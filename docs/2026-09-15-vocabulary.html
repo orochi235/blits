@@ -297,6 +297,7 @@
     scale<sub>c</sub> : <var>V<sub>c</sub></var> × [0, 1] → <var>V<sub>c</sub></var> &nbsp;<span class="note">present iff rest is</span><br>
     lerp<sub>c</sub> : <var>V<sub>c</sub></var> × <var>V<sub>c</sub></var> × [0, 1] → <var>V<sub>c</sub></var></p>
     <p>Laws: join is associative; join(<var>v</var>, rest) = <var>v</var>; scale(<var>v</var>, 1) = <var>v</var>; scale(<var>v</var>, 0) = rest; lerp(<var>a</var>, <var>b</var>, 0) = <var>a</var>; lerp(<var>a</var>, <var>b</var>, 1) = <var>b</var>. A channel with rest is a monoid. <code>mul</code> is (ℝ, ·, 1); <code>sum</code> is (ℝ, +, 0); <code>max</code> is (ℝ≥0, max, 0); <code>last</code> is (<var>V</var>, second-argument) with no identity.</p>
+    <p>Strictly, only join is an operation on <var>V<sub>c</sub></var>, in the algebraist’s sense of a map from the set to itself: binary, with rest as its identity. Scale is not: it takes a value and a number from a different set, which makes it an <em>action</em> of [0, 1] on the channel, as scalars act on a vector space, with scale(<var>v</var>, 1) = <var>v</var> as its unit law. Lerp is a family of binary operations indexed by <var>u</var>; on a channel that adds it is the convex combination (1 − <var>u</var>)<var>a</var> + <var>u</var><var>b</var> and not primitive at all, and it is primitive only where there is no addition to build it from, as for color. Fold, below, is join iterated. A channel is therefore an <em>algebra</em>: a set carrying its operations.</p>
   </div>
 
   <div class="k"><span class="r" data-r="table">table</span></div>
@@ -602,7 +603,7 @@
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">weight</button></div>
     <div class="field">math</div><div class="words"><button class="w star">coefficient</button><button class="w">scalar</button><button class="w">factor</button><button class="w">multiplier</button><button class="w">alpha</button><button class="w">magnitude</button></div>
-    <div class="field">audio</div><div class="words"><button class="w star">fader</button><button class="w">gain</button><button class="w">level</button><button class="w">volume</button><button class="w">trim</button><button class="w">wet</button></div>
+    <div class="field">audio</div><div class="words"><button class="w star">fader</button><button class="w">gain</button><button class="w">level</button><button class="w star">volume</button><button class="w">trim</button><button class="w">wet</button></div>
     <div class="field">animation</div><div class="words"><button class="w star">influence</button><button class="w">amount</button><button class="w">opacity</button><button class="w">strength</button><button class="w">presence</button><button class="w">mask</button></div>
     <div class="field">lighting</div><div class="words"><button class="w">intensity</button><button class="w">dimmer</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-weight" data-term="weight" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
@@ -625,13 +626,13 @@
 
 <section class="term" id="t-contribution" data-term="contribution">
   <div class="term-head"><h3>Contribution</h3><span class="now">was <code>contribution</code></span></div>
-  <div class="gloss"><p>One track’s share of one item on one frame.</p><ul><li>The track’s offset after its weight has been applied.</li><li>The merge combines contributions channel by channel, starting from rest.</li></ul></div>
+  <div class="gloss"><p>What one track actually does to one item on one frame, once its weight is applied.</p><ul><li>The track’s offset after its weight has been applied. Not a fraction of the whole: two tracks each contributing gain 0.1 leave the item at 0.01.</li><li>The merge combines contributions channel by channel, starting from rest.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">contribution</button></div>
     <div class="field">math</div><div class="words"><button class="w star">summand</button><button class="w">addend</button><button class="w">operand</button><button class="w">component</button><button class="w">increment</button><button class="w">delta</button></div>
     <div class="field">audio</div><div class="words"><button class="w star">send</button><button class="w">stem</button><button class="w">part</button><button class="w">bus</button><button class="w">voice</button></div>
     <div class="field">compositing</div><div class="words"><button class="w star">layer</button><button class="w">pass</button><button class="w">plate</button><button class="w">element</button></div>
-    <div class="field">plain</div><div class="words"><button class="w">share</button><button class="w">slice</button><button class="w">cut</button><button class="w">say</button><button class="w">vote</button></div>
+    <div class="field">plain</div><div class="words"><button class="w">share</button><button class="w">slice</button><button class="w">cut</button><button class="w star">impact</button><button class="w">influence</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-contribution" data-term="contribution" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>

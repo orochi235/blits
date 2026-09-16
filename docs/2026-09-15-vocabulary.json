@@ -1,0 +1,4021 @@
+{
+  "title": "blits vocabulary",
+  "subject": "blits, the effects-schema package: the roles of its schema, the verbs of its API, and the operations of its channels",
+  "status": "Naming open · nothing built · 2026-09-15",
+  "date": "2026-09-15",
+  "fields": [
+    "DAW",
+    "stage lighting",
+    "animation rig",
+    "algebra",
+    "physics",
+    "learning"
+  ],
+  "roles": [
+    {
+      "key": "offset",
+      "title": "Offset",
+      "was": "offset",
+      "kind": "noun",
+      "gloss": {
+        "lead": "What one call to a piece returns: a record with one slot per channel of the table.",
+        "items": [
+          "The piece fills only the slots it drives and leaves the others empty. Flicker fills gain; slam fills position and \\scale; hue fills color.",
+          "Which slots come back is the piece’s own decision, and it may differ from call to call.",
+          "A filled slot is a change from the channel’s rest: <code>gain: 0.1</code> means multiply by 0.1, not set to 0.1.",
+          "An empty slot means no contribution. The merge skips it."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "delta",
+              "star": true
+            },
+            {
+              "word": "point",
+              "star": false
+            },
+            {
+              "word": "deviation",
+              "star": false
+            },
+            {
+              "word": "perturbation",
+              "star": false
+            },
+            {
+              "word": "term",
+              "star": true
+            },
+            {
+              "word": "vector",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "send",
+              "star": true
+            },
+            {
+              "word": "input",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "snapshot",
+              "star": true
+            },
+            {
+              "word": "pose",
+              "star": false
+            },
+            {
+              "word": "frame",
+              "star": false
+            },
+            {
+              "word": "keyvalue",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "compositing",
+          "words": [
+            {
+              "word": "layer",
+              "star": false
+            },
+            {
+              "word": "pass",
+              "star": false
+            },
+            {
+              "word": "plate",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "level",
+              "star": false
+            },
+            {
+              "word": "cue",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "shift",
+              "star": false
+            },
+            {
+              "word": "nudge",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "residual",
+              "star": true
+            }
+          ]
+        }
+      ],
+      "description": "emitted value"
+    },
+    {
+      "key": "channel",
+      "title": "Channel",
+      "was": "channel",
+      "kind": "noun",
+      "gloss": {
+        "lead": "One slot in an offset: one name, one rule for combining two values written into it.",
+        "items": [
+          "Gain is a channel whose values multiply. Position is a channel whose triples \\add.",
+          "The rule belongs to the channel, so what happens when two pieces write the same slot is settled once, not per piece.",
+          "One name and one rule whatever the shape of the values: gain is a single number, position is three under one rule."
+        ]
+      },
+      "groups": [
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "lane",
+              "star": true
+            },
+            {
+              "word": "strip",
+              "star": false
+            },
+            {
+              "word": "fader",
+              "star": false
+            },
+            {
+              "word": "stem",
+              "star": false
+            },
+            {
+              "word": "band",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "data",
+          "words": [
+            {
+              "word": "field",
+              "star": false
+            },
+            {
+              "word": "property",
+              "star": false
+            },
+            {
+              "word": "attribute",
+              "star": false
+            },
+            {
+              "word": "column",
+              "star": false
+            },
+            {
+              "word": "slot",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "axis",
+              "star": true
+            },
+            {
+              "word": "factor",
+              "star": true
+            },
+            {
+              "word": "component",
+              "star": false
+            },
+            {
+              "word": "dimension",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "param",
+              "star": true
+            },
+            {
+              "word": "curve",
+              "star": false
+            },
+            {
+              "word": "knob",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "circuit",
+              "star": false
+            },
+            {
+              "word": "dimmer",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "feature",
+              "star": true
+            }
+          ]
+        }
+      ],
+      "description": "one field"
+    },
+    {
+      "key": "table",
+      "title": "Table",
+      "was": "table",
+      "kind": "noun",
+      "gloss": {
+        "lead": "The full list of channels one kind of thing can be moved on, each with its rule.",
+        "items": [
+          "klieg has three: a pose table for a letter, a part table for a tube run or a flake, a lighting table for the whole frame.",
+          "A piece writes into one table. A mix runs over one table.",
+          "It is a closed list: a piece cannot write a channel the table does not have."
+        ]
+      },
+      "groups": [
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "fixture",
+              "star": true
+            },
+            {
+              "word": "personality",
+              "star": true
+            },
+            {
+              "word": "patch",
+              "star": false
+            },
+            {
+              "word": "profile",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "rig",
+              "star": true
+            },
+            {
+              "word": "skeleton",
+              "star": false
+            },
+            {
+              "word": "puppet",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "data",
+          "words": [
+            {
+              "word": "schema",
+              "star": false
+            },
+            {
+              "word": "shape",
+              "star": false
+            },
+            {
+              "word": "image",
+              "star": false
+            },
+            {
+              "word": "remit",
+              "star": false
+            },
+            {
+              "word": "gamut",
+              "star": true
+            },
+            {
+              "word": "ambit",
+              "star": false
+            },
+            {
+              "word": "model",
+              "star": false
+            },
+            {
+              "word": "template",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "algebra",
+              "star": true
+            },
+            {
+              "word": "space",
+              "star": true
+            },
+            {
+              "word": "domain",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "desk",
+              "star": false
+            },
+            {
+              "word": "console",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "channel set"
+    },
+    {
+      "key": "item",
+      "title": "Item",
+      "was": "item",
+      "kind": "noun",
+      "gloss": {
+        "lead": "The thing being driven.",
+        "items": [
+          "A letter, a tube run, a wheel wedge, a page.",
+          "A piece is asked about one item at a time, and a sample is the answer for one item.",
+          "A system that drives a single thing, such as klieg’s lighting, has one item."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "index",
+              "star": true
+            },
+            {
+              "word": "argument",
+              "star": false
+            },
+            {
+              "word": "point",
+              "star": false
+            },
+            {
+              "word": "element",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage",
+          "words": [
+            {
+              "word": "actor",
+              "star": true
+            },
+            {
+              "word": "subject",
+              "star": true
+            },
+            {
+              "word": "puppet",
+              "star": false
+            },
+            {
+              "word": "player",
+              "star": false
+            },
+            {
+              "word": "fixture",
+              "star": false
+            },
+            {
+              "word": "lamp",
+              "star": false
+            },
+            {
+              "word": "instrument",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "data",
+          "words": [
+            {
+              "word": "node",
+              "star": false
+            },
+            {
+              "word": "entity",
+              "star": false
+            },
+            {
+              "word": "member",
+              "star": false
+            },
+            {
+              "word": "object",
+              "star": false
+            },
+            {
+              "word": "unit",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "target",
+              "star": true
+            },
+            {
+              "word": "body",
+              "star": false
+            },
+            {
+              "word": "particle",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "example",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "driven thing"
+    },
+    {
+      "key": "piece",
+      "title": "Piece",
+      "was": "piece",
+      "kind": "noun",
+      "gloss": {
+        "lead": "The function an author writes.",
+        "items": [
+          "It is given where a track is in its period, which item is being asked about, and the frame’s context, and it returns an offset.",
+          "The same inputs always give the same offset.",
+          "A piece that needs memory declares a state per item. The mix advances that state once a frame, before asking."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "curve",
+              "star": true
+            },
+            {
+              "word": "map",
+              "star": false
+            },
+            {
+              "word": "function",
+              "star": false
+            },
+            {
+              "word": "field",
+              "star": true
+            },
+            {
+              "word": "generator",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "clip",
+              "star": true
+            },
+            {
+              "word": "loop",
+              "star": false
+            },
+            {
+              "word": "pattern",
+              "star": false
+            },
+            {
+              "word": "riff",
+              "star": false
+            },
+            {
+              "word": "phrase",
+              "star": false
+            },
+            {
+              "word": "motif",
+              "star": false
+            },
+            {
+              "word": "voice",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "motion",
+              "star": true
+            },
+            {
+              "word": "gesture",
+              "star": true
+            },
+            {
+              "word": "move",
+              "star": false
+            },
+            {
+              "word": "beat",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "chase",
+              "star": false
+            },
+            {
+              "word": "cue",
+              "star": false
+            },
+            {
+              "word": "effect",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "extractor",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "function of time"
+    },
+    {
+      "key": "track",
+      "title": "Track",
+      "was": "track",
+      "kind": "noun",
+      "gloss": {
+        "lead": "One piece, playing.",
+        "items": [
+          "It has its own start time, rate and loop setting, its own weight over time, and its own set of items.",
+          "Two tracks of the same piece are two clocks and two weights.",
+          "A track is what a host adds to a mix and later stops."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "operand",
+              "star": false
+            },
+            {
+              "word": "parametrization",
+              "star": false
+            },
+            {
+              "word": "instance",
+              "star": false
+            },
+            {
+              "word": "evaluation",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "strand",
+              "star": false
+            },
+            {
+              "word": "lane",
+              "star": false
+            },
+            {
+              "word": "voice",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "action",
+              "star": true
+            },
+            {
+              "word": "animation",
+              "star": true
+            },
+            {
+              "word": "player",
+              "star": false
+            },
+            {
+              "word": "run",
+              "star": false
+            },
+            {
+              "word": "playback",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "submaster",
+              "star": true
+            },
+            {
+              "word": "fader",
+              "star": false
+            },
+            {
+              "word": "cue",
+              "star": false
+            },
+            {
+              "word": "chase",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "game",
+          "words": [
+            {
+              "word": "layer",
+              "star": false
+            },
+            {
+              "word": "state",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "force",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "member",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "playing instance"
+    },
+    {
+      "key": "mix",
+      "title": "Mix",
+      "was": "mix",
+      "kind": "noun",
+      "gloss": {
+        "lead": "Everything a host holds: the tracks that are playing, over one table.",
+        "items": [
+          "Once a frame the host steps it. That advances every track’s clock, weight and state.",
+          "Then, for each item it wants to draw, the host samples@v it and gets back one resolved record."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "combination",
+              "star": true
+            },
+            {
+              "word": "sum",
+              "star": false
+            },
+            {
+              "word": "reduction",
+              "star": false
+            },
+            {
+              "word": "union",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "aggregate",
+              "star": false
+            },
+            {
+              "word": "bus",
+              "star": true
+            },
+            {
+              "word": "desk",
+              "star": false
+            },
+            {
+              "word": "system",
+              "star": false
+            },
+            {
+              "word": "master",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "mixer",
+              "star": false
+            },
+            {
+              "word": "timeline",
+              "star": false
+            },
+            {
+              "word": "stage",
+              "star": false
+            },
+            {
+              "word": "sequencer",
+              "star": false
+            },
+            {
+              "word": "scene",
+              "star": false
+            },
+            {
+              "word": "graph",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "universe",
+              "star": true
+            },
+            {
+              "word": "output",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "compositing",
+          "words": [
+            {
+              "word": "comp",
+              "star": true
+            },
+            {
+              "word": "stack",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "ensemble",
+              "star": true
+            }
+          ]
+        }
+      ],
+      "description": "live set"
+    },
+    {
+      "key": "signal",
+      "title": "Signal",
+      "was": "signal",
+      "kind": "noun",
+      "gloss": {
+        "lead": "A number from 0 to 1 that comes from outside the clock, read per item per frame.",
+        "items": [
+          "How close the cursor is. How long it has hovered. A level the host writes.",
+          "As a track’s weight, it makes an effect follow the cursor.",
+          "As a selector, it picks a point between alternatives."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "parameter",
+              "star": true
+            },
+            {
+              "word": "variable",
+              "star": false
+            },
+            {
+              "word": "functional",
+              "star": false
+            },
+            {
+              "word": "measure",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "synth",
+          "words": [
+            {
+              "word": "control",
+              "star": false
+            },
+            {
+              "word": "modulator",
+              "star": false
+            },
+            {
+              "word": "lfo",
+              "star": false
+            },
+            {
+              "word": "envelope",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "sidechain",
+              "star": false
+            },
+            {
+              "word": "send",
+              "star": false
+            },
+            {
+              "word": "input",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "fader",
+              "star": true
+            },
+            {
+              "word": "dimmer",
+              "star": false
+            },
+            {
+              "word": "level",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "dsp",
+          "words": [
+            {
+              "word": "sensor",
+              "star": false
+            },
+            {
+              "word": "reading",
+              "star": false
+            },
+            {
+              "word": "probe",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "driver",
+              "star": true
+            },
+            {
+              "word": "expression",
+              "star": false
+            },
+            {
+              "word": "feed",
+              "star": true
+            }
+          ]
+        }
+      ],
+      "description": "outside input"
+    },
+    {
+      "key": "handle",
+      "title": "Handle",
+      "was": "handle",
+      "kind": "noun",
+      "gloss": {
+        "lead": "What add returns for one track.",
+        "items": [
+          "Knobs you can turn while it runs: its weight, its rate, seek and stop. Writes take effect on the next frame.",
+          "A promise, <code>done</code>, that resolves once the track has left the mix by any route."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "binding",
+              "star": true
+            },
+            {
+              "word": "reference",
+              "star": false
+            },
+            {
+              "word": "variable",
+              "star": false
+            },
+            {
+              "word": "name",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "controls",
+          "words": [
+            {
+              "word": "player",
+              "star": false
+            },
+            {
+              "word": "control",
+              "star": false
+            },
+            {
+              "word": "controller",
+              "star": false
+            },
+            {
+              "word": "remote",
+              "star": false
+            },
+            {
+              "word": "knob",
+              "star": false
+            },
+            {
+              "word": "fader",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "systems",
+          "words": [
+            {
+              "word": "ticket",
+              "star": false
+            },
+            {
+              "word": "token",
+              "star": false
+            },
+            {
+              "word": "lease",
+              "star": true
+            },
+            {
+              "word": "job",
+              "star": false
+            },
+            {
+              "word": "session",
+              "star": false
+            },
+            {
+              "word": "slot",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "playback",
+          "words": [
+            {
+              "word": "playback",
+              "star": false
+            },
+            {
+              "word": "run",
+              "star": false
+            },
+            {
+              "word": "instance",
+              "star": false
+            },
+            {
+              "word": "voice",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "live controls"
+    },
+    {
+      "key": "engine",
+      "title": "Engine",
+      "was": "engine",
+      "kind": "noun",
+      "gloss": {
+        "lead": "The code behind a mix that does the stepping and the sampling.",
+        "items": [
+          "The mix is the interface. An engine is one implementation of it.",
+          "One ships, running pieces on the CPU.",
+          "A later one could bake keyframes to CSS or fill a GPU buffer, and a host would not know the difference."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "model",
+              "star": true
+            },
+            {
+              "word": "evaluator",
+              "star": true
+            },
+            {
+              "word": "interpretation",
+              "star": false
+            },
+            {
+              "word": "semantics",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "backend",
+              "star": true
+            },
+            {
+              "word": "driver",
+              "star": false
+            },
+            {
+              "word": "runtime",
+              "star": true
+            },
+            {
+              "word": "kernel",
+              "star": false
+            },
+            {
+              "word": "core",
+              "star": false
+            },
+            {
+              "word": "substrate",
+              "star": false
+            },
+            {
+              "word": "provider",
+              "star": true
+            },
+            {
+              "word": "renderer",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "evaluation",
+          "words": [
+            {
+              "word": "executor",
+              "star": false
+            },
+            {
+              "word": "scheduler",
+              "star": false
+            },
+            {
+              "word": "interpreter",
+              "star": false
+            },
+            {
+              "word": "vm",
+              "star": false
+            },
+            {
+              "word": "machine",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "machinery",
+          "words": [
+            {
+              "word": "plant",
+              "star": false
+            },
+            {
+              "word": "motor",
+              "star": false
+            },
+            {
+              "word": "solver",
+              "star": true
+            }
+          ]
+        }
+      ],
+      "description": "implementation"
+    },
+    {
+      "key": "host",
+      "title": "Host",
+      "was": "host",
+      "kind": "noun",
+      "gloss": {
+        "lead": "The program that owns the frame loop and the things on screen.",
+        "items": [
+          "klieg, wod, sherpa, magicsmoke.",
+          "It holds a mix, steps it once a frame, samples@v it per item, and writes what comes back onto a mesh, a wedge or a gain node.",
+          "The package never draws anything itself."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "integrator",
+              "star": true
+            },
+            {
+              "word": "observer",
+              "star": false
+            },
+            {
+              "word": "ambient",
+              "star": false
+            },
+            {
+              "word": "universe",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "embedder",
+              "star": false
+            },
+            {
+              "word": "app",
+              "star": false
+            },
+            {
+              "word": "caller",
+              "star": false
+            },
+            {
+              "word": "client",
+              "star": false
+            },
+            {
+              "word": "runtime",
+              "star": false
+            },
+            {
+              "word": "driver",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "daw",
+              "star": true
+            },
+            {
+              "word": "session",
+              "star": false
+            },
+            {
+              "word": "console",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage",
+          "words": [
+            {
+              "word": "house",
+              "star": true
+            },
+            {
+              "word": "venue",
+              "star": false
+            },
+            {
+              "word": "stage",
+              "star": false
+            },
+            {
+              "word": "theater",
+              "star": false
+            },
+            {
+              "word": "operator",
+              "star": false
+            },
+            {
+              "word": "board-op",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "pipeline",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "owner of the loop"
+    },
+    {
+      "key": "rest",
+      "title": "Rest",
+      "was": "rest",
+      "kind": "noun",
+      "gloss": {
+        "lead": "A channel’s value for nothing happening.",
+        "items": [
+          "For a channel that multiplies it is 1. For one that adds it is 0. Color has none.",
+          "A track at weight 0 pulls its values to rest.",
+          "An item no track reaches samples@v to rest on every channel."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "identity",
+              "star": true
+            },
+            {
+              "word": "origin",
+              "star": true
+            },
+            {
+              "word": "unit",
+              "star": false
+            },
+            {
+              "word": "zero",
+              "star": false
+            },
+            {
+              "word": "neutral",
+              "star": false
+            },
+            {
+              "word": "null",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "base",
+              "star": false
+            },
+            {
+              "word": "default",
+              "star": false
+            },
+            {
+              "word": "home",
+              "star": false
+            },
+            {
+              "word": "still",
+              "star": false
+            },
+            {
+              "word": "idle",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "unity",
+              "star": false
+            },
+            {
+              "word": "silence",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "dark",
+              "star": false
+            },
+            {
+              "word": "blackout",
+              "star": false
+            },
+            {
+              "word": "preset",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "flat",
+              "star": false
+            },
+            {
+              "word": "ground",
+              "star": false
+            },
+            {
+              "word": "equilibrium",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "baseline",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "the identity"
+    },
+    {
+      "key": "weight",
+      "title": "Weight",
+      "was": "weight",
+      "kind": "noun",
+      "gloss": {
+        "lead": "How much of a track is on, from 0 to 1.",
+        "items": [
+          "Its offset is pulled toward rest by the weight before the merge: at 0 the track contributes nothing, at 1 all of it.",
+          "A ramp in time is a fade. A signal is an effect that follows the cursor.",
+          "It is the only knob the mix turns."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "coefficient",
+              "star": true
+            },
+            {
+              "word": "scalar",
+              "star": false
+            },
+            {
+              "word": "factor",
+              "star": false
+            },
+            {
+              "word": "multiplier",
+              "star": false
+            },
+            {
+              "word": "alpha",
+              "star": false
+            },
+            {
+              "word": "magnitude",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "fader",
+              "star": true
+            },
+            {
+              "word": "gain",
+              "star": false
+            },
+            {
+              "word": "level",
+              "star": false
+            },
+            {
+              "word": "volume",
+              "star": true
+            },
+            {
+              "word": "trim",
+              "star": false
+            },
+            {
+              "word": "wet",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "influence",
+              "star": true
+            },
+            {
+              "word": "amount",
+              "star": false
+            },
+            {
+              "word": "opacity",
+              "star": false
+            },
+            {
+              "word": "strength",
+              "star": false
+            },
+            {
+              "word": "presence",
+              "star": false
+            },
+            {
+              "word": "mask",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "intensity",
+              "star": false
+            },
+            {
+              "word": "dimmer",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "how much is on"
+    },
+    {
+      "key": "sample",
+      "title": "Sample",
+      "was": "ResolvedOffset",
+      "kind": "noun",
+      "gloss": {
+        "lead": "The answer for one item on one frame.",
+        "items": [
+          "Every channel of the table filled, after every track’s contribution has been merged.",
+          "A complete record, where an offset is a partial one.",
+          "The host reads it and writes it to the screen."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "point",
+              "star": true
+            },
+            {
+              "word": "value",
+              "star": false
+            },
+            {
+              "word": "image",
+              "star": false
+            },
+            {
+              "word": "sum",
+              "star": false
+            },
+            {
+              "word": "result",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "output",
+              "star": true
+            },
+            {
+              "word": "master",
+              "star": false
+            },
+            {
+              "word": "mixdown",
+              "star": false
+            },
+            {
+              "word": "readout",
+              "star": false
+            },
+            {
+              "word": "reading",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "pose",
+              "star": true
+            },
+            {
+              "word": "frame",
+              "star": false
+            },
+            {
+              "word": "state",
+              "star": false
+            },
+            {
+              "word": "snapshot",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "electrical",
+          "words": [
+            {
+              "word": "outlet",
+              "star": true
+            },
+            {
+              "word": "tap",
+              "star": false
+            },
+            {
+              "word": "feed",
+              "star": false
+            },
+            {
+              "word": "terminal",
+              "star": false
+            },
+            {
+              "word": "resultant",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "vector",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "sample"
+    },
+    {
+      "key": "contribution",
+      "title": "Contribution",
+      "was": "contribution",
+      "kind": "noun",
+      "gloss": {
+        "lead": "What one track actually does to one item on one frame, once its weight is applied.",
+        "items": [
+          "The track’s offset after its weight has been applied. Not a fraction of the whole: two tracks each contributing gain 0.1 leave the item at 0.01.",
+          "The merge combines contributions channel by channel, starting from rest."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "summand",
+              "star": true
+            },
+            {
+              "word": "addend",
+              "star": false
+            },
+            {
+              "word": "operand",
+              "star": false
+            },
+            {
+              "word": "component",
+              "star": false
+            },
+            {
+              "word": "increment",
+              "star": false
+            },
+            {
+              "word": "delta",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "send",
+              "star": true
+            },
+            {
+              "word": "stem",
+              "star": false
+            },
+            {
+              "word": "part",
+              "star": false
+            },
+            {
+              "word": "bus",
+              "star": false
+            },
+            {
+              "word": "voice",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "compositing",
+          "words": [
+            {
+              "word": "layer",
+              "star": true
+            },
+            {
+              "word": "pass",
+              "star": false
+            },
+            {
+              "word": "plate",
+              "star": false
+            },
+            {
+              "word": "element",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "share",
+              "star": false
+            },
+            {
+              "word": "slice",
+              "star": false
+            },
+            {
+              "word": "cut",
+              "star": false
+            },
+            {
+              "word": "impact",
+              "star": true
+            },
+            {
+              "word": "influence",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "one track's share"
+    },
+    {
+      "key": "context",
+      "title": "Context",
+      "was": "ctx",
+      "kind": "noun",
+      "gloss": {
+        "lead": "What a piece is handed beside the phase and the item.",
+        "items": [
+          "The frame’s clock, and the time since the last frame.",
+          "How long the track has been playing, which pass this is, and the track’s weight.",
+          "The piece’s own state for this item.",
+          "Anything the host adds, such as where the cursor is."
+        ]
+      },
+      "groups": [
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "setting",
+              "star": false
+            },
+            {
+              "word": "env",
+              "star": false
+            },
+            {
+              "word": "environment",
+              "star": false
+            },
+            {
+              "word": "scope",
+              "star": false
+            },
+            {
+              "word": "frame",
+              "star": false
+            },
+            {
+              "word": "args",
+              "star": false
+            },
+            {
+              "word": "props",
+              "star": false
+            },
+            {
+              "word": "bag",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "time",
+          "words": [
+            {
+              "word": "tick",
+              "star": true
+            },
+            {
+              "word": "moment",
+              "star": false
+            },
+            {
+              "word": "instant",
+              "star": false
+            },
+            {
+              "word": "beat",
+              "star": false
+            },
+            {
+              "word": "pulse",
+              "star": false
+            },
+            {
+              "word": "clock",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage",
+          "words": [
+            {
+              "word": "cue",
+              "star": false
+            },
+            {
+              "word": "call",
+              "star": false
+            },
+            {
+              "word": "situation",
+              "star": false
+            },
+            {
+              "word": "scene",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "parameters",
+              "star": false
+            },
+            {
+              "word": "bindings",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "what a piece is handed"
+    },
+    {
+      "key": "period",
+      "title": "Period",
+      "was": "duration",
+      "kind": "noun",
+      "gloss": {
+        "lead": "How long one pass of a piece lasts, in milliseconds.",
+        "items": [
+          "The phase runs from 0 to 1 across it and then wraps.",
+          "A period of 0 means the piece does not repeat: the phase stays at 0 and the piece reads elapsed time instead."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "recurrence",
+              "star": false
+            },
+            {
+              "word": "cycle",
+              "star": false
+            },
+            {
+              "word": "wavelength",
+              "star": false
+            },
+            {
+              "word": "modulus",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "bar",
+              "star": true
+            },
+            {
+              "word": "measure",
+              "star": false
+            },
+            {
+              "word": "loop",
+              "star": false
+            },
+            {
+              "word": "phrase",
+              "star": false
+            },
+            {
+              "word": "beat",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "pass",
+              "star": true
+            },
+            {
+              "word": "lap",
+              "star": false
+            },
+            {
+              "word": "turn",
+              "star": false
+            },
+            {
+              "word": "revolution",
+              "star": false
+            },
+            {
+              "word": "iteration",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "time",
+          "words": [
+            {
+              "word": "duration",
+              "star": false
+            },
+            {
+              "word": "length",
+              "star": false
+            },
+            {
+              "word": "span",
+              "star": false
+            },
+            {
+              "word": "interval",
+              "star": false
+            },
+            {
+              "word": "tempo",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "epoch",
+              "star": true
+            }
+          ]
+        }
+      ],
+      "description": "one pass"
+    },
+    {
+      "key": "phase",
+      "title": "Phase",
+      "was": "t",
+      "kind": "fixed",
+      "gloss": {
+        "lead": "Where a track is within its period, from 0 to 1, wrapping.",
+        "items": [
+          "The first thing a piece is handed, and what stagger shifts per item.",
+          "klieg’s <code>cycle</code> already calls its per-letter offset <code>phase</code>.",
+          "Fixed, not up for a vote. The cost is renaming klieg’s <code>onPhase</code> and <code>PhaseEvent</code>, the enter–active–exit events sherpa consumes, which Mike has said klieg will pay."
+        ]
+      },
+      "description": "place in the pass"
+    },
+    {
+      "key": "group",
+      "title": "Group",
+      "was": "group",
+      "kind": "noun",
+      "gloss": {
+        "lead": "A label shared by tracks that are alternatives in time.",
+        "items": [
+          "klieg’s enter, active and exit are one group.",
+          "Within a group the weights are capped to sum to at most 1, so a crossfade is always a \\blend of the two and never a pile-up.",
+          "Tracks meant to stack stay out of groups."
+        ]
+      },
+      "groups": [
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "bus",
+              "star": true
+            },
+            {
+              "word": "stem",
+              "star": false
+            },
+            {
+              "word": "submix",
+              "star": false
+            },
+            {
+              "word": "aux",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "submaster",
+              "star": true
+            },
+            {
+              "word": "cuelist",
+              "star": false
+            },
+            {
+              "word": "stack",
+              "star": false
+            },
+            {
+              "word": "bank",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "partition",
+              "star": true
+            },
+            {
+              "word": "class",
+              "star": false
+            },
+            {
+              "word": "family",
+              "star": false
+            },
+            {
+              "word": "set",
+              "star": false
+            },
+            {
+              "word": "cohort",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "layer",
+              "star": true
+            },
+            {
+              "word": "blendtree",
+              "star": false
+            },
+            {
+              "word": "exclusive",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "gang",
+              "star": false
+            },
+            {
+              "word": "crew",
+              "star": false
+            },
+            {
+              "word": "pool",
+              "star": false
+            },
+            {
+              "word": "band",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "capped set"
+    }
+  ],
+  "verbs": [
+    {
+      "key": "add",
+      "title": "add",
+      "was": "mix.add(track)",
+      "kind": "verb",
+      "gloss": {
+        "lead": "Put a track into the mix.",
+        "items": [
+          "It begins on the next frame unless its start time says otherwise.",
+          "Returns the handle."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "apply",
+              "star": true
+            },
+            {
+              "word": "insert",
+              "star": false
+            },
+            {
+              "word": "adjoin",
+              "star": false
+            },
+            {
+              "word": "introduce",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "exert",
+              "star": false
+            },
+            {
+              "word": "impose",
+              "star": false
+            },
+            {
+              "word": "impress",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "arm",
+              "star": true
+            },
+            {
+              "word": "play",
+              "star": true
+            },
+            {
+              "word": "launch",
+              "star": false
+            },
+            {
+              "word": "start",
+              "star": false
+            },
+            {
+              "word": "cue",
+              "star": false
+            },
+            {
+              "word": "run",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "go",
+              "star": true
+            },
+            {
+              "word": "fire",
+              "star": false
+            },
+            {
+              "word": "strike",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "push",
+              "star": false
+            },
+            {
+              "word": "mount",
+              "star": false
+            },
+            {
+              "word": "attach",
+              "star": false
+            },
+            {
+              "word": "spawn",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "mix.add(track)",
+      "description": "add"
+    },
+    {
+      "key": "stop",
+      "title": "stop",
+      "was": "handle.stop()",
+      "kind": "verb",
+      "gloss": {
+        "lead": "Take a track out of the mix.",
+        "items": [
+          "Its weight ramps down over its fade first.",
+          "Or, if asked, it waits per item until the track is at rest and leaves without a fade."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "remove",
+              "star": true
+            },
+            {
+              "word": "withdraw",
+              "star": false
+            },
+            {
+              "word": "cancel",
+              "star": false
+            },
+            {
+              "word": "vanish",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "release",
+              "star": true
+            },
+            {
+              "word": "damp",
+              "star": false
+            },
+            {
+              "word": "settle",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "cease",
+              "star": false
+            },
+            {
+              "word": "kill",
+              "star": true
+            },
+            {
+              "word": "mute",
+              "star": true
+            },
+            {
+              "word": "end",
+              "star": false
+            },
+            {
+              "word": "fade",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "out",
+              "star": true
+            },
+            {
+              "word": "blackout",
+              "star": false
+            },
+            {
+              "word": "dim",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "halt",
+              "star": false
+            },
+            {
+              "word": "retire",
+              "star": false
+            },
+            {
+              "word": "drop",
+              "star": false
+            },
+            {
+              "word": "finish",
+              "star": false
+            },
+            {
+              "word": "quit",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "handle.stop()",
+      "description": "stop"
+    },
+    {
+      "key": "step",
+      "title": "step",
+      "was": "mix.step(now)",
+      "kind": "verb",
+      "gloss": {
+        "lead": "Move the mix to a frame.",
+        "items": [
+          "Every track’s clock, weight and piece state advances once, keyed by the frame’s time.",
+          "Asking twice for the same time changes nothing."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "iterate",
+              "star": false
+            },
+            {
+              "word": "evolve",
+              "star": false
+            },
+            {
+              "word": "propagate",
+              "star": false
+            },
+            {
+              "word": "advance",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "integrate",
+              "star": true
+            },
+            {
+              "word": "tick",
+              "star": true
+            },
+            {
+              "word": "pulse",
+              "star": false
+            },
+            {
+              "word": "march",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "clock",
+              "star": true
+            },
+            {
+              "word": "beat",
+              "star": true
+            },
+            {
+              "word": "run",
+              "star": false
+            },
+            {
+              "word": "frame",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "sweep",
+              "star": true
+            },
+            {
+              "word": "cycle",
+              "star": true
+            },
+            {
+              "word": "go",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "update",
+              "star": false
+            },
+            {
+              "word": "turn",
+              "star": false
+            },
+            {
+              "word": "tock",
+              "star": false
+            },
+            {
+              "word": "progress",
+              "star": false
+            },
+            {
+              "word": "move",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "mix.step(now)",
+      "description": "step"
+    },
+    {
+      "key": "sample",
+      "title": "sample",
+      "was": "mix.sample(item)",
+      "kind": "verb",
+      "gloss": {
+        "lead": "Ask for one item’s resolved record at the current frame.",
+        "items": []
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "eval",
+              "star": true
+            },
+            {
+              "word": "evaluate",
+              "star": false
+            },
+            {
+              "word": "at",
+              "star": true
+            },
+            {
+              "word": "value",
+              "star": false
+            },
+            {
+              "word": "resolve",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "observe",
+              "star": true
+            },
+            {
+              "word": "measure",
+              "star": true
+            },
+            {
+              "word": "probe",
+              "star": true
+            },
+            {
+              "word": "sense",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "read",
+              "star": true
+            },
+            {
+              "word": "take",
+              "star": true
+            },
+            {
+              "word": "tap",
+              "star": true
+            },
+            {
+              "word": "poll",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "look",
+              "star": true
+            },
+            {
+              "word": "peek",
+              "star": true
+            },
+            {
+              "word": "get",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "query",
+              "star": false
+            },
+            {
+              "word": "fetch",
+              "star": false
+            },
+            {
+              "word": "pull",
+              "star": true
+            },
+            {
+              "word": "sum",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "mix.sample(item)",
+      "description": "sample"
+    },
+    {
+      "key": "seek",
+      "title": "seek",
+      "was": "handle.seek(ms)",
+      "kind": "verb",
+      "gloss": {
+        "lead": "Move one track’s own clock to a given elapsed time.",
+        "items": [
+          "Nothing else in the mix moves."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "shift",
+              "star": false
+            },
+            {
+              "word": "transpose",
+              "star": false
+            },
+            {
+              "word": "translate",
+              "star": false
+            },
+            {
+              "word": "rebase",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "warp",
+              "star": true
+            },
+            {
+              "word": "displace",
+              "star": false
+            },
+            {
+              "word": "jump",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "scrub",
+              "star": true
+            },
+            {
+              "word": "cue",
+              "star": true
+            },
+            {
+              "word": "locate",
+              "star": false
+            },
+            {
+              "word": "rewind",
+              "star": false
+            },
+            {
+              "word": "skip",
+              "star": true
+            },
+            {
+              "word": "wind",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "goto",
+              "star": false
+            },
+            {
+              "word": "place",
+              "star": false
+            },
+            {
+              "word": "set",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "position",
+              "star": false
+            },
+            {
+              "word": "slide",
+              "star": false
+            },
+            {
+              "word": "align",
+              "star": false
+            },
+            {
+              "word": "retime",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "handle.seek(ms)",
+      "description": "seek"
+    },
+    {
+      "key": "blend",
+      "title": "blend",
+      "was": "mix.blend(pieces, by)",
+      "kind": "verb",
+      "gloss": {
+        "lead": "Put several tracks in at once whose weights are shared out by one signal.",
+        "items": [
+          "As the signal runs from 0 to 1, the result moves from the first piece to the last."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "interp",
+              "star": true
+            },
+            {
+              "word": "interpolate",
+              "star": false
+            },
+            {
+              "word": "convex",
+              "star": false
+            },
+            {
+              "word": "weigh",
+              "star": false
+            },
+            {
+              "word": "combine",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "superpose",
+              "star": false
+            },
+            {
+              "word": "balance",
+              "star": false
+            },
+            {
+              "word": "cross",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "pan",
+              "star": true
+            },
+            {
+              "word": "crossfade",
+              "star": false
+            },
+            {
+              "word": "morph",
+              "star": true
+            },
+            {
+              "word": "fade",
+              "star": true
+            },
+            {
+              "word": "split",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "sweep",
+              "star": true
+            },
+            {
+              "word": "dial",
+              "star": false
+            },
+            {
+              "word": "steer",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "select",
+              "star": false
+            },
+            {
+              "word": "switch",
+              "star": false
+            },
+            {
+              "word": "route",
+              "star": false
+            },
+            {
+              "word": "tween",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "mix.blend(pieces, by)",
+      "description": "blend"
+    },
+    {
+      "key": "clear",
+      "title": "clear",
+      "was": "mix.clear()",
+      "kind": "verb",
+      "gloss": {
+        "lead": "Stop every track in the mix, with the given fade.",
+        "items": []
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "zero",
+              "star": true
+            },
+            {
+              "word": "null",
+              "star": false
+            },
+            {
+              "word": "empty",
+              "star": false
+            },
+            {
+              "word": "void",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "damp",
+              "star": true
+            },
+            {
+              "word": "quench",
+              "star": false
+            },
+            {
+              "word": "still",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "mute",
+              "star": true
+            },
+            {
+              "word": "silence",
+              "star": false
+            },
+            {
+              "word": "kill",
+              "star": true
+            },
+            {
+              "word": "cut",
+              "star": true
+            },
+            {
+              "word": "stopall",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "blackout",
+              "star": true
+            },
+            {
+              "word": "out",
+              "star": true
+            },
+            {
+              "word": "dark",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "reset",
+              "star": false
+            },
+            {
+              "word": "flush",
+              "star": false
+            },
+            {
+              "word": "wipe",
+              "star": true
+            },
+            {
+              "word": "purge",
+              "star": false
+            },
+            {
+              "word": "unload",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "mix.clear()",
+      "description": "clear"
+    },
+    {
+      "key": "forget",
+      "title": "forget",
+      "was": "mix.forget(item)",
+      "kind": "verb",
+      "gloss": {
+        "lead": "Throw away the state the mix keeps for one item.",
+        "items": [
+          "For an item that will not be sampled@v again, such as a letter that has left the screen."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "drop",
+              "star": true
+            },
+            {
+              "word": "discard",
+              "star": false
+            },
+            {
+              "word": "delete",
+              "star": false
+            },
+            {
+              "word": "erase",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "shed",
+              "star": true
+            },
+            {
+              "word": "dissipate",
+              "star": false
+            },
+            {
+              "word": "decay",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "free",
+              "star": true
+            },
+            {
+              "word": "unload",
+              "star": false
+            },
+            {
+              "word": "eject",
+              "star": false
+            },
+            {
+              "word": "dump",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "lighting",
+          "words": [
+            {
+              "word": "strike",
+              "star": true
+            },
+            {
+              "word": "unpatch",
+              "star": false
+            },
+            {
+              "word": "cull",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "prune",
+              "star": true
+            },
+            {
+              "word": "evict",
+              "star": false
+            },
+            {
+              "word": "release",
+              "star": false
+            },
+            {
+              "word": "dispose",
+              "star": false
+            },
+            {
+              "word": "unbind",
+              "star": false
+            },
+            {
+              "word": "detach",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "mix.forget(item)",
+      "description": "forget"
+    },
+    {
+      "key": "join",
+      "title": "join",
+      "was": "join(a, b)",
+      "kind": "operation",
+      "gloss": {
+        "lead": "Combine two values on one channel into one.",
+        "items": [
+          "For gain, multiply. For position, \\add. For dark, take the larger. For color, take the later.",
+          "The channel decides, not the pieces."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "combine",
+              "star": true
+            },
+            {
+              "word": "compose",
+              "star": false
+            },
+            {
+              "word": "plus",
+              "star": false
+            },
+            {
+              "word": "dot",
+              "star": false
+            },
+            {
+              "word": "meet",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "code",
+          "words": [
+            {
+              "word": "merge",
+              "star": true
+            },
+            {
+              "word": "concat",
+              "star": false
+            },
+            {
+              "word": "append",
+              "star": false
+            },
+            {
+              "word": "mappend",
+              "star": false
+            },
+            {
+              "word": "unite",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "sum",
+              "star": true
+            },
+            {
+              "word": "submix",
+              "star": false
+            },
+            {
+              "word": "bus",
+              "star": false
+            },
+            {
+              "word": "stack",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "compositing",
+          "words": [
+            {
+              "word": "layer",
+              "star": true
+            },
+            {
+              "word": "over",
+              "star": false
+            },
+            {
+              "word": "comp",
+              "star": false
+            },
+            {
+              "word": "screen",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "fuse",
+              "star": false
+            },
+            {
+              "word": "meld",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "join(a, b)",
+      "description": "join"
+    },
+    {
+      "key": "scale",
+      "title": "scale",
+      "was": "scale(v, w)",
+      "kind": "operation",
+      "gloss": {
+        "lead": "Pull a value toward its channel’s rest by a weight from 0 to 1.",
+        "items": [
+          "At 1 the value is untouched. At 0 it is rest.",
+          "Only a channel that has a rest can do this."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "attenuate",
+              "star": true
+            },
+            {
+              "word": "weigh",
+              "star": false
+            },
+            {
+              "word": "multiply",
+              "star": false
+            },
+            {
+              "word": "interpolate",
+              "star": false
+            },
+            {
+              "word": "shrink",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "fade",
+              "star": true
+            },
+            {
+              "word": "trim",
+              "star": false
+            },
+            {
+              "word": "gain",
+              "star": false
+            },
+            {
+              "word": "dim",
+              "star": false
+            },
+            {
+              "word": "taper",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "ease",
+              "star": true
+            },
+            {
+              "word": "tween",
+              "star": false
+            },
+            {
+              "word": "modulate",
+              "star": false
+            },
+            {
+              "word": "dampen",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "damp",
+              "star": false
+            },
+            {
+              "word": "decay",
+              "star": false
+            },
+            {
+              "word": "relax",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "temper",
+              "star": true
+            },
+            {
+              "word": "soften",
+              "star": false
+            },
+            {
+              "word": "dial",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "scale(v, w)",
+      "description": "scale"
+    },
+    {
+      "key": "lerp",
+      "title": "lerp",
+      "was": "lerp(a, b, u)",
+      "kind": "operation",
+      "gloss": {
+        "lead": "Find the value a given fraction of the way from one value to another on a channel.",
+        "items": [
+          "How a retargeted track moves from wherever an item is now.",
+          "The only way a channel without a rest, such as color, can change smoothly."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "interpolate",
+              "star": true
+            },
+            {
+              "word": "mean",
+              "star": false
+            },
+            {
+              "word": "convex",
+              "star": false
+            },
+            {
+              "word": "affine",
+              "star": false
+            },
+            {
+              "word": "average",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "tween",
+              "star": true
+            },
+            {
+              "word": "ease",
+              "star": false
+            },
+            {
+              "word": "morph",
+              "star": false
+            },
+            {
+              "word": "glide",
+              "star": false
+            },
+            {
+              "word": "slide",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "crossfade",
+              "star": false
+            },
+            {
+              "word": "pan",
+              "star": false
+            },
+            {
+              "word": "sweep",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "bridge",
+              "star": true
+            },
+            {
+              "word": "span",
+              "star": false
+            },
+            {
+              "word": "between",
+              "star": false
+            },
+            {
+              "word": "travel",
+              "star": false
+            },
+            {
+              "word": "walk",
+              "star": false
+            },
+            {
+              "word": "ramp",
+              "star": false
+            },
+            {
+              "word": "stride",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "lerp(a, b, u)",
+      "description": "lerp"
+    },
+    {
+      "key": "fold",
+      "title": "fold",
+      "was": "fold(contributions)",
+      "kind": "operation",
+      "gloss": {
+        "lead": "Merge every contribution reaching one item into one resolved record.",
+        "items": [
+          "Channel by channel, starting from rest.",
+          "What Σ stands for in the relations, and what an engine exists to compute."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "reduce",
+              "star": true
+            },
+            {
+              "word": "sum",
+              "star": true
+            },
+            {
+              "word": "accumulate",
+              "star": false
+            },
+            {
+              "word": "aggregate",
+              "star": false
+            },
+            {
+              "word": "compose",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "code",
+          "words": [
+            {
+              "word": "collapse",
+              "star": false
+            },
+            {
+              "word": "flatten",
+              "star": false
+            },
+            {
+              "word": "gather",
+              "star": false
+            },
+            {
+              "word": "total",
+              "star": false
+            },
+            {
+              "word": "tally",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "mixdown",
+              "star": true
+            },
+            {
+              "word": "bounce",
+              "star": false
+            },
+            {
+              "word": "master",
+              "star": false
+            },
+            {
+              "word": "render",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "superpose",
+              "star": true
+            },
+            {
+              "word": "integrate",
+              "star": false
+            },
+            {
+              "word": "resolve",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "settle",
+              "star": false
+            },
+            {
+              "word": "combine",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "pooling",
+              "star": true
+            }
+          ]
+        }
+      ],
+      "signature": "fold(contributions)",
+      "description": "fold"
+    }
+  ],
+  "sets": [
+    {
+      "role": "offset",
+      "words": {
+        "DAW": "send",
+        "stage lighting": "level",
+        "animation rig": "delta",
+        "algebra": "term",
+        "physics": "vector",
+        "learning": "residual"
+      }
+    },
+    {
+      "role": "channel",
+      "words": {
+        "DAW": "lane",
+        "stage lighting": "circuit",
+        "animation rig": "axis",
+        "algebra": "axis",
+        "physics": "component",
+        "learning": "feature"
+      }
+    },
+    {
+      "role": "table",
+      "words": {
+        "DAW": "desk",
+        "stage lighting": "fixture",
+        "animation rig": "rig",
+        "algebra": "domain",
+        "physics": "space",
+        "learning": "feature space"
+      }
+    },
+    {
+      "role": "item",
+      "words": {
+        "DAW": "note",
+        "stage lighting": "lamp",
+        "animation rig": "actor",
+        "algebra": "index",
+        "physics": "body",
+        "learning": "example"
+      }
+    },
+    {
+      "role": "piece",
+      "words": {
+        "DAW": "clip",
+        "stage lighting": "chase",
+        "animation rig": "gesture",
+        "algebra": "curve",
+        "physics": "field",
+        "learning": "extractor"
+      }
+    },
+    {
+      "role": "track",
+      "words": {
+        "DAW": "voice",
+        "stage lighting": "submaster",
+        "animation rig": "action",
+        "algebra": "operand",
+        "physics": "force",
+        "learning": "member"
+      }
+    },
+    {
+      "role": "mix",
+      "words": {
+        "DAW": "mix",
+        "stage lighting": "universe",
+        "animation rig": "mixer",
+        "algebra": "sum",
+        "physics": "system",
+        "learning": "ensemble"
+      }
+    },
+    {
+      "role": "signal",
+      "words": {
+        "DAW": "sidechain",
+        "stage lighting": "fader",
+        "animation rig": "driver",
+        "algebra": "parameter",
+        "physics": "potential",
+        "learning": "parameter"
+      }
+    },
+    {
+      "role": "handle",
+      "words": {
+        "DAW": "fader",
+        "stage lighting": "fader",
+        "animation rig": "handle",
+        "algebra": "binding",
+        "physics": "lever",
+        "learning": null
+      }
+    },
+    {
+      "role": "engine",
+      "words": {
+        "DAW": "backend",
+        "stage lighting": "desk",
+        "animation rig": "runtime",
+        "algebra": "model",
+        "physics": "solver",
+        "learning": "backend"
+      }
+    },
+    {
+      "role": "host",
+      "words": {
+        "DAW": "daw",
+        "stage lighting": "house",
+        "animation rig": "player",
+        "algebra": "integrator",
+        "physics": "integrator",
+        "learning": "pipeline"
+      }
+    },
+    {
+      "role": "rest",
+      "words": {
+        "DAW": "unity",
+        "stage lighting": "blackout",
+        "animation rig": "base",
+        "algebra": "origin",
+        "physics": "equilibrium",
+        "learning": "baseline"
+      }
+    },
+    {
+      "role": "weight",
+      "words": {
+        "DAW": "fader",
+        "stage lighting": "intensity",
+        "animation rig": "influence",
+        "algebra": "coefficient",
+        "physics": "magnitude",
+        "learning": "weight"
+      }
+    },
+    {
+      "role": "sample",
+      "words": {
+        "DAW": "output",
+        "stage lighting": "output",
+        "animation rig": "pose",
+        "algebra": "point",
+        "physics": "resultant",
+        "learning": "feature vector"
+      }
+    },
+    {
+      "role": "contribution",
+      "words": {
+        "DAW": "send",
+        "stage lighting": null,
+        "animation rig": "layer",
+        "algebra": "summand",
+        "physics": "impulse",
+        "learning": "activation"
+      }
+    },
+    {
+      "role": "context",
+      "words": {
+        "DAW": null,
+        "stage lighting": "cue",
+        "animation rig": "frame",
+        "algebra": "environment",
+        "physics": "state",
+        "learning": "context"
+      }
+    },
+    {
+      "role": "period",
+      "words": {
+        "DAW": "bar",
+        "stage lighting": "chase",
+        "animation rig": "pass",
+        "algebra": "period",
+        "physics": "period",
+        "learning": "epoch"
+      }
+    },
+    {
+      "role": "group",
+      "words": {
+        "DAW": "bus",
+        "stage lighting": "submaster",
+        "animation rig": "layer",
+        "algebra": "partition",
+        "physics": "constraint",
+        "learning": "softmax"
+      }
+    }
+  ],
+  "defaults": {
+    "table": "domain",
+    "channel": "axis",
+    "offset": "term",
+    "piece": "curve"
+  },
+  "relations": [
+    {
+      "formula": "channel = values + rule",
+      "gloss": "a set of values, and how two of them combine"
+    },
+    {
+      "formula": "table = { channel₁ … channelₙ }",
+      "gloss": "the axes one kind of thing can move on"
+    },
+    {
+      "formula": "offset ⊂ table",
+      "gloss": "one value on some of those axes; the \\rest absent"
+    },
+    {
+      "formula": "offset = piece(phase, item)",
+      "gloss": "what one effect says about one thing at one instant"
+    },
+    {
+      "formula": "phase = ((now − start) · rate) mod period",
+      "gloss": "a track's own clock, normalized to its period"
+    },
+    {
+      "formula": "track = piece + clock + weight + target",
+      "gloss": "an effect given a start, a speed, a volume, a set of things"
+    },
+    {
+      "formula": "weight = envelope(now) &nbsp;or&nbsp; signal(item)",
+      "gloss": "how much of a track is on: a ramp in time, or an outside reading"
+    },
+    {
+      "formula": "contribution = weight ⊙ offset",
+      "gloss": "the offset scaled toward rest, per channel"
+    },
+    {
+      "formula": "sample = rest ⊕ Σ<sub>tracks</sub> contribution",
+      "gloss": "everything reaching one item this frame, folded, per channel"
+    },
+    {
+      "formula": "mix = { track₁ … trackₘ } over one table",
+      "gloss": "what a host holds and steps"
+    },
+    {
+      "formula": "handle → track.(start, rate, weight)",
+      "gloss": "the knobs a host may turn between frames"
+    },
+    {
+      "formula": "engine(mix, now) = item ↦ sample",
+      "gloss": "whatever computes the fold; one ships"
+    }
+  ],
+  "algebra": [
+    {
+      "key": "channel",
+      "body": "<p>A channel <var>c</var> is a value set <var>V<sub>c</sub></var> with four operations:</p>\n    <p class=\"m\">join<sub>c</sub> : <var>V<sub>c</sub></var> × <var>V<sub>c</sub></var> → <var>V<sub>c</sub></var><br>\n    rest<sub>c</sub> ∈ <var>V<sub>c</sub></var> &nbsp;<span class=\"note\">optional</span><br>\n    scale<sub>c</sub> : <var>V<sub>c</sub></var> × [0, 1] → <var>V<sub>c</sub></var> &nbsp;<span class=\"note\">present iff rest is</span><br>\n    lerp<sub>c</sub> : <var>V<sub>c</sub></var> × <var>V<sub>c</sub></var> × [0, 1] → <var>V<sub>c</sub></var></p>\n    <p>Laws: join is associative; join(<var>v</var>, rest) = <var>v</var>; scale(<var>v</var>, 1) = <var>v</var>; scale(<var>v</var>, 0) = rest; lerp(<var>a</var>, <var>b</var>, 0) = <var>a</var>; lerp(<var>a</var>, <var>b</var>, 1) = <var>b</var>. A channel with rest is a monoid. <code>mul</code> is (ℝ, ·, 1); <code>sum</code> is (ℝ, +, 0); <code>max</code> is (ℝ≥0, max, 0); <code>last</code> is (<var>V</var>, second-argument) with no identity.</p>\n    <p>Strictly, only join is an operation on <var>V<sub>c</sub></var>, in the algebraist’s sense of a map from the set to itself: binary, with rest as its identity. Scale is not: it takes a value and a number from a different set, which makes it an <em>action</em> of [0, 1] on the channel, as scalars act on a vector space, with scale(<var>v</var>, 1) = <var>v</var> as its unit law. Lerp is a family of binary operations indexed by <var>u</var>; on a channel that adds it is the convex combination (1 − <var>u</var>)<var>a</var> + <var>u</var><var>b</var> and not primitive at all, and it is primitive only where there is no addition to build it from, as for color. Fold, below, is join iterated. A channel is therefore an <em>algebra</em>: a set carrying its operations.</p>"
+    },
+    {
+      "key": "table",
+      "body": "<p>A finite indexed family of channels, <var>T</var> = {<var>c</var><sub>1</sub>, …, <var>c<sub>n</sub></var>}. It defines two spaces:</p>\n    <p class=\"m\">Δ<sub>T</sub> = ∏<sub>c</sub> (<var>V<sub>c</sub></var> ∪ {⊥}) &nbsp;<span class=\"note\">partial: any channel may be absent</span><br>\n    Σ<sub>T</sub> = ∏<sub>c</sub> <var>V<sub>c</sub></var> &nbsp;<span class=\"note\">total: every channel present</span></p>\n    <p>Δ is what pieces write; Σ is what a host reads. Both are products, so every operation on a table is the channel's operation applied coordinate-wise, with ⊥ treated as \"contributes nothing\" (it is the unit of join on Δ).</p>"
+    },
+    {
+      "key": "item",
+      "body": "<p>An element <var>i</var> of an arbitrary set <var>I</var>. The package never looks inside it; identity is all it uses, for state. A system with no item dimension has <var>I</var> = {∗}.</p>"
+    },
+    {
+      "key": "offset",
+      "body": "<p>One element δ ∈ Δ<sub>T</sub>: the return value of one call to one piece for one item at one instant.</p>\n    <p class=\"m\">δ = <var>p</var>(<var>t</var>, <var>i</var>, ctx)</p>\n    <p>Two offsets on the same item compose by join<sub>c</sub> per channel. The resolved value a host reads is an element of Σ<sub>T</sub>, not Δ<sub>T</sub>; klieg's <code>ResolvedOffset</code> lives there, and the sheet's starred <code>sample</code> is a name for it.</p>"
+    },
+    {
+      "key": "piece",
+      "body": "<p>A period <var>d<sub>p</sub></var> ∈ ℝ<sub>≥0</sub> and a function of normalized time:</p>\n    <p class=\"m\"><var>p</var> : [0, 1] × <var>I</var> × Ctx → Δ<sub>T</sub></p>\n    <p>Pure in its arguments. A stateful piece carries a state set <var>S</var> with an initial state per item and a \\step function <var>S</var> × ℝ → <var>S</var>; the mix threads <var>s<sub>i</sub></var> through ctx, so <var>p</var> stays a function of what it is given. A wrapper is a function Piece → Piece.</p>"
+    },
+    {
+      "key": "signal",
+      "body": "<p class=\"m\">σ : <var>I</var> × Ctx → [0, 1]</p><p>The same shape as a piece with one channel on [0, 1] and no period. Combinators are pointwise: peak = max, gate = \\step function, ease = a stateful σ.</p>"
+    },
+    {
+      "key": "track",
+      "body": "<p>A tuple <var>k</var> = (<var>p</var>, <var>s</var>, <var>r</var>, <var>w</var>, <var>on</var>): a piece, a start time, a rate, a weight function, and a target predicate <var>I</var> → {0, 1}. Its own clock and its contribution on an item at time <var>τ</var>:</p>\n    <p class=\"m\">elapsed<sub>k</sub>(τ) = (τ − <var>s</var>) · <var>r</var><br>\n    <var>t</var> = (elapsed mod <var>d<sub>p</sub></var>) / <var>d<sub>p</sub></var><br>\n    <var>w<sub>k</sub></var> : ℝ → [0, 1] &nbsp;<span class=\"note\">an envelope in τ, or σ(<var>i</var>, ctx)</span><br>\n    contrib<sub>k</sub>(<var>i</var>, τ) = <var>w<sub>k</sub></var>(τ) ⊙ <var>p</var>(<var>t</var>, <var>i</var>, ctx) &nbsp;&nbsp;where <var>w</var> ⊙ δ = (scale<sub>c</sub>(δ<sub>c</sub>, <var>w</var>))<sub>c</sub></p>\n    <p>On a channel with no rest, ⊙ is a gate: δ<sub>c</sub> if <var>w</var> &gt; ε, else ⊥. Two tracks of one piece are two tuples; they share <var>p</var> and nothing else.</p>"
+    },
+    {
+      "key": "mix",
+      "body": "<p>A finite set of tracks <var>M</var> over one table, and the fold that resolves them:</p>\n    <p class=\"m\">sample<sub>M</sub>(<var>i</var>, τ) = ⨁<sub>c</sub> &nbsp;join<sub>c</sub><sup>*</sup> { contrib<sub>k</sub>(<var>i</var>, τ)<sub>c</sub> : <var>k</var> ∈ <var>M</var>, <var>on<sub>k</sub></var>(<var>i</var>) } &nbsp;&nbsp;∈ Σ<sub>T</sub></p>\n    <p>join<sup>*</sup> folds from rest<sub>c</sub>, so an item nothing reaches samples@v to rest. Associativity is what makes the fold order-free; <code>last</code> is the one channel where order matters, and it is by declaration. A group <var>G</var> ⊆ <var>M</var> with a cap rescales its weights by 1 / max(1, Σ<sub>k∈G</sub> <var>w<sub>k</sub></var>) before ⊙.</p>\n    <p>The four \\blends, in these terms: fade is <var>w<sub>k</sub></var> a ramp in τ; alternatives are <var>w<sub>k</sub></var> = hat<sub>k</sub>(σ) with Σ<sub>k</sub> hat<sub>k</sub> = 1; handover removes <var>k</var> from <var>M</var> at the first τ where <var>p</var>(<var>t</var>, <var>i</var>, ctx) = rest; retarget replaces \\stop 0 of a keyframe piece with sample<sub>M∖{k}</sub>(<var>i</var>, <var>s</var>) and moves by lerp<sub>c</sub>.</p>"
+    },
+    {
+      "key": "handle",
+      "body": "<p>A reference to one <var>k</var> ∈ <var>M</var> with write access to <var>s</var>, <var>r</var> and <var>w</var>, and the event <var>k</var> ∉ <var>M</var>. It \\adds nothing to the algebra; it is how a host mutates a tuple between frames.</p>"
+    },
+    {
+      "key": "engine",
+      "body": "<p>An implementation of sample:</p>\n    <p class=\"m\"><var>E</var> : (<var>T</var>, <var>M</var>, τ) → (<var>I</var> → Σ<sub>T</sub>)</p>\n    <p>Two engines are interchangeable exactly when they agree on every (<var>T</var>, <var>M</var>, τ) whose pieces both can run. That equation is the port's test: <var>E</var><sub>mixer</sub> must equal klieg's three merge functions on every input klieg's suites already exercise.</p>"
+    }
+  ],
+  "prose": {
+    "why": {
+      "title": "Why offset",
+      "body": "<p>It is klieg's own word, and it says the one thing that matters about what a piece emits: the value is <em>relative to rest</em>, not absolute. A piece that writes nothing contributes nothing; position \\rests at 0 and gain at 1; the merge is a fold of relative contributions. That is what lets layers compose without knowing about each other.</p>\n<p>It is wrong in two places. Color replaces rather than \\offsets, and a retargeted keyframe track holds absolute \\stops. It also covers two things at once: what a piece emits, a partial relative record, and what the mix returns, a resolved absolute one. klieg calls those <code>PartOffset</code> and <code>ResolvedOffset</code>. A rename can split them, and the first term below carries both.</p>"
+    },
+    "relations": {
+      "title": "The roles, as relations",
+      "body": "<p>How the quantities stand to each other, one line each, before any of them is defined precisely. Read <b>=</b> as \"is made of\" or \"is computed from\", and <b>Σ</b> as \"the fold of\", using whatever rule the channel has.</p>\n\n<div class=\"rel\">\n  <div class=\"f\">channel = values + rule</div><div class=\"g\">a set of values, and how two of them combine</div>\n  <div class=\"f\">table = { channel₁ … channelₙ }</div><div class=\"g\">the axes one kind of thing can move on</div>\n  <div class=\"f\">offset ⊂ table</div><div class=\"g\">one value on some of those axes; the \\rest absent</div>\n  <div class=\"f\">offset = piece(phase, item)</div><div class=\"g\">what one effect says about one thing at one instant</div>\n  <div class=\"f\">phase = ((now − start) · rate) mod period</div><div class=\"g\">a track's own clock, normalized to its period</div>\n  <div class=\"f\">track = piece + clock + weight + target</div><div class=\"g\">an effect given a start, a speed, a volume, a set of things</div>\n  <div class=\"f\">weight = envelope(now) &nbsp;or&nbsp; signal(item)</div><div class=\"g\">how much of a track is on: a ramp in time, or an outside reading</div>\n  <div class=\"f\">contribution = weight ⊙ offset</div><div class=\"g\">the offset scaled toward rest, per channel</div>\n  <div class=\"f\">sample = rest ⊕ Σ<sub>tracks</sub> contribution</div><div class=\"g\">everything reaching one item this frame, folded, per channel</div>\n  <div class=\"f\">mix = { track₁ … trackₘ } over one table</div><div class=\"g\">what a host holds and steps</div>\n  <div class=\"f\">handle → track.(start, rate, weight)</div><div class=\"g\">the knobs a host may turn between frames</div>\n  <div class=\"f\">engine(mix, now) = item ↦ sample</div><div class=\"g\">whatever computes the fold; one ships</div>\n</div>\n\n<p>Two of these carry the whole design. <b>contribution = weight ⊙ offset</b> is where every fade, crossfade and \\blend-between-alternatives happens, because weight is the only thing a mix varies. <b>sample = rest ⊕ Σ contribution</b> is where layering happens, and the rule inside Σ belongs to the channel, so two effects on one axis combine the same way whoever wrote them.</p>"
+    },
+    "algebraIntro": {
+      "title": "The roles, as algebra",
+      "body": "<p>The same relations with their sets and laws made explicit. Nothing here is beyond a product of sets and a fold; the point is that every \\blend in the package is one of the four channel operations applied under the fold.</p>\n\n<div class=\"alg\">\n  <div class=\"k\">channel</div>\n  <div class=\"v\">\n    <p>A channel <var>c</var> is a value set <var>V<sub>c</sub></var> with four operations:</p>\n    <p class=\"m\">join<sub>c</sub> : <var>V<sub>c</sub></var> × <var>V<sub>c</sub></var> → <var>V<sub>c</sub></var><br>\n    rest<sub>c</sub> ∈ <var>V<sub>c</sub></var> &nbsp;<span class=\"note\">optional</span><br>\n    scale<sub>c</sub> : <var>V<sub>c</sub></var> × [0, 1] → <var>V<sub>c</sub></var> &nbsp;<span class=\"note\">present iff rest is</span><br>\n    lerp<sub>c</sub> : <var>V<sub>c</sub></var> × <var>V<sub>c</sub></var> × [0, 1] → <var>V<sub>c</sub></var></p>\n    <p>Laws: join is associative; join(<var>v</var>, rest) = <var>v</var>; scale(<var>v</var>, 1) = <var>v</var>; scale(<var>v</var>, 0) = rest; lerp(<var>a</var>, <var>b</var>, 0) = <var>a</var>; lerp(<var>a</var>, <var>b</var>, 1) = <var>b</var>. A channel with rest is a monoid. <code>mul</code> is (ℝ, ·, 1); <code>sum</code> is (ℝ, +, 0); <code>max</code> is (ℝ≥0, max, 0); <code>last</code> is (<var>V</var>, second-argument) with no identity.</p>\n    <p>Strictly, only join is an operation on <var>V<sub>c</sub></var>, in the algebraist’s sense of a map from the set to itself: binary, with rest as its identity. Scale is not: it takes a value and a number from a different set, which makes it an <em>action</em> of [0, 1] on the channel, as scalars act on a vector space, with scale(<var>v</var>, 1) = <var>v</var> as its unit law. Lerp is a family of binary operations indexed by <var>u</var>; on a channel that adds it is the convex combination (1 − <var>u</var>)<var>a</var> + <var>u</var><var>b</var> and not primitive at all, and it is primitive only where there is no addition to build it from, as for color. Fold, below, is join iterated. A channel is therefore an <em>algebra</em>: a set carrying its operations.</p>\n  </div>\n\n  <div class=\"k\">table</div>\n  <div class=\"v\">\n    <p>A finite indexed family of channels, <var>T</var> = {<var>c</var><sub>1</sub>, …, <var>c<sub>n</sub></var>}. It defines two spaces:</p>\n    <p class=\"m\">Δ<sub>T</sub> = ∏<sub>c</sub> (<var>V<sub>c</sub></var> ∪ {⊥}) &nbsp;<span class=\"note\">partial: any channel may be absent</span><br>\n    Σ<sub>T</sub> = ∏<sub>c</sub> <var>V<sub>c</sub></var> &nbsp;<span class=\"note\">total: every channel present</span></p>\n    <p>Δ is what pieces write; Σ is what a host reads. Both are products, so every operation on a table is the channel's operation applied coordinate-wise, with ⊥ treated as \"contributes nothing\" (it is the unit of join on Δ).</p>\n  </div>\n\n  <div class=\"k\">item</div>\n  <div class=\"v\"><p>An element <var>i</var> of an arbitrary set <var>I</var>. The package never looks inside it; identity is all it uses, for state. A system with no item dimension has <var>I</var> = {∗}.</p></div>\n\n  <div class=\"k\">offset</div>\n  <div class=\"v\">\n    <p>One element δ ∈ Δ<sub>T</sub>: the return value of one call to one piece for one item at one instant.</p>\n    <p class=\"m\">δ = <var>p</var>(<var>t</var>, <var>i</var>, ctx)</p>\n    <p>Two offsets on the same item compose by join<sub>c</sub> per channel. The resolved value a host reads is an element of Σ<sub>T</sub>, not Δ<sub>T</sub>; klieg's <code>ResolvedOffset</code> lives there, and the sheet's starred <code>sample</code> is a name for it.</p>\n  </div>\n\n  <div class=\"k\">piece</div>\n  <div class=\"v\">\n    <p>A period <var>d<sub>p</sub></var> ∈ ℝ<sub>≥0</sub> and a function of normalized time:</p>\n    <p class=\"m\"><var>p</var> : [0, 1] × <var>I</var> × Ctx → Δ<sub>T</sub></p>\n    <p>Pure in its arguments. A stateful piece carries a state set <var>S</var> with an initial state per item and a \\step function <var>S</var> × ℝ → <var>S</var>; the mix threads <var>s<sub>i</sub></var> through ctx, so <var>p</var> stays a function of what it is given. A wrapper is a function Piece → Piece.</p>\n  </div>\n\n  <div class=\"k\">signal</div>\n  <div class=\"v\"><p class=\"m\">σ : <var>I</var> × Ctx → [0, 1]</p><p>The same shape as a piece with one channel on [0, 1] and no period. Combinators are pointwise: peak = max, gate = \\step function, ease = a stateful σ.</p></div>\n\n  <div class=\"k\">track</div>\n  <div class=\"v\">\n    <p>A tuple <var>k</var> = (<var>p</var>, <var>s</var>, <var>r</var>, <var>w</var>, <var>on</var>): a piece, a start time, a rate, a weight function, and a target predicate <var>I</var> → {0, 1}. Its own clock and its contribution on an item at time <var>τ</var>:</p>\n    <p class=\"m\">elapsed<sub>k</sub>(τ) = (τ − <var>s</var>) · <var>r</var><br>\n    <var>t</var> = (elapsed mod <var>d<sub>p</sub></var>) / <var>d<sub>p</sub></var><br>\n    <var>w<sub>k</sub></var> : ℝ → [0, 1] &nbsp;<span class=\"note\">an envelope in τ, or σ(<var>i</var>, ctx)</span><br>\n    contrib<sub>k</sub>(<var>i</var>, τ) = <var>w<sub>k</sub></var>(τ) ⊙ <var>p</var>(<var>t</var>, <var>i</var>, ctx) &nbsp;&nbsp;where <var>w</var> ⊙ δ = (scale<sub>c</sub>(δ<sub>c</sub>, <var>w</var>))<sub>c</sub></p>\n    <p>On a channel with no rest, ⊙ is a gate: δ<sub>c</sub> if <var>w</var> &gt; ε, else ⊥. Two tracks of one piece are two tuples; they share <var>p</var> and nothing else.</p>\n  </div>\n\n  <div class=\"k\">mix</div>\n  <div class=\"v\">\n    <p>A finite set of tracks <var>M</var> over one table, and the fold that resolves them:</p>\n    <p class=\"m\">sample<sub>M</sub>(<var>i</var>, τ) = ⨁<sub>c</sub> &nbsp;join<sub>c</sub><sup>*</sup> { contrib<sub>k</sub>(<var>i</var>, τ)<sub>c</sub> : <var>k</var> ∈ <var>M</var>, <var>on<sub>k</sub></var>(<var>i</var>) } &nbsp;&nbsp;∈ Σ<sub>T</sub></p>\n    <p>join<sup>*</sup> folds from rest<sub>c</sub>, so an item nothing reaches samples@v to rest. Associativity is what makes the fold order-free; <code>last</code> is the one channel where order matters, and it is by declaration. A group <var>G</var> ⊆ <var>M</var> with a cap rescales its weights by 1 / max(1, Σ<sub>k∈G</sub> <var>w<sub>k</sub></var>) before ⊙.</p>\n    <p>The four \\blends, in these terms: fade is <var>w<sub>k</sub></var> a ramp in τ; alternatives are <var>w<sub>k</sub></var> = hat<sub>k</sub>(σ) with Σ<sub>k</sub> hat<sub>k</sub> = 1; handover removes <var>k</var> from <var>M</var> at the first τ where <var>p</var>(<var>t</var>, <var>i</var>, ctx) = rest; retarget replaces \\stop 0 of a keyframe piece with sample<sub>M∖{k}</sub>(<var>i</var>, <var>s</var>) and moves by lerp<sub>c</sub>.</p>\n  </div>\n\n  <div class=\"k\">handle</div>\n  <div class=\"v\"><p>A reference to one <var>k</var> ∈ <var>M</var> with write access to <var>s</var>, <var>r</var> and <var>w</var>, and the event <var>k</var> ∉ <var>M</var>. It \\adds nothing to the algebra; it is how a host mutates a tuple between frames.</p></div>\n\n  <div class=\"k\">engine</div>\n  <div class=\"v\">\n    <p>An implementation of sample:</p>\n    <p class=\"m\"><var>E</var> : (<var>T</var>, <var>M</var>, τ) → (<var>I</var> → Σ<sub>T</sub>)</p>\n    <p>Two engines are interchangeable exactly when they agree on every (<var>T</var>, <var>M</var>, τ) whose pieces both can run. That equation is the port's test: <var>E</var><sub>mixer</sub> must equal klieg's three merge functions on every input klieg's suites already exercise.</p>\n  </div>\n</div>\n\n<p>Read across, the whole package is: pieces produce elements of Δ; tracks \\weight them with ⊙; a mix folds them with join into Σ; an engine is any function that computes that fold. The channel table is the only place arithmetic is defined, so a consumer that needs a new \\blend \\adds a channel with a new (join, rest, scale, lerp), never a new rule in the mix.</p>"
+    },
+    "sets": {
+      "title": "Six consistent sets",
+      "body": "<p>Six fields each give a complete vocabulary for the whole pipeline. The learning column lands on the same three roles the geometry does, with the same split: <em>feature</em> for one coordinate, <em>feature space</em> for all of them, <em>feature vector</em> for one point; and it gives <em>residual</em>, <em>ensemble</em> and <em>epoch</em>, each exact. The physics column is the one that says what the mix <em>is</em>: forces from independent sources superposing on a body into one resultant, with a field assigning one to every point. Its cost is that forces \\add and half the channels multiply, and that <code>force</code> is a flag and a physics-engine word in the same codebases. Any one column reads as a system; mixing columns reads as arbitrary, with one exception: the algebra column is strong exactly where the arithmetic lives (domain, axis, term, curve) and strained where the host lives, so a set that is mathematical on the left of the fold and plain on the right matches what each part is.</p>\n<div class=\"tbl\"><table class=\"vocab\">\n  <tr><th>yours</th><th>role</th><th>DAW</th><th>stage lighting</th><th>animation rig</th><th>algebra</th><th>physics</th><th>learning</th></tr>\n  <tr data-role=\"offset\"><td class=\"mine\" data-for=\"offset\"></td><td class=\"role\">emitted value</td><td>send</td><td>level</td><td>delta</td><td>term</td><td>vector</td><td>residual</td></tr>\n  <tr data-role=\"channel\"><td class=\"mine\" data-for=\"channel\"></td><td class=\"role\">one field</td><td>lane</td><td>circuit</td><td>axis</td><td>axis</td><td>component</td><td>feature</td></tr>\n  <tr data-role=\"table\"><td class=\"mine\" data-for=\"table\"></td><td class=\"role\">channel set</td><td>desk</td><td>fixture</td><td>rig</td><td>domain</td><td>space</td><td>feature space</td></tr>\n  <tr data-role=\"item\"><td class=\"mine\" data-for=\"item\"></td><td class=\"role\">driven thing</td><td>note</td><td>lamp</td><td>actor</td><td>index</td><td>body</td><td>example</td></tr>\n  <tr data-role=\"piece\"><td class=\"mine\" data-for=\"piece\"></td><td class=\"role\">function of time</td><td>clip</td><td>chase</td><td>gesture</td><td>curve</td><td>field</td><td>extractor</td></tr>\n  <tr data-role=\"track\"><td class=\"mine\" data-for=\"track\"></td><td class=\"role\">playing instance</td><td>voice</td><td>submaster</td><td>action</td><td>operand</td><td>force</td><td>member</td></tr>\n  <tr data-role=\"mix\"><td class=\"mine\" data-for=\"mix\"></td><td class=\"role\">live set</td><td>mix</td><td>universe</td><td>mixer</td><td>sum</td><td>system</td><td>ensemble</td></tr>\n  <tr data-role=\"signal\"><td class=\"mine\" data-for=\"signal\"></td><td class=\"role\">outside input</td><td>sidechain</td><td>fader</td><td>driver</td><td>parameter</td><td>potential</td><td>parameter</td></tr>\n  <tr data-role=\"handle\"><td class=\"mine\" data-for=\"handle\"></td><td class=\"role\">live controls</td><td>fader</td><td>fader</td><td>handle</td><td>binding</td><td>lever</td><td>—</td></tr>\n  <tr data-role=\"engine\"><td class=\"mine\" data-for=\"engine\"></td><td class=\"role\">implementation</td><td>backend</td><td>desk</td><td>runtime</td><td>model</td><td>solver</td><td>backend</td></tr>\n  <tr data-role=\"host\"><td class=\"mine\" data-for=\"host\"></td><td class=\"role\">owner of the loop</td><td>daw</td><td>house</td><td>player</td><td>integrator</td><td>integrator</td><td>pipeline</td></tr>\n  <tr data-role=\"rest\"><td class=\"mine\" data-for=\"rest\"></td><td class=\"role\">the identity</td><td>unity</td><td>blackout</td><td>base</td><td>origin</td><td>equilibrium</td><td>baseline</td></tr>\n  <tr data-role=\"weight\"><td class=\"mine\" data-for=\"weight\"></td><td class=\"role\">how much is on</td><td>fader</td><td>intensity</td><td>influence</td><td>coefficient</td><td>magnitude</td><td>weight</td></tr>\n  <tr data-role=\"sample\"><td class=\"mine\" data-for=\"sample\"></td><td class=\"role\">the resolved value</td><td>output</td><td>output</td><td>pose</td><td>point</td><td>resultant</td><td>feature vector</td></tr>\n  <tr data-role=\"contribution\"><td class=\"mine\" data-for=\"contribution\"></td><td class=\"role\">one track's share</td><td>send</td><td>—</td><td>layer</td><td>summand</td><td>impulse</td><td>activation</td></tr>\n  <tr data-role=\"context\"><td class=\"mine\" data-for=\"context\"></td><td class=\"role\">what a piece is handed</td><td>—</td><td>cue</td><td>frame</td><td>environment</td><td>state</td><td>context</td></tr>\n  <tr data-role=\"period\"><td class=\"mine\" data-for=\"period\"></td><td class=\"role\">one pass</td><td>bar</td><td>chase</td><td>pass</td><td>period</td><td>period</td><td>epoch</td></tr>\n  <tr data-role=\"group\"><td class=\"mine\" data-for=\"group\"></td><td class=\"role\">capped set</td><td>bus</td><td>submaster</td><td>layer</td><td>partition</td><td>constraint</td><td>softmax</td></tr>\n</table></div>"
+    },
+    "domain": {
+      "title": "On domain for the channel set",
+      "body": "<p><b>Revised.</b> The objection below measured the word against the piece, whose output is the offset space. The table defines join, scale and lerp, and those act <em>on</em> the value space, so for them it is the domain in the strict sense, and so is the mix's fold. The klieg collision is not a constraint: Mike said on 2026-09-15 that klieg changes if it has to, provided blits produces something good, so the gradient's <code>domain</code> renames if this word is taken. <code>domain</code> now ranks with <code>rig</code>: the one for a mathematical register, the other for the puppet.</p>\n<p>The original note, kept for the record. It works as English and has two collisions, one of them in klieg.</p>\n<ul>\n  <li><b>Math puts it at the wrong end.</b> A clip maps time and a target <em>to</em> an offset. The offset space is the codomain; the domain is time. d3 uses the words the same way: <code>domain</code> is input, <code>range</code> is output. Anyone who knows either reads \"the pose domain\" as time.</li>\n  <li><b>klieg already uses it.</b> The gradient's <code>letter</code> domain is the span a color ramp runs over. A second, unrelated <code>domain</code> in the same package's types is a collision a reader hits once and distrusts forever.</li>\n</ul>\n<p>What it gets right is the feel: \"the pose domain\" says <em>the area where pose values live</em>, which is better than <code>table</code>, which says data structure. Two words keep that feel without the collisions. <code>space</code> is the math word for the output side: \"pose space\", \"part space\", \"presence space\" all read as the set of values a thing can take. <code>rig</code> says it from the animation side: the set of controls a thing is driven through.</p>"
+    },
+    "recommendation": {
+      "title": "What I would take",
+      "body": "<div class=\"callout\">\n  <div class=\"eyebrow\">recommendation</div>\n  <p>Mathematical where the arithmetic lives, plain where the host lives. <code>domain</code> for the channel set, <code>axis</code> for one channel, <code>term</code> for what a piece returns, <code>curve</code> for the piece itself; with them, <code>origin</code> for rest and <code>coefficient</code> for weight. On the host side the DAW words stay: <code>track</code>, <code>mix</code>, <code>signal</code>, <code>handle</code>, <code>engine</code>, and <code>item</code> for the driven thing until a better one turns up. The page opens on this set.</p>\n</div>\n<p>In one sentence: a curve returns a term; the coefficient scales it toward the origin; the mix folds the terms along each axis of the domain. Every word in it is doing exact work.</p>"
+    }
+  }
+}
