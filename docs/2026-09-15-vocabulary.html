@@ -87,7 +87,11 @@
 
   nav.toc ol { list-style: none; margin: 0; padding: 0; font-size: 0.86rem; line-height: 1.4; }
   nav.toc li { margin: 0 0 7px; }
+  nav.toc li { position: relative; }
   nav.toc a { color: var(--muted); text-decoration: none; }
+  nav.toc a.current { color: var(--ink); }
+  nav.toc a.current::before { content: '→'; position: absolute; left: -1.25em; color: var(--accent); }
+  nav.toc a.current .vb::before, nav.toc li:has(> a.current > .vb) > a::before { color: var(--verb); }
   nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
   nav.toc .grp { color: var(--ink); font-weight: 600; margin-top: 14px; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
   a { color: var(--accent-ink); }
@@ -100,7 +104,7 @@
   th, td { text-align: left; vertical-align: top; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); }
   th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
   td.role { color: var(--muted); font-size: 0.86rem; font-family: 'Instrument Sans', sans-serif; }
-  td.mine { font-weight: 500; }
+  td.mine { font-weight: 500; white-space: nowrap; }
   td.mine:empty::after { content: '—'; color: var(--muted); font-weight: 400; }
 
   .callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; margin: 0 0 18px; }
@@ -116,7 +120,10 @@
   .term-head h3 { margin: 0; font-size: 1.15rem; }
   .term-head .now { color: var(--muted); font-size: 0.86rem; }
   .term-head .now code { font-size: 0.8rem; }
-  .gloss { color: var(--muted); font-size: 0.95rem; margin: 0 0 10px; }
+  .gloss { color: var(--muted); font-size: 0.95rem; margin: 0 0 12px; }
+  .gloss p { margin: 0 0 4px; color: var(--ink); }
+  .gloss ul { margin: 0; padding-left: 1.1em; }
+  .gloss li { margin-bottom: 3px; }
   .rows { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; }
   @media (max-width: 560px) { .rows { grid-template-columns: 1fr; gap: 2px; } .field { margin-top: 8px; } }
   .field { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; padding-top: 6px; }
@@ -132,6 +139,8 @@
   .w.keep { border-style: dashed; background: var(--ground); }
   .w.picked { background: var(--pick); color: var(--pick-ink); border-color: var(--pick); }
   .w.picked.default { background: var(--ground); color: var(--accent-ink); border-color: var(--pick); }
+  .vocab td.picked { box-shadow: inset 0 0 0 1px var(--pick); background: var(--pick); color: var(--pick-ink); font-weight: 500; border-radius: 3px; padding-left: 6px; padding-right: 6px; }
+  .vocab td.picked.default { background: transparent; color: var(--accent-ink); }
   .w.picked.default.star::after { color: var(--accent); }
   .r.sub.default { border-style: dashed; }
   .vb.sub.default { border-style: dashed; }
@@ -201,7 +210,7 @@
     <li><a href="#why">Why offset</a></li>
     <li><a href="#relations">The roles, as relations</a></li>
     <li><a href="#algebra">The roles, as algebra</a></li>
-    <li><a href="#sets">Five consistent sets</a></li>
+    <li><a href="#sets">Six consistent sets</a></li>
     <li><a href="#pick">Your set</a></li>
     <li class="grp">Terms</li>
     <li><a href="#t-offset">Offset</a></li>
@@ -349,65 +358,65 @@
 
 <p>Read across, the whole package is: pieces produce elements of Δ; tracks <span class="keep">weight</span> them with ⊙; a mix folds them with join into Σ; an engine is any function that computes that fold. The channel table is the only place arithmetic is defined, so a consumer that needs a new <span class="keep">blend</span> <span class="keep">adds</span> a channel with a new (join, rest, scale, lerp), never a new rule in the mix.</p>
 
-<h2 id="sets">Five consistent sets</h2>
-<p>Five fields each give a complete vocabulary for the whole pipeline. The physics column is the one that says what the mix <em>is</em>: forces from independent sources superposing on a body into one resultant, with a field assigning one to every point. Its cost is that forces <span class="keep">add</span> and half the channels multiply, and that <code>force</code> is a flag and a physics-engine word in the same codebases. Any one column reads as a system; mixing columns reads as arbitrary, with one exception: the algebra column is strong exactly where the arithmetic lives (domain, axis, term, curve) and strained where the host lives, so a set that is mathematical on the left of the fold and plain on the right matches what each part is.</p>
+<h2 id="sets">Six consistent sets</h2>
+<p>Six fields each give a complete vocabulary for the whole pipeline. The learning column lands on the same three roles the geometry does, with the same split: <em>feature</em> for one coordinate, <em>feature space</em> for all of them, <em>feature vector</em> for one point; and it gives <em>residual</em>, <em>ensemble</em> and <em>epoch</em>, each exact. The physics column is the one that says what the mix <em>is</em>: forces from independent sources superposing on a body into one resultant, with a field assigning one to every point. Its cost is that forces <span class="keep">add</span> and half the channels multiply, and that <code>force</code> is a flag and a physics-engine word in the same codebases. Any one column reads as a system; mixing columns reads as arbitrary, with one exception: the algebra column is strong exactly where the arithmetic lives (domain, axis, term, curve) and strained where the host lives, so a set that is mathematical on the left of the fold and plain on the right matches what each part is.</p>
 <div class="tbl"><table class="vocab">
-  <tr><th>role</th><th>DAW</th><th>stage lighting</th><th>animation rig</th><th>algebra</th><th>physics</th></tr>
-  <tr><td class="role">emitted value</td><td>send</td><td>level</td><td>delta</td><td>term</td><td>vector</td></tr>
-  <tr><td class="role">one field</td><td>lane</td><td>circuit</td><td>axis</td><td>axis</td><td>component</td></tr>
-  <tr><td class="role">channel set</td><td>desk</td><td>fixture</td><td>rig</td><td>domain</td><td>space</td></tr>
-  <tr><td class="role">driven thing</td><td>voice</td><td>lamp</td><td>actor</td><td>index</td><td>body</td></tr>
-  <tr><td class="role">function of time</td><td>clip</td><td>chase</td><td>gesture</td><td>curve</td><td>field</td></tr>
-  <tr><td class="role">playing instance</td><td>track</td><td>submaster</td><td>action</td><td>operand</td><td>force</td></tr>
-  <tr><td class="role">live set</td><td>mix</td><td>universe</td><td>mixer</td><td>sum</td><td>system</td></tr>
-  <tr><td class="role">outside input</td><td>sidechain</td><td>fader</td><td>driver</td><td>parameter</td><td>potential</td></tr>
-  <tr><td class="role">live controls</td><td>fader</td><td>fader</td><td>handle</td><td>binding</td><td>lever</td></tr>
-  <tr><td class="role">implementation</td><td>backend</td><td>desk</td><td>runtime</td><td>model</td><td>solver</td></tr>
-  <tr><td class="role">owner of the loop</td><td>daw</td><td>house</td><td>player</td><td>integrator</td><td>integrator</td></tr>
-  <tr><td class="role">the identity</td><td>unity</td><td>blackout</td><td>base</td><td>origin</td><td>equilibrium</td></tr>
-  <tr><td class="role">how much is on</td><td>fader</td><td>intensity</td><td>influence</td><td>coefficient</td><td>magnitude</td></tr>
-  <tr><td class="role">the resolved value</td><td>output</td><td>output</td><td>pose</td><td>point</td><td>resultant</td></tr>
-  <tr><td class="role">one track's share</td><td>send</td><td>—</td><td>layer</td><td>summand</td><td>impulse</td></tr>
-  <tr><td class="role">what a piece is handed</td><td>—</td><td>cue</td><td>frame</td><td>environment</td><td>state</td></tr>
-  <tr><td class="role">one pass</td><td>bar</td><td>chase</td><td>pass</td><td>period</td><td>period</td></tr>
-  <tr><td class="role">capped set</td><td>bus</td><td>submaster</td><td>layer</td><td>partition</td><td>constraint</td></tr>
+  <tr><th>yours</th><th>role</th><th>DAW</th><th>stage lighting</th><th>animation rig</th><th>algebra</th><th>physics</th><th>learning</th></tr>
+  <tr data-role="offset"><td class="mine" data-for="offset"></td><td class="role">emitted value</td><td>send</td><td>level</td><td>delta</td><td>term</td><td>vector</td><td>residual</td></tr>
+  <tr data-role="channel"><td class="mine" data-for="channel"></td><td class="role">one field</td><td>lane</td><td>circuit</td><td>axis</td><td>axis</td><td>component</td><td>feature</td></tr>
+  <tr data-role="table"><td class="mine" data-for="table"></td><td class="role">channel set</td><td>desk</td><td>fixture</td><td>rig</td><td>domain</td><td>space</td><td>feature space</td></tr>
+  <tr data-role="item"><td class="mine" data-for="item"></td><td class="role">driven thing</td><td>note</td><td>lamp</td><td>actor</td><td>index</td><td>body</td><td>example</td></tr>
+  <tr data-role="piece"><td class="mine" data-for="piece"></td><td class="role">function of time</td><td>clip</td><td>chase</td><td>gesture</td><td>curve</td><td>field</td><td>extractor</td></tr>
+  <tr data-role="track"><td class="mine" data-for="track"></td><td class="role">playing instance</td><td>voice</td><td>submaster</td><td>action</td><td>operand</td><td>force</td><td>member</td></tr>
+  <tr data-role="mix"><td class="mine" data-for="mix"></td><td class="role">live set</td><td>mix</td><td>universe</td><td>mixer</td><td>sum</td><td>system</td><td>ensemble</td></tr>
+  <tr data-role="signal"><td class="mine" data-for="signal"></td><td class="role">outside input</td><td>sidechain</td><td>fader</td><td>driver</td><td>parameter</td><td>potential</td><td>parameter</td></tr>
+  <tr data-role="handle"><td class="mine" data-for="handle"></td><td class="role">live controls</td><td>fader</td><td>fader</td><td>handle</td><td>binding</td><td>lever</td><td>—</td></tr>
+  <tr data-role="engine"><td class="mine" data-for="engine"></td><td class="role">implementation</td><td>backend</td><td>desk</td><td>runtime</td><td>model</td><td>solver</td><td>backend</td></tr>
+  <tr data-role="host"><td class="mine" data-for="host"></td><td class="role">owner of the loop</td><td>daw</td><td>house</td><td>player</td><td>integrator</td><td>integrator</td><td>pipeline</td></tr>
+  <tr data-role="rest"><td class="mine" data-for="rest"></td><td class="role">the identity</td><td>unity</td><td>blackout</td><td>base</td><td>origin</td><td>equilibrium</td><td>baseline</td></tr>
+  <tr data-role="weight"><td class="mine" data-for="weight"></td><td class="role">how much is on</td><td>fader</td><td>intensity</td><td>influence</td><td>coefficient</td><td>magnitude</td><td>weight</td></tr>
+  <tr data-role="sample"><td class="mine" data-for="sample"></td><td class="role">the resolved value</td><td>output</td><td>output</td><td>pose</td><td>point</td><td>resultant</td><td>feature vector</td></tr>
+  <tr data-role="contribution"><td class="mine" data-for="contribution"></td><td class="role">one track's share</td><td>send</td><td>—</td><td>layer</td><td>summand</td><td>impulse</td><td>activation</td></tr>
+  <tr data-role="context"><td class="mine" data-for="context"></td><td class="role">what a piece is handed</td><td>—</td><td>cue</td><td>frame</td><td>environment</td><td>state</td><td>context</td></tr>
+  <tr data-role="period"><td class="mine" data-for="period"></td><td class="role">one pass</td><td>bar</td><td>chase</td><td>pass</td><td>period</td><td>period</td><td>epoch</td></tr>
+  <tr data-role="group"><td class="mine" data-for="group"></td><td class="role">capped set</td><td>bus</td><td>submaster</td><td>layer</td><td>partition</td><td>constraint</td><td>softmax</td></tr>
 </table></div>
 
 <h2 id="pick">Your set</h2>
 <p class="legend">Click a word under any term to pick it, write one in, or click the dashed incumbent to commit to keeping it. A recommended default shows as an outline until you click it, and its substitutions are boxed dashed; a pick of your own is filled and boxed solid. <span class="star">★</span> marks the ones I would defend. The page opens on the recommended set and remembers your picks in this browser only. <button class="clear" id="reset" type="button">Reset to recommended</button> <button class="clear" id="clear" type="button">Clear all</button></p>
 <div class="tbl"><table id="mine">
-  <tr><th>role</th><th>was</th><th>yours</th></tr>
-  <tr><td class="role">emitted value</td><td class="now">offset</td><td class="mine" data-for="offset"></td></tr>
-  <tr><td class="role">one field</td><td class="now">channel</td><td class="mine" data-for="channel"></td></tr>
-  <tr><td class="role">channel set</td><td class="now">table</td><td class="mine" data-for="table"></td></tr>
-  <tr><td class="role">driven thing</td><td class="now">item</td><td class="mine" data-for="item"></td></tr>
-  <tr><td class="role">function of time</td><td class="now">piece</td><td class="mine" data-for="piece"></td></tr>
-  <tr><td class="role">playing instance</td><td class="now">track</td><td class="mine" data-for="track"></td></tr>
-  <tr><td class="role">live set</td><td class="now">mix</td><td class="mine" data-for="mix"></td></tr>
-  <tr><td class="role">outside input</td><td class="now">signal</td><td class="mine" data-for="signal"></td></tr>
-  <tr><td class="role">live controls</td><td class="now">handle</td><td class="mine" data-for="handle"></td></tr>
-  <tr><td class="role">implementation</td><td class="now">engine</td><td class="mine" data-for="engine"></td></tr>
-  <tr><td class="role">owner of the loop</td><td class="now">host</td><td class="mine" data-for="host"></td></tr>
-  <tr><td class="role">the identity</td><td class="now">rest</td><td class="mine" data-for="rest"></td></tr>
-  <tr><td class="role">how much is on</td><td class="now">weight</td><td class="mine" data-for="weight"></td></tr>
-  <tr><td class="role">the resolved value</td><td class="now">ResolvedOffset</td><td class="mine" data-for="sample"></td></tr>
-  <tr><td class="role">one track's share</td><td class="now">contribution</td><td class="mine" data-for="contribution"></td></tr>
-  <tr><td class="role">what a piece is handed</td><td class="now">ctx</td><td class="mine" data-for="context"></td></tr>
-  <tr><td class="role">one pass</td><td class="now">duration</td><td class="mine" data-for="period"></td></tr>
-  <tr><td class="role">place in the pass</td><td class="now">t</td><td class="fixedcell">phase</td></tr>
-  <tr><td class="role">capped set</td><td class="now">group</td><td class="mine" data-for="group"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-add">add</span></td><td class="now">add</td><td class="mine" data-for="v-add"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-stop">stop</span></td><td class="now">stop</td><td class="mine" data-for="v-stop"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-step">step</span></td><td class="now">step</td><td class="mine" data-for="v-step"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-sample">sample</span></td><td class="now">sample</td><td class="mine" data-for="v-sample"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-seek">seek</span></td><td class="now">seek</td><td class="mine" data-for="v-seek"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-blend">blend</span></td><td class="now">blend</td><td class="mine" data-for="v-blend"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-clear">clear</span></td><td class="now">clear</td><td class="mine" data-for="v-clear"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-forget">forget</span></td><td class="now">forget</td><td class="mine" data-for="v-forget"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-join">join</span></td><td class="now">join</td><td class="mine" data-for="v-join"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-scale">scale</span></td><td class="now">scale</td><td class="mine" data-for="v-scale"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-lerp">lerp</span></td><td class="now">lerp</td><td class="mine" data-for="v-lerp"></td></tr>
-  <tr><td class="role"><span class="vb" data-v="v-fold">fold</span></td><td class="now">fold</td><td class="mine" data-for="v-fold"></td></tr>
+  <tr><th>yours</th><th>role</th><th>was</th></tr>
+  <tr><td class="mine" data-for="offset"></td><td class="role">emitted value</td><td class="now">offset</td></tr>
+  <tr><td class="mine" data-for="channel"></td><td class="role">one field</td><td class="now">channel</td></tr>
+  <tr><td class="mine" data-for="table"></td><td class="role">channel set</td><td class="now">table</td></tr>
+  <tr><td class="mine" data-for="item"></td><td class="role">driven thing</td><td class="now">item</td></tr>
+  <tr><td class="mine" data-for="piece"></td><td class="role">function of time</td><td class="now">piece</td></tr>
+  <tr><td class="mine" data-for="track"></td><td class="role">playing instance</td><td class="now">track</td></tr>
+  <tr><td class="mine" data-for="mix"></td><td class="role">live set</td><td class="now">mix</td></tr>
+  <tr><td class="mine" data-for="signal"></td><td class="role">outside input</td><td class="now">signal</td></tr>
+  <tr><td class="mine" data-for="handle"></td><td class="role">live controls</td><td class="now">handle</td></tr>
+  <tr><td class="mine" data-for="engine"></td><td class="role">implementation</td><td class="now">engine</td></tr>
+  <tr><td class="mine" data-for="host"></td><td class="role">owner of the loop</td><td class="now">host</td></tr>
+  <tr><td class="mine" data-for="rest"></td><td class="role">the identity</td><td class="now">rest</td></tr>
+  <tr><td class="mine" data-for="weight"></td><td class="role">how much is on</td><td class="now">weight</td></tr>
+  <tr><td class="mine" data-for="sample"></td><td class="role">the resolved value</td><td class="now">ResolvedOffset</td></tr>
+  <tr><td class="mine" data-for="contribution"></td><td class="role">one track's share</td><td class="now">contribution</td></tr>
+  <tr><td class="mine" data-for="context"></td><td class="role">what a piece is handed</td><td class="now">ctx</td></tr>
+  <tr><td class="mine" data-for="period"></td><td class="role">one pass</td><td class="now">duration</td></tr>
+  <tr><td class="fixedcell">phase</td><td class="role">place in the pass</td><td class="now">t</td></tr>
+  <tr><td class="mine" data-for="group"></td><td class="role">capped set</td><td class="now">group</td></tr>
+  <tr><td class="mine" data-for="v-add"></td><td class="role"><span class="vb" data-v="v-add">add</span></td><td class="now">add</td></tr>
+  <tr><td class="mine" data-for="v-stop"></td><td class="role"><span class="vb" data-v="v-stop">stop</span></td><td class="now">stop</td></tr>
+  <tr><td class="mine" data-for="v-step"></td><td class="role"><span class="vb" data-v="v-step">step</span></td><td class="now">step</td></tr>
+  <tr><td class="mine" data-for="v-sample"></td><td class="role"><span class="vb" data-v="v-sample">sample</span></td><td class="now">sample</td></tr>
+  <tr><td class="mine" data-for="v-seek"></td><td class="role"><span class="vb" data-v="v-seek">seek</span></td><td class="now">seek</td></tr>
+  <tr><td class="mine" data-for="v-blend"></td><td class="role"><span class="vb" data-v="v-blend">blend</span></td><td class="now">blend</td></tr>
+  <tr><td class="mine" data-for="v-clear"></td><td class="role"><span class="vb" data-v="v-clear">clear</span></td><td class="now">clear</td></tr>
+  <tr><td class="mine" data-for="v-forget"></td><td class="role"><span class="vb" data-v="v-forget">forget</span></td><td class="now">forget</td></tr>
+  <tr><td class="mine" data-for="v-join"></td><td class="role"><span class="vb" data-v="v-join">join</span></td><td class="now">join</td></tr>
+  <tr><td class="mine" data-for="v-scale"></td><td class="role"><span class="vb" data-v="v-scale">scale</span></td><td class="now">scale</td></tr>
+  <tr><td class="mine" data-for="v-lerp"></td><td class="role"><span class="vb" data-v="v-lerp">lerp</span></td><td class="now">lerp</td></tr>
+  <tr><td class="mine" data-for="v-fold"></td><td class="role"><span class="vb" data-v="v-fold">fold</span></td><td class="now">fold</td></tr>
 </table></div>
 
 <h2>Terms</h2>
@@ -415,36 +424,38 @@
 
 <section class="term" id="t-offset" data-term="offset">
   <div class="term-head"><h3>Offset</h3><span class="now">was <code>offset</code></span></div>
-  <p class="gloss">What a piece emits: a partial record of channel values, relative to rest. Absent means no contribution.</p>
+  <div class="gloss"><p>What one call to a piece returns: a record with one slot per channel of the table.</p><ul><li>The piece fills only the slots it drives and leaves the others empty. Flicker fills gain; slam fills position and <span class="keep">scale</span>; hue fills color.</li><li>Which slots come back is the piece’s own decision, and it may differ from call to call.</li><li>A filled slot is a change from the channel’s rest: <code>gain: 0.1</code> means multiply by 0.1, not set to 0.1.</li><li>An empty slot means no contribution. The merge skips it.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">offset</button></div>
     <div class="field">math</div><div class="words"><button class="w star">delta</button><button class="w">point</button><button class="w">deviation</button><button class="w">perturbation</button><button class="w star">term</button><button class="w">vector</button></div>
-    <div class="field">audio</div><div class="words"><button class="w star">send</button><button class="w">input</button><button class="w">touch</button></div>
+    <div class="field">audio</div><div class="words"><button class="w star">send</button><button class="w">input</button></div>
     <div class="field">animation</div><div class="words"><button class="w star">snapshot</button><button class="w">pose</button><button class="w">frame</button><button class="w">keyvalue</button></div>
     <div class="field">compositing</div><div class="words"><button class="w">layer</button><button class="w">pass</button><button class="w">plate</button></div>
     <div class="field">lighting</div><div class="words"><button class="w">level</button><button class="w">cue</button></div>
     <div class="field">plain</div><div class="words"><button class="w">shift</button><button class="w star">nudge</button></div>
+    <div class="field">learning</div><div class="words"><button class="w star">residual</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-offset" data-term="offset" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>
 
 <section class="term" id="t-channel" data-term="channel">
   <div class="term-head"><h3>Channel</h3><span class="now">was <code>channel</code></span></div>
-  <p class="gloss">One field of an offset, with its own arithmetic: join, rest, scale, lerp.</p>
+  <div class="gloss"><p>One slot in an offset: one name, one rule for combining two values written into it.</p><ul><li>Gain is a channel whose values multiply. Position is a channel whose triples <span class="keep">add</span>.</li><li>The rule belongs to the channel, so what happens when two pieces write the same slot is settled once, not per piece.</li><li>One name and one rule whatever the shape of the values: gain is a single number, position is three under one rule.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">channel</button></div>
-    <div class="field">audio</div><div class="words"><button class="w">bus</button><button class="w star">lane</button><button class="w">strip</button><button class="w">fader</button><button class="w">stem</button><button class="w">band</button></div>
+    <div class="field">audio</div><div class="words"><button class="w star">lane</button><button class="w">strip</button><button class="w">fader</button><button class="w">stem</button><button class="w">band</button></div>
     <div class="field">data</div><div class="words"><button class="w">field</button><button class="w">property</button><button class="w">attribute</button><button class="w">column</button><button class="w">slot</button></div>
-    <div class="field">math</div><div class="words"><button class="w star">axis</button><button class="w">coordinate</button><button class="w">component</button><button class="w">scalar</button></div>
+    <div class="field">math</div><div class="words"><button class="w star">axis</button><button class="w star">factor</button><button class="w">component</button><button class="w star">dimension</button></div>
     <div class="field">animation</div><div class="words"><button class="w star">param</button><button class="w">curve</button><button class="w">knob</button></div>
     <div class="field">lighting</div><div class="words"><button class="w">circuit</button><button class="w">dimmer</button></div>
+    <div class="field">learning</div><div class="words"><button class="w star">feature</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-channel" data-term="channel" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>
 
 <section class="term" id="t-table" data-term="table">
   <div class="term-head"><h3>Table</h3><span class="now">was <code>table</code></span></div>
-  <p class="gloss">The channel set for one kind of offset: klieg's pose, klieg's part, wod's presence.</p>
+  <div class="gloss"><p>The full list of channels one kind of thing can be moved on, each with its rule.</p><ul><li>klieg has three: a pose table for a letter, a part table for a tube run or a flake, a lighting table for the whole frame.</li><li>A piece writes into one table. A mix runs over one table.</li><li>It is a closed list: a piece cannot write a channel the table does not have.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">table</button></div>
     <div class="field">lighting</div><div class="words"><button class="w star">fixture</button><button class="w star">personality</button><button class="w">patch</button><button class="w">profile</button></div>
@@ -458,62 +469,66 @@
 
 <section class="term" id="t-item" data-term="item">
   <div class="term-head"><h3>Item</h3><span class="now">was <code>item</code></span></div>
-  <p class="gloss">What is driven: a letter, a part, a wedge, a page, or a unit value for a system with no item dimension.</p>
+  <div class="gloss"><p>The thing being driven.</p><ul><li>A letter, a tube run, a wheel wedge, a page.</li><li>A piece is asked about one item at a time, and a sample is the answer for one item.</li><li>A system that drives a single thing, such as klieg’s lighting, has one item.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">item</button></div>
     <div class="field">math</div><div class="words"><button class="w star">index</button><button class="w">argument</button><button class="w">point</button><button class="w">element</button></div>
     <div class="field">stage</div><div class="words"><button class="w star">actor</button><button class="w star">subject</button><button class="w">puppet</button><button class="w">player</button><button class="w">fixture</button><button class="w">lamp</button><button class="w">instrument</button></div>
     <div class="field">data</div><div class="words"><button class="w">node</button><button class="w">entity</button><button class="w">member</button><button class="w">object</button><button class="w">unit</button></div>
-    <div class="field">plain</div><div class="words"><button class="w star">target</button><button class="w">body</button><button class="w">thing</button><button class="w">particle</button></div>
+    <div class="field">plain</div><div class="words"><button class="w star">target</button><button class="w">body</button><button class="w">particle</button></div>
+    <div class="field">learning</div><div class="words"><button class="w">example</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-item" data-term="item" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>
 
 <section class="term" id="t-piece" data-term="piece">
   <div class="term-head"><h3>Piece</h3><span class="now">was <code>piece</code></span></div>
-  <p class="gloss">A pure function of normalized time and an item that returns an offset. Optionally stateful.</p>
+  <div class="gloss"><p>The function an author writes.</p><ul><li>It is given where a track is in its period, which item is being asked about, and the frame’s context, and it returns an offset.</li><li>The same inputs always give the same offset.</li><li>A piece that needs memory declares a state per item. The mix advances that state once a frame, before asking.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">piece</button></div>
     <div class="field">math</div><div class="words"><button class="w star">curve</button><button class="w">map</button><button class="w">function</button><button class="w star">field</button><button class="w">generator</button></div>
     <div class="field">DAW</div><div class="words"><button class="w star">clip</button><button class="w">loop</button><button class="w">pattern</button><button class="w">riff</button><button class="w">phrase</button><button class="w">motif</button><button class="w">voice</button></div>
-    <div class="field">animation</div><div class="words"><button class="w star">motion</button><button class="w star">gesture</button><button class="w">move</button><button class="w">figure</button><button class="w">beat</button></div>
+    <div class="field">animation</div><div class="words"><button class="w star">motion</button><button class="w star">gesture</button><button class="w">move</button><button class="w">beat</button></div>
     <div class="field">lighting</div><div class="words"><button class="w">chase</button><button class="w">cue</button><button class="w">effect</button></div>
+    <div class="field">learning</div><div class="words"><button class="w">extractor</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-piece" data-term="piece" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>
 
 <section class="term" id="t-track" data-term="track">
   <div class="term-head"><h3>Track</h3><span class="now">was <code>track</code></span></div>
-  <p class="gloss">A piece plus its own playback: start, rate, loop, weight envelope, target. The unit a host adds and stops.</p>
+  <div class="gloss"><p>One piece, playing.</p><ul><li>It has its own start time, rate and loop setting, its own weight over time, and its own set of items.</li><li>Two tracks of the same piece are two clocks and two weights.</li><li>A track is what a host adds to a mix and later stops.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">track</button></div>
     <div class="field">math</div><div class="words"><button class="w">operand</button><button class="w">parametrization</button><button class="w">instance</button><button class="w">evaluation</button></div>
-    <div class="field">DAW</div><div class="words"><button class="w">strand</button><button class="w">lane</button><button class="w">take</button><button class="w">voice</button></div>
+    <div class="field">DAW</div><div class="words"><button class="w">strand</button><button class="w">lane</button><button class="w star">voice</button></div>
     <div class="field">animation</div><div class="words"><button class="w star">action</button><button class="w star">animation</button><button class="w">player</button><button class="w">run</button><button class="w">playback</button></div>
     <div class="field">lighting</div><div class="words"><button class="w star">submaster</button><button class="w">fader</button><button class="w">cue</button><button class="w">chase</button></div>
     <div class="field">game</div><div class="words"><button class="w">layer</button><button class="w">state</button></div>
     <div class="field">plain</div><div class="words"><button class="w star">force</button></div>
+    <div class="field">learning</div><div class="words"><button class="w">member</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-track" data-term="track" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>
 
 <section class="term" id="t-mix" data-term="mix">
   <div class="term-head"><h3>Mix</h3><span class="now">was <code>mix</code></span></div>
-  <p class="gloss">The set of live tracks over one table, stepped once a frame and <span class="vb" data-v="v-sample" data-form="3">sampled</span> per item. What a host holds.</p>
+  <div class="gloss"><p>Everything a host holds: the tracks that are playing, over one table.</p><ul><li>Once a frame the host steps it. That advances every track’s clock, weight and state.</li><li>Then, for each item it wants to draw, the host <span class="vb" data-v="v-sample" data-form="1">samples</span> it and gets back one resolved record.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">mix</button></div>
     <div class="field">math</div><div class="words"><button class="w star">combination</button><button class="w">sum</button><button class="w">reduction</button><button class="w">union</button></div>
-    <div class="field">audio</div><div class="words"><button class="w">aggregate</button><button class="w star">bus</button><button class="w">desk</button><button class="w">system</button><button class="w">master</button><button class="w">session</button></div>
+    <div class="field">audio</div><div class="words"><button class="w">aggregate</button><button class="w star">bus</button><button class="w">desk</button><button class="w">system</button><button class="w">master</button></div>
     <div class="field">animation</div><div class="words"><button class="w">mixer</button><button class="w">timeline</button><button class="w">stage</button><button class="w">sequencer</button><button class="w">scene</button><button class="w">graph</button></div>
     <div class="field">lighting</div><div class="words"><button class="w star">universe</button><button class="w">output</button></div>
     <div class="field">compositing</div><div class="words"><button class="w star">comp</button><button class="w">stack</button></div>
+    <div class="field">learning</div><div class="words"><button class="w star">ensemble</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-mix" data-term="mix" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>
 
 <section class="term" id="t-signal" data-term="signal">
   <div class="term-head"><h3>Signal</h3><span class="now">was <code>signal</code></span></div>
-  <p class="gloss">A 0..1 scalar resolved per item per frame from something outside the clock.</p>
+  <div class="gloss"><p>A number from 0 to 1 that comes from outside the clock, read per item per frame.</p><ul><li>How close the cursor is. How long it has hovered. A level the host writes.</li><li>As a track’s weight, it makes an effect follow the cursor.</li><li>As a selector, it picks a point between alternatives.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">signal</button></div>
     <div class="field">math</div><div class="words"><button class="w star">parameter</button><button class="w">variable</button><button class="w">functional</button><button class="w">measure</button></div>
@@ -528,7 +543,7 @@
 
 <section class="term" id="t-handle" data-term="handle">
   <div class="term-head"><h3>Handle</h3><span class="now">was <code>handle</code></span></div>
-  <p class="gloss">What add returns for one track: knobs you can turn while it runs, its weight, its rate, seek and stop, taking effect on the next frame; and a promise, <code>done</code>, that resolves once the track has left the mix by any route.</p>
+  <div class="gloss"><p>What add returns for one track.</p><ul><li>Knobs you can turn while it runs: its weight, its rate, seek and stop. Writes take effect on the next frame.</li><li>A promise, <code>done</code>, that resolves once the track has left the mix by any route.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">handle</button></div>
     <div class="field">math</div><div class="words"><button class="w star">binding</button><button class="w">reference</button><button class="w">variable</button><button class="w">name</button></div>
@@ -541,7 +556,7 @@
 
 <section class="term" id="t-engine" data-term="engine">
   <div class="term-head"><h3>Engine</h3><span class="now">was <code>engine</code></span></div>
-  <p class="gloss">The implementation behind a mix. One ships; the seam is the mix's own interface.</p>
+  <div class="gloss"><p>The code behind a mix that does the stepping and the sampling.</p><ul><li>The mix is the interface. An engine is one implementation of it.</li><li>One ships, running pieces on the CPU.</li><li>A later one could bake keyframes to CSS or fill a GPU buffer, and a host would not know the difference.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">engine</button></div>
     <div class="field">math</div><div class="words"><button class="w star">model</button><button class="w star">evaluator</button><button class="w">interpretation</button><button class="w">semantics</button></div>
@@ -554,34 +569,36 @@
 
 <section class="term" id="t-host" data-term="host">
   <div class="term-head"><h3>Host</h3><span class="now">was <code>host</code></span></div>
-  <p class="gloss">The code that owns the frame loop: holds a mix, calls <span class="vb" data-v="v-step">step</span> once a frame and <span class="vb" data-v="v-sample">sample</span> per item, and writes what comes back into the world. klieg, wod, sherpa and magicsmoke are hosts.</p>
+  <div class="gloss"><p>The program that owns the frame loop and the things on screen.</p><ul><li>klieg, wod, sherpa, magicsmoke.</li><li>It holds a mix, steps it once a frame, <span class="vb" data-v="v-sample" data-form="1">samples</span> it per item, and writes what comes back onto a mesh, a wedge or a gain node.</li><li>The package never draws anything itself.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">host</button></div>
     <div class="field">math</div><div class="words"><button class="w star">integrator</button><button class="w">observer</button><button class="w">ambient</button><button class="w">universe</button></div>
     <div class="field">software</div><div class="words"><button class="w">embedder</button><button class="w">app</button><button class="w">caller</button><button class="w">client</button><button class="w">runtime</button><button class="w">driver</button></div>
-    <div class="field">audio</div><div class="words"><button class="w star">daw</button><button class="w">session</button><button class="w">console</button><button class="w">deck</button></div>
+    <div class="field">audio</div><div class="words"><button class="w star">daw</button><button class="w">session</button><button class="w">console</button></div>
     <div class="field">stage</div><div class="words"><button class="w star">house</button><button class="w">venue</button><button class="w">stage</button><button class="w">theater</button><button class="w">operator</button><button class="w">board-op</button></div>
+    <div class="field">learning</div><div class="words"><button class="w">pipeline</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-host" data-term="host" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>
 
 <section class="term" id="t-rest" data-term="rest">
   <div class="term-head"><h3>Rest</h3><span class="now">was <code>rest</code></span></div>
-  <p class="gloss">A channel's identity: the value that contributes nothing. 1 for a multiplier, 0 for a sum, absent for color. What a weight of zero scales toward.</p>
+  <div class="gloss"><p>A channel’s value for nothing happening.</p><ul><li>For a channel that multiplies it is 1. For one that adds it is 0. Color has none.</li><li>A track at weight 0 pulls its values to rest.</li><li>An item no track reaches <span class="vb" data-v="v-sample" data-form="1">samples</span> to rest on every channel.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">rest</button></div>
     <div class="field">math</div><div class="words"><button class="w star">identity</button><button class="w star">origin</button><button class="w">unit</button><button class="w">zero</button><button class="w">neutral</button><button class="w">null</button></div>
     <div class="field">animation</div><div class="words"><button class="w">base</button><button class="w">default</button><button class="w">home</button><button class="w">still</button><button class="w">idle</button></div>
-    <div class="field">audio</div><div class="words"><button class="w">unity</button><button class="w">silence</button><button class="w">flat</button></div>
+    <div class="field">audio</div><div class="words"><button class="w">unity</button><button class="w">silence</button></div>
     <div class="field">lighting</div><div class="words"><button class="w">dark</button><button class="w">blackout</button><button class="w">preset</button></div>
-    <div class="field">plain</div><div class="words"><button class="w">baseline</button><button class="w">ground</button><button class="w">equilibrium</button></div>
+    <div class="field">plain</div><div class="words"><button class="w">flat</button><button class="w">ground</button><button class="w">equilibrium</button></div>
+    <div class="field">learning</div><div class="words"><button class="w">baseline</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-rest" data-term="rest" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>
 
 <section class="term" id="t-weight" data-term="weight">
   <div class="term-head"><h3>Weight</h3><span class="now">was <code>weight</code></span></div>
-  <p class="gloss">How much of a track is on, 0..1: a ramp in time, or a signal read per item. Scales the offset toward rest before the fold. The only knob a mix varies.</p>
+  <div class="gloss"><p>How much of a track is on, from 0 to 1.</p><ul><li>Its offset is pulled toward rest by the weight before the merge: at 0 the track contributes nothing, at 1 all of it.</li><li>A ramp in time is a fade. A signal is an effect that follows the cursor.</li><li>It is the only knob the mix turns.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">weight</button></div>
     <div class="field">math</div><div class="words"><button class="w star">coefficient</button><button class="w">scalar</button><button class="w">factor</button><button class="w">multiplier</button><button class="w">alpha</button><button class="w">magnitude</button></div>
@@ -594,20 +611,21 @@
 
 <section class="term" id="t-sample" data-term="sample">
   <div class="term-head"><h3>Sample</h3><span class="now">was <code>ResolvedOffset</code></span></div>
-  <p class="gloss">The resolved value for one item this frame: every channel filled, the fold landed. What the host reads and writes to a mesh, a wedge or a gain node.</p>
+  <div class="gloss"><p>The answer for one item on one frame.</p><ul><li>Every channel of the table filled, after every track’s contribution has been merged.</li><li>A complete record, where an offset is a partial one.</li><li>The host reads it and writes it to the screen.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">sample</button></div>
     <div class="field">math</div><div class="words"><button class="w star">point</button><button class="w">value</button><button class="w">image</button><button class="w">sum</button><button class="w">result</button></div>
     <div class="field">audio</div><div class="words"><button class="w star">output</button><button class="w">master</button><button class="w">mixdown</button><button class="w">readout</button><button class="w">reading</button></div>
-    <div class="field">animation</div><div class="words"><button class="w star">pose</button><button class="w">frame</button><button class="w">state</button><button class="w">snapshot</button><button class="w">keyvalue</button></div>
+    <div class="field">animation</div><div class="words"><button class="w star">pose</button><button class="w">frame</button><button class="w">state</button><button class="w">snapshot</button></div>
     <div class="field">electrical</div><div class="words"><button class="w star">outlet</button><button class="w">tap</button><button class="w">feed</button><button class="w">terminal</button><button class="w">resultant</button></div>
+    <div class="field">learning</div><div class="words"><button class="w">vector</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-sample" data-term="sample" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>
 
 <section class="term" id="t-contribution" data-term="contribution">
   <div class="term-head"><h3>Contribution</h3><span class="now">was <code>contribution</code></span></div>
-  <p class="gloss">One track's share of one item this frame: its offset after its weight. What the fold sums.</p>
+  <div class="gloss"><p>One track’s share of one item on one frame.</p><ul><li>The track’s offset after its weight has been applied.</li><li>The merge combines contributions channel by channel, starting from rest.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">contribution</button></div>
     <div class="field">math</div><div class="words"><button class="w star">summand</button><button class="w">addend</button><button class="w">operand</button><button class="w">component</button><button class="w">increment</button><button class="w">delta</button></div>
@@ -620,7 +638,7 @@
 
 <section class="term" id="t-context" data-term="context">
   <div class="term-head"><h3>Context</h3><span class="now">was <code>ctx</code></span></div>
-  <p class="gloss">What a piece is handed beside t and the item: now, dt, elapsed, pass, weight, its own state, and the host's extras such as the pointer.</p>
+  <div class="gloss"><p>What a piece is handed beside the phase and the item.</p><ul><li>The frame’s clock, and the time since the last frame.</li><li>How long the track has been playing, which pass this is, and the track’s weight.</li><li>The piece’s own state for this item.</li><li>Anything the host adds, such as where the cursor is.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">context</button></div>
     <div class="field">software</div><div class="words"><button class="w">setting</button><button class="w">env</button><button class="w">environment</button><button class="w">scope</button><button class="w">frame</button><button class="w">args</button><button class="w">props</button><button class="w">bag</button></div>
@@ -633,25 +651,26 @@
 
 <section class="term" id="t-period" data-term="period">
   <div class="term-head"><h3>Period</h3><span class="now">was <code>duration</code></span></div>
-  <p class="gloss">Milliseconds of one pass of a piece; t runs 0..1 across it and then wraps. Zero means aperiodic: t stays 0 and the piece reads elapsed.</p>
+  <div class="gloss"><p>How long one pass of a piece lasts, in milliseconds.</p><ul><li>The phase runs from 0 to 1 across it and then wraps.</li><li>A period of 0 means the piece does not repeat: the phase stays at 0 and the piece reads elapsed time instead.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">period</button></div>
     <div class="field">math</div><div class="words"><button class="w">recurrence</button><button class="w">cycle</button><button class="w">wavelength</button><button class="w">modulus</button></div>
     <div class="field">music</div><div class="words"><button class="w star">bar</button><button class="w">measure</button><button class="w">loop</button><button class="w">phrase</button><button class="w">beat</button></div>
     <div class="field">animation</div><div class="words"><button class="w star">pass</button><button class="w">lap</button><button class="w">turn</button><button class="w">revolution</button><button class="w">iteration</button></div>
-    <div class="field">time</div><div class="words"><button class="w">duration</button><button class="w">length</button><button class="w">span</button><button class="w">interval</button><button class="w">tempo</button><button class="w">stride</button></div>
+    <div class="field">time</div><div class="words"><button class="w">duration</button><button class="w">length</button><button class="w">span</button><button class="w">interval</button><button class="w">tempo</button></div>
+    <div class="field">learning</div><div class="words"><button class="w star">epoch</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-period" data-term="period" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>
 
 <section class="term fixed" id="t-phase" data-term="phase">
   <div class="term-head"><h3>Phase</h3><span class="now">was <code>t</code></span><span class="status">fixed</span></div>
-  <p class="gloss">Where a track is within its period, 0..1, wrapping. What a piece is handed first, and what stagger shifts per item. klieg’s <code>cycle</code> already calls its per-letter offset <code>phase</code>. Fixed, not up for a vote; the cost is renaming klieg’s <code>onPhase</code> and <code>PhaseEvent</code>, the enter–active–exit events sherpa consumes through <code>ctx.phase</code>, which Mike has said klieg will pay.</p>
+  <div class="gloss"><p>Where a track is within its period, from 0 to 1, wrapping.</p><ul><li>The first thing a piece is handed, and what stagger shifts per item.</li><li>klieg’s <code>cycle</code> already calls its per-letter offset <code>phase</code>.</li><li>Fixed, not up for a vote. The cost is renaming klieg’s <code>onPhase</code> and <code>PhaseEvent</code>, the enter–active–exit events sherpa consumes, which Mike has said klieg will pay.</li></ul></div>
 </section>
 
 <section class="term" id="t-group" data-term="group">
   <div class="term-head"><h3>Group</h3><span class="now">was <code>group</code></span></div>
-  <p class="gloss">Tracks whose summed weight is capped at 1, so a crossfade between them cannot lurch. klieg's enter, active and exit are one.</p>
+  <div class="gloss"><p>A label shared by tracks that are alternatives in time.</p><ul><li>klieg’s enter, active and exit are one group.</li><li>Within a group the weights are capped to sum to at most 1, so a crossfade is always a <span class="keep">blend</span> of the two and never a pile-up.</li><li>Tracks meant to stack stay out of groups.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">group</button></div>
     <div class="field">audio</div><div class="words"><button class="w star">bus</button><button class="w">stem</button><button class="w">submix</button><button class="w">aux</button></div>
@@ -669,7 +688,7 @@
 
 <section class="term verb" id="t-v-add" data-term="v-add">
   <div class="term-head"><h3><span class="vb" data-v="v-add">add</span></h3><span class="now">was <code>mix.add(track)</code></span></div>
-  <p class="gloss">Puts a track in the mix. It begins on the next step unless its start says otherwise, and returns the handle.</p>
+  <div class="gloss"><p>Put a track into the mix.</p><ul><li>It begins on the next frame unless its start time says otherwise.</li><li>Returns the handle.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">add</button></div>
     <div class="field">math</div><div class="words"><button class="w star">apply</button><button class="w">insert</button><button class="w">adjoin</button><button class="w">introduce</button></div>
@@ -683,7 +702,7 @@
 
 <section class="term verb" id="t-v-stop" data-term="v-stop">
   <div class="term-head"><h3><span class="vb" data-v="v-stop">stop</span></h3><span class="now">was <code>handle.stop()</code></span></div>
-  <p class="gloss">Takes a track out of the mix, ramping its weight down over its fade or waiting per item for rest.</p>
+  <div class="gloss"><p>Take a track out of the mix.</p><ul><li>Its weight ramps down over its fade first.</li><li>Or, if asked, it waits per item until the track is at rest and leaves without a fade.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">stop</button></div>
     <div class="field">math</div><div class="words"><button class="w star">remove</button><button class="w">withdraw</button><button class="w">cancel</button><button class="w">vanish</button></div>
@@ -697,7 +716,7 @@
 
 <section class="term verb" id="t-v-step" data-term="v-step">
   <div class="term-head"><h3><span class="vb" data-v="v-step">step</span></h3><span class="now">was <code>mix.step(now)</code></span></div>
-  <p class="gloss">Advances the mix to a frame: every clock, weight and piece state moves once, keyed by now.</p>
+  <div class="gloss"><p>Move the mix to a frame.</p><ul><li>Every track’s clock, weight and piece state advances once, keyed by the frame’s time.</li><li>Asking twice for the same time changes nothing.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">step</button></div>
     <div class="field">math</div><div class="words"><button class="w">iterate</button><button class="w">evolve</button><button class="w">propagate</button><button class="w">advance</button></div>
@@ -711,7 +730,7 @@
 
 <section class="term verb" id="t-v-sample" data-term="v-sample">
   <div class="term-head"><h3><span class="vb" data-v="v-sample">sample</span></h3><span class="now">was <code>mix.sample(item)</code></span></div>
-  <p class="gloss">Reads the resolved value for one item at the stepped frame.</p>
+  <div class="gloss"><p>Ask for one item’s resolved record at the current frame.</p></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">sample</button></div>
     <div class="field">math</div><div class="words"><button class="w star">eval</button><button class="w">evaluate</button><button class="w star">at</button><button class="w">value</button><button class="w">resolve</button></div>
@@ -725,7 +744,7 @@
 
 <section class="term verb" id="t-v-seek" data-term="v-seek">
   <div class="term-head"><h3><span class="vb" data-v="v-seek">seek</span></h3><span class="now">was <code>handle.seek(ms)</code></span></div>
-  <p class="gloss">Jumps a track's own clock to an elapsed time.</p>
+  <div class="gloss"><p>Move one track’s own clock to a given elapsed time.</p><ul><li>Nothing else in the mix moves.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">seek</button></div>
     <div class="field">math</div><div class="words"><button class="w">shift</button><button class="w">transpose</button><button class="w">translate</button><button class="w">rebase</button></div>
@@ -739,7 +758,7 @@
 
 <section class="term verb" id="t-v-blend" data-term="v-blend">
   <div class="term-head"><h3><span class="vb" data-v="v-blend">blend</span></h3><span class="now">was <code>mix.blend(pieces, by)</code></span></div>
-  <p class="gloss">Adds several tracks whose weights split one signal, so a parameter picks a point between alternatives.</p>
+  <div class="gloss"><p>Put several tracks in at once whose weights are shared out by one signal.</p><ul><li>As the signal runs from 0 to 1, the result moves from the first piece to the last.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">blend</button></div>
     <div class="field">math</div><div class="words"><button class="w star">interp</button><button class="w">interpolate</button><button class="w">convex</button><button class="w">weigh</button><button class="w star">combine</button></div>
@@ -753,7 +772,7 @@
 
 <section class="term verb" id="t-v-clear" data-term="v-clear">
   <div class="term-head"><h3><span class="vb" data-v="v-clear">clear</span></h3><span class="now">was <code>mix.clear()</code></span></div>
-  <p class="gloss">Stops every track, with the given fade.</p>
+  <div class="gloss"><p>Stop every track in the mix, with the given fade.</p></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">clear</button></div>
     <div class="field">math</div><div class="words"><button class="w star">zero</button><button class="w">null</button><button class="w">empty</button><button class="w">void</button></div>
@@ -767,7 +786,7 @@
 
 <section class="term verb" id="t-v-forget" data-term="v-forget">
   <div class="term-head"><h3><span class="vb" data-v="v-forget">forget</span></h3><span class="now">was <code>mix.forget(item)</code></span></div>
-  <p class="gloss">Drops the per-item state the mix holds for an item that will not be <span class="vb" data-v="v-sample" data-form="3">sampled</span> again.</p>
+  <div class="gloss"><p>Throw away the state the mix keeps for one item.</p><ul><li>For an item that will not be <span class="vb" data-v="v-sample" data-form="3">sampled</span> again, such as a letter that has left the screen.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">forget</button></div>
     <div class="field">math</div><div class="words"><button class="w star">drop</button><button class="w">discard</button><button class="w">delete</button><button class="w">erase</button></div>
@@ -785,7 +804,7 @@
 
 <section class="term verb op" id="t-v-join" data-term="v-join">
   <div class="term-head"><h3><span class="vb" data-v="v-join">join</span></h3><span class="now">was <code>join(a, b)</code></span></div>
-  <p class="gloss">A channel's rule for two contributions on it: what multiplying does for gain, adding for position, the larger for dark, the later for color. Associative, with rest as its unit where there is one.</p>
+  <div class="gloss"><p>Combine two values on one channel into one.</p><ul><li>For gain, multiply. For position, <span class="keep">add</span>. For dark, take the larger. For color, take the later.</li><li>The channel decides, not the pieces.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">join</button></div>
     <div class="field">math</div><div class="words"><button class="w star">combine</button><button class="w">compose</button><button class="w">plus</button><button class="w">dot</button><button class="w">meet</button></div>
@@ -799,7 +818,7 @@
 
 <section class="term verb op" id="t-v-scale" data-term="v-scale">
   <div class="term-head"><h3><span class="vb" data-v="v-scale">scale</span></h3><span class="now">was <code>scale(v, w)</code></span></div>
-  <p class="gloss">A channel's rule for taking a value toward rest by a weight in 0..1: all of it at 1, none at 0. Only channels with a rest have one. What ⊙ applies.</p>
+  <div class="gloss"><p>Pull a value toward its channel’s rest by a weight from 0 to 1.</p><ul><li>At 1 the value is untouched. At 0 it is rest.</li><li>Only a channel that has a rest can do this.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">scale</button></div>
     <div class="field">math</div><div class="words"><button class="w star">attenuate</button><button class="w">weigh</button><button class="w">multiply</button><button class="w">interpolate</button><button class="w">shrink</button></div>
@@ -813,7 +832,7 @@
 
 <section class="term verb op" id="t-v-lerp" data-term="v-lerp">
   <div class="term-head"><h3><span class="vb" data-v="v-lerp">lerp</span></h3><span class="now">was <code>lerp(a, b, u)</code></span></div>
-  <p class="gloss">A channel's rule for the value a fraction of the way from one value to another. What retargeting and blend-between-alternatives move by, and the only way a channel without rest can move smoothly.</p>
+  <div class="gloss"><p>Find the value a given fraction of the way from one value to another on a channel.</p><ul><li>How a retargeted track moves from wherever an item is now.</li><li>The only way a channel without a rest, such as color, can change smoothly.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">lerp</button></div>
     <div class="field">math</div><div class="words"><button class="w star">interpolate</button><button class="w">mean</button><button class="w">convex</button><button class="w">affine</button><button class="w">average</button></div>
@@ -826,14 +845,15 @@
 
 <section class="term verb op" id="t-v-fold" data-term="v-fold">
   <div class="term-head"><h3><span class="vb" data-v="v-fold">fold</span></h3><span class="now">was <code>fold(contributions)</code></span></div>
-  <p class="gloss">The mix's operation: join every contribution reaching one item, channel by channel, starting from rest. What Σ stands for in the relations, and what an engine exists to compute.</p>
+  <div class="gloss"><p>Merge every contribution reaching one item into one resolved record.</p><ul><li>Channel by channel, starting from rest.</li><li>What Σ stands for in the relations, and what an engine exists to compute.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">fold</button></div>
     <div class="field">math</div><div class="words"><button class="w star">reduce</button><button class="w star">sum</button><button class="w">accumulate</button><button class="w">aggregate</button><button class="w">compose</button></div>
     <div class="field">code</div><div class="words"><button class="w">collapse</button><button class="w">flatten</button><button class="w">gather</button><button class="w">total</button><button class="w">tally</button></div>
     <div class="field">audio</div><div class="words"><button class="w star">mixdown</button><button class="w">bounce</button><button class="w">master</button><button class="w">render</button></div>
     <div class="field">physics</div><div class="words"><button class="w star">superpose</button><button class="w">integrate</button><button class="w">resolve</button></div>
-    <div class="field">plain</div><div class="words"><button class="w">settle</button><button class="w">combine</button><button class="w">squash</button></div>
+    <div class="field">plain</div><div class="words"><button class="w">settle</button><button class="w">combine</button></div>
+    <div class="field">learning</div><div class="words"><button class="w star">pooling</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-v-fold" data-term="v-fold" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
 </section>
@@ -926,7 +946,7 @@
   // Wrap every role word in the page text once, remembering its inflection, so a pick can be
   // written back in the same case and number. The picker's own buttons, the "now" labels and
   // code names stay as written.
-  var SKIP = '.words, .now, .vocab td:not(.role), code, button, .keep, .r, .vb, script, style';
+  var SKIP = '.words, .now, .mine, .fixedcell, .vocab td:not(.role), code, button, .keep, .r, .vb, script, style';
   var verbAlts = [];
   WALK_VERBS.forEach(function (key) { VERB_FORMS[key].forEach(function (f) { verbAlts.push(f); }); });
   var WORD = new RegExp('\\b(' + ROLES.map(function (r) { return r + '(?:e?s)?'; }).concat(verbAlts).join('|') + ')\\b', 'gi');
@@ -1026,7 +1046,15 @@
         wi.classList.toggle('picked', !!written);
       }
     });
-    document.querySelectorAll('#mine .mine').forEach(function (td) {
+    document.querySelectorAll('.vocab tr[data-role]').forEach(function (tr) {
+      var role = tr.getAttribute('data-role'), pick = picks[role];
+      tr.querySelectorAll('td:not(.role):not(.mine)').forEach(function (td) {
+        var hit = !!pick && td.textContent.trim() === pick;
+        td.classList.toggle('picked', hit);
+        td.classList.toggle('default', hit && !chosen[role]);
+      });
+    });
+    document.querySelectorAll('.mine').forEach(function (td) {
       td.textContent = picks[td.getAttribute('data-for')] || '';
     });
     document.querySelectorAll('.vb').forEach(function (el) {
@@ -1102,6 +1130,21 @@
   dropStale();
   save();
   render();
+
+  // The nav marks the section the reader is in: the last one whose top has passed the fold line.
+  var navLinks = [].slice.call(document.querySelectorAll('nav.toc a[href^="#"]'));
+  var targets = navLinks.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
+  var ticking = false;
+  function markCurrent() {
+    ticking = false;
+    var line = 96, best = -1;
+    for (var i = 0; i < targets.length; i++) {
+      if (targets[i] && targets[i].getBoundingClientRect().top <= line) best = i;
+    }
+    navLinks.forEach(function (a, i) { a.classList.toggle('current', i === best); });
+  }
+  window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(markCurrent); } }, { passive: true });
+  markCurrent();
 })();
 </script>
 </body>
