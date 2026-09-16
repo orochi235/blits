@@ -302,7 +302,7 @@
               "star": false
             },
             {
-              "word": "profile",
+              "word": "axes",
               "star": false
             }
           ]
@@ -352,8 +352,8 @@
               "star": false
             },
             {
-              "word": "model",
-              "star": false
+              "word": "range",
+              "star": true
             },
             {
               "word": "template",
@@ -1029,10 +1029,12 @@
       "was": "handle",
       "kind": "noun",
       "gloss": {
-        "lead": "What add returns for one track.",
+        "lead": "The remote for one track: what add gives back so you can point at that track later.",
         "items": [
-          "Knobs you can turn while it runs: its weight, its rate, seek and stop. Writes take effect on the next frame.",
-          "A promise, <code>done</code>, that resolves once the track has left the mix by any route."
+          "You add a flicker. Three seconds on, the cursor leaves and you want <em>that</em> flicker to fade out, not the other twelve tracks. The handle is how you say which one.",
+          "Through it you can set the track’s weight and rate, seek its clock, and stop it. Each lands on the next frame.",
+          "Its <code>done</code> promise resolves when the track has left the mix by any route, so a host can await an effect finishing.",
+          "The same idea as the id <code>setTimeout</code> returns, or the object <code>element.animate()</code> returns, or klieg’s own <code>FireHandle</code>."
         ]
       },
       "groups": [
@@ -1628,11 +1630,12 @@
       "was": "ResolvedOffset",
       "kind": "noun",
       "gloss": {
-        "lead": "The answer for one item on one frame.",
+        "lead": "What one item looks like at one frame, after every track has been merged.",
         "items": [
-          "Every channel of the table filled, after every track’s contribution has been merged.",
-          "A complete record, where an offset is a partial one.",
-          "The host reads it and writes it to the screen."
+          "A frame is a moment: one tick of the clock across the whole mix. A sample is one cell of it: one item at that tick. A frame with 24 tube runs holds 24 samples.",
+          "Every channel of the table is filled. Where an offset is partial, a sample is complete.",
+          "The host reads it and writes it to the screen: a mesh’s position, a wedge’s opacity, a gain node’s level.",
+          "klieg’s name for it, <code>ResolvedOffset</code>, says how it is made rather than what it is."
         ]
       },
       "groups": [
@@ -1694,7 +1697,7 @@
               "star": true
             },
             {
-              "word": "frame",
+              "word": "cell",
               "star": false
             },
             {
@@ -1750,7 +1753,7 @@
       "was": "contribution",
       "kind": "noun",
       "gloss": {
-        "lead": "What one track actually does to one item on one frame, once its weight is applied.",
+        "lead": "What one track actually does to one item in one frame, once its weight is applied.",
         "items": [
           "The track’s offset after its weight has been applied. Not a fraction of the whole: two tracks each contributing gain 0.1 leave the item at 0.01.",
           "The merge combines contributions channel by channel, starting from rest."

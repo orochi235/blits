@@ -22,6 +22,7 @@
     --verb: #5c8a00;
     --verb-ink: #3f6200;
     --verb-pick-ink: #ffffff;
+    --paper: #ffffff;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -39,6 +40,7 @@
       --verb: #a3e635;
       --verb-ink: #c5f26b;
       --verb-pick-ink: #15130f;
+      --paper: #0b0a08;
     }
   }
   :root[data-theme="dark"] {
@@ -56,6 +58,7 @@
     --verb: #a3e635;
     --verb-ink: #c5f26b;
     --verb-pick-ink: #15130f;
+    --paper: #0b0a08;
   }
 
   body {
@@ -138,9 +141,9 @@
   .w.star::after { content: ' ★'; color: var(--accent); font-size: 0.8em; }
   .w.keep { border-style: dashed; background: var(--ground); }
   .w.picked { background: var(--pick); color: var(--pick-ink); border-color: var(--pick); }
-  .w.picked.default { background: var(--ground); color: var(--accent-ink); border-color: var(--pick); }
+  .w.picked.default { background: var(--paper); color: var(--accent-ink); border-color: var(--pick); box-shadow: inset 0 0 0 1px var(--pick); }
   .vocab td.picked { box-shadow: inset 0 0 0 1px var(--pick); background: var(--pick); color: var(--pick-ink); font-weight: 500; border-radius: 3px; padding-left: 6px; padding-right: 6px; }
-  .vocab td.picked.default { background: transparent; color: var(--accent-ink); }
+  .vocab td.picked.default { background: var(--paper); color: var(--accent-ink); box-shadow: inset 0 0 0 2px var(--pick); }
   .w.picked.default.star::after { color: var(--accent); }
   .r.sub.default { border-style: dashed; }
   .vb.sub.default { border-style: dashed; }
@@ -182,6 +185,7 @@
   .term.verb .w.star::after { color: var(--verb); }
   .term.verb .w:hover, .term.verb .wi:focus { border-color: var(--verb); }
   .term.verb .w.picked, .term.verb .wi.picked { background: var(--verb); color: var(--verb-pick-ink); border-color: var(--verb); }
+  .term.verb .w.picked.default { background: var(--paper); color: var(--verb-ink); border-color: var(--verb); box-shadow: inset 0 0 0 1px var(--verb); }
   .term.verb .w.picked.star::after, .term.verb .wi.picked::placeholder { color: var(--verb-pick-ink); }
   .term.verb:target .term-head h3 { text-decoration-color: var(--verb); }
   #verbs { border-top-color: var(--verb); }
@@ -459,9 +463,9 @@
   <div class="gloss"><p>The full list of channels one kind of thing can be moved on, each with its rule.</p><ul><li>klieg has three: a pose table for a letter, a part table for a tube run or a flake, a lighting table for the whole frame.</li><li>A piece writes into one table. A mix runs over one table.</li><li>It is a closed list: a piece cannot write a channel the table does not have.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">table</button></div>
-    <div class="field">lighting</div><div class="words"><button class="w star">fixture</button><button class="w star">personality</button><button class="w">patch</button><button class="w">profile</button></div>
+    <div class="field">lighting</div><div class="words"><button class="w star">fixture</button><button class="w star">personality</button><button class="w">patch</button><button class="w">axes</button></div>
     <div class="field">animation</div><div class="words"><button class="w star">rig</button><button class="w">skeleton</button><button class="w">puppet</button></div>
-    <div class="field">data</div><div class="words"><button class="w">schema</button><button class="w">shape</button><button class="w">image</button><button class="w">remit</button><button class="w star">gamut</button><button class="w">ambit</button><button class="w">model</button><button class="w">template</button></div>
+    <div class="field">data</div><div class="words"><button class="w">schema</button><button class="w">shape</button><button class="w">image</button><button class="w">remit</button><button class="w star">gamut</button><button class="w">ambit</button><button class="w star">range</button><button class="w">template</button></div>
     <div class="field">math</div><div class="words"><button class="w star">algebra</button><button class="w star">space</button><button class="w star">domain</button></div>
     <div class="field">audio</div><div class="words"><button class="w">desk</button><button class="w">console</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-table" data-term="table" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
@@ -544,7 +548,7 @@
 
 <section class="term" id="t-handle" data-term="handle">
   <div class="term-head"><h3>Handle</h3><span class="now">was <code>handle</code></span></div>
-  <div class="gloss"><p>What add returns for one track.</p><ul><li>Knobs you can turn while it runs: its weight, its rate, seek and stop. Writes take effect on the next frame.</li><li>A promise, <code>done</code>, that resolves once the track has left the mix by any route.</li></ul></div>
+  <div class="gloss"><p>The remote for one track: what add gives back so you can point at that track later.</p><ul><li>You add a flicker. Three seconds on, the cursor leaves and you want <em>that</em> flicker to fade out, not the other twelve tracks. The handle is how you say which one.</li><li>Through it you can set the track’s weight and rate, seek its clock, and stop it. Each lands on the next frame.</li><li>Its <code>done</code> promise resolves when the track has left the mix by any route, so a host can await an effect finishing.</li><li>The same idea as the id <code>setTimeout</code> returns, or the object <code>element.animate()</code> returns, or klieg’s own <code>FireHandle</code>.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">handle</button></div>
     <div class="field">math</div><div class="words"><button class="w star">binding</button><button class="w">reference</button><button class="w">variable</button><button class="w">name</button></div>
@@ -612,12 +616,12 @@
 
 <section class="term" id="t-sample" data-term="sample">
   <div class="term-head"><h3>Sample</h3><span class="now">was <code>ResolvedOffset</code></span></div>
-  <div class="gloss"><p>The answer for one item on one frame.</p><ul><li>Every channel of the table filled, after every track’s contribution has been merged.</li><li>A complete record, where an offset is a partial one.</li><li>The host reads it and writes it to the screen.</li></ul></div>
+  <div class="gloss"><p>What one item looks like at one frame, after every track has been merged.</p><ul><li>A frame is a moment: one tick of the clock across the whole mix. A sample is one cell of it: one item at that tick. A frame with 24 tube runs holds 24 samples.</li><li>Every channel of the table is filled. Where an offset is partial, a sample is complete.</li><li>The host reads it and writes it to the screen: a mesh’s position, a wedge’s opacity, a gain node’s level.</li><li>klieg’s name for it, <code>ResolvedOffset</code>, says how it is made rather than what it is.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">sample</button></div>
     <div class="field">math</div><div class="words"><button class="w star">point</button><button class="w">value</button><button class="w">image</button><button class="w">sum</button><button class="w">result</button></div>
     <div class="field">audio</div><div class="words"><button class="w star">output</button><button class="w">master</button><button class="w">mixdown</button><button class="w">readout</button><button class="w">reading</button></div>
-    <div class="field">animation</div><div class="words"><button class="w star">pose</button><button class="w">frame</button><button class="w">state</button><button class="w">snapshot</button></div>
+    <div class="field">animation</div><div class="words"><button class="w star">pose</button><button class="w">cell</button><button class="w">state</button><button class="w">snapshot</button></div>
     <div class="field">electrical</div><div class="words"><button class="w star">outlet</button><button class="w">tap</button><button class="w">feed</button><button class="w">terminal</button><button class="w">resultant</button></div>
     <div class="field">learning</div><div class="words"><button class="w">vector</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-sample" data-term="sample" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
@@ -626,7 +630,7 @@
 
 <section class="term" id="t-contribution" data-term="contribution">
   <div class="term-head"><h3>Contribution</h3><span class="now">was <code>contribution</code></span></div>
-  <div class="gloss"><p>What one track actually does to one item on one frame, once its weight is applied.</p><ul><li>The track’s offset after its weight has been applied. Not a fraction of the whole: two tracks each contributing gain 0.1 leave the item at 0.01.</li><li>The merge combines contributions channel by channel, starting from rest.</li></ul></div>
+  <div class="gloss"><p>What one track actually does to one item in one frame, once its weight is applied.</p><ul><li>The track’s offset after its weight has been applied. Not a fraction of the whole: two tracks each contributing gain 0.1 leave the item at 0.01.</li><li>The merge combines contributions channel by channel, starting from rest.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">contribution</button></div>
     <div class="field">math</div><div class="words"><button class="w star">summand</button><button class="w">addend</button><button class="w">operand</button><button class="w">component</button><button class="w">increment</button><button class="w">delta</button></div>
