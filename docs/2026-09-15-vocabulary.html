@@ -388,7 +388,7 @@
 </table></div>
 
 <h2 id="pick">Your set</h2>
-<p class="legend">Click a word under any term to pick it, write one in, or click the dashed incumbent to commit to keeping it. A word you chose has a white border inside its edge and its substitutions are boxed. A default the page picked for you has neither: its substitutions carry a dashed underline until you click it. <span class="star">★</span> marks the ones I would defend. The page opens on the recommended set and remembers your picks in this browser only. <button class="clear" id="reset" type="button">Reset to recommended</button> <button class="clear" id="clear" type="button">Clear all</button></p>
+<p class="legend">Click a word under any term to pick it, write one in, or click the dashed incumbent to commit to keeping it. A word you chose, the current one included, has a white border inside its edge and is boxed wherever it appears. A default the page picked for you has neither: it carries a dashed underline until you click it. <span class="star">★</span> marks the ones I would defend. The page opens on the recommended set and remembers your picks in this browser only. <button class="clear" id="reset" type="button">Reset to recommended</button> <button class="clear" id="clear" type="button">Clear all</button></p>
 <div class="tbl"><table id="mine">
   <tr><th>yours</th><th>role</th><th>was</th></tr>
   <tr><td class="mine" data-for="offset"></td><td class="role">emitted value</td><td class="now">offset</td></tr>
@@ -1080,15 +1080,15 @@
       var out = conjugate(word, form);
       if (el.getAttribute('data-cap')) out = out.charAt(0).toUpperCase() + out.slice(1);
       el.textContent = out;
-      el.classList.toggle('sub', word !== base);
-      el.classList.toggle('default', word !== base && !chosen[key]);
+      el.classList.toggle('sub', !!picks[key]);
+      el.classList.toggle('default', !!picks[key] && !chosen[key]);
     });
     document.querySelectorAll('.r').forEach(function (el) {
       var role = el.getAttribute('data-r');
       var word = picks[role];
       el.textContent = inflect(word || role, el);
-      el.classList.toggle('sub', !!word && word !== role);
-      el.classList.toggle('default', !!word && word !== role && !chosen[role]);
+      el.classList.toggle('sub', !!word);
+      el.classList.toggle('default', !!word && !chosen[role]);
     });
     fixArticles();
   }
