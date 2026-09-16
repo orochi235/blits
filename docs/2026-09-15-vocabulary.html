@@ -93,7 +93,7 @@
   nav.toc li { position: relative; }
   nav.toc a { color: var(--muted); text-decoration: none; }
   nav.toc a.current { color: var(--ink); }
-  nav.toc a.current::before { content: '→'; position: absolute; left: -1.25em; color: var(--accent); }
+  nav.toc a.current::before { content: '▸'; position: absolute; left: -1.1em; color: var(--accent); }
   nav.toc a.current .vb::before, nav.toc li:has(> a.current > .vb) > a::before { color: var(--verb); }
   nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
   nav.toc .grp { color: var(--ink); font-weight: 600; margin-top: 14px; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -141,10 +141,9 @@
   .w.star::after { content: ' ★'; color: var(--accent); font-size: 0.8em; }
   .w.keep { border-style: dashed; background: var(--ground); }
   .w.picked { background: var(--pick); color: var(--pick-ink); border-color: var(--pick); }
-  .w.picked.default { background: var(--paper); color: var(--accent-ink); border-color: var(--pick); box-shadow: inset 0 0 0 1px var(--pick); }
+  .w.picked.chosen { box-shadow: inset 0 0 0 2px var(--paper); }
   .vocab td.picked { box-shadow: inset 0 0 0 1px var(--pick); background: var(--pick); color: var(--pick-ink); font-weight: 500; border-radius: 3px; padding-left: 6px; padding-right: 6px; }
-  .vocab td.picked.default { background: var(--paper); color: var(--accent-ink); box-shadow: inset 0 0 0 2px var(--pick); }
-  .w.picked.default.star::after { color: var(--accent); }
+  .vocab td.picked.chosen { box-shadow: inset 0 0 0 1px var(--pick), inset 0 0 0 3px var(--paper); }
   .r.sub.default { border-style: dashed; }
   .vb.sub.default { border-style: dashed; }
   .w.picked.star::after { color: var(--pick-ink); }
@@ -185,7 +184,6 @@
   .term.verb .w.star::after { color: var(--verb); }
   .term.verb .w:hover, .term.verb .wi:focus { border-color: var(--verb); }
   .term.verb .w.picked, .term.verb .wi.picked { background: var(--verb); color: var(--verb-pick-ink); border-color: var(--verb); }
-  .term.verb .w.picked.default { background: var(--paper); color: var(--verb-ink); border-color: var(--verb); box-shadow: inset 0 0 0 1px var(--verb); }
   .term.verb .w.picked.star::after, .term.verb .wi.picked::placeholder { color: var(--verb-pick-ink); }
   .term.verb:target .term-head h3 { text-decoration-color: var(--verb); }
   #verbs { border-top-color: var(--verb); }
@@ -388,7 +386,7 @@
 </table></div>
 
 <h2 id="pick">Your set</h2>
-<p class="legend">Click a word under any term to pick it, write one in, or click the dashed incumbent to commit to keeping it. A recommended default shows as an outline until you click it, and its substitutions are boxed dashed; a pick of your own is filled and boxed solid. <span class="star">★</span> marks the ones I would defend. The page opens on the recommended set and remembers your picks in this browser only. <button class="clear" id="reset" type="button">Reset to recommended</button> <button class="clear" id="clear" type="button">Clear all</button></p>
+<p class="legend">Click a word under any term to pick it, write one in, or click the dashed incumbent to commit to keeping it. A word you chose has a white border inside its edge; a default the page picked for you does not, and its substitutions are boxed dashed until you click it. <span class="star">★</span> marks the ones I would defend. The page opens on the recommended set and remembers your picks in this browser only. <button class="clear" id="reset" type="button">Reset to recommended</button> <button class="clear" id="clear" type="button">Clear all</button></p>
 <div class="tbl"><table id="mine">
   <tr><th>yours</th><th>role</th><th>was</th></tr>
   <tr><td class="mine" data-for="offset"></td><td class="role">emitted value</td><td class="now">offset</td></tr>
@@ -643,7 +641,7 @@
 
 <section class="term" id="t-context" data-term="context">
   <div class="term-head"><h3>Context</h3><span class="now">was <code>ctx</code></span></div>
-  <div class="gloss"><p>What a piece is handed beside the phase and the item.</p><ul><li>The frame’s clock, and the time since the last frame.</li><li>How long the track has been playing, which pass this is, and the track’s weight.</li><li>The piece’s own state for this item.</li><li>Anything the host adds, such as where the cursor is.</li></ul></div>
+  <div class="gloss"><p>The relevant state of the world in this frame, as a piece sees it, for one item.</p><ul><li>Everything a piece may read but did not compute, and nothing else. It is handed in beside the phase and the item.</li><li>Shared by the whole frame: the clock, and the time since the last frame.</li><li>Particular to the track: how long it has been playing, which pass this is, its weight.</li><li>Particular to this item: the piece’s own state for it.</li><li>Whatever the host adds, such as where the cursor is.</li></ul></div>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">context</button></div>
     <div class="field">software</div><div class="words"><button class="w">setting</button><button class="w">env</button><button class="w">environment</button><button class="w">scope</button><button class="w">frame</button><button class="w">args</button><button class="w">props</button><button class="w">bag</button></div>
@@ -1006,7 +1004,12 @@
     });
   }
 
-  function plural(w) { return /(s|x|ch|sh)$/.test(w) ? w + 'es' : w + 's'; }
+  var PLURALS = { axis: 'axes', basis: 'bases', index: 'indices', vertex: 'vertices', matrix: 'matrices', radius: 'radii', locus: 'loci', persona: 'personae', datum: 'data', criterion: 'criteria' };
+  function plural(w) {
+    if (PLURALS[w]) return PLURALS[w];
+    if (/[^aeiou]y$/.test(w)) return w.slice(0, -1) + 'ies';
+    return /(s|x|z|ch|sh)$/.test(w) ? w + 'es' : w + 's';
+  }
   function inflect(word, el) {
     if (el.getAttribute('data-plural')) word = plural(word);
     if (el.getAttribute('data-cap')) word = word.charAt(0).toUpperCase() + word.slice(1);
@@ -1042,6 +1045,7 @@
         onButton = onButton || on;
         b.classList.toggle('picked', on);
         b.classList.toggle('default', on && !chosen[term]);
+        b.classList.toggle('chosen', on && !!chosen[term]);
         b.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
       var wi = sec.querySelector('.wi');
@@ -1057,6 +1061,7 @@
         var hit = !!pick && td.textContent.trim() === pick;
         td.classList.toggle('picked', hit);
         td.classList.toggle('default', hit && !chosen[role]);
+        td.classList.toggle('chosen', hit && !!chosen[role]);
       });
     });
     document.querySelectorAll('.mine').forEach(function (td) {
