@@ -166,6 +166,8 @@
   a.vb:hover { text-decoration-color: var(--verb); }
   a.r.sub:hover, a.vb.sub:hover { text-decoration: underline; text-underline-offset: 0.15em; }
   .r.sub { color: var(--accent-ink); border: 1px solid var(--accent); border-radius: 3px; padding: 0 0.28em; margin: 0 0.04em; }
+  .r.sub.kept, .vb.sub.kept { color: var(--ink); border-color: var(--ink); }
+  .w.keep.picked { background: var(--ink); color: var(--ground); border-color: var(--ink); }
   .term:target { scroll-margin-top: 24px; }
   .term-head h3 .sub.default { cursor: pointer; }
   .term-head h3 .sub.default:hover { border-style: solid; }
@@ -1082,6 +1084,7 @@
       el.textContent = out;
       el.classList.toggle('sub', !!picks[key]);
       el.classList.toggle('default', !!picks[key] && !chosen[key]);
+      el.classList.toggle('kept', picks[key] === base);
     });
     document.querySelectorAll('.r').forEach(function (el) {
       var role = el.getAttribute('data-r');
@@ -1089,6 +1092,7 @@
       el.textContent = inflect(word || role, el);
       el.classList.toggle('sub', !!word);
       el.classList.toggle('default', !!word && !chosen[role]);
+      el.classList.toggle('kept', word === role);
     });
     fixArticles();
   }
