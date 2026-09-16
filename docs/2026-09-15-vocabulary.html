@@ -941,6 +941,9 @@
   }
   function dropStale() {
     Object.keys(picks).forEach(function (term) {
+      // A pick that is not the recommended default can only have come from the reader, so it
+      // counts as chosen even if it was stored before the page recorded that.
+      if (picks[term] !== DEFAULTS[term]) chosen[term] = true;
       var sec = document.querySelector('.term[data-term="' + term + '"]');
       if (!sec) { delete picks[term]; delete chosen[term]; delete written[term]; return; }
       var onButton = [].some.call(sec.querySelectorAll('.w'), function (b) { return b.textContent.trim() === picks[term]; });
