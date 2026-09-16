@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>blits schema</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #f6f4ef;
+    --ink: #1d1a16;
+    --muted: #6b645a;
+    --rule: #ddd7cb;
+    --accent: #b8641a;
+    --accent-ink: #7a4110;
+    --code-bg: #eeeae1;
+    --code-ink: #2a2622;
+    --mark: #fff3dc;
+    --nav-bg: #f0ece3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #15130f;
+      --ink: #ece6da;
+      --muted: #9a9081;
+      --rule: #2c2822;
+      --accent: #e8a24a;
+      --accent-ink: #f2c179;
+      --code-bg: #1e1b16;
+      --code-ink: #e2dccf;
+      --mark: #2a2214;
+      --nav-bg: #1a1713;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #15130f;
+    --ink: #ece6da;
+    --muted: #9a9081;
+    --rule: #2c2822;
+    --accent: #e8a24a;
+    --accent-ink: #f2c179;
+    --code-bg: #1e1b16;
+    --code-ink: #e2dccf;
+    --mark: #2a2214;
+    --nav-bg: #1a1713;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: Literata, Georgia, 'Times New Roman', serif;
+    font-size: 17px;
+    line-height: 1.55;
+    padding-inline: 16px;
+    padding-block: 0 64px;
+  }
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  @media (min-width: 960px) {
+    .page { grid-template-columns: 200px minmax(0, 72ch); gap: 56px; }
+    nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; max-height: 100vh; overflow-y: auto; padding-top: 48px; }
+  }
+
+  h1, h2, h3, nav, .eyebrow, th, dt, .status { font-family: 'Instrument Sans', 'Helvetica Neue', Arial, sans-serif; }
+  h1 { font-size: 2.4rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.05; margin: 0 0 8px; text-wrap: balance; }
+  h2 { font-size: 1.35rem; font-weight: 600; margin: 56px 0 12px; padding-top: 16px; border-top: 1px solid var(--rule); text-wrap: balance; }
+  h3 { font-size: 1.05rem; font-weight: 600; margin: 28px 0 8px; }
+  p { margin: 0 0 14px; }
+  header { padding-top: 48px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; color: var(--accent); font-weight: 600; margin-bottom: 12px; }
+  .status { display: inline-block; font-size: 0.78rem; font-weight: 500; color: var(--accent-ink); background: var(--mark); padding: 3px 9px; border-radius: 3px; margin-top: 10px; }
+  .lede { font-size: 1.05rem; color: var(--ink); }
+  .meta { color: var(--muted); font-size: 0.95rem; }
+  .meta b { color: var(--ink); font-weight: 500; }
+
+  nav.toc ol { list-style: none; margin: 0; padding: 0; font-size: 0.86rem; line-height: 1.4; }
+  nav.toc li { margin: 0 0 7px; }
+  nav.toc a { color: var(--muted); text-decoration: none; }
+  nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
+  nav.toc .grp { color: var(--ink); font-weight: 600; margin-top: 14px; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  a { color: var(--accent-ink); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  pre, code { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; }
+  code { font-size: 0.86em; background: var(--code-bg); color: var(--code-ink); padding: 1px 5px; border-radius: 3px; }
+  pre { background: var(--code-bg); color: var(--code-ink); padding: 14px 16px; border-radius: 4px; overflow-x: auto; font-size: 0.8rem; line-height: 1.5; margin: 0 0 18px; }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .cm { color: var(--muted); }
+
+  .tbl { overflow-x: auto; margin: 0 0 18px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+  td code { white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; }
+
+  dl { margin: 0 0 18px; display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; }
+  dt { font-weight: 600; font-size: 0.95rem; padding-top: 2px; }
+  dd { margin: 0; }
+  @media (max-width: 560px) { dl { grid-template-columns: 1fr; gap: 2px; } dd { margin-bottom: 10px; } }
+
+  ul { padding-left: 1.2em; margin: 0 0 14px; }
+  li { margin-bottom: 6px; }
+  li > b, p > b { font-weight: 500; }
+
+  figure { margin: 18px 0 22px; }
+  figure svg { width: 100%; height: auto; display: block; }
+  figcaption { font-size: 0.85rem; color: var(--muted); margin-top: 8px; font-family: 'Instrument Sans', sans-serif; }
+  .dia text { font-family: 'Instrument Sans', sans-serif; font-size: 12px; fill: var(--ink); }
+  .dia .sub { fill: var(--muted); font-size: 10.5px; }
+  .dia .box { fill: var(--code-bg); stroke: var(--rule); }
+  .dia .hot { stroke: var(--accent); }
+  .dia .arrow { stroke: var(--muted); fill: none; }
+  .dia .head { fill: var(--muted); }
+
+  .callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; margin: 0 0 18px; color: var(--ink); }
+  .callout .eyebrow { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+<nav class="toc" aria-label="Sections">
+  <ol>
+    <li class="grp">Shape</li>
+    <li><a href="#picture">In one picture</a></li>
+    <li><a href="#vocab">Vocabulary</a></li>
+    <li class="grp">Schema</li>
+    <li><a href="#channels">Channels</a></li>
+    <li><a href="#pieces">Pieces</a></li>
+    <li><a href="#tracks">Tracks</a></li>
+    <li><a href="#mix">Mix</a></li>
+    <li><a href="#signals">Signals</a></li>
+    <li class="grp">Behavior</li>
+    <li><a href="#time">Time</a></li>
+    <li><a href="#blend">Blending</a></li>
+    <li><a href="#state">Piece state</a></li>
+    <li><a href="#engines">Engines</a></li>
+    <li class="grp">Consumers</li>
+    <li><a href="#tables">Channel tables</a></li>
+    <li><a href="#klieg">The klieg port</a></li>
+    <li class="grp">Record</li>
+    <li><a href="#against">Decided against</a></li>
+    <li><a href="#tests">Tests</a></li>
+    <li><a href="#open">Open</a></li>
+  </ol>
+</nav>
+
+<main>
+<header>
+  <div class="eyebrow">blits · design</div>
+  <h1>An effects schema, and the API around it</h1>
+  <p class="lede">A small runtime package for concurrent effects. Each effect runs on its own clock with its own state and weight, and a mix folds them into one value per item per frame by rules that belong to the channel, not the effect.</p>
+  <p class="meta"><b>For:</b> whoever builds <code>blits</code>, and whoever ports klieg, wod, sherpa or magicsmoke onto it. <b>Answers:</b> what the vocabulary is, what an author writes, what a host calls, and where a second engine would plug in.</p>
+  <span class="status">Design under review · nothing built · 2026-09-15</span>
+</header>
+
+<h2 id="picture">In one picture</h2>
+<p>A host steps the mix once a frame. For each item it wants drawn, the mix samples every track that reaches that item, scales each sample toward its channel's rest by the track's current weight, joins them channel by channel, and hands back one offset. The host writes that offset wherever it goes: a three.js mesh, an SVG wedge, a CSS transform, an audio gain.</p>
+
+<figure>
+<svg class="dia" viewBox="0 0 720 250" role="img" aria-label="Pipeline: tracks sample a piece, weights scale toward rest, channels join, one offset per item">
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="head"/></marker></defs>
+  <!-- tracks -->
+  <text x="20" y="22" class="sub">tracks, each on its own clock</text>
+  <rect x="20" y="32" width="170" height="44" rx="3" class="box"/>
+  <text x="32" y="50">flicker · loop · w 1.0</text>
+  <text x="32" y="66" class="sub">t = (now − start) · rate mod pass</text>
+  <rect x="20" y="86" width="170" height="44" rx="3" class="box hot"/>
+  <text x="32" y="104">power · state · w 0.4 ↑</text>
+  <text x="32" y="120" class="sub">fading in over 300 ms</text>
+  <rect x="20" y="140" width="170" height="44" rx="3" class="box"/>
+  <text x="32" y="158">slam → rest · once · w 1.0</text>
+  <text x="32" y="174" class="sub">keys, retargeted from current</text>
+  <!-- sample -->
+  <path d="M190 54 H240" class="arrow" marker-end="url(#ah)"/>
+  <path d="M190 108 H240" class="arrow" marker-end="url(#ah)"/>
+  <path d="M190 162 H240" class="arrow" marker-end="url(#ah)"/>
+  <rect x="242" y="32" width="120" height="152" rx="3" class="box"/>
+  <text x="256" y="56">piece.at(t,</text>
+  <text x="256" y="72">  item, ctx)</text>
+  <text x="256" y="104" class="sub">partial offset:</text>
+  <text x="256" y="120" class="sub">{ gain: 0.1 }</text>
+  <text x="256" y="136" class="sub">{ gain: 0 }</text>
+  <text x="256" y="152" class="sub">{ position: […] }</text>
+  <!-- scale -->
+  <path d="M362 108 H412" class="arrow" marker-end="url(#ah)"/>
+  <rect x="414" y="32" width="120" height="152" rx="3" class="box"/>
+  <text x="428" y="56">scale(v, w)</text>
+  <text x="428" y="72" class="sub">toward rest</text>
+  <text x="428" y="104" class="sub">gain 1→0.1 at w 1</text>
+  <text x="428" y="120" class="sub">gain 1→0.6 at w .4</text>
+  <text x="428" y="136" class="sub">position · 1</text>
+  <text x="428" y="160" class="sub">rest-less channels gate</text>
+  <!-- join -->
+  <path d="M534 108 H584" class="arrow" marker-end="url(#ah)"/>
+  <rect x="586" y="32" width="114" height="152" rx="3" class="box hot"/>
+  <text x="600" y="56">join per</text>
+  <text x="600" y="72">channel</text>
+  <text x="600" y="104" class="sub">gain: mul → 0.06</text>
+  <text x="600" y="120" class="sub">position: sum</text>
+  <text x="600" y="136" class="sub">dark: max</text>
+  <text x="600" y="152" class="sub">color: last</text>
+  <!-- out -->
+  <path d="M643 184 V214" class="arrow" marker-end="url(#ah)"/>
+  <text x="586" y="238">one offset, this item, this frame</text>
+  <text x="20" y="238" class="sub">The host calls mix.step(now) once, then mix.sample(item) per item. Same now → same answer, however many times it asks.</text>
+</svg>
+<figcaption>Three tracks reaching one part of a tube sign. The channel table decides how the three gains combine; the tracks only decide what they contribute and how much of it is on.</figcaption>
+</figure>
+
+<p>Everything klieg does today fits this picture, in three copies with three channel sets. wod's transition tracks are the same picture with one item type and a retargeting tween. sherpa's seam is two tracks. magicsmoke's fault is one track whose weight is a signal.</p>
+
+<h2 id="vocab">Vocabulary</h2>
+<p>Ten words. Every other name in the package is built from these.</p>
+<dl>
+  <dt>Offset</dt><dd>A partial record of channel values. A piece writes only the channels it drives; an absent channel means no contribution.</dd>
+  <dt>Channel</dt><dd>One field of an offset, with its own arithmetic: how two contributions join, what rest is if there is one, how to scale toward rest, how to lerp.</dd>
+  <dt>Table</dt><dd>The channel set for one kind of offset. klieg's pose, klieg's part, wod's presence are each a table.</dd>
+  <dt>Item</dt><dd>What is being driven: a letter, a part, a wedge, a page, or a unit value for a system with no item dimension such as klieg's lighting.</dd>
+  <dt>Piece</dt><dd>A pure function of normalized time and an item that returns an offset. Optionally stateful. This is klieg's word and it keeps it.</dd>
+  <dt>Track</dt><dd>A piece plus its own playback: start, rate, loop, weight envelope, target, and blend options. The unit a host adds and stops.</dd>
+  <dt>Mix</dt><dd>The set of live tracks over one table, stepped once a frame and sampled per item. What a host holds.</dd>
+  <dt>Signal</dt><dd>A 0..1 scalar resolved per item per frame from something outside the clock: the cursor, a hover value, another track's state.</dd>
+  <dt>Handle</dt><dd>What <code>add</code> returns: the live controls on one track, and its completion.</dd>
+  <dt>Engine</dt><dd>The implementation behind a mix. One ships. The seam is the mix's own interface.</dd>
+</dl>
+
+<h2 id="channels">Channels</h2>
+<p>The arithmetic of blending is a property of the operand type, so it lives on the channel and nowhere else. Every merge, fade, crossfade, and retarget in the package is one of these four operations.</p>
+
+<pre><code>interface Channel&lt;V&gt; {
+  <span class="cm">/** Identity. Absent means the channel has none: `color` replaces rather than contributes. */</span>
+  rest?: V;
+  <span class="cm">/** Fold two contributions into one. */</span>
+  join(a: V, b: V): V;
+  <span class="cm">/** Fade toward `rest` by weight 0..1. Required when `rest` is set; absent otherwise. */</span>
+  scale?(v: V, w: number): V;
+  <span class="cm">/** Interpolate, for retargeting and for blending alternatives. */</span>
+  lerp(a: V, b: V, u: number): V;
+}
+
+type Table&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&gt;&gt; };</code></pre>
+
+<p>Stock channels cover every case the four repos hold today:</p>
+<div class="tbl"><table>
+  <tr><th>channel</th><th>rest</th><th>join</th><th>scale</th><th>lerp</th><th>used by</th></tr>
+  <tr><td><code>sum()</code></td><td class="num">0</td><td>a + b</td><td>v · w</td><td>linear</td><td>position axes, rotation, crawl, yaw, pitch, offset</td></tr>
+  <tr><td><code>mul()</code></td><td class="num">1</td><td>a · b</td><td>1 + (v − 1) · w</td><td>linear</td><td>gain, scale, opacity, hold</td></tr>
+  <tr><td><code>max()</code></td><td class="num">0</td><td>max(a, b)</td><td>v · w</td><td>linear</td><td>dark, aperture</td></tr>
+  <tr><td><code>last()</code></td><td>none</td><td>b</td><td>—</td><td>caller's</td><td>color, offsetAngle</td></tr>
+  <tr><td><code>vec(n, ch)</code></td><td>per axis</td><td>per axis</td><td>per axis</td><td>per axis</td><td>Vec3 position, premultiplied light</td></tr>
+</table></div>
+
+<p>A channel with no rest cannot fade. The mix handles that in one way: below a weight threshold the contribution is dropped, above it the value passes through whole. That is the rule hinge's blend mode already applies to color, and it is stated here once so no consumer rediscovers it. Retargeting is the way a rest-less channel does move smoothly, since a lerp from a sampled value needs no identity.</p>
+
+<p>A table is plain data, so a consumer declares one in a line and the mix is typed by it:</p>
+<pre><code>const PART = table&lt;PartOffset&gt;({
+  gain: mul(), scale: mul(), dark: max(), crawl: sum(),
+  position: vec(3, sum()), rotation: vec(3, sum()),
+  light: vec(3, sum()), color: last({ lerp: mixHex }),
+});</code></pre>
+
+<h2 id="pieces">Pieces</h2>
+<p>A piece is what an author writes. It is klieg's <code>EffectPiece</code> with two additions: the context carries absolute time as well as normalized, and a piece may declare state.</p>
+
+<pre><code>interface Piece&lt;I, O, S = void&gt; {
+  <span class="cm">/** Milliseconds per pass. 0 means aperiodic: `t` is always 0 and the piece reads `ctx.elapsed`. */</span>
+  duration: number;
+  at(t: number, item: I, ctx: Ctx&lt;S&gt;): Partial&lt;O&gt;;
+
+  <span class="cm">/** Per-item state, created on the first frame this piece sees an item. */</span>
+  state?(item: I): S;
+  <span class="cm">/** Advances state once per item per frame, before any `at` that frame. `dt` is Infinity under reduced motion. */</span>
+  step?(state: S, dt: number, item: I, ctx: Ctx&lt;S&gt;): void;
+
+  <span class="cm">/** Present when the piece was authored as keyframes, so an engine that reads data can. */</span>
+  readonly keys?: readonly Keyframe&lt;O&gt;[];
+}
+
+interface Ctx&lt;S = void&gt; {
+  <span class="cm">/** The mix clock at this frame. Identical for every sample in the frame. */</span>
+  now: number;
+  <span class="cm">/** Milliseconds since the previous step. Infinity under reduced motion: snap, never integrate. */</span>
+  dt: number;
+  <span class="cm">/** Milliseconds this track has been playing, rate applied. What lets a piece see across passes. */</span>
+  elapsed: number;
+  <span class="cm">/** Which pass this is, 0 first. */</span>
+  pass: number;
+  <span class="cm">/** This track's current weight, so a piece that wants to know how "on" it is can. */</span>
+  weight: number;
+  <span class="cm">/** This item's state, when the piece declares one. */</span>
+  state: S;
+  <span class="cm">/** Anything the host adds for its own pieces: klieg's pointer and pointerInWord go here. */</span>
+  host: unknown;
+}</code></pre>
+
+<p>Two authoring forms build a piece. Both return the same interface, so a track cannot tell them apart.</p>
+<div class="tbl"><table>
+  <tr><th>form</th><th>signature</th><th>what it is</th></tr>
+  <tr><td><code>fn</code></td><td><code>piece(duration, at, { state?, step? })</code></td><td>Procedural. Flicker, roving, a hash walk, a starter strike. Only a JS engine can run one.</td></tr>
+  <tr><td><code>keys</code></td><td><code>keys(duration, stops, { ease?, easeBy?, delayBy? })</code></td><td>Declarative stops, klieg's transition sugar and wod's keyframes. Data preserved on <code>piece.keys</code> for an engine that reads data instead of calling functions.</td></tr>
+</table></div>
+
+<p>Wrappers stay wrappers. klieg's <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>hinge</code> and <code>partition</code> take a piece and return a piece, and none of them changes. Composition at the piece level is for reshaping one contribution; composition at the mix level is for running several. The two do not merge.</p>
+
+<h2 id="tracks">Tracks</h2>
+<p>A track is a piece given a clock and a volume knob. This is the unit that answers "independent state and timeframe": two tracks of the same piece are two clocks, two states, two weights.</p>
+
+<pre><code>interface TrackSpec&lt;I, O&gt; {
+  piece: Piece&lt;I, O, any&gt;;
+  <span class="cm">/** Which items this track reaches. Default: all of them. Resolved once when the track is added. */</span>
+  target?: (item: I) =&gt; boolean;
+
+  <span class="cm">// clock</span>
+  <span class="cm">/** Mix-clock ms the track starts. Default: the next step. */</span>
+  start?: number;
+  /** Playback rate. 1 is real time; 0 freezes. */
+  rate?: number;
+  <span class="cm">/** true loops for good, false plays one pass and holds its last value, n plays n passes. */</span>
+  loop?: boolean | number;
+  <span class="cm">/** Per-item phase spread, klieg's stagger grammar. Ramps t; does not offset it. */</span>
+  stagger?: number | StaggerSpec;
+
+  <span class="cm">// weight</span>
+  <span class="cm">/** Steady weight, or a signal read per item per frame. Default 1. */</span>
+  weight?: number | Signal&lt;I&gt;;
+  <span class="cm">/** Ramp in and out, ms. Out applies on `stop()` and when a finite loop ends. */</span>
+  fade?: { in?: number; out?: number; ease?: Easing };
+  <span class="cm">/** Tracks sharing a group have their summed weight capped at 1 within it. klieg's phase rule. */</span>
+  group?: string;
+
+  <span class="cm">// blend</span>
+  <span class="cm">/** A `keys` piece whose first stop reads "wherever this item is now", lerped over the pass. */</span>
+  from?: 'current';
+}
+
+interface Handle {
+  readonly id: number;
+  readonly state: 'pending' | 'live' | 'fading' | 'done';
+  <span class="cm">/** Live. Writes land on the next step. */</span>
+  weight: number;
+  rate: number;
+  <span class="cm">/** Jumps the track's own clock. */</span>
+  seek(elapsed: number): void;
+  <span class="cm">/** Ramps out over `fade.out` unless given a fade here; `at: 'rest'` waits per item for a resting sample first. */</span>
+  stop(opts?: { fade?: number; at?: 'rest'; deadline?: number }): void;
+  <span class="cm">/** Resolves when the track has been removed from the mix, however that happened. */</span>
+  readonly done: Promise&lt;void&gt;;
+}</code></pre>
+
+<p>Weights are the only knob the mix owns. Fade, crossfade, handover, alternatives, and hinge's continuous mode are all weights over time; the section on blending shows each one as such. A piece never sees a weight applied to its output, it only sees the number in <code>ctx.weight</code> if it cares.</p>
+
+<h2 id="mix">Mix</h2>
+<p>What a host holds. The methods are few because the tracks carry the options.</p>
+
+<pre><code>function mix&lt;I, O&gt;(table: Table&lt;O&gt;, opts?: MixOptions&lt;I, O&gt;): Mix&lt;I, O&gt;;
+
+interface MixOptions&lt;I, O&gt; {
+  engine?: Engine;                <span class="cm">// default: mixer</span>
+  <span class="cm">/** Reduced motion: fades and warm-ups snap, `dt` reads Infinity. Read once at creation, or a signal. */</span>
+  reduce?: boolean | (() =&gt; boolean);
+  <span class="cm">/** Merged into every `ctx.host`. */</span>
+  host?: unknown;
+}
+
+interface Mix&lt;I, O&gt; {
+  <span class="cm">/** Adds a track. It begins on the next step unless `start` says otherwise. */</span>
+  add(spec: TrackSpec&lt;I, O&gt;): Handle;
+  <span class="cm">/** N tracks whose weights split one signal, k in 0..1. Two pieces crossfade; more make stops. */</span>
+  blend(pieces: readonly Piece&lt;I, O&gt;[], by: Signal&lt;I&gt;, spec?: Omit&lt;TrackSpec&lt;I, O&gt;, 'piece' | 'weight'&gt;): Handle[];
+
+  <span class="cm">/** Once per frame. Advances every clock, weight and state. Idempotent for a repeated `now`. */</span>
+  step(now: number): void;
+  <span class="cm">/** The merged offset for one item at the stepped frame. `out` is written in place when given. */</span>
+  sample(item: I, out?: O): O;
+  <span class="cm">/** Every channel at rest for this item this frame, so a host can skip the write. */</span>
+  atRest(item: I): boolean;
+
+  <span class="cm">/** Anything still contributing, fading, or pending. A host stops its loop when this is false. */</span>
+  readonly live: boolean;
+  <span class="cm">/** Stops every track, with the given fade. */</span>
+  clear(opts?: { fade?: number }): void;
+  <span class="cm">/** Forgets per-item state. Call when an item is retired, or let the WeakMap do it. */</span>
+  forget(item: I): void;
+}</code></pre>
+
+<p>Items are not registered. State lives in a <code>WeakMap</code> keyed by the item object, created on first sample and stepped by the gap in <code>now</code> since that item was last stepped. That is the rule klieg's dwell arrived at, and it means a part a wrapper leaves unasked for a while catches up rather than resuming where it paused.</p>
+
+<h2 id="signals">Signals</h2>
+<p>A signal is a 0..1 scalar resolved per item per frame. It is the package's one input type from outside the clock, and it plugs in at exactly two places: a track's <code>weight</code>, and <code>blend</code>'s selector.</p>
+
+<pre><code>type Signal&lt;I&gt; = (item: I, ctx: Ctx) =&gt; number;
+
+<span class="cm">// stock combinators; klieg's own `near`, `dwell`, `level` are consumers' signals built on these</span>
+function peak&lt;I&gt;(...signals: Signal&lt;I&gt;[]): Signal&lt;I&gt;;          <span class="cm">// max</span>
+function ease&lt;I&gt;(of: Signal&lt;I&gt;, { riseMs, fallMs }): Signal&lt;I&gt;;  <span class="cm">// stateful: climbs and drains toward its input</span>
+function level&lt;I&gt;(initial?: number): Signal&lt;I&gt; &amp; { set(v: number): void };  <span class="cm">// host-written</span>
+function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;          <span class="cm">// 0 below `at`, 1 at or above</span></code></pre>
+
+<p>A stateful signal keeps state the same way a stateful piece does: per item, keyed by identity, stepped by the gap in <code>now</code>. <code>ease</code> is klieg's <code>dwell</code> with the cursor factored out.</p>
+
+<h2 id="time">Time</h2>
+<ul>
+  <li><b>The mix is pull-based on a host clock.</b> The host owns the frame loop and calls <code>step(now)</code> with milliseconds on any monotonic clock it likes. klieg passes its <code>Clock.now()</code>; wod passes <code>performance.now()</code>; a test passes integers.</li>
+  <li><b>Everything in a frame reads one <code>now</code>.</b> A second <code>step</code> with the same value is a no-op, and every <code>sample</code> between steps answers from the same frame. This is what makes state advance once however many probes a wrapper makes.</li>
+  <li><b>A track's clock is <code>(now − start) · rate</code>.</b> Its pass is that modulo <code>duration</code>; both reach the piece, as <code>t</code> and <code>ctx.elapsed</code>. A rate change rebases so <code>elapsed</code> is continuous.</li>
+  <li><b><code>dt</code> is derived, never supplied.</b> The gap between this step and the last, per item, and <code>Infinity</code> under reduced motion. A piece that integrates guards against that with a snap, as klieg's already do.</li>
+  <li><b>Calls land on the next step.</b> A host writes <code>handle.weight</code> or calls <code>stop</code> on its own clock; the mix applies it at the first <code>now</code> that sees it. Nothing changes mid-frame.</li>
+</ul>
+
+<h2 id="blend">Blending</h2>
+<p>The four behaviors asked for, each as the weight or lerp it reduces to. Nothing here is a mechanism of its own.</p>
+<div class="tbl"><table>
+  <tr><th>behavior</th><th>how</th><th>what it replaces</th></tr>
+  <tr><td>Fade in and out</td><td><code>fade: { in, out }</code> ramps the track's weight; each channel's <code>scale</code> takes it toward rest.</td><td>klieg's <code>Timeline.weight</code>, the <code>blendMs</code> ramps, and <code>carry</code>.</td></tr>
+  <tr><td>Crossfade at a phase seam</td><td>Two tracks in one <code>group</code>, one fading out as the other fades in. The group caps the summed weight at 1, which is the lurch guard klieg's timeline applies when a hold is shorter than the blend.</td><td>enter → active → exit as three tracks.</td></tr>
+  <tr><td>Handover at rest</td><td><code>stop({ at: 'rest', deadline })</code> removes the track per item at the first frame its sample equals rest, or at the deadline. The next track was added already and simply becomes the only contributor.</td><td><code>turns</code>' handover rule, made available to any pair.</td></tr>
+  <tr><td>Blend between alternatives</td><td><code>mix.blend([a, b, c], by: k)</code> adds three tracks whose weights are the hat functions of k at 0, ½, 1. Continuous, no rebuild, and hinge's quantization goes away for pieces whose channels have rest.</td><td><code>hinge</code>'s stops mode. Its blend mode is just <code>weight: signal</code>.</td></tr>
+  <tr><td>Retarget on interruption</td><td><code>from: 'current'</code> on a <code>keys</code> track reads the item's merged sample at the track's first frame as stop 0 and lerps from it through the channel's <code>lerp</code>.</td><td>wod's base-sampling. New to klieg: a regroup could tween from mid-float instead of carrying it away.</td></tr>
+</table></div>
+
+<div class="callout">
+  <div class="eyebrow">the one rule</div>
+  <p>A weight scales a contribution toward its channel's rest. A lerp moves between two values. Every blend is one or the other, chosen by the channel. A consumer that needs a third arithmetic adds a channel, not a mix option.</p>
+</div>
+
+<h2 id="state">Piece state</h2>
+<p>klieg built three stateful pieces in one week, <code>power</code>, <code>kicks</code> and <code>dwell</code>, and each rediscovered the same three rules: key state by the item object, step once per frame by the gap in <code>now</code>, snap under infinite <code>dt</code>. Those rules are the package's, applied by the mix, and a piece declares only what its state is and how it advances.</p>
+
+<pre><code>const power = piece&lt;PartInfo, PartOffset, PowerState&gt;(0, (t, part, ctx) =&gt; {
+  const s = ctx.state;
+  return s.mode === 'on' ? {} : { gain: s.gain };
+}, {
+  state: () =&gt; ({ mode: 'on', gain: 1, since: 0 }),
+  step: (s, dt, part, ctx) =&gt; { <span class="cm">/* advance the strike, the flare, the warm-up */</span> },
+});</code></pre>
+
+<p>Sign-wide state, which <code>power</code> has, is per-item state on a shared item: the piece's <code>state</code> returns one object from a closure and every part reads it. The mix does not need to know.</p>
+
+<h2 id="engines">Engines</h2>
+<p>The engine is the implementation behind <code>Mix</code>. The schema above is data plus pure functions, so a mix can be interpreted by more than one thing. One engine ships, and the seam is designed so the second one does not need the first rewritten.</p>
+
+<pre><code>interface Engine {
+  readonly name: string;
+  <span class="cm">/** Which piece forms this engine can run. A track whose piece it cannot run is refused at `add`, by name. */</span>
+  readonly runs: ReadonlySet&lt;'fn' | 'keys'&gt;;
+  <span class="cm">/** Builds the mix. Everything on `Mix` is the engine's to implement. */</span>
+  create&lt;I, O&gt;(table: Table&lt;O&gt;, opts: MixOptions&lt;I, O&gt;): Mix&lt;I, O&gt;;
+}
+
+export const mixer: Engine;   <span class="cm">// the one that ships</span></code></pre>
+
+<p><b>mixer</b> runs both forms on the CPU, samples per item on demand, and is the extraction of what klieg does today. What later engines would look like, so the seam is judged against something real and none of them is being built:</p>
+<ul>
+  <li><b>A baked engine</b> runs <code>keys</code> tracks only and emits Web Animations or CSS keyframes, so a DOM consumer like wod gets compositor-thread playback. It refuses <code>fn</code> pieces at <code>add</code>.</li>
+  <li><b>A recording engine</b> wraps another engine and captures every sample into keyframes, turning a procedural piece into data for the baked one.</li>
+  <li><b>A GPU engine</b> writes per-item offsets into a buffer instead of returning them, for a part count where a JS loop per frame is the cost. Same table, same tracks; <code>sample</code> becomes a read from the buffer.</li>
+</ul>
+<p>The seam holds only if nothing outside the engine assumes sampling is a function call. Two consequences for the schema: <code>sample</code> takes an <code>out</code> parameter so a buffer-backed engine can fill in place, and <code>keys</code> pieces keep their stops on the object rather than closing over them.</p>
+
+<h2 id="tables">Channel tables</h2>
+<p>What each consumer declares. The rules are the ones each repo already applies; the table makes them one line each.</p>
+<div class="tbl"><table>
+  <tr><th>consumer</th><th>item</th><th>table</th><th>notes</th></tr>
+  <tr><td>klieg motion</td><td><code>LetterInfo</code></td><td>position vec3 sum · rotation vec3 sum · scale mul · opacity mul</td><td>Three tracks in group <code>phase</code>, fades of <code>blendMs</code>.</td></tr>
+  <tr><td>klieg effects</td><td><code>PartInfo</code></td><td>gain mul · scale mul · dark max · crawl sum · position vec3 sum · rotation vec3 sum · light vec3 sum · color last</td><td>Light is premultiplied by amount before it reaches the channel, as <code>mergeOffsets</code> does.</td></tr>
+  <tr><td>klieg lighting</td><td>unit</td><td>yaw sum · pitch sum</td><td>One item, the frame. A mix with no item dimension is a mix over one item.</td></tr>
+  <tr><td>wod transitions</td><td>wedge <code>Segment</code></td><td>hold mul · opacity mul · scale mul · offset sum · rotate sum · aperture max · offsetAngle last</td><td>Every track is <code>keys</code> with <code>from: 'current'</code>; the tracks map goes away.</td></tr>
+  <tr><td>sherpa seams</td><td>page</td><td>opacity mul · transform (host's) · clip max</td><td>Exit and enter as two tracks; overlap is whether both are live at once.</td></tr>
+  <tr><td>magicsmoke</td><td>fault</td><td>intensity mul</td><td>One track, <code>weight: signal</code> from dwell; <code>blow</code> is a state piece on the same track.</td></tr>
+</table></div>
+
+<h2 id="klieg">The klieg port</h2>
+<p>All three klieg systems move in one pass, as chosen. The port is an extraction first and a feature second, and the boundary between the two is where the baselines are checked.</p>
+<ul>
+  <li><b>Step one reproduces the arithmetic exactly.</b> <code>Timeline.poseAt</code> becomes three tracks whose weight function is <code>min(inW, outW)</code> with the group cap, and <code>EffectFrame.resolve</code> becomes a mix over parts with the same modulo pass and the same stagger call. <code>mergeOffsets</code> and <code>addScaled</code> are the channel tables. The 40 Playwright baselines and every vitest case hold unchanged. Any that moves is a defect in the port, not a baseline to re-bless.</li>
+  <li><b>Step two turns on what the extraction bought.</b> <code>power</code>, <code>kicks</code> and <code>dwell</code> lose their hand-rolled frame keying. <code>hinge</code>'s blend mode becomes <code>weight: signal</code> and its stops mode becomes <code>mix.blend</code>; the old names stay as sugar. A host can add an effect to a running fire and fade it in, which has no equivalent today.</li>
+  <li><b>Wrappers do not move.</b> <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>partition</code> and the <code>Sequence</code>'s <code>carry</code> and <code>within</code> stay piece-level and unchanged, except that <code>carry</code> can be deleted once a regroup uses <code>from: 'current'</code>.</li>
+  <li><b><code>FrameCtx</code> becomes <code>Ctx</code> with klieg's fields on <code>host</code>.</b> <code>pointer</code>, <code>pointerInWord</code> and <code>dt</code> keep their meanings. Every klieg piece signature changes by one property path, and a codemod does it.</li>
+  <li><b>klieg gains one runtime dependency</b>, zero-dependency itself, ESM-only, with types.</li>
+</ul>
+
+<h2 id="against">Decided against</h2>
+<ul>
+  <li><b>A signal graph.</b> Everything as nodes evaluated once per frame. Most general, and every existing piece would be re-expressed as nodes; a misbehaving sign would be read as a graph rather than a list. Signals stay scalars and plug in at two places.</li>
+  <li><b>Keyframes as the only form.</b> The platform's shape and wod's. It cannot carry a hash-driven flicker or a permutation walk without an escape hatch that is the procedural form under another name. Both forms are first-class instead.</li>
+  <li><b>Adopting a tweening library.</b> GSAP, anime.js and Motion own a property and write absolute values, so concurrent writers conflict. anime.js v4's additive mode is the closest and still has no rest rule per channel. three's <code>AnimationMixer</code> has the right model and is keyframe-only over object property paths.</li>
+  <li><b>Item registration.</b> A <code>mix.items(list)</code> call would let the mix step every state eagerly. It puts a second source of truth about the pool in the host. Lazy state keyed by identity, stepped by the gap in <code>now</code>, needs nothing from the host and is the rule klieg already proved.</li>
+  <li><b>A mix option for the lurch guard.</b> A global "normalize when over 1" would apply to effects that legitimately stack. The cap belongs to the tracks that crossfade, so it is a <code>group</code>.</li>
+</ul>
+
+<h2 id="tests">Tests</h2>
+<ul>
+  <li><b>Channel laws</b>, property-tested per stock channel: <code>join(v, rest) = v</code>, <code>scale(v, 1) = v</code>, <code>scale(v, 0) = rest</code>, <code>lerp(a, b, 0) = a</code>, <code>lerp(a, b, 1) = b</code>.</li>
+  <li><b>One frame, one answer.</b> A stateful piece sampled 12 times at one <code>now</code> steps once; a second <code>step</code> with the same <code>now</code> is a no-op.</li>
+  <li><b>Catch-up.</b> An item unsampled for three frames steps by the whole gap on the fourth.</li>
+  <li><b>Fade continuity.</b> A track stopped mid-pass with a fade produces no frame-to-frame jump larger than its per-frame ramp, on every channel with rest.</li>
+  <li><b>Retarget continuity.</b> A <code>from: 'current'</code> track added on a moving item has a first sample equal to the item's previous sample.</li>
+  <li><b>Group cap.</b> Two tracks in a group at weight 1 each produce the same output as one at weight 1.</li>
+  <li><b>Handover.</b> <code>stop({ at: 'rest' })</code> removes per item at the first resting frame, and at the deadline for a piece that never rests.</li>
+  <li><b>Engine refusal.</b> An engine whose <code>runs</code> lacks <code>fn</code> throws at <code>add</code> naming the track.</li>
+  <li><b>The klieg extraction</b> is judged by klieg's own suites and the Playwright baselines, unchanged.</li>
+</ul>
+
+<h2 id="open">Open</h2>
+<ul>
+  <li><b>The package name.</b> <code>blits</code> is free on npm. <code>@lightningjs/blits</code> is a live TV app framework with its own animation plugin, so searches for the name land there first.</li>
+  <li><b>Where klieg's stagger lives.</b> The grammar is generic already; whether <code>StaggerSpec</code> and <code>orderKey</code> move into the package or stay klieg's and are passed in as a function.</li>
+  <li><b>Color's lerp.</b> A hex channel needs a color space to lerp in. sRGB is what klieg's light channel assumes; OKLCH reads better for a crossfade between hues. One choice, made once, on the stock <code>hex</code> channel.</li>
+  <li><b>Whether magicsmoke wants this at all.</b> Its fault is one intensity; the case is weakest there and it may stay a consumer only of <code>ease</code>.</li>
+</ul>
+</main>
+</div>
+</body>
+</html>
