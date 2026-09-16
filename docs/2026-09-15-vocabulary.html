@@ -88,12 +88,12 @@
   .meta { color: var(--muted); font-size: 0.95rem; }
   .meta b { color: var(--ink); font-weight: 500; }
 
-  nav.toc ol { list-style: none; margin: 0; padding: 0; font-size: 0.86rem; line-height: 1.4; }
+  nav.toc ol { list-style: none; margin: 0; padding: 0 0 0 1.2em; font-size: 0.86rem; line-height: 1.4; }
   nav.toc li { margin: 0 0 7px; }
   nav.toc li { position: relative; }
   nav.toc a { color: var(--muted); text-decoration: none; }
   nav.toc a.current { color: var(--ink); }
-  nav.toc a.current::before { content: '▸'; position: absolute; left: -1.1em; color: var(--accent); }
+  nav.toc a.current::before { content: '▸'; position: absolute; left: -1.2em; top: 0; color: var(--accent); }
   nav.toc a.current .vb::before, nav.toc li:has(> a.current > .vb) > a::before { color: var(--verb); }
   nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
   nav.toc .grp { color: var(--ink); font-weight: 600; margin-top: 14px; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
