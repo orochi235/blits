@@ -1869,12 +1869,13 @@
       "was": "ctx",
       "kind": "noun",
       "gloss": {
-        "lead": "What a piece is handed beside the phase and the item.",
+        "lead": "The relevant state of the world in this frame, as a piece sees it, for one item.",
         "items": [
-          "The frame’s clock, and the time since the last frame.",
-          "How long the track has been playing, which pass this is, and the track’s weight.",
-          "The piece’s own state for this item.",
-          "Anything the host adds, such as where the cursor is."
+          "Everything a piece may read but did not compute, and nothing else. It is handed in beside the phase and the item.",
+          "Shared by the whole frame: the clock, and the time since the last frame.",
+          "Particular to the track: how long it has been playing, which pass this is, its weight.",
+          "Particular to this item: the piece’s own state for it.",
+          "Whatever the host adds, such as where the cursor is."
         ]
       },
       "groups": [
