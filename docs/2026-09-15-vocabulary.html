@@ -167,6 +167,7 @@
   .term.fixed .term-head .status { margin: 0; }
   td.fixedcell { font-weight: 500; color: var(--muted); }
   .api { font-size: 0.95rem; line-height: 2; }
+  #ops { margin-top: 36px; }
   .api code { margin-right: 2px; }
   .vb.sub { color: var(--verb-ink); border: 1px solid var(--verb); border-radius: 3px; padding: 0 0.22em; }
   .term.verb .w.star::after { color: var(--verb); }
@@ -231,6 +232,11 @@
     <li><a href="#t-v-blend"><span class="vb" data-v="v-blend">blend</span></a></li>
     <li><a href="#t-v-clear"><span class="vb" data-v="v-clear">clear</span></a></li>
     <li><a href="#t-v-forget"><span class="vb" data-v="v-forget">forget</span></a></li>
+    <li class="grp">Operations</li>
+    <li><a href="#t-v-join"><span class="vb" data-v="v-join">join</span></a></li>
+    <li><a href="#t-v-scale"><span class="vb" data-v="v-scale">scale</span></a></li>
+    <li><a href="#t-v-lerp"><span class="vb" data-v="v-lerp">lerp</span></a></li>
+    <li><a href="#t-v-fold"><span class="vb" data-v="v-fold">fold</span></a></li>
     <li class="grp">Notes</li>
     <li><a href="#domain">On domain</a></li>
     <li><a href="#take">What I would take</a></li>
@@ -240,7 +246,7 @@
 <main>
 <header>
   <div class="eyebrow">blits · naming</div>
-  <h1>Eighteen roles, eight verbs, twenty words each</h1>
+  <h1>Eighteen roles, twelve verbs, twenty words each</h1>
   <p class="lede">The vocabulary in the schema draft is klieg's, kept because it was there. This sheet puts every role beside twenty alternatives drawn from the fields that already have a word for it, so the right one can be recognized rather than argued for.</p>
   <p class="meta"><b>For:</b> choosing the names before anything is typed. <b>Answers:</b> what each role is, what other fields call it, and which set holds together. Reads with <a href="2026-09-15-schema.html">the schema draft</a>.</p>
   <span class="status">Naming open · nothing built · 2026-09-15</span>
@@ -319,7 +325,7 @@
     <var>t</var> = (elapsed mod <var>d<sub>p</sub></var>) / <var>d<sub>p</sub></var><br>
     <var>w<sub>k</sub></var> : ℝ → [0, 1] &nbsp;<span class="note">an envelope in τ, or σ(<var>i</var>, ctx)</span><br>
     contrib<sub>k</sub>(<var>i</var>, τ) = <var>w<sub>k</sub></var>(τ) ⊙ <var>p</var>(<var>t</var>, <var>i</var>, ctx) &nbsp;&nbsp;where <var>w</var> ⊙ δ = (scale<sub>c</sub>(δ<sub>c</sub>, <var>w</var>))<sub>c</sub></p>
-    <p>On a channel with no rest, ⊙ is a gate: δ<sub>c</sub> if <var>w</var> &gt; θ, else ⊥. Two tracks of one piece are two tuples; they share <var>p</var> and nothing else.</p>
+    <p>On a channel with no rest, ⊙ is a gate: δ<sub>c</sub> if <var>w</var> &gt; ε, else ⊥. Two tracks of one piece are two tuples; they share <var>p</var> and nothing else.</p>
   </div>
 
   <div class="k"><span class="r" data-r="mix">mix</span></div>
@@ -398,6 +404,10 @@
   <tr><td class="role"><span class="vb" data-v="v-blend">blend</span></td><td class="now">blend</td><td class="mine" data-for="v-blend"></td></tr>
   <tr><td class="role"><span class="vb" data-v="v-clear">clear</span></td><td class="now">clear</td><td class="mine" data-for="v-clear"></td></tr>
   <tr><td class="role"><span class="vb" data-v="v-forget">forget</span></td><td class="now">forget</td><td class="mine" data-for="v-forget"></td></tr>
+  <tr><td class="role"><span class="vb" data-v="v-join">join</span></td><td class="now">join</td><td class="mine" data-for="v-join"></td></tr>
+  <tr><td class="role"><span class="vb" data-v="v-scale">scale</span></td><td class="now">scale</td><td class="mine" data-for="v-scale"></td></tr>
+  <tr><td class="role"><span class="vb" data-v="v-lerp">lerp</span></td><td class="now">lerp</td><td class="mine" data-for="v-lerp"></td></tr>
+  <tr><td class="role"><span class="vb" data-v="v-fold">fold</span></td><td class="now">fold</td><td class="mine" data-for="v-fold"></td></tr>
 </table></div>
 
 <h2>Terms</h2>
@@ -409,8 +419,8 @@
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">offset</button></div>
     <div class="field">math</div><div class="words"><button class="w star">delta</button><button class="w">point</button><button class="w">deviation</button><button class="w">perturbation</button><button class="w star">term</button><button class="w">vector</button></div>
-    <div class="field">audio</div><div class="words"><button class="w star">send</button><button class="w">contribution</button><button class="w">touch</button></div>
-    <div class="field">animation</div><div class="words"><button class="w star">sample</button><button class="w">pose</button><button class="w">frame</button><button class="w">keyvalue</button></div>
+    <div class="field">audio</div><div class="words"><button class="w star">send</button><button class="w">input</button><button class="w">touch</button></div>
+    <div class="field">animation</div><div class="words"><button class="w star">snapshot</button><button class="w">pose</button><button class="w">frame</button><button class="w">keyvalue</button></div>
     <div class="field">compositing</div><div class="words"><button class="w">layer</button><button class="w">pass</button><button class="w">plate</button></div>
     <div class="field">lighting</div><div class="words"><button class="w">level</button><button class="w">cue</button></div>
     <div class="field">plain</div><div class="words"><button class="w">shift</button><button class="w star">nudge</button></div>
@@ -439,7 +449,7 @@
     <div class="field">keep</div><div class="words"><button class="w keep">table</button></div>
     <div class="field">lighting</div><div class="words"><button class="w star">fixture</button><button class="w star">personality</button><button class="w">patch</button><button class="w">profile</button></div>
     <div class="field">animation</div><div class="words"><button class="w star">rig</button><button class="w">skeleton</button><button class="w">puppet</button></div>
-    <div class="field">data</div><div class="words"><button class="w">schema</button><button class="w">shape</button><button class="w">layout</button><button class="w">spec</button><button class="w">format</button><button class="w">kind</button><button class="w">model</button><button class="w">template</button></div>
+    <div class="field">data</div><div class="words"><button class="w">schema</button><button class="w">shape</button><button class="w">image</button><button class="w">remit</button><button class="w star">gamut</button><button class="w">ambit</button><button class="w">model</button><button class="w">template</button></div>
     <div class="field">math</div><div class="words"><button class="w star">algebra</button><button class="w star">space</button><button class="w star">domain</button></div>
     <div class="field">audio</div><div class="words"><button class="w">desk</button><button class="w">console</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-table" data-term="table" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
@@ -492,7 +502,7 @@
   <p class="gloss">The set of live tracks over one table, stepped once a frame and <span class="vb" data-v="v-sample" data-form="3">sampled</span> per item. What a host holds.</p>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">mix</button></div>
-    <div class="field">math</div><div class="words"><button class="w star">fold</button><button class="w">sum</button><button class="w">reduction</button><button class="w">blend</button></div>
+    <div class="field">math</div><div class="words"><button class="w star">combination</button><button class="w">sum</button><button class="w">reduction</button><button class="w">union</button></div>
     <div class="field">audio</div><div class="words"><button class="w">aggregate</button><button class="w star">bus</button><button class="w">desk</button><button class="w">system</button><button class="w">master</button><button class="w">session</button></div>
     <div class="field">animation</div><div class="words"><button class="w">mixer</button><button class="w">timeline</button><button class="w">stage</button><button class="w">sequencer</button><button class="w">scene</button><button class="w">graph</button></div>
     <div class="field">lighting</div><div class="words"><button class="w star">universe</button><button class="w">output</button></div>
@@ -518,7 +528,7 @@
 
 <section class="term" id="t-handle" data-term="handle">
   <div class="term-head"><h3>Handle</h3><span class="now">was <code>handle</code></span></div>
-  <p class="gloss">What add returns: the live controls on one track, and its completion.</p>
+  <p class="gloss">What add returns for one track: knobs you can turn while it runs, its weight, its rate, seek and stop, taking effect on the next frame; and a promise, <code>done</code>, that resolves once the track has left the mix by any route.</p>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">handle</button></div>
     <div class="field">math</div><div class="words"><button class="w star">binding</button><button class="w">reference</button><button class="w">variable</button><button class="w">name</button></div>
@@ -535,7 +545,7 @@
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">engine</button></div>
     <div class="field">math</div><div class="words"><button class="w star">model</button><button class="w star">evaluator</button><button class="w">interpretation</button><button class="w">semantics</button></div>
-    <div class="field">software</div><div class="words"><button class="w star">backend</button><button class="w">driver</button><button class="w star">runtime</button><button class="w">kernel</button><button class="w">core</button><button class="w">host</button><button class="w star">provider</button><button class="w">renderer</button></div>
+    <div class="field">software</div><div class="words"><button class="w star">backend</button><button class="w">driver</button><button class="w star">runtime</button><button class="w">kernel</button><button class="w">core</button><button class="w">substrate</button><button class="w star">provider</button><button class="w">renderer</button></div>
     <div class="field">evaluation</div><div class="words"><button class="w">executor</button><button class="w">scheduler</button><button class="w">interpreter</button><button class="w">vm</button><button class="w">machine</button></div>
     <div class="field">machinery</div><div class="words"><button class="w">plant</button><button class="w">motor</button><button class="w star">solver</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-engine" data-term="engine" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
@@ -576,7 +586,7 @@
     <div class="field">keep</div><div class="words"><button class="w keep">weight</button></div>
     <div class="field">math</div><div class="words"><button class="w star">coefficient</button><button class="w">scalar</button><button class="w">factor</button><button class="w">multiplier</button><button class="w">alpha</button><button class="w">magnitude</button></div>
     <div class="field">audio</div><div class="words"><button class="w star">fader</button><button class="w">gain</button><button class="w">level</button><button class="w">volume</button><button class="w">trim</button><button class="w">wet</button></div>
-    <div class="field">animation</div><div class="words"><button class="w star">influence</button><button class="w">blend</button><button class="w">opacity</button><button class="w">strength</button><button class="w">presence</button><button class="w">mask</button></div>
+    <div class="field">animation</div><div class="words"><button class="w star">influence</button><button class="w">amount</button><button class="w">opacity</button><button class="w">strength</button><button class="w">presence</button><button class="w">mask</button></div>
     <div class="field">lighting</div><div class="words"><button class="w">intensity</button><button class="w">dimmer</button></div>
     <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-weight" data-term="weight" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
   </div>
@@ -718,7 +728,7 @@
   <p class="gloss">Jumps a track's own clock to an elapsed time.</p>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">seek</button></div>
-    <div class="field">math</div><div class="words"><button class="w">shift</button><button class="w">offset</button><button class="w">translate</button><button class="w">rebase</button></div>
+    <div class="field">math</div><div class="words"><button class="w">shift</button><button class="w">transpose</button><button class="w">translate</button><button class="w">rebase</button></div>
     <div class="field">physics</div><div class="words"><button class="w star">warp</button><button class="w">displace</button><button class="w star">jump</button></div>
     <div class="field">DAW</div><div class="words"><button class="w star">scrub</button><button class="w star">cue</button><button class="w">locate</button><button class="w">rewind</button><button class="w star">skip</button><button class="w">wind</button></div>
     <div class="field">lighting</div><div class="words"><button class="w">goto</button><button class="w">place</button><button class="w star">set</button></div>
@@ -732,7 +742,7 @@
   <p class="gloss">Adds several tracks whose weights split one signal, so a parameter picks a point between alternatives.</p>
   <div class="rows">
     <div class="field">keep</div><div class="words"><button class="w keep">blend</button></div>
-    <div class="field">math</div><div class="words"><button class="w star">lerp</button><button class="w">interpolate</button><button class="w">convex</button><button class="w">weigh</button><button class="w star">mix</button></div>
+    <div class="field">math</div><div class="words"><button class="w star">interp</button><button class="w">interpolate</button><button class="w">convex</button><button class="w">weigh</button><button class="w star">combine</button></div>
     <div class="field">physics</div><div class="words"><button class="w">superpose</button><button class="w">balance</button><button class="w star">cross</button></div>
     <div class="field">DAW</div><div class="words"><button class="w star">pan</button><button class="w">crossfade</button><button class="w star">morph</button><button class="w star">fade</button><button class="w">split</button></div>
     <div class="field">lighting</div><div class="words"><button class="w star">sweep</button><button class="w">dial</button><button class="w star">steer</button></div>
@@ -769,6 +779,65 @@
   </div>
 </section>
 
+<h3 id="ops">Operations</h3>
+<p>The four operations the schema itself performs: three a channel declares beside its rest, and the one the mix runs over them. They are not on the API line, since a host never calls them, but they are named in every definition and the algebra, and they conjugate like any verb.</p>
+<p class="api"><code><span class="vb" data-v="v-join">join</span>(a, b)</code> · <code><span class="vb" data-v="v-scale">scale</span>(v, w)</code> · <code><span class="vb" data-v="v-lerp">lerp</span>(a, b, u)</code> · <code><span class="vb" data-v="v-fold">fold</span>(contributions)</code> · <code>rest</code></p>
+
+<section class="term verb op" id="t-v-join" data-term="v-join">
+  <div class="term-head"><h3><span class="vb" data-v="v-join">join</span></h3><span class="now">was <code>join(a, b)</code></span></div>
+  <p class="gloss">A channel's rule for two contributions on it: what multiplying does for gain, adding for position, the larger for dark, the later for color. Associative, with rest as its unit where there is one.</p>
+  <div class="rows">
+    <div class="field">keep</div><div class="words"><button class="w keep">join</button></div>
+    <div class="field">math</div><div class="words"><button class="w star">combine</button><button class="w">compose</button><button class="w">plus</button><button class="w">dot</button><button class="w">meet</button></div>
+    <div class="field">code</div><div class="words"><button class="w star">merge</button><button class="w">concat</button><button class="w">append</button><button class="w">mappend</button><button class="w">unite</button></div>
+    <div class="field">audio</div><div class="words"><button class="w star">sum</button><button class="w">submix</button><button class="w">bus</button><button class="w">stack</button></div>
+    <div class="field">compositing</div><div class="words"><button class="w star">layer</button><button class="w">over</button><button class="w">comp</button><button class="w">screen</button></div>
+    <div class="field">plain</div><div class="words"><button class="w">fuse</button><button class="w">meld</button></div>
+    <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-v-join" data-term="v-join" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
+  </div>
+</section>
+
+<section class="term verb op" id="t-v-scale" data-term="v-scale">
+  <div class="term-head"><h3><span class="vb" data-v="v-scale">scale</span></h3><span class="now">was <code>scale(v, w)</code></span></div>
+  <p class="gloss">A channel's rule for taking a value toward rest by a weight in 0..1: all of it at 1, none at 0. Only channels with a rest have one. What ⊙ applies.</p>
+  <div class="rows">
+    <div class="field">keep</div><div class="words"><button class="w keep">scale</button></div>
+    <div class="field">math</div><div class="words"><button class="w star">attenuate</button><button class="w">weigh</button><button class="w">multiply</button><button class="w">interpolate</button><button class="w">shrink</button></div>
+    <div class="field">audio</div><div class="words"><button class="w star">fade</button><button class="w">trim</button><button class="w">gain</button><button class="w">dim</button><button class="w">taper</button></div>
+    <div class="field">animation</div><div class="words"><button class="w star">ease</button><button class="w">tween</button><button class="w">modulate</button><button class="w">dampen</button></div>
+    <div class="field">physics</div><div class="words"><button class="w">damp</button><button class="w">decay</button><button class="w">relax</button></div>
+    <div class="field">plain</div><div class="words"><button class="w star">temper</button><button class="w">soften</button><button class="w">dial</button></div>
+    <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-v-scale" data-term="v-scale" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
+  </div>
+</section>
+
+<section class="term verb op" id="t-v-lerp" data-term="v-lerp">
+  <div class="term-head"><h3><span class="vb" data-v="v-lerp">lerp</span></h3><span class="now">was <code>lerp(a, b, u)</code></span></div>
+  <p class="gloss">A channel's rule for the value a fraction of the way from one value to another. What retargeting and blend-between-alternatives move by, and the only way a channel without rest can move smoothly.</p>
+  <div class="rows">
+    <div class="field">keep</div><div class="words"><button class="w keep">lerp</button></div>
+    <div class="field">math</div><div class="words"><button class="w star">interpolate</button><button class="w">mean</button><button class="w">convex</button><button class="w">affine</button><button class="w">average</button></div>
+    <div class="field">animation</div><div class="words"><button class="w star">tween</button><button class="w">ease</button><button class="w">morph</button><button class="w">glide</button><button class="w">slide</button></div>
+    <div class="field">audio</div><div class="words"><button class="w">crossfade</button><button class="w">pan</button><button class="w">sweep</button></div>
+    <div class="field">plain</div><div class="words"><button class="w star">bridge</button><button class="w">span</button><button class="w">between</button><button class="w">travel</button><button class="w">walk</button><button class="w">ramp</button><button class="w">stride</button></div>
+    <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-v-lerp" data-term="v-lerp" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
+  </div>
+</section>
+
+<section class="term verb op" id="t-v-fold" data-term="v-fold">
+  <div class="term-head"><h3><span class="vb" data-v="v-fold">fold</span></h3><span class="now">was <code>fold(contributions)</code></span></div>
+  <p class="gloss">The mix's operation: join every contribution reaching one item, channel by channel, starting from rest. What Σ stands for in the relations, and what an engine exists to compute.</p>
+  <div class="rows">
+    <div class="field">keep</div><div class="words"><button class="w keep">fold</button></div>
+    <div class="field">math</div><div class="words"><button class="w star">reduce</button><button class="w star">sum</button><button class="w">accumulate</button><button class="w">aggregate</button><button class="w">compose</button></div>
+    <div class="field">code</div><div class="words"><button class="w">collapse</button><button class="w">flatten</button><button class="w">gather</button><button class="w">total</button><button class="w">tally</button></div>
+    <div class="field">audio</div><div class="words"><button class="w star">mixdown</button><button class="w">bounce</button><button class="w">master</button><button class="w">render</button></div>
+    <div class="field">physics</div><div class="words"><button class="w star">superpose</button><button class="w">integrate</button><button class="w">resolve</button></div>
+    <div class="field">plain</div><div class="words"><button class="w">settle</button><button class="w">combine</button><button class="w">squash</button></div>
+    <div class="field">write-in</div><div class="words"><input class="wi" type="text" id="write-v-fold" data-term="v-fold" placeholder="your own word" autocomplete="off" spellcheck="false"></div>
+  </div>
+</section>
+
 <h2 id="domain">On <code>domain</code> for the channel set</h2>
 <p><b>Revised.</b> The objection below measured the word against the piece, whose output is the offset space. The table defines join, scale and lerp, and those act <em>on</em> the value space, so for them it is the domain in the strict sense, and so is the mix's fold. The klieg collision is not a constraint: Mike said on 2026-09-15 that klieg changes if it has to, provided blits produces something good, so the gradient's <code>domain</code> renames if this word is taken. <code>domain</code> now ranks with <code>rig</code>: the one for a mathematical register, the other for the puppet.</p>
 <p>The original note, kept for the record. It works as English and has two collisions, one of them in klieg.</p>
@@ -790,9 +859,9 @@
 <script>
 (function () {
   var KEY = 'blits-vocab-picks';
-  var VERBS = { 'v-add': 'add', 'v-stop': 'stop', 'v-step': 'step', 'v-sample': 'sample', 'v-seek': 'seek', 'v-blend': 'blend', 'v-clear': 'clear', 'v-forget': 'forget' };
+  var VERBS = { 'v-add': 'add', 'v-stop': 'stop', 'v-step': 'step', 'v-sample': 'sample', 'v-seek': 'seek', 'v-blend': 'blend', 'v-clear': 'clear', 'v-forget': 'forget', 'v-join': 'join', 'v-scale': 'scale', 'v-lerp': 'lerp', 'v-fold': 'fold' };
   // Verbs the walker may wrap. `sample` is also a noun role, so its verb uses are marked by hand.
-  var WALK_VERBS = ['v-add', 'v-stop', 'v-step', 'v-seek', 'v-blend', 'v-clear', 'v-forget'];
+  var WALK_VERBS = ['v-add', 'v-stop', 'v-step', 'v-seek', 'v-blend', 'v-clear', 'v-forget', 'v-join', 'v-scale', 'v-lerp', 'v-fold'];
   // [3rd singular, past, past participle, -ing]. Anything absent conjugates by the regular rules.
   var IRREG = {
     go: ['goes', 'went', 'gone', 'going'], read: ['reads', 'read', 'read', 'reading'], take: ['takes', 'took', 'taken', 'taking'],
@@ -919,6 +988,25 @@
     return word;
   }
 
+  // "a" or "an" directly before a substituted word follows the word's first sound.
+  function article(word) {
+    if (/^(uni|use|usu|eu|one|ubi|ur[ae])/i.test(word)) return 'a';
+    if (/^hour|^heir|^honest/i.test(word)) return 'an';
+    return /^[aeiou]/i.test(word) ? 'an' : 'a';
+  }
+  function fixArticles() {
+    document.querySelectorAll('.r, .vb').forEach(function (el) {
+      var prev = el.previousSibling;
+      if (!prev || prev.nodeType !== 3) return;
+      var m = /(^|\s)(a|an|A|An)(\s+)$/.exec(prev.nodeValue);
+      if (!m) return;
+      var want = article(el.textContent);
+      if (m[2][0] === 'A') want = want.charAt(0).toUpperCase() + want.slice(1);
+      if (m[2] === want) return;
+      prev.nodeValue = prev.nodeValue.slice(0, m.index + m[1].length) + want + m[3];
+    });
+  }
+
   function render() {
     document.querySelectorAll('.term').forEach(function (sec) {
       var term = sec.getAttribute('data-term');
@@ -959,6 +1047,7 @@
       el.classList.toggle('sub', !!word && word !== role);
       el.classList.toggle('default', !!word && word !== role && !chosen[role]);
     });
+    fixArticles();
   }
 
   document.querySelectorAll('.term').forEach(function (sec) {
