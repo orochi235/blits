@@ -144,8 +144,10 @@
   .w.picked.chosen { box-shadow: inset 0 0 0 2px var(--paper); }
   .vocab td.picked { box-shadow: inset 0 0 0 1px var(--pick); background: var(--pick); color: var(--pick-ink); font-weight: 500; border-radius: 3px; padding-left: 6px; padding-right: 6px; }
   .vocab td.picked.chosen { box-shadow: inset 0 0 0 1px var(--pick), inset 0 0 0 3px var(--paper); }
-  .r.sub.default { border-style: dashed; }
-  .vb.sub.default { border-style: dashed; }
+  .r.sub.default, .vb.sub.default { border: none; padding: 0; margin: 0; text-decoration: underline dashed; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+  .r.sub.default { text-decoration-color: var(--accent); }
+  .vb.sub.default { text-decoration-color: var(--verb); }
+  nav.toc .r.sub.default, nav.toc .vb.sub.default { text-decoration: none; }
   .w.picked.star::after { color: var(--pick-ink); }
   .legend { font-size: 0.86rem; color: var(--muted); margin: 0 0 20px; font-family: 'Instrument Sans', sans-serif; }
   .legend .star { color: var(--accent); }
@@ -159,7 +161,7 @@
   .rel .g { color: var(--muted); font-size: 0.95rem; }
 
   a.r, a.vb { color: inherit; text-decoration: underline dashed; text-decoration-color: var(--muted); text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
-  a.r.sub, a.vb.sub { text-decoration: none; }
+  a.r.sub:not(.default), a.vb.sub:not(.default) { text-decoration: none; }
   a.r:hover { text-decoration-color: var(--accent); }
   a.vb:hover { text-decoration-color: var(--verb); }
   a.r.sub:hover, a.vb.sub:hover { text-decoration: underline; text-underline-offset: 0.15em; }
@@ -386,7 +388,7 @@
 </table></div>
 
 <h2 id="pick">Your set</h2>
-<p class="legend">Click a word under any term to pick it, write one in, or click the dashed incumbent to commit to keeping it. A word you chose has a white border inside its edge; a default the page picked for you does not, and its substitutions are boxed dashed until you click it. <span class="star">★</span> marks the ones I would defend. The page opens on the recommended set and remembers your picks in this browser only. <button class="clear" id="reset" type="button">Reset to recommended</button> <button class="clear" id="clear" type="button">Clear all</button></p>
+<p class="legend">Click a word under any term to pick it, write one in, or click the dashed incumbent to commit to keeping it. A word you chose has a white border inside its edge and its substitutions are boxed. A default the page picked for you has neither: its substitutions carry a dashed underline until you click it. <span class="star">★</span> marks the ones I would defend. The page opens on the recommended set and remembers your picks in this browser only. <button class="clear" id="reset" type="button">Reset to recommended</button> <button class="clear" id="clear" type="button">Clear all</button></p>
 <div class="tbl"><table id="mine">
   <tr><th>yours</th><th>role</th><th>was</th></tr>
   <tr><td class="mine" data-for="offset"></td><td class="role">emitted value</td><td class="now">offset</td></tr>
