@@ -401,11 +401,13 @@ interface Mix&lt;I, O&gt; {
 
 <span class="cm">// stock combinators; klieg's own `near`, `dwell`, `level` are consumers' signals built on these</span>
 function peak&lt;I&gt;(...signals: Signal&lt;I&gt;[]): Signal&lt;I&gt;;          <span class="cm">// max</span>
-function ease&lt;I&gt;(of: Signal&lt;I&gt;, { riseMs, fallMs }): Signal&lt;I&gt;;  <span class="cm">// stateful: climbs and drains toward its input</span>
+function slew&lt;I&gt;(of: Signal&lt;I&gt;, { riseMs, fallMs }): Signal&lt;I&gt;;  <span class="cm">// stateful: rate-limited follow toward its input</span>
 function level&lt;I&gt;(initial?: number): Signal&lt;I&gt; &amp; { set(v: number): void };  <span class="cm">// host-written</span>
 function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;          <span class="cm">// 0 below `at`, 1 at or above</span></code></pre>
 
-<p>A stateful signal keeps state the same way a stateful piece does: per item, keyed by identity, stepped by the gap in <code>now</code>. <code>ease</code> is klieg's <code>dwell</code> with the cursor factored out.</p>
+<p>A stateful signal keeps state the same way a stateful piece does: per item, keyed by identity, stepped by the gap in <code>now</code>. <code>slew</code> is klieg's <code>dwell</code> with the cursor factored out.</p>
+
+<p><code>slew</code> is the package's one decay primitive: a value that follows its input at a rate limit, no faster than <code>riseMs</code> per unit climbing or <code>fallMs</code> draining. It is not <code>Easing</code>, which is a curve over a known duration, and it is not called <code>ease</code> for that reason &mdash; <code>fade.ease</code> and <code>keys({ ease })</code> already mean the curve. A decay tail is a <code>slew</code> to 0 with no rise; a fade is a <code>slew</code> on a weight; klieg's <code>kicks</code> is a <code>slew</code> to 0 that <code>peak</code> pokes back up. Nothing else in the package stores a value in order to lag it.</p>
 
 <h2 id="time">Time</h2>
 <ul>
@@ -482,7 +484,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
 <p>All three klieg systems move in one pass, as chosen. The port is an extraction first and a feature second, and the boundary between the two is where the baselines are checked.</p>
 <ul>
   <li><b>Step one reproduces the arithmetic exactly.</b> <code>Timeline.poseAt</code> becomes three tracks whose weight function is <code>min(inW, outW)</code> with the group cap, and <code>EffectFrame.resolve</code> becomes a mix over parts with the same modulo pass and the same stagger call. <code>mergeOffsets</code> and <code>addScaled</code> are the channel tables. The 40 Playwright baselines and every vitest case hold unchanged. Any that moves is a defect in the port, not a baseline to re-bless.</li>
-  <li><b>Step two turns on what the extraction bought.</b> <code>power</code>, <code>kicks</code> and <code>dwell</code> lose their hand-rolled frame keying. <code>hinge</code>'s blend mode becomes <code>weight: signal</code> and its stops mode becomes <code>mix.blend</code>; the old names stay as sugar. A host can add an effect to a running fire and fade it in, which has no equivalent today.</li>
+  <li><b>Step two turns on what the extraction bought.</b> <code>power</code>, <code>kicks</code> and <code>dwell</code> lose their hand-rolled frame keying, and <code>slew</code> takes the decay math with it: <code>dwell</code>'s <code>toward</code> and <code>kicks</code>' drain are one function, leaving <code>kicks</code> its falloff and its event queue. <code>power</code> keeps its state machine, which is not a decay. <code>hinge</code>'s blend mode becomes <code>weight: signal</code> and its stops mode becomes <code>mix.blend</code>; the old names stay as sugar. A host can add an effect to a running fire and fade it in, which has no equivalent today.</li>
   <li><b>Wrappers do not move.</b> <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>partition</code> and the <code>Sequence</code>'s <code>carry</code> and <code>within</code> stay piece-level and unchanged, except that <code>carry</code> can be deleted once a regroup uses <code>from: 'current'</code>.</li>
   <li><b><code>FrameCtx</code> becomes <code>Ctx</code> with klieg's fields on <code>host</code>.</b> <code>pointer</code>, <code>pointerInWord</code> and <code>dt</code> keep their meanings. Every klieg piece signature changes by one property path, and a codemod does it.</li>
   <li><b>klieg gains one runtime dependency</b>, zero-dependency itself, ESM-only, with types.</li>
@@ -515,7 +517,8 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>The package name.</b> <code>blits</code> is free on npm. <code>@lightningjs/blits</code> is a live TV app framework with its own animation plugin, so searches for the name land there first.</li>
   <li><b>Where klieg's stagger lives.</b> The grammar is generic already; whether <code>StaggerSpec</code> and <code>orderKey</code> move into the package or stay klieg's and are passed in as a function.</li>
   <li><b>Color's lerp.</b> A hex channel needs a color space to lerp in. sRGB is what klieg's light channel assumes; OKLCH reads better for a crossfade between hues. One choice, made once, on the stock <code>hex</code> channel.</li>
-  <li><b>Whether magicsmoke wants this at all.</b> Its fault is one intensity; the case is weakest there and it may stay a consumer only of <code>ease</code>.</li>
+  <li><b>Whether <code>slew</code> is linear or exponential.</b> klieg's three decays are all linear, <code>ms / rate</code>, so linear keeps the port's arithmetic identical and the Playwright baselines green. An exponential release reads better and never reaches rest, which <code>atRest</code> needs it to, so it would want a floor. One choice, made once.</li>
+  <li><b>Whether magicsmoke wants this at all.</b> Its fault is one intensity; the case is weakest there and it may stay a consumer only of <code>slew</code>.</li>
 </ul>
 </main>
 </div>
