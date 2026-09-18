@@ -269,11 +269,13 @@ type Table&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K
 });</code></pre>
 
 <h2 id="pieces">Pieces</h2>
-<p>A piece is what an author writes. It is klieg's <code>EffectPiece</code> with two additions: the context carries absolute time as well as normalized, and a piece may declare state.</p>
+<p>A piece is what an author writes. It is klieg's <code>EffectPiece</code> with three additions: the context carries absolute time as well as normalized, a piece may declare state, and a piece declares which channels it contributes to.</p>
 
 <pre><code>interface Piece&lt;I, O, S = void&gt; {
   <span class="cm">/** Milliseconds per pass. 0 means aperiodic: `t` is always 0 and the piece reads `ctx.elapsed`. */</span>
   duration: number;
+  <span class="cm">/** The channels this piece contributes to. Every key `at` sets, and no others. */</span>
+  readonly writes: readonly (keyof O)[];
   at(t: number, item: I, ctx: Ctx&lt;S&gt;): Partial&lt;O&gt;;
 
   <span class="cm">/** Per-item state, created on the first frame this piece sees an item. */</span>
@@ -309,7 +311,9 @@ interface Ctx&lt;S = void&gt; {
   <tr><td><code>keys</code></td><td><code>keys(duration, stops, { ease?, easeBy?, delayBy? })</code></td><td>Declarative stops, klieg's transition sugar and wod's keyframes. Data preserved on <code>piece.keys</code> for an engine that reads data instead of calling functions.</td></tr>
 </table></div>
 
-<p>Wrappers stay wrappers. klieg's <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>hinge</code> and <code>partition</code> take a piece and return a piece, and none of them changes. Composition at the piece level is for reshaping one contribution; composition at the mix level is for running several. The two do not merge.</p>
+<p><code>writes</code> is the piece's half of the contract the rest of the package already states: a channel table declares what a consumer has, an engine declares its <code>runs</code> set, and both are checked at <code>add</code>. Without it the only way to learn what a piece touches is to call it, per item, per frame. With it the mix refuses a piece contributing a channel the table lacks, resolves each track's channels once at <code>add</code> instead of walking the whole table per sample, and can answer what a track affects without sampling it. A <code>keys</code> piece derives it from its stops.</p>
+
+<p>Wrappers stay wrappers. klieg's <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>hinge</code> and <code>partition</code> take a piece and return a piece, and none of them changes except to pass <code>writes</code> through &mdash; a wrapper reshapes one contribution and never adds a channel to it. Composition at the piece level is for reshaping one contribution; composition at the mix level is for running several. The two do not merge.</p>
 
 <h2 id="tracks">Tracks</h2>
 <p>A track is a piece given a clock and a volume knob. This is the unit that answers "independent state and timeframe": two tracks of the same piece are two clocks, two states, two weights.</p>
@@ -372,7 +376,7 @@ interface MixOptions&lt;I, O&gt; {
 }
 
 interface Mix&lt;I, O&gt; {
-  <span class="cm">/** Adds a track. It begins on the next step unless `start` says otherwise. */</span>
+  <span class="cm">/** Adds a track. Throws when the engine cannot run the piece's form, or the table lacks a channel it `writes`. */</span>
   add(spec: TrackSpec&lt;I, O&gt;): Handle;
   <span class="cm">/** N tracks whose weights split one signal, k in 0..1. Two pieces crossfade; more make stops. */</span>
   blend(pieces: readonly Piece&lt;I, O&gt;[], by: Signal&lt;I&gt;, spec?: Omit&lt;TrackSpec&lt;I, O&gt;, 'piece' | 'weight'&gt;): Handle[];
@@ -461,7 +465,7 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
 
 export const mixer: Engine;   <span class="cm">// the one that ships</span></code></pre>
 
-<p><b>mixer</b> runs both forms on the CPU, samples per item on demand, and is the extraction of what klieg does today. What later engines would look like, so the seam is judged against something real and none of them is being built:</p>
+<p><b>mixer</b> runs both forms on the CPU, samples per item on demand, and is the extraction of what klieg does today. It folds each contribution into the item's accumulator as it samples, rather than collecting every layer and merging at the end as klieg's <code>EffectFrame</code> does: weights are scalars that no sample depends on, so they resolve for the item first and the group cap holds. That order is what would let a later revision hand pieces one scratch object to write into instead of returning a fresh partial per piece per item per frame, which <code>writes</code> makes safe to hand out without clearing. What later engines would look like, so the seam is judged against something real and none of them is being built:</p>
 <ul>
   <li><b>A baked engine</b> runs <code>keys</code> tracks only and emits Web Animations or CSS keyframes, so a DOM consumer like wod gets compositor-thread playback. It refuses <code>fn</code> pieces at <code>add</code>.</li>
   <li><b>A recording engine</b> wraps another engine and captures every sample into keyframes, turning a procedural piece into data for the baked one.</li>
@@ -511,6 +515,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>Band quiet.</b> A signal held inside a <code>gate</code>'s band for a whole pass produces no switch, whatever it does inside it. Same for a rest-less channel's contribution under a weight that wanders between <code>off</code> and <code>on</code>.</li>
   <li><b>Group cap.</b> Two tracks in a group at weight 1 each produce the same output as one at weight 1.</li>
   <li><b>Handover.</b> <code>stop({ at: 'rest' })</code> removes per item at the first resting frame, and at the deadline for a piece that never rests.</li>
+  <li><b>Declared writes.</b> A piece's <code>at</code> sets no key outside its <code>writes</code>, on every item and every pass. A track whose piece writes a channel the table lacks throws at <code>add</code> naming both.</li>
   <li><b>Engine refusal.</b> An engine whose <code>runs</code> lacks <code>fn</code> throws at <code>add</code> naming the track.</li>
   <li><b>The klieg extraction</b> is judged by klieg's own suites and the Playwright baselines, unchanged.</li>
 </ul>
@@ -520,6 +525,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>The package name.</b> <code>blits</code> is free on npm. <code>@lightningjs/blits</code> is a live TV app framework with its own animation plugin, so searches for the name land there first.</li>
   <li><b>Where klieg's stagger lives.</b> The grammar is generic already; whether <code>StaggerSpec</code> and <code>orderKey</code> move into the package or stay klieg's and are passed in as a function.</li>
   <li><b>Color's lerp.</b> A hex channel needs a color space to lerp in. sRGB is what klieg's light channel assumes; OKLCH reads better for a crossfade between hues. One choice, made once, on the stock <code>hex</code> channel.</li>
+  <li><b>Whether <code>at</code> writes into a buffer.</b> A piece allocates one partial offset per item per frame, and <code>writes</code> plus the fold order would let the mix hand it one scratch object instead. It costs the nicest property <code>at</code> has &mdash; a pure function a test calls once &mdash; so it waits on a p95 frame time from the klieg port, measured after <code>sample(item, out)</code> has already taken the merge's own allocations out. If it lands it replaces the returning form; two ways to author a piece cost more than the allocation does.</li>
   <li><b>The stock band's width.</b> Whether <code>gate</code>'s default band is symmetric around <code>at</code> and how wide it is. It has to clear the frame noise in a real signal, so it is a measurement from klieg's <code>near</code> and <code>dwell</code>, not a guess.</li>
   <li><b>Whether <code>slew</code> is linear or exponential.</b> klieg's three decays are all linear, <code>ms / rate</code>, so linear keeps the port's arithmetic identical and the Playwright baselines green. An exponential release reads better and never reaches rest, which <code>atRest</code> needs it to, so it would want a floor. One choice, made once.</li>
   <li><b>Whether magicsmoke wants this at all.</b> Its fault is one intensity; the case is weakest there and it may stay a consumer only of <code>slew</code>.</li>
