@@ -22,13 +22,22 @@ one of them, and a script.
   klieg port, decided-against, tests, open items. Status line says design under review. **It is
   written in the incumbent words** (table, offset, piece, track) and gets renamed once the
   vocabulary is called.
-- `docs/2026-09-15-vocabulary.html` — the naming sheet: 19 nouns (one fixed), 8 verbs, 4
-  operations, 20 candidates each, six consistent-set columns, relations, algebra, and page-wide
-  substitution of the reader's picks. Its behavior is specified in `~/src/semanticore/README.md`
-  and the lessons from building it in `~/src/semanticore/HANDOFF.md`.
-- `docs/2026-09-15-vocabulary.json` — the sheet exported to the `Job` shape semanticore loads.
-  `docs/export-vocabulary.py` regenerates it; run it after any edit to the sheet, and it exits
-  non-zero if a role does not hold exactly 20 words.
+- `docs/2026-09-15-vocabulary.json` — **the naming sheet, and the source of it.** 19 nouns (one
+  fixed), 8 verbs, 4 operations, 20 candidates each, six consistent-set columns, relations,
+  algebra. Edit this file; semanticore builds the page from it, so nothing is hand-edited in HTML
+  any more:
+
+  ```
+  cd ~/src/semanticore && node bin/semanticore.js check <job>   # 20-word rule, placeholders
+  node bin/semanticore.js serve ~/src/blits/docs/2026-09-15-vocabulary.json --port 4871
+  ```
+
+  Pinned to semanticore `7dac96e`. The built page is not committed here; `serve` rebuilds on every
+  edit and adds undo/redo, snapshots, cross-off and chat, none of which the hand page had.
+- `docs/2026-09-15-vocabulary.html` — the hand-built sheet from 2026-09-15, now frozen and no
+  longer the source. Kept only until two things are true: the served page is confirmed at visual
+  parity with it, and Mike's picks have been read out of the browser tab that holds them. Then it
+  goes; git history and `~/src/semanticore/reference/` both keep a copy.
 
 ## Decided in conversation, and in no doc
 
@@ -68,21 +77,27 @@ one of them, and a script.
 
 ## Next, in order
 
-1. **Mike calls the set.** Then rename through the schema page, regenerate the export, and copy
-   both pages and the JSON into `~/src/semanticore/reference/`.
-2. **Spec self-review** of the schema page (placeholders, contradictions, ambiguity, scope) and
+1. **Mark the glosses for substitution.** The definitions are written in the incumbent words and
+   almost nothing in them is marked: 6 marked tokens against 166 bare role-word occurrences. So a
+   pick changes the headings and leaves every definition saying `offset` and `channel`, which is
+   the page's one job undone — a name is judged in a sentence. This has to land before the set can
+   be called.
+2. **Mike calls the set.** Then rename through the schema page and copy the JSON into
+   `~/src/semanticore/reference/`.
+3. **Spec self-review** of the schema page (placeholders, contradictions, ambiguity, scope) and
    Mike's sign-off. This is the brainstorming skill's review gate; the design has been presented
    but not approved as a spec.
-3. **Implementation plan** via the writing-plans skill: package scaffold (zero deps, ESM, vitest,
+4. **Implementation plan** via the writing-plans skill: package scaffold (zero deps, ESM, vitest,
    biome as klieg), stock channels with property tests for the laws, piece and keys forms, tracks,
    the mixer engine, then the klieg extraction with baselines as the gate.
-4. **A remote**, private under orochi235 like semanticore, when Mike asks.
-5. **`~/src/PROJECTS.md`** entry for blits once it has code; add semanticore at the same time.
+5. **A remote**, private under orochi235 like semanticore, when Mike asks.
+6. **`~/src/PROJECTS.md`** entry for blits once it has code; add semanticore at the same time.
 
 ## Loose ends
 
 - No remote; two design pages committed only here.
-- The picks exist in one browser. If they matter, get the words from Mike and write them into the
-  schema page and this file.
+- The picks exist in one browser, in the hand page's tab. Nothing on disk holds them, and the
+  served page starts from the recommendations. Get them out before that tab is closed; after the
+  switch semanticore's snapshots write them to a file.
 - The schema page and the vocabulary sheet disagree on nothing yet, only because the sheet
   substitutes and the schema does not. After the rename they must be read together once.
