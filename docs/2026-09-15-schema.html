@@ -259,7 +259,7 @@ type Table&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K
   <tr><td><code>vec(n, ch)</code></td><td>per axis</td><td>per axis</td><td>per axis</td><td>per axis</td><td>Vec3 position, premultiplied light</td></tr>
 </table></div>
 
-<p>A channel with no rest cannot fade. The mix handles that in one way: below a weight threshold the contribution is dropped, above it the value passes through whole. That is the rule hinge's blend mode already applies to color, and it is stated here once so no consumer rediscovers it. Retargeting is the way a rest-less channel does move smoothly, since a lerp from a sampled value needs no identity.</p>
+<p>A channel with no rest cannot fade. The mix handles that in one way: below a weight threshold the contribution is dropped, above it the value passes through whole. That is the rule hinge's blend mode already applies to color, and it is stated here once so no consumer rediscovers it. <b>The threshold is a band, not an edge</b> &mdash; it drops at <code>off</code> and passes at <code>on</code>, and between the two it holds whatever it last did. One edge chatters: a weight resting on it is carried back and forth by frame noise, and every crossing drops or restores the whole contribution. Retargeting is the way a rest-less channel does move smoothly, since a lerp from a sampled value needs no identity.</p>
 
 <p>A table is plain data, so a consumer declares one in a line and the mix is typed by it:</p>
 <pre><code>const PART = table&lt;PartOffset&gt;({
@@ -403,11 +403,12 @@ interface Mix&lt;I, O&gt; {
 function peak&lt;I&gt;(...signals: Signal&lt;I&gt;[]): Signal&lt;I&gt;;          <span class="cm">// max</span>
 function slew&lt;I&gt;(of: Signal&lt;I&gt;, { riseMs, fallMs }): Signal&lt;I&gt;;  <span class="cm">// stateful: rate-limited follow toward its input</span>
 function level&lt;I&gt;(initial?: number): Signal&lt;I&gt; &amp; { set(v: number): void };  <span class="cm">// host-written</span>
-function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;          <span class="cm">// 0 below `at`, 1 at or above</span></code></pre>
+function gate&lt;I&gt;(of: Signal&lt;I&gt;, band: { on: number; off: number }): Signal&lt;I&gt;;  <span class="cm">// stateful: holds inside the band</span>
+function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;          <span class="cm">// sugar for on = off = at</span></code></pre>
 
-<p>A stateful signal keeps state the same way a stateful piece does: per item, keyed by identity, stepped by the gap in <code>now</code>. <code>slew</code> is klieg's <code>dwell</code> with the cursor factored out.</p>
+<p>A stateful signal keeps state the same way a stateful piece does: per item, keyed by identity, stepped by the gap in <code>now</code>. <code>slew</code> is klieg's <code>dwell</code> with the cursor factored out; <code>gate</code> keeps one bit, which way it last switched.</p>
 
-<p><code>slew</code> is the package's one decay primitive: a value that follows its input at a rate limit, no faster than <code>riseMs</code> per unit climbing or <code>fallMs</code> draining. It is not <code>Easing</code>, which is a curve over a known duration, and it is not called <code>ease</code> for that reason &mdash; <code>fade.ease</code> and <code>keys({ ease })</code> already mean the curve. A decay tail is a <code>slew</code> to 0 with no rise; a fade is a <code>slew</code> on a weight; klieg's <code>kicks</code> is a <code>slew</code> to 0 that <code>peak</code> pokes back up. Nothing else in the package stores a value in order to lag it.</p>
+<p><code>slew</code> is the package's one decay primitive: a value that follows its input at a rate limit, no faster than <code>riseMs</code> per unit climbing or <code>fallMs</code> draining. It is not <code>Easing</code>, which is a curve over a known duration, and it is not called <code>ease</code> for that reason &mdash; <code>fade.ease</code> and <code>keys({ ease })</code> already mean the curve. A decay tail is a <code>slew</code> to 0 with no rise; a fade is a <code>slew</code> on a weight; klieg's <code>kicks</code> is a <code>slew</code> to 0 that <code>peak</code> pokes back up. Nothing else in the package stores a value in order to lag it. <code>gate</code> is the other half of that pair and not a substitute for it: a slew sets how fast a value may move, a band sets whether it may move at all. A slew cannot quiet a gate, because a rate limit delays a crossing without deciding it, and an input resting on the threshold drags the slewed value onto the threshold with it.</p>
 
 <h2 id="time">Time</h2>
 <ul>
@@ -496,6 +497,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>Keyframes as the only form.</b> The platform's shape and wod's. It cannot carry a hash-driven flicker or a permutation walk without an escape hatch that is the procedural form under another name. Both forms are first-class instead.</li>
   <li><b>Adopting a tweening library.</b> GSAP, anime.js and Motion own a property and write absolute values, so concurrent writers conflict. anime.js v4's additive mode is the closest and still has no rest rule per channel. three's <code>AnimationMixer</code> has the right model and is keyframe-only over object property paths.</li>
   <li><b>Item registration.</b> A <code>mix.items(list)</code> call would let the mix step every state eagerly. It puts a second source of truth about the pool in the host. Lazy state keyed by identity, stepped by the gap in <code>now</code>, needs nothing from the host and is the rule klieg already proved.</li>
+  <li><b>A slew in place of the band.</b> Smoothing a gate's input instead of giving it two edges. It delays the crossing without deciding it, so an input that rests on the threshold chatters anyway, and the rate needed to help at all costs visible lag.</li>
   <li><b>A mix option for the lurch guard.</b> A global "normalize when over 1" would apply to effects that legitimately stack. The cap belongs to the tracks that crossfade, so it is a <code>group</code>.</li>
 </ul>
 
@@ -506,6 +508,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>Catch-up.</b> An item unsampled for three frames steps by the whole gap on the fourth.</li>
   <li><b>Fade continuity.</b> A track stopped mid-pass with a fade produces no frame-to-frame jump larger than its per-frame ramp, on every channel with rest.</li>
   <li><b>Retarget continuity.</b> A <code>from: 'current'</code> track added on a moving item has a first sample equal to the item's previous sample.</li>
+  <li><b>Band quiet.</b> A signal held inside a <code>gate</code>'s band for a whole pass produces no switch, whatever it does inside it. Same for a rest-less channel's contribution under a weight that wanders between <code>off</code> and <code>on</code>.</li>
   <li><b>Group cap.</b> Two tracks in a group at weight 1 each produce the same output as one at weight 1.</li>
   <li><b>Handover.</b> <code>stop({ at: 'rest' })</code> removes per item at the first resting frame, and at the deadline for a piece that never rests.</li>
   <li><b>Engine refusal.</b> An engine whose <code>runs</code> lacks <code>fn</code> throws at <code>add</code> naming the track.</li>
@@ -517,6 +520,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>The package name.</b> <code>blits</code> is free on npm. <code>@lightningjs/blits</code> is a live TV app framework with its own animation plugin, so searches for the name land there first.</li>
   <li><b>Where klieg's stagger lives.</b> The grammar is generic already; whether <code>StaggerSpec</code> and <code>orderKey</code> move into the package or stay klieg's and are passed in as a function.</li>
   <li><b>Color's lerp.</b> A hex channel needs a color space to lerp in. sRGB is what klieg's light channel assumes; OKLCH reads better for a crossfade between hues. One choice, made once, on the stock <code>hex</code> channel.</li>
+  <li><b>The stock band's width.</b> Whether <code>gate</code>'s default band is symmetric around <code>at</code> and how wide it is. It has to clear the frame noise in a real signal, so it is a measurement from klieg's <code>near</code> and <code>dwell</code>, not a guess.</li>
   <li><b>Whether <code>slew</code> is linear or exponential.</b> klieg's three decays are all linear, <code>ms / rate</code>, so linear keeps the port's arithmetic identical and the Playwright baselines green. An exponential release reads better and never reaches rest, which <code>atRest</code> needs it to, so it would want a floor. One choice, made once.</li>
   <li><b>Whether magicsmoke wants this at all.</b> Its fault is one intensity; the case is weakest there and it may stay a consumer only of <code>slew</code>.</li>
 </ul>
