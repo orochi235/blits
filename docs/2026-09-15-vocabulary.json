@@ -820,7 +820,7 @@
               "star": false
             },
             {
-              "word": "system",
+              "word": "session",
               "star": false
             },
             {
@@ -1257,6 +1257,133 @@
         }
       ],
       "description": "implementation"
+    },
+    {
+      "key": "system",
+      "title": "System",
+      "was": "system",
+      "kind": "noun",
+      "gloss": {
+        "lead": "One complete area of driven behavior: a table, the item type it drives, and the mix that runs them.",
+        "items": [
+          "klieg's motion, effects and lighting are three systems in one host; wod's transitions are one.",
+          "A system is what a consumer declares and could do without: dropping one takes its table, its items and its mix with it, and leaves the others standing.",
+          "Two systems never share a mix, so a track belongs to exactly one."
+        ]
+      },
+      "groups": [
+        {
+          "field": "stage",
+          "words": [
+            {
+              "word": "department",
+              "star": true
+            },
+            {
+              "word": "desk",
+              "star": false
+            },
+            {
+              "word": "board",
+              "star": false
+            },
+            {
+              "word": "grid",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation",
+          "words": [
+            {
+              "word": "rig",
+              "star": true
+            },
+            {
+              "word": "harness",
+              "star": false
+            },
+            {
+              "word": "layer",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "subsystem",
+              "star": true
+            },
+            {
+              "word": "module",
+              "star": false
+            },
+            {
+              "word": "service",
+              "star": false
+            },
+            {
+              "word": "facility",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "structure",
+              "star": false
+            },
+            {
+              "word": "space",
+              "star": false
+            },
+            {
+              "word": "category",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "audio",
+          "words": [
+            {
+              "word": "rack",
+              "star": false
+            },
+            {
+              "word": "console",
+              "star": false
+            },
+            {
+              "word": "bus",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "anatomy",
+          "words": [
+            {
+              "word": "faculty",
+              "star": true
+            },
+            {
+              "word": "apparatus",
+              "star": false
+            },
+            {
+              "word": "organ",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "complete area"
     },
     {
       "key": "host",
@@ -3899,6 +4026,17 @@
         "physics": "constraint",
         "learning": "softmax"
       }
+    },
+    {
+      "role": "system",
+      "words": {
+        "DAW": "rack",
+        "stage lighting": "department",
+        "animation rig": "rig",
+        "algebra": "structure",
+        "physics": "apparatus",
+        "learning": "module"
+      }
     }
   ],
   "defaults": {
@@ -3947,6 +4085,10 @@
     {
       "formula": "mix = { track₁ … trackₘ } over one table",
       "gloss": "what a host holds and steps"
+    },
+    {
+      "formula": "system = table + item + mix",
+      "gloss": "one complete area a host drives: what can be moved, what is moved, and what is moving it"
     },
     {
       "formula": "handle → track.(start, rate, weight)",
