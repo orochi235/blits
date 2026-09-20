@@ -1,21 +1,60 @@
 {
   "picks": {
-    "table": "domain",
+    "table": "slot",
     "channel": "axis",
     "offset": "point",
     "piece": "curve",
     "item": "subject",
-    "track": "run"
+    "handle": "binding",
+    "weight": "coefficient",
+    "host": "integrator",
+    "sample": "pose",
+    "contribution": "influence",
+    "context": "setting",
+    "period": "period",
+    "v-add": "arm",
+    "track": "effect",
+    "v-step": "move",
+    "v-clear": "clear",
+    "v-blend": "combine",
+    "v-sample": "sample"
   },
   "chosen": {
     "offset": true,
     "item": true,
-    "track": true
+    "table": true,
+    "handle": true,
+    "weight": true,
+    "host": true,
+    "sample": true,
+    "contribution": true,
+    "context": true,
+    "period": true,
+    "v-add": true,
+    "track": true,
+    "v-step": true,
+    "v-clear": true,
+    "v-blend": true,
+    "v-sample": true
   },
-  "written": {},
-  "locked": {},
-  "informal": {},
-  "struck": {},
+  "written": {
+    "table": "slot",
+    "track": "effect"
+  },
+  "locked": {
+    "weight": true,
+    "sample": true,
+    "period": true
+  },
+  "informal": {
+    "period": true
+  },
+  "struck": {
+    "signal": {
+      "fader": true,
+      "dimmer": true
+    }
+  },
   "important": {
     "channel": true,
     "track": true,
@@ -36,6 +75,7 @@
     "signal": "noun",
     "handle": "noun",
     "engine": "noun",
+    "system": "noun",
     "host": "noun",
     "rest": "noun",
     "weight": "noun",
