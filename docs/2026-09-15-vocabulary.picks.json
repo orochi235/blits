@@ -1,0 +1,51 @@
+{
+  "picks": {
+    "table": "domain",
+    "channel": "axis",
+    "offset": "point",
+    "piece": "curve",
+    "item": "subject",
+    "track": "run"
+  },
+  "chosen": {
+    "offset": true,
+    "item": true,
+    "track": true
+  },
+  "written": {},
+  "locked": {},
+  "informal": {},
+  "struck": {},
+  "important": {
+    "channel": true,
+    "track": true,
+    "piece": true,
+    "item": true,
+    "mix": true,
+    "rest": true,
+    "weight": true
+  },
+  "pos": {
+    "offset": "noun",
+    "channel": "noun",
+    "table": "noun",
+    "item": "noun",
+    "piece": "noun",
+    "track": "noun",
+    "mix": "noun",
+    "signal": "noun",
+    "handle": "noun",
+    "engine": "noun",
+    "host": "noun",
+    "rest": "noun",
+    "weight": "noun",
+    "sample": "noun",
+    "contribution": "noun",
+    "context": "noun",
+    "period": "noun",
+    "phase": "noun",
+    "group": "noun"
+  },
+  "notes": {},
+  "starred": {}
+}
