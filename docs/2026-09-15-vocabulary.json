@@ -2372,7 +2372,7 @@
       "gloss": {
         "lead": "Take a track out of the mix.",
         "items": [
-          "Its weight ramps down over its fade first.",
+          "Its weight ramps to 0 over the track’s fade first — a number of milliseconds, set when the track was added or passed here.",
           "Or, if asked, it waits per item until the track is at rest and leaves without a fade."
         ]
       },
@@ -2492,9 +2492,10 @@
       "was": "mix.step(now)",
       "kind": "verb",
       "gloss": {
-        "lead": "Move the mix to a frame.",
+        "lead": "Move the mix to a point in time.",
         "items": [
-          "Every track’s clock, weight and piece state advances once, keyed by the frame’s time.",
+          "It takes the frame’s clock reading, not an amount elapsed. The gap since the last call can be any size, and every clock, weight and piece state advances by that whole gap at once.",
+          "So a mix left alone for a second catches up in one call, and a host that drops frames loses no motion.",
           "Asking twice for the same time changes nothing."
         ]
       },
@@ -2975,8 +2976,10 @@
       "was": "mix.clear()",
       "kind": "verb",
       "gloss": {
-        "lead": "Stop every track in the mix, with the given fade.",
-        "items": []
+        "lead": "Stop every track in the mix at once.",
+        "items": [
+          "Takes a fade in milliseconds: every weight ramps to 0 over it, and the tracks leave when they get there. Without one they leave on the next frame."
+        ]
       },
       "groups": [
         {
