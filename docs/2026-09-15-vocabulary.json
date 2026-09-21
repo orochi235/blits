@@ -328,6 +328,10 @@
           "field": "data",
           "words": [
             {
+              "word": "envelope",
+              "star": true
+            },
+            {
               "word": "schema",
               "star": false
             },
@@ -354,10 +358,6 @@
             {
               "word": "range",
               "star": true
-            },
-            {
-              "word": "template",
-              "star": false
             }
           ]
         },
@@ -648,7 +648,8 @@
         "items": [
           "It has its own start time, rate and loop setting, its own weight over time, and its own set of items.",
           "Two tracks of the same piece are two clocks and two weights.",
-          "A track is what a host adds to a mix and later stops."
+          "A track is what a host adds to a mix and later stops.",
+          "What a host passes to <code>add</code> is a track spec; the track is the live thing, holding the clock, the weight and the piece's state per item."
         ]
       },
       "groups": [
@@ -769,6 +770,20 @@
         }
       ],
       "description": "playing instance"
+    },
+    {
+      "key": "spec",
+      "title": "Spec",
+      "was": "spec",
+      "kind": "fixed",
+      "gloss": {
+        "lead": "The plain object of parameters handed to a call.",
+        "items": [
+          "A track spec is what <code>add</code> takes — piece, items, rate, weight, fade. The track is what the mix builds from it, and what the handle points at.",
+          "Fixed, and used the same way everywhere: whatever a call takes as a bag of named parameters is that thing's spec."
+        ]
+      },
+      "description": "parameters passed in"
     },
     {
       "key": "mix",
@@ -2255,7 +2270,8 @@
         "items": [
           "klieg’s enter, active and exit are one group.",
           "Within a group the weights are capped to sum to at most 1, so a crossfade is always a \\blend of the two and never a pile-up.",
-          "Tracks meant to stack stay out of groups."
+          "Tracks meant to stack stay out of groups.",
+          "Tracks that must run in order belong to a sequence, not a group."
         ]
       },
       "groups": [
@@ -2272,10 +2288,6 @@
             },
             {
               "word": "submix",
-              "star": false
-            },
-            {
-              "word": "aux",
               "star": false
             }
           ]
@@ -2319,10 +2331,6 @@
             {
               "word": "set",
               "star": false
-            },
-            {
-              "word": "cohort",
-              "star": false
             }
           ]
         },
@@ -2361,21 +2369,166 @@
             {
               "word": "band",
               "star": false
+            },
+            {
+              "word": "seat",
+              "star": true
+            },
+            {
+              "word": "choke",
+              "star": false
             }
           ]
         }
       ],
       "description": "capped set"
+    },
+    {
+      "key": "sequence",
+      "title": "Sequence",
+      "was": "sequence",
+      "kind": "noun",
+      "gloss": {
+        "lead": "An ordered chain of tracks that hand over, one to the next.",
+        "items": [
+          "klieg's enter, active and exit, in that order: each track's exit is the next one's cue.",
+          "A group only caps what is on at once. A sequence also says what comes next, and when the whole thing is done.",
+          "It finishes, which a group never does — a handle for the sequence resolves once the last track has left."
+        ]
+      },
+      "groups": [
+        {
+          "field": "narrative",
+          "words": [
+            {
+              "word": "arc",
+              "star": true
+            },
+            {
+              "word": "act",
+              "star": false
+            },
+            {
+              "word": "beat",
+              "star": false
+            },
+            {
+              "word": "chapter",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "movement",
+              "star": true
+            },
+            {
+              "word": "phrase",
+              "star": false
+            },
+            {
+              "word": "suite",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "arrangement",
+              "star": false
+            },
+            {
+              "word": "timeline",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage",
+          "words": [
+            {
+              "word": "cuelist",
+              "star": false
+            },
+            {
+              "word": "rundown",
+              "star": false
+            },
+            {
+              "word": "chase",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "reel",
+              "star": false
+            },
+            {
+              "word": "montage",
+              "star": false
+            },
+            {
+              "word": "storyboard",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "composition",
+              "star": true
+            },
+            {
+              "word": "chain",
+              "star": false
+            },
+            {
+              "word": "order",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "trajectory",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "learning",
+          "words": [
+            {
+              "word": "curriculum",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "ordered chain"
     }
   ],
   "verbs": [
     {
       "key": "add",
       "title": "add",
-      "was": "mix.add(track)",
+      "was": "mix.add(spec)",
       "kind": "verb",
       "gloss": {
-        "lead": "Put a track into the mix.",
+        "lead": "Put a track into the mix, built from a spec.",
         "items": [
           "It begins on the next frame unless its start time says otherwise.",
           "Returns the handle."
@@ -2488,7 +2641,7 @@
           ]
         }
       ],
-      "signature": "mix.add(track)",
+      "signature": "mix.add(spec)",
       "description": "add"
     },
     {
@@ -2980,12 +3133,13 @@
     {
       "key": "blend",
       "title": "blend",
-      "was": "mix.blend(pieces, by)",
+      "was": "mix.blend(specs, by)",
       "kind": "verb",
       "gloss": {
         "lead": "Put several tracks in at once whose weights are shared out by one signal.",
         "items": [
-          "As the signal runs from 0 to 1, the result moves from the first piece to the last."
+          "As the signal runs from 0 to 1, the result moves from the first piece to the last.",
+          "The same as adding each of them, with one signal sharing the weights out."
         ]
       },
       "groups": [
@@ -3095,8 +3249,14 @@
           ]
         }
       ],
-      "signature": "mix.blend(pieces, by)",
-      "description": "blend"
+      "signature": "mix.blend(specs, by)",
+      "description": "blend",
+      "links": [
+        {
+          "rel": "derived from",
+          "to": "v-add"
+        }
+      ]
     },
     {
       "key": "clear",
@@ -3106,7 +3266,8 @@
       "gloss": {
         "lead": "Stop every track in the mix at once.",
         "items": [
-          "Takes a fade in milliseconds: every weight ramps to 0 over it, and the tracks leave when they get there. Without one they leave on the next frame."
+          "Takes a fade in milliseconds: every weight ramps to 0 over it, and the tracks leave when they get there. Without one they leave on the next frame.",
+          "The same as stopping each track through its handle, with one fade for all of them."
         ]
       },
       "groups": [
@@ -3217,7 +3378,13 @@
         }
       ],
       "signature": "mix.clear()",
-      "description": "clear"
+      "description": "clear",
+      "links": [
+        {
+          "rel": "derived from",
+          "to": "v-stop"
+        }
+      ]
     },
     {
       "key": "forget",
@@ -3471,7 +3638,8 @@
         "lead": "Pull a value toward its channel’s rest by a weight from 0 to 1.",
         "items": [
           "At 1 the value is untouched. At 0 it is rest.",
-          "Only a channel that has a rest can do this."
+          "Only a channel that has a rest can do this.",
+          "lerp with one end pinned to rest: scale(v, w) is lerp(rest, v, w). That is the whole reason a channel without a rest cannot do it."
         ]
       },
       "groups": [
@@ -3582,7 +3750,13 @@
         }
       ],
       "signature": "scale(v, w)",
-      "description": "scale"
+      "description": "scale",
+      "links": [
+        {
+          "rel": "derived from",
+          "to": "v-lerp"
+        }
+      ]
     },
     {
       "key": "lerp",
@@ -3710,7 +3884,8 @@
         "lead": "Merge every contribution reaching one item into one resolved record.",
         "items": [
           "Channel by channel, starting from rest.",
-          "What Σ stands for in the relations, and what an engine exists to compute."
+          "What Σ stands for in the relations, and what an engine exists to compute.",
+          "join, taken down the list two at a time, from rest. The channel's rule does the work; fold only supplies the order and the starting value."
         ]
       },
       "groups": [
@@ -3826,7 +4001,13 @@
         }
       ],
       "signature": "fold(contributions)",
-      "description": "fold"
+      "description": "fold",
+      "links": [
+        {
+          "rel": "derived from",
+          "to": "v-join"
+        }
+      ]
     }
   ],
   "sets": [
@@ -4038,13 +4219,27 @@
         "physics": "apparatus",
         "learning": "module"
       }
+    },
+    {
+      "role": "sequence",
+      "words": {
+        "DAW": "arrangement",
+        "stage lighting": "cuelist",
+        "animation rig": "timeline",
+        "algebra": "composition",
+        "physics": "trajectory",
+        "learning": "curriculum"
+      }
     }
   ],
   "defaults": {
-    "table": "domain",
+    "table": "envelope",
     "channel": "axis",
     "offset": "term",
-    "piece": "curve"
+    "piece": "pattern",
+    "sequence": "arc",
+    "group": "seat",
+    "track": "voice"
   },
   "relations": [
     {
@@ -4072,7 +4267,7 @@
       "gloss": "an effect given a start, a speed, a volume, a set of things"
     },
     {
-      "formula": "weight = envelope(now) &nbsp;or&nbsp; signal(item)",
+      "formula": "weight = ramp(now) &nbsp;or&nbsp; signal(item)",
       "gloss": "how much of a track is on: a ramp in time, or an outside reading"
     },
     {
@@ -4086,6 +4281,10 @@
     {
       "formula": "mix = { track₁ … trackₘ } over one table",
       "gloss": "what a host holds and steps"
+    },
+    {
+      "formula": "sequence = [track₁ … trackₙ] in order",
+      "gloss": "a chain that hands over and finishes; a group only caps what is on at once"
     },
     {
       "formula": "system = table + item + mix",
@@ -4127,7 +4326,7 @@
     },
     {
       "key": "track",
-      "body": "<p>A tuple <var>k</var> = (<var>p</var>, <var>s</var>, <var>r</var>, <var>w</var>, <var>on</var>): a piece, a start time, a rate, a weight function, and a target predicate <var>I</var> → {0, 1}. Its own clock and its contribution on an item at time <var>τ</var>:</p>\n    <p class=\"m\">elapsed<sub>k</sub>(τ) = (τ − <var>s</var>) · <var>r</var><br>\n    <var>t</var> = (elapsed mod <var>d<sub>p</sub></var>) / <var>d<sub>p</sub></var><br>\n    <var>w<sub>k</sub></var> : ℝ → [0, 1] &nbsp;<span class=\"note\">an envelope in τ, or σ(<var>i</var>, ctx)</span><br>\n    contrib<sub>k</sub>(<var>i</var>, τ) = <var>w<sub>k</sub></var>(τ) ⊙ <var>p</var>(<var>t</var>, <var>i</var>, ctx) &nbsp;&nbsp;where <var>w</var> ⊙ δ = (scale<sub>c</sub>(δ<sub>c</sub>, <var>w</var>))<sub>c</sub></p>\n    <p>On a channel with no rest, ⊙ is a gate: δ<sub>c</sub> if <var>w</var> &gt; ε, else ⊥. Two tracks of one piece are two tuples; they share <var>p</var> and nothing else.</p>"
+      "body": "<p>A tuple <var>k</var> = (<var>p</var>, <var>s</var>, <var>r</var>, <var>w</var>, <var>on</var>): a piece, a start time, a rate, a weight function, and a target predicate <var>I</var> → {0, 1}. Its own clock and its contribution on an item at time <var>τ</var>:</p>\n    <p class=\"m\">elapsed<sub>k</sub>(τ) = (τ − <var>s</var>) · <var>r</var><br>\n    <var>t</var> = (elapsed mod <var>d<sub>p</sub></var>) / <var>d<sub>p</sub></var><br>\n    <var>w<sub>k</sub></var> : ℝ → [0, 1] &nbsp;<span class=\"note\">a ramp in τ, or σ(<var>i</var>, ctx)</span><br>\n    contrib<sub>k</sub>(<var>i</var>, τ) = <var>w<sub>k</sub></var>(τ) ⊙ <var>p</var>(<var>t</var>, <var>i</var>, ctx) &nbsp;&nbsp;where <var>w</var> ⊙ δ = (scale<sub>c</sub>(δ<sub>c</sub>, <var>w</var>))<sub>c</sub></p>\n    <p>On a channel with no rest, ⊙ is a gate: δ<sub>c</sub> if <var>w</var> &gt; ε, else ⊥. Two tracks of one piece are two tuples; they share <var>p</var> and nothing else.</p>"
     },
     {
       "key": "mix",

@@ -1,31 +1,37 @@
 {
   "picks": {
-    "table": "slot",
-    "channel": "axis",
-    "offset": "point",
-    "piece": "curve",
+    "channel": "channel",
+    "offset": "delta",
+    "piece": "pattern",
     "item": "subject",
-    "handle": "binding",
+    "handle": "handle",
     "weight": "coefficient",
-    "host": "integrator",
     "sample": "pose",
     "contribution": "influence",
-    "context": "setting",
+    "context": "context",
     "period": "period",
-    "v-add": "arm",
-    "track": "effect",
-    "v-step": "move",
-    "v-clear": "clear",
-    "v-blend": "combine",
-    "v-sample": "sample"
+    "v-add": "insert",
+    "track": "voice",
+    "v-step": "step",
+    "v-blend": "interp",
+    "v-sample": "get",
+    "sequence": "chain",
+    "v-forget": "reset",
+    "v-clear": "wipe",
+    "v-stop": "remove",
+    "v-join": "join",
+    "v-scale": "scale",
+    "v-lerp": "lerp",
+    "v-fold": "fold",
+    "table": "envelope",
+    "engine": "runtime",
+    "host": "engine"
   },
   "chosen": {
     "offset": true,
     "item": true,
-    "table": true,
     "handle": true,
     "weight": true,
-    "host": true,
     "sample": true,
     "contribution": true,
     "context": true,
@@ -33,26 +39,62 @@
     "v-add": true,
     "track": true,
     "v-step": true,
-    "v-clear": true,
     "v-blend": true,
-    "v-sample": true
+    "v-sample": true,
+    "sequence": true,
+    "v-forget": true,
+    "v-clear": true,
+    "v-stop": true,
+    "v-join": true,
+    "v-scale": true,
+    "v-lerp": true,
+    "v-fold": true,
+    "table": true,
+    "channel": true,
+    "piece": true,
+    "engine": true,
+    "host": true
   },
   "written": {
-    "table": "slot",
-    "track": "effect"
+    "v-forget": "reset",
+    "host": "engine"
   },
   "locked": {
     "weight": true,
     "sample": true,
-    "period": true
+    "period": true,
+    "sequence": true,
+    "v-forget": true,
+    "v-add": true,
+    "v-stop": true,
+    "v-step": true,
+    "v-clear": true,
+    "v-scale": true,
+    "v-lerp": true,
+    "table": true,
+    "item": true,
+    "v-blend": true,
+    "context": true,
+    "contribution": true,
+    "track": true,
+    "piece": true,
+    "handle": true,
+    "channel": true,
+    "offset": true
   },
   "informal": {
-    "period": true
+    "period": true,
+    "handle": true
   },
   "struck": {
     "signal": {
       "fader": true,
       "dimmer": true
+    },
+    "offset": {
+      "send": true,
+      "plate": true,
+      "cue": true
     }
   },
   "important": {
@@ -71,6 +113,7 @@
     "item": "noun",
     "piece": "noun",
     "track": "noun",
+    "spec": "noun",
     "mix": "noun",
     "signal": "noun",
     "handle": "noun",
@@ -84,7 +127,8 @@
     "context": "noun",
     "period": "noun",
     "phase": "noun",
-    "group": "noun"
+    "group": "noun",
+    "sequence": "noun"
   },
   "notes": {},
   "starred": {}

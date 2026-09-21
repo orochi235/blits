@@ -94,7 +94,7 @@ head('track', ` — one ${word('piece')}, playing`, 400, 280, 352);
 rows(400, 306, [
   `<tspan class="strong">${word('piece')}</tspan>(${word('phase')}, ${word('item')}, ${word('context')}) → ${word('offset')}`,
   `clock — start · rate · ${word('period')} ⇒ ${word('phase')}`,
-  `<tspan class="strong">${word('weight')}</tspan> — envelope(now), or ${an('signal')} ${word('signal')}`,
+  `<tspan class="strong">${word('weight')}</tspan> — ramp(now), or ${an('signal')} ${word('signal')}`,
   `target — where it is heading`,
 ], 352);
 

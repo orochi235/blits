@@ -38,15 +38,15 @@
 <text class="title" x="40" y="44">blits vocabulary — what contains what, and what reaches a subject</text>
 <text class="sub" x="40" y="66">Names are the current picks, with the incumbent in parentheses. Generated from 2026-09-15-vocabulary.json.</text>
 <rect class="box host" x="40" y="92" width="1160" height="46" rx="10"/>
-<text class="head" x="62" y="122"><tspan class="strong">integrator</tspan> <tspan class="was">(host)</tspan> — owns the frame loop: steps each mix once a frame, and holds every binding</text>
+<text class="head" x="62" y="122"><tspan class="strong">engine</tspan> <tspan class="was">(host)</tspan> — owns the frame loop: steps each mix once a frame, and holds every handle</text>
 <rect class="box frame" x="40" y="166" width="1160" height="404" rx="10"/>
 <text class="frametag" x="62" y="194">system — one complete area. klieg runs three: motion, effects, lighting</text>
 <rect class="box panel" x="68" y="212" width="248" height="172" rx="10"/>
-<text class="head" x="88" y="240"><tspan class="strong">slot</tspan> <tspan class="was">(table)</tspan></text>
+<text class="head" x="88" y="240"><tspan class="strong">envelope</tspan> <tspan class="was">(table)</tspan></text>
 <text class="row" x="88" y="262">what a subject can move on</text>
-<text class="row" x="88" y="292"><tspan class="chip">axis</tspan> position · sum</text>
-<text class="row" x="88" y="313"><tspan class="chip">axis</tspan> gain · mul</text>
-<text class="row" x="88" y="334"><tspan class="chip">axis</tspan> color · last</text>
+<text class="row" x="88" y="292"><tspan class="chip">channel</tspan> position · sum</text>
+<text class="row" x="88" y="313"><tspan class="chip">channel</tspan> gain · mul</text>
+<text class="row" x="88" y="334"><tspan class="chip">channel</tspan> color · last</text>
 <text class="row" x="88" y="366"><tspan class="strong">rest</tspan> — nothing happening</text>
 <rect class="box panel" x="68" y="400" width="248" height="72" rx="10"/>
 <text class="head" x="88" y="428"><tspan class="strong">subject</tspan> <tspan class="was">(item)</tspan></text>
@@ -55,26 +55,26 @@
 <text class="head" x="88" y="516"><tspan class="strong">signal</tspan> — from outside</text>
 <text class="row" x="88" y="540">0 to 1, per subject, per frame</text>
 <rect class="box panel" x="352" y="212" width="848" height="336" rx="10"/>
-<text class="head" x="374" y="240"><tspan class="strong">mix</tspan> — every effect playing, over one slot</text>
+<text class="head" x="374" y="240"><tspan class="strong">mix</tspan> — every voice playing, over one envelope</text>
 <rect class="box ghost" x="396" y="268" width="392" height="180" rx="10"/>
 <rect class="box ghost" x="388" y="260" width="392" height="180" rx="10"/>
 <rect class="box card" x="380" y="252" width="392" height="180" rx="10"/>
-<text class="head" x="400" y="280"><tspan class="strong">effect</tspan> <tspan class="was">(track)</tspan> — one curve, playing</text>
-<text class="row" x="400" y="306"><tspan class="strong">curve</tspan>(t, subject, setting) → point</text>
+<text class="head" x="400" y="280"><tspan class="strong">voice</tspan> <tspan class="was">(track)</tspan> — one pattern, playing</text>
+<text class="row" x="400" y="306"><tspan class="strong">pattern</tspan>(t, subject, context) → delta</text>
 <text class="row" x="400" y="327">clock — start · rate · period ⇒ t</text>
-<text class="row" x="400" y="348"><tspan class="strong">coefficient</tspan> — envelope(now), or a signal</text>
+<text class="row" x="400" y="348"><tspan class="strong">coefficient</tspan> — ramp(now), or a signal</text>
 <text class="row" x="400" y="369">target — where it is heading</text>
 <rect class="box card dashed" x="800" y="252" width="372" height="92" rx="10"/>
 <text class="head" x="820" y="280"><tspan class="strong">group</tspan> — alternatives in time</text>
 <text class="row" x="820" y="304">weights capped to sum to 1</text>
 <text class="row" x="820" y="325">klieg's enter · active · exit</text>
 <rect class="box card" x="800" y="360" width="372" height="94" rx="10"/>
-<text class="head" x="820" y="388"><tspan class="strong">engine</tspan> — computes the fold</text>
+<text class="head" x="820" y="388"><tspan class="strong">runtime</tspan> <tspan class="was">(engine)</tspan> — computes the fold</text>
 <text class="row" x="820" y="412">one ships: the mixer; the seam is the interface</text>
-<text class="row mono" x="820" y="436">engine(mix, now) = subject ↦ pose</text>
+<text class="row mono" x="820" y="436">runtime(mix, now) = subject ↦ pose</text>
 <rect class="box card" x="800" y="470" width="372" height="62" rx="10"/>
-<text class="head" x="820" y="498"><tspan class="strong">binding</tspan> <tspan class="was">(handle)</tspan> — the live controls</text>
-<text class="row" x="820" y="520">start · rate · coefficient · seek · stop</text>
+<text class="head" x="820" y="498"><tspan class="strong">handle</tspan> — the live controls</text>
+<text class="row" x="820" y="520">start · rate · coefficient · seek · remove</text>
 <path class="edge" d="M 316 276 H 372" marker-end="url(#tip)"/>
 <text class="edgelabel" x="318" y="268">declares</text>
 <path class="edge" d="M 316 432 H 372" marker-end="url(#tip)"/>
@@ -83,14 +83,14 @@
 <text class="edgelabel" x="190" y="578">may be a coefficient</text>
 <text class="section" x="40" y="620">One subject, one frame</text>
 <rect class="box panel" x="68" y="636" width="300" height="108" rx="10"/>
-<text class="head" x="88" y="664"><tspan class="strong">point</tspan> <tspan class="was">(offset)</tspan> ⊂ slot</text>
-<text class="row" x="88" y="688">what one curve says about</text>
+<text class="head" x="88" y="664"><tspan class="strong">delta</tspan> <tspan class="was">(offset)</tspan> ⊂ envelope</text>
+<text class="row" x="88" y="688">what one pattern says about</text>
 <text class="row" x="88" y="709">one subject at one instant</text>
 <rect class="box panel" x="440" y="636" width="300" height="108" rx="10"/>
 <text class="head" x="460" y="664"><tspan class="strong">influence</tspan> <tspan class="was">(contribution)</tspan></text>
-<text class="row" x="460" y="688">= coefficient ⊙ point</text>
+<text class="row" x="460" y="688">= coefficient ⊙ delta</text>
 <text class="row" x="460" y="709">pulled toward rest by how</text>
-<text class="row" x="460" y="730">much of the effect is on</text>
+<text class="row" x="460" y="730">much of the voice is on</text>
 <rect class="box panel" x="816" y="636" width="384" height="108" rx="10"/>
 <text class="head" x="836" y="664"><tspan class="strong">pose</tspan> <tspan class="was">(ResolvedOffset)</tspan></text>
 <text class="row" x="836" y="688">= rest ⊕ Σ influence</text>
@@ -102,7 +102,7 @@
 <text class="edgelabel" x="372" y="682">× coefficient</text>
 <path class="edge" d="M 740 690 H 810" marker-end="url(#tip)"/>
 <text class="edgelabel" x="768" y="682">Σ</text>
-<text class="note" x="40" y="790">A system declares one slot and one kind of subject; its mix runs effects over that slot; each effect is one curve with its own clock and coefficient.</text>
-<text class="note" x="40" y="812">Nothing is computed on demand: the engine folds once a frame, and sample reads what the frame already produced.</text>
-<text class="note" x="40" y="834">Two systems never share a mix, so a effect belongs to exactly one.</text>
+<text class="note" x="40" y="790">A system declares one envelope and one kind of subject; its mix runs voices over that envelope; each voice is one pattern with its own clock and coefficient.</text>
+<text class="note" x="40" y="812">Nothing is computed on demand: the runtime folds once a frame, and get reads what the frame already produced.</text>
+<text class="note" x="40" y="834">Two systems never share a mix, so a voice belongs to exactly one.</text>
 </svg>
