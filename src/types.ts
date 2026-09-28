@@ -83,7 +83,10 @@ export interface VoiceSpec<I, O> {
   start?: number;
   /** Playback rate. 1 is real time; 0 freezes. */
   rate?: number;
-  /** true loops for good, false plays one pass and holds its last value, n plays n passes. */
+  /**
+   * true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its
+   * passes are done — over `fade.out` where one is set, at once where none is.
+   */
   loop?: boolean | number;
   /** Per-subject delay in ms, klieg's stagger grammar reduced to the one thing the mix needs. */
   stagger?: (subject: I) => number;
