@@ -158,8 +158,8 @@
   <div class="eyebrow">blits · design</div>
   <h1>An effects schema, and the API around it</h1>
   <p class="lede">A small runtime package for concurrent effects. Each effect runs on its own clock with its own state and weight, and a mix folds them into one value per subject per frame by rules that belong to the channel, not the effect.</p>
-  <p class="meta"><b>For:</b> whoever builds <code>blits</code>, and whoever ports klieg, wod, sherpa or magicsmoke onto it. <b>Answers:</b> what the vocabulary is, what an author writes, what a host calls, and where a second engine would plug in.</p>
-  <span class="status">Design under review · nothing built · 2026-09-15</span>
+  <p class="meta"><b>For:</b> whoever builds <code>blits</code>, and whoever ports klieg, wod, sherpa or magicsmoke onto it. <b>Answers:</b> what the vocabulary is, what an author writes, what a host calls, and where a second engine would plug in. The package implements this page; where the two differ, the code in <code>src/</code> is the one that runs.</p>
+  <span class="status">Built · v0.1.0 · design 2026-09-15, package 2026-09-28</span>
 </header>
 
 <h2 id="picture">In one picture</h2>
@@ -275,13 +275,15 @@ type Rig&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
 <pre><code>const PART = rig&lt;PartOffset&gt;({
   gain: mul(), scale: mul(), dark: max(), crawl: sum(),
   position: vec(3, sum()), rotation: vec(3, sum()),
-  light: vec(3, sum()), color: last({ lerp: mixHex }),
+  light: vec(3, sum()), color: hex(),
 });</code></pre>
 
 <h2 id="patches">Patches</h2>
 <p>A patch is what an author writes. It is klieg's <code>EffectPiece</code> with three additions: the setting carries absolute time as well as normalized, a patch may declare state, and a patch declares which channels it contributes to.</p>
 
 <pre><code>interface Patch&lt;I, O, S = void&gt; {
+  <span class="cm">/** Which authoring form built it. An engine declares which forms it runs. */</span>
+  readonly form: 'fn' | 'keys';
   <span class="cm">/** Milliseconds one pass lasts. 0 is aperiodic: one pass that never ends, so `phase` and `pass` stay 0,
      `loop` is ignored, and the patch reads `setting.elapsed` instead. */</span>
   period: number;
@@ -323,13 +325,13 @@ interface Setting&lt;S = void&gt; {
 <p>Two authoring forms build a patch. Both return the same interface, so a voice cannot tell them apart.</p>
 <div class="tbl"><table>
   <tr><th>form</th><th>signature</th><th>what it is</th></tr>
-  <tr><td><code>fn</code></td><td><code>patch(period, at, { state?, step? })</code></td><td>Procedural. Flicker, roving, a hash walk, a starter strike. Only a JS engine can run one.</td></tr>
+  <tr><td><code>fn</code></td><td><code>patch(period, at, { writes, state?, step? })</code></td><td>Procedural. Flicker, roving, a hash walk, a starter strike. Only a JS engine can run one.</td></tr>
   <tr><td><code>keys</code></td><td><code>keys(period, stops, { ease?, easeBy?, delayBy? })</code></td><td>Declarative stops, klieg's transition sugar and wod's keyframes. Data preserved on <code>patch.keys</code> for an engine that reads data instead of calling functions.</td></tr>
 </table></div>
 
 <p><code>writes</code> is the patch's half of the contract the rest of the package already states: a channel rig declares what a consumer has, an engine declares its <code>runs</code> set, and both are checked at <code>cue</code>. Without it the only way to learn what a patch touches is to call it, per subject, per frame. With it the mix refuses a patch contributing a channel the rig lacks, resolves each voice's channels once at <code>cue</code> instead of walking the whole rig per sample, and can answer what a voice affects without sampling it. A <code>keys</code> patch derives it from its stops.</p>
 
-<p>Four small names the page leans on: <code>Easing</code> is a <code>(u: number) =&gt; number</code> on 0..1, with the stock curves klieg already ships; <code>Keyframe&lt;O&gt;</code> is one stop, <code>{ at: number; delta: Partial&lt;O&gt;; ease?: Easing }</code>, kept on <code>patch.keys</code> so an engine can read what a <code>keys</code> patch is made of; <code>StaggerSpec</code> is klieg's stagger grammar, whose home is open below; <code>mixHex</code> is the hex channel's <code>lerp</code>, whose color space is open below.</p>
+<p>Two small names the page leans on: <code>Easing</code> is a <code>(u: number) =&gt; number</code> on 0..1, with the stock curves klieg already ships, and <code>Keyframe&lt;O&gt;</code> is one stop, <code>{ at: number; delta: Partial&lt;O&gt;; ease?: Easing }</code>, kept on <code>patch.keys</code> so an engine can read what a <code>keys</code> patch is made of. <code>mixHex</code> is the <code>hex</code> channel's <code>lerp</code>, shipped in sRGB; the color space is open below.</p>
 
 <p>Wrappers stay wrappers. klieg's <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>hinge</code> and <code>partition</code> take a patch and return a patch, and none of them changes except to pass <code>writes</code> through &mdash; a wrapper reshapes one influence and never adds a channel to it. Composition at the patch level is for reshaping one influence; composition at the mix level is for running several. The two do not merge.</p>
 
@@ -349,8 +351,9 @@ interface Setting&lt;S = void&gt; {
   rate?: number;
   <span class="cm">/** true loops for good, false plays one pass and holds its last value, n plays n passes. */</span>
   loop?: boolean | number;
-  <span class="cm">/** Per-subject phase spread, klieg's stagger grammar. Ramps `phase`; does not offset it. */</span>
-  stagger?: number | StaggerSpec;
+  <span class="cm">/** Per-subject delay in ms. klieg's stagger grammar stays klieg's and passes in the one thing
+     the mix needs: how long this subject waits. */</span>
+  stagger?: (subject: I) =&gt; number;
 
   <span class="cm">// weight</span>
   <span class="cm">/** Steady weight, or a signal read per subject per frame. Default 1. */</span>
@@ -363,7 +366,8 @@ interface Setting&lt;S = void&gt; {
 
   <span class="cm">// blend</span>
   <span class="cm">/** A `keys` patch whose first stop reads "wherever this subject is now", lerped over the pass. Read from
-     the pose of the frame before this voice first contributes, so it never reads itself. */</span>
+     the pose of the frame before this voice first contributes, so it never reads itself. With no
+     such frame on record it is this frame's pose with every other voice folded in. */</span>
   from?: 'current';
 }
 
@@ -388,14 +392,16 @@ interface Handle {
 <h2 id="mix">Mix</h2>
 <p>What a host holds. The methods are few because the voices carry the options.</p>
 
-<pre><code>function mix&lt;I, O&gt;(rig: Rig&lt;O&gt;, opts?: MixOptions&lt;I, O&gt;): Mix&lt;I, O&gt;;
+<pre><code>function mix&lt;I, O&gt;(rig: Rig&lt;O&gt;, opts?: MixOptions): Mix&lt;I, O&gt;;
 
-interface MixOptions&lt;I, O&gt; {
+interface MixOptions {
   engine?: Engine;                <span class="cm">// default: mixer</span>
   <span class="cm">/** Reduced motion: fades and warm-ups snap, `dt` reads Infinity. Read once at creation, or a signal. */</span>
   reduce?: boolean | (() =&gt; boolean);
   <span class="cm">/** Merged into every `setting.host`. */</span>
   host?: unknown;
+  <span class="cm">/** The band a rest-less channel's influence switches across. Default 0.4 / 0.6, a placeholder. */</span>
+  band?: { on: number; off: number };
 }
 
 interface Mix&lt;I, O&gt; {
@@ -490,7 +496,7 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
   <span class="cm">/** Which patch forms this engine can run. A voice whose patch it cannot run is refused at `cue`, by name. */</span>
   readonly runs: ReadonlySet&lt;'fn' | 'keys'&gt;;
   <span class="cm">/** Builds the mix. Everything on `Mix` is the engine's to implement. */</span>
-  create&lt;I, O&gt;(rig: Rig&lt;O&gt;, opts: MixOptions&lt;I, O&gt;): Mix&lt;I, O&gt;;
+  create&lt;I, O&gt;(rig: Rig&lt;O&gt;, opts: MixOptions): Mix&lt;I, O&gt;;
 }
 
 export const mixer: Engine;   <span class="cm">// the one that ships</span></code></pre>
@@ -537,8 +543,9 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
 </ul>
 
 <h2 id="tests">Tests</h2>
+<p>These are the package's suite, in <code>test/</code>. Everything below the klieg extraction is written and green.</p>
 <ul>
-  <li><b>Channel laws</b>, property-tested per stock channel: <code>join(v, rest) = v</code>, <code>scale(v, 1) = v</code>, <code>scale(v, 0) = rest</code>, <code>lerp(a, b, 0) = a</code>, <code>lerp(a, b, 1) = b</code>.</li>
+  <li><b>Channel laws</b>, property-tested per stock channel over a deterministic sample: <code>join(v, rest) = v</code>, <code>scale(v, 1) = v</code>, <code>scale(v, 0) = rest</code>, <code>lerp(a, b, 0) = a</code>, <code>lerp(a, b, 1) = b</code>. Each holds on the channel's own domain &mdash; <code>max</code>'s rest is an identity for values at or above it, which is what <code>dark</code> and <code>aperture</code> are.</li>
   <li><b>One frame, one answer.</b> A stateful patch sampled 12 times at one <code>now</code> steps once; a second <code>sync</code> with the same <code>now</code> is a no-op.</li>
   <li><b>Catch-up.</b> A subject unsampled for three frames steps by the whole gap on the fourth.</li>
   <li><b>Fade continuity.</b> A voice stopped mid-pass with a fade produces no frame-to-frame jump larger than its per-frame ramp, on every channel with rest.</li>
@@ -555,8 +562,8 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
 <ul>
   <li><b>Whether a <code>chain</code> is a first-class object.</b> An ordered set of voices that hand over, enter to active to exit, with one handle that resolves when the last has left. The design covers the behavior today with a <code>group</code> plus fades, which says how the ones that are on fold together and nothing about what comes next; klieg's <code>Sequence</code> and <code>Timeline</code> would port more directly onto the object. The word is called and the thing is not in the API.</li>
   <li><b>The package name.</b> <code>blits</code> is free on npm. <code>@lightningjs/blits</code> is a live TV app framework with its own animation plugin, so searches for the name land there first.</li>
-  <li><b>Where klieg's stagger lives.</b> The grammar is generic already; whether <code>StaggerSpec</code> and <code>orderKey</code> move into the package or stay klieg's and are passed in as a function.</li>
-  <li><b>Color's lerp.</b> A hex channel needs a color space to lerp in. sRGB is what klieg's light channel assumes; OKLCH reads better for a crossfade between hues. One choice, made once, on the stock <code>hex</code> channel.</li>
+  <li><b>Where klieg's stagger lives.</b> The package takes a function per subject today, so the grammar and its <code>orderKey</code> stay klieg's; whether they move in is for the port to answer.</li>
+  <li><b>Color's lerp.</b> The stock <code>hex</code> channel ships sRGB, which is what klieg's light channel assumes and what keeps the port's arithmetic identical. OKLCH reads better for a crossfade between hues and would replace it rather than join it; the choice waits on seeing a hue crossfade in the port.</li>
   <li><b>Whether <code>at</code> writes into a buffer.</b> A patch allocates one partial delta per subject per frame, and <code>writes</code> plus the fold order would let the mix hand it one scratch object instead. It costs the nicest property <code>at</code> has &mdash; a pure function a test calls once &mdash; so it waits on a p95 frame time from the klieg port, measured after <code>sample(subject, out)</code> has already taken the merge's own allocations out. If it lands it replaces the returning form; two ways to author a patch cost more than the allocation does.</li>
   <li><b>The stock band's width.</b> Whether <code>gate</code>'s default band is symmetric around <code>at</code> and how wide it is. It has to clear the frame noise in a real signal, so it is a measurement from klieg's <code>near</code> and <code>dwell</code>, not a guess.</li>
   <li><b>Whether <code>slew</code> is linear or exponential.</b> klieg's three decays are all linear, <code>ms / rate</code>, so linear keeps the port's arithmetic identical and the Playwright baselines green. An exponential release reads better and never reaches rest, which <code>atRest</code> needs it to, so it would want a floor. One choice, made once.</li>

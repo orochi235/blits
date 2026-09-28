@@ -1,0 +1,225 @@
+import { describe, expect, it } from 'vitest';
+import { mul, rig, sum } from '../src/channels.js';
+import { mix } from '../src/mixer.js';
+import { patch } from '../src/patch.js';
+
+interface Pose {
+  gain: number;
+  crawl: number;
+}
+const PART = rig<Pose>({ gain: mul(), crawl: sum() });
+
+interface Part {
+  id: string;
+}
+
+describe('one frame, one answer', () => {
+  it('a stateful patch sampled twelve times at one now steps once', () => {
+    let steps = 0;
+    const counting = patch<Part, Pose, { ticks: number }>(
+      0,
+      (_phase, _part, setting) => ({ crawl: setting.state.ticks }),
+      {
+        writes: ['crawl'],
+        state: () => ({ ticks: 0 }),
+        step: (state) => {
+          state.ticks++;
+          steps++;
+        },
+      },
+    );
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: counting });
+    const part = { id: 'a' };
+
+    m.sync(0);
+    for (let i = 0; i < 12; i++) m.sample(part);
+    expect(steps).toBe(0);
+
+    m.sync(16);
+    for (let i = 0; i < 12; i++) m.sample(part);
+    expect(steps).toBe(1);
+  });
+
+  it('a second sync with the same now is a no-op', () => {
+    const steps: number[] = [];
+    const counting = patch<Part, Pose, { n: number }>(0, () => ({}), {
+      writes: [],
+      state: () => ({ n: 0 }),
+      step: (_s, dt) => steps.push(dt),
+    });
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: counting });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.sample(part);
+    m.sync(16);
+    m.sample(part);
+    m.sync(16);
+    m.sample(part);
+    expect(steps).toEqual([16]);
+  });
+});
+
+describe('catch-up', () => {
+  it('a subject unsampled for three frames steps by the whole gap on the fourth', () => {
+    const gaps: number[] = [];
+    const counting = patch<Part, Pose, { n: number }>(0, () => ({}), {
+      writes: [],
+      state: () => ({ n: 0 }),
+      step: (_s, dt) => gaps.push(dt),
+    });
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: counting });
+    const watched = { id: 'watched' };
+    const ignored = { id: 'ignored' };
+
+    for (const now of [0, 16, 32, 48]) {
+      m.sync(now);
+      m.sample(watched);
+    }
+    m.sample(ignored);
+    expect(gaps).toEqual([16, 16, 16]);
+
+    m.sync(64);
+    m.sample(ignored);
+    expect(gaps.at(-1)).toBe(64 - 48);
+  });
+
+  it('the gap is never subdivided: one catch-up, not one per frame missed', () => {
+    const gaps: number[] = [];
+    const counting = patch<Part, Pose, { n: number }>(0, () => ({}), {
+      writes: [],
+      state: () => ({ n: 0 }),
+      step: (_s, dt) => gaps.push(dt),
+    });
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: counting });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.sample(part);
+    m.sync(16);
+    m.sync(32);
+    m.sync(48);
+    m.sample(part);
+    expect(gaps).toEqual([48]);
+  });
+});
+
+describe('the clock', () => {
+  it('phase is 0..1 across the period and wraps', () => {
+    const seen: number[] = [];
+    const p = patch<Part, Pose>(
+      1000,
+      (phase) => {
+        seen.push(phase);
+        return {};
+      },
+      { writes: [] },
+    );
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: p });
+    const part = { id: 'a' };
+    for (const now of [0, 250, 500, 1000, 1250]) {
+      m.sync(now);
+      m.sample(part);
+    }
+    expect(seen).toEqual([0, 0.25, 0.5, 0, 0.25]);
+  });
+
+  it('a period of 0 holds phase and pass at 0 and hands over elapsed instead', () => {
+    const seen: { phase: number; pass: number; elapsed: number }[] = [];
+    const p = patch<Part, Pose>(
+      0,
+      (phase, _part, setting) => {
+        seen.push({ phase, pass: setting.pass, elapsed: setting.elapsed });
+        return {};
+      },
+      { writes: [] },
+    );
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: p, loop: false });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.sample(part);
+    m.sync(900);
+    m.sample(part);
+    expect(seen).toEqual([
+      { phase: 0, pass: 0, elapsed: 0 },
+      { phase: 0, pass: 0, elapsed: 900 },
+    ]);
+  });
+
+  it('seek moves the clock and leaves state where it was', () => {
+    let ticks = 0;
+    const p = patch<Part, Pose, { n: number }>(
+      1000,
+      (phase, _part, setting) => ({ crawl: phase * 100 + setting.state.n }),
+      {
+        writes: ['crawl'],
+        state: () => ({ n: 0 }),
+        step: (state) => {
+          state.n++;
+          ticks++;
+        },
+      },
+    );
+    const m = mix<Part, Pose>(PART);
+    const h = m.cue({ patch: p });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.sample(part);
+    m.sync(100);
+    m.sample(part);
+    expect(ticks).toBe(1);
+
+    h.seek(4000);
+    m.sync(200);
+    const pose = m.sample(part);
+    // Phase jumped to 4000 + 100 ms of playback; state advanced once for the frame, not to 4000.
+    expect(pose.crawl).toBeCloseTo(0.1 * 100 + 2, 9);
+    expect(ticks).toBe(2);
+  });
+
+  it('a rate change rebases so elapsed is continuous', () => {
+    const seen: number[] = [];
+    const p = patch<Part, Pose>(
+      0,
+      (_phase, _part, setting) => {
+        seen.push(setting.elapsed);
+        return {};
+      },
+      { writes: [] },
+    );
+    const m = mix<Part, Pose>(PART);
+    const h = m.cue({ patch: p });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.sample(part);
+    m.sync(100);
+    m.sample(part);
+    h.rate = 2;
+    m.sync(200);
+    m.sample(part);
+    expect(seen).toEqual([0, 100, 300]);
+  });
+});
+
+describe('reduced motion', () => {
+  it('hands the patch an infinite dt so it snaps rather than integrates', () => {
+    const gaps: number[] = [];
+    const p = patch<Part, Pose, { n: number }>(0, () => ({}), {
+      writes: [],
+      state: () => ({ n: 0 }),
+      step: (_s, dt) => gaps.push(dt),
+    });
+    const m = mix<Part, Pose>(PART, { reduce: true });
+    m.cue({ patch: p });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.sample(part);
+    m.sync(16);
+    m.sample(part);
+    expect(gaps).toEqual([Number.POSITIVE_INFINITY]);
+  });
+});

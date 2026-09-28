@@ -13,12 +13,19 @@ weight, and a mix folds them into one value per subject per frame by rules that 
 channel, not the effect. The vocabulary is the deliverable as much as the runtime is — the sources
 are open by design, so the language has to be able to name a seam it does not own. It generalizes
 what klieg does three times over (motion, effects, lighting) and what wod's transition voices do
-once, so klieg, wod, sherpa and magicsmoke can share one vocabulary and one engine. **Nothing is
-built.** The repo holds two design pages, an export of one of them, and a script.
+once, so klieg, wod, sherpa and magicsmoke can share one vocabulary and one engine. **The package
+is built and tested; nothing consumes it yet.**
 
 ## State
 
 - `main`, no remote. Clean tree.
+- **The package, v0.1.0.** `src/` is the whole of it: `channels.ts` (the stock channels, `rig`,
+  `hex`/`mixHex`), `patch.ts` (`patch`, `keys`, and the stop evaluator `from: 'current'` reuses),
+  `signals.ts` (`peak`, `slew`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
+  objects and a Map for anything else), `mixer.ts` (the engine and `mix`), `types.ts` (the whole
+  public surface, doc-commented). Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
+  is lint, typecheck of both `src` and `test`, then the suite: 55 tests, green, and they are the
+  design page's own test list minus the klieg extraction.
 - `docs/2026-09-15-schema.html` — the design: vocabulary, channel table, patches, voices, mix,
   signals, time model, blending, patch state, the engine seam, per-consumer rigs, the klieg port,
   decided-against, tests, open items. Status line says design under review. It reads in the called
@@ -116,18 +123,19 @@ built.** The repo holds two design pages, an export of one of them, and a script
 
 ## Next, in order
 
-1. **Mike's sign-off on the schema as a spec.** The self-review is done and its findings are
-   fixed; what remains is the approval itself, plus the group cap decision above. This is the
-   brainstorming skill's review gate and it is what stands between here and an implementation plan.
-2. **Implementation plan** via the writing-plans skill: package scaffold (zero deps, ESM, vitest,
-   biome as klieg), stock channels with property tests for the laws, patch and keys forms, voices,
-   the mixer engine, then the klieg extraction with the 40 Playwright baselines as the gate.
-3. **A remote**, private under orochi235 like semanticore, when Mike asks.
-4. **`~/src/PROJECTS.md`** entry for blits once it has code; add semanticore at the same time.
+1. **The klieg port.** All three systems at once, extraction first: `Timeline.poseAt` becomes three
+   voices in one group, `EffectFrame.resolve` becomes a mix over parts, `mergeOffsets` and
+   `addScaled` become the rigs. The 40 Playwright baselines and klieg's vitest cases are the gate —
+   any that moves is a defect in the port. The schema page's klieg section has the rest, including
+   what step two turns on afterward.
+2. **A remote**, private under orochi235 like semanticore, when Mike asks. blits is committed only
+   here.
+3. **`stagger`** is the one place the package knowingly departs from klieg's grammar: it takes a
+   per-subject delay function, and whether `StaggerSpec` and `orderKey` move in is for the port.
 
 ## Loose ends
 
-- No remote; two design pages committed only here.
+- No remote; the package and both design pages are committed only here.
 - **A stale served-page tab will overwrite `2026-09-15-vocabulary.picks.json` with whatever set it
   was holding.** It has happened twice — `65d2d71` restored one, and the same loss was in the
   working tree at the start of 2026-09-27's session. Before trusting the picks file, `git diff` it;

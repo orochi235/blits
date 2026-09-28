@@ -1,2 +1,5 @@
 # The chat dock writes one of these beside each job; it is a transcript, not a source.
 *.chat.json
+node_modules
+dist
+.playwright-mcp
