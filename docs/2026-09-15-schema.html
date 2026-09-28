@@ -95,7 +95,7 @@
   .cm { color: var(--muted); }
 
   .tbl { overflow-x: auto; margin: 0 0 18px; }
-  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  rig { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
   th, td { text-align: left; vertical-align: top; padding: 8px 10px 8px 0; border-bottom: 1px solid var(--rule); }
   th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
   td code { white-space: nowrap; }
@@ -134,17 +134,17 @@
     <li><a href="#vocab">Vocabulary</a></li>
     <li class="grp">Schema</li>
     <li><a href="#channels">Channels</a></li>
-    <li><a href="#pieces">Pieces</a></li>
-    <li><a href="#tracks">Tracks</a></li>
+    <li><a href="#patches">Patches</a></li>
+    <li><a href="#voices">Voices</a></li>
     <li><a href="#mix">Mix</a></li>
     <li><a href="#signals">Signals</a></li>
     <li class="grp">Behavior</li>
     <li><a href="#time">Time</a></li>
     <li><a href="#blend">Blending</a></li>
-    <li><a href="#state">Piece state</a></li>
+    <li><a href="#state">Patch state</a></li>
     <li><a href="#engines">Engines</a></li>
     <li class="grp">Consumers</li>
-    <li><a href="#tables">Channel tables</a></li>
+    <li><a href="#rigs">Channel rigs</a></li>
     <li><a href="#klieg">The klieg port</a></li>
     <li class="grp">Record</li>
     <li><a href="#against">Decided against</a></li>
@@ -157,19 +157,19 @@
 <header>
   <div class="eyebrow">blits · design</div>
   <h1>An effects schema, and the API around it</h1>
-  <p class="lede">A small runtime package for concurrent effects. Each effect runs on its own clock with its own state and weight, and a mix folds them into one value per item per frame by rules that belong to the channel, not the effect.</p>
+  <p class="lede">A small runtime package for concurrent effects. Each effect runs on its own clock with its own state and weight, and a mix folds them into one value per subject per frame by rules that belong to the channel, not the effect.</p>
   <p class="meta"><b>For:</b> whoever builds <code>blits</code>, and whoever ports klieg, wod, sherpa or magicsmoke onto it. <b>Answers:</b> what the vocabulary is, what an author writes, what a host calls, and where a second engine would plug in.</p>
   <span class="status">Design under review · nothing built · 2026-09-15</span>
 </header>
 
 <h2 id="picture">In one picture</h2>
-<p>A host steps the mix once a frame. For each item it wants drawn, the mix samples every track that reaches that item, scales each sample toward its channel's rest by the track's current weight, joins them channel by channel, and hands back one offset. The host writes that offset wherever it goes: a three.js mesh, an SVG wedge, a CSS transform, an audio gain.</p>
+<p>A host syncs the mix once a frame. For each subject it wants drawn, the mix samples every voice that reaches that subject, scales each delta toward its channel's rest by the voice's current weight, joins them channel by channel, and hands back one pose. The host writes that pose wherever it goes: a three.js mesh, an SVG wedge, a CSS transform, an audio gain.</p>
 
 <figure>
-<svg class="dia" viewBox="0 0 720 250" role="img" aria-label="Pipeline: tracks sample a piece, weights scale toward rest, channels join, one offset per item">
+<svg class="dia" viewBox="0 0 720 272" role="img" aria-label="Pipeline: voices sample a patch, weights scale toward rest, channels join, one pose per subject">
   <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="head"/></marker></defs>
-  <!-- tracks -->
-  <text x="20" y="22" class="sub">tracks, each on its own clock</text>
+  <!-- voices -->
+  <text x="20" y="22" class="sub">voices, each on its own clock</text>
   <rect x="20" y="32" width="170" height="44" rx="3" class="box"/>
   <text x="32" y="50">flicker · loop · w 1.0</text>
   <text x="32" y="66" class="sub">t = (now − start) · rate mod pass</text>
@@ -184,9 +184,9 @@
   <path d="M190 108 H240" class="arrow" marker-end="url(#ah)"/>
   <path d="M190 162 H240" class="arrow" marker-end="url(#ah)"/>
   <rect x="242" y="32" width="120" height="152" rx="3" class="box"/>
-  <text x="256" y="56">piece.at(t,</text>
-  <text x="256" y="72">  item, ctx)</text>
-  <text x="256" y="104" class="sub">partial offset:</text>
+  <text x="256" y="56">patch.at(t,</text>
+  <text x="256" y="72">  subject, setting)</text>
+  <text x="256" y="104" class="sub">partial delta:</text>
   <text x="256" y="120" class="sub">{ gain: 0.1 }</text>
   <text x="256" y="136" class="sub">{ gain: 0 }</text>
   <text x="256" y="152" class="sub">{ position: […] }</text>
@@ -210,26 +210,26 @@
   <text x="600" y="152" class="sub">color: last</text>
   <!-- out -->
   <path d="M643 184 V214" class="arrow" marker-end="url(#ah)"/>
-  <text x="586" y="238">one offset, this item, this frame</text>
-  <text x="20" y="238" class="sub">The host calls mix.step(now) once, then mix.sample(item) per item. Same now → same answer, however many times it asks.</text>
+  <text x="512" y="238">one pose, this subject, this frame</text>
+  <text x="20" y="264" class="sub">The host calls mix.sync(now) once, then mix.sample(subject) per subject. Same now → same answer, however many times it asks.</text>
 </svg>
-<figcaption>Three tracks reaching one part of a tube sign. The channel table decides how the three gains combine; the tracks only decide what they contribute and how much of it is on.</figcaption>
+<figcaption>Three voices reaching one part of a tube sign. The channel rig decides how the three gains combine; the voices only decide what they contribute and how much of it is on.</figcaption>
 </figure>
 
-<p>Everything klieg does today fits this picture, in three copies with three channel sets. wod's transition tracks are the same picture with one item type and a retargeting tween. sherpa's seam is two tracks. magicsmoke's fault is one track whose weight is a signal.</p>
+<p>Everything klieg does today fits this picture, in three copies with three channel sets. wod's transition voices are the same picture with one subject type and a retargeting tween. sherpa's seam is two voices. magicsmoke's fault is one voice whose weight is a signal.</p>
 
 <h2 id="vocab">Vocabulary</h2>
 <p>Ten words. Every other name in the package is built from these.</p>
 <dl>
-  <dt>Offset</dt><dd>A partial record of channel values. A piece writes only the channels it drives; an absent channel means no contribution.</dd>
-  <dt>Channel</dt><dd>One field of an offset, with its own arithmetic: how two contributions join, what rest is if there is one, how to scale toward rest, how to lerp.</dd>
-  <dt>Table</dt><dd>The channel set for one kind of offset. klieg's pose, klieg's part, wod's presence are each a table.</dd>
-  <dt>Item</dt><dd>What is being driven: a letter, a part, a wedge, a page, or a unit value for a system with no item dimension such as klieg's lighting.</dd>
-  <dt>Piece</dt><dd>A pure function of normalized time and an item that returns an offset. Optionally stateful. This is klieg's word and it keeps it.</dd>
-  <dt>Track</dt><dd>A piece plus its own playback: start, rate, loop, weight envelope, target, and blend options. The unit a host adds and stops.</dd>
-  <dt>Mix</dt><dd>The set of live tracks over one table, stepped once a frame and sampled per item. What a host holds.</dd>
-  <dt>Signal</dt><dd>A 0..1 scalar resolved per item per frame from something outside the clock: the cursor, a hover value, another track's state.</dd>
-  <dt>Handle</dt><dd>What <code>add</code> returns: the live controls on one track, and its completion.</dd>
+  <dt>Delta</dt><dd>A partial record of channel values. A patch writes only the channels it drives; an absent channel means no influence.</dd>
+  <dt>Channel</dt><dd>One field of a delta, with its own arithmetic: how two influences join, what rest is if there is one, how to scale toward rest, how to lerp.</dd>
+  <dt>Rig</dt><dd>The channel set for one kind of delta. klieg's pose, klieg's part, wod's presence are each a rig.</dd>
+  <dt>Subject</dt><dd>What is being driven: a letter, a part, a wedge, a page, or a unit value for a system with no subject dimension such as klieg's lighting.</dd>
+  <dt>Patch</dt><dd>A pure function of normalized time and a subject that returns a delta. Optionally stateful. This is klieg's word and it keeps it.</dd>
+  <dt>Voice</dt><dd>A patch plus its own playback: start, rate, loop, weight envelope, target, and blend options. The unit a host cues and fades.</dd>
+  <dt>Mix</dt><dd>The set of live voices over one rig, synced once a frame and sampled per subject. What a host holds.</dd>
+  <dt>Signal</dt><dd>A 0..1 scalar resolved per subject per frame from something outside the clock: the cursor, a hover value, another voice's state.</dd>
+  <dt>Handle</dt><dd>What <code>cue</code> returns: the live controls on one voice, and its completion.</dd>
   <dt>Engine</dt><dd>The implementation behind a mix. One ships. The seam is the mix's own interface.</dd>
 </dl>
 
@@ -239,7 +239,7 @@
 <pre><code>interface Channel&lt;V&gt; {
   <span class="cm">/** Identity. Absent means the channel has none: `color` replaces rather than contributes. */</span>
   rest?: V;
-  <span class="cm">/** Fold two contributions into one. */</span>
+  <span class="cm">/** Fold two influences into one. */</span>
   join(a: V, b: V): V;
   <span class="cm">/** Fade toward `rest` by weight 0..1. Required when `rest` is set; absent otherwise. */</span>
   scale?(v: V, w: number): V;
@@ -247,161 +247,161 @@
   lerp(a: V, b: V, u: number): V;
 }
 
-type Table&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&gt;&gt; };</code></pre>
+type Rig&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&gt;&gt; };</code></pre>
 
 <p>Stock channels cover every case the four repos hold today:</p>
-<div class="tbl"><table>
+<div class="tbl"><rig>
   <tr><th>channel</th><th>rest</th><th>join</th><th>scale</th><th>lerp</th><th>used by</th></tr>
   <tr><td><code>sum()</code></td><td class="num">0</td><td>a + b</td><td>v · w</td><td>linear</td><td>position axes, rotation, crawl, yaw, pitch, offset</td></tr>
   <tr><td><code>mul()</code></td><td class="num">1</td><td>a · b</td><td>1 + (v − 1) · w</td><td>linear</td><td>gain, scale, opacity, hold</td></tr>
   <tr><td><code>max()</code></td><td class="num">0</td><td>max(a, b)</td><td>v · w</td><td>linear</td><td>dark, aperture</td></tr>
   <tr><td><code>last()</code></td><td>none</td><td>b</td><td>—</td><td>caller's</td><td>color, offsetAngle</td></tr>
   <tr><td><code>vec(n, ch)</code></td><td>per axis</td><td>per axis</td><td>per axis</td><td>per axis</td><td>Vec3 position, premultiplied light</td></tr>
-</table></div>
+</rig></div>
 
-<p>A channel with no rest cannot fade. The mix handles that in one way: below a weight threshold the contribution is dropped, above it the value passes through whole. That is the rule hinge's blend mode already applies to color, and it is stated here once so no consumer rediscovers it. <b>The threshold is a band, not an edge</b> &mdash; it drops at <code>off</code> and passes at <code>on</code>, and between the two it holds whatever it last did. One edge chatters: a weight resting on it is carried back and forth by frame noise, and every crossing drops or restores the whole contribution. Retargeting is the way a rest-less channel does move smoothly, since a lerp from a sampled value needs no identity.</p>
+<p>A channel with no rest cannot fade. The mix handles that in one way: below a weight threshold the influence is dropped, above it the value passes through whole. That is the rule hinge's blend mode already applies to color, and it is stated here once so no consumer rediscovers it. <b>The threshold is a band, not an edge</b> &mdash; it drops at <code>off</code> and passes at <code>on</code>, and between the two it holds whatever it last did. One edge chatters: a weight resting on it is carried back and forth by frame noise, and every crossing drops or restores the whole influence. Retargeting is the way a rest-less channel does move smoothly, since a lerp from a sampled value needs no identity.</p>
 
-<p>A table is plain data, so a consumer declares one in a line and the mix is typed by it:</p>
-<pre><code>const PART = table&lt;PartOffset&gt;({
+<p>A rig is plain data, so a consumer declares one in a line and the mix is typed by it:</p>
+<pre><code>const PART = rig&lt;PartOffset&gt;({
   gain: mul(), scale: mul(), dark: max(), crawl: sum(),
   position: vec(3, sum()), rotation: vec(3, sum()),
   light: vec(3, sum()), color: last({ lerp: mixHex }),
 });</code></pre>
 
-<h2 id="pieces">Pieces</h2>
-<p>A piece is what an author writes. It is klieg's <code>EffectPiece</code> with three additions: the context carries absolute time as well as normalized, a piece may declare state, and a piece declares which channels it contributes to.</p>
+<h2 id="patches">Patches</h2>
+<p>A patch is what an author writes. It is klieg's <code>EffectPiece</code> with three additions: the setting carries absolute time as well as normalized, a patch may declare state, and a patch declares which channels it contributes to.</p>
 
-<pre><code>interface Piece&lt;I, O, S = void&gt; {
-  <span class="cm">/** Milliseconds per pass. 0 means aperiodic: `t` is always 0 and the piece reads `ctx.elapsed`. */</span>
+<pre><code>interface Patch&lt;I, O, S = void&gt; {
+  <span class="cm">/** Milliseconds per pass. 0 means aperiodic: `t` is always 0 and the patch reads `setting.elapsed`. */</span>
   duration: number;
-  <span class="cm">/** The channels this piece contributes to. Every key `at` sets, and no others. */</span>
+  <span class="cm">/** The channels this patch contributes to. Every key `at` sets, and no others. */</span>
   readonly writes: readonly (keyof O)[];
-  at(t: number, item: I, ctx: Ctx&lt;S&gt;): Partial&lt;O&gt;;
+  at(t: number, subject: I, setting: Setting&lt;S&gt;): Partial&lt;O&gt;;
 
-  <span class="cm">/** Per-item state, created on the first frame this piece sees an item. */</span>
-  state?(item: I): S;
-  <span class="cm">/** Advances state once per item per frame, before any `at` that frame. `dt` is Infinity under reduced motion. */</span>
-  step?(state: S, dt: number, item: I, ctx: Ctx&lt;S&gt;): void;
+  <span class="cm">/** Per-subject state, created on the first frame this patch sees a subject. */</span>
+  state?(subject: I): S;
+  <span class="cm">/** Advances state once per subject per frame, before any `at` that frame. `dt` is Infinity under reduced motion. */</span>
+  step?(state: S, dt: number, subject: I, setting: Setting&lt;S&gt;): void;
 
-  <span class="cm">/** Present when the piece was authored as keyframes, so an engine that reads data can. */</span>
+  <span class="cm">/** Present when the patch was authored as keyframes, so an engine that reads data can. */</span>
   readonly keys?: readonly Keyframe&lt;O&gt;[];
 }
 
-interface Ctx&lt;S = void&gt; {
+interface Setting&lt;S = void&gt; {
   <span class="cm">/** The mix clock at this frame. Identical for every sample in the frame. */</span>
   now: number;
-  <span class="cm">/** Milliseconds since the previous step. Infinity under reduced motion: snap, never integrate. */</span>
+  <span class="cm">/** Milliseconds since the previous sync. Infinity under reduced motion: snap, never integrate. */</span>
   dt: number;
-  <span class="cm">/** Milliseconds this track has been playing, rate applied. What lets a piece see across passes. */</span>
+  <span class="cm">/** Milliseconds this voice has been playing, rate applied. What lets a patch see across passes. */</span>
   elapsed: number;
   <span class="cm">/** Which pass this is, 0 first. */</span>
   pass: number;
-  <span class="cm">/** This track's current weight, so a piece that wants to know how "on" it is can. */</span>
+  <span class="cm">/** This voice's current weight, so a patch that wants to know how "on" it is can. */</span>
   weight: number;
-  <span class="cm">/** This item's state, when the piece declares one. */</span>
+  <span class="cm">/** This subject's state, when the patch declares one. */</span>
   state: S;
-  <span class="cm">/** Anything the host adds for its own pieces: klieg's pointer and pointerInWord go here. */</span>
+  <span class="cm">/** Anything the host adds for its own patches: klieg's pointer and pointerInWord go here. */</span>
   host: unknown;
 }</code></pre>
 
-<p>Two authoring forms build a piece. Both return the same interface, so a track cannot tell them apart.</p>
-<div class="tbl"><table>
+<p>Two authoring forms build a patch. Both return the same interface, so a voice cannot tell them apart.</p>
+<div class="tbl"><rig>
   <tr><th>form</th><th>signature</th><th>what it is</th></tr>
-  <tr><td><code>fn</code></td><td><code>piece(duration, at, { state?, step? })</code></td><td>Procedural. Flicker, roving, a hash walk, a starter strike. Only a JS engine can run one.</td></tr>
-  <tr><td><code>keys</code></td><td><code>keys(duration, stops, { ease?, easeBy?, delayBy? })</code></td><td>Declarative stops, klieg's transition sugar and wod's keyframes. Data preserved on <code>piece.keys</code> for an engine that reads data instead of calling functions.</td></tr>
-</table></div>
+  <tr><td><code>fn</code></td><td><code>patch(duration, at, { state?, step? })</code></td><td>Procedural. Flicker, roving, a hash walk, a starter strike. Only a JS engine can run one.</td></tr>
+  <tr><td><code>keys</code></td><td><code>keys(duration, stops, { ease?, easeBy?, delayBy? })</code></td><td>Declarative stops, klieg's transition sugar and wod's keyframes. Data preserved on <code>patch.keys</code> for an engine that reads data instead of calling functions.</td></tr>
+</rig></div>
 
-<p><code>writes</code> is the piece's half of the contract the rest of the package already states: a channel table declares what a consumer has, an engine declares its <code>runs</code> set, and both are checked at <code>add</code>. Without it the only way to learn what a piece touches is to call it, per item, per frame. With it the mix refuses a piece contributing a channel the table lacks, resolves each track's channels once at <code>add</code> instead of walking the whole table per sample, and can answer what a track affects without sampling it. A <code>keys</code> piece derives it from its stops.</p>
+<p><code>writes</code> is the patch's half of the contract the rest of the package already states: a channel rig declares what a consumer has, an engine declares its <code>runs</code> set, and both are checked at <code>cue</code>. Without it the only way to learn what a patch touches is to call it, per subject, per frame. With it the mix refuses a patch contributing a channel the rig lacks, resolves each voice's channels once at <code>cue</code> instead of walking the whole rig per sample, and can answer what a voice affects without sampling it. A <code>keys</code> patch derives it from its stops.</p>
 
-<p>Wrappers stay wrappers. klieg's <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>hinge</code> and <code>partition</code> take a piece and return a piece, and none of them changes except to pass <code>writes</code> through &mdash; a wrapper reshapes one contribution and never adds a channel to it. Composition at the piece level is for reshaping one contribution; composition at the mix level is for running several. The two do not merge.</p>
+<p>Wrappers stay wrappers. klieg's <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>hinge</code> and <code>partition</code> take a patch and return a patch, and none of them changes except to pass <code>writes</code> through &mdash; a wrapper reshapes one influence and never adds a channel to it. Composition at the patch level is for reshaping one influence; composition at the mix level is for running several. The two do not merge.</p>
 
-<h2 id="tracks">Tracks</h2>
-<p>A track is a piece given a clock and a volume knob. This is the unit that answers "independent state and timeframe": two tracks of the same piece are two clocks, two states, two weights.</p>
+<h2 id="voices">Voices</h2>
+<p>A voice is a patch given a clock and a volume knob. This is the unit that answers "independent state and timeframe": two voices of the same patch are two clocks, two states, two weights.</p>
 
-<pre><code>interface TrackSpec&lt;I, O&gt; {
-  piece: Piece&lt;I, O, any&gt;;
-  <span class="cm">/** Which items this track reaches. Default: all of them. Resolved once when the track is added. */</span>
-  target?: (item: I) =&gt; boolean;
+<pre><code>interface VoiceSpec&lt;I, O&gt; {
+  patch: Patch&lt;I, O, any&gt;;
+  <span class="cm">/** Which subjects this voice reaches. Default: all of them. Resolved once when the voice is cued. */</span>
+  target?: (subject: I) =&gt; boolean;
 
   <span class="cm">// clock</span>
-  <span class="cm">/** Mix-clock ms the track starts. Default: the next step. */</span>
+  <span class="cm">/** Mix-clock ms the voice starts. Default: the next sync. */</span>
   start?: number;
   /** Playback rate. 1 is real time; 0 freezes. */
   rate?: number;
   <span class="cm">/** true loops for good, false plays one pass and holds its last value, n plays n passes. */</span>
   loop?: boolean | number;
-  <span class="cm">/** Per-item phase spread, klieg's stagger grammar. Ramps t; does not offset it. */</span>
+  <span class="cm">/** Per-subject phase spread, klieg's stagger grammar. Ramps t; does not offset it. */</span>
   stagger?: number | StaggerSpec;
 
   <span class="cm">// weight</span>
-  <span class="cm">/** Steady weight, or a signal read per item per frame. Default 1. */</span>
+  <span class="cm">/** Steady weight, or a signal read per subject per frame. Default 1. */</span>
   weight?: number | Signal&lt;I&gt;;
-  <span class="cm">/** Ramp in and out, ms. Out applies on `stop()` and when a finite loop ends. */</span>
+  <span class="cm">/** Ramp in and out, ms. Out applies on `fade()` and when a finite loop ends. */</span>
   fade?: { in?: number; out?: number; ease?: Easing };
-  <span class="cm">/** Tracks sharing a group have their summed weight capped at 1 within it. klieg's phase rule. */</span>
+  <span class="cm">/** Voices sharing a group have their summed weight capped at 1 within it. klieg's phase rule. */</span>
   group?: string;
 
   <span class="cm">// blend</span>
-  <span class="cm">/** A `keys` piece whose first stop reads "wherever this item is now", lerped over the pass. */</span>
+  <span class="cm">/** A `keys` patch whose first stop reads "wherever this subject is now", lerped over the pass. */</span>
   from?: 'current';
 }
 
 interface Handle {
   readonly id: number;
   readonly state: 'pending' | 'live' | 'fading' | 'done';
-  <span class="cm">/** Live. Writes land on the next step. */</span>
+  <span class="cm">/** Live. Writes land on the next sync. */</span>
   weight: number;
   rate: number;
-  <span class="cm">/** Jumps the track's own clock. */</span>
+  <span class="cm">/** Jumps the voice's own clock. */</span>
   seek(elapsed: number): void;
-  <span class="cm">/** Ramps out over `fade.out` unless given a fade here; `at: 'rest'` waits per item for a resting sample first. */</span>
-  stop(opts?: { fade?: number; at?: 'rest'; deadline?: number }): void;
-  <span class="cm">/** Resolves when the track has been removed from the mix, however that happened. */</span>
+  <span class="cm">/** Ramps out over `fade.out` unless given a fade here; `at: 'rest'` waits per subject for a resting pose first. */</span>
+  fade(opts?: { over?: number; at?: 'rest'; deadline?: number }): void;
+  <span class="cm">/** Resolves when the voice has been removed from the mix, however that happened. */</span>
   readonly done: Promise&lt;void&gt;;
 }</code></pre>
 
-<p>Weights are the only knob the mix owns. Fade, crossfade, handover, alternatives, and hinge's continuous mode are all weights over time; the section on blending shows each one as such. A piece never sees a weight applied to its output, it only sees the number in <code>ctx.weight</code> if it cares.</p>
+<p>Weights are the only knob the mix owns. Fade, crossfade, handover, alternatives, and hinge's continuous mode are all weights over time; the section on blending shows each one as such. A patch never sees a weight applied to its output, it only sees the number in <code>setting.weight</code> if it cares.</p>
 
 <h2 id="mix">Mix</h2>
-<p>What a host holds. The methods are few because the tracks carry the options.</p>
+<p>What a host holds. The methods are few because the voices carry the options.</p>
 
-<pre><code>function mix&lt;I, O&gt;(table: Table&lt;O&gt;, opts?: MixOptions&lt;I, O&gt;): Mix&lt;I, O&gt;;
+<pre><code>function mix&lt;I, O&gt;(rig: Rig&lt;O&gt;, opts?: MixOptions&lt;I, O&gt;): Mix&lt;I, O&gt;;
 
 interface MixOptions&lt;I, O&gt; {
   engine?: Engine;                <span class="cm">// default: mixer</span>
   <span class="cm">/** Reduced motion: fades and warm-ups snap, `dt` reads Infinity. Read once at creation, or a signal. */</span>
   reduce?: boolean | (() =&gt; boolean);
-  <span class="cm">/** Merged into every `ctx.host`. */</span>
+  <span class="cm">/** Merged into every `setting.host`. */</span>
   host?: unknown;
 }
 
 interface Mix&lt;I, O&gt; {
-  <span class="cm">/** Adds a track. Throws when the engine cannot run the piece's form, or the table lacks a channel it `writes`. */</span>
-  add(spec: TrackSpec&lt;I, O&gt;): Handle;
-  <span class="cm">/** N tracks whose weights split one signal, k in 0..1. Two pieces crossfade; more make stops. */</span>
-  blend(pieces: readonly Piece&lt;I, O&gt;[], by: Signal&lt;I&gt;, spec?: Omit&lt;TrackSpec&lt;I, O&gt;, 'piece' | 'weight'&gt;): Handle[];
+  <span class="cm">/** Cues a voice. Throws when the engine cannot run the patch's form, or the rig lacks a channel it `writes`. */</span>
+  cue(spec: VoiceSpec&lt;I, O&gt;): Handle;
+  <span class="cm">/** N voices whose weights split one signal, k in 0..1. Two patches crossfade; more make stops. */</span>
+  blend(patches: readonly Patch&lt;I, O&gt;[], by: Signal&lt;I&gt;, spec?: Omit&lt;VoiceSpec&lt;I, O&gt;, 'patch' | 'weight'&gt;): Handle[];
 
   <span class="cm">/** Once per frame. Advances every clock, weight and state. Idempotent for a repeated `now`. */</span>
-  step(now: number): void;
-  <span class="cm">/** The merged offset for one item at the stepped frame. `out` is written in place when given. */</span>
-  sample(item: I, out?: O): O;
-  <span class="cm">/** Every channel at rest for this item this frame, so a host can skip the write. */</span>
-  atRest(item: I): boolean;
+  sync(now: number): void;
+  <span class="cm">/** The merged pose for one subject at the synced frame. `out` is written in place when given. */</span>
+  sample(subject: I, out?: O): O;
+  <span class="cm">/** Every channel at rest for this subject this frame, so a host can skip the write. */</span>
+  atRest(subject: I): boolean;
 
   <span class="cm">/** Anything still contributing, fading, or pending. A host stops its loop when this is false. */</span>
   readonly live: boolean;
-  <span class="cm">/** Stops every track, with the given fade. */</span>
+  <span class="cm">/** Stops every voice, with the given fade. */</span>
   clear(opts?: { fade?: number }): void;
-  <span class="cm">/** Forgets per-item state. Call when an item is retired, or let the WeakMap do it. */</span>
-  forget(item: I): void;
+  <span class="cm">/** Forgets per-subject state. Call when a subject is retired, or let the WeakMap do it. */</span>
+  drop(subject: I): void;
 }</code></pre>
 
-<p>Items are not registered. State lives in a <code>WeakMap</code> keyed by the item object, created on first sample and stepped by the gap in <code>now</code> since that item was last stepped. That is the rule klieg's dwell arrived at, and it means a part a wrapper leaves unasked for a while catches up rather than resuming where it paused.</p>
+<p>Subjects are not registered. State lives in a <code>WeakMap</code> keyed by the subject object, created on first sample and stepped by the gap in <code>now</code> since that subject was last stepped. That is the rule klieg's dwell arrived at, and it means a part a wrapper leaves unasked for a while catches up rather than resuming where it paused.</p>
 
 <h2 id="signals">Signals</h2>
-<p>A signal is a 0..1 scalar resolved per item per frame. It is the package's one input type from outside the clock, and it plugs in at exactly two places: a track's <code>weight</code>, and <code>blend</code>'s selector.</p>
+<p>A signal is a 0..1 scalar resolved per subject per frame. It is the package's one input type from outside the clock, and it plugs in at exactly two places: a voice's <code>weight</code>, and <code>blend</code>'s selector.</p>
 
-<pre><code>type Signal&lt;I&gt; = (item: I, ctx: Ctx) =&gt; number;
+<pre><code>type Signal&lt;I&gt; = (subject: I, setting: Setting) =&gt; number;
 
 <span class="cm">// stock combinators; klieg's own `near`, `dwell`, `level` are consumers' signals built on these</span>
 function peak&lt;I&gt;(...signals: Signal&lt;I&gt;[]): Signal&lt;I&gt;;          <span class="cm">// max</span>
@@ -410,113 +410,113 @@ function level&lt;I&gt;(initial?: number): Signal&lt;I&gt; &amp; { set(v: number
 function gate&lt;I&gt;(of: Signal&lt;I&gt;, band: { on: number; off: number }): Signal&lt;I&gt;;  <span class="cm">// stateful: holds inside the band</span>
 function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;          <span class="cm">// sugar for on = off = at</span></code></pre>
 
-<p>A stateful signal keeps state the same way a stateful piece does: per item, keyed by identity, stepped by the gap in <code>now</code>. <code>slew</code> is klieg's <code>dwell</code> with the cursor factored out; <code>gate</code> keeps one bit, which way it last switched.</p>
+<p>A stateful signal keeps state the same way a stateful patch does: per subject, keyed by identity, stepped by the gap in <code>now</code>. <code>slew</code> is klieg's <code>dwell</code> with the cursor factored out; <code>gate</code> keeps one bit, which way it last switched.</p>
 
 <p><code>slew</code> is the package's one decay primitive: a value that follows its input at a rate limit, no faster than <code>riseMs</code> per unit climbing or <code>fallMs</code> draining. It is not <code>Easing</code>, which is a curve over a known duration, and it is not called <code>ease</code> for that reason &mdash; <code>fade.ease</code> and <code>keys({ ease })</code> already mean the curve. A decay tail is a <code>slew</code> to 0 with no rise; a fade is a <code>slew</code> on a weight; klieg's <code>kicks</code> is a <code>slew</code> to 0 that <code>peak</code> pokes back up. Nothing else in the package stores a value in order to lag it. <code>gate</code> is the other half of that pair and not a substitute for it: a slew sets how fast a value may move, a band sets whether it may move at all. A slew cannot quiet a gate, because a rate limit delays a crossing without deciding it, and an input resting on the threshold drags the slewed value onto the threshold with it.</p>
 
 <h2 id="time">Time</h2>
 <ul>
-  <li><b>The mix is pull-based on a host clock.</b> The host owns the frame loop and calls <code>step(now)</code> with milliseconds on any monotonic clock it likes. klieg passes its <code>Clock.now()</code>; wod passes <code>performance.now()</code>; a test passes integers.</li>
-  <li><b>Everything in a frame reads one <code>now</code>.</b> A second <code>step</code> with the same value is a no-op, and every <code>sample</code> between steps answers from the same frame. This is what makes state advance once however many probes a wrapper makes.</li>
-  <li><b>A track's clock is <code>(now − start) · rate</code>.</b> Its pass is that modulo <code>duration</code>; both reach the piece, as <code>t</code> and <code>ctx.elapsed</code>. A rate change rebases so <code>elapsed</code> is continuous.</li>
-  <li><b><code>dt</code> is derived, never supplied.</b> The gap between this step and the last, per item, and <code>Infinity</code> under reduced motion. A piece that integrates guards against that with a snap, as klieg's already do.</li>
-  <li><b>Calls land on the next step.</b> A host writes <code>handle.weight</code> or calls <code>stop</code> on its own clock; the mix applies it at the first <code>now</code> that sees it. Nothing changes mid-frame.</li>
+  <li><b>The mix is pull-based on a host clock.</b> The host owns the frame loop and calls <code>sync(now)</code> with milliseconds on any monotonic clock it likes. klieg passes its <code>Clock.now()</code>; wod passes <code>performance.now()</code>; a test passes integers.</li>
+  <li><b>Everything in a frame reads one <code>now</code>.</b> A second <code>sync</code> with the same value is a no-op, and every <code>sample</code> between syncs answers from the same frame. This is what makes state advance once however many probes a wrapper makes.</li>
+  <li><b>A voice's clock is <code>(now − start) · rate</code>.</b> Its pass is that modulo <code>duration</code>; both reach the patch, as <code>t</code> and <code>setting.elapsed</code>. A rate change rebases so <code>elapsed</code> is continuous.</li>
+  <li><b><code>dt</code> is derived, never supplied.</b> The gap between this sync and the last, per subject, and <code>Infinity</code> under reduced motion. A patch that integrates guards against that with a snap, as klieg's already do.</li>
+  <li><b>Calls land on the next sync.</b> A host writes <code>handle.weight</code> or calls <code>fade</code> on its own clock; the mix applies it at the first <code>now</code> that sees it. Nothing changes mid-frame.</li>
 </ul>
 
 <h2 id="blend">Blending</h2>
 <p>The four behaviors asked for, each as the weight or lerp it reduces to. Nothing here is a mechanism of its own.</p>
-<div class="tbl"><table>
+<div class="tbl"><rig>
   <tr><th>behavior</th><th>how</th><th>what it replaces</th></tr>
-  <tr><td>Fade in and out</td><td><code>fade: { in, out }</code> ramps the track's weight; each channel's <code>scale</code> takes it toward rest.</td><td>klieg's <code>Timeline.weight</code>, the <code>blendMs</code> ramps, and <code>carry</code>.</td></tr>
-  <tr><td>Crossfade at a phase seam</td><td>Two tracks in one <code>group</code>, one fading out as the other fades in. The group caps the summed weight at 1, which is the lurch guard klieg's timeline applies when a hold is shorter than the blend.</td><td>enter → active → exit as three tracks.</td></tr>
-  <tr><td>Handover at rest</td><td><code>stop({ at: 'rest', deadline })</code> removes the track per item at the first frame its sample equals rest, or at the deadline. The next track was added already and simply becomes the only contributor.</td><td><code>turns</code>' handover rule, made available to any pair.</td></tr>
-  <tr><td>Blend between alternatives</td><td><code>mix.blend([a, b, c], by: k)</code> adds three tracks whose weights are the hat functions of k at 0, ½, 1. Continuous, no rebuild, and hinge's quantization goes away for pieces whose channels have rest.</td><td><code>hinge</code>'s stops mode. Its blend mode is just <code>weight: signal</code>.</td></tr>
-  <tr><td>Retarget on interruption</td><td><code>from: 'current'</code> on a <code>keys</code> track reads the item's merged sample at the track's first frame as stop 0 and lerps from it through the channel's <code>lerp</code>.</td><td>wod's base-sampling. New to klieg: a regroup could tween from mid-float instead of carrying it away.</td></tr>
-</table></div>
+  <tr><td>Fade in and out</td><td><code>fade: { in, out }</code> ramps the voice's weight; each channel's <code>scale</code> takes it toward rest.</td><td>klieg's <code>Timeline.weight</code>, the <code>blendMs</code> ramps, and <code>carry</code>.</td></tr>
+  <tr><td>Crossfade at a phase seam</td><td>Two voices in one <code>group</code>, one fading out as the other fades in. The group caps the summed weight at 1, which is the lurch guard klieg's timeline applies when a hold is shorter than the blend.</td><td>enter → active → exit as three voices.</td></tr>
+  <tr><td>Handover at rest</td><td><code>fade({ at: 'rest', deadline })</code> removes the voice per subject at the first frame its pose equals rest, or at the deadline. The next voice was cued already and simply becomes the only contributor.</td><td><code>turns</code>' handover rule, made available to any pair.</td></tr>
+  <tr><td>Blend between alternatives</td><td><code>mix.blend([a, b, c], by: k)</code> cues three voices whose weights are the hat functions of k at 0, ½, 1. Continuous, no rebuild, and hinge's quantization goes away for patches whose channels have rest.</td><td><code>hinge</code>'s stops mode. Its blend mode is just <code>weight: signal</code>.</td></tr>
+  <tr><td>Retarget on interruption</td><td><code>from: 'current'</code> on a <code>keys</code> voice reads the subject's merged pose at the voice's first frame as stop 0 and lerps from it through the channel's <code>lerp</code>.</td><td>wod's base-sampling. New to klieg: a regroup could tween from mid-float instead of carrying it away.</td></tr>
+</rig></div>
 
 <div class="callout">
   <div class="eyebrow">the one rule</div>
-  <p>A weight scales a contribution toward its channel's rest. A lerp moves between two values. Every blend is one or the other, chosen by the channel. A consumer that needs a third arithmetic adds a channel, not a mix option.</p>
+  <p>A weight scales an influence toward its channel's rest. A lerp moves between two values. Every blend is one or the other, chosen by the channel. A consumer that needs a third arithmetic adds a channel, not a mix option.</p>
 </div>
 
-<h2 id="state">Piece state</h2>
-<p>klieg built three stateful pieces in one week, <code>power</code>, <code>kicks</code> and <code>dwell</code>, and each rediscovered the same three rules: key state by the item object, step once per frame by the gap in <code>now</code>, snap under infinite <code>dt</code>. Those rules are the package's, applied by the mix, and a piece declares only what its state is and how it advances.</p>
+<h2 id="state">Patch state</h2>
+<p>klieg built three stateful patches in one week, <code>power</code>, <code>kicks</code> and <code>dwell</code>, and each rediscovered the same three rules: key state by the subject object, step once per frame by the gap in <code>now</code>, snap under infinite <code>dt</code>. Those rules are the package's, applied by the mix, and a patch declares only what its state is and how it advances.</p>
 
-<pre><code>const power = piece&lt;PartInfo, PartOffset, PowerState&gt;(0, (t, part, ctx) =&gt; {
-  const s = ctx.state;
+<pre><code>const power = patch&lt;PartInfo, PartOffset, PowerState&gt;(0, (t, part, setting) =&gt; {
+  const s = setting.state;
   return s.mode === 'on' ? {} : { gain: s.gain };
 }, {
   state: () =&gt; ({ mode: 'on', gain: 1, since: 0 }),
-  step: (s, dt, part, ctx) =&gt; { <span class="cm">/* advance the strike, the flare, the warm-up */</span> },
+  step: (s, dt, part, setting) =&gt; { <span class="cm">/* advance the strike, the flare, the warm-up */</span> },
 });</code></pre>
 
-<p>Sign-wide state, which <code>power</code> has, is per-item state on a shared item: the piece's <code>state</code> returns one object from a closure and every part reads it. The mix does not need to know.</p>
+<p>Sign-wide state, which <code>power</code> has, is per-subject state on a shared subject: the patch's <code>state</code> returns one object from a closure and every part reads it. The mix does not need to know.</p>
 
 <h2 id="engines">Engines</h2>
 <p>The engine is the implementation behind <code>Mix</code>. The schema above is data plus pure functions, so a mix can be interpreted by more than one thing. One engine ships, and the seam is designed so the second one does not need the first rewritten.</p>
 
 <pre><code>interface Engine {
   readonly name: string;
-  <span class="cm">/** Which piece forms this engine can run. A track whose piece it cannot run is refused at `add`, by name. */</span>
+  <span class="cm">/** Which patch forms this engine can run. A voice whose patch it cannot run is refused at `cue`, by name. */</span>
   readonly runs: ReadonlySet&lt;'fn' | 'keys'&gt;;
   <span class="cm">/** Builds the mix. Everything on `Mix` is the engine's to implement. */</span>
-  create&lt;I, O&gt;(table: Table&lt;O&gt;, opts: MixOptions&lt;I, O&gt;): Mix&lt;I, O&gt;;
+  create&lt;I, O&gt;(rig: Rig&lt;O&gt;, opts: MixOptions&lt;I, O&gt;): Mix&lt;I, O&gt;;
 }
 
 export const mixer: Engine;   <span class="cm">// the one that ships</span></code></pre>
 
-<p><b>mixer</b> runs both forms on the CPU, samples per item on demand, and is the extraction of what klieg does today. It folds each contribution into the item's accumulator as it samples, rather than collecting every layer and merging at the end as klieg's <code>EffectFrame</code> does: weights are scalars that no sample depends on, so they resolve for the item first and the group cap holds. That order is what would let a later revision hand pieces one scratch object to write into instead of returning a fresh partial per piece per item per frame, which <code>writes</code> makes safe to hand out without clearing. What later engines would look like, so the seam is judged against something real and none of them is being built:</p>
+<p><b>mixer</b> runs both forms on the CPU, samples per subject on demand, and is the extraction of what klieg does today. It folds each influence into the subject's accumulator as it samples, rather than collecting every layer and merging at the end as klieg's <code>EffectFrame</code> does: weights are scalars that no pose depends on, so they resolve for the subject first and the group cap holds. That order is what would let a later revision hand patches one scratch object to write into instead of returning a fresh partial per patch per subject per frame, which <code>writes</code> makes safe to hand out without clearing. What later engines would look like, so the seam is judged against something real and none of them is being built:</p>
 <ul>
-  <li><b>A baked engine</b> runs <code>keys</code> tracks only and emits Web Animations or CSS keyframes, so a DOM consumer like wod gets compositor-thread playback. It refuses <code>fn</code> pieces at <code>add</code>.</li>
-  <li><b>A recording engine</b> wraps another engine and captures every sample into keyframes, turning a procedural piece into data for the baked one.</li>
-  <li><b>A GPU engine</b> writes per-item offsets into a buffer instead of returning them, for a part count where a JS loop per frame is the cost. Same table, same tracks; <code>sample</code> becomes a read from the buffer.</li>
+  <li><b>A baked engine</b> runs <code>keys</code> voices only and emits Web Animations or CSS keyframes, so a DOM consumer like wod gets compositor-thread playback. It refuses <code>fn</code> patches at <code>cue</code>.</li>
+  <li><b>A recording engine</b> wraps another engine and captures every pose into keyframes, turning a procedural patch into data for the baked one.</li>
+  <li><b>A GPU engine</b> writes per-subject deltas into a buffer instead of returning them, for a part count where a JS loop per frame is the cost. Same rig, same voices; <code>sample</code> becomes a read from the buffer.</li>
 </ul>
-<p>The seam holds only if nothing outside the engine assumes sampling is a function call. Two consequences for the schema: <code>sample</code> takes an <code>out</code> parameter so a buffer-backed engine can fill in place, and <code>keys</code> pieces keep their stops on the object rather than closing over them.</p>
+<p>The seam holds only if nothing outside the engine assumes sampling is a function call. Two consequences for the schema: <code>sample</code> takes an <code>out</code> parameter so a buffer-backed engine can fill in place, and <code>keys</code> patches keep their stops on the object rather than closing over them.</p>
 
-<h2 id="tables">Channel tables</h2>
-<p>What each consumer declares. The rules are the ones each repo already applies; the table makes them one line each.</p>
-<div class="tbl"><table>
-  <tr><th>consumer</th><th>item</th><th>table</th><th>notes</th></tr>
-  <tr><td>klieg motion</td><td><code>LetterInfo</code></td><td>position vec3 sum · rotation vec3 sum · scale mul · opacity mul</td><td>Three tracks in group <code>phase</code>, fades of <code>blendMs</code>.</td></tr>
+<h2 id="rigs">Channel rigs</h2>
+<p>What each consumer declares. The rules are the ones each repo already applies; the rig makes them one line each.</p>
+<div class="tbl"><rig>
+  <tr><th>consumer</th><th>subject</th><th>rig</th><th>notes</th></tr>
+  <tr><td>klieg motion</td><td><code>LetterInfo</code></td><td>position vec3 sum · rotation vec3 sum · scale mul · opacity mul</td><td>Three voices in group <code>phase</code>, fades of <code>blendMs</code>.</td></tr>
   <tr><td>klieg effects</td><td><code>PartInfo</code></td><td>gain mul · scale mul · dark max · crawl sum · position vec3 sum · rotation vec3 sum · light vec3 sum · color last</td><td>Light is premultiplied by amount before it reaches the channel, as <code>mergeOffsets</code> does.</td></tr>
-  <tr><td>klieg lighting</td><td>unit</td><td>yaw sum · pitch sum</td><td>One item, the frame. A mix with no item dimension is a mix over one item.</td></tr>
-  <tr><td>wod transitions</td><td>wedge <code>Segment</code></td><td>hold mul · opacity mul · scale mul · offset sum · rotate sum · aperture max · offsetAngle last</td><td>Every track is <code>keys</code> with <code>from: 'current'</code>; the tracks map goes away.</td></tr>
-  <tr><td>sherpa seams</td><td>page</td><td>opacity mul · transform (host's) · clip max</td><td>Exit and enter as two tracks; overlap is whether both are live at once.</td></tr>
-  <tr><td>magicsmoke</td><td>fault</td><td>intensity mul</td><td>One track, <code>weight: signal</code> from dwell; <code>blow</code> is a state piece on the same track.</td></tr>
-</table></div>
+  <tr><td>klieg lighting</td><td>unit</td><td>yaw sum · pitch sum</td><td>One subject, the frame. A mix with no subject dimension is a mix over one subject.</td></tr>
+  <tr><td>wod transitions</td><td>wedge <code>Segment</code></td><td>hold mul · opacity mul · scale mul · offset sum · rotate sum · aperture max · offsetAngle last</td><td>Every voice is <code>keys</code> with <code>from: 'current'</code>; the voices map goes away.</td></tr>
+  <tr><td>sherpa seams</td><td>page</td><td>opacity mul · transform (host's) · clip max</td><td>Exit and enter as two voices; overlap is whether both are live at once.</td></tr>
+  <tr><td>magicsmoke</td><td>fault</td><td>intensity mul</td><td>One voice, <code>weight: signal</code> from dwell; <code>blow</code> is a state patch on the same voice.</td></tr>
+</rig></div>
 
 <h2 id="klieg">The klieg port</h2>
 <p>All three klieg systems move in one pass, as chosen. The port is an extraction first and a feature second, and the boundary between the two is where the baselines are checked.</p>
 <ul>
-  <li><b>Step one reproduces the arithmetic exactly.</b> <code>Timeline.poseAt</code> becomes three tracks whose weight function is <code>min(inW, outW)</code> with the group cap, and <code>EffectFrame.resolve</code> becomes a mix over parts with the same modulo pass and the same stagger call. <code>mergeOffsets</code> and <code>addScaled</code> are the channel tables. The 40 Playwright baselines and every vitest case hold unchanged. Any that moves is a defect in the port, not a baseline to re-bless.</li>
-  <li><b>Step two turns on what the extraction bought.</b> <code>power</code>, <code>kicks</code> and <code>dwell</code> lose their hand-rolled frame keying, and <code>slew</code> takes the decay math with it: <code>dwell</code>'s <code>toward</code> and <code>kicks</code>' drain are one function, leaving <code>kicks</code> its falloff and its event queue. <code>power</code> keeps its state machine, which is not a decay. <code>hinge</code>'s blend mode becomes <code>weight: signal</code> and its stops mode becomes <code>mix.blend</code>; the old names stay as sugar. A host can add an effect to a running fire and fade it in, which has no equivalent today.</li>
-  <li><b>Wrappers do not move.</b> <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>partition</code> and the <code>Sequence</code>'s <code>carry</code> and <code>within</code> stay piece-level and unchanged, except that <code>carry</code> can be deleted once a regroup uses <code>from: 'current'</code>.</li>
-  <li><b><code>FrameCtx</code> becomes <code>Ctx</code> with klieg's fields on <code>host</code>.</b> <code>pointer</code>, <code>pointerInWord</code> and <code>dt</code> keep their meanings. Every klieg piece signature changes by one property path, and a codemod does it.</li>
+  <li><b>Step one reproduces the arithmetic exactly.</b> <code>Timeline.poseAt</code> becomes three voices whose weight function is <code>min(inW, outW)</code> with the group cap, and <code>EffectFrame.resolve</code> becomes a mix over parts with the same modulo pass and the same stagger call. <code>mergeOffsets</code> and <code>addScaled</code> are the channel rigs. The 40 Playwright baselines and every vitest case hold unchanged. Any that moves is a defect in the port, not a baseline to re-bless.</li>
+  <li><b>Step two turns on what the extraction bought.</b> <code>power</code>, <code>kicks</code> and <code>dwell</code> lose their hand-rolled frame keying, and <code>slew</code> takes the decay math with it: <code>dwell</code>'s <code>toward</code> and <code>kicks</code>' drain are one function, leaving <code>kicks</code> its falloff and its event queue. <code>power</code> keeps its state machine, which is not a decay. <code>hinge</code>'s blend mode becomes <code>weight: signal</code> and its stops mode becomes <code>mix.blend</code>; the old names stay as sugar. A host can cue an effect to a running fire and fade it in, which has no equivalent today.</li>
+  <li><b>Wrappers do not move.</b> <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>partition</code> and the <code>Sequence</code>'s <code>carry</code> and <code>within</code> stay patch-level and unchanged, except that <code>carry</code> can be deleted once a regroup uses <code>from: 'current'</code>.</li>
+  <li><b><code>FrameCtx</code> becomes <code>Setting</code> with klieg's fields on <code>host</code>.</b> <code>pointer</code>, <code>pointerInWord</code> and <code>dt</code> keep their meanings. Every klieg patch signature changes by one property path, and a codemod does it.</li>
   <li><b>klieg gains one runtime dependency</b>, zero-dependency itself, ESM-only, with types.</li>
 </ul>
 
 <h2 id="against">Decided against</h2>
 <ul>
-  <li><b>A signal graph.</b> Everything as nodes evaluated once per frame. Most general, and every existing piece would be re-expressed as nodes; a misbehaving sign would be read as a graph rather than a list. Signals stay scalars and plug in at two places.</li>
+  <li><b>A signal graph.</b> Everything as nodes evaluated once per frame. Most general, and every existing patch would be re-expressed as nodes; a misbehaving sign would be read as a graph rather than a list. Signals stay scalars and plug in at two places.</li>
   <li><b>Keyframes as the only form.</b> The platform's shape and wod's. It cannot carry a hash-driven flicker or a permutation walk without an escape hatch that is the procedural form under another name. Both forms are first-class instead.</li>
   <li><b>Adopting a tweening library.</b> GSAP, anime.js and Motion own a property and write absolute values, so concurrent writers conflict. anime.js v4's additive mode is the closest and still has no rest rule per channel. three's <code>AnimationMixer</code> has the right model and is keyframe-only over object property paths.</li>
-  <li><b>Item registration.</b> A <code>mix.items(list)</code> call would let the mix step every state eagerly. It puts a second source of truth about the pool in the host. Lazy state keyed by identity, stepped by the gap in <code>now</code>, needs nothing from the host and is the rule klieg already proved.</li>
+  <li><b>Subject registration.</b> A <code>mix.subjects(list)</code> call would let the mix step every state eagerly. It puts a second source of truth about the pool in the host. Lazy state keyed by identity, stepped by the gap in <code>now</code>, needs nothing from the host and is the rule klieg already proved.</li>
   <li><b>A slew in place of the band.</b> Smoothing a gate's input instead of giving it two edges. It delays the crossing without deciding it, so an input that rests on the threshold chatters anyway, and the rate needed to help at all costs visible lag.</li>
-  <li><b>A mix option for the lurch guard.</b> A global "normalize when over 1" would apply to effects that legitimately stack. The cap belongs to the tracks that crossfade, so it is a <code>group</code>.</li>
+  <li><b>A mix option for the lurch guard.</b> A global "normalize when over 1" would apply to effects that legitimately stack. The cap belongs to the voices that crossfade, so it is a <code>group</code>.</li>
 </ul>
 
 <h2 id="tests">Tests</h2>
 <ul>
   <li><b>Channel laws</b>, property-tested per stock channel: <code>join(v, rest) = v</code>, <code>scale(v, 1) = v</code>, <code>scale(v, 0) = rest</code>, <code>lerp(a, b, 0) = a</code>, <code>lerp(a, b, 1) = b</code>.</li>
-  <li><b>One frame, one answer.</b> A stateful piece sampled 12 times at one <code>now</code> steps once; a second <code>step</code> with the same <code>now</code> is a no-op.</li>
-  <li><b>Catch-up.</b> An item unsampled for three frames steps by the whole gap on the fourth.</li>
-  <li><b>Fade continuity.</b> A track stopped mid-pass with a fade produces no frame-to-frame jump larger than its per-frame ramp, on every channel with rest.</li>
-  <li><b>Retarget continuity.</b> A <code>from: 'current'</code> track added on a moving item has a first sample equal to the item's previous sample.</li>
-  <li><b>Band quiet.</b> A signal held inside a <code>gate</code>'s band for a whole pass produces no switch, whatever it does inside it. Same for a rest-less channel's contribution under a weight that wanders between <code>off</code> and <code>on</code>.</li>
-  <li><b>Group cap.</b> Two tracks in a group at weight 1 each produce the same output as one at weight 1.</li>
-  <li><b>Handover.</b> <code>stop({ at: 'rest' })</code> removes per item at the first resting frame, and at the deadline for a piece that never rests.</li>
-  <li><b>Declared writes.</b> A piece's <code>at</code> sets no key outside its <code>writes</code>, on every item and every pass. A track whose piece writes a channel the table lacks throws at <code>add</code> naming both.</li>
-  <li><b>Engine refusal.</b> An engine whose <code>runs</code> lacks <code>fn</code> throws at <code>add</code> naming the track.</li>
+  <li><b>One frame, one answer.</b> A stateful patch sampled 12 times at one <code>now</code> steps once; a second <code>sync</code> with the same <code>now</code> is a no-op.</li>
+  <li><b>Catch-up.</b> A subject unsampled for three frames steps by the whole gap on the fourth.</li>
+  <li><b>Fade continuity.</b> A voice stopped mid-pass with a fade produces no frame-to-frame jump larger than its per-frame ramp, on every channel with rest.</li>
+  <li><b>Retarget continuity.</b> A <code>from: 'current'</code> voice cued on a moving subject has a first sample equal to the subject's previous sample.</li>
+  <li><b>Band quiet.</b> A signal held inside a <code>gate</code>'s band for a whole pass produces no switch, whatever it does inside it. Same for a rest-less channel's influence under a weight that wanders between <code>off</code> and <code>on</code>.</li>
+  <li><b>Group cap.</b> Two voices in a group at weight 1 each produce the same output as one at weight 1.</li>
+  <li><b>Handover.</b> <code>fade({ at: 'rest' })</code> removes per subject at the first resting frame, and at the deadline for a patch that never rests.</li>
+  <li><b>Declared writes.</b> A patch's <code>at</code> sets no key outside its <code>writes</code>, on every subject and every pass. A voice whose patch writes a channel the rig lacks throws at <code>cue</code> naming both.</li>
+  <li><b>Engine refusal.</b> An engine whose <code>runs</code> lacks <code>fn</code> throws at <code>cue</code> naming the voice.</li>
   <li><b>The klieg extraction</b> is judged by klieg's own suites and the Playwright baselines, unchanged.</li>
 </ul>
 
@@ -525,7 +525,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>The package name.</b> <code>blits</code> is free on npm. <code>@lightningjs/blits</code> is a live TV app framework with its own animation plugin, so searches for the name land there first.</li>
   <li><b>Where klieg's stagger lives.</b> The grammar is generic already; whether <code>StaggerSpec</code> and <code>orderKey</code> move into the package or stay klieg's and are passed in as a function.</li>
   <li><b>Color's lerp.</b> A hex channel needs a color space to lerp in. sRGB is what klieg's light channel assumes; OKLCH reads better for a crossfade between hues. One choice, made once, on the stock <code>hex</code> channel.</li>
-  <li><b>Whether <code>at</code> writes into a buffer.</b> A piece allocates one partial offset per item per frame, and <code>writes</code> plus the fold order would let the mix hand it one scratch object instead. It costs the nicest property <code>at</code> has &mdash; a pure function a test calls once &mdash; so it waits on a p95 frame time from the klieg port, measured after <code>sample(item, out)</code> has already taken the merge's own allocations out. If it lands it replaces the returning form; two ways to author a piece cost more than the allocation does.</li>
+  <li><b>Whether <code>at</code> writes into a buffer.</b> A patch allocates one partial delta per subject per frame, and <code>writes</code> plus the fold order would let the mix hand it one scratch object instead. It costs the nicest property <code>at</code> has &mdash; a pure function a test calls once &mdash; so it waits on a p95 frame time from the klieg port, measured after <code>sample(subject, out)</code> has already taken the merge's own allocations out. If it lands it replaces the returning form; two ways to author a patch cost more than the allocation does.</li>
   <li><b>The stock band's width.</b> Whether <code>gate</code>'s default band is symmetric around <code>at</code> and how wide it is. It has to clear the frame noise in a real signal, so it is a measurement from klieg's <code>near</code> and <code>dwell</code>, not a guess.</li>
   <li><b>Whether <code>slew</code> is linear or exponential.</b> klieg's three decays are all linear, <code>ms / rate</code>, so linear keeps the port's arithmetic identical and the Playwright baselines green. An exponential release reads better and never reaches rest, which <code>atRest</code> needs it to, so it would want a floor. One choice, made once.</li>
   <li><b>Whether magicsmoke wants this at all.</b> Its fault is one intensity; the case is weakest there and it may stay a consumer only of <code>slew</code>.</li>
