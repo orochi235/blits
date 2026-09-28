@@ -11,6 +11,12 @@
   ],
   "license": "MIT",
   "author": "orochi235",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orochi235/blits.git"
+  },
+  "homepage": "https://github.com/orochi235/blits#readme",
+  "bugs": "https://github.com/orochi235/blits/issues",
   "type": "module",
   "sideEffects": false,
   "exports": {

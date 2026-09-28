@@ -49,8 +49,8 @@ clock), **handle** (the live controls on one voice), **engine** (the implementat
 The design — the full vocabulary, the channel table, the time model, blending, the engine seam, and
 what is still open — is `docs/2026-09-15-schema.html`, which ships in the package: open it from
 `node_modules/blits/`. The naming work behind it is
-`docs/2026-09-15-vocabulary.json`, which [semanticore](https://github.com/orochi235/semanticore)
-serves as a page.
+`docs/2026-09-15-vocabulary.json`, which semanticore serves as a page.
+That repo is private; the JSON stands on its own.
 
 ## Status
 
