@@ -7,12 +7,14 @@ restate either from here; read them.
 
 ## What blits is
 
-A small runtime package for concurrent effects: each effect runs on its own clock with its own
-state and weight, and a mix folds them into one value per item per frame by rules that belong to
-the channel, not the effect. It generalizes what klieg does three times over (motion, effects,
-lighting) and what wod's transition tracks do once, so klieg, wod, sherpa and magicsmoke can share
-one vocabulary and one engine. **Nothing is built.** The repo holds two design pages, an export of
-one of them, and a script.
+A common language and paradigm for orchestrating effects from arbitrary sources, extensibly and
+flexibly. The package follows from that: each effect runs on its own clock with its own state and
+weight, and a mix folds them into one value per item per frame by rules that belong to the
+channel, not the effect. The vocabulary is the deliverable as much as the runtime is — the sources
+are open by design, so the language has to be able to name a seam it does not own. It generalizes
+what klieg does three times over (motion, effects, lighting) and what wod's transition tracks do
+once, so klieg, wod, sherpa and magicsmoke can share one vocabulary and one engine. **Nothing is
+built.** The repo holds two design pages, an export of one of them, and a script.
 
 ## State
 
@@ -62,6 +64,26 @@ one of them, and a script.
   after deciding the range reading was as valid.
 - **Blending** covers all four behaviors he was offered: fade, retarget on interruption, blend
   between alternatives, handover at rest. All reduce to a weight per track or a channel lerp.
+- **Two clocks, one of them addressable.** Mix time is a reading the host reports, not a position
+  anything sets. Voice time is a position, because `phase` is computed from the reading rather than
+  accumulated into. So `seek` has exactly one scope, the voice, and needs no qualifier.
+  Decided 2026-09-27.
+- **The mix keeps no history**, so it cannot be moved to an earlier reading: stateful piece state
+  and slew-driven weights have no inverse, and voices that finished their fade are gone with no
+  record that they existed. A purely stateless mix would evaluate at any reading; the obstruction
+  is accumulation and membership, not time. Going back would mean re-adding voices and replaying
+  forward from a point still held. That is a capability the design lacks, not one the ontology
+  forbids — the schema constrains only the source (`monotonic clock`) and says nothing about
+  scrubbing. Noted 2026-09-27.
+- **`mix.step(now)` becomes `sync`**, and `step` stays on the piece callback, where it takes a `dt`
+  and means an advance. The mix method takes an absolute reading and publishes it; nothing advances
+  at the call, and each item catches up when it is next sampled. Both were called `step`, meaning
+  opposite things. Carry this into the schema rename. Decided 2026-09-27.
+- **Name from the point of view of the thing that experiences it**, not the machinery that
+  produces it. A pattern does not meet a fresh object each frame; it looks again and the world has
+  moved on, so an argument from allocation is not an argument about the concept. The same cut
+  settled the mix's clock verb: `step` named the consequence, `sync` names the act. Stated
+  2026-09-27.
 - **Two halves of "offset"** were split: what a piece returns (partial, relative) and what the mix
   returns (resolved). The sheet names them separately; klieg's `ResolvedOffset` is the second.
 
@@ -77,13 +99,13 @@ one of them, and a script.
 
 ## Next, in order
 
-1. **Mark the glosses for substitution.** The definitions are written in the incumbent words and
-   almost nothing in them is marked: 6 marked tokens against 166 bare role-word occurrences. So a
-   pick changes the headings and leaves every definition saying `offset` and `channel`, which is
-   the page's one job undone — a name is judged in a sentence. This has to land before the set can
-   be called.
-2. **Mike calls the set.** Then rename through the schema page and copy the JSON into
-   `~/src/semanticore/reference/`.
+1. **Rename the schema page.** It is written in the incumbent words — table, offset, piece, track —
+   and the set is now called: rig, delta, patch, voice, subject, channel, pose, influence, setting,
+   cue, fade, sync, seek, drop. Nothing else can be reviewed until the design reads in the words it
+   will ship in. Then copy the JSON into `~/src/semanticore/reference/`.
+2. **Finish the sheet.** Eleven rows have no pick recorded: mix, system, group, sequence, and
+   the verbs sample, blend, clear, join, scale, lerp and fold. Keeping an incumbent still needs the
+   click, or nothing is written down.
 3. **Spec self-review** of the schema page (placeholders, contradictions, ambiguity, scope) and
    Mike's sign-off. This is the brainstorming skill's review gate; the design has been presented
    but not approved as a spec.

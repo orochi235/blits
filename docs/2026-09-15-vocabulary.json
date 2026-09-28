@@ -137,7 +137,7 @@
           "field": "learning",
           "words": [
             {
-              "word": "residual",
+              "word": "adjustment",
               "star": true
             }
           ]
@@ -278,7 +278,7 @@
       "was": "table",
       "kind": "noun",
       "gloss": {
-        "lead": "The full list of channels one kind of thing can be moved on, each with its rule.",
+        "lead": "The full list of channels one kind of item can be moved on, each with its rule.",
         "items": [
           "klieg has three: a pose table for a letter, a part table for a tube run or a flake, a lighting table for the whole frame.",
           "A piece writes into one table. A mix runs over one table.",
@@ -522,11 +522,12 @@
       "was": "piece",
       "kind": "noun",
       "gloss": {
-        "lead": "The function an author writes.",
+        "lead": "A reusable rule for how one item moves away from rest over time. A track is one of them playing.",
         "items": [
-          "It is given where a track is in its period, which item is being asked about, and the frame’s context, and it returns an offset.",
-          "The same inputs always give the same offset.",
-          "A piece that needs memory declares a state per item. The mix advances that state once a frame, before asking."
+          "Given where it is in its period and what the item looks like now, it returns an offset: values on the channels it drives, and nothing on the others.",
+          "It declares which channels it writes, so what it may touch is known before it runs.",
+          "It may keep state per item — a strike burning down, a warm-up, a hash walk — advanced by the gap since that item last caught up.",
+          "It knows nothing about the others. Everything it emits is relative to rest, and that is what lets several of them run at once without coordinating."
         ]
       },
       "groups": [
@@ -917,11 +918,12 @@
       "was": "signal",
       "kind": "noun",
       "gloss": {
-        "lead": "A number from 0 to 1 that comes from outside the clock, read per item per frame.",
+        "lead": "A function of one item, read once a frame, that yields a number from 0 to 1 from something outside the clock.",
         "items": [
-          "How close the cursor is. How long it has hovered. A level the host writes.",
-          "As a track’s weight, it makes an effect follow the cursor.",
-          "As a selector, it picks a point between alternatives."
+          "Where the number comes from: how close the cursor is, how long it has hovered, a level the host writes, another track’s state.",
+          "They compose, and some of them hold state: peak takes the largest of several, slew follows its input no faster than a rate limit, gate holds its value inside a band.",
+          "It plugs in at two places and nowhere else — as a track’s weight, so an effect follows the cursor, and as the selector blend@v shares weight out by.",
+          "A piece is also a function of one item read once a frame. The difference is what comes back: a piece writes an offset across channels, a signal yields one scalar, and where that scalar is allowed to land is fixed."
         ]
       },
       "groups": [
@@ -1039,17 +1041,159 @@
       "description": "outside input"
     },
     {
+      "key": "source",
+      "title": "Source",
+      "was": "source",
+      "kind": "fixed",
+      "description": "where a track comes from",
+      "gloss": {
+        "lead": "Whatever decided a track should exist: the app side of the call, named but not defined.",
+        "items": [
+          "A score, a handler on an event, a sequence handing over, another system entirely. The package owns none of them and requires nothing of them.",
+          "It is here so the vocabulary can say where a track came from. There is no source type, no interface and nothing to implement: a source calls add@v and gets back a handle."
+        ]
+      }
+    },
+    {
+      "key": "score",
+      "title": "Score",
+      "was": "score",
+      "kind": "noun",
+      "description": "the plan a host keeps",
+      "gloss": {
+        "lead": "The source a host keeps that holds the whole plan: what plays, over what, and when.",
+        "items": [
+          "It supplies the two things the package otherwise takes as given — the timing, and the cast of items that will be driven.",
+          "What it looks like is not knowable here. klieg’s is spread across handlers and a Timeline; another app’s may be a document, a route table, a state machine.",
+          "blits does not read one and does not require one. It names it because every app that orchestrates effects has one or its equivalent, and because a source that is a score, rather than a handler, is the one that can be replayed or seeked.",
+          "Being ahead of time is what distinguishes it: a handler knows only now, a score knows the shape of the whole run."
+        ]
+      },
+      "links": [
+        {
+          "rel": "kind of",
+          "to": "source"
+        }
+      ],
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "series",
+              "star": false
+            },
+            {
+              "word": "mapping",
+              "star": false
+            },
+            {
+              "word": "expression",
+              "star": false
+            },
+            {
+              "word": "function",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage",
+          "words": [
+            {
+              "word": "script",
+              "star": true
+            },
+            {
+              "word": "promptbook",
+              "star": false
+            },
+            {
+              "word": "plot",
+              "star": true
+            },
+            {
+              "word": "book",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "chart",
+              "star": true
+            },
+            {
+              "word": "arrangement",
+              "star": false
+            },
+            {
+              "word": "sheet",
+              "star": false
+            },
+            {
+              "word": "part",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "timeline",
+              "star": true
+            },
+            {
+              "word": "storyboard",
+              "star": false
+            },
+            {
+              "word": "breakdown",
+              "star": false
+            },
+            {
+              "word": "schedule",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "plan",
+              "star": true
+            },
+            {
+              "word": "program",
+              "star": false
+            },
+            {
+              "word": "manifest",
+              "star": false
+            },
+            {
+              "word": "recipe",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": ""
+    },
+    {
       "key": "handle",
       "title": "Handle",
       "was": "handle",
       "kind": "noun",
       "gloss": {
-        "lead": "The remote for one track: what add gives back so you can point at that track later.",
+        "lead": "The remote for one track: what add@v gives back, so you can point at that one later.",
         "items": [
-          "You add a flicker. Three seconds on, the cursor leaves and you want <em>that</em> flicker to fade out, not the other twelve tracks. The handle is how you say which one.",
-          "Through it you can set the track’s weight and rate, seek its clock, and stop it. Each lands on the next frame.",
-          "Its <code>done</code> promise resolves when the track has left the mix by any route, so a host can await an effect finishing.",
-          "The same idea as the id <code>setTimeout</code> returns, or the object <code>element.animate()</code> returns, or klieg’s own <code>FireHandle</code>."
+          "Through it you set the track’s weight and rate, seek@v its clock, and stop@v it. Each lands on the next frame, never mid-frame.",
+          "Its done promise resolves once the track has left the mix by any route, so a host can await an effect finishing."
         ]
       },
       "groups": [
@@ -1098,7 +1242,7 @@
               "star": false
             },
             {
-              "word": "fader",
+              "word": "tether",
               "star": true
             }
           ]
@@ -1312,7 +1456,7 @@
           "field": "animation",
           "words": [
             {
-              "word": "rig",
+              "word": "chassis",
               "star": true
             },
             {
@@ -1406,11 +1550,12 @@
       "was": "host",
       "kind": "noun",
       "gloss": {
-        "lead": "The program that owns the frame loop and the things on screen.",
+        "lead": "Whatever meets the package’s three obligations: it owns the frame loop, it draws, and it keeps the items alive.",
         "items": [
-          "klieg, wod, sherpa, magicsmoke.",
-          "It holds a mix, steps it once a frame, samples@v it per item, and writes what comes back onto a mesh, a wedge or a gain node.",
-          "The package never draws anything itself."
+          "Once a frame it steps@v the mix, then samples@v every item it means to draw and writes what comes back onto a mesh, a wedge or a gain node. The package draws nothing itself.",
+          "Items must keep their identity between frames. State is held against the object, so an item rebuilt every frame silently starts over.",
+          "That is the whole contract. Deciding what plays is a source’s job, not this one, and everything else klieg does — laying out letters, holding a timeline, choosing when to strike — is the app, not the host.",
+          "klieg, wod, sherpa and magicsmoke each contain one. None of them is one."
         ]
       },
       "groups": [
@@ -2772,12 +2917,13 @@
       "was": "mix.step(now)",
       "kind": "verb",
       "gloss": {
-        "lead": "Set the mix's clock to now; everything catches up to it.",
+        "lead": "The host tells the mix what time it is: one \\clock reading, once a \\frame.",
         "items": [
-          "It takes the frame's clock reading, not an amount elapsed: once a frame, the host hands it what time it is.",
-          "Every track's clock and weight, and every piece's state, moves forward by the gap since the last call — whatever its size. Ten dropped frames arrive as one long advance and nothing is lost.",
-          "That gap is never subdivided. A piece whose state integrates sees one advance of 160ms, not ten of 16ms.",
-          "Asking twice for the same time changes nothing."
+          "It takes an absolute reading on a monotonic \\clock, never an amount elapsed. klieg passes its own <code>Clock.now()</code>, wod passes <code>performance.now()</code>, a test passes integers.",
+          "Nothing advances at the call. It publishes the reading, and each item catches up the first time it is sampled@v afterward, by the gap since that item last caught up.",
+          "The gap is never subdivided. An item left unasked for three \\frames catches up once, by the whole gap, not three times: nothing is lost and nothing is replayed.",
+          "The same reading twice changes nothing, and every sample between readings answers from the one \\frame.",
+          "The reading only ever goes forward. A piece’s state is an accumulation with no inverse, so no reading un-burns a strike or un-slews a value. Moving a track within its period is seek@v’s job, and that moves phase, not this."
         ]
       },
       "groups": [
@@ -2785,19 +2931,19 @@
           "field": "math",
           "words": [
             {
-              "word": "iterate",
-              "star": false
+              "word": "evaluate",
+              "star": true
             },
             {
-              "word": "evolve",
-              "star": false
-            },
-            {
-              "word": "propagate",
+              "word": "index",
               "star": false
             },
             {
               "word": "advance",
+              "star": false
+            },
+            {
+              "word": "iterate",
               "star": false
             }
           ]
@@ -2806,19 +2952,19 @@
           "field": "physics",
           "words": [
             {
+              "word": "observe",
+              "star": true
+            },
+            {
               "word": "integrate",
-              "star": true
-            },
-            {
-              "word": "tick",
-              "star": true
-            },
-            {
-              "word": "pulse",
               "star": false
             },
             {
-              "word": "march",
+              "word": "measure",
+              "star": false
+            },
+            {
+              "word": "time",
               "star": false
             }
           ]
@@ -2827,19 +2973,19 @@
           "field": "DAW",
           "words": [
             {
+              "word": "sync",
+              "star": true
+            },
+            {
               "word": "clock",
               "star": true
             },
             {
-              "word": "beat",
-              "star": true
-            },
-            {
-              "word": "run",
+              "word": "transport",
               "star": false
             },
             {
-              "word": "frame",
+              "word": "run",
               "star": false
             }
           ]
@@ -2848,15 +2994,15 @@
           "field": "lighting",
           "words": [
             {
-              "word": "sweep",
-              "star": true
-            },
-            {
-              "word": "cycle",
+              "word": "call",
               "star": true
             },
             {
               "word": "go",
+              "star": false
+            },
+            {
+              "word": "sweep",
               "star": false
             }
           ]
@@ -2865,23 +3011,23 @@
           "field": "software",
           "words": [
             {
+              "word": "now",
+              "star": true
+            },
+            {
+              "word": "mark",
+              "star": false
+            },
+            {
+              "word": "tick",
+              "star": false
+            },
+            {
               "word": "update",
               "star": false
             },
             {
-              "word": "turn",
-              "star": false
-            },
-            {
-              "word": "tock",
-              "star": false
-            },
-            {
-              "word": "progress",
-              "star": false
-            },
-            {
-              "word": "move",
+              "word": "drive",
               "star": false
             }
           ]
@@ -4019,7 +4165,7 @@
         "animation rig": "delta",
         "algebra": "term",
         "physics": "vector",
-        "learning": "residual"
+        "learning": "adjustment"
       }
     },
     {
@@ -4102,8 +4248,8 @@
     {
       "role": "handle",
       "words": {
-        "DAW": "fader",
-        "stage lighting": "fader",
+        "DAW": "tether",
+        "stage lighting": "tether",
         "animation rig": "handle",
         "algebra": "binding",
         "physics": "lever",
@@ -4214,7 +4360,7 @@
       "words": {
         "DAW": "rack",
         "stage lighting": "department",
-        "animation rig": "rig",
+        "animation rig": "chassis",
         "algebra": "structure",
         "physics": "apparatus",
         "learning": "module"
@@ -4356,7 +4502,7 @@
     },
     "sets": {
       "title": "Six consistent sets",
-      "body": "<p>Six fields each give a complete vocabulary for the whole pipeline. The learning column lands on the same three roles the geometry does, with the same split: <em>feature</em> for one coordinate, <em>feature space</em> for all of them, <em>feature vector</em> for one point; and it gives <em>residual</em>, <em>ensemble</em> and <em>epoch</em>, each exact. The physics column is the one that says what the mix <em>is</em>: forces from independent sources superposing on a body into one resultant, with a field assigning one to every point. Its cost is that forces \\add and half the channels multiply, and that <code>force</code> is a flag and a physics-engine word in the same codebases. Any one column reads as a system; mixing columns reads as arbitrary, with one exception: the algebra column is strong exactly where the arithmetic lives (domain, axis, term, curve) and strained where the host lives, so a set that is mathematical on the left of the fold and plain on the right matches what each part is.</p>\n<div class=\"tbl\"><table class=\"vocab\">\n  <tr><th>yours</th><th>role</th><th>DAW</th><th>stage lighting</th><th>animation rig</th><th>algebra</th><th>physics</th><th>learning</th></tr>\n  <tr data-role=\"offset\"><td class=\"mine\" data-for=\"offset\"></td><td class=\"role\">emitted value</td><td>send</td><td>level</td><td>delta</td><td>term</td><td>vector</td><td>residual</td></tr>\n  <tr data-role=\"channel\"><td class=\"mine\" data-for=\"channel\"></td><td class=\"role\">one field</td><td>lane</td><td>circuit</td><td>axis</td><td>axis</td><td>component</td><td>feature</td></tr>\n  <tr data-role=\"table\"><td class=\"mine\" data-for=\"table\"></td><td class=\"role\">channel set</td><td>desk</td><td>fixture</td><td>rig</td><td>domain</td><td>space</td><td>feature space</td></tr>\n  <tr data-role=\"item\"><td class=\"mine\" data-for=\"item\"></td><td class=\"role\">driven thing</td><td>note</td><td>lamp</td><td>actor</td><td>index</td><td>body</td><td>example</td></tr>\n  <tr data-role=\"piece\"><td class=\"mine\" data-for=\"piece\"></td><td class=\"role\">function of time</td><td>clip</td><td>chase</td><td>gesture</td><td>curve</td><td>field</td><td>extractor</td></tr>\n  <tr data-role=\"track\"><td class=\"mine\" data-for=\"track\"></td><td class=\"role\">playing instance</td><td>voice</td><td>submaster</td><td>action</td><td>operand</td><td>force</td><td>member</td></tr>\n  <tr data-role=\"mix\"><td class=\"mine\" data-for=\"mix\"></td><td class=\"role\">live set</td><td>mix</td><td>universe</td><td>mixer</td><td>sum</td><td>configuration</td><td>ensemble</td></tr>\n  <tr data-role=\"signal\"><td class=\"mine\" data-for=\"signal\"></td><td class=\"role\">outside input</td><td>sidechain</td><td>fader</td><td>driver</td><td>parameter</td><td>potential</td><td>parameter</td></tr>\n  <tr data-role=\"handle\"><td class=\"mine\" data-for=\"handle\"></td><td class=\"role\">live controls</td><td>fader</td><td>fader</td><td>handle</td><td>binding</td><td>lever</td><td>—</td></tr>\n  <tr data-role=\"engine\"><td class=\"mine\" data-for=\"engine\"></td><td class=\"role\">implementation</td><td>backend</td><td>desk</td><td>runtime</td><td>model</td><td>solver</td><td>backend</td></tr>\n  <tr data-role=\"host\"><td class=\"mine\" data-for=\"host\"></td><td class=\"role\">owner of the loop</td><td>daw</td><td>house</td><td>player</td><td>integrator</td><td>integrator</td><td>pipeline</td></tr>\n  <tr data-role=\"rest\"><td class=\"mine\" data-for=\"rest\"></td><td class=\"role\">the identity</td><td>unity</td><td>blackout</td><td>base</td><td>origin</td><td>equilibrium</td><td>baseline</td></tr>\n  <tr data-role=\"weight\"><td class=\"mine\" data-for=\"weight\"></td><td class=\"role\">how much is on</td><td>fader</td><td>intensity</td><td>influence</td><td>coefficient</td><td>magnitude</td><td>weight</td></tr>\n  <tr data-role=\"sample\"><td class=\"mine\" data-for=\"sample\"></td><td class=\"role\">the resolved value</td><td>output</td><td>output</td><td>pose</td><td>point</td><td>resultant</td><td>feature vector</td></tr>\n  <tr data-role=\"contribution\"><td class=\"mine\" data-for=\"contribution\"></td><td class=\"role\">one track's share</td><td>send</td><td>—</td><td>layer</td><td>summand</td><td>impulse</td><td>activation</td></tr>\n  <tr data-role=\"context\"><td class=\"mine\" data-for=\"context\"></td><td class=\"role\">what a piece is handed</td><td>—</td><td>cue</td><td>frame</td><td>environment</td><td>state</td><td>context</td></tr>\n  <tr data-role=\"period\"><td class=\"mine\" data-for=\"period\"></td><td class=\"role\">one pass</td><td>bar</td><td>chase</td><td>pass</td><td>period</td><td>period</td><td>epoch</td></tr>\n  <tr data-role=\"group\"><td class=\"mine\" data-for=\"group\"></td><td class=\"role\">capped set</td><td>bus</td><td>submaster</td><td>layer</td><td>partition</td><td>constraint</td><td>softmax</td></tr>\n</table></div>"
+      "body": "<p>Six fields each give a complete vocabulary for the whole pipeline. The learning column lands on the same three roles the geometry does, with the same split: <em>feature</em> for one coordinate, <em>feature space</em> for all of them, <em>feature vector</em> for one point; and it gives <em>adjustment</em>, <em>ensemble</em> and <em>epoch</em>. The physics column is the one that says what the mix <em>is</em>: forces from independent sources superposing on a body into one resultant, with a field assigning one to every point. Its cost is that forces \\add and half the channels multiply, and that <code>force</code> is a flag and a physics-engine word in the same codebases. Any one column reads as a system; mixing columns reads as arbitrary, with one exception: the algebra column is strong exactly where the arithmetic lives (domain, axis, term, curve) and strained where the host lives, so a set that is mathematical on the left of the fold and plain on the right matches what each part is.</p>\n<div class=\"tbl\"><table class=\"vocab\">\n  <tr><th>yours</th><th>role</th><th>DAW</th><th>stage lighting</th><th>animation rig</th><th>algebra</th><th>physics</th><th>learning</th></tr>\n  <tr data-role=\"offset\"><td class=\"mine\" data-for=\"offset\"></td><td class=\"role\">emitted value</td><td>send</td><td>level</td><td>delta</td><td>term</td><td>vector</td><td>adjustment</td></tr>\n  <tr data-role=\"channel\"><td class=\"mine\" data-for=\"channel\"></td><td class=\"role\">one field</td><td>lane</td><td>circuit</td><td>axis</td><td>axis</td><td>component</td><td>feature</td></tr>\n  <tr data-role=\"table\"><td class=\"mine\" data-for=\"table\"></td><td class=\"role\">channel set</td><td>desk</td><td>fixture</td><td>rig</td><td>domain</td><td>space</td><td>feature space</td></tr>\n  <tr data-role=\"item\"><td class=\"mine\" data-for=\"item\"></td><td class=\"role\">driven thing</td><td>note</td><td>lamp</td><td>actor</td><td>index</td><td>body</td><td>example</td></tr>\n  <tr data-role=\"piece\"><td class=\"mine\" data-for=\"piece\"></td><td class=\"role\">function of time</td><td>clip</td><td>chase</td><td>gesture</td><td>curve</td><td>field</td><td>extractor</td></tr>\n  <tr data-role=\"track\"><td class=\"mine\" data-for=\"track\"></td><td class=\"role\">playing instance</td><td>voice</td><td>submaster</td><td>action</td><td>operand</td><td>force</td><td>member</td></tr>\n  <tr data-role=\"mix\"><td class=\"mine\" data-for=\"mix\"></td><td class=\"role\">live set</td><td>mix</td><td>universe</td><td>mixer</td><td>sum</td><td>configuration</td><td>ensemble</td></tr>\n  <tr data-role=\"signal\"><td class=\"mine\" data-for=\"signal\"></td><td class=\"role\">outside input</td><td>sidechain</td><td>fader</td><td>driver</td><td>parameter</td><td>potential</td><td>parameter</td></tr>\n  <tr data-role=\"handle\"><td class=\"mine\" data-for=\"handle\"></td><td class=\"role\">live controls</td><td>tether</td><td>tether</td><td>handle</td><td>binding</td><td>lever</td><td>—</td></tr>\n  <tr data-role=\"engine\"><td class=\"mine\" data-for=\"engine\"></td><td class=\"role\">implementation</td><td>backend</td><td>desk</td><td>runtime</td><td>model</td><td>solver</td><td>backend</td></tr>\n  <tr data-role=\"host\"><td class=\"mine\" data-for=\"host\"></td><td class=\"role\">owner of the loop</td><td>daw</td><td>house</td><td>player</td><td>integrator</td><td>integrator</td><td>pipeline</td></tr>\n  <tr data-role=\"rest\"><td class=\"mine\" data-for=\"rest\"></td><td class=\"role\">the identity</td><td>unity</td><td>blackout</td><td>base</td><td>origin</td><td>equilibrium</td><td>baseline</td></tr>\n  <tr data-role=\"weight\"><td class=\"mine\" data-for=\"weight\"></td><td class=\"role\">how much is on</td><td>fader</td><td>intensity</td><td>influence</td><td>coefficient</td><td>magnitude</td><td>weight</td></tr>\n  <tr data-role=\"sample\"><td class=\"mine\" data-for=\"sample\"></td><td class=\"role\">the resolved value</td><td>output</td><td>output</td><td>pose</td><td>point</td><td>resultant</td><td>feature vector</td></tr>\n  <tr data-role=\"contribution\"><td class=\"mine\" data-for=\"contribution\"></td><td class=\"role\">one track's share</td><td>send</td><td>—</td><td>layer</td><td>summand</td><td>impulse</td><td>activation</td></tr>\n  <tr data-role=\"context\"><td class=\"mine\" data-for=\"context\"></td><td class=\"role\">what a piece is handed</td><td>—</td><td>cue</td><td>frame</td><td>environment</td><td>state</td><td>context</td></tr>\n  <tr data-role=\"period\"><td class=\"mine\" data-for=\"period\"></td><td class=\"role\">one pass</td><td>bar</td><td>chase</td><td>pass</td><td>period</td><td>period</td><td>epoch</td></tr>\n  <tr data-role=\"group\"><td class=\"mine\" data-for=\"group\"></td><td class=\"role\">capped set</td><td>bus</td><td>submaster</td><td>layer</td><td>partition</td><td>constraint</td><td>softmax</td></tr>\n</table></div>"
     },
     "domain": {
       "title": "On domain for the channel set",

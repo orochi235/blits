@@ -51,7 +51,7 @@ const arrow = (d, label, lx, ly) => {
 };
 
 const W = 1240;
-const H = 880;
+const H = 968;
 
 text(40, 44, `${job.title} — what contains what, and what reaches ${an('item')} ${word('item')}`, 'title');
 text(40, 66, `Names are the current picks, with the incumbent in parentheses. Generated from ${basename(jobPath)}.`, 'sub');
@@ -135,9 +135,22 @@ arrow('M 588 440 V 600 H 218 V 630', `returns one, per ${word('item')}`, 600, 48
 arrow('M 368 690 H 434', `× ${word('weight')}`, 372, 682);
 arrow('M 740 690 H 810', 'Σ', 768, 682);
 
-text(40, 790, `A ${word('system')} declares one ${word('table')} and one kind of ${word('item')}; its ${word('mix')} runs ${word('track')}s over that ${word('table')}; each ${word('track')} is one ${word('piece')} with its own clock and ${word('weight')}.`, 'note');
-text(40, 812, `Nothing is computed on demand: the ${word('engine')} folds once a frame, and ${word('v-sample')} reads what the frame already produced.`, 'note');
-text(40, 834, `Two ${word('system')}s never share a ${word('mix')}, so a ${word('track')} belongs to exactly one.`, 'note');
+// ── sources ──────────────────────────────────────────────────────────────────
+text(40, 770, `Where ${word('track')}s come from`, 'section');
+
+box(68, 786, 540, 92, 'panel dashed');
+head('source', ' — whatever decides one should exist', 88, 814, 500);
+rows(88, 838, [`a handler on an event, a ${word('sequence')} handing over,`, `${word('v-add')}s and gets back ${an('handle')} ${word('handle')}`], 500);
+
+box(660, 786, 540, 92, 'panel dashed');
+head('score', ` — the ${word('source')} the app keeps`, 680, 814, 500);
+rows(680, 838, [`the whole plan: timings and the cast`, `blits never reads one; it only knows it is there`], 500);
+
+arrow('M 340 782 V 742', `${word('v-add')}`, 348, 762);
+
+text(40, 906, `A ${word('system')} declares one ${word('table')} and one kind of ${word('item')}; its ${word('mix')} runs ${word('track')}s over that ${word('table')}; each ${word('track')} is one ${word('piece')} with its own clock and ${word('weight')}.`, 'note');
+text(40, 928, `Nothing is computed until it is asked for: ${word('v-sample')} folds that ${word('item')}'s ${word('contribution')}s at the current reading, and an ${word('item')} nobody asks about costs nothing.`, 'note');
+text(40, 950, `Two ${word('system')}s never share a ${word('mix')}, so a ${word('track')} belongs to exactly one.`, 'note');
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="ui-sans-serif, -apple-system, 'Helvetica Neue', sans-serif">
 <style>
