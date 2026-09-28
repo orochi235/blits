@@ -18,7 +18,9 @@ systems now run on it**, on a branch that is not merged.
 
 ## State
 
-- `main`, no remote. Clean tree.
+- `main`, clean, pushed to `git@github.com:orochi235/blits.git` — **private**. The remote had been
+  configured and pushed once on 2026-09-16 and then went unmentioned; two handoffs since have said
+  there was none. Check `git remote -v` before believing any of this.
 - **klieg's port is done and green, on `blits-port` in `~/src/klieg`** — three commits, not merged,
   no remote push. All three systems fold through a mix: `Timeline.poseAt` cues a voice per layer of
   each phase, `EffectFrame` one per effect, and the sign's environment is a mix with one subject.
@@ -123,9 +125,10 @@ systems now run on it**, on a branch that is not merged.
 
 ## Next, in order
 
-1. **Give klieg a dependency it can build from.** A registry (private under orochi235, as
-   semanticore) or a tarball committed inside klieg — the `file:` path cannot be merged, and until
-   it is replaced klieg's suite cannot run on the fleet either. This is a decision, not a task.
+1. **Publish 0.1.0, then point klieg at it.** The package is publish-ready and `npm publish` stops
+   at an OTP prompt, so it is Mike's to run. Then `packages/core/package.json` in klieg trades
+   `"blits": "file:../../../blits"` for `"blits": "^0.1.0"`, which is what makes that branch
+   mergeable and lets klieg's suite run on the fleet again.
 2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
    their hand-rolled frame keying onto `slew`, `hinge`'s modes become `weight: signal` and
    `mix.blend`, and `FrameCtx` becomes `Setting` with klieg's fields on `host`. The schema page's
@@ -141,7 +144,6 @@ systems now run on it**, on a branch that is not merged.
 
 ## Loose ends
 
-- No remote; the package and both design pages are committed only here.
 - **klieg's `blits-port` branch is local, unmerged and unpushed**, and its `file:` dependency means
   no other machine can build it.
 - **A stale served-page tab will overwrite `2026-09-15-vocabulary.picks.json` with whatever set it
