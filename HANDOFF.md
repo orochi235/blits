@@ -25,7 +25,8 @@ is built and tested; nothing consumes it yet.**
   objects and a Map for anything else), `mixer.ts` (the engine and `mix`), `types.ts` (the whole
   public surface, doc-commented). Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
   is lint, typecheck of both `src` and `test`, then the suite: 55 tests, green, and they are the
-  design page's own test list minus the klieg extraction.
+  design page's own test list minus the klieg extraction. Enlisted for the fleet — `.onto/tests` is
+  `plugin: node`, `run: npm test`, `runner: vitest` — and green there too.
 - `docs/2026-09-15-schema.html` — the design: vocabulary, channel table, patches, voices, mix,
   signals, time model, blending, patch state, the engine seam, per-consumer rigs, the klieg port,
   decided-against, tests, open items. Status line says design under review. It reads in the called
