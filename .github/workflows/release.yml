@@ -1,0 +1,65 @@
+name: Release
+
+# Publishes on a pushed `v*` tag, with no npm token anywhere: npm's trusted publishing swaps the
+# workflow's OIDC token for a short-lived credential, which is why `id-token: write` is the one
+# permission that matters here.
+#
+# It only works once npmjs.com knows about this workflow: blits → Settings → Trusted publishing →
+# GitHub Actions, with `orochi235`, `blits`, and this file's name. That page exists only for a
+# package that has been published at least once, so 0.1.0 goes out by hand and every version after
+# it goes out from here.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      # Trusted publishing needs npm 11.5.1 or later, which is newer than the npm some Node lines
+      # ship with. Upgrading is cheaper than pinning a Node version for a reason unrelated to Node.
+      - run: npm install -g npm@latest
+
+      - run: npm ci
+
+      # Separately rather than through `npm run check`, so a failure names which one broke.
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      # A tag that disagrees with the manifest publishes a version nobody asked for, under a name
+      # git will keep pointing somewhere else. Cheaper to stop here than to unpublish.
+      - name: The tag has to be the version being published
+        if: github.ref_type == 'tag'
+        run: |
+          tagged="${GITHUB_REF_NAME#v}"
+          manifest="$(node -p 'require("./package.json").version')"
+          if [ "$tagged" != "$manifest" ]; then
+            echo "tag says $tagged, package.json says $manifest" >&2
+            exit 1
+          fi
+
+      - run: npm publish
