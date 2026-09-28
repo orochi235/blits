@@ -311,7 +311,7 @@ interface Setting&lt;S = void&gt; {
   elapsed: number;
   <span class="cm">/** Which pass this is, 0 first. */</span>
   pass: number;
-  <span class="cm">/** This voice's weight for this subject this frame, after its fade envelope, its signal and any group cap:
+  <span class="cm">/** This voice's weight for this subject this frame, after its fade envelope, its signal and its share of any group:
      the same number the mix is about to scale by. */</span>
   weight: number;
   <span class="cm">/** This subject's state, when the patch declares one. */</span>
@@ -357,7 +357,8 @@ interface Setting&lt;S = void&gt; {
   weight?: number | Signal&lt;I&gt;;
   <span class="cm">/** Ramp in and out, ms. Out applies on `fade()` and when a finite loop ends. */</span>
   fade?: { in?: number; out?: number; ease?: Easing };
-  <span class="cm">/** Voices sharing a group have their summed weight capped at 1 within it. klieg's phase rule. */</span>
+  <span class="cm">/** Voices sharing a group are alternatives: the mix folds them into one influence through each
+     channel's `lerp` before anything else sees them. klieg's phase rule, generalized. */</span>
   group?: string;
 
   <span class="cm">// blend</span>
@@ -400,7 +401,8 @@ interface MixOptions&lt;I, O&gt; {
 interface Mix&lt;I, O&gt; {
   <span class="cm">/** Cues a voice. Throws when the engine cannot run the patch's form, or the rig lacks a channel it `writes`. */</span>
   cue(spec: VoiceSpec&lt;I, O&gt;): Handle;
-  <span class="cm">/** N voices whose weights split one signal, k in 0..1. Two patches crossfade; more make stops. */</span>
+  <span class="cm">/** N voices whose weights split one signal, k in 0..1, cued into one group so they fold as
+     alternatives. Two patches crossfade; more make stops. */</span>
   blend(patches: readonly Patch&lt;I, O&gt;[], by: Signal&lt;I&gt;, spec?: Omit&lt;VoiceSpec&lt;I, O&gt;, 'patch' | 'weight'&gt;): Handle[];
 
   <span class="cm">/** The host reports the clock, once a frame. Nothing advances at the call: it publishes the reading, and
@@ -454,11 +456,13 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
 <div class="tbl"><table>
   <tr><th>behavior</th><th>how</th><th>what it replaces</th></tr>
   <tr><td>Fade in and out</td><td><code>fade: { in, out }</code> ramps the voice's weight; each channel's <code>scale</code> takes it toward rest.</td><td>klieg's <code>Timeline.weight</code>, the <code>blendMs</code> ramps, and <code>carry</code>.</td></tr>
-  <tr><td>Crossfade at a phase seam</td><td>Two voices in one <code>group</code>, one fading out as the other fades in. The group caps the summed weight at 1, which is the lurch guard klieg's timeline applies when a hold is shorter than the blend.</td><td>enter → active → exit as three voices.</td></tr>
+  <tr><td>Crossfade at a phase seam</td><td>Two voices in one <code>group</code>, one fading out as the other fades in. The group folds them by the channel's <code>lerp</code> at their weight ratio, which on <code>sum</code> is the lurch guard klieg's timeline applies when a hold is shorter than the blend, and on every other channel is the crossfade that guard was standing in for.</td><td>enter → active → exit as three voices.</td></tr>
   <tr><td>Handover at rest</td><td><code>fade({ at: 'rest', deadline })</code> removes the voice per subject at the first frame its pose equals rest, or at the deadline. The next voice was cued already and simply becomes the only contributor.</td><td><code>turns</code>' handover rule, made available to any pair.</td></tr>
   <tr><td>Blend between alternatives</td><td><code>mix.blend([a, b, c], by: k)</code> cues three voices whose weights are the hat functions of k at 0, ½, 1. Continuous, no rebuild, and hinge's quantization goes away for patches whose channels have rest.</td><td><code>hinge</code>'s stops mode. Its blend mode is just <code>weight: signal</code>.</td></tr>
   <tr><td>Retarget on interruption</td><td><code>from: 'current'</code> on a <code>keys</code> voice takes stop 0 from the subject's pose in the frame before it first contributes &mdash; every other voice folded in, itself excluded &mdash; and lerps from there through the channel's <code>lerp</code>.</td><td>wod's base-sampling. New to klieg: a regroup could tween from mid-float instead of carrying it away.</td></tr>
 </table></div>
+
+<p><b>A group is folded by <code>lerp</code>, not by scaling and joining.</b> Voices sharing a <code>group</code> are alternatives in time, so the mix combines them into one influence first: each member weighted by its share of the group's summed weight, through the channel's own <code>lerp</code>, in cue order. That one influence then contributes at weight <code>min(1, &Sigma;w)</code> and is scaled toward rest like any other. On a <code>sum</code> channel this is exactly <code>w&#8321;a + w&#8322;b</code>, the arithmetic klieg's timeline already runs, so the cap it was written as is a special case of the fold rather than a rule of its own. On <code>mul</code>, <code>max</code> and <code>last</code> it is the difference between an alternative and a pile-up: two voices halfway through a handover, both holding a gain of 0.06, fold to 0.06 &mdash; which is what one alternative means &mdash; where scaling and joining reads 0.28, the product of two half-scaled copies. A grouped voice may write only channels that have a <code>lerp</code>, which every stock channel does. Cue order is visible only to a <code>lerp</code> that is not linear, such as a hue taking the short way round.</p>
 
 <div class="callout">
   <div class="eyebrow">the one rule</div>
@@ -491,7 +495,7 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
 
 export const mixer: Engine;   <span class="cm">// the one that ships</span></code></pre>
 
-<p><b>mixer</b> runs both forms on the CPU, samples per subject on demand, and is the extraction of what klieg does today. It folds each influence into the subject's accumulator as it samples, rather than collecting every layer and merging at the end as klieg's <code>EffectFrame</code> does: weights are scalars that no pose depends on, so they resolve for the subject first and the group cap holds. That order is what would let a later revision hand patches one scratch object to write into instead of returning a fresh partial per patch per subject per frame, which <code>writes</code> makes safe to hand out without clearing. What later engines would look like, so the seam is judged against something real and none of them is being built:</p>
+<p><b>mixer</b> runs both forms on the CPU, samples per subject on demand, and is the extraction of what klieg does today. It folds each influence into the subject's accumulator as it samples, rather than collecting every layer and merging at the end as klieg's <code>EffectFrame</code> does: weights are scalars that no pose depends on, so they resolve for the subject first, and a group folds to one influence before that influence is joined. That order is what would let a later revision hand patches one scratch object to write into instead of returning a fresh partial per patch per subject per frame, which <code>writes</code> makes safe to hand out without clearing. What later engines would look like, so the seam is judged against something real and none of them is being built:</p>
 <ul>
   <li><b>A baked engine</b> runs <code>keys</code> voices only and emits Web Animations or CSS keyframes, so a DOM consumer like wod gets compositor-thread playback. It refuses <code>fn</code> patches at <code>cue</code>.</li>
   <li><b>A recording engine</b> wraps another engine and captures every pose into keyframes, turning a procedural patch into data for the baked one.</li>
@@ -514,7 +518,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
 <h2 id="klieg">The klieg port</h2>
 <p>All three klieg systems move in one pass, as chosen. The port is an extraction first and a feature second, and the boundary between the two is where the baselines are checked.</p>
 <ul>
-  <li><b>Step one reproduces the arithmetic exactly.</b> <code>Timeline.poseAt</code> becomes three voices whose weight function is <code>min(inW, outW)</code> with the group cap, and <code>EffectFrame.resolve</code> becomes a mix over parts with the same modulo pass and the same stagger call. <code>mergeOffsets</code> and <code>addScaled</code> are the channel rigs. The 40 Playwright baselines and every vitest case hold unchanged. Any that moves is a defect in the port, not a baseline to re-bless.</li>
+  <li><b>Step one reproduces the arithmetic exactly.</b> <code>Timeline.poseAt</code> becomes three voices in one group whose weight function is <code>min(inW, outW)</code>, and <code>EffectFrame.resolve</code> becomes a mix over parts with the same modulo pass and the same stagger call. <code>mergeOffsets</code> and <code>addScaled</code> are the channel rigs. The 40 Playwright baselines and every vitest case hold unchanged. Any that moves is a defect in the port, not a baseline to re-bless.</li>
   <li><b>Step two turns on what the extraction bought.</b> <code>power</code>, <code>kicks</code> and <code>dwell</code> lose their hand-rolled frame keying, and <code>slew</code> takes the decay math with it: <code>dwell</code>'s <code>toward</code> and <code>kicks</code>' drain are one function, leaving <code>kicks</code> its falloff and its event queue. <code>power</code> keeps its state machine, which is not a decay. <code>hinge</code>'s blend mode becomes <code>weight: signal</code> and its stops mode becomes <code>mix.blend</code>; the old names stay as sugar. A host can cue an effect to a running fire and fade it in, which has no equivalent today.</li>
   <li><b>Wrappers do not move.</b> <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>partition</code> and the <code>Sequence</code>'s <code>carry</code> and <code>within</code> stay patch-level and unchanged, except that <code>carry</code> can be deleted once a regroup uses <code>from: 'current'</code>.</li>
   <li><b><code>FrameCtx</code> becomes <code>Setting</code> with klieg's fields on <code>host</code>.</b> <code>pointer</code>, <code>pointerInWord</code> and <code>dt</code> keep their meanings. Every klieg patch signature changes by one property path, and a codemod does it.</li>
@@ -528,6 +532,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>Adopting a tweening library.</b> GSAP, anime.js and Motion own a property and write absolute values, so concurrent writers conflict. anime.js v4's additive mode is the closest and still has no rest rule per channel. three's <code>AnimationMixer</code> has the right model and is keyframe-only over object property paths.</li>
   <li><b>Subject registration.</b> A <code>mix.subjects(list)</code> call would let the mix step every state eagerly. It puts a second source of truth about the pool in the host. Lazy state keyed by identity, stepped by the gap in <code>now</code>, needs nothing from the host and is the rule klieg already proved.</li>
   <li><b>A slew in place of the band.</b> Smoothing a gate's input instead of giving it two edges. It delays the crossing without deciding it, so an input that rests on the threshold chatters anyway, and the rate needed to help at all costs visible lag.</li>
+  <li><b>Normalizing a group's weights per channel.</b> The other way to make a crossfade hold its value on <code>mul</code>: keep the scale-and-join fold and pick a per-channel divisor. It costs the property the mixer's fold order rests on &mdash; that weights are scalars resolved for the subject before any channel is touched &mdash; and it has no answer for <code>last</code>, which has no arithmetic to normalize. The <code>lerp</code> fold gets the same result from the rule the package already has.</li>
   <li><b>A mix option for the lurch guard.</b> A global "normalize when over 1" would apply to effects that legitimately stack. The cap belongs to the voices that crossfade, so it is a <code>group</code>.</li>
 </ul>
 
@@ -539,7 +544,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>Fade continuity.</b> A voice stopped mid-pass with a fade produces no frame-to-frame jump larger than its per-frame ramp, on every channel with rest.</li>
   <li><b>Retarget continuity.</b> A <code>from: 'current'</code> voice cued on a moving subject has a first sample equal to the subject's previous sample.</li>
   <li><b>Band quiet.</b> A signal held inside a <code>gate</code>'s band for a whole pass produces no switch, whatever it does inside it. Same for a rest-less channel's influence under a weight that wanders between <code>off</code> and <code>on</code>.</li>
-  <li><b>Group cap.</b> Two voices in a group at weight 1 each are scaled to 0.5, so a group's summed weight is 1 however many voices are in it. The test asserts the weights, not the pose: on a <code>sum</code> channel capping also leaves the output equal to one voice at weight 1, and on <code>mul</code>, <code>max</code> and <code>last</code> it does not.</li>
+  <li><b>Group fold.</b> Two voices in a group driving the same value produce that value, on every stock channel &mdash; the invariant the old cap met on <code>sum</code> alone. At unequal values they produce the channel's <code>lerp</code> at their weight ratio, which on <code>sum</code> is the number scaling and joining already gives and is what keeps klieg's baselines green. A group whose weights sum below 1 scales the folded value toward rest by the sum; above 1 it caps at 1.</li>
   <li><b>Handover.</b> <code>fade({ at: 'rest' })</code> removes per subject at the first resting frame, and at the deadline for a patch that never rests.</li>
   <li><b>Declared writes.</b> A patch's <code>at</code> sets no key outside its <code>writes</code>, on every subject and every pass. A voice whose patch writes a channel the rig lacks throws at <code>cue</code> naming both.</li>
   <li><b>Engine refusal.</b> An engine whose <code>runs</code> lacks <code>fn</code> throws at <code>cue</code> naming the voice.</li>
@@ -548,8 +553,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
 
 <h2 id="open">Open</h2>
 <ul>
-  <li><b>Whether a group's cap should hold value on channels other than <code>sum</code>.</b> Capping the summed weight at 1 makes a crossfade value-preserving on <code>sum</code> and on nothing else: two voices at 0.5 on <code>mul</code> give <code>(1 + (v &minus; 1) / 2)&sup2;</code>, which for a gain of 0.06 reads 0.28, and <code>max</code> and <code>last</code> miss by their own margins. klieg only ever crossfades <code>sum</code> channels, so the lurch guard the rule came from is not wrong, but a crossfade on <code>gain</code> will dip through the seam. Three ways out: normalize per channel, <code>lerp</code> between the two voices instead of scaling and joining when a group holds exactly two, or leave it and say so here.</li>
-  <li><b>Whether a <code>chain</code> is a first-class object.</b> An ordered set of voices that hand over, enter to active to exit, with one handle that resolves when the last has left. The design covers the behavior today with a <code>group</code> plus fades, which caps what is on at once and says nothing about what comes next; klieg's <code>Sequence</code> and <code>Timeline</code> would port more directly onto the object. The word is called and the thing is not in the API.</li>
+  <li><b>Whether a <code>chain</code> is a first-class object.</b> An ordered set of voices that hand over, enter to active to exit, with one handle that resolves when the last has left. The design covers the behavior today with a <code>group</code> plus fades, which says how the ones that are on fold together and nothing about what comes next; klieg's <code>Sequence</code> and <code>Timeline</code> would port more directly onto the object. The word is called and the thing is not in the API.</li>
   <li><b>The package name.</b> <code>blits</code> is free on npm. <code>@lightningjs/blits</code> is a live TV app framework with its own animation plugin, so searches for the name land there first.</li>
   <li><b>Where klieg's stagger lives.</b> The grammar is generic already; whether <code>StaggerSpec</code> and <code>orderKey</code> move into the package or stay klieg's and are passed in as a function.</li>
   <li><b>Color's lerp.</b> A hex channel needs a color space to lerp in. sRGB is what klieg's light channel assumes; OKLCH reads better for a crossfade between hues. One choice, made once, on the stock <code>hex</code> channel.</li>

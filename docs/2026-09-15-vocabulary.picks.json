@@ -21,18 +21,7 @@
     "host": "host",
     "weight": "weight",
     "v-step": "sync",
-    "score": "score",
-    "mix": "mix",
-    "system": "system",
-    "v-sample": "sample",
-    "v-blend": "blend",
-    "v-clear": "clear",
-    "v-join": "join",
-    "v-scale": "scale",
-    "v-lerp": "lerp",
-    "v-fold": "fold",
-    "group": "group",
-    "sequence": "chain"
+    "score": "score"
   },
   "chosen": {
     "offset": true,
@@ -56,18 +45,7 @@
     "host": true,
     "weight": true,
     "v-step": true,
-    "score": true,
-    "mix": true,
-    "system": true,
-    "v-sample": true,
-    "v-blend": true,
-    "v-clear": true,
-    "v-join": true,
-    "v-scale": true,
-    "v-lerp": true,
-    "v-fold": true,
-    "group": true,
-    "sequence": true
+    "score": true
   },
   "written": {
     "piece": "patch"
@@ -94,18 +72,7 @@
     "track": true,
     "item": true,
     "rest": true,
-    "table": true,
-    "mix": true,
-    "system": true,
-    "v-sample": true,
-    "v-blend": true,
-    "v-clear": true,
-    "v-join": true,
-    "v-scale": true,
-    "v-lerp": true,
-    "v-fold": true,
-    "group": true,
-    "sequence": true
+    "table": true
   },
   "informal": {
     "spec": true

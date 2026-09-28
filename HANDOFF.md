@@ -93,16 +93,19 @@ built.** The repo holds two design pages, an export of one of them, and a script
   moved on, so an argument from allocation is not an argument about the concept. The same cut
   settled the mix's clock verb: `step` named the consequence, `sync` names the act. Stated
   2026-09-27.
+- **A group folds by `lerp`, not by scaling and joining.** The review found the old cap's
+  invariant — two voices in a group at weight 1 look like one at weight 1 — false on every channel
+  but `sum`: two at 0.5 on `mul` give `(1 + (v − 1) / 2)²`, so a shared gain of 0.06 read 0.28.
+  A group is alternatives, so the mix folds its members through the channel's own `lerp` by their
+  share of the summed weight, and that one influence contributes at `min(1, Σw)`. On `sum` it is
+  identically `w₁a + w₂b`, so klieg's baselines hold and the port stays an extraction. Mike had no
+  view and asked me to take it; decided 2026-09-27, and the alternative (per-channel
+  normalization) is in the page's Decided against.
 - **Two halves of "offset"** were split: the delta a patch returns (partial, relative) and the pose
   the mix returns (resolved). klieg's `ResolvedOffset` is the second.
 
 ## Open, from the design and the naming
 
-- **The group cap's arithmetic** is the one review finding left as a decision rather than an edit.
-  Capping a group's summed weight at 1 is value-preserving on `sum` and on nothing else: two
-  voices at 0.5 on `mul` give `(1 + (v − 1) / 2)²`, so a gain of 0.06 reads 0.28. klieg only
-  crossfades `sum` channels today, so nothing is broken; a crossfade on `gain` would dip. The
-  three ways out are in the schema's Open section.
 - A **chain** (the called word for a sequence), an ordered set of voices that hand over, enter to
   active to exit, with one handle that resolves when the last has left. The design covers the
   behavior with `group` plus fades; the object is not in the API.
