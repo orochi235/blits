@@ -77,7 +77,7 @@ text(88, 366, `<tspan class="strong">${word('rest')}</tspan> — nothing happeni
 
 box(68, 400, 248, 72, 'panel');
 head('item', '', 88, 428, 208);
-rows(88, 452, [`what is driven: a letter, a part`], 208);
+rows(88, 452, [`driven: a letter, a part`], 208);
 
 box(68, 488, 248, 72, 'panel');
 head('signal', ' — from outside', 88, 516, 208);
@@ -149,7 +149,7 @@ rows(680, 838, [`the whole plan: timings and the cast`, `blits never reads one; 
 arrow('M 340 782 V 742', `${word('v-add')}`, 348, 762);
 
 text(40, 906, `A ${word('system')} declares one ${word('table')} and one kind of ${word('item')}; its ${word('mix')} runs ${word('track')}s over that ${word('table')}; each ${word('track')} is one ${word('piece')} with its own clock and ${word('weight')}.`, 'note');
-text(40, 928, `Nothing is computed until it is asked for: ${word('v-sample')} folds that ${word('item')}'s ${word('contribution')}s at the current reading, and an ${word('item')} nobody asks about costs nothing.`, 'note');
+text(40, 928, `Nothing is computed until it is asked for: ${word('v-sample')} folds that ${word('item')}'s ${word('contribution')}s at the current reading, and ${an('item')} ${word('item')} nobody asks about costs nothing.`, 'note');
 text(40, 950, `Two ${word('system')}s never share a ${word('mix')}, so a ${word('track')} belongs to exactly one.`, 'note');
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="ui-sans-serif, -apple-system, 'Helvetica Neue', sans-serif">

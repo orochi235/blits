@@ -50,7 +50,7 @@
 <text class="row" x="88" y="366"><tspan class="strong">rest</tspan> — nothing happening</text>
 <rect class="box panel" x="68" y="400" width="248" height="72" rx="10"/>
 <text class="head" x="88" y="428"><tspan class="strong">subject</tspan> <tspan class="was">(item)</tspan></text>
-<text class="row" x="88" y="452">what is driven: a letter, a part</text>
+<text class="row" x="88" y="452">driven: a letter, a part</text>
 <rect class="box panel" x="68" y="488" width="248" height="72" rx="10"/>
 <text class="head" x="88" y="516"><tspan class="strong">signal</tspan> — from outside</text>
 <text class="row" x="88" y="540">0 to 1, per subject, per frame</text>
@@ -114,6 +114,6 @@
 <path class="edge" d="M 340 782 V 742" marker-end="url(#tip)"/>
 <text class="edgelabel" x="348" y="762">cue</text>
 <text class="note" x="40" y="906">A system declares one rig and one kind of subject; its mix runs voices over that rig; each voice is one patch with its own clock and weight.</text>
-<text class="note" x="40" y="928">Nothing is computed until it is asked for: sample folds that subject's influences at the current reading, and an subject nobody asks about costs nothing.</text>
+<text class="note" x="40" y="928">Nothing is computed until it is asked for: sample folds that subject's influences at the current reading, and a subject nobody asks about costs nothing.</text>
 <text class="note" x="40" y="950">Two systems never share a mix, so a voice belongs to exactly one.</text>
 </svg>

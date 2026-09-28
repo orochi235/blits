@@ -794,7 +794,7 @@
       "gloss": {
         "lead": "Everything a host holds: the tracks that are playing, over one table.",
         "items": [
-          "Once a frame the host steps it. That advances every track’s clock, weight and state.",
+          "Once a frame the host tells it what time it is. Nothing advances at that call: each item catches up by the whole gap the first time it is sampled afterward.",
           "Then, for each item it wants to draw, the host samples@v it and gets back one resolved record."
         ]
       },
