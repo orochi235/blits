@@ -105,7 +105,7 @@
 <text class="section" x="40" y="770">Where voices come from</text>
 <rect class="box panel dashed" x="68" y="786" width="540" height="92" rx="10"/>
 <text class="head" x="88" y="814"><tspan class="strong">source</tspan> — whatever decides one should exist</text>
-<text class="row" x="88" y="838">a handler on an event, a sequence handing over,</text>
+<text class="row" x="88" y="838">a handler on an event, a chain handing over,</text>
 <text class="row" x="88" y="859">cues and gets back a handle</text>
 <rect class="box panel dashed" x="660" y="786" width="540" height="92" rx="10"/>
 <text class="head" x="680" y="814"><tspan class="strong">score</tspan> — the source the app keeps</text>

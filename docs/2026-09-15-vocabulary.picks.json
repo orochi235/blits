@@ -30,7 +30,9 @@
     "v-join": "join",
     "v-scale": "scale",
     "v-lerp": "lerp",
-    "v-fold": "fold"
+    "v-fold": "fold",
+    "group": "group",
+    "sequence": "chain"
   },
   "chosen": {
     "offset": true,
@@ -63,7 +65,9 @@
     "v-join": true,
     "v-scale": true,
     "v-lerp": true,
-    "v-fold": true
+    "v-fold": true,
+    "group": true,
+    "sequence": true
   },
   "written": {
     "piece": "patch"
@@ -99,7 +103,9 @@
     "v-join": true,
     "v-scale": true,
     "v-lerp": true,
-    "v-fold": true
+    "v-fold": true,
+    "group": true,
+    "sequence": true
   },
   "informal": {
     "spec": true
