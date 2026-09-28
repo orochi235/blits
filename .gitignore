@@ -3,3 +3,6 @@
 node_modules
 dist
 .playwright-mcp
+
+# The incremental build stamp, beside the config that names it.
+.tsbuildinfo

@@ -47,15 +47,23 @@ and weight), **mix** (the live voices over one rig), **signal** (a 0..1 scalar f
 clock), **handle** (the live controls on one voice), **engine** (the implementation behind a mix).
 
 The design — the full vocabulary, the channel table, the time model, blending, the engine seam, and
-what is still open — is `docs/2026-09-15-schema.html`. The naming work behind it is
+what is still open — is `docs/2026-09-15-schema.html`, which ships in the package: open it from
+`node_modules/blits/`. The naming work behind it is
 `docs/2026-09-15-vocabulary.json`, which [semanticore](https://github.com/orochi235/semanticore)
 serves as a page.
 
 ## Status
 
-v0.1.0: the package is built and tested against the design's own test list, and nothing consumes it
-yet. The klieg port is next, and it is an extraction first — same arithmetic, so klieg's Playwright
-baselines hold unchanged.
+v0.1.0, and one real consumer: [klieg](https://github.com/orochi235/klieg) composes all three of
+its systems — letter motion, part effects, and the environment a sign is lit by — on a mix each.
+That port was an extraction rather than a rewrite, so it is also the evidence that the arithmetic
+here is the arithmetic a working renderer already had: klieg's suite of 1974 cases and its
+screenshot baselines came through it unchanged.
+
+One thing the port sent back. klieg's three motion phases layer, so they cue as separate voices; a
+`group` folds its members through each channel's `lerp` instead, which is what a crossfade between
+alternatives wants and is not the same number on a multiplicative channel. Reach for a group when
+one voice should replace another, not when both should be heard.
 
 Zero runtime dependencies, ESM only, types included.
 

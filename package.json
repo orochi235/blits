@@ -20,7 +20,9 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "docs/2026-09-15-schema.html",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc -b",
@@ -28,7 +30,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b && tsc -p tsconfig.test.json",
     "lint": "biome check .",
-    "check": "npm run lint && npm run typecheck && npm run test"
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run check"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
