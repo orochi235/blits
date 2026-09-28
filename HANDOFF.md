@@ -1,4 +1,4 @@
-# Handoff — blits, 2026-09-15
+# Handoff — blits, 2026-09-28
 
 **For:** the next session on blits. **Answers:** what blits is meant to be, what exists, what was
 decided in conversation and lives nowhere else, and what comes next. The design is in
@@ -13,12 +13,21 @@ weight, and a mix folds them into one value per subject per frame by rules that 
 channel, not the effect. The vocabulary is the deliverable as much as the runtime is — the sources
 are open by design, so the language has to be able to name a seam it does not own. It generalizes
 what klieg does three times over (motion, effects, lighting) and what wod's transition voices do
-once, so klieg, wod, sherpa and magicsmoke can share one vocabulary and one engine. **The package
-is built and tested; nothing consumes it yet.**
+once, so klieg, wod, sherpa and magicsmoke can share one vocabulary and one engine. **klieg's three
+systems now run on it**, on a branch that is not merged.
 
 ## State
 
 - `main`, no remote. Clean tree.
+- **klieg's port is done and green, on `blits-port` in `~/src/klieg`** — three commits, not merged,
+  no remote push. All three systems fold through a mix: `Timeline.poseAt` cues a voice per layer of
+  each phase, `EffectFrame` one per effect, and the sign's environment is a mix with one subject.
+  The arithmetic did not move: klieg's 1970 vitest cases pass, and its Playwright specs fail exactly
+  the five they already failed on `main`, to the pixel (recorded in klieg's changelog). The schema
+  page's klieg section says what the port found; do not re-derive it from here.
+- **klieg depends on this checkout by path** — `"blits": "file:../../../blits"` in
+  `packages/core/package.json` — so the branch resolves on this machine and nowhere else. That is
+  the one thing standing between the branch and a merge.
 - **The package, v0.1.0.** `src/` is the whole of it: `channels.ts` (the stock channels, `rig`,
   `hex`/`mixHex`), `patch.ts` (`patch`, `keys`, and the stop evaluator `from: 'current'` reuses),
   `signals.ts` (`peak`, `slew`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
@@ -112,31 +121,24 @@ is built and tested; nothing consumes it yet.**
 - **Two halves of "offset"** were split: the delta a patch returns (partial, relative) and the pose
   the mix returns (resolved). klieg's `ResolvedOffset` is the second.
 
-## Open, from the design and the naming
-
-- A **chain** (the called word for a sequence), an ordered set of voices that hand over, enter to
-  active to exit, with one handle that resolves when the last has left. The design covers the
-  behavior with `group` plus fades; the object is not in the API.
-- **Color's lerp space**: sRGB or OKLCH, on the stock hex channel.
-- **Where stagger lives**: in the package or passed in by klieg.
-- **Whether magicsmoke wants blits at all**; its case is weakest.
-- The schema page's own **Open** section has the rest.
-
 ## Next, in order
 
-1. **The klieg port.** All three systems at once, extraction first: `Timeline.poseAt` becomes three
-   voices in one group, `EffectFrame.resolve` becomes a mix over parts, `mergeOffsets` and
-   `addScaled` become the rigs. The 40 Playwright baselines and klieg's vitest cases are the gate —
-   any that moves is a defect in the port. The schema page's klieg section has the rest, including
-   what step two turns on afterward.
-2. **A remote**, private under orochi235 like semanticore, when Mike asks. blits is committed only
-   here.
-3. **`stagger`** is the one place the package knowingly departs from klieg's grammar: it takes a
-   per-subject delay function, and whether `StaggerSpec` and `orderKey` move in is for the port.
+1. **Give klieg a dependency it can build from.** A registry (private under orochi235, as
+   semanticore) or a tarball committed inside klieg — the `file:` path cannot be merged, and until
+   it is replaced klieg's suite cannot run on the fleet either. This is a decision, not a task.
+2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
+   their hand-rolled frame keying onto `slew`, `hinge`'s modes become `weight: signal` and
+   `mix.blend`, and `FrameCtx` becomes `Setting` with klieg's fields on `host`. The schema page's
+   klieg section has the list. Nothing here is started.
+3. **The remaining opens** are in the schema page: whether a `chain` is a first-class object,
+   color's lerp space, the stock band's width, whether `slew` is linear, and whether magicsmoke
+   wants any of this.
 
 ## Loose ends
 
 - No remote; the package and both design pages are committed only here.
+- **klieg's `blits-port` branch is local, unmerged and unpushed**, and its `file:` dependency means
+  no other machine can build it.
 - **A stale served-page tab will overwrite `2026-09-15-vocabulary.picks.json` with whatever set it
   was holding.** It has happened twice — `65d2d71` restored one, and the same loss was in the
   working tree at the start of 2026-09-27's session. Before trusting the picks file, `git diff` it;
