@@ -18,12 +18,12 @@ built.** The repo holds two design pages, an export of one of them, and a script
 
 ## State
 
-- `main`, no remote, latest `99d913d`. Clean tree.
+- `main`, no remote, latest `c011070`. Clean tree.
 - `docs/2026-09-15-schema.html` — the design: vocabulary, channel table, pieces, tracks, mix,
   signals, time model, blending, piece state, the engine seam, per-consumer channel tables, the
-  klieg port, decided-against, tests, open items. Status line says design under review. **It is
-  written in the incumbent words** (table, offset, piece, track) and gets renamed once the
-  vocabulary is called.
+  klieg port, decided-against, tests, open items. Status line says design under review. It reads
+  in the called words as of `c011070`; klieg's own `offset` channel, the arithmetic `add`, a
+  `keys` patch's `stops` and the patch callback `step` are deliberately unrenamed.
 - `docs/2026-09-15-vocabulary.json` — **the naming sheet, and the source of it.** 19 nouns (one
   fixed), 8 verbs, 4 operations, 20 candidates each, six consistent-set columns, relations,
   algebra. Edit this file; semanticore builds the page from it, so nothing is hand-edited in HTML
@@ -99,27 +99,21 @@ built.** The repo holds two design pages, an export of one of them, and a script
 
 ## Next, in order
 
-1. **Rename the schema page.** It is written in the incumbent words — table, offset, piece, track —
-   and the set is now called: rig, delta, patch, voice, subject, channel, pose, influence, setting,
-   cue, fade, sync, seek, drop. Nothing else can be reviewed until the design reads in the words it
-   will ship in. Then copy the JSON into `~/src/semanticore/reference/`.
-2. **Finish the sheet.** Eleven rows have no pick recorded: mix, system, group, sequence, and
-   the verbs sample, blend, clear, join, scale, lerp and fold. Keeping an incumbent still needs the
-   click, or nothing is written down.
-3. **Spec self-review** of the schema page (placeholders, contradictions, ambiguity, scope) and
+1. **Spec self-review** of the schema page — placeholders, contradictions, ambiguity, scope — and
    Mike's sign-off. This is the brainstorming skill's review gate; the design has been presented
-   but not approved as a spec.
-4. **Implementation plan** via the writing-plans skill: package scaffold (zero deps, ESM, vitest,
-   biome as klieg), stock channels with property tests for the laws, piece and keys forms, tracks,
-   the mixer engine, then the klieg extraction with baselines as the gate.
-5. **A remote**, private under orochi235 like semanticore, when Mike asks.
-6. **`~/src/PROJECTS.md`** entry for blits once it has code; add semanticore at the same time.
+   but never approved as a spec. It is the gate on everything below.
+2. **Two rows are still open** on the sheet: `group` and `sequence`. The page recommends `seat`
+   and `arc`; neither is the incumbent, so neither can be taken by default.
+3. **Implementation plan** via the writing-plans skill: package scaffold (zero deps, ESM, vitest,
+   biome as klieg), stock channels with property tests for the laws, patch and keys forms, voices,
+   the mixer engine, then the klieg extraction with the 40 Playwright baselines as the gate.
+4. **A remote**, private under orochi235 like semanticore, when Mike asks.
+5. **`~/src/PROJECTS.md`** entry for blits once it has code; add semanticore at the same time.
 
 ## Loose ends
 
 - No remote; two design pages committed only here.
-- The picks exist in one browser, in the hand page's tab. Nothing on disk holds them, and the
-  served page starts from the recommendations. Get them out before that tab is closed; after the
-  switch semanticore's snapshots write them to a file.
-- The schema page and the vocabulary sheet disagree on nothing yet, only because the sheet
-  substitutes and the schema does not. After the rename they must be read together once.
+- The schema page and the sheet now use the same words. They have not been read side by side
+  once since the rename.
+- `handle.fade` takes `over` for its ramp, renamed from `fade` so the verb and its argument are
+  not the same word. Nothing else was consulted about that.
