@@ -1011,7 +1011,7 @@
               "star": false
             },
             {
-              "word": "reading",
+              "word": "gauge",
               "star": false
             },
             {
@@ -3255,7 +3255,7 @@
               "star": false
             },
             {
-              "word": "reading",
+              "word": "capture",
               "star": false
             }
           ]
@@ -3552,6 +3552,133 @@
         }
       ],
       "description": "what a piece is handed"
+    },
+    {
+      "key": "reading",
+      "title": "Reading",
+      "was": "now",
+      "kind": "noun",
+      "description": "the mix clock's value at a frame",
+      "gloss": {
+        "lead": "The value of the mix clock the host reports: what <code>sync</code> is handed each frame and what a look ahead or back is taken at.",
+        "items": [
+          "A reading is reported, never set, and only goes forward; nothing in the mix moves the clock.",
+          "A voice's elapsed is the other clock, and it is a position: <code>seek</code> sets it. Mix time is not.",
+          "Milliseconds on any monotonic clock the host likes."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "parameter",
+              "star": true
+            },
+            {
+              "word": "abscissa",
+              "star": false
+            },
+            {
+              "word": "argument",
+              "star": false
+            },
+            {
+              "word": "ordinate",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "instant",
+              "star": true
+            },
+            {
+              "word": "epoch",
+              "star": false
+            },
+            {
+              "word": "proper time",
+              "star": false
+            },
+            {
+              "word": "coordinate time",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "playhead",
+              "star": true
+            },
+            {
+              "word": "transport",
+              "star": false
+            },
+            {
+              "word": "song position",
+              "star": false
+            },
+            {
+              "word": "timecode",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "frame count",
+              "star": false
+            },
+            {
+              "word": "timestamp",
+              "star": false
+            },
+            {
+              "word": "code",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "tick",
+              "star": false
+            },
+            {
+              "word": "timestamp ms",
+              "star": false
+            },
+            {
+              "word": "clock value",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "downbeat count",
+              "star": false
+            },
+            {
+              "word": "bar count",
+              "star": false
+            }
+          ]
+        }
+      ]
     },
     {
       "key": "period",
@@ -5989,6 +6116,17 @@
         "algebra": "interval",
         "physics": "epoch",
         "learning": "batch"
+      }
+    },
+    {
+      "role": "reading",
+      "words": {
+        "DAW": "playhead",
+        "stage lighting": "cue time",
+        "animation rig": "frame",
+        "algebra": "parameter",
+        "physics": "instant",
+        "learning": "step"
       }
     },
     {
