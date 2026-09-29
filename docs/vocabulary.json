@@ -1318,9 +1318,9 @@
       ]
     },
     {
-      "key": "trigger",
-      "title": "Trigger",
-      "was": "trigger",
+      "key": "event",
+      "title": "Event",
+      "was": "event",
       "kind": "noun",
       "description": "a named instant a source raises",
       "gloss": {
@@ -1328,7 +1328,7 @@
         "items": [
           "Scheduled in a score, it is known ahead: a read ahead sees it and a voice can be fully in by it.",
           "Fired by the host when something happens, such as a click or a reply, it is unknown until it fires: a voice pinned to it waits, and anything depending on it reads as held.",
-          "A condition on a channel's value is not a trigger. A host that wants one fires a trigger when it sees it."
+          "What fires one on a condition is a trigger. A trigger on a channel's value is the host's: it watches the condition and fires the event."
         ]
       },
       "groups": [
@@ -1336,8 +1336,8 @@
           "field": "math",
           "words": [
             {
-              "word": "event",
-              "star": true
+              "word": "trigger",
+              "star": false
             },
             {
               "word": "occurrence",
@@ -6178,13 +6178,13 @@
       }
     },
     {
-      "role": "trigger",
+      "role": "event",
       "words": {
         "DAW": "marker",
         "stage lighting": "go",
         "animation rig": "hit",
         "algebra": "impulse",
-        "physics": "event",
+        "physics": "occurrence",
         "learning": "callback"
       }
     },
