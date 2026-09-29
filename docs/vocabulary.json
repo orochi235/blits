@@ -1232,7 +1232,7 @@
               "star": false
             },
             {
-              "word": "sync point",
+              "word": "locator",
               "star": false
             },
             {
@@ -1245,11 +1245,11 @@
           "field": "film",
           "words": [
             {
-              "word": "cue point",
+              "word": "timecode",
               "star": false
             },
             {
-              "word": "sync mark",
+              "word": "clapper",
               "star": false
             },
             {
@@ -1270,7 +1270,7 @@
               "star": false
             },
             {
-              "word": "autofollow",
+              "word": "tie",
               "star": false
             }
           ]
@@ -1580,7 +1580,8 @@
         "lead": "A word a source attaches to its voices so a query from anywhere can select them as a set.",
         "items": [
           "Many voices share a tag; a voice has many tags.",
-          "What lets one source place against another's material without knowing its labels."
+          "What lets one source place against another's material without knowing its labels.",
+          "A tag can be declared to fold its voices as alternatives, which is what a group is today."
         ]
       },
       "groups": [
@@ -2013,11 +2014,11 @@
               "star": true
             },
             {
-              "word": "onion skin",
+              "word": "onionskin",
               "star": false
             },
             {
-              "word": "pose preview",
+              "word": "trace",
               "star": false
             }
           ]
@@ -2030,7 +2031,7 @@
               "star": false
             },
             {
-              "word": "preview cut",
+              "word": "proof",
               "star": false
             },
             {
@@ -2047,7 +2048,7 @@
               "star": false
             },
             {
-              "word": "preview mode",
+              "word": "simulation",
               "star": false
             },
             {
@@ -2093,7 +2094,7 @@
           "field": "math",
           "words": [
             {
-              "word": "error bound",
+              "word": "margin",
               "star": true
             },
             {
@@ -2152,7 +2153,7 @@
               "star": false
             },
             {
-              "word": "error bar",
+              "word": "whisker",
               "star": false
             },
             {
@@ -2224,7 +2225,7 @@
           "field": "math",
           "words": [
             {
-              "word": "initial value",
+              "word": "datum",
               "star": true
             },
             {
@@ -2232,7 +2233,7 @@
               "star": false
             },
             {
-              "word": "fixed point",
+              "word": "waypoint",
               "star": false
             },
             {
@@ -2245,11 +2246,11 @@
           "field": "software",
           "words": [
             {
-              "word": "snapshot store",
+              "word": "snapshot",
               "star": false
             },
             {
-              "word": "save point",
+              "word": "savepoint",
               "star": false
             },
             {
@@ -2266,15 +2267,15 @@
           "field": "games",
           "words": [
             {
-              "word": "save state",
+              "word": "savestate",
               "star": true
             },
             {
-              "word": "rollback frame",
+              "word": "rollback",
               "star": false
             },
             {
-              "word": "keyframe state",
+              "word": "keyframe",
               "star": false
             }
           ]
@@ -2313,11 +2314,11 @@
           "field": "physics",
           "words": [
             {
-              "word": "initial condition",
+              "word": "reference",
               "star": false
             },
             {
-              "word": "boundary state",
+              "word": "boundary",
               "star": false
             }
           ]
@@ -2380,7 +2381,7 @@
               "star": false
             },
             {
-              "word": "bar range",
+              "word": "loop",
               "star": false
             },
             {
@@ -2435,7 +2436,7 @@
               "star": false
             },
             {
-              "word": "step span",
+              "word": "leg",
               "star": false
             }
           ]
@@ -2444,7 +2445,7 @@
           "field": "stage lighting",
           "words": [
             {
-              "word": "fade time",
+              "word": "ramp",
               "star": false
             },
             {
@@ -2457,7 +2458,7 @@
           "field": "software",
           "words": [
             {
-              "word": "tick span",
+              "word": "gap",
               "star": false
             },
             {
@@ -3827,7 +3828,8 @@
           "klieg’s enter, active and exit are one group.",
           "Within a group the weights are capped to sum to at most 1, so a crossfade is always a \\blend of the two and never a pile-up.",
           "Tracks meant to stack stay out of groups.",
-          "Tracks that must run in order belong to a sequence, not a group."
+          "Tracks that must run in order belong to a sequence, not a group.",
+          "Proposed to fold into tag: a tag declared to blend its voices as alternatives, rather than a second kind of label. A voice blends in at most one."
         ]
       },
       "groups": [
@@ -4661,7 +4663,7 @@
           "field": "film",
           "words": [
             {
-              "word": "cue up",
+              "word": "wind",
               "star": false
             },
             {
