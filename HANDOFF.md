@@ -138,7 +138,7 @@ systems now run on it**, on a branch that is not merged.
    names, and the tube gradient still calls its own thing `domain`. Each is a break in klieg's
    published surface — sherpa reads `ctx.phase` — and step one had to leave every baseline where it
    was, so they wait for a version of klieg that intends to break.
-4. **The remaining opens** are in the schema page: whether a `chain` is a first-class object,
+4. **The remaining opens** are in the schema page: how the score comes inside (decided it does; unbuilt),
    color's lerp space, the stock band's width, whether `slew` is linear, and whether magicsmoke
    wants any of this.
 
