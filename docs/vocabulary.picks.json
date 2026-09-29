@@ -1,6 +1,6 @@
 {
   "picks": {
-    "table": "rig",
+    "table": "kit",
     "channel": "channel",
     "offset": "delta",
     "piece": "patch",
@@ -21,7 +21,29 @@
     "host": "host",
     "weight": "weight",
     "v-step": "sync",
-    "score": "score"
+    "score": "score",
+    "edge": "mark",
+    "label": "name",
+    "tag": "tag",
+    "query": "query",
+    "pin": "anchor",
+    "reducer": "resolver",
+    "view": "projection",
+    "stretch": "interval",
+    "system": "subsystem",
+    "sequence": "series",
+    "group": "locus",
+    "v-sample": "probe",
+    "v-look": "project",
+    "v-blend": "blend",
+    "v-clear": "mute",
+    "mix": "mix",
+    "certainty": "doubt",
+    "reading": "timestamp",
+    "v-sure": "assess",
+    "event": "event",
+    "checkpoint": "snapshot",
+    "v-join": "merge"
   },
   "chosen": {
     "offset": true,
@@ -45,10 +67,35 @@
     "host": true,
     "weight": true,
     "v-step": true,
-    "score": true
+    "score": true,
+    "edge": true,
+    "label": true,
+    "tag": true,
+    "query": true,
+    "pin": true,
+    "reducer": true,
+    "view": true,
+    "stretch": true,
+    "system": true,
+    "sequence": true,
+    "group": true,
+    "v-sample": true,
+    "v-look": true,
+    "v-blend": true,
+    "v-clear": true,
+    "mix": true,
+    "certainty": true,
+    "reading": true,
+    "v-sure": true,
+    "event": true,
+    "checkpoint": true,
+    "v-join": true
   },
   "written": {
-    "piece": "patch"
+    "piece": "patch",
+    "label": "name",
+    "reducer": "resolver",
+    "sequence": "series"
   },
   "locked": {
     "sample": true,
@@ -72,10 +119,33 @@
     "track": true,
     "item": true,
     "rest": true,
-    "table": true
+    "tag": true,
+    "query": true,
+    "edge": true,
+    "label": true,
+    "reducer": true,
+    "sequence": true,
+    "v-sample": true,
+    "mix": true,
+    "reading": true,
+    "v-look": true,
+    "table": true,
+    "group": true,
+    "event": true,
+    "pin": true,
+    "certainty": true,
+    "view": true,
+    "stretch": true,
+    "v-sure": true,
+    "v-blend": true,
+    "v-join": true
   },
   "informal": {
-    "spec": true
+    "spec": true,
+    "label": true,
+    "query": true,
+    "reducer": true,
+    "v-clear": true
   },
   "struck": {
     "offset": {
@@ -106,6 +176,17 @@
     "signal": "noun",
     "source": "noun",
     "score": "noun",
+    "pin": "noun",
+    "event": "noun",
+    "edge": "noun",
+    "label": "noun",
+    "tag": "noun",
+    "query": "noun",
+    "reducer": "noun",
+    "view": "noun",
+    "certainty": "noun",
+    "checkpoint": "noun",
+    "stretch": "noun",
     "handle": "noun",
     "engine": "noun",
     "system": "noun",
@@ -115,16 +196,30 @@
     "sample": "noun",
     "contribution": "noun",
     "context": "noun",
+    "reading": "noun",
     "period": "noun",
     "phase": "noun",
     "group": "noun",
-    "sequence": "noun"
+    "sequence": "noun",
+    "trigger": "noun"
   },
   "notes": {},
   "starred": {
     "item": {
       "target": true,
       "subject": true
+    },
+    "view": {
+      "image": true,
+      "projection": true
     }
+  },
+  "added": {
+    "certainty": [
+      "doubt"
+    ],
+    "v-join": [
+      "merge"
+    ]
   }
 }
