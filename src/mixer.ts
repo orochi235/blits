@@ -6,10 +6,10 @@ import type {
   FadeOptions,
   FadeSpec,
   Handle,
+  Kit,
   Mix,
   MixOptions,
   Patch,
-  Rig,
   Setting,
   Signal,
   VoiceSpec,
@@ -21,9 +21,9 @@ interface Subject<S> {
   state: S;
   /** The `now` this subject last caught up to, for this voice. */
   stepped: number;
-  /** The `now` this subject was last sampled at, so twelve samples in a frame step once. */
-  sampled: number;
-  /** The last delta computed this frame, handed back to a repeat sample unchanged. */
+  /** The `now` this subject was last probed at, so twelve probes in a frame step once. */
+  probed: number;
+  /** The last delta computed this frame, handed back to a repeat probe unchanged. */
   delta: Record<string, unknown> | null;
   /** Stop 0 for a `from: 'current'` voice, taken the first frame this subject is seen. */
   base?: Record<string, unknown>;
@@ -110,7 +110,7 @@ class Mixer<I, O> implements Mix<I, O> {
   private wantsPose = false;
 
   constructor(
-    private readonly rig: Rig<O>,
+    private readonly kit: Kit<O>,
     private readonly opts: MixOptions,
   ) {}
 
@@ -129,8 +129,8 @@ class Mixer<I, O> implements Mix<I, O> {
     if (!engine.runs.has(patch.form))
       throw new Error(`blits: engine ${engine.name} does not run ${patch.form} patches`);
     for (const channel of patch.writes)
-      if (!(channel in (this.rig as object)))
-        throw new Error(`blits: rig has no channel ${String(channel)}, which this patch writes`);
+      if (!(channel in (this.kit as object)))
+        throw new Error(`blits: kit has no channel ${String(channel)}, which this patch writes`);
     if (spec.from === 'current' && patch.form !== 'keys')
       throw new Error("blits: from: 'current' needs a keys patch");
 
@@ -151,9 +151,9 @@ class Mixer<I, O> implements Mix<I, O> {
   blend(
     patches: readonly Patch<I, O, unknown>[],
     by: Signal<I>,
-    spec: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'group'> = {},
+    spec: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'locus'> = {},
   ): Handle[] {
-    const group = `blend:${this.nextId}`;
+    const locus = `blend:${this.nextId}`;
     const stops = patches.length - 1;
     return patches.map((patch, i) => {
       const share = (subject: I, setting: Setting) => {
@@ -162,11 +162,12 @@ class Mixer<I, O> implements Mix<I, O> {
         return d >= 1 ? 0 : 1 - d;
       };
       const weight: Signal<I> = by.input ? Object.assign(share, { input: true }) : share;
-      return this.cue({ ...spec, patch, weight, group });
+      return this.cue({ ...spec, patch, weight, locus });
     });
   }
 
-  sync(now: number): void {
+  sync(timestamp: number): void {
+    const now = timestamp;
     if (now === this.now) return;
     this.now = now;
     for (const voice of this.voices) {
@@ -194,14 +195,14 @@ class Mixer<I, O> implements Mix<I, O> {
     }
   }
 
-  sample(subject: I, out?: O): O {
+  probe(subject: I, out?: O): O {
     const pose = this.fold(subject, out);
     // Keeping last frame's pose is free when the mix allocated it; a host sampling into its own
     // object only pays for the copy once something in the mix has asked to retarget from it.
     if (out === undefined) this.pose.set(subject, pose);
     else if (this.wantsPose) {
       const kept = {} as O;
-      for (const key of Object.keys(this.rig as object) as Key<O>[]) {
+      for (const key of Object.keys(this.kit as object) as Key<O>[]) {
         const v = (pose as Record<string, unknown>)[key];
         if (v !== undefined) (kept as Record<string, unknown>)[key] = copy(v);
       }
@@ -212,8 +213,8 @@ class Mixer<I, O> implements Mix<I, O> {
 
   atRest(subject: I): boolean {
     const pose = this.fold(subject, undefined, true);
-    for (const key of Object.keys(this.rig as object) as Key<O>[]) {
-      const channel = this.rig[key] as Channel<unknown>;
+    for (const key of Object.keys(this.kit as object) as Key<O>[]) {
+      const channel = this.kit[key] as Channel<unknown>;
       const value = (pose as Record<string, unknown>)[key];
       if (channel.rest === undefined) {
         if (value !== undefined) return false;
@@ -226,7 +227,7 @@ class Mixer<I, O> implements Mix<I, O> {
     return this.voices.some((v) => v.state !== 'done');
   }
 
-  clear(opts?: { over?: number }): void {
+  mute(opts?: { over?: number }): void {
     for (const voice of this.voices) this.beginFade(voice, { over: opts?.over });
   }
 
@@ -334,7 +335,7 @@ class Mixer<I, O> implements Mix<I, O> {
       held = {
         state: voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
         stepped: now,
-        sampled: Number.NaN,
+        probed: Number.NaN,
         delta: null,
         kept,
         keep: keeper(kept),
@@ -359,7 +360,7 @@ class Mixer<I, O> implements Mix<I, O> {
     }
 
     const setting: Setting<unknown> = {
-      now,
+      timestamp: now,
       dt: this.reduced ? Number.POSITIVE_INFINITY : now - held.stepped,
       elapsed,
       pass,
@@ -375,9 +376,9 @@ class Mixer<I, O> implements Mix<I, O> {
     const weight = raw < 0 ? 0 : raw > 1 ? 1 : raw;
     setting.weight = weight;
 
-    if (held.sampled === now && held.delta) return { delta: held.delta, weight };
+    if (held.probed === now && held.delta) return { delta: held.delta, weight };
 
-    if (voice.patch.step && held.sampled !== now && now !== held.stepped) {
+    if (voice.patch.step && held.probed !== now && now !== held.stepped) {
       voice.patch.step(held.state as never, setting.dt, subject, setting as Setting<never>);
       held.stepped = now;
     }
@@ -397,7 +398,7 @@ class Mixer<I, O> implements Mix<I, O> {
       delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
     }
     held.delta = delta;
-    held.sampled = now;
+    held.probed = now;
 
     if (voice.out?.rest && this.isRest(delta)) {
       voice.rested.set(subject, true);
@@ -409,7 +410,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /**
    * Stop 0 for a retargeting voice: the subject's pose in the frame before this voice contributes.
-   * With no such frame on record — a voice cued before the subject was ever sampled, or a host that
+   * With no such frame on record — a voice cued before the subject was ever probed, or a host that
    * samples into its own object — it is this frame's pose with every other voice folded in.
    */
   private baseFor(voice: Voice<I, O>, subject: I): Record<string, unknown> {
@@ -424,7 +425,7 @@ class Mixer<I, O> implements Mix<I, O> {
     }
     const base: Record<string, unknown> = {};
     for (const key of voice.patch.writes as Key<O>[]) {
-      const channel = this.rig[key] as Channel<unknown>;
+      const channel = this.kit[key] as Channel<unknown>;
       const value = prior?.[key];
       const fallback = channel.rest;
       if (value !== undefined) base[key] = copy(value);
@@ -435,15 +436,15 @@ class Mixer<I, O> implements Mix<I, O> {
 
   private isRest(delta: Record<string, unknown>): boolean {
     for (const key of Object.keys(delta) as Key<O>[]) {
-      const channel = this.rig[key] as Channel<unknown>;
+      const channel = this.kit[key] as Channel<unknown>;
       if (channel.rest === undefined) return false;
       if (!near(delta[key], channel.rest)) return false;
     }
     return true;
   }
 
-  /** Folds a group's members into one influence through each channel's own `lerp`. */
-  private foldGroup(members: { delta: Record<string, unknown>; weight: number }[]): {
+  /** Folds a locus's members into one influence through each channel's own `lerp`. */
+  private foldLocus(members: { delta: Record<string, unknown>; weight: number }[]): {
     delta: Record<string, unknown>;
     weight: number;
   } {
@@ -455,7 +456,7 @@ class Mixer<I, O> implements Mix<I, O> {
     for (const member of members) {
       if (member.weight <= 0) continue;
       for (const key of Object.keys(member.delta)) {
-        const channel = this.rig[key as Key<O>] as Channel<unknown>;
+        const channel = this.kit[key as Key<O>] as Channel<unknown>;
         const held = taken.get(key);
         if (held === undefined) {
           delta[key] = copy(member.delta[key]);
@@ -479,22 +480,22 @@ class Mixer<I, O> implements Mix<I, O> {
     return now;
   }
 
-  private readonly groupBands = new Store<I, Map<string, boolean>>();
+  private readonly locusBands = new Store<I, Map<string, boolean>>();
   /** Voices whose stop 0 is mid-computation, so a fold for one cannot re-enter itself. */
   private readonly folding = new Set<number>();
 
   private fold(subject: I, out?: O, dry = false, except?: number): O {
     const now = this.now;
     const pose = (out ?? ({} as O)) as Record<string, unknown>;
-    for (const key of Object.keys(this.rig as object) as Key<O>[]) {
-      const channel = this.rig[key] as Channel<unknown>;
+    for (const key of Object.keys(this.kit as object) as Key<O>[]) {
+      const channel = this.kit[key] as Channel<unknown>;
       if (channel.rest !== undefined) pose[key] = copy(channel.rest);
     }
     if (Number.isNaN(now)) return pose as O;
 
     const singles: { voice: Voice<I, O> | null; delta: Record<string, unknown>; weight: number }[] =
       [];
-    const groups = new Map<string, { delta: Record<string, unknown>; weight: number }[]>();
+    const loci = new Map<string, { delta: Record<string, unknown>; weight: number }[]>();
     const order: (string | number)[] = [];
 
     for (const voice of this.voices) {
@@ -502,24 +503,24 @@ class Mixer<I, O> implements Mix<I, O> {
       const got = dry && voice.subjects.has(subject) ? this.peek(voice, subject, now) : null;
       const influence = got ?? this.influence(voice, subject, now);
       if (!influence) continue;
-      const group = voice.spec.group;
-      if (group === undefined) {
+      const locus = voice.spec.locus;
+      if (locus === undefined) {
         singles.push({ voice, ...influence });
         order.push(voice.id);
       } else {
-        const held = groups.get(group);
+        const held = loci.get(locus);
         if (held) held.push(influence);
         else {
-          groups.set(group, [influence]);
-          order.push(group);
+          loci.set(locus, [influence]);
+          order.push(locus);
         }
       }
     }
 
-    let bands = this.groupBands.get(subject);
+    let bands = this.locusBands.get(subject);
     if (bands === undefined) {
       bands = new Map();
-      this.groupBands.set(subject, bands);
+      this.locusBands.set(subject, bands);
     }
 
     for (const at of order) {
@@ -528,19 +529,19 @@ class Mixer<I, O> implements Mix<I, O> {
           ? singles.find((s) => s.voice?.id === at)
           : {
               voice: null,
-              ...this.foldGroup(groups.get(at) as { delta: never; weight: number }[]),
+              ...this.foldLocus(loci.get(at) as { delta: never; weight: number }[]),
             };
       if (!entry) continue;
       const { delta, weight } = entry;
       if (weight <= 0) continue;
       for (const key of Object.keys(delta) as Key<O>[]) {
-        const channel = this.rig[key] as Channel<unknown>;
+        const channel = this.kit[key] as Channel<unknown>;
         const value = delta[key];
         if (value === undefined) continue;
         if (channel.rest !== undefined && channel.scale) {
-          pose[key] = channel.join(pose[key], channel.scale(value, weight));
+          pose[key] = channel.merge(pose[key], channel.scale(value, weight));
         } else if (this.passes(bands, `${at}:${key}`, weight)) {
-          pose[key] = pose[key] === undefined ? copy(value) : channel.join(pose[key], value);
+          pose[key] = pose[key] === undefined ? copy(value) : channel.merge(pose[key], value);
         }
       }
     }
@@ -554,13 +555,13 @@ class Mixer<I, O> implements Mix<I, O> {
     now: number,
   ): { delta: Record<string, unknown>; weight: number } | null {
     const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
-    if (!held || held.sampled !== now || !held.delta) return null;
+    if (!held || held.probed !== now || !held.delta) return null;
     return { delta: held.delta, weight: this.weightOf(voice, subject, now, held) };
   }
 
   private weightOf(voice: Voice<I, O>, subject: I, now: number, held: Subject<unknown>): number {
     const setting: Setting<unknown> = {
-      now,
+      timestamp: now,
       dt: 0,
       elapsed: voice.elapsedAt(now),
       pass: 0,
@@ -576,15 +577,15 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 }
 
-/** The one that ships: both forms on the CPU, sampled per subject on demand. */
+/** The one that ships: both forms on the CPU, probed per subject on demand. */
 export const mixer: Engine = {
   name: 'mixer',
   runs: new Set<'fn' | 'keys'>(['fn', 'keys']),
-  create<I, O>(rig: Rig<O>, opts: MixOptions): Mix<I, O> {
-    return new Mixer<I, O>(rig, opts);
+  create<I, O>(kit: Kit<O>, opts: MixOptions): Mix<I, O> {
+    return new Mixer<I, O>(kit, opts);
   },
 };
 
-export function mix<I, O>(rig: Rig<O>, opts: MixOptions = {}): Mix<I, O> {
-  return (opts.engine ?? mixer).create<I, O>(rig, opts);
+export function mix<I, O>(kit: Kit<O>, opts: MixOptions = {}): Mix<I, O> {
+  return (opts.engine ?? mixer).create<I, O>(kit, opts);
 }

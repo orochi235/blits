@@ -1,4 +1,4 @@
-import type { Channel, Rig } from './types.js';
+import type { Channel, Kit } from './types.js';
 
 const mix = (a: number, b: number, u: number) => a + (b - a) * u;
 
@@ -6,7 +6,7 @@ const mix = (a: number, b: number, u: number) => a + (b - a) * u;
 export function sum(): Channel<number> {
   return {
     rest: 0,
-    join: (a, b) => a + b,
+    merge: (a, b) => a + b,
     scale: (v, w) => v * w,
     lerp: mix,
   };
@@ -16,7 +16,7 @@ export function sum(): Channel<number> {
 export function mul(): Channel<number> {
   return {
     rest: 1,
-    join: (a, b) => a * b,
+    merge: (a, b) => a * b,
     scale: (v, w) => 1 + (v - 1) * w,
     lerp: mix,
   };
@@ -26,7 +26,7 @@ export function mul(): Channel<number> {
 export function max(): Channel<number> {
   return {
     rest: 0,
-    join: (a, b) => (a > b ? a : b),
+    merge: (a, b) => (a > b ? a : b),
     scale: (v, w) => v * w,
     lerp: mix,
   };
@@ -39,7 +39,7 @@ export function max(): Channel<number> {
  */
 export function last<V>(opts?: { lerp?: (a: V, b: V, u: number) => V }): Channel<V> {
   return {
-    join: (_a, b) => b,
+    merge: (_a, b) => b,
     lerp: opts?.lerp ?? ((a, b, u) => (u < 0.5 ? a : b)),
   };
 }
@@ -50,9 +50,9 @@ export function vec(n: number, of: Channel<number>): Channel<number[]> {
   const scale = of.scale;
   return {
     rest,
-    join: (a, b) => {
+    merge: (a, b) => {
       const out = new Array<number>(n);
-      for (let i = 0; i < n; i++) out[i] = of.join(a[i] ?? 0, b[i] ?? 0);
+      for (let i = 0; i < n; i++) out[i] = of.merge(a[i] ?? 0, b[i] ?? 0);
       return out;
     },
     scale:
@@ -94,7 +94,7 @@ export function hex(): Channel<number> {
   return last<number>({ lerp: mixHex });
 }
 
-/** A rig is plain data; this only fixes the type. */
-export function rig<O>(channels: Rig<O>): Rig<O> {
+/** A kit is plain data; this only fixes the type. */
+export function kit<O>(channels: Kit<O>): Kit<O> {
   return channels;
 }

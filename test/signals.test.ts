@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { hex, mul, rig, sum } from '../src/channels.js';
+import { hex, kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import { gate, level, peak, slew } from '../src/signals.js';
@@ -10,7 +10,7 @@ interface Pose {
   crawl: number;
   color: number;
 }
-const PART = rig<Pose>({ gain: mul(), crawl: sum(), color: hex() });
+const PART = kit<Pose>({ gain: mul(), crawl: sum(), color: hex() });
 interface Part {
   id: string;
 }
@@ -22,7 +22,7 @@ beforeEach(() => {
   kept = new Map();
 });
 const frame = (now: number, dt: number): Setting => ({
-  now,
+  timestamp: now,
   dt,
   elapsed: now,
   pass: 0,
@@ -61,17 +61,17 @@ describe('band quiet', () => {
       weight: k,
     });
     m.sync(0);
-    expect(m.sample(part).color).toBe(0x00ff00);
+    expect(m.probe(part).color).toBe(0x00ff00);
 
     for (const [i, w] of [0.55, 0.45, 0.58, 0.42].entries()) {
       k.set(w);
       m.sync(16 * (i + 1));
-      expect(m.sample(part).color).toBe(0x00ff00);
+      expect(m.probe(part).color).toBe(0x00ff00);
     }
 
     k.set(0.2);
     m.sync(100);
-    expect(m.sample(part).color).toBeUndefined();
+    expect(m.probe(part).color).toBeUndefined();
   });
 });
 
@@ -107,13 +107,13 @@ describe('slew', () => {
     const m = mix<Part, Pose>(PART);
     m.cue({ patch: gain, weight: shared });
     m.sync(0);
-    m.sample(part);
+    m.probe(part);
     input.set(1);
     m.cue({ patch: gain, weight: shared, start: 50 });
     m.sync(50);
     // The first voice is halfway up and the second, seeing the part for the first time, snaps to
     // 1: gain is (1 − 0.5)(1 − 1). One shared state would read 0.5 for both, and 0.25.
-    expect(m.sample(part).gain).toBeCloseTo(0, 9);
+    expect(m.probe(part).gain).toBeCloseTo(0, 9);
   });
 
   it('measures its own gap, not the gap the voice caught up by', () => {
@@ -124,12 +124,12 @@ describe('slew', () => {
       weight: slew(input, { riseMs: 1000 }),
     });
     m.sync(0);
-    m.sample(part);
+    m.probe(part);
     input.set(1);
     const seen: number[] = [];
     for (let t = 100; t <= 500; t += 100) {
       m.sync(t);
-      seen.push(1 - m.sample(part).gain);
+      seen.push(1 - m.probe(part).gain);
     }
     for (const [i, w] of seen.entries()) expect(w).toBeCloseTo(0.1 * (i + 1), 9);
   });

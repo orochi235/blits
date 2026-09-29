@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { mul, rig, sum } from '../src/channels.js';
+import { kit, mul, sum } from '../src/channels.js';
 import { mix, mixer } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
-import type { Engine, Mix, MixOptions, Rig } from '../src/types.js';
+import type { Engine, Kit, Mix, MixOptions } from '../src/types.js';
 
 interface Pose {
   gain: number;
   crawl: number;
 }
-const PART = rig<Pose>({ gain: mul(), crawl: sum() });
+const PART = kit<Pose>({ gain: mul(), crawl: sum() });
 interface Part {
   id: string;
 }
@@ -23,7 +23,7 @@ describe('declared writes', () => {
       m.sync(now);
       for (const subject of [{ id: 'a' }, { id: 'b' }]) {
         const delta = p.at((now % 100) / 100, subject, {
-          now,
+          timestamp: now,
           dt: 16,
           elapsed: now,
           pass: 0,
@@ -37,7 +37,7 @@ describe('declared writes', () => {
     }
   });
 
-  it('a voice whose patch writes a channel the rig lacks throws at cue, naming both', () => {
+  it('a voice whose patch writes a channel the kit lacks throws at cue, naming both', () => {
     const stray = patch<Part, { rogue: number }, void>(0, () => ({ rogue: 1 }), {
       writes: ['rogue'],
     });
@@ -59,7 +59,7 @@ describe('engine refusal', () => {
     name: 'baked',
     runs: new Set<'fn' | 'keys'>(['keys']),
     // A wrapping engine hands its own identity down, so the refusal names the engine a host chose.
-    create<I, O>(r: Rig<O>, opts: MixOptions): Mix<I, O> {
+    create<I, O>(r: Kit<O>, opts: MixOptions): Mix<I, O> {
       return mixer.create<I, O>(r, { ...opts, engine: baked });
     },
   };
@@ -92,12 +92,12 @@ describe('target', () => {
       },
     });
     m.sync(0);
-    expect(m.sample({ id: 'a' }).crawl).toBe(5);
-    expect(m.sample({ id: 'skipped' }).crawl).toBe(0);
+    expect(m.probe({ id: 'a' }).crawl).toBe(5);
+    expect(m.probe({ id: 'skipped' }).crawl).toBe(0);
 
     m.sync(16);
     const born = { id: 'later' };
-    expect(m.sample(born).crawl).toBe(5);
+    expect(m.probe(born).crawl).toBe(5);
     expect(asked).toEqual(['a', 'skipped', 'later']);
   });
 
@@ -113,7 +113,7 @@ describe('target', () => {
     });
     for (const now of [0, 16, 32]) {
       m.sync(now);
-      m.sample(part);
+      m.probe(part);
     }
     expect(calls).toBe(1);
   });
@@ -127,8 +127,8 @@ describe('stagger', () => {
       stagger: (subject) => (subject.id === 'late' ? 100 : 0),
     });
     m.sync(200);
-    expect(m.sample({ id: 'early' }).crawl).toBeCloseTo(20, 9);
-    expect(m.sample({ id: 'late' }).crawl).toBeCloseTo(10, 9);
+    expect(m.probe({ id: 'early' }).crawl).toBeCloseTo(20, 9);
+    expect(m.probe({ id: 'late' }).crawl).toBeCloseTo(10, 9);
   });
 
   it('a subject whose stagger has not elapsed contributes nothing yet', () => {
@@ -138,9 +138,9 @@ describe('stagger', () => {
       stagger: () => 100,
     });
     m.sync(50);
-    expect(m.sample(part).crawl).toBe(0);
+    expect(m.probe(part).crawl).toBe(0);
     m.sync(150);
-    expect(m.sample(part).crawl).toBe(50);
+    expect(m.probe(part).crawl).toBe(50);
   });
 });
 
@@ -170,13 +170,13 @@ describe('the mix as a host sees it', () => {
       }),
     });
     m.sync(0);
-    m.sample(part);
+    m.probe(part);
     m.sync(16);
-    m.sample(part);
+    m.probe(part);
     expect(built).toBe(1);
     m.drop(part);
     m.sync(32);
-    m.sample(part);
+    m.probe(part);
     expect(built).toBe(2);
   });
 
@@ -187,11 +187,11 @@ describe('the mix as a host sees it', () => {
       loop: 2,
     });
     m.sync(0);
-    m.sample(part);
+    m.probe(part);
     m.sync(150);
-    expect(m.sample(part).crawl).toBeCloseTo(5, 9);
+    expect(m.probe(part).crawl).toBeCloseTo(5, 9);
     m.sync(250);
-    m.sample(part);
+    m.probe(part);
     expect(m.live).toBe(false);
     await h.done;
     expect(h.state).toBe('done');

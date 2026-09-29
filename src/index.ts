@@ -1,4 +1,4 @@
-export { hex, last, max, mixHex, mul, rig, sum, vec } from './channels.js';
+export { hex, kit, last, max, mixHex, mul, sum, vec } from './channels.js';
 export { mix, mixer } from './mixer.js';
 export { keys, patch } from './patch.js';
 export { gate, level, peak, slew } from './signals.js';
@@ -10,10 +10,10 @@ export type {
   FadeSpec,
   Handle,
   Keyframe,
+  Kit,
   Mix,
   MixOptions,
   Patch,
-  Rig,
   Setting,
   Signal,
   VoiceSpec,

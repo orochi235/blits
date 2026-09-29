@@ -3,15 +3,15 @@ export interface Channel<V> {
   /** Identity. Absent means the channel has none: it replaces rather than contributes. */
   rest?: V;
   /** Fold two influences into one. */
-  join(a: V, b: V): V;
+  merge(a: V, b: V): V;
   /** Fade toward `rest` by weight 0..1. Required when `rest` is set; absent otherwise. */
   scale?(v: V, w: number): V;
-  /** Interpolate, for retargeting, for blending alternatives, and for folding a group. */
+  /** Interpolate, for retargeting, for blending alternatives, and for folding a locus. */
   lerp(a: V, b: V, u: number): V;
 }
 
 /** The channel set for one kind of delta. */
-export type Rig<O> = { readonly [K in keyof O]-?: Channel<NonNullable<O[K]>> };
+export type Kit<O> = { readonly [K in keyof O]-?: Channel<NonNullable<O[K]>> };
 
 export type Easing = (u: number) => number;
 
@@ -25,8 +25,8 @@ export interface Keyframe<O> {
 
 /** What a patch may read and did not compute, for one subject this frame. */
 export interface Setting<S = void> {
-  /** The mix clock at this frame. Identical for every sample in the frame. */
-  now: number;
+  /** The mix clock's timestamp at this frame. Identical for every probe in the frame. */
+  timestamp: number;
   /**
    * The gap this subject is catching up by: milliseconds since it last advanced, which is the gap
    * since the previous sync only for a subject sampled every frame. Infinity under reduced motion.
@@ -36,7 +36,7 @@ export interface Setting<S = void> {
   elapsed: number;
   /** Which pass this is, 0 first. */
   pass: number;
-  /** This voice's weight for this subject this frame, after fades, signals and any group. */
+  /** This voice's weight for this subject this frame, after fades, signals and any locus. */
   weight: number;
   /** This subject's state, when the patch declares one. */
   state: S;
@@ -105,8 +105,8 @@ export interface VoiceSpec<I, O> {
   weight?: number | Signal<I>;
   /** Ramp in and out, ms. Out applies on `fade()` and when a finite loop ends. */
   fade?: FadeSpec;
-  /** Voices sharing a group are alternatives: the mix folds them through each channel's `lerp`. */
-  group?: string;
+  /** Voices sharing a locus are alternatives: the mix folds them through each channel's `lerp`. */
+  locus?: string;
 
   /** A `keys` voice whose first stop reads wherever this subject is now. */
   from?: 'current';
@@ -151,26 +151,26 @@ export interface MixOptions {
 }
 
 export interface Mix<I, O> {
-  /** Cues a voice. Throws when the engine cannot run the patch's form, or the rig lacks a channel. */
+  /** Cues a voice. Throws when the engine cannot run the patch's form, or the kit lacks a channel. */
   cue(spec: VoiceSpec<I, O>): Handle;
-  /** N voices whose weights split one signal, cued into one group so they fold as alternatives. */
+  /** N voices whose weights split one signal, cued into one locus so they fold as alternatives. */
   blend(
     patches: readonly Patch<I, O, unknown>[],
     by: Signal<I>,
-    spec?: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'group'>,
+    spec?: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'locus'>,
   ): Handle[];
 
   /** The host reports the clock, once a frame. Nothing advances at the call. */
-  sync(now: number): void;
+  sync(timestamp: number): void;
   /** The merged pose for one subject at the synced frame. */
-  sample(subject: I, out?: O): O;
+  probe(subject: I, out?: O): O;
   /** Every channel at rest for this subject this frame, so a host can skip the write. */
   atRest(subject: I): boolean;
 
   /** Anything still contributing, fading, or pending. */
   readonly live: boolean;
   /** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */
-  clear(opts?: { over?: number }): void;
+  mute(opts?: { over?: number }): void;
   /** Forgets per-subject state. */
   drop(subject: I): void;
 }
@@ -179,5 +179,5 @@ export interface Engine {
   readonly name: string;
   /** Which patch forms this engine can run. A voice it cannot run is refused at `cue`, by name. */
   readonly runs: ReadonlySet<'fn' | 'keys'>;
-  create<I, O>(rig: Rig<O>, opts: MixOptions): Mix<I, O>;
+  create<I, O>(kit: Kit<O>, opts: MixOptions): Mix<I, O>;
 }

@@ -38,8 +38,8 @@ describe('channel laws', () => {
       // `max` is an identity at 0 only on the values it is for: `dark` and `aperture` are 0..1.
       for (const raw of numbers()) {
         const v = name === 'max' ? Math.abs(raw) : raw;
-        close(channel.join(v, rest), v);
-        close(channel.join(rest, v), v);
+        close(channel.merge(v, rest), v);
+        close(channel.merge(rest, v), v);
         close(scale(v, 1), v);
         close(scale(v, 0), rest);
       }
@@ -73,7 +73,7 @@ describe('channel laws', () => {
     const channel = last<string>();
     expect(channel.rest).toBeUndefined();
     expect(channel.scale).toBeUndefined();
-    expect(channel.join('a', 'b')).toBe('b');
+    expect(channel.merge('a', 'b')).toBe('b');
     expect(channel.lerp('a', 'b', 0)).toBe('a');
     expect(channel.lerp('a', 'b', 1)).toBe('b');
   });
@@ -84,7 +84,7 @@ describe('channel laws', () => {
     const scale = channel.scale as (v: number[], w: number) => number[];
     expect(rest).toEqual([0, 0, 0]);
     const v = [1, -2, 3.5];
-    closeAll(channel.join(v, rest), v);
+    closeAll(channel.merge(v, rest), v);
     closeAll(scale(v, 1), v);
     closeAll(scale(v, 0), rest);
     closeAll(channel.lerp(v, rest, 0.5), [0.5, -1, 1.75]);
@@ -93,7 +93,7 @@ describe('channel laws', () => {
   it('vec: rest is copied, not shared, so a fold cannot write into it', () => {
     const channel = vec(2, sum());
     const first = channel.rest as number[];
-    expect(channel.join([1, 1], [2, 2])).toEqual([3, 3]);
+    expect(channel.merge([1, 1], [2, 2])).toEqual([3, 3]);
     expect(first).toEqual([0, 0]);
   });
 
@@ -101,6 +101,6 @@ describe('channel laws', () => {
     expect(mixHex(0x000000, 0xffffff, 0)).toBe(0x000000);
     expect(mixHex(0x000000, 0xffffff, 1)).toBe(0xffffff);
     expect(mixHex(0x000000, 0xffffff, 0.5)).toBe(0x808080);
-    expect(hex().join(0x112233, 0x445566)).toBe(0x445566);
+    expect(hex().merge(0x112233, 0x445566)).toBe(0x445566);
   });
 });

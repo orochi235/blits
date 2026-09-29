@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+The API reads in the called vocabulary. `rig` and `Rig` are `kit` and `Kit`; `mix.sample` is
+`mix.probe`; a channel's `join` is `merge`; `VoiceSpec.group` is `locus`; `mix.clear` is `mix.mute`;
+and the mix clock's value is a timestamp, so `sync(timestamp)` and `setting.timestamp` replace
+`sync(now)` and `setting.now`. Nothing else moved.
+
 A stateful signal's state is kept by the mix, through the new `setting.keep`, per voice and subject.
 Two voices handed one `slew` or `gate` now follow on their own instead of sharing a value. A `slew`
 measures its own gap, which fixes it rising too fast in a voice whose patch has no `step`: that

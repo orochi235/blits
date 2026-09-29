@@ -30,7 +30,7 @@ systems now run on it**, on a branch that is not merged.
 - **klieg depends on this checkout by path** — `"blits": "file:../../../blits"` in
   `packages/core/package.json` — so the branch resolves on this machine and nowhere else. That is
   the one thing standing between the branch and a merge.
-- **The package, v0.1.0.** `src/` is the whole of it: `channels.ts` (the stock channels, `rig`,
+- **The package, v0.1.0.** `src/` is the whole of it: `channels.ts` (the stock channels, `kit`,
   `hex`/`mixHex`), `patch.ts` (`patch`, `keys`, and the stop evaluator `from: 'current'` reuses),
   `signals.ts` (`peak`, `slew`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
   objects and a Map for anything else), `mixer.ts` (the engine and `mix`), `types.ts` (the whole
@@ -45,7 +45,7 @@ systems now run on it**, on a branch that is not merged.
   callback `step` are deliberately unrenamed.
 - **The spec self-review has been done and its findings fixed** (2026-09-27). What the review
   changed, so nobody re-derives it: `sync`, `step` and `Setting.dt` now say that nothing advances
-  at the call and each subject catches up by its own whole gap; `mix.clear` takes `over` like
+  at the call and each subject catches up by its own whole gap; `mix.mute` takes `over` like
   `handle.fade`; `duration` is `period` and `t` is `phase`, 0..1 across the period; `pose`,
   `influence`, `setting`, `period`, `phase`, `system`, `source` and `score` are defined in the
   Vocabulary section; `Easing`, `Keyframe<O>`, `StaggerSpec` and `mixHex` are given; and the
@@ -82,10 +82,13 @@ systems now run on it**, on a branch that is not merged.
   inside the port, not ahead of it.
 - **`phase`** is the fixed name for the normalized position within a period, formerly `t`. It costs
   renaming klieg's `onPhase` and `PhaseEvent`, which sherpa consumes through `ctx.phase`.
-- **The vocabulary is called**, and `docs/vocabulary.picks.json` is where it lives:
-  delta, channel, rig, subject, patch, voice, mix, signal, handle, engine, pose, influence,
-  setting, period, phase, rest, weight, group, chain, host, source, score, system; cue, fade,
-  seek, sync, sample, blend, clear, drop; join, scale, lerp, fold. The schema page reads in them.
+- **The vocabulary is called**, every role enshrined on 2026-09-29, and
+  `docs/vocabulary.picks.json` is where it lives: delta, channel, kit, subject, patch, voice, mix,
+  signal, handle, engine, pose, influence, setting, timestamp, period, phase, rest, weight, locus,
+  series, host, source, score, subsystem; for the score, anchor, event, mark, name, tag, query,
+  resolver, projection (synonym image), doubt, snapshot, interval; cue, fade, sync, probe, project,
+  assess, seek, blend, mute, drop; merge, scale, lerp, fold. The code and the schema page read in
+  them. `name`, `query` and `resolver` are marked informal.
 - **Blending** covers all four behaviors he was offered: fade, retarget on interruption, blend
   between alternatives, handover at rest. All reduce to a weight per voice or a channel lerp.
 - **Two clocks, one of them addressable.** Mix time is a reading the host reports, not a position
@@ -108,10 +111,10 @@ systems now run on it**, on a branch that is not merged.
   moved on, so an argument from allocation is not an argument about the concept. The same cut
   settled the mix's clock verb: `step` named the consequence, `sync` names the act. Stated
   2026-09-27.
-- **A group folds by `lerp`, not by scaling and joining.** The review found the old cap's
-  invariant — two voices in a group at weight 1 look like one at weight 1 — false on every channel
+- **A locus folds by `lerp`, not by scaling and merging.** The review found the old cap's
+  invariant — two voices in a locus at weight 1 look like one at weight 1 — false on every channel
   but `sum`: two at 0.5 on `mul` give `(1 + (v − 1) / 2)²`, so a shared gain of 0.06 read 0.28.
-  A group is alternatives, so the mix folds its members through the channel's own `lerp` by their
+  A locus is alternatives, so the mix folds its members through the channel's own `lerp` by their
   share of the summed weight, and that one influence contributes at `min(1, Σw)`. On `sum` it is
   identically `w₁a + w₂b`, so klieg's baselines hold and the port stays an extraction. Mike had no
   view and asked me to take it; decided 2026-09-27, and the alternative (per-channel

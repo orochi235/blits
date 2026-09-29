@@ -30,7 +30,7 @@ export function level<I>(initial = 0): Signal<I> & { set(v: number): void } {
 
 interface Slewed {
   value: number;
-  /** The `now` this value was taken at; NaN until first sight. */
+  /** The timestamp this value was taken at; NaN until first sight. */
   seen: number;
 }
 
@@ -46,18 +46,18 @@ export function slew<I>(
   const read = (subject: I, setting: Setting): number => {
     const target = of(subject, setting);
     const held = setting.keep<Slewed>(read, () => ({ value: target, seen: Number.NaN }));
-    if (setting.now === held.seen) return held.value;
+    if (setting.timestamp === held.seen) return held.value;
     let next = target;
     if (!Number.isNaN(held.seen) && Number.isFinite(setting.dt)) {
       const gap = target - held.value;
       const ms = gap > 0 ? riseMs : fallMs;
       if (ms > 0) {
-        const step = (setting.now - held.seen) / ms;
+        const step = (setting.timestamp - held.seen) / ms;
         next = gap > 0 ? Math.min(target, held.value + step) : Math.max(target, held.value - step);
       }
     }
     held.value = next;
-    held.seen = setting.now;
+    held.seen = setting.timestamp;
     return next;
   };
   return marked(read, inputOf([of]));
@@ -78,9 +78,9 @@ export function gate<I>(of: Signal<I>, band: { on: number; off: number } | numbe
   const read = (subject: I, setting: Setting): number => {
     const input = of(subject, setting);
     const held = setting.keep<Gated>(read, () => ({ on: input >= on, seen: Number.NaN }));
-    if (setting.now !== held.seen) {
+    if (setting.timestamp !== held.seen) {
       held.on = input >= on ? true : input <= off ? false : held.on;
-      held.seen = setting.now;
+      held.seen = setting.timestamp;
     }
     return held.on ? 1 : 0;
   };
