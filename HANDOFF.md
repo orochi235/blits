@@ -52,7 +52,7 @@ systems now run on it**, on a branch that is not merged.
   answers a builder would otherwise have guessed are stated where they belong — `target` runs per
   subject on first sight, `seek` moves the clock and never runs state forward, `setting.weight` is
   post-cap, `from: 'current'` reads the frame before the voice contributes, a stateful signal's
-  state belongs to the instance, `live` goes true on `cue` and the mix never calls back, and a
+  state is kept by the mix per voice and subject (changed 2026-09-29), `live` goes true on `cue` and the mix never calls back, and a
   consumer may declare its own channel, which is what sherpa's `transform` is.
 - `docs/vocabulary.json` — **the naming sheet, and the source of it.** 19 nouns (one
   fixed), 8 verbs, 4 operations, 20 candidates each, six consistent-set columns, relations,

@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+A stateful signal's state is kept by the mix, through the new `setting.keep`, per voice and subject.
+Two voices handed one `slew` or `gate` now follow on their own instead of sharing a value. A `slew`
+measures its own gap, which fixes it rising too fast in a voice whose patch has no `step`: that
+voice's `dt` counts from when it first saw the subject, and `slew` was rate-limiting by it. A signal
+reading outside input carries `input: true`, set by `level` and inherited by what is built on it.
+
 ## 0.1.0
 
 First release. A mix folds concurrent effects into one value per subject per frame: each effect runs

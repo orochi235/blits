@@ -42,6 +42,12 @@ export interface Setting<S = void> {
   state: S;
   /** Anything the host adds for its own patches. */
   host: unknown;
+  /**
+   * The state `owner` keeps for this voice and this subject, made by `init` on first ask. The mix
+   * holds it, so a read at another time can copy it instead of moving it. A stateful signal keeps
+   * its state here and nowhere else.
+   */
+  keep<K>(owner: object, init: () => K): K;
 }
 
 /** A pure function of phase and a subject that returns a delta. Optionally stateful. */
@@ -62,8 +68,12 @@ export interface Patch<I, O, S = void> {
   readonly keys?: readonly Keyframe<O>[];
 }
 
-/** A 0..1 scalar resolved per subject per frame from something outside the clock. */
-export type Signal<I> = (subject: I, setting: Setting) => number;
+/**
+ * A 0..1 scalar resolved per subject per frame from something outside the clock. `input` is set
+ * when it reads something the clock does not drive, such as a value the host writes; a signal
+ * built on one inherits it.
+ */
+export type Signal<I> = ((subject: I, setting: Setting) => number) & { readonly input?: boolean };
 
 export interface FadeSpec {
   in?: number;

@@ -27,7 +27,18 @@ interface Subject<S> {
   delta: Record<string, unknown> | null;
   /** Stop 0 for a `from: 'current'` voice, taken the first frame this subject is seen. */
   base?: Record<string, unknown>;
+  /** What each stateful signal on this voice keeps for this subject, by the signal. */
+  kept: Map<object, unknown>;
+  keep: Setting['keep'];
 }
+
+const keeper = (kept: Map<object, unknown>): Setting['keep'] =>
+  function keep<K>(owner: object, init: () => K): K {
+    if (kept.has(owner)) return kept.get(owner) as K;
+    const made = init();
+    kept.set(owner, made);
+    return made;
+  };
 
 interface Ramp {
   from: number;
@@ -145,11 +156,12 @@ class Mixer<I, O> implements Mix<I, O> {
     const group = `blend:${this.nextId}`;
     const stops = patches.length - 1;
     return patches.map((patch, i) => {
-      const weight: Signal<I> = (subject, setting) => {
+      const share = (subject: I, setting: Setting) => {
         const k = by(subject, setting);
         const d = stops === 0 ? 0 : Math.abs(k * stops - i);
         return d >= 1 ? 0 : 1 - d;
       };
+      const weight: Signal<I> = by.input ? Object.assign(share, { input: true }) : share;
       return this.cue({ ...spec, patch, weight, group });
     });
   }
@@ -318,11 +330,14 @@ class Mixer<I, O> implements Mix<I, O> {
 
     let held = voice.subjects.get(subject) as Subject<unknown> | undefined;
     if (held === undefined) {
+      const kept = new Map<object, unknown>();
       held = {
         state: voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
         stepped: now,
         sampled: Number.NaN,
         delta: null,
+        kept,
+        keep: keeper(kept),
       };
       voice.subjects.set(subject, held);
       voice.seen++;
@@ -351,6 +366,7 @@ class Mixer<I, O> implements Mix<I, O> {
       weight: 0,
       state: held.state,
       host: this.opts.host,
+      keep: held.keep,
     };
 
     const base = voice.weight;
@@ -551,6 +567,7 @@ class Mixer<I, O> implements Mix<I, O> {
       weight: 0,
       state: held.state,
       host: this.opts.host,
+      keep: held.keep,
     };
     const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
     const raw =

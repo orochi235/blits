@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { hex, mul, rig, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
@@ -16,6 +16,11 @@ interface Part {
 }
 const part = { id: 'a' };
 
+// One voice and one subject's worth of kept state, as the mix would hold it.
+let kept = new Map<object, unknown>();
+beforeEach(() => {
+  kept = new Map();
+});
 const frame = (now: number, dt: number): Setting => ({
   now,
   dt,
@@ -24,6 +29,10 @@ const frame = (now: number, dt: number): Setting => ({
   weight: 0,
   state: undefined as never,
   host: undefined,
+  keep: (owner, init) => {
+    if (!kept.has(owner)) kept.set(owner, init());
+    return kept.get(owner) as never;
+  },
 });
 
 describe('band quiet', () => {
@@ -91,17 +100,44 @@ describe('slew', () => {
     expect(second).toBe(first);
   });
 
-  it('state belongs to the instance, so two readers share it and two instances do not', () => {
+  it('state belongs to the voice reading it, so two voices handed one slew follow on their own', () => {
     const input = level<Part>(0);
     const shared = slew<Part>(input, { riseMs: 100 });
-    shared(part, frame(0, 0));
+    const gain = patch<Part, Pose>(0, () => ({ gain: 0 }), { writes: ['gain'] });
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: gain, weight: shared });
+    m.sync(0);
+    m.sample(part);
     input.set(1);
-    // One instance, read by two callers in the same frame: one answer, and it is rate-limited.
-    expect(shared(part, frame(50, 50))).toBeCloseTo(0.5, 9);
-    expect(shared(part, frame(50, 50))).toBeCloseTo(0.5, 9);
-    // A second instance has its own state, and first sight snaps to the input.
-    const separate = slew<Part>(input, { riseMs: 100 });
-    expect(separate(part, frame(50, 50))).toBe(1);
+    m.cue({ patch: gain, weight: shared, start: 50 });
+    m.sync(50);
+    // The first voice is halfway up and the second, seeing the part for the first time, snaps to
+    // 1: gain is (1 − 0.5)(1 − 1). One shared state would read 0.5 for both, and 0.25.
+    expect(m.sample(part).gain).toBeCloseTo(0, 9);
+  });
+
+  it('measures its own gap, not the gap the voice caught up by', () => {
+    const input = level<Part>(0);
+    const m = mix<Part, Pose>(PART);
+    m.cue({
+      patch: patch<Part, Pose>(0, () => ({ gain: 0 }), { writes: ['gain'] }),
+      weight: slew(input, { riseMs: 1000 }),
+    });
+    m.sync(0);
+    m.sample(part);
+    input.set(1);
+    const seen: number[] = [];
+    for (let t = 100; t <= 500; t += 100) {
+      m.sync(t);
+      seen.push(1 - m.sample(part).gain);
+    }
+    for (const [i, w] of seen.entries()) expect(w).toBeCloseTo(0.1 * (i + 1), 9);
+  });
+
+  it('marks itself driven by outside input when what it follows is', () => {
+    expect(slew(level<Part>(0), { riseMs: 100 }).input).toBe(true);
+    expect(gate(peak(level<Part>(0)), 0.5).input).toBe(true);
+    expect(slew<Part>(() => 0.5, { riseMs: 100 }).input).toBeUndefined();
   });
 });
 
