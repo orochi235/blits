@@ -36,7 +36,7 @@
 </marker></defs>
 <rect class="bg" x="0" y="0" width="1240" height="968"/>
 <text class="title" x="40" y="44">blits vocabulary — what contains what, and what reaches a subject</text>
-<text class="sub" x="40" y="66">Names are the current picks, with the incumbent in parentheses. Generated from 2026-09-15-vocabulary.json.</text>
+<text class="sub" x="40" y="66">Names are the current picks, with the incumbent in parentheses. Generated from vocabulary.json.</text>
 <rect class="box host" x="40" y="92" width="1160" height="46" rx="10"/>
 <text class="head" x="62" y="122"><tspan class="strong">host</tspan> — owns the frame loop: syncs each mix once a frame, and holds every handle</text>
 <rect class="box frame" x="40" y="166" width="1160" height="404" rx="10"/>

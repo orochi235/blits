@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, basename } from 'node:path';
 
 const here = dirname(new URL(import.meta.url).pathname);
-const jobPath = process.argv[2] || join(here, '2026-09-15-vocabulary.json');
+const jobPath = process.argv[2] || join(here, 'vocabulary.json');
 const outPath = process.argv[3] || join(here, 'concept-map.svg');
 const job = JSON.parse(readFileSync(jobPath, 'utf8'));
 let picks = {};

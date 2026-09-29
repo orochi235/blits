@@ -47,9 +47,9 @@ and weight), **mix** (the live voices over one rig), **signal** (a 0..1 scalar f
 clock), **handle** (the live controls on one voice), **engine** (the implementation behind a mix).
 
 The design — the full vocabulary, the channel table, the time model, blending, the engine seam, and
-what is still open — is `docs/2026-09-15-schema.html`, which ships in the package: open it from
+what is still open — is `docs/schema.html`, which ships in the package: open it from
 `node_modules/blits/`. The naming work behind it is
-`docs/2026-09-15-vocabulary.json`, which semanticore serves as a page.
+`docs/vocabulary.json`, which semanticore serves as a page.
 That repo is private; the JSON stands on its own.
 
 ## Status

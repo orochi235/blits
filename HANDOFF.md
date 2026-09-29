@@ -2,7 +2,7 @@
 
 **For:** the next session on blits. **Answers:** what blits is meant to be, what exists, what was
 decided in conversation and lives nowhere else, and what comes next. The design is in
-`docs/2026-09-15-schema.html`; the naming work is in `docs/2026-09-15-vocabulary.html`. Do not
+`docs/schema.html`; the naming work is in `docs/vocabulary.json`, which semanticore serves as a page. Do not
 restate either from here; read them.
 
 ## What blits is
@@ -38,7 +38,7 @@ systems now run on it**, on a branch that is not merged.
   is lint, typecheck of both `src` and `test`, then the suite: 55 tests, green, and they are the
   design page's own test list minus the klieg extraction. Enlisted for the fleet — `.onto/tests` is
   `plugin: node`, `run: npm test`, `runner: vitest` — and green there too.
-- `docs/2026-09-15-schema.html` — the design: vocabulary, channel table, patches, voices, mix,
+- `docs/schema.html` — the design: vocabulary, channel table, patches, voices, mix,
   signals, time model, blending, patch state, the engine seam, per-consumer rigs, the klieg port,
   decided-against, tests, open items. Status line says design under review. It reads in the called
   words; klieg's own `offset` channel, the arithmetic `add`, a `keys` patch's `stops` and the patch
@@ -54,22 +54,18 @@ systems now run on it**, on a branch that is not merged.
   post-cap, `from: 'current'` reads the frame before the voice contributes, a stateful signal's
   state belongs to the instance, `live` goes true on `cue` and the mix never calls back, and a
   consumer may declare its own channel, which is what sherpa's `transform` is.
-- `docs/2026-09-15-vocabulary.json` — **the naming sheet, and the source of it.** 19 nouns (one
+- `docs/vocabulary.json` — **the naming sheet, and the source of it.** 19 nouns (one
   fixed), 8 verbs, 4 operations, 20 candidates each, six consistent-set columns, relations,
   algebra. Edit this file; semanticore builds the page from it, so nothing is hand-edited in HTML
   any more:
 
   ```
   cd ~/src/semanticore && node bin/semanticore.js check <job>   # 20-word rule, placeholders
-  node bin/semanticore.js serve ~/src/blits/docs/2026-09-15-vocabulary.json --port 4871
+  node bin/semanticore.js serve ~/src/blits/docs/vocabulary.json --port 4871
   ```
 
   Pinned to semanticore `7dac96e`. The built page is not committed here; `serve` rebuilds on every
   edit and adds undo/redo, snapshots, cross-off and chat, none of which the hand page had.
-- `docs/2026-09-15-vocabulary.html` — the hand-built sheet from 2026-09-15, now frozen and no
-  longer the source. Kept only until two things are true: the served page is confirmed at visual
-  parity with it, and Mike's picks have been read out of the browser tab that holds them. Then it
-  goes; git history and `~/src/semanticore/reference/` both keep a copy.
 
 ## Decided in conversation, and in no doc
 
@@ -86,7 +82,7 @@ systems now run on it**, on a branch that is not merged.
   inside the port, not ahead of it.
 - **`phase`** is the fixed name for the normalized position within a period, formerly `t`. It costs
   renaming klieg's `onPhase` and `PhaseEvent`, which sherpa consumes through `ctx.phase`.
-- **The vocabulary is called**, and `docs/2026-09-15-vocabulary.picks.json` is where it lives:
+- **The vocabulary is called**, and `docs/vocabulary.picks.json` is where it lives:
   delta, channel, rig, subject, patch, voice, mix, signal, handle, engine, pose, influence,
   setting, period, phase, rest, weight, group, chain, host, source, score, system; cue, fade,
   seek, sync, sample, blend, clear, drop; join, scale, lerp, fold. The schema page reads in them.
@@ -146,7 +142,7 @@ systems now run on it**, on a branch that is not merged.
 
 - **klieg's `blits-port` branch is local, unmerged and unpushed**, and its `file:` dependency means
   no other machine can build it.
-- **A stale served-page tab will overwrite `2026-09-15-vocabulary.picks.json` with whatever set it
+- **A stale served-page tab will overwrite `vocabulary.picks.json` with whatever set it
   was holding.** It has happened twice — `65d2d71` restored one, and the same loss was in the
   working tree at the start of 2026-09-27's session. Before trusting the picks file, `git diff` it;
   before reloading the served page, make sure no old tab is open on it.

@@ -27,7 +27,7 @@
   },
   "files": [
     "dist",
-    "docs/2026-09-15-schema.html",
+    "docs/schema.html",
     "CHANGELOG.md"
   ],
   "scripts": {

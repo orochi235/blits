@@ -3,7 +3,7 @@
 **For:** whoever calls the blits vocabulary. **Answers:** what each role would be called by someone
 working from its definition and nothing else.
 
-Every name here was chosen from the gloss in `2026-09-15-vocabulary.json` with that file's
+Every name here was chosen from the gloss in `vocabulary.json` with that file's
 candidate lists and consistent-set columns unread, so where a pick matches the sheet it is
 convergence rather than agreement. Where a definition named its own incumbent, that is noted.
 
