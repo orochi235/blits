@@ -1318,6 +1318,138 @@
       ]
     },
     {
+      "key": "trigger",
+      "title": "Trigger",
+      "was": "trigger",
+      "kind": "noun",
+      "description": "a named instant a source raises",
+      "gloss": {
+        "lead": "A named instant a source raises, which a pin can target: blits times it and never reads what it means.",
+        "items": [
+          "Scheduled in a score, it is known ahead: a read ahead sees it and a voice can be fully in by it.",
+          "Fired by the host when something happens, such as a click or a reply, it is unknown until it fires: a voice pinned to it waits, and anything depending on it reads as held.",
+          "A condition on a channel's value is not a trigger. A host that wants one fires a trigger when it sees it."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "event",
+              "star": true
+            },
+            {
+              "word": "occurrence",
+              "star": false
+            },
+            {
+              "word": "instant",
+              "star": false
+            },
+            {
+              "word": "impulse",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "marker",
+              "star": true
+            },
+            {
+              "word": "locator",
+              "star": false
+            },
+            {
+              "word": "hit",
+              "star": false
+            },
+            {
+              "word": "note",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "go",
+              "star": false
+            },
+            {
+              "word": "standby",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "sync",
+              "star": false
+            },
+            {
+              "word": "clapper",
+              "star": false
+            },
+            {
+              "word": "slate",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "callback",
+              "star": false
+            },
+            {
+              "word": "interrupt",
+              "star": false
+            },
+            {
+              "word": "hook",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "downbeat",
+              "star": false
+            },
+            {
+              "word": "cue",
+              "star": false
+            },
+            {
+              "word": "fermata",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "games",
+          "words": [
+            {
+              "word": "flag",
+              "star": true
+            }
+          ]
+        }
+      ]
+    },
+    {
       "key": "edge",
       "title": "Edge",
       "was": "edge",
@@ -6043,6 +6175,17 @@
         "algebra": "constraint",
         "physics": "binding",
         "learning": "dependency"
+      }
+    },
+    {
+      "role": "trigger",
+      "words": {
+        "DAW": "marker",
+        "stage lighting": "go",
+        "animation rig": "hit",
+        "algebra": "impulse",
+        "physics": "event",
+        "learning": "callback"
       }
     },
     {
