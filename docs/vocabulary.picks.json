@@ -43,7 +43,10 @@
     "v-sure": "assess",
     "event": "event",
     "checkpoint": "snapshot",
-    "v-join": "merge"
+    "v-join": "merge",
+    "v-scale": "scale",
+    "v-lerp": "lerp",
+    "v-fold": "fold"
   },
   "chosen": {
     "offset": true,
@@ -89,7 +92,10 @@
     "v-sure": true,
     "event": true,
     "checkpoint": true,
-    "v-join": true
+    "v-join": true,
+    "v-scale": true,
+    "v-lerp": true,
+    "v-fold": true
   },
   "written": {
     "piece": "patch",
@@ -138,7 +144,13 @@
     "stretch": true,
     "v-sure": true,
     "v-blend": true,
-    "v-join": true
+    "v-join": true,
+    "checkpoint": true,
+    "system": true,
+    "v-clear": true,
+    "v-scale": true,
+    "v-lerp": true,
+    "v-fold": true
   },
   "informal": {
     "spec": true,
