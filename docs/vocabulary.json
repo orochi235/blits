@@ -3842,7 +3842,8 @@
           "Within a group the weights are capped to sum to at most 1, so a crossfade is always a \\blend of the two and never a pile-up.",
           "Tracks meant to stack stay out of groups.",
           "Tracks that must run in order belong to a sequence, not a group.",
-          "Proposed to fold into tag: a tag declared to blend its voices as alternatives, rather than a second kind of label. A voice blends in at most one."
+          "Proposed to fold into tag: a tag declared to blend its voices as alternatives, rather than a second kind of label. A voice blends in at most one.",
+          "Read as a locus: the members are the answers to one question about what the subject is doing (how it moves, what mood it is in), and every blend of them lies in the space they span, the way alleles share one locus. That space grows and shrinks as answers are cued and leave. The question is an axis of behavior, not a channel; a group spans every channel its members write."
         ]
       },
       "groups": [
@@ -3926,10 +3927,6 @@
           "field": "plain",
           "words": [
             {
-              "word": "gang",
-              "star": false
-            },
-            {
               "word": "crew",
               "star": false
             },
@@ -3948,6 +3945,15 @@
             {
               "word": "choke",
               "star": false
+            }
+          ]
+        },
+        {
+          "field": "genetics",
+          "words": [
+            {
+              "word": "locus",
+              "star": true
             }
           ]
         }
