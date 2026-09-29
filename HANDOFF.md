@@ -21,7 +21,7 @@ systems now run on it**, on a branch that is not merged.
 - `main`, clean, pushed to `git@github.com:orochi235/blits.git` — **private**. The remote had been
   configured and pushed once on 2026-09-16 and then went unmentioned; two handoffs since have said
   there was none. Check `git remote -v` before believing any of this.
-- **klieg's port is done and green, on `blits-port` in `~/src/klieg`** — three commits, not merged,
+- **klieg's port is done and green, on `blits-port` in `~/src/klieg`** — four commits, the last following the 2026-09-29 rename; not merged,
   no remote push. All three systems fold through a mix: `Timeline.poseAt` cues a voice per layer of
   each phase, `EffectFrame` one per effect, and the sign's environment is a mix with one subject.
   The arithmetic did not move: klieg's 1970 vitest cases pass, and its Playwright specs fail exactly
