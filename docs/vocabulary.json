@@ -1326,6 +1326,7 @@
       "gloss": {
         "lead": "A named instant a source raises, which a pin can target: blits times it and never reads what it means.",
         "items": [
+          "A voice raises four of its own, its edges: start, in, out and end.",
           "Scheduled in a score, it is known ahead: a read ahead sees it and a voice can be fully in by it.",
           "Fired by the host when something happens, such as a click or a reply, it is unknown until it fires: a voice pinned to it waits, and anything depending on it reads as held.",
           "What fires one on a condition is a trigger. A trigger on a channel's value is the host's: it watches the condition and fires the event."
@@ -1460,7 +1461,8 @@
         "items": [
           "What a pin fixes, and what a query answers with.",
           "start and in are always known ahead; out and end once the voice has a finite length or a scheduled fade.",
-          "In blocking an actor hits a mark; a pin lands a voice on one the same way."
+          "In blocking an actor hits a mark; a pin lands a voice on one the same way.",
+          "An edge is an event the voice raises about itself; the four are events like any other, and a mark placed on a voice is one more."
         ]
       },
       "groups": [
