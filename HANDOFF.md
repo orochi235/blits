@@ -18,7 +18,7 @@ systems now run on it**, on a branch that is not merged.
 
 ## State
 
-- `main`, clean, pushed to `git@github.com:orochi235/blits.git` — **private**. The remote had been
+- `main` at `git@github.com:orochi235/blits.git` — **private**, and 28 commits ahead of it on 2026-09-29. The remote had been
   configured and pushed once on 2026-09-16 and then went unmentioned; two handoffs since have said
   there was none. Check `git remote -v` before believing any of this.
 - **klieg's port is done and green, on `blits-port` in `~/src/klieg`** — four commits, the last following the 2026-09-29 rename; not merged,
@@ -124,8 +124,10 @@ systems now run on it**, on a branch that is not merged.
 
 ## Next, in order
 
-1. **Publish 0.1.0, then point klieg at it.** The package is publish-ready and `npm publish` stops
-   at an OTP prompt, so it is Mike's to run. Then `packages/core/package.json` in klieg trades
+1. **Publish 0.1.0, then point klieg at it.** Held at 0.1.0 while npm answers Mike's request about
+   the name — the registry 404s `blits`, but the request is pending. The 2026-09-29 rename went into
+   0.1.0 rather than a 0.2.0, since nothing had been published. `npm publish` stops at an OTP
+   prompt, so it is Mike's to run. Then `packages/core/package.json` in klieg trades
    `"blits": "file:../../../blits"` for `"blits": "^0.1.0"`, which is what makes that branch
    mergeable and lets klieg's suite run on the fleet again.
 2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
