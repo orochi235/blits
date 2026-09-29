@@ -2155,10 +2155,6 @@
               "star": false
             },
             {
-              "word": "whisker",
-              "star": false
-            },
-            {
               "word": "interval",
               "star": false
             }
@@ -2204,6 +2200,15 @@
             {
               "word": "live",
               "star": false
+            }
+          ]
+        },
+        {
+          "field": "review",
+          "words": [
+            {
+              "word": "assessment",
+              "star": true
             }
           ]
         }
@@ -4762,10 +4767,6 @@
           "field": "statistics",
           "words": [
             {
-              "word": "qualify",
-              "star": false
-            },
-            {
               "word": "rate",
               "star": false
             },
@@ -4822,12 +4823,21 @@
           "field": "stage lighting",
           "words": [
             {
-              "word": "tally",
-              "star": false
-            },
-            {
               "word": "confirm",
               "star": false
+            }
+          ]
+        },
+        {
+          "field": "review",
+          "words": [
+            {
+              "word": "assess",
+              "star": true
+            },
+            {
+              "word": "vet",
+              "star": true
             }
           ]
         }
