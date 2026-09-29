@@ -1321,7 +1321,8 @@
         "lead": "One of the four instants a voice has on the mix clock: start (fade-in begins), in (full weight), out (fade-out begins) and end (gone).",
         "items": [
           "What a pin fixes, and what a query answers with.",
-          "start and in are always known ahead; out and end once the voice has a finite length or a scheduled fade."
+          "start and in are always known ahead; out and end once the voice has a finite length or a scheduled fade.",
+          "In blocking an actor hits a mark; a pin lands a voice on one the same way."
         ]
       },
       "groups": [
@@ -1372,10 +1373,6 @@
             },
             {
               "word": "extreme",
-              "star": false
-            },
-            {
-              "word": "breakdown",
               "star": false
             }
           ]
@@ -1432,6 +1429,15 @@
             {
               "word": "transition",
               "star": false
+            }
+          ]
+        },
+        {
+          "field": "theater",
+          "words": [
+            {
+              "word": "mark",
+              "star": true
             }
           ]
         }
