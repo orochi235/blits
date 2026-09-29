@@ -2081,12 +2081,14 @@
       "title": "Certainty",
       "was": "sure",
       "kind": "noun",
-      "description": "how far a peek can be trusted",
+      "description": "how far a view can be trusted",
       "gloss": {
-        "lead": "Per channel, how sure a view's answer is: exact, stepped (exact to the step) or held (an outside input assumed to stay).",
+        "lead": "How far a view's answer can be trusted, told channel by channel, since one channel can be certain while the next is a guess.",
         "items": [
-          "The least sure voice that fed a channel decides it.",
-          "A patch that declares nothing counts as driven by the clock."
+          "<b>exact</b>: nothing uncertain went into it. The mix will show this.",
+          "<b>stepped</b>: something the clock drives, such as a slew chasing a sine, moved between the events the view jumped across. Close, and off by at most what a finer step would fix.",
+          "<b>held</b>: something from outside the clock went into it, such as the pointer or a level the host sets. Nobody knows its future, so the view assumed it stays where it is now.",
+          "A channel takes the least certain of the voices that wrote it."
         ]
       },
       "groups": [
