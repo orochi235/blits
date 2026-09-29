@@ -2100,7 +2100,8 @@
         "lead": "What a look@v returns: the mix at a reading other than the one the host last stepped@v to, ahead or back, which never touches the live mix.",
         "items": [
           "Each subject's state is copied the first time it is asked about, then carried forward one stretch at a time.",
-          "It answers the way the live mix does: sample@v a subject for its pose, and sure@v it for how far each channel can be trusted."
+          "It answers the way the live mix does: sample@v a subject for its pose, and sure@v it for how far each channel can be trusted.",
+          "Called a projection, with image as its synonym: the image of the mix under one timestamp. Decided 2026-09-29; the sheet has no synonym mark yet, so it is recorded here."
         ]
       },
       "groups": [
