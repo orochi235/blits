@@ -282,7 +282,8 @@
         "items": [
           "klieg has three: a pose table for a letter, a part table for a tube run or a flake, a lighting table for the whole frame.",
           "A piece writes into one table. A mix runs over one table.",
-          "It is a closed list: a piece cannot write a channel the table does not have."
+          "It is a closed list: a piece cannot write a channel the table does not have.",
+          "In hero games a character's kit is its fixed set of abilities, the same for everyone who plays it; a rig is that for one kind of subject."
         ]
       },
       "groups": [
@@ -344,16 +345,8 @@
               "star": false
             },
             {
-              "word": "remit",
-              "star": false
-            },
-            {
               "word": "gamut",
               "star": true
-            },
-            {
-              "word": "ambit",
-              "star": false
             },
             {
               "word": "range",
@@ -387,6 +380,19 @@
             },
             {
               "word": "console",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "gaming",
+          "words": [
+            {
+              "word": "kit",
+              "star": true
+            },
+            {
+              "word": "loadout",
               "star": false
             }
           ]
