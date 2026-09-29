@@ -1821,12 +1821,13 @@
       "title": "Reducer",
       "was": "reducer",
       "kind": "noun",
-      "description": "which match a query answers with",
+      "description": "which match a pin follows",
       "gloss": {
-        "lead": "How a query picks one time when more than one voice matches: next, first, last, earliest, latest.",
+        "lead": "What narrows a query's matches to the one voice whose edge a pin follows. The selector says which voices qualify; the reducer says which of them counts.",
         "items": [
-          "An empty match leaves the pinned voice pending.",
-          "Ties need one rule."
+          "It compares only times on the mix clock: <code>earliest</code> and <code>latest</code> by the edge the query names, <code>next</code> and <code>previous</code> as the earliest after now and the latest before it.",
+          "It never reads what a voice contributes, so it cannot pick the loudest or the one with the most gain.",
+          "No match answers nothing, and the pinned voice stays pending until something matches."
         ]
       },
       "groups": [
