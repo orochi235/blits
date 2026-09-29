@@ -1065,8 +1065,8 @@
         "items": [
           "It supplies the two things the package otherwise takes as given — the timing, and the cast of items that will be driven.",
           "What it looks like is not knowable here. klieg’s is spread across handlers and a Timeline; another app’s may be a document, a route table, a state machine.",
-          "blits does not read one and does not require one. It names it because every app that orchestrates effects has one or its equivalent, and because a source that is a score, rather than a handler, is the one that can be replayed or seeked.",
-          "Being ahead of time is what distinguishes it: a handler knows only now, a score knows the shape of the whole run."
+          "Being ahead of time is what distinguishes it: a handler knows only now, a score knows the shape of the whole run.",
+          "It comes inside blits (decided 2026-09-29), provided it depends on no implementation: one per source, placing voices by pins, knowing when each plays and never what it contributes."
         ]
       },
       "links": [
@@ -1183,6 +1183,1283 @@
         }
       ],
       "signature": ""
+    },
+    {
+      "key": "pin",
+      "title": "Pin",
+      "was": "pin",
+      "kind": "noun",
+      "description": "what fixes a voice in time",
+      "gloss": {
+        "lead": "What fixes one edge of a voice to a time, or to an edge another voice has.",
+        "items": [
+          "At most one on each side: start or in, and out or end.",
+          "It takes a query, so it is rerun while bound; once its target leaves it keeps the time it last resolved to.",
+          "<code>pin: { in: 12_400 }</code> is fully in by 12.4 s."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "constraint",
+              "star": true
+            },
+            {
+              "word": "binding",
+              "star": false
+            },
+            {
+              "word": "equation",
+              "star": false
+            },
+            {
+              "word": "condition",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "snap",
+              "star": true
+            },
+            {
+              "word": "lock",
+              "star": false
+            },
+            {
+              "word": "sync point",
+              "star": false
+            },
+            {
+              "word": "spot",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "cue point",
+              "star": false
+            },
+            {
+              "word": "sync mark",
+              "star": false
+            },
+            {
+              "word": "slate",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "follow",
+              "star": true
+            },
+            {
+              "word": "link",
+              "star": false
+            },
+            {
+              "word": "autofollow",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "dependency",
+              "star": false
+            },
+            {
+              "word": "hook",
+              "star": false
+            },
+            {
+              "word": "anchor",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "downbeat",
+              "star": false
+            },
+            {
+              "word": "entrance",
+              "star": false
+            },
+            {
+              "word": "fermata",
+              "star": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "edge",
+      "title": "Edge",
+      "was": "edge",
+      "kind": "noun",
+      "description": "an instant on a voice's span",
+      "gloss": {
+        "lead": "One of the four instants a voice has on the mix clock: start (fade-in begins), in (full weight), out (fade-out begins) and end (gone).",
+        "items": [
+          "What a pin fixes, and what a query answers with.",
+          "start and in are always known ahead; out and end once the voice has a finite length or a scheduled fade."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "bound",
+              "star": true
+            },
+            {
+              "word": "endpoint",
+              "star": false
+            },
+            {
+              "word": "limit",
+              "star": false
+            },
+            {
+              "word": "extremum",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "region boundary",
+              "star": false
+            },
+            {
+              "word": "locator",
+              "star": false
+            },
+            {
+              "word": "marker",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation rig",
+          "words": [
+            {
+              "word": "key time",
+              "star": false
+            },
+            {
+              "word": "extreme",
+              "star": false
+            },
+            {
+              "word": "breakdown",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "attack",
+              "star": false
+            },
+            {
+              "word": "release",
+              "star": true
+            },
+            {
+              "word": "onset",
+              "star": false
+            },
+            {
+              "word": "downbeat",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "in point",
+              "star": true
+            },
+            {
+              "word": "out point",
+              "star": false
+            },
+            {
+              "word": "cut",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "front",
+              "star": false
+            },
+            {
+              "word": "threshold",
+              "star": false
+            },
+            {
+              "word": "transition",
+              "star": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "label",
+      "title": "Label",
+      "was": "key",
+      "kind": "noun",
+      "description": "a voice's name in its score",
+      "gloss": {
+        "lead": "The name a source gives a voice, so another voice can be placed against it without holding its handle.",
+        "items": [
+          "A string blits never reads.",
+          "Namespaced by score: a bare label names a voice in the same score, <code>{ score, key }</code> one in another.",
+          "Called <code>key</code> in the sketch, which collides with the <code>keys</code> patch form."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "index",
+              "star": true
+            },
+            {
+              "word": "identifier",
+              "star": false
+            },
+            {
+              "word": "symbol",
+              "star": false
+            },
+            {
+              "word": "variable",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "id",
+              "star": true
+            },
+            {
+              "word": "handle name",
+              "star": false
+            },
+            {
+              "word": "slug",
+              "star": false
+            },
+            {
+              "word": "ref",
+              "star": false
+            },
+            {
+              "word": "moniker",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "region name",
+              "star": false
+            },
+            {
+              "word": "clip name",
+              "star": false
+            },
+            {
+              "word": "track name",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "cue number",
+              "star": false
+            },
+            {
+              "word": "q number",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "slate name",
+              "star": false
+            },
+            {
+              "word": "take",
+              "star": false
+            },
+            {
+              "word": "shot code",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "rehearsal letter",
+              "star": true
+            },
+            {
+              "word": "part name",
+              "star": false
+            },
+            {
+              "word": "cue name",
+              "star": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tag",
+      "title": "Tag",
+      "was": "tag",
+      "kind": "noun",
+      "description": "a label a source attaches for queries",
+      "gloss": {
+        "lead": "A word a source attaches to its voices so a query from anywhere can select them as a set.",
+        "items": [
+          "Many voices share a tag; a voice has many tags.",
+          "What lets one source place against another's material without knowing its labels."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "class",
+              "star": true
+            },
+            {
+              "word": "predicate",
+              "star": false
+            },
+            {
+              "word": "subset",
+              "star": false
+            },
+            {
+              "word": "attribute",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "category",
+              "star": false
+            },
+            {
+              "word": "facet",
+              "star": false
+            },
+            {
+              "word": "flag",
+              "star": false
+            },
+            {
+              "word": "topic",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "color",
+              "star": true
+            },
+            {
+              "word": "folder",
+              "star": false
+            },
+            {
+              "word": "track group",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "part",
+              "star": false
+            },
+            {
+              "word": "palette",
+              "star": false
+            },
+            {
+              "word": "preset",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "reel",
+              "star": false
+            },
+            {
+              "word": "bin",
+              "star": false
+            },
+            {
+              "word": "keyword",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "section",
+              "star": false
+            },
+            {
+              "word": "voice part",
+              "star": false
+            },
+            {
+              "word": "instrument",
+              "star": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "query",
+      "title": "Query",
+      "was": "query",
+      "kind": "noun",
+      "description": "what a pin asks the score",
+      "gloss": {
+        "lead": "A question the merged score answers with a time: a selector, an edge, and, where more than one voice matches, a reducer.",
+        "items": [
+          "It reads only what the score knows: labels, scores, the channels a voice writes, tags. Never a channel's value.",
+          "The same queries say what plays at a time and where the next event is."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "expression",
+              "star": true
+            },
+            {
+              "word": "predicate",
+              "star": false
+            },
+            {
+              "word": "formula",
+              "star": false
+            },
+            {
+              "word": "relation",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "selector",
+              "star": true
+            },
+            {
+              "word": "lookup",
+              "star": false
+            },
+            {
+              "word": "filter",
+              "star": false
+            },
+            {
+              "word": "search",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "locate",
+              "star": false
+            },
+            {
+              "word": "find",
+              "star": false
+            },
+            {
+              "word": "go to",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "recall",
+              "star": false
+            },
+            {
+              "word": "select",
+              "star": false
+            },
+            {
+              "word": "highlight",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "log",
+              "star": false
+            },
+            {
+              "word": "match",
+              "star": false
+            },
+            {
+              "word": "conform",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "cue",
+              "star": false
+            },
+            {
+              "word": "reference",
+              "star": false
+            },
+            {
+              "word": "lookup point",
+              "star": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "reducer",
+      "title": "Reducer",
+      "was": "reducer",
+      "kind": "noun",
+      "description": "which match a query answers with",
+      "gloss": {
+        "lead": "How a query picks one time when more than one voice matches: next, first, last, earliest, latest.",
+        "items": [
+          "An empty match leaves the pinned voice pending.",
+          "Ties need one rule."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "aggregate",
+              "star": true
+            },
+            {
+              "word": "extremum",
+              "star": false
+            },
+            {
+              "word": "minimum",
+              "star": false
+            },
+            {
+              "word": "argmin",
+              "star": false
+            },
+            {
+              "word": "fold function",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "picker",
+              "star": false
+            },
+            {
+              "word": "chooser",
+              "star": false
+            },
+            {
+              "word": "collector",
+              "star": false
+            },
+            {
+              "word": "winner",
+              "star": false
+            },
+            {
+              "word": "tiebreak",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "nearest",
+              "star": false
+            },
+            {
+              "word": "first hit",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "statistics",
+          "words": [
+            {
+              "word": "order statistic",
+              "star": true
+            },
+            {
+              "word": "rank",
+              "star": false
+            },
+            {
+              "word": "quantile",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "priority",
+              "star": false
+            },
+            {
+              "word": "htp",
+              "star": false
+            },
+            {
+              "word": "ltp",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "resolution",
+              "star": false
+            },
+            {
+              "word": "cadence",
+              "star": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "view",
+      "title": "View",
+      "was": "view",
+      "kind": "noun",
+      "description": "the mix read at another time",
+      "gloss": {
+        "lead": "What a peek returns: the mix at a reading other than the synced one, sampled per subject and never touching the live mix.",
+        "items": [
+          "Copies each subject's state lazily and steps it once per stretch.",
+          "Answers <code>sample</code> and <code>sure</code>, like the live mix answers sample and atRest."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "projection",
+              "star": true
+            },
+            {
+              "word": "evaluation",
+              "star": false
+            },
+            {
+              "word": "image",
+              "star": false
+            },
+            {
+              "word": "section",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "preview",
+              "star": true
+            },
+            {
+              "word": "prelisten",
+              "star": false
+            },
+            {
+              "word": "scrub",
+              "star": false
+            },
+            {
+              "word": "solo",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation rig",
+          "words": [
+            {
+              "word": "ghost",
+              "star": true
+            },
+            {
+              "word": "onion skin",
+              "star": false
+            },
+            {
+              "word": "pose preview",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "dailies",
+              "star": false
+            },
+            {
+              "word": "preview cut",
+              "star": false
+            },
+            {
+              "word": "playout",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "blind",
+              "star": false
+            },
+            {
+              "word": "preview mode",
+              "star": false
+            },
+            {
+              "word": "visualizer",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "forecast",
+              "star": false
+            },
+            {
+              "word": "extrapolation",
+              "star": false
+            },
+            {
+              "word": "prediction",
+              "star": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "certainty",
+      "title": "Certainty",
+      "was": "sure",
+      "kind": "noun",
+      "description": "how far a peek can be trusted",
+      "gloss": {
+        "lead": "Per channel, how sure a view's answer is: exact, stepped (exact to the step) or held (an outside input assumed to stay).",
+        "items": [
+          "The least sure voice that fed a channel decides it.",
+          "A patch that declares nothing counts as driven by the clock."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "error bound",
+              "star": true
+            },
+            {
+              "word": "tolerance",
+              "star": false
+            },
+            {
+              "word": "precision",
+              "star": false
+            },
+            {
+              "word": "confidence",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "uncertainty",
+              "star": false
+            },
+            {
+              "word": "accuracy",
+              "star": false
+            },
+            {
+              "word": "fidelity",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "freshness",
+              "star": false
+            },
+            {
+              "word": "staleness",
+              "star": false
+            },
+            {
+              "word": "validity",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "statistics",
+          "words": [
+            {
+              "word": "variance",
+              "star": false
+            },
+            {
+              "word": "error bar",
+              "star": false
+            },
+            {
+              "word": "interval",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "proxy",
+              "star": false
+            },
+            {
+              "word": "offline",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "render state",
+              "star": false
+            },
+            {
+              "word": "latency",
+              "star": false
+            },
+            {
+              "word": "frozen",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "tracking",
+              "star": false
+            },
+            {
+              "word": "live",
+              "star": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "checkpoint",
+      "title": "Checkpoint",
+      "was": "checkpoint",
+      "kind": "noun",
+      "description": "a kept state to read back from",
+      "gloss": {
+        "lead": "A copy of a subject's state kept at a time, so a read back can step forward from it rather than from the voice's start.",
+        "items": [
+          "How many are kept is a cost to tune, not a design question.",
+          "Without one, a read back starts where the voice's state was made."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "initial value",
+              "star": true
+            },
+            {
+              "word": "seed",
+              "star": false
+            },
+            {
+              "word": "fixed point",
+              "star": false
+            },
+            {
+              "word": "basis",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "snapshot store",
+              "star": false
+            },
+            {
+              "word": "save point",
+              "star": false
+            },
+            {
+              "word": "backup",
+              "star": false
+            },
+            {
+              "word": "journal",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "games",
+          "words": [
+            {
+              "word": "save state",
+              "star": true
+            },
+            {
+              "word": "rollback frame",
+              "star": false
+            },
+            {
+              "word": "keyframe state",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "freeze",
+              "star": false
+            },
+            {
+              "word": "bounce",
+              "star": true
+            },
+            {
+              "word": "render",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "master",
+              "star": false
+            },
+            {
+              "word": "archive",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "initial condition",
+              "star": false
+            },
+            {
+              "word": "boundary state",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "preset",
+              "star": false
+            },
+            {
+              "word": "memory",
+              "star": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "stretch",
+      "title": "Stretch",
+      "was": "stretch",
+      "kind": "noun",
+      "description": "the span one step covers",
+      "gloss": {
+        "lead": "The time between two events the score knows: a voice starting, a fade ending, a loop running out.",
+        "items": [
+          "A read steps once per stretch, however long.",
+          "Exact across it when what the state follows holds still; stepped when a clock-driven input moves inside it."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "interval",
+              "star": true
+            },
+            {
+              "word": "segment",
+              "star": false
+            },
+            {
+              "word": "run",
+              "star": false
+            },
+            {
+              "word": "domain",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "region",
+              "star": false
+            },
+            {
+              "word": "bar range",
+              "star": false
+            },
+            {
+              "word": "section",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "phrase",
+              "star": true
+            },
+            {
+              "word": "passage",
+              "star": false
+            },
+            {
+              "word": "measure",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "shot",
+              "star": false
+            },
+            {
+              "word": "scene",
+              "star": false
+            },
+            {
+              "word": "cut",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "epoch",
+              "star": false
+            },
+            {
+              "word": "regime",
+              "star": false
+            },
+            {
+              "word": "step span",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "fade time",
+              "star": false
+            },
+            {
+              "word": "hold",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "tick span",
+              "star": false
+            },
+            {
+              "word": "window",
+              "star": false
+            }
+          ]
+        }
+      ]
     },
     {
       "key": "handle",
@@ -2538,7 +3815,8 @@
         "items": [
           "klieg's enter, active and exit, in that order: each track's exit is the next one's cue.",
           "A group only caps what is on at once. A sequence also says what comes next, and when the whole thing is done.",
-          "It finishes, which a group never does — a handle for the sequence resolves once the last track has left."
+          "It finishes, which a group never does — a handle for the sequence resolves once the last track has left.",
+          "Now one arrangement a score can hold, rather than an object of its own."
         ]
       },
       "groups": [
@@ -3117,7 +4395,7 @@
           "field": "lighting",
           "words": [
             {
-              "word": "look",
+              "word": "glance",
               "star": true
             },
             {
@@ -3134,7 +4412,7 @@
           "field": "software",
           "words": [
             {
-              "word": "query",
+              "word": "ask",
               "star": false
             },
             {
@@ -3154,6 +4432,269 @@
       ],
       "signature": "mix.sample(item)",
       "description": "sample"
+    },
+    {
+      "key": "look",
+      "title": "look",
+      "was": "mix.peek(t)",
+      "kind": "verb",
+      "description": "read the mix at another time",
+      "gloss": {
+        "lead": "Open a view of the mix at a reading other than the synced one.",
+        "items": [
+          "Ahead or back; the live mix is untouched.",
+          "Takes an optional finer step."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "evaluate",
+              "star": true
+            },
+            {
+              "word": "project",
+              "star": false
+            },
+            {
+              "word": "extrapolate",
+              "star": false
+            },
+            {
+              "word": "solve",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "preview",
+              "star": true
+            },
+            {
+              "word": "scrub",
+              "star": false
+            },
+            {
+              "word": "audition",
+              "star": false
+            },
+            {
+              "word": "prelisten",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "animation rig",
+          "words": [
+            {
+              "word": "ghost",
+              "star": false
+            },
+            {
+              "word": "onion",
+              "star": false
+            },
+            {
+              "word": "scout",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "probe",
+              "star": true
+            },
+            {
+              "word": "inspect",
+              "star": false
+            },
+            {
+              "word": "fork",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "cue up",
+              "star": false
+            },
+            {
+              "word": "spool",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "forecast",
+              "star": false
+            },
+            {
+              "word": "integrate",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "blind",
+              "star": false
+            },
+            {
+              "word": "visualize",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "mix.peek(t)"
+    },
+    {
+      "key": "sure",
+      "title": "sure",
+      "was": "view.sure(subject)",
+      "kind": "verb",
+      "description": "how sure a view is, per channel",
+      "gloss": {
+        "lead": "Ask a view how far its answer for one subject can be trusted, channel by channel.",
+        "items": [
+          "Returns exact, stepped or held per channel."
+        ]
+      },
+      "groups": [
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "bound",
+              "star": true
+            },
+            {
+              "word": "certify",
+              "star": false
+            },
+            {
+              "word": "estimate",
+              "star": false
+            },
+            {
+              "word": "prove",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "trust",
+              "star": false
+            },
+            {
+              "word": "verify",
+              "star": false
+            },
+            {
+              "word": "validate",
+              "star": true
+            },
+            {
+              "word": "audit",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "statistics",
+          "words": [
+            {
+              "word": "qualify",
+              "star": false
+            },
+            {
+              "word": "rate",
+              "star": false
+            },
+            {
+              "word": "grade",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "meter",
+              "star": false
+            },
+            {
+              "word": "monitor",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "check",
+              "star": false
+            },
+            {
+              "word": "proof",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "measure",
+              "star": false
+            },
+            {
+              "word": "calibrate",
+              "star": false
+            },
+            {
+              "word": "gauge",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "tally",
+              "star": false
+            },
+            {
+              "word": "confirm",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "view.sure(subject)"
     },
     {
       "key": "seek",
@@ -4331,6 +5872,116 @@
         "algebra": "environment",
         "physics": "state",
         "learning": "context"
+      }
+    },
+    {
+      "role": "pin",
+      "words": {
+        "DAW": "sync point",
+        "stage lighting": "follow",
+        "animation rig": "key",
+        "algebra": "constraint",
+        "physics": "binding",
+        "learning": "dependency"
+      }
+    },
+    {
+      "role": "edge",
+      "words": {
+        "DAW": "locator",
+        "stage lighting": "cue point",
+        "animation rig": "key time",
+        "algebra": "bound",
+        "physics": "front",
+        "learning": "threshold"
+      }
+    },
+    {
+      "role": "label",
+      "words": {
+        "DAW": "region name",
+        "stage lighting": "cue number",
+        "animation rig": "name",
+        "algebra": "identifier",
+        "physics": "label",
+        "learning": "id"
+      }
+    },
+    {
+      "role": "tag",
+      "words": {
+        "DAW": "color",
+        "stage lighting": "part",
+        "animation rig": "layer",
+        "algebra": "class",
+        "physics": "class",
+        "learning": "feature"
+      }
+    },
+    {
+      "role": "query",
+      "words": {
+        "DAW": "locate",
+        "stage lighting": "recall",
+        "animation rig": "search",
+        "algebra": "expression",
+        "physics": "measurement",
+        "learning": "query"
+      }
+    },
+    {
+      "role": "reducer",
+      "words": {
+        "DAW": "nearest",
+        "stage lighting": "LTP",
+        "animation rig": "priority",
+        "algebra": "aggregate",
+        "physics": "extremum",
+        "learning": "pooling"
+      }
+    },
+    {
+      "role": "view",
+      "words": {
+        "DAW": "preview",
+        "stage lighting": "blind",
+        "animation rig": "ghost",
+        "algebra": "projection",
+        "physics": "forecast",
+        "learning": "prediction"
+      }
+    },
+    {
+      "role": "certainty",
+      "words": {
+        "DAW": "render state",
+        "stage lighting": "tracking",
+        "animation rig": "proxy",
+        "algebra": "error bound",
+        "physics": "uncertainty",
+        "learning": "confidence"
+      }
+    },
+    {
+      "role": "checkpoint",
+      "words": {
+        "DAW": "freeze",
+        "stage lighting": "preset",
+        "animation rig": "cached pose",
+        "algebra": "initial value",
+        "physics": "initial condition",
+        "learning": "checkpoint"
+      }
+    },
+    {
+      "role": "stretch",
+      "words": {
+        "DAW": "region",
+        "stage lighting": "fade time",
+        "animation rig": "segment",
+        "algebra": "interval",
+        "physics": "epoch",
+        "learning": "batch"
       }
     },
     {
