@@ -1955,12 +1955,12 @@
       "title": "View",
       "was": "view",
       "kind": "noun",
-      "description": "the mix read at another time",
+      "description": "the mix at another time",
       "gloss": {
-        "lead": "What a peek returns: the mix at a reading other than the synced one, sampled per subject and never touching the live mix.",
+        "lead": "What a look@v returns: the mix at a reading other than the one the host last stepped@v to, ahead or back, which never touches the live mix.",
         "items": [
-          "Copies each subject's state lazily and steps it once per stretch.",
-          "Answers <code>sample</code> and <code>sure</code>, like the live mix answers sample and atRest."
+          "Each subject's state is copied the first time it is asked about, then carried forward one stretch at a time.",
+          "It answers the way the live mix does: sample@v a subject for its pose, and sure@v it for how far each channel can be trusted."
         ]
       },
       "groups": [
