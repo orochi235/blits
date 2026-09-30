@@ -21,8 +21,16 @@ const types = {
   '.svg': 'image/svg+xml',
 };
 
+// The site is built under its base path, so the server strips it before reading dist.
+const base = (process.env.BLITS_SITE_BASE ?? '/').replace(/\/?$/, '/');
+
 const server = createServer((req, res) => {
-  let path = join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+  const url = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+  if (!url.startsWith(base)) {
+    res.writeHead(404).end();
+    return;
+  }
+  let path = join(root, url.slice(base.length - 1));
   if (existsSync(path) && statSync(path).isDirectory()) path = join(path, 'index.html');
   if (!existsSync(path)) {
     res.writeHead(404).end();
@@ -51,7 +59,7 @@ for (const [i, path] of pages.entries()) {
   const errors = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(origin + path, { waitUntil: 'networkidle' });
+  await page.goto(origin + base.slice(0, -1) + path, { waitUntil: 'networkidle' });
   const explainers = await page.locator('.explainer').count();
   await page.waitForTimeout(explainers ? 2000 : 200);
   for (let k = 0; k < explainers; k++) {

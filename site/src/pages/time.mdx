@@ -1,0 +1,56 @@
+---
+layout: ../layouts/Page.astro
+title: Time
+description: The mix runs on the host's clock. The host reports the time once a frame, and everything else is worked out from that one number.
+---
+import HideTab, { CatchUp } from '../explainers/Time';
+
+# Time
+
+<p class="lede">A mix has no clock of its own. The host tells it the time once a frame, and every voice, fade and patch state works from that one number.</p>
+
+<CatchUp client:only="react" />
+
+A mix is **pull-based**: nothing happens until the host asks. The host owns the frame loop, and each frame it does two things in order. It calls `sync(timestamp)` to say what time it is, then `probe(subject)` for each subject it is about to draw.
+
+```ts
+function frame(timestamp: number) {
+  m.sync(timestamp);
+  for (const part of visible) apply(part, m.probe(part, scratch));
+  requestAnimationFrame(frame);
+}
+```
+
+The timestamp is milliseconds on any clock that only moves forward. klieg passes its own clock, wod passes `performance.now()`, and a test passes integers.
+
+Everything in a frame reads that one timestamp. A second `sync` with the same value does nothing, and every probe between two syncs answers from the same frame, so a subject probed twelve times in a frame still advances once.
+
+A voice's clock is `(timestamp − start) · rate`, which a patch reads as `setting.elapsed`. Its place within the period is the phase the patch is handed. Change a voice's rate and its clock carries on from where it was rather than jumping.
+
+**`dt` is worked out, never passed in.** It's the time since this subject last advanced. For a subject probed every frame that is one frame. For a subject nobody asked about for two seconds, it is two seconds, handed over in one step. That is what B does above: it stops while unprobed, then catches up by its whole gap the moment it is probed again. [Patch state](../state/) covers what that means for a patch that integrates.
+
+## Time away
+
+<HideTab client:only="react" />
+
+A hidden browser tab gets no frames, so the first sync after it comes back can be an hour past the last one. By default the mix treats that hour like any other gap: fades and finite loops finish, and every subject catches up by all of it. With rebase off, the first frame back finds the fade complete and the sweep gone.
+
+A host that doesn't want the time away to count calls `mix.rebase()` before its next sync:
+
+```ts
+document.addEventListener('visibilitychange', () => document.hidden || m.rebase());
+```
+
+The next sync then takes the gap out of the mix's clock, and every voice, fade and subject resumes where it was left. From then on the mix's clock, which `setting.timestamp` reads, is the host's timestamp less the time taken out. A `start` the host gives to `cue` is still read on the host's clock, and converted.
+
+The host's clock is whatever it passes to `sync`, and a voice's `start` has to be on the same one. A `requestAnimationFrame` timestamp and `performance.now()` share an origin, so they mix freely. `Date.now()` counts from 1970 and does not.
+
+A handle's `weight`, `rate` and `fade` can be set at any time on the host's side, and they land on the next sync. Nothing changes partway through a frame.
+
+## Reference
+
+Nothing is filed under time on its own. The members that carry it live on [Mix](../mix/):
+
+- [`Mix`](../mix/#api-Mix): `sync`, `rebase` and `probe`.
+- [`MixOptions`](../mix/#api-MixOptions): `maxDt`, and `reduce`, which hands every step a `dt` of Infinity.
+- [`Setting`](../state/#api-Setting): `timestamp`, `dt` and `elapsed`, as a patch reads them.

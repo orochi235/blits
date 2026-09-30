@@ -11,7 +11,7 @@ export default defineConfig({
   markdown: {
     shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' }, defaultColor: 'light' },
   },
-  server: { host: '::', port: 4872 },
+  server: { host: '::', port: 4880 },
   vite: {
     resolve: {
       alias: { '@blits': fileURLToPath(new URL('../src', import.meta.url)) },

@@ -80,7 +80,6 @@ a:hover {
 }
 
 .rail {
-  border-right: 1px solid var(--rule);
   padding: 2rem 1.25rem;
   font: 500 0.95rem / 1.4 var(--label);
   font-stretch: 87.5%;
@@ -132,6 +131,13 @@ a:hover {
 
 .page {
   padding: 3rem 2.5rem 6rem;
+  border-left: 1px solid var(--rule);
+  min-height: 100vh;
+}
+
+.page > .explainer,
+.page > .wide,
+.page > .api {
   max-width: 62rem;
 }
 
@@ -139,11 +145,8 @@ a:hover {
   max-width: 40rem;
 }
 
-.page > .explainer,
-.page > .wide,
-.page > table,
-.page > .api {
-  max-width: none;
+.page > table {
+  max-width: 48rem;
 }
 
 h1,
@@ -293,12 +296,13 @@ pre code {
 }
 
 .explainer-controls {
-  flex: 1 1 16rem;
-  max-width: 24rem;
+  flex: 1 1 28rem;
+  min-width: 0;
 }
 
 .ledger {
   flex: 2 1 22rem;
+  max-width: 40rem;
   font-family: var(--mono);
   font-size: 0.82rem;
   margin: 0;
@@ -409,7 +413,6 @@ pre code {
   .rail {
     position: static;
     height: auto;
-    border-right: none;
     border-bottom: 1px solid var(--rule);
     padding: 1rem;
   }
@@ -428,6 +431,7 @@ pre code {
   }
   .page {
     padding: 1.5rem 1rem 4rem;
+    border-left: none;
   }
   h1 {
     font-size: 2rem;

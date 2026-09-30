@@ -1,0 +1,21 @@
+---
+layout: ../layouts/Page.astro
+title: klieg
+description: klieg, a neon-sign renderer, runs its motion, its effects and its lighting on three blits mixes.
+---
+
+# klieg
+
+<p class="lede">blits was extracted from <a href="https://github.com/orochi235/klieg">klieg</a>, a neon-sign renderer, which now runs its motion, its effects and its lighting on three mixes.</p>
+
+Each of the three is a kit, a subject type and a mix over them:
+
+| Mix | Subjects | Channels |
+|---|---|---|
+| Motion | Each letter | `position` and `rotation` (`vec(3, sum())`), `scale` and `opacity` (`mul`) |
+| Effects | Each part of the sign | `gain`, `scale` (`mul`), `dark` (`max`), `crawl` (`sum`), `position`, `rotation`, `light` (`vec(3, sum())`), `color` (`last`) |
+| Lighting | One subject: the whole frame | `yaw` and `pitch` (`sum`) |
+
+The port was an extraction, not a rewrite. Its first step reproduced klieg's arithmetic exactly: no number changed, klieg's own test suites pass as they did, and none of its Playwright visual baselines moved.
+
+A live sign goes here, with its three mixes exposed so you can watch each voice's weight and what it contributes. It isn't built yet: it waits until klieg depends on the published package rather than on a local copy of this repo.

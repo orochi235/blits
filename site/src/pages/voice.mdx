@@ -1,0 +1,54 @@
+---
+layout: ../layouts/Page.astro
+title: Voice
+description: A voice is a patch playing on a mix, with its own clock and its own weight. Cueing one returns a handle to steer it by.
+---
+import Voice from '../explainers/Voice';
+import ApiEntries from '../components/ApiEntries.astro';
+
+# Voice
+
+<p class="lede">A voice is a patch given a clock and a volume knob. Two voices of the same patch are two clocks and two weights, and neither knows about the other.</p>
+
+<Voice client:only="react" />
+
+A patch says what an effect does at each phase. A **voice** says when it plays, how fast, for how long, for which subjects and how strongly. You make one by passing a spec to a mix's `cue`, and you get back a **handle** for steering it while it plays.
+
+```ts
+import { mix } from 'blits';
+
+const row = mix<Dot, DotPose>(DOT);
+const hop = row.cue({
+  patch: bounce,
+  rate: 1,
+  loop: 3,
+  stagger: (dot) => dot.index * 150,
+  fade: { in: 600, out: 800 },
+});
+
+hop.rate = 2;
+hop.fade();
+await hop.done;
+```
+
+## The clock
+
+A voice starts at the next `sync` unless its spec gives a `start`. From then on it counts its own milliseconds, `elapsed`, and phase is `elapsed` divided by the patch's period, wrapped.
+
+**Rate** scales that count: 1 is real time, 2 is double speed, 0 freezes the voice where it is. It's live on the handle, so `handle.rate = 0` pauses one voice while everything else plays on.
+
+**Seek** moves a voice's clock to any `elapsed`, forward or back. The phase is recomputed from the new reading, and nothing is run forward to catch up.
+
+**Loop** says how many passes a voice plays: `true` for good, `false` for one, or a number. When a finite loop finishes, the voice leaves the mix, over its fade out if it has one and at once if it doesn't.
+
+## Stagger
+
+**Stagger** delays each subject by its own amount, in voice milliseconds, so the same voice can ripple along a row. The mix asks for a subject's delay once, the first time it sees that subject, and keeps the answer. Because the delay is counted on the voice's clock, it scales with rate: at double speed the ripple runs twice as fast too.
+
+## Fades
+
+A voice's weight can ramp. `fade.in` is how long it takes to reach full weight, and it counts from each subject's own start, so with a stagger every dot fades in on its own schedule. Those are the staggered ramps at the left of the lines under the row.
+
+`handle.fade()` ramps the voice out over `fade.out`, or over `{ over }` if you pass one, and then removes it. Unlike a fade in, a fade out starts for every subject at the moment you call it, which is why the lines all come down together at the dashed mark. `handle.done` is a promise that resolves once the voice has left the mix, however it left.
+
+<ApiEntries word="voice" />

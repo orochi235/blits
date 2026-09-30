@@ -1,0 +1,53 @@
+---
+layout: ../layouts/Page.astro
+title: Engine
+description: The implementation behind a mix. One ships, and the seam is there so a second one does not need the first rewritten.
+---
+import ApiEntries from '../components/ApiEntries.astro';
+
+# Engine
+
+<p class="lede">An engine is the implementation behind a mix. One ships, called <code>mixer</code>, and every mix uses it unless told otherwise.</p>
+
+An engine is three things. A `name`, for error messages. `runs`, the set of patch forms it can run: `'fn'` for patches written as a function, `'keys'` for patches written as keyframes. And `create(kit, opts)`, which builds a mix. Everything on a mix is the engine's to implement.
+
+`mixer` runs both forms on the CPU, working out each subject's pose when it is probed. You pass a different engine through `MixOptions`:
+
+```ts
+const m = mix<Part, PartPose>(PART, { engine: myEngine });
+```
+
+A mix refuses a voice its engine can't run. The refusal comes at `cue`, not partway through a frame, and names the engine and the form.
+
+## Why the seam exists
+
+A patch written as keyframes is data: its stops stay on the patch as `keys`, and its easing is a CSS name, a `cubic-bezier` or `steps` rather than a function. That is so an engine other than `mixer` can read them. None of these is being built, but they are what the seam is judged against:
+
+- A Web Animations engine that runs `keys` patches only and hands them to the browser, so a page's motion plays off the main thread. It refuses `fn` patches at `cue`.
+- A recording engine that wraps another and captures every pose as keyframes, turning a procedural patch into data for the first.
+- A GPU engine that writes each subject's pose into a buffer, for a part count where a JavaScript loop per frame is the cost. That is why `probe` takes an `out` object to fill.
+
+An engine can start as a wrapper around `mixer`. This one runs on the CPU like `mixer` does, but declares that it runs keyframes only, so a mix built on it refuses anything else:
+
+```ts
+import { type Engine, keys, mix, mixer } from 'blits';
+
+const keysOnly: Engine = {
+  name: 'keys-only',
+  runs: new Set(['keys']),
+  create: (kit, opts) => mixer.create(kit, opts),
+};
+
+const m = mix<Part, PartPose>(PART, { engine: keysOnly });
+const rise = keys<Part, PartPose>(400, [
+  { at: 0, delta: { gain: 0 } },
+  { at: 1, delta: { gain: 1 } },
+]);
+
+m.cue({ patch: rise }); // runs
+m.cue({ patch: flicker }); // throws: blits: engine keys-only does not run fn patches
+```
+
+`mixer` checks each cue against the engine named in the options it was built with, which here is `keysOnly`, so the refusal carries the wrapper's name.
+
+<ApiEntries word="engine" />

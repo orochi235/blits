@@ -3,7 +3,63 @@ layout: ../layouts/Page.astro
 title: blits
 description: Concurrent effects, each on its own clock with its own state and weight, folded into one value per subject per frame.
 ---
+import Home from '../explainers/Home';
 
 # blits
 
 <p class="lede">Concurrent effects, mixed. Each effect runs on its own clock with its own state and weight, and a mix folds them into one value per subject per frame, by rules that belong to the channel rather than to the effect.</p>
+
+<Home client:only="react" />
+
+The table under the swatches is the middle swatch, itemized: what each voice would do to it alone, and what the mix makes of all of them together. Pulse multiplies its gain, Wave adds to its lift, and Tint sets its color. None of them knows the others exist.
+
+## The words
+
+These words carry the rest, and each has a page with a live explainer.
+
+| Word | What it is |
+|---|---|
+| [Channel](channel/) | One field of a pose, with its own arithmetic: how two influences combine, and its rest. |
+| [Kit](channel/) | The channels one kind of pose is made of. |
+| Subject | Whatever is driven: a letter, a part, a card. The mix keeps its state per subject. |
+| Delta | What a patch returns: a partial pose, only the channels it writes. |
+| [Patch](patch/) | A pure function of phase and a subject that returns a delta, or a list of keyframes. |
+| [Voice](voice/) | A patch playing on its own clock, at its own weight. |
+| [Mix](mix/) | The live voices over one kit, folded into one pose per subject per frame. |
+| [Signal](signal/) | A 0..1 scalar from outside the clock, which can drive a weight. |
+| Handle | The live controls on one voice: its weight, rate, seek and fade. |
+| [Engine](engine/) | The implementation behind a mix. One ships. |
+
+## One frame
+
+The host owns the frame loop. Once a frame it tells the mix what time it is, then asks for the subjects it is about to draw:
+
+```ts
+import { hex, kit, max, mix, mul, patch, sum, vec } from 'blits';
+
+const PART = kit<PartPose>({
+  gain: mul(),
+  dark: max(),
+  position: vec(3, sum()),
+  color: hex(),
+});
+
+const flicker = patch<Part, PartPose>(
+  180,
+  (phase, part) => ({ gain: 0.2 + 0.8 * Math.abs(Math.sin(phase * Math.PI + part.seed)) }),
+  { writes: ['gain'] },
+);
+
+const m = mix<Part, PartPose>(PART);
+const handle = m.cue({ patch: flicker, fade: { in: 300, out: 300 } });
+
+function frame(timestamp: number) {
+  m.sync(timestamp);
+  for (const part of visible) apply(part, m.probe(part, scratch));
+  if (m.live) requestAnimationFrame(frame);
+}
+
+handle.fade({ over: 500 }); // the voice ramps out and leaves
+```
+
+`blits` has no runtime dependencies and ships as ESM. It is what [klieg](klieg/) runs its motion, its effects and its lighting on.

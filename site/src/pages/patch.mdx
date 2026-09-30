@@ -1,0 +1,61 @@
+---
+layout: ../layouts/Page.astro
+title: Patch
+description: A patch is what an author writes, a pure function of phase and a subject that returns a delta. It comes in two forms, a function and a list of stops.
+---
+import Patch from '../explainers/Patch';
+import ApiEntries from '../components/ApiEntries.astro';
+
+# Patch
+
+<p class="lede">A patch is the effect itself: given how far through its period it is and which subject it's looking at, it returns the change it wants to make.</p>
+
+<Patch client:only="react" />
+
+A patch is a pure function of **phase** and a subject. It returns a **delta**, a partial pose holding only the channels it has something to say about. It doesn't know when it started, how loud it is or what else is playing; a voice gives it those. The same patch can play on ten voices at once.
+
+**Period** is how many milliseconds one pass lasts, and **phase** runs from 0 to 1 across it, then wraps. A period of 0 makes a patch aperiodic: phase stays 0, and the patch reads `setting.elapsed` instead if it needs time.
+
+Every patch declares its **writes**: the channels it may contribute to. The mix checks them against the kit when the patch is cued, so a patch that writes a channel the kit lacks is refused there rather than failing a frame later, and the mix never has to call a patch to learn what it touches.
+
+## Two forms
+
+The function form, `patch`, takes the period, the function and the writes. Anything computed goes here: a flicker, a hash walk, a curve you can only write as code.
+
+```ts
+import { patch } from 'blits';
+
+const breathe = patch<Part, PartPose>(
+  3000,
+  (phase) => ({ gain: Math.sin(Math.PI * phase) ** 2 }),
+  { writes: ['gain'] },
+);
+```
+
+The keys form, `keys`, takes the period and a list of stops. Each stop is a phase and the delta at that phase, and between stops the value is interpolated. Its writes are every channel the stops mention, so it needs no list of its own.
+
+```ts
+import { keys } from 'blits';
+
+const pulse = keys<Part, PartPose>(
+  3000,
+  [
+    { at: 0, delta: { gain: 0 } },
+    { at: 0.5, delta: { gain: 1 } },
+    { at: 1, delta: { gain: 0 } },
+  ],
+  { ease: 'ease-in-out' },
+);
+```
+
+A voice can't tell the two apart: both are a `Patch` with the same `at`. The difference is that a keys patch keeps its stops on `patch.keys`, so they can still be read as data.
+
+## Easing is data
+
+An **easing** is a curve on 0 to 1 that reshapes the progress through each segment between two stops. Pick one in the explainer and watch the keys curve change while the function above it stays put; the square on the right is the easing itself, with the marker at the current segment's progress.
+
+An easing is one of CSS's names (`'linear'`, `'ease'`, `'ease-in'`, `'ease-out'`, `'ease-in-out'`), a `{ bezier: [x1, y1, x2, y2] }` or a `{ steps, jump }`, the same curves CSS's `cubic-bezier()` and `steps()` draw. You can also pass a plain `(u) => number`.
+
+The data forms are there for engines. A WAAPI or GPU engine can hand a stop list with `'ease-in-out'` to the browser or a shader, but it can't do anything with a JavaScript function except call it. So a keys patch with data easings is something such an engine can read, while a function patch, or a function easing, runs only on the CPU engine. `ease` sets the curve for every segment, `easeBy` sets one per channel, and a stop's own `ease` sets the curve into that stop.
+
+<ApiEntries word="patch" />

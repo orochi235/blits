@@ -1,0 +1,75 @@
+---
+layout: ../layouts/Page.astro
+title: Blending
+description: Fades, retargets, blends between alternatives and handovers at rest, each a weight per voice or a channel's lerp.
+---
+import { Blend, Fade, Handover, Retarget } from '../explainers/Blending';
+import ApiEntries from '../components/ApiEntries.astro';
+
+# Blending
+
+<p class="lede">Fading a voice in, cutting one off for another, sliding between alternatives and letting an effect finish before it leaves all come down to two moves: a weight that scales a voice toward rest, or a channel's lerp between two values.</p>
+
+A weight scales what a voice contributes toward its channel's rest, so at 0 the voice changes nothing. A lerp moves between two values by a fraction. The mix has no other way to combine things, and every behavior on this page picks one of the two.
+
+## Fade in and out
+
+<Fade client:only="react" />
+
+A voice's `fade` gives it ramps: `in` runs from the moment it starts, `out` from the moment it's told to leave, and `ease` shapes both. The ramp is only a weight, so it takes every channel the voice writes toward rest at once, each by its own arithmetic.
+
+```ts
+const h = m.cue({ patch: wave, fade: { in: 1000, out: 1200, ease: 'ease-in-out' } });
+
+h.fade(); // over its own fade.out
+h.fade({ over: 300 }); // or over a ramp given here
+```
+
+A voice cued with a finite `loop` fades out by itself when its passes run out.
+
+## Retarget on interruption
+
+<Retarget client:only="react" />
+
+A `keys` voice cued with `from: 'current'` doesn't start at its own first stop. It reads where the subject is, in the frame before it first contributes, with every other voice folded in, and lerps from there to its later stops. Cut one move short and start another, and the subject carries on from wherever the first one left it.
+
+```ts
+const back = keys<Dot, Placed>(1600, [
+  { at: 0, delta: { x: 0 } }, // replaced by wherever the dot is
+  { at: 1, delta: { x: 1 } },
+]);
+
+first.fade({ over: 0 });
+m.cue({ patch: back, loop: false, from: 'current' });
+```
+
+It carries position, not speed. The second voice starts from standing, so a dot moving fast when it's interrupted stops dead and then sets off again: watch the trace flatten at the cut. Carrying velocity across a retarget is a known gap.
+
+## Blend between alternatives
+
+<Blend client:only="react" />
+
+`mix.blend(patches, by)` cues one voice per patch and splits a signal between them. With three patches, `by` at 0 is all the first, at ½ all the second, at 1 all the third, and anywhere between shares out between the two nearest. Moving the signal moves the result smoothly, with nothing re-cued.
+
+```ts
+const mood = level<Dot>(0);
+m.blend([flat, arch, ramp], mood);
+
+mood.set(0.25); // half flat, half arch
+```
+
+The voices a blend cues share a [locus](../locus/): the mix treats them as alternatives, folding them into one influence through each channel's lerp before it merges that with anything else. That's what keeps two gains of 0.06 at 0.06 halfway through, instead of multiplying them.
+
+## Handover at rest
+
+<Handover client:only="react" />
+
+`fade({ at: 'rest' })` doesn't ramp anything down. The voice stays at full weight and leaves each subject separately, at the first frame what it writes for that subject is at rest. A hop finishes its hop, and each subject lands on its own schedule. Whatever the next voice is, it was cued already, and it simply becomes the only thing moving that subject.
+
+```ts
+hop.fade({ at: 'rest', deadline: 2500 });
+```
+
+A patch that never comes to rest would keep its voice forever, so `deadline` says how many milliseconds to wait before the voice leaves regardless. In the demo the last dot never lands, and it drops when the deadline arrives. Rest here means exactly the channel's rest, so a patch meant to hand over this way should hold its rest value for a stretch rather than pass through it between two frames.
+
+<ApiEntries word="blending" />

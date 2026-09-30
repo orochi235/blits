@@ -1,0 +1,61 @@
+---
+layout: ../layouts/Page.astro
+title: Mix
+description: A mix is the set of live voices over one kit. The host tells it the time once a frame, then asks it for each subject's pose.
+---
+import Mix from '../explainers/Mix';
+import ApiEntries from '../components/ApiEntries.astro';
+
+# Mix
+
+<p class="lede">A mix holds every voice playing over one kit. Once a frame you tell it the time, then ask it what each subject looks like.</p>
+
+<Mix client:only="react" />
+
+A **mix** is made over a kit, and every voice cued on it writes that kit's channels. The things it drives are its **subjects**: letters, parts, bars, whatever the host has. You don't register them. The first time you ask about a subject, the mix starts keeping its state.
+
+Above, three voices play over twelve bars. Wave rolls across all of them, pulse beats on every other one, and swell rises and falls everywhere at once. Each column stacks what each voice adds to that bar, and the line on top is the **pose**: every voice folded together, through the channel's arithmetic, into the one value a host writes. The ledger itemizes one bar; pick a different one with "Ledger subject".
+
+## The frame loop
+
+The host owns the loop. The mix never schedules a frame or calls back; it only answers.
+
+```ts
+import { kit, mix, patch, sum } from 'blits';
+
+const bars = mix<Bar, BarPose>(kit({ height: sum() }));
+
+bars.cue({
+  patch: patch(1200, (phase) => ({ height: 0.5 - 0.5 * Math.cos(2 * Math.PI * phase) }), {
+    writes: ['height'],
+  }),
+  target: (bar) => bar.i % 2 === 0,
+});
+
+const pose = { height: 0 };
+function frame(timestamp: number) {
+  bars.sync(timestamp);
+  for (const bar of all) {
+    bars.probe(bar, pose);
+    bar.el.style.transform = `scaleY(${pose.height})`;
+  }
+  if (bars.live) requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+```
+
+`sync(timestamp)` tells the mix what time it is. Nothing is computed at the call. `probe(subject, out?)` then folds every voice for that subject at that time and returns the pose, written into `out` when you pass one, so a loop over many subjects needn't allocate. Probing the same subject twice in a frame gives the same answer, and a stateful patch steps once: one frame, one answer.
+
+## Reach and rest
+
+`target` picks which subjects a voice reaches. It runs once per subject, the first time the mix sees it, and the answer is kept. Pulse above has `target: (bar) => bar.i % 2 === 0`, so the odd columns never get a pulse block, and the ledger's pulse row reads 0 when you pick an odd bar.
+
+`atRest(subject)` is true when every channel of that subject's pose is at its rest, so a host can skip writing it. `live` is true while any voice is still playing, fading or waiting to start. When it goes false, the host can stop its loop. Cueing a voice makes it true again at once, and restarting the loop is the host's job.
+
+## Clearing up
+
+`mute()` fades every voice out, over `over` ms when you pass it and over each voice's own `fade.out` otherwise. With "Mute at 5 s" on, the explainer calls `mute({ over: 1500 })` and every voice leaves together; once the last is done, the mix is no longer live.
+
+`drop(subject)` forgets what the mix was keeping for one subject. Call it when a subject goes away for good.
+
+<ApiEntries word="mix" />

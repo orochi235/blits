@@ -158,7 +158,7 @@ function Ledger<I, O>({
         <tr>
           <th scope="col">Voice</th>
           <th scope="col" className="num">
-            Weight
+            Handle weight
           </th>
           {channels.map((c) => (
             <th key={c} scope="col" className="num">

@@ -55,6 +55,19 @@ what is still open — is `docs/schema.html`, which ships in the package: open i
 `docs/vocabulary.json`, which semanticore serves as a page.
 That repo is private; the JSON stands on its own.
 
+## The site
+
+`site/` is a docs site with a live explainer for each word and the API reference, generated from the
+doc comments in `src/`. It runs the working tree, not a build:
+
+```
+npm run site         # dev server on port 4880
+npm run site:smoke   # build, then load every page headless and fail on any error
+```
+
+`.github/workflows/site.yml` deploys it to GitHub Pages. It runs only by hand until Pages is enabled
+on the repo.
+
 ## Status
 
 v0.1.0, and one real consumer: [klieg](https://github.com/orochi235/klieg) composes all three of

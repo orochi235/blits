@@ -36,7 +36,7 @@ outline and writes its own prose for newcomers; it does not render, replace or a
 
 | Command | Does |
 |---|---|
-| `npm run site` | Generates the API JSON, then the Astro dev server on host `::`, port 4872 (semanticore's `serve` has 4871). |
+| `npm run site` | Generates the API JSON, then the Astro dev server on host `::`, port 4880 (semanticore's `serve` has 4871). |
 | `npm run site:build` | Generates the API JSON, then a static build to `site/dist/`. |
 | `npm run site:smoke` | Builds, serves `site/dist/` and runs the smoke test (below). |
 

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "api": "typedoc --json .generated/api.json --tsconfig ../tsconfig.json ../src/index.ts --excludePrivate --excludeInternal --sort source-order --logLevel Warn",
-    "dev": "npm run api && astro dev --host :: --port 4872",
+    "dev": "npm run api && astro dev --host :: --port 4880",
     "build": "npm run api && astro build",
     "smoke": "npm run build && node scripts/smoke.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"

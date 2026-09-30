@@ -1,0 +1,56 @@
+---
+layout: ../layouts/Page.astro
+title: Patch state
+description: A patch can keep state per subject. The mix makes it, steps it once a frame by the gap, and hands it back.
+---
+import State from '../explainers/State';
+import ApiEntries from '../components/ApiEntries.astro';
+
+# Patch state
+
+<p class="lede">A patch can keep state for each subject, such as a spring's position and speed. The patch says what the state is and how it advances; the mix decides when.</p>
+
+<State client:only="react" />
+
+A stateful patch declares two functions besides its usual one. `state(subject)` makes a subject's state, and the mix calls it the first time the patch sees that subject. `step(state, dt, subject, setting)` advances it, and the mix calls it once per subject per sampled frame. The patch's own function then reads the result as `setting.state`.
+
+```ts
+import { kit, patch, sum } from 'blits';
+
+const spring = patch<Dot, { x: number }, { x: number; v: number }>(
+  0,
+  (phase, dot, setting) => ({ x: setting.state.x }),
+  {
+    writes: ['x'],
+    state: () => ({ x: 0, v: 0 }),
+    step: (s, dt) => {
+      if (!Number.isFinite(dt)) {
+        s.x = 1;
+        s.v = 0;
+        return;
+      }
+      const secs = dt / 1000;
+      s.v += (-150 * (s.x - 1) - 8 * s.v) * secs;
+      s.x += s.v * secs;
+    },
+  },
+);
+```
+
+"Once per sampled frame" means a frame in which the subject was probed. Probe it twelve times in a frame and it steps once; don't probe it at all and it doesn't step. When it is next probed, `dt` is the whole gap since it last stepped, not one frame. A patch with a closed form, like a decay written as `Math.exp(-t / tau)`, gets that right for free.
+
+An integrator doesn't. The spring above takes one Euler step per call, and one step 1.2 s long lands it far off the scale, where it rings for a second before it settles. `maxDt` caps the `dt` any step is handed, however long the gap:
+
+```ts
+const m = mix<Dot, { x: number }>(kit({ x: sum() }), { maxDt: 64 });
+```
+
+With the cap on, the subject that sat out takes one short step and carries on from where it stopped. It doesn't catch up on the time it missed, which for a spring is the right trade. The cap is off by default because a closed form wants the whole gap.
+
+Under reduced motion, `dt` is Infinity. A patch that integrates checks for that and snaps to where it would settle, as the spring above does.
+
+A signal can keep state too, through `setting.keep(owner, init)`: the mix holds one value per voice, per subject and per owner, made by `init` the first time it's asked for. A stateful signal keeps its state there and nowhere else.
+
+The `setting` a patch is handed is reused for every call, so it is valid only during that call. Copy out what you need rather than holding on to the object.
+
+<ApiEntries word="state" />
