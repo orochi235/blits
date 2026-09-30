@@ -8,6 +8,11 @@ export interface Channel<V> {
   scale?(v: V, w: number): V;
   /** Interpolate, for retargeting, for blending alternatives, and for folding a locus. */
   lerp(a: V, b: V, u: number): V;
+  /**
+   * Optional: `merge(into, scale(v, w))`, written into `into` and returned, so a channel whose
+   * values are objects need not allocate per influence. The mix only hands it a value it made.
+   */
+  fold?(into: V, v: V, w: number): V;
 }
 
 /** The channel set for one kind of delta. */

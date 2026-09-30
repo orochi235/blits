@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { kit, mul, sum, vec } from '../src/channels.js';
 import { curve } from '../src/easing.js';
+import { mix } from '../src/mixer.js';
 import { evalKeys, keys } from '../src/patch.js';
 import type { Keyframe } from '../src/types.js';
 
@@ -123,5 +125,29 @@ describe('keys', () => {
     );
     expect(p.at(0.4, {}, undefined as never).a).toBe(0);
     expect(p.at(0.6, {}, undefined as never).a).toBe(5);
+  });
+
+  it('a fold writes into nothing it was handed: stops, deltas and returned poses stay as they were', () => {
+    const stops: Keyframe<Pose>[] = [
+      { at: 0, delta: { p: [1, 2, 3] } },
+      { at: 0.5, delta: { p: [4, 5, 6] } },
+      { at: 1, delta: { p: [1, 2, 3] } },
+    ];
+    const frozen = JSON.stringify(stops);
+    const m = mix<object, Pose>(kit({ a: sum(), b: mul(), p: vec(3, sum()) }));
+    m.cue({ patch: keys<object, Pose>(100, stops), weight: 0.5 });
+    m.cue({ patch: keys<object, Pose>(100, stops), start: 30 });
+    const subject = {};
+    const out = {} as Pose;
+    const seen: number[][] = [];
+    for (let t = 0; t <= 300; t += 10) {
+      m.sync(t);
+      const pose = m.probe(subject, out);
+      seen.push([...pose.p]);
+      const held = pose.p;
+      m.probe({}, out);
+      expect(held).toEqual(seen[seen.length - 1]);
+    }
+    expect(JSON.stringify(stops)).toBe(frozen);
   });
 });

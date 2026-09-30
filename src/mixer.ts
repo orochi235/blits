@@ -567,7 +567,10 @@ class Mixer<I, O> implements Mix<I, O> {
       if (value === undefined) continue;
       const channel = this.channels[slot] as Channel<unknown>;
       if (channel.rest !== undefined && channel.scale) {
-        pose[key] = channel.merge(pose[key], channel.scale(value, weight));
+        // pose[key] is the copy of rest this fold made, so it is ours to write into.
+        pose[key] = channel.fold
+          ? channel.fold(pose[key], value, weight)
+          : channel.merge(pose[key], channel.scale(value, weight));
         continue;
       }
       const band = held.bands[i];
@@ -645,7 +648,10 @@ class Mixer<I, O> implements Mix<I, O> {
         const value = delta[key];
         if (value === undefined) continue;
         if (channel.rest !== undefined && channel.scale) {
-          pose[key] = channel.merge(pose[key], channel.scale(value, weight));
+          // pose[key] is the copy of rest this fold made, so it is ours to write into.
+          pose[key] = channel.fold
+            ? channel.fold(pose[key], value, weight)
+            : channel.merge(pose[key], channel.scale(value, weight));
           continue;
         }
         const band = `${at}:${key}`;

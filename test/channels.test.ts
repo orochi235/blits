@@ -90,6 +90,28 @@ describe('channel laws', () => {
     closeAll(channel.lerp(v, rest, 0.5), [0.5, -1, 1.75]);
   });
 
+  it('fold into an accumulator is merge of scale, on every channel that has one', () => {
+    const channels: [string, Channel<number[]>][] = [
+      ['vec sum', vec(3, sum())],
+      ['vec mul', vec(3, mul())],
+      ['vec max', vec(3, max())],
+    ];
+    const r = numbers();
+    const next = () => r.next().value as number;
+    for (const [, channel] of channels) {
+      expect(channel.fold).toBeDefined();
+      for (const w of weights) {
+        const a = [next(), next(), next()];
+        const v = [next(), next()];
+        const want = channel.merge(a, channel.scale?.(v, w) as number[]);
+        const into = [...a];
+        expect(channel.fold?.(into, v, w)).toBe(into);
+        closeAll(into, want);
+      }
+    }
+    expect(vec(3, last<number>()).fold).toBeUndefined();
+  });
+
   it('vec: rest is copied, not shared, so a fold cannot write into it', () => {
     const channel = vec(2, sum());
     const first = channel.rest as number[];

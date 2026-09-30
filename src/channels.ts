@@ -64,6 +64,13 @@ export function vec(n: number, of: Channel<number>): Channel<number[]> {
             for (let i = 0; i < n; i++) out[i] = scale(v[i] ?? fill, w);
             return out;
           },
+    fold:
+      scale === undefined
+        ? undefined
+        : (into, v, w) => {
+            for (let i = 0; i < n; i++) into[i] = of.merge(into[i] ?? fill, scale(v[i] ?? fill, w));
+            return into;
+          },
     lerp: (a, b, u) => {
       const out = new Array<number>(n);
       for (let i = 0; i < n; i++) out[i] = of.lerp(a[i] ?? fill, b[i] ?? fill, u);
