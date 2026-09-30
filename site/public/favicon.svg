@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    .track { stroke: #1d2430; }
+    @media (prefers-color-scheme: dark) { .track { stroke: #e3e7ed; } }
+  </style>
+  <g class="track" stroke-width="3" stroke-linecap="round">
+    <line x1="7" y1="4" x2="7" y2="28" />
+    <line x1="16" y1="4" x2="16" y2="28" />
+    <line x1="25" y1="4" x2="25" y2="28" />
+  </g>
+  <rect x="2.5" y="16" width="9" height="8" rx="2" fill="#2f66d8" />
+  <rect x="11.5" y="7" width="9" height="8" rx="2" fill="#d99a12" />
+  <rect x="20.5" y="12" width="9" height="8" rx="2" fill="#c23d7a" />
+</svg>

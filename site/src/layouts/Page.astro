@@ -19,6 +19,7 @@ const link = (slug: string) => `${base}${slug ? `${slug}/` : ''}`;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title === 'blits' ? 'blits' : `blits: ${title}`}</title>
     {fm.description && <meta name="description" content={fm.description} />}
+    <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
