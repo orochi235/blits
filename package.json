@@ -39,12 +39,18 @@
     "check": "npm run lint && npm run typecheck && npm run test",
     "prepack": "npm run build",
     "prepublishOnly": "npm run check",
-    "bench": "npm run build && node bench/frame.mjs"
+    "bench": "npm run build && node bench/frame.mjs",
+    "site": "npm run dev -w site",
+    "site:build": "npm run build -w site",
+    "site:smoke": "npm run smoke -w site"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
     "@types/node": "^26.2.0",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
-  }
+  },
+  "workspaces": [
+    "site"
+  ]
 }

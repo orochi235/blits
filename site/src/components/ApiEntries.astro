@@ -1,0 +1,34 @@
+---
+import { type Entry, entriesFor } from '../api';
+import Parts from './Parts.astro';
+
+interface Props {
+  word?: string;
+  list?: Entry[];
+  heading?: string;
+}
+const list = Astro.props.list ?? entriesFor(Astro.props.word ?? '');
+const heading = Astro.props.heading ?? 'Reference';
+---
+{list.length > 0 && (
+  <section class="api">
+    <h2>{heading}</h2>
+    {list.map((e) => (
+      <article class="api-entry" id={`api-${e.name}`}>
+        <h3>{e.name}<span class="api-kind">{e.kind}</span></h3>
+        <pre><code>{e.signature}</code></pre>
+        {e.summary.length > 0 && <p><Parts parts={e.summary} /></p>}
+        {e.members.length > 0 && (
+          <ul class="api-members">
+            {e.members.map((m) => (
+              <li>
+                <code>{m.signature}</code>
+                {m.summary.length > 0 && <p><Parts parts={m.summary} /></p>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </article>
+    ))}
+  </section>
+)}

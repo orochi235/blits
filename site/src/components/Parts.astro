@@ -1,0 +1,8 @@
+---
+/** A TypeDoc comment summary: text, with code spans kept as code. */
+interface Props {
+  parts: { kind: string; text: string }[];
+}
+const { parts } = Astro.props;
+---
+{parts.map((p) => (p.kind === 'code' ? <code>{p.text.replace(/^`+|`+$/g, '')}</code> : p.text))}

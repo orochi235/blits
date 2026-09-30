@@ -4,6 +4,17 @@
   "javascript": { "formatter": { "quoteStyle": "single" } },
   "linter": { "enabled": true, "rules": { "preset": "recommended" } },
   "files": {
-    "includes": ["src/**", "test/**", "bench/**", "*.json", "*.ts", "!package-lock.json"]
+    "includes": [
+      "src/**",
+      "test/**",
+      "bench/**",
+      "site/src/**/*.ts",
+      "site/src/**/*.tsx",
+      "site/scripts/**",
+      "site/*.mjs",
+      "*.json",
+      "*.ts",
+      "!package-lock.json"
+    ]
   }
 }

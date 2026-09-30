@@ -1,0 +1,36 @@
+---
+layout: ../layouts/Page.astro
+title: Channel and kit
+description: A channel is one field with its own arithmetic. A kit is the set of channels one kind of pose is made of.
+---
+import Channel from '../explainers/Channel';
+import ApiEntries from '../components/ApiEntries.astro';
+
+# Channel and kit
+
+<p class="lede">A channel is one field of a pose, and it owns the arithmetic: how two voices writing it combine, and what it reads when nobody is writing.</p>
+
+<Channel client:only="react" />
+
+Two voices write the same field. Whether the result is their sum, their product, the larger of the two or simply the later one isn't up to either voice. It belongs to the channel, so a flicker and a fade can share `gain` without knowing about each other.
+
+Every stock channel but `last` has a **rest**: the value that changes nothing. It's 0 for `sum` and `max`, and 1 for `mul`. A voice's weight fades it toward rest, so at weight 0 a voice leaves its channel exactly as it found it. Drag a weight down and watch its bar shrink into the dashed line.
+
+`last` has no rest, so there is nothing to fade toward. A weight can only switch it on or off, and it does so across a band (on above 0.6, off below 0.4) rather than at an edge, so a weight hovering near the middle doesn't flicker between the two.
+
+A **kit** names the channels one kind of pose is made of:
+
+```ts
+import { hex, kit, max, mul, sum, vec } from 'blits';
+
+const PART = kit<PartPose>({
+  gain: mul(),
+  dark: max(),
+  position: vec(3, sum()),
+  color: hex(),
+});
+```
+
+`vec(n, of)` runs one channel's arithmetic down an axis list, and `hex` is a `last` that interpolates colors, for blending between alternatives. A consumer can declare a channel of its own: it's four functions, and only `merge` and `lerp` are required.
+
+<ApiEntries word="channel" />
