@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kit, mul, sum } from '../src/channels.js';
+import { hex, kit, mul, sum } from '../src/channels.js';
 import { mix, mixer } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
 import type { Engine, Kit, Mix, MixOptions } from '../src/types.js';
@@ -142,6 +142,20 @@ describe('stagger', () => {
     m.sync(150);
     expect(m.probe(part).crawl).toBe(50);
   });
+
+  it('a fade in starts when the subject does, not when the voice does', () => {
+    const m = mix<Part, Pose>(PART);
+    m.cue({
+      patch: patch<Part, Pose>(0, () => ({ crawl: 10 }), { writes: ['crawl'] }),
+      start: 0,
+      fade: { in: 200 },
+      stagger: () => 500,
+    });
+    m.sync(600);
+    expect(m.probe(part).crawl).toBeCloseTo(5, 9);
+    m.sync(700);
+    expect(m.probe(part).crawl).toBeCloseTo(10, 9);
+  });
 });
 
 describe('the mix as a host sees it', () => {
@@ -155,6 +169,21 @@ describe('the mix as a host sees it', () => {
     expect(m.live).toBe(false);
     m.cue({ patch: patch<Part, Pose>(0, () => ({ crawl: 1 }), { writes: ['crawl'] }) });
     expect(m.live).toBe(true);
+  });
+
+  it('a reused out object carries nothing from one subject to the next', () => {
+    const m = mix<Part, { gain: number; color?: number }>(kit({ gain: mul(), color: hex() }));
+    const a = { id: 'a' };
+    m.cue({
+      patch: patch<Part, { gain: number; color?: number }>(0, () => ({ color: 0xff0000 }), {
+        writes: ['color'],
+      }),
+      target: (subject) => subject === a,
+    });
+    m.sync(1);
+    const scratch = {} as { gain: number; color?: number };
+    expect(m.probe(a, scratch).color).toBe(0xff0000);
+    expect(m.probe({ id: 'b' }, scratch)).toEqual({ gain: 1 });
   });
 
   it('drop forgets a subject, so its state is built again on next sight', () => {

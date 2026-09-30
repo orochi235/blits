@@ -97,6 +97,13 @@ describe('channel laws', () => {
     expect(first).toEqual([0, 0]);
   });
 
+  it('vec: a missing axis reads as the channel rest, not zero', () => {
+    const channel = vec(3, mul());
+    expect(channel.merge([2, 2], [1, 1, 1])).toEqual([2, 2, 1]);
+    expect(channel.lerp([2, 2], [1, 1, 1], 0.5)).toEqual([1.5, 1.5, 1]);
+    expect(channel.scale?.([2, 2], 1)).toEqual([2, 2, 1]);
+  });
+
   it('hex: lerps in sRGB and ends where it was told to', () => {
     expect(mixHex(0x000000, 0xffffff, 0)).toBe(0x000000);
     expect(mixHex(0x000000, 0xffffff, 1)).toBe(0xffffff);

@@ -293,12 +293,12 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   /** The ramp a voice's own fade envelope applies this frame, 0..1. */
-  private envelope(voice: Voice<I, O>, now: number): number {
+  private envelope(voice: Voice<I, O>, now: number, delay: number): number {
     const reduced = this.reduced;
     let w = 1;
     const fadeIn = voice.fade.in ?? 0;
     if (fadeIn > 0 && !reduced) {
-      const u = (now - voice.start) / fadeIn;
+      const u = (now - voice.start - delay) / fadeIn;
       if (u < 1) w *= voice.fade.ease ? voice.fade.ease(Math.max(0, u)) : Math.max(0, u);
     }
     const out = voice.out;
@@ -372,7 +372,8 @@ class Mixer<I, O> implements Mix<I, O> {
 
     const base = voice.weight;
     const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
-    const raw = (signal ? signal(subject, setting as Setting) : base) * this.envelope(voice, now);
+    const raw =
+      (signal ? signal(subject, setting as Setting) : base) * this.envelope(voice, now, delay);
     const weight = raw < 0 ? 0 : raw > 1 ? 1 : raw;
     setting.weight = weight;
 
@@ -490,6 +491,7 @@ class Mixer<I, O> implements Mix<I, O> {
     for (const key of Object.keys(this.kit as object) as Key<O>[]) {
       const channel = this.kit[key] as Channel<unknown>;
       if (channel.rest !== undefined) pose[key] = copy(channel.rest);
+      else delete pose[key];
     }
     if (Number.isNaN(now)) return pose as O;
 
@@ -571,8 +573,10 @@ class Mixer<I, O> implements Mix<I, O> {
       keep: held.keep,
     };
     const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
+    const delay = voice.spec.stagger ? voice.spec.stagger(subject) : 0;
     const raw =
-      (signal ? signal(subject, setting as Setting) : voice.weight) * this.envelope(voice, now);
+      (signal ? signal(subject, setting as Setting) : voice.weight) *
+      this.envelope(voice, now, delay);
     return raw < 0 ? 0 : raw > 1 ? 1 : raw;
   }
 }

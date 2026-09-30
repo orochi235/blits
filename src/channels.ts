@@ -48,11 +48,12 @@ export function last<V>(opts?: { lerp?: (a: V, b: V, u: number) => V }): Channel
 export function vec(n: number, of: Channel<number>): Channel<number[]> {
   const rest = of.rest === undefined ? undefined : new Array<number>(n).fill(of.rest);
   const scale = of.scale;
+  const fill = of.rest ?? 0;
   return {
     rest,
     merge: (a, b) => {
       const out = new Array<number>(n);
-      for (let i = 0; i < n; i++) out[i] = of.merge(a[i] ?? 0, b[i] ?? 0);
+      for (let i = 0; i < n; i++) out[i] = of.merge(a[i] ?? fill, b[i] ?? fill);
       return out;
     },
     scale:
@@ -60,12 +61,12 @@ export function vec(n: number, of: Channel<number>): Channel<number[]> {
         ? undefined
         : (v, w) => {
             const out = new Array<number>(n);
-            for (let i = 0; i < n; i++) out[i] = scale(v[i] ?? 0, w);
+            for (let i = 0; i < n; i++) out[i] = scale(v[i] ?? fill, w);
             return out;
           },
     lerp: (a, b, u) => {
       const out = new Array<number>(n);
-      for (let i = 0; i < n; i++) out[i] = of.lerp(a[i] ?? 0, b[i] ?? 0, u);
+      for (let i = 0; i < n; i++) out[i] = of.lerp(a[i] ?? fill, b[i] ?? fill, u);
       return out;
     },
   };
