@@ -708,7 +708,11 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 }
 
-/** The one that ships: both forms on the CPU, probed per subject on demand. */
+/**
+ * The one that ships: both forms on the CPU, probed per subject on demand.
+ *
+ * @category engine
+ */
 export const mixer: Engine = {
   name: 'mixer',
   runs: new Set<'fn' | 'keys'>(['fn', 'keys']),
@@ -717,6 +721,11 @@ export const mixer: Engine = {
   },
 };
 
+/**
+ * Makes a mix over a kit, on the engine the options name or the stock one.
+ *
+ * @category mix
+ */
 export function mix<I, O>(kit: Kit<O>, opts: MixOptions = {}): Mix<I, O> {
   return (opts.engine ?? mixer).create<I, O>(kit, opts);
 }

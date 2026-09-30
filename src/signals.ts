@@ -5,7 +5,11 @@ const inputOf = (signals: readonly Signal<never>[]): boolean => signals.some((s)
 const marked = <I>(read: (subject: I, setting: Setting) => number, input: boolean): Signal<I> =>
   (input ? Object.assign(read, { input: true }) : read) as Signal<I>;
 
-/** The loudest of several signals. */
+/**
+ * The loudest of several signals.
+ *
+ * @category signal
+ */
 export function peak<I>(...signals: readonly Signal<I>[]): Signal<I> {
   return marked<I>((subject, setting) => {
     let out = 0;
@@ -17,7 +21,11 @@ export function peak<I>(...signals: readonly Signal<I>[]): Signal<I> {
   }, inputOf(signals));
 }
 
-/** A signal the host writes. klieg's `level`. */
+/**
+ * A signal the host writes. klieg's `level`.
+ *
+ * @category signal
+ */
 export function level<I>(initial = 0): Signal<I> & { set(v: number): void } {
   let value = initial;
   return Object.assign(() => value, {
@@ -38,6 +46,8 @@ interface Slewed {
  * The package's one decay primitive: follows its input at a rate limit, no faster than `riseMs` per
  * unit climbing or `fallMs` draining. The mix keeps its state per voice and subject, so two voices
  * handed the same slew each follow on their own.
+ *
+ * @category signal
  */
 export function slew<I>(
   of: Signal<I>,
@@ -71,6 +81,8 @@ interface Gated {
 /**
  * The other half of the pair: a band, not an edge. It drops at `off`, passes at `on`, and between
  * the two it holds whatever it last did, so an input resting on a threshold cannot chatter.
+ *
+ * @category signal
  */
 export function gate<I>(of: Signal<I>, band: { on: number; off: number } | number): Signal<I> {
   const on = typeof band === 'number' ? band : band.on;

@@ -2,7 +2,11 @@ import type { Channel, Kit } from './types.js';
 
 const mix = (a: number, b: number, u: number) => a + (b - a) * u;
 
-/** Position axes, rotation, crawl, yaw, pitch, offset. */
+/**
+ * Position axes, rotation, crawl, yaw, pitch, offset.
+ *
+ * @category channel
+ */
 export function sum(): Channel<number> {
   return {
     rest: 0,
@@ -12,7 +16,11 @@ export function sum(): Channel<number> {
   };
 }
 
-/** Gain, scale, opacity, hold. */
+/**
+ * Gain, scale, opacity, hold.
+ *
+ * @category channel
+ */
 export function mul(): Channel<number> {
   return {
     rest: 1,
@@ -22,7 +30,11 @@ export function mul(): Channel<number> {
   };
 }
 
-/** Dark, aperture. */
+/**
+ * Dark, aperture.
+ *
+ * @category channel
+ */
 export function max(): Channel<number> {
   return {
     rest: 0,
@@ -36,6 +48,8 @@ export function max(): Channel<number> {
  * A channel with no rest: the last influence to pass wins, and a weight can only gate it. The
  * default `lerp` steps at the midpoint, which is all a value with no arithmetic can promise; a
  * consumer with a real interpolation passes its own, as `hex` does.
+ *
+ * @category channel
  */
 export function last<V>(opts?: { lerp?: (a: V, b: V, u: number) => V }): Channel<V> {
   return {
@@ -44,7 +58,11 @@ export function last<V>(opts?: { lerp?: (a: V, b: V, u: number) => V }): Channel
   };
 }
 
-/** Vec3 position, premultiplied light: one channel's arithmetic applied down an axis list. */
+/**
+ * Vec3 position, premultiplied light: one channel's arithmetic applied down an axis list.
+ *
+ * @category channel
+ */
 export function vec(n: number, of: Channel<number>): Channel<number[]> {
   const rest = of.rest === undefined ? undefined : new Array<number>(n).fill(of.rest);
   const scale = of.scale;
@@ -84,6 +102,8 @@ const clamp255 = (v: number) => (v < 0 ? 0 : v > 255 ? 255 : Math.round(v));
 /**
  * sRGB, which is what klieg's light channel already assumes, so the port's arithmetic is
  * unchanged. OKLCH reads better across hues and is the open question, not a second function.
+ *
+ * @category channel
  */
 export function mixHex(a: number, b: number, u: number): number {
   const ar = (a >> 16) & 0xff;
@@ -97,12 +117,20 @@ export function mixHex(a: number, b: number, u: number): number {
   );
 }
 
-/** Color, as 0xrrggbb. */
+/**
+ * Color, as 0xrrggbb.
+ *
+ * @category channel
+ */
 export function hex(): Channel<number> {
   return last<number>({ lerp: mixHex });
 }
 
-/** A kit is plain data; this only fixes the type. */
+/**
+ * A kit is plain data; this only fixes the type.
+ *
+ * @category channel
+ */
 export function kit<O>(channels: Kit<O>): Kit<O> {
   return channels;
 }

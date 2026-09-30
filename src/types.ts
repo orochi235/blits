@@ -1,4 +1,8 @@
-/** One field of a delta, with its own arithmetic. */
+/**
+ * One field of a delta, with its own arithmetic.
+ *
+ * @category channel
+ */
 export interface Channel<V> {
   /** Identity. Absent means the channel has none: it replaces rather than contributes. */
   rest?: V;
@@ -15,12 +19,18 @@ export interface Channel<V> {
   fold?(into: V, v: V, w: number): V;
 }
 
-/** The channel set for one kind of delta. */
+/**
+ * The channel set for one kind of delta.
+ *
+ * @category channel
+ */
 export type Kit<O> = { readonly [K in keyof O]-?: Channel<NonNullable<O[K]>> };
 
 /**
  * A curve on 0..1, as data where it can be: CSS's names, a `cubic-bezier`, or `steps`, which a
  * WAAPI or GPU engine can read. The function form runs on the CPU engine only.
+ *
+ * @category patch
  */
 export type Easing =
   | ((u: number) => number)
@@ -32,7 +42,11 @@ export type Easing =
   | { readonly bezier: readonly [x1: number, y1: number, x2: number, y2: number] }
   | { readonly steps: number; readonly jump?: 'start' | 'end' };
 
-/** One stop of a `keys` patch. */
+/**
+ * One stop of a `keys` patch.
+ *
+ * @category patch
+ */
 export interface Keyframe<O> {
   /** Phase, 0..1. */
   at: number;
@@ -43,6 +57,8 @@ export interface Keyframe<O> {
 /**
  * What a patch may read and did not compute, for one subject this frame. The mix reuses the object,
  * so it is valid only during the call it is handed to.
+ *
+ * @category state
  */
 export interface Setting<S = void> {
   /**
@@ -74,7 +90,11 @@ export interface Setting<S = void> {
   keep<K>(owner: object, init: () => K): K;
 }
 
-/** A pure function of phase and a subject that returns a delta. Optionally stateful. */
+/**
+ * A pure function of phase and a subject that returns a delta. Optionally stateful.
+ *
+ * @category patch
+ */
 export interface Patch<I, O, S = void> {
   /** Which authoring form built it. An engine declares which forms it runs. */
   readonly form: 'fn' | 'keys';
@@ -96,15 +116,27 @@ export interface Patch<I, O, S = void> {
  * A 0..1 scalar resolved per subject per frame from something outside the clock. `input` is set
  * when it reads something the clock does not drive, such as a value the host writes; a signal
  * built on one inherits it.
+ *
+ * @category signal
  */
 export type Signal<I> = ((subject: I, setting: Setting) => number) & { readonly input?: boolean };
 
+/**
+ * A voice's own ramps in and out, in ms, and the curve both take.
+ *
+ * @category blending
+ */
 export interface FadeSpec {
   in?: number;
   out?: number;
   ease?: Easing;
 }
 
+/**
+ * What `cue` takes: a patch, and the clock, weight and reach it plays with.
+ *
+ * @category voice
+ */
 export interface VoiceSpec<I, O> {
   patch: Patch<I, O, unknown>;
   /**
@@ -142,6 +174,11 @@ export interface VoiceSpec<I, O> {
   from?: 'current';
 }
 
+/**
+ * How a voice leaves when it is faded.
+ *
+ * @category blending
+ */
 export interface FadeOptions {
   /** The ramp, ms. Defaults to the voice's own `fade.out`. */
   over?: number;
@@ -151,6 +188,11 @@ export interface FadeOptions {
   deadline?: number;
 }
 
+/**
+ * The live controls on one voice, returned by `cue`.
+ *
+ * @category voice
+ */
 export interface Handle {
   readonly id: number;
   readonly state: 'pending' | 'live' | 'fading' | 'done';
@@ -167,6 +209,11 @@ export interface Handle {
   readonly done: Promise<void>;
 }
 
+/**
+ * How a mix is built: its engine, reduced motion, the host, and its limits.
+ *
+ * @category mix
+ */
 export interface MixOptions {
   engine?: Engine;
   /** Reduced motion: fades and warm-ups snap, `dt` reads Infinity. */
@@ -185,6 +232,11 @@ export interface MixOptions {
   maxDt?: number;
 }
 
+/**
+ * The live voices over one kit, folded into one pose per subject per frame.
+ *
+ * @category mix
+ */
 export interface Mix<I, O> {
   /** Cues a voice. Throws when the engine cannot run the patch's form, or the kit lacks a channel. */
   cue(spec: VoiceSpec<I, O>): Handle;
@@ -215,6 +267,11 @@ export interface Mix<I, O> {
   drop(subject: I): void;
 }
 
+/**
+ * The implementation behind a mix: which patch forms it runs, and how it makes one.
+ *
+ * @category engine
+ */
 export interface Engine {
   readonly name: string;
   /** Which patch forms this engine can run. A voice it cannot run is refused at `cue`, by name. */

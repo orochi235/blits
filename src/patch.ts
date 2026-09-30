@@ -1,6 +1,11 @@
 import { type Curve, curve } from './easing.js';
 import type { Easing, Keyframe, Patch, Setting } from './types.js';
 
+/**
+ * What `patch` takes besides its period and its function.
+ *
+ * @category patch
+ */
 export interface PatchOptions<I, O, S> {
   /** The channels this patch contributes to. Every key `at` sets, and no others. */
   writes: readonly (keyof O)[];
@@ -8,7 +13,11 @@ export interface PatchOptions<I, O, S> {
   step?(state: S, dt: number, subject: I, setting: Setting<S>): void;
 }
 
-/** The procedural form. Flicker, roving, a hash walk, a starter strike. */
+/**
+ * The procedural form. Flicker, roving, a hash walk, a starter strike.
+ *
+ * @category patch
+ */
 export function patch<I, O, S = void>(
   period: number,
   at: (phase: number, subject: I, setting: Setting<S>) => Partial<O>,
@@ -24,6 +33,11 @@ export function patch<I, O, S = void>(
   };
 }
 
+/**
+ * What `keys` takes besides its period and its stops.
+ *
+ * @category patch
+ */
 export interface KeysOptions<O> {
   /** The curve every segment takes unless a stop or `easeBy` overrides it. */
   ease?: Easing;
@@ -185,7 +199,11 @@ export function evalKeys<O>(
   return readKeys(build(stops, writes, period, opts), phase, {}, base as never) as Partial<O>;
 }
 
-/** The declarative form. klieg's transition sugar and wod's keyframes. */
+/**
+ * The declarative form. klieg's transition sugar and wod's keyframes.
+ *
+ * @category patch
+ */
 export function keys<I, O>(
   period: number,
   stops: readonly Keyframe<O>[],
