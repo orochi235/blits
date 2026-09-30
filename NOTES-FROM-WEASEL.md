@@ -18,9 +18,9 @@ in play allocates nothing of its own. `npm run bench` (`bench/frame.mjs`) took f
 18.7 to about 10.5 ms per frame and keys 10k × 3 from 33.0 to 9.2. What is left, all measured by
 that benchmark and a CPU profile:
 
-- `vec` allocates a new array in every `merge`, `scale` and `lerp`, and `interpolate` does for a
-  keyed array: why keys 10k × 3 still collects 140 times in 300 frames. Removing it needs an
-  in-place operation on `Channel`, which is a change to the public surface.
+- `vec` channels now fold in place (`Channel.fold`); `keys` still interpolates a new array per read
+  of a keyed array, which is most of the 82 collections left in keys 10k × 3. Doing it in place
+  must never write into a stop's own array: a prototype that did corrupted the keyframes.
 - One WeakMap lookup per voice per subject (`Store.get`, 7.5% of a profile of fn 10k × 3). The
   patch's own function is 24% of the same profile.
 - `atRest` runs a second fold, though on reused deltas.
