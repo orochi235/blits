@@ -1,4 +1,4 @@
-# Handoff — blits, 2026-09-28
+# Handoff — blits, 2026-09-30
 
 **For:** the next session on blits. **Answers:** what blits is meant to be, what exists, what was
 decided in conversation and lives nowhere else, and what comes next. The design is in
@@ -18,7 +18,7 @@ systems now run on it**, on a branch that is not merged.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **private**, and 28 commits ahead of it on 2026-09-29. The remote had been
+- `main` at `git@github.com:orochi235/blits.git` — **private**, and 43 commits ahead of it on 2026-09-30, unpushed. The remote had been
   configured and pushed once on 2026-09-16 and then went unmentioned; two handoffs since have said
   there was none. Check `git remote -v` before believing any of this.
 - **klieg's port is done and green, on `blits-port` in `~/src/klieg`** — four commits, the last following the 2026-09-29 rename; not merged,
@@ -31,13 +31,17 @@ systems now run on it**, on a branch that is not merged.
   `packages/core/package.json` — so the branch resolves on this machine and nowhere else. That is
   the one thing standing between the branch and a merge.
 - **The package, v0.1.0.** `src/` is the whole of it: `channels.ts` (the stock channels, `kit`,
-  `hex`/`mixHex`), `patch.ts` (`patch`, `keys`, and the stop evaluator `from: 'current'` reuses),
+  `hex`/`mixHex`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
+  and the stops built once per channel that `from: 'current'` reuses),
   `signals.ts` (`peak`, `slew`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
   objects and a Map for anything else), `mixer.ts` (the engine and `mix`), `types.ts` (the whole
   public surface, doc-commented). Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
-  is lint, typecheck of both `src` and `test`, then the suite: 55 tests, green, and they are the
-  design page's own test list minus the klieg extraction. Enlisted for the fleet — `.onto/tests` is
+  is lint, typecheck of both `src` and `test`, then the suite: 71 tests, green. `npm run bench`
+  (`bench/frame.mjs`) measures a frame at scene sizes, GC counts included. Enlisted for the fleet — `.onto/tests` is
   `plugin: node`, `run: npm test`, `runner: vitest` — and green there too.
+- **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
+  the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
+  is green on all 13 pages. Local only; `.github/workflows/site.yml` deploys to Pages by hand.
 - `docs/schema.html` — the design: vocabulary, channel table, patches, voices, mix,
   signals, time model, blending, patch state, the engine seam, per-consumer rigs, the klieg port,
   decided-against, tests, open items. Status line says design under review. It reads in the called
@@ -122,10 +126,23 @@ systems now run on it**, on a branch that is not merged.
 - **Two halves of "offset"** were split: the delta a patch returns (partial, relative) and the pose
   the mix returns (resolved). klieg's `ResolvedOffset` is the second.
 
+- **Decided 2026-09-29/30, and in the code or the schema since**: easing is data (CSS's names,
+  `{ bezier }`, `{ steps }`) as well as a function; `stagger` is asked once per subject and a
+  subject's fade in counts from its own start; a `Setting` is valid only during its call;
+  `Channel.fold` folds into the pose in place; `mix.rebase()` takes hidden-tab time out of the
+  clock and `MixOptions.maxDt` caps a step's `dt`, off by default.
+- **Versioning is not a constraint yet**: Mike, 2026-09-29, "idgaf about versioning". Breaks land
+  in 0.1.0 until it is published.
+- **The site**: the vocabulary first, consumers' docs second, the npm pitch third. Astro, not a
+  Vite app, because it is mostly documents. `docs/schema.html` stays the design record, untouched;
+  the site takes its outline loosely. Local until GitHub Pages, and the workflow exists already.
+
 ## Next, in order
 
-0. **`NOTES-FROM-WEASEL.md`** holds weasel's read of blits: the per-frame allocation profile, and
-   design questions (hidden-tab resume, easing as data, velocity on retarget). Its bugs are fixed.
+0. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
+   in the hot path, velocity on retarget, and what weasel has that blits doesn't (events, a
+   mix-wide time scale, nesting, cheap observability — the site's ledger wants the last, to show a
+   voice's weight after fades).
    Delete each item as it is dealt with, and the file once it is empty.
    `NOTES-FROM-ASTV.md` is astv's: the operations and cases a reading-back API has to serve, for
    whoever builds the score. Same rule.
@@ -151,6 +168,9 @@ systems now run on it**, on a branch that is not merged.
 
 ## Loose ends
 
+- **A semanticore `serve` has held port 4872 since 2026-09-20** (pid 17237, cwd this repo), on
+  `docs/2026-09-15-vocabulary.json`, a file since renamed. It is the kind of stale tab the next
+  item warns about; the site moved to 4880 rather than touch it.
 - **klieg's `blits-port` branch is local, unmerged and unpushed**, and its `file:` dependency means
   no other machine can build it.
 - **A stale served-page tab will overwrite `vocabulary.picks.json` with whatever set it
