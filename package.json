@@ -38,7 +38,8 @@
     "lint": "biome check .",
     "check": "npm run lint && npm run typecheck && npm run test",
     "prepack": "npm run build",
-    "prepublishOnly": "npm run check"
+    "prepublishOnly": "npm run check",
+    "bench": "npm run build && node bench/frame.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",

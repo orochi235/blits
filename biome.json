@@ -4,6 +4,6 @@
   "javascript": { "formatter": { "quoteStyle": "single" } },
   "linter": { "enabled": true, "rules": { "preset": "recommended" } },
   "files": {
-    "includes": ["src/**", "test/**", "*.json", "*.ts", "!package-lock.json"]
+    "includes": ["src/**", "test/**", "bench/**", "*.json", "*.ts", "!package-lock.json"]
   }
 }
