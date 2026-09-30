@@ -127,6 +127,8 @@ systems now run on it**, on a branch that is not merged.
 0. **`NOTES-FROM-WEASEL.md`** holds weasel's read of blits: the per-frame allocation profile, and
    design questions (hidden-tab resume, easing as data, velocity on retarget). Its bugs are fixed.
    Delete each item as it is dealt with, and the file once it is empty.
+   `NOTES-FROM-ASTV.md` is astv's: the operations and cases a reading-back API has to serve, for
+   whoever builds the score. Same rule.
 
 1. **Publish 0.1.0, then point klieg at it.** Held at 0.1.0 while npm answers Mike's request about
    the name — the registry 404s `blits`, but the request is pending. The 2026-09-29 rename went into
