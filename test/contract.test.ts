@@ -156,6 +156,38 @@ describe('stagger', () => {
     m.sync(700);
     expect(m.probe(part).crawl).toBeCloseTo(10, 9);
   });
+
+  it('a fade in under a rate starts where the voice clock reaches the delay', () => {
+    const m = mix<Part, Pose>(PART);
+    m.cue({
+      patch: patch<Part, Pose>(0, () => ({ crawl: 10 }), { writes: ['crawl'] }),
+      start: 0,
+      rate: 2,
+      fade: { in: 200 },
+      stagger: () => 500,
+    });
+    m.sync(0);
+    m.probe(part);
+    m.sync(350);
+    expect(m.probe(part).crawl).toBeCloseTo(5, 9);
+  });
+
+  it('asks stagger once per subject and keeps the answer', () => {
+    let asked = 0;
+    const m = mix<Part, Pose>(PART);
+    m.cue({
+      patch: patch<Part, Pose>(0, () => ({ crawl: 1 }), { writes: ['crawl'] }),
+      stagger: () => {
+        asked++;
+        return 0;
+      },
+    });
+    for (let t = 0; t < 5; t++) {
+      m.sync(t * 16);
+      m.probe(part);
+    }
+    expect(asked).toBe(1);
+  });
 });
 
 describe('the mix as a host sees it', () => {

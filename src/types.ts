@@ -13,7 +13,19 @@ export interface Channel<V> {
 /** The channel set for one kind of delta. */
 export type Kit<O> = { readonly [K in keyof O]-?: Channel<NonNullable<O[K]>> };
 
-export type Easing = (u: number) => number;
+/**
+ * A curve on 0..1, as data where it can be: CSS's names, a `cubic-bezier`, or `steps`, which a
+ * WAAPI or GPU engine can read. The function form runs on the CPU engine only.
+ */
+export type Easing =
+  | ((u: number) => number)
+  | 'linear'
+  | 'ease'
+  | 'ease-in'
+  | 'ease-out'
+  | 'ease-in-out'
+  | { readonly bezier: readonly [x1: number, y1: number, x2: number, y2: number] }
+  | { readonly steps: number; readonly jump?: 'start' | 'end' };
 
 /** One stop of a `keys` patch. */
 export interface Keyframe<O> {
@@ -23,7 +35,10 @@ export interface Keyframe<O> {
   ease?: Easing;
 }
 
-/** What a patch may read and did not compute, for one subject this frame. */
+/**
+ * What a patch may read and did not compute, for one subject this frame. The mix reuses the object,
+ * so it is valid only during the call it is handed to.
+ */
 export interface Setting<S = void> {
   /** The mix clock's timestamp at this frame. Identical for every probe in the frame. */
   timestamp: number;
@@ -98,7 +113,10 @@ export interface VoiceSpec<I, O> {
    * passes are done — over `fade.out` where one is set, at once where none is.
    */
   loop?: boolean | number;
-  /** Per-subject delay in ms, klieg's stagger grammar reduced to the one thing the mix needs. */
+  /**
+   * Per-subject delay in voice ms, klieg's stagger grammar reduced to the one thing the mix needs.
+   * Like `target`, it runs once per subject on first sight, and the answer is kept.
+   */
   stagger?: (subject: I) => number;
 
   /** Steady weight, or a signal read per subject per frame. Default 1. */

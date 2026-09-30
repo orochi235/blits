@@ -1,3 +1,4 @@
+import { type Curve, curve } from './easing.js';
 import type { Easing, Keyframe, Patch, Setting } from './types.js';
 
 export interface PatchOptions<I, O, S> {
@@ -53,51 +54,126 @@ function interpolate(a: unknown, b: unknown, u: number): unknown {
   return u < 0.5 ? a : b;
 }
 
-/**
- * Reads one channel of a stop list at a phase. Stops that do not carry the channel are skipped, so
- * a channel may be keyed at its own resolution. `base` stands in for the value at phase 0, which is
- * how `from: 'current'` starts a voice wherever the subject already is.
- */
-function readChannel<O>(
-  stops: readonly Keyframe<O>[],
-  channel: keyof O,
-  phase: number,
-  opts: KeysOptions<O>,
-  base?: O[keyof O],
-): O[keyof O] | undefined {
-  const held: { at: number; value: O[keyof O]; ease?: Easing }[] = [];
-  if (base !== undefined) held.push({ at: 0, value: base });
-  for (const stop of stops) {
-    const value = stop.delta[channel];
-    if (value === undefined) continue;
-    if (base !== undefined && stop.at === 0) continue;
-    held.push({ at: stop.at, value: value as O[keyof O], ease: stop.ease });
-  }
-  if (held.length === 0) return undefined;
-  held.sort((x, y) => x.at - y.at);
-
-  const first = held[0] as { at: number; value: O[keyof O]; ease?: Easing };
-  const lastHeld = held[held.length - 1] as { at: number; value: O[keyof O]; ease?: Easing };
-  if (phase <= first.at) return first.value;
-  if (phase >= lastHeld.at) return lastHeld.value;
-
-  for (let i = 0; i < held.length - 1; i++) {
-    const a = held[i] as { at: number; value: O[keyof O]; ease?: Easing };
-    const b = held[i + 1] as { at: number; value: O[keyof O]; ease?: Easing };
-    if (phase < a.at || phase > b.at) continue;
-    const span = b.at - a.at;
-    const u = span === 0 ? 1 : (phase - a.at) / span;
-    const ease = b.ease ?? opts.easeBy?.(channel) ?? opts.ease;
-    const eased = ease ? ease(u) : u;
-    const own = opts.lerpBy?.(channel);
-    return (
-      own ? own(a.value as never, b.value as never, eased) : interpolate(a.value, b.value, eased)
-    ) as O[keyof O];
-  }
-  return lastHeld.value;
+interface Point {
+  at: number;
+  value: unknown;
+  /** The curve into this point from the one before: the stop's own, else the channel's. */
+  ease: Curve | undefined;
 }
 
-/** Evaluates a stop list into a delta. Shared by the patch's own `at` and by `from: 'current'`. */
+/** One channel of a stop list, sorted and resolved once, so a read is a binary search. */
+interface Track {
+  channel: string;
+  /** Every stop carrying this channel, by phase. */
+  all: Point[];
+  /** The same without stops at 0, which a `from: 'current'` base replaces. */
+  tail: Point[];
+  delay: number;
+  lerp: ((a: never, b: never, u: number) => unknown) | undefined;
+}
+
+export interface Built {
+  tracks: Track[];
+  period: number;
+}
+
+function build<O>(
+  stops: readonly Keyframe<O>[],
+  writes: readonly (keyof O)[],
+  period: number,
+  opts: KeysOptions<O>,
+): Built {
+  const fallback = opts.ease === undefined ? undefined : curve(opts.ease);
+  const tracks: Track[] = [];
+  for (const channel of writes) {
+    const own = opts.easeBy?.(channel);
+    const trackEase = own === undefined ? fallback : curve(own);
+    const all: Point[] = [];
+    for (const stop of stops) {
+      const value = stop.delta[channel];
+      if (value === undefined) continue;
+      all.push({
+        at: stop.at,
+        value,
+        ease: stop.ease === undefined ? trackEase : curve(stop.ease),
+      });
+    }
+    all.sort((x, y) => x.at - y.at);
+    tracks.push({
+      channel: channel as string,
+      all,
+      tail: all.filter((pt) => pt.at !== 0),
+      delay: opts.delayBy?.(channel) ?? 0,
+      lerp: opts.lerpBy?.(channel),
+    });
+  }
+  return { tracks, period };
+}
+
+/**
+ * Reads one track at a phase. `base` stands in for the value at phase 0, which is how
+ * `from: 'current'` starts a voice wherever the subject already is.
+ */
+function read(track: Track, phase: number, base: unknown): unknown {
+  const pts = base === undefined ? track.all : track.tail;
+  const o = base === undefined ? 0 : 1;
+  const n = pts.length + o;
+  if (n === 0) return undefined;
+  const firstAt = o === 1 ? 0 : (pts[0] as Point).at;
+  if (phase <= firstAt) return o === 1 ? base : (pts[0] as Point).value;
+  const last = pts[pts.length - 1] as Point | undefined;
+  if (last === undefined || phase >= last.at) return last === undefined ? base : last.value;
+
+  // The first point at or past phase; the segment ends there.
+  let lo = 1;
+  let hi = n - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if ((pts[mid - o] as Point).at >= phase) hi = mid;
+    else lo = mid + 1;
+  }
+  const b = pts[lo - o] as Point;
+  const aAt = lo - 1 < o ? 0 : (pts[lo - 1 - o] as Point).at;
+  const aValue = lo - 1 < o ? base : (pts[lo - 1 - o] as Point).value;
+  const u = (phase - aAt) / (b.at - aAt);
+  const eased = b.ease ? b.ease(u) : u;
+  return track.lerp
+    ? track.lerp(aValue as never, b.value as never, eased)
+    : interpolate(aValue, b.value, eased);
+}
+
+/** Evaluates built stops into `out`; a channel with nothing to read at this phase is left undefined. */
+export function readKeys(
+  built: Built,
+  phase: number,
+  out: Record<string, unknown>,
+  base?: Record<string, unknown>,
+): Record<string, unknown> {
+  const period = built.period;
+  for (const track of built.tracks) {
+    const delay = track.delay;
+    const shifted =
+      delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
+    const value = read(track, shifted, base?.[track.channel]);
+    if (value !== undefined) out[track.channel] = value;
+    else if (out[track.channel] !== undefined) out[track.channel] = undefined;
+  }
+  return out;
+}
+
+const cache = new WeakMap<object, Built>();
+
+/** The built form of a patch's stops, made on first ask for a patch `keys()` did not build. */
+export function builtOf<I, O, S>(p: Patch<I, O, S>): Built {
+  let held = cache.get(p);
+  if (held === undefined) {
+    held = build(p.keys as readonly Keyframe<O>[], p.writes, p.period, keysOptionsOf(p) ?? {});
+    cache.set(p, held);
+  }
+  return held;
+}
+
+/** Evaluates a stop list into a fresh delta. */
 export function evalKeys<O>(
   stops: readonly Keyframe<O>[],
   writes: readonly (keyof O)[],
@@ -106,15 +182,7 @@ export function evalKeys<O>(
   opts: KeysOptions<O>,
   base?: Partial<O>,
 ): Partial<O> {
-  const out: Partial<O> = {};
-  for (const channel of writes) {
-    const delay = opts.delayBy?.(channel) ?? 0;
-    const shifted =
-      delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
-    const value = readChannel(stops, channel, shifted, opts, base?.[channel]);
-    if (value !== undefined) out[channel] = value;
-  }
-  return out;
+  return readKeys(build(stops, writes, period, opts), phase, {}, base as never) as Partial<O>;
 }
 
 /** The declarative form. klieg's transition sugar and wod's keyframes. */
@@ -124,13 +192,15 @@ export function keys<I, O>(
   opts: KeysOptions<O> = {},
 ): Patch<I, O, void> {
   const writes = [...new Set(stops.flatMap((s) => Object.keys(s.delta) as (keyof O)[]))];
-  const built: Patch<I, O, void> = {
+  const made = build(stops, writes, period, opts);
+  const p: Patch<I, O, void> = {
     form: 'keys',
     period,
     writes,
     keys: stops,
-    at: (phase) => evalKeys(stops, writes, phase, period, opts),
+    at: (phase) => readKeys(made, phase, {}) as Partial<O>,
   };
-  options.set(built as unknown as Patch<never, never, never>, opts as KeysOptions<unknown>);
-  return built;
+  options.set(p as unknown as Patch<never, never, never>, opts as KeysOptions<unknown>);
+  cache.set(p, made);
+  return p;
 }

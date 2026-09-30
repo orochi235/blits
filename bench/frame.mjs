@@ -48,14 +48,16 @@ for (const [i, [form, n, voices]] of rows.entries()) {
   const scratch = {};
   let t = 0;
   for (let f = 0; f < 30; f++) {
-    m.sync((t += 16.7));
+    t += 16.7;
+    m.sync(t);
     for (const s of subjects) m.probe(s, scratch);
   }
   await new Promise((r) => setTimeout(r, 0));
   const before = gcs;
   const t0 = performance.now();
   for (let f = 0; f < frames; f++) {
-    m.sync((t += 16.7));
+    t += 16.7;
+    m.sync(t);
     for (const s of subjects) m.probe(s, scratch);
   }
   const ms = (performance.now() - t0) / frames;
