@@ -154,7 +154,8 @@ export interface VoiceSpec<I, O> {
   rate?: number;
   /**
    * true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its
-   * passes are done — over `fade.out` where one is set, at once where none is.
+   * passes are done for the latest-staggered subject it has seen — over `fade.out` where one is
+   * set, at once where none is.
    */
   loop?: boolean | number;
   /**

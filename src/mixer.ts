@@ -87,6 +87,8 @@ class Voice<I, O> {
   readonly setting: Setting<unknown>;
   /** Every subject this voice has been asked about, so a handover knows when it is finished. */
   seen = 0;
+  /** The longest stagger of any subject seen, so a finite loop waits for the last of them. */
+  latest = 0;
   restedCount = 0;
   resolve!: () => void;
   readonly done: Promise<void>;
@@ -237,7 +239,7 @@ class Mixer<I, O> implements Mix<I, O> {
       const loop = voice.spec.loop ?? true;
       const passes = loop === true ? Number.POSITIVE_INFINITY : loop === false ? 1 : loop;
       if (voice.state === 'live' && period > 0 && Number.isFinite(passes)) {
-        if (voice.elapsedAt(now) >= period * passes) this.beginFade(voice, {});
+        if (voice.elapsedAt(now) >= period * passes + voice.latest) this.beginFade(voice, {});
       }
       if (voice.state === 'fading' && voice.out) {
         const { at, over, rest, deadline } = voice.out;
@@ -405,6 +407,7 @@ class Mixer<I, O> implements Mix<I, O> {
     };
     voice.subjects.set(subject, held);
     if (reaches) voice.seen++;
+    if (delay > voice.latest) voice.latest = delay;
     return held;
   }
 

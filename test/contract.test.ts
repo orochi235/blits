@@ -258,3 +258,25 @@ describe('the mix as a host sees it', () => {
     expect(h.state).toBe('done');
   });
 });
+
+describe('a finite loop under stagger', () => {
+  it('stays until the latest subject it has seen has played its passes', () => {
+    const m = mix<Part, Pose>(PART);
+    const early = { id: 'early' };
+    const late = { id: 'late' };
+    m.cue({
+      patch: patch<Part, Pose>(100, (phase) => ({ crawl: phase * 10 }), { writes: ['crawl'] }),
+      loop: 1,
+      stagger: (s) => (s.id === 'late' ? 300 : 0),
+    });
+    for (let t = 0; t <= 350; t += 50) {
+      m.sync(t);
+      m.probe(early);
+      m.probe(late);
+    }
+    expect(m.probe(late).crawl).toBeCloseTo(5, 9);
+    expect(m.live).toBe(true);
+    m.sync(450);
+    expect(m.live).toBe(false);
+  });
+});
