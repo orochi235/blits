@@ -48,7 +48,15 @@ function timeline(
     ctx.lineTo(px(m.at), box.y + box.h);
     ctx.stroke();
     ctx.setLineDash([]);
-    label(ctx, m.text, px(m.at) + 5, box.y + box.h - 8, ink.soft);
+    label(
+      ctx,
+      m.text,
+      px(m.at) + 5,
+      box.y + box.h - 8,
+      ink.soft,
+      'left',
+      /\(|^deadline$/.test(m.text),
+    );
   }
   ctx.strokeStyle = ink.ink;
   ctx.beginPath();
@@ -118,7 +126,12 @@ export function Fade() {
       schema={fadeConfig}
       duration={FADE_DURATION}
       aspect={0.46}
-      caption="A wave that fades in over 1 s, then out over 1.2 s once fade() is called. The line under the row is the voice's weight: the ease shapes both ramps."
+      caption={
+        <>
+          A wave that fades in over 1 s, then out over 1.2 s once <code>fade()</code> is called. The
+          line under the row is the voice's weight: the ease shapes both ramps.
+        </>
+      }
       draw={(ctx, frame, size, ink) => {
         const top: Size = { w: size.w, h: size.h * 0.55 };
         dots(
@@ -162,7 +175,7 @@ const FIRST_TARGET = 4;
 const SECOND_TARGET = 1;
 
 const retargetConfig = f.schema({
-  current: f.boolean(true).label("from: 'current' on the second voice"),
+  current: f.boolean(true).label('Second voice starts where the dot is'),
 });
 type RetargetConfig = ReturnType<typeof retargetConfig.defaults>;
 
@@ -215,7 +228,13 @@ export function Retarget() {
       schema={retargetConfig}
       duration={RETARGET_DURATION}
       aspect={0.46}
-      caption="The first voice heads for 4. At 1.1 s it is cut and a second voice heads for 1. With from: 'current' the second starts where the dot is; without it, from its own first stop at 0."
+      caption={
+        <>
+          The first voice heads for 4. At 1.1 s it is cut and a second voice heads for 1. With{' '}
+          <code>from: 'current'</code> the second starts where the dot is; without it, from its own
+          first stop at 0.
+        </>
+      }
       draw={(ctx, frame, size, ink) => {
         const left = 40;
         const right = size.w - 40;
@@ -323,7 +342,12 @@ export function Blend() {
       scene={blendScene}
       duration={BLEND_DURATION}
       aspect={0.46}
-      caption="Three poses of one row, cued with mix.blend and a signal that sweeps from 0 to 1 and back. The faint dots are each pose alone; the solid ones are what the mix makes."
+      caption={
+        <>
+          Three poses of one row, cued with <code>mix.blend</code> and a signal that sweeps from 0
+          to 1 and back. The faint dots are each pose alone; the solid ones are what the mix makes.
+        </>
+      }
       draw={(ctx, frame, size, ink) => {
         const top: Size = { w: size.w, h: size.h * 0.74 };
         const opts = { baseline: 0.92, range: 0.8 };
@@ -391,11 +415,11 @@ const handoverConfig = f.schema({
   leave: f
     .enum('rest', ['rest', 'ramp'])
     .labels([
-      { value: 'rest', label: "at: 'rest'" },
-      { value: 'ramp', label: 'over: 400' },
+      { value: 'rest', label: 'At rest' },
+      { value: 'ramp', label: 'Over 400 ms' },
     ])
     .radio()
-    .label('fade() with'),
+    .label('Leave'),
 });
 type HandoverConfig = ReturnType<typeof handoverConfig.defaults>;
 
@@ -445,7 +469,14 @@ export function Handover() {
       schema={handoverConfig}
       duration={HANDOVER_DURATION}
       aspect={0.5}
-      caption="A looping hop, staggered across the row, faded at 1.9 s. At rest, each dot finishes its hop and leaves when it lands; the last dot never lands, so the deadline takes it. With a ramp, every dot sinks at once, mid-air or not."
+      caption={
+        <>
+          A looping hop, staggered across the row, faded at 1.9 s. With <code>at: 'rest'</code>,
+          each dot finishes its hop and leaves when it lands; the last dot never lands, so the{' '}
+          <code>deadline</code> takes it. With <code>over: 400</code>, every dot sinks at once,
+          mid-air or not.
+        </>
+      }
       draw={(ctx, frame, size, ink, c) => {
         const top: Size = { w: size.w, h: size.h * 0.5 };
         dots(

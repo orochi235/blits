@@ -181,7 +181,7 @@ function plot(
     ctx.fill();
   }
   ctx.restore();
-  label(ctx, opts.title, box.x + 8, box.y + 18, ink.soft);
+  label(ctx, opts.title, box.x + 8, box.y + 18, ink.soft, 'left', opts.title.includes('('));
 }
 
 const stub = {} as Setting<void>;
@@ -193,7 +193,13 @@ export default function Patch() {
       schema={config}
       duration={PERIOD}
       aspect={0.5}
-      caption="The scrubber is the phase: one period of both patches. The patch function stays put; the keys curve takes whatever easing you pick, on each segment between stops."
+      caption={
+        <>
+          The scrubber is the phase: one period of both patches. The <code>patch</code> curve stays
+          put; the <code>keys</code> curve takes whatever easing you pick, on each segment between
+          stops.
+        </>
+      }
       draw={(ctx, frame, size, ink, c) => {
         const phase = (frame.t % PERIOD) / PERIOD;
         const pad = 12;

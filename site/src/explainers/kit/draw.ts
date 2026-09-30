@@ -147,6 +147,7 @@ export function trace(
   ctx.restore();
 }
 
+/** A text label on the stage. `code` sets it in the mono face, for an API name like `fade()`. */
 export function label(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -154,8 +155,9 @@ export function label(
   y: number,
   color: string,
   align: CanvasTextAlign = 'left',
+  code = false,
 ): void {
-  ctx.font = LABEL;
+  ctx.font = code ? MONO : LABEL;
   ctx.fillStyle = color;
   ctx.textAlign = align;
   ctx.fillText(text, x, y);

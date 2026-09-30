@@ -34,7 +34,7 @@ const config = f.schema({
   stagger: f.number(150).range(0, 500).step(10).suffix('ms').label('Stagger per dot'),
   fadeIn: f.number(600).range(0, 2000).step(50).suffix('ms').label('Fade in'),
   fadeOut: f.number(800).range(0, 2000).step(50).suffix('ms').label('Fade out'),
-  fades: f.boolean(true).label('Call fade()'),
+  fades: f.boolean(true).label('Fade out'),
   fadeAt: f
     .number(4500)
     .range(0, DURATION)
@@ -86,7 +86,13 @@ export default function Voice() {
       schema={config}
       duration={DURATION}
       aspect={0.5}
-      caption="One voice, seven dots. Each dot starts later by the stagger and fades in from its own start; the lines under the row are each dot's weight over time, and the dashed mark is where fade() is called."
+      caption={
+        <>
+          One voice, seven dots. Each dot starts later by the stagger and fades in from its own
+          start; the lines under the row are each dot's weight over time, and the dashed mark is
+          where <code>fade()</code> is called.
+        </>
+      }
       draw={(ctx, frame, size, ink, c) => {
         const top = { w: size.w, h: size.h * 0.55 };
         dots(

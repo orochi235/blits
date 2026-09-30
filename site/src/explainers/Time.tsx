@@ -81,7 +81,12 @@ export function CatchUp() {
       scene={catchUpScene}
       duration={CATCH}
       aspect={0.5}
-      caption="Each subject counts the seconds its step has been handed. B goes unprobed in the shaded stretch, so it holds still; the next probe hands it the whole gap in one step."
+      caption={
+        <>
+          Each subject counts the seconds its <code>step</code> has been handed. B goes unprobed in
+          the shaded stretch, so it holds still; the next probe hands it the whole gap in one step.
+        </>
+      }
       draw={(ctx, frame, size, ink) => {
         const top = Math.round(size.h * 0.5);
         numberLine(ctx, { w: size.w, h: top }, ink, {
@@ -177,7 +182,13 @@ export default function HideTab() {
       schema={hiding}
       duration={HIDE}
       aspect={0.5}
-      caption="In the shaded stretch the tab is hidden and the host gets no frames. Without rebase, the first frame back is 2.5 s later on every clock: the fade has finished and the sweep's one pass is over. With rebase, both resume where they were."
+      caption={
+        <>
+          In the shaded stretch the tab is hidden and the host gets no frames. Without{' '}
+          <code>rebase()</code>, the first frame back is 2.5 s later on every clock: the fade has
+          finished and the sweep's one pass is over. With it, both resume where they were.
+        </>
+      }
       draw={(ctx, frame, size, ink) => {
         const pose = frame.poses[0];
         const top = Math.round(size.h * 0.42);

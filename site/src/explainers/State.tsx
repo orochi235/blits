@@ -46,7 +46,7 @@ const spring = patch<Subject, Pose, Spring>(0, (_phase, _s, setting) => ({ x: se
 });
 
 const config = f.schema({
-  capped: f.boolean(false).label('maxDt 64 ms'),
+  capped: f.boolean(false).label('Cap each step at 64 ms'),
 });
 type Config = ReturnType<typeof config.defaults>;
 
@@ -71,7 +71,14 @@ export default function State() {
       schema={config}
       duration={DURATION}
       aspect={0.52}
-      caption="One spring patch, two subjects. The lower one goes unprobed in the shaded stretch, and its next step is handed the whole 1.2 s gap. Uncapped, one Euler step that long throws it far off the scale; with maxDt at 64 ms it takes one short step and carries on."
+      caption={
+        <>
+          One spring patch, two subjects. The lower one goes unprobed in the shaded stretch, and its
+          next <code>step</code> is handed the whole 1.2 s gap. Uncapped, one Euler step that long
+          throws it far off the scale; with <code>maxDt: 64</code> it takes one short step and
+          carries on.
+        </>
+      }
       draw={(ctx, frame, size, ink) => {
         const top = Math.round(size.h * 0.4);
         numberLine(ctx, { w: size.w, h: top }, ink, {
