@@ -45,11 +45,15 @@ export interface Keyframe<O> {
  * so it is valid only during the call it is handed to.
  */
 export interface Setting<S = void> {
-  /** The mix clock's timestamp at this frame. Identical for every probe in the frame. */
+  /**
+   * The mix clock at this frame: the host's timestamp less any time `rebase` took out. Identical
+   * for every probe in the frame.
+   */
   timestamp: number;
   /**
    * The gap this subject is catching up by: milliseconds since it last advanced, which is the gap
-   * since the previous sync only for a subject sampled every frame. Infinity under reduced motion.
+   * since the previous sync only for a subject sampled every frame. Infinity under reduced motion;
+   * no more than `maxDt` where the mix sets one.
    */
   dt: number;
   /** Milliseconds this voice has been playing, rate applied. */
@@ -109,7 +113,10 @@ export interface VoiceSpec<I, O> {
    */
   target?: (subject: I) => boolean;
 
-  /** Mix-clock ms the voice starts. Default: the next sync. */
+  /**
+   * When the voice starts, in ms on the host's clock, the one it passes `sync`: a rAF timestamp and
+   * `performance.now()` share an origin, `Date.now()` does not. Default: the next sync.
+   */
   start?: number;
   /** Playback rate. 1 is real time; 0 freezes. */
   rate?: number;
@@ -171,6 +178,11 @@ export interface MixOptions {
    * noise in a real signal; these are placeholders until the klieg port measures one.
    */
   band?: { on: number; off: number };
+  /**
+   * The most `dt` a `step` or signal is handed, however long the gap. Off by default, since a
+   * patch with a closed form wants the whole gap; an integrator wants this set.
+   */
+  maxDt?: number;
 }
 
 export interface Mix<I, O> {
@@ -185,6 +197,11 @@ export interface Mix<I, O> {
 
   /** The host reports the clock, once a frame. Nothing advances at the call. */
   sync(timestamp: number): void;
+  /**
+   * The time between the last sync and the next one is not to count: a host calls it when a
+   * hidden tab comes back. Every voice, fade and subject resumes where it was left.
+   */
+  rebase(): void;
   /** The merged pose for one subject at the synced frame. */
   probe(subject: I, out?: O): O;
   /** Every channel at rest for this subject this frame, so a host can skip the write. */

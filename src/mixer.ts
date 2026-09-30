@@ -137,7 +137,11 @@ class Mixer<I, O> implements Mix<I, O> {
   private readonly voices: Voice<I, O>[] = [];
   private readonly pose = new Store<I, O>();
   private nextId = 1;
+  /** The mix clock: the host's timestamp less every gap `rebase` has taken out. */
   private now = Number.NaN;
+  private offset = 0;
+  private last = Number.NaN;
+  private rebasing = false;
   private wantsPose = false;
   /** Read once a sync, so a `reduce` function is not called per voice per subject. */
   private reducedNow = false;
@@ -182,7 +186,8 @@ class Mixer<I, O> implements Mix<I, O> {
     if (spec.from === 'current' && patch.form !== 'keys')
       throw new Error("blits: from: 'current' needs a keys patch");
 
-    const start = spec.start ?? (Number.isNaN(this.now) ? 0 : this.now);
+    const start =
+      spec.start !== undefined ? spec.start - this.offset : Number.isNaN(this.now) ? 0 : this.now;
     const voice = new Voice<I, O>(
       this.nextId++,
       spec,
@@ -218,7 +223,10 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   sync(timestamp: number): void {
-    const now = timestamp;
+    if (this.rebasing && !Number.isNaN(this.last)) this.offset += timestamp - this.last;
+    this.rebasing = false;
+    this.last = timestamp;
+    const now = timestamp - this.offset;
     if (now === this.now) return;
     this.now = now;
     this.reducedNow = this.reduced;
@@ -276,6 +284,10 @@ class Mixer<I, O> implements Mix<I, O> {
       } else if (!near(value, channel.rest)) return false;
     }
     return true;
+  }
+
+  rebase(): void {
+    this.rebasing = true;
   }
 
   get live(): boolean {
@@ -431,7 +443,13 @@ class Mixer<I, O> implements Mix<I, O> {
 
     const setting = voice.setting;
     setting.timestamp = now;
-    setting.dt = this.reducedNow ? Number.POSITIVE_INFINITY : now - held.stepped;
+    const gap = now - held.stepped;
+    const cap = this.opts.maxDt;
+    setting.dt = this.reducedNow
+      ? Number.POSITIVE_INFINITY
+      : cap !== undefined && gap > cap
+        ? cap
+        : gap;
     setting.elapsed = elapsed;
     setting.pass = pass;
     setting.weight = 0;

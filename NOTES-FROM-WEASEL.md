@@ -32,25 +32,6 @@ that benchmark and a CPU profile:
 
 ## Lessons weasel paid for
 
-**A hidden tab arrives as one enormous frame.** rAF stops while a tab is hidden, so the first
-`sync` after an hour away is an hour past the last one. In blits that finishes every fade and
-every finite loop at once, and hands `step` a `dt` of 3.6 million ms. `Setting.dt` says catching
-up by the whole gap is deliberate, which is a fine rule for state. weasel decided the opposite for
-clocks: its frame gate, `useVisibleRaf`, calls an `onResume` hook, and every animation's clock
-rebases there, so hidden time never counts as elapsed. Whichever way blits goes, it wants a way
-to say "the clock was away": a `mix.rebase()` or a `sync(t, { resumed: true })`. It should also
-state in the time model which way it went.
-
-**Cap the step an integrator sees.** weasel's physics step is `min(0.064, Δms / 1000)` seconds.
-Semi-implicit Euler blows up on a large `dt`, and so will any spring written as a blits `step`
-unless the patch caps it itself, which every author will forget once.
-
-**`performance.now()` and `Date.now()` have different origins.** weasel's tweens broke when one
-path defaulted to `Date.now`. rAF timestamps share `performance.now()`'s origin. blits never reads
-a clock itself, which is right, but `VoiceSpec.start` is "mix-clock ms", and saying in the
-docs that this means the rAF / `performance.now()` timeline would save someone passing
-`Date.now()`.
-
 **Retargeting position without velocity leaves a kink.** `from: 'current'` starts a keys voice
 where the subject is now, but its first segment starts from zero speed wherever the old motion was
 heading. weasel's `physics` has `setTarget` and `setVelocity` for this. The one place weasel

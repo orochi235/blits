@@ -35,6 +35,9 @@ function frame(timestamp: number) {
   if (m.live) requestAnimationFrame(frame);
 }
 
+// A hidden tab gets no frames; say the time away should not count, or every fade finishes at once.
+document.addEventListener('visibilitychange', () => document.hidden || m.rebase());
+
 handle.fade({ over: 500 }); // the voice ramps out and leaves
 ```
 

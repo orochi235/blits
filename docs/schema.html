@@ -348,7 +348,7 @@ interface Setting&lt;S = void&gt; {
   target?: (subject: I) =&gt; boolean;
 
   <span class="cm">// clock</span>
-  <span class="cm">/** Mix-clock ms the voice starts. Default: the next sync. */</span>
+  <span class="cm">/** When the voice starts, in ms on the clock the host passes <code>sync</code>. Default: the next sync. */</span>
   start?: number;
   /** Playback rate. 1 is real time; 0 freezes. */
   rate?: number;
@@ -407,6 +407,8 @@ interface MixOptions {
   host?: unknown;
   <span class="cm">/** The band a rest-less channel's influence switches across. Default 0.4 / 0.6, a placeholder. */</span>
   band?: { on: number; off: number };
+  <span class="cm">/** The most `dt` a step or signal is handed, however long the gap. Off by default. */</span>
+  maxDt?: number;
 }
 
 interface Mix&lt;I, O&gt; {
@@ -420,6 +422,8 @@ interface Mix&lt;I, O&gt; {
      each subject catches up by the whole gap the first time it is probed afterward. The same timestamp twice
      changes nothing, and the reading only ever goes forward. */</span>
   sync(timestamp: number): void;
+  <span class="cm">/** The time between the last sync and the next one does not count. Called when a hidden tab comes back. */</span>
+  rebase(): void;
   <span class="cm">/** The merged pose for one subject at the synced frame. `out` is written in place when given. */</span>
   probe(subject: I, out?: O): O;
   <span class="cm">/** Every channel at rest for this subject this frame, so a host can skip the write. */</span>
@@ -459,6 +463,7 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
   <li><b>Everything in a frame reads one timestamp.</b> A second <code>sync</code> with the same value is a no-op, and every <code>probe</code> between syncs answers from the same frame. This is what makes state advance once however many probes a wrapper makes.</li>
   <li><b>A voice's clock is <code>(timestamp − start) · rate</code>.</b> That reading is <code>setting.elapsed</code>, and its position within the period, <code>(elapsed mod period) / period</code>, is the <code>phase</code> the patch is handed first. Both reach the patch. A rate change rebases so <code>elapsed</code> is continuous.</li>
   <li><b><code>dt</code> is derived, never supplied.</b> The gap between this sync and the last, per subject, and <code>Infinity</code> under reduced motion. A patch that integrates guards against that with a snap, as klieg's already do.</li>
+  <li><b>Time away is the host's to call.</b> A hidden tab gets no frames, so its next <code>sync</code> can be an hour past the last. By default that hour is a gap like any other: fades and finite loops finish, and every subject catches up by all of it. A host that calls <code>mix.rebase()</code> on <code>visibilitychange</code> says the gap does not count, and the mix clock &mdash; what <code>setting.timestamp</code> reads, and what voices, fades and subjects run on &mdash; resumes where it was left. It is then the host's timestamp less the time taken out, and a <code>start</code> the host gives is read on the host's clock and converted. <code>maxDt</code> caps the <code>dt</code> a <code>step</code> or signal is handed for any gap, the net an integrator wants; it is off by default because a patch with a closed form wants the whole gap. The host's clock is whatever it passes <code>sync</code>: a rAF timestamp and <code>performance.now()</code> share an origin, and <code>Date.now()</code> does not.</li>
   <li><b>Calls land on the next sync.</b> A host writes <code>handle.weight</code> or calls <code>fade</code> on its own clock; the mix applies it at the first timestamp that sees it. Nothing changes mid-frame.</li>
 </ul>
 

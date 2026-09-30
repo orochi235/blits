@@ -223,3 +223,76 @@ describe('reduced motion', () => {
     expect(gaps).toEqual([Number.POSITIVE_INFINITY]);
   });
 });
+
+describe('time away', () => {
+  const still = () => patch<Part, Pose>(0, () => ({ crawl: 10 }), { writes: ['crawl'] });
+
+  it('rebase makes the next sync continuous, so a fade picks up where it was left', () => {
+    const m = mix<Part, Pose>(PART);
+    const part = { id: 'a' };
+    m.cue({ patch: still(), start: 0, fade: { in: 200 } });
+    m.sync(100);
+    expect(m.probe(part).crawl).toBeCloseTo(5, 9);
+    m.rebase();
+    m.sync(3_600_100);
+    expect(m.probe(part).crawl).toBeCloseTo(5, 9);
+    m.sync(3_600_150);
+    expect(m.probe(part).crawl).toBeCloseTo(7.5, 9);
+  });
+
+  it('a step after a rebase sees the frame gap, not the time away', () => {
+    const gaps: number[] = [];
+    const m = mix<Part, Pose>(PART);
+    m.cue({
+      patch: patch<Part, Pose, null>(0, () => ({}), {
+        writes: [],
+        state: () => null,
+        step: (_s, dt) => gaps.push(dt),
+      }),
+    });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.probe(part);
+    m.sync(16);
+    m.probe(part);
+    m.rebase();
+    m.sync(60_000);
+    m.probe(part);
+    m.sync(60_016);
+    m.probe(part);
+    expect(gaps).toEqual([16, 16]);
+  });
+
+  it('a start given after a rebase is read on the host clock', () => {
+    const m = mix<Part, Pose>(PART);
+    const part = { id: 'a' };
+    m.sync(0);
+    m.rebase();
+    m.sync(10_000);
+    m.cue({ patch: still(), start: 10_100 });
+    m.sync(10_050);
+    expect(m.probe(part).crawl).toBe(0);
+    m.sync(10_100);
+    expect(m.probe(part).crawl).toBe(10);
+  });
+
+  it('maxDt caps the gap a step is handed', () => {
+    const gaps: number[] = [];
+    const m = mix<Part, Pose>(PART, { maxDt: 64 });
+    m.cue({
+      patch: patch<Part, Pose, null>(0, () => ({}), {
+        writes: [],
+        state: () => null,
+        step: (_s, dt) => gaps.push(dt),
+      }),
+    });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.probe(part);
+    m.sync(16);
+    m.probe(part);
+    m.sync(10_016);
+    m.probe(part);
+    expect(gaps).toEqual([16, 64]);
+  });
+});
