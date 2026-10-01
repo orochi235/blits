@@ -1,5 +1,5 @@
 import { type Curve, curve } from './easing.js';
-import type { Easing, Keyframe, Patch, Setting } from './types.js';
+import type { Easing, Keyframe, Kit, Patch, Setting } from './types.js';
 
 /**
  * What `patch` takes besides its period and its function.
@@ -7,8 +7,12 @@ import type { Easing, Keyframe, Patch, Setting } from './types.js';
  * @category patch
  */
 export interface PatchOptions<I, O, S> {
-  /** The channels this patch contributes to. Every key `at` sets, and no others. */
-  writes: readonly (keyof O)[];
+  /** The channels this patch contributes to. Every key `at` sets, and no others. Default: `kit`'s. */
+  writes?: readonly (keyof O)[];
+  /** The channels this patch was written against, which `cue` checks a mix's kit against. */
+  kit?: Partial<Kit<O>>;
+  /** The fields of `setting.host` this patch reads, which `cue` checks the mix's host for. */
+  reads?: readonly string[];
   state?(subject: I): S;
   step?(state: S, dt: number, subject: I, setting: Setting<S>): void;
 }
@@ -23,10 +27,15 @@ export function patch<I, O, S = void>(
   at: (phase: number, subject: I, setting: Setting<S>) => Partial<O>,
   opts: PatchOptions<I, O, S>,
 ): Patch<I, O, S> {
+  const writes = opts.writes ?? (opts.kit ? (Object.keys(opts.kit) as (keyof O)[]) : undefined);
+  if (writes === undefined)
+    throw new Error('blits: a patch needs writes, or a kit to take them from');
   return {
     form: 'fn',
     period,
-    writes: opts.writes,
+    writes,
+    kit: opts.kit,
+    reads: opts.reads,
     at,
     state: opts.state,
     step: opts.step,
@@ -47,6 +56,8 @@ export interface KeysOptions<O> {
   delayBy?: (channel: keyof O) => number;
   /** How one channel interpolates, where its values are not numbers or number arrays. */
   lerpBy?: (channel: keyof O) => ((a: never, b: never, u: number) => unknown) | undefined;
+  /** The channels these stops were written against, which `cue` checks a mix's kit against. */
+  kit?: Partial<Kit<O>>;
 }
 
 const options = new WeakMap<Patch<never, never, never>, KeysOptions<unknown>>();
@@ -215,6 +226,7 @@ export function keys<I, O>(
     form: 'keys',
     period,
     writes,
+    kit: opts.kit,
     keys: stops,
     at: (phase) => readKeys(made, phase, {}) as Partial<O>,
   };

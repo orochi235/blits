@@ -9,6 +9,7 @@ const mix = (a: number, b: number, u: number) => a + (b - a) * u;
  */
 export function sum(): Channel<number> {
   return {
+    kind: 'sum',
     rest: 0,
     merge: (a, b) => a + b,
     scale: (v, w) => v * w,
@@ -23,6 +24,7 @@ export function sum(): Channel<number> {
  */
 export function mul(): Channel<number> {
   return {
+    kind: 'mul',
     rest: 1,
     merge: (a, b) => a * b,
     scale: (v, w) => 1 + (v - 1) * w,
@@ -37,6 +39,7 @@ export function mul(): Channel<number> {
  */
 export function max(): Channel<number> {
   return {
+    kind: 'max',
     rest: 0,
     merge: (a, b) => (a > b ? a : b),
     scale: (v, w) => v * w,
@@ -53,6 +56,8 @@ export function max(): Channel<number> {
  */
 export function last<V>(opts?: { lerp?: (a: V, b: V, u: number) => V }): Channel<V> {
   return {
+    // A lerp of its own is arithmetic the name cannot vouch for.
+    kind: opts?.lerp ? undefined : 'last',
     merge: (_a, b) => b,
     lerp: opts?.lerp ?? ((a, b, u) => (u < 0.5 ? a : b)),
   };
@@ -68,6 +73,7 @@ export function vec(n: number, of: Channel<number>): Channel<number[]> {
   const scale = of.scale;
   const fill = of.rest ?? 0;
   return {
+    kind: of.kind === undefined ? undefined : `vec(${n}, ${of.kind})`,
     rest,
     merge: (a, b) => {
       const out = new Array<number>(n);
@@ -123,7 +129,7 @@ export function mixHex(a: number, b: number, u: number): number {
  * @category channel
  */
 export function hex(): Channel<number> {
-  return last<number>({ lerp: mixHex });
+  return { ...last<number>({ lerp: mixHex }), kind: 'hex' };
 }
 
 /**

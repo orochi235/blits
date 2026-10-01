@@ -19,6 +19,8 @@ import type {
 
 type Key<O> = keyof O & string;
 
+const none: readonly string[] = Object.freeze([]);
+
 /** Everything one voice holds for one subject, so a probe makes one lookup per voice. */
 interface Subject<S> {
   /** The voice's `target` answer, fixed on first sight. */
@@ -165,7 +167,13 @@ class Mixer<I, O> implements Mix<I, O> {
   private readonly send = (event: unknown): void => {
     const { voice, subject } = this.sending;
     if (voice === null) return;
-    this.sent.push({ timestamp: voice.setting.timestamp, subject, voice: voice.id, event });
+    this.sent.push({
+      timestamp: voice.setting.timestamp,
+      subject,
+      voice: voice.id,
+      tags: voice.spec.tags ?? none,
+      event,
+    });
   };
   /** What `influence` and `peek` found besides the delta, read by the caller at once. */
   private w = 0;
@@ -200,9 +208,22 @@ class Mixer<I, O> implements Mix<I, O> {
     const engine = this.opts.engine ?? mixer;
     if (!engine.runs.has(patch.form))
       throw new Error(`blits: engine ${engine.name} does not run ${patch.form} patches`);
-    for (const channel of patch.writes)
+    for (const channel of patch.writes) {
       if (!(channel in (this.kit as object)))
         throw new Error(`blits: kit has no channel ${String(channel)}, which this patch writes`);
+      const wanted = patch.kit?.[channel] as Channel<unknown> | undefined;
+      const here = this.kit[channel] as Channel<unknown>;
+      if (wanted && wanted !== here && (wanted.kind === undefined || wanted.kind !== here.kind))
+        throw new Error(
+          `blits: channel ${String(channel)} is ${here.kind ?? 'a custom channel'} in this kit, but the patch was written for ${wanted.kind ?? 'a custom channel'}`,
+        );
+    }
+    if (patch.reads) {
+      const host = this.opts.host;
+      for (const field of patch.reads)
+        if (typeof host !== 'object' || host === null || !(field in host))
+          throw new Error(`blits: the patch reads host.${field}, which this mix's host lacks`);
+    }
     if (spec.from === 'current' && patch.form !== 'keys')
       throw new Error("blits: from: 'current' needs a keys patch");
 
@@ -324,10 +345,17 @@ class Mixer<I, O> implements Mix<I, O> {
     for (const voice of this.voices) voice.subjects.delete(subject);
   }
 
-  drain<E = unknown>(): Sent<I, E>[] {
-    const out = this.sent;
-    if (out.length === 0) return [];
-    this.sent = [];
+  drain<E = unknown>(tag?: string): Sent<I, E>[] {
+    const all = this.sent;
+    if (all.length === 0) return [];
+    let out = all;
+    if (tag === undefined) this.sent = [];
+    else {
+      out = [];
+      const kept: Sent<I, unknown>[] = [];
+      for (const e of all) (e.tags.includes(tag) ? out : kept).push(e);
+      this.sent = kept;
+    }
     return out.sort((a, b) => a.timestamp - b.timestamp) as Sent<I, E>[];
   }
 

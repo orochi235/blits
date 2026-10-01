@@ -4,6 +4,12 @@
  * @category channel
  */
 export interface Channel<V> {
+  /**
+   * Names this channel's arithmetic, so a patch written against one channel can be checked against
+   * another of the same name. Two channels of one kind must fold identically; the stock ones set it,
+   * as `'sum'` or `'vec(3, sum)'`. Absent, a channel matches only itself.
+   */
+  kind?: string;
   /** Identity. Absent means the channel has none: it replaces rather than contributes. */
   rest?: V;
   /** Fold two influences into one. */
@@ -108,6 +114,8 @@ export interface Sent<I, E = unknown> {
   subject: I;
   /** The id of the voice whose patch sent it, as its handle reports. */
   voice: number;
+  /** That voice's tags. */
+  tags: readonly string[];
   event: E;
 }
 
@@ -123,6 +131,13 @@ export interface Patch<I, O, S = void> {
   readonly period: number;
   /** The channels this patch contributes to. Every key `at` sets, and no others. */
   readonly writes: readonly (keyof O)[];
+  /**
+   * The channels this patch was written against. `cue` refuses a mix whose channel of the same name
+   * is of another kind, so a patch published in one package cannot fold by another's arithmetic.
+   */
+  readonly kit?: Partial<Kit<O>>;
+  /** The fields of `setting.host` this patch reads. `cue` refuses a mix whose host lacks one. */
+  readonly reads?: readonly string[];
   /** `phase` is 0..1 across one period, wrapping. */
   at(phase: number, subject: I, setting: Setting<S>): Partial<O>;
   /** Per-subject state, created on the first frame this patch sees a subject. */
@@ -197,6 +212,8 @@ export interface VoiceSpec<I, O> {
 
   /** A `keys` voice whose first stop reads wherever this subject is now. */
   from?: 'current';
+  /** Words a source attaches to this voice, so its events can be drained as a set. */
+  tags?: readonly string[];
 }
 
 /**
@@ -309,9 +326,10 @@ export interface Mix<I, O> {
    * where two share a timestamp. A subject's events are made while it catches up, which is when it is
    * probed, so one nobody probes has sent nothing yet: promptness is the host's, by probing. Under
    * `stepMs` each carries the end of the interval it happened in, so what is sent and when does not
-   * depend on how the host spaces its probes. Time `rebase` took out sends nothing.
+   * depend on how the host spaces its probes. Time `rebase` took out sends nothing. Given a tag, it
+   * takes only the events of voices carrying it and leaves the rest for whoever drains them.
    */
-  drain<E = unknown>(): Sent<I, E>[];
+  drain<E = unknown>(tag?: string): Sent<I, E>[];
 }
 
 /**

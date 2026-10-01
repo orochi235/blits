@@ -245,6 +245,9 @@
 <p>The arithmetic of blending is a property of the operand type, so it lives on the channel and nowhere else. Every merge, fade, crossfade, and retarget in the package is one of these four operations.</p>
 
 <pre><code>interface Channel&lt;V&gt; {
+  <span class="cm">/** Names the arithmetic: 'sum', 'vec(3, sum)'. Two channels of one kind fold identically. Absent, a channel
+     matches only itself. */</span>
+  kind?: string;
   <span class="cm">/** Identity. Absent means the channel has none: `color` replaces rather than contributes. */</span>
   rest?: V;
   <span class="cm">/** Fold two influences into one. */</span>
@@ -289,6 +292,10 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
   period: number;
   <span class="cm">/** The channels this patch contributes to. Every key `at` sets, and no others. */</span>
   readonly writes: readonly (keyof O)[];
+  <span class="cm">/** The channels it was written against. `cue` refuses a kit whose channel of the same name is another kind. */</span>
+  readonly kit?: Partial&lt;Kit&lt;O&gt;&gt;;
+  <span class="cm">/** The fields of `setting.host` it reads. `cue` refuses a mix whose host lacks one. */</span>
+  readonly reads?: readonly string[];
   <span class="cm">/** `phase` is 0..1 across one period, wrapping. */</span>
   at(phase: number, subject: I, setting: Setting&lt;S&gt;): Partial&lt;O&gt;;
 
@@ -377,6 +384,8 @@ interface Setting&lt;S = void&gt; {
      the pose of the frame before this voice first contributes, so it never reads itself. With no
      such frame on record it is this frame's pose with every other voice folded in. */</span>
   from?: 'current';
+  <span class="cm">/** Words a source attaches to its voices, so their events can be drained as a set. */</span>
+  tags?: readonly string[];
 }
 
 interface Handle&lt;I&gt; {
@@ -446,7 +455,7 @@ interface Mix&lt;I, O&gt; {
   <span class="cm">/** Forgets per-subject state. Call when a subject is retired, or let the WeakMap do it. */</span>
   drop(subject: I): void;
   <span class="cm">/** Every event sent since the last drain, earliest first. Drain after probing. */</span>
-  drain&lt;E&gt;(): { timestamp: number; subject: I; voice: number; event: E }[];
+  drain&lt;E&gt;(tag?: string): { timestamp: number; subject: I; voice: number; tags: readonly string[]; event: E }[];
 }</code></pre>
 
 <p>Subjects are not registered. State lives in a <code>WeakMap</code> keyed by the subject object, created on first probe and stepped by the gap in the timestamp since that subject was last stepped. That is the rule klieg's dwell arrived at, and it means a part a wrapper leaves unasked for a while catches up rather than resuming where it paused.</p>
@@ -543,6 +552,16 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <tr><td>sherpa seams</td><td>page</td><td>opacity mul · transform (host's) · clip max</td><td>Exit and enter as two voices; overlap is whether both are live at once.</td></tr>
   <tr><td>magicsmoke faults</td><td>fault</td><td>none: the patch writes no channels</td><td>One voice per fault. Its weight is the intensity, a number or any signal. Its state is the seeded discharge process, stepped under <code>stepMs: 5</code>, easing exponentially toward <code>setting.weight</code> and sending each discharge as an event. Stopping is <code>handle.fade()</code>; <code>blow</code> writes into the fault's own state through magicsmoke's handle, not as a second voice. The mix never sets <code>reduce</code>, which would step off the grid, and <code>cue</code> passes the last synced timestamp as <code>start</code>, the old process's clock origin. Jolt, whine and hum stay off blits: the browser already composites jolt, and whine and hum fade on the audio clock. magicsmoke imports <code>Signal</code>, <code>Handle</code>, <code>Setting</code>, <code>slew</code> and <code>level</code>, so those are surface to keep stable.</td></tr>
 </table></div>
+
+<h2 id="publishing">Pieces from other packages</h2>
+<p>A package can publish blits pieces for a host to mix with its own: signals, patches, and the channels its patches write. Nothing compares classes, so a patch made by one copy of blits cues into a mix made by another, and a patch written against a few channels cues into a mix over more. Four rules keep that safe.</p>
+<ul>
+  <li><b>A published patch names its kit.</b> <code>patch(…, { kit })</code> and <code>keys(…, { kit })</code> record the channels the patch was written against, and <code>cue</code> refuses a mix whose channel of the same name is another <code>kind</code>, naming both. Without it, a <code>sum</code> offset cued into a mix whose <code>offset</code> multiplies would fold wrong and say nothing. A custom channel has no kind and matches only itself, so a package that defines one exports the object for hosts to put in their kits.</li>
+  <li><b>A published patch names what it reads from the host.</b> <code>reads: ['pointer']</code>, and <code>cue</code> refuses a mix whose <code>host</code> lacks the field. A patch meant for anyone reads nothing from the host.</li>
+  <li><b>A package tags its voices and drains by its tag.</b> <code>cue({ …, tags: ['magicsmoke'] })</code>, then <code>mix.drain('magicsmoke')</code> takes that package's events and leaves every other package's queued. A tag is the vocabulary's word for a label a source attaches so a query can select voices as a set; draining is its first query.</li>
+  <li><b>A package that sends events publishes what handles them.</b> blits mixes numbers and times events; it draws nothing. A patch that only sends, like magicsmoke's fault, is half a piece: the other half is the package's renderer, which the host hands the drained events, <code>smoke.render(mix.drain('magicsmoke'))</code>.</li>
+</ul>
+<p>The cleanest seam needs none of these: a <code>Signal</code> is a number per subject, so a package exporting one (magicsmoke's fault intensity, say) and a host using it as a weight agree on nothing but the subject type.</p>
 
 <h2 id="klieg">The klieg port</h2>
 <p>All three klieg systems move in one pass, as chosen. The port is an extraction first and a feature second, and the boundary between the two is where the baselines are checked.</p>

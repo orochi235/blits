@@ -11,7 +11,9 @@ for a patch (a function of phase, or a list of keyframes), voices with rates, lo
 envelopes and loci, the five signals (`peak`, `slew`, `lag`, `level`, `gate`) with their state
 kept per voice and subject, per-subject state that catches up by its own gap or, under `stepMs`, at a
 fixed interval so it plays the same at any frame rate, events a patch sends for the host to `drain`,
-`handle.weightOf` for reading a voice's weight per subject, and the `Engine` seam behind `mix`.
+`handle.weightOf` for reading a voice's weight per subject, the checks that let one package's
+patches mix into another's (`Channel.kind`, `Patch.kit` and `Patch.reads` checked at `cue`, and
+`tags` to drain one package's events), and the `Engine` seam behind `mix`.
 
 [klieg](https://github.com/orochi235/klieg) composes its motion, its effects and its lighting on
 this, which is where the arithmetic was proven: that port changed no number and moved no baseline.
