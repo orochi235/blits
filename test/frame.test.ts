@@ -419,3 +419,69 @@ describe('stepMs at an interval that is not a whole number of ms', () => {
     expect(count).toBe(120);
   });
 });
+
+describe('voices targeted at one subject each', () => {
+  const crawl = (v: number) => patch<Part, Pose>(0, () => ({ crawl: v }), { writes: ['crawl'] });
+
+  it('fold only into the subject they target, and asks target once per subject', () => {
+    const subjects = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+    const asked: string[] = [];
+    const m = mix<Part, Pose>(PART);
+    subjects.forEach((mine, i) => {
+      m.cue({
+        patch: crawl(i + 1),
+        target: (s) => {
+          asked.push(`${i}:${s.id}`);
+          return s === mine;
+        },
+      });
+    });
+    for (const now of [0, 16, 32]) {
+      m.sync(now);
+      expect(subjects.map((s) => m.probe(s).crawl)).toEqual([1, 2, 3]);
+    }
+    expect(asked).toHaveLength(9);
+  });
+
+  it('pick up a voice cued later, drop one that finished, and wait to ask a pending one', () => {
+    const a = { id: 'a' };
+    let asked = 0;
+    const m = mix<Part, Pose>(PART);
+    const first = m.cue({ patch: crawl(1), target: (s) => s === a });
+    m.cue({
+      patch: crawl(10),
+      start: 100,
+      target: (s) => {
+        asked++;
+        return s === a;
+      },
+    });
+    m.sync(0);
+    expect(m.probe(a).crawl).toBe(1);
+    expect(asked).toBe(0);
+    m.sync(100);
+    expect(m.probe(a).crawl).toBe(11);
+    expect(asked).toBe(1);
+    first.fade();
+    m.sync(116);
+    expect(m.probe(a).crawl).toBe(10);
+    m.cue({ patch: crawl(100) });
+    m.sync(132);
+    expect(m.probe(a).crawl).toBe(110);
+  });
+});
+
+describe('a voice cued before the first sync', () => {
+  it('is pending until its start, not live', () => {
+    const m = mix<Part, Pose>(PART);
+    const h = m.cue({
+      patch: patch<Part, Pose>(0, () => ({ crawl: 1 }), { writes: ['crawl'] }),
+      start: 100,
+    });
+    expect(h.state).toBe('pending');
+    m.sync(0);
+    expect(h.state).toBe('pending');
+    m.sync(100);
+    expect(h.state).toBe('live');
+  });
+});

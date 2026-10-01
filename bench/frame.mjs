@@ -35,13 +35,18 @@ const rows = [
   ['keys', 1000, 3],
   ['keys', 10000, 3],
   ['locus', 10000, 3],
+  // One voice per subject, each targeted at its own: magicsmoke's faults on one shared mix.
+  ['own', 100, 1],
+  ['own', 1000, 1],
 ];
 
 const frames = 300;
 for (const [i, [form, n, voices]] of rows.entries()) {
   const m = mix(K);
   const subjects = Array.from({ length: n }, (_, j) => ({ seed: j * 0.37 }));
-  for (let v = 0; v < voices; v++) {
+  if (form === 'own')
+    for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
+  for (let v = 0; form !== 'own' && v < voices; v++) {
     const p = form === 'keys' ? bounce() : flicker(v);
     m.cue({ patch: p, fade: { in: 100 }, locus: form === 'locus' ? 'one' : undefined });
   }

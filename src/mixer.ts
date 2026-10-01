@@ -156,6 +156,15 @@ class Mixer<I, O> implements Mix<I, O> {
   private wantsPose = false;
   /** Read once a sync, so a `reduce` function is not called per voice per subject. */
   private reducedNow = false;
+  /**
+   * Per subject, the voices that may reach it, in voice order, so a probe walks those rather than
+   * every voice: a voice targeted at one subject is asked about that subject alone. Rebuilt when
+   * `version` moves, which is whenever the list or a voice's pending state changes.
+   */
+  private readonly reach = new Store<I, { version: number; voices: Voice<I, O>[] }>();
+  private version = 0;
+  /** How many voices in the list carry a `target`; with none, every voice reaches every subject. */
+  private targeted = 0;
   /** How many voices in the list carry a locus; with none, a fold allocates nothing. */
   private loci = 0;
   /** Events sent since the last drain, and who is being probed, so `send` knows whose they are. */
@@ -234,13 +243,15 @@ class Mixer<I, O> implements Mix<I, O> {
       spec,
       patch,
       spec.fade ?? {},
-      Number.isNaN(this.now) ? start : this.now,
+      this.now,
       start,
       this.slotOf,
       this.opts.host,
       this.send,
     );
     this.voices.push(voice);
+    this.version++;
+    if (spec.target !== undefined) this.targeted++;
     if (spec.locus !== undefined) this.loci++;
     if (spec.from === 'current') this.wantsPose = true;
     return this.handle(voice);
@@ -274,7 +285,10 @@ class Mixer<I, O> implements Mix<I, O> {
     this.reducedNow = this.reduced;
     for (const voice of this.voices) {
       if (voice.state === 'done') continue;
-      if (voice.state === 'pending' && now >= voice.start) voice.state = 'live';
+      if (voice.state === 'pending' && now >= voice.start) {
+        voice.state = 'live';
+        this.version++;
+      }
       const period = voice.patch.period;
       const loop = voice.spec.loop ?? true;
       const passes = loop === true ? Number.POSITIVE_INFINITY : loop === false ? 1 : loop;
@@ -295,6 +309,8 @@ class Mixer<I, O> implements Mix<I, O> {
       const voice = this.voices[i] as Voice<I, O>;
       if (voice.state === 'done') {
         this.voices.splice(i, 1);
+        this.version++;
+        if (voice.spec.target !== undefined) this.targeted--;
         if (voice.spec.locus !== undefined) this.loci--;
       }
     }
@@ -342,6 +358,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   drop(subject: I): void {
     this.pose.delete(subject);
+    this.reach.delete(subject);
     for (const voice of this.voices) voice.subjects.delete(subject);
   }
 
@@ -666,6 +683,24 @@ class Mixer<I, O> implements Mix<I, O> {
     return w >= on ? true : w <= off ? false : (was ?? w >= on);
   }
 
+  /**
+   * The voices that may reach this subject. A live voice is asked once, through the record it keeps
+   * for the subject anyway; a pending one is kept until it goes live, since `target` is asked on
+   * first sight, and sight only comes once a voice plays.
+   */
+  private reaching(subject: I, now: number): Voice<I, O>[] {
+    if (this.targeted === 0) return this.voices;
+    const held = this.reach.get(subject);
+    if (held !== undefined && held.version === this.version) return held.voices;
+    const voices: Voice<I, O>[] = [];
+    for (const voice of this.voices) {
+      if (voice.state === 'done') continue;
+      if (voice.state === 'pending' || this.held(voice, subject, now).reaches) voices.push(voice);
+    }
+    this.reach.set(subject, { version: this.version, voices });
+    return voices;
+  }
+
   private readonly locusBands = new Store<I, Map<string, boolean>>();
   /** Voices whose stop 0 is mid-computation, so a fold for one cannot re-enter itself. */
   private readonly folding = new Set<number>();
@@ -711,8 +746,9 @@ class Mixer<I, O> implements Mix<I, O> {
     }
     if (Number.isNaN(now)) return pose as O;
 
+    const voices = this.reaching(subject, now);
     if (this.loci === 0) {
-      for (const voice of this.voices) {
+      for (const voice of voices) {
         if (voice.id === except) continue;
         const delta = this.read(voice, subject, now, dry);
         if (delta === null || this.w <= 0) continue;
@@ -726,7 +762,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const order: (Single | string)[] = [];
     const weights: number[] = [];
     const loci = new Map<string, { delta: Record<string, unknown>; weight: number }[]>();
-    for (const voice of this.voices) {
+    for (const voice of voices) {
       if (voice.id === except) continue;
       const delta = this.read(voice, subject, now, dry);
       if (delta === null) continue;
