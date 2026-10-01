@@ -137,9 +137,10 @@ systems now run on it**, on a branch that is not merged.
   Vite app, because it is mostly documents. `docs/schema.html` stays the design record, untouched;
   the site takes its outline loosely. Local until GitHub Pages, and the workflow exists already.
 
-- **Built 2026-09-30 for magicsmoke**, which is adopting blits by `file:` on a branch: `lag`,
+- **Built 2026-09-30 for magicsmoke**, which now runs every fault on blits (its old engine is
+  deleted; branch `blits-engine` in magicsmoke, unmerged, `file:` dependency): `lag`,
   `handle.weightOf`, `MixOptions.stepMs` and `setting.send` / `mix.drain`. Each is in the schema
-  page; magicsmoke's two rows in the consumer table say how it uses them.
+  page; magicsmoke's row in the consumer table says how it uses them.
 
 ## Next, in order
 
@@ -156,7 +157,8 @@ systems now run on it**, on a branch that is not merged.
    0.1.0 rather than a 0.2.0, since nothing had been published. `npm publish` stops at an OTP
    prompt, so it is Mike's to run. Then `packages/core/package.json` in klieg trades
    `"blits": "file:../../../blits"` for `"blits": "^0.1.0"`, which is what makes that branch
-   mergeable and lets klieg's suite run on the fleet again.
+   mergeable and lets klieg's suite run on the fleet again. magicsmoke's `blits-engine` branch waits
+   on the same publish. Whether the name is `blits` or `@msb235/blits` is undecided.
 2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
    their hand-rolled frame keying onto `slew`, `hinge`'s modes become `weight: signal` and
    `mix.blend`, and `FrameCtx` becomes `Setting` with klieg's fields on `host`. The schema page's
