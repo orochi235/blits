@@ -390,8 +390,8 @@ export interface MixOptions {
    * every change a handle made and when, the voices that have left, and those copies of state, so a
    * read back restores the nearest copy and steps forward from it. Off by default, and a mix without
    * it keeps nothing. With `inputs`, it also keeps what each input signal on a voice's weight read
-   * per subject, each time it changed, so a read back over a `level` or a pointer is known rather
-   * than held.
+   * per subject, and the host fields patches `reads`, each time they changed, so a read back over a
+   * `level` or a pointer is known rather than held.
    */
   history?: { ms: number; every?: number; inputs?: boolean };
 }

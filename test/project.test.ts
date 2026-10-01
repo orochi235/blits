@@ -276,6 +276,33 @@ describe('project back', () => {
     expect(lost.m.project(260).assess(a).x).toBe('held');
   });
 
+  it('reads a patch back through the host fields it read then, when history keeps inputs', () => {
+    const a = { id: 'a' };
+    const run = (inputs: boolean) => {
+      const host = { pointer: { x: 0 } };
+      const follow = patch<Part, Pose>(
+        0,
+        (_p, _s, st) => ({ x: (st.host as typeof host).pointer.x }),
+        { writes: ['x'], reads: ['pointer'] },
+      );
+      const m = mix<Part, Pose>(K, { host, history: { ms: 5000, inputs } });
+      m.cue({ patch: follow });
+      const seen = new Map<number, number>();
+      for (const t of every(0, 600, 20)) {
+        host.pointer.x = t < 300 ? t / 10 : 30;
+        m.sync(t);
+        seen.set(t, m.probe(a).x);
+      }
+      return { m, seen };
+    };
+    const kept = run(true);
+    for (const t of [40, 200, 300, 580]) {
+      expect(kept.m.project(t).probe(a).x).toBe(kept.seen.get(t));
+      expect(kept.m.project(t).assess(a).x).toBe('exact');
+    }
+    expect(run(false).m.project(200).assess(a).x).toBe('held');
+  });
+
   it('keeps no more than its horizon', () => {
     const a = { id: 'a' };
     const m = mix<Part, Pose>(K, { history: { ms: 200, every: 20 } });

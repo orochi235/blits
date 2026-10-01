@@ -169,6 +169,18 @@ const near = (a: unknown, b: unknown): boolean => {
 
 const copy = (v: unknown): unknown => (Array.isArray(v) ? [...v] : v);
 
+/** Deep equality over plain data, for telling whether a host field changed. */
+function same(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  if (ka.length !== kb.length) return false;
+  for (const k of ka)
+    if (!same((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])) return false;
+  return true;
+}
+
 class Voice<I, O> {
   state: 'pending' | 'live' | 'fading' | 'done' = 'pending';
   rate: number;
@@ -344,6 +356,12 @@ class Mixer<I, O> implements Mix<I, O> {
   private backward = false;
   /** True during a sync, so a control change it makes is recorded as showing in that frame. */
   private moving = false;
+  /**
+   * Under `history` with `inputs`, the host fields patches read, copied each frame they changed. In
+   * a projection reading back, the copy in force then.
+   */
+  private hostLog: { at: number; fields: Record<string, unknown> }[] = [];
+  private hostThen: { fields: Record<string, unknown> } | undefined;
   /** Each subject's last two poses and when they were probed, for `from: 'current'`. */
   private pose = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();
   private nextId = 1;
@@ -624,6 +642,13 @@ class Mixer<I, O> implements Mix<I, O> {
         throw new Error(`blits: ${timestamp} is older than this mix's history reaches`);
       c.now = t;
       c.backward = true;
+      const was = last(this.hostLog, t, true);
+      const host = this.opts.host;
+      const then =
+        was && typeof host === 'object' && host !== null
+          ? Object.assign(Object.create(host) as object, was.fields)
+          : undefined;
+      if (was) c.hostThen = was;
       c.voices = [...this.voices, ...this.gone]
         .filter((v) => v.cuedAt <= t && v.doneAt > t)
         .sort((a, b) => a.id - b.id)
@@ -634,6 +659,7 @@ class Mixer<I, O> implements Mix<I, O> {
             last(log, t, (e) => e.sync) ?? (log[0] as Controls),
           );
           copy.state = t < v.start ? 'pending' : copy.out && copy.out.at <= t ? 'fading' : 'live';
+          if (then !== undefined) copy.setting.host = then;
           return copy;
         });
       c.count();
@@ -984,6 +1010,22 @@ class Mixer<I, O> implements Mix<I, O> {
     };
   }
 
+  /** Under `history` with `inputs`, copies the host fields any voice reads, once a frame, when they changed. */
+  private recordHost(now: number): void {
+    const log = this.hostLog;
+    const prev = log[log.length - 1];
+    if (prev !== undefined && prev.at === now) return;
+    const host = this.opts.host as Record<string, unknown>;
+    const fields: Record<string, unknown> = {};
+    for (const v of this.voices)
+      for (const f of v.patch.reads ?? none)
+        if (!(f in fields)) fields[f] = structuredClone(host[f]);
+    if (prev !== undefined && same(prev.fields, fields)) return;
+    log.push({ at: now, fields });
+    const reach = now - (this.opts.history as { ms: number }).ms;
+    while (log.length > 1 && (log[1] as { at: number }).at <= reach) log.shift();
+  }
+
   /** Under `history` with `inputs`, keeps what an input signal read, each time it changes. */
   private record(held: Subject<unknown>, value: number): void {
     const history = this.opts.history;
@@ -1038,7 +1080,11 @@ class Mixer<I, O> implements Mix<I, O> {
     // A weight read back from a recording is what the mix used then, so its signal's state is moot.
     const replayed = held.replay !== undefined && last(held.replay, this.now, true) !== undefined;
     if (typeof weight === 'function' && weight.input && !replayed) return 'held';
-    if (voice.patch.reads !== undefined && voice.patch.reads.length > 0) return 'held';
+    const reads = voice.patch.reads;
+    if (reads !== undefined && reads.length > 0) {
+      const then = this.hostThen?.fields;
+      if (then === undefined || !reads.every((f) => f in then)) return 'held';
+    }
     if (this.now > (held.from ?? this.now)) {
       const tick = this.opts.stepMs;
       const fixed = tick !== undefined && tick > 0 && !this.reducedNow;
@@ -1243,6 +1289,8 @@ class Mixer<I, O> implements Mix<I, O> {
     }
 
     const history = this.opts.history;
+    if (history?.inputs && voice.patch.reads !== undefined && !this.projecting)
+      this.recordHost(now);
     reading.horizon =
       history === undefined
         ? Number.POSITIVE_INFINITY

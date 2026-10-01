@@ -12,8 +12,8 @@ version and everything else the patch. Each release lists its changes as **Break
   then, and `assess` says per channel whether it is `exact`, `stepped` or `held`. Ahead it plays
   what is cued forward; behind it needs `MixOptions.history: { ms, every? }`, which keeps every
   handle change, the voices that left, and copies of stateful state, so a read back under `stepMs`
-  lands on the pose the mix showed, and with `inputs` it records what input weight signals read, so
-  a read back over a `level` is known. `Patch.clone` copies state `structuredClone` cannot.
+  lands on the pose the mix showed, and with `inputs` it records what input weight signals and the
+  host fields patches `reads` held, so a read back over a `level` or a pointer is known. `Patch.clone` copies state `structuredClone` cannot.
 - The score: a voice takes a `name` and an `anchor` placement, `start` or `in` and `out` or `end`,
   each a timestamp or another voice's mark (`after`, `with`, `before`, or `of` plus `mark`),
   selected by name, tag or written channel with a resolver. Each source can keep its own `score`,

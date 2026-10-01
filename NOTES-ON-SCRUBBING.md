@@ -1,8 +1,8 @@
 # Scrubbing a stateful mix: what is left
 
 **Status: partly built.** Rewritten 2026-10-01 down to its unbuilt half. Fixed-interval stepping
-(`stepMs`), closed-form motion (`spring`, `glide`), copies of state, the history horizon and
-reading back (`mix.project`, `MixOptions.history`) are built, and the schema page's Score section
+(`stepMs`), closed-form motion (`spring`, `glide`), copies of state, the history horizon, recorded
+input and reading back (`mix.project`, `MixOptions.history`) are built, and the schema page's Score section
 describes them. Delete this file once the items below are built or turned down, moving any decision
 into `docs/schema.html` first.
 
@@ -18,10 +18,7 @@ the log it would have used is the per-voice control log `history` keeps. Not to 
 
 ## Left to build
 
-1. **Recording a patch's host input.** `history: { inputs: true }` records an input signal on a
-   voice's weight, built 2026-10-01. A patch that `reads` host fields still reads them live, so a read
-   back through one is `held`; recording would mean snapshotting the fields it names per frame.
-2. **`handle.seek` on a stateful voice.** Seek moves the voice clock and leaves state where it was,
+1. **`handle.seek` on a stateful voice.** Seek moves the voice clock and leaves state where it was,
    so a stepped patch carries state from the old position to the new one. Measured against
    `ec5c6f6`: the spring below, played to 300 ms at 60 fps and then `seek(0)`, reads
    `x = 111.165` on the next frame, where a fresh voice reads about 0. With history the mix could
