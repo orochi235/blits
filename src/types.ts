@@ -184,6 +184,71 @@ export interface FadeSpec {
 }
 
 /**
+ * The four times a voice is known by on the mix clock: when its fade in begins (`start`), when it is
+ * fully in (`in`), when its fade out begins (`out`), and when it is gone (`end`).
+ *
+ * @category score
+ */
+export type Mark = 'start' | 'in' | 'out' | 'end';
+
+/**
+ * Selects voices by what the plan knows of them, never by a channel's value. Where several match,
+ * the resolver picks one: `last` cued (the default), `first` cued, `next` (the earliest whose mark
+ * is still to come), `earliest` or `latest` by the mark's time.
+ *
+ * @category score
+ */
+export interface Query {
+  name?: string;
+  tag?: string;
+  /** A channel the voice's patch writes. */
+  writes?: string;
+  resolver?: 'last' | 'first' | 'next' | 'earliest' | 'latest';
+}
+
+/**
+ * A time given by another voice: `mark` of the voice `of` selects, moved by `by` ms. `after` is
+ * sugar for that voice's `end`, `with` for its `start`, and `before` for its start less `by`. A
+ * string selects by name.
+ *
+ * @category score
+ */
+export type Anchor =
+  | { of: string | Query; mark: Mark; by?: number }
+  | { after: string | Query; by?: number }
+  | { with: string | Query; by?: number }
+  | { before: string | Query; by?: number };
+
+/**
+ * Where a voice sits on the mix clock: at most one of `start` and `in`, and at most one of `out`
+ * and `end`, each a timestamp on the host's clock or an anchor to another voice. A voice whose
+ * anchor has no answer yet waits pending; one whose anchored mark is already past starts partway
+ * through, as playback does from the middle of a region.
+ *
+ * @category score
+ */
+export interface Placement {
+  start?: number | Anchor;
+  in?: number | Anchor;
+  out?: number | Anchor;
+  end?: number | Anchor;
+}
+
+/**
+ * One mark of one voice, as `marks` lists it.
+ *
+ * @category score
+ */
+export interface Marked {
+  /** On the host's clock. */
+  timestamp: number;
+  mark: Mark;
+  voice: number;
+  name: string | undefined;
+  tags: readonly string[];
+}
+
+/**
  * What `cue` takes: a patch, and the clock, weight and reach it plays with.
  *
  * @category voice
@@ -226,6 +291,10 @@ export interface VoiceSpec<I, O> {
   from?: 'current';
   /** Words a source attaches to this voice, so its events can be drained as a set. */
   tags?: readonly string[];
+  /** What other voices call this one by. A label blits never reads. */
+  name?: string;
+  /** Where it sits relative to the clock or to other voices, in place of `start`. */
+  anchor?: Placement;
 }
 
 /**
@@ -379,6 +448,12 @@ export interface Mix<I, O> {
   mute(opts?: { over?: number }): void;
   /** Forgets per-subject state. */
   drop(subject: I): void;
+  /**
+   * Every mark the plan knows between two timestamps on the host's clock, earliest first: when
+   * voices start, are fully in, begin to fade and are gone. A mark nothing has fixed yet, such as
+   * the out of a voice that loops for good, is not listed.
+   */
+  marks(from: number, to: number): Marked[];
   /**
    * Every event patches have sent since the last drain, earliest first, in the order they were sent
    * where two share a timestamp. A subject's events are made while it catches up, which is when it is

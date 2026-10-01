@@ -10,10 +10,14 @@ import type {
   FadeSpec,
   Handle,
   Kit,
+  Mark,
+  Marked,
   Mix,
   MixOptions,
   Patch,
+  Placement,
   Projection,
+  Query,
   Sent,
   Setting,
   Signal,
@@ -189,6 +193,10 @@ class Voice<I, O> {
   doneAt = Number.POSITIVE_INFINITY;
   /** Under `history`, its controls after each change, oldest first. */
   log: Controls[] | null = null;
+  /** Where an anchored `out` or `end` puts its fade's start, mix time; Infinity until known. */
+  outAt = Number.POSITIVE_INFINITY;
+  /** Whether its start is still to be fixed by an anchor, so it waits pending. */
+  placing = false;
   resolve!: () => void;
   readonly done: Promise<void>;
 
@@ -198,7 +206,7 @@ class Voice<I, O> {
     readonly patch: Patch<I, O, unknown>,
     readonly fade: FadeSpec,
     now: number,
-    readonly start: number,
+    public start: number,
     slotOf: Map<string, number>,
     channels: readonly Channel<unknown>[],
     host: unknown,
@@ -341,6 +349,8 @@ class Mixer<I, O> implements Mix<I, O> {
   private targeted = 0;
   /** How many voices in the list carry a locus; with none, a fold allocates nothing. */
   private loci = 0;
+  /** How many voices in the list are anchored, so a sync with none skips placing them. */
+  private anchored = 0;
   /** Events sent since the last drain, and who is being probed, so `send` knows whose they are. */
   private sent: Sent<I, unknown>[] = [];
   private sending: { voice: Voice<I, O> | null; subject: I } = {
@@ -412,9 +422,17 @@ class Mixer<I, O> implements Mix<I, O> {
     }
     if (spec.from === 'current' && patch.form !== 'keys')
       throw new Error("blits: from: 'current' needs a keys patch");
+    const anchor = spec.anchor;
+    if (anchor) this.checkPlacement(spec, anchor);
 
-    const start =
-      spec.start !== undefined ? spec.start - this.offset : Number.isNaN(this.now) ? 0 : this.now;
+    const placed = anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
+    const start = placed
+      ? Number.POSITIVE_INFINITY
+      : spec.start !== undefined
+        ? spec.start - this.offset
+        : Number.isNaN(this.now)
+          ? 0
+          : this.now;
     const voice = new Voice<I, O>(
       this.nextId++,
       spec,
@@ -428,6 +446,7 @@ class Mixer<I, O> implements Mix<I, O> {
       this.send,
     );
     if (!Number.isNaN(this.now)) voice.cuedAt = this.now;
+    voice.placing = placed;
     if (this.opts.history) {
       voice.log = [];
       voice.note(Number.NEGATIVE_INFINITY);
@@ -437,6 +456,14 @@ class Mixer<I, O> implements Mix<I, O> {
     if (spec.target !== undefined) this.targeted++;
     if (spec.locus !== undefined) this.loci++;
     if (spec.from === 'current') this.wantsPose = true;
+    if (anchor) {
+      this.anchored++;
+      this.place();
+      if (!Number.isNaN(this.now) && voice.state === 'pending' && this.now >= voice.start) {
+        voice.state = 'live';
+        this.version++;
+      }
+    }
     return this.handle(voice);
   }
 
@@ -471,8 +498,11 @@ class Mixer<I, O> implements Mix<I, O> {
   private move(now: number): void {
     this.now = now;
     this.reducedNow = this.reduced;
+    if (this.anchored > 0) this.place();
     for (const voice of this.voices) {
       if (voice.state === 'done') continue;
+      if (voice.state === 'live' && voice.outAt <= now)
+        this.beginFade(voice, {}, Math.max(voice.start, voice.outAt));
       if (voice.state === 'pending' && now >= voice.start) {
         voice.state = 'live';
         this.version++;
@@ -506,6 +536,7 @@ class Mixer<I, O> implements Mix<I, O> {
         this.version++;
         if (voice.spec.target !== undefined) this.targeted--;
         if (voice.spec.locus !== undefined) this.loci--;
+        if (voice.spec.anchor !== undefined) this.anchored--;
       }
     }
     const history = this.opts.history;
@@ -599,6 +630,26 @@ class Mixer<I, O> implements Mix<I, O> {
     };
   }
 
+  marks(from: number, to: number): Marked[] {
+    const lo = from - this.offset;
+    const hi = to - this.offset;
+    const out: Marked[] = [];
+    for (const voice of [...this.voices, ...this.gone]) {
+      for (const mark of ['start', 'in', 'out', 'end'] as const) {
+        const t = this.markOf(voice, mark);
+        if (t === undefined || t < lo || t > hi) continue;
+        out.push({
+          timestamp: t + this.offset,
+          mark,
+          voice: voice.id,
+          name: voice.spec.name,
+          tags: voice.spec.tags ?? none,
+        });
+      }
+    }
+    return out.sort((a, b) => a.timestamp - b.timestamp || a.voice - b.voice);
+  }
+
   atRest(subject: I): boolean {
     const pose = this.fold(subject, undefined, true);
     for (let i = 0; i < this.names.length; i++) {
@@ -646,6 +697,159 @@ class Mixer<I, O> implements Mix<I, O> {
 
   // ── internals ──────────────────────────────────────────────────────────────
 
+  /** Refuses a placement that names a mark twice on one side, or that waits on itself. */
+  private checkPlacement(spec: VoiceSpec<I, O>, anchor: Placement): void {
+    if (anchor.start !== undefined && anchor.in !== undefined)
+      throw new Error('blits: a placement anchors start or in, not both');
+    if (anchor.out !== undefined && anchor.end !== undefined)
+      throw new Error('blits: a placement anchors out or end, not both');
+    if (spec.start !== undefined && (anchor.start !== undefined || anchor.in !== undefined))
+      throw new Error('blits: a voice takes start or an anchored start, not both');
+    const name = spec.name;
+    if (name === undefined) return;
+    const names = (p: Placement): string[] =>
+      [p.start, p.in, p.out, p.end].flatMap((a) => {
+        if (a === undefined || typeof a === 'number') return [];
+        const q = 'of' in a ? a.of : 'after' in a ? a.after : 'with' in a ? a.with : a.before;
+        const n = typeof q === 'string' ? q : q.name;
+        return n === undefined ? [] : [n];
+      });
+    const seen = new Set<string>();
+    const waits = [...names(anchor)];
+    while (waits.length > 0) {
+      const n = waits.pop() as string;
+      if (n === name) throw new Error(`blits: ${name}'s placement waits on itself`);
+      if (seen.has(n)) continue;
+      seen.add(n);
+      for (const v of this.voices)
+        if (v.spec.name === n && v.spec.anchor) waits.push(...names(v.spec.anchor));
+    }
+  }
+
+  /**
+   * Fixes every anchored voice's start and out from what its anchors answer now. A start is fixed
+   * while the voice waits and an out until its fade begins; a target that has left keeps the time it
+   * last gave. Repeated so a chain of anchors settles in one sync.
+   */
+  private place(): void {
+    for (let round = 0; round <= this.voices.length; round++) {
+      let moved = false;
+      for (const voice of this.voices) {
+        const anchor = voice.spec.anchor;
+        if (anchor === undefined || voice.state === 'done') continue;
+        if (voice.placing && voice.state === 'pending') {
+          const by = anchor.start ?? anchor.in;
+          const t = by === undefined ? undefined : this.resolve(by, voice);
+          if (t !== undefined) {
+            const start = anchor.start !== undefined ? t : t - (voice.fade.in ?? 0);
+            if (start !== voice.start) {
+              voice.start = start;
+              voice.anchorNow = start;
+              voice.anchorElapsed = 0;
+              moved = true;
+            }
+          }
+        }
+        if (voice.state !== 'fading') {
+          const by = anchor.out ?? anchor.end;
+          const t = by === undefined ? undefined : this.resolve(by, voice);
+          if (t !== undefined) {
+            const at = anchor.out !== undefined ? t : t - (voice.fade.out ?? 0);
+            if (at !== voice.outAt) {
+              voice.outAt = at;
+              moved = true;
+            }
+          }
+        }
+      }
+      if (!moved) return;
+    }
+  }
+
+  /** The mix time an anchor answers, or undefined while its target has none. */
+  private resolve(
+    a: number | NonNullable<Placement['start']>,
+    self: Voice<I, O>,
+  ): number | undefined {
+    if (typeof a === 'number') return a - this.offset;
+    let query: string | Query;
+    let mark: Mark;
+    let by = a.by ?? 0;
+    if ('of' in a) {
+      query = a.of;
+      mark = a.mark;
+    } else if ('after' in a) {
+      query = a.after;
+      mark = 'end';
+    } else if ('with' in a) {
+      query = a.with;
+      mark = 'start';
+    } else {
+      query = a.before;
+      mark = 'start';
+      by = -by;
+    }
+    const target = this.select(typeof query === 'string' ? { name: query } : query, mark, self);
+    if (target === undefined) return undefined;
+    const t = this.markOf(target, mark);
+    return t === undefined ? undefined : t + by;
+  }
+
+  /** The voice a query picks, among those cued and those that have left, never the asker. */
+  private select(q: Query, mark: Mark, self: Voice<I, O>): Voice<I, O> | undefined {
+    const all = [...this.gone, ...this.voices].filter(
+      (v) =>
+        v !== self &&
+        (q.name === undefined || v.spec.name === q.name) &&
+        (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
+        (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes)),
+    );
+    if (all.length === 0) return undefined;
+    all.sort((a, b) => a.id - b.id);
+    const resolver = q.resolver ?? 'last';
+    if (resolver === 'first') return all[0];
+    if (resolver === 'last') return all[all.length - 1];
+    const timed = all.flatMap((v) => {
+      const t = this.markOf(v, mark);
+      return t === undefined ? [] : [{ v, t }];
+    });
+    if (resolver === 'next') {
+      const now = Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now;
+      const ahead = timed.filter((e) => e.t >= now).sort((a, b) => a.t - b.t);
+      return ahead[0]?.v;
+    }
+    timed.sort((a, b) => a.t - b.t);
+    return (resolver === 'earliest' ? timed[0] : timed[timed.length - 1])?.v;
+  }
+
+  /** When a voice reaches a mark, mix time, or undefined while nothing has fixed it. */
+  private markOf(voice: Voice<I, O>, mark: Mark): number | undefined {
+    const start = voice.start;
+    if (!Number.isFinite(start)) return undefined;
+    if (mark === 'start') return start;
+    if (mark === 'in') return start + (voice.fade.in ?? 0);
+    const out = voice.out;
+    let outAt: number | undefined;
+    if (out !== null) outAt = out.at;
+    else if (Number.isFinite(voice.outAt)) outAt = voice.outAt;
+    else {
+      const period = voice.patch.period;
+      const loop = voice.spec.loop ?? true;
+      const passes = loop === true ? Number.POSITIVE_INFINITY : loop === false ? 1 : loop;
+      if (period > 0 && Number.isFinite(passes)) {
+        const t = voice.timeAt(period * passes + voice.latest);
+        if (Number.isFinite(t)) outAt = Math.max(start, t);
+      }
+    }
+    if (mark === 'out') return voice.state === 'done' && outAt === undefined ? voice.doneAt : outAt;
+    if (voice.state === 'done') return voice.doneAt;
+    if (out !== null) {
+      if (out.rest) return out.deadline === undefined ? undefined : out.at + out.deadline;
+      return out.at + out.over;
+    }
+    return outAt === undefined ? undefined : outAt + (this.reduced ? 0 : (voice.fade.out ?? 0));
+  }
+
   /** A voice's elapsed at an earlier mix time, by the controls it had then. */
   private elapsedThen(voice: Voice<I, O>, t: number): number {
     const log = voice.log;
@@ -668,6 +872,7 @@ class Mixer<I, O> implements Mix<I, O> {
   private count(): void {
     this.targeted = this.voices.filter((v) => v.spec.target !== undefined).length;
     this.loci = this.voices.filter((v) => v.spec.locus !== undefined).length;
+    this.anchored = this.voices.filter((v) => v.spec.anchor !== undefined).length;
     this.version++;
   }
 
