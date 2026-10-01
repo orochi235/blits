@@ -35,7 +35,9 @@ that benchmark and a CPU profile:
 **Retargeting position without velocity leaves a kink.** `from: 'current'` starts a keys voice
 where the subject is now, but its first segment starts from zero speed wherever the old motion was
 heading. weasel's `physics` has `setTarget` and `setVelocity` for this. The one place weasel
-doesn't carry velocity (reflow glides) is written up as a known gap.
+doesn't carry velocity (reflow glides) is written up as a known gap. **`spring` and `glide` now
+carry it** (2026-09-30): their `to` and `push` keep velocity across a change. A `keys` voice with
+`from: 'current'` still starts from zero speed.
 
 ## What weasel has that blits doesn't
 

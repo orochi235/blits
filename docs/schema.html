@@ -509,6 +509,23 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
   <p>A weight scales an influence toward its channel's rest. A lerp moves between two values. Every blend is one or the other, chosen by the channel. A consumer that needs a third arithmetic adds a channel, not a mix option.</p>
 </div>
 
+<h2 id="motion">Springs and glides</h2>
+<p>Motion that has momentum is not a curve over a known duration, so it is neither <code>keys</code> nor <code>Easing</code>. Two patches carry it, each solved in closed form per subject, so where a subject is at a given moment does not depend on how the frames that sample it were spaced. Each keeps one stretch per subject: released at a voice time from a position and a velocity, heading somewhere. A change mid-flight ends the stretch and starts the next from where the subject is <em>and how fast it is moving</em>, which is what keeps a retarget from kinking.</p>
+<pre><code>const s = spring&lt;Node, Pose&gt;('x', { from: 0, to: 100, stiffness: 170, damping: 26 });
+mix.cue({ patch: s });
+s.to(node, 40);              <span class="cm">// heads elsewhere from wherever it is, keeping its velocity</span>
+s.push(node, 600);           <span class="cm">// a kick: same target, new velocity</span>
+s.read(node);                <span class="cm">// { value, velocity }, for handing the motion to another patch</span>
+
+const g = glide&lt;Node, Pose&gt;('x', { from: 0, velocity: 1200, ms: 325 });  <span class="cm">// a fling: rests 390 past the start</span></code></pre>
+<ul>
+  <li><b>Time is the voice's</b>, so <code>rate</code> and <code>seek</code> apply. A change takes effect at the voice time it names, or at the subject's next read; naming one is what makes a retarget land the same at any frame rate.</li>
+  <li><b>History is one stretch.</b> A read earlier than the latest change evaluates the latest stretch backward, not what happened. Keeping more waits on the history horizon in <code>NOTES-ON-SCRUBBING.md</code>.</li>
+  <li><b>A value settles.</b> Within <code>settle</code> (1e-4) of where it heads, and that slow, it lands there exactly, so <code>atRest</code> sees it. <code>settle: 0</code> keeps the curve exact.</li>
+  <li><b>The state is the patch's own</b>, per subject, rather than the mix's, because the host retargets through the patch. Cue each one on one voice.</li>
+  <li><b>Handing motion between patches</b> is <code>read</code> on the old one and <code>from</code> plus <code>velocity</code> on the new: a fling that ends in a spring starts the spring at the glide's velocity.</li>
+</ul>
+
 <h2 id="state">Patch state</h2>
 <p>klieg built three stateful patches in one week, <code>power</code>, <code>kicks</code> and <code>dwell</code>, and each rediscovered the same three rules: key state by the subject object, step once per frame by the gap in the timestamp, snap under infinite <code>dt</code>. Those rules are the package's, applied by the mix, and a patch declares only what its state is and how it advances.</p>
 

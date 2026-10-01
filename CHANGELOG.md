@@ -6,6 +6,13 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Added
+
+- `spring` and `glide`: momentum in closed form, per subject, so where a subject is does not depend
+  on frame rate. `spring.to` retargets and `push` sets a velocity mid-flight, each starting the next
+  stretch from where the subject is and how fast it moves; `read` returns both, for handing motion
+  to another patch.
+
 ### Fixed
 
 - Keyed stops, and a `from: 'current'` retarget, interpolate through the channel's own `lerp`, as
