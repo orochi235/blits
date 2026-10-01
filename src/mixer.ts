@@ -89,6 +89,11 @@ interface Controls extends Clock {
   at: number;
   weight: number;
   out: Ramp | null;
+  /** Where its anchors had placed it then: start, and the start of an anchored fade out. */
+  start: number;
+  outAt: number;
+  /** Made by a sync, so it shows in that frame; a host's change between frames shows from the next. */
+  sync: boolean;
 }
 
 function elapsedWith(c: Clock, now: number): number {
@@ -102,13 +107,14 @@ function elapsedWith(c: Clock, now: number): number {
 }
 
 /**
- * The last entry taken before `t`, or at it where `inclusive`. A control change made in a frame is
- * taken strictly: it shows from the next frame on, as it did live.
+ * The last entry taken before `t`, or at it where `inclusive` says so, as it does for a change a
+ * sync made. A host's change between frames is taken strictly: it shows from the next frame on, as
+ * it did live.
  */
 function last<T extends { at: number }>(
   list: readonly T[],
   t: number,
-  inclusive: boolean,
+  inclusive: boolean | ((e: T) => boolean),
 ): T | undefined {
   let lo = 0;
   let hi = list.length - 1;
@@ -116,7 +122,7 @@ function last<T extends { at: number }>(
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
     const e = list[mid] as T;
-    if (e.at < t || (inclusive && e.at === t)) {
+    if (e.at < t || (e.at === t && (typeof inclusive === 'function' ? inclusive(e) : inclusive))) {
       found = e;
       lo = mid + 1;
     } else hi = mid - 1;
@@ -265,15 +271,18 @@ class Voice<I, O> {
   }
 
   /** Records this voice's controls as they stand, from mix time `at`. */
-  note(at: number): void {
+  note(at: number, sync = false): void {
     this.log?.push({
       at,
+      sync,
       anchorNow: this.anchorNow,
       anchorElapsed: this.anchorElapsed,
       rate: this.rate,
       ramp: this.ramp,
       weight: this.weight,
       out: this.out,
+      start: this.start,
+      outAt: this.outAt,
     });
   }
 
@@ -294,6 +303,8 @@ class Voice<I, O> {
       v.ramp = controls.ramp;
       v.weight = controls.weight;
       v.out = controls.out;
+      v.start = controls.start;
+      v.outAt = controls.outAt;
     }
     v.resolve = noSend;
     return v;
@@ -327,6 +338,8 @@ class Mixer<I, O> implements Mix<I, O> {
   private projecting = false;
   /** Set on a projection reading back: a subject it has nothing on starts from its voice's start. */
   private backward = false;
+  /** True during a sync, so a control change it makes is recorded as showing in that frame. */
+  private moving = false;
   /** Each subject's last two poses and when they were probed, for `from: 'current'`. */
   private pose = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();
   private nextId = 1;
@@ -447,10 +460,6 @@ class Mixer<I, O> implements Mix<I, O> {
     );
     if (!Number.isNaN(this.now)) voice.cuedAt = this.now;
     voice.placing = placed;
-    if (this.opts.history) {
-      voice.log = [];
-      voice.note(Number.NEGATIVE_INFINITY);
-    }
     this.voices.push(voice);
     this.version++;
     if (spec.target !== undefined) this.targeted++;
@@ -463,6 +472,11 @@ class Mixer<I, O> implements Mix<I, O> {
         voice.state = 'live';
         this.version++;
       }
+    }
+    // After placing, so the controls it starts with are where its anchors put it at the cue.
+    if (this.opts.history) {
+      voice.log = [];
+      voice.note(Number.NEGATIVE_INFINITY);
     }
     return this.handle(voice);
   }
@@ -496,6 +510,15 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** Moves the mix clock to `now`: voices start, finite loops end, and fades finish. */
   private move(now: number): void {
+    this.moving = true;
+    try {
+      this.moveTo(now);
+    } finally {
+      this.moving = false;
+    }
+  }
+
+  private moveTo(now: number): void {
     this.now = now;
     this.reducedNow = this.reduced;
     if (this.anchored > 0) this.place();
@@ -604,7 +627,7 @@ class Mixer<I, O> implements Mix<I, O> {
           const log = v.log as Controls[];
           const copy = v.copy(
             (subject) => this.recall(v, subject, t),
-            last(log, t, false) ?? (log[0] as Controls),
+            last(log, t, (e) => e.sync) ?? (log[0] as Controls),
           );
           copy.state = t < v.start ? 'pending' : copy.out && copy.out.at <= t ? 'fading' : 'live';
           return copy;
@@ -746,6 +769,7 @@ class Mixer<I, O> implements Mix<I, O> {
               voice.start = start;
               voice.anchorNow = start;
               voice.anchorElapsed = 0;
+              this.noted(voice);
               moved = true;
             }
           }
@@ -757,6 +781,7 @@ class Mixer<I, O> implements Mix<I, O> {
             const at = anchor.out !== undefined ? t : t - (voice.fade.out ?? 0);
             if (at !== voice.outAt) {
               voice.outAt = at;
+              this.noted(voice);
               moved = true;
             }
           }
@@ -861,7 +886,7 @@ class Mixer<I, O> implements Mix<I, O> {
   private noted(voice: Voice<I, O>): void {
     const log = voice.log;
     if (log === null) return;
-    voice.note(Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now);
+    voice.note(Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now, this.moving);
     const reach = this.now - (this.opts.history as { ms: number }).ms;
     let drop = 0;
     while (drop + 1 < log.length && (log[drop + 1] as Controls).at <= reach) drop++;

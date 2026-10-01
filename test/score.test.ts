@@ -178,3 +178,21 @@ describe('marks', () => {
     ]);
   });
 });
+
+describe('placement read back', () => {
+  it('reads a start its anchor fixed later as it stood then', () => {
+    const m = mix<Row, Pose>(K, { history: { ms: 5000 } });
+    m.sync(0);
+    const late = m.cue({ patch: hold(1000), anchor: { start: { with: 'cue' } } });
+    const r = { id: 'r' };
+    const seen = new Map<number, number>();
+    for (let t = 0; t <= 1000; t += 50) {
+      m.sync(t);
+      if (t === 300) m.cue({ patch: dim(0), name: 'cue', start: 100 });
+      seen.set(t, m.probe(r).x);
+    }
+    expect(late.state).toBe('live');
+    for (const t of [50, 250, 300, 350, 900])
+      expect([t, m.project(t).probe(r).x]).toEqual([t, seen.get(t)]);
+  });
+});
