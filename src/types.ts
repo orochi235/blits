@@ -10,6 +10,12 @@ export interface Channel<V> {
    * as `'sum'` or `'vec(3, sum)'`. Absent, a channel matches only itself.
    */
   kind?: string;
+  /**
+   * The range a numeric value means anything in, such as 0..1 for an opacity. The mix clamps the
+   * folded value to it, axis by axis for an array, so neither stacked voices nor a retarget that
+   * carries speed can push it out; overshoot stops flat at the bound.
+   */
+  bounds?: readonly [min: number, max: number];
   /** Identity. Absent means the channel has none: it replaces rather than contributes. */
   rest?: V;
   /** Fold two influences into one. */

@@ -225,6 +225,8 @@ class Mixer<I, O> implements Mix<I, O> {
 
   private readonly names: Key<O>[];
   private readonly channels: Channel<unknown>[];
+  /** Slots of the channels that declare bounds, clamped after every fold. */
+  private readonly bounded: number[];
   private readonly slotOf = new Map<string, number>();
 
   constructor(
@@ -233,6 +235,7 @@ class Mixer<I, O> implements Mix<I, O> {
   ) {
     this.names = Object.keys(kit as object) as Key<O>[];
     this.channels = this.names.map((k) => kit[k] as Channel<unknown>);
+    this.bounded = this.channels.flatMap((c, i) => (c.bounds ? [i] : []));
     this.names.forEach((k, i) => {
       this.slotOf.set(k, i);
     });
@@ -822,7 +825,31 @@ class Mixer<I, O> implements Mix<I, O> {
     }
   }
 
+  /** Clamps every bounded channel of a folded pose into its range, in place. */
+  private clamp(pose: Record<string, unknown>): Record<string, unknown> {
+    for (const slot of this.bounded) {
+      const [lo, hi] = (this.channels[slot] as Channel<unknown>).bounds as readonly [
+        number,
+        number,
+      ];
+      const key = this.names[slot] as string;
+      const v = pose[key];
+      if (typeof v === 'number') pose[key] = v < lo ? lo : v > hi ? hi : v;
+      else if (Array.isArray(v))
+        for (let i = 0; i < v.length; i++) {
+          const x = v[i] as number;
+          v[i] = x < lo ? lo : x > hi ? hi : x;
+        }
+    }
+    return pose;
+  }
+
   private fold(subject: I, out?: O, dry = false, except?: number): O {
+    const pose = this.folded(subject, out, dry, except) as Record<string, unknown>;
+    return (this.bounded.length === 0 ? pose : this.clamp(pose)) as O;
+  }
+
+  private folded(subject: I, out?: O, dry = false, except?: number): O {
     const now = this.now;
     const pose = (out ?? ({} as O)) as Record<string, unknown>;
     for (let i = 0; i < this.names.length; i++) {

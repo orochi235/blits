@@ -2,14 +2,25 @@ import type { Channel, Kit } from './types.js';
 
 const mix = (a: number, b: number, u: number) => a + (b - a) * u;
 
+/** What a stock numeric channel takes. */
+export interface NumberOptions {
+  /** The range the value means anything in; the mix clamps to it. */
+  bounds?: readonly [min: number, max: number];
+}
+
+/** Bounds change how a value folds at its edges, so they are part of the kind. */
+const kindOf = (name: string, bounds?: readonly [number, number]) =>
+  bounds === undefined ? name : `${name}[${bounds[0]}, ${bounds[1]}]`;
+
 /**
  * Position axes, rotation, crawl, yaw, pitch, offset.
  *
  * @category channel
  */
-export function sum(): Channel<number> {
+export function sum(opts?: NumberOptions): Channel<number> {
   return {
-    kind: 'sum',
+    kind: kindOf('sum', opts?.bounds),
+    bounds: opts?.bounds,
     rest: 0,
     merge: (a, b) => a + b,
     scale: (v, w) => v * w,
@@ -22,9 +33,10 @@ export function sum(): Channel<number> {
  *
  * @category channel
  */
-export function mul(): Channel<number> {
+export function mul(opts?: NumberOptions): Channel<number> {
   return {
-    kind: 'mul',
+    kind: kindOf('mul', opts?.bounds),
+    bounds: opts?.bounds,
     rest: 1,
     merge: (a, b) => a * b,
     scale: (v, w) => 1 + (v - 1) * w,
@@ -37,9 +49,10 @@ export function mul(): Channel<number> {
  *
  * @category channel
  */
-export function max(): Channel<number> {
+export function max(opts?: NumberOptions): Channel<number> {
   return {
-    kind: 'max',
+    kind: kindOf('max', opts?.bounds),
+    bounds: opts?.bounds,
     rest: 0,
     merge: (a, b) => (a > b ? a : b),
     scale: (v, w) => v * w,
@@ -74,6 +87,7 @@ export function vec(n: number, of: Channel<number>): Channel<number[]> {
   const fill = of.rest ?? 0;
   return {
     kind: of.kind === undefined ? undefined : `vec(${n}, ${of.kind})`,
+    bounds: of.bounds,
     rest,
     merge: (a, b) => {
       const out = new Array<number>(n);

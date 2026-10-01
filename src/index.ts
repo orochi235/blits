@@ -1,3 +1,4 @@
+export type { NumberOptions } from './channels.js';
 export { hex, kit, last, max, mixHex, mul, sum, vec } from './channels.js';
 export { mix, mixer } from './mixer.js';
 export type { Motion, Moving, PerSubject, Value } from './motion.js';

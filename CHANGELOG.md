@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- Channel `bounds`: `sum`, `mul` and `max` take `{ bounds: [min, max] }`, and `vec` inherits its
+  axis channel's. The mix clamps the folded value to the range, so stacked voices and a retarget
+  that carries speed stop flat at the bound. Bounds are part of the channel's kind.
+
 ## 0.2.0
 
 ### Breaking

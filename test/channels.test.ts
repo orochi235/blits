@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { hex, last, max, mixHex, mul, sum, vec } from '../src/channels.js';
+import { hex, kit, last, max, mixHex, mul, sum, vec } from '../src/channels.js';
+import { mix } from '../src/mixer.js';
+import { keys, patch } from '../src/patch.js';
 import type { Channel } from '../src/types.js';
 
 /**
@@ -131,5 +133,65 @@ describe('channel laws', () => {
     expect(mixHex(0x000000, 0xffffff, 1)).toBe(0xffffff);
     expect(mixHex(0x000000, 0xffffff, 0.5)).toBe(0x808080);
     expect(hex().merge(0x112233, 0x445566)).toBe(0x445566);
+  });
+});
+
+describe('bounds', () => {
+  interface Look {
+    opacity: number;
+    lift: number;
+    at: number[];
+  }
+  const LOOK = kit<Look>({
+    opacity: mul({ bounds: [0, 1] }),
+    lift: sum({ bounds: [0, 1] }),
+    at: vec(2, sum({ bounds: [-10, 10] })),
+  });
+  const s = { id: 'a' };
+
+  it('clamps stacked voices into the range, axis by axis for a vector', () => {
+    const m = mix<{ id: string }, Look>(LOOK);
+    const p = patch<{ id: string }, Look>(0, () => ({ lift: 0.7, at: [8, -3] }), {
+      writes: ['lift', 'at'],
+    });
+    m.cue({ patch: p });
+    m.cue({ patch: p });
+    m.sync(0);
+    expect(m.probe(s)).toMatchObject({ lift: 1, at: [10, -6] });
+  });
+
+  it('stops a retarget that carries speed flat at the bound', () => {
+    // Rising at 1/300 a ms, retargeted at 0.9 toward 0.95: carried, it would pass 1.
+    const peak = (k: typeof LOOK) => {
+      const m = mix<{ id: string }, Look>(k);
+      const rising = m.cue({
+        patch: patch<{ id: string }, Look>(300, (phase) => ({ lift: phase }), { writes: ['lift'] }),
+      });
+      m.sync(0);
+      m.probe(s);
+      m.sync(270);
+      m.probe(s);
+      rising.weight = 0;
+      m.cue({
+        patch: keys<{ id: string }, Look>(400, [{ at: 1, delta: { lift: 0.95 } }]),
+        from: 'current',
+        loop: false,
+      });
+      let top = 0;
+      for (let t = 280; t <= 670; t += 10) {
+        m.sync(t);
+        top = Math.max(top, m.probe(s).lift);
+      }
+      return top;
+    };
+    expect(peak(kit<Look>({ opacity: mul(), lift: sum(), at: vec(2, sum()) }))).toBeGreaterThan(1);
+    expect(peak(LOOK)).toBe(1);
+  });
+
+  it('are part of the kind, so a patch written for one range is refused by another', () => {
+    expect(mul({ bounds: [0, 1] }).kind).toBe('mul[0, 1]');
+    expect(vec(2, sum({ bounds: [-10, 10] })).kind).toBe('vec(2, sum[-10, 10])');
+    const p = patch<{ id: string }, Look>(0, () => ({ opacity: 0.5 }), { kit: { opacity: mul() } });
+    expect(() => mix<{ id: string }, Look>(LOOK).cue({ patch: p })).toThrow(/mul\[0, 1\].*mul/);
   });
 });

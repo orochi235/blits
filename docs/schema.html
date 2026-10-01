@@ -248,6 +248,9 @@
   <span class="cm">/** Names the arithmetic: 'sum', 'vec(3, sum)'. Two channels of one kind fold identically. Absent, a channel
      matches only itself. */</span>
   kind?: string;
+  <span class="cm">/** The range a numeric value means anything in. The mix clamps the folded value to it, so stacked voices and a
+     retarget that carries speed stop flat at the bound. Part of the kind: mul({ bounds: [0, 1] }) is 'mul[0, 1]'. */</span>
+  bounds?: readonly [min: number, max: number];
   <span class="cm">/** Identity. Absent means the channel has none: `color` replaces rather than contributes. */</span>
   rest?: V;
   <span class="cm">/** Fold two influences into one. */</span>
@@ -569,7 +572,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <tr><td>klieg motion</td><td><code>LetterInfo</code></td><td>position vec3 sum · rotation vec3 sum · scale mul · opacity mul</td><td>Three voices in locus <code>phase</code>, fades of <code>blendMs</code>.</td></tr>
   <tr><td>klieg effects</td><td><code>PartInfo</code></td><td>gain mul · scale mul · dark max · crawl sum · position vec3 sum · rotation vec3 sum · light vec3 sum · color last</td><td>Light is premultiplied by amount before it reaches the channel, as <code>mergeOffsets</code> does.</td></tr>
   <tr><td>klieg lighting</td><td>unit</td><td>yaw sum · pitch sum</td><td>One subject, the frame. A mix with no subject dimension is a mix over one subject.</td></tr>
-  <tr><td>wod transitions</td><td>wedge <code>Segment</code></td><td>hold mul · opacity mul · scale mul · offset sum · rotate sum · aperture max · offsetAngle last</td><td>Every voice is <code>keys</code> with <code>from: 'current'</code>; the voices map goes away.</td></tr>
+  <tr><td>wod transitions</td><td>wedge <code>Segment</code></td><td>hold mul[0, 1] · opacity mul[0, 1] · scale mul · offset sum · rotate sum · aperture max[0, 1] · offsetAngle last</td><td>Every voice is <code>keys</code> with <code>from: 'current'</code>; the voices map goes away.</td></tr>
   <tr><td>sherpa seams</td><td>page</td><td>opacity mul · transform (host's) · clip max</td><td>Exit and enter as two voices; overlap is whether both are live at once.</td></tr>
   <tr><td>magicsmoke faults</td><td>fault</td><td>none: the patch writes no channels</td><td>One voice per fault, on a mix per fault that magicsmoke keeps to itself. Its weight is the intensity, a number or any signal. Its state is the seeded discharge process, stepped under <code>stepMs: 5</code>, easing exponentially toward <code>setting.weight</code> and sending each discharge as an event. Stopping is <code>handle.fade()</code>; <code>blow</code> writes into the fault's own state through magicsmoke's handle, not as a second voice. The mix never sets <code>reduce</code>, which would step off the grid, and <code>cue</code> passes the last synced timestamp as <code>start</code>, the old process's clock origin. Jolt, whine and hum stay off blits: the browser already composites jolt, and whine and hum fade on the audio clock. magicsmoke imports <code>Signal</code>, <code>Handle</code>, <code>Setting</code>, <code>slew</code> and <code>level</code>, so those are surface to keep stable.</td></tr>
 </table></div>
