@@ -1,6 +1,6 @@
 {
   "name": "@msb235/blits",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Concurrent effects: each on its own clock with its own state and weight, folded into one value per subject per frame",
   "keywords": [
     "animation",
