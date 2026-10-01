@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { hex, kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
-import { gate, level, peak, slew } from '../src/signals.js';
+import { gate, lag, level, peak, slew } from '../src/signals.js';
 import type { Setting } from '../src/types.js';
 
 interface Pose {
@@ -138,6 +138,42 @@ describe('slew', () => {
     expect(slew(level<Part>(0), { riseMs: 100 }).input).toBe(true);
     expect(gate(peak(level<Part>(0)), 0.5).input).toBe(true);
     expect(slew<Part>(() => 0.5, { riseMs: 100 }).input).toBeUndefined();
+  });
+});
+
+describe('lag', () => {
+  it('closes 1 − exp(−gap / ms) of the distance, rising and falling on their own constants', () => {
+    const input = level<Part>(0);
+    const followed = lag<Part>(input, { riseMs: 100, fallMs: 200 });
+    expect(followed(part, frame(0, 0))).toBe(0);
+
+    input.set(1);
+    expect(followed(part, frame(100, 100))).toBeCloseTo(1 - Math.exp(-1), 12);
+
+    input.set(0);
+    const from = 1 - Math.exp(-1);
+    expect(followed(part, frame(300, 200))).toBeCloseTo(from * Math.exp(-1), 12);
+
+    expect(followed(part, frame(316, Number.POSITIVE_INFINITY))).toBe(0);
+  });
+
+  it('reads the same at any frame spacing while its input holds still', () => {
+    const read = (every: number): number => {
+      kept = new Map();
+      const input = level<Part>(0);
+      const followed = lag<Part>(input, { riseMs: 100, fallMs: 100 });
+      followed(part, frame(0, 0));
+      input.set(1);
+      let v = 0;
+      for (let t = every; t <= 240; t += every) v = followed(part, frame(t, every));
+      return v;
+    };
+    const exact = 1 - Math.exp(-240 / 100);
+    for (const every of [5, 8, 16, 30, 48, 80, 240]) expect(read(every)).toBeCloseTo(exact, 12);
+  });
+
+  it('marks itself driven by outside input when what it follows is', () => {
+    expect(lag<Part>(level<Part>(0), { riseMs: 10 }).input).toBe(true);
   });
 });
 

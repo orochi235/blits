@@ -73,6 +73,37 @@ export function slew<I>(
   return marked(read, inputOf([of]));
 }
 
+/**
+ * The exponential counterpart to `slew`: closes the same fraction of the distance to its input in
+ * every equal stretch of time, `1 − exp(−gap / ms)`, so it reads the same however the frames that
+ * sample it are spaced while the input holds still. `riseMs` and `fallMs` are time constants: after
+ * one, 63% of the way is covered. 0 follows at once. The mix keeps its state per voice and subject.
+ *
+ * @category signal
+ */
+export function lag<I>(
+  of: Signal<I>,
+  { riseMs = 0, fallMs = 0 }: { riseMs?: number; fallMs?: number },
+): Signal<I> {
+  const read = (subject: I, setting: Setting): number => {
+    const target = of(subject, setting);
+    const held = setting.keep<Slewed>(read, () => ({ value: target, seen: Number.NaN }));
+    if (setting.timestamp === held.seen) return held.value;
+    let next = target;
+    if (!Number.isNaN(held.seen) && Number.isFinite(setting.dt)) {
+      const ms = target > held.value ? riseMs : fallMs;
+      if (ms > 0) {
+        const gap = setting.timestamp - held.seen;
+        next = held.value + (target - held.value) * (1 - Math.exp(-gap / ms));
+      }
+    }
+    held.value = next;
+    held.seen = setting.timestamp;
+    return next;
+  };
+  return marked(read, inputOf([of]));
+}
+
 interface Gated {
   on: boolean;
   seen: number;
