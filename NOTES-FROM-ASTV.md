@@ -41,8 +41,9 @@ is a function of position minus the last step at or before it that changed the n
   on screen, whatever the reason it appeared. No placeholder state, no rule that only applies to
   arrivals.
 - **A camera that retargets mid-flight.** astv's flights retarget when a new scene lands while the
-  camera is still moving. Your note that `from: 'current'` restarts from zero velocity, so a
-  retarget kinks, is the known gap this case would hit.
+  camera is still moving. Since blits 0.2.0 a `from: 'current'` voice leaves at the subject's
+  velocity and `spring.to` keeps it, so the retarget no longer kinks; what is left is reading
+  that camera back at an earlier step, which is the next case.
 - **State that cannot be a function of position.** Ghosts need a removed node's position from the
   scene before the commit that removed it; a camera mid-flight has velocity. These are astv's two
   candidates for your nearest-checkpoint-then-step-forward answer.
