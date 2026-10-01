@@ -361,6 +361,18 @@ class Mixer<I, O> implements Mix<I, O> {
    * a projection reading back, the copy in force then.
    */
   private hostLog: { at: number; fields: Record<string, unknown> }[] = [];
+  /**
+   * Marks the host announced on a score: mix time, NaN until the next sync for one announced as
+   * now before any sync; `made` is when it was announced, for a read back to know what was known.
+   */
+  private announced: {
+    name: string;
+    score: string | undefined;
+    tags: readonly string[];
+    at: number;
+    made: number;
+    order: number;
+  }[] = [];
   private hostThen: { fields: Record<string, unknown> } | undefined;
   /** Each subject's last two poses and when they were probed, for `from: 'current'`. */
   private pose = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();
@@ -543,7 +555,13 @@ class Mixer<I, O> implements Mix<I, O> {
   private moveTo(now: number): void {
     this.now = now;
     this.reducedNow = this.reduced;
+    for (const a of this.announced) if (Number.isNaN(a.at)) a.at = now;
     if (this.anchored > 0) this.place();
+    if (this.announced.length > 0) {
+      // Kept while still ahead, or while history reaches it; anchors waiting on one were placed above.
+      const reach = now - (this.opts.history?.ms ?? 0);
+      this.announced = this.announced.filter((a) => a.at >= reach);
+    }
     for (const voice of this.voices) {
       if (voice.state === 'done') continue;
       if (voice.state === 'live' && voice.outAt <= now)
@@ -633,6 +651,7 @@ class Mixer<I, O> implements Mix<I, O> {
       c.voices = this.voices
         .filter((v) => v.state !== 'done')
         .map((v) => v.copy((subject) => this.carry(v, subject)));
+      c.announced = this.announced.map((a) => ({ ...a }));
       c.count();
       c.move(t);
     } else {
@@ -649,6 +668,7 @@ class Mixer<I, O> implements Mix<I, O> {
           ? Object.assign(Object.create(host) as object, was.fields)
           : undefined;
       if (was) c.hostThen = was;
+      c.announced = this.announced.filter((a) => a.made < t).map((a) => ({ ...a }));
       c.voices = [...this.voices, ...this.gone]
         .filter((v) => v.cuedAt <= t && v.doneAt > t)
         .sort((a, b) => a.id - b.id)
@@ -683,10 +703,36 @@ class Mixer<I, O> implements Mix<I, O> {
     };
   }
 
+  announce(
+    name: string,
+    opts: { at?: number; score?: string; tags?: readonly string[] } = {},
+  ): void {
+    const at = opts.at !== undefined ? opts.at - this.offset : this.now;
+    this.announced.push({
+      name,
+      score: opts.score,
+      tags: opts.tags ?? none,
+      at,
+      made: Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now,
+      order: this.nextId++,
+    });
+  }
+
   marks(from: number, to: number): Marked[] {
     const lo = from - this.offset;
     const hi = to - this.offset;
-    const out: Marked[] = [];
+    const out: (Marked & { order: number })[] = [];
+    for (const a of this.announced)
+      if (a.at >= lo && a.at <= hi)
+        out.push({
+          timestamp: a.at + this.offset,
+          mark: undefined,
+          voice: undefined,
+          score: a.score,
+          name: a.name,
+          tags: a.tags,
+          order: a.order,
+        });
     for (const voice of [...this.voices, ...this.gone]) {
       for (const mark of ['start', 'in', 'out', 'end'] as const) {
         const t = this.markOf(voice, mark);
@@ -698,10 +744,12 @@ class Mixer<I, O> implements Mix<I, O> {
           score: voice.spec.score,
           name: voice.spec.name,
           tags: voice.spec.tags ?? none,
+          order: voice.id,
         });
       }
     }
-    return out.sort((a, b) => a.timestamp - b.timestamp || a.voice - b.voice);
+    out.sort((a, b) => a.timestamp - b.timestamp || a.order - b.order);
+    return out.map(({ order: _, ...m }) => m);
   }
 
   atRest(subject: I): boolean {
@@ -849,38 +897,46 @@ class Mixer<I, O> implements Mix<I, O> {
       mark = 'start';
       by = -by;
     }
-    const target = this.select(typeof query === 'string' ? { name: query } : query, mark, self);
-    if (target === undefined) return undefined;
-    const t = this.markOf(target, mark);
+    const t = this.timeOf(typeof query === 'string' ? { name: query } : query, mark, self);
     return t === undefined ? undefined : t + by;
   }
 
-  /** The voice a query picks, among those cued and those that have left, never the asker. */
-  private select(q: Query, mark: Mark, self: Voice<I, O>): Voice<I, O> | undefined {
-    const all = [...this.gone, ...this.voices].filter(
-      (v) =>
+  /**
+   * The time a query answers: `mark` of the voice it picks, among those cued and those that have
+   * left, never the asker; or a mark the host announced on the score, which is the same time for
+   * any of the four. Undefined while what it picks has no such time.
+   */
+  private timeOf(q: Query, mark: Mark, self: Voice<I, O>): number | undefined {
+    const score = q.score ?? self.spec.score;
+    const found: { order: number; t: number | undefined }[] = [];
+    for (const v of [...this.gone, ...this.voices])
+      if (
         v !== self &&
-        v.spec.score === (q.score ?? self.spec.score) &&
+        v.spec.score === score &&
         (q.name === undefined || v.spec.name === q.name) &&
         (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
-        (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes)),
-    );
-    if (all.length === 0) return undefined;
-    all.sort((a, b) => a.id - b.id);
+        (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes))
+      )
+        found.push({ order: v.id, t: this.markOf(v, mark) });
+    if (q.writes === undefined)
+      for (const a of this.announced)
+        if (
+          a.score === score &&
+          (q.name === undefined || a.name === q.name) &&
+          (q.tag === undefined || a.tags.includes(q.tag))
+        )
+          found.push({ order: a.order, t: Number.isNaN(a.at) ? undefined : a.at });
+    if (found.length === 0) return undefined;
+    found.sort((x, y) => x.order - y.order);
     const resolver = q.resolver ?? 'last';
-    if (resolver === 'first') return all[0];
-    if (resolver === 'last') return all[all.length - 1];
-    const timed = all.flatMap((v) => {
-      const t = this.markOf(v, mark);
-      return t === undefined ? [] : [{ v, t }];
-    });
+    if (resolver === 'first') return found[0]?.t;
+    if (resolver === 'last') return found[found.length - 1]?.t;
+    const times = found.flatMap((e) => (e.t === undefined ? [] : [e.t])).sort((x, y) => x - y);
     if (resolver === 'next') {
       const now = Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now;
-      const ahead = timed.filter((e) => e.t >= now).sort((a, b) => a.t - b.t);
-      return ahead[0]?.v;
+      return times.find((t) => t >= now);
     }
-    timed.sort((a, b) => a.t - b.t);
-    return (resolver === 'earliest' ? timed[0] : timed[timed.length - 1])?.v;
+    return resolver === 'earliest' ? times[0] : times[times.length - 1];
   }
 
   /** When a voice reaches a mark, mix time, or undefined while nothing has fixed it. */
@@ -1061,6 +1117,19 @@ class Mixer<I, O> implements Mix<I, O> {
     const out = {} as Record<string, Doubt>;
     for (const name of this.names) out[name] = 'exact';
     const rank = { exact: 0, stepped: 1, held: 2 } as const;
+    // A voice still waiting on an anchor nothing has answered may yet play, or stop, by now.
+    for (const voice of this.voices) {
+      const anchor = voice.spec.anchor;
+      if (anchor === undefined || voice.state === 'done') continue;
+      const waiting =
+        (voice.state === 'pending' && !Number.isFinite(voice.start)) ||
+        (voice.state !== 'pending' &&
+          voice.state !== 'fading' &&
+          (anchor.out !== undefined || anchor.end !== undefined) &&
+          !Number.isFinite(voice.outAt));
+      if (!waiting || (voice.spec.target && !voice.spec.target(subject))) continue;
+      for (const slot of voice.slots) out[this.names[slot] as string] = 'held';
+    }
     for (const voice of this.reaching(subject, this.now)) {
       if (voice.state === 'pending' || voice.state === 'done') continue;
       const held = voice.subjects.get(subject) as Subject<unknown> | undefined;

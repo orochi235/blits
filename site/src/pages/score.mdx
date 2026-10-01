@@ -43,9 +43,21 @@ A voice whose anchor has no answer yet waits pending: a name nobody has cued, or
 
 A voice that has left can still be anchored to only while the mix's history reaches it.
 
+## Announcing a mark
+
+Some moments only the host knows: a click, a reply from a server, a beat it has scheduled. The host puts a named mark on the score with `announce`, and anchors target it the same way they target a voice's marks.
+
+```ts
+m.cue({ patch: burst, anchor: { start: { with: 'reply' } } });   // waits
+m.announce('reply');                                             // now
+m.announce('beat', { at: performance.now() + 1200 });            // known ahead
+```
+
+A voice waiting on a mark nobody has announced stays pending, and a read ahead says `held` for whatever it would feed. An announced mark stays while it is still ahead, or while the mix's history reaches it.
+
 ## What comes next
 
-`mix.marks(from, to)` lists every mark the plan knows between two timestamps, earliest first, with each voice's id, name and tags. A mark nothing has fixed yet is left out.
+`mix.marks(from, to)` lists every mark the plan knows between two timestamps, earliest first: each voice's four, with its id, name and tags, and every announced mark. A mark nothing has fixed yet is left out.
 
 ```ts
 for (const next of m.marks(now, now + 2000)) if (next.mark === 'start') prepare(next.name);

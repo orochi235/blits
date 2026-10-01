@@ -238,15 +238,18 @@ export interface Placement {
 }
 
 /**
- * One mark of one voice, as `marks` lists it.
+ * One mark as `marks` lists it: one of a voice's four, or one the host announced on a score, which
+ * has a name and no voice.
  *
  * @category score
  */
 export interface Marked {
   /** On the host's clock. */
   timestamp: number;
-  mark: Mark;
-  voice: number;
+  /** Which of a voice's four this is; undefined for an announced mark. */
+  mark: Mark | undefined;
+  /** The voice it belongs to; undefined for an announced mark. */
+  voice: number | undefined;
   score: string | undefined;
   name: string | undefined;
   tags: readonly string[];
@@ -461,9 +464,16 @@ export interface Mix<I, O> {
   /** Forgets per-subject state. */
   drop(subject: I): void;
   /**
+   * Puts a named mark on a score, for anchors to target as they target a voice's marks: a voice
+   * placed `{ with: 'reply' }` waits until the host announces `reply`. `at` is a timestamp on the
+   * host's clock, default now, and may lie ahead, so a read ahead sees it. A mark stays while it is
+   * ahead or while the mix's history reaches it.
+   */
+  announce(name: string, opts?: { at?: number; score?: string; tags?: readonly string[] }): void;
+  /**
    * Every mark the plan knows between two timestamps on the host's clock, earliest first: when
-   * voices start, are fully in, begin to fade and are gone. A mark nothing has fixed yet, such as
-   * the out of a voice that loops for good, is not listed.
+   * voices start, are fully in, begin to fade and are gone, and what the host announced. A mark
+   * nothing has fixed yet, such as the out of a voice that loops for good, is not listed.
    */
   marks(from: number, to: number): Marked[];
   /**

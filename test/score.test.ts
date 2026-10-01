@@ -228,3 +228,75 @@ describe('scores', () => {
     ).toThrow(/itself/);
   });
 });
+
+describe('announced marks', () => {
+  it('starts a voice waiting on a mark when the host announces it', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    const burst = m.cue({ patch: dim(0), anchor: { start: { with: 'reply' } } });
+    m.sync(500);
+    expect(burst.state).toBe('pending');
+    m.announce('reply');
+    m.sync(516);
+    expect(burst.state).toBe('live');
+    expect(at(m, 0, 1000)).toContain(`500 ${burst.id} start`);
+  });
+
+  it('takes an announced time ahead, lists it, and lets a read ahead see it', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: dim(0), fade: { in: 200 }, anchor: { in: { with: 'beat' } } });
+    m.announce('beat', { at: 1200, tags: ['music'] });
+    m.sync(16);
+    const marks = m.marks(0, 2000);
+    expect(marks.find((e) => e.name === 'beat')).toEqual({
+      timestamp: 1200,
+      mark: undefined,
+      voice: undefined,
+      score: undefined,
+      name: 'beat',
+      tags: ['music'],
+    });
+    const r = { id: 'r' };
+    expect(m.project(900).probe(r).gain).toBe(1);
+    expect(m.project(1100).probe(r).gain).toBeCloseTo(0.75, 9);
+    expect(m.project(1300).probe(r).gain).toBe(0.5);
+  });
+
+  it('says held for a channel whose voice still waits on a mark nobody announced', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: dim(0), anchor: { start: { after: 'reply' } } });
+    m.cue({ patch: hold(500) });
+    const r = { id: 'r' };
+    m.probe(r);
+    expect(m.project(1000).assess(r)).toEqual({ x: 'exact', gain: 'held' });
+  });
+
+  it('reads back only what had been announced by then', () => {
+    const m = mix<Row, Pose>(K, { history: { ms: 5000 } });
+    const r = { id: 'r' };
+    m.sync(0);
+    m.cue({ patch: dim(0), anchor: { start: { with: 'beat' } } });
+    const seen = new Map<number, number>();
+    for (let t = 0; t <= 1600; t += 50) {
+      m.sync(t);
+      if (t === 500) m.announce('beat', { at: 1000 });
+      seen.set(t, m.probe(r).gain);
+    }
+    for (const t of [300, 600, 950, 1000, 1500])
+      expect([t, m.project(t).probe(r).gain]).toEqual([t, seen.get(t)]);
+  });
+
+  it('keeps announced marks to their score', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    const mine = m.cue({ patch: dim(0), score: 'a', anchor: { start: { with: 'go' } } });
+    m.announce('go', { score: 'b' });
+    m.sync(16);
+    expect(mine.state).toBe('pending');
+    m.announce('go', { score: 'a' });
+    m.sync(32);
+    expect(mine.state).toBe('live');
+  });
+});

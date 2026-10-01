@@ -110,7 +110,10 @@ systems now run on it**, on a branch that is not merged.
 - **The score's shape, picked 2026-10-01 while building it** (Mike asleep; his to overturn): anchors
   are `after` (the target's end), `with` (its start), `before` (its start less `by`) and the general
   `{ of, mark, by }`; a query's resolver is a field, `resolver: 'next'`, not the schema's earlier
-  `next: true`; a bare name looks in the asker's `score`. A start follows its target only while
+  `next: true`; a bare name looks in the asker's `score`. Mike chose (2026-10-01, awake): a **mark** is
+  any named time an anchor hangs from, a voice's four or one the host puts on a score with
+  `mix.announce(name, { at? })`; an **event** is only what a patch `send`s out. `announce` is not in
+  `docs/vocabulary.json` yet. A start follows its target only while
   pending, an out until its fade begins. Queries never read channel values, and astv's own rules
   (which nodes changed, arrivals growing from an ancestor, ghosts) stay astv's: checked with two astv
   sessions on 2026-10-01.
@@ -178,9 +181,9 @@ systems now run on it**, on a branch that is not merged.
    names, and the tube gradient still calls its own thing `domain`. Each is a break in klieg's
    published surface — sherpa reads `ctx.phase` — and step one had to leave every baseline where it
    was, so they wait for a version of klieg that intends to break.
-5. **The remaining opens** are in the schema page: what the score still lacks (events as anchor
-   targets, which need a picked verb for raising one; tags absorbing loci; splitting a read ahead at
-   known events), color's lerp space and the stock band's width.
+5. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
+   a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
+   stock band's width.
 
 ## Loose ends
 

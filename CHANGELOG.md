@@ -17,7 +17,8 @@ version and everything else the patch. Each release lists its changes as **Break
 - The score: a voice takes a `name` and an `anchor` placement, `start` or `in` and `out` or `end`,
   each a timestamp or another voice's mark (`after`, `with`, `before`, or `of` plus `mark`),
   selected by name, tag or written channel with a resolver. Each source can keep its own `score`,
-  with names namespaced per score. `mix.marks(from, to)` lists the marks the plan knows.
+  with names namespaced per score. `mix.announce(name, { at? })` puts a named mark on a score for
+  anchors to wait on, and `mix.marks(from, to)` lists every mark the plan knows.
 - `spring` and `glide` keep every stretch within the mix's history, so a read before a retarget
   finds where the subject was.
 
