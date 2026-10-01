@@ -4,10 +4,9 @@ name: Release
 # workflow's OIDC token for a short-lived credential, which is why `id-token: write` is the one
 # permission that matters here.
 #
-# It only works once npmjs.com knows about this workflow: @msb235/blits → Settings → Trusted publishing →
-# GitHub Actions, with `orochi235`, `blits` (the repo), and this file's name. That page exists only for a
-# package that has been published at least once, so 0.1.0 goes out by hand and every version after
-# it goes out from here.
+# npmjs.com holds the trust: `npm trust github @msb235/blits --file release.yml --repo orochi235/blits
+# --allow-publish` registered it, and `npm trust list @msb235/blits` shows it. It can be set before
+# the first publish, so every version, 0.1.0 included, goes out from here.
 
 on:
   push:
