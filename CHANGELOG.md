@@ -4,6 +4,27 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- `mix.project(timestamp)` reads the mix at another time without moving it: `probe` gives the pose
+  then, and `assess` says per channel whether it is `exact`, `stepped` or `held`. Ahead it plays
+  what is cued forward; behind it needs `MixOptions.history: { ms, every? }`, which keeps every
+  handle change, the voices that left, and copies of stateful state, so a read back under `stepMs`
+  lands on the pose the mix showed. `Patch.clone` copies state `structuredClone` cannot.
+- The score: a voice takes a `name` and an `anchor` placement, `start` or `in` and `out` or `end`,
+  each a timestamp or another voice's mark (`after`, `with`, `before`, or `of` plus `mark`),
+  selected by name, tag or written channel with a resolver. `mix.marks(from, to)` lists the marks
+  the plan knows.
+- `spring` and `glide` keep every stretch within the mix's history, so a read before a retarget
+  finds where the subject was.
+
+### Fixed
+
+- A finite loop's fade out starts when its last pass ended, not at the first frame after, so it
+  plays the same at any frame rate.
+
 ## 0.2.1
 
 ### Added
