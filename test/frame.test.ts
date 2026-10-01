@@ -485,3 +485,43 @@ describe('a voice cued before the first sync', () => {
     expect(h.state).toBe('live');
   });
 });
+
+describe('handle.ramp', () => {
+  const clock = () =>
+    patch<Part, Pose>(0, (_p, _s, setting) => ({ crawl: setting.elapsed }), { writes: ['crawl'] });
+
+  it('eases the rate in, so the voice clock integrates it and never jumps', () => {
+    const m = mix<Part, Pose>(PART);
+    const h = m.cue({ patch: clock() });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.sync(100);
+    expect(m.probe(part).crawl).toBe(100);
+    h.ramp(0, 200);
+    m.sync(200);
+    // Half way down a linear ramp from 1 to 0 over 200 ms: 100 · (1 + 0.5) / 2.
+    expect(m.probe(part).crawl).toBeCloseTo(175, 9);
+    expect(h.rate).toBeCloseTo(0.5, 9);
+    m.sync(300);
+    expect(m.probe(part).crawl).toBeCloseTo(200, 9);
+    m.sync(1000);
+    expect(m.probe(part).crawl).toBeCloseTo(200, 9);
+    expect(h.rate).toBe(0);
+  });
+
+  it('keeps going through a seek, and a rate write replaces it', () => {
+    const m = mix<Part, Pose>(PART);
+    const h = m.cue({ patch: clock() });
+    const part = { id: 'a' };
+    m.sync(0);
+    h.ramp(3, 100);
+    m.sync(50);
+    h.seek(0);
+    m.sync(100);
+    // From the seek at 50: rate 2 → 3 over the 50 ms left, 50 · 2.5.
+    expect(m.probe(part).crawl).toBeCloseTo(125, 9);
+    h.rate = 1;
+    m.sync(150);
+    expect(m.probe(part).crawl).toBeCloseTo(175, 9);
+  });
+});

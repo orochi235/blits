@@ -46,6 +46,8 @@ interface Subject<S> {
   delta: Record<string, unknown> | null;
   /** Stop 0 for a `from: 'current'` voice, taken the first frame this subject is seen. */
   base?: Record<string, unknown>;
+  /** The pose's velocity per channel at that moment, units per ms, so the first segment leaves at it. */
+  slope?: Record<string, unknown>;
   /** What each stateful signal on this voice keeps for this subject, by the signal. */
   kept: Map<object, unknown>;
   keep: Setting['keep'];
@@ -80,9 +82,14 @@ class Voice<I, O> {
   state: 'pending' | 'live' | 'fading' | 'done' = 'pending';
   rate: number;
   weight: number;
-  /** elapsed = anchorElapsed + (now − anchorNow) · rate, rebased on a rate change or a seek. */
+  /**
+   * elapsed = anchorElapsed + the rate integrated from anchorNow, rebased on a rate change or a seek.
+   * Without a ramp the rate is constant; with one it moves linearly from `from` to `to` over `over`
+   * mix ms starting at the anchor, and holds `to` after.
+   */
   anchorNow: number;
   anchorElapsed = 0;
+  ramp: { from: number; to: number; over: number } | null = null;
   out: Ramp | null = null;
   readonly subjects = new Store<I, Subject<unknown>>();
   /** Kit slot of each channel the patch writes, in `writes` order. */
@@ -139,18 +146,42 @@ class Voice<I, O> {
   }
 
   elapsedAt(now: number): number {
-    return this.anchorElapsed + (now - this.anchorNow) * this.rate;
+    const dt = now - this.anchorNow;
+    const r = this.ramp;
+    if (r === null) return this.anchorElapsed + dt * this.rate;
+    if (dt <= 0) return this.anchorElapsed + dt * r.from;
+    const d = r.to - r.from;
+    if (dt <= r.over) return this.anchorElapsed + r.from * dt + (d * dt * dt) / (2 * r.over);
+    return this.anchorElapsed + r.from * r.over + (d * r.over) / 2 + r.to * (dt - r.over);
   }
 
+  rateAt(now: number): number {
+    const r = this.ramp;
+    if (r === null) return this.rate;
+    const u = (now - this.anchorNow) / r.over;
+    return u >= 1 ? r.to : u <= 0 ? r.from : r.from + (r.to - r.from) * u;
+  }
+
+  /** Moves the anchor to `now`, carrying what is left of a ramp. */
   rebase(now: number): void {
+    const rate = this.rateAt(now);
     this.anchorElapsed = this.elapsedAt(now);
+    const r = this.ramp;
+    if (r !== null) {
+      const left = this.anchorNow + r.over - now;
+      this.ramp = left > 0 ? { from: rate, to: r.to, over: left } : null;
+    }
     this.anchorNow = now;
   }
 }
 
 class Mixer<I, O> implements Mix<I, O> {
   private readonly voices: Voice<I, O>[] = [];
-  private readonly pose = new Store<I, O>();
+  /** Each subject's last two poses and when they were probed, for `from: 'current'`. */
+  private readonly pose = new Store<
+    I,
+    { pose: O; at: number; prev: O | undefined; prevAt: number }
+  >();
   private nextId = 1;
   /** The mix clock: the host's timestamp less every gap `rebase` has taken out. */
   private now = Number.NaN;
@@ -325,14 +356,26 @@ class Mixer<I, O> implements Mix<I, O> {
     const pose = this.fold(subject, out);
     // Keeping last frame's pose is free when the mix allocated it; a host sampling into its own
     // object only pays for the copy once something in the mix has asked to retarget from it.
-    if (out === undefined) this.pose.set(subject, pose);
+    let kept: O | undefined;
+    if (out === undefined) kept = pose;
     else if (this.wantsPose) {
-      const kept = {} as O;
+      kept = {} as O;
       for (const key of this.names) {
         const v = (pose as Record<string, unknown>)[key];
         if (v !== undefined) (kept as Record<string, unknown>)[key] = copy(v);
       }
-      this.pose.set(subject, kept);
+    }
+    if (kept !== undefined) {
+      const rec = this.pose.get(subject);
+      if (rec === undefined)
+        this.pose.set(subject, { pose: kept, at: this.now, prev: undefined, prevAt: Number.NaN });
+      else if (rec.at === this.now) rec.pose = kept;
+      else {
+        rec.prev = rec.pose;
+        rec.prevAt = rec.at;
+        rec.pose = kept;
+        rec.at = this.now;
+      }
     }
     return pose;
   }
@@ -397,14 +440,22 @@ class Mixer<I, O> implements Mix<I, O> {
         voice.weight = w;
       },
       get rate() {
-        return voice.rate;
+        return voice.rateAt(Number.isNaN(mix.now) ? voice.start : mix.now);
       },
       set rate(r: number) {
         voice.rebase(Number.isNaN(mix.now) ? voice.start : mix.now);
+        voice.ramp = null;
+        voice.rate = r;
+      },
+      ramp(r: number, over: number) {
+        const now = Number.isNaN(mix.now) ? voice.start : mix.now;
+        voice.rebase(now);
+        const from = voice.rateAt(now);
+        voice.ramp = over > 0 && r !== from ? { from, to: r, over } : null;
         voice.rate = r;
       },
       seek(elapsed: number) {
-        voice.anchorNow = Number.isNaN(mix.now) ? voice.start : mix.now;
+        voice.rebase(Number.isNaN(mix.now) ? voice.start : mix.now);
         voice.anchorElapsed = elapsed;
       },
       fade(opts?: FadeOptions) {
@@ -463,7 +514,8 @@ class Mixer<I, O> implements Mix<I, O> {
     if (held !== undefined) return held;
     const reaches = voice.spec.target ? voice.spec.target(subject) : true;
     const delay = reaches && voice.spec.stagger ? voice.spec.stagger(subject) : 0;
-    // When the voice clock reads `delay`, from where it is anchored now.
+    // When the voice clock reads `delay`, from where it is anchored now; during a ramp this assumes
+    // the rate it is ramping to.
     const since =
       voice.rate > 0
         ? voice.anchorNow + (delay - voice.anchorElapsed) / voice.rate
@@ -567,10 +619,20 @@ class Mixer<I, O> implements Mix<I, O> {
     if (voice.built) {
       let base: Record<string, unknown> | undefined;
       if (voice.spec.from === 'current') {
-        if (held.base === undefined) held.base = this.baseFor(voice, subject);
+        if (held.base === undefined) {
+          held.base = this.baseFor(voice, subject);
+          held.slope = this.slopeFor(voice, subject);
+        }
         base = held.base;
       }
-      delta = readKeys(voice.built, phase, held.delta ?? {}, base, voice.lerps as never);
+      delta = readKeys(
+        voice.built,
+        phase,
+        held.delta ?? {},
+        base,
+        voice.lerps as never,
+        held.slope,
+      );
     } else {
       delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
     }
@@ -623,7 +685,7 @@ class Mixer<I, O> implements Mix<I, O> {
    * samples into its own object — it is this frame's pose with every other voice folded in.
    */
   private baseFor(voice: Voice<I, O>, subject: I): Record<string, unknown> {
-    let prior = this.pose.get(subject) as Record<string, unknown> | undefined;
+    let prior = this.pose.get(subject)?.pose as Record<string, unknown> | undefined;
     if (prior === undefined && !this.folding.has(voice.id)) {
       this.folding.add(voice.id);
       try {
@@ -641,6 +703,27 @@ class Mixer<I, O> implements Mix<I, O> {
       else if (fallback !== undefined) base[key] = copy(fallback);
     }
     return base;
+  }
+
+  /**
+   * How fast each numeric channel this voice writes was moving, from the subject's last two probed
+   * poses, in units per ms. Undefined with fewer than two on record, which starts the voice at rest.
+   */
+  private slopeFor(voice: Voice<I, O>, subject: I): Record<string, unknown> | undefined {
+    const rec = this.pose.get(subject);
+    if (rec?.prev === undefined || !(rec.at > rec.prevAt)) return undefined;
+    const dt = rec.at - rec.prevAt;
+    const now = rec.pose as Record<string, unknown>;
+    const before = rec.prev as Record<string, unknown>;
+    const slope: Record<string, unknown> = {};
+    for (const key of voice.patch.writes as Key<O>[]) {
+      const a = before[key];
+      const b = now[key];
+      if (typeof a === 'number' && typeof b === 'number') slope[key] = (b - a) / dt;
+      else if (Array.isArray(a) && Array.isArray(b) && a.length === b.length)
+        slope[key] = b.map((v, i) => ((v as number) - (a[i] as number)) / dt);
+    }
+    return slope;
   }
 
   private isRest(delta: Record<string, unknown>): boolean {

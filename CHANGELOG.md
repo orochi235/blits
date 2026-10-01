@@ -6,7 +6,17 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Breaking
+
+- A `keys` voice cued with `from: 'current'` now leaves at the velocity the subject had, taken from
+  its last two probed poses, instead of on the first segment's own curve. A subject that was still
+  leaves at rest. Only the first segment changes, and it still lands on its stop.
+- `Handle` gains `ramp`, so an object written to stand in for a handle needs one.
+
 ### Added
+
+- `handle.ramp(rate, over)`: eases a voice's playback rate to a new one over `over` ms, so a pause
+  or a slow-motion does not snap. The voice clock integrates the ramp.
 
 - `spring` and `glide`: momentum in closed form, per subject, so where a subject is does not depend
   on frame rate. `spring.to` retargets and `push` sets a velocity mid-flight, each starting the next

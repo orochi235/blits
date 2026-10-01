@@ -196,10 +196,33 @@ describe('retarget on interruption', () => {
     // Its first frame reproduces where the subject already was, rather than snapping to stop 0.
     expect(m.probe(part).crawl).toBeCloseTo(before, 9);
 
+    // And it leaves at the speed the subject had, 0.1 a ms, before it turns toward stop 1.
     m.sync(416);
     const next = m.probe(part).crawl;
-    expect(Math.abs(next - before)).toBeLessThanOrEqual((before * 16) / 1000 + 1e-9);
-    expect(next).toBeLessThan(before);
+    expect((next - before) / 16).toBeCloseTo(0.1, 2);
+    m.sync(1300);
+    expect(m.probe(part).crawl).toBeLessThan(10);
+  });
+
+  it("a from: 'current' voice cued on a still subject leaves at rest and eases into its segment", () => {
+    const m = mix<Part, Pose>(PART);
+    const held = m.cue({
+      patch: patch<Part, Pose>(0, () => ({ crawl: 50 }), { writes: ['crawl'] }),
+    });
+    m.sync(0);
+    m.probe(part);
+    m.sync(16);
+    m.probe(part);
+    held.weight = 0;
+    m.cue({ patch: keys<Part, Pose>(1000, [{ at: 1, delta: { crawl: 0 } }]), from: 'current' });
+    m.sync(17);
+    const a = m.probe(part).crawl;
+    m.sync(18);
+    // A linear segment from 50 to 0 moves 0.05 a ms; leaving a standstill, it starts near 0 instead.
+    expect(a - m.probe(part).crawl).toBeLessThan(0.001);
+    m.sync(516);
+    // Half way: the linear 25 plus the bend, 50 · ½ · ¼.
+    expect(m.probe(part).crawl).toBeCloseTo(31.25, 6);
   });
 });
 

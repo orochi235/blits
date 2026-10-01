@@ -240,7 +240,14 @@ export interface Handle<I = unknown> {
   readonly state: 'pending' | 'live' | 'fading' | 'done';
   /** Live. Writes land on the next sync. */
   weight: number;
+  /** Playback rate now. Setting it changes speed at once; `ramp` eases into a new one. */
   rate: number;
+  /**
+   * Moves the rate to `rate` linearly over `over` mix ms, so a pause or a slow-motion eases in
+   * rather than snapping. The voice clock integrates the ramp, so its position stays continuous and
+   * its speed does too. A later `rate` write or `ramp` replaces it; `seek` keeps it.
+   */
+  ramp(rate: number, over: number): void;
   /**
    * Moves this voice's clock, forward or back. Phase is computed from the reading rather than
    * accumulated into, so state is left where it is and never run forward to meet the new position.

@@ -144,7 +144,13 @@ function build<O>(
  * Reads one track at a phase. `base` stands in for the value at phase 0, which is how
  * `from: 'current'` starts a voice wherever the subject already is.
  */
-function read(track: Track, phase: number, base: unknown, lerp: Lerp | undefined): unknown {
+function read(
+  track: Track,
+  phase: number,
+  base: unknown,
+  lerp: Lerp | undefined,
+  slope: unknown,
+): unknown {
   const pts = base === undefined ? track.all : track.tail;
   const o = base === undefined ? 0 : 1;
   const n = pts.length + o;
@@ -168,7 +174,30 @@ function read(track: Track, phase: number, base: unknown, lerp: Lerp | undefined
   const u = (phase - aAt) / (b.at - aAt);
   const eased = b.ease ? b.ease(u) : u;
   const by = track.lerp ?? lerp;
-  return by ? by(aValue as never, b.value as never, eased) : interpolate(aValue, b.value, eased);
+  const value = by
+    ? by(aValue as never, b.value as never, eased)
+    : interpolate(aValue, b.value, eased);
+  // Leaving a retarget's base, bend the first segment so it starts at the slope the subject had:
+  // add c·u(1−u)², which is 0 at both ends, flat at the end, and fixes the slope at the start.
+  if (slope === undefined || lo - 1 >= o) return value;
+  const len = b.at - aAt;
+  const e0 = b.ease ? b.ease(1e-6) / 1e-6 : 1;
+  const bend = (s: number, a: number, z: number) =>
+    (s * len - (z - a) * e0) * u * (1 - u) * (1 - u);
+  if (typeof value === 'number' && typeof slope === 'number')
+    return value + bend(slope, aValue as number, b.value as number);
+  if (Array.isArray(value) && Array.isArray(slope))
+    return value.map((v, i) =>
+      typeof v === 'number' && typeof slope[i] === 'number'
+        ? v +
+          bend(
+            slope[i] as number,
+            (aValue as number[])[i] as number,
+            (b.value as number[])[i] as number,
+          )
+        : v,
+    );
+  return value;
 }
 
 /**
@@ -182,6 +211,8 @@ export function readKeys(
   out: Record<string, unknown>,
   base?: Record<string, unknown>,
   lerps?: readonly (Lerp | undefined)[],
+  /** Per channel, how fast a retargeted subject was moving, units per ms. */
+  slopes?: Record<string, unknown>,
 ): Record<string, unknown> {
   const period = built.period;
   for (let i = 0; i < built.tracks.length; i++) {
@@ -189,7 +220,14 @@ export function readKeys(
     const delay = track.delay;
     const shifted =
       delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
-    const value = read(track, shifted, base?.[track.channel], lerps?.[i]);
+    const perMs = slopes?.[track.channel];
+    const slope =
+      perMs === undefined || period === 0
+        ? undefined
+        : typeof perMs === 'number'
+          ? perMs * period
+          : (perMs as number[]).map((s) => s * period);
+    const value = read(track, shifted, base?.[track.channel], lerps?.[i], slope);
     if (value !== undefined) out[track.channel] = value;
     else if (out[track.channel] !== undefined) out[track.channel] = undefined;
   }
