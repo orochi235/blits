@@ -4,6 +4,15 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- Keyed stops, and a `from: 'current'` retarget, interpolate through the channel's own `lerp`, as
+  the schema says. They used plain numeric interpolation unless `lerpBy` named one, so a keyed
+  `hex` color blended its packed integer instead of its components. `lerpBy` still wins, and a
+  `keys` patch read outside a mix uses the `kit` it names.
+
 ## 0.1.1
 
 ### Fixed

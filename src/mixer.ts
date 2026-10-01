@@ -89,6 +89,8 @@ class Voice<I, O> {
   readonly slots: number[];
   /** The stops built ahead of time, for a `keys` patch. */
   readonly built: Built | null;
+  /** The kit's `lerp` for each channel the patch writes, which keyed stops interpolate through. */
+  readonly lerps: Channel<unknown>['lerp'][];
   readonly ease: Curve | undefined;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: Setting<unknown>;
@@ -108,11 +110,13 @@ class Voice<I, O> {
     now: number,
     readonly start: number,
     slotOf: Map<string, number>,
+    channels: readonly Channel<unknown>[],
     host: unknown,
     send: (event: unknown) => void,
   ) {
     this.slots = patch.writes.map((k) => slotOf.get(k as string) as number);
     this.built = patch.form === 'keys' && patch.keys ? builtOf(patch) : null;
+    this.lerps = this.slots.map((slot) => (channels[slot] as Channel<unknown>).lerp);
     this.ease = fade.ease === undefined ? undefined : curve(fade.ease);
     this.setting = {
       timestamp: 0,
@@ -246,6 +250,7 @@ class Mixer<I, O> implements Mix<I, O> {
       this.now,
       start,
       this.slotOf,
+      this.channels,
       this.opts.host,
       this.send,
     );
@@ -565,7 +570,7 @@ class Mixer<I, O> implements Mix<I, O> {
         if (held.base === undefined) held.base = this.baseFor(voice, subject);
         base = held.base;
       }
-      delta = readKeys(voice.built, phase, held.delta ?? {}, base);
+      delta = readKeys(voice.built, phase, held.delta ?? {}, base, voice.lerps as never);
     } else {
       delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
     }

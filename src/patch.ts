@@ -54,7 +54,10 @@ export interface KeysOptions<O> {
   easeBy?: (channel: keyof O) => Easing | undefined;
   /** Milliseconds one channel waits before it starts moving, within the period. */
   delayBy?: (channel: keyof O) => number;
-  /** How one channel interpolates, where its values are not numbers or number arrays. */
+  /**
+   * How one channel interpolates, where it should differ from the channel's own `lerp`. A mix hands
+   * every keyed channel its kit's `lerp` unless this names one.
+   */
   lerpBy?: (channel: keyof O) => ((a: never, b: never, u: number) => unknown) | undefined;
   /** The channels these stops were written against, which `cue` checks a mix's kit against. */
   kit?: Partial<Kit<O>>;
@@ -85,6 +88,8 @@ interface Point {
   /** The curve into this point from the one before: the stop's own, else the channel's. */
   ease: Curve | undefined;
 }
+
+type Lerp = (a: never, b: never, u: number) => unknown;
 
 /** One channel of a stop list, sorted and resolved once, so a read is a binary search. */
 interface Track {
@@ -129,7 +134,7 @@ function build<O>(
       all,
       tail: all.filter((pt) => pt.at !== 0),
       delay: opts.delayBy?.(channel) ?? 0,
-      lerp: opts.lerpBy?.(channel),
+      lerp: opts.lerpBy?.(channel) ?? (opts.kit?.[channel]?.lerp as Track['lerp']),
     });
   }
   return { tracks, period };
@@ -139,7 +144,7 @@ function build<O>(
  * Reads one track at a phase. `base` stands in for the value at phase 0, which is how
  * `from: 'current'` starts a voice wherever the subject already is.
  */
-function read(track: Track, phase: number, base: unknown): unknown {
+function read(track: Track, phase: number, base: unknown, lerp: Lerp | undefined): unknown {
   const pts = base === undefined ? track.all : track.tail;
   const o = base === undefined ? 0 : 1;
   const n = pts.length + o;
@@ -162,24 +167,29 @@ function read(track: Track, phase: number, base: unknown): unknown {
   const aValue = lo - 1 < o ? base : (pts[lo - 1 - o] as Point).value;
   const u = (phase - aAt) / (b.at - aAt);
   const eased = b.ease ? b.ease(u) : u;
-  return track.lerp
-    ? track.lerp(aValue as never, b.value as never, eased)
-    : interpolate(aValue, b.value, eased);
+  const by = track.lerp ?? lerp;
+  return by ? by(aValue as never, b.value as never, eased) : interpolate(aValue, b.value, eased);
 }
 
-/** Evaluates built stops into `out`; a channel with nothing to read at this phase is left undefined. */
+/**
+ * Evaluates built stops into `out`; a channel with nothing to read at this phase is left undefined.
+ * `lerps` holds the mix's channel `lerp` per track, in `writes` order, for a track the patch did not
+ * give one.
+ */
 export function readKeys(
   built: Built,
   phase: number,
   out: Record<string, unknown>,
   base?: Record<string, unknown>,
+  lerps?: readonly (Lerp | undefined)[],
 ): Record<string, unknown> {
   const period = built.period;
-  for (const track of built.tracks) {
+  for (let i = 0; i < built.tracks.length; i++) {
+    const track = built.tracks[i] as Track;
     const delay = track.delay;
     const shifted =
       delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
-    const value = read(track, shifted, base?.[track.channel]);
+    const value = read(track, shifted, base?.[track.channel], lerps?.[i]);
     if (value !== undefined) out[track.channel] = value;
     else if (out[track.channel] !== undefined) out[track.channel] = undefined;
   }

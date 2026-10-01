@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { kit, mul, sum, vec } from '../src/channels.js';
+import { hex, kit, mixHex, mul, sum, vec } from '../src/channels.js';
 import { curve } from '../src/easing.js';
 import { mix } from '../src/mixer.js';
 import { evalKeys, keys } from '../src/patch.js';
-import type { Keyframe } from '../src/types.js';
+import type { Channel, Keyframe } from '../src/types.js';
 
 interface Pose {
   a: number;
@@ -149,5 +149,86 @@ describe('keys', () => {
       expect(held).toEqual(seen[seen.length - 1]);
     }
     expect(JSON.stringify(stops)).toBe(frozen);
+  });
+});
+
+describe('keyed stops interpolate through the channel', () => {
+  interface Lit {
+    color: number;
+    angle: number;
+  }
+  // Takes the short way round: 0.1 and 2π − 0.1 meet at 0, not at π.
+  const wrapped: Channel<number> = {
+    merge: (_a, b) => b,
+    lerp: (a, b, u) => {
+      let d = (b - a) % (2 * Math.PI);
+      if (d > Math.PI) d -= 2 * Math.PI;
+      if (d < -Math.PI) d += 2 * Math.PI;
+      return a + d * u;
+    },
+  };
+  const LIT = kit<Lit>({ color: hex(), angle: wrapped });
+  const subject = { id: 'a' };
+
+  it("reads a keyed color through the mix's hex lerp, not as a packed integer", () => {
+    const m = mix<{ id: string }, Lit>(LIT);
+    m.cue({
+      patch: keys<{ id: string }, Lit>(100, [
+        { at: 0, delta: { color: 0xff0000 } },
+        { at: 1, delta: { color: 0x0000ff } },
+      ]),
+      loop: false,
+    });
+    m.sync(0);
+    m.probe(subject);
+    m.sync(50);
+    expect(m.probe(subject).color).toBe(mixHex(0xff0000, 0x0000ff, 0.5));
+  });
+
+  it("retargets from the current value through the channel's lerp", () => {
+    const m = mix<{ id: string }, Lit>(LIT);
+    m.cue({
+      patch: keys<{ id: string }, Lit>(0, [{ at: 0, delta: { angle: 2 * Math.PI - 0.1 } }]),
+    });
+    m.sync(0);
+    m.probe(subject);
+    m.cue({
+      patch: keys<{ id: string }, Lit>(100, [{ at: 1, delta: { angle: 0.1 } }]),
+      from: 'current',
+      loop: false,
+    });
+    m.sync(50);
+    expect(m.probe(subject).angle).toBeCloseTo(2 * Math.PI, 9);
+  });
+
+  it('a lerpBy the patch names wins over the channel', () => {
+    const m = mix<{ id: string }, Lit>(LIT);
+    m.cue({
+      patch: keys<{ id: string }, Lit>(
+        100,
+        [
+          { at: 0, delta: { angle: 0 } },
+          { at: 1, delta: { angle: 1 } },
+        ],
+        { lerpBy: () => (_a: never, b: never) => b },
+      ),
+      loop: false,
+    });
+    m.sync(0);
+    m.probe(subject);
+    m.sync(50);
+    expect(m.probe(subject).angle).toBe(1);
+  });
+
+  it('read outside a mix, uses the kit the patch names', () => {
+    const p = keys<{ id: string }, Lit>(
+      100,
+      [
+        { at: 0, delta: { color: 0xff0000 } },
+        { at: 1, delta: { color: 0x0000ff } },
+      ],
+      { kit: { color: hex() } },
+    );
+    expect(p.at(0.5, subject, undefined as never).color).toBe(mixHex(0xff0000, 0x0000ff, 0.5));
   });
 });
