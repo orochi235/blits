@@ -133,7 +133,8 @@ systems now run on it**, on a branch that is not merged.
   clock and `MixOptions.maxDt` caps a step's `dt`, off by default.
 - **Semver from 0.1.1**, decided 2026-09-30. Below 1.0.0 a break bumps the minor. 1.0.0 happens only
   on the owner's explicit say-so, whatever else has landed. Every release gets a `CHANGELOG.md` section, which
-  the release workflow checks. 0.1.0 was never published and npm will not take the number.
+  the release workflow checks. 0.1.0 went out by hand; 0.1.1 is the same code from the
+  workflow, and every release after it goes out from a `v*` tag.
 - **The site**: the vocabulary first, consumers' docs second, the npm pitch third. Astro, not a
   Vite app, because it is mostly documents. `docs/schema.html` stays the design record, untouched;
   the site takes its outline loosely. Local until GitHub Pages, and the workflow exists already.
@@ -153,13 +154,10 @@ systems now run on it**, on a branch that is not merged.
    `NOTES-FROM-ASTV.md` is astv's: the operations and cases a reading-back API has to serve, for
    whoever builds the score. Same rule.
 
-1. **Publish 0.1.1 as `@msb235/blits`, then point klieg and magicsmoke at it.** The scoped name
-   was chosen 2026-09-30 while npm answers the request for bare `blits`; `publishConfig.access` is
-   `public`. `npm publish` stops at an OTP prompt, so it is the owner's to run. Then klieg's
-   `packages/core/package.json` trades `"@msb235/blits": "file:../../../blits"` for an exact
-   `"0.1.1"`, which makes `blits-port` mergeable and lets klieg's suite run on the fleet again, and
-   magicsmoke's `blits-engine` does the same. The trusted publisher in `release.yml` is registered
-   on npmjs.com after that first publish.
+1. **Point klieg and magicsmoke at the published `@msb235/blits@0.1.1`.** It is on npm, from the
+   release workflow with provenance. klieg's `packages/core/package.json` trades
+   `"@msb235/blits": "file:../../../blits"` for an exact `"0.1.1"`, which makes `blits-port`
+   mergeable and lets klieg's suite run on the fleet again; magicsmoke's `blits-engine` does the same.
 2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
    their hand-rolled frame keying onto `slew`, `hinge`'s modes become `weight: signal` and
    `mix.blend`, and `FrameCtx` becomes `Setting` with klieg's fields on `host`. The schema page's

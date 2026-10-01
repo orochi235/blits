@@ -6,7 +6,14 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## 0.1.1
 
-First release. 0.1.0 was never published: npm holds the number and will not take it. A mix folds concurrent effects into one value per subject per frame: each effect runs
+### Fixed
+
+- Published from the release workflow through npm's trusted publishing, with a provenance
+  statement. The code is 0.1.0's; only the version and this changelog differ.
+
+## 0.1.0
+
+First release, published by hand. A mix folds concurrent effects into one value per subject per frame: each effect runs
 on its own clock with its own state and weight, and the rules for combining them belong to the
 channel being written rather than to the effect writing it.
 
