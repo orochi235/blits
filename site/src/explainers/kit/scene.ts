@@ -191,5 +191,6 @@ const inert: Handle = {
   rate: 1,
   seek() {},
   fade() {},
+  weightOf: () => 0,
   done: Promise.resolve(),
 };

@@ -26,6 +26,8 @@ interface Subject<S> {
   delay: number;
   /** The mix timestamp this subject's delay ran out at, which its fade in counts from. */
   since: number;
+  /** The weight this voice gave this subject the last frame it was probed, 0 where it gave none. */
+  weight: number;
   /** Left at rest during a handover, so it stops contributing. */
   rested: boolean;
   /** Per written channel, whether a rest-less influence is on: 0 unknown, 1 on, 2 off. */
@@ -177,7 +179,7 @@ class Mixer<I, O> implements Mix<I, O> {
     return this.opts.band ?? { on: 0.6, off: 0.4 };
   }
 
-  cue(spec: VoiceSpec<I, O>): Handle {
+  cue(spec: VoiceSpec<I, O>): Handle<I> {
     const patch = spec.patch;
     const engine = this.opts.engine ?? mixer;
     if (!engine.runs.has(patch.form))
@@ -210,7 +212,7 @@ class Mixer<I, O> implements Mix<I, O> {
     patches: readonly Patch<I, O, unknown>[],
     by: Signal<I>,
     spec: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'locus'> = {},
-  ): Handle[] {
+  ): Handle<I>[] {
     const locus = `blend:${this.nextId}`;
     const stops = patches.length - 1;
     return patches.map((patch, i) => {
@@ -307,7 +309,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   // ── internals ──────────────────────────────────────────────────────────────
 
-  private handle(voice: Voice<I, O>): Handle {
+  private handle(voice: Voice<I, O>): Handle<I> {
     const mix = this;
     return {
       id: voice.id,
@@ -333,6 +335,10 @@ class Mixer<I, O> implements Mix<I, O> {
       },
       fade(opts?: FadeOptions) {
         mix.beginFade(voice, opts ?? {});
+      },
+      weightOf(subject: I) {
+        if (voice.state === 'done') return 0;
+        return (voice.subjects.get(subject) as Subject<unknown> | undefined)?.weight ?? 0;
       },
       done: voice.done,
     };
@@ -393,6 +399,7 @@ class Mixer<I, O> implements Mix<I, O> {
       reaches,
       delay,
       since,
+      weight: 0,
       rested: false,
       bands: new Uint8Array(voice.slots.length),
       state:
@@ -427,6 +434,7 @@ class Mixer<I, O> implements Mix<I, O> {
   private influence(voice: Voice<I, O>, subject: I, now: number): Record<string, unknown> | null {
     if (voice.state === 'pending' || voice.state === 'done') return null;
     const held = this.held(voice, subject, now);
+    held.weight = 0;
     if (!held.reaches) return null;
     if (voice.out?.rest && held.rested) return null;
 
@@ -461,6 +469,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
     const weight = this.weigh(voice, subject, now, held);
     setting.weight = weight;
+    held.weight = weight;
 
     if (held.probed === now && held.delta) {
       this.w = weight;
@@ -488,6 +497,7 @@ class Mixer<I, O> implements Mix<I, O> {
     held.probed = now;
 
     if (voice.out?.rest && this.isRest(delta)) {
+      held.weight = 0;
       held.rested = true;
       voice.restedCount++;
       return null;

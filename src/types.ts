@@ -194,7 +194,7 @@ export interface FadeOptions {
  *
  * @category voice
  */
-export interface Handle {
+export interface Handle<I = unknown> {
   readonly id: number;
   readonly state: 'pending' | 'live' | 'fading' | 'done';
   /** Live. Writes land on the next sync. */
@@ -206,6 +206,13 @@ export interface Handle {
    */
   seek(elapsed: number): void;
   fade(opts?: FadeOptions): void;
+  /**
+   * The weight this voice gave `subject` the last frame that subject was probed: after its fades
+   * and its weight signal, before a locus folds it with its alternatives. 0 for a subject it does
+   * not reach, has not started on, has left at rest, or has never been probed for; 0 once done.
+   * Costs nothing until it is asked.
+   */
+  weightOf(subject: I): number;
   /** Resolves when the voice has been removed from the mix, however that happened. */
   readonly done: Promise<void>;
 }
@@ -240,13 +247,13 @@ export interface MixOptions {
  */
 export interface Mix<I, O> {
   /** Cues a voice. Throws when the engine cannot run the patch's form, or the kit lacks a channel. */
-  cue(spec: VoiceSpec<I, O>): Handle;
+  cue(spec: VoiceSpec<I, O>): Handle<I>;
   /** N voices whose weights split one signal, cued into one locus so they fold as alternatives. */
   blend(
     patches: readonly Patch<I, O, unknown>[],
     by: Signal<I>,
     spec?: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'locus'>,
-  ): Handle[];
+  ): Handle<I>[];
 
   /** The host reports the clock, once a frame. Nothing advances at the call. */
   sync(timestamp: number): void;
