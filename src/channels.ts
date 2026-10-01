@@ -2,7 +2,11 @@ import type { Channel, Kit } from './types.js';
 
 const mix = (a: number, b: number, u: number) => a + (b - a) * u;
 
-/** What a stock numeric channel takes. */
+/**
+ * What a stock numeric channel takes.
+ *
+ * @category channel
+ */
 export interface NumberOptions {
   /** The range the value means anything in; the mix clamps to it. */
   bounds?: readonly [min: number, max: number];

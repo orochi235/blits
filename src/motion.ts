@@ -2,9 +2,17 @@ import { reading } from './reading.js';
 import { Store } from './store.js';
 import type { Patch, Setting } from './types.js';
 
-/** A number, or one number per axis. */
+/**
+ * A number, or one number per axis.
+ *
+ * @category patch
+ */
 export type Value = number | readonly number[];
-/** One value for every subject, or one per subject. */
+/**
+ * One value for every subject, or one per subject.
+ *
+ * @category patch
+ */
 export type PerSubject<I, V> = V | ((subject: I) => V);
 
 /**

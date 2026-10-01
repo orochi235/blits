@@ -8,6 +8,7 @@ export const words = [
   { slug: 'time', title: 'Time' },
   { slug: 'blending', title: 'Blending' },
   { slug: 'locus', title: 'Locus' },
+  { slug: 'score', title: 'Score' },
   { slug: 'state', title: 'Patch state' },
   { slug: 'engine', title: 'Engine' },
 ] as const;
