@@ -18,10 +18,9 @@ the log it would have used is the per-voice control log `history` keeps. Not to 
 
 ## Left to build
 
-1. **Recording input.** A signal marked `input` (a `level`, a pointer) has no known past, so a read
-   back over one answers `held` with the value read now. While playing, record what each input
-   signal returned per subject, only when it changed, within the history horizon; a read back then
-   replays the recording and the voice becomes exact. Opt-in, since most live uses never read back.
+1. **Recording a patch's host input.** `history: { inputs: true }` records an input signal on a
+   voice's weight, built 2026-10-01. A patch that `reads` host fields still reads them live, so a read
+   back through one is `held`; recording would mean snapshotting the fields it names per frame.
 2. **`handle.seek` on a stateful voice.** Seek moves the voice clock and leaves state where it was,
    so a stepped patch carries state from the old position to the new one. Measured against
    `ec5c6f6`: the spring below, played to 300 ms at 60 fps and then `seek(0)`, reads

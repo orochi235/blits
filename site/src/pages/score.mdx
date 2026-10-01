@@ -32,6 +32,8 @@ m.cue({
 
 A string picks a voice by name. A **query** picks by what the plan knows of a voice instead: its `name`, a `tag`, or a channel it `writes`. Where several match, its `resolver` chooses: the `last` cued (the default), the `first`, the `next` whose mark is still to come, or the `earliest` or `latest` by time. A query never reads a channel's value: "when gain crosses 0.5" is the host's to watch.
 
+Each source can keep its own plan as a `score`. Names are looked up within the asking voice's score, so two sources can both have an `intro` without meeting; a query names `score` to reach into another one.
+
 ```ts
 // Fully in 200 ms before the next voice that writes gain.
 m.cue({ patch: lead, fade: { in: 50 }, anchor: { in: { before: { writes: 'gain', resolver: 'next' }, by: 200 } } });
@@ -60,6 +62,6 @@ const m = mix(K, { history: { ms: 10_000 }, stepMs: 5 });
 m.project(performance.now() - 3000).probe(part);
 ```
 
-With history, the mix keeps what it cued, every change a handle made and when, the voices that have left, and a copy of each stateful voice's state per subject every `every` ms. A read back restores the nearest copy and steps forward from it. Under `stepMs` that is exact, so scrubbing back and forth lands on the pose the mix showed. `spring` and `glide` keep their motion within the horizon, so a retargeted one reads back to where it was. A mix without history keeps nothing.
+With history, the mix keeps what it cued, every change a handle made and when, the voices that have left, and a copy of each stateful voice's state per subject every `every` ms. A read back restores the nearest copy and steps forward from it. Under `stepMs` that is exact, so scrubbing back and forth lands on the pose the mix showed. `spring` and `glide` keep their motion within the horizon, so a retargeted one reads back to where it was. With `history: { ms, inputs: true }` the mix also records what each input signal on a voice's weight read, so a read back over a `level` the host moved is known rather than `held`. A mix without history keeps nothing.
 
 <ApiEntries word="score" />
