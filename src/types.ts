@@ -155,6 +155,12 @@ export interface Patch<I, O, S = void> {
   step?(state: S, dt: number, subject: I, setting: Setting<S>): void;
   /** Present when the patch was authored as keyframes, so an engine that reads data can. */
   readonly keys?: readonly Keyframe<O>[];
+  /**
+   * A copy of `state` that shares nothing with it, for a read at another time. Default
+   * `structuredClone`, which is enough for plain data; a state holding a class instance or a
+   * function needs its own.
+   */
+  clone?(state: S): S;
 }
 
 /**
@@ -299,6 +305,39 @@ export interface MixOptions {
    * Signals and `at` still see the frame. Off by default.
    */
   stepMs?: number;
+  /**
+   * How far back `project` may read, in ms of mix time, and how often a stateful voice's state is
+   * kept per subject on the way, `every` ms (default 200). Within it the mix remembers what it cued,
+   * every change a handle made and when, the voices that have left, and those copies of state, so a
+   * read back restores the nearest copy and steps forward from it. Off by default, and a mix without
+   * it keeps nothing.
+   */
+  history?: { ms: number; every?: number };
+}
+
+/**
+ * How sure a projection is of one channel: `exact` where only the clock and known changes drove
+ * it; `stepped` where state was advanced across a gap in one go, which is as good as the patch's
+ * step makes it; `held` where it depends on input from outside the clock, whose value at that time
+ * is not known, so the value it had is held.
+ *
+ * @category mix
+ */
+export type Doubt = 'exact' | 'stepped' | 'held';
+
+/**
+ * The mix read at another time: what `probe` would give at that timestamp, with nothing in the
+ * live mix moved. Valid until the mix is next synced or cued.
+ *
+ * @category mix
+ */
+export interface Projection<I, O> {
+  /** The timestamp it reads at, on the host's clock. */
+  readonly timestamp: number;
+  /** The merged pose for one subject at this projection's timestamp. */
+  probe(subject: I, out?: O): O;
+  /** Per channel, how sure that pose is; the least sure voice that fed a channel decides. */
+  assess(subject: I): { [K in keyof O]-?: Doubt };
 }
 
 /**
@@ -325,6 +364,12 @@ export interface Mix<I, O> {
   rebase(): void;
   /** The merged pose for one subject at the synced frame. */
   probe(subject: I, out?: O): O;
+  /**
+   * Reads the mix at another timestamp, on the host's clock, without moving it. Ahead of the last
+   * sync it plays what is cued forward; behind it, it needs `history`, and throws for a timestamp
+   * older than the history reaches.
+   */
+  project(timestamp: number): Projection<I, O>;
   /** Every channel at rest for this subject this frame, so a host can skip the write. */
   atRest(subject: I): boolean;
 

@@ -8,6 +8,7 @@ export { keys, patch } from './patch.js';
 export { gate, lag, level, peak, slew } from './signals.js';
 export type {
   Channel,
+  Doubt,
   Easing,
   Engine,
   FadeOptions,
@@ -18,6 +19,7 @@ export type {
   Mix,
   MixOptions,
   Patch,
+  Projection,
   Sent,
   Setting,
   Signal,

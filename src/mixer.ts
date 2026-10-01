@@ -1,8 +1,10 @@
 import { type Curve, curve } from './easing.js';
 import { type Built, builtOf, readKeys } from './patch.js';
+import { reading } from './reading.js';
 import { Store } from './store.js';
 import type {
   Channel,
+  Doubt,
   Engine,
   FadeOptions,
   FadeSpec,
@@ -11,11 +13,15 @@ import type {
   Mix,
   MixOptions,
   Patch,
+  Projection,
   Sent,
   Setting,
   Signal,
   VoiceSpec,
 } from './types.js';
+
+// Every runtime blits targets has it; the package's lib setting names no environment.
+declare function structuredClone<T>(value: T): T;
 
 type Key<O> = keyof O & string;
 
@@ -51,6 +57,11 @@ interface Subject<S> {
   /** What each stateful signal on this voice keeps for this subject, by the signal. */
   kept: Map<object, unknown>;
   keep: Setting['keep'];
+  /** Under `history`, copies of this record by the mix time they were taken, oldest first. */
+  snaps?: { at: number; held: Subject<S> }[];
+  /** In a projection: where this record started from, and whether nothing known could be. */
+  from?: number;
+  unknown?: boolean;
 }
 
 const keeper = (kept: Map<object, unknown>): Setting['keep'] =>
@@ -60,6 +71,72 @@ const keeper = (kept: Map<object, unknown>): Setting['keep'] =>
     kept.set(owner, made);
     return made;
   };
+
+/** What sets a voice's clock: its rate, and where it was last anchored. */
+interface Clock {
+  anchorNow: number;
+  anchorElapsed: number;
+  rate: number;
+  ramp: { from: number; to: number; over: number } | null;
+}
+
+/** A voice's clock, weight and fade from one mix time on, kept under `history`. */
+interface Controls extends Clock {
+  at: number;
+  weight: number;
+  out: Ramp | null;
+}
+
+function elapsedWith(c: Clock, now: number): number {
+  const dt = now - c.anchorNow;
+  const r = c.ramp;
+  if (r === null) return c.anchorElapsed + dt * c.rate;
+  if (dt <= 0) return c.anchorElapsed + dt * r.from;
+  const d = r.to - r.from;
+  if (dt <= r.over) return c.anchorElapsed + r.from * dt + (d * dt * dt) / (2 * r.over);
+  return c.anchorElapsed + r.from * r.over + (d * r.over) / 2 + r.to * (dt - r.over);
+}
+
+/**
+ * The last entry taken before `t`, or at it where `inclusive`. A control change made in a frame is
+ * taken strictly: it shows from the next frame on, as it did live.
+ */
+function last<T extends { at: number }>(
+  list: readonly T[],
+  t: number,
+  inclusive: boolean,
+): T | undefined {
+  let lo = 0;
+  let hi = list.length - 1;
+  let found: T | undefined;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const e = list[mid] as T;
+    if (e.at < t || (inclusive && e.at === t)) {
+      found = e;
+      lo = mid + 1;
+    } else hi = mid - 1;
+  }
+  return found;
+}
+
+/** A store that fills a missing entry from `make` on first ask. */
+class Filled<K, V> extends Store<K, V> {
+  constructor(private readonly make: (key: K) => V | undefined) {
+    super();
+  }
+
+  override get(key: K): V | undefined {
+    let v = super.get(key);
+    if (v === undefined) {
+      v = this.make(key);
+      if (v !== undefined) super.set(key, v);
+    }
+    return v;
+  }
+}
+
+const noSend = (): void => {};
 
 interface Ramp {
   from: number;
@@ -106,6 +183,12 @@ class Voice<I, O> {
   /** The longest stagger of any subject seen, so a finite loop waits for the last of them. */
   latest = 0;
   restedCount = 0;
+  /** The mix time it was cued at; -Infinity before the first sync. */
+  cuedAt = Number.NEGATIVE_INFINITY;
+  /** The mix time it left at. */
+  doneAt = Number.POSITIVE_INFINITY;
+  /** Under `history`, its controls after each change, oldest first. */
+  log: Controls[] | null = null;
   resolve!: () => void;
   readonly done: Promise<void>;
 
@@ -146,13 +229,66 @@ class Voice<I, O> {
   }
 
   elapsedAt(now: number): number {
-    const dt = now - this.anchorNow;
+    return elapsedWith(this, now);
+  }
+
+  /** The mix time its clock reads `elapsed`, inverting `elapsedAt`; Infinity where it never will. */
+  timeAt(elapsed: number): number {
+    const e0 = this.anchorElapsed;
     const r = this.ramp;
-    if (r === null) return this.anchorElapsed + dt * this.rate;
-    if (dt <= 0) return this.anchorElapsed + dt * r.from;
-    const d = r.to - r.from;
-    if (dt <= r.over) return this.anchorElapsed + r.from * dt + (d * dt * dt) / (2 * r.over);
-    return this.anchorElapsed + r.from * r.over + (d * r.over) / 2 + r.to * (dt - r.over);
+    if (r === null) {
+      if (this.rate > 0) return this.anchorNow + (elapsed - e0) / this.rate;
+      return elapsed <= e0 ? this.anchorNow : Number.POSITIVE_INFINITY;
+    }
+    if (elapsed <= e0)
+      return r.from > 0 ? this.anchorNow + (elapsed - e0) / r.from : this.anchorNow;
+    const a = (r.to - r.from) / (2 * r.over);
+    const atEnd = e0 + r.from * r.over + a * r.over * r.over;
+    if (elapsed <= atEnd) {
+      const c = e0 - elapsed;
+      const dt =
+        Math.abs(a) < 1e-12
+          ? -c / r.from
+          : (-r.from + Math.sqrt(Math.max(0, r.from * r.from - 4 * a * c))) / (2 * a);
+      return this.anchorNow + dt;
+    }
+    if (r.to <= 0) return Number.POSITIVE_INFINITY;
+    return this.anchorNow + r.over + (elapsed - atEnd) / r.to;
+  }
+
+  /** Records this voice's controls as they stand, from mix time `at`. */
+  note(at: number): void {
+    this.log?.push({
+      at,
+      anchorNow: this.anchorNow,
+      anchorElapsed: this.anchorElapsed,
+      rate: this.rate,
+      ramp: this.ramp,
+      weight: this.weight,
+      out: this.out,
+    });
+  }
+
+  /**
+   * A copy for a projection: its own setting, which sends nothing, and its own per-subject records,
+   * filled from `fill`. With `controls` it takes those, as the voice stood at an earlier time.
+   */
+  copy(fill: (subject: I) => Subject<unknown> | undefined, controls?: Controls): Voice<I, O> {
+    const v = Object.assign(Object.create(Voice.prototype), this) as Voice<I, O>;
+    const w = v as unknown as Record<string, unknown>;
+    w.subjects = new Filled<I, Subject<unknown>>(fill);
+    w.setting = { ...this.setting, keep: keeper(new Map()), send: noSend };
+    v.log = null;
+    if (controls) {
+      v.anchorNow = controls.anchorNow;
+      v.anchorElapsed = controls.anchorElapsed;
+      v.rate = controls.rate;
+      v.ramp = controls.ramp;
+      v.weight = controls.weight;
+      v.out = controls.out;
+    }
+    v.resolve = noSend;
+    return v;
   }
 
   rateAt(now: number): number {
@@ -176,12 +312,15 @@ class Voice<I, O> {
 }
 
 class Mixer<I, O> implements Mix<I, O> {
-  private readonly voices: Voice<I, O>[] = [];
+  private voices: Voice<I, O>[] = [];
+  /** Under `history`, voices that have left but that a read back may still reach. */
+  private gone: Voice<I, O>[] = [];
+  /** Set on a projection's own mixer: it sends nothing, keeps no history, and reads without committing. */
+  private projecting = false;
+  /** Set on a projection reading back: a subject it has nothing on starts from its voice's start. */
+  private backward = false;
   /** Each subject's last two poses and when they were probed, for `from: 'current'`. */
-  private readonly pose = new Store<
-    I,
-    { pose: O; at: number; prev: O | undefined; prevAt: number }
-  >();
+  private pose = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();
   private nextId = 1;
   /** The mix clock: the host's timestamp less every gap `rebase` has taken out. */
   private now = Number.NaN;
@@ -210,7 +349,7 @@ class Mixer<I, O> implements Mix<I, O> {
   };
   private readonly send = (event: unknown): void => {
     const { voice, subject } = this.sending;
-    if (voice === null) return;
+    if (voice === null || this.projecting) return;
     this.sent.push({
       timestamp: voice.setting.timestamp,
       subject,
@@ -288,6 +427,11 @@ class Mixer<I, O> implements Mix<I, O> {
       this.opts.host,
       this.send,
     );
+    if (!Number.isNaN(this.now)) voice.cuedAt = this.now;
+    if (this.opts.history) {
+      voice.log = [];
+      voice.note(Number.NEGATIVE_INFINITY);
+    }
     this.voices.push(voice);
     this.version++;
     if (spec.target !== undefined) this.targeted++;
@@ -320,6 +464,11 @@ class Mixer<I, O> implements Mix<I, O> {
     this.last = timestamp;
     const now = timestamp - this.offset;
     if (now === this.now) return;
+    this.move(now);
+  }
+
+  /** Moves the mix clock to `now`: voices start, finite loops end, and fades finish. */
+  private move(now: number): void {
     this.now = now;
     this.reducedNow = this.reduced;
     for (const voice of this.voices) {
@@ -332,7 +481,11 @@ class Mixer<I, O> implements Mix<I, O> {
       const loop = voice.spec.loop ?? true;
       const passes = loop === true ? Number.POSITIVE_INFINITY : loop === false ? 1 : loop;
       if (voice.state === 'live' && period > 0 && Number.isFinite(passes)) {
-        if (voice.elapsedAt(now) >= period * passes + voice.latest) this.beginFade(voice, {});
+        const end = period * passes + voice.latest;
+        // The fade starts when the last pass ended, not at the frame that noticed, so it plays the
+        // same at any frame rate and a read at another time can find it.
+        if (voice.elapsedAt(now) >= end)
+          this.beginFade(voice, {}, Math.max(voice.start, Math.min(now, voice.timeAt(end))));
       }
       if (voice.state === 'fading' && voice.out) {
         const { at, over, rest, deadline } = voice.out;
@@ -340,18 +493,25 @@ class Mixer<I, O> implements Mix<I, O> {
         if (rest) {
           const out = deadline !== undefined && spent >= deadline;
           const settled = voice.seen > 0 && voice.restedCount >= voice.seen;
-          if (out || settled) this.retire(voice);
-        } else if (spent >= over) this.retire(voice);
+          if (out) this.retire(voice, at + (deadline as number));
+          else if (settled) this.retire(voice);
+        } else if (spent >= over) this.retire(voice, at + over);
       }
     }
     for (let i = this.voices.length - 1; i >= 0; i--) {
       const voice = this.voices[i] as Voice<I, O>;
       if (voice.state === 'done') {
         this.voices.splice(i, 1);
+        if (this.opts.history) this.gone.push(voice);
         this.version++;
         if (voice.spec.target !== undefined) this.targeted--;
         if (voice.spec.locus !== undefined) this.loci--;
       }
+    }
+    const history = this.opts.history;
+    if (history && this.gone.length > 0) {
+      const reach = now - history.ms;
+      this.gone = this.gone.filter((v) => v.doneAt >= reach);
     }
   }
 
@@ -383,6 +543,62 @@ class Mixer<I, O> implements Mix<I, O> {
     return pose;
   }
 
+  project(timestamp: number): Projection<I, O> {
+    const t = timestamp - this.offset;
+    const c = new Mixer<I, O>(this.kit, { ...this.opts, history: undefined });
+    c.projecting = true;
+    c.pose = this.pose;
+    c.offset = this.offset;
+    c.wantsPose = this.wantsPose;
+    c.nextId = this.nextId;
+    c.reducedNow = this.reducedNow;
+    if (Number.isNaN(this.now) || t >= this.now) {
+      c.now = this.now;
+      c.voices = this.voices
+        .filter((v) => v.state !== 'done')
+        .map((v) => v.copy((subject) => this.carry(v, subject)));
+      c.count();
+      c.move(t);
+    } else {
+      const history = this.opts.history;
+      if (!history) throw new Error('blits: reading back needs a mix made with history');
+      if (t < this.now - history.ms)
+        throw new Error(`blits: ${timestamp} is older than this mix's history reaches`);
+      c.now = t;
+      c.backward = true;
+      c.voices = [...this.voices, ...this.gone]
+        .filter((v) => v.cuedAt <= t && v.doneAt > t)
+        .sort((a, b) => a.id - b.id)
+        .map((v) => {
+          const log = v.log as Controls[];
+          const copy = v.copy(
+            (subject) => this.recall(v, subject, t),
+            last(log, t, false) ?? (log[0] as Controls),
+          );
+          copy.state = t < v.start ? 'pending' : copy.out && copy.out.at <= t ? 'fading' : 'live';
+          return copy;
+        });
+      c.count();
+    }
+    const read = <T>(f: () => T): T => {
+      reading.live = false;
+      try {
+        return f();
+      } finally {
+        reading.live = true;
+      }
+    };
+    return {
+      timestamp,
+      probe: (subject, out) => read(() => c.fold(subject, out)),
+      assess: (subject) =>
+        read(() => {
+          c.fold(subject);
+          return c.doubts(subject);
+        }),
+    };
+  }
+
   atRest(subject: I): boolean {
     const pose = this.fold(subject, undefined, true);
     for (let i = 0; i < this.names.length; i++) {
@@ -411,6 +627,7 @@ class Mixer<I, O> implements Mix<I, O> {
     this.pose.delete(subject);
     this.reach.delete(subject);
     for (const voice of this.voices) voice.subjects.delete(subject);
+    for (const voice of this.gone) voice.subjects.delete(subject);
   }
 
   drain<E = unknown>(tag?: string): Sent<I, E>[] {
@@ -429,6 +646,146 @@ class Mixer<I, O> implements Mix<I, O> {
 
   // ── internals ──────────────────────────────────────────────────────────────
 
+  /** A voice's elapsed at an earlier mix time, by the controls it had then. */
+  private elapsedThen(voice: Voice<I, O>, t: number): number {
+    const log = voice.log;
+    const c = log === null ? undefined : last(log, t, true);
+    return elapsedWith(c ?? voice, t);
+  }
+
+  /** Records a change to a voice's controls under `history`, and lets go of what it no longer reaches. */
+  private noted(voice: Voice<I, O>): void {
+    const log = voice.log;
+    if (log === null) return;
+    voice.note(Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now);
+    const reach = this.now - (this.opts.history as { ms: number }).ms;
+    let drop = 0;
+    while (drop + 1 < log.length && (log[drop + 1] as Controls).at <= reach) drop++;
+    if (drop > 0) log.splice(0, drop);
+  }
+
+  /** Recounts what the fold's shortcuts depend on, for a projection's freshly copied voices. */
+  private count(): void {
+    this.targeted = this.voices.filter((v) => v.spec.target !== undefined).length;
+    this.loci = this.voices.filter((v) => v.spec.locus !== undefined).length;
+    this.version++;
+  }
+
+  /** A copy of a subject's record that shares nothing a read could change. */
+  private copyHeld(voice: Voice<I, O>, h: Subject<unknown>): Subject<unknown> {
+    const kept = new Map<object, unknown>();
+    for (const [owner, value] of h.kept) kept.set(owner, structuredClone(value));
+    const patch = voice.patch;
+    return {
+      ...h,
+      bands: h.bands.slice(),
+      state:
+        h.state === undefined
+          ? undefined
+          : patch.clone
+            ? patch.clone(h.state)
+            : structuredClone(h.state),
+      kept,
+      keep: keeper(kept),
+      probed: Number.NaN,
+      delta: null,
+      base: h.base === undefined ? undefined : structuredClone(h.base),
+      slope: h.slope === undefined ? undefined : structuredClone(h.slope),
+      snaps: undefined,
+    };
+  }
+
+  /** A projection ahead starts each subject from where the live mix holds it. */
+  private carry(voice: Voice<I, O>, subject: I): Subject<unknown> | undefined {
+    const live = voice.subjects.get(subject) as Subject<unknown> | undefined;
+    if (live === undefined) return undefined;
+    const h = this.copyHeld(voice, live);
+    h.from = h.stepped;
+    return h;
+  }
+
+  /**
+   * A projection back starts each subject from the latest copy kept at or before `t`, else from its
+   * voice's start with fresh state, which is exact for a voice stepped at a fixed interval.
+   */
+  private recall(voice: Voice<I, O>, subject: I, t: number): Subject<unknown> | undefined {
+    const live = voice.subjects.get(subject) as Subject<unknown> | undefined;
+    if (live === undefined) return undefined;
+    const snap = live.snaps && last(live.snaps, t, true);
+    if (snap) {
+      const h = this.copyHeld(voice, snap.held);
+      h.from = h.stepped;
+      return h;
+    }
+    const kept = new Map<object, unknown>();
+    const stepped = live.since < t ? live.since : t;
+    return {
+      reaches: live.reaches,
+      delay: live.delay,
+      since: live.since,
+      weight: 0,
+      rested: false,
+      bands: new Uint8Array(voice.slots.length),
+      state:
+        live.reaches && voice.patch.state
+          ? (voice.patch.state(subject) as unknown)
+          : (undefined as unknown),
+      stepped,
+      ticks: 0,
+      probed: Number.NaN,
+      delta: null,
+      kept,
+      keep: keeper(kept),
+      from: stepped,
+      unknown: voice.spec.from === 'current',
+    };
+  }
+
+  /** Under `history`, keeps a copy of a stateful voice's record for this subject every so often. */
+  private remember(voice: Voice<I, O>, held: Subject<unknown>): void {
+    const history = this.opts.history;
+    if (!history || this.projecting) return;
+    if (voice.patch.step === undefined && held.kept.size === 0 && held.base === undefined) return;
+    const snaps = held.snaps ?? [];
+    held.snaps = snaps;
+    const prev = snaps[snaps.length - 1];
+    if (prev !== undefined && this.now - prev.at < (history.every ?? 200)) return;
+    snaps.push({ at: this.now, held: this.copyHeld(voice, held) });
+    const reach = this.now - history.ms;
+    while (snaps.length > 1 && (snaps[1] as { at: number }).at <= reach) snaps.shift();
+  }
+
+  /** Per channel, the least sure voice that fed it this frame. */
+  private doubts(subject: I): { [K in keyof O]-?: Doubt } {
+    const out = {} as Record<string, Doubt>;
+    for (const name of this.names) out[name] = 'exact';
+    const rank = { exact: 0, stepped: 1, held: 2 } as const;
+    for (const voice of this.reaching(subject, this.now)) {
+      if (voice.state === 'pending' || voice.state === 'done') continue;
+      const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
+      if (!held?.reaches || held.weight <= 0) continue;
+      const d = this.doubtOf(voice, held);
+      for (const slot of voice.slots) {
+        const name = this.names[slot] as string;
+        if (rank[d] > rank[out[name] as Doubt]) out[name] = d;
+      }
+    }
+    return out as { [K in keyof O]-?: Doubt };
+  }
+
+  private doubtOf(voice: Voice<I, O>, held: Subject<unknown>): Doubt {
+    const weight = voice.spec.weight;
+    if (held.unknown) return 'held';
+    if (typeof weight === 'function' && weight.input) return 'held';
+    if (voice.patch.reads !== undefined && voice.patch.reads.length > 0) return 'held';
+    if (this.now > (held.from ?? this.now)) {
+      const tick = this.opts.stepMs;
+      const fixed = tick !== undefined && tick > 0 && !this.reducedNow;
+      if ((voice.patch.step && !fixed) || held.kept.size > 0) return 'stepped';
+    }
+    return 'exact';
+  }
+
   private handle(voice: Voice<I, O>): Handle<I> {
     const mix = this;
     return {
@@ -441,6 +798,7 @@ class Mixer<I, O> implements Mix<I, O> {
       },
       set weight(w: number) {
         voice.weight = w;
+        mix.noted(voice);
       },
       get rate() {
         return voice.rateAt(Number.isNaN(mix.now) ? voice.start : mix.now);
@@ -449,6 +807,7 @@ class Mixer<I, O> implements Mix<I, O> {
         voice.rebase(Number.isNaN(mix.now) ? voice.start : mix.now);
         voice.ramp = null;
         voice.rate = r;
+        mix.noted(voice);
       },
       ramp(r: number, over: number) {
         const now = Number.isNaN(mix.now) ? voice.start : mix.now;
@@ -456,10 +815,12 @@ class Mixer<I, O> implements Mix<I, O> {
         const from = voice.rateAt(now);
         voice.ramp = over > 0 && r !== from ? { from, to: r, over } : null;
         voice.rate = r;
+        mix.noted(voice);
       },
       seek(elapsed: number) {
         voice.rebase(Number.isNaN(mix.now) ? voice.start : mix.now);
         voice.anchorElapsed = elapsed;
+        mix.noted(voice);
       },
       fade(opts?: FadeOptions) {
         mix.beginFade(voice, opts ?? {});
@@ -472,22 +833,25 @@ class Mixer<I, O> implements Mix<I, O> {
     };
   }
 
-  private beginFade(voice: Voice<I, O>, opts: FadeOptions): void {
+  private beginFade(voice: Voice<I, O>, opts: FadeOptions, at?: number): void {
     if (voice.state === 'done' || voice.state === 'fading') return;
     const over = this.reduced ? 0 : (opts.over ?? voice.fade.out ?? 0);
     voice.state = 'fading';
     voice.out = {
       from: 1,
-      at: Number.isNaN(this.now) ? voice.start : this.now,
+      at: at ?? (Number.isNaN(this.now) ? voice.start : this.now),
       over,
       rest: opts.at === 'rest',
       deadline: opts.deadline,
     };
-    if (over === 0 && opts.at !== 'rest') this.retire(voice);
+    this.noted(voice);
+    if (over === 0 && opts.at !== 'rest') this.retire(voice, voice.out.at);
   }
 
-  private retire(voice: Voice<I, O>): void {
+  /** Removes a voice, recording that it left at `at`, default now. */
+  private retire(voice: Voice<I, O>, at?: number): void {
     voice.state = 'done';
+    voice.doneAt = at ?? (Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now);
     voice.resolve();
   }
 
@@ -535,13 +899,17 @@ class Mixer<I, O> implements Mix<I, O> {
         reaches && voice.patch.state
           ? (voice.patch.state(subject) as unknown)
           : (undefined as unknown),
-      stepped: now,
+      stepped: this.backward && since < now ? since : now,
       ticks: 0,
       probed: Number.NaN,
       delta: null,
       kept,
       keep: keeper(kept),
     };
+    if (this.projecting) {
+      held.from = held.stepped;
+      held.unknown = this.backward && voice.spec.from === 'current';
+    }
     voice.subjects.set(subject, held);
     if (reaches) voice.seen++;
     if (delay > voice.latest) voice.latest = delay;
@@ -609,6 +977,12 @@ class Mixer<I, O> implements Mix<I, O> {
       return held.delta;
     }
 
+    const history = this.opts.history;
+    reading.horizon =
+      history === undefined
+        ? Number.POSITIVE_INFINITY
+        : this.elapsedThen(voice, now - history.ms) - held.delay;
+
     const tick = this.opts.stepMs;
     if (voice.patch.step && held.probed !== now) {
       if (tick !== undefined && tick > 0 && !this.reducedNow) this.tick(voice, subject, held, tick);
@@ -641,6 +1015,7 @@ class Mixer<I, O> implements Mix<I, O> {
     }
     held.delta = delta;
     held.probed = now;
+    if (history !== undefined) this.remember(voice, held);
 
     if (voice.out?.rest && this.isRest(delta)) {
       held.weight = 0;

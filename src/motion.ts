@@ -1,3 +1,4 @@
+import { reading } from './reading.js';
 import { Store } from './store.js';
 import type { Patch, Setting } from './types.js';
 
@@ -33,7 +34,11 @@ interface Change {
 }
 
 interface Held {
-  segment: Segment | null;
+  /**
+   * Every stretch a read may still reach, by release time, so a read earlier than the latest change
+   * finds the stretch that was playing then. Older ones go once the mix's history no longer reaches.
+   */
+  segments: Segment[];
   /** Changes not yet applied, in the order they were asked for. */
   pending: Change[];
   /** The voice time of the last read, for `read` with no time given. */
@@ -78,7 +83,7 @@ function moving<I, O, V extends Value>(writes: keyof O, shape: Shape<I, V>) {
   const entry = (subject: I): Held => {
     let h = held.get(subject);
     if (h === undefined) {
-      h = { segment: null, pending: [], last: Number.NaN };
+      h = { segments: [], pending: [], last: Number.NaN };
       held.set(subject, h);
     }
     return h;
@@ -107,20 +112,53 @@ function moving<I, O, V extends Value>(writes: keyof O, shape: Shape<I, V>) {
     to: shape.aim(x, v, was, subject),
   });
 
-  /** Brings a subject's motion up to `now`, applying every change due by then, in order. */
+  /** The stretch playing at voice time `at`: the latest released by then, else the first. */
+  const playing = (segments: Segment[], at: number): Segment => {
+    let lo = 0;
+    let hi = segments.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if ((segments[mid] as Segment).at <= at) lo = mid;
+      else hi = mid - 1;
+    }
+    return segments[lo] as Segment;
+  };
+
+  const applied = (seg: Segment, change: Change, at: number, subject: I): Segment => {
+    const { x, v } = evaluate(seg, at);
+    return release(at, x, change.v ?? v, change.to ?? seg.to, subject);
+  };
+
+  /**
+   * The stretch playing at `now`. A live read commits every change due by then, in order, an
+   * untimed one at `now`; a projection's read applies them to a copy, an untimed one at the last
+   * live read, and commits nothing.
+   */
   const advance = (subject: I, h: Held, now: number): Segment => {
-    h.segment ??= release(0, shape.from(subject), shape.velocity(subject), null, subject);
+    if (h.segments.length === 0)
+      h.segments.push(release(0, shape.from(subject), shape.velocity(subject), null, subject));
+    const segments = h.segments;
+    if (!reading.live) {
+      let seg = playing(segments, now);
+      for (const change of h.pending) {
+        const at = change.at ?? h.last;
+        if (!(at <= now)) break;
+        if (at >= seg.at) seg = applied(seg, change, at, subject);
+      }
+      return seg;
+    }
     while (h.pending.length > 0) {
       const change = h.pending[0] as Change;
       const at = change.at ?? now;
       if (at > now) break;
       h.pending.shift();
-      const seg = h.segment;
-      const { x, v } = evaluate(seg, at);
-      const vel = change.v ?? v;
-      h.segment = release(at, x, vel, change.to ?? seg.to, subject);
+      const next = applied(playing(segments, at), change, at, subject);
+      let i = segments.length;
+      while (i > 0 && (segments[i - 1] as Segment).at > at) i--;
+      segments.splice(i, 0, next);
     }
-    return h.segment;
+    while (segments.length > 1 && (segments[1] as Segment).at <= reading.horizon) segments.shift();
+    return playing(segments, now);
   };
 
   const out = (subject: I, xs: number[]): V => {
@@ -135,13 +173,14 @@ function moving<I, O, V extends Value>(writes: keyof O, shape: Shape<I, V>) {
     at(_phase: number, subject: I, setting: Setting<void>): Partial<O> {
       const h = entry(subject);
       const seg = advance(subject, h, setting.elapsed);
-      h.last = setting.elapsed;
+      if (reading.live) h.last = setting.elapsed;
       return { [writes]: out(subject, evaluate(seg, setting.elapsed).x) } as Partial<O>;
     },
     read(subject: I, at?: number): Motion<V> | undefined {
       const h = held.get(subject);
-      if (h === undefined || h.segment === null) return undefined;
-      const { x, v } = evaluate(h.segment, at ?? h.last);
+      if (h === undefined || h.segments.length === 0) return undefined;
+      const when = at ?? h.last;
+      const { x, v } = evaluate(playing(h.segments, when), when);
       return { value: out(subject, x), velocity: out(subject, v) };
     },
     push(subject: I, velocity: V, at?: number): void {

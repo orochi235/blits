@@ -25,6 +25,16 @@ const bounce = () =>
     { at: 1, delta: { gain: 1, position: [0, 0, 0] } },
   ]);
 
+// Stateful, so a read back has state to restore from a kept copy and step forward.
+const drift = () =>
+  patch(0, (_p, _s, st) => ({ dark: st.state.x }), {
+    writes: ['dark'],
+    state: () => ({ x: 0 }),
+    step: (st, dt) => {
+      st.x += (1 - st.x) * Math.min(1, dt / 400);
+    },
+  });
+
 const rows = [
   ['fn', 100, 1],
   ['fn', 1000, 1],
@@ -38,16 +48,21 @@ const rows = [
   // One voice per subject, each targeted at its own: magicsmoke's faults on one shared mix.
   ['own', 100, 1],
   ['own', 1000, 1],
+  // A projection made and probed every frame, as a continuous scrub would: 500 ms ahead, and
+  // 300 ms back on a mix keeping 5 s of history.
+  ['ahead', 1000, 3],
+  ['back', 1000, 3],
 ];
 
 const frames = 300;
 for (const [i, [form, n, voices]] of rows.entries()) {
-  const m = mix(K);
+  const scrub = form === 'ahead' || form === 'back';
+  const m = mix(K, form === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {});
   const subjects = Array.from({ length: n }, (_, j) => ({ seed: j * 0.37 }));
   if (form === 'own')
     for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
   for (let v = 0; form !== 'own' && v < voices; v++) {
-    const p = form === 'keys' ? bounce() : flicker(v);
+    const p = form === 'keys' ? bounce() : scrub && v === 0 ? drift() : flicker(v);
     m.cue({ patch: p, fade: { in: 100 }, locus: form === 'locus' ? 'one' : undefined });
   }
   const scratch = {};
@@ -61,6 +76,11 @@ for (const [i, [form, n, voices]] of rows.entries()) {
   const before = gcs;
   const t0 = performance.now();
   for (let f = 0; f < frames; f++) {
+    if (scrub) {
+      const p = m.project(form === 'ahead' ? t + 500 : t - 300 + (f % 20) * 5);
+      for (const s of subjects) p.probe(s, scratch);
+      continue;
+    }
     t += 16.7;
     m.sync(t);
     for (const s of subjects) m.probe(s, scratch);
