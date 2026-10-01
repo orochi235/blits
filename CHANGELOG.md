@@ -1,8 +1,12 @@
 # Changelog
 
-## 0.1.0
+This package follows [semver](https://semver.org). Below 1.0.0, a breaking change bumps the minor
+version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
+**Fixed**, and the release workflow refuses a tag with no section here.
 
-First release. A mix folds concurrent effects into one value per subject per frame: each effect runs
+## 0.1.1
+
+First release. 0.1.0 was never published: npm holds the number and will not take it. A mix folds concurrent effects into one value per subject per frame: each effect runs
 on its own clock with its own state and weight, and the rules for combining them belong to the
 channel being written rather than to the effect writing it.
 

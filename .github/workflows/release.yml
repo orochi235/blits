@@ -61,4 +61,12 @@ jobs:
             exit 1
           fi
 
+      - name: The changelog has a section for this version
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          if ! grep -qx "## $version" CHANGELOG.md; then
+            echo "CHANGELOG.md has no '## $version' section" >&2
+            exit 1
+          fi
+
       - run: npm publish

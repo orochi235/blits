@@ -30,7 +30,7 @@ systems now run on it**, on a branch that is not merged.
 - **klieg depends on this checkout by path** — `"blits": "file:../../../blits"` in
   `packages/core/package.json` — so the branch resolves on this machine and nowhere else. That is
   the one thing standing between the branch and a merge.
-- **The package, v0.1.0.** `src/` is the whole of it: `channels.ts` (the stock channels, `kit`,
+- **The package, v0.1.1.** `src/` is the whole of it: `channels.ts` (the stock channels, `kit`,
   `hex`/`mixHex`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
   `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
@@ -131,8 +131,9 @@ systems now run on it**, on a branch that is not merged.
   subject's fade in counts from its own start; a `Setting` is valid only during its call;
   `Channel.fold` folds into the pose in place; `mix.rebase()` takes hidden-tab time out of the
   clock and `MixOptions.maxDt` caps a step's `dt`, off by default.
-- **Versioning is not a constraint yet**: Mike, 2026-09-29, "idgaf about versioning". Breaks land
-  in 0.1.0 until it is published.
+- **Semver from 0.1.1**, decided 2026-09-30. Below 1.0.0 a break bumps the minor. 1.0.0 happens only
+  on the owner's explicit say-so, whatever else has landed. Every release gets a `CHANGELOG.md` section, which
+  the release workflow checks. 0.1.0 was never published and npm will not take the number.
 - **The site**: the vocabulary first, consumers' docs second, the npm pitch third. Astro, not a
   Vite app, because it is mostly documents. `docs/schema.html` stays the design record, untouched;
   the site takes its outline loosely. Local until GitHub Pages, and the workflow exists already.
@@ -152,11 +153,11 @@ systems now run on it**, on a branch that is not merged.
    `NOTES-FROM-ASTV.md` is astv's: the operations and cases a reading-back API has to serve, for
    whoever builds the score. Same rule.
 
-1. **Publish 0.1.0 as `@msb235/blits`, then point klieg and magicsmoke at it.** The scoped name
+1. **Publish 0.1.1 as `@msb235/blits`, then point klieg and magicsmoke at it.** The scoped name
    was chosen 2026-09-30 while npm answers the request for bare `blits`; `publishConfig.access` is
    `public`. `npm publish` stops at an OTP prompt, so it is the owner's to run. Then klieg's
    `packages/core/package.json` trades `"@msb235/blits": "file:../../../blits"` for an exact
-   `"0.1.0"`, which makes `blits-port` mergeable and lets klieg's suite run on the fleet again, and
+   `"0.1.1"`, which makes `blits-port` mergeable and lets klieg's suite run on the fleet again, and
    magicsmoke's `blits-engine` does the same. The trusted publisher in `release.yml` is registered
    on npmjs.com after that first publish.
 2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
