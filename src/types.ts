@@ -192,13 +192,16 @@ export interface FadeSpec {
 export type Mark = 'start' | 'in' | 'out' | 'end';
 
 /**
- * Selects voices by what the plan knows of them, never by a channel's value. Where several match,
+ * Selects voices by what the plan knows of them, never by a channel's value, within the asking
+ * voice's own score unless it names another. Where several match,
  * the resolver picks one: `last` cued (the default), `first` cued, `next` (the earliest whose mark
  * is still to come), `earliest` or `latest` by the mark's time.
  *
  * @category score
  */
 export interface Query {
+  /** The score to look in. Default: the asking voice's own. */
+  score?: string;
   name?: string;
   tag?: string;
   /** A channel the voice's patch writes. */
@@ -244,6 +247,7 @@ export interface Marked {
   timestamp: number;
   mark: Mark;
   voice: number;
+  score: string | undefined;
   name: string | undefined;
   tags: readonly string[];
 }
@@ -293,6 +297,12 @@ export interface VoiceSpec<I, O> {
   tags?: readonly string[];
   /** What other voices call this one by. A label blits never reads. */
   name?: string;
+  /**
+   * The plan this voice belongs to. Each source keeps its own, so two sources can use one name
+   * without meeting: a bare name in an anchor means a voice in the same score, and a query names
+   * `score` to reach into another. Default: the mix's one unnamed score.
+   */
+  score?: string;
   /** Where it sits relative to the clock or to other voices, in place of `start`. */
   anchor?: Placement;
 }

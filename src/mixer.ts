@@ -665,6 +665,7 @@ class Mixer<I, O> implements Mix<I, O> {
           timestamp: t + this.offset,
           mark,
           voice: voice.id,
+          score: voice.spec.score,
           name: voice.spec.name,
           tags: voice.spec.tags ?? none,
         });
@@ -730,22 +731,26 @@ class Mixer<I, O> implements Mix<I, O> {
       throw new Error('blits: a voice takes start or an anchored start, not both');
     const name = spec.name;
     if (name === undefined) return;
-    const names = (p: Placement): string[] =>
+    // A voice is known by its score and its name; a bare name in an anchor is in the asker's score.
+    const key = (score: string | undefined, n: string) => `${score ?? ''}\u0000${n}`;
+    const names = (p: Placement, score: string | undefined): string[] =>
       [p.start, p.in, p.out, p.end].flatMap((a) => {
         if (a === undefined || typeof a === 'number') return [];
         const q = 'of' in a ? a.of : 'after' in a ? a.after : 'with' in a ? a.with : a.before;
-        const n = typeof q === 'string' ? q : q.name;
-        return n === undefined ? [] : [n];
+        if (typeof q === 'string') return [key(score, q)];
+        return q.name === undefined ? [] : [key(q.score ?? score, q.name)];
       });
+    const self = key(spec.score, name);
     const seen = new Set<string>();
-    const waits = [...names(anchor)];
+    const waits = names(anchor, spec.score);
     while (waits.length > 0) {
       const n = waits.pop() as string;
-      if (n === name) throw new Error(`blits: ${name}'s placement waits on itself`);
+      if (n === self) throw new Error(`blits: ${name}'s placement waits on itself`);
       if (seen.has(n)) continue;
       seen.add(n);
       for (const v of this.voices)
-        if (v.spec.name === n && v.spec.anchor) waits.push(...names(v.spec.anchor));
+        if (v.spec.name !== undefined && key(v.spec.score, v.spec.name) === n && v.spec.anchor)
+          waits.push(...names(v.spec.anchor, v.spec.score));
     }
   }
 
@@ -825,6 +830,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const all = [...this.gone, ...this.voices].filter(
       (v) =>
         v !== self &&
+        v.spec.score === (q.score ?? self.spec.score) &&
         (q.name === undefined || v.spec.name === q.name) &&
         (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
         (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes)),

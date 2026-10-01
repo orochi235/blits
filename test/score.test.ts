@@ -196,3 +196,35 @@ describe('placement read back', () => {
       expect([t, m.project(t).probe(r).x]).toEqual([t, seen.get(t)]);
   });
 });
+
+describe('scores', () => {
+  it('keeps names apart per score, and reaches into another when a query names it', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: hold(100), name: 'intro', score: 'a', start: 100, loop: false });
+    m.cue({ patch: hold(100), name: 'intro', score: 'b', start: 500, loop: false });
+    m.cue({ patch: hold(100), name: 'next', score: 'a', anchor: { start: { after: 'intro' } } });
+    m.cue({
+      patch: hold(100),
+      name: 'cross',
+      score: 'b',
+      anchor: { start: { after: { score: 'a', name: 'intro' }, by: 50 } },
+    });
+    const starts = m
+      .marks(0, 1000)
+      .filter((e) => e.mark === 'start')
+      .map((e) => `${e.timestamp} ${e.score}:${e.name}`);
+    expect(starts).toEqual(['100 a:intro', '200 a:next', '250 b:cross', '500 b:intro']);
+  });
+
+  it('only refuses a placement that waits on itself in its own score', () => {
+    const m = mix<Row, Pose>(K);
+    m.cue({ patch: hold(100), name: 'x', score: 'a', anchor: { start: { after: 'y' } } });
+    expect(() =>
+      m.cue({ patch: hold(100), name: 'y', score: 'b', anchor: { start: { after: 'x' } } }),
+    ).not.toThrow();
+    expect(() =>
+      m.cue({ patch: hold(100), name: 'y', score: 'a', anchor: { start: { after: 'x' } } }),
+    ).toThrow(/itself/);
+  });
+});
