@@ -158,6 +158,18 @@ describe('lag', () => {
     expect(followed(part, frame(316, Number.POSITIVE_INFINITY))).toBe(0);
   });
 
+  it('lands on its input once within floor of it, and never with floor 0', () => {
+    const input = level<Part>(1);
+    const landing = lag<Part>(input, { fallMs: 100 });
+    const exact = lag<Part>(input, { fallMs: 100, floor: 0 });
+    landing(part, frame(0, 0));
+    exact(part, frame(0, 0));
+    input.set(0);
+    expect(landing(part, frame(1400, 1400))).toBe(0);
+    expect(exact(part, frame(1400, 1400))).toBeCloseTo(Math.exp(-14), 15);
+    expect(exact(part, frame(1400, 1400))).toBeGreaterThan(0);
+  });
+
   it('reads the same at any frame spacing while its input holds still', () => {
     const read = (every: number): number => {
       kept = new Map();

@@ -396,3 +396,26 @@ describe('stepMs', () => {
     expect(count).toBe(4);
   });
 });
+
+describe('stepMs at an interval that is not a whole number of ms', () => {
+  it('runs one step per interval at 120 Hz sampled at 120 Hz', () => {
+    let count = 0;
+    const tick = 1000 / 120;
+    const m = mix<Part, Pose>(PART, { stepMs: tick });
+    m.cue({
+      patch: patch<Part, Pose, null>(0, () => ({}), {
+        writes: [],
+        state: () => null,
+        step: () => {
+          count++;
+        },
+      }),
+    });
+    const part = { id: 'a' };
+    for (let n = 0; n <= 120; n++) {
+      m.sync(n * tick);
+      m.probe(part);
+    }
+    expect(count).toBe(120);
+  });
+});

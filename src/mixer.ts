@@ -548,7 +548,8 @@ class Mixer<I, O> implements Mix<I, O> {
     const setting = voice.setting;
     const frameDt = setting.dt;
     let n = held.ticks;
-    const due = Math.floor((now - held.since) / tick);
+    // The epsilon keeps an interval like 1000 / 120 from landing a hair short of a whole count.
+    const due = Math.floor((now - held.since) / tick + 1e-9);
     const cap = this.opts.maxDt;
     if (cap !== undefined) {
       const most = Math.floor(cap / tick);

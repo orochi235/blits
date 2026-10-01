@@ -77,13 +77,14 @@ export function slew<I>(
  * The exponential counterpart to `slew`: closes the same fraction of the distance to its input in
  * every equal stretch of time, `1 − exp(−gap / ms)`, so it reads the same however the frames that
  * sample it are spaced while the input holds still. `riseMs` and `fallMs` are time constants: after
- * one, 63% of the way is covered. 0 follows at once. The mix keeps its state per voice and subject.
+ * one, 63% of the way is covered. 0 follows at once. Within `floor` of its input it lands on it, so a
+ * subject can reach rest; pass 0 to keep the curve exact. The mix keeps its state per voice and subject.
  *
  * @category signal
  */
 export function lag<I>(
   of: Signal<I>,
-  { riseMs = 0, fallMs = 0 }: { riseMs?: number; fallMs?: number },
+  { riseMs = 0, fallMs = 0, floor = 1e-6 }: { riseMs?: number; fallMs?: number; floor?: number },
 ): Signal<I> {
   const read = (subject: I, setting: Setting): number => {
     const target = of(subject, setting);
@@ -95,6 +96,7 @@ export function lag<I>(
       if (ms > 0) {
         const gap = setting.timestamp - held.seen;
         next = held.value + (target - held.value) * (1 - Math.exp(-gap / ms));
+        if (Math.abs(target - next) <= floor) next = target;
       }
     }
     held.value = next;

@@ -306,8 +306,10 @@ export interface Mix<I, O> {
   drop(subject: I): void;
   /**
    * Every event patches have sent since the last drain, earliest first, in the order they were sent
-   * where two share a timestamp. Events are only sent while a subject is probed, so drain after
-   * probing.
+   * where two share a timestamp. A subject's events are made while it catches up, which is when it is
+   * probed, so one nobody probes has sent nothing yet: promptness is the host's, by probing. Under
+   * `stepMs` each carries the end of the interval it happened in, so what is sent and when does not
+   * depend on how the host spaces its probes. Time `rebase` took out sends nothing.
    */
   drain<E = unknown>(): Sent<I, E>[];
 }
