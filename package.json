@@ -1,5 +1,5 @@
 {
-  "name": "blits",
+  "name": "@msb235/blits",
   "version": "0.1.0",
   "description": "Concurrent effects: each on its own clock with its own state and weight, folded into one value per subject per frame",
   "keywords": [
@@ -17,6 +17,9 @@
   },
   "homepage": "https://github.com/orochi235/blits#readme",
   "bugs": "https://github.com/orochi235/blits/issues",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "sideEffects": false,
   "exports": {

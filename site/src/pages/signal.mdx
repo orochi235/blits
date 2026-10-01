@@ -17,7 +17,7 @@ A voice's weight can be a fixed number, or it can be a **signal**: a function th
 The simplest signal is one you write yourself:
 
 ```ts
-import type { Signal } from 'blits';
+import type { Signal } from '@msb235/blits';
 
 const ripple: Signal<Bar> = (bar, setting) => 0.5 + 0.5 * Math.sin(setting.timestamp / 400 - bar.i);
 bars.cue({ patch: glow, weight: ripple });
@@ -34,7 +34,7 @@ bars.cue({ patch: glow, weight: ripple });
 `gate(of, { on, off })` turns a signal into on or off across a band. It switches on when its input reaches `on`, off when it falls to `off`, and between the two it holds whatever it last did. Pick "Steps": the level sits at 0.5, inside the band, twice, and the gate stays where it was each time rather than flickering. A slew can't do that job. It slows a crossing down but still crosses, so an input resting on a threshold drags the slewed value onto the threshold with it.
 
 ```ts
-import { gate, level, slew } from 'blits';
+import { gate, level, slew } from '@msb235/blits';
 
 const near = level<Bar>();
 window.addEventListener('pointermove', (e) => near.set(closeness(e)));

@@ -18,7 +18,7 @@ Without a locus, the mix treats them as two effects stacked on each other. Each 
 With both voices in one **locus**, the mix treats them as alternatives. It first folds the locus into one influence, blending the members through the channel's own `lerp`, each by its share of the locus's summed weight. That one influence then contributes at weight `min(1, Σw)`, faded toward rest like any other. Both members say 0.06, so the blend says 0.06, and at a summed weight of 1 the subject reads 0.06 the whole way across.
 
 ```ts
-import { kit, mix, mul, patch } from 'blits';
+import { kit, mix, mul, patch } from '@msb235/blits';
 
 const lights = mix<Light, { gain: number }>(kit({ gain: mul() }));
 const dim = patch<Light, { gain: number }>(0, () => ({ gain: 0.06 }), { writes: ['gain'] });
@@ -39,7 +39,7 @@ A locus whose weights sum below 1 is faded toward rest by that sum, and one whos
 `mix.blend(patches, by)` cues several voices into one locus for you, with their weights split by one signal: at 0 the first patch has it all, at 1 the last. Two patches crossfade; more make stops along the way.
 
 ```ts
-import { level, patch } from 'blits';
+import { level, patch } from '@msb235/blits';
 
 const at = (gain: number) => patch<Light, { gain: number }>(0, () => ({ gain }), { writes: ['gain'] });
 

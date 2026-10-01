@@ -21,7 +21,7 @@ Above, three voices play over twelve bars. Wave rolls across all of them, pulse 
 The host owns the loop. The mix never schedules a frame or calls back; it only answers.
 
 ```ts
-import { kit, mix, patch, sum } from 'blits';
+import { kit, mix, patch, sum } from '@msb235/blits';
 
 const bars = mix<Bar, BarPose>(kit({ height: sum() }));
 

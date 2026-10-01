@@ -15,7 +15,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 A stateful patch declares two functions besides its usual one. `state(subject)` makes a subject's state, and the mix calls it the first time the patch sees that subject. `step(state, dt, subject, setting)` advances it, and the mix calls it once per subject per sampled frame. The patch's own function then reads the result as `setting.state`.
 
 ```ts
-import { kit, patch, sum } from 'blits';
+import { kit, patch, sum } from '@msb235/blits';
 
 const spring = patch<Dot, { x: number }, { x: number; v: number }>(
   0,

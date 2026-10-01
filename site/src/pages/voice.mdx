@@ -15,7 +15,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 A patch says what an effect does at each phase. A **voice** says when it plays, how fast, for how long, for which subjects and how strongly. You make one by passing a spec to a mix's `cue`, and you get back a **handle** for steering it while it plays.
 
 ```ts
-import { mix } from 'blits';
+import { mix } from '@msb235/blits';
 
 const row = mix<Dot, DotPose>(DOT);
 const hop = row.cue({

@@ -152,13 +152,13 @@ systems now run on it**, on a branch that is not merged.
    `NOTES-FROM-ASTV.md` is astv's: the operations and cases a reading-back API has to serve, for
    whoever builds the score. Same rule.
 
-1. **Publish 0.1.0, then point klieg at it.** Held at 0.1.0 while npm answers Mike's request about
-   the name — the registry 404s `blits`, but the request is pending. The 2026-09-29 rename went into
-   0.1.0 rather than a 0.2.0, since nothing had been published. `npm publish` stops at an OTP
-   prompt, so it is Mike's to run. Then `packages/core/package.json` in klieg trades
-   `"blits": "file:../../../blits"` for `"blits": "^0.1.0"`, which is what makes that branch
-   mergeable and lets klieg's suite run on the fleet again. magicsmoke's `blits-engine` branch waits
-   on the same publish. Whether the name is `blits` or `@msb235/blits` is undecided.
+1. **Publish 0.1.0 as `@msb235/blits`, then point klieg and magicsmoke at it.** The scoped name
+   was chosen 2026-09-30 while npm answers the request for bare `blits`; `publishConfig.access` is
+   `public`. `npm publish` stops at an OTP prompt, so it is the owner's to run. Then klieg's
+   `packages/core/package.json` trades `"@msb235/blits": "file:../../../blits"` for an exact
+   `"0.1.0"`, which makes `blits-port` mergeable and lets klieg's suite run on the fleet again, and
+   magicsmoke's `blits-engine` does the same. The trusted publisher in `release.yml` is registered
+   on npmjs.com after that first publish.
 2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
    their hand-rolled frame keying onto `slew`, `hinge`'s modes become `weight: signal` and
    `mix.blend`, and `FrameCtx` becomes `Setting` with klieg's fields on `host`. The schema page's

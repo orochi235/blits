@@ -30,7 +30,7 @@ A patch written as keyframes is data: its stops stay on the patch as `keys`, and
 An engine can start as a wrapper around `mixer`. This one runs on the CPU like `mixer` does, but declares that it runs keyframes only, so a mix built on it refuses anything else:
 
 ```ts
-import { type Engine, keys, mix, mixer } from 'blits';
+import { type Engine, keys, mix, mixer } from '@msb235/blits';
 
 const keysOnly: Engine = {
   name: 'keys-only',

@@ -9,7 +9,7 @@ transitions, extracted so those repos, sherpa and magicsmoke can share one vocab
 engine.
 
 ```ts
-import { hex, kit, max, mix, mul, patch, sum, vec } from 'blits';
+import { hex, kit, max, mix, mul, patch, sum, vec } from '@msb235/blits';
 
 // What a part of a sign can move on. The arithmetic lives here and nowhere else.
 const PART = kit<PartPose>({
@@ -51,7 +51,7 @@ clock), **handle** (the live controls on one voice), **engine** (the implementat
 
 The design — the full vocabulary, the channel table, the time model, blending, the engine seam, and
 what is still open — is `docs/schema.html`, which ships in the package: open it from
-`node_modules/blits/`. The naming work behind it is
+`node_modules/@msb235/blits/`. The naming work behind it is
 `docs/vocabulary.json`, which semanticore serves as a page.
 That repo is private; the JSON stands on its own.
 

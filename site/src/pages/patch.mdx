@@ -23,7 +23,7 @@ Every patch declares its **writes**: the channels it may contribute to. The mix 
 The function form, `patch`, takes the period, the function and the writes. Anything computed goes here: a flicker, a hash walk, a curve you can only write as code.
 
 ```ts
-import { patch } from 'blits';
+import { patch } from '@msb235/blits';
 
 const breathe = patch<Part, PartPose>(
   3000,
@@ -35,7 +35,7 @@ const breathe = patch<Part, PartPose>(
 The keys form, `keys`, takes the period and a list of stops. Each stop is a phase and the delta at that phase, and between stops the value is interpolated. Its writes are every channel the stops mention, so it needs no list of its own.
 
 ```ts
-import { keys } from 'blits';
+import { keys } from '@msb235/blits';
 
 const pulse = keys<Part, PartPose>(
   3000,
