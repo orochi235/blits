@@ -389,9 +389,11 @@ export interface MixOptions {
    * kept per subject on the way, `every` ms (default 200). Within it the mix remembers what it cued,
    * every change a handle made and when, the voices that have left, and those copies of state, so a
    * read back restores the nearest copy and steps forward from it. Off by default, and a mix without
-   * it keeps nothing.
+   * it keeps nothing. With `inputs`, it also keeps what each input signal on a voice's weight read
+   * per subject, each time it changed, so a read back over a `level` or a pointer is known rather
+   * than held.
    */
-  history?: { ms: number; every?: number };
+  history?: { ms: number; every?: number; inputs?: boolean };
 }
 
 /**

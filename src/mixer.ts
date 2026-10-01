@@ -66,6 +66,10 @@ interface Subject<S> {
   /** In a projection: where this record started from, and whether nothing known could be. */
   from?: number;
   unknown?: boolean;
+  /** Under `history` with `inputs`, what an input weight signal read for this subject, when it changed. */
+  inputs?: { at: number; value: number }[];
+  /** In a projection reading back: that record, to read in place of the signal. */
+  replay?: { at: number; value: number }[];
 }
 
 const keeper = (kept: Map<object, unknown>): Setting['keep'] =>
@@ -928,6 +932,7 @@ class Mixer<I, O> implements Mix<I, O> {
       base: h.base === undefined ? undefined : structuredClone(h.base),
       slope: h.slope === undefined ? undefined : structuredClone(h.slope),
       snaps: undefined,
+      inputs: undefined,
     };
   }
 
@@ -951,6 +956,7 @@ class Mixer<I, O> implements Mix<I, O> {
     if (snap) {
       const h = this.copyHeld(voice, snap.held);
       h.from = h.stepped;
+      h.replay = live.inputs;
       return h;
     }
     const kept = new Map<object, unknown>();
@@ -974,7 +980,24 @@ class Mixer<I, O> implements Mix<I, O> {
       keep: keeper(kept),
       from: stepped,
       unknown: voice.spec.from === 'current',
+      replay: live.inputs,
     };
+  }
+
+  /** Under `history` with `inputs`, keeps what an input signal read, each time it changes. */
+  private record(held: Subject<unknown>, value: number): void {
+    const history = this.opts.history;
+    if (!history?.inputs || this.projecting) return;
+    const inputs = held.inputs ?? [];
+    held.inputs = inputs;
+    const prev = inputs[inputs.length - 1];
+    if (prev !== undefined && (prev.value === value || prev.at === this.now)) {
+      if (prev.at === this.now) prev.value = value;
+      return;
+    }
+    inputs.push({ at: this.now, value });
+    const reach = this.now - history.ms;
+    while (inputs.length > 1 && (inputs[1] as { at: number }).at <= reach) inputs.shift();
   }
 
   /** Under `history`, keeps a copy of a stateful voice's record for this subject every so often. */
@@ -1012,12 +1035,14 @@ class Mixer<I, O> implements Mix<I, O> {
   private doubtOf(voice: Voice<I, O>, held: Subject<unknown>): Doubt {
     const weight = voice.spec.weight;
     if (held.unknown) return 'held';
-    if (typeof weight === 'function' && weight.input) return 'held';
+    // A weight read back from a recording is what the mix used then, so its signal's state is moot.
+    const replayed = held.replay !== undefined && last(held.replay, this.now, true) !== undefined;
+    if (typeof weight === 'function' && weight.input && !replayed) return 'held';
     if (voice.patch.reads !== undefined && voice.patch.reads.length > 0) return 'held';
     if (this.now > (held.from ?? this.now)) {
       const tick = this.opts.stepMs;
       const fixed = tick !== undefined && tick > 0 && !this.reducedNow;
-      if ((voice.patch.step && !fixed) || held.kept.size > 0) return 'stepped';
+      if ((voice.patch.step && !fixed) || (held.kept.size > 0 && !replayed)) return 'stepped';
     }
     return 'exact';
   }
@@ -1157,9 +1182,13 @@ class Mixer<I, O> implements Mix<I, O> {
     this.sending.voice = voice;
     this.sending.subject = subject;
     const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
-    const raw =
-      (signal ? signal(subject, voice.setting as Setting) : voice.weight) *
-      this.envelope(voice, now, held.since);
+    let base = voice.weight;
+    if (signal) {
+      const was = held.replay && last(held.replay, now, true);
+      base = was ? was.value : signal(subject, voice.setting as Setting);
+      if (signal.input && !was) this.record(held, base);
+    }
+    const raw = base * this.envelope(voice, now, held.since);
     return raw < 0 ? 0 : raw > 1 ? 1 : raw;
   }
 

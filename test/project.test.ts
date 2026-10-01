@@ -252,6 +252,30 @@ describe('project back', () => {
     expect(m.project(300).probe(a).x).toBeCloseTo(seen.get(300) as number, 9);
   });
 
+  it('reads input back from a recording when history keeps inputs, and holds it otherwise', () => {
+    const a = { id: 'a' };
+    const run = (inputs: boolean) => {
+      const knob = level<Part>(0.2);
+      const m = mix<Part, Pose>(K, { history: { ms: 5000, inputs } });
+      m.cue({ patch: wave, weight: slew(knob, { riseMs: 100, fallMs: 100 }) });
+      const seen = new Map<number, number>();
+      for (const t of every(0, 1000, 20)) {
+        m.sync(t);
+        if (t === 200) knob.set(0.9);
+        if (t === 600) knob.set(0.4);
+        seen.set(t, m.probe(a).x);
+      }
+      return { m, seen };
+    };
+    const kept = run(true);
+    for (const t of [100, 220, 260, 640, 980]) {
+      expect(kept.m.project(t).probe(a).x).toBe(kept.seen.get(t));
+      expect(kept.m.project(t).assess(a).x).toBe('exact');
+    }
+    const lost = run(false);
+    expect(lost.m.project(260).assess(a).x).toBe('held');
+  });
+
   it('keeps no more than its horizon', () => {
     const a = { id: 'a' };
     const m = mix<Part, Pose>(K, { history: { ms: 200, every: 20 } });
