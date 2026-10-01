@@ -18,22 +18,20 @@ systems now run on it**, on a branch that is not merged.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **private**, and 43 commits ahead of it on 2026-09-30, unpushed. The remote had been
-  configured and pushed once on 2026-09-16 and then went unmentioned; two handoffs since have said
-  there was none. Check `git remote -v` before believing any of this.
-- **klieg's port is done and green, on `blits-port` in `~/src/klieg`** — four commits, the last following the 2026-09-29 rename; not merged,
-  no remote push. All three systems fold through a mix: `Timeline.poseAt` cues a voice per layer of
+- `main` at `git@github.com:orochi235/blits.git` — **private**, pushed and in step with `origin/main`
+  as of `ed2debd` (release 0.2.1).
+- **klieg's port is done and green, on `blits-port` in `~/src/klieg`** — not merged into klieg's
+  `main`; pushed except its last two commits. All three systems fold through a mix: `Timeline.poseAt` cues a voice per layer of
   each phase, `EffectFrame` one per effect, and the sign's environment is a mix with one subject.
   The arithmetic did not move: klieg's 1970 vitest cases pass, and its Playwright specs fail exactly
   the five they already failed on `main`, to the pixel (recorded in klieg's changelog). The schema
   page's klieg section says what the port found; do not re-derive it from here.
-- **klieg depends on this checkout by path** — `"blits": "file:../../../blits"` in
-  `packages/core/package.json` — so the branch resolves on this machine and nowhere else. That is
-  the one thing standing between the branch and a merge.
-- **The package, v0.1.1.** `src/` is the whole of it: `channels.ts` (the stock channels, `kit`,
-  `hex`/`mixHex`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
+- **klieg depends on the published package**, `"@msb235/blits": "^0.2.1"` in
+  `packages/core/package.json`, so the branch builds anywhere and nothing blocks the merge.
+- **The package, `@msb235/blits` 0.2.1 on npm.** `src/` is the whole of it: `channels.ts` (the stock
+  channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
-  `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
+  `motion.ts` (`spring`, `glide`), `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
   objects and a Map for anything else), `mixer.ts` (the engine and `mix`), `types.ts` (the whole
   public surface, doc-commented). Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
   is lint, typecheck of both `src` and `test`, then the suite, green. `npm run bench`
@@ -140,24 +138,24 @@ systems now run on it**, on a branch that is not merged.
   the site takes its outline loosely. Local until GitHub Pages, and the workflow exists already.
 
 - **Built 2026-09-30 for magicsmoke**, which now runs every fault on blits (its old engine is
-  deleted; branch `blits-engine` in magicsmoke, unmerged, `file:` dependency): `lag`,
+  deleted; on magicsmoke's `main` since 0.5.0, pinned to `@msb235/blits` `0.1.1`): `lag`,
   `handle.weightOf`, `MixOptions.stepMs` and `setting.send` / `mix.drain`. Each is in the schema
   page; magicsmoke's row in the consumer table says how it uses them.
 
 ## Next, in order
 
 0. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
-   in the hot path, velocity on retarget, and what weasel has that blits doesn't (booking events
+   in the hot path and what weasel has that blits doesn't (booking events
    ahead, a mix-wide time scale, nesting, a mix that can list what is playing). The site's ledger
    can now show a voice's weight after fades through `handle.weightOf`; nothing draws it yet.
    Delete each item as it is dealt with, and the file once it is empty.
    `NOTES-FROM-ASTV.md` is astv's: the operations and cases a reading-back API has to serve, for
    whoever builds the score. Same rule.
 
-1. **Point klieg and magicsmoke at the published `@msb235/blits@0.1.1`.** It is on npm, from the
-   release workflow with provenance. klieg's `packages/core/package.json` trades
-   `"@msb235/blits": "file:../../../blits"` for an exact `"0.1.1"`, which makes `blits-port`
-   mergeable and lets klieg's suite run on the fleet again; magicsmoke's `blits-engine` does the same.
+1. **Merge klieg's `blits-port`, and move magicsmoke to 0.2.x.** klieg already depends on the
+   published package; push its last two commits and merge. magicsmoke pins `0.1.1`, and 0.2.0 broke
+   two things it may touch: a `from: 'current'` keys voice now leaves at the subject's velocity, and
+   `Handle` gained `ramp`, which matters if magicsmoke builds handle-shaped objects. Unchecked.
 2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
    their hand-rolled frame keying onto `slew`, `hinge`'s modes become `weight: signal` and
    `mix.blend`, and `FrameCtx` becomes `Setting` with klieg's fields on `host`. The schema page's
@@ -172,11 +170,6 @@ systems now run on it**, on a branch that is not merged.
 
 ## Loose ends
 
-- **A semanticore `serve` has held port 4872 since 2026-09-20** (pid 17237, cwd this repo), on
-  `docs/2026-09-15-vocabulary.json`, a file since renamed. It is the kind of stale tab the next
-  item warns about; the site moved to 4880 rather than touch it.
-- **klieg's `blits-port` branch is local, unmerged and unpushed**, and its `file:` dependency means
-  no other machine can build it.
 - **A stale served-page tab will overwrite `vocabulary.picks.json` with whatever set it
   was holding.** It has happened twice — `65d2d71` restored one, and the same loss was in the
   working tree at the start of 2026-09-27's session. Before trusting the picks file, `git diff` it;

@@ -1,7 +1,7 @@
 # Notes from weasel
 
 **For:** whoever is working on blits next. **Answers:** what a read of blits from the weasel side
-turned up: bugs, where the per-frame time goes, and lessons weasel paid for that apply here.
+turned up: bugs, where the per-frame time goes, and what weasel has that blits doesn't.
 Written 2026-09-29 against `6cd7a49`; its three bugs were fixed in `5f4b2e5`. weasel (`~/src/weasel`, published as `@weasel-js/core`) is a 2D
 scene-graph canvas engine whose animator lives in `packages/core/src/animation/`.
 
@@ -29,15 +29,6 @@ that benchmark and a CPU profile:
   (`docs/superpowers/specs/2026-08-24-frame-loop-decoupling-design.md` in weasel).
 - `mixHex` unpacks both colors on every call; a `keys` segment's endpoints are fixed, so that could
   happen once per segment.
-
-## Lessons weasel paid for
-
-**Retargeting position without velocity leaves a kink.** `from: 'current'` starts a keys voice
-where the subject is now, but its first segment starts from zero speed wherever the old motion was
-heading. weasel's `physics` has `setTarget` and `setVelocity` for this. The one place weasel
-doesn't carry velocity (reflow glides) is written up as a known gap. **`spring` and `glide` now
-carry it** (2026-09-30): their `to` and `push` keep velocity across a change. A `keys` voice with
-`from: 'current'` still starts from zero speed.
 
 ## What weasel has that blits doesn't
 
