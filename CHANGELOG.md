@@ -26,6 +26,8 @@ version and everything else the patch. Each release lists its changes as **Break
 
 - A finite loop's fade out starts when its last pass ended, not at the first frame after, so it
   plays the same at any frame rate.
+- The published `package.json` no longer lists `workspaces: ["site"]`, which only the repo's docs
+  site uses.
 
 ## 0.2.1
 

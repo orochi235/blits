@@ -69,4 +69,9 @@ jobs:
             exit 1
           fi
 
+      # `workspaces` only wires up the site for development. npm publishes package.json as it
+      # stands, so the field has to come off this throwaway checkout before packing.
+      - name: Drop the site workspace from the published manifest
+        run: npm pkg delete workspaces
+
       - run: npm publish
