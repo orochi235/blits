@@ -33,10 +33,10 @@ systems now run on it**, on a branch that is not merged.
 - **The package, v0.1.0.** `src/` is the whole of it: `channels.ts` (the stock channels, `kit`,
   `hex`/`mixHex`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
-  `signals.ts` (`peak`, `slew`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
+  `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
   objects and a Map for anything else), `mixer.ts` (the engine and `mix`), `types.ts` (the whole
   public surface, doc-commented). Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
-  is lint, typecheck of both `src` and `test`, then the suite: 71 tests, green. `npm run bench`
+  is lint, typecheck of both `src` and `test`, then the suite, green. `npm run bench`
   (`bench/frame.mjs`) measures a frame at scene sizes, GC counts included. Enlisted for the fleet — `.onto/tests` is
   `plugin: node`, `run: npm test`, `runner: vitest` — and green there too.
 - **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
@@ -137,15 +137,17 @@ systems now run on it**, on a branch that is not merged.
   Vite app, because it is mostly documents. `docs/schema.html` stays the design record, untouched;
   the site takes its outline loosely. Local until GitHub Pages, and the workflow exists already.
 
+- **Built 2026-09-30 for magicsmoke**, which is adopting blits by `file:` on a branch: `lag`,
+  `handle.weightOf`, `MixOptions.stepMs` and `setting.send` / `mix.drain`. Each is in the schema
+  page; magicsmoke's two rows in the consumer table say how it uses them.
+
 ## Next, in order
 
 0. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
-   in the hot path, velocity on retarget, and what weasel has that blits doesn't (events, a
-   mix-wide time scale, nesting, cheap observability — the site's ledger wants the last, to show a
-   voice's weight after fades).
+   in the hot path, velocity on retarget, and what weasel has that blits doesn't (booking events
+   ahead, a mix-wide time scale, nesting, a mix that can list what is playing). The site's ledger
+   can now show a voice's weight after fades through `handle.weightOf`; nothing draws it yet.
    Delete each item as it is dealt with, and the file once it is empty.
-   `NOTES-FROM-MAGICSMOKE.md` is magicsmoke's ranked asks now that it is adopting blits, plus a
-   hold on editing the schema's magicsmoke row until Mike approves its shape.
    `NOTES-FROM-ASTV.md` is astv's: the operations and cases a reading-back API has to serve, for
    whoever builds the score. Same rule.
 
@@ -165,8 +167,7 @@ systems now run on it**, on a branch that is not merged.
    published surface — sherpa reads `ctx.phase` — and step one had to leave every baseline where it
    was, so they wait for a version of klieg that intends to break.
 4. **The remaining opens** are in the schema page: how the score comes inside (decided it does; unbuilt),
-   color's lerp space, the stock band's width, and whether `slew` is linear. magicsmoke
-   does want it: see its notes file.
+   color's lerp space and the stock band's width.
 
 ## Loose ends
 

@@ -323,6 +323,9 @@ interface Setting&lt;S = void&gt; {
   <span class="cm">/** The state `owner` keeps for this voice and subject, made by `init` on first ask. Held by the mix, so a read at
      another time can copy it; a stateful signal keeps its state here and nowhere else. */</span>
   keep&lt;K&gt;(owner: object, init: () =&gt; K): K;
+  <span class="cm">/** Reports an event for this voice and subject at `timestamp`. Queued until the host drains it; the mix
+     never calls back. Meant for `step`. */</span>
+  send(event: unknown): void;
 }</code></pre>
 
 <p>Two authoring forms build a patch. Both return the same interface, so a voice cannot tell them apart.</p>
@@ -376,7 +379,7 @@ interface Setting&lt;S = void&gt; {
   from?: 'current';
 }
 
-interface Handle {
+interface Handle&lt;I&gt; {
   readonly id: number;
   readonly state: 'pending' | 'live' | 'fading' | 'done';
   <span class="cm">/** Live. Writes land on the next sync. */</span>
@@ -388,6 +391,9 @@ interface Handle {
   seek(elapsed: number): void;
   <span class="cm">/** Ramps out over `fade.out` unless given a fade here; `at: 'rest'` waits per subject for a resting pose first. */</span>
   fade(opts?: { over?: number; at?: 'rest'; deadline?: number }): void;
+  <span class="cm">/** The weight this voice gave `subject` the last frame it was probed: after fades and its signal, before a
+     locus folds it. 0 where it gave none. One number on a record the mix keeps anyway, so free unasked. */</span>
+  weightOf(subject: I): number;
   <span class="cm">/** Resolves when the voice has been removed from the mix, however that happened. */</span>
   readonly done: Promise&lt;void&gt;;
 }</code></pre>
@@ -409,14 +415,16 @@ interface MixOptions {
   band?: { on: number; off: number };
   <span class="cm">/** The most `dt` a step or signal is handed, however long the gap. Off by default. */</span>
   maxDt?: number;
+  <span class="cm">/** Run every `step` once per interval of this many ms instead of once by the frame's gap. Off by default. */</span>
+  stepMs?: number;
 }
 
 interface Mix&lt;I, O&gt; {
   <span class="cm">/** Cues a voice. Throws when the engine cannot run the patch's form, or the kit lacks a channel it `writes`. */</span>
-  cue(spec: VoiceSpec&lt;I, O&gt;): Handle;
+  cue(spec: VoiceSpec&lt;I, O&gt;): Handle&lt;I&gt;;
   <span class="cm">/** N voices whose weights split one signal, k in 0..1, cued into one locus so they fold as
      alternatives. Two patches crossfade; more make stops. */</span>
-  blend(patches: readonly Patch&lt;I, O&gt;[], by: Signal&lt;I&gt;, spec?: Omit&lt;VoiceSpec&lt;I, O&gt;, 'patch' | 'weight'&gt;): Handle[];
+  blend(patches: readonly Patch&lt;I, O&gt;[], by: Signal&lt;I&gt;, spec?: Omit&lt;VoiceSpec&lt;I, O&gt;, 'patch' | 'weight'&gt;): Handle&lt;I&gt;[];
 
   <span class="cm">/** The host reports the clock, once a frame. Nothing advances at the call: it publishes the reading, and
      each subject catches up by the whole gap the first time it is probed afterward. The same timestamp twice
@@ -437,6 +445,8 @@ interface Mix&lt;I, O&gt; {
   mute(opts?: { over?: number }): void;
   <span class="cm">/** Forgets per-subject state. Call when a subject is retired, or let the WeakMap do it. */</span>
   drop(subject: I): void;
+  <span class="cm">/** Every event sent since the last drain, earliest first. Drain after probing. */</span>
+  drain&lt;E&gt;(): { timestamp: number; subject: I; voice: number; event: E }[];
 }</code></pre>
 
 <p>Subjects are not registered. State lives in a <code>WeakMap</code> keyed by the subject object, created on first probe and stepped by the gap in the timestamp since that subject was last stepped. That is the rule klieg's dwell arrived at, and it means a part a wrapper leaves unasked for a while catches up rather than resuming where it paused.</p>
@@ -449,13 +459,14 @@ interface Mix&lt;I, O&gt; {
 <span class="cm">// stock combinators; klieg's own `near`, `dwell`, `level` are consumers' signals built on these</span>
 function peak&lt;I&gt;(...signals: Signal&lt;I&gt;[]): Signal&lt;I&gt;;          <span class="cm">// max</span>
 function slew&lt;I&gt;(of: Signal&lt;I&gt;, { riseMs, fallMs }): Signal&lt;I&gt;;  <span class="cm">// stateful: rate-limited follow toward its input</span>
+function lag&lt;I&gt;(of: Signal&lt;I&gt;, { riseMs, fallMs, floor }): Signal&lt;I&gt;;  <span class="cm">// stateful: exponential follow, time constants</span>
 function level&lt;I&gt;(initial?: number): Signal&lt;I&gt; &amp; { set(v: number): void };  <span class="cm">// host-written</span>
 function gate&lt;I&gt;(of: Signal&lt;I&gt;, band: { on: number; off: number }): Signal&lt;I&gt;;  <span class="cm">// stateful: holds inside the band</span>
 function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;          <span class="cm">// sugar for on = off = at</span></code></pre>
 
 <p>A stateful signal keeps its state in the mix, through <code>setting.keep(owner, init)</code>: per voice and per subject, keyed by the signal itself, made on first ask. So two voices handed the same <code>slew</code> each follow on their own, and a read at another time can copy what the mix holds instead of moving it. A signal measures its own gap, from the timestamp it last saw, rather than the gap its voice caught up by. <code>input</code> marks a signal that reads something the clock does not drive: <code>level</code> sets it, and <code>peak</code>, <code>slew</code>, <code>gate</code> and <code>blend</code>&rsquo;s shares inherit it from what they read. <code>slew</code> is klieg's <code>dwell</code> with the cursor factored out; <code>gate</code> keeps one bit, which way it last switched.</p>
 
-<p><code>slew</code> is the package's one decay primitive: a value that follows its input at a rate limit, no faster than <code>riseMs</code> per unit climbing or <code>fallMs</code> draining. It is not <code>Easing</code>, which is a curve over a known duration, and it is not called <code>ease</code> for that reason &mdash; <code>fade.ease</code> and <code>keys({ ease })</code> already mean the curve. A decay tail is a <code>slew</code> to 0 with no rise; a fade is a <code>slew</code> on a weight; klieg's <code>kicks</code> is a <code>slew</code> to 0 that <code>peak</code> pokes back up. Nothing else in the package stores a value in order to lag it. <code>gate</code> is the other half of that pair and not a substitute for it: a slew sets how fast a value may move, a band sets whether it may move at all. A slew cannot quiet a gate, because a rate limit delays a crossing without deciding it, and an input resting on the threshold drags the slewed value onto the threshold with it.</p>
+<p><code>slew</code> and <code>lag</code> are the package's two decay primitives. <code>slew</code> follows its input at a rate limit, no faster than <code>riseMs</code> per unit climbing or <code>fallMs</code> draining; it stays linear, because klieg's three decays are and the port's baselines depend on it. <code>lag</code> closes <code>1 − exp(−gap / ms)</code> of the distance per read, so it reads the same at any frame spacing while its input holds still; it lands on its input within <code>floor</code> (1e-6), because an exponential never reaches rest and <code>atRest</code> needs it to, and <code>floor: 0</code> keeps the curve exact. magicsmoke's intensity ease is a <code>lag</code>. It is not <code>Easing</code>, which is a curve over a known duration, and it is not called <code>ease</code> for that reason &mdash; <code>fade.ease</code> and <code>keys({ ease })</code> already mean the curve. A decay tail is a <code>slew</code> to 0 with no rise; a fade is a <code>slew</code> on a weight; klieg's <code>kicks</code> is a <code>slew</code> to 0 that <code>peak</code> pokes back up. Nothing else in the package stores a value in order to follow it. <code>gate</code> is the other half of that pair and not a substitute for it: a slew sets how fast a value may move, a band sets whether it may move at all. A slew cannot quiet a gate, because a rate limit delays a crossing without deciding it, and an input resting on the threshold drags the slewed value onto the threshold with it.</p>
 
 <h2 id="time">Time</h2>
 <ul>
@@ -463,7 +474,9 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
   <li><b>Everything in a frame reads one timestamp.</b> A second <code>sync</code> with the same value is a no-op, and every <code>probe</code> between syncs answers from the same frame. This is what makes state advance once however many probes a wrapper makes.</li>
   <li><b>A voice's clock is <code>(timestamp − start) · rate</code>.</b> That reading is <code>setting.elapsed</code>, and its position within the period, <code>(elapsed mod period) / period</code>, is the <code>phase</code> the patch is handed first. Both reach the patch. A rate change rebases so <code>elapsed</code> is continuous.</li>
   <li><b><code>dt</code> is derived, never supplied.</b> The gap between this sync and the last, per subject, and <code>Infinity</code> under reduced motion. A patch that integrates guards against that with a snap, as klieg's already do.</li>
-  <li><b>Time away is the host's to call.</b> A hidden tab gets no frames, so its next <code>sync</code> can be an hour past the last. By default that hour is a gap like any other: fades and finite loops finish, and every subject catches up by all of it. A host that calls <code>mix.rebase()</code> on <code>visibilitychange</code> says the gap does not count, and the mix clock &mdash; what <code>setting.timestamp</code> reads, and what voices, fades and subjects run on &mdash; resumes where it was left. It is then the host's timestamp less the time taken out, and a <code>start</code> the host gives is read on the host's clock and converted. <code>maxDt</code> caps the <code>dt</code> a <code>step</code> or signal is handed for any gap, the net an integrator wants; it is off by default because a patch with a closed form wants the whole gap. The host's clock is whatever it passes <code>sync</code>: a rAF timestamp and <code>performance.now()</code> share an origin, and <code>Date.now()</code> does not.</li>
+  <li><b>Time away is the host's to call.</b> A hidden tab gets no frames, so its next <code>sync</code> can be an hour past the last. By default that hour is a gap like any other: fades and finite loops finish, and every subject catches up by all of it. A host that calls <code>mix.rebase()</code> on <code>visibilitychange</code> says the gap does not count, and the mix clock &mdash; what <code>setting.timestamp</code> reads, and what voices, fades and subjects run on &mdash; resumes where it was left. It is then the host's timestamp less the time taken out, and a <code>start</code> the host gives is read on the host's clock and converted. <code>maxDt</code> caps the <code>dt</code> a <code>step</code> or signal is handed for any gap, the net an integrator wants; it is off by default because a patch with a closed form wants the whole gap.</li>
+  <li><b>There is no frame rate, only an optional step interval.</b> A frame is a reading, so a stateless patch reads the same at any rate. A <code>step</code> handed the frame's gap does not: an integrator gives a different answer at 30 and 144&nbsp;fps. <code>stepMs</code> runs <code>step</code> once per whole interval instead, on a grid counted from when the subject's delay ran out, carrying the remainder, so the answer and every event's time are the same at any frame rate. <code>maxDt</code> then caps how many intervals one sample runs. Signals and <code>at</code> still read the frame. The host's clock is whatever it passes <code>sync</code>: a rAF timestamp and <code>performance.now()</code> share an origin, and <code>Date.now()</code> does not.</li>
+  <li><b>Events come out by draining.</b> A patch calls <code>setting.send(event)</code>, usually from <code>step</code>, and the host calls <code>mix.drain()</code> after probing to take everything sent, earliest first. Events are made while a subject catches up, so a subject nobody probes has sent nothing yet, and promptness is the host's to buy by probing. Under <code>stepMs</code> each is stamped with the end of the interval it happened in, so the events and their times do not depend on how the probes are spaced. Time taken out by <code>rebase</code> sends nothing. This is the small half of weasel's events: no booking ahead against an outside clock, and no retraction.</li>
   <li><b>Calls land on the next sync.</b> A host writes <code>handle.weight</code> or calls <code>fade</code> on its own clock; the mix applies it at the first timestamp that sees it. Nothing changes mid-frame.</li>
 </ul>
 
@@ -528,7 +541,8 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <tr><td>klieg lighting</td><td>unit</td><td>yaw sum · pitch sum</td><td>One subject, the frame. A mix with no subject dimension is a mix over one subject.</td></tr>
   <tr><td>wod transitions</td><td>wedge <code>Segment</code></td><td>hold mul · opacity mul · scale mul · offset sum · rotate sum · aperture max · offsetAngle last</td><td>Every voice is <code>keys</code> with <code>from: 'current'</code>; the voices map goes away.</td></tr>
   <tr><td>sherpa seams</td><td>page</td><td>opacity mul · transform (host's) · clip max</td><td>Exit and enter as two voices; overlap is whether both are live at once.</td></tr>
-  <tr><td>magicsmoke</td><td>fault</td><td>intensity mul</td><td>One voice, <code>weight: signal</code> from dwell; <code>blow</code> is a state patch on the same voice.</td></tr>
+  <tr><td>magicsmoke faults</td><td>fault</td><td>none: the patch writes no channels</td><td>One voice per fault. Its weight is the intensity, a number or any signal. Its state is the seeded discharge process, stepped under <code>stepMs: 5</code>, easing exponentially toward <code>setting.weight</code> and sending each discharge as an event. Stopping is <code>handle.fade()</code>; <code>blow</code> writes into the fault's own state through magicsmoke's handle, not as a second voice.</td></tr>
+  <tr><td>magicsmoke stage</td><td>the page, one subject</td><td>whine · hum · jolt <code>vec(2, sum())</code></td><td>A separate mix, which needs none of <code>stepMs</code>, <code>send</code> or <code>lag</code>. magicsmoke imports <code>Signal</code>, <code>Handle</code>, <code>Setting</code>, <code>slew</code> and <code>level</code>, so those are surface to keep stable.</td></tr>
 </table></div>
 
 <h2 id="klieg">The klieg port</h2>
@@ -577,8 +591,6 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>Color's lerp.</b> The stock <code>hex</code> channel ships sRGB, which is what klieg's light channel assumes and what keeps the port's arithmetic identical. OKLCH reads better for a crossfade between hues and would replace it rather than join it; the choice waits on seeing a hue crossfade in the port.</li>
   <li><b>Whether <code>at</code> writes into a buffer: no, it returns.</b> A patch allocates one partial delta per subject per frame, and <code>writes</code> plus the fold order would let the mix hand it one scratch object instead. The port measured what that would buy: a frame of klieg&rsquo;s motion — 12 letters through four voices — costs 0.017&nbsp;ms, and a frame of its effects — 60 parts under three effects — costs 0.134&nbsp;ms, against a 16.7&nbsp;ms budget. Under 1% of a frame is not worth the nicest property <code>at</code> has, which is being a pure function a test calls once. The p99 of the effects frame is 1.3&nbsp;ms, which is the collector catching up on exactly these allocations, so a subject count an order of magnitude past klieg&rsquo;s would reopen it. <code>packages/core/test/bench/frame-cost.bench.ts</code> in klieg is the measurement</li>
   <li><b>The stock band's width.</b> Whether <code>gate</code>'s default band is symmetric around <code>at</code> and how wide it is. It has to clear the frame noise in a real signal, so it is a measurement from klieg's <code>near</code> and <code>dwell</code>, not a guess.</li>
-  <li><b>Whether <code>slew</code> is linear or exponential.</b> klieg's three decays are all linear, <code>ms / rate</code>, so linear keeps the port's arithmetic identical and the Playwright baselines green. An exponential release reads better and never reaches rest, which <code>atRest</code> needs it to, so it would want a floor. One choice, made once.</li>
-  <li><b>Whether magicsmoke wants this at all.</b> Its fault is one intensity; the case is weakest there and it may stay a consumer only of <code>slew</code>.</li>
 </ul>
 </main>
 </div>

@@ -44,15 +44,17 @@ Open design questions rather than asks. blits may rightly say some of these belo
 - **Events on a timeline.** weasel's event tracks fire only on forward crossings of
   `(previous, playhead]`, and report `lateBy` in ms. With a `booking` they are scheduled 100 ms
   ahead against an outside clock (an audio engine's `now()`), and a pause, seek, rate change or
-  edit retracts the booking. Sound cues in wod or magicsmoke will want this. A blits voice can
-  only produce values.
+  edit retracts the booking. blits now has the small half: a patch `send`s timestamped events and
+  the host `drain`s them (2026-09-30, for magicsmoke). Booking ahead, retraction and `lateBy` are
+  still weasel's alone; wod's sound cues would want them.
 - **Pause and time scale at every level, multiplied.** weasel scales the whole animator, a key and
   a handle, and multiplies the three. blits has `rate` per voice and nothing mix-wide.
 - **Nesting.** A weasel timeline can hold child timelines at offsets, and the parent owns their
   playback. A blits voice is flat.
 - **Observability that costs nothing unwatched.** weasel's `watch(listener)` and `live()` build
-  event objects only while something is subscribed. A mix can't currently answer "what is
-  playing and at what weight" without a debugger.
+  event objects only while something is subscribed. blits now answers "at what weight" per voice
+  and subject (`handle.weightOf`, free unasked, 2026-09-30). "What is playing" still has no answer
+  without holding every handle: a mix cannot list its voices.
 
 ## What weasel would need before depending on blits
 
