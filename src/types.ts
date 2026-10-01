@@ -69,7 +69,8 @@ export interface Setting<S = void> {
   /**
    * The gap this subject is catching up by: milliseconds since it last advanced, which is the gap
    * since the previous sync only for a subject sampled every frame. Infinity under reduced motion;
-   * no more than `maxDt` where the mix sets one.
+   * no more than `maxDt` where the mix sets one. Inside a `step` under `stepMs`, it is `stepMs`, and
+   * `timestamp` is the end of that interval.
    */
   dt: number;
   /** Milliseconds this voice has been playing, rate applied. */
@@ -106,7 +107,10 @@ export interface Patch<I, O, S = void> {
   at(phase: number, subject: I, setting: Setting<S>): Partial<O>;
   /** Per-subject state, created on the first frame this patch sees a subject. */
   state?(subject: I): S;
-  /** Advances state once per subject per sampled frame, by the whole gap since it last advanced. */
+  /**
+   * Advances state once per subject per sampled frame, by the whole gap since it last advanced; or,
+   * where the mix sets `stepMs`, once per whole interval of that length.
+   */
   step?(state: S, dt: number, subject: I, setting: Setting<S>): void;
   /** Present when the patch was authored as keyframes, so an engine that reads data can. */
   readonly keys?: readonly Keyframe<O>[];
@@ -238,6 +242,13 @@ export interface MixOptions {
    * patch with a closed form wants the whole gap; an integrator wants this set.
    */
   maxDt?: number;
+  /**
+   * Run every `step` at this fixed interval, ms, instead of once by the frame's gap, so stateful
+   * patches play the same at any frame rate. Intervals count from when a subject's delay ran out,
+   * the remainder carrying to the next sample; `maxDt` then caps how many one sample may run.
+   * Signals and `at` still see the frame. Off by default.
+   */
+  stepMs?: number;
 }
 
 /**

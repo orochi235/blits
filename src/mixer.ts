@@ -35,6 +35,8 @@ interface Subject<S> {
   state: S;
   /** The `now` this subject last caught up to, for this voice. */
   stepped: number;
+  /** Under `stepMs`, how many intervals have run since `since`; `stepped` is where that lands. */
+  ticks: number;
   /** The `now` this subject was last probed at, so twelve probes in a frame step once. */
   probed: number;
   /** The last delta computed this frame, handed back to a repeat probe unchanged. */
@@ -407,6 +409,7 @@ class Mixer<I, O> implements Mix<I, O> {
           ? (voice.patch.state(subject) as unknown)
           : (undefined as unknown),
       stepped: now,
+      ticks: 0,
       probed: Number.NaN,
       delta: null,
       kept,
@@ -477,9 +480,13 @@ class Mixer<I, O> implements Mix<I, O> {
       return held.delta;
     }
 
-    if (voice.patch.step && held.probed !== now && now !== held.stepped) {
-      voice.patch.step(held.state as never, setting.dt, subject, setting as Setting<never>);
-      held.stepped = now;
+    const tick = this.opts.stepMs;
+    if (voice.patch.step && held.probed !== now) {
+      if (tick !== undefined && tick > 0 && !this.reducedNow) this.tick(voice, subject, held, tick);
+      else if (now !== held.stepped) {
+        voice.patch.step(held.state as never, setting.dt, subject, setting as Setting<never>);
+        held.stepped = now;
+      }
     }
 
     let delta: Record<string, unknown>;
@@ -505,6 +512,34 @@ class Mixer<I, O> implements Mix<I, O> {
     this.w = weight;
     this.h = held;
     return delta;
+  }
+
+  /**
+   * Runs `step` once per whole interval between where this subject last stopped and now, on a grid
+   * counted from when its delay ran out, and leaves the remainder for the next sample. Counting
+   * rather than adding keeps the grid where it is however many samples it is reached through.
+   */
+  private tick(voice: Voice<I, O>, subject: I, held: Subject<unknown>, tick: number): void {
+    const now = this.now;
+    const setting = voice.setting;
+    const frameDt = setting.dt;
+    let n = held.ticks;
+    const due = Math.floor((now - held.since) / tick);
+    const cap = this.opts.maxDt;
+    if (cap !== undefined) {
+      const most = Math.floor(cap / tick);
+      if (due - n > most) n = due - most;
+    }
+    const step = voice.patch.step as NonNullable<Patch<I, O, unknown>['step']>;
+    setting.dt = tick;
+    for (n++; n <= due; n++) {
+      setting.timestamp = held.since + n * tick;
+      step(held.state as never, tick, subject, setting as Setting<never>);
+    }
+    held.ticks = due > held.ticks ? due : held.ticks;
+    held.stepped = held.since + held.ticks * tick;
+    setting.timestamp = now;
+    setting.dt = frameDt;
   }
 
   /**

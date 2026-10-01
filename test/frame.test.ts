@@ -296,3 +296,103 @@ describe('time away', () => {
     expect(gaps).toEqual([16, 64]);
   });
 });
+
+describe('stepMs', () => {
+  interface Spring {
+    x: number;
+    v: number;
+  }
+  // Semi-implicit Euler toward 100: the integrator NOTES-ON-SCRUBBING.md measured drifting by frame rate.
+  const spring = () =>
+    patch<Part, Pose, Spring>(0, (_p, _s, setting) => ({ crawl: setting.state.x }), {
+      writes: ['crawl'],
+      state: () => ({ x: 0, v: 0 }),
+      step: (s, dt) => {
+        const t = dt / 1000;
+        s.v += (180 * (100 - s.x) - 12 * s.v) * t;
+        s.x += s.v * t;
+      },
+    });
+  const at300 = (fps: number, stepMs?: number): number => {
+    const m = mix<Part, Pose>(PART, { stepMs });
+    m.cue({ patch: spring() });
+    const part = { id: 'a' };
+    const every = 1000 / fps;
+    for (let n = 0; n * every < 300; n++) {
+      m.sync(n * every);
+      m.probe(part);
+    }
+    m.sync(300);
+    return m.probe(part).crawl;
+  };
+
+  it('plays a stateful patch the same at any frame rate', () => {
+    const exact = at300(200, 5);
+    for (const fps of [144, 120, 60, 30, 24]) expect(at300(fps, 5)).toBe(exact);
+    expect(at300(30)).not.toBeCloseTo(at300(144), 1);
+  });
+
+  it('hands step the interval and the time each interval ends, carrying the remainder', () => {
+    const calls: [number, number][] = [];
+    const m = mix<Part, Pose>(PART, { stepMs: 5 });
+    m.cue({
+      patch: patch<Part, Pose, null>(0, () => ({}), {
+        writes: [],
+        state: () => null,
+        step: (_s, dt, _subject, setting) => calls.push([setting.timestamp, dt]),
+      }),
+    });
+    const part = { id: 'a' };
+    for (const now of [0, 7, 13, 16, 31]) {
+      m.sync(now);
+      m.probe(part);
+    }
+    expect(calls).toEqual([
+      [5, 5],
+      [10, 5],
+      [15, 5],
+      [20, 5],
+      [25, 5],
+      [30, 5],
+    ]);
+  });
+
+  it('counts intervals from when a staggered subject starts', () => {
+    const calls: number[] = [];
+    const m = mix<Part, Pose>(PART, { stepMs: 10 });
+    m.cue({
+      stagger: () => 3,
+      patch: patch<Part, Pose, null>(0, () => ({}), {
+        writes: [],
+        state: () => null,
+        step: (_s, _dt, _subject, setting) => calls.push(setting.timestamp),
+      }),
+    });
+    const part = { id: 'a' };
+    for (const now of [0, 16, 33]) {
+      m.sync(now);
+      m.probe(part);
+    }
+    expect(calls).toEqual([13, 23, 33]);
+  });
+
+  it('runs no more intervals in one sample than maxDt holds', () => {
+    let count = 0;
+    const m = mix<Part, Pose>(PART, { stepMs: 5, maxDt: 20 });
+    m.cue({
+      patch: patch<Part, Pose, null>(0, () => ({}), {
+        writes: [],
+        state: () => null,
+        step: () => {
+          count++;
+        },
+      }),
+    });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.probe(part);
+    m.sync(10_000);
+    m.probe(part);
+    expect(count).toBe(4);
+  });
+});
