@@ -89,6 +89,26 @@ export interface Setting<S = void> {
    * its state here and nowhere else.
    */
   keep<K>(owner: object, init: () => K): K;
+  /**
+   * Reports an event at `timestamp`, for this voice and this subject. The mix queues it until the
+   * host drains it, and never calls back. Meant for `step`, where under `stepMs` the timestamp is
+   * the interval the event happened in rather than the frame that sampled it.
+   */
+  send(event: unknown): void;
+}
+
+/**
+ * One event a patch sent, as `drain` hands it back.
+ *
+ * @category state
+ */
+export interface Sent<I, E = unknown> {
+  /** The mix clock when it was sent. */
+  timestamp: number;
+  subject: I;
+  /** The id of the voice whose patch sent it, as its handle reports. */
+  voice: number;
+  event: E;
 }
 
 /**
@@ -284,6 +304,12 @@ export interface Mix<I, O> {
   mute(opts?: { over?: number }): void;
   /** Forgets per-subject state. */
   drop(subject: I): void;
+  /**
+   * Every event patches have sent since the last drain, earliest first, in the order they were sent
+   * where two share a timestamp. Events are only sent while a subject is probed, so drain after
+   * probing.
+   */
+  drain<E = unknown>(): Sent<I, E>[];
 }
 
 /**

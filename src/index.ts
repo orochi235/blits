@@ -15,6 +15,7 @@ export type {
   Mix,
   MixOptions,
   Patch,
+  Sent,
   Setting,
   Signal,
   VoiceSpec,

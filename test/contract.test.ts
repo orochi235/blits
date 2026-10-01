@@ -31,6 +31,7 @@ describe('declared writes', () => {
           state: undefined,
           host: undefined,
           keep: (_owner, init) => init(),
+          send: () => {},
         });
         for (const key of Object.keys(delta)) expect(p.writes).toContain(key);
       }

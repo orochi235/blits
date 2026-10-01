@@ -33,6 +33,7 @@ const frame = (now: number, dt: number): Setting => ({
     if (!kept.has(owner)) kept.set(owner, init());
     return kept.get(owner) as never;
   },
+  send: () => {},
 });
 
 describe('band quiet', () => {

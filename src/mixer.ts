@@ -11,6 +11,7 @@ import type {
   Mix,
   MixOptions,
   Patch,
+  Sent,
   Setting,
   Signal,
   VoiceSpec,
@@ -106,6 +107,7 @@ class Voice<I, O> {
     readonly start: number,
     slotOf: Map<string, number>,
     host: unknown,
+    send: (event: unknown) => void,
   ) {
     this.slots = patch.writes.map((k) => slotOf.get(k as string) as number);
     this.built = patch.form === 'keys' && patch.keys ? builtOf(patch) : null;
@@ -119,6 +121,7 @@ class Voice<I, O> {
       state: undefined,
       host,
       keep: keeper(new Map()),
+      send,
     };
     this.rate = spec.rate ?? 1;
     this.weight = typeof spec.weight === 'number' ? spec.weight : 1;
@@ -153,6 +156,17 @@ class Mixer<I, O> implements Mix<I, O> {
   private reducedNow = false;
   /** How many voices in the list carry a locus; with none, a fold allocates nothing. */
   private loci = 0;
+  /** Events sent since the last drain, and who is being probed, so `send` knows whose they are. */
+  private sent: Sent<I, unknown>[] = [];
+  private sending: { voice: Voice<I, O> | null; subject: I } = {
+    voice: null,
+    subject: undefined as I,
+  };
+  private readonly send = (event: unknown): void => {
+    const { voice, subject } = this.sending;
+    if (voice === null) return;
+    this.sent.push({ timestamp: voice.setting.timestamp, subject, voice: voice.id, event });
+  };
   /** What `influence` and `peek` found besides the delta, read by the caller at once. */
   private w = 0;
   private h: Subject<unknown> | null = null;
@@ -203,6 +217,7 @@ class Mixer<I, O> implements Mix<I, O> {
       start,
       this.slotOf,
       this.opts.host,
+      this.send,
     );
     this.voices.push(voice);
     if (spec.locus !== undefined) this.loci++;
@@ -307,6 +322,13 @@ class Mixer<I, O> implements Mix<I, O> {
   drop(subject: I): void {
     this.pose.delete(subject);
     for (const voice of this.voices) voice.subjects.delete(subject);
+  }
+
+  drain<E = unknown>(): Sent<I, E>[] {
+    const out = this.sent;
+    if (out.length === 0) return [];
+    this.sent = [];
+    return out.sort((a, b) => a.timestamp - b.timestamp) as Sent<I, E>[];
   }
 
   // ── internals ──────────────────────────────────────────────────────────────
@@ -423,6 +445,8 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** The weight a voice gives a subject this frame, with the setting already filled in. */
   private weigh(voice: Voice<I, O>, subject: I, now: number, held: Subject<unknown>): number {
+    this.sending.voice = voice;
+    this.sending.subject = subject;
     const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
     const raw =
       (signal ? signal(subject, voice.setting as Setting) : voice.weight) *
