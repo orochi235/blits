@@ -14,7 +14,8 @@ A new API around blits, adopted on Mike's direction. magicsmoke owns its mix int
 and returns blits types: a fault is a `Handle`, its intensity is a number or any `Signal`, and the
 host calls `sync(timestamp)`. The old `createLayer`/`fault`/`update(dt)` API stays on the old engine
 for an A/B comparison, then becomes an alias over the new one. The A/B bar is exact: the same seed and
-intensity script give identical discharges at identical times.
+intensity script give identical discharges at identical times. It links blits locally through a
+`file:` dependency for now, as klieg does, so it is not waiting on a publish.
 
 The shape inside magicsmoke is **recommended to Mike, not approved**: each fault is a subject with
 `intensity`, `surge` (`mul`) and `lift` (`sum`), and `blow` is a `keys` voice; a one-subject mix
@@ -45,8 +46,6 @@ message again when that is approved.
    Exactness against a step change in target matters only once item 1 lands.
 4. **Cheap observability**, which weasel asks for too: magicsmoke's tuning lab wants each voice's
    live weight per subject after fades, to show the `blow` ramp and the fades.
-5. **Publish 0.1.0.** magicsmoke publishes through trusted publishing and can't take a `file:`
-   dependency, so its port lives on a branch until blits is on npm, as klieg's does.
 
 ## Surface magicsmoke imports
 
