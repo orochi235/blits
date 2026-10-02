@@ -697,6 +697,51 @@ describe('lanes give motion voices the pose the general path gives', () => {
     );
   });
 
+  it('for an untimed change made while its voice waits on a start, with only some probed', () => {
+    agree(
+      (m, parts) => {
+        const s = spring<Part, Pose>('crawl', { from: 0, to: crawlTo });
+        m.cue({ patch: s, start: 300 });
+        return {
+          at: (t) => {
+            if (t === 120) for (const part of parts) s.to(part, -part.id);
+          },
+        };
+      },
+      { times, probe: (t, part) => t < 300 || (part.id + Math.round(t)) % 3 !== 0 },
+    );
+  });
+
+  it('for an untimed retarget of a subject not probed last frame, read and projected', () => {
+    const seen: number[][] = [];
+    agree(
+      (m, parts) => {
+        const s = spring<Part, Pose>('crawl', { from: 0, to: 100 });
+        m.cue({ patch: s, stagger: (p) => p.id * 10 });
+        const out: number[] = [];
+        seen.push(out);
+        const b = parts[1] as Part;
+        return {
+          at: (t) => {
+            if (t !== 200) return;
+            s.to(b, -50);
+            out.push((s.read(b) as { value: number }).value, m.project(100).probe(b).crawl);
+          },
+        };
+      },
+      {
+        times: [0, 100, 200, 300],
+        mix: { history: { ms: 2000 } },
+        probe: (t, part) => !(t === 100 && part.id === 1),
+      },
+    );
+    const [off, on] = seen as [number[], number[]];
+    expect(off.length).toBe(2);
+    off.forEach((v, i) => {
+      expect(Object.is(v, on[i]), `value ${i}: ${v} vs ${on[i]}`).toBe(true);
+    });
+  });
+
   it('when a subject is dropped and probed again, and its number goes to another', () => {
     agree(
       (m, parts) => {

@@ -575,6 +575,8 @@ class Mixer<I, O> implements Mix<I, O> {
     );
     if (!Number.isNaN(this.now)) voice.cuedAt = this.now;
     voice.placing = placed;
+    const motion = motionOf<I>(patch);
+    if (motion !== undefined) motion.frame = (subject) => this.frameOf(voice, subject);
     this.voices.push(voice);
     this.index(voice);
     this.version++;
@@ -939,6 +941,18 @@ class Mixer<I, O> implements Mix<I, O> {
     if (voice.keeping) return;
     voice.keeping = true;
     this.lanes?.invalidate();
+  }
+
+  /**
+   * A subject's voice time at the latest frame, where a motion patch places an untimed change and a
+   * `read` with no time; NaN until the voice has started and met the subject.
+   */
+  private frameOf(voice: Voice<I, O>, subject: I): number {
+    if (Number.isNaN(this.now) || voice.state === 'pending') return Number.NaN;
+    const held = voice.subjects.get(subject);
+    if (held === undefined || !held.reaches) return Number.NaN;
+    const now = voice.state === 'done' ? Math.min(this.now, voice.doneAt) : this.now;
+    return voice.elapsedAt(now) - held.delay;
   }
 
   /** Fills a voice's setting for a call to its patch, the weight aside. */

@@ -81,11 +81,11 @@ Per patch form:
   motion patch moves every subject on one axis count; mixed lengths throw. Each subject's current segment (release time, start position, start velocity, target, per
   axis) lives in the patch's arrays; older segments, kept only while the mix keeps history, live in
   per-subject lists. `to`, `push` and `read` work on whichever holds the state, and the general
-  path reads the same state, so there is one copy. A fill samples every subject the voice has
-  met, so on a lane `read(subject)` with no time reports the latest frame rather than the subject's last probe, and
-  a projection applies an untimed change still waiting at that frame. A subject with a change due
-  is left to its next probe, which applies it as the general path would; so is a retarget or push
-  between two probes of one frame, which refills.
+  path reads the same state, so there is one copy. An untimed `to` or `push` takes the
+  subject's voice time at the mix's latest frame, and `read` with no time answers there, on both
+  paths, so a fill sampling subjects the host did not probe changes nothing. A retarget or push
+  between two probes of one frame refills, and a subject probed earlier that frame keeps the
+  value it read.
 
 A stateless `fn` that calls `setting.send` from `at` now sends each frame for every subject it has
 met, not only for the ones probed that frame. Nothing in blits or its consumers does this today. A

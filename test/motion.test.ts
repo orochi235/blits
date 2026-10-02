@@ -205,7 +205,58 @@ describe('the motion form', () => {
     expect(m.probe(a).x).toBe(before);
   });
 
-  it('reads nothing with no time given until a frame has read the subject', () => {
+  it("lands an untimed change on a subject the host skipped at the patch's latest frame", () => {
+    const run = (change: (s: ReturnType<typeof spring<Part, Pose>>, b: Part) => void) => {
+      const s = spring<Part, Pose>('x', { from: 0, to: 100, stiffness: 180, damping: 12 });
+      const m = mix<Part, Pose>(K);
+      m.cue({ patch: s, stagger: (p) => (p.id === 'b' ? 30 : 0) });
+      const a = { id: 'a' };
+      const b = { id: 'b' };
+      m.sync(0);
+      m.probe(a);
+      m.probe(b);
+      m.sync(100);
+      m.probe(a);
+      change(s, b);
+      m.sync(200);
+      return m.probe(b).x;
+    };
+    const untimed = run((s, b) => s.to(b, -50));
+    // The frame is 100, which is voice time 70 for a subject staggered 30.
+    expect(untimed).toBe(run((s, b) => s.to(b, -50, 70)));
+    expect(untimed).not.toBe(run((s, b) => s.to(b, -50, 170)));
+  });
+
+  it("reads with no time at the patch's latest frame, not the subject's last probe", () => {
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: s });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(100);
+    expect(s.read(a)).toEqual(s.read(a, 100));
+    expect(s.read(a)).not.toEqual(s.read(a, 0));
+  });
+
+  it('applies an untimed change at the first read of a subject no frame has met', () => {
+    const run = (change: (s: ReturnType<typeof spring<Part, Pose>>, a: Part) => void) => {
+      const s = spring<Part, Pose>('x', { from: 0, to: 100, stiffness: 180, damping: 12 });
+      const m = mix<Part, Pose>(K);
+      m.cue({ patch: s });
+      const a = { id: 'a' };
+      change(s, a);
+      m.sync(0);
+      m.probe({ id: 'other' });
+      m.sync(150);
+      m.probe(a);
+      m.sync(300);
+      return m.probe(a).x;
+    };
+    expect(run((s, a) => s.to(a, -50))).toBe(run((s, a) => s.to(a, -50, 150)));
+  });
+
+  it('reads nothing with no time given until a frame of its voice has met the subject', () => {
     const s = spring<Part, Pose>('x', { from: 0, to: 100 });
     const a = { id: 'a' };
     s.to(a, 50, 0);

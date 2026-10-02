@@ -13,8 +13,12 @@ version and everything else the patch. Each release lists its changes as **Break
   `'motion'`, so an engine that declares `runs` must list it to run a spring or a glide. A motion
   patch throws when two of its subjects, or a subject's start, target and velocity, or a `to` or
   `push`, move on different numbers of axes. It makes a subject's first stretch at its first `to`
-  or `push` as well as at its first read, so `read(subject, at)` answers from then on; `read` with
-  no time still returns undefined until a frame has read the subject.
+  or `push` as well as at its first read, so `read(subject, at)` answers from then on.
+- An untimed retarget lands at the patch's latest frame, not the subject's next read; `read` with
+  no time reports that frame. Both take the subject's own voice time at the mix's latest frame, so
+  a subject the host did not probe changes at the same moment as one it did. For a subject no frame
+  of its voice has met yet, an untimed change still applies at its first read, and `read` with no
+  time returns undefined.
 
 ### Added
 

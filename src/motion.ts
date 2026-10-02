@@ -36,7 +36,7 @@ interface Segment {
 }
 
 interface Change {
-  /** Voice ms it takes effect at; absent, at the subject's next read. */
+  /** Voice ms it takes effect at; absent, at the subject's next read, for one no frame has met. */
   at?: number;
   to?: number[];
   v?: number[];
@@ -122,11 +122,14 @@ const per = <I, V>(p: PerSubject<I, V>, subject: I): V =>
  */
 export type Moving<I, O, V extends Value> = Patch<I, O, void> & {
   /**
-   * Where `subject` is and how fast it moves at voice time `at`, default its last read. With no
-   * time given, undefined until a frame has read the subject.
+   * Where `subject` is and how fast it moves at voice time `at`, default the mix's latest frame.
+   * With no time given, undefined until a frame of its voice has met the subject.
    */
   read(subject: I, at?: number): Motion<V> | undefined;
-  /** Sets `subject` moving at `velocity`, units per second, from voice time `at`, default its next read. */
+  /**
+   * Sets `subject` moving at `velocity`, units per second, from voice time `at`, default the mix's
+   * latest frame; for a subject no frame of its voice has met yet, its first read.
+   */
   push(subject: I, velocity: V, at?: number): void;
 };
 
@@ -146,10 +149,10 @@ interface Shape<I> {
  * gives it, with earlier stretches a read back may reach and changes not yet applied beside them.
  * The one copy, read by `at` and by a mix's lane alike.
  *
- * After the law, each subject's run of `stride` numbers is its release time, its last live read,
- * its flags, then `x0`, `v0` and `to` per axis. A live sample reads this one buffer and nothing else
- * the patch owns: at 10k springs of one subject each, a buffer per field, a map lookup per sample
- * and the law in an object of its own took a call from 130 ns to 490.
+ * After the law, each subject's run of `stride` numbers is its release time, its flags, then `x0`,
+ * `v0` and `to` per axis. A live sample reads this one buffer and nothing else the patch owns: at
+ * 10k springs of one subject each, a buffer per field, a map lookup per sample and the law in an
+ * object of its own took a call from 130 ns to 490.
  */
 export class Motions<I> {
   private readonly numbers = new Numbers<I>((slot) => this.forget(slot));
@@ -167,6 +170,11 @@ export class Motions<I> {
   vs = new Float64Array(0);
   private readonly pending = new Map<number, Change[]>();
   private readonly older = new Map<number, Segment[]>();
+  /**
+   * The subject's voice time at the mix's latest frame, which an untimed change and a `read` with
+   * no time take; NaN where no frame of the patch's voice has met the subject. Set by the mix.
+   */
+  frame: (subject: I) => number = () => Number.NaN;
 
   constructor(private readonly shape: Shape<I>) {
     this.runs = Float64Array.from(shape.law);
@@ -183,7 +191,7 @@ export class Motions<I> {
     for (const a of [x, v, to]) this.check(a, n);
     if (this.n < 0) {
       this.n = n;
-      this.stride = 3 + 3 * n;
+      this.stride = 2 + 3 * n;
       if (shared.xs.length < n) shared = { xs: new Float64Array(n), vs: new Float64Array(n) };
       this.xs = shared.xs;
       this.vs = shared.vs;
@@ -191,9 +199,7 @@ export class Motions<I> {
     const s = this.numbers.take(subject);
     this.slots.set(subject, s);
     this.grow(s + 1);
-    const b = this.base(s);
-    this.runs[b + 1] = Number.NaN;
-    this.runs[b + 2] = this.shape.scalar(subject) ? SCALAR : 0;
+    this.runs[this.base(s) + 1] = this.shape.scalar(subject) ? SCALAR : 0;
     this.write(s, { at: 0, x0: x, v0: v, to });
     return s;
   }
@@ -208,28 +214,27 @@ export class Motions<I> {
 
   /** The value `at` hands the mix: the first axis for a number, a fresh array otherwise. */
   value(s: number, xs: Float64Array): number | number[] {
-    return ((this.runs[this.base(s) + 2] as number) & SCALAR) !== 0
+    return ((this.runs[this.base(s) + 1] as number) & SCALAR) !== 0
       ? (xs[0] as number)
       : Array.from(xs.subarray(0, this.n));
   }
 
   /**
    * Position and velocity at voice time `t` into `xo` and `vo`. A live read commits every change due
-   * by then, in order, an untimed one at `t`; a projection's read applies them to a copy, an untimed
-   * one at the last live read, and commits nothing.
+   * by then, in order, an untimed one at `t`; a projection's read applies the timed ones to a copy
+   * and commits nothing.
    */
   sample(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
     if (reading.live) {
       const runs = this.runs;
       const b = this.base(s);
-      if ((runs[b + 2] as number) & PENDING) this.commit(s, t);
-      if ((runs[b + 2] as number) & OLDER) this.prune(s);
-      runs[b + 1] = t;
+      if ((runs[b + 1] as number) & PENDING) this.commit(s, t);
+      if ((runs[b + 1] as number) & OLDER) this.prune(s);
       const at = runs[b] as number;
-      if (t < at && (runs[b + 2] as number) & OLDER)
+      if (t < at && (runs[b + 1] as number) & OLDER)
         this.evaluateSegment(this.playing(s, t), t, xo, vo);
       else {
-        const x = b + 3;
+        const x = b + 2;
         this.evaluate(at, runs, x, runs, x + this.n, runs, x + 2 * this.n, t, xo, vo);
       }
       return;
@@ -238,18 +243,18 @@ export class Motions<I> {
     const list = this.pending.get(s);
     if (list !== undefined)
       for (const change of list) {
-        const a = change.at ?? this.last(s);
-        if (!(a <= t)) break;
+        const a = change.at;
+        if (a === undefined || !(a <= t)) break;
         if (a >= seg.at) seg = this.applied(s, seg, change, a);
       }
     this.evaluateSegment(seg, t, xo, vo);
   }
 
-  /** Position and velocity at `at`, default the last live read; undefined until there is one. */
+  /** Position and velocity at `at`, default the latest frame; undefined until there is one. */
   read(subject: I, at?: number): { x: Float64Array; v: Float64Array; s: number } | undefined {
     const s = this.slots.get(subject);
     if (s === undefined) return undefined;
-    const when = at ?? this.last(s);
+    const when = at ?? this.frame(subject);
     if (Number.isNaN(when)) return undefined;
     const x = new Float64Array(this.n);
     const v = new Float64Array(this.n);
@@ -257,11 +262,15 @@ export class Motions<I> {
     return { x, v, s };
   }
 
-  /** Queues a retarget or push for `subject`'s next read at or past its time. */
+  /** Queues a retarget or push, untimed at the latest frame, for `subject`'s next read past its time. */
   change(subject: I, c: Change): void {
     const s = this.slot(subject);
     this.check(c.to, this.n);
     this.check(c.v, this.n);
+    if (c.at === undefined) {
+      const at = this.frame(subject);
+      if (!Number.isNaN(at)) c.at = at;
+    }
     const list = this.pending.get(s);
     if (list === undefined) {
       this.pending.set(s, [c]);
@@ -270,20 +279,13 @@ export class Motions<I> {
     reading.moved++;
   }
 
-  /** Whether a live read of subject `s` at voice time `t` would apply a change. */
-  due(s: number, t: number): boolean {
-    if (((this.runs[this.base(s) + 2] as number) & PENDING) === 0) return false;
-    const first = this.pending.get(s)?.[0];
-    return first !== undefined && (first.at ?? t) <= t;
-  }
-
   private check(a: readonly number[] | undefined, n: number): void {
     if (a !== undefined && a.length !== n)
       throw new Error('blits: a motion patch moves every subject on the same number of axes');
   }
 
   private flag(s: number, bit: number, on: boolean): void {
-    const i = this.base(s) + 2;
+    const i = this.base(s) + 1;
     const flags = this.runs[i] as number;
     this.runs[i] = on ? flags | bit : flags & ~bit;
   }
@@ -296,11 +298,6 @@ export class Motions<I> {
   /** Where subject `s`'s run starts in `runs`. */
   private base(s: number): number {
     return HEAD + s * this.stride;
-  }
-
-  /** The voice time of subject `s`'s last live read, for `read` with no time given. */
-  private last(s: number): number {
-    return this.runs[this.base(s) + 1] as number;
   }
 
   private grow(size: number): void {
@@ -317,16 +314,16 @@ export class Motions<I> {
     const b = this.base(s);
     this.runs[b] = seg.at;
     for (let i = 0; i < n; i++) {
-      this.runs[b + 3 + i] = seg.x0[i] as number;
-      this.runs[b + 3 + n + i] = seg.v0[i] as number;
-      this.runs[b + 3 + 2 * n + i] = seg.to[i] as number;
+      this.runs[b + 2 + i] = seg.x0[i] as number;
+      this.runs[b + 2 + n + i] = seg.v0[i] as number;
+      this.runs[b + 2 + 2 * n + i] = seg.to[i] as number;
     }
   }
 
   /** The stretch subject `s` is playing now, as an object. */
   private latest(s: number): Segment {
     const n = this.n;
-    const x = this.base(s) + 3;
+    const x = this.base(s) + 2;
     return {
       at: this.runs[this.base(s)] as number,
       x0: Array.from(this.runs.subarray(x, x + n)),
@@ -518,7 +515,10 @@ export function spring<I, O, V extends Value = number>(
     mass?: number;
   },
 ): Moving<I, O, V> & {
-  /** Heads `subject` for `target` from voice time `at`, default its next read, keeping its velocity. */
+  /**
+   * Heads `subject` for `target` from voice time `at`, keeping its velocity: by default the mix's
+   * latest frame, or for a subject no frame of its voice has met yet, its first read.
+   */
   to(subject: I, target: V, at?: number): void;
 } {
   const k = opts.stiffness ?? 170;

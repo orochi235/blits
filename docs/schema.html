@@ -556,7 +556,7 @@ s.read(node);                <span class="cm">// { value, velocity }, for handin
 
 const g = glide&lt;Node, Pose&gt;('x', { from: 0, velocity: 1200, ms: 325 });  <span class="cm">// a fling: rests 390 past the start</span></code></pre>
 <ul>
-  <li><b>Time is the voice's</b>, so <code>rate</code> and <code>seek</code> apply. A change takes effect at the voice time it names, or at the subject's next read; naming one is what makes a retarget land the same at any frame rate.</li>
+  <li><b>Time is the voice's</b>, so <code>rate</code> and <code>seek</code> apply. A change takes effect at the voice time it names, or, named none, at the subject's own voice time at the mix's latest frame, whether or not the host probed it then; naming one is what makes a retarget land the same at any frame rate. A subject no frame of its voice has met yet takes an unnamed change at its first read. <code>read</code> with no time answers at that same latest frame.</li>
   <li><b>History is kept to the mix's horizon.</b> Each subject keeps every stretch a read may still reach, so a read earlier than a change finds the stretch that was playing then. A mix without <code>history</code> keeps only the stretch playing now.</li>
   <li><b>A value settles.</b> Within <code>settle</code> (1e-4) of where it heads, and that slow, it lands there exactly, so <code>atRest</code> sees it. <code>settle: 0</code> keeps the curve exact.</li>
   <li><b>The state is the patch's own</b>, per subject, rather than the mix's, because the host retargets through the patch. Cue each one on one voice. A patch moves every subject on the same number of axes, and throws on a subject, a <code>to</code> or a <code>push</code> with another, leaving the subject as it was.</li>

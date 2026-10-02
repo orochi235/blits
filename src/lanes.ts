@@ -230,10 +230,7 @@ export class Lanes<I, O> {
   private subjects: (I | typeof absent | undefined)[] = [];
   /** While a fill runs, so a probe a patch makes from inside it takes the general path. */
   private filling = false;
-  /**
-   * Numbers a fill leaves to the general path: handed out while it ran, or a subject with a motion
-   * change due, which its next probe applies as it would without lanes.
-   */
+  /** Numbers handed out while a fill ran, which that fill did not fill. */
   private readonly late: number[] = [];
   private keeps = false;
   private now = Number.NaN;
@@ -616,8 +613,7 @@ export class Lanes<I, O> {
 
   /**
    * A motion voice's value for a subject, sampled from the patch's state as its `at` would. A probe
-   * this frame already read keeps the value it read, and a subject with a change due is left to its
-   * next probe, so a change applies at the read it would without lanes.
+   * this frame already read keeps the value it read, as the general path's record would.
    */
   private move(
     lane: Lane<I, O>,
@@ -643,11 +639,6 @@ export class Lanes<I, O> {
       if (ms < 0) {
         ms = run.slot(subject);
         lane.data[o + MSLOT] = ms;
-      }
-      if (run.due(ms, elapsed)) {
-        held.probed = Number.NaN;
-        this.late.push(slot);
-        return;
       }
       this.host.horizon(voice, delay);
       run.sample(ms, elapsed, run.xs, run.vs);
