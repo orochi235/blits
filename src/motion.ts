@@ -88,7 +88,7 @@ let slope = false;
 const memo = { dt: Number.NaN, ease: undefined as Curve | undefined, secs: 0, left: 0 };
 
 /** `t` seconds after release, the terms every axis shares, into `timed`. */
-function prepare(law: Float64Array, t: number, ease: Curve | undefined): void {
+function prepare(law: Float64Array, t: number): void {
   switch (law[0]) {
     case UNDER: {
       const zeta = law[2] as number;
@@ -107,25 +107,6 @@ function prepare(law: Float64Array, t: number, ease: Curve | undefined): void {
     case OVER: {
       timed.e = Math.exp((law[2] as number) * t);
       timed.e2 = Math.exp((law[3] as number) * t);
-      return;
-    }
-    case EASED: {
-      const secs = law[2] as number;
-      const u = t / secs;
-      if (u >= 1) {
-        timed.e = 1;
-        timed.e2 = 0;
-        return;
-      }
-      const c = ease as Curve;
-      timed.e = c(u);
-      if (!slope) {
-        timed.e2 = 0;
-        return;
-      }
-      const lo = Math.max(0, u - SPAN);
-      const hi = Math.min(1, u + SPAN);
-      timed.e2 = (c(hi) - c(lo)) / (hi - lo) / secs;
       return;
     }
     default:
@@ -170,11 +151,6 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
       const e2 = timed.e2;
       solved.y = a * e1 + b * e2;
       solved.dy = a * r1 * e1 + b * r2 * e2;
-      return;
-    }
-    case EASED: {
-      solved.y = y0 * (1 - timed.e);
-      solved.dy = -y0 * timed.e2;
       return;
     }
     default: {
@@ -573,27 +549,13 @@ export class Motions<I> {
     const n = this.n;
     const dt = Math.max(0, t - at) / 1000;
     const law = this.runs;
-    if (law[0] === EASED && !slope) {
-      const ease = this.shape.ease as Curve;
-      // Subjects released together share `dt`, so a frame reads a bezier once, not once each.
-      if (dt !== memo.dt || ease !== memo.ease || law[2] !== memo.secs) {
-        const u = dt / (law[2] as number);
-        memo.dt = dt;
-        memo.ease = ease;
-        memo.secs = law[2] as number;
-        memo.left = u >= 1 ? 0 : 1 - ease(u);
-      }
-      const left = memo.left;
-      for (let i = 0; i < n; i++) {
-        const goal = to[g + i] as number;
-        xo[i] = left === 0 ? goal : goal + ((x0[x + i] as number) - goal) * left;
-        vo[i] = 0;
-      }
+    if (law[0] === EASED) {
+      this.eased(dt, law[2] as number, x0, x, to, g, xo, vo);
       return;
     }
     const settle = law[1] as number;
     let still = settle > 0;
-    prepare(law, dt, this.shape.ease);
+    prepare(law, dt);
     for (let i = 0; i < n; i++) {
       const goal = to[g + i] as number;
       solve(law, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
@@ -606,6 +568,41 @@ export class Motions<I> {
         xo[i] = to[g + i] as number;
         vo[i] = 0;
       }
+  }
+
+  /** A tween's stretch, `dt` seconds after release, kept out of `evaluate` so a spring's stays small. */
+  private eased(
+    dt: number,
+    secs: number,
+    x0: ArrayLike<number>,
+    x: number,
+    to: ArrayLike<number>,
+    g: number,
+    xo: Float64Array,
+    vo: Float64Array,
+  ): void {
+    const ease = this.shape.ease as Curve;
+    const u = dt / secs;
+    // Subjects released together share `dt`, so a frame reads a bezier once, not once each.
+    if (dt !== memo.dt || ease !== memo.ease || secs !== memo.secs) {
+      memo.dt = dt;
+      memo.ease = ease;
+      memo.secs = secs;
+      memo.left = u >= 1 ? 0 : 1 - ease(u);
+    }
+    const left = memo.left;
+    let rate = 0;
+    if (slope && u < 1) {
+      const lo = Math.max(0, u - SPAN);
+      const hi = Math.min(1, u + SPAN);
+      rate = (ease(hi) - ease(lo)) / (hi - lo) / secs;
+    }
+    for (let i = 0; i < this.n; i++) {
+      const goal = to[g + i] as number;
+      const gap = (x0[x + i] as number) - goal;
+      xo[i] = left === 0 ? goal : goal + gap * left;
+      vo[i] = -gap * rate;
+    }
   }
 }
 
