@@ -5,7 +5,8 @@
   "description": "Spike: how many subjects x voices each fold strategy fits in a frame. Not an engine; nothing here ships.",
   "scripts": {
     "smoke": "node bench.mjs --smoke",
-    "bench": "node bench.mjs"
+    "bench": "node bench.mjs",
+    "motion": "node motion-bench.mjs"
   },
   "dependencies": {
     "webgpu": "0.6.1"

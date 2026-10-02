@@ -4,29 +4,16 @@
 import { writeFileSync } from 'node:fs';
 import os from 'node:os';
 import { device, floors, setup } from './gpu.mjs';
-import { CHANNELS, dense, flat, makeMix } from './workload.mjs';
+import { ex, f3, load, quantile, time } from './timing.mjs';
+import { CHANNELS, dense, flat, makeMix, sampleOf } from './workload.mjs';
 
 const smoke = process.argv.includes('--smoke');
 const NS = smoke ? [1_000, 100_000] : [1_000, 10_000, 100_000, 1_000_000];
 const VS = smoke ? [1, 8] : [1, 3, 8];
 const FRAMES = smoke ? 60 : 200;
-const WARM = 30;
 const VARIANTS = ['mixer', 'dense', 'gpu', 'gpu+rb', 'gpu+rb2'];
 const CHECK_TIMES = [37, 180, 420, 777, 1234, 5000.5, 12345.6];
 const BUDGETS = [2, 4, 8];
-
-const load = () =>
-  os
-    .loadavg()
-    .map((x) => x.toFixed(2))
-    .join(' ');
-const f3 = (x) => x.toFixed(3).padStart(9);
-const ex = (x) => x.toExponential(1).padStart(8);
-const tick = () => new Promise((r) => setTimeout(r, 0));
-const quantile = (xs, q) => {
-  const s = [...xs].sort((a, b) => a - b);
-  return s[Math.min(s.length - 1, Math.floor(q * s.length))];
-};
 
 console.log(`loadavg at start: ${load()}   (${os.cpus().length} cores)`);
 const { dev, info } = await device();
@@ -38,13 +25,6 @@ console.log(
 console.log(
   `floor: 4-byte copy  -> mapAsync             median ${f3(quantile(fl.map, 0.5))} ms  p95 ${f3(quantile(fl.map, 0.95))} ms`,
 );
-
-/** A spread of subjects to check, and a mix holding only them: a pose depends on i, not on N. */
-function sampleOf(n) {
-  const idx = new Set([0, 1, 2, n - 1]);
-  for (let k = 0; k < 28; k++) idx.add(Math.floor(((k + 0.5) / 28) * n));
-  return [...idx];
-}
 
 /** Max abs error of each variant against the mix, over the sample, at each check time. */
 async function check(n, voices, cpu, g) {
@@ -88,27 +68,6 @@ async function check(n, voices, cpu, g) {
   }
   await g.drain();
   return err;
-}
-
-async function time(step, frames) {
-  let t = 0;
-  // A frame after the first, so first-sight setup in the mix is not what decides the warm-up.
-  await step((t += 16.7));
-  let t0 = performance.now();
-  await step((t += 16.7));
-  const one = performance.now() - t0;
-  const warm = one > 50 ? 3 : WARM;
-  const count = one > 20 ? Math.max(10, Math.min(frames, Math.round(4000 / one))) : frames;
-  for (let f = 0; f < warm; f++) await step((t += 16.7));
-  await tick();
-  const ms = [];
-  for (let f = 0; f < count; f++) {
-    t0 = performance.now();
-    await step((t += 16.7));
-    ms.push(performance.now() - t0);
-  }
-  await tick();
-  return { median: quantile(ms, 0.5), p95: quantile(ms, 0.95), frames: count };
 }
 
 const total = NS.length * VS.length * VARIANTS.length;
