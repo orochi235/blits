@@ -1,16 +1,17 @@
 name: Release
 
-# Publishes on a pushed `v*` tag, with no npm token anywhere: npm's trusted publishing swaps the
+# Publishes on a pushed tag, with no npm token anywhere: npm's trusted publishing swaps the
 # workflow's OIDC token for a short-lived credential, which is why `id-token: write` is the one
-# permission that matters here.
+# permission that matters here. A `v*` tag publishes the engine, `@msb235/blits`; a `quarks-v*` tag
+# publishes the driver in `packages/quarks`, `@msb235/blits-quarks`.
 #
-# npmjs.com holds the trust: `npm trust github @msb235/blits --file release.yml --repo orochi235/blits
-# --allow-publish` registered it, and `npm trust list @msb235/blits` shows it. It can be set before
-# the first publish, so every version, 0.1.0 included, goes out from here.
+# npmjs.com holds the trust, per package: `npm trust github <name> --file release.yml --repo
+# orochi235/blits --allow-publish` registers it, and `npm trust list <name>` shows it. It can be set
+# before a package's first publish, so every version goes out from here.
 
 on:
   push:
-    tags: ['v*']
+    tags: ['v*', 'quarks-v*']
   workflow_dispatch:
 
 permissions:
@@ -49,19 +50,31 @@ jobs:
       - name: Test
         run: npm test
 
+      # Which package this run publishes, from the tag; a run by hand publishes the engine.
+      - name: Pick the package
+        id: pick
+        run: |
+          case "$GITHUB_REF_NAME" in
+            quarks-v*) echo "dir=packages/quarks" >> "$GITHUB_OUTPUT"
+                       echo "version=${GITHUB_REF_NAME#quarks-v}" >> "$GITHUB_OUTPUT" ;;
+            *)         echo "dir=." >> "$GITHUB_OUTPUT"
+                       echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT" ;;
+          esac
+
       # A tag that disagrees with the manifest publishes a version nobody asked for, under a name
       # git will keep pointing somewhere else. Cheaper to stop here than to unpublish.
       - name: The tag has to be the version being published
         if: github.ref_type == 'tag'
+        working-directory: ${{ steps.pick.outputs.dir }}
         run: |
-          tagged="${GITHUB_REF_NAME#v}"
           manifest="$(node -p 'require("./package.json").version')"
-          if [ "$tagged" != "$manifest" ]; then
-            echo "tag says $tagged, package.json says $manifest" >&2
+          if [ "${{ steps.pick.outputs.version }}" != "$manifest" ]; then
+            echo "tag says ${{ steps.pick.outputs.version }}, package.json says $manifest" >&2
             exit 1
           fi
 
       - name: The changelog has a section for this version
+        working-directory: ${{ steps.pick.outputs.dir }}
         run: |
           version="$(node -p 'require("./package.json").version')"
           if ! grep -qx "## $version" CHANGELOG.md; then
@@ -69,9 +82,23 @@ jobs:
             exit 1
           fi
 
-      # `workspaces` only wires up the site for development. npm publishes package.json as it
-      # stands, so the field has to come off this throwaway checkout before packing.
-      - name: Drop the site workspace from the published manifest
+      # The driver pins the engine exactly; a pin npm cannot serve would publish a broken install.
+      - name: The driver's engine is on npm
+        if: steps.pick.outputs.dir == 'packages/quarks'
+        run: |
+          pin="$(node -p 'require("./packages/quarks/package.json").dependencies["@msb235/blits"]')"
+          npm view "@msb235/blits@$pin" version
+
+      # `workspaces` only wires up the site and the driver for development. npm publishes
+      # package.json as it stands, so the field has to come off this throwaway checkout before packing.
+      - name: Drop the workspaces from the engine's published manifest
+        if: steps.pick.outputs.dir == '.'
         run: npm pkg delete workspaces
 
-      - run: npm publish
+      - name: Publish the engine
+        if: steps.pick.outputs.dir == '.'
+        run: npm publish
+
+      - name: Publish the driver
+        if: steps.pick.outputs.dir == 'packages/quarks'
+        run: npm publish -w @msb235/blits-quarks
