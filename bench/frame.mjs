@@ -71,6 +71,11 @@ const rows = [
   ['keys-', 10000, 3],
   ['spring-', 10000, 1],
   ['sparse-', 10000, 1],
+  // Read through `pull` into one array per channel instead of a probe per subject.
+  ['fn^', 10000, 3],
+  ['keys^', 1000, 3],
+  ['keys^', 10000, 3],
+  ['spring^', 10000, 1],
   // A projection made and probed every frame, as a continuous scrub would: 500 ms ahead, and
   // 300 ms back on a mix keeping 5 s of history.
   ['ahead', 1000, 3],
@@ -78,9 +83,13 @@ const rows = [
 ];
 
 const frames = 300;
-for (const [i, [form, n, voices]] of rows.entries()) {
+// Row names after the script, `node bench/frame.mjs keys keys^`, run only those rows.
+const only = process.argv.slice(2);
+const chosen = only.length > 0 ? rows.filter(([form]) => only.includes(form)) : rows;
+for (const [i, [form, n, voices]] of chosen.entries()) {
   const off = form.endsWith('-');
-  const kind = off ? form.slice(0, -1) : form;
+  const pulls = form.endsWith('^');
+  const kind = off || pulls ? form.slice(0, -1) : form;
   const scrub = kind === 'ahead' || kind === 'back';
   const m = mix(K, {
     ...(kind === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {}),
@@ -105,13 +114,23 @@ for (const [i, [form, n, voices]] of rows.entries()) {
   }
   const probed = kind === 'sparse' ? subjects.filter((_, j) => j % 20 === 0) : subjects;
   const scratch = {};
+  const columns = {
+    gain: new Float64Array(n),
+    dark: new Float64Array(n),
+    position: new Float64Array(n * 3),
+    color: new Float64Array(n),
+  };
+  const read = (list) => {
+    if (pulls) m.pull(list, columns);
+    else for (const s of list) m.probe(s, scratch);
+  };
   let t = 0;
   let first = 0;
   for (let f = 0; f < 30; f++) {
     const f0 = performance.now();
     t += 16.7;
     m.sync(t);
-    for (const s of f === 0 ? subjects : probed) m.probe(s, scratch);
+    read(f === 0 ? subjects : probed);
     if (f === 0) first = performance.now() - f0;
   }
   await new Promise((r) => setTimeout(r, 0));
@@ -126,7 +145,7 @@ for (const [i, [form, n, voices]] of rows.entries()) {
     } else {
       t += 16.7;
       m.sync(t);
-      for (const s of probed) m.probe(s, scratch);
+      read(probed);
     }
     each[f] = performance.now() - f0;
   }
@@ -137,7 +156,7 @@ for (const [i, [form, n, voices]] of rows.entries()) {
   await new Promise((r) => setTimeout(r, 0));
   const ns = (ms * 1e6) / (n * voices);
   console.log(
-    `${String(i + 1).padStart(2)}/${rows.length}  ${form.padEnd(7)} N=${String(n).padStart(6)} V=${voices}` +
+    `${String(i + 1).padStart(2)}/${chosen.length}  ${form.padEnd(7)} N=${String(n).padStart(6)} V=${voices}` +
       `  ${ms.toFixed(3).padStart(8)} ms/frame  ${ns.toFixed(0).padStart(5)} ns/subject·voice` +
       `  p99 ${p99.toFixed(3).padStart(8)}  worst ${worst.toFixed(3).padStart(8)}` +
       `  first ${first.toFixed(1).padStart(7)} ms` +

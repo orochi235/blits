@@ -476,6 +476,16 @@ export interface Projection<I, O> {
 }
 
 /**
+ * Arrays for `pull` to write, one per channel it reads: any channel whose value is a number or an
+ * array of numbers.
+ *
+ * @category mix
+ */
+export type Columns<O> = {
+  [K in keyof O as NonNullable<O[K]> extends number | readonly number[] ? K : never]?: Float64Array;
+};
+
+/**
  * The live voices over one kit, folded into one pose per subject per frame.
  *
  * @category mix
@@ -499,6 +509,13 @@ export interface Mix<I, O> {
   rebase(): void;
   /** The merged pose for one subject at the synced frame. */
   probe(subject: I, out?: O): O;
+  /**
+   * Writes each subject's pose into arrays, one per channel, subject by subject in the order given:
+   * what `probe(subject, out)` gives, without a pose object per subject. A channel of `n` numbers
+   * takes `n` places per subject, side by side; one with no value for a subject writes NaN there.
+   * Fastest while every voice runs on a lane. Throws when an array is too short for the subjects.
+   */
+  pull(subjects: Iterable<I>, into: Columns<O>): void;
   /**
    * Reads the mix at another timestamp, on the host's clock, without moving it. Ahead of the last
    * sync it plays what is cued forward; behind it, it needs `history`, and throws for a timestamp

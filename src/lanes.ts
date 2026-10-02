@@ -89,6 +89,29 @@ interface Laned {
   start: readonly number[];
 }
 
+/** One channel `pull` writes: where in the kit, how many numbers a subject, and its rest. */
+export interface Column {
+  key: string;
+  slot: number;
+  axes: number;
+  out: Float64Array;
+  /** The rest, clamped, or NaN for a channel with none. */
+  rest: Float64Array;
+  bounds: readonly [number, number] | undefined;
+}
+
+export function clampRun(
+  out: Float64Array,
+  at: number,
+  n: number,
+  [lo, hi]: readonly [number, number],
+): void {
+  for (let i = at; i < at + n; i++) {
+    const x = out[i] as number;
+    out[i] = x < lo ? lo : x > hi ? hi : x;
+  }
+}
+
 const STRIDE = 7;
 const DELAY = 0;
 const SINCE = 1;
@@ -430,6 +453,29 @@ export class Lanes<I, O> {
     return (
       (this.per[o + LANE_PROBE] as number) > from || (this.per[o + GENERAL_PROBE] as number) > from
     );
+  }
+
+  /**
+   * Writes a subject's values into each column at subject `n`'s places, for a probe that reads from
+   * the lanes while every voice is on one: a channel no lane holds is at rest.
+   */
+  write(slot: number, columns: readonly Column[], n: number): void {
+    const bySlot = this.bySlot;
+    for (let k = 0; k < columns.length; k++) {
+      const c = columns[k] as Column;
+      const axes = c.axes;
+      const out = c.out;
+      const at = n * axes;
+      const ch = bySlot[c.slot];
+      if (ch === undefined) {
+        for (let a = 0; a < axes; a++) out[at + a] = c.rest[a] as number;
+        continue;
+      }
+      const values = ch.values;
+      const base = slot * axes;
+      for (let a = 0; a < axes; a++) out[at + a] = values[base + a] as number;
+      if (c.bounds !== undefined) clampRun(out, at, axes, c.bounds);
+    }
   }
 
   /** Writes a subject's laned values into a pose, each array channel into a new array. */
