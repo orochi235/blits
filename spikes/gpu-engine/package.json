@@ -4,7 +4,6 @@
   "type": "module",
   "description": "Spike: how many subjects x voices each fold strategy fits in a frame. Not an engine; nothing here ships.",
   "scripts": {
-    "check": "node check.mjs",
     "smoke": "node bench.mjs --smoke",
     "bench": "node bench.mjs"
   },

@@ -48,33 +48,39 @@ The `webgpu` package runs Dawn in Node. Its postinstall only strips macOS quaran
 
 Apple M2 Max, Metal (`apple-m2-max`, `metal-3`, not a fallback adapter), Node 26.10.
 
-**Smoke run, under load** (loadavg 12.5 at start, 12.7 at end, on 12 cores: other benchmarks were
-running). CPU rows are inflated by the load; GPU rows less so. The full grid replaces this table.
+**Full grid, 2026-10-01, on fleet node `orochi`** (loadavg 21 at start, 17 at end, on 12 cores, so
+not quiet: CPU rows are inflated and their p95s are wide; GPU rows less so). Median ms per frame;
+`—` is a `mixer` row skipped because its frame would pass a second. Per-row p95 and ns per
+subject·voice are in `results.json` after a run.
 
-| N | V | variant | median ms | p95 ms | ns / subject·voice |
-|---:|---:|---|---:|---:|---:|
-|   1,000 | 1 | mixer   |   0.522 |   0.701 | 522.0 |
-|   1,000 | 1 | dense   |   0.051 |   0.116 |  50.6 |
-|   1,000 | 1 | gpu     |   0.251 |   0.638 | 250.8 |
-|   1,000 | 1 | gpu+rb  |   0.237 |   0.477 | 237.1 |
-|   1,000 | 1 | gpu+rb2 |   0.115 |   0.524 | 115.1 |
-|   1,000 | 8 | mixer   |   4.840 |   6.219 | 605.1 |
-|   1,000 | 8 | dense   |   0.296 |   0.604 |  37.0 |
-|   1,000 | 8 | gpu     |   0.239 |   0.917 |  29.9 |
-|   1,000 | 8 | gpu+rb  |   0.248 |   0.896 |  31.0 |
-|   1,000 | 8 | gpu+rb2 |   0.138 |   0.252 |  17.3 |
-| 100,000 | 1 | mixer   |  95.585 | 117.160 | 955.9 |
-| 100,000 | 1 | dense   |   3.817 |   5.173 |  38.2 |
-| 100,000 | 1 | gpu     |   0.260 |   1.023 |   2.6 |
-| 100,000 | 1 | gpu+rb  |   0.355 |   1.769 |   3.6 |
-| 100,000 | 1 | gpu+rb2 |   0.204 |   0.476 |   2.0 |
-| 100,000 | 8 | mixer   | 402.831 | 621.778 | 503.5 |
-| 100,000 | 8 | dense   |  29.166 |  46.916 |  36.5 |
-| 100,000 | 8 | gpu     |   0.284 |   0.485 |   0.4 |
-| 100,000 | 8 | gpu+rb  |   0.368 |   0.821 |   0.5 |
-| 100,000 | 8 | gpu+rb2 |   0.205 |   0.806 |   0.3 |
+| N × V | `mixer` | `dense` | `gpu` | `gpu+rb` | `gpu+rb2` |
+|---|---:|---:|---:|---:|---:|
+|     1,000 × 1 |    0.517 |    0.039 |    0.226 |    0.258 |    0.114 |
+|     1,000 × 3 |    1.510 |    0.106 |    0.241 |    0.264 |    0.126 |
+|     1,000 × 8 |    4.341 |    0.276 |    0.243 |    0.295 |    0.169 |
+|    10,000 × 1 |    6.802 |    0.369 |    0.198 |    0.255 |    0.118 |
+|    10,000 × 3 |   23.520 |    1.341 |    0.256 |    0.267 |    0.120 |
+|    10,000 × 8 |   78.265 |    2.855 |    0.273 |    0.356 |    0.170 |
+|   100,000 × 1 |  110.967 |    4.058 |    0.220 |    0.349 |    0.165 |
+|   100,000 × 3 |  161.574 |   11.346 |    0.299 |    0.406 |    0.209 |
+|   100,000 × 8 |  483.913 |   33.191 |    0.357 |    0.457 |    0.234 |
+| 1,000,000 × 1 |        — |   44.660 |    0.353 |    1.408 |    0.653 |
+| 1,000,000 × 3 |        — |  147.610 |    0.556 |    1.973 |    0.658 |
+| 1,000,000 × 8 |        — |  489.374 |    0.809 |    2.040 |    0.871 |
 
-Max abs error against the mix: `dense` ≤ 1.9e-6, the shader ≤ 3.2e-5. Both are float32 rounding;
+Largest N × V whose median fits the budget:
+
+| Variant | 2 ms | 4 ms | 8 ms |
+|---|---:|---:|---:|
+| `mixer` | 3,000 | 3,000 | 10,000 |
+| `dense` | 30,000 | 80,000 | 100,000 |
+| `gpu` | 8,000,000 | 8,000,000 | 8,000,000 |
+| `gpu+rb` | 3,000,000 | 8,000,000 | 8,000,000 |
+| `gpu+rb2` | 8,000,000 | 8,000,000 | 8,000,000 |
+
+8,000,000 is the largest row in the grid, not a ceiling the GPU reached.
+
+Max abs error against the mix: `dense` ≤ 1.9e-6, the shader ≤ 3.9e-5. Both are float32 rounding;
 the shader's is larger because it also does its arithmetic, including time, in float32.
 
 Floors, measured before the grid: an empty submit awaited through `onSubmittedWorkDone` takes
