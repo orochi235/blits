@@ -133,12 +133,25 @@ export function last<V>(opts?: { lerp?: (a: V, b: V, u: number) => V }): Channel
 }
 
 /**
+ * `n` copies of `v` in an array the engine stores as doubles from the start, so a copy of it, and
+ * every fraction written into that copy, keeps one element kind: a pose's arrays then look alike to
+ * every fold, whichever path made them.
+ */
+function doubles(n: number, v: number): number[] {
+  if (n === 0) return [];
+  const a = [0.5];
+  for (let i = 1; i < n; i++) a.push(0.5);
+  for (let i = 0; i < n; i++) a[i] = v;
+  return a;
+}
+
+/**
  * Vec3 position, premultiplied light: one channel's arithmetic applied down an axis list.
  *
  * @category channel
  */
 export function vec(n: number, of: Channel<number>): Channel<number[]> {
-  const rest = of.rest === undefined ? undefined : new Array<number>(n).fill(of.rest);
+  const rest = of.rest === undefined ? undefined : doubles(n, of.rest);
   const scale = of.scale;
   const fill = of.rest ?? 0;
   const lerpTo = (out: number[] | undefined, a: number[], b: number[], u: number): number[] => {

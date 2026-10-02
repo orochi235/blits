@@ -1,4 +1,4 @@
-import { clampWeight, envelope, passesOf, place, placed } from './clock.js';
+import { clampWeight, envelope, passAt, passesOf, phaseAt } from './clock.js';
 import { type Curve, curve } from './easing.js';
 import { type LaneHost, Lanes } from './lanes.js';
 import { motionOf, noFrame } from './motion.js';
@@ -268,6 +268,8 @@ export class Voice<I, O> {
   /** For a motion patch, the hook it was given to ask the mix for its subjects' voice time. */
   frame: ((subject: I) => number) | null = null;
   readonly ease: Curve | undefined;
+  /** How many passes its `loop` plays, worked out once. */
+  readonly passes: number;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: Setting<unknown>;
   /** Every subject this voice has been asked about, so a handover knows when it is finished. */
@@ -311,6 +313,7 @@ export class Voice<I, O> {
         )
       : undefined;
     this.ease = fade.ease === undefined ? undefined : curve(fade.ease);
+    this.passes = passesOf(spec.loop);
     this.setting = {
       timestamp: 0,
       dt: 0,
@@ -660,7 +663,7 @@ class Mixer<I, O> implements Mix<I, O> {
         this.version++;
       }
       const period = voice.patch.period;
-      const passes = passesOf(voice.spec.loop);
+      const passes = voice.passes;
       if (voice.state === 'live' && period > 0 && Number.isFinite(passes)) {
         const end = period * passes + voice.latest;
         // The fade starts when the last pass ended, not at the frame that noticed, so it plays the
@@ -1163,7 +1166,7 @@ class Mixer<I, O> implements Mix<I, O> {
     else if (Number.isFinite(voice.outAt)) outAt = voice.outAt;
     else {
       const period = voice.patch.period;
-      const passes = passesOf(voice.spec.loop);
+      const passes = voice.passes;
       if (period > 0 && Number.isFinite(passes)) {
         const t = voice.timeAt(period * passes + voice.latest);
         if (Number.isFinite(t)) outAt = Math.max(start, t);
@@ -1563,9 +1566,9 @@ class Mixer<I, O> implements Mix<I, O> {
     const elapsed = voice.elapsedAt(now) - held.delay;
     if (elapsed < 0) return null;
 
-    place(elapsed, voice.patch.period, passesOf(voice.spec.loop));
-    const phase = placed.phase;
-    const pass = placed.pass;
+    const period = voice.patch.period;
+    const phase = phaseAt(elapsed, period, voice.passes);
+    const pass = passAt(elapsed, period, voice.passes);
 
     this.prime(voice, held, now, elapsed, pass);
     const setting = voice.setting;

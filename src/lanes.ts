@@ -1,5 +1,5 @@
 import { foldNumber, type Numeric, numericOf } from './channels.js';
-import { clampWeight, passesOf, place, placed } from './clock.js';
+import { clampWeight, passAt, phaseAt } from './clock.js';
 import type { Subject, Voice } from './mixer.js';
 import { type Motions, motionOf } from './motion.js';
 import { absent, Numbers } from './numbers.js';
@@ -85,6 +85,8 @@ interface Laned {
   rest: number;
   axes: number;
   values: Float64Array;
+  /** An array channel's rest, which a copy starts from as the general path's does. */
+  start: readonly number[];
 }
 
 const STRIDE = 7;
@@ -98,6 +100,14 @@ const MSLOT = 4;
 /** For a motion voice, the last fill that sampled the subject, and the voice's seeks then. */
 const SAMPLED = 5;
 const SEEKS = 6;
+
+const SLOT = 6;
+const FILLED = 0;
+const SEEN = 1;
+const IDLE = 2;
+const LANE_PROBE = 3;
+const GENERAL_PROBE = 4;
+const LANE_FILL = 5;
 
 /**
  * Below what share of its subjects probed last frame a lane stops filling, and above what share it
@@ -135,6 +145,12 @@ class Lane<I, O> {
   idle = false;
   /** The lines it goes idle and busy at, by its patch form. */
   readonly line: { stop: number; start: number };
+  /**
+   * A `fn` or `keys` voice naming one subject, which shares nothing across subjects for a fill to
+   * save, so it stays idle: its subject takes the general path, and the channel stays a lane for
+   * the voices that do share.
+   */
+  readonly solo: boolean;
   /**
    * When the voice started playing on its lane, in the order lanes did; 0 while it waits. A subject
    * checked against every lane up to some epoch has met this one if this one's is no later.
@@ -178,6 +194,8 @@ class Lane<I, O> {
   constructor(readonly voice: Voice<I, O>) {
     this.motion = motionOf<I>(voice.patch);
     this.line = voice.built !== null ? SPARSE.keys : SPARSE.other;
+    this.solo = voice.named !== null && voice.named.size === 1 && this.motion === undefined;
+    this.idle = this.solo;
   }
 
   positionOf(slot: number): number {
@@ -232,6 +250,8 @@ class Lane<I, O> {
 export class Lanes<I, O> {
   private readonly numbers: Numbers<I>;
   private lanes: Lane<I, O>[] = [];
+  /** The lanes a fill visits: every lane but the solo ones. */
+  private runs: Lane<I, O>[] = [];
   /** The lanes over every subject that have started playing, by epoch. */
   private dense: Lane<I, O>[] = [];
   private readonly byId = new Map<number, Lane<I, O>>();
@@ -244,21 +264,15 @@ export class Lanes<I, O> {
   whole = false;
   private cap = 0;
   private epochs = 0;
-  /** Per subject number, which fill last wrote it; 0 for none. */
-  private filled = new Uint32Array(0);
-  private fills = 0;
-  /** Per subject number, the latest lane epoch a probe of it has checked it against. */
-  private seen = new Uint32Array(0);
-  /** Per subject number, how many idle lanes reach it; a probe reads lanes only where none do. */
-  private idle = new Uint32Array(0);
   /**
-   * Per subject number, the probe count at its last probe read from the lanes and at its last probe
-   * folded by the general path, and the fill the former read: which of a lane and a record holds
-   * the weight `weightOf` reports.
+   * Per subject number, `SLOT` numbers side by side, so a probe reads one place in memory: which
+   * fill last wrote it (0 for none); the latest lane epoch a probe of it has checked it against;
+   * how many idle lanes reach it, since a probe reads lanes only where none do; and the probe count
+   * at its last probe read from the lanes and at its last probe folded by the general path, with
+   * the fill the former read, which say whether a lane or a record holds what `weightOf` reports.
    */
-  private laneProbe = new Float64Array(0);
-  private generalProbe = new Float64Array(0);
-  private laneFill = new Uint32Array(0);
+  private per = new Float64Array(0);
+  private fills = 0;
   private probes = 0;
   /**
    * Each subject by number as last probed, held from that probe until the next fill uses it, so a
@@ -267,6 +281,8 @@ export class Lanes<I, O> {
    * once no lane remains.
    */
   private subjects: (I | typeof absent | undefined)[] = [];
+  /** Whether a probe has held a subject since the last fill let them go. */
+  private holding = false;
   /** While a fill runs, so a probe a patch makes from inside it takes the general path. */
   private filling = false;
   /**
@@ -315,12 +331,12 @@ export class Lanes<I, O> {
     const slot = this.numbers.take(subject);
     this.live++;
     this.grow(slot + 1);
-    this.filled[slot] = 0;
-    this.seen[slot] = 0;
-    this.idle[slot] = 0;
-    this.laneProbe[slot] = 0;
-    this.generalProbe[slot] = 0;
-    this.laneFill[slot] = 0;
+    this.per[slot * SLOT + FILLED] = 0;
+    this.per[slot * SLOT + SEEN] = 0;
+    this.per[slot * SLOT + IDLE] = 0;
+    this.per[slot * SLOT + LANE_PROBE] = 0;
+    this.per[slot * SLOT + GENERAL_PROBE] = 0;
+    this.per[slot * SLOT + LANE_FILL] = 0;
     if (this.filling) this.late.push(slot);
     return slot;
   }
@@ -341,10 +357,12 @@ export class Lanes<I, O> {
   }
 
   private reported(lane: Lane<I, O>, slot: number): number | undefined {
-    if (!((this.laneProbe[slot] as number) > (this.generalProbe[slot] as number))) return undefined;
+    const o = slot * SLOT;
+    if (!((this.per[o + LANE_PROBE] as number) > (this.per[o + GENERAL_PROBE] as number)))
+      return undefined;
     const p = lane.positionOf(slot);
     if (p < 0) return undefined;
-    return lane.data[p * STRIDE + (this.laneFill[slot] === this.fills ? WEIGHT : PROBED)];
+    return lane.data[p * STRIDE + (this.per[o + LANE_FILL] === this.fills ? WEIGHT : PROBED)];
   }
 
   /**
@@ -362,10 +380,16 @@ export class Lanes<I, O> {
       this.frameProbes = this.probes;
       this.fresh = true;
     }
-    if (slot >= 0 && !this.probedThisFrame(slot)) this.distinct++;
     if (this.filling) return this.general(slot);
     if (this.qualifiedVersion !== version) this.requalify(version);
     if (this.laned.length === 0) return this.general(slot);
+    // Only solo lanes: nothing to fill, and every subject takes the general path.
+    if (this.runs.length === 0) {
+      if (slot < 0) return false;
+      if ((this.per[slot * SLOT + SEEN] as number) < this.epochs) this.meet(slot, subject);
+      return this.general(slot);
+    }
+    if (slot >= 0 && !this.probedThisFrame(slot)) this.distinct++;
     if (this.filledAt !== now || this.filledVersion !== version || this.moved !== reading.moved) {
       this.fillAll(now, version);
       // A patch call in that fill made kept state, which took its voice off its lane: fill without it.
@@ -376,30 +400,36 @@ export class Lanes<I, O> {
       }
     }
     if (slot < 0) return false;
-    this.subjects[slot] = subject;
     const probe = ++this.probes;
-    let lane = this.filled[slot] === this.fills && this.idle[slot] === 0;
-    if ((this.seen[slot] as number) < this.epochs && this.meet(slot, subject)) {
+    const per = this.per;
+    const o = slot * SLOT;
+    let lane = per[o + FILLED] === this.fills && per[o + IDLE] === 0;
+    if ((per[o + SEEN] as number) < this.epochs && this.meet(slot, subject)) {
       // The fill ran before the subject had these positions, so it reads the general path all frame.
-      this.filled[slot] = 0;
+      per[o + FILLED] = 0;
       lane = false;
     }
     if (lane) {
-      this.laneProbe[slot] = probe;
-      this.laneFill[slot] = this.fills;
-    } else this.generalProbe[slot] = probe;
+      per[o + LANE_PROBE] = probe;
+      per[o + LANE_FILL] = this.fills;
+      this.subjects[slot] = subject;
+      this.holding = true;
+    } else per[o + GENERAL_PROBE] = probe;
     return lane;
   }
 
   private general(slot: number): false {
-    if (slot >= 0) this.generalProbe[slot] = ++this.probes;
+    if (slot >= 0) this.per[slot * SLOT + GENERAL_PROBE] = ++this.probes;
     return false;
   }
 
   /** Whether a probe has read the subject since the frame began, on either path. */
   private probedThisFrame(slot: number): boolean {
     const from = this.frameProbes;
-    return (this.laneProbe[slot] as number) > from || (this.generalProbe[slot] as number) > from;
+    const o = slot * SLOT;
+    return (
+      (this.per[o + LANE_PROBE] as number) > from || (this.per[o + GENERAL_PROBE] as number) > from
+    );
   }
 
   /** Writes a subject's laned values into a pose, each array channel into a new array. */
@@ -412,9 +442,10 @@ export class Lanes<I, O> {
         pose[ch.name] = ch.values[slot] as number;
         continue;
       }
-      const arr: number[] = [];
+      // Made as the general path makes it, a copy of rest, so poses from either path share a shape.
+      const arr = [...ch.start];
       const base = slot * axes;
-      for (let a = 0; a < axes; a++) arr.push(ch.values[base + a] as number);
+      for (let a = 0; a < axes; a++) arr[a] = ch.values[base + a] as number;
       pose[ch.name] = arr;
     }
   }
@@ -424,8 +455,8 @@ export class Lanes<I, O> {
    * checked and that reaches it. True when any did, so the probe takes the general path.
    */
   private meet(slot: number, subject: I): boolean {
-    const from = this.seen[slot] as number;
-    this.seen[slot] = this.epochs;
+    const from = this.per[slot * SLOT + SEEN] as number;
+    this.per[slot * SLOT + SEEN] = this.epochs;
     let met = false;
     const dense = this.dense;
     for (let i = dense.length - 1; i >= 0; i--) {
@@ -434,7 +465,7 @@ export class Lanes<I, O> {
       const held = this.host.meet(lane.voice, subject);
       if (!held.reaches) continue;
       lane.add(slot, held);
-      if (lane.idle) this.idle[slot] = (this.idle[slot] as number) + 1;
+      if (lane.idle) this.reach(slot, 1);
       met = true;
     }
     const naming = this.host.naming(subject);
@@ -443,40 +474,31 @@ export class Lanes<I, O> {
         const lane = this.byId.get(voice.id);
         if (lane === undefined || lane.epoch <= from || lane.positionOf(slot) >= 0) continue;
         lane.add(slot, this.host.meet(voice, subject));
-        if (lane.idle) this.idle[slot] = (this.idle[slot] as number) + 1;
+        if (lane.idle) this.reach(slot, 1);
         met = true;
       }
     return met;
   }
 
+  /** Counts an idle lane more or fewer reaching a subject. */
+  private reach(slot: number, by: number): void {
+    const i = slot * SLOT + IDLE;
+    this.per[i] = (this.per[i] as number) + by;
+  }
+
   private forget(slot: number): void {
     this.live--;
     for (const lane of this.lanes) lane.remove(slot);
-    if (slot < this.filled.length) this.filled[slot] = 0;
+    if (slot < this.cap) this.per[slot * SLOT + FILLED] = 0;
     this.subjects[slot] = undefined;
   }
 
   private grow(size: number): void {
     if (size <= this.cap) return;
     const cap = Math.max(size, this.cap * 2, 64);
-    const filled = new Uint32Array(cap);
-    filled.set(this.filled);
-    this.filled = filled;
-    const seen = new Uint32Array(cap);
-    seen.set(this.seen);
-    this.seen = seen;
-    const idle = new Uint32Array(cap);
-    idle.set(this.idle);
-    this.idle = idle;
-    const laneFill = new Uint32Array(cap);
-    laneFill.set(this.laneFill);
-    this.laneFill = laneFill;
-    const laneProbe = new Float64Array(cap);
-    laneProbe.set(this.laneProbe);
-    this.laneProbe = laneProbe;
-    const generalProbe = new Float64Array(cap);
-    generalProbe.set(this.generalProbe);
-    this.generalProbe = generalProbe;
+    const per = new Float64Array(cap * SLOT);
+    per.set(this.per);
+    this.per = per;
     for (const ch of this.laned) {
       const values = new Float64Array(cap * ch.axes);
       values.set(ch.values);
@@ -507,6 +529,7 @@ export class Lanes<I, O> {
       kept.push(lane);
     }
     this.lanes = kept;
+    this.runs = kept.filter((l) => !l.solo);
     this.dense = kept
       .filter((l) => l.voice.named === null && l.epoch > 0)
       .sort((a, b) => a.epoch - b.epoch);
@@ -528,6 +551,7 @@ export class Lanes<I, O> {
         rest: typeof rest === 'number' ? rest : (rest[0] as number),
         axes: n.axes,
         values: new Float64Array(this.cap * n.axes),
+        start: typeof rest === 'number' ? [] : rest,
       };
       this.laned.push(ch);
       this.bySlot[slot] = ch;
@@ -568,13 +592,16 @@ export class Lanes<I, O> {
       const share = this.live > 0 ? this.lastDistinct / this.live : 1;
       // One pass, deciding and running each lane, since a mix of many small lanes pays per visit.
       let busy = false;
-      for (const lane of this.lanes) {
+      for (const lane of this.runs) {
         if (decide) {
-          // A lane with few subjects, such as one naming its own, goes by the share of all probed.
+          // A lane with few subjects, such as one naming its own, goes by the share of all probed;
+          // one with a single subject shares nothing a fill could save, as a solo lane does not.
           const line = lane.line;
-          if (lane.list.length >= 64) this.pace(lane);
-          else if (lane.idle ? share >= line.start || lane.list.length === 0 : share < line.stop)
-            this.flip(lane);
+          const n = lane.list.length;
+          if (n >= 64) this.pace(lane);
+          else if (n === 1 && lane.motion === undefined) {
+            if (!lane.idle) this.rest(lane);
+          } else if (lane.idle ? share >= line.start : share < line.stop) this.flip(lane);
         }
         if (lane.idle) continue;
         if (!busy) {
@@ -584,9 +611,12 @@ export class Lanes<I, O> {
         this.run(lane);
       }
       // With every lane idle there was nothing to fill, and no subject reads a lane this frame.
-      if (busy) this.filled.fill(this.fills, 0, size);
-      for (const slot of this.late) this.filled[slot] = 0;
-      this.subjects.fill(undefined, 0, size);
+      if (busy) for (let s = 0; s < size; s++) this.per[s * SLOT + FILLED] = this.fills;
+      for (const slot of this.late) this.per[slot * SLOT + FILLED] = 0;
+      if (this.holding) {
+        this.subjects.fill(undefined, 0, size);
+        this.holding = false;
+      }
       this.moved = reading.moved;
     } finally {
       this.filling = false;
@@ -610,8 +640,8 @@ export class Lanes<I, O> {
     let probed = 0;
     for (let p = this.fills % step; p < list.length; p += step) {
       const slot = list[p] as number;
-      const a = this.laneProbe[slot] as number;
-      const b = this.generalProbe[slot] as number;
+      const a = this.per[slot * SLOT + LANE_PROBE] as number;
+      const b = this.per[slot * SLOT + GENERAL_PROBE] as number;
       if ((a > from && a <= to) || (b > from && b <= to)) probed++;
       looked++;
     }
@@ -631,9 +661,9 @@ export class Lanes<I, O> {
     const data = lane.data;
     for (let p = 0; p < list.length; p++) {
       const slot = list[p] as number;
-      this.idle[slot] = (this.idle[slot] as number) + 1;
+      this.reach(slot, 1);
       // A probe read this subject from the last fill, which this lane's weight stays from.
-      if (this.laneFill[slot] === this.fills - 1) {
+      if (this.per[slot * SLOT + LANE_FILL] === this.fills - 1) {
         const o = p * STRIDE;
         data[o + PROBED] = data[o + WEIGHT] as number;
       }
@@ -642,7 +672,7 @@ export class Lanes<I, O> {
 
   private wake(lane: Lane<I, O>): void {
     lane.idle = false;
-    for (const slot of lane.list) this.idle[slot] = (this.idle[slot] as number) - 1;
+    for (const slot of lane.list) this.reach(slot, -1);
   }
 
   private subjectAt(slot: number): I | typeof absent {
@@ -650,6 +680,7 @@ export class Lanes<I, O> {
     if (subject === undefined) {
       subject = this.numbers.subject(slot);
       this.subjects[slot] = subject;
+      this.holding = true;
     }
     return subject;
   }
@@ -666,7 +697,7 @@ export class Lanes<I, O> {
     lane.fade = 1;
     const elapsed = voice.elapsedAt(this.now);
     const period = voice.patch.period;
-    const passes = passesOf(voice.spec.loop);
+    const passes = voice.passes;
     const list = lane.list;
     for (let p = 0; p < list.length; p++) {
       this.one(lane, p, list[p] as number, elapsed, period, passes);
@@ -688,7 +719,8 @@ export class Lanes<I, O> {
     const data = lane.data;
     const o = p * STRIDE;
     // A probe read this subject from the last fill: keep the weight it read for `weightOf`.
-    if (this.laneFill[slot] === this.fills - 1) data[o + PROBED] = data[o + WEIGHT] as number;
+    if (this.per[slot * SLOT + LANE_FILL] === this.fills - 1)
+      data[o + PROBED] = data[o + WEIGHT] as number;
     const delay = data[o + DELAY] as number;
     const elapsed = elapsedNow - delay;
     if (elapsed < 0) {
@@ -696,11 +728,10 @@ export class Lanes<I, O> {
       return;
     }
     if (!lane.placed || !Object.is(elapsed, lane.placedAt)) {
-      place(elapsed, period, passes);
       lane.placed = true;
       lane.placedAt = elapsed;
-      lane.phase = placed.phase;
-      lane.pass = placed.pass;
+      lane.phase = phaseAt(elapsed, period, passes);
+      lane.pass = passAt(elapsed, period, passes);
     }
     const since = data[o + SINCE] as number;
     if (!lane.flat && (!lane.weighed || !Object.is(since, lane.weighedSince))) {
@@ -818,8 +849,8 @@ export class Lanes<I, O> {
     const o = p * STRIDE;
     if (
       (held.probed === this.now && held.seeks === lane.data[o + SEEKS]) ||
-      !((this.laneProbe[slot] as number) > this.frameProbes) ||
-      lane.data[o + SAMPLED] !== this.laneFill[slot]
+      !((this.per[slot * SLOT + LANE_PROBE] as number) > this.frameProbes) ||
+      lane.data[o + SAMPLED] !== this.per[slot * SLOT + LANE_FILL]
     )
       return;
     held.delta = lane.deltas[p] ?? null;

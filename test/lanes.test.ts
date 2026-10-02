@@ -1165,6 +1165,21 @@ describe('lanes go idle below a share of subjects probed and fill again above it
     );
   });
 
+  it('for a fn voice per subject beside a keys voice over all of them', () => {
+    agree(
+      (m, parts) => {
+        m.cue({ patch: pulse(), stagger: (p) => p.id * 4 });
+        for (const part of parts.slice(0, 30)) m.cue({ patch: wave(), subjects: [part] });
+        return {
+          at: (t) => {
+            if (t === 400) m.cue({ patch: wave(), subjects: [parts[35] as Part], weight: 0.5 });
+          },
+        };
+      },
+      { times: frames, parts: 40, probe },
+    );
+  });
+
   it('for a keys and a fn voice on one channel, one idle while the other fills', () => {
     agree(
       (m) => {
