@@ -214,12 +214,10 @@ function read(
 const lastRead: { wrote: unknown } = { wrote: undefined };
 
 /**
- * Whose arrays a read may write into: per track, a bit set while `out` holds an array an earlier read
- * interpolated into, never a stop's or a base's. Only the one record `out` belongs to may carry it.
+ * Arrays a reader lets keyed reads interpolate into, by track. Each only ever holds what a read made,
+ * never a stop's or a base's, and a delta read through it is good until the next read through it.
  */
-export interface Owner {
-  owned: number;
-}
+export type Scratch = (unknown[] | undefined)[];
 
 /**
  * Per track, the in-place form of the `lerp` a read takes, where it is the mix channel's own and the
@@ -249,7 +247,7 @@ export function readKeys(
   /** Per channel, how fast a retargeted subject was moving, units per ms. */
   slopes?: Record<string, unknown>,
   intos?: readonly (LerpInto | undefined)[],
-  owner?: Owner,
+  scratch?: Scratch,
 ): Record<string, unknown> {
   const period = built.period;
   for (let i = 0; i < built.tracks.length; i++) {
@@ -258,8 +256,7 @@ export function readKeys(
     const shifted =
       delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
     const perMs = slopes?.[track.channel];
-    // Past 30 tracks there is no bit to keep, so those channels allocate per read.
-    const bit = owner === undefined || i > 30 ? 0 : 1 << i;
+    const into = scratch === undefined ? undefined : intos?.[i];
     lastRead.wrote = undefined;
     const value = read(
       track,
@@ -268,13 +265,11 @@ export function readKeys(
       lerps?.[i],
       period === 0 ? undefined : perMs,
       period,
-      bit === 0 ? undefined : intos?.[i],
-      bit !== 0 && (owner as Owner).owned & bit ? (out[track.channel] as unknown[]) : undefined,
+      into,
+      into === undefined ? undefined : (scratch as Scratch)[i],
     );
-    if (bit !== 0) {
-      const o = owner as Owner;
-      o.owned = value !== undefined && value === lastRead.wrote ? o.owned | bit : o.owned & ~bit;
-    }
+    if (into !== undefined && value === lastRead.wrote)
+      (scratch as Scratch)[i] = value as unknown[];
     if (value !== undefined) out[track.channel] = value;
     else if (out[track.channel] !== undefined) out[track.channel] = undefined;
   }

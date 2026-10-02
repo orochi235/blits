@@ -1,5 +1,5 @@
 import { type Curve, curve } from './easing.js';
-import { type Built, builtOf, intosOf, readKeys } from './patch.js';
+import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
 import type {
@@ -54,8 +54,8 @@ interface Subject<S> {
   probed: number;
   /** The last delta computed this frame, handed back to a repeat probe unchanged. */
   delta: Record<string, unknown> | null;
-  /** Per keyed channel, a bit set while `delta` holds an array a read made and may write again. */
-  owned: number;
+  /** The phase `delta` was read at, to read it again once its voice's scratch has moved on. */
+  phase: number;
   /** Stop 0 for a `from: 'current'` voice, taken the first frame this subject is seen. */
   base?: Record<string, unknown>;
   /** The pose's velocity per channel at that moment, units per ms, so the first segment leaves at it. */
@@ -107,7 +107,7 @@ function stub(): Subject<unknown> {
     ticks: 0,
     probed: Number.NaN,
     delta: null,
-    owned: 0,
+    phase: 0,
     kept,
     keep: keeper(kept),
     voice: null,
@@ -242,6 +242,13 @@ class Voice<I, O> {
   readonly lerps: Channel<unknown>['lerp'][];
   /** Per keyed channel, the in-place form of the lerp its stops take, where it has one. */
   readonly intos: ReturnType<typeof intosOf> | undefined;
+  /**
+   * The arrays keyed reads interpolate into: one set for the voice, not one per subject, since 10k
+   * subjects' worth of long-lived arrays costs more in cache misses than allocating them did.
+   */
+  scratch: Scratch = [];
+  /** The record whose delta holds `scratch`'s arrays; any other's must be read again to be handed out. */
+  holder: Subject<unknown> | null = null;
   readonly ease: Curve | undefined;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: Setting<unknown>;
@@ -359,6 +366,8 @@ class Voice<I, O> {
     const w = v as unknown as Record<string, unknown>;
     w.subjects = new Filled<I, Subject<unknown>>(fill);
     w.setting = { ...this.setting, keep: keeper(new Map()), send: noSend };
+    v.scratch = [];
+    v.holder = null;
     v.log = null;
     if (controls) {
       v.anchorNow = controls.anchorNow;
@@ -1070,7 +1079,7 @@ class Mixer<I, O> implements Mix<I, O> {
       keep: keeper(kept),
       probed: Number.NaN,
       delta: null,
-      owned: 0,
+      phase: 0,
       base: h.base === undefined ? undefined : structuredClone(h.base),
       slope: h.slope === undefined ? undefined : structuredClone(h.slope),
       snaps: undefined,
@@ -1121,7 +1130,7 @@ class Mixer<I, O> implements Mix<I, O> {
       ticks: 0,
       probed: Number.NaN,
       delta: null,
-      owned: 0,
+      phase: 0,
       kept,
       keep: keeper(kept),
       voice,
@@ -1351,7 +1360,7 @@ class Mixer<I, O> implements Mix<I, O> {
       ticks: 0,
       probed: Number.NaN,
       delta: null,
-      owned: 0,
+      phase: 0,
       kept,
       keep: keeper(kept),
       voice,
@@ -1432,6 +1441,7 @@ class Mixer<I, O> implements Mix<I, O> {
     held.weight = weight;
 
     if (held.probed === now && held.delta) {
+      if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
       this.w = weight;
       return held.delta;
     }
@@ -1455,24 +1465,8 @@ class Mixer<I, O> implements Mix<I, O> {
 
     let delta: Record<string, unknown>;
     if (voice.built) {
-      let base: Record<string, unknown> | undefined;
-      if (voice.spec.from === 'current') {
-        if (held.base === undefined) {
-          held.base = this.baseFor(voice, subject);
-          held.slope = this.slopeFor(voice, subject);
-        }
-        base = held.base;
-      }
-      delta = readKeys(
-        voice.built,
-        phase,
-        held.delta ?? {},
-        base,
-        voice.lerps as never,
-        held.slope,
-        voice.intos,
-        held,
-      );
+      held.phase = phase;
+      delta = this.keyed(voice, subject, held);
     } else {
       delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
     }
@@ -1487,6 +1481,31 @@ class Mixer<I, O> implements Mix<I, O> {
       return null;
     }
     this.w = weight;
+    return delta;
+  }
+
+  /** Reads a keys voice's stops at `held.phase` into the subject's delta, through the voice's scratch. */
+  private keyed(voice: Voice<I, O>, subject: I, held: Subject<unknown>): Record<string, unknown> {
+    let base: Record<string, unknown> | undefined;
+    if (voice.spec.from === 'current') {
+      if (held.base === undefined) {
+        held.base = this.baseFor(voice, subject);
+        held.slope = this.slopeFor(voice, subject);
+      }
+      base = held.base;
+    }
+    const delta = readKeys(
+      voice.built as Built,
+      held.phase,
+      held.delta ?? {},
+      base,
+      voice.lerps as never,
+      held.slope,
+      voice.intos,
+      voice.scratch,
+    );
+    held.delta = delta;
+    if (voice.scratch.length > 0) voice.holder = held;
     return delta;
   }
 
@@ -1841,6 +1860,7 @@ class Mixer<I, O> implements Mix<I, O> {
         setting.state = held.state;
         setting.keep = held.keep;
         this.w = this.weigh(voice, subject, now, held);
+        if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
         return held.delta;
       }
     }
