@@ -65,11 +65,12 @@ const rows = [
   ['spring', 10000, 1],
   ['springs', 1000, 1],
   ['springs', 10000, 1],
-  // Lanes fill every numbered subject; this probes 5% of 10k each frame, where that costs more.
+  // Lanes fill every subject they have met: this one probes all 10k once, then 5% each frame.
   ['sparse', 10000, 1],
   // The same rows with lanes off, for the comparison in one run.
   ['keys-', 10000, 3],
   ['spring-', 10000, 1],
+  ['sparse-', 10000, 1],
   // A projection made and probed every frame, as a continuous scrub would: 500 ms ahead, and
   // 300 ms back on a mix keeping 5 s of history.
   ['ahead', 1000, 3],
@@ -110,7 +111,7 @@ for (const [i, [form, n, voices]] of rows.entries()) {
     const f0 = performance.now();
     t += 16.7;
     m.sync(t);
-    for (const s of probed) m.probe(s, scratch);
+    for (const s of f === 0 ? subjects : probed) m.probe(s, scratch);
     if (f === 0) first = performance.now() - f0;
   }
   await new Promise((r) => setTimeout(r, 0));
