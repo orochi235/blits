@@ -924,7 +924,6 @@ class Mixer<I, O> implements Mix<I, O> {
     if (typeof spec.weight === 'function') return false;
     if (spec.locus !== undefined || spec.from === 'current') return false;
     if (voice.out?.rest) return false;
-    if (patch.form === 'motion') return false;
     if (patch.state !== undefined || patch.step !== undefined) return false;
     if (this.opts.history?.inputs && patch.reads !== undefined && patch.reads.length > 0)
       return false;

@@ -187,6 +187,14 @@ export class Motions<I> {
     const list = this.pending.get(s);
     if (list === undefined) this.pending.set(s, [c]);
     else list.push(c);
+    reading.moved++;
+  }
+
+  /** Whether a live read of subject `s` at voice time `t` would apply a change. */
+  due(s: number, t: number): boolean {
+    if (this.pending.size === 0) return false;
+    const first = this.pending.get(s)?.[0];
+    return first !== undefined && (first.at ?? t) <= t;
   }
 
   private check(a: readonly number[] | undefined, n: number): void {

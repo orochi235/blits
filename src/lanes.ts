@@ -1,6 +1,7 @@
 import { foldNumber, type Numeric, numericOf } from './channels.js';
 import { clampWeight, passesOf, place, placed } from './clock.js';
 import type { Subject, Voice } from './mixer.js';
+import { type Motions, motionOf } from './motion.js';
 import { absent, Numbers } from './numbers.js';
 import { readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
@@ -139,8 +140,12 @@ class Lane<I, O> {
   fade = 1;
   /** Whether the voice has no fade in or out this fill, so its envelope is 1 for every subject. */
   flat = false;
+  /** A motion patch's state, which the lane samples in place of calling the patch. */
+  readonly motion: Motions<I> | undefined;
 
-  constructor(readonly voice: Voice<I, O>) {}
+  constructor(readonly voice: Voice<I, O>) {
+    this.motion = motionOf<I>(voice.patch);
+  }
 
   positionOf(slot: number): number {
     return this.at.get(slot) ?? -1;
@@ -225,11 +230,19 @@ export class Lanes<I, O> {
   private subjects: (I | typeof absent | undefined)[] = [];
   /** While a fill runs, so a probe a patch makes from inside it takes the general path. */
   private filling = false;
-  /** Numbers handed out while a fill ran, which that fill did not fill. */
+  /**
+   * Numbers a fill leaves to the general path: handed out while it ran, or a subject with a motion
+   * change due, which its next probe applies as it would without lanes.
+   */
   private readonly late: number[] = [];
   private keeps = false;
   private now = Number.NaN;
   private filledAt = Number.NaN;
+  /** `reading.moved` at the last fill, so a retarget or push between two probes refills. */
+  private moved = 0;
+  /** The `now` of the latest probe, and the probe count before its first, to tell a probe this frame. */
+  private frameAt = Number.NaN;
+  private frameProbes = 0;
   private filledVersion = Number.NaN;
   private qualifiedVersion = Number.NaN;
 
@@ -289,18 +302,19 @@ export class Lanes<I, O> {
    * this frame, which is where it is first seen; so does one probed from inside a fill.
    */
   prepare(slot: number, subject: I, now: number, version: number): boolean {
-    if (this.filling) {
-      if (slot >= 0) this.generalProbe[slot] = ++this.probes;
-      return false;
+    if (now !== this.frameAt) {
+      this.frameAt = now;
+      this.frameProbes = this.probes;
     }
+    if (this.filling) return this.general(slot);
     if (this.qualifiedVersion !== version) this.requalify(version);
-    if (this.laned.length === 0) return false;
-    if (this.filledAt !== now || this.filledVersion !== version) {
+    if (this.laned.length === 0) return this.general(slot);
+    if (this.filledAt !== now || this.filledVersion !== version || this.moved !== reading.moved) {
       this.fillAll(now, version);
       // A patch call in that fill made kept state, which took its voice off its lane: fill without it.
       if (this.qualifiedVersion !== version) {
         this.requalify(version);
-        if (this.laned.length === 0) return false;
+        if (this.laned.length === 0) return this.general(slot);
         this.fillAll(now, version);
       }
     }
@@ -318,6 +332,17 @@ export class Lanes<I, O> {
       this.laneFill[slot] = this.fills;
     } else this.generalProbe[slot] = probe;
     return lane;
+  }
+
+  private general(slot: number): false {
+    if (slot >= 0) this.generalProbe[slot] = ++this.probes;
+    return false;
+  }
+
+  /** Whether a probe has read the subject since the frame began, on either path. */
+  private probedThisFrame(slot: number): boolean {
+    const from = this.frameProbes;
+    return (this.laneProbe[slot] as number) > from || (this.generalProbe[slot] as number) > from;
   }
 
   /** Writes a subject's laned values into a pose, each array channel into a new array. */
@@ -475,6 +500,7 @@ export class Lanes<I, O> {
       this.filled.fill(this.fills, 0, size);
       for (const slot of this.late) this.filled[slot] = 0;
       this.subjects.fill(undefined, 0, size);
+      this.moved = reading.moved;
     } finally {
       this.filling = false;
       this.late.length = 0;
@@ -568,6 +594,10 @@ export class Lanes<I, O> {
     const subject = this.subjectAt(slot);
     if (subject === absent) return;
     const held = lane.records[p] as Subject<unknown>;
+    if (lane.motion !== undefined) {
+      this.move(lane, lane.motion, o, slot, subject, held, elapsed, delay, w);
+      return;
+    }
     const kept = reading.kept;
     host.ready(voice, subject, held, elapsed, lane.pass, w);
     host.horizon(voice, delay);
@@ -582,6 +612,51 @@ export class Lanes<I, O> {
     if (this.keeps) host.after(voice, held);
     if (reading.kept !== kept && !voice.keeping) host.kept(voice);
     if (w > 0) this.foldDelta(lane, slot, delta, w);
+  }
+
+  /**
+   * A motion voice's value for a subject, sampled from the patch's state as its `at` would. A probe
+   * this frame already read keeps the value it read, and a subject with a change due is left to its
+   * next probe, so a change applies at the read it would without lanes.
+   */
+  private move(
+    lane: Lane<I, O>,
+    run: Motions<I>,
+    o: number,
+    slot: number,
+    subject: I,
+    held: Subject<unknown>,
+    elapsed: number,
+    delay: number,
+    w: number,
+  ): void {
+    const voice = lane.voice;
+    const ch = lane.chans[0] as Laned;
+    let delta = held.delta;
+    if (
+      delta === null ||
+      held.probed !== this.now ||
+      held.seeks !== voice.seeks ||
+      !this.probedThisFrame(slot)
+    ) {
+      let ms = lane.data[o + MSLOT] as number;
+      if (ms < 0) {
+        ms = run.slot(subject);
+        lane.data[o + MSLOT] = ms;
+      }
+      if (run.due(ms, elapsed)) {
+        held.probed = Number.NaN;
+        this.late.push(slot);
+        return;
+      }
+      this.host.horizon(voice, delay);
+      run.sample(ms, elapsed, run.xs, run.vs);
+      delta = { [ch.name]: run.value(ms, run.xs) };
+      held.delta = delta;
+      held.probed = this.now;
+      held.seeks = voice.seeks;
+    }
+    if (w > 0) this.foldInto(ch, slot, delta[ch.name], w);
   }
 
   /** For a keys voice: the delta's value for each channel it writes, read once per phase. */

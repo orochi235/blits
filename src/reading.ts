@@ -15,4 +15,6 @@ export const reading = {
    * without looking into the record it was made on.
    */
   kept: 0,
+  /** How many retargets and pushes any motion patch has taken, so a mix can tell one came mid-frame. */
+  moved: 0,
 };

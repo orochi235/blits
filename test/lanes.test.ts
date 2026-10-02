@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kit, max, mul, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
+import { glide, spring } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 import type { Handle, Mix, MixOptions } from '../src/types.js';
 
@@ -595,6 +596,170 @@ describe('lanes stay identical where a fill and a probe interleave', () => {
         if (t === 120) b.fade({ over: 2000 });
         for (const p of parts) look(p, [a, b]);
       }
+    });
+  });
+});
+
+describe('lanes give motion voices the pose the general path gives', () => {
+  const crawlTo = (p: Part) => 10 * p.id;
+
+  it('for a spring over every subject, retargeted and pushed, timed and untimed, mid-flight', () => {
+    agree(
+      (m, parts) => {
+        const s = spring<Part, Pose>('crawl', {
+          from: 0,
+          to: crawlTo,
+          stiffness: 180,
+          damping: 12,
+        });
+        m.cue({ patch: s, fade: { in: 50 } });
+        return {
+          at: (t) => {
+            if (t === 120) s.to(parts[2] as Part, -40);
+            if (t === 333) s.push(parts[3] as Part, 900);
+            if (t === 500) s.to(parts[1] as Part, 5, 700);
+            if (t === 999) s.push(parts[0] as Part, -300, 1200);
+          },
+        };
+      },
+      { times },
+    );
+  });
+
+  it('for a vector spring and a glide on separate channels', () => {
+    agree(
+      (m, parts) => {
+        const g = glide<Part, Pose>('dark', { from: 0.1, velocity: 3, ms: 250 });
+        m.cue({
+          patch: spring<Part, Pose, number[]>('position', {
+            from: (p) => [p.id, 0, 0],
+            to: [0, 5, -5],
+            settle: 0,
+          }),
+        });
+        m.cue({ patch: g });
+        return {
+          at: (t) => {
+            if (t === 333) g.push(parts[4] as Part, -2);
+            if (t === 999) g.push(parts[1] as Part, 7, 1200);
+          },
+        };
+      },
+      { times },
+    );
+  });
+
+  it('for a spring per subject named with subjects, beside one over every subject', () => {
+    agree(
+      (m, parts) => {
+        const each = parts.map((part) => spring<Part, Pose>('crawl', { from: 0, to: part.id }));
+        parts.forEach((part, i) => {
+          m.cue({ patch: each[i] as ReturnType<typeof spring<Part, Pose>>, subjects: [part] });
+        });
+        m.cue({
+          patch: spring<Part, Pose>('dark', { from: crawlTo, to: 0 }),
+          stagger: (p) => p.id * 40,
+        });
+        return {
+          at: (t) => {
+            if (t === 120) each[2]?.to(parts[2] as Part, -4);
+            if (t === 500) each[5]?.push(parts[5] as Part, 30, 600);
+          },
+        };
+      },
+      { times },
+    );
+  });
+
+  it('when only some subjects are probed, with changes waiting on unprobed ones', () => {
+    agree(
+      (m, parts) => {
+        const s = spring<Part, Pose>('crawl', {
+          from: 0,
+          to: crawlTo,
+          stiffness: 180,
+          damping: 12,
+        });
+        const g = glide<Part, Pose>('dark', { from: (p) => p.id, velocity: 1 });
+        m.cue({ patch: s });
+        m.cue({ patch: g });
+        return {
+          at: (t) => {
+            for (const part of parts) {
+              if ((part.id + t) % 4 === 0) s.to(part, -part.id);
+              if ((part.id + t) % 5 === 1) g.push(part, part.id - 3);
+              if ((part.id + t) % 7 === 2) s.push(part, 50, t + 30);
+            }
+          },
+        };
+      },
+      { times, parts: 12, probe: (t, part) => (part.id + Math.round(t)) % 3 !== 0 },
+    );
+  });
+
+  it('when a subject is dropped and probed again, and its number goes to another', () => {
+    agree(
+      (m, parts) => {
+        const s = spring<Part, Pose>('crawl', { from: crawlTo, to: 0 });
+        m.cue({ patch: s });
+        return {
+          at: (t) => {
+            if (t === 120) s.to(parts[0] as Part, 30);
+            if (t === 333) m.drop(parts[0] as Part);
+            if (t === 500) m.drop(parts[3] as Part);
+            if (t === 999) parts.push({ id: 6 });
+          },
+        };
+      },
+      { times },
+    );
+  });
+
+  it('when a spring changes between two probes of one frame', () => {
+    script((m, parts, look) => {
+      const s = spring<Part, Pose>('crawl', { from: 0, to: crawlTo });
+      const h = m.cue({ patch: s });
+      m.sync(0);
+      for (const p of parts) look(p, [h]);
+      m.sync(100);
+      look(parts[0] as Part, [h]);
+      s.to(parts[0] as Part, 50);
+      s.to(parts[1] as Part, -50);
+      look(parts[0] as Part, [h]);
+      look(parts[1] as Part, [h]);
+      look(parts[2] as Part, [h]);
+      h.weight = 0.5;
+      s.push(parts[2] as Part, 400);
+      look(parts[0] as Part, [h]);
+      look(parts[2] as Part, [h]);
+      m.cue({ patch: spring<Part, Pose>('dark', { from: 1, to: 0 }) });
+      look(parts[2] as Part, [h]);
+      m.sync(200);
+      for (const p of parts) look(p, [h]);
+    });
+  });
+
+  it('under history, read back through projections', () => {
+    const runs = [false, true].map((lanes) => {
+      const m = mix<Part, Pose>(K, { lanes, history: { ms: 2000 } });
+      const s = spring<Part, Pose>('crawl', { from: 0, to: 100, stiffness: 180, damping: 12 });
+      m.cue({ patch: s });
+      const parts = Array.from({ length: 3 }, (_, id) => ({ id }));
+      const out: number[] = [];
+      for (const t of [0, 50, 100, 150, 200, 250]) {
+        if (t === 100) s.to(parts[0] as Part, -30);
+        if (t === 150) s.push(parts[1] as Part, 200, 120);
+        m.sync(t);
+        for (const part of parts) if (part.id !== 2 || t % 100 === 0) out.push(m.probe(part).crawl);
+      }
+      for (const back of [220, 120, 60])
+        for (const part of parts) out.push(m.project(back).probe(part).crawl);
+      return out;
+    });
+    const [off, on] = runs as [number[], number[]];
+    expect(on.length).toBe(off.length);
+    off.forEach((v, i) => {
+      expect(Object.is(v, on[i]), `value ${i}: ${v} vs ${on[i]}`).toBe(true);
     });
   });
 });
