@@ -80,10 +80,10 @@ const timed = { e: 0, e2: 0, cos: 0, sin: 0 };
 /** How far a tween's slope is read either side of `u`, for an easing that is only a function. */
 const SPAN = 1e-4;
 /**
- * Whether a sample wants velocity. A tween's costs two more reads of its easing, which a mix
- * sampling a value never uses; `read` and a retarget do.
+ * Whether an evaluation wants a tween's velocity, which costs two more reads of its easing. Only
+ * `read` reports it; a mix and a retarget never use it.
  */
-let slope = true;
+let slope = false;
 /** The last tween sample's time, curve and length, and the share of the way it had left to go. */
 const memo = { dt: Number.NaN, ease: undefined as Curve | undefined, secs: 0, left: 0 };
 
@@ -310,15 +310,6 @@ export class Motions<I> {
    * a projection's read applies the timed ones to a copy and commits nothing.
    */
   sample(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
-    slope = false;
-    try {
-      this.sampleValue(s, t, xo, vo);
-    } finally {
-      slope = true;
-    }
-  }
-
-  private sampleValue(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
     if (reading.live) {
       const runs = this.runs;
       const b = this.base(s);
@@ -366,7 +357,9 @@ export class Motions<I> {
     if (Number.isNaN(when)) return undefined;
     const x = new Float64Array(this.n);
     const v = new Float64Array(this.n);
+    slope = true;
     this.peek(s, when, x, v);
+    slope = false;
     return { x, v, s };
   }
 

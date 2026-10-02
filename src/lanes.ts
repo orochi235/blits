@@ -902,7 +902,7 @@ export class Lanes<I, O> {
       lane.deltas[p] = null;
       data[o + SAMPLED] = this.fills;
       data[o + SEEKS] = voice.seeks;
-      if (w > 0) this.foldInto(ch, slot, ch.axes === 1 ? run.xs[0] : run.xs, w);
+      if (w > 0) this.foldRun(ch, slot, run.xs, w);
       return;
     }
     lane.deltas[p] = delta;
@@ -975,6 +975,14 @@ export class Lanes<I, O> {
       ch = chans[i] as Laned;
       this.foldInto(ch, slot, delta[ch.name], w);
     }
+  }
+
+  /** Folds a motion sample's axes, kept apart from `foldInto` so neither reads two array kinds. */
+  private foldRun(ch: Laned, slot: number, xs: Float64Array, w: number): void {
+    const values = ch.values;
+    const base = slot * ch.axes;
+    for (let a = 0; a < ch.axes; a++)
+      values[base + a] = foldNumber(ch.op, values[base + a] as number, xs[a] as number, w);
   }
 
   private foldInto(ch: Laned, slot: number, value: unknown, w: number): void {
