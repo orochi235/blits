@@ -36,7 +36,10 @@ interface Segment {
 }
 
 interface Change {
-  /** Voice ms it takes effect at; absent, at the subject's next read, for one no frame has met. */
+  /**
+   * Voice ms it takes effect at; absent, until the subject's next read stamps it with that read's
+   * time, for one made while no frame had met the subject.
+   */
   at?: number;
   to?: number[];
   v?: number[];
@@ -220,9 +223,9 @@ export class Motions<I> {
   }
 
   /**
-   * Position and velocity at voice time `t` into `xo` and `vo`. A live read commits every change due
-   * by then, in order, an untimed one at `t`; a projection's read applies the timed ones to a copy
-   * and commits nothing.
+   * Position and velocity at voice time `t` into `xo` and `vo`. A live read stamps every untimed
+   * change with `t` and commits every change due by then, in time order; a projection's read applies
+   * the timed ones to a copy and commits nothing.
    */
   sample(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
     if (reading.live) {
@@ -239,15 +242,29 @@ export class Motions<I> {
       }
       return;
     }
-    let seg = this.playing(s, t);
-    const list = this.pending.get(s);
-    if (list !== undefined)
-      for (const change of list) {
-        const a = change.at;
-        if (a === undefined || !(a <= t)) break;
-        if (a >= seg.at) seg = this.applied(s, seg, change, a);
-      }
-    this.evaluateSegment(seg, t, xo, vo);
+    this.peek(s, t, xo, vo);
+  }
+
+  /**
+   * Whether a live `sample` at `t` would leave the subject's state as it is: nothing to stamp or
+   * commit by then, and nothing older than `reading.horizon` to let go of.
+   */
+  quiet(s: number, t: number): boolean {
+    const runs = this.runs;
+    const b = this.base(s);
+    const flags = runs[b + 1] as number;
+    if (flags & PENDING) {
+      const list = this.pending.get(s) as Change[];
+      const first = (list[0] as Change).at;
+      if (first === undefined || first <= t || (list[list.length - 1] as Change).at === undefined)
+        return false;
+    }
+    if (flags & OLDER) {
+      const list = this.older.get(s) as Segment[];
+      const next = list.length > 1 ? (list[1] as Segment).at : (runs[b] as number);
+      if (next <= reading.horizon) return false;
+    }
+    return true;
   }
 
   /** Position and velocity at `at`, default the latest frame; undefined until there is one. */
@@ -258,11 +275,14 @@ export class Motions<I> {
     if (Number.isNaN(when)) return undefined;
     const x = new Float64Array(this.n);
     const v = new Float64Array(this.n);
-    this.evaluateSegment(this.playing(s, when), when, x, v);
+    this.peek(s, when, x, v);
     return { x, v, s };
   }
 
-  /** Queues a retarget or push, untimed at the latest frame, for `subject`'s next read past its time. */
+  /**
+   * Queues a retarget or push, untimed at the latest frame, for `subject`'s next read past its time.
+   * The queue keeps the changes with a time in time order, ahead of any still waiting for one.
+   */
   change(subject: I, c: Change): void {
     const s = this.slot(subject);
     this.check(c.to, this.n);
@@ -275,8 +295,33 @@ export class Motions<I> {
     if (list === undefined) {
       this.pending.set(s, [c]);
       this.flag(s, PENDING, true);
-    } else list.push(c);
+    } else if (c.at === undefined) list.push(c);
+    else this.queue(list, c, c.at);
     reading.moved++;
+  }
+
+  /** Files a change with a time after every one due by then, ahead of those still waiting for one. */
+  private queue(list: Change[], c: Change, at: number): void {
+    let i = list.length;
+    while (i > 0) {
+      const before = (list[i - 1] as Change).at;
+      if (before !== undefined && before <= at) break;
+      i--;
+    }
+    list.splice(i, 0, c);
+  }
+
+  /** Every change due by `t` applied to a copy of the stretch playing then, committing nothing. */
+  private peek(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
+    let seg = this.playing(s, t);
+    const list = this.pending.get(s);
+    if (list !== undefined)
+      for (const change of list) {
+        const a = change.at;
+        if (a === undefined || !(a <= t)) break;
+        if (a >= seg.at) seg = this.applied(s, seg, change, a);
+      }
+    this.evaluateSegment(seg, t, xo, vo);
   }
 
   private check(a: readonly number[] | undefined, n: number): void {
@@ -365,9 +410,18 @@ export class Motions<I> {
 
   private commit(s: number, t: number): void {
     const list = this.pending.get(s) as Change[];
+    // The first read of a subject no frame had met: those waiting for a time take this one.
+    if ((list[list.length - 1] as Change).at === undefined) {
+      let i = list.length;
+      while (i > 0 && (list[i - 1] as Change).at === undefined) i--;
+      for (const c of list.splice(i)) {
+        c.at = t;
+        this.queue(list, c, t);
+      }
+    }
     while (list.length > 0) {
       const change = list[0] as Change;
-      const a = change.at ?? t;
+      const a = change.at as number;
       if (a > t) break;
       list.shift();
       this.insert(s, this.applied(s, this.playing(s, a), change, a));

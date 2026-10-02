@@ -285,7 +285,41 @@ describe('the motion form', () => {
       expect(m.probe(b).x).toBe(-50);
     });
 
+    it(`reads an untimed push the moment it is made, lanes ${lanes}`, () => {
+      const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+      const m = mix<Part, Pose>(K, { lanes });
+      m.cue({ patch: s });
+      const b = { id: 'b' };
+      for (const t of [0, 100]) {
+        m.sync(t);
+        m.probe(b);
+      }
+      s.push(b, 2000);
+      expect(s.read(b)?.velocity).toBe(2000);
+      s.to(b, -10, 50);
+      expect(s.read(b)?.velocity).toBe(2000);
+      expect(s.read(b, 99)?.velocity).toBeLessThan(0);
+    });
   }
+
+  it('applies an untimed change and a later timed one in time order, not the order made', () => {
+    const run = (untimedFirst: boolean) => {
+      const g = glide<Part, Pose>('x', { from: 0, velocity: 300 });
+      const m = mix<Part, Pose>(K);
+      m.cue({ patch: g });
+      const a = { id: 'a' };
+      if (untimedFirst) g.push(a, 900);
+      g.push(a, -500, 219);
+      if (!untimedFirst) g.push(a, 900);
+      const out: number[] = [];
+      for (const t of [102, 308]) {
+        m.sync(t);
+        out.push(m.probe(a).x);
+      }
+      return out;
+    };
+    expect(run(false)).toEqual(run(true));
+  });
 
   it('forgets a subject the mix drops, so a string subject starts afresh', () => {
     const s = spring<string, Pose>('x', { from: 0, to: 100 });

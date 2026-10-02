@@ -784,6 +784,64 @@ describe('lanes give motion voices the pose the general path gives', () => {
     });
   });
 
+  it('reads an untimed push to a subject the host did not probe since', () => {
+    const seen = [false, true].map((lanes) => {
+      const s = spring<Part, Pose>('crawl', { from: 0, to: 100 });
+      const m = mix<Part, Pose>(K, { lanes });
+      m.cue({ patch: s });
+      const [a, b] = [{ id: 0 }, { id: 1 }];
+      for (const t of [0, 100]) {
+        m.sync(t);
+        m.probe(a);
+        m.probe(b);
+      }
+      s.push(b, 2000);
+      m.sync(116);
+      m.probe(a);
+      return s.read(b);
+    });
+    expect(seen[1]).toEqual(seen[0]);
+  });
+
+  it('for an untimed change on an unmet subject made after a later timed one', () => {
+    script((m, parts, look) => {
+      const g = glide<Part, Pose>('crawl', { from: 0, velocity: 300 });
+      m.cue({ patch: g });
+      const [a, b] = parts as [Part, Part];
+      g.push(a, -500, 219);
+      g.push(a, 900);
+      m.sync(102);
+      look(a);
+      look(b);
+      m.sync(234);
+      look(b);
+      m.sync(308);
+      look(a);
+    });
+  });
+
+  for (const history of [false, true])
+    it(`seeked back past a retarget due while its subject went unprobed, history ${history}`, () => {
+      const seen = [false, true].map((lanes) => {
+        const s = spring<Part, Pose>('crawl', { from: 0, to: 100 });
+        const m = mix<Part, Pose>(K, { lanes, history: history ? { ms: 5000 } : undefined });
+        const h = m.cue({ patch: s });
+        const [a, b] = [{ id: 0 }, { id: 1 }];
+        for (const t of [0, 500]) {
+          m.sync(t);
+          m.probe(a);
+          m.probe(b);
+        }
+        s.to(a, -50, 300);
+        m.sync(600);
+        m.probe(b);
+        h.seek(200);
+        m.sync(616);
+        return [m.probe(a).crawl, m.probe(b).crawl];
+      });
+      expect(seen[1]).toEqual(seen[0]);
+    });
+
   it('under history, read back through projections', () => {
     const runs = [false, true].map((lanes) => {
       const m = mix<Part, Pose>(K, { lanes, history: { ms: 2000 } });

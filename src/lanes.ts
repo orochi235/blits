@@ -87,7 +87,7 @@ interface Laned {
   values: Float64Array;
 }
 
-const STRIDE = 5;
+const STRIDE = 7;
 const DELAY = 0;
 const SINCE = 1;
 /** The weight the last fill gave the subject. */
@@ -95,6 +95,9 @@ const WEIGHT = 2;
 /** The weight a fill gave it the last time a probe read it from the lane. */
 const PROBED = 3;
 const MSLOT = 4;
+/** For a motion voice, the last fill that sampled the subject, and the voice's seeks then. */
+const SAMPLED = 5;
+const SEEKS = 6;
 
 /**
  * What one laned voice keeps per subject it reaches, by position in `list`. A subject gets a
@@ -112,11 +115,13 @@ class Lane<I, O> {
   epoch = 0;
   /**
    * Per position, `STRIDE` numbers side by side, so one subject's are one read from memory: its
-   * delay, its `since`, its weight at the last fill, its weight at the last fill a probe read, and a
-   * motion patch's own number for it (-1 until asked).
+   * delay, its `since`, its weight at the last fill, its weight at the last fill a probe read, a
+   * motion patch's own number for it (-1 until asked), and the fill and seeks of its last sample.
    */
   data = new Float64Array(0);
   records: (Subject<unknown> | undefined)[] = [];
+  /** For a motion voice, per position, the delta its last sample made. */
+  deltas: (Record<string, unknown> | null)[] = [];
   /** What a keys read writes into, reused across subjects. */
   readonly delta: Record<string, unknown> = {};
   /** The arrays keyed reads interpolate into: the lane's own, so a probe mid-fill cannot move them. */
@@ -167,7 +172,9 @@ class Lane<I, O> {
     this.data[o + WEIGHT] = 0;
     this.data[o + PROBED] = 0;
     this.data[o + MSLOT] = -1;
+    this.data[o + SAMPLED] = -1;
     this.records[p] = held;
+    this.deltas[p] = null;
   }
 
   /** A subject lost its number: the last position moves into its place. */
@@ -181,10 +188,12 @@ class Lane<I, O> {
       this.at.set(moved, p);
       this.data.copyWithin(p * STRIDE, last * STRIDE, (last + 1) * STRIDE);
       this.records[p] = this.records[last];
+      this.deltas[p] = this.deltas[last] ?? null;
     }
     this.list.pop();
     this.at.delete(slot);
     this.records[last] = undefined;
+    this.deltas[last] = null;
   }
 }
 
@@ -230,7 +239,10 @@ export class Lanes<I, O> {
   private subjects: (I | typeof absent | undefined)[] = [];
   /** While a fill runs, so a probe a patch makes from inside it takes the general path. */
   private filling = false;
-  /** Numbers handed out while a fill ran, which that fill did not fill. */
+  /**
+   * Numbers a fill left to the general path: handed out while it ran, or with a voice whose call
+   * the general path has to make.
+   */
   private readonly late: number[] = [];
   private keeps = false;
   private now = Number.NaN;
@@ -476,8 +488,10 @@ export class Lanes<I, O> {
   private leave(lane: Lane<I, O>): void {
     for (let p = 0; p < lane.list.length; p++) {
       const rec = lane.records[p];
-      const w = this.reported(lane, lane.list[p] as number);
+      const slot = lane.list[p] as number;
+      const w = this.reported(lane, slot);
       if (rec !== undefined && w !== undefined) rec.weight = w;
+      if (rec !== undefined && lane.motion !== undefined) this.settle(lane, p, slot, rec);
     }
     lane.voice.laned = false;
   }
@@ -592,7 +606,7 @@ export class Lanes<I, O> {
     if (subject === absent) return;
     const held = lane.records[p] as Subject<unknown>;
     if (lane.motion !== undefined) {
-      this.move(lane, lane.motion, o, slot, subject, held, elapsed, delay, w);
+      this.move(lane, lane.motion, p, slot, subject, held, elapsed, delay, w);
       return;
     }
     const kept = reading.kept;
@@ -612,13 +626,15 @@ export class Lanes<I, O> {
   }
 
   /**
-   * A motion voice's value for a subject, sampled from the patch's state as its `at` would. A probe
+   * A motion voice's value for a subject, sampled from the patch's state as its `at` would, but only
+   * where that sample changes nothing: one with a change to stamp, commit or let go of goes to the
+   * general path, which samples it if and when a probe asks, as it would with no lanes. A probe
    * this frame already read keeps the value it read, as the general path's record would.
    */
   private move(
     lane: Lane<I, O>,
     run: Motions<I>,
-    o: number,
+    p: number,
     slot: number,
     subject: I,
     held: Subject<unknown>,
@@ -627,7 +643,10 @@ export class Lanes<I, O> {
     w: number,
   ): void {
     const voice = lane.voice;
+    const data = lane.data;
+    const o = p * STRIDE;
     const ch = lane.chans[0] as Laned;
+    this.settle(lane, p, slot, held);
     let delta = held.delta;
     if (
       delta === null ||
@@ -635,19 +654,40 @@ export class Lanes<I, O> {
       held.seeks !== voice.seeks ||
       !this.probedThisFrame(slot)
     ) {
-      let ms = lane.data[o + MSLOT] as number;
+      let ms = data[o + MSLOT] as number;
       if (ms < 0) {
         ms = run.slot(subject);
-        lane.data[o + MSLOT] = ms;
+        data[o + MSLOT] = ms;
       }
       this.host.horizon(voice, delay);
+      if (!run.quiet(ms, elapsed)) {
+        this.late.push(slot);
+        return;
+      }
       run.sample(ms, elapsed, run.xs, run.vs);
       delta = { [ch.name]: run.value(ms, run.xs) };
-      held.delta = delta;
-      held.probed = this.now;
-      held.seeks = voice.seeks;
     }
+    lane.deltas[p] = delta;
+    data[o + SAMPLED] = this.fills;
+    data[o + SEEKS] = voice.seeks;
     if (w > 0) this.foldInto(ch, slot, delta[ch.name], w);
+  }
+
+  /**
+   * A probe this frame read a motion voice's value for the subject from an earlier fill: write onto
+   * its record what the general path's sample would have, so a later read this frame reuses it.
+   */
+  private settle(lane: Lane<I, O>, p: number, slot: number, held: Subject<unknown>): void {
+    const o = p * STRIDE;
+    if (
+      held.probed === this.now ||
+      !((this.laneProbe[slot] as number) > this.frameProbes) ||
+      lane.data[o + SAMPLED] !== this.laneFill[slot]
+    )
+      return;
+    held.delta = lane.deltas[p] ?? null;
+    held.probed = this.now;
+    held.seeks = lane.data[o + SEEKS] as number;
   }
 
   /** For a keys voice: the delta's value for each channel it writes, read once per phase. */
