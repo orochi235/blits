@@ -25,6 +25,11 @@ version and everything else the patch. Each release lists its changes as **Break
   subject the mix has met, probed that frame or not; and a patch that first calls `setting.keep`
   partway through playing can advance that state once more for one subject the host did not probe
   that frame.
+- `mixHex`, and so the `hex` channel, blends in OKLCH rather than sRGB, taking hue the short way
+  round and a gray end's hue from the other end. A crossfade from red to blue passes through
+  0xba00c2 rather than 0x800080, and black to white through 0x636363 rather than 0x808080. A blend costs about 45 ns where the
+  two ends repeat frame to frame and 210 ns where every call brings new colors, against 8 ns in
+  sRGB.
 
 ### Added
 

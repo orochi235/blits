@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hex, kit, max, mul, sum, vec } from '../src/channels.js';
+import { hex, kit, max, mixHex, mul, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
 import { level } from '../src/signals.js';
@@ -85,7 +85,7 @@ describe('locus fold', () => {
     a.weight = 0.5;
     b.weight = 0.5;
     m.sync(0);
-    expect(m.probe(part).color).toBe(0x808080);
+    expect(m.probe(part).color).toBe(mixHex(0x000000, 0xffffff, 0.5));
   });
 });
 

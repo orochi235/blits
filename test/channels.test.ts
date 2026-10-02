@@ -139,11 +139,22 @@ describe('channel laws', () => {
     expect(channel.scale?.([2, 2], 1)).toEqual([2, 2, 1]);
   });
 
-  it('hex: lerps in sRGB and ends where it was told to', () => {
+  it('hex: lerps in OKLCH and ends where it was told to', () => {
     expect(mixHex(0x000000, 0xffffff, 0)).toBe(0x000000);
     expect(mixHex(0x000000, 0xffffff, 1)).toBe(0xffffff);
-    expect(mixHex(0x000000, 0xffffff, 0.5)).toBe(0x808080);
+    expect(mixHex(0x000000, 0xffffff, 0.5)).toBe(0x636363);
+    expect(mixHex(0xff0000, 0x0000ff, 0.5)).toBe(0xba00c2);
     expect(hex().merge(0x112233, 0x445566)).toBe(0x445566);
+  });
+
+  it('hex: a gray end takes the other end’s hue rather than swinging through one of its own', () => {
+    expect(mixHex(0x808080, 0xff0000, 0.5)).toBe(0xc66356);
+    expect(mixHex(0xff0000, 0x808080, 0.5)).toBe(0xc66356);
+  });
+
+  it('hex: hue goes the short way round', () => {
+    // red to green passes through orange, not through blue
+    expect(mixHex(0xff0000, 0x00ff00, 0.5)).toBe(0xf99500);
   });
 });
 
