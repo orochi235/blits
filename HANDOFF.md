@@ -1,4 +1,4 @@
-# Handoff — blits, 2026-09-30
+# Handoff — blits, 2026-10-02
 
 **For:** the next session on blits. **Answers:** what blits is meant to be, what exists, what was
 decided in conversation and lives nowhere else, and what comes next. The design is in
@@ -19,7 +19,14 @@ systems now run on it**, on a branch that is not merged.
 ## State
 
 - `main` at `git@github.com:orochi235/blits.git` — **private**, pushed and in step with `origin/main`
-  as of `ed2debd` (release 0.2.1).
+  as of `121ee19` (release 0.2.1 plus doc fixes).
+- **The score and reading back are built on branch `project`**, pushed, not merged, no PR opened
+  (2026-10-01, overnight). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
+  log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
+  names, scores and queries, `mix.marks`, motion history in `spring`/`glide`, and the site's Score
+  page. The schema page's Score section describes it; `CHANGELOG.md` has it under Unreleased. One
+  behavior change rides along: a finite loop's fade starts when its last pass ended, not at the
+  next frame.
 - **klieg's port is done and green, on `blits-port` in `~/src/klieg`** — not merged into klieg's
   `main`; pushed except its last two commits. All three systems fold through a mix: `Timeline.poseAt` cues a voice per layer of
   each phase, `EffectFrame` one per effect, and the sign's environment is a mix with one subject.
@@ -31,7 +38,8 @@ systems now run on it**, on a branch that is not merged.
 - **The package, `@msb235/blits` 0.2.1 on npm.** `src/` is the whole of it: `channels.ts` (the stock
   channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
-  `motion.ts` (`spring`, `glide`), `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
+  `motion.ts` (`spring`, `glide`), `lanes.ts` (lanes, with `clock.ts`, the phase,
+  envelope and weight clamp both fold paths share, and `numbers.ts`, which numbers subjects), `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
   objects and a Map for anything else), `mixer.ts` (the engine and `mix`), `types.ts` (the whole
   public surface, doc-commented). Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
   is lint, typecheck of both `src` and `test`, then the suite, green. `npm run bench`
@@ -97,13 +105,19 @@ systems now run on it**, on a branch that is not merged.
   anything sets. Voice time is a position, because `phase` is computed from the reading rather than
   accumulated into. So `seek` has exactly one scope, the voice, and needs no qualifier.
   Decided 2026-09-27.
-- **The mix keeps no history**, so it cannot be moved to an earlier reading: stateful patch state
-  and slew-driven weights have no inverse, and voices that finished their fade are gone with no
-  record that they existed. A purely stateless mix would evaluate at any reading; the obstruction
-  is accumulation and membership, not time. Going back would mean re-adding voices and replaying
-  forward from a point still held. That is a capability the design lacks, not one the ontology
-  forbids — the schema constrains only the source (`monotonic clock`) and says nothing about
-  scrubbing. Noted 2026-09-27.
+- **Reading back is a read, never a move.** The mix still only goes forward; `project(t)` copies
+  state and reads at `t`, with history opt-in and nothing kept without it. A mix-level `seek` is
+  decided against for that reason (2026-10-01, in `NOTES-ON-SCRUBBING.md`).
+- **The score's shape, picked 2026-10-01 while building it** (Mike asleep; his to overturn): anchors
+  are `after` (the target's end), `with` (its start), `before` (its start less `by`) and the general
+  `{ of, mark, by }`; a query's resolver is a field, `resolver: 'next'`, not the schema's earlier
+  `next: true`; a bare name looks in the asker's `score`. Mike chose (2026-10-01, awake): a **mark** is
+  any named time an anchor hangs from, a voice's four or one the host puts on a score with
+  `mix.announce(name, { at? })`; an **event** is only what a patch `send`s out. `announce` is not in
+  `docs/vocabulary.json` yet. A start follows its target only while
+  pending, an out until its fade begins. Queries never read channel values, and astv's own rules
+  (which nodes changed, arrivals growing from an ancestor, ghosts) stay astv's: checked with two astv
+  sessions on 2026-10-01.
 - **`mix.step(now)` becomes `sync`**, and `step` stays on the patch callback, where it takes a `dt`
   and means an advance. The mix method takes an absolute reading and publishes it; nothing advances
   at the call, and each subject catches up when it is next sampled. Both were called `step`, meaning
@@ -144,32 +158,80 @@ systems now run on it**, on a branch that is not merged.
 
 ## Next, in order
 
-0. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
-   in the hot path and what weasel has that blits doesn't (booking events
-   ahead, a mix-wide time scale, nesting, a mix that can list what is playing). The site's ledger
-   can now show a voice's weight after fades through `handle.weightOf`; nothing draws it yet.
-   Delete each item as it is dealt with, and the file once it is empty.
-   `NOTES-FROM-ASTV.md` is astv's: the operations and cases a reading-back API has to serve, for
-   whoever builds the score. Same rule.
+0. **Review and merge `project`, then release.** Whether it is 0.2.2 or 0.3.0 is Mike's call: the
+   additions are non-breaking, but the finite-loop fade timing moves by up to a frame. klieg takes
+   `^0.2.1`, so a 0.2.2 reaches it on its next install; run klieg's Playwright specs against the
+   branch before a patch release.
 
-1. **Merge klieg's `blits-port`, and move magicsmoke to 0.2.x.** klieg already depends on the
+1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
+   in the hot path and what weasel has that blits doesn't (booking events ahead, a mix-wide time
+   scale, nesting, a mix that can list what is playing). Delete each item as it is dealt with, and
+   the file once it is empty. Its speed items matter only if weasel adopts blits: klieg and
+   magicsmoke are expected to run about two dozen voices over tens of subjects, under 1,000 subject
+   × voice pairs, where a frame costs about 0.2 ms (2026-10-01 guess, not a measured
+   workload). `NOTES-ON-SCRUBBING.md` holds the one undecided reading-back item,
+   `handle.seek` on a stateful voice.
+
+1a. **Lanes are built and merged into `project`** (2026-10-02). The schema page's Lanes section
+   says what they are, what qualifies and the two places the pose path differs; the `'motion'` form
+   is in its Springs and glides section. Measured on the fleet (studio, three runs alternated
+   against `project`), lanes ÷ `project` per frame: `keys` 0.38–0.57, springs 0.53–0.72, a
+   stateless `fn` 0.70–0.88. A lane rests when few of its subjects were probed last frame. The table
+   is in `spikes/gpu-engine/README.md` under "Lanes, as built". A weasel session reruns
+   `animator-on-blits` and `pose-overrides` against the build before deciding its animator step 3
+   (weasel `c7a183bde`, branch `pose-overrides-mix`).
+
+1b. **What lanes cost on rows they don't serve, accepted by Mike 2026-10-02.** A voice per subject
+   (`named`) reads 1.07× at 10,000 subjects (+0.2 ms) and 1.2× at 100–1,000 (+0.04 ms at most); a
+   mix probing 5% of its subjects 1.29× (+0.03 ms); a projection every frame (`ahead`) 1.10×
+   (+0.2 ms); a spring voice per subject with `lanes: false` about 1.05×. Profiles put it in three
+   places: the phase and channel arithmetic is now one shared copy that V8 does not always inline
+   where `project` had it written out; numbering and first-sight checks on every probe while lanes
+   are on; two more fields per record (lane number, seek count) that a projection copies. Writing
+   the arithmetic out again was turned down, since the exactness guarantee rests on there being one
+   copy.
+
+1c. **Next for speed, decided with Mike 2026-10-02, in this order, each measured on the fleet
+   before the next starts. None is designed yet.**
+   - **Bulk output.** A host reads a laned channel's array by subject number instead of calling
+     `probe` per subject. A probe costs about 110–140 ns at 10,000 subjects even when a lane did
+     all the work, which caps lanes for a host that probes every node, as weasel's paint walk does.
+   - **A `tween` stock form** with each subject's endpoints as data, so a tween runs on a lane
+     without allocating per call the way a `fn` does.
+   - **Voices sharing a patch, grouped into one lane indexed by voice**, so a voice per subject
+     costs what one voice does. Only if a voice per call still needs it once `tween` exists.
+
+1d. **`@msb235/blits-quarks` is built, in `packages/quarks`, unreleased.** Its README says how it
+   works. Before its first release Mike registers trusted publishing for the name (the release
+   workflow's header says how); then the release is a `quarks-v0.1.0` tag, after renaming its
+   changelog's Unreleased section. Moving magicsmoke's fizz and tuning onto it is a follow-up in
+   magicsmoke's repo.
+
+2. **Merge klieg's `blits-port`, and move magicsmoke to 0.2.x.** klieg already depends on the
    published package; push its last two commits and merge. magicsmoke pins `0.1.1`, and 0.2.0 broke
    two things it may touch: a `from: 'current'` keys voice now leaves at the subject's velocity, and
    `Handle` gained `ramp`, which matters if magicsmoke builds handle-shaped objects. Unchecked.
-2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
+3. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
    their hand-rolled frame keying onto `slew`, `hinge`'s modes become `weight: signal` and
    `mix.blend`, and `FrameCtx` becomes `Setting` with klieg's fields on `host`. The schema page's
    klieg section has the list. Nothing here is started.
-3. **The renames the vocabulary bought, which the port deliberately left alone.** `t` is still `t`
+   klieg's `effects/signal.ts` also keeps its own `peak`, `level` and `dwell` (`dwell` is blits'
+   `slew`) on a `(t, part, ctx)` signature, which is why klieg's signals are invisible to the mix.
+4. **The renames the vocabulary bought, which the port deliberately left alone.** `t` is still `t`
    on `MotionPiece.offset` and `EffectPiece.at`, `onPhase` and `PhaseEvent` still carry those
    names, and the tube gradient still calls its own thing `domain`. Each is a break in klieg's
    published surface — sherpa reads `ctx.phase` — and step one had to leave every baseline where it
    was, so they wait for a version of klieg that intends to break.
-4. **The remaining opens** are in the schema page: how the score comes inside (decided it does; unbuilt),
-   color's lerp space and the stock band's width.
+5. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
+   a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
+   stock band's width.
 
 ## Loose ends
 
+- **A pose can hold a keyframe's own array.** When a channel has no rest and its `merge` returns
+  its second argument, as a `last()` over arrays does, `apply` puts the delta's array into the
+  pose uncopied. With two voices on a keyed array channel, a host that edits its pose edits the
+  stop. Found 2026-10-01 and not fixed.
 - **A stale served-page tab will overwrite `vocabulary.picks.json` with whatever set it
   was holding.** It has happened twice — `65d2d71` restored one, and the same loss was in the
   working tree at the start of 2026-09-27's session. Before trusting the picks file, `git diff` it;

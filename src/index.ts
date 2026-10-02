@@ -7,7 +7,9 @@ export type { KeysOptions, PatchOptions } from './patch.js';
 export { keys, patch } from './patch.js';
 export { gate, lag, level, peak, slew } from './signals.js';
 export type {
+  Anchor,
   Channel,
+  Doubt,
   Easing,
   Engine,
   FadeOptions,
@@ -15,9 +17,15 @@ export type {
   Handle,
   Keyframe,
   Kit,
+  Mark,
+  Marked,
   Mix,
   MixOptions,
+  MotionSpec,
   Patch,
+  Placement,
+  Projection,
+  Query,
   Sent,
   Setting,
   Signal,

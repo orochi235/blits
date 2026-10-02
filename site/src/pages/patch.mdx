@@ -1,7 +1,7 @@
 ---
 layout: ../layouts/Page.astro
 title: Patch
-description: A patch is what an author writes, a pure function of phase and a subject that returns a delta. It comes in two forms, a function and a list of stops.
+description: A patch is what an author writes, a pure function of phase and a subject that returns a delta. It comes in three forms: a function, a list of stops, and motion with momentum.
 ---
 import Patch from '../explainers/Patch';
 import ApiEntries from '../components/ApiEntries.astro';
@@ -18,7 +18,7 @@ A patch is a pure function of **phase** and a subject. It returns a **delta**, a
 
 Every patch declares its **writes**: the channels it may contribute to. The mix checks them against the kit when the patch is cued, so a patch that writes a channel the kit lacks is refused there rather than failing a frame later, and the mix never has to call a patch to learn what it touches.
 
-## Two forms
+## Three forms
 
 The function form, `patch`, takes the period, the function and the writes. Anything computed goes here: a flicker, a hash walk, a curve you can only write as code.
 
@@ -48,7 +48,15 @@ const pulse = keys<Part, PartPose>(
 );
 ```
 
-A voice can't tell the two apart: both are a `Patch` with the same `at`. The difference is that a keys patch keeps its stops on `patch.keys`, so they can still be read as data.
+The motion form, `spring` or `glide`, moves each subject with momentum toward where it heads, solved in closed form, and can be retargeted or pushed mid-flight. It has no period; it reads the voice's elapsed time.
+
+```ts
+import { spring } from '@msb235/blits';
+
+const rise = spring<Part, PartPose, number[]>('position', { from: [0, 0, 0], to: [0, 1, 0] });
+```
+
+A voice can't tell the three apart: each is a `Patch` with the same `at`. The difference is what an engine can read as data: a keys patch keeps its stops on `patch.keys`, and a motion patch keeps its kind and constants on `patch.motion`.
 
 ## Easing is data
 

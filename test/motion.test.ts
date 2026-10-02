@@ -1,3 +1,5 @@
+import { setFlagsFromString } from 'node:v8';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import { kit, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
@@ -169,5 +171,256 @@ describe('glide', () => {
     expect(m.probe(a).x).toBeCloseTo(there, 2);
     m.sync(5000);
     expect(m.probe(a).x).toBeCloseTo(there - 200 * 0.25, 3);
+  });
+});
+
+describe('the motion form', () => {
+  it('spring and glide are form motion, carrying their constants as data', () => {
+    const s = spring<Part, Pose>('x', { to: 1, stiffness: 120, damping: 14 });
+    expect(s.form).toBe('motion');
+    expect(s.motion).toEqual({
+      kind: 'spring',
+      stiffness: 120,
+      damping: 14,
+      mass: 1,
+      settle: 1e-4,
+    });
+    const g = glide<Part, Pose>('x', { from: 0, ms: 200, settle: 0 });
+    expect(g.form).toBe('motion');
+    expect(g.motion).toEqual({ kind: 'glide', ms: 200, settle: 0 });
+  });
+
+  it('seeked back past a retarget it kept history of, plays the stretch from before it', () => {
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    const m = mix<Part, Pose>(K, { history: { ms: 5000 } });
+    const h = m.cue({ patch: s });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(300);
+    const before = m.probe(a).x;
+    s.to(a, -50, 500);
+    m.sync(1000);
+    m.probe(a);
+    h.seek(200);
+    m.sync(1100);
+    expect(m.probe(a).x).toBe(before);
+  });
+
+  it("lands an untimed change on a subject the host skipped at the patch's latest frame", () => {
+    const run = (change: (s: ReturnType<typeof spring<Part, Pose>>, b: Part) => void) => {
+      const s = spring<Part, Pose>('x', { from: 0, to: 100, stiffness: 180, damping: 12 });
+      const m = mix<Part, Pose>(K);
+      m.cue({ patch: s, stagger: (p) => (p.id === 'b' ? 30 : 0) });
+      const a = { id: 'a' };
+      const b = { id: 'b' };
+      m.sync(0);
+      m.probe(a);
+      m.probe(b);
+      m.sync(100);
+      m.probe(a);
+      change(s, b);
+      m.sync(200);
+      return m.probe(b).x;
+    };
+    const untimed = run((s, b) => s.to(b, -50));
+    // The frame is 100, which is voice time 70 for a subject staggered 30.
+    expect(untimed).toBe(run((s, b) => s.to(b, -50, 70)));
+    expect(untimed).not.toBe(run((s, b) => s.to(b, -50, 170)));
+  });
+
+  it("reads with no time at the patch's latest frame, not the subject's last probe", () => {
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: s });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(100);
+    expect(s.read(a)).toEqual(s.read(a, 100));
+    expect(s.read(a)).not.toEqual(s.read(a, 0));
+  });
+
+  it('applies an untimed change at the first read of a subject no frame has met', () => {
+    const run = (change: (s: ReturnType<typeof spring<Part, Pose>>, a: Part) => void) => {
+      const s = spring<Part, Pose>('x', { from: 0, to: 100, stiffness: 180, damping: 12 });
+      const m = mix<Part, Pose>(K);
+      m.cue({ patch: s });
+      const a = { id: 'a' };
+      change(s, a);
+      m.sync(0);
+      m.probe({ id: 'other' });
+      m.sync(150);
+      m.probe(a);
+      m.sync(300);
+      return m.probe(a).x;
+    };
+    expect(run((s, a) => s.to(a, -50))).toBe(run((s, a) => s.to(a, -50, 150)));
+  });
+
+  it('reads nothing with no time given until a frame of its voice has met the subject', () => {
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    const a = { id: 'a' };
+    s.to(a, 50, 0);
+    expect(s.read(a)).toBeUndefined();
+    expect(s.read(a, 0)).toEqual({ value: 0, velocity: 0 });
+  });
+
+  for (const lanes of [false, true]) {
+    it(`plays an untimed retarget made before a staggered subject starts, lanes ${lanes}`, () => {
+      const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+      const m = mix<Part, Pose>(K, { lanes });
+      m.cue({ patch: s, stagger: (p) => (p.id === 'b' ? 500 : 0) });
+      const a = { id: 'a' };
+      const b = { id: 'b' };
+      for (const t of [0, 100]) {
+        m.sync(t);
+        m.probe(a);
+        m.probe(b);
+      }
+      s.to(b, -50);
+      expect(s.read(b)).toBeUndefined();
+      m.sync(600);
+      m.probe(a);
+      m.probe(b);
+      m.sync(5000);
+      expect(m.probe(b).x).toBe(-50);
+    });
+
+    it(`reads an untimed push the moment it is made, lanes ${lanes}`, () => {
+      const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+      const m = mix<Part, Pose>(K, { lanes });
+      m.cue({ patch: s });
+      const b = { id: 'b' };
+      for (const t of [0, 100]) {
+        m.sync(t);
+        m.probe(b);
+      }
+      s.push(b, 2000);
+      expect(s.read(b)?.velocity).toBe(2000);
+      s.to(b, -10, 50);
+      expect(s.read(b)?.velocity).toBe(2000);
+      expect(s.read(b, 99)?.velocity).toBeLessThan(0);
+    });
+  }
+
+  it('applies an untimed change and a later timed one in time order, not the order made', () => {
+    const run = (untimedFirst: boolean) => {
+      const g = glide<Part, Pose>('x', { from: 0, velocity: 300 });
+      const m = mix<Part, Pose>(K);
+      m.cue({ patch: g });
+      const a = { id: 'a' };
+      if (untimedFirst) g.push(a, 900);
+      g.push(a, -500, 219);
+      if (!untimedFirst) g.push(a, 900);
+      const out: number[] = [];
+      for (const t of [102, 308]) {
+        m.sync(t);
+        out.push(m.probe(a).x);
+      }
+      return out;
+    };
+    expect(run(false)).toEqual(run(true));
+  });
+
+  it('lets go of a mix the host dropped while it keeps the spring the mix played', async () => {
+    setFlagsFromString('--expose_gc');
+    const gc = runInNewContext('gc') as () => void;
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    const ref = (() => {
+      const m = mix<Part, Pose>(K);
+      m.cue({ patch: s });
+      m.sync(0);
+      m.probe({ id: 'a' });
+      return new WeakRef(m);
+    })();
+    for (let i = 0; i < 20 && ref.deref() !== undefined; i++) {
+      await new Promise((r) => setTimeout(r, 0));
+      gc();
+    }
+    expect(ref.deref()).toBeUndefined();
+  });
+
+  it('reads nothing with no time once the voice playing the subject is gone', () => {
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    const m = mix<Part, Pose>(K);
+    const h = m.cue({ patch: s });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(100);
+    m.probe(a);
+    expect(s.read(a)).toBeDefined();
+    h.fade({ over: 0 });
+    m.sync(116);
+    m.probe(a);
+    expect(s.read(a)).toBeUndefined();
+    expect(s.read(a, 100)).toBeDefined();
+  });
+
+  it('forgets a subject the mix drops, so a string subject starts afresh', () => {
+    const s = spring<string, Pose>('x', { from: 0, to: 100 });
+    const m = mix<string, Pose>(K);
+    m.cue({ patch: s });
+    m.sync(0);
+    m.probe('a');
+    s.to('a', -50, 100);
+    m.sync(200);
+    const fresh = m.probe('b').x;
+    expect(m.probe('a').x).not.toBe(fresh);
+    m.drop('a');
+    expect(s.read('a', 200)).toBeUndefined();
+    expect(m.probe('a').x).toBe(fresh);
+  });
+
+  it('refuses a retarget or push on another number of axes, leaving the subject as it was', () => {
+    const run = (bad?: (s: ReturnType<typeof spring<Part, Pose, number[]>>, a: Part) => void) => {
+      const s = spring<Part, Pose, number[]>('p', { from: [0, 0], to: [1, 2] });
+      const m = mix<Part, Pose>(K);
+      m.cue({ patch: s });
+      const a = { id: 'a' };
+      m.sync(0);
+      m.probe(a);
+      s.to(a, [5, 6], 100);
+      if (bad) expect(() => bad(s, a)).toThrow(/same number of axes/);
+      return [200, 400, 800].map((t) => {
+        m.sync(t);
+        return [...m.probe(a).p];
+      });
+    };
+    const clean = run();
+    expect(run((s, a) => s.to(a, [1, 2, 3]))).toEqual(clean);
+    expect(run((s, a) => s.to(a, [5]))).toEqual(clean);
+    expect(run((s, a) => s.push(a, [1, 2, 3]))).toEqual(clean);
+  });
+
+  it('refuses a subject whose own start, target and velocity disagree on how many axes', () => {
+    const s = spring<Part, Pose, number[]>('p', {
+      from: (part) => (part.id === 'b' ? [0, 0] : [0, 0, 0]),
+      to: [1, 2, 3],
+    });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: s });
+    m.sync(0);
+    expect(() => m.probe({ id: 'b' })).toThrow(/same number of axes/);
+    const v = spring<Part, Pose, number[]>('p', { to: [1, 2], velocity: [1, 2, 3] });
+    const n = mix<Part, Pose>(K);
+    n.cue({ patch: v });
+    n.sync(0);
+    expect(() => n.probe({ id: 'a' })).toThrow(/same number of axes/);
+    const b = { id: 'b' };
+    expect(() => s.to(b, [1, 2, 3])).toThrow(/same number of axes/);
+    expect(s.read(b, 0)).toBeUndefined();
+  });
+
+  it('refuses subjects moving on different numbers of axes', () => {
+    const s = spring<Part, Pose, number[]>('p', {
+      to: (part) => (part.id === 'a' ? [1, 2] : [1, 2, 3]),
+    });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: s });
+    m.sync(0);
+    m.probe({ id: 'a' });
+    expect(() => m.probe({ id: 'b' })).toThrow(/same number of axes/);
   });
 });

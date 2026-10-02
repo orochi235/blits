@@ -4,6 +4,73 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Breaking
+
+- `spring` and `glide` build patches of a third form, `'motion'`, instead of `'fn'`, and carry
+  their kind and constants on `patch.motion`, a `MotionSpec`. `Patch.form` and `Engine.runs` take
+  `'motion'`, so an engine that declares `runs` must list it to run a spring or a glide. A motion
+  patch throws when two of its subjects, or a subject's start, target and velocity, or a `to` or
+  `push`, move on different numbers of axes. It makes a subject's first stretch at its first `to`
+  or `push` as well as at its first read, so `read(subject, at)` answers from then on.
+- An untimed retarget lands at the subject's own voice time at the mix's latest sync, not at the
+  subject's next read, so a subject the host did not probe changes at the same moment as one it
+  did; `read` with no time answers at that time, counting every change due by then. For a subject
+  no frame of its voice has met yet, or still inside its stagger, an untimed change applies at its
+  first read, after any timed change due by then, and `read` with no time returns undefined, as it
+  does once the voice is gone. Changes apply in time order, not the order they were made.
+- `drop(subject)` also forgets a motion patch's state for the subject, so it starts afresh.
+- With lanes on, a stateless patch calling `setting.send` from `at` sends every frame for every
+  subject the mix has met, probed that frame or not; and a patch that first calls `setting.keep`
+  partway through playing can advance that state once more for one subject the host did not probe
+  that frame.
+
+### Added
+
+- Lanes: a channel every voice writing it can run that way is computed for every subject at once,
+  in flat arrays, at the frame's first probe, rather than subject by subject, and gives the same
+  pose. `keys`, a stateless `fn` and `motion` voices with a number weight qualify. Three `keys`
+  voices over 10,000 subjects fell from 6.1 to 2.6 ms a frame. A lane whose subjects were mostly
+  left unprobed last frame stops filling and its subjects take the general path until probes pick
+  up again, so a host probing 5% of 10,000 subjects pays about what it would with lanes off, not
+  ten times it. `MixOptions.lanes: false` turns lanes off. They cost a little on frames they
+  don't serve: a voice per subject reads up to 7% slower at 10,000 subjects (about 20% at
+  100–1,000, a few hundredths of a millisecond), a mix probing few of its subjects about 0.03 ms
+  more, and a projection made every frame about 10% more.
+- `mix.project(timestamp)` reads the mix at another time without moving it: `probe` gives the pose
+  then, and `assess` says per channel whether it is `exact`, `stepped` or `held`. Ahead it plays
+  what is cued forward; behind it needs `MixOptions.history: { ms, every? }`, which keeps every
+  handle change, the voices that left, and copies of stateful state, so a read back under `stepMs`
+  lands on the pose the mix showed, and with `inputs` it records what input weight signals and the
+  host fields patches `reads` held, so a read back over a `level` or a pointer is known. `Patch.clone` copies state `structuredClone` cannot.
+- The score: a voice takes a `name` and an `anchor` placement, `start` or `in` and `out` or `end`,
+  each a timestamp or another voice's mark (`after`, `with`, `before`, or `of` plus `mark`),
+  selected by name, tag or written channel with a resolver. Each source can keep its own `score`,
+  with names namespaced per score. `mix.announce(name, { at? })` puts a named mark on a score for
+  anchors to wait on, and `mix.marks(from, to)` lists every mark the plan knows.
+- `spring` and `glide` keep every stretch within the mix's history, so a read before a retarget
+  finds where the subject was.
+- A cue can name its subjects, `subjects: [a, b]`, in place of a `target`. The mix files the voice
+  under each one, so a voice per subject costs the same as one voice: the first frame of 1,000
+  subjects on a voice each fell from about 500 ms to 1 ms.
+
+### Fixed
+
+- A voice faded before its start plays once its start arrives. It used to stay out of every
+  subject's fold until some other voice was cued or left.
+- A probe after a `seek` in the same frame reads the voice where the seek put it, rather than the
+  value an earlier probe that frame read before the seek. A stateful patch still steps once.
+- A probe looks its subject up once rather than once per voice, which makes frames with several
+  voices 5–12% faster.
+- A `keys` patch reads a keyed `vec` channel into an array its voice reuses, rather than a new one
+  each read, which halves collections at 10,000 subjects and leaves frame time unchanged.
+
+- A finite loop's fade out starts when its last pass ended, not at the first frame after, so it
+  plays the same at any frame rate.
+- The published `package.json` no longer lists `workspaces: ["site"]`, which only the repo's docs
+  site uses.
+
 ## 0.2.1
 
 ### Added

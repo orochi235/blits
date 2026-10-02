@@ -158,7 +158,7 @@ function Ledger<I, O>({
         <tr>
           <th scope="col">Voice</th>
           <th scope="col" className="num">
-            Handle weight
+            Weight
           </th>
           {channels.map((c) => (
             <th key={c} scope="col" className="num">
@@ -177,7 +177,7 @@ function Ledger<I, O>({
                 <span className="swatch" data-color={v.color} />
                 {v.name}
               </th>
-              <td className="num">{h ? fmt(h.weight) : ''}</td>
+              <td className="num">{h ? fmt(h.weightOf(frame.subjects[focus] as I)) : ''}</td>
               {channels.map((c) => (
                 <td key={c} className="num">
                   {show(c, alone[c])}

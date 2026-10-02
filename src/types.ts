@@ -98,13 +98,17 @@ export interface Setting<S = void> {
   /**
    * The state `owner` keeps for this voice and this subject, made by `init` on first ask. The mix
    * holds it, so a read at another time can copy it instead of moving it. A stateful signal keeps
-   * its state here and nowhere else.
+   * its state here and nowhere else. With lanes on, a patch that first calls it partway through
+   * playing can have that state advanced once for one subject not probed on the frame it starts; a
+   * patch that keeps state from its first call, or declares `state`, never does.
    */
   keep<K>(owner: object, init: () => K): K;
   /**
    * Reports an event at `timestamp`, for this voice and this subject. The mix queues it until the
    * host drains it, and never calls back. Meant for `step`, where under `stepMs` the timestamp is
-   * the interval the event happened in rather than the frame that sampled it.
+   * the interval the event happened in rather than the frame that sampled it. Sent from a stateless
+   * patch's `at` while it runs on a lane, it goes out for every subject the mix has met, probed that
+   * frame or not.
    */
   send(event: unknown): void;
 }
@@ -126,13 +130,40 @@ export interface Sent<I, E = unknown> {
 }
 
 /**
+ * What a `'motion'` patch is made of, as data an engine can read: the kind of motion and its
+ * constants. Each subject's start, target and starting velocity stay on the patch, since they may
+ * be functions of the subject.
+ *
+ * @category patch
+ */
+export type MotionSpec =
+  | {
+      readonly kind: 'spring';
+      /** Per second squared. */
+      readonly stiffness: number;
+      /** Per second. */
+      readonly damping: number;
+      readonly mass: number;
+      readonly settle: number;
+    }
+  | {
+      readonly kind: 'glide';
+      /** The friction's time constant, ms. */
+      readonly ms: number;
+      readonly settle: number;
+    };
+
+/**
  * A pure function of phase and a subject that returns a delta. Optionally stateful.
  *
  * @category patch
  */
 export interface Patch<I, O, S = void> {
-  /** Which authoring form built it. An engine declares which forms it runs. */
-  readonly form: 'fn' | 'keys';
+  /**
+   * Which authoring form built it: `'fn'` from `patch`, `'keys'` from `keys`, `'motion'` from
+   * `spring` or `glide`. An engine declares which forms it runs.
+   */
+  readonly form: 'fn' | 'keys' | 'motion';
   /** Milliseconds one pass lasts. 0 is aperiodic: phase and pass stay 0. */
   readonly period: number;
   /** The channels this patch contributes to. Every key `at` sets, and no others. */
@@ -155,6 +186,14 @@ export interface Patch<I, O, S = void> {
   step?(state: S, dt: number, subject: I, setting: Setting<S>): void;
   /** Present when the patch was authored as keyframes, so an engine that reads data can. */
   readonly keys?: readonly Keyframe<O>[];
+  /** Present on a `'motion'` patch: its kind and constants, for an engine that reads data. */
+  readonly motion?: MotionSpec;
+  /**
+   * A copy of `state` that shares nothing with it, for a read at another time. Default
+   * `structuredClone`, which is enough for plain data; a state holding a class instance or a
+   * function needs its own.
+   */
+  clone?(state: S): S;
 }
 
 /**
@@ -178,6 +217,78 @@ export interface FadeSpec {
 }
 
 /**
+ * The four times a voice is known by on the mix clock: when its fade in begins (`start`), when it is
+ * fully in (`in`), when its fade out begins (`out`), and when it is gone (`end`).
+ *
+ * @category score
+ */
+export type Mark = 'start' | 'in' | 'out' | 'end';
+
+/**
+ * Selects voices by what the plan knows of them, never by a channel's value, within the asking
+ * voice's own score unless it names another. Where several match,
+ * the resolver picks one: `last` cued (the default), `first` cued, `next` (the earliest whose mark
+ * is still to come), `earliest` or `latest` by the mark's time.
+ *
+ * @category score
+ */
+export interface Query {
+  /** The score to look in. Default: the asking voice's own. */
+  score?: string;
+  name?: string;
+  tag?: string;
+  /** A channel the voice's patch writes. */
+  writes?: string;
+  resolver?: 'last' | 'first' | 'next' | 'earliest' | 'latest';
+}
+
+/**
+ * A time given by another voice: `mark` of the voice `of` selects, moved by `by` ms. `after` is
+ * sugar for that voice's `end`, `with` for its `start`, and `before` for its start less `by`. A
+ * string selects by name.
+ *
+ * @category score
+ */
+export type Anchor =
+  | { of: string | Query; mark: Mark; by?: number }
+  | { after: string | Query; by?: number }
+  | { with: string | Query; by?: number }
+  | { before: string | Query; by?: number };
+
+/**
+ * Where a voice sits on the mix clock: at most one of `start` and `in`, and at most one of `out`
+ * and `end`, each a timestamp on the host's clock or an anchor to another voice. A voice whose
+ * anchor has no answer yet waits pending; one whose anchored mark is already past starts partway
+ * through, as playback does from the middle of a region.
+ *
+ * @category score
+ */
+export interface Placement {
+  start?: number | Anchor;
+  in?: number | Anchor;
+  out?: number | Anchor;
+  end?: number | Anchor;
+}
+
+/**
+ * One mark as `marks` lists it: one of a voice's four, or one the host announced on a score, which
+ * has a name and no voice.
+ *
+ * @category score
+ */
+export interface Marked {
+  /** On the host's clock. */
+  timestamp: number;
+  /** Which of a voice's four this is; undefined for an announced mark. */
+  mark: Mark | undefined;
+  /** The voice it belongs to; undefined for an announced mark. */
+  voice: number | undefined;
+  score: string | undefined;
+  name: string | undefined;
+  tags: readonly string[];
+}
+
+/**
  * What `cue` takes: a patch, and the clock, weight and reach it plays with.
  *
  * @category voice
@@ -186,9 +297,18 @@ export interface VoiceSpec<I, O> {
   patch: Patch<I, O, unknown>;
   /**
    * Which subjects this voice reaches. Default: all of them. The predicate is fixed at `cue`; it
-   * runs per subject the first time the mix sees that subject, and the answer is kept.
+   * runs per subject the first time the mix sees that subject, and the answer is kept. Every
+   * voice's predicate meets every subject, so voices that each reach a known few cost the square
+   * of their number, in time and in memory (a record per voice per subject asked: about 800 MB for
+   * 1,000 such voices); name those with `subjects` instead.
    */
   target?: (subject: I) => boolean;
+  /**
+   * The subjects this voice reaches, fixed at `cue` and matched by identity; a probe of any other
+   * never asks this voice. Takes the place of `target`, and a cue giving both is refused: a
+   * predicate over a fixed list is that list filtered, which the host can do before cueing.
+   */
+  subjects?: readonly I[];
 
   /**
    * When the voice starts, in ms on the host's clock, the one it passes `sync`: a rAF timestamp and
@@ -220,6 +340,16 @@ export interface VoiceSpec<I, O> {
   from?: 'current';
   /** Words a source attaches to this voice, so its events can be drained as a set. */
   tags?: readonly string[];
+  /** What other voices call this one by. A label blits never reads. */
+  name?: string;
+  /**
+   * The plan this voice belongs to. Each source keeps its own, so two sources can use one name
+   * without meeting: a bare name in an anchor means a voice in the same score, and a query names
+   * `score` to reach into another. Default: the mix's one unnamed score.
+   */
+  score?: string;
+  /** Where it sits relative to the clock or to other voices, in place of `start`. */
+  anchor?: Placement;
 }
 
 /**
@@ -299,6 +429,50 @@ export interface MixOptions {
    * Signals and `at` still see the frame. Off by default.
    */
   stepMs?: number;
+  /**
+   * How far back `project` may read, in ms of mix time, and how often a stateful voice's state is
+   * kept per subject on the way, `every` ms (default 200). Within it the mix remembers what it cued,
+   * every change a handle made and when, the voices that have left, and those copies of state, so a
+   * read back restores the nearest copy and steps forward from it. Off by default, and a mix without
+   * it keeps nothing. With `inputs`, it also keeps what each input signal on a voice's weight read
+   * per subject, and the host fields patches `reads`, each time they changed, so a read back over a
+   * `level` or a pointer is known rather than held.
+   */
+  history?: { ms: number; every?: number; inputs?: boolean };
+  /**
+   * Whether a channel may run as a lane: computed for every subject at once in flat arrays, when
+   * every voice writing it can run that way. On by default; the pose is the same either way, so
+   * turning it off is for ruling a lane out, or for comparing against. Two things differ: a
+   * stateless patch's `setting.send` from `at` sends for every subject a lane fills, probed or not,
+   * and a patch that first calls `setting.keep` partway through playing can advance that state once
+   * more for one unprobed subject (see `Setting.keep`).
+   */
+  lanes?: boolean;
+}
+
+/**
+ * How sure a projection is of one channel: `exact` where only the clock and known changes drove
+ * it; `stepped` where state was advanced across a gap in one go, which is as good as the patch's
+ * step makes it; `held` where it depends on input from outside the clock, whose value at that time
+ * is not known, so the value it had is held.
+ *
+ * @category mix
+ */
+export type Doubt = 'exact' | 'stepped' | 'held';
+
+/**
+ * The mix read at another time: what `probe` would give at that timestamp, with nothing in the
+ * live mix moved. Valid until the mix is next synced or cued.
+ *
+ * @category mix
+ */
+export interface Projection<I, O> {
+  /** The timestamp it reads at, on the host's clock. */
+  readonly timestamp: number;
+  /** The merged pose for one subject at this projection's timestamp. */
+  probe(subject: I, out?: O): O;
+  /** Per channel, how sure that pose is; the least sure voice that fed a channel decides. */
+  assess(subject: I): { [K in keyof O]-?: Doubt };
 }
 
 /**
@@ -325,6 +499,12 @@ export interface Mix<I, O> {
   rebase(): void;
   /** The merged pose for one subject at the synced frame. */
   probe(subject: I, out?: O): O;
+  /**
+   * Reads the mix at another timestamp, on the host's clock, without moving it. Ahead of the last
+   * sync it plays what is cued forward; behind it, it needs `history`, and throws for a timestamp
+   * older than the history reaches.
+   */
+  project(timestamp: number): Projection<I, O>;
   /** Every channel at rest for this subject this frame, so a host can skip the write. */
   atRest(subject: I): boolean;
 
@@ -332,15 +512,30 @@ export interface Mix<I, O> {
   readonly live: boolean;
   /** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */
   mute(opts?: { over?: number }): void;
-  /** Forgets per-subject state. */
+  /** Forgets per-subject state, a motion patch's for the subject included. */
   drop(subject: I): void;
+  /**
+   * Puts a named mark on a score, for anchors to target as they target a voice's marks: a voice
+   * placed `{ with: 'reply' }` waits until the host announces `reply`. `at` is a timestamp on the
+   * host's clock, default now, and may lie ahead, so a read ahead sees it. A mark stays while it is
+   * ahead or while the mix's history reaches it.
+   */
+  announce(name: string, opts?: { at?: number; score?: string; tags?: readonly string[] }): void;
+  /**
+   * Every mark the plan knows between two timestamps on the host's clock, earliest first: when
+   * voices start, are fully in, begin to fade and are gone, and what the host announced. A mark
+   * nothing has fixed yet, such as the out of a voice that loops for good, is not listed.
+   */
+  marks(from: number, to: number): Marked[];
   /**
    * Every event patches have sent since the last drain, earliest first, in the order they were sent
    * where two share a timestamp. A subject's events are made while it catches up, which is when it is
-   * probed, so one nobody probes has sent nothing yet: promptness is the host's, by probing. Under
-   * `stepMs` each carries the end of the interval it happened in, so what is sent and when does not
-   * depend on how the host spaces its probes. Time `rebase` took out sends nothing. Given a tag, it
-   * takes only the events of voices carrying it and leaves the rest for whoever drains them.
+   * probed, so one nobody probes has sent nothing yet: promptness is the host's, by probing. A
+   * stateless patch's `at` on a lane is the exception: it runs for every subject the mix has met, at
+   * the frame's first probe. Under `stepMs` each carries the end of the interval it happened in, so
+   * what is sent and when does not depend on how the host spaces its probes. Time `rebase` took out
+   * sends nothing. Given a tag, it takes only the events of voices carrying it and leaves the rest for
+   * whoever drains them.
    */
   drain<E = unknown>(tag?: string): Sent<I, E>[];
 }
@@ -353,6 +548,6 @@ export interface Mix<I, O> {
 export interface Engine {
   readonly name: string;
   /** Which patch forms this engine can run. A voice it cannot run is refused at `cue`, by name. */
-  readonly runs: ReadonlySet<'fn' | 'keys'>;
+  readonly runs: ReadonlySet<'fn' | 'keys' | 'motion'>;
   create<I, O>(kit: Kit<O>, opts: MixOptions): Mix<I, O>;
 }

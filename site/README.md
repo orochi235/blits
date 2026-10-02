@@ -23,9 +23,9 @@ An explainer declares a `Scene` (`src/explainers/kit/scene.ts`): a kit, subjects
 optionally events at a time, a `syncing` predicate (false is a hidden tab), a `probing` predicate
 (false leaves a subject unasked), `record` for a trace, and the ledger's subject and channels. The
 kit owns the clock and the mix. No explainer reads a wall clock, so scrubbing backwards rebuilds the
-mix and replays from 0; a mix cannot read back. The ledger itemizes the fold by playing each voice
-in a solo mix beside the real one. It shows the handle's weight, not the weight after fades and
-signals, because the mix exposes no such reading.
+mix and replays from 0; the kit keeps no history to read back through. The ledger itemizes the fold
+by playing each voice in a solo mix beside the real one, and shows each voice's weight for the
+ledger subject after fades and signals, from `handle.weightOf`.
 
 Colors come from the CSS tokens through `readInk`, and each voice keeps its slot color (`v1`..`v3`)
 on the stage, in the ledger and in any trace.

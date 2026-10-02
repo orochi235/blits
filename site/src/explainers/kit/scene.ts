@@ -81,7 +81,7 @@ function cueAll<I, O>(m: Mix<I, O>, voices: VoiceDef<I, O>[]): Handle[] {
 
 /**
  * Holds one run of a scene and moves it to any time: forward by stepping frames, backward by
- * rebuilding from 0, since a mix keeps no history to read back through.
+ * rebuilding from 0, since the explainers make their mixes without history.
  */
 export class Player<I, O, C> {
   private run: Run<I, O> | null = null;

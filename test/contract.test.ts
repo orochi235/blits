@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { hex, kit, mul, sum } from '../src/channels.js';
 import { mix, mixer } from '../src/mixer.js';
+import { spring } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 import type { Engine, Kit, Mix, MixOptions } from '../src/types.js';
 
@@ -78,6 +79,11 @@ describe('engine refusal', () => {
       { at: 1, delta: { crawl: 10 } },
     ]);
     expect(() => m.cue({ patch: declarative })).not.toThrow();
+  });
+
+  it('refuses a motion patch on an engine that runs keys only', () => {
+    const m = mix<Part, Pose>(PART, { engine: baked });
+    expect(() => m.cue({ patch: spring<Part, Pose>('crawl', { to: 1 }) })).toThrow(/motion/);
   });
 });
 

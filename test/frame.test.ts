@@ -41,6 +41,49 @@ describe('one frame, one answer', () => {
     expect(steps).toBe(1);
   });
 
+  it('a probe after a seek in the same frame reads where the seek put the voice, stepping once', () => {
+    let steps = 0;
+    const p = patch<Part, Pose, { n: number }>(
+      1000,
+      (phase, _part, setting) => ({ gain: 1 + phase, crawl: setting.state.n }),
+      {
+        writes: ['gain', 'crawl'],
+        state: () => ({ n: 0 }),
+        step: (state) => {
+          state.n++;
+          steps++;
+        },
+      },
+    );
+    const m = mix<Part, Pose>(PART, { lanes: false });
+    const h = m.cue({ patch: p });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.probe(part);
+    m.sync(100);
+    expect(m.probe(part).gain).toBeCloseTo(1.1, 9);
+    h.seek(600);
+    const after = m.probe(part);
+    expect(after.gain).toBeCloseTo(1.6, 9);
+    expect(after.crawl).toBe(1);
+    expect(steps).toBe(1);
+  });
+
+  it('a voice faded before its start plays once its start arrives, with no other cue', () => {
+    const m = mix<Part, Pose>(PART, { lanes: false });
+    const part = { id: 'a' };
+    m.cue({ patch: patch<Part, Pose>(0, () => ({ gain: 2 }), { writes: ['gain'] }) });
+    const late = m.cue({
+      patch: patch<Part, Pose>(0, () => ({ crawl: 5 }), { writes: ['crawl'] }),
+      start: 300,
+    });
+    m.sync(100);
+    expect(m.probe(part).crawl).toBe(0);
+    late.fade({ over: 2000 });
+    m.sync(400);
+    expect(m.probe(part).crawl).toBeGreaterThan(0);
+  });
+
   it('a second sync with the same now is a no-op', () => {
     const steps: number[] = [];
     const counting = patch<Part, Pose, { n: number }>(0, () => ({}), {
@@ -468,6 +511,136 @@ describe('voices targeted at one subject each', () => {
     m.cue({ patch: crawl(100) });
     m.sync(132);
     expect(m.probe(a).crawl).toBe(110);
+  });
+});
+
+describe('voices naming their subjects', () => {
+  const crawl = (v: number) => patch<Part, Pose>(0, () => ({ crawl: v }), { writes: ['crawl'] });
+  const clock = () =>
+    patch<Part, Pose>(0, (_p, _s, setting) => ({ crawl: setting.elapsed }), { writes: ['crawl'] });
+
+  it('fold one voice per subject only into the subject each names', () => {
+    const subjects = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+    const m = mix<Part, Pose>(PART);
+    const handles = subjects.map((mine, i) => m.cue({ patch: crawl(i + 1), subjects: [mine] }));
+    const stranger = { id: 'stranger' };
+    for (const now of [0, 16, 32]) {
+      m.sync(now);
+      expect(subjects.map((s) => m.probe(s).crawl)).toEqual([1, 2, 3]);
+      expect(m.probe(stranger).crawl).toBe(0);
+    }
+    expect(handles.map((h) => h.weightOf(subjects[0] as Part))).toEqual([1, 0, 0]);
+    expect((handles[0] as { weightOf(s: Part): number }).weightOf(stranger)).toBe(0);
+  });
+
+  it('fold several voices naming one subject, and one voice naming several, matched by identity', () => {
+    const a = { id: 'a' };
+    const b = { id: 'b' };
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: crawl(1), subjects: [a] });
+    m.cue({ patch: crawl(10), subjects: [a, b, a] });
+    m.cue({ patch: crawl(100), subjects: [b] });
+    m.sync(0);
+    expect(m.probe(a).crawl).toBe(11);
+    expect(m.probe(b).crawl).toBe(110);
+    expect(m.probe({ id: 'a' }).crawl).toBe(0);
+  });
+
+  it('play alongside targeted and untargeted voices, and never ask target of a named voice', () => {
+    const a = { id: 'a' };
+    const b = { id: 'b' };
+    const asked: string[] = [];
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: crawl(1) });
+    m.cue({ patch: crawl(10), subjects: [a] });
+    m.cue({
+      patch: crawl(100),
+      target: (s) => {
+        asked.push(s.id);
+        return s === b;
+      },
+    });
+    m.cue({ patch: crawl(1000), subjects: [b] });
+    for (const now of [0, 16]) {
+      m.sync(now);
+      expect(m.probe(a).crawl).toBe(11);
+      expect(m.probe(b).crawl).toBe(1101);
+    }
+    expect(asked).toEqual(['a', 'b']);
+  });
+
+  it('pick up a named voice once it goes live, and drop one that left', () => {
+    const a = { id: 'a' };
+    const m = mix<Part, Pose>(PART);
+    const first = m.cue({ patch: crawl(1), subjects: [a] });
+    m.cue({ patch: crawl(10), start: 100, subjects: [a] });
+    m.sync(0);
+    expect(m.probe(a).crawl).toBe(1);
+    m.sync(100);
+    expect(m.probe(a).crawl).toBe(11);
+    first.fade();
+    m.sync(116);
+    expect(m.probe(a).crawl).toBe(10);
+    m.cue({ patch: crawl(100), subjects: [a] });
+    m.sync(132);
+    expect(m.probe(a).crawl).toBe(110);
+  });
+
+  it('are refused at cue alongside a target', () => {
+    const m = mix<Part, Pose>(PART);
+    const a = { id: 'a' };
+    expect(() => m.cue({ patch: crawl(1), subjects: [a], target: () => true })).toThrow(
+      /target or subjects/,
+    );
+  });
+
+  it('read back through a projection, including a voice that has since left', () => {
+    const a = { id: 'a' };
+    const b = { id: 'b' };
+    const m = mix<Part, Pose>(PART, { history: { ms: 1000 } });
+    m.sync(0);
+    const gone = m.cue({ patch: clock(), subjects: [a] });
+    m.cue({ patch: crawl(1000), subjects: [b] });
+    for (let t = 16; t <= 160; t += 16) {
+      m.sync(t);
+      m.probe(a);
+      m.probe(b);
+    }
+    gone.fade();
+    m.sync(176);
+    expect(m.probe(a).crawl).toBe(0);
+    const back = m.project(80);
+    expect(back.probe(a).crawl).toBe(80);
+    expect(back.probe(b).crawl).toBe(1000);
+    const ahead = m.project(300);
+    expect(ahead.probe(a).crawl).toBe(0);
+    expect(ahead.probe(b).crawl).toBe(1000);
+  });
+
+  it('let a projection ahead drop a named voice that leaves within it', () => {
+    const a = { id: 'a' };
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: crawl(1), subjects: [a], loop: false });
+    m.cue({
+      patch: patch<Part, Pose>(100, () => ({ crawl: 10 }), { writes: ['crawl'] }),
+      subjects: [a],
+      loop: false,
+    });
+    m.sync(0);
+    expect(m.probe(a).crawl).toBe(11);
+    expect(m.project(200).probe(a).crawl).toBe(1);
+  });
+
+  it('assess a voice waiting on an anchor as held only for the subjects it names', () => {
+    const a = { id: 'a' };
+    const b = { id: 'b' };
+    const m = mix<Part, Pose>(PART);
+    m.sync(0);
+    m.cue({ patch: crawl(1), subjects: [a], anchor: { start: { after: 'reply' } } });
+    m.probe(a);
+    m.probe(b);
+    expect(m.project(100).assess(a).crawl).toBe('held');
+    expect(m.project(100).assess(b).crawl).toBe('exact');
   });
 });
 

@@ -1,0 +1,79 @@
+---
+layout: ../layouts/Page.astro
+title: Score
+description: The score is the plan of when each voice plays. Voices can be placed relative to one another, and the mix can list what comes next and read itself at another time.
+---
+import Score from '../explainers/Score';
+import ApiEntries from '../components/ApiEntries.astro';
+
+# Score
+
+<p class="lede">The score is the plan: when each voice plays, for how long, and relative to which other voice. It never says what a voice contributes; that stays in the patch and the channels.</p>
+
+<Score client:only="react" />
+
+Every voice has four **marks** on the mix clock: `start`, when its fade in begins; `in`, when it is at full weight; `out`, when its fade out begins; and `end`, when it is gone. Above, an orb flies in, its row's text arrives once it lands, and a tint comes in as the text finishes, holds, then fades.
+
+## Placing a voice
+
+A voice takes a `name`, and a placement in `anchor`: at most one of `start` and `in`, and at most one of `out` and `end`. Each is a timestamp on the host's clock or an **anchor** to another voice's mark.
+
+```ts
+m.cue({ patch: flight, name: 'orb', start: 300, loop: false });
+m.cue({ patch: arrive, name: 'text', loop: false, anchor: { start: { after: 'orb' } } });
+m.cue({
+  patch: tint,
+  fade: { in: 200, out: 1400 },
+  anchor: { in: { after: 'text' }, out: { after: 'text', by: 600 } },
+});
+```
+
+`after` is the other voice's `end`, `with` is its `start`, and `before` is its start less `by`. The general form names the mark: `{ of: 'orb', mark: 'in', by: 50 }`. Anchoring `in` or `end` takes the voice's own fade into account, so `anchor: { in: 12_400 }` means fully in at 12.4 s.
+
+A string picks a voice by name. A **query** picks by what the plan knows of a voice instead: its `name`, a `tag`, or a channel it `writes`. Where several match, its `resolver` chooses: the `last` cued (the default), the `first`, the `next` whose mark is still to come, or the `earliest` or `latest` by time. A query never reads a channel's value: "when gain crosses 0.5" is the host's to watch.
+
+Each source can keep its own plan as a `score`. Names are looked up within the asking voice's score, so two sources can both have an `intro` without meeting; a query names `score` to reach into another one.
+
+```ts
+// Fully in 200 ms before the next voice that writes gain.
+m.cue({ patch: lead, fade: { in: 50 }, anchor: { in: { before: { writes: 'gain', resolver: 'next' }, by: 200 } } });
+```
+
+A voice whose anchor has no answer yet waits pending: a name nobody has cued, or the `out` of a voice that loops for good. One whose mark is already past starts partway through, the way playback starts in the middle of a region. While it waits, it follows its target, so cutting the orb short above brings everything after it forward. A placement that waits on itself is refused at `cue`.
+
+A voice that has left can still be anchored to only while the mix's history reaches it.
+
+## Announcing a mark
+
+Some moments only the host knows: a click, a reply from a server, a beat it has scheduled. The host puts a named mark on the score with `announce`, and anchors target it the same way they target a voice's marks.
+
+```ts
+m.cue({ patch: burst, anchor: { start: { with: 'reply' } } });   // waits
+m.announce('reply');                                             // now
+m.announce('beat', { at: performance.now() + 1200 });            // known ahead
+```
+
+A voice waiting on a mark nobody has announced stays pending, and a read ahead says `held` for whatever it would feed. An announced mark stays while it is still ahead, or while the mix's history reaches it.
+
+## What comes next
+
+`mix.marks(from, to)` lists every mark the plan knows between two timestamps, earliest first: each voice's four, with its id, name and tags, and every announced mark. A mark nothing has fixed yet is left out.
+
+```ts
+for (const next of m.marks(now, now + 2000)) if (next.mark === 'start') prepare(next.name);
+```
+
+## Reading another time
+
+`mix.project(timestamp)` reads the mix at another time without moving it. Its `probe` gives the pose a subject would have then, and `assess` says per channel how sure that is: `exact` where only the clock and known changes drove it, `stepped` where state was advanced across the gap in one go, and `held` where it depends on input from outside the clock, such as a `level` the host sets.
+
+Ahead of the last sync it plays forward what is cued. Behind it, the mix needs `history`:
+
+```ts
+const m = mix(K, { history: { ms: 10_000 }, stepMs: 5 });
+m.project(performance.now() - 3000).probe(part);
+```
+
+With history, the mix keeps what it cued, every change a handle made and when, the voices that have left, and a copy of each stateful voice's state per subject every `every` ms. A read back restores the nearest copy and steps forward from it. Under `stepMs` that is exact, so scrubbing back and forth lands on the pose the mix showed. `spring` and `glide` keep their motion within the horizon, so a retargeted one reads back to where it was. With `history: { ms, inputs: true }` the mix also records what each input signal on a voice's weight read, so a read back over a `level` the host moved is known rather than `held`. A mix without history keeps nothing.
+
+<ApiEntries word="score" />

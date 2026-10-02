@@ -50,6 +50,8 @@ requestAnimationFrame(frame);
 
 `target` picks which subjects a voice reaches. It runs once per subject, the first time the mix sees it, and the answer is kept. Pulse above has `target: (bar) => bar.i % 2 === 0`, so the odd columns never get a pulse block, and the ledger's pulse row reads 0 when you pick an odd bar.
 
+`subjects` names the subjects a voice reaches instead: `subjects: [bar]` reaches that bar and no other. Every `target` meets every subject the mix sees, so a scene with one voice per subject should name them, which lets a probe skip the voices that name someone else. A voice takes one or the other, never both.
+
 `atRest(subject)` is true when every channel of that subject's pose is at its rest, so a host can skip writing it. `live` is true while any voice is still playing, fading or waiting to start. When it goes false, the host can stop its loop. Cueing a voice makes it true again at once, and restarting the loop is the host's job.
 
 ## Clearing up
