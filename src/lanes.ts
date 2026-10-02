@@ -100,6 +100,29 @@ const SAMPLED = 5;
 const SEEKS = 6;
 
 /**
+ * Below what share of its subjects probed last frame a lane stops filling, and above what share it
+ * fills again; between the two it keeps doing what it did, so a host near the line does not flip
+ * every frame. Measured at 10k and 1k subjects (2026-10-02, one local machine): filling breaks even
+ * with probing through the general path at about 19% probed for keys at both sizes, 71-77% for a
+ * spring, and 63% (1k) to about 100% (10k) for a stateless fn.
+ */
+const SPARSE = { keys: { stop: 0.15, start: 0.25 }, other: { stop: 0.6, start: 0.8 } };
+
+/** The least prime at least `n`, and 1 below 2. */
+function primeFrom(n: number): number {
+  if (n < 2) return 1;
+  for (let c = n; ; c++) {
+    let prime = true;
+    for (let d = 2; d * d <= c; d++)
+      if (c % d === 0) {
+        prime = false;
+        break;
+      }
+    if (prime) return c;
+  }
+}
+
+/**
  * What one laned voice keeps per subject it reaches, by position in `list`. A subject gets a
  * position when a probe of it first finds the voice playing, which is when the general path first
  * sees it too.
@@ -108,6 +131,10 @@ class Lane<I, O> {
   /** The subject number at each position. */
   readonly list: number[] = [];
   private readonly at = new Map<number, number>();
+  /** Whether too few of its subjects were probed lately to fill it: theirs take the general path. */
+  idle = false;
+  /** The lines it goes idle and busy at, by its patch form. */
+  readonly line: { stop: number; start: number };
   /**
    * When the voice started playing on its lane, in the order lanes did; 0 while it waits. A subject
    * checked against every lane up to some epoch has met this one if this one's is no later.
@@ -150,6 +177,7 @@ class Lane<I, O> {
 
   constructor(readonly voice: Voice<I, O>) {
     this.motion = motionOf<I>(voice.patch);
+    this.line = voice.built !== null ? SPARSE.keys : SPARSE.other;
   }
 
   positionOf(slot: number): number {
@@ -221,6 +249,8 @@ export class Lanes<I, O> {
   private fills = 0;
   /** Per subject number, the latest lane epoch a probe of it has checked it against. */
   private seen = new Uint32Array(0);
+  /** Per subject number, how many idle lanes reach it; a probe reads lanes only where none do. */
+  private idle = new Uint32Array(0);
   /**
    * Per subject number, the probe count at its last probe read from the lanes and at its last probe
    * folded by the general path, and the fill the former read: which of a lane and a record holds
@@ -252,6 +282,16 @@ export class Lanes<I, O> {
   /** The `now` of the latest probe, and the probe count before its first, to tell a probe this frame. */
   private frameAt = Number.NaN;
   private frameProbes = 0;
+  /** The probe counts the last frame with a probe began and ended at, which lanes go idle by. */
+  private lastFrom = 0;
+  private lastTo = 0;
+  /** Set when a frame's first probe arrives, so its first fill decides which lanes go idle. */
+  private fresh = false;
+  /** Subjects probed this frame and in the last frame with a probe, counted once each. */
+  private distinct = 0;
+  private lastDistinct = 0;
+  /** Numbered subjects alive. */
+  private live = 0;
   private filledVersion = Number.NaN;
   private qualifiedVersion = Number.NaN;
 
@@ -273,9 +313,11 @@ export class Lanes<I, O> {
   /** Numbers a subject the mix sees for the first time. */
   number(subject: I): number {
     const slot = this.numbers.take(subject);
+    this.live++;
     this.grow(slot + 1);
     this.filled[slot] = 0;
     this.seen[slot] = 0;
+    this.idle[slot] = 0;
     this.laneProbe[slot] = 0;
     this.generalProbe[slot] = 0;
     this.laneFill[slot] = 0;
@@ -312,9 +354,15 @@ export class Lanes<I, O> {
    */
   prepare(slot: number, subject: I, now: number, version: number): boolean {
     if (now !== this.frameAt) {
+      this.lastFrom = this.frameProbes;
+      this.lastTo = this.probes;
+      this.lastDistinct = this.distinct;
+      this.distinct = 0;
       this.frameAt = now;
       this.frameProbes = this.probes;
+      this.fresh = true;
     }
+    if (slot >= 0 && !this.probedThisFrame(slot)) this.distinct++;
     if (this.filling) return this.general(slot);
     if (this.qualifiedVersion !== version) this.requalify(version);
     if (this.laned.length === 0) return this.general(slot);
@@ -330,7 +378,7 @@ export class Lanes<I, O> {
     if (slot < 0) return false;
     this.subjects[slot] = subject;
     const probe = ++this.probes;
-    let lane = this.filled[slot] === this.fills;
+    let lane = this.filled[slot] === this.fills && this.idle[slot] === 0;
     if ((this.seen[slot] as number) < this.epochs && this.meet(slot, subject)) {
       // The fill ran before the subject had these positions, so it reads the general path all frame.
       this.filled[slot] = 0;
@@ -386,6 +434,7 @@ export class Lanes<I, O> {
       const held = this.host.meet(lane.voice, subject);
       if (!held.reaches) continue;
       lane.add(slot, held);
+      if (lane.idle) this.idle[slot] = (this.idle[slot] as number) + 1;
       met = true;
     }
     const naming = this.host.naming(subject);
@@ -394,12 +443,14 @@ export class Lanes<I, O> {
         const lane = this.byId.get(voice.id);
         if (lane === undefined || lane.epoch <= from || lane.positionOf(slot) >= 0) continue;
         lane.add(slot, this.host.meet(voice, subject));
+        if (lane.idle) this.idle[slot] = (this.idle[slot] as number) + 1;
         met = true;
       }
     return met;
   }
 
   private forget(slot: number): void {
+    this.live--;
     for (const lane of this.lanes) lane.remove(slot);
     if (slot < this.filled.length) this.filled[slot] = 0;
     this.subjects[slot] = undefined;
@@ -414,6 +465,9 @@ export class Lanes<I, O> {
     const seen = new Uint32Array(cap);
     seen.set(this.seen);
     this.seen = seen;
+    const idle = new Uint32Array(cap);
+    idle.set(this.idle);
+    this.idle = idle;
     const laneFill = new Uint32Array(cap);
     laneFill.set(this.laneFill);
     this.laneFill = laneFill;
@@ -488,6 +542,7 @@ export class Lanes<I, O> {
 
   /** Hands a voice back to the general path, with the weights `weightOf` reports kept on its records. */
   private leave(lane: Lane<I, O>): void {
+    if (lane.idle) this.wake(lane);
     for (let p = 0; p < lane.list.length; p++) {
       const rec = lane.records[p];
       const slot = lane.list[p] as number;
@@ -508,9 +563,28 @@ export class Lanes<I, O> {
       this.filledVersion = version;
       const size = this.numbers.size;
       this.keeps = host.keeps;
-      for (const ch of this.laned) ch.values.fill(ch.rest, 0, size * ch.axes);
-      for (const lane of this.lanes) this.run(lane);
-      this.filled.fill(this.fills, 0, size);
+      const decide = this.fresh;
+      this.fresh = false;
+      const share = this.live > 0 ? this.lastDistinct / this.live : 1;
+      // One pass, deciding and running each lane, since a mix of many small lanes pays per visit.
+      let busy = false;
+      for (const lane of this.lanes) {
+        if (decide) {
+          // A lane with few subjects, such as one naming its own, goes by the share of all probed.
+          const line = lane.line;
+          if (lane.list.length >= 64) this.pace(lane);
+          else if (lane.idle ? share >= line.start || lane.list.length === 0 : share < line.stop)
+            this.flip(lane);
+        }
+        if (lane.idle) continue;
+        if (!busy) {
+          busy = true;
+          for (const ch of this.laned) ch.values.fill(ch.rest, 0, size * ch.axes);
+        }
+        this.run(lane);
+      }
+      // With every lane idle there was nothing to fill, and no subject reads a lane this frame.
+      if (busy) this.filled.fill(this.fills, 0, size);
       for (const slot of this.late) this.filled[slot] = 0;
       this.subjects.fill(undefined, 0, size);
       this.moved = reading.moved;
@@ -518,6 +592,57 @@ export class Lanes<I, O> {
       this.filling = false;
       this.late.length = 0;
     }
+  }
+
+  /**
+   * Sets a lane idle or busy by the share of its subjects probed in the last frame that had a probe,
+   * read from about 256 of them a prime stride apart, from an offset that moves each frame, so a host
+   * probing every second or third subject is not read as probing all or none. Both paths give the
+   * same values, so this only picks the cheaper.
+   */
+  private pace(lane: Lane<I, O>): void {
+    const list = lane.list;
+    const line = lane.line;
+    const from = this.lastFrom;
+    const to = this.lastTo;
+    const step = primeFrom(Math.floor(list.length / 256));
+    let looked = 0;
+    let probed = 0;
+    for (let p = this.fills % step; p < list.length; p += step) {
+      const slot = list[p] as number;
+      const a = this.laneProbe[slot] as number;
+      const b = this.generalProbe[slot] as number;
+      if ((a > from && a <= to) || (b > from && b <= to)) probed++;
+      looked++;
+    }
+    const share = probed / looked;
+    if (lane.idle ? share >= line.start : share < line.stop) this.flip(lane);
+  }
+
+  private flip(lane: Lane<I, O>): void {
+    if (lane.idle) this.wake(lane);
+    else this.rest(lane);
+  }
+
+  /** Leaves a lane's subjects to the general path until it wakes, keeping what `weightOf` reports. */
+  private rest(lane: Lane<I, O>): void {
+    lane.idle = true;
+    const list = lane.list;
+    const data = lane.data;
+    for (let p = 0; p < list.length; p++) {
+      const slot = list[p] as number;
+      this.idle[slot] = (this.idle[slot] as number) + 1;
+      // A probe read this subject from the last fill, which this lane's weight stays from.
+      if (this.laneFill[slot] === this.fills - 1) {
+        const o = p * STRIDE;
+        data[o + PROBED] = data[o + WEIGHT] as number;
+      }
+    }
+  }
+
+  private wake(lane: Lane<I, O>): void {
+    lane.idle = false;
+    for (const slot of lane.list) this.idle[slot] = (this.idle[slot] as number) - 1;
   }
 
   private subjectAt(slot: number): I | typeof absent {

@@ -1104,6 +1104,115 @@ describe('lanes hand a channel to the general path and take it back', () => {
   });
 });
 
+describe('lanes go idle below a share of subjects probed and fill again above it', () => {
+  // Frames 40 ms apart; the share probed runs all, 5%, all, 50%, 10%, all.
+  const frames = Array.from({ length: 26 }, (_, f) => f * 40);
+  const share = (t: number): number => {
+    const f = t / 40;
+    if (f < 4) return 1;
+    if (f < 9) return 0.05;
+    if (f < 13) return 1;
+    if (f < 17) return 0.5;
+    if (f < 21) return 0.1;
+    return 1;
+  };
+  const probe = (t: number, part: Part) => part.id % Math.round(1 / share(t)) === 0;
+
+  it('for keys voices with stagger and a mid-run cue', () => {
+    agree(
+      (m) => {
+        m.cue({ patch: pulse(), stagger: (p) => p.id * 7 });
+        m.cue({ patch: pulse(), weight: 0.6, fade: { in: 120 } });
+        return {
+          at: (t) => {
+            if (t === 400) m.cue({ patch: pulse(), stagger: (p) => p.id * 3, weight: 0.4 });
+          },
+        };
+      },
+      { times: frames, parts: 40, probe },
+    );
+  });
+
+  it('for stateless fn voices with stagger and a mid-run cue', () => {
+    agree(
+      (m) => {
+        m.cue({ patch: wave(), stagger: (p) => p.id * 5 });
+        return {
+          at: (t) => {
+            if (t === 400) m.cue({ patch: wave(), weight: 0.5, stagger: (p) => p.id * 11 });
+          },
+        };
+      },
+      { times: frames, parts: 40, probe },
+    );
+  });
+
+  it('for a spring retargeted while idle, with a mid-run cue', () => {
+    agree(
+      (m, parts) => {
+        const s = spring<Part, Pose>('crawl', { from: 0, to: (p) => p.id, stiffness: 120 });
+        m.cue({ patch: s, stagger: (p) => p.id * 4 });
+        return {
+          at: (t) => {
+            if (t === 240) s.to(parts[3] as Part, -20);
+            if (t === 400)
+              m.cue({ patch: glide<Part, Pose>('dark', { from: 0, velocity: 2, ms: 300 }) });
+            if (t === 720) s.to(parts[20] as Part, 9);
+          },
+        };
+      },
+      { times: frames, parts: 40, probe },
+    );
+  });
+
+  it('for a keys and a fn voice on one channel, one idle while the other fills', () => {
+    agree(
+      (m) => {
+        m.cue({ patch: pulse(), stagger: (p) => p.id * 6 });
+        m.cue({ patch: wave(), weight: 0.7 });
+        return {
+          at: (t) => {
+            if (t === 600) m.cue({ patch: pulse(), weight: 0.3 });
+          },
+        };
+      },
+      { times: frames, parts: 40, probe },
+    );
+  });
+
+  it('skips an idle lane and fills a busy one', () => {
+    const m = mix<Part, Pose>(K);
+    const calls: number[] = [];
+    const parts = Array.from({ length: 40 }, (_, id) => ({ id }));
+    m.cue({
+      patch: patch<Part, Pose>(
+        0,
+        (_ph, part) => {
+          calls.push(part.id);
+          return { crawl: 1 };
+        },
+        { writes: ['crawl'] },
+      ),
+    });
+    const frame = (t: number, probed: readonly Part[]): number => {
+      calls.length = 0;
+      m.sync(t);
+      for (const part of probed) m.probe(part);
+      return calls.length;
+    };
+    const few = [parts[0] as Part, parts[20] as Part];
+    frame(0, parts);
+    frame(16, parts);
+    // Every subject was probed last frame: the lane fills all 40 though 2 are probed now.
+    expect(frame(32, few)).toBe(40);
+    // 5% probed last frame: the lane is idle and the general path calls for the 2 probed.
+    expect(frame(48, few)).toBe(2);
+    // Still idle this frame, whatever is probed; then all probed last frame wakes it.
+    expect(frame(64, parts)).toBe(40);
+    expect(frame(80, few)).toBe(40);
+  });
+});
+
 describe('lanes run', () => {
   it("fill every numbered subject at the frame's first probe", () => {
     const m = mix<Part, Pose>(K);

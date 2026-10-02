@@ -31,9 +31,10 @@ version and everything else the patch. Each release lists its changes as **Break
 - Lanes: a channel every voice writing it can run that way is computed for every subject at once,
   in flat arrays, at the frame's first probe, rather than subject by subject, and gives the same
   pose. `keys`, a stateless `fn` and `motion` voices with a number weight qualify. Three `keys`
-  voices over 10,000 subjects fell from 6.1 to 2.6 ms a frame. A fill covers every subject a voice
-  has met, so a host that probes a few of many pays for all of them; `MixOptions.lanes: false`
-  turns lanes off.
+  voices over 10,000 subjects fell from 6.1 to 2.6 ms a frame. A lane whose subjects were mostly
+  left unprobed last frame stops filling and its subjects take the general path until probes pick
+  up again, so a host probing 5% of 10,000 subjects pays about what it would with lanes off, not
+  ten times it. `MixOptions.lanes: false` turns lanes off.
 - `mix.project(timestamp)` reads the mix at another time without moving it: `probe` gives the pose
   then, and `assess` says per channel whether it is `exact`, `stepped` or `held`. Ahead it plays
   what is cued forward; behind it needs `MixOptions.history: { ms, every? }`, which keeps every

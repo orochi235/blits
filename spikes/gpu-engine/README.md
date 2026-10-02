@@ -219,9 +219,10 @@ one. `sparse` probes all 10k subjects once, then 5% each frame.
 - **Springs got slower.** `spring-` against `spring` on the `lanes` build is what lanes buy, about
   0.82×; but the branch slowed a spring on the general path by 1.58× at 10k (`spring-` across
   builds), most likely through the `motion` form's rewrite, so a spring frame is 1.24× `project`'s with lanes on. Not yet profiled.
-- **A sparsely probed mix pays for every subject it met:** 1.26 ms against 0.11 when 5% of 10k are
-  probed, because a fill covers every subject a voice has met. `MixOptions.lanes: false` is the
-  answer for that host today.
+- **A sparsely probed mix paid for every subject it met:** 1.26 ms against 0.11 when 5% of 10k are
+  probed, because a fill covered every subject a voice had met. Since then a lane whose subjects
+  mostly went unprobed last frame rests and leaves them to the general path, which brought the
+  `sparse` row to about 0.15–0.17 ms against 1.2–1.35 before it, on one local machine.
 - **The general path did not get faster**: `locus`, `named` and `own` sit at 1.0–1.1×.
 - **A probe has a floor.** Measured while building, a probe costs about 110–140 ns at 10k subjects
   even when a lane did all the work, so a host that probes every node pays 1.1–1.4 ms before any
