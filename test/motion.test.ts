@@ -2,8 +2,9 @@ import { setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import { kit, sum, vec } from '../src/channels.js';
+import { curve } from '../src/easing.js';
 import { mix } from '../src/mixer.js';
-import { glide, spring } from '../src/motion.js';
+import { glide, spring, tween } from '../src/motion.js';
 
 interface Pose {
   x: number;
@@ -422,5 +423,117 @@ describe('the motion form', () => {
     m.sync(0);
     m.probe({ id: 'a' });
     expect(() => m.probe({ id: 'b' })).toThrow(/same number of axes/);
+  });
+});
+
+describe('tween', () => {
+  const ease = curve('ease-out');
+  const play = (every: number, until: number) => {
+    const t = tween<Part, Pose>('x', { from: 10, to: 110, ms: 400, ease: 'ease-out' });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: t });
+    const a = { id: 'a' };
+    for (let at = 0; at < until; at += every) {
+      m.sync(at);
+      m.probe(a);
+    }
+    m.sync(until);
+    return { t, m, a, x: m.probe(a).x };
+  };
+
+  it('lands where the closed form says at any frame rate', () => {
+    for (const at of [0, 50, 150, 333, 399]) {
+      const want = 10 + 100 * ease(at / 400);
+      for (const every of [1, 16, 33, 100]) expect(play(every, at).x).toBeCloseTo(want, 9);
+    }
+  });
+
+  it('ends exactly at to, and the mix sees rest when to is the rest', () => {
+    const { t, a, x } = play(16, 400);
+    expect(x).toBe(110);
+    expect(t.read(a)).toEqual({ value: 110, velocity: 0 });
+    const home = tween<Part, Pose>('x', { from: 1, to: 0, ms: 300 });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: home });
+    const b = { id: 'b' };
+    for (let at = 0; at <= 320; at += 16) {
+      m.sync(at);
+      m.probe(b);
+    }
+    expect(m.probe(b).x).toBe(0);
+    expect(m.atRest(b)).toBe(true);
+  });
+
+  it('reads its velocity from the slope of its easing', () => {
+    const lin = tween<Part, Pose>('x', { from: 0, to: 100, ms: 200, ease: 'linear' });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: lin });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(100);
+    m.probe(a);
+    expect((lin.read(a) as { velocity: number }).velocity).toBeCloseTo(500, 6);
+  });
+
+  it('retargets from where a subject is, over the full ms again', () => {
+    const t = tween<Part, Pose>('x', { from: 0, to: 100, ms: 200, ease: 'linear' });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: t });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(100);
+    expect(m.probe(a).x).toBeCloseTo(50, 9);
+    t.to(a, -50);
+    m.sync(200);
+    expect(m.probe(a).x).toBeCloseTo(0, 9);
+    m.sync(300);
+    expect(m.probe(a).x).toBe(-50);
+  });
+
+  it('takes from and to per subject, on every axis', () => {
+    const t = tween<Part, Pose, number[]>('p', {
+      from: (s) => (s.id === 'a' ? [0, 0] : [10, 10]),
+      to: [20, -20],
+      ms: 100,
+      ease: 'linear',
+    });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: t });
+    m.sync(0);
+    const a = { id: 'a' };
+    const b = { id: 'b' };
+    m.probe(a);
+    m.probe(b);
+    m.sync(50);
+    expect(m.probe(a).p).toEqual([10, -10]);
+    expect(m.probe(b).p).toEqual([15, -5]);
+  });
+
+  it('honors the voice rate', () => {
+    const t = tween<Part, Pose>('x', { from: 0, to: 100, ms: 200, ease: 'linear' });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: t, rate: 2 });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(50);
+    expect(m.probe(a).x).toBeCloseTo(50, 9);
+  });
+
+  it('reads back through a projection', () => {
+    const t = tween<Part, Pose>('x', { from: 0, to: 100, ms: 400, ease: 'ease-out' });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: t });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    expect(m.project(200).probe(a).x).toBeCloseTo(100 * ease(0.5), 9);
+  });
+
+  it('has no push, and refuses an ms that is not positive', () => {
+    expect('push' in tween<Part, Pose>('x', { from: 0, to: 1, ms: 10 })).toBe(false);
+    expect(() => tween<Part, Pose>('x', { from: 0, to: 1, ms: 0 })).toThrow(/positive ms/);
   });
 });

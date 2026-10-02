@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kit, max, mul, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
-import { glide, spring } from '../src/motion.js';
+import { glide, spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 import type { Handle, Mix, MixOptions } from '../src/types.js';
 
@@ -773,6 +773,42 @@ describe('lanes give motion voices the pose the general path gives', () => {
             if (t === 999) g.push(parts[1] as Part, 7, 1200);
           },
         };
+      },
+      { times },
+    );
+  });
+
+  it('for a tween over every subject, retargeted timed and untimed, mid-flight', () => {
+    agree(
+      (m, parts) => {
+        const tw = tween<Part, Pose>('crawl', { from: 0, to: crawlTo, ms: 600 });
+        m.cue({ patch: tw, stagger: (p) => p.id * 30 });
+        return {
+          at: (t) => {
+            if (t === 120) tw.to(parts[2] as Part, -40);
+            if (t === 500) tw.to(parts[1] as Part, 5, 700);
+          },
+        };
+      },
+      { times },
+    );
+  });
+
+  it('for a tween per subject named with subjects', () => {
+    agree(
+      (m, parts) => {
+        parts.forEach((part) => {
+          m.cue({
+            patch: tween<Part, Pose, number[]>('position', {
+              from: [part.id, 0, 0],
+              to: [0, part.id, -part.id],
+              ms: 300 + 50 * part.id,
+              ease: { bezier: [0.3, 0, 0.2, 1] },
+            }),
+            subjects: [part],
+            loop: false,
+          });
+        });
       },
       { times },
     );

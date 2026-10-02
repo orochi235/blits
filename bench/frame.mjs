@@ -3,7 +3,7 @@
 // `p99` and `worst` are single frames, where a collection landing mid-frame shows; `gc` counts
 // collections during the timed frames and the ms they paused for.
 import { PerformanceObserver } from 'node:perf_hooks';
-import { hex, keys, kit, max, mix, mul, patch, spring, sum, vec } from '../dist/index.js';
+import { hex, keys, kit, max, mix, mul, patch, spring, sum, tween, vec } from '../dist/index.js';
 
 const K = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: hex() });
 
@@ -43,6 +43,43 @@ const drift = () =>
 // weasel's tween-to-target shape as a spring: each subject heads somewhere of its own.
 const settle = () => spring('position', { from: [0, 0, 0], to: (s) => [s.seed, 1, 0] });
 
+// The same shape as a tween, long enough to stay in flight for the whole run, and as weasel's
+// animator wrote it before there was one: a `fn` looking each subject's endpoints up per call.
+const LONG = 10000;
+const smooth = (u) => u * u * (3 - 2 * u);
+const glideTo = () =>
+  tween('position', { from: [0, 0, 0], to: (s) => [s.seed, 1, 0], ms: LONG, ease: smooth });
+const tweenFn = () =>
+  patch(
+    LONG,
+    (ph, s) => {
+      const u = smooth(ph);
+      return { position: [s.seed * u, u, 0] };
+    },
+    { writes: ['position'] },
+  );
+
+// weasel's animator-on-blits shape: string ids, each node's endpoints held in a map by id.
+const easeOut = (u) => 1 - (1 - u) ** 3;
+const ends = new Map();
+const weaselTween = () =>
+  tween('position', {
+    from: (id) => ends.get(id).from,
+    to: (id) => ends.get(id).to,
+    ms: LONG,
+    ease: easeOut,
+  });
+const weaselFn = () =>
+  patch(
+    LONG,
+    (ph, id) => {
+      const { from: a, to: b } = ends.get(id);
+      const u = easeOut(ph);
+      return { position: [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, 0] };
+    },
+    { writes: ['position'] },
+  );
+
 const rows = [
   ['fn', 100, 1],
   ['fn', 1000, 1],
@@ -65,17 +102,27 @@ const rows = [
   ['spring', 10000, 1],
   ['springs', 1000, 1],
   ['springs', 10000, 1],
+  // One tween voice over every subject, one per subject, and a `fn` doing a tween's job.
+  ['tween', 10000, 1],
+  ['tweens', 10000, 1],
+  ['tweenfn', 10000, 1],
+  ['weasel', 10000, 1],
+  ['weaselfn', 10000, 1],
   // Lanes fill every subject they have met: this one probes all 10k once, then 5% each frame.
   ['sparse', 10000, 1],
   // The same rows with lanes off, for the comparison in one run.
   ['keys-', 10000, 3],
   ['spring-', 10000, 1],
+  ['tween-', 10000, 1],
+  ['tweenfn-', 10000, 1],
   ['sparse-', 10000, 1],
   // Read through `pull` into one array per channel instead of a probe per subject.
   ['fn^', 10000, 3],
   ['keys^', 1000, 3],
   ['keys^', 10000, 3],
   ['spring^', 10000, 1],
+  ['tween^', 10000, 1],
+  ['tweenfn^', 10000, 1],
   // A projection made and probed every frame, as a continuous scrub would: 500 ms ahead, and
   // 300 ms back on a mix keeping 5 s of history.
   ['ahead', 1000, 3],
@@ -95,21 +142,34 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     ...(kind === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {}),
     lanes: !off,
   });
-  const subjects = Array.from({ length: n }, (_, j) => ({ seed: j * 0.37 }));
-  const own = kind === 'own' || kind === 'named' || kind === 'springs';
+  const weasel = kind.startsWith('weasel');
+  const subjects = Array.from({ length: n }, (_, j) => (weasel ? `n${j}` : { seed: j * 0.37 }));
+  if (weasel)
+    for (let j = 0; j < n; j++)
+      ends.set(`n${j}`, { from: [j, 300 - j, 0], to: [j + 500, 300 - j, 0] });
+  const own = kind === 'own' || kind === 'named' || kind === 'springs' || kind === 'tweens';
   if (kind === 'own')
     for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
   if (kind === 'named') for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine] });
   if (kind === 'springs') for (const mine of subjects) m.cue({ patch: settle(), subjects: [mine] });
+  if (kind === 'tweens') for (const mine of subjects) m.cue({ patch: glideTo(), subjects: [mine] });
   for (let v = 0; !own && v < voices; v++) {
     const p =
       kind === 'keys'
         ? bounce()
         : kind === 'spring'
           ? settle()
-          : scrub && v === 0
-            ? drift()
-            : flicker(v);
+          : kind === 'tween'
+            ? glideTo()
+            : kind === 'tweenfn'
+              ? tweenFn()
+              : kind === 'weasel'
+                ? weaselTween()
+                : kind === 'weaselfn'
+                  ? weaselFn()
+                  : scrub && v === 0
+                    ? drift()
+                    : flicker(v);
     m.cue({ patch: p, fade: { in: 100 }, locus: kind === 'locus' ? 'one' : undefined });
   }
   const probed = kind === 'sparse' ? subjects.filter((_, j) => j % 20 === 0) : subjects;

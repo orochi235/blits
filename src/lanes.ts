@@ -186,8 +186,14 @@ class Lane<I, O> {
    */
   data = new Float64Array(0);
   records: (Subject<unknown> | undefined)[] = [];
-  /** For a motion voice, per position, the delta its last sample made. */
+  /**
+   * For a motion voice, per position, the delta its last sample made; null where that sample was
+   * kept only in `samples`, until a probe asks for it.
+   */
   deltas: (Record<string, unknown> | null)[] = [];
+  /** For a motion voice, per position, its last sample's value on each of `axes` axes. */
+  samples = new Float64Array(0);
+  axes = 0;
   /** What a keys read writes into, reused across subjects. */
   readonly delta: Record<string, unknown> = {};
   /** The arrays keyed reads interpolate into: the lane's own, so a probe mid-fill cannot move them. */
@@ -258,6 +264,8 @@ class Lane<I, O> {
       this.data.copyWithin(p * STRIDE, last * STRIDE, (last + 1) * STRIDE);
       this.records[p] = this.records[last];
       this.deltas[p] = this.deltas[last] ?? null;
+      const n = this.axes;
+      if (n > 0) this.samples.copyWithin(p * n, last * n, (last + 1) * n);
     }
     this.list.pop();
     this.at.delete(slot);
@@ -861,7 +869,7 @@ export class Lanes<I, O> {
     const o = p * STRIDE;
     const ch = lane.chans[0] as Laned;
     this.settle(lane, p, slot, held);
-    let delta = held.delta;
+    const delta = held.delta;
     if (
       delta === null ||
       held.probed !== this.now ||
@@ -879,12 +887,39 @@ export class Lanes<I, O> {
         return;
       }
       run.sample(ms, elapsed, run.xs, run.vs);
-      delta = { [ch.name]: run.value(ms, run.xs) };
+      // Kept as numbers, not a delta: one is built only if a probe this frame asks for it.
+      const n = run.n;
+      if (lane.axes !== n) {
+        lane.axes = n;
+        lane.samples = new Float64Array(0);
+      }
+      if ((p + 1) * n > lane.samples.length) {
+        const grown = new Float64Array(Math.max(p + 1, (lane.samples.length / n) * 2, 4) * n);
+        grown.set(lane.samples);
+        lane.samples = grown;
+      }
+      for (let a = 0; a < n; a++) lane.samples[p * n + a] = run.xs[a] as number;
+      lane.deltas[p] = null;
+      data[o + SAMPLED] = this.fills;
+      data[o + SEEKS] = voice.seeks;
+      if (w > 0) this.foldInto(ch, slot, ch.axes === 1 ? run.xs[0] : run.xs, w);
+      return;
     }
     lane.deltas[p] = delta;
     data[o + SAMPLED] = this.fills;
     data[o + SEEKS] = voice.seeks;
     if (w > 0) this.foldInto(ch, slot, delta[ch.name], w);
+  }
+
+  /** The delta a motion voice's last sample for position `p` made, built from `samples`. */
+  private sampled(lane: Lane<I, O>, p: number): Record<string, unknown> {
+    const run = lane.motion as Motions<I>;
+    const n = lane.axes;
+    for (let a = 0; a < n; a++) run.xs[a] = lane.samples[p * n + a] as number;
+    const ms = lane.data[p * STRIDE + MSLOT] as number;
+    const delta = { [(lane.chans[0] as Laned).name]: run.value(ms, run.xs) };
+    lane.deltas[p] = delta;
+    return delta;
   }
 
   /**
@@ -899,7 +934,7 @@ export class Lanes<I, O> {
       lane.data[o + SAMPLED] !== this.per[slot * SLOT + LANE_FILL]
     )
       return;
-    held.delta = lane.deltas[p] ?? null;
+    held.delta = lane.deltas[p] ?? this.sampled(lane, p);
     held.probed = this.now;
     held.seeks = lane.data[o + SEEKS] as number;
   }

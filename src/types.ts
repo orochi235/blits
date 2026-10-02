@@ -151,6 +151,13 @@ export type MotionSpec =
       /** The friction's time constant, ms. */
       readonly ms: number;
       readonly settle: number;
+    }
+  | {
+      readonly kind: 'tween';
+      /** How long a stretch takes. */
+      readonly ms: number;
+      readonly ease: Easing;
+      readonly settle: number;
     };
 
 /**
