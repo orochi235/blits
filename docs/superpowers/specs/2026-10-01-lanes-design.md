@@ -85,8 +85,12 @@ Per patch form:
 
 A stateless `fn` that calls `setting.send` from `at` now sends each frame for every subject it has
 met, not only for the ones probed that frame. Nothing in blits or its consumers does this today. A
-patch that keeps per-subject state through `setting.keep` is stateful: once a call leaves kept state
-on a record, its voice leaves its lane for the general path.
+patch that keeps per-subject state through `setting.keep` is stateful: once a call makes kept state
+on a record, the fill makes no further call for that voice and the voice leaves its lane for the
+general path. A record a fill called keeps that call's result, so a probe that frame reuses it. If a
+patch first calls `keep` partway through playing and the call that does belongs to a subject not
+probed that frame, that subject's state advances once more than on the general path; declaring
+`state` avoids it.
 
 Later probes that frame copy each laned channel's values into the pose, and fold the rest through
 the general path. `probe(subject, out)` keeps its signature.

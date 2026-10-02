@@ -478,6 +478,70 @@ describe('lanes stay identical where a fill and a probe interleave', () => {
     });
   });
 
+  it('for a fn that starts keeping state partway through, every subject probed', () => {
+    const owner = {};
+    script((m, parts, look) => {
+      m.cue({
+        patch: patch<Part, Pose>(
+          1000,
+          (phase, _part, setting) => {
+            if (phase < 0.5) return { crawl: phase };
+            const kept = setting.keep(owner, () => ({ n: 0 }));
+            kept.n++;
+            return { crawl: kept.n };
+          },
+          { writes: ['crawl'] },
+        ),
+      });
+      for (const t of [0, 100, 200, 400, 600, 650, 700, 800, 1200, 1600]) {
+        m.sync(t);
+        for (const p of parts) look(p);
+      }
+    });
+  });
+
+  it('advances state a fn starts keeping partway through once more, for one unprobed subject', () => {
+    const owner = {};
+    const times = [100, 200, 400, 600, 650, 700, 800, 1200, 1600];
+    const runs = [false, true].map((lanes) => {
+      const m = mix<Part, Pose>(K, { lanes });
+      const parts = Array.from({ length: 6 }, (_, id) => ({ id }));
+      m.cue({
+        patch: patch<Part, Pose>(
+          1000,
+          (phase, _part, setting) => {
+            if (phase < 0.5) return { crawl: phase };
+            const kept = setting.keep(owner, () => ({ n: 0 }));
+            kept.n++;
+            return { crawl: kept.n };
+          },
+          { writes: ['crawl'] },
+        ),
+      });
+      m.sync(0);
+      for (const p of parts) m.probe(p);
+      // Subject 0 holds the lane's first position and is not probed again until t > 1000.
+      const crawl: number[][] = [];
+      for (const t of times) {
+        m.sync(t);
+        crawl.push(parts.map((p) => (p.id !== 0 || t > 1000 ? m.probe(p).crawl : Number.NaN)));
+      }
+      return crawl;
+    });
+    const [off, on] = runs as [number[][], number[][]];
+    const ahead = new Set<number>();
+    off.forEach((row, i) => {
+      row.forEach((v, id) => {
+        const w = (on[i] as number[])[id] as number;
+        if (Number.isNaN(v)) return;
+        expect(w - v, `t=${times[i]} subject ${id}`).toBeGreaterThanOrEqual(0);
+        expect(w - v, `t=${times[i]} subject ${id}`).toBeLessThanOrEqual(1);
+        if (w !== v) ahead.add(id);
+      });
+    });
+    expect([...ahead]).toEqual([0]);
+  });
+
   it('reports weightOf as of the last frame each subject was probed', () => {
     const res = [false, true].map((lanes) => {
       const m = mix<Part, Pose>(K, { lanes });

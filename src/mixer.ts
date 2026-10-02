@@ -913,7 +913,9 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /**
    * Whether a voice's patch and spec can run on a lane, its channels aside. A voice whose patch has
-   * kept state on a record through `setting.keep` is stateful from then on, and leaves its lane.
+   * kept state on a record through `setting.keep` is stateful from then on, and leaves its lane;
+   * one that starts keeping partway through may advance that state once for one subject not
+   * probed on the frame it starts, which declaring `state` avoids.
    */
   private fits(voice: Voice<I, O>): boolean {
     const spec = voice.spec;

@@ -295,7 +295,15 @@ export class Lanes<I, O> {
     }
     if (this.qualifiedVersion !== version) this.requalify(version);
     if (this.laned.length === 0) return false;
-    if (this.filledAt !== now || this.filledVersion !== version) this.fillAll(now, version);
+    if (this.filledAt !== now || this.filledVersion !== version) {
+      this.fillAll(now, version);
+      // A patch call in that fill made kept state, which took its voice off its lane: fill without it.
+      if (this.qualifiedVersion !== version) {
+        this.requalify(version);
+        if (this.laned.length === 0) return false;
+        this.fillAll(now, version);
+      }
+    }
     if (slot < 0) return false;
     this.subjects[slot] = subject;
     const probe = ++this.probes;
@@ -496,8 +504,11 @@ export class Lanes<I, O> {
     const period = voice.patch.period;
     const passes = passesOf(voice.spec.loop);
     const list = lane.list;
-    for (let p = 0; p < list.length; p++)
+    for (let p = 0; p < list.length; p++) {
       this.one(lane, p, list[p] as number, elapsed, period, passes);
+      // Its patch just made kept state: no further call this fill, the general path makes them.
+      if (voice.keeping) return;
+    }
   }
 
   private one(
@@ -564,6 +575,10 @@ export class Lanes<I, O> {
       string,
       unknown
     >;
+    // What `influence` leaves on the record, so a probe on the general path this frame reuses it.
+    held.delta = delta;
+    held.probed = this.now;
+    held.seeks = voice.seeks;
     if (this.keeps) host.after(voice, held);
     if (reading.kept !== kept && !voice.keeping) host.kept(voice);
     if (w > 0) this.foldDelta(lane, slot, delta, w);
