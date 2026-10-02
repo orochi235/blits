@@ -242,6 +242,11 @@
   <dt>Score</dt><dd>The source that holds a host's whole plan: what plays, over what, and when. It supplies the two things blits takes as given, the timing and the cast of subjects. klieg's is spread across handlers and a <code>Timeline</code>; another host's may be a document or a route table. Inside blits it is a plan of voices placed on the mix clock, which knows when each plays and never what it contributes; see Score.</dd>
 </dl>
 
+<p>Informal terms are used in design work and in the code but appear nowhere in the public API, so a consumer never has to learn them.</p>
+<dl>
+  <dt>Lane</dt><dd>A channel the mix computes for every subject at once, in flat arrays indexed by a number it gives each subject, rather than subject by subject. A channel runs as a lane only while every voice writing it qualifies; otherwise it takes the general path. Being designed, not built.</dd>
+</dl>
+
 <h2 id="channels">Channels</h2>
 <p>The arithmetic of blending is a property of the operand type, so it lives on the channel and nowhere else. Every merge, fade, crossfade, and retarget in the package is one of these four operations.</p>
 
