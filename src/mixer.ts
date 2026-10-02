@@ -1,7 +1,7 @@
 import { clampWeight, envelope, passesOf, place, placed } from './clock.js';
 import { type Curve, curve } from './easing.js';
 import { type LaneHost, Lanes } from './lanes.js';
-import { motionOf } from './motion.js';
+import { motionOf, noFrame } from './motion.js';
 import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
@@ -265,6 +265,8 @@ export class Voice<I, O> {
   seeks = 0;
   /** Whether its patch has kept state on a record through `setting.keep`, which makes it stateful. */
   keeping = false;
+  /** For a motion patch, the hook it was given to ask the mix for its subjects' voice time. */
+  frame: ((subject: I) => number) | null = null;
   readonly ease: Curve | undefined;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: Setting<unknown>;
@@ -576,7 +578,10 @@ class Mixer<I, O> implements Mix<I, O> {
     if (!Number.isNaN(this.now)) voice.cuedAt = this.now;
     voice.placing = placed;
     const motion = motionOf<I>(patch);
-    if (motion !== undefined) motion.frame = (subject) => this.frameOf(voice, subject);
+    if (motion !== undefined) {
+      voice.frame = Mixer.frameHook(new WeakRef(this), new WeakRef(voice));
+      motion.frame = voice.frame;
+    }
     this.voices.push(voice);
     this.index(voice);
     this.version++;
@@ -944,16 +949,30 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   /**
+   * What a motion patch asks for its subjects' voice time at the latest frame. It holds the mix and
+   * the voice weakly, so a patch the host keeps does not keep a mix it has let go of alive.
+   */
+  private static frameHook<I, O>(
+    mix: WeakRef<Mixer<I, O>>,
+    voice: WeakRef<Voice<I, O>>,
+  ): (subject: I) => number {
+    return (subject) => {
+      const m = mix.deref();
+      const v = voice.deref();
+      return m === undefined || v === undefined ? Number.NaN : m.frameOf(v, subject);
+    };
+  }
+
+  /**
    * A subject's voice time at the latest frame, where a motion patch places an untimed change and a
    * `read` with no time; NaN until the voice has started and met the subject, and while the
-   * subject's own time is still short of its stagger.
+   * subject's own time is still short of its stagger. A retired voice's patch no longer asks.
    */
   private frameOf(voice: Voice<I, O>, subject: I): number {
     if (Number.isNaN(this.now) || voice.state === 'pending') return Number.NaN;
     const held = voice.subjects.get(subject);
     if (held === undefined || !held.reaches) return Number.NaN;
-    const now = voice.state === 'done' ? Math.min(this.now, voice.doneAt) : this.now;
-    const t = voice.elapsedAt(now) - held.delay;
+    const t = voice.elapsedAt(this.now) - held.delay;
     return t < 0 ? Number.NaN : t;
   }
 
@@ -1451,6 +1470,9 @@ class Mixer<I, O> implements Mix<I, O> {
   /** Removes a voice, recording that it left at `at`, default now. */
   private retire(voice: Voice<I, O>, at?: number): void {
     this.lanes?.invalidate();
+    const motion = motionOf<I>(voice.patch);
+    if (motion !== undefined && motion.frame === voice.frame) motion.frame = noFrame;
+    voice.frame = null;
     voice.state = 'done';
     voice.doneAt = at ?? (Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now);
     voice.resolve();

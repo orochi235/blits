@@ -1,3 +1,5 @@
+import { setFlagsFromString } from 'node:v8';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import { kit, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
@@ -319,6 +321,41 @@ describe('the motion form', () => {
       return out;
     };
     expect(run(false)).toEqual(run(true));
+  });
+
+  it('lets go of a mix the host dropped while it keeps the spring the mix played', async () => {
+    setFlagsFromString('--expose_gc');
+    const gc = runInNewContext('gc') as () => void;
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    const ref = (() => {
+      const m = mix<Part, Pose>(K);
+      m.cue({ patch: s });
+      m.sync(0);
+      m.probe({ id: 'a' });
+      return new WeakRef(m);
+    })();
+    for (let i = 0; i < 20 && ref.deref() !== undefined; i++) {
+      await new Promise((r) => setTimeout(r, 0));
+      gc();
+    }
+    expect(ref.deref()).toBeUndefined();
+  });
+
+  it('reads nothing with no time once the voice playing the subject is gone', () => {
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    const m = mix<Part, Pose>(K);
+    const h = m.cue({ patch: s });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(100);
+    m.probe(a);
+    expect(s.read(a)).toBeDefined();
+    h.fade({ over: 0 });
+    m.sync(116);
+    m.probe(a);
+    expect(s.read(a)).toBeUndefined();
+    expect(s.read(a, 100)).toBeDefined();
   });
 
   it('forgets a subject the mix drops, so a string subject starts afresh', () => {

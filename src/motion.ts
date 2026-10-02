@@ -57,6 +57,9 @@ const COAST = 3;
  */
 const HEAD = 5;
 
+/** A motion patch's `frame` while no mix plays it: no subject has a latest frame. */
+export const noFrame = (): number => Number.NaN;
+
 const solved = { y: 0, dy: 0 };
 /** Where every patch's `sample` leaves a value on its way to the mix; none outlives its call. */
 let shared = { xs: new Float64Array(4), vs: new Float64Array(4) };
@@ -126,7 +129,8 @@ const per = <I, V>(p: PerSubject<I, V>, subject: I): V =>
 export type Moving<I, O, V extends Value> = Patch<I, O, void> & {
   /**
    * Where `subject` is and how fast it moves at voice time `at`, default the mix's latest frame.
-   * With no time given, undefined until a frame of its voice has met the subject.
+   * With no time given, undefined until a frame of its voice has met the subject, and again once
+   * that voice is gone.
    */
   read(subject: I, at?: number): Motion<V> | undefined;
   /**
@@ -175,9 +179,10 @@ export class Motions<I> {
   private readonly older = new Map<number, Segment[]>();
   /**
    * The subject's voice time at the mix's latest frame, which an untimed change and a `read` with
-   * no time take; NaN where no frame of the patch's voice has met the subject. Set by the mix.
+   * no time take; NaN where no frame of the patch's voice has met the subject. Set by the mix that
+   * cues the patch, and put back when its voice retires.
    */
-  frame: (subject: I) => number = () => Number.NaN;
+  frame: (subject: I) => number = noFrame;
 
   constructor(private readonly shape: Shape<I>) {
     this.runs = Float64Array.from(shape.law);
