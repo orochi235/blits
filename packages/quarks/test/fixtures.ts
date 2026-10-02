@@ -1,6 +1,7 @@
 import { patch } from '@msb235/blits';
 import { MeshBasicMaterial } from 'three';
 import {
+  type Behavior,
   ConstantColor,
   ConstantValue,
   IntervalValue,
@@ -35,6 +36,23 @@ export function system(over: Partial<Parameters> = {}): ParticleSystem {
     material: new MeshBasicMaterial(),
     ...over,
   });
+}
+
+/** A behavior that throws from `initialize`, as a particle is born, while `fail.on` is set. */
+export function failing(fail: { on: boolean }): Behavior {
+  return {
+    type: 'failing',
+    initialize() {
+      if (fail.on) throw new Error('behavior failed');
+    },
+    update() {},
+    frameUpdate() {},
+    toJSON() {},
+    clone() {
+      return this;
+    },
+    reset() {},
+  } as unknown as Behavior;
 }
 
 /** Every particle the system holds, oldest first. */

@@ -1,7 +1,7 @@
 import {
   Bezier,
   ColorRange,
-  type ConstantValue,
+  ConstantValue,
   type IntervalValue,
   PiecewiseBezier,
   Vector4,
@@ -52,6 +52,17 @@ describe('Authored', () => {
     expect(() => new Authored(system({ startSize: curve }), all)).toThrow(/startSize/);
     const range = new ColorRange(new Vector4(0, 0, 0, 1), new Vector4(1, 1, 1, 1));
     expect(() => new Authored(system({ startColor: range }), all)).toThrow(/startColor/);
+  });
+
+  it('refuses one generator on two fields, naming both', () => {
+    const one = new ConstantValue(2);
+    expect(() => new Authored(system({ startSpeed: one, startLife: one }), all)).toThrow(
+      /startSpeed.*startLife/,
+    );
+    const only = { speed: true, size: false, life: false, tint: false };
+    expect(() => new Authored(system({ startSpeed: one, startLife: one }), only)).toThrow(
+      /startSpeed.*startLife/,
+    );
   });
 
   it('refuses a system that does not emit in world space', () => {

@@ -27,8 +27,13 @@ export class Authored {
       throw new Error(
         'blits-quarks: a system needs worldSpace: true, since the driver places particles in world coordinates',
       );
-    for (const name of SCALARS) {
+    for (const [i, name] of SCALARS.entries()) {
       if (!applies[name]) continue;
+      for (const [j, other] of SCALARS.entries())
+        if (j !== i && system[FIELD[other]] === system[FIELD[name]])
+          throw new Error(
+            `blits-quarks: ${FIELD[i < j ? name : other]} and ${FIELD[i < j ? other : name]} share one generator, so scaling one would scale both; give each its own`,
+          );
       const gen = system[FIELD[name]];
       if (gen instanceof ConstantValue) this.ranges[name] = { gen, value: gen.value };
       else if (gen instanceof IntervalValue) this.ranges[name] = { gen, a: gen.a, b: gen.b };

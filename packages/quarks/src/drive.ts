@@ -65,12 +65,33 @@ export function drive<I, O extends Partial<Emission>>(
     travelDistance: 0,
   };
 
+  // Floating-point drift in `rate × dt` lands a hair under a whole particle; this much is ignored.
+  const SLACK = 1e-6;
+
   const emit = (b: Bound<O>): void => {
-    b.authored.apply(b.pose);
     const at = typeof b.at === 'function' ? b.at() : b.at;
-    const [x, y, z] = 'x' in at ? [at.x, at.y, at.z] : at;
     const o = b.pose.offset;
-    matrix.makeTranslation(x + (o?.[0] ?? 0), y + (o?.[1] ?? 0), z + (o?.[2] ?? 0));
+    let x: number;
+    let y: number;
+    let z: number;
+    if ('x' in at) {
+      x = at.x;
+      y = at.y;
+      z = at.z;
+    } else {
+      x = at[0];
+      y = at[1];
+      z = at[2];
+    }
+    // The emitter's world rotation and scale, as quarks itself emits with, at the subject's position.
+    const world = b.system.emitter.matrixWorld.elements;
+    const e = matrix.elements;
+    for (let i = 0; i < 12; i++) e[i] = world[i] as number;
+    e[12] = x + (o?.[0] ?? 0);
+    e[13] = y + (o?.[1] ?? 0);
+    e[14] = z + (o?.[2] ?? 0);
+    e[15] = 1;
+    b.authored.apply(b.pose);
     // Past the system's own bursts, and no time passing: exactly `count` particles, nothing else.
     state.burstIndex = b.system.emissionBursts.length;
     state.burstWaveIndex = 0;
@@ -116,9 +137,9 @@ export function drive<I, O extends Partial<Emission>>(
     write(dt) {
       for (const [subject, b] of bound) {
         mix.probe(subject, b.pose);
-        const rate = b.pose.rate ?? 0;
-        if (rate > 0) b.carry += rate * dt;
-        const n = Math.floor(b.carry / 1000);
+        const owed = (b.pose.rate ?? 0) * dt;
+        if (Number.isFinite(owed) && owed > 0) b.carry += owed;
+        const n = Math.floor((b.carry + SLACK) / 1000);
         b.carry -= n * 1000;
         b.count = n;
       }
@@ -126,14 +147,28 @@ export function drive<I, O extends Partial<Emission>>(
         for (const sent of mix.drain<Burst>(opts.bursts)) {
           const b = bound.get(sent.subject);
           const n = Math.floor(sent.event.count);
-          if (b !== undefined && n > 0) b.count += n;
+          if (b !== undefined && Number.isFinite(n) && n > 0) b.count += n;
         }
-      for (const b of bound.values())
-        if (b.count > 0) {
-          emit(b);
-          b.count = 0;
+      // A subject that throws loses this frame's particles; the rest still emit, the authored
+      // values always go back, and the first error is rethrown once they have.
+      let failed = false;
+      let first: unknown;
+      try {
+        for (const b of bound.values()) {
+          if (b.count <= 0) continue;
+          try {
+            emit(b);
+          } catch (err) {
+            if (!failed) first = err;
+            failed = true;
+          } finally {
+            b.count = 0;
+          }
         }
-      for (const held of systems.values()) held.authored.restore();
+      } finally {
+        for (const held of systems.values()) held.authored.restore();
+      }
+      if (failed) throw first;
     },
   };
 }
