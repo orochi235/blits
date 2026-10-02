@@ -42,9 +42,73 @@ interface Change {
   v?: number[];
 }
 
-/** One axis, `t` seconds after release, `y0` from where it heads and moving at `v0`, into `solved`. */
-type Solve = (y0: number, v0: number, t: number) => void;
+const UNDER = 0;
+const CRITICAL = 1;
+const OVER = 2;
+const COAST = 3;
+
+/**
+ * A patch's law, `[form, settle, k1, k2, k3]`: which closed form its stretches follow, its `settle`,
+ * and up to three constants that form reads. It heads the patch's `runs`, so `solve` finds them in
+ * the buffer a sample already reads rather than in an object of their own.
+ */
+const HEAD = 5;
+
 const solved = { y: 0, dy: 0 };
+/** Where every patch's `sample` leaves a value on its way to the mix; none outlives its call. */
+let shared = { xs: new Float64Array(4), vs: new Float64Array(4) };
+
+/** A subject's flags: its value is a number; it has changes pending; it has older stretches. */
+const SCALAR = 1;
+const PENDING = 2;
+const OLDER = 4;
+
+/** One axis, `t` seconds after release, `y0` from where it heads and moving at `v0`, into `solved`. */
+function solve(law: Float64Array, y0: number, v0: number, t: number): void {
+  switch (law[0]) {
+    case UNDER: {
+      const zeta = law[2] as number;
+      const w0 = law[3] as number;
+      const wd = law[4] as number;
+      const e = Math.exp(-zeta * w0 * t);
+      const b = (v0 + zeta * w0 * y0) / wd;
+      const cos = Math.cos(wd * t);
+      const sin = Math.sin(wd * t);
+      const y = e * (y0 * cos + b * sin);
+      solved.y = y;
+      solved.dy = -zeta * w0 * y + e * wd * (b * cos - y0 * sin);
+      return;
+    }
+    case CRITICAL: {
+      const w0 = law[3] as number;
+      const e = Math.exp(-w0 * t);
+      const b = v0 + w0 * y0;
+      const y = e * (y0 + b * t);
+      solved.y = y;
+      solved.dy = e * b - w0 * y;
+      return;
+    }
+    case OVER: {
+      const r1 = law[2] as number;
+      const r2 = law[3] as number;
+      const a = (v0 - r2 * y0) / (r1 - r2);
+      const b = y0 - a;
+      const e1 = Math.exp(r1 * t);
+      const e2 = Math.exp(r2 * t);
+      solved.y = a * e1 + b * e2;
+      solved.dy = a * r1 * e1 + b * r2 * e2;
+      return;
+    }
+    default: {
+      // Released at x moving at v, a glide comes to rest at x + v·τ; y is the distance still to go,
+      // which friction closes as e^(−t/τ), and its derivative at release is v again.
+      const tau = law[2] as number;
+      const e = Math.exp(-t / tau);
+      solved.y = y0 * e;
+      solved.dy = (-y0 / tau) * e;
+    }
+  }
+}
 
 const axes = (v: Value): number[] => (typeof v === 'number' ? [v] : [...v]);
 const per = <I, V>(p: PerSubject<I, V>, subject: I): V =>
@@ -71,16 +135,21 @@ interface Shape<I> {
   velocity: (subject: I) => number[];
   /** Where it heads when released from `x` at `v`, given where it was heading. */
   aim: (x: number[], v: number[], was: number[] | null, subject: I) => number[];
-  solve: Solve;
-  settle: number;
+  /** `[form, settle, k1, k2, k3]`. */
+  law: readonly number[];
   /** Whether a subject's value is a number rather than an array. */
   scalar: (subject: I) => boolean;
 }
 
 /**
- * A motion patch's subjects: the stretch each is playing, in flat arrays by a number the patch
+ * A motion patch's subjects: the stretch each is playing, in one flat array by a number the patch
  * gives it, with earlier stretches a read back may reach and changes not yet applied beside them.
  * The one copy, read by `at` and by a mix's lane alike.
+ *
+ * After the law, each subject's run of `stride` numbers is its release time, its last live read,
+ * its flags, then `x0`, `v0` and `to` per axis. A live sample reads this one buffer and nothing else
+ * the patch owns: at 10k springs of one subject each, a buffer per field, a map lookup per sample
+ * and the law in an object of its own took a call from 130 ns to 490.
  */
 export class Motions<I> {
   private readonly numbers = new Numbers<I>((slot) => this.forget(slot));
@@ -88,20 +157,20 @@ export class Motions<I> {
   /** Axes per subject; -1 until the first subject sets it. */
   n = -1;
   private cap = 0;
-  at = new Float64Array(0);
-  x0 = new Float64Array(0);
-  v0 = new Float64Array(0);
-  to = new Float64Array(0);
-  /** The voice time of each subject's last live read, for `read` with no time given. */
-  last = new Float64Array(0);
-  scalar = new Uint8Array(0);
-  /** Where `sample` leaves a subject's position and velocity, per axis. */
+  private stride = 0;
+  private runs: Float64Array;
+  /**
+   * Where `sample` leaves a subject's position and velocity, per axis. Shared by every patch, so
+   * read it before the next sample.
+   */
   xs = new Float64Array(0);
   vs = new Float64Array(0);
   private readonly pending = new Map<number, Change[]>();
   private readonly older = new Map<number, Segment[]>();
 
-  constructor(private readonly shape: Shape<I>) {}
+  constructor(private readonly shape: Shape<I>) {
+    this.runs = Float64Array.from(shape.law);
+  }
 
   /** The patch's number for `subject`, made with its first stretch on first ask. */
   slot(subject: I): number {
@@ -114,14 +183,17 @@ export class Motions<I> {
     for (const a of [x, v, to]) this.check(a, n);
     if (this.n < 0) {
       this.n = n;
-      this.xs = new Float64Array(n);
-      this.vs = new Float64Array(n);
+      this.stride = 3 + 3 * n;
+      if (shared.xs.length < n) shared = { xs: new Float64Array(n), vs: new Float64Array(n) };
+      this.xs = shared.xs;
+      this.vs = shared.vs;
     }
     const s = this.numbers.take(subject);
     this.slots.set(subject, s);
     this.grow(s + 1);
-    this.scalar[s] = this.shape.scalar(subject) ? 1 : 0;
-    this.last[s] = Number.NaN;
+    const b = this.base(s);
+    this.runs[b + 1] = Number.NaN;
+    this.runs[b + 2] = this.shape.scalar(subject) ? SCALAR : 0;
     this.write(s, { at: 0, x0: x, v0: v, to });
     return s;
   }
@@ -136,7 +208,9 @@ export class Motions<I> {
 
   /** The value `at` hands the mix: the first axis for a number, a fresh array otherwise. */
   value(s: number, xs: Float64Array): number | number[] {
-    return this.scalar[s] === 1 ? (xs[0] as number) : Array.from(xs.subarray(0, this.n));
+    return ((this.runs[this.base(s) + 2] as number) & SCALAR) !== 0
+      ? (xs[0] as number)
+      : Array.from(xs.subarray(0, this.n));
   }
 
   /**
@@ -146,36 +220,40 @@ export class Motions<I> {
    */
   sample(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
     if (reading.live) {
-      if (this.pending.size > 0 && this.pending.has(s)) this.commit(s, t);
-      if (this.older.size > 0) this.prune(s);
-      this.last[s] = t;
-      if (t < (this.at[s] as number) && this.older.has(s)) {
-        const seg = this.playing(s, t);
-        this.evaluate(seg.at, seg.x0, seg.v0, seg.to, 0, t, xo, vo);
-      } else this.evaluate(this.at[s] as number, this.x0, this.v0, this.to, s * this.n, t, xo, vo);
+      const runs = this.runs;
+      const b = this.base(s);
+      if ((runs[b + 2] as number) & PENDING) this.commit(s, t);
+      if ((runs[b + 2] as number) & OLDER) this.prune(s);
+      runs[b + 1] = t;
+      const at = runs[b] as number;
+      if (t < at && (runs[b + 2] as number) & OLDER)
+        this.evaluateSegment(this.playing(s, t), t, xo, vo);
+      else {
+        const x = b + 3;
+        this.evaluate(at, runs, x, runs, x + this.n, runs, x + 2 * this.n, t, xo, vo);
+      }
       return;
     }
     let seg = this.playing(s, t);
     const list = this.pending.get(s);
     if (list !== undefined)
       for (const change of list) {
-        const a = change.at ?? (this.last[s] as number);
+        const a = change.at ?? this.last(s);
         if (!(a <= t)) break;
         if (a >= seg.at) seg = this.applied(s, seg, change, a);
       }
-    this.evaluate(seg.at, seg.x0, seg.v0, seg.to, 0, t, xo, vo);
+    this.evaluateSegment(seg, t, xo, vo);
   }
 
   /** Position and velocity at `at`, default the last live read; undefined until there is one. */
   read(subject: I, at?: number): { x: Float64Array; v: Float64Array; s: number } | undefined {
     const s = this.slots.get(subject);
     if (s === undefined) return undefined;
-    const when = at ?? (this.last[s] as number);
+    const when = at ?? this.last(s);
     if (Number.isNaN(when)) return undefined;
-    const seg = this.playing(s, when);
     const x = new Float64Array(this.n);
     const v = new Float64Array(this.n);
-    this.evaluate(seg.at, seg.x0, seg.v0, seg.to, 0, when, x, v);
+    this.evaluateSegment(this.playing(s, when), when, x, v);
     return { x, v, s };
   }
 
@@ -185,14 +263,16 @@ export class Motions<I> {
     this.check(c.to, this.n);
     this.check(c.v, this.n);
     const list = this.pending.get(s);
-    if (list === undefined) this.pending.set(s, [c]);
-    else list.push(c);
+    if (list === undefined) {
+      this.pending.set(s, [c]);
+      this.flag(s, PENDING, true);
+    } else list.push(c);
     reading.moved++;
   }
 
   /** Whether a live read of subject `s` at voice time `t` would apply a change. */
   due(s: number, t: number): boolean {
-    if (this.pending.size === 0) return false;
+    if (((this.runs[this.base(s) + 2] as number) & PENDING) === 0) return false;
     const first = this.pending.get(s)?.[0];
     return first !== undefined && (first.at ?? t) <= t;
   }
@@ -202,57 +282,63 @@ export class Motions<I> {
       throw new Error('blits: a motion patch moves every subject on the same number of axes');
   }
 
+  private flag(s: number, bit: number, on: boolean): void {
+    const i = this.base(s) + 2;
+    const flags = this.runs[i] as number;
+    this.runs[i] = on ? flags | bit : flags & ~bit;
+  }
+
   private forget(s: number): void {
     this.pending.delete(s);
     this.older.delete(s);
   }
 
+  /** Where subject `s`'s run starts in `runs`. */
+  private base(s: number): number {
+    return HEAD + s * this.stride;
+  }
+
+  /** The voice time of subject `s`'s last live read, for `read` with no time given. */
+  private last(s: number): number {
+    return this.runs[this.base(s) + 1] as number;
+  }
+
   private grow(size: number): void {
     if (size <= this.cap) return;
-    const cap = Math.max(size, this.cap * 2, 16);
-    const n = this.n;
-    const more = (a: Float64Array, width: number) => {
-      const b = new Float64Array(cap * width);
-      b.set(a);
-      return b;
-    };
-    this.at = more(this.at, 1);
-    this.last = more(this.last, 1);
-    this.x0 = more(this.x0, n);
-    this.v0 = more(this.v0, n);
-    this.to = more(this.to, n);
-    const sc = new Uint8Array(cap);
-    sc.set(this.scalar);
-    this.scalar = sc;
+    const cap = Math.max(size, this.cap * 2);
+    const runs = new Float64Array(HEAD + cap * this.stride);
+    runs.set(this.runs);
+    this.runs = runs;
     this.cap = cap;
   }
 
   private write(s: number, seg: Segment): void {
     const n = this.n;
-    this.at[s] = seg.at;
+    const b = this.base(s);
+    this.runs[b] = seg.at;
     for (let i = 0; i < n; i++) {
-      this.x0[s * n + i] = seg.x0[i] as number;
-      this.v0[s * n + i] = seg.v0[i] as number;
-      this.to[s * n + i] = seg.to[i] as number;
+      this.runs[b + 3 + i] = seg.x0[i] as number;
+      this.runs[b + 3 + n + i] = seg.v0[i] as number;
+      this.runs[b + 3 + 2 * n + i] = seg.to[i] as number;
     }
   }
 
   /** The stretch subject `s` is playing now, as an object. */
   private latest(s: number): Segment {
     const n = this.n;
-    const o = s * n;
+    const x = this.base(s) + 3;
     return {
-      at: this.at[s] as number,
-      x0: Array.from(this.x0.subarray(o, o + n)),
-      v0: Array.from(this.v0.subarray(o, o + n)),
-      to: Array.from(this.to.subarray(o, o + n)),
+      at: this.runs[this.base(s)] as number,
+      x0: Array.from(this.runs.subarray(x, x + n)),
+      v0: Array.from(this.runs.subarray(x + n, x + 2 * n)),
+      to: Array.from(this.runs.subarray(x + 2 * n, x + 3 * n)),
     };
   }
 
   /** The stretch playing at voice time `t`: the latest released by then, else the first. */
   private playing(s: number, t: number): Segment {
     const list = this.older.get(s);
-    if (list === undefined || t >= (this.at[s] as number)) return this.latest(s);
+    if (list === undefined || t >= (this.runs[this.base(s)] as number)) return this.latest(s);
     if ((list[0] as Segment).at > t) return list[0] as Segment;
     let lo = 0;
     let hi = list.length - 1;
@@ -267,7 +353,7 @@ export class Motions<I> {
   private applied(s: number, seg: Segment, change: Change, at: number): Segment {
     const x = new Float64Array(this.n);
     const v = new Float64Array(this.n);
-    this.evaluate(seg.at, seg.x0, seg.v0, seg.to, 0, at, x, v);
+    this.evaluateSegment(seg, at, x, v);
     const xs = Array.from(x);
     const vs = change.v ?? Array.from(v);
     const subject = this.numbers.subject(s);
@@ -289,15 +375,19 @@ export class Motions<I> {
       list.shift();
       this.insert(s, this.applied(s, this.playing(s, a), change, a));
     }
-    if (list.length === 0) this.pending.delete(s);
+    if (list.length === 0) {
+      this.pending.delete(s);
+      this.flag(s, PENDING, false);
+    }
   }
 
   private insert(s: number, seg: Segment): void {
     let list = this.older.get(s);
-    if (seg.at >= (this.at[s] as number)) {
+    if (seg.at >= (this.runs[this.base(s)] as number)) {
       if (list === undefined) {
         list = [];
         this.older.set(s, list);
+        this.flag(s, OLDER, true);
       }
       list.push(this.latest(s));
       this.write(s, seg);
@@ -306,6 +396,7 @@ export class Motions<I> {
     if (list === undefined) {
       list = [];
       this.older.set(s, list);
+      this.flag(s, OLDER, true);
     }
     let i = list.length;
     while (i > 0 && (list[i - 1] as Segment).at > seg.at) i--;
@@ -318,36 +409,47 @@ export class Motions<I> {
     if (list === undefined) return;
     while (
       list.length > 0 &&
-      (list.length > 1 ? (list[1] as Segment).at : (this.at[s] as number)) <= reading.horizon
+      (list.length > 1 ? (list[1] as Segment).at : (this.runs[this.base(s)] as number)) <=
+        reading.horizon
     )
       list.shift();
-    if (list.length === 0) this.older.delete(s);
+    if (list.length === 0) {
+      this.older.delete(s);
+      this.flag(s, OLDER, false);
+    }
+  }
+
+  private evaluateSegment(seg: Segment, t: number, xo: Float64Array, vo: Float64Array): void {
+    this.evaluate(seg.at, seg.x0, 0, seg.v0, 0, seg.to, 0, t, xo, vo);
   }
 
   private evaluate(
     at: number,
     x0: ArrayLike<number>,
+    x: number,
     v0: ArrayLike<number>,
+    v: number,
     to: ArrayLike<number>,
-    off: number,
+    g: number,
     t: number,
     xo: Float64Array,
     vo: Float64Array,
   ): void {
     const n = this.n;
     const dt = Math.max(0, t - at) / 1000;
-    const settle = this.shape.settle;
+    const law = this.runs;
+    const settle = law[1] as number;
     let still = settle > 0;
     for (let i = 0; i < n; i++) {
-      const goal = to[off + i] as number;
-      this.shape.solve((x0[off + i] as number) - goal, v0[off + i] as number, dt);
+      const goal = to[g + i] as number;
+      solve(law, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
       xo[i] = goal + solved.y;
       vo[i] = solved.dy;
       if (Math.abs(solved.y) > settle || Math.abs(solved.dy) > settle) still = false;
     }
     if (still)
       for (let i = 0; i < n; i++) {
-        xo[i] = to[off + i] as number;
+        xo[i] = to[g + i] as number;
         vo[i] = 0;
       }
   }
@@ -425,38 +527,12 @@ export function spring<I, O, V extends Value = number>(
   const settle = opts.settle ?? 1e-4;
   const w0 = Math.sqrt(k / m);
   const zeta = c / (2 * Math.sqrt(k * m));
-  let solve: Solve;
-  if (zeta < 1) {
-    const wd = w0 * Math.sqrt(1 - zeta * zeta);
-    solve = (y0, v0, t) => {
-      const e = Math.exp(-zeta * w0 * t);
-      const b = (v0 + zeta * w0 * y0) / wd;
-      const cos = Math.cos(wd * t);
-      const sin = Math.sin(wd * t);
-      const y = e * (y0 * cos + b * sin);
-      solved.y = y;
-      solved.dy = -zeta * w0 * y + e * wd * (b * cos - y0 * sin);
-    };
-  } else if (zeta === 1) {
-    solve = (y0, v0, t) => {
-      const e = Math.exp(-w0 * t);
-      const b = v0 + w0 * y0;
-      const y = e * (y0 + b * t);
-      solved.y = y;
-      solved.dy = e * b - w0 * y;
-    };
-  } else {
+  let law: number[];
+  if (zeta < 1) law = [UNDER, settle, zeta, w0, w0 * Math.sqrt(1 - zeta * zeta)];
+  else if (zeta === 1) law = [CRITICAL, settle, 0, w0, 0];
+  else {
     const s = Math.sqrt(zeta * zeta - 1);
-    const r1 = -w0 * (zeta - s);
-    const r2 = -w0 * (zeta + s);
-    solve = (y0, v0, t) => {
-      const a = (v0 - r2 * y0) / (r1 - r2);
-      const b = y0 - a;
-      const e1 = Math.exp(r1 * t);
-      const e2 = Math.exp(r2 * t);
-      solved.y = a * e1 + b * e2;
-      solved.dy = a * r1 * e1 + b * r2 * e2;
-    };
+    law = [OVER, settle, -w0 * (zeta - s), -w0 * (zeta + s), 0];
   }
   const target = (subject: I) => axes(per(opts.to, subject));
   const { patch, state } = moving<I, O, V>(
@@ -467,8 +543,7 @@ export function spring<I, O, V extends Value = number>(
       velocity: (s) =>
         opts.velocity === undefined ? target(s).map(() => 0) : axes(per(opts.velocity, s)),
       aim: (_x, _v, was, s) => was ?? target(s),
-      solve,
-      settle,
+      law,
       scalar: (s) => typeof per(opts.to, s) === 'number',
     },
   );
@@ -496,13 +571,6 @@ export function glide<I, O, V extends Value = number>(
   const ms = opts.ms ?? 325;
   const tau = ms / 1000;
   const settle = opts.settle ?? 1e-4;
-  // Released at x moving at v, a glide comes to rest at x + v·τ; y is the distance still to go,
-  // which friction closes as e^(−t/τ), and its derivative at release is v again.
-  const solve: Solve = (y0, _v0, t) => {
-    const e = Math.exp(-t / tau);
-    solved.y = y0 * e;
-    solved.dy = (-y0 / tau) * e;
-  };
   const { patch } = moving<I, O, V>(
     writes,
     { kind: 'glide', ms, settle },
@@ -513,8 +581,7 @@ export function glide<I, O, V extends Value = number>(
           ? axes(per(opts.from, s)).map(() => 0)
           : axes(per(opts.velocity, s)),
       aim: (x, v) => x.map((xi, i) => xi + (v[i] as number) * tau),
-      solve,
-      settle,
+      law: [COAST, settle, tau, 0, 0],
       scalar: (s) => typeof per(opts.from, s) === 'number',
     },
   );
