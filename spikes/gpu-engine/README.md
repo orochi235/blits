@@ -41,6 +41,9 @@ Each row prints as it finishes. Rows warm up 30 frames and time 200 (fewer where
 20 ms). The mix is skipped at 1M where the 100k row implies a frame over ~1 s. `results.json` is
 rewritten each run and ignored by git.
 
+`node motion-bench.mjs` (`--smoke` for N ∈ {1k, 10k}) runs the tween and spring rows below. It
+needs only `dist/`, not `webgpu`, and writes `motion-results.json`.
+
 The `webgpu` package runs Dawn in Node. Its postinstall only strips macOS quarantine from
 `dawn.node`; npm's install-script allowlist skips it, and the binary loaded without it here.
 
@@ -86,12 +89,57 @@ the shader's is larger because it also does its arithmetic, including time, in f
 Floors, measured before the grid: an empty submit awaited through `onSubmittedWorkDone` takes
 0.044 ms median; a 4-byte copy awaited through `mapAsync` takes 0.194 ms.
 
+## weasel's tweens and springs
+
+The `keys` rows above are not weasel's workload. weasel's animator bench
+(`tests/perf/bench/animator-on-blits.bench.ts` in weasel) moves N nodes' `{ x, y }` (a
+`pos: vec(2, sum())` kit, string subject ids) by a tween or a spring per node, in two shapes: one
+voice reading each node's endpoints, and a voice per node named with `subjects: [id]`.
+`motion.mjs` and `motion-bench.mjs` time that workload, CPU only.
+
+| Variant | Tween | Spring |
+|---|---|---|
+| `mixer` | `patch(60 s, fn)` easing (i, −i) to (i + 500, 300 − i) by weasel's `easeOut` | blits' `spring`, weasel's undamped settings, `settle: 0` |
+| `dense fn` | the same closure, called per subject inside the loop, returning `{ pos: [x, y] }` | — |
+| `dense native` | the tween written into the loop over `Float64Array`s | the underdamped closed form from `src/motion.ts`, position and velocity per subject |
+
+In dense, one voice is one start and weight for every subject; a voice per node is N voices, each
+with its own start, period, weight and endpoints, looping over voices and writing through a subject
+index. The bench never retargets, so the native spring holds each subject's stretch (release time,
+x0, v0, target) and never rewrites it. Every dense variant matched the mix exactly (max abs error 0,
+velocity included) at seven times up to 12.3 s, for 32 subjects per row.
+
+**2026-10-01, fleet node `orochi`** (loadavg 9.3 at start, 10.2 at end, on 12 cores). Median ms per
+frame, and the mix's median over each row's.
+
+| N | kind | shape | `mixer` | `dense fn` | `dense native` | fn × | native × |
+|---:|---|---|---:|---:|---:|---:|---:|
+|   1,000 | tween  | one voice  |  0.132 | 0.014 | 0.003 |  9.2 |  38.2 |
+|   1,000 | tween  | voice/node |  0.307 | 0.011 | 0.007 | 27.8 |  42.1 |
+|   1,000 | spring | one voice  |  0.270 |     — | 0.031 |    — |   8.7 |
+|   1,000 | spring | voice/node |  0.286 |     — | 0.032 |    — |   9.0 |
+|  10,000 | tween  | one voice  |  1.644 | 0.076 | 0.021 | 21.6 |  77.1 |
+|  10,000 | tween  | voice/node |  2.721 | 0.107 | 0.075 | 25.3 |  36.2 |
+|  10,000 | spring | one voice  |  3.820 |     — | 0.335 |    — |  11.4 |
+|  10,000 | spring | voice/node |  6.179 |     — | 0.334 |    — |  18.5 |
+| 100,000 | tween  | one voice  | 33.497 | 0.816 | 0.217 | 41.0 | 154.7 |
+| 100,000 | tween  | voice/node | 57.621 | 1.256 | 0.786 | 45.9 |  73.3 |
+| 100,000 | spring | one voice  | 79.620 |     — | 3.329 |    — |  23.9 |
+| 100,000 | spring | voice/node | 94.915 |     — | 3.519 |    — |  27.0 |
+
+The speedup survives the move to weasel's workload: a dense engine calling the host's own tween
+closure is 20–25× the mix at 10k, so the gap is the mix's per-subject bookkeeping, not the fn call.
+Springs gain least (11–19× at 10k); unprofiled, the likely cause is `exp`, `cos` and `sin` per subject.
+
 ## Caveats
 
 - **Nothing here is the real engine seam.** The shader knows this one kit and this one stop shape
   (three stops at 0, 0.5, 1); it has no `fn` patches, `locus`, `from: 'current'`, signals, bounds,
   rest-less channels or events. It answers what the arithmetic costs, not what a general GPU
   engine would.
+- **`dense fn` may not allocate.** The closure returns a fresh `{ pos: [x, y] }` per subject, but
+  in a monomorphic loop V8 can inline it and drop the allocation (not checked). A dense engine
+  calling many different host closures would see more of their cost.
 - **No `hex()` channel.** A rest-less channel switches on and off through a hysteresis band held
   per subject per voice, which is state a dense or GPU fold would have to carry; leaving it out
   keeps every variant stateless.
