@@ -264,6 +264,29 @@ describe('the motion form', () => {
     expect(s.read(a, 0)).toEqual({ value: 0, velocity: 0 });
   });
 
+  for (const lanes of [false, true]) {
+    it(`plays an untimed retarget made before a staggered subject starts, lanes ${lanes}`, () => {
+      const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+      const m = mix<Part, Pose>(K, { lanes });
+      m.cue({ patch: s, stagger: (p) => (p.id === 'b' ? 500 : 0) });
+      const a = { id: 'a' };
+      const b = { id: 'b' };
+      for (const t of [0, 100]) {
+        m.sync(t);
+        m.probe(a);
+        m.probe(b);
+      }
+      s.to(b, -50);
+      expect(s.read(b)).toBeUndefined();
+      m.sync(600);
+      m.probe(a);
+      m.probe(b);
+      m.sync(5000);
+      expect(m.probe(b).x).toBe(-50);
+    });
+
+  }
+
   it('forgets a subject the mix drops, so a string subject starts afresh', () => {
     const s = spring<string, Pose>('x', { from: 0, to: 100 });
     const m = mix<string, Pose>(K);

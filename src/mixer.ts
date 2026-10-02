@@ -945,14 +945,16 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /**
    * A subject's voice time at the latest frame, where a motion patch places an untimed change and a
-   * `read` with no time; NaN until the voice has started and met the subject.
+   * `read` with no time; NaN until the voice has started and met the subject, and while the
+   * subject's own time is still short of its stagger.
    */
   private frameOf(voice: Voice<I, O>, subject: I): number {
     if (Number.isNaN(this.now) || voice.state === 'pending') return Number.NaN;
     const held = voice.subjects.get(subject);
     if (held === undefined || !held.reaches) return Number.NaN;
     const now = voice.state === 'done' ? Math.min(this.now, voice.doneAt) : this.now;
-    return voice.elapsedAt(now) - held.delay;
+    const t = voice.elapsedAt(now) - held.delay;
+    return t < 0 ? Number.NaN : t;
   }
 
   /** Fills a voice's setting for a call to its patch, the weight aside. */
