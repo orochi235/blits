@@ -91,6 +91,12 @@ Floors, measured before the grid: an empty submit awaited through `onSubmittedWo
 
 ## weasel's tweens and springs
 
+**These dense columns leave out reading the pose back.** They time filling the arrays only; the
+`mixer` column includes a `probe` per subject. Building lanes in `mixer` (2026-10-02) measured a
+probe at about 110–140 ns at 10k subjects even when a lane did all the work, so a host that probes
+every node pays 1.1–1.4 ms at 10k before any arithmetic. Compare these columns with weasel's
+animator only for a host that reads the arrays in bulk.
+
 The `keys` rows above are not weasel's workload. weasel's animator bench
 (`tests/perf/bench/animator-on-blits.bench.ts` in weasel) moves N nodes' `{ x, y }` (a
 `pos: vec(2, sum())` kit, string subject ids) by a tween or a spring per node, in two shapes: one
