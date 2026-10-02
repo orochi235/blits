@@ -213,6 +213,21 @@ describe('the motion form', () => {
     expect(s.read(a, 0)).toEqual({ value: 0, velocity: 0 });
   });
 
+  it('forgets a subject the mix drops, so a string subject starts afresh', () => {
+    const s = spring<string, Pose>('x', { from: 0, to: 100 });
+    const m = mix<string, Pose>(K);
+    m.cue({ patch: s });
+    m.sync(0);
+    m.probe('a');
+    s.to('a', -50, 100);
+    m.sync(200);
+    const fresh = m.probe('b').x;
+    expect(m.probe('a').x).not.toBe(fresh);
+    m.drop('a');
+    expect(s.read('a', 200)).toBeUndefined();
+    expect(m.probe('a').x).toBe(fresh);
+  });
+
   it('refuses a retarget or push on another number of axes, leaving the subject as it was', () => {
     const run = (bad?: (s: ReturnType<typeof spring<Part, Pose, number[]>>, a: Part) => void) => {
       const s = spring<Part, Pose, number[]>('p', { from: [0, 0], to: [1, 2] });

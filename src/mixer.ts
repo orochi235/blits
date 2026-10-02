@@ -1,5 +1,6 @@
 import { clampWeight, envelope, passesOf, place, placed } from './clock.js';
 import { type Curve, curve } from './easing.js';
+import { motionOf } from './motion.js';
 import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
@@ -844,8 +845,10 @@ class Mixer<I, O> implements Mix<I, O> {
   drop(subject: I): void {
     this.pose.delete(subject);
     this.chains.delete(subject);
-    for (const voice of this.voices) voice.subjects.delete(subject);
-    for (const voice of this.gone) voice.subjects.delete(subject);
+    for (const voice of [...this.voices, ...this.gone]) {
+      voice.subjects.delete(subject);
+      motionOf<I>(voice.patch)?.release(subject);
+    }
   }
 
   drain<E = unknown>(tag?: string): Sent<I, E>[] {

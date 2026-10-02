@@ -126,6 +126,14 @@ export class Motions<I> {
     return s;
   }
 
+  /** Forgets a subject, so a later ask starts it afresh from `from`. */
+  release(subject: I): void {
+    const s = this.slots.get(subject);
+    if (s === undefined) return;
+    this.slots.delete(subject);
+    this.numbers.release(s);
+  }
+
   /** The value `at` hands the mix: the first axis for a number, a fresh array otherwise. */
   value(s: number, xs: Float64Array): number | number[] {
     return this.scalar[s] === 1 ? (xs[0] as number) : Array.from(xs.subarray(0, this.n));
