@@ -150,6 +150,74 @@ describe('keys', () => {
     }
     expect(JSON.stringify(stops)).toBe(frozen);
   });
+
+  it('a keyed array read into a reused array never reaches a stop, a held pose or another reader', () => {
+    interface Rig {
+      a: number;
+      p: number[];
+      q: number[];
+    }
+    const freeze = (stops: Keyframe<Rig>[]): Keyframe<Rig>[] => {
+      for (const stop of stops) {
+        for (const v of Object.values(stop.delta)) Object.freeze(v);
+        Object.freeze(stop.delta);
+        Object.freeze(stop);
+      }
+      return Object.freeze(stops) as Keyframe<Rig>[];
+    };
+    const loop = freeze([
+      { at: 0, delta: { a: 0, p: [1, 2, 3], q: [0, 0, 0] } },
+      { at: 0.5, delta: { a: 4, p: [4, -5, 6], q: [2, 4, 8] }, ease: 'ease-in' },
+      { at: 1, delta: { a: 0, p: [1, 2, 3], q: [0, 0, 0] } },
+    ]);
+    const retarget = freeze([
+      { at: 0.5, delta: { p: [9, 9, 9] } },
+      { at: 1, delta: { p: [0, 1, 0] } },
+    ]);
+    const frozen = JSON.stringify([loop, retarget]);
+    const stock = vec(3, sum());
+    // Borrows vec's lerp, but its merge hands the influence itself to the pose, so a read must not
+    // reuse that array.
+    const stockLast: Channel<number[]> = { lerp: stock.lerp, merge: (_a, b) => b };
+    // The same arithmetic through lerps with no in-place form, which allocate as reads used to.
+    const lerp = (a: number[], b: number[], u: number) => stock.lerp(a, b, u);
+    const run = (fresh: boolean) => {
+      const m = mix<{ id: number }, Rig>(
+        kit<Rig>({
+          a: sum(),
+          p: fresh ? { ...stock, lerp } : stock,
+          q: fresh ? { ...stockLast, lerp } : stockLast,
+        }),
+        { history: { ms: 2000 } },
+      );
+      const shared = keys<{ id: number }, Rig>(1000, loop);
+      m.cue({ patch: shared, stagger: (s) => s.id * 130 });
+      m.cue({ patch: shared, start: 250, weight: 0.75 });
+      const subjects = [{ id: 0 }, { id: 1 }];
+      const out = {} as Rig;
+      const frames: unknown[] = [];
+      const kept: { pose: Rig; was: Rig }[] = [];
+      for (let t = 0; t <= 2000; t += 25) {
+        if (t === 400)
+          m.cue({ patch: keys<{ id: number }, Rig>(600, retarget), from: 'current', loop: false });
+        m.sync(t);
+        for (const s of subjects) {
+          frames.push(structuredClone(m.probe(s, out)));
+          const pose = m.probe(s);
+          kept.push({ pose, was: structuredClone(pose) });
+          frames.push(m.atRest(s));
+          frames.push(structuredClone(m.project(t + 300).probe(s)));
+          if (t >= 100) frames.push(structuredClone(m.project(t - 100).probe(s)));
+        }
+        // A repeat probe in the same frame hands back each subject's delta from earlier.
+        for (const s of subjects) frames.push(structuredClone(m.probe(s)));
+      }
+      for (const { pose, was } of kept) expect(pose).toEqual(was);
+      return frames;
+    };
+    expect(run(false)).toEqual(run(true));
+    expect(JSON.stringify([loop, retarget])).toBe(frozen);
+  });
 });
 
 describe('keyed stops interpolate through the channel', () => {

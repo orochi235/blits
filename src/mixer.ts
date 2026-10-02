@@ -1,5 +1,5 @@
 import { type Curve, curve } from './easing.js';
-import { type Built, builtOf, readKeys } from './patch.js';
+import { type Built, builtOf, intosOf, readKeys } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
 import type {
@@ -54,6 +54,8 @@ interface Subject<S> {
   probed: number;
   /** The last delta computed this frame, handed back to a repeat probe unchanged. */
   delta: Record<string, unknown> | null;
+  /** Per keyed channel, a bit set while `delta` holds an array a read made and may write again. */
+  owned: number;
   /** Stop 0 for a `from: 'current'` voice, taken the first frame this subject is seen. */
   base?: Record<string, unknown>;
   /** The pose's velocity per channel at that moment, units per ms, so the first segment leaves at it. */
@@ -105,6 +107,7 @@ function stub(): Subject<unknown> {
     ticks: 0,
     probed: Number.NaN,
     delta: null,
+    owned: 0,
     kept,
     keep: keeper(kept),
     voice: null,
@@ -237,6 +240,8 @@ class Voice<I, O> {
   readonly built: Built | null;
   /** The kit's `lerp` for each channel the patch writes, which keyed stops interpolate through. */
   readonly lerps: Channel<unknown>['lerp'][];
+  /** Per keyed channel, the in-place form of the lerp its stops take, where it has one. */
+  readonly intos: ReturnType<typeof intosOf> | undefined;
   readonly ease: Curve | undefined;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: Setting<unknown>;
@@ -274,6 +279,12 @@ class Voice<I, O> {
     this.named = spec.subjects ? new Set(spec.subjects) : null;
     this.built = patch.form === 'keys' && patch.keys ? builtOf(patch) : null;
     this.lerps = this.slots.map((slot) => (channels[slot] as Channel<unknown>).lerp);
+    this.intos = this.built
+      ? intosOf(
+          this.built,
+          this.slots.map((slot) => channels[slot] as Channel<unknown>),
+        )
+      : undefined;
     this.ease = fade.ease === undefined ? undefined : curve(fade.ease);
     this.setting = {
       timestamp: 0,
@@ -1059,6 +1070,7 @@ class Mixer<I, O> implements Mix<I, O> {
       keep: keeper(kept),
       probed: Number.NaN,
       delta: null,
+      owned: 0,
       base: h.base === undefined ? undefined : structuredClone(h.base),
       slope: h.slope === undefined ? undefined : structuredClone(h.slope),
       snaps: undefined,
@@ -1109,6 +1121,7 @@ class Mixer<I, O> implements Mix<I, O> {
       ticks: 0,
       probed: Number.NaN,
       delta: null,
+      owned: 0,
       kept,
       keep: keeper(kept),
       voice,
@@ -1338,6 +1351,7 @@ class Mixer<I, O> implements Mix<I, O> {
       ticks: 0,
       probed: Number.NaN,
       delta: null,
+      owned: 0,
       kept,
       keep: keeper(kept),
       voice,
@@ -1456,6 +1470,8 @@ class Mixer<I, O> implements Mix<I, O> {
         base,
         voice.lerps as never,
         held.slope,
+        voice.intos,
+        held,
       );
     } else {
       delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
