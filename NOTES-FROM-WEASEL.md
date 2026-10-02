@@ -29,8 +29,8 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   call being a lane per voice; `HANDOFF.md` item 1c has the next steps for each.
 - **Memory with `target`:** a mix of 1,000 per-node voices reached by `target` held about 810 MB
   after 40 frames (720 MB before lanes), growing with the square of the count, from the record each
-  voice keeps per subject it is asked about. With `subjects` it stays at a few MB. `target` per node
-  is the shape `subjects` replaces; worth a line in `target`'s doc pointing there.
+  voice keeps per subject it is asked about. With `subjects` it stays at a few MB. `target`'s doc
+  now says so and points to `subjects`.
 
 ## What weasel has that blits doesn't
 

@@ -299,7 +299,8 @@ export interface VoiceSpec<I, O> {
    * Which subjects this voice reaches. Default: all of them. The predicate is fixed at `cue`; it
    * runs per subject the first time the mix sees that subject, and the answer is kept. Every
    * voice's predicate meets every subject, so voices that each reach a known few cost the square
-   * of their number; name those with `subjects` instead.
+   * of their number, in time and in memory (a record per voice per subject asked: about 800 MB for
+   * 1,000 such voices); name those with `subjects` instead.
    */
   target?: (subject: I) => boolean;
   /**
