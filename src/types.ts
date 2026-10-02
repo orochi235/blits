@@ -157,7 +157,6 @@ export type MotionSpec =
       /** How long a stretch takes. */
       readonly ms: number;
       readonly ease: Easing;
-      readonly settle: number;
     };
 
 /**

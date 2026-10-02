@@ -48,12 +48,13 @@ const pulse = keys<Part, PartPose>(
 );
 ```
 
-The motion form, `spring` or `glide`, moves each subject with momentum toward where it heads, solved in closed form, and can be retargeted or pushed mid-flight. It has no period; it reads the voice's elapsed time.
+The motion form, `spring`, `glide` or `tween`, moves each subject toward where it heads, solved in closed form, and can be retargeted mid-flight. A spring or a glide has momentum and can be pushed; a tween eases from one value to another over `ms`, each subject's endpoints its own. It has no period; it reads the voice's elapsed time.
 
 ```ts
-import { spring } from '@msb235/blits';
+import { spring, tween } from '@msb235/blits';
 
 const rise = spring<Part, PartPose, number[]>('position', { from: [0, 0, 0], to: [0, 1, 0] });
+const slide = tween<Part, PartPose, number[]>('position', { from: [0, 0, 0], to: [1, 0, 0], ms: 400 });
 ```
 
 A voice can't tell the three apart: each is a `Patch` with the same `at`. The difference is what an engine can read as data: a keys patch keeps its stops on `patch.keys`, and a motion patch keeps its kind and constants on `patch.motion`.

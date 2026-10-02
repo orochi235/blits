@@ -794,6 +794,20 @@ describe('lanes give motion voices the pose the general path gives', () => {
     );
   });
 
+  it('for a motion on fewer axes than its channel, beside one on all of them', () => {
+    agree(
+      (m) => {
+        m.cue({
+          patch: spring<Part, Pose, number[]>('position', { from: [0, 0, 0], to: [0, 0, 50] }),
+        });
+        m.cue({
+          patch: tween<Part, Pose, number[]>('position', { from: [0, 0], to: [10, 5], ms: 200 }),
+        });
+      },
+      { times },
+    );
+  });
+
   it('for a tween per subject named with subjects', () => {
     agree(
       (m, parts) => {

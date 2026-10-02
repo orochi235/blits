@@ -231,6 +231,43 @@ one. `sparse` probes all 10k subjects once, then 5% each frame.
   arithmetic. `mix.pull` reads in bulk and takes a frame to 0.84–0.93 of a probe's; the schema's Lanes
   section says what is left.
 
+## Tween
+
+`tween` shipped on branch `tween`, a motion patch with each subject's endpoints as data; the
+schema page's motion section says what it is. `bench/frame.mjs` measured it on 2026-10-02 on
+`studio` against `main` (`ca8d47a`), six rounds alternating which build ran first, Node 26.8, with
+render jobs keeping the load at 13–25 on 10 cores throughout. Medians of the six runs' per-row
+means, in ms per frame; gc is collections and their pause over 300 frames; × is `tween` over
+`main`. Every subject is probed each frame; a `^` row reads through `pull`, a `-` row runs with
+lanes off. The tween rows exist only on the branch:
+
+| row | N × V | `main` ms | gc | `tween` ms | gc | × |
+|---|---:|---:|---:|---:|---:|---:|
+| `keys` | 10,000 × 3 |  2.839 |  30 /  4.7 ms |  2.880 |  30 /  9.0 ms | 1.01 |
+| `spring` | 10,000 × 1 |  2.707 |  33 / 19.5 ms |  2.413 |  18 /  3.0 ms | 0.89 |
+| `spring^` | 10,000 × 1 |  3.775 |  26 / 14.8 ms |  3.380 |  12 /  2.4 ms | 0.90 |
+| `springs` | 10,000 × 1 |  5.707 |  35 / 33.1 ms |  4.705 |  20 /  6.0 ms | 0.82 |
+| `spring-` | 10,000 × 1 |  3.333 |  24 / 18.6 ms |  3.808 |  28 / 22.4 ms | 1.14 |
+| `tween` | 10,000 × 1 | – | – |  2.410 |  20 /  5.1 ms | – |
+| `tweenfn` | 10,000 × 1 | – | – |  2.337 |  31 / 21.4 ms | – |
+| `tweens` | 10,000 × 1 | – | – |  6.280 |  21 /  5.1 ms | – |
+| `weasel` | 10,000 × 1 | – | – |  2.478 |  20 /  4.2 ms | – |
+| `weaselfn` | 10,000 × 1 | – | – |  2.985 |  30 / 17.8 ms | – |
+
+- **In weasel's shape a tween beats the `fn` it replaces:** `weasel` (string ids, endpoints in a
+  map, read once) at 0.83 of `weaselfn` (the same lookup on every call), with a quarter of the
+  collection pause. Against a `fn` that reads its endpoints straight off the subject (`tweenfn`)
+  it is even: both sit on the probe floor.
+- **Motion lanes stopped allocating a delta per subject**, which is what moved `spring`,
+  `spring^` and `springs` to 0.82–0.90 with about half the collections. A delta is built only
+  when a probe in the same frame asks for one.
+- **`spring-`, a spring with lanes off, is unresolved.** Its six rounds ran 0.93–1.38× `main`
+  under that load; alternated local runs of the same build put it at 0.97–1.09, and a profile
+  shows the general path's spring solver unchanged. An earlier build that folded the tween's
+  arithmetic into the spring solver's function did slow it by 13% in profiles; that is gone.
+- **A tween per subject** (`tweens`, 10,000 voices) costs 2.6× one tween voice over the same
+  subjects, which is the case for grouping voices that share a patch into one lane.
+
 ## Caveats
 
 - **Nothing here is the real engine seam.** The shader knows this one kit and this one stop shape

@@ -902,7 +902,10 @@ export class Lanes<I, O> {
       lane.deltas[p] = null;
       data[o + SAMPLED] = this.fills;
       data[o + SEEKS] = voice.seeks;
-      if (w > 0) this.foldRun(ch, slot, run.xs, w);
+      if (w <= 0) return;
+      // A sample of other axes than the channel's folds as the general path folds it.
+      if (n === ch.axes && run.scalar(ms) === (ch.axes === 1)) this.foldRun(ch, slot, run.xs, w);
+      else this.foldInto(ch, slot, run.value(ms, run.xs), w);
       return;
     }
     lane.deltas[p] = delta;

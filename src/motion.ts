@@ -271,6 +271,11 @@ export class Motions<I> {
     this.numbers.release(s);
   }
 
+  /** Whether subject `s`'s value is a number rather than an array. */
+  scalar(s: number): boolean {
+    return ((this.runs[this.base(s) + 1] as number) & SCALAR) !== 0;
+  }
+
   /** The value `at` hands the mix: the first axis for a number, a fresh array otherwise. */
   value(s: number, xs: Float64Array): number | number[] {
     if (((this.runs[this.base(s) + 1] as number) & SCALAR) !== 0) return xs[0] as number;
@@ -334,8 +339,11 @@ export class Motions<I> {
     const x = new Float64Array(this.n);
     const v = new Float64Array(this.n);
     slope = true;
-    this.peek(s, when, x, v);
-    slope = false;
+    try {
+      this.peek(s, when, x, v);
+    } finally {
+      slope = false;
+    }
     return { x, v, s };
   }
 
@@ -613,13 +621,10 @@ export function motionOf<I>(p: object): Motions<I> | undefined {
   return states.get(p) as Motions<I> | undefined;
 }
 
-function moving<I, O, V extends Value>(
-  writes: keyof O,
-  motion: MotionSpec,
-  shape: Shape<I>,
-  pushes = true,
-) {
+function moving<I, O, V extends Value>(writes: keyof O, motion: MotionSpec, shape: Shape<I>) {
   const state = new Motions<I>(shape);
+  const push = (subject: I, velocity: V, at?: number): void =>
+    state.change(subject, { at, v: axes(velocity) });
   const patch = {
     form: 'motion' as const,
     period: 0,
@@ -635,13 +640,9 @@ function moving<I, O, V extends Value>(
       if (r === undefined) return undefined;
       return { value: state.value(r.s, r.x) as V, velocity: state.value(r.s, r.v) as V };
     },
-    push(subject: I, velocity: V, at?: number): void {
-      state.change(subject, { at, v: axes(velocity) });
-    },
   };
-  if (!pushes) delete (patch as Partial<typeof patch>).push;
   states.set(patch, state as Motions<unknown>);
-  return { patch, state };
+  return { patch, state, push };
 }
 
 interface Common<I, V extends Value> {
@@ -696,7 +697,7 @@ export function spring<I, O, V extends Value = number>(
     law = [OVER, settle, -w0 * (zeta - s), -w0 * (zeta + s), 0];
   }
   const target = (subject: I) => axes(per(opts.to, subject));
-  const { patch, state } = moving<I, O, V>(
+  const { patch, state, push } = moving<I, O, V>(
     writes,
     { kind: 'spring', stiffness: k, damping: c, mass: m, settle },
     {
@@ -710,6 +711,7 @@ export function spring<I, O, V extends Value = number>(
     },
   );
   return Object.assign(patch, {
+    push,
     to: (subject: I, goal: V, at?: number) => state.change(subject, { at, to: axes(goal) }),
   }) as unknown as ReturnType<typeof spring<I, O, V>>;
 }
@@ -733,7 +735,7 @@ export function glide<I, O, V extends Value = number>(
   const ms = opts.ms ?? 325;
   const tau = ms / 1000;
   const settle = opts.settle ?? 1e-4;
-  const { patch } = moving<I, O, V>(
+  const { patch, push } = moving<I, O, V>(
     writes,
     { kind: 'glide', ms, settle },
     {
@@ -748,7 +750,7 @@ export function glide<I, O, V extends Value = number>(
       ease: undefined,
     },
   );
-  return patch as unknown as Moving<I, O, V>;
+  return Object.assign(patch, { push }) as unknown as Moving<I, O, V>;
 }
 
 /**
@@ -762,7 +764,7 @@ export function glide<I, O, V extends Value = number>(
  */
 export function tween<I, O, V extends Value = number>(
   writes: keyof O,
-  opts: Omit<Common<I, V>, 'velocity'> & {
+  opts: {
     /** Where each subject starts. */
     from: PerSubject<I, V>;
     /** Where each subject ends. */
@@ -782,20 +784,18 @@ export function tween<I, O, V extends Value = number>(
 } {
   if (!(opts.ms > 0)) throw new Error('blits: a tween takes a positive ms');
   const ease = opts.ease ?? 'ease';
-  const settle = opts.settle ?? 1e-4;
   const target = (subject: I) => axes(per(opts.to, subject));
   const { patch, state } = moving<I, O, V>(
     writes,
-    { kind: 'tween', ms: opts.ms, ease, settle },
+    { kind: 'tween', ms: opts.ms, ease },
     {
       from: (s) => axes(per(opts.from, s)),
       velocity: (s) => target(s).map(() => 0),
       aim: (_x, _v, was, s) => was ?? target(s),
-      law: [EASED, settle, opts.ms / 1000, 0, 0],
+      law: [EASED, 0, opts.ms / 1000, 0, 0],
       scalar: (s) => typeof per(opts.to, s) === 'number',
       ease: curve(ease),
     },
-    false,
   );
   return Object.assign(patch, {
     to: (subject: I, goal: V, at?: number) => state.change(subject, { at, to: axes(goal) }),
