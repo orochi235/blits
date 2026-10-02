@@ -931,6 +931,43 @@ describe('lanes give motion voices the pose the general path gives', () => {
       expect(seen[1]).toEqual(seen[0]);
     });
 
+  for (const steps of [
+    [],
+    ['seek'],
+    ['fade'],
+    ['seek', 'fade'],
+    ['stagger'],
+    ['seek', 'fade', 'stagger'],
+  ])
+    it(`for a past-timed retarget between two probes of one frame: ${steps.join('+') || 'plain'}`, () => {
+      script((m, parts, look) => {
+        const s = spring<Part, Pose>('crawl', { from: 0, to: 100 });
+        const h = m.cue({ patch: s });
+        if (steps.includes('stagger'))
+          m.cue({
+            patch: spring<Part, Pose>('crawl', { from: 0, to: 5 }),
+            stagger: (p) => p.id * 50,
+            weight: 0,
+          });
+        const [p, q] = parts as [Part, Part];
+        m.sync(0);
+        look(p, [h]);
+        look(q);
+        m.sync(100);
+        look(p, [h]);
+        if (steps.includes('seek')) {
+          h.seek(300);
+          look(p, [h]);
+        }
+        if (steps.includes('fade')) h.fade({ over: 45 });
+        s.to(p, -40, 50);
+        look(p, [h]);
+        look(p, [h]);
+        m.sync(116);
+        look(p, [h]);
+      });
+    });
+
   it('under history, read back through projections', () => {
     const runs = [false, true].map((lanes) => {
       const m = mix<Part, Pose>(K, { lanes, history: { ms: 2000 } });

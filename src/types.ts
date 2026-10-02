@@ -99,8 +99,8 @@ export interface Setting<S = void> {
    * The state `owner` keeps for this voice and this subject, made by `init` on first ask. The mix
    * holds it, so a read at another time can copy it instead of moving it. A stateful signal keeps
    * its state here and nowhere else. With lanes on, a patch that first calls it partway through
-   * playing can have that state advanced once for one subject not probed on the frame it starts; a patch that keeps
-   * state from its first call, or declares `state`, never does.
+   * playing can have that state advanced once for one subject not probed on the frame it starts; a
+   * patch that keeps state from its first call, or declares `state`, never does.
    */
   keep<K>(owner: object, init: () => K): K;
   /**

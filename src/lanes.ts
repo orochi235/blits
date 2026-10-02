@@ -692,7 +692,7 @@ export class Lanes<I, O> {
   private settle(lane: Lane<I, O>, p: number, slot: number, held: Subject<unknown>): void {
     const o = p * STRIDE;
     if (
-      held.probed === this.now ||
+      (held.probed === this.now && held.seeks === lane.data[o + SEEKS]) ||
       !((this.laneProbe[slot] as number) > this.frameProbes) ||
       lane.data[o + SAMPLED] !== this.laneFill[slot]
     )
