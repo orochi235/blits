@@ -51,6 +51,13 @@ export function delays(n, voices) {
   return d;
 }
 
+/** A spread of subjects to check, and a mix holding only them: a pose depends on i, not on N. */
+export function sampleOf(n) {
+  const idx = new Set([0, 1, 2, n - 1]);
+  for (let k = 0; k < 28; k++) idx.add(Math.floor(((k + 0.5) / 28) * n));
+  return [...idx];
+}
+
 // ---- variant 1: the real mix ----
 
 export function makeMix(voices, subjects) {
