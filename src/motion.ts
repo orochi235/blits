@@ -57,7 +57,10 @@ const per = <I, V>(p: PerSubject<I, V>, subject: I): V =>
  * @category patch
  */
 export type Moving<I, O, V extends Value> = Patch<I, O, void> & {
-  /** Where `subject` is and how fast it moves at voice time `at`, default its last read. */
+  /**
+   * Where `subject` is and how fast it moves at voice time `at`, default its last read. With no
+   * time given, undefined until a frame has read the subject.
+   */
   read(subject: I, at?: number): Motion<V> | undefined;
   /** Sets `subject` moving at `velocity`, units per second, from voice time `at`, default its next read. */
   push(subject: I, velocity: V, at?: number): void;
@@ -106,18 +109,20 @@ export class Motions<I> {
     if (known !== undefined) return known;
     const x = this.shape.from(subject);
     const v = this.shape.velocity(subject);
+    const to = this.shape.aim(x, v, null, subject);
+    const n = this.n < 0 ? x.length : this.n;
+    for (const a of [x, v, to]) this.check(a, n);
     if (this.n < 0) {
-      this.n = x.length;
-      this.xs = new Float64Array(this.n);
-      this.vs = new Float64Array(this.n);
-    } else if (x.length !== this.n)
-      throw new Error('blits: a motion patch moves every subject on the same number of axes');
+      this.n = n;
+      this.xs = new Float64Array(n);
+      this.vs = new Float64Array(n);
+    }
     const s = this.numbers.take(subject);
     this.slots.set(subject, s);
     this.grow(s + 1);
     this.scalar[s] = this.shape.scalar(subject) ? 1 : 0;
     this.last[s] = Number.NaN;
-    this.write(s, { at: 0, x0: x, v0: v, to: this.shape.aim(x, v, null, subject) });
+    this.write(s, { at: 0, x0: x, v0: v, to });
     return s;
   }
 
@@ -153,6 +158,7 @@ export class Motions<I> {
     this.evaluate(seg.at, seg.x0, seg.v0, seg.to, 0, t, xo, vo);
   }
 
+  /** Position and velocity at `at`, default the last live read; undefined until there is one. */
   read(subject: I, at?: number): { x: Float64Array; v: Float64Array; s: number } | undefined {
     const s = this.slots.get(subject);
     if (s === undefined) return undefined;
@@ -165,11 +171,19 @@ export class Motions<I> {
     return { x, v, s };
   }
 
+  /** Queues a retarget or push for `subject`'s next read at or past its time. */
   change(subject: I, c: Change): void {
     const s = this.slot(subject);
+    this.check(c.to, this.n);
+    this.check(c.v, this.n);
     const list = this.pending.get(s);
     if (list === undefined) this.pending.set(s, [c]);
     else list.push(c);
+  }
+
+  private check(a: readonly number[] | undefined, n: number): void {
+    if (a !== undefined && a.length !== n)
+      throw new Error('blits: a motion patch moves every subject on the same number of axes');
   }
 
   private forget(s: number): void {

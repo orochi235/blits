@@ -213,6 +213,46 @@ describe('the motion form', () => {
     expect(s.read(a, 0)).toEqual({ value: 0, velocity: 0 });
   });
 
+  it('refuses a retarget or push on another number of axes, leaving the subject as it was', () => {
+    const run = (bad?: (s: ReturnType<typeof spring<Part, Pose, number[]>>, a: Part) => void) => {
+      const s = spring<Part, Pose, number[]>('p', { from: [0, 0], to: [1, 2] });
+      const m = mix<Part, Pose>(K);
+      m.cue({ patch: s });
+      const a = { id: 'a' };
+      m.sync(0);
+      m.probe(a);
+      s.to(a, [5, 6], 100);
+      if (bad) expect(() => bad(s, a)).toThrow(/same number of axes/);
+      return [200, 400, 800].map((t) => {
+        m.sync(t);
+        return [...m.probe(a).p];
+      });
+    };
+    const clean = run();
+    expect(run((s, a) => s.to(a, [1, 2, 3]))).toEqual(clean);
+    expect(run((s, a) => s.to(a, [5]))).toEqual(clean);
+    expect(run((s, a) => s.push(a, [1, 2, 3]))).toEqual(clean);
+  });
+
+  it('refuses a subject whose own start, target and velocity disagree on how many axes', () => {
+    const s = spring<Part, Pose, number[]>('p', {
+      from: (part) => (part.id === 'b' ? [0, 0] : [0, 0, 0]),
+      to: [1, 2, 3],
+    });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: s });
+    m.sync(0);
+    expect(() => m.probe({ id: 'b' })).toThrow(/same number of axes/);
+    const v = spring<Part, Pose, number[]>('p', { to: [1, 2], velocity: [1, 2, 3] });
+    const n = mix<Part, Pose>(K);
+    n.cue({ patch: v });
+    n.sync(0);
+    expect(() => n.probe({ id: 'a' })).toThrow(/same number of axes/);
+    const b = { id: 'b' };
+    expect(() => s.to(b, [1, 2, 3])).toThrow(/same number of axes/);
+    expect(s.read(b, 0)).toBeUndefined();
+  });
+
   it('refuses subjects moving on different numbers of axes', () => {
     const s = spring<Part, Pose, number[]>('p', {
       to: (part) => (part.id === 'a' ? [1, 2] : [1, 2, 3]),
