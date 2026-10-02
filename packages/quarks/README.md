@@ -55,8 +55,13 @@ event `{ count }` a patch `send`s under the tag you gave `drive`.
   and forgets them, so a later `attach` captures whatever you have set since.
 - **`write(dt)`**, `dt` in ms, after `mix.sync`: probes each attached subject, adds `rate × dt` to
   its carry and emits the whole particles, adds the floored `count` of each burst drained for it,
-  and emits them all at `at + offset` with that subject's values. A rate or count at or below 0
-  adds nothing, and a burst for a subject not attached is ignored.
+  and emits them all at `at + offset` with that subject's values. A rate or count at or below 0,
+  or not finite, adds nothing, and a burst for a subject not attached is ignored. Particles leave
+  at the subject's position but with the emitter's world rotation and scale, as of its last
+  `matrixWorld` update, so a rotated emitter shape still points where you turned it.
+- **If emitting a subject throws** (its `at`, or a behavior's `initialize`), that subject's
+  particles for the frame are dropped, every other subject still emits, including its drained
+  bursts, your authored values are put back, and then `write` rethrows the first error.
 
 `send` is also yours for anything else a discharge drives, such as flashes or audio: drain your own
 tags; the driver takes only the one you gave it.
@@ -67,4 +72,14 @@ tags; the driver takes only the one you gave it.
   `startColor` a `ConstantColor`, when their channel is in the kit; anything else is refused at
   `attach`, naming the field.
 - A system must have `worldSpace: true`.
+- One generator object may not serve two of `startSpeed`, `startSize` and `startLife`, since
+  scaling one would scale the other; `attach` refuses it, naming both fields.
+- The start values are captured at the first `attach` of a system. Replacing a generator, or
+  editing one, while the system is attached is not seen: the driver keeps writing to the captured
+  generator and puts the captured values back each frame. Detach every subject on the system,
+  change it, and attach again.
+- `write` emits everything `rate × dt` owes at once, so a long `dt`, such as the first frame
+  after a hidden tab, bursts a whole gap's worth of particles. The driver does not clamp it: when
+  you call `mix.rebase()` after a gap, leave the gap out of the `dt` you hand `write` too, or clamp
+  `dt` yourself.
 - What quarks does to a particle after birth (forces, behaviors, color over life) stays quarks'.
