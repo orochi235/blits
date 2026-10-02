@@ -9,6 +9,7 @@ export { gate, lag, level, peak, slew } from './signals.js';
 export type {
   Anchor,
   Channel,
+  Columns,
   Doubt,
   Easing,
   Engine,

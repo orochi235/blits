@@ -1,12 +1,13 @@
 import { clampWeight, envelope, passAt, passesOf, phaseAt } from './clock.js';
 import { type Curve, curve } from './easing.js';
-import { type LaneHost, Lanes } from './lanes.js';
+import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
 import { motionOf, noFrame } from './motion.js';
 import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
 import type {
   Channel,
+  Columns,
   Doubt,
   Engine,
   FadeOptions,
@@ -215,6 +216,21 @@ const near = (a: unknown, b: unknown): boolean => {
 };
 
 const copy = (v: unknown): unknown => (Array.isArray(v) ? [...v] : v);
+
+type Values = Record<string, unknown>;
+
+/** Writes a folded pose's value into subject `n`'s places in a column. */
+function writeValue(c: Column, v: unknown, n: number): void {
+  const at = n * c.axes;
+  if (typeof v === 'number' && c.axes === 1) c.out[at] = v;
+  else if (Array.isArray(v) && v.length === c.axes)
+    for (let a = 0; a < c.axes; a++) c.out[at + a] = v[a] as number;
+  else if (v === undefined) c.out.fill(Number.NaN, at, at + c.axes);
+  else
+    throw new TypeError(
+      `blits: pull reads ${c.key} as ${c.axes === 1 ? 'a number' : `${c.axes} numbers`} a subject, and the pose has ${String(v)}`,
+    );
+}
 
 /** Deep equality over plain data, for telling whether a host field changed. */
 function same(a: unknown, b: unknown): boolean {
@@ -462,6 +478,8 @@ class Mixer<I, O> implements Mix<I, O> {
   private last = Number.NaN;
   private rebasing = false;
   private wantsPose = false;
+  /** The pose `pull` folds a subject into where it cannot read straight from the lanes. */
+  private scratch: O | undefined;
   /** Read once a sync, so a `reduce` function is not called per voice per subject. */
   private reducedNow = false;
   /**
@@ -705,6 +723,12 @@ class Mixer<I, O> implements Mix<I, O> {
 
   probe(subject: I, out?: O): O {
     const pose = this.fold(subject, out);
+    this.keep(subject, pose, out);
+    return pose;
+  }
+
+  /** After a probe, keeps the pose a retarget from `'current'` reads as the subject's last. */
+  private keep(subject: I, pose: O, out: O | undefined): void {
     // Keeping last frame's pose is free when the mix allocated it; a host sampling into its own
     // object only pays for the copy once something in the mix has asked to retarget from it.
     let kept: O | undefined;
@@ -728,7 +752,62 @@ class Mixer<I, O> implements Mix<I, O> {
         rec.at = this.now;
       }
     }
-    return pose;
+  }
+
+  pull(subjects: Iterable<I>, into: Columns<O>): void {
+    const columns = this.columnsOf(into);
+    const lanes = this.lanes;
+    const now = this.now;
+    if (this.scratch === undefined) this.scratch = {} as O;
+    const scratch = this.scratch;
+    let room = Number.POSITIVE_INFINITY;
+    let tightest = '';
+    for (const c of columns) {
+      const fits = Math.floor(c.out.length / c.axes);
+      if (fits < room) {
+        room = fits;
+        tightest = c.key;
+      }
+    }
+    let n = 0;
+    for (const subject of subjects) {
+      if (n >= room)
+        throw new RangeError(
+          `blits: pull's array for ${tightest} has room for ${room} subjects, and was given more`,
+        );
+      const head = Number.isNaN(now) ? null : this.chain(subject, now);
+      const laned = head !== null && lanes?.prepare(head.slot, subject, now, this.version) === true;
+      if (laned && (lanes as Lanes<I, O>).whole && !this.wantsPose) {
+        (lanes as Lanes<I, O>).write((head as Subject<unknown>).slot, columns, n);
+      } else {
+        const folded = this.foldWith(subject, scratch, head, laned, false);
+        const pose = (this.bounded.length === 0 ? folded : this.clamp(folded as Values)) as Values;
+        this.keep(subject, pose as O, scratch);
+        for (const c of columns) writeValue(c, pose[c.key], n);
+      }
+      n++;
+    }
+  }
+
+  /** The kit slot, width, rest and bounds of every channel `pull` was handed an array for. */
+  private columnsOf(into: Columns<O>): Column[] {
+    const columns: Column[] = [];
+    for (const key of Object.keys(into)) {
+      const out = (into as Record<string, Float64Array | undefined>)[key];
+      if (out === undefined) continue;
+      const slot = this.slotOf.get(key);
+      if (slot === undefined) throw new Error(`blits: pull was handed ${key}, which the kit lacks`);
+      const channel = this.channels[slot] as Channel<unknown>;
+      const rest = channel.rest;
+      const axes = Array.isArray(rest) ? rest.length : 1;
+      const bounds = channel.bounds as readonly [number, number] | undefined;
+      const at = new Float64Array(axes).fill(Number.NaN);
+      if (typeof rest === 'number') at[0] = rest;
+      else if (Array.isArray(rest)) at.set(rest as number[]);
+      if (bounds !== undefined) clampRun(at, 0, axes, bounds);
+      columns.push({ key, slot, axes, out, rest: at, bounds });
+    }
+    return columns;
   }
 
   project(timestamp: number): Projection<I, O> {
@@ -1897,11 +1976,25 @@ class Mixer<I, O> implements Mix<I, O> {
 
   private folded(subject: I, out?: O, dry = false, except?: number): O {
     const now = this.now;
-    const pose = (out ?? ({} as O)) as Record<string, unknown>;
     const head = Number.isNaN(now) ? null : this.chain(subject, now);
-    const lanes = this.lanes;
     // A subject numbered since the frame's fill folds every voice here, laned ones included.
-    const laned = head !== null && lanes?.prepare(head.slot, subject, now, this.version) === true;
+    const laned =
+      head !== null && this.lanes?.prepare(head.slot, subject, now, this.version) === true;
+    return this.foldWith(subject, out ?? ({} as O), head, laned, dry, except);
+  }
+
+  /** The fold after a subject's chain is linked and its lanes asked whether it reads from them. */
+  private foldWith(
+    subject: I,
+    out: O,
+    head: Subject<unknown> | null,
+    laned: boolean,
+    dry: boolean,
+    except?: number,
+  ): O {
+    const now = this.now;
+    const pose = out as Record<string, unknown>;
+    const lanes = this.lanes;
     const skip = laned ? (lanes as Lanes<I, O>).copies : null;
     for (let i = 0; i < this.names.length; i++) {
       if (skip?.[i]) continue;

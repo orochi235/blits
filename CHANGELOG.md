@@ -27,9 +27,10 @@ version and everything else the patch. Each release lists its changes as **Break
   that frame.
 - `mixHex`, and so the `hex` channel, blends in OKLCH rather than sRGB, taking hue the short way
   round and a gray end's hue from the other end. A crossfade from red to blue passes through
-  0xba00c2 rather than 0x800080, and black to white through 0x636363 rather than 0x808080. A blend costs about 45 ns where the
-  two ends repeat frame to frame and 210 ns where every call brings new colors, against 8 ns in
-  sRGB. `hex({ space: 'srgb' })` keeps the sRGB blend.
+  0xba00c2 rather than 0x800080, and black to white through 0x636363 rather than 0x808080. A blend
+  costs about 45 ns where the two ends repeat frame to frame and 210 ns where every call brings new
+  colors, against 8 ns in sRGB. `hex({ space: 'srgb' })` keeps the sRGB blend.
+- `Mix` has a `pull` method, so an engine's `create` must return a mix that implements it.
 
 ### Added
 
@@ -43,6 +44,11 @@ version and everything else the patch. Each release lists its changes as **Break
   don't serve: a voice per subject reads up to 7% slower at 10,000 subjects (about 20% at
   100–1,000, a few hundredths of a millisecond), a mix probing few of its subjects about 0.03 ms
   more, and a projection made every frame about 10% more.
+- `mix.pull(subjects, { channel: Float64Array, ... })` writes each subject's pose into one array per
+  channel, in the order given, giving what `probe(subject, out)` gives without a pose object per
+  subject. A channel of `n` numbers takes `n` places a subject; one with no value writes NaN. While
+  every voice runs on a lane it copies straight from the lanes: a frame of three `keys` voices
+  over 10,000 subjects costs 0.84 of the same frame read through `probe`, a spring 0.91.
 - `mix.project(timestamp)` reads the mix at another time without moving it: `probe` gives the pose
   then, and `assess` says per channel whether it is `exact`, `stepped` or `held`. Ahead it plays
   what is cued forward; behind it needs `MixOptions.history: { ms, every? }`, which keeps every

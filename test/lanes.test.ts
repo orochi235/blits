@@ -50,11 +50,40 @@ function expectSame(a: Pose, b: Pose, where: string): void {
   }
 }
 
+/** Reads `parts` through `pull`, one pose per part, as `probe(part, out)` would give them. */
+function pulled(m: Mix<Part, Pose>, parts: readonly Part[]): Pose[] {
+  const k = parts.length;
+  const cols = {
+    gain: new Float64Array(k),
+    crawl: new Float64Array(k),
+    dark: new Float64Array(k),
+    position: new Float64Array(k * 3),
+    opacity: new Float64Array(k),
+  };
+  m.pull(parts, cols);
+  return parts.map((_, i) => ({
+    gain: cols.gain[i] as number,
+    crawl: cols.crawl[i] as number,
+    dark: cols.dark[i] as number,
+    position: [...cols.position.subarray(i * 3, i * 3 + 3)],
+    opacity: cols.opacity[i] as number,
+  }));
+}
+
+/** Lanes off and on, each read through `probe` and through `pull`; the first is the reference. */
+const ways = [
+  { lanes: false, pull: false },
+  { lanes: true, pull: false },
+  { lanes: false, pull: true },
+  { lanes: true, pull: true },
+];
+
 /**
- * Plays one scenario on a mix with lanes off and one with them on, building it afresh for each so
- * nothing is shared. At every time it probes the parts `probe` picks, into a fresh pose and into a
- * reused out object, and requires every channel, every handle's `weightOf` for every part, probed
- * or not, and `atRest` to match.
+ * Plays one scenario on a mix with lanes off and on, read through `probe` and through `pull`,
+ * building it afresh each time so nothing is shared. At every time it reads the parts `probe`
+ * picks twice: into a fresh pose, and into a reused out object or, on a `pull` run, through one
+ * `pull` of them all ahead of the fresh probes. Every channel, every handle's `weightOf` for every
+ * part, probed or not, and `atRest` must match the reference.
  */
 function agree(
   play: Play,
@@ -66,11 +95,11 @@ function agree(
   },
 ): void {
   const n = opts.parts ?? 6;
-  const runs = [false, true].map((lanes) => {
+  const runs = ways.map((way) => {
     const parts = Array.from({ length: n }, (_, id) => ({ id }));
-    const m = mix<Part, Pose>(K, { ...opts.mix, lanes });
+    const m = mix<Part, Pose>(K, { ...opts.mix, lanes: way.lanes });
     const r = play(m, parts) ?? {};
-    return { m, parts, handles: r.handles ?? [], at: r.at, out: {} as Pose };
+    return { ...way, m, parts, handles: r.handles ?? [], at: r.at, out: {} as Pose };
   });
   for (const t of opts.times) {
     const seen = runs.map((run) => {
@@ -79,27 +108,32 @@ function agree(
       const poses: Pose[] = [];
       const weights: number[] = [];
       const rest: boolean[] = [];
-      for (const part of run.parts) {
-        if (opts.probe && !opts.probe(t, part)) continue;
+      const read = run.parts.filter((part) => !opts.probe || opts.probe(t, part));
+      const fromPull = run.pull ? pulled(run.m, read) : [];
+      read.forEach((part, i) => {
         poses.push(snapshot(run.m.probe(part)));
-        poses.push(snapshot(run.m.probe(part, run.out)));
+        poses.push(run.pull ? (fromPull[i] as Pose) : snapshot(run.m.probe(part, run.out)));
         rest.push(run.m.atRest(part));
-      }
+      });
       for (const part of run.parts) for (const h of run.handles) weights.push(h.weightOf(part));
       return { poses, weights, rest };
     });
-    const [off, on] = seen as [(typeof seen)[0], (typeof seen)[0]];
-    off.poses.forEach((pose, i) => {
-      expectSame(pose, on.poses[i] as Pose, `t=${t} probe ${i}`);
+    const [ref, ...others] = seen as [(typeof seen)[0], ...(typeof seen)[0][]];
+    others.forEach((other, w) => {
+      const way = `lanes ${runs[w + 1]?.lanes ? 'on' : 'off'}${runs[w + 1]?.pull ? ', pull' : ''}`;
+      ref.poses.forEach((pose, i) => {
+        expectSame(pose, other.poses[i] as Pose, `t=${t} ${way} read ${i}`);
+      });
+      expect(other.weights, `t=${t} ${way} weightOf`).toEqual(ref.weights);
+      expect(other.rest, `t=${t} ${way} atRest`).toEqual(ref.rest);
     });
-    expect(on.weights, `t=${t} weightOf`).toEqual(off.weights);
-    expect(on.rest, `t=${t} atRest`).toEqual(off.rest);
   }
 }
 
 /**
- * Runs `run` with lanes off and on; `look` probes a subject and records every given handle's
- * `weightOf` for it. Every probe and weight must match.
+ * Runs `run` with lanes off and on, read through `probe` and through `pull`; `look` reads a
+ * subject and records every given handle's `weightOf` for it. On a `pull` run it pulls the subject
+ * and then probes it, so the mix keeps the pose a probe keeps. Every read and weight must match.
  */
 function script(
   run: (
@@ -109,23 +143,29 @@ function script(
   ) => void,
   opts: { parts?: number } = {},
 ): void {
-  const seen = [false, true].map((lanes) => {
+  const seen = ways.map((way) => {
     const parts = Array.from({ length: opts.parts ?? 6 }, (_, id) => ({ id }));
-    const m = mix<Part, Pose>(K, { lanes });
+    const m = mix<Part, Pose>(K, { lanes: way.lanes });
     const poses: Pose[] = [];
     const weights: number[] = [];
     run(m, parts, (part, handles = []) => {
-      poses.push(snapshot(m.probe(part)));
+      if (way.pull) {
+        poses.push(pulled(m, [part])[0] as Pose);
+        m.probe(part);
+      } else poses.push(snapshot(m.probe(part)));
       for (const h of handles) weights.push(h.weightOf(part));
     });
     return { poses, weights };
   });
-  const [off, on] = seen as [(typeof seen)[0], (typeof seen)[0]];
-  expect(on.poses.length).toBe(off.poses.length);
-  off.poses.forEach((pose, i) => {
-    expectSame(pose, on.poses[i] as Pose, `probe ${i}`);
+  const [ref, ...others] = seen as [(typeof seen)[0], ...(typeof seen)[0][]];
+  others.forEach((other, w) => {
+    const way = `lanes ${ways[w + 1]?.lanes ? 'on' : 'off'}${ways[w + 1]?.pull ? ', pull' : ''}`;
+    expect(other.poses.length).toBe(ref.poses.length);
+    ref.poses.forEach((pose, i) => {
+      expectSame(pose, other.poses[i] as Pose, `${way} read ${i}`);
+    });
+    expect(other.weights, `${way} weightOf`).toEqual(ref.weights);
   });
-  expect(on.weights, 'weightOf').toEqual(off.weights);
 }
 
 const times = [0, 16, 50, 120, 333, 500, 999, 1000, 1500, 2600];
