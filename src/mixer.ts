@@ -1,3 +1,4 @@
+import { clampWeight, envelope, passesOf, place, placed } from './clock.js';
 import { type Curve, curve } from './easing.js';
 import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
@@ -633,8 +634,7 @@ class Mixer<I, O> implements Mix<I, O> {
         this.version++;
       }
       const period = voice.patch.period;
-      const loop = voice.spec.loop ?? true;
-      const passes = loop === true ? Number.POSITIVE_INFINITY : loop === false ? 1 : loop;
+      const passes = passesOf(voice.spec.loop);
       if (voice.state === 'live' && period > 0 && Number.isFinite(passes)) {
         const end = period * passes + voice.latest;
         // The fade starts when the last pass ended, not at the frame that noticed, so it plays the
@@ -1016,8 +1016,7 @@ class Mixer<I, O> implements Mix<I, O> {
     else if (Number.isFinite(voice.outAt)) outAt = voice.outAt;
     else {
       const period = voice.patch.period;
-      const loop = voice.spec.loop ?? true;
-      const passes = loop === true ? Number.POSITIVE_INFINITY : loop === false ? 1 : loop;
+      const passes = passesOf(voice.spec.loop);
       if (period > 0 && Number.isFinite(passes)) {
         const t = voice.timeAt(period * passes + voice.latest);
         if (Number.isFinite(t)) outAt = Math.max(start, t);
@@ -1314,22 +1313,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** The ramp a voice's own fade envelope applies this frame, 0..1. */
   private envelope(voice: Voice<I, O>, now: number, since: number): number {
-    const reduced = this.reducedNow;
-    const ease = voice.ease;
-    let w = 1;
-    const fadeIn = voice.fade.in ?? 0;
-    if (fadeIn > 0 && !reduced) {
-      const u = (now - since) / fadeIn;
-      if (u < 1) w *= ease ? ease(Math.max(0, u)) : Math.max(0, u);
-    }
-    const out = voice.out;
-    if (out && !out.rest) {
-      if (reduced || out.over === 0) return 0;
-      const u = 1 - (now - out.at) / out.over;
-      const clamped = u < 0 ? 0 : u > 1 ? 1 : u;
-      w *= ease ? ease(clamped) : clamped;
-    }
-    return w;
+    return envelope(voice.fade.in ?? 0, voice.out, voice.ease, this.reducedNow, now, since);
   }
 
   /** What this voice holds for this subject, made on first sight with `target` and `stagger` asked once. */
@@ -1389,8 +1373,7 @@ class Mixer<I, O> implements Mix<I, O> {
       base = was ? was.value : signal(subject, voice.setting as Setting);
       if (signal.input && !was) this.record(held, base);
     }
-    const raw = base * this.envelope(voice, now, held.since);
-    return raw < 0 ? 0 : raw > 1 ? 1 : raw;
+    return clampWeight(base * this.envelope(voice, now, held.since));
   }
 
   /**
@@ -1410,16 +1393,9 @@ class Mixer<I, O> implements Mix<I, O> {
     const elapsed = voice.elapsedAt(now) - held.delay;
     if (elapsed < 0) return null;
 
-    const period = voice.patch.period;
-    const loop = voice.spec.loop ?? true;
-    const passes = loop === true ? Number.POSITIVE_INFINITY : loop === false ? 1 : loop;
-    let phase = 0;
-    let pass = 0;
-    if (period > 0) {
-      const done = Number.isFinite(passes) && elapsed >= period * passes;
-      phase = done ? 1 : (elapsed % period) / period;
-      pass = done ? passes - 1 : Math.floor(elapsed / period);
-    }
+    place(elapsed, voice.patch.period, passesOf(voice.spec.loop));
+    const phase = placed.phase;
+    const pass = placed.pass;
 
     const setting = voice.setting;
     setting.timestamp = now;
