@@ -1,5 +1,6 @@
 import { clampWeight, envelope, passesOf, place, placed } from './clock.js';
 import { type Curve, curve } from './easing.js';
+import { type LaneHost, Lanes } from './lanes.js';
 import { motionOf } from './motion.js';
 import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
@@ -34,7 +35,7 @@ type Key<O> = keyof O & string;
 const none: readonly string[] = Object.freeze([]);
 
 /** Everything one voice holds for one subject, chained through the next voice that reaches it. */
-interface Subject<S> {
+export interface Subject<S> {
   /** The voice's `target` answer, fixed on first sight. */
   reaches: boolean;
   /** The voice's `stagger` answer in voice ms, fixed on first sight. */
@@ -84,6 +85,8 @@ interface Subject<S> {
    */
   version: number;
   loci: Map<string, boolean> | null;
+  /** On the first record: the number lanes index this subject by, -1 without one. */
+  slot: number;
 }
 
 const keeper = (kept: Map<object, unknown>): Setting['keep'] =>
@@ -116,6 +119,7 @@ function stub(): Subject<unknown> {
     next: null,
     version: Number.NaN,
     loci: null,
+    slot: -1,
   };
 }
 
@@ -220,7 +224,7 @@ function same(a: unknown, b: unknown): boolean {
   return true;
 }
 
-class Voice<I, O> {
+export class Voice<I, O> {
   state: 'pending' | 'live' | 'fading' | 'done' = 'pending';
   rate: number;
   weight: number;
@@ -251,6 +255,8 @@ class Voice<I, O> {
   scratch: Scratch = [];
   /** The record whose delta holds `scratch`'s arrays; any other's must be read again to be handed out. */
   holder: Subject<unknown> | null = null;
+  /** Whether its channels run as lanes this frame, so the general fold passes it by. */
+  laned = false;
   readonly ease: Curve | undefined;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: Setting<unknown>;
@@ -370,6 +376,7 @@ class Voice<I, O> {
     w.setting = { ...this.setting, keep: keeper(new Map()), send: noSend };
     v.scratch = [];
     v.holder = null;
+    v.laned = false;
     v.log = null;
     if (controls) {
       v.anchorNow = controls.anchorNow;
@@ -486,6 +493,7 @@ class Mixer<I, O> implements Mix<I, O> {
   /** Slots of the channels that declare bounds, clamped after every fold. */
   private readonly bounded: number[];
   private readonly slotOf = new Map<string, number>();
+  private readonly lanes: Lanes<I, O> | null;
 
   constructor(
     private readonly kit: Kit<O>,
@@ -497,6 +505,7 @@ class Mixer<I, O> implements Mix<I, O> {
     this.names.forEach((k, i) => {
       this.slotOf.set(k, i);
     });
+    this.lanes = opts.lanes === false ? null : new Lanes<I, O>(this.laneHost());
   }
 
   private get reduced(): boolean {
@@ -705,7 +714,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   project(timestamp: number): Projection<I, O> {
     const t = timestamp - this.offset;
-    const c = new Mixer<I, O>(this.kit, { ...this.opts, history: undefined });
+    const c = new Mixer<I, O>(this.kit, { ...this.opts, history: undefined, lanes: false });
     c.projecting = true;
     c.pose = this.pose;
     c.offset = this.offset;
@@ -843,6 +852,8 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   drop(subject: I): void {
+    const head = this.chains.get(subject);
+    if (head !== undefined && head.slot >= 0 && this.lanes !== null) this.lanes.release(head.slot);
     this.pose.delete(subject);
     this.chains.delete(subject);
     for (const voice of [...this.voices, ...this.gone]) {
@@ -863,6 +874,89 @@ class Mixer<I, O> implements Mix<I, O> {
       this.sent = kept;
     }
     return out.sort((a, b) => a.timestamp - b.timestamp) as Sent<I, E>[];
+  }
+
+  private laneHost(): LaneHost<I, O> {
+    const mix = this;
+    return {
+      get now() {
+        return mix.now;
+      },
+      get version() {
+        return mix.version;
+      },
+      get voices() {
+        return mix.voices;
+      },
+      channels: this.channels,
+      names: this.names,
+      fits: (voice) => mix.fits(voice),
+      meet: (voice, subject) => mix.held(voice, subject, mix.now),
+      envelope: (voice, since) => mix.envelope(voice, mix.now, since),
+      ready: (voice, subject, held, elapsed, pass, weight) => {
+        mix.prime(voice, held, mix.now, elapsed, pass);
+        voice.setting.weight = weight;
+        mix.sending.voice = voice;
+        mix.sending.subject = subject;
+      },
+      horizon: (voice, delay) => {
+        reading.horizon = mix.horizonFor(voice, delay, mix.now);
+      },
+      after: (voice, held) => {
+        if (mix.opts.history !== undefined) mix.remember(voice, held);
+      },
+      slotOf: (subject) => mix.chains.get(subject)?.slot ?? -1,
+    };
+  }
+
+  /** Whether a voice's patch and spec can run on a lane, its channels aside. */
+  private fits(voice: Voice<I, O>): boolean {
+    const spec = voice.spec;
+    const patch = voice.patch;
+    if (typeof spec.weight === 'function') return false;
+    if (spec.locus !== undefined || spec.from === 'current') return false;
+    if (voice.out?.rest) return false;
+    if (patch.form === 'motion') return false;
+    if (patch.state !== undefined || patch.step !== undefined) return false;
+    if (this.opts.history?.inputs && patch.reads !== undefined && patch.reads.length > 0)
+      return false;
+    const built = voice.built;
+    return (
+      built === null ||
+      built.tracks.every((t, i) => t.lerp === undefined || t.lerp === voice.lerps[i])
+    );
+  }
+
+  /** Fills a voice's setting for a call to its patch, the weight aside. */
+  private prime(
+    voice: Voice<I, O>,
+    held: Subject<unknown>,
+    now: number,
+    elapsed: number,
+    pass: number,
+  ): void {
+    const setting = voice.setting;
+    setting.timestamp = now;
+    const gap = now - held.stepped;
+    const cap = this.opts.maxDt;
+    setting.dt = this.reducedNow
+      ? Number.POSITIVE_INFINITY
+      : cap !== undefined && gap > cap
+        ? cap
+        : gap;
+    setting.elapsed = elapsed;
+    setting.pass = pass;
+    setting.weight = 0;
+    setting.state = held.state;
+    setting.keep = held.keep;
+  }
+
+  /** The earliest voice time a read may still ask for, for a subject delayed `delay`. */
+  private horizonFor(voice: Voice<I, O>, delay: number, now: number): number {
+    const history = this.opts.history;
+    return history === undefined
+      ? Number.POSITIVE_INFINITY
+      : this.elapsedThen(voice, now - history.ms) - delay;
   }
 
   // ── internals ──────────────────────────────────────────────────────────────
@@ -1089,6 +1183,7 @@ class Mixer<I, O> implements Mix<I, O> {
       next: null,
       version: Number.NaN,
       loci: null,
+      slot: -1,
     };
   }
 
@@ -1139,6 +1234,7 @@ class Mixer<I, O> implements Mix<I, O> {
       next: null,
       version: Number.NaN,
       loci: null,
+      slot: -1,
       from: stepped,
       unknown: voice.spec.from === 'current',
       replay: live.inputs,
@@ -1258,6 +1354,7 @@ class Mixer<I, O> implements Mix<I, O> {
       set weight(w: number) {
         voice.weight = w;
         mix.noted(voice);
+        mix.lanes?.refill();
       },
       get rate() {
         return voice.rateAt(Number.isNaN(mix.now) ? voice.start : mix.now);
@@ -1267,6 +1364,7 @@ class Mixer<I, O> implements Mix<I, O> {
         voice.ramp = null;
         voice.rate = r;
         mix.noted(voice);
+        mix.lanes?.refill();
       },
       ramp(r: number, over: number) {
         const now = Number.isNaN(mix.now) ? voice.start : mix.now;
@@ -1275,17 +1373,21 @@ class Mixer<I, O> implements Mix<I, O> {
         voice.ramp = over > 0 && r !== from ? { from, to: r, over } : null;
         voice.rate = r;
         mix.noted(voice);
+        mix.lanes?.refill();
       },
       seek(elapsed: number) {
         voice.rebase(Number.isNaN(mix.now) ? voice.start : mix.now);
         voice.anchorElapsed = elapsed;
         mix.noted(voice);
+        mix.lanes?.refill();
       },
       fade(opts?: FadeOptions) {
         mix.beginFade(voice, opts ?? {});
       },
       weightOf(subject: I) {
         if (voice.state === 'done') return 0;
+        if (voice.laned && mix.lanes !== null)
+          return mix.lanes.weightOf(voice.id, mix.chains.get(subject)?.slot ?? -1) ?? 0;
         return (voice.subjects.get(subject) as Subject<unknown> | undefined)?.weight ?? 0;
       },
       done: voice.done,
@@ -1304,11 +1406,14 @@ class Mixer<I, O> implements Mix<I, O> {
       deadline: opts.deadline,
     };
     this.noted(voice);
+    if (opts.at === 'rest') this.lanes?.invalidate();
+    else this.lanes?.refill();
     if (over === 0 && opts.at !== 'rest') this.retire(voice, voice.out.at);
   }
 
   /** Removes a voice, recording that it left at `at`, default now. */
   private retire(voice: Voice<I, O>, at?: number): void {
+    this.lanes?.invalidate();
     voice.state = 'done';
     voice.doneAt = at ?? (Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now);
     voice.resolve();
@@ -1354,6 +1459,7 @@ class Mixer<I, O> implements Mix<I, O> {
       next: null,
       version: Number.NaN,
       loci: null,
+      slot: -1,
     };
     if (this.projecting) {
       held.from = held.stepped;
@@ -1400,20 +1506,8 @@ class Mixer<I, O> implements Mix<I, O> {
     const phase = placed.phase;
     const pass = placed.pass;
 
+    this.prime(voice, held, now, elapsed, pass);
     const setting = voice.setting;
-    setting.timestamp = now;
-    const gap = now - held.stepped;
-    const cap = this.opts.maxDt;
-    setting.dt = this.reducedNow
-      ? Number.POSITIVE_INFINITY
-      : cap !== undefined && gap > cap
-        ? cap
-        : gap;
-    setting.elapsed = elapsed;
-    setting.pass = pass;
-    setting.weight = 0;
-    setting.state = held.state;
-    setting.keep = held.keep;
 
     const weight = this.weigh(voice, subject, now, held);
     setting.weight = weight;
@@ -1428,10 +1522,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const history = this.opts.history;
     if (history?.inputs && voice.patch.reads !== undefined && !this.projecting)
       this.recordHost(now);
-    reading.horizon =
-      history === undefined
-        ? Number.POSITIVE_INFINITY
-        : this.elapsedThen(voice, now - history.ms) - held.delay;
+    reading.horizon = this.horizonFor(voice, held.delay, now);
 
     const tick = this.opts.stepMs;
     if (voice.patch.step && held.probed !== now) {
@@ -1642,7 +1733,10 @@ class Mixer<I, O> implements Mix<I, O> {
     if (was !== undefined && was !== head) {
       head.loci = was.loci;
       was.loci = null;
-    }
+      head.slot = was.slot;
+      was.slot = -1;
+    } else if (was === undefined && this.lanes !== null && head.slot < 0)
+      head.slot = this.lanes.number(subject, this.named.get(subject));
     if (was !== head) this.chains.set(subject, head);
     return head;
   }
@@ -1747,10 +1841,13 @@ class Mixer<I, O> implements Mix<I, O> {
     if (Number.isNaN(now)) return pose as O;
 
     const head = this.chain(subject, now);
+    const lanes = this.lanes;
+    if (lanes?.prepare(head.slot)) lanes.copy(head.slot, pose);
     if (this.loci === 0) {
       for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
         const voice = held.voice as Voice<I, O> | null;
-        if (voice === null || voice.id === except || voice.state === 'done') continue;
+        if (voice === null || voice.laned || voice.id === except || voice.state === 'done')
+          continue;
         const delta = this.read(voice, subject, now, dry, held);
         if (delta === null || this.w <= 0) continue;
         this.apply(pose, voice, held, delta, this.w);
@@ -1765,7 +1862,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const loci = new Map<string, { delta: Record<string, unknown>; weight: number }[]>();
     for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
       const voice = held.voice as Voice<I, O> | null;
-      if (voice === null || voice.id === except || voice.state === 'done') continue;
+      if (voice === null || voice.laned || voice.id === except || voice.state === 'done') continue;
       const delta = this.read(voice, subject, now, dry, held);
       if (delta === null) continue;
       const locus = voice.spec.locus;
