@@ -147,6 +147,15 @@ describe('channel laws', () => {
     expect(hex().merge(0x112233, 0x445566)).toBe(0x445566);
   });
 
+  it("hex: space 'srgb' blends red, green and blue each on its own", () => {
+    const srgb = hex({ space: 'srgb' });
+    expect(srgb.kind).toBe('hex');
+    expect(srgb.lerp(0x000000, 0xffffff, 0.5)).toBe(0x808080);
+    expect(srgb.lerp(0xff0000, 0x0000ff, 0.5)).toBe(0x800080);
+    expect(srgb.lerp(0x112233, 0x445566, 0)).toBe(0x112233);
+    expect(hex().lerp(0xff0000, 0x0000ff, 0.5)).toBe(mixHex(0xff0000, 0x0000ff, 0.5));
+  });
+
   it('hex: a gray end takes the other end’s hue rather than swinging through one of its own', () => {
     expect(mixHex(0x808080, 0xff0000, 0.5)).toBe(0xc66356);
     expect(mixHex(0xff0000, 0x808080, 0.5)).toBe(0xc66356);
