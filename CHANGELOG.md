@@ -34,7 +34,10 @@ version and everything else the patch. Each release lists its changes as **Break
   voices over 10,000 subjects fell from 6.1 to 2.6 ms a frame. A lane whose subjects were mostly
   left unprobed last frame stops filling and its subjects take the general path until probes pick
   up again, so a host probing 5% of 10,000 subjects pays about what it would with lanes off, not
-  ten times it. `MixOptions.lanes: false` turns lanes off.
+  ten times it. `MixOptions.lanes: false` turns lanes off. They cost a little on frames they
+  don't serve: a voice per subject reads up to 7% slower at 10,000 subjects (about 20% at
+  100–1,000, a few hundredths of a millisecond), a mix probing few of its subjects about 0.03 ms
+  more, and a projection made every frame about 10% more.
 - `mix.project(timestamp)` reads the mix at another time without moving it: `probe` gives the pose
   then, and `assess` says per channel whether it is `exact`, `stepped` or `held`. Ahead it plays
   what is cued forward; behind it needs `MixOptions.history: { ms, every? }`, which keeps every

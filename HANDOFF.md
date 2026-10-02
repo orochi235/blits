@@ -38,7 +38,7 @@ systems now run on it**, on a branch that is not merged.
 - **The package, `@msb235/blits` 0.2.1 on npm.** `src/` is the whole of it: `channels.ts` (the stock
   channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
-  `motion.ts` (`spring`, `glide`), `lanes.ts` (lanes; on branch `lanes`, with `clock.ts`, the phase,
+  `motion.ts` (`spring`, `glide`), `lanes.ts` (lanes, with `clock.ts`, the phase,
   envelope and weight clamp both fold paths share, and `numbers.ts`, which numbers subjects), `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
   objects and a Map for anything else), `mixer.ts` (the engine and `mix`), `types.ts` (the whole
   public surface, doc-commented). Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
@@ -172,23 +172,24 @@ systems now run on it**, on a branch that is not merged.
    workload). `NOTES-ON-SCRUBBING.md` holds the one undecided reading-back item,
    `handle.seek` on a stateful voice.
 
-1a. **Lanes are built, on branch `lanes`** (cut from `project`, not merged, not pushed). The
-   schema page's Lanes section says what they are, what qualifies and the two places the pose path
-   differs; the `'motion'` form is in its Springs and glides section. Measured on the fleet
-   (2026-10-02, `studio`, load 2.2–2.9, 8 performance cores, three runs alternated against
-   `project`): three `keys` voices over 10,000 subjects fell from 6.1 to 2.6 ms a frame, a
-   stateless `fn` gained up to 37%, and a mix probing 5% of the subjects it has met rose from 0.1 to
-   1.3 ms, since a fill covers every subject met. The table is in `spikes/gpu-engine/README.md`
-   under "Lanes, as built". A weasel session reruns `animator-on-blits` and `pose-overrides`
-   against the build before deciding its animator step 3 (weasel `c7a183bde`, branch
-   `pose-overrides-mix`); the coordinating session tells it.
+1a. **Lanes are built and merged into `project`** (2026-10-02). The schema page's Lanes section
+   says what they are, what qualifies and the two places the pose path differs; the `'motion'` form
+   is in its Springs and glides section. Measured on the fleet (studio, three runs alternated
+   against `project`), lanes ÷ `project` per frame: `keys` 0.38–0.57, springs 0.53–0.72, a
+   stateless `fn` 0.70–0.88. A lane rests when few of its subjects were probed last frame. The table
+   is in `spikes/gpu-engine/README.md` under "Lanes, as built". A weasel session reruns
+   `animator-on-blits` and `pose-overrides` against the build before deciding its animator step 3
+   (weasel `c7a183bde`, branch `pose-overrides-mix`).
 
-1b. **Springs got slower on `lanes`, unprofiled.** One spring voice over 10,000 subjects reads 5.4 ms
-   a frame against `project`'s 4.3; with `lanes: false` it reads 6.5, so lanes win back about
-   half of what the branch cost a spring on the general path, where the `motion` form is the
-   likely cause. A voice per
-   subject rose from 6.3 to 7.1 ms. Find the cost, or say it in `CHANGELOG.md`, before `lanes`
-   merges.
+1b. **What lanes cost on rows they don't serve, accepted by Mike 2026-10-02.** A voice per subject
+   (`named`) reads 1.07× at 10,000 subjects (+0.2 ms) and 1.2× at 100–1,000 (+0.04 ms at most); a
+   mix probing 5% of its subjects 1.29× (+0.03 ms); a projection every frame (`ahead`) 1.10×
+   (+0.2 ms); a spring voice per subject with `lanes: false` about 1.05×. Profiles put it in three
+   places: the phase and channel arithmetic is now one shared copy that V8 does not always inline
+   where `project` had it written out; numbering and first-sight checks on every probe while lanes
+   are on; two more fields per record (lane number, seek count) that a projection copies. Writing
+   the arithmetic out again was turned down, since the exactness guarantee rests on there being one
+   copy.
 
 1c. **Next for speed, decided with Mike 2026-10-02, in this order, each measured on the fleet
    before the next starts. None is designed yet.**
