@@ -31,7 +31,7 @@ type Key<O> = keyof O & string;
 
 const none: readonly string[] = Object.freeze([]);
 
-/** Everything one voice holds for one subject, so a probe makes one lookup per voice. */
+/** Everything one voice holds for one subject, chained through the next voice that reaches it. */
 interface Subject<S> {
   /** The voice's `target` answer, fixed on first sight. */
   reaches: boolean;
@@ -70,6 +70,16 @@ interface Subject<S> {
   inputs?: { at: number; value: number }[];
   /** In a projection reading back: that record, to read in place of the signal. */
   replay?: { at: number; value: number }[];
+  /** The voice this is the record of; null on a subject's stub. */
+  voice: object | null;
+  /** The next voice's record for this subject, in voice order, among those that reach it. */
+  next: Subject<unknown> | null;
+  /**
+   * On the first record, which the mix keeps per subject so a probe makes one lookup: the `version`
+   * the chain was linked at, and per locus and channel whether a rest-less influence is on.
+   */
+  version: number;
+  loci: Map<string, boolean> | null;
 }
 
 const keeper = (kept: Map<object, unknown>): Setting['keep'] =>
@@ -79,6 +89,30 @@ const keeper = (kept: Map<object, unknown>): Setting['keep'] =>
     kept.set(owner, made);
     return made;
   };
+
+/** The first record of a subject no live voice reaches, so a probe of it still makes one lookup. */
+function stub(): Subject<unknown> {
+  const kept = new Map<object, unknown>();
+  return {
+    reaches: false,
+    delay: 0,
+    since: 0,
+    weight: 0,
+    rested: false,
+    bands: new Uint8Array(0),
+    state: undefined,
+    stepped: 0,
+    ticks: 0,
+    probed: Number.NaN,
+    delta: null,
+    kept,
+    keep: keeper(kept),
+    voice: null,
+    next: null,
+    version: Number.NaN,
+    loci: null,
+  };
+}
 
 /** What sets a voice's clock: its rate, and where it was last anchored. */
 interface Clock {
@@ -386,14 +420,12 @@ class Mixer<I, O> implements Mix<I, O> {
   /** Read once a sync, so a `reduce` function is not called per voice per subject. */
   private reducedNow = false;
   /**
-   * Per subject, the voices that may reach it, in voice order, so a probe walks those rather than
-   * every voice: a voice targeted at one subject is asked about that subject alone. Rebuilt when
-   * `version` moves, which is whenever the list or a voice's pending state changes.
+   * Per subject, the first record of the chain through every live voice that reaches it, or a stub
+   * where none does. Relinked when `version` moves, which is whenever the list or a voice's pending
+   * state changes.
    */
-  private readonly reach = new Store<I, { version: number; voices: Voice<I, O>[] }>();
+  private readonly chains = new Store<I, Subject<unknown>>();
   private version = 0;
-  /** How many voices in the list carry a `target`; with none, every voice reaches every subject. */
-  private targeted = 0;
   /** How many voices in the list carry a locus; with none, a fold allocates nothing. */
   private loci = 0;
   /** How many voices in the list are anchored, so a sync with none skips placing them. */
@@ -415,9 +447,8 @@ class Mixer<I, O> implements Mix<I, O> {
       event,
     });
   };
-  /** What `influence` and `peek` found besides the delta, read by the caller at once. */
+  /** The weight `influence` found besides the delta, read by the caller at once. */
   private w = 0;
-  private h: Subject<unknown> | null = null;
 
   private readonly names: Key<O>[];
   private readonly channels: Channel<unknown>[];
@@ -496,7 +527,6 @@ class Mixer<I, O> implements Mix<I, O> {
     voice.placing = placed;
     this.voices.push(voice);
     this.version++;
-    if (spec.target !== undefined) this.targeted++;
     if (spec.locus !== undefined) this.loci++;
     if (spec.from === 'current') this.wantsPose = true;
     if (anchor) {
@@ -597,7 +627,6 @@ class Mixer<I, O> implements Mix<I, O> {
         this.voices.splice(i, 1);
         if (this.opts.history) this.gone.push(voice);
         this.version++;
-        if (voice.spec.target !== undefined) this.targeted--;
         if (voice.spec.locus !== undefined) this.loci--;
         if (voice.spec.anchor !== undefined) this.anchored--;
       }
@@ -778,7 +807,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   drop(subject: I): void {
     this.pose.delete(subject);
-    this.reach.delete(subject);
+    this.chains.delete(subject);
     for (const voice of this.voices) voice.subjects.delete(subject);
     for (const voice of this.gone) voice.subjects.delete(subject);
   }
@@ -987,7 +1016,6 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** Recounts what the fold's shortcuts depend on, for a projection's freshly copied voices. */
   private count(): void {
-    this.targeted = this.voices.filter((v) => v.spec.target !== undefined).length;
     this.loci = this.voices.filter((v) => v.spec.locus !== undefined).length;
     this.anchored = this.voices.filter((v) => v.spec.anchor !== undefined).length;
     this.version++;
@@ -1015,6 +1043,9 @@ class Mixer<I, O> implements Mix<I, O> {
       slope: h.slope === undefined ? undefined : structuredClone(h.slope),
       snaps: undefined,
       inputs: undefined,
+      next: null,
+      version: Number.NaN,
+      loci: null,
     };
   }
 
@@ -1060,6 +1091,10 @@ class Mixer<I, O> implements Mix<I, O> {
       delta: null,
       kept,
       keep: keeper(kept),
+      voice,
+      next: null,
+      version: Number.NaN,
+      loci: null,
       from: stepped,
       unknown: voice.spec.from === 'current',
       replay: live.inputs,
@@ -1130,10 +1165,14 @@ class Mixer<I, O> implements Mix<I, O> {
       if (!waiting || (voice.spec.target && !voice.spec.target(subject))) continue;
       for (const slot of voice.slots) out[this.names[slot] as string] = 'held';
     }
-    for (const voice of this.reaching(subject, this.now)) {
-      if (voice.state === 'pending' || voice.state === 'done') continue;
-      const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
-      if (!held?.reaches || held.weight <= 0) continue;
+    for (
+      let held: Subject<unknown> | null = this.chain(subject, this.now);
+      held !== null;
+      held = held.next
+    ) {
+      const voice = held.voice as Voice<I, O> | null;
+      if (voice === null || voice.state === 'done') continue;
+      if (held.weight <= 0) continue;
       const d = this.doubtOf(voice, held);
       for (const slot of voice.slots) {
         const name = this.names[slot] as string;
@@ -1281,6 +1320,10 @@ class Mixer<I, O> implements Mix<I, O> {
       delta: null,
       kept,
       keep: keeper(kept),
+      voice,
+      next: null,
+      version: Number.NaN,
+      loci: null,
     };
     if (this.projecting) {
       held.from = held.stepped;
@@ -1308,12 +1351,15 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   /**
-   * One voice's delta for one subject this frame, or null when it does not reach. Its weight and
-   * the subject's record are left in `w` and `h`.
+   * One live voice's delta for one subject this frame, through its record for the subject, or null
+   * when it does not reach. Its weight is left in `w`.
    */
-  private influence(voice: Voice<I, O>, subject: I, now: number): Record<string, unknown> | null {
-    if (voice.state === 'pending' || voice.state === 'done') return null;
-    const held = this.held(voice, subject, now);
+  private influence(
+    voice: Voice<I, O>,
+    subject: I,
+    now: number,
+    held: Subject<unknown>,
+  ): Record<string, unknown> | null {
     held.weight = 0;
     if (!held.reaches) return null;
     if (voice.out?.rest && held.rested) return null;
@@ -1353,7 +1399,6 @@ class Mixer<I, O> implements Mix<I, O> {
 
     if (held.probed === now && held.delta) {
       this.w = weight;
-      this.h = held;
       return held.delta;
     }
 
@@ -1406,7 +1451,6 @@ class Mixer<I, O> implements Mix<I, O> {
       return null;
     }
     this.w = weight;
-    this.h = held;
     return delta;
   }
 
@@ -1532,24 +1576,35 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   /**
-   * The voices that may reach this subject. A live voice is asked once, through the record it keeps
-   * for the subject anyway; a pending one is kept until it goes live, since `target` is asked on
-   * first sight, and sight only comes once a voice plays.
+   * The first of this subject's records, linked through every live voice that reaches it. A voice
+   * is asked once, through the record it keeps for the subject anyway; a pending one is linked when
+   * it goes live, since `target` is asked on first sight, and sight only comes once a voice plays.
    */
-  private reaching(subject: I, now: number): Voice<I, O>[] {
-    if (this.targeted === 0) return this.voices;
-    const held = this.reach.get(subject);
-    if (held !== undefined && held.version === this.version) return held.voices;
-    const voices: Voice<I, O>[] = [];
+  private chain(subject: I, now: number): Subject<unknown> {
+    const was = this.chains.get(subject);
+    if (was !== undefined && was.version === this.version) return was;
+    let first: Subject<unknown> | null = null;
+    let prev: Subject<unknown> | null = null;
     for (const voice of this.voices) {
-      if (voice.state === 'done') continue;
-      if (voice.state === 'pending' || this.held(voice, subject, now).reaches) voices.push(voice);
+      if (voice.state !== 'live' && voice.state !== 'fading') continue;
+      const held = this.held(voice, subject, now);
+      if (!held.reaches) continue;
+      held.voice = voice;
+      held.next = null;
+      if (prev === null) first = held;
+      else prev.next = held;
+      prev = held;
     }
-    this.reach.set(subject, { version: this.version, voices });
-    return voices;
+    const head = first ?? stub();
+    head.version = this.version;
+    if (was !== undefined && was !== head) {
+      head.loci = was.loci;
+      was.loci = null;
+    }
+    if (was !== head) this.chains.set(subject, head);
+    return head;
   }
 
-  private readonly locusBands = new Store<I, Map<string, boolean>>();
   /** Voices whose stop 0 is mid-computation, so a fold for one cannot re-enter itself. */
   private readonly folding = new Set<number>();
 
@@ -1618,13 +1673,14 @@ class Mixer<I, O> implements Mix<I, O> {
     }
     if (Number.isNaN(now)) return pose as O;
 
-    const voices = this.reaching(subject, now);
+    const head = this.chain(subject, now);
     if (this.loci === 0) {
-      for (const voice of voices) {
-        if (voice.id === except) continue;
-        const delta = this.read(voice, subject, now, dry);
+      for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
+        const voice = held.voice as Voice<I, O> | null;
+        if (voice === null || voice.id === except || voice.state === 'done') continue;
+        const delta = this.read(voice, subject, now, dry, held);
         if (delta === null || this.w <= 0) continue;
-        this.apply(pose, voice, this.h as Subject<unknown>, delta, this.w);
+        this.apply(pose, voice, held, delta, this.w);
       }
       return pose as O;
     }
@@ -1634,13 +1690,14 @@ class Mixer<I, O> implements Mix<I, O> {
     const order: (Single | string)[] = [];
     const weights: number[] = [];
     const loci = new Map<string, { delta: Record<string, unknown>; weight: number }[]>();
-    for (const voice of voices) {
-      if (voice.id === except) continue;
-      const delta = this.read(voice, subject, now, dry);
+    for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
+      const voice = held.voice as Voice<I, O> | null;
+      if (voice === null || voice.id === except || voice.state === 'done') continue;
+      const delta = this.read(voice, subject, now, dry, held);
       if (delta === null) continue;
       const locus = voice.spec.locus;
       if (locus === undefined) {
-        order.push({ voice, held: this.h as Subject<unknown>, delta });
+        order.push({ voice, held, delta });
         weights.push(this.w);
         continue;
       }
@@ -1653,10 +1710,10 @@ class Mixer<I, O> implements Mix<I, O> {
       }
     }
 
-    let bands = this.locusBands.get(subject);
-    if (bands === undefined) {
+    let bands = head.loci;
+    if (bands === null) {
       bands = new Map();
-      this.locusBands.set(subject, bands);
+      head.loci = bands;
     }
 
     for (let n = 0; n < order.length; n++) {
@@ -1696,10 +1753,10 @@ class Mixer<I, O> implements Mix<I, O> {
     subject: I,
     now: number,
     dry: boolean,
+    held: Subject<unknown>,
   ): Record<string, unknown> | null {
     if (dry) {
-      const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
-      if (held?.reaches && held.probed === now && held.delta) {
+      if (held.reaches && held.probed === now && held.delta) {
         const setting = voice.setting;
         setting.timestamp = now;
         setting.dt = 0;
@@ -1709,11 +1766,10 @@ class Mixer<I, O> implements Mix<I, O> {
         setting.state = held.state;
         setting.keep = held.keep;
         this.w = this.weigh(voice, subject, now, held);
-        this.h = held;
         return held.delta;
       }
     }
-    return this.influence(voice, subject, now);
+    return this.influence(voice, subject, now, held);
   }
 }
 
