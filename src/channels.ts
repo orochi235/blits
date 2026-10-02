@@ -18,6 +18,31 @@ export function lerpInto(channel: Channel<unknown>): LerpInto | undefined {
   return inPlace.get(channel);
 }
 
+/** What a lane needs of a stock numeric channel: its arithmetic by name, its rest, its axis count. */
+export interface Numeric {
+  op: 'sum' | 'mul' | 'max';
+  rest: number;
+  axes: number;
+}
+
+const numerics = new WeakMap<object, Numeric>();
+
+/**
+ * The stock arithmetic of a channel `sum`, `mul`, `max` or `vec` made, keyed by the object itself,
+ * so a custom channel that claims a stock `kind` is not trusted with a lane.
+ */
+export function numericOf(channel: Channel<unknown>): Numeric | undefined {
+  return numerics.get(channel);
+}
+
+/** `merge(acc, scale(v, w))` for a stock numeric channel, in exactly its arithmetic. */
+export function foldNumber(op: Numeric['op'], acc: number, v: number, w: number): number {
+  if (op === 'sum') return acc + v * w;
+  if (op === 'mul') return acc * (1 + (v - 1) * w);
+  const s = v * w;
+  return acc > s ? acc : s;
+}
+
 /**
  * What a stock numeric channel takes.
  *
@@ -38,7 +63,7 @@ const kindOf = (name: string, bounds?: readonly [number, number]) =>
  * @category channel
  */
 export function sum(opts?: NumberOptions): Channel<number> {
-  return {
+  const channel: Channel<number> = {
     kind: kindOf('sum', opts?.bounds),
     bounds: opts?.bounds,
     rest: 0,
@@ -46,6 +71,8 @@ export function sum(opts?: NumberOptions): Channel<number> {
     scale: (v, w) => v * w,
     lerp: mix,
   };
+  numerics.set(channel, { op: 'sum', rest: 0, axes: 1 });
+  return channel;
 }
 
 /**
@@ -54,7 +81,7 @@ export function sum(opts?: NumberOptions): Channel<number> {
  * @category channel
  */
 export function mul(opts?: NumberOptions): Channel<number> {
-  return {
+  const channel: Channel<number> = {
     kind: kindOf('mul', opts?.bounds),
     bounds: opts?.bounds,
     rest: 1,
@@ -62,6 +89,8 @@ export function mul(opts?: NumberOptions): Channel<number> {
     scale: (v, w) => 1 + (v - 1) * w,
     lerp: mix,
   };
+  numerics.set(channel, { op: 'mul', rest: 1, axes: 1 });
+  return channel;
 }
 
 /**
@@ -70,7 +99,7 @@ export function mul(opts?: NumberOptions): Channel<number> {
  * @category channel
  */
 export function max(opts?: NumberOptions): Channel<number> {
-  return {
+  const channel: Channel<number> = {
     kind: kindOf('max', opts?.bounds),
     bounds: opts?.bounds,
     rest: 0,
@@ -78,6 +107,8 @@ export function max(opts?: NumberOptions): Channel<number> {
     scale: (v, w) => v * w,
     lerp: mix,
   };
+  numerics.set(channel, { op: 'max', rest: 0, axes: 1 });
+  return channel;
 }
 
 /**
@@ -137,6 +168,8 @@ export function vec(n: number, of: Channel<number>): Channel<number[]> {
     lerp: (a, b, u) => lerpTo(undefined, a, b, u),
   };
   inPlace.set(channel, lerpTo as LerpInto);
+  const inner = numerics.get(of);
+  if (inner !== undefined && inner.axes === 1) numerics.set(channel, { ...inner, axes: n });
   return channel;
 }
 

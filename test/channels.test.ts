@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { hex, kit, last, max, mixHex, mul, sum, vec } from '../src/channels.js';
+import {
+  foldNumber,
+  hex,
+  kit,
+  last,
+  max,
+  mixHex,
+  mul,
+  numericOf,
+  sum,
+  vec,
+} from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
 import type { Channel } from '../src/types.js';
@@ -193,5 +204,39 @@ describe('bounds', () => {
     expect(vec(2, sum({ bounds: [-10, 10] })).kind).toBe('vec(2, sum[-10, 10])');
     const p = patch<{ id: string }, Look>(0, () => ({ opacity: 0.5 }), { kit: { opacity: mul() } });
     expect(() => mix<{ id: string }, Look>(LOOK).cue({ patch: p })).toThrow(/mul\[0, 1\].*mul/);
+  });
+});
+
+describe('numericOf and foldNumber', () => {
+  it('registers the stock numeric channels, and only the objects they return', () => {
+    expect(numericOf(sum())).toEqual({ op: 'sum', rest: 0, axes: 1 });
+    expect(numericOf(mul({ bounds: [0, 1] }))).toEqual({ op: 'mul', rest: 1, axes: 1 });
+    expect(numericOf(max())).toEqual({ op: 'max', rest: 0, axes: 1 });
+    expect(numericOf(vec(3, sum()))).toEqual({ op: 'sum', rest: 0, axes: 3 });
+    expect(numericOf(hex())).toBeUndefined();
+    expect(numericOf({ ...sum() })).toBeUndefined();
+  });
+
+  it('folds exactly as the channel merges a scaled value', () => {
+    for (const [make, op] of [
+      [sum, 'sum'],
+      [mul, 'mul'],
+      [max, 'max'],
+    ] as const) {
+      const c = make();
+      for (const [acc, v, w] of [
+        [0, 0.1, 1],
+        [1, 0.1, 1],
+        [0.3, -0.25, 0.7],
+        [2, -0, 0.5],
+        [-0, -0, 0],
+        [0, 0, 0.3],
+        [-1.5, 2.5, 0],
+        [0.2, -3, 1],
+      ] as const) {
+        const want = c.merge(acc, (c.scale as (v: number, w: number) => number)(v, w));
+        expect(Object.is(foldNumber(op, acc, v, w), want)).toBe(true);
+      }
+    }
   });
 });
