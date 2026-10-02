@@ -465,11 +465,13 @@ export class Lanes<I, O> {
     this.bySlot = host.channels.map(() => undefined);
     channels.forEach((on, slot) => {
       if (!on) return;
-      const n = numericOf(host.channels[slot] as Channel<unknown>) as Numeric;
+      const channel = host.channels[slot] as Channel<unknown>;
+      const n = numericOf(channel) as Numeric;
+      const rest = channel.rest as number | number[];
       const ch: Laned = {
         name: host.names[slot] as string,
         op: n.op,
-        rest: n.rest,
+        rest: typeof rest === 'number' ? rest : (rest[0] as number),
         axes: n.axes,
         values: new Float64Array(this.cap * n.axes),
       };

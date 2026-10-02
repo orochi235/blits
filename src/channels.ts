@@ -18,12 +18,18 @@ export function lerpInto(channel: Channel<unknown>): LerpInto | undefined {
   return inPlace.get(channel);
 }
 
-/** What a lane needs of a stock numeric channel: its arithmetic by name, its rest, its axis count. */
+/** What a lane needs of a stock numeric channel beyond the channel: its arithmetic by name, its axes. */
 export interface Numeric {
   op: 'sum' | 'mul' | 'max';
-  rest: number;
   axes: number;
 }
+
+/** The stock channels' arithmetic, once: their `merge` and `scale` are these, and so is `foldNumber`. */
+const add = (a: number, b: number): number => a + b;
+const times = (v: number, w: number): number => v * w;
+const product = (a: number, b: number): number => a * b;
+const toward = (v: number, w: number): number => 1 + (v - 1) * w;
+const larger = (a: number, b: number): number => (a > b ? a : b);
 
 const numerics = new WeakMap<object, Numeric>();
 
@@ -37,10 +43,9 @@ export function numericOf(channel: Channel<unknown>): Numeric | undefined {
 
 /** `merge(acc, scale(v, w))` for a stock numeric channel, in exactly its arithmetic. */
 export function foldNumber(op: Numeric['op'], acc: number, v: number, w: number): number {
-  if (op === 'sum') return acc + v * w;
-  if (op === 'mul') return acc * (1 + (v - 1) * w);
-  const s = v * w;
-  return acc > s ? acc : s;
+  if (op === 'sum') return add(acc, times(v, w));
+  if (op === 'mul') return product(acc, toward(v, w));
+  return larger(acc, times(v, w));
 }
 
 /**
@@ -67,11 +72,11 @@ export function sum(opts?: NumberOptions): Channel<number> {
     kind: kindOf('sum', opts?.bounds),
     bounds: opts?.bounds,
     rest: 0,
-    merge: (a, b) => a + b,
-    scale: (v, w) => v * w,
+    merge: add,
+    scale: times,
     lerp: mix,
   };
-  numerics.set(channel, { op: 'sum', rest: 0, axes: 1 });
+  numerics.set(channel, { op: 'sum', axes: 1 });
   return channel;
 }
 
@@ -85,11 +90,11 @@ export function mul(opts?: NumberOptions): Channel<number> {
     kind: kindOf('mul', opts?.bounds),
     bounds: opts?.bounds,
     rest: 1,
-    merge: (a, b) => a * b,
-    scale: (v, w) => 1 + (v - 1) * w,
+    merge: product,
+    scale: toward,
     lerp: mix,
   };
-  numerics.set(channel, { op: 'mul', rest: 1, axes: 1 });
+  numerics.set(channel, { op: 'mul', axes: 1 });
   return channel;
 }
 
@@ -103,11 +108,11 @@ export function max(opts?: NumberOptions): Channel<number> {
     kind: kindOf('max', opts?.bounds),
     bounds: opts?.bounds,
     rest: 0,
-    merge: (a, b) => (a > b ? a : b),
-    scale: (v, w) => v * w,
+    merge: larger,
+    scale: times,
     lerp: mix,
   };
-  numerics.set(channel, { op: 'max', rest: 0, axes: 1 });
+  numerics.set(channel, { op: 'max', axes: 1 });
   return channel;
 }
 

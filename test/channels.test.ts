@@ -209,10 +209,10 @@ describe('bounds', () => {
 
 describe('numericOf and foldNumber', () => {
   it('registers the stock numeric channels, and only the objects they return', () => {
-    expect(numericOf(sum())).toEqual({ op: 'sum', rest: 0, axes: 1 });
-    expect(numericOf(mul({ bounds: [0, 1] }))).toEqual({ op: 'mul', rest: 1, axes: 1 });
-    expect(numericOf(max())).toEqual({ op: 'max', rest: 0, axes: 1 });
-    expect(numericOf(vec(3, sum()))).toEqual({ op: 'sum', rest: 0, axes: 3 });
+    expect(numericOf(sum())).toEqual({ op: 'sum', axes: 1 });
+    expect(numericOf(mul({ bounds: [0, 1] }))).toEqual({ op: 'mul', axes: 1 });
+    expect(numericOf(max())).toEqual({ op: 'max', axes: 1 });
+    expect(numericOf(vec(3, sum()))).toEqual({ op: 'sum', axes: 3 });
     expect(numericOf(hex())).toBeUndefined();
     expect(numericOf({ ...sum() })).toBeUndefined();
   });
