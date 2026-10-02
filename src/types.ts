@@ -106,7 +106,9 @@ export interface Setting<S = void> {
   /**
    * Reports an event at `timestamp`, for this voice and this subject. The mix queues it until the
    * host drains it, and never calls back. Meant for `step`, where under `stepMs` the timestamp is
-   * the interval the event happened in rather than the frame that sampled it.
+   * the interval the event happened in rather than the frame that sampled it. Sent from a stateless
+   * patch's `at` while it runs on a lane, it goes out for every subject the mix has met, probed that
+   * frame or not.
    */
   send(event: unknown): void;
 }
@@ -524,10 +526,12 @@ export interface Mix<I, O> {
   /**
    * Every event patches have sent since the last drain, earliest first, in the order they were sent
    * where two share a timestamp. A subject's events are made while it catches up, which is when it is
-   * probed, so one nobody probes has sent nothing yet: promptness is the host's, by probing. Under
-   * `stepMs` each carries the end of the interval it happened in, so what is sent and when does not
-   * depend on how the host spaces its probes. Time `rebase` took out sends nothing. Given a tag, it
-   * takes only the events of voices carrying it and leaves the rest for whoever drains them.
+   * probed, so one nobody probes has sent nothing yet: promptness is the host's, by probing. A
+   * stateless patch's `at` on a lane is the exception: it runs for every subject the mix has met, at
+   * the frame's first probe. Under `stepMs` each carries the end of the interval it happened in, so
+   * what is sent and when does not depend on how the host spaces its probes. Time `rebase` took out
+   * sends nothing. Given a tag, it takes only the events of voices carrying it and leaves the rest for
+   * whoever drains them.
    */
   drain<E = unknown>(tag?: string): Sent<I, E>[];
 }

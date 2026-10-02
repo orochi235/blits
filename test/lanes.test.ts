@@ -809,6 +809,117 @@ describe('lanes give motion voices the pose the general path gives', () => {
   });
 });
 
+describe('lanes hand a channel to the general path and take it back', () => {
+  const crawlTo = (p: Part) => p.id * 3;
+  const drift = () =>
+    patch<Part, Pose, { x: number }>(
+      0,
+      (_ph, _part, setting) => ({ gain: 1 + setting.state.x, crawl: setting.state.x }),
+      {
+        writes: ['gain', 'crawl'],
+        state: () => ({ x: 0 }),
+        step: (s, dt) => {
+          s.x += (0.5 - s.x) * Math.min(1, dt / 400);
+        },
+      },
+    );
+
+  it('when a channel gains a stateful voice mid-animation and loses it again', () => {
+    agree(
+      (m) => {
+        m.cue({ patch: pulse(), fade: { in: 300 } });
+        m.cue({ patch: spring<Part, Pose>('crawl', { from: 0, to: crawlTo }) });
+        m.cue({ patch: wave() });
+        let h: Handle<Part> | undefined;
+        return {
+          at: (t) => {
+            if (t === 333) h = m.cue({ patch: drift() });
+            if (t === 1000) h?.fade({ over: 0 });
+          },
+        };
+      },
+      { times },
+    );
+  });
+
+  it('when a channel gains a voice with a signal weight and loses it again', () => {
+    agree(
+      (m) => {
+        m.cue({ patch: pulse(), loop: true });
+        m.cue({ patch: spring<Part, Pose>('crawl', { from: 0, to: crawlTo }) });
+        let h: Handle<Part> | undefined;
+        return {
+          at: (t) => {
+            if (t === 120)
+              h = m.cue({
+                patch: wave(),
+                loop: true,
+                weight: (part) => 0.25 + 0.1 * part.id,
+              });
+            if (t === 999) h?.fade({ over: 0 });
+          },
+        };
+      },
+      { times },
+    );
+  });
+
+  it('when a channel gains a voice in a locus and loses it again', () => {
+    agree(
+      (m) => {
+        m.cue({ patch: pulse(), loop: true });
+        m.cue({ patch: spring<Part, Pose>('crawl', { from: 0, to: crawlTo }) });
+        const hs: Handle<Part>[] = [];
+        return {
+          at: (t) => {
+            if (t === 120) {
+              hs.push(m.cue({ patch: wave(), loop: true, locus: 'a', weight: 0.6 }));
+              hs.push(m.cue({ patch: pulse(), loop: true, locus: 'a', weight: 0.4 }));
+            }
+            if (t === 1000) for (const h of hs) h.fade({ over: 0 });
+          },
+        };
+      },
+      { times },
+    );
+  });
+
+  it('when a voice starts fading to rest, which takes it off its lane', () => {
+    agree(
+      (m) => {
+        const h = m.cue({ patch: pulse(), loop: true });
+        m.cue({ patch: spring<Part, Pose>('crawl', { from: 0, to: crawlTo }) });
+        return {
+          handles: [h],
+          at: (t) => {
+            if (t === 500) h.fade({ at: 'rest', deadline: 2000 });
+          },
+        };
+      },
+      { times },
+    );
+  });
+
+  it('when a spring shares the channel a voice fading to rest is leaving', () => {
+    agree(
+      (m, parts) => {
+        const s = spring<Part, Pose>('crawl', { from: 0, to: crawlTo });
+        const h = m.cue({ patch: s, fade: { in: 50, out: 200 } });
+        m.cue({ patch: wave(), loop: true });
+        return {
+          handles: [h],
+          at: (t) => {
+            if (t === 120) s.to(parts[2] as Part, -40);
+            if (t === 500) h.fade({ at: 'rest', deadline: 2000 });
+            if (t === 999) s.push(parts[3] as Part, 700);
+          },
+        };
+      },
+      { times: [...times, 3000, 3500] },
+    );
+  });
+});
+
 describe('lanes run', () => {
   it("fill every numbered subject at the frame's first probe", () => {
     const m = mix<Part, Pose>(K);
