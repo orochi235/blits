@@ -17,18 +17,20 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 - `probe` with no `out` stores a freshly allocated pose per subject per frame. weasel measured this
   pattern: a new pose object per node per frame took major GC from 57 ms to 549 ms over 10 s
   (`docs/superpowers/specs/2026-08-24-frame-loop-decoupling-design.md` in weasel).
-- A frame of 10k subjects on one voice read 2.0 ms for a `fn` tween and 4.4 ms for a `spring`,
-  against 0.3 and 1.0 ms for weasel's own animator doing the same arithmetic (weasel's
-  `tests/perf/bench/animator-on-blits.bench.ts`, 2026-10-01 against `project`; a voice per call
-  read 3.6–3.9 and 6.6–6.9 ms). **Lanes (branch `lanes`, 2026-10-02) closed part of this, not
-  most of it.** On blits' own bench on the fleet, `keys` frames fell to 0.35–0.53× and a stateless
-  `fn` to 0.63–0.95×; springs rose to 1.13–1.61×, because the same branch slowed a spring on the
-  general path more than lanes win back; a voice per subject named with `subjects` did not move. What still
-  stands between blits and weasel's numbers: a probe costs about 110–140 ns at 10k even when a lane
-  did all the work, which a paint walk probing every node pays in full; a `fn` tween allocates its
-  delta per call; and a voice per call is a lane per voice. `HANDOFF.md` item 1c has the next steps
-  for each, and the table is in `spikes/gpu-engine/README.md`. weasel's own rerun of
-  `animator-on-blits` and `pose-overrides` against the build is pending.
+- **weasel's `animator-on-blits` against lanes** (blits `461efe4`, studio, 2026-10-02, vitest means
+  in ms, two runs; weasel's own animator in brackets): at 10k, one voice reads 2.4–2.6 for a `fn`
+  tween [0.44–0.47] and 2.4–3.3 for a spring [0.63–0.73]; a voice per call (`subjects`) 3.8–4.2
+  for a `keys` tween and 4.5–4.9 for a spring. Lanes clearly win only on the spring per call
+  (lanes off 6.1–7.1). **The one-voice `fn` tween runs slower with lanes on than off** (2.4–2.6 vs
+  2.1–2.2): its `at` looks each node's endpoints up by string id, which puts it below the `fn`
+  break-even. Starting 10k voices, one per call, costs 138 ms for tweens and 89 for springs on the
+  first frame [10–15]. What still stands between blits and weasel: the probe floor (about
+  110–140 ns at 10k even when a lane did the work), a `fn` tween's per-call cost, and a voice per
+  call being a lane per voice; `HANDOFF.md` item 1c has the next steps for each.
+- **Memory with `target`:** a mix of 1,000 per-node voices reached by `target` held about 810 MB
+  after 40 frames (720 MB before lanes), growing with the square of the count, from the record each
+  voice keeps per subject it is asked about. With `subjects` it stays at a few MB. `target` per node
+  is the shape `subjects` replaces; worth a line in `target`'s doc pointing there.
 
 ## What weasel has that blits doesn't
 
