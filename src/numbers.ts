@@ -38,10 +38,6 @@ export class Numbers<I> {
     return slot;
   }
 
-  alive(slot: number): boolean {
-    return this.live[slot] === 1;
-  }
-
   subject(slot: number): I | typeof absent {
     if (this.live[slot] !== 1) return absent;
     const ref = this.refs[slot];

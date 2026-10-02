@@ -8,7 +8,6 @@ describe('Numbers', () => {
     expect([n.take('a'), n.take('b'), n.take('c')]).toEqual([0, 1, 2]);
     n.release(1);
     expect(freed).toEqual([1]);
-    expect(n.alive(1)).toBe(false);
     expect(n.subject(1)).toBe(absent);
     expect(n.take('d')).toBe(1);
     expect(n.subject(1)).toBe('d');

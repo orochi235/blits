@@ -555,8 +555,9 @@ class Mixer<I, O> implements Mix<I, O> {
     const anchor = spec.anchor;
     if (anchor) this.checkPlacement(spec, anchor);
 
-    const placed = anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
-    const start = placed
+    const anchored =
+      anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
+    const start = anchored
       ? Number.POSITIVE_INFINITY
       : spec.start !== undefined
         ? spec.start - this.offset
@@ -576,7 +577,7 @@ class Mixer<I, O> implements Mix<I, O> {
       this.send,
     );
     if (!Number.isNaN(this.now)) voice.cuedAt = this.now;
-    voice.placing = placed;
+    voice.placing = anchored;
     const motion = motionOf<I>(patch);
     if (motion !== undefined) {
       voice.frame = Mixer.frameHook(new WeakRef(this), new WeakRef(voice));

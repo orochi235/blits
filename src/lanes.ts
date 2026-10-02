@@ -202,7 +202,7 @@ class Lane<I, O> {
  * frame's fill leaves for probes to copy.
  */
 export class Lanes<I, O> {
-  readonly numbers: Numbers<I>;
+  private readonly numbers: Numbers<I>;
   private lanes: Lane<I, O>[] = [];
   /** The lanes over every subject that have started playing, by epoch. */
   private dense: Lane<I, O>[] = [];
