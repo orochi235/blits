@@ -21,6 +21,7 @@ export type {
   Marked,
   Mix,
   MixOptions,
+  MotionSpec,
   Patch,
   Placement,
   Projection,

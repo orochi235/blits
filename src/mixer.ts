@@ -1845,13 +1845,13 @@ class Mixer<I, O> implements Mix<I, O> {
 }
 
 /**
- * The one that ships: both forms on the CPU, probed per subject on demand.
+ * The one that ships: every form on the CPU, probed per subject on demand.
  *
  * @category engine
  */
 export const mixer: Engine = {
   name: 'mixer',
-  runs: new Set<'fn' | 'keys'>(['fn', 'keys']),
+  runs: new Set<'fn' | 'keys' | 'motion'>(['fn', 'keys', 'motion']),
   create<I, O>(kit: Kit<O>, opts: MixOptions): Mix<I, O> {
     return new Mixer<I, O>(kit, opts);
   },

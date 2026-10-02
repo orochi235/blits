@@ -171,3 +171,56 @@ describe('glide', () => {
     expect(m.probe(a).x).toBeCloseTo(there - 200 * 0.25, 3);
   });
 });
+
+describe('the motion form', () => {
+  it('spring and glide are form motion, carrying their constants as data', () => {
+    const s = spring<Part, Pose>('x', { to: 1, stiffness: 120, damping: 14 });
+    expect(s.form).toBe('motion');
+    expect(s.motion).toEqual({
+      kind: 'spring',
+      stiffness: 120,
+      damping: 14,
+      mass: 1,
+      settle: 1e-4,
+    });
+    const g = glide<Part, Pose>('x', { from: 0, ms: 200, settle: 0 });
+    expect(g.form).toBe('motion');
+    expect(g.motion).toEqual({ kind: 'glide', ms: 200, settle: 0 });
+  });
+
+  it('seeked back past a retarget it kept history of, plays the stretch from before it', () => {
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    const m = mix<Part, Pose>(K, { history: { ms: 5000 } });
+    const h = m.cue({ patch: s });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(300);
+    const before = m.probe(a).x;
+    s.to(a, -50, 500);
+    m.sync(1000);
+    m.probe(a);
+    h.seek(200);
+    m.sync(1100);
+    expect(m.probe(a).x).toBe(before);
+  });
+
+  it('reads nothing with no time given until a frame has read the subject', () => {
+    const s = spring<Part, Pose>('x', { from: 0, to: 100 });
+    const a = { id: 'a' };
+    s.to(a, 50, 0);
+    expect(s.read(a)).toBeUndefined();
+    expect(s.read(a, 0)).toEqual({ value: 0, velocity: 0 });
+  });
+
+  it('refuses subjects moving on different numbers of axes', () => {
+    const s = spring<Part, Pose, number[]>('p', {
+      to: (part) => (part.id === 'a' ? [1, 2] : [1, 2, 3]),
+    });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: s });
+    m.sync(0);
+    m.probe({ id: 'a' });
+    expect(() => m.probe({ id: 'b' })).toThrow(/same number of axes/);
+  });
+});

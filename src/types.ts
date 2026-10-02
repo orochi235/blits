@@ -126,13 +126,40 @@ export interface Sent<I, E = unknown> {
 }
 
 /**
+ * What a `'motion'` patch is made of, as data an engine can read: the kind of motion and its
+ * constants. Each subject's start, target and starting velocity stay on the patch, since they may
+ * be functions of the subject.
+ *
+ * @category patch
+ */
+export type MotionSpec =
+  | {
+      readonly kind: 'spring';
+      /** Per second squared. */
+      readonly stiffness: number;
+      /** Per second. */
+      readonly damping: number;
+      readonly mass: number;
+      readonly settle: number;
+    }
+  | {
+      readonly kind: 'glide';
+      /** The friction's time constant, ms. */
+      readonly ms: number;
+      readonly settle: number;
+    };
+
+/**
  * A pure function of phase and a subject that returns a delta. Optionally stateful.
  *
  * @category patch
  */
 export interface Patch<I, O, S = void> {
-  /** Which authoring form built it. An engine declares which forms it runs. */
-  readonly form: 'fn' | 'keys';
+  /**
+   * Which authoring form built it: `'fn'` from `patch`, `'keys'` from `keys`, `'motion'` from
+   * `spring` or `glide`. An engine declares which forms it runs.
+   */
+  readonly form: 'fn' | 'keys' | 'motion';
   /** Milliseconds one pass lasts. 0 is aperiodic: phase and pass stay 0. */
   readonly period: number;
   /** The channels this patch contributes to. Every key `at` sets, and no others. */
@@ -155,6 +182,8 @@ export interface Patch<I, O, S = void> {
   step?(state: S, dt: number, subject: I, setting: Setting<S>): void;
   /** Present when the patch was authored as keyframes, so an engine that reads data can. */
   readonly keys?: readonly Keyframe<O>[];
+  /** Present on a `'motion'` patch: its kind and constants, for an engine that reads data. */
+  readonly motion?: MotionSpec;
   /**
    * A copy of `state` that shares nothing with it, for a read at another time. Default
    * `structuredClone`, which is enough for plain data; a state holding a class instance or a
@@ -509,6 +538,6 @@ export interface Mix<I, O> {
 export interface Engine {
   readonly name: string;
   /** Which patch forms this engine can run. A voice it cannot run is refused at `cue`, by name. */
-  readonly runs: ReadonlySet<'fn' | 'keys'>;
+  readonly runs: ReadonlySet<'fn' | 'keys' | 'motion'>;
   create<I, O>(kit: Kit<O>, opts: MixOptions): Mix<I, O>;
 }
