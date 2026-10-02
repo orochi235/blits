@@ -587,6 +587,32 @@ describe('lanes stay identical where a fill and a probe interleave', () => {
     });
   });
 
+  it('leaves a staggered subject its first call on the general path, for a fn keeping state', () => {
+    script((m, parts, look) => {
+      const h = m.cue({
+        patch: patch<Part, Pose>(
+          1000,
+          (_phase, _part, setting) => {
+            const kept = setting.keep(K, () => ({ n: 0 }));
+            kept.n++;
+            return { crawl: kept.n };
+          },
+          { writes: ['crawl'] },
+        ),
+        stagger: () => 100,
+      });
+      const [p, q] = parts as [Part, Part];
+      m.sync(0);
+      look(p, [h]);
+      look(q, [h]);
+      m.sync(150);
+      look(q, [h]);
+      m.sync(200);
+      look(p, [h]);
+      look(q, [h]);
+    });
+  });
+
   it('for a pending voice faded before it starts', () => {
     script((m, parts, look) => {
       const a = m.cue({ patch: pulse() });

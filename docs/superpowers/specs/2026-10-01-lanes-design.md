@@ -59,7 +59,9 @@ The first `probe` after a `sync` fills every lane, once:
 
 1. Per voice: the voice's elapsed time from its clock, its fade-out factor, whether it is done.
 2. Per voice and numbered subject it reaches: elapsed minus that subject's `delay`, the phase, the
-   fade-in from `since`, the weight; then the patch's value.
+   fade-in from `since`, the weight; then the patch's value. A voice's first call for a subject is
+   the general path's to make, so a subject whose stagger ran out since its last probe is left to
+   the general path until a probe makes that call.
 3. Fold into the channel's arrays in voice order, the order the general path folds in. A voice's
    patch is called whenever the general path would call it, weight 0 included, and folded only
    above 0. `bounds` are clamped by the general path's own `clamp` after laned values are copied

@@ -605,6 +605,11 @@ export class Lanes<I, O> {
     const subject = this.subjectAt(slot);
     if (subject === absent) return;
     const held = lane.records[p] as Subject<unknown>;
+    // The general path makes a voice's first call for a subject, where it first sees it play.
+    if (Number.isNaN(held.probed)) {
+      this.late.push(slot);
+      return;
+    }
     if (lane.motion !== undefined) {
       this.move(lane, lane.motion, p, slot, subject, held, elapsed, delay, w);
       return;
