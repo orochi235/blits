@@ -69,17 +69,53 @@ const SCALAR = 1;
 const PENDING = 2;
 const OLDER = 4;
 
-/** One axis, `t` seconds after release, `y0` from where it heads and moving at `v0`, into `solved`. */
+/**
+ * The terms of a stretch that depend only on how long since its release, the same on every axis, so
+ * a sample works them out once rather than once per axis.
+ */
+const timed = { e: 0, e2: 0, cos: 0, sin: 0 };
+
+/** `t` seconds after release, the terms every axis shares, into `timed`. */
+function prepare(law: Float64Array, t: number): void {
+  switch (law[0]) {
+    case UNDER: {
+      const zeta = law[2] as number;
+      const w0 = law[3] as number;
+      const wd = law[4] as number;
+      timed.e = Math.exp(-zeta * w0 * t);
+      timed.cos = Math.cos(wd * t);
+      timed.sin = Math.sin(wd * t);
+      return;
+    }
+    case CRITICAL: {
+      const w0 = law[3] as number;
+      timed.e = Math.exp(-w0 * t);
+      return;
+    }
+    case OVER: {
+      timed.e = Math.exp((law[2] as number) * t);
+      timed.e2 = Math.exp((law[3] as number) * t);
+      return;
+    }
+    default:
+      timed.e = Math.exp(-t / (law[2] as number));
+  }
+}
+
+/**
+ * One axis, `t` seconds after release, `y0` from where it heads and moving at `v0`, into `solved`,
+ * with `timed` prepared for `t`.
+ */
 function solve(law: Float64Array, y0: number, v0: number, t: number): void {
   switch (law[0]) {
     case UNDER: {
       const zeta = law[2] as number;
       const w0 = law[3] as number;
       const wd = law[4] as number;
-      const e = Math.exp(-zeta * w0 * t);
+      const e = timed.e;
       const b = (v0 + zeta * w0 * y0) / wd;
-      const cos = Math.cos(wd * t);
-      const sin = Math.sin(wd * t);
+      const cos = timed.cos;
+      const sin = timed.sin;
       const y = e * (y0 * cos + b * sin);
       solved.y = y;
       solved.dy = -zeta * w0 * y + e * wd * (b * cos - y0 * sin);
@@ -87,7 +123,7 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
     }
     case CRITICAL: {
       const w0 = law[3] as number;
-      const e = Math.exp(-w0 * t);
+      const e = timed.e;
       const b = v0 + w0 * y0;
       const y = e * (y0 + b * t);
       solved.y = y;
@@ -99,8 +135,8 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
       const r2 = law[3] as number;
       const a = (v0 - r2 * y0) / (r1 - r2);
       const b = y0 - a;
-      const e1 = Math.exp(r1 * t);
-      const e2 = Math.exp(r2 * t);
+      const e1 = timed.e;
+      const e2 = timed.e2;
       solved.y = a * e1 + b * e2;
       solved.dy = a * r1 * e1 + b * r2 * e2;
       return;
@@ -109,7 +145,7 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
       // Released at x moving at v, a glide comes to rest at x + v·τ; y is the distance still to go,
       // which friction closes as e^(−t/τ), and its derivative at release is v again.
       const tau = law[2] as number;
-      const e = Math.exp(-t / tau);
+      const e = timed.e;
       solved.y = y0 * e;
       solved.dy = (-y0 / tau) * e;
     }
@@ -223,9 +259,11 @@ export class Motions<I> {
 
   /** The value `at` hands the mix: the first axis for a number, a fresh array otherwise. */
   value(s: number, xs: Float64Array): number | number[] {
-    return ((this.runs[this.base(s) + 1] as number) & SCALAR) !== 0
-      ? (xs[0] as number)
-      : Array.from(xs.subarray(0, this.n));
+    if (((this.runs[this.base(s) + 1] as number) & SCALAR) !== 0) return xs[0] as number;
+    const n = this.n;
+    const out = new Array<number>(n);
+    for (let i = 0; i < n; i++) out[i] = xs[i] as number;
+    return out;
   }
 
   /**
@@ -497,6 +535,7 @@ export class Motions<I> {
     const law = this.runs;
     const settle = law[1] as number;
     let still = settle > 0;
+    prepare(law, dt);
     for (let i = 0; i < n; i++) {
       const goal = to[g + i] as number;
       solve(law, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
