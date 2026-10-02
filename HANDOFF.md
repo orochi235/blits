@@ -176,6 +176,8 @@ systems now run on it**, on a branch that is not merged.
    there is one engine rather than a second one to keep in parity. weasel's animator step 3 waits on
    it. Evidence and the open design questions (subject numbering, eager vs lazy filling, what
    qualifies, output surface) are in `spikes/gpu-engine/README.md`. Design first, then build.
+   When lanes land, tell a weasel session: it reruns `animator-on-blits` and `pose-overrides` against
+   them before deciding step 3 (weasel `c7a183bde`, branch `pose-overrides-mix`).
 
 2. **Merge klieg's `blits-port`, and move magicsmoke to 0.2.x.** klieg already depends on the
    published package; push its last two commits and merge. magicsmoke pins `0.1.1`, and 0.2.0 broke
