@@ -42,6 +42,25 @@ on its own are untouched.
 Only the channels in your kit are written; leave one out and that field stays yours. A burst is an
 event `{ count }` a patch `send`s under the tag you gave `drive`.
 
+## API
+
+- **`drive(mix, { kit, bursts? })`** returns the driver. `kit` is the mix's kit, which tells the
+  driver which of its channels are present; `bursts` is the tag it drains, and without one it
+  drains nothing.
+- **`attach(subject, system, { at })`** binds a subject to a system and a position: `{ x, y, z }`,
+  `[x, y, z]`, or a function returning either, asked each frame the subject emits. The first
+  subject attached to a system captures its authored start values, so scaling never compounds.
+  Attaching a subject twice throws.
+- **`detach(subject)`** unbinds it. Detaching a system's last subject puts its authored values back
+  and forgets them, so a later `attach` captures whatever you have set since.
+- **`write(dt)`**, `dt` in ms, after `mix.sync`: probes each attached subject, adds `rate × dt` to
+  its carry and emits the whole particles, adds the floored `count` of each burst drained for it,
+  and emits them all at `at + offset` with that subject's values. A rate or count at or below 0
+  adds nothing, and a burst for a subject not attached is ignored.
+
+`send` is also yours for anything else a discharge drives, such as flashes or audio: drain your own
+tags; the driver takes only the one you gave it.
+
 ## Limits
 
 - `startSpeed`, `startSize` and `startLife` must be a `ConstantValue` or `IntervalValue`, and
