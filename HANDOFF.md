@@ -201,6 +201,10 @@ systems now run on it**, on a branch that is not merged.
    - **Voices sharing a patch, grouped into one lane indexed by voice**, so a voice per subject
      costs what one voice does. Only if a voice per call still needs it once `tween` exists.
 
+1d. **`@msb235/blits-quarks`, designed 2026-10-02, nothing built:** a separate package in
+   `packages/quarks` that turns poses into three.quarks particles, so the engine stays light. The
+   spec is `docs/superpowers/specs/2026-10-02-blits-quarks-design.md`.
+
 2. **Merge klieg's `blits-port`, and move magicsmoke to 0.2.x.** klieg already depends on the
    published package; push its last two commits and merge. magicsmoke pins `0.1.1`, and 0.2.0 broke
    two things it may touch: a `from: 'current'` keys voice now leaves at the subject's velocity, and
