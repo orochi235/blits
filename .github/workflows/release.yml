@@ -82,6 +82,18 @@ jobs:
             exit 1
           fi
 
+      # The driver's tests run against the engine's source in this tree, so the pin has to name that
+      # version, or the release would pass against different code than its users install.
+      - name: The driver pins the engine it was tested against
+        if: steps.pick.outputs.dir == 'packages/quarks'
+        run: |
+          pin="$(node -p 'require("./packages/quarks/package.json").dependencies["@msb235/blits"]')"
+          engine="$(node -p 'require("./package.json").version')"
+          if [ "$pin" != "$engine" ]; then
+            echo "the driver pins @msb235/blits $pin, but this tree's engine is $engine" >&2
+            exit 1
+          fi
+
       # The driver pins the engine exactly; a pin npm cannot serve would publish a broken install.
       - name: The driver's engine is on npm
         if: steps.pick.outputs.dir == 'packages/quarks'
