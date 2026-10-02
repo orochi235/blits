@@ -171,6 +171,12 @@ systems now run on it**, on a branch that is not merged.
    workload). `NOTES-ON-SCRUBBING.md` holds the one undecided reading-back item,
    `handle.seek` on a stateful voice.
 
+1a. **Dense lanes inside `mixer`, decided 2026-10-01, nothing built.** A channel folds over flat
+   arrays when every voice writing it qualifies, falling back per channel to the current path, so
+   there is one engine rather than a second one to keep in parity. weasel's animator step 3 waits on
+   it. Evidence and the open design questions (subject numbering, eager vs lazy filling, what
+   qualifies, output surface) are in `spikes/gpu-engine/README.md`. Design first, then build.
+
 2. **Merge klieg's `blits-port`, and move magicsmoke to 0.2.x.** klieg already depends on the
    published package; push its last two commits and merge. magicsmoke pins `0.1.1`, and 0.2.0 broke
    two things it may touch: a `from: 'current'` keys voice now leaves at the subject's velocity, and
