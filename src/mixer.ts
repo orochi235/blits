@@ -195,6 +195,8 @@ class Voice<I, O> {
   ramp: { from: number; to: number; over: number } | null = null;
   out: Ramp | null = null;
   readonly subjects = new Store<I, Subject<unknown>>();
+  /** The subjects its spec names, or null where it names none. */
+  readonly named: ReadonlySet<I> | null;
   /** Kit slot of each channel the patch writes, in `writes` order. */
   readonly slots: number[];
   /** The stops built ahead of time, for a `keys` patch. */
@@ -235,6 +237,7 @@ class Voice<I, O> {
     send: (event: unknown) => void,
   ) {
     this.slots = patch.writes.map((k) => slotOf.get(k as string) as number);
+    this.named = spec.subjects ? new Set(spec.subjects) : null;
     this.built = patch.form === 'keys' && patch.keys ? builtOf(patch) : null;
     this.lerps = this.slots.map((slot) => (channels[slot] as Channel<unknown>).lerp);
     this.ease = fade.ease === undefined ? undefined : curve(fade.ease);
@@ -394,6 +397,12 @@ class Mixer<I, O> implements Mix<I, O> {
   private version = 0;
   /** How many voices in the list carry a `target`; with none, every voice reaches every subject. */
   private targeted = 0;
+  /** Per subject, the voices whose `subjects` name it, in voice order. */
+  private named = new Store<I, Voice<I, O>[]>();
+  /** How many voices in the list carry `subjects`. */
+  private naming = 0;
+  /** The voices in the list that name no subjects, in voice order. */
+  private general: Voice<I, O>[] = [];
   /** How many voices in the list carry a locus; with none, a fold allocates nothing. */
   private loci = 0;
   /** How many voices in the list are anchored, so a sync with none skips placing them. */
@@ -469,6 +478,8 @@ class Mixer<I, O> implements Mix<I, O> {
     }
     if (spec.from === 'current' && patch.form !== 'keys')
       throw new Error("blits: from: 'current' needs a keys patch");
+    if (spec.subjects !== undefined && spec.target !== undefined)
+      throw new Error('blits: a voice takes target or subjects, not both');
     const anchor = spec.anchor;
     if (anchor) this.checkPlacement(spec, anchor);
 
@@ -495,6 +506,7 @@ class Mixer<I, O> implements Mix<I, O> {
     if (!Number.isNaN(this.now)) voice.cuedAt = this.now;
     voice.placing = placed;
     this.voices.push(voice);
+    this.index(voice);
     this.version++;
     if (spec.target !== undefined) this.targeted++;
     if (spec.locus !== undefined) this.loci++;
@@ -591,17 +603,21 @@ class Mixer<I, O> implements Mix<I, O> {
         } else if (spent >= over) this.retire(voice, at + over);
       }
     }
+    let pruned = false;
     for (let i = this.voices.length - 1; i >= 0; i--) {
       const voice = this.voices[i] as Voice<I, O>;
       if (voice.state === 'done') {
         this.voices.splice(i, 1);
         if (this.opts.history) this.gone.push(voice);
         this.version++;
+        if (voice.named === null) pruned = true;
+        else this.unindex(voice);
         if (voice.spec.target !== undefined) this.targeted--;
         if (voice.spec.locus !== undefined) this.loci--;
         if (voice.spec.anchor !== undefined) this.anchored--;
       }
     }
+    if (pruned) this.general = this.general.filter((v) => v.state !== 'done');
     const history = this.opts.history;
     if (history && this.gone.length > 0) {
       const reach = now - history.ms;
@@ -987,6 +1003,10 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** Recounts what the fold's shortcuts depend on, for a projection's freshly copied voices. */
   private count(): void {
+    this.named = new Store<I, Voice<I, O>[]>();
+    this.naming = 0;
+    this.general = [];
+    for (const voice of this.voices) this.index(voice);
     this.targeted = this.voices.filter((v) => v.spec.target !== undefined).length;
     this.loci = this.voices.filter((v) => v.spec.locus !== undefined).length;
     this.anchored = this.voices.filter((v) => v.spec.anchor !== undefined).length;
@@ -1127,7 +1147,7 @@ class Mixer<I, O> implements Mix<I, O> {
           voice.state !== 'fading' &&
           (anchor.out !== undefined || anchor.end !== undefined) &&
           !Number.isFinite(voice.outAt));
-      if (!waiting || (voice.spec.target && !voice.spec.target(subject))) continue;
+      if (!waiting || !this.aims(voice, subject)) continue;
       for (const slot of voice.slots) out[this.names[slot] as string] = 'held';
     }
     for (const voice of this.reaching(subject, this.now)) {
@@ -1255,7 +1275,7 @@ class Mixer<I, O> implements Mix<I, O> {
   private held(voice: Voice<I, O>, subject: I, now: number): Subject<unknown> {
     let held = voice.subjects.get(subject) as Subject<unknown> | undefined;
     if (held !== undefined) return held;
-    const reaches = voice.spec.target ? voice.spec.target(subject) : true;
+    const reaches = this.aims(voice, subject);
     const delay = reaches && voice.spec.stagger ? voice.spec.stagger(subject) : 0;
     // When the voice clock reads `delay`, from where it is anchored now; during a ramp this assumes
     // the rate it is ramping to.
@@ -1537,16 +1557,55 @@ class Mixer<I, O> implements Mix<I, O> {
    * first sight, and sight only comes once a voice plays.
    */
   private reaching(subject: I, now: number): Voice<I, O>[] {
-    if (this.targeted === 0) return this.voices;
+    if (this.targeted === 0 && this.naming === 0) return this.voices;
     const held = this.reach.get(subject);
     if (held !== undefined && held.version === this.version) return held.voices;
     const voices: Voice<I, O>[] = [];
-    for (const voice of this.voices) {
-      if (voice.state === 'done') continue;
+    const take = (voice: Voice<I, O>) => {
+      if (voice.state === 'done') return;
       if (voice.state === 'pending' || this.held(voice, subject, now).reaches) voices.push(voice);
+    };
+    const named = this.naming === 0 ? undefined : this.named.get(subject);
+    let j = 0;
+    for (const voice of this.general) {
+      while (named !== undefined && j < named.length && (named[j] as Voice<I, O>).id < voice.id)
+        take(named[j++] as Voice<I, O>);
+      take(voice);
     }
+    while (named !== undefined && j < named.length) take(named[j++] as Voice<I, O>);
     this.reach.set(subject, { version: this.version, voices });
     return voices;
+  }
+
+  /** Whether a voice reaches a subject by what its spec says: the subjects it names, or its `target`. */
+  private aims(voice: Voice<I, O>, subject: I): boolean {
+    if (voice.named !== null) return voice.named.has(subject);
+    return voice.spec.target ? voice.spec.target(subject) : true;
+  }
+
+  /** Files a voice under each subject it names, or among the voices that name none. */
+  private index(voice: Voice<I, O>): void {
+    if (voice.named === null) {
+      this.general.push(voice);
+      return;
+    }
+    this.naming++;
+    for (const subject of voice.named) {
+      const list = this.named.get(subject);
+      if (list === undefined) this.named.set(subject, [voice]);
+      else list.push(voice);
+    }
+  }
+
+  private unindex(voice: Voice<I, O>): void {
+    this.naming--;
+    for (const subject of voice.named as ReadonlySet<I>) {
+      const list = this.named.get(subject);
+      if (list === undefined) continue;
+      const i = list.indexOf(voice);
+      if (i >= 0) list.splice(i, 1);
+      if (list.length === 0) this.named.delete(subject);
+    }
   }
 
   private readonly locusBands = new Store<I, Map<string, boolean>>();

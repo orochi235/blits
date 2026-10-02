@@ -264,9 +264,17 @@ export interface VoiceSpec<I, O> {
   patch: Patch<I, O, unknown>;
   /**
    * Which subjects this voice reaches. Default: all of them. The predicate is fixed at `cue`; it
-   * runs per subject the first time the mix sees that subject, and the answer is kept.
+   * runs per subject the first time the mix sees that subject, and the answer is kept. Every
+   * voice's predicate meets every subject, so voices that each reach a known few cost the square
+   * of their number; name those with `subjects` instead.
    */
   target?: (subject: I) => boolean;
+  /**
+   * The subjects this voice reaches, fixed at `cue` and matched by identity; a probe of any other
+   * never asks this voice. Takes the place of `target`, and a cue giving both is refused: a
+   * predicate over a fixed list is that list filtered, which the host can do before cueing.
+   */
+  subjects?: readonly I[];
 
   /**
    * When the voice starts, in ms on the host's clock, the one it passes `sync`: a rAF timestamp and
