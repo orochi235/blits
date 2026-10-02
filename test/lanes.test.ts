@@ -657,6 +657,25 @@ describe('lanes stay identical where a fill and a probe interleave', () => {
     expect(counts[1]).toBe(counts[0]);
   });
 
+  it('folds a vec value a fn returns as a typed array', () => {
+    agree(
+      (m) => {
+        m.cue({
+          patch: patch<Part, Pose>(
+            1000,
+            (phase, part) => ({
+              position: Float64Array.of(phase, -part.id, 2) as unknown as number[],
+            }),
+            { writes: ['position'] },
+          ),
+        });
+        m.cue({ patch: pulse() });
+        return undefined;
+      },
+      { times },
+    );
+  });
+
   it('for a pending voice faded before it starts', () => {
     script((m, parts, look) => {
       const a = m.cue({ patch: pulse() });

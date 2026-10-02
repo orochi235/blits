@@ -746,7 +746,9 @@ export class Lanes<I, O> {
       return;
     }
     const base = slot * ch.axes;
-    const arr = Array.isArray(value) ? (value as number[]) : null;
+    // Indexed as `vec`'s fold indexes it, so a typed array folds as an array does.
+    const arr =
+      Array.isArray(value) || ArrayBuffer.isView(value) ? (value as ArrayLike<number>) : null;
     for (let a = 0; a < ch.axes; a++) {
       const v = arr === null ? ch.rest : (arr[a] ?? ch.rest);
       values[base + a] = foldNumber(ch.op, values[base + a] as number, v, w);
