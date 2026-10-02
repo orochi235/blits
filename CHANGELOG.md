@@ -14,14 +14,21 @@ version and everything else the patch. Each release lists its changes as **Break
   patch throws when two of its subjects, or a subject's start, target and velocity, or a `to` or
   `push`, move on different numbers of axes. It makes a subject's first stretch at its first `to`
   or `push` as well as at its first read, so `read(subject, at)` answers from then on.
-- An untimed retarget lands at the patch's latest frame, not the subject's next read; `read` with
-  no time reports that frame. Both take the subject's own voice time at the mix's latest frame, so
-  a subject the host did not probe changes at the same moment as one it did. For a subject no frame
-  of its voice has met yet, an untimed change still applies at its first read, and `read` with no
-  time returns undefined.
+- An untimed retarget lands at the subject's own voice time at the mix's latest sync, not at the
+  subject's next read, so a subject the host did not probe changes at the same moment as one it
+  did; `read` with no time answers at that time, counting every change due by then. For a subject
+  no frame of its voice has met yet, or still inside its stagger, an untimed change applies at its
+  first read, after any timed change due by then, and `read` with no time returns undefined, as it
+  does once the voice is gone. Changes apply in time order, not the order they were made.
+- `drop(subject)` also forgets a motion patch's state for the subject, so it starts afresh.
+- With lanes on, a stateless patch calling `setting.send` from `at` sends every frame for every
+  subject the mix has met, probed that frame or not.
 
 ### Added
 
+- Lanes: a channel every voice writing it can run that way is computed for every subject at once,
+  in flat arrays, rather than subject by subject, and gives the same pose. `MixOptions.lanes: false`
+  turns them off.
 - `mix.project(timestamp)` reads the mix at another time without moving it: `probe` gives the pose
   then, and `assess` says per channel whether it is `exact`, `stepped` or `held`. Ahead it plays
   what is cued forward; behind it needs `MixOptions.history: { ms, every? }`, which keeps every

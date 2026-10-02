@@ -244,7 +244,7 @@
 
 <p>Informal terms are used in design work and in the code but appear nowhere in the public API, so a consumer never has to learn them.</p>
 <dl>
-  <dt>Lane</dt><dd>A channel the mix computes for every subject at once, in flat arrays indexed by a number it gives each subject, rather than subject by subject. A channel runs as a lane only while every voice writing it qualifies; otherwise it takes the general path. Being designed, not built.</dd>
+  <dt>Lane</dt><dd>A channel the mix computes for every subject at once, in flat arrays indexed by a number it gives each subject, rather than subject by subject. A channel runs as a lane only while every voice writing it qualifies; otherwise it takes the general path, which folds subject by subject as the mix always has. Lanes are on by default and give the same pose; <code>MixOptions.lanes: false</code> turns them off.</dd>
 </dl>
 
 <h2 id="channels">Channels</h2>
@@ -456,6 +456,9 @@ interface MixOptions {
   stepMs?: number;
   <span class="cm">/** How far back `project` may read, and how often a stateful voice's state is copied on the way. Off by default. */</span>
   history?: { ms: number; every?: number; inputs?: boolean };
+  <span class="cm">/** Whether a channel may run as a lane. On by default; the pose is the same either way, apart from
+     a stateless patch's `send` from `at` and a patch that starts keeping state partway through. */</span>
+  lanes?: boolean;
 }
 
 interface Mix&lt;I, O&gt; {
@@ -488,7 +491,7 @@ interface Mix&lt;I, O&gt; {
   readonly live: boolean;
   <span class="cm">/** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */</span>
   mute(opts?: { over?: number }): void;
-  <span class="cm">/** Forgets per-subject state. Call when a subject is retired, or let the WeakMap do it. */</span>
+  <span class="cm">/** Forgets per-subject state, a motion patch's included. Call when a subject is retired, or let the WeakMap do it. */</span>
   drop(subject: I): void;
   <span class="cm">/** Every event sent since the last drain, earliest first. Drain after probing. */</span>
   drain&lt;E&gt;(tag?: string): { timestamp: number; subject: I; voice: number; tags: readonly string[]; event: E }[];
@@ -523,7 +526,7 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
   <li><b><code>dt</code> is derived, never supplied.</b> The gap between this sync and the last, per subject, and <code>Infinity</code> under reduced motion. A patch that integrates guards against that with a snap, as klieg's already do.</li>
   <li><b>Time away is the host's to call.</b> A hidden tab gets no frames, so its next <code>sync</code> can be an hour past the last. By default that hour is a gap like any other: fades and finite loops finish, and every subject catches up by all of it. A host that calls <code>mix.rebase()</code> on <code>visibilitychange</code> says the gap does not count, and the mix clock &mdash; what <code>setting.timestamp</code> reads, and what voices, fades and subjects run on &mdash; resumes where it was left. It is then the host's timestamp less the time taken out, and a <code>start</code> the host gives is read on the host's clock and converted. <code>maxDt</code> caps the <code>dt</code> a <code>step</code> or signal is handed for any gap, the net an integrator wants; it is off by default because a patch with a closed form wants the whole gap.</li>
   <li><b>There is no frame rate, only an optional step interval.</b> A frame is a reading, so a stateless patch reads the same at any rate. A <code>step</code> handed the frame's gap does not: an integrator gives a different answer at 30 and 144&nbsp;fps. <code>stepMs</code> runs <code>step</code> once per whole interval instead, on a grid counted from when the subject's delay ran out, carrying the remainder, so the answer and every event's time are the same at any frame rate. <code>maxDt</code> then caps how many intervals one sample runs. Signals and <code>at</code> still read the frame. The host's clock is whatever it passes <code>sync</code>: a rAF timestamp and <code>performance.now()</code> share an origin, and <code>Date.now()</code> does not.</li>
-  <li><b>Events come out by draining.</b> A patch calls <code>setting.send(event)</code>, usually from <code>step</code>, and the host calls <code>mix.drain()</code> after probing to take everything sent, earliest first. Events are made while a subject catches up, so a subject nobody probes has sent nothing yet, and promptness is the host's to buy by probing. Under <code>stepMs</code> each is stamped with the end of the interval it happened in, so the events and their times do not depend on how the probes are spaced. Time taken out by <code>rebase</code> sends nothing. This is the small half of weasel's events: no booking ahead against an outside clock, and no retraction.</li>
+  <li><b>Events come out by draining.</b> A patch calls <code>setting.send(event)</code>, usually from <code>step</code>, and the host calls <code>mix.drain()</code> after probing to take everything sent, earliest first. Events are made while a subject catches up, so a subject nobody probes has sent nothing yet, and promptness is the host's to buy by probing. Under <code>stepMs</code> each is stamped with the end of the interval it happened in, so the events and their times do not depend on how the probes are spaced. Time taken out by <code>rebase</code> sends nothing. The exception is a stateless patch sending from <code>at</code> on a lane: a lane fills every subject the mix has met, so it sends for each of them every frame, probed or not. This is the small half of weasel's events: no booking ahead against an outside clock, and no retraction.</li>
   <li><b>A finite loop ends when its last pass does,</b> not at the frame that notices: its fade out counts from that moment, so it plays the same at any frame rate and a read at another time can find it. A fade's end and a handover's deadline are kept the same way.</li>
   <li><b>Calls land on the next sync.</b> A host writes <code>handle.weight</code> or calls <code>fade</code> on its own clock; the mix applies it at the first timestamp that sees it. Nothing changes mid-frame.</li>
 </ul>
@@ -556,7 +559,7 @@ s.read(node);                <span class="cm">// { value, velocity }, for handin
 
 const g = glide&lt;Node, Pose&gt;('x', { from: 0, velocity: 1200, ms: 325 });  <span class="cm">// a fling: rests 390 past the start</span></code></pre>
 <ul>
-  <li><b>Time is the voice's</b>, so <code>rate</code> and <code>seek</code> apply. A change takes effect at the voice time it names, or, named none, at the subject's own voice time at the mix's latest frame, whether or not the host probed it then; naming one is what makes a retarget land the same at any frame rate. A subject no frame of its voice has met yet takes an unnamed change at its first read. <code>read</code> with no time answers at that same latest frame.</li>
+  <li><b>Time is the voice's</b>, so <code>rate</code> and <code>seek</code> apply. A change takes effect at the voice time it names, or, named none, at the subject's own voice time at the mix's latest frame, whether or not the host probed it then; naming one is what makes a retarget land the same at any frame rate. A subject no frame of its voice has met yet, or still inside its stagger, takes an unnamed change at its first read, after any named change due by then. <code>read</code> with no time answers at that same latest frame, counting every change due by then, and answers nothing once the voice is gone.</li>
   <li><b>History is kept to the mix's horizon.</b> Each subject keeps every stretch a read may still reach, so a read earlier than a change finds the stretch that was playing then. A mix without <code>history</code> keeps only the stretch playing now.</li>
   <li><b>A value settles.</b> Within <code>settle</code> (1e-4) of where it heads, and that slow, it lands there exactly, so <code>atRest</code> sees it. <code>settle: 0</code> keeps the curve exact.</li>
   <li><b>The state is the patch's own</b>, per subject, rather than the mix's, because the host retargets through the patch. Cue each one on one voice. A patch moves every subject on the same number of axes, and throws on a subject, a <code>to</code> or a <code>push</code> with another, leaving the subject as it was.</li>

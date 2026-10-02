@@ -85,10 +85,13 @@ Per patch form:
   axis) lives in the patch's arrays; older segments, kept only while the mix keeps history, live in
   per-subject lists. `to`, `push` and `read` work on whichever holds the state, and the general
   path reads the same state, so there is one copy. An untimed `to` or `push` takes the
-  subject's voice time at the mix's latest frame, and `read` with no time answers there, on both
-  paths, so a fill sampling subjects the host did not probe changes nothing. A retarget or push
-  between two probes of one frame refills, and a subject probed earlier that frame keeps the
-  value it read.
+  subject's voice time at the mix's latest frame, and `read` with no time answers there, counting
+  every change due by then, on both paths. A subject no frame has met, or still inside its
+  stagger, stamps an untimed change with the time of its first read; the queue is kept in time
+  order. A fill samples a subject only where the sample changes nothing: one with a change to
+  stamp, commit or let go of is left to the general path, which samples it if and when a probe
+  asks, so commits happen exactly where they would with lanes off. A retarget or push between two
+  probes of one frame refills, and a subject probed earlier that frame keeps the value it read.
 
 A stateless `fn` that calls `setting.send` from `at` now sends each frame for every subject it has
 met, not only for the ones probed that frame. Nothing in blits or its consumers does this today. A

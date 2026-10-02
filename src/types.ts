@@ -98,8 +98,8 @@ export interface Setting<S = void> {
   /**
    * The state `owner` keeps for this voice and this subject, made by `init` on first ask. The mix
    * holds it, so a read at another time can copy it instead of moving it. A stateful signal keeps
-   * its state here and nowhere else. A patch that first calls it partway through playing can have
-   * that state advanced once for one subject not probed on the frame it starts; a patch that keeps
+   * its state here and nowhere else. With lanes on, a patch that first calls it partway through
+   * playing can have that state advanced once for one subject not probed on the frame it starts; a patch that keeps
    * state from its first call, or declares `state`, never does.
    */
   keep<K>(owner: object, init: () => K): K;
@@ -441,7 +441,10 @@ export interface MixOptions {
   /**
    * Whether a channel may run as a lane: computed for every subject at once in flat arrays, when
    * every voice writing it can run that way. On by default; the pose is the same either way, so
-   * turning it off is for ruling a lane out, or for comparing against.
+   * turning it off is for ruling a lane out, or for comparing against. Two things differ: a
+   * stateless patch's `setting.send` from `at` sends for every subject a lane fills, probed or not,
+   * and a patch that first calls `setting.keep` partway through playing can advance that state once
+   * more for one unprobed subject (see `Setting.keep`).
    */
   lanes?: boolean;
 }
@@ -508,7 +511,7 @@ export interface Mix<I, O> {
   readonly live: boolean;
   /** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */
   mute(opts?: { over?: number }): void;
-  /** Forgets per-subject state. */
+  /** Forgets per-subject state, a motion patch's for the subject included. */
   drop(subject: I): void;
   /**
    * Puts a named mark on a score, for anchors to target as they target a voice's marks: a voice

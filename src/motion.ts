@@ -128,14 +128,15 @@ const per = <I, V>(p: PerSubject<I, V>, subject: I): V =>
  */
 export type Moving<I, O, V extends Value> = Patch<I, O, void> & {
   /**
-   * Where `subject` is and how fast it moves at voice time `at`, default the mix's latest frame.
-   * With no time given, undefined until a frame of its voice has met the subject, and again once
-   * that voice is gone.
+   * Where `subject` is and how fast it moves at voice time `at`, default the mix's latest frame,
+   * counting every change due by then. With no time given, undefined until a frame of its voice
+   * has met the subject, while the subject is still inside its stagger, and once that voice is gone.
    */
   read(subject: I, at?: number): Motion<V> | undefined;
   /**
    * Sets `subject` moving at `velocity`, units per second, from voice time `at`, default the mix's
-   * latest frame; for a subject no frame of its voice has met yet, its first read.
+   * latest frame; for a subject no frame of its voice has met yet, or still inside its stagger, its
+   * first read, after any change with a time due by then.
    */
   push(subject: I, velocity: V, at?: number): void;
 };
@@ -576,7 +577,8 @@ export function spring<I, O, V extends Value = number>(
 ): Moving<I, O, V> & {
   /**
    * Heads `subject` for `target` from voice time `at`, keeping its velocity: by default the mix's
-   * latest frame, or for a subject no frame of its voice has met yet, its first read.
+   * latest frame, or for a subject no frame of its voice has met yet, or still inside its stagger,
+   * its first read, after any change with a time due by then.
    */
   to(subject: I, target: V, at?: number): void;
 } {
