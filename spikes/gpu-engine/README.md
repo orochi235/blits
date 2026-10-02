@@ -228,7 +228,8 @@ one. `sparse` probes all 10k subjects once, then 5% each frame.
 - **The general path did not get faster**: `locus`, `named` and `own` sit at 1.0–1.1×.
 - **A probe has a floor.** Measured while building, a probe costs about 110–140 ns at 10k subjects
   even when a lane did all the work, so a host that probes every node pays 1.1–1.4 ms before any
-  arithmetic. Reading a lane's arrays in bulk is the next step (`HANDOFF.md`).
+  arithmetic. `mix.pull` reads in bulk and takes a frame to 0.84–0.93 of a probe's; the schema's Lanes
+  section says what is left.
 
 ## Caveats
 

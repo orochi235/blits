@@ -192,10 +192,12 @@ systems now run on it**, on a branch that is not merged.
    copy.
 
 1c. **Next for speed, decided with Mike 2026-10-02, in this order, each measured on the fleet
-   before the next starts. None is designed yet.**
-   - **Bulk output.** A host reads a laned channel's array by subject number instead of calling
-     `probe` per subject. A probe costs about 110–140 ns at 10,000 subjects even when a lane did
-     all the work, which caps lanes for a host that probes every node, as weasel's paint walk does.
+   before the next starts.**
+   - **Bulk output: `mix.pull`, built 2026-10-02** on branch `pull` (shape B of three: the host
+     hands arrays in its own order, nothing internal is exposed). Fleet: a frame costs 0.84–0.93 of
+     one read through `probe(s, out)`. The rest of a probe's per-subject cost is the record lookup
+     and lane bookkeeping; keeping subject numbers between `pull` calls and doing that bookkeeping
+     per call is the next step if a host still needs it. Not designed.
    - **A `tween` stock form** with each subject's endpoints as data, so a tween runs on a lane
      without allocating per call the way a `fn` does.
    - **Voices sharing a patch, grouped into one lane indexed by voice**, so a voice per subject
