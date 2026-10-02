@@ -6,6 +6,15 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Breaking
+
+- `spring` and `glide` build patches of a third form, `'motion'`, instead of `'fn'`, and carry
+  their kind and constants on `patch.motion`, a `MotionSpec`. `Patch.form` and `Engine.runs` take
+  `'motion'`, so an engine that declares `runs` must list it to run a spring or a glide. A motion
+  patch throws when two of its subjects move on different numbers of axes, and makes a subject's
+  first stretch at its first `to` or `push` as well as at its first read, so `read(subject, at)`
+  answers from then on rather than only once a frame has read the subject.
+
 ### Added
 
 - `mix.project(timestamp)` reads the mix at another time without moving it: `probe` gives the pose

@@ -294,8 +294,9 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
 <p>A patch is what an author writes. It is klieg's <code>EffectPiece</code> with three additions: the setting carries absolute time as well as normalized, a patch may declare state, and a patch declares which channels it contributes to.</p>
 
 <pre><code>interface Patch&lt;I, O, S = void&gt; {
-  <span class="cm">/** Which authoring form built it. An engine declares which forms it runs. */</span>
-  readonly form: 'fn' | 'keys';
+  <span class="cm">/** Which authoring form built it: `'fn'` from `patch`, `'keys'` from `keys`, `'motion'` from `spring`
+     or `glide`. An engine declares which forms it runs. */</span>
+  readonly form: 'fn' | 'keys' | 'motion';
   <span class="cm">/** Milliseconds one pass lasts. 0 is aperiodic: one pass that never ends, so `phase` and `pass` stay 0,
      `loop` is ignored, and the patch reads `setting.elapsed` instead. */</span>
   period: number;
@@ -316,6 +317,8 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
 
   <span class="cm">/** Present when the patch was authored as keyframes, so an engine that reads data can. */</span>
   readonly keys?: readonly Keyframe&lt;O&gt;[];
+  <span class="cm">/** Present on a `'motion'` patch: its kind and constants, for an engine that reads data. */</span>
+  readonly motion?: MotionSpec;
   <span class="cm">/** A copy of `state` sharing nothing with it, for a read at another time. Default `structuredClone`. */</span>
   clone?(state: S): S;
 }
@@ -346,11 +349,12 @@ interface Setting&lt;S = void&gt; {
   send(event: unknown): void;
 }</code></pre>
 
-<p>Two authoring forms build a patch. Both return the same interface, so a voice cannot tell them apart.</p>
+<p>Three authoring forms build a patch. All return the same interface, so a voice cannot tell them apart.</p>
 <div class="tbl"><table>
   <tr><th>form</th><th>signature</th><th>what it is</th></tr>
   <tr><td><code>fn</code></td><td><code>patch(period, at, { writes, state?, step? })</code></td><td>Procedural. Flicker, roving, a hash walk, a starter strike. Only a JS engine can run one.</td></tr>
   <tr><td><code>keys</code></td><td><code>keys(period, stops, { ease?, easeBy?, delayBy? })</code></td><td>Declarative stops, klieg's transition sugar and wod's keyframes. Data preserved on <code>patch.keys</code> for an engine that reads data instead of calling functions.</td></tr>
+  <tr><td><code>motion</code></td><td><code>spring(writes, opts)</code>, <code>glide(writes, opts)</code></td><td>Momentum, solved in closed form per subject; <a href="#motion">below</a>. The kind and its constants are preserved on <code>patch.motion</code>, a <code>MotionSpec</code>.</td></tr>
 </table></div>
 
 <p><code>writes</code> is the patch's half of the contract the rest of the package already states: a channel kit declares what a consumer has, an engine declares its <code>runs</code> set, and both are checked at <code>cue</code>. Without it the only way to learn what a patch touches is to call it, per subject, per frame. With it the mix refuses a patch contributing a channel the kit lacks, resolves each voice's channels once at <code>cue</code> instead of walking the whole kit per probe, and can answer what a voice affects without probing it. A <code>keys</code> patch derives it from its stops.</p>
@@ -543,7 +547,7 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
 </div>
 
 <h2 id="motion">Springs and glides</h2>
-<p>Motion that has momentum is not a curve over a known duration, so it is neither <code>keys</code> nor <code>Easing</code>. Two patches carry it, each solved in closed form per subject, so where a subject is at a given moment does not depend on how the frames that sample it were spaced. Each keeps one stretch per subject: released at a voice time from a position and a velocity, heading somewhere. A change mid-flight ends the stretch and starts the next from where the subject is <em>and how fast it is moving</em>, which is what keeps a retarget from kinking.</p>
+<p>Motion that has momentum is not a curve over a known duration, so it is neither <code>keys</code> nor <code>Easing</code>. Two patches carry it, both of form <code>motion</code>, each solved in closed form per subject, so where a subject is at a given moment does not depend on how the frames that sample it were spaced. Each keeps one stretch per subject: released at a voice time from a position and a velocity, heading somewhere. A change mid-flight ends the stretch and starts the next from where the subject is <em>and how fast it is moving</em>, which is what keeps a retarget from kinking.</p>
 <pre><code>const s = spring&lt;Node, Pose&gt;('x', { from: 0, to: 100, stiffness: 170, damping: 26 });
 mix.cue({ patch: s });
 s.to(node, 40);              <span class="cm">// heads elsewhere from wherever it is, keeping its velocity</span>
@@ -555,7 +559,8 @@ const g = glide&lt;Node, Pose&gt;('x', { from: 0, velocity: 1200, ms: 325 });  <
   <li><b>Time is the voice's</b>, so <code>rate</code> and <code>seek</code> apply. A change takes effect at the voice time it names, or at the subject's next read; naming one is what makes a retarget land the same at any frame rate.</li>
   <li><b>History is kept to the mix's horizon.</b> Each subject keeps every stretch a read may still reach, so a read earlier than a change finds the stretch that was playing then. A mix without <code>history</code> keeps only the stretch playing now.</li>
   <li><b>A value settles.</b> Within <code>settle</code> (1e-4) of where it heads, and that slow, it lands there exactly, so <code>atRest</code> sees it. <code>settle: 0</code> keeps the curve exact.</li>
-  <li><b>The state is the patch's own</b>, per subject, rather than the mix's, because the host retargets through the patch. Cue each one on one voice.</li>
+  <li><b>The state is the patch's own</b>, per subject, rather than the mix's, because the host retargets through the patch. Cue each one on one voice. A patch moves every subject on the same number of axes, and throws on a subject with another.</li>
+  <li><b>The constants are data.</b> <code>patch.motion</code>, a <code>MotionSpec</code>, is <code>{ kind: 'spring', stiffness, damping, mass, settle }</code> or <code>{ kind: 'glide', ms, settle }</code>, so an engine can run one without calling <code>at</code>. Where each subject starts and heads stays on the patch, since either may be a function of the subject.</li>
   <li><b>Handing motion between patches</b> is <code>read</code> on the old one and <code>from</code> plus <code>velocity</code> on the new: a fling that ends in a spring starts the spring at the glide's velocity.</li>
 </ul>
 
@@ -605,16 +610,16 @@ interface Projection&lt;I, O&gt; {
 <pre><code>interface Engine {
   readonly name: string;
   <span class="cm">/** Which patch forms this engine can run. A voice whose patch it cannot run is refused at `cue`, by name. */</span>
-  readonly runs: ReadonlySet&lt;'fn' | 'keys'&gt;;
+  readonly runs: ReadonlySet&lt;'fn' | 'keys' | 'motion'&gt;;
   <span class="cm">/** Builds the mix. Everything on `Mix` is the engine's to implement. */</span>
   create&lt;I, O&gt;(kit: Kit&lt;O&gt;, opts: MixOptions): Mix&lt;I, O&gt;;
 }
 
 export const mixer: Engine;   <span class="cm">// the one that ships</span></code></pre>
 
-<p><b>mixer</b> runs both forms on the CPU, samples per subject on demand, and is the extraction of what klieg does today. It folds each influence into the subject's accumulator as it probes, rather than collecting every layer and merging at the end as klieg's <code>EffectFrame</code> does: weights are scalars that no pose depends on, so they resolve for the subject first, and a locus folds to one influence before that influence is merged. That order is what would let a later revision hand patches one scratch object to write into instead of returning a fresh partial per patch per subject per frame, which <code>writes</code> makes safe to hand out without clearing. What later engines would look like, so the seam is judged against something real and none of them is being built:</p>
+<p><b>mixer</b> runs every form on the CPU, samples per subject on demand, and is the extraction of what klieg does today. It folds each influence into the subject's accumulator as it probes, rather than collecting every layer and merging at the end as klieg's <code>EffectFrame</code> does: weights are scalars that no pose depends on, so they resolve for the subject first, and a locus folds to one influence before that influence is merged. That order is what would let a later revision hand patches one scratch object to write into instead of returning a fresh partial per patch per subject per frame, which <code>writes</code> makes safe to hand out without clearing. What later engines would look like, so the seam is judged against something real and none of them is being built:</p>
 <ul>
-  <li><b>A baked engine</b> runs <code>keys</code> voices only and emits Web Animations or CSS keyframes, so a DOM consumer like wod gets compositor-thread playback. It refuses <code>fn</code> patches at <code>cue</code>.</li>
+  <li><b>A baked engine</b> runs <code>keys</code> voices only and emits Web Animations or CSS keyframes, so a DOM consumer like wod gets compositor-thread playback. It refuses <code>fn</code> and <code>motion</code> patches at <code>cue</code>.</li>
   <li><b>A recording engine</b> wraps another engine and captures every pose into keyframes, turning a procedural patch into data for the baked one.</li>
   <li><b>A GPU engine</b> writes per-subject deltas into a buffer instead of returning them, for a part count where a JS loop per frame is the cost. Same kit, same voices; <code>probe</code> becomes a read from the buffer.</li>
 </ul>
