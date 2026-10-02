@@ -216,9 +216,11 @@ one. `sparse` probes all 10k subjects once, then 5% each frame.
 
 - **Keys gain most:** 0.35–0.53× at 1k, 0.42× at 10k × 3. A stateless `fn` gains less (0.63–0.95×)
   because each call still allocates its delta.
-- **Springs got slower.** `spring-` against `spring` on the `lanes` build is what lanes buy, about
-  0.82×; but the branch slowed a spring on the general path by 1.58× at 10k (`spring-` across
-  builds), most likely through the `motion` form's rewrite, so a spring frame is 1.24× `project`'s with lanes on. Not yet profiled.
+- **Springs got slower here, and faster since.** `spring-` against `spring` on the `lanes` build is
+  what lanes buy, about 0.82×; but the branch slowed a spring on the general path by 1.58× at 10k.
+  `d02d317` stopped the spring solver allocating per sample, and a rerun put lanes ÷ `project` at
+  0.53–0.72 for springs, 0.38–0.57 for `keys` and 0.70–0.88 for a stateless `fn`. The table above
+  predates it.
 - **A sparsely probed mix paid for every subject it met:** 1.26 ms against 0.11 when 5% of 10k are
   probed, because a fill covered every subject a voice had met. Since then a lane whose subjects
   mostly went unprobed last frame rests and leaves them to the general path, which brought the
