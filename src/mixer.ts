@@ -96,6 +96,7 @@ const keeper = (kept: Map<object, unknown>): Setting['keep'] =>
     if (kept.has(owner)) return kept.get(owner) as K;
     const made = init();
     kept.set(owner, made);
+    reading.kept++;
     return made;
   };
 
@@ -1539,6 +1540,7 @@ class Mixer<I, O> implements Mix<I, O> {
       return held.delta;
     }
 
+    const keptBefore = reading.kept;
     const history = this.opts.history;
     if (history?.inputs && voice.patch.reads !== undefined && !this.projecting)
       this.recordHost(now);
@@ -1564,7 +1566,7 @@ class Mixer<I, O> implements Mix<I, O> {
     held.probed = now;
     held.seeks = voice.seeks;
     if (history !== undefined) this.remember(voice, held);
-    if (held.kept.size > 0 && !voice.keeping) this.stateful(voice);
+    if (reading.kept !== keptBefore && !voice.keeping) this.stateful(voice);
 
     if (voice.out?.rest && this.isRest(delta)) {
       held.weight = 0;

@@ -3,6 +3,7 @@ import { clampWeight, passesOf, place, placed } from './clock.js';
 import type { Subject, Voice } from './mixer.js';
 import { absent, Numbers } from './numbers.js';
 import { readKeys, type Scratch } from './patch.js';
+import { reading } from './reading.js';
 import type { Channel } from './types.js';
 
 /** What qualifying needs of one voice: whether its patch and spec can run on a lane, and its channels. */
@@ -556,6 +557,7 @@ export class Lanes<I, O> {
     const subject = this.subjectAt(slot);
     if (subject === absent) return;
     const held = lane.records[p] as Subject<unknown>;
+    const kept = reading.kept;
     host.ready(voice, subject, held, elapsed, lane.pass, w);
     host.horizon(voice, delay);
     const delta = voice.patch.at(lane.phase, subject, voice.setting as never) as Record<
@@ -563,7 +565,7 @@ export class Lanes<I, O> {
       unknown
     >;
     if (this.keeps) host.after(voice, held);
-    if (held.kept.size > 0 && !voice.keeping) host.kept(voice);
+    if (reading.kept !== kept && !voice.keeping) host.kept(voice);
     if (w > 0) this.foldDelta(lane, slot, delta, w);
   }
 

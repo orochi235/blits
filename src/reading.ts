@@ -10,4 +10,9 @@ export const reading = {
    * older. Infinity where the mix keeps none, so only what plays now is kept.
    */
   horizon: Number.POSITIVE_INFINITY,
+  /**
+   * How many entries `setting.keep` has made in any mix, so a patch call that made one shows
+   * without looking into the record it was made on.
+   */
+  kept: 0,
 };
