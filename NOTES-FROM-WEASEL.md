@@ -26,6 +26,10 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   tried on 2026-10-01 and dropped: skipping the fold changes results in the last bit (`mul` at
   weight 1, `-0` under `sum`, `max` against rest), and the variants that stay exact measured no
   faster. `spikes/gpu-engine` on branch `spike/gpu-engine` measures what a dense engine would do.
+- Rerun 2026-10-01 against `project`, with `subjects` (weasel's bench, loaded machine): a voice per
+  call at 10k reads 3.6–3.9 ms a frame for tweens and 6.6–6.9 for springs, against 1.8 and 4.1–4.5
+  for one voice and 0.3 and 0.5 for weasel's animator. Starting 1k voices fell from about 1 s to
+  3 ms. Unprofiled guess for the gap between the two blits shapes: `sync` walks every voice.
 
 ## What weasel has that blits doesn't
 
