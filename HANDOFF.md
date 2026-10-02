@@ -165,7 +165,10 @@ systems now run on it**, on a branch that is not merged.
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
    in the hot path and what weasel has that blits doesn't (booking events ahead, a mix-wide time
    scale, nesting, a mix that can list what is playing). Delete each item as it is dealt with, and
-   the file once it is empty. `NOTES-ON-SCRUBBING.md` holds the one undecided reading-back item,
+   the file once it is empty. Its speed items matter only if weasel adopts blits: klieg and
+   magicsmoke are expected to run about two dozen voices over tens of subjects, under 1,000 subject
+   × voice pairs, where a frame costs about 0.2 ms (2026-10-01 guess, not a measured
+   workload). `NOTES-ON-SCRUBBING.md` holds the one undecided reading-back item,
    `handle.seek` on a stateful voice.
 
 2. **Merge klieg's `blits-port`, and move magicsmoke to 0.2.x.** klieg already depends on the
