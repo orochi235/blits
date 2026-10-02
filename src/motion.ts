@@ -90,25 +90,6 @@ const memo = { dt: Number.NaN, ease: undefined as Curve | undefined, secs: 0, le
 /** `t` seconds after release, the terms every axis shares, into `timed`. */
 function prepare(law: Float64Array, t: number, ease: Curve | undefined): void {
   switch (law[0]) {
-    case EASED: {
-      const secs = law[2] as number;
-      const u = t / secs;
-      if (u >= 1) {
-        timed.e = 1;
-        timed.e2 = 0;
-        return;
-      }
-      const c = ease as Curve;
-      timed.e = c(u);
-      if (!slope) {
-        timed.e2 = 0;
-        return;
-      }
-      const lo = Math.max(0, u - SPAN);
-      const hi = Math.min(1, u + SPAN);
-      timed.e2 = (c(hi) - c(lo)) / (hi - lo) / secs;
-      return;
-    }
     case UNDER: {
       const zeta = law[2] as number;
       const w0 = law[3] as number;
@@ -128,6 +109,25 @@ function prepare(law: Float64Array, t: number, ease: Curve | undefined): void {
       timed.e2 = Math.exp((law[3] as number) * t);
       return;
     }
+    case EASED: {
+      const secs = law[2] as number;
+      const u = t / secs;
+      if (u >= 1) {
+        timed.e = 1;
+        timed.e2 = 0;
+        return;
+      }
+      const c = ease as Curve;
+      timed.e = c(u);
+      if (!slope) {
+        timed.e2 = 0;
+        return;
+      }
+      const lo = Math.max(0, u - SPAN);
+      const hi = Math.min(1, u + SPAN);
+      timed.e2 = (c(hi) - c(lo)) / (hi - lo) / secs;
+      return;
+    }
     default:
       timed.e = Math.exp(-t / (law[2] as number));
   }
@@ -139,11 +139,6 @@ function prepare(law: Float64Array, t: number, ease: Curve | undefined): void {
  */
 function solve(law: Float64Array, y0: number, v0: number, t: number): void {
   switch (law[0]) {
-    case EASED: {
-      solved.y = y0 * (1 - timed.e);
-      solved.dy = -y0 * timed.e2;
-      return;
-    }
     case UNDER: {
       const zeta = law[2] as number;
       const w0 = law[3] as number;
@@ -175,6 +170,11 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
       const e2 = timed.e2;
       solved.y = a * e1 + b * e2;
       solved.dy = a * r1 * e1 + b * r2 * e2;
+      return;
+    }
+    case EASED: {
+      solved.y = y0 * (1 - timed.e);
+      solved.dy = -y0 * timed.e2;
       return;
     }
     default: {
@@ -222,8 +222,8 @@ interface Shape<I> {
   law: readonly number[];
   /** Whether a subject's value is a number rather than an array. */
   scalar: (subject: I) => boolean;
-  /** A tween's easing, which its law cannot hold. */
-  ease?: Curve;
+  /** A tween's easing, which its law cannot hold; undefined, but present, on every other shape. */
+  ease: Curve | undefined;
 }
 
 /**
@@ -709,6 +709,7 @@ export function spring<I, O, V extends Value = number>(
       aim: (_x, _v, was, s) => was ?? target(s),
       law,
       scalar: (s) => typeof per(opts.to, s) === 'number',
+      ease: undefined,
     },
   );
   return Object.assign(patch, {
@@ -747,6 +748,7 @@ export function glide<I, O, V extends Value = number>(
       aim: (x, v) => x.map((xi, i) => xi + (v[i] as number) * tau),
       law: [COAST, settle, tau, 0, 0],
       scalar: (s) => typeof per(opts.from, s) === 'number',
+      ease: undefined,
     },
   );
   return patch as unknown as Moving<I, O, V>;
