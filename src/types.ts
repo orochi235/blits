@@ -405,6 +405,12 @@ export interface MixOptions {
    * `level` or a pointer is known rather than held.
    */
   history?: { ms: number; every?: number; inputs?: boolean };
+  /**
+   * Whether a channel may run as a lane: computed for every subject at once in flat arrays, when
+   * every voice writing it can run that way. On by default; the pose is the same either way, so
+   * turning it off is for ruling a lane out, or for comparing against.
+   */
+  lanes?: boolean;
 }
 
 /**
