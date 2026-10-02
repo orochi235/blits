@@ -11,24 +11,21 @@ and delete this file once it is empty.
 
 ## Speed
 
-Rewritten on 2026-09-29: `keys` stops are built once per channel with a binary search per read,
-easings are resolved at build, one record per voice and subject replaces three lookups, the
-`Setting` is reused per voice, channels are resolved to slots once per kit, and a fold with no locus
-in play allocates nothing of its own. `npm run bench` (`bench/frame.mjs`) took fn 10k × 3 from
-18.7 to about 10.5 ms per frame and keys 10k × 3 from 33.0 to 9.2. What is left, all measured by
-that benchmark and a CPU profile:
+What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 
-- `vec` channels now fold in place (`Channel.fold`); `keys` still interpolates a new array per read
-  of a keyed array, which is most of the 82 collections left in keys 10k × 3. Doing it in place
-  must never write into a stop's own array: a prototype that did corrupted the keyframes.
-- One WeakMap lookup per voice per subject (`Store.get`, 7.5% of a profile of fn 10k × 3). The
-  patch's own function is 24% of the same profile.
+- `keys` interpolates a new array per read of a keyed array: about 88 of the collections in
+  keys 10k × 3. Branch `keys-scratch` (`914f69e`) reuses one per voice per subject and halves
+  them, but measured 6% slower per frame on an idle fleet node, so it is unmerged pending a call.
 - `atRest` runs a second fold, though on reused deltas.
 - `probe` with no `out` stores a freshly allocated pose per subject per frame. weasel measured this
   pattern: a new pose object per node per frame took major GC from 57 ms to 549 ms over 10 s
   (`docs/superpowers/specs/2026-08-24-frame-loop-decoupling-design.md` in weasel).
-- `mixHex` unpacks both colors on every call; a `keys` segment's endpoints are fixed, so that could
-  happen once per segment.
+- A frame of 10k subjects on one voice reads 2.0 ms for a `fn` tween and 4.4 ms for a `spring`,
+  against 0.3 and 1.0 ms for weasel's own animator doing the same arithmetic (weasel's
+  `tests/perf/bench/animator-on-blits.bench.ts`). A fast path for a subject one voice reaches was
+  tried on 2026-10-01 and dropped: skipping the fold changes results in the last bit (`mul` at
+  weight 1, `-0` under `sum`, `max` against rest), and the variants that stay exact measured no
+  faster. `spikes/gpu-engine` on branch `spike/gpu-engine` measures what a dense engine would do.
 
 ## What weasel has that blits doesn't
 

@@ -190,6 +190,10 @@ systems now run on it**, on a branch that is not merged.
 
 ## Loose ends
 
+- **A pose can hold a keyframe's own array.** When a channel has no rest and its `merge` returns
+  its second argument, as a `last()` over arrays does, `apply` puts the delta's array into the
+  pose uncopied. With two voices on a keyed array channel, a host that edits its pose edits the
+  stop. Found 2026-10-01 and not fixed.
 - **A stale served-page tab will overwrite `vocabulary.picks.json` with whatever set it
   was holding.** It has happened twice — `65d2d71` restored one, and the same loss was in the
   working tree at the start of 2026-09-27's session. Before trusting the picks file, `git diff` it;

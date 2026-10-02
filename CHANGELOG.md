@@ -21,8 +21,14 @@ version and everything else the patch. Each release lists its changes as **Break
   anchors to wait on, and `mix.marks(from, to)` lists every mark the plan knows.
 - `spring` and `glide` keep every stretch within the mix's history, so a read before a retarget
   finds where the subject was.
+- A cue can name its subjects, `subjects: [a, b]`, in place of a `target`. The mix files the voice
+  under each one, so a voice per subject costs the same as one voice: the first frame of 1,000
+  subjects on a voice each fell from about 500 ms to 1 ms.
 
 ### Fixed
+
+- A probe looks its subject up once rather than once per voice, which makes frames with several
+  voices 5–12% faster.
 
 - A finite loop's fade out starts when its last pass ended, not at the first frame after, so it
   plays the same at any frame rate.
