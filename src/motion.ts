@@ -1,7 +1,8 @@
+import { type Curve, curve } from './easing.js';
 import { absent, Numbers } from './numbers.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
-import type { MotionSpec, Patch, Setting } from './types.js';
+import type { Easing, MotionSpec, Patch, Setting } from './types.js';
 
 /**
  * A number, or one number per axis.
@@ -49,6 +50,7 @@ const UNDER = 0;
 const CRITICAL = 1;
 const OVER = 2;
 const COAST = 3;
+const EASED = 4;
 
 /**
  * A patch's law, `[form, settle, k1, k2, k3]`: which closed form its stretches follow, its `settle`,
@@ -74,6 +76,16 @@ const OLDER = 4;
  * a sample works them out once rather than once per axis.
  */
 const timed = { e: 0, e2: 0, cos: 0, sin: 0 };
+
+/** How far a tween's slope is read either side of `u`, for an easing that is only a function. */
+const SPAN = 1e-4;
+/**
+ * Whether an evaluation wants a tween's velocity, which costs two more reads of its easing. Only
+ * `read` reports it; a mix and a retarget never use it.
+ */
+let slope = false;
+/** The last tween sample's time, curve and length, and the share of the way it had left to go. */
+const memo = { dt: Number.NaN, ease: undefined as Curve | undefined, secs: 0, left: 0 };
 
 /** `t` seconds after release, the terms every axis shares, into `timed`. */
 function prepare(law: Float64Array, t: number): void {
@@ -186,6 +198,8 @@ interface Shape<I> {
   law: readonly number[];
   /** Whether a subject's value is a number rather than an array. */
   scalar: (subject: I) => boolean;
+  /** A tween's easing, which its law cannot hold; undefined, but present, on every other shape. */
+  ease: Curve | undefined;
 }
 
 /**
@@ -257,6 +271,11 @@ export class Motions<I> {
     this.numbers.release(s);
   }
 
+  /** Whether subject `s`'s value is a number rather than an array. */
+  scalar(s: number): boolean {
+    return ((this.runs[this.base(s) + 1] as number) & SCALAR) !== 0;
+  }
+
   /** The value `at` hands the mix: the first axis for a number, a fresh array otherwise. */
   value(s: number, xs: Float64Array): number | number[] {
     if (((this.runs[this.base(s) + 1] as number) & SCALAR) !== 0) return xs[0] as number;
@@ -267,9 +286,9 @@ export class Motions<I> {
   }
 
   /**
-   * Position and velocity at voice time `t` into `xo` and `vo`. A live read stamps every untimed
-   * change with `t` and commits every change due by then, in time order; a projection's read applies
-   * the timed ones to a copy and commits nothing.
+   * Position and velocity at voice time `t` into `xo` and `vo`, a tween's velocity left at 0. A live
+   * read stamps every untimed change with `t` and commits every change due by then, in time order;
+   * a projection's read applies the timed ones to a copy and commits nothing.
    */
   sample(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
     if (reading.live) {
@@ -319,7 +338,12 @@ export class Motions<I> {
     if (Number.isNaN(when)) return undefined;
     const x = new Float64Array(this.n);
     const v = new Float64Array(this.n);
-    this.peek(s, when, x, v);
+    slope = true;
+    try {
+      this.peek(s, when, x, v);
+    } finally {
+      slope = false;
+    }
     return { x, v, s };
   }
 
@@ -533,6 +557,10 @@ export class Motions<I> {
     const n = this.n;
     const dt = Math.max(0, t - at) / 1000;
     const law = this.runs;
+    if (law[0] === EASED) {
+      this.eased(dt, law[2] as number, x0, x, to, g, xo, vo);
+      return;
+    }
     const settle = law[1] as number;
     let still = settle > 0;
     prepare(law, dt);
@@ -549,6 +577,41 @@ export class Motions<I> {
         vo[i] = 0;
       }
   }
+
+  /** A tween's stretch, `dt` seconds after release, kept out of `evaluate` so a spring's stays small. */
+  private eased(
+    dt: number,
+    secs: number,
+    x0: ArrayLike<number>,
+    x: number,
+    to: ArrayLike<number>,
+    g: number,
+    xo: Float64Array,
+    vo: Float64Array,
+  ): void {
+    const ease = this.shape.ease as Curve;
+    const u = dt / secs;
+    // Subjects released together share `dt`, so a frame reads a bezier once, not once each.
+    if (dt !== memo.dt || ease !== memo.ease || secs !== memo.secs) {
+      memo.dt = dt;
+      memo.ease = ease;
+      memo.secs = secs;
+      memo.left = u >= 1 ? 0 : 1 - ease(u);
+    }
+    const left = memo.left;
+    let rate = 0;
+    if (slope && u < 1) {
+      const lo = Math.max(0, u - SPAN);
+      const hi = Math.min(1, u + SPAN);
+      rate = (ease(hi) - ease(lo)) / (hi - lo) / secs;
+    }
+    for (let i = 0; i < this.n; i++) {
+      const goal = to[g + i] as number;
+      const gap = (x0[x + i] as number) - goal;
+      xo[i] = left === 0 ? goal : goal + gap * left;
+      vo[i] = -gap * rate;
+    }
+  }
 }
 
 const states = new WeakMap<object, Motions<unknown>>();
@@ -560,6 +623,8 @@ export function motionOf<I>(p: object): Motions<I> | undefined {
 
 function moving<I, O, V extends Value>(writes: keyof O, motion: MotionSpec, shape: Shape<I>) {
   const state = new Motions<I>(shape);
+  const push = (subject: I, velocity: V, at?: number): void =>
+    state.change(subject, { at, v: axes(velocity) });
   const patch = {
     form: 'motion' as const,
     period: 0,
@@ -575,12 +640,9 @@ function moving<I, O, V extends Value>(writes: keyof O, motion: MotionSpec, shap
       if (r === undefined) return undefined;
       return { value: state.value(r.s, r.x) as V, velocity: state.value(r.s, r.v) as V };
     },
-    push(subject: I, velocity: V, at?: number): void {
-      state.change(subject, { at, v: axes(velocity) });
-    },
   };
   states.set(patch, state as Motions<unknown>);
-  return { patch, state };
+  return { patch, state, push };
 }
 
 interface Common<I, V extends Value> {
@@ -635,7 +697,7 @@ export function spring<I, O, V extends Value = number>(
     law = [OVER, settle, -w0 * (zeta - s), -w0 * (zeta + s), 0];
   }
   const target = (subject: I) => axes(per(opts.to, subject));
-  const { patch, state } = moving<I, O, V>(
+  const { patch, state, push } = moving<I, O, V>(
     writes,
     { kind: 'spring', stiffness: k, damping: c, mass: m, settle },
     {
@@ -645,9 +707,11 @@ export function spring<I, O, V extends Value = number>(
       aim: (_x, _v, was, s) => was ?? target(s),
       law,
       scalar: (s) => typeof per(opts.to, s) === 'number',
+      ease: undefined,
     },
   );
   return Object.assign(patch, {
+    push,
     to: (subject: I, goal: V, at?: number) => state.change(subject, { at, to: axes(goal) }),
   }) as unknown as ReturnType<typeof spring<I, O, V>>;
 }
@@ -671,7 +735,7 @@ export function glide<I, O, V extends Value = number>(
   const ms = opts.ms ?? 325;
   const tau = ms / 1000;
   const settle = opts.settle ?? 1e-4;
-  const { patch } = moving<I, O, V>(
+  const { patch, push } = moving<I, O, V>(
     writes,
     { kind: 'glide', ms, settle },
     {
@@ -683,7 +747,57 @@ export function glide<I, O, V extends Value = number>(
       aim: (x, v) => x.map((xi, i) => xi + (v[i] as number) * tau),
       law: [COAST, settle, tau, 0, 0],
       scalar: (s) => typeof per(opts.from, s) === 'number',
+      ease: undefined,
     },
   );
-  return patch as unknown as Moving<I, O, V>;
+  return Object.assign(patch, { push }) as unknown as Moving<I, O, V>;
+}
+
+/**
+ * From one value to another over `ms` along an easing, solved in closed form, so frame rate does not
+ * change where a subject is. `to(subject, target)` retargets one subject mid-flight: the new stretch
+ * starts from where it is and takes the full `ms` again, so its velocity jumps where a spring's
+ * would not. Time is the voice's, so `rate` and `seek` apply, and a voice's `loop` does not repeat
+ * it. Cue each tween on one voice. Every subject moves on the same number of axes.
+ *
+ * @category patch
+ */
+export function tween<I, O, V extends Value = number>(
+  writes: keyof O,
+  opts: {
+    /** Where each subject starts. */
+    from: PerSubject<I, V>;
+    /** Where each subject ends. */
+    to: PerSubject<I, V>;
+    /** How long a stretch takes, ms. */
+    ms: number;
+    /** The curve from `from` to `to`. Default `'ease'`, as CSS's. */
+    ease?: Easing;
+  },
+): Omit<Moving<I, O, V>, 'push'> & {
+  /**
+   * Heads `subject` for `target` from voice time `at`, over a full `ms` from where it is: by default
+   * the mix's latest frame, or for a subject no frame of its voice has met yet, or still inside its
+   * stagger, its first read, after any change with a time due by then.
+   */
+  to(subject: I, target: V, at?: number): void;
+} {
+  if (!(opts.ms > 0)) throw new Error('blits: a tween takes a positive ms');
+  const ease = opts.ease ?? 'ease';
+  const target = (subject: I) => axes(per(opts.to, subject));
+  const { patch, state } = moving<I, O, V>(
+    writes,
+    { kind: 'tween', ms: opts.ms, ease },
+    {
+      from: (s) => axes(per(opts.from, s)),
+      velocity: (s) => target(s).map(() => 0),
+      aim: (_x, _v, was, s) => was ?? target(s),
+      law: [EASED, 0, opts.ms / 1000, 0, 0],
+      scalar: (s) => typeof per(opts.to, s) === 'number',
+      ease: curve(ease),
+    },
+  );
+  return Object.assign(patch, {
+    to: (subject: I, goal: V, at?: number) => state.change(subject, { at, to: axes(goal) }),
+  }) as unknown as ReturnType<typeof tween<I, O, V>>;
 }

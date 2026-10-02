@@ -151,6 +151,12 @@ export type MotionSpec =
       /** The friction's time constant, ms. */
       readonly ms: number;
       readonly settle: number;
+    }
+  | {
+      readonly kind: 'tween';
+      /** How long a stretch takes. */
+      readonly ms: number;
+      readonly ease: Easing;
     };
 
 /**
@@ -161,7 +167,7 @@ export type MotionSpec =
 export interface Patch<I, O, S = void> {
   /**
    * Which authoring form built it: `'fn'` from `patch`, `'keys'` from `keys`, `'motion'` from
-   * `spring` or `glide`. An engine declares which forms it runs.
+   * `spring`, `glide` or `tween`. An engine declares which forms it runs.
    */
   readonly form: 'fn' | 'keys' | 'motion';
   /** Milliseconds one pass lasts. 0 is aperiodic: phase and pass stay 0. */

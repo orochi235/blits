@@ -34,6 +34,16 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- `tween(writes, { from, to, ms, ease? })`, a motion patch that eases each subject from one value
+  to another over `ms`, with `from` and `to` given per subject and read once when the mix first
+  meets it. `to(subject, target)` retargets one subject from where it is over a full `ms` again,
+  and `read` reports value and velocity as a spring's does. It runs on lanes as springs do, with
+  each subject's endpoints as data, so a tween over every subject no longer needs a `fn` that looks
+  its endpoints up on each call: in weasel's shape (10,000 string ids, endpoints in a map) a frame
+  costs 0.83 of that `fn`'s and pauses for collection a quarter as long. A motion lane no longer
+  allocates a delta per subject either, which takes a spring frame over 10,000 subjects to
+  0.82–0.90 of the last build's. `MotionSpec` gains
+  `{ kind: 'tween', ms, ease }`.
 - Lanes: a channel every voice writing it can run that way is computed for every subject at once,
   in flat arrays, at the frame's first probe, rather than subject by subject, and gives the same
   pose. `keys`, a stateless `fn` and `motion` voices with a number weight qualify. Three `keys`

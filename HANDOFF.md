@@ -20,8 +20,8 @@ systems now run on it**, on a branch that is not merged.
 
 - `main` at `git@github.com:orochi235/blits.git` — **private**, pushed and in step with `origin/main`
   as of `121ee19` (release 0.2.1 plus doc fixes).
-- **The score and reading back are built on branch `project`**, pushed, not merged, no PR opened
-  (2026-10-01, overnight). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
+- **The score and reading back are on `main`**, merged from `project` with lanes, `pull` and
+  blits-quarks (2026-10-02), not released. `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
   names, scores and queries, `mix.marks`, motion history in `spring`/`glide`, and the site's Score
   page. The schema page's Score section describes it; `CHANGELOG.md` has it under Unreleased. One
@@ -158,10 +158,10 @@ systems now run on it**, on a branch that is not merged.
 
 ## Next, in order
 
-0. **Review and merge `project`, then release.** Whether it is 0.2.2 or 0.3.0 is Mike's call: the
-   additions are non-breaking, but the finite-loop fade timing moves by up to a frame. klieg takes
-   `^0.2.1`, so a 0.2.2 reaches it on its next install; run klieg's Playwright specs against the
-   branch before a patch release.
+0. **Release what is on `main`.** `CHANGELOG.md`'s Unreleased section has Breaking entries (the
+   `'motion'` form, untimed retarget timing, `mixHex` in OKLCH), which under this repo's semver
+   makes it 0.3.0; the number is Mike's call. klieg takes `^0.2.1`, so it does not pick 0.3.0 up
+   on its own.
 
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
    in the hot path and what weasel has that blits doesn't (booking events ahead, a mix-wide time
@@ -198,14 +198,24 @@ systems now run on it**, on a branch that is not merged.
      one read through `probe(s, out)`. The rest of a probe's per-subject cost is the record lookup
      and lane bookkeeping; keeping subject numbers between `pull` calls and doing that bookkeeping
      per call is the next step if a host still needs it. Not designed.
-   - **A `tween` stock form** with each subject's endpoints as data, so a tween runs on a lane
-     without allocating per call the way a `fn` does.
+   - **`tween`, built 2026-10-02** as a fourth motion kind (Mike chose its own clock, like a
+     spring's, over the voice's period). In weasel's shape on studio it takes a frame to 0.83
+     of a `fn` tween's and its collection pauses to a quarter; against a `fn` with no per-call
+     lookup it is about even, both sitting on the probe floor. The schema page's motion section
+     and `spikes/gpu-engine/README.md` under "Tween" have it. **Unresolved:** a spring
+     with lanes off read 1.14× `main` on a loaded studio and even locally; the README says what
+     was ruled out. Measure it again on a quiet node before the release.
    - **Voices sharing a patch, grouped into one lane indexed by voice**, so a voice per subject
-     costs what one voice does. Only if a voice per call still needs it once `tween` exists.
+     costs what one voice does. Only if a voice per call still needs it once `tween` exists. On
+     studio a tween per subject (`tweens`, 10k voices) cost 2.6× one tween voice over the same
+     subjects, so it would; whether weasel needs a voice per call is
+     weasel's to say. Not designed.
 
 1d. **`@msb235/blits-quarks` is built, in `packages/quarks`, unreleased.** Its README says how it
-   works. Before its first release Mike registers trusted publishing for the name (the release
-   workflow's header says how); then the release is a `quarks-v0.1.0` tag, after renaming its
+   works. Before its first release Mike registers trusted publishing for the name, logged in to
+   npm: `npm trust github @msb235/blits-quarks --file release.yml --repo orochi235/blits
+   --allow-publish`, checked with `npm trust list @msb235/blits-quarks`. Not done as of
+   2026-10-02 (this machine's shell was logged out); then the release is a `quarks-v0.1.0` tag, after renaming its
    changelog's Unreleased section. Moving magicsmoke's fizz and tuning onto it is a follow-up in
    magicsmoke's repo.
 
