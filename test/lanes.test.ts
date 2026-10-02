@@ -27,6 +27,15 @@ interface Part {
 type Played = { handles?: Handle<Part>[]; at?: (t: number) => void } | undefined;
 type Play = (m: Mix<Part, Pose>, parts: Part[]) => Played;
 
+function snapshot(pose: Pose): Pose {
+  const copy = {} as Record<keyof Pose, number | number[]>;
+  for (const key of every) {
+    const v = pose[key];
+    copy[key] = Array.isArray(v) ? [...v] : v;
+  }
+  return copy as unknown as Pose;
+}
+
 function expectSame(a: Pose, b: Pose, where: string): void {
   for (const key of every) {
     const x = a[key];
@@ -70,8 +79,8 @@ function agree(
       const rest: boolean[] = [];
       for (const part of run.parts) {
         if (opts.probe && !opts.probe(t, part)) continue;
-        poses.push(run.m.probe(part));
-        poses.push({ ...run.m.probe(part, run.out) });
+        poses.push(snapshot(run.m.probe(part)));
+        poses.push(snapshot(run.m.probe(part, run.out)));
         for (const h of run.handles) weights.push(h.weightOf(part));
         rest.push(run.m.atRest(part));
       }
