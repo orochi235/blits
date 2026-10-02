@@ -1,5 +1,6 @@
+import { type LerpInto, lerpInto } from './channels.js';
 import { type Curve, curve } from './easing.js';
-import type { Easing, Keyframe, Kit, Patch, Setting } from './types.js';
+import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js';
 
 /**
  * What `patch` takes besides its period and its function.
@@ -149,7 +150,11 @@ function read(
   phase: number,
   base: unknown,
   lerp: Lerp | undefined,
+  /** Units per ms, for a retarget's first segment. */
   slope: unknown,
+  period: number,
+  into: LerpInto | undefined,
+  reuse: unknown[] | undefined,
 ): unknown {
   const pts = base === undefined ? track.all : track.tail;
   const o = base === undefined ? 0 : 1;
@@ -173,31 +178,59 @@ function read(
   const aValue = lo - 1 < o ? base : (pts[lo - 1 - o] as Point).value;
   const u = (phase - aAt) / (b.at - aAt);
   const eased = b.ease ? b.ease(u) : u;
-  const by = track.lerp ?? lerp;
-  const value = by
-    ? by(aValue as never, b.value as never, eased)
-    : interpolate(aValue, b.value, eased);
+  let value: unknown;
+  if (into !== undefined) {
+    value = into(reuse, aValue, b.value, eased);
+    lastRead.wrote = value;
+  } else {
+    const by = track.lerp ?? lerp;
+    value = by ? by(aValue as never, b.value as never, eased) : interpolate(aValue, b.value, eased);
+  }
   // Leaving a retarget's base, bend the first segment so it starts at the slope the subject had:
   // add c·u(1−u)², which is 0 at both ends, flat at the end, and fixes the slope at the start.
   if (slope === undefined || lo - 1 >= o) return value;
   const len = b.at - aAt;
   const e0 = b.ease ? b.ease(1e-6) / 1e-6 : 1;
   const bend = (s: number, a: number, z: number) =>
-    (s * len - (z - a) * e0) * u * (1 - u) * (1 - u);
+    (s * period * len - (z - a) * e0) * u * (1 - u) * (1 - u);
   if (typeof value === 'number' && typeof slope === 'number')
     return value + bend(slope, aValue as number, b.value as number);
-  if (Array.isArray(value) && Array.isArray(slope))
-    return value.map((v, i) =>
-      typeof v === 'number' && typeof slope[i] === 'number'
-        ? v +
-          bend(
-            slope[i] as number,
-            (aValue as number[])[i] as number,
-            (b.value as number[])[i] as number,
-          )
-        : v,
-    );
+  if (Array.isArray(value) && Array.isArray(slope)) {
+    const out = value === lastRead.wrote ? value : new Array<unknown>(value.length);
+    for (let i = 0; i < value.length; i++) {
+      const v = value[i];
+      const s = slope[i];
+      out[i] =
+        typeof v === 'number' && typeof s === 'number'
+          ? v + bend(s, (aValue as number[])[i] as number, (b.value as number[])[i] as number)
+          : v;
+    }
+    return out;
+  }
   return value;
+}
+
+/** The array the last `read` interpolated into, which only its caller's record holds. */
+const lastRead: { wrote: unknown } = { wrote: undefined };
+
+/**
+ * Arrays a reader lets keyed reads interpolate into, by track. Each only ever holds what a read made,
+ * never a stop's or a base's, and a delta read through it is good until the next read through it.
+ */
+export type Scratch = (unknown[] | undefined)[];
+
+/**
+ * Per track, the in-place form of the `lerp` a read takes, where it is the mix channel's own and the
+ * channel has one. `channels` holds the mix's channel per track, in `writes` order.
+ */
+export function intosOf(
+  built: Built,
+  channels: readonly Channel<unknown>[],
+): (LerpInto | undefined)[] {
+  return built.tracks.map((track, i) => {
+    const channel = channels[i] as Channel<unknown>;
+    return track.lerp === undefined || track.lerp === channel.lerp ? lerpInto(channel) : undefined;
+  });
 }
 
 /**
@@ -213,6 +246,8 @@ export function readKeys(
   lerps?: readonly (Lerp | undefined)[],
   /** Per channel, how fast a retargeted subject was moving, units per ms. */
   slopes?: Record<string, unknown>,
+  intos?: readonly (LerpInto | undefined)[],
+  scratch?: Scratch,
 ): Record<string, unknown> {
   const period = built.period;
   for (let i = 0; i < built.tracks.length; i++) {
@@ -221,13 +256,20 @@ export function readKeys(
     const shifted =
       delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
     const perMs = slopes?.[track.channel];
-    const slope =
-      perMs === undefined || period === 0
-        ? undefined
-        : typeof perMs === 'number'
-          ? perMs * period
-          : (perMs as number[]).map((s) => s * period);
-    const value = read(track, shifted, base?.[track.channel], lerps?.[i], slope);
+    const into = scratch === undefined ? undefined : intos?.[i];
+    lastRead.wrote = undefined;
+    const value = read(
+      track,
+      shifted,
+      base?.[track.channel],
+      lerps?.[i],
+      period === 0 ? undefined : perMs,
+      period,
+      into,
+      into === undefined ? undefined : (scratch as Scratch)[i],
+    );
+    if (into !== undefined && value === lastRead.wrote)
+      (scratch as Scratch)[i] = value as unknown[];
     if (value !== undefined) out[track.channel] = value;
     else if (out[track.channel] !== undefined) out[track.channel] = undefined;
   }

@@ -3,6 +3,22 @@ import type { Channel, Kit } from './types.js';
 const mix = (a: number, b: number, u: number) => a + (b - a) * u;
 
 /**
+ * Writes `lerp(a, b, u)` into `out` and returns it, or returns a new array where `out` is absent or
+ * the wrong length. The caller must own `out`: nothing else may hold it.
+ */
+export type LerpInto = (out: unknown[] | undefined, a: unknown, b: unknown, u: number) => unknown[];
+
+const inPlace = new WeakMap<object, LerpInto>();
+
+/**
+ * The in-place form of a stock array channel's `lerp`. Keyed by the channel rather than its `lerp`,
+ * since only the stock fold and merge are known to copy the array rather than keep it.
+ */
+export function lerpInto(channel: Channel<unknown>): LerpInto | undefined {
+  return inPlace.get(channel);
+}
+
+/**
  * What a stock numeric channel takes.
  *
  * @category channel
@@ -89,7 +105,12 @@ export function vec(n: number, of: Channel<number>): Channel<number[]> {
   const rest = of.rest === undefined ? undefined : new Array<number>(n).fill(of.rest);
   const scale = of.scale;
   const fill = of.rest ?? 0;
-  return {
+  const lerpTo = (out: number[] | undefined, a: number[], b: number[], u: number): number[] => {
+    const o = out?.length === n ? out : new Array<number>(n);
+    for (let i = 0; i < n; i++) o[i] = of.lerp(a[i] ?? fill, b[i] ?? fill, u);
+    return o;
+  };
+  const channel: Channel<number[]> = {
     kind: of.kind === undefined ? undefined : `vec(${n}, ${of.kind})`,
     bounds: of.bounds,
     rest,
@@ -113,12 +134,10 @@ export function vec(n: number, of: Channel<number>): Channel<number[]> {
             for (let i = 0; i < n; i++) into[i] = of.merge(into[i] ?? fill, scale(v[i] ?? fill, w));
             return into;
           },
-    lerp: (a, b, u) => {
-      const out = new Array<number>(n);
-      for (let i = 0; i < n; i++) out[i] = of.lerp(a[i] ?? fill, b[i] ?? fill, u);
-      return out;
-    },
+    lerp: (a, b, u) => lerpTo(undefined, a, b, u),
   };
+  inPlace.set(channel, lerpTo as LerpInto);
+  return channel;
 }
 
 const clamp255 = (v: number) => (v < 0 ? 0 : v > 255 ? 255 : Math.round(v));
