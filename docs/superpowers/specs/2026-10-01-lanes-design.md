@@ -13,9 +13,9 @@ this (weasel's `docs/proposals/2026-09-30-animator-on-blits.md`).
 A **lane** is a channel the mix computes for every subject at once, in `Float64Array`s indexed by
 a number the mix gives each subject, instead of subject by subject through the per-subject records
 in `src/mixer.ts`. A channel runs as a lane only while every voice writing it qualifies; any other
-channel takes the general path, which is today's code unchanged. There is one engine, `mixer`, and
-no new public API: a consumer never chooses a lane, and `lane` is an informal term in the schema's
-vocabulary.
+channel takes the general path, which is today's code unchanged. There is one engine, `mixer`. A
+consumer never chooses a lane, and `lane` is an informal term in the schema's vocabulary. The
+public API changes in two places, below: a `'motion'` patch form and `MixOptions.lanes`.
 
 ## Scope
 
@@ -68,9 +68,11 @@ Per patch form:
   resolves.
 - **Stateless `fn`**: called per subject with a filled `Setting`, its return folded. The `Setting`
   is the voice's reused one, as today.
-- **`spring` and `glide`**: keep `form: 'fn'` and a working `at`, so any engine that runs `fn`
-  still runs them, and carry their parameters as data under an internal marker `mixer`
-  recognizes; the public types do not change. Each subject's current segment (release time, start position, start velocity, target, per
+- **`spring` and `glide`**: become a third public patch form, `'motion'`, carrying their
+  parameters as data the way a `keys` patch carries its stops: `patch.motion` holds the kind
+  (`'spring'` or `'glide'`) and its parameters. `Engine.runs` lists `'motion'` like the other
+  forms, so an engine that can't run it refuses at `cue`. A spring is no longer `form: 'fn'`;
+  nothing in blits' consumers checks that. Each subject's current segment (release time, start position, start velocity, target, per
   axis) lives in the lane's arrays; older segments, kept only while the mix keeps history, live in
   per-subject lists. `to`, `push` and `read` work on whichever holds the state, and the general
   path reads the same state, so there is one copy.
@@ -95,8 +97,8 @@ variants matched `mixer` exactly this way.
 
 ## Tests
 
-- **Lanes off against lanes on.** A test-only switch in `src/mixer.ts`, not exported from
-  `src/index.ts`, turns lanes off. Every qualifying scenario runs both ways and must match with
+- **Lanes off against lanes on.** `MixOptions.lanes: false` turns lanes off, for these tests and
+  for a host that wants to rule a lane out. Every qualifying scenario runs both ways and must match with
   `Object.is` on every channel of every probe: each patch form, `stagger`, `target`, `subjects`,
   loops finite and infinite, `rate`/`ramp`/`seek`, fades in and out, `bounds`, a spring retargeted
   and pushed mid-flight.
