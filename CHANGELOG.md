@@ -22,13 +22,18 @@ version and everything else the patch. Each release lists its changes as **Break
   does once the voice is gone. Changes apply in time order, not the order they were made.
 - `drop(subject)` also forgets a motion patch's state for the subject, so it starts afresh.
 - With lanes on, a stateless patch calling `setting.send` from `at` sends every frame for every
-  subject the mix has met, probed that frame or not.
+  subject the mix has met, probed that frame or not; and a patch that first calls `setting.keep`
+  partway through playing can advance that state once more for one subject the host did not probe
+  that frame.
 
 ### Added
 
 - Lanes: a channel every voice writing it can run that way is computed for every subject at once,
-  in flat arrays, rather than subject by subject, and gives the same pose. `MixOptions.lanes: false`
-  turns them off.
+  in flat arrays, at the frame's first probe, rather than subject by subject, and gives the same
+  pose. `keys`, a stateless `fn` and `motion` voices with a number weight qualify. Three `keys`
+  voices over 10,000 subjects fell from 6.1 to 2.6 ms a frame. A fill covers every subject a voice
+  has met, so a host that probes a few of many pays for all of them; `MixOptions.lanes: false`
+  turns lanes off.
 - `mix.project(timestamp)` reads the mix at another time without moving it: `probe` gives the pose
   then, and `assess` says per channel whether it is `exact`, `stepped` or `held`. Ahead it plays
   what is cued forward; behind it needs `MixOptions.history: { ms, every? }`, which keeps every

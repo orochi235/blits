@@ -11,7 +11,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 
 An engine is three things. A `name`, for error messages. `runs`, the set of patch forms it can run: `'fn'` for patches written as a function, `'keys'` for patches written as keyframes, `'motion'` for a `spring` or `glide`. And `create(kit, opts)`, which builds a mix. Everything on a mix is the engine's to implement.
 
-`mixer` runs every form on the CPU, working out each subject's pose when it is probed. You pass a different engine through `MixOptions`:
+`mixer` runs every form on the CPU, working out each subject's pose when it is probed. Where every voice writing a channel allows it, it works that channel out for every subject at once at the frame's first probe instead, with the same result; `MixOptions.lanes: false` turns that off. You pass a different engine through `MixOptions`:
 
 ```ts
 const m = mix<Part, PartPose>(PART, { engine: myEngine });

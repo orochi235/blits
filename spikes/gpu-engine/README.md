@@ -154,13 +154,13 @@ channels with non-numeric values. Nothing classed as impossible.
 **Laziness is observable.** `target`, `stagger` and `state()` run at a subject's first probe; the
 fade-in origin, a finite loop's end, `fade({ at: 'rest' })`'s count, `slew`/`gate` sampling,
 events and `weightOf` all depend on which subjects were probed. Filling every subject each frame
-changes all of these, so an eager lane is safe only for stateless voices.
+changes all of these, so an eager lane is safe only for stateless voices. Lanes as built leave
+every first meeting of a voice and a subject to a probe on the general path, and fill only subjects
+already met.
 
-**Lanes inside `mixer`** (inferred from the code): a lane filled once per frame, with `probe` a
-lookup and a copy, would land within about 2–3× of pure dense at one voice and closer at eight.
-Qualification is per channel but evaluation is per voice, so one `fn` voice on a shared channel
-brings the per-subject overhead back for every voice writing it. Bit-for-bit agreement needs
-`Float64Array`, `%` for phase, chain order for folding, and the same `Curve` closures.
+**Lanes inside `mixer`** were predicted at 2–3× of pure dense; built, three `keys` voices over 10k
+read 2.57 ms against `dense`'s 1.34 ms above (different machines, so roughly). What they measured
+is in "Lanes, as built" below.
 
 **The consumers' effects**, by table row: 15 already fit a data form, 30 fit a stock form blits
 could ship, 20 fit a small expression graph, 6 need a function. The six: magicsmoke's fault
@@ -176,6 +176,56 @@ stepped hash noise, distance falloff, stagger by index; plus `smoothstep` and sp
 piece reaches blits through one generic `fn` (`effects/frame.ts:92`, `motion/compositor.ts:127`,
 `render/lighting.ts:73`) that reads klieg's frame context from a closure. A data engine sees
 nothing in klieg until the pieces emit data forms.
+
+## Lanes, as built
+
+Lanes shipped inside `mixer` on branch `lanes`; the schema page's Lanes section says what they
+are. `bench/frame.mjs` at the repo root measured them on 2026-10-02 on fleet node `studio` (M1 Max,
+8 performance cores, load 2.2–2.9 throughout): the `project` build (lanes' parent) and the `lanes`
+build, alternated three times on Node 26.8. Medians of the three runs' per-row means, in ms per
+frame; p99 is a single frame; gc is collections and their pause over 300 frames; × is `lanes` over
+`project`. A row ending `-` runs with `lanes: false`, so on `project` it repeats the row without
+one. `sparse` probes all 10k subjects once, then 5% each frame.
+
+| row | N × V | `project` ms | p99 | gc | `lanes` ms | p99 | gc | × |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `fn` |    100 × 1 |  0.029 |  0.095 |  12 /   0.7 ms |  0.028 |  0.122 |   7 /   0.5 ms |  0.97 |
+| `fn` |  1,000 × 1 |  0.226 |  0.402 |  26 /   3.4 ms |  0.180 |  0.299 |  22 /   2.0 ms |  0.80 |
+| `fn` |  1,000 × 3 |  0.591 |  0.865 |  11 /   6.4 ms |  0.440 |  0.734 |   7 /   4.4 ms |  0.74 |
+| `fn` |  1,000 × 8 |  1.269 |  1.733 |  14 /   4.7 ms |  0.798 |  1.135 |   7 /   1.8 ms |  0.63 |
+| `fn` | 10,000 × 3 |  5.125 |  5.867 |  63 /  30.2 ms |  4.860 |  8.706 |  43 /  27.4 ms |  0.95 |
+| `keys` |  1,000 × 1 |  0.281 |  0.388 |   3 /   2.1 ms |  0.150 |  0.273 |   4 /   1.8 ms |  0.53 |
+| `keys` |  1,000 × 3 |  0.588 |  0.778 |   5 /   1.4 ms |  0.203 |  0.329 |   4 /   1.2 ms |  0.35 |
+| `keys` | 10,000 × 3 |  6.118 |  6.918 |  48 /  13.7 ms |  2.570 |  2.867 |  40 /   5.7 ms |  0.42 |
+| `locus` | 10,000 × 3 |  8.363 |  9.003 | 213 / 188.5 ms |  9.124 | 10.501 | 214 / 206.8 ms |  1.09 |
+| `own` |    100 × 1 |  0.025 |  0.040 |   0 /   0.0 ms |  0.029 |  0.057 |   1 /   1.6 ms |  1.16 |
+| `own` |  1,000 × 1 |  0.323 |  0.790 |   4 /   5.3 ms |  0.348 |  0.760 |   3 /   2.6 ms |  1.08 |
+| `named` |    100 × 1 |  0.026 |  0.034 |   0 /   0.0 ms |  0.025 |  0.035 |   0 /   0.0 ms |  0.96 |
+| `named` |  1,000 × 1 |  0.237 |  0.311 |   3 /   3.4 ms |  0.243 |  0.421 |   3 /   3.5 ms |  1.03 |
+| `named` | 10,000 × 1 |  3.185 |  3.974 |  32 /  21.8 ms |  3.329 |  4.370 |  32 /  22.5 ms |  1.05 |
+| `spring` |  1,000 × 1 |  0.321 |  0.811 |   7 /   3.3 ms |  0.517 |  0.913 |   8 /   3.7 ms |  1.61 |
+| `spring` | 10,000 × 1 |  4.316 |  5.200 |  79 /  59.0 ms |  5.362 |  6.097 |  87 /  65.5 ms |  1.24 |
+| `springs` |  1,000 × 1 |  0.434 |  0.910 |   7 /   3.7 ms |  0.556 |  1.024 |   9 /   4.6 ms |  1.28 |
+| `springs` | 10,000 × 1 |  6.299 |  7.590 |  75 /  71.7 ms |  7.126 |  8.350 |  88 /  83.6 ms |  1.13 |
+| `sparse` | 10,000 × 1 |  0.114 |  0.168 |   2 /   2.5 ms |  1.258 |  2.045 |   9 /   7.3 ms | 11.04 |
+| `keys-` | 10,000 × 3 |  6.171 |  7.222 |  49 /  32.6 ms |  6.587 |  7.634 |  50 /  36.1 ms |  1.07 |
+| `spring-` | 10,000 × 1 |  4.112 |  5.050 |  75 /  56.2 ms |  6.512 |  9.082 |  75 / 150.9 ms |  1.58 |
+| `sparse-` | 10,000 × 1 |  0.116 |  0.158 |   2 /   2.5 ms |  0.125 |  0.151 |   1 /   1.6 ms |  1.08 |
+| `ahead` |  1,000 × 3 |  2.204 |  3.580 |  43 /  35.5 ms |  2.284 |  3.419 |  43 /  41.4 ms |  1.04 |
+| `back` |  1,000 × 3 |  2.528 |  3.780 |  38 /  25.3 ms |  2.439 |  3.586 |  39 /  25.8 ms |  0.96 |
+
+- **Keys gain most:** 0.35–0.53× at 1k, 0.42× at 10k × 3. A stateless `fn` gains less (0.63–0.95×)
+  because each call still allocates its delta.
+- **Springs got slower.** `spring-` against `spring` on the `lanes` build is what lanes buy, about
+  0.82×; but the branch slowed a spring on the general path by 1.58× at 10k (`spring-` across
+  builds), most likely through the `motion` form's rewrite, so a spring frame is 1.24× `project`'s with lanes on. Not yet profiled.
+- **A sparsely probed mix pays for every subject it met:** 1.26 ms against 0.11 when 5% of 10k are
+  probed, because a fill covers every subject a voice has met. `MixOptions.lanes: false` is the
+  answer for that host today.
+- **The general path did not get faster**: `locus`, `named` and `own` sit at 1.0–1.1×.
+- **A probe has a floor.** Measured while building, a probe costs about 110–140 ns at 10k subjects
+  even when a lane did all the work, so a host that probes every node pays 1.1–1.4 ms before any
+  arithmetic. Reading a lane's arrays in bulk is the next step (`HANDOFF.md`).
 
 ## Caveats
 
