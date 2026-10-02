@@ -902,9 +902,8 @@ class Mixer<I, O> implements Mix<I, O> {
       horizon: (voice, delay) => {
         reading.horizon = mix.horizonFor(voice, delay, mix.now);
       },
-      after: (voice, held) => {
-        if (mix.opts.history !== undefined) mix.remember(voice, held);
-      },
+      keeps: this.opts.history !== undefined,
+      after: (voice, held) => mix.remember(voice, held),
       slotOf: (subject) => mix.chains.get(subject)?.slot ?? -1,
     };
   }
@@ -1386,8 +1385,10 @@ class Mixer<I, O> implements Mix<I, O> {
       },
       weightOf(subject: I) {
         if (voice.state === 'done') return 0;
-        if (voice.laned && mix.lanes !== null)
-          return mix.lanes.weightOf(voice.id, mix.chains.get(subject)?.slot ?? -1) ?? 0;
+        if (voice.laned && mix.lanes !== null) {
+          const w = mix.lanes.weightOf(voice.id, mix.chains.get(subject)?.slot ?? -1);
+          if (w !== undefined) return w;
+        }
         return (voice.subjects.get(subject) as Subject<unknown> | undefined)?.weight ?? 0;
       },
       done: voice.done,
@@ -1842,12 +1843,14 @@ class Mixer<I, O> implements Mix<I, O> {
 
     const head = this.chain(subject, now);
     const lanes = this.lanes;
-    if (lanes?.prepare(head.slot)) lanes.copy(head.slot, pose);
+    // A subject numbered since the frame's fill folds every voice here, laned ones included.
+    const laned = lanes?.prepare(head.slot) === true;
+    if (laned) (lanes as Lanes<I, O>).copy(head.slot, pose);
     if (this.loci === 0) {
       for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
         const voice = held.voice as Voice<I, O> | null;
-        if (voice === null || voice.laned || voice.id === except || voice.state === 'done')
-          continue;
+        if (voice === null || (laned && voice.laned)) continue;
+        if (voice.id === except || voice.state === 'done') continue;
         const delta = this.read(voice, subject, now, dry, held);
         if (delta === null || this.w <= 0) continue;
         this.apply(pose, voice, held, delta, this.w);
@@ -1862,7 +1865,8 @@ class Mixer<I, O> implements Mix<I, O> {
     const loci = new Map<string, { delta: Record<string, unknown>; weight: number }[]>();
     for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
       const voice = held.voice as Voice<I, O> | null;
-      if (voice === null || voice.laned || voice.id === except || voice.state === 'done') continue;
+      if (voice === null || (laned && voice.laned)) continue;
+      if (voice.id === except || voice.state === 'done') continue;
       const delta = this.read(voice, subject, now, dry, held);
       if (delta === null) continue;
       const locus = voice.spec.locus;

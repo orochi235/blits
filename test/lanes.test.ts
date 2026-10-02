@@ -196,6 +196,30 @@ describe('lanes give the pose the general path gives', () => {
     );
   });
 
+  it('for a voice per subject, each targeted at its own', () => {
+    agree(
+      (m, parts) => {
+        for (const mine of parts) m.cue({ patch: wave(), target: (p) => p === mine });
+      },
+      { times },
+    );
+  });
+
+  it('for voices cued once every subject is numbered, one waiting on a start', () => {
+    agree(
+      (m) => {
+        m.cue({ patch: pulse() });
+        return {
+          at: (t) => {
+            if (t === 333) m.cue({ patch: wave(), stagger: (p) => p.id * 30 });
+            if (t === 500) m.cue({ patch: pulse(), start: 1200, weight: 0.4 });
+          },
+        };
+      },
+      { times },
+    );
+  });
+
   it('with bounds clamping a laned channel once', () => {
     agree(
       (m) => {
