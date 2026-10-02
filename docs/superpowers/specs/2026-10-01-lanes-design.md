@@ -29,12 +29,13 @@ A **voice qualifies** when all of these hold:
 | Timing | `stagger`, `loop`, `rate`, `ramp`, `seek`, anchors | — |
 | Other | — | `locus`, `from: 'current'`, `fade({ at: 'rest' })` |
 
-A **channel qualifies** when its kind is a stock numeric one (`sum`, `mul`, `max`, `vec` of those,
-with or without `bounds`) and every voice writing it qualifies. A voice whose channels are not all
+A **channel qualifies** when it is a channel object `sum`, `mul`, `max` or `vec` made (with or
+without `bounds`; a custom channel claiming one of their kinds does not count) and every voice writing it qualifies. A voice whose channels are not all
 laned runs entirely on the general path, so no patch is ever called twice in a frame; lanes are
 therefore found as a fixed point over voices and channels, recomputed when a voice is cued,
-retires, or changes in a way that affects qualifying (a `fade({ at: 'rest' })`, a weight set to a
-signal). Never per probe.
+retires, or starts a `fade({ at: 'rest' })`, the only handle change that affects qualifying. Never
+per probe. A cue, retirement or handle change between two probes of one frame refills the lanes
+at the next probe, which can call a stateless `fn`'s `at` twice for a subject that frame.
 
 A mix with `history` keeps lanes, but a `project` reads through the general path.
 
@@ -49,7 +50,8 @@ nothing can probe a subject that no longer exists.
 A subject's first probe takes the general path, which is where first sight already happens:
 `target`, `stagger`, the fade-in origin `since`, the voice's `seen` and `latest`. The lane copies
 `delay` and `since` into per-voice arrays at that point. A voice cued after a subject was numbered
-meets that subject at the voice's first fill instead of at the subject's next probe; for a host
+meets that subject at the voice's first fill instead of at the subject's next probe, so its
+`target`, `stagger` and `since` are taken then; for a host
 that probes every numbered subject every frame, those are the same frame.
 
 ## Filling a lane
@@ -59,8 +61,10 @@ The first `probe` after a `sync` fills every lane, once:
 1. Per voice: the voice's elapsed time from its clock, its fade-out factor, whether it is done.
 2. Per voice and numbered subject it reaches: elapsed minus that subject's `delay`, the phase, the
    fade-in from `since`, the weight; then the patch's value.
-3. Fold into the channel's arrays in voice order, the order the general path folds in, then clamp
-   any `bounds`.
+3. Fold into the channel's arrays in voice order, the order the general path folds in. A voice's
+   patch is called whenever the general path would call it, weight 0 included, and folded only
+   above 0. `bounds` are clamped by the general path's own `clamp` after laned values are copied
+   into the pose.
 
 Per patch form:
 
@@ -72,7 +76,10 @@ Per patch form:
   parameters as data the way a `keys` patch carries its stops: `patch.motion` holds the kind
   (`'spring'` or `'glide'`) and its parameters. `Engine.runs` lists `'motion'` like the other
   forms, so an engine that can't run it refuses at `cue`. A spring is no longer `form: 'fn'`;
-  nothing in blits' consumers checks that. Each subject's current segment (release time, start position, start velocity, target, per
+  nothing in blits' consumers checks that. Its state belongs to the patch, since `to`, `push` and
+  `read` address the patch, not a mix: the patch numbers its own subjects and keeps the current
+  segment in its arrays, and each lane position caches the patch's number for its subject. A
+  motion patch moves every subject on one axis count; mixed lengths throw. Each subject's current segment (release time, start position, start velocity, target, per
   axis) lives in the lane's arrays; older segments, kept only while the mix keeps history, live in
   per-subject lists. `to`, `push` and `read` work on whichever holds the state, and the general
   path reads the same state, so there is one copy.
