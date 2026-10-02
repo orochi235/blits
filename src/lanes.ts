@@ -614,6 +614,11 @@ export class Lanes<I, O> {
       this.move(lane, lane.motion, p, slot, subject, held, elapsed, delay, w);
       return;
     }
+    // Called already this frame, by the general path or a fill before a refill: reuse, as a probe does.
+    if (held.probed === this.now && held.delta !== null && held.seeks === voice.seeks) {
+      if (w > 0) this.foldDelta(lane, slot, held.delta, w);
+      return;
+    }
     const kept = reading.kept;
     host.ready(voice, subject, held, elapsed, lane.pass, w);
     host.horizon(voice, delay);

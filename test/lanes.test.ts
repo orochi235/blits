@@ -632,6 +632,31 @@ describe('lanes stay identical where a fill and a probe interleave', () => {
     });
   });
 
+  it('sends once per subject per frame from a stateless fn refilled between probes', () => {
+    const counts = [false, true].map((lanes) => {
+      const m = mix<Part, Pose>(K, { lanes });
+      const h = m.cue({
+        patch: patch<Part, Pose>(
+          1000,
+          (phase, _part, setting) => {
+            setting.send('tick');
+            return { crawl: phase };
+          },
+          { writes: ['crawl'] },
+        ),
+      });
+      const a = { id: 0 };
+      m.sync(0);
+      m.probe(a);
+      m.sync(16);
+      m.probe(a);
+      h.weight = 0.5;
+      m.probe(a);
+      return m.drain().length;
+    });
+    expect(counts[1]).toBe(counts[0]);
+  });
+
   it('for a pending voice faded before it starts', () => {
     script((m, parts, look) => {
       const a = m.cue({ patch: pulse() });

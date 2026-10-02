@@ -35,7 +35,8 @@ laned runs entirely on the general path, so no patch is ever called twice in a f
 therefore found as a fixed point over voices and channels, recomputed when a voice is cued,
 retires, or starts a `fade({ at: 'rest' })`, the only handle change that affects qualifying. Never
 per probe. A cue, retirement or handle change between two probes of one frame refills the lanes
-at the next probe, which can call a stateless `fn`'s `at` twice for a subject that frame.
+at the next probe, which reuses what a stateless `fn`'s `at` returned for each subject that frame
+rather than calling it again, as a second probe on the general path does.
 
 A mix with `history` keeps lanes, but a `project` reads through the general path.
 
