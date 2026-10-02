@@ -1,15 +1,19 @@
 // Per-frame cost of a mix at scene sizes. Run with `npm run bench`, which builds dist first.
 // Rows print as they finish; `first` is the first frame, where each voice meets each subject;
-// `gc` counts collections during the timed frames, which is where allocation shows when the
-// timing alone does not.
+// `p99` and `worst` are single frames, where a collection landing mid-frame shows; `gc` counts
+// collections during the timed frames and the ms they paused for.
 import { PerformanceObserver } from 'node:perf_hooks';
 import { hex, keys, kit, max, mix, mul, patch, sum, vec } from '../dist/index.js';
 
 const K = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: hex() });
 
 let gcs = 0;
+let paused = 0;
 new PerformanceObserver((list) => {
-  gcs += list.getEntries().length;
+  for (const entry of list.getEntries()) {
+    gcs++;
+    paused += entry.duration;
+  }
 }).observe({ entryTypes: ['gc'] });
 
 const flicker = (v) =>
@@ -84,24 +88,31 @@ for (const [i, [form, n, voices]] of rows.entries()) {
   }
   await new Promise((r) => setTimeout(r, 0));
   const before = gcs;
-  const t0 = performance.now();
+  const pausedBefore = paused;
+  const each = new Float64Array(frames);
   for (let f = 0; f < frames; f++) {
+    const f0 = performance.now();
     if (scrub) {
       const p = m.project(form === 'ahead' ? t + 500 : t - 300 + (f % 20) * 5);
       for (const s of subjects) p.probe(s, scratch);
-      continue;
+    } else {
+      t += 16.7;
+      m.sync(t);
+      for (const s of subjects) m.probe(s, scratch);
     }
-    t += 16.7;
-    m.sync(t);
-    for (const s of subjects) m.probe(s, scratch);
+    each[f] = performance.now() - f0;
   }
-  const ms = (performance.now() - t0) / frames;
+  const ms = each.reduce((a, b) => a + b, 0) / frames;
+  each.sort();
+  const p99 = each[Math.ceil(frames * 0.99) - 1];
+  const worst = each[frames - 1];
   await new Promise((r) => setTimeout(r, 0));
   const ns = (ms * 1e6) / (n * voices);
   console.log(
     `${String(i + 1).padStart(2)}/${rows.length}  ${form.padEnd(5)} N=${String(n).padStart(6)} V=${voices}` +
       `  ${ms.toFixed(3).padStart(8)} ms/frame  ${ns.toFixed(0).padStart(5)} ns/subject·voice` +
+      `  p99 ${p99.toFixed(3).padStart(8)}  worst ${worst.toFixed(3).padStart(8)}` +
       `  first ${first.toFixed(1).padStart(7)} ms` +
-      `  gc ${String(gcs - before).padStart(4)}`,
+      `  gc ${String(gcs - before).padStart(4)} ${(paused - pausedBefore).toFixed(1).padStart(6)} ms`,
   );
 }
