@@ -587,6 +587,25 @@ describe('lanes stay identical where a fill and a probe interleave', () => {
     });
   });
 
+  it('reports weightOf after atRest on the frame a subject meets a new lane', () => {
+    const seen = [false, true].map((lanes) => {
+      const m = mix<Part, Pose>(K, { lanes });
+      const h = m.cue({
+        patch: patch<Part, Pose>(1000, (phase) => ({ crawl: phase }), { writes: ['crawl'] }),
+        fade: { in: 50 },
+      });
+      const p = { id: 0 };
+      m.sync(0);
+      m.probe(p);
+      m.sync(100);
+      m.probe(p);
+      m.cue({ patch: pulse() });
+      m.atRest(p);
+      return h.weightOf(p);
+    });
+    expect(seen[1]).toBe(seen[0]);
+  });
+
   it('leaves a staggered subject its first call on the general path, for a fn keeping state', () => {
     script((m, parts, look) => {
       const h = m.cue({

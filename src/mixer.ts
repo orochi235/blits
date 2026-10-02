@@ -1984,6 +1984,7 @@ class Mixer<I, O> implements Mix<I, O> {
         setting.state = held.state;
         setting.keep = held.keep;
         this.w = this.weigh(voice, subject, now, held);
+        held.weight = this.w;
         if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
         return held.delta;
       }
