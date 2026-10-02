@@ -309,6 +309,9 @@ describe('lanes give the pose the general path gives', () => {
       probe(parts[2] as Part);
       a.ramp(0.5, 300);
       probe(parts[0] as Part);
+      a.seek(700);
+      probe(parts[0] as Part);
+      probe(parts[1] as Part);
       b.fade({ over: 400 });
       probe(parts[1] as Part);
       m.sync(450);
@@ -351,10 +354,6 @@ describe('lanes give the pose the general path gives', () => {
       expectSame(pose, on[i] as Pose, `probe ${i}`);
     });
   });
-
-  // The general path hands a subject probed earlier in the frame its cached delta, read before the
-  // seek; a refilled lane reads every subject after it.
-  it.todo('when a seek moves a voice between two probes of one subject in one frame');
 
   it('when a dropped number goes to a new subject the voice does not reach', () => {
     const runs = [false, true].map((lanes) => {

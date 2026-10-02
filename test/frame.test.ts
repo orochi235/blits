@@ -41,6 +41,34 @@ describe('one frame, one answer', () => {
     expect(steps).toBe(1);
   });
 
+  it('a probe after a seek in the same frame reads where the seek put the voice, stepping once', () => {
+    let steps = 0;
+    const p = patch<Part, Pose, { n: number }>(
+      1000,
+      (phase, _part, setting) => ({ gain: 1 + phase, crawl: setting.state.n }),
+      {
+        writes: ['gain', 'crawl'],
+        state: () => ({ n: 0 }),
+        step: (state) => {
+          state.n++;
+          steps++;
+        },
+      },
+    );
+    const m = mix<Part, Pose>(PART, { lanes: false });
+    const h = m.cue({ patch: p });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.probe(part);
+    m.sync(100);
+    expect(m.probe(part).gain).toBeCloseTo(1.1, 9);
+    h.seek(600);
+    const after = m.probe(part);
+    expect(after.gain).toBeCloseTo(1.6, 9);
+    expect(after.crawl).toBe(1);
+    expect(steps).toBe(1);
+  });
+
   it('a second sync with the same now is a no-op', () => {
     const steps: number[] = [];
     const counting = patch<Part, Pose, { n: number }>(0, () => ({}), {

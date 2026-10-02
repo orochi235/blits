@@ -37,6 +37,8 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A probe after a `seek` in the same frame reads the voice where the seek put it, rather than the
+  value an earlier probe that frame read before the seek. A stateful patch still steps once.
 - A probe looks its subject up once rather than once per voice, which makes frames with several
   voices 5–12% faster.
 - A `keys` patch reads a keyed `vec` channel into an array its voice reuses, rather than a new one

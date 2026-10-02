@@ -59,6 +59,8 @@ export interface Subject<S> {
   delta: Record<string, unknown> | null;
   /** The phase `delta` was read at, to read it again once its voice's scratch has moved on. */
   phase: number;
+  /** The voice's `seeks` when `delta` was read, so a seek later in the frame reads it again. */
+  seeks: number;
   /** Stop 0 for a `from: 'current'` voice, taken the first frame this subject is seen. */
   base?: Record<string, unknown>;
   /** The pose's velocity per channel at that moment, units per ms, so the first segment leaves at it. */
@@ -113,6 +115,7 @@ function stub(): Subject<unknown> {
     probed: Number.NaN,
     delta: null,
     phase: 0,
+    seeks: 0,
     kept,
     keep: keeper(kept),
     voice: null,
@@ -257,6 +260,8 @@ export class Voice<I, O> {
   holder: Subject<unknown> | null = null;
   /** Whether its channels run as lanes this frame, so the general fold passes it by. */
   laned = false;
+  /** How many times it has been sought, so a delta read before a seek is not handed out after it. */
+  seeks = 0;
   readonly ease: Curve | undefined;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: Setting<unknown>;
@@ -1175,6 +1180,7 @@ class Mixer<I, O> implements Mix<I, O> {
       probed: Number.NaN,
       delta: null,
       phase: 0,
+      seeks: 0,
       base: h.base === undefined ? undefined : structuredClone(h.base),
       slope: h.slope === undefined ? undefined : structuredClone(h.slope),
       snaps: undefined,
@@ -1227,6 +1233,7 @@ class Mixer<I, O> implements Mix<I, O> {
       probed: Number.NaN,
       delta: null,
       phase: 0,
+      seeks: 0,
       kept,
       keep: keeper(kept),
       voice,
@@ -1377,6 +1384,7 @@ class Mixer<I, O> implements Mix<I, O> {
       seek(elapsed: number) {
         voice.rebase(Number.isNaN(mix.now) ? voice.start : mix.now);
         voice.anchorElapsed = elapsed;
+        voice.seeks++;
         mix.noted(voice);
         mix.lanes?.refill();
       },
@@ -1454,6 +1462,7 @@ class Mixer<I, O> implements Mix<I, O> {
       probed: Number.NaN,
       delta: null,
       phase: 0,
+      seeks: 0,
       kept,
       keep: keeper(kept),
       voice,
@@ -1514,7 +1523,7 @@ class Mixer<I, O> implements Mix<I, O> {
     setting.weight = weight;
     held.weight = weight;
 
-    if (held.probed === now && held.delta) {
+    if (held.probed === now && held.delta && held.seeks === voice.seeks) {
       if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
       this.w = weight;
       return held.delta;
@@ -1543,6 +1552,7 @@ class Mixer<I, O> implements Mix<I, O> {
     }
     held.delta = delta;
     held.probed = now;
+    held.seeks = voice.seeks;
     if (history !== undefined) this.remember(voice, held);
 
     if (voice.out?.rest && this.isRest(delta)) {
@@ -1930,7 +1940,7 @@ class Mixer<I, O> implements Mix<I, O> {
     held: Subject<unknown>,
   ): Record<string, unknown> | null {
     if (dry) {
-      if (held.reaches && held.probed === now && held.delta) {
+      if (held.reaches && held.probed === now && held.delta && held.seeks === voice.seeks) {
         const setting = voice.setting;
         setting.timestamp = now;
         setting.dt = 0;
