@@ -68,6 +68,12 @@ npm run site:smoke   # build, then load every page headless and fail on any erro
 `.github/workflows/site.yml` deploys it to GitHub Pages. It runs only by hand until Pages is enabled
 on the repo.
 
+## Packages
+
+`packages/quarks` is `@msb235/blits-quarks`, a driver that turns poses into
+[three.quarks](https://github.com/Alchemist0823/three.quarks) particles. It is published separately
+so the engine keeps no dependencies; its README says how it works.
+
 ## Status
 
 v0.1.0, and one real consumer: [klieg](https://github.com/orochi235/klieg) composes all three of
