@@ -179,6 +179,8 @@ systems now run on it**, on a branch that is not merged.
    their hand-rolled frame keying onto `slew`, `hinge`'s modes become `weight: signal` and
    `mix.blend`, and `FrameCtx` becomes `Setting` with klieg's fields on `host`. The schema page's
    klieg section has the list. Nothing here is started.
+   klieg's `effects/signal.ts` also keeps its own `peak`, `level` and `dwell` (`dwell` is blits'
+   `slew`) on a `(t, part, ctx)` signature, which is why klieg's signals are invisible to the mix.
 4. **The renames the vocabulary bought, which the port deliberately left alone.** `t` is still `t`
    on `MotionPiece.offset` and `EffectPiece.at`, `onPhase` and `PhaseEvent` still carry those
    names, and the tube gradient still calls its own thing `domain`. Each is a break in klieg's

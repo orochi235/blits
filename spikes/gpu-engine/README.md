@@ -131,6 +131,46 @@ The speedup survives the move to weasel's workload: a dense engine calling the h
 closure is 20–25× the mix at 10k, so the gap is the mix's per-subject bookkeeping, not the fn call.
 Springs gain least (11–19× at 10k); unprofiled, the likely cause is `exp`, `cos` and `sin` per subject.
 
+## What a dense layout could run
+
+Two read-only surveys from 2026-10-01: every feature in `src/types.ts` at `34a3378`, and every
+function-shaped effect in blits' consumers (klieg `blits-port` `aba960f`, magicsmoke `c822948`,
+weasel `pose-overrides-mix` `0799659c4`). The classes are judgments from reading the code, not
+measurements.
+
+**blits' features.** Nearly everything fits flat arrays: the stock channels including `hex`'s
+bands, `keys` with data easing, number weights, fades, loops, `stagger`, `subjects`, loci,
+`from: 'current'`, the score, `weightOf`, `atRest`, `project`. What doesn't is opaque per-subject
+code: `fn` patches and their `state`/`step`, `spring` and `glide` as written (their segments could
+become arrays), signal weights, `slew`/`lag`/`gate`, `keep`, `send`, history snapshots, and
+channels with non-numeric values. Nothing classed as impossible.
+
+**Laziness is observable.** `target`, `stagger` and `state()` run at a subject's first probe; the
+fade-in origin, a finite loop's end, `fade({ at: 'rest' })`'s count, `slew`/`gate` sampling,
+events and `weightOf` all depend on which subjects were probed. Filling every subject each frame
+changes all of these, so an eager lane is safe only for stateless voices.
+
+**Lanes inside `mixer`** (inferred from the code): a lane filled once per frame, with `probe` a
+lookup and a copy, would land within about 2–3× of pure dense at one voice and closer at eight.
+Qualification is per channel but evaluation is per voice, so one `fn` voice on a shared channel
+brings the per-subject overhead back for every voice writing it. Bit-for-bit agreement needs
+`Float64Array`, `%` for phase, chain order for folding, and the same `Curve` closures.
+
+**The consumers' effects**, by table row: 15 already fit a data form, 30 fit a stock form blits
+could ship, 20 fit a small expression graph, 6 need a function. The six: magicsmoke's fault
+process (a seeded random stream, events), klieg's `power` (a sign-wide state machine reducing
+across subjects, with a sync callback), `turns` and `roving` (cross-subject; both could be baked
+into tables when built), `send` from a `step`, and the composition lab's typed source. Recurring
+patterns worth a stock form: an oscillator with a per-subject phase, a follower usable as a
+channel value (not only a weight), per-subject endpoints, phase remaps (`clamp`, `fract`, scale),
+stepped hash noise, distance falloff, stagger by index; plus `smoothstep` and spring eases and
+`min()` and `angle()` channels.
+
+**klieg hides everything behind three adapters.** Every klieg effect, motion layer and lighting
+piece reaches blits through one generic `fn` (`effects/frame.ts:92`, `motion/compositor.ts:127`,
+`render/lighting.ts:73`) that reads klieg's frame context from a closure. A data engine sees
+nothing in klieg until the pieces emit data forms.
+
 ## Caveats
 
 - **Nothing here is the real engine seam.** The shader knows this one kit and this one stop shape
