@@ -10,4 +10,14 @@ export const reading = {
    * older. Infinity where the mix keeps none, so only what plays now is kept.
    */
   horizon: Number.POSITIVE_INFINITY,
+  /**
+   * How many entries `setting.keep` has made in any mix, so a patch call that made one shows
+   * without looking into the record it was made on.
+   */
+  kept: 0,
+  /**
+   * How many retargets and pushes any motion patch has taken, so a mix can tell one came mid-frame.
+   * One count for every mix: a change to a spring in one mix refills the lanes of all of them.
+   */
+  moved: 0,
 };

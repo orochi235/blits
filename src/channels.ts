@@ -18,6 +18,36 @@ export function lerpInto(channel: Channel<unknown>): LerpInto | undefined {
   return inPlace.get(channel);
 }
 
+/** What a lane needs of a stock numeric channel beyond the channel: its arithmetic by name, its axes. */
+export interface Numeric {
+  op: 'sum' | 'mul' | 'max';
+  axes: number;
+}
+
+/** The stock channels' arithmetic, once: their `merge` and `scale` are these, and so is `foldNumber`. */
+const add = (a: number, b: number): number => a + b;
+const times = (v: number, w: number): number => v * w;
+const product = (a: number, b: number): number => a * b;
+const toward = (v: number, w: number): number => 1 + (v - 1) * w;
+const larger = (a: number, b: number): number => (a > b ? a : b);
+
+const numerics = new WeakMap<object, Numeric>();
+
+/**
+ * The stock arithmetic of a channel `sum`, `mul`, `max` or `vec` made, keyed by the object itself,
+ * so a custom channel that claims a stock `kind` is not trusted with a lane.
+ */
+export function numericOf(channel: Channel<unknown>): Numeric | undefined {
+  return numerics.get(channel);
+}
+
+/** `merge(acc, scale(v, w))` for a stock numeric channel, in exactly its arithmetic. */
+export function foldNumber(op: Numeric['op'], acc: number, v: number, w: number): number {
+  if (op === 'sum') return add(acc, times(v, w));
+  if (op === 'mul') return product(acc, toward(v, w));
+  return larger(acc, times(v, w));
+}
+
 /**
  * What a stock numeric channel takes.
  *
@@ -38,14 +68,16 @@ const kindOf = (name: string, bounds?: readonly [number, number]) =>
  * @category channel
  */
 export function sum(opts?: NumberOptions): Channel<number> {
-  return {
+  const channel: Channel<number> = {
     kind: kindOf('sum', opts?.bounds),
     bounds: opts?.bounds,
     rest: 0,
-    merge: (a, b) => a + b,
-    scale: (v, w) => v * w,
+    merge: add,
+    scale: times,
     lerp: mix,
   };
+  numerics.set(channel, { op: 'sum', axes: 1 });
+  return channel;
 }
 
 /**
@@ -54,14 +86,16 @@ export function sum(opts?: NumberOptions): Channel<number> {
  * @category channel
  */
 export function mul(opts?: NumberOptions): Channel<number> {
-  return {
+  const channel: Channel<number> = {
     kind: kindOf('mul', opts?.bounds),
     bounds: opts?.bounds,
     rest: 1,
-    merge: (a, b) => a * b,
-    scale: (v, w) => 1 + (v - 1) * w,
+    merge: product,
+    scale: toward,
     lerp: mix,
   };
+  numerics.set(channel, { op: 'mul', axes: 1 });
+  return channel;
 }
 
 /**
@@ -70,14 +104,16 @@ export function mul(opts?: NumberOptions): Channel<number> {
  * @category channel
  */
 export function max(opts?: NumberOptions): Channel<number> {
-  return {
+  const channel: Channel<number> = {
     kind: kindOf('max', opts?.bounds),
     bounds: opts?.bounds,
     rest: 0,
-    merge: (a, b) => (a > b ? a : b),
-    scale: (v, w) => v * w,
+    merge: larger,
+    scale: times,
     lerp: mix,
   };
+  numerics.set(channel, { op: 'max', axes: 1 });
+  return channel;
 }
 
 /**
@@ -97,12 +133,25 @@ export function last<V>(opts?: { lerp?: (a: V, b: V, u: number) => V }): Channel
 }
 
 /**
+ * `n` copies of `v` in an array the engine stores as doubles from the start, so a copy of it, and
+ * every fraction written into that copy, keeps one element kind: a pose's arrays then look alike to
+ * every fold, whichever path made them.
+ */
+function doubles(n: number, v: number): number[] {
+  if (n === 0) return [];
+  const a = [0.5];
+  for (let i = 1; i < n; i++) a.push(0.5);
+  for (let i = 0; i < n; i++) a[i] = v;
+  return a;
+}
+
+/**
  * Vec3 position, premultiplied light: one channel's arithmetic applied down an axis list.
  *
  * @category channel
  */
 export function vec(n: number, of: Channel<number>): Channel<number[]> {
-  const rest = of.rest === undefined ? undefined : new Array<number>(n).fill(of.rest);
+  const rest = of.rest === undefined ? undefined : doubles(n, of.rest);
   const scale = of.scale;
   const fill = of.rest ?? 0;
   const lerpTo = (out: number[] | undefined, a: number[], b: number[], u: number): number[] => {
@@ -137,6 +186,8 @@ export function vec(n: number, of: Channel<number>): Channel<number[]> {
     lerp: (a, b, u) => lerpTo(undefined, a, b, u),
   };
   inPlace.set(channel, lerpTo as LerpInto);
+  const inner = numerics.get(of);
+  if (inner !== undefined && inner.axes === 1) numerics.set(channel, { ...inner, axes: n });
   return channel;
 }
 

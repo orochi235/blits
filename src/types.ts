@@ -98,13 +98,17 @@ export interface Setting<S = void> {
   /**
    * The state `owner` keeps for this voice and this subject, made by `init` on first ask. The mix
    * holds it, so a read at another time can copy it instead of moving it. A stateful signal keeps
-   * its state here and nowhere else.
+   * its state here and nowhere else. With lanes on, a patch that first calls it partway through
+   * playing can have that state advanced once for one subject not probed on the frame it starts; a
+   * patch that keeps state from its first call, or declares `state`, never does.
    */
   keep<K>(owner: object, init: () => K): K;
   /**
    * Reports an event at `timestamp`, for this voice and this subject. The mix queues it until the
    * host drains it, and never calls back. Meant for `step`, where under `stepMs` the timestamp is
-   * the interval the event happened in rather than the frame that sampled it.
+   * the interval the event happened in rather than the frame that sampled it. Sent from a stateless
+   * patch's `at` while it runs on a lane, it goes out for every subject the mix has met, probed that
+   * frame or not.
    */
   send(event: unknown): void;
 }
@@ -126,13 +130,40 @@ export interface Sent<I, E = unknown> {
 }
 
 /**
+ * What a `'motion'` patch is made of, as data an engine can read: the kind of motion and its
+ * constants. Each subject's start, target and starting velocity stay on the patch, since they may
+ * be functions of the subject.
+ *
+ * @category patch
+ */
+export type MotionSpec =
+  | {
+      readonly kind: 'spring';
+      /** Per second squared. */
+      readonly stiffness: number;
+      /** Per second. */
+      readonly damping: number;
+      readonly mass: number;
+      readonly settle: number;
+    }
+  | {
+      readonly kind: 'glide';
+      /** The friction's time constant, ms. */
+      readonly ms: number;
+      readonly settle: number;
+    };
+
+/**
  * A pure function of phase and a subject that returns a delta. Optionally stateful.
  *
  * @category patch
  */
 export interface Patch<I, O, S = void> {
-  /** Which authoring form built it. An engine declares which forms it runs. */
-  readonly form: 'fn' | 'keys';
+  /**
+   * Which authoring form built it: `'fn'` from `patch`, `'keys'` from `keys`, `'motion'` from
+   * `spring` or `glide`. An engine declares which forms it runs.
+   */
+  readonly form: 'fn' | 'keys' | 'motion';
   /** Milliseconds one pass lasts. 0 is aperiodic: phase and pass stay 0. */
   readonly period: number;
   /** The channels this patch contributes to. Every key `at` sets, and no others. */
@@ -155,6 +186,8 @@ export interface Patch<I, O, S = void> {
   step?(state: S, dt: number, subject: I, setting: Setting<S>): void;
   /** Present when the patch was authored as keyframes, so an engine that reads data can. */
   readonly keys?: readonly Keyframe<O>[];
+  /** Present on a `'motion'` patch: its kind and constants, for an engine that reads data. */
+  readonly motion?: MotionSpec;
   /**
    * A copy of `state` that shares nothing with it, for a read at another time. Default
    * `structuredClone`, which is enough for plain data; a state holding a class instance or a
@@ -405,6 +438,15 @@ export interface MixOptions {
    * `level` or a pointer is known rather than held.
    */
   history?: { ms: number; every?: number; inputs?: boolean };
+  /**
+   * Whether a channel may run as a lane: computed for every subject at once in flat arrays, when
+   * every voice writing it can run that way. On by default; the pose is the same either way, so
+   * turning it off is for ruling a lane out, or for comparing against. Two things differ: a
+   * stateless patch's `setting.send` from `at` sends for every subject a lane fills, probed or not,
+   * and a patch that first calls `setting.keep` partway through playing can advance that state once
+   * more for one unprobed subject (see `Setting.keep`).
+   */
+  lanes?: boolean;
 }
 
 /**
@@ -469,7 +511,7 @@ export interface Mix<I, O> {
   readonly live: boolean;
   /** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */
   mute(opts?: { over?: number }): void;
-  /** Forgets per-subject state. */
+  /** Forgets per-subject state, a motion patch's for the subject included. */
   drop(subject: I): void;
   /**
    * Puts a named mark on a score, for anchors to target as they target a voice's marks: a voice
@@ -487,10 +529,12 @@ export interface Mix<I, O> {
   /**
    * Every event patches have sent since the last drain, earliest first, in the order they were sent
    * where two share a timestamp. A subject's events are made while it catches up, which is when it is
-   * probed, so one nobody probes has sent nothing yet: promptness is the host's, by probing. Under
-   * `stepMs` each carries the end of the interval it happened in, so what is sent and when does not
-   * depend on how the host spaces its probes. Time `rebase` took out sends nothing. Given a tag, it
-   * takes only the events of voices carrying it and leaves the rest for whoever drains them.
+   * probed, so one nobody probes has sent nothing yet: promptness is the host's, by probing. A
+   * stateless patch's `at` on a lane is the exception: it runs for every subject the mix has met, at
+   * the frame's first probe. Under `stepMs` each carries the end of the interval it happened in, so
+   * what is sent and when does not depend on how the host spaces its probes. Time `rebase` took out
+   * sends nothing. Given a tag, it takes only the events of voices carrying it and leaves the rest for
+   * whoever drains them.
    */
   drain<E = unknown>(tag?: string): Sent<I, E>[];
 }
@@ -503,6 +547,6 @@ export interface Mix<I, O> {
 export interface Engine {
   readonly name: string;
   /** Which patch forms this engine can run. A voice it cannot run is refused at `cue`, by name. */
-  readonly runs: ReadonlySet<'fn' | 'keys'>;
+  readonly runs: ReadonlySet<'fn' | 'keys' | 'motion'>;
   create<I, O>(kit: Kit<O>, opts: MixOptions): Mix<I, O>;
 }

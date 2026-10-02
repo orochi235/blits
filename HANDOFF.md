@@ -1,4 +1,4 @@
-# Handoff — blits, 2026-10-01
+# Handoff — blits, 2026-10-02
 
 **For:** the next session on blits. **Answers:** what blits is meant to be, what exists, what was
 decided in conversation and lives nowhere else, and what comes next. The design is in
@@ -38,7 +38,8 @@ systems now run on it**, on a branch that is not merged.
 - **The package, `@msb235/blits` 0.2.1 on npm.** `src/` is the whole of it: `channels.ts` (the stock
   channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
-  `motion.ts` (`spring`, `glide`), `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
+  `motion.ts` (`spring`, `glide`), `lanes.ts` (lanes, with `clock.ts`, the phase,
+  envelope and weight clamp both fold paths share, and `numbers.ts`, which numbers subjects), `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
   objects and a Map for anything else), `mixer.ts` (the engine and `mix`), `types.ts` (the whole
   public surface, doc-commented). Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
   is lint, typecheck of both `src` and `test`, then the suite, green. `npm run bench`
@@ -171,13 +172,34 @@ systems now run on it**, on a branch that is not merged.
    workload). `NOTES-ON-SCRUBBING.md` holds the one undecided reading-back item,
    `handle.seek` on a stateful voice.
 
-1a. **Dense lanes inside `mixer`, decided 2026-10-01, nothing built.** A channel folds over flat
-   arrays when every voice writing it qualifies, falling back per channel to the current path, so
-   there is one engine rather than a second one to keep in parity. weasel's animator step 3 waits on
-   it. Evidence and the open design questions (subject numbering, eager vs lazy filling, what
-   qualifies, output surface) are in `spikes/gpu-engine/README.md`. Design first, then build.
-   When lanes land, tell a weasel session: it reruns `animator-on-blits` and `pose-overrides` against
-   them before deciding step 3 (weasel `c7a183bde`, branch `pose-overrides-mix`).
+1a. **Lanes are built and merged into `project`** (2026-10-02). The schema page's Lanes section
+   says what they are, what qualifies and the two places the pose path differs; the `'motion'` form
+   is in its Springs and glides section. Measured on the fleet (studio, three runs alternated
+   against `project`), lanes ÷ `project` per frame: `keys` 0.38–0.57, springs 0.53–0.72, a
+   stateless `fn` 0.70–0.88. A lane rests when few of its subjects were probed last frame. The table
+   is in `spikes/gpu-engine/README.md` under "Lanes, as built". A weasel session reruns
+   `animator-on-blits` and `pose-overrides` against the build before deciding its animator step 3
+   (weasel `c7a183bde`, branch `pose-overrides-mix`).
+
+1b. **What lanes cost on rows they don't serve, accepted by Mike 2026-10-02.** A voice per subject
+   (`named`) reads 1.07× at 10,000 subjects (+0.2 ms) and 1.2× at 100–1,000 (+0.04 ms at most); a
+   mix probing 5% of its subjects 1.29× (+0.03 ms); a projection every frame (`ahead`) 1.10×
+   (+0.2 ms); a spring voice per subject with `lanes: false` about 1.05×. Profiles put it in three
+   places: the phase and channel arithmetic is now one shared copy that V8 does not always inline
+   where `project` had it written out; numbering and first-sight checks on every probe while lanes
+   are on; two more fields per record (lane number, seek count) that a projection copies. Writing
+   the arithmetic out again was turned down, since the exactness guarantee rests on there being one
+   copy.
+
+1c. **Next for speed, decided with Mike 2026-10-02, in this order, each measured on the fleet
+   before the next starts. None is designed yet.**
+   - **Bulk output.** A host reads a laned channel's array by subject number instead of calling
+     `probe` per subject. A probe costs about 110–140 ns at 10,000 subjects even when a lane did
+     all the work, which caps lanes for a host that probes every node, as weasel's paint walk does.
+   - **A `tween` stock form** with each subject's endpoints as data, so a tween runs on a lane
+     without allocating per call the way a `fn` does.
+   - **Voices sharing a patch, grouped into one lane indexed by voice**, so a voice per subject
+     costs what one voice does. Only if a voice per call still needs it once `tween` exists.
 
 2. **Merge klieg's `blits-port`, and move magicsmoke to 0.2.x.** klieg already depends on the
    published package; push its last two commits and merge. magicsmoke pins `0.1.1`, and 0.2.0 broke

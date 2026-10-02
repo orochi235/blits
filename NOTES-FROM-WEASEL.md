@@ -17,16 +17,18 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 - `probe` with no `out` stores a freshly allocated pose per subject per frame. weasel measured this
   pattern: a new pose object per node per frame took major GC from 57 ms to 549 ms over 10 s
   (`docs/superpowers/specs/2026-08-24-frame-loop-decoupling-design.md` in weasel).
-- A frame of 10k subjects on one voice reads 2.0 ms for a `fn` tween and 4.4 ms for a `spring`,
+- A frame of 10k subjects on one voice read 2.0 ms for a `fn` tween and 4.4 ms for a `spring`,
   against 0.3 and 1.0 ms for weasel's own animator doing the same arithmetic (weasel's
-  `tests/perf/bench/animator-on-blits.bench.ts`). A fast path for a subject one voice reaches was
-  tried on 2026-10-01 and dropped: skipping the fold changes results in the last bit (`mul` at
-  weight 1, `-0` under `sum`, `max` against rest), and the variants that stay exact measured no
-  faster. `spikes/gpu-engine` on branch `spike/gpu-engine` measures what a dense engine would do.
-- Rerun 2026-10-01 against `project`, with `subjects` (weasel's bench, loaded machine): a voice per
-  call at 10k reads 3.6–3.9 ms a frame for tweens and 6.6–6.9 for springs, against 1.8 and 4.1–4.5
-  for one voice and 0.3 and 0.5 for weasel's animator. Starting 1k voices fell from about 1 s to
-  3 ms. Unprofiled guess for the gap between the two blits shapes: `sync` walks every voice.
+  `tests/perf/bench/animator-on-blits.bench.ts`, 2026-10-01 against `project`; a voice per call
+  read 3.6–3.9 and 6.6–6.9 ms). **Lanes (branch `lanes`, 2026-10-02) closed part of this, not
+  most of it.** On blits' own bench on the fleet, `keys` frames fell to 0.35–0.53× and a stateless
+  `fn` to 0.63–0.95×; springs rose to 1.13–1.61×, because the same branch slowed a spring on the
+  general path more than lanes win back; a voice per subject named with `subjects` did not move. What still
+  stands between blits and weasel's numbers: a probe costs about 110–140 ns at 10k even when a lane
+  did all the work, which a paint walk probing every node pays in full; a `fn` tween allocates its
+  delta per call; and a voice per call is a lane per voice. `HANDOFF.md` item 1c has the next steps
+  for each, and the table is in `spikes/gpu-engine/README.md`. weasel's own rerun of
+  `animator-on-blits` and `pose-overrides` against the build is pending.
 
 ## What weasel has that blits doesn't
 
