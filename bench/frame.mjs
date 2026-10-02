@@ -1,6 +1,7 @@
 // Per-frame cost of a mix at scene sizes. Run with `npm run bench`, which builds dist first.
-// Rows print as they finish; `gc` counts collections during the timed frames, which is where
-// allocation shows when the timing alone does not.
+// Rows print as they finish; `first` is the first frame, where each voice meets each subject;
+// `gc` counts collections during the timed frames, which is where allocation shows when the
+// timing alone does not.
 import { PerformanceObserver } from 'node:perf_hooks';
 import { hex, keys, kit, max, mix, mul, patch, sum, vec } from '../dist/index.js';
 
@@ -48,6 +49,10 @@ const rows = [
   // One voice per subject, each targeted at its own: magicsmoke's faults on one shared mix.
   ['own', 100, 1],
   ['own', 1000, 1],
+  // The same, each voice naming its subject with `subjects`.
+  ['named', 100, 1],
+  ['named', 1000, 1],
+  ['named', 10000, 1],
   // A projection made and probed every frame, as a continuous scrub would: 500 ms ahead, and
   // 300 ms back on a mix keeping 5 s of history.
   ['ahead', 1000, 3],
@@ -59,18 +64,23 @@ for (const [i, [form, n, voices]] of rows.entries()) {
   const scrub = form === 'ahead' || form === 'back';
   const m = mix(K, form === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {});
   const subjects = Array.from({ length: n }, (_, j) => ({ seed: j * 0.37 }));
+  const own = form === 'own' || form === 'named';
   if (form === 'own')
     for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
-  for (let v = 0; form !== 'own' && v < voices; v++) {
+  if (form === 'named') for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine] });
+  for (let v = 0; !own && v < voices; v++) {
     const p = form === 'keys' ? bounce() : scrub && v === 0 ? drift() : flicker(v);
     m.cue({ patch: p, fade: { in: 100 }, locus: form === 'locus' ? 'one' : undefined });
   }
   const scratch = {};
   let t = 0;
+  let first = 0;
   for (let f = 0; f < 30; f++) {
+    const f0 = performance.now();
     t += 16.7;
     m.sync(t);
     for (const s of subjects) m.probe(s, scratch);
+    if (f === 0) first = performance.now() - f0;
   }
   await new Promise((r) => setTimeout(r, 0));
   const before = gcs;
@@ -91,6 +101,7 @@ for (const [i, [form, n, voices]] of rows.entries()) {
   console.log(
     `${String(i + 1).padStart(2)}/${rows.length}  ${form.padEnd(5)} N=${String(n).padStart(6)} V=${voices}` +
       `  ${ms.toFixed(3).padStart(8)} ms/frame  ${ns.toFixed(0).padStart(5)} ns/subject·voice` +
+      `  first ${first.toFixed(1).padStart(7)} ms` +
       `  gc ${String(gcs - before).padStart(4)}`,
   );
 }

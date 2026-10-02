@@ -362,6 +362,10 @@ interface Setting&lt;S = void&gt; {
   <span class="cm">/** Which subjects this voice reaches. Default: all of them. The predicate is fixed at `cue`; it runs per
      subject the first time the mix sees that subject, and the answer is kept for as long as the state is. */</span>
   target?: (subject: I) =&gt; boolean;
+  <span class="cm">/** The subjects this voice reaches, fixed at `cue` and matched by identity; a probe of any other never
+     asks this voice. Takes the place of <code>target</code>, and a cue giving both is refused: a predicate over a
+     fixed list is that list filtered, which the host can do before cueing. */</span>
+  subjects?: readonly I[];
 
   <span class="cm">// clock</span>
   <span class="cm">/** When the voice starts, in ms on the clock the host passes <code>sync</code>. Default: the next sync. */</span>
@@ -481,7 +485,7 @@ interface Mix&lt;I, O&gt; {
   drain&lt;E&gt;(tag?: string): { timestamp: number; subject: I; voice: number; tags: readonly string[]; event: E }[];
 }</code></pre>
 
-<p>A probe walks the voices that may reach its subject, not every voice. With no <code>target</code> in the mix that is all of them, so nothing is kept; once a voice targets, each subject keeps the list of voices whose <code>target</code> took it, rebuilt when a voice is cued, starts or leaves. One voice per subject on a shared mix then costs one voice per probe: 1000 subjects, each with its own voice, took 95&nbsp;ms a frame before the list and 0.45&nbsp;ms after (<code>npm run bench</code>, rows <code>own</code>).</p>
+<p>A probe walks the voices that may reach its subject, not every voice. With no <code>target</code> in the mix that is all of them, so nothing is kept; once a voice targets, each subject keeps the list of voices whose <code>target</code> took it, rebuilt when a voice is cued, starts or leaves. One voice per subject on a shared mix then costs one voice per probe: 1000 subjects, each with its own voice, took 95&nbsp;ms a frame before the list and 0.45&nbsp;ms after (<code>npm run bench</code>, rows <code>own</code>). Building the list still asks every <code>target</code> of every new subject, so the first frame of that scene took 500&ndash;580&nbsp;ms. A voice that names its subjects with <code>subjects</code> is filed under each of them at <code>cue</code>, and a subject's list is built from the voices filed under it and those that name none: the same scene's first frame took 1.0&nbsp;ms, and 10.6&nbsp;ms at 10,000 subjects (rows <code>named</code>).</p>
 
 <p>Subjects are not registered. State lives in a <code>WeakMap</code> keyed by the subject object, created on first probe and stepped by the gap in the timestamp since that subject was last stepped. That is the rule klieg's dwell arrived at, and it means a part a wrapper leaves unasked for a while catches up rather than resuming where it paused.</p>
 
