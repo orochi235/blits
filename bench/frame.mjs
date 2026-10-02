@@ -3,7 +3,7 @@
 // `p99` and `worst` are single frames, where a collection landing mid-frame shows; `gc` counts
 // collections during the timed frames and the ms they paused for.
 import { PerformanceObserver } from 'node:perf_hooks';
-import { hex, keys, kit, max, mix, mul, patch, sum, vec } from '../dist/index.js';
+import { hex, keys, kit, max, mix, mul, patch, spring, sum, vec } from '../dist/index.js';
 
 const K = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: hex() });
 
@@ -40,6 +40,9 @@ const drift = () =>
     },
   });
 
+// weasel's tween-to-target shape as a spring: each subject heads somewhere of its own.
+const settle = () => spring('position', { from: [0, 0, 0], to: (s) => [s.seed, 1, 0] });
+
 const rows = [
   ['fn', 100, 1],
   ['fn', 1000, 1],
@@ -57,6 +60,16 @@ const rows = [
   ['named', 100, 1],
   ['named', 1000, 1],
   ['named', 10000, 1],
+  // One spring voice over every subject, and one per subject named with `subjects`.
+  ['spring', 1000, 1],
+  ['spring', 10000, 1],
+  ['springs', 1000, 1],
+  ['springs', 10000, 1],
+  // Lanes fill every numbered subject; this probes 5% of 10k each frame, where that costs more.
+  ['sparse', 10000, 1],
+  // The same rows with lanes off, for the comparison in one run.
+  ['keys-', 10000, 3],
+  ['spring-', 10000, 1],
   // A projection made and probed every frame, as a continuous scrub would: 500 ms ahead, and
   // 300 ms back on a mix keeping 5 s of history.
   ['ahead', 1000, 3],
@@ -65,17 +78,31 @@ const rows = [
 
 const frames = 300;
 for (const [i, [form, n, voices]] of rows.entries()) {
-  const scrub = form === 'ahead' || form === 'back';
-  const m = mix(K, form === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {});
+  const off = form.endsWith('-');
+  const kind = off ? form.slice(0, -1) : form;
+  const scrub = kind === 'ahead' || kind === 'back';
+  const m = mix(K, {
+    ...(kind === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {}),
+    lanes: !off,
+  });
   const subjects = Array.from({ length: n }, (_, j) => ({ seed: j * 0.37 }));
-  const own = form === 'own' || form === 'named';
-  if (form === 'own')
+  const own = kind === 'own' || kind === 'named' || kind === 'springs';
+  if (kind === 'own')
     for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
-  if (form === 'named') for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine] });
+  if (kind === 'named') for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine] });
+  if (kind === 'springs') for (const mine of subjects) m.cue({ patch: settle(), subjects: [mine] });
   for (let v = 0; !own && v < voices; v++) {
-    const p = form === 'keys' ? bounce() : scrub && v === 0 ? drift() : flicker(v);
-    m.cue({ patch: p, fade: { in: 100 }, locus: form === 'locus' ? 'one' : undefined });
+    const p =
+      kind === 'keys'
+        ? bounce()
+        : kind === 'spring'
+          ? settle()
+          : scrub && v === 0
+            ? drift()
+            : flicker(v);
+    m.cue({ patch: p, fade: { in: 100 }, locus: kind === 'locus' ? 'one' : undefined });
   }
+  const probed = kind === 'sparse' ? subjects.filter((_, j) => j % 20 === 0) : subjects;
   const scratch = {};
   let t = 0;
   let first = 0;
@@ -83,7 +110,7 @@ for (const [i, [form, n, voices]] of rows.entries()) {
     const f0 = performance.now();
     t += 16.7;
     m.sync(t);
-    for (const s of subjects) m.probe(s, scratch);
+    for (const s of probed) m.probe(s, scratch);
     if (f === 0) first = performance.now() - f0;
   }
   await new Promise((r) => setTimeout(r, 0));
@@ -93,12 +120,12 @@ for (const [i, [form, n, voices]] of rows.entries()) {
   for (let f = 0; f < frames; f++) {
     const f0 = performance.now();
     if (scrub) {
-      const p = m.project(form === 'ahead' ? t + 500 : t - 300 + (f % 20) * 5);
-      for (const s of subjects) p.probe(s, scratch);
+      const p = m.project(kind === 'ahead' ? t + 500 : t - 300 + (f % 20) * 5);
+      for (const s of probed) p.probe(s, scratch);
     } else {
       t += 16.7;
       m.sync(t);
-      for (const s of subjects) m.probe(s, scratch);
+      for (const s of probed) m.probe(s, scratch);
     }
     each[f] = performance.now() - f0;
   }
@@ -109,7 +136,7 @@ for (const [i, [form, n, voices]] of rows.entries()) {
   await new Promise((r) => setTimeout(r, 0));
   const ns = (ms * 1e6) / (n * voices);
   console.log(
-    `${String(i + 1).padStart(2)}/${rows.length}  ${form.padEnd(5)} N=${String(n).padStart(6)} V=${voices}` +
+    `${String(i + 1).padStart(2)}/${rows.length}  ${form.padEnd(7)} N=${String(n).padStart(6)} V=${voices}` +
       `  ${ms.toFixed(3).padStart(8)} ms/frame  ${ns.toFixed(0).padStart(5)} ns/subject·voice` +
       `  p99 ${p99.toFixed(3).padStart(8)}  worst ${worst.toFixed(3).padStart(8)}` +
       `  first ${first.toFixed(1).padStart(7)} ms` +
