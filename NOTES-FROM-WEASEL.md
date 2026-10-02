@@ -13,9 +13,6 @@ and delete this file once it is empty.
 
 What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 
-- `keys` interpolates a new array per read of a keyed array: about 88 of the collections in
-  keys 10k × 3. Branch `keys-scratch` (`914f69e`) reuses one per voice per subject and halves
-  them, but measured 6% slower per frame on an idle fleet node, so it is unmerged pending a call.
 - `atRest` runs a second fold, though on reused deltas.
 - `probe` with no `out` stores a freshly allocated pose per subject per frame. weasel measured this
   pattern: a new pose object per node per frame took major GC from 57 ms to 549 ms over 10 s

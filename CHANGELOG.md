@@ -29,6 +29,8 @@ version and everything else the patch. Each release lists its changes as **Break
 
 - A probe looks its subject up once rather than once per voice, which makes frames with several
   voices 5–12% faster.
+- A `keys` patch reads a keyed `vec` channel into an array its voice reuses, rather than a new one
+  each read, which halves collections at 10,000 subjects and leaves frame time unchanged.
 
 - A finite loop's fade out starts when its last pass ended, not at the first frame after, so it
   plays the same at any frame rate.
