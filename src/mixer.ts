@@ -1400,6 +1400,8 @@ class Mixer<I, O> implements Mix<I, O> {
   private beginFade(voice: Voice<I, O>, opts: FadeOptions, at?: number): void {
     if (voice.state === 'done' || voice.state === 'fading') return;
     const over = this.reduced ? 0 : (opts.over ?? voice.fade.out ?? 0);
+    // A voice is linked into its subjects' chains once it plays, and a fading one plays.
+    if (voice.state === 'pending') this.version++;
     voice.state = 'fading';
     voice.out = {
       from: 1,

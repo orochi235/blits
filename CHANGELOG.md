@@ -37,6 +37,8 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A voice faded before its start plays once its start arrives. It used to stay out of every
+  subject's fold until some other voice was cued or left.
 - A probe after a `seek` in the same frame reads the voice where the seek put it, rather than the
   value an earlier probe that frame read before the seek. A stateful patch still steps once.
 - A probe looks its subject up once rather than once per voice, which makes frames with several

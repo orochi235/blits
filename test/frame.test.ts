@@ -69,6 +69,21 @@ describe('one frame, one answer', () => {
     expect(steps).toBe(1);
   });
 
+  it('a voice faded before its start plays once its start arrives, with no other cue', () => {
+    const m = mix<Part, Pose>(PART, { lanes: false });
+    const part = { id: 'a' };
+    m.cue({ patch: patch<Part, Pose>(0, () => ({ gain: 2 }), { writes: ['gain'] }) });
+    const late = m.cue({
+      patch: patch<Part, Pose>(0, () => ({ crawl: 5 }), { writes: ['crawl'] }),
+      start: 300,
+    });
+    m.sync(100);
+    expect(m.probe(part).crawl).toBe(0);
+    late.fade({ over: 2000 });
+    m.sync(400);
+    expect(m.probe(part).crawl).toBeGreaterThan(0);
+  });
+
   it('a second sync with the same now is a no-op', () => {
     const steps: number[] = [];
     const counting = patch<Part, Pose, { n: number }>(0, () => ({}), {
