@@ -46,8 +46,6 @@ export function qualify(
 
 /** What a lane fill asks of the mix it belongs to. */
 export interface LaneHost<I, O> {
-  readonly now: number;
-  readonly version: number;
   readonly voices: readonly Voice<I, O>[];
   readonly channels: readonly Channel<unknown>[];
   readonly names: readonly string[];
@@ -85,6 +83,13 @@ interface Laned {
   values: Float64Array;
 }
 
+const STRIDE = 5;
+const REACH = 0;
+const DELAY = 1;
+const SINCE = 2;
+const WEIGHT = 3;
+const MSLOT = 4;
+
 /**
  * What one laned voice keeps per subject it plays on, by position in `list`: every subject it
  * reaches, for a voice over every subject; the numbered ones among those it names, for one that
@@ -97,16 +102,31 @@ class Lane<I, O> {
   private readonly at = new Map<number, number>();
   /** For a voice over every subject: whether it has met every subject numbered before it played. */
   swept = false;
-  /** 0 not yet met, 1 reaches, 2 does not. */
-  reach = new Uint8Array(0);
-  delay = new Float64Array(0);
-  since = new Float64Array(0);
-  weight = new Float64Array(0);
-  /** A motion patch's own number for the subject, -1 until asked. */
-  mslot = new Int32Array(0);
+  /**
+   * Per position, `STRIDE` numbers side by side, so one subject's are one read from memory: whether
+   * it was met (0 not yet, 1 reaches, 2 does not), its delay, its `since`, its weight at the last
+   * fill, and a motion patch's own number for it (-1 until asked).
+   */
+  data = new Float64Array(0);
   records: (Subject<unknown> | undefined)[] = [];
   /** What a keys read writes into, reused across subjects. */
   readonly delta: Record<string, unknown> = {};
+  /** The laned channel of each channel the voice writes, in `writes` order. */
+  chans: Laned[] = [];
+  /** The value read for each of `chans`, for the subject being folded. */
+  values: unknown[] = [];
+  /**
+   * Within one fill, the last elapsed placed and the last `since` weighed, with what they gave, so
+   * subjects sharing a delay or a start share the arithmetic: the same inputs give the same bits.
+   */
+  placedAt = Number.NaN;
+  phase = 0;
+  pass = 0;
+  readAt = Number.NaN;
+  weighedSince = Number.NaN;
+  fade = 1;
+  /** Whether the voice has no fade in or out this fill, so its envelope is 1 for every subject. */
+  flat = false;
 
   constructor(readonly voice: Voice<I, O>) {
     this.dense = voice.named === null;
@@ -114,6 +134,19 @@ class Lane<I, O> {
 
   positionOf(slot: number): number {
     return this.at.get(slot) ?? -1;
+  }
+
+  weightAt(p: number): number {
+    return this.data[p * STRIDE + WEIGHT] as number;
+  }
+
+  /** Records what the voice's record for the subject at `p` fixed on first sight. */
+  met(p: number, held: Subject<unknown>): void {
+    const o = p * STRIDE;
+    this.records[p] = held;
+    this.data[o + REACH] = held.reaches ? 1 : 2;
+    this.data[o + DELAY] = held.delay;
+    this.data[o + SINCE] = held.since;
   }
 
   /** A subject's position, made unmet if it has none. */
@@ -137,11 +170,7 @@ class Lane<I, O> {
       const moved = this.list[last] as number;
       this.list[p] = moved;
       this.at.set(moved, p);
-      this.reach[p] = this.reach[last] as number;
-      this.delay[p] = this.delay[last] as number;
-      this.since[p] = this.since[last] as number;
-      this.weight[p] = this.weight[last] as number;
-      this.mslot[p] = this.mslot[last] as number;
+      this.data.copyWithin(p * STRIDE, last * STRIDE, (last + 1) * STRIDE);
       this.records[p] = this.records[last];
     }
     this.list.pop();
@@ -150,30 +179,19 @@ class Lane<I, O> {
   }
 
   private clear(p: number): void {
-    this.reach[p] = 0;
-    this.weight[p] = 0;
-    this.mslot[p] = -1;
+    const o = p * STRIDE;
+    this.data[o + REACH] = 0;
+    this.data[o + WEIGHT] = 0;
+    this.data[o + MSLOT] = -1;
     this.records[p] = undefined;
   }
 
   private grow(size: number): void {
-    const cap = this.reach.length;
+    const cap = this.data.length / STRIDE;
     if (size <= cap) return;
-    const next = Math.max(size, cap * 2, 4);
-    const reach = new Uint8Array(next);
-    reach.set(this.reach);
-    this.reach = reach;
-    const more = (a: Float64Array) => {
-      const b = new Float64Array(next);
-      b.set(a);
-      return b;
-    };
-    this.delay = more(this.delay);
-    this.since = more(this.since);
-    this.weight = more(this.weight);
-    const mslot = new Int32Array(next).fill(-1);
-    mslot.set(this.mslot);
-    this.mslot = mslot;
+    const data = new Float64Array(Math.max(size, cap * 2, 4) * STRIDE);
+    data.set(this.data);
+    this.data = data;
   }
 }
 
@@ -194,9 +212,17 @@ export class Lanes<I, O> {
   private fills = 0;
   /** Numbers handed out since the last fill, for the voices over every subject to meet at the next. */
   private fresh: number[] = [];
-  /** During a fill, each subject by number, looked up once: every look through a weak reference costs. */
+  /**
+   * Each subject by number as last probed, held from that probe until the next fill uses it, so a
+   * fill rarely looks one up through its weak reference, which costs on every look.
+   */
   private readonly subjects: (I | typeof absent | undefined)[] = [];
   private keeps = false;
+  private now = Number.NaN;
+  /** By kit slot, whether a fill leaves the channel's values for probes to copy. */
+  readonly copies: boolean[] = [];
+  /** Whether every voice in the mix is on a lane, so a filled subject has nothing left to fold. */
+  whole = false;
   private filledAt = Number.NaN;
   private filledVersion = Number.NaN;
   private qualifiedVersion = Number.NaN;
@@ -236,47 +262,49 @@ export class Lanes<I, O> {
    */
   weightOf(id: number, slot: number): number | undefined {
     const lane = this.byId.get(id);
-    if (lane === undefined || !this.current(slot)) return undefined;
+    if (lane === undefined || slot < 0 || this.filled[slot] !== this.fills) return undefined;
     const p = lane.positionOf(slot);
-    return p < 0 ? 0 : (lane.weight[p] as number);
+    return p < 0 ? 0 : lane.weightAt(p);
   }
 
   /**
-   * Fills the lanes once a frame, and says whether `slot`'s values are this fill's. A subject
-   * numbered since the fill is not in it, so it takes the general path until the next frame.
+   * Fills the lanes once a frame, and says whether the probed subject's values are this fill's. A
+   * subject numbered since the fill is not in it, so it takes the general path until the next frame.
    */
-  prepare(slot: number): boolean {
-    const host = this.host;
-    if (this.qualifiedVersion !== host.version) this.requalify();
+  prepare(slot: number, subject: I, now: number, version: number): boolean {
+    if (this.qualifiedVersion !== version) this.requalify(version);
     if (this.laned.length === 0) {
       // A voice that joins a lane later meets every numbered subject then.
       this.fresh.length = 0;
       return false;
     }
-    if (this.filledAt !== host.now || this.filledVersion !== host.version) this.fillAll();
-    return this.current(slot);
+    if (this.filledAt !== now || this.filledVersion !== version) this.fillAll(now, version);
+    if (slot < 0) return false;
+    this.subjects[slot] = subject;
+    return this.filled[slot] === this.fills;
   }
 
-  /** Writes a subject's laned values into a pose whose laned channels hold fresh copies of rest. */
+  /** Writes a subject's laned values into a pose, each array channel into a new array. */
   copy(slot: number, pose: Record<string, unknown>): void {
-    for (const ch of this.laned) {
-      if (ch.axes === 1) {
+    const laned = this.laned;
+    for (let c = 0; c < laned.length; c++) {
+      const ch = laned[c] as Laned;
+      const axes = ch.axes;
+      if (axes === 1) {
         pose[ch.name] = ch.values[slot] as number;
         continue;
       }
-      const arr = pose[ch.name] as number[];
-      const base = slot * ch.axes;
-      for (let a = 0; a < ch.axes; a++) arr[a] = ch.values[base + a] as number;
+      const arr: number[] = [];
+      const base = slot * axes;
+      for (let a = 0; a < axes; a++) arr.push(ch.values[base + a] as number);
+      pose[ch.name] = arr;
     }
-  }
-
-  private current(slot: number): boolean {
-    return slot >= 0 && this.fills > 0 && this.filled[slot] === this.fills;
   }
 
   private forget(slot: number): void {
     for (const lane of this.lanes) lane.remove(slot);
     if (slot < this.filled.length) this.filled[slot] = 0;
+    this.subjects[slot] = undefined;
   }
 
   private grow(size: number): void {
@@ -293,9 +321,9 @@ export class Lanes<I, O> {
     this.cap = cap;
   }
 
-  private requalify(): void {
+  private requalify(version: number): void {
     const host = this.host;
-    this.qualifiedVersion = host.version;
+    this.qualifiedVersion = version;
     this.filledVersion = Number.NaN;
     const present = host.voices.filter((v) => v.state !== 'done');
     const numeric = host.channels.map((c) => numericOf(c) !== undefined);
@@ -311,6 +339,7 @@ export class Lanes<I, O> {
       kept.push(this.byId.get(v.id) ?? this.join(v));
     }
     this.lanes = kept;
+    this.whole = kept.length === present.length;
     this.byId.clear();
     for (const lane of kept) this.byId.set(lane.voice.id, lane);
     this.laned = [];
@@ -328,6 +357,12 @@ export class Lanes<I, O> {
       this.laned.push(ch);
       this.bySlot[slot] = ch;
     });
+    this.copies.length = 0;
+    for (const ch of this.bySlot) this.copies.push(ch !== undefined);
+    for (const lane of kept) {
+      lane.chans = lane.voice.slots.map((s) => this.bySlot[s] as Laned);
+      lane.values = lane.chans.map(() => undefined);
+    }
   }
 
   private join(voice: Voice<I, O>): Lane<I, O> {
@@ -345,16 +380,17 @@ export class Lanes<I, O> {
   private leave(lane: Lane<I, O>): void {
     for (let p = 0; p < lane.list.length; p++) {
       const rec = lane.records[p];
-      if (rec !== undefined) rec.weight = lane.weight[p] as number;
+      if (rec !== undefined) rec.weight = lane.weightAt(p);
     }
     lane.voice.laned = false;
   }
 
-  private fillAll(): void {
+  private fillAll(now: number, version: number): void {
     const host = this.host;
     this.fills++;
-    this.filledAt = host.now;
-    this.filledVersion = host.version;
+    this.now = now;
+    this.filledAt = now;
+    this.filledVersion = version;
     const size = this.numbers.size;
     this.keeps = host.keeps;
     for (const ch of this.laned) ch.values.fill(ch.rest, 0, size * ch.axes);
@@ -380,11 +416,7 @@ export class Lanes<I, O> {
     if (subject === absent) return;
     const held = this.host.meet(lane.voice, subject);
     if (!held.reaches) return;
-    const p = lane.add(slot);
-    lane.records[p] = held;
-    lane.delay[p] = held.delay;
-    lane.since[p] = held.since;
-    lane.reach[p] = 1;
+    lane.met(lane.add(slot), held);
   }
 
   /** One voice's contribution to every subject it plays on. */
@@ -401,7 +433,14 @@ export class Lanes<I, O> {
     }
     // This fill's keyed reads overwrite the voice's scratch, which a record's delta may hold.
     voice.holder = null;
-    const elapsed = voice.elapsedAt(this.host.now);
+    lane.placedAt = Number.NaN;
+    lane.readAt = Number.NaN;
+    // With no fade in or out the envelope is 1 for every subject, which is what it would return.
+    const flat = !((voice.fade.in ?? 0) > 0) && voice.out === null;
+    lane.weighedSince = Number.NaN;
+    lane.flat = flat;
+    lane.fade = 1;
+    const elapsed = voice.elapsedAt(this.now);
     const period = voice.patch.period;
     const passes = passesOf(voice.spec.loop);
     const list = lane.list;
@@ -419,71 +458,116 @@ export class Lanes<I, O> {
   ): void {
     const host = this.host;
     const voice = lane.voice;
-    let r = lane.reach[p] as number;
-    if (r === 0) {
+    const data = lane.data;
+    const o = p * STRIDE;
+    if (data[o + REACH] === 0) {
       const subject = this.subjectAt(slot);
       if (subject === absent) return;
-      const held = host.meet(voice, subject);
-      lane.records[p] = held;
-      lane.delay[p] = held.delay;
-      lane.since[p] = held.since;
-      r = held.reaches ? 1 : 2;
-      lane.reach[p] = r;
+      lane.met(p, host.meet(voice, subject));
     }
-    if (r === 2) return;
-    const delay = lane.delay[p] as number;
+    if (data[o + REACH] === 2) return;
+    const delay = data[o + DELAY] as number;
     const elapsed = elapsedNow - delay;
     if (elapsed < 0) {
-      lane.weight[p] = 0;
+      data[o + WEIGHT] = 0;
       return;
     }
-    place(elapsed, period, passes);
-    const w = clampWeight(voice.weight * host.envelope(voice, lane.since[p] as number));
-    lane.weight[p] = w;
+    if (elapsed !== lane.placedAt) {
+      place(elapsed, period, passes);
+      lane.placedAt = elapsed;
+      lane.phase = placed.phase;
+      lane.pass = placed.pass;
+    }
+    const since = data[o + SINCE] as number;
+    if (!lane.flat && since !== lane.weighedSince) {
+      lane.fade = host.envelope(voice, since);
+      lane.weighedSince = since;
+    }
+    const w = clampWeight(voice.weight * lane.fade);
+    data[o + WEIGHT] = w;
     if (voice.built !== null) {
-      readKeys(
-        voice.built,
-        placed.phase,
-        lane.delta,
-        undefined,
-        voice.lerps as never,
-        undefined,
-        voice.intos,
-        voice.scratch,
-      );
-      if (w > 0) this.fold(voice, slot, lane.delta, w);
+      if (elapsed !== lane.readAt) {
+        readKeys(
+          voice.built,
+          lane.phase,
+          lane.delta,
+          undefined,
+          voice.lerps as never,
+          undefined,
+          voice.intos,
+          voice.scratch,
+        );
+        lane.readAt = elapsed;
+        this.gather(lane, lane.delta);
+      }
+      if (w > 0) this.fold(lane, slot, w);
       return;
     }
     const subject = this.subjectAt(slot);
     if (subject === absent) return;
     const held = lane.records[p] as Subject<unknown>;
-    host.ready(voice, subject, held, elapsed, placed.pass, w);
+    host.ready(voice, subject, held, elapsed, lane.pass, w);
     host.horizon(voice, delay);
-    const delta = voice.patch.at(placed.phase, subject, voice.setting as never) as Record<
+    const delta = voice.patch.at(lane.phase, subject, voice.setting as never) as Record<
       string,
       unknown
     >;
     if (this.keeps) host.after(voice, held);
-    if (w > 0) this.fold(voice, slot, delta, w);
+    if (w > 0) {
+      this.foldDelta(lane, slot, delta, w);
+    }
   }
 
-  private fold(voice: Voice<I, O>, slot: number, delta: Record<string, unknown>, w: number): void {
-    const slots = voice.slots;
-    for (let i = 0; i < slots.length; i++) {
-      const ch = this.bySlot[slots[i] as number] as Laned;
-      const value = delta[ch.name];
-      if (value === undefined) continue;
-      const values = ch.values;
-      if (ch.axes === 1) {
-        values[slot] = foldNumber(ch.op, values[slot] as number, value as number, w);
-        continue;
-      }
-      const base = slot * ch.axes;
-      const arr = Array.isArray(value) ? (value as number[]) : null;
-      for (let a = 0; a < ch.axes; a++) {
-        const v = arr === null ? ch.rest : (arr[a] ?? ch.rest);
-        values[base + a] = foldNumber(ch.op, values[base + a] as number, v, w);
-      }
+  /** For a keys voice: the delta's value for each channel it writes, read once per phase. */
+  private gather(lane: Lane<I, O>, delta: Record<string, unknown>): void {
+    const chans = lane.chans;
+    for (let i = 0; i < chans.length; i++) lane.values[i] = delta[(chans[i] as Laned).name];
+  }
+
+  /** Folds what `gather` read into a subject's laned values. */
+  private fold(lane: Lane<I, O>, slot: number, w: number): void {
+    const chans = lane.chans;
+    for (let i = 0; i < chans.length; i++)
+      this.foldInto(chans[i] as Laned, slot, lane.values[i], w);
+  }
+
+  /**
+   * Folds a delta a patch returned into a subject's laned values. The first few channels are read
+   * at a site of their own, which in most mixes sees one channel name and stays fast, where one
+   * site reading every name in turn slows every read.
+   */
+  private foldDelta(
+    lane: Lane<I, O>,
+    slot: number,
+    delta: Record<string, unknown>,
+    w: number,
+  ): void {
+    const chans = lane.chans;
+    const n = chans.length;
+    let ch = chans[0] as Laned;
+    if (n > 0) this.foldInto(ch, slot, delta[ch.name], w);
+    ch = chans[1] as Laned;
+    if (n > 1) this.foldInto(ch, slot, delta[ch.name], w);
+    ch = chans[2] as Laned;
+    if (n > 2) this.foldInto(ch, slot, delta[ch.name], w);
+    for (let i = 3; i < n; i++) {
+      ch = chans[i] as Laned;
+      this.foldInto(ch, slot, delta[ch.name], w);
+    }
+  }
+
+  private foldInto(ch: Laned, slot: number, value: unknown, w: number): void {
+    if (value === undefined) return;
+    const values = ch.values;
+    if (ch.axes === 1) {
+      values[slot] = foldNumber(ch.op, values[slot] as number, value as number, w);
+      return;
+    }
+    const base = slot * ch.axes;
+    const arr = Array.isArray(value) ? (value as number[]) : null;
+    for (let a = 0; a < ch.axes; a++) {
+      const v = arr === null ? ch.rest : (arr[a] ?? ch.rest);
+      values[base + a] = foldNumber(ch.op, values[base + a] as number, v, w);
     }
   }
 }

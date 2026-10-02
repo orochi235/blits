@@ -884,12 +884,6 @@ class Mixer<I, O> implements Mix<I, O> {
   private laneHost(): LaneHost<I, O> {
     const mix = this;
     return {
-      get now() {
-        return mix.now;
-      },
-      get version() {
-        return mix.version;
-      },
       get voices() {
         return mix.voices;
       },
@@ -1842,20 +1836,24 @@ class Mixer<I, O> implements Mix<I, O> {
   private folded(subject: I, out?: O, dry = false, except?: number): O {
     const now = this.now;
     const pose = (out ?? ({} as O)) as Record<string, unknown>;
+    const head = Number.isNaN(now) ? null : this.chain(subject, now);
+    const lanes = this.lanes;
+    // A subject numbered since the frame's fill folds every voice here, laned ones included.
+    const laned = head !== null && lanes?.prepare(head.slot, subject, now, this.version) === true;
+    const skip = laned ? (lanes as Lanes<I, O>).copies : null;
     for (let i = 0; i < this.names.length; i++) {
+      if (skip?.[i]) continue;
       const rest = (this.channels[i] as Channel<unknown>).rest;
       const key = this.names[i] as string;
       // Never `delete`: it drops a reused out object into dictionary mode for good.
       if (rest !== undefined) pose[key] = copy(rest);
       else if (pose[key] !== undefined) pose[key] = undefined;
     }
-    if (Number.isNaN(now)) return pose as O;
-
-    const head = this.chain(subject, now);
-    const lanes = this.lanes;
-    // A subject numbered since the frame's fill folds every voice here, laned ones included.
-    const laned = lanes?.prepare(head.slot) === true;
-    if (laned) (lanes as Lanes<I, O>).copy(head.slot, pose);
+    if (head === null) return pose as O;
+    if (laned) {
+      (lanes as Lanes<I, O>).copy(head.slot, pose);
+      if ((lanes as Lanes<I, O>).whole) return pose as O;
+    }
     if (this.loci === 0) {
       for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
         const voice = held.voice as Voice<I, O> | null;
