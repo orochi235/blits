@@ -2,7 +2,7 @@ import { foldNumber, type Numeric, numericOf } from './channels.js';
 import { clampWeight, passesOf, place, placed } from './clock.js';
 import type { Subject, Voice } from './mixer.js';
 import { absent, Numbers } from './numbers.js';
-import { readKeys } from './patch.js';
+import { readKeys, type Scratch } from './patch.js';
 import type { Channel } from './types.js';
 
 /** What qualifying needs of one voice: whether its patch and spec can run on a lane, and its channels. */
@@ -51,8 +51,10 @@ export interface LaneHost<I, O> {
   readonly names: readonly string[];
   /** Whether a voice's patch and spec can run on a lane, its channels aside. */
   fits(voice: Voice<I, O>): boolean;
-  /** The voice's record for the subject, made on first sight exactly as a probe makes it. */
+  /** The voice's record for a subject this probe has already linked it to. */
   meet(voice: Voice<I, O>, subject: I): Subject<unknown>;
+  /** The voices whose `subjects` name the subject, in voice order. */
+  naming(subject: I): readonly Voice<I, O>[] | undefined;
   /** The voice's own fade for a subject whose delay ran out at `since`. */
   envelope(voice: Voice<I, O>, since: number): number;
   /** Fills the voice's setting and the send target for a call to its patch. */
@@ -70,8 +72,8 @@ export interface LaneHost<I, O> {
   readonly keeps: boolean;
   /** After a patch call, keeps history of a record that grew kept state. */
   after(voice: Voice<I, O>, held: Subject<unknown>): void;
-  /** The subject's number, -1 for one not yet numbered. */
-  slotOf(subject: I): number;
+  /** A patch call left kept state on a record: the voice is stateful from now on. */
+  kept(voice: Voice<I, O>): void;
 }
 
 /** One laned channel: its arithmetic, and every numbered subject's folded value, `axes` per subject. */
@@ -84,33 +86,39 @@ interface Laned {
 }
 
 const STRIDE = 5;
-const REACH = 0;
-const DELAY = 1;
-const SINCE = 2;
-const WEIGHT = 3;
+const DELAY = 0;
+const SINCE = 1;
+/** The weight the last fill gave the subject. */
+const WEIGHT = 2;
+/** The weight a fill gave it the last time a probe read it from the lane. */
+const PROBED = 3;
 const MSLOT = 4;
 
 /**
- * What one laned voice keeps per subject it plays on, by position in `list`: every subject it
- * reaches, for a voice over every subject; the numbered ones among those it names, for one that
- * names its subjects.
+ * What one laned voice keeps per subject it reaches, by position in `list`. A subject gets a
+ * position when a probe of it first finds the voice playing, which is when the general path first
+ * sees it too.
  */
 class Lane<I, O> {
-  readonly dense: boolean;
   /** The subject number at each position. */
   readonly list: number[] = [];
   private readonly at = new Map<number, number>();
-  /** For a voice over every subject: whether it has met every subject numbered before it played. */
-  swept = false;
   /**
-   * Per position, `STRIDE` numbers side by side, so one subject's are one read from memory: whether
-   * it was met (0 not yet, 1 reaches, 2 does not), its delay, its `since`, its weight at the last
-   * fill, and a motion patch's own number for it (-1 until asked).
+   * When the voice started playing on its lane, in the order lanes did; 0 while it waits. A subject
+   * checked against every lane up to some epoch has met this one if this one's is no later.
+   */
+  epoch = 0;
+  /**
+   * Per position, `STRIDE` numbers side by side, so one subject's are one read from memory: its
+   * delay, its `since`, its weight at the last fill, its weight at the last fill a probe read, and a
+   * motion patch's own number for it (-1 until asked).
    */
   data = new Float64Array(0);
   records: (Subject<unknown> | undefined)[] = [];
   /** What a keys read writes into, reused across subjects. */
   readonly delta: Record<string, unknown> = {};
+  /** The arrays keyed reads interpolate into: the lane's own, so a probe mid-fill cannot move them. */
+  readonly scratch: Scratch = [];
   /** The laned channel of each channel the voice writes, in `writes` order. */
   chans: Laned[] = [];
   /** The value read for each of `chans`, for the subject being folded. */
@@ -119,46 +127,41 @@ class Lane<I, O> {
    * Within one fill, the last elapsed placed and the last `since` weighed, with what they gave, so
    * subjects sharing a delay or a start share the arithmetic: the same inputs give the same bits.
    */
-  placedAt = Number.NaN;
+  placed = false;
+  placedAt = 0;
   phase = 0;
   pass = 0;
-  readAt = Number.NaN;
-  weighedSince = Number.NaN;
+  read = false;
+  readAt = 0;
+  weighed = false;
+  weighedSince = 0;
   fade = 1;
   /** Whether the voice has no fade in or out this fill, so its envelope is 1 for every subject. */
   flat = false;
 
-  constructor(readonly voice: Voice<I, O>) {
-    this.dense = voice.named === null;
-  }
+  constructor(readonly voice: Voice<I, O>) {}
 
   positionOf(slot: number): number {
     return this.at.get(slot) ?? -1;
   }
 
-  weightAt(p: number): number {
-    return this.data[p * STRIDE + WEIGHT] as number;
-  }
-
-  /** Records what the voice's record for the subject at `p` fixed on first sight. */
-  met(p: number, held: Subject<unknown>): void {
-    const o = p * STRIDE;
-    this.records[p] = held;
-    this.data[o + REACH] = held.reaches ? 1 : 2;
-    this.data[o + DELAY] = held.delay;
-    this.data[o + SINCE] = held.since;
-  }
-
-  /** A subject's position, made unmet if it has none. */
-  add(slot: number): number {
-    const had = this.at.get(slot);
-    if (had !== undefined) return had;
+  /** Gives a subject the voice reaches a position, from what its record fixed on first sight. */
+  add(slot: number, held: Subject<unknown>): void {
     const p = this.list.length;
     this.list.push(slot);
     this.at.set(slot, p);
-    this.grow(p + 1);
-    this.clear(p);
-    return p;
+    if ((p + 1) * STRIDE > this.data.length) {
+      const data = new Float64Array(Math.max(p + 1, (this.data.length / STRIDE) * 2, 4) * STRIDE);
+      data.set(this.data);
+      this.data = data;
+    }
+    const o = p * STRIDE;
+    this.data[o + DELAY] = held.delay;
+    this.data[o + SINCE] = held.since;
+    this.data[o + WEIGHT] = 0;
+    this.data[o + PROBED] = 0;
+    this.data[o + MSLOT] = -1;
+    this.records[p] = held;
   }
 
   /** A subject lost its number: the last position moves into its place. */
@@ -175,23 +178,7 @@ class Lane<I, O> {
     }
     this.list.pop();
     this.at.delete(slot);
-    this.clear(last);
-  }
-
-  private clear(p: number): void {
-    const o = p * STRIDE;
-    this.data[o + REACH] = 0;
-    this.data[o + WEIGHT] = 0;
-    this.data[o + MSLOT] = -1;
-    this.records[p] = undefined;
-  }
-
-  private grow(size: number): void {
-    const cap = this.data.length / STRIDE;
-    if (size <= cap) return;
-    const data = new Float64Array(Math.max(size, cap * 2, 4) * STRIDE);
-    data.set(this.data);
-    this.data = data;
+    this.records[last] = undefined;
   }
 }
 
@@ -202,27 +189,45 @@ class Lane<I, O> {
 export class Lanes<I, O> {
   readonly numbers: Numbers<I>;
   private lanes: Lane<I, O>[] = [];
+  /** The lanes over every subject that have started playing, by epoch. */
+  private dense: Lane<I, O>[] = [];
   private readonly byId = new Map<number, Lane<I, O>>();
   private laned: Laned[] = [];
   /** By kit slot, the laned channel there. */
   private bySlot: (Laned | undefined)[] = [];
-  private cap = 0;
-  /** Per subject number, which fill last wrote it; 0 for none. */
-  private filled = new Uint32Array(0);
-  private fills = 0;
-  /** Numbers handed out since the last fill, for the voices over every subject to meet at the next. */
-  private fresh: number[] = [];
-  /**
-   * Each subject by number as last probed, held from that probe until the next fill uses it, so a
-   * fill rarely looks one up through its weak reference, which costs on every look.
-   */
-  private readonly subjects: (I | typeof absent | undefined)[] = [];
-  private keeps = false;
-  private now = Number.NaN;
   /** By kit slot, whether a fill leaves the channel's values for probes to copy. */
   readonly copies: boolean[] = [];
   /** Whether every voice in the mix is on a lane, so a filled subject has nothing left to fold. */
   whole = false;
+  private cap = 0;
+  private epochs = 0;
+  /** Per subject number, which fill last wrote it; 0 for none. */
+  private filled = new Uint32Array(0);
+  private fills = 0;
+  /** Per subject number, the latest lane epoch a probe of it has checked it against. */
+  private seen = new Uint32Array(0);
+  /**
+   * Per subject number, the probe count at its last probe read from the lanes and at its last probe
+   * folded by the general path, and the fill the former read: which of a lane and a record holds
+   * the weight `weightOf` reports.
+   */
+  private laneProbe = new Float64Array(0);
+  private generalProbe = new Float64Array(0);
+  private laneFill = new Uint32Array(0);
+  private probes = 0;
+  /**
+   * Each subject by number as last probed, held from that probe until the next fill uses it, so a
+   * fill rarely looks one up through its weak reference, which costs on every look. A host that
+   * stops syncing keeps at most one frame's probed subjects alive until its next fill, and none
+   * once no lane remains.
+   */
+  private subjects: (I | typeof absent | undefined)[] = [];
+  /** While a fill runs, so a probe a patch makes from inside it takes the general path. */
+  private filling = false;
+  /** Numbers handed out while a fill ran, which that fill did not fill. */
+  private readonly late: number[] = [];
+  private keeps = false;
+  private now = Number.NaN;
   private filledAt = Number.NaN;
   private filledVersion = Number.NaN;
   private qualifiedVersion = Number.NaN;
@@ -242,13 +247,16 @@ export class Lanes<I, O> {
     this.filledVersion = Number.NaN;
   }
 
-  /** Numbers a subject the mix sees for the first time; `naming` are the voices whose `subjects` name it. */
-  number(subject: I, naming: readonly Voice<I, O>[] | undefined): number {
+  /** Numbers a subject the mix sees for the first time. */
+  number(subject: I): number {
     const slot = this.numbers.take(subject);
     this.grow(slot + 1);
     this.filled[slot] = 0;
-    this.fresh.push(slot);
-    if (naming !== undefined) for (const v of naming) this.byId.get(v.id)?.add(slot);
+    this.seen[slot] = 0;
+    this.laneProbe[slot] = 0;
+    this.generalProbe[slot] = 0;
+    this.laneFill[slot] = 0;
+    if (this.filling) this.late.push(slot);
     return slot;
   }
 
@@ -257,31 +265,50 @@ export class Lanes<I, O> {
   }
 
   /**
-   * A laned voice's weight for a subject at the last fill; undefined for a voice not on a lane, or
-   * for a subject that fill did not reach, whose record holds it instead.
+   * A laned voice's weight for a subject at the last frame a probe read it from the lane; undefined
+   * where the subject's record holds it instead, because its last probe took the general path or
+   * the voice is not on a lane.
    */
   weightOf(id: number, slot: number): number | undefined {
     const lane = this.byId.get(id);
-    if (lane === undefined || slot < 0 || this.filled[slot] !== this.fills) return undefined;
+    if (lane === undefined || slot < 0) return undefined;
+    return this.reported(lane, slot);
+  }
+
+  private reported(lane: Lane<I, O>, slot: number): number | undefined {
+    if (!((this.laneProbe[slot] as number) > (this.generalProbe[slot] as number))) return undefined;
     const p = lane.positionOf(slot);
-    return p < 0 ? 0 : lane.weightAt(p);
+    if (p < 0) return undefined;
+    return lane.data[p * STRIDE + (this.laneFill[slot] === this.fills ? WEIGHT : PROBED)];
   }
 
   /**
-   * Fills the lanes once a frame, and says whether the probed subject's values are this fill's. A
-   * subject numbered since the fill is not in it, so it takes the general path until the next frame.
+   * Fills the lanes once a frame, and says whether this probe of a subject reads its values from
+   * them. One that a lane has not met yet, newly numbered or newly reached, takes the general path
+   * this frame, which is where it is first seen; so does one probed from inside a fill.
    */
   prepare(slot: number, subject: I, now: number, version: number): boolean {
-    if (this.qualifiedVersion !== version) this.requalify(version);
-    if (this.laned.length === 0) {
-      // A voice that joins a lane later meets every numbered subject then.
-      this.fresh.length = 0;
+    if (this.filling) {
+      if (slot >= 0) this.generalProbe[slot] = ++this.probes;
       return false;
     }
+    if (this.qualifiedVersion !== version) this.requalify(version);
+    if (this.laned.length === 0) return false;
     if (this.filledAt !== now || this.filledVersion !== version) this.fillAll(now, version);
     if (slot < 0) return false;
     this.subjects[slot] = subject;
-    return this.filled[slot] === this.fills;
+    const probe = ++this.probes;
+    let lane = this.filled[slot] === this.fills;
+    if ((this.seen[slot] as number) < this.epochs && this.meet(slot, subject)) {
+      // The fill ran before the subject had these positions, so it reads the general path all frame.
+      this.filled[slot] = 0;
+      lane = false;
+    }
+    if (lane) {
+      this.laneProbe[slot] = probe;
+      this.laneFill[slot] = this.fills;
+    } else this.generalProbe[slot] = probe;
+    return lane;
   }
 
   /** Writes a subject's laned values into a pose, each array channel into a new array. */
@@ -301,6 +328,34 @@ export class Lanes<I, O> {
     }
   }
 
+  /**
+   * Gives a probed subject a position on every lane that started playing since the subject was last
+   * checked and that reaches it. True when any did, so the probe takes the general path.
+   */
+  private meet(slot: number, subject: I): boolean {
+    const from = this.seen[slot] as number;
+    this.seen[slot] = this.epochs;
+    let met = false;
+    const dense = this.dense;
+    for (let i = dense.length - 1; i >= 0; i--) {
+      const lane = dense[i] as Lane<I, O>;
+      if (lane.epoch <= from) break;
+      const held = this.host.meet(lane.voice, subject);
+      if (!held.reaches) continue;
+      lane.add(slot, held);
+      met = true;
+    }
+    const naming = this.host.naming(subject);
+    if (naming !== undefined)
+      for (const voice of naming) {
+        const lane = this.byId.get(voice.id);
+        if (lane === undefined || lane.epoch <= from || lane.positionOf(slot) >= 0) continue;
+        lane.add(slot, this.host.meet(voice, subject));
+        met = true;
+      }
+    return met;
+  }
+
   private forget(slot: number): void {
     for (const lane of this.lanes) lane.remove(slot);
     if (slot < this.filled.length) this.filled[slot] = 0;
@@ -313,6 +368,18 @@ export class Lanes<I, O> {
     const filled = new Uint32Array(cap);
     filled.set(this.filled);
     this.filled = filled;
+    const seen = new Uint32Array(cap);
+    seen.set(this.seen);
+    this.seen = seen;
+    const laneFill = new Uint32Array(cap);
+    laneFill.set(this.laneFill);
+    this.laneFill = laneFill;
+    const laneProbe = new Float64Array(cap);
+    laneProbe.set(this.laneProbe);
+    this.laneProbe = laneProbe;
+    const generalProbe = new Float64Array(cap);
+    generalProbe.set(this.generalProbe);
+    this.generalProbe = generalProbe;
     for (const ch of this.laned) {
       const values = new Float64Array(cap * ch.axes);
       values.set(ch.values);
@@ -336,12 +403,21 @@ export class Lanes<I, O> {
     const kept: Lane<I, O>[] = [];
     for (const v of present) {
       if (!voices.has(v.id)) continue;
-      kept.push(this.byId.get(v.id) ?? this.join(v));
+      const lane = this.byId.get(v.id) ?? new Lane<I, O>(v);
+      v.laned = true;
+      if (lane.epoch === 0 && (v.state === 'live' || v.state === 'fading'))
+        lane.epoch = ++this.epochs;
+      kept.push(lane);
     }
     this.lanes = kept;
+    this.dense = kept
+      .filter((l) => l.voice.named === null && l.epoch > 0)
+      .sort((a, b) => a.epoch - b.epoch);
     this.whole = kept.length === present.length;
     this.byId.clear();
     for (const lane of kept) this.byId.set(lane.voice.id, lane);
+    // With no lane left no fill comes to let go of the subjects the last probes held.
+    if (kept.length === 0) this.subjects = [];
     this.laned = [];
     this.bySlot = host.channels.map(() => undefined);
     channels.forEach((on, slot) => {
@@ -365,39 +441,35 @@ export class Lanes<I, O> {
     }
   }
 
-  private join(voice: Voice<I, O>): Lane<I, O> {
-    const lane = new Lane<I, O>(voice);
-    voice.laned = true;
-    if (!lane.dense)
-      for (const subject of voice.named as ReadonlySet<I>) {
-        const slot = this.host.slotOf(subject);
-        if (slot >= 0) lane.add(slot);
-      }
-    return lane;
-  }
-
   /** Hands a voice back to the general path, with the weights `weightOf` reports kept on its records. */
   private leave(lane: Lane<I, O>): void {
     for (let p = 0; p < lane.list.length; p++) {
       const rec = lane.records[p];
-      if (rec !== undefined) rec.weight = lane.weightAt(p);
+      const w = this.reported(lane, lane.list[p] as number);
+      if (rec !== undefined && w !== undefined) rec.weight = w;
     }
     lane.voice.laned = false;
   }
 
   private fillAll(now: number, version: number): void {
     const host = this.host;
-    this.fills++;
-    this.now = now;
-    this.filledAt = now;
-    this.filledVersion = version;
-    const size = this.numbers.size;
-    this.keeps = host.keeps;
-    for (const ch of this.laned) ch.values.fill(ch.rest, 0, size * ch.axes);
-    for (const lane of this.lanes) this.run(lane);
-    this.fresh.length = 0;
-    this.subjects.fill(undefined, 0, size);
-    this.filled.fill(this.fills, 0, size);
+    this.filling = true;
+    try {
+      this.fills++;
+      this.now = now;
+      this.filledAt = now;
+      this.filledVersion = version;
+      const size = this.numbers.size;
+      this.keeps = host.keeps;
+      for (const ch of this.laned) ch.values.fill(ch.rest, 0, size * ch.axes);
+      for (const lane of this.lanes) this.run(lane);
+      this.filled.fill(this.fills, 0, size);
+      for (const slot of this.late) this.filled[slot] = 0;
+      this.subjects.fill(undefined, 0, size);
+    } finally {
+      this.filling = false;
+      this.late.length = 0;
+    }
   }
 
   private subjectAt(slot: number): I | typeof absent {
@@ -409,36 +481,15 @@ export class Lanes<I, O> {
     return subject;
   }
 
-  /** Has a voice over every subject meet a numbered one, and gives it a position if it reaches. */
-  private admit(lane: Lane<I, O>, slot: number): void {
-    if (!this.numbers.alive(slot) || lane.positionOf(slot) >= 0) return;
-    const subject = this.subjectAt(slot);
-    if (subject === absent) return;
-    const held = this.host.meet(lane.voice, subject);
-    if (!held.reaches) return;
-    lane.met(lane.add(slot), held);
-  }
-
   /** One voice's contribution to every subject it plays on. */
   private run(lane: Lane<I, O>): void {
     const voice = lane.voice;
     if (voice.state !== 'live' && voice.state !== 'fading') return;
-    if (lane.dense) {
-      if (lane.swept) for (const slot of this.fresh) this.admit(lane, slot);
-      else {
-        // Met once it plays, as a probe would meet it, since a placed start can still move before.
-        lane.swept = true;
-        for (let s = 0; s < this.numbers.size; s++) this.admit(lane, s);
-      }
-    }
-    // This fill's keyed reads overwrite the voice's scratch, which a record's delta may hold.
-    voice.holder = null;
-    lane.placedAt = Number.NaN;
-    lane.readAt = Number.NaN;
+    lane.placed = false;
+    lane.read = false;
+    lane.weighed = false;
     // With no fade in or out the envelope is 1 for every subject, which is what it would return.
-    const flat = !((voice.fade.in ?? 0) > 0) && voice.out === null;
-    lane.weighedSince = Number.NaN;
-    lane.flat = flat;
+    lane.flat = !((voice.fade.in ?? 0) > 0) && voice.out === null;
     lane.fade = 1;
     const elapsed = voice.elapsedAt(this.now);
     const period = voice.patch.period;
@@ -460,33 +511,31 @@ export class Lanes<I, O> {
     const voice = lane.voice;
     const data = lane.data;
     const o = p * STRIDE;
-    if (data[o + REACH] === 0) {
-      const subject = this.subjectAt(slot);
-      if (subject === absent) return;
-      lane.met(p, host.meet(voice, subject));
-    }
-    if (data[o + REACH] === 2) return;
+    // A probe read this subject from the last fill: keep the weight it read for `weightOf`.
+    if (this.laneFill[slot] === this.fills - 1) data[o + PROBED] = data[o + WEIGHT] as number;
     const delay = data[o + DELAY] as number;
     const elapsed = elapsedNow - delay;
     if (elapsed < 0) {
       data[o + WEIGHT] = 0;
       return;
     }
-    if (elapsed !== lane.placedAt) {
+    if (!lane.placed || !Object.is(elapsed, lane.placedAt)) {
       place(elapsed, period, passes);
+      lane.placed = true;
       lane.placedAt = elapsed;
       lane.phase = placed.phase;
       lane.pass = placed.pass;
     }
     const since = data[o + SINCE] as number;
-    if (!lane.flat && since !== lane.weighedSince) {
+    if (!lane.flat && (!lane.weighed || !Object.is(since, lane.weighedSince))) {
       lane.fade = host.envelope(voice, since);
+      lane.weighed = true;
       lane.weighedSince = since;
     }
     const w = clampWeight(voice.weight * lane.fade);
     data[o + WEIGHT] = w;
     if (voice.built !== null) {
-      if (elapsed !== lane.readAt) {
+      if (!lane.read || !Object.is(elapsed, lane.readAt)) {
         readKeys(
           voice.built,
           lane.phase,
@@ -495,8 +544,9 @@ export class Lanes<I, O> {
           voice.lerps as never,
           undefined,
           voice.intos,
-          voice.scratch,
+          lane.scratch,
         );
+        lane.read = true;
         lane.readAt = elapsed;
         this.gather(lane, lane.delta);
       }
@@ -513,9 +563,8 @@ export class Lanes<I, O> {
       unknown
     >;
     if (this.keeps) host.after(voice, held);
-    if (w > 0) {
-      this.foldDelta(lane, slot, delta, w);
-    }
+    if (held.kept.size > 0 && !voice.keeping) host.kept(voice);
+    if (w > 0) this.foldDelta(lane, slot, delta, w);
   }
 
   /** For a keys voice: the delta's value for each channel it writes, read once per phase. */

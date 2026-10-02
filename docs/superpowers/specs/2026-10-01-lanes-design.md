@@ -49,10 +49,9 @@ nothing can probe a subject that no longer exists.
 
 A subject's first probe takes the general path, which is where first sight already happens:
 `target`, `stagger`, the fade-in origin `since`, the voice's `seen` and `latest`. The lane copies
-`delay` and `since` into per-voice arrays at that point. A voice cued after a subject was numbered
-meets that subject at the voice's first fill instead of at the subject's next probe, so its
-`target`, `stagger` and `since` are taken then; for a host
-that probes every numbered subject every frame, those are the same frame.
+`delay` and `since` into per-voice arrays at that point. A voice that starts playing after a
+subject was numbered meets it the same way, at the subject's next probe, which takes the general
+path for that frame; so every voice sees every subject at the same times on both paths.
 
 ## Filling a lane
 
@@ -84,8 +83,10 @@ Per patch form:
   per-subject lists. `to`, `push` and `read` work on whichever holds the state, and the general
   path reads the same state, so there is one copy.
 
-A stateless `fn` that calls `setting.send` from `at` now sends for every numbered subject it
-reaches each frame, not only for probed ones. Nothing in blits or its consumers does this today.
+A stateless `fn` that calls `setting.send` from `at` now sends each frame for every subject it has
+met, not only for the ones probed that frame. Nothing in blits or its consumers does this today. A
+patch that keeps per-subject state through `setting.keep` is stateful: once a call leaves kept state
+on a record, its voice leaves its lane for the general path.
 
 Later probes that frame copy each laned channel's values into the pose, and fold the rest through
 the general path. `probe(subject, out)` keeps its signature.

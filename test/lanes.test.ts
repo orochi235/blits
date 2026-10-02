@@ -52,7 +52,8 @@ function expectSame(a: Pose, b: Pose, where: string): void {
 /**
  * Plays one scenario on a mix with lanes off and one with them on, building it afresh for each so
  * nothing is shared. At every time it probes the parts `probe` picks, into a fresh pose and into a
- * reused out object, and requires every channel, every handle's `weightOf` and `atRest` to match.
+ * reused out object, and requires every channel, every handle's `weightOf` for every part, probed
+ * or not, and `atRest` to match.
  */
 function agree(
   play: Play,
@@ -81,9 +82,9 @@ function agree(
         if (opts.probe && !opts.probe(t, part)) continue;
         poses.push(snapshot(run.m.probe(part)));
         poses.push(snapshot(run.m.probe(part, run.out)));
-        for (const h of run.handles) weights.push(h.weightOf(part));
         rest.push(run.m.atRest(part));
       }
+      for (const part of run.parts) for (const h of run.handles) weights.push(h.weightOf(part));
       return { poses, weights, rest };
     });
     const [off, on] = seen as [(typeof seen)[0], (typeof seen)[0]];
@@ -93,6 +94,37 @@ function agree(
     expect(on.weights, `t=${t} weightOf`).toEqual(off.weights);
     expect(on.rest, `t=${t} atRest`).toEqual(off.rest);
   }
+}
+
+/**
+ * Runs `run` with lanes off and on; `look` probes a subject and records every given handle's
+ * `weightOf` for it. Every probe and weight must match.
+ */
+function script(
+  run: (
+    m: Mix<Part, Pose>,
+    parts: Part[],
+    look: (part: Part, handles?: Handle<Part>[]) => void,
+  ) => void,
+  opts: { parts?: number } = {},
+): void {
+  const seen = [false, true].map((lanes) => {
+    const parts = Array.from({ length: opts.parts ?? 6 }, (_, id) => ({ id }));
+    const m = mix<Part, Pose>(K, { lanes });
+    const poses: Pose[] = [];
+    const weights: number[] = [];
+    run(m, parts, (part, handles = []) => {
+      poses.push(snapshot(m.probe(part)));
+      for (const h of handles) weights.push(h.weightOf(part));
+    });
+    return { poses, weights };
+  });
+  const [off, on] = seen as [(typeof seen)[0], (typeof seen)[0]];
+  expect(on.poses.length).toBe(off.poses.length);
+  off.poses.forEach((pose, i) => {
+    expectSame(pose, on.poses[i] as Pose, `probe ${i}`);
+  });
+  expect(on.weights, 'weightOf').toEqual(off.weights);
 }
 
 const times = [0, 16, 50, 120, 333, 500, 999, 1000, 1500, 2600];
@@ -108,6 +140,18 @@ const pulse = () =>
     { ease: { bezier: [0.3, 0.1, 0.2, 1] } },
   );
 
+const wave = () =>
+  patch<Part, Pose>(
+    700,
+    (phase, part) => ({
+      gain: 0.2 + 0.8 * Math.abs(Math.sin(phase * Math.PI + part.id)),
+      crawl: -0,
+      dark: -0.25 + phase,
+      position: [phase, -0, part.id],
+    }),
+    { writes: ['gain', 'crawl', 'dark', 'position'] },
+  );
+
 describe('lanes give the pose the general path gives', () => {
   it('for a keys voice over every subject', () => {
     agree(
@@ -117,18 +161,6 @@ describe('lanes give the pose the general path gives', () => {
       { times },
     );
   });
-
-  const wave = () =>
-    patch<Part, Pose>(
-      700,
-      (phase, part) => ({
-        gain: 0.2 + 0.8 * Math.abs(Math.sin(phase * Math.PI + part.id)),
-        crawl: -0,
-        dark: -0.25 + phase,
-        position: [phase, -0, part.id],
-      }),
-      { writes: ['gain', 'crawl', 'dark', 'position'] },
-    );
 
   it('for a stateless fn voice, with -0, a negative max and a mul of 0.1', () => {
     agree(
@@ -275,6 +307,9 @@ describe('lanes give the pose the general path gives', () => {
       const a = { id: 0 };
       const b = { id: 1 };
       const h = m.cue({ patch: pulse() });
+      m.sync(50);
+      m.probe(a);
+      m.probe(b);
       m.sync(100);
       const first = m.probe(a);
       m.cue({ patch: wave() });
@@ -370,6 +405,132 @@ describe('lanes give the pose the general path gives', () => {
     expect(off[0]?.gain).toBe(1);
     off.forEach((pose, i) => {
       expectSame(pose, on[i] as Pose, `probe ${i}`);
+    });
+  });
+});
+
+describe('lanes stay identical where a fill and a probe interleave', () => {
+  it('when a patch probes a subject the mix has never seen from inside a fill', () => {
+    script((m, parts, look) => {
+      const extra = { id: 99 };
+      let asked = false;
+      m.cue({ patch: pulse() });
+      m.cue({
+        patch: patch<Part, Pose>(
+          700,
+          (phase, part) => {
+            if (!asked && part.id === 0) {
+              asked = true;
+              m.probe(extra);
+            }
+            return { crawl: phase + part.id };
+          },
+          { writes: ['crawl'] },
+        ),
+      });
+      for (const t of times) {
+        m.sync(t);
+        for (const p of parts) look(p);
+        look(extra);
+      }
+    });
+  });
+
+  it('when a patch probes another numbered subject from inside a fill', () => {
+    script((m, parts, look) => {
+      m.cue({ patch: pulse() });
+      m.cue({
+        patch: patch<Part, Pose>(
+          700,
+          (phase, part) => {
+            const other = parts[(part.id + 1) % parts.length] as Part;
+            const g = part.id === 0 ? m.probe(other).gain : 1;
+            return { crawl: phase + part.id + g };
+          },
+          { writes: ['crawl'] },
+        ),
+      });
+      for (const t of times) {
+        m.sync(t);
+        for (const p of parts) look(p);
+      }
+    });
+  });
+
+  it('for a fn keeping a count through setting.keep, with only some subjects probed', () => {
+    const owner = {};
+    script((m, parts, look) => {
+      m.cue({
+        patch: patch<Part, Pose>(
+          500,
+          (phase, _part, setting) => {
+            const kept = setting.keep(owner, () => ({ n: 0 }));
+            kept.n++;
+            return { crawl: kept.n + phase };
+          },
+          { writes: ['crawl'] },
+        ),
+      });
+      for (const t of times) {
+        m.sync(t);
+        for (const p of parts) if ((p.id + t) % 2 === 0) look(p);
+      }
+    });
+  });
+
+  it('reports weightOf as of the last frame each subject was probed', () => {
+    const res = [false, true].map((lanes) => {
+      const m = mix<Part, Pose>(K, { lanes });
+      const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
+      const h = m.cue({ patch: pulse(), fade: { in: 400 } });
+      m.sync(0);
+      for (const p of parts) m.probe(p);
+      m.sync(100);
+      for (const p of parts) m.probe(p);
+      m.sync(300);
+      m.probe(parts[0] as Part);
+      return parts.map((p) => h.weightOf(p));
+    });
+    expect(res[1]).toEqual(res[0]);
+  });
+
+  it('for a voice cued mid-run with a finite loop and stagger, meeting only probed subjects', () => {
+    script((m, parts, look) => {
+      m.cue({ patch: pulse() });
+      m.sync(0);
+      for (const p of parts) look(p);
+      const h = m.cue({ patch: wave(), loop: 1, stagger: (p) => p.id * 300, fade: { out: 100 } });
+      for (const t of [16, 50, 120, 333, 500, 700, 900, 1000, 1500, 2000, 2600, 3000]) {
+        m.sync(t);
+        for (const p of parts.slice(0, 3)) look(p, [h]);
+      }
+    });
+  });
+
+  it('for -0 and +0 elapsed side by side in one fill', () => {
+    script((m, parts, look) => {
+      const h = m.cue({
+        patch: patch<Part, Pose>(500, (phase) => ({ dark: phase }), { writes: ['dark'] }),
+        stagger: (p) => (p.id % 2 === 0 ? 0 : -0),
+        rate: -1,
+      });
+      m.sync(100);
+      for (const p of parts) look(p);
+      m.sync(150);
+      h.seek(-0);
+      for (const p of parts) look(p);
+    });
+  });
+
+  it('for a pending voice faded before it starts', () => {
+    script((m, parts, look) => {
+      const a = m.cue({ patch: pulse() });
+      const b = m.cue({ patch: wave(), start: 300 });
+      for (const t of times) {
+        m.sync(t);
+        if (t === 120) b.fade({ over: 2000 });
+        for (const p of parts) look(p, [a, b]);
+      }
     });
   });
 });

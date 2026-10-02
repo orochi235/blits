@@ -262,6 +262,8 @@ export class Voice<I, O> {
   laned = false;
   /** How many times it has been sought, so a delta read before a seek is not handed out after it. */
   seeks = 0;
+  /** Whether its patch has kept state on a record through `setting.keep`, which makes it stateful. */
+  keeping = false;
   readonly ease: Curve | undefined;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: Setting<unknown>;
@@ -891,6 +893,7 @@ class Mixer<I, O> implements Mix<I, O> {
       names: this.names,
       fits: (voice) => mix.fits(voice),
       meet: (voice, subject) => mix.held(voice, subject, mix.now),
+      naming: (subject) => (mix.naming === 0 ? undefined : mix.named.get(subject)),
       envelope: (voice, since) => mix.envelope(voice, mix.now, since),
       ready: (voice, subject, held, elapsed, pass, weight) => {
         mix.prime(voice, held, mix.now, elapsed, pass);
@@ -903,14 +906,18 @@ class Mixer<I, O> implements Mix<I, O> {
       },
       keeps: this.opts.history !== undefined,
       after: (voice, held) => mix.remember(voice, held),
-      slotOf: (subject) => mix.chains.get(subject)?.slot ?? -1,
+      kept: (voice) => mix.stateful(voice),
     };
   }
 
-  /** Whether a voice's patch and spec can run on a lane, its channels aside. */
+  /**
+   * Whether a voice's patch and spec can run on a lane, its channels aside. A voice whose patch has
+   * kept state on a record through `setting.keep` is stateful from then on, and leaves its lane.
+   */
   private fits(voice: Voice<I, O>): boolean {
     const spec = voice.spec;
     const patch = voice.patch;
+    if (voice.keeping) return false;
     if (typeof spec.weight === 'function') return false;
     if (spec.locus !== undefined || spec.from === 'current') return false;
     if (voice.out?.rest) return false;
@@ -923,6 +930,13 @@ class Mixer<I, O> implements Mix<I, O> {
       built === null ||
       built.tracks.every((t, i) => t.lerp === undefined || t.lerp === voice.lerps[i])
     );
+  }
+
+  /** A voice's patch kept state on a record: it is stateful from now on. */
+  private stateful(voice: Voice<I, O>): void {
+    if (voice.keeping) return;
+    voice.keeping = true;
+    this.lanes?.invalidate();
   }
 
   /** Fills a voice's setting for a call to its patch, the weight aside. */
@@ -1550,6 +1564,7 @@ class Mixer<I, O> implements Mix<I, O> {
     held.probed = now;
     held.seeks = voice.seeks;
     if (history !== undefined) this.remember(voice, held);
+    if (held.kept.size > 0 && !voice.keeping) this.stateful(voice);
 
     if (voice.out?.rest && this.isRest(delta)) {
       held.weight = 0;
@@ -1743,7 +1758,7 @@ class Mixer<I, O> implements Mix<I, O> {
       head.slot = was.slot;
       was.slot = -1;
     } else if (was === undefined && this.lanes !== null && head.slot < 0)
-      head.slot = this.lanes.number(subject, this.named.get(subject));
+      head.slot = this.lanes.number(subject);
     if (was !== head) this.chains.set(subject, head);
     return head;
   }
