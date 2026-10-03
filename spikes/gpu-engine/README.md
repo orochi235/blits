@@ -261,10 +261,9 @@ lanes off. The tween rows exist only on the branch:
 - **Motion lanes stopped allocating a delta per subject**, which is what moved `spring`,
   `spring^` and `springs` to 0.82–0.90 with about half the collections. A delta is built only
   when a probe in the same frame asks for one.
-- **`spring-`, a spring with lanes off, is unresolved.** Its six rounds ran 0.93–1.38× `main`
-  under that load; alternated local runs of the same build put it at 0.97–1.09, and a profile
-  shows the general path's spring solver unchanged. An earlier build that folded the tween's
-  arithmetic into the spring solver's function did slow it by 13% in profiles; that is gone.
+- **`spring-`, a spring with lanes off, costs what it did before `tween`.** Its 1.14× above came
+  from the load: on an idle `teitou` (2026-10-02, `bench/ab.sh ca8d47a 6e13f3f 10`, Node 26.10) it
+  read 0.99× `ca8d47a`, rounds 0.95–1.07, while `spring` and `springs` read 0.94× and `keys` 1.01×.
 - **A tween per subject** (`tweens`, 10,000 voices) costs 2.6× one tween voice over the same
   subjects, which is the case for grouping voices that share a patch into one lane.
 

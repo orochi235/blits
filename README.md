@@ -76,7 +76,7 @@ so the engine keeps no dependencies; its README says how it works.
 
 ## Status
 
-v0.2.1, with two consumers. magicsmoke runs every fault on it, and
+v0.3.0, with two consumers. magicsmoke runs every fault on it, and
 [klieg](https://github.com/orochi235/klieg) composes all three of its systems — letter motion,
 part effects, and the environment a sign is lit by — on a mix each, on a branch not yet merged.
 That port was an extraction rather than a rewrite, so it is also the evidence that the arithmetic

@@ -18,13 +18,12 @@ systems now run on it**, on a branch that is not merged.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **private**, pushed and in step with `origin/main`
-  as of `121ee19` (release 0.2.1 plus doc fixes).
-- **The score and reading back are on `main`**, merged from `project` with lanes, `pull` and
-  blits-quarks (2026-10-02), not released. `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
+- `main` at `git@github.com:orochi235/blits.git` — **private**; release 0.3.0 (2026-10-02).
+- **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
+  blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
   names, scores and queries, `mix.marks`, motion history in `spring`/`glide`, and the site's Score
-  page. The schema page's Score section describes it; `CHANGELOG.md` has it under Unreleased. One
+  page. The schema page's Score section describes it; `CHANGELOG.md` has it under 0.3.0. One
   behavior change rides along: a finite loop's fade starts when its last pass ended, not at the
   next frame.
 - **klieg's port is done and green, on `blits-port` in `~/src/klieg`** — not merged into klieg's
@@ -35,7 +34,7 @@ systems now run on it**, on a branch that is not merged.
   page's klieg section says what the port found; do not re-derive it from here.
 - **klieg depends on the published package**, `"@msb235/blits": "^0.2.1"` in
   `packages/core/package.json`, so the branch builds anywhere and nothing blocks the merge.
-- **The package, `@msb235/blits` 0.2.1 on npm.** `src/` is the whole of it: `channels.ts` (the stock
+- **The package, `@msb235/blits` 0.3.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
   channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
   `motion.ts` (`spring`, `glide`), `lanes.ts` (lanes, with `clock.ts`, the phase,
@@ -158,11 +157,6 @@ systems now run on it**, on a branch that is not merged.
 
 ## Next, in order
 
-0. **Release what is on `main`.** `CHANGELOG.md`'s Unreleased section has Breaking entries (the
-   `'motion'` form, untimed retarget timing, `mixHex` in OKLCH), which under this repo's semver
-   makes it 0.3.0; the number is Mike's call. klieg takes `^0.2.1`, so it does not pick 0.3.0 up
-   on its own.
-
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
    in the hot path and what weasel has that blits doesn't (booking events ahead, a mix-wide time
    scale, nesting, a mix that can list what is playing). Delete each item as it is dealt with, and
@@ -202,9 +196,7 @@ systems now run on it**, on a branch that is not merged.
      spring's, over the voice's period). In weasel's shape on studio it takes a frame to 0.83
      of a `fn` tween's and its collection pauses to a quarter; against a `fn` with no per-call
      lookup it is about even, both sitting on the probe floor. The schema page's motion section
-     and `spikes/gpu-engine/README.md` under "Tween" have it. **Unresolved:** a spring
-     with lanes off read 1.14× `main` on a loaded studio and even locally; the README says what
-     was ruled out. Measure it again on a quiet node before the release.
+     and `spikes/gpu-engine/README.md` under "Tween" have it. A spring with lanes off, which read 1.14× on a loaded studio, reads 0.99× on an idle node.
    - **Voices sharing a patch, grouped into one lane indexed by voice**, so a voice per subject
      costs what one voice does. Only if a voice per call still needs it once `tween` exists. On
      studio a tween per subject (`tweens`, 10k voices) cost 2.6× one tween voice over the same
