@@ -21,12 +21,11 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   2026-10-02, vitest means in ms per frame at 10k nodes, two runs; weasel's own animator in
   brackets [0.42–0.44 tween, 0.67–0.94 spring]). One `tween` voice over every node, read by
   `probe` per node: 2.0–2.1 (2.6–2.7 lanes off), level with a `fn` voice at 2.1. A voice per call:
-  3.8–3.9. One spring voice: 2.5; a spring voice per call 4.6–4.7. Read through `pull` once a
-  frame instead (second run, studio less loaded; weasel's own 0.34 that run): one tween voice 1.8
-  against 2.4 by `probe`, about 0.77 of it and still about 4×, near 170 ns a node against weasel's
-  35–45; one spring voice 2.3 [0.54]. At 1k, pull 0.13 [0.03]. weasel's arithmetic, not a profile:
-  what is left is per-node lookup and bookkeeping, so keeping subject numbers between `pull` calls
-  (`HANDOFF.md` 1c) is the next step.
+  3.8–3.9. One spring voice: 2.5; a spring voice per call 4.6–4.7. Read through `pull`, with the
+  same array every frame, on `93f0317` against `26c9764` (studio, alternated): one tween voice
+  1.2–1.3 ms, from 1.6–2.1, about 0.67 of before and about 3.5× weasel's own 0.32–0.38; one
+  spring voice 1.5–1.7 [0.52–0.95]; at 1k a tween voice 0.10–0.11 [0.03]. About 120 ns a node
+  against weasel's 35. What is left is the lane's per-node motion step (`HANDOFF.md` 1c).
 - **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a
   `fn` voice in plain Node: about 35 ms warm against 16, and 80–90 cold against 28–42 (weasel,
   orochi under load, 2026-10-02). A cold run in blits' own shape read the other way, 34 against 49.
