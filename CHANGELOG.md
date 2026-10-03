@@ -4,6 +4,20 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Breaking
+
+- A tween's `MotionSpec` reads `ms: undefined` where its `ms` is a function of the subject.
+
+### Added
+
+- `handle.fade({ subject, over })` fades one subject out of a voice, which plays on for the rest.
+  Once the ramp ends the voice forgets the subject (its record, its lane position and a motion
+  patch's state for it) and no longer reaches it; a motion patch's `to` brings it back, met afresh.
+  `mix.drop(subject)` clears it too. It keeps the voice on its lane.
+- `tween`'s `ms` may be a function of the subject, asked each time one of its stretches starts.
+
 ## 0.3.0
 
 ### Breaking

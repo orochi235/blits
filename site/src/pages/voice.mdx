@@ -51,4 +51,6 @@ A voice's weight can ramp. `fade.in` is how long it takes to reach full weight, 
 
 `handle.fade()` ramps the voice out over `fade.out`, or over `{ over }` if you pass one, and then removes it. Unlike a fade in, a fade out starts for every subject at the moment you call it, which is why the lines all come down together at the dashed mark. `handle.done` is a promise that resolves once the voice has left the mix, however it left.
 
+`handle.fade({ subject })` fades one subject out instead, and the voice plays on for the rest. Once that ramp ends the voice forgets the subject and stops reaching it, so one voice can carry many short animations, one per node, and still cancel a node or hand it to another patch. A motion patch's `to` brings the subject back, met afresh.
+
 <ApiEntries word="voice" />
