@@ -17,18 +17,16 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 - `probe` with no `out` stores a freshly allocated pose per subject per frame. weasel measured this
   pattern: a new pose object per node per frame took major GC from 57 ms to 549 ms over 10 s
   (`docs/superpowers/specs/2026-08-24-frame-loop-decoupling-design.md` in weasel).
-- **weasel's `animator-on-blits` against lanes** (blits `461efe4`, studio, 2026-10-02, vitest means
-  in ms, two runs; weasel's own animator in brackets): at 10k, one voice reads 2.4–2.6 for a `fn`
-  tween [0.44–0.47] and 2.4–3.3 for a spring [0.63–0.73]; a voice per call (`subjects`) 3.8–4.2
-  for a `keys` tween and 4.5–4.9 for a spring. Lanes clearly win only on the spring per call
-  (lanes off 6.1–7.1). The one-voice `fn` tween ran slower with lanes on than off (2.4–2.6 vs
-  2.1–2.2), since its `at` looks each node's endpoints up by string id. **blits now has `tween`**,
-  which keeps those endpoints as data: on blits' own bench in that shape it takes a frame to
-  0.83 of the `fn`'s and its collection pauses to a quarter; weasel's bench has not been rerun on
-  it. Starting 10k voices, one per call, costs 138 ms for tweens and 89 for springs on the first
-  frame [10–15]. What still stands between blits and weasel: the probe floor (about 110–140 ns at
-  10k even when a lane did the work) and a voice per call being a lane per voice; `HANDOFF.md`
-  item 1c has the next step for each.
+- **weasel's `animator-on-blits` against one shared voice** (blits `26c9764`, studio, Node 26.8.1,
+  2026-10-02, vitest means in ms per frame at 10k nodes, two runs; weasel's own animator in
+  brackets [0.42–0.44 tween, 0.67–0.94 spring]). One `tween` voice over every node, read by
+  `probe` per node: 2.0–2.1 (2.6–2.7 lanes off), level with a `fn` voice at 2.1. A voice per call:
+  3.8–3.9. One spring voice: 2.5; a spring voice per call 4.6–4.7. At 1k: one tween voice 0.15
+  [0.03–0.04]. Start plus first frame for 10k tweens: 93 and 17 ms for one tween voice (the 93
+  unexplained), 64–65 for a voice per call [12]. So a shared voice halves the per-call cost but
+  stays about 5× weasel's own. weasel's arithmetic, not a profile: the probe floor of about 120 ns
+  a node is 1.2 ms at 10k before any interpolation. Whether `pull` closes it is unmeasured in
+  weasel's shape; keeping subject numbers between `pull` calls (`HANDOFF.md` 1c) is the step after.
 - **Memory with `target`:** a mix of 1,000 per-node voices reached by `target` held about 810 MB
   after 40 frames (720 MB before lanes), growing with the square of the count, from the record each
   voice keeps per subject it is asked about. With `subjects` it stays at a few MB. `target`'s doc
