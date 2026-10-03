@@ -38,7 +38,7 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@msb235/blits": "0.2.1"
+    "@msb235/blits": "0.3.0"
   },
   "peerDependencies": {
     "three": ">=0.185.0 <1.0.0",
