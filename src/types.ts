@@ -154,8 +154,8 @@ export type MotionSpec =
     }
   | {
       readonly kind: 'tween';
-      /** How long a stretch takes. */
-      readonly ms: number;
+      /** How long a stretch takes; undefined where it varies by subject, kept on the patch then. */
+      readonly ms: number | undefined;
       readonly ease: Easing;
     };
 
@@ -359,18 +359,30 @@ export interface VoiceSpec<I, O> {
 }
 
 /**
- * How a voice leaves when it is faded.
+ * How a voice leaves when it is faded: the whole voice, or one subject.
  *
  * @category blending
  */
-export interface FadeOptions {
-  /** The ramp, ms. Defaults to the voice's own `fade.out`. */
-  over?: number;
-  /** Leave per subject at the first frame that subject's contribution is at rest. */
-  at?: 'rest';
-  /** Ms after which the voice leaves whether or not it rested. */
-  deadline?: number;
-}
+export type FadeOptions<I = unknown> =
+  | {
+      /** The ramp, ms. Defaults to the voice's own `fade.out`. */
+      over?: number;
+      /** Leave per subject at the first frame that subject's contribution is at rest. */
+      at?: 'rest';
+      /** Ms after which the voice leaves whether or not it rested. */
+      deadline?: number;
+      subject?: never;
+    }
+  | {
+      /**
+       * The one subject to fade out of this voice, which plays on for the rest. Once the ramp ends
+       * the voice forgets the subject and reaches it no more, until a motion patch's `to` brings it
+       * back, met afresh: `from`, `target` and `stagger` asked again.
+       */
+      subject: I;
+      /** The ramp, ms. Defaults to the voice's own `fade.out`; 0 takes the subject out at once. */
+      over?: number;
+    };
 
 /**
  * The live controls on one voice, returned by `cue`.
@@ -395,7 +407,7 @@ export interface Handle<I = unknown> {
    * accumulated into, so state is left where it is and never run forward to meet the new position.
    */
   seek(elapsed: number): void;
-  fade(opts?: FadeOptions): void;
+  fade(opts?: FadeOptions<I>): void;
   /**
    * The weight this voice gave `subject` the last frame that subject was probed: after its fades
    * and its weight signal, before a locus folds it with its alternatives. 0 for a subject it does

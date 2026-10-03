@@ -267,3 +267,75 @@ describe('the pose', () => {
     expect(out.crawl).toBe(7);
   });
 });
+
+describe('fading one subject out of a voice', () => {
+  const a = { id: 'a' };
+  const b = { id: 'b' };
+  const crawls = (n: number) => patch<Part, Pose>(0, () => ({ crawl: n }), { writes: ['crawl'] });
+
+  it('ramps that subject alone, then the voice reaches it no more and plays on for the rest', () => {
+    const m = mix<Part, Pose>(PART);
+    const h = m.cue({ patch: crawls(10) });
+    m.sync(0);
+    m.probe(a);
+    m.probe(b);
+    h.fade({ subject: a, over: 100 });
+    m.sync(50);
+    expect(m.probe(a).crawl).toBeCloseTo(5, 9);
+    expect(m.probe(b).crawl).toBe(10);
+    m.sync(100);
+    expect(m.probe(a).crawl).toBe(0);
+    m.sync(500);
+    expect(m.probe(a).crawl).toBe(0);
+    expect(h.weightOf(a)).toBe(0);
+    expect(m.probe(b).crawl).toBe(10);
+    expect(h.state).toBe('live');
+  });
+
+  it('takes the subject out at once over 0, and under reduced motion', () => {
+    for (const reduce of [false, true]) {
+      const m = mix<Part, Pose>(PART, { reduce });
+      const h = m.cue({ patch: crawls(10), fade: { out: 300 } });
+      m.sync(0);
+      m.probe(a);
+      h.fade(reduce ? { subject: a } : { subject: a, over: 0 });
+      expect(m.probe(a).crawl).toBe(0);
+      expect(m.probe(b).crawl).toBe(10);
+    }
+  });
+
+  it('leaves nothing stacked under the voice that takes the subject over', () => {
+    const m = mix<Part, Pose>(PART);
+    const first = m.cue({ patch: crawls(5) });
+    m.sync(0);
+    m.probe(a);
+    first.fade({ subject: a, over: 0 });
+    m.cue({ patch: crawls(3) });
+    m.sync(16);
+    expect(m.probe(a).crawl).toBe(3);
+    expect(m.probe(b).crawl).toBe(8);
+  });
+
+  it('is forgotten with the subject by drop, so the voice reaches it again', () => {
+    const m = mix<Part, Pose>(PART);
+    const h = m.cue({ patch: crawls(5) });
+    m.sync(0);
+    h.fade({ subject: a, over: 0 });
+    expect(m.probe(a).crawl).toBe(0);
+    m.drop(a);
+    m.sync(16);
+    expect(m.probe(a).crawl).toBe(5);
+  });
+
+  it('reads mid-ramp and past it from a projection, leaving the live mix as it was', () => {
+    const m = mix<Part, Pose>(PART);
+    const h = m.cue({ patch: crawls(10) });
+    m.sync(0);
+    m.probe(a);
+    h.fade({ subject: a, over: 100 });
+    expect(m.project(25).probe(a).crawl).toBeCloseTo(7.5, 9);
+    expect(m.project(200).probe(a).crawl).toBe(0);
+    m.sync(50);
+    expect(m.probe(a).crawl).toBeCloseTo(5, 9);
+  });
+});

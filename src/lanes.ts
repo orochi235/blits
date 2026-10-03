@@ -59,6 +59,8 @@ export interface LaneHost<I, O> {
   naming(subject: I): readonly Voice<I, O>[] | undefined;
   /** The voice's own fade for a subject whose delay ran out at `since`. */
   envelope(voice: Voice<I, O>, since: number): number;
+  /** What a subject's own ramp out of the voice leaves of its weight, 0..1. */
+  parting(voice: Voice<I, O>, subject: I): number;
   /** Fills the voice's setting and the send target for a call to its patch. */
   ready(
     voice: Voice<I, O>,
@@ -376,6 +378,19 @@ export class Lanes<I, O> {
     this.numbers.release(slot);
   }
 
+  /** A voice faded a subject out of itself alone: its lane lets the subject's position go. */
+  part(id: number, slot: number): void {
+    const lane = this.byId.get(id);
+    if (lane === undefined || lane.positionOf(slot) < 0) return;
+    if (lane.idle) this.reach(slot, -1);
+    lane.remove(slot);
+  }
+
+  /** A voice brought a subject back: its next probe meets every lane again, as it met them first. */
+  rejoin(slot: number): void {
+    if (slot < this.cap) this.per[slot * SLOT + SEEN] = 0;
+  }
+
   /**
    * A laned voice's weight for a subject at the last frame a probe read it from the lane; undefined
    * where the subject's record holds it instead, because its last probe took the general path or
@@ -516,6 +531,7 @@ export class Lanes<I, O> {
     for (let i = dense.length - 1; i >= 0; i--) {
       const lane = dense[i] as Lane<I, O>;
       if (lane.epoch <= from) break;
+      if (lane.positionOf(slot) >= 0) continue;
       const held = this.host.meet(lane.voice, subject);
       if (!held.reaches) continue;
       lane.add(slot, held);
@@ -527,7 +543,9 @@ export class Lanes<I, O> {
       for (const voice of naming) {
         const lane = this.byId.get(voice.id);
         if (lane === undefined || lane.epoch <= from || lane.positionOf(slot) >= 0) continue;
-        lane.add(slot, this.host.meet(voice, subject));
+        const held = this.host.meet(voice, subject);
+        if (!held.reaches) continue;
+        lane.add(slot, held);
         if (lane.idle) this.reach(slot, 1);
         met = true;
       }
@@ -793,7 +811,11 @@ export class Lanes<I, O> {
       lane.weighed = true;
       lane.weighedSince = since;
     }
-    const w = clampWeight(voice.weight * lane.fade);
+    let w = clampWeight(voice.weight * lane.fade);
+    if (voice.parts !== null) {
+      const subject = this.subjectAt(slot);
+      if (subject !== absent) w *= host.parting(voice, subject);
+    }
     data[o + WEIGHT] = w;
     if (voice.built !== null) {
       if (!lane.read || !Object.is(elapsed, lane.readAt)) {

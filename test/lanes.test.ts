@@ -250,6 +250,34 @@ describe('lanes give the pose the general path gives', () => {
     );
   });
 
+  it('with one subject faded out of a voice, at once and over a ramp, and one brought back', () => {
+    const play: Play = (m, parts) => {
+      const a = m.cue({ patch: pulse(), fade: { out: 200 } });
+      const b = m.cue({ patch: wave(), weight: 0.5 });
+      const t = tween<Part, Pose>('crawl', {
+        from: 0,
+        to: (p) => p.id * 10,
+        ms: (p) => 200 + p.id * 50,
+      });
+      const c = m.cue({ patch: t });
+      return {
+        handles: [a, b, c],
+        at: (now) => {
+          if (now === 500) {
+            a.fade({ subject: parts[1] as Part });
+            b.fade({ subject: parts[2] as Part, over: 0 });
+            c.fade({ subject: parts[3] as Part, over: 0 });
+            c.fade({ subject: parts[4] as Part, over: 300 });
+          }
+          if (now === 1500) t.to(parts[3] as Part, -20);
+        },
+      };
+    };
+    const ramp = [0, 16, 500, 550, 650, 800, 999, 1500, 1516, 1700, 2600];
+    agree(play, { times: ramp });
+    agree(play, { times: ramp, parts: 80, probe: (now, p) => p.id % 7 === 0 || now > 1600 });
+  });
+
   it('with weight, rate, ramp and seek changed between frames', () => {
     agree(
       (m) => {

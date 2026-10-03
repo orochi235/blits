@@ -1,7 +1,7 @@
 import { clampWeight, envelope, passAt, passesOf, phaseAt } from './clock.js';
 import { type Curve, curve } from './easing.js';
 import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
-import { motionOf, noFrame } from './motion.js';
+import { motionOf, noFrame, noRevive } from './motion.js';
 import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
@@ -283,6 +283,12 @@ export class Voice<I, O> {
   keeping = false;
   /** For a motion patch, the hook it was given to ask the mix for its subjects' voice time. */
   frame: ((subject: I) => number) | null = null;
+  /** For a motion patch, the hook it was given to bring a subject faded out of this voice back. */
+  revive: ((subject: I) => void) | null = null;
+  /** Subjects fading out of this voice alone, by the ramp each started; null while none are. */
+  parts: Map<I, { at: number; over: number }> | null = null;
+  /** Subjects faded out of this voice, by the mix time each left at; null while none have. */
+  parted: Map<I, number> | null = null;
   readonly ease: Curve | undefined;
   /** How many passes its `loop` plays, worked out once. */
   readonly passes: number;
@@ -603,6 +609,8 @@ class Mixer<I, O> implements Mix<I, O> {
     if (motion !== undefined) {
       voice.frame = Mixer.frameHook(new WeakRef(this), new WeakRef(voice));
       motion.frame = voice.frame;
+      voice.revive = Mixer.reviveHook(new WeakRef(this), new WeakRef(voice));
+      motion.revive = voice.revive;
     }
     this.voices.push(voice);
     this.index(voice);
@@ -689,6 +697,10 @@ class Mixer<I, O> implements Mix<I, O> {
         if (voice.elapsedAt(now) >= end)
           this.beginFade(voice, {}, Math.max(voice.start, Math.min(now, voice.timeAt(end))));
       }
+      // A projection reads a finished ramp as weight 0, and leaves the live voice's subjects be.
+      if (voice.parts !== null && !this.projecting)
+        for (const [subject, r] of voice.parts)
+          if (now - r.at >= r.over) this.part(voice, subject, r.at + r.over);
       if (voice.state === 'fading' && voice.out) {
         const { at, over, rest, deadline } = voice.out;
         const spent = now - at;
@@ -957,6 +969,8 @@ class Mixer<I, O> implements Mix<I, O> {
     for (const voice of [...this.voices, ...this.gone]) {
       voice.subjects.delete(subject);
       motionOf<I>(voice.patch)?.release(subject);
+      voice.parts?.delete(subject);
+      voice.parted?.delete(subject);
     }
   }
 
@@ -986,6 +1000,7 @@ class Mixer<I, O> implements Mix<I, O> {
       meet: (voice, subject) => mix.held(voice, subject, mix.now),
       naming: (subject) => (mix.naming === 0 ? undefined : mix.named.get(subject)),
       envelope: (voice, since) => mix.envelope(voice, mix.now, since),
+      parting: (voice, subject) => mix.parting(voice, subject, mix.now),
       ready: (voice, subject, held, elapsed, pass, weight) => {
         mix.prime(voice, held, mix.now, elapsed, pass);
         voice.setting.weight = weight;
@@ -1035,6 +1050,16 @@ class Mixer<I, O> implements Mix<I, O> {
    * What a motion patch asks for its subjects' voice time at the latest frame. It holds the mix and
    * the voice weakly, so a patch the host keeps does not keep a mix it has let go of alive.
    */
+  private static reviveHook<I, O>(
+    mix: WeakRef<Mixer<I, O>>,
+    voice: WeakRef<Voice<I, O>>,
+  ): (subject: I) => void {
+    return (subject) => {
+      const v = voice.deref();
+      if (v !== undefined) mix.deref()?.unpart(v, subject);
+    };
+  }
+
   private static frameHook<I, O>(
     mix: WeakRef<Mixer<I, O>>,
     voice: WeakRef<Voice<I, O>>,
@@ -1516,8 +1541,10 @@ class Mixer<I, O> implements Mix<I, O> {
         mix.noted(voice);
         mix.lanes?.refill();
       },
-      fade(opts?: FadeOptions) {
-        mix.beginFade(voice, opts ?? {});
+      fade(opts?: FadeOptions<I>) {
+        if (opts !== undefined && 'subject' in opts)
+          mix.fadeSubject(voice, opts.subject as I, opts.over);
+        else mix.beginFade(voice, opts ?? {});
       },
       weightOf(subject: I) {
         if (voice.state === 'done') return 0;
@@ -1531,7 +1558,78 @@ class Mixer<I, O> implements Mix<I, O> {
     };
   }
 
-  private beginFade(voice: Voice<I, O>, opts: FadeOptions, at?: number): void {
+  /** Starts one subject's ramp out of a voice, or takes it out at once for a ramp of 0. */
+  private fadeSubject(voice: Voice<I, O>, subject: I, over?: number): void {
+    if (voice.state === 'done' || voice.parted?.has(subject) || voice.parts?.has(subject)) return;
+    const ms = this.reduced ? 0 : (over ?? voice.fade.out ?? 0);
+    const at = Number.isNaN(this.now) ? voice.start : this.now;
+    if (ms === 0) {
+      this.part(voice, subject, at);
+      return;
+    }
+    voice.parts ??= new Map();
+    voice.parts.set(subject, { at, over: ms });
+    this.lanes?.refill();
+  }
+
+  /** What a subject's own ramp out of a voice leaves of its weight this frame, 0..1. */
+  private parting(voice: Voice<I, O>, subject: I, now: number): number {
+    const r = voice.parts?.get(subject);
+    if (r === undefined) return 1;
+    return envelope(
+      0,
+      { at: r.at, over: r.over, rest: false },
+      voice.ease,
+      this.reducedNow,
+      now,
+      0,
+    );
+  }
+
+  /**
+   * Takes a subject out of one voice for good, as of mix time `at`: the voice forgets its record,
+   * its lane position and a motion patch's state for it, and reaches it no more.
+   */
+  private part(voice: Voice<I, O>, subject: I, at: number): void {
+    voice.parts?.delete(subject);
+    if (voice.parts?.size === 0) voice.parts = null;
+    voice.parted ??= new Map();
+    voice.parted.set(subject, at);
+    this.forgetIn(voice, subject);
+    const motion = motionOf<I>(voice.patch);
+    if (motion !== undefined && motion.frame === voice.frame) motion.release(subject);
+  }
+
+  /** Brings a subject faded out of a voice back, to be met afresh on its next probe. */
+  private unpart(voice: Voice<I, O>, subject: I): void {
+    if (voice.parted?.delete(subject) !== true) return;
+    if (voice.parted.size === 0) voice.parted = null;
+    this.forgetIn(voice, subject);
+    const slot = this.chains.get(subject)?.slot ?? -1;
+    if (slot >= 0) this.lanes?.rejoin(slot);
+  }
+
+  /** Drops a voice's record of a subject and relinks the subject's chain without it. */
+  private forgetIn(voice: Voice<I, O>, subject: I): void {
+    const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
+    if (held !== undefined) {
+      voice.subjects.delete(subject);
+      if (held.reaches) voice.seen--;
+      if (held.rested) voice.restedCount--;
+      if (voice.holder === held) voice.holder = null;
+    }
+    const head = this.chains.get(subject);
+    if (head === undefined) return;
+    head.version = Number.NaN;
+    if (voice.laned && head.slot >= 0) this.lanes?.part(voice.id, head.slot);
+    this.lanes?.refill();
+  }
+
+  private beginFade(
+    voice: Voice<I, O>,
+    opts: { over?: number; at?: 'rest'; deadline?: number },
+    at?: number,
+  ): void {
     if (voice.state === 'done' || voice.state === 'fading') return;
     const over = this.reduced ? 0 : (opts.over ?? voice.fade.out ?? 0);
     // A voice is linked into its subjects' chains once it plays, and a fading one plays.
@@ -1555,7 +1653,9 @@ class Mixer<I, O> implements Mix<I, O> {
     this.lanes?.invalidate();
     const motion = motionOf<I>(voice.patch);
     if (motion !== undefined && motion.frame === voice.frame) motion.frame = noFrame;
+    if (motion !== undefined && motion.revive === voice.revive) motion.revive = noRevive;
     voice.frame = null;
+    voice.revive = null;
     voice.state = 'done';
     voice.doneAt = at ?? (Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now);
     voice.resolve();
@@ -1625,7 +1725,10 @@ class Mixer<I, O> implements Mix<I, O> {
       base = was ? was.value : signal(subject, voice.setting as Setting);
       if (signal.input && !was) this.record(held, base);
     }
-    return clampWeight(base * this.envelope(voice, now, held.since));
+    const fade = this.envelope(voice, now, held.since);
+    return clampWeight(
+      base * (voice.parts === null ? fade : fade * this.parting(voice, subject, now)),
+    );
   }
 
   /**
@@ -1889,6 +1992,9 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** Whether a voice reaches a subject by what its spec says: the subjects it names, or its `target`. */
   private aims(voice: Voice<I, O>, subject: I): boolean {
+    // A read back to before a subject left still finds it reached.
+    const left = voice.parted?.get(subject);
+    if (left !== undefined && !(this.now < left)) return false;
     if (voice.named !== null) return voice.named.has(subject);
     return voice.spec.target ? voice.spec.target(subject) : true;
   }

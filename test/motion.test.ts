@@ -492,6 +492,37 @@ describe('tween', () => {
     expect(m.probe(a).x).toBe(-50);
   });
 
+  it('takes ms per subject, asked again each time a stretch starts', () => {
+    let slow = 200;
+    const t = tween<Part, Pose>('x', {
+      from: 0,
+      to: 100,
+      ms: (s) => (s.id === 'a' ? 100 : slow),
+      ease: 'linear',
+    });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: t });
+    const a = { id: 'a' };
+    const b = { id: 'b' };
+    m.sync(0);
+    m.probe(a);
+    m.probe(b);
+    m.sync(50);
+    expect(m.probe(a).x).toBeCloseTo(50, 9);
+    expect(m.probe(b).x).toBeCloseTo(25, 9);
+    slow = 400;
+    t.to(b, 0);
+    m.sync(250);
+    expect(m.probe(b).x).toBeCloseTo(12.5, 9);
+    expect(m.probe(a).x).toBe(100);
+    expect(() => tween<Part, Pose>('x', { from: 0, to: 1, ms: 0 })).toThrow(/positive ms/);
+    const bad = tween<Part, Pose>('x', { from: 0, to: 1, ms: () => -1 });
+    const n = mix<Part, Pose>(K);
+    n.cue({ patch: bad });
+    n.sync(0);
+    expect(() => n.probe(a)).toThrow(/positive ms/);
+  });
+
   it('takes from and to per subject, on every axis', () => {
     const t = tween<Part, Pose, number[]>('p', {
       from: (s) => (s.id === 'a' ? [0, 0] : [10, 10]),
@@ -535,5 +566,39 @@ describe('tween', () => {
   it('has no push, and refuses an ms that is not positive', () => {
     expect('push' in tween<Part, Pose>('x', { from: 0, to: 1, ms: 10 })).toBe(false);
     expect(() => tween<Part, Pose>('x', { from: 0, to: 1, ms: 0 })).toThrow(/positive ms/);
+  });
+});
+
+describe('a subject faded out of a motion voice', () => {
+  it('comes back on `to`, met afresh from `from`', () => {
+    const froms: string[] = [];
+    const t = tween<Part, Pose>('x', {
+      from: (s) => {
+        froms.push(s.id);
+        return 40;
+      },
+      to: (s) => (s.id === 'a' ? 100 : 40),
+      ms: 100,
+      ease: 'linear',
+    });
+    const m = mix<Part, Pose>(K);
+    const h = m.cue({ patch: t });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(50);
+    expect(m.probe(a).x).toBeCloseTo(70, 9);
+    h.fade({ subject: a, over: 0 });
+    m.sync(60);
+    expect(m.probe(a).x).toBe(0);
+    expect(t.read(a)).toBeUndefined();
+    m.sync(300);
+    t.to(a, 0);
+    m.sync(316);
+    // Its first stretch began at voice time 0 and is long over, so the new one leaves from 100.
+    expect(m.probe(a).x).toBe(100);
+    m.sync(366);
+    expect(m.probe(a).x).toBeCloseTo(50, 9);
+    expect(froms).toEqual(['a', 'a']);
   });
 });
