@@ -784,42 +784,25 @@ class Mixer<I, O> implements Mix<I, O> {
         tightest = c.key;
       }
     }
-    const one = (subject: I, head: Subject<unknown> | null, n: number) => {
-      const laned = head !== null && lanes?.prepare(head.slot, subject, now, this.version) === true;
-      if (laned && (lanes as Lanes<I, O>).whole && !this.wantsPose) {
-        (lanes as Lanes<I, O>).writeLater((head as Subject<unknown>).slot, columns, n);
-      } else {
-        const folded = this.foldWith(subject, scratch, head, laned, false);
-        const pose = (this.bounded.length === 0 ? folded : this.clamp(folded as Values)) as Values;
-        this.keep(subject, pose as O, scratch);
-        for (const c of columns) writeValue(c, pose[c.key], n);
-      }
-    };
-    const full = () =>
-      new RangeError(
+    // Any other iterable is read into an array first, no further than one past the room there is.
+    let list: readonly I[];
+    if (Array.isArray(subjects)) list = subjects as readonly I[];
+    else {
+      const taken: I[] = [];
+      for (const subject of subjects) if (taken.push(subject) > room) break;
+      list = taken;
+    }
+    if (list.length > room)
+      throw new RangeError(
         `blits: pull's array for ${tightest} has room for ${room} subjects, and was given more`,
       );
-    if (!Array.isArray(subjects)) {
-      let n = 0;
-      try {
-        for (const subject of subjects) {
-          if (n >= room) throw full();
-          one(subject, Number.isNaN(now) ? null : this.chain(subject, now), n);
-          n++;
-        }
-      } finally {
-        lanes?.flush();
-      }
-      return;
-    }
-    const list = subjects as readonly I[];
-    if (list.length > room) throw full();
+    const whole = lanes !== null && !this.wantsPose;
     // An array read again in the same order reuses each position's chain head while it is current.
+    const was = this.pulled;
+    const heads = this.pulledHeads;
+    was.length = list.length;
+    heads.length = list.length;
     try {
-      const was = this.pulled;
-      const heads = this.pulledHeads;
-      was.length = list.length;
-      heads.length = list.length;
       for (let n = 0; n < list.length; n++) {
         const subject = list[n] as I;
         let head: Subject<unknown> | null = null;
@@ -833,7 +816,16 @@ class Mixer<I, O> implements Mix<I, O> {
             heads[n] = head;
           }
         }
-        one(subject, head, n);
+        const laned =
+          head !== null && lanes?.prepare(head.slot, subject, now, this.version) === true;
+        if (laned && whole && (lanes as Lanes<I, O>).whole) {
+          (lanes as Lanes<I, O>).writeLater((head as Subject<unknown>).slot, columns, n);
+          continue;
+        }
+        const folded = this.foldWith(subject, scratch, head, laned, false);
+        const pose = (this.bounded.length === 0 ? folded : this.clamp(folded as Values)) as Values;
+        this.keep(subject, pose as O, scratch);
+        for (const c of columns) writeValue(c, pose[c.key], n);
       }
     } finally {
       lanes?.flush();
