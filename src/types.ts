@@ -531,7 +531,10 @@ export interface Mix<I, O> {
    * Writes each subject's pose into arrays, one per channel, subject by subject in the order given:
    * what `probe(subject, out)` gives, without a pose object per subject. A channel of `n` numbers
    * takes `n` places per subject, side by side; one with no value for a subject writes NaN there.
-   * Fastest while every voice runs on a lane. Throws when an array is too short for the subjects.
+   * Fastest while every voice runs on a lane, and when `subjects` is an array read again in the
+   * same order: the mix remembers the last array's subjects by position, holding them until the
+   * next `pull`, and skips looking up any still in its place. Throws when an array is too short for
+   * the subjects.
    */
   pull(subjects: Iterable<I>, into: Columns<O>): void;
   /**

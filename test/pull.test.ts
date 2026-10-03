@@ -66,3 +66,61 @@ describe('pull', () => {
     );
   });
 });
+
+describe('pull reading the same array again', () => {
+  type Part = { id: number };
+  const ramp = keys<Part, Pose>(100, [
+    { at: 0, delta: { gain: 0.5 } },
+    { at: 1, delta: { gain: 0.25 } },
+  ]);
+  const byId = keys<Part, Pose>(100, [
+    { at: 0, delta: { position: [0, 0] } },
+    { at: 1, delta: { position: [10, 20] } },
+  ]);
+
+  /** Pulls `list` and checks every subject's values against a probe of it. */
+  function agrees(m: ReturnType<typeof mix<Part, Pose>>, list: Part[]): void {
+    const gain = new Float64Array(list.length);
+    const position = new Float64Array(list.length * 2);
+    m.pull(list, { gain, position });
+    list.forEach((part, i) => {
+      const pose = m.probe(part);
+      expect(gain[i], `gain of ${part.id}`).toBe(pose.gain);
+      expect([position[2 * i], position[2 * i + 1]], `position of ${part.id}`).toEqual(
+        pose.position,
+      );
+    });
+  }
+
+  for (const lanes of [true, false])
+    it(`stays right as the array, the voices and the subjects change, lanes ${lanes ? 'on' : 'off'}`, () => {
+      const list = Array.from({ length: 6 }, (_, id) => ({ id }));
+      const m = mix<Part, Pose>(K, { lanes });
+      const h = m.cue({ patch: ramp, stagger: (p) => p.id * 10 });
+      let t = 0;
+      const frame = () => {
+        m.sync((t += 16));
+        agrees(m, list);
+      };
+      frame();
+      frame();
+      // Edited in place: two entries swapped, then one replaced by a subject never seen.
+      [list[1], list[4]] = [list[4] as Part, list[1] as Part];
+      frame();
+      list[2] = { id: 99 };
+      frame();
+      // A voice cued between pulls.
+      m.cue({ patch: byId, subjects: [list[0] as Part, list[3] as Part] });
+      frame();
+      // A subject faded out of a voice, and one dropped.
+      h.fade({ subject: list[5] as Part, over: 0 });
+      frame();
+      m.drop(list[0] as Part);
+      frame();
+      // Shorter, then longer again.
+      list.length = 3;
+      frame();
+      list.push({ id: 7 }, { id: 8 });
+      frame();
+    });
+});

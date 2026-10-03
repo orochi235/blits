@@ -18,6 +18,11 @@ version and everything else the patch. Each release lists its changes as **Break
   `mix.drop(subject)` clears it too. It keeps the voice on its lane.
 - `tween`'s `ms` may be a function of the subject, asked each time one of its stretches starts.
 
+### Fixed
+
+- `pull` over an array read again in the same order skips looking each subject up: one tween
+  voice over 10k subjects read by `pull` went from 1.86 to about 1.0–1.4 ms a frame, locally.
+
 ## 0.3.0
 
 ### Breaking
