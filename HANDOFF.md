@@ -187,11 +187,16 @@ systems now run on it**, on klieg's `main`.
 
 1c. **Next for speed, decided with Mike 2026-10-02, in this order, each measured on the fleet
    before the next starts.**
-   - **Bulk output: `mix.pull`, built 2026-10-02** on branch `pull` (shape B of three: the host
-     hands arrays in its own order, nothing internal is exposed). Fleet: a frame costs 0.84–0.93 of
-     one read through `probe(s, out)`. The rest of a probe's per-subject cost is the record lookup
-     and lane bookkeeping; keeping subject numbers between `pull` calls and doing that bookkeeping
-     per call is the next step if a host still needs it. Not designed.
+   - **Bulk output: `mix.pull`, built 2026-10-02.** The host hands arrays in its own order; nothing
+     internal is exposed. An array read again in the same order skips each subject's lookup (Mike
+     chose that over a view object or host-held numbers, 2026-10-02); the schema page's Reading in
+     bulk paragraph has the numbers. In weasel's shape a shared tween voice read by `pull` was still
+     about 4× weasel's own animator before that. Profiled locally, the rest splits about evenly
+     between the lane's per-subject motion step (`one`, `move`, `sample`, `eased`, `foldRun`) and
+     the read (`pull`'s loop, `prepare`, `write`). Storing stretches as Float64Arrays to make the
+     closed forms read one array kind was tried and gave nothing (reverted, `b4a4260`). What is left
+     is spread over many layers per subject; a batched motion step on the lane is the next idea.
+     Not designed.
    - **`tween`, built 2026-10-02** as a fourth motion kind (Mike chose its own clock, like a
      spring's, over the voice's period). In weasel's shape on studio it takes a frame to 0.83
      of a `fn` tween's and its collection pauses to a quarter; against a `fn` with no per-call
