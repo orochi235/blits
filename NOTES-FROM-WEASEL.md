@@ -27,11 +27,11 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   35–45; one spring voice 2.3 [0.54]. At 1k, pull 0.13 [0.03]. weasel's arithmetic, not a profile:
   what is left is per-node lookup and bookkeeping, so keeping subject numbers between `pull` calls
   (`HANDOFF.md` 1c) is the next step.
-- **Starting one tween voice over 10k nodes** read 85–93 ms for start plus first frame in weasel's
-  bench (one run 17), against 11–12 for a `fn` voice; 300 and 1k nodes are fine. Not reproduced in
-  blits: a cold single run of the same shape (string ids, endpoints in a map, read by `pull`) took
-  34 ms for the tween and 49 for the `fn`, locally on 26c9764. What weasel's start row times is
-  not yet known.
+- **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a
+  `fn` voice in plain Node: about 35 ms warm against 16, and 80–90 cold against 28–42 (weasel,
+  orochi under load, 2026-10-02). A cold run in blits' own shape read the other way, 34 against 49.
+  weasel's vitest row read 8×, which weasel puts down to collection landing in its few measured
+  iterations, untraced. Not worth chasing until it shows outside a microbench.
 - **Memory with `target`:** a mix of 1,000 per-node voices reached by `target` held about 810 MB
   after 40 frames (720 MB before lanes), growing with the square of the count, from the record each
   voice keeps per subject it is asked about. With `subjects` it stays at a few MB. `target`'s doc
