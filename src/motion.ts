@@ -35,9 +35,9 @@ export interface Motion<V extends Value = number> {
 interface Segment {
   at: number;
   secs: number;
-  x0: Float64Array;
-  v0: Float64Array;
-  to: Float64Array;
+  x0: number[];
+  v0: number[];
+  to: number[];
 }
 
 interface Change {
@@ -169,7 +169,6 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
   }
 }
 
-const f64 = (a: readonly number[]): Float64Array => Float64Array.from(a);
 const axes = (v: Value): number[] => (typeof v === 'number' ? [v] : [...v]);
 const per = <I, V>(p: PerSubject<I, V>, subject: I): V =>
   typeof p === 'function' ? (p as (s: I) => V)(subject) : p;
@@ -272,8 +271,7 @@ export class Motions<I> {
     this.slots.set(subject, s);
     this.grow(s + 1);
     this.runs[this.base(s) + 1] = this.shape.scalar(subject) ? SCALAR : 0;
-    const secs = this.shape.secs?.(subject) ?? 0;
-    this.write(s, { at: 0, secs, x0: f64(x), v0: f64(v), to: f64(to) });
+    this.write(s, { at: 0, secs: this.shape.secs?.(subject) ?? 0, x0: x, v0: v, to });
     return s;
   }
 
@@ -457,9 +455,9 @@ export class Motions<I> {
     return {
       at: this.runs[this.base(s)] as number,
       secs: this.runs[this.base(s) + 2] as number,
-      x0: this.runs.slice(x, x + n),
-      v0: this.runs.slice(x + n, x + 2 * n),
-      to: this.runs.slice(x + 2 * n, x + 3 * n),
+      x0: Array.from(this.runs.subarray(x, x + n)),
+      v0: Array.from(this.runs.subarray(x + n, x + 2 * n)),
+      to: Array.from(this.runs.subarray(x + 2 * n, x + 3 * n)),
     };
   }
 
@@ -482,17 +480,13 @@ export class Motions<I> {
     const x = new Float64Array(this.n);
     const v = new Float64Array(this.n);
     this.evaluateSegment(seg, at, x, v);
-    const vs = change.v === undefined ? v : f64(change.v);
+    const xs = Array.from(x);
+    const vs = change.v ?? Array.from(v);
     const subject = this.numbers.subject(s);
     const known = subject === absent ? (undefined as I) : subject;
-    const to = this.shape.aim(
-      Array.from(x),
-      Array.from(vs),
-      change.to ?? Array.from(seg.to),
-      known,
-    );
+    const to = this.shape.aim(xs, vs, change.to ?? seg.to, known);
     const secs = subject === absent ? seg.secs : (this.shape.secs?.(known) ?? 0);
-    return { at, secs, x0: x, v0: vs, to: f64(to) };
+    return { at, secs, x0: xs, v0: vs, to };
   }
 
   private commit(s: number, t: number): void {
@@ -564,11 +558,11 @@ export class Motions<I> {
   private evaluate(
     at: number,
     secs: number,
-    x0: Float64Array,
+    x0: ArrayLike<number>,
     x: number,
-    v0: Float64Array,
+    v0: ArrayLike<number>,
     v: number,
-    to: Float64Array,
+    to: ArrayLike<number>,
     g: number,
     t: number,
     xo: Float64Array,
@@ -602,9 +596,9 @@ export class Motions<I> {
   private eased(
     dt: number,
     secs: number,
-    x0: Float64Array,
+    x0: ArrayLike<number>,
     x: number,
-    to: Float64Array,
+    to: ArrayLike<number>,
     g: number,
     xo: Float64Array,
     vo: Float64Array,
