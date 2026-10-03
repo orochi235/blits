@@ -20,8 +20,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
-- `pull` over an array read again in the same order skips looking each subject up: one tween
-  voice over 10k subjects read by `pull` went from 1.86 to about 1.0–1.4 ms a frame, locally.
+- `pull` over a list read again in the same order skips looking each subject up, and copies lane
+  values a column at a time; a motion voice's lane fills in one loop. One tween voice over 10k
+  subjects read by `pull` takes 0.59–0.66 of the time it did on teitou; a spring 0.68–0.74.
 
 ## 0.3.0
 

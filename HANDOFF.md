@@ -191,12 +191,14 @@ systems now run on it**, on klieg's `main`.
      internal is exposed. An array read again in the same order skips each subject's lookup (Mike
      chose that over a view object or host-held numbers, 2026-10-02); the schema page's Reading in
      bulk paragraph has the numbers. In weasel's shape a shared tween voice read by `pull` was still
-     about 4× weasel's own animator before that. Profiled locally, the rest splits about evenly
-     between the lane's per-subject motion step (`one`, `move`, `sample`, `eased`, `foldRun`) and
-     the read (`pull`'s loop, `prepare`, `write`). Storing stretches as Float64Arrays to make the
-     closed forms read one array kind was tried and gave nothing (reverted, `b4a4260`). What is left
-     is spread over many layers per subject; a batched motion step on the lane is the next idea.
-     Not designed.
+     about 4× weasel's own animator before that. Then (branch `motion-batch`, 2026-10-02): lane
+     values copied a column at a time, as one block when in order; a motion lane filled in one loop
+     (`runMotion`) through the one copy of the closed forms (`Motions.sampleBare` calls
+     `evaluate`), keeping Mike's one-copy rule. Mike set the goal as fast and capacious as
+     possible, not a target (2026-10-02). weasel-shaped `pull` at 10k is now about 0.46 ms on
+     teitou, from 0.71. Storing stretches as Float64Arrays gave nothing (reverted, `b4a4260`).
+     Next, by the last profile: `prepare`'s per-subject bookkeeping (~10%), `runMotion` itself
+     (~22%), and the fold (~6%).
    - **`tween`, built 2026-10-02** as a fourth motion kind (Mike chose its own clock, like a
      spring's, over the voice's period). In weasel's shape on studio it takes a frame to 0.83
      of a `fn` tween's and its collection pauses to a quarter; against a `fn` with no per-call
