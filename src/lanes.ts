@@ -330,6 +330,7 @@ export class Lanes<I, O> {
   private queueSlots = new Int32Array(0);
   private queueRows = new Int32Array(0);
   private queued = 0;
+  private inOrder = true;
   private queuedFor: readonly Column[] | null = null;
   private keeps = false;
   private now = Number.NaN;
@@ -507,6 +508,12 @@ export class Lanes<I, O> {
     }
     this.queueSlots[k] = slot;
     this.queueRows[k] = n;
+    if (
+      k > 0 &&
+      (slot !== (this.queueSlots[k - 1] as number) + 1 ||
+        n !== (this.queueRows[k - 1] as number) + 1)
+    )
+      this.inOrder = false;
     this.queued = k + 1;
   }
 
@@ -515,6 +522,9 @@ export class Lanes<I, O> {
     const columns = this.queuedFor;
     if (count === 0 || columns === null) return;
     this.queued = 0;
+    // Subjects numbered in the order the host lists them: each column is one block.
+    const block = this.inOrder;
+    this.inOrder = true;
     const slots = this.queueSlots;
     const rows = this.queueRows;
     for (let k = 0; k < columns.length; k++) {
@@ -530,7 +540,10 @@ export class Lanes<I, O> {
         continue;
       }
       const values = ch.values;
-      if (axes === 1) {
+      if (block) {
+        const s0 = (slots[0] as number) * axes;
+        out.set(values.subarray(s0, s0 + count * axes), (rows[0] as number) * axes);
+      } else if (axes === 1) {
         for (let i = 0; i < count; i++)
           out[rows[i] as number] = values[slots[i] as number] as number;
       } else
@@ -936,6 +949,9 @@ export class Lanes<I, O> {
     const elapsedNow = voice.elapsedAt(this.now);
     const flat = lane.flat;
     const parts = voice.parts !== null;
+    // On a frame's first fill no probe has read a subject yet, so none needs `move` for that.
+    const probed = this.probes !== from;
+    const whole = clampWeight(voice.weight);
     const n = run.n;
     if (n > 0) {
       if (lane.axes !== n) {
@@ -969,7 +985,7 @@ export class Lanes<I, O> {
           lane.weighedSince = since;
         }
       }
-      let w = clampWeight(voice.weight * lane.fade);
+      let w = flat ? whole : clampWeight(voice.weight * lane.fade);
       if (parts) {
         const subject = this.subjectAt(slot);
         if (subject !== absent) w *= this.host.parting(voice, subject);
@@ -985,8 +1001,8 @@ export class Lanes<I, O> {
       const ms = data[o + MSLOT] as number;
       if (
         ms < 0 ||
-        (per[q + LANE_PROBE] as number) > from ||
-        (per[q + GENERAL_PROBE] as number) > from ||
+        (probed &&
+          ((per[q + LANE_PROBE] as number) > from || (per[q + GENERAL_PROBE] as number) > from)) ||
         !run.sampleBare(ms, elapsed, xs, run.vs)
       ) {
         this.move(lane, run, p, slot, records[p] as Subject<unknown>, elapsed, delay, w);
