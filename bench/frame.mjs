@@ -123,6 +123,7 @@ const rows = [
   ['spring^', 10000, 1],
   ['tween^', 10000, 1],
   ['tweenfn^', 10000, 1],
+  ['weasel^', 10000, 1],
   // A projection made and probed every frame, as a continuous scrub would: 500 ms ahead, and
   // 300 ms back on a mix keeping 5 s of history.
   ['ahead', 1000, 3],
