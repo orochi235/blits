@@ -489,6 +489,12 @@ class Mixer<I, O> implements Mix<I, O> {
   /** The last array `pull` read, by position, with each subject's chain head, to skip the lookup. */
   private pulled: I[] = [];
   private pulledHeads: (Subject<unknown> | undefined)[] = [];
+  /** Each remembered head's lane slot, and the `version` and `relinks` they were all current at. */
+  private pulledSlots = new Int32Array(0);
+  private pulledVersion = Number.NaN;
+  private pulledRelinks = -1;
+  /** Counts chains made stale one subject at a time, which `version` does not. */
+  private relinks = 0;
   /** Read once a sync, so a `reduce` function is not called per voice per subject. */
   private reducedNow = false;
   /**
@@ -797,31 +803,46 @@ class Mixer<I, O> implements Mix<I, O> {
         `blits: pull's array for ${tightest} has room for ${room} subjects, and was given more`,
       );
     const whole = lanes !== null && !this.wantsPose;
-    // An array read again in the same order reuses each position's chain head while it is current.
+    // An array read again in the same order reuses each position's chain head while it is current:
+    // all of them at once while nothing has relinked since the last pull, else one by one.
     const was = this.pulled;
     const heads = this.pulledHeads;
     was.length = list.length;
     heads.length = list.length;
+    if (this.pulledSlots.length < list.length) {
+      const slots = new Int32Array(Math.max(64, list.length));
+      slots.set(this.pulledSlots);
+      this.pulledSlots = slots;
+    }
+    const slots = this.pulledSlots;
+    const version = this.version;
+    const relinks = this.relinks;
+    const live = !Number.isNaN(now);
+    const current = live && this.pulledVersion === version && this.pulledRelinks === relinks;
     try {
       for (let n = 0; n < list.length; n++) {
         const subject = list[n] as I;
-        let head: Subject<unknown> | null = null;
-        if (!Number.isNaN(now)) {
-          const kept = heads[n];
-          if (was[n] === subject && kept !== undefined && kept.version === this.version)
-            head = kept;
+        let slot = -1;
+        if (live) {
+          if (current && was[n] === subject) slot = slots[n] as number;
           else {
-            head = this.chain(subject, now);
+            const kept = heads[n];
+            const head =
+              was[n] === subject && kept !== undefined && kept.version === version
+                ? kept
+                : this.chain(subject, now);
             was[n] = subject;
             heads[n] = head;
+            slot = head.slot;
+            slots[n] = slot;
           }
         }
-        const laned =
-          head !== null && lanes?.prepare(head.slot, subject, now, this.version) === true;
+        const laned = live && lanes?.prepare(slot, subject, now, this.version) === true;
         if (laned && whole && (lanes as Lanes<I, O>).whole) {
-          (lanes as Lanes<I, O>).writeLater((head as Subject<unknown>).slot, columns, n);
+          (lanes as Lanes<I, O>).writeLater(slot, columns, n);
           continue;
         }
+        const head = live ? (heads[n] as Subject<unknown>) : null;
         const folded = this.foldWith(subject, scratch, head, laned, false);
         const pose = (this.bounded.length === 0 ? folded : this.clamp(folded as Values)) as Values;
         this.keep(subject, pose as O, scratch);
@@ -830,6 +851,10 @@ class Mixer<I, O> implements Mix<I, O> {
     } finally {
       lanes?.flush();
     }
+    // Every head is current only if nothing relinked or changed version while they were read.
+    const unchanged = live && this.version === version && this.relinks === relinks;
+    this.pulledVersion = unchanged ? version : Number.NaN;
+    this.pulledRelinks = relinks;
   }
 
   /** The kit slot, width, rest and bounds of every channel `pull` was handed an array for. */
@@ -995,7 +1020,10 @@ class Mixer<I, O> implements Mix<I, O> {
   drop(subject: I): void {
     const head = this.chains.get(subject);
     // Nothing that kept this head, such as `pull`'s remembered list, may take it as current again.
-    if (head !== undefined) head.version = Number.NaN;
+    if (head !== undefined) {
+      head.version = Number.NaN;
+      this.relinks++;
+    }
     if (head !== undefined && head.slot >= 0 && this.lanes !== null) this.lanes.release(head.slot);
     this.pose.delete(subject);
     this.chains.delete(subject);
@@ -1654,6 +1682,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const head = this.chains.get(subject);
     if (head === undefined) return;
     head.version = Number.NaN;
+    this.relinks++;
     if (voice.laned && head.slot >= 0) this.lanes?.part(voice.id, head.slot);
     this.lanes?.refill();
   }
