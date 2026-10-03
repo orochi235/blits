@@ -197,11 +197,23 @@ systems now run on it**, on klieg's `main`.
      of a `fn` tween's and its collection pauses to a quarter; against a `fn` with no per-call
      lookup it is about even, both sitting on the probe floor. The schema page's motion section
      and `spikes/gpu-engine/README.md` under "Tween" have it. A spring with lanes off, which read 1.14× on a loaded studio, reads 0.99× on an idle node.
-   - **Voices sharing a patch, grouped into one lane indexed by voice**, so a voice per subject
-     costs what one voice does. Only if a voice per call still needs it once `tween` exists. On
-     studio a tween per subject (`tweens`, 10k voices) cost 2.6× one tween voice over the same
-     subjects, so it would; whether weasel needs a voice per call is
-     weasel's to say. Not designed.
+   - **One voice carrying many independent animations, decided with Mike 2026-10-02. Not built.**
+     A host that starts many short animations (weasel's reflow and pose helpers, one per node) keeps
+     one shared voice per motion kind on its lane, rather than a voice per call. weasel (weasel-64,
+     from its `poseHelpers.ts`, `reflow.ts` and `types.ts`) needs, per node: its own start (exists:
+     `to(subject, target, at)`), its own duration, and removal with no successor or when a node
+     changes motion kind mid-flight, since a settled subject keeps contributing to the fold. So:
+     - `ms` takes a per-subject value, as `from`/`to` do. Data, not control.
+     - **`handle.drop` and `handle.fade` take an optional subject** — the existing verbs scoped to
+       one subject, not a new removal verb, so the handle stays the only pathway for control. A
+       later `to(subject, …)` on the same voice brings a dropped subject back. A per-subject weight
+       signal can already zero a subject, but a function weight takes a voice off its lane
+       (`fits` in `src/mixer.ts`), so it is no substitute.
+   - **Voices sharing a patch, grouped into one lane indexed by voice**, so a voice per call costs
+     what one voice does. The engine should make the natural use the fast one, so this stays
+     planned for hosts that cannot share a voice — a call that needs its own pause or rate, say.
+     On studio a tween per subject (`tweens`, 10k voices) cost 2.6× one tween voice over the same
+     subjects, about 4 ms a frame in weasel's bench. After the item above. Not designed.
 
 1d. **`@msb235/blits-quarks` 0.1.0 is on npm**, published by hand 2026-10-02 because npm refuses
    trust for a name never published; trusted publishing is registered since, so later versions go out
