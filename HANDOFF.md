@@ -14,7 +14,7 @@ channel, not the effect. The vocabulary is the deliverable as much as the runtim
 are open by design, so the language has to be able to name a seam it does not own. It generalizes
 what klieg does three times over (motion, effects, lighting) and what wod's transition voices do
 once, so klieg, wod, sherpa and magicsmoke can share one vocabulary and one engine. **klieg's three
-systems now run on it**, on a branch that is not merged.
+systems now run on it**, on klieg's `main`.
 
 ## State
 
@@ -26,14 +26,14 @@ systems now run on it**, on a branch that is not merged.
   page. The schema page's Score section describes it; `CHANGELOG.md` has it under 0.3.0. One
   behavior change rides along: a finite loop's fade starts when its last pass ended, not at the
   next frame.
-- **klieg's port is done and green, on `blits-port` in `~/src/klieg`** — not merged into klieg's
-  `main`; pushed except its last two commits. All three systems fold through a mix: `Timeline.poseAt` cues a voice per layer of
-  each phase, `EffectFrame` one per effect, and the sign's environment is a mix with one subject.
-  The arithmetic did not move: klieg's 1970 vitest cases pass, and its Playwright specs fail exactly
-  the five they already failed on `main`, to the pixel (recorded in klieg's changelog). The schema
-  page's klieg section says what the port found; do not re-derive it from here.
-- **klieg depends on the published package**, `"@msb235/blits": "^0.2.1"` in
-  `packages/core/package.json`, so the branch builds anywhere and nothing blocks the merge.
+- **klieg's port is merged into klieg's `main`** (2026-10-02), pinned to `@msb235/blits` `0.3.0`
+  exactly in `packages/core/package.json`. All three systems fold through a mix: `Timeline.poseAt`
+  cues a voice per layer of each phase, `EffectFrame` one per effect, and the sign's environment is
+  a mix with one subject. The arithmetic did not move: klieg's 1974 vitest cases pass on the fleet,
+  and its Playwright specs fail exactly the five they already failed before the port, to the pixel
+  (recorded in klieg's changelog). 0.3.0 needed no change in klieg: its `color` channel is a `hex`,
+  but every effect voice plays at full weight with no locus, so the OKLCH blend is never taken. The
+  schema page's klieg section says what the port found.
 - **The package, `@msb235/blits` 0.3.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
   channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
@@ -151,7 +151,7 @@ systems now run on it**, on a branch that is not merged.
   the site takes its outline loosely. Local until GitHub Pages, and the workflow exists already.
 
 - **Built 2026-09-30 for magicsmoke**, which now runs every fault on blits (its old engine is
-  deleted; on magicsmoke's `main` since 0.5.0, pinned to `@msb235/blits` `0.1.1`): `lag`,
+  deleted; on magicsmoke's `main` since 0.5.0, pinned to `@msb235/blits` `0.3.0` since 2026-10-02): `lag`,
   `handle.weightOf`, `MixOptions.stepMs` and `setting.send` / `mix.drain`. Each is in the schema
   page; magicsmoke's row in the consumer table says how it uses them.
 
@@ -208,22 +208,18 @@ systems now run on it**, on a branch that is not merged.
    from `quarks-v*` tags. Its README says how it works. Moving magicsmoke's fizz and tuning onto it
    is a follow-up in magicsmoke's repo.
 
-2. **Merge klieg's `blits-port`, and move magicsmoke to 0.2.x.** klieg already depends on the
-   published package; push its last two commits and merge. magicsmoke pins `0.1.1`, and 0.2.0 broke
-   two things it may touch: a `from: 'current'` keys voice now leaves at the subject's velocity, and
-   `Handle` gained `ramp`, which matters if magicsmoke builds handle-shaped objects. Unchecked.
-3. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
+2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
    their hand-rolled frame keying onto `slew`, `hinge`'s modes become `weight: signal` and
    `mix.blend`, and `FrameCtx` becomes `Setting` with klieg's fields on `host`. The schema page's
    klieg section has the list. Nothing here is started.
    klieg's `effects/signal.ts` also keeps its own `peak`, `level` and `dwell` (`dwell` is blits'
    `slew`) on a `(t, part, ctx)` signature, which is why klieg's signals are invisible to the mix.
-4. **The renames the vocabulary bought, which the port deliberately left alone.** `t` is still `t`
+3. **The renames the vocabulary bought, which the port deliberately left alone.** `t` is still `t`
    on `MotionPiece.offset` and `EffectPiece.at`, `onPhase` and `PhaseEvent` still carry those
    names, and the tube gradient still calls its own thing `domain`. Each is a break in klieg's
    published surface — sherpa reads `ctx.phase` — and step one had to leave every baseline where it
    was, so they wait for a version of klieg that intends to break.
-5. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
+4. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
    a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
    stock band's width.
 

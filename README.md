@@ -78,7 +78,7 @@ so the engine keeps no dependencies; its README says how it works.
 
 v0.3.0, with two consumers. magicsmoke runs every fault on it, and
 [klieg](https://github.com/orochi235/klieg) composes all three of its systems — letter motion,
-part effects, and the environment a sign is lit by — on a mix each, on a branch not yet merged.
+part effects, and the environment a sign is lit by — on a mix each.
 That port was an extraction rather than a rewrite, so it is also the evidence that the arithmetic
 here is the arithmetic a working renderer already had: klieg's suite of 1974 cases and its
 screenshot baselines came through it unchanged.
