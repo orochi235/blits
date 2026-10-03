@@ -195,8 +195,9 @@ systems now run on it**, on klieg's `main`.
      values copied a column at a time, as one block when in order; a motion lane filled in one loop
      (`runMotion`) through the one copy of the closed forms (`Motions.sampleBare` calls
      `evaluate`), keeping Mike's one-copy rule. Mike set the goal as fast and capacious as
-     possible, not a target (2026-10-02). weasel-shaped `pull` at 10k is now about 0.46 ms on
-     teitou, from 0.71. Storing stretches as Float64Arrays gave nothing (reverted, `b4a4260`).
+     possible, not a target (2026-10-02). weasel-shaped `pull` at 10k is now about 0.44 ms on
+     teitou, from 0.71; remembered lane slots are read without loading each chain while nothing
+     has relinked (`relinks` counts chains made stale one subject at a time). Storing stretches as Float64Arrays gave nothing (reverted, `b4a4260`).
      Next, by the last profile: `prepare`'s per-subject bookkeeping (~10%), `runMotion` itself
      (~22%), and the fold (~6%).
    - **`tween`, built 2026-10-02** as a fourth motion kind (Mike chose its own clock, like a
