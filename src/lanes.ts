@@ -114,7 +114,7 @@ export function clampRun(
   }
 }
 
-const STRIDE = 7;
+const STRIDE = 8;
 const DELAY = 0;
 const SINCE = 1;
 /** The weight the last fill gave the subject. */
@@ -125,6 +125,8 @@ const MSLOT = 4;
 /** For a motion voice, the last fill that sampled the subject, and the voice's seeks then. */
 const SAMPLED = 5;
 const SEEKS = 6;
+/** 1 once the general path has made the voice's first call for the subject, which never undoes. */
+const MET = 7;
 
 const SLOT = 6;
 const FILLED = 0;
@@ -250,6 +252,7 @@ class Lane<I, O> {
     this.data[o + PROBED] = 0;
     this.data[o + MSLOT] = -1;
     this.data[o + SAMPLED] = -1;
+    this.data[o + MET] = 0;
     this.records[p] = held;
     this.deltas[p] = null;
   }
@@ -323,6 +326,11 @@ export class Lanes<I, O> {
    * the general path has to make.
    */
   private readonly late: number[] = [];
+  /** What `writeLater` has queued: lane slots and the rows they go to, for one set of columns. */
+  private queueSlots = new Int32Array(0);
+  private queueRows = new Int32Array(0);
+  private queued = 0;
+  private queuedFor: readonly Column[] | null = null;
   private keeps = false;
   private now = Number.NaN;
   private filledAt = Number.NaN;
@@ -479,25 +487,60 @@ export class Lanes<I, O> {
   }
 
   /**
-   * Writes a subject's values into each column at subject `n`'s places, for a probe that reads from
-   * the lanes while every voice is on one: a channel no lane holds is at rest.
+   * Queues a subject's values for each column at subject `n`'s places, for a `pull` that reads
+   * from the lanes while every voice is on one; `flush` writes what is queued, column by column. A
+   * channel no lane holds is at rest. Anything queued is written before the lanes fill again.
    */
-  write(slot: number, columns: readonly Column[], n: number): void {
-    const bySlot = this.bySlot;
+  writeLater(slot: number, columns: readonly Column[], n: number): void {
+    if (columns !== this.queuedFor) {
+      this.flush();
+      this.queuedFor = columns;
+    }
+    const k = this.queued;
+    if (k === this.queueSlots.length) {
+      const slots = new Int32Array(Math.max(64, k * 2));
+      slots.set(this.queueSlots);
+      this.queueSlots = slots;
+      const rows = new Int32Array(slots.length);
+      rows.set(this.queueRows);
+      this.queueRows = rows;
+    }
+    this.queueSlots[k] = slot;
+    this.queueRows[k] = n;
+    this.queued = k + 1;
+  }
+
+  flush(): void {
+    const count = this.queued;
+    const columns = this.queuedFor;
+    if (count === 0 || columns === null) return;
+    this.queued = 0;
+    const slots = this.queueSlots;
+    const rows = this.queueRows;
     for (let k = 0; k < columns.length; k++) {
       const c = columns[k] as Column;
       const axes = c.axes;
       const out = c.out;
-      const at = n * axes;
-      const ch = bySlot[c.slot];
+      const ch = this.bySlot[c.slot];
       if (ch === undefined) {
-        for (let a = 0; a < axes; a++) out[at + a] = c.rest[a] as number;
+        for (let i = 0; i < count; i++) {
+          const at = (rows[i] as number) * axes;
+          for (let a = 0; a < axes; a++) out[at + a] = c.rest[a] as number;
+        }
         continue;
       }
       const values = ch.values;
-      const base = slot * axes;
-      for (let a = 0; a < axes; a++) out[at + a] = values[base + a] as number;
-      if (c.bounds !== undefined) clampRun(out, at, axes, c.bounds);
+      if (axes === 1) {
+        for (let i = 0; i < count; i++)
+          out[rows[i] as number] = values[slots[i] as number] as number;
+      } else
+        for (let i = 0; i < count; i++) {
+          const at = (rows[i] as number) * axes;
+          const base = (slots[i] as number) * axes;
+          for (let a = 0; a < axes; a++) out[at + a] = values[base + a] as number;
+        }
+      if (c.bounds !== undefined)
+        for (let i = 0; i < count; i++) clampRun(out, (rows[i] as number) * axes, axes, c.bounds);
     }
   }
 
@@ -580,6 +623,7 @@ export class Lanes<I, O> {
   }
 
   private requalify(version: number): void {
+    this.flush();
     const host = this.host;
     this.qualifiedVersion = version;
     this.filledVersion = Number.NaN;
@@ -650,6 +694,7 @@ export class Lanes<I, O> {
   }
 
   private fillAll(now: number, version: number): void {
+    this.flush();
     const host = this.host;
     this.filling = true;
     try {
@@ -930,10 +975,12 @@ export class Lanes<I, O> {
         if (subject !== absent) w *= this.host.parting(voice, subject);
       }
       data[o + WEIGHT] = w;
-      const held = records[p] as Subject<unknown>;
-      if (Number.isNaN(held.probed)) {
-        this.late.push(slot);
-        continue;
+      if (data[o + MET] === 0) {
+        if (Number.isNaN((records[p] as Subject<unknown>).probed)) {
+          this.late.push(slot);
+          continue;
+        }
+        data[o + MET] = 1;
       }
       const ms = data[o + MSLOT] as number;
       if (
@@ -942,11 +989,11 @@ export class Lanes<I, O> {
         (per[q + GENERAL_PROBE] as number) > from ||
         !run.sampleBare(ms, elapsed, xs, run.vs)
       ) {
-        this.move(lane, run, p, slot, held, elapsed, delay, w);
+        this.move(lane, run, p, slot, records[p] as Subject<unknown>, elapsed, delay, w);
         continue;
       }
       for (let a = 0; a < n; a++) samples[p * n + a] = xs[a] as number;
-      lane.deltas[p] = null;
+      if (lane.deltas[p] !== null) lane.deltas[p] = null;
       data[o + SAMPLED] = fills;
       data[o + SEEKS] = seeks;
       if (w <= 0) continue;

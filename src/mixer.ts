@@ -787,7 +787,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const one = (subject: I, head: Subject<unknown> | null, n: number) => {
       const laned = head !== null && lanes?.prepare(head.slot, subject, now, this.version) === true;
       if (laned && (lanes as Lanes<I, O>).whole && !this.wantsPose) {
-        (lanes as Lanes<I, O>).write((head as Subject<unknown>).slot, columns, n);
+        (lanes as Lanes<I, O>).writeLater((head as Subject<unknown>).slot, columns, n);
       } else {
         const folded = this.foldWith(subject, scratch, head, laned, false);
         const pose = (this.bounded.length === 0 ? folded : this.clamp(folded as Values)) as Values;
@@ -801,33 +801,42 @@ class Mixer<I, O> implements Mix<I, O> {
       );
     if (!Array.isArray(subjects)) {
       let n = 0;
-      for (const subject of subjects) {
-        if (n >= room) throw full();
-        one(subject, Number.isNaN(now) ? null : this.chain(subject, now), n);
-        n++;
+      try {
+        for (const subject of subjects) {
+          if (n >= room) throw full();
+          one(subject, Number.isNaN(now) ? null : this.chain(subject, now), n);
+          n++;
+        }
+      } finally {
+        lanes?.flush();
       }
       return;
     }
     const list = subjects as readonly I[];
     if (list.length > room) throw full();
     // An array read again in the same order reuses each position's chain head while it is current.
-    const was = this.pulled;
-    const heads = this.pulledHeads;
-    was.length = list.length;
-    heads.length = list.length;
-    for (let n = 0; n < list.length; n++) {
-      const subject = list[n] as I;
-      let head: Subject<unknown> | null = null;
-      if (!Number.isNaN(now)) {
-        const kept = heads[n];
-        if (was[n] === subject && kept !== undefined && kept.version === this.version) head = kept;
-        else {
-          head = this.chain(subject, now);
-          was[n] = subject;
-          heads[n] = head;
+    try {
+      const was = this.pulled;
+      const heads = this.pulledHeads;
+      was.length = list.length;
+      heads.length = list.length;
+      for (let n = 0; n < list.length; n++) {
+        const subject = list[n] as I;
+        let head: Subject<unknown> | null = null;
+        if (!Number.isNaN(now)) {
+          const kept = heads[n];
+          if (was[n] === subject && kept !== undefined && kept.version === this.version)
+            head = kept;
+          else {
+            head = this.chain(subject, now);
+            was[n] = subject;
+            heads[n] = head;
+          }
         }
+        one(subject, head, n);
       }
-      one(subject, head, n);
+    } finally {
+      lanes?.flush();
     }
   }
 
