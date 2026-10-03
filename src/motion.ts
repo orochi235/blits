@@ -322,6 +322,32 @@ export class Motions<I> {
   }
 
   /**
+   * A live `sample` at `t` for a subject with nothing pending and no earlier stretch kept, true
+   * then; false, writing nothing, for any other, which `quiet` and `sample` take instead.
+   */
+  sampleBare(s: number, t: number, xo: Float64Array, vo: Float64Array): boolean {
+    const runs = this.runs;
+    const b = this.base(s);
+    if (((runs[b + 1] as number) & (PENDING | OLDER)) !== 0) return false;
+    const x = b + 3;
+    const n = this.n;
+    this.evaluate(
+      runs[b] as number,
+      runs[b + 2] as number,
+      runs,
+      x,
+      runs,
+      x + n,
+      runs,
+      x + 2 * n,
+      t,
+      xo,
+      vo,
+    );
+    return true;
+  }
+
+  /**
    * Whether a live `sample` at `t` would leave the subject's state as it is: nothing to stamp or
    * commit by then, and nothing older than `reading.horizon` to let go of.
    */

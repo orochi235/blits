@@ -767,6 +767,10 @@ export class Lanes<I, O> {
     // With no fade in or out the envelope is 1 for every subject, which is what it would return.
     lane.flat = !((voice.fade.in ?? 0) > 0) && voice.out === null;
     lane.fade = 1;
+    if (lane.motion !== undefined && !voice.keeping) {
+      this.runMotion(lane, lane.motion);
+      return;
+    }
     const elapsed = voice.elapsedAt(this.now);
     const period = voice.patch.period;
     const passes = voice.passes;
@@ -836,18 +840,19 @@ export class Lanes<I, O> {
       if (w > 0) this.fold(lane, slot, w);
       return;
     }
-    const subject = this.subjectAt(slot);
-    if (subject === absent) return;
     const held = lane.records[p] as Subject<unknown>;
     // The general path makes a voice's first call for a subject, where it first sees it play.
     if (Number.isNaN(held.probed)) {
       this.late.push(slot);
       return;
     }
+    // A motion patch needs the subject only to number it, so the lookup waits until then.
     if (lane.motion !== undefined) {
-      this.move(lane, lane.motion, p, slot, subject, held, elapsed, delay, w);
+      this.move(lane, lane.motion, p, slot, held, elapsed, delay, w);
       return;
     }
+    const subject = this.subjectAt(slot);
+    if (subject === absent) return;
     // Called already this frame, by the general path or a fill before a refill: reuse, as a probe does.
     if (held.probed === this.now && held.delta !== null && held.seeks === voice.seeks) {
       if (w > 0) this.foldDelta(lane, slot, held.delta, w);
@@ -870,6 +875,87 @@ export class Lanes<I, O> {
   }
 
   /**
+   * A motion voice's fill: what `one` and `move` do for each subject, in one loop for the common
+   * case, a subject not yet probed this frame with nothing pending, and through `move` for the rest.
+   */
+  private runMotion(lane: Lane<I, O>, run: Motions<I>): void {
+    const voice = lane.voice;
+    const data = lane.data;
+    const per = this.per;
+    const list = lane.list;
+    const records = lane.records;
+    const ch = lane.chans[0] as Laned;
+    const fills = this.fills;
+    const from = this.frameProbes;
+    const seeks = voice.seeks;
+    const elapsedNow = voice.elapsedAt(this.now);
+    const flat = lane.flat;
+    const parts = voice.parts !== null;
+    const n = run.n;
+    if (n > 0) {
+      if (lane.axes !== n) {
+        lane.axes = n;
+        lane.samples = new Float64Array(0);
+      }
+      if (list.length * n > lane.samples.length) {
+        const grown = new Float64Array(Math.max(list.length, (lane.samples.length / n) * 2, 4) * n);
+        grown.set(lane.samples);
+        lane.samples = grown;
+      }
+    }
+    const samples = lane.samples;
+    const xs = run.xs;
+    for (let p = 0; p < list.length; p++) {
+      const slot = list[p] as number;
+      const o = p * STRIDE;
+      const q = slot * SLOT;
+      if (per[q + LANE_FILL] === fills - 1) data[o + PROBED] = data[o + WEIGHT] as number;
+      const delay = data[o + DELAY] as number;
+      const elapsed = elapsedNow - delay;
+      if (elapsed < 0) {
+        data[o + WEIGHT] = 0;
+        continue;
+      }
+      if (!flat) {
+        const since = data[o + SINCE] as number;
+        if (!lane.weighed || !Object.is(since, lane.weighedSince)) {
+          lane.fade = this.host.envelope(voice, since);
+          lane.weighed = true;
+          lane.weighedSince = since;
+        }
+      }
+      let w = clampWeight(voice.weight * lane.fade);
+      if (parts) {
+        const subject = this.subjectAt(slot);
+        if (subject !== absent) w *= this.host.parting(voice, subject);
+      }
+      data[o + WEIGHT] = w;
+      const held = records[p] as Subject<unknown>;
+      if (Number.isNaN(held.probed)) {
+        this.late.push(slot);
+        continue;
+      }
+      const ms = data[o + MSLOT] as number;
+      if (
+        ms < 0 ||
+        (per[q + LANE_PROBE] as number) > from ||
+        (per[q + GENERAL_PROBE] as number) > from ||
+        !run.sampleBare(ms, elapsed, xs, run.vs)
+      ) {
+        this.move(lane, run, p, slot, held, elapsed, delay, w);
+        continue;
+      }
+      for (let a = 0; a < n; a++) samples[p * n + a] = xs[a] as number;
+      lane.deltas[p] = null;
+      data[o + SAMPLED] = fills;
+      data[o + SEEKS] = seeks;
+      if (w <= 0) continue;
+      if (n === ch.axes && run.scalar(ms) === (ch.axes === 1)) this.foldRun(ch, slot, xs, w);
+      else this.foldInto(ch, slot, run.value(ms, xs), w);
+    }
+  }
+
+  /**
    * A motion voice's value for a subject, sampled from the patch's state as its `at` would, but only
    * where that sample changes nothing: one with a change to stamp, commit or let go of goes to the
    * general path, which samples it if and when a probe asks, as it would with no lanes. A probe
@@ -880,7 +966,6 @@ export class Lanes<I, O> {
     run: Motions<I>,
     p: number,
     slot: number,
-    subject: I,
     held: Subject<unknown>,
     elapsed: number,
     delay: number,
@@ -900,6 +985,8 @@ export class Lanes<I, O> {
     ) {
       let ms = data[o + MSLOT] as number;
       if (ms < 0) {
+        const subject = this.subjectAt(slot);
+        if (subject === absent) return;
         ms = run.slot(subject);
         data[o + MSLOT] = ms;
       }
