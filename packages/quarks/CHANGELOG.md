@@ -4,7 +4,7 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
-## Unreleased
+## 0.1.0 — 2026-10-02
 
 ### Added
 

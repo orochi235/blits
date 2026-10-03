@@ -211,13 +211,10 @@ systems now run on it**, on a branch that is not merged.
      subjects, so it would; whether weasel needs a voice per call is
      weasel's to say. Not designed.
 
-1d. **`@msb235/blits-quarks` is built, in `packages/quarks`, unreleased.** Its README says how it
-   works. Before its first release Mike registers trusted publishing for the name, logged in to
-   npm: `npm trust github @msb235/blits-quarks --file release.yml --repo orochi235/blits
-   --allow-publish`, checked with `npm trust list @msb235/blits-quarks`. Not done as of
-   2026-10-02 (this machine's shell was logged out); then the release is a `quarks-v0.1.0` tag, after renaming its
-   changelog's Unreleased section. Moving magicsmoke's fizz and tuning onto it is a follow-up in
-   magicsmoke's repo.
+1d. **`@msb235/blits-quarks` 0.1.0 is on npm**, published by hand 2026-10-02 because npm refuses
+   trust for a name never published; trusted publishing is registered since, so later versions go out
+   from `quarks-v*` tags. Its README says how it works. Moving magicsmoke's fizz and tuning onto it
+   is a follow-up in magicsmoke's repo.
 
 2. **Merge klieg's `blits-port`, and move magicsmoke to 0.2.x.** klieg already depends on the
    published package; push its last two commits and merge. magicsmoke pins `0.1.1`, and 0.2.0 broke

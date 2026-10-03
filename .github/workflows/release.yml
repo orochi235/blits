@@ -6,8 +6,8 @@ name: Release
 # publishes the driver in `packages/quarks`, `@msb235/blits-quarks`.
 #
 # npmjs.com holds the trust, per package: `npm trust github <name> --file release.yml --repo
-# orochi235/blits --allow-publish` registers it, and `npm trust list <name>` shows it. It can be set
-# before a package's first publish, so every version goes out from here.
+# orochi235/blits --allow-publish` registers it, and `npm trust list <name>` shows it. npm refuses it
+# (404) for a name that has never been published, so a package's first version goes out by hand.
 
 on:
   push:
