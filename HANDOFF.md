@@ -219,6 +219,13 @@ systems now run on it**, on klieg's `main`.
      already meant "forget this subject everywhere". weasel (weasel-64) confirmed it needs per-node
      removal: a node changes motion kind mid-flight, or is cancelled with nothing replacing it. The
      schema page's Open section has the one gap, reading back across a subject fade under `history`.
+   - **A voice per node at scale is bound by memory, not calls** (measured 2026-10-02, teitou,
+     `bench/split.mjs`): single-subject tween voices cost 18 ns more per voice than one shared
+     voice at 1k, 48 at 10k, 226 at 100k, nearly all in the fill, plus `sync` at 2.8 ms for 100k.
+     A motion patch belongs to one voice, so "voices sharing a patch" does not apply to motion.
+     Proposed to Mike, not yet approved: voice clocks and weights mirrored into flat arrays, `sync`
+     driven by a queue of scheduled events, motion state rows pooled per mix, then one lane over
+     single-subject motion voices. Not designed.
    - **Voices sharing a patch, grouped into one lane indexed by voice**, so a voice per call costs
      what one voice does. The engine should make the natural use the fast one, so this stays
      planned for hosts that cannot share a voice — a call that needs its own pause or rate, say.
