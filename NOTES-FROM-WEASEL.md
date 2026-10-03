@@ -21,13 +21,13 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   2026-10-02, vitest means in ms per frame at 10k nodes, two runs; weasel's own animator in
   brackets [0.42–0.44 tween, 0.67–0.94 spring]). One `tween` voice over every node, read by
   `probe` per node: 2.0–2.1 (2.6–2.7 lanes off), level with a `fn` voice at 2.1. A voice per call:
-  3.8–3.9. One spring voice: 2.5; a spring voice per call 4.6–4.7. Read through `pull` with the
-  same array every frame, on `a00754e` against `93f0317` (studio, five alternated pairs, noisy:
-  weasel's own row ranged 0.31–0.86): one tween voice median 0.94 against 1.34 ms, about 0.7 of
-  before and 2.5–3× weasel's own; one spring voice 1.3–1.6 against 1.8–1.9 [about 0.55]; at 1k a
-  tween voice 0.07 against 0.10 [0.03]. weasel's rows build a `{x, y}` object per node after the
-  read, which its own animator pays too. blits' own `weasel^` row, which builds none, read 0.44 on
-  teitou at `de5ba57`.
+  3.8–3.9. One spring voice: 2.5; a spring voice per call 4.6–4.7. Like for like on teitou at
+  `de5ba57` (weasel, Node 26.10, three runs, 2026-10-02), one tween voice over 10k read by `pull`:
+  0.33–0.40 ms bare (`sync` + `pull`, nothing allocated per node) against weasel's 0.15–0.16 bare,
+  about 2.4×, though weasel's bare frame still builds a `{x, y}` per node; with each side writing
+  its per-node sink, 0.38–0.46 against 0.20–0.33, about 1.5×. Read by `probe` 0.79–0.94; a voice
+  per call 1.9. One spring voice by `pull` 0.57–0.66; weasel's own spring row is unstable on
+  teitou (0.31–1.28), cause unknown. About 35–40 ns a node against weasel's 15.
 - **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a
   `fn` voice in plain Node: about 35 ms warm against 16, and 80–90 cold against 28–42 (weasel,
   orochi under load, 2026-10-02). A cold run in blits' own shape read the other way, 34 against 49.
