@@ -21,12 +21,17 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   2026-10-02, vitest means in ms per frame at 10k nodes, two runs; weasel's own animator in
   brackets [0.42–0.44 tween, 0.67–0.94 spring]). One `tween` voice over every node, read by
   `probe` per node: 2.0–2.1 (2.6–2.7 lanes off), level with a `fn` voice at 2.1. A voice per call:
-  3.8–3.9. One spring voice: 2.5; a spring voice per call 4.6–4.7. At 1k: one tween voice 0.15
-  [0.03–0.04]. Start plus first frame for 10k tweens: 93 and 17 ms for one tween voice (the 93
-  unexplained), 64–65 for a voice per call [12]. So a shared voice halves the per-call cost but
-  stays about 5× weasel's own. weasel's arithmetic, not a profile: the probe floor of about 120 ns
-  a node is 1.2 ms at 10k before any interpolation. Whether `pull` closes it is unmeasured in
-  weasel's shape; keeping subject numbers between `pull` calls (`HANDOFF.md` 1c) is the step after.
+  3.8–3.9. One spring voice: 2.5; a spring voice per call 4.6–4.7. Read through `pull` once a
+  frame instead (second run, studio less loaded; weasel's own 0.34 that run): one tween voice 1.8
+  against 2.4 by `probe`, about 0.77 of it and still about 4×, near 170 ns a node against weasel's
+  35–45; one spring voice 2.3 [0.54]. At 1k, pull 0.13 [0.03]. weasel's arithmetic, not a profile:
+  what is left is per-node lookup and bookkeeping, so keeping subject numbers between `pull` calls
+  (`HANDOFF.md` 1c) is the next step.
+- **Starting one tween voice over 10k nodes** read 85–93 ms for start plus first frame in weasel's
+  bench (one run 17), against 11–12 for a `fn` voice; 300 and 1k nodes are fine. Not reproduced in
+  blits: a cold single run of the same shape (string ids, endpoints in a map, read by `pull`) took
+  34 ms for the tween and 49 for the `fn`, locally on 26c9764. What weasel's start row times is
+  not yet known.
 - **Memory with `target`:** a mix of 1,000 per-node voices reached by `target` held about 810 MB
   after 40 frames (720 MB before lanes), growing with the square of the count, from the record each
   voice keeps per subject it is asked about. With `subjects` it stays at a few MB. `target`'s doc
