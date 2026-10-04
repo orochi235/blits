@@ -1,3 +1,4 @@
+import { type LerpInto, lerpInto } from './channels.js';
 import { clampWeight, envelope, passAt, passesOf, phaseAt } from './clock.js';
 import { type Curve, curve } from './easing.js';
 import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
@@ -86,10 +87,11 @@ export interface Subject<S> {
   next: Subject<unknown> | null;
   /**
    * On the first record, which the mix keeps per subject so a probe makes one lookup: the `version`
-   * the chain was linked at, and per locus and channel whether a rest-less influence is on.
+   * the chain was linked at, and per locus, by channel slot, whether a rest-less influence is on:
+   * 0 never decided, 1 on, 2 off.
    */
   version: number;
-  loci: Map<string, boolean> | null;
+  loci: Map<string, Uint8Array> | null;
   /** On the first record: the number lanes index this subject by, -1 without one. */
   slot: number;
 }
@@ -129,6 +131,69 @@ function stub(): Subject<unknown> {
     loci: null,
     slot: -1,
   };
+}
+
+/**
+ * What a fold with a locus in play gathers, kept from one fold to the next: the influences in
+ * voice order, each a voice's own or a locus's first member; every locus member; and per channel
+ * slot, a locus's folding value, the weight taken into it and the array it owns.
+ */
+interface LocusScratch<I, O> {
+  n: number;
+  voices: (Voice<I, O> | null)[];
+  helds: (Subject<unknown> | null)[];
+  deltas: (Record<string, unknown> | null)[];
+  weights: number[];
+  /** Per influence, -1 for a voice's own, or which of `names` it is. */
+  groups: number[];
+  names: string[];
+  m: number;
+  mVoices: (Voice<I, O> | null)[];
+  mDeltas: (Record<string, unknown> | null)[];
+  mWeights: number[];
+  mGroups: number[];
+  values: unknown[];
+  taken: Float64Array;
+  met: Uint8Array;
+  touched: number[];
+  owned: (number[] | undefined)[];
+}
+
+function locusScratch<I, O>(channels: number): LocusScratch<I, O> {
+  return {
+    n: 0,
+    voices: [],
+    helds: [],
+    deltas: [],
+    weights: [],
+    groups: [],
+    names: [],
+    m: 0,
+    mVoices: [],
+    mDeltas: [],
+    mWeights: [],
+    mGroups: [],
+    values: new Array(channels).fill(undefined),
+    taken: new Float64Array(channels),
+    met: new Uint8Array(channels),
+    touched: [],
+    owned: new Array(channels).fill(undefined),
+  };
+}
+
+/**
+ * `value` copied into the array `k` owns for the slot, as long as the channel's rest, where a
+ * shorter value leaves the rest's own fill: what the channel's fold and lerp read past its end.
+ */
+function own<I, O>(k: LocusScratch<I, O>, slot: number, value: number[], rest: number[]): number[] {
+  let out = k.owned[slot];
+  if (out === undefined) {
+    out = rest.slice();
+    k.owned[slot] = out;
+  }
+  for (let i = 0; i < out.length; i++)
+    out[i] = i < value.length ? (value[i] as number) : (rest[i] as number);
+  return out;
 }
 
 /** One entry in a mix's due queue; stale once its voice has been scheduled again. */
@@ -595,6 +660,11 @@ class Mixer<I, O> implements Mix<I, O> {
   private readonly channels: Channel<unknown>[];
   /** Slots of the channels that declare bounds, clamped after every fold. */
   private readonly bounded: number[];
+  /** By slot, a stock array channel's in-place `lerp`. */
+  private readonly lerpsInto: (LerpInto | undefined)[];
+  /** What a fold with a locus in play gathers into, one per depth of folds under way. */
+  private readonly locusScratch: LocusScratch<I, O>[] = [];
+  private locusDepth = 0;
   private readonly slotOf = new Map<string, number>();
   private readonly lanes: Lanes<I, O> | null;
 
@@ -605,6 +675,7 @@ class Mixer<I, O> implements Mix<I, O> {
     this.names = Object.keys(kit as object) as Key<O>[];
     this.channels = this.names.map((k) => kit[k] as Channel<unknown>);
     this.bounded = this.channels.flatMap((c, i) => (c.bounds ? [i] : []));
+    this.lerpsInto = this.channels.map((c) => lerpInto(c));
     this.names.forEach((k, i) => {
       this.slotOf.set(k, i);
     });
@@ -2289,33 +2360,51 @@ class Mixer<I, O> implements Mix<I, O> {
     return true;
   }
 
-  /** Folds a locus's members into one influence through each channel's own `lerp`. */
-  private foldLocus(members: { delta: Record<string, unknown>; weight: number }[]): {
-    delta: Record<string, unknown>;
-    weight: number;
-  } {
+  /**
+   * Folds one locus's members into one influence through each channel's own `lerp`: its value per
+   * channel goes in `k.values`, the channels in `k.touched` in the order first met, and its weight
+   * is returned. A channel folding by scale takes its value in an array of `k`'s own, lerped in
+   * place, since the fold only reads it.
+   */
+  private foldLocus(k: LocusScratch<I, O>, group: number): number {
+    k.touched.length = 0;
     let sum = 0;
-    for (const m of members) sum += m.weight;
-    const delta: Record<string, unknown> = {};
-    if (sum <= 0) return { delta, weight: 0 };
-    const taken = new Map<string, number>();
-    for (const member of members) {
-      if (member.weight <= 0) continue;
-      for (const key of Object.keys(member.delta)) {
-        if (member.delta[key] === undefined) continue;
-        const channel = this.kit[key as Key<O>] as Channel<unknown>;
-        const held = taken.get(key);
-        if (held === undefined) {
-          delta[key] = copy(member.delta[key]);
-          taken.set(key, member.weight);
+    for (let m = 0; m < k.m; m++) if (k.mGroups[m] === group) sum += k.mWeights[m] as number;
+    if (sum <= 0) return 0;
+    const taken = k.taken;
+    for (let m = 0; m < k.m; m++) {
+      if (k.mGroups[m] !== group) continue;
+      const weight = k.mWeights[m] as number;
+      if (weight <= 0) continue;
+      const delta = k.mDeltas[m] as Record<string, unknown>;
+      const slots = (k.mVoices[m] as Voice<I, O>).slots;
+      for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i] as number;
+        const value = delta[this.names[slot] as string];
+        if (value === undefined) continue;
+        const channel = this.channels[slot] as Channel<unknown>;
+        if (k.met[slot] === 0) {
+          k.met[slot] = 1;
+          k.touched.push(slot);
+          taken[slot] = weight;
+          k.values[slot] =
+            this.lerpsInto[slot] !== undefined && channel.scale && Array.isArray(value)
+              ? own(k, slot, value, channel.rest as number[])
+              : copy(value);
           continue;
         }
-        const total = held + member.weight;
-        delta[key] = channel.lerp(delta[key], member.delta[key], member.weight / total);
-        taken.set(key, total);
+        const total = (taken[slot] as number) + weight;
+        const was = k.values[slot];
+        const lerp = this.lerpsInto[slot];
+        k.values[slot] =
+          lerp !== undefined && was === k.owned[slot]
+            ? lerp(was as unknown[], was, value, weight / total)
+            : channel.lerp(was, value, weight / total);
+        taken[slot] = total;
       }
     }
-    return { delta, weight: sum > 1 ? 1 : sum };
+    for (let t = 0; t < k.touched.length; t++) k.met[k.touched[t] as number] = 0;
+    return sum > 1 ? 1 : sum;
   }
 
   /** Whether a rest-less channel's influence is switched on, across a band rather than an edge. */
@@ -2523,66 +2612,108 @@ class Mixer<I, O> implements Mix<I, O> {
     }
 
     // With a locus in play, each one folds at its first member's place in the voice order.
-    type Single = { voice: Voice<I, O>; held: Subject<unknown>; delta: Record<string, unknown> };
-    const order: (Single | string)[] = [];
-    const weights: number[] = [];
-    const loci = new Map<string, { delta: Record<string, unknown>; weight: number }[]>();
-    for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
-      const voice = held.voice as Voice<I, O> | null;
-      if (voice === null || (laned && voice.laned)) continue;
-      if (voice.id === except || voice.state === 'done') continue;
-      const delta = this.read(voice, subject, now, dry, held);
-      if (delta === null) continue;
-      const locus = voice.spec.locus;
-      if (locus === undefined) {
-        order.push({ voice, held, delta });
-        weights.push(this.w);
-        continue;
-      }
-      const members = loci.get(locus);
-      if (members) members.push({ delta, weight: this.w });
-      else {
-        loci.set(locus, [{ delta, weight: this.w }]);
-        order.push(locus);
-        weights.push(0);
-      }
+    // A patch reading the pose can fold again from inside this one, so each depth has its own.
+    let k = this.locusScratch[this.locusDepth];
+    if (k === undefined) {
+      k = locusScratch<I, O>(this.channels.length);
+      this.locusScratch[this.locusDepth] = k;
     }
-
-    let bands = head.loci;
-    if (bands === null) {
-      bands = new Map();
-      head.loci = bands;
-    }
-
-    for (let n = 0; n < order.length; n++) {
-      const at = order[n] as Single | string;
-      if (typeof at !== 'string') {
-        if ((weights[n] as number) > 0)
-          this.apply(pose, at.voice, at.held, at.delta, weights[n] as number);
-        continue;
+    this.locusDepth++;
+    try {
+      k.n = 0;
+      k.m = 0;
+      k.names.length = 0;
+      for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
+        const voice = held.voice as Voice<I, O> | null;
+        if (voice === null || (laned && voice.laned)) continue;
+        if (voice.id === except || voice.state === 'done') continue;
+        const delta = this.read(voice, subject, now, dry, held);
+        if (delta === null) continue;
+        const locus = voice.spec.locus;
+        let group = -1;
+        if (locus !== undefined) {
+          group = k.names.indexOf(locus);
+          const m = k.m++;
+          k.mVoices[m] = voice;
+          k.mDeltas[m] = delta;
+          k.mWeights[m] = this.w;
+          if (group >= 0) {
+            k.mGroups[m] = group;
+            continue;
+          }
+          group = k.names.length;
+          k.names.push(locus);
+          k.mGroups[m] = group;
+        }
+        const n = k.n++;
+        k.voices[n] = voice;
+        k.helds[n] = held;
+        k.deltas[n] = delta;
+        k.weights[n] = locus === undefined ? this.w : 0;
+        k.groups[n] = group;
       }
-      const { delta, weight } = this.foldLocus(
-        loci.get(at) as { delta: Record<string, unknown>; weight: number }[],
-      );
-      if (weight <= 0) continue;
-      for (const key of Object.keys(delta)) {
-        const channel = this.kit[key as Key<O>] as Channel<unknown>;
-        const value = delta[key];
-        if (value === undefined) continue;
-        if (channel.rest !== undefined && channel.scale) {
-          // pose[key] is the copy of rest this fold made, so it is ours to write into.
-          pose[key] = channel.fold
-            ? channel.fold(pose[key], value, weight)
-            : channel.merge(pose[key], channel.scale(value, weight));
+
+      let bands = head.loci;
+      if (bands === null) {
+        bands = new Map();
+        head.loci = bands;
+      }
+
+      for (let n = 0; n < k.n; n++) {
+        const group = k.groups[n] as number;
+        if (group < 0) {
+          const weight = k.weights[n] as number;
+          if (weight > 0)
+            this.apply(
+              pose,
+              k.voices[n] as Voice<I, O>,
+              k.helds[n] as Subject<unknown>,
+              k.deltas[n] as Record<string, unknown>,
+              weight,
+            );
           continue;
         }
-        const band = `${at}:${key}`;
-        const on = this.passes(bands.get(band), weight);
-        bands.set(band, on);
-        if (on) pose[key] = pose[key] === undefined ? copy(value) : channel.merge(pose[key], value);
+        const weight = this.foldLocus(k, group);
+        if (weight <= 0) continue;
+        const name = k.names[group] as string;
+        let on = bands.get(name);
+        if (on === undefined) {
+          on = new Uint8Array(this.channels.length);
+          bands.set(name, on);
+        }
+        for (let t = 0; t < k.touched.length; t++) {
+          const slot = k.touched[t] as number;
+          const value = k.values[slot];
+          k.values[slot] = undefined;
+          const key = this.names[slot] as string;
+          const channel = this.channels[slot] as Channel<unknown>;
+          if (channel.rest !== undefined && channel.scale) {
+            // pose[key] is the copy of rest this fold made, so it is ours to write into.
+            pose[key] = channel.fold
+              ? channel.fold(pose[key], value, weight)
+              : channel.merge(pose[key], channel.scale(value, weight));
+            continue;
+          }
+          const band = on[slot] as number;
+          const passes = this.passes(band === 0 ? undefined : band === 1, weight);
+          on[slot] = passes ? 1 : 2;
+          if (passes)
+            pose[key] = pose[key] === undefined ? copy(value) : channel.merge(pose[key], value);
+        }
       }
+      return pose as O;
+    } finally {
+      for (let n = 0; n < k.n; n++) {
+        k.voices[n] = null;
+        k.helds[n] = null;
+        k.deltas[n] = null;
+      }
+      for (let m = 0; m < k.m; m++) {
+        k.mVoices[m] = null;
+        k.mDeltas[m] = null;
+      }
+      this.locusDepth--;
     }
-    return pose as O;
   }
 
   /** `influence`, or for a dry fold a subject already probed this frame, without advancing it. */
