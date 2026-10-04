@@ -166,6 +166,13 @@ function keeping<I, O>(voice: Voice<I, O>): Setting['keep'] {
   };
 }
 
+/** A record's band state, made when a rest-less channel first asks. */
+function bandsFor(held: Subject<unknown>, n: number): Uint8Array {
+  const bands = new Uint8Array(n);
+  held.bands = bands;
+  return bands;
+}
+
 /** The first record of a subject no live voice reaches, so a probe of it still makes one lookup. */
 function stub(): Subject<unknown> {
   return {
@@ -2601,11 +2608,7 @@ class Mixer<I, O> implements Mix<I, O> {
           : channel.merge(pose[key], channel.scale(value, weight));
         continue;
       }
-      let bands = held.bands;
-      if (bands === null) {
-        bands = new Uint8Array(slots.length);
-        held.bands = bands;
-      }
+      const bands = held.bands ?? bandsFor(held, slots.length);
       const band = bands[i];
       const on = this.passes(band === 0 ? undefined : band === 1, weight);
       bands[i] = on ? 1 : 2;
@@ -2683,8 +2686,19 @@ class Mixer<I, O> implements Mix<I, O> {
       }
       return pose as O;
     }
+    return this.foldLoci(subject, pose, head, laned, dry, except);
+  }
 
-    // With a locus in play, each one folds at its first member's place in the voice order.
+  /** `foldWith`'s voices with a locus in play: each locus folds at its first member's place. */
+  private foldLoci(
+    subject: I,
+    pose: Record<string, unknown>,
+    head: Subject<unknown>,
+    laned: boolean,
+    dry: boolean,
+    except: number | undefined,
+  ): O {
+    const now = this.now;
     // A patch reading the pose can fold again from inside this one, so each depth has its own.
     let k = this.locusScratch[this.locusDepth];
     if (k === undefined) {
