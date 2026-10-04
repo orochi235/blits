@@ -3,7 +3,8 @@ import { kit, max, mul, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
-import type { Handle, Mix, MixOptions } from '../src/types.js';
+import { slew } from '../src/signals.js';
+import type { Handle, Mix, MixOptions, Setting } from '../src/types.js';
 
 interface Pose {
   gain: number;
@@ -1716,6 +1717,42 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
     // The general path would have called the patch for subjects 3 and 1 alone.
     expect(seen.sort()).toEqual([0, 1, 2, 3]);
   });
+
+  it('for voices writing several channels, crowds sharing one folding in voice order', () => {
+    // 1e16 + 1 rounds the 1 away, so the crawl folds to 0 in voice order and to 1 out of it.
+    const both = (crawl: number) =>
+      patch<Part, Pose>(0, (_ph, part) => ({ crawl, dark: part.id / 10 }), {
+        writes: ['crawl', 'dark'],
+      });
+    agree(
+      (m, parts) => ({
+        handles: parts.flatMap((p) => [
+          m.cue({ patch: both(1e16), subjects: [p] }),
+          m.cue({
+            patch: keys<Part, Pose>(400, [
+              { at: 0, delta: { crawl: 1 } },
+              { at: 1, delta: { crawl: 1 } },
+            ]),
+            subjects: [p],
+          }),
+          m.cue({ patch: both(-1e16), subjects: [p] }),
+        ]),
+      }),
+      { times: ramp },
+    );
+    const m = mix<Part, Pose>(K);
+    const p = { id: 3 };
+    m.cue({ patch: both(1e16), subjects: [p] });
+    m.cue({
+      patch: patch<Part, Pose>(0, () => ({ crawl: 1 }), { writes: ['crawl'] }),
+      subjects: [p],
+    });
+    m.cue({ patch: both(-1e16), subjects: [p] });
+    for (const t of [0, 16, 32]) {
+      m.sync(t);
+      expect(m.probe(p).crawl).toBe(0);
+    }
+  });
 });
 
 describe('crowds take voices on and off as they come and go', () => {
@@ -1762,4 +1799,235 @@ describe('crowds take voices on and off as they come and go', () => {
     agree(play, { times: frames, parts: 70 });
     agree(play, { times: frames, parts: 70, probe: (t, p) => p.id % 4 === 0 || t % 64 === 0 });
   }, 30_000);
+});
+
+describe('lanes weigh a subject fading out of its voice as the general path does', () => {
+  const ramp = [0, 16, 33, 50, 66, 83, 100, 133, 166, 200, 233, 266, 300, 400];
+  for (const weight of [0.37, 1, 1.6])
+    it(`at weight ${weight}, for a fn, a keys and a tween voice over every subject`, () => {
+      agree(
+        (m, parts) => {
+          const handles = [
+            m.cue({ patch: pulse(), weight, fade: { in: 100 } }),
+            m.cue({
+              patch: keys<Part, Pose>(500, [
+                { at: 0, delta: { crawl: 1 } },
+                { at: 1, delta: { crawl: 4 } },
+              ]),
+              weight,
+            }),
+            m.cue({
+              patch: tween<Part, Pose, number[]>('position', {
+                from: [0, 0, 0],
+                to: (p) => [p.id, 1, 2],
+                ms: 300,
+              }),
+              weight,
+              fade: { in: 50 },
+            }),
+          ];
+          const at = (t: number) => {
+            if (t !== 50) return;
+            for (const p of parts.filter((p) => p.id % 2 === 0))
+              for (const h of handles) h.fade({ subject: p, over: 200 });
+          };
+          return { handles, at };
+        },
+        { times: ramp, parts: 70 },
+      );
+    });
+});
+
+describe('a voice weighted by a signal runs on lanes while the signal keeps no state', () => {
+  const ramp = [0, 16, 33, 50, 100, 150, 200, 333, 500, 700];
+  const varying = (p: Part, s: Setting) => 0.5 + 0.5 * Math.sin(s.elapsed / 120 + p.id);
+
+  /** How many subjects a fn voice's patch is called for on a frame probing two of six. */
+  const calls = (weight: (p: Part, s: Setting) => number) => {
+    const m = mix<Part, Pose>(K);
+    const parts = Array.from({ length: 6 }, (_, id) => ({ id }));
+    const seen = new Set<number>();
+    m.cue({
+      patch: patch<Part, Pose>(
+        0,
+        (_ph, p) => {
+          seen.add(p.id);
+          return { crawl: p.id };
+        },
+        { writes: ['crawl'] },
+      ),
+      weight,
+    });
+    m.sync(0);
+    for (const p of parts) m.probe(p);
+    seen.clear();
+    m.sync(16);
+    m.probe(parts[1] as Part);
+    m.probe(parts[4] as Part);
+    return seen.size;
+  };
+
+  it('fills every subject from the lane for a signal that keeps none', () => {
+    expect(calls(varying)).toBe(6);
+  });
+
+  it('takes the general path for a signal that keeps state, from its first call', () => {
+    expect(calls(slew(varying, { riseMs: 100 }))).toBe(2);
+  });
+
+  it('stops calling a motion voice’s signal for subjects nobody probed once it keeps state', () => {
+    // From t=300 the signal counts frames per subject in kept state and reads by the count.
+    // Subjects 90-99 go unread until 600; the first subject a fill meets may still get one call,
+    // as `Setting.keep` says, so the unread ones are the last.
+    const owner = {};
+    const counting = (p: Part, s: Setting) => {
+      if (s.timestamp < 300) return 0.5 + p.id / 200;
+      const n = s.keep(owner, () => ({ n: 0, seen: Number.NaN }));
+      if (n.seen !== s.timestamp) {
+        n.n++;
+        n.seen = s.timestamp;
+      }
+      return 1 / (1 + n.n);
+    };
+    agree(
+      (m) => ({
+        handles: [
+          m.cue({
+            patch: tween<Part, Pose, number>('crawl', {
+              from: 0,
+              to: (p) => p.id,
+              ms: 2000,
+            }),
+            weight: counting,
+          }),
+        ],
+      }),
+      {
+        times: [0, 100, 200, 300, 400, 500, 600],
+        parts: 100,
+        probe: (t, p) => t === 0 || t === 600 || p.id < 90,
+      },
+    );
+  });
+
+  it('gives the pose the general path gives, with a fade, a subject fade and pull', () => {
+    for (const weight of [varying, slew(varying, { riseMs: 90, fallMs: 40 })])
+      agree(
+        (m, parts) => {
+          const handles = [
+            m.cue({ patch: pulse(), weight, fade: { in: 80 } }),
+            m.cue({
+              patch: tween<Part, Pose, number[]>('position', {
+                from: [0, 0, 0],
+                to: (p) => [p.id, 2, 0],
+                ms: 400,
+              }),
+              weight,
+            }),
+            ...parts.map((p) =>
+              m.cue({
+                patch: keys<Part, Pose>(300, [
+                  { at: 0, delta: { gain: 1 } },
+                  { at: 1, delta: { gain: 0.4 } },
+                ]),
+                subjects: [p],
+                weight,
+              }),
+            ),
+          ];
+          const at = (t: number) => {
+            if (t === 150) handles[0]?.fade({ subject: parts[2] as Part, over: 100 });
+          };
+          return { handles, at };
+        },
+        { times: ramp, parts: 70 },
+      );
+  });
+});
+
+describe('a locus of keys and fn voices runs on lanes and folds as the general path folds it', () => {
+  const ramp = [0, 16, 33, 50, 100, 150, 200, 250, 333, 500, 700, 900];
+  const flicker = (k: number) =>
+    patch<Part, Pose>(
+      400,
+      (ph, p) => ({ gain: 0.6 + 0.3 * Math.sin(ph * 5 + p.id + k), crawl: ph * k - p.id / 9 }),
+      { writes: ['gain', 'crawl'] },
+    );
+  const sweep = keys<Part, Pose>(300, [
+    { at: 0, delta: { crawl: 2, position: [1, 0, 0] } },
+    { at: 1, delta: { crawl: -1, position: [0, 3, 1] } },
+  ]);
+  const by = (p: Part, s: Setting) => 0.5 + 0.5 * Math.sin(s.elapsed / 90 + p.id);
+
+  it('for a blend, members reaching different subjects, weights over 1, fades and a voice between', () => {
+    agree(
+      (m, parts) => {
+        const blend = m.blend([flicker(1), flicker(2), sweep], by, { fade: { in: 60 } });
+        const between = m.cue({ patch: pulse(), weight: 0.7 });
+        const handles = [
+          ...blend,
+          between,
+          m.cue({ patch: flicker(3), locus: 'pair', weight: 1.4, target: (p) => p.id % 3 === 0 }),
+          m.cue({ patch: sweep, locus: 'pair', weight: 0.6, fade: { in: 120, out: 80 } }),
+          m.cue({ patch: flicker(4), locus: 'pair', subjects: parts.slice(5, 20) }),
+        ];
+        const at = (t: number) => {
+          if (t === 150) handles[5]?.fade({ subject: parts[4] as Part, over: 100 });
+          if (t === 333) handles[6]?.fade();
+        };
+        return { handles, at };
+      },
+      { times: ramp, parts: 70 },
+    );
+  });
+
+  it('hands the whole locus to the general path when a member cannot run on a lane', () => {
+    agree(
+      (m, parts) => {
+        const handles = [
+          m.cue({ patch: flicker(1), locus: 'a' }),
+          m.cue({ patch: sweep, locus: 'a', weight: 0.5 }),
+        ];
+        const at = (t: number) => {
+          // A spring member writing a channel no other member writes still counts in the sum.
+          if (t === 100)
+            handles.push(
+              m.cue({
+                patch: spring<Part, Pose, number[]>('position', {
+                  from: [0, 0, 0],
+                  to: (p) => [p.id, 0, 0],
+                }),
+                locus: 'a',
+                subjects: [parts[7] as Part],
+              }),
+            );
+          if (t === 500) handles[2]?.fade({ over: 0 });
+        };
+        return { handles, at };
+      },
+      { times: ramp, parts: 70 },
+    );
+  });
+
+  it('fills a blend from the lanes', () => {
+    const m = mix<Part, Pose>(K);
+    const parts = Array.from({ length: 6 }, (_, id) => ({ id }));
+    const seen = new Set<number>();
+    const counted = (k: number) =>
+      patch<Part, Pose>(
+        0,
+        (_ph, p) => {
+          seen.add(p.id);
+          return { crawl: p.id * k };
+        },
+        { writes: ['crawl'] },
+      );
+    m.blend([counted(1), counted(2)], by);
+    m.sync(0);
+    for (const p of parts) m.probe(p);
+    seen.clear();
+    m.sync(16);
+    m.probe(parts[2] as Part);
+    expect(seen.size).toBe(6);
+  });
 });

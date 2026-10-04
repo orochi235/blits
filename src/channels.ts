@@ -1,6 +1,8 @@
 import type { Channel, Kit } from './types.js';
 
-const mix = (a: number, b: number, u: number) => a + (b - a) * u;
+/** The stock numeric channels' `lerp`, which `vec` applies per axis and lanes call directly. */
+export const lerpNumber = (a: number, b: number, u: number) => a + (b - a) * u;
+const mix = lerpNumber;
 
 /**
  * Writes `lerp(a, b, u)` into `out` and returns it, or returns a new array where `out` is absent or

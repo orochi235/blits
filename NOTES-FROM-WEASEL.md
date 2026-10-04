@@ -31,9 +31,11 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   weasel's vitest row read 8×, which weasel puts down to collection landing in its few measured
   iterations, untraced. Not worth chasing until it shows outside a microbench.
 - **Memory with `target`:** a mix of 1,000 per-node voices reached by `target` held about 810 MB
-  after 40 frames (720 MB before lanes), growing with the square of the count, from the record each
-  voice keeps per subject it is asked about. With `subjects` it stays at a few MB. `target`'s doc
-  now says so and points to `subjects`.
+  after 40 frames on 2026-10-02, growing with the square of the count. Since 2026-10-04 the
+  subjects a voice does not reach share one record, and the same mix holds about 37 MB after
+  its first frame (`bench/memory.mjs 1000 targets`): what still grows with the square is one map
+  entry per voice and subject, `target`'s remembered answer. With `subjects` it stays at a few
+  MB. `target`'s doc says so and points to `subjects`.
 
 ## What weasel has that blits doesn't
 

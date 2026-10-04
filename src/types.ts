@@ -98,9 +98,10 @@ export interface Setting<S = void> {
   /**
    * The state `owner` keeps for this voice and this subject, made by `init` on first ask. The mix
    * holds it, so a read at another time can copy it instead of moving it. A stateful signal keeps
-   * its state here and nowhere else. With lanes on, a patch that first calls it partway through
-   * playing can have that state advanced once for one subject not probed on the frame it starts; a
-   * patch that keeps state from its first call, or declares `state`, never does.
+   * its state here and nowhere else. With lanes on, a patch or weight signal that first calls it
+   * partway through playing can have that state advanced once for one subject not probed on the
+   * frame it starts; one that keeps state from its first call, or a patch that declares `state`,
+   * never does.
    */
   keep<K>(owner: object, init: () => K): K;
   /**
@@ -305,8 +306,8 @@ export interface VoiceSpec<I, O> {
    * Which subjects this voice reaches. Default: all of them. The predicate is fixed at `cue`; it
    * runs per subject the first time the mix sees that subject, and the answer is kept. Every
    * voice's predicate meets every subject, so voices that each reach a known few cost the square
-   * of their number, in time and in memory (a record per voice per subject asked: about 800 MB for
-   * 1,000 such voices); name those with `subjects` instead.
+   * of their number, in time and in memory (the answer kept per voice per subject asked: about
+   * 37 MB for 1,000 such voices); name those with `subjects` instead.
    */
   target?: (subject: I) => boolean;
   /**

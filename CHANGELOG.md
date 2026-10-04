@@ -4,6 +4,59 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A subject fading out of a voice with `handle.fade({ subject })` gets the same weight on a lane
+  as on the general path. A lane held the voice's weight to 1 before multiplying in the subject's
+  ramp, where the general path holds the product: a voice at weight 1.6 halfway out of a subject
+  read 0.5 of its delta on a lane and 0.8 elsewhere. Below weight 1 the two differed only in the
+  last bit.
+- A voice weighted by a signal runs on lanes, weighed by the general path's own arithmetic, where
+  it always took the general path; a signal that keeps state through `setting.keep` takes its voice
+  off lanes from the first call, as a patch that keeps state does. Three such voices over 10k
+  subjects take 0.79 of the time they did on teitou. A signal holding state of its own outside
+  `setting.keep` is now called for every subject the mix has met, probed or not, as a stateless
+  patch on a lane already is.
+- `atRest` reads a voice's weight as the probe it repeats did, holds and stagger delay included.
+  It handed a weight signal the voice's time before its holds and the subject's delay, so
+  `weightOf` changed after it, and a channel with no rest could switch on or off and stay so.
+- A locus whose members are all `keys` or stateless `fn` voices runs on lanes, so `mix.blend` over
+  such patches does: each subject's members are gathered as the general path's locus fold gathers
+  them and folded in at its first member's place. A motion member keeps the whole locus on the
+  general path. On teitou three voices in a locus over 10k subjects take 0.72 of the time they
+  did, and a blend of three weighted by a signal 0.84.
+- A voice in a locus folds only the channels its patch writes, as a voice outside one does; a
+  delta's other keys were folded too.
+- A `keys` or stateless `fn` voice naming one subject and writing several channels joins a crowd,
+  as one writing a single channel does, where it took the general path. On teitou 10k such voices
+  read by probe take 0.79 of the time they did and 1k take 0.65; 100 take about 1.1.
+- A crowd's `keys` rows fold their stops straight into the lanes, through the same segment search
+  `readKeys` makes, rather than through a delta per row: 10k `keys` voices of one subject each
+  take 0.74 of the time they did read by `pull` and 0.85 by probe on teitou.
+- A crowd more than half empty rows slides its rows down in place, where the mix qualified every
+  voice again: with one of 10k tween voices replaced each frame, the worst of 12,000 frames fell
+  from about 9 ms to 3 on teitou.
+- A fold with a locus in play allocates nothing per subject: 10k subjects under three voices in a
+  locus take 0.83 of the time they did on teitou, with a third of the collections.
+- A read back copies records holding plain data directly, not through `structuredClone`: a
+  projection made and probed every frame over 1k subjects and three voices takes 0.61 of the time
+  ahead and 0.81 back.
+- A spring works out its time terms once for the subjects released together: one spring voice over
+  10k subjects read by `pull` takes about 0.89 of the time, and a spring voice per subject 0.86.
+- A voice shares one record among the subjects it does not reach, where it kept a full one for
+  each subject it was asked about. 1000 voices each picking one subject by `target` held 269 MB
+  after their first frame and now 37 MB; that first frame takes 77 ms on teitou, from 123, and
+  each later frame 0.86 of the time.
+- A voice and its records make their maps, arrays and promises on first use, and a subject's
+  number needs no token object. A voice of one subject holds 2.5 KB after its first frame as a
+  `fn` (3.4 KB before) and 5.2 KB as a tween (7.3 KB). On teitou cueing 10k tween voices of one
+  subject each takes about 18 ms, from 26, and reading their first frame about 31, from 39.
+  `setting.keep` is now one function per voice that writes to the record being called for, so one
+  kept and called after its call, which `Setting` never allowed, no longer reaches the record it
+  came with.
+
 ## 0.4.0
 
 ### Breaking

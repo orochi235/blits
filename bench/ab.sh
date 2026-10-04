@@ -3,7 +3,8 @@
 #   bench/ab.sh <rev-a> <rev-b> <rounds> [rows...]
 # Each revision is built from `git archive` into a temporary directory, removed on exit, and runs
 # its own bench/frame.mjs, so a row must exist in both, unless AB_BENCH names one file both run.
-# Prints each run's rows as they finish.
+# AB_EACH=1 runs each named row in a process of its own, so no row's numbers depend on the rows
+# before it. Prints each run's rows as they finish.
 set -euo pipefail
 a="$1"; b="$2"; rounds="$3"; shift 3
 root="$(git rev-parse --show-toplevel)"
@@ -23,6 +24,13 @@ done
 for ((r = 1; r <= rounds; r++)); do
   if ((r % 2)); then order=("$a" "$b"); else order=("$b" "$a"); fi
   for rev in "${order[@]}"; do
+    if [[ -n "${AB_EACH:-}" ]]; then
+      for row in "$@"; do
+        echo "== round $r/$rounds $rev"
+        (cd "$tmp/$rev" && node bench/frame.mjs "$row")
+      done
+      continue
+    fi
     echo "== round $r/$rounds $rev"
     (cd "$tmp/$rev" && node bench/frame.mjs "$@")
   done

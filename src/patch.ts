@@ -93,7 +93,7 @@ interface Point {
 type Lerp = (a: never, b: never, u: number) => unknown;
 
 /** One channel of a stop list, sorted and resolved once, so a read is a binary search. */
-interface Track {
+export interface Track {
   channel: string;
   /** Every stop carrying this channel, by phase. */
   all: Point[];
@@ -141,29 +141,52 @@ function build<O>(
   return { tracks, period };
 }
 
+/** What `segment` found: nothing to read, one value, or a segment to interpolate along. */
+export const NOTHING = 0;
+export const AT = 1;
+export const BETWEEN = 2;
+
 /**
- * Reads one track at a phase. `base` stands in for the value at phase 0, which is how
- * `from: 'current'` starts a voice wherever the subject already is.
+ * Where `segment` leaves a track's reading: the value, or the segment's two ends, how far along it
+ * is before and after its easing, whether it leaves `base`, its length and its easing. Read it
+ * before anything else reads a track.
  */
-function read(
-  track: Track,
-  phase: number,
-  base: unknown,
-  lerp: Lerp | undefined,
-  /** Units per ms, for a retarget's first segment. */
-  slope: unknown,
-  period: number,
-  into: LerpInto | undefined,
-  reuse: unknown[] | undefined,
-): unknown {
+export const seg = {
+  a: undefined as unknown,
+  b: undefined as unknown,
+  u: 0,
+  eased: 0,
+  first: false,
+  len: 0,
+  ease: undefined as Curve | undefined,
+};
+
+/** A track's phase once its channel's own delay applies. */
+export function shifted(track: Track, phase: number, period: number): number {
+  const delay = track.delay;
+  return delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
+}
+
+/**
+ * Finds where one track is at a phase, into `seg`: the one copy of the search, which `read` and a
+ * lane folding stops straight into a subject's values both make. `base` stands in for the value at
+ * phase 0, which is how `from: 'current'` starts a voice wherever the subject already is.
+ */
+export function segment(track: Track, phase: number, base: unknown): number {
   const pts = base === undefined ? track.all : track.tail;
   const o = base === undefined ? 0 : 1;
   const n = pts.length + o;
-  if (n === 0) return undefined;
+  if (n === 0) return NOTHING;
   const firstAt = o === 1 ? 0 : (pts[0] as Point).at;
-  if (phase <= firstAt) return o === 1 ? base : (pts[0] as Point).value;
+  if (phase <= firstAt) {
+    seg.a = o === 1 ? base : (pts[0] as Point).value;
+    return AT;
+  }
   const last = pts[pts.length - 1] as Point | undefined;
-  if (last === undefined || phase >= last.at) return last === undefined ? base : last.value;
+  if (last === undefined || phase >= last.at) {
+    seg.a = last === undefined ? base : last.value;
+    return AT;
+  }
 
   // The first point at or past phase; the segment ends there.
   let lo = 1;
@@ -175,26 +198,57 @@ function read(
   }
   const b = pts[lo - o] as Point;
   const aAt = lo - 1 < o ? 0 : (pts[lo - 1 - o] as Point).at;
-  const aValue = lo - 1 < o ? base : (pts[lo - 1 - o] as Point).value;
   const u = (phase - aAt) / (b.at - aAt);
+  // Before any of `seg` is written, so an easing that reads stops itself cannot overwrite it.
   const eased = b.ease ? b.ease(u) : u;
+  seg.a = lo - 1 < o ? base : (pts[lo - 1 - o] as Point).value;
+  seg.b = b.value;
+  seg.u = u;
+  seg.eased = eased;
+  seg.first = lo - 1 < o;
+  seg.len = b.at - aAt;
+  seg.ease = b.ease;
+  return BETWEEN;
+}
+
+/** Reads one track at a phase; `base` as `segment` takes it. */
+function read(
+  track: Track,
+  phase: number,
+  base: unknown,
+  lerp: Lerp | undefined,
+  /** Units per ms, for a retarget's first segment. */
+  slope: unknown,
+  period: number,
+  into: LerpInto | undefined,
+  reuse: unknown[] | undefined,
+): unknown {
+  const found = segment(track, phase, base);
+  if (found === NOTHING) return undefined;
+  if (found === AT) return seg.a;
+  const aValue = seg.a;
+  const bValue = seg.b;
+  const u = seg.u;
+  const eased = seg.eased;
+  const first = seg.first;
+  const len = seg.len;
+  const ease = seg.ease;
   let value: unknown;
   if (into !== undefined) {
-    value = into(reuse, aValue, b.value, eased);
+    value = into(reuse, aValue, bValue, eased);
     lastRead.wrote = value;
   } else {
     const by = track.lerp ?? lerp;
-    value = by ? by(aValue as never, b.value as never, eased) : interpolate(aValue, b.value, eased);
+    value = by ? by(aValue as never, bValue as never, eased) : interpolate(aValue, bValue, eased);
   }
   // Leaving a retarget's base, bend the first segment so it starts at the slope the subject had:
   // add c·u(1−u)², which is 0 at both ends, flat at the end, and fixes the slope at the start.
-  if (slope === undefined || lo - 1 >= o) return value;
-  const len = b.at - aAt;
-  const e0 = b.ease ? b.ease(1e-6) / 1e-6 : 1;
+  if (slope === undefined || !first) return value;
+  const e0 = ease ? ease(1e-6) / 1e-6 : 1;
   const bend = (s: number, a: number, z: number) =>
     (s * period * len - (z - a) * e0) * u * (1 - u) * (1 - u);
   if (typeof value === 'number' && typeof slope === 'number')
-    return value + bend(slope, aValue as number, b.value as number);
+    return value + bend(slope, aValue as number, bValue as number);
   if (Array.isArray(value) && Array.isArray(slope)) {
     const out = value === lastRead.wrote ? value : new Array<unknown>(value.length);
     for (let i = 0; i < value.length; i++) {
@@ -202,7 +256,7 @@ function read(
       const s = slope[i];
       out[i] =
         typeof v === 'number' && typeof s === 'number'
-          ? v + bend(s, (aValue as number[])[i] as number, (b.value as number[])[i] as number)
+          ? v + bend(s, (aValue as number[])[i] as number, (bValue as number[])[i] as number)
           : v;
     }
     return out;
@@ -252,15 +306,12 @@ export function readKeys(
   const period = built.period;
   for (let i = 0; i < built.tracks.length; i++) {
     const track = built.tracks[i] as Track;
-    const delay = track.delay;
-    const shifted =
-      delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
     const perMs = slopes?.[track.channel];
     const into = scratch === undefined ? undefined : intos?.[i];
     lastRead.wrote = undefined;
     const value = read(
       track,
-      shifted,
+      shifted(track, phase, period),
       base?.[track.channel],
       lerps?.[i],
       period === 0 ? undefined : perMs,

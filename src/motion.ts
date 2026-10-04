@@ -71,6 +71,8 @@ export const noTouch = (): void => {};
 const solved = { y: 0, dy: 0 };
 /** Where every patch's `sample` leaves a value on its way to the mix; none outlives its call. */
 let shared = { xs: new Float64Array(4), vs: new Float64Array(4) };
+/** What a patch's `xs` and `vs` are before its first subject sets its axes. */
+const unsized = new Float64Array(0);
 
 /**
  * A subject's flags: its value is a number; it has changes pending; it has older stretches; the
@@ -97,9 +99,29 @@ let slope = false;
 /** The last tween sample's time, curve and length, and the share of the way it had left to go. */
 const memo = { u: Number.NaN, ease: undefined as Curve | undefined, left: 0 };
 
+/** The law and time `timed` was last worked out for: subjects released together share them. */
+const prepared = {
+  form: Number.NaN,
+  k1: Number.NaN,
+  k2: Number.NaN,
+  k3: Number.NaN,
+  t: Number.NaN,
+};
+
 /** `t` seconds after release, the terms every axis shares, into `timed`. */
 function prepare(law: Float64Array, t: number): void {
-  switch (law[0]) {
+  const form = law[0] as number;
+  const k1 = law[2] as number;
+  const k2 = law[3] as number;
+  const k3 = law[4] as number;
+  const p = prepared;
+  if (Object.is(t, p.t) && form === p.form && k1 === p.k1 && k2 === p.k2 && k3 === p.k3) return;
+  p.form = form;
+  p.k1 = k1;
+  p.k2 = k2;
+  p.k3 = k3;
+  p.t = t;
+  switch (form) {
     case UNDER: {
       const zeta = law[2] as number;
       const w0 = law[3] as number;
@@ -236,10 +258,11 @@ export class Motions<I> {
    * Where `sample` leaves a subject's position and velocity, per axis. Shared by every patch, so
    * read it before the next sample.
    */
-  xs = new Float64Array(0);
-  vs = new Float64Array(0);
-  private readonly pending = new Map<number, Change[]>();
-  private readonly older = new Map<number, Segment[]>();
+  xs = unsized;
+  vs = unsized;
+  /** By subject number, changes not yet applied and earlier stretches a read back may reach. */
+  private readonly pending: (Change[] | undefined)[] = [];
+  private readonly older: (Segment[] | undefined)[] = [];
   /**
    * The subject's voice time at the mix's latest frame, which an untimed change and a `read` with
    * no time take; NaN where no frame of the patch's voice has met the subject. Set by the mix that
@@ -419,13 +442,13 @@ export class Motions<I> {
     const b = this.base(s);
     const flags = runs[b + 1] as number;
     if (flags & PENDING) {
-      const list = this.pending.get(s) as Change[];
+      const list = this.pending[s] as Change[];
       const first = (list[0] as Change).at;
       if (first === undefined || first <= t || (list[list.length - 1] as Change).at === undefined)
         return false;
     }
     if (flags & OLDER) {
-      const list = this.older.get(s) as Segment[];
+      const list = this.older[s] as Segment[];
       const next = list.length > 1 ? (list[1] as Segment).at : (runs[b] as number);
       if (next <= reading.horizon) return false;
     }
@@ -462,9 +485,9 @@ export class Motions<I> {
       const at = this.frame(subject);
       if (!Number.isNaN(at)) c.at = at;
     }
-    const list = this.pending.get(s);
+    const list = this.pending[s];
     if (list === undefined) {
-      this.pending.set(s, [c]);
+      this.pending[s] = [c];
       this.flag(s, PENDING, true);
     } else if (c.at === undefined) list.push(c);
     else this.queue(list, c, c.at);
@@ -485,7 +508,7 @@ export class Motions<I> {
   /** Every change due by `t` applied to a copy of the stretch playing then, committing nothing. */
   private peek(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
     let seg = this.playing(s, t);
-    const list = this.pending.get(s);
+    const list = this.pending[s];
     if (list !== undefined)
       for (const change of list) {
         const a = change.at;
@@ -508,8 +531,8 @@ export class Motions<I> {
   }
 
   private forget(s: number): void {
-    this.pending.delete(s);
-    this.older.delete(s);
+    this.pending[s] = undefined;
+    this.older[s] = undefined;
   }
 
   /** Where subject `s`'s run starts in `runs`. */
@@ -555,7 +578,7 @@ export class Motions<I> {
 
   /** The stretch playing at voice time `t`: the latest released by then, else the first. */
   private playing(s: number, t: number): Segment {
-    const list = this.older.get(s);
+    const list = this.older[s];
     if (list === undefined || t >= (this.runs[this.base(s)] as number)) return this.latest(s);
     if ((list[0] as Segment).at > t) return list[0] as Segment;
     let lo = 0;
@@ -582,7 +605,7 @@ export class Motions<I> {
   }
 
   private commit(s: number, t: number): void {
-    const list = this.pending.get(s) as Change[];
+    const list = this.pending[s] as Change[];
     // The first read of a subject no frame had met: those waiting for a time take this one.
     if ((list[list.length - 1] as Change).at === undefined) {
       let i = list.length;
@@ -600,17 +623,17 @@ export class Motions<I> {
       this.insert(s, this.applied(s, this.playing(s, a), change, a));
     }
     if (list.length === 0) {
-      this.pending.delete(s);
+      this.pending[s] = undefined;
       this.flag(s, PENDING, false);
     }
   }
 
   private insert(s: number, seg: Segment): void {
-    let list = this.older.get(s);
+    let list = this.older[s];
     if (seg.at >= (this.runs[this.base(s)] as number)) {
       if (list === undefined) {
         list = [];
-        this.older.set(s, list);
+        this.older[s] = list;
         this.flag(s, OLDER, true);
       }
       list.push(this.latest(s));
@@ -619,7 +642,7 @@ export class Motions<I> {
     }
     if (list === undefined) {
       list = [];
-      this.older.set(s, list);
+      this.older[s] = list;
       this.flag(s, OLDER, true);
     }
     let i = list.length;
@@ -629,7 +652,7 @@ export class Motions<I> {
 
   /** Lets go of stretches older than the one in force at `reading.horizon`. */
   private prune(s: number): void {
-    const list = this.older.get(s);
+    const list = this.older[s];
     if (list === undefined) return;
     while (
       list.length > 0 &&
@@ -638,7 +661,7 @@ export class Motions<I> {
     )
       list.shift();
     if (list.length === 0) {
-      this.older.delete(s);
+      this.older[s] = undefined;
       this.flag(s, OLDER, false);
     }
   }
@@ -774,6 +797,90 @@ function moving<I, O, V extends Value>(writes: keyof O, motion: MotionSpec, shap
   return { patch, state, push };
 }
 
+/**
+ * The shapes of the stock motions, each one object over the options it reads, where a closure per
+ * question cost a function and its context per patch: a mix may hold a patch per voice.
+ */
+class SpringShape<I, V extends Value> implements Shape<I> {
+  readonly ease = undefined;
+  readonly ms = undefined;
+  constructor(
+    readonly law: readonly number[],
+    private readonly opts: {
+      to: PerSubject<I, V>;
+      from?: PerSubject<I, V>;
+      velocity?: PerSubject<I, V>;
+    },
+  ) {}
+  from(s: I): number[] {
+    return axes(per(this.opts.from ?? this.opts.to, s));
+  }
+  velocity(s: I): number[] {
+    const v = this.opts.velocity;
+    return v === undefined ? axes(per(this.opts.to, s)).map(() => 0) : axes(per(v, s));
+  }
+  aim(_x: number[], _v: number[], was: number[] | null, s: I): number[] {
+    return was ?? axes(per(this.opts.to, s));
+  }
+  scalar(s: I): boolean {
+    return typeof per(this.opts.to, s) === 'number';
+  }
+}
+
+class GlideShape<I, V extends Value> implements Shape<I> {
+  readonly ease = undefined;
+  readonly ms = undefined;
+  constructor(
+    readonly law: readonly number[],
+    private readonly opts: { from: PerSubject<I, V>; velocity?: PerSubject<I, V> },
+    private readonly tau: number,
+  ) {}
+  from(s: I): number[] {
+    return axes(per(this.opts.from, s));
+  }
+  velocity(s: I): number[] {
+    const v = this.opts.velocity;
+    return v === undefined ? axes(per(this.opts.from, s)).map(() => 0) : axes(per(v, s));
+  }
+  aim(x: number[], v: number[]): number[] {
+    return x.map((xi, i) => xi + (v[i] as number) * this.tau);
+  }
+  scalar(s: I): boolean {
+    return typeof per(this.opts.from, s) === 'number';
+  }
+}
+
+const EASED_LAW: readonly number[] = [EASED, 0, 0, 0, 0];
+
+class TweenShape<I, V extends Value> implements Shape<I> {
+  readonly law = EASED_LAW;
+  constructor(
+    readonly ease: Curve,
+    private readonly opts: {
+      from: PerSubject<I, V>;
+      to: PerSubject<I, V>;
+      ms: PerSubject<I, number>;
+    },
+  ) {}
+  from(s: I): number[] {
+    return axes(per(this.opts.from, s));
+  }
+  velocity(s: I): number[] {
+    return axes(per(this.opts.to, s)).map(() => 0);
+  }
+  aim(_x: number[], _v: number[], was: number[] | null, s: I): number[] {
+    return was ?? axes(per(this.opts.to, s));
+  }
+  scalar(s: I): boolean {
+    return typeof per(this.opts.to, s) === 'number';
+  }
+  ms(s: I): number {
+    const length = per(this.opts.ms, s);
+    if (!(length > 0)) throw new Error('blits: a tween takes a positive ms');
+    return length;
+  }
+}
+
 interface Common<I, V extends Value> {
   /** Units per second each subject starts moving at. Default 0. */
   velocity?: PerSubject<I, V>;
@@ -825,20 +932,10 @@ export function spring<I, O, V extends Value = number>(
     const s = Math.sqrt(zeta * zeta - 1);
     law = [OVER, settle, -w0 * (zeta - s), -w0 * (zeta + s), 0];
   }
-  const target = (subject: I) => axes(per(opts.to, subject));
   const { patch, state, push } = moving<I, O, V>(
     writes,
     { kind: 'spring', stiffness: k, damping: c, mass: m, settle },
-    {
-      from: (s) => axes(per(opts.from ?? opts.to, s)),
-      velocity: (s) =>
-        opts.velocity === undefined ? target(s).map(() => 0) : axes(per(opts.velocity, s)),
-      aim: (_x, _v, was, s) => was ?? target(s),
-      law,
-      scalar: (s) => typeof per(opts.to, s) === 'number',
-      ease: undefined,
-      ms: undefined,
-    },
+    new SpringShape(law, opts),
   );
   return Object.assign(patch, {
     push,
@@ -868,18 +965,7 @@ export function glide<I, O, V extends Value = number>(
   const { patch, push } = moving<I, O, V>(
     writes,
     { kind: 'glide', ms, settle },
-    {
-      from: (s) => axes(per(opts.from, s)),
-      velocity: (s) =>
-        opts.velocity === undefined
-          ? axes(per(opts.from, s)).map(() => 0)
-          : axes(per(opts.velocity, s)),
-      aim: (x, v) => x.map((xi, i) => xi + (v[i] as number) * tau),
-      law: [COAST, settle, tau, 0, 0],
-      scalar: (s) => typeof per(opts.from, s) === 'number',
-      ease: undefined,
-      ms: undefined,
-    },
+    new GlideShape([COAST, settle, tau, 0, 0], opts, tau),
   );
   return Object.assign(patch, { push }) as unknown as Moving<I, O, V>;
 }
@@ -914,26 +1000,13 @@ export function tween<I, O, V extends Value = number>(
   to(subject: I, target: V, at?: number): void;
 } {
   const fixed = typeof opts.ms === 'number';
-  const ms = (subject: I): number => {
-    const length = per(opts.ms, subject);
-    if (!(length > 0)) throw new Error('blits: a tween takes a positive ms');
-    return length;
-  };
-  if (fixed) ms(undefined as I);
   const ease = opts.ease ?? 'ease';
-  const target = (subject: I) => axes(per(opts.to, subject));
+  const shape = new TweenShape(curve(ease), opts);
+  if (fixed) shape.ms(undefined as I);
   const { patch, state } = moving<I, O, V>(
     writes,
     { kind: 'tween', ms: fixed ? (opts.ms as number) : undefined, ease },
-    {
-      from: (s) => axes(per(opts.from, s)),
-      velocity: (s) => target(s).map(() => 0),
-      aim: (_x, _v, was, s) => was ?? target(s),
-      law: [EASED, 0, 0, 0, 0],
-      scalar: (s) => typeof per(opts.to, s) === 'number',
-      ease: curve(ease),
-      ms,
-    },
+    shape,
   );
   return Object.assign(patch, {
     to: (subject: I, goal: V, at?: number) => state.change(subject, { at, to: axes(goal) }),
