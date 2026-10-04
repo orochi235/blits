@@ -22,7 +22,6 @@ export interface TransportProps {
 export function Transport(p: TransportProps) {
   return (
     <div className={s.transport}>
-      {/* Its time readout sits in a cell sized for the widest time, so the row stays put. */}
       <WeaselTransport
         paused={!p.playing}
         loop={p.loop}

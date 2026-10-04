@@ -1,4 +1,5 @@
 import { compile, FRAME } from '@pg/blits/compile';
+import type { Composition } from '@pg/blits/composition';
 import { Player } from '@pg/blits/player';
 import { DEFAULT } from '@pg/blits/presets';
 import { applyEdit, clipsOf } from '@pg/blits/score';
@@ -20,15 +21,13 @@ export function App() {
   compRef.current = comp;
   const subjects = useMemo(() => subjectsOf(comp.stage), [comp.stage]);
   const last = useRef<Player | null>(null);
-  // A new stage needs new columns, so a new player; it picks up the old one's playhead and sliders.
+  const compiled = useRef<Composition | null>(null);
+  // A new stage needs new columns, so a new player; it takes over the old one's playhead and sliders.
   const player = useMemo(() => {
-    const p = new Player(() => compile(compRef.current, subjects, { solos: true }), subjects);
-    const was = last.current;
-    if (was) {
-      for (const [name, v] of was.moved) p.setLevel(name, v);
-      p.seek(was.t);
-    }
+    const build = () => compile(compRef.current, subjects, { solos: true });
+    const p = new Player(build, subjects, { levels: compRef.current.levels, from: last.current });
     last.current = p;
+    compiled.current = compRef.current;
     return p;
   }, [subjects]);
   const [frame, setFrame] = useState(0);
@@ -42,7 +41,8 @@ export function App() {
 
   // Every edit recompiles and replays to the playhead.
   useEffect(() => {
-    player.rebuild(comp.levels);
+    if (compiled.current !== comp) player.rebuild(comp.levels);
+    compiled.current = comp;
     tick();
   }, [comp, player, tick]);
 
@@ -65,7 +65,7 @@ export function App() {
             setPlaying(false);
             return;
           }
-          t %= length;
+          t = length > 0 ? t % length : 0;
         }
         player.seek(t);
         tick();

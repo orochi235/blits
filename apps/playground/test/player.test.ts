@@ -111,6 +111,19 @@ describe('Player', () => {
     expect(bits(p.columns)).toEqual(at(0.25));
   });
 
+  it('a player taking over keeps the playhead and moves, unless the level was edited', () => {
+    const old = new Player(() => compile(c, subjects), subjects, { levels: c.levels });
+    old.setLevel('k', 0.5);
+    old.seek(40 * FRAME);
+    const same = new Player(() => compile(c, subjects), subjects, { levels: c.levels, from: old });
+    expect(same.t).toBe(old.t);
+    expect(same.moved.get('k')).toBe(0.5);
+    expect(bits(same.columns)).toEqual(bits(old.columns));
+    const levels = [{ name: 'k', value: 0.25, min: 0, max: 1 }];
+    const edited = new Player(() => compile(c, subjects), subjects, { levels, from: old });
+    expect(edited.moved.has('k')).toBe(false);
+  });
+
   it('rebuild keeps the playhead and the pose', () => {
     const p = player();
     p.seek(500);

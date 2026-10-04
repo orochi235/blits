@@ -37,11 +37,20 @@ export class Player {
   constructor(
     private readonly build: () => Built,
     readonly subjects: readonly Subject[],
+    /** The composition's levels; `from`, a player this one replaces, hands over its sliders and playhead. */
+    init?: { levels: readonly Level[]; from?: Player | null },
   ) {
     this.columns = Player.columnsFor(subjects.length);
     this.scratch = Player.columnsFor(subjects.length);
+    const from = init?.from;
+    if (from) {
+      for (const [name, v] of from.slid) this.slid.set(name, v);
+      this.authored = from.authored && new Map(from.authored);
+    }
+    if (init) this.author(init.levels);
     this.built = this.fresh();
     this.step(0);
+    if (from) this.seek(from.t);
   }
 
   seek(t: number): void {
