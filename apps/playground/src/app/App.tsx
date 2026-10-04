@@ -1,5 +1,5 @@
 import { compile, FRAME } from '@pg/blits/compile';
-import type { Composition } from '@pg/blits/composition';
+import type { Composition, Voice } from '@pg/blits/composition';
 import { Player } from '@pg/blits/player';
 import { DEFAULT } from '@pg/blits/presets';
 import { applyEdit, clipsOf } from '@pg/blits/score';
@@ -11,12 +11,38 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import s from './App.module.css';
 import { Transport } from './Transport';
 import { useComposition } from './useComposition';
+import { VoicePanel } from './VoicePanel';
 
 /** The most wall time one tick plays, so a hidden tab coming back does not replay seconds at once. */
 const MAX_TICK_MS = 250;
 
+function freshVoice(voices: readonly Voice[]): Voice {
+  const names = new Set(voices.map((v) => v.name));
+  let n = voices.length + 1;
+  while (names.has(`voice ${n}`)) n++;
+  return {
+    id: `v${Date.now().toString(36)}`,
+    name: `voice ${n}`,
+    hue: (voices.length * 67) % 360,
+    start: 0,
+    rate: 1,
+    loop: true,
+    weight: 1,
+    fade: {},
+    patch: {
+      kind: 'keys',
+      period: 1000,
+      stops: [
+        { at: 0, delta: { glow: 0 } },
+        { at: 0.5, delta: { glow: 1 }, ease: 'ease-in-out' },
+        { at: 1, delta: { glow: 0 }, ease: 'ease-in-out' },
+      ],
+    },
+  };
+}
+
 export function App() {
-  const { comp, set, undo, redo } = useComposition(DEFAULT);
+  const { comp, set, undo, redo, share } = useComposition(DEFAULT);
   const compRef = useRef(comp);
   compRef.current = comp;
   const subjects = useMemo(() => subjectsOf(comp.stage), [comp.stage]);
@@ -38,6 +64,7 @@ export function App() {
   const [live, setLive] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [picked, setPicked] = useState<number | null>(0);
+  const [shared, setShared] = useState<string | null>(null);
 
   // Every edit recompiles and replays to the playhead.
   useEffect(() => {
@@ -93,6 +120,27 @@ export function App() {
     tick();
   };
   const edit = (e: ClipEdit) => set(applyEdit(compRef.current, e));
+  const voice = comp.voices.find((v) => v.id === selected);
+  const setVoice = (next: Voice) =>
+    set({
+      ...compRef.current,
+      voices: compRef.current.voices.map((v) => (v.id === next.id ? next : v)),
+    });
+  const addVoice = () => {
+    const v = freshVoice(compRef.current.voices);
+    set({ ...compRef.current, voices: [...compRef.current.voices, v] });
+    setSelected(v.id);
+  };
+  const deleteVoice = (id: string) => {
+    set({ ...compRef.current, voices: compRef.current.voices.filter((v) => v.id !== id) });
+    setSelected(null);
+  };
+  const copyLink = () => {
+    navigator.clipboard.writeText(share()).then(
+      () => setShared('link copied'),
+      () => setShared('could not copy the link'),
+    );
+  };
   const play = (on: boolean) => {
     if (on && player.t >= comp.length - FRAME) player.seek(0);
     setPlaying(on);
@@ -112,7 +160,27 @@ export function App() {
           />
         </section>
         <section className={s.inspector} aria-label="inspector" />
-        <aside className={s.side} aria-label="voice and patch" />
+        <aside className={s.side} aria-label="voice and patch">
+          <div className={s.row}>
+            <button type="button" onClick={addVoice}>
+              add voice
+            </button>
+            <button type="button" onClick={copyLink}>
+              share
+            </button>
+            {shared && <span role="status">{shared}</span>}
+          </div>
+          {voice && (
+            <VoicePanel
+              key={voice.id}
+              voice={voice}
+              errors={player.built.errors}
+              faults={player.built.faults.get(voice.id)}
+              onChange={setVoice}
+              onDelete={() => deleteVoice(voice.id)}
+            />
+          )}
+        </aside>
         <section className={s.score}>
           <Transport
             playing={playing}

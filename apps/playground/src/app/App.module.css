@@ -60,3 +60,30 @@
   font-size: var(--wzl-font-size-xs);
   color: var(--wzl-accent);
 }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-xs);
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg);
+}
+
+.panel,
+.field {
+  display: grid;
+  gap: var(--wzl-space-sm);
+}
+
+.errors,
+.fault {
+  margin: 0;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-danger);
+}
+
+.errors {
+  padding-inline-start: var(--wzl-space-md);
+}
