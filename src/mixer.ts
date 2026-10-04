@@ -703,13 +703,18 @@ class Mixer<I, O> implements Mix<I, O> {
   private wantsPose = false;
   /** The pose `pull` folds a subject into where it cannot read straight from the lanes. */
   private scratch: O | undefined;
-  /** The last array `pull` read, by position, with each subject's chain head, to skip the lookup. */
   /** Live voices by the earliest mix time `moveTo` would change each, a binary heap. */
   private due: Due<I, O>[] = [];
+  /**
+   * The array `popDue` fills, kept between frames: a fresh `[]` each frame changed shape on its
+   * first push, and the optimized `popDue` threw itself away on most frames a voice came due.
+   */
+  private dueSpare: Voice<I, O>[] | null = [];
   /** Voices retired since `moveTo` last pruned them. */
   private retired = 0;
   /** Visit every voice each sync, as before the due queue; for tests that compare the two. */
   private walkAll = false;
+  /** The last array `pull` read, by position, with each subject's chain head, to skip the lookup. */
   private pulled: I[] = [];
   private pulledHeads: (Subject<unknown> | undefined)[] = [];
   /** Each remembered head's lane slot, and the `version` and `relinks` they were all current at. */
@@ -983,6 +988,10 @@ class Mixer<I, O> implements Mix<I, O> {
       }
       if (!this.projecting) this.schedule(voice);
     }
+    if (visit !== this.voices) {
+      visit.length = 0;
+      this.dueSpare = visit;
+    }
     this.stirred = false;
     if (this.retired === 0) {
       this.forget(now);
@@ -1075,12 +1084,16 @@ class Mixer<I, O> implements Mix<I, O> {
     }
   }
 
-  /** Takes every current entry due by `now` off the queue, in cue order. */
+  /**
+   * Takes every current entry due by `now` off the queue, in cue order, into the spare array, which
+   * the caller hands back once visited; a `moveTo` inside another's visit gets one of its own.
+   */
   private popDue(now: number): Voice<I, O>[] {
     const heap = this.due;
     const at = (k: number): number =>
       k < heap.length ? (heap[k] as Due<I, O>).at : Number.POSITIVE_INFINITY;
-    const out: Voice<I, O>[] = [];
+    const out = this.dueSpare ?? [];
+    this.dueSpare = null;
     while (heap.length > 0 && (heap[0] as Due<I, O>).at <= now) {
       const top = heap[0] as Due<I, O>;
       const last = heap.pop() as Due<I, O>;
