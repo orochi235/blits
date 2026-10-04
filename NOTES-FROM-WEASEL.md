@@ -34,7 +34,10 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   left slots out of list order. `popDue` shows at up to 14%, but that is a Maglev deopt loop on its
   fresh `out` array, and removing the deopts saved no time. A user ease runs once per subject once
   start times differ, where voices started together share one call a frame: a cubic
-  `1 - (1 - u) ** 3` costs about 0.1 ms at 10k against a line.
+  `1 - (1 - u) ** 3` costs about 0.1 ms at 10k against a line. Retargeting each tween as it is
+  cued, as weasel's codec does, costs nothing further (`RETARGET=1 bench/scatter.mjs`), but a tween
+  of arrays on a channel holding a number reads every row through the slow fold: 1.2 ms a frame at
+  10k against 0.24 for the same tween of numbers (teitou, 2026-10-04, `0e26fb3`).
 - **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a
   `fn` voice in plain Node: about 35 ms warm against 16, and 80–90 cold against 28–42 (weasel,
   orochi under load, 2026-10-02). A cold run in blits' own shape read the other way, 34 against 49.

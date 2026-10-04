@@ -17,7 +17,13 @@ const build = (way) => {
   const m = mix(kit({ p: sum() }));
   const cue = (id) => {
     if (way === 'junk') for (let j = 0; j < 40; j++) keep.push({ a: j, b: [j, j], c: `x${j}` });
-    return m.cue({ patch: tween('p', { from: 0, to: 1, ms: 1e9, ease }), subjects: [id] });
+    // RETARGET=1 cues each resting at 0 and retargets it at 1 from its start, as weasel's codec does.
+    if (process.env.RETARGET !== '1')
+      return m.cue({ patch: tween('p', { from: 0, to: 1, ms: 1e9, ease }), subjects: [id] });
+    const glide = tween('p', { from: 0, to: 0, ms: 1e9, ease });
+    const h = m.cue({ patch: glide, subjects: [id] });
+    glide.to(id, 1, 0);
+    return h;
   };
   let t = 0;
   const frame = () => {
