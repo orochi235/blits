@@ -1799,6 +1799,32 @@ describe('crowds take voices on and off as they come and go', () => {
     agree(play, { times: frames, parts: 70 });
     agree(play, { times: frames, parts: 70, probe: (t, p) => p.id % 4 === 0 || t % 64 === 0 });
   }, 30_000);
+
+  it('with a crowd voice starting in the frame a voice over every subject leaves', () => {
+    const flick = (k: number) =>
+      patch<Part, Pose>(
+        180,
+        (ph, p) => ({ gain: 0.5 + 0.4 * Math.sin(ph * 6 + p.id + k), dark: ph }),
+        { writes: ['gain', 'dark'] },
+      );
+    const push = (v: number) => patch<Part, Pose>(180, () => ({ crawl: v }), { writes: ['crawl'] });
+    agree(
+      (m, parts) => {
+        const a = m.cue({ patch: push(5) });
+        const b = m.cue({ patch: push(3) });
+        for (const p of parts) m.cue({ patch: flick(p.id), subjects: [p], weight: 0.7 });
+        m.cue({ patch: flick(7), subjects: [parts[0] as Part], start: 50 });
+        return {
+          handles: [a, b],
+          at: (t) => {
+            if (t === 16) a.fade({ at: 'rest' });
+            if (t === 50) b.fade({ at: 'rest' });
+          },
+        };
+      },
+      { times: [0, 16, 33, 50, 66, 83], parts: 4 },
+    );
+  });
 });
 
 describe('lanes weigh a subject fading out of its voice as the general path does', () => {

@@ -1136,6 +1136,7 @@ export class Lanes<I, O> {
     const host = this.host;
     this.qualifiedVersion = version;
     this.filledVersion = Number.NaN;
+    const touched = this.touched.slice();
     this.touched.length = 0;
     const present = host.voices.filter((v) => v.state !== 'done');
     for (const v of present) if (v.id > this.known) this.known = v.id;
@@ -1222,6 +1223,13 @@ export class Lanes<I, O> {
           const v = c.voices[p] as Voice<I, O>;
           if (c.rowOf.get(v.id) === p && v.state === 'done') this.bury(c, p);
         }
+      // A crowd voice that started or began fading takes it up on its row, as `retouch` does.
+      for (const v of touched) {
+        if (v.state === 'done') continue;
+        const c = this.crowdOf.get(v.id);
+        const p = c?.rowOf.get(v.id);
+        if (c !== undefined && p !== undefined) this.retouchRow(c, p, v);
+      }
       this.compactSparse();
       return;
     }
@@ -1381,9 +1389,7 @@ export class Lanes<I, O> {
           this.bury(c, p);
           continue;
         }
-        const h = p * c.stride;
-        if (c.hot[h + H_EPOCH] === 0 && v.state !== 'pending') c.hot[h + H_EPOCH] = this.open(v);
-        c.hot[h + H_FLAGS] = (c.hot[h + H_FLAGS] as number) | F_VOICE;
+        this.retouchRow(c, p, v);
         continue;
       }
       if (v.state === 'done' && !known) continue;
@@ -1410,6 +1416,13 @@ export class Lanes<I, O> {
     // As a qualify leaving nothing on lanes: no fill comes to let go of what the last probes held.
     if (this.lanes.length === 0 && this.crowds.every((c) => c.dead === c.size)) this.subjects = [];
     return true;
+  }
+
+  /** A crowd row takes up its voice as it now stands: opened once it starts, its fields copied again. */
+  private retouchRow(c: Crowd<I, O>, p: number, v: Voice<I, O>): void {
+    const h = p * c.stride;
+    if (c.hot[h + H_EPOCH] === 0 && v.state !== 'pending') c.hot[h + H_EPOCH] = this.open(v);
+    c.hot[h + H_FLAGS] = (c.hot[h + H_FLAGS] as number) | F_VOICE;
   }
 
   /**

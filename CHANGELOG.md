@@ -8,6 +8,13 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A crowd voice that starts or begins fading in the frame the lanes are qualified again plays on
+  them. A qualify that kept the crowds as they stood, as when a voice over every subject leaves,
+  dropped the news, and the row stayed silent: a voice starting at 50 ms on one subject read nothing
+  on the lanes while one over every subject faded out then.
+- A subject numbered by a mix, or by a motion patch, is let go once collected even when it was the
+  first object numbered and was collected before a second came. Its number, its lane positions and
+  its motion state were held for good.
 - A crowd copies its rows' motion stretches as a fill begins, rather than in the loop that reads
   every row. Once voices had faded, V8 spent that loop's inlining on the copy and stopped inlining
   each row's ease, and every mix in the process stayed slower afterwards. With 10k tween voices of
