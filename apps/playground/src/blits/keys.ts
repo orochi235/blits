@@ -42,6 +42,7 @@ export function tracksOf(
 export function stopsOf(
   tracks: readonly SampledTrack<unknown>[],
   period: number,
+  previous: readonly Keyframe<Pose>[] = [],
 ): Keyframe<Pose>[] {
   const byAt = new Map<number, Keyframe<Pose>>();
   for (const track of tracks) {
@@ -54,6 +55,11 @@ export function stopsOf(
       if (ease !== undefined) stop.ease = ease;
       byAt.set(at, stop);
     }
+  }
+  for (const stop of byAt.values()) {
+    if (stop.ease !== undefined) continue;
+    const kept = previous.find((p) => p.at === stop.at)?.ease;
+    if (kept !== undefined && toWeasel(kept) === undefined) stop.ease = kept;
   }
   return [...byAt.values()].sort((a, b) => a.at - b.at);
 }

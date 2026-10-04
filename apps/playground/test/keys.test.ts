@@ -1,5 +1,7 @@
+import type { Keyframe } from '@msb235/blits';
 import { toBlits, toWeasel } from '@pg/blits/easing';
 import { stopsOf, tracksOf } from '@pg/blits/keys';
+import type { Pose } from '@pg/blits/kit';
 import { describe, expect, it } from 'vitest';
 
 const stops = [
@@ -23,6 +25,40 @@ describe('tracksOf / stopsOf', () => {
       { at: 0.5, delta: { scale: 2 }, ease: { bezier: [0.42, 0, 1, 1] } },
       { at: 1, delta: { scale: 1, offset: [10, 0] } },
     ]);
+  });
+});
+
+describe('stopsOf keeps eases weasel cannot express', () => {
+  const round = (ease: Keyframe<Pose>['ease']) => {
+    const before: Keyframe<Pose>[] = [
+      { at: 0, delta: { scale: 1 } },
+      { at: 1, delta: { scale: 2 }, ease },
+    ];
+    return stopsOf(tracksOf(before, 400), 400, before);
+  };
+
+  it('steps', () => {
+    expect(round({ steps: 4, jump: 'start' })[1]?.ease).toEqual({ steps: 4, jump: 'start' });
+  });
+
+  it('a function', () => {
+    const fn = (u: number) => u * u;
+    expect(round(fn)[1]?.ease).toBe(fn);
+  });
+
+  it("explicit 'linear', which differs from no ease once the keys option sets one", () => {
+    expect(round('linear')[1]?.ease).toBe('linear');
+  });
+
+  it('an ease the user set on the track wins over the previous one', () => {
+    const before: Keyframe<Pose>[] = [
+      { at: 0, delta: { scale: 1 } },
+      { at: 1, delta: { scale: 2 }, ease: 'linear' },
+    ];
+    const tracks = tracksOf(before, 400);
+    const key = tracks[0]?.keys[1];
+    if (key) key.easing = { bezier: [0, 0, 1, 1] };
+    expect(stopsOf(tracks, 400, before)[1]?.ease).toEqual({ bezier: [0, 0, 1, 1] });
   });
 });
 
