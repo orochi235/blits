@@ -1,4 +1,4 @@
-# Handoff — blits, 2026-10-02
+# Handoff — blits, 2026-10-03
 
 **For:** the next session on blits. **Answers:** what blits is meant to be, what exists, what was
 decided in conversation and lives nowhere else, and what comes next. The design is in
@@ -49,6 +49,12 @@ systems now run on it**, on klieg's `main`.
   `animation.finished`, which map to `hold: 'after'` and `handle.played`. The schema page's Holding
   paragraph has the design. Mike chose the name and the values `before`/`after`/`both`, and that a
   held voice's end is when it is faded, not when its passes run out.
+- **`mix.inert` is on `main`, unreleased** (2026-10-03, merge `3228fa7`), for wod's frame loop to
+  sleep under a landed wheel while `live` stays true. Mike asked for it and named it through the wod
+  session; the CHANGELOG entry and the schema page's `Mix` block say what counts as inert. **wod has
+  not been told the commit** — its session ended before the message could go; wod's migration spec
+  (`~/src/wod/docs/superpowers/specs/2026-10-03-blits-migration-design.md`, "Prerequisite: blits
+  0.4.0 `hold`") is waiting on it. Both `hold` and `inert` reach wod only once 0.4.0 is published.
 - **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
   the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
   is green on all 13 pages. Local only; `.github/workflows/site.yml` deploys to Pages by hand.
@@ -161,6 +167,25 @@ systems now run on it**, on klieg's `main`.
   page; magicsmoke's row in the consumer table says how it uses them.
 
 ## Next, in order
+
+0. **The playground, on branch `playground` in the worktree `~/src/blits-playground`.** A Vite +
+   labkit app at `apps/playground` for composing voices on a score, watching them on a stage of dots
+   or letters, and inspecting each channel's fold. Designed and planned, **not built**: the design
+   is `docs/superpowers/specs/2026-10-03-playground-design.md` and the plan, sixteen tasks,
+   `docs/superpowers/plans/2026-10-03-playground.md`. **Mike has not reviewed the plan or chosen how
+   to run it** (subagent per task with review, or one session doing all of it): ask him that first.
+   Decided in conversation and not otherwise written down:
+   - It is for Mike to compose, watch blits work and learn it; what it outputs matters little. It is
+     also where he tries UI ideas for downstream apps, informally — no variant mechanism.
+   - Every UI widget must be able to move to weasel later: generic props, no blits imports, forge
+     stories. Mike will rework the score and panel designs later; this version is a start.
+   - The document types are `Composition`, `Voice`, `PatchSource`, `Expr` — no `Doc` suffix (Mike
+     took that from a side discussion).
+   - Both stages get built (Mike asked for letters as well as dots), with the plots inspector.
+   - The plan's research found labkit 1.7.3 has no `UndoStack` class or `useLabState`; it has pure
+     undo functions and `Persistence` + `usePersistedState`. The plan uses those.
+   The plan and spec are scaffolding: Task 16 folds what stays true into `apps/playground/README.md`
+   and deletes both.
 
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
    in the hot path and what weasel has that blits doesn't (booking events ahead, a mix-wide time
