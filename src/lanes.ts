@@ -472,6 +472,8 @@ class Crowd<I, O> implements Positions<I, O> {
   cursor = 0;
   /** Rows whose voices have left, kept in place until the crowds are next rebuilt. */
   dead = 0;
+  /** Whether some row is `F_STALE`, for `freshen` to copy before the fill's loop. */
+  stale = false;
   readonly xs: Float64Array;
   readonly vs: Float64Array;
   /** What a keys row reads into, folded before the next row reads. */
@@ -489,6 +491,12 @@ class Crowd<I, O> implements Positions<I, O> {
 
   voiceAt(p: number): Voice<I, O> {
     return this.voices[p] as Voice<I, O>;
+  }
+
+  /** Marks row `p` to copy its stretch from its patch again before the next fill reads it. */
+  restale(p: number, flags: number): void {
+    this.hot[p * this.stride + H_FLAGS] = flags | F_STALE;
+    this.stale = true;
   }
 
   /** Samples of another width than the channel's, which `samples` cannot hold, by row. */
@@ -1089,7 +1097,7 @@ export class Lanes<I, O> {
     c.data[o + MET] = 0;
     c.records[p] = held;
     c.deltas[p] = null;
-    c.hot[h + H_FLAGS] = flags | F_PLACED | F_STALE;
+    c.restale(p, flags | F_PLACED);
     if (c.idle) this.reach(slot, 1);
     return true;
   }
@@ -1498,6 +1506,7 @@ export class Lanes<I, O> {
     to.list[q] = from.list[p] as number;
     to.data.set(from.data.subarray(p * STRIDE, (p + 1) * STRIDE), q * STRIDE);
     to.hot.set(from.hot.subarray(p * from.stride, (p + 1) * from.stride), q * to.stride);
+    if (((from.hot[p * from.stride + H_FLAGS] as number) & F_STALE) !== 0) to.stale = true;
     to.samples.set(from.samples.subarray(p * from.axes, (p + 1) * from.axes), q * to.axes);
     to.deltas[q] = from.deltas[p] ?? null;
     to.records[q] = from.records[p];
@@ -1517,7 +1526,7 @@ export class Lanes<I, O> {
     const run = motionOf<I>(v.patch);
     const h = p * c.stride;
     c.hot.fill(0, h, h + c.stride);
-    c.hot[h + H_FLAGS] = F_VOICE | F_STALE | (run === undefined ? 0 : F_MOTION);
+    c.restale(p, F_VOICE | (run === undefined ? 0 : F_MOTION));
     c.hot[h + H_ID] = v.id;
     c.list[p] = -1;
     const o = p * STRIDE;
@@ -1566,8 +1575,7 @@ export class Lanes<I, O> {
     const c = this.crowdOf.get(id);
     const p = c?.rowOf.get(id);
     if (c === undefined || p === undefined) return;
-    const f = p * c.stride + H_FLAGS;
-    c.hot[f] = (c.hot[f] as number) | F_STALE;
+    c.restale(p, c.hot[p * c.stride + H_FLAGS] as number);
   }
 
   /** Something on a voice changed: a crowd copies it again at the next fill. */
@@ -1654,6 +1662,7 @@ export class Lanes<I, O> {
           else if (c.idle ? share >= c.line.start : share < c.line.stop) this.flip(c);
         }
         c.cursor = 0;
+        if (c.stale) this.freshen(c);
         if (!c.idle && c.size > 0) busy = true;
       }
       if (busy) {
@@ -2209,7 +2218,6 @@ export class Lanes<I, O> {
         data[o + MET] = 1;
       }
       const ms = data[o + MSLOT] as number;
-      if ((f & F_STALE) !== 0 && ms >= 0) f = this.copyStretch(c, p, ms);
       if (
         ms < 0 ||
         (f & F_BARE) === 0 ||
@@ -2219,7 +2227,7 @@ export class Lanes<I, O> {
         const run = c.motions[p] as Motions<I>;
         this.move(c, run, p, slot, c.records[p] as Subject<unknown>, elapsed, delay, w);
         // The first sample numbered the subject in the patch: copy its stretch from the next fill.
-        if (ms < 0) hot[h + H_FLAGS] = (hot[h + H_FLAGS] as number) | F_STALE;
+        if (ms < 0) c.restale(p, hot[h + H_FLAGS] as number);
         continue;
       }
       closed(
@@ -2306,6 +2314,23 @@ export class Lanes<I, O> {
     c.hot[h + H_SEEKS] = v.seeks;
     c.hot[h + H_FLAGS] = f;
     return f;
+  }
+
+  /**
+   * Copies stale motion rows' stretches as a fill begins: inside `runCrowd`, once voices came and
+   * went, TurboFan spent its inlining on the copy and stopped inlining every row's ease.
+   */
+  private freshen(c: Crowd<I, O>): void {
+    c.stale = false;
+    const hot = c.hot;
+    const H = c.stride;
+    for (let p = 0; p < c.list.length; p++) {
+      const f = hot[p * H + H_FLAGS] as number;
+      if ((f & F_STALE) === 0 || (f & F_MOTION) === 0) continue;
+      // A row with no stretch yet is marked again once its first sample numbers it.
+      const ms = c.data[p * STRIDE + MSLOT] as number;
+      if (ms >= 0) this.copyStretch(c, p, ms);
+    }
   }
 
   /** Copies a crowd row's current stretch from its patch into `hot`; returns the row's flags. */
