@@ -135,6 +135,8 @@ const rows = [
   ['fns', 10000, 1],
   ['weasel', 10000, 1],
   ['weaselfn', 10000, 1],
+  // `atRest` asked of every subject each frame, under a tween and a `fn` voice over all of them.
+  ['rest', 10000, 2],
   // Lanes fill every subject they have met: this one probes all 10k once, then 5% each frame.
   ['sparse', 10000, 1],
   // The same rows with lanes off, for the comparison in one run.
@@ -230,7 +232,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
         ? bounce()
         : kind === 'spring'
           ? settle()
-          : kind === 'tween'
+          : kind === 'tween' || (kind === 'rest' && v === 0)
             ? glideTo()
             : kind === 'tweenfn'
               ? tweenFn()
@@ -257,7 +259,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     color: new Float64Array(n),
   };
   const read = (list) => {
-    if (pulls) m.pull(list, columns);
+    if (kind === 'rest') for (const s of list) m.atRest(s);
+    else if (pulls) m.pull(list, columns);
     else for (const s of list) m.probe(s, scratch);
   };
   let t = 0;
