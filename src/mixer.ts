@@ -775,7 +775,10 @@ class Mixer<I, O> implements Mix<I, O> {
       }
       if (!this.projecting) this.schedule(voice);
     }
-    if (this.retired === 0) return this.forget(now);
+    if (this.retired === 0) {
+      this.forget(now);
+      return;
+    }
     this.retired = 0;
     let pruned = false;
     for (let i = this.voices.length - 1; i >= 0; i--) {
@@ -814,8 +817,10 @@ class Mixer<I, O> implements Mix<I, O> {
     if (voice.state === 'done') return Number.POSITIVE_INFINITY;
     if (Number.isNaN(voice.opened)) return Number.NEGATIVE_INFINITY;
     let due = Number.POSITIVE_INFINITY;
-    if (voice.parts !== null) for (const r of voice.parts.values()) due = Math.min(due, r.at + r.over);
-    if (voice.state === 'pending') return Math.min(due, Number.isNaN(voice.start) ? due : voice.start);
+    if (voice.parts !== null)
+      for (const r of voice.parts.values()) due = Math.min(due, r.at + r.over);
+    if (voice.state === 'pending')
+      return Math.min(due, Number.isNaN(voice.start) ? due : voice.start);
     if (voice.state === 'fading') {
       const out = voice.out;
       if (out === null || out.rest) return Number.NEGATIVE_INFINITY;
@@ -840,6 +845,7 @@ class Mixer<I, O> implements Mix<I, O> {
   /** Files a voice in the due queue at its current due, replacing any entry it had. */
   private schedule(voice: Voice<I, O>): void {
     if (this.projecting) return;
+    this.lanes?.voiceChanged(voice.id);
     const token = ++voice.dueToken;
     const due = this.dueOf(voice);
     if (due === Number.POSITIVE_INFINITY) return;
@@ -857,6 +863,8 @@ class Mixer<I, O> implements Mix<I, O> {
   /** Takes every current entry due by `now` off the queue, in cue order. */
   private popDue(now: number): Voice<I, O>[] {
     const heap = this.due;
+    const at = (k: number): number =>
+      k < heap.length ? (heap[k] as Due<I, O>).at : Number.POSITIVE_INFINITY;
     const out: Voice<I, O>[] = [];
     while (heap.length > 0 && (heap[0] as Due<I, O>).at <= now) {
       const top = heap[0] as Due<I, O>;
@@ -867,10 +875,8 @@ class Mixer<I, O> implements Mix<I, O> {
         for (;;) {
           const l = 2 * i + 1;
           const r = l + 1;
-          const left = l < heap.length && (heap[l] as Due<I, O>).at < (heap[i] as Due<I, O>).at;
-          const m0 = left ? l : i;
-          const m =
-            r < heap.length && (heap[r] as Due<I, O>).at < (heap[m0] as Due<I, O>).at ? r : m0;
+          const m0 = at(l) < at(i) ? l : i;
+          const m = at(r) < at(m0) ? r : m0;
           if (m === i) break;
           [heap[m], heap[i]] = [heap[i] as Due<I, O>, heap[m] as Due<I, O>];
           i = m;

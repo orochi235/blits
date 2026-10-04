@@ -1,7 +1,8 @@
 import { foldNumber, type Numeric, numericOf } from './channels.js';
 import { clampWeight, passAt, phaseAt } from './clock.js';
+import type { Curve } from './easing.js';
 import type { Subject, Voice } from './mixer.js';
-import { type Motions, motionOf } from './motion.js';
+import { closed, type Motions, motionOf, noTouch } from './motion.js';
 import { absent, Numbers } from './numbers.js';
 import { readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
@@ -159,12 +160,38 @@ function primeFrom(n: number): number {
   }
 }
 
+/** What pacing reads and sets: a lane's or a crowd's subjects, idle state and per-position numbers. */
+interface Paced {
+  list: number[];
+  idle: boolean;
+  readonly line: { stop: number; start: number };
+  data: Float64Array;
+}
+
+/**
+ * Where a motion voice's per-subject numbers live, by position: a lane of one voice, or the crowd
+ * of single-subject motion voices, whose positions each belong to a voice of their own.
+ */
+export interface Positions<I, O> {
+  /** `STRIDE` numbers per position. */
+  data: Float64Array;
+  /** Each position's last delta, built from its kept sample only when asked. */
+  deltas: (Record<string, unknown> | null)[];
+  /** Keeps a position's sample, `n` numbers from `xs`. */
+  keep(p: number, xs: Float64Array, n: number): void;
+  /** Reads a position's kept sample back into `xs`. */
+  kept(p: number, xs: Float64Array): void;
+  chans: Laned[];
+  voiceAt(p: number): Voice<I, O>;
+  motionAt(p: number): Motions<I> | undefined;
+}
+
 /**
  * What one laned voice keeps per subject it reaches, by position in `list`. A subject gets a
  * position when a probe of it first finds the voice playing, which is when the general path first
  * sees it too.
  */
-class Lane<I, O> {
+class Lane<I, O> implements Positions<I, O> {
   /** The subject number at each position. */
   readonly list: number[] = [];
   private readonly at = new Map<number, number>();
@@ -224,6 +251,32 @@ class Lane<I, O> {
   /** A motion patch's state, which the lane samples in place of calling the patch. */
   readonly motion: Motions<I> | undefined;
 
+  voiceAt(): Voice<I, O> {
+    return this.voice;
+  }
+
+  keep(p: number, xs: Float64Array, n: number): void {
+    if (this.axes !== n) {
+      this.axes = n;
+      this.samples = new Float64Array(0);
+    }
+    if ((p + 1) * n > this.samples.length) {
+      const grown = new Float64Array(Math.max(p + 1, (this.samples.length / n) * 2, 4) * n);
+      grown.set(this.samples);
+      this.samples = grown;
+    }
+    for (let a = 0; a < n; a++) this.samples[p * n + a] = xs[a] as number;
+  }
+
+  kept(p: number, xs: Float64Array): void {
+    const n = this.axes;
+    for (let a = 0; a < n; a++) xs[a] = this.samples[p * n + a] as number;
+  }
+
+  motionAt(): Motions<I> | undefined {
+    return this.motion;
+  }
+
   constructor(readonly voice: Voice<I, O>) {
     this.motion = motionOf<I>(voice.patch);
     this.line = voice.built !== null ? SPARSE.keys : SPARSE.other;
@@ -279,6 +332,137 @@ class Lane<I, O> {
   }
 }
 
+/** Whether a laned voice belongs in a crowd: a motion voice naming a single subject. */
+function crowdable<I, O>(v: Voice<I, O>): boolean {
+  return (
+    v.named !== null &&
+    v.named.size === 1 &&
+    v.slots.length === 1 &&
+    motionOf(v.patch) !== undefined
+  );
+}
+
+/** Per row of a crowd's `hot`: what the fill reads of the row's voice and its current stretch. */
+const H_FLAGS = 0;
+const H_NOW = 1;
+const H_ELAPSED = 2;
+const H_RATE = 3;
+/** The voice's weight, held to 0..1. */
+const H_WEIGHT = 4;
+const H_SEEKS = 5;
+const H_EPOCH = 6;
+const H_ID = 7;
+/** The patch's law, `HEAD` numbers. */
+const H_LAW = 8;
+const H_AT = 13;
+const H_SECS = 14;
+/** `x0`, `v0` and `to`, `axes` numbers each. */
+const H_X0 = 15;
+
+/** The voice is playing: live, held or fading. */
+const F_PLAYING = 1;
+/** Its weight and clock are `hot`'s: no fade in or out, rate ramp, subject ramp or kept state. */
+const F_FAST = 2;
+/** Its stretch changed since `hot` copied it. */
+const F_STALE = 4;
+/** `hot` holds its stretch, with nothing pending and no earlier stretch kept. */
+const F_BARE = 8;
+/** A probe has met its subject, so its per-subject numbers are set. */
+const F_PLACED = 16;
+/** Its samples fold as the channel's axes, a number for a number and an array for an array. */
+const F_FOLDS = 32;
+/** Something on the voice changed since `hot` copied it. */
+const F_VOICE = 64;
+
+/**
+ * Every motion voice on one channel that reaches a single subject, a row each, in voice order: the
+ * per-subject numbers a lane keeps, and a copy of what a fill reads of the voice and its patch, so
+ * a fill over 100k of them reads a few flat arrays instead of 100k voices, lanes and patch buffers.
+ * Each copy is written when its source changes: the voice's by `voiceChanged`, the stretch through
+ * the patch's `touched`.
+ */
+class Crowd<I, O> implements Positions<I, O> {
+  /** The subject number at each row. */
+  list: number[] = [];
+  /** `STRIDE` numbers per row, laid out as a lane's. */
+  data = new Float64Array(0);
+  hot = new Float64Array(0);
+  readonly stride: number;
+  samples = new Float64Array(0);
+  deltas: (Record<string, unknown> | null)[] = [];
+  records: (Subject<unknown> | undefined)[] = [];
+  voices: Voice<I, O>[] = [];
+  motions: Motions<I>[] = [];
+  eases: (Curve | undefined)[] = [];
+  touches: ((s: number) => void)[] = [];
+  readonly rowOf = new Map<number, number>();
+  idle = false;
+  readonly line = SPARSE.other;
+  /** Where the fill now under way has reached. */
+  cursor = 0;
+  readonly xs: Float64Array;
+  readonly vs: Float64Array;
+
+  constructor(
+    readonly chans: Laned[],
+    readonly axes: number,
+  ) {
+    this.stride = H_X0 + 3 * axes;
+    this.xs = new Float64Array(axes);
+    this.vs = new Float64Array(axes);
+  }
+
+  voiceAt(p: number): Voice<I, O> {
+    return this.voices[p] as Voice<I, O>;
+  }
+
+  /** Samples of another width than the channel's, which `samples` cannot hold, by row. */
+  odd: Map<number, Float64Array> | null = null;
+
+  keep(p: number, xs: Float64Array, n: number): void {
+    if (n === this.axes) {
+      for (let a = 0; a < n; a++) this.samples[p * n + a] = xs[a] as number;
+      this.odd?.delete(p);
+      return;
+    }
+    this.odd ??= new Map();
+    this.odd.set(p, xs.slice(0, n));
+  }
+
+  kept(p: number, xs: Float64Array): void {
+    const odd = this.odd?.get(p);
+    if (odd !== undefined) {
+      xs.set(odd);
+      return;
+    }
+    const n = this.axes;
+    for (let a = 0; a < n; a++) xs[a] = this.samples[p * n + a] as number;
+  }
+
+  motionAt(p: number): Motions<I> | undefined {
+    return this.motions[p];
+  }
+
+  get size(): number {
+    return this.list.length;
+  }
+
+  /** Makes room for `rows` rows. */
+  reserve(rows: number): void {
+    if (rows * STRIDE <= this.data.length) return;
+    const cap = Math.max(rows, (this.data.length / STRIDE) * 2, 16);
+    const data = new Float64Array(cap * STRIDE);
+    data.set(this.data);
+    this.data = data;
+    const hot = new Float64Array(cap * this.stride);
+    hot.set(this.hot);
+    this.hot = hot;
+    const samples = new Float64Array(cap * this.axes);
+    samples.set(this.samples);
+    this.samples = samples;
+  }
+}
+
 /**
  * The lanes of one mix: subject numbers, which channels and voices run on lanes, and the values a
  * frame's fill leaves for probes to copy.
@@ -291,6 +475,9 @@ export class Lanes<I, O> {
   /** The lanes over every subject that have started playing, by epoch. */
   private dense: Lane<I, O>[] = [];
   private readonly byId = new Map<number, Lane<I, O>>();
+  /** The crowds of single-subject motion voices, one per channel, and which holds each voice. */
+  private crowds: Crowd<I, O>[] = [];
+  private readonly crowdOf = new Map<number, Crowd<I, O>>();
   private laned: Laned[] = [];
   /** By kit slot, the laned channel there. */
   private bySlot: (Laned | undefined)[] = [];
@@ -390,9 +577,30 @@ export class Lanes<I, O> {
   /** A voice faded a subject out of itself alone: its lane lets the subject's position go. */
   part(id: number, slot: number): void {
     const lane = this.byId.get(id);
-    if (lane === undefined || lane.positionOf(slot) < 0) return;
-    if (lane.idle) this.reach(slot, -1);
-    lane.remove(slot);
+    if (lane !== undefined) {
+      if (lane.positionOf(slot) < 0) return;
+      if (lane.idle) this.reach(slot, -1);
+      lane.remove(slot);
+      return;
+    }
+    const c = this.crowdOf.get(id);
+    const p = c?.rowOf.get(id);
+    if (c !== undefined && p !== undefined && c.list[p] === slot) this.unplace(c, p);
+  }
+
+  /** Takes a crowd row off its subject, to be placed again if a probe meets it again. */
+  private unplace(c: Crowd<I, O>, p: number): void {
+    const slot = c.list[p] as number;
+    if (c.idle && slot >= 0) this.reach(slot, -1);
+    c.list[p] = -1;
+    c.records[p] = undefined;
+    c.deltas[p] = null;
+    const f = p * c.stride + H_FLAGS;
+    c.hot[f] = (c.hot[f] as number) & ~F_PLACED;
+    const o = p * STRIDE;
+    c.data[o + MSLOT] = -1;
+    c.data[o + SAMPLED] = -1;
+    c.data[o + MET] = 0;
   }
 
   /** A voice brought a subject back: its next probe meets every lane again, as it met them first. */
@@ -406,9 +614,12 @@ export class Lanes<I, O> {
    * the voice is not on a lane.
    */
   weightOf(id: number, slot: number): number | undefined {
+    if (slot < 0) return undefined;
     const lane = this.byId.get(id);
-    if (lane === undefined || slot < 0) return undefined;
-    return this.reported(lane, slot);
+    if (lane !== undefined) return this.reported(lane, slot);
+    const c = this.crowdOf.get(id);
+    const p = c?.rowOf.get(id);
+    return c === undefined || p === undefined ? undefined : this.reportedRow(c, p, slot);
   }
 
   private reported(lane: Lane<I, O>, slot: number): number | undefined {
@@ -439,7 +650,7 @@ export class Lanes<I, O> {
     if (this.qualifiedVersion !== version) this.requalify(version);
     if (this.laned.length === 0) return this.general(slot);
     // Only solo lanes: nothing to fill, and every subject takes the general path.
-    if (this.runs.length === 0) {
+    if (this.runs.length === 0 && this.crowds.length === 0) {
       if (slot < 0) return false;
       if ((this.per[slot * SLOT + SEEN] as number) < this.epochs) this.meet(slot, subject);
       return this.general(slot);
@@ -598,7 +809,11 @@ export class Lanes<I, O> {
     if (naming !== undefined)
       for (const voice of naming) {
         const lane = this.byId.get(voice.id);
-        if (lane === undefined || lane.epoch <= from || lane.positionOf(slot) >= 0) continue;
+        if (lane === undefined) {
+          if (this.place(voice, slot, subject, from)) met = true;
+          continue;
+        }
+        if (lane.epoch <= from || lane.positionOf(slot) >= 0) continue;
         const held = this.host.meet(voice, subject);
         if (!held.reaches) continue;
         lane.add(slot, held);
@@ -606,6 +821,32 @@ export class Lanes<I, O> {
         met = true;
       }
     return met;
+  }
+
+  /** Places a crowd voice's row on the subject a probe met, as `Lane.add` adds a position. */
+  private place(voice: Voice<I, O>, slot: number, subject: I, from: number): boolean {
+    const c = this.crowdOf.get(voice.id);
+    const p = c?.rowOf.get(voice.id);
+    if (c === undefined || p === undefined) return false;
+    const h = p * c.stride;
+    const flags = c.hot[h + H_FLAGS] as number;
+    if ((c.hot[h + H_EPOCH] as number) <= from || (flags & F_PLACED) !== 0) return false;
+    const held = this.host.meet(voice, subject);
+    if (!held.reaches) return false;
+    const o = p * STRIDE;
+    c.list[p] = slot;
+    c.data[o + DELAY] = held.delay;
+    c.data[o + SINCE] = held.since;
+    c.data[o + WEIGHT] = 0;
+    c.data[o + PROBED] = 0;
+    c.data[o + MSLOT] = -1;
+    c.data[o + SAMPLED] = -1;
+    c.data[o + MET] = 0;
+    c.records[p] = held;
+    c.deltas[p] = null;
+    c.hot[h + H_FLAGS] = flags | F_PLACED | F_STALE;
+    if (c.idle) this.reach(slot, 1);
+    return true;
   }
 
   /** Counts an idle lane more or fewer reaching a subject. */
@@ -617,6 +858,8 @@ export class Lanes<I, O> {
   private forget(slot: number): void {
     this.live--;
     for (const lane of this.lanes) lane.remove(slot);
+    for (const c of this.crowds)
+      for (let p = 0; p < c.size; p++) if (c.list[p] === slot) this.unplace(c, p);
     if (slot < this.cap) this.per[slot * SLOT + FILLED] = 0;
     this.subjects[slot] = undefined;
   }
@@ -649,8 +892,13 @@ export class Lanes<I, O> {
     );
     for (const lane of this.lanes) if (!voices.has(lane.voice.id)) this.leave(lane);
     const kept: Lane<I, O>[] = [];
+    let crowded = 0;
     for (const v of present) {
       if (!voices.has(v.id)) continue;
+      if (crowdable(v)) {
+        crowded++;
+        continue;
+      }
       const lane = this.byId.get(v.id) ?? new Lane<I, O>(v);
       v.laned = true;
       if (lane.epoch === 0 && v.state !== 'pending') lane.epoch = ++this.epochs;
@@ -661,11 +909,11 @@ export class Lanes<I, O> {
     this.dense = kept
       .filter((l) => l.voice.named === null && l.epoch > 0)
       .sort((a, b) => a.epoch - b.epoch);
-    this.whole = kept.length === present.length;
+    this.whole = kept.length + crowded === present.length;
     this.byId.clear();
     for (const lane of kept) this.byId.set(lane.voice.id, lane);
     // With no lane left no fill comes to let go of the subjects the last probes held.
-    if (kept.length === 0) this.subjects = [];
+    if (kept.length === 0 && crowded === 0) this.subjects = [];
     this.laned = [];
     this.bySlot = host.channels.map(() => undefined);
     channels.forEach((on, slot) => {
@@ -690,6 +938,134 @@ export class Lanes<I, O> {
       lane.chans = lane.voice.slots.map((s) => this.bySlot[s] as Laned);
       lane.values = lane.chans.map(() => undefined);
     }
+    this.regroup(present.filter((v) => voices.has(v.id) && crowdable(v)));
+  }
+
+  /**
+   * Rebuilds the crowds from the voices that belong in one, in voice order: a voice already in a
+   * crowd keeps its row's numbers, a new one gets a row a probe will place, and a voice no longer in
+   * one is handed back to the general path, as a lane's voice is when it leaves.
+   */
+  private regroup(members: Voice<I, O>[]): void {
+    const keep = new Set(members.map((v) => v.id));
+    for (const c of this.crowds)
+      for (let p = 0; p < c.size; p++) {
+        const v = c.voices[p] as Voice<I, O>;
+        if (!keep.has(v.id) || v.state === 'done') this.leaveCrowd(c, p);
+      }
+    const bySlot = new Map<number, Crowd<I, O>>();
+    const crowds: Crowd<I, O>[] = [];
+    const was = this.crowdOf;
+    const next = new Map<number, Crowd<I, O>>();
+    for (const v of members) {
+      const slot = v.slots[0] as number;
+      let c = bySlot.get(slot);
+      if (c === undefined) {
+        const ch = this.bySlot[slot] as Laned;
+        c = new Crowd<I, O>([ch], ch.axes);
+        const old = this.crowds.find((o) => o.chans[0]?.name === ch.name);
+        if (old !== undefined) c.idle = old.idle;
+        bySlot.set(slot, c);
+        crowds.push(c);
+      }
+      const from = was.get(v.id);
+      const p = c.size;
+      c.reserve(p + 1);
+      const at = from?.rowOf.get(v.id);
+      if (from !== undefined && at !== undefined) this.copyRow(from, at, c, p);
+      else this.newRow(c, p, v);
+      if (c.hot[p * c.stride + H_EPOCH] === 0 && v.state !== 'pending')
+        c.hot[p * c.stride + H_EPOCH] = ++this.epochs;
+      c.rowOf.set(v.id, p);
+      next.set(v.id, c);
+      v.laned = true;
+    }
+    this.crowds = crowds;
+    was.clear();
+    for (const [id, c] of next) was.set(id, c);
+  }
+
+  private copyRow(from: Crowd<I, O>, p: number, to: Crowd<I, O>, q: number): void {
+    to.list[q] = from.list[p] as number;
+    to.data.set(from.data.subarray(p * STRIDE, (p + 1) * STRIDE), q * STRIDE);
+    to.hot.set(from.hot.subarray(p * from.stride, (p + 1) * from.stride), q * to.stride);
+    to.samples.set(from.samples.subarray(p * from.axes, (p + 1) * from.axes), q * to.axes);
+    to.deltas[q] = from.deltas[p] ?? null;
+    to.records[q] = from.records[p];
+    to.voices[q] = from.voices[p] as Voice<I, O>;
+    to.motions[q] = from.motions[p] as Motions<I>;
+    to.eases[q] = from.eases[p];
+    to.touches[q] = from.touches[p] as (s: number) => void;
+    const odd = from.odd?.get(p);
+    if (odd !== undefined) {
+      to.odd ??= new Map();
+      to.odd.set(q, odd);
+    }
+  }
+
+  private newRow(c: Crowd<I, O>, p: number, v: Voice<I, O>): void {
+    const run = motionOf<I>(v.patch) as Motions<I>;
+    const h = p * c.stride;
+    c.hot.fill(0, h, h + c.stride);
+    c.hot[h + H_FLAGS] = F_VOICE | F_STALE;
+    c.hot[h + H_ID] = v.id;
+    run.lawInto(c.hot, h + H_LAW);
+    c.list[p] = -1;
+    const o = p * STRIDE;
+    c.data.fill(0, o, o + STRIDE);
+    c.data[o + MSLOT] = -1;
+    c.data[o + SAMPLED] = -1;
+    c.deltas[p] = null;
+    c.records[p] = undefined;
+    c.voices[p] = v;
+    c.motions[p] = run;
+    c.eases[p] = run.ease;
+    const id = v.id;
+    const touch = () => this.touchedCrowd(id);
+    run.touched = touch;
+    c.touches[p] = touch;
+  }
+
+  /** A crowd voice's patch changed a stretch: its copy is read again at the next fill. */
+  private touchedCrowd(id: number): void {
+    const c = this.crowdOf.get(id);
+    const p = c?.rowOf.get(id);
+    if (c === undefined || p === undefined) return;
+    const f = p * c.stride + H_FLAGS;
+    c.hot[f] = (c.hot[f] as number) | F_STALE;
+  }
+
+  /** Something on a voice changed: a crowd copies it again at the next fill. */
+  voiceChanged(id: number): void {
+    const c = this.crowdOf.get(id);
+    const p = c?.rowOf.get(id);
+    if (c === undefined || p === undefined) return;
+    const f = p * c.stride + H_FLAGS;
+    c.hot[f] = (c.hot[f] as number) | F_VOICE;
+  }
+
+  /** Hands a crowd voice back to the general path, as `leave` does a lane's. */
+  private leaveCrowd(c: Crowd<I, O>, p: number): void {
+    const slot = c.list[p] as number;
+    const rec = c.records[p];
+    if (slot >= 0) {
+      if (c.idle) this.reach(slot, -1);
+      const w = this.reportedRow(c, p, slot);
+      if (rec !== undefined && w !== undefined) rec.weight = w;
+      if (rec !== undefined) this.settle(c, p, slot, rec);
+    }
+    const run = c.motions[p] as Motions<I>;
+    if (run.touched === c.touches[p]) run.touched = noTouch;
+    (c.voices[p] as Voice<I, O>).laned = false;
+  }
+
+  /** A crowd row's weight as `reported` reads a lane position's. */
+  private reportedRow(c: Crowd<I, O>, p: number, slot: number): number | undefined {
+    const o = slot * SLOT;
+    if (!((this.per[o + LANE_PROBE] as number) > (this.per[o + GENERAL_PROBE] as number)))
+      return undefined;
+    if ((c.list[p] as number) !== slot) return undefined;
+    return c.data[p * STRIDE + (this.per[o + LANE_FILL] === this.fills ? WEIGHT : PROBED)];
   }
 
   /** Hands a voice back to the general path, with the weights `weightOf` reports kept on its records. */
@@ -719,7 +1095,9 @@ export class Lanes<I, O> {
       const decide = this.fresh;
       this.fresh = false;
       const share = this.live > 0 ? this.lastDistinct / this.live : 1;
-      // One pass, deciding and running each lane, since a mix of many small lanes pays per visit.
+      // Deciding which lanes and crowds go idle first, then running them, in voice order: a crowd's
+      // rows are folded between the lanes on either side of their voices, as the general path
+      // folds every voice in order.
       let busy = false;
       for (const lane of this.runs) {
         if (decide) {
@@ -732,12 +1110,24 @@ export class Lanes<I, O> {
             if (!lane.idle) this.rest(lane);
           } else if (lane.idle ? share >= line.start : share < line.stop) this.flip(lane);
         }
-        if (lane.idle) continue;
-        if (!busy) {
-          busy = true;
-          for (const ch of this.laned) ch.values.fill(ch.rest, 0, size * ch.axes);
+        if (!lane.idle) busy = true;
+      }
+      for (const c of this.crowds) {
+        if (decide) {
+          if (c.size >= 64) this.pace(c);
+          else if (c.idle ? share >= c.line.start : share < c.line.stop) this.flip(c);
         }
-        this.run(lane);
+        c.cursor = 0;
+        if (!c.idle && c.size > 0) busy = true;
+      }
+      if (busy) {
+        for (const ch of this.laned) ch.values.fill(ch.rest, 0, size * ch.axes);
+        for (const lane of this.runs) {
+          if (lane.idle) continue;
+          if (this.crowds.length > 0) this.crowdsUpTo(lane.voice.id);
+          this.run(lane);
+        }
+        if (this.crowds.length > 0) this.crowdsUpTo(Number.POSITIVE_INFINITY);
       }
       // With every lane idle there was nothing to fill, and no subject reads a lane this frame.
       if (busy) for (let s = 0; s < size; s++) this.per[s * SLOT + FILLED] = this.fills;
@@ -759,7 +1149,7 @@ export class Lanes<I, O> {
    * probing every second or third subject is not read as probing all or none. Both paths give the
    * same values, so this only picks the cheaper.
    */
-  private pace(lane: Lane<I, O>): void {
+  private pace(lane: Paced): void {
     const list = lane.list;
     const line = lane.line;
     const from = this.lastFrom;
@@ -769,27 +1159,29 @@ export class Lanes<I, O> {
     let probed = 0;
     for (let p = this.fills % step; p < list.length; p += step) {
       const slot = list[p] as number;
+      if (slot < 0) continue;
       const a = this.per[slot * SLOT + LANE_PROBE] as number;
       const b = this.per[slot * SLOT + GENERAL_PROBE] as number;
       if ((a > from && a <= to) || (b > from && b <= to)) probed++;
       looked++;
     }
-    const share = probed / looked;
+    const share = looked > 0 ? probed / looked : 1;
     if (lane.idle ? share >= line.start : share < line.stop) this.flip(lane);
   }
 
-  private flip(lane: Lane<I, O>): void {
+  private flip(lane: Paced): void {
     if (lane.idle) this.wake(lane);
     else this.rest(lane);
   }
 
   /** Leaves a lane's subjects to the general path until it wakes, keeping what `weightOf` reports. */
-  private rest(lane: Lane<I, O>): void {
+  private rest(lane: Paced): void {
     lane.idle = true;
     const list = lane.list;
     const data = lane.data;
     for (let p = 0; p < list.length; p++) {
       const slot = list[p] as number;
+      if (slot < 0) continue;
       this.reach(slot, 1);
       // A probe read this subject from the last fill, which this lane's weight stays from.
       if (this.per[slot * SLOT + LANE_FILL] === this.fills - 1) {
@@ -799,9 +1191,9 @@ export class Lanes<I, O> {
     }
   }
 
-  private wake(lane: Lane<I, O>): void {
+  private wake(lane: Paced): void {
     lane.idle = false;
-    for (const slot of lane.list) this.reach(slot, -1);
+    for (const slot of lane.list) if (slot >= 0) this.reach(slot, -1);
   }
 
   private subjectAt(slot: number): I | typeof absent {
@@ -934,6 +1326,150 @@ export class Lanes<I, O> {
     if (w > 0) this.foldDelta(lane, slot, delta, w);
   }
 
+  /** Runs every crowd's rows whose voices come before voice `id`, from where each crowd reached. */
+  private crowdsUpTo(id: number): void {
+    for (const c of this.crowds) if (!c.idle && c.cursor < c.size) this.runCrowd(c, id);
+  }
+
+  /**
+   * A crowd's rows from its cursor up to voice `id`: what `runMotion` does for a lane's subjects,
+   * reading each row's voice and stretch from `hot`, and through `move` for whatever `hot` cannot
+   * answer, as `runMotion` does.
+   */
+  private runCrowd(c: Crowd<I, O>, id: number): void {
+    const data = c.data;
+    const hot = c.hot;
+    const H = c.stride;
+    const per = this.per;
+    const list = c.list;
+    const ch = c.chans[0] as Laned;
+    const n = c.axes;
+    const fills = this.fills;
+    const from = this.frameProbes;
+    const probed = this.probes !== from;
+    const now = this.now;
+    const xs = c.xs;
+    const vs = c.vs;
+    const samples = c.samples;
+    let p = c.cursor;
+    for (; p < list.length; p++) {
+      const h = p * H;
+      if ((hot[h + H_ID] as number) >= id) break;
+      let f = hot[h + H_FLAGS] as number;
+      if ((f & F_VOICE) !== 0) f = this.copyVoice(c, p);
+      if ((f & F_PLAYING) === 0 || (f & F_PLACED) === 0) continue;
+      const slot = list[p] as number;
+      const o = p * STRIDE;
+      const q = slot * SLOT;
+      if (per[q + LANE_FILL] === fills - 1) data[o + PROBED] = data[o + WEIGHT] as number;
+      const delay = data[o + DELAY] as number;
+      const fast = (f & F_FAST) !== 0;
+      const voice = c.voices[p] as Voice<I, O>;
+      const elapsedNow = fast
+        ? (hot[h + H_ELAPSED] as number) +
+          (now - (hot[h + H_NOW] as number)) * (hot[h + H_RATE] as number)
+        : voice.elapsedAt(now);
+      const elapsed = elapsedNow - delay;
+      if (elapsed < 0) {
+        data[o + WEIGHT] = 0;
+        continue;
+      }
+      let w: number;
+      if (fast) w = hot[h + H_WEIGHT] as number;
+      else {
+        w = clampWeight(voice.weight * this.host.envelope(voice, data[o + SINCE] as number));
+        if (voice.parts !== null) {
+          const subject = this.subjectAt(slot);
+          if (subject !== absent) w *= this.host.parting(voice, subject);
+        }
+      }
+      data[o + WEIGHT] = w;
+      if (data[o + MET] === 0) {
+        if (Number.isNaN((c.records[p] as Subject<unknown>).probed)) {
+          this.late.push(slot);
+          continue;
+        }
+        data[o + MET] = 1;
+      }
+      const ms = data[o + MSLOT] as number;
+      if ((f & F_STALE) !== 0 && ms >= 0) f = this.copyStretch(c, p, ms);
+      if (
+        ms < 0 ||
+        (f & F_BARE) === 0 ||
+        (probed &&
+          ((per[q + LANE_PROBE] as number) > from || (per[q + GENERAL_PROBE] as number) > from))
+      ) {
+        const run = c.motions[p] as Motions<I>;
+        this.move(c, run, p, slot, c.records[p] as Subject<unknown>, elapsed, delay, w);
+        // The first sample numbered the subject in the patch: copy its stretch from the next fill.
+        if (ms < 0) hot[h + H_FLAGS] = (hot[h + H_FLAGS] as number) | F_STALE;
+        continue;
+      }
+      closed(
+        hot,
+        h + H_LAW,
+        c.eases[p],
+        n,
+        hot[h + H_AT] as number,
+        hot[h + H_SECS] as number,
+        hot,
+        h + H_X0,
+        hot,
+        h + H_X0 + n,
+        hot,
+        h + H_X0 + 2 * n,
+        elapsed,
+        xs,
+        vs,
+      );
+      for (let a = 0; a < n; a++) samples[p * n + a] = xs[a] as number;
+      if (c.deltas[p] !== null) c.deltas[p] = null;
+      data[o + SAMPLED] = fills;
+      data[o + SEEKS] = hot[h + H_SEEKS] as number;
+      if (w <= 0) continue;
+      if ((f & F_FOLDS) !== 0) this.foldRun(ch, slot, xs, w);
+      else this.foldInto(ch, slot, (c.motions[p] as Motions<I>).value(ms, xs), w);
+    }
+    c.cursor = p;
+  }
+
+  /** Copies what a fill reads of a crowd row's voice into `hot`; returns the row's flags. */
+  private copyVoice(c: Crowd<I, O>, p: number): number {
+    const v = c.voices[p] as Voice<I, O>;
+    const h = p * c.stride;
+    let f = (c.hot[h + H_FLAGS] as number) & ~(F_VOICE | F_PLAYING | F_FAST);
+    if (v.state === 'live' || v.state === 'held' || v.state === 'fading') f |= F_PLAYING;
+    if (
+      v.ramp === null &&
+      !((v.fade.in ?? 0) > 0) &&
+      v.out === null &&
+      v.parts === null &&
+      !v.keeping
+    )
+      f |= F_FAST;
+    c.hot[h + H_NOW] = v.anchorNow;
+    c.hot[h + H_ELAPSED] = v.anchorElapsed;
+    c.hot[h + H_RATE] = v.rate;
+    c.hot[h + H_WEIGHT] = clampWeight(v.weight);
+    c.hot[h + H_SEEKS] = v.seeks;
+    c.hot[h + H_FLAGS] = f;
+    return f;
+  }
+
+  /** Copies a crowd row's current stretch from its patch into `hot`; returns the row's flags. */
+  private copyStretch(c: Crowd<I, O>, p: number, ms: number): number {
+    const run = c.motions[p] as Motions<I>;
+    const h = p * c.stride;
+    let f = (c.hot[h + H_FLAGS] as number) & ~(F_STALE | F_BARE | F_FOLDS);
+    const ch = c.chans[0] as Laned;
+    if (run.n === c.axes && run.stretchInto(ms, c.hot, h + H_AT)) {
+      f |= F_BARE;
+      if (run.scalar(ms) === (ch.axes === 1)) f |= F_FOLDS;
+    }
+    c.hot[h + H_FLAGS] = f;
+    return f;
+  }
+
   /**
    * A motion voice's fill: what `one` and `move` do for each subject, in one loop for the common
    * case, a subject not yet probed this frame with nothing pending, and through `move` for the rest.
@@ -1027,7 +1563,7 @@ export class Lanes<I, O> {
    * this frame already read keeps the value it read, as the general path's record would.
    */
   private move(
-    lane: Lane<I, O>,
+    lane: Positions<I, O>,
     run: Motions<I>,
     p: number,
     slot: number,
@@ -1036,7 +1572,7 @@ export class Lanes<I, O> {
     delay: number,
     w: number,
   ): void {
-    const voice = lane.voice;
+    const voice = lane.voiceAt(p);
     const data = lane.data;
     const o = p * STRIDE;
     const ch = lane.chans[0] as Laned;
@@ -1063,16 +1599,7 @@ export class Lanes<I, O> {
       run.sample(ms, elapsed, run.xs, run.vs);
       // Kept as numbers, not a delta: one is built only if a probe this frame asks for it.
       const n = run.n;
-      if (lane.axes !== n) {
-        lane.axes = n;
-        lane.samples = new Float64Array(0);
-      }
-      if ((p + 1) * n > lane.samples.length) {
-        const grown = new Float64Array(Math.max(p + 1, (lane.samples.length / n) * 2, 4) * n);
-        grown.set(lane.samples);
-        lane.samples = grown;
-      }
-      for (let a = 0; a < n; a++) lane.samples[p * n + a] = run.xs[a] as number;
+      lane.keep(p, run.xs, n);
       lane.deltas[p] = null;
       data[o + SAMPLED] = this.fills;
       data[o + SEEKS] = voice.seeks;
@@ -1089,10 +1616,9 @@ export class Lanes<I, O> {
   }
 
   /** The delta a motion voice's last sample for position `p` made, built from `samples`. */
-  private sampled(lane: Lane<I, O>, p: number): Record<string, unknown> {
-    const run = lane.motion as Motions<I>;
-    const n = lane.axes;
-    for (let a = 0; a < n; a++) run.xs[a] = lane.samples[p * n + a] as number;
+  private sampled(lane: Positions<I, O>, p: number): Record<string, unknown> {
+    const run = lane.motionAt(p) as Motions<I>;
+    lane.kept(p, run.xs);
     const ms = lane.data[p * STRIDE + MSLOT] as number;
     const delta = { [(lane.chans[0] as Laned).name]: run.value(ms, run.xs) };
     lane.deltas[p] = delta;
@@ -1103,7 +1629,7 @@ export class Lanes<I, O> {
    * A probe this frame read a motion voice's value for the subject from an earlier fill: write onto
    * its record what the general path's sample would have, so a later read this frame reuses it.
    */
-  private settle(lane: Lane<I, O>, p: number, slot: number, held: Subject<unknown>): void {
+  private settle(lane: Positions<I, O>, p: number, slot: number, held: Subject<unknown>): void {
     const o = p * STRIDE;
     if (
       (held.probed === this.now && held.seeks === lane.data[o + SEEKS]) ||

@@ -1393,3 +1393,104 @@ describe('lanes run', () => {
     expect(seen.sort()).toEqual([0, 1, 2, 3]);
   });
 });
+
+describe('a crowd of single-subject motion voices gives the pose the general path gives', () => {
+  const ramp = [0, 16, 50, 120, 333, 500, 520, 700, 999, 1000, 1300, 1500, 1516, 1700, 2600];
+
+  const each = (m: Mix<Part, Pose>, parts: Part[], start = 0) =>
+    parts.map((p, i) =>
+      i % 2 === 0
+        ? m.cue({
+            patch: tween<Part, Pose, number[]>('position', {
+              from: [0, 0, 0],
+              to: [p.id, -p.id, 1],
+              ms: 200 + p.id * 30,
+              ease: 'ease-out',
+            }),
+            subjects: [p],
+            start,
+          })
+        : m.cue({
+            patch: spring<Part, Pose, number[]>('position', {
+              to: [p.id, 2, -1],
+              stiffness: 150,
+              damping: 12,
+            }),
+            subjects: [p],
+            start,
+          }),
+    );
+
+  it('for a tween or a spring per subject', () => {
+    agree((m, parts) => ({ handles: each(m, parts) }), { times: ramp });
+  });
+
+  it('folded in voice order with shared voices on the same channel, before and after them', () => {
+    agree(
+      (m, parts) => {
+        const a = m.cue({ patch: pulse() });
+        const crowd = each(m, parts);
+        const b = m.cue({ patch: wave(), weight: 0.4 });
+        return { handles: [a, ...crowd, b] };
+      },
+      { times: ramp },
+    );
+  });
+
+  it('with fades, weights, rates, ramps, seeks, retargets and subject fades between frames', () => {
+    const play: Play = (m, parts) => {
+      const tweens = parts.map((p) =>
+        tween<Part, Pose, number[]>('position', { from: [0, 0, 0], to: [p.id, 1, 2], ms: 400 }),
+      );
+      const hs = parts.map((p, i) =>
+        m.cue({
+          patch: tweens[i] as ReturnType<typeof tween<Part, Pose, number[]>>,
+          subjects: [p],
+          fade: i % 3 === 0 ? { in: 150, out: 200 } : undefined,
+          weight: i % 4 === 1 ? 0.5 : 1,
+        }),
+      );
+      return {
+        handles: hs,
+        at: (t) => {
+          if (t === 333) {
+            (hs[1] as Handle<Part>).rate = 2;
+            (hs[2] as Handle<Part>).weight = 0.25;
+            (hs[3] as Handle<Part>).ramp(0.5, 300);
+            (hs[4] as Handle<Part>).seek(50);
+          }
+          if (t === 500) {
+            (hs[0] as Handle<Part>).fade({ over: 300 });
+            (hs[5] as Handle<Part>).fade({ subject: parts[5] as Part, over: 200 });
+            tweens[2]?.to(parts[2] as Part, [9, 9, 9]);
+          }
+          if (t === 1000)
+            (tweens[5] as ReturnType<typeof tween<Part, Pose, number[]>>).to(
+              parts[5] as Part,
+              [1, 1, 1],
+            );
+          if (t === 1300) (hs[1] as Handle<Part>).fade({ subject: parts[1] as Part, over: 0 });
+        },
+      };
+    };
+    agree(play, { times: ramp });
+    agree(play, { times: ramp, parts: 90, probe: (t, p) => p.id % 9 === 0 || t > 1400 });
+  });
+
+  it('with voices starting late, finishing, dropped subjects and loops of one pass', () => {
+    agree(
+      (m, parts) => {
+        const early = each(m, parts.slice(0, 3));
+        const late = each(m, parts.slice(3), 500);
+        return {
+          handles: [...early, ...late],
+          at: (t) => {
+            if (t === 999) m.drop(parts[0] as Part);
+            if (t === 1500) (early[1] as Handle<Part>).fade({ over: 0 });
+          },
+        };
+      },
+      { times: ramp },
+    );
+  });
+});

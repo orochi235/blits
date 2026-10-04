@@ -66,6 +66,7 @@ const HEAD = 5;
 /** A motion patch's `frame` while no mix plays it: no subject has a latest frame. */
 export const noFrame = (): number => Number.NaN;
 export const noRevive = (): void => {};
+export const noTouch = (): void => {};
 
 const solved = { y: 0, dy: 0 };
 /** Where every patch's `sample` leaves a value on its way to the mix; none outlives its call. */
@@ -93,29 +94,29 @@ let slope = false;
 const memo = { dt: Number.NaN, ease: undefined as Curve | undefined, secs: 0, left: 0 };
 
 /** `t` seconds after release, the terms every axis shares, into `timed`. */
-function prepare(law: Float64Array, t: number): void {
-  switch (law[0]) {
+function prepare(law: Float64Array, lo: number, t: number): void {
+  switch (law[lo + 0]) {
     case UNDER: {
-      const zeta = law[2] as number;
-      const w0 = law[3] as number;
-      const wd = law[4] as number;
+      const zeta = law[lo + 2] as number;
+      const w0 = law[lo + 3] as number;
+      const wd = law[lo + 4] as number;
       timed.e = Math.exp(-zeta * w0 * t);
       timed.cos = Math.cos(wd * t);
       timed.sin = Math.sin(wd * t);
       return;
     }
     case CRITICAL: {
-      const w0 = law[3] as number;
+      const w0 = law[lo + 3] as number;
       timed.e = Math.exp(-w0 * t);
       return;
     }
     case OVER: {
-      timed.e = Math.exp((law[2] as number) * t);
-      timed.e2 = Math.exp((law[3] as number) * t);
+      timed.e = Math.exp((law[lo + 2] as number) * t);
+      timed.e2 = Math.exp((law[lo + 3] as number) * t);
       return;
     }
     default:
-      timed.e = Math.exp(-t / (law[2] as number));
+      timed.e = Math.exp(-t / (law[lo + 2] as number));
   }
 }
 
@@ -123,12 +124,12 @@ function prepare(law: Float64Array, t: number): void {
  * One axis, `t` seconds after release, `y0` from where it heads and moving at `v0`, into `solved`,
  * with `timed` prepared for `t`.
  */
-function solve(law: Float64Array, y0: number, v0: number, t: number): void {
-  switch (law[0]) {
+function solve(law: Float64Array, lo: number, y0: number, v0: number, t: number): void {
+  switch (law[lo + 0]) {
     case UNDER: {
-      const zeta = law[2] as number;
-      const w0 = law[3] as number;
-      const wd = law[4] as number;
+      const zeta = law[lo + 2] as number;
+      const w0 = law[lo + 3] as number;
+      const wd = law[lo + 4] as number;
       const e = timed.e;
       const b = (v0 + zeta * w0 * y0) / wd;
       const cos = timed.cos;
@@ -139,7 +140,7 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
       return;
     }
     case CRITICAL: {
-      const w0 = law[3] as number;
+      const w0 = law[lo + 3] as number;
       const e = timed.e;
       const b = v0 + w0 * y0;
       const y = e * (y0 + b * t);
@@ -148,8 +149,8 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
       return;
     }
     case OVER: {
-      const r1 = law[2] as number;
-      const r2 = law[3] as number;
+      const r1 = law[lo + 2] as number;
+      const r2 = law[lo + 3] as number;
       const a = (v0 - r2 * y0) / (r1 - r2);
       const b = y0 - a;
       const e1 = timed.e;
@@ -161,7 +162,7 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
     default: {
       // Released at x moving at v, a glide comes to rest at x + v·τ; y is the distance still to go,
       // which friction closes as e^(−t/τ), and its derivative at release is v again.
-      const tau = law[2] as number;
+      const tau = law[lo + 2] as number;
       const e = timed.e;
       solved.y = y0 * e;
       solved.dy = (-y0 / tau) * e;
@@ -281,6 +282,38 @@ export class Motions<I> {
     if (s === undefined) return;
     this.slots.delete(subject);
     this.numbers.release(s);
+  }
+
+  /**
+   * Called with a subject's number whenever its stretch or what is pending for it changes, so a
+   * mix keeping a copy of it knows to read it again. Set by the mix, put back when its voice retires.
+   */
+  touched: (s: number) => void = noTouch;
+
+  /** The easing a tween's stretches follow; undefined for every other shape. */
+  get ease(): Curve | undefined {
+    return this.shape.ease;
+  }
+
+  /** Copies the patch's law, `[form, settle, k1, k2, k3]`, into `out` from `o`. */
+  lawInto(out: Float64Array, o: number): void {
+    for (let k = 0; k < HEAD; k++) out[o + k] = this.runs[k] as number;
+  }
+
+  /**
+   * Copies subject `s`'s current stretch into `out` from `o` as its release time, its seconds, then
+   * `x0`, `v0` and `to` per axis; false, copying nothing, while it has a change pending or an
+   * earlier stretch kept, which only `sample` handles.
+   */
+  stretchInto(s: number, out: Float64Array, o: number): boolean {
+    const runs = this.runs;
+    const b = this.base(s);
+    if (((runs[b + 1] as number) & (PENDING | OLDER)) !== 0) return false;
+    out[o] = runs[b] as number;
+    out[o + 1] = runs[b + 2] as number;
+    const n3 = 3 * this.n;
+    for (let i = 0; i < n3; i++) out[o + 2 + i] = runs[b + 3 + i] as number;
+    return true;
   }
 
   /** Whether subject `s`'s value is a number rather than an array. */
@@ -438,6 +471,7 @@ export class Motions<I> {
   }
 
   private flag(s: number, bit: number, on: boolean): void {
+    this.touched(s);
     const i = this.base(s) + 1;
     const flags = this.runs[i] as number;
     this.runs[i] = on ? flags | bit : flags & ~bit;
@@ -465,6 +499,7 @@ export class Motions<I> {
   private write(s: number, seg: Segment): void {
     const n = this.n;
     const b = this.base(s);
+    this.touched(s);
     this.runs[b] = seg.at;
     this.runs[b + 2] = seg.secs;
     for (let i = 0; i < n; i++) {
@@ -594,18 +629,19 @@ export class Motions<I> {
     xo: Float64Array,
     vo: Float64Array,
   ): void {
-    closed(this.runs, this.shape.ease, this.n, at, secs, x0, x, v0, v, to, g, t, xo, vo);
+    closed(this.runs, 0, this.shape.ease, this.n, at, secs, x0, x, v0, v, to, g, t, xo, vo);
   }
 }
 
 /**
  * A stretch `t` voice ms into it, released at `at` from `x0` moving at `v0` toward `to` (each read
  * from its offset), into `xo` and `vo`: the one copy of the closed forms, which `law` (a patch's
- * `[form, settle, k1, k2, k3]` at the head of its buffer) picks between. A tween reads `ease` and
+ * `[form, settle, k1, k2, k3]`, read from `lo`) picks between. A tween reads `ease` and
  * `secs`; every other form ignores them.
  */
 export function closed(
   law: Float64Array,
+  lo: number,
   ease: Curve | undefined,
   n: number,
   at: number,
@@ -621,16 +657,16 @@ export function closed(
   vo: Float64Array,
 ): void {
   const dt = Math.max(0, t - at) / 1000;
-  if (law[0] === EASED) {
+  if (law[lo] === EASED) {
     eased(ease as Curve, n, dt, secs, x0, x, to, g, xo, vo);
     return;
   }
-  const settle = law[1] as number;
+  const settle = law[lo + 1] as number;
   let still = settle > 0;
-  prepare(law, dt);
+  prepare(law, lo, dt);
   for (let i = 0; i < n; i++) {
     const goal = to[g + i] as number;
-    solve(law, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
+    solve(law, lo, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
     xo[i] = goal + solved.y;
     vo[i] = solved.dy;
     if (Math.abs(solved.y) > settle || Math.abs(solved.dy) > settle) still = false;
