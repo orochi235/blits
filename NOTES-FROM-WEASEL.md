@@ -17,17 +17,13 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 - `probe` with no `out` stores a freshly allocated pose per subject per frame. weasel measured this
   pattern: a new pose object per node per frame took major GC from 57 ms to 549 ms over 10 s
   (`docs/superpowers/specs/2026-08-24-frame-loop-decoupling-design.md` in weasel).
-- **weasel's `animator-on-blits` against one shared voice** (blits `26c9764`, studio, Node 26.8.1,
-  2026-10-02, vitest means in ms per frame at 10k nodes, two runs; weasel's own animator in
-  brackets [0.42–0.44 tween, 0.67–0.94 spring]). One `tween` voice over every node, read by
-  `probe` per node: 2.0–2.1 (2.6–2.7 lanes off), level with a `fn` voice at 2.1. A voice per call:
-  3.8–3.9. One spring voice: 2.5; a spring voice per call 4.6–4.7. Like for like on teitou at
-  `de5ba57` (weasel, Node 26.10, three runs, 2026-10-02), one tween voice over 10k read by `pull`:
-  0.33–0.40 ms bare (`sync` + `pull`, nothing allocated per node) against weasel's 0.15–0.16 bare,
-  about 2.4×, though weasel's bare frame still builds a `{x, y}` per node; with each side writing
-  its per-node sink, 0.38–0.46 against 0.20–0.33, about 1.5×. Read by `probe` 0.79–0.94; a voice
-  per call 1.9. One spring voice by `pull` 0.57–0.66; weasel's own spring row is unstable on
-  teitou (0.31–1.28), cause unknown. About 35–40 ns a node against weasel's 15.
+- **weasel's `animator-on-blits` on teitou against `2da21c1`** (weasel, Node 26.10, six passes,
+  2026-10-03, vitest means in ms per frame at 10k): a tween motion voice per animation read by
+  `pull` costs 0.42–0.46, the same as one shared tween voice (0.39–0.47), so weasel expects to drop
+  its own grouping. Without building `{x, y}` sinks 0.35–0.38. By `probe` 0.82–0.94; a `keys` voice
+  per animation by `probe` 1.74–1.95, which no crowd serves yet (`HANDOFF.md` 1c). A spring voice
+  per animation by `pull` 0.60–0.65. weasel's old animator reads 0.22–0.37 for its whole frame;
+  its animator rebuilt on blits 0.77–0.88, about blits' `pull` plus weasel's own per-call work.
 - **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a
   `fn` voice in plain Node: about 35 ms warm against 16, and 80–90 cold against 28–42 (weasel,
   orochi under load, 2026-10-02). A cold run in blits' own shape read the other way, 34 against 49.
