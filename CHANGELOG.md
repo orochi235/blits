@@ -31,6 +31,14 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A `keys` or stateless `fn` voice naming one subject and writing one channel fills from its
+  channel's crowd, as a motion voice does, where it took the general path. On teitou 10k `fn`
+  voices of one subject each read by `pull` take 0.7 of the time they did.
+- A voice naming its subjects that is cued, starts or retires relinks only those subjects, and
+  joins or leaves its crowd in place, where it made every subject relink and the lanes qualify
+  every voice again: a frame stopping one of 10k such voices and cueing another fell from about
+  9 ms to 0.6 by `pull` on teitou. `mix.drop` looks only at the voices over every subject and
+  those naming the one dropped, where it walked every voice.
 - A lane gives a `vec(1)` channel an array of one, as the general path does, where it gave a
   bare number; and a motion voice on one folds without making an array per subject per frame.
 - A `tween` divides elapsed by its length in milliseconds, so a point a whole fraction of the way
