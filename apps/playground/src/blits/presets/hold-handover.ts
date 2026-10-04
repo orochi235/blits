@@ -1,6 +1,6 @@
 import type { Composition } from '../composition';
 
-// `rise` holds after, so its end is unfixed and `drop`, anchored after it, waits until it is faded.
+// `rise` holds its last frame until `drop` starts, then fades out under it.
 const c: Composition = {
   version: 1,
   title: 'hold handover',
@@ -17,7 +17,8 @@ const c: Composition = {
       loop: 1,
       hold: 'after',
       weight: 1,
-      fade: {},
+      fade: { out: 400 },
+      anchor: { out: { with: 'drop' } },
       stagger: { code: '(s) => s.index * 120' },
       patch: {
         kind: 'keys',
@@ -32,12 +33,11 @@ const c: Composition = {
       id: 'drop',
       name: 'drop',
       hue: 330,
-      start: 0,
+      start: 2000,
       rate: 1,
       loop: 1,
       weight: 1,
       fade: { in: 200 },
-      anchor: { start: { after: 'rise' } },
       patch: {
         kind: 'keys',
         period: 1000,

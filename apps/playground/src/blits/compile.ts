@@ -90,7 +90,7 @@ function specOf(
   if (v.from) spec.from = v.from;
   if (v.anchor) {
     spec.anchor = v.anchor;
-    delete spec.start;
+    if (v.anchor.start !== undefined || v.anchor.in !== undefined) delete spec.start;
   }
   return { spec };
 }

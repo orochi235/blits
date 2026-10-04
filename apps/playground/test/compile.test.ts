@@ -393,6 +393,23 @@ describe('compile', () => {
     expect(built.handles.get('late')?.state).toBe('pending');
   });
 
+  it('an anchor on the out mark only keeps the voice start', () => {
+    const glow = { kind: 'keys' as const, period: 100, stops: [{ at: 0, delta: { glow: 1 } }] };
+    const a = voice({
+      id: 'a',
+      name: 'a',
+      start: 500,
+      patch: glow,
+      anchor: { out: { with: 'b' } },
+    });
+    const b = voice({ id: 'b', name: 'b', start: 2000, patch: glow });
+    const built = compile(comp([a, b]), subjects);
+    built.mix.sync(100);
+    expect(built.handles.get('a')?.state).toBe('pending');
+    built.mix.sync(600);
+    expect(built.handles.get('a')?.state).toBe('live');
+  });
+
   it('a solo mix shows one voice as if the others were silent', () => {
     const a = voice({
       id: 'a',

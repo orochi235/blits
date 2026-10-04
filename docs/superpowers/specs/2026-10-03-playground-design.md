@@ -162,7 +162,7 @@ reach inside for one.
 | stagger wave    | `stagger` as an expression of column, with `fade.in`            |
 | crossfade       | two voices in one `locus`, weight handed between them           |
 | spring retarget | `spring` on `offset`, retargeted from live mode                 |
-| hold handover   | `hold: 'after'`, the next voice fading the last `at: 'rest'`    |
+| hold handover   | `hold: 'after'`, the next voice's start fading the last out     |
 | pointer glow    | weight as `slew(level('mouse'))`                                |
 | fold rules      | one delta through `sum`, `mul` and `max`                        |
 

@@ -23,7 +23,7 @@ const OPTIONS: Record<Motion['kind'], readonly string[]> = {
 
 const NAMED_EASES = ['linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out'] as const;
 
-/** Errors on the patch as a whole, which no single field shows. */
+/** Errors on the patch as a whole, which no single field shows; so are errors on options it has no field for. */
 const WHOLE = new Set(['stops', 'writes', 'opts']);
 
 function blank(kind: Kind): PatchSource {
@@ -124,7 +124,12 @@ export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelP
   const set = (patch: PatchSource) => onChange({ ...v, patch });
   const mine = errors.filter((e) => e.voice === v.id);
   const err = (field: string) => mine.find((e) => e.field === field);
-  const whole = mine.filter((e) => WHOLE.has(e.field));
+  const shown = p.kind === 'keys' || p.kind === 'fn' ? [] : OPTIONS[p.kind];
+  const whole = mine.filter(
+    (e) =>
+      WHOLE.has(e.field) ||
+      (e.field.startsWith('opts.') && !shown.includes(e.field.slice('opts.'.length))),
+  );
   const phase =
     'period' in p && p.period > 0 ? Math.max(0, (playhead - v.start) * v.rate) % p.period : 0;
 
