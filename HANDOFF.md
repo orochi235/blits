@@ -168,24 +168,21 @@ systems now run on it**, on klieg's `main`.
 
 ## Next, in order
 
-0. **The playground, on branch `playground` in the worktree `~/src/blits-playground`.** A Vite +
-   labkit app at `apps/playground` for composing voices on a score, watching them on a stage of dots
-   or letters, and inspecting each channel's fold. Designed and planned, **not built**: the design
-   is `docs/superpowers/specs/2026-10-03-playground-design.md` and the plan, sixteen tasks,
-   `docs/superpowers/plans/2026-10-03-playground.md`. **Mike has not reviewed the plan or chosen how
-   to run it** (subagent per task with review, or one session doing all of it): ask him that first.
+0. **The playground is built, on branch `playground` in the worktree `~/src/blits-playground`, not
+   merged.** A Vite + labkit app at `apps/playground`; its README says what it is, how to run it and
+   how it works, and holds what stays true of the design (the spec and plan are deleted). Before
+   merging:
+   - **The release would break on it.** `npm publish` runs `prepublishOnly`, which is `npm run
+     check`, after the release workflow has deleted `workspaces` from the manifest; `check` now
+     reaches into `@blits/playground` (its typecheck, and the smoke run) and would fail with no
+     workspace to find. Whether to drop `prepublishOnly` in CI, or keep the playground out of
+     `check`, is Mike's call.
+   - The stage, length, levels and title can't be edited in the UI yet, only through a preset or a
+     shared link; the design had a dots/letters switch.
    Decided in conversation and not otherwise written down:
-   - It is for Mike to compose, watch blits work and learn it; what it outputs matters little. It is
-     also where he tries UI ideas for downstream apps, informally — no variant mechanism.
-   - Every UI widget must be able to move to weasel later: generic props, no blits imports, forge
-     stories. Mike will rework the score and panel designs later; this version is a start.
-   - The document types are `Composition`, `Voice`, `PatchSource`, `Expr` — no `Doc` suffix (Mike
-     took that from a side discussion).
-   - Both stages get built (Mike asked for letters as well as dots), with the plots inspector.
-   - The plan's research found labkit 1.7.3 has no `UndoStack` class or `useLabState`; it has pure
-     undo functions and `Persistence` + `usePersistedState`. The plan uses those.
-   The plan and spec are scaffolding: Task 16 folds what stays true into `apps/playground/README.md`
-   and deletes both.
+   - Mike will rework the score and panel designs later; this version is a start.
+   - The composition types are named without a `Doc` suffix (Mike took that from a side
+     discussion).
 
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
    in the hot path and what weasel has that blits doesn't (booking events ahead, a mix-wide time

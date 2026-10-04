@@ -39,7 +39,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b && tsc -p tsconfig.test.json && tsc -b packages/quarks && tsc -p packages/quarks/tsconfig.test.json && npm run typecheck -w @blits/playground",
     "lint": "biome check .",
-    "check": "npm run lint && npm run typecheck && npm run test",
+    "check": "npm run lint && npm run typecheck && npm run test && npm run playground:smoke",
     "prepack": "npm run build",
     "prepublishOnly": "npm run check",
     "bench": "npm run build && node bench/frame.mjs",
