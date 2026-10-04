@@ -1568,11 +1568,7 @@ export class Lanes<I, O> {
     const subject = this.subjectAt(slot);
     if (subject === absent) return 0;
     const base = this.host.signal(voice, subject, rec, elapsed, pass);
-    return weighed(
-      base,
-      fade,
-      voice.parts === null ? 1 : this.host.parting(voice, subject),
-    );
+    return weighed(base, fade, voice.parts === null ? 1 : this.host.parting(voice, subject));
   }
 
   /** What a subject's own ramp out of a voice leaves of its weight: 1 with none. */

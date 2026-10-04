@@ -1,6 +1,7 @@
 import { type LerpInto, lerpInto } from './channels.js';
 import { envelope, heldTime, passAt, passesOf, phaseAt, weighed } from './clock.js';
 import { type Curve, curve } from './easing.js';
+import { type HandleHost, VoiceHandle } from './handle.js';
 import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
 import { type Motions, motionOf, noFrame, noRevive } from './motion.js';
 import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
@@ -782,6 +783,7 @@ class Mixer<I, O> implements Mix<I, O> {
   private locusDepth = 0;
   private readonly slotOf = new Map<string, number>();
   private readonly lanes: Lanes<I, O> | null;
+  private handles: HandleHost<I, O> | null = null;
 
   constructor(
     private readonly kit: Kit<O>,
@@ -2020,64 +2022,29 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   private handle(voice: Voice<I, O>): Handle<I> {
-    const mix = this;
+    this.handles ??= this.handleHost();
+    return new VoiceHandle(voice, this.handles);
+  }
+
+  private handleHost(): HandleHost<I, O> {
     return {
-      id: voice.id,
-      get state() {
-        return voice.state;
+      nowFor: (voice) => (Number.isNaN(this.now) ? voice.start : this.now),
+      changed: (voice) => {
+        this.noted(voice);
+        this.lanes?.refill();
       },
-      get played() {
-        return voice.played;
-      },
-      get weight() {
-        return voice.weight;
-      },
-      set weight(w: number) {
-        voice.weight = w;
-        mix.noted(voice);
-        mix.lanes?.refill();
-      },
-      get rate() {
-        return voice.rateAt(Number.isNaN(mix.now) ? voice.start : mix.now);
-      },
-      set rate(r: number) {
-        voice.rebase(Number.isNaN(mix.now) ? voice.start : mix.now);
-        voice.ramp = null;
-        voice.rate = r;
-        mix.noted(voice);
-        mix.lanes?.refill();
-      },
-      ramp(r: number, over: number) {
-        const now = Number.isNaN(mix.now) ? voice.start : mix.now;
-        voice.rebase(now);
-        const from = voice.rateAt(now);
-        voice.ramp = over > 0 && r !== from ? { from, to: r, over } : null;
-        voice.rate = r;
-        mix.noted(voice);
-        mix.lanes?.refill();
-      },
-      seek(elapsed: number) {
-        voice.rebase(Number.isNaN(mix.now) ? voice.start : mix.now);
-        voice.anchorElapsed = elapsed;
-        voice.seeks++;
-        mix.noted(voice);
-        mix.lanes?.refill();
-      },
-      fade(opts?: FadeOptions<I>) {
+      fade: (voice, opts) => {
         if (opts !== undefined && 'subject' in opts)
-          mix.fadeSubject(voice, opts.subject as I, opts.over);
-        else mix.beginFade(voice, opts ?? {});
+          this.fadeSubject(voice, opts.subject as I, opts.over);
+        else this.beginFade(voice, opts ?? {});
       },
-      weightOf(subject: I) {
+      weightOf: (voice, subject) => {
         if (voice.state === 'done') return 0;
-        if (voice.laned && mix.lanes !== null) {
-          const w = mix.lanes.weightOf(voice.id, mix.chains.get(subject)?.slot ?? -1);
+        if (voice.laned && this.lanes !== null) {
+          const w = this.lanes.weightOf(voice.id, this.chains.get(subject)?.slot ?? -1);
           if (w !== undefined) return w;
         }
         return (voice.subjects.get(subject) as Subject<unknown> | undefined)?.weight ?? 0;
-      },
-      get done() {
-        return voice.done;
       },
     };
   }
