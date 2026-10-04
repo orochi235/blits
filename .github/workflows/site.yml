@@ -1,9 +1,10 @@
 name: Site
 
-# Builds the site and deploys it to GitHub Pages. Off until Pages is enabled on the repo: the only
-# trigger is by hand, and adding `push: branches: [main]` is the switch.
+# Builds the site and deploys it to GitHub Pages, at michaelbaker.tech/blits/.
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:

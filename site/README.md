@@ -39,5 +39,5 @@ have, so the site pins `typescript` 6 for itself while the package builds with 7
 
 ## Deploying
 
-`.github/workflows/site.yml` checks, smokes and deploys to GitHub Pages. It runs only by hand;
-adding `push: branches: [main]` turns it on once Pages is enabled on the repo.
+`.github/workflows/site.yml` checks, smokes and deploys to GitHub Pages on every push to `main`,
+and by hand. The site is live at `michaelbaker.tech/blits/`.

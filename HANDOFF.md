@@ -57,7 +57,7 @@ systems now run on it**, on klieg's `main`.
   "Prerequisite: blits 0.4.0 `hold`") is waiting on `hold` and `inert`, both now on npm in 0.4.0.
 - **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
   the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
-  is green on all 13 pages. Local only; `.github/workflows/site.yml` deploys to Pages by hand.
+  is green on all 13 pages. Deployed to `michaelbaker.tech/blits/` by `.github/workflows/site.yml` on every push to `main`.
 - `docs/schema.html` — the design: vocabulary, channel table, patches, voices, mix,
   signals, time model, blending, patch state, the engine seam, per-consumer rigs, the klieg port,
   decided-against, tests, open items. Status line says design under review. It reads in the called
