@@ -2031,3 +2031,64 @@ describe('a locus of keys and fn voices runs on lanes and folds as the general p
     expect(seen.size).toBe(6);
   });
 });
+
+describe('a voice a probe meets late, after every laned voice, folds onto the lanes’ values', () => {
+  const flick = (k: number) =>
+    patch<Part, Pose>(
+      180,
+      (ph, s) => ({ gain: 0.5 + 0.4 * Math.sin(ph * 6 + s.id + k), dark: ph }),
+      {
+        writes: ['gain', 'dark'],
+      },
+    );
+  const glideTo = (s: Part) =>
+    tween<Part, Pose, number[]>('position', { from: [0, 0, 0], to: [s.id, 1, 0], ms: 400 });
+
+  /** A voice per part, and a voice over every part replaced at each time, with fades. */
+  const swap =
+    (late: boolean): Play =>
+    (m, parts) => {
+      for (const p of parts) m.cue({ patch: glideTo(p), subjects: [p] });
+      for (const p of parts) m.cue({ patch: flick(p.id), subjects: [p], weight: 0.7 });
+      let shared = m.cue({ patch: flick(9), fade: { in: 40 }, weight: 1.3 });
+      const handles = [shared];
+      let k = 0;
+      return {
+        handles,
+        at: (t) => {
+          if (t === 0) return;
+          shared.fade({ over: k % 2 === 0 ? 0 : 30 });
+          shared = m.cue({ patch: flick(k++), fade: { in: 40 }, weight: 0.4 + (k % 3) * 0.5 });
+          handles.push(shared);
+          // A voice naming one part, cued after the shared one, so it no longer folds last.
+          if (late) m.cue({ patch: flick(k + 5), subjects: [parts[k % parts.length] as Part] });
+        },
+      };
+    };
+  const times = [0, 16, 33, 50, 66, 83, 100, 133, 166, 200, 250, 300, 450];
+
+  it('reads what the general path reads, probed every frame', () => {
+    agree(swap(false), { times });
+  });
+
+  it('reads what the general path reads, probed sparsely', () => {
+    agree(swap(false), { times, probe: (t, part) => (part.id + Math.round(t)) % 3 !== 0 });
+  });
+
+  it('reads what the general path reads when a later voice takes the fold order', () => {
+    agree(swap(true), { times });
+  });
+
+  it('owes the voice rather than sending the subject to the general path', () => {
+    const m = mix<Part, Pose>(K);
+    const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
+    const played = swap(false)(m, parts);
+    m.sync(0);
+    for (const p of parts) m.probe(p);
+    played?.at?.(16);
+    m.sync(16);
+    for (const p of parts) m.probe(p);
+    const lanes = (m as unknown as { lanes: { owed: Map<number, number[]> } }).lanes;
+    expect(lanes.owed.size).toBe(parts.length);
+  });
+});
