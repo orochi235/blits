@@ -381,12 +381,15 @@ interface Setting&lt;S = void&gt; {
   start?: number;
   /** Playback rate. 1 is real time; 0 freezes. */
   rate?: number;
-  <span class="cm">/** true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its passes are done — over <code>fade.out</code> where one is set, at once where none is. */</span>
+  <span class="cm">/** true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its passes are done — over <code>fade.out</code> where one is set, at once where none is — unless it holds after. */</span>
   loop?: boolean | number;
   <span class="cm">/** Per-subject delay in voice ms. klieg's stagger grammar stays klieg's and passes in the one
      thing the mix needs: how long this subject waits. Asked once per subject on first sight and
      kept, like <code>target</code>; the subject's fade in starts when the voice clock reaches it. */</span>
   stagger?: (subject: I) =&gt; number;
+  <span class="cm">/** Show the first frame before a subject starts, the last after its passes run out, or both. Default: neither,
+     so the voice shows nothing outside its passes. See Holding. */</span>
+  hold?: 'before' | 'after' | 'both';
 
   <span class="cm">// weight</span>
   <span class="cm">/** Steady weight, or a signal read per subject per frame. Default 1. */</span>
@@ -416,7 +419,8 @@ interface Setting&lt;S = void&gt; {
 
 interface Handle&lt;I&gt; {
   readonly id: number;
-  readonly state: 'pending' | 'live' | 'fading' | 'done';
+  <span class="cm">/** <code>held</code>: a voice holding after has played every pass and shows its last frame until faded. */</span>
+  readonly state: 'pending' | 'live' | 'held' | 'fading' | 'done';
   <span class="cm">/** Live. Writes land on the next sync. */</span>
   weight: number;
   rate: number;
@@ -434,9 +438,22 @@ interface Handle&lt;I&gt; {
   weightOf(subject: I): number;
   <span class="cm">/** Resolves when the voice has been removed from the mix, however that happened. */</span>
   readonly done: Promise&lt;void&gt;;
+  <span class="cm">/** Resolves true when a finite loop's last pass ends, for the latest-staggered subject it has seen, and false
+     if the voice leaves before that. Never rejects. */</span>
+  readonly played: Promise&lt;boolean&gt;;
 }</code></pre>
 
 <p><b>Fading one subject.</b> <code>fade({ subject, over })</code> ramps one subject out of a voice and leaves the voice playing for every other subject; <code>over: 0</code> takes it out at once. When the ramp ends the voice forgets the subject &mdash; its record, its lane position and a motion patch&rsquo;s state for it &mdash; and no longer reaches it, so nothing it held stays stacked under whatever takes the subject over. A motion patch&rsquo;s <code>to</code> brings it back, met afresh: <code>from</code>, <code>target</code> and <code>stagger</code> are asked again. Any other voice reaches it again only once <code>drop</code> forgets the subject. This is what lets a host that starts many short animations, one per node, run them as one voice on one lane instead of a voice per call, while still cancelling a node or handing it to a different patch.</p>
+
+<p><b>Holding.</b> A voice shows nothing outside its passes unless it holds. <code>hold: 'before'</code> shows a subject the voice&rsquo;s first frame from the cue until the subject starts: while the voice is pending, and while the subject waits out its <code>stagger</code>. <code>hold: 'after'</code> shows the last frame of the last pass once a finite loop has played out, and the voice stays until <code>fade()</code> takes it out, ramping from that frame. <code>'both'</code> does both. wod asked for it to replace WAAPI&rsquo;s <code>fill</code>: a spin lands and holds its angle, and staggered wedges wait on their first frame rather than popping in.</p>
+<ul>
+  <li><b>A held subject&rsquo;s clock stands still.</b> It reads phase 0 of pass 0 before, and phase 1 of the last pass after, with <code>elapsed</code> pinned to that edge. <code>at</code> is asked for that frame. <code>step</code> does not run while a subject waits, so a stateful patch starts playing from the state it was cued with; after, it runs once more to where the last pass ended and then no more, so the held frame does not depend on when the last frame before it fell. A voice holding before stays <code>pending</code> until it starts, and <code>weightOf</code> reports the weight it gives a waiting subject.</li>
+  <li><b><code>fade.in</code> counts from the first frame the voice shows</b>, so with <code>'before'</code> it ramps in on the held frame rather than at full weight, and does not dip when play begins.</li>
+  <li><b>A voice holding after reaches <code>held</code>, not <code>fading</code>,</b> at the moment a voice without a hold would begin its fade out. <code>played</code> resolves true then. Its <code>out</code> and <code>end</code> marks are unfixed until it is faded, like those of a voice that loops for good, so <code>{ after: 'spin' }</code> waits for the fade. A host that wants to start something when the passes run out awaits <code>played</code>.</li>
+  <li><b>The host owns every held voice.</b> One cued per spin and never faded stays in the mix for good, one more voice folded every frame. The next voice&rsquo;s cue is the time to fade the last, at once or <code>at: 'rest'</code>.</li>
+  <li><b>Where it changes nothing.</b> A voice that loops for good never runs out of passes, so only <code>'before'</code> applies to it. A motion patch (<code>spring</code>, <code>glide</code>, <code>tween</code>) already holds its target and has no passes, so <code>hold</code> does nothing to it. Lanes give the same pose with it as without them, as for everything else.</li>
+  <li><b>What it costs.</b> A voice holding before runs on the general path while it is pending, which takes the channels it writes off their lanes until it starts; one that is already live, waiting only on a subject&rsquo;s stagger, stays on its lane. A mix with no hold reads no slower (<code>keys</code> and <code>fn</code> rows of <code>bench/frame.mjs</code>, three passes alternated against <code>main</code> on a laptop, 2026-10-03).</li>
+</ul>
 
 <p>Weights are the only knob the mix owns. Fade, crossfade, handover, alternatives, and hinge's continuous mode are all weights over time; the section on blending shows each one as such. A patch never sees a weight applied to its output, it only sees the number in <code>setting.weight</code> if it cares.</p>
 
@@ -533,7 +550,7 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
   <li><b>Time away is the host's to call.</b> A hidden tab gets no frames, so its next <code>sync</code> can be an hour past the last. By default that hour is a gap like any other: fades and finite loops finish, and every subject catches up by all of it. A host that calls <code>mix.rebase()</code> on <code>visibilitychange</code> says the gap does not count, and the mix clock &mdash; what <code>setting.timestamp</code> reads, and what voices, fades and subjects run on &mdash; resumes where it was left. It is then the host's timestamp less the time taken out, and a <code>start</code> the host gives is read on the host's clock and converted. <code>maxDt</code> caps the <code>dt</code> a <code>step</code> or signal is handed for any gap, the net an integrator wants; it is off by default because a patch with a closed form wants the whole gap.</li>
   <li><b>There is no frame rate, only an optional step interval.</b> A frame is a reading, so a stateless patch reads the same at any rate. A <code>step</code> handed the frame's gap does not: an integrator gives a different answer at 30 and 144&nbsp;fps. <code>stepMs</code> runs <code>step</code> once per whole interval instead, on a grid counted from when the subject's delay ran out, carrying the remainder, so the answer and every event's time are the same at any frame rate. <code>maxDt</code> then caps how many intervals one sample runs. Signals and <code>at</code> still read the frame. The host's clock is whatever it passes <code>sync</code>: a rAF timestamp and <code>performance.now()</code> share an origin, and <code>Date.now()</code> does not.</li>
   <li><b>Events come out by draining.</b> A patch calls <code>setting.send(event)</code>, usually from <code>step</code>, and the host calls <code>mix.drain()</code> after probing to take everything sent, earliest first. Events are made while a subject catches up, so a subject nobody probes has sent nothing yet, and promptness is the host's to buy by probing. Under <code>stepMs</code> each is stamped with the end of the interval it happened in, so the events and their times do not depend on how the probes are spaced. Time taken out by <code>rebase</code> sends nothing. The exception is a stateless patch sending from <code>at</code> on a lane: a lane fills every subject the mix has met, so it sends for each of them every frame, probed or not. This is the small half of weasel's events: no booking ahead against an outside clock, and no retraction.</li>
-  <li><b>A finite loop ends when its last pass does,</b> not at the frame that notices: its fade out counts from that moment, so it plays the same at any frame rate and a read at another time can find it. A fade's end and a handover's deadline are kept the same way.</li>
+  <li><b>A finite loop ends when its last pass does,</b> not at the frame that notices: its fade out counts from that moment, or it turns <code>held</code> then if it holds after, so it plays the same at any frame rate and a read at another time can find it. A fade's end and a handover's deadline are kept the same way.</li>
   <li><b>Calls land on the next sync.</b> A host writes <code>handle.weight</code> or calls <code>fade</code> on its own clock; the mix applies it at the first timestamp that sees it. Nothing changes mid-frame.</li>
 </ul>
 
@@ -703,6 +720,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>Subject registration.</b> A <code>mix.subjects(list)</code> call would let the mix step every state eagerly. It puts a second source of truth about the pool in the host. Lazy state keyed by identity, stepped by the gap in the timestamp, needs nothing from the host and is the rule klieg already proved.</li>
   <li><b>A slew in place of the band.</b> Smoothing a gate's input instead of giving it two edges. It delays the crossing without deciding it, so an input that rests on the threshold chatters anyway, and the rate needed to help at all costs visible lag.</li>
   <li><b>Normalizing a locus's weights per channel.</b> The other way to make a crossfade hold its value on <code>mul</code>: keep the scale-and-merge fold and pick a per-channel divisor. It costs the property the mixer's fold order rests on &mdash; that weights are scalars resolved for the subject before any channel is touched &mdash; and it has no answer for <code>last</code>, which has no arithmetic to normalize. The <code>lerp</code> fold gets the same result from the rule the package already has.</li>
+  <li><b>Removing a held voice once another covers it.</b> WAAPI drops a finished, filling animation when a later one replaces every property it sets. In a mix, &ldquo;covers&rdquo; depends on weights, loci and each channel&rsquo;s fold, and a voice leaving on its own would change the pose with no call to point at. The host fades it.</li>
   <li><b>A mix option for the lurch guard.</b> A global "normalize when over 1" would apply to effects that legitimately stack. The cap belongs to the voices that crossfade, so it is a <code>locus</code>.</li>
 </ul>
 

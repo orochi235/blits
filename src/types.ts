@@ -326,7 +326,7 @@ export interface VoiceSpec<I, O> {
   /**
    * true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its
    * passes are done for the latest-staggered subject it has seen — over `fade.out` where one is
-   * set, at once where none is.
+   * set, at once where none is — unless it holds after.
    */
   loop?: boolean | number;
   /**
@@ -334,6 +334,16 @@ export interface VoiceSpec<I, O> {
    * Like `target`, it runs once per subject on first sight, and the answer is kept.
    */
   stagger?: (subject: I) => number;
+  /**
+   * Show a subject the first frame before it starts — while the voice is pending and while the
+   * subject waits out its `stagger` — the last frame of the last pass after a finite loop plays
+   * out, or both. A held subject's clock stands still: `at` is asked for the edge frame and `step`
+   * does not run, past one last step to the end of the last pass. `fade.in` counts from the first
+   * frame the voice shows. A voice holding after stays, `held`, until `fade()` or an anchored `out`
+   * takes it out, so every one cued must be faded or it stays in the mix for good. Does nothing to
+   * a motion patch, which holds its target already. Default: neither.
+   */
+  hold?: 'before' | 'after' | 'both';
 
   /** Steady weight, or a signal read per subject per frame. Default 1. */
   weight?: number | Signal<I>;
@@ -391,7 +401,8 @@ export type FadeOptions<I = unknown> =
  */
 export interface Handle<I = unknown> {
   readonly id: number;
-  readonly state: 'pending' | 'live' | 'fading' | 'done';
+  /** `held`: a voice holding after has played every pass and shows its last frame until faded. */
+  readonly state: 'pending' | 'live' | 'held' | 'fading' | 'done';
   /** Live. Writes land on the next sync. */
   weight: number;
   /** Playback rate now. Setting it changes speed at once; `ramp` eases into a new one. */
@@ -411,12 +422,18 @@ export interface Handle<I = unknown> {
   /**
    * The weight this voice gave `subject` the last frame that subject was probed: after its fades
    * and its weight signal, before a locus folds it with its alternatives. 0 for a subject it does
-   * not reach, has not started on, has left at rest, or has never been probed for; 0 once done.
+   * not reach, has not started on and does not hold before, has left at rest, or has never been
+   * probed for; 0 once done.
    * Costs nothing until it is asked.
    */
   weightOf(subject: I): number;
   /** Resolves when the voice has been removed from the mix, however that happened. */
   readonly done: Promise<void>;
+  /**
+   * Resolves true when a finite loop's last pass ends, for the latest-staggered subject it has
+   * seen, and false if the voice leaves before that. Never rejects.
+   */
+  readonly played: Promise<boolean>;
 }
 
 /**

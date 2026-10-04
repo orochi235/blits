@@ -41,8 +41,10 @@ export interface Subject<S> {
   reaches: boolean;
   /** The voice's `stagger` answer in voice ms, fixed on first sight. */
   delay: number;
-  /** The mix timestamp this subject's delay ran out at, which its fade in counts from. */
+  /** The mix timestamp this subject's delay ran out at, which its step grid counts from. */
   since: number;
+  /** The mix timestamp its fade in counts from: `since`, or earlier for a voice holding before. */
+  shown: number;
   /** The weight this voice gave this subject the last frame it was probed, 0 where it gave none. */
   weight: number;
   /** Left at rest during a handover, so it stops contributing. */
@@ -108,6 +110,7 @@ function stub(): Subject<unknown> {
     reaches: false,
     delay: 0,
     since: 0,
+    shown: 0,
     weight: 0,
     rested: false,
     bands: new Uint8Array(0),
@@ -245,7 +248,7 @@ function same(a: unknown, b: unknown): boolean {
 }
 
 export class Voice<I, O> {
-  state: 'pending' | 'live' | 'fading' | 'done' = 'pending';
+  state: 'pending' | 'live' | 'held' | 'fading' | 'done' = 'pending';
   rate: number;
   weight: number;
   /**
@@ -292,6 +295,15 @@ export class Voice<I, O> {
   readonly ease: Curve | undefined;
   /** How many passes its `loop` plays, worked out once. */
   readonly passes: number;
+  /** Voice ms its passes last, Infinity for an aperiodic patch or a loop for good. */
+  readonly span: number;
+  /** Its `hold`, for a patch it applies to: motion holds its target already. */
+  readonly holdsBefore: boolean;
+  readonly holdsAfter: boolean;
+  /** The mix time it first showed: when it was cued, or the first sync after. */
+  opened = Number.NaN;
+  /** Records made while it was pending, whose `since` its start may since have moved. */
+  early: Subject<unknown>[] | null = null;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: Setting<unknown>;
   /** Every subject this voice has been asked about, so a handover knows when it is finished. */
@@ -311,6 +323,8 @@ export class Voice<I, O> {
   placing = false;
   resolve!: () => void;
   readonly done: Promise<void>;
+  play!: (played: boolean) => void;
+  readonly played: Promise<boolean>;
 
   constructor(
     readonly id: number,
@@ -336,6 +350,13 @@ export class Voice<I, O> {
       : undefined;
     this.ease = fade.ease === undefined ? undefined : curve(fade.ease);
     this.passes = passesOf(spec.loop);
+    this.span =
+      patch.period > 0 && Number.isFinite(this.passes)
+        ? patch.period * this.passes
+        : Number.POSITIVE_INFINITY;
+    const holds = motionOf(patch) === undefined ? spec.hold : undefined;
+    this.holdsBefore = holds === 'before' || holds === 'both';
+    this.holdsAfter = holds === 'after' || holds === 'both';
     this.setting = {
       timestamp: 0,
       dt: 0,
@@ -352,6 +373,9 @@ export class Voice<I, O> {
     this.anchorNow = start;
     this.done = new Promise((r) => {
       this.resolve = r;
+    });
+    this.played = new Promise((r) => {
+      this.play = r;
     });
     if (now >= start) this.state = 'live';
   }
@@ -413,6 +437,7 @@ export class Voice<I, O> {
     v.holder = null;
     v.laned = false;
     v.log = null;
+    v.early = null;
     if (controls) {
       v.anchorNow = controls.anchorNow;
       v.anchorElapsed = controls.anchorElapsed;
@@ -424,6 +449,7 @@ export class Voice<I, O> {
       v.outAt = controls.outAt;
     }
     v.resolve = noSend;
+    v.play = noSend;
     return v;
   }
 
@@ -612,7 +638,10 @@ class Mixer<I, O> implements Mix<I, O> {
       this.opts.host,
       this.send,
     );
-    if (!Number.isNaN(this.now)) voice.cuedAt = this.now;
+    if (!Number.isNaN(this.now)) {
+      voice.cuedAt = this.now;
+      voice.opened = this.now;
+    }
     voice.placing = anchored;
     const motion = motionOf<I>(patch);
     if (motion !== undefined) {
@@ -631,6 +660,7 @@ class Mixer<I, O> implements Mix<I, O> {
       this.place();
       if (!Number.isNaN(this.now) && voice.state === 'pending' && this.now >= voice.start) {
         voice.state = 'live';
+        this.started(voice);
         this.version++;
       }
     }
@@ -691,20 +721,25 @@ class Mixer<I, O> implements Mix<I, O> {
     }
     for (const voice of this.voices) {
       if (voice.state === 'done') continue;
-      if (voice.state === 'live' && voice.outAt <= now)
+      if (Number.isNaN(voice.opened)) voice.opened = now;
+      if ((voice.state === 'live' || voice.state === 'held') && voice.outAt <= now)
         this.beginFade(voice, {}, Math.max(voice.start, voice.outAt));
       if (voice.state === 'pending' && now >= voice.start) {
         voice.state = 'live';
+        this.started(voice);
         this.version++;
       }
-      const period = voice.patch.period;
-      const passes = voice.passes;
-      if (voice.state === 'live' && period > 0 && Number.isFinite(passes)) {
-        const end = period * passes + voice.latest;
-        // The fade starts when the last pass ended, not at the frame that noticed, so it plays the
-        // same at any frame rate and a read at another time can find it.
-        if (voice.elapsedAt(now) >= end)
-          this.beginFade(voice, {}, Math.max(voice.start, Math.min(now, voice.timeAt(end))));
+      if (voice.state !== 'pending' && Number.isFinite(voice.span)) {
+        const end = voice.span + voice.latest;
+        if (voice.elapsedAt(now) >= end) {
+          voice.play(true);
+          // The fade starts when the last pass ended, not at the frame that noticed, so it plays
+          // the same at any frame rate and a read at another time can find it.
+          if (voice.state === 'live') {
+            if (voice.holdsAfter) voice.state = 'held';
+            else this.beginFade(voice, {}, Math.max(voice.start, Math.min(now, voice.timeAt(end))));
+          }
+        } else if (voice.state === 'held') voice.state = 'live';
       }
       // A projection reads a finished ramp as weight 0, and leaves the live voice's subjects be.
       if (voice.parts !== null && !this.projecting)
@@ -919,7 +954,14 @@ class Mixer<I, O> implements Mix<I, O> {
             (subject) => this.recall(v, subject, t),
             last(log, t, (e) => e.sync) ?? (log[0] as Controls),
           );
-          copy.state = t < v.start ? 'pending' : copy.out && copy.out.at <= t ? 'fading' : 'live';
+          copy.state =
+            t < v.start
+              ? 'pending'
+              : copy.out && copy.out.at <= t
+                ? 'fading'
+                : copy.holdsAfter && copy.elapsedAt(t) >= copy.span + copy.latest
+                  ? 'held'
+                  : 'live';
           if (then !== undefined) copy.setting.host = then;
           return copy;
         });
@@ -1087,6 +1129,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const spec = voice.spec;
     const patch = voice.patch;
     if (voice.keeping) return false;
+    if (voice.state === 'pending' && voice.holdsBefore) return false;
     if (typeof spec.weight === 'function') return false;
     if (spec.locus !== undefined || spec.from === 'current') return false;
     if (voice.out?.rest) return false;
@@ -1155,18 +1198,18 @@ class Mixer<I, O> implements Mix<I, O> {
   ): void {
     const setting = voice.setting;
     setting.timestamp = now;
-    const gap = now - held.stepped;
-    const cap = this.opts.maxDt;
-    setting.dt = this.reducedNow
-      ? Number.POSITIVE_INFINITY
-      : cap !== undefined && gap > cap
-        ? cap
-        : gap;
+    setting.dt = this.capped(now - held.stepped);
     setting.elapsed = elapsed;
     setting.pass = pass;
     setting.weight = 0;
     setting.state = held.state;
     setting.keep = held.keep;
+  }
+
+  /** A gap as a `dt`: Infinity under reduced motion, and no more than `maxDt`. */
+  private capped(gap: number): number {
+    const cap = this.opts.maxDt;
+    return this.reducedNow ? Number.POSITIVE_INFINITY : cap !== undefined && gap > cap ? cap : gap;
   }
 
   /** The earliest voice time a read may still ask for, for a subject delayed `delay`. */
@@ -1329,13 +1372,9 @@ class Mixer<I, O> implements Mix<I, O> {
     let outAt: number | undefined;
     if (out !== null) outAt = out.at;
     else if (Number.isFinite(voice.outAt)) outAt = voice.outAt;
-    else {
-      const period = voice.patch.period;
-      const passes = voice.passes;
-      if (period > 0 && Number.isFinite(passes)) {
-        const t = voice.timeAt(period * passes + voice.latest);
-        if (Number.isFinite(t)) outAt = Math.max(start, t);
-      }
+    else if (!voice.holdsAfter && Number.isFinite(voice.span)) {
+      const t = voice.timeAt(voice.span + voice.latest);
+      if (Number.isFinite(t)) outAt = Math.max(start, t);
     }
     if (mark === 'out') return voice.state === 'done' && outAt === undefined ? voice.doneAt : outAt;
     if (voice.state === 'done') return voice.doneAt;
@@ -1435,6 +1474,7 @@ class Mixer<I, O> implements Mix<I, O> {
       reaches: live.reaches,
       delay: live.delay,
       since: live.since,
+      shown: live.shown,
       weight: 0,
       rested: false,
       bands: new Uint8Array(voice.slots.length),
@@ -1568,6 +1608,7 @@ class Mixer<I, O> implements Mix<I, O> {
       get state() {
         return voice.state;
       },
+      played: voice.played,
       get weight() {
         return voice.weight;
       },
@@ -1720,6 +1761,7 @@ class Mixer<I, O> implements Mix<I, O> {
     voice.revive = null;
     voice.state = 'done';
     voice.doneAt = at ?? (Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now);
+    voice.play(false);
     voice.resolve();
   }
 
@@ -1734,17 +1776,13 @@ class Mixer<I, O> implements Mix<I, O> {
     if (held !== undefined) return held;
     const reaches = this.aims(voice, subject);
     const delay = reaches && voice.spec.stagger ? voice.spec.stagger(subject) : 0;
-    // When the voice clock reads `delay`, from where it is anchored now; during a ramp this assumes
-    // the rate it is ramping to.
-    const since =
-      voice.rate > 0
-        ? voice.anchorNow + (delay - voice.anchorElapsed) / voice.rate
-        : voice.start + delay;
+    const since = this.sinceOf(voice, delay);
     const kept = new Map<object, unknown>();
     held = {
       reaches,
       delay,
       since,
+      shown: this.shownOf(voice, since),
       weight: 0,
       rested: false,
       bands: new Uint8Array(voice.slots.length),
@@ -1771,9 +1809,38 @@ class Mixer<I, O> implements Mix<I, O> {
       held.unknown = this.backward && voice.spec.from === 'current';
     }
     voice.subjects.set(subject, held);
+    if (voice.state === 'pending') {
+      voice.early ??= [];
+      voice.early.push(held);
+    }
     if (reaches) voice.seen++;
     if (delay > voice.latest) voice.latest = delay;
     return held;
+  }
+
+  /**
+   * When the voice clock reads `delay`, from where it is anchored now; during a ramp this assumes
+   * the rate it is ramping to.
+   */
+  private sinceOf(voice: Voice<I, O>, delay: number): number {
+    return voice.rate > 0
+      ? voice.anchorNow + (delay - voice.anchorElapsed) / voice.rate
+      : voice.start + delay;
+  }
+
+  private shownOf(voice: Voice<I, O>, since: number): number {
+    return voice.holdsBefore && voice.opened < since ? voice.opened : since;
+  }
+
+  /** A voice has gone live: the records it made while pending count from where it started. */
+  private started(voice: Voice<I, O>): void {
+    const early = voice.early;
+    if (early === null) return;
+    voice.early = null;
+    for (const held of early) {
+      held.since = this.sinceOf(voice, held.delay);
+      held.shown = this.shownOf(voice, held.since);
+    }
   }
 
   /** The weight a voice gives a subject this frame, with the setting already filled in. */
@@ -1787,7 +1854,7 @@ class Mixer<I, O> implements Mix<I, O> {
       base = was ? was.value : signal(subject, voice.setting as Setting);
       if (signal.input && !was) this.record(held, base);
     }
-    const fade = this.envelope(voice, now, held.since);
+    const fade = this.envelope(voice, now, held.shown);
     return clampWeight(
       base * (voice.parts === null ? fade : fade * this.parting(voice, subject, now)),
     );
@@ -1807,8 +1874,17 @@ class Mixer<I, O> implements Mix<I, O> {
     if (!held.reaches) return null;
     if (voice.out?.rest && held.rested) return null;
 
-    const elapsed = voice.elapsedAt(now) - held.delay;
-    if (elapsed < 0) return null;
+    let elapsed = voice.elapsedAt(now) - held.delay;
+    // A held subject's clock stands still at the edge it holds: -1 before, 1 after, 0 playing.
+    let still = 0;
+    if (elapsed < 0) {
+      if (!voice.holdsBefore) return null;
+      elapsed = 0;
+      still = -1;
+    } else if (voice.holdsAfter && elapsed > voice.span) {
+      elapsed = voice.span;
+      still = 1;
+    }
 
     const period = voice.patch.period;
     const phase = phaseAt(elapsed, period, voice.passes);
@@ -1834,11 +1910,15 @@ class Mixer<I, O> implements Mix<I, O> {
     reading.horizon = this.horizonFor(voice, held.delay, now);
 
     const tick = this.opts.stepMs;
-    if (voice.patch.step && held.probed !== now) {
-      if (tick !== undefined && tick > 0 && !this.reducedNow) this.tick(voice, subject, held, tick);
-      else if (now !== held.stepped) {
+    if (voice.patch.step && held.probed !== now && still >= 0) {
+      // Held after, it steps once more to where its last pass ended, and no further.
+      const to = still === 1 ? voice.timeAt(held.delay + voice.span) : now;
+      if (tick !== undefined && tick > 0 && !this.reducedNow)
+        this.tick(voice, subject, held, tick, to);
+      else if (still === 0 ? now !== held.stepped : to > held.stepped) {
+        if (still === 1) setting.dt = this.capped(to - held.stepped);
         voice.patch.step(held.state as never, setting.dt, subject, setting as Setting<never>);
-        held.stepped = now;
+        held.stepped = to;
       }
     }
 
@@ -1895,13 +1975,19 @@ class Mixer<I, O> implements Mix<I, O> {
    * counted from when its delay ran out, and leaves the remainder for the next sample. Counting
    * rather than adding keeps the grid where it is however many samples it is reached through.
    */
-  private tick(voice: Voice<I, O>, subject: I, held: Subject<unknown>, tick: number): void {
+  private tick(
+    voice: Voice<I, O>,
+    subject: I,
+    held: Subject<unknown>,
+    tick: number,
+    to: number,
+  ): void {
     const now = this.now;
     const setting = voice.setting;
     const frameDt = setting.dt;
     let n = held.ticks;
     // The epsilon keeps an interval like 1000 / 120 from landing a hair short of a whole count.
-    const due = Math.floor((now - held.since) / tick + 1e-9);
+    const due = Math.floor((to - held.since) / tick + 1e-9);
     const cap = this.opts.maxDt;
     if (cap !== undefined) {
       const most = Math.floor(cap / tick);
@@ -2014,7 +2100,8 @@ class Mixer<I, O> implements Mix<I, O> {
   /**
    * The first of this subject's records, linked through every live voice that reaches it. A voice
    * is asked once, through the record it keeps for the subject anyway; a pending one is linked when
-   * it goes live, since `target` is asked on first sight, and sight only comes once a voice plays.
+   * it goes live, since `target` is asked on first sight, and sight only comes once a voice plays
+   * or holds before.
    */
   private chain(subject: I, now: number): Subject<unknown> {
     const was = this.chains.get(subject);
@@ -2022,7 +2109,8 @@ class Mixer<I, O> implements Mix<I, O> {
     let first: Subject<unknown> | null = null;
     let prev: Subject<unknown> | null = null;
     const link = (voice: Voice<I, O>) => {
-      if (voice.state !== 'live' && voice.state !== 'fading') return;
+      const state = voice.state;
+      if (state === 'done' || (state === 'pending' && !voice.holdsBefore)) return;
       const held = this.held(voice, subject, now);
       if (!held.reaches) return;
       held.voice = voice;

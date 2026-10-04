@@ -99,7 +99,8 @@ describe('pull reading the same array again', () => {
       const h = m.cue({ patch: ramp, stagger: (p) => p.id * 10 });
       let t = 0;
       const frame = () => {
-        m.sync((t += 16));
+        t += 16;
+        m.sync(t);
         agrees(m, list);
       };
       frame();

@@ -247,7 +247,7 @@ class Lane<I, O> {
     }
     const o = p * STRIDE;
     this.data[o + DELAY] = held.delay;
-    this.data[o + SINCE] = held.since;
+    this.data[o + SINCE] = held.shown;
     this.data[o + WEIGHT] = 0;
     this.data[o + PROBED] = 0;
     this.data[o + MSLOT] = -1;
@@ -653,8 +653,7 @@ export class Lanes<I, O> {
       if (!voices.has(v.id)) continue;
       const lane = this.byId.get(v.id) ?? new Lane<I, O>(v);
       v.laned = true;
-      if (lane.epoch === 0 && (v.state === 'live' || v.state === 'fading'))
-        lane.epoch = ++this.epochs;
+      if (lane.epoch === 0 && v.state !== 'pending') lane.epoch = ++this.epochs;
       kept.push(lane);
     }
     this.lanes = kept;
@@ -818,7 +817,7 @@ export class Lanes<I, O> {
   /** One voice's contribution to every subject it plays on. */
   private run(lane: Lane<I, O>): void {
     const voice = lane.voice;
-    if (voice.state !== 'live' && voice.state !== 'fading') return;
+    if (voice.state === 'pending' || voice.state === 'done') return;
     lane.placed = false;
     lane.read = false;
     lane.weighed = false;
@@ -856,11 +855,14 @@ export class Lanes<I, O> {
     if (this.per[slot * SLOT + LANE_FILL] === this.fills - 1)
       data[o + PROBED] = data[o + WEIGHT] as number;
     const delay = data[o + DELAY] as number;
-    const elapsed = elapsedNow - delay;
+    let elapsed = elapsedNow - delay;
     if (elapsed < 0) {
-      data[o + WEIGHT] = 0;
-      return;
-    }
+      if (!voice.holdsBefore) {
+        data[o + WEIGHT] = 0;
+        return;
+      }
+      elapsed = 0;
+    } else if (voice.holdsAfter && elapsed > voice.span) elapsed = voice.span;
     if (!lane.placed || !Object.is(elapsed, lane.placedAt)) {
       lane.placed = true;
       lane.placedAt = elapsed;

@@ -234,6 +234,29 @@ describe('lanes give the pose the general path gives', () => {
     );
   });
 
+  it('with holds before and after, staggered and faded in', () => {
+    agree(
+      (m) => {
+        const a = m.cue({
+          patch: pulse(),
+          loop: 1,
+          stagger: (p) => p.id * 90,
+          fade: { in: 200 },
+          hold: 'both',
+        });
+        const b = m.cue({ patch: wave(), loop: 2, stagger: (p) => p.id * 40, hold: 'after' });
+        const c = m.cue({ patch: wave(), loop: 1, start: 400, weight: 0.5, hold: 'before' });
+        return {
+          handles: [a, b, c],
+          at: (t) => {
+            if (t === 2600) a.fade({ over: 0 });
+          },
+        };
+      },
+      { times: [...times, 3000], probe: (t, p) => t !== 500 || p.id % 2 === 0 },
+    );
+  });
+
   it('with finite loops, fades out and a mute', () => {
     agree(
       (m) => {
