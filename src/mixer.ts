@@ -467,10 +467,55 @@ export class Voice<I, O> {
   keepOn: Subject<unknown> | null = null;
   /** What `setting.keep` holds when called before any record is. */
   ownKept: Map<object, unknown> | null = null;
-  resolve!: () => void;
-  readonly done: Promise<void>;
-  play!: (played: boolean) => void;
-  readonly played: Promise<boolean>;
+  /**
+   * `done` and `played`, made when first asked for, already settled if the voice is: most hosts
+   * never await either, and a mix may hold tens of thousands of voices.
+   */
+  private finished = false;
+  private playedAs: boolean | undefined = undefined;
+  private donePromise: Promise<void> | null = null;
+  private doneSettle: (() => void) | null = null;
+  private playedPromise: Promise<boolean> | null = null;
+  private playedSettle: ((played: boolean) => void) | null = null;
+  /** A projection's copy, which settles nothing. */
+  private quiet = false;
+
+  get done(): Promise<void> {
+    if (this.donePromise === null)
+      this.donePromise = this.finished
+        ? Promise.resolve()
+        : new Promise((r) => {
+            this.doneSettle = r;
+          });
+    return this.donePromise;
+  }
+
+  get played(): Promise<boolean> {
+    if (this.playedPromise === null) {
+      const as = this.playedAs;
+      this.playedPromise =
+        as !== undefined
+          ? Promise.resolve(as)
+          : new Promise((r) => {
+              this.playedSettle = r;
+            });
+    }
+    return this.playedPromise;
+  }
+
+  /** The voice has left: `done` resolves. */
+  resolve(): void {
+    if (this.quiet || this.finished) return;
+    this.finished = true;
+    this.doneSettle?.();
+  }
+
+  /** Its finite loop ended (true) or it left first (false), whichever comes first: `played` resolves. */
+  play(played: boolean): void {
+    if (this.quiet || this.playedAs !== undefined) return;
+    this.playedAs = played;
+    this.playedSettle?.(played);
+  }
 
   constructor(
     readonly id: number,
@@ -518,12 +563,6 @@ export class Voice<I, O> {
     this.rate = spec.rate ?? 1;
     this.weight = typeof spec.weight === 'number' ? spec.weight : 1;
     this.anchorNow = start;
-    this.done = new Promise((r) => {
-      this.resolve = r;
-    });
-    this.played = new Promise((r) => {
-      this.play = r;
-    });
     if (now >= start) this.state = 'live';
   }
 
@@ -597,8 +636,7 @@ export class Voice<I, O> {
       v.start = controls.start;
       v.outAt = controls.outAt;
     }
-    v.resolve = noSend;
-    v.play = noSend;
+    v.quiet = true;
     return v;
   }
 
@@ -1985,7 +2023,9 @@ class Mixer<I, O> implements Mix<I, O> {
       get state() {
         return voice.state;
       },
-      played: voice.played,
+      get played() {
+        return voice.played;
+      },
       get weight() {
         return voice.weight;
       },
@@ -2033,7 +2073,9 @@ class Mixer<I, O> implements Mix<I, O> {
         }
         return (voice.subjects.get(subject) as Subject<unknown> | undefined)?.weight ?? 0;
       },
-      done: voice.done,
+      get done() {
+        return voice.done;
+      },
     };
   }
 
