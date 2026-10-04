@@ -492,6 +492,28 @@ describe('tween', () => {
     expect(m.probe(a).x).toBe(-50);
   });
 
+  it('divides in milliseconds, so a point a whole fraction of the way lands exactly', () => {
+    for (const lanes of [false, true]) {
+      const t = tween<Part, Pose>('x', { from: 0, to: 100, ms: 200, ease: 'linear' });
+      const m = mix<Part, Pose>(K, { lanes });
+      m.cue({ patch: t });
+      const a = { id: 'a' };
+      m.sync(0);
+      m.probe(a);
+      m.sync(150);
+      expect(m.probe(a).x).toBe(75);
+      const c = tween<Part, Pose>('x', { from: 0, to: 255, ms: 400, ease: 'linear' });
+      const n = mix<Part, Pose>(K, { lanes });
+      n.cue({ patch: c, subjects: [a] });
+      n.sync(0);
+      n.probe(a);
+      n.sync(100);
+      expect(n.probe(a).x).toBe(63.75);
+      n.sync(400);
+      expect(n.probe(a).x).toBe(255);
+    }
+  });
+
   it('takes ms per subject, asked again each time a stretch starts', () => {
     let slow = 200;
     const t = tween<Part, Pose>('x', {

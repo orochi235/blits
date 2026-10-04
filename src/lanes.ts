@@ -353,7 +353,7 @@ const H_SEEKS = 5;
 const H_EPOCH = 6;
 const H_ID = 7;
 const H_AT = 8;
-const H_SECS = 9;
+const H_MS = 9;
 /** `x0`, `v0` and `to`, `axes` numbers each. */
 const H_X0 = 10;
 
@@ -1423,7 +1423,7 @@ export class Lanes<I, O> {
         c.eases[p],
         n,
         hot[h + H_AT] as number,
-        hot[h + H_SECS] as number,
+        hot[h + H_MS] as number,
         hot,
         h + H_X0,
         hot,

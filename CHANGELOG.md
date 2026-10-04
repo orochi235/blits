@@ -28,6 +28,8 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A `tween` divides elapsed by its length in milliseconds, so a point a whole fraction of the way
+  in lands exactly: 150 ms into a 200 ms linear tween from 0 to 100 reads 75, not 74.99999999999999.
 - `pull` over a list read again in the same order skips looking each subject up, and copies lane
   values a column at a time; a motion voice's lane fills in one loop. One tween voice over 10k
   subjects read by `pull` takes 0.59–0.66 of the time it did on teitou; a spring 0.68–0.74.

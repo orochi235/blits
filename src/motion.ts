@@ -30,11 +30,11 @@ export interface Motion<V extends Value = number> {
 
 /**
  * One closed-form stretch: released at `at` (voice ms) from `x0` moving at `v0`, toward `to`, over
- * `secs` for a tween (0 for any other shape).
+ * `ms` for a tween (0 for any other shape).
  */
 interface Segment {
   at: number;
-  secs: number;
+  ms: number;
   x0: number[];
   v0: number[];
   to: number[];
@@ -91,7 +91,7 @@ const SPAN = 1e-4;
  */
 let slope = false;
 /** The last tween sample's time, curve and length, and the share of the way it had left to go. */
-const memo = { dt: Number.NaN, ease: undefined as Curve | undefined, secs: 0, left: 0 };
+const memo = { u: Number.NaN, ease: undefined as Curve | undefined, left: 0 };
 
 /** `t` seconds after release, the terms every axis shares, into `timed`. */
 function prepare(law: Float64Array, t: number): void {
@@ -207,7 +207,7 @@ interface Shape<I> {
   /** A tween's easing, which its law cannot hold; undefined, but present, on every other shape. */
   ease: Curve | undefined;
   /** A tween's seconds for a stretch the subject starts now; undefined, but present, on the rest. */
-  secs: ((subject: I) => number) | undefined;
+  ms: ((subject: I) => number) | undefined;
 }
 
 /**
@@ -272,7 +272,7 @@ export class Motions<I> {
     this.slots.set(subject, s);
     this.grow(s + 1);
     this.runs[this.base(s) + 1] = this.shape.scalar(subject) ? SCALAR : 0;
-    this.write(s, { at: 0, secs: this.shape.secs?.(subject) ?? 0, x0: x, v0: v, to });
+    this.write(s, { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to });
     return s;
   }
 
@@ -346,8 +346,8 @@ export class Motions<I> {
         this.evaluateSegment(this.playing(s, t), t, xo, vo);
       else {
         const x = b + 3;
-        const secs = runs[b + 2] as number;
-        this.evaluate(at, secs, runs, x, runs, x + this.n, runs, x + 2 * this.n, t, xo, vo);
+        const ms = runs[b + 2] as number;
+        this.evaluate(at, ms, runs, x, runs, x + this.n, runs, x + 2 * this.n, t, xo, vo);
       }
       return;
     }
@@ -501,7 +501,7 @@ export class Motions<I> {
     const b = this.base(s);
     this.touched(s);
     this.runs[b] = seg.at;
-    this.runs[b + 2] = seg.secs;
+    this.runs[b + 2] = seg.ms;
     for (let i = 0; i < n; i++) {
       this.runs[b + 3 + i] = seg.x0[i] as number;
       this.runs[b + 3 + n + i] = seg.v0[i] as number;
@@ -515,7 +515,7 @@ export class Motions<I> {
     const x = this.base(s) + 3;
     return {
       at: this.runs[this.base(s)] as number,
-      secs: this.runs[this.base(s) + 2] as number,
+      ms: this.runs[this.base(s) + 2] as number,
       x0: Array.from(this.runs.subarray(x, x + n)),
       v0: Array.from(this.runs.subarray(x + n, x + 2 * n)),
       to: Array.from(this.runs.subarray(x + 2 * n, x + 3 * n)),
@@ -546,8 +546,8 @@ export class Motions<I> {
     const subject = this.numbers.subject(s);
     const known = subject === absent ? (undefined as I) : subject;
     const to = this.shape.aim(xs, vs, change.to ?? seg.to, known);
-    const secs = subject === absent ? seg.secs : (this.shape.secs?.(known) ?? 0);
-    return { at, secs, x0: xs, v0: vs, to };
+    const ms = subject === absent ? seg.ms : (this.shape.ms?.(known) ?? 0);
+    return { at, ms, x0: xs, v0: vs, to };
   }
 
   private commit(s: number, t: number): void {
@@ -613,12 +613,12 @@ export class Motions<I> {
   }
 
   private evaluateSegment(seg: Segment, t: number, xo: Float64Array, vo: Float64Array): void {
-    this.evaluate(seg.at, seg.secs, seg.x0, 0, seg.v0, 0, seg.to, 0, t, xo, vo);
+    this.evaluate(seg.at, seg.ms, seg.x0, 0, seg.v0, 0, seg.to, 0, t, xo, vo);
   }
 
   private evaluate(
     at: number,
-    secs: number,
+    ms: number,
     x0: ArrayLike<number>,
     x: number,
     v0: ArrayLike<number>,
@@ -629,7 +629,7 @@ export class Motions<I> {
     xo: Float64Array,
     vo: Float64Array,
   ): void {
-    closed(this.runs, this.shape.ease, this.n, at, secs, x0, x, v0, v, to, g, t, xo, vo);
+    closed(this.runs, this.shape.ease, this.n, at, ms, x0, x, v0, v, to, g, t, xo, vo);
   }
 }
 
@@ -637,14 +637,15 @@ export class Motions<I> {
  * A stretch `t` voice ms into it, released at `at` from `x0` moving at `v0` toward `to` (each read
  * from its offset), into `xo` and `vo`: the one copy of the closed forms, which `law` (a patch's
  * `[form, settle, k1, k2, k3]`, the head of a patch's buffer or a copy of it) picks between. A tween reads `ease` and
- * `secs`; every other form ignores them.
+ * `ms`, the stretch's length, dividing in milliseconds so a boundary lands exactly; every other
+ * form ignores them.
  */
 export function closed(
   law: Float64Array,
   ease: Curve | undefined,
   n: number,
   at: number,
-  secs: number,
+  ms: number,
   x0: ArrayLike<number>,
   x: number,
   v0: ArrayLike<number>,
@@ -655,11 +656,11 @@ export function closed(
   xo: Float64Array,
   vo: Float64Array,
 ): void {
-  const dt = Math.max(0, t - at) / 1000;
   if (law[0] === EASED) {
-    eased(ease as Curve, n, dt, secs, x0, x, to, g, xo, vo);
+    eased(ease as Curve, n, Math.max(0, t - at) / ms, ms, x0, x, to, g, xo, vo);
     return;
   }
+  const dt = Math.max(0, t - at) / 1000;
   const settle = law[1] as number;
   let still = settle > 0;
   prepare(law, dt);
@@ -681,8 +682,8 @@ export function closed(
 function eased(
   ease: Curve,
   n: number,
-  dt: number,
-  secs: number,
+  u: number,
+  ms: number,
   x0: ArrayLike<number>,
   x: number,
   to: ArrayLike<number>,
@@ -690,12 +691,10 @@ function eased(
   xo: Float64Array,
   vo: Float64Array,
 ): void {
-  const u = dt / secs;
-  // Subjects released together share `dt`, so a frame reads a bezier once, not once each.
-  if (dt !== memo.dt || ease !== memo.ease || secs !== memo.secs) {
-    memo.dt = dt;
+  // Subjects released together share `u`, so a frame reads a bezier once, not once each.
+  if (u !== memo.u || ease !== memo.ease) {
+    memo.u = u;
     memo.ease = ease;
-    memo.secs = secs;
     memo.left = u >= 1 ? 0 : 1 - ease(u);
   }
   const left = memo.left;
@@ -703,7 +702,7 @@ function eased(
   if (slope && u < 1) {
     const lo = Math.max(0, u - SPAN);
     const hi = Math.min(1, u + SPAN);
-    rate = (ease(hi) - ease(lo)) / (hi - lo) / secs;
+    rate = ((ease(hi) - ease(lo)) / (hi - lo)) * (1000 / ms);
   }
   for (let i = 0; i < n; i++) {
     const goal = to[g + i] as number;
@@ -807,7 +806,7 @@ export function spring<I, O, V extends Value = number>(
       law,
       scalar: (s) => typeof per(opts.to, s) === 'number',
       ease: undefined,
-      secs: undefined,
+      ms: undefined,
     },
   );
   return Object.assign(patch, {
@@ -848,7 +847,7 @@ export function glide<I, O, V extends Value = number>(
       law: [COAST, settle, tau, 0, 0],
       scalar: (s) => typeof per(opts.from, s) === 'number',
       ease: undefined,
-      secs: undefined,
+      ms: undefined,
     },
   );
   return Object.assign(patch, { push }) as unknown as Moving<I, O, V>;
@@ -884,12 +883,12 @@ export function tween<I, O, V extends Value = number>(
   to(subject: I, target: V, at?: number): void;
 } {
   const fixed = typeof opts.ms === 'number';
-  const secs = (subject: I): number => {
-    const ms = per(opts.ms, subject);
-    if (!(ms > 0)) throw new Error('blits: a tween takes a positive ms');
-    return ms / 1000;
+  const ms = (subject: I): number => {
+    const length = per(opts.ms, subject);
+    if (!(length > 0)) throw new Error('blits: a tween takes a positive ms');
+    return length;
   };
-  if (fixed) secs(undefined as I);
+  if (fixed) ms(undefined as I);
   const ease = opts.ease ?? 'ease';
   const target = (subject: I) => axes(per(opts.to, subject));
   const { patch, state } = moving<I, O, V>(
@@ -902,7 +901,7 @@ export function tween<I, O, V extends Value = number>(
       law: [EASED, 0, 0, 0, 0],
       scalar: (s) => typeof per(opts.to, s) === 'number',
       ease: curve(ease),
-      secs,
+      ms,
     },
   );
   return Object.assign(patch, {
