@@ -4,7 +4,7 @@ import type { Curve } from './easing.js';
 import type { Subject, Voice } from './mixer.js';
 import { closed, type Motions, motionOf, noTouch } from './motion.js';
 import { absent, Numbers } from './numbers.js';
-import { readKeys, type Scratch } from './patch.js';
+import { type Flat, flatOf, readFlat, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import type { Channel } from './types.js';
 
@@ -407,6 +407,8 @@ class Crowd<I, O> implements Positions<I, O> {
   eases: (Curve | undefined)[] = [];
   /** Each row's patch law, one array shared by every row whose law is the same. */
   laws: Float64Array[] = [];
+  /** For a keys row whose stops read as numbers, those numbers; null for any other row. */
+  flats: (Flat | null)[] = [];
   touches: ((s: number) => void)[] = [];
   readonly rowOf = new Map<number, number>();
   idle = false;
@@ -1015,6 +1017,7 @@ export class Lanes<I, O> {
     to.motions[q] = from.motions[p];
     to.eases[q] = from.eases[p];
     to.laws[q] = from.laws[p] as Float64Array;
+    to.flats[q] = from.flats[p] ?? null;
     to.touches[q] = from.touches[p] as (s: number) => void;
     const odd = from.odd?.get(p);
     if (odd !== undefined) {
@@ -1038,6 +1041,8 @@ export class Lanes<I, O> {
     c.records[p] = undefined;
     c.voices[p] = v;
     c.motions[p] = run;
+    const ch = c.chans[0] as Laned;
+    c.flats[p] = v.built === null ? null : flatOf(v.built, ch.scalar, ch.axes, ch.rest);
     if (run === undefined) {
       c.laws[p] = none;
       c.eases[p] = undefined;
@@ -1506,10 +1511,15 @@ export class Lanes<I, O> {
     const period = voice.patch.period;
     const phase = phaseAt(elapsed, period, voice.passes);
     if (voice.built !== null) {
-      if (w > 0) {
-        this.readKeyed(voice, phase, c.delta, c.scratch);
-        this.foldDelta(c.chans, slot, c.delta, w);
+      if (!(w > 0)) return;
+      const flat = c.flats[p] as Flat | null;
+      if (flat !== null) {
+        readFlat(flat, phase, period, c.xs);
+        this.foldRun(c.chans[0] as Laned, slot, c.xs, w);
+        return;
       }
+      this.readKeyed(voice, phase, c.delta, c.scratch);
+      this.foldDelta(c.chans, slot, c.delta, w);
       return;
     }
     const rec = c.records[p] as Subject<unknown>;
