@@ -797,6 +797,90 @@ function moving<I, O, V extends Value>(writes: keyof O, motion: MotionSpec, shap
   return { patch, state, push };
 }
 
+/**
+ * The shapes of the stock motions, each one object over the options it reads, where a closure per
+ * question cost a function and its context per patch: a mix may hold a patch per voice.
+ */
+class SpringShape<I, V extends Value> implements Shape<I> {
+  readonly ease = undefined;
+  readonly ms = undefined;
+  constructor(
+    readonly law: readonly number[],
+    private readonly opts: {
+      to: PerSubject<I, V>;
+      from?: PerSubject<I, V>;
+      velocity?: PerSubject<I, V>;
+    },
+  ) {}
+  from(s: I): number[] {
+    return axes(per(this.opts.from ?? this.opts.to, s));
+  }
+  velocity(s: I): number[] {
+    const v = this.opts.velocity;
+    return v === undefined ? axes(per(this.opts.to, s)).map(() => 0) : axes(per(v, s));
+  }
+  aim(_x: number[], _v: number[], was: number[] | null, s: I): number[] {
+    return was ?? axes(per(this.opts.to, s));
+  }
+  scalar(s: I): boolean {
+    return typeof per(this.opts.to, s) === 'number';
+  }
+}
+
+class GlideShape<I, V extends Value> implements Shape<I> {
+  readonly ease = undefined;
+  readonly ms = undefined;
+  constructor(
+    readonly law: readonly number[],
+    private readonly opts: { from: PerSubject<I, V>; velocity?: PerSubject<I, V> },
+    private readonly tau: number,
+  ) {}
+  from(s: I): number[] {
+    return axes(per(this.opts.from, s));
+  }
+  velocity(s: I): number[] {
+    const v = this.opts.velocity;
+    return v === undefined ? axes(per(this.opts.from, s)).map(() => 0) : axes(per(v, s));
+  }
+  aim(x: number[], v: number[]): number[] {
+    return x.map((xi, i) => xi + (v[i] as number) * this.tau);
+  }
+  scalar(s: I): boolean {
+    return typeof per(this.opts.from, s) === 'number';
+  }
+}
+
+const EASED_LAW: readonly number[] = [EASED, 0, 0, 0, 0];
+
+class TweenShape<I, V extends Value> implements Shape<I> {
+  readonly law = EASED_LAW;
+  constructor(
+    readonly ease: Curve,
+    private readonly opts: {
+      from: PerSubject<I, V>;
+      to: PerSubject<I, V>;
+      ms: PerSubject<I, number>;
+    },
+  ) {}
+  from(s: I): number[] {
+    return axes(per(this.opts.from, s));
+  }
+  velocity(s: I): number[] {
+    return axes(per(this.opts.to, s)).map(() => 0);
+  }
+  aim(_x: number[], _v: number[], was: number[] | null, s: I): number[] {
+    return was ?? axes(per(this.opts.to, s));
+  }
+  scalar(s: I): boolean {
+    return typeof per(this.opts.to, s) === 'number';
+  }
+  ms(s: I): number {
+    const length = per(this.opts.ms, s);
+    if (!(length > 0)) throw new Error('blits: a tween takes a positive ms');
+    return length;
+  }
+}
+
 interface Common<I, V extends Value> {
   /** Units per second each subject starts moving at. Default 0. */
   velocity?: PerSubject<I, V>;
@@ -848,20 +932,10 @@ export function spring<I, O, V extends Value = number>(
     const s = Math.sqrt(zeta * zeta - 1);
     law = [OVER, settle, -w0 * (zeta - s), -w0 * (zeta + s), 0];
   }
-  const target = (subject: I) => axes(per(opts.to, subject));
   const { patch, state, push } = moving<I, O, V>(
     writes,
     { kind: 'spring', stiffness: k, damping: c, mass: m, settle },
-    {
-      from: (s) => axes(per(opts.from ?? opts.to, s)),
-      velocity: (s) =>
-        opts.velocity === undefined ? target(s).map(() => 0) : axes(per(opts.velocity, s)),
-      aim: (_x, _v, was, s) => was ?? target(s),
-      law,
-      scalar: (s) => typeof per(opts.to, s) === 'number',
-      ease: undefined,
-      ms: undefined,
-    },
+    new SpringShape(law, opts),
   );
   return Object.assign(patch, {
     push,
@@ -891,18 +965,7 @@ export function glide<I, O, V extends Value = number>(
   const { patch, push } = moving<I, O, V>(
     writes,
     { kind: 'glide', ms, settle },
-    {
-      from: (s) => axes(per(opts.from, s)),
-      velocity: (s) =>
-        opts.velocity === undefined
-          ? axes(per(opts.from, s)).map(() => 0)
-          : axes(per(opts.velocity, s)),
-      aim: (x, v) => x.map((xi, i) => xi + (v[i] as number) * tau),
-      law: [COAST, settle, tau, 0, 0],
-      scalar: (s) => typeof per(opts.from, s) === 'number',
-      ease: undefined,
-      ms: undefined,
-    },
+    new GlideShape([COAST, settle, tau, 0, 0], opts, tau),
   );
   return Object.assign(patch, { push }) as unknown as Moving<I, O, V>;
 }
@@ -937,26 +1000,13 @@ export function tween<I, O, V extends Value = number>(
   to(subject: I, target: V, at?: number): void;
 } {
   const fixed = typeof opts.ms === 'number';
-  const ms = (subject: I): number => {
-    const length = per(opts.ms, subject);
-    if (!(length > 0)) throw new Error('blits: a tween takes a positive ms');
-    return length;
-  };
-  if (fixed) ms(undefined as I);
   const ease = opts.ease ?? 'ease';
-  const target = (subject: I) => axes(per(opts.to, subject));
+  const shape = new TweenShape(curve(ease), opts);
+  if (fixed) shape.ms(undefined as I);
   const { patch, state } = moving<I, O, V>(
     writes,
     { kind: 'tween', ms: fixed ? (opts.ms as number) : undefined, ease },
-    {
-      from: (s) => axes(per(opts.from, s)),
-      velocity: (s) => target(s).map(() => 0),
-      aim: (_x, _v, was, s) => was ?? target(s),
-      law: [EASED, 0, 0, 0, 0],
-      scalar: (s) => typeof per(opts.to, s) === 'number',
-      ease: curve(ease),
-      ms,
-    },
+    shape,
   );
   return Object.assign(patch, {
     to: (subject: I, goal: V, at?: number) => state.change(subject, { at, to: axes(goal) }),
