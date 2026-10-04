@@ -1,5 +1,6 @@
 import { type Curve, curve } from './easing.js';
 import { absent, Numbers } from './numbers.js';
+import { carve } from './slab.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
 import type { Easing, MotionSpec, Patch, Setting } from './types.js';
@@ -549,7 +550,7 @@ export class Motions<I> {
   private grow(size: number): void {
     if (size <= this.cap) return;
     const cap = Math.max(size, this.cap * 2);
-    const runs = new Float64Array(HEAD + cap * this.stride);
+    const runs = carve(HEAD + cap * this.stride);
     runs.set(this.runs);
     this.runs = runs;
     this.cap = cap;
