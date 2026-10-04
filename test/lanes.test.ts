@@ -2119,7 +2119,7 @@ describe('a voice a probe meets late, after every laned voice, folds onto the la
       return reads.flat();
     };
     const off = run(false);
-    run(true).forEach((pose, i) => expectSame(pose, off[i] as Pose, `read ${i}`));
+    for (const [i, pose] of run(true).entries()) expectSame(pose, off[i] as Pose, `read ${i}`);
   });
 
   it('reports the weight an owed voice has after atRest is the first to meet it', () => {

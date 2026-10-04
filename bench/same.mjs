@@ -276,7 +276,12 @@ function run(lib, seed, general = false) {
       if (chance(0.5)) {
         attempt('pull', () => m.pull(subjects, columns));
         note(`f${f} again`, [...columns.gain, ...columns.dark, ...columns.off, ...columns.pos]);
-      } else for (const s of subjects) note(`f${f} again ${s.i}`, attempt('probe', () => m.probe(s)));
+      } else
+        for (const s of subjects)
+          note(
+            `f${f} again ${s.i}`,
+            attempt('probe', () => m.probe(s)),
+          );
     }
     if (chance(0.2))
       note(
