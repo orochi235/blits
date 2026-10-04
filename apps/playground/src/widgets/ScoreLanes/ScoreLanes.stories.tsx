@@ -18,7 +18,8 @@ const CLIPS: Clip[] = [
     passes: 2,
     fadeIn: 300,
     fadeOut: 250,
-    spread: 1100,
+    spread: 900,
+    spreadAt: 200,
   },
   {
     ...base,

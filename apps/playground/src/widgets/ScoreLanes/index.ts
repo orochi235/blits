@@ -9,6 +9,7 @@ export interface Clip {
   fadeIn: number;
   fadeOut: number;
   spread: number; // ms from first to last subject's start; 0 = none
+  spreadAt?: number; // ms after start where the first subject starts; default 0
   holdBefore: boolean;
   holdAfter: boolean;
   group?: string;
@@ -40,4 +41,5 @@ export interface ScoreLanesProps {
   labelWidth?: number; // default 140
 }
 
+export { hatchOf } from './drag';
 export { ScoreLanes } from './ScoreLanes';

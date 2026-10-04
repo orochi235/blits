@@ -1,6 +1,6 @@
 import { glide, keys, mix, patch, spring, tween } from '@msb235/blits';
 import { compile, FRAME } from '@pg/blits/compile';
-import type { Composition, Voice } from '@pg/blits/composition';
+import type { Composition, PatchSource, Voice } from '@pg/blits/composition';
 import { KIT, type Pose } from '@pg/blits/kit';
 import { subjectsOf } from '@pg/blits/stage';
 import { describe, expect, it } from 'vitest';
@@ -365,6 +365,20 @@ describe('compile', () => {
     expect(built.mix.probe(subjects[0] as never).glow).toBe(1);
     expect(built.handles.has('bad')).toBe(false);
     expect([...built.patches.keys()]).toEqual(['ok']);
+  });
+
+  it('a voice reusing an earlier voice’s name is a field error and is not cued', () => {
+    const p: PatchSource = { kind: 'keys', period: 100, stops: [{ at: 0, delta: { glow: 1 } }] };
+    const built = compile(
+      comp([voice({ id: 'a', name: 'x', patch: p }), voice({ id: 'b', name: 'x', patch: p })]),
+      subjects,
+      { solos: true },
+    );
+    expect(built.errors).toEqual([
+      { voice: 'b', field: 'name', error: 'another voice is named "x"', line: null },
+    ]);
+    expect([...built.handles.keys()]).toEqual(['a']);
+    expect([...built.solos.keys()]).toEqual(['a']);
   });
 
   it('an anchor to a voice that does not exist leaves the voice pending without throwing', () => {

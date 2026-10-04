@@ -1,8 +1,7 @@
 import type { Composition, Voice } from '@pg/blits/composition';
 import { applyEdit, clipsOf } from '@pg/blits/score';
 import { subjectsOf } from '@pg/blits/stage';
-import type { Clip, ClipEdit } from '@pg/widgets/ScoreLanes';
-import { hatchOf } from '@pg/widgets/ScoreLanes/drag';
+import { type Clip, type ClipEdit, hatchOf } from '@pg/widgets/ScoreLanes';
 import { describe, expect, it } from 'vitest';
 
 const v = (x: Partial<Voice> & Pick<Voice, 'id'>): Voice => ({
@@ -54,6 +53,19 @@ describe('clipsOf', () => {
     expect(clips[1]).toMatchObject({ passes: Number.POSITIVE_INFINITY, locked: true });
     expect(clips[2]).toMatchObject({ pass: 0, label: 'c · spring', spread: 0 });
     expect(clips[3]).toMatchObject({ passes: 1, fadeIn: 0, fadeOut: 0, locked: false });
+  });
+  it('a spread starts at the smallest stagger', () => {
+    const d = { ...c, voices: [v({ id: 'x', stagger: { code: '(s) => 100 + s.col * 50' } })] };
+    expect(clipsOf(d, subjects).clips[0]).toMatchObject({ spreadAt: 100, spread: 150 });
+    expect(clipsOf(c, subjects).clips[0]).not.toHaveProperty('spreadAt');
+  });
+  it('an anchor naming its own voice links to another voice of that name, or none', () => {
+    const self = v({ id: 'x', name: 'n', anchor: { start: { after: 'n' } } });
+    expect(clipsOf({ ...c, voices: [self] }, subjects).links).toEqual([]);
+    const twin = v({ id: 'y', name: 'n' });
+    expect(clipsOf({ ...c, voices: [self, twin] }, subjects).links).toEqual([
+      { from: { clip: 'x', edge: 'start' }, to: { clip: 'y', edge: 'end' } },
+    ]);
   });
   it('a stagger that fails to compile spreads nothing', () => {
     const d = { ...c, voices: [v({ id: 'x', stagger: { code: '(s) =>' } })] };
@@ -121,6 +133,16 @@ describe('applyEdit', () => {
     expect(at(applyEdit(c, { clip: 'a', kind: 'group', with: null }), 'a')).not.toHaveProperty(
       'locus',
     );
+  });
+  it('a group left with one voice is dissolved', () => {
+    const pair = { ...c, voices: [...c.voices, v({ id: 'e', locus: 'g' })] };
+    const left = applyEdit(pair, { clip: 'e', kind: 'group', with: null });
+    expect(left.voices.filter((x) => x.locus !== undefined)).toEqual([]);
+    const moved = applyEdit(pair, { clip: 'e', kind: 'group', with: 'b' });
+    expect(at(moved, 'a')).not.toHaveProperty('locus');
+    expect([at(moved, 'e')?.locus, at(moved, 'b')?.locus]).toEqual(['group 1', 'group 1']);
+    const trio = { ...pair, voices: [...pair.voices, v({ id: 'f', locus: 'g' })] };
+    expect(at(applyEdit(trio, { clip: 'e', kind: 'group', with: null }), 'a')?.locus).toBe('g');
   });
   it('an edit naming no voice changes nothing', () => {
     expect(applyEdit(c, { clip: 'nobody', kind: 'move', start: 5 })).toBe(c);

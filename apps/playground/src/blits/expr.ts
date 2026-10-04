@@ -1,5 +1,5 @@
-import { gate, lag, peak, type Signal, slew } from '@msb235/blits';
-import type { Expr } from './composition';
+import { gate, lag, level, peak, type Signal, slew } from '@msb235/blits';
+import type { Expr, Level } from './composition';
 import type { Subject } from './stage';
 
 export interface Faults {
@@ -9,6 +9,14 @@ export interface Faults {
 
 export interface Scope {
   level(name: string): Signal<Subject>;
+}
+
+export type LevelSignal = Signal<Subject> & { set(v: number): void };
+
+/** A scope reading the composition's levels; a name it lacks reads 0. */
+export function scopeOf(list: readonly Level[]): Scope & { levels: Map<string, LevelSignal> } {
+  const levels = new Map(list.map((l) => [l.name, level<Subject>(l.value)]));
+  return { levels, level: (name) => levels.get(name) ?? level<Subject>(0) };
 }
 
 export type Compiled<F> = { fn: F; faults: Faults } | { error: string; line: number | null };

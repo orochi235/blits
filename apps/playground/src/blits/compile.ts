@@ -3,7 +3,6 @@ import {
   glide,
   type Handle,
   keys,
-  level,
   type Mix,
   mix,
   type Patch,
@@ -13,7 +12,7 @@ import {
   tween,
 } from '@msb235/blits';
 import { type Composition, type Expr, isExpr, type PatchSource, type Voice } from './composition';
-import { compileExpr, type Faults, type Scope } from './expr';
+import { compileExpr, type Faults, type Scope, scopeOf } from './expr';
 import { type ChannelName, KIT, type Pose } from './kit';
 import type { Subject } from './stage';
 
@@ -213,8 +212,8 @@ export function compile(
   subjects: readonly Subject[],
   opts: { solos?: boolean } = {},
 ): Built {
-  const levels = new Map(c.levels.map((l) => [l.name, level<Subject>(l.value)]));
-  const scope: Scope = { level: (name) => levels.get(name) ?? level<Subject>(0) };
+  const scope = scopeOf(c.levels);
+  const { levels } = scope;
   const errors: FieldError[] = [];
   const faults = new Map<string, Faults>();
   const patches = new Map<string, Patch<Subject, Pose, unknown>>();
@@ -223,7 +222,19 @@ export function compile(
   const make = (only: string | null) => {
     const m = mix<Subject, Pose>(KIT, { stepMs: FRAME });
     const handles = new Map<string, Handle<Subject>>();
+    const named = new Set<string>();
     for (const v of c.voices) {
+      if (named.has(v.name)) {
+        if (only === null)
+          errors.push({
+            voice: v.id,
+            field: 'name',
+            error: `another voice is named "${v.name}"`,
+            line: null,
+          });
+        continue;
+      }
+      named.add(v.name);
       const list: Faults[] = [];
       const r = specOf(v, scope, list);
       if ('errors' in r) {

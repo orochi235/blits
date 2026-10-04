@@ -370,7 +370,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
             {c.spread > 0 && (
               <rect
                 className={s.spread}
-                x={scale.x(c.start)}
+                x={scale.x(c.start + (c.spreadAt ?? 0))}
                 y={top + h + 2}
                 width={scale.x(c.start + c.spread) - scale.x(c.start)}
                 height={3}
