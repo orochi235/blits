@@ -59,6 +59,22 @@ const tweenFn = () =>
     { writes: ['position'] },
   );
 
+// A voice per subject doing a tween's job, as keys and as a `fn`, each with its own endpoints.
+const keysTo = (s) =>
+  keys(LONG, [
+    { at: 0, delta: { position: [0, 0, 0] } },
+    { at: 1, delta: { position: [s.seed, 1, 0] }, ease: smooth },
+  ]);
+const fnTo = (s) =>
+  patch(
+    LONG,
+    (ph) => {
+      const u = smooth(ph);
+      return { position: [s.seed * u, u, 0] };
+    },
+    { writes: ['position'] },
+  );
+
 // weasel's animator-on-blits shape: string ids, each node's endpoints held in a map by id.
 const easeOut = (u) => 1 - (1 - u) ** 3;
 const ends = new Map();
@@ -107,6 +123,8 @@ const rows = [
   ['tweens', 10000, 1],
   ['tweens', 100000, 1],
   ['tweenfn', 10000, 1],
+  ['keyses', 10000, 1],
+  ['fns', 10000, 1],
   ['weasel', 10000, 1],
   ['weaselfn', 10000, 1],
   // Lanes fill every subject they have met: this one probes all 10k once, then 5% each frame.
@@ -124,6 +142,8 @@ const rows = [
   ['spring^', 10000, 1],
   ['tween^', 10000, 1],
   ['tweenfn^', 10000, 1],
+  ['keyses^', 10000, 1],
+  ['fns^', 10000, 1],
   ['weasel^', 10000, 1],
   // A projection made and probed every frame, as a continuous scrub would: 500 ms ahead, and
   // 300 ms back on a mix keeping 5 s of history.
@@ -149,12 +169,21 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   if (weasel)
     for (let j = 0; j < n; j++)
       ends.set(`n${j}`, { from: [j, 300 - j, 0], to: [j + 500, 300 - j, 0] });
-  const own = kind === 'own' || kind === 'named' || kind === 'springs' || kind === 'tweens';
+  const own =
+    kind === 'own' ||
+    kind === 'named' ||
+    kind === 'springs' ||
+    kind === 'tweens' ||
+    kind === 'keyses' ||
+    kind === 'fns';
   if (kind === 'own')
     for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
   if (kind === 'named') for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine] });
   if (kind === 'springs') for (const mine of subjects) m.cue({ patch: settle(), subjects: [mine] });
   if (kind === 'tweens') for (const mine of subjects) m.cue({ patch: glideTo(), subjects: [mine] });
+  if (kind === 'keyses')
+    for (const mine of subjects) m.cue({ patch: keysTo(mine), subjects: [mine] });
+  if (kind === 'fns') for (const mine of subjects) m.cue({ patch: fnTo(mine), subjects: [mine] });
   for (let v = 0; !own && v < voices; v++) {
     const p =
       kind === 'keys'

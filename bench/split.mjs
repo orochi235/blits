@@ -22,7 +22,8 @@ let t = 0;
 const sums = { sync: 0, fill: 0, rest: 0 };
 for (let f = 0; f < 400; f++) {
   const a = performance.now();
-  m.sync((t += 16));
+  t += 16;
+  m.sync(t);
   const b = performance.now();
   m.probe(subjects[0], out);
   const c = performance.now();

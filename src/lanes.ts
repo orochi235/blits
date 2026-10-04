@@ -334,15 +334,22 @@ class Lane<I, O> implements Positions<I, O> {
   }
 }
 
-/** Whether a laned voice belongs in a crowd: a motion voice naming a single subject. */
+/** Whether a laned voice belongs in a crowd: one naming a single subject and writing one channel. */
 function crowdable<I, O>(v: Voice<I, O>): boolean {
-  return (
-    v.named !== null &&
-    v.named.size === 1 &&
-    v.slots.length === 1 &&
-    motionOf(v.patch) !== undefined
-  );
+  return v.named !== null && v.named.size === 1 && v.slots.length === 1;
 }
+
+/**
+ * A subject's voice time once its voice's holds apply: held at 0 before it starts and at the end of
+ * its passes after, and NaN where it shows nothing.
+ */
+function held<I, O>(voice: Voice<I, O>, elapsed: number): number {
+  if (elapsed < 0) return voice.holdsBefore ? 0 : Number.NaN;
+  return voice.holdsAfter && elapsed > voice.span ? voice.span : elapsed;
+}
+
+/** The law of a row that has none, a keys or fn voice's. */
+const none = new Float64Array(0);
 
 /** Per row of a crowd's `hot`: what the fill reads of the row's voice and its current stretch. */
 const H_FLAGS = 0;
@@ -373,13 +380,17 @@ const F_PLACED = 16;
 const F_FOLDS = 32;
 /** Something on the voice changed since `hot` copied it. */
 const F_VOICE = 64;
+/** The row's voice is a motion voice; otherwise its patch is keys or a stateless fn. */
+const F_MOTION = 128;
+/** The voice holds before or after, so its clock is read from the voice. */
+const F_HOLDS = 256;
 
 /**
- * Every motion voice on one channel that reaches a single subject, a row each, in voice order: the
- * per-subject numbers a lane keeps, and a copy of what a fill reads of the voice and its patch, so
- * a fill over 100k of them reads a few flat arrays instead of 100k voices, lanes and patch buffers.
- * Each copy is written when its source changes: the voice's by `voiceChanged`, the stretch through
- * the patch's `touched`.
+ * Every laned voice on one channel that reaches a single subject, a row each, in voice order: the
+ * per-subject numbers a lane keeps, and a copy of what a fill reads of the voice and, for a motion
+ * voice, its patch, so a fill over 100k of them reads a few flat arrays instead of 100k voices,
+ * lanes and patch buffers. Each copy is written when its source changes: the voice's by
+ * `voiceChanged`, the stretch through the patch's `touched`.
  */
 class Crowd<I, O> implements Positions<I, O> {
   /** The subject number at each row. */
@@ -392,7 +403,7 @@ class Crowd<I, O> implements Positions<I, O> {
   deltas: (Record<string, unknown> | null)[] = [];
   records: (Subject<unknown> | undefined)[] = [];
   voices: Voice<I, O>[] = [];
-  motions: Motions<I>[] = [];
+  motions: (Motions<I> | undefined)[] = [];
   eases: (Curve | undefined)[] = [];
   /** Each row's patch law, one array shared by every row whose law is the same. */
   laws: Float64Array[] = [];
@@ -404,6 +415,9 @@ class Crowd<I, O> implements Positions<I, O> {
   cursor = 0;
   readonly xs: Float64Array;
   readonly vs: Float64Array;
+  /** What a keys row reads into, folded before the next row reads. */
+  readonly delta: Record<string, unknown> = {};
+  readonly scratch: Scratch = [];
 
   constructor(
     readonly chans: Laned[],
@@ -839,7 +853,7 @@ export class Lanes<I, O> {
     const o = p * STRIDE;
     c.list[p] = slot;
     c.data[o + DELAY] = held.delay;
-    c.data[o + SINCE] = held.since;
+    c.data[o + SINCE] = held.shown;
     c.data[o + WEIGHT] = 0;
     c.data[o + PROBED] = 0;
     c.data[o + MSLOT] = -1;
@@ -998,7 +1012,7 @@ export class Lanes<I, O> {
     to.deltas[q] = from.deltas[p] ?? null;
     to.records[q] = from.records[p];
     to.voices[q] = from.voices[p] as Voice<I, O>;
-    to.motions[q] = from.motions[p] as Motions<I>;
+    to.motions[q] = from.motions[p];
     to.eases[q] = from.eases[p];
     to.laws[q] = from.laws[p] as Float64Array;
     to.touches[q] = from.touches[p] as (s: number) => void;
@@ -1010,12 +1024,11 @@ export class Lanes<I, O> {
   }
 
   private newRow(c: Crowd<I, O>, p: number, v: Voice<I, O>): void {
-    const run = motionOf<I>(v.patch) as Motions<I>;
+    const run = motionOf<I>(v.patch);
     const h = p * c.stride;
     c.hot.fill(0, h, h + c.stride);
-    c.hot[h + H_FLAGS] = F_VOICE | F_STALE;
+    c.hot[h + H_FLAGS] = F_VOICE | F_STALE | (run === undefined ? 0 : F_MOTION);
     c.hot[h + H_ID] = v.id;
-    c.laws[p] = this.lawOf(run);
     c.list[p] = -1;
     const o = p * STRIDE;
     c.data.fill(0, o, o + STRIDE);
@@ -1025,6 +1038,13 @@ export class Lanes<I, O> {
     c.records[p] = undefined;
     c.voices[p] = v;
     c.motions[p] = run;
+    if (run === undefined) {
+      c.laws[p] = none;
+      c.eases[p] = undefined;
+      c.touches[p] = noTouch;
+      return;
+    }
+    c.laws[p] = this.lawOf(run);
     c.eases[p] = run.ease;
     const id = v.id;
     const touch = () => this.touchedCrowd(id);
@@ -1068,10 +1088,10 @@ export class Lanes<I, O> {
       if (c.idle) this.reach(slot, -1);
       const w = this.reportedRow(c, p, slot);
       if (rec !== undefined && w !== undefined) rec.weight = w;
-      if (rec !== undefined) this.settle(c, p, slot, rec);
+      if (rec !== undefined && c.motions[p] !== undefined) this.settle(c, p, slot, rec);
     }
-    const run = c.motions[p] as Motions<I>;
-    if (run.touched === c.touches[p]) run.touched = noTouch;
+    const run = c.motions[p];
+    if (run !== undefined && run.touched === c.touches[p]) run.touched = noTouch;
     (c.voices[p] as Voice<I, O>).laned = false;
   }
 
@@ -1263,14 +1283,11 @@ export class Lanes<I, O> {
     if (this.per[slot * SLOT + LANE_FILL] === this.fills - 1)
       data[o + PROBED] = data[o + WEIGHT] as number;
     const delay = data[o + DELAY] as number;
-    let elapsed = elapsedNow - delay;
-    if (elapsed < 0) {
-      if (!voice.holdsBefore) {
-        data[o + WEIGHT] = 0;
-        return;
-      }
-      elapsed = 0;
-    } else if (voice.holdsAfter && elapsed > voice.span) elapsed = voice.span;
+    const elapsed = held(voice, elapsedNow - delay);
+    if (!(elapsed >= 0)) {
+      data[o + WEIGHT] = 0;
+      return;
+    }
     if (!lane.placed || !Object.is(elapsed, lane.placedAt)) {
       lane.placed = true;
       lane.placedAt = elapsed;
@@ -1291,16 +1308,7 @@ export class Lanes<I, O> {
     data[o + WEIGHT] = w;
     if (voice.built !== null) {
       if (!lane.read || !Object.is(elapsed, lane.readAt)) {
-        readKeys(
-          voice.built,
-          lane.phase,
-          lane.delta,
-          undefined,
-          voice.lerps as never,
-          undefined,
-          voice.intos,
-          lane.scratch,
-        );
+        this.readKeyed(voice, lane.phase, lane.delta, lane.scratch);
         lane.read = true;
         lane.readAt = elapsed;
         this.gather(lane, lane.delta);
@@ -1308,38 +1316,70 @@ export class Lanes<I, O> {
       if (w > 0) this.fold(lane, slot, w);
       return;
     }
-    const held = lane.records[p] as Subject<unknown>;
+    const rec = lane.records[p] as Subject<unknown>;
     // The general path makes a voice's first call for a subject, where it first sees it play.
-    if (Number.isNaN(held.probed)) {
+    if (Number.isNaN(rec.probed)) {
       this.late.push(slot);
       return;
     }
     // A motion patch needs the subject only to number it, so the lookup waits until then.
     if (lane.motion !== undefined) {
-      this.move(lane, lane.motion, p, slot, held, elapsed, delay, w);
+      this.move(lane, lane.motion, p, slot, rec, elapsed, delay, w);
       return;
     }
+    this.call(voice, lane.chans, rec, slot, elapsed, lane.phase, lane.pass, delay, w);
+  }
+
+  /** Reads a keys voice's stops at `phase` into `delta`, interpolating into the reader's `scratch`. */
+  private readKeyed(
+    voice: Voice<I, O>,
+    phase: number,
+    delta: Record<string, unknown>,
+    scratch: Scratch,
+  ): void {
+    readKeys(
+      voice.built as NonNullable<Voice<I, O>['built']>,
+      phase,
+      delta,
+      undefined,
+      voice.lerps as never,
+      undefined,
+      voice.intos,
+      scratch,
+    );
+  }
+
+  /** Calls a stateless fn voice's patch for a subject its general path has met, and folds the delta. */
+  private call(
+    voice: Voice<I, O>,
+    chans: readonly Laned[],
+    rec: Subject<unknown>,
+    slot: number,
+    elapsed: number,
+    phase: number,
+    pass: number,
+    delay: number,
+    w: number,
+  ): void {
+    const host = this.host;
     const subject = this.subjectAt(slot);
     if (subject === absent) return;
     // Called already this frame, by the general path or a fill before a refill: reuse, as a probe does.
-    if (held.probed === this.now && held.delta !== null && held.seeks === voice.seeks) {
-      if (w > 0) this.foldDelta(lane, slot, held.delta, w);
+    if (rec.probed === this.now && rec.delta !== null && rec.seeks === voice.seeks) {
+      if (w > 0) this.foldDelta(chans, slot, rec.delta, w);
       return;
     }
     const kept = reading.kept;
-    host.ready(voice, subject, held, elapsed, lane.pass, w);
+    host.ready(voice, subject, rec, elapsed, pass, w);
     host.horizon(voice, delay);
-    const delta = voice.patch.at(lane.phase, subject, voice.setting as never) as Record<
-      string,
-      unknown
-    >;
+    const delta = voice.patch.at(phase, subject, voice.setting as never) as Record<string, unknown>;
     // What `influence` leaves on the record, so a probe on the general path this frame reuses it.
-    held.delta = delta;
-    held.probed = this.now;
-    held.seeks = voice.seeks;
-    if (this.keeps) host.after(voice, held);
+    rec.delta = delta;
+    rec.probed = this.now;
+    rec.seeks = voice.seeks;
+    if (this.keeps) host.after(voice, rec);
     if (reading.kept !== kept && !voice.keeping) host.kept(voice);
-    if (w > 0) this.foldDelta(lane, slot, delta, w);
+    if (w > 0) this.foldDelta(chans, slot, delta, w);
   }
 
   /** Runs every crowd's rows whose voices come before voice `id`, from where each crowd reached. */
@@ -1385,8 +1425,9 @@ export class Lanes<I, O> {
         ? (hot[h + H_ELAPSED] as number) +
           (now - (hot[h + H_NOW] as number)) * (hot[h + H_RATE] as number)
         : voice.elapsedAt(now);
-      const elapsed = elapsedNow - delay;
-      if (elapsed < 0) {
+      let elapsed = elapsedNow - delay;
+      if ((f & F_HOLDS) !== 0) elapsed = held(voice, elapsed);
+      if (!(elapsed >= 0)) {
         data[o + WEIGHT] = 0;
         continue;
       }
@@ -1400,6 +1441,10 @@ export class Lanes<I, O> {
         }
       }
       data[o + WEIGHT] = w;
+      if ((f & F_MOTION) === 0) {
+        this.row(c, p, voice, slot, elapsed, delay, w);
+        continue;
+      }
       if (data[o + MET] === 0) {
         if (Number.isNaN((c.records[p] as Subject<unknown>).probed)) {
           this.late.push(slot);
@@ -1448,12 +1493,50 @@ export class Lanes<I, O> {
     c.cursor = p;
   }
 
+  /** A keys or fn row's contribution, as `one` makes a lane position's. */
+  private row(
+    c: Crowd<I, O>,
+    p: number,
+    voice: Voice<I, O>,
+    slot: number,
+    elapsed: number,
+    delay: number,
+    w: number,
+  ): void {
+    const period = voice.patch.period;
+    const phase = phaseAt(elapsed, period, voice.passes);
+    if (voice.built !== null) {
+      if (w > 0) {
+        this.readKeyed(voice, phase, c.delta, c.scratch);
+        this.foldDelta(c.chans, slot, c.delta, w);
+      }
+      return;
+    }
+    const rec = c.records[p] as Subject<unknown>;
+    if (Number.isNaN(rec.probed)) {
+      this.late.push(slot);
+      return;
+    }
+    this.call(
+      voice,
+      c.chans,
+      rec,
+      slot,
+      elapsed,
+      phase,
+      passAt(elapsed, period, voice.passes),
+      delay,
+      w,
+    );
+  }
+
   /** Copies what a fill reads of a crowd row's voice into `hot`; returns the row's flags. */
   private copyVoice(c: Crowd<I, O>, p: number): number {
     const v = c.voices[p] as Voice<I, O>;
     const h = p * c.stride;
-    let f = (c.hot[h + H_FLAGS] as number) & ~(F_VOICE | F_PLAYING | F_FAST);
+    let f = (c.hot[h + H_FLAGS] as number) & ~(F_VOICE | F_PLAYING | F_FAST | F_HOLDS);
     if (v.state === 'live' || v.state === 'held' || v.state === 'fading') f |= F_PLAYING;
+    if (v.holdsBefore || v.holdsAfter) f |= F_HOLDS;
     if (
       v.ramp === null &&
       !((v.fade.in ?? 0) > 0) &&
@@ -1676,12 +1759,11 @@ export class Lanes<I, O> {
    * site reading every name in turn slows every read.
    */
   private foldDelta(
-    lane: Lane<I, O>,
+    chans: readonly Laned[],
     slot: number,
     delta: Record<string, unknown>,
     w: number,
   ): void {
-    const chans = lane.chans;
     const n = chans.length;
     let ch = chans[0] as Laned;
     if (n > 0) this.foldInto(ch, slot, delta[ch.name], w);
