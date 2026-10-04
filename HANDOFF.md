@@ -49,12 +49,12 @@ systems now run on it**, on klieg's `main`.
   `animation.finished`, which map to `hold: 'after'` and `handle.played`. The schema page's Holding
   paragraph has the design. Mike chose the name and the values `before`/`after`/`both`, and that a
   held voice's end is when it is faded, not when its passes run out.
-- **`mix.inert` is on `main`, unreleased** (2026-10-03, merge `3228fa7`), for wod's frame loop to
+- **`mix.inert` shipped in 0.4.0** (built 2026-10-03, merge `3228fa7`), for wod's frame loop to
   sleep under a landed wheel while `live` stays true. Mike asked for it and named it through the wod
-  session; the CHANGELOG entry and the schema page's `Mix` block say what counts as inert. **wod has
-  not been told the commit** — its session ended before the message could go; wod's migration spec
-  (`~/src/wod/docs/superpowers/specs/2026-10-03-blits-migration-design.md`, "Prerequisite: blits
-  0.4.0 `hold`") is waiting on it. Both `hold` and `inert` reach wod only once 0.4.0 is published.
+  session; the CHANGELOG entry and the schema page's `Mix` block say what counts as inert. As of
+  2026-10-03 **wod had not been told** — its session ended before the message could go; wod's
+  migration spec (`~/src/wod/docs/superpowers/specs/2026-10-03-blits-migration-design.md`,
+  "Prerequisite: blits 0.4.0 `hold`") is waiting on `hold` and `inert`, both now on npm in 0.4.0.
 - **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
   the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
   is green on all 13 pages. Local only; `.github/workflows/site.yml` deploys to Pages by hand.

@@ -178,9 +178,10 @@ edit stays inside what `load` accepts; every preset compiles and plays clean. Th
 the rest in a real browser, failing on a console error, a page error or a blank stage; `--shots <dir>` keeps its screenshots, which otherwise go to a
 temp directory removed on exit.
 
-The root `npm run check` leaves the playground out, as it does the site: the release workflow
-deletes `workspaces` before `npm publish` runs `check`, so a workspace step there would fail the
-release. `npm run playground:check` is the playground's own; its tests also run in the root suite.
+The root `npm run check` lints the playground and runs its tests, but leaves out its typecheck and
+smoke run, as it does the site's: the release workflow deletes `workspaces` before `npm publish`
+runs `check`, so a workspace step there would fail the release. `npm run playground:check` runs
+the typecheck, the tests and the smoke run.
 
 ## Not in this version
 
