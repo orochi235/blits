@@ -2096,6 +2096,21 @@ describe('a voice a probe meets late, after every laned voice, folds onto the la
     run(true).forEach((pose, i) => expectSame(pose, off[i] as Pose, `read ${i}`));
   });
 
+  it('reports the weight an owed voice has after atRest is the first to meet it', () => {
+    const run = (lanes: boolean) => {
+      const m = mix<Part, Pose>(K, { lanes });
+      const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
+      for (const p of parts) m.cue({ patch: glideTo(p), subjects: [p] });
+      m.sync(0);
+      for (const p of parts) m.probe(p);
+      const h = m.cue({ patch: flick(1), fade: { in: 200 }, weight: 0.8 });
+      m.sync(16);
+      const rest = parts.map((p) => m.atRest(p));
+      return [...rest, ...parts.map((p) => h.weightOf(p))];
+    };
+    expect(run(true)).toEqual(run(false));
+  });
+
   it('owes the voice rather than sending the subject to the general path', () => {
     const m = mix<Part, Pose>(K);
     const parts = Array.from({ length: 4 }, (_, id) => ({ id }));

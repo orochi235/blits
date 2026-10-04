@@ -2765,8 +2765,7 @@ class Mixer<I, O> implements Mix<I, O> {
         if (voice === null || (laned && voice.laned && !this.owedBy(owed, voice))) continue;
         if (voice.id === except || voice.state === 'done') continue;
         const delta = this.read(voice, subject, now, dry, held);
-        if (owed >= 0 && voice.laned && !dry)
-          (lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
+        if (owed >= 0 && voice.laned) (lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
         if (delta === null || this.w <= 0) continue;
         this.apply(pose, voice, held, delta, this.w);
       }
@@ -2807,8 +2806,7 @@ class Mixer<I, O> implements Mix<I, O> {
         if (voice === null || (laned && voice.laned && !this.owedBy(owed, voice))) continue;
         if (voice.id === except || voice.state === 'done') continue;
         const delta = this.read(voice, subject, now, dry, held);
-        if (owed >= 0 && voice.laned && !dry)
-          (this.lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
+        if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
         if (delta === null) continue;
         const locus = voice.spec.locus;
         let group = -1;
