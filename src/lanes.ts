@@ -1119,6 +1119,22 @@ export class Lanes<I, O> {
     for (const lane of kept) this.byId.set(lane.voice.id, lane);
     // With no lane left no fill comes to let go of the subjects the last probes held.
     if (kept.length === 0 && crowded === 0) this.subjects = [];
+    const members = present.filter((v) => voices.has(v.id) && crowdable(v));
+    // The same channels laned and the same voices crowded, as when a voice over every subject comes
+    // or goes among a crowd of thousands: what a rebuild would make is what is there.
+    if (this.sameChannels(channels) && this.sameCrowds(members)) {
+      for (const lane of kept) {
+        lane.chans = lane.voice.slots.map((s) => this.bySlot[s] as Laned);
+        lane.values = lane.chans.map(() => undefined);
+      }
+      for (const c of this.crowds)
+        for (let p = 0; p < c.size; p++) {
+          const v = c.voices[p] as Voice<I, O>;
+          if (c.rowOf.get(v.id) === p && v.state === 'done') this.bury(c, p);
+        }
+      for (const c of this.crowds) if (c.dead > 64 && c.dead * 2 > c.size) this.compact(c);
+      return;
+    }
     this.laned = [];
     this.bySlot = host.channels.map(() => undefined);
     channels.forEach((on, slot) => {
@@ -1145,7 +1161,33 @@ export class Lanes<I, O> {
       lane.chans = lane.voice.slots.map((s) => this.bySlot[s] as Laned);
       lane.values = lane.chans.map(() => undefined);
     }
-    this.regroup(present.filter((v) => voices.has(v.id) && crowdable(v)));
+    this.regroup(members);
+  }
+
+  /** Whether qualifying laned exactly the channels laned now. */
+  private sameChannels(channels: readonly boolean[]): boolean {
+    const by = this.bySlot;
+    if (by.length !== channels.length) return false;
+    for (let i = 0; i < by.length; i++) if ((by[i] !== undefined) !== channels[i]) return false;
+    return true;
+  }
+
+  /**
+   * Whether every voice qualifying for a crowd has its row, and every row's voice either qualified
+   * or is done, so the crowds stand as a rebuild would leave them, departed rows aside.
+   */
+  private sameCrowds(members: readonly Voice<I, O>[]): boolean {
+    let live = 0;
+    for (const v of members) {
+      if (!this.crowdOf.has(v.id)) return false;
+      live++;
+    }
+    let rows = 0;
+    for (const [id, c] of this.crowdOf) {
+      const p = c.rowOf.get(id) as number;
+      if ((c.voices[p] as Voice<I, O>).state !== 'done') rows++;
+    }
+    return rows === live;
   }
 
   /**
