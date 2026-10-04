@@ -199,10 +199,12 @@ export function segment(track: Track, phase: number, base: unknown): number {
   const b = pts[lo - o] as Point;
   const aAt = lo - 1 < o ? 0 : (pts[lo - 1 - o] as Point).at;
   const u = (phase - aAt) / (b.at - aAt);
+  // Before any of `seg` is written, so an easing that reads stops itself cannot overwrite it.
+  const eased = b.ease ? b.ease(u) : u;
   seg.a = lo - 1 < o ? base : (pts[lo - 1 - o] as Point).value;
   seg.b = b.value;
   seg.u = u;
-  seg.eased = b.ease ? b.ease(u) : u;
+  seg.eased = eased;
   seg.first = lo - 1 < o;
   seg.len = b.at - aAt;
   seg.ease = b.ease;
