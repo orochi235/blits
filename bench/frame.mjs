@@ -154,6 +154,9 @@ const rows = [
   ['tweenfn^', 10000, 1],
   ['keyses^', 10000, 1],
   ['churn^', 10000, 1],
+  // weasel's churn: the stopped voice's subject leaves for good and a new one arrives, read by
+  // `pull` over a fresh copy of the list kept dense by swapping the last subject into the gap.
+  ['turnover^', 10000, 1],
   // weasel's animator on blits: a tween or spring voice per animation, read by `pull`.
   ['tweens^', 10000, 1],
   ['springs^', 10000, 1],
@@ -184,7 +187,10 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     lanes: !off,
   });
   const weasel = kind.startsWith('weasel');
-  const subjects = Array.from({ length: n }, (_, j) => (weasel ? `n${j}` : { seed: j * 0.37 }));
+  const turnover = kind === 'turnover';
+  const subjects = Array.from({ length: n }, (_, j) =>
+    weasel ? `n${j}` : turnover ? j : { seed: j * 0.37 },
+  );
   if (weasel)
     for (let j = 0; j < n; j++)
       ends.set(`n${j}`, { from: [j, 300 - j, 0], to: [j + 500, 300 - j, 0] });
@@ -195,15 +201,20 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     kind === 'tweens' ||
     kind === 'keyses' ||
     kind === 'churn' ||
+    kind === 'turnover' ||
     kind === 'swap' ||
     kind === 'fns';
   if (kind === 'own')
     for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
   if (kind === 'named') for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine] });
   if (kind === 'springs') for (const mine of subjects) m.cue({ patch: settle(), subjects: [mine] });
+  const glideOf = (mine) =>
+    turnover
+      ? tween('position', { from: [mine, 0, 0], to: [mine, 1, 0], ms: LONG, ease: smooth })
+      : glideTo();
   const handles =
-    kind === 'tweens' || kind === 'churn' || kind === 'swap'
-      ? subjects.map((mine) => m.cue({ patch: glideTo(), subjects: [mine] }))
+    kind === 'tweens' || kind === 'churn' || kind === 'turnover' || kind === 'swap'
+      ? subjects.map((mine) => m.cue({ patch: glideOf(mine), subjects: [mine] }))
       : [];
   // Replaces the voice of one subject a frame, walking through them all.
   let turn = 0;
@@ -212,6 +223,26 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     if (shared !== null) {
       shared.fade({ over: 0 });
       shared = m.cue({ patch: flicker(turn++ % 3) });
+      return;
+    }
+    if (turnover) {
+      const k = (turn++ * 7919) % n;
+      handles[k].fade({ over: 0 });
+      m.drop(probed[k]);
+      const fresh = n + turn;
+      probed = probed.slice();
+      probed[k] = probed[n - 1];
+      handles[k] = handles[n - 1];
+      probed[n - 1] = fresh;
+      // As weasel's codec does: cue a tween resting where it starts, then retarget it at its start.
+      const glide = tween('position', {
+        from: [fresh, 0, 0],
+        to: [fresh, 0, 0],
+        ms: LONG,
+        ease: smooth,
+      });
+      handles[n - 1] = m.cue({ patch: glide, subjects: [fresh] });
+      glide.to(fresh, [fresh, 1, 0], 0);
       return;
     }
     if (kind !== 'churn') return;
@@ -250,7 +281,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       weight: kind === 'signal' ? by : undefined,
     });
   }
-  const probed = kind === 'sparse' ? subjects.filter((_, j) => j % 20 === 0) : subjects;
+  let probed = kind === 'sparse' ? subjects.filter((_, j) => j % 20 === 0) : subjects;
   const scratch = {};
   const columns = {
     gain: new Float64Array(n),
