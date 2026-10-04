@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useState } from 'react';
+import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import s from './CodePane.module.css';
 
 export interface CodePaneProps {
@@ -12,6 +12,8 @@ export interface CodePaneProps {
 
 export function CodePane({ value, onCommit, error, errorLine, label, rows = 6 }: CodePaneProps) {
   const [draft, setDraft] = useState(value);
+  const errorId = `${useId()}-error`;
+  const gutter = useRef<HTMLOListElement>(null);
   useEffect(() => setDraft(value), [value]);
   const commit = () => {
     if (draft !== value) onCommit(draft);
@@ -31,7 +33,7 @@ export function CodePane({ value, onCommit, error, errorLine, label, rows = 6 }:
     <div className={s.pane}>
       <span className={s.label}>{label}</span>
       <div className={error ? s.bodyBad : s.body}>
-        <ol className={s.gutter} aria-hidden="true">
+        <ol ref={gutter} className={s.gutter} aria-hidden="true">
           {Array.from({ length: lines }, (_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: the gutter is positional
             <li key={i} className={i + 1 === errorLine ? s.marked : undefined}>
@@ -47,13 +49,17 @@ export function CodePane({ value, onCommit, error, errorLine, label, rows = 6 }:
           spellCheck={false}
           aria-label={label}
           aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
+          onScroll={(e) => {
+            if (gutter.current) gutter.current.scrollTop = e.currentTarget.scrollTop;
+          }}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={key}
         />
       </div>
       {error && (
-        <span className={s.error} role="alert">
+        <span id={errorId} className={s.error} role="alert">
           {errorLine ? `line ${errorLine}: ` : ''}
           {error}
         </span>
