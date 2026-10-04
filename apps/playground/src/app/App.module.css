@@ -1,0 +1,62 @@
+.grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 360px;
+  grid-template-rows: minmax(320px, 1fr) auto;
+  grid-template-areas:
+    "stage inspector side"
+    "score score side";
+  gap: var(--wzl-space-sm);
+  padding: var(--wzl-space-sm);
+}
+
+.stage {
+  grid-area: stage;
+  min-height: 0;
+}
+
+.inspector {
+  grid-area: inspector;
+  min-height: 0;
+  overflow: auto;
+}
+
+.side {
+  grid-area: side;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: var(--wzl-space-md);
+}
+
+.score {
+  grid-area: score;
+  display: grid;
+  gap: var(--wzl-space-xs);
+  min-width: 0;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-md);
+  flex-wrap: wrap;
+}
+
+.live,
+.level {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-xs);
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg);
+}
+
+.badge {
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-accent);
+}

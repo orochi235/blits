@@ -1,4 +1,5 @@
 import { type Built, FRAME } from './compile';
+import type { Level } from './composition';
 import type { Subject } from './stage';
 
 export interface Columns {
@@ -19,7 +20,8 @@ export class Player {
   private frame = -1;
   private readonly scratch: Columns;
   // Slider moves outlive a rebuild: a replay plays them at their current value.
-  private readonly moved = new Map<string, number>();
+  private readonly slid = new Map<string, number>();
+  private authored: Map<string, number> | null = null;
 
   static columnsFor(n: number): Columns {
     return {
@@ -48,10 +50,20 @@ export class Player {
     for (let f = this.frame + 1; f <= target; f++) this.step(f);
   }
 
-  rebuild(): void {
+  /**
+   * Rebuilds at the same frame. Given the composition's levels, a slider move is dropped when its
+   * level is gone or the composition's own value for it changed, so an edit takes effect.
+   */
+  rebuild(levels?: readonly Level[]): void {
+    if (levels) this.author(levels);
     const target = Math.max(0, this.frame);
     this.built = this.fresh();
     for (let f = 0; f <= target; f++) this.step(f);
+  }
+
+  /** Slider values in force, by level name; levels absent here play the composition's value. */
+  get moved(): ReadonlyMap<string, number> {
+    return this.slid;
   }
 
   solo(id: string, out: Columns): void {
@@ -59,13 +71,23 @@ export class Player {
   }
 
   setLevel(name: string, value: number): void {
-    this.moved.set(name, value);
+    this.slid.set(name, value);
     this.built.levels.get(name)?.set(value);
+  }
+
+  private author(levels: readonly Level[]): void {
+    const next = new Map(levels.map((l) => [l.name, l.value]));
+    for (const name of this.slid.keys()) {
+      const was = this.authored?.get(name);
+      if (!next.has(name) || (this.authored !== null && was !== next.get(name)))
+        this.slid.delete(name);
+    }
+    this.authored = next;
   }
 
   private fresh(): Built {
     const built = this.build();
-    for (const [name, value] of this.moved) built.levels.get(name)?.set(value);
+    for (const [name, value] of this.slid) built.levels.get(name)?.set(value);
     this.frame = -1;
     return built;
   }

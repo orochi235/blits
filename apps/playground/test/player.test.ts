@@ -84,6 +84,33 @@ describe('Player', () => {
     expect(bits(still.columns)).not.toEqual(want);
   });
 
+  it('an edit to a level drops its slider move; an unchanged level keeps it', () => {
+    let comp = c;
+    const p = new Player(() => compile(comp, subjects, { solos: true }), subjects);
+    const at = (k: number) => {
+      const q = player();
+      q.setLevel('k', k);
+      q.seek(40 * FRAME);
+      return bits(q.columns);
+    };
+    p.rebuild(comp.levels);
+    p.setLevel('k', 0.5);
+    p.seek(40 * FRAME);
+    comp = { ...comp, title: 'renamed' };
+    p.rebuild(comp.levels);
+    expect(bits(p.columns)).toEqual(at(0.5));
+    comp = { ...comp, levels: [{ name: 'k', value: 0.25, min: 0, max: 1 }] };
+    p.rebuild(comp.levels);
+    expect(p.moved.has('k')).toBe(false);
+    expect(bits(p.columns)).toEqual(at(0.25));
+    p.setLevel('k', 0.5);
+    comp = { ...comp, levels: [] };
+    p.rebuild(comp.levels);
+    comp = { ...comp, levels: [{ name: 'k', value: 0.25, min: 0, max: 1 }] };
+    p.rebuild(comp.levels);
+    expect(bits(p.columns)).toEqual(at(0.25));
+  });
+
   it('rebuild keeps the playhead and the pose', () => {
     const p = player();
     p.seek(500);

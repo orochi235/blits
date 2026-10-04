@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 describe('stage draw math', () => {
   it('draws color 0 as the base color and pads others to six hex digits', () => {
     expect(cssColor(0)).toBe('#7aa2ff');
+    expect(cssColor(Number.NaN)).toBe('#7aa2ff');
     expect(cssColor(0x00ff08)).toBe('#00ff08');
     expect(cssColor(0, 'rgb(1, 2, 3)')).toBe('rgb(1, 2, 3)');
   });

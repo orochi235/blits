@@ -2,7 +2,7 @@ import type { StageSpec } from '../composition';
 import type { Columns } from '../player';
 import type { Subject } from '../stage';
 
-/** Colors the stage takes from the theme; `base` stands in for color 0, the kit's black rest. */
+/** Colors the stage takes from the theme; `base` stands in for an unwritten color (NaN) and for 0. */
 export interface Palette {
   base: string;
   pick: string;
@@ -11,7 +11,7 @@ export interface Palette {
 export const DEFAULT_PALETTE: Palette = { base: '#7aa2ff', pick: '#ff6b8b' };
 
 export const cssColor = (c: number, base = DEFAULT_PALETTE.base) =>
-  c === 0 ? base : `#${(c & 0xffffff).toString(16).padStart(6, '0')}`;
+  c === 0 || !Number.isFinite(c) ? base : `#${(c & 0xffffff).toString(16).padStart(6, '0')}`;
 
 type Shape = (ctx: CanvasRenderingContext2D, r: number, i: number) => void;
 
