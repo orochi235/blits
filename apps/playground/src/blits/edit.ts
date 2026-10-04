@@ -59,10 +59,24 @@ export function addLevel(levels: readonly Level[]): Level[] {
 export const removeLevel = (levels: readonly Level[], i: number): Level[] =>
   levels.filter((_, k) => k !== i);
 
+export const nameFree = (levels: readonly Level[], i: number, name: string) =>
+  name !== '' && !levels.some((l, k) => k !== i && l.name === name);
+
+const holdIn = (v: number, min: number, max: number) => Math.min(Math.max(v, min), max);
+
+/** Whether every level has a distinct non-blank name, min below max, and a value within them. */
+export const levelsOk = (levels: readonly Level[]) =>
+  levels.every(
+    (l, i) =>
+      nameFree(levels, i, l.name.trim()) &&
+      l.min < l.max &&
+      holdIn(l.value, l.min, l.max) === l.value,
+  );
+
 /** Level `i` renamed; a blank name or one another level has leaves the levels as they were. */
 export function renameLevel(levels: readonly Level[], i: number, name: string): Level[] {
   const next = name.trim();
-  if (!next || levels.some((l, k) => k !== i && l.name === next)) return [...levels];
+  if (!nameFree(levels, i, next)) return [...levels];
   return levels.map((l, k) => (k === i ? { ...l, name: next } : l));
 }
 
@@ -80,6 +94,6 @@ export function tuneLevel(
   const min = change.min ?? old.min;
   const max = change.max ?? old.max;
   if (min >= max) return [...levels];
-  const value = Math.min(Math.max(change.value ?? old.value, min), max);
+  const value = holdIn(change.value ?? old.value, min, max);
   return levels.map((l, k) => (k === i ? { ...l, min, max, value } : l));
 }

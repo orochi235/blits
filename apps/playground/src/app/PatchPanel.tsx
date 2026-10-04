@@ -1,3 +1,4 @@
+import { hexOf } from '@pg/blits/color';
 import type { FieldError } from '@pg/blits/compile';
 import type { Expr, PatchSource, Voice } from '@pg/blits/composition';
 import { stopsOf, tracksOf } from '@pg/blits/keys';
@@ -63,8 +64,6 @@ function parsed(text: string): number | number[] | Expr | undefined {
   } catch {}
   return { code: t };
 }
-
-const hexOf = (n: number) => `#${(n >>> 0).toString(16).padStart(6, '0').slice(-6)}`;
 
 /** The selected key's value as inputs shaped to its channel, and the curve into it. */
 function KeyEditor({ key: k, track, commit, setEasing }: KeyEditorCtx) {

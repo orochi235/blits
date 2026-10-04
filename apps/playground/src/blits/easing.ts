@@ -5,7 +5,7 @@ import { easingBezier } from '@weasel-js/ui';
 type Bezier = readonly [number, number, number, number];
 type Named = Exclude<Easing, object | ((u: number) => number)>;
 
-const CSS: Record<Exclude<Named, 'linear'>, Bezier> = {
+export const CSS: Record<Exclude<Named, 'linear'>, Bezier> = {
   ease: [0.25, 0.1, 0.25, 1],
   'ease-in': [0.42, 0, 1, 1],
   'ease-out': [0, 0, 0.58, 1],

@@ -1,6 +1,8 @@
 export interface Series {
   id: string;
   hue: number;
+  /** Overrides the color a hue gives. */
+  color?: string;
   values: readonly number[];
   thick?: boolean;
 }

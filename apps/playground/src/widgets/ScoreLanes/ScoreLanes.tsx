@@ -1,6 +1,7 @@
 import numeric from '@weasel-js/theme/numeric.module.css';
 import { MenuButton, type MenuButtonItem } from '@weasel-js/ui';
 import { type KeyboardEvent, type PointerEvent, useId, useMemo, useRef, useState } from 'react';
+import { hueColor } from '../hue';
 import { dragEdit, fadeRoom, groupDrop, type Handle, hatchOf } from './drag';
 import { clipEnd, clipPolygon, groupBrackets, MAX_PASSES, passLines, scaleOf } from './geometry';
 import type { Clip, ClipEdit, Edge, Hatch, ScoreLanesProps } from './index';
@@ -33,7 +34,6 @@ function nudge(e: KeyboardEvent): number | null {
 }
 
 const activates = (e: KeyboardEvent) => e.key === 'Enter' || e.key === ' ';
-const hueFill = (hue: number) => `hsl(${hue} 70% 62%)`;
 const fadeMax = (room: number, length: number) => Math.round(Math.min(room, length));
 
 const HATCHES: [Hatch, string][] = [
@@ -292,7 +292,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
           <path
             key={b.group}
             className={s.bracket}
-            stroke={hueFill(b.hue)}
+            stroke={hueColor(b.hue)}
             d={`M${x - 4} ${y0} H${x} V${y1} H${x - 4}`}
           />
         );
@@ -304,7 +304,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
         const open = !Number.isFinite(clipEnd(c));
         const end = Math.min(clipEnd(c), duration);
         const length = open ? duration : end - c.start;
-        const fill = hueFill(c.hue);
+        const fill = hueColor(c.hue);
         const classes = [s.clip, c.id === selected && s.selected, c.locked && s.locked];
         return (
           <g key={c.id} className={classes.filter(Boolean).join(' ')}>

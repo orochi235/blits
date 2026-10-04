@@ -19,7 +19,7 @@ const frameOf = (t: number) => Math.max(0, Math.floor(t / FRAME + 1e-9));
 export const WINDOW = 3000;
 
 /** The picked subject at one frame: the mix's pose, each voice's solo pose, each voice's `weightOf`. */
-export interface Sample {
+interface Sample {
   t: number;
   full: Pose;
   solos: ReadonlyMap<string, Pose>;

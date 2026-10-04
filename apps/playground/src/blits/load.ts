@@ -1,5 +1,6 @@
 import {
   type Composition,
+  type Level,
   MAX_COLS,
   MAX_LENGTH,
   MAX_LEVELS,
@@ -7,6 +8,8 @@ import {
   MAX_TEXT,
   MAX_VOICES,
 } from './composition';
+import { CSS } from './easing';
+import { levelsOk } from './edit';
 import { CHANNELS } from './kit';
 
 type Rec = Record<string, unknown>;
@@ -25,7 +28,8 @@ const oneOf =
     xs.includes(v);
 
 const easing = (v: unknown) =>
-  oneOf('linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out')(v) ||
+  v === 'linear' ||
+  (str(v) && Object.hasOwn(CSS, v)) ||
   (obj(v) && Array.isArray(v.bezier) && v.bezier.length === 4 && v.bezier.every(num)) ||
   (obj(v) && count(v.steps) && opt(v.jump, oneOf('start', 'end')));
 
@@ -97,6 +101,7 @@ export function load(raw: unknown): Composition | null {
   if (!stage(raw.stage)) return null;
   const { levels, voices } = raw;
   if (!Array.isArray(levels) || levels.length > MAX_LEVELS || !levels.every(level)) return null;
+  if (!levelsOk(levels as Level[])) return null;
   if (!Array.isArray(voices) || voices.length > MAX_VOICES || !voices.every(voice)) return null;
   if (new Set(voices.map((v) => (v as Rec).id)).size !== voices.length) return null;
   return raw as unknown as Composition;

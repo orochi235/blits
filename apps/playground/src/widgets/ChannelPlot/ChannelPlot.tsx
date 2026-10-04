@@ -1,4 +1,5 @@
 import { modelToPlot, Plot2D } from '@weasel-js/ui';
+import { hueColor } from '../hue';
 import s from './ChannelPlot.module.css';
 import { insetRange, pathOf, rangeOf, type Series } from './path';
 
@@ -47,7 +48,7 @@ export function ChannelPlot({
             key={ser.id}
             className={ser.thick ? s.thick : s.thin}
             d={pathOf(times, ser.values, x, y)}
-            stroke={`hsl(${ser.hue} 70% 62%)`}
+            stroke={ser.color ?? hueColor(ser.hue)}
           />
         ))}
         <line className={s.playhead} x1={px} x2={px} y1={0} y2={height} />

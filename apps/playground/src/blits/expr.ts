@@ -12,7 +12,7 @@ export interface Scope {
   level(name: string): Signal<Subject>;
 }
 
-export type LevelSignal = Signal<Subject> & { set(v: number): void };
+type LevelSignal = Signal<Subject> & { set(v: number): void };
 
 /** A scope reading the composition's levels; a name it lacks reads 0. */
 export function scopeOf(list: readonly Level[]): Scope & { levels: Map<string, LevelSignal> } {

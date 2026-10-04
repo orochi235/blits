@@ -32,7 +32,13 @@ export function Inspector({ player, comp }: InspectorProps) {
           hue: v.hue,
           values: h.map((x) => plotted(x.solos.get(v.id), ch)),
         }));
-        series.push({ id: 'mix', hue: 0, values: h.map((x) => plotted(x.full, ch)), thick: true });
+        series.push({
+          id: 'mix',
+          hue: 0,
+          color: 'var(--wzl-fg)',
+          values: h.map((x) => plotted(x.full, ch)),
+          thick: true,
+        });
         return <ChannelPlot key={ch} label={ch} times={times} series={series} playhead={t} />;
       })}
       <ChannelPlot

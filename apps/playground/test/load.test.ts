@@ -132,3 +132,32 @@ describe('the share hash', () => {
     expect(fromHash(`#${toHash({ ...copy(), version: 2 } as never)}`)).toBeNull();
   });
 });
+
+describe('load levels', () => {
+  const withLevels = (levels: unknown[]) => ({ ...copy(), levels });
+  const lv = (over: Record<string, unknown> = {}) => ({
+    name: 'a',
+    value: 0.5,
+    min: 0,
+    max: 1,
+    ...over,
+  });
+
+  it('accepts a level whose value sits at a bound', () => {
+    expect(load(withLevels([lv({ value: 1 })]))).not.toBeNull();
+  });
+
+  it.each([
+    ['min at max', lv({ min: 1, max: 1, value: 1 })],
+    ['min above max', lv({ min: 2, max: 1, value: 1 })],
+    ['value below min', lv({ value: -1 })],
+    ['value above max', lv({ value: 2 })],
+    ['blank name', lv({ name: '  ' })],
+  ])('refuses %s', (_, level) => {
+    expect(load(withLevels([level]))).toBeNull();
+  });
+
+  it('refuses duplicate names', () => {
+    expect(load(withLevels([lv(), lv()]))).toBeNull();
+  });
+});
