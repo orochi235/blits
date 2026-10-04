@@ -11,7 +11,7 @@ const FIELDS: ConfigField[] = [
   { key: 'name', label: 'name', type: 'text', default: '' },
   { key: 'start', label: 'start', type: 'number', default: 0, min: 0, step: 10 },
   { key: 'rate', label: 'rate', type: 'slider', default: 1, min: 0, max: 4, step: 0.05 },
-  { key: 'loopForGood', label: 'loop for good', type: 'checkbox', default: true },
+  { key: 'repeat', label: 'repeat', type: 'checkbox', default: true },
   { key: 'passes', label: 'passes', type: 'number', default: 1, min: 1, step: 1 },
   { key: 'fadeIn', label: 'fade in', type: 'number', default: 0, min: 0, step: 10 },
   { key: 'fadeOut', label: 'fade out', type: 'number', default: 0, min: 0, step: 10 },
@@ -31,7 +31,7 @@ const SPEC_KEY: Record<string, string> = {
   name: 'name',
   start: 'start',
   rate: 'rate',
-  loopForGood: 'loop',
+  repeat: 'loop',
   passes: 'loop',
   fadeIn: 'fade',
   fadeOut: 'fade',
@@ -45,7 +45,7 @@ for (const [key, leaf] of Object.entries(resolved.group.children))
 const SCHEMA = {
   ...resolved,
   sections: [
-    { at: '', label: 'timing', paths: ['start', 'rate', 'loopForGood', 'passes'] },
+    { at: '', label: 'timing', paths: ['start', 'rate', 'repeat', 'passes'] },
     { at: '', label: 'fade', paths: ['fadeIn', 'fadeOut'] },
     { at: '', label: 'blending', paths: ['hold', 'locus', 'fromCurrent'] },
   ],
@@ -63,7 +63,7 @@ function written(v: Voice, path: string, value: unknown): Voice {
     case 'start':
     case 'rate':
       return Number.isFinite(value) ? { ...v, [path]: value as number } : v;
-    case 'loopForGood':
+    case 'repeat':
       return { ...v, loop: value ? true : typeof v.loop === 'number' ? v.loop : 1 };
     case 'passes':
       return Number.isFinite(value) ? { ...v, loop: Math.max(1, Math.round(value as number)) } : v;
@@ -96,7 +96,7 @@ export function VoicePanel({ voice: v, errors, faults, onChange, onDelete }: Voi
     name: v.name,
     start: v.start,
     rate: v.rate,
-    loopForGood: v.loop === true,
+    repeat: v.loop === true,
     passes: typeof v.loop === 'number' ? v.loop : 1,
     fadeIn: v.fade.in ?? 0,
     fadeOut: v.fade.out ?? 0,
