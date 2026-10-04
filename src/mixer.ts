@@ -12,7 +12,6 @@ import type {
   Columns,
   Doubt,
   Engine,
-  FadeOptions,
   FadeSpec,
   Handle,
   Kit,
