@@ -155,7 +155,8 @@ const rows = [
   ['back', 1000, 3],
 ];
 
-const frames = 300;
+// FRAMES=20000 for a profile long enough to sample a fast row.
+const frames = Number(process.env.FRAMES ?? 300);
 // Row names after the script, `node bench/frame.mjs keys keys^`, run only those rows.
 const only = process.argv.slice(2);
 const chosen = only.length > 0 ? rows.filter(([form]) => only.includes(form)) : rows;
