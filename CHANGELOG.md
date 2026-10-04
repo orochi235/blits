@@ -42,12 +42,13 @@ version and everything else the patch. Each release lists its changes as **Break
   ahead and 0.81 back.
 - A spring works out its time terms once for the subjects released together: one spring voice over
   10k subjects read by `pull` takes about 0.89 of the time.
-- A voice and its records make their maps and arrays on first use. A voice of one subject holds
-  2.8 KB after its first frame as a `fn` (3.4 KB before) and 6.0 KB as a tween (7.3 KB), and cueing
-  10k tween voices of one subject each and reading their first frame takes about 52 ms on teitou,
-  from 66. `setting.keep` is now one function per voice that writes to the record being called
-  for, so one kept and called after its call, which `Setting` never allowed, no longer reaches the
-  record it came with.
+- A voice and its records make their maps, arrays and promises on first use, and a subject's
+  number needs no token object. A voice of one subject holds 2.5 KB after its first frame as a
+  `fn` (3.4 KB before) and 5.2 KB as a tween (7.3 KB). On teitou cueing 10k tween voices of one
+  subject each takes about 18 ms, from 26, and reading their first frame about 31, from 39.
+  `setting.keep` is now one function per voice that writes to the record being called for, so one
+  kept and called after its call, which `Setting` never allowed, no longer reaches the record it
+  came with.
 
 ## 0.4.0
 

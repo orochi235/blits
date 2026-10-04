@@ -264,13 +264,17 @@ systems now run on it**, on klieg's `main`.
        10k subjects take about 3.3 ms a frame, three plain ones 2.2 (teitou). The difference is
        the signal per voice and subject and the locus's gather. A locus with a motion member,
        or a signal that keeps state, stays on the general path.
-     - **Starting 10k one-subject tween voices costs about 52 ms** (cue and first frame), where
-       a `fn` voice costs about 24: a motion patch per voice holds about 3 KB of state for one
-       subject, mostly its numbering (a WeakRef, a FinalizationRegistry entry) and closures.
-     - **Two rows read slower than 0.4.0**: `own` at 1k about 1.06× and `named` at 100 about
-       1.05–1.11× (+0.01 and +0.002 ms). `named`'s is a fill's bookkeeping at 100 crowd rows;
-       `own`'s came with the memory commit and is untraced. Two unused fields on `Voice` did
-       not reproduce it.
+     - **Starting 10k one-subject tween voices costs about 49 ms** (cue and first frame, from 65
+       at 0.4.0), where a `fn` voice costs about 22: a motion patch per voice still holds about
+       2.7 KB for one subject, mostly the closures `moving` makes per patch (`from`, `velocity`,
+       `aim`, `scalar`, `ms`, `at`, `read`, `to`) and its numbering (a WeakRef and a
+       FinalizationRegistry). `bench/heapby.mjs` lists it by constructor.
+     - **Nothing reads clearly slower than 0.4.0 at steady state.** In 300-frame runs `sparse`
+       is bimodal (0.078 or 0.11 ms) and `named` at 100 and `own` at 1k read 5–9% slower; at
+       `FRAMES=5000` `sparse` and `fn` at 100 are equal, `named` at 100 is faster, `own` is
+       too noisy to call (0.163–0.170 against 0.148–0.198), and `keys-` (lanes off) reads
+       2–3% slower (teitou, 2026-10-04). Confirm any short-run regression at `FRAMES=5000`
+       before chasing it: 330 frames can end before the JIT settles.
      - **A crowd's `keys` rows** cost about 105 ns a subject by `pull` against 24 for one keys
        voice over the same subjects, mostly `readKeys` per row. Reading the segment straight
        into the channel would skip an array per row but copy `read`'s segment search.
