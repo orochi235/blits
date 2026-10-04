@@ -15,11 +15,15 @@ export class Numbers<I> {
   /** By number: the subject, a weak reference to it, or undefined for a number not in use. */
   private readonly refs: (I | WeakRef<object> | typeof unit | undefined)[] = [];
   /**
-   * Made at the first object numbered: a motion patch per voice holds one, mostly for one subject.
+   * Made at the second object numbered, when the first is registered too: a motion patch per voice
+   * holds a `Numbers`, mostly for one subject, whose collection frees nothing worth a registry.
    * Each object's weak reference is also its token, so a number reused after its subject is
    * released never hears of the old one's collection.
    */
   private registry: FinalizationRegistry<number> | null = null;
+  /** The one object numbered before there was a registry, and its number. */
+  private lone: WeakRef<object> | null = null;
+  private loneSlot = -1;
 
   constructor(private readonly gone: (slot: number) => void) {}
 
@@ -30,13 +34,26 @@ export class Numbers<I> {
 
   take(subject: I): number {
     const slot = this.free.pop() ?? this.next++;
+    let dead = -1;
     if (typeof subject === 'object' && subject !== null) {
       const ref = new WeakRef(subject as object);
       this.refs[slot] = ref;
-      if (this.registry === null)
+      if (this.registry === null) {
+        if (this.lone === null) {
+          this.lone = ref;
+          this.loneSlot = slot;
+          return slot;
+        }
         this.registry = new FinalizationRegistry<number>((slot) => this.release(slot));
+        const first = this.lone.deref();
+        if (first !== undefined) this.registry.register(first, this.loneSlot, this.lone);
+        // Collected with no registry to hear of it: released here, once this subject is numbered.
+        else dead = this.loneSlot;
+        this.lone = null;
+      }
       this.registry.register(subject as object, slot, ref);
     } else this.refs[slot] = subject === undefined ? unit : subject;
+    if (dead >= 0) this.release(dead);
     return slot;
   }
 
@@ -54,7 +71,8 @@ export class Numbers<I> {
   release(slot: number): void {
     const ref = this.refs[slot];
     if (ref === undefined) return;
-    if (ref instanceof WeakRef) this.registry?.unregister(ref);
+    if (ref === this.lone) this.lone = null;
+    else if (ref instanceof WeakRef) this.registry?.unregister(ref);
     this.refs[slot] = undefined;
     this.gone(slot);
     this.free.push(slot);

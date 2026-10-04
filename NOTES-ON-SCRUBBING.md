@@ -1,20 +1,197 @@
 # Scrubbing a stateful mix: what is left
 
-**Status: partly built.** Rewritten 2026-10-01 down to its unbuilt half. Fixed-interval stepping
-(`stepMs`), closed-form motion (`spring`, `glide`), copies of state, the history horizon, recorded
-input and reading back (`mix.project`, `MixOptions.history`) are built, and the schema page's Score section
-describes them. Delete this file once the items below are built or turned down, moving any decision
+**Status: partly built, plus an unbuilt draft.** Fixed-interval stepping (`stepMs`), closed-form
+motion (`spring`, `glide`), copies of state, the history horizon, recorded input and reading back
+(`mix.project`, `MixOptions.history`) are built, and the schema page's Score section describes them.
+A mix-level rewind, below, is a draft from 2026-10-04: none of it is built, and it waits on the
+decisions it lists. Delete this file once every item is built or turned down, moving any decision
 into `docs/schema.html` first.
 
-**For:** whoever works on reading back next. **Answers:** what reading at another time still gets
-wrong, and the measurement that started this.
+**For:** whoever works on reading back next. **Answers:** whether and how the live mix can go back,
+what reading at another time still gets wrong, and the measurement that started this.
 
-## Decided against: moving the mix itself back
+## Proposed: rewind (draft, unbuilt)
 
-The original proposal had a mix-level `seek(timestamp)` that rebuilt the live voice set from a cue
-log. It conflicts with "two clocks, one addressable" (the handoff, 2026-09-27): mix time is a reading
-the host reports, never a position anything sets. A scrub is a read instead, `mix.project(t)`, and
-the log it would have used is the per-voice control log `history` keeps. Not to be re-proposed.
+**This is an unbuilt draft that reopens the 2026-10-01 decision** ("Decided against: moving the mix
+itself back", which held that mix time is a reading, never a position). Nothing here is in `src/`.
+Line references are to `8a1a940`. "(read)" marks a claim from reading the code, "(ran)" one checked
+against a build of it.
+
+### Two shapes
+
+- **Rewind from history**: `mix.rewind(t)`. The mix restores itself to `t` from what `history`
+  already keeps, and plays on from there.
+- **Save and load**: `mix.save()` hands the host an opaque snapshot; `mix.load(snap)` puts it back.
+  The host picks when to save and how many to keep, then re-does whatever it did after the save and
+  syncs forward to `t`. This is how rollback netcode and video keyframes work. The mix keeps no
+  history of its own.
+
+| | Rewind from history | Save and load |
+|---|---|---|
+| Needs | `history` on the mix | nothing on the mix |
+| How far back | `history.ms` | as far back as the host's oldest snapshot |
+| What the host re-does afterward | nothing | every call it made after the save: cues, handle writes, `announce`, `mute`, `drop`, `spring.to`/`push`, `level.set`, host fields |
+| Handles the host holds | valid for every voice alive at `t` | valid for voices alive at the save; a re-done cue makes a new handle |
+| Exact without `stepMs` | no: state steps once across the gap from the nearest copy, as `project` does (`stepped`) | yes, if the host replays the same frames it showed |
+| Exact with `stepMs` | yes, the grid lands where it did live (read: `tick`, `mixer.ts:2442`) | yes |
+| Memory | one copy per stateful subject per `every`, within the horizon | whatever the host keeps |
+| Cost on a frame that never rewinds | what `history` costs today | a check per record per probe while any snapshot is held (copy on write, below) |
+| New code | a restore in place, built from `project`'s pieces | a copy-on-write layer, a motion-buffer copy, and the same restore |
+
+**Recommendation: rewind from history.** The mix already records everything a rewind needs, so the
+host re-does nothing and keeps no second log of its own calls. A host-kept log is a second record of
+what the mix did, the same objection that turned down subject registration in the schema page.
+Save and load wins only where the horizon or the cost of `history` is the problem, and it can be
+added later as a pin on history: `save()` holds history from being pruned past that instant, and
+`load` runs the same restore.
+
+### Why a projection cannot just become the live mix
+
+All read:
+
+- A projection is a separate `Mixer` built with `history: undefined, lanes: false`
+  (`mixer.ts:1260`), holding new `Voice` objects from `Voice.copy` (`mixer.ts:619`). Every handle the
+  host holds closes over the original voice (`handle`, `mixer.ts:2022`), so promoting the copy would
+  orphan all of them.
+- A projection's records are filled lazily, on each subject's first probe, from the live records
+  (`Filled`, `recall`, `mixer.ts:1876`). It never has a full set to promote, and its own docs say it
+  is valid only until the next sync or cue.
+- The copies are made `quiet` and send nothing, so they never settle `done` or `played` and never
+  put an event in `drain`.
+
+So a rewind has to restore the live objects in place. It reuses `project`'s pieces: the controls
+lookup (`last(log, t, e => e.sync)`), the state picker at the end of `project` (`mixer.ts:1299`),
+`recall` and `copyHeld` for records, and the announced-mark filter.
+
+**Subjects cannot be listed** (read): per-subject records live in a `Store`, a `WeakMap` for object
+subjects (`store.ts:12`), and lanes hold subjects only by `WeakRef`. So neither shape can restore or
+copy every record at once. A rewind bumps an epoch, and each record is replaced from `recall` the
+first time it is touched afterward. Save and load has the same problem the other way round: a record
+must be copied into the snapshot the first time it is touched after `save`, which is copy on write.
+
+### The API
+
+```ts
+/** Moves the mix back to `timestamp`. Throws where reading back there would. */
+rewind(timestamp: number): void;
+```
+
+It returns nothing; a host wanting to know how sure the result will be asks `project(t).assess`
+first. One-syllable alternatives: `back`, `wind`, `roll`, `jump`. For the other shape: `save`/`load`,
+`snap`/`load`, `take`/`put`.
+
+| Method | After `rewind(t)` |
+|---|---|
+| `project(t')` | reads the rewound mix; a read ahead of `t` plays what is cued from `t` on |
+| `sync(h)` | the host keeps passing its own clock; the mix reads `t` plus the host's gap since its last sync (below) |
+| `rebase()` | still takes the next gap out, and composes with a rewind, since both only move the offset |
+
+### What the live mix holds after `rewind(t)`
+
+| Part | After the rewind | How |
+|---|---|---|
+| Voice controls (rate, ramp, weight, fade, seeks, anchored start and out) | as they stood at `t`; later writes are gone | the control log `history` keeps; truncated at `t` |
+| Patch and signal state | the nearest copy at or before `t`, stepped to `t`; fresh state from the voice's start where none was kept | `recall`, `copyHeld`, per subject on first touch |
+| Motion patches (`spring`, `glide`, `tween`) | the stretch in force at `t`; later retargets and pushes are cut | new: a truncate in `Motions` (`motion.ts:249`), whose earlier stretches it already keeps (`older`, `motion.ts:265`) |
+| Voices cued after `t` | retired, `done` resolves, `played` resolves false (decision below) | `retire` |
+| Voices retired after `t` | back, on their original handles, at the controls they had at `t` | `gone` holds them; re-index, re-hook motion (`retire` unhooks it, `mixer.ts:2181`) |
+| Subjects faded out of a voice after `t`, or `drop`ped after `t` | back as never seen: their records were forgotten | the gap the schema page's Open section already names |
+| Lanes and crowds | thrown away and qualified again on the next probe | a fresh `Lanes`, chains relinked; the first frame after pays a full qualify |
+| Undrained events stamped after `t` | discarded | filter `sent` |
+| Events already drained | stay with the host; playing on past those times may send them again (decision below) | |
+| Announced marks | those announced by `t` | the same filter `project` uses (`a.made < t`) |
+| History after `t` | discarded: snapshots, the control log, recorded inputs and host fields | truncate each list |
+| `from: 'current'` poses | discarded; a retarget read from them reads as `held` | clear the pose store |
+| `level` signals and host fields | the host's own; the mix does not set them | |
+
+### The next sync
+
+The mix clock is the host's reading less an offset (`sync`, `mixer.ts:915`). A rewind adds the
+distance it went back to that offset and moves the mix to `t` at once, so a probe straight after it
+reads `t`. The host goes on passing its own monotonic clock, and the next `sync(h)` reads
+`t + (h − last h)`. `rebase` works the same way, so the two compose.
+
+### Limits
+
+| Case | Rewind from history | Save and load |
+|---|---|---|
+| `t` past `history.ms` | throws, as `project` does | no limit but the host's snapshots |
+| mix without `history` | throws | works |
+| `stepMs` set | exact | exact |
+| `stepMs` unset | `stepped`: one step across the gap from the nearest copy | exact only if the host replays every frame |
+
+### Save and load, in detail
+
+- **In a snapshot:** the mix clock, offset and announced marks; each voice's controls and state;
+  every record, copied on its first touch after the save; each motion patch's flat buffers (`runs`,
+  `pending`, `older`), which can be copied whole since `Motions` numbers its subjects. Not lanes,
+  which are rebuilt.
+- **Copying state:** `copyHeld` (`mixer.ts:1835`) uses `patch.clone` where given, else `clone`, a
+  fast path for plain objects two deep that falls back to `structuredClone`. The schema page measured
+  a projection's first probe at about 3 ms for 1000 subjects under three voices.
+- **Exactness:** under `stepMs` the grid restores with the record (`since`, `ticks`). Without it, a
+  `step` handed the frame's gap answers differently at a different spacing (the table under The
+  measurement), so only a frame-for-frame replay matches.
+- **Re-done cues** get new ids and new handles. Restoring the id counter would hand an old handle's id
+  to a new voice.
+- **Releasing:** the mix copies on write while any snapshot is held, so it has to learn when the host
+  lets one go, through an explicit `free` or a `FinalizationRegistry`.
+
+### Decisions
+
+1. **Which shape: does the mix go back by itself, from the history it keeps, or does the host save
+   snapshots and re-do its own calls after loading one?** Turns on whether a host has to keep a log
+   of its own calls, whether rewinding needs `history`, and how far back it can reach. Recommended:
+   the mix goes back by itself.
+2. **After going back, does what happened after `t` vanish, or play again as it was recorded?**
+   Vanishing is undo: the future is cut and the mix plays on fresh. Playing again is a tape: voices
+   cued after `t` come back at their times, retargets replay. A tape makes mix time a position,
+   which is the 2026-09-27 decision overturned rather than bent. Recommended: vanish.
+3. **When the mix plays past a time again, does it send the events it already sent there?** The host
+   drained them once, so sending again duplicates them; not sending means a patch's `send` is no
+   longer a record of what played. Recommended: send again, and say so on `rewind`, since the host
+   knows it rewound.
+4. **When a voice that had finished comes back, do `done` and `played` start over?** They already
+   resolved and cannot un-resolve. Starting over gives a later `await` a fresh promise; anyone already
+   awaiting saw the old one resolve. Recommended: start over.
+5. **Do `rewind(t)` and `project(t)` take the host's clock or the mix clock?** Host time is what a host
+   has, but once a rewind or a `rebase` has moved the offset, one host time no longer names one
+   moment (see Found while drafting). Recommended: host time, with the mix keeping a log of offsets
+   so each host time maps to exactly one mix time.
+6. **Should `sync` with an earlier timestamp throw once `rewind` exists?** Today it is accepted and
+   half works (below). Recommended: throw, and point at `rewind`.
+7. **Without `stepMs`, does a rewind step once across the gap or replay each recorded frame?**
+   Replaying is exact but needs a log of sync timestamps and costs a frame's work per frame replayed.
+   Recommended: step once and report `stepped`, as `project` does.
+
+### Build plan
+
+Sizes are estimates, not measurements.
+
+| Step | Reuses | New |
+|---|---|---|
+| Restore controls and voice state at `t` | the control log, `project`'s state picker | moving the state picker into a function both call |
+| Restore records lazily | `recall`, `copyHeld` | an epoch on the mix and a check where a record is fetched |
+| Bring back voices that left after `t`, retire those cued after | `gone`, `retire`, `index` | un-retiring: re-hook motion, reset `done`/`played` |
+| Cut motion stretches after `t` | `older`, `prune` | a truncate per subject in `Motions` |
+| Truncate history, inputs, host fields, marks, undrained events | the horizon pruning | a cut at `t` for each list |
+| Lanes | `Lanes` construction | none beyond discarding it |
+| Offset log, refusing a backward `sync` | | both |
+| Tests | the read-back suite's "equals the pose the mix showed under `stepMs`" | the same against `rewind`, and handles held across it |
+
+Largest risk: every place that caches per-subject state outside a record (`pulled` heads, lane
+slots, `strays`) has to be cleared too, or a rewind shows a stale value.
+
+### Found while drafting
+
+- **`sync` going backward is not refused** (ran). The schema page and `Mix.sync` say the reading only
+  goes forward, but `sync` takes any timestamp (`mixer.ts:915`). Stateless voices move back; a
+  stateful patch without `stepMs` is handed a negative `dt`: a `step` that adds `dt` saw `[300, -200]`
+  for syncs at 0, 300 and 100. Under `stepMs` state holds still until the clock passes where it was.
+- **`project` across a `rebase` misreads host times** (ran). It converts with today's offset
+  (`mixer.ts:1259`), so a host time from before a rebase reads at the wrong moment. A 1000 ms loop
+  rising 0 to 100, synced at 0 and 200, rebased, then synced at 10200: live reads 20; `project(200)`
+  reads 0, where the host saw 20.
 
 ## Left to build
 

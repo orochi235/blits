@@ -39,7 +39,11 @@ function byConstructor() {
   const out = new Map();
   for (let i = 0; i < nodes.length; i += width) {
     const type = types[nodes[i + iType]];
-    const name = type === 'object' || type === 'closure' ? strings[nodes[i + iName]] : `(${type})`;
+    // A native or array node's name says what it backs, e.g. a WeakMap's table.
+    const name =
+      type === 'object' || type === 'closure'
+        ? strings[nodes[i + iName]]
+        : `(${type}) ${String(strings[nodes[i + iName]]).slice(0, 40)}`;
     const key = type === 'closure' ? `closure ${name}` : name;
     const e = out.get(key) ?? { n: 0, bytes: 0 };
     e.n++;

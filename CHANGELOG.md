@@ -8,6 +8,41 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A crowd voice that starts or begins fading in the frame the lanes are qualified again plays on
+  them. A qualify that kept the crowds as they stood, as when a voice over every subject leaves,
+  dropped the news, and the row stayed silent: a voice starting at 50 ms on one subject read nothing
+  on the lanes while one over every subject faded out then.
+- A subject numbered by a mix, or by a motion patch, is let go once collected even when it was the
+  first object numbered and was collected before a second came. Its number, its lane positions and
+  its motion state were held for good.
+- A crowd copies its rows' motion stretches as a fill begins, rather than in the loop that reads
+  every row. Once voices had faded, V8 spent that loop's inlining on the copy and stopped inlining
+  each row's ease, and every mix in the process stayed slower afterwards. With 10k tween voices of
+  one subject each read by `pull`, a frame takes 0.24 ms on teitou after every voice has been
+  replaced once, from 0.31, and 0.40 ms with one replaced each frame (`churn^`), from 0.44.
+- A crowd compacts its rows once a quarter of them are empty, rather than half: one replacing a
+  voice a frame carried as many empty rows as live ones, all walked every fill. The same 10k voices
+  replaced once each take 0.31 ms a frame on teitou, from 0.33 (`bench/scatter.mjs replaced`).
+- A voice weighted by a signal on a lane is weighed under the fade its lane already worked out,
+  where the general path's weighing worked the fade out again for every subject; a laned `fn` call
+  in a mix keeping no history no longer asks the mix for its horizon. On teitou three signal voices
+  over 10k subjects take about 0.91 of the time they did, three plain `fn` voices 0.91 and a blend
+  of three 0.95.
+- A voice's handle is one object of a class, where each `cue` made a dozen closures: cueing 10k
+  tween voices of one subject each takes 7.7–9.7 ms on teitou, from 13.5–15.3, and 10k `fn` voices
+  2.8–3.1 ms, from 4.8–7.1.
+- A voice naming its subjects keeps them in a list, with a set only past eight, and a motion patch
+  numbering one subject makes no `FinalizationRegistry` until it numbers a second: a tween voice of
+  one subject holds about 5.3 KB, from 5.6 (`bench/heapby.mjs`).
+- A voice over every subject coming, starting or going among a crowd no longer qualifies every
+  voice again, and a probe meeting it folds it onto the lanes' values where it comes after every
+  other laned voice, rather than reading the general path for the frame: with 10k tween voices of
+  one subject each and a voice over all of them replaced every frame (`swap`), a frame takes
+  6.0–6.1 ms on teitou, from 12.2–12.5. A qualify that would rebuild the crowds and laned channels
+  unchanged keeps them as they stand.
+- `atRest` answers from the lanes' values for a subject every voice of which is laned, rather than
+  folding a pose to compare: asked of 10k subjects under two voices, a frame takes 0.94–1.07 ms on
+  teitou, from 1.41–1.43 (`rest`).
 - A subject fading out of a voice with `handle.fade({ subject })` gets the same weight on a lane
   as on the general path. A lane held the voice's weight to 1 before multiplying in the subject's
   ramp, where the general path holds the product: a voice at weight 1.6 halfway out of a subject

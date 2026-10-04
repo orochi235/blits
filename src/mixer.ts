@@ -1,8 +1,10 @@
 import { type LerpInto, lerpInto } from './channels.js';
 import { envelope, heldTime, passAt, passesOf, phaseAt, weighed } from './clock.js';
 import { type Curve, curve } from './easing.js';
+import { type HandleHost, VoiceHandle } from './handle.js';
 import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
 import { type Motions, motionOf, noFrame, noRevive } from './motion.js';
+import { Named } from './named.js';
 import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
@@ -11,7 +13,6 @@ import type {
   Columns,
   Doubt,
   Engine,
-  FadeOptions,
   FadeSpec,
   Handle,
   Kit,
@@ -400,7 +401,7 @@ export class Voice<I, O> {
   out: Ramp | null = null;
   readonly subjects = new Store<I, Subject<unknown>>();
   /** The subjects its spec names, or null where it names none. */
-  readonly named: ReadonlySet<I> | null;
+  readonly named: Named<I> | null;
   /** Kit slot of each channel the patch writes, in `writes` order. */
   readonly slots: number[];
   /** The stops built ahead of time, for a `keys` patch. */
@@ -532,7 +533,7 @@ export class Voice<I, O> {
     send: (event: unknown) => void,
   ) {
     this.slots = patch.writes.map((k) => slotOf.get(k as string) as number);
-    this.named = spec.subjects ? new Set(spec.subjects) : null;
+    this.named = spec.subjects ? new Named(spec.subjects) : null;
     this.built = patch.form === 'keys' && patch.keys ? builtOf(patch) : null;
     this.lerps = this.slots.map((slot) => (channels[slot] as Channel<unknown>).lerp);
     this.intos = this.built
@@ -782,6 +783,7 @@ class Mixer<I, O> implements Mix<I, O> {
   private locusDepth = 0;
   private readonly slotOf = new Map<string, number>();
   private readonly lanes: Lanes<I, O> | null;
+  private handles: HandleHost<I, O> | null = null;
 
   constructor(
     private readonly kit: Kit<O>,
@@ -1215,7 +1217,7 @@ class Mixer<I, O> implements Mix<I, O> {
           }
         }
         const laned = live && lanes?.prepare(slot, subject, now, this.version) === true;
-        if (laned && whole && (lanes as Lanes<I, O>).whole) {
+        if (laned && whole && (lanes as Lanes<I, O>).whole && !(lanes as Lanes<I, O>).owes(slot)) {
           (lanes as Lanes<I, O>).writeLater(slot, columns, n);
           continue;
         }
@@ -1378,7 +1380,19 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   atRest(subject: I): boolean {
-    const pose = this.fold(subject, undefined, true);
+    const head = this.linked(subject);
+    const laned = this.linkedLaned;
+    const lanes = this.lanes as Lanes<I, O>;
+    // Every voice on lanes and nothing to clamp: the pose a fold would make is the lanes' values.
+    if (laned && lanes.whole && this.bounded.length === 0) {
+      const slot = (head as Subject<unknown>).slot;
+      if (!lanes.owes(slot)) return lanes.rests(slot);
+    }
+    const pose = this.foldWith(subject, {} as O, head, laned, true) as Record<string, unknown>;
+    return this.rests((this.bounded.length === 0 ? pose : this.clamp(pose)) as O);
+  }
+
+  private rests(pose: O): boolean {
     for (let i = 0; i < this.names.length; i++) {
       const channel = this.channels[i] as Channel<unknown>;
       const value = (pose as Record<string, unknown>)[this.names[i] as string];
@@ -1508,12 +1522,12 @@ class Mixer<I, O> implements Mix<I, O> {
         mix.sending.voice = voice;
         mix.sending.subject = subject;
       },
-      weigh: (voice, subject, held, elapsed, pass) => {
+      signal: (voice, subject, held, elapsed, pass) => {
         mix.prime(voice, held, mix.now, elapsed, pass);
         const kept = reading.kept;
-        const w = mix.weigh(voice, subject, mix.now, held);
+        const base = mix.base(voice, subject, mix.now, held);
         if (reading.kept !== kept && !voice.keeping) mix.stateful(voice);
-        return w;
+        return base;
       },
       horizon: (voice, delay) => {
         reading.horizon = mix.horizonFor(voice, delay, mix.now);
@@ -2020,64 +2034,29 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   private handle(voice: Voice<I, O>): Handle<I> {
-    const mix = this;
+    this.handles ??= this.handleHost();
+    return new VoiceHandle(voice, this.handles);
+  }
+
+  private handleHost(): HandleHost<I, O> {
     return {
-      id: voice.id,
-      get state() {
-        return voice.state;
+      nowFor: (voice) => (Number.isNaN(this.now) ? voice.start : this.now),
+      changed: (voice) => {
+        this.noted(voice);
+        this.lanes?.refill();
       },
-      get played() {
-        return voice.played;
-      },
-      get weight() {
-        return voice.weight;
-      },
-      set weight(w: number) {
-        voice.weight = w;
-        mix.noted(voice);
-        mix.lanes?.refill();
-      },
-      get rate() {
-        return voice.rateAt(Number.isNaN(mix.now) ? voice.start : mix.now);
-      },
-      set rate(r: number) {
-        voice.rebase(Number.isNaN(mix.now) ? voice.start : mix.now);
-        voice.ramp = null;
-        voice.rate = r;
-        mix.noted(voice);
-        mix.lanes?.refill();
-      },
-      ramp(r: number, over: number) {
-        const now = Number.isNaN(mix.now) ? voice.start : mix.now;
-        voice.rebase(now);
-        const from = voice.rateAt(now);
-        voice.ramp = over > 0 && r !== from ? { from, to: r, over } : null;
-        voice.rate = r;
-        mix.noted(voice);
-        mix.lanes?.refill();
-      },
-      seek(elapsed: number) {
-        voice.rebase(Number.isNaN(mix.now) ? voice.start : mix.now);
-        voice.anchorElapsed = elapsed;
-        voice.seeks++;
-        mix.noted(voice);
-        mix.lanes?.refill();
-      },
-      fade(opts?: FadeOptions<I>) {
+      fade: (voice, opts) => {
         if (opts !== undefined && 'subject' in opts)
-          mix.fadeSubject(voice, opts.subject as I, opts.over);
-        else mix.beginFade(voice, opts ?? {});
+          this.fadeSubject(voice, opts.subject as I, opts.over);
+        else this.beginFade(voice, opts ?? {});
       },
-      weightOf(subject: I) {
+      weightOf: (voice, subject) => {
         if (voice.state === 'done') return 0;
-        if (voice.laned && mix.lanes !== null) {
-          const w = mix.lanes.weightOf(voice.id, mix.chains.get(subject)?.slot ?? -1);
+        if (voice.laned && this.lanes !== null) {
+          const w = this.lanes.weightOf(voice.id, this.chains.get(subject)?.slot ?? -1);
           if (w !== undefined) return w;
         }
         return (voice.subjects.get(subject) as Subject<unknown> | undefined)?.weight ?? 0;
-      },
-      get done() {
-        return voice.done;
       },
     };
   }
@@ -2309,17 +2288,21 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** The weight a voice gives a subject this frame, with the setting already filled in. */
   private weigh(voice: Voice<I, O>, subject: I, now: number, held: Subject<unknown>): number {
+    const base = this.base(voice, subject, now, held);
+    const fade = this.envelope(voice, now, held.shown);
+    return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
+  }
+
+  /** A voice's weight for a subject before its fade and ramp: its signal's, or its own number. */
+  private base(voice: Voice<I, O>, subject: I, now: number, held: Subject<unknown>): number {
     this.sending.voice = voice;
     this.sending.subject = subject;
     const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
-    let base = voice.weight;
-    if (signal) {
-      const was = held.replay && last(held.replay, now, true);
-      base = was ? was.value : signal(subject, voice.setting as Setting);
-      if (signal.input && !was) this.record(held, base);
-    }
-    const fade = this.envelope(voice, now, held.shown);
-    return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
+    if (signal === null) return voice.weight;
+    const was = held.replay && last(held.replay, now, true);
+    const base = was ? was.value : signal(subject, voice.setting as Setting);
+    if (signal.input && !was) this.record(held, base);
+    return base;
   }
 
   /**
@@ -2661,7 +2644,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   private unindex(voice: Voice<I, O>): void {
     this.naming--;
-    for (const subject of voice.named as ReadonlySet<I>) {
+    for (const subject of voice.named as Named<I>) {
       const list = this.named.get(subject);
       if (list === undefined) continue;
       const i = list.indexOf(voice);
@@ -2728,13 +2711,23 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   private folded(subject: I, out?: O, dry = false, except?: number): O {
+    const head = this.linked(subject);
+    return this.foldWith(subject, out ?? ({} as O), head, this.linkedLaned, dry, except);
+  }
+
+  /**
+   * A subject's chain, linked for this frame, and in `linkedLaned` whether its lanes answer for the
+   * voices on them; a subject numbered since the frame's fill folds every voice, laned ones included.
+   */
+  private linked(subject: I): Subject<unknown> | null {
     const now = this.now;
     const head = Number.isNaN(now) ? null : this.chain(subject, now);
-    // A subject numbered since the frame's fill folds every voice here, laned ones included.
-    const laned =
+    this.linkedLaned =
       head !== null && this.lanes?.prepare(head.slot, subject, now, this.version) === true;
-    return this.foldWith(subject, out ?? ({} as O), head, laned, dry, except);
+    return head;
   }
+
+  private linkedLaned = false;
 
   /** The fold after a subject's chain is linked and its lanes asked whether it reads from them. */
   private foldWith(
@@ -2758,22 +2751,32 @@ class Mixer<I, O> implements Mix<I, O> {
       else if (pose[key] !== undefined) pose[key] = undefined;
     }
     if (head === null) return pose as O;
+    // A subject owing lanes it just met folds those voices here, after the lanes' values.
+    let owed = -1;
     if (laned) {
-      (lanes as Lanes<I, O>).copy(head.slot, pose);
-      if ((lanes as Lanes<I, O>).whole) return pose as O;
+      const l = lanes as Lanes<I, O>;
+      l.copy(head.slot, pose);
+      if (l.owes(head.slot)) owed = head.slot;
+      else if (l.whole) return pose as O;
     }
     if (this.loci === 0) {
       for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
         const voice = held.voice as Voice<I, O> | null;
-        if (voice === null || (laned && voice.laned)) continue;
+        if (voice === null || (laned && voice.laned && !this.owedBy(owed, voice))) continue;
         if (voice.id === except || voice.state === 'done') continue;
         const delta = this.read(voice, subject, now, dry, held);
+        if (owed >= 0 && voice.laned) (lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
         if (delta === null || this.w <= 0) continue;
         this.apply(pose, voice, held, delta, this.w);
       }
       return pose as O;
     }
-    return this.foldLoci(subject, pose, head, laned, dry, except);
+    return this.foldLoci(subject, pose, head, laned, dry, except, owed);
+  }
+
+  /** Whether the subject numbered `owed` reads laned `voice` from the general path this fill. */
+  private owedBy(owed: number, voice: Voice<I, O>): boolean {
+    return owed >= 0 && (this.lanes as Lanes<I, O>).owesVoice(owed, voice.id);
   }
 
   /** `foldWith`'s voices with a locus in play: each locus folds at its first member's place. */
@@ -2784,6 +2787,7 @@ class Mixer<I, O> implements Mix<I, O> {
     laned: boolean,
     dry: boolean,
     except: number | undefined,
+    owed: number,
   ): O {
     const now = this.now;
     // A patch reading the pose can fold again from inside this one, so each depth has its own.
@@ -2799,9 +2803,10 @@ class Mixer<I, O> implements Mix<I, O> {
       k.names.length = 0;
       for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
         const voice = held.voice as Voice<I, O> | null;
-        if (voice === null || (laned && voice.laned)) continue;
+        if (voice === null || (laned && voice.laned && !this.owedBy(owed, voice))) continue;
         if (voice.id === except || voice.state === 'done') continue;
         const delta = this.read(voice, subject, now, dry, held);
+        if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
         if (delta === null) continue;
         const locus = voice.spec.locus;
         let group = -1;

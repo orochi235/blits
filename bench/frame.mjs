@@ -1,7 +1,8 @@
 // Per-frame cost of a mix at scene sizes. Run with `npm run bench`, which builds dist first.
 // Rows print as they finish; `first` is the first frame, where each voice meets each subject;
 // `p99` and `worst` are single frames, where a collection landing mid-frame shows; `gc` counts
-// collections during the timed frames and the ms they paused for.
+// collections during the timed frames and the ms they paused for. WINDOW=2500 also prints the mean
+// of each run of that many frames, for a cost that drifts as the run goes on.
 import { PerformanceObserver } from 'node:perf_hooks';
 import { hex, keys, kit, max, mix, mul, patch, spring, sum, tween, vec } from '../dist/index.js';
 
@@ -130,9 +131,13 @@ const rows = [
   // A tween voice per subject, with one stopped, its subject dropped, and a new one cued on it
   // every frame.
   ['churn', 10000, 1],
+  // A tween voice per subject, with a voice over every subject replaced each frame.
+  ['swap', 10000, 1],
   ['fns', 10000, 1],
   ['weasel', 10000, 1],
   ['weaselfn', 10000, 1],
+  // `atRest` asked of every subject each frame, under a tween and a `fn` voice over all of them.
+  ['rest', 10000, 2],
   // Lanes fill every subject they have met: this one probes all 10k once, then 5% each frame.
   ['sparse', 10000, 1],
   // The same rows with lanes off, for the comparison in one run.
@@ -150,6 +155,9 @@ const rows = [
   ['tweenfn^', 10000, 1],
   ['keyses^', 10000, 1],
   ['churn^', 10000, 1],
+  // weasel's churn: the stopped voice's subject leaves for good and a new one arrives, read by
+  // `pull` over a fresh copy of the list kept dense by swapping the last subject into the gap.
+  ['turnover^', 10000, 1],
   // weasel's animator on blits: a tween or spring voice per animation, read by `pull`.
   ['tweens^', 10000, 1],
   ['springs^', 10000, 1],
@@ -163,6 +171,7 @@ const rows = [
 
 // FRAMES=20000 for a profile long enough to sample a fast row.
 const frames = Number(process.env.FRAMES ?? 300);
+const windowed = Number(process.env.WINDOW ?? 0);
 // Row names after the script, `node bench/frame.mjs keys keys^`, run only those rows; `tweens:10000`
 // only the one at that size.
 const only = process.argv.slice(2);
@@ -180,7 +189,10 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     lanes: !off,
   });
   const weasel = kind.startsWith('weasel');
-  const subjects = Array.from({ length: n }, (_, j) => (weasel ? `n${j}` : { seed: j * 0.37 }));
+  const turnover = kind === 'turnover';
+  const subjects = Array.from({ length: n }, (_, j) =>
+    weasel ? `n${j}` : turnover ? j : { seed: j * 0.37 },
+  );
   if (weasel)
     for (let j = 0; j < n; j++)
       ends.set(`n${j}`, { from: [j, 300 - j, 0], to: [j + 500, 300 - j, 0] });
@@ -191,18 +203,50 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     kind === 'tweens' ||
     kind === 'keyses' ||
     kind === 'churn' ||
+    kind === 'turnover' ||
+    kind === 'swap' ||
     kind === 'fns';
   if (kind === 'own')
     for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
   if (kind === 'named') for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine] });
   if (kind === 'springs') for (const mine of subjects) m.cue({ patch: settle(), subjects: [mine] });
+  const glideOf = (mine) =>
+    turnover
+      ? tween('position', { from: [mine, 0, 0], to: [mine, 1, 0], ms: LONG, ease: smooth })
+      : glideTo();
   const handles =
-    kind === 'tweens' || kind === 'churn'
-      ? subjects.map((mine) => m.cue({ patch: glideTo(), subjects: [mine] }))
+    kind === 'tweens' || kind === 'churn' || kind === 'turnover' || kind === 'swap'
+      ? subjects.map((mine) => m.cue({ patch: glideOf(mine), subjects: [mine] }))
       : [];
   // Replaces the voice of one subject a frame, walking through them all.
   let turn = 0;
+  let shared = kind === 'swap' ? m.cue({ patch: flicker(0) }) : null;
   const churn = () => {
+    if (shared !== null) {
+      shared.fade({ over: 0 });
+      shared = m.cue({ patch: flicker(turn++ % 3) });
+      return;
+    }
+    if (turnover) {
+      const k = (turn++ * 7919) % n;
+      handles[k].fade({ over: 0 });
+      m.drop(probed[k]);
+      const fresh = n + turn;
+      probed = probed.slice();
+      probed[k] = probed[n - 1];
+      handles[k] = handles[n - 1];
+      probed[n - 1] = fresh;
+      // As weasel's codec does: cue a tween resting where it starts, then retarget it at its start.
+      const glide = tween('position', {
+        from: [fresh, 0, 0],
+        to: [fresh, 0, 0],
+        ms: LONG,
+        ease: smooth,
+      });
+      handles[n - 1] = m.cue({ patch: glide, subjects: [fresh] });
+      glide.to(fresh, [fresh, 1, 0], 0);
+      return;
+    }
     if (kind !== 'churn') return;
     const k = turn++ % n;
     handles[k].fade({ over: 0 });
@@ -221,7 +265,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
         ? bounce()
         : kind === 'spring'
           ? settle()
-          : kind === 'tween'
+          : kind === 'tween' || (kind === 'rest' && v === 0)
             ? glideTo()
             : kind === 'tweenfn'
               ? tweenFn()
@@ -239,7 +283,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       weight: kind === 'signal' ? by : undefined,
     });
   }
-  const probed = kind === 'sparse' ? subjects.filter((_, j) => j % 20 === 0) : subjects;
+  let probed = kind === 'sparse' ? subjects.filter((_, j) => j % 20 === 0) : subjects;
   const scratch = {};
   const columns = {
     gain: new Float64Array(n),
@@ -248,7 +292,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     color: new Float64Array(n),
   };
   const read = (list) => {
-    if (pulls) m.pull(list, columns);
+    if (kind === 'rest') for (const s of list) m.atRest(s);
+    else if (pulls) m.pull(list, columns);
     else for (const s of list) m.probe(s, scratch);
   };
   let t = 0;
@@ -277,6 +322,13 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       read(probed);
     }
     each[f] = performance.now() - f0;
+    if (windowed > 0 && (f + 1) % windowed === 0) {
+      let sum = 0;
+      for (let g = f + 1 - windowed; g <= f; g++) sum += each[g];
+      console.log(
+        `      frames ${String(f + 1).padStart(6)}  ${(sum / windowed).toFixed(3).padStart(8)} ms/frame`,
+      );
+    }
   }
   const ms = each.reduce((a, b) => a + b, 0) / frames;
   each.sort();

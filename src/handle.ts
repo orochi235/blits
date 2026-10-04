@@ -1,0 +1,84 @@
+import type { Voice } from './mixer.js';
+import type { FadeOptions, Handle } from './types.js';
+
+/** What a voice's handle asks of the mix that cued it: one per mix, shared by every handle. */
+export interface HandleHost<I, O> {
+  /** The mix clock, or the voice's start before the first sync. */
+  nowFor(voice: Voice<I, O>): number;
+  /** A handle write changed the voice: reschedule it, and refill the lanes. */
+  changed(voice: Voice<I, O>): void;
+  fade(voice: Voice<I, O>, opts: FadeOptions<I> | undefined): void;
+  weightOf(voice: Voice<I, O>, subject: I): number;
+}
+
+/** A voice's handle: the host's only way to control a voice once cued. */
+export class VoiceHandle<I, O> implements Handle<I> {
+  readonly id: number;
+  readonly #voice: Voice<I, O>;
+  readonly #host: HandleHost<I, O>;
+
+  constructor(voice: Voice<I, O>, host: HandleHost<I, O>) {
+    this.id = voice.id;
+    this.#voice = voice;
+    this.#host = host;
+  }
+
+  get state(): Handle<I>['state'] {
+    return this.#voice.state;
+  }
+
+  get played(): Promise<boolean> {
+    return this.#voice.played;
+  }
+
+  get done(): Promise<void> {
+    return this.#voice.done;
+  }
+
+  get weight(): number {
+    return this.#voice.weight;
+  }
+
+  set weight(w: number) {
+    this.#voice.weight = w;
+    this.#host.changed(this.#voice);
+  }
+
+  get rate(): number {
+    return this.#voice.rateAt(this.#host.nowFor(this.#voice));
+  }
+
+  set rate(r: number) {
+    const voice = this.#voice;
+    voice.rebase(this.#host.nowFor(voice));
+    voice.ramp = null;
+    voice.rate = r;
+    this.#host.changed(voice);
+  }
+
+  ramp(r: number, over: number): void {
+    const voice = this.#voice;
+    const now = this.#host.nowFor(voice);
+    voice.rebase(now);
+    const from = voice.rateAt(now);
+    voice.ramp = over > 0 && r !== from ? { from, to: r, over } : null;
+    voice.rate = r;
+    this.#host.changed(voice);
+  }
+
+  seek(elapsed: number): void {
+    const voice = this.#voice;
+    voice.rebase(this.#host.nowFor(voice));
+    voice.anchorElapsed = elapsed;
+    voice.seeks++;
+    this.#host.changed(voice);
+  }
+
+  fade(opts?: FadeOptions<I>): void {
+    this.#host.fade(this.#voice, opts);
+  }
+
+  weightOf(subject: I): number {
+    return this.#host.weightOf(this.#voice, subject);
+  }
+}

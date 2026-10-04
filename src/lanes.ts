@@ -74,11 +74,11 @@ export interface LaneHost<I, O> {
     weight: number,
   ): void;
   /**
-   * A voice with a signal weight: its weight for a subject the general path has met, as the general
-   * path weighs it, with the setting filled in for the call; makes the voice stateful if the signal
-   * keeps state.
+   * A voice with a signal weight: the signal's value for a subject the general path has met, before
+   * the fade and ramp `weighed` applies, with the setting filled in for the call; makes the voice
+   * stateful if the signal keeps state.
    */
-  weigh(
+  signal(
     voice: Voice<I, O>,
     subject: I,
     held: Subject<unknown>,
@@ -472,6 +472,8 @@ class Crowd<I, O> implements Positions<I, O> {
   cursor = 0;
   /** Rows whose voices have left, kept in place until the crowds are next rebuilt. */
   dead = 0;
+  /** Whether some row is `F_STALE`, for `freshen` to copy before the fill's loop. */
+  stale = false;
   readonly xs: Float64Array;
   readonly vs: Float64Array;
   /** What a keys row reads into, folded before the next row reads. */
@@ -489,6 +491,12 @@ class Crowd<I, O> implements Positions<I, O> {
 
   voiceAt(p: number): Voice<I, O> {
     return this.voices[p] as Voice<I, O>;
+  }
+
+  /** Marks row `p` to copy its stretch from its patch again before the next fill reads it. */
+  restale(p: number, flags: number): void {
+    this.hot[p * this.stride + H_FLAGS] = flags | F_STALE;
+    this.stale = true;
   }
 
   /** Samples of another width than the channel's, which `samples` cannot hold, by row. */
@@ -559,6 +567,12 @@ export class Lanes<I, O> {
   private into: Locus<I, O> | null = null;
   private intoId = 0;
   private readonly lawsByKey = new Map<string, Float64Array>();
+  private lastLaw: Float64Array | null = null;
+  /** The lanes the last `meet` gave a position, and whether it placed a crowd row. */
+  private readonly met: number[] = [];
+  private metCrowd = false;
+  /** By subject number, the laned voices its probes fold on the general path this fill. */
+  private readonly owed = new Map<number, number[]>();
   private laned: Laned[] = [];
   /** By kit slot, the laned channel there. */
   private bySlot: (Laned | undefined)[] = [];
@@ -742,9 +756,14 @@ export class Lanes<I, O> {
     const o = slot * SLOT;
     let lane = per[o + FILLED] === this.fills && per[o + IDLE] === 0;
     if ((per[o + SEEN] as number) < this.wide && this.meet(slot, subject)) {
-      // The fill ran before the subject had these positions, so it reads the general path all frame.
-      per[o + FILLED] = 0;
-      lane = false;
+      // The fill ran before the subject had these positions. Where every voice it just met folds
+      // after every other laned voice, the general path folds just those onto the lanes' values;
+      // otherwise it reads the general path all frame.
+      if (lane && per[o + IDLE] === 0 && this.owable(slot)) this.owed.set(slot, this.met.slice());
+      else {
+        per[o + FILLED] = 0;
+        lane = false;
+      }
     }
     if (lane) {
       per[o + LANE_PROBE] = probe;
@@ -788,7 +807,8 @@ export class Lanes<I, O> {
         slot < 0 ||
         per[o + FILLED] !== fills ||
         per[o + IDLE] !== 0 ||
-        (per[o + SEEN] as number) < wide
+        (per[o + SEEN] as number) < wide ||
+        (this.owed.size > 0 && this.owed.has(slot))
       )
         break;
       if (!((per[o + LANE_PROBE] as number) > frame || (per[o + GENERAL_PROBE] as number) > frame))
@@ -830,8 +850,13 @@ export class Lanes<I, O> {
       this.fresh = true;
     }
     if (this.filling) return GENERAL;
-    if (this.qualifiedVersion !== version) this.requalify(version);
-    else if (this.touched.length > 0 && !this.retouch()) this.requalify(version);
+    // The mix's version moves only when a voice over every subject comes, goes, starts or stops
+    // waiting, each of which touches it, so a version past a qualify that stands is a set of touches.
+    if (this.qualifiedVersion !== version) {
+      if (!Number.isNaN(this.qualifiedVersion) && this.touched.length > 0 && this.retouch())
+        this.qualifiedVersion = version;
+      else this.requalify(version);
+    } else if (this.touched.length > 0 && !this.retouch()) this.requalify(version);
     if (this.laned.length === 0) return GENERAL;
     if (this.filledAt !== now || this.filledVersion !== version || this.moved !== reading.moved) {
       this.fillAll(now, version);
@@ -929,6 +954,65 @@ export class Lanes<I, O> {
     }
   }
 
+  /**
+   * Whether the lanes a probe of the subject at `slot` just met (`met`) can be folded on the general
+   * path after the lanes' values: none is in a locus or a crowd, the subject owes none already this
+   * fill, and each comes after every other laned voice in voice order, so folding it last folds in
+   * the general path's order.
+   */
+  private owable(slot: number): boolean {
+    if (this.metCrowd || this.owed.has(slot)) return false;
+    const met = this.met;
+    let other = Number.NEGATIVE_INFINITY;
+    for (const lane of this.lanes) {
+      const id = lane.voice.id;
+      if (id > other && !met.includes(id)) other = id;
+    }
+    for (const c of this.crowds)
+      if (c.size > 0) other = Math.max(other, c.hot[(c.size - 1) * c.stride + H_ID] as number);
+    for (const id of met)
+      if (id <= other || (this.byId.get(id) as Lane<I, O>).group !== null) return false;
+    return true;
+  }
+
+  /** Whether the subject at `slot` reads some laned voice from the general path this fill. */
+  owes(slot: number): boolean {
+    return this.owed.size > 0 && this.owed.has(slot);
+  }
+
+  /** Whether the subject at `slot` reads laned voice `id` from the general path this fill. */
+  owesVoice(slot: number, id: number): boolean {
+    return (this.owed.get(slot) as number[]).includes(id);
+  }
+
+  /** The weight the general path gave a voice the subject at `slot` owes, as `weightOf` reports. */
+  paid(id: number, slot: number, w: number): void {
+    const lane = this.byId.get(id);
+    const p = lane === undefined ? -1 : lane.positionOf(slot);
+    if (p >= 0) (lane as Lane<I, O>).data[p * STRIDE + WEIGHT] = w;
+  }
+
+  /**
+   * Whether a subject's laned values are at their channels' rest, as `atRest` reads the pose `copy`
+   * would write: each number within 1e-9 of its rest.
+   */
+  rests(slot: number): boolean {
+    for (const ch of this.laned) {
+      const values = ch.values;
+      if (ch.scalar) {
+        if (!(Math.abs((values[slot] as number) - ch.rest) < 1e-9)) return false;
+        continue;
+      }
+      // `copy` lengthens a rest shorter than the channel's axes, and a longer array is never near it.
+      if (ch.start.length < ch.axes) return false;
+      const base = slot * ch.axes;
+      for (let a = 0; a < ch.axes; a++)
+        if (!(Math.abs((values[base + a] as number) - (ch.start[a] as number)) < 1e-9))
+          return false;
+    }
+    return true;
+  }
+
   /** Writes a subject's laned values into a pose, each array channel into a new array. */
   copy(slot: number, pose: Record<string, unknown>): void {
     const laned = this.laned;
@@ -956,6 +1040,8 @@ export class Lanes<I, O> {
     const from = seen < 0 ? -1 - seen : seen;
     this.per[slot * SLOT + SEEN] = this.epochs;
     let met = false;
+    this.met.length = 0;
+    this.metCrowd = false;
     const dense = this.dense;
     for (let i = dense.length - 1; i >= 0; i--) {
       const lane = dense[i] as Lane<I, O>;
@@ -965,6 +1051,7 @@ export class Lanes<I, O> {
       if (!held.reaches) continue;
       lane.add(slot, held);
       if (lane.idle) this.reach(slot, 1);
+      this.met.push(lane.voice.id);
       met = true;
     }
     const naming = this.host.naming(subject);
@@ -972,7 +1059,10 @@ export class Lanes<I, O> {
       for (const voice of naming) {
         const lane = this.byId.get(voice.id);
         if (lane === undefined) {
-          if (this.place(voice, slot, subject, from)) met = true;
+          if (this.place(voice, slot, subject, from)) {
+            met = true;
+            this.metCrowd = true;
+          }
           continue;
         }
         if (lane.epoch <= from || lane.positionOf(slot) >= 0) continue;
@@ -980,6 +1070,7 @@ export class Lanes<I, O> {
         if (!held.reaches) continue;
         lane.add(slot, held);
         if (lane.idle) this.reach(slot, 1);
+        this.met.push(voice.id);
         met = true;
       }
     return met;
@@ -1006,7 +1097,7 @@ export class Lanes<I, O> {
     c.data[o + MET] = 0;
     c.records[p] = held;
     c.deltas[p] = null;
-    c.hot[h + H_FLAGS] = flags | F_PLACED | F_STALE;
+    c.restale(p, flags | F_PLACED);
     if (c.idle) this.reach(slot, 1);
     return true;
   }
@@ -1045,6 +1136,7 @@ export class Lanes<I, O> {
     const host = this.host;
     this.qualifiedVersion = version;
     this.filledVersion = Number.NaN;
+    const touched = this.touched.slice();
     this.touched.length = 0;
     const present = host.voices.filter((v) => v.state !== 'done');
     for (const v of present) if (v.id > this.known) this.known = v.id;
@@ -1118,6 +1210,29 @@ export class Lanes<I, O> {
     for (const lane of kept) this.byId.set(lane.voice.id, lane);
     // With no lane left no fill comes to let go of the subjects the last probes held.
     if (kept.length === 0 && crowded === 0) this.subjects = [];
+    const members = present.filter((v) => voices.has(v.id) && crowdable(v));
+    // The same channels laned and the same voices crowded, as when a voice over every subject comes
+    // or goes among a crowd of thousands: what a rebuild would make is what is there.
+    if (this.sameChannels(channels) && this.sameCrowds(members)) {
+      for (const lane of kept) {
+        lane.chans = lane.voice.slots.map((s) => this.bySlot[s] as Laned);
+        lane.values = lane.chans.map(() => undefined);
+      }
+      for (const c of this.crowds)
+        for (let p = 0; p < c.size; p++) {
+          const v = c.voices[p] as Voice<I, O>;
+          if (c.rowOf.get(v.id) === p && v.state === 'done') this.bury(c, p);
+        }
+      // A crowd voice that started or began fading takes it up on its row, as `retouch` does.
+      for (const v of touched) {
+        if (v.state === 'done') continue;
+        const c = this.crowdOf.get(v.id);
+        const p = c?.rowOf.get(v.id);
+        if (c !== undefined && p !== undefined) this.retouchRow(c, p, v);
+      }
+      this.compactSparse();
+      return;
+    }
     this.laned = [];
     this.bySlot = host.channels.map(() => undefined);
     channels.forEach((on, slot) => {
@@ -1144,7 +1259,33 @@ export class Lanes<I, O> {
       lane.chans = lane.voice.slots.map((s) => this.bySlot[s] as Laned);
       lane.values = lane.chans.map(() => undefined);
     }
-    this.regroup(present.filter((v) => voices.has(v.id) && crowdable(v)));
+    this.regroup(members);
+  }
+
+  /** Whether qualifying laned exactly the channels laned now. */
+  private sameChannels(channels: readonly boolean[]): boolean {
+    const by = this.bySlot;
+    if (by.length !== channels.length) return false;
+    for (let i = 0; i < by.length; i++) if ((by[i] !== undefined) !== channels[i]) return false;
+    return true;
+  }
+
+  /**
+   * Whether every voice qualifying for a crowd has its row, and every row's voice either qualified
+   * or is done, so the crowds stand as a rebuild would leave them, departed rows aside.
+   */
+  private sameCrowds(members: readonly Voice<I, O>[]): boolean {
+    let live = 0;
+    for (const v of members) {
+      if (!this.crowdOf.has(v.id)) return false;
+      live++;
+    }
+    let rows = 0;
+    for (const [id, c] of this.crowdOf) {
+      const p = c.rowOf.get(id) as number;
+      if ((c.voices[p] as Voice<I, O>).state !== 'done') rows++;
+    }
+    return rows === live;
   }
 
   /**
@@ -1168,7 +1309,10 @@ export class Lanes<I, O> {
       const from = was.get(v.id);
       this.join(v, from, from?.rowOf.get(v.id), old);
     }
-    if (this.crowds.length === 0) this.lawsByKey.clear();
+    if (this.crowds.length === 0) {
+      this.lawsByKey.clear();
+      this.lastLaw = null;
+    }
   }
 
   /**
@@ -1230,7 +1374,7 @@ export class Lanes<I, O> {
    * first that cannot be, which needs a qualify: one that leaves a lane or the general path, which
    * may open a channel, or one that joins anything but a crowd on a laned channel. Neither a voice
    * that fits joining laned channels nor a laned one leaving moves the fixed point `qualify` finds.
-   * A crowd more than half empty rows is compacted.
+   * A crowd a quarter empty rows is compacted.
    */
   private retouch(): boolean {
     const touched = [...new Set(this.touched)].sort((a, b) => a.id - b.id);
@@ -1245,13 +1389,16 @@ export class Lanes<I, O> {
           this.bury(c, p);
           continue;
         }
-        const h = p * c.stride;
-        if (c.hot[h + H_EPOCH] === 0 && v.state !== 'pending') c.hot[h + H_EPOCH] = this.open(v);
-        c.hot[h + H_FLAGS] = (c.hot[h + H_FLAGS] as number) | F_VOICE;
+        this.retouchRow(c, p, v);
         continue;
       }
       if (v.state === 'done' && !known) continue;
-      if (v.state === 'done' || this.byId.has(v.id)) return false;
+      const lane = this.byId.get(v.id);
+      if (lane !== undefined) {
+        if (!this.relane(lane)) return false;
+        continue;
+      }
+      if (v.state === 'done') return false;
       // A locus's members are on lanes together or not at all, so one joining may move the others.
       if (v.spec.locus !== undefined) return false;
       const laned = v.slots.some((slot) => this.bySlot[slot] !== undefined);
@@ -1260,18 +1407,68 @@ export class Lanes<I, O> {
         this.whole = false;
         continue;
       }
-      if (
-        known ||
-        !fits ||
-        !laned ||
-        !crowdable(v) ||
-        v.slots.some((slot) => this.bySlot[slot] === undefined)
-      )
+      if (known || !fits || !laned || v.slots.some((slot) => this.bySlot[slot] === undefined))
         return false;
-      this.join(v, undefined, undefined, this.crowds);
+      if (crowdable(v)) this.join(v, undefined, undefined, this.crowds);
+      else this.enlane(v);
     }
-    for (const c of this.crowds) if (c.dead > 64 && c.dead * 2 > c.size) this.compact(c);
+    this.compactSparse();
+    // As a qualify leaving nothing on lanes: no fill comes to let go of what the last probes held.
+    if (this.lanes.length === 0 && this.crowds.every((c) => c.dead === c.size)) this.subjects = [];
     return true;
+  }
+
+  /** A crowd row takes up its voice as it now stands: opened once it starts, its fields copied again. */
+  private retouchRow(c: Crowd<I, O>, p: number, v: Voice<I, O>): void {
+    const h = p * c.stride;
+    if (c.hot[h + H_EPOCH] === 0 && v.state !== 'pending') c.hot[h + H_EPOCH] = this.open(v);
+    c.hot[h + H_FLAGS] = (c.hot[h + H_FLAGS] as number) | F_VOICE;
+  }
+
+  /**
+   * A new voice that fits and writes only laned channels, and that no crowd takes, gets a lane at
+   * the end of the order, its id being past every other: what a qualify would give it, since such a
+   * voice joining cannot unlane a channel.
+   */
+  private enlane(v: Voice<I, O>): void {
+    const lane = new Lane<I, O>(v);
+    v.laned = true;
+    if (v.state !== 'pending') lane.epoch = this.open(v);
+    lane.chans = v.slots.map((s) => this.bySlot[s] as Laned);
+    lane.values = lane.chans.map(() => undefined);
+    this.lanes.push(lane);
+    this.byId.set(v.id, lane);
+    if (v.named === null && lane.epoch > 0) this.dense.push(lane);
+  }
+
+  /**
+   * A laned voice that started playing or finished, as a qualify would take it: a lane leaving
+   * cannot lane or unlane another channel. False for a locus member, which a qualify must take.
+   */
+  private relane(lane: Lane<I, O>): boolean {
+    const v = lane.voice;
+    if (v.state !== 'done') {
+      if (lane.epoch === 0 && v.state !== 'pending') {
+        lane.epoch = this.open(v);
+        if (v.named === null) this.dense.push(lane);
+      }
+      return true;
+    }
+    if (lane.group !== null) return false;
+    this.leave(lane);
+    this.lanes.splice(this.lanes.indexOf(lane), 1);
+    const d = this.dense.indexOf(lane);
+    if (d >= 0) this.dense.splice(d, 1);
+    this.byId.delete(v.id);
+    return true;
+  }
+
+  /**
+   * Compacts every crowd a quarter or more empty rows: each fill walks every row, and at half a
+   * crowd replacing a voice a frame carried as many empty rows as live ones.
+   */
+  private compactSparse(): void {
+    for (const c of this.crowds) if (c.dead > 64 && c.dead * 4 >= c.size) this.compact(c);
   }
 
   /**
@@ -1322,6 +1519,7 @@ export class Lanes<I, O> {
     to.list[q] = from.list[p] as number;
     to.data.set(from.data.subarray(p * STRIDE, (p + 1) * STRIDE), q * STRIDE);
     to.hot.set(from.hot.subarray(p * from.stride, (p + 1) * from.stride), q * to.stride);
+    if (((from.hot[p * from.stride + H_FLAGS] as number) & F_STALE) !== 0) to.stale = true;
     to.samples.set(from.samples.subarray(p * from.axes, (p + 1) * from.axes), q * to.axes);
     to.deltas[q] = from.deltas[p] ?? null;
     to.records[q] = from.records[p];
@@ -1341,7 +1539,7 @@ export class Lanes<I, O> {
     const run = motionOf<I>(v.patch);
     const h = p * c.stride;
     c.hot.fill(0, h, h + c.stride);
-    c.hot[h + H_FLAGS] = F_VOICE | F_STALE | (run === undefined ? 0 : F_MOTION);
+    c.restale(p, F_VOICE | (run === undefined ? 0 : F_MOTION));
     c.hot[h + H_ID] = v.id;
     c.list[p] = -1;
     const o = p * STRIDE;
@@ -1368,6 +1566,15 @@ export class Lanes<I, O> {
 
   /** A patch's law, as the one array every crowd row with the same law shares. */
   private lawOf(run: Motions<I>): Float64Array {
+    // Most crowds' voices share one law, so the last one found is checked before any key is made.
+    const last = this.lastLaw;
+    if (last !== null && run.hasLaw(last)) return last;
+    const law = this.lawKeyed(run);
+    this.lastLaw = law;
+    return law;
+  }
+
+  private lawKeyed(run: Motions<I>): Float64Array {
     const law = run.law();
     const key = law.join(' ');
     const known = this.lawsByKey.get(key);
@@ -1381,8 +1588,7 @@ export class Lanes<I, O> {
     const c = this.crowdOf.get(id);
     const p = c?.rowOf.get(id);
     if (c === undefined || p === undefined) return;
-    const f = p * c.stride + H_FLAGS;
-    c.hot[f] = (c.hot[f] as number) | F_STALE;
+    c.restale(p, c.hot[p * c.stride + H_FLAGS] as number);
   }
 
   /** Something on a voice changed: a crowd copies it again at the next fill. */
@@ -1437,6 +1643,7 @@ export class Lanes<I, O> {
     this.filling = true;
     try {
       this.fills++;
+      this.owed.clear();
       this.now = now;
       this.filledAt = now;
       this.filledVersion = version;
@@ -1468,6 +1675,7 @@ export class Lanes<I, O> {
           else if (c.idle ? share >= c.line.start : share < c.line.stop) this.flip(c);
         }
         c.cursor = 0;
+        if (c.stale) this.freshen(c);
         if (!c.idle && c.size > 0) busy = true;
       }
       if (busy) {
@@ -1548,16 +1756,18 @@ export class Lanes<I, O> {
   }
 
   /**
-   * A voice with a signal weight: its weight for the subject at `slot`, through the general path's
-   * own arithmetic; NaN where that path has not made the voice's first call for the subject, which
-   * it then makes this frame, so a signal that keeps state is first called where the general path
-   * would call it.
+   * A voice with a signal weight: its weight for the subject at `slot` under the voice's fade `fade`,
+   * through the general path's own arithmetic; NaN where that path has not made the voice's first
+   * call for the subject, which it then makes this frame, so a signal that keeps state is first
+   * called where the general path would call it.
    */
   private signalled(
     voice: Voice<I, O>,
     slot: number,
     rec: Subject<unknown>,
     elapsed: number,
+    pass: number,
+    fade: number,
   ): number {
     if (Number.isNaN(rec.probed)) {
       this.late.push(slot);
@@ -1565,8 +1775,8 @@ export class Lanes<I, O> {
     }
     const subject = this.subjectAt(slot);
     if (subject === absent) return 0;
-    const pass = passAt(elapsed, voice.patch.period, voice.passes);
-    return this.host.weigh(voice, subject, rec, elapsed, pass);
+    const base = this.host.signal(voice, subject, rec, elapsed, pass);
+    return weighed(base, fade, voice.parts === null ? 1 : this.host.parting(voice, subject));
   }
 
   /** What a subject's own ramp out of a voice leaves of its weight: 1 with none. */
@@ -1775,7 +1985,14 @@ export class Lanes<I, O> {
     }
     let w: number;
     if (typeof voice.spec.weight === 'function') {
-      w = this.signalled(voice, slot, lane.records[p] as Subject<unknown>, elapsed);
+      w = this.signalled(
+        voice,
+        slot,
+        lane.records[p] as Subject<unknown>,
+        elapsed,
+        lane.pass,
+        lane.fade,
+      );
       if (Number.isNaN(w)) {
         data[o + WEIGHT] = 0;
         return false;
@@ -1898,7 +2115,8 @@ export class Lanes<I, O> {
     }
     const kept = reading.kept;
     host.ready(voice, subject, rec, elapsed, pass, w);
-    host.horizon(voice, delay);
+    if (this.keeps) host.horizon(voice, delay);
+    else reading.horizon = Number.POSITIVE_INFINITY;
     const delta = voice.patch.at(phase, subject, voice.setting as never) as Record<string, unknown>;
     // What `influence` leaves on the record, so a probe on the general path this frame reuses it.
     rec.delta = delta;
@@ -1982,7 +2200,14 @@ export class Lanes<I, O> {
       let w: number;
       if (fast) w = hot[h + H_WEIGHT] as number;
       else if (typeof voice.spec.weight === 'function') {
-        w = this.signalled(voice, slot, c.records[p] as Subject<unknown>, elapsed);
+        w = this.signalled(
+          voice,
+          slot,
+          c.records[p] as Subject<unknown>,
+          elapsed,
+          passAt(elapsed, voice.patch.period, voice.passes),
+          this.host.envelope(voice, data[o + SINCE] as number),
+        );
         if (Number.isNaN(w)) {
           data[o + WEIGHT] = 0;
           continue;
@@ -2006,7 +2231,6 @@ export class Lanes<I, O> {
         data[o + MET] = 1;
       }
       const ms = data[o + MSLOT] as number;
-      if ((f & F_STALE) !== 0 && ms >= 0) f = this.copyStretch(c, p, ms);
       if (
         ms < 0 ||
         (f & F_BARE) === 0 ||
@@ -2016,7 +2240,7 @@ export class Lanes<I, O> {
         const run = c.motions[p] as Motions<I>;
         this.move(c, run, p, slot, c.records[p] as Subject<unknown>, elapsed, delay, w);
         // The first sample numbered the subject in the patch: copy its stretch from the next fill.
-        if (ms < 0) hot[h + H_FLAGS] = (hot[h + H_FLAGS] as number) | F_STALE;
+        if (ms < 0) c.restale(p, hot[h + H_FLAGS] as number);
         continue;
       }
       closed(
@@ -2105,6 +2329,23 @@ export class Lanes<I, O> {
     return f;
   }
 
+  /**
+   * Copies stale motion rows' stretches as a fill begins: inside `runCrowd`, once voices came and
+   * went, TurboFan spent its inlining on the copy and stopped inlining every row's ease.
+   */
+  private freshen(c: Crowd<I, O>): void {
+    c.stale = false;
+    const hot = c.hot;
+    const H = c.stride;
+    for (let p = 0; p < c.list.length; p++) {
+      const f = hot[p * H + H_FLAGS] as number;
+      if ((f & F_STALE) === 0 || (f & F_MOTION) === 0) continue;
+      // A row with no stretch yet is marked again once its first sample numbers it.
+      const ms = c.data[p * STRIDE + MSLOT] as number;
+      if (ms >= 0) this.copyStretch(c, p, ms);
+    }
+  }
+
   /** Copies a crowd row's current stretch from its patch into `hot`; returns the row's flags. */
   private copyStretch(c: Crowd<I, O>, p: number, ms: number): number {
     const run = c.motions[p] as Motions<I>;
@@ -2167,24 +2408,30 @@ export class Lanes<I, O> {
         data[o + WEIGHT] = 0;
         continue;
       }
+      if (!flat) {
+        const since = data[o + SINCE] as number;
+        if (!lane.weighed || !Object.is(since, lane.weighedSince)) {
+          lane.fade = this.host.envelope(voice, since);
+          lane.weighed = true;
+          lane.weighedSince = since;
+        }
+      }
       let w: number;
       if (signal) {
-        w = this.signalled(voice, slot, records[p] as Subject<unknown>, elapsed);
+        w = this.signalled(
+          voice,
+          slot,
+          records[p] as Subject<unknown>,
+          elapsed,
+          passAt(elapsed, voice.patch.period, voice.passes),
+          lane.fade,
+        );
         if (Number.isNaN(w)) {
           data[o + WEIGHT] = 0;
           continue;
         }
-      } else {
-        if (!flat) {
-          const since = data[o + SINCE] as number;
-          if (!lane.weighed || !Object.is(since, lane.weighedSince)) {
-            lane.fade = this.host.envelope(voice, since);
-            lane.weighed = true;
-            lane.weighedSince = since;
-          }
-        }
+      } else
         w = flat && !parts ? whole : weighed(voice.weight, lane.fade, this.parting(voice, slot));
-      }
       data[o + WEIGHT] = w;
       if (data[o + MET] === 0) {
         if (Number.isNaN((records[p] as Subject<unknown>).probed)) {
@@ -2248,7 +2495,8 @@ export class Lanes<I, O> {
         ms = run.slot(subject);
         data[o + MSLOT] = ms;
       }
-      this.host.horizon(voice, delay);
+      if (this.keeps) this.host.horizon(voice, delay);
+      else reading.horizon = Number.POSITIVE_INFINITY;
       if (!run.quiet(ms, elapsed)) {
         this.late.push(slot);
         return;

@@ -260,25 +260,29 @@ systems now run on it**, on klieg's `main`.
      a weight before multiplying in a subject fade, and `atRest`'s dry read handed a weight
      signal the unheld time. `SAME_LANES=off bench/same.sh <rev>` compares this tree's lanes with
      a revision's general path. What is still slow, largest first:
+     - **A voice over every subject cued among a crowd** (`swap`: 10k tween voices of one subject
+       each, a voice over all of them replaced every frame) costs about 6.0 ms a frame on teitou,
+       from 12.4 at `560f79c`. What is left is each subject meeting the new voice: a record per
+       subject and a relinked chain.
      - **A blend still costs half again a plain voice**: three voices blended by a signal over
-       10k subjects take about 3.3 ms a frame, three plain ones 2.2 (teitou). The difference is
-       the signal per voice and subject and the locus's gather. A locus with a motion member,
-       or a signal that keeps state, stays on the general path.
-     - **Starting 10k one-subject tween voices costs about 49 ms** (cue and first frame, from 65
-       at 0.4.0), where a `fn` voice costs about 22: a motion patch per voice still holds about
-       2.7 KB for one subject, mostly the closures `moving` makes per patch (`from`, `velocity`,
-       `aim`, `scalar`, `ms`, `at`, `read`, `to`) and its numbering (a WeakRef and a
-       FinalizationRegistry). `bench/heapby.mjs` lists it by constructor.
-     - **Nothing reads clearly slower than 0.4.0 at steady state.** In 300-frame runs `sparse`
-       is bimodal (0.078 or 0.11 ms) and `named` at 100 and `own` at 1k read 5–9% slower; at
-       `FRAMES=5000` `sparse` and `fn` at 100 are equal, `named` at 100 is faster, `own` is
-       too noisy to call (0.163–0.170 against 0.148–0.198), and `keys-` (lanes off) reads
-       2–3% slower (teitou, 2026-10-04). Confirm any short-run regression at `FRAMES=5000`
-       before chasing it: 330 frames can end before the JIT settles.
+       10k subjects take about 3.2 ms a frame, three plain ones 2.0 (teitou). `mix.blend` calls
+       its signal once per member and subject; calling it once per subject would cut a third of
+       a three-member blend's signal calls, but changes how often a host's signal runs, so it waits
+       on Mike. A locus with a motion member, or a signal that keeps state, stays on the general
+       path.
+     - **Starting 10k one-subject tween voices** takes about 8 ms to cue and 23 for the first frame,
+       against about 3 and 11 for `fn` voices (teitou, branch `slow-cases-2`). The rest is
+       allocation spread over a `Motions`, its closures, two WeakMaps and three WeakRefs per voice,
+       with collection about a fifth of the profile. Measured no different and reverted: carving
+       motion buffers from a shared slab, and keeping a named subject's record out of the WeakMap.
      - **A crowd's `keys` rows** still cost about 82 ns a subject by `pull` against 24 for one
-       keys voice over the same subjects: each row searches its own stops and calls its easing,
-       where a shared voice does that once per phase. They fold straight into the lanes now,
-       through the segment search `read` uses (`segment` in `patch.ts`).
+       keys voice over the same subjects: each row chases its own voice, stops and arrays, where
+       a shared voice reads them once per phase.
+     - **`target` memory** still grows with the square of voices × subjects (see
+       `NOTES-FROM-WEASEL.md`): a bit per voice and subject number would end it, but only mixes
+       with lanes number their subjects.
+     - **Nothing reads clearly slower than 0.4.0 at steady state.** Confirm any short-run
+       regression at `FRAMES=5000` before chasing it: 330 frames can end before the JIT settles.
 
 1d. **`@msb235/blits-quarks` 0.1.0 is on npm**, published by hand 2026-10-02 because npm refuses
    trust for a name never published; trusted publishing is registered since, so later versions go out

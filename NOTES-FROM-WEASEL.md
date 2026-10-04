@@ -13,7 +13,8 @@ and delete this file once it is empty.
 
 What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 
-- `atRest` runs a second fold, though on reused deltas.
+- `atRest` runs a second fold, though on reused deltas, wherever a subject has a voice off lanes;
+  one whose every voice is laned reads the lanes' values instead (since 2026-10-04).
 - `probe` with no `out` stores a freshly allocated pose per subject per frame. weasel measured this
   pattern: a new pose object per node per frame took major GC from 57 ms to 549 ms over 10 s
   (`docs/superpowers/specs/2026-08-24-frame-loop-decoupling-design.md` in weasel).
@@ -25,6 +26,18 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   (28–50 ms on `2da21c1`); springs 0.73–1.08 against 0.62–0.67, where blits now wins. weasel
   puts the tween gap down to its own per-animation reads (about 0.5 ms, being removed) and a
   drop it still defers a frame.
+- **Churn, what is left** (`turnover^`, weasel's shape: each frame one subject leaves for good and
+  a new one comes, read by `pull` over a list kept dense by swap-remove; teitou, 2026-10-04,
+  `2ad0063`). 0.43 ms a frame against 0.32–0.33 for the same voices steady (`tweens^`). In the
+  profile: `moveTo` compacting all 10k voices to drop the one that retired (about 4%; skipping it
+  would touch every reader of the voice list), and `flush` writing row by row once the swaps have
+  left slots out of list order. `popDue` shows at up to 14%, but that is a Maglev deopt loop on its
+  fresh `out` array, and removing the deopts saved no time. A user ease runs once per subject once
+  start times differ, where voices started together share one call a frame: a cubic
+  `1 - (1 - u) ** 3` costs about 0.1 ms at 10k against a line. Retargeting each tween as it is
+  cued, as weasel's codec does, costs nothing further (`RETARGET=1 bench/scatter.mjs`), but a tween
+  of arrays on a channel holding a number reads every row through the slow fold: 1.2 ms a frame at
+  10k against 0.24 for the same tween of numbers (teitou, 2026-10-04, `0e26fb3`).
 - **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a
   `fn` voice in plain Node: about 35 ms warm against 16, and 80–90 cold against 28–42 (weasel,
   orochi under load, 2026-10-02). A cold run in blits' own shape read the other way, 34 against 49.
