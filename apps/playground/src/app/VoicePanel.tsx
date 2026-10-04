@@ -26,8 +26,22 @@ const FIELDS: ConfigField[] = [
   { key: 'fromCurrent', label: "from: 'current'", type: 'checkbox', default: false },
 ];
 const resolved = fromConfigFields(FIELDS);
+/** The `VoiceSpec` member each row writes, whose doc comment it shows. */
+const SPEC_KEY: Record<string, string> = {
+  name: 'name',
+  start: 'start',
+  rate: 'rate',
+  loopForGood: 'loop',
+  passes: 'loop',
+  fadeIn: 'fade',
+  fadeOut: 'fade',
+  hold: 'hold',
+  locus: 'locus',
+  fromCurrent: 'from',
+};
 // `manual` keeps a row's label from toggling it to `auto`, which a voice field has no meaning for.
-for (const leaf of Object.values(resolved.group.children)) Object.assign(leaf, { manual: true });
+for (const [key, leaf] of Object.entries(resolved.group.children))
+  Object.assign(leaf, { manual: true, description: docOf(`VoiceSpec.${SPEC_KEY[key]}`) ?? '' });
 const SCHEMA = {
   ...resolved,
   sections: [
@@ -109,25 +123,31 @@ export function VoicePanel({ voice: v, errors, faults, onChange, onDelete }: Voi
           </ul>
         </div>
       )}
-      <ExprInput
-        label="stagger"
-        placeholder="(s) => s.col * 80"
-        value={v.stagger?.code ?? ''}
-        error={errorOf('stagger')}
-        onCommit={(code) => onChange({ ...v, stagger: code ? { code } : undefined })}
-      />
-      <ExprInput
-        label="target"
-        placeholder="(s) => s.row === 0"
-        value={v.target?.code ?? ''}
-        error={errorOf('target')}
-        onCommit={(code) => onChange({ ...v, target: code ? { code } : undefined })}
-      />
-      <WeightField
-        value={v.weight}
-        error={errorOf('weight')}
-        onChange={(weight) => onChange({ ...v, weight })}
-      />
+      <div title={docOf('VoiceSpec.stagger')}>
+        <ExprInput
+          label="stagger"
+          placeholder="(s) => s.col * 80"
+          value={v.stagger?.code ?? ''}
+          error={errorOf('stagger')}
+          onCommit={(code) => onChange({ ...v, stagger: code ? { code } : undefined })}
+        />
+      </div>
+      <div title={docOf('VoiceSpec.target')}>
+        <ExprInput
+          label="target"
+          placeholder="(s) => s.row === 0"
+          value={v.target?.code ?? ''}
+          error={errorOf('target')}
+          onCommit={(code) => onChange({ ...v, target: code ? { code } : undefined })}
+        />
+      </div>
+      <div title={docOf('VoiceSpec.weight')}>
+        <WeightField
+          value={v.weight}
+          error={errorOf('weight')}
+          onChange={(weight) => onChange({ ...v, weight })}
+        />
+      </div>
       {faults && faults.count > 0 && (
         <p className={s.fault} role="status">
           {faults.count} calls threw; first: {faults.first}

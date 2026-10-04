@@ -141,4 +141,31 @@ describe('Player', () => {
     p.solo('sp', out);
     expect(bits(out)).toEqual(bits(p.columns));
   });
+
+  it('a live retarget reaches the full mix and the solo, and a seek back or a rebuild drops it', () => {
+    const p = player();
+    p.seek(1500);
+    const plain = player();
+    plain.seek(1500);
+    const before = [...p.columns.offset];
+    p.live('sp', (_, patch) => {
+      for (const s of subjects)
+        (patch as unknown as { to(s: unknown, v: number[]): void }).to(s, [0, 80]);
+    });
+    expect(p.livened).toBe(true);
+    p.seek(2500);
+    plain.seek(2500);
+    expect(p.columns.offset[1]).toBeGreaterThan(40);
+    expect(p.probe('sp', 0)?.offset).toEqual(p.probe(null, 0)?.offset);
+    p.seek(1500);
+    expect(p.livened).toBe(false);
+    expect([...p.columns.offset]).toEqual(before);
+    p.live('sp', (h) => {
+      h.weight = 0;
+    });
+    p.rebuild();
+    expect(p.livened).toBe(false);
+    p.seek(2500);
+    expect(bits(p.columns)).toEqual(bits(plain.columns));
+  });
 });

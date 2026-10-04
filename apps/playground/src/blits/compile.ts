@@ -28,6 +28,8 @@ export interface FieldError {
 export interface Built {
   mix: Mix<Subject, Pose>;
   solos: Map<string, Mix<Subject, Pose>>;
+  /** Each solo mix's own voice, so a live change reaches the solo the inspector reads too. */
+  soloed: Map<string, { handle: Handle<Subject>; patch: Patch<Subject, Pose, unknown> }>;
   handles: Map<string, Handle<Subject>>;
   patches: Map<string, Patch<Subject, Pose, unknown>>;
   levels: Map<string, { set(v: number): void }>;
@@ -109,7 +111,7 @@ const REQUIRED = { spring: ['to'], glide: ['from'], tween: ['from', 'to', 'ms'] 
 const finite = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
 
 /** Why blits would refuse `out` for this motion option, or null when it takes it. */
-function refusalOf(channel: ChannelName, key: string): (out: unknown) => string | null {
+export function refusalOf(channel: ChannelName, key: string): (out: unknown) => string | null {
   if (key === 'ms') return (out) => (finite(out) && out > 0 ? null : 'takes a positive number');
   const rest = KIT[channel].rest;
   if (!Array.isArray(rest)) return (out) => (finite(out) ? null : 'takes a number');
@@ -222,6 +224,7 @@ export function compile(
   const make = (only: string | null) => {
     const m = mix<Subject, Pose>(KIT, { stepMs: FRAME });
     const handles = new Map<string, Handle<Subject>>();
+    let own: { handle: Handle<Subject>; patch: Patch<Subject, Pose, unknown> } | null = null;
     const named = new Set<string>();
     for (const v of c.voices) {
       if (named.has(v.name)) {
@@ -243,7 +246,9 @@ export function compile(
       }
       const spec = only === null || only === v.id ? r.spec : { ...r.spec, weight: 0 };
       try {
-        handles.set(v.id, m.cue(spec));
+        const handle = m.cue(spec);
+        handles.set(v.id, handle);
+        if (only === v.id) own = { handle, patch: spec.patch };
       } catch (err) {
         if (only === null)
           errors.push({
@@ -266,11 +271,17 @@ export function compile(
         });
       }
     }
-    return { m, handles };
+    return { m, handles, own };
   };
   const full = make(null);
   const solos = new Map<string, Mix<Subject, Pose>>();
-  if (opts.solos) for (const id of full.handles.keys()) solos.set(id, make(id).m);
+  const soloed: Built['soloed'] = new Map();
+  if (opts.solos)
+    for (const id of full.handles.keys()) {
+      const made = make(id);
+      solos.set(id, made.m);
+      if (made.own) soloed.set(id, made.own);
+    }
   void subjects;
-  return { mix: full.m, solos, handles: full.handles, patches, levels, faults, errors };
+  return { mix: full.m, solos, soloed, handles: full.handles, patches, levels, faults, errors };
 }

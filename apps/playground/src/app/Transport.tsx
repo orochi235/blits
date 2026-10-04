@@ -13,6 +13,8 @@ export interface TransportProps {
   length: number;
   live: boolean;
   onLive(l: boolean): void;
+  /** Whether a live change is in force; the next edit or seek back drops it. */
+  livened: boolean;
   levels: readonly Level[];
   /** Slider values in force; a level absent here shows the composition's value. */
   moved: ReadonlyMap<string, number>;
@@ -50,7 +52,13 @@ export function Transport(p: TransportProps) {
           />
         </label>
       ))}
-      {p.live && <span className={s.badge}>live changes are temporary</span>}
+      {(p.live || p.livened) && (
+        <span className={s.badge} role="status">
+          {p.livened
+            ? 'live changes in force: the next edit or scrub back drops them'
+            : 'live: changes are temporary'}
+        </span>
+      )}
     </div>
   );
 }

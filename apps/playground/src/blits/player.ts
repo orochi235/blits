@@ -1,5 +1,7 @@
+import type { Handle, Patch } from '@msb235/blits';
 import { type Built, FRAME } from './compile';
 import type { Level } from './composition';
+import type { Pose } from './kit';
 import type { Subject } from './stage';
 
 export interface Columns {
@@ -22,6 +24,7 @@ export class Player {
   // Slider moves outlive a rebuild: a replay plays them at their current value.
   private readonly slid = new Map<string, number>();
   private authored: Map<string, number> | null = null;
+  private isLive = false;
 
   static columnsFor(n: number): Columns {
     return {
@@ -79,6 +82,40 @@ export class Player {
     this.built.solos.get(id)?.pull(this.subjects, out);
   }
 
+  /** The picked subject's pose in the full mix, or in voice `id`'s solo, at the synced frame. */
+  probe(id: string | null, i: number): Pose | undefined {
+    const subject = this.subjects[i];
+    const m = id === null ? this.built.mix : this.built.solos.get(id);
+    return subject && m ? m.probe(subject) : undefined;
+  }
+
+  weightOf(id: string, i: number): number {
+    const subject = this.subjects[i];
+    return subject ? (this.built.handles.get(id)?.weightOf(subject) ?? 0) : 0;
+  }
+
+  /**
+   * Acts on voice `id` as it runs, in the full mix and in its solo alike. The change lasts until
+   * the next rebuild: an edit, or a seek back.
+   */
+  live(
+    id: string,
+    act: (handle: Handle<Subject>, patch: Patch<Subject, Pose, unknown>) => void,
+  ): void {
+    const handle = this.built.handles.get(id);
+    const patch = this.built.patches.get(id);
+    if (!handle || !patch) return;
+    act(handle, patch);
+    const solo = this.built.soloed.get(id);
+    if (solo) act(solo.handle, solo.patch);
+    this.isLive = true;
+  }
+
+  /** Whether a live change is in force, which the next rebuild drops. */
+  get livened(): boolean {
+    return this.isLive;
+  }
+
   setLevel(name: string, value: number): void {
     this.slid.set(name, value);
     this.built.levels.get(name)?.set(value);
@@ -98,6 +135,7 @@ export class Player {
     const built = this.build();
     for (const [name, value] of this.slid) built.levels.get(name)?.set(value);
     this.frame = -1;
+    this.isLive = false;
     return built;
   }
 

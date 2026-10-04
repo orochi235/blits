@@ -94,3 +94,14 @@
   display: flex;
   flex-direction: column;
 }
+
+.plots {
+  display: grid;
+  gap: var(--wzl-space-xs);
+}
+
+.readout {
+  min-width: 4ch;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}

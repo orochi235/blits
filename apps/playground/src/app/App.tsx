@@ -9,6 +9,8 @@ import { type ClipEdit, ScoreLanes } from '@pg/widgets/ScoreLanes';
 import { LabShell } from '@weasel-js/labkit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import s from './App.module.css';
+import { Inspector } from './Inspector';
+import { LivePanel } from './LivePanel';
 import { PatchPanel } from './PatchPanel';
 import { Transport } from './Transport';
 import { useComposition } from './useComposition';
@@ -72,6 +74,7 @@ export function App() {
   const [live, setLive] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [picked, setPicked] = useState<number | null>(0);
+  const shown = picked !== null && picked < subjects.length ? picked : null;
   // A link the clipboard took, or one it refused, left on screen to copy by hand.
   const [shared, setShared] = useState<{ copied: boolean; url: string } | null>(null);
   const linkRef = useRef<HTMLInputElement>(null);
@@ -197,11 +200,13 @@ export function App() {
             subjects={subjects}
             columns={player.columns}
             frame={frame}
-            picked={picked}
+            picked={shown}
             onPick={setPicked}
           />
         </section>
-        <section className={s.inspector} aria-label="inspector" />
+        <section className={s.inspector} aria-label="inspector">
+          <Inspector player={player} comp={comp} picked={shown} frame={frame} />
+        </section>
         <aside className={s.side} aria-label="voice and patch">
           <div className={s.row}>
             <button
@@ -243,6 +248,15 @@ export function App() {
               onDelete={() => deleteVoice(voice.id)}
             />
           )}
+          {voice && live && (
+            <LivePanel
+              key={`${voice.id} live`}
+              player={player}
+              comp={comp}
+              voice={voice}
+              onActed={tick}
+            />
+          )}
           {voice && (
             <PatchPanel
               key={`${voice.id} patch`}
@@ -265,6 +279,7 @@ export function App() {
             length={comp.length}
             live={live}
             onLive={setLive}
+            livened={player.livened}
             levels={comp.levels}
             moved={player.moved}
             onLevel={(name, v) => {
