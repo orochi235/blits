@@ -58,7 +58,7 @@ export function stopsOf(
   }
   for (const stop of byAt.values()) {
     if (stop.ease !== undefined) continue;
-    const kept = previous.find((p) => p.at === stop.at)?.ease;
+    const kept = previous.find((p) => Math.abs(p.at - stop.at) < 1e-6)?.ease;
     if (kept !== undefined && toWeasel(kept) === undefined) stop.ease = kept;
   }
   return [...byAt.values()].sort((a, b) => a.at - b.at);

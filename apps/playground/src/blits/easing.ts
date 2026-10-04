@@ -1,5 +1,5 @@
 import type { Easing } from '@msb235/blits';
-import type { EasingSpec } from '@weasel-js/core';
+import { type EasingSpec, resolveEasing } from '@weasel-js/core';
 import { easingBezier } from '@weasel-js/ui';
 
 type Bezier = readonly [number, number, number, number];
@@ -20,5 +20,5 @@ export function toWeasel(e: Easing | undefined): EasingSpec | undefined {
 export function toBlits(e: EasingSpec | undefined): Easing | undefined {
   if (e === undefined) return undefined;
   const b = easingBezier(e);
-  return b ? { bezier: [b[0], b[1], b[2], b[3]] } : undefined;
+  return b ? { bezier: [b[0], b[1], b[2], b[3]] } : resolveEasing(e);
 }

@@ -2,6 +2,7 @@ import type { Keyframe } from '@msb235/blits';
 import { toBlits, toWeasel } from '@pg/blits/easing';
 import { stopsOf, tracksOf } from '@pg/blits/keys';
 import type { Pose } from '@pg/blits/kit';
+import { resolveEasing } from '@weasel-js/core';
 import { describe, expect, it } from 'vitest';
 
 const stops = [
@@ -68,5 +69,13 @@ describe('easing', () => {
     expect(toWeasel('linear')).toBeUndefined();
     expect(toBlits({ bezier: [0.1, 0.2, 0.3, 0.4] })).toEqual({ bezier: [0.1, 0.2, 0.3, 0.4] });
     expect(toBlits(undefined)).toBeUndefined();
+  });
+
+  it('turns a weasel named curve with no bezier form into a function', () => {
+    const got = toBlits('easeOutQuad');
+    expect(typeof got).toBe('function');
+    const want = resolveEasing('easeOutQuad');
+    for (const u of [0, 0.25, 0.5, 0.9, 1])
+      expect((got as (u: number) => number)(u)).toBeCloseTo(want(u));
   });
 });
