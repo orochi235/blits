@@ -559,6 +559,7 @@ export class Lanes<I, O> {
   private into: Locus<I, O> | null = null;
   private intoId = 0;
   private readonly lawsByKey = new Map<string, Float64Array>();
+  private lastLaw: Float64Array | null = null;
   private laned: Laned[] = [];
   /** By kit slot, the laned channel there. */
   private bySlot: (Laned | undefined)[] = [];
@@ -1168,7 +1169,10 @@ export class Lanes<I, O> {
       const from = was.get(v.id);
       this.join(v, from, from?.rowOf.get(v.id), old);
     }
-    if (this.crowds.length === 0) this.lawsByKey.clear();
+    if (this.crowds.length === 0) {
+      this.lawsByKey.clear();
+      this.lastLaw = null;
+    }
   }
 
   /**
@@ -1368,6 +1372,15 @@ export class Lanes<I, O> {
 
   /** A patch's law, as the one array every crowd row with the same law shares. */
   private lawOf(run: Motions<I>): Float64Array {
+    // Most crowds' voices share one law, so the last one found is checked before any key is made.
+    const last = this.lastLaw;
+    if (last !== null && run.hasLaw(last)) return last;
+    const law = this.lawKeyed(run);
+    this.lastLaw = law;
+    return law;
+  }
+
+  private lawKeyed(run: Motions<I>): Float64Array {
     const law = run.law();
     const key = law.join(' ');
     const known = this.lawsByKey.get(key);

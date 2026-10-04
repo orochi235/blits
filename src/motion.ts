@@ -327,6 +327,12 @@ export class Motions<I> {
     return this.runs.slice(0, HEAD);
   }
 
+  /** Whether `law` holds this patch's law, number for number, as `Object.is` compares them. */
+  hasLaw(law: Float64Array): boolean {
+    for (let i = 0; i < HEAD; i++) if (!Object.is(law[i], this.runs[i])) return false;
+    return true;
+  }
+
   /**
    * Copies subject `s`'s current stretch into `out` from `o` as its release time, its seconds, then
    * `x0`, `v0` and `to` per axis; false, copying nothing, while it has a change pending or an
