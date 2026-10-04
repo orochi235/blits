@@ -18,7 +18,7 @@ systems now run on it**, on klieg's `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **private**; release 0.3.0 (2026-10-02).
+- `main` at `git@github.com:orochi235/blits.git` — **private**; release 0.4.0 (2026-10-04).
 - **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
   blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
@@ -34,7 +34,7 @@ systems now run on it**, on klieg's `main`.
   (recorded in klieg's changelog). 0.3.0 needed no change in klieg: its `color` channel is a `hex`,
   but every effect voice plays at full weight with no locus, so the OKLCH blend is never taken. The
   schema page's klieg section says what the port found.
-- **The package, `@msb235/blits` 0.3.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
+- **The package, `@msb235/blits` 0.4.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
   channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
   `motion.ts` (`spring`, `glide`), `lanes.ts` (lanes, with `clock.ts`, the phase,
@@ -44,7 +44,7 @@ systems now run on it**, on klieg's `main`.
   is lint, typecheck of both `src` and `test`, then the suite, green. `npm run bench`
   (`bench/frame.mjs`) measures a frame at scene sizes, GC counts included. Enlisted for the fleet — `.onto/tests` is
   `plugin: node`, `run: npm test`, `runner: vitest` — and green there too.
-- **`hold` is on `main`, unreleased** (2026-10-03): WAAPI's `fill` under blits' own name, for wod's
+- **`hold` shipped in 0.4.0** (built 2026-10-03): WAAPI's `fill` under blits' own name, for wod's
   move onto blits — `useSpin` holds its landing angle with `fill: 'forwards'` and awaits
   `animation.finished`, which map to `hold: 'after'` and `handle.played`. The schema page's Holding
   paragraph has the design. Mike chose the name and the values `before`/`after`/`both`, and that a
