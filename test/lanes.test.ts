@@ -1532,3 +1532,234 @@ describe('lanes give a one-axis vector channel the shape the general path gives'
     );
   });
 });
+
+describe('a crowd of single-subject keys and fn voices gives the pose the general path gives', () => {
+  const ramp = [0, 16, 50, 120, 333, 500, 520, 700, 999, 1000, 1300, 1500, 1516, 1700, 2600, 3000];
+
+  /** One voice per part on `position`: keys, a stateless fn and a tween in turn. */
+  const each = (m: Mix<Part, Pose>, parts: Part[], start = 0) =>
+    parts.map((p, i) =>
+      i % 3 === 0
+        ? m.cue({
+            patch: keys<Part, Pose>(400 + p.id * 20, [
+              { at: 0, delta: { position: [0, 0, 0] } },
+              { at: 0.5, delta: { position: [p.id, -1, 2] }, ease: 'ease-in' },
+              { at: 1, delta: { position: [-p.id, 3, 0] } },
+            ]),
+            subjects: [p],
+            start,
+          })
+        : i % 3 === 1
+          ? m.cue({
+              patch: patch<Part, Pose>(
+                300 + p.id * 10,
+                (phase, part) => ({ position: [phase * part.id, -0, 0.5 - phase] }),
+                { writes: ['position'] },
+              ),
+              subjects: [p],
+              start,
+            })
+          : m.cue({
+              patch: tween<Part, Pose, number[]>('position', {
+                from: [0, 0, 0],
+                to: [p.id, 1, -1],
+                ms: 250,
+              }),
+              subjects: [p],
+              start,
+            }),
+    );
+
+  it('for a keys, a fn or a tween voice per subject, beside shared voices on the channel', () => {
+    agree(
+      (m, parts) => {
+        const a = m.cue({ patch: pulse() });
+        const crowd = each(m, parts);
+        const b = m.cue({ patch: wave(), weight: 0.4 });
+        return { handles: [a, ...crowd, b] };
+      },
+      { times: ramp },
+    );
+  });
+
+  it('with holds, loops, staggers, fades, weights, rates, seeks and subject fades', () => {
+    const play: Play = (m, parts) => {
+      const hs = parts.map((p, i) =>
+        m.cue({
+          patch:
+            i % 2 === 0
+              ? keys<Part, Pose>(300, [
+                  { at: 0, delta: { gain: 0.2 } },
+                  { at: 1, delta: { gain: 0.2 + p.id / 10 } },
+                ])
+              : patch<Part, Pose>(250, (phase) => ({ gain: 1 - phase / 2 }), {
+                  writes: ['gain'],
+                }),
+          subjects: [p],
+          loop: i % 4 < 2 ? 2 : true,
+          hold: i % 3 === 0 ? 'both' : i % 3 === 1 ? 'after' : undefined,
+          start: i % 5 === 0 ? 300 : 0,
+          fade: i % 3 === 2 ? { in: 150, out: 200 } : undefined,
+          weight: i % 4 === 1 ? 0.5 : 1,
+        }),
+      );
+      return {
+        handles: hs,
+        at: (t) => {
+          if (t === 333) {
+            (hs[1] as Handle<Part>).rate = 2;
+            (hs[2] as Handle<Part>).weight = 0.25;
+            (hs[3] as Handle<Part>).ramp(0.5, 300);
+            (hs[4] as Handle<Part>).seek(50);
+          }
+          if (t === 500) {
+            (hs[0] as Handle<Part>).fade({ over: 300 });
+            (hs[5] as Handle<Part>).fade({ subject: parts[5] as Part, over: 200 });
+          }
+          if (t === 1300) (hs[1] as Handle<Part>).fade({ subject: parts[1] as Part, over: 0 });
+        },
+      };
+    };
+    agree(play, { times: ramp });
+    agree(play, { times: ramp, parts: 90, probe: (t, p) => p.id % 9 === 0 || t > 1400 });
+  });
+
+  it('with voices starting late, finishing and dropped subjects', () => {
+    agree(
+      (m, parts) => {
+        const early = each(m, parts.slice(0, 3));
+        const late = each(m, parts.slice(3), 500);
+        return {
+          handles: [...early, ...late],
+          at: (t) => {
+            if (t === 999) m.drop(parts[0] as Part);
+            if (t === 1500) (early[1] as Handle<Part>).fade({ over: 0 });
+          },
+        };
+      },
+      { times: ramp },
+    );
+  });
+
+  it('for a fn per subject that starts keeping state partway through', () => {
+    agree(
+      (m, parts) => ({
+        handles: parts.map((p) =>
+          m.cue({
+            patch: patch<Part, Pose>(
+              0,
+              (_ph, part, setting) => {
+                if (setting.elapsed < 400) return { crawl: part.id };
+                const n = setting.keep(part, () => ({ n: 0 }));
+                n.n++;
+                return { crawl: n.n };
+              },
+              { writes: ['crawl'] },
+            ),
+            subjects: [p],
+          }),
+        ),
+      }),
+      { times: ramp },
+    );
+  });
+
+  it('for keys with a delay, short and typed stops and easeBy', () => {
+    agree(
+      (m, parts) => ({
+        handles: parts.map((p, i) =>
+          m.cue({
+            patch: keys<Part, Pose>(
+              600,
+              [
+                { at: 0, delta: { position: [1, 2] as number[] } },
+                { at: 0.3, delta: { position: Float64Array.of(p.id, 0, -0) as never } },
+                { at: 0.3, delta: { position: [5, 5, 5] }, ease: 'ease-out' },
+                { at: 1, delta: { position: [-1, -0, p.id] } },
+              ],
+              {
+                delayBy: () => (i % 2 === 0 ? 120 : 0),
+                easeBy: () => (i % 3 === 0 ? { steps: 3 } : undefined),
+              },
+            ),
+            subjects: [p],
+            weight: i % 2 === 0 ? 0.7 : 1,
+          }),
+        ),
+      }),
+      { times: ramp },
+    );
+  });
+
+  it('calls a fn voice per subject from the fill, once per frame each', () => {
+    const m = mix<Part, Pose>(K);
+    const seen: number[] = [];
+    const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
+    for (const p of parts)
+      m.cue({
+        patch: patch<Part, Pose>(
+          0,
+          (_ph, part) => {
+            seen.push(part.id);
+            return { crawl: part.id };
+          },
+          { writes: ['crawl'] },
+        ),
+        subjects: [p],
+      });
+    m.sync(0);
+    for (const part of parts) m.probe(part);
+    seen.length = 0;
+    m.sync(16);
+    m.probe(parts[3] as Part);
+    m.probe(parts[1] as Part);
+    // The general path would have called the patch for subjects 3 and 1 alone.
+    expect(seen.sort()).toEqual([0, 1, 2, 3]);
+  });
+});
+
+describe('crowds take voices on and off as they come and go', () => {
+  const frames = Array.from({ length: 100 }, (_, f) => f * 16);
+
+  it('with voices replaced every frame, drops, pending starts and a shared voice coming and going', () => {
+    const play: Play = (m, parts) => {
+      const n = parts.length;
+      const kinds = (p: Part, i: number) =>
+        i % 3 === 0
+          ? tween<Part, Pose, number[]>('position', { from: [0, 0, 0], to: [p.id, i, 1], ms: 300 })
+          : i % 3 === 1
+            ? keys<Part, Pose>(250, [
+                { at: 0, delta: { position: [i, 0, 0] } },
+                { at: 1, delta: { position: [0, p.id, -1] } },
+              ])
+            : patch<Part, Pose>(200, (ph) => ({ position: [ph * i, 1, p.id] }), {
+                writes: ['position'],
+              });
+      const hs = parts.map((p, i) => m.cue({ patch: kinds(p, i), subjects: [p] }));
+      let shared: Handle<Part> | null = null;
+      let turn = 0;
+      return {
+        handles: hs,
+        at: (t) => {
+          const f = t / 16;
+          for (let j = 0; j < 3; j++) {
+            const k = turn++ % n;
+            const p = parts[k] as Part;
+            (hs[k] as Handle<Part>).fade({ over: f % 4 === 0 ? 40 : 0 });
+            if (f % 5 === 0) m.drop(p);
+            hs[k] = m.cue({
+              patch: kinds(p, turn),
+              subjects: [p],
+              start: f % 7 === 0 ? t + 50 : undefined,
+            });
+          }
+          // Late, so rows left empty pile up past where the crowds are rebuilt first.
+          if (f === 60) shared = m.cue({ patch: pulse(), weight: 0.3 });
+          if (f === 85) shared?.fade({ over: 0 });
+        },
+      };
+    };
+    agree(play, { times: frames, parts: 70 });
+    agree(play, { times: frames, parts: 70, probe: (t, p) => p.id % 4 === 0 || t % 64 === 0 });
+  }, 30_000);
+});

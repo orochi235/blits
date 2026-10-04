@@ -21,7 +21,7 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   2026-10-03, vitest means in ms per frame at 10k): a tween motion voice per animation read by
   `pull` costs 0.42–0.46, the same as one shared tween voice (0.39–0.47), so weasel expects to drop
   its own grouping. Without building `{x, y}` sinks 0.35–0.38. By `probe` 0.82–0.94; a `keys` voice
-  per animation by `probe` 1.74–1.95, which no crowd serves yet (`HANDOFF.md` 1c). A spring voice
+  per animation by `probe` 1.74–1.95, before crowds took `keys` rows (`HANDOFF.md` 1c). A spring voice
   per animation by `pull` 0.60–0.65. weasel's old animator reads 0.22–0.37 for its whole frame;
   its animator rebuilt on blits 0.77–0.88, about blits' `pull` plus weasel's own per-call work.
 - **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a

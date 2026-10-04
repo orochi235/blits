@@ -203,8 +203,11 @@ systems now run on it**, on klieg's `main`.
      possible, not a target (2026-10-02). weasel-shaped `pull` at 10k is now about 0.44 ms on
      teitou, from 0.71; remembered lane slots are read without loading each chain while nothing
      has relinked (`relinks` counts chains made stale one subject at a time). Storing stretches as Float64Arrays gave nothing (reverted, `b4a4260`).
-     Next, by the last profile: `prepare`'s per-subject bookkeeping (~10%), `runMotion` itself
-     (~22%), and the fold (~6%).
+     `prepare`'s per-subject bookkeeping now runs once per `pull` over a remembered list
+     (`pullRun`, branch `pull-run`, 2026-10-03): weasel-shaped `pull` about 0.38–0.45 ms on
+     teitou. What is left, by a profile of 20,000 frames on teitou (0.35 ms a frame): the fill is
+     about 68% (`runMotion` 30%, the fold 12%, weasel's own easing 9%), the read about 29%
+     (`pullRun` 14%, the column copy 11%).
    - **`tween`, built 2026-10-02** as a fourth motion kind (Mike chose its own clock, like a
      spring's, over the voice's period). In weasel's shape on studio it takes a frame to 0.83
      of a `fn` tween's and its collection pauses to a quarter; against a `fn` with no per-call
@@ -223,9 +226,15 @@ systems now run on it**, on klieg's `main`.
      share a crowd of flat rows per channel, and `sync` visits only voices with something due. The
      schema page's Lanes section has how and the numbers; 10k tween voices of one subject each now
      cost what one shared voice does. Mike approved the direction and the design, which was then
-     deleted as built. Not done: single-subject `keys` and `fn` voices still take the general path
-     (the same rows with another sampler would do it), and `requalify` is still a pass over every
-     voice whenever `version` changes, which a host starting a voice per call every frame pays.
+     deleted as built.
+   - **Crowds take `keys` and stateless `fn` rows, and voices come and go without a requalify**
+     (branch `crowd-rows`, 2026-10-03). A voice naming its subjects relinks only those, joins its
+     crowd at the end and leaves an empty row; `drop` walks only the voices that can hold the
+     subject. weasel's ask: on teitou a frame replacing one of 10k tween voices went from about
+     9 ms to 0.6 by `pull`. The schema page's crowd paragraph has the rest. Left: a voice naming
+     one subject but writing several channels still has a solo lane, idle, so takes the general
+     path; and one that leaves the general path or a lane, rather than a crowd, still requalifies
+     every voice. Reading keys stops as flat numbers measured no different and was reverted.
 
 1d. **`@msb235/blits-quarks` 0.1.0 is on npm**, published by hand 2026-10-02 because npm refuses
    trust for a name never published; trusted publishing is registered since, so later versions go out
@@ -249,6 +258,14 @@ systems now run on it**, on klieg's `main`.
    stock band's width.
 
 ## Loose ends
+
+- **Rows run earlier in one process change a later row's numbers.** The shared `fn` row read by
+  `pull` reads about 1.9 ms run alone or after per-subject rows on either build, but 2.8–2.9 at
+  the end of a 15-row run on `crowd-rows` (teitou, 2026-10-03). The cause is untraced. Compare
+  rows in the same order on both sides, and treat a row that moves only in a long run as suspect.
+- **A crowd more than half empty rows rebuilds in one frame.** That is one full qualify, about
+  what any cue cost before (roughly 9 ms at 10k on teitou), once every few thousand voices
+  replaced. Not measured as a spike yet.
 
 - **A pose can hold a keyframe's own array.** When a channel has no rest and its `merge` returns
   its second argument, as a `last()` over arrays does, `apply` puts the delta's array into the

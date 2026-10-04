@@ -59,6 +59,22 @@ const tweenFn = () =>
     { writes: ['position'] },
   );
 
+// A voice per subject doing a tween's job, as keys and as a `fn`, each with its own endpoints.
+const keysTo = (s) =>
+  keys(LONG, [
+    { at: 0, delta: { position: [0, 0, 0] } },
+    { at: 1, delta: { position: [s.seed, 1, 0] }, ease: smooth },
+  ]);
+const fnTo = (s) =>
+  patch(
+    LONG,
+    (ph) => {
+      const u = smooth(ph);
+      return { position: [s.seed * u, u, 0] };
+    },
+    { writes: ['position'] },
+  );
+
 // weasel's animator-on-blits shape: string ids, each node's endpoints held in a map by id.
 const easeOut = (u) => 1 - (1 - u) ** 3;
 const ends = new Map();
@@ -107,6 +123,11 @@ const rows = [
   ['tweens', 10000, 1],
   ['tweens', 100000, 1],
   ['tweenfn', 10000, 1],
+  ['keyses', 10000, 1],
+  // A tween voice per subject, with one stopped, its subject dropped, and a new one cued on it
+  // every frame.
+  ['churn', 10000, 1],
+  ['fns', 10000, 1],
   ['weasel', 10000, 1],
   ['weaselfn', 10000, 1],
   // Lanes fill every subject they have met: this one probes all 10k once, then 5% each frame.
@@ -124,6 +145,9 @@ const rows = [
   ['spring^', 10000, 1],
   ['tween^', 10000, 1],
   ['tweenfn^', 10000, 1],
+  ['keyses^', 10000, 1],
+  ['churn^', 10000, 1],
+  ['fns^', 10000, 1],
   ['weasel^', 10000, 1],
   // A projection made and probed every frame, as a continuous scrub would: 500 ms ahead, and
   // 300 ms back on a mix keeping 5 s of history.
@@ -131,7 +155,8 @@ const rows = [
   ['back', 1000, 3],
 ];
 
-const frames = 300;
+// FRAMES=20000 for a profile long enough to sample a fast row.
+const frames = Number(process.env.FRAMES ?? 300);
 // Row names after the script, `node bench/frame.mjs keys keys^`, run only those rows.
 const only = process.argv.slice(2);
 const chosen = only.length > 0 ? rows.filter(([form]) => only.includes(form)) : rows;
@@ -149,12 +174,34 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   if (weasel)
     for (let j = 0; j < n; j++)
       ends.set(`n${j}`, { from: [j, 300 - j, 0], to: [j + 500, 300 - j, 0] });
-  const own = kind === 'own' || kind === 'named' || kind === 'springs' || kind === 'tweens';
+  const own =
+    kind === 'own' ||
+    kind === 'named' ||
+    kind === 'springs' ||
+    kind === 'tweens' ||
+    kind === 'keyses' ||
+    kind === 'churn' ||
+    kind === 'fns';
   if (kind === 'own')
     for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
   if (kind === 'named') for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine] });
   if (kind === 'springs') for (const mine of subjects) m.cue({ patch: settle(), subjects: [mine] });
-  if (kind === 'tweens') for (const mine of subjects) m.cue({ patch: glideTo(), subjects: [mine] });
+  const handles =
+    kind === 'tweens' || kind === 'churn'
+      ? subjects.map((mine) => m.cue({ patch: glideTo(), subjects: [mine] }))
+      : [];
+  // Replaces the voice of one subject a frame, walking through them all.
+  let turn = 0;
+  const churn = () => {
+    if (kind !== 'churn') return;
+    const k = turn++ % n;
+    handles[k].fade({ over: 0 });
+    m.drop(subjects[k]);
+    handles[k] = m.cue({ patch: glideTo(), subjects: [subjects[k]] });
+  };
+  if (kind === 'keyses')
+    for (const mine of subjects) m.cue({ patch: keysTo(mine), subjects: [mine] });
+  if (kind === 'fns') for (const mine of subjects) m.cue({ patch: fnTo(mine), subjects: [mine] });
   for (let v = 0; !own && v < voices; v++) {
     const p =
       kind === 'keys'
@@ -191,6 +238,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   for (let f = 0; f < 30; f++) {
     const f0 = performance.now();
     t += 16.7;
+    churn();
     m.sync(t);
     read(f === 0 ? subjects : probed);
     if (f === 0) first = performance.now() - f0;
@@ -206,6 +254,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       for (const s of probed) p.probe(s, scratch);
     } else {
       t += 16.7;
+      churn();
       m.sync(t);
       read(probed);
     }

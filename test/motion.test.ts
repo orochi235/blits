@@ -374,6 +374,35 @@ describe('the motion form', () => {
     expect(m.probe('a').x).toBe(fresh);
   });
 
+  it('forgets a dropped subject on a patch that a voice not naming it still plays', () => {
+    const s = spring<string, Pose>('x', { from: 0, to: 100 });
+    const m = mix<string, Pose>(K);
+    const a = m.cue({ patch: s, subjects: ['a'] });
+    m.cue({ patch: s, subjects: ['b'] });
+    m.sync(0);
+    m.probe('a');
+    m.probe('b');
+    m.sync(50);
+    a.fade({ over: 0 });
+    m.sync(66);
+    m.probe('b');
+    expect(s.read('a', 66)).toBeDefined();
+    m.drop('a');
+    expect(s.read('a', 66)).toBeUndefined();
+  });
+
+  it('forgets a dropped subject the host retargeted on a patch no voice played for it', () => {
+    const s = spring<string, Pose>('x', { from: 0, to: 100 });
+    const m = mix<string, Pose>(K);
+    m.cue({ patch: s, subjects: ['b'] });
+    m.sync(0);
+    m.probe('b');
+    s.to('a', 5, 100);
+    expect(s.read('a', 50)).toBeDefined();
+    m.drop('a');
+    expect(s.read('a', 50)).toBeUndefined();
+  });
+
   it('refuses a retarget or push on another number of axes, leaving the subject as it was', () => {
     const run = (bad?: (s: ReturnType<typeof spring<Part, Pose, number[]>>, a: Part) => void) => {
       const s = spring<Part, Pose, number[]>('p', { from: [0, 0], to: [1, 2] });
