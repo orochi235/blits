@@ -552,6 +552,10 @@ class Mixer<I, O> implements Mix<I, O> {
   private version = 0;
   /** Per subject, the voices whose `subjects` name it, in voice order. */
   private named = new Store<I, Voice<I, O>[]>();
+  /** Voices a subject has been faded out of, which `drop` looks in besides those that reach it. */
+  private readonly parters = new Set<Voice<I, O>>();
+  /** Per subject, the motion patches a voice or the host has asked about it, so `drop` frees it. */
+  private readonly motions = new Store<I, Motions<I>[]>();
   /** How many voices in the list carry `subjects`. */
   private naming = 0;
   /** The voices in the list that name no subjects, in voice order. */
@@ -797,6 +801,7 @@ class Mixer<I, O> implements Mix<I, O> {
         continue;
       }
       if (this.opts.history) this.gone.push(voice);
+      else this.parters.delete(voice);
       this.changed(voice);
       if (voice.named === null) pruned = true;
       else this.unindex(voice);
@@ -1226,7 +1231,8 @@ class Mixer<I, O> implements Mix<I, O> {
     this.pose.delete(subject);
     this.chains.delete(subject);
     this.stirred = true;
-    // Only a voice over every subject, one naming this one, or one gone may hold a record of it.
+    // A record of it is only in a voice over every subject, one naming it, or one gone; a ramp out
+    // of a voice that does not name it is in `parters`, and a patch's own state in `motions`.
     const forget = (voice: Voice<I, O>) => {
       voice.subjects.delete(subject);
       voice.motion?.release(subject);
@@ -1237,6 +1243,22 @@ class Mixer<I, O> implements Mix<I, O> {
     const named = this.named.get(subject);
     if (named !== undefined) for (const voice of [...named]) forget(voice);
     for (const voice of this.gone) forget(voice);
+    for (const voice of this.parters) {
+      forget(voice);
+      if (voice.parts?.size === 0) voice.parts = null;
+      if (voice.parted?.size === 0) voice.parted = null;
+      if (voice.parts === null && voice.parted === null) this.parters.delete(voice);
+    }
+    const motions = this.motions.get(subject);
+    if (motions !== undefined) for (const motion of motions) motion.release(subject);
+    this.motions.delete(subject);
+  }
+
+  /** Notes that a motion patch holds or may hold state for a subject, for `drop` to free. */
+  private holds(motion: Motions<I>, subject: I): void {
+    const list = this.motions.get(subject);
+    if (list === undefined) this.motions.set(subject, [motion]);
+    else if (!list.includes(motion)) list.push(motion);
   }
 
   drain<E = unknown>(tag?: string): Sent<I, E>[] {
@@ -1326,7 +1348,9 @@ class Mixer<I, O> implements Mix<I, O> {
       if (m === undefined) return;
       m.stirred = true;
       const v = voice.deref();
-      if (v !== undefined) m.unpart(v, subject);
+      if (v === undefined) return;
+      if (v.motion !== undefined) m.holds(v.motion, subject);
+      m.unpart(v, subject);
     };
   }
 
@@ -1840,6 +1864,7 @@ class Mixer<I, O> implements Mix<I, O> {
     }
     voice.parts ??= new Map();
     voice.parts.set(subject, { at, over: ms });
+    this.parters.add(voice);
     this.schedule(voice);
     this.lanes?.refill();
   }
@@ -1867,6 +1892,7 @@ class Mixer<I, O> implements Mix<I, O> {
     if (voice.parts?.size === 0) voice.parts = null;
     voice.parted ??= new Map();
     voice.parted.set(subject, at);
+    this.parters.add(voice);
     this.forgetIn(voice, subject);
     const motion = voice.motion;
     if (motion !== undefined && motion.frame === voice.frame) motion.release(subject);
@@ -1980,6 +2006,8 @@ class Mixer<I, O> implements Mix<I, O> {
       held.unknown = this.backward && voice.spec.from === 'current';
     }
     voice.subjects.set(subject, held);
+    if (reaches && voice.motion !== undefined && !this.projecting)
+      this.holds(voice.motion, subject);
     if (voice.state === 'pending') {
       voice.early ??= [];
       voice.early.push(held);

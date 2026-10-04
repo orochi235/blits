@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { hex, kit, max, mixHex, mul, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
+import { tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 import { level } from '../src/signals.js';
 
@@ -314,6 +315,26 @@ describe('fading one subject out of a voice', () => {
     m.sync(16);
     expect(m.probe(a).crawl).toBe(3);
     expect(m.probe(b).crawl).toBe(8);
+  });
+
+  it('is forgotten by drop on a voice that does not name the subject, which goes inert', () => {
+    const m = mix<Part, Pose>(PART);
+    const a = { id: 'x' };
+    const b = { id: 'y' };
+    const h = m.cue({
+      patch: tween<Part, Pose>('crawl', { from: 0, to: 1, ms: 10 }),
+      subjects: [b],
+    });
+    m.sync(0);
+    m.probe(b);
+    h.fade({ subject: a, over: 100 });
+    m.sync(16);
+    m.probe(b);
+    expect(m.inert).toBe(false);
+    m.drop(a);
+    m.sync(32);
+    m.probe(b);
+    expect(m.inert).toBe(true);
   });
 
   it('is forgotten with the subject by drop, so the voice reaches it again', () => {
