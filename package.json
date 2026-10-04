@@ -45,7 +45,10 @@
     "bench": "npm run build && node bench/frame.mjs",
     "site": "npm run dev -w site",
     "site:build": "npm run build -w site",
-    "site:smoke": "npm run smoke -w site"
+    "site:smoke": "npm run smoke -w site",
+    "playground": "npm run dev -w @blits/playground",
+    "playground:smoke": "npm run smoke -w @blits/playground",
+    "playground:check": "npm run typecheck -w @blits/playground && vitest run apps/playground/test && npm run playground:smoke"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
@@ -55,6 +58,7 @@
   },
   "workspaces": [
     "site",
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ]
 }

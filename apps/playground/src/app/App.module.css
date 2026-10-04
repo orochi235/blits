@@ -1,0 +1,149 @@
+.grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 360px;
+  grid-template-rows: minmax(320px, 1fr) auto;
+  grid-template-areas:
+    "stage inspector side"
+    "score score side";
+  gap: var(--wzl-space-sm);
+  padding: var(--wzl-space-sm);
+}
+
+.stage {
+  grid-area: stage;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--wzl-space-xs);
+}
+
+.inspector {
+  grid-area: inspector;
+  min-height: 0;
+  overflow: auto;
+}
+
+.side {
+  grid-area: side;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: var(--wzl-space-md);
+}
+
+.score {
+  grid-area: score;
+  display: grid;
+  gap: var(--wzl-space-xs);
+  min-width: 0;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-md);
+  flex-wrap: wrap;
+}
+
+.live,
+.level {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-xs);
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg);
+}
+
+.badge {
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-accent);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-xs);
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg);
+}
+
+.panel,
+.field {
+  display: grid;
+  gap: var(--wzl-space-sm);
+}
+
+.errors,
+.fault {
+  margin: 0;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-danger);
+}
+
+.errors {
+  padding-inline-start: var(--wzl-space-md);
+}
+
+/* Timeline is a flex column that collapses in a box with no height. */
+.timeline {
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+}
+
+.plots {
+  display: grid;
+  gap: var(--wzl-space-xs);
+}
+
+.readout {
+  min-width: 4ch;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-md);
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-sm);
+  font-weight: 600;
+}
+
+.number {
+  width: 9ch;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.text {
+  flex: 1;
+  min-width: 12ch;
+}
+
+.levels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, 8ch) auto;
+  gap: var(--wzl-space-xs);
+  align-items: center;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg-muted);
+}
+
+.levels input {
+  min-width: 0;
+  width: 100%;
+}

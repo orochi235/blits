@@ -1,0 +1,137 @@
+.score {
+  width: 100%;
+  display: block;
+  user-select: none;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+}
+
+.score :focus-visible {
+  outline: 2px solid var(--wzl-focus-ring);
+  outline-offset: 1px;
+}
+
+.ruler rect {
+  fill: var(--wzl-surface-raised);
+  cursor: ew-resize;
+}
+
+.ruler text {
+  fill: var(--wzl-fg-muted);
+  pointer-events: none;
+}
+
+.laneLine {
+  stroke: var(--wzl-line-subtle);
+}
+
+.label {
+  fill: var(--wzl-fg);
+  cursor: grab;
+}
+
+.drop {
+  fill: var(--wzl-accent);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.bracket {
+  fill: none;
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.ghost {
+  fill: var(--wzl-fg);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.body {
+  opacity: 0.8;
+  cursor: grab;
+}
+
+.selected .body {
+  opacity: 1;
+  stroke: var(--wzl-fg);
+  stroke-width: 1.5;
+}
+
+.locked .body {
+  cursor: default;
+}
+
+.pass {
+  stroke: var(--wzl-surface-sunken);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.spread {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.hatch {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.handle {
+  fill: var(--wzl-fg);
+  opacity: 0;
+  cursor: ew-resize;
+}
+
+.handle:focus-visible,
+.selected .handle,
+.clip:hover .handle {
+  opacity: 0.9;
+}
+
+.edge {
+  fill: transparent;
+  cursor: col-resize;
+}
+
+.edge:focus-visible {
+  fill: var(--wzl-fg);
+}
+
+.arrow,
+.arrowStill {
+  fill: var(--wzl-fg);
+  opacity: 0.6;
+  font-size: var(--wzl-font-size-lg);
+}
+
+.arrow {
+  cursor: w-resize;
+}
+
+.arrowStill {
+  pointer-events: none;
+}
+
+.link {
+  fill: none;
+  stroke: var(--wzl-accent);
+  stroke-dasharray: 4 3;
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.playhead {
+  stroke: var(--wzl-danger);
+  stroke-width: 2;
+  pointer-events: none;
+}

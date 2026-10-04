@@ -1,4 +1,4 @@
-# Handoff — blits, 2026-10-02
+# Handoff — blits, 2026-10-03
 
 **For:** the next session on blits. **Answers:** what blits is meant to be, what exists, what was
 decided in conversation and lives nowhere else, and what comes next. The design is in
@@ -49,6 +49,12 @@ systems now run on it**, on klieg's `main`.
   `animation.finished`, which map to `hold: 'after'` and `handle.played`. The schema page's Holding
   paragraph has the design. Mike chose the name and the values `before`/`after`/`both`, and that a
   held voice's end is when it is faded, not when its passes run out.
+- **`mix.inert` shipped in 0.4.0** (built 2026-10-03, merge `3228fa7`), for wod's frame loop to
+  sleep under a landed wheel while `live` stays true. Mike asked for it and named it through the wod
+  session; the CHANGELOG entry and the schema page's `Mix` block say what counts as inert. As of
+  2026-10-03 **wod had not been told** — its session ended before the message could go; wod's
+  migration spec (`~/src/wod/docs/superpowers/specs/2026-10-03-blits-migration-design.md`,
+  "Prerequisite: blits 0.4.0 `hold`") is waiting on `hold` and `inert`, both now on npm in 0.4.0.
 - **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
   the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
   is green on all 13 pages. Local only; `.github/workflows/site.yml` deploys to Pages by hand.
@@ -161,6 +167,14 @@ systems now run on it**, on klieg's `main`.
   page; magicsmoke's row in the consumer table says how it uses them.
 
 ## Next, in order
+
+0. **The playground is built, on branch `playground` in the worktree `~/src/blits-playground`, not
+   merged.** A Vite + labkit app at `apps/playground`; its README says what it is, how to run it and
+   how it works, and holds what stays true of the design (the spec and plan are deleted).
+   Decided in conversation and not otherwise written down:
+   - Mike will rework the score and panel designs later; this version is a start.
+   - The composition types are named without a `Doc` suffix (Mike took that from a side
+     discussion).
 
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
    in the hot path and what weasel has that blits doesn't (booking events ahead, a mix-wide time

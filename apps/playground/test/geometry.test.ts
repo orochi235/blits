@@ -1,0 +1,84 @@
+import type { Clip } from '@pg/widgets/ScoreLanes';
+import {
+  clipEnd,
+  clipPolygon,
+  groupBrackets,
+  passLines,
+  scaleOf,
+} from '@pg/widgets/ScoreLanes/geometry';
+import { describe, expect, it } from 'vitest';
+
+const clip = (c: Partial<Clip>): Clip => ({
+  id: 'a',
+  lane: 0,
+  label: 'a',
+  hue: 200,
+  start: 0,
+  pass: 500,
+  passes: 2,
+  fadeIn: 0,
+  fadeOut: 0,
+  spread: 0,
+  holdBefore: false,
+  holdAfter: false,
+  ...c,
+});
+
+describe('geometry', () => {
+  it('maps time to x past the label column and back', () => {
+    const s = scaleOf(2000, 1140, 140);
+    expect(s.x(0)).toBe(140);
+    expect(s.x(2000)).toBe(1140);
+    expect(s.t(640)).toBe(1000);
+  });
+  it('stays finite over an empty duration', () => {
+    const s = scaleOf(0, 1000, 0);
+    expect(Number.isFinite(s.x(0))).toBe(true);
+    expect(Number.isFinite(s.t(500))).toBe(true);
+  });
+  it('ends a clip after its passes, or never', () => {
+    expect(clipEnd(clip({ start: 100 }))).toBe(1100);
+    expect(clipEnd(clip({ passes: Number.POSITIVE_INFINITY }))).toBe(Number.POSITIVE_INFINITY);
+  });
+  it('slopes the fades', () => {
+    const s = scaleOf(1000, 1000, 0);
+    expect(clipPolygon(clip({ fadeIn: 100, fadeOut: 200 }), s, 10, 20, 1000)).toBe(
+      '0,30 100,10 800,10 1000,30',
+    );
+  });
+  it('draws an open clip to the view end', () => {
+    const s = scaleOf(1000, 1000, 0);
+    expect(clipPolygon(clip({ passes: Number.POSITIVE_INFINITY }), s, 0, 10, 1000)).toBe(
+      '0,10 0,0 1000,0 1000,10',
+    );
+  });
+  it('puts dividers between passes, none for an aperiodic clip', () => {
+    expect(passLines(clip({ passes: 3 }), 5000)).toEqual([500, 1000]);
+    expect(passLines(clip({ pass: 0, passes: 1 }), 5000)).toEqual([]);
+  });
+  it('brackets groups of two or more, hued by their first clip', () => {
+    const clips = [
+      clip({ id: 'a', lane: 0, group: 'g', hue: 10 }),
+      clip({ id: 'b', lane: 1 }),
+      clip({ id: 'c', lane: 3, group: 'g', hue: 99 }),
+      clip({ id: 'd', lane: 2, group: 'solo' }),
+    ];
+    expect(groupBrackets(clips)).toEqual([{ group: 'g', hue: 10, from: 0, to: 3, depth: 0 }]);
+  });
+  it('shares a column between brackets whose lanes do not overlap', () => {
+    const lanes: [number, string][] = [
+      [0, 'x'],
+      [2, 'x'],
+      [1, 'y'],
+      [3, 'y'],
+      [4, 'z'],
+      [5, 'z'],
+    ];
+    const clips = lanes.map(([lane, group]) => clip({ id: `${lane}`, lane, group }));
+    expect(groupBrackets(clips).map((b) => [b.group, b.depth])).toEqual([
+      ['x', 0],
+      ['y', 1],
+      ['z', 0],
+    ]);
+  });
+});
