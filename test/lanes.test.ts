@@ -11,6 +11,8 @@ interface Pose {
   dark: number;
   position: number[];
   opacity: number;
+  /** A one-axis vector, which is an array, not a number. */
+  bend: number[];
 }
 const K = kit<Pose>({
   gain: mul(),
@@ -18,6 +20,7 @@ const K = kit<Pose>({
   dark: max(),
   position: vec(3, sum()),
   opacity: mul({ bounds: [0, 1] }),
+  bend: vec(1, sum()),
 });
 const every = Object.keys(K) as (keyof Pose)[];
 
@@ -59,6 +62,7 @@ function pulled(m: Mix<Part, Pose>, parts: readonly Part[]): Pose[] {
     dark: new Float64Array(k),
     position: new Float64Array(k * 3),
     opacity: new Float64Array(k),
+    bend: new Float64Array(k),
   };
   m.pull(parts, cols);
   return parts.map((_, i) => ({
@@ -67,6 +71,7 @@ function pulled(m: Mix<Part, Pose>, parts: readonly Part[]): Pose[] {
     dark: cols.dark[i] as number,
     position: [...cols.position.subarray(i * 3, i * 3 + 3)],
     opacity: cols.opacity[i] as number,
+    bend: [cols.bend[i] as number],
   }));
 }
 
@@ -1492,6 +1497,38 @@ describe('a crowd of single-subject motion voices gives the pose the general pat
         };
       },
       { times: ramp },
+    );
+  });
+});
+
+describe('lanes give a one-axis vector channel the shape the general path gives', () => {
+  it('for a tween voice, a tween per subject and a keys voice writing it', () => {
+    agree(
+      (m, parts) => {
+        const shared = m.cue({
+          patch: tween<Part, Pose, number[]>('bend', {
+            from: [0],
+            to: (p) => [p.id],
+            ms: 400,
+            ease: 'linear',
+          }),
+        });
+        const each = parts.map((p) =>
+          m.cue({
+            patch: tween<Part, Pose, number[]>('bend', { from: [1], to: [-p.id], ms: 300 }),
+            subjects: [p],
+          }),
+        );
+        const stops = m.cue({
+          patch: keys<Part, Pose>(500, [
+            { at: 0, delta: { bend: [0] } },
+            { at: 1, delta: { bend: [2] } },
+          ]),
+          weight: 0.5,
+        });
+        return { handles: [shared, ...each, stops] };
+      },
+      { times },
     );
   });
 });

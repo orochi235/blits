@@ -84,6 +84,8 @@ export interface LaneHost<I, O> {
 /** One laned channel: its arithmetic, and every numbered subject's folded value, `axes` per subject. */
 interface Laned {
   name: string;
+  /** Its value is a number, its rest a number; otherwise an array, which `vec(1)` is too. */
+  scalar: boolean;
   op: Numeric['op'];
   rest: number;
   axes: number;
@@ -775,7 +777,7 @@ export class Lanes<I, O> {
     for (let c = 0; c < laned.length; c++) {
       const ch = laned[c] as Laned;
       const axes = ch.axes;
-      if (axes === 1) {
+      if (ch.scalar) {
         pose[ch.name] = ch.values[slot] as number;
         continue;
       }
@@ -925,6 +927,7 @@ export class Lanes<I, O> {
       const ch: Laned = {
         name: host.names[slot] as string,
         op: n.op,
+        scalar: typeof rest === 'number',
         rest: typeof rest === 'number' ? rest : (rest[0] as number),
         axes: n.axes,
         values: new Float64Array(this.cap * n.axes),
@@ -1476,7 +1479,7 @@ export class Lanes<I, O> {
     const ch = c.chans[0] as Laned;
     if (run.n === c.axes && run.stretchInto(ms, c.hot, h + H_AT)) {
       f |= F_BARE;
-      if (run.scalar(ms) === (ch.axes === 1)) f |= F_FOLDS;
+      if (run.scalar(ms) === ch.scalar) f |= F_FOLDS;
     }
     c.hot[h + H_FLAGS] = f;
     return f;
@@ -1563,7 +1566,7 @@ export class Lanes<I, O> {
       data[o + SAMPLED] = fills;
       data[o + SEEKS] = seeks;
       if (w <= 0) continue;
-      if (n === ch.axes && run.scalar(ms) === (ch.axes === 1)) this.foldRun(ch, slot, xs, w);
+      if (n === ch.axes && run.scalar(ms) === ch.scalar) this.foldRun(ch, slot, xs, w);
       else this.foldInto(ch, slot, run.value(ms, xs), w);
     }
   }
@@ -1617,7 +1620,7 @@ export class Lanes<I, O> {
       data[o + SEEKS] = voice.seeks;
       if (w <= 0) return;
       // A sample of other axes than the channel's folds as the general path folds it.
-      if (n === ch.axes && run.scalar(ms) === (ch.axes === 1)) this.foldRun(ch, slot, run.xs, w);
+      if (n === ch.axes && run.scalar(ms) === ch.scalar) this.foldRun(ch, slot, run.xs, w);
       else this.foldInto(ch, slot, run.value(ms, run.xs), w);
       return;
     }
@@ -1703,7 +1706,7 @@ export class Lanes<I, O> {
   private foldInto(ch: Laned, slot: number, value: unknown, w: number): void {
     if (value === undefined) return;
     const values = ch.values;
-    if (ch.axes === 1) {
+    if (ch.scalar) {
       values[slot] = foldNumber(ch.op, values[slot] as number, value as number, w);
       return;
     }

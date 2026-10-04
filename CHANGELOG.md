@@ -31,6 +31,8 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A lane gives a `vec(1)` channel an array of one, as the general path does, where it gave a
+  bare number; and a motion voice on one folds without making an array per subject per frame.
 - A `tween` divides elapsed by its length in milliseconds, so a point a whole fraction of the way
   in lands exactly: 150 ms into a 200 ms linear tween from 0 to 100 reads 75, not 74.99999999999999.
 - `pull` over a list read again in the same order skips looking each subject up, and copies lane
