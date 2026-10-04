@@ -133,6 +133,11 @@ const SEEKS = 6;
 /** 1 once the general path has made the voice's first call for the subject, which never undoes. */
 const MET = 7;
 
+/** What `begin` found: the general path, only solo lanes, or lanes filled. */
+const GENERAL = 0;
+const SOLO = 1;
+const READY = 2;
+
 const SLOT = 6;
 const FILLED = 0;
 /**
@@ -677,36 +682,14 @@ export class Lanes<I, O> {
    * this frame, which is where it is first seen; so does one probed from inside a fill.
    */
   prepare(slot: number, subject: I, now: number, version: number): boolean {
-    if (now !== this.frameAt) {
-      this.lastFrom = this.frameProbes;
-      this.lastTo = this.probes;
-      this.lastDistinct = this.distinct;
-      this.distinct = 0;
-      this.frameAt = now;
-      this.frameProbes = this.probes;
-      this.fresh = true;
-    }
-    if (this.filling) return this.general(slot);
-    if (this.qualifiedVersion !== version) this.requalify(version);
-    else if (this.touched.length > 0 && !this.retouch()) this.requalify(version);
-    if (this.laned.length === 0) return this.general(slot);
-    // Only solo lanes: nothing to fill, and every subject takes the general path.
-    if (this.runs.length === 0 && this.crowds.length === 0) {
-      if (slot < 0) return false;
+    const ready = this.begin(now, version);
+    if (ready === GENERAL) return this.general(slot);
+    if (slot < 0) return false;
+    if (ready === SOLO) {
       if ((this.per[slot * SLOT + SEEN] as number) < this.wide) this.meet(slot, subject);
       return this.general(slot);
     }
-    if (slot >= 0 && !this.probedThisFrame(slot)) this.distinct++;
-    if (this.filledAt !== now || this.filledVersion !== version || this.moved !== reading.moved) {
-      this.fillAll(now, version);
-      // A patch call in that fill made kept state, which took its voice off its lane: fill without it.
-      if (this.qualifiedVersion !== version) {
-        this.requalify(version);
-        if (this.laned.length === 0) return this.general(slot);
-        this.fillAll(now, version);
-      }
-    }
-    if (slot < 0) return false;
+    if (!this.probedThisFrame(slot)) this.distinct++;
     const probe = ++this.probes;
     const per = this.per;
     const o = slot * SLOT;
@@ -723,6 +706,83 @@ export class Lanes<I, O> {
       this.holding = true;
     } else per[o + GENERAL_PROBE] = probe;
     return lane;
+  }
+
+  /**
+   * For a `pull` of a list it read last time in the same order, with every voice on a lane: what
+   * `prepare` and `writeLater` do for each subject from position `from`, while the subject reads
+   * from the lanes; returns the first position that does not, or the list's length.
+   */
+  pullRun(
+    slots: Int32Array,
+    list: readonly I[],
+    was: readonly I[],
+    from: number,
+    columns: readonly Column[],
+    now: number,
+    version: number,
+  ): number {
+    if (this.begin(now, version) !== READY || !this.whole) return from;
+    const per = this.per;
+    const fills = this.fills;
+    const wide = this.wide;
+    const frame = this.frameProbes;
+    const subjects = this.subjects;
+    let n = from;
+    for (; n < list.length; n++) {
+      const subject = list[n] as I;
+      if (was[n] !== subject) break;
+      const slot = slots[n] as number;
+      const o = slot * SLOT;
+      if (
+        slot < 0 ||
+        per[o + FILLED] !== fills ||
+        per[o + IDLE] !== 0 ||
+        (per[o + SEEN] as number) < wide
+      )
+        break;
+      if (!((per[o + LANE_PROBE] as number) > frame || (per[o + GENERAL_PROBE] as number) > frame))
+        this.distinct++;
+      per[o + LANE_PROBE] = ++this.probes;
+      per[o + LANE_FILL] = fills;
+      subjects[slot] = subject;
+      this.writeLater(slot, columns, n);
+    }
+    if (n > from) this.holding = true;
+    return n;
+  }
+
+  /**
+   * What a probe does before its subject, once a frame's lanes are settled: qualifies and fills as
+   * needed. Says whether the subject takes the general path, whether only solo lanes exist, so
+   * there is nothing to fill, or whether the lanes are filled.
+   */
+  private begin(now: number, version: number): number {
+    if (now !== this.frameAt) {
+      this.lastFrom = this.frameProbes;
+      this.lastTo = this.probes;
+      this.lastDistinct = this.distinct;
+      this.distinct = 0;
+      this.frameAt = now;
+      this.frameProbes = this.probes;
+      this.fresh = true;
+    }
+    if (this.filling) return GENERAL;
+    if (this.qualifiedVersion !== version) this.requalify(version);
+    else if (this.touched.length > 0 && !this.retouch()) this.requalify(version);
+    if (this.laned.length === 0) return GENERAL;
+    // Only solo lanes: nothing to fill, and every subject takes the general path.
+    if (this.runs.length === 0 && this.crowds.length === 0) return SOLO;
+    if (this.filledAt !== now || this.filledVersion !== version || this.moved !== reading.moved) {
+      this.fillAll(now, version);
+      // A patch call in that fill made kept state, which took its voice off its lane: fill without it.
+      if (this.qualifiedVersion !== version) {
+        this.requalify(version);
+        if (this.laned.length === 0) return GENERAL;
+        this.fillAll(now, version);
+      }
+    }
+    return READY;
   }
 
   private general(slot: number): false {
