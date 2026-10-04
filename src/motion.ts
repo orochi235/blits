@@ -594,63 +594,87 @@ export class Motions<I> {
     xo: Float64Array,
     vo: Float64Array,
   ): void {
-    const n = this.n;
-    const dt = Math.max(0, t - at) / 1000;
-    const law = this.runs;
-    if (law[0] === EASED) {
-      this.eased(dt, secs, x0, x, to, g, xo, vo);
-      return;
-    }
-    const settle = law[1] as number;
-    let still = settle > 0;
-    prepare(law, dt);
-    for (let i = 0; i < n; i++) {
-      const goal = to[g + i] as number;
-      solve(law, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
-      xo[i] = goal + solved.y;
-      vo[i] = solved.dy;
-      if (Math.abs(solved.y) > settle || Math.abs(solved.dy) > settle) still = false;
-    }
-    if (still)
-      for (let i = 0; i < n; i++) {
-        xo[i] = to[g + i] as number;
-        vo[i] = 0;
-      }
+    closed(this.runs, this.shape.ease, this.n, at, secs, x0, x, v0, v, to, g, t, xo, vo);
   }
+}
 
-  /** A tween's stretch, `dt` seconds after release, kept out of `evaluate` so a spring's stays small. */
-  private eased(
-    dt: number,
-    secs: number,
-    x0: ArrayLike<number>,
-    x: number,
-    to: ArrayLike<number>,
-    g: number,
-    xo: Float64Array,
-    vo: Float64Array,
-  ): void {
-    const ease = this.shape.ease as Curve;
-    const u = dt / secs;
-    // Subjects released together share `dt`, so a frame reads a bezier once, not once each.
-    if (dt !== memo.dt || ease !== memo.ease || secs !== memo.secs) {
-      memo.dt = dt;
-      memo.ease = ease;
-      memo.secs = secs;
-      memo.left = u >= 1 ? 0 : 1 - ease(u);
+/**
+ * A stretch `t` voice ms into it, released at `at` from `x0` moving at `v0` toward `to` (each read
+ * from its offset), into `xo` and `vo`: the one copy of the closed forms, which `law` (a patch's
+ * `[form, settle, k1, k2, k3]` at the head of its buffer) picks between. A tween reads `ease` and
+ * `secs`; every other form ignores them.
+ */
+export function closed(
+  law: Float64Array,
+  ease: Curve | undefined,
+  n: number,
+  at: number,
+  secs: number,
+  x0: ArrayLike<number>,
+  x: number,
+  v0: ArrayLike<number>,
+  v: number,
+  to: ArrayLike<number>,
+  g: number,
+  t: number,
+  xo: Float64Array,
+  vo: Float64Array,
+): void {
+  const dt = Math.max(0, t - at) / 1000;
+  if (law[0] === EASED) {
+    eased(ease as Curve, n, dt, secs, x0, x, to, g, xo, vo);
+    return;
+  }
+  const settle = law[1] as number;
+  let still = settle > 0;
+  prepare(law, dt);
+  for (let i = 0; i < n; i++) {
+    const goal = to[g + i] as number;
+    solve(law, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
+    xo[i] = goal + solved.y;
+    vo[i] = solved.dy;
+    if (Math.abs(solved.y) > settle || Math.abs(solved.dy) > settle) still = false;
+  }
+  if (still)
+    for (let i = 0; i < n; i++) {
+      xo[i] = to[g + i] as number;
+      vo[i] = 0;
     }
-    const left = memo.left;
-    let rate = 0;
-    if (slope && u < 1) {
-      const lo = Math.max(0, u - SPAN);
-      const hi = Math.min(1, u + SPAN);
-      rate = (ease(hi) - ease(lo)) / (hi - lo) / secs;
-    }
-    for (let i = 0; i < this.n; i++) {
-      const goal = to[g + i] as number;
-      const gap = (x0[x + i] as number) - goal;
-      xo[i] = left === 0 ? goal : goal + gap * left;
-      vo[i] = -gap * rate;
-    }
+}
+
+/** A tween's stretch, `dt` seconds after release, kept out of `closed` so a spring's stays small. */
+function eased(
+  ease: Curve,
+  n: number,
+  dt: number,
+  secs: number,
+  x0: ArrayLike<number>,
+  x: number,
+  to: ArrayLike<number>,
+  g: number,
+  xo: Float64Array,
+  vo: Float64Array,
+): void {
+  const u = dt / secs;
+  // Subjects released together share `dt`, so a frame reads a bezier once, not once each.
+  if (dt !== memo.dt || ease !== memo.ease || secs !== memo.secs) {
+    memo.dt = dt;
+    memo.ease = ease;
+    memo.secs = secs;
+    memo.left = u >= 1 ? 0 : 1 - ease(u);
+  }
+  const left = memo.left;
+  let rate = 0;
+  if (slope && u < 1) {
+    const lo = Math.max(0, u - SPAN);
+    const hi = Math.min(1, u + SPAN);
+    rate = (ease(hi) - ease(lo)) / (hi - lo) / secs;
+  }
+  for (let i = 0; i < n; i++) {
+    const goal = to[g + i] as number;
+    const gap = (x0[x + i] as number) - goal;
+    xo[i] = left === 0 ? goal : goal + gap * left;
+    vo[i] = -gap * rate;
   }
 }
 
