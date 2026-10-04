@@ -157,9 +157,13 @@ const rows = [
 
 // FRAMES=20000 for a profile long enough to sample a fast row.
 const frames = Number(process.env.FRAMES ?? 300);
-// Row names after the script, `node bench/frame.mjs keys keys^`, run only those rows.
+// Row names after the script, `node bench/frame.mjs keys keys^`, run only those rows; `tweens:10000`
+// only the one at that size.
 const only = process.argv.slice(2);
-const chosen = only.length > 0 ? rows.filter(([form]) => only.includes(form)) : rows;
+const chosen =
+  only.length > 0
+    ? rows.filter(([form, n]) => only.includes(form) || only.includes(`${form}:${n}`))
+    : rows;
 for (const [i, [form, n, voices]] of chosen.entries()) {
   const off = form.endsWith('-');
   const pulls = form.endsWith('^');
