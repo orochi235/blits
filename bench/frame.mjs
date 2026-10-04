@@ -106,6 +106,9 @@ const rows = [
   ['keys', 1000, 3],
   ['keys', 10000, 3],
   ['locus', 10000, 3],
+  // The same three voices weighted by a signal, and `mix.blend` between them, which is both.
+  ['signal', 10000, 3],
+  ['blend', 10000, 3],
   // One voice per subject, each targeted at its own: magicsmoke's faults on one shared mix.
   ['own', 100, 1],
   ['own', 1000, 1],
@@ -206,7 +209,10 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   if (kind === 'keyses')
     for (const mine of subjects) m.cue({ patch: keysTo(mine), subjects: [mine] });
   if (kind === 'fns') for (const mine of subjects) m.cue({ patch: fnTo(mine), subjects: [mine] });
-  for (let v = 0; !own && v < voices; v++) {
+  // Weighted per subject by a signal holding no state: three voices, or a blend between three.
+  const by = (s) => 0.5 + 0.5 * Math.sin(s.seed);
+  if (kind === 'blend') m.blend([flicker(0), flicker(1), flicker(2)], by, { fade: { in: 100 } });
+  for (let v = 0; !own && kind !== 'blend' && v < voices; v++) {
     const p =
       kind === 'keys'
         ? bounce()
@@ -223,7 +229,12 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
                   : scrub && v === 0
                     ? drift()
                     : flicker(v);
-    m.cue({ patch: p, fade: { in: 100 }, locus: kind === 'locus' ? 'one' : undefined });
+    m.cue({
+      patch: p,
+      fade: { in: 100 },
+      locus: kind === 'locus' ? 'one' : undefined,
+      weight: kind === 'signal' ? by : undefined,
+    });
   }
   const probed = kind === 'sparse' ? subjects.filter((_, j) => j % 20 === 0) : subjects;
   const scratch = {};
