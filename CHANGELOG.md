@@ -32,6 +32,9 @@ version and everything else the patch. Each release lists its changes as **Break
 - A `keys` or stateless `fn` voice naming one subject and writing several channels joins a crowd,
   as one writing a single channel does, where it took the general path. On teitou 10k such voices
   read by probe take 0.79 of the time they did and 1k take 0.65; 100 take about 1.1.
+- A crowd's `keys` rows fold their stops straight into the lanes, through the same segment search
+  `readKeys` makes, rather than through a delta per row: 10k `keys` voices of one subject each
+  take 0.74 of the time they did read by `pull` and 0.85 by probe on teitou.
 - A crowd more than half empty rows slides its rows down in place, where the mix qualified every
   voice again: with one of 10k tween voices replaced each frame, the worst of 12,000 frames fell
   from about 9 ms to 3 on teitou.

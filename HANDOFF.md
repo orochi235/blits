@@ -275,9 +275,10 @@ systems now run on it**, on klieg's `main`.
        too noisy to call (0.163–0.170 against 0.148–0.198), and `keys-` (lanes off) reads
        2–3% slower (teitou, 2026-10-04). Confirm any short-run regression at `FRAMES=5000`
        before chasing it: 330 frames can end before the JIT settles.
-     - **A crowd's `keys` rows** cost about 105 ns a subject by `pull` against 24 for one keys
-       voice over the same subjects, mostly `readKeys` per row. Reading the segment straight
-       into the channel would skip an array per row but copy `read`'s segment search.
+     - **A crowd's `keys` rows** still cost about 82 ns a subject by `pull` against 24 for one
+       keys voice over the same subjects: each row searches its own stops and calls its easing,
+       where a shared voice does that once per phase. They fold straight into the lanes now,
+       through the segment search `read` uses (`segment` in `patch.ts`).
 
 1d. **`@msb235/blits-quarks` 0.1.0 is on npm**, published by hand 2026-10-02 because npm refuses
    trust for a name never published; trusted publishing is registered since, so later versions go out
