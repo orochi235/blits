@@ -1,4 +1,12 @@
-import type { Composition } from './composition';
+import {
+  type Composition,
+  MAX_COLS,
+  MAX_LENGTH,
+  MAX_LEVELS,
+  MAX_ROWS,
+  MAX_TEXT,
+  MAX_VOICES,
+} from './composition';
 import { CHANNELS } from './kit';
 
 type Rec = Record<string, unknown>;
@@ -8,7 +16,8 @@ const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinit
 const str = (v: unknown): v is string => typeof v === 'string';
 const opt = (v: unknown, ok: (v: unknown) => boolean) => v === undefined || ok(v);
 const expr = (v: unknown) => obj(v) && str(v.code);
-const count = (v: unknown) => Number.isInteger(v) && (v as number) > 0;
+const count = (v: unknown, max = Infinity) =>
+  Number.isInteger(v) && (v as number) > 0 && (v as number) <= max;
 const channel = (v: unknown) => CHANNELS.includes(v as never);
 const oneOf =
   (...xs: unknown[]) =>
@@ -77,23 +86,27 @@ const level = (v: unknown) => obj(v) && str(v.name) && num(v.value) && num(v.min
 
 const stage = (v: unknown) =>
   obj(v) &&
-  ((v.kind === 'dots' && count(v.cols) && count(v.rows)) || (v.kind === 'letters' && str(v.text)));
+  ((v.kind === 'dots' && count(v.cols, MAX_COLS) && count(v.rows, MAX_ROWS)) ||
+    (v.kind === 'letters' && str(v.text) && [...v.text].length <= MAX_TEXT));
 
 /** `raw` as a composition when it is a version 1 one of the right shape, else null. */
 export function load(raw: unknown): Composition | null {
   if (!obj(raw) || raw.version !== 1) return null;
-  if (!str(raw.title) || !num(raw.length) || raw.length < 0 || !stage(raw.stage)) return null;
-  if (!Array.isArray(raw.levels) || !raw.levels.every(level)) return null;
-  if (!Array.isArray(raw.voices) || !raw.voices.every(voice)) return null;
-  const ids = new Set(raw.voices.map((v) => (v as Rec).id));
-  if (ids.size !== raw.voices.length) return null;
+  if (!str(raw.title) || !num(raw.length) || raw.length <= 0 || raw.length > MAX_LENGTH)
+    return null;
+  if (!stage(raw.stage)) return null;
+  const { levels, voices } = raw;
+  if (!Array.isArray(levels) || levels.length > MAX_LEVELS || !levels.every(level)) return null;
+  if (!Array.isArray(voices) || voices.length > MAX_VOICES || !voices.every(voice)) return null;
+  if (new Set(voices.map((v) => (v as Rec).id)).size !== voices.length) return null;
   return raw as unknown as Composition;
 }
 
-// base64url: plain base64's `+` would come back from URLSearchParams as a space.
+// base64url of the UTF-8 bytes: plain base64's `+` would come back from URLSearchParams as a space.
 export function toHash(c: Composition): string {
-  const b64 = btoa(encodeURIComponent(JSON.stringify(c)));
-  return `c=${b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+  let bin = '';
+  for (const b of new TextEncoder().encode(JSON.stringify(c))) bin += String.fromCharCode(b);
+  return `c=${btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
 }
 
 /** The composition a `#c=…` hash carries, or null when it carries none that loads. */
@@ -101,7 +114,9 @@ export function fromHash(hash: string): Composition | null {
   const c = new URLSearchParams(hash.replace(/^#/, '')).get('c');
   if (!c) return null;
   try {
-    return load(JSON.parse(decodeURIComponent(atob(c.replace(/-/g, '+').replace(/_/g, '/')))));
+    const bin = atob(c.replace(/-/g, '+').replace(/_/g, '/'));
+    const bytes = Uint8Array.from(bin, (ch) => ch.charCodeAt(0));
+    return load(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)));
   } catch {
     return null;
   }

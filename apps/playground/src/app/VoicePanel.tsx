@@ -25,8 +25,11 @@ const FIELDS: ConfigField[] = [
   { key: 'locus', label: 'locus', type: 'text', default: '' },
   { key: 'fromCurrent', label: "from: 'current'", type: 'checkbox', default: false },
 ];
+const resolved = fromConfigFields(FIELDS);
+// `manual` keeps a row's label from toggling it to `auto`, which a voice field has no meaning for.
+for (const leaf of Object.values(resolved.group.children)) Object.assign(leaf, { manual: true });
 const SCHEMA = {
-  ...fromConfigFields(FIELDS),
+  ...resolved,
   sections: [
     { at: '', label: 'timing', paths: ['start', 'rate', 'loopForGood', 'passes'] },
     { at: '', label: 'fade', paths: ['fadeIn', 'fadeOut'] },

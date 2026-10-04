@@ -1,4 +1,12 @@
-import type { Composition } from '@pg/blits/composition';
+import {
+  type Composition,
+  MAX_COLS,
+  MAX_LENGTH,
+  MAX_LEVELS,
+  MAX_ROWS,
+  MAX_TEXT,
+  MAX_VOICES,
+} from '@pg/blits/composition';
 import { fromHash, load, toHash } from '@pg/blits/load';
 import { DEFAULT } from '@pg/blits/presets';
 import { describe, expect, it } from 'vitest';
@@ -81,10 +89,36 @@ describe('load', () => {
   });
 });
 
+describe('the caps', () => {
+  const voices = (n: number) => Array.from({ length: n }, (_, i) => ({ ...voice(), id: `v${i}` }));
+  const levels = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ name: `l${i}`, value: 0, min: 0, max: 1 }));
+  const dots = (cols: number, rows: number) => ({ ...copy(), stage: { kind: 'dots', cols, rows } });
+  const text = (n: number) => ({ ...copy(), stage: { kind: 'letters', text: 'é'.repeat(n) } });
+
+  it('accepts a composition at every cap', () => {
+    expect(load(dots(MAX_COLS, MAX_ROWS))).not.toBeNull();
+    expect(load(text(MAX_TEXT))).not.toBeNull();
+    expect(load({ ...copy(), length: MAX_LENGTH })).not.toBeNull();
+    expect(load({ ...copy(), voices: voices(MAX_VOICES) })).not.toBeNull();
+    expect(load({ ...copy(), levels: levels(MAX_LEVELS) })).not.toBeNull();
+  });
+
+  it('refuses one past any cap, and a length of zero', () => {
+    expect(load(dots(MAX_COLS + 1, 1))).toBeNull();
+    expect(load(dots(1, MAX_ROWS + 1))).toBeNull();
+    expect(load(text(MAX_TEXT + 1))).toBeNull();
+    expect(load({ ...copy(), length: MAX_LENGTH + 1 })).toBeNull();
+    expect(load({ ...copy(), length: 0 })).toBeNull();
+    expect(load({ ...copy(), voices: voices(MAX_VOICES + 1) })).toBeNull();
+    expect(load({ ...copy(), levels: levels(MAX_LEVELS + 1) })).toBeNull();
+  });
+});
+
 describe('the share hash', () => {
   it('round-trips a composition, characters base64 spells with + and / included', () => {
     const c = { ...copy(), title: 'wave ~~~ ??? > é 日本' };
-    expect(btoa(encodeURIComponent(JSON.stringify(c)))).toMatch(/[+/]/);
+    expect(Buffer.from(JSON.stringify(c)).toString('base64')).toMatch(/[+/]/);
     const hash = toHash(c);
     expect(hash).toMatch(/^c=[\w-]+$/);
     expect(fromHash(`#${hash}`)).toEqual(c);
@@ -94,6 +128,7 @@ describe('the share hash', () => {
     expect(fromHash('#c=garbage')).toBeNull();
     expect(fromHash('')).toBeNull();
     expect(fromHash('#x=1')).toBeNull();
+    expect(fromHash(`#c=${Buffer.from([0xff, 0xfe]).toString('base64url')}`)).toBeNull();
     expect(fromHash(`#${toHash({ ...copy(), version: 2 } as never)}`)).toBeNull();
   });
 });

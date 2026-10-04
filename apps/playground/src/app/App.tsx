@@ -1,5 +1,5 @@
 import { compile, FRAME } from '@pg/blits/compile';
-import type { Composition, Voice } from '@pg/blits/composition';
+import { type Composition, MAX_VOICES, type Voice } from '@pg/blits/composition';
 import { Player } from '@pg/blits/player';
 import { DEFAULT } from '@pg/blits/presets';
 import { applyEdit, clipsOf } from '@pg/blits/score';
@@ -16,12 +16,19 @@ import { VoicePanel } from './VoicePanel';
 /** The most wall time one tick plays, so a hidden tab coming back does not replay seconds at once. */
 const MAX_TICK_MS = 250;
 
+/** How long "link copied" stays up. */
+const NOTICE_MS = 3000;
+
+let made = 0;
+const freshId = () =>
+  typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `v${Date.now()}-${++made}`;
+
 function freshVoice(voices: readonly Voice[]): Voice {
   const names = new Set(voices.map((v) => v.name));
   let n = voices.length + 1;
   while (names.has(`voice ${n}`)) n++;
   return {
-    id: `v${Date.now().toString(36)}`,
+    id: freshId(),
     name: `voice ${n}`,
     hue: (voices.length * 67) % 360,
     start: 0,
@@ -64,7 +71,15 @@ export function App() {
   const [live, setLive] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [picked, setPicked] = useState<number | null>(0);
-  const [shared, setShared] = useState<string | null>(null);
+  // A link the clipboard took, or one it refused, left on screen to copy by hand.
+  const [shared, setShared] = useState<{ copied: boolean; url: string } | null>(null);
+  const linkRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    linkRef.current?.select();
+    if (!shared?.copied) return;
+    const id = setTimeout(() => setShared(null), NOTICE_MS);
+    return () => clearTimeout(id);
+  }, [shared]);
 
   // Every edit recompiles and replays to the playhead.
   useEffect(() => {
@@ -127,6 +142,7 @@ export function App() {
       voices: compRef.current.voices.map((v) => (v.id === next.id ? next : v)),
     });
   const addVoice = () => {
+    if (compRef.current.voices.length >= MAX_VOICES) return;
     const v = freshVoice(compRef.current.voices);
     set({ ...compRef.current, voices: [...compRef.current.voices, v] });
     setSelected(v.id);
@@ -136,10 +152,10 @@ export function App() {
     setSelected(null);
   };
   const copyLink = () => {
-    navigator.clipboard.writeText(share()).then(
-      () => setShared('link copied'),
-      () => setShared('could not copy the link'),
-    );
+    const url = share();
+    const failed = () => setShared({ copied: false, url });
+    if (!navigator.clipboard?.writeText) return failed();
+    navigator.clipboard.writeText(url).then(() => setShared({ copied: true, url }), failed);
   };
   const play = (on: boolean) => {
     if (on && player.t >= comp.length - FRAME) player.seek(0);
@@ -162,14 +178,35 @@ export function App() {
         <section className={s.inspector} aria-label="inspector" />
         <aside className={s.side} aria-label="voice and patch">
           <div className={s.row}>
-            <button type="button" onClick={addVoice}>
+            <button
+              type="button"
+              onClick={addVoice}
+              disabled={comp.voices.length >= MAX_VOICES}
+              title={comp.voices.length >= MAX_VOICES ? `at most ${MAX_VOICES} voices` : undefined}
+            >
               add voice
             </button>
             <button type="button" onClick={copyLink}>
               share
             </button>
-            {shared && <span role="status">{shared}</span>}
+            {shared?.copied && <span role="status">link copied</span>}
           </div>
+          {shared && !shared.copied && (
+            <div className={s.row} role="status">
+              <label className={s.row}>
+                copy this link
+                <input
+                  readOnly
+                  value={shared.url}
+                  ref={linkRef}
+                  onFocus={(e) => e.target.select()}
+                />
+              </label>
+              <button type="button" onClick={() => setShared(null)}>
+                close
+              </button>
+            </div>
+          )}
           {voice && (
             <VoicePanel
               key={voice.id}

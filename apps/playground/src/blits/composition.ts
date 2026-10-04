@@ -57,3 +57,11 @@ export interface Composition {
 
 export const isExpr = (v: unknown): v is Expr =>
   typeof v === 'object' && v !== null && typeof (v as Expr).code === 'string';
+
+/** The most a composition may hold; `load` refuses more, and no editor offers more. */
+export const MAX_COLS = 64;
+export const MAX_ROWS = 64;
+export const MAX_TEXT = 200;
+export const MAX_LENGTH = 120_000;
+export const MAX_VOICES = 64;
+export const MAX_LEVELS = 16;
