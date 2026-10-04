@@ -26,6 +26,14 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   (28–50 ms on `2da21c1`); springs 0.73–1.08 against 0.62–0.67, where blits now wins. weasel
   puts the tween gap down to its own per-animation reads (about 0.5 ms, being removed) and a
   drop it still defers a frame.
+- **Churn, blits' share** (`turnover^`, weasel's shape: each frame one subject leaves for good and
+  a new one comes, read by `pull` over a list kept dense by swap-remove; teitou, 2026-10-04,
+  `eec0b21`). 0.45–0.47 ms a frame against 0.36–0.37 for the same voices steady (`tweens^`), so
+  blits accounts for about 0.09 of the ~0.3 ms weasel's churn frame adds. In the profile: `moveTo`
+  compacting all 10k voices to drop the one that retired (about 4%), and `flush` writing row by
+  row once the swaps have left slots out of list order (`writeLater`/`flush` about 10% more than
+  steady). `popDue` shows at 14%, but that is a Maglev deopt loop on its fresh `out` array, and
+  removing the deopts saved no time.
 - **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a
   `fn` voice in plain Node: about 35 ms warm against 16, and 80–90 cold against 28–42 (weasel,
   orochi under load, 2026-10-02). A cold run in blits' own shape read the other way, 34 against 49.
