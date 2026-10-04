@@ -131,6 +131,13 @@ function stub(): Subject<unknown> {
   };
 }
 
+/** One entry in a mix's due queue; stale once its voice has been scheduled again. */
+interface Due<I, O> {
+  at: number;
+  voice: Voice<I, O>;
+  token: number;
+}
+
 /** What sets a voice's clock: its rate, and where it was last anchored. */
 interface Clock {
   anchorNow: number;
@@ -302,6 +309,8 @@ export class Voice<I, O> {
   readonly holdsAfter: boolean;
   /** The mix time it first showed: when it was cued, or the first sync after. */
   opened = Number.NaN;
+  /** Which of its entries in the mix's due queue is current; older ones are skipped when popped. */
+  dueToken = 0;
   /** Records made while it was pending, whose `since` its start may since have moved. */
   early: Subject<unknown>[] | null = null;
   /** Reused for every call this voice makes, so it is valid only during the call. */
@@ -513,6 +522,12 @@ class Mixer<I, O> implements Mix<I, O> {
   /** The pose `pull` folds a subject into where it cannot read straight from the lanes. */
   private scratch: O | undefined;
   /** The last array `pull` read, by position, with each subject's chain head, to skip the lookup. */
+  /** Live voices by the earliest mix time `moveTo` would change each, a binary heap. */
+  private due: Due<I, O>[] = [];
+  /** Voices retired since `moveTo` last pruned them. */
+  private retired = 0;
+  /** Visit every voice each sync, as before the due queue; for tests that compare the two. */
+  private walkAll = false;
   private pulled: I[] = [];
   private pulledHeads: (Subject<unknown> | undefined)[] = [];
   /** Each remembered head's lane slot, and the `version` and `relinks` they were all current at. */
@@ -669,6 +684,7 @@ class Mixer<I, O> implements Mix<I, O> {
       voice.log = [];
       voice.note(Number.NEGATIVE_INFINITY);
     }
+    this.schedule(voice);
     return this.handle(voice);
   }
 
@@ -719,7 +735,9 @@ class Mixer<I, O> implements Mix<I, O> {
       const reach = now - (this.opts.history?.ms ?? 0);
       this.announced = this.announced.filter((a) => a.at >= reach);
     }
-    for (const voice of this.voices) {
+    // A live mix visits only the voices due by now; a projection, which copies few, visits all.
+    const visit = this.projecting || this.walkAll ? this.voices : this.popDue(now);
+    for (const voice of visit) {
       if (voice.state === 'done') continue;
       if (Number.isNaN(voice.opened)) voice.opened = now;
       if ((voice.state === 'live' || voice.state === 'held') && voice.outAt <= now)
@@ -755,7 +773,10 @@ class Mixer<I, O> implements Mix<I, O> {
           else if (settled) this.retire(voice);
         } else if (spent >= over) this.retire(voice, at + over);
       }
+      if (!this.projecting) this.schedule(voice);
     }
+    if (this.retired === 0) return this.forget(now);
+    this.retired = 0;
     let pruned = false;
     for (let i = this.voices.length - 1; i >= 0; i--) {
       const voice = this.voices[i] as Voice<I, O>;
@@ -770,11 +791,98 @@ class Mixer<I, O> implements Mix<I, O> {
       }
     }
     if (pruned) this.general = this.general.filter((v) => v.state !== 'done');
+    this.forget(now);
+  }
+
+  /** Lets go of the voices that have left and that history no longer reaches. */
+  private forget(now: number): void {
     const history = this.opts.history;
     if (history && this.gone.length > 0) {
       const reach = now - history.ms;
       this.gone = this.gone.filter((v) => v.doneAt >= reach);
     }
+  }
+
+  /**
+   * The earliest mix time `moveTo` would change a voice: its start, its anchored out, the end of
+   * its last pass, the end of its fade or of a subject's ramp out; -Infinity where it must be
+   * visited every frame, Infinity where nothing will happen until a handle or anchor changes it.
+   * Early is safe, since a visit that finds nothing due schedules again; late is not, so anything
+   * that can bring it earlier calls `schedule`.
+   */
+  private dueOf(voice: Voice<I, O>): number {
+    if (voice.state === 'done') return Number.POSITIVE_INFINITY;
+    if (Number.isNaN(voice.opened)) return Number.NEGATIVE_INFINITY;
+    let due = Number.POSITIVE_INFINITY;
+    if (voice.parts !== null) for (const r of voice.parts.values()) due = Math.min(due, r.at + r.over);
+    if (voice.state === 'pending') return Math.min(due, Number.isNaN(voice.start) ? due : voice.start);
+    if (voice.state === 'fading') {
+      const out = voice.out;
+      if (out === null || out.rest) return Number.NEGATIVE_INFINITY;
+      return Math.min(due, out.at + out.over);
+    }
+    due = Math.min(due, voice.outAt);
+    if (Number.isFinite(voice.span)) {
+      const end = voice.span + voice.latest;
+      // A held voice goes live again once its clock is back before its end: by a seek, by a
+      // subject staggered later than any before, or by running backwards, which is checked each
+      // frame while it can.
+      if (voice.state === 'held') {
+        if (voice.rate <= 0 || voice.ramp !== null) return Number.NEGATIVE_INFINITY;
+        if (!Number.isNaN(this.now) && voice.elapsedAt(this.now) < end)
+          return Number.NEGATIVE_INFINITY;
+      }
+      if (voice.state === 'live') due = Math.min(due, voice.timeAt(end));
+    }
+    return due;
+  }
+
+  /** Files a voice in the due queue at its current due, replacing any entry it had. */
+  private schedule(voice: Voice<I, O>): void {
+    if (this.projecting) return;
+    const token = ++voice.dueToken;
+    const due = this.dueOf(voice);
+    if (due === Number.POSITIVE_INFINITY) return;
+    const heap = this.due;
+    heap.push({ at: Number.isNaN(due) ? Number.NEGATIVE_INFINITY : due, voice, token });
+    let i = heap.length - 1;
+    while (i > 0) {
+      const up = (i - 1) >> 1;
+      if ((heap[up] as Due<I, O>).at <= (heap[i] as Due<I, O>).at) break;
+      [heap[up], heap[i]] = [heap[i] as Due<I, O>, heap[up] as Due<I, O>];
+      i = up;
+    }
+  }
+
+  /** Takes every current entry due by `now` off the queue, in cue order. */
+  private popDue(now: number): Voice<I, O>[] {
+    const heap = this.due;
+    const out: Voice<I, O>[] = [];
+    while (heap.length > 0 && (heap[0] as Due<I, O>).at <= now) {
+      const top = heap[0] as Due<I, O>;
+      const last = heap.pop() as Due<I, O>;
+      if (heap.length > 0) {
+        heap[0] = last;
+        let i = 0;
+        for (;;) {
+          const l = 2 * i + 1;
+          const r = l + 1;
+          const left = l < heap.length && (heap[l] as Due<I, O>).at < (heap[i] as Due<I, O>).at;
+          const m0 = left ? l : i;
+          const m =
+            r < heap.length && (heap[r] as Due<I, O>).at < (heap[m0] as Due<I, O>).at ? r : m0;
+          if (m === i) break;
+          [heap[m], heap[i]] = [heap[i] as Due<I, O>, heap[m] as Due<I, O>];
+          i = m;
+        }
+      }
+      if (top.token === top.voice.dueToken && top.voice.state !== 'done') {
+        top.voice.dueToken++;
+        out.push(top.voice);
+      }
+    }
+    if (out.length > 1) out.sort((a, b) => a.id - b.id);
+    return out;
   }
 
   probe(subject: I, out?: O): O {
@@ -1394,6 +1502,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** Records a change to a voice's controls under `history`, and lets go of what it no longer reaches. */
   private noted(voice: Voice<I, O>): void {
+    this.schedule(voice);
     const log = voice.log;
     if (log === null) return;
     voice.note(Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now, this.moving);
@@ -1671,6 +1780,7 @@ class Mixer<I, O> implements Mix<I, O> {
     }
     voice.parts ??= new Map();
     voice.parts.set(subject, { at, over: ms });
+    this.schedule(voice);
     this.lanes?.refill();
   }
 
@@ -1760,6 +1870,7 @@ class Mixer<I, O> implements Mix<I, O> {
     voice.frame = null;
     voice.revive = null;
     voice.state = 'done';
+    this.retired++;
     voice.doneAt = at ?? (Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now);
     voice.play(false);
     voice.resolve();
@@ -1814,7 +1925,11 @@ class Mixer<I, O> implements Mix<I, O> {
       voice.early.push(held);
     }
     if (reaches) voice.seen++;
-    if (delay > voice.latest) voice.latest = delay;
+    if (delay > voice.latest) {
+      voice.latest = delay;
+      // A later end can take a held voice live again.
+      if (voice.state === 'held') this.schedule(voice);
+    }
     return held;
   }
 
