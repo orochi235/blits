@@ -15,6 +15,7 @@
     "@weasel-js/labkit": "1.7.3",
     "@weasel-js/theme": "1.7.3",
     "@weasel-js/ui": "1.7.3",
+    "acorn": "8.18.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },

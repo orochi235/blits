@@ -17,6 +17,15 @@ describe('compileExpr', () => {
     expect('error' in r && r.error.length > 0).toBe(true);
   });
 
+  it('reports the author line of a syntax error', () => {
+    const r = compileExpr({ code: '(phase) => {\n  return { turn: phase * 360 +\n}' }, scope, 0);
+    expect('error' in r && r.line).toBe(3);
+    const two = compileExpr({ code: '(s) =>\n  s.col * * 2' }, scope, 0);
+    expect('error' in two && two.line).toBe(2);
+    const one = compileExpr({ code: '(s) => s.col *' }, scope, 0);
+    expect('error' in one && one.line).toBe(1);
+  });
+
   it('reports the author line of a throw while evaluating', () => {
     const r = compileExpr({ code: '(\n(() => { throw new Error("early"); })())' }, scope, 0);
     expect(r).toEqual({ error: 'early', line: 2 });

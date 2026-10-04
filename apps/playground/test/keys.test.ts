@@ -23,7 +23,7 @@ describe('tracksOf / stopsOf', () => {
     const back = stopsOf(tracksOf(stops, 400), 400);
     expect(back).toEqual([
       { at: 0, delta: { scale: 1, offset: [0, 0] } },
-      { at: 0.5, delta: { scale: 2 }, ease: { bezier: [0.42, 0, 1, 1] } },
+      { at: 0.5, delta: { scale: 2 }, ease: 'ease-in' },
       { at: 1, delta: { scale: 1, offset: [10, 0] } },
     ]);
   });
@@ -71,11 +71,33 @@ describe('easing', () => {
     expect(toBlits(undefined)).toBeUndefined();
   });
 
-  it('turns a weasel named curve with no bezier form into a function', () => {
-    const got = toBlits('easeOutQuad');
-    expect(typeof got).toBe('function');
-    const want = resolveEasing('easeOutQuad');
-    for (const u of [0, 0.25, 0.5, 0.9, 1])
-      expect((got as (u: number) => number)(u)).toBeCloseTo(want(u));
+  it('turns a weasel named curve into bezier points, and shows them by name again', () => {
+    expect(toBlits('easeOutQuad')).toEqual({ bezier: [0.5, 1, 0.89, 1] });
+    expect(toWeasel({ bezier: [0.5, 1, 0.89, 1] })).toBe('easeOutQuad');
+    expect(toBlits('linear')).toBe('linear');
+  });
+
+  it('gives points that match a CSS name that name', () => {
+    expect(toBlits({ bezier: [0.42, 0, 0.58, 1] })).toBe('ease-in-out');
+    expect(toBlits({ bezier: [0.25, 0.1, 0.25, 1] })).toBe('ease');
+  });
+
+  it('refuses a curve with no bezier form', () => {
+    expect(toBlits('easeOutBounce')).toBeNull();
+    expect(toBlits('easeInElastic')).toBeNull();
+    expect(toBlits(resolveEasing('easeOutQuad'))).toBeNull();
+  });
+
+  it('keeps the old ease when the timeline picks a refused curve, and stays JSON', () => {
+    const before: Keyframe<Pose>[] = [
+      { at: 0, delta: { scale: 1 } },
+      { at: 1, delta: { scale: 2 }, ease: 'ease-out' },
+    ];
+    const tracks = tracksOf(before, 400);
+    const key = tracks[0]?.keys[1];
+    if (key) key.easing = 'easeOutBounce';
+    const after = stopsOf(tracks, 400, before);
+    expect(after[1]?.ease).toBe('ease-out');
+    expect(JSON.parse(JSON.stringify(after))).toEqual(after);
   });
 });

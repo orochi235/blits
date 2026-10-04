@@ -45,6 +45,7 @@ export function stopsOf(
   previous: readonly Keyframe<Pose>[] = [],
 ): Keyframe<Pose>[] {
   const byAt = new Map<number, Keyframe<Pose>>();
+  const refused = new Set<number>();
   for (const track of tracks) {
     const ch = track.label as ChannelName;
     for (const key of track.keys) {
@@ -52,14 +53,17 @@ export function stopsOf(
       const stop = byAt.get(at) ?? { at, delta: {} };
       (stop.delta as Record<string, unknown>)[ch] = key.value;
       const ease = toBlits(key.easing);
-      if (ease !== undefined) stop.ease = ease;
+      if (ease === null) refused.add(at);
+      else if (ease !== undefined) stop.ease = ease;
       byAt.set(at, stop);
     }
   }
   for (const stop of byAt.values()) {
     if (stop.ease !== undefined) continue;
     const kept = previous.find((p) => Math.abs(p.at - stop.at) < 1e-6)?.ease;
-    if (kept !== undefined && toWeasel(kept) === undefined) stop.ease = kept;
+    // A curve blits cannot keep as data leaves the stop's old ease in place.
+    if (kept !== undefined && (refused.has(stop.at) || toWeasel(kept) === undefined))
+      stop.ease = kept;
   }
   return [...byAt.values()].sort((a, b) => a.at - b.at);
 }
