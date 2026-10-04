@@ -1512,7 +1512,6 @@ class Mixer<I, O> implements Mix<I, O> {
         mix.prime(voice, held, mix.now, elapsed, pass);
         const kept = reading.kept;
         const w = mix.weigh(voice, subject, mix.now, held);
-        voice.keepOn = null;
         if (reading.kept !== kept && !voice.keeping) mix.stateful(voice);
         return w;
       },
@@ -2187,6 +2186,8 @@ class Mixer<I, O> implements Mix<I, O> {
     voice.frame = null;
     voice.revive = null;
     voice.state = 'done';
+    // The record its setting last wrote to, which a retired voice no longer calls for.
+    voice.keepOn = null;
     this.retired++;
     voice.doneAt = at ?? (Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now);
     voice.play(false);
@@ -2922,16 +2923,12 @@ class Mixer<I, O> implements Mix<I, O> {
         setting.state = held.state;
         voice.keepOn = held;
         this.w = this.weigh(voice, subject, now, held);
-        voice.keepOn = null;
         held.weight = this.w;
         if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
         return held.delta;
       }
     }
-    const delta = this.influence(voice, subject, now, held);
-    // A setting is valid only during its call, so the record need not stay reachable after it.
-    voice.keepOn = null;
-    return delta;
+    return this.influence(voice, subject, now, held);
   }
 }
 

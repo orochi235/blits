@@ -1900,7 +1900,6 @@ export class Lanes<I, O> {
     host.ready(voice, subject, rec, elapsed, pass, w);
     host.horizon(voice, delay);
     const delta = voice.patch.at(phase, subject, voice.setting as never) as Record<string, unknown>;
-    voice.keepOn = null;
     // What `influence` leaves on the record, so a probe on the general path this frame reuses it.
     rec.delta = delta;
     rec.probed = this.now;
