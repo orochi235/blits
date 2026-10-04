@@ -63,6 +63,22 @@ describe('geometry', () => {
       clip({ id: 'c', lane: 3, group: 'g', hue: 99 }),
       clip({ id: 'd', lane: 2, group: 'solo' }),
     ];
-    expect(groupBrackets(clips)).toEqual([{ group: 'g', hue: 10, from: 0, to: 3 }]);
+    expect(groupBrackets(clips)).toEqual([{ group: 'g', hue: 10, from: 0, to: 3, depth: 0 }]);
+  });
+  it('shares a column between brackets whose lanes do not overlap', () => {
+    const lanes: [number, string][] = [
+      [0, 'x'],
+      [2, 'x'],
+      [1, 'y'],
+      [3, 'y'],
+      [4, 'z'],
+      [5, 'z'],
+    ];
+    const clips = lanes.map(([lane, group]) => clip({ id: `${lane}`, lane, group }));
+    expect(groupBrackets(clips).map((b) => [b.group, b.depth])).toEqual([
+      ['x', 0],
+      ['y', 1],
+      ['z', 0],
+    ]);
   });
 });

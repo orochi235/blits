@@ -8,6 +8,8 @@ import s from './ScoreLanes.module.css';
 
 const WIDTH = 1000;
 const RULER = 24;
+const BRACKET_STEP = 5;
+const MENU_W = 28;
 
 type Drag =
   | { clip: Clip; handle: Handle; x0: number }
@@ -45,7 +47,12 @@ function menuItems(c: Clip, clips: readonly Clip[]): MenuButtonItem[] {
   const now = hatchOf(c);
   const items: MenuButtonItem[] = HATCHES.map(([h, text]) => ({
     value: `hatch:${h ?? 'none'}`,
-    label: h === now ? `✓ ${text}` : text,
+    label: (
+      <>
+        {h === now && <span aria-hidden>✓ </span>}
+        {text}
+      </>
+    ),
     textValue: text,
   }));
   for (const o of clips) {
@@ -202,6 +209,9 @@ export function ScoreLanes(props: ScoreLanesProps) {
   const linkDrag = drag && 'link' in drag ? drag : null;
   const linkFrom = linkDrag ? edgeAt(linkDrag.link.clip, linkDrag.link.edge) : null;
   const groupDrag = drag && 'group' in drag ? drag : null;
+  const brackets = groupBrackets(clips);
+  const depths = Math.max(0, ...brackets.map((b) => b.depth + 1));
+  const menuX = labelW - 4 - depths * BRACKET_STEP - MENU_W;
   const dropLane =
     groupDrag && groupDrag.x < labelW && groupDrop(clips, groupDrag.group, laneAt(groupDrag.y))
       ? laneAt(groupDrag.y)
@@ -274,8 +284,8 @@ export function ScoreLanes(props: ScoreLanesProps) {
       {dropLane !== null && (
         <rect className={s.drop} x={0} y={RULER + dropLane * laneH} width={labelW} height={laneH} />
       )}
-      {groupBrackets(clips).map((b, i) => {
-        const x = labelW - 4 - i * 5;
+      {brackets.map((b) => {
+        const x = labelW - 4 - b.depth * BRACKET_STEP;
         const y0 = RULER + b.from * laneH + 6;
         const y1 = RULER + (b.to + 1) * laneH - 6;
         return (
@@ -332,7 +342,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
               onKeyDown={(e) => keyBody(e, raw)}
             />
             {c.id === selected && (
-              <foreignObject x={labelW - 40} y={top - 2} width={26} height={h + 4}>
+              <foreignObject x={menuX} y={top - 2} width={MENU_W - 2} height={h + 4}>
                 {/* Menu presses, portaled or not, must not reach the score's deselect. */}
                 <div className={s.menu} onPointerDown={(e) => e.stopPropagation()}>
                   <MenuButton

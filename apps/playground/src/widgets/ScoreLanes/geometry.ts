@@ -47,11 +47,12 @@ export interface Bracket {
   hue: number;
   from: number; // first lane
   to: number; // last lane
+  depth: number; // column, 0 nearest the lanes; brackets whose lanes don't overlap share one
 }
 
 /** One bracket per group of two or more clips, hued by its first clip, in order of first appearance. */
 export function groupBrackets(clips: readonly Clip[]): Bracket[] {
-  const out = new Map<string, Bracket & { count: number }>();
+  const out = new Map<string, Omit<Bracket, 'depth'> & { count: number }>();
   for (const c of clips) {
     if (c.group === undefined) continue;
     const b = out.get(c.group);
@@ -62,7 +63,13 @@ export function groupBrackets(clips: readonly Clip[]): Bracket[] {
       b.count++;
     }
   }
+  const ends: number[] = []; // last lane taken in each column
   return [...out.values()]
     .filter((b) => b.count > 1)
-    .map(({ group, hue, from, to }) => ({ group, hue, from, to }));
+    .map(({ group, hue, from, to }) => {
+      let depth = ends.findIndex((end) => end < from);
+      if (depth < 0) depth = ends.length;
+      ends[depth] = to;
+      return { group, hue, from, to, depth };
+    });
 }
