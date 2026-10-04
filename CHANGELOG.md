@@ -19,10 +19,12 @@ version and everything else the patch. Each release lists its changes as **Break
 - A voice naming its subjects keeps them in a list, with a set only past eight, and a motion patch
   numbering one subject makes no `FinalizationRegistry` until it numbers a second: a tween voice of
   one subject holds about 5.3 KB, from 5.6 (`bench/heapby.mjs`).
-- A voice over every subject coming or going among a crowd no longer rebuilds the crowds and the
-  laned channels when qualifying leaves them as they were: with 10k tween voices of one subject each
-  and a voice over all of them replaced every frame (`swap`), a frame takes 8.3–8.8 ms on teitou,
-  from 12.5–12.9.
+- A voice over every subject coming, starting or going among a crowd no longer qualifies every
+  voice again, and a probe meeting it folds it onto the lanes' values where it comes after every
+  other laned voice, rather than reading the general path for the frame: with 10k tween voices of
+  one subject each and a voice over all of them replaced every frame (`swap`), a frame takes
+  6.0–6.1 ms on teitou, from 12.2–12.5. A qualify that would rebuild the crowds and laned channels
+  unchanged keeps them as they stand.
 - `atRest` answers from the lanes' values for a subject every voice of which is laned, rather than
   folding a pose to compare: asked of 10k subjects under two voices, a frame takes 0.94–1.07 ms on
   teitou, from 1.41–1.43 (`rest`).

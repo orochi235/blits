@@ -261,11 +261,9 @@ systems now run on it**, on klieg's `main`.
      signal the unheld time. `SAME_LANES=off bench/same.sh <rev>` compares this tree's lanes with
      a revision's general path. What is still slow, largest first:
      - **A voice over every subject cued among a crowd** (`swap`: 10k tween voices of one subject
-       each, a voice over all of them replaced every frame) costs about 8.5 ms a frame on teitou,
-       from 12.7 before branch `slow-cases-2` stopped rebuilding unchanged crowds. Each probe that
-       frame meets the new voice and takes the general path, its crowd rows included. A lead, not
-       tried: where every voice a subject meets late comes after every laned voice in order, fold
-       just those onto the lanes' values.
+       each, a voice over all of them replaced every frame) costs about 6.0 ms a frame on teitou,
+       from 12.4 at `560f79c`. What is left is each subject meeting the new voice: a record per
+       subject and a relinked chain.
      - **A blend still costs half again a plain voice**: three voices blended by a signal over
        10k subjects take about 3.2 ms a frame, three plain ones 2.0 (teitou). `mix.blend` calls
        its signal once per member and subject; calling it once per subject would cut a third of
