@@ -13,6 +13,12 @@ version and everything else the patch. Each release lists its changes as **Break
   ramp, where the general path holds the product: a voice at weight 1.6 halfway out of a subject
   read 0.5 of its delta on a lane and 0.8 elsewhere. Below weight 1 the two differed only in the
   last bit.
+- A voice weighted by a signal runs on lanes, weighed by the general path's own arithmetic, where
+  it always took the general path; a signal that keeps state through `setting.keep` takes its voice
+  off lanes from the first call, as a patch that keeps state does. Three such voices over 10k
+  subjects take 0.79 of the time they did on teitou. A signal holding state of its own outside
+  `setting.keep` is now called for every subject the mix has met, probed or not, as a stateless
+  patch on a lane already is.
 - A voice in a locus folds only the channels its patch writes, as a voice outside one does; a
   delta's other keys were folded too.
 - A `keys` or stateless `fn` voice naming one subject and writing several channels joins a crowd,
