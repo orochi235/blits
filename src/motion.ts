@@ -71,6 +71,8 @@ export const noTouch = (): void => {};
 const solved = { y: 0, dy: 0 };
 /** Where every patch's `sample` leaves a value on its way to the mix; none outlives its call. */
 let shared = { xs: new Float64Array(4), vs: new Float64Array(4) };
+/** What a patch's `xs` and `vs` are before its first subject sets its axes. */
+const unsized = new Float64Array(0);
 
 /**
  * A subject's flags: its value is a number; it has changes pending; it has older stretches; the
@@ -236,10 +238,11 @@ export class Motions<I> {
    * Where `sample` leaves a subject's position and velocity, per axis. Shared by every patch, so
    * read it before the next sample.
    */
-  xs = new Float64Array(0);
-  vs = new Float64Array(0);
-  private readonly pending = new Map<number, Change[]>();
-  private readonly older = new Map<number, Segment[]>();
+  xs = unsized;
+  vs = unsized;
+  /** By subject number, changes not yet applied and earlier stretches a read back may reach. */
+  private readonly pending: (Change[] | undefined)[] = [];
+  private readonly older: (Segment[] | undefined)[] = [];
   /**
    * The subject's voice time at the mix's latest frame, which an untimed change and a `read` with
    * no time take; NaN where no frame of the patch's voice has met the subject. Set by the mix that
@@ -419,13 +422,13 @@ export class Motions<I> {
     const b = this.base(s);
     const flags = runs[b + 1] as number;
     if (flags & PENDING) {
-      const list = this.pending.get(s) as Change[];
+      const list = this.pending[s] as Change[];
       const first = (list[0] as Change).at;
       if (first === undefined || first <= t || (list[list.length - 1] as Change).at === undefined)
         return false;
     }
     if (flags & OLDER) {
-      const list = this.older.get(s) as Segment[];
+      const list = this.older[s] as Segment[];
       const next = list.length > 1 ? (list[1] as Segment).at : (runs[b] as number);
       if (next <= reading.horizon) return false;
     }
@@ -462,9 +465,9 @@ export class Motions<I> {
       const at = this.frame(subject);
       if (!Number.isNaN(at)) c.at = at;
     }
-    const list = this.pending.get(s);
+    const list = this.pending[s];
     if (list === undefined) {
-      this.pending.set(s, [c]);
+      this.pending[s] = [c];
       this.flag(s, PENDING, true);
     } else if (c.at === undefined) list.push(c);
     else this.queue(list, c, c.at);
@@ -485,7 +488,7 @@ export class Motions<I> {
   /** Every change due by `t` applied to a copy of the stretch playing then, committing nothing. */
   private peek(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
     let seg = this.playing(s, t);
-    const list = this.pending.get(s);
+    const list = this.pending[s];
     if (list !== undefined)
       for (const change of list) {
         const a = change.at;
@@ -508,8 +511,8 @@ export class Motions<I> {
   }
 
   private forget(s: number): void {
-    this.pending.delete(s);
-    this.older.delete(s);
+    this.pending[s] = undefined;
+    this.older[s] = undefined;
   }
 
   /** Where subject `s`'s run starts in `runs`. */
@@ -555,7 +558,7 @@ export class Motions<I> {
 
   /** The stretch playing at voice time `t`: the latest released by then, else the first. */
   private playing(s: number, t: number): Segment {
-    const list = this.older.get(s);
+    const list = this.older[s];
     if (list === undefined || t >= (this.runs[this.base(s)] as number)) return this.latest(s);
     if ((list[0] as Segment).at > t) return list[0] as Segment;
     let lo = 0;
@@ -582,7 +585,7 @@ export class Motions<I> {
   }
 
   private commit(s: number, t: number): void {
-    const list = this.pending.get(s) as Change[];
+    const list = this.pending[s] as Change[];
     // The first read of a subject no frame had met: those waiting for a time take this one.
     if ((list[list.length - 1] as Change).at === undefined) {
       let i = list.length;
@@ -600,17 +603,17 @@ export class Motions<I> {
       this.insert(s, this.applied(s, this.playing(s, a), change, a));
     }
     if (list.length === 0) {
-      this.pending.delete(s);
+      this.pending[s] = undefined;
       this.flag(s, PENDING, false);
     }
   }
 
   private insert(s: number, seg: Segment): void {
-    let list = this.older.get(s);
+    let list = this.older[s];
     if (seg.at >= (this.runs[this.base(s)] as number)) {
       if (list === undefined) {
         list = [];
-        this.older.set(s, list);
+        this.older[s] = list;
         this.flag(s, OLDER, true);
       }
       list.push(this.latest(s));
@@ -619,7 +622,7 @@ export class Motions<I> {
     }
     if (list === undefined) {
       list = [];
-      this.older.set(s, list);
+      this.older[s] = list;
       this.flag(s, OLDER, true);
     }
     let i = list.length;
@@ -629,7 +632,7 @@ export class Motions<I> {
 
   /** Lets go of stretches older than the one in force at `reading.horizon`. */
   private prune(s: number): void {
-    const list = this.older.get(s);
+    const list = this.older[s];
     if (list === undefined) return;
     while (
       list.length > 0 &&
@@ -638,7 +641,7 @@ export class Motions<I> {
     )
       list.shift();
     if (list.length === 0) {
-      this.older.delete(s);
+      this.older[s] = undefined;
       this.flag(s, OLDER, false);
     }
   }

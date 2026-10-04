@@ -50,8 +50,11 @@ export interface Subject<S> {
   weight: number;
   /** Left at rest during a handover, so it stops contributing. */
   rested: boolean;
-  /** Per written channel, whether a rest-less influence is on: 0 unknown, 1 on, 2 off. */
-  bands: Uint8Array;
+  /**
+   * Per written channel, whether a rest-less influence is on: 0 unknown, 1 on, 2 off; null until
+   * a rest-less channel asks.
+   */
+  bands: Uint8Array | null;
   state: S;
   /** The `now` this subject last caught up to, for this voice. */
   stepped: number;
@@ -69,9 +72,8 @@ export interface Subject<S> {
   base?: Record<string, unknown>;
   /** The pose's velocity per channel at that moment, units per ms, so the first segment leaves at it. */
   slope?: Record<string, unknown>;
-  /** What each stateful signal on this voice keeps for this subject, by the signal. */
-  kept: Map<object, unknown>;
-  keep: Setting['keep'];
+  /** What `setting.keep` holds for this voice and subject, by owner; null until it holds any. */
+  kept: Map<object, unknown> | null;
   /** Under `history`, copies of this record by the mix time they were taken, oldest first. */
   snaps?: { at: number; held: Subject<S> }[];
   /** In a projection: where this record started from, and whether nothing known could be. */
@@ -96,18 +98,29 @@ export interface Subject<S> {
   slot: number;
 }
 
-const keeper = (kept: Map<object, unknown>): Setting['keep'] =>
-  function keep<K>(owner: object, init: () => K): K {
+/**
+ * A voice's `setting.keep`, one per voice: a setting is valid only during its call, so the state
+ * goes on the record of the subject being called for, `keepOn`, or on the voice before any is.
+ */
+function keeping<I, O>(voice: Voice<I, O>): Setting['keep'] {
+  return function keep<K>(owner: object, init: () => K): K {
+    const held = voice.keepOn;
+    let kept = held === null ? voice.ownKept : held.kept;
+    if (kept === null) {
+      kept = new Map();
+      if (held === null) voice.ownKept = kept;
+      else held.kept = kept;
+    }
     if (kept.has(owner)) return kept.get(owner) as K;
     const made = init();
     kept.set(owner, made);
     reading.kept++;
     return made;
   };
+}
 
 /** The first record of a subject no live voice reaches, so a probe of it still makes one lookup. */
 function stub(): Subject<unknown> {
-  const kept = new Map<object, unknown>();
   return {
     reaches: false,
     delay: 0,
@@ -115,7 +128,7 @@ function stub(): Subject<unknown> {
     shown: 0,
     weight: 0,
     rested: false,
-    bands: new Uint8Array(0),
+    bands: null,
     state: undefined,
     stepped: 0,
     ticks: 0,
@@ -123,8 +136,7 @@ function stub(): Subject<unknown> {
     delta: null,
     phase: 0,
     seeks: 0,
-    kept,
-    keep: keeper(kept),
+    kept: null,
     voice: null,
     next: null,
     version: Number.NaN,
@@ -397,6 +409,10 @@ export class Voice<I, O> {
   outAt = Number.POSITIVE_INFINITY;
   /** Whether its start is still to be fixed by an anchor, so it waits pending. */
   placing = false;
+  /** The record `setting.keep` writes to: the one its patch or signal is being called for. */
+  keepOn: Subject<unknown> | null = null;
+  /** What `setting.keep` holds when called before any record is. */
+  ownKept: Map<object, unknown> | null = null;
   resolve!: () => void;
   readonly done: Promise<void>;
   play!: (played: boolean) => void;
@@ -442,7 +458,7 @@ export class Voice<I, O> {
       weight: 0,
       state: undefined,
       host,
-      keep: keeper(new Map()),
+      keep: keeping(this),
       send,
     };
     this.rate = spec.rate ?? 1;
@@ -509,7 +525,9 @@ export class Voice<I, O> {
     const v = Object.assign(Object.create(Voice.prototype), this) as Voice<I, O>;
     const w = v as unknown as Record<string, unknown>;
     w.subjects = new Filled<I, Subject<unknown>>(fill);
-    w.setting = { ...this.setting, keep: keeper(new Map()), send: noSend };
+    w.setting = { ...this.setting, keep: keeping(v), send: noSend };
+    v.keepOn = null;
+    v.ownKept = null;
     v.scratch = [];
     v.holder = null;
     v.laned = false;
@@ -634,6 +652,8 @@ class Mixer<I, O> implements Mix<I, O> {
   private general: Voice<I, O>[] = [];
   /** How many voices in the list carry a locus; with none, a fold allocates nothing. */
   private loci = 0;
+  /** The one weak reference every motion patch's hooks hold this mix by. */
+  private self: WeakRef<Mixer<I, O>> | null = null;
   /** How many voices in the list are anchored, so a sync with none skips placing them. */
   private anchored = 0;
   /** Events sent since the last drain, and who is being probed, so `send` knows whose they are. */
@@ -748,9 +768,11 @@ class Mixer<I, O> implements Mix<I, O> {
     const motion = voice.motion;
     if (motion !== undefined) {
       this.playing.set(motion, (this.playing.get(motion) ?? 0) + 1);
-      voice.frame = Mixer.frameHook(new WeakRef(this), new WeakRef(voice));
+      this.self ??= new WeakRef(this);
+      const weak = new WeakRef(voice);
+      voice.frame = Mixer.frameHook(this.self, weak);
       motion.frame = voice.frame;
-      voice.revive = Mixer.reviveHook(new WeakRef(this), new WeakRef(voice));
+      voice.revive = Mixer.reviveHook(this.self, weak);
       motion.revive = voice.revive;
     }
     this.voices.push(voice);
@@ -1490,7 +1512,7 @@ class Mixer<I, O> implements Mix<I, O> {
     setting.pass = pass;
     setting.weight = 0;
     setting.state = held.state;
-    setting.keep = held.keep;
+    voice.keepOn = held;
   }
 
   /** A gap as a `dt`: Infinity under reduced motion, and no more than `maxDt`. */
@@ -1705,12 +1727,15 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** A copy of a subject's record that shares nothing a read could change. */
   private copyHeld(voice: Voice<I, O>, h: Subject<unknown>): Subject<unknown> {
-    const kept = new Map<object, unknown>();
-    for (const [owner, value] of h.kept) kept.set(owner, structuredClone(value));
+    let kept: Map<object, unknown> | null = null;
+    if (h.kept !== null) {
+      kept = new Map();
+      for (const [owner, value] of h.kept) kept.set(owner, structuredClone(value));
+    }
     const patch = voice.patch;
     return {
       ...h,
-      bands: h.bands.slice(),
+      bands: h.bands === null ? null : h.bands.slice(),
       state:
         h.state === undefined
           ? undefined
@@ -1718,7 +1743,6 @@ class Mixer<I, O> implements Mix<I, O> {
             ? patch.clone(h.state)
             : structuredClone(h.state),
       kept,
-      keep: keeper(kept),
       probed: Number.NaN,
       delta: null,
       phase: 0,
@@ -1757,7 +1781,6 @@ class Mixer<I, O> implements Mix<I, O> {
       h.replay = live.inputs;
       return h;
     }
-    const kept = new Map<object, unknown>();
     const stepped = live.since < t ? live.since : t;
     return {
       reaches: live.reaches,
@@ -1766,7 +1789,7 @@ class Mixer<I, O> implements Mix<I, O> {
       shown: live.shown,
       weight: 0,
       rested: false,
-      bands: new Uint8Array(voice.slots.length),
+      bands: null,
       state:
         live.reaches && voice.patch.state
           ? (voice.patch.state(subject) as unknown)
@@ -1777,8 +1800,7 @@ class Mixer<I, O> implements Mix<I, O> {
       delta: null,
       phase: 0,
       seeks: 0,
-      kept,
-      keep: keeper(kept),
+      kept: null,
       voice,
       next: null,
       version: Number.NaN,
@@ -1826,7 +1848,12 @@ class Mixer<I, O> implements Mix<I, O> {
   private remember(voice: Voice<I, O>, held: Subject<unknown>): void {
     const history = this.opts.history;
     if (!history || this.projecting) return;
-    if (voice.patch.step === undefined && held.kept.size === 0 && held.base === undefined) return;
+    if (
+      voice.patch.step === undefined &&
+      (held.kept === null || held.kept.size === 0) &&
+      held.base === undefined
+    )
+      return;
     const snaps = held.snaps ?? [];
     held.snaps = snaps;
     const prev = snaps[snaps.length - 1];
@@ -1885,7 +1912,8 @@ class Mixer<I, O> implements Mix<I, O> {
     if (this.now > (held.from ?? this.now)) {
       const tick = this.opts.stepMs;
       const fixed = tick !== undefined && tick > 0 && !this.reducedNow;
-      if ((voice.patch.step && !fixed) || (held.kept.size > 0 && !replayed)) return 'stepped';
+      if ((voice.patch.step && !fixed) || (held.kept !== null && held.kept.size > 0 && !replayed))
+        return 'stepped';
     }
     return 'exact';
   }
@@ -2071,7 +2099,6 @@ class Mixer<I, O> implements Mix<I, O> {
     const reaches = this.aims(voice, subject);
     const delay = reaches && voice.spec.stagger ? voice.spec.stagger(subject) : 0;
     const since = this.sinceOf(voice, delay);
-    const kept = new Map<object, unknown>();
     held = {
       reaches,
       delay,
@@ -2079,7 +2106,7 @@ class Mixer<I, O> implements Mix<I, O> {
       shown: this.shownOf(voice, since),
       weight: 0,
       rested: false,
-      bands: new Uint8Array(voice.slots.length),
+      bands: null,
       state:
         reaches && voice.patch.state
           ? (voice.patch.state(subject) as unknown)
@@ -2090,8 +2117,7 @@ class Mixer<I, O> implements Mix<I, O> {
       delta: null,
       phase: 0,
       seeks: 0,
-      kept,
-      keep: keeper(kept),
+      kept: null,
       voice,
       next: null,
       version: Number.NaN,
@@ -2533,9 +2559,14 @@ class Mixer<I, O> implements Mix<I, O> {
           : channel.merge(pose[key], channel.scale(value, weight));
         continue;
       }
-      const band = held.bands[i];
+      let bands = held.bands;
+      if (bands === null) {
+        bands = new Uint8Array(slots.length);
+        held.bands = bands;
+      }
+      const band = bands[i];
       const on = this.passes(band === 0 ? undefined : band === 1, weight);
-      held.bands[i] = on ? 1 : 2;
+      bands[i] = on ? 1 : 2;
       if (on) pose[key] = pose[key] === undefined ? copy(value) : channel.merge(pose[key], value);
     }
   }
@@ -2733,7 +2764,7 @@ class Mixer<I, O> implements Mix<I, O> {
         setting.pass = 0;
         setting.weight = 0;
         setting.state = held.state;
-        setting.keep = held.keep;
+        voice.keepOn = held;
         this.w = this.weigh(voice, subject, now, held);
         held.weight = this.w;
         if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
