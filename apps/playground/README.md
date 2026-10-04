@@ -9,6 +9,7 @@ variant mechanism for UI ideas; an idea gets built into the app.
 ```
 npm run playground         # from the repo root: field docs from blits' types, then Vite on :: port 4881
 npm run playground:smoke   # build, then play every preset for a second in headless Chromium
+npm run playground:check   # typecheck, the pure tests and the smoke run
 npm run stories -w @blits/playground   # forge stories for the widgets
 npx vitest run apps/playground/test    # the pure modules
 ```
@@ -168,6 +169,10 @@ edit to voice; a bad expression errors on its field while compile still returns;
 compiles and plays clean. The smoke run covers the rest in a real browser, failing on a console
 error, a page error or a blank stage; `--shots <dir>` keeps its screenshots, which otherwise go to a
 temp directory removed on exit.
+
+The root `npm run check` leaves the playground out, as it does the site: the release workflow
+deletes `workspaces` before `npm publish` runs `check`, so a workspace step there would fail the
+release. `npm run playground:check` is the playground's own; its tests also run in the root suite.
 
 ## Not in this version
 

@@ -172,11 +172,6 @@ systems now run on it**, on klieg's `main`.
    merged.** A Vite + labkit app at `apps/playground`; its README says what it is, how to run it and
    how it works, and holds what stays true of the design (the spec and plan are deleted). Before
    merging:
-   - **The release would break on it.** `npm publish` runs `prepublishOnly`, which is `npm run
-     check`, after the release workflow has deleted `workspaces` from the manifest; `check` now
-     reaches into `@blits/playground` (its typecheck, and the smoke run) and would fail with no
-     workspace to find. Whether to drop `prepublishOnly` in CI, or keep the playground out of
-     `check`, is Mike's call.
    - The stage, length, levels and title can't be edited in the UI yet, only through a preset or a
      shared link; the design had a dots/letters switch.
    Decided in conversation and not otherwise written down:
