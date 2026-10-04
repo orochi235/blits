@@ -9,6 +9,7 @@ import { type ClipEdit, ScoreLanes } from '@pg/widgets/ScoreLanes';
 import { LabShell } from '@weasel-js/labkit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import s from './App.module.css';
+import { CompFields, LevelsPanel, StageControls } from './CompositionControls';
 import { Inspector } from './Inspector';
 import { LivePanel } from './LivePanel';
 import { PatchPanel } from './PatchPanel';
@@ -174,28 +175,32 @@ export function App() {
     setSelected(null);
   };
   const header = (
-    <label className={s.row}>
-      preset
-      <select
-        value={PRESETS.find((x) => x.comp === comp)?.name ?? ''}
-        onChange={(e) => loadPreset(e.target.value)}
-      >
-        <option value="" disabled>
-          {comp.title}
-        </option>
-        {PRESETS.map((x) => (
-          <option key={x.name} value={x.name}>
-            {x.name}
+    <div className={s.header}>
+      <label className={s.row}>
+        preset
+        <select
+          value={PRESETS.find((x) => x.comp === comp)?.name ?? ''}
+          onChange={(e) => loadPreset(e.target.value)}
+        >
+          <option value="" disabled>
+            {comp.title}
           </option>
-        ))}
-      </select>
-    </label>
+          {PRESETS.map((x) => (
+            <option key={x.name} value={x.name}>
+              {x.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <CompFields comp={comp} onChange={set} />
+    </div>
   );
 
   return (
     <LabShell title="blits playground" mode="dark" header={header}>
       <div className={s.grid}>
-        <section className={s.stage}>
+        <section className={s.stage} aria-label="stage">
+          <StageControls comp={comp} onChange={set} />
           <Stage
             stage={comp.stage}
             subjects={subjects}
@@ -239,6 +244,7 @@ export function App() {
               </button>
             </div>
           )}
+          <LevelsPanel comp={comp} onChange={set} />
           {voice && (
             <VoicePanel
               key={voice.id}

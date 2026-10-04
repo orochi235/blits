@@ -14,6 +14,9 @@
 .stage {
   grid-area: stage;
   min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--wzl-space-xs);
 }
 
 .inspector {
@@ -104,4 +107,43 @@
   min-width: 4ch;
   text-align: end;
   font-variant-numeric: tabular-nums;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-md);
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-sm);
+  font-weight: 600;
+}
+
+.number {
+  width: 9ch;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.text {
+  flex: 1;
+  min-width: 12ch;
+}
+
+.levels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, 8ch) auto;
+  gap: var(--wzl-space-xs);
+  align-items: center;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg-muted);
+}
+
+.levels input {
+  min-width: 0;
+  width: 100%;
 }

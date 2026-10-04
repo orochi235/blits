@@ -21,10 +21,18 @@ into `src/generated/docs.json` (gitignored), which the panels show as tooltips o
 
 ## The screen
 
-The stage is top left, and clicking a subject picks it for the inspector, top middle. The voice and
-patch panels for the selected clip run down the right. The score fills the bottom, with the
-transport above it: play and pause, rate, loop, a slider per level, and the live toggle. The preset
-menu is in the header.
+The stage is top left, with a dots/letters switch above it and, beside the switch, the columns and
+rows or the text; clicking a subject picks it for the inspector, top middle. The levels panel, then
+the voice and patch panels for the selected clip, run down the right. The score fills the bottom,
+with the transport above it: play and pause, rate, loop, a slider per level, and the live toggle.
+The header holds the preset menu, the title and the length.
+
+These composition edits go through the same history as every other, so undo, storage and share
+cover them, and `src/blits/edit.ts` holds each one to the `MAX_*` caps `load` enforces. Switching
+the stage's kind starts from 12 by 6 dots or the text `blits`. A level's name must be unique and not
+blank, and its bounds may not cross; its value is held inside them. A text or number field commits
+on Enter or leaving it, so typing is one undo step. Removing or renaming a level an expression names
+is allowed: the expression then reads 0, with no error.
 
 ## A composition
 
@@ -165,9 +173,9 @@ onto them.
 `test/` is vitest in a node environment, over the pure modules only: each patch kind compiled from
 a composition gives, to the bit, the poses the matching hand-written `cue` gives; a scrub back over
 a stateful voice lands on the pose continuous play showed; the score round-trips voice to clip to
-edit to voice; a bad expression errors on its field while compile still returns; every preset
-compiles and plays clean. The smoke run covers the rest in a real browser, failing on a console
-error, a page error or a blank stage; `--shots <dir>` keeps its screenshots, which otherwise go to a
+edit to voice; a bad expression errors on its field while compile still returns; a composition
+edit stays inside what `load` accepts; every preset compiles and plays clean. The smoke run covers
+the rest in a real browser, failing on a console error, a page error or a blank stage; `--shots <dir>` keeps its screenshots, which otherwise go to a
 temp directory removed on exit.
 
 The root `npm run check` leaves the playground out, as it does the site: the release workflow
@@ -179,5 +187,3 @@ release. `npm run playground:check` is the playground's own; its tests also run 
 - Reading back (`history` and `project` at a past time) and drained events, as panels of their own.
 - Recording level moves.
 - Saving to a file.
-- Editing the stage, the length, the levels or the title from the UI: they come from the preset or a
-  shared link.

@@ -170,10 +170,7 @@ systems now run on it**, on klieg's `main`.
 
 0. **The playground is built, on branch `playground` in the worktree `~/src/blits-playground`, not
    merged.** A Vite + labkit app at `apps/playground`; its README says what it is, how to run it and
-   how it works, and holds what stays true of the design (the spec and plan are deleted). Before
-   merging:
-   - The stage, length, levels and title can't be edited in the UI yet, only through a preset or a
-     shared link; the design had a dots/letters switch.
+   how it works, and holds what stays true of the design (the spec and plan are deleted).
    Decided in conversation and not otherwise written down:
    - Mike will rework the score and panel designs later; this version is a start.
    - The composition types are named without a `Doc` suffix (Mike took that from a side
