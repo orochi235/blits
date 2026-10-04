@@ -219,17 +219,13 @@ systems now run on it**, on klieg's `main`.
      already meant "forget this subject everywhere". weasel (weasel-64) confirmed it needs per-node
      removal: a node changes motion kind mid-flight, or is cancelled with nothing replacing it. The
      schema page's Open section has the one gap, reading back across a subject fade under `history`.
-   - **A voice per node at scale is bound by memory, not calls** (measured 2026-10-02, teitou,
-     `bench/split.mjs`): single-subject tween voices cost 18 ns more per voice than one shared
-     voice at 1k, 48 at 10k, 226 at 100k, nearly all in the fill, plus `sync` at 2.8 ms for 100k.
-     A motion patch belongs to one voice, so "voices sharing a patch" does not apply to motion.
-     Mike approved the direction 2026-10-03; the design is
-     `docs/superpowers/specs/2026-10-03-voice-table-design.md`, awaiting his review. Not built.
-   - **Voices sharing a patch, grouped into one lane indexed by voice**, so a voice per call costs
-     what one voice does. The engine should make the natural use the fast one, so this stays
-     planned for hosts that cannot share a voice — a call that needs its own pause or rate, say.
-     On studio a tween per subject (`tweens`, 10k voices) cost 2.6× one tween voice over the same
-     subjects, about 4 ms a frame in weasel's bench. After the item above. Not designed.
+   - **A voice per node, built 2026-10-03** (branch `voice-lane`): single-subject motion voices
+     share a crowd of flat rows per channel, and `sync` visits only voices with something due. The
+     schema page's Lanes section has how and the numbers; 10k tween voices of one subject each now
+     cost what one shared voice does. Mike approved the direction and the design, which was then
+     deleted as built. Not done: single-subject `keys` and `fn` voices still take the general path
+     (the same rows with another sampler would do it), and `requalify` is still a pass over every
+     voice whenever `version` changes, which a host starting a voice per call every frame pays.
 
 1d. **`@msb235/blits-quarks` 0.1.0 is on npm**, published by hand 2026-10-02 because npm refuses
    trust for a name never published; trusted publishing is registered since, so later versions go out

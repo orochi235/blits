@@ -33,6 +33,9 @@ version and everything else the patch. Each release lists its changes as **Break
 - `pull` over a list read again in the same order skips looking each subject up, and copies lane
   values a column at a time; a motion voice's lane fills in one loop. One tween voice over 10k
   subjects read by `pull` takes 0.59–0.66 of the time it did on teitou; a spring 0.68–0.74.
+- Motion voices of one subject each fill from one crowd of flat rows per channel, and `sync` visits
+  only voices with something due: 10k tween voices of one subject each take 0.54–0.59 of the time
+  they did on teitou, 100k take 0.31–0.33.
 
 ## 0.3.0
 
