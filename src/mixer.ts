@@ -4,6 +4,7 @@ import { type Curve, curve } from './easing.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
 import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
 import { type Motions, motionOf, noFrame, noRevive } from './motion.js';
+import { Named } from './named.js';
 import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
@@ -400,7 +401,7 @@ export class Voice<I, O> {
   out: Ramp | null = null;
   readonly subjects = new Store<I, Subject<unknown>>();
   /** The subjects its spec names, or null where it names none. */
-  readonly named: ReadonlySet<I> | null;
+  readonly named: Named<I> | null;
   /** Kit slot of each channel the patch writes, in `writes` order. */
   readonly slots: number[];
   /** The stops built ahead of time, for a `keys` patch. */
@@ -532,7 +533,7 @@ export class Voice<I, O> {
     send: (event: unknown) => void,
   ) {
     this.slots = patch.writes.map((k) => slotOf.get(k as string) as number);
-    this.named = spec.subjects ? new Set(spec.subjects) : null;
+    this.named = spec.subjects ? new Named(spec.subjects) : null;
     this.built = patch.form === 'keys' && patch.keys ? builtOf(patch) : null;
     this.lerps = this.slots.map((slot) => (channels[slot] as Channel<unknown>).lerp);
     this.intos = this.built
@@ -2631,7 +2632,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   private unindex(voice: Voice<I, O>): void {
     this.naming--;
-    for (const subject of voice.named as ReadonlySet<I>) {
+    for (const subject of voice.named as Named<I>) {
       const list = this.named.get(subject);
       if (list === undefined) continue;
       const i = list.indexOf(voice);
