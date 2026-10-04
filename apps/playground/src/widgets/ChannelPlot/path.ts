@@ -20,6 +20,12 @@ export function rangeOf(series: readonly Series[]): [number, number] {
   return [lo - pad, hi + pad];
 }
 
+/** Widens [lo, hi] so `px` pixels of a `size`-pixel axis lie beyond each end. */
+export function insetRange([lo, hi]: [number, number], px: number, size: number): [number, number] {
+  const pad = ((hi - lo) * px) / Math.max(1, size - 2 * px);
+  return [lo - pad, hi + pad];
+}
+
 export function pathOf(
   times: readonly number[],
   values: readonly number[],

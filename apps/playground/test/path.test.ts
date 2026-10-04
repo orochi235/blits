@@ -1,4 +1,4 @@
-import { pathOf, rangeOf } from '@pg/widgets/ChannelPlot/path';
+import { insetRange, pathOf, rangeOf } from '@pg/widgets/ChannelPlot/path';
 import { describe, expect, it } from 'vitest';
 
 describe('ChannelPlot paths', () => {
@@ -6,6 +6,12 @@ describe('ChannelPlot paths', () => {
     expect(rangeOf([{ id: 'a', hue: 0, values: [0, 10] }])).toEqual([-0.5, 10.5]);
     expect(rangeOf([{ id: 'a', hue: 0, values: [3, 3] }])).toEqual([2.5, 3.5]);
     expect(rangeOf([])).toEqual([-0.5, 0.5]);
+  });
+  it('leaves px pixels of room beyond each end of the range', () => {
+    const [lo, hi] = insetRange([0, 1], 10, 100);
+    expect(lo).toBeCloseTo(-0.125);
+    expect(hi).toBeCloseTo(1.125);
+    expect(((0 - lo) / (hi - lo)) * 100).toBeCloseTo(10);
   });
   it('builds a polyline path, skipping non-finite values', () => {
     expect(

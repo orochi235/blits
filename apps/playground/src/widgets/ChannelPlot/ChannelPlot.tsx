@@ -1,6 +1,6 @@
 import { modelToPlot, Plot2D } from '@weasel-js/ui';
 import s from './ChannelPlot.module.css';
-import { pathOf, rangeOf, type Series } from './path';
+import { insetRange, pathOf, rangeOf, type Series } from './path';
 
 export interface ChannelPlotProps {
   label: string;
@@ -11,6 +11,8 @@ export interface ChannelPlotProps {
   height?: number;
 }
 
+const LABEL_ROOM = 8; // px kept clear above and below the data so edge tick labels fit
+
 export function ChannelPlot({
   label,
   times,
@@ -19,7 +21,7 @@ export function ChannelPlot({
   width = 320,
   height = 90,
 }: ChannelPlotProps) {
-  const [yMin, yMax] = rangeOf(series);
+  const [yMin, yMax] = insetRange(rangeOf(series), LABEL_ROOM, height);
   const xMin = times[0] ?? 0;
   const xMax = Math.max(xMin + 1e-9, times[times.length - 1] ?? 1);
   const range = { xMin, xMax, yMin, yMax };
