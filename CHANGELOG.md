@@ -25,7 +25,8 @@ version and everything else the patch. Each release lists its changes as **Break
 - A locus whose members are all `keys` or stateless `fn` voices runs on lanes, so `mix.blend` over
   such patches does: each subject's members are gathered as the general path's locus fold gathers
   them and folded in at its first member's place. A motion member keeps the whole locus on the
-  general path. A blend of three over 10k subjects takes about a third less time on teitou.
+  general path. On teitou three voices in a locus over 10k subjects take 0.72 of the time they
+  did, and a blend of three weighted by a signal 0.84.
 - A voice in a locus folds only the channels its patch writes, as a voice outside one does; a
   delta's other keys were folded too.
 - A `keys` or stateless `fn` voice naming one subject and writing several channels joins a crowd,
