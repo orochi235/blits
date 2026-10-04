@@ -8,6 +8,24 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A voice weighted by a signal on a lane is weighed under the fade its lane already worked out,
+  where the general path's weighing worked the fade out again for every subject; a laned `fn` call
+  in a mix keeping no history no longer asks the mix for its horizon. On teitou three signal voices
+  over 10k subjects take about 0.91 of the time they did, three plain `fn` voices 0.91 and a blend
+  of three 0.95.
+- A voice's handle is one object of a class, where each `cue` made a dozen closures: cueing 10k
+  tween voices of one subject each takes 7.7–9.7 ms on teitou, from 13.5–15.3, and 10k `fn` voices
+  2.8–3.1 ms, from 4.8–7.1.
+- A voice naming its subjects keeps them in a list, with a set only past eight, and a motion patch
+  numbering one subject makes no `FinalizationRegistry` until it numbers a second: a tween voice of
+  one subject holds about 5.3 KB, from 5.6 (`bench/heapby.mjs`).
+- A voice over every subject coming or going among a crowd no longer rebuilds the crowds and the
+  laned channels when qualifying leaves them as they were: with 10k tween voices of one subject each
+  and a voice over all of them replaced every frame (`swap`), a frame takes 8.3–8.8 ms on teitou,
+  from 12.5–12.9.
+- `atRest` answers from the lanes' values for a subject every voice of which is laned, rather than
+  folding a pose to compare: asked of 10k subjects under two voices, a frame takes 0.94–1.07 ms on
+  teitou, from 1.41–1.43 (`rest`).
 - A subject fading out of a voice with `handle.fade({ subject })` gets the same weight on a lane
   as on the general path. A lane held the voice's weight to 1 before multiplying in the subject's
   ramp, where the general path holds the product: a voice at weight 1.6 halfway out of a subject
