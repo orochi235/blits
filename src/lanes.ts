@@ -930,6 +930,27 @@ export class Lanes<I, O> {
     }
   }
 
+  /**
+   * Whether a subject's laned values are at their channels' rest, as `atRest` reads the pose `copy`
+   * would write: each number within 1e-9 of its rest.
+   */
+  rests(slot: number): boolean {
+    for (const ch of this.laned) {
+      const values = ch.values;
+      if (ch.scalar) {
+        if (!(Math.abs((values[slot] as number) - ch.rest) < 1e-9)) return false;
+        continue;
+      }
+      // `copy` lengthens a rest shorter than the channel's axes, and a longer array is never near it.
+      if (ch.start.length < ch.axes) return false;
+      const base = slot * ch.axes;
+      for (let a = 0; a < ch.axes; a++)
+        if (!(Math.abs((values[base + a] as number) - (ch.start[a] as number)) < 1e-9))
+          return false;
+    }
+    return true;
+  }
+
   /** Writes a subject's laned values into a pose, each array channel into a new array. */
   copy(slot: number, pose: Record<string, unknown>): void {
     const laned = this.laned;

@@ -1380,7 +1380,17 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   atRest(subject: I): boolean {
-    const pose = this.fold(subject, undefined, true);
+    const head = this.linked(subject);
+    const laned = this.linkedLaned;
+    const lanes = this.lanes as Lanes<I, O>;
+    // Every voice on lanes and nothing to clamp: the pose a fold would make is the lanes' values.
+    if (laned && lanes.whole && this.bounded.length === 0)
+      return lanes.rests((head as Subject<unknown>).slot);
+    const pose = this.foldWith(subject, {} as O, head, laned, true) as Record<string, unknown>;
+    return this.rests((this.bounded.length === 0 ? pose : this.clamp(pose)) as O);
+  }
+
+  private rests(pose: O): boolean {
     for (let i = 0; i < this.names.length; i++) {
       const channel = this.channels[i] as Channel<unknown>;
       const value = (pose as Record<string, unknown>)[this.names[i] as string];
@@ -2699,13 +2709,23 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   private folded(subject: I, out?: O, dry = false, except?: number): O {
+    const head = this.linked(subject);
+    return this.foldWith(subject, out ?? ({} as O), head, this.linkedLaned, dry, except);
+  }
+
+  /**
+   * A subject's chain, linked for this frame, and in `linkedLaned` whether its lanes answer for the
+   * voices on them; a subject numbered since the frame's fill folds every voice, laned ones included.
+   */
+  private linked(subject: I): Subject<unknown> | null {
     const now = this.now;
     const head = Number.isNaN(now) ? null : this.chain(subject, now);
-    // A subject numbered since the frame's fill folds every voice here, laned ones included.
-    const laned =
+    this.linkedLaned =
       head !== null && this.lanes?.prepare(head.slot, subject, now, this.version) === true;
-    return this.foldWith(subject, out ?? ({} as O), head, laned, dry, except);
+    return head;
   }
+
+  private linkedLaned = false;
 
   /** The fold after a subject's chain is linked and its lanes asked whether it reads from them. */
   private foldWith(
