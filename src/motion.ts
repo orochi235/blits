@@ -99,9 +99,29 @@ let slope = false;
 /** The last tween sample's time, curve and length, and the share of the way it had left to go. */
 const memo = { u: Number.NaN, ease: undefined as Curve | undefined, left: 0 };
 
+/** The law and time `timed` was last worked out for: subjects released together share them. */
+const prepared = {
+  form: Number.NaN,
+  k1: Number.NaN,
+  k2: Number.NaN,
+  k3: Number.NaN,
+  t: Number.NaN,
+};
+
 /** `t` seconds after release, the terms every axis shares, into `timed`. */
 function prepare(law: Float64Array, t: number): void {
-  switch (law[0]) {
+  const form = law[0] as number;
+  const k1 = law[2] as number;
+  const k2 = law[3] as number;
+  const k3 = law[4] as number;
+  const p = prepared;
+  if (Object.is(t, p.t) && form === p.form && k1 === p.k1 && k2 === p.k2 && k3 === p.k3) return;
+  p.form = form;
+  p.k1 = k1;
+  p.k2 = k2;
+  p.k3 = k3;
+  p.t = t;
+  switch (form) {
     case UNDER: {
       const zeta = law[2] as number;
       const w0 = law[3] as number;
