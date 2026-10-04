@@ -255,15 +255,15 @@ systems now run on it**, on klieg's `main`.
      Every change was checked bit for bit with `bench/same.sh <rev>` (random scenes through two
      builds), and timed one row per process with `AB_EACH=1 bench/ab.sh`. `bench/start.mjs`,
      `bench/memory.mjs` and `bench/heapby.mjs` measure starting voices and what each one holds.
-     What is still slow, largest first:
-     - **A voice with a locus or a signal weight never runs on a lane**, so every `mix.blend`
-       takes the general path: 10k subjects under three voices in a locus cost about 3.9 ms a
-       frame, against 2.1 without the locus (teitou). A signal on a lane would be called for
-       every subject the lane has met, so one holding state outside `setting.keep` would be
-       called more often than the general path calls it; the stock signals keep from their
-       first call, which the general path makes, but `influence` does not yet notice a `keep`
-       made inside `weigh`. A locus on lanes needs two passes, since it folds at its first
-       member's place, which differs by subject. Not started.
+     The same night put signal weights and loci on lanes (the schema page's Lanes section has
+     how), which found and fixed two exactness bugs the random scenes now cover: a lane clamped
+     a weight before multiplying in a subject fade, and `atRest`'s dry read handed a weight
+     signal the unheld time. `SAME_LANES=off bench/same.sh <rev>` compares this tree's lanes with
+     a revision's general path. What is still slow, largest first:
+     - **A blend still costs half again a plain voice**: three voices blended by a signal over
+       10k subjects take about 3.3 ms a frame, three plain ones 2.2 (teitou). The difference is
+       the signal per voice and subject and the locus's gather. A locus with a motion member,
+       or a signal that keeps state, stays on the general path.
      - **Starting 10k one-subject tween voices costs about 52 ms** (cue and first frame), where
        a `fn` voice costs about 24: a motion patch per voice holds about 3 KB of state for one
        subject, mostly its numbering (a WeakRef, a FinalizationRegistry entry) and closures.
