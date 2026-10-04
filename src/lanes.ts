@@ -1214,7 +1214,7 @@ export class Lanes<I, O> {
           const v = c.voices[p] as Voice<I, O>;
           if (c.rowOf.get(v.id) === p && v.state === 'done') this.bury(c, p);
         }
-      for (const c of this.crowds) if (c.dead > 64 && c.dead * 2 > c.size) this.compact(c);
+      this.compactSparse();
       return;
     }
     this.laned = [];
@@ -1358,7 +1358,7 @@ export class Lanes<I, O> {
    * first that cannot be, which needs a qualify: one that leaves a lane or the general path, which
    * may open a channel, or one that joins anything but a crowd on a laned channel. Neither a voice
    * that fits joining laned channels nor a laned one leaving moves the fixed point `qualify` finds.
-   * A crowd more than half empty rows is compacted.
+   * A crowd a quarter empty rows is compacted.
    */
   private retouch(): boolean {
     const touched = [...new Set(this.touched)].sort((a, b) => a.id - b.id);
@@ -1398,7 +1398,7 @@ export class Lanes<I, O> {
       if (crowdable(v)) this.join(v, undefined, undefined, this.crowds);
       else this.enlane(v);
     }
-    for (const c of this.crowds) if (c.dead > 64 && c.dead * 2 > c.size) this.compact(c);
+    this.compactSparse();
     // As a qualify leaving nothing on lanes: no fill comes to let go of what the last probes held.
     if (this.lanes.length === 0 && this.crowds.every((c) => c.dead === c.size)) this.subjects = [];
     return true;
@@ -1440,6 +1440,14 @@ export class Lanes<I, O> {
     if (d >= 0) this.dense.splice(d, 1);
     this.byId.delete(v.id);
     return true;
+  }
+
+  /**
+   * Compacts every crowd a quarter or more empty rows: each fill walks every row, and at half a
+   * crowd replacing a voice a frame carried as many empty rows as live ones.
+   */
+  private compactSparse(): void {
+    for (const c of this.crowds) if (c.dead > 64 && c.dead * 4 >= c.size) this.compact(c);
   }
 
   /**
