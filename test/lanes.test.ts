@@ -1716,6 +1716,42 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
     // The general path would have called the patch for subjects 3 and 1 alone.
     expect(seen.sort()).toEqual([0, 1, 2, 3]);
   });
+
+  it('for voices writing several channels, crowds sharing one folding in voice order', () => {
+    // 1e16 + 1 rounds the 1 away, so the crawl folds to 0 in voice order and to 1 out of it.
+    const both = (crawl: number) =>
+      patch<Part, Pose>(0, (_ph, part) => ({ crawl, dark: part.id / 10 }), {
+        writes: ['crawl', 'dark'],
+      });
+    agree(
+      (m, parts) => ({
+        handles: parts.flatMap((p) => [
+          m.cue({ patch: both(1e16), subjects: [p] }),
+          m.cue({
+            patch: keys<Part, Pose>(400, [
+              { at: 0, delta: { crawl: 1 } },
+              { at: 1, delta: { crawl: 1 } },
+            ]),
+            subjects: [p],
+          }),
+          m.cue({ patch: both(-1e16), subjects: [p] }),
+        ]),
+      }),
+      { times: ramp },
+    );
+    const m = mix<Part, Pose>(K);
+    const p = { id: 3 };
+    m.cue({ patch: both(1e16), subjects: [p] });
+    m.cue({
+      patch: patch<Part, Pose>(0, () => ({ crawl: 1 }), { writes: ['crawl'] }),
+      subjects: [p],
+    });
+    m.cue({ patch: both(-1e16), subjects: [p] });
+    for (const t of [0, 16, 32]) {
+      m.sync(t);
+      expect(m.probe(p).crawl).toBe(0);
+    }
+  });
 });
 
 describe('crowds take voices on and off as they come and go', () => {

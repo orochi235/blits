@@ -133,10 +133,9 @@ const SEEKS = 6;
 /** 1 once the general path has made the voice's first call for the subject, which never undoes. */
 const MET = 7;
 
-/** What `begin` found: the general path, only solo lanes, or lanes filled. */
+/** What `begin` found: the general path, or lanes filled. */
 const GENERAL = 0;
-const SOLO = 1;
-const READY = 2;
+const READY = 1;
 
 const SLOT = 6;
 const FILLED = 0;
@@ -213,12 +212,6 @@ class Lane<I, O> implements Positions<I, O> {
   /** The lines it goes idle and busy at, by its patch form. */
   readonly line: { stop: number; start: number };
   /**
-   * A `fn` or `keys` voice naming one subject, which shares nothing across subjects for a fill to
-   * save, so it stays idle: its subject takes the general path, and the channel stays a lane for
-   * the voices that do share.
-   */
-  readonly solo: boolean;
-  /**
    * When the voice started playing on its lane, in the order lanes did; 0 while it waits. A subject
    * checked against every lane up to some epoch has met this one if this one's is no later.
    */
@@ -293,8 +286,6 @@ class Lane<I, O> implements Positions<I, O> {
   constructor(readonly voice: Voice<I, O>) {
     this.motion = motionOf<I>(voice.patch);
     this.line = voice.built !== null ? SPARSE.keys : SPARSE.other;
-    this.solo = voice.named !== null && voice.named.size === 1 && this.motion === undefined;
-    this.idle = this.solo;
   }
 
   positionOf(slot: number): number {
@@ -345,9 +336,20 @@ class Lane<I, O> implements Positions<I, O> {
   }
 }
 
-/** Whether a laned voice belongs in a crowd: one naming a single subject and writing one channel. */
+/**
+ * Whether a laned voice belongs in a crowd: one naming a single subject, which shares nothing
+ * across subjects for a lane to save. A motion voice writes one channel; a keys or fn voice may
+ * write several, and joins the crowd of voices writing those same channels.
+ */
 function crowdable<I, O>(v: Voice<I, O>): boolean {
-  return v.named !== null && v.named.size === 1 && v.slots.length === 1;
+  return v.named !== null && v.named.size === 1 && (v.slots.length === 1 || v.motion === undefined);
+}
+
+/** Whether two crowds' channels are the same list. */
+function same(a: readonly Laned[], b: readonly Laned[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
 }
 
 /**
@@ -499,14 +501,14 @@ class Crowd<I, O> implements Positions<I, O> {
 export class Lanes<I, O> {
   private readonly numbers: Numbers<I>;
   private lanes: Lane<I, O>[] = [];
-  /** The lanes a fill visits: every lane but the solo ones. */
-  private runs: Lane<I, O>[] = [];
   /** The lanes over every subject that have started playing, by epoch. */
   private dense: Lane<I, O>[] = [];
   private readonly byId = new Map<number, Lane<I, O>>();
   /** The crowds of single-subject motion voices, one per channel, and which holds each voice. */
   private crowds: Crowd<I, O>[] = [];
   private readonly crowdOf = new Map<number, Crowd<I, O>>();
+  /** Whether two crowds share a channel, so their rows must interleave in voice order. */
+  private overlap = false;
   private readonly lawsByKey = new Map<string, Float64Array>();
   private laned: Laned[] = [];
   /** By kit slot, the laned channel there. */
@@ -685,10 +687,6 @@ export class Lanes<I, O> {
     const ready = this.filled(now, version) ? READY : this.begin(now, version);
     if (ready === GENERAL) return this.general(slot);
     if (slot < 0) return false;
-    if (ready === SOLO) {
-      if ((this.per[slot * SLOT + SEEN] as number) < this.wide) this.meet(slot, subject);
-      return this.general(slot);
-    }
     if (!this.probedThisFrame(slot)) this.distinct++;
     const probe = ++this.probes;
     const per = this.per;
@@ -770,8 +768,7 @@ export class Lanes<I, O> {
 
   /**
    * What a probe does before its subject, once a frame's lanes are settled: qualifies and fills as
-   * needed. Says whether the subject takes the general path, whether only solo lanes exist, so
-   * there is nothing to fill, or whether the lanes are filled.
+   * needed. Says whether the subject takes the general path or the lanes are filled.
    */
   private begin(now: number, version: number): number {
     if (now !== this.frameAt) {
@@ -787,8 +784,6 @@ export class Lanes<I, O> {
     if (this.qualifiedVersion !== version) this.requalify(version);
     else if (this.touched.length > 0 && !this.retouch()) this.requalify(version);
     if (this.laned.length === 0) return GENERAL;
-    // Only solo lanes: nothing to fill, and every subject takes the general path.
-    if (this.runs.length === 0 && this.crowds.length === 0) return SOLO;
     if (this.filledAt !== now || this.filledVersion !== version || this.moved !== reading.moved) {
       this.fillAll(now, version);
       // A patch call in that fill made kept state, which took its voice off its lane: fill without it.
@@ -1025,7 +1020,6 @@ export class Lanes<I, O> {
       kept.push(lane);
     }
     this.lanes = kept;
-    this.runs = kept.filter((l) => !l.solo);
     this.dense = kept
       .filter((l) => l.voice.named === null && l.epoch > 0)
       .sort((a, b) => a.epoch - b.epoch);
@@ -1078,6 +1072,7 @@ export class Lanes<I, O> {
     const was = new Map(this.crowdOf);
     this.crowds = [];
     this.crowdOf.clear();
+    this.overlap = false;
     for (const v of members) {
       const from = was.get(v.id);
       this.join(v, from, from?.rowOf.get(v.id), old);
@@ -1096,12 +1091,15 @@ export class Lanes<I, O> {
     at: number | undefined,
     old: readonly Crowd<I, O>[],
   ): void {
-    const ch = this.bySlot[v.slots[0] as number] as Laned;
-    let c = this.crowds.find((o) => o.chans[0] === ch);
+    const chans = v.slots.map((s) => this.bySlot[s] as Laned);
+    let c = this.crowds.find((o) => same(o.chans, chans));
     if (c === undefined) {
-      c = new Crowd<I, O>([ch], ch.axes);
-      const was = old.find((o) => o.chans[0]?.name === ch.name);
+      c = new Crowd<I, O>(chans, (chans[0] as Laned).axes);
+      const names = chans.map((ch) => ch.name).join(' ');
+      const was = old.find((o) => o.chans.map((ch) => ch.name).join(' ') === names);
       if (was !== undefined) c.idle = was.idle;
+      for (const o of this.crowds)
+        if (o.chans.some((ch) => chans.includes(ch))) this.overlap = true;
       this.crowds.push(c);
     }
     const p = c.size;
@@ -1174,7 +1172,7 @@ export class Lanes<I, O> {
         !fits ||
         !laned ||
         !crowdable(v) ||
-        this.bySlot[v.slots[0] as number] === undefined
+        v.slots.some((slot) => this.bySlot[slot] === undefined)
       )
         return false;
       this.join(v, undefined, undefined, this.crowds);
@@ -1327,7 +1325,7 @@ export class Lanes<I, O> {
       // rows are folded between the lanes on either side of their voices, as the general path
       // folds every voice in order.
       let busy = false;
-      for (const lane of this.runs) {
+      for (const lane of this.lanes) {
         if (decide) {
           // A lane with few subjects, such as one naming its own, goes by the share of all probed;
           // one with a single subject shares nothing a fill could save, as a solo lane does not.
@@ -1350,7 +1348,7 @@ export class Lanes<I, O> {
       }
       if (busy) {
         for (const ch of this.laned) ch.values.fill(ch.rest, 0, size * ch.axes);
-        for (const lane of this.runs) {
+        for (const lane of this.lanes) {
           if (lane.idle) continue;
           if (this.crowds.length > 0) this.crowdsUpTo(lane.voice.id);
           this.run(lane);
@@ -1576,7 +1574,27 @@ export class Lanes<I, O> {
 
   /** Runs every crowd's rows whose voices come before voice `id`, from where each crowd reached. */
   private crowdsUpTo(id: number): void {
-    for (const c of this.crowds) if (!c.idle && c.cursor < c.size) this.runCrowd(c, id);
+    if (!this.overlap) {
+      for (const c of this.crowds) if (!c.idle && c.cursor < c.size) this.runCrowd(c, id);
+      return;
+    }
+    // Crowds sharing a channel take turns in voice order, so a subject's rows fold as one crowd's do.
+    for (;;) {
+      let first: Crowd<I, O> | undefined;
+      let a = id;
+      let b = id;
+      for (const c of this.crowds) {
+        if (c.idle || c.cursor >= c.size) continue;
+        const next = c.hot[c.cursor * c.stride + H_ID] as number;
+        if (next < a) {
+          b = a;
+          a = next;
+          first = c;
+        } else if (next < b) b = next;
+      }
+      if (first === undefined) return;
+      this.runCrowd(first, b);
+    }
   }
 
   /**

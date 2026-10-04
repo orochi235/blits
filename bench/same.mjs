@@ -32,7 +32,12 @@ function run(lib, seed) {
   const chance = (p) => r() < p;
   const int = (lo, hi) => lo + Math.floor(r() * (hi - lo + 1));
   const trace = [];
-  const note = (label, v) => trace.push(`${label} ${JSON.stringify(v)}`);
+  // A pose's keys in name order: which path filled a channel decides the order they were written.
+  const sorted = (_k, v) =>
+    v !== null && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : 1)))
+      : v;
+  const note = (label, v) => trace.push(`${label} ${JSON.stringify(v, sorted)}`);
   const attempt = (label, f) => {
     try {
       return f();
