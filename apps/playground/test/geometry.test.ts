@@ -1,5 +1,11 @@
 import type { Clip } from '@pg/widgets/ScoreLanes';
-import { clipEnd, clipPolygon, passLines, scaleOf } from '@pg/widgets/ScoreLanes/geometry';
+import {
+  clipEnd,
+  clipPolygon,
+  groupBrackets,
+  passLines,
+  scaleOf,
+} from '@pg/widgets/ScoreLanes/geometry';
 import { describe, expect, it } from 'vitest';
 
 const clip = (c: Partial<Clip>): Clip => ({
@@ -25,6 +31,11 @@ describe('geometry', () => {
     expect(s.x(2000)).toBe(1140);
     expect(s.t(640)).toBe(1000);
   });
+  it('stays finite over an empty duration', () => {
+    const s = scaleOf(0, 1000, 0);
+    expect(Number.isFinite(s.x(0))).toBe(true);
+    expect(Number.isFinite(s.t(500))).toBe(true);
+  });
   it('ends a clip after its passes, or never', () => {
     expect(clipEnd(clip({ start: 100 }))).toBe(1100);
     expect(clipEnd(clip({ passes: Number.POSITIVE_INFINITY }))).toBe(Number.POSITIVE_INFINITY);
@@ -44,5 +55,14 @@ describe('geometry', () => {
   it('puts dividers between passes, none for an aperiodic clip', () => {
     expect(passLines(clip({ passes: 3 }), 5000)).toEqual([500, 1000]);
     expect(passLines(clip({ pass: 0, passes: 1 }), 5000)).toEqual([]);
+  });
+  it('brackets groups of two or more, hued by their first clip', () => {
+    const clips = [
+      clip({ id: 'a', lane: 0, group: 'g', hue: 10 }),
+      clip({ id: 'b', lane: 1 }),
+      clip({ id: 'c', lane: 3, group: 'g', hue: 99 }),
+      clip({ id: 'd', lane: 2, group: 'solo' }),
+    ];
+    expect(groupBrackets(clips)).toEqual([{ group: 'g', hue: 10, from: 0, to: 3 }]);
   });
 });

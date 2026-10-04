@@ -19,11 +19,14 @@ export interface Link {
   from: { clip: string; edge: Edge };
   to: { clip: string; edge: Edge };
 }
+export type Hatch = 'before' | 'after' | 'both' | null;
 export type ClipEdit =
   | { clip: string; kind: 'move'; start: number }
   | { clip: string; kind: 'fadeIn' | 'fadeOut'; ms: number }
   | { clip: string; kind: 'passes'; passes: number }
-  | { clip: string; kind: 'link'; link: Link };
+  | { clip: string; kind: 'link'; link: Link }
+  | { clip: string; kind: 'hatch'; hatch: Hatch }
+  | { clip: string; kind: 'group'; with: string | null }; // null leaves its group
 export interface ScoreLanesProps {
   clips: readonly Clip[];
   links: readonly Link[];

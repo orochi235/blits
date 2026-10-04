@@ -29,6 +29,7 @@ const CLIPS: Clip[] = [
     start: 1000,
     pass: 600,
     passes: Number.POSITIVE_INFINITY,
+    group: 'echo',
   },
   {
     ...base,
@@ -41,6 +42,7 @@ const CLIPS: Clip[] = [
     passes: 1,
     holdBefore: true,
     holdAfter: true,
+    group: 'echo',
   },
   {
     ...base,
@@ -72,12 +74,23 @@ const LINKS: Link[] = [
 ];
 
 function apply(clips: Clip[], e: ClipEdit): Clip[] {
+  if (e.kind === 'group') {
+    const target = clips.find((c) => c.id === e.with);
+    const group = target?.group ?? (target ? `g-${target.id}` : undefined);
+    return clips.map((c) => (c.id === e.clip || c.id === target?.id ? { ...c, group } : c));
+  }
   return clips.map((c) => {
     if (c.id !== e.clip) return c;
     if (e.kind === 'move') return { ...c, start: e.start };
     if (e.kind === 'passes') return { ...c, passes: e.passes };
     if (e.kind === 'fadeIn') return { ...c, fadeIn: e.ms };
     if (e.kind === 'fadeOut') return { ...c, fadeOut: e.ms };
+    if (e.kind === 'hatch')
+      return {
+        ...c,
+        holdBefore: e.hatch === 'before' || e.hatch === 'both',
+        holdAfter: e.hatch === 'after' || e.hatch === 'both',
+      };
     return c;
   });
 }

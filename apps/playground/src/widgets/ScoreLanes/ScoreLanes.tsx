@@ -1,8 +1,9 @@
 import numeric from '@weasel-js/theme/numeric.module.css';
+import { MenuButton, type MenuButtonItem } from '@weasel-js/ui';
 import { type KeyboardEvent, type PointerEvent, useId, useMemo, useRef, useState } from 'react';
-import { dragEdit, type Handle } from './drag';
-import { clipEnd, clipPolygon, passLines, scaleOf } from './geometry';
-import type { Clip, ClipEdit, Edge, ScoreLanesProps } from './index';
+import { dragEdit, fadeRoom, groupDrop, type Handle, hatchOf } from './drag';
+import { clipEnd, clipPolygon, groupBrackets, MAX_PASSES, passLines, scaleOf } from './geometry';
+import type { Clip, ClipEdit, Edge, Hatch, ScoreLanesProps } from './index';
 import s from './ScoreLanes.module.css';
 
 const WIDTH = 1000;
@@ -11,7 +12,8 @@ const RULER = 24;
 type Drag =
   | { clip: Clip; handle: Handle; x0: number }
   | { link: { clip: string; edge: Edge }; x: number; y: number }
-  | { scrub: true };
+  | { scrub: true }
+  | { group: string; label: string; x: number; y: number };
 
 const seconds = (ms: number) => `${(ms / 1000).toFixed(2)}s`;
 
@@ -29,6 +31,41 @@ function nudge(e: KeyboardEvent): number | null {
 }
 
 const activates = (e: KeyboardEvent) => e.key === 'Enter' || e.key === ' ';
+const hueFill = (hue: number) => `hsl(${hue} 70% 62%)`;
+const fadeMax = (room: number, length: number) => Math.round(Math.min(room, length));
+
+const HATCHES: [Hatch, string][] = [
+  ['before', 'Hatch before'],
+  ['after', 'Hatch after'],
+  ['both', 'Hatch both'],
+  [null, 'No hatch'],
+];
+
+function menuItems(c: Clip, clips: readonly Clip[]): MenuButtonItem[] {
+  const now = hatchOf(c);
+  const items: MenuButtonItem[] = HATCHES.map(([h, text]) => ({
+    value: `hatch:${h ?? 'none'}`,
+    label: h === now ? `✓ ${text}` : text,
+    textValue: text,
+  }));
+  for (const o of clips) {
+    if (o.id === c.id || o.lane === c.lane || (c.group !== undefined && o.group === c.group))
+      continue;
+    items.push({ value: `group:${o.id}`, label: `Group with ${o.label}` });
+  }
+  items.push({ value: 'leave', label: 'Leave group', isDisabled: c.group === undefined });
+  return items;
+}
+
+function menuEdit(c: Clip, value: string): ClipEdit | null {
+  if (value === 'leave') return { clip: c.id, kind: 'group', with: null };
+  if (value.startsWith('group:')) return { clip: c.id, kind: 'group', with: value.slice(6) };
+  if (value.startsWith('hatch:')) {
+    const h = value.slice(6);
+    return { clip: c.id, kind: 'hatch', hatch: h === 'none' ? null : (h as Hatch) };
+  }
+  return null;
+}
 
 export function ScoreLanes(props: ScoreLanesProps) {
   const { clips, links, duration, playhead, selected, onSelect, onEdit, onScrub } = props;
@@ -50,7 +87,6 @@ export function ScoreLanes(props: ScoreLanesProps) {
       y: ((e.clientY - box.top) / box.height) * height,
     };
   };
-  const msPerUnit = duration / (WIDTH - labelW);
   const shown = (c: Clip): Clip => {
     if (!preview || preview.clip !== c.id) return c;
     if (preview.kind === 'move') return { ...c, start: preview.start };
@@ -88,12 +124,13 @@ export function ScoreLanes(props: ScoreLanesProps) {
     const p = local(e);
     if ('scrub' in drag) scrubTo(p.x);
     else if ('link' in drag) setDrag({ ...drag, x: p.x, y: p.y });
-    else setPreview(dragEdit(drag.clip, drag.handle, (p.x - drag.x0) * msPerUnit));
+    else if ('group' in drag) setDrag({ ...drag, x: p.x, y: p.y });
+    else setPreview(dragEdit(drag.clip, drag.handle, scale.t(p.x) - scale.t(drag.x0)));
   };
   const onUp = (e: PointerEvent) => {
     if (drag && 'link' in drag) {
       const p = local(e);
-      const lane = Math.floor((p.y - RULER) / laneH);
+      const lane = laneAt(p.y);
       const t = scale.t(p.x);
       const hit = clips.find(
         (c) =>
@@ -110,9 +147,24 @@ export function ScoreLanes(props: ScoreLanesProps) {
           link: { from: drag.link, to: { clip: hit.id, edge } },
         });
       }
+    } else if (drag && 'group' in drag) {
+      const p = local(e);
+      const edit = p.x < labelW ? groupDrop(clips, drag.group, laneAt(p.y)) : null;
+      if (edit) onEdit(edit);
     } else if (preview) onEdit(preview);
+    reset();
+  };
+  const reset = () => {
     setDrag(null);
     setPreview(null);
+  };
+  const laneAt = (y: number) => Math.floor((y - RULER) / laneH);
+  const beginGroup = (e: PointerEvent, clip: Clip) => {
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture(e.pointerId);
+    onSelect(clip.id);
+    const p = local(e);
+    setDrag({ group: clip.id, label: clip.label, x: p.x, y: p.y });
   };
 
   const keyEdit = (e: KeyboardEvent, clip: Clip, handle: Handle) => {
@@ -149,6 +201,11 @@ export function ScoreLanes(props: ScoreLanesProps) {
   };
   const linkDrag = drag && 'link' in drag ? drag : null;
   const linkFrom = linkDrag ? edgeAt(linkDrag.link.clip, linkDrag.link.edge) : null;
+  const groupDrag = drag && 'group' in drag ? drag : null;
+  const dropLane =
+    groupDrag && groupDrag.x < labelW && groupDrop(clips, groupDrag.group, laneAt(groupDrag.y))
+      ? laneAt(groupDrag.y)
+      : null;
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: an <svg> cannot be a <fieldset>
@@ -160,6 +217,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
       aria-label="score"
       onPointerMove={onMove}
       onPointerUp={onUp}
+      onPointerCancel={reset}
       onPointerDown={() => onSelect(null)}
     >
       <defs>
@@ -213,6 +271,22 @@ export function ScoreLanes(props: ScoreLanesProps) {
           y2={RULER + (i + 1) * laneH}
         />
       ))}
+      {dropLane !== null && (
+        <rect className={s.drop} x={0} y={RULER + dropLane * laneH} width={labelW} height={laneH} />
+      )}
+      {groupBrackets(clips).map((b, i) => {
+        const x = labelW - 4 - i * 5;
+        const y0 = RULER + b.from * laneH + 6;
+        const y1 = RULER + (b.to + 1) * laneH - 6;
+        return (
+          <path
+            key={b.group}
+            className={s.bracket}
+            stroke={hueFill(b.hue)}
+            d={`M${x - 4} ${y0} H${x} V${y1} H${x - 4}`}
+          />
+        );
+      })}
       {clips.map((raw) => {
         const c = shown(raw);
         const top = RULER + c.lane * laneH + 4;
@@ -220,11 +294,18 @@ export function ScoreLanes(props: ScoreLanesProps) {
         const open = !Number.isFinite(clipEnd(c));
         const end = Math.min(clipEnd(c), duration);
         const length = open ? duration : end - c.start;
-        const fill = `hsl(${c.hue} 70% 62%)`;
+        const fill = hueFill(c.hue);
         const classes = [s.clip, c.id === selected && s.selected, c.locked && s.locked];
         return (
           <g key={c.id} className={classes.filter(Boolean).join(' ')}>
-            <text className={s.label} x={6} y={top + h / 2 + 4} aria-hidden>
+            {/* The label drags onto another lane's label to group; the clip menu is its keyboard path. */}
+            <text
+              className={s.label}
+              x={6}
+              y={top + h / 2 + 4}
+              aria-hidden
+              onPointerDown={(e) => beginGroup(e, raw)}
+            >
               {c.label}
             </text>
             {c.holdBefore && c.start > 0 && (
@@ -245,11 +326,27 @@ export function ScoreLanes(props: ScoreLanesProps) {
               fill={fill}
               role="button"
               tabIndex={0}
-              aria-pressed={c.id === selected}
+              aria-current={c.id === selected ? 'true' : undefined}
               aria-label={`${c.label}, starts ${seconds(c.start)}${c.locked ? ', anchored' : ''}`}
               onPointerDown={(e) => begin(e, raw, 'body')}
               onKeyDown={(e) => keyBody(e, raw)}
             />
+            {c.id === selected && (
+              <foreignObject x={labelW - 40} y={top - 2} width={26} height={h + 4}>
+                {/* Menu presses, portaled or not, must not reach the score's deselect. */}
+                <div className={s.menu} onPointerDown={(e) => e.stopPropagation()}>
+                  <MenuButton
+                    label="⋯"
+                    aria-label={`${c.label} menu`}
+                    items={menuItems(raw, clips)}
+                    onAction={(v) => {
+                      const edit = menuEdit(raw, v);
+                      if (edit) onEdit(edit);
+                    }}
+                  />
+                </div>
+              </foreignObject>
+            )}
             {passLines(c, duration).map((t) => (
               <line
                 key={t}
@@ -290,7 +387,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
               tabIndex={0}
               aria-label={`${c.label} fade in`}
               aria-valuemin={0}
-              aria-valuemax={Math.round(length)}
+              aria-valuemax={fadeMax(fadeRoom(c, 'fadeIn'), length)}
               aria-valuenow={Math.round(c.fadeIn)}
               aria-valuetext={`${Math.round(c.fadeIn)} ms`}
               onPointerDown={(e) => begin(e, raw, 'fadeIn')}
@@ -306,7 +403,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
                 tabIndex={0}
                 aria-label={`${c.label} fade out`}
                 aria-valuemin={0}
-                aria-valuemax={Math.round(length)}
+                aria-valuemax={fadeMax(fadeRoom(c, 'fadeOut'), length)}
                 aria-valuenow={Math.round(c.fadeOut)}
                 aria-valuetext={`${Math.round(c.fadeOut)} ms`}
                 onPointerDown={(e) => begin(e, raw, 'fadeOut')}
@@ -324,7 +421,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
                 tabIndex={0}
                 aria-label={`${c.label} passes`}
                 aria-valuemin={1}
-                aria-valuemax={Math.max(200, c.passes)}
+                aria-valuemax={MAX_PASSES}
                 aria-valuenow={c.passes}
                 aria-valuetext={`${c.passes} ${c.passes === 1 ? 'pass' : 'passes'}`}
                 onPointerDown={(e) => begin(e, raw, 'end')}
@@ -374,6 +471,11 @@ export function ScoreLanes(props: ScoreLanesProps) {
       })}
       {linkDrag && linkFrom && (
         <line className={s.link} x1={linkFrom.x} y1={linkFrom.y} x2={linkDrag.x} y2={linkDrag.y} />
+      )}
+      {groupDrag && (
+        <text className={s.ghost} x={groupDrag.x + 8} y={groupDrag.y + 4}>
+          {groupDrag.label}
+        </text>
       )}
       <line
         className={s.playhead}
