@@ -28,8 +28,8 @@ export interface FieldError {
 export interface Built {
   mix: Mix<Subject, Pose>;
   solos: Map<string, Mix<Subject, Pose>>;
-  /** Each solo mix's own voice, so a live change reaches the solo the inspector reads too. */
-  soloed: Map<string, { handle: Handle<Subject>; patch: Patch<Subject, Pose, unknown> }>;
+  /** Every voice cued in each solo mix, by solo then voice id, so a live change can reach them. */
+  soloVoices: Map<string, Voices>;
   handles: Map<string, Handle<Subject>>;
   patches: Map<string, Patch<Subject, Pose, unknown>>;
   levels: Map<string, { set(v: number): void }>;
@@ -38,6 +38,11 @@ export interface Built {
 }
 
 type Spec = BlitsVoiceSpec<Subject, Pose>;
+
+export interface Voices {
+  handles: Map<string, Handle<Subject>>;
+  patches: Map<string, Patch<Subject, Pose, unknown>>;
+}
 
 /** One voice's spec, or the errors that kept it from being built. */
 function specOf(
@@ -218,13 +223,12 @@ export function compile(
   const { levels } = scope;
   const errors: FieldError[] = [];
   const faults = new Map<string, Faults>();
-  const patches = new Map<string, Patch<Subject, Pose, unknown>>();
 
   // Specs are built afresh per mix: a motion patch keeps its state on itself and plays on one voice.
   const make = (only: string | null) => {
     const m = mix<Subject, Pose>(KIT, { stepMs: FRAME });
     const handles = new Map<string, Handle<Subject>>();
-    let own: { handle: Handle<Subject>; patch: Patch<Subject, Pose, unknown> } | null = null;
+    const cued = new Map<string, Patch<Subject, Pose, unknown>>();
     const named = new Set<string>();
     for (const v of c.voices) {
       if (named.has(v.name)) {
@@ -246,9 +250,8 @@ export function compile(
       }
       const spec = only === null || only === v.id ? r.spec : { ...r.spec, weight: 0 };
       try {
-        const handle = m.cue(spec);
-        handles.set(v.id, handle);
-        if (only === v.id) own = { handle, patch: spec.patch };
+        handles.set(v.id, m.cue(spec));
+        cued.set(v.id, spec.patch);
       } catch (err) {
         if (only === null)
           errors.push({
@@ -260,7 +263,6 @@ export function compile(
         continue;
       }
       if (only === null) {
-        patches.set(v.id, r.spec.patch);
         faults.set(v.id, {
           get count() {
             return list.reduce((n, f) => n + f.count, 0);
@@ -271,17 +273,26 @@ export function compile(
         });
       }
     }
-    return { m, handles, own };
+    return { m, handles, patches: cued };
   };
   const full = make(null);
   const solos = new Map<string, Mix<Subject, Pose>>();
-  const soloed: Built['soloed'] = new Map();
+  const soloVoices = new Map<string, Voices>();
   if (opts.solos)
     for (const id of full.handles.keys()) {
       const made = make(id);
       solos.set(id, made.m);
-      if (made.own) soloed.set(id, made.own);
+      soloVoices.set(id, made);
     }
   void subjects;
-  return { mix: full.m, solos, soloed, handles: full.handles, patches, levels, faults, errors };
+  return {
+    mix: full.m,
+    solos,
+    soloVoices,
+    handles: full.handles,
+    patches: full.patches,
+    levels,
+    faults,
+    errors,
+  };
 }

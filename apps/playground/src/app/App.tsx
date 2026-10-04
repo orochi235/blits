@@ -75,6 +75,7 @@ export function App() {
   const [selected, setSelected] = useState<string | null>(null);
   const [picked, setPicked] = useState<number | null>(0);
   const shown = picked !== null && picked < subjects.length ? picked : null;
+  useEffect(() => player.pick(shown), [player, shown]);
   // A link the clipboard took, or one it refused, left on screen to copy by hand.
   const [shared, setShared] = useState<{ copied: boolean; url: string } | null>(null);
   const linkRef = useRef<HTMLInputElement>(null);
@@ -205,7 +206,7 @@ export function App() {
           />
         </section>
         <section className={s.inspector} aria-label="inspector">
-          <Inspector player={player} comp={comp} picked={shown} frame={frame} />
+          <Inspector player={player} comp={comp} />
         </section>
         <aside className={s.side} aria-label="voice and patch">
           <div className={s.row}>

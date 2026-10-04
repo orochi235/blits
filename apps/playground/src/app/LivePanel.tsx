@@ -1,6 +1,8 @@
+import type { Moving, spring, Value } from '@msb235/blits';
 import { refusalOf } from '@pg/blits/compile';
 import type { Composition, Voice } from '@pg/blits/composition';
 import { compileExpr, scopeOf } from '@pg/blits/expr';
+import type { Pose } from '@pg/blits/kit';
 import type { Player } from '@pg/blits/player';
 import type { Subject } from '@pg/blits/stage';
 import { ExprInput } from '@pg/widgets/ExprInput';
@@ -8,11 +10,8 @@ import { useState } from 'react';
 import s from './App.module.css';
 import { docOf } from './docs';
 
-/** What a motion patch takes mid-flight: `to` on a spring or a tween, `push` on any. */
-interface Retargetable {
-  to?(subject: Subject, target: unknown): void;
-  push(subject: Subject, velocity: unknown): void;
-}
+/** A spring's or a tween's patch, which take `to`; a glide takes only `push`, which every one does. */
+type Aimed = ReturnType<typeof spring<Subject, Pose, Value>>;
 
 export interface LivePanelProps {
   player: Player;
@@ -52,12 +51,11 @@ export function LivePanel({ player, comp, voice: v, onActed }: LivePanelProps) {
     });
     setAimError(wrong ? `${aimKey} ${wrong}` : r.faults.first);
     act(v.id, (_, patch) => {
-      const m = patch as unknown as Retargetable;
       player.subjects.forEach((subject, i) => {
-        const value = values[i];
+        const value = values[i] as Value | undefined;
         if (value === undefined) return;
-        if (aimKey === 'to') m.to?.(subject, value);
-        else m.push(subject, value);
+        if (aimKey === 'to') (patch as unknown as Aimed).to(subject, value);
+        else (patch as unknown as Moving<Subject, Pose, Value>).push(subject, value);
       });
     });
   };
@@ -76,8 +74,9 @@ export function LivePanel({ player, comp, voice: v, onActed }: LivePanelProps) {
           value={handle.weight}
           onChange={(e) => {
             const w = Number(e.target.value);
-            act(v.id, (h) => {
-              h.weight = w;
+            // Elsewhere the voice plays silent beside another's solo, and must stay so.
+            act(v.id, (h, _, heard) => {
+              if (heard) h.weight = w;
             });
           }}
         />

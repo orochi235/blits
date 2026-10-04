@@ -1,7 +1,7 @@
 import { compile, FRAME } from '@pg/blits/compile';
 import type { Composition } from '@pg/blits/composition';
 import { CHANNELS } from '@pg/blits/kit';
-import { type Columns, Player } from '@pg/blits/player';
+import { type Columns, Player, WINDOW } from '@pg/blits/player';
 import { subjectsOf } from '@pg/blits/stage';
 import { describe, expect, it } from 'vitest';
 
@@ -156,7 +156,9 @@ describe('Player', () => {
     p.seek(2500);
     plain.seek(2500);
     expect(p.columns.offset[1]).toBeGreaterThan(40);
-    expect(p.probe('sp', 0)?.offset).toEqual(p.probe(null, 0)?.offset);
+    const solo = Player.columnsFor(subjects.length);
+    p.solo('sp', solo);
+    expect(bits(solo)).toEqual(bits(p.columns));
     p.seek(1500);
     expect(p.livened).toBe(false);
     expect([...p.columns.offset]).toEqual(before);
@@ -167,5 +169,60 @@ describe('Player', () => {
     expect(p.livened).toBe(false);
     p.seek(2500);
     expect(bits(p.columns)).toEqual(bits(plain.columns));
+  });
+
+  it('a live fade reaches the voice in every solo, so one anchored to its end starts there too', () => {
+    const keysVoice = (id: string, delta: Record<string, number>) => ({
+      id,
+      name: id,
+      hue: 0,
+      start: 0,
+      rate: 1,
+      loop: true as const,
+      weight: 1,
+      fade: { out: 300 },
+      patch: { kind: 'keys' as const, period: 1000, stops: [{ at: 0, delta }] },
+    });
+    const comp: Composition = {
+      ...c,
+      levels: [],
+      voices: [
+        keysVoice('b', { turn: 30 }),
+        { ...keysVoice('x', { glow: 0.7 }), anchor: { start: { after: 'b' } } },
+      ],
+    };
+    const p = new Player(() => compile(comp, subjects, { solos: true }), subjects);
+    p.seek(500);
+    p.live('b', (h) => h.fade());
+    p.seek(1500);
+    const solo = Player.columnsFor(subjects.length);
+    p.solo('x', solo);
+    expect(p.columns.glow[0]).toBeGreaterThan(0);
+    expect(bits({ ...solo, turn: p.columns.turn })).toEqual(bits(p.columns));
+  });
+
+  it('records the picked subject through play, a seek back and a rebuild, keeping the last window', () => {
+    const p = player();
+    const seen: number[] = [];
+    const stop = p.subscribe(() => seen.push(p.getSnapshot().samples.length));
+    p.pick(1);
+    p.seek(4000);
+    const h = p.getSnapshot();
+    expect(h.picked).toBe(1);
+    expect(h.samples[h.samples.length - 1]?.t).toBe(p.t);
+    expect((h.samples[0]?.t ?? 0) >= p.t - WINDOW).toBe(true);
+    const last = h.samples[h.samples.length - 1];
+    expect(last?.solos.get('sp')?.offset).toEqual(last?.full.offset);
+    expect(last?.weights.get('sp')).toBeGreaterThan(0);
+    p.seek(1000);
+    expect(p.getSnapshot().samples.length).toBe(Math.floor(1000 / FRAME + 1e-9) + 1);
+    const before = p.getSnapshot();
+    p.rebuild();
+    expect(p.getSnapshot()).not.toBe(before);
+    expect(p.getSnapshot().samples.map((x) => x.full.offset)).toEqual(
+      before.samples.map((x) => x.full.offset),
+    );
+    stop();
+    expect(seen.length).toBeGreaterThan(2);
   });
 });

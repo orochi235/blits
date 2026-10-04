@@ -15,6 +15,25 @@ export interface Columns {
 
 const frameOf = (t: number) => Math.max(0, Math.floor(t / FRAME + 1e-9));
 
+/** How much history the picked subject keeps, ms of score time. */
+export const WINDOW = 3000;
+
+/** The picked subject at one frame: the mix's pose, each voice's solo pose, each voice's `weightOf`. */
+export interface Sample {
+  t: number;
+  full: Pose;
+  solos: ReadonlyMap<string, Pose>;
+  weights: ReadonlyMap<string, number>;
+}
+
+export interface History {
+  picked: number | null;
+  samples: readonly Sample[];
+}
+
+// Probes write into a pose the mix reuses, so each is copied before the next.
+const copied = (p: Pose): Pose => ({ ...p, offset: [...p.offset] });
+
 export class Player {
   built: Built;
   t = 0;
@@ -25,6 +44,10 @@ export class Player {
   private readonly slid = new Map<string, number>();
   private authored: Map<string, number> | null = null;
   private isLive = false;
+  private picked: number | null = null;
+  private samples: Sample[] = [];
+  private history: History = { picked: null, samples: [] };
+  private readonly listeners = new Set<() => void>();
 
   static columnsFor(n: number): Columns {
     return {
@@ -58,8 +81,10 @@ export class Player {
 
   seek(t: number): void {
     const target = frameOf(t);
+    if (target === this.frame) return;
     if (target < this.frame) this.built = this.fresh();
     for (let f = this.frame + 1; f <= target; f++) this.step(f);
+    this.emit();
   }
 
   /**
@@ -71,7 +96,26 @@ export class Player {
     const target = Math.max(0, this.frame);
     this.built = this.fresh();
     for (let f = 0; f <= target; f++) this.step(f);
+    this.emit();
   }
+
+  /** Records subject `i` from the frame shown on, or nothing for null. */
+  pick(i: number | null): void {
+    const next = i !== null && i >= 0 && i < this.subjects.length ? i : null;
+    if (next === this.picked) return;
+    this.picked = next;
+    this.samples = [];
+    this.record();
+    this.emit();
+  }
+
+  readonly subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+
+  /** The picked subject's last `WINDOW` ms; a new object whenever it changed. */
+  readonly getSnapshot = (): History => this.history;
 
   /** Slider values in force, by level name; levels absent here play the composition's value. */
   get moved(): ReadonlyMap<string, number> {
@@ -82,32 +126,25 @@ export class Player {
     this.built.solos.get(id)?.pull(this.subjects, out);
   }
 
-  /** The picked subject's pose in the full mix, or in voice `id`'s solo, at the synced frame. */
-  probe(id: string | null, i: number): Pose | undefined {
-    const subject = this.subjects[i];
-    const m = id === null ? this.built.mix : this.built.solos.get(id);
-    return subject && m ? m.probe(subject) : undefined;
-  }
-
-  weightOf(id: string, i: number): number {
-    const subject = this.subjects[i];
-    return subject ? (this.built.handles.get(id)?.weightOf(subject) ?? 0) : 0;
-  }
-
   /**
-   * Acts on voice `id` as it runs, in the full mix and in its solo alike. The change lasts until
-   * the next rebuild: an edit, or a seek back.
+   * Acts on voice `id` as it runs, in the full mix and in every solo mix, where it plays silent
+   * beside the soloed voice but still keeps time for whatever is anchored to it. `heard` is true
+   * for the copies that sound, the full mix's and its own solo's: a weight belongs only on those.
+   * The change lasts until the next rebuild: an edit, or a seek back.
    */
   live(
     id: string,
-    act: (handle: Handle<Subject>, patch: Patch<Subject, Pose, unknown>) => void,
+    act: (handle: Handle<Subject>, patch: Patch<Subject, Pose, unknown>, heard: boolean) => void,
   ): void {
     const handle = this.built.handles.get(id);
     const patch = this.built.patches.get(id);
     if (!handle || !patch) return;
-    act(handle, patch);
-    const solo = this.built.soloed.get(id);
-    if (solo) act(solo.handle, solo.patch);
+    act(handle, patch, true);
+    for (const [solo, voices] of this.built.soloVoices) {
+      const h = voices.handles.get(id);
+      const p = voices.patches.get(id);
+      if (h && p) act(h, p, solo === id);
+    }
     this.isLive = true;
   }
 
@@ -136,6 +173,7 @@ export class Player {
     for (const [name, value] of this.slid) built.levels.get(name)?.set(value);
     this.frame = -1;
     this.isLive = false;
+    this.samples = [];
     return built;
   }
 
@@ -150,5 +188,25 @@ export class Player {
     }
     this.frame = f;
     this.t = t;
+    this.record();
+  }
+
+  private record(): void {
+    const subject = this.picked === null ? undefined : this.subjects[this.picked];
+    if (subject === undefined || this.frame < 0) return;
+    const { mix, solos, handles } = this.built;
+    const soloPoses = new Map<string, Pose>();
+    const weights = new Map<string, number>();
+    for (const [id, solo] of solos) soloPoses.set(id, copied(solo.probe(subject)));
+    for (const [id, handle] of handles) weights.set(id, handle.weightOf(subject));
+    const h = this.samples;
+    if (h.length > 0 && (h[h.length - 1] as Sample).t === this.t) h.pop();
+    h.push({ t: this.t, full: copied(mix.probe(subject)), solos: soloPoses, weights });
+    while (h.length > 0 && (h[0] as Sample).t < this.t - WINDOW) h.shift();
+  }
+
+  private emit(): void {
+    this.history = { picked: this.picked, samples: this.samples.slice() };
+    for (const listener of this.listeners) listener();
   }
 }
