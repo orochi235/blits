@@ -1217,7 +1217,7 @@ class Mixer<I, O> implements Mix<I, O> {
           }
         }
         const laned = live && lanes?.prepare(slot, subject, now, this.version) === true;
-        if (laned && whole && (lanes as Lanes<I, O>).whole) {
+        if (laned && whole && (lanes as Lanes<I, O>).whole && !(lanes as Lanes<I, O>).owes(slot)) {
           (lanes as Lanes<I, O>).writeLater(slot, columns, n);
           continue;
         }
@@ -1384,8 +1384,10 @@ class Mixer<I, O> implements Mix<I, O> {
     const laned = this.linkedLaned;
     const lanes = this.lanes as Lanes<I, O>;
     // Every voice on lanes and nothing to clamp: the pose a fold would make is the lanes' values.
-    if (laned && lanes.whole && this.bounded.length === 0)
-      return lanes.rests((head as Subject<unknown>).slot);
+    if (laned && lanes.whole && this.bounded.length === 0) {
+      const slot = (head as Subject<unknown>).slot;
+      if (!lanes.owes(slot)) return lanes.rests(slot);
+    }
     const pose = this.foldWith(subject, {} as O, head, laned, true) as Record<string, unknown>;
     return this.rests((this.bounded.length === 0 ? pose : this.clamp(pose)) as O);
   }
@@ -2749,22 +2751,33 @@ class Mixer<I, O> implements Mix<I, O> {
       else if (pose[key] !== undefined) pose[key] = undefined;
     }
     if (head === null) return pose as O;
+    // A subject owing lanes it just met folds those voices here, after the lanes' values.
+    let owed = -1;
     if (laned) {
-      (lanes as Lanes<I, O>).copy(head.slot, pose);
-      if ((lanes as Lanes<I, O>).whole) return pose as O;
+      const l = lanes as Lanes<I, O>;
+      l.copy(head.slot, pose);
+      if (l.owes(head.slot)) owed = head.slot;
+      else if (l.whole) return pose as O;
     }
     if (this.loci === 0) {
       for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
         const voice = held.voice as Voice<I, O> | null;
-        if (voice === null || (laned && voice.laned)) continue;
+        if (voice === null || (laned && voice.laned && !this.owedBy(owed, voice))) continue;
         if (voice.id === except || voice.state === 'done') continue;
         const delta = this.read(voice, subject, now, dry, held);
+        if (owed >= 0 && voice.laned && !dry)
+          (lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
         if (delta === null || this.w <= 0) continue;
         this.apply(pose, voice, held, delta, this.w);
       }
       return pose as O;
     }
-    return this.foldLoci(subject, pose, head, laned, dry, except);
+    return this.foldLoci(subject, pose, head, laned, dry, except, owed);
+  }
+
+  /** Whether the subject numbered `owed` reads laned `voice` from the general path this fill. */
+  private owedBy(owed: number, voice: Voice<I, O>): boolean {
+    return owed >= 0 && (this.lanes as Lanes<I, O>).owesVoice(owed, voice.id);
   }
 
   /** `foldWith`'s voices with a locus in play: each locus folds at its first member's place. */
@@ -2775,6 +2788,7 @@ class Mixer<I, O> implements Mix<I, O> {
     laned: boolean,
     dry: boolean,
     except: number | undefined,
+    owed: number,
   ): O {
     const now = this.now;
     // A patch reading the pose can fold again from inside this one, so each depth has its own.
@@ -2790,9 +2804,11 @@ class Mixer<I, O> implements Mix<I, O> {
       k.names.length = 0;
       for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
         const voice = held.voice as Voice<I, O> | null;
-        if (voice === null || (laned && voice.laned)) continue;
+        if (voice === null || (laned && voice.laned && !this.owedBy(owed, voice))) continue;
         if (voice.id === except || voice.state === 'done') continue;
         const delta = this.read(voice, subject, now, dry, held);
+        if (owed >= 0 && voice.laned && !dry)
+          (this.lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
         if (delta === null) continue;
         const locus = voice.spec.locus;
         let group = -1;

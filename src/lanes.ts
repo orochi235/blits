@@ -560,6 +560,11 @@ export class Lanes<I, O> {
   private intoId = 0;
   private readonly lawsByKey = new Map<string, Float64Array>();
   private lastLaw: Float64Array | null = null;
+  /** The lanes the last `meet` gave a position, and whether it placed a crowd row. */
+  private readonly met: number[] = [];
+  private metCrowd = false;
+  /** By subject number, the laned voices its probes fold on the general path this fill. */
+  private readonly owed = new Map<number, number[]>();
   private laned: Laned[] = [];
   /** By kit slot, the laned channel there. */
   private bySlot: (Laned | undefined)[] = [];
@@ -743,9 +748,14 @@ export class Lanes<I, O> {
     const o = slot * SLOT;
     let lane = per[o + FILLED] === this.fills && per[o + IDLE] === 0;
     if ((per[o + SEEN] as number) < this.wide && this.meet(slot, subject)) {
-      // The fill ran before the subject had these positions, so it reads the general path all frame.
-      per[o + FILLED] = 0;
-      lane = false;
+      // The fill ran before the subject had these positions. Where every voice it just met folds
+      // after every other laned voice, the general path folds just those onto the lanes' values;
+      // otherwise it reads the general path all frame.
+      if (lane && per[o + IDLE] === 0 && this.owable(slot)) this.owed.set(slot, this.met.slice());
+      else {
+        per[o + FILLED] = 0;
+        lane = false;
+      }
     }
     if (lane) {
       per[o + LANE_PROBE] = probe;
@@ -931,6 +941,44 @@ export class Lanes<I, O> {
   }
 
   /**
+   * Whether the lanes a probe of the subject at `slot` just met (`met`) can be folded on the general
+   * path after the lanes' values: none is in a locus or a crowd, the subject owes none already this
+   * fill, and each comes after every other laned voice in voice order, so folding it last folds in
+   * the general path's order.
+   */
+  private owable(slot: number): boolean {
+    if (this.metCrowd || this.owed.has(slot)) return false;
+    const met = this.met;
+    let other = Number.NEGATIVE_INFINITY;
+    for (const lane of this.lanes) {
+      const id = lane.voice.id;
+      if (id > other && !met.includes(id)) other = id;
+    }
+    for (const c of this.crowds)
+      if (c.size > 0) other = Math.max(other, c.hot[(c.size - 1) * c.stride + H_ID] as number);
+    for (const id of met)
+      if (id <= other || (this.byId.get(id) as Lane<I, O>).group !== null) return false;
+    return true;
+  }
+
+  /** Whether the subject at `slot` reads some laned voice from the general path this fill. */
+  owes(slot: number): boolean {
+    return this.owed.size > 0 && this.owed.has(slot);
+  }
+
+  /** Whether the subject at `slot` reads laned voice `id` from the general path this fill. */
+  owesVoice(slot: number, id: number): boolean {
+    return (this.owed.get(slot) as number[]).includes(id);
+  }
+
+  /** The weight the general path gave a voice the subject at `slot` owes, as `weightOf` reports. */
+  paid(id: number, slot: number, w: number): void {
+    const lane = this.byId.get(id);
+    const p = lane === undefined ? -1 : lane.positionOf(slot);
+    if (p >= 0) (lane as Lane<I, O>).data[p * STRIDE + WEIGHT] = w;
+  }
+
+  /**
    * Whether a subject's laned values are at their channels' rest, as `atRest` reads the pose `copy`
    * would write: each number within 1e-9 of its rest.
    */
@@ -978,6 +1026,8 @@ export class Lanes<I, O> {
     const from = seen < 0 ? -1 - seen : seen;
     this.per[slot * SLOT + SEEN] = this.epochs;
     let met = false;
+    this.met.length = 0;
+    this.metCrowd = false;
     const dense = this.dense;
     for (let i = dense.length - 1; i >= 0; i--) {
       const lane = dense[i] as Lane<I, O>;
@@ -987,6 +1037,7 @@ export class Lanes<I, O> {
       if (!held.reaches) continue;
       lane.add(slot, held);
       if (lane.idle) this.reach(slot, 1);
+      this.met.push(lane.voice.id);
       met = true;
     }
     const naming = this.host.naming(subject);
@@ -994,7 +1045,10 @@ export class Lanes<I, O> {
       for (const voice of naming) {
         const lane = this.byId.get(voice.id);
         if (lane === undefined) {
-          if (this.place(voice, slot, subject, from)) met = true;
+          if (this.place(voice, slot, subject, from)) {
+            met = true;
+            this.metCrowd = true;
+          }
           continue;
         }
         if (lane.epoch <= from || lane.positionOf(slot) >= 0) continue;
@@ -1002,6 +1056,7 @@ export class Lanes<I, O> {
         if (!held.reaches) continue;
         lane.add(slot, held);
         if (lane.idle) this.reach(slot, 1);
+        this.met.push(voice.id);
         met = true;
       }
     return met;
@@ -1513,6 +1568,7 @@ export class Lanes<I, O> {
     this.filling = true;
     try {
       this.fills++;
+      this.owed.clear();
       this.now = now;
       this.filledAt = now;
       this.filledVersion = version;
