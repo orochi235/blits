@@ -1717,3 +1717,49 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
     expect(seen.sort()).toEqual([0, 1, 2, 3]);
   });
 });
+
+describe('crowds take voices on and off as they come and go', () => {
+  const frames = Array.from({ length: 100 }, (_, f) => f * 16);
+
+  it('with voices replaced every frame, drops, pending starts and a shared voice coming and going', () => {
+    const play: Play = (m, parts) => {
+      const n = parts.length;
+      const kinds = (p: Part, i: number) =>
+        i % 3 === 0
+          ? tween<Part, Pose, number[]>('position', { from: [0, 0, 0], to: [p.id, i, 1], ms: 300 })
+          : i % 3 === 1
+            ? keys<Part, Pose>(250, [
+                { at: 0, delta: { position: [i, 0, 0] } },
+                { at: 1, delta: { position: [0, p.id, -1] } },
+              ])
+            : patch<Part, Pose>(200, (ph) => ({ position: [ph * i, 1, p.id] }), {
+                writes: ['position'],
+              });
+      const hs = parts.map((p, i) => m.cue({ patch: kinds(p, i), subjects: [p] }));
+      let shared: Handle<Part> | null = null;
+      let turn = 0;
+      return {
+        handles: hs,
+        at: (t) => {
+          const f = t / 16;
+          for (let j = 0; j < 3; j++) {
+            const k = turn++ % n;
+            const p = parts[k] as Part;
+            (hs[k] as Handle<Part>).fade({ over: f % 4 === 0 ? 40 : 0 });
+            if (f % 5 === 0) m.drop(p);
+            hs[k] = m.cue({
+              patch: kinds(p, turn),
+              subjects: [p],
+              start: f % 7 === 0 ? t + 50 : undefined,
+            });
+          }
+          // Late, so rows left empty pile up past where the crowds are rebuilt first.
+          if (f === 60) shared = m.cue({ patch: pulse(), weight: 0.3 });
+          if (f === 85) shared?.fade({ over: 0 });
+        },
+      };
+    };
+    agree(play, { times: frames, parts: 70 });
+    agree(play, { times: frames, parts: 70, probe: (t, p) => p.id % 4 === 0 || t % 64 === 0 });
+  }, 30_000);
+});

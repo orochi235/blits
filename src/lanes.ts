@@ -58,6 +58,8 @@ export interface LaneHost<I, O> {
   meet(voice: Voice<I, O>, subject: I): Subject<unknown>;
   /** The voices whose `subjects` name the subject, in voice order. */
   naming(subject: I): readonly Voice<I, O>[] | undefined;
+  /** The subject's number, -1 where it has none yet. */
+  slotOf(subject: I): number;
   /** The voice's own fade for a subject whose delay ran out at `since`. */
   envelope(voice: Voice<I, O>, since: number): number;
   /** What a subject's own ramp out of the voice leaves of its weight, 0..1. */
@@ -133,6 +135,10 @@ const MET = 7;
 
 const SLOT = 6;
 const FILLED = 0;
+/**
+ * The latest epoch a probe has checked the subject against; or, as `-1 - e`, that a voice naming
+ * it started after epoch `e`, so its next probe checks it against everything since `e`.
+ */
 const SEEN = 1;
 const IDLE = 2;
 const LANE_PROBE = 3;
@@ -413,6 +419,8 @@ class Crowd<I, O> implements Positions<I, O> {
   readonly line = SPARSE.other;
   /** Where the fill now under way has reached. */
   cursor = 0;
+  /** Rows whose voices have left, kept in place until the crowds are next rebuilt. */
+  dead = 0;
   readonly xs: Float64Array;
   readonly vs: Float64Array;
   /** What a keys row reads into, folded before the next row reads. */
@@ -504,6 +512,12 @@ export class Lanes<I, O> {
   whole = false;
   private cap = 0;
   private epochs = 0;
+  /** The latest epoch of a lane over every subject, which every subject meets on its next probe. */
+  private wide = 0;
+  /** Voices that joined, started or left since the last qualify, settled at the next probe. */
+  private touched: Voice<I, O>[] = [];
+  /** The highest voice id the last qualify or settling of `touched` considered. */
+  private known = 0;
   /**
    * Per subject number, `SLOT` numbers side by side, so a probe reads one place in memory: which
    * fill last wrote it (0 for none); the latest lane epoch a probe of it has checked it against;
@@ -572,13 +586,22 @@ export class Lanes<I, O> {
     this.filledVersion = Number.NaN;
   }
 
+  /**
+   * A voice joined, started playing or left: the next probe takes it on or off its crowd where it
+   * can, and qualifies again where it cannot.
+   */
+  touch(voice: Voice<I, O>): void {
+    this.touched.push(voice);
+    this.filledVersion = Number.NaN;
+  }
+
   /** Numbers a subject the mix sees for the first time. */
   number(subject: I): number {
     const slot = this.numbers.take(subject);
     this.live++;
     this.grow(slot + 1);
     this.per[slot * SLOT + FILLED] = 0;
-    this.per[slot * SLOT + SEEN] = 0;
+    this.per[slot * SLOT + SEEN] = -1;
     this.per[slot * SLOT + IDLE] = 0;
     this.per[slot * SLOT + LANE_PROBE] = 0;
     this.per[slot * SLOT + GENERAL_PROBE] = 0;
@@ -622,7 +645,7 @@ export class Lanes<I, O> {
 
   /** A voice brought a subject back: its next probe meets every lane again, as it met them first. */
   rejoin(slot: number): void {
-    if (slot < this.cap) this.per[slot * SLOT + SEEN] = 0;
+    if (slot < this.cap) this.per[slot * SLOT + SEEN] = -1;
   }
 
   /**
@@ -665,11 +688,12 @@ export class Lanes<I, O> {
     }
     if (this.filling) return this.general(slot);
     if (this.qualifiedVersion !== version) this.requalify(version);
+    else if (this.touched.length > 0 && !this.retouch()) this.requalify(version);
     if (this.laned.length === 0) return this.general(slot);
     // Only solo lanes: nothing to fill, and every subject takes the general path.
     if (this.runs.length === 0 && this.crowds.length === 0) {
       if (slot < 0) return false;
-      if ((this.per[slot * SLOT + SEEN] as number) < this.epochs) this.meet(slot, subject);
+      if ((this.per[slot * SLOT + SEEN] as number) < this.wide) this.meet(slot, subject);
       return this.general(slot);
     }
     if (slot >= 0 && !this.probedThisFrame(slot)) this.distinct++;
@@ -687,7 +711,7 @@ export class Lanes<I, O> {
     const per = this.per;
     const o = slot * SLOT;
     let lane = per[o + FILLED] === this.fills && per[o + IDLE] === 0;
-    if ((per[o + SEEN] as number) < this.epochs && this.meet(slot, subject)) {
+    if ((per[o + SEEN] as number) < this.wide && this.meet(slot, subject)) {
       // The fill ran before the subject had these positions, so it reads the general path all frame.
       per[o + FILLED] = 0;
       lane = false;
@@ -808,7 +832,8 @@ export class Lanes<I, O> {
    * checked and that reaches it. True when any did, so the probe takes the general path.
    */
   private meet(slot: number, subject: I): boolean {
-    const from = this.per[slot * SLOT + SEEN] as number;
+    const seen = this.per[slot * SLOT + SEEN] as number;
+    const from = seen < 0 ? -1 - seen : seen;
     this.per[slot * SLOT + SEEN] = this.epochs;
     let met = false;
     const dense = this.dense;
@@ -900,7 +925,9 @@ export class Lanes<I, O> {
     const host = this.host;
     this.qualifiedVersion = version;
     this.filledVersion = Number.NaN;
+    this.touched.length = 0;
     const present = host.voices.filter((v) => v.state !== 'done');
+    for (const v of present) if (v.id > this.known) this.known = v.id;
     const numeric = host.channels.map((c) => numericOf(c) !== undefined);
     const { channels, voices } = qualify(
       numeric,
@@ -918,7 +945,7 @@ export class Lanes<I, O> {
       }
       const lane = this.byId.get(v.id) ?? new Lane<I, O>(v);
       v.laned = true;
-      if (lane.epoch === 0 && v.state !== 'pending') lane.epoch = ++this.epochs;
+      if (lane.epoch === 0 && v.state !== 'pending') lane.epoch = this.open(v);
       kept.push(lane);
     }
     this.lanes = kept;
@@ -971,37 +998,126 @@ export class Lanes<I, O> {
         const v = c.voices[p] as Voice<I, O>;
         if (!keep.has(v.id) || v.state === 'done') this.leaveCrowd(c, p);
       }
-    const bySlot = new Map<number, Crowd<I, O>>();
-    const crowds: Crowd<I, O>[] = [];
-    const was = this.crowdOf;
-    const next = new Map<number, Crowd<I, O>>();
+    const old = this.crowds;
+    const was = new Map(this.crowdOf);
+    this.crowds = [];
+    this.crowdOf.clear();
     for (const v of members) {
-      const slot = v.slots[0] as number;
-      let c = bySlot.get(slot);
-      if (c === undefined) {
-        const ch = this.bySlot[slot] as Laned;
-        c = new Crowd<I, O>([ch], ch.axes);
-        const old = this.crowds.find((o) => o.chans[0]?.name === ch.name);
-        if (old !== undefined) c.idle = old.idle;
-        bySlot.set(slot, c);
-        crowds.push(c);
-      }
       const from = was.get(v.id);
-      const p = c.size;
-      c.reserve(p + 1);
-      const at = from?.rowOf.get(v.id);
-      if (from !== undefined && at !== undefined) this.copyRow(from, at, c, p);
-      else this.newRow(c, p, v);
-      if (c.hot[p * c.stride + H_EPOCH] === 0 && v.state !== 'pending')
-        c.hot[p * c.stride + H_EPOCH] = ++this.epochs;
-      c.rowOf.set(v.id, p);
-      next.set(v.id, c);
-      v.laned = true;
+      this.join(v, from, from?.rowOf.get(v.id), old);
     }
-    this.crowds = crowds;
-    if (crowds.length === 0) this.lawsByKey.clear();
-    was.clear();
-    for (const [id, c] of next) was.set(id, c);
+    if (this.crowds.length === 0) this.lawsByKey.clear();
+  }
+
+  /**
+   * Gives a voice the next row of its channel's crowd, made if there is none: a copy of the row it
+   * had in `from` at `at`, or a new one. `old` holds the crowds being replaced, whose idle state a
+   * new crowd on the same channel keeps. Rows stay in voice order only because voices join in it.
+   */
+  private join(
+    v: Voice<I, O>,
+    from: Crowd<I, O> | undefined,
+    at: number | undefined,
+    old: readonly Crowd<I, O>[],
+  ): void {
+    const ch = this.bySlot[v.slots[0] as number] as Laned;
+    let c = this.crowds.find((o) => o.chans[0] === ch);
+    if (c === undefined) {
+      c = new Crowd<I, O>([ch], ch.axes);
+      const was = old.find((o) => o.chans[0]?.name === ch.name);
+      if (was !== undefined) c.idle = was.idle;
+      this.crowds.push(c);
+    }
+    const p = c.size;
+    c.reserve(p + 1);
+    if (from !== undefined && at !== undefined) this.copyRow(from, at, c, p);
+    else this.newRow(c, p, v);
+    if (c.hot[p * c.stride + H_EPOCH] === 0 && v.state !== 'pending')
+      c.hot[p * c.stride + H_EPOCH] = this.open(v);
+    c.rowOf.set(v.id, p);
+    this.crowdOf.set(v.id, c);
+    v.laned = true;
+  }
+
+  /**
+   * A voice starts playing on a lane or crowd: its epoch. Every subject meets a voice over all of
+   * them on its next probe; a voice naming its subjects marks only those.
+   */
+  private open(v: Voice<I, O>): number {
+    const epoch = ++this.epochs;
+    if (v.named === null) {
+      this.wide = epoch;
+      return epoch;
+    }
+    for (const subject of v.named) {
+      const slot = this.host.slotOf(subject);
+      if (slot < 0 || slot >= this.cap) continue;
+      const i = slot * SLOT + SEEN;
+      const seen = this.per[i] as number;
+      const from = seen < 0 ? -1 - seen : seen;
+      this.per[i] = -1 - Math.min(from, epoch - 1);
+    }
+    return epoch;
+  }
+
+  /**
+   * Takes the voices `touch` named on or off their crowds, each as it now stands; false at the
+   * first that cannot be, which needs a qualify: one that leaves a lane or the general path, which
+   * may open a channel, or one that joins anything but a crowd on a laned channel. Neither a voice
+   * that fits joining laned channels nor a laned one leaving moves the fixed point `qualify` finds.
+   * False too once a crowd is more than half empty rows, which a qualify rebuilds without.
+   */
+  private retouch(): boolean {
+    const touched = [...new Set(this.touched)].sort((a, b) => a.id - b.id);
+    this.touched.length = 0;
+    for (const v of touched) {
+      const known = v.id <= this.known;
+      if (v.id > this.known) this.known = v.id;
+      const c = this.crowdOf.get(v.id);
+      const p = c?.rowOf.get(v.id);
+      if (c !== undefined && p !== undefined) {
+        if (v.state === 'done') {
+          this.bury(c, p);
+          continue;
+        }
+        const h = p * c.stride;
+        if (c.hot[h + H_EPOCH] === 0 && v.state !== 'pending') c.hot[h + H_EPOCH] = this.open(v);
+        c.hot[h + H_FLAGS] = (c.hot[h + H_FLAGS] as number) | F_VOICE;
+        continue;
+      }
+      if (v.state === 'done' && !known) continue;
+      if (v.state === 'done' || this.byId.has(v.id)) return false;
+      const laned = v.slots.some((slot) => this.bySlot[slot] !== undefined);
+      const fits = v.slots.length > 0 && this.host.fits(v);
+      if (!laned && !fits) {
+        this.whole = false;
+        continue;
+      }
+      if (
+        known ||
+        !fits ||
+        !laned ||
+        !crowdable(v) ||
+        this.bySlot[v.slots[0] as number] === undefined
+      )
+        return false;
+      this.join(v, undefined, undefined, this.crowds);
+    }
+    return !this.crowds.some((c) => c.dead > 64 && c.dead * 2 > c.size);
+  }
+
+  /** A crowd voice left: its row stays, empty, until the crowds are next rebuilt. */
+  private bury(c: Crowd<I, O>, p: number): void {
+    const v = c.voices[p] as Voice<I, O>;
+    this.leaveCrowd(c, p);
+    c.list[p] = -1;
+    c.records[p] = undefined;
+    c.deltas[p] = null;
+    c.motions[p] = undefined;
+    c.hot[p * c.stride + H_FLAGS] = 0;
+    c.rowOf.delete(v.id);
+    this.crowdOf.delete(v.id);
+    c.dead++;
   }
 
   private copyRow(from: Crowd<I, O>, p: number, to: Crowd<I, O>, q: number): void {

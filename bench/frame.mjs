@@ -124,6 +124,9 @@ const rows = [
   ['tweens', 100000, 1],
   ['tweenfn', 10000, 1],
   ['keyses', 10000, 1],
+  // A tween voice per subject, with one stopped, its subject dropped, and a new one cued on it
+  // every frame.
+  ['churn', 10000, 1],
   ['fns', 10000, 1],
   ['weasel', 10000, 1],
   ['weaselfn', 10000, 1],
@@ -143,6 +146,7 @@ const rows = [
   ['tween^', 10000, 1],
   ['tweenfn^', 10000, 1],
   ['keyses^', 10000, 1],
+  ['churn^', 10000, 1],
   ['fns^', 10000, 1],
   ['weasel^', 10000, 1],
   // A projection made and probed every frame, as a continuous scrub would: 500 ms ahead, and
@@ -175,12 +179,25 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     kind === 'springs' ||
     kind === 'tweens' ||
     kind === 'keyses' ||
+    kind === 'churn' ||
     kind === 'fns';
   if (kind === 'own')
     for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
   if (kind === 'named') for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine] });
   if (kind === 'springs') for (const mine of subjects) m.cue({ patch: settle(), subjects: [mine] });
-  if (kind === 'tweens') for (const mine of subjects) m.cue({ patch: glideTo(), subjects: [mine] });
+  const handles =
+    kind === 'tweens' || kind === 'churn'
+      ? subjects.map((mine) => m.cue({ patch: glideTo(), subjects: [mine] }))
+      : [];
+  // Replaces the voice of one subject a frame, walking through them all.
+  let turn = 0;
+  const churn = () => {
+    if (kind !== 'churn') return;
+    const k = turn++ % n;
+    handles[k].fade({ over: 0 });
+    m.drop(subjects[k]);
+    handles[k] = m.cue({ patch: glideTo(), subjects: [subjects[k]] });
+  };
   if (kind === 'keyses')
     for (const mine of subjects) m.cue({ patch: keysTo(mine), subjects: [mine] });
   if (kind === 'fns') for (const mine of subjects) m.cue({ patch: fnTo(mine), subjects: [mine] });
@@ -220,6 +237,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   for (let f = 0; f < 30; f++) {
     const f0 = performance.now();
     t += 16.7;
+    churn();
     m.sync(t);
     read(f === 0 ? subjects : probed);
     if (f === 0) first = performance.now() - f0;
@@ -235,6 +253,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       for (const s of probed) p.probe(s, scratch);
     } else {
       t += 16.7;
+      churn();
       m.sync(t);
       read(probed);
     }
