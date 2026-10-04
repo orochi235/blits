@@ -682,7 +682,7 @@ export class Lanes<I, O> {
    * this frame, which is where it is first seen; so does one probed from inside a fill.
    */
   prepare(slot: number, subject: I, now: number, version: number): boolean {
-    const ready = this.begin(now, version);
+    const ready = this.filled(now, version) ? READY : this.begin(now, version);
     if (ready === GENERAL) return this.general(slot);
     if (slot < 0) return false;
     if (ready === SOLO) {
@@ -709,7 +709,8 @@ export class Lanes<I, O> {
   }
 
   /**
-   * For a `pull` of a list it read last time in the same order, with every voice on a lane: what
+   * For a `pull` of a list it read last time in the same order, with every voice on a lane, where
+   * `heads` holds each position's remembered chain head unless all are known current: what
    * `prepare` and `writeLater` do for each subject from position `from`, while the subject reads
    * from the lanes; returns the first position that does not, or the list's length.
    */
@@ -717,12 +718,14 @@ export class Lanes<I, O> {
     slots: Int32Array,
     list: readonly I[],
     was: readonly I[],
+    heads: readonly ({ version: number } | undefined)[] | null,
     from: number,
     columns: readonly Column[],
     now: number,
     version: number,
   ): number {
-    if (this.begin(now, version) !== READY || !this.whole) return from;
+    const ready = this.filled(now, version) ? READY : this.begin(now, version);
+    if (ready !== READY || !this.whole) return from;
     const per = this.per;
     const fills = this.fills;
     const wide = this.wide;
@@ -731,7 +734,7 @@ export class Lanes<I, O> {
     let n = from;
     for (; n < list.length; n++) {
       const subject = list[n] as I;
-      if (was[n] !== subject) break;
+      if (was[n] !== subject || (heads !== null && heads[n]?.version !== version)) break;
       const slot = slots[n] as number;
       const o = slot * SLOT;
       if (
@@ -750,6 +753,19 @@ export class Lanes<I, O> {
     }
     if (n > from) this.holding = true;
     return n;
+  }
+
+  /** Whether this frame's lanes are filled and nothing since asks `begin` to look again. */
+  private filled(now: number, version: number): boolean {
+    return (
+      this.filledAt === now &&
+      this.frameAt === now &&
+      this.filledVersion === version &&
+      this.qualifiedVersion === version &&
+      this.moved === reading.moved &&
+      this.touched.length === 0 &&
+      !this.filling
+    );
   }
 
   /**

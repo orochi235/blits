@@ -980,11 +980,20 @@ class Mixer<I, O> implements Mix<I, O> {
     const live = !Number.isNaN(now);
     const current = live && this.pulledVersion === version && this.pulledRelinks === relinks;
     // Every subject read from the lanes, at the positions it had last time, goes in one run.
-    const runs = current && whole;
+    const runs = live && whole;
     try {
       for (let n = 0; n < list.length; n++) {
         if (runs) {
-          n = (lanes as Lanes<I, O>).pullRun(slots, list, was, n, columns, now, this.version);
+          n = (lanes as Lanes<I, O>).pullRun(
+            slots,
+            list,
+            was,
+            current ? null : heads,
+            n,
+            columns,
+            now,
+            this.version,
+          );
           if (n === list.length) break;
         }
         const subject = list[n] as I;
