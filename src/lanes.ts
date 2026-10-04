@@ -73,6 +73,18 @@ export interface LaneHost<I, O> {
     pass: number,
     weight: number,
   ): void;
+  /**
+   * A voice with a signal weight: its weight for a subject the general path has met, as the general
+   * path weighs it, with the setting filled in for the call; makes the voice stateful if the signal
+   * keeps state.
+   */
+  weigh(
+    voice: Voice<I, O>,
+    subject: I,
+    held: Subject<unknown>,
+    elapsed: number,
+    pass: number,
+  ): number;
   /** Sets `reading.horizon` for the voice and a subject delayed `delay` voice ms. */
   horizon(voice: Voice<I, O>, delay: number): void;
   /** Whether the mix keeps history, so a record a patch call changed may need a copy kept. */
@@ -1453,6 +1465,28 @@ export class Lanes<I, O> {
     for (const slot of lane.list) if (slot >= 0) this.reach(slot, -1);
   }
 
+  /**
+   * A voice with a signal weight: its weight for the subject at `slot`, through the general path's
+   * own arithmetic; NaN where that path has not made the voice's first call for the subject, which
+   * it then makes this frame, so a signal that keeps state is first called where the general path
+   * would call it.
+   */
+  private signalled(
+    voice: Voice<I, O>,
+    slot: number,
+    rec: Subject<unknown>,
+    elapsed: number,
+  ): number {
+    if (Number.isNaN(rec.probed)) {
+      this.late.push(slot);
+      return Number.NaN;
+    }
+    const subject = this.subjectAt(slot);
+    if (subject === absent) return 0;
+    const pass = passAt(elapsed, voice.patch.period, voice.passes);
+    return this.host.weigh(voice, subject, rec, elapsed, pass);
+  }
+
   /** What a subject's own ramp out of a voice leaves of its weight: 1 with none. */
   private parting(voice: Voice<I, O>, slot: number): number {
     if (voice.parts === null) return 1;
@@ -1528,7 +1562,14 @@ export class Lanes<I, O> {
       lane.weighed = true;
       lane.weighedSince = since;
     }
-    const w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
+    let w: number;
+    if (typeof voice.spec.weight === 'function') {
+      w = this.signalled(voice, slot, lane.records[p] as Subject<unknown>, elapsed);
+      if (Number.isNaN(w)) {
+        data[o + WEIGHT] = 0;
+        return;
+      }
+    } else w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
     data[o + WEIGHT] = w;
     if (voice.built !== null) {
       if (!lane.read || !Object.is(elapsed, lane.readAt)) {
@@ -1677,7 +1718,13 @@ export class Lanes<I, O> {
       }
       let w: number;
       if (fast) w = hot[h + H_WEIGHT] as number;
-      else
+      else if (typeof voice.spec.weight === 'function') {
+        w = this.signalled(voice, slot, c.records[p] as Subject<unknown>, elapsed);
+        if (Number.isNaN(w)) {
+          data[o + WEIGHT] = 0;
+          continue;
+        }
+      } else
         w = weighed(
           voice.weight,
           this.host.envelope(voice, data[o + SINCE] as number),
@@ -1785,7 +1832,8 @@ export class Lanes<I, O> {
       !((v.fade.in ?? 0) > 0) &&
       v.out === null &&
       v.parts === null &&
-      !v.keeping
+      !v.keeping &&
+      typeof v.spec.weight !== 'function'
     )
       f |= F_FAST;
     c.hot[h + H_NOW] = v.anchorNow;
@@ -1828,6 +1876,7 @@ export class Lanes<I, O> {
     const elapsedNow = voice.elapsedAt(this.now);
     const flat = lane.flat;
     const parts = voice.parts !== null;
+    const signal = typeof voice.spec.weight === 'function';
     // On a frame's first fill no probe has read a subject yet, so none needs `move` for that.
     const probed = this.probes !== from;
     const whole = clampWeight(voice.weight);
@@ -1856,16 +1905,24 @@ export class Lanes<I, O> {
         data[o + WEIGHT] = 0;
         continue;
       }
-      if (!flat) {
-        const since = data[o + SINCE] as number;
-        if (!lane.weighed || !Object.is(since, lane.weighedSince)) {
-          lane.fade = this.host.envelope(voice, since);
-          lane.weighed = true;
-          lane.weighedSince = since;
+      let w: number;
+      if (signal) {
+        w = this.signalled(voice, slot, records[p] as Subject<unknown>, elapsed);
+        if (Number.isNaN(w)) {
+          data[o + WEIGHT] = 0;
+          continue;
         }
+      } else {
+        if (!flat) {
+          const since = data[o + SINCE] as number;
+          if (!lane.weighed || !Object.is(since, lane.weighedSince)) {
+            lane.fade = this.host.envelope(voice, since);
+            lane.weighed = true;
+            lane.weighedSince = since;
+          }
+        }
+        w = flat && !parts ? whole : weighed(voice.weight, lane.fade, this.parting(voice, slot));
       }
-      const w =
-        flat && !parts ? whole : weighed(voice.weight, lane.fade, this.parting(voice, slot));
       data[o + WEIGHT] = w;
       if (data[o + MET] === 0) {
         if (Number.isNaN((records[p] as Subject<unknown>).probed)) {

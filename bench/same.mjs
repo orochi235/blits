@@ -151,7 +151,17 @@ function run(lib, seed, general = false) {
       spec.target = (s) => s.i % mod === 0;
     }
     if (chance(0.25)) spec.locus = pick(['a', 'b']);
-    if (chance(0.3)) spec.weight = chance(0.5) ? r() * 1.8 : (s) => 0.5 + 0.5 * Math.sin(s.seed);
+    if (chance(0.3)) {
+      const varying = (s, st) => 0.5 + 0.5 * Math.sin(st.elapsed / 150 + s.seed);
+      spec.weight = pick([
+        r() * 1.8,
+        (s) => 0.5 + 0.5 * Math.sin(s.seed),
+        varying,
+        lib.slew(varying, { riseMs: 120, fallMs: 60 }),
+        lib.lag(varying, { riseMs: 80, fallMs: 200 }),
+        lib.gate(varying, { on: 0.6, off: 0.4 }),
+      ]);
+    }
     if (chance(0.4)) spec.fade = { in: pick([0, 50, 200]), out: pick([0, 100, 300]) };
     if (chance(0.3)) spec.loop = chance(0.5) ? true : int(1, 3);
     if (chance(0.2)) spec.rate = pick([0.5, 2]);

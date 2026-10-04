@@ -3,7 +3,8 @@ import { kit, max, mul, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
-import type { Handle, Mix, MixOptions } from '../src/types.js';
+import { slew } from '../src/signals.js';
+import type { Handle, Mix, MixOptions, Setting } from '../src/types.js';
 
 interface Pose {
   gain: number;
@@ -1835,4 +1836,76 @@ describe('lanes weigh a subject fading out of its voice as the general path does
         { times: ramp, parts: 70 },
       );
     });
+});
+
+describe('a voice weighted by a signal runs on lanes while the signal keeps no state', () => {
+  const ramp = [0, 16, 33, 50, 100, 150, 200, 333, 500, 700];
+  const varying = (p: Part, s: Setting) => 0.5 + 0.5 * Math.sin(s.elapsed / 120 + p.id);
+
+  /** How many subjects a fn voice's patch is called for on a frame probing two of six. */
+  const calls = (weight: (p: Part, s: Setting) => number) => {
+    const m = mix<Part, Pose>(K);
+    const parts = Array.from({ length: 6 }, (_, id) => ({ id }));
+    const seen = new Set<number>();
+    m.cue({
+      patch: patch<Part, Pose>(
+        0,
+        (_ph, p) => {
+          seen.add(p.id);
+          return { crawl: p.id };
+        },
+        { writes: ['crawl'] },
+      ),
+      weight,
+    });
+    m.sync(0);
+    for (const p of parts) m.probe(p);
+    seen.clear();
+    m.sync(16);
+    m.probe(parts[1] as Part);
+    m.probe(parts[4] as Part);
+    return seen.size;
+  };
+
+  it('fills every subject from the lane for a signal that keeps none', () => {
+    expect(calls(varying)).toBe(6);
+  });
+
+  it('takes the general path for a signal that keeps state, from its first call', () => {
+    expect(calls(slew(varying, { riseMs: 100 }))).toBe(2);
+  });
+
+  it('gives the pose the general path gives, with a fade, a subject fade and pull', () => {
+    for (const weight of [varying, slew(varying, { riseMs: 90, fallMs: 40 })])
+      agree(
+        (m, parts) => {
+          const handles = [
+            m.cue({ patch: pulse(), weight, fade: { in: 80 } }),
+            m.cue({
+              patch: tween<Part, Pose, number[]>('position', {
+                from: [0, 0, 0],
+                to: (p) => [p.id, 2, 0],
+                ms: 400,
+              }),
+              weight,
+            }),
+            ...parts.map((p) =>
+              m.cue({
+                patch: keys<Part, Pose>(300, [
+                  { at: 0, delta: { gain: 1 } },
+                  { at: 1, delta: { gain: 0.4 } },
+                ]),
+                subjects: [p],
+                weight,
+              }),
+            ),
+          ];
+          const at = (t: number) => {
+            if (t === 150) handles[0]?.fade({ subject: parts[2] as Part, over: 100 });
+          };
+          return { handles, at };
+        },
+        { times: ramp, parts: 70 },
+      );
+  });
 });

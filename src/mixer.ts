@@ -1467,6 +1467,13 @@ class Mixer<I, O> implements Mix<I, O> {
         mix.sending.voice = voice;
         mix.sending.subject = subject;
       },
+      weigh: (voice, subject, held, elapsed, pass) => {
+        mix.prime(voice, held, mix.now, elapsed, pass);
+        const kept = reading.kept;
+        const w = mix.weigh(voice, subject, mix.now, held);
+        if (reading.kept !== kept && !voice.keeping) mix.stateful(voice);
+        return w;
+      },
       horizon: (voice, delay) => {
         reading.horizon = mix.horizonFor(voice, delay, mix.now);
       },
@@ -1487,7 +1494,9 @@ class Mixer<I, O> implements Mix<I, O> {
     const patch = voice.patch;
     if (voice.keeping) return false;
     if (voice.state === 'pending' && voice.holdsBefore) return false;
-    if (typeof spec.weight === 'function') return false;
+    // A signal reading host input records it per probe under history, which a fill cannot.
+    if (typeof spec.weight === 'function' && spec.weight.input && this.opts.history?.inputs)
+      return false;
     if (spec.locus !== undefined || spec.from === 'current') return false;
     if (voice.out?.rest) return false;
     if (patch.state !== undefined || patch.step !== undefined) return false;
@@ -2264,7 +2273,11 @@ class Mixer<I, O> implements Mix<I, O> {
     this.prime(voice, held, now, elapsed, pass);
     const setting = voice.setting;
 
+    // A signal that keeps state makes its voice stateful, as a patch that does: a lane would call
+    // it for subjects no probe asked about.
+    const keptAtWeigh = reading.kept;
     const weight = this.weigh(voice, subject, now, held);
+    if (reading.kept !== keptAtWeigh && !voice.keeping) this.stateful(voice);
     setting.weight = weight;
     held.weight = weight;
 
