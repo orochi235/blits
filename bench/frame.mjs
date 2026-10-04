@@ -130,6 +130,8 @@ const rows = [
   // A tween voice per subject, with one stopped, its subject dropped, and a new one cued on it
   // every frame.
   ['churn', 10000, 1],
+  // A tween voice per subject, with a voice over every subject replaced each frame.
+  ['swap', 10000, 1],
   ['fns', 10000, 1],
   ['weasel', 10000, 1],
   ['weaselfn', 10000, 1],
@@ -191,18 +193,25 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     kind === 'tweens' ||
     kind === 'keyses' ||
     kind === 'churn' ||
+    kind === 'swap' ||
     kind === 'fns';
   if (kind === 'own')
     for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
   if (kind === 'named') for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine] });
   if (kind === 'springs') for (const mine of subjects) m.cue({ patch: settle(), subjects: [mine] });
   const handles =
-    kind === 'tweens' || kind === 'churn'
+    kind === 'tweens' || kind === 'churn' || kind === 'swap'
       ? subjects.map((mine) => m.cue({ patch: glideTo(), subjects: [mine] }))
       : [];
   // Replaces the voice of one subject a frame, walking through them all.
   let turn = 0;
+  let shared = kind === 'swap' ? m.cue({ patch: flicker(0) }) : null;
   const churn = () => {
+    if (shared !== null) {
+      shared.fade({ over: 0 });
+      shared = m.cue({ patch: flicker(turn++ % 3) });
+      return;
+    }
     if (kind !== 'churn') return;
     const k = turn++ % n;
     handles[k].fade({ over: 0 });
