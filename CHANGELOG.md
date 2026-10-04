@@ -45,6 +45,10 @@ version and everything else the patch. Each release lists its changes as **Break
   ahead and 0.81 back.
 - A spring works out its time terms once for the subjects released together: one spring voice over
   10k subjects read by `pull` takes about 0.89 of the time.
+- A voice shares one record among the subjects it does not reach, where it kept a full one for
+  each subject it was asked about. 1000 voices each picking one subject by `target` held 269 MB
+  after their first frame and now 37 MB; that first frame takes 77 ms on teitou, from 123, and
+  each later frame 0.86 of the time.
 - A voice and its records make their maps, arrays and promises on first use, and a subject's
   number needs no token object. A voice of one subject holds 2.5 KB after its first frame as a
   `fn` (3.4 KB before) and 5.2 KB as a tween (7.3 KB). On teitou cueing 10k tween voices of one
