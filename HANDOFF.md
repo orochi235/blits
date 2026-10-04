@@ -245,10 +245,35 @@ systems now run on it**, on klieg's `main`.
      (branch `crowd-rows`, 2026-10-03). A voice naming its subjects relinks only those, joins its
      crowd at the end and leaves an empty row; `drop` walks only the voices that can hold the
      subject. weasel's ask: on teitou a frame replacing one of 10k tween voices went from about
-     9 ms to 0.6 by `pull`. The schema page's crowd paragraph has the rest. Left: a voice naming
-     one subject but writing several channels still has a solo lane, idle, so takes the general
-     path; and one that leaves the general path or a lane, rather than a crowd, still requalifies
-     every voice. Reading keys stops as flat numbers measured no different and was reverted.
+     9 ms to 0.6 by `pull`. The schema page's crowd paragraph has the rest. Left: a voice that
+     leaves the general path or a lane, rather than a crowd, still requalifies every voice.
+     Reading keys stops as flat numbers measured no different and was reverted.
+   - **The slow cases after 0.4.0, worked overnight 2026-10-04** (branch `slow-cases`, Mike
+     asleep). `CHANGELOG.md`'s Unreleased section lists what landed, with numbers: crowds of
+     several channels, in-place crowd compaction, an allocation-free locus fold, read backs
+     without `structuredClone`, a spring's shared time terms, and per-voice memory cut by a sixth.
+     Every change was checked bit for bit with `bench/same.sh <rev>` (random scenes through two
+     builds), and timed one row per process with `AB_EACH=1 bench/ab.sh`. `bench/start.mjs`,
+     `bench/memory.mjs` and `bench/heapby.mjs` measure starting voices and what each one holds.
+     What is still slow, largest first:
+     - **A voice with a locus or a signal weight never runs on a lane**, so every `mix.blend`
+       takes the general path: 10k subjects under three voices in a locus cost about 3.9 ms a
+       frame, against 2.1 without the locus (teitou). A signal on a lane would be called for
+       every subject the lane has met, so one holding state outside `setting.keep` would be
+       called more often than the general path calls it; the stock signals keep from their
+       first call, which the general path makes, but `influence` does not yet notice a `keep`
+       made inside `weigh`. A locus on lanes needs two passes, since it folds at its first
+       member's place, which differs by subject. Not started.
+     - **Starting 10k one-subject tween voices costs about 52 ms** (cue and first frame), where
+       a `fn` voice costs about 24: a motion patch per voice holds about 3 KB of state for one
+       subject, mostly its numbering (a WeakRef, a FinalizationRegistry entry) and closures.
+     - **Two rows read slower than 0.4.0**: `own` at 1k about 1.06× and `named` at 100 about
+       1.05–1.11× (+0.01 and +0.002 ms). `named`'s is a fill's bookkeeping at 100 crowd rows;
+       `own`'s came with the memory commit and is untraced. Two unused fields on `Voice` did
+       not reproduce it.
+     - **A crowd's `keys` rows** cost about 105 ns a subject by `pull` against 24 for one keys
+       voice over the same subjects, mostly `readKeys` per row. Reading the segment straight
+       into the channel would skip an array per row but copy `read`'s segment search.
 
 1d. **`@msb235/blits-quarks` 0.1.0 is on npm**, published by hand 2026-10-02 because npm refuses
    trust for a name never published; trusted publishing is registered since, so later versions go out
@@ -273,13 +298,11 @@ systems now run on it**, on klieg's `main`.
 
 ## Loose ends
 
-- **Rows run earlier in one process change a later row's numbers.** The shared `fn` row read by
-  `pull` reads about 1.9 ms run alone or after per-subject rows on either build, but 2.8–2.9 at
-  the end of a 15-row run on `crowd-rows` (teitou, 2026-10-03). The cause is untraced. Compare
-  rows in the same order on both sides, and treat a row that moves only in a long run as suspect.
-- **A crowd more than half empty rows rebuilds in one frame.** That is one full qualify, about
-  what any cue cost before (roughly 9 ms at 10k on teitou), once every few thousand voices
-  replaced. Not measured as a spike yet.
+- **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
+  100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k
+  `tweens` row and 214 after the 100k one (teitou). A dropped mix is freed
+  (`bench/memory.mjs`), so it is the heap that row grew, not a leak. `AB_EACH=1 bench/ab.sh`
+  runs each row in a process of its own.
 
 - **A pose can hold a keyframe's own array.** When a channel has no rest and its `merge` returns
   its second argument, as a `last()` over arrays does, `apply` puts the delta's array into the
