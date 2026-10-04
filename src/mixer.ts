@@ -467,6 +467,8 @@ export class Voice<I, O> {
   keepOn: Subject<unknown> | null = null;
   /** What `setting.keep` holds when called before any record is. */
   ownKept: Map<object, unknown> | null = null;
+  /** The one record of every subject it does not reach. */
+  unreached: Subject<unknown> | null = null;
   /**
    * `done` and `played`, made when first asked for, already settled if the voice is: most hosts
    * never await either, and a mix may hold tens of thousands of voices.
@@ -637,6 +639,7 @@ export class Voice<I, O> {
       v.outAt = controls.outAt;
     }
     v.quiet = true;
+    v.unreached = null;
     return v;
   }
 
@@ -2194,25 +2197,58 @@ class Mixer<I, O> implements Mix<I, O> {
     return envelope(voice.fade.in ?? 0, voice.out, voice.ease, this.reducedNow, now, since);
   }
 
+  /** The record a voice gives every subject it does not reach. */
+  private unreachedOf(voice: Voice<I, O>, now: number): Subject<unknown> {
+    const since = this.sinceOf(voice, 0);
+    const none: Subject<unknown> = {
+      reaches: false,
+      delay: 0,
+      since,
+      shown: this.shownOf(voice, since),
+      weight: 0,
+      rested: false,
+      bands: null,
+      state: undefined,
+      stepped: now,
+      ticks: 0,
+      probed: Number.NaN,
+      delta: null,
+      phase: 0,
+      seeks: 0,
+      kept: null,
+      voice,
+      next: null,
+      version: Number.NaN,
+      loci: null,
+      slot: -1,
+    };
+    voice.unreached = none;
+    return none;
+  }
+
   /** What this voice holds for this subject, made on first sight with `target` and `stagger` asked once. */
   private held(voice: Voice<I, O>, subject: I, now: number): Subject<unknown> {
     let held = voice.subjects.get(subject) as Subject<unknown> | undefined;
     if (held !== undefined) return held;
     const reaches = this.aims(voice, subject);
-    const delay = reaches && voice.spec.stagger ? voice.spec.stagger(subject) : 0;
+    if (!reaches) {
+      // Nothing is kept for a subject the voice does not reach, so one record stands for them all:
+      // a voice per subject reached by `target` held one per subject it was asked about.
+      const none = voice.unreached ?? this.unreachedOf(voice, now);
+      voice.subjects.set(subject, none);
+      return none;
+    }
+    const delay = voice.spec.stagger ? voice.spec.stagger(subject) : 0;
     const since = this.sinceOf(voice, delay);
     held = {
-      reaches,
+      reaches: true,
       delay,
       since,
       shown: this.shownOf(voice, since),
       weight: 0,
       rested: false,
       bands: null,
-      state:
-        reaches && voice.patch.state
-          ? (voice.patch.state(subject) as unknown)
-          : (undefined as unknown),
+      state: voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
       stepped: this.backward && since < now ? since : now,
       ticks: 0,
       probed: Number.NaN,
@@ -2235,7 +2271,7 @@ class Mixer<I, O> implements Mix<I, O> {
       voice.early ??= [];
       voice.early.push(held);
     }
-    if (reaches) voice.seen++;
+    voice.seen++;
     if (delay > voice.latest) {
       voice.latest = delay;
       // A later end can take a held voice live again.

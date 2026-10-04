@@ -1,6 +1,6 @@
 // Heap per voice of one subject each, by form: after cueing, after the first frame, after a second,
 // and once the mix is let go (which should return to where it started).
-//   node --expose-gc bench/memory.mjs [N] [forms...]   forms: tweens springs fns keyses named
+//   node --expose-gc bench/memory.mjs [N] [forms...]   forms: tweens springs fns keyses named targets (a fn voice per subject picked by target, not in the default list: it grows with the square)
 import { keys, kit, max, mix, mul, patch, spring, sum, tween, vec } from '../dist/index.js';
 
 const N = Number(process.argv[2] ?? 10000);
@@ -37,7 +37,12 @@ for (const [i, form] of forms.entries()) {
   const subjects = Array.from({ length: N }, (_, j) => ({ seed: j * 0.37 }));
   const withSubjects = await heap();
   let m = mix(K);
-  for (const s of subjects) m.cue({ patch: make[form](s), subjects: [s] });
+  for (const s of subjects)
+    m.cue(
+      form === 'targets'
+        ? { patch: make.named(), target: (x) => x === s }
+        : { patch: make[form](s), subjects: [s] },
+    );
   const cued = await heap();
   const out = {};
   m.sync(16);
