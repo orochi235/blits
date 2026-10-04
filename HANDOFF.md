@@ -18,7 +18,7 @@ systems now run on it**, on klieg's `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **private**; release 0.4.0 (2026-10-04).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.4.0 (2026-10-04).
 - **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
   blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
