@@ -7,7 +7,7 @@
     "dev": "npm run api && astro dev --host :: --port 4880",
     "build": "npm run api && astro build",
     "smoke": "npm run build && node scripts/smoke.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "npm run api && astro sync && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@astrojs/mdx": "^8.0.2",
