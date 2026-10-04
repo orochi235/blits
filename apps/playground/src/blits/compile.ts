@@ -49,6 +49,7 @@ function specOf(
     field: string,
     expr: Expr,
     fallback: ReturnType<F>,
+    takes?: (out: unknown) => string | null,
   ): F | undefined => {
     const r = compileExpr<F>(expr, scope, fallback);
     if ('error' in r) {
@@ -56,7 +57,16 @@ function specOf(
       return undefined;
     }
     faults.push(r.faults);
-    return r.fn;
+    if (!takes) return r.fn;
+    const inner = r.fn as unknown as (...a: unknown[]) => unknown;
+    return ((...a: unknown[]) => {
+      const out = inner(...a);
+      const wrong = takes(out);
+      if (wrong === null) return out;
+      r.faults.count++;
+      r.faults.first ??= `${field} ${wrong}`;
+      return fallback;
+    }) as unknown as F;
   };
   const made = patchOf(v.patch, fn, (field, error) =>
     errors.push({ voice: v.id, field, error, line: null }),
@@ -90,11 +100,24 @@ type Fn = <F extends (...a: never[]) => unknown>(
   field: string,
   expr: Expr,
   fallback: ReturnType<F>,
+  takes?: (out: unknown) => string | null,
 ) => F | undefined;
 type Fail = (field: string, error: string) => void;
 
 const PER_SUBJECT = new Set(['to', 'from', 'velocity']);
 const REQUIRED = { spring: ['to'], glide: ['from'], tween: ['from', 'to', 'ms'] } as const;
+
+const finite = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
+
+/** Why blits would refuse `out` for this motion option, or null when it takes it. */
+function refusalOf(channel: ChannelName, key: string): (out: unknown) => string | null {
+  if (key === 'ms') return (out) => (finite(out) && out > 0 ? null : 'takes a positive number');
+  const rest = KIT[channel].rest;
+  if (!Array.isArray(rest)) return (out) => (finite(out) ? null : 'takes a number');
+  const n = rest.length;
+  return (out) =>
+    Array.isArray(out) && out.length === n && out.every(finite) ? null : `takes ${n} numbers`;
+}
 
 /** What a motion option gives a subject its expression throws on: a value the channel can take. */
 function fallbackOf(channel: ChannelName, key: string): number | number[] {
@@ -149,13 +172,23 @@ function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Pose, unkno
   const opts: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(p.opts)) {
     if (!isExpr(v)) {
-      if (p.kind === 'tween' && k === 'ms' && !((v as number) > 0))
-        bad('opts.ms', 'takes a positive number');
+      const wrong =
+        PER_SUBJECT.has(k) || (p.kind === 'tween' && k === 'ms')
+          ? refusalOf(p.channel, k)(v)
+          : finite(v)
+            ? null
+            : 'takes a number';
+      if (wrong !== null) bad(`opts.${k}`, wrong);
       opts[k] = v;
     } else if (!PER_SUBJECT.has(k) && !(p.kind === 'tween' && k === 'ms')) {
       bad(`opts.${k}`, 'takes a number');
     } else {
-      const f = fn<(s: Subject) => unknown>(`opts.${k}`, v, fallbackOf(p.channel, k));
+      const f = fn<(s: Subject) => unknown>(
+        `opts.${k}`,
+        v,
+        fallbackOf(p.channel, k),
+        refusalOf(p.channel, k),
+      );
       if (f) opts[k] = f;
       else ok = false;
     }

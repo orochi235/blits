@@ -275,6 +275,60 @@ describe('compile', () => {
     expect(built.mix.probe(subjects.find((s) => s.col === 1) as never).scale).toBe(3);
   });
 
+  it('an option expression returning what blits refuses counts a fault and uses the fallback', () => {
+    const built = compile(
+      comp([
+        voice({
+          id: 'w',
+          patch: {
+            kind: 'tween',
+            channel: 'scale',
+            opts: { from: 2, to: 3, ms: { code: '(s) => s.col * 100' } },
+          },
+        }),
+        voice({
+          id: 's',
+          patch: {
+            kind: 'spring',
+            channel: 'offset',
+            opts: { to: { code: '(s) => (s.col === 2 ? [1, 2, 3] : [s.col, 0])' }, from: [5, 5] },
+          },
+        }),
+      ]),
+      subjects,
+    );
+    const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+    hand.cue({
+      patch: tween<(typeof subjects)[0], Pose, number>('scale', {
+        from: 2,
+        to: 3,
+        ms: (s) => (s.col === 0 ? FRAME : s.col * 100),
+      }),
+    });
+    hand.cue({
+      patch: spring<(typeof subjects)[0], Pose, number[]>('offset', {
+        to: (s) => (s.col === 2 ? [0, 0] : [s.col, 0]),
+        from: [5, 5],
+      }),
+    });
+    expect(built.errors).toEqual([]);
+    same(built.mix, hand);
+    expect(built.faults.get('w')?.count).toBeGreaterThan(0);
+    expect(built.faults.get('w')?.first).toBe('opts.ms takes a positive number');
+    expect(built.faults.get('s')?.first).toBe('opts.to takes 2 numbers');
+  });
+
+  it('a fixed option of the wrong shape is a field error', () => {
+    const v = voice({
+      id: 's',
+      patch: { kind: 'spring', channel: 'offset', opts: { to: 5, from: [0, 0, 0] } },
+    });
+    expect(compile(comp([v]), subjects).errors.map((e) => [e.field, e.error])).toEqual([
+      ['opts.to', 'takes 2 numbers'],
+      ['opts.from', 'takes 2 numbers'],
+    ]);
+  });
+
   it('voices fold in the order the composition lists them', () => {
     const layer = (id: string, turn: number, color: number) =>
       voice({
