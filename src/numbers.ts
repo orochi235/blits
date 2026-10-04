@@ -34,6 +34,7 @@ export class Numbers<I> {
 
   take(subject: I): number {
     const slot = this.free.pop() ?? this.next++;
+    let dead = -1;
     if (typeof subject === 'object' && subject !== null) {
       const ref = new WeakRef(subject as object);
       this.refs[slot] = ref;
@@ -46,10 +47,13 @@ export class Numbers<I> {
         this.registry = new FinalizationRegistry<number>((slot) => this.release(slot));
         const first = this.lone.deref();
         if (first !== undefined) this.registry.register(first, this.loneSlot, this.lone);
+        // Collected with no registry to hear of it: released here, once this subject is numbered.
+        else dead = this.loneSlot;
         this.lone = null;
       }
       this.registry.register(subject as object, slot, ref);
     } else this.refs[slot] = subject === undefined ? unit : subject;
+    if (dead >= 0) this.release(dead);
     return slot;
   }
 
