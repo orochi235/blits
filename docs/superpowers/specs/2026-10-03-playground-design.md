@@ -55,7 +55,7 @@ One kit drives both stages, so every preset plays on either.
 | `opacity` | `mul({ bounds: [0, 1] })` | alpha        | alpha           |
 | `glow`    | `max()`                   | halo         | halo            |
 
-`Pose` is the kit's pose: `{ offset: number[]; turn; scale; color: string; opacity; glow }`. A subject is `{ index, row, col, x, y, char }`; dots fill `row`/`col`/`x`/`y`, letters `index`/`char`.
+`Pose` is the kit's pose: `{ offset: number[]; turn; scale; color: number (0xrrggbb); opacity; glow }`. A subject is `{ index, row, col, x, y, char }`; dots fill `row`/`col`/`x`/`y`, letters `index`/`char`.
 
 ## The composition
 
