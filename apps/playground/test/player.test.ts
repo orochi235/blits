@@ -19,7 +19,6 @@ const c: Composition = {
       start: 0,
       rate: 1,
       loop: true,
-      // fallMs: with none, syncing a stale mix back to 0 drops the slew to 0 and hides the bug.
       weight: {
         code: 'slew((s, x) => (x.elapsed < 300 ? 0 : level("k")(s, x)), { riseMs: 400, fallMs: 400 })',
       },
