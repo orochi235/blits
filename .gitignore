@@ -6,3 +6,4 @@ dist
 
 # The incremental build stamp, beside the config that names it.
 .tsbuildinfo
+.superpowers/
