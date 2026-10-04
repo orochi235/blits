@@ -17,13 +17,14 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 - `probe` with no `out` stores a freshly allocated pose per subject per frame. weasel measured this
   pattern: a new pose object per node per frame took major GC from 57 ms to 549 ms over 10 s
   (`docs/superpowers/specs/2026-08-24-frame-loop-decoupling-design.md` in weasel).
-- **weasel's `animator-on-blits` on teitou against `2da21c1`** (weasel, Node 26.10, six passes,
-  2026-10-03, vitest means in ms per frame at 10k): a tween motion voice per animation read by
-  `pull` costs 0.42–0.46, the same as one shared tween voice (0.39–0.47), so weasel expects to drop
-  its own grouping. Without building `{x, y}` sinks 0.35–0.38. By `probe` 0.82–0.94; a `keys` voice
-  per animation by `probe` 1.74–1.95, before crowds took `keys` rows (`HANDOFF.md` 1c). A spring voice
-  per animation by `pull` 0.60–0.65. weasel's old animator reads 0.22–0.37 for its whole frame;
-  its animator rebuilt on blits 0.77–0.88, about blits' `pull` plus weasel's own per-call work.
+- **weasel's `animator-on-blits` on teitou against `5a514a3`** (weasel, Node 26.10, three passes
+  alternated, 2026-10-04, vitest means in ms per frame at 10k). blits alone: a tween voice per
+  animation read by `pull` 0.38–0.42, one shared voice 0.34–0.41, a spring voice per animation
+  0.56–0.61. Through weasel's whole animator, old against on blits: tweens steady 0.25–0.36
+  against 1.02–1.08; one tween stopped and one started each frame 0.18–0.19 against 1.33–1.38
+  (28–50 ms on `2da21c1`); springs 0.73–1.08 against 0.62–0.67, where blits now wins. weasel
+  puts the tween gap down to its own per-animation reads (about 0.5 ms, being removed) and a
+  drop it still defers a frame.
 - **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a
   `fn` voice in plain Node: about 35 ms warm against 16, and 80–90 cold against 28–42 (weasel,
   orochi under load, 2026-10-02). A cold run in blits' own shape read the other way, 34 against 49.
