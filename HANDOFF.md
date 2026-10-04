@@ -44,6 +44,11 @@ systems now run on it**, on klieg's `main`.
   is lint, typecheck of both `src` and `test`, then the suite, green. `npm run bench`
   (`bench/frame.mjs`) measures a frame at scene sizes, GC counts included. Enlisted for the fleet — `.onto/tests` is
   `plugin: node`, `run: npm test`, `runner: vitest` — and green there too.
+- **`hold` is on `main`, unreleased** (2026-10-03): WAAPI's `fill` under blits' own name, for wod's
+  move onto blits — `useSpin` holds its landing angle with `fill: 'forwards'` and awaits
+  `animation.finished`, which map to `hold: 'after'` and `handle.played`. The schema page's Holding
+  paragraph has the design. Mike chose the name and the values `before`/`after`/`both`, and that a
+  held voice's end is when it is faded, not when its passes run out.
 - **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
   the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
   is green on all 13 pages. Local only; `.github/workflows/site.yml` deploys to Pages by hand.
