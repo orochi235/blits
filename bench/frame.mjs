@@ -105,6 +105,7 @@ const rows = [
   // One tween voice over every subject, one per subject, and a `fn` doing a tween's job.
   ['tween', 10000, 1],
   ['tweens', 10000, 1],
+  ['tweens', 100000, 1],
   ['tweenfn', 10000, 1],
   ['weasel', 10000, 1],
   ['weaselfn', 10000, 1],
