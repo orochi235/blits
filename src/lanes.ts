@@ -1139,7 +1139,7 @@ export class Lanes<I, O> {
    * first that cannot be, which needs a qualify: one that leaves a lane or the general path, which
    * may open a channel, or one that joins anything but a crowd on a laned channel. Neither a voice
    * that fits joining laned channels nor a laned one leaving moves the fixed point `qualify` finds.
-   * False too once a crowd is more than half empty rows, which a qualify rebuilds without.
+   * A crowd more than half empty rows is compacted.
    */
   private retouch(): boolean {
     const touched = [...new Set(this.touched)].sort((a, b) => a.id - b.id);
@@ -1177,7 +1177,38 @@ export class Lanes<I, O> {
         return false;
       this.join(v, undefined, undefined, this.crowds);
     }
-    return !this.crowds.some((c) => c.dead > 64 && c.dead * 2 > c.size);
+    for (const c of this.crowds) if (c.dead > 64 && c.dead * 2 > c.size) this.compact(c);
+    return true;
+  }
+
+  /**
+   * Slides a crowd's rows down over the empty ones its departed voices left, in order, so its rows
+   * stay in voice order; a qualify did this by rebuilding every crowd, a dropped frame at 10k rows.
+   */
+  private compact(c: Crowd<I, O>): void {
+    let q = 0;
+    for (let p = 0; p < c.size; p++) {
+      const v = c.voices[p] as Voice<I, O>;
+      if (c.rowOf.get(v.id) !== p) {
+        c.odd?.delete(p);
+        continue;
+      }
+      if (q !== p) {
+        this.copyRow(c, p, c, q);
+        c.odd?.delete(p);
+        c.rowOf.set(v.id, q);
+      }
+      q++;
+    }
+    c.list.length = q;
+    c.voices.length = q;
+    c.records.length = q;
+    c.deltas.length = q;
+    c.motions.length = q;
+    c.eases.length = q;
+    c.laws.length = q;
+    c.touches.length = q;
+    c.dead = 0;
   }
 
   /** A crowd voice left: its row stays, empty, until the crowds are next rebuilt. */
