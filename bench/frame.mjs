@@ -1,7 +1,8 @@
 // Per-frame cost of a mix at scene sizes. Run with `npm run bench`, which builds dist first.
 // Rows print as they finish; `first` is the first frame, where each voice meets each subject;
 // `p99` and `worst` are single frames, where a collection landing mid-frame shows; `gc` counts
-// collections during the timed frames and the ms they paused for.
+// collections during the timed frames and the ms they paused for. WINDOW=2500 also prints the mean
+// of each run of that many frames, for a cost that drifts as the run goes on.
 import { PerformanceObserver } from 'node:perf_hooks';
 import { hex, keys, kit, max, mix, mul, patch, spring, sum, tween, vec } from '../dist/index.js';
 
@@ -170,6 +171,7 @@ const rows = [
 
 // FRAMES=20000 for a profile long enough to sample a fast row.
 const frames = Number(process.env.FRAMES ?? 300);
+const windowed = Number(process.env.WINDOW ?? 0);
 // Row names after the script, `node bench/frame.mjs keys keys^`, run only those rows; `tweens:10000`
 // only the one at that size.
 const only = process.argv.slice(2);
@@ -320,6 +322,13 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       read(probed);
     }
     each[f] = performance.now() - f0;
+    if (windowed > 0 && (f + 1) % windowed === 0) {
+      let sum = 0;
+      for (let g = f + 1 - windowed; g <= f; g++) sum += each[g];
+      console.log(
+        `      frames ${String(f + 1).padStart(6)}  ${(sum / windowed).toFixed(3).padStart(8)} ms/frame`,
+      );
+    }
   }
   const ms = each.reduce((a, b) => a + b, 0) / frames;
   each.sort();
