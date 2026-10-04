@@ -1900,6 +1900,7 @@ export class Lanes<I, O> {
     host.ready(voice, subject, rec, elapsed, pass, w);
     host.horizon(voice, delay);
     const delta = voice.patch.at(phase, subject, voice.setting as never) as Record<string, unknown>;
+    voice.keepOn = null;
     // What `influence` leaves on the record, so a probe on the general path this frame reuses it.
     rec.delta = delta;
     rec.probed = this.now;
@@ -2155,6 +2156,8 @@ export class Lanes<I, O> {
     const samples = lane.samples;
     const xs = run.xs;
     for (let p = 0; p < list.length; p++) {
+      // Its signal just made kept state: no further call this fill, the general path makes them.
+      if (signal && voice.keeping) return;
       const slot = list[p] as number;
       const o = p * STRIDE;
       const q = slot * SLOT;

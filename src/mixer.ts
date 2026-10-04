@@ -1512,6 +1512,7 @@ class Mixer<I, O> implements Mix<I, O> {
         mix.prime(voice, held, mix.now, elapsed, pass);
         const kept = reading.kept;
         const w = mix.weigh(voice, subject, mix.now, held);
+        voice.keepOn = null;
         if (reading.kept !== kept && !voice.keeping) mix.stateful(voice);
         return w;
       },
@@ -2884,6 +2885,13 @@ class Mixer<I, O> implements Mix<I, O> {
         k.mVoices[m] = null;
         k.mDeltas[m] = null;
       }
+      // Left set only where a channel's lerp threw partway, which the next fold must not inherit.
+      for (let t = 0; t < k.touched.length; t++) {
+        const slot = k.touched[t] as number;
+        k.met[slot] = 0;
+        k.values[slot] = undefined;
+      }
+      k.touched.length = 0;
       this.locusDepth--;
     }
   }
@@ -2914,12 +2922,16 @@ class Mixer<I, O> implements Mix<I, O> {
         setting.state = held.state;
         voice.keepOn = held;
         this.w = this.weigh(voice, subject, now, held);
+        voice.keepOn = null;
         held.weight = this.w;
         if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
         return held.delta;
       }
     }
-    return this.influence(voice, subject, now, held);
+    const delta = this.influence(voice, subject, now, held);
+    // A setting is valid only during its call, so the record need not stay reachable after it.
+    voice.keepOn = null;
+    return delta;
   }
 }
 

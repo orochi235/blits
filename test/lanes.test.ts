@@ -1875,6 +1875,41 @@ describe('a voice weighted by a signal runs on lanes while the signal keeps no s
     expect(calls(slew(varying, { riseMs: 100 }))).toBe(2);
   });
 
+  it('stops calling a motion voice’s signal for subjects nobody probed once it keeps state', () => {
+    // From t=300 the signal counts frames per subject in kept state and reads by the count.
+    // Subjects 90-99 go unread until 600; the first subject a fill meets may still get one call,
+    // as `Setting.keep` says, so the unread ones are the last.
+    const owner = {};
+    const counting = (p: Part, s: Setting) => {
+      if (s.timestamp < 300) return 0.5 + p.id / 200;
+      const n = s.keep(owner, () => ({ n: 0, seen: Number.NaN }));
+      if (n.seen !== s.timestamp) {
+        n.n++;
+        n.seen = s.timestamp;
+      }
+      return 1 / (1 + n.n);
+    };
+    agree(
+      (m) => ({
+        handles: [
+          m.cue({
+            patch: tween<Part, Pose, number>('crawl', {
+              from: 0,
+              to: (p) => p.id,
+              ms: 2000,
+            }),
+            weight: counting,
+          }),
+        ],
+      }),
+      {
+        times: [0, 100, 200, 300, 400, 500, 600],
+        parts: 100,
+        probe: (t, p) => t === 0 || t === 600 || p.id < 90,
+      },
+    );
+  });
+
   it('gives the pose the general path gives, with a fade, a subject fade and pull', () => {
     for (const weight of [varying, slew(varying, { riseMs: 90, fallMs: 40 })])
       agree(
