@@ -799,7 +799,8 @@ export class Lanes<I, O> {
         slot < 0 ||
         per[o + FILLED] !== fills ||
         per[o + IDLE] !== 0 ||
-        (per[o + SEEN] as number) < wide
+        (per[o + SEEN] as number) < wide ||
+        (this.owed.size > 0 && this.owed.has(slot))
       )
         break;
       if (!((per[o + LANE_PROBE] as number) > frame || (per[o + GENERAL_PROBE] as number) > frame))

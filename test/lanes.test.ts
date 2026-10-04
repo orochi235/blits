@@ -2079,6 +2079,23 @@ describe('a voice a probe meets late, after every laned voice, folds onto the la
     agree(swap(true), { times });
   });
 
+  it('reads an owed voice in a second pull of the same frame', () => {
+    const run = (lanes: boolean) => {
+      const m = mix<Part, Pose>(K, { lanes });
+      const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
+      const played = swap(false)(m, parts);
+      const reads: Pose[][] = [];
+      for (const t of [0, 16, 33]) {
+        played?.at?.(t);
+        m.sync(t);
+        reads.push(pulled(m, parts), pulled(m, parts));
+      }
+      return reads.flat();
+    };
+    const off = run(false);
+    run(true).forEach((pose, i) => expectSame(pose, off[i] as Pose, `read ${i}`));
+  });
+
   it('owes the voice rather than sending the subject to the general path', () => {
     const m = mix<Part, Pose>(K);
     const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
