@@ -157,6 +157,7 @@ describe('compile', () => {
               to: { code: '(s) => 1 + s.row' },
               ms: { code: '(s) => 300 + s.col * 100' },
             },
+            ease: 'linear',
           },
         }),
       ]),
@@ -168,10 +169,42 @@ describe('compile', () => {
         from: 1,
         to: (s) => 1 + s.row,
         ms: (s) => 300 + s.col * 100,
+        ease: 'linear',
       }),
     });
     expect(built.errors).toEqual([]);
     same(built.mix, hand);
+  });
+
+  it('a motion option that throws for some subjects falls back to the channel rest', () => {
+    const built = compile(
+      comp([
+        voice({
+          id: 's',
+          patch: {
+            kind: 'spring',
+            channel: 'offset',
+            opts: {
+              to: { code: '(s) => (s.col === 1 ? s.nope.x : [s.col * 10, 0])' },
+              from: [5, 5],
+            },
+          },
+        }),
+      ]),
+      subjects,
+    );
+    const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+    hand.cue({
+      patch: spring<(typeof subjects)[0], Pose, number[]>('offset', {
+        to: (s) => (s.col === 1 ? [0, 0] : [s.col * 10, 0]),
+        from: [5, 5],
+      }),
+    });
+    expect(built.errors).toEqual([]);
+    same(built.mix, hand, 3000);
+    const thrown = subjects.find((s) => s.col === 1) as (typeof subjects)[0];
+    expect(built.mix.probe(thrown).offset).toEqual([0, 0]);
+    expect(built.faults.get('s')?.count).toBeGreaterThan(0);
   });
 
   it('skips a voice with a bad expression, names the field, and keeps the rest', () => {

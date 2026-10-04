@@ -14,7 +14,7 @@ import {
 } from '@msb235/blits';
 import { type Composition, type Expr, isExpr, type PatchSource, type Voice } from './composition';
 import { compileExpr, type Faults, type Scope } from './expr';
-import { KIT, type Pose } from './kit';
+import { type ChannelName, KIT, type Pose } from './kit';
 import type { Subject } from './stage';
 
 export const FRAME = 1000 / 60;
@@ -90,6 +90,16 @@ type Fn = <F extends (...a: never[]) => unknown>(
   fallback: ReturnType<F>,
 ) => F | undefined;
 
+/** What a motion option gives a subject its expression throws on: a value the channel can take. */
+function fallbackOf(channel: ChannelName, key: string): number | number[] {
+  const rest = KIT[channel].rest as number | number[] | undefined;
+  const zero = Array.isArray(rest) ? rest.map(() => 0) : 0;
+  if (key === 'to' || key === 'from') return rest ?? zero;
+  // A tween refuses a non-positive ms; 325 is glide's own default.
+  if (key === 'ms') return 325;
+  return key === 'velocity' ? zero : 0;
+}
+
 function patchOf(p: PatchSource, fn: Fn): Patch<Subject, Pose, unknown> | undefined {
   if (p.kind === 'keys')
     return keys<Subject, Pose>(p.period, p.stops, p.ease ? { ease: p.ease } : {});
@@ -116,11 +126,12 @@ function patchOf(p: PatchSource, fn: Fn): Patch<Subject, Pose, unknown> | undefi
   for (const [k, v] of Object.entries(p.opts)) {
     if (!isExpr(v)) opts[k] = v;
     else {
-      const f = fn<(s: Subject) => unknown>(`opts.${k}`, v, 0);
+      const f = fn<(s: Subject) => unknown>(`opts.${k}`, v, fallbackOf(p.channel, k));
       if (!f) return undefined;
       opts[k] = f;
     }
   }
+  if (p.kind === 'tween' && p.ease) opts.ease = p.ease;
   const maker = p.kind === 'spring' ? spring : p.kind === 'glide' ? glide : tween;
   return maker<Subject, Pose, number | number[]>(p.channel, opts as never) as unknown as Patch<
     Subject,

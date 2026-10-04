@@ -24,6 +24,8 @@ export type PatchSource =
       kind: 'spring' | 'glide' | 'tween';
       channel: ChannelName;
       opts: Record<string, number | number[] | Expr>;
+      /** A tween's curve; spring and glide have none. */
+      ease?: Easing;
     };
 
 export interface Voice {
