@@ -1,4 +1,4 @@
-import { type LerpInto, lerpInto, mix } from './channels.js';
+import { type LerpInto, lerpInto } from './channels.js';
 import { type Curve, curve } from './easing.js';
 import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js';
 
@@ -99,9 +99,6 @@ interface Track {
   all: Point[];
   /** The same without stops at 0, which a `from: 'current'` base replaces. */
   tail: Point[];
-  /** The phase of each of `all`, and of a base at 0 followed by each of `tail`. */
-  ats: Float64Array;
-  tailAts: Float64Array;
   delay: number;
   lerp: ((a: never, b: never, u: number) => unknown) | undefined;
 }
@@ -133,13 +130,10 @@ function build<O>(
       });
     }
     all.sort((x, y) => x.at - y.at);
-    const tail = all.filter((pt) => pt.at !== 0);
     tracks.push({
       channel: channel as string,
       all,
-      tail,
-      ats: Float64Array.from(all, (pt) => pt.at),
-      tailAts: Float64Array.from([0, ...tail.map((pt) => pt.at)]),
+      tail: all.filter((pt) => pt.at !== 0),
       delay: opts.delayBy?.(channel) ?? 0,
       lerp: opts.lerpBy?.(channel) ?? (opts.kit?.[channel]?.lerp as Track['lerp']),
     });
@@ -171,7 +165,14 @@ function read(
   const last = pts[pts.length - 1] as Point | undefined;
   if (last === undefined || phase >= last.at) return last === undefined ? base : last.value;
 
-  const lo = locate(base === undefined ? track.ats : track.tailAts, phase);
+  // The first point at or past phase; the segment ends there.
+  let lo = 1;
+  let hi = n - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if ((pts[mid - o] as Point).at >= phase) hi = mid;
+    else lo = mid + 1;
+  }
   const b = pts[lo - o] as Point;
   const aAt = lo - 1 < o ? 0 : (pts[lo - 1 - o] as Point).at;
   const aValue = lo - 1 < o ? base : (pts[lo - 1 - o] as Point).value;
@@ -207,99 +208,6 @@ function read(
     return out;
   }
   return value;
-}
-
-/**
- * The first stop at or past `phase`, which ends the segment it falls in, for a phase strictly
- * between the first stop's and the last's.
- */
-function locate(ats: Float64Array, phase: number): number {
-  let lo = 1;
-  let hi = ats.length - 1;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if ((ats[mid] as number) >= phase) hi = mid;
-    else lo = mid + 1;
-  }
-  return lo;
-}
-
-/** A track's phase once its own delay is taken off, in a patch of `period` ms. */
-function shift(delay: number, phase: number, period: number): number {
-  return delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
-}
-
-/**
- * One track as numbers, `axes` to a stop with an absent axis read as `fill`, for a reader folding
- * a stock numeric channel without a delta: such a channel's `lerp` is `mix` on every axis.
- */
-export interface Flat {
-  track: Track;
-  scalar: boolean;
-  axes: number;
-  fill: number;
-  values: Float64Array;
-}
-
-const flats = new WeakMap<Track, Flat>();
-
-/**
- * A built patch's one track as numbers for a stock numeric channel of `axes` axes, a number or an
- * array, or null where a read of it is not that: a `lerp` of its own, no stops, or a stop of
- * another shape than the channel's.
- */
-export function flatOf(built: Built, scalar: boolean, axes: number, fill: number): Flat | null {
-  const track = built.tracks[0];
-  if (built.tracks.length !== 1 || track === undefined) return null;
-  const known = flats.get(track);
-  if (known !== undefined && known.scalar === scalar && known.axes === axes && known.fill === fill)
-    return known;
-  if (track.lerp !== undefined || track.all.length === 0) return null;
-  const values = new Float64Array(track.all.length * axes);
-  for (let p = 0; p < track.all.length; p++) {
-    const v = (track.all[p] as Point).value;
-    if (scalar) {
-      if (typeof v !== 'number') return null;
-      values[p] = v;
-      continue;
-    }
-    if (!Array.isArray(v) && !ArrayBuffer.isView(v)) return null;
-    const arr = v as ArrayLike<unknown>;
-    for (let a = 0; a < axes; a++) {
-      const x = arr[a] ?? fill;
-      if (typeof x !== 'number') return null;
-      values[p * axes + a] = x;
-    }
-  }
-  const flat = { track, scalar, axes, fill, values };
-  flats.set(track, flat);
-  return flat;
-}
-
-/** Reads a flat track at `phase` into `out`, as `read` reads it through the channel's `lerp`. */
-export function readFlat(f: Flat, phase: number, period: number, out: Float64Array): void {
-  const track = f.track;
-  const at = shift(track.delay, phase, period);
-  const ats = track.ats;
-  const n = ats.length;
-  const axes = f.axes;
-  const values = f.values;
-  let from = 0;
-  if (at <= (ats[0] as number)) from = 0;
-  else if (at >= (ats[n - 1] as number)) from = n - 1;
-  else {
-    const lo = locate(ats, at);
-    const aAt = ats[lo - 1] as number;
-    const u = (at - aAt) / ((ats[lo] as number) - aAt);
-    const ease = (track.all[lo] as Point).ease;
-    const eased = ease ? ease(u) : u;
-    const a0 = (lo - 1) * axes;
-    const b0 = lo * axes;
-    for (let a = 0; a < axes; a++)
-      out[a] = mix(values[a0 + a] as number, values[b0 + a] as number, eased);
-    return;
-  }
-  for (let a = 0; a < axes; a++) out[a] = values[from * axes + a] as number;
 }
 
 /** The array the last `read` interpolated into, which only its caller's record holds. */
@@ -344,7 +252,9 @@ export function readKeys(
   const period = built.period;
   for (let i = 0; i < built.tracks.length; i++) {
     const track = built.tracks[i] as Track;
-    const shifted = shift(track.delay, phase, period);
+    const delay = track.delay;
+    const shifted =
+      delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
     const perMs = slopes?.[track.channel];
     const into = scratch === undefined ? undefined : intos?.[i];
     lastRead.wrote = undefined;

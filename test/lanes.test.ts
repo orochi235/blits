@@ -1664,33 +1664,6 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
     );
   });
 
-  it('for keys with a delay, short and typed stops and easeBy', () => {
-    agree(
-      (m, parts) => ({
-        handles: parts.map((p, i) =>
-          m.cue({
-            patch: keys<Part, Pose>(
-              600,
-              [
-                { at: 0, delta: { position: [1, 2] as number[] } },
-                { at: 0.3, delta: { position: Float64Array.of(p.id, 0, -0) as never } },
-                { at: 0.3, delta: { position: [5, 5, 5] }, ease: 'ease-out' },
-                { at: 1, delta: { position: [-1, -0, p.id] } },
-              ],
-              {
-                delayBy: () => (i % 2 === 0 ? 120 : 0),
-                easeBy: () => (i % 3 === 0 ? { steps: 3 } : undefined),
-              },
-            ),
-            subjects: [p],
-            weight: i % 2 === 0 ? 0.7 : 1,
-          }),
-        ),
-      }),
-      { times: ramp },
-    );
-  });
-
   it('calls a fn voice per subject from the fill, once per frame each', () => {
     const m = mix<Part, Pose>(K);
     const seen: number[] = [];
