@@ -8,6 +8,14 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A crowd copies its rows' motion stretches as a fill begins, rather than in the loop that reads
+  every row. Once voices had faded, V8 spent that loop's inlining on the copy and stopped inlining
+  each row's ease, and every mix in the process stayed slower afterwards. With 10k tween voices of
+  one subject each read by `pull`, a frame takes 0.24 ms on teitou after every voice has been
+  replaced once, from 0.31, and 0.40 ms with one replaced each frame (`churn^`), from 0.44.
+- A crowd compacts its rows once a quarter of them are empty, rather than half: one replacing a
+  voice a frame carried as many empty rows as live ones, all walked every fill. The same 10k voices
+  replaced once each take 0.31 ms a frame on teitou, from 0.33 (`bench/scatter.mjs replaced`).
 - A voice weighted by a signal on a lane is weighed under the fade its lane already worked out,
   where the general path's weighing worked the fade out again for every subject; a laned `fn` call
   in a mix keeping no history no longer asks the mix for its horizon. On teitou three signal voices
