@@ -83,7 +83,7 @@ const ways = [
  * building it afresh each time so nothing is shared. At every time it reads the parts `probe`
  * picks twice: into a fresh pose, and into a reused out object or, on a `pull` run, through one
  * `pull` of them all ahead of the fresh probes. Every channel, every handle's `weightOf` for every
- * part, probed or not, and `atRest` must match the reference.
+ * part, probed or not, `atRest` and `inert` must match the reference.
  */
 function agree(
   play: Play,
@@ -116,7 +116,7 @@ function agree(
         rest.push(run.m.atRest(part));
       });
       for (const part of run.parts) for (const h of run.handles) weights.push(h.weightOf(part));
-      return { poses, weights, rest };
+      return { poses, weights, rest, inert: run.m.inert };
     });
     const [ref, ...others] = seen as [(typeof seen)[0], ...(typeof seen)[0][]];
     others.forEach((other, w) => {
@@ -126,6 +126,7 @@ function agree(
       });
       expect(other.weights, `t=${t} ${way} weightOf`).toEqual(ref.weights);
       expect(other.rest, `t=${t} ${way} atRest`).toEqual(ref.rest);
+      expect(other.inert, `t=${t} ${way} inert`).toBe(ref.inert);
     });
   }
 }

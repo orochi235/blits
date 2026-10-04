@@ -512,6 +512,9 @@ interface Mix&lt;I, O&gt; {
      `blend` make it true again at once; the mix never calls back into the host, so restarting the loop is
      the caller's to do on the same path that cued. */</span>
   readonly live: boolean;
+  <span class="cm">/** Another frame would change no pose: every voice is done, held at a plain weight, or a motion whose every
+     subject has landed. A host may sleep its loop while this is true and `live` still is. */</span>
+  readonly inert: boolean;
   <span class="cm">/** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */</span>
   mute(opts?: { over?: number }): void;
   <span class="cm">/** Forgets per-subject state, a motion patch's included. Call when a subject is retired, or let the WeakMap do it. */</span>

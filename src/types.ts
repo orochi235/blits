@@ -565,6 +565,12 @@ export interface Mix<I, O> {
 
   /** Anything still contributing, fading, or pending. */
   readonly live: boolean;
+  /**
+   * Another frame would change no pose, so a host's frame loop may sleep: every voice is done, held
+   * at a plain weight, or a motion whose every subject has landed on its target. A change made since
+   * the last sync, a retarget included, makes it false until the next.
+   */
+  readonly inert: boolean;
   /** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */
   mute(opts?: { over?: number }): void;
   /** Forgets per-subject state, a motion patch's for the subject included. */

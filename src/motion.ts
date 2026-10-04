@@ -72,10 +72,14 @@ const solved = { y: 0, dy: 0 };
 /** Where every patch's `sample` leaves a value on its way to the mix; none outlives its call. */
 let shared = { xs: new Float64Array(4), vs: new Float64Array(4) };
 
-/** A subject's flags: its value is a number; it has changes pending; it has older stretches. */
+/**
+ * A subject's flags: its value is a number; it has changes pending; it has older stretches; the
+ * stretch it is playing was found landed, which holds until another replaces it.
+ */
 const SCALAR = 1;
 const PENDING = 2;
 const OLDER = 4;
+const LANDED = 8;
 
 /**
  * The terms of a stretch that depend only on how long since its release, the same on every axis, so
@@ -381,6 +385,32 @@ export class Motions<I> {
   }
 
   /**
+   * Whether every subject has landed on its target at its voice time at the latest frame, as a
+   * sample there would find; one with a change waiting has not. Commits nothing.
+   */
+  landed(): boolean {
+    const runs = this.runs;
+    const n = this.n;
+    for (let s = 0; s < this.numbers.size; s++) {
+      const b = this.base(s);
+      const flags = runs[b + 1] as number;
+      if ((flags & (LANDED | PENDING)) === LANDED) continue;
+      const subject = this.numbers.subject(s);
+      if (subject === absent) continue;
+      if (flags & PENDING) return false;
+      const at = runs[b] as number;
+      const t = this.frame(subject);
+      if (!(t >= at)) return false;
+      const x = b + 3;
+      const ms = runs[b + 2] as number;
+      if (!this.evaluate(at, ms, runs, x, runs, x + n, runs, x + 2 * n, t, this.xs, this.vs))
+        return false;
+      runs[b + 1] = flags | LANDED;
+    }
+    return true;
+  }
+
+  /**
    * Whether a live `sample` at `t` would leave the subject's state as it is: nothing to stamp or
    * commit by then, and nothing older than `reading.horizon` to let go of.
    */
@@ -501,6 +531,7 @@ export class Motions<I> {
     const b = this.base(s);
     this.touched(s);
     this.runs[b] = seg.at;
+    this.runs[b + 1] = (this.runs[b + 1] as number) & ~LANDED;
     this.runs[b + 2] = seg.ms;
     for (let i = 0; i < n; i++) {
       this.runs[b + 3 + i] = seg.x0[i] as number;
@@ -628,8 +659,8 @@ export class Motions<I> {
     t: number,
     xo: Float64Array,
     vo: Float64Array,
-  ): void {
-    closed(this.runs, this.shape.ease, this.n, at, ms, x0, x, v0, v, to, g, t, xo, vo);
+  ): boolean {
+    return closed(this.runs, this.shape.ease, this.n, at, ms, x0, x, v0, v, to, g, t, xo, vo);
   }
 }
 
@@ -655,11 +686,9 @@ export function closed(
   t: number,
   xo: Float64Array,
   vo: Float64Array,
-): void {
-  if (law[0] === EASED) {
-    eased(ease as Curve, n, Math.max(0, t - at) / ms, ms, x0, x, to, g, xo, vo);
-    return;
-  }
+): boolean {
+  if (law[0] === EASED)
+    return eased(ease as Curve, n, Math.max(0, t - at) / ms, ms, x0, x, to, g, xo, vo);
   const dt = Math.max(0, t - at) / 1000;
   const settle = law[1] as number;
   let still = settle > 0;
@@ -676,6 +705,7 @@ export function closed(
       xo[i] = to[g + i] as number;
       vo[i] = 0;
     }
+  return still;
 }
 
 /** A tween's stretch, `dt` seconds after release, kept out of `closed` so a spring's stays small. */
@@ -690,7 +720,7 @@ function eased(
   g: number,
   xo: Float64Array,
   vo: Float64Array,
-): void {
+): boolean {
   // Subjects released together share `u`, so a frame reads a bezier once, not once each.
   if (u !== memo.u || ease !== memo.ease) {
     memo.u = u;
@@ -710,6 +740,7 @@ function eased(
     xo[i] = left === 0 ? goal : goal + gap * left;
     vo[i] = -gap * rate;
   }
+  return left === 0;
 }
 
 const states = new WeakMap<object, Motions<unknown>>();

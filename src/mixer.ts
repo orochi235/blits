@@ -1,7 +1,7 @@
 import { clampWeight, envelope, passAt, passesOf, phaseAt } from './clock.js';
 import { type Curve, curve } from './easing.js';
 import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
-import { motionOf, noFrame, noRevive } from './motion.js';
+import { type Motions, motionOf, noFrame, noRevive } from './motion.js';
 import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
@@ -304,6 +304,8 @@ export class Voice<I, O> {
   readonly passes: number;
   /** Voice ms its passes last, Infinity for an aperiodic patch or a loop for good. */
   readonly span: number;
+  /** The state behind a motion patch, undefined for any other. */
+  readonly motion: Motions<I> | undefined;
   /** Its `hold`, for a patch it applies to: motion holds its target already. */
   readonly holdsBefore: boolean;
   readonly holdsAfter: boolean;
@@ -363,7 +365,8 @@ export class Voice<I, O> {
       patch.period > 0 && Number.isFinite(this.passes)
         ? patch.period * this.passes
         : Number.POSITIVE_INFINITY;
-    const holds = motionOf(patch) === undefined ? spec.hold : undefined;
+    this.motion = motionOf<I>(patch);
+    const holds = this.motion === undefined ? spec.hold : undefined;
     this.holdsBefore = holds === 'before' || holds === 'both';
     this.holdsAfter = holds === 'after' || holds === 'both';
     this.setting = {
@@ -538,6 +541,8 @@ class Mixer<I, O> implements Mix<I, O> {
   private relinks = 0;
   /** Read once a sync, so a `reduce` function is not called per voice per subject. */
   private reducedNow = false;
+  /** Something was changed since the last sync, so the next frame may differ from this one. */
+  private stirred = false;
   /**
    * Per subject, the first record of the chain through every live voice that reaches it, or a stub
    * where none does. Relinked when `version` moves, which is whenever the list or a voice's pending
@@ -658,7 +663,7 @@ class Mixer<I, O> implements Mix<I, O> {
       voice.opened = this.now;
     }
     voice.placing = anchored;
-    const motion = motionOf<I>(patch);
+    const motion = voice.motion;
     if (motion !== undefined) {
       voice.frame = Mixer.frameHook(new WeakRef(this), new WeakRef(voice));
       motion.frame = voice.frame;
@@ -668,6 +673,7 @@ class Mixer<I, O> implements Mix<I, O> {
     this.voices.push(voice);
     this.index(voice);
     this.version++;
+    this.stirred = true;
     if (spec.locus !== undefined) this.loci++;
     if (spec.from === 'current') this.wantsPose = true;
     if (anchor) {
@@ -775,6 +781,7 @@ class Mixer<I, O> implements Mix<I, O> {
       }
       if (!this.projecting) this.schedule(voice);
     }
+    this.stirred = false;
     if (this.retired === 0) {
       this.forget(now);
       return;
@@ -1169,6 +1176,22 @@ class Mixer<I, O> implements Mix<I, O> {
     return this.voices.some((v) => v.state !== 'done');
   }
 
+  get inert(): boolean {
+    return !this.stirred && this.voices.every((v) => this.still(v, this.now));
+  }
+
+  /** Whether a voice will change no pose from `now` on, short of a change made to it. */
+  private still(voice: Voice<I, O>, now: number): boolean {
+    if (voice.state === 'done') return true;
+    if (voice.state !== 'held' && voice.state !== 'live') return false;
+    if (typeof voice.spec.weight === 'function' || voice.parts !== null) return false;
+    const fadeIn = this.reducedNow ? 0 : (voice.fade.in ?? 0);
+    if (fadeIn > 0 && now - this.sinceOf(voice, voice.latest) < fadeIn) return false;
+    if (voice.state === 'held') return true;
+    const motion = voice.motion;
+    return motion !== undefined && voice.elapsedAt(now) >= voice.latest && motion.landed();
+  }
+
   mute(opts?: { over?: number }): void {
     for (const voice of this.voices) this.beginFade(voice, { over: opts?.over });
   }
@@ -1183,9 +1206,10 @@ class Mixer<I, O> implements Mix<I, O> {
     if (head !== undefined && head.slot >= 0 && this.lanes !== null) this.lanes.release(head.slot);
     this.pose.delete(subject);
     this.chains.delete(subject);
+    this.stirred = true;
     for (const voice of [...this.voices, ...this.gone]) {
       voice.subjects.delete(subject);
-      motionOf<I>(voice.patch)?.release(subject);
+      voice.motion?.release(subject);
       voice.parts?.delete(subject);
       voice.parted?.delete(subject);
     }
@@ -1273,8 +1297,11 @@ class Mixer<I, O> implements Mix<I, O> {
     voice: WeakRef<Voice<I, O>>,
   ): (subject: I) => void {
     return (subject) => {
+      const m = mix.deref();
+      if (m === undefined) return;
+      m.stirred = true;
       const v = voice.deref();
-      if (v !== undefined) mix.deref()?.unpart(v, subject);
+      if (v !== undefined) m.unpart(v, subject);
     };
   }
 
@@ -1508,6 +1535,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** Records a change to a voice's controls under `history`, and lets go of what it no longer reaches. */
   private noted(voice: Voice<I, O>): void {
+    this.stirred = true;
     this.schedule(voice);
     const log = voice.log;
     if (log === null) return;
@@ -1778,6 +1806,7 @@ class Mixer<I, O> implements Mix<I, O> {
   /** Starts one subject's ramp out of a voice, or takes it out at once for a ramp of 0. */
   private fadeSubject(voice: Voice<I, O>, subject: I, over?: number): void {
     if (voice.state === 'done' || voice.parted?.has(subject) || voice.parts?.has(subject)) return;
+    this.stirred = true;
     const ms = this.reduced ? 0 : (over ?? voice.fade.out ?? 0);
     const at = Number.isNaN(this.now) ? voice.start : this.now;
     if (ms === 0) {
@@ -1814,7 +1843,7 @@ class Mixer<I, O> implements Mix<I, O> {
     voice.parted ??= new Map();
     voice.parted.set(subject, at);
     this.forgetIn(voice, subject);
-    const motion = motionOf<I>(voice.patch);
+    const motion = voice.motion;
     if (motion !== undefined && motion.frame === voice.frame) motion.release(subject);
   }
 
@@ -1870,7 +1899,7 @@ class Mixer<I, O> implements Mix<I, O> {
   /** Removes a voice, recording that it left at `at`, default now. */
   private retire(voice: Voice<I, O>, at?: number): void {
     this.lanes?.invalidate();
-    const motion = motionOf<I>(voice.patch);
+    const motion = voice.motion;
     if (motion !== undefined && motion.frame === voice.frame) motion.frame = noFrame;
     if (motion !== undefined && motion.revive === voice.revive) motion.revive = noRevive;
     voice.frame = null;
