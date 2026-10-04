@@ -58,7 +58,9 @@ function specOf(
     faults.push(r.faults);
     return r.fn;
   };
-  const made = patchOf(v.patch, fn);
+  const made = patchOf(v.patch, fn, (field, error) =>
+    errors.push({ voice: v.id, field, error, line: null }),
+  );
   const stagger = v.stagger ? fn<(s: Subject) => number>('stagger', v.stagger, 0) : undefined;
   const target = v.target ? fn<(s: Subject) => boolean>('target', v.target, false) : undefined;
   const weight = isExpr(v.weight) ? fn<Signal<Subject>>('weight', v.weight, 0) : v.weight;
@@ -89,20 +91,31 @@ type Fn = <F extends (...a: never[]) => unknown>(
   expr: Expr,
   fallback: ReturnType<F>,
 ) => F | undefined;
+type Fail = (field: string, error: string) => void;
+
+const PER_SUBJECT = new Set(['to', 'from', 'velocity']);
+const REQUIRED = { spring: ['to'], glide: ['from'], tween: ['from', 'to', 'ms'] } as const;
 
 /** What a motion option gives a subject its expression throws on: a value the channel can take. */
 function fallbackOf(channel: ChannelName, key: string): number | number[] {
   const rest = KIT[channel].rest as number | number[] | undefined;
   const zero = Array.isArray(rest) ? rest.map(() => 0) : 0;
   if (key === 'to' || key === 'from') return rest ?? zero;
-  // A tween refuses a non-positive ms; 325 is glide's own default.
-  if (key === 'ms') return 325;
+  if (key === 'ms') return FRAME;
   return key === 'velocity' ? zero : 0;
 }
 
-function patchOf(p: PatchSource, fn: Fn): Patch<Subject, Pose, unknown> | undefined {
-  if (p.kind === 'keys')
-    return keys<Subject, Pose>(p.period, p.stops, p.ease ? { ease: p.ease } : {});
+const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
+
+function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Pose, unknown> | undefined {
+  if (p.kind === 'keys') {
+    try {
+      return keys<Subject, Pose>(p.period, p.stops, p.ease ? { ease: p.ease } : {});
+    } catch (err) {
+      fail('stops', messageOf(err));
+      return undefined;
+    }
+  }
   if (p.kind === 'fn') {
     const at = fn<(phase: number, s: Subject, set: never) => Partial<Pose>>(
       'at',
@@ -116,28 +129,50 @@ function patchOf(p: PatchSource, fn: Fn): Patch<Subject, Pose, unknown> | undefi
       ? fn<(st: unknown, dt: number) => void>('step', { code: p.step }, undefined)
       : undefined;
     if (!at || (p.state && !state) || (p.step && !step)) return undefined;
-    return patch<Subject, Pose, unknown>(p.period, at as never, {
-      writes: p.writes,
-      ...(state ? { state } : {}),
-      ...(step ? { step: step as never } : {}),
-    }) as Patch<Subject, Pose, unknown>;
-  }
-  const opts: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(p.opts)) {
-    if (!isExpr(v)) opts[k] = v;
-    else {
-      const f = fn<(s: Subject) => unknown>(`opts.${k}`, v, fallbackOf(p.channel, k));
-      if (!f) return undefined;
-      opts[k] = f;
+    try {
+      return patch<Subject, Pose, unknown>(p.period, at as never, {
+        writes: p.writes,
+        ...(state ? { state } : {}),
+        ...(step ? { step: step as never } : {}),
+      }) as Patch<Subject, Pose, unknown>;
+    } catch (err) {
+      fail('writes', messageOf(err));
+      return undefined;
     }
   }
+  let ok = true;
+  const bad = (field: string, error: string) => {
+    fail(field, error);
+    ok = false;
+  };
+  for (const k of REQUIRED[p.kind]) if (p.opts[k] === undefined) bad(`opts.${k}`, 'is required');
+  const opts: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(p.opts)) {
+    if (!isExpr(v)) {
+      if (p.kind === 'tween' && k === 'ms' && !((v as number) > 0))
+        bad('opts.ms', 'takes a positive number');
+      opts[k] = v;
+    } else if (!PER_SUBJECT.has(k) && !(p.kind === 'tween' && k === 'ms')) {
+      bad(`opts.${k}`, 'takes a number');
+    } else {
+      const f = fn<(s: Subject) => unknown>(`opts.${k}`, v, fallbackOf(p.channel, k));
+      if (f) opts[k] = f;
+      else ok = false;
+    }
+  }
+  if (!ok) return undefined;
   if (p.kind === 'tween' && p.ease) opts.ease = p.ease;
   const maker = p.kind === 'spring' ? spring : p.kind === 'glide' ? glide : tween;
-  return maker<Subject, Pose, number | number[]>(p.channel, opts as never) as unknown as Patch<
-    Subject,
-    Pose,
-    unknown
-  >;
+  try {
+    return maker<Subject, Pose, number | number[]>(p.channel, opts as never) as unknown as Patch<
+      Subject,
+      Pose,
+      unknown
+    >;
+  } catch (err) {
+    fail('opts', messageOf(err));
+    return undefined;
+  }
 }
 
 export function compile(
@@ -170,7 +205,7 @@ export function compile(
           errors.push({
             voice: v.id,
             field: 'cue',
-            error: err instanceof Error ? err.message : String(err),
+            error: messageOf(err),
             line: null,
           });
         continue;

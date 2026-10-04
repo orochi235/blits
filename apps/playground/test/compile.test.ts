@@ -207,6 +207,98 @@ describe('compile', () => {
     expect(built.faults.get('s')?.count).toBeGreaterThan(0);
   });
 
+  it('a motion patch blits refuses to build is a field error, and compile returns', () => {
+    const ok = voice({
+      id: 'ok',
+      patch: { kind: 'keys', period: 100, stops: [{ at: 0, delta: { glow: 1 } }] },
+    });
+    const zero = voice({
+      id: 'zero',
+      patch: { kind: 'tween', channel: 'scale', opts: { from: 1, to: 2, ms: 0 } },
+    });
+    const aimless = voice({
+      id: 'aimless',
+      patch: { kind: 'spring', channel: 'offset', opts: { from: [0, 0] } },
+    });
+    const built = compile(comp([zero, aimless, ok]), subjects);
+    expect(built.errors.map((e) => [e.voice, e.field])).toEqual([
+      ['zero', 'opts.ms'],
+      ['aimless', 'opts.to'],
+    ]);
+    built.mix.sync(0);
+    expect(built.mix.probe(subjects[0] as never).glow).toBe(1);
+    expect([...built.handles.keys()]).toEqual(['ok']);
+  });
+
+  it('an expression on an option that takes a number is a field error, and every one is named', () => {
+    const v = voice({
+      id: 'g',
+      patch: {
+        kind: 'glide',
+        channel: 'turn',
+        opts: { from: { code: '(s) =>' }, ms: { code: '(s) => 300' }, settle: { code: '() => 0' } },
+      },
+    });
+    const built = compile(comp([v]), subjects);
+    expect(built.errors.map((e) => [e.field, e.error === 'takes a number'])).toEqual([
+      ['opts.from', false],
+      ['opts.ms', true],
+      ['opts.settle', true],
+    ]);
+    expect(built.handles.size).toBe(0);
+  });
+
+  it('a tween whose ms throws for a subject snaps that subject to the fallback target', () => {
+    const built = compile(
+      comp([
+        voice({
+          id: 'w',
+          patch: {
+            kind: 'tween',
+            channel: 'scale',
+            opts: { from: 2, to: 3, ms: { code: '(s) => (s.col === 1 ? s.nope.x : 500)' } },
+          },
+        }),
+      ]),
+      subjects,
+    );
+    const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+    hand.cue({
+      patch: tween<(typeof subjects)[0], Pose, number>('scale', {
+        from: 2,
+        to: 3,
+        ms: (s) => (s.col === 1 ? FRAME : 500),
+      }),
+    });
+    expect(built.errors).toEqual([]);
+    same(built.mix, hand);
+    expect(built.mix.probe(subjects.find((s) => s.col === 1) as never).scale).toBe(3);
+  });
+
+  it('voices fold in the order the composition lists them', () => {
+    const layer = (id: string, turn: number, color: number) =>
+      voice({
+        id,
+        patch: { kind: 'keys', period: 100, stops: [{ at: 0, delta: { turn, color } }] },
+      });
+    const order = [layer('a', 0.1, 0xff0000), layer('b', 0.2, 0x00ff00), layer('c', 0.3, 0x0000ff)];
+    for (const voices of [order, [...order].reverse()]) {
+      const built = compile(comp(voices), subjects);
+      const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+      for (const v of voices)
+        if (v.patch.kind === 'keys') hand.cue({ patch: keys(100, v.patch.stops) });
+      same(built.mix, hand, 100);
+    }
+    const forward = compile(comp(order), subjects).mix;
+    const back = compile(comp([...order].reverse()), subjects).mix;
+    forward.sync(0);
+    back.sync(0);
+    const s0 = subjects[0] as never;
+    expect(forward.probe(s0).turn).not.toBe(back.probe(s0).turn);
+    expect(forward.probe(s0).color).toBe(0x0000ff);
+    expect(back.probe(s0).color).toBe(0xff0000);
+  });
+
   it('skips a voice with a bad expression, names the field, and keeps the rest', () => {
     const ok = voice({
       id: 'ok',
