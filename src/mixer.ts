@@ -32,6 +32,53 @@ import type {
 // Every runtime blits targets has it; the package's lib setting names no environment.
 declare function structuredClone<T>(value: T): T;
 
+const slow: unique symbol = Symbol('slow');
+
+/**
+ * `structuredClone(v)`, made directly for what records mostly hold — numbers, strings, and plain
+ * objects and arrays of them two deep — with what `structuredClone` would give; anything else, or
+ * anything it would refuse, goes to it. A read back copies a record per voice and subject.
+ */
+export function clone<T>(v: T): T {
+  const quick = copied(v, 2);
+  met.length = 0;
+  return quick === slow ? structuredClone(v) : (quick as T);
+}
+
+/** The objects one `clone` has met: one met twice is shared, which `structuredClone` keeps. */
+const met: object[] = [];
+
+function copied(v: unknown, depth: number): unknown {
+  if (typeof v === 'symbol' || typeof v === 'function') return slow;
+  if (typeof v !== 'object' || v === null) return v;
+  if (depth === 0 || met.includes(v)) return slow;
+  met.push(v);
+  if (Array.isArray(v)) {
+    if (Object.getPrototypeOf(v) !== Array.prototype) return slow;
+    const out: unknown[] = [];
+    for (let i = 0; i < v.length; i++) {
+      if (!(i in v)) return slow;
+      const x = copied(v[i], depth - 1);
+      if (x === slow) return slow;
+      out.push(x);
+    }
+    // A property besides the elements, which `structuredClone` keeps.
+    let keys = 0;
+    for (const _ in v) if (++keys > v.length) return slow;
+    return out;
+  }
+  const proto = Object.getPrototypeOf(v);
+  if (proto !== Object.prototype && proto !== null) return slow;
+  const out: Record<string, unknown> = {};
+  for (const k in v) {
+    if (k === '__proto__') return slow;
+    const x = copied((v as Record<string, unknown>)[k], depth - 1);
+    if (x === slow) return slow;
+    out[k] = x;
+  }
+  return out;
+}
+
 type Key<O> = keyof O & string;
 
 const none: readonly string[] = Object.freeze([]);
@@ -1730,25 +1777,21 @@ class Mixer<I, O> implements Mix<I, O> {
     let kept: Map<object, unknown> | null = null;
     if (h.kept !== null) {
       kept = new Map();
-      for (const [owner, value] of h.kept) kept.set(owner, structuredClone(value));
+      for (const [owner, value] of h.kept) kept.set(owner, clone(value));
     }
     const patch = voice.patch;
     return {
       ...h,
       bands: h.bands === null ? null : h.bands.slice(),
       state:
-        h.state === undefined
-          ? undefined
-          : patch.clone
-            ? patch.clone(h.state)
-            : structuredClone(h.state),
+        h.state === undefined ? undefined : patch.clone ? patch.clone(h.state) : clone(h.state),
       kept,
       probed: Number.NaN,
       delta: null,
       phase: 0,
       seeks: 0,
-      base: h.base === undefined ? undefined : structuredClone(h.base),
-      slope: h.slope === undefined ? undefined : structuredClone(h.slope),
+      base: h.base === undefined ? undefined : clone(h.base),
+      slope: h.slope === undefined ? undefined : clone(h.slope),
       snaps: undefined,
       inputs: undefined,
       next: null,
@@ -1820,8 +1863,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const host = this.opts.host as Record<string, unknown>;
     const fields: Record<string, unknown> = {};
     for (const v of this.voices)
-      for (const f of v.patch.reads ?? none)
-        if (!(f in fields)) fields[f] = structuredClone(host[f]);
+      for (const f of v.patch.reads ?? none) if (!(f in fields)) fields[f] = clone(host[f]);
     if (prev !== undefined && same(prev.fields, fields)) return;
     log.push({ at: now, fields });
     const reach = now - (this.opts.history as { ms: number }).ms;
