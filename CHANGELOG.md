@@ -9,6 +9,8 @@ version and everything else the patch. Each release lists its changes as **Break
 ### Breaking
 
 - A tween's `MotionSpec` reads `ms: undefined` where its `ms` is a function of the subject.
+- `Handle.state` can read `'held'`. Only a voice cued with `hold` reaches it, so nothing changes at
+  run time for one cued without, but a `switch` over every state no longer covers them all.
 
 ### Added
 
@@ -17,6 +19,12 @@ version and everything else the patch. Each release lists its changes as **Break
   patch's state for it) and no longer reaches it; a motion patch's `to` brings it back, met afresh.
   `mix.drop(subject)` clears it too. It keeps the voice on its lane.
 - `tween`'s `ms` may be a function of the subject, asked each time one of its stretches starts.
+- `hold: 'before' | 'after' | 'both'` on a voice. Before, a subject shows the voice's first frame
+  while the voice is pending and while the subject waits out its `stagger`; after, a finite loop
+  shows its last frame once its passes are done and stays, `held`, until faded. `fade.in` counts
+  from the first frame shown. What WAAPI calls `fill`.
+- `handle.played` resolves true when a finite loop's last pass ends, false if the voice leaves
+  first. It never rejects.
 
 ### Fixed
 
