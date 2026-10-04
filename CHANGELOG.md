@@ -14,6 +14,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- `mix.inert` is true when another frame would change no pose, so a host's loop may sleep while
+  `live` is still true: every voice is done, held after its passes at a plain weight, or a motion
+  whose every subject has landed on its target. A retarget, a fade or a cue makes it false again.
 - `handle.fade({ subject, over })` fades one subject out of a voice, which plays on for the rest.
   Once the ramp ends the voice forgets the subject (its record, its lane position and a motion
   patch's state for it) and no longer reaches it; a motion patch's `to` brings it back, met afresh.
