@@ -13,7 +13,8 @@ and delete this file once it is empty.
 
 What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 
-- `atRest` runs a second fold, though on reused deltas.
+- `atRest` runs a second fold, though on reused deltas, wherever a subject has a voice off lanes;
+  one whose every voice is laned reads the lanes' values instead (since 2026-10-04).
 - `probe` with no `out` stores a freshly allocated pose per subject per frame. weasel measured this
   pattern: a new pose object per node per frame took major GC from 57 ms to 549 ms over 10 s
   (`docs/superpowers/specs/2026-08-24-frame-loop-decoupling-design.md` in weasel).
