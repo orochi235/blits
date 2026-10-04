@@ -39,6 +39,9 @@ version and everything else the patch. Each release lists its changes as **Break
   every voice again: a frame stopping one of 10k such voices and cueing another fell from about
   9 ms to 0.6 by `pull` on teitou. `mix.drop` looks only at the voices over every subject and
   those naming the one dropped, where it walked every voice.
+- `mix.drop` frees a subject from a voice faded off it with `handle.fade({ subject })`, and a mix
+  whose last ramp of that kind is dropped can read `inert` again; it also frees the subject from a
+  motion patch that another voice plays on after the voice naming the subject left.
 - `pull` reads a list it read before in the same order from the lanes in one run, checking the
   frame once rather than per subject: a tween voice over 10k subjects read by `pull` takes about
   0.83 of the time it did on teitou.
