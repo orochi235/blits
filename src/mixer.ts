@@ -1508,12 +1508,12 @@ class Mixer<I, O> implements Mix<I, O> {
         mix.sending.voice = voice;
         mix.sending.subject = subject;
       },
-      weigh: (voice, subject, held, elapsed, pass) => {
+      signal: (voice, subject, held, elapsed, pass) => {
         mix.prime(voice, held, mix.now, elapsed, pass);
         const kept = reading.kept;
-        const w = mix.weigh(voice, subject, mix.now, held);
+        const base = mix.base(voice, subject, mix.now, held);
         if (reading.kept !== kept && !voice.keeping) mix.stateful(voice);
-        return w;
+        return base;
       },
       horizon: (voice, delay) => {
         reading.horizon = mix.horizonFor(voice, delay, mix.now);
@@ -2309,17 +2309,21 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** The weight a voice gives a subject this frame, with the setting already filled in. */
   private weigh(voice: Voice<I, O>, subject: I, now: number, held: Subject<unknown>): number {
+    const base = this.base(voice, subject, now, held);
+    const fade = this.envelope(voice, now, held.shown);
+    return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
+  }
+
+  /** A voice's weight for a subject before its fade and ramp: its signal's, or its own number. */
+  private base(voice: Voice<I, O>, subject: I, now: number, held: Subject<unknown>): number {
     this.sending.voice = voice;
     this.sending.subject = subject;
     const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
-    let base = voice.weight;
-    if (signal) {
-      const was = held.replay && last(held.replay, now, true);
-      base = was ? was.value : signal(subject, voice.setting as Setting);
-      if (signal.input && !was) this.record(held, base);
-    }
-    const fade = this.envelope(voice, now, held.shown);
-    return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
+    if (signal === null) return voice.weight;
+    const was = held.replay && last(held.replay, now, true);
+    const base = was ? was.value : signal(subject, voice.setting as Setting);
+    if (signal.input && !was) this.record(held, base);
+    return base;
   }
 
   /**
