@@ -352,12 +352,10 @@ const H_WEIGHT = 4;
 const H_SEEKS = 5;
 const H_EPOCH = 6;
 const H_ID = 7;
-/** The patch's law, `HEAD` numbers. */
-const H_LAW = 8;
-const H_AT = 13;
-const H_SECS = 14;
+const H_AT = 8;
+const H_SECS = 9;
 /** `x0`, `v0` and `to`, `axes` numbers each. */
-const H_X0 = 15;
+const H_X0 = 10;
 
 /** The voice is playing: live, held or fading. */
 const F_PLAYING = 1;
@@ -394,6 +392,8 @@ class Crowd<I, O> implements Positions<I, O> {
   voices: Voice<I, O>[] = [];
   motions: Motions<I>[] = [];
   eases: (Curve | undefined)[] = [];
+  /** Each row's patch law, one array shared by every row whose law is the same. */
+  laws: Float64Array[] = [];
   touches: ((s: number) => void)[] = [];
   readonly rowOf = new Map<number, number>();
   idle = false;
@@ -478,6 +478,7 @@ export class Lanes<I, O> {
   /** The crowds of single-subject motion voices, one per channel, and which holds each voice. */
   private crowds: Crowd<I, O>[] = [];
   private readonly crowdOf = new Map<number, Crowd<I, O>>();
+  private readonly lawsByKey = new Map<string, Float64Array>();
   private laned: Laned[] = [];
   /** By kit slot, the laned channel there. */
   private bySlot: (Laned | undefined)[] = [];
@@ -981,6 +982,7 @@ export class Lanes<I, O> {
       v.laned = true;
     }
     this.crowds = crowds;
+    if (crowds.length === 0) this.lawsByKey.clear();
     was.clear();
     for (const [id, c] of next) was.set(id, c);
   }
@@ -995,6 +997,7 @@ export class Lanes<I, O> {
     to.voices[q] = from.voices[p] as Voice<I, O>;
     to.motions[q] = from.motions[p] as Motions<I>;
     to.eases[q] = from.eases[p];
+    to.laws[q] = from.laws[p] as Float64Array;
     to.touches[q] = from.touches[p] as (s: number) => void;
     const odd = from.odd?.get(p);
     if (odd !== undefined) {
@@ -1009,7 +1012,7 @@ export class Lanes<I, O> {
     c.hot.fill(0, h, h + c.stride);
     c.hot[h + H_FLAGS] = F_VOICE | F_STALE;
     c.hot[h + H_ID] = v.id;
-    run.lawInto(c.hot, h + H_LAW);
+    c.laws[p] = this.lawOf(run);
     c.list[p] = -1;
     const o = p * STRIDE;
     c.data.fill(0, o, o + STRIDE);
@@ -1024,6 +1027,16 @@ export class Lanes<I, O> {
     const touch = () => this.touchedCrowd(id);
     run.touched = touch;
     c.touches[p] = touch;
+  }
+
+  /** A patch's law, as the one array every crowd row with the same law shares. */
+  private lawOf(run: Motions<I>): Float64Array {
+    const law = run.law();
+    const key = law.join(' ');
+    const known = this.lawsByKey.get(key);
+    if (known !== undefined) return known;
+    this.lawsByKey.set(key, law);
+    return law;
   }
 
   /** A crowd voice's patch changed a stretch: its copy is read again at the next fill. */
@@ -1406,8 +1419,7 @@ export class Lanes<I, O> {
         continue;
       }
       closed(
-        hot,
-        h + H_LAW,
+        c.laws[p] as Float64Array,
         c.eases[p],
         n,
         hot[h + H_AT] as number,

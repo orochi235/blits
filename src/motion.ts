@@ -94,29 +94,29 @@ let slope = false;
 const memo = { dt: Number.NaN, ease: undefined as Curve | undefined, secs: 0, left: 0 };
 
 /** `t` seconds after release, the terms every axis shares, into `timed`. */
-function prepare(law: Float64Array, lo: number, t: number): void {
-  switch (law[lo + 0]) {
+function prepare(law: Float64Array, t: number): void {
+  switch (law[0]) {
     case UNDER: {
-      const zeta = law[lo + 2] as number;
-      const w0 = law[lo + 3] as number;
-      const wd = law[lo + 4] as number;
+      const zeta = law[2] as number;
+      const w0 = law[3] as number;
+      const wd = law[4] as number;
       timed.e = Math.exp(-zeta * w0 * t);
       timed.cos = Math.cos(wd * t);
       timed.sin = Math.sin(wd * t);
       return;
     }
     case CRITICAL: {
-      const w0 = law[lo + 3] as number;
+      const w0 = law[3] as number;
       timed.e = Math.exp(-w0 * t);
       return;
     }
     case OVER: {
-      timed.e = Math.exp((law[lo + 2] as number) * t);
-      timed.e2 = Math.exp((law[lo + 3] as number) * t);
+      timed.e = Math.exp((law[2] as number) * t);
+      timed.e2 = Math.exp((law[3] as number) * t);
       return;
     }
     default:
-      timed.e = Math.exp(-t / (law[lo + 2] as number));
+      timed.e = Math.exp(-t / (law[2] as number));
   }
 }
 
@@ -124,12 +124,12 @@ function prepare(law: Float64Array, lo: number, t: number): void {
  * One axis, `t` seconds after release, `y0` from where it heads and moving at `v0`, into `solved`,
  * with `timed` prepared for `t`.
  */
-function solve(law: Float64Array, lo: number, y0: number, v0: number, t: number): void {
-  switch (law[lo + 0]) {
+function solve(law: Float64Array, y0: number, v0: number, t: number): void {
+  switch (law[0]) {
     case UNDER: {
-      const zeta = law[lo + 2] as number;
-      const w0 = law[lo + 3] as number;
-      const wd = law[lo + 4] as number;
+      const zeta = law[2] as number;
+      const w0 = law[3] as number;
+      const wd = law[4] as number;
       const e = timed.e;
       const b = (v0 + zeta * w0 * y0) / wd;
       const cos = timed.cos;
@@ -140,7 +140,7 @@ function solve(law: Float64Array, lo: number, y0: number, v0: number, t: number)
       return;
     }
     case CRITICAL: {
-      const w0 = law[lo + 3] as number;
+      const w0 = law[3] as number;
       const e = timed.e;
       const b = v0 + w0 * y0;
       const y = e * (y0 + b * t);
@@ -149,8 +149,8 @@ function solve(law: Float64Array, lo: number, y0: number, v0: number, t: number)
       return;
     }
     case OVER: {
-      const r1 = law[lo + 2] as number;
-      const r2 = law[lo + 3] as number;
+      const r1 = law[2] as number;
+      const r2 = law[3] as number;
       const a = (v0 - r2 * y0) / (r1 - r2);
       const b = y0 - a;
       const e1 = timed.e;
@@ -162,7 +162,7 @@ function solve(law: Float64Array, lo: number, y0: number, v0: number, t: number)
     default: {
       // Released at x moving at v, a glide comes to rest at x + v·τ; y is the distance still to go,
       // which friction closes as e^(−t/τ), and its derivative at release is v again.
-      const tau = law[lo + 2] as number;
+      const tau = law[2] as number;
       const e = timed.e;
       solved.y = y0 * e;
       solved.dy = (-y0 / tau) * e;
@@ -295,9 +295,9 @@ export class Motions<I> {
     return this.shape.ease;
   }
 
-  /** Copies the patch's law, `[form, settle, k1, k2, k3]`, into `out` from `o`. */
-  lawInto(out: Float64Array, o: number): void {
-    for (let k = 0; k < HEAD; k++) out[o + k] = this.runs[k] as number;
+  /** A copy of the patch's law, `[form, settle, k1, k2, k3]`. */
+  law(): Float64Array {
+    return this.runs.slice(0, HEAD);
   }
 
   /**
@@ -629,19 +629,18 @@ export class Motions<I> {
     xo: Float64Array,
     vo: Float64Array,
   ): void {
-    closed(this.runs, 0, this.shape.ease, this.n, at, secs, x0, x, v0, v, to, g, t, xo, vo);
+    closed(this.runs, this.shape.ease, this.n, at, secs, x0, x, v0, v, to, g, t, xo, vo);
   }
 }
 
 /**
  * A stretch `t` voice ms into it, released at `at` from `x0` moving at `v0` toward `to` (each read
  * from its offset), into `xo` and `vo`: the one copy of the closed forms, which `law` (a patch's
- * `[form, settle, k1, k2, k3]`, read from `lo`) picks between. A tween reads `ease` and
+ * `[form, settle, k1, k2, k3]`, the head of a patch's buffer or a copy of it) picks between. A tween reads `ease` and
  * `secs`; every other form ignores them.
  */
 export function closed(
   law: Float64Array,
-  lo: number,
   ease: Curve | undefined,
   n: number,
   at: number,
@@ -657,16 +656,16 @@ export function closed(
   vo: Float64Array,
 ): void {
   const dt = Math.max(0, t - at) / 1000;
-  if (law[lo] === EASED) {
+  if (law[0] === EASED) {
     eased(ease as Curve, n, dt, secs, x0, x, to, g, xo, vo);
     return;
   }
-  const settle = law[lo + 1] as number;
+  const settle = law[1] as number;
   let still = settle > 0;
-  prepare(law, lo, dt);
+  prepare(law, dt);
   for (let i = 0; i < n; i++) {
     const goal = to[g + i] as number;
-    solve(law, lo, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
+    solve(law, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
     xo[i] = goal + solved.y;
     vo[i] = solved.dy;
     if (Math.abs(solved.y) > settle || Math.abs(solved.dy) > settle) still = false;
