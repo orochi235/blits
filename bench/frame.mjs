@@ -150,6 +150,9 @@ const rows = [
   ['tweenfn^', 10000, 1],
   ['keyses^', 10000, 1],
   ['churn^', 10000, 1],
+  // weasel's animator on blits: a tween or spring voice per animation, read by `pull`.
+  ['tweens^', 10000, 1],
+  ['springs^', 10000, 1],
   ['fns^', 10000, 1],
   ['weasel^', 10000, 1],
   // A projection made and probed every frame, as a continuous scrub would: 500 ms ahead, and
