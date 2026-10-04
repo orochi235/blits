@@ -271,6 +271,13 @@ function run(lib, seed, general = false) {
         const pose = attempt('probe', () => (how === 'out' ? m.probe(s, out) : m.probe(s)));
         note(`f${f} ${s.i}`, pose);
       }
+    // A second read of the same frame, which reads what each subject's first read left behind.
+    if (chance(0.15)) {
+      if (chance(0.5)) {
+        attempt('pull', () => m.pull(subjects, columns));
+        note(`f${f} again`, [...columns.gain, ...columns.dark, ...columns.off, ...columns.pos]);
+      } else for (const s of subjects) note(`f${f} again ${s.i}`, attempt('probe', () => m.probe(s)));
+    }
     if (chance(0.2))
       note(
         `f${f} rest`,
