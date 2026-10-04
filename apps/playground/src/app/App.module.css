@@ -87,3 +87,10 @@
 .errors {
   padding-inline-start: var(--wzl-space-md);
 }
+
+/* Timeline is a flex column that collapses in a box with no height. */
+.timeline {
+  height: 260px;
+  display: flex;
+  flex-direction: column;
+}

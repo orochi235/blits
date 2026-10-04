@@ -1,7 +1,7 @@
 import { compile, FRAME } from '@pg/blits/compile';
 import { type Composition, MAX_VOICES, type Voice } from '@pg/blits/composition';
 import { Player } from '@pg/blits/player';
-import { DEFAULT } from '@pg/blits/presets';
+import { DEFAULT, PRESETS } from '@pg/blits/presets';
 import { applyEdit, clipsOf } from '@pg/blits/score';
 import { subjectsOf } from '@pg/blits/stage';
 import { Stage } from '@pg/blits/stages/Stage';
@@ -9,6 +9,7 @@ import { type ClipEdit, ScoreLanes } from '@pg/widgets/ScoreLanes';
 import { LabShell } from '@weasel-js/labkit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import s from './App.module.css';
+import { PatchPanel } from './PatchPanel';
 import { Transport } from './Transport';
 import { useComposition } from './useComposition';
 import { VoicePanel } from './VoicePanel';
@@ -162,8 +163,33 @@ export function App() {
     setPlaying(on);
   };
 
+  const loadPreset = (name: string) => {
+    const preset = PRESETS.find((x) => x.name === name);
+    if (!preset) return;
+    set(preset.comp);
+    setSelected(null);
+  };
+  const header = (
+    <label className={s.row}>
+      preset
+      <select
+        value={PRESETS.find((x) => x.comp === comp)?.name ?? ''}
+        onChange={(e) => loadPreset(e.target.value)}
+      >
+        <option value="" disabled>
+          {comp.title}
+        </option>
+        {PRESETS.map((x) => (
+          <option key={x.name} value={x.name}>
+            {x.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
   return (
-    <LabShell title="blits playground" mode="dark">
+    <LabShell title="blits playground" mode="dark" header={header}>
       <div className={s.grid}>
         <section className={s.stage}>
           <Stage
@@ -215,6 +241,15 @@ export function App() {
               faults={player.built.faults.get(voice.id)}
               onChange={setVoice}
               onDelete={() => deleteVoice(voice.id)}
+            />
+          )}
+          {voice && (
+            <PatchPanel
+              key={`${voice.id} patch`}
+              voice={voice}
+              errors={player.built.errors}
+              playhead={player.t}
+              onChange={setVoice}
             />
           )}
         </aside>
