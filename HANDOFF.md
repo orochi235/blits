@@ -205,8 +205,9 @@ systems now run on it**, on klieg's `main`.
      has relinked (`relinks` counts chains made stale one subject at a time). Storing stretches as Float64Arrays gave nothing (reverted, `b4a4260`).
      `prepare`'s per-subject bookkeeping now runs once per `pull` over a remembered list
      (`pullRun`, branch `pull-run`, 2026-10-03): weasel-shaped `pull` about 0.38–0.45 ms on
-     teitou. What is left, by a profile of 20,000 frames on teitou: the fill is about 60% of the
-     frame (`runMotion` 26%, the fold 10%, the host's easing 8%), the per-subject read about 30%.
+     teitou. What is left, by a profile of 20,000 frames on teitou (0.35 ms a frame): the fill is
+     about 68% (`runMotion` 30%, the fold 12%, weasel's own easing 9%), the read about 29%
+     (`pullRun` 14%, the column copy 11%).
    - **`tween`, built 2026-10-02** as a fourth motion kind (Mike chose its own clock, like a
      spring's, over the voice's period). In weasel's shape on studio it takes a frame to 0.83
      of a `fn` tween's and its collection pauses to a quarter; against a `fn` with no per-call
