@@ -1911,7 +1911,8 @@ export class Lanes<I, O> {
     }
     const kept = reading.kept;
     host.ready(voice, subject, rec, elapsed, pass, w);
-    host.horizon(voice, delay);
+    if (this.keeps) host.horizon(voice, delay);
+    else reading.horizon = Number.POSITIVE_INFINITY;
     const delta = voice.patch.at(phase, subject, voice.setting as never) as Record<string, unknown>;
     // What `influence` leaves on the record, so a probe on the general path this frame reuses it.
     rec.delta = delta;
@@ -2274,7 +2275,8 @@ export class Lanes<I, O> {
         ms = run.slot(subject);
         data[o + MSLOT] = ms;
       }
-      this.host.horizon(voice, delay);
+      if (this.keeps) this.host.horizon(voice, delay);
+      else reading.horizon = Number.POSITIVE_INFINITY;
       if (!run.quiet(ms, elapsed)) {
         this.late.push(slot);
         return;
