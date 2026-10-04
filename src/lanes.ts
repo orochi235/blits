@@ -841,8 +841,13 @@ export class Lanes<I, O> {
       this.fresh = true;
     }
     if (this.filling) return GENERAL;
-    if (this.qualifiedVersion !== version) this.requalify(version);
-    else if (this.touched.length > 0 && !this.retouch()) this.requalify(version);
+    // The mix's version moves only when a voice over every subject comes, goes, starts or stops
+    // waiting, each of which touches it, so a version past a qualify that stands is a set of touches.
+    if (this.qualifiedVersion !== version) {
+      if (!Number.isNaN(this.qualifiedVersion) && this.touched.length > 0 && this.retouch())
+        this.qualifiedVersion = version;
+      else this.requalify(version);
+    } else if (this.touched.length > 0 && !this.retouch()) this.requalify(version);
     if (this.laned.length === 0) return GENERAL;
     if (this.filledAt !== now || this.filledVersion !== version || this.moved !== reading.moved) {
       this.fillAll(now, version);
@@ -1373,7 +1378,12 @@ export class Lanes<I, O> {
         continue;
       }
       if (v.state === 'done' && !known) continue;
-      if (v.state === 'done' || this.byId.has(v.id)) return false;
+      const lane = this.byId.get(v.id);
+      if (lane !== undefined) {
+        if (!this.relane(lane)) return false;
+        continue;
+      }
+      if (v.state === 'done') return false;
       // A locus's members are on lanes together or not at all, so one joining may move the others.
       if (v.spec.locus !== undefined) return false;
       const laned = v.slots.some((slot) => this.bySlot[slot] !== undefined);
@@ -1382,17 +1392,52 @@ export class Lanes<I, O> {
         this.whole = false;
         continue;
       }
-      if (
-        known ||
-        !fits ||
-        !laned ||
-        !crowdable(v) ||
-        v.slots.some((slot) => this.bySlot[slot] === undefined)
-      )
+      if (known || !fits || !laned || v.slots.some((slot) => this.bySlot[slot] === undefined))
         return false;
-      this.join(v, undefined, undefined, this.crowds);
+      if (crowdable(v)) this.join(v, undefined, undefined, this.crowds);
+      else this.enlane(v);
     }
     for (const c of this.crowds) if (c.dead > 64 && c.dead * 2 > c.size) this.compact(c);
+    // As a qualify leaving nothing on lanes: no fill comes to let go of what the last probes held.
+    if (this.lanes.length === 0 && this.crowds.every((c) => c.dead === c.size)) this.subjects = [];
+    return true;
+  }
+
+  /**
+   * A new voice that fits and writes only laned channels, and that no crowd takes, gets a lane at
+   * the end of the order, its id being past every other: what a qualify would give it, since such a
+   * voice joining cannot unlane a channel.
+   */
+  private enlane(v: Voice<I, O>): void {
+    const lane = new Lane<I, O>(v);
+    v.laned = true;
+    if (v.state !== 'pending') lane.epoch = this.open(v);
+    lane.chans = v.slots.map((s) => this.bySlot[s] as Laned);
+    lane.values = lane.chans.map(() => undefined);
+    this.lanes.push(lane);
+    this.byId.set(v.id, lane);
+    if (v.named === null && lane.epoch > 0) this.dense.push(lane);
+  }
+
+  /**
+   * A laned voice that started playing or finished, as a qualify would take it: a lane leaving
+   * cannot lane or unlane another channel. False for a locus member, which a qualify must take.
+   */
+  private relane(lane: Lane<I, O>): boolean {
+    const v = lane.voice;
+    if (v.state !== 'done') {
+      if (lane.epoch === 0 && v.state !== 'pending') {
+        lane.epoch = this.open(v);
+        if (v.named === null) this.dense.push(lane);
+      }
+      return true;
+    }
+    if (lane.group !== null) return false;
+    this.leave(lane);
+    this.lanes.splice(this.lanes.indexOf(lane), 1);
+    const d = this.dense.indexOf(lane);
+    if (d >= 0) this.dense.splice(d, 1);
+    this.byId.delete(v.id);
     return true;
   }
 
