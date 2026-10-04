@@ -1,0 +1,186 @@
+import {
+  type VoiceSpec as BlitsVoiceSpec,
+  glide,
+  type Handle,
+  keys,
+  level,
+  type Mix,
+  mix,
+  type Patch,
+  patch,
+  type Signal,
+  spring,
+  tween,
+} from '@msb235/blits';
+import { type Composition, type Expr, isExpr, type PatchSource, type Voice } from './composition';
+import { compileExpr, type Faults, type Scope } from './expr';
+import { KIT, type Pose } from './kit';
+import type { Subject } from './stage';
+
+export const FRAME = 1000 / 60;
+
+export interface FieldError {
+  voice: string | null;
+  field: string;
+  error: string;
+  line: number | null;
+}
+
+export interface Built {
+  mix: Mix<Subject, Pose>;
+  solos: Map<string, Mix<Subject, Pose>>;
+  handles: Map<string, Handle<Subject>>;
+  patches: Map<string, Patch<Subject, Pose, unknown>>;
+  levels: Map<string, { set(v: number): void }>;
+  faults: Map<string, Faults>;
+  errors: FieldError[];
+}
+
+type Spec = BlitsVoiceSpec<Subject, Pose>;
+
+/** One voice's spec, or the errors that kept it from being built. */
+function specOf(
+  v: Voice,
+  scope: Scope,
+  faults: Faults[],
+): { spec: Spec } | { errors: FieldError[] } {
+  const errors: FieldError[] = [];
+  const fn = <F extends (...a: never[]) => unknown>(
+    field: string,
+    expr: Expr,
+    fallback: ReturnType<F>,
+  ): F | undefined => {
+    const r = compileExpr<F>(expr, scope, fallback);
+    if ('error' in r) {
+      errors.push({ voice: v.id, field, error: r.error, line: r.line });
+      return undefined;
+    }
+    faults.push(r.faults);
+    return r.fn;
+  };
+  const made = patchOf(v.patch, fn);
+  const stagger = v.stagger ? fn<(s: Subject) => number>('stagger', v.stagger, 0) : undefined;
+  const target = v.target ? fn<(s: Subject) => boolean>('target', v.target, false) : undefined;
+  const weight = isExpr(v.weight) ? fn<Signal<Subject>>('weight', v.weight, 0) : v.weight;
+  if (errors.length > 0 || made === undefined || weight === undefined) return { errors };
+  const spec: Spec = {
+    patch: made as Patch<Subject, Pose, unknown>,
+    start: v.start,
+    rate: v.rate,
+    loop: v.loop,
+    weight,
+    fade: v.fade,
+    name: v.name,
+  };
+  if (stagger) spec.stagger = stagger;
+  if (target) spec.target = target;
+  if (v.hold) spec.hold = v.hold;
+  if (v.locus) spec.locus = v.locus;
+  if (v.from) spec.from = v.from;
+  if (v.anchor) {
+    spec.anchor = v.anchor;
+    delete spec.start;
+  }
+  return { spec };
+}
+
+type Fn = <F extends (...a: never[]) => unknown>(
+  field: string,
+  expr: Expr,
+  fallback: ReturnType<F>,
+) => F | undefined;
+
+function patchOf(p: PatchSource, fn: Fn): Patch<Subject, Pose, unknown> | undefined {
+  if (p.kind === 'keys')
+    return keys<Subject, Pose>(p.period, p.stops, p.ease ? { ease: p.ease } : {});
+  if (p.kind === 'fn') {
+    const at = fn<(phase: number, s: Subject, set: never) => Partial<Pose>>(
+      'at',
+      { code: p.at },
+      {},
+    );
+    const state = p.state
+      ? fn<(s: Subject) => unknown>('state', { code: p.state }, undefined)
+      : undefined;
+    const step = p.step
+      ? fn<(st: unknown, dt: number) => void>('step', { code: p.step }, undefined)
+      : undefined;
+    if (!at || (p.state && !state) || (p.step && !step)) return undefined;
+    return patch<Subject, Pose, unknown>(p.period, at as never, {
+      writes: p.writes,
+      ...(state ? { state } : {}),
+      ...(step ? { step: step as never } : {}),
+    }) as Patch<Subject, Pose, unknown>;
+  }
+  const opts: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(p.opts)) {
+    if (!isExpr(v)) opts[k] = v;
+    else {
+      const f = fn<(s: Subject) => unknown>(`opts.${k}`, v, 0);
+      if (!f) return undefined;
+      opts[k] = f;
+    }
+  }
+  const maker = p.kind === 'spring' ? spring : p.kind === 'glide' ? glide : tween;
+  return maker<Subject, Pose, number | number[]>(p.channel, opts as never) as unknown as Patch<
+    Subject,
+    Pose,
+    unknown
+  >;
+}
+
+export function compile(
+  c: Composition,
+  subjects: readonly Subject[],
+  opts: { solos?: boolean } = {},
+): Built {
+  const levels = new Map(c.levels.map((l) => [l.name, level<Subject>(l.value)]));
+  const scope: Scope = { level: (name) => levels.get(name) ?? level<Subject>(0) };
+  const errors: FieldError[] = [];
+  const faults = new Map<string, Faults>();
+  const patches = new Map<string, Patch<Subject, Pose, unknown>>();
+
+  // Specs are built afresh per mix: a motion patch keeps its state on itself and plays on one voice.
+  const make = (only: string | null) => {
+    const m = mix<Subject, Pose>(KIT, { stepMs: FRAME });
+    const handles = new Map<string, Handle<Subject>>();
+    for (const v of c.voices) {
+      const list: Faults[] = [];
+      const r = specOf(v, scope, list);
+      if ('errors' in r) {
+        if (only === null) errors.push(...r.errors);
+        continue;
+      }
+      const spec = only === null || only === v.id ? r.spec : { ...r.spec, weight: 0 };
+      try {
+        handles.set(v.id, m.cue(spec));
+      } catch (err) {
+        if (only === null)
+          errors.push({
+            voice: v.id,
+            field: 'cue',
+            error: err instanceof Error ? err.message : String(err),
+            line: null,
+          });
+        continue;
+      }
+      if (only === null) {
+        patches.set(v.id, r.spec.patch);
+        faults.set(v.id, {
+          get count() {
+            return list.reduce((n, f) => n + f.count, 0);
+          },
+          get first() {
+            return list.find((f) => f.first)?.first ?? null;
+          },
+        });
+      }
+    }
+    return { m, handles };
+  };
+  const full = make(null);
+  const solos = new Map<string, Mix<Subject, Pose>>();
+  if (opts.solos) for (const id of full.handles.keys()) solos.set(id, make(id).m);
+  void subjects;
+  return { mix: full.m, solos, handles: full.handles, patches, levels, faults, errors };
+}
