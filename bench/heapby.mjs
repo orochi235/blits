@@ -23,7 +23,9 @@ const make = {
 
 function byConstructor() {
   globalThis.gc();
-  const file = writeHeapSnapshot(join(tmpdir(), `blits-heapby-${process.pid}-${Date.now()}.heapsnapshot`));
+  const file = writeHeapSnapshot(
+    join(tmpdir(), `blits-heapby-${process.pid}-${Date.now()}.heapsnapshot`),
+  );
   const snap = JSON.parse(readFileSync(file, 'utf8'));
   rmSync(file);
   const f = snap.snapshot.meta.node_fields;
@@ -68,5 +70,7 @@ let total = 0;
 for (const [, bytes] of rows) total += bytes;
 console.log(`${form} N=${N}: ${total.toFixed(0)} B per voice in rows of 8 B or more`);
 for (const [key, bytes, n] of rows.slice(0, 40))
-  console.log(`${bytes.toFixed(0).padStart(6)} B  ${n.toFixed(2).padStart(6)}×  ${key.slice(0, 70)}`);
+  console.log(
+    `${bytes.toFixed(0).padStart(6)} B  ${n.toFixed(2).padStart(6)}×  ${key.slice(0, 70)}`,
+  );
 console.log(m.live, subjects.length);

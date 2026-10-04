@@ -1,6 +1,6 @@
 // Whether two builds give the same bits: random scenes (voices of every form, loci, fades, holds,
 // subject fades, drops, retargets, seeks, projections) run through both, every read compared.
-//   node bench/same.mjs <dist-a> <dist-b> [scenes] [first-seed]
+//   node bench/same.mjs <dist-a> <dist-b> [scenes] [first-seed]   SAME_LANES=off runs dist-a without lanes
 // `bench/same.sh <rev>` builds a revision and compares it with this tree's dist.
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -26,7 +26,7 @@ function rng(seed) {
 
 const NUMERIC = ['gain', 'dark', 'off', 'pos'];
 
-function run(lib, seed) {
+function run(lib, seed, general = false) {
   const r = rng(seed);
   const pick = (xs) => xs[Math.floor(r() * xs.length)];
   const chance = (p) => r() < p;
@@ -55,7 +55,7 @@ function run(lib, seed) {
     color: lib.hex(),
     tag: lib.last(),
   });
-  const opts = { lanes: chance(0.7) };
+  const opts = { lanes: chance(0.7) && !general };
   if (chance(0.15)) opts.history = { ms: 2000 };
   if (chance(0.15)) opts.stepMs = pick([4, 8, 16]);
   const m = lib.mix(K, opts);
@@ -151,7 +151,7 @@ function run(lib, seed) {
       spec.target = (s) => s.i % mod === 0;
     }
     if (chance(0.25)) spec.locus = pick(['a', 'b']);
-    if (chance(0.3)) spec.weight = chance(0.5) ? r() : (s) => 0.5 + 0.5 * Math.sin(s.seed);
+    if (chance(0.3)) spec.weight = chance(0.5) ? r() * 1.8 : (s) => 0.5 + 0.5 * Math.sin(s.seed);
     if (chance(0.4)) spec.fade = { in: pick([0, 50, 200]), out: pick([0, 100, 300]) };
     if (chance(0.3)) spec.loop = chance(0.5) ? true : int(1, 3);
     if (chance(0.2)) spec.rate = pick([0.5, 2]);
@@ -183,7 +183,7 @@ function run(lib, seed) {
       attempt('fade subject', () =>
         pick(handles).fade({ subject: pick(subjects), over: pick([0, 80]) }),
       );
-    if (chance(0.05) && handles.length > 0) pick(handles).weight = r();
+    if (chance(0.05) && handles.length > 0) pick(handles).weight = r() * 1.8;
     if (chance(0.03) && handles.length > 0) pick(handles).rate = pick([0.5, 1, 3]);
     if (chance(0.03) && handles.length > 0) attempt('seek', () => pick(handles).seek(r() * 500));
     if (chance(0.04)) attempt('drop', () => m.drop(pick(subjects)));
@@ -228,7 +228,7 @@ function run(lib, seed) {
 
 let bad = 0;
 for (let seed = first; seed < first + scenes; seed++) {
-  const a = run(A, seed);
+  const a = run(A, seed, process.env.SAME_LANES === 'off');
   const b = run(B, seed);
   const n = Math.max(a.length, b.length);
   let at = -1;

@@ -1,5 +1,5 @@
 import { foldNumber, type Numeric, numericOf } from './channels.js';
-import { clampWeight, passAt, phaseAt } from './clock.js';
+import { clampWeight, passAt, phaseAt, weighed } from './clock.js';
 import type { Curve } from './easing.js';
 import type { Subject, Voice } from './mixer.js';
 import { closed, type Motions, motionOf, noTouch } from './motion.js';
@@ -1453,6 +1453,13 @@ export class Lanes<I, O> {
     for (const slot of lane.list) if (slot >= 0) this.reach(slot, -1);
   }
 
+  /** What a subject's own ramp out of a voice leaves of its weight: 1 with none. */
+  private parting(voice: Voice<I, O>, slot: number): number {
+    if (voice.parts === null) return 1;
+    const subject = this.subjectAt(slot);
+    return subject === absent ? 1 : this.host.parting(voice, subject);
+  }
+
   private subjectAt(slot: number): I | typeof absent {
     let subject = this.subjects[slot];
     if (subject === undefined) {
@@ -1521,11 +1528,7 @@ export class Lanes<I, O> {
       lane.weighed = true;
       lane.weighedSince = since;
     }
-    let w = clampWeight(voice.weight * lane.fade);
-    if (voice.parts !== null) {
-      const subject = this.subjectAt(slot);
-      if (subject !== absent) w *= host.parting(voice, subject);
-    }
+    const w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
     data[o + WEIGHT] = w;
     if (voice.built !== null) {
       if (!lane.read || !Object.is(elapsed, lane.readAt)) {
@@ -1674,13 +1677,12 @@ export class Lanes<I, O> {
       }
       let w: number;
       if (fast) w = hot[h + H_WEIGHT] as number;
-      else {
-        w = clampWeight(voice.weight * this.host.envelope(voice, data[o + SINCE] as number));
-        if (voice.parts !== null) {
-          const subject = this.subjectAt(slot);
-          if (subject !== absent) w *= this.host.parting(voice, subject);
-        }
-      }
+      else
+        w = weighed(
+          voice.weight,
+          this.host.envelope(voice, data[o + SINCE] as number),
+          this.parting(voice, slot),
+        );
       data[o + WEIGHT] = w;
       if ((f & F_MOTION) === 0) {
         this.row(c, p, voice, slot, elapsed, delay, w);
@@ -1862,11 +1864,8 @@ export class Lanes<I, O> {
           lane.weighedSince = since;
         }
       }
-      let w = flat ? whole : clampWeight(voice.weight * lane.fade);
-      if (parts) {
-        const subject = this.subjectAt(slot);
-        if (subject !== absent) w *= this.host.parting(voice, subject);
-      }
+      const w =
+        flat && !parts ? whole : weighed(voice.weight, lane.fade, this.parting(voice, slot));
       data[o + WEIGHT] = w;
       if (data[o + MET] === 0) {
         if (Number.isNaN((records[p] as Subject<unknown>).probed)) {

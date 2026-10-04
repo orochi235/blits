@@ -1,5 +1,5 @@
 import { type LerpInto, lerpInto } from './channels.js';
-import { clampWeight, envelope, passAt, passesOf, phaseAt } from './clock.js';
+import { envelope, passAt, passesOf, phaseAt, weighed } from './clock.js';
 import { type Curve, curve } from './easing.js';
 import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
 import { type Motions, motionOf, noFrame, noRevive } from './motion.js';
@@ -2228,9 +2228,7 @@ class Mixer<I, O> implements Mix<I, O> {
       if (signal.input && !was) this.record(held, base);
     }
     const fade = this.envelope(voice, now, held.shown);
-    return clampWeight(
-      base * (voice.parts === null ? fade : fade * this.parting(voice, subject, now)),
-    );
+    return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
   }
 
   /**

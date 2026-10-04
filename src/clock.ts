@@ -53,3 +53,11 @@ export function envelope(
 export function clampWeight(raw: number): number {
   return raw < 0 ? 0 : raw > 1 ? 1 : raw;
 }
+
+/**
+ * A voice's weight for one subject: its own `base`, times its fade and what the subject's own ramp
+ * out of it leaves (1 without one), held to 0..1 once, after both.
+ */
+export function weighed(base: number, fade: number, parting: number): number {
+  return clampWeight(base * (fade * parting));
+}

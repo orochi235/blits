@@ -8,6 +8,11 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A subject fading out of a voice with `handle.fade({ subject })` gets the same weight on a lane
+  as on the general path. A lane held the voice's weight to 1 before multiplying in the subject's
+  ramp, where the general path holds the product: a voice at weight 1.6 halfway out of a subject
+  read 0.5 of its delta on a lane and 0.8 elsewhere. Below weight 1 the two differed only in the
+  last bit.
 - A voice in a locus folds only the channels its patch writes, as a voice outside one does; a
   delta's other keys were folded too.
 - A `keys` or stateless `fn` voice naming one subject and writing several channels joins a crowd,

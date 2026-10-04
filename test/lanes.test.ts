@@ -1799,3 +1799,40 @@ describe('crowds take voices on and off as they come and go', () => {
     agree(play, { times: frames, parts: 70, probe: (t, p) => p.id % 4 === 0 || t % 64 === 0 });
   }, 30_000);
 });
+
+describe('lanes weigh a subject fading out of its voice as the general path does', () => {
+  const ramp = [0, 16, 33, 50, 66, 83, 100, 133, 166, 200, 233, 266, 300, 400];
+  for (const weight of [0.37, 1, 1.6])
+    it(`at weight ${weight}, for a fn, a keys and a tween voice over every subject`, () => {
+      agree(
+        (m, parts) => {
+          const handles = [
+            m.cue({ patch: pulse(), weight, fade: { in: 100 } }),
+            m.cue({
+              patch: keys<Part, Pose>(500, [
+                { at: 0, delta: { crawl: 1 } },
+                { at: 1, delta: { crawl: 4 } },
+              ]),
+              weight,
+            }),
+            m.cue({
+              patch: tween<Part, Pose, number[]>('position', {
+                from: [0, 0, 0],
+                to: (p) => [p.id, 1, 2],
+                ms: 300,
+              }),
+              weight,
+              fade: { in: 50 },
+            }),
+          ];
+          const at = (t: number) => {
+            if (t !== 50) return;
+            for (const p of parts.filter((p) => p.id % 2 === 0))
+              for (const h of handles) h.fade({ subject: p, over: 200 });
+          };
+          return { handles, at };
+        },
+        { times: ramp, parts: 70 },
+      );
+    });
+});
