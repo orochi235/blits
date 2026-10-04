@@ -29,6 +29,18 @@ const holds = <K extends keyof Pose>(channel: K, value: Pose[K]) =>
   patch<Part, Pose>(0, () => ({ [channel]: value }) as Partial<Pose>, { writes: [channel] });
 
 describe('locus fold', () => {
+  it('folds only the channels a patch writes, as a fold outside a locus does', () => {
+    // The patch declares crawl and returns dark besides, which no fold may take.
+    const loose = patch<Part, Pose>(0, () => ({ crawl: 3, dark: 0.7 }), { writes: ['crawl'] });
+    for (const locus of [undefined, 'phase']) {
+      const m = mix<Part, Pose>(PART, { lanes: false });
+      m.cue({ patch: loose, locus });
+      m.cue({ patch: holds('crawl', 5), locus });
+      m.sync(0);
+      expect(m.probe(part).dark, `locus ${locus}`).toBe(0);
+    }
+  });
+
   it('two voices in a locus driving the same value produce that value, on every channel', () => {
     for (const [channel, value] of [
       ['gain', 0.06],

@@ -4,6 +4,32 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A voice in a locus folds only the channels its patch writes, as a voice outside one does; a
+  delta's other keys were folded too.
+- A `keys` or stateless `fn` voice naming one subject and writing several channels joins a crowd,
+  as one writing a single channel does, where it took the general path. On teitou 10k such voices
+  read by probe take 0.79 of the time they did and 1k take 0.65; 100 take about 1.1.
+- A crowd more than half empty rows slides its rows down in place, where the mix qualified every
+  voice again: with one of 10k tween voices replaced each frame, the worst of 12,000 frames fell
+  from about 9 ms to 3 on teitou.
+- A fold with a locus in play allocates nothing per subject: 10k subjects under three voices in a
+  locus take 0.83 of the time they did on teitou, with a third of the collections.
+- A read back copies records holding plain data directly, not through `structuredClone`: a
+  projection made and probed every frame over 1k subjects and three voices takes 0.61 of the time
+  ahead and 0.81 back.
+- A spring works out its time terms once for the subjects released together: one spring voice over
+  10k subjects read by `pull` takes about 0.89 of the time.
+- A voice and its records make their maps and arrays on first use. A voice of one subject holds
+  2.8 KB after its first frame as a `fn` (3.4 KB before) and 6.0 KB as a tween (7.3 KB), and cueing
+  10k tween voices of one subject each and reading their first frame takes about 52 ms on teitou,
+  from 66. `setting.keep` is now one function per voice that writes to the record being called
+  for, so one kept and called after its call, which `Setting` never allowed, no longer reaches the
+  record it came with.
+
 ## 0.4.0
 
 ### Breaking
