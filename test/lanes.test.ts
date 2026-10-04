@@ -1909,3 +1909,90 @@ describe('a voice weighted by a signal runs on lanes while the signal keeps no s
       );
   });
 });
+
+describe('a locus of keys and fn voices runs on lanes and folds as the general path folds it', () => {
+  const ramp = [0, 16, 33, 50, 100, 150, 200, 250, 333, 500, 700, 900];
+  const flicker = (k: number) =>
+    patch<Part, Pose>(
+      400,
+      (ph, p) => ({ gain: 0.6 + 0.3 * Math.sin(ph * 5 + p.id + k), crawl: ph * k - p.id / 9 }),
+      { writes: ['gain', 'crawl'] },
+    );
+  const sweep = keys<Part, Pose>(300, [
+    { at: 0, delta: { crawl: 2, position: [1, 0, 0] } },
+    { at: 1, delta: { crawl: -1, position: [0, 3, 1] } },
+  ]);
+  const by = (p: Part, s: Setting) => 0.5 + 0.5 * Math.sin(s.elapsed / 90 + p.id);
+
+  it('for a blend, members reaching different subjects, weights over 1, fades and a voice between', () => {
+    agree(
+      (m, parts) => {
+        const blend = m.blend([flicker(1), flicker(2), sweep], by, { fade: { in: 60 } });
+        const between = m.cue({ patch: pulse(), weight: 0.7 });
+        const handles = [
+          ...blend,
+          between,
+          m.cue({ patch: flicker(3), locus: 'pair', weight: 1.4, target: (p) => p.id % 3 === 0 }),
+          m.cue({ patch: sweep, locus: 'pair', weight: 0.6, fade: { in: 120, out: 80 } }),
+          m.cue({ patch: flicker(4), locus: 'pair', subjects: parts.slice(5, 20) }),
+        ];
+        const at = (t: number) => {
+          if (t === 150) handles[5]?.fade({ subject: parts[4] as Part, over: 100 });
+          if (t === 333) handles[6]?.fade();
+        };
+        return { handles, at };
+      },
+      { times: ramp, parts: 70 },
+    );
+  });
+
+  it('hands the whole locus to the general path when a member cannot run on a lane', () => {
+    agree(
+      (m, parts) => {
+        const handles = [
+          m.cue({ patch: flicker(1), locus: 'a' }),
+          m.cue({ patch: sweep, locus: 'a', weight: 0.5 }),
+        ];
+        const at = (t: number) => {
+          // A spring member writing a channel no other member writes still counts in the sum.
+          if (t === 100)
+            handles.push(
+              m.cue({
+                patch: spring<Part, Pose, number[]>('position', {
+                  from: [0, 0, 0],
+                  to: (p) => [p.id, 0, 0],
+                }),
+                locus: 'a',
+                subjects: [parts[7] as Part],
+              }),
+            );
+          if (t === 500) handles[2]?.fade({ over: 0 });
+        };
+        return { handles, at };
+      },
+      { times: ramp, parts: 70 },
+    );
+  });
+
+  it('fills a blend from the lanes', () => {
+    const m = mix<Part, Pose>(K);
+    const parts = Array.from({ length: 6 }, (_, id) => ({ id }));
+    const seen = new Set<number>();
+    const counted = (k: number) =>
+      patch<Part, Pose>(
+        0,
+        (_ph, p) => {
+          seen.add(p.id);
+          return { crawl: p.id * k };
+        },
+        { writes: ['crawl'] },
+      );
+    m.blend([counted(1), counted(2)], by);
+    m.sync(0);
+    for (const p of parts) m.probe(p);
+    seen.clear();
+    m.sync(16);
+    m.probe(parts[2] as Part);
+    expect(seen.size).toBe(6);
+  });
+});

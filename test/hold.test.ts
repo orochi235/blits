@@ -24,6 +24,26 @@ const ramp = () =>
 const settled = (p: Promise<unknown>): Promise<unknown> =>
   Promise.race([p, new Promise((r) => setTimeout(() => r('pending'), 0))]);
 
+describe('a dry read weighs as the probe it repeats did', () => {
+  it('leaves weightOf where the probe put it, held before the voice starts and after', () => {
+    // A signal reading voice time: atRest must not hand it the unheld time.
+    const byTime = (_p: Part, s: Setting) => 0.5 + 0.4 * Math.sin(s.elapsed / 40);
+    const read = (rest: boolean) => {
+      const m = mix<Part, Pose>(PART, { lanes: false });
+      const h = m.cue({ patch: ramp(), weight: byTime, hold: 'both', start: 100, loop: 1 });
+      const seen: number[] = [];
+      for (const t of [0, 50, 120, 190, 260, 300]) {
+        m.sync(t);
+        m.probe(part);
+        if (rest) m.atRest(part);
+        seen.push(h.weightOf(part));
+      }
+      return seen;
+    };
+    expect(read(true)).toEqual(read(false));
+  });
+});
+
 describe('hold before', () => {
   it('shows a waiting subject the first frame through its stagger', () => {
     const m = mix<Part, Pose>(PART);

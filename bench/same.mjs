@@ -62,11 +62,30 @@ function run(lib, seed, general = false) {
   const subjects = Array.from({ length: int(1, 40) }, (_, i) => ({ i, seed: r() * 10 }));
   const ease = () => pick(['linear', 'ease', 'ease-in', 'ease-out', (u) => u * u, undefined]);
 
+  // SAME_TRACE=<seed> prints what that scene does, to stderr, from the side with lanes; with
+  // SAME_WATCH=<subject>, each frame both sides print every voice's weight for that subject.
+  const traced = process.env.SAME_TRACE === String(seed) && !general;
+  const say = (...what) => {
+    if (traced) console.error(`f${frame} t=${t}`, ...what);
+  };
+  const watched = process.env.SAME_TRACE === String(seed) && process.env.SAME_WATCH !== undefined;
+  const watch = (how, order) => {
+    if (!watched) return;
+    const s = subjects[Number(process.env.SAME_WATCH)];
+    if (s === undefined) return;
+    const weights = handles.map((h) => h.weightOf(s));
+    console.error(
+      `  ${general ? 'general' : 'lanes  '} f${frame} t=${t} ${how} ${order.includes(s) ? 'read' : 'unread'} weights ${JSON.stringify(weights)}`,
+    );
+  };
+  let made = '';
+  let frame = -1;
   const motions = [];
   const patchOf = () => {
     const kind = pick(['fn', 'fn', 'stateful', 'keys', 'keys', 'spring', 'tween', 'glide']);
     const writes = NUMERIC.filter(() => chance(0.5));
     if (writes.length === 0) writes.push(pick(NUMERIC));
+    made = `${kind} ${writes.join(',')}`;
     const period = pick([0, 200, 500, 1000, 3000]);
     const k = r() * 3;
     if (kind === 'fn') {
@@ -170,6 +189,12 @@ function run(lib, seed, general = false) {
     if (chance(0.1)) spec.start = t + pick([50, 200]);
     const h = attempt('cue', () => m.cue(spec));
     if (h !== undefined) handles.push(h);
+    say(
+      `cue #${handles.length - 1} ${made} reach=${reach}`,
+      spec.subjects ? `[${spec.subjects.map((s) => s.i)}]` : '',
+      JSON.stringify({ ...spec, patch: undefined, subjects: undefined, target: undefined }),
+      typeof spec.weight === 'function' ? `weight ${spec.weight.name || 'fn'}` : '',
+    );
   };
 
   let t = 0;
@@ -183,27 +208,54 @@ function run(lib, seed, general = false) {
   };
   const frames = int(20, 80);
   for (let f = 0; f < frames; f++) {
+    frame = f;
     t += pick([1, 8, 16.7, 16.7, 33, 120]);
     if (chance(0.15)) cue();
     if (chance(0.06) && handles.length > 0) {
       const h = pick(handles);
-      attempt('fade', () => h.fade(chance(0.5) ? { over: pick([0, 100]) } : undefined));
+      const o = chance(0.5) ? { over: pick([0, 100]) } : undefined;
+      say(`fade #${handles.indexOf(h)}`, JSON.stringify(o));
+      attempt('fade', () => h.fade(o));
     }
-    if (chance(0.06) && handles.length > 0)
-      attempt('fade subject', () =>
-        pick(handles).fade({ subject: pick(subjects), over: pick([0, 80]) }),
-      );
-    if (chance(0.05) && handles.length > 0) pick(handles).weight = r() * 1.8;
-    if (chance(0.03) && handles.length > 0) pick(handles).rate = pick([0.5, 1, 3]);
-    if (chance(0.03) && handles.length > 0) attempt('seek', () => pick(handles).seek(r() * 500));
-    if (chance(0.04)) attempt('drop', () => m.drop(pick(subjects)));
+    if (chance(0.06) && handles.length > 0) {
+      const h = pick(handles);
+      const s = pick(subjects);
+      const over = pick([0, 80]);
+      say(`fade #${handles.indexOf(h)} subject ${s.i} over ${over}`);
+      attempt('fade subject', () => h.fade({ subject: s, over }));
+    }
+    if (chance(0.05) && handles.length > 0) {
+      const h = pick(handles);
+      h.weight = r() * 1.8;
+      say(`weight #${handles.indexOf(h)} = ${h.weight}`);
+    }
+    if (chance(0.03) && handles.length > 0) {
+      const h = pick(handles);
+      h.rate = pick([0.5, 1, 3]);
+      say(`rate #${handles.indexOf(h)} = ${h.rate}`);
+    }
+    if (chance(0.03) && handles.length > 0) {
+      const h = pick(handles);
+      const at = r() * 500;
+      say(`seek #${handles.indexOf(h)} ${at}`);
+      attempt('seek', () => h.seek(at));
+    }
+    if (chance(0.04)) {
+      const s = pick(subjects);
+      say(`drop ${s.i}`);
+      attempt('drop', () => m.drop(s));
+    }
     if (chance(0.08) && motions.length > 0) {
       const mo = pick(motions);
       const s = pick(subjects);
+      say(`${mo.kind === 'glide' ? 'push' : 'to'} ${mo.kind} subject ${s.i}`);
       if (mo.kind !== 'glide') attempt('to', () => mo.p.to(s, mo.v(s, r() * 6)));
       else attempt('push', () => mo.p.push(s, mo.v(s, r() * 3)));
     }
-    if (chance(0.01)) attempt('mute', () => m.mute({ over: 100 }));
+    if (chance(0.01)) {
+      say('mute');
+      attempt('mute', () => m.mute({ over: 100 }));
+    }
     attempt('sync', () => m.sync(t));
 
     const how = pick(['probe', 'probe', 'out', 'pull', 'pull', 'project']);
@@ -232,6 +284,7 @@ function run(lib, seed, general = false) {
       );
     }
     note(`f${f} state`, [m.live, m.inert, ...handles.map((h) => h.state)]);
+    watch(how, order);
   }
   return trace;
 }

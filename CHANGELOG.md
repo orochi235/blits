@@ -19,6 +19,13 @@ version and everything else the patch. Each release lists its changes as **Break
   subjects take 0.79 of the time they did on teitou. A signal holding state of its own outside
   `setting.keep` is now called for every subject the mix has met, probed or not, as a stateless
   patch on a lane already is.
+- `atRest` reads a voice's weight as the probe it repeats did, holds and stagger delay included.
+  It handed a weight signal the voice's time before its holds and the subject's delay, so
+  `weightOf` changed after it, and a channel with no rest could switch on or off and stay so.
+- A locus whose members are all `keys` or stateless `fn` voices runs on lanes, so `mix.blend` over
+  such patches does: each subject's members are gathered as the general path's locus fold gathers
+  them and folded in at its first member's place. A motion member keeps the whole locus on the
+  general path. A blend of three over 10k subjects takes about a third less time on teitou.
 - A voice in a locus folds only the channels its patch writes, as a voice outside one does; a
   delta's other keys were folded too.
 - A `keys` or stateless `fn` voice naming one subject and writing several channels joins a crowd,

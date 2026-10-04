@@ -49,6 +49,15 @@ export function envelope(
   return w;
 }
 
+/**
+ * A subject's voice time `raw` once the voice's holds apply: 0 before it starts if it holds before,
+ * else NaN, where it shows nothing; `span` once its passes end if it holds after.
+ */
+export function heldTime(raw: number, before: boolean, after: boolean, span: number): number {
+  if (raw < 0) return before ? 0 : Number.NaN;
+  return after && raw > span ? span : raw;
+}
+
 /** A weight held to 0..1. */
 export function clampWeight(raw: number): number {
   return raw < 0 ? 0 : raw > 1 ? 1 : raw;

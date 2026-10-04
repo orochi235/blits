@@ -1,5 +1,5 @@
-import { foldNumber, type Numeric, numericOf } from './channels.js';
-import { clampWeight, passAt, phaseAt, weighed } from './clock.js';
+import { foldNumber, lerpNumber, type Numeric, numericOf } from './channels.js';
+import { clampWeight, heldTime, passAt, phaseAt, weighed } from './clock.js';
 import type { Curve } from './easing.js';
 import type { Subject, Voice } from './mixer.js';
 import { closed, type Motions, motionOf, noTouch } from './motion.js';
@@ -106,6 +106,24 @@ interface Laned {
   values: Float64Array;
   /** An array channel's rest, which a copy starts from as the general path's does. */
   start: readonly number[];
+  /** Its place among the laned channels. */
+  index: number;
+}
+
+/**
+ * The laned voices sharing one locus, in voice order, and what a fill gathers from them for each
+ * subject before folding it in at the subject's first member: their summed weight, and per laned
+ * channel the members' values lerped by share of weight and the weight taken into each.
+ */
+interface Locus<I, O> {
+  readonly members: Lane<I, O>[];
+  /** By subject number: the fill that last met it, the member it met first then, the summed weight. */
+  met: Float64Array;
+  first: Float64Array;
+  sum: Float64Array;
+  /** By laned channel, then subject number (times axes for `values`). */
+  values: (Float64Array | undefined)[];
+  taken: (Float64Array | undefined)[];
 }
 
 /** One channel `pull` writes: where in the kit, how many numbers a subject, and its rest. */
@@ -268,6 +286,8 @@ class Lane<I, O> implements Positions<I, O> {
   flat = false;
   /** A motion patch's state, which the lane samples in place of calling the patch. */
   readonly motion: Motions<I> | undefined;
+  /** The locus its voice shares, gathered before the voices are folded in order. */
+  group: Locus<I, O> | null = null;
 
   voiceAt(): Voice<I, O> {
     return this.voice;
@@ -354,7 +374,20 @@ class Lane<I, O> implements Positions<I, O> {
  * write several, and joins the crowd of voices writing those same channels.
  */
 function crowdable<I, O>(v: Voice<I, O>): boolean {
-  return v.named !== null && v.named.size === 1 && (v.slots.length === 1 || v.motion === undefined);
+  return (
+    v.named !== null &&
+    v.named.size === 1 &&
+    v.spec.locus === undefined &&
+    (v.slots.length === 1 || v.motion === undefined)
+  );
+}
+
+/** `xs`, or a copy at least `n` long where it is shorter. */
+function sized(xs: Float64Array, n: number): Float64Array {
+  if (xs.length >= n) return xs;
+  const grown = new Float64Array(n);
+  grown.set(xs);
+  return grown;
 }
 
 /** Whether two crowds' channels are the same list. */
@@ -369,8 +402,7 @@ function same(a: readonly Laned[], b: readonly Laned[]): boolean {
  * its passes after, and NaN where it shows nothing.
  */
 function held<I, O>(voice: Voice<I, O>, elapsed: number): number {
-  if (elapsed < 0) return voice.holdsBefore ? 0 : Number.NaN;
-  return voice.holdsAfter && elapsed > voice.span ? voice.span : elapsed;
+  return heldTime(elapsed, voice.holdsBefore, voice.holdsAfter, voice.span);
 }
 
 /** The law of a row that has none, a keys or fn voice's. */
@@ -521,6 +553,11 @@ export class Lanes<I, O> {
   private readonly crowdOf = new Map<number, Crowd<I, O>>();
   /** Whether two crowds share a channel, so their rows must interleave in voice order. */
   private overlap = false;
+  /** The loci whose voices are on lanes, every member of each on one. */
+  private loci: Locus<I, O>[] = [];
+  /** While a fill gathers a locus: that locus and the member gathering, where folds go instead. */
+  private into: Locus<I, O> | null = null;
+  private intoId = 0;
   private readonly lawsByKey = new Map<string, Float64Array>();
   private laned: Laned[] = [];
   /** By kit slot, the laned channel there. */
@@ -1012,11 +1049,30 @@ export class Lanes<I, O> {
     const present = host.voices.filter((v) => v.state !== 'done');
     for (const v of present) if (v.id > this.known) this.known = v.id;
     const numeric = host.channels.map((c) => numericOf(c) !== undefined);
-    const { channels, voices } = qualify(
-      numeric,
-      // A voice writing nothing has no lane to fill, so it stays where its calls are made.
-      present.map((v) => ({ id: v.id, fits: v.slots.length > 0 && host.fits(v), slots: v.slots })),
-    );
+    // A voice writing nothing has no lane to fill, so it stays where its calls are made.
+    const fits = present.map((v) => v.slots.length > 0 && host.fits(v));
+    const candidates = () =>
+      present.map((v, i) => ({ id: v.id, fits: fits[i] as boolean, slots: v.slots }));
+    let { channels, voices } = qualify(numeric, candidates());
+    // A locus folds its members together, so they run on lanes all together or not at all.
+    for (let split = true; split; ) {
+      split = false;
+      const loci = new Map<string, number[]>();
+      present.forEach((v, i) => {
+        const name = v.spec.locus;
+        if (name === undefined) return;
+        const at = loci.get(name);
+        if (at === undefined) loci.set(name, [i]);
+        else at.push(i);
+      });
+      for (const at of loci.values()) {
+        const on = at.filter((i) => voices.has((present[i] as Voice<I, O>).id)).length;
+        if (on === 0 || on === at.length) continue;
+        for (const i of at) fits[i] = false;
+        split = true;
+      }
+      if (split) ({ channels, voices } = qualify(numeric, candidates()));
+    }
     for (const lane of this.lanes) if (!voices.has(lane.voice.id)) this.leave(lane);
     const kept: Lane<I, O>[] = [];
     let crowded = 0;
@@ -1032,6 +1088,28 @@ export class Lanes<I, O> {
       kept.push(lane);
     }
     this.lanes = kept;
+    this.loci = [];
+    const loci = new Map<string, Locus<I, O>>();
+    for (const lane of kept) {
+      lane.group = null;
+      const name = lane.voice.spec.locus;
+      if (name === undefined) continue;
+      let g = loci.get(name);
+      if (g === undefined) {
+        g = {
+          members: [],
+          met: new Float64Array(this.cap),
+          first: new Float64Array(this.cap),
+          sum: new Float64Array(this.cap),
+          values: [],
+          taken: [],
+        };
+        loci.set(name, g);
+        this.loci.push(g);
+      }
+      g.members.push(lane);
+      lane.group = g;
+    }
     this.dense = kept
       .filter((l) => l.voice.named === null && l.epoch > 0)
       .sort((a, b) => a.epoch - b.epoch);
@@ -1055,6 +1133,7 @@ export class Lanes<I, O> {
         axes: n.axes,
         values: new Float64Array(this.cap * n.axes),
         start: typeof rest === 'number' ? [] : rest,
+        index: this.laned.length,
       };
       this.laned.push(ch);
       this.bySlot[slot] = ch;
@@ -1173,6 +1252,8 @@ export class Lanes<I, O> {
       }
       if (v.state === 'done' && !known) continue;
       if (v.state === 'done' || this.byId.has(v.id)) return false;
+      // A locus's members are on lanes together or not at all, so one joining may move the others.
+      if (v.spec.locus !== undefined) return false;
       const laned = v.slots.some((slot) => this.bySlot[slot] !== undefined);
       const fits = v.slots.length > 0 && this.host.fits(v);
       if (!laned && !fits) {
@@ -1391,6 +1472,7 @@ export class Lanes<I, O> {
       }
       if (busy) {
         for (const ch of this.laned) ch.values.fill(ch.rest, 0, size * ch.axes);
+        for (const g of this.loci) this.gatherLocus(g);
         for (const lane of this.lanes) {
           if (lane.idle) continue;
           if (this.crowds.length > 0) this.crowdsUpTo(lane.voice.id);
@@ -1504,16 +1586,140 @@ export class Lanes<I, O> {
     return subject;
   }
 
-  /** One voice's contribution to every subject it plays on. */
-  private run(lane: Lane<I, O>): void {
+  /**
+   * Every member of a locus, in voice order, gathered rather than folded: a member's delta for a
+   * subject is lerped into what the members before it left there by its share of the weight
+   * taken, as the general path's `foldLocus` does, so each subject's locus can fold in at its
+   * first member's place in the order.
+   */
+  private gatherLocus(g: Locus<I, O>): void {
+    const cap = this.cap;
+    if (g.met.length < cap) {
+      g.met = sized(g.met, cap);
+      g.first = sized(g.first, cap);
+      g.sum = sized(g.sum, cap);
+    }
+    for (let k = 0; k < g.values.length; k++) {
+      const values = g.values[k];
+      const taken = g.taken[k];
+      const axes = (this.laned[k] as Laned).axes;
+      if (values !== undefined) g.values[k] = sized(values, cap * axes);
+      if (taken !== undefined) g.taken[k] = sized(taken, cap);
+    }
+    this.into = g;
+    try {
+      for (const lane of g.members) {
+        const voice = lane.voice;
+        if (lane.idle || voice.state === 'pending' || voice.state === 'done') continue;
+        this.intoId = voice.id;
+        this.reset(lane);
+        const elapsed = voice.elapsedAt(this.now);
+        const period = voice.patch.period;
+        const passes = voice.passes;
+        const list = lane.list;
+        for (let p = 0; p < list.length; p++) {
+          const slot = list[p] as number;
+          if (this.one(lane, p, slot, elapsed, period, passes)) {
+            this.meetLocus(g, slot);
+            g.sum[slot] = (g.sum[slot] as number) + (lane.data[p * STRIDE + WEIGHT] as number);
+          }
+          if (voice.keeping) break;
+        }
+      }
+    } finally {
+      this.into = null;
+    }
+  }
+
+  /** The first a fill hears of a subject in a locus: from the member now gathering. */
+  private meetLocus(g: Locus<I, O>, slot: number): void {
+    if (g.met[slot] === this.fills) return;
+    g.met[slot] = this.fills;
+    g.first[slot] = this.intoId;
+    g.sum[slot] = 0;
+    for (const taken of g.taken) if (taken !== undefined) taken[slot] = 0;
+  }
+
+  /** A member's value for one channel of a subject, lerped into its locus: `foldLocus`'s step. */
+  private gatherInto(g: Locus<I, O>, ch: Laned, slot: number, value: unknown, w: number): void {
+    this.meetLocus(g, slot);
+    const k = ch.index;
+    let values = g.values[k];
+    let takenAt = g.taken[k];
+    if (values === undefined || takenAt === undefined) {
+      values = new Float64Array(this.cap * ch.axes);
+      takenAt = new Float64Array(this.cap);
+      g.values[k] = values;
+      g.taken[k] = takenAt;
+    }
+    const taken = takenAt[slot] as number;
+    const total = taken + w;
+    const u = w / total;
+    if (ch.scalar) {
+      values[slot] =
+        taken === 0 ? (value as number) : lerpNumber(values[slot] as number, value as number, u);
+    } else {
+      // Read past its end as the rest, as `vec`'s lerp and fold both read an array.
+      const arr =
+        Array.isArray(value) || ArrayBuffer.isView(value) ? (value as ArrayLike<number>) : null;
+      const base = slot * ch.axes;
+      for (let a = 0; a < ch.axes; a++) {
+        const v = arr === null ? ch.rest : (arr[a] ?? ch.rest);
+        values[base + a] = taken === 0 ? v : lerpNumber(values[base + a] as number, v, u);
+      }
+    }
+    takenAt[slot] = total;
+  }
+
+  /** A locus member's turn in the order: each subject it was the first member of takes the locus. */
+  private foldLocus(lane: Lane<I, O>, g: Locus<I, O>): void {
+    const id = lane.voice.id;
+    const fills = this.fills;
+    const list = lane.list;
+    for (let p = 0; p < list.length; p++) {
+      const slot = list[p] as number;
+      if (g.met[slot] !== fills || g.first[slot] !== id) continue;
+      const sum = g.sum[slot] as number;
+      if (sum <= 0) continue;
+      const w = sum > 1 ? 1 : sum;
+      for (let k = 0; k < g.values.length; k++) {
+        const takenAt = g.taken[k];
+        if (takenAt === undefined || !((takenAt[slot] as number) > 0)) continue;
+        const ch = this.laned[k] as Laned;
+        const values = g.values[k] as Float64Array;
+        const into = ch.values;
+        const base = slot * ch.axes;
+        for (let a = 0; a < ch.axes; a++)
+          into[base + a] = foldNumber(
+            ch.op,
+            into[base + a] as number,
+            values[base + a] as number,
+            w,
+          );
+      }
+    }
+  }
+
+  /** What a lane remembers within one fill, cleared before the fill runs it. */
+  private reset(lane: Lane<I, O>): void {
     const voice = lane.voice;
-    if (voice.state === 'pending' || voice.state === 'done') return;
     lane.placed = false;
     lane.read = false;
     lane.weighed = false;
     // With no fade in or out the envelope is 1 for every subject, which is what it would return.
     lane.flat = !((voice.fade.in ?? 0) > 0) && voice.out === null;
     lane.fade = 1;
+  }
+
+  /** One voice's contribution to every subject it plays on. */
+  private run(lane: Lane<I, O>): void {
+    const voice = lane.voice;
+    if (voice.state === 'pending' || voice.state === 'done') return;
+    if (lane.group !== null) {
+      this.foldLocus(lane, lane.group);
+      return;
+    }
+    this.reset(lane);
     if (lane.motion !== undefined && !voice.keeping) {
       this.runMotion(lane, lane.motion);
       return;
@@ -1529,6 +1735,11 @@ export class Lanes<I, O> {
     }
   }
 
+  /**
+   * One subject's contribution from a lane's voice. True where the voice gave the subject a delta,
+   * as the general path's `influence` does where it returns one, which is what makes a voice in a
+   * locus one of its members for the subject.
+   */
   private one(
     lane: Lane<I, O>,
     p: number,
@@ -1536,7 +1747,7 @@ export class Lanes<I, O> {
     elapsedNow: number,
     period: number,
     passes: number,
-  ): void {
+  ): boolean {
     const host = this.host;
     const voice = lane.voice;
     const data = lane.data;
@@ -1548,7 +1759,7 @@ export class Lanes<I, O> {
     const elapsed = held(voice, elapsedNow - delay);
     if (!(elapsed >= 0)) {
       data[o + WEIGHT] = 0;
-      return;
+      return false;
     }
     if (!lane.placed || !Object.is(elapsed, lane.placedAt)) {
       lane.placed = true;
@@ -1567,7 +1778,7 @@ export class Lanes<I, O> {
       w = this.signalled(voice, slot, lane.records[p] as Subject<unknown>, elapsed);
       if (Number.isNaN(w)) {
         data[o + WEIGHT] = 0;
-        return;
+        return false;
       }
     } else w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
     data[o + WEIGHT] = w;
@@ -1579,20 +1790,20 @@ export class Lanes<I, O> {
         this.gather(lane, lane.delta);
       }
       if (w > 0) this.fold(lane, slot, w);
-      return;
+      return true;
     }
     const rec = lane.records[p] as Subject<unknown>;
     // The general path makes a voice's first call for a subject, where it first sees it play.
     if (Number.isNaN(rec.probed)) {
       this.late.push(slot);
-      return;
+      return false;
     }
     // A motion patch needs the subject only to number it, so the lookup waits until then.
     if (lane.motion !== undefined) {
       this.move(lane, lane.motion, p, slot, rec, elapsed, delay, w);
-      return;
+      return true;
     }
-    this.call(voice, lane.chans, rec, slot, elapsed, lane.phase, lane.pass, delay, w);
+    return this.call(voice, lane.chans, rec, slot, elapsed, lane.phase, lane.pass, delay, w);
   }
 
   /** Reads a keys voice's stops at `phase` into `delta`, interpolating into the reader's `scratch`. */
@@ -1614,7 +1825,10 @@ export class Lanes<I, O> {
     );
   }
 
-  /** Calls a stateless fn voice's patch for a subject its general path has met, and folds the delta. */
+  /**
+   * Calls a stateless fn voice's patch for a subject its general path has met, and folds the delta;
+   * false for a subject the host has let go of.
+   */
   private call(
     voice: Voice<I, O>,
     chans: readonly Laned[],
@@ -1625,14 +1839,14 @@ export class Lanes<I, O> {
     pass: number,
     delay: number,
     w: number,
-  ): void {
+  ): boolean {
     const host = this.host;
     const subject = this.subjectAt(slot);
-    if (subject === absent) return;
+    if (subject === absent) return false;
     // Called already this frame, by the general path or a fill before a refill: reuse, as a probe does.
     if (rec.probed === this.now && rec.delta !== null && rec.seeks === voice.seeks) {
       if (w > 0) this.foldDelta(chans, slot, rec.delta, w);
-      return;
+      return true;
     }
     const kept = reading.kept;
     host.ready(voice, subject, rec, elapsed, pass, w);
@@ -1645,6 +1859,7 @@ export class Lanes<I, O> {
     if (this.keeps) host.after(voice, rec);
     if (reading.kept !== kept && !voice.keeping) host.kept(voice);
     if (w > 0) this.foldDelta(chans, slot, delta, w);
+    return true;
   }
 
   /** Runs every crowd's rows whose voices come before voice `id`, from where each crowd reached. */
@@ -2084,6 +2299,10 @@ export class Lanes<I, O> {
 
   private foldInto(ch: Laned, slot: number, value: unknown, w: number): void {
     if (value === undefined) return;
+    if (this.into !== null) {
+      this.gatherInto(this.into, ch, slot, value, w);
+      return;
+    }
     const values = ch.values;
     if (ch.scalar) {
       values[slot] = foldNumber(ch.op, values[slot] as number, value as number, w);

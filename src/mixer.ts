@@ -1,5 +1,5 @@
 import { type LerpInto, lerpInto } from './channels.js';
-import { envelope, passAt, passesOf, phaseAt, weighed } from './clock.js';
+import { envelope, heldTime, passAt, passesOf, phaseAt, weighed } from './clock.js';
 import { type Curve, curve } from './easing.js';
 import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
 import { type Motions, motionOf, noFrame, noRevive } from './motion.js';
@@ -1497,7 +1497,9 @@ class Mixer<I, O> implements Mix<I, O> {
     // A signal reading host input records it per probe under history, which a fill cannot.
     if (typeof spec.weight === 'function' && spec.weight.input && this.opts.history?.inputs)
       return false;
-    if (spec.locus !== undefined || spec.from === 'current') return false;
+    // A locus on lanes gathers keys and fn members; a motion member keeps it on the general path.
+    if (spec.locus !== undefined && voice.motion !== undefined) return false;
+    if (spec.from === 'current') return false;
     if (voice.out?.rest) return false;
     if (patch.state !== undefined || patch.step !== undefined) return false;
     if (this.opts.history?.inputs && patch.reads !== undefined && patch.reads.length > 0)
@@ -2254,17 +2256,11 @@ class Mixer<I, O> implements Mix<I, O> {
     if (!held.reaches) return null;
     if (voice.out?.rest && held.rested) return null;
 
-    let elapsed = voice.elapsedAt(now) - held.delay;
+    const raw = voice.elapsedAt(now) - held.delay;
+    if (raw < 0 && !voice.holdsBefore) return null;
+    const elapsed = heldTime(raw, voice.holdsBefore, voice.holdsAfter, voice.span);
     // A held subject's clock stands still at the edge it holds: -1 before, 1 after, 0 playing.
-    let still = 0;
-    if (elapsed < 0) {
-      if (!voice.holdsBefore) return null;
-      elapsed = 0;
-      still = -1;
-    } else if (voice.holdsAfter && elapsed > voice.span) {
-      elapsed = voice.span;
-      still = 1;
-    }
+    const still = raw < 0 ? -1 : voice.holdsAfter && raw > voice.span ? 1 : 0;
 
     const period = voice.patch.period;
     const phase = phaseAt(elapsed, period, voice.passes);
@@ -2825,10 +2821,17 @@ class Mixer<I, O> implements Mix<I, O> {
     if (dry) {
       if (held.reaches && held.probed === now && held.delta && held.seeks === voice.seeks) {
         const setting = voice.setting;
+        // The setting the probe that read the delta had, but for `dt`: a dry read advances nothing.
+        const elapsed = heldTime(
+          voice.elapsedAt(now) - held.delay,
+          voice.holdsBefore,
+          voice.holdsAfter,
+          voice.span,
+        );
         setting.timestamp = now;
         setting.dt = 0;
-        setting.elapsed = voice.elapsedAt(now);
-        setting.pass = 0;
+        setting.elapsed = elapsed;
+        setting.pass = passAt(elapsed, voice.patch.period, voice.passes);
         setting.weight = 0;
         setting.state = held.state;
         voice.keepOn = held;
