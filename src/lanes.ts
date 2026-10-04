@@ -4,7 +4,7 @@ import type { Curve } from './easing.js';
 import type { Subject, Voice } from './mixer.js';
 import { closed, type Motions, motionOf, noTouch } from './motion.js';
 import { absent, Numbers } from './numbers.js';
-import { readKeys, type Scratch } from './patch.js';
+import { AT, NOTHING, readKeys, type Scratch, seg, segment, shifted, type Track } from './patch.js';
 import { reading } from './reading.js';
 import type { Channel } from './types.js';
 
@@ -1806,6 +1806,54 @@ export class Lanes<I, O> {
     return this.call(voice, lane.chans, rec, slot, elapsed, lane.phase, lane.pass, delay, w);
   }
 
+  /**
+   * A keys voice's stops at `phase` folded straight into a subject's values, without a delta: what
+   * `readKeyed` then `foldDelta` give, through the same segment search and the stock channels' own
+   * lerp, which is all a laned keys voice can use.
+   */
+  private foldKeys(
+    voice: Voice<I, O>,
+    chans: readonly Laned[],
+    phase: number,
+    slot: number,
+    w: number,
+  ): void {
+    const built = voice.built as NonNullable<Voice<I, O>['built']>;
+    const tracks = built.tracks;
+    for (let i = 0; i < tracks.length; i++) {
+      const track = tracks[i] as Track;
+      const ch = chans[i] as Laned;
+      const found = segment(track, shifted(track, phase, built.period), undefined);
+      if (found === NOTHING) continue;
+      if (found === AT) {
+        this.foldInto(ch, slot, seg.a, w);
+        continue;
+      }
+      const a = seg.a;
+      const b = seg.b;
+      const u = seg.eased;
+      if (ch.scalar) {
+        this.foldInto(
+          ch,
+          slot,
+          (voice.lerps[i] as (a: unknown, b: unknown, u: number) => unknown)(a, b, u),
+          w,
+        );
+        continue;
+      }
+      // `vec`'s lerp, reading each end past its length as the rest, then its fold.
+      const as = a as ArrayLike<number>;
+      const bs = b as ArrayLike<number>;
+      const values = ch.values;
+      const base = slot * ch.axes;
+      const rest = ch.rest;
+      for (let x = 0; x < ch.axes; x++) {
+        const v = lerpNumber(as[x] ?? rest, bs[x] ?? rest, u);
+        values[base + x] = foldNumber(ch.op, values[base + x] as number, v, w);
+      }
+    }
+  }
+
   /** Reads a keys voice's stops at `phase` into `delta`, interpolating into the reader's `scratch`. */
   private readKeyed(
     voice: Voice<I, O>,
@@ -2011,10 +2059,7 @@ export class Lanes<I, O> {
     const period = voice.patch.period;
     const phase = phaseAt(elapsed, period, voice.passes);
     if (voice.built !== null) {
-      if (w > 0) {
-        this.readKeyed(voice, phase, c.delta, c.scratch);
-        this.foldDelta(c.chans, slot, c.delta, w);
-      }
+      if (w > 0) this.foldKeys(voice, c.chans, phase, slot, w);
       return;
     }
     const rec = c.records[p] as Subject<unknown>;
