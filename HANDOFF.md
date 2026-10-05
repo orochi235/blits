@@ -341,12 +341,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    `weasel^`), Mike's go 2026-10-05. Bare tween rows fill in one loop (`bare.ts`) and `pull` queues
    runs since 2026-10-05: on teitou `tweens^` takes 0.17 ms a frame and `weasel^` 0.22, against
    0.031–0.047 for a hand-written loop doing the same arithmetic. What is left:
-   - A stamp per fill in place of `Per.FILLED` on every subject: `Lanes.busyFill` says the fill
-     ran a lane, and the slot holds the fill that left the subject to the general path (late, owing,
-     numbered or forgotten since). Built and measured, not committed: `tweens^` −0.004 ms,
-     `churn^` −0.007, `named:10000` −0.05, `fn:10000x3` −0.07, but `probed` 1.498 → 1.519 ms
-     (14 alternated runs, teitou) with 4% more collections, on the same probe paths; cause not
-     found. Mike's call whether the trade is worth it.
+   - **`probe` and `atRest` each allocate one heap number a call** in `probed` (heap sampling:
+     `atRest` 230 MB over 1500 frames of 10k subjects, 16 B a call). Inferred, not tested: it is the
+     mix's `now`, a double, boxed to pass to `chain`, which V8 never inlines (over its bytecode
+     limit). A second box came with `prepare` falling out of `atRest`'s inlining, as V8 ranks a
+     callee by call frequency over bytecode size, counting what the callee itself inlines; keep
+     `prepare` small. Reading `now` inside `chain` instead of passing it would test the first.
    - `pullRun`'s per-subject stamps (`LANE_PROBE`, `LANE_FILL`): written per run instead, they
      would give `weightOf` and `pace` a second place to read the same answer. Not tried.
    - Measured no different, so not worth re-proposing: moving `popDue`'s loop into a function of

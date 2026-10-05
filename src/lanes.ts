@@ -14,7 +14,7 @@ import {
 } from './fill.js';
 import { fold, foldDelta, foldInto, foldRun, gather } from './gather.js';
 import { Begin, type Lane, type Laned, type Locus, Per, Row } from './lane.js';
-import { meet, owable, reach } from './meet.js';
+import { meet, reach } from './meet.js';
 import type { Watcher } from './motion.js';
 import { type absent, Numbers } from './numbers.js';
 import { Owed } from './owed.js';
@@ -124,14 +124,17 @@ export class Lanes<I, O> implements Watcher {
   /** The highest voice id the last qualify or settling of `touched` considered. */
   known = 0;
   /**
-   * Per subject number, `SLOT` numbers side by side, so a probe reads one place in memory: which
-   * fill last wrote it (0 for none); the latest lane epoch a probe of it has checked it against;
-   * how many idle lanes reach it, since a probe reads lanes only where none do; and the probe count
-   * at its last probe read from the lanes and at its last probe folded by the general path, with
-   * the fill the former read, which say whether a lane or a record holds what `weightOf` reports.
+   * Per subject number, `SLOT` numbers side by side, so a probe reads one place in memory: the
+   * fill that last left it to the general path, being late, owing, newly numbered or forgotten;
+   * the latest lane epoch a probe of it has checked it against; how many idle lanes reach it,
+   * since a probe reads lanes only where none do; and the probe count at its last probe read from
+   * the lanes and at its last probe folded by the general path, with the fill the former read,
+   * which say whether a lane or a record holds what `weightOf` reports.
    */
   per = new Float64Array(0);
   fills = 0;
+  /** The latest fill if it ran a lane, else 0: a subject whose `FILLED` is below it reads it. */
+  busyFill = 0;
   probes = 0;
   /**
    * Each subject by number as last probed, held from that probe until the next fill uses it, so a
@@ -208,7 +211,7 @@ export class Lanes<I, O> implements Watcher {
     const slot = this.numbers.take(subject);
     this.live++;
     this.grow(slot + 1);
-    this.per[slot * Per.SLOT + Per.FILLED] = 0;
+    this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
     this.per[slot * Per.SLOT + Per.SEEN] = -1;
     this.per[slot * Per.SLOT + Per.IDLE] = 0;
     this.per[slot * Per.SLOT + Per.LANE_PROBE] = 0;
@@ -278,24 +281,15 @@ export class Lanes<I, O> implements Watcher {
     version: number,
     head: Subject<unknown> | null,
   ): boolean {
-    const ready = this.filled(now, version) ? Begin.READY : this.begin(now, version);
-    if (ready === Begin.GENERAL) return this.general(slot);
+    if (!this.filled(now, version) && this.begin(now, version) === Begin.GENERAL)
+      return this.general(slot);
     if (slot < 0) return false;
     if (!this.probedThisFrame(slot)) this.distinct++;
     const probe = ++this.probes;
     const per = this.per;
     const o = slot * Per.SLOT;
-    let lane = per[o + Per.FILLED] === this.fills && per[o + Per.IDLE] === 0;
-    if ((per[o + Per.SEEN] as number) < this.wide && meet(this, slot, subject, head)) {
-      // The fill ran before the subject had these positions. Where every voice it just met folds
-      // after every other laned voice, the general path folds just those onto the lanes' values;
-      // otherwise it reads the general path all frame.
-      if (lane && per[o + Per.IDLE] === 0 && owable(this, slot)) this.owed.owe(slot, this.met);
-      else {
-        per[o + Per.FILLED] = 0;
-        lane = false;
-      }
-    }
+    let lane = (per[o + Per.FILLED] as number) < this.busyFill && per[o + Per.IDLE] === 0;
+    if ((per[o + Per.SEEN] as number) < this.wide) lane = meet(this, slot, subject, head, lane);
     if (lane) {
       per[o + Per.LANE_PROBE] = probe;
       per[o + Per.LANE_FILL] = this.fills;
@@ -430,7 +424,7 @@ export class Lanes<I, O> implements Watcher {
     for (const lane of this.lanes) lane.remove(slot);
     for (const c of this.crowds)
       for (let p = 0; p < c.size; p++) if (c.list[p] === slot) unplace(this, c, p);
-    if (slot < this.cap) this.per[slot * Per.SLOT + Per.FILLED] = 0;
+    if (slot < this.cap) this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
     this.subjects[slot] = undefined;
   }
 

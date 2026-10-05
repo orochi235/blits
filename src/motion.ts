@@ -153,52 +153,59 @@ function prepare(law: Float64Array, t: number): void {
 
 /**
  * One axis, `t` seconds after release, `y0` from where it heads and moving at `v0`, into `solved`,
- * with `timed` prepared for `t`.
+ * with `timed` prepared for `t`. Each form is a function of its own, small enough for V8 to inline
+ * wherever `closed` is: as one switch over all four it was not, and spring fills ran at two speeds.
  */
 function solve(law: Float64Array, y0: number, v0: number, t: number): void {
-  switch (law[0]) {
-    case UNDER: {
-      const zeta = law[2] as number;
-      const w0 = law[3] as number;
-      const wd = law[4] as number;
-      const e = timed.e;
-      const b = (v0 + zeta * w0 * y0) / wd;
-      const cos = timed.cos;
-      const sin = timed.sin;
-      const y = e * (y0 * cos + b * sin);
-      solved.y = y;
-      solved.dy = -zeta * w0 * y + e * wd * (b * cos - y0 * sin);
-      return;
-    }
-    case CRITICAL: {
-      const w0 = law[3] as number;
-      const e = timed.e;
-      const b = v0 + w0 * y0;
-      const y = e * (y0 + b * t);
-      solved.y = y;
-      solved.dy = e * b - w0 * y;
-      return;
-    }
-    case OVER: {
-      const r1 = law[2] as number;
-      const r2 = law[3] as number;
-      const a = (v0 - r2 * y0) / (r1 - r2);
-      const b = y0 - a;
-      const e1 = timed.e;
-      const e2 = timed.e2;
-      solved.y = a * e1 + b * e2;
-      solved.dy = a * r1 * e1 + b * r2 * e2;
-      return;
-    }
-    default: {
-      // Released at x moving at v, a glide comes to rest at x + v·τ; y is the distance still to go,
-      // which friction closes as e^(−t/τ), and its derivative at release is v again.
-      const tau = law[2] as number;
-      const e = timed.e;
-      solved.y = y0 * e;
-      solved.dy = (-y0 / tau) * e;
-    }
-  }
+  const form = law[0];
+  if (form === UNDER) solveUnder(law, y0, v0);
+  else if (form === CRITICAL) solveCritical(law, y0, v0, t);
+  else if (form === OVER) solveOver(law, y0, v0);
+  else solveGlide(law, y0);
+}
+
+function solveUnder(law: Float64Array, y0: number, v0: number): void {
+  const zeta = law[2] as number;
+  const w0 = law[3] as number;
+  const wd = law[4] as number;
+  const e = timed.e;
+  const b = (v0 + zeta * w0 * y0) / wd;
+  const cos = timed.cos;
+  const sin = timed.sin;
+  const y = e * (y0 * cos + b * sin);
+  solved.y = y;
+  solved.dy = -zeta * w0 * y + e * wd * (b * cos - y0 * sin);
+}
+
+function solveCritical(law: Float64Array, y0: number, v0: number, t: number): void {
+  const w0 = law[3] as number;
+  const e = timed.e;
+  const b = v0 + w0 * y0;
+  const y = e * (y0 + b * t);
+  solved.y = y;
+  solved.dy = e * b - w0 * y;
+}
+
+function solveOver(law: Float64Array, y0: number, v0: number): void {
+  const r1 = law[2] as number;
+  const r2 = law[3] as number;
+  const a = (v0 - r2 * y0) / (r1 - r2);
+  const b = y0 - a;
+  const e1 = timed.e;
+  const e2 = timed.e2;
+  solved.y = a * e1 + b * e2;
+  solved.dy = a * r1 * e1 + b * r2 * e2;
+}
+
+/**
+ * Released at x moving at v, a glide comes to rest at x + v·τ; y is the distance still to go,
+ * which friction closes as e^(−t/τ), and its derivative at release is v again.
+ */
+function solveGlide(law: Float64Array, y0: number): void {
+  const tau = law[2] as number;
+  const e = timed.e;
+  solved.y = y0 * e;
+  solved.dy = (-y0 / tau) * e;
 }
 
 const axes = (v: Value): number[] => (typeof v === 'number' ? [v] : [...v]);

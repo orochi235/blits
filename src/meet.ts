@@ -28,13 +28,15 @@ export function owable<I, O>(lanes: Lanes<I, O>, slot: number): boolean {
 
 /**
  * Gives a probed subject a position on every lane that started playing since the subject was last
- * checked and that reaches it. True when any did, so the probe takes the general path.
+ * checked and that reaches it, and says whether the probe still reads the lanes, given `lane`,
+ * whether it would have. Kept out of `prepare`, which V8 then inlines into its callers.
  */
 export function meet<I, O>(
   lanes: Lanes<I, O>,
   slot: number,
   subject: I,
   head: Subject<unknown> | null,
+  lane: boolean,
 ): boolean {
   const seen = lanes.per[slot * Per.SLOT + Per.SEEN] as number;
   const from = seen < 0 ? -1 - seen : seen;
@@ -74,7 +76,17 @@ export function meet<I, O>(
       lanes.met.push(voice.id);
       met = true;
     }
-  return met;
+  if (!met) return lane;
+  // The fill ran before the subject had these positions. Where every voice it just met folds
+  // after every other laned voice, the general path folds just those onto the lanes' values;
+  // otherwise it reads the general path all frame.
+  const o = slot * Per.SLOT;
+  if (lane && lanes.per[o + Per.IDLE] === 0 && owable(lanes, slot)) {
+    lanes.owed.owe(slot, lanes.met);
+    return true;
+  }
+  lanes.per[o + Per.FILLED] = lanes.fills;
+  return false;
 }
 
 /** Places a crowd voice's row on the subject a probe met, as `Lane.add` adds a position. */

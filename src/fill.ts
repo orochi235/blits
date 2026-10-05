@@ -83,8 +83,8 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
         }
     }
     // With every lane idle there was nothing to fill, and no subject reads a lane this frame.
-    if (busy) for (let s = 0; s < size; s++) lanes.per[s * Per.SLOT + Per.FILLED] = lanes.fills;
-    for (const slot of lanes.late) lanes.per[slot * Per.SLOT + Per.FILLED] = 0;
+    lanes.busyFill = busy ? lanes.fills : 0;
+    for (const slot of lanes.late) lanes.per[slot * Per.SLOT + Per.FILLED] = lanes.fills;
     if (lanes.holding) {
       lanes.subjects.fill(undefined, 0, size);
       lanes.holding = false;

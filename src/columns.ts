@@ -45,6 +45,7 @@ export function pullRun<I, O>(
   if (ready !== Begin.READY || !lanes.whole) return from;
   const per = lanes.per;
   const fills = lanes.fills;
+  const busy = lanes.busyFill;
   const wide = lanes.wide;
   const frame = lanes.frameProbes;
   const subjects = lanes.subjects;
@@ -68,7 +69,7 @@ export function pullRun<I, O>(
     const o = slot * Per.SLOT;
     if (
       slot < 0 ||
-      per[o + Per.FILLED] !== fills ||
+      (per[o + Per.FILLED] as number) >= busy ||
       per[o + Per.IDLE] !== 0 ||
       (per[o + Per.SEEN] as number) < wide ||
       lanes.owes(slot)

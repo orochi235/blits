@@ -4,6 +4,21 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A fill no longer stamps every subject: the lanes keep which fill ran a lane, and a subject is
+  stamped only when it is left to the general path. A spring is solved by a function per kind of
+  spring, small enough for V8 to inline where it samples, where one function over all four left
+  spring fills running at one of two speeds. At 10k subjects, a frame takes 0.438 ms against 0.473
+  with a spring voice read by `pull` (`spring^`), 0.411 against 0.463 with a spring voice per
+  subject (`springs^`), 0.937 against 0.996 and 0.884 against 0.935 for the same by `probe`,
+  0.306 against 0.319 with one subject replaced each frame (`turnover^`), 0.226 against 0.233 with
+  one voice replaced each frame (`churn^`), and 0.167 against 0.170 with a tween voice per subject
+  (`tweens^`); a probe and `atRest` of every subject (`probed`) is unchanged, 1.497 against 1.504
+  (teitou, medians of eight alternated runs, twelve for `probed`).
+
 ## 0.6.0
 
 ### Breaking
