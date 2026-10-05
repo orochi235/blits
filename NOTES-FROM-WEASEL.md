@@ -23,10 +23,8 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   drop it still defers a frame.
 - **Churn, what is left** (`turnover^`, weasel's shape: each frame one subject leaves for good and
   a new one comes, read by `pull` over a list kept dense by swap-remove; teitou, 2026-10-04,
-  `2ad0063`). 0.43 ms a frame against 0.32–0.33 for the same voices steady (`tweens^`). In the
-  profile: `moveTo` compacting all 10k voices to drop the one that retired (about 4%; skipping it
-  would touch every reader of the voice list), and `flush` writing row by row once the swaps have
-  left slots out of list order. `popDue` shows at up to 14%, but that is a Maglev deopt loop on its
+  `ae6565f`). 0.41–0.42 ms a frame against 0.32–0.33 for the same voices steady (`tweens^`). In
+  the profile: `flush` writing row by row once the swaps have left slots out of list order. `popDue` shows at up to 14%, but that is a Maglev deopt loop on its
   fresh `out` array, and removing the deopts saved no time. A user ease runs once per subject once
   start times differ, where voices started together share one call a frame: a cubic
   `1 - (1 - u) ** 3` costs about 0.1 ms at 10k against a line. Retargeting each tween as it is

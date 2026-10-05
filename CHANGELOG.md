@@ -91,6 +91,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A voice retiring no longer has the mix read every voice it holds to take it out of the list: up
+  to 8 a frame are found by their id. At 10k voices with one leaving each frame (`turnover^`), a
+  frame takes 0.407–0.416 ms against 0.427–0.436 (teitou, three alternated runs).
+
 - A subject meeting a voice over every subject on a lane does less to meet it. A lane finds a
   subject's place by its number in an array rather than a Map, the voice's record comes from the
   chain the probe just linked rather than a second lookup, the voices naming the subject are looked
