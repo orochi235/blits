@@ -212,6 +212,12 @@ const axes = (v: Value): number[] => (typeof v === 'number' ? [v] : [...v]);
 const still = (x: readonly number[]): number[] => new Array<number>(x.length).fill(0);
 const per = <I, V>(p: PerSubject<I, V>, subject: I): V =>
   typeof p === 'function' ? (p as (s: I) => V)(subject) : p;
+const scalarOf = <I, V>(p: PerSubject<I, V>): boolean | undefined =>
+  typeof p === 'function' ? undefined : typeof p === 'number';
+const wrongKind = (channel: string, holdsNumber: boolean): Error =>
+  new Error(
+    `blits: channel ${channel} holds ${holdsNumber ? 'a number' : 'an array'}, and this motion patch gives a subject ${holdsNumber ? 'an array' : 'a number'}`,
+  );
 
 /**
  * A patch whose motion is a closed form per subject, so it lands in the same place at any frame
@@ -244,6 +250,8 @@ interface Shape<I> {
   law: readonly number[];
   /** Whether a subject's value is a number rather than an array. */
   scalar: (subject: I) => boolean;
+  /** Whether every subject's value is a number; undefined where that depends on the subject. */
+  scalarEvery(): boolean | undefined;
   /** A tween's easing, which its law cannot hold; undefined, but present, on every other shape. */
   ease: Curve | undefined;
   /** A tween's seconds for a stretch the subject starts now; undefined, but present, on the rest. */
@@ -291,6 +299,26 @@ export class Motions<I> {
    */
   owner: MotionOwner | null = null;
   ownerId = -1;
+  /** Whether the channel it was cued on holds a number; undefined until it is cued. */
+  private holdsNumber: boolean | undefined = undefined;
+  private channel = '';
+
+  /**
+   * Records what the channel the patch is cued on holds, refusing a value of the other kind: at once
+   * where every subject's value is one kind, else on the first sample of a subject whose value is not.
+   */
+  cuedOn(channel: string, holdsNumber: boolean): void {
+    const every = this.shape.scalarEvery();
+    if (every !== undefined && every !== holdsNumber) throw wrongKind(channel, holdsNumber);
+    for (let s = 0; s < this.numbers.size; s++)
+      if (
+        this.numbers.subject(s) !== absent &&
+        (((this.runs[this.base(s) + 1] as number) & SCALAR) !== 0) !== holdsNumber
+      )
+        throw wrongKind(channel, holdsNumber);
+    this.holdsNumber = holdsNumber;
+    this.channel = channel;
+  }
 
   private frame(subject: I): number {
     return this.owner === null ? Number.NaN : this.owner.frame(this.ownerId, subject);
@@ -309,6 +337,9 @@ export class Motions<I> {
     this.check(x, n);
     this.check(v, n);
     this.check(to, n);
+    const scalar = this.shape.scalar(subject);
+    if (this.holdsNumber !== undefined && scalar !== this.holdsNumber)
+      throw wrongKind(this.channel, this.holdsNumber);
     if (this.n < 0) {
       this.n = n;
       this.stride = 3 + 3 * n;
@@ -323,7 +354,7 @@ export class Motions<I> {
     }
     if (this.numbers.size > 1) this.slots.set(subject, s);
     this.grow(s + 1);
-    this.runs[this.base(s) + 1] = this.shape.scalar(subject) ? SCALAR : 0;
+    this.runs[this.base(s) + 1] = scalar ? SCALAR : 0;
     this.write(s, { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to });
     return s;
   }
@@ -908,6 +939,9 @@ class SpringShape<I, V extends Value> implements Shape<I> {
   scalar(s: I): boolean {
     return typeof per(this.goal, s) === 'number';
   }
+  scalarEvery(): boolean | undefined {
+    return scalarOf(this.goal);
+  }
 }
 
 class GlideShape<I, V extends Value> implements Shape<I> {
@@ -939,6 +973,9 @@ class GlideShape<I, V extends Value> implements Shape<I> {
   }
   scalar(s: I): boolean {
     return typeof per(this.start, s) === 'number';
+  }
+  scalarEvery(): boolean | undefined {
+    return scalarOf(this.start);
   }
 }
 
@@ -978,6 +1015,9 @@ class TweenShape<I, V extends Value> implements Shape<I> {
   }
   scalar(s: I): boolean {
     return typeof per(this.goal, s) === 'number';
+  }
+  scalarEvery(): boolean | undefined {
+    return scalarOf(this.goal);
   }
   ms(s: I): number {
     const length = per(this.length, s);

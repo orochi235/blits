@@ -4,6 +4,7 @@ import { schedule } from './due.js';
 import { started } from './held.js';
 import { handle } from './hosts.js';
 import type { Mixer } from './mixer.js';
+import { motionOf } from './motion.js';
 import { adopt, ownerReading } from './owner.js';
 import { durationOf } from './patch.js';
 import { checkPlacement, localNow, mixAt, pin, place } from './place.js';
@@ -22,6 +23,13 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
       throw new Error(
         `blits: channel ${String(channel)} is ${here.kind ?? 'a custom channel'} in this kit, but the patch was written for ${wanted.kind ?? 'a custom channel'}`,
       );
+  }
+  const motion = motionOf<I>(patch);
+  if (motion !== undefined) {
+    const channel = patch.writes[0] as keyof O;
+    const rest = (mix.kit[channel] as Channel<unknown>).rest;
+    if (typeof rest === 'number') motion.cuedOn(String(channel), true);
+    else if (Array.isArray(rest) || ArrayBuffer.isView(rest)) motion.cuedOn(String(channel), false);
   }
   if (patch.reads) {
     const host = mix.opts.host;
@@ -75,7 +83,6 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
   voice.placing = anchored;
   if (mix.pace !== null && owner === null && spec.start !== undefined && voice.state === 'pending')
     pin(mix, voice, spec.start - mix.offset);
-  const motion = voice.motion;
   if (motion !== undefined) {
     mix.playing.set(motion, (mix.playing.get(motion) ?? 0) + 1);
     mix.owner ??= motionOwner(new WeakRef(mix));

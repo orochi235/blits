@@ -453,6 +453,33 @@ describe('the motion form', () => {
     m.probe({ id: 'a' });
     expect(() => m.probe({ id: 'b' })).toThrow(/same number of axes/);
   });
+
+  it('refuses an array on a channel holding a number, and a number on one holding an array', () => {
+    const m = mix<Part, Pose>(K);
+    const arrays = tween<Part, Pose, number[]>('x', { from: [0], to: [1], ms: 100 });
+    expect(() => m.cue({ patch: arrays })).toThrow(/channel x holds a number/);
+    const number = tween<Part, Pose, number>('p', { from: 0, to: 1, ms: 100 });
+    expect(() => m.cue({ patch: number })).toThrow(/channel p holds an array/);
+    expect(m.voices()).toHaveLength(0);
+  });
+
+  it("refuses a subject whose own value is the wrong kind for its channel on that subject's first sample", () => {
+    const s = spring<Part, Pose, number | number[]>('x', {
+      to: (part) => (part.id === 'b' ? [1] : 1),
+    });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: s });
+    m.sync(0);
+    expect(m.probe({ id: 'a' }).x).toBeTypeOf('number');
+    expect(() => m.probe({ id: 'b' })).toThrow(/channel x holds a number/);
+  });
+
+  it('refuses a patch cued on a channel holding a number in one mix and an array in another', () => {
+    const s = spring<Part, Pose, number>('x', { to: 1 });
+    mix<Part, Pose>(K).cue({ patch: s });
+    const other = mix(kit<{ x: number[] }>({ x: vec(1, sum()) }));
+    expect(() => other.cue({ patch: s as never })).toThrow(/channel x holds an array/);
+  });
 });
 
 describe('tween', () => {

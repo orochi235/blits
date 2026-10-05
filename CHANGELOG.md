@@ -31,6 +31,12 @@ version and everything else the patch. Each release lists its changes as **Break
   changes nothing; it showed on the general path and on a lane, and a crowd row now keeps its own
   copy of the numbers. Make a new patch to change its stops.
 
+- A spring, glide or tween refuses a value of the wrong kind for its channel: an array on a channel
+  holding a number, or a number on one holding an array. A value every subject shares is refused at
+  `cue`, and one given per subject on that subject's first sample. A one-element array on a number
+  channel used to play as its number, through a fold about 5× slower (1.2 ms a frame at 10k subjects
+  against 0.24, on teitou); a number on an array channel played as the channel's rest.
+
 ### Added
 
 - A mix's host has a type: `mix<I, O, H>` types its `host` option, and every patch, signal and
