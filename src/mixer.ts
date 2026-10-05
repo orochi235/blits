@@ -991,9 +991,15 @@ class Mixer<I, O> implements Mix<I, O> {
     const pace = this.pace;
     const now = pace === null ? u : pace.sync(u);
     const later = u !== this.u;
+    const still = later && now === this.now;
     this.u = u;
     // Host time moving while the mix clock stands still lands what waits on host time or the host.
     if (now !== this.now || (later && pace !== null && this.waits())) this.move(now);
+    // It is a frame too, which asks every weight signal again, so one reading input follows it.
+    if (still) {
+      this.frame = ++frames;
+      this.lanes?.refill();
+    }
     const bookers = this.bookers;
     if (bookers !== null) for (const b of bookers) b.sync();
   }

@@ -130,6 +130,12 @@ version and everything else the patch. Each release lists its changes as **Break
   first that needs a qualify, such as a locus member off the lanes starting, and the qualify that
   followed never heard of the rest: a voice on one subject starting at 50 ms beside a glide in a
   locus starting then read nothing on the lanes for good.
+- A paused mix asks a weight signal again at each sync, on lanes and for a blend, as the general
+  path already asked a plain voice's. A sync that moved host time while the mix clock stood still
+  was not a new frame: a laned voice kept the weight its lanes were last filled with, and a blend
+  the reading it took before, so a signal the host set while paused, such as a `level`, changed
+  nothing until the mix ran again. A paused mix on lanes now fills them each frame, as a running
+  one does.
 - A subject numbered by a mix, or by a motion patch, is let go once collected even when it was the
   first object numbered and was collected before a second came. Its number, its lane positions and
   its motion state were held for good.

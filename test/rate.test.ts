@@ -211,6 +211,23 @@ describe('mix rate', () => {
       expect(m.probe(a).gain).not.toBe(low);
       expect(m.inert).toBe(false);
     });
+
+    it('reads a blend’s signal again at each sync, so one reading input follows it', () => {
+      for (const lanes of [false, true]) {
+        const pointer = level<Part>(0.25);
+        const m = mix<Part, Pose>(K, { lanes });
+        m.sync(0);
+        m.blend([wave, clock], pointer);
+        m.sync(100);
+        m.probe(a);
+        m.rate = 0;
+        m.sync(110);
+        const low = m.probe(a).x;
+        pointer.set(1);
+        m.sync(120);
+        expect(m.probe(a).x, `lanes ${lanes}`).not.toBe(low);
+      }
+    });
   });
 
   describe('host timestamps', () => {

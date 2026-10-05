@@ -3,7 +3,7 @@ import { kit, max, mul, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
-import { slew } from '../src/signals.js';
+import { level, slew } from '../src/signals.js';
 import type { Handle, Mix, MixOptions, Setting } from '../src/types.js';
 
 interface Pose {
@@ -1987,6 +1987,32 @@ describe('a voice weighted by a signal runs on lanes while the signal keeps no s
         },
         { times: ramp, parts: 70 },
       );
+  });
+
+  it('asks the signal again at each sync while the mix is paused, as the general path does', () => {
+    agree(
+      (m) => {
+        const knob = level<Part>(0.3);
+        const handles = [
+          m.cue({
+            patch: spring<Part, Pose, number>('crawl', { from: 0, to: (p) => p.id + 1 }),
+            weight: knob,
+          }),
+          m.cue({ patch: pulse(), weight: knob }),
+        ];
+        return {
+          handles,
+          at: (t) => {
+            if (t === 50) m.rate = 0;
+            if (t === 100) knob.set(0.9);
+            if (t === 133) m.ramp(1, 40);
+            if (t === 150) m.ramp(0, 40);
+            if (t === 300) knob.set(0.6);
+          },
+        };
+      },
+      { times: [0, 16, 33, 50, 66, 100, 116, 133, 150, 166, 200, 300, 316] },
+    );
   });
 });
 
