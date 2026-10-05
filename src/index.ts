@@ -8,6 +8,9 @@ export { keys, patch } from './patch.js';
 export { gate, lag, level, peak, slew } from './signals.js';
 export type {
   Anchor,
+  BookedHit,
+  Booker,
+  BookOptions,
   Channel,
   Columns,
   Doubt,
@@ -16,6 +19,7 @@ export type {
   FadeOptions,
   FadeSpec,
   Handle,
+  Hit,
   Keyframe,
   Kit,
   Mark,

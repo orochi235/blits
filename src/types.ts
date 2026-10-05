@@ -303,6 +303,79 @@ export interface Marked {
 }
 
 /**
+ * An event at a time on a voice's own clock, which `book` hands a host ahead of time. It plays once
+ * per pass, for the voice and not per subject, so `stagger` does not spread it.
+ *
+ * @category score
+ */
+export interface Hit<E = unknown> {
+  /** Voice ms into each pass: 0 up to the patch's `duration`, or any time at all for a patch with none. */
+  at: number;
+  event: E;
+}
+
+/**
+ * One pass of one hit, as `book` takes it.
+ *
+ * @category score
+ */
+export interface BookedHit<E = unknown> {
+  /** On the host's clock. */
+  timestamp: number;
+  voice: number;
+  /** Which of the voice's `hits`, by index. */
+  hit: number;
+  /** Which pass, 0 first. */
+  pass: number;
+  event: E;
+  score: string | undefined;
+  name: string | undefined;
+  tags: readonly string[];
+}
+
+/**
+ * What `book` takes: an outside clock, how far ahead to book on it, and what to do with each item.
+ *
+ * @category score
+ */
+export interface BookOptions<E = unknown> {
+  /**
+   * The outside clock, in ms: `audio.currentTime * 1000`, `performance.now()`, or whatever the host
+   * schedules against. Read once a sync. The mix maps its host time onto it by an offset that folds
+   * in 5% of each frame's difference, and starts over from the clock's own reading on a jump past
+   * 50 ms, such as a suspended context or a hidden tab.
+   */
+  clock: () => number;
+  /** How far ahead to book, host ms. It has to cover the longest gap between two syncs. */
+  ahead: number;
+  /** How far past an item first seen late may be and still be taken, host ms. */
+  late: number;
+  /**
+   * Called once per item: a mark as `marks` lists it, or a hit. `when` is on the outside clock;
+   * `lateBy` is how many host ms past the item was when first seen, 0 for one booked ahead, which
+   * is then taken at the clock's now. Return a `stop` to hear about a booking whose time moved by
+   * more than 1 ms or that went away (a seek, a rate or ramp on the voice or the mix, a fade, a
+   * `rebase`, an anchor's target moving, the voice leaving); the item is then booked again, at its
+   * new time, at the same sync.
+   */
+  take(item: Marked | BookedHit<E>, when: number, lateBy: number): { stop(): void } | undefined;
+  /** Book only the voices, and announced marks, carrying this tag. */
+  tag?: string;
+  /** Book only this score's voices and marks. */
+  score?: string;
+}
+
+/**
+ * A running booker, returned by `book`.
+ *
+ * @category score
+ */
+export interface Booker {
+  /** Stops every booking still ahead, and books nothing more. */
+  stop(): void;
+}
+
+/**
  * What `cue` takes: a patch, and the clock, weight and reach it plays with.
  *
  * @category voice
@@ -374,6 +447,11 @@ export interface VoiceSpec<I, O, H = unknown> {
   score?: string;
   /** Where it sits relative to the clock or to other voices, in place of `start`. */
   anchor?: Placement;
+  /**
+   * Events at times on this voice's clock, which `book` hands a host ahead of time. Patch-sent
+   * events are not known ahead, so they stay drain-only; these are the plan.
+   */
+  hits?: readonly Hit[];
 }
 
 /**
@@ -638,6 +716,15 @@ export interface Mix<I, O, H = unknown> {
    * whoever drains them.
    */
   drain<E = unknown>(tag?: string): Sent<I, E>[];
+  /**
+   * Hands the host each mark and hit before it comes, against a clock of its own, so it can schedule
+   * the thing itself: a sound on an `AudioContext`, a MIDI message with a timestamp, a video loaded
+   * before the voice that shows it starts. Booking runs at each `sync`, `ahead` ms out, and a
+   * booking whose time moves is stopped and taken again. Nothing is booked twice: a mark is known by
+   * its voice and which mark, a hit by its voice, index and pass. `project` books nothing, and
+   * nothing about booking is replayed under `history`. A mix with no booker pays nothing for it.
+   */
+  book<E = unknown>(opts: BookOptions<E>): Booker;
 }
 
 /**

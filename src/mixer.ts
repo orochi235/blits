@@ -1,3 +1,4 @@
+import { Book, type BookHost, checkHits, type Listed } from './book.js';
 import { type LerpInto, lerpInto } from './channels.js';
 import {
   type Clock,
@@ -23,6 +24,8 @@ import { type Built, builtOf, durationOf, intosOf, readKeys, type Scratch } from
 import { reading } from './reading.js';
 import { Store } from './store.js';
 import type {
+  Booker,
+  BookOptions,
   Channel,
   Columns,
   Doubt,
@@ -817,6 +820,8 @@ class Mixer<I, O> implements Mix<I, O> {
   private readonly slotOf = new Map<string, number>();
   private readonly lanes: Lanes<I, O> | null;
   private handles: HandleHost<I, O> | null = null;
+  /** What `book` made, still booking; null while there is none. */
+  private bookers: Book<I, O>[] | null = null;
 
   constructor(
     private readonly kit: Kit<O>,
@@ -868,6 +873,7 @@ class Mixer<I, O> implements Mix<I, O> {
       throw new Error('blits: a voice takes target or subjects, not both');
     const anchor = spec.anchor;
     if (anchor) this.checkPlacement(spec, anchor);
+    if (spec.hits !== undefined) checkHits(spec.hits, durationOf(patch));
 
     const anchored =
       anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
@@ -966,8 +972,36 @@ class Mixer<I, O> implements Mix<I, O> {
     const later = u !== this.u;
     this.u = u;
     // Host time moving while the mix clock stands still lands what waits on host time or the host.
-    if (now === this.now && !(later && pace !== null && this.waits())) return;
-    this.move(now);
+    if (now !== this.now || (later && pace !== null && this.waits())) this.move(now);
+    const bookers = this.bookers;
+    if (bookers !== null) for (const b of bookers) b.sync();
+  }
+
+  book(opts: BookOptions): Booker {
+    if (this.projecting) throw new Error('blits: a projection books nothing');
+    const mix = this;
+    const host: BookHost<I, O> = {
+      get voices() {
+        return mix.cued;
+      },
+      get timestamp() {
+        return mix.last;
+      },
+      get now() {
+        return mix.now;
+      },
+      hostOf: (t) => this.hostOf(t),
+      readingAt: (timestamp) => this.readingAt(timestamp - this.offset),
+      endOf: (voice) => this.markOf(voice, 'end'),
+      marks: (from, to) => this.listed(from, to),
+      unhook: (b) => {
+        const left = (this.bookers ?? []).filter((x) => x !== b);
+        this.bookers = left.length === 0 ? null : left;
+      },
+    };
+    const b = new Book(host, opts);
+    this.bookers = [...(this.bookers ?? []), b];
+    return b;
   }
 
   /** Whether a sync that leaves the mix clock where it was still has something to land. */
@@ -1314,7 +1348,7 @@ class Mixer<I, O> implements Mix<I, O> {
   project(timestamp: number): Projection<I, O> {
     const u = timestamp - this.offset;
     const pace = this.pace;
-    const t = pace === null ? u : pace.reading(u);
+    const t = this.readingAt(u);
     const c = new Mixer<I, O>(this.kit, { ...this.opts, history: undefined, lanes: false });
     c.projecting = true;
     c.pose = this.pose;
@@ -1410,10 +1444,24 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   marks(from: number, to: number): Marked[] {
+    return this.listed(from, to).map(({ order: _, ...m }) => m);
+  }
+
+  /** The host timestamp the mix clock reads mix time `t` at; Infinity where it never will. */
+  private hostOf(t: number): number {
+    return (this.pace === null ? t : this.pace.timeOf(t)) + this.offset;
+  }
+
+  /** What the mix clock reads at host time `u`, by the clock in force then. */
+  private readingAt(u: number): number {
+    return this.pace === null ? u : this.pace.reading(u);
+  }
+
+  /** Every mark between two host timestamps, earliest first, with the order that tells each apart. */
+  private listed(from: number, to: number): Listed[] {
     const lo = from - this.offset;
     const hi = to - this.offset;
-    const pace = this.pace;
-    const out: (Marked & { order: number })[] = [];
+    const out: Listed[] = [];
     for (const a of this.announced)
       if (a.at >= lo && a.at <= hi)
         out.push({
@@ -1428,7 +1476,7 @@ class Mixer<I, O> implements Mix<I, O> {
     for (const voice of [...this.cued, ...this.gone]) {
       for (const mark of ['start', 'in', 'out', 'end'] as const) {
         const m = this.markOf(voice, mark);
-        const t = m === undefined || pace === null ? m : pace.timeOf(m);
+        const t = m === undefined ? m : this.hostOf(m) - this.offset;
         if (t === undefined || t < lo || t > hi) continue;
         out.push({
           timestamp: t + this.offset,
@@ -1442,7 +1490,7 @@ class Mixer<I, O> implements Mix<I, O> {
       }
     }
     out.sort((a, b) => a.timestamp - b.timestamp || a.order - b.order);
-    return out.map(({ order: _, ...m }) => m);
+    return out;
   }
 
   atRest(subject: I): boolean {
