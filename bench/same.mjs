@@ -1,5 +1,5 @@
-// Whether two builds give the same bits: random scenes (voices of every form, loci, fades, holds,
-// subject fades, drops, retargets, seeks, projections) run through both, every read compared.
+// Whether two builds give the same bits: random scenes (voices of every form, loci, blends, fades,
+// holds, subject fades, drops, retargets, seeks, projections) run through both, every read compared.
 //   node bench/same.mjs <dist-a> <dist-b> [scenes] [first-seed]   SAME_LANES=off runs dist-a without lanes
 // SAME_RATE=1 also changes the mix's own rate, which needs both builds to have one; without it the
 // scenes are what they were before mixes had a rate.
@@ -59,7 +59,7 @@ function run(lib, seed, general = false) {
     tag: lib.last(),
   });
   const opts = { lanes: chance(0.7) && !general };
-  if (chance(0.15)) opts.history = { ms: 2000 };
+  if (chance(0.15)) opts.history = { ms: 2000, inputs: chance(0.5) };
   if (chance(0.15)) opts.stepMs = pick([4, 8, 16]);
   const m = lib.mix(K, opts);
   const subjects = Array.from({ length: int(1, 40) }, (_, i) => ({ i, seed: r() * 10 }));
@@ -163,7 +163,39 @@ function run(lib, seed, general = false) {
   };
 
   const handles = [];
+  const varying = (s, st) => 0.5 + 0.5 * Math.sin(st.elapsed / 150 + s.seed);
+  const knob = lib.level(0.3);
+  const stateless = [
+    (s) => 0.5 + 0.5 * Math.sin(s.seed),
+    varying,
+    lib.peak(knob, (s) => 0.3 * s.seed),
+  ];
+  const signal = () =>
+    pick([
+      ...stateless,
+      lib.slew(varying, { riseMs: 120, fallMs: 60 }),
+      lib.lag(varying, { riseMs: 80, fallMs: 200 }),
+      lib.gate(varying, { on: 0.6, off: 0.4 }),
+    ]);
+  // Members of a blend whose signal reads the voice's clock: the one read takes the first member's
+  // setting, so seeking or retiming one member alone is not compared.
+  const timed = new Set();
+  // `mix.blend` over one to three patches, by one signal. A signal keeping state is left out: before
+  // blends shared one read, each member kept its own, which parted ways where members left lanes apart.
+  const blend = () => {
+    const patches = Array.from({ length: int(1, 3) }, patchOf);
+    const spec = {};
+    if (chance(0.4)) spec.fade = { in: pick([0, 50, 200]), out: pick([0, 100, 300]) };
+    if (chance(0.2)) spec.stagger = (s) => s.i * 7;
+    if (chance(0.3)) spec.target = (s) => s.i % 2 === 0;
+    const by = pick(stateless);
+    const hs = attempt('blend', () => m.blend(patches, by, spec));
+    if (hs !== undefined) handles.push(...hs);
+    if (hs !== undefined && by === varying) for (const h of hs) timed.add(h);
+    say(`blend #${handles.length - patches.length}.. by ${by.name || 'fn'}`, JSON.stringify(spec));
+  };
   const cue = () => {
+    if (chance(0.15)) return blend();
     const spec = { patch: patchOf() };
     const reach = pick(['all', 'one', 'some', 'target']);
     if (reach === 'one') spec.subjects = [pick(subjects)];
@@ -173,17 +205,7 @@ function run(lib, seed, general = false) {
       spec.target = (s) => s.i % mod === 0;
     }
     if (chance(0.25)) spec.locus = pick(['a', 'b']);
-    if (chance(0.3)) {
-      const varying = (s, st) => 0.5 + 0.5 * Math.sin(st.elapsed / 150 + s.seed);
-      spec.weight = pick([
-        r() * 1.8,
-        (s) => 0.5 + 0.5 * Math.sin(s.seed),
-        varying,
-        lib.slew(varying, { riseMs: 120, fallMs: 60 }),
-        lib.lag(varying, { riseMs: 80, fallMs: 200 }),
-        lib.gate(varying, { on: 0.6, off: 0.4 }),
-      ]);
-    }
+    if (chance(0.3)) spec.weight = chance(0.2) ? r() * 1.8 : signal();
     if (chance(0.4)) spec.fade = { in: pick([0, 50, 200]), out: pick([0, 100, 300]) };
     if (chance(0.3)) spec.loop = chance(0.5) ? true : int(1, 3);
     if (chance(0.2)) spec.rate = pick([0.5, 2]);
@@ -234,14 +256,14 @@ function run(lib, seed, general = false) {
     }
     if (chance(0.03) && handles.length > 0) {
       const h = pick(handles);
-      h.rate = pick([0.5, 1, 3]);
+      if (!timed.has(h)) h.rate = pick([0.5, 1, 3]);
       say(`rate #${handles.indexOf(h)} = ${h.rate}`);
     }
     if (chance(0.03) && handles.length > 0) {
       const h = pick(handles);
       const at = r() * 500;
       say(`seek #${handles.indexOf(h)} ${at}`);
-      attempt('seek', () => h.seek(at));
+      if (!timed.has(h)) attempt('seek', () => h.seek(at));
     }
     if (chance(0.04)) {
       const s = pick(subjects);
@@ -265,6 +287,10 @@ function run(lib, seed, general = false) {
         say(`mix ramp ${rate} over ${over}`);
         m.ramp(rate, over);
       }
+    }
+    if (chance(0.1)) {
+      knob.set(r());
+      say(`knob ${knob()}`);
     }
     if (chance(0.01)) {
       say('mute');
