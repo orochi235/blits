@@ -59,9 +59,10 @@ function ExplainerBody<I, O, C>({
   const canvas = useRef<HTMLCanvasElement>(null);
   const size = useWidth(canvas, aspect);
   const visible = useVisible(canvas);
+  const focused = useFocused();
 
   useEffect(() => {
-    if (!playing || !visible) return;
+    if (!playing || !visible || !focused) return;
     let last = performance.now();
     let id = requestAnimationFrame(function tick(now) {
       const dt = Math.min(now - last, 100);
@@ -70,7 +71,7 @@ function ExplainerBody<I, O, C>({
       id = requestAnimationFrame(tick);
     });
     return () => cancelAnimationFrame(id);
-  }, [playing, visible, duration]);
+  }, [playing, visible, focused, duration]);
 
   useEffect(() => {
     const f = player.at(t);
@@ -233,6 +234,22 @@ function useWidth(ref: React.RefObject<HTMLElement | null>, aspect: number): Siz
     return () => ro.disconnect();
   }, [ref, aspect]);
   return size;
+}
+
+/** Whether the window has focus: a page behind another app stops playing, as one scrolled away does. */
+function useFocused(): boolean {
+  const [on, setOn] = useState(() => typeof document === 'undefined' || document.hasFocus());
+  useEffect(() => {
+    const focus = () => setOn(true);
+    const blur = () => setOn(false);
+    window.addEventListener('focus', focus);
+    window.addEventListener('blur', blur);
+    return () => {
+      window.removeEventListener('focus', focus);
+      window.removeEventListener('blur', blur);
+    };
+  }, []);
+  return on;
 }
 
 function useVisible(ref: React.RefObject<HTMLElement | null>): boolean {
