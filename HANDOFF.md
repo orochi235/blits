@@ -316,6 +316,26 @@ systems now run on it**, on klieg's `main`.
      - **Nothing reads clearly slower than 0.4.0 at steady state.** Confirm any short-run
        regression at `FRAMES=5000` before chasing it: 330 frames can end before the JIT settles.
 
+1e. **Next for speed: the steady frame of 10k one-voice-per-subject tweens read by `pull`** (`tweens^`,
+   `weasel^`), Mike's go 2026-10-05; to start once the `mixer.ts`/`lanes.ts` split lands. Profiled on
+   teitou at `375be46`: `tweens^` 0.32 ms a frame, `weasel^` 0.35, against 0.031–0.047 for a
+   hand-written loop doing the same arithmetic. In order, each measured before the next:
+   - Fill bare tween rows in one tight loop: no per-fill copy into `samples` or `SAMPLED`/`SEEKS`
+     stamps (recompute through `closed` when asked), `foldNumber` called directly, and the tween's
+     closed form called without the 14-argument `closed` → `eased` hop, split into pieces both
+     share so it stays one copy. Prototyped: −0.08 ms on `tweens^`, −0.09 on `weasel^`.
+   - Record a `pull` as a run (first slot and a count) rather than a `writeLater` per subject, and
+     rest-fill unlaned columns as one block in `flush`. Prototyped: −0.03 / −0.05, but it slowed
+     `churn^` by 0.04, to fix first. Under churn `writeLater` is about 0.28 ms against 0.04 steady
+     (blits-0c, busy machine): check `--trace-deopt` first. This session owns `pullRun`,
+     `writeLater` and `flush`; blits-0c owns `moveTo`, arrays on a number channel and `atRest`.
+   - Inferred, smaller: one fill-wide stamp instead of `FILLED` on every subject (~0.01 ms);
+     `pullRun`'s remaining per-subject checks (up to ~0.03, but a second pathway for what
+     `weightOf` and `pace` read).
+   - A steady frame allocates 16 B a subject in `runCrowd`, likely a user ease's boxed return.
+   - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
+     runs a side at least.
+
 1d. **`@msb235/blits-quarks` 0.1.0 is on npm**, published by hand 2026-10-02 because npm refuses
    trust for a name never published; trusted publishing is registered since, so later versions go out
    from `quarks-v*` tags. `main` pins it to engine 0.3.0, a breaking change not yet released (0.2.0
