@@ -92,7 +92,7 @@ function specOf(
   };
   if (stagger) spec.stagger = stagger;
   if (target) spec.target = target;
-  if (v.hold) spec.hold = v.hold;
+  if (v.freeze) spec.freeze = v.freeze;
   if (v.locus) spec.locus = v.locus;
   if (v.from) spec.from = v.from;
   if (v.anchor) {

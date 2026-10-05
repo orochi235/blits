@@ -81,6 +81,7 @@ const voice = (v: unknown) =>
   patch(v.patch) &&
   opt(v.stagger, expr) &&
   opt(v.target, expr) &&
+  opt(v.freeze, oneOf('before', 'after', 'both')) &&
   opt(v.hold, oneOf('before', 'after', 'both')) &&
   opt(v.locus, str) &&
   opt(v.from, oneOf('current')) &&
@@ -104,6 +105,12 @@ export function load(raw: unknown): Composition | null {
   if (!levelsOk(levels as Level[])) return null;
   if (!Array.isArray(voices) || voices.length > MAX_VOICES || !voices.every(voice)) return null;
   if (new Set(voices.map((v) => (v as Rec).id)).size !== voices.length) return null;
+  // Saved and shared before blits named it `freeze`.
+  for (const v of voices as Rec[])
+    if ('hold' in v) {
+      v.freeze ??= v.hold;
+      delete v.hold;
+    }
   return raw as unknown as Composition;
 }
 

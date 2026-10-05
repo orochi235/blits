@@ -33,7 +33,7 @@ describe('load', () => {
     for (const patch of kinds) expect(load(withVoice({ patch }))).not.toBeNull();
     const extras = {
       target: { code: '(s) => true' },
-      hold: 'after',
+      freeze: 'after',
       locus: 'a',
       from: 'current',
       weight: 0.5,
@@ -45,6 +45,12 @@ describe('load', () => {
     expect(load({ ...copy(), stage: { kind: 'letters', text: 'hi' } })).not.toBeNull();
   });
 
+  it('reads a voice saved with hold as freeze', () => {
+    const v = load(withVoice({ hold: 'after' }))?.voices[0];
+    expect(v?.freeze).toBe('after');
+    expect(v).not.toHaveProperty('hold');
+    expect(load(withVoice({ hold: 'after', freeze: 'before' }))?.voices[0]?.freeze).toBe('before');
+  });
   it('refuses a wrong version, a missing field, or junk', () => {
     expect(load({ ...DEFAULT, version: 2 })).toBeNull();
     const { voices: _, ...noVoices } = DEFAULT;
@@ -72,7 +78,7 @@ describe('load', () => {
       withVoice({ fade: undefined }),
       withVoice({ fade: { in: '400' } }),
       withVoice({ fade: { ease: 'bounce' } }),
-      withVoice({ hold: 'always' }),
+      withVoice({ freeze: 'always' }),
       withVoice({ from: 'start' }),
       withVoice({ locus: 3 }),
       withVoice({ anchor: 'wave' }),

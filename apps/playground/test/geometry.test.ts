@@ -19,8 +19,8 @@ const clip = (c: Partial<Clip>): Clip => ({
   fadeIn: 0,
   fadeOut: 0,
   spread: 0,
-  holdBefore: false,
-  holdAfter: false,
+  freezeBefore: false,
+  freezeAfter: false,
   ...c,
 });
 

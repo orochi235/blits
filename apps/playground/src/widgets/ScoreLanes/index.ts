@@ -10,8 +10,8 @@ export interface Clip {
   fadeOut: number;
   spread: number; // ms from first to last subject's start; 0 = none
   spreadAt?: number; // ms after start where the first subject starts; default 0
-  holdBefore: boolean;
-  holdAfter: boolean;
+  freezeBefore: boolean;
+  freezeAfter: boolean;
   group?: string;
   locked?: boolean; // start is set elsewhere (anchored): body drag disabled
 }

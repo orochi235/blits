@@ -38,7 +38,7 @@ export interface Voice {
   loop: boolean | number;
   stagger?: Expr;
   target?: Expr;
-  hold?: 'before' | 'after' | 'both';
+  freeze?: 'before' | 'after' | 'both';
   weight: number | Expr;
   fade: { in?: number; out?: number; ease?: Easing };
   locus?: string;

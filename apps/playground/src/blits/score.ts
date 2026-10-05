@@ -31,8 +31,8 @@ function spreadOf(
 const passesOf = (v: Voice) =>
   v.loop === true ? Number.POSITIVE_INFINITY : v.loop === false ? 1 : v.loop;
 
-function holdOf(v: Voice): Hatch {
-  return v.hold ?? null;
+function freezeOf(v: Voice): Hatch {
+  return v.freeze ?? null;
 }
 
 /** The voice name and edge an anchor points at, when it selects by name. */
@@ -54,7 +54,7 @@ export function clipsOf(
 ): { clips: Clip[]; links: Link[] } {
   const scope = scopeOf(c.levels);
   const clips = c.voices.map((v, lane): Clip => {
-    const hold = holdOf(v);
+    const freeze = freezeOf(v);
     const spread = spreadOf(v, subjects, scope);
     const clip: Clip = {
       id: v.id,
@@ -67,8 +67,8 @@ export function clipsOf(
       fadeIn: v.fade.in ?? 0,
       fadeOut: v.fade.out ?? 0,
       spread: spread.ms,
-      holdBefore: hold === 'before' || hold === 'both',
-      holdAfter: hold === 'after' || hold === 'both',
+      freezeBefore: freeze === 'before' || freeze === 'both',
+      freezeAfter: freeze === 'after' || freeze === 'both',
       locked: v.anchor?.start !== undefined || v.anchor?.in !== undefined,
     };
     if (spread.at !== 0) clip.spreadAt = spread.at;
@@ -113,8 +113,8 @@ function edited(c: Composition, v: Voice, edit: Exclude<ClipEdit, { kind: 'group
     case 'fadeOut':
       return edit.ms === (v.fade.out ?? 0) ? v : { ...v, fade: { ...v.fade, out: edit.ms } };
     case 'hatch':
-      if (edit.hatch === holdOf(v)) return v;
-      return edit.hatch === null ? without(v, 'hold') : { ...v, hold: edit.hatch };
+      if (edit.hatch === freezeOf(v)) return v;
+      return edit.hatch === null ? without(v, 'freeze') : { ...v, freeze: edit.hatch };
     case 'link': {
       const to = c.voices.find((x) => x.id === edit.link.to.clip);
       if (!to || to.id === v.id) return v;

@@ -19,7 +19,7 @@ export interface Subject<S> {
   delay: number;
   /** The mix timestamp this subject's delay ran out at, which its step grid counts from. */
   since: number;
-  /** The mix timestamp its fade in counts from: `since`, or earlier for a voice holding before. */
+  /** The mix timestamp its fade in counts from: `since`, or earlier for a voice freezing before. */
   shown: number;
   /** The weight this voice gave this subject the last frame it was probed, 0 where it gave none. */
   weight: number;
@@ -158,7 +158,7 @@ export interface Ramp {
 }
 
 export class Voice<I, O> {
-  state: 'pending' | 'live' | 'held' | 'fading' | 'done' = 'pending';
+  state: 'pending' | 'live' | 'frozen' | 'fading' | 'done' = 'pending';
   rate: number;
   weight: number;
   /**
@@ -206,9 +206,9 @@ export class Voice<I, O> {
   readonly span: number;
   /** The state behind a motion patch, undefined for any other. */
   readonly motion: Motions<I> | undefined;
-  /** Its `hold`, for a patch it applies to: motion holds its target already. */
-  readonly holdsBefore: boolean;
-  readonly holdsAfter: boolean;
+  /** Its `freeze`, for a patch it applies to: motion keeps its target already. */
+  readonly freezesBefore: boolean;
+  readonly freezesAfter: boolean;
   /** The mix time it first showed: when it was cued, or the first sync after. */
   opened = Number.NaN;
   /** Which of its entries in the mix's due queue is current; older ones are skipped when popped. */
@@ -330,11 +330,13 @@ export class Voice<I, O> {
         ? this.duration * this.passes
         : Number.POSITIVE_INFINITY;
     this.motion = motionOf<I>(patch);
-    const holds = this.motion === undefined ? spec.hold : undefined;
-    // A voice with no hold of its own takes its owner's.
-    const inherits = holds === undefined && this.motion === undefined && owner !== null;
-    this.holdsBefore = inherits ? owner.holdsBefore : holds === 'before' || holds === 'both';
-    this.holdsAfter = inherits ? owner.holdsAfter : holds === 'after' || holds === 'both';
+    const freezes = this.motion === undefined ? (spec.freeze ?? spec.hold) : undefined;
+    // A voice with no freeze of its own takes its owner's.
+    const inherits = freezes === undefined && this.motion === undefined && owner !== null;
+    this.freezesBefore = inherits
+      ? owner.freezesBefore
+      : freezes === 'before' || freezes === 'both';
+    this.freezesAfter = inherits ? owner.freezesAfter : freezes === 'after' || freezes === 'both';
     this.setting = new VoiceSetting(host, send, this);
     this.rate = spec.rate ?? 1;
     this.weight = typeof spec.weight === 'number' ? spec.weight : 1;

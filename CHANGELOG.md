@@ -6,6 +6,14 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Breaking
+
+- A voice's `hold` is `freeze`, SMIL's name for it, and a voice frozen after its passes is in state
+  `'frozen'`, not `'held'`: a host comparing `handle.state` to `'held'` must compare to `'frozen'`.
+  `hold` is still taken on a voice and an owner where `freeze` is not set, but it is deprecated and
+  a later release removes it; where both are set, `freeze` wins. `assess` still says `'held'` for a
+  channel whose input is not known, which is another thing.
+
 ### Added
 
 - `ticker()`, one frame loop for any number of mixes: `add(mix)` syncs it every frame, `after(fn)`

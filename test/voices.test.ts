@@ -28,7 +28,7 @@ describe('mix.voices', () => {
   it('lists every voice by cue order, pending, live, held and fading alike', () => {
     const m = mix<Part, Pose>(PART);
     m.sync(0);
-    const held = m.cue({ patch: ramp(), loop: false, hold: 'after' });
+    const held = m.cue({ patch: ramp(), loop: false, freeze: 'after' });
     const fading = m.cue({ patch: ramp(), loop: true, fade: { out: 1000 } });
     const live = m.cue({ patch: ramp(), loop: true });
     const pending = m.cue({ patch: ramp(), start: 5000 });
@@ -36,14 +36,14 @@ describe('mix.voices', () => {
     fading.fade();
     m.sync(210);
     expect([held.state, fading.state, live.state, pending.state]).toEqual([
-      'held',
+      'frozen',
       'fading',
       'live',
       'pending',
     ]);
     expect(ids(m.voices())).toEqual([held.id, fading.id, live.id, pending.id]);
     expect(m.voices().every((h, i) => h === [held, fading, live, pending][i])).toBe(true);
-    expect(m.voices().map((h) => h.state)).toEqual(['held', 'fading', 'live', 'pending']);
+    expect(m.voices().map((h) => h.state)).toEqual(['frozen', 'fading', 'live', 'pending']);
   });
 
   it('hands back the very handles cue returned', () => {

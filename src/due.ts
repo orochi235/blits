@@ -33,10 +33,10 @@ function dueOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): number {
   due = Math.min(due, voice.outAt);
   if (Number.isFinite(voice.span)) {
     const end = voice.span + voice.latest;
-    // A held voice goes live again once its clock is back before its end: by a seek, by a
+    // A frozen voice goes live again once its clock is back before its end: by a seek, by a
     // subject staggered later than any before, or by running backwards, which is checked each
     // frame while it can.
-    if (voice.state === 'held') {
+    if (voice.state === 'frozen') {
       if (voice.rate <= 0 || voice.ramp !== null) return Number.NEGATIVE_INFINITY;
       if (!Number.isNaN(mix.now) && voice.elapsedAt(mix.now) < end) return Number.NEGATIVE_INFINITY;
     }

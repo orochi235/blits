@@ -54,11 +54,14 @@ magicsmoke run on it**, each on its own `main`.
   is lint, typecheck of both `src` and `test`, then the suite, green. `npm run bench`
   (`bench/frame.mjs`) measures a frame at scene sizes, GC counts included. Enlisted for the fleet — `.onto/tests` is
   `plugin: node`, `run: npm test`, `runner: vitest` — and green there too.
-- **`hold` shipped in 0.4.0** (built 2026-10-03): WAAPI's `fill` under blits' own name, for wod's
-  move onto blits — `useSpin` holds its landing angle with `fill: 'forwards'` and awaits
-  `animation.finished`, which map to `hold: 'after'` and `handle.played`. The schema page's Holding
-  paragraph has the design. Mike chose the name and the values `before`/`after`/`both`, and that a
-  held voice's end is when it is faded, not when its passes run out.
+- **A voice's `freeze`** (shipped in 0.4.0 as `hold`, renamed 2026-10-05, unreleased): WAAPI's
+  `fill` under blits' own name, for wod's move onto blits — `useSpin` holds its landing angle with
+  `fill: 'forwards'` and awaits `animation.finished`, which map to `freeze: 'after'` and
+  `handle.played`. The schema page's Freezing paragraph has the design. Mike chose the values
+  `before`/`after`/`both`, that a frozen voice's end is when it is faded, not when its passes run
+  out, and the name `freeze` once the ticker's `hold()` took the word; `hold` stays a deprecated
+  alias, and the state is `'frozen'`. wod (`anglePatch.ts`, `transition/tracks.ts`'s `'held'`) and
+  klieg (`compositor.ts`) change when they move past 0.5.0.
 - **`mix.inert` shipped in 0.4.0** (built 2026-10-03, merge `3228fa7`), for wod's frame loop to
   sleep under a landed wheel while `live` stays true. Mike asked for it and named it through the wod
   session; the CHANGELOG entry and the schema page's `Mix` block say what counts as inert. wod's

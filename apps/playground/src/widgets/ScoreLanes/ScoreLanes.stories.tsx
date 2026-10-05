@@ -5,7 +5,7 @@ import { type Clip, type ClipEdit, type Link, ScoreLanes } from './index';
 const meta: Meta<typeof ScoreLanes> = { title: 'playground/ScoreLanes', component: ScoreLanes };
 export default meta;
 
-const base = { fadeIn: 0, fadeOut: 0, spread: 0, holdBefore: false, holdAfter: false };
+const base = { fadeIn: 0, fadeOut: 0, spread: 0, freezeBefore: false, freezeAfter: false };
 const CLIPS: Clip[] = [
   {
     ...base,
@@ -41,8 +41,8 @@ const CLIPS: Clip[] = [
     start: 3000,
     pass: 1300,
     passes: 1,
-    holdBefore: true,
-    holdAfter: true,
+    freezeBefore: true,
+    freezeAfter: true,
     group: 'echo',
   },
   {
@@ -89,8 +89,8 @@ function apply(clips: Clip[], e: ClipEdit): Clip[] {
     if (e.kind === 'hatch')
       return {
         ...c,
-        holdBefore: e.hatch === 'before' || e.hatch === 'both',
-        holdAfter: e.hatch === 'after' || e.hatch === 'both',
+        freezeBefore: e.hatch === 'before' || e.hatch === 'both',
+        freezeAfter: e.hatch === 'after' || e.hatch === 'both',
       };
     return c;
   });

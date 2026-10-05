@@ -3,7 +3,7 @@ import { passAt, phaseAt, silent, weighed } from './clock.js';
 import { flush } from './columns.js';
 import { crowdsUpTo, freshen } from './crowd.js';
 import { foldLocus, gatherLocus } from './gather.js';
-import { held, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
+import { frozenAt, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { reach } from './meet.js';
 import { absent } from './numbers.js';
@@ -248,7 +248,7 @@ export function one<I, O>(
   if (this.per[slot * Per.SLOT + Per.LANE_FILL] === this.fills - 1)
     data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
   const delay = data[o + Row.DELAY] as number;
-  const elapsed = held(voice, elapsedNow - delay);
+  const elapsed = frozenAt(voice, elapsedNow - delay);
   if (!(elapsed >= 0)) {
     data[o + Row.WEIGHT] = 0;
     return false;

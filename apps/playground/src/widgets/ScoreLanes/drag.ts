@@ -25,9 +25,9 @@ export function fadeRoom(c: Clip, handle: 'fadeIn' | 'fadeOut'): number {
 }
 
 export function hatchOf(c: Clip): Hatch {
-  if (c.holdBefore && c.holdAfter) return 'both';
-  if (c.holdBefore) return 'before';
-  if (c.holdAfter) return 'after';
+  if (c.freezeBefore && c.freezeAfter) return 'both';
+  if (c.freezeBefore) return 'before';
+  if (c.freezeAfter) return 'after';
   return null;
 }
 

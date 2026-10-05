@@ -22,7 +22,7 @@ const c: Composition = {
   length: 4000,
   levels: [],
   voices: [
-    v({ id: 'a', stagger: { code: '(s) => s.col * 100' }, hold: 'after', locus: 'g' }),
+    v({ id: 'a', stagger: { code: '(s) => s.col * 100' }, freeze: 'after', locus: 'g' }),
     v({ id: 'b', loop: true, anchor: { start: { after: 'a' } } }),
     v({ id: 'c', patch: { kind: 'spring', channel: 'scale', opts: { to: 2 } }, loop: true }),
     v({ id: 'd', loop: false, fade: {}, anchor: { end: { of: 'c', mark: 'in', by: 20 } } }),
@@ -45,8 +45,8 @@ describe('clipsOf', () => {
       fadeIn: 100,
       fadeOut: 50,
       spread: 300,
-      holdBefore: false,
-      holdAfter: true,
+      freezeBefore: false,
+      freezeAfter: true,
       group: 'g',
       locked: false,
     });
@@ -110,10 +110,10 @@ describe('applyEdit', () => {
     );
     expect(at(e, 'e')?.anchor).toEqual({ end: { after: 'b' } });
   });
-  it('writes a hatch as hold, and none removes it', () => {
-    expect(at(applyEdit(c, { clip: 'b', kind: 'hatch', hatch: 'both' }), 'b')?.hold).toBe('both');
+  it('writes a hatch as freeze, and none removes it', () => {
+    expect(at(applyEdit(c, { clip: 'b', kind: 'hatch', hatch: 'both' }), 'b')?.freeze).toBe('both');
     expect(at(applyEdit(c, { clip: 'a', kind: 'hatch', hatch: null }), 'a')).not.toHaveProperty(
-      'hold',
+      'freeze',
     );
   });
   it('joining a grouped clip takes its locus', () => {
@@ -190,7 +190,7 @@ describe('voice → clip → edit → voice', () => {
     const [a, b, cc, dd] = clipsOf(d, subjects).clips;
     expect(a).toMatchObject({ start: 120, fadeOut: 10 });
     expect(b).toMatchObject({ passes: 4, group: cc?.group });
-    expect(cc).toMatchObject({ holdBefore: true, holdAfter: false });
+    expect(cc).toMatchObject({ freezeBefore: true, freezeAfter: false });
     expect(cc?.group).toBeDefined();
     expect(dd).toMatchObject({ fadeIn: 30 });
   });

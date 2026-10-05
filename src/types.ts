@@ -408,7 +408,7 @@ export interface VoiceSpec<I, O, H = unknown> {
   /**
    * true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its
    * passes are done for the latest-staggered subject it has seen — over `fade.out` where one is
-   * set, at once where none is — unless it holds after.
+   * set, at once where none is — unless it freezes after.
    */
   loop?: boolean | number;
   /**
@@ -419,12 +419,14 @@ export interface VoiceSpec<I, O, H = unknown> {
   /**
    * Show a subject the first frame before it starts — while the voice is pending and while the
    * subject waits out its `stagger` — the last frame of the last pass after a finite loop plays
-   * out, or both. A held subject's clock stands still: `at` is asked for the edge frame and `step`
+   * out, or both. A frozen subject's clock stands still: `at` is asked for the edge frame and `step`
    * does not run, past one last step to the end of the last pass. `fade.in` counts from the first
-   * frame the voice shows. A voice holding after stays, `held`, until `fade()` or an anchored `out`
-   * takes it out, so every one cued must be faded or it stays in the mix for good. Does nothing to
-   * a motion patch, which holds its target already. Default: neither.
+   * frame the voice shows. A voice freezing after stays, `frozen`, until `fade()` or an anchored
+   * `out` takes it out, so every one cued must be faded or it stays in the mix for good. Does
+   * nothing to a motion patch, which keeps its target already. Default: neither.
    */
+  freeze?: 'before' | 'after' | 'both';
+  /** @deprecated Use `freeze`. A voice that sets only `hold` still freezes; `freeze` wins over it. */
   hold?: 'before' | 'after' | 'both';
 
   /** Steady weight, or a signal read per subject per frame. Default 1. */
@@ -458,7 +460,7 @@ export interface VoiceSpec<I, O, H = unknown> {
    * the owner's clock, in ms from when the owner starts, and default to where that clock is now; a
    * bare name in an anchor means a sibling, another voice the owner holds. Its clock runs on the
    * owner's, so the owner's rate, ramp and seeks move it, and its weight is multiplied by the
-   * owner's weight and fade. Without a `hold` of its own it takes the owner's.
+   * owner's weight and fade. Without a `freeze` of its own it takes the owner's.
    */
   owner?: Handle<I>;
 }
@@ -483,7 +485,9 @@ export interface OwnerSpec<I, H = unknown> {
   weight?: number | Signal<I, H>;
   /** One ramp in and out over every child, multiplied into their weights as `weight` is. */
   fade?: FadeSpec;
-  /** The hold every child without one of its own takes. */
+  /** The freeze every child without one of its own takes. */
+  freeze?: 'before' | 'after' | 'both';
+  /** @deprecated Use `freeze`. An owner that sets only `hold` still freezes; `freeze` wins over it. */
   hold?: 'before' | 'after' | 'both';
   /** Words a source attaches to it, as a voice's. */
   tags?: readonly string[];
@@ -530,8 +534,8 @@ export type FadeOptions<I = unknown> =
  */
 export interface Handle<I = unknown> {
   readonly id: number;
-  /** `held`: a voice holding after has played every pass and shows its last frame until faded. */
-  readonly state: 'pending' | 'live' | 'held' | 'fading' | 'done';
+  /** `frozen`: a voice freezing after has played every pass and shows its last frame until faded. */
+  readonly state: 'pending' | 'live' | 'frozen' | 'fading' | 'done';
   /** The handle of the owner this voice plays under; undefined for one on the mix clock. */
   readonly owner: Handle<I> | undefined;
   /** Live. Writes land on the next sync. */
@@ -553,7 +557,7 @@ export interface Handle<I = unknown> {
   /**
    * The weight this voice gave `subject` the last frame that subject was probed: after its fades
    * and its weight signal, before a locus folds it with its alternatives. 0 for a subject it does
-   * not reach, has not started on and does not hold before, has left at rest, or has never been
+   * not reach, has not started on and does not freeze before, has left at rest, or has never been
    * probed for; 0 once done.
    * Costs nothing until it is asked.
    */
@@ -737,7 +741,7 @@ export interface Mix<I, O, H = unknown> {
   atRest(subject: I): boolean;
 
   /**
-   * A handle on every voice still in the mix, pending, live, held or fading, in the order they were
+   * A handle on every voice still in the mix, pending, live, frozen or fading, in the order they were
    * cued; given a tag, only the voices whose `tags` carry it. Each is the handle `cue` returned for
    * that voice, so a listed handle is `===` the cued one.
    */
@@ -745,7 +749,7 @@ export interface Mix<I, O, H = unknown> {
   /** Anything still contributing, fading, or pending. */
   readonly live: boolean;
   /**
-   * Another frame would change no pose, so a host's frame loop may sleep: every voice is done, held
+   * Another frame would change no pose, so a host's frame loop may sleep: every voice is done, frozen
    * at a plain weight, or a motion whose every subject has landed on its target. At rate 0 it is
    * enough that every voice not done has started, at a plain weight, with no anchor. A change made
    * since the last sync, a retarget or a rate included, makes it false until the next.

@@ -16,8 +16,8 @@ const FIELDS: ConfigField[] = [
   { key: 'fadeIn', label: 'fade in', type: 'number', default: 0, min: 0, step: 10 },
   { key: 'fadeOut', label: 'fade out', type: 'number', default: 0, min: 0, step: 10 },
   {
-    key: 'hold',
-    label: 'hold',
+    key: 'freeze',
+    label: 'freeze',
     type: 'select',
     default: 'none',
     options: ['none', 'before', 'after', 'both'].map((v) => ({ value: v, label: v })),
@@ -35,7 +35,7 @@ const SPEC_KEY: Record<string, string> = {
   passes: 'loop',
   fadeIn: 'fade',
   fadeOut: 'fade',
-  hold: 'hold',
+  freeze: 'freeze',
   locus: 'locus',
   fromCurrent: 'from',
 };
@@ -47,7 +47,7 @@ const SCHEMA = {
   sections: [
     { at: '', label: 'timing', paths: ['start', 'rate', 'repeat', 'passes'] },
     { at: '', label: 'fade', paths: ['fadeIn', 'fadeOut'] },
-    { at: '', label: 'blending', paths: ['hold', 'locus', 'fromCurrent'] },
+    { at: '', label: 'blending', paths: ['freeze', 'locus', 'fromCurrent'] },
   ],
 };
 
@@ -71,8 +71,8 @@ function written(v: Voice, path: string, value: unknown): Voice {
       return Number.isFinite(value) ? { ...v, fade: { ...v.fade, in: value as number } } : v;
     case 'fadeOut':
       return Number.isFinite(value) ? { ...v, fade: { ...v.fade, out: value as number } } : v;
-    case 'hold':
-      return { ...v, hold: value === 'none' ? undefined : (value as Voice['hold']) };
+    case 'freeze':
+      return { ...v, freeze: value === 'none' ? undefined : (value as Voice['freeze']) };
     case 'fromCurrent':
       return { ...v, from: value ? 'current' : undefined };
     default:
@@ -100,7 +100,7 @@ export function VoicePanel({ voice: v, errors, faults, onChange, onDelete }: Voi
     passes: typeof v.loop === 'number' ? v.loop : 1,
     fadeIn: v.fade.in ?? 0,
     fadeOut: v.fade.out ?? 0,
-    hold: v.hold ?? 'none',
+    freeze: v.freeze ?? 'none',
     locus: v.locus ?? '',
     fromCurrent: v.from === 'current',
   };

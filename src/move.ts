@@ -48,7 +48,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   for (const voice of visit) {
     if (voice.state === 'done') continue;
     if (Number.isNaN(voice.opened)) voice.opened = now;
-    if ((voice.state === 'live' || voice.state === 'held') && voice.outAt <= now)
+    if ((voice.state === 'live' || voice.state === 'frozen') && voice.outAt <= now)
       beginFade(mix, voice, {}, Math.max(startOf(voice), voice.outAt));
     if (
       voice.state === 'pending' &&
@@ -65,11 +65,11 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
         // The fade starts when the last pass ended, not at the frame that noticed, so it plays
         // the same at any frame rate and a read at another time can find it.
         if (voice.state === 'live') {
-          if (voice.holdsAfter) voice.state = 'held';
+          if (voice.freezesAfter) voice.state = 'frozen';
           else
             beginFade(mix, voice, {}, Math.max(startOf(voice), Math.min(now, voice.timeAt(end))));
         }
-      } else if (voice.state === 'held') voice.state = 'live';
+      } else if (voice.state === 'frozen') voice.state = 'live';
     }
     // A projection reads a finished ramp as weight 0, and leaves the live voice's subjects be.
     if (voice.parts !== null && !mix.projecting)
