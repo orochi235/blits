@@ -260,9 +260,12 @@ export class Motions<I> {
    */
   xs = unsized;
   vs = unsized;
-  /** By subject number, changes not yet applied and earlier stretches a read back may reach. */
-  private readonly pending: (Change[] | undefined)[] = [];
-  private readonly older: (Segment[] | undefined)[] = [];
+  /**
+   * By subject number, changes not yet applied and earlier stretches a read back may reach. Each
+   * starts with room for one: an empty array written at 0 reserves 17, and most patches have one.
+   */
+  private readonly pending: (Change[] | undefined)[] = [undefined];
+  private readonly older: (Segment[] | undefined)[] = [undefined];
   /**
    * The subject's voice time at the mix's latest frame, which an untimed change and a `read` with
    * no time take; NaN where no frame of the patch's voice has met the subject. Set by the mix that

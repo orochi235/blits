@@ -23,7 +23,8 @@ export class Named<I> {
         if (list.length > FEW) set = new Set(list);
       }
     }
-    this.list = list;
+    // Exactly as long as it is: a list grown by push keeps room for 17.
+    this.list = list.slice();
     this.set = set;
   }
 

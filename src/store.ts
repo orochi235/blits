@@ -12,21 +12,36 @@ const noStrong = new Map<never, never>();
 export class Store<K, V> {
   private weak: WeakMap<object, V> = noWeak;
   private strong: Map<K, V> = noStrong;
+  /**
+   * The first key that is not an object, and its value, held here until a second comes: a voice of
+   * one subject keyed by id would otherwise spend a Map's smallest table on it.
+   */
+  private oneKey: K | typeof none = none;
+  private oneValue: V | undefined = undefined;
 
   get(key: K): V | undefined {
-    return typeof key === 'object' && key !== null
-      ? this.weak.get(key as object)
-      : this.strong.get(key);
+    if (typeof key === 'object' && key !== null) return this.weak.get(key as object);
+    return same(this.oneKey, key) ? this.oneValue : this.strong.get(key);
   }
 
   set(key: K, value: V): void {
     if (typeof key === 'object' && key !== null) {
       if (this.weak === noWeak) this.weak = new WeakMap();
       this.weak.set(key as object, value);
-    } else {
-      if (this.strong === noStrong) this.strong = new Map();
-      this.strong.set(key, value);
+      return;
     }
+    if (this.strong === noStrong && (this.oneKey === none || same(this.oneKey, key))) {
+      this.oneKey = key;
+      this.oneValue = value;
+      return;
+    }
+    if (this.strong === noStrong) this.strong = new Map();
+    if (this.oneKey !== none) {
+      this.strong.set(this.oneKey as K, this.oneValue as V);
+      this.oneKey = none;
+      this.oneValue = undefined;
+    }
+    this.strong.set(key, value);
   }
 
   has(key: K): boolean {
@@ -35,10 +50,21 @@ export class Store<K, V> {
 
   delete(key: K): void {
     if (typeof key === 'object' && key !== null) this.weak.delete(key as object);
-    else this.strong.delete(key);
+    else if (same(this.oneKey, key)) {
+      this.oneKey = none;
+      this.oneValue = undefined;
+    } else this.strong.delete(key);
   }
 
   clear(): void {
+    this.oneKey = none;
+    this.oneValue = undefined;
     this.strong.clear();
   }
 }
+
+/** No key held inline. */
+const none: unique symbol = Symbol('none');
+
+/** A Map's key equality, SameValueZero: NaN finds NaN. */
+const same = (a: unknown, b: unknown): boolean => a === b || (a !== a && b !== b);

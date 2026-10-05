@@ -13,7 +13,8 @@ export class Numbers<I> {
   private next = 0;
   private readonly free: number[] = [];
   /** By number: the subject, a weak reference to it, or undefined for a number not in use. */
-  private readonly refs: (I | WeakRef<object> | typeof unit | undefined)[] = [];
+  // Room for one: an empty array written at 0 reserves 17, and most patches number one subject.
+  private readonly refs: (I | WeakRef<object> | typeof unit | undefined)[] = [undefined];
   /**
    * Made at the second object numbered, when the first is registered too: a motion patch per voice
    * holds a `Numbers`, mostly for one subject, whose collection frees nothing worth a registry.
