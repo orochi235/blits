@@ -16,6 +16,7 @@ export const words = [
 export type Word = (typeof words)[number]['slug'];
 
 export const extra = [
+  { slug: 'glossary', title: 'Glossary' },
   { slug: 'reference', title: 'Reference' },
   { slug: 'klieg', title: 'klieg' },
 ] as const;

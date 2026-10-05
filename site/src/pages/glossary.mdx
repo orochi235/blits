@@ -1,0 +1,660 @@
+---
+layout: ../layouts/Page.astro
+title: Glossary
+description: The words blits uses, from anchor to weight, each with a short explanation, an example, and a link to the page that covers it.
+---
+
+# Glossary
+
+<p class="lede">The words blits uses, each with a short explanation, an example, and a link to the page that covers it in depth.</p>
+
+[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [handle](#handle) · [`history`](#history) · [`hold`](#hold) · [host](#host) · [influence](#influence) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [locus](#locus) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight)
+
+The examples share one setup: a row of dots that can move up and down, glow, and change color.
+
+```ts
+import { hex, keys, kit, mix, mul, patch, sum } from '@msb235/blits';
+
+interface Dot {
+  i: number;
+}
+interface DotPose {
+  y: number;
+  glow: number;
+  color: number;
+}
+
+const DOT = kit<DotPose>({ y: sum(), glow: mul(), color: hex() });
+const dots = mix<Dot, DotPose>(DOT);
+
+const bob = patch<Dot, DotPose>(1000, (phase) => ({ y: Math.sin(2 * Math.PI * phase) }), {
+  writes: ['y'],
+});
+const dim = patch<Dot, DotPose>(0, () => ({ glow: 0.5 }), { writes: ['glow'] });
+const rise = keys<Dot, DotPose>(
+  600,
+  [
+    { at: 0, delta: { y: 0 } },
+    { at: 1, delta: { y: 1 } },
+  ],
+  { ease: 'ease-out' },
+);
+```
+
+`bob` moves a dot up and down once a second, `dim` halves its glow, and `rise` lifts it by 1 over 0.6 seconds. In the examples, `dot` is any one dot, `all` is every dot on the page, and `now` is `performance.now()`.
+
+## anchor
+
+An anchor places a [voice](#voice) relative to another voice instead of at a fixed time. Any of a voice's [marks](#mark) can be anchored, at most one of `start` and `in` and one of `out` and `end`. `after` means when the other voice ends, `with` when it starts, and `before` that many milliseconds before it starts. A voice whose anchor has no answer yet waits, so anchoring each voice to the one before runs them in order.
+
+```ts
+dots.cue({ patch: rise, name: 'intro', loop: false });
+dots.cue({ patch: dim, fade: { in: 400 }, anchor: { in: { after: 'intro' } } });
+```
+
+The dots are fully dimmed the moment `intro` ends, so the dimming starts 400 ms before that.
+
+In depth: [Score](../score/#placing-a-voice). Reference: [`Anchor`](../score/#api-Anchor), [`Placement`](../score/#api-Placement).
+
+## `blend`
+
+`mix.blend(patches, by)` cues one [voice](#voice) per [patch](#patch) and shares their [weight](#weight) out by a [signal](#signal). With two patches, the signal at 0 plays only the first, at 1 only the second, and in between a share of each. More patches make stops along the way. The voices share a [locus](#locus), so they combine as alternatives rather than stacking.
+
+```ts
+import { level } from '@msb235/blits';
+
+const still = patch<Dot, DotPose>(0, () => ({ y: 0 }), { writes: ['y'] });
+const energy = level<Dot>(0);
+dots.blend([still, bob], energy);
+energy.set(0.5); // the dots bob at half height
+```
+
+In depth: [Blending](../blending/#blend-between-alternatives), [Locus](../locus/#blend). Reference: [`Mix`](../mix/#api-Mix).
+
+## channel
+
+A channel is one field of a [pose](#pose), together with its arithmetic: how two voices writing it [`merge`](#merge), and its [rest](#rest), the value that changes nothing. Because the channel owns the arithmetic, two voices can write the same field without knowing about each other. blits ships `sum`, `mul` (multiply), `max`, `last` (the later value wins), `vec` for a list of numbers, and `hex` for colors. A channel of your own is four functions, of which only `merge` and `lerp` are required.
+
+```ts
+import type { Channel } from '@msb235/blits';
+
+const brightest: Channel<number> = {
+  rest: 0,
+  merge: (a, b) => Math.max(a, b),
+  scale: (v, w) => v * w,
+  lerp: (a, b, u) => a + (b - a) * u,
+};
+```
+
+This one keeps the brightest value written to it, as `max` does.
+
+In depth: [Channel and kit](../channel/). Reference: [`Channel`](../channel/#api-Channel), [`sum`](../channel/#api-sum), [`mul`](../channel/#api-mul), [`hex`](../channel/#api-hex).
+
+## `cue`
+
+`mix.cue(spec)` starts a [voice](#voice) and returns its [handle](#handle). The spec is a plain object: the [patch](#patch) to play, plus options for its clock, its [weight](#weight), and which subjects it reaches. The voice starts at the next [`sync`](#sync) unless you give it a `start`. A cue the mix can't play, such as a patch writing a field the [kit](#kit) lacks, throws at the call rather than a frame later.
+
+```ts
+dots.cue({ patch: bob, rate: 2, loop: 3, fade: { in: 300 } });
+```
+
+Three bobs at double speed, fading in over 300 ms.
+
+In depth: [Voice](../voice/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec), [`Mix`](../mix/#api-Mix).
+
+## delta
+
+A delta is what a [patch](#patch) returns: a partial [pose](#pose) holding only the [channels](#channel) it has something to say about. Each value goes through its channel's arithmetic rather than straight onto the subject, so the same number can mean different things on different channels.
+
+`dim` from the setup returns `{ glow: 0.5 }`. `glow` multiplies, so that halves a dot's glow rather than setting it to 0.5. The delta says nothing about `y` or `color`, which it leaves to other voices.
+
+In depth: [Patch](../patch/). Reference: [`Patch`](../patch/#api-Patch).
+
+## doubt
+
+When you read the mix at another time with a [projection](#projection), its `assess(subject)` says how far to trust each channel of the answer. `'exact'` means only the clock and changes the mix already knows about went into it. `'stepped'` means a patch that keeps its own state was moved across the whole gap in one step, so the answer is close but not exact. `'held'` means it depends on something from outside the clock, such as the pointer, whose future nobody knows, so the projection assumed it stays where it is.
+
+```ts
+const soon = dots.project(now + 1000);
+soon.assess(dot); // { y: 'exact', glow: 'held', color: 'exact' }
+```
+
+Here a voice writing `glow` has its weight set by the pointer, so a second from now its glow is a guess.
+
+In depth: [Score](../score/#reading-another-time). Reference: [`Doubt`](../mix/#api-Doubt), [`Projection`](../mix/#api-Projection).
+
+## `drop`
+
+`mix.drop(subject)` throws away everything the mix was keeping for one [subject](#subject). Call it when a subject leaves for good, such as a card removed from the page.
+
+```ts
+dots.drop(dot);
+```
+
+In depth: [Mix](../mix/#clearing-up). Reference: [`Mix`](../mix/#api-Mix).
+
+## `dt`
+
+`dt` is the gap, in milliseconds, that a [subject](#subject) is catching up by. A patch that keeps state receives it in `step`, the function that advances that state. The mix moves a subject forward only when the [host](#host) asks for its pose, so a subject nobody asked about for two seconds gets one `dt` of two seconds, not one per frame it missed. It is `Infinity` under reduced motion, and the mix's `maxDt` option caps it for a patch that can't take one long step.
+
+```ts
+const settle = patch<Dot, DotPose, { y: number }>(0, (_phase, _dot, setting) => ({ y: setting.state.y }), {
+  writes: ['y'],
+  state: () => ({ y: 1 }),
+  step: (s, dt) => {
+    s.y *= Math.exp(-dt / 300); // right for any gap, Infinity included
+  },
+});
+```
+
+In depth: [Time](../time/), [Patch state](../state/). Reference: [`Setting`](../state/#api-Setting), [`MixOptions`](../mix/#api-MixOptions).
+
+## easing
+
+An easing is a curve that reshapes progress from 0 to 1, as in CSS. blits takes CSS's names, such as `'ease-in-out'`, a `{ bezier: [x1, y1, x2, y2] }`, a `{ steps: n }`, or a plain function. Prefer the data forms: an [engine](#engine) could hand them to the browser or a GPU, but a function can only run on the CPU.
+
+```ts
+const land = keys<Dot, DotPose>(
+  800,
+  [
+    { at: 0, delta: { y: 1 } },
+    { at: 1, delta: { y: 0 } },
+  ],
+  { ease: { bezier: [0.3, 0, 0.2, 1.4] } },
+);
+```
+
+The curve overshoots, so each dot dips below its line before it lands.
+
+In depth: [Patch](../patch/#easing-is-data). Reference: [`Easing`](../patch/#api-Easing).
+
+## `elapsed`
+
+`setting.elapsed` is how long a [voice](#voice) has been playing, in milliseconds, counted at its own [`rate`](#rate): after one real second, a voice at half speed has 500 elapsed. A patch with a [period](#period) of 0 reads it to know how far along it is.
+
+```ts
+const wake = patch<Dot, DotPose>(0, (_phase, _dot, setting) => ({ glow: Math.min(1, setting.elapsed / 500) }), {
+  writes: ['glow'],
+});
+```
+
+Each dot comes up from dark over half a second.
+
+In depth: [Time](../time/). Reference: [`Setting`](../state/#api-Setting).
+
+## engine
+
+The engine is the code behind a [mix](#mix) that works out each pose. One ships, `mixer`, and every mix uses it unless you pass another. A later engine, such as one that hands keyframes to the browser to play, could replace it without changing any code that uses the mix.
+
+```ts
+import { mixer } from '@msb235/blits';
+
+const same = mix<Dot, DotPose>(DOT, { engine: mixer }); // what every mix gets anyway
+```
+
+In depth: [Engine](../engine/). Reference: [`Engine`](../engine/#api-Engine), [`mixer`](../engine/#api-mixer).
+
+## event
+
+An event is a message a [patch](#patch) sends to the [host](#host), such as "this dot just landed". The patch calls `setting.send(event)`, the mix queues it, and the host collects the queue with `mix.drain()` after asking for poses. The mix never calls the host back on its own.
+
+```ts
+const fall = patch<Dot, DotPose, { y: number }>(0, (_phase, _dot, setting) => ({ y: setting.state.y }), {
+  writes: ['y'],
+  state: () => ({ y: 1 }),
+  step: (s, dt, _dot, setting) => {
+    if (s.y === 0) return;
+    s.y = Math.max(0, s.y - dt / 500);
+    if (s.y === 0) setting.send('landed');
+  },
+});
+
+for (const sent of dots.drain()) if (sent.event === 'landed') sparkle(sent.subject);
+```
+
+`sparkle` is the host's own.
+
+Reference: [`Setting`](../state/#api-Setting), [`Sent`](../state/#api-Sent), [`Mix`](../mix/#api-Mix).
+
+## `fade`
+
+A voice's `fade` option gives it ramps: `in` is how many milliseconds it takes to reach full [weight](#weight), and `out` how long it takes to leave. `handle.fade()` starts the ramp out and removes the voice at the end. Pass `{ over }` for a different length, `{ at: 'rest' }` to keep full weight and leave each subject the moment it comes to [rest](#rest), or `{ subject }` to fade one subject out while the voice plays on for the others.
+
+```ts
+const h = dots.cue({ patch: bob, fade: { in: 300, out: 800 } });
+h.fade(); // ramps out over 800 ms, then leaves the mix
+```
+
+In depth: [Voice](../voice/#fades), [Blending](../blending/#fade-in-and-out). Reference: [`FadeSpec`](../blending/#api-FadeSpec), [`FadeOptions`](../blending/#api-FadeOptions).
+
+## `fold`
+
+To fold is to combine every [influence](#influence) on one [subject](#subject) into its [pose](#pose), channel by channel, starting from each channel's [rest](#rest) and applying its [`merge`](#merge) one influence at a time. A [channel](#channel) may also supply its own `fold` function, which does the same job by writing into an existing value instead of making a new one.
+
+Two voices write `glow`, one 0.5 and the other 0.8. `glow` multiplies, so starting from its rest of 1 the dot's glow folds to 0.4.
+
+In depth: [Mix](../mix/). Reference: [`Channel`](../channel/#api-Channel).
+
+## handle
+
+A handle is what [`cue`](#cue) returns: the live controls for one [voice](#voice). Through it you change the voice's [weight](#weight) and [rate](#rate), [`seek`](#seek) its clock, and [`fade`](#fade) it out, and each change lands at the next [`sync`](#sync). `done` is a promise that resolves once the voice has left the mix, however it left.
+
+```ts
+const h = dots.cue({ patch: bob });
+h.rate = 0; // pauses this voice; every other voice plays on
+h.fade();
+await h.done;
+```
+
+In depth: [Voice](../voice/). Reference: [`Handle`](../voice/#api-Handle).
+
+## `history`
+
+With the `history` option, a mix remembers its recent past so a [projection](#projection) can read it at an earlier time. `ms` is how far back it reaches. Within that, it keeps what was cued, every change made through a [handle](#handle), and a copy of each patch's own state every `every` milliseconds (200 by default). A read back starts from the nearest copy and steps forward. A mix without history keeps nothing, and can only read ahead.
+
+```ts
+const scrubbable = mix<Dot, DotPose>(DOT, { history: { ms: 10_000 } });
+scrubbable.project(now - 3000).probe(dot); // the dot as it was 3 s ago
+```
+
+In depth: [Score](../score/#reading-another-time). Reference: [`MixOptions`](../mix/#api-MixOptions).
+
+## `hold`
+
+A voice normally shows nothing before it starts or after it finishes. `hold: 'before'` shows each [subject](#subject) the voice's first frame while it waits to start, `'after'` keeps the last frame once a finite [`loop`](#loop) has played out, and `'both'` does both. A voice holding after stays in the mix until you [`fade`](#fade) it.
+
+```ts
+dots.cue({ patch: rise, loop: false, stagger: (dot) => dot.i * 100, hold: 'after' });
+```
+
+Each dot rises in turn and stays up.
+
+In depth: [Voice](../voice/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
+
+## host
+
+The host is your code: whatever owns the frame loop, tells the [mix](#mix) the time, asks it for poses, and puts them on screen. blits draws nothing and schedules nothing itself. The host must keep each [subject](#subject) the same object from frame to frame, since the mix keeps state by identity. Whatever the host passes as the mix's `host` option reaches every patch as `setting.host`.
+
+```ts
+function frame(timestamp: number) {
+  dots.sync(timestamp);
+  for (const dot of all) draw(dot, dots.probe(dot));
+  if (dots.live) requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+```
+
+`draw` is the host's own: it might set a CSS transform, a mesh's position, or a gain node's level.
+
+In depth: [Mix](../mix/#the-frame-loop), [Time](../time/). Reference: [`MixOptions`](../mix/#api-MixOptions).
+
+## influence
+
+An influence is what one [voice](#voice) actually does to one [subject](#subject) in one frame: its [delta](#delta) after its [weight](#weight) has pulled it toward [rest](#rest). It isn't a share of the result. Two voices that each contribute a glow of 0.5 leave the dot at 0.25, since `glow` multiplies.
+
+`dim` at weight 0.5 has an influence of `glow: 0.75`, halfway from rest at 1 toward its 0.5.
+
+In depth: [Blending](../blending/), [Locus](../locus/).
+
+## kit
+
+A kit lists the [channels](#channel) one kind of [pose](#pose) is made of, one per field. Every [mix](#mix) is built over a kit, and a [patch](#patch) that writes a field the kit doesn't have is refused when it is [cued](#cue).
+
+```ts
+const DOT = kit<DotPose>({ y: sum(), glow: mul(), color: hex() });
+```
+
+In depth: [Channel and kit](../channel/). Reference: [`kit`](../channel/#api-kit), [`Kit`](../channel/#api-Kit).
+
+## lane
+
+A lane is a [channel](#channel) that the default [engine](#engine) works out for every subject at once, in flat arrays, rather than one subject at a time. The mix moves a channel onto a lane by itself when every voice writing it can be worked out that way, and the pose comes out the same. Turn lanes off with `lanes: false` to rule them out while debugging, or to compare speed with and without them.
+
+```ts
+const plain = mix<Dot, DotPose>(DOT, { lanes: false });
+```
+
+In depth: [Engine](../engine/). Reference: [`MixOptions`](../mix/#api-MixOptions).
+
+## `lerp`
+
+A [channel](#channel)'s `lerp(a, b, u)` finds the value a fraction `u` of the way from `a` to `b`. The mix uses it wherever it moves between two values instead of stacking them: a [retarget](#retarget), the voices in a [locus](#locus), and [`blend`](#blend). It is also the only way a channel with no [rest](#rest), such as a color, changes smoothly.
+
+```ts
+sum().lerp(0, 10, 0.25); // 2.5
+hex().lerp(0xff0000, 0x0000ff, 0.5); // a purple halfway from red to blue
+```
+
+Reference: [`Channel`](../channel/#api-Channel), [`mixHex`](../channel/#api-mixHex).
+
+## locus
+
+Voices given the same `locus` name are alternatives, not layers: as one fades out and another fades in, a subject should look like one or the other, never both stacked. The mix first blends a locus's members into one [influence](#influence) with each channel's [`lerp`](#lerp), by their shares of the locus's total [weight](#weight), then [folds](#fold) that in with everything else.
+
+```ts
+const old = dots.cue({ patch: dim, locus: 'light', fade: { out: 1000 } });
+dots.cue({ patch: dim, locus: 'light', fade: { in: 1000 } });
+old.fade(); // the glow holds at 0.5 the whole way across
+```
+
+Without the locus, the two half-faded voices would multiply to 0.56, and the dots would brighten halfway through.
+
+In depth: [Locus](../locus/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
+
+## `loop`
+
+`loop` says how many passes a voice plays, a pass being one run through its [period](#period): `true` to repeat forever, `false` for one pass, or a number. When a finite loop runs out, the voice leaves the mix, over its [`fade`](#fade) out if it has one, unless it [holds](#hold) its last frame.
+
+```ts
+dots.cue({ patch: bob, loop: 3 }); // three bobs, then gone
+```
+
+In depth: [Voice](../voice/#the-clock). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
+
+## mark
+
+A mark is a named moment on the mix's clock that an [anchor](#anchor) can wait for. Every voice has four: `start`, when its fade in begins; `in`, when it reaches full weight; `out`, when its fade out begins; and `end`, when it is gone. The [host](#host) adds its own with `mix.announce(name)`, for a moment only it knows about, such as a reply from a server. `mix.marks(from, to)` lists every mark due between two times.
+
+```ts
+dots.cue({ patch: rise, anchor: { start: { with: 'reply' } } }); // waits
+dots.announce('reply'); // starts it
+```
+
+In depth: [Score](../score/#announcing-a-mark). Reference: [`Mark`](../score/#api-Mark), [`Marked`](../score/#api-Marked).
+
+## `merge`
+
+A [channel](#channel)'s `merge(a, b)` combines two values written to it into one: `sum` adds, `mul` multiplies, `max` takes the larger, and `last` takes the later. It is the channel's rule for stacking, so voices never have to agree on one.
+
+```ts
+import { max } from '@msb235/blits';
+
+mul().merge(0.5, 0.8); // 0.4
+max().merge(0.2, 0.7); // 0.7
+```
+
+Reference: [`Channel`](../channel/#api-Channel).
+
+## mix
+
+A mix holds every [voice](#voice) playing over one [kit](#kit), and [folds](#fold) them into one [pose](#pose) per subject each frame. Once a frame the [host](#host) tells it the time with [`sync`](#sync), then asks for each subject's pose with [`probe`](#probe). An app can keep several mixes, one for each kind of thing it animates: [klieg](../klieg/) runs its motion, its effects, and its lighting on three.
+
+```ts
+const dots = mix<Dot, DotPose>(DOT);
+dots.live; // true while any voice is playing, fading, or waiting to start
+```
+
+In depth: [Mix](../mix/). Reference: [`mix`](../mix/#api-mix), [`Mix`](../mix/#api-Mix), [`MixOptions`](../mix/#api-MixOptions).
+
+## `mute`
+
+`mix.mute()` fades every voice out at once: over `over` milliseconds when you pass it, or over each voice's own [`fade`](#fade) out otherwise. Once the last voice has gone, the mix is no longer live and the [host](#host) can stop its loop.
+
+```ts
+dots.mute({ over: 500 });
+```
+
+In depth: [Mix](../mix/#clearing-up). Reference: [`Mix`](../mix/#api-Mix).
+
+## `name`
+
+A voice's `name` lets another voice's [anchor](#anchor) refer to it without holding its [handle](#handle); blits never reads it otherwise. Names belong to a [score](#score), so two parts of an app can each have a voice called `intro`.
+
+```ts
+dots.cue({ patch: rise, name: 'intro', loop: false });
+dots.cue({ patch: bob, anchor: { start: { after: 'intro' } } });
+```
+
+In depth: [Score](../score/#placing-a-voice). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
+
+## patch
+
+A patch is the effect itself: a function that takes a [phase](#phase) and one [subject](#subject) and returns a [delta](#delta). It doesn't know when it started, how strong it is, or what else is playing; a [voice](#voice) supplies those, so one patch can play on many voices at once. Every patch declares the channels it writes. You write one as a function with `patch`, as keyframes with `keys`, or as motion toward a target with `spring`, `glide`, or `tween`.
+
+```ts
+import { spring } from '@msb235/blits';
+
+const sway = spring<Dot, DotPose>('y', { from: 0, to: 1, stiffness: 120, damping: 8 });
+```
+
+A springy rise that overshoots and wobbles before it settles at 1.
+
+In depth: [Patch](../patch/), [Patch state](../state/). Reference: [`Patch`](../patch/#api-Patch), [`patch`](../patch/#api-patch), [`keys`](../patch/#api-keys), [`spring`](../patch/#api-spring).
+
+## period
+
+A patch's period is how long one pass lasts, in milliseconds. [Phase](#phase) runs from 0 to 1 across it, then wraps. A period of 0 means the patch doesn't repeat: phase stays 0, and the patch reads [`elapsed`](#elapsed) if it needs to know the time.
+
+`bob` has a period of 1000, so it bobs once a second.
+
+In depth: [Patch](../patch/). Reference: [`Patch`](../patch/#api-Patch).
+
+## phase
+
+Phase is how far a voice is through its [period](#period), from 0 to 1, wrapping. It is the first thing a [patch](#patch) is handed.
+
+`bob` returns `y: Math.sin(2 * Math.PI * phase)`, so at phase 0.25 a dot is at the top and at 0.75 at the bottom.
+
+In depth: [Patch](../patch/), [Time](../time/).
+
+## pose
+
+A pose is what one [subject](#subject) looks like at one frame, with every voice [folded](#fold) in. A [delta](#delta) holds only what one patch writes; a pose holds every channel of the [kit](#kit), at [rest](#rest) where nothing moved it. The one exception is a channel with no rest, such as a color nothing has set, which is left out. The pose is what the [host](#host) puts on screen.
+
+With `bob` a quarter of the way through its period and `dim` at full weight, a dot's pose is `{ y: 1, glow: 0.5 }`.
+
+In depth: [Mix](../mix/).
+
+## `probe`
+
+`mix.probe(subject)` returns a subject's [pose](#pose) at the last [`sync`](#sync). Probing the same subject twice in a frame gives the same answer and advances any state once. Pass an `out` object to have the pose written into it, so a loop over many subjects allocates nothing. `mix.pull(subjects, arrays)` reads many subjects at once, writing each channel into a `Float64Array`.
+
+```ts
+const pose = { y: 0, glow: 1, color: 0 };
+for (const dot of all) draw(dot, dots.probe(dot, pose));
+```
+
+In depth: [Mix](../mix/#the-frame-loop). Reference: [`Mix`](../mix/#api-Mix), [`Columns`](../mix/#api-Columns).
+
+## projection
+
+`mix.project(timestamp)` reads the mix at another time without moving it, and returns a projection. Its `probe` gives the pose a subject would have then, and its `assess` says how far to trust each channel of that pose (see [doubt](#doubt)). Reading ahead plays forward what is already cued; reading back needs [`history`](#history).
+
+```ts
+dots.project(now + 500).probe(dot); // where the dot will be in half a second
+```
+
+In depth: [Score](../score/#reading-another-time). Reference: [`Projection`](../mix/#api-Projection), [`Mix`](../mix/#api-Mix).
+
+## query
+
+A query picks a voice for an [anchor](#anchor) to follow, by what the [score](#score) knows about it: its [`name`](#name), a [tag](#tag), or a channel it writes. Where several voices match, `resolver` chooses: the `'last'` cued (the default), the `'first'`, the `'next'` one still to come, or the `'earliest'` or `'latest'` by time. A query never reads a channel's value: "when the glow passes 0.5" is for the host to watch.
+
+```ts
+// Fully dimmed 200 ms before the next voice tagged 'beat' starts.
+dots.cue({
+  patch: dim,
+  fade: { in: 100 },
+  anchor: { in: { before: { tag: 'beat', resolver: 'next' }, by: 200 } },
+});
+```
+
+In depth: [Score](../score/#placing-a-voice). Reference: [`Query`](../score/#api-Query).
+
+## `rate`
+
+A voice's `rate` is its playback speed: 1 is real time, 2 is double speed, and 0 freezes it. Setting it on the [handle](#handle) changes speed at once; `ramp(rate, over)` eases into a new speed over that many milliseconds.
+
+```ts
+const h = dots.cue({ patch: bob });
+h.ramp(0, 300); // slows to a stop over 300 ms
+```
+
+In depth: [Voice](../voice/#the-clock). Reference: [`Handle`](../voice/#api-Handle), [`VoiceSpec`](../voice/#api-VoiceSpec).
+
+## rest
+
+A [channel](#channel)'s rest is the value that changes nothing: 0 for `sum` and `max`, and 1 for `mul`. A [weight](#weight) pulls a voice's values toward rest, so a voice at weight 0 leaves the pose exactly as it found it, and a subject no voice reaches sits at rest. `last` has no rest, so a weight can only switch it on or off.
+
+`glow` multiplies, so its rest is 1: a dot that no voice dims glows at full strength.
+
+In depth: [Channel and kit](../channel/). Reference: [`Channel`](../channel/#api-Channel).
+
+## retarget
+
+A retarget sends a moving subject somewhere new, starting from wherever it is now rather than jumping. A `keys` voice cued with `from: 'current'` starts from the subject's present value instead of its own first stop. A `spring` or `tween` redirects one subject with `to(subject, target)`, and a spring keeps its speed as it turns.
+
+```ts
+import { spring } from '@msb235/blits';
+
+dots.cue({ patch: rise, loop: false, from: 'current' }); // rises from wherever the dot is
+
+const sway = spring<Dot, DotPose>('y', { to: 0 });
+dots.cue({ patch: sway });
+sway.to(dot, 1); // this dot swings toward 1 without losing speed
+```
+
+In depth: [Blending](../blending/#retarget-on-interruption), [Patch](../patch/). Reference: [`spring`](../patch/#api-spring), [`tween`](../patch/#api-tween), [`VoiceSpec`](../voice/#api-VoiceSpec).
+
+## `scale`
+
+A [channel](#channel)'s `scale(v, w)` pulls a value toward [rest](#rest) by a [weight](#weight) from 0 to 1: at 1 the value is untouched, and at 0 it is rest. It is how a weight or a [`fade`](#fade) acts on a channel. Only a channel with a rest has one.
+
+```ts
+mul().scale?.(0.5, 0.5); // 0.75, halfway from 0.5 back to 1
+```
+
+In depth: [Blending](../blending/). Reference: [`Channel`](../channel/#api-Channel).
+
+## score
+
+A score is the plan of when voices play, kept apart from what they do. Every voice belongs to one, by default the mix's single unnamed score. Each part of an app that cues voices, such as a menu and a page transition, can keep its own score so their [names](#name) don't collide, and a [query](#query) can name a score to reach into another.
+
+```ts
+dots.cue({ patch: rise, score: 'menu', name: 'open', loop: false });
+dots.cue({ patch: dim, anchor: { start: { after: { score: 'menu', name: 'open' } } } });
+```
+
+In depth: [Score](../score/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec), [`Query`](../score/#api-Query).
+
+## `seek`
+
+`handle.seek(elapsed)` moves one voice's clock to a given time, forward or back, and nothing else in the mix moves. [Phase](#phase) is worked out again from the new time. Any state the patch keeps is left as it was, not run forward to catch up.
+
+```ts
+const h = dots.cue({ patch: bob });
+h.seek(250); // a quarter of the way through a bob
+```
+
+In depth: [Voice](../voice/#the-clock). Reference: [`Handle`](../voice/#api-Handle).
+
+## setting
+
+The setting is the third argument a [patch](#patch) is handed: everything it may read but didn't compute, for this subject in this frame. It holds the [`timestamp`](#timestamp) and [`dt`](#dt), the voice's [`elapsed`](#elapsed) time and which pass through its [period](#period) it is on, its [weight](#weight), the patch's own state for this subject, and whatever the [host](#host) added. The mix reuses the object, so copy out what you need rather than keeping it.
+
+```ts
+const firstBright = patch<Dot, DotPose>(1000, (_phase, _dot, setting) => ({ glow: setting.pass === 0 ? 1 : 0.6 }), {
+  writes: ['glow'],
+});
+```
+
+Full glow on the first pass, dimmer on every pass after.
+
+In depth: [Patch state](../state/). Reference: [`Setting`](../state/#api-Setting).
+
+## signal
+
+A signal is a number from 0 to 1, read for each subject every frame, that comes from outside the clock: how near the pointer is, how long it has hovered, or a value the host sets. It plugs in at two places: as a voice's [weight](#weight), so an effect can follow the pointer, and as the selector for [`blend`](#blend). blits ships `level`, which holds whatever the host last set, and `slew`, `lag`, `gate`, and `peak` to smooth, switch, or combine others.
+
+```ts
+import { level, slew } from '@msb235/blits';
+
+const dark = level<Dot>();
+dots.cue({ patch: dim, weight: slew(dark, { riseMs: 150, fallMs: 600 }) });
+dark.set(1); // the dots dim over 150 ms, and recover over 600 once it drops
+```
+
+In depth: [Signal](../signal/). Reference: [`Signal`](../signal/#api-Signal), [`level`](../signal/#api-level), [`slew`](../signal/#api-slew).
+
+## `stagger`
+
+`stagger` delays each [subject](#subject)'s start by its own number of milliseconds, so one voice can ripple along a row. The mix asks once per subject and keeps the answer. The delay counts on the voice's clock, so it speeds up and slows down with its [`rate`](#rate).
+
+```ts
+dots.cue({ patch: bob, stagger: (dot) => dot.i * 100 }); // a wave along the row
+```
+
+In depth: [Voice](../voice/#stagger). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
+
+## subject
+
+A subject is one thing being animated: a dot, a letter, a card, a light. You don't register subjects. The mix starts keeping state for one the first time you ask about it, keyed by the object itself, so keep each subject the same object from frame to frame or its effects start over.
+
+In the setup, each `Dot` is a subject, and `dots.probe(dot)` asks the mix about one.
+
+In depth: [Mix](../mix/).
+
+## `sync`
+
+`mix.sync(timestamp)` is how the [host](#host) tells the mix what time it is, once a frame. Nothing is computed at the call: each subject catches up by its whole gap the first time it is [probed](#probe) afterward, and a second call with the same [timestamp](#timestamp) does nothing. When a hidden browser tab comes back, call `mix.rebase()` before the next sync so the time away doesn't count.
+
+```ts
+dots.sync(now);
+document.addEventListener('visibilitychange', () => document.hidden || dots.rebase());
+```
+
+In depth: [Time](../time/). Reference: [`Mix`](../mix/#api-Mix).
+
+## tag
+
+A tag is a word attached to a voice so other code can pick out a set of voices. A [query](#query) can select voices by tag, and `mix.drain(tag)` collects only the [events](#event) from voices carrying it. A voice can carry many tags, and many voices can share one.
+
+```ts
+dots.cue({ patch: rise, tags: ['intro'], loop: false });
+dots.cue({ patch: bob, anchor: { start: { after: { tag: 'intro' } } } });
+```
+
+In depth: [Score](../score/#placing-a-voice). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec), [`Query`](../score/#api-Query).
+
+## `target`
+
+`target` limits a voice to the subjects a function accepts. The mix asks once per subject and keeps the answer. When you already know the subjects, list them with `subjects` instead, which is faster when there are many voices that each reach a few subjects. A voice takes one or the other, never both.
+
+```ts
+dots.cue({ patch: dim, target: (dot) => dot.i % 2 === 0 }); // every other dot
+dots.cue({ patch: bob, subjects: [dot] }); // just this one
+```
+
+In depth: [Mix](../mix/#reach-and-rest). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
+
+## timestamp
+
+The timestamp is the time the [host](#host) passes to [`sync`](#sync): milliseconds on any clock that only goes forward. A `requestAnimationFrame` timestamp and `performance.now()` count from the same moment, so they can be used together; `Date.now()` counts from 1970 and can't. A voice's `start` must be on the same clock. A patch reads the current timestamp as `setting.timestamp`.
+
+```ts
+dots.cue({ patch: bob, start: now + 500 }); // starts in half a second
+```
+
+In depth: [Time](../time/). Reference: [`Setting`](../state/#api-Setting).
+
+## voice
+
+A voice is a [patch](#patch) playing: the patch plus a clock, a [weight](#weight), and the subjects it reaches. Two voices of the same patch are two clocks and two weights, and neither knows about the other. You start one with [`cue`](#cue) and steer it through its [handle](#handle).
+
+```ts
+dots.cue({ patch: bob });
+dots.cue({ patch: bob, rate: 3, weight: 0.2 }); // a small, fast bob on top of the slow one
+```
+
+In depth: [Voice](../voice/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec), [`Handle`](../voice/#api-Handle).
+
+## weight
+
+A voice's weight is how much of it is on, from 0 to 1. Each voice's values are pulled toward [rest](#rest) by its weight before they are combined, so at 0 a voice changes nothing and at 1 it has its full effect. A weight can be a fixed number, a [signal](#signal) read for each subject every frame, or ramped by a [`fade`](#fade), and you can change it through the [handle](#handle) while the voice plays.
+
+```ts
+const h = dots.cue({ patch: bob, weight: 0.3 }); // bobs at 30% of the height
+h.weight = 1;
+```
+
+In depth: [Blending](../blending/), [Signal](../signal/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec), [`Handle`](../voice/#api-Handle).
