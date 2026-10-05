@@ -44,6 +44,15 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   weasel's vitest row read 8×, which weasel puts down to collection landing in its few measured
   iterations, untraced. Not worth chasing until it shows outside a microbench.
 
+- **Reuse a retired voice's records for the next cue** (suggestion). weasel's animator under churn
+  (each frame one tween stops and another starts, a voice each) runs its own loop 0.66–0.75 ms a
+  frame at 10k after every animation was replaced once, against 0.21 with no voice cued; with no
+  voice, churn costs nothing (teitou, 0.4.0, 2026-10-05). What a voice keeps alive lands between
+  the host's per-animation objects in memory, about 3.2 KB for a one-subject tween on 0.4.0: patch
+  0.8, `cue` 1.6, first frame 0.75. Shrinking it by a third (`0c80b6d`) barely helped, so the
+  measure is whether a steady churn allocates anything that survives, not how much. Detail in
+  weasel's `docs/proposals/2026-09-30-animator-on-blits.md`.
+
 ## What weasel has that blits doesn't
 
 Open design questions rather than asks. blits may rightly say some of these belong in a host.
