@@ -1,9 +1,9 @@
 import type { Composition } from '../composition';
 
-// `rise` holds its last frame until `drop` starts, then fades out under it.
+// `rise` freezes on its last frame until `drop` starts, then fades out under it.
 const c: Composition = {
   version: 1,
-  title: 'hold handover',
+  title: 'freeze handover',
   stage: { kind: 'letters', text: 'blits' },
   length: 5000,
   levels: [],
@@ -15,7 +15,7 @@ const c: Composition = {
       start: 0,
       rate: 1,
       loop: 1,
-      hold: 'after',
+      freeze: 'after',
       weight: 1,
       fade: { out: 400 },
       anchor: { out: { with: 'drop' } },

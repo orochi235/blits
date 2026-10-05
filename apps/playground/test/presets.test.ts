@@ -23,14 +23,14 @@ describe.each(PRESETS)('preset $name', ({ comp }) => {
   });
 });
 
-it('hold handover: rise holds, then fades out as drop starts', () => {
-  const comp = PRESETS.find((x) => x.name === 'hold handover')?.comp;
-  if (!comp) throw new Error('no hold handover');
+it('freeze handover: rise freezes, then fades out as drop starts', () => {
+  const comp = PRESETS.find((x) => x.name === 'freeze handover')?.comp;
+  if (!comp) throw new Error('no freeze handover');
   const subjects = subjectsOf(comp.stage);
   const p = new Player(() => compile(comp, subjects), subjects, { levels: comp.levels });
   const state = (id: string) => p.built.handles.get(id)?.state;
   p.seek(1900);
-  expect([state('rise'), state('drop')]).toEqual(['held', 'pending']);
+  expect([state('rise'), state('drop')]).toEqual(['frozen', 'pending']);
   p.seek(2100);
   expect([state('rise'), state('drop')]).toEqual(['fading', 'live']);
   p.seek(2600);
@@ -42,7 +42,7 @@ it('has the six presets the spec lists, the first the default', () => {
     'stagger wave',
     'crossfade',
     'spring retarget',
-    'hold handover',
+    'freeze handover',
     'pointer glow',
     'fold rules',
   ]);

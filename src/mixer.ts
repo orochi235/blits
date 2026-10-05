@@ -446,11 +446,11 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** Whether a voice will change no pose from `now` on, short of a change made to it. */
   still(voice: Voice<I, O>, now: number): boolean {
     if (voice.state === 'done') return true;
-    if (voice.state !== 'held' && voice.state !== 'live') return false;
+    if (voice.state !== 'frozen' && voice.state !== 'live') return false;
     if (typeof voice.spec.weight === 'function' || voice.parts !== null) return false;
     const fadeIn = this.reducedNow ? 0 : (voice.fade.in ?? 0);
     if (fadeIn > 0 && now - this.sinceOf(voice, voice.latest) < fadeIn) return false;
-    if (voice.state === 'held' || voice.holding !== null) return true;
+    if (voice.state === 'frozen' || voice.holding !== null) return true;
     const motion = voice.motion;
     return motion !== undefined && voice.elapsedAt(now) >= voice.latest && motion.landed();
   }

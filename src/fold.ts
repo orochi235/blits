@@ -1,4 +1,4 @@
-import { heldTime, passAt, phaseAt, silent } from './clock.js';
+import { frozenTime, passAt, phaseAt, silent } from './clock.js';
 import { copy as copyValue } from './clone.js';
 import { recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
@@ -60,10 +60,10 @@ export function influence<I, O>(
   if (voice.out?.rest && held.rested) return null;
 
   const raw = voice.elapsedAt(now) - held.delay;
-  if (raw < 0 && !voice.holdsBefore) return null;
-  const elapsed = heldTime(raw, voice.holdsBefore, voice.holdsAfter, voice.span);
-  // A held subject's clock stands still at the edge it holds: -1 before, 1 after, 0 playing.
-  const still = raw < 0 ? -1 : voice.holdsAfter && raw > voice.span ? 1 : 0;
+  if (raw < 0 && !voice.freezesBefore) return null;
+  const elapsed = frozenTime(raw, voice.freezesBefore, voice.freezesAfter, voice.span);
+  // A frozen subject's clock stands still at the edge it freezes at: -1 before, 1 after, 0 playing.
+  const still = raw < 0 ? -1 : voice.freezesAfter && raw > voice.span ? 1 : 0;
 
   const duration = voice.duration;
   const phase = phaseAt(elapsed, duration, voice.passes);
@@ -93,7 +93,7 @@ export function influence<I, O>(
 
   const tick = this.opts.stepMs;
   if (voice.patch.step && held.probed !== now && still >= 0) {
-    // Held after, it steps once more to where its last pass ended, and no further.
+    // Frozen after, it steps once more to where its last pass ended, and no further.
     const to = still === 1 ? voice.timeAt(held.delay + voice.span) : now;
     if (tick !== undefined && tick > 0 && !this.reducedNow)
       this.tick(voice, subject, held, tick, to);
@@ -538,10 +538,10 @@ export function read<I, O>(
     if (held.reaches && held.probed === now && held.delta && held.seeks === voice.seeks) {
       const setting = voice.setting;
       // The setting the probe that read the delta had, but for `dt`: a dry read advances nothing.
-      const elapsed = heldTime(
+      const elapsed = frozenTime(
         voice.elapsedAt(now) - held.delay,
-        voice.holdsBefore,
-        voice.holdsAfter,
+        voice.freezesBefore,
+        voice.freezesAfter,
         voice.span,
       );
       setting.timestamp = now;

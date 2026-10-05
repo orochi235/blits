@@ -99,7 +99,7 @@ export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   const spec = voice.spec;
   const patch = voice.patch;
   if (voice.keeping) return false;
-  if (voice.state === 'pending' && voice.holdsBefore) return false;
+  if (voice.state === 'pending' && voice.freezesBefore) return false;
   // A fill weighs a voice's owners once for every subject, which a signal on one would not be.
   if (voice.owner !== null && signalled(voice)) return false;
   // A signal reading host input records it per probe under history, which a fill cannot.

@@ -6,7 +6,7 @@ description: The words blits uses, from anchor to weight, each with a short expl
 
 # Glossary
 
-[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [handle](#handle) · [`history`](#history) · [`hold`](#hold) · [host](#host) · [influence](#influence) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [locus](#locus) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight)
+[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [`freeze`](#freeze) · [handle](#handle) · [`history`](#history) · [host](#host) · [influence](#influence) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [locus](#locus) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight)
 
 The examples share one setup: a row of dots that can move up and down, glow, and change color.
 
@@ -241,6 +241,18 @@ Two voices write `glow`, one 0.5 and the other 0.8. `glow` multiplies, so starti
 
 In depth: [Mix](../mix/). Reference: [`Channel`](../channel/#api-Channel).
 
+## `freeze`
+
+A voice normally shows nothing before it starts or after it finishes. `freeze: 'before'` shows each [subject](#subject) the voice's first frame while it waits to start, `'after'` keeps the last frame once a finite [`loop`](#loop) has played out, and `'both'` does both. A voice freezing after stays, `frozen`, in the mix until you [`fade`](#fade) it. The name is SMIL's for the same thing; `hold`, its name before 0.6.0, still works and is deprecated.
+
+```ts
+dots.cue({ patch: rise, loop: false, stagger: (dot) => dot.i * 100, freeze: 'after' });
+```
+
+Each dot rises in turn and stays up.
+
+In depth: [Voice](../voice/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
+
 ## handle
 
 A handle is what [`cue`](#cue) returns: the live controls for one [voice](#voice). Through it you change the voice's [weight](#weight) and [rate](#rate), [`seek`](#seek) its clock, and [`fade`](#fade) it out, and each change lands at the next [`sync`](#sync). `done` is a promise that resolves once the voice has left the mix, however it left.
@@ -264,18 +276,6 @@ scrubbable.project(now - 3000).probe(dot); // the dot as it was 3 s ago
 ```
 
 In depth: [Score](../score/#reading-another-time). Reference: [`MixOptions`](../mix/#api-MixOptions).
-
-## `hold`
-
-A voice normally shows nothing before it starts or after it finishes. `hold: 'before'` shows each [subject](#subject) the voice's first frame while it waits to start, `'after'` keeps the last frame once a finite [`loop`](#loop) has played out, and `'both'` does both. A voice holding after stays in the mix until you [`fade`](#fade) it.
-
-```ts
-dots.cue({ patch: rise, loop: false, stagger: (dot) => dot.i * 100, hold: 'after' });
-```
-
-Each dot rises in turn and stays up.
-
-In depth: [Voice](../voice/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 
 ## host
 
@@ -349,7 +349,7 @@ In depth: [Locus](../locus/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 
 ## `loop`
 
-`loop` says how many passes a voice plays, a [pass](#pass) being one run through its patch: `true` to repeat forever, `false` for one pass, or a number. When a finite loop runs out, the voice leaves the mix, over its [`fade`](#fade) out if it has one, unless it [holds](#hold) its last frame.
+`loop` says how many passes a voice plays, a [pass](#pass) being one run through its patch: `true` to repeat forever, `false` for one pass, or a number. When a finite loop runs out, the voice leaves the mix, over its [`fade`](#fade) out if it has one, unless it [freezes](#freeze) on its last frame.
 
 ```ts
 dots.cue({ patch: bob, loop: 3 }); // three bobs, then gone

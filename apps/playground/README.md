@@ -50,7 +50,7 @@ interface Composition {
 ```
 
 A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `loop`, `stagger`, `target`,
-`hold`, `weight`, `fade`, `locus`, `from`, `anchor`), so the voice panel teaches the real spec, plus
+`freeze`, `weight`, `fade`, `locus`, `from`, `anchor`), so the voice panel teaches the real spec, plus
 an `id`, a `name`, a `hue` and a `patch`. A `PatchSource` is one of:
 
 | `kind`                       | Holds                                                                  |
@@ -99,7 +99,7 @@ edges; `src/blits/score.ts` turns voices into clips and the widget's edits back 
 | dividers inside        | passes of the period          | drag the right edge, snapping to whole passes: `loop`    |
 | arrow at the end       | `loop: true`                  | drag it back to make the loop finite                     |
 | thin bar under it      | stagger spread, first to last | none; `stagger` is an expression                         |
-| hatched extension      | `hold`                        | the clip's menu                                          |
+| hatched extension      | `freeze`                      | the clip's menu                                          |
 | shared color bracket   | `locus`                       | drag a lane label onto another's, or the clip's menu     |
 | dashed link            | `anchor`                      | Alt-drag from an edge to another clip's edge             |
 
@@ -157,7 +157,7 @@ One `Composition` per file in `src/blits/presets/`.
 | stagger wave    | `stagger` as an expression of column, with `fade.in`; the default |
 | crossfade       | two voices in one `locus`, weight handed between them by a level |
 | spring retarget | `spring` on `offset`, retargeted from live mode               |
-| hold handover   | `hold: 'after'`, the next voice's start fading the last out   |
+| freeze handover | `freeze: 'after'`, the next voice's start fading the last out |
 | pointer glow    | weight as `slew(level('mouse'))`                              |
 | fold rules      | one delta through `sum`, `mul` and `max`                      |
 

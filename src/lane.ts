@@ -1,6 +1,6 @@
 import { unbareLane } from './bare.js';
 import type { Numeric } from './channels.js';
-import { heldTime } from './clock.js';
+import { frozenTime } from './clock.js';
 import { type Motions, motionOf } from './motion.js';
 import type { Scratch } from './patch.js';
 import type { Subject, Voice } from './voice.js';
@@ -296,9 +296,9 @@ export class Lane<I, O> implements Positions<I, O> {
 }
 
 /**
- * A subject's voice time once its voice's holds apply: held at 0 before it starts and at the end of
- * its passes after, and NaN where it shows nothing.
+ * A subject's voice time once its voice's freezes apply: frozen at 0 before it starts and at the end
+ * of its passes after, and NaN where it shows nothing.
  */
-export function held<I, O>(voice: Voice<I, O>, elapsed: number): number {
-  return heldTime(elapsed, voice.holdsBefore, voice.holdsAfter, voice.span);
+export function frozenAt<I, O>(voice: Voice<I, O>, elapsed: number): number {
+  return frozenTime(elapsed, voice.freezesBefore, voice.freezesAfter, voice.span);
 }

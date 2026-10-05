@@ -145,11 +145,11 @@ describe('mix.owns', () => {
   it('gives its hold to each child that has none of its own', () => {
     const m = mix<Part, Pose>(K);
     m.sync(0);
-    const o = m.owns({ hold: 'after' });
+    const o = m.owns({ freeze: 'after' });
     const held = m.cue({ patch: ramp, loop: false, owner: o });
-    const own = m.cue({ patch: ramp, loop: false, owner: o, hold: 'before', subjects: [b] });
+    const own = m.cue({ patch: ramp, loop: false, owner: o, freeze: 'before', subjects: [b] });
     m.sync(300);
-    expect(held.state).toBe('held');
+    expect(held.state).toBe('frozen');
     expect(m.probe(a).y).toBe(10);
     expect(own.state).toBe('done');
     expect(o.state).toBe('live');

@@ -80,8 +80,8 @@ export function project<I, O>(
           ? 'pending'
           : copy.out && copy.out.at <= t
             ? 'fading'
-            : copy.holdsAfter && copy.elapsedAt(t) >= copy.span + copy.latest
-              ? 'held'
+            : copy.freezesAfter && copy.elapsedAt(t) >= copy.span + copy.latest
+              ? 'frozen'
               : 'live';
     count(c);
   }

@@ -249,10 +249,10 @@ describe('lanes give the pose the general path gives', () => {
           loop: 1,
           stagger: (p) => p.id * 90,
           fade: { in: 200 },
-          hold: 'both',
+          freeze: 'both',
         });
-        const b = m.cue({ patch: wave(), loop: 2, stagger: (p) => p.id * 40, hold: 'after' });
-        const c = m.cue({ patch: wave(), loop: 1, start: 400, weight: 0.5, hold: 'before' });
+        const b = m.cue({ patch: wave(), loop: 2, stagger: (p) => p.id * 40, freeze: 'after' });
+        const c = m.cue({ patch: wave(), loop: 1, start: 400, weight: 0.5, freeze: 'before' });
         return {
           handles: [a, b, c],
           at: (t) => {

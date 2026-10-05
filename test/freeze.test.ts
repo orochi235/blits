@@ -25,12 +25,12 @@ const settled = (p: Promise<unknown>): Promise<unknown> =>
   Promise.race([p, new Promise((r) => setTimeout(() => r('pending'), 0))]);
 
 describe('a dry read weighs as the probe it repeats did', () => {
-  it('leaves weightOf where the probe put it, held before the voice starts and after', () => {
+  it('leaves weightOf where the probe put it, frozen before the voice starts and after', () => {
     // A signal reading voice time: atRest must not hand it the unheld time.
     const byTime = (_p: Part, s: Setting) => 0.5 + 0.4 * Math.sin(s.elapsed / 40);
     const read = (rest: boolean) => {
       const m = mix<Part, Pose>(PART, { lanes: false });
-      const h = m.cue({ patch: ramp(), weight: byTime, hold: 'both', start: 100, loop: 1 });
+      const h = m.cue({ patch: ramp(), weight: byTime, freeze: 'both', start: 100, loop: 1 });
       const seen: number[] = [];
       for (const t of [0, 50, 120, 190, 260, 300]) {
         m.sync(t);
@@ -44,10 +44,10 @@ describe('a dry read weighs as the probe it repeats did', () => {
   });
 });
 
-describe('hold before', () => {
+describe('freeze before', () => {
   it('shows a waiting subject the first frame through its stagger', () => {
     const m = mix<Part, Pose>(PART);
-    m.cue({ patch: ramp(), loop: 1, stagger: () => 100, hold: 'before' });
+    m.cue({ patch: ramp(), loop: 1, stagger: () => 100, freeze: 'before' });
     m.sync(50);
     expect(m.probe(part).crawl).toBe(10);
     m.sync(150);
@@ -56,7 +56,7 @@ describe('hold before', () => {
 
   it('shows the first frame while the voice is pending, and stays pending', () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp(), loop: 1, start: 200, hold: 'before' });
+    const h = m.cue({ patch: ramp(), loop: 1, start: 200, freeze: 'before' });
     m.sync(0);
     expect(m.probe(part).crawl).toBe(10);
     expect(h.state).toBe('pending');
@@ -66,9 +66,9 @@ describe('hold before', () => {
     expect(h.state).toBe('live');
   });
 
-  it('holds before a start an anchor has yet to fix, then plays from where it lands', () => {
+  it('freezes before a start an anchor has yet to fix, then plays from where it lands', () => {
     const m = mix<Part, Pose>(PART);
-    m.cue({ patch: ramp(), loop: 1, anchor: { start: { with: 'cue' } }, hold: 'before' });
+    m.cue({ patch: ramp(), loop: 1, anchor: { start: { with: 'cue' } }, freeze: 'before' });
     m.sync(0);
     expect(m.probe(part).crawl).toBe(10);
     m.sync(40);
@@ -80,7 +80,7 @@ describe('hold before', () => {
 
   it('fades in from the first frame it shows, not from when the subject starts', () => {
     const m = mix<Part, Pose>(PART);
-    m.cue({ patch: ramp(), loop: 1, fade: { in: 200 }, stagger: () => 500, hold: 'before' });
+    m.cue({ patch: ramp(), loop: 1, fade: { in: 200 }, stagger: () => 500, freeze: 'before' });
     m.sync(0);
     m.probe(part);
     m.sync(100);
@@ -115,7 +115,7 @@ describe('hold before', () => {
       },
     );
     const m = mix<Part, Pose>(PART);
-    m.cue({ patch: counter, loop: 1, stagger: () => 100, hold: 'both' });
+    m.cue({ patch: counter, loop: 1, stagger: () => 100, freeze: 'both' });
     for (const t of [0, 50, 90]) {
       m.sync(t);
       expect(m.probe(part).crawl).toBe(0);
@@ -134,23 +134,23 @@ describe('hold before', () => {
   });
 });
 
-describe('hold after', () => {
-  it('shows the last frame once its passes are done, and stays held', async () => {
+describe('freeze after', () => {
+  it('shows the last frame once its passes are done, and stays frozen', async () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp(), loop: 1, fade: { out: 100 }, hold: 'after' });
+    const h = m.cue({ patch: ramp(), loop: 1, fade: { out: 100 }, freeze: 'after' });
     m.sync(0);
     m.probe(part);
     m.sync(500);
     expect(m.probe(part).crawl).toBe(20);
-    expect(h.state).toBe('held');
+    expect(h.state).toBe('frozen');
     expect(m.live).toBe(true);
     expect(await settled(h.played)).toBe(true);
     expect(await settled(h.done)).toBe('pending');
   });
 
-  it('leaves only when faded, ramping out from the held frame', async () => {
+  it('leaves only when faded, ramping out from the frozen frame', async () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp(), loop: 1, fade: { out: 100 }, hold: 'after' });
+    const h = m.cue({ patch: ramp(), loop: 1, fade: { out: 100 }, freeze: 'after' });
     m.sync(0);
     m.sync(500);
     h.fade();
@@ -163,7 +163,7 @@ describe('hold after', () => {
     expect(h.state).toBe('done');
   });
 
-  it('holds each staggered subject at its own last frame', () => {
+  it('freezes each staggered subject at its own last frame', () => {
     const m = mix<Part, Pose>(PART);
     const early = { id: 'early' };
     const late = { id: 'late' };
@@ -171,7 +171,7 @@ describe('hold after', () => {
       patch: ramp(),
       loop: 1,
       stagger: (s) => (s.id === 'late' ? 300 : 0),
-      hold: 'after',
+      freeze: 'after',
     });
     m.sync(0);
     m.probe(early);
@@ -181,16 +181,16 @@ describe('hold after', () => {
     expect(m.probe(late).crawl).toBeCloseTo(15, 9);
     expect(h.state).toBe('live');
     m.sync(450);
-    expect(h.state).toBe('held');
+    expect(h.state).toBe('frozen');
     expect(m.probe(late).crawl).toBe(20);
   });
 
   it('plays again when sought back into its passes', () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp(), loop: 1, hold: 'after' });
+    const h = m.cue({ patch: ramp(), loop: 1, freeze: 'after' });
     m.sync(0);
     m.sync(200);
-    expect(h.state).toBe('held');
+    expect(h.state).toBe('frozen');
     h.seek(50);
     m.sync(210);
     expect(h.state).toBe('live');
@@ -199,7 +199,7 @@ describe('hold after', () => {
 
   it('leaves its out and end unfixed until faded, so a voice after it waits', () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp(), loop: 1, hold: 'after', name: 'spin' });
+    const h = m.cue({ patch: ramp(), loop: 1, freeze: 'after', name: 'spin' });
     const next = m.cue({ patch: ramp(), loop: 1, anchor: { start: { after: 'spin' } } });
     m.sync(0);
     m.sync(500);
@@ -217,34 +217,34 @@ describe('hold after', () => {
 
   it('fades at an anchored out', () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp(), loop: 1, hold: 'after', anchor: { out: 400 } });
+    const h = m.cue({ patch: ramp(), loop: 1, freeze: 'after', anchor: { out: 400 } });
     m.sync(0);
     m.sync(200);
-    expect(h.state).toBe('held');
+    expect(h.state).toBe('frozen');
     m.sync(400);
     expect(h.state).toBe('done');
   });
 
   it('does nothing to a voice that loops for good', () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp(), hold: 'after' });
+    const h = m.cue({ patch: ramp(), freeze: 'after' });
     m.sync(0);
     m.sync(250);
     expect(h.state).toBe('live');
     expect(m.probe(part).crawl).toBeCloseTo(15, 9);
   });
 
-  it('a projection ahead reads the held frame', () => {
+  it('a projection ahead reads the frozen frame', () => {
     const m = mix<Part, Pose>(PART);
-    m.cue({ patch: ramp(), loop: 1, hold: 'after' });
+    m.cue({ patch: ramp(), loop: 1, freeze: 'after' });
     m.sync(0);
     m.probe(part);
     expect(m.project(1000).probe(part).crawl).toBe(20);
   });
 
-  it('a projection back reads the held frame', () => {
+  it('a projection back reads the frozen frame', () => {
     const m = mix<Part, Pose>(PART, { history: { ms: 10_000 } });
-    const h = m.cue({ patch: ramp(), loop: 1, hold: 'after', fade: { out: 0 } });
+    const h = m.cue({ patch: ramp(), loop: 1, freeze: 'after', fade: { out: 0 } });
     m.sync(0);
     m.probe(part);
     m.sync(300);
@@ -258,7 +258,7 @@ describe('hold after', () => {
 });
 
 describe('played', () => {
-  it('resolves true when a finite loop plays out without a hold', async () => {
+  it('resolves true when a finite loop plays out without a freeze', async () => {
     const m = mix<Part, Pose>(PART);
     const h = m.cue({ patch: ramp(), loop: 1 });
     m.sync(0);
@@ -268,7 +268,7 @@ describe('played', () => {
 
   it('resolves false when the voice leaves before its last pass ends', async () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp(), loop: 2, hold: 'after' });
+    const h = m.cue({ patch: ramp(), loop: 2, freeze: 'after' });
     m.sync(0);
     m.sync(50);
     h.fade({ over: 0 });
@@ -285,5 +285,20 @@ describe('played', () => {
     h.fade({ over: 0 });
     m.sync(510);
     expect(await h.played).toBe(false);
+  });
+});
+
+describe('hold, the deprecated name for freeze', () => {
+  it('still freezes, and freeze wins where both are set', () => {
+    const m = mix<Part, Pose>(PART);
+    const old = m.cue({ patch: ramp(), loop: 1, hold: 'after' });
+    const both = m.cue({ patch: ramp(), loop: 1, hold: 'after', freeze: 'before' });
+    m.sync(0);
+    m.probe(part);
+    m.sync(200);
+    m.probe(part);
+    m.sync(210);
+    expect(old.state).toBe('frozen');
+    expect(both.state).not.toBe('frozen');
   });
 });

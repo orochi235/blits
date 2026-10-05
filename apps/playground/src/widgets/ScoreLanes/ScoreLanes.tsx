@@ -318,7 +318,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
             >
               {c.label}
             </text>
-            {c.holdBefore && c.start > 0 && (
+            {c.freezeBefore && c.start > 0 && (
               <rect
                 className={s.hatch}
                 x={labelW}
@@ -377,7 +377,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
                 fill={fill}
               />
             )}
-            {c.holdAfter && !open && end < duration && (
+            {c.freezeAfter && !open && end < duration && (
               <rect
                 className={s.hatch}
                 x={scale.x(end)}

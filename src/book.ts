@@ -15,7 +15,7 @@ export type Listed = Marked & { order: number };
 
 /** What a booker reads of the mix that made it. */
 export interface BookHost<I, O> {
-  /** The voices in the mix, pending, live, held or fading. */
+  /** The voices in the mix, pending, live, frozen or fading. */
   readonly voices: readonly Voice<I, O>[];
   /** The host's timestamp at the last sync. */
   readonly timestamp: number;

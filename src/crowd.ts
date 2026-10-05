@@ -2,7 +2,7 @@ import { bareRows, clock, Sampled, unbare } from './bare.js';
 import { clampWeight, passAt, phaseAt, weighed } from './clock.js';
 import type { Curve } from './easing.js';
 import { KeyRows } from './keyrows.js';
-import { held, type Laned, Per, type Positions, Row, SPARSE } from './lane.js';
+import { frozenAt, type Laned, Per, type Positions, Row, SPARSE } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { closed, type Motions } from './motion.js';
 import type { Scratch } from './patch.js';
@@ -47,7 +47,7 @@ export const enum Hot {
 /** A crowd row's flags, at `Hot.FLAGS`. */
 // biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package; see `Row`
 export const enum Flag {
-  /** The voice is playing: live, held or fading. */
+  /** The voice is playing: live, frozen or fading. */
   PLAYING = 1,
   /** Its weight and clock are `hot`'s: no fade in or out, rate ramp, subject ramp or kept state. */
   FAST = 2,
@@ -63,8 +63,8 @@ export const enum Flag {
   VOICE = 64,
   /** The row's voice is a motion voice; otherwise its patch is keys or a stateless fn. */
   MOTION = 128,
-  /** The voice holds before or after, so its clock is read from the voice. */
-  HOLDS = 256,
+  /** The voice freezes before or after, so its clock is read from the voice. */
+  FREEZES = 256,
   /** A keys row whose stops `keys` holds, at `Hot.AT`, with its duration at `Hot.X0` and passes at `Hot.MS`. */
   FLAT = 512,
   /** The row's patch is a tween. */
@@ -82,7 +82,7 @@ const enum Bare {
     Flag.FOLDS |
     Flag.VOICE |
     Flag.MOTION |
-    Flag.HOLDS |
+    Flag.FREEZES |
     Flag.FLAT |
     Flag.TWEEN,
   // biome-ignore lint/style/useLiteralEnumMembers: tsc folds the flags into a literal
@@ -284,7 +284,7 @@ function rows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, first: number, id: numbe
     const voice = c.voices[p] as Voice<I, O>;
     const elapsedNow = fast ? clock(hot, h, now) : voice.elapsedAt(now);
     let elapsed = elapsedNow - delay;
-    if ((f & Flag.HOLDS) !== 0) elapsed = held(voice, elapsed);
+    if ((f & Flag.FREEZES) !== 0) elapsed = frozenAt(voice, elapsed);
     if (!(elapsed >= 0)) {
       data[o + Row.WEIGHT] = 0;
       continue;
@@ -413,9 +413,10 @@ export function row<I, O>(
 function copyVoice<I, O>(c: Crowd<I, O>, p: number): number {
   const v = c.voices[p] as Voice<I, O>;
   const h = p * c.stride;
-  let f = (c.hot[h + Hot.FLAGS] as number) & ~(Flag.VOICE | Flag.PLAYING | Flag.FAST | Flag.HOLDS);
-  if (v.state === 'live' || v.state === 'held' || v.state === 'fading') f |= Flag.PLAYING;
-  if (v.holdsBefore || v.holdsAfter) f |= Flag.HOLDS;
+  let f =
+    (c.hot[h + Hot.FLAGS] as number) & ~(Flag.VOICE | Flag.PLAYING | Flag.FAST | Flag.FREEZES);
+  if (v.state === 'live' || v.state === 'frozen' || v.state === 'fading') f |= Flag.PLAYING;
+  if (v.freezesBefore || v.freezesAfter) f |= Flag.FREEZES;
   if (
     v.ramp === null &&
     v.owner === null &&

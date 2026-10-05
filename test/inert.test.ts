@@ -24,7 +24,7 @@ const ramp = () =>
 describe('inert', () => {
   it('holds once a held voice has played out, and wakes for its fade', () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp(), loop: 1, hold: 'after' });
+    const h = m.cue({ patch: ramp(), loop: 1, freeze: 'after' });
     m.sync(0);
     m.probe(part);
     m.sync(50);
@@ -60,7 +60,7 @@ describe('inert', () => {
 
   it('is not inert while a held voice weighs by a signal', () => {
     const m = mix<Part, Pose>(PART);
-    m.cue({ patch: ramp(), loop: 1, hold: 'after', weight: () => 0.5 });
+    m.cue({ patch: ramp(), loop: 1, freeze: 'after', weight: () => 0.5 });
     m.sync(0);
     m.probe(part);
     m.sync(5000);
@@ -70,7 +70,7 @@ describe('inert', () => {
 
   it('is not inert while a voice waits to start', () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp(), loop: 1, hold: 'after', start: 1000 });
+    const h = m.cue({ patch: ramp(), loop: 1, freeze: 'after', start: 1000 });
     m.sync(0);
     m.probe(part);
     expect(h.state).toBe('pending');
@@ -79,7 +79,7 @@ describe('inert', () => {
 
   it('is not inert while a held voice fades in', () => {
     const m = mix<Part, Pose>(PART);
-    m.cue({ patch: ramp(), loop: 1, hold: 'after', fade: { in: 500 } });
+    m.cue({ patch: ramp(), loop: 1, freeze: 'after', fade: { in: 500 } });
     m.sync(0);
     m.probe(part);
     m.sync(200);

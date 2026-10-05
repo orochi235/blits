@@ -32,7 +32,7 @@ function stub(): Subject<unknown> {
  * The first of this subject's records, linked through every live voice that reaches it. A voice
  * is asked once, through the record it keeps for the subject anyway; a pending one is linked when
  * it goes live, since `target` is asked on first sight, and sight only comes once a voice plays
- * or holds before.
+ * or freezes before.
  */
 export function chain<I, O>(this: Mixer<I, O>, subject: I, now: number): Subject<unknown> {
   const was = this.chains.get(subject);
@@ -78,7 +78,7 @@ export function chain<I, O>(this: Mixer<I, O>, subject: I, now: number): Subject
   return head;
 }
 
-/** A voice's record for a subject where its chain links it: the voice plays or holds, and reaches it. */
+/** A voice's record for a subject where its chain links it: the voice plays or freezes, and reaches it. */
 export function linkable<I, O>(
   this: Mixer<I, O>,
   voice: Voice<I, O>,
@@ -87,7 +87,7 @@ export function linkable<I, O>(
   slot: number,
 ): Subject<unknown> | null {
   const state = voice.state;
-  if (state === 'done' || (state === 'pending' && !voice.holdsBefore)) return null;
+  if (state === 'done' || (state === 'pending' && !voice.freezesBefore)) return null;
   const held = this.held(voice, subject, now, slot);
   return held.reaches ? held : null;
 }

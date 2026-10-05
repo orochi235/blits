@@ -89,7 +89,7 @@ export function heldByInput<I, O>(voice: Voice<I, O>): boolean {
 /**
  * What one owner multiplies into its children's weight for a subject at mix time `now`: its weight,
  * or its signal's read by `base`, times its own fade, held to 0..1. Its fade in counts from when it
- * started, or from when it first showed where it holds before.
+ * started, or from when it first showed where it freezes before.
  */
 export function ownWeight<I, O>(
   owner: Voice<I, O>,
@@ -99,7 +99,7 @@ export function ownWeight<I, O>(
 ): number {
   const b = typeof owner.spec.weight === 'function' ? base(owner) : owner.weight;
   const start = owner.owner === null ? owner.start : mixTime(owner.owner, owner.start);
-  const since = owner.holdsBefore && owner.opened < start ? owner.opened : start;
+  const since = owner.freezesBefore && owner.opened < start ? owner.opened : start;
   return clampWeight(b * envelope(owner.fade.in ?? 0, owner.out, owner.ease, reduced, now, since));
 }
 

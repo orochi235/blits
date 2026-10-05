@@ -393,8 +393,8 @@ interface Setting&lt;S = void, H = unknown&gt; {
      kept, like <code>target</code>; the subject's fade in starts when the voice clock reaches it. */</span>
   stagger?: (subject: I) =&gt; number;
   <span class="cm">/** Show the first frame before a subject starts, the last after its passes run out, or both. Default: neither,
-     so the voice shows nothing outside its passes. See Holding. */</span>
-  hold?: 'before' | 'after' | 'both';
+     so the voice shows nothing outside its passes. See Freezing. <code>hold</code>, its name before 0.6.0, still works and is deprecated. */</span>
+  freeze?: 'before' | 'after' | 'both';
 
   <span class="cm">// weight</span>
   <span class="cm">/** Steady weight, or a signal read per subject per frame. Default 1. */</span>
@@ -428,8 +428,8 @@ interface Setting&lt;S = void, H = unknown&gt; {
 
 interface Handle&lt;I&gt; {
   readonly id: number;
-  <span class="cm">/** <code>held</code>: a voice holding after has played every pass and shows its last frame until faded. */</span>
-  readonly state: 'pending' | 'live' | 'held' | 'fading' | 'done';
+  <span class="cm">/** <code>frozen</code>: a voice freezing after has played every pass and shows its last frame until faded. */</span>
+  readonly state: 'pending' | 'live' | 'frozen' | 'fading' | 'done';
   <span class="cm">/** The owner's handle, for a voice an owner holds. */</span>
   readonly owner: Handle&lt;I&gt; | undefined;
   <span class="cm">/** Live. Writes land on the next sync. */</span>
@@ -456,14 +456,14 @@ interface Handle&lt;I&gt; {
 
 <p><b>Fading one subject.</b> <code>fade({ subject, over })</code> ramps one subject out of a voice and leaves the voice playing for every other subject; <code>over: 0</code> takes it out at once. When the ramp ends the voice forgets the subject &mdash; its record, its lane position and a motion patch&rsquo;s state for it &mdash; and no longer reaches it, so nothing it held stays stacked under whatever takes the subject over. A motion patch&rsquo;s <code>to</code> brings it back, met afresh: <code>from</code>, <code>target</code> and <code>stagger</code> are asked again. Any other voice reaches it again only once <code>drop</code> forgets the subject. This is what lets a host that starts many short animations, one per node, run them as one voice on one lane instead of a voice per call, while still cancelling a node or handing it to a different patch.</p>
 
-<p><b>Holding.</b> A voice shows nothing outside its passes unless it holds. <code>hold: 'before'</code> shows a subject the voice&rsquo;s first frame from the cue until the subject starts: while the voice is pending, and while the subject waits out its <code>stagger</code>. <code>hold: 'after'</code> shows the last frame of the last pass once a finite loop has played out, and the voice stays until <code>fade()</code> takes it out, ramping from that frame. <code>'both'</code> does both. wod asked for it to replace WAAPI&rsquo;s <code>fill</code>: a spin lands and holds its angle, and staggered wedges wait on their first frame rather than popping in.</p>
+<p><b>Freezing.</b> A voice shows nothing outside its passes unless it freezes, the name SMIL gives the same thing (<code>fill="freeze"</code>). <code>freeze: 'before'</code> shows a subject the voice&rsquo;s first frame from the cue until the subject starts: while the voice is pending, and while the subject waits out its <code>stagger</code>. <code>freeze: 'after'</code> shows the last frame of the last pass once a finite loop has played out, and the voice stays until <code>fade()</code> takes it out, ramping from that frame. <code>'both'</code> does both. wod asked for it to replace WAAPI&rsquo;s <code>fill</code>: a spin lands and freezes on its angle, and staggered wedges wait on their first frame rather than popping in.</p>
 <ul>
-  <li><b>A held subject&rsquo;s clock stands still.</b> It reads phase 0 of pass 0 before, and phase 1 of the last pass after, with <code>elapsed</code> pinned to that edge. <code>at</code> is asked for that frame. <code>step</code> does not run while a subject waits, so a stateful patch starts playing from the state it was cued with; after, it runs once more to where the last pass ended and then no more, so the held frame does not depend on when the last frame before it fell. A voice holding before stays <code>pending</code> until it starts, and <code>weightOf</code> reports the weight it gives a waiting subject.</li>
-  <li><b><code>fade.in</code> counts from the first frame the voice shows</b>, so with <code>'before'</code> it ramps in on the held frame rather than at full weight, and does not dip when play begins.</li>
-  <li><b>A voice holding after reaches <code>held</code>, not <code>fading</code>,</b> at the moment a voice without a hold would begin its fade out. <code>played</code> resolves true then. Its <code>out</code> and <code>end</code> marks are unfixed until it is faded, like those of a voice that loops for good, so <code>{ after: 'spin' }</code> waits for the fade. A host that wants to start something when the passes run out awaits <code>played</code>.</li>
-  <li><b>The host owns every held voice.</b> One cued per spin and never faded stays in the mix for good, one more voice folded every frame. The next voice&rsquo;s cue is the time to fade the last, at once or <code>at: 'rest'</code>.</li>
-  <li><b>Where it changes nothing.</b> A voice that loops for good never runs out of passes, so only <code>'before'</code> applies to it. A motion patch (<code>spring</code>, <code>glide</code>, <code>tween</code>) already holds its target and has no passes, so <code>hold</code> does nothing to it. Lanes give the same pose with it as without them, as for everything else.</li>
-  <li><b>What it costs.</b> A voice holding before runs on the general path while it is pending, which takes the channels it writes off their lanes until it starts; one that is already live, waiting only on a subject&rsquo;s stagger, stays on its lane. A mix with no hold reads no slower (<code>keys</code> and <code>fn</code> rows of <code>bench/frame.mjs</code>, three passes alternated against <code>main</code> on a laptop, 2026-10-03).</li>
+  <li><b>A frozen subject&rsquo;s clock stands still.</b> It reads phase 0 of pass 0 before, and phase 1 of the last pass after, with <code>elapsed</code> pinned to that edge. <code>at</code> is asked for that frame. <code>step</code> does not run while a subject waits, so a stateful patch starts playing from the state it was cued with; after, it runs once more to where the last pass ended and then no more, so the frozen frame does not depend on when the last frame before it fell. A voice freezing before stays <code>pending</code> until it starts, and <code>weightOf</code> reports the weight it gives a waiting subject.</li>
+  <li><b><code>fade.in</code> counts from the first frame the voice shows</b>, so with <code>'before'</code> it ramps in on the frozen frame rather than at full weight, and does not dip when play begins.</li>
+  <li><b>A voice freezing after reaches <code>frozen</code>, not <code>fading</code>,</b> at the moment a voice without a freeze would begin its fade out. <code>played</code> resolves true then. Its <code>out</code> and <code>end</code> marks are unfixed until it is faded, like those of a voice that loops for good, so <code>{ after: 'spin' }</code> waits for the fade. A host that wants to start something when the passes run out awaits <code>played</code>.</li>
+  <li><b>The host owns every frozen voice.</b> One cued per spin and never faded stays in the mix for good, one more voice folded every frame. The next voice&rsquo;s cue is the time to fade the last, at once or <code>at: 'rest'</code>.</li>
+  <li><b>Where it changes nothing.</b> A voice that loops for good never runs out of passes, so only <code>'before'</code> applies to it. A motion patch (<code>spring</code>, <code>glide</code>, <code>tween</code>) already keeps its target and has no passes, so <code>freeze</code> does nothing to it. Lanes give the same pose with it as without them, as for everything else.</li>
+  <li><b>What it costs.</b> A voice freezing before runs on the general path while it is pending, which takes the channels it writes off their lanes until it starts; one that is already live, waiting only on a subject&rsquo;s stagger, stays on its lane. A mix with no freeze reads no slower (<code>keys</code> and <code>fn</code> rows of <code>bench/frame.mjs</code>, three passes alternated against <code>main</code> on a laptop, 2026-10-03).</li>
 </ul>
 
 <p>Weights are the only knob the mix owns. Fade, crossfade, handover, alternatives, and hinge's continuous mode are all weights over time; the section on blending shows each one as such. A patch never sees a weight applied to its output, it only sees the number in <code>setting.weight</code> if it cares.</p>
@@ -526,14 +526,14 @@ interface Mix&lt;I, O, H = unknown&gt; {
   <span class="cm">/** Every mark the plan knows between two timestamps, earliest first. */</span>
   marks(from: number, to: number): Marked[];
 
-  <span class="cm">/** A handle on every voice still in the mix, pending, live, held or fading, in cue order; given a tag, only
+  <span class="cm">/** A handle on every voice still in the mix, pending, live, frozen or fading, in cue order; given a tag, only
      the voices carrying it. Each is the handle `cue` returned for that voice. */</span>
   voices(tag?: string): Handle&lt;I&gt;[];
 
   <span class="cm">/** Anything still contributing, fading, or pending. A host stops its loop when this is false. `cue` and
      `blend` make it true again at once, and `onWake` says so. */</span>
   readonly live: boolean;
-  <span class="cm">/** Another frame would change no pose: every voice is done, held at a plain weight, or a motion whose every
+  <span class="cm">/** Another frame would change no pose: every voice is done, frozen at a plain weight, or a motion whose every
      subject has landed, or, at rate 0, every voice has started at a plain weight with no anchor. A host may sleep its loop while this is true and `live` still is. */</span>
   readonly inert: boolean;
   <span class="cm">/** Calls `fn` when a host call makes the mix need frames again after a sync: a cue, a fade, a rate, a seek, a
@@ -693,7 +693,7 @@ intro.fade();       <span class="cm">// one envelope over both</span></code></pr
     <tr><td><code>rate</code>, <code>ramp</code></td><td>Multiply into each child's own rate: a child's clock reads its owner's clock where a voice's reads the mix's.</td></tr>
     <tr><td><code>seek</code></td><td>Moves the owner's clock, and every child's phase with it. State stays where it is, as for a voice's own seek.</td></tr>
     <tr><td><code>weight</code> (a number or a signal), <code>fade</code></td><td>Multiply into each child's weight per subject, as the child's own fade does.</td></tr>
-    <tr><td><code>hold</code></td><td>Taken by every child with no hold of its own.</td></tr>
+    <tr><td><code>freeze</code></td><td>Taken by every child with no freeze of its own.</td></tr>
     <tr><td><code>played</code>, <code>done</code></td><td><code>played</code> once every child has finished its passes. The owner leaves once it has held a voice and has none left; a fade that ends takes its children with it.</td></tr>
     <tr><td><code>loop</code></td><td>Refused at <code>owns</code>: a pass would have to restart stateful children (decided 2026-10-04).</td></tr>
   </table></div>
@@ -806,7 +806,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>Subject registration.</b> A <code>mix.subjects(list)</code> call would let the mix step every state eagerly. It puts a second source of truth about the pool in the host. Lazy state keyed by identity, stepped by the gap in the timestamp, needs nothing from the host and is the rule klieg already proved.</li>
   <li><b>A slew in place of the band.</b> Smoothing a gate's input instead of giving it two edges. It delays the crossing without deciding it, so an input that rests on the threshold chatters anyway, and the rate needed to help at all costs visible lag.</li>
   <li><b>Normalizing a locus's weights per channel.</b> The other way to make a crossfade hold its value on <code>mul</code>: keep the scale-and-merge fold and pick a per-channel divisor. It costs the property the mixer's fold order rests on &mdash; that weights are scalars resolved for the subject before any channel is touched &mdash; and it has no answer for <code>last</code>, which has no arithmetic to normalize. The <code>lerp</code> fold gets the same result from the rule the package already has.</li>
-  <li><b>Removing a held voice once another covers it.</b> WAAPI drops a finished, filling animation when a later one replaces every property it sets. In a mix, &ldquo;covers&rdquo; depends on weights, loci and each channel&rsquo;s fold, and a voice leaving on its own would change the pose with no call to point at. The host fades it.</li>
+  <li><b>Removing a frozen voice once another covers it.</b> WAAPI drops a finished, filling animation when a later one replaces every property it sets. In a mix, &ldquo;covers&rdquo; depends on weights, loci and each channel&rsquo;s fold, and a voice leaving on its own would change the pose with no call to point at. The host fades it.</li>
   <li><b>A mix option for the lurch guard.</b> A global "normalize when over 1" would apply to effects that legitimately stack. The cap belongs to the voices that crossfade, so it is a <code>locus</code>.</li>
 </ul>
 

@@ -14,8 +14,8 @@ const clip = (c: Partial<Clip>): Clip => ({
   fadeIn: 50,
   fadeOut: 50,
   spread: 0,
-  holdBefore: false,
-  holdAfter: false,
+  freezeBefore: false,
+  freezeAfter: false,
   ...c,
 });
 
@@ -65,11 +65,11 @@ describe('dragEdit', () => {
 });
 
 describe('hatchOf', () => {
-  it('reads the two holds as one choice', () => {
+  it('reads the two freezes as one choice', () => {
     expect(hatchOf(clip({}))).toBeNull();
-    expect(hatchOf(clip({ holdBefore: true }))).toBe('before');
-    expect(hatchOf(clip({ holdAfter: true }))).toBe('after');
-    expect(hatchOf(clip({ holdBefore: true, holdAfter: true }))).toBe('both');
+    expect(hatchOf(clip({ freezeBefore: true }))).toBe('before');
+    expect(hatchOf(clip({ freezeAfter: true }))).toBe('after');
+    expect(hatchOf(clip({ freezeBefore: true, freezeAfter: true }))).toBe('both');
   });
 });
 

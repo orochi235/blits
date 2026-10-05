@@ -50,10 +50,10 @@ export function envelope(
 }
 
 /**
- * A subject's voice time `raw` once the voice's holds apply: 0 before it starts if it holds before,
- * else NaN, where it shows nothing; `span` once its passes end if it holds after.
+ * A subject's voice time `raw` once the voice's freezes apply: 0 before it starts if it freezes
+ * before, else NaN, where it shows nothing; `span` once its passes end if it freezes after.
  */
-export function heldTime(raw: number, before: boolean, after: boolean, span: number): number {
+export function frozenTime(raw: number, before: boolean, after: boolean, span: number): number {
   if (raw < 0) return before ? 0 : Number.NaN;
   return after && raw > span ? span : raw;
 }

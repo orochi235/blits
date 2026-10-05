@@ -95,8 +95,8 @@ export function held<I, O>(
   voice.seen++;
   if (delay > voice.latest) {
     voice.latest = delay;
-    // A later end can take a held voice live again.
-    if (voice.state === 'held') schedule(this, voice);
+    // A later end can take a frozen voice live again.
+    if (voice.state === 'frozen') schedule(this, voice);
   }
   return held;
 }
@@ -114,7 +114,7 @@ export function sinceOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, delay: numb
 }
 
 export function shownOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, since: number): number {
-  return voice.holdsBefore && voice.opened < since ? voice.opened : since;
+  return voice.freezesBefore && voice.opened < since ? voice.opened : since;
 }
 
 /** A voice has gone live: the records it made while pending count from where it started. */
