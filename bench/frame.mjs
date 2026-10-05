@@ -138,6 +138,8 @@ const rows = [
   ['weaselfn', 10000, 1],
   // `atRest` asked of every subject each frame, under a tween and a `fn` voice over all of them.
   ['rest', 10000, 2],
+  // A probe of every subject each frame, then `atRest` of each, as a host skipping writes does.
+  ['probed', 10000, 2],
   // Lanes fill every subject they have met: this one probes all 10k once, then 5% each frame.
   ['sparse', 10000, 1],
   // The same rows with lanes off, for the comparison in one run.
@@ -146,6 +148,7 @@ const rows = [
   ['tween-', 10000, 1],
   ['tweenfn-', 10000, 1],
   ['blend-', 10000, 3],
+  ['probed-', 10000, 2],
   ['sparse-', 10000, 1],
   // Read through `pull` into one array per channel instead of a probe per subject.
   ['fn^', 10000, 3],
@@ -266,7 +269,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
         ? bounce()
         : kind === 'spring'
           ? settle()
-          : kind === 'tween' || (kind === 'rest' && v === 0)
+          : kind === 'tween' || ((kind === 'rest' || kind === 'probed') && v === 0)
             ? glideTo()
             : kind === 'tweenfn'
               ? tweenFn()
@@ -294,6 +297,11 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   };
   const read = (list) => {
     if (kind === 'rest') for (const s of list) m.atRest(s);
+    else if (kind === 'probed')
+      for (const s of list) {
+        m.probe(s, scratch);
+        m.atRest(s);
+      }
     else if (pulls) m.pull(list, columns);
     else for (const s of list) m.probe(s, scratch);
   };

@@ -25,6 +25,7 @@ function stub(): Subject<unknown> {
     version: Number.NaN,
     loci: null,
     slot: -1,
+    rests: Number.NaN,
   };
 }
 

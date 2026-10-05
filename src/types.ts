@@ -726,7 +726,10 @@ export interface Mix<I, O, H = unknown> {
    * older than the history reaches.
    */
   project(timestamp: number): Projection<I, O>;
-  /** Every channel at rest for this subject this frame, so a host can skip the write. */
+  /**
+   * Every channel at rest for this subject this frame, so a host can skip the write. After a probe
+   * of the subject this frame, it answers for the pose that probe gave, without folding again.
+   */
   atRest(subject: I): boolean;
 
   /**

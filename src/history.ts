@@ -90,6 +90,7 @@ export function copyHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): Subject
     version: Number.NaN,
     loci: null,
     slot: -1,
+    rests: Number.NaN,
   };
 }
 

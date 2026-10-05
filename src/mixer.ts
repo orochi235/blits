@@ -289,6 +289,10 @@ export class Mixer<I, O> implements Mix<I, O> {
   probe(subject: I, out?: O): O {
     const pose = this.fold(subject, out);
     this.keep(subject, pose, out);
+    if (this.wantsRest) {
+      const head = this.linkedHead;
+      if (head !== null) head.rests = 2 * this.restsKey() + (this.rests(pose) ? 1 : 0);
+    }
     return pose;
   }
 
@@ -321,7 +325,13 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   atRest(subject: I): boolean {
+    this.wantsRest = true;
     const head = this.linked(subject);
+    // A probe this frame answers for the pose it gave the host.
+    if (head !== null) {
+      const since = head.rests - 2 * this.restsKey();
+      if (since >= 0) return since === 1;
+    }
     const laned = this.linkedLaned;
     const lanes = this.lanes as Lanes<I, O>;
     // Every voice on lanes and nothing to clamp: the pose a fold would make is the lanes' values.
@@ -329,7 +339,11 @@ export class Mixer<I, O> implements Mix<I, O> {
       const slot = (head as Subject<unknown>).slot;
       if (!lanes.owes(slot)) return lanes.rests(slot);
     }
-    const pose = this.foldWith(subject, {} as O, head, laned, true) as Record<string, unknown>;
+    this.restScratch ??= {} as O;
+    const pose = this.foldWith(subject, this.restScratch, head, laned, true) as Record<
+      string,
+      unknown
+    >;
     return this.rests((this.bounded.length === 0 ? pose : this.clamp(pose)) as O);
   }
 
@@ -471,6 +485,31 @@ export class Mixer<I, O> implements Mix<I, O> {
   readonly folding = new Set<number>();
 
   linkedLaned = false;
+  /** The chain `linked` last returned. */
+  linkedHead: Subject<unknown> | null = null;
+  /** `atRest` has been asked, so each probe records on the subject whether its pose rested. */
+  wantsRest = false;
+  /** What a probe's record of rest is good for: moved by a new frame, version or relink. */
+  private restsEpoch = 0;
+  private restsFrame = Number.NaN;
+  private restsVersion = Number.NaN;
+  private restsRelinks = -1;
+  /** The pose `atRest` folds into where no probe this frame answers. */
+  private restScratch: O | undefined;
+
+  private restsKey(): number {
+    if (
+      this.frame !== this.restsFrame ||
+      this.version !== this.restsVersion ||
+      this.relinks !== this.restsRelinks
+    ) {
+      this.restsEpoch++;
+      this.restsFrame = this.frame;
+      this.restsVersion = this.version;
+      this.restsRelinks = this.relinks;
+    }
+    return this.restsEpoch;
+  }
 }
 
 // The probe's hot path is methods, installed here from the modules that own them: as functions
