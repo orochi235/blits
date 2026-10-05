@@ -287,6 +287,13 @@ systems now run on it**, on klieg's `main`.
      - **`target` memory** still grows with the square of voices × subjects (see
        `NOTES-FROM-WEASEL.md`): a bit per voice and subject number would end it, but only mixes
        with lanes number their subjects.
+     - **weasel's animator wants a voice that allocates almost nothing per cue**, and waits on
+       Mike. At `0c80b6d` (3.7 KB a voice) its 10k-tween frame takes 0.51–0.73 ms on teitou
+       against 0.165 with no voice cued: its loop misses cache because each animation's objects
+       sit a voice apart, and that cost does not fall in step with bytes. Getting there means a
+       one-subject voice and its `tween()` patch keeping their state in a crowd's rows, made
+       lazily or pooled: a redesign of `Voice` and of patches as per-subject state. Offered
+       instead: one tween voice over many subjects, retargeted by `patch.to` per animation.
      - **A motion patch's `runs` as a plain array** would save about 150 B more per voice (a
        one-subject tween voice holds 3.7 KB by `bench/heapwho.mjs 5000 weasel`), but `closed`
        then reads stretches from a plain array and from a crowd's Float64Array, and at
