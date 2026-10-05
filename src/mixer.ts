@@ -22,6 +22,7 @@ import { Named } from './named.js';
 import { Pace } from './pace.js';
 import { type Built, builtOf, durationOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
+import { Steps } from './relink.js';
 import { Store } from './store.js';
 import type {
   Booker,
@@ -796,6 +797,7 @@ class Mixer<I, O> implements Mix<I, O> {
    */
   private readonly chains = new Store<I, Subject<unknown>>();
   private version = 0;
+  private readonly steps = new Steps<Voice<I, O>>();
   /** Per subject, the voices whose `subjects` name it, in voice order. */
   private named = new Store<I, Voice<I, O>[]>();
   /** Voices a subject has been faded out of, which `drop` looks in besides those that reach it. */
@@ -2055,7 +2057,7 @@ class Mixer<I, O> implements Mix<I, O> {
     for (const voice of this.cued) this.index(voice);
     this.loci = this.cued.filter((v) => v.spec.locus !== undefined).length;
     this.anchored = this.cued.filter((v) => v.spec.anchor !== undefined).length;
-    this.version++;
+    this.steps.push(null, ++this.version);
   }
 
   /** A copy of a subject's record that shares nothing a read could change. */
@@ -2856,27 +2858,34 @@ class Mixer<I, O> implements Mix<I, O> {
   private chain(subject: I, now: number): Subject<unknown> {
     const was = this.chains.get(subject);
     if (was !== undefined && was.version === this.version) return was;
-    let first: Subject<unknown> | null = null;
-    let prev: Subject<unknown> | null = null;
-    const link = (voice: Voice<I, O>) => {
-      const state = voice.state;
-      if (state === 'done' || (state === 'pending' && !voice.holdsBefore)) return;
-      const held = this.held(voice, subject, now);
-      if (!held.reaches) return;
-      held.voice = voice;
-      held.next = null;
-      if (prev === null) first = held;
-      else prev.next = held;
-      prev = held;
-    };
-    const named = this.naming === 0 ? undefined : this.named.get(subject);
-    let j = 0;
-    for (const voice of this.general) {
-      while (named !== undefined && j < named.length && (named[j] as Voice<I, O>).id < voice.id)
-        link(named[j++] as Voice<I, O>);
-      link(voice);
+    // Where only voices over every subject changed since, those alone are taken off or put on.
+    let first =
+      was === undefined
+        ? undefined
+        : this.steps.patch(was.voice === null ? null : was, was.version, (voice) =>
+            this.linkable(voice, subject, now),
+          );
+    if (first === undefined) {
+      let prev: Subject<unknown> | null = null;
+      first = null;
+      const link = (voice: Voice<I, O>) => {
+        const held = this.linkable(voice, subject, now);
+        if (held === null) return;
+        held.voice = voice;
+        held.next = null;
+        if (prev === null) first = held;
+        else prev.next = held;
+        prev = held;
+      };
+      const named = this.naming === 0 ? undefined : this.named.get(subject);
+      let j = 0;
+      for (const voice of this.general) {
+        while (named !== undefined && j < named.length && (named[j] as Voice<I, O>).id < voice.id)
+          link(named[j++] as Voice<I, O>);
+        link(voice);
+      }
+      while (named !== undefined && j < named.length) link(named[j++] as Voice<I, O>);
     }
-    while (named !== undefined && j < named.length) link(named[j++] as Voice<I, O>);
     const head = first ?? stub();
     head.version = this.version;
     if (was !== undefined && was !== head) {
@@ -2888,6 +2897,14 @@ class Mixer<I, O> implements Mix<I, O> {
       head.slot = this.lanes.number(subject);
     if (was !== head) this.chains.set(subject, head);
     return head;
+  }
+
+  /** A voice's record for a subject where its chain links it: the voice plays or holds, and reaches it. */
+  private linkable(voice: Voice<I, O>, subject: I, now: number): Subject<unknown> | null {
+    const state = voice.state;
+    if (state === 'done' || (state === 'pending' && !voice.holdsBefore)) return null;
+    const held = this.held(voice, subject, now);
+    return held.reaches ? held : null;
   }
 
   /** Whether a voice reaches a subject by what its spec says: the subjects it names, or its `target`. */
@@ -2907,7 +2924,7 @@ class Mixer<I, O> implements Mix<I, O> {
   private changed(voice: Voice<I, O>): void {
     this.lanes?.touch(voice);
     if (voice.named === null) {
-      this.version++;
+      this.steps.push(voice, ++this.version);
       return;
     }
     for (const subject of voice.named) {
