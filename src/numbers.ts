@@ -11,7 +11,8 @@ const unit: unique symbol = Symbol('unit');
  */
 export class Numbers<I> {
   private next = 0;
-  private readonly free: number[] = [];
+  /** Numbers released for reuse; null until one is, as most patches never release one. */
+  private free: number[] | null = null;
   /** By number: the subject, a weak reference to it, or undefined for a number not in use. */
   // Room for one: an empty array written at 0 reserves 17, and most patches number one subject.
   private readonly refs: (I | WeakRef<object> | typeof unit | undefined)[] = [undefined];
@@ -26,7 +27,8 @@ export class Numbers<I> {
   private lone: WeakRef<object> | null = null;
   private loneSlot = -1;
 
-  constructor(private readonly gone: (slot: number) => void) {}
+  /** Takes the owner rather than a callback, which would cost a closure and its context per patch. */
+  constructor(private readonly owner: { forget(slot: number): void }) {}
 
   /** One past the highest number handed out, so a loop over 0..size meets every live one. */
   get size(): number {
@@ -34,7 +36,7 @@ export class Numbers<I> {
   }
 
   take(subject: I): number {
-    const slot = this.free.pop() ?? this.next++;
+    const slot = this.free?.pop() ?? this.next++;
     let dead = -1;
     if (typeof subject === 'object' && subject !== null) {
       const ref = new WeakRef(subject as object);
@@ -75,7 +77,8 @@ export class Numbers<I> {
     if (ref === this.lone) this.lone = null;
     else if (ref instanceof WeakRef) this.registry?.unregister(ref);
     this.refs[slot] = undefined;
-    this.gone(slot);
-    this.free.push(slot);
+    this.owner.forget(slot);
+    if (this.free === null) this.free = [slot];
+    else this.free.push(slot);
   }
 }

@@ -287,6 +287,12 @@ systems now run on it**, on klieg's `main`.
      - **`target` memory** still grows with the square of voices × subjects (see
        `NOTES-FROM-WEASEL.md`): a bit per voice and subject number would end it, but only mixes
        with lanes number their subjects.
+     - **A motion patch's `runs` as a plain array** would save about 150 B more per voice (a
+       one-subject tween voice holds 3.7 KB by `bench/heapwho.mjs 5000 weasel`), but `closed`
+       then reads stretches from a plain array and from a crowd's Float64Array, and at
+       `FRAMES=5000` on teitou `tweens^` ran 6% slower; copying each stretch into a Float64Array
+       first made `weasel^`, whose voices sample through their patch every frame, 15% slower. The
+       way through is a lane copying its stretches into its own Float64Array, as a crowd does.
      - **Nothing reads clearly slower than 0.4.0 at steady state.** Confirm any short-run
        regression at `FRAMES=5000` before chasing it: 330 frames can end before the JIT settles.
 

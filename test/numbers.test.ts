@@ -6,7 +6,7 @@ import { absent, Numbers } from '../src/numbers.js';
 describe('Numbers', () => {
   it('hands out 0, 1, 2 and reuses a released number', () => {
     const freed: number[] = [];
-    const n = new Numbers<string>((slot) => freed.push(slot));
+    const n = new Numbers<string>({ forget: (slot) => freed.push(slot) });
     expect([n.take('a'), n.take('b'), n.take('c')]).toEqual([0, 1, 2]);
     n.release(1);
     expect(freed).toEqual([1]);
@@ -18,7 +18,7 @@ describe('Numbers', () => {
 
   it('releases a number once, however often it is asked', () => {
     const freed: number[] = [];
-    const n = new Numbers<string>((slot) => freed.push(slot));
+    const n = new Numbers<string>({ forget: (slot) => freed.push(slot) });
     n.take('a');
     n.release(0);
     n.release(0);
@@ -29,7 +29,7 @@ describe('Numbers', () => {
     setFlagsFromString('--expose_gc');
     const gc = runInNewContext('gc') as () => void;
     const freed: number[] = [];
-    const n = new Numbers<object>((slot) => freed.push(slot));
+    const n = new Numbers<object>({ forget: (slot) => freed.push(slot) });
     const ref = (() => {
       const first = {};
       n.take(first);
@@ -49,7 +49,7 @@ describe('Numbers', () => {
   });
 
   it('holds an object subject weakly and hands it back while it lives', () => {
-    const n = new Numbers<{ id: number }>(() => {});
+    const n = new Numbers<{ id: number }>({ forget: () => {} });
     const part = { id: 7 };
     const slot = n.take(part);
     expect(n.subject(slot)).toBe(part);

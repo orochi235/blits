@@ -2,7 +2,7 @@ import { foldNumber, lerpNumber, type Numeric, numericOf } from './channels.js';
 import { clampWeight, heldTime, passAt, phaseAt, weighed } from './clock.js';
 import type { Curve } from './easing.js';
 import type { Subject, Voice } from './mixer.js';
-import { closed, type Motions, motionOf, noTouch } from './motion.js';
+import { closed, type Motions, motionOf, type Watcher } from './motion.js';
 import { absent, Numbers } from './numbers.js';
 import { AT, NOTHING, readKeys, type Scratch, seg, segment, shifted, type Track } from './patch.js';
 import { reading } from './reading.js';
@@ -447,7 +447,7 @@ const F_HOLDS = 256;
  * per-subject numbers a lane keeps, and a copy of what a fill reads of the voice and, for a motion
  * voice, its patch, so a fill over 100k of them reads a few flat arrays instead of 100k voices,
  * lanes and patch buffers. Each copy is written when its source changes: the voice's by
- * `voiceChanged`, the stretch through the patch's `touched`.
+ * `voiceChanged`, the stretch by `stretchChanged`.
  */
 class Crowd<I, O> implements Positions<I, O> {
   /** The subject number at each row. */
@@ -464,7 +464,6 @@ class Crowd<I, O> implements Positions<I, O> {
   eases: (Curve | undefined)[] = [];
   /** Each row's patch law, one array shared by every row whose law is the same. */
   laws: Float64Array[] = [];
-  touches: ((s: number) => void)[] = [];
   readonly rowOf = new Map<number, number>();
   idle = false;
   readonly line = SPARSE.other;
@@ -550,7 +549,7 @@ class Crowd<I, O> implements Positions<I, O> {
  * The lanes of one mix: subject numbers, which channels and voices run on lanes, and the values a
  * frame's fill leaves for probes to copy.
  */
-export class Lanes<I, O> {
+export class Lanes<I, O> implements Watcher {
   private readonly numbers: Numbers<I>;
   private lanes: Lane<I, O>[] = [];
   /** The lanes over every subject that have started playing, by epoch. */
@@ -642,7 +641,7 @@ export class Lanes<I, O> {
   private qualifiedVersion = Number.NaN;
 
   constructor(private readonly host: LaneHost<I, O>) {
-    this.numbers = new Numbers<I>((slot) => this.forget(slot));
+    this.numbers = new Numbers<I>(this);
   }
 
   /** A change that may move a voice on or off its lane: qualify again, then fill again. */
@@ -1108,7 +1107,7 @@ export class Lanes<I, O> {
     this.per[i] = (this.per[i] as number) + by;
   }
 
-  private forget(slot: number): void {
+  forget(slot: number): void {
     this.live--;
     for (const lane of this.lanes) lane.remove(slot);
     for (const c of this.crowds)
@@ -1497,7 +1496,6 @@ export class Lanes<I, O> {
     c.motions.length = q;
     c.eases.length = q;
     c.laws.length = q;
-    c.touches.length = q;
     c.dead = 0;
   }
 
@@ -1527,7 +1525,6 @@ export class Lanes<I, O> {
     to.motions[q] = from.motions[p];
     to.eases[q] = from.eases[p];
     to.laws[q] = from.laws[p] as Float64Array;
-    to.touches[q] = from.touches[p] as (s: number) => void;
     const odd = from.odd?.get(p);
     if (odd !== undefined) {
       to.odd ??= new Map();
@@ -1553,15 +1550,12 @@ export class Lanes<I, O> {
     if (run === undefined) {
       c.laws[p] = none;
       c.eases[p] = undefined;
-      c.touches[p] = noTouch;
       return;
     }
     c.laws[p] = this.lawOf(run);
     c.eases[p] = run.ease;
-    const id = v.id;
-    const touch = () => this.touchedCrowd(id);
-    run.touched = touch;
-    c.touches[p] = touch;
+    run.watcher = this;
+    run.watchId = v.id;
   }
 
   /** A patch's law, as the one array every crowd row with the same law shares. */
@@ -1584,7 +1578,7 @@ export class Lanes<I, O> {
   }
 
   /** A crowd voice's patch changed a stretch: its copy is read again at the next fill. */
-  private touchedCrowd(id: number): void {
+  stretchChanged(id: number): void {
     const c = this.crowdOf.get(id);
     const p = c?.rowOf.get(id);
     if (c === undefined || p === undefined) return;
@@ -1611,8 +1605,9 @@ export class Lanes<I, O> {
       if (rec !== undefined && c.motions[p] !== undefined) this.settle(c, p, slot, rec);
     }
     const run = c.motions[p];
-    if (run !== undefined && run.touched === c.touches[p]) run.touched = noTouch;
-    (c.voices[p] as Voice<I, O>).laned = false;
+    const v = c.voices[p] as Voice<I, O>;
+    if (run !== undefined && run.watcher === this && run.watchId === v.id) run.watcher = null;
+    v.laned = false;
   }
 
   /** A crowd row's weight as `reported` reads a lane position's. */

@@ -67,4 +67,4 @@ export class Store<K, V> {
 const none: unique symbol = Symbol('none');
 
 /** A Map's key equality, SameValueZero: NaN finds NaN. */
-const same = (a: unknown, b: unknown): boolean => a === b || (a !== a && b !== b);
+const same = (a: unknown, b: unknown): boolean => a === b || Object.is(a, b);

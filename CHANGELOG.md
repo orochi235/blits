@@ -6,13 +6,20 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Breaking
+
+- A spring, glide or tween's `to`, `push`, `read` and `at` are methods of its class, so call them on
+  the patch, as `glide.to(id, 1)`: one taken off it, as `const { to } = glide`, has no patch to act
+  on. Its `motion` is a getter on the class rather than its own property.
+
 ### Fixed
 
 - A voice holds less while it plays. A store keeps its first id inline rather than in a Map, a
-  voice's small arrays are sized to what they hold, and `setting.keep` is made the first time a
-  patch reads it: a one-subject tween voice keyed by a number, cued and retargeted as weasel's
-  animator does, holds 4.4 KB, from 5.3 (`bench/heapwho.mjs 5000 weasel`, which breaks a voice's
-  bytes down by the field that holds them).
+  voice's small arrays are sized to what they hold, `setting.keep` is made the first time a patch
+  reads it, and a spring, glide or tween keeps its methods on its class rather than in closures of
+  its own: a one-subject tween voice keyed by a number, cued and retargeted as weasel's animator
+  does, holds 3.7 KB, from 5.3
+  (`bench/heapwho.mjs 5000 weasel`, which breaks a voice's bytes down by the field that holds them).
 - A crowd voice that starts or begins fading in the frame the lanes are qualified again plays on
   them. A qualify that kept the crowds as they stood, as when a voice over every subject leaves,
   dropped the news, and the row stayed silent: a voice starting at 50 ms on one subject read nothing
