@@ -24,7 +24,9 @@ version and everything else the patch. Each release lists its changes as **Break
   timestamp the host gives or reads stays on the host's clock: a `start`, an anchor given as a
   number, an announced mark, `marks` and `project`. A paused mix with nothing left to land is
   `inert`, and `history` keeps every rate change, so `project` reads back through them as it does
-  through a handle's. A mix whose rate is never set reads the same bits as before.
+  through a handle's. A mix whose rate is never set reads the same bits as before, at the same
+  cost: every row timed (`fn`, `keys`, `named`, `spring`, `tweens^`, `churn^`, `ahead`, `back`)
+  overlaps `9015b0b`'s range over three to five alternated runs on studio.
 
 ### Fixed
 
