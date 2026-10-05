@@ -22,7 +22,8 @@
       "apps/*/*.json",
       "*.json",
       "*.ts",
-      "!package-lock.json"
+      "!package-lock.json",
+      "!!.claude"
     ]
   }
 }
