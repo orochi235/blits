@@ -44,14 +44,17 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   weasel's vitest row read 8×, which weasel puts down to collection landing in its few measured
   iterations, untraced. Not worth chasing until it shows outside a microbench.
 
-- **Reuse a retired voice's records for the next cue** (suggestion). weasel's animator under churn
-  (each frame one tween stops and another starts, a voice each) runs its own loop 0.66–0.75 ms a
-  frame at 10k after every animation was replaced once, against 0.21 with no voice cued; with no
-  voice, churn costs nothing (teitou, 0.4.0, 2026-10-05). What a voice keeps alive lands between
-  the host's per-animation objects in memory, about 3.2 KB for a one-subject tween on 0.4.0: patch
-  0.8, `cue` 1.6, first frame 0.75. Shrinking it by a third (`0c80b6d`) barely helped, so the
-  measure is whether a steady churn allocates anything that survives, not how much. Detail in
-  weasel's `docs/proposals/2026-09-30-animator-on-blits.md`.
+- **Reusing a retired voice's records was prototyped and measured no help to weasel**
+  (2026-10-05, teitou, branch `worktree-agent-a69538f8b9a609b0c`, not merged). Pooling everything
+  blits allocates per voice halved what a churned voice leaves alive (2,819 to 1,424 B with a patch
+  per voice), but weasel's loop after churn moved 0.487 to 0.466 ms, inside teitou's ±0.08 noise,
+  against 0.21 with no voice. On blits `6c4b3bf` that loop already reads 0.47–0.49, not 0.4.0's
+  0.66–0.75. The gap left does not scale with blits' survivors; untested candidates are the host's
+  own patch per voice (about 0.9 KB, which blits cannot recycle) and the 14–25 KB of garbage blits
+  makes per churned voice (lane compaction `subarray`, `retouch`'s Set and sort, `Array.from` in
+  motion's `latest` and `applied`). The next run that would decide it: weasel's codec on one shared
+  tween patch per ease and duration. `bench/churnwho.mjs` (`SHARED=1` for one shared patch)
+  diffs the heap per churned voice.
 
 ## What weasel has that blits doesn't
 
