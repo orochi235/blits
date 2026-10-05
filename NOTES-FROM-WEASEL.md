@@ -36,7 +36,7 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   iterations, untraced. Not worth chasing until it shows outside a microbench.
 
 - **Reusing a retired voice's records was prototyped and measured no help to weasel**
-  (2026-10-05, teitou, branch `worktree-agent-a69538f8b9a609b0c`, not merged). Pooling everything
+  (2026-10-05, teitou; the prototype was deleted). Pooling everything
   blits allocates per voice halved what a churned voice leaves alive (2,819 to 1,424 B with a patch
   per voice), but weasel's loop after churn moved 0.487 to 0.466 ms, inside teitou's ±0.08 noise,
   against 0.21 with no voice. On blits `6c4b3bf` that loop already reads 0.47–0.49, not 0.4.0's
