@@ -120,7 +120,8 @@ describe('voices leaving', () => {
     for (const take of [[7], [30, 2, 19], [39, 0, 5, 11, 12, 13, 22, 23, 24, 25, 26, 33]]) {
       for (const k of take) all[k]?.h.fade({ over: 0 });
       live = live.filter((v) => !take.includes(v.k));
-      m.sync((t += 10));
+      t += 10;
+      m.sync(t);
       expect(ids(m.voices())).toEqual(live.map((v) => v.h.id));
       expect(m.probe(part).crawl).toBe(live.reduce((s, v) => s + v.k + 1, 0));
     }

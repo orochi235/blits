@@ -87,7 +87,8 @@ describe.each([true, false])('atRest after a probe, lanes %s', (lanes) => {
     let t = 0;
     for (const change of changes) {
       const h = m.cue({ patch: p, loop: true });
-      m.sync((t += 50));
+      t += 50;
+      m.sync(t);
       m.probe(part);
       expect(m.atRest(part)).toBe(false);
       change(h);
