@@ -147,10 +147,10 @@ describe('ticker', () => {
     expect(waiting()).toBe(0);
   });
 
-  it('holds the loop awake while stayed', () => {
+  it('holds the loop awake while held', () => {
     const { t, step, waiting } = harness();
     t.add(fake());
-    const release = t.stay();
+    const release = t.hold();
     step(16);
     step(32);
     expect(waiting()).toBe(1);

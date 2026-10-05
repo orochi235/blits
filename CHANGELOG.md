@@ -9,7 +9,7 @@ version and everything else the patch. Each release lists its changes as **Break
 ### Added
 
 - `ticker()`, one frame loop for any number of mixes: `add(mix)` syncs it every frame, `after(fn)`
-  runs once the mixes have synced, and `stay()` holds the loop awake. It runs on animation frames, or on a
+  runs once the mixes have synced, and `hold()` keeps the loop awake. It runs on animation frames, or on a
   timer where there are none, as in a worker or Node, or with `grain: 'timer'`; `fps` caps the rate on
   a grid, so a 60 Hz display capped at 30 runs every other frame. It sleeps while every mix is
   `inert` and wakes on a mix's `onWake`. A mix or callback that throws stops neither the loop nor the

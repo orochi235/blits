@@ -36,8 +36,8 @@ export interface Ticker {
   /** Calls `fn` each frame, after every mix has synced, with the frame's timestamp. Returns an unsubscribe. */
   after(fn: (timestamp: number) => void): () => void;
   /** Keeps frames coming whatever the mixes say, until the returned release is called. */
-  stay(): () => void;
-  /** Cancels the waiting frame; a mix waking, `stay` or `add` starts the loop again. */
+  hold(): () => void;
+  /** Cancels the waiting frame; a mix waking, `hold` or `add` starts the loop again. */
   stop(): void;
   /** What the ticker's clock reads now. */
   now(): number;
@@ -151,7 +151,7 @@ export function ticker(opts: TickerOptions = {}): Ticker {
         if (i >= 0) fns.splice(i, 1);
       };
     },
-    stay() {
+    hold() {
       holds++;
       schedule();
       let released = false;
