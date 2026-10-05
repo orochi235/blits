@@ -63,7 +63,7 @@ for (const [i, path] of pages.entries()) {
   const explainers = await page.locator('.explainer').count();
   await page.waitForTimeout(explainers ? 2000 : 200);
   for (let k = 0; k < explainers; k++) {
-    const range = page.locator('.explainer input[type=range]').nth(k);
+    const range = page.locator('.explainer').nth(k).locator('input[aria-label=Time]');
     await range.scrollIntoViewIfNeeded();
     await range.fill('0');
   }
