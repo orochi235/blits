@@ -285,11 +285,16 @@ systems now run on it**, on klieg's `main`.
        almost nothing. A profile against the plain locus puts the difference in the lanes' per-member weight path (`one`,
        `signalled`, and `gatherLocus`). A locus with a motion member, or a signal that keeps state,
        stays on the general path.
-     - **Starting 10k one-subject tween voices** takes about 8 ms to cue and 23 for the first frame,
-       against about 3 and 11 for `fn` voices (teitou, branch `slow-cases-2`). The rest is
-       allocation spread over a `Motions`, its closures, two WeakMaps and three WeakRefs per voice,
-       with collection about a fifth of the profile. Measured no different and reverted: carving
-       motion buffers from a shared slab, and keeping a named subject's record out of the WeakMap.
+     - **Starting 10k one-subject tween voices** takes about 2.5–2.8 ms to cue and 16–17 for the
+       first frame, against about 3 and 11–12 for `fn` voices (teitou, 2026-10-05, `bench/start.mjs`
+       medians). Cueing caught up once a patch stopped making a buffer before its first subject.
+       What the first frame still allocates per voice, by the code: the patch's first stretch
+       (its endpoint arrays, a weak reference, a buffer off the heap) and the voice's own WeakMap
+       and record, with collection the largest line of a profile (15%);
+       weasel's ask below is the way past it. Measured no different and reverted: carving motion
+       buffers from a shared slab, and keeping a named subject's record out of the WeakMap. Asking
+       the mix by voice id rather than through two closures, and finding a lone subject without a
+       WeakMap, measured no different in time and were kept for the bytes they save.
      - **A crowd's `keys` rows** still cost about 82 ns a subject by `pull` against 24 for one
        keys voice over the same subjects: each row chases its own voice, stops and arrays, where
        a shared voice reads them once per phase.

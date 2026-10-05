@@ -208,6 +208,8 @@ function solve(law: Float64Array, y0: number, v0: number, t: number): void {
 }
 
 const axes = (v: Value): number[] => (typeof v === 'number' ? [v] : [...v]);
+/** Zero on every axis `x` has: a motion's velocity where its options give none. */
+const still = (x: readonly number[]): number[] => new Array<number>(x.length).fill(0);
 const per = <I, V>(p: PerSubject<I, V>, subject: I): V =>
   typeof p === 'function' ? (p as (s: I) => V)(subject) : p;
 
@@ -234,7 +236,8 @@ export type Moving<I, O, V extends Value> = Patch<I, O, void> & {
 
 interface Shape<I> {
   from: (subject: I) => number[];
-  velocity: (subject: I) => number[];
+  /** How fast each axis starts moving, given where it starts: still unless the options say. */
+  velocity: (subject: I, x: number[]) => number[];
   /** Where it heads when released from `x` at `v`, given where it was heading. */
   aim: (x: number[], v: number[], was: number[] | null, subject: I) => number[];
   /** `[form, settle, k1, k2, k3]`. */
@@ -267,7 +270,8 @@ export class Motions<I> {
   n = -1;
   private cap = 0;
   private stride = 0;
-  private runs: Float64Array;
+  /** The law, then each subject's run; empty until the first subject, the law read from `shape`. */
+  private runs = unsized;
   /**
    * Where `sample` leaves a subject's position and velocity, per axis. Shared by every patch, so
    * read it before the next sample.
@@ -292,19 +296,19 @@ export class Motions<I> {
     return this.owner === null ? Number.NaN : this.owner.frame(this.ownerId, subject);
   }
 
-  constructor(private readonly shape: Shape<I>) {
-    this.runs = Float64Array.from(shape.law);
-  }
+  constructor(private readonly shape: Shape<I>) {}
 
   /** The patch's number for `subject`, made with its first stretch on first ask. */
   slot(subject: I): number {
     const known = this.known(subject);
     if (known !== undefined) return known;
     const x = this.shape.from(subject);
-    const v = this.shape.velocity(subject);
+    const v = this.shape.velocity(subject, x);
     const to = this.shape.aim(x, v, null, subject);
     const n = this.n < 0 ? x.length : this.n;
-    for (const a of [x, v, to]) this.check(a, n);
+    this.check(x, n);
+    this.check(v, n);
+    this.check(to, n);
     if (this.n < 0) {
       this.n = n;
       this.stride = 3 + 3 * n;
@@ -359,12 +363,13 @@ export class Motions<I> {
 
   /** A copy of the patch's law, `[form, settle, k1, k2, k3]`. */
   law(): Float64Array {
-    return this.runs.slice(0, HEAD);
+    return this.cap === 0 ? Float64Array.from(this.shape.law) : this.runs.slice(0, HEAD);
   }
 
   /** Whether `law` holds this patch's law, number for number, as `Object.is` compares them. */
   hasLaw(law: Float64Array): boolean {
-    for (let i = 0; i < HEAD; i++) if (!Object.is(law[i], this.runs[i])) return false;
+    const own = this.cap === 0 ? this.shape.law : this.runs;
+    for (let i = 0; i < HEAD; i++) if (!Object.is(law[i], own[i])) return false;
     return true;
   }
 
@@ -586,7 +591,7 @@ export class Motions<I> {
     if (size <= this.cap) return;
     const cap = Math.max(size, this.cap * 2);
     const runs = new Float64Array(HEAD + cap * this.stride);
-    runs.set(this.runs);
+    runs.set(this.cap === 0 ? this.shape.law : this.runs);
     this.runs = runs;
     this.cap = cap;
   }
@@ -893,9 +898,9 @@ class SpringShape<I, V extends Value> implements Shape<I> {
   from(s: I): number[] {
     return axes(per(this.start, s));
   }
-  velocity(s: I): number[] {
+  velocity(s: I, x: number[]): number[] {
     const v = this.speed;
-    return v === undefined ? axes(per(this.goal, s)).map(() => 0) : axes(per(v, s));
+    return v === undefined ? still(x) : axes(per(v, s));
   }
   aim(_x: number[], _v: number[], was: number[] | null, s: I): number[] {
     return was ?? axes(per(this.goal, s));
@@ -925,9 +930,9 @@ class GlideShape<I, V extends Value> implements Shape<I> {
   from(s: I): number[] {
     return axes(per(this.start, s));
   }
-  velocity(s: I): number[] {
+  velocity(s: I, x: number[]): number[] {
     const v = this.speed;
-    return v === undefined ? axes(per(this.start, s)).map(() => 0) : axes(per(v, s));
+    return v === undefined ? still(x) : axes(per(v, s));
   }
   aim(x: number[], v: number[]): number[] {
     return x.map((xi, i) => xi + (v[i] as number) * this.tau);
@@ -965,8 +970,8 @@ class TweenShape<I, V extends Value> implements Shape<I> {
   from(s: I): number[] {
     return axes(per(this.start, s));
   }
-  velocity(s: I): number[] {
-    return axes(per(this.goal, s)).map(() => 0);
+  velocity(_s: I, x: number[]): number[] {
+    return still(x);
   }
   aim(_x: number[], _v: number[], was: number[] | null, s: I): number[] {
     return was ?? axes(per(this.goal, s));

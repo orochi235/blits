@@ -89,6 +89,10 @@ version and everything else the patch. Each release lists its changes as **Break
   reference it numbered it by, rather than a WeakMap of its own: a one-subject tween voice over an
   object holds 3610 B, from 3747 (`bench/heapwho.mjs 5000 tweens`). Starting them takes no less
   time.
+- A spring, glide or tween makes its buffer when it numbers its first subject, rather than one for
+  its law when it is made and another then, and works out a still start without asking `to` again:
+  making and cueing 10k one-subject tween voices takes 2.5–2.8 ms on teitou, from 5.1–6.8, and
+  their first frame 15.7–16.9 ms, from 19.0–21.1 (`bench/start.mjs`).
 - A pose never holds a patch's own array. Where a channel's `merge` returned its second argument,
   as `last()` does, the mix put that array into the pose as it was: with two voices on a keyed
   array channel, a host editing its pose edited the stop, and every later frame read the edit. The
