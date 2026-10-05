@@ -33,7 +33,7 @@ against a build of it.
 | What the host re-does afterward | nothing | every call it made after the save: cues, handle writes, `announce`, `mute`, `drop`, `spring.to`/`push`, `level.set`, host fields |
 | Handles the host holds | valid for every voice alive at `t` | valid for voices alive at the save; a re-done cue makes a new handle |
 | Exact without `stepMs` | no: state steps once across the gap from the nearest copy, as `project` does (`stepped`) | yes, if the host replays the same frames it showed |
-| Exact with `stepMs` | yes, the grid lands where it did live (read: `tick`, `mixer.ts:2442`) | yes |
+| Exact with `stepMs` | yes, the grid lands where it did live (read: `tick`, `fold.ts`) | yes |
 | Memory | one copy per stateful subject per `every`, within the horizon | whatever the host keeps |
 | Cost on a frame that never rewinds | what `history` costs today | a check per record per probe while any snapshot is held (copy on write, below) |
 | New code | a restore in place, built from `project`'s pieces | a copy-on-write layer, a motion-buffer copy, and the same restore |
@@ -50,17 +50,17 @@ added later as a pin on history: `save()` holds history from being pruned past t
 All read:
 
 - A projection is a separate `Mixer` built with `history: undefined, lanes: false`
-  (`mixer.ts:1260`), holding new `Voice` objects from `Voice.copy` (`mixer.ts:619`). Every handle the
-  host holds closes over the original voice (`handle`, `mixer.ts:2022`), so promoting the copy would
+  (`project`, `mixer.ts`), holding new `Voice` objects from `Voice.copy` (`voice.ts`). Every handle the
+  host holds closes over the original voice (`handle`, `hosts.ts`), so promoting the copy would
   orphan all of them.
 - A projection's records are filled lazily, on each subject's first probe, from the live records
-  (`Filled`, `recall`, `mixer.ts:1876`). It never has a full set to promote, and its own docs say it
+  (`Filled` in `voice.ts`, `recall` in `project.ts`). It never has a full set to promote, and its own docs say it
   is valid only until the next sync or cue.
 - The copies are made `quiet` and send nothing, so they never settle `done` or `played` and never
   put an event in `drain`.
 
 So a rewind has to restore the live objects in place. It reuses `project`'s pieces: the controls
-lookup (`last(log, t, e => e.sync)`), the state picker at the end of `project` (`mixer.ts:1299`),
+lookup (`last(log, t, e => e.sync)`), the state picker at the end of `project` (`project.ts`),
 `recall` and `copyHeld` for records, and the announced-mark filter.
 
 **Subjects cannot be listed** (read): per-subject records live in a `Store`, a `WeakMap` for object
@@ -94,7 +94,7 @@ first. One-syllable alternatives: `back`, `wind`, `roll`, `jump`. For the other 
 | Patch and signal state | the nearest copy at or before `t`, stepped to `t`; fresh state from the voice's start where none was kept | `recall`, `copyHeld`, per subject on first touch |
 | Motion patches (`spring`, `glide`, `tween`) | the stretch in force at `t`; later retargets and pushes are cut | new: a truncate in `Motions` (`motion.ts:249`), whose earlier stretches it already keeps (`older`, `motion.ts:265`) |
 | Voices cued after `t` | retired, `done` resolves, `played` resolves false (decision below) | `retire` |
-| Voices retired after `t` | back, on their original handles, at the controls they had at `t` | `gone` holds them; re-index, re-hook motion (`retire` unhooks it, `mixer.ts:2181`) |
+| Voices retired after `t` | back, on their original handles, at the controls they had at `t` | `gone` holds them; re-index, re-hook motion (`retire` unhooks it, `fade.ts`) |
 | Subjects faded out of a voice after `t`, or `drop`ped after `t` | back as never seen: their records were forgotten | the gap the schema page's Open section already names |
 | Lanes and crowds | thrown away and qualified again on the next probe | a fresh `Lanes`, chains relinked; the first frame after pays a full qualify |
 | Undrained events stamped after `t` | discarded | filter `sent` |
@@ -106,7 +106,7 @@ first. One-syllable alternatives: `back`, `wind`, `roll`, `jump`. For the other 
 
 ### The next sync
 
-The mix clock is the host's reading less an offset (`sync`, `mixer.ts:915`). A rewind adds the
+The mix clock is the host's reading less an offset (`sync`, `mixer.ts`). A rewind adds the
 distance it went back to that offset and moves the mix to `t` at once, so a probe straight after it
 reads `t`. The host goes on passing its own monotonic clock, and the next `sync(h)` reads
 `t + (h − last h)`. `rebase` works the same way, so the two compose.
@@ -126,7 +126,7 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
   every record, copied on its first touch after the save; each motion patch's flat buffers (`runs`,
   `pending`, `older`), which can be copied whole since `Motions` numbers its subjects. Not lanes,
   which are rebuilt.
-- **Copying state:** `copyHeld` (`mixer.ts:1835`) uses `patch.clone` where given, else `clone`, a
+- **Copying state:** `copyHeld` (`history.ts`) uses `patch.clone` where given, else `clone`, a
   fast path for plain objects two deep that falls back to `structuredClone`. The schema page measured
   a projection's first probe at about 3 ms for 1000 subjects under three voices.
 - **Exactness:** under `stepMs` the grid restores with the record (`since`, `ticks`). Without it, a
@@ -185,11 +185,11 @@ slots, `strays`) has to be cleared too, or a rewind shows a stale value.
 ### Found while drafting
 
 - **`sync` going backward is not refused** (ran). The schema page and `Mix.sync` say the reading only
-  goes forward, but `sync` takes any timestamp (`mixer.ts:915`). Stateless voices move back; a
+  goes forward, but `sync` takes any timestamp (`sync`, `mixer.ts`). Stateless voices move back; a
   stateful patch without `stepMs` is handed a negative `dt`: a `step` that adds `dt` saw `[300, -200]`
   for syncs at 0, 300 and 100. Under `stepMs` state holds still until the clock passes where it was.
 - **`project` across a `rebase` misreads host times** (ran). It converts with today's offset
-  (`mixer.ts:1259`), so a host time from before a rebase reads at the wrong moment. A 1000 ms loop
+  (`project.ts`), so a host time from before a rebase reads at the wrong moment. A 1000 ms loop
   rising 0 to 100, synced at 0 and 200, rebased, then synced at 10200: live reads 20; `project(200)`
   reads 0, where the host saw 20.
 

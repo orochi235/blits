@@ -37,10 +37,19 @@ systems now run on it**, on klieg's `main`.
 - **The package, `@msb235/blits` 0.4.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
   channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
-  `motion.ts` (`spring`, `glide`), `lanes.ts` (lanes, with `clock.ts`, the phase,
-  envelope and weight clamp both fold paths share, and `numbers.ts`, which numbers subjects), `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
-  objects and a Map for anything else), `mixer.ts` (the engine and `mix`), `types.ts` (the whole
-  public surface, doc-commented). Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
+  `motion.ts` (`spring`, `glide`), `clock.ts` (the phase, envelope and weight clamp both fold
+  paths share), `numbers.ts` (numbers subjects), `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
+  objects and a Map for anything else), `types.ts` (the whole public surface, doc-commented). The
+  mix is `mixer.ts` (the `Mixer`'s state, its public methods, the engine and `mix`) and a module
+  per part it owns: `voice.ts` (a voice and its record of a subject), `cue.ts`, `place.ts`
+  (anchors), `marks.ts`, `move.ts` and `due.ts` (the clock moving, the voices due), `held.ts`,
+  `chain.ts`, `weigh.ts`, `blend.ts`, `fold.ts` and `locus.ts` (the general path), `pull.ts`,
+  `fade.ts`, `strays.ts`, `hosts.ts`, `history.ts`, `project.ts`, `owner.ts`, `book.ts`, `pace.ts`
+  and `handle.ts`. Lanes are `lanes.ts` (the `Lanes` class and the probe protocol) with
+  `qualify.ts`, `lane.ts`, `crowd.ts`, `rows.ts`, `meet.ts`, `fill.ts`, `gather.ts`, `sample.ts`
+  and `columns.ts`. What a probe or a fill runs per subject is methods, written in those modules
+  as functions taking `this` and installed on the prototype at the foot of `mixer.ts` and
+  `lanes.ts`: as plain functions they cost up to 9%. Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
   is lint, typecheck of both `src` and `test`, then the suite, green. `npm run bench`
   (`bench/frame.mjs`) measures a frame at scene sizes, GC counts included. Enlisted for the fleet — `.onto/tests` is
   `plugin: node`, `run: npm test`, `runner: vitest` — and green there too.
@@ -320,7 +329,7 @@ systems now run on it**, on klieg's `main`.
    `weasel^`), Mike's go 2026-10-05; to start once the `mixer.ts`/`lanes.ts` split lands. Profiled on
    teitou at `375be46`: `tweens^` 0.32 ms a frame, `weasel^` 0.35, against 0.031–0.047 for a
    hand-written loop doing the same arithmetic. In order, each measured before the next:
-   - Fill bare tween rows in one tight loop: no per-fill copy into `samples` or `SAMPLED`/`SEEKS`
+   - Fill bare tween rows in one tight loop: no per-fill copy into `samples` or `Row.SAMPLED`/`Row.SEEKS`
      stamps (recompute through `closed` when asked), `foldNumber` called directly, and the tween's
      closed form called without the 14-argument `closed` → `eased` hop, split into pieces both
      share so it stays one copy. Prototyped: −0.08 ms on `tweens^`, −0.09 on `weasel^`.
@@ -329,7 +338,7 @@ systems now run on it**, on klieg's `main`.
      `churn^` by 0.04, to fix first. Under churn `writeLater` is about 0.28 ms against 0.04 steady
      (blits-0c, busy machine): check `--trace-deopt` first. This session owns `pullRun`,
      `writeLater` and `flush`; blits-0c owns `moveTo`, arrays on a number channel and `atRest`.
-   - Inferred, smaller: one fill-wide stamp instead of `FILLED` on every subject (~0.01 ms);
+   - Inferred, smaller: one fill-wide stamp instead of `Per.FILLED` on every subject (~0.01 ms);
      `pullRun`'s remaining per-subject checks (up to ~0.03, but a second pathway for what
      `weightOf` and `pace` read).
    - A steady frame allocates 16 B a subject in `runCrowd`, likely a user ease's boxed return.
@@ -360,11 +369,6 @@ systems now run on it**, on klieg's `main`.
    stock band's width.
 
 ## Loose ends
-
-- **`src/mixer.ts` is 3,500 lines and `src/lanes.ts` 2,700.** Each holds several jobs that
-  should own a module apiece; today's work moved pieces out (`owner.ts`, `book.ts`, `pace.ts`,
-  `owed.ts`, `unreached.ts`, `relink.ts`, `keyrows.ts`) but `owns` still added about 200 lines of
-  wiring to `mixer.ts`. Split both along what owns what before adding to either again.
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
   100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k
