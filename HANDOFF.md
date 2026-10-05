@@ -13,8 +13,8 @@ weight, and a mix folds them into one value per subject per frame by rules that 
 channel, not the effect. The vocabulary is the deliverable as much as the runtime is — the sources
 are open by design, so the language has to be able to name a seam it does not own. It generalizes
 what klieg does three times over (motion, effects, lighting) and what wod's transition voices do
-once, so klieg, wod, sherpa and magicsmoke can share one vocabulary and one engine. **klieg, wod and
-magicsmoke run on it**, each on its own `main`.
+once, so klieg, wod, sherpa and magicsmoke can share one vocabulary and one engine. **klieg, wod,
+sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
@@ -27,8 +27,11 @@ magicsmoke run on it**, each on its own `main`.
   behavior change rides along: a finite loop's fade starts when its last pass ended, not at the
   next frame.
 - **klieg's port is merged into klieg's `main`** (2026-10-02), and its step two shipped in klieg
-  0.15.0 (merge `77d537d`, 2026-10-05) pinned to `@msb235/blits` `0.4.0` exactly in
-  `packages/core/package.json`. All three systems fold through a mix: `Timeline.poseAt`
+  0.15.0 (merge `77d537d`, 2026-10-05). klieg 0.16.0 pins `@msb235/blits` `0.5.0` exactly in
+  `packages/core/package.json` and reads `setting.host` through `mix<I, O, H>`.
+- **sherpa is on blits 0.5.0 (exact) and klieg `^0.16.0`** (2026-10-05), with one deduped blits
+  copy. Its seams run on a blits mix, and its klieg pages hold on clicks and stages through
+  `dismiss: 'host'` and `advance()`, paced on klieg's `active` and `stage` marks. All three systems fold through a mix: `Timeline.poseAt`
   cues a voice per layer of each phase, `EffectFrame` one per effect, and the sign's environment is
   a mix with one subject. The arithmetic did not move: klieg's 1974 vitest cases pass on the fleet,
   and its Playwright specs fail exactly the five they already failed before the port, to the pixel
@@ -359,8 +362,7 @@ magicsmoke run on it**, each on its own `main`.
    is a follow-up in magicsmoke's repo.
 
 2. **klieg's tube gradient still calls its own thing `domain`**, the one rename step two
-   (klieg 0.15.0) left. sherpa still depends on klieg `^0.8.0` and has not moved since
-   2026-09-01; reaching 0.15.0 crosses the `onPhase` → `onMark` rename.
+   (klieg 0.15.0) left.
 3. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
    a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
    stock band's width.
