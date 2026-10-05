@@ -37,6 +37,12 @@ version and everything else the patch. Each release lists its changes as **Break
   channel used to play as its number, through a fold about 5× slower (1.2 ms a frame at 10k subjects
   against 0.24, on teitou); a number on an array channel played as the channel's rest.
 
+- `atRest` after a probe of the subject in the same frame answers for the pose that probe gave,
+  rather than folding the subject again: a weight reading host input that moved between the two no
+  longer changes the answer. With lanes off, a probe then `atRest` of 10k subjects under two voices
+  (`probed-`) takes 2.64–2.71 ms a frame against 3.80–3.87 (teitou, three alternated runs); a mix
+  that never asks `atRest` reads as before.
+
 ### Added
 
 - A mix's host has a type: `mix<I, O, H>` types its `host` option, and every patch, signal and

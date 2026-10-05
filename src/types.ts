@@ -708,7 +708,11 @@ export interface Mix<I, O, H = unknown> {
    * it.
    */
   ramp(rate: number, over: number): void;
-  /** The merged pose for one subject at the synced frame. */
+  /**
+   * The merged pose for one subject at the synced frame, written into `out` when given. Without
+   * it, each call makes a new object, so a host reading every subject every frame passes `out` or
+   * reads by `pull`.
+   */
   probe(subject: I, out?: O): O;
   /**
    * Writes each subject's pose into arrays, one per channel, subject by subject in the order given:
