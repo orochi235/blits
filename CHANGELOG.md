@@ -27,6 +27,9 @@ version and everything else the patch. Each release lists its changes as **Break
   signal keeping state, as `slew`, `lag` and `gate` do, keeps one state per subject for the whole
   blend, which carries on when the member that made it leaves; each member kept its own, and those
   could part ways where members left the lanes in different frames.
+- `keys` copies each stop's array when it is made, so editing an array after passing it to `keys`
+  changes nothing; it showed on the general path and on a lane, and a crowd row now keeps its own
+  copy of the numbers. Make a new patch to change its stops.
 
 ### Added
 
@@ -99,6 +102,11 @@ version and everything else the patch. Each release lists its changes as **Break
   their first frame, from 37.1, and over 3000 subjects 4.2 KB, from 135; that first frame takes
   35–38 ms on teitou, from 72–79, and later frames are unchanged (`bench/memory.mjs`, row `own`).
   With `lanes: false` the answers are kept in a map as before.
+- A crowd's `keys` rows read their stops from one array the crowd keeps, copied as each row
+  joins, rather than through each row's voice, tracks and stop arrays: 10k `keys` voices of one
+  subject each read by `pull` take 0.34–0.36 ms a frame on teitou, from 0.66–1.02, and by probe
+  0.81–0.83, from 1.00–1.37. A row whose stops are not plain numbers on its channel's axes reads
+  them as before.
 - A pose never holds a patch's own array. Where a channel's `merge` returned its second argument,
   as `last()` does, the mix put that array into the pose as it was: with two voices on a keyed
   array channel, a host editing its pose edited the stop, and every later frame read the edit. The

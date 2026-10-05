@@ -295,9 +295,12 @@ systems now run on it**, on klieg's `main`.
        buffers from a shared slab, and keeping a named subject's record out of the WeakMap. Asking
        the mix by voice id rather than through two closures, and finding a lone subject without a
        WeakMap, measured no different in time and were kept for the bytes they save.
-     - **A crowd's `keys` rows** still cost about 82 ns a subject by `pull` against 24 for one
-       keys voice over the same subjects: each row chases its own voice, stops and arrays, where
-       a shared voice reads them once per phase.
+     - **A crowd's `keys` rows** cost about 35 ns a subject by `pull` against 25 for keys voices
+       over every subject (teitou, 2026-10-05), from 66–102 once their stops were copied into
+       the crowd's own array. What is left is each row's own segment search, ease and lerp, where
+       a shared voice does those once per phase; sharing them across rows whose stops have the
+       same phases and easings would need a way to tell that cheaply, such as interning a
+       track's timing when it is built.
      - **weasel's animator wants a voice that allocates almost nothing per cue**, and waits on
        Mike. At `0c80b6d` (3.7 KB a voice) its 10k-tween frame takes 0.51–0.73 ms on teitou
        against 0.165 with no voice cued: its loop misses cache because each animation's objects

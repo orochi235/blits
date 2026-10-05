@@ -1,6 +1,7 @@
 import { foldNumber, lerpNumber, type Numeric, numericOf } from './channels.js';
 import { clampWeight, heldTime, passAt, phaseAt, silent, weighed } from './clock.js';
 import type { Curve } from './easing.js';
+import { KeyRows } from './keyrows.js';
 import type { Subject, Voice } from './mixer.js';
 import { closed, type Motions, motionOf, type Watcher } from './motion.js';
 import { absent, Numbers } from './numbers.js';
@@ -455,6 +456,8 @@ const F_VOICE = 64;
 const F_MOTION = 128;
 /** The voice holds before or after, so its clock is read from the voice. */
 const F_HOLDS = 256;
+/** A keys row whose stops `keys` holds, at `H_AT`, with its duration at `H_X0` and passes at `H_MS`. */
+const F_FLAT = 512;
 
 /**
  * Every laned voice on one channel that reaches a single subject, a row each, in voice order: the
@@ -491,6 +494,8 @@ class Crowd<I, O> implements Positions<I, O> {
   readonly vs: Float64Array;
   /** What a keys row reads into, folded before the next row reads. */
   readonly delta: Record<string, unknown> = {};
+  /** The stops of its `F_FLAT` keys rows. */
+  keys = new KeyRows();
   readonly scratch: Scratch = [];
 
   constructor(
@@ -1532,6 +1537,9 @@ export class Lanes<I, O> implements Watcher {
    * stay in voice order; a qualify did this by rebuilding every crowd, a dropped frame at 10k rows.
    */
   private compact(c: Crowd<I, O>): void {
+    // The rows' stops are copied into a fresh pool, leaving the departed rows' behind.
+    const keys = c.keys;
+    c.keys = new KeyRows();
     let q = 0;
     for (let p = 0; p < c.size; p++) {
       const v = c.voices[p] as Voice<I, O>;
@@ -1540,10 +1548,10 @@ export class Lanes<I, O> implements Watcher {
         continue;
       }
       if (q !== p) {
-        this.copyRow(c, p, c, q);
+        this.copyRow(c, p, c, q, keys);
         c.odd?.delete(p);
         c.rowOf.set(v.id, q);
-      }
+      } else this.copyKeys(keys, c, q);
       q++;
     }
     c.list.length = q;
@@ -1570,10 +1578,17 @@ export class Lanes<I, O> implements Watcher {
     c.dead++;
   }
 
-  private copyRow(from: Crowd<I, O>, p: number, to: Crowd<I, O>, q: number): void {
+  private copyRow(
+    from: Crowd<I, O>,
+    p: number,
+    to: Crowd<I, O>,
+    q: number,
+    keys = from.keys,
+  ): void {
     to.list[q] = from.list[p] as number;
     to.data.set(from.data.subarray(p * STRIDE, (p + 1) * STRIDE), q * STRIDE);
     to.hot.set(from.hot.subarray(p * from.stride, (p + 1) * from.stride), q * to.stride);
+    this.copyKeys(keys, to, q);
     if (((from.hot[p * from.stride + H_FLAGS] as number) & F_STALE) !== 0) to.stale = true;
     to.samples.set(from.samples.subarray(p * from.axes, (p + 1) * from.axes), q * to.axes);
     to.deltas[q] = from.deltas[p] ?? null;
@@ -1589,11 +1604,24 @@ export class Lanes<I, O> implements Watcher {
     }
   }
 
+  /** Copies row `q`'s stops, as its `hot` holds their place in `keys`, into its crowd's pool. */
+  private copyKeys(keys: KeyRows, c: Crowd<I, O>, q: number): void {
+    const h = q * c.stride;
+    if (((c.hot[h + H_FLAGS] as number) & F_FLAT) !== 0)
+      c.hot[h + H_AT] = c.keys.copy(keys, c.hot[h + H_AT] as number);
+  }
+
   private newRow(c: Crowd<I, O>, p: number, v: Voice<I, O>): void {
     const run = motionOf<I>(v.patch);
     const h = p * c.stride;
     c.hot.fill(0, h, h + c.stride);
-    c.restale(p, F_VOICE | (run === undefined ? 0 : F_MOTION));
+    const at = v.built === null ? -1 : c.keys.add(v.built, c.chans);
+    if (at >= 0) {
+      c.hot[h + H_AT] = at;
+      c.hot[h + H_X0] = v.duration;
+      c.hot[h + H_MS] = v.passes;
+    }
+    c.restale(p, F_VOICE | (run === undefined ? 0 : F_MOTION) | (at >= 0 ? F_FLAT : 0));
     c.hot[h + H_ID] = v.id;
     c.list[p] = -1;
     const o = p * STRIDE;
@@ -2275,6 +2303,17 @@ export class Lanes<I, O> implements Watcher {
           this.parting(voice, slot),
         );
       data[o + WEIGHT] = w;
+      if ((f & F_FLAT) !== 0) {
+        if (w > 0)
+          c.keys.fold(
+            hot[h + H_AT] as number,
+            phaseAt(elapsed, hot[h + H_X0] as number, hot[h + H_MS] as number),
+            c.chans,
+            slot,
+            w,
+          );
+        continue;
+      }
       if ((f & F_MOTION) === 0) {
         this.row(c, p, voice, slot, elapsed, delay, w);
         continue;

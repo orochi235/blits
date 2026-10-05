@@ -100,6 +100,9 @@ export interface Track {
   all: Point[];
   /** The same without stops at 0, which a `from: 'current'` base replaces. */
   tail: Point[];
+  /** The phases of `all` and of `tail`, which the search reads. */
+  ats: Float64Array;
+  tailAts: Float64Array;
   delay: number;
   lerp: ((a: never, b: never, u: number) => unknown) | undefined;
 }
@@ -126,15 +129,23 @@ function build<O>(
       if (value === undefined) continue;
       all.push({
         at: stop.at,
-        value,
+        // A copy, so every reader sees the stop as it was built: a lane may hold its numbers.
+        value: Array.isArray(value)
+          ? [...value]
+          : ArrayBuffer.isView(value)
+            ? (value as unknown as { slice(): unknown }).slice()
+            : value,
         ease: stop.ease === undefined ? trackEase : curve(stop.ease),
       });
     }
     all.sort((x, y) => x.at - y.at);
+    const tail = all.filter((pt) => pt.at !== 0);
     tracks.push({
       channel: channel as string,
       all,
-      tail: all.filter((pt) => pt.at !== 0),
+      tail,
+      ats: Float64Array.from(all, (pt) => pt.at),
+      tailAts: Float64Array.from(tail, (pt) => pt.at),
       delay: opts.delayBy?.(channel) ?? 0,
       lerp: opts.lerpBy?.(channel) ?? (opts.kit?.[channel]?.lerp as Track['lerp']),
     });
@@ -164,8 +175,52 @@ export const seg = {
 
 /** A track's phase once its channel's own delay applies. */
 export function shifted(track: Track, phase: number, duration: number): number {
-  const delay = track.delay;
+  return shift(track.delay, phase, duration);
+}
+
+/** A phase once a channel's delay of `delay` ms in a duration of `duration` applies. */
+export function shift(delay: number, phase: number, duration: number): number {
   return delay === 0 || duration === 0 ? phase : Math.max(0, (phase * duration - delay) / duration);
+}
+
+/**
+ * Where `phase` falls among `n` stop phases `ats[off + k * stride]`, in order: -2 for no stops, -1
+ * at or before the first, `n` at or past the last, and otherwise the first stop past it, where the
+ * segment from the one before ends. With `segment`'s, the one copy of the search.
+ */
+export function locate(
+  ats: ArrayLike<number>,
+  off: number,
+  stride: number,
+  n: number,
+  phase: number,
+): number {
+  if (n === 0) return -2;
+  if (phase <= (ats[off] as number)) return -1;
+  if (phase >= (ats[off + (n - 1) * stride] as number)) return n;
+  return firstPast(ats, off, stride, 1, n - 1, phase);
+}
+
+/** The first of stops `lo` to `hi` whose phase is at or past `phase`, the last known to be. */
+function firstPast(
+  ats: ArrayLike<number>,
+  off: number,
+  stride: number,
+  lo: number,
+  hi: number,
+  phase: number,
+): number {
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if ((ats[off + mid * stride] as number) >= phase) hi = mid;
+    else lo = mid + 1;
+  }
+  return lo;
+}
+
+/** How far along a segment from phase `a` to `b` a phase is, before easing. */
+export function fraction(phase: number, a: number, b: number): number {
+  return (phase - a) / (b - a);
 }
 
 /**
@@ -174,32 +229,34 @@ export function shifted(track: Track, phase: number, duration: number): number {
  * phase 0, which is how `from: 'current'` starts a voice wherever the subject already is.
  */
 export function segment(track: Track, phase: number, base: unknown): number {
-  const pts = base === undefined ? track.all : track.tail;
+  let lo: number;
   const o = base === undefined ? 0 : 1;
-  const n = pts.length + o;
-  if (n === 0) return NOTHING;
-  const firstAt = o === 1 ? 0 : (pts[0] as Point).at;
-  if (phase <= firstAt) {
-    seg.a = o === 1 ? base : (pts[0] as Point).value;
-    return AT;
-  }
-  const last = pts[pts.length - 1] as Point | undefined;
-  if (last === undefined || phase >= last.at) {
-    seg.a = last === undefined ? base : last.value;
-    return AT;
-  }
-
-  // The first point at or past phase; the segment ends there.
-  let lo = 1;
-  let hi = n - 1;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if ((pts[mid - o] as Point).at >= phase) hi = mid;
-    else lo = mid + 1;
+  const pts = o === 0 ? track.all : track.tail;
+  if (o === 0) {
+    const n = pts.length;
+    lo = locate(track.ats, 0, 1, n, phase);
+    if (lo === -2) return NOTHING;
+    if (lo === -1 || lo === n) {
+      seg.a = (pts[lo === -1 ? 0 : n - 1] as Point).value;
+      return AT;
+    }
+  } else {
+    // Stop 0 is `base`, at phase 0, and stop k is the tail's k - 1.
+    const n = pts.length + 1;
+    if (phase <= 0) {
+      seg.a = base;
+      return AT;
+    }
+    const last = pts[pts.length - 1] as Point | undefined;
+    if (last === undefined || phase >= last.at) {
+      seg.a = last === undefined ? base : last.value;
+      return AT;
+    }
+    lo = firstPast(track.tailAts, -1, 1, 1, n - 1, phase);
   }
   const b = pts[lo - o] as Point;
   const aAt = lo - 1 < o ? 0 : (pts[lo - 1 - o] as Point).at;
-  const u = (phase - aAt) / (b.at - aAt);
+  const u = fraction(phase, aAt, b.at);
   // Before any of `seg` is written, so an easing that reads stops itself cannot overwrite it.
   const eased = b.ease ? b.ease(u) : u;
   seg.a = lo - 1 < o ? base : (pts[lo - 1 - o] as Point).value;
