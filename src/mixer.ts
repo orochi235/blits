@@ -125,8 +125,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** The last array `pull` read, by position, with each subject's chain head, to skip the lookup. */
   /** Live voices by the earliest mix time `moveTo` would change each, a binary heap. */
   due: Due<I, O>[] = [];
-  /** Voices retired since `moveTo` last pruned them. */
-  retired = 0;
+  /** Voices retired since `moveTo` last pruned them, in the order they retired. */
+  retired: Voice<I, O>[] = [];
   /** Visit every voice each sync, as before the due queue; for tests that compare the two. */
   walkAll = false;
   pulled: I[] = [];

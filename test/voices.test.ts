@@ -99,3 +99,30 @@ describe('mix.voices', () => {
     expect(m.voices('b')).toHaveLength(2);
   });
 });
+
+describe('voices leaving', () => {
+  it('leaves exactly the voices still playing, a few leaving a frame or many at once', () => {
+    const m = mix<Part, Pose>(PART);
+    const part = { id: 'a' };
+    m.sync(0);
+    const by = (k: number) =>
+      keys<Part, Pose>(100, [
+        { at: 0, delta: { crawl: k } },
+        { at: 1, delta: { crawl: k } },
+      ]);
+    const all = Array.from({ length: 40 }, (_, k) => ({
+      k,
+      h: m.cue({ patch: by(k + 1), loop: true }),
+    }));
+    let live = all.slice();
+    let t = 0;
+    // Out of cue order: one, then three, then twelve in one frame.
+    for (const take of [[7], [30, 2, 19], [39, 0, 5, 11, 12, 13, 22, 23, 24, 25, 26, 33]]) {
+      for (const k of take) all[k]?.h.fade({ over: 0 });
+      live = live.filter((v) => !take.includes(v.k));
+      m.sync((t += 10));
+      expect(ids(m.voices())).toEqual(live.map((v) => v.h.id));
+      expect(m.probe(part).crawl).toBe(live.reduce((s, v) => s + v.k + 1, 0));
+    }
+  });
+});

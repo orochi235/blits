@@ -88,34 +88,78 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
     if (!mix.projecting) schedule(mix, voice);
   }
   mix.stirred = false;
-  if (mix.retired === 0) {
-    forget(mix, now);
-    return;
-  }
-  mix.retired = 0;
-  let pruned = false;
-  let kept = 0;
-  const voices = mix.cued;
-  for (let i = 0; i < voices.length; i++) {
-    const voice = voices[i] as Voice<I, O>;
-    if (voice.state !== 'done') {
-      voices[kept++] = voice;
-      continue;
-    }
-    if (mix.opts.history) mix.gone.push(voice);
-    else mix.parters.delete(voice);
-    unplay(mix, voice);
-    changed(mix, voice);
-    if (voice.named === null) pruned = true;
-    else unindex(mix, voice);
-    if (voice.holding !== null && mix.owners !== null)
-      mix.owners = mix.owners.filter((v) => v !== voice);
-    if (voice.spec.locus !== undefined) mix.loci--;
-    if (voice.spec.anchor !== undefined) mix.anchored--;
-  }
-  voices.length = kept;
-  if (pruned) mix.general = mix.general.filter((v) => v.state !== 'done');
+  if (mix.retired.length > 0) prune(mix);
   forget(mix, now);
+}
+
+/** Past this many voices retiring in one frame, one pass over the list beats a search for each. */
+const SEARCHED = 8;
+
+/**
+ * Takes the voices retired since the last prune out of the list, in list order. A few are found by
+ * their id, which the list is in order of, so the voices still in it are not read.
+ */
+function prune<I, O>(mix: Mixer<I, O>): void {
+  const retired = mix.retired;
+  mix.retired = [];
+  const voices = mix.cued;
+  let at: number[] | null = null;
+  // A projection's list holds copies of voices gone before it, which only a pass takes out.
+  if (retired.length <= SEARCHED && !mix.projecting) {
+    if (retired.length > 1) retired.sort((a, b) => a.id - b.id);
+    at = [];
+    for (let k = 0; k < retired.length; k++) {
+      const voice = retired[k] as Voice<I, O>;
+      const i = voice === retired[k - 1] ? -1 : indexOf(voices, voice);
+      if (i < 0) {
+        at = null;
+        break;
+      }
+      at.push(i);
+    }
+  }
+  let pruned = false;
+  if (at !== null) {
+    for (const voice of retired) pruned = leave(mix, voice) || pruned;
+    for (let k = at.length - 1; k >= 0; k--) voices.splice(at[k] as number, 1);
+  } else {
+    let kept = 0;
+    for (let i = 0; i < voices.length; i++) {
+      const voice = voices[i] as Voice<I, O>;
+      if (voice.state !== 'done') voices[kept++] = voice;
+      else pruned = leave(mix, voice) || pruned;
+    }
+    voices.length = kept;
+  }
+  if (pruned) mix.general = mix.general.filter((v) => v.state !== 'done');
+}
+
+/** The voice's place in a list in id order, or -1 where it is not there. */
+function indexOf<I, O>(voices: readonly Voice<I, O>[], voice: Voice<I, O>): number {
+  let lo = 0;
+  let hi = voices.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >>> 1;
+    const id = (voices[mid] as Voice<I, O>).id;
+    if (id === voice.id) return voices[mid] === voice ? mid : -1;
+    if (id < voice.id) lo = mid + 1;
+    else hi = mid - 1;
+  }
+  return -1;
+}
+
+/** Lets go of a retired voice's place in the mix; whether it was among the voices naming no subject. */
+function leave<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
+  if (mix.opts.history) mix.gone.push(voice);
+  else mix.parters.delete(voice);
+  unplay(mix, voice);
+  changed(mix, voice);
+  if (voice.named !== null) unindex(mix, voice);
+  if (voice.holding !== null && mix.owners !== null)
+    mix.owners = mix.owners.filter((v) => v !== voice);
+  if (voice.spec.locus !== undefined) mix.loci--;
+  if (voice.spec.anchor !== undefined) mix.anchored--;
+  return voice.named === null;
 }
 
 /** Lets go of the voices that have left and that history no longer reaches. */

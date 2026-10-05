@@ -122,7 +122,7 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
   voice.state = 'done';
   // The record its setting last wrote to, which a retired voice no longer calls for.
   voice.keepOn = null;
-  mix.retired++;
+  mix.retired.push(voice);
   voice.doneAt = at ?? (Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now);
   voice.play(false);
   voice.resolve();
