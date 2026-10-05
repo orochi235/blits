@@ -13,7 +13,7 @@ export interface ExplainerProps<I, O, C> {
   schema?: Schema<C>;
   /** Explainer ms one play-through lasts before it loops. */
   duration: number;
-  /** Stage height as a fraction of its width. */
+  /** Stage height as a fraction of its width, up to `MAX_STAGE_H`. */
   aspect?: number;
   draw(ctx: CanvasRenderingContext2D, frame: Frame<I, O>, size: Size, ink: Ink, config: C): void;
   /** How the ledger prints one channel's value. Numbers default to three decimals. */
@@ -217,6 +217,9 @@ function useReducedMotion(): boolean {
   return r;
 }
 
+/** A stage, its controls, and its caption fit a window about 800 px tall together. */
+const MAX_STAGE_H = 400;
+
 function useWidth(ref: React.RefObject<HTMLElement | null>, aspect: number): Size {
   const [size, setSize] = useState<Size>({ w: 0, h: 0 });
   useEffect(() => {
@@ -224,7 +227,7 @@ function useWidth(ref: React.RefObject<HTMLElement | null>, aspect: number): Siz
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
       const w = Math.floor(entry?.contentRect.width ?? 0);
-      setSize({ w, h: Math.round(w * aspect) });
+      setSize({ w, h: Math.min(MAX_STAGE_H, Math.round(w * aspect)) });
     });
     ro.observe(el);
     return () => ro.disconnect();
