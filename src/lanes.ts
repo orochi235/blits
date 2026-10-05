@@ -149,11 +149,14 @@ export class Lanes<I, O> implements Watcher {
    * the general path has to make.
    */
   readonly late: number[] = [];
-  /** What `writeLater` has queued: lane slots and the rows they go to, for one set of columns. */
+  /**
+   * What `writeLater` and `pullRun` have queued, for one set of columns, as runs: each run's first
+   * lane slot, the row it goes to, and how many subjects follow both one apart.
+   */
   queueSlots = new Int32Array(0);
   queueRows = new Int32Array(0);
+  queueCounts = new Int32Array(0);
   queued = 0;
-  inOrder = true;
   queuedFor: readonly Column[] | null = null;
   keeps = false;
   now = Number.NaN;

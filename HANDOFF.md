@@ -326,14 +326,14 @@ systems now run on it**, on klieg's `main`.
        regression at `FRAMES=5000` before chasing it: 330 frames can end before the JIT settles.
 
 1e. **Next for speed: the steady frame of 10k one-voice-per-subject tweens read by `pull`** (`tweens^`,
-   `weasel^`), Mike's go 2026-10-05. Bare tween rows fill in one loop since 2026-10-05 (`bare.ts`):
-   on teitou `tweens^` takes 0.23 ms a frame and `weasel^` 0.27, against 0.031–0.047 for a
-   hand-written loop doing the same arithmetic. In order, each measured before the next:
-   - Record a `pull` as a run (first slot and a count) rather than a `writeLater` per subject, and
-     rest-fill unlaned columns as one block in `flush`. Prototyped: −0.03 / −0.05, but it slowed
-     `churn^` by 0.04, to fix first. Under churn `writeLater` is about 0.28 ms against 0.04 steady
-     (blits-0c, busy machine): check `--trace-deopt` first. This session owns `pullRun`,
-     `writeLater` and `flush`; blits-0c owns `moveTo`, arrays on a number channel and `atRest`.
+   `weasel^`), Mike's go 2026-10-05. Bare tween rows fill in one loop (`bare.ts`) and `pull` queues
+   runs since 2026-10-05: on teitou `tweens^` takes 0.17 ms a frame and `weasel^` 0.22, against
+   0.031–0.047 for a hand-written loop doing the same arithmetic. In order, each measured before
+   the next:
+   - `popDue` (`due.ts`) is 42–49% of a `turnover^` profile on teitou: compiled on the stack while
+     the first frame's 10k voices came due, it deoptimizes at its tail on every frame one comes due,
+     as `pull` did (`node --trace-deopt`: 252 in 600 frames). Moving its loop into a function of
+     its own ends it; not yet measured.
    - Inferred, smaller: one fill-wide stamp instead of `Per.FILLED` on every subject (~0.01 ms);
      `pullRun`'s remaining per-subject checks (up to ~0.03, but a second pathway for what
      `weightOf` and `pace` read).

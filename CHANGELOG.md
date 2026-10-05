@@ -91,6 +91,15 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- `pull` queues the subjects it reads from the lanes as runs, a first subject and a count, rather
+  than one by one, and writes each run into its arrays as a block. Its loop over the subjects no
+  longer shares a function with its tail: compiled while the first long list was read, `pull`
+  deoptimized at its tail on every frame a voice came or went. At 10k subjects, a frame takes
+  0.167–0.180 ms against 0.228–0.235 with a tween voice per subject (`tweens^`), 0.218–0.227
+  against 0.269–0.278 over one voice (`weasel^`), 0.218–0.234 against 0.291–0.307 with one voice
+  replaced each frame (`churn^`), and 0.308–0.314 against 0.330–0.344 with one subject replaced
+  each frame (`turnover^`) (teitou, eight alternated runs).
+
 - A fill samples a tween on a lane or in a crowd and folds it in one loop, calling its closed form
   and the channel's fold directly, and keeps no copy of the sample: one is worked out again from
   the tween's stretch when a probe later in the frame needs it. The steady frame no longer

@@ -48,7 +48,19 @@ export function pullRun<I, O>(
   const wide = lanes.wide;
   const frame = lanes.frameProbes;
   const subjects = lanes.subjects;
+  if (columns !== lanes.queuedFor) {
+    flush(lanes);
+    lanes.queuedFor = columns;
+  }
+  room(lanes, lanes.queued + list.length - from);
+  const qSlots = lanes.queueSlots;
+  const qRows = lanes.queueRows;
+  const qCounts = lanes.queueCounts;
+  let k = lanes.queued;
   let n = from;
+  // The run being gathered: its first slot and row, and how far it has reached.
+  let first = -1;
+  let start = from;
   for (; n < list.length; n++) {
     const subject = list[n] as I;
     if (was[n] !== subject || (heads !== null && heads[n]?.version !== version)) break;
@@ -72,8 +84,24 @@ export function pullRun<I, O>(
     per[o + Per.LANE_PROBE] = ++lanes.probes;
     per[o + Per.LANE_FILL] = fills;
     subjects[slot] = subject;
-    writeLater(lanes, slot, columns, n);
+    if (slot !== first + (n - start)) {
+      if (first >= 0) {
+        qSlots[k] = first;
+        qRows[k] = start;
+        qCounts[k] = n - start;
+        k++;
+      }
+      first = slot;
+      start = n;
+    }
   }
+  if (first >= 0) {
+    qSlots[k] = first;
+    qRows[k] = start;
+    qCounts[k] = n - start;
+    k++;
+  }
+  lanes.queued = k;
   if (n > from) lanes.holding = true;
   return n;
 }
@@ -89,65 +117,115 @@ export function writeLater<I, O>(
   columns: readonly Column[],
   n: number,
 ): void {
+  queue(lanes, columns, slot, n, 1);
+}
+
+/** Queues `count` subjects from lane slot `slot` for rows from `row`, one apart in both. */
+function queue<I, O>(
+  lanes: Lanes<I, O>,
+  columns: readonly Column[],
+  slot: number,
+  row: number,
+  count: number,
+): void {
   if (columns !== lanes.queuedFor) {
     flush(lanes);
     lanes.queuedFor = columns;
   }
   const k = lanes.queued;
-  if (k === lanes.queueSlots.length) {
-    const slots = new Int32Array(Math.max(64, k * 2));
-    slots.set(lanes.queueSlots);
-    lanes.queueSlots = slots;
-    const rows = new Int32Array(slots.length);
-    rows.set(lanes.queueRows);
-    lanes.queueRows = rows;
+  if (k > 0) {
+    const last = k - 1;
+    const had = lanes.queueCounts[last] as number;
+    if (
+      slot === (lanes.queueSlots[last] as number) + had &&
+      row === (lanes.queueRows[last] as number) + had
+    ) {
+      lanes.queueCounts[last] = had + count;
+      return;
+    }
   }
+  room(lanes, k + 1);
   lanes.queueSlots[k] = slot;
-  lanes.queueRows[k] = n;
-  if (
-    k > 0 &&
-    (slot !== (lanes.queueSlots[k - 1] as number) + 1 ||
-      n !== (lanes.queueRows[k - 1] as number) + 1)
-  )
-    lanes.inOrder = false;
+  lanes.queueRows[k] = row;
+  lanes.queueCounts[k] = count;
   lanes.queued = k + 1;
 }
 
+/** Makes room in the queue for `runs` runs. */
+function room<I, O>(lanes: Lanes<I, O>, runs: number): void {
+  if (runs <= lanes.queueSlots.length) return;
+  const size = Math.max(64, runs, lanes.queueSlots.length * 2);
+  lanes.queueSlots = grown(lanes.queueSlots, size);
+  lanes.queueRows = grown(lanes.queueRows, size);
+  lanes.queueCounts = grown(lanes.queueCounts, size);
+}
+
+function grown(a: Int32Array<ArrayBuffer>, size: number): Int32Array<ArrayBuffer> {
+  const b = new Int32Array(size);
+  b.set(a);
+  return b;
+}
+
+/** Writes every queued run into its columns: a channel's values as a block, a rest as a fill. */
 export function flush<I, O>(lanes: Lanes<I, O>): void {
-  const count = lanes.queued;
+  const runs = lanes.queued;
   const columns = lanes.queuedFor;
-  if (count === 0 || columns === null) return;
+  if (runs === 0 || columns === null) return;
   lanes.queued = 0;
-  // Subjects numbered in the order the host lists them: each column is one block.
-  const block = lanes.inOrder;
-  lanes.inOrder = true;
-  const slots = lanes.queueSlots;
-  const rows = lanes.queueRows;
   for (let k = 0; k < columns.length; k++) {
     const c = columns[k] as Column;
-    const axes = c.axes;
-    const out = c.out;
     const ch = lanes.bySlot[c.slot];
-    if (ch === undefined) {
-      for (let i = 0; i < count; i++) {
-        const at = (rows[i] as number) * axes;
-        for (let a = 0; a < axes; a++) out[at + a] = c.rest[a] as number;
-      }
-      continue;
-    }
-    const values = ch.values;
-    if (block) {
-      const s0 = (slots[0] as number) * axes;
-      out.set(values.subarray(s0, s0 + count * axes), (rows[0] as number) * axes);
-    } else if (axes === 1) {
-      for (let i = 0; i < count; i++) out[rows[i] as number] = values[slots[i] as number] as number;
-    } else
-      for (let i = 0; i < count; i++) {
-        const at = (rows[i] as number) * axes;
-        const base = (slots[i] as number) * axes;
-        for (let a = 0; a < axes; a++) out[at + a] = values[base + a] as number;
-      }
+    if (ch === undefined) rests(lanes, c, runs);
+    else copies(lanes, c, ch.values, runs);
     if (c.bounds !== undefined)
-      for (let i = 0; i < count; i++) clampRun(out, (rows[i] as number) * axes, axes, c.bounds);
+      for (let r = 0; r < runs; r++)
+        clampRun(
+          c.out,
+          (lanes.queueRows[r] as number) * c.axes,
+          (lanes.queueCounts[r] as number) * c.axes,
+          c.bounds,
+        );
+  }
+}
+
+// A typed array's `fill` and `set` cost more to call than a short run costs to copy.
+
+/** Writes a column's rest into every queued run's rows. */
+function rests<I, O>(lanes: Lanes<I, O>, c: Column, runs: number): void {
+  const rows = lanes.queueRows;
+  const counts = lanes.queueCounts;
+  const out = c.out;
+  const axes = c.axes;
+  if (axes === 1) {
+    const v = c.rest[0] as number;
+    for (let r = 0; r < runs; r++) {
+      const at = rows[r] as number;
+      const end = at + (counts[r] as number);
+      if (end - at > 64) out.fill(v, at, end);
+      else for (let i = at; i < end; i++) out[i] = v;
+    }
+    return;
+  }
+  for (let r = 0; r < runs; r++) {
+    const at = (rows[r] as number) * axes;
+    const end = at + (counts[r] as number) * axes;
+    for (let i = at; i < end; i += axes)
+      for (let a = 0; a < axes; a++) out[i + a] = c.rest[a] as number;
+  }
+}
+
+/** Copies a laned channel's values for every queued run into its rows. */
+function copies<I, O>(lanes: Lanes<I, O>, c: Column, values: Float64Array, runs: number): void {
+  const slots = lanes.queueSlots;
+  const rows = lanes.queueRows;
+  const counts = lanes.queueCounts;
+  const out = c.out;
+  const axes = c.axes;
+  for (let r = 0; r < runs; r++) {
+    const at = (rows[r] as number) * axes;
+    const base = (slots[r] as number) * axes;
+    const span = (counts[r] as number) * axes;
+    if (span > 64) out.set(values.subarray(base, base + span), at);
+    else for (let i = 0; i < span; i++) out[at + i] = values[base + i] as number;
   }
 }

@@ -51,7 +51,6 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
   const lanes = mix.lanes;
   const now = mix.now;
   if (mix.scratch === undefined) mix.scratch = {} as O;
-  const scratch = mix.scratch;
   let room = Number.POSITIVE_INFINITY;
   let tightest = '';
   for (const c of columns) {
@@ -85,57 +84,12 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
     slots.set(mix.pulledSlots);
     mix.pulledSlots = slots;
   }
-  const slots = mix.pulledSlots;
   const version = mix.version;
   const relinks = mix.relinks;
   const live = !Number.isNaN(now);
   const current = live && mix.pulledVersion === version && mix.pulledRelinks === relinks;
-  // Every subject read from the lanes, at the positions it had last time, goes in one run.
-  const runs = live && whole;
   try {
-    for (let n = 0; n < list.length; n++) {
-      if (runs) {
-        n = pullRun(
-          lanes as Lanes<I, O>,
-          slots,
-          list,
-          was,
-          current ? null : heads,
-          n,
-          columns,
-          now,
-          mix.version,
-        );
-        if (n === list.length) break;
-      }
-      const subject = list[n] as I;
-      let slot = -1;
-      if (live) {
-        if (current && was[n] === subject) slot = slots[n] as number;
-        else {
-          const kept = heads[n];
-          const head =
-            was[n] === subject && kept !== undefined && kept.version === version
-              ? kept
-              : mix.chain(subject, now);
-          was[n] = subject;
-          heads[n] = head;
-          slot = head.slot;
-          slots[n] = slot;
-        }
-      }
-      const laned =
-        live && lanes?.prepare(slot, subject, now, mix.version, heads[n] ?? null) === true;
-      if (laned && whole && (lanes as Lanes<I, O>).whole && !(lanes as Lanes<I, O>).owes(slot)) {
-        writeLater(lanes as Lanes<I, O>, slot, columns, n);
-        continue;
-      }
-      const head = live ? (heads[n] as Subject<unknown>) : null;
-      const folded = mix.foldWith(subject, scratch, head, laned, false);
-      const pose = (mix.bounded.length === 0 ? folded : mix.clamp(folded as Values)) as Values;
-      mix.keep(subject, pose as O, scratch);
-      for (const c of columns) writeValue(c, pose[c.key], n);
-    }
+    readAll(mix, list, columns, live, current, whole);
   } finally {
     if (lanes !== null) flush(lanes);
   }
@@ -143,6 +97,73 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
   const unchanged = live && mix.version === version && mix.relinks === relinks;
   mix.pulledVersion = unchanged ? version : Number.NaN;
   mix.pulledRelinks = relinks;
+}
+
+/**
+ * Reads every subject in `list` into the columns, kept apart from `pull` so a list long enough to
+ * compile the loop on the stack does not leave `pull`'s own code compiled before its tail had run:
+ * under churn that code deoptimized at the tail on every frame.
+ */
+function readAll<I, O>(
+  mix: Mixer<I, O>,
+  list: readonly I[],
+  columns: readonly Column[],
+  live: boolean,
+  current: boolean,
+  whole: boolean,
+): void {
+  const lanes = mix.lanes;
+  const now = mix.now;
+  const scratch = mix.scratch as O;
+  const was = mix.pulled;
+  const heads = mix.pulledHeads;
+  const slots = mix.pulledSlots;
+  const version = mix.version;
+  // Every subject read from the lanes, at the positions it had last time, goes in one run.
+  const runs = live && whole;
+  for (let n = 0; n < list.length; n++) {
+    if (runs) {
+      n = pullRun(
+        lanes as Lanes<I, O>,
+        slots,
+        list,
+        was,
+        current ? null : heads,
+        n,
+        columns,
+        now,
+        mix.version,
+      );
+      if (n === list.length) break;
+    }
+    const subject = list[n] as I;
+    let slot = -1;
+    if (live) {
+      if (current && was[n] === subject) slot = slots[n] as number;
+      else {
+        const kept = heads[n];
+        const head =
+          was[n] === subject && kept !== undefined && kept.version === version
+            ? kept
+            : mix.chain(subject, now);
+        was[n] = subject;
+        heads[n] = head;
+        slot = head.slot;
+        slots[n] = slot;
+      }
+    }
+    const laned =
+      live && lanes?.prepare(slot, subject, now, mix.version, heads[n] ?? null) === true;
+    if (laned && whole && (lanes as Lanes<I, O>).whole && !(lanes as Lanes<I, O>).owes(slot)) {
+      writeLater(lanes as Lanes<I, O>, slot, columns, n);
+      continue;
+    }
+    const head = live ? (heads[n] as Subject<unknown>) : null;
+    const folded = mix.foldWith(subject, scratch, head, laned, false);
+    const pose = (mix.bounded.length === 0 ? folded : mix.clamp(folded as Values)) as Values;
+    mix.keep(subject, pose as O, scratch);
+    for (const c of columns) writeValue(c, pose[c.key], n);
+  }
 }
 
 /** The kit slot, width, rest and bounds of every channel `pull` was handed an array for. */

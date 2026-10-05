@@ -67,6 +67,59 @@ describe('pull', () => {
   });
 });
 
+describe('pull reading subjects from the lanes in runs', () => {
+  interface Wide {
+    gain: number;
+    position: number[];
+    opacity: number;
+    tint: number;
+  }
+  const W = kit<Wide>({
+    gain: mul(),
+    position: vec(2, sum()),
+    opacity: mul({ bounds: [0, 1] }),
+    tint: sum(),
+  });
+  type Part = { id: number };
+  const rise = keys<Part, Wide>(100, [
+    { at: 0, delta: { gain: 0.5, position: [0, 1], opacity: 0.4 } },
+    { at: 1, delta: { gain: 2, position: [30, -5], opacity: 1.6 } },
+  ]);
+
+  it('writes runs, runs broken by order, repeats and channels no voice writes', () => {
+    const parts = Array.from({ length: 150 }, (_, id) => ({ id }));
+    const m = mix<Part, Wide>(W, { lanes: true });
+    m.cue({ patch: rise, stagger: (p) => p.id });
+    // The numbers follow first sight: the order of the first pull, which later lists break up.
+    const lists = [
+      parts,
+      [...parts.slice(20), ...parts.slice(0, 20)],
+      [...parts.slice(0, 30), parts[3] as Part, ...parts.slice(30)],
+      parts.filter((p) => p.id % 3 !== 1),
+    ];
+    for (let t = 16; t <= 160; t += 16) {
+      m.sync(t);
+      for (const list of lists) {
+        const k = list.length;
+        const cols = {
+          gain: new Float64Array(k),
+          position: new Float64Array(2 * k),
+          opacity: new Float64Array(k),
+          tint: new Float64Array(k),
+        };
+        m.pull(list, cols);
+        list.forEach((part, i) => {
+          const pose = m.probe(part);
+          expect(cols.gain[i], `t=${t} gain of ${part.id}`).toBe(pose.gain);
+          expect([cols.position[2 * i], cols.position[2 * i + 1]]).toEqual(pose.position);
+          expect(cols.opacity[i], `t=${t} opacity of ${part.id}`).toBe(pose.opacity);
+          expect(cols.tint[i], `t=${t} tint of ${part.id}`).toBe(pose.tint);
+        });
+      }
+    }
+  });
+});
+
 describe('pull reading the same array again', () => {
   type Part = { id: number };
   const ramp = keys<Part, Pose>(100, [
