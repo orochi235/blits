@@ -357,7 +357,12 @@ for (let seed = first; seed < first + scenes; seed++) {
     bad++;
     console.log(`seed ${seed}: differs at line ${at}\n  a: ${a[at]}\n  b: ${b[at]}`);
   }
-  if ((seed - first + 1) % 50 === 0) console.log(`${seed - first + 1}/${scenes}  ${bad} differ`);
+  if ((seed - first + 1) % 50 === 0) {
+    console.log(`${seed - first + 1}/${scenes}  ${bad} differ`);
+    // Subjects are let go by finalizers, which run only between tasks: past ~5800 scenes without
+    // this the heap ran out at 4 GB.
+    await new Promise((r) => setTimeout(r, 0));
+  }
 }
 console.log(bad === 0 ? `same: ${scenes} scenes` : `${bad} of ${scenes} scenes differ`);
 process.exit(bad === 0 ? 0 : 1);
