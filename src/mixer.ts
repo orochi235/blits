@@ -478,6 +478,29 @@ function same(a: unknown, b: unknown): boolean {
   return true;
 }
 
+/** Whether the voice's shared unreached record stands for the subject numbered `slot`. */
+function unreached<I, O>(voice: Voice<I, O>, slot: number): boolean {
+  const bits = voice.unreachedBits;
+  if (bits === null || slot < 0) return false;
+  const word = slot >>> 5;
+  return word < bits.length && ((bits[word] as number) & (1 << (slot & 31))) !== 0;
+}
+
+/** Marks or clears the subject numbered `slot` as one the voice does not reach. */
+function unreach<I, O>(voice: Voice<I, O>, slot: number, on: boolean): void {
+  let bits = voice.unreachedBits;
+  const word = slot >>> 5;
+  if (bits === null || word >= bits.length) {
+    if (!on) return;
+    const grown = new Uint32Array(Math.max(word + 1, (bits?.length ?? 0) * 2, 2));
+    if (bits !== null) grown.set(bits);
+    voice.unreachedBits = grown;
+    bits = grown;
+  }
+  const bit = 1 << (slot & 31);
+  bits[word] = on ? (bits[word] as number) | bit : (bits[word] as number) & ~bit;
+}
+
 export class Voice<I, O> {
   state: 'pending' | 'live' | 'held' | 'fading' | 'done' = 'pending';
   rate: number;
@@ -561,6 +584,8 @@ export class Voice<I, O> {
   blend: { of: Blend<I, O>; i: number } | null = null;
   /** The one record of every subject it does not reach. */
   unreached: Subject<unknown> | null = null;
+  /** By subject number, a bit set where `unreached` stands for the subject; null until one is. */
+  unreachedBits: Uint32Array | null = null;
   /**
    * `done` and `played`, made when first asked for, already settled if the voice is: most hosts
    * never await either, and a mix may hold tens of thousands of voices.
@@ -704,6 +729,7 @@ export class Voice<I, O> {
     }
     v.quiet = true;
     v.unreached = null;
+    v.unreachedBits = null;
     return v;
   }
 
@@ -1718,10 +1744,15 @@ class Mixer<I, O> implements Mix<I, O> {
       channels: this.channels,
       names: this.names,
       fits: (voice) => mix.fits(voice),
-      meet: (voice, subject, head) => {
+      meet: (voice, subject, head, slot) => {
         for (let held = head; held !== null; held = held.next)
           if (held.voice === voice) return held;
-        return mix.held(voice, subject, mix.now);
+        return mix.held(voice, subject, mix.now, slot);
+      },
+      forgot: (slot) => {
+        // Only a voice over every subject keeps bits, and one gone may still be read back.
+        for (const voice of mix.general) unreach(voice, slot, false);
+        for (const voice of mix.gone) unreach(voice, slot, false);
       },
       naming: (subject) => (mix.naming === 0 ? undefined : mix.named.get(subject)),
       slotOf: (subject) => mix.chains.get(subject)?.slot ?? -1,
@@ -2091,9 +2122,18 @@ class Mixer<I, O> implements Mix<I, O> {
     };
   }
 
+  /** A voice's record of a subject, the one it shares among those it does not reach included. */
+  private recordOf(voice: Voice<I, O>, subject: I): Subject<unknown> | undefined {
+    const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
+    if (held !== undefined || voice.unreachedBits === null) return held;
+    return unreached(voice, this.chains.get(subject)?.slot ?? -1)
+      ? (voice.unreached as Subject<unknown>)
+      : undefined;
+  }
+
   /** A projection ahead starts each subject from where the live mix holds it. */
   private carry(voice: Voice<I, O>, subject: I): Subject<unknown> | undefined {
-    const live = voice.subjects.get(subject) as Subject<unknown> | undefined;
+    const live = this.recordOf(voice, subject);
     if (live === undefined) return undefined;
     const h = this.copyHeld(voice, live);
     h.from = h.stepped;
@@ -2105,7 +2145,7 @@ class Mixer<I, O> implements Mix<I, O> {
    * voice's start with fresh state, which is exact for a voice stepped at a fixed interval.
    */
   private recall(voice: Voice<I, O>, subject: I, t: number): Subject<unknown> | undefined {
-    const live = voice.subjects.get(subject) as Subject<unknown> | undefined;
+    const live = this.recordOf(voice, subject);
     if (live === undefined) return undefined;
     const snap = live.snaps && last(live.snaps, t, true);
     if (snap) {
@@ -2336,6 +2376,8 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** Drops a voice's record of a subject and relinks the subject's chain without it. */
   private forgetIn(voice: Voice<I, O>, subject: I): void {
+    const head = this.chains.get(subject);
+    if (head !== undefined && head.slot >= 0) unreach(voice, head.slot, false);
     const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
     if (held !== undefined) {
       voice.subjects.delete(subject);
@@ -2343,7 +2385,6 @@ class Mixer<I, O> implements Mix<I, O> {
       if (held.rested) voice.restedCount--;
       if (voice.holder === held) voice.holder = null;
     }
-    const head = this.chains.get(subject);
     if (head === undefined) return;
     head.version = Number.NaN;
     this.relinks++;
@@ -2428,15 +2469,19 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   /** What this voice holds for this subject, made on first sight with `target` and `stagger` asked once. */
-  private held(voice: Voice<I, O>, subject: I, now: number): Subject<unknown> {
+  private held(voice: Voice<I, O>, subject: I, now: number, slot: number): Subject<unknown> {
+    if (unreached(voice, slot)) return voice.unreached as Subject<unknown>;
     let held = voice.subjects.get(subject) as Subject<unknown> | undefined;
     if (held !== undefined) return held;
     const reaches = this.aims(voice, subject);
     if (!reaches) {
       // Nothing is kept for a subject the voice does not reach, so one record stands for them all:
-      // a voice per subject reached by `target` held one per subject it was asked about.
+      // a voice per subject reached by `target` held one per subject it was asked about. Where lanes
+      // number the subject, a bit by its number says so, where a map entry each grew with voices
+      // times subjects.
       const none = voice.unreached ?? this.unreachedOf(voice, now);
-      voice.subjects.set(subject, none);
+      if (slot >= 0 && voice.named === null) unreach(voice, slot, true);
+      else voice.subjects.set(subject, none);
       return none;
     }
     const delay = voice.spec.stagger ? voice.spec.stagger(subject) : 0;
@@ -2862,18 +2907,20 @@ class Mixer<I, O> implements Mix<I, O> {
   private chain(subject: I, now: number): Subject<unknown> {
     const was = this.chains.get(subject);
     if (was !== undefined && was.version === this.version) return was;
+    const slot =
+      was !== undefined ? was.slot : this.lanes !== null ? this.lanes.number(subject) : -1;
     // Where only voices over every subject changed since, those alone are taken off or put on.
     let first =
       was === undefined
         ? undefined
         : this.steps.patch(was.voice === null ? null : was, was.version, (voice) =>
-            this.linkable(voice, subject, now),
+            this.linkable(voice, subject, now, slot),
           );
     if (first === undefined) {
       let prev: Subject<unknown> | null = null;
       first = null;
       const link = (voice: Voice<I, O>) => {
-        const held = this.linkable(voice, subject, now);
+        const held = this.linkable(voice, subject, now, slot);
         if (held === null) return;
         held.voice = voice;
         held.next = null;
@@ -2897,17 +2944,21 @@ class Mixer<I, O> implements Mix<I, O> {
       was.loci = null;
       head.slot = was.slot;
       was.slot = -1;
-    } else if (was === undefined && this.lanes !== null && head.slot < 0)
-      head.slot = this.lanes.number(subject);
+    } else if (was === undefined) head.slot = slot;
     if (was !== head) this.chains.set(subject, head);
     return head;
   }
 
   /** A voice's record for a subject where its chain links it: the voice plays or holds, and reaches it. */
-  private linkable(voice: Voice<I, O>, subject: I, now: number): Subject<unknown> | null {
+  private linkable(
+    voice: Voice<I, O>,
+    subject: I,
+    now: number,
+    slot: number,
+  ): Subject<unknown> | null {
     const state = voice.state;
     if (state === 'done' || (state === 'pending' && !voice.holdsBefore)) return null;
-    const held = this.held(voice, subject, now);
+    const held = this.held(voice, subject, now, slot);
     return held.reaches ? held : null;
   }
 

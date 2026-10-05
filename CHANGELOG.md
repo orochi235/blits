@@ -93,6 +93,12 @@ version and everything else the patch. Each release lists its changes as **Break
   its law when it is made and another then, and works out a still start without asking `to` again:
   making and cueing 10k one-subject tween voices takes 2.5–2.8 ms on teitou, from 5.1–6.8, and
   their first frame 15.7–16.9 ms, from 19.0–21.1 (`bench/start.mjs`).
+- A voice over every subject keeps the subjects its `target` turned away as a bit by the number
+  lanes give each, where it kept a map entry for each: memory no longer grows with voices times
+  subjects. 1000 voices each picking one of 1000 subjects by `target` hold 4.6 KB a voice after
+  their first frame, from 37.1, and over 3000 subjects 4.2 KB, from 135; that first frame takes
+  35–38 ms on teitou, from 72–79, and later frames are unchanged (`bench/memory.mjs`, row `own`).
+  With `lanes: false` the answers are kept in a map as before.
 - A pose never holds a patch's own array. Where a channel's `merge` returned its second argument,
   as `last()` does, the mix put that array into the pose as it was: with two voices on a keyed
   array channel, a host editing its pose edited the stop, and every later frame read the edit. The

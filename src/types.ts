@@ -386,8 +386,9 @@ export interface VoiceSpec<I, O, H = unknown> {
    * Which subjects this voice reaches. Default: all of them. The predicate is fixed at `cue`; it
    * runs per subject the first time the mix sees that subject, and the answer is kept. Every
    * voice's predicate meets every subject, so voices that each reach a known few cost the square
-   * of their number, in time and in memory (the answer kept per voice per subject asked: about
-   * 37 MB for 1,000 such voices); name those with `subjects` instead.
+   * of their number in time; name those with `subjects` instead. A no is kept as a bit by the
+   * number lanes give the subject, but with `lanes: false` as a map entry per voice per subject
+   * asked (about 37 MB for 1,000 such voices over 1,000 subjects).
    */
   target?: (subject: I) => boolean;
   /**

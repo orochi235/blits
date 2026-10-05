@@ -298,9 +298,6 @@ systems now run on it**, on klieg's `main`.
      - **A crowd's `keys` rows** still cost about 82 ns a subject by `pull` against 24 for one
        keys voice over the same subjects: each row chases its own voice, stops and arrays, where
        a shared voice reads them once per phase.
-     - **`target` memory** still grows with the square of voices × subjects (see
-       `NOTES-FROM-WEASEL.md`): a bit per voice and subject number would end it, but only mixes
-       with lanes number their subjects.
      - **weasel's animator wants a voice that allocates almost nothing per cue**, and waits on
        Mike. At `0c80b6d` (3.7 KB a voice) its 10k-tween frame takes 0.51–0.73 ms on teitou
        against 0.165 with no voice cued: its loop misses cache because each animation's objects

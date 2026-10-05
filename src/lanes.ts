@@ -55,7 +55,14 @@ export interface LaneHost<I, O> {
   /** Whether a voice's patch and spec can run on a lane, its channels aside. */
   fits(voice: Voice<I, O>): boolean;
   /** The voice's record for a subject this probe has already linked it to, from `head` if there. */
-  meet(voice: Voice<I, O>, subject: I, head: Subject<unknown> | null): Subject<unknown>;
+  meet(
+    voice: Voice<I, O>,
+    subject: I,
+    head: Subject<unknown> | null,
+    slot: number,
+  ): Subject<unknown>;
+  /** The number `slot` was let go of, to be handed to another subject. */
+  forgot(slot: number): void;
   /** The voices whose `subjects` name the subject, in voice order. */
   naming(subject: I): readonly Voice<I, O>[] | undefined;
   /** The subject's number, -1 where it has none yet. */
@@ -1082,7 +1089,7 @@ export class Lanes<I, O> implements Watcher {
       const lane = dense[i] as Lane<I, O>;
       if (lane.epoch <= from) break;
       if (lane.positionOf(slot) >= 0) continue;
-      const held = this.host.meet(lane.voice, subject, head);
+      const held = this.host.meet(lane.voice, subject, head, slot);
       if (!held.reaches) continue;
       lane.add(slot, held);
       if (lane.idle) this.reach(slot, 1);
@@ -1102,7 +1109,7 @@ export class Lanes<I, O> implements Watcher {
           continue;
         }
         if (lane.epoch <= from || lane.positionOf(slot) >= 0) continue;
-        const held = this.host.meet(voice, subject, head);
+        const held = this.host.meet(voice, subject, head, slot);
         if (!held.reaches) continue;
         lane.add(slot, held);
         if (lane.idle) this.reach(slot, 1);
@@ -1126,7 +1133,7 @@ export class Lanes<I, O> implements Watcher {
     const h = p * c.stride;
     const flags = c.hot[h + H_FLAGS] as number;
     if ((c.hot[h + H_EPOCH] as number) <= from || (flags & F_PLACED) !== 0) return false;
-    const held = this.host.meet(voice, subject, head);
+    const held = this.host.meet(voice, subject, head, slot);
     if (!held.reaches) return false;
     const o = p * STRIDE;
     c.list[p] = slot;
@@ -1151,6 +1158,7 @@ export class Lanes<I, O> implements Watcher {
   }
 
   forget(slot: number): void {
+    this.host.forgot(slot);
     this.live--;
     for (const lane of this.lanes) lane.remove(slot);
     for (const c of this.crowds)
