@@ -14,7 +14,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 
 Two voices write the same field. Whether the result is their sum, their product, the larger of the two or simply the later one isn't up to either voice. It belongs to the channel, so a flicker and a fade can share `gain` without knowing about each other.
 
-Every stock channel but `last` has a **rest**: the value that changes nothing. It's 0 for `sum` and `max`, and 1 for `mul`. A voice's weight fades it toward rest, so at weight 0 a voice leaves its channel exactly as it found it. Drag a weight down and watch its bar shrink into the dashed line.
+Every stock channel but `last` has a **rest**: the value that changes nothing. It's 0 for `sum` and `max`, and 1 for `mul`. A voice's weight fades it toward rest, so at weight 0 a voice leaves its channel exactly as it found it. Drag a weight down and watch its bar shrink into the dashed line, and its lamp settle where the channel rests.
 
 `last` has no rest, so there is nothing to fade toward. A weight can only switch it on or off, and it does so across a band (on above 0.6, off below 0.4) rather than at an edge, so a weight hovering near the middle doesn't flicker between the two.
 

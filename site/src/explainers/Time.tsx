@@ -1,7 +1,7 @@
 import { last, kit as makeKit, sum } from '@blits/channels';
 import { patch } from '@blits/patch';
 import { f } from '@weasel-js/labkit';
-import { label, numberLine, trace } from './kit/draw';
+import { label, lamp, numberLine, trace } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import type { Ink } from './kit/ink';
 import type { Scene } from './kit/scene';
@@ -75,21 +75,97 @@ const catchUp: Scene<Subject, Tally, Record<string, never>> = {
 };
 const catchUpScene = () => catchUp;
 
+/** A stopwatch dial per subject: the hand and the swept wedge both read its counted seconds. */
+function dials(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  ink: Ink,
+  rows: { name: string; color: string; seconds: number; note?: string }[],
+): void {
+  const r = Math.min(h * 0.34, w / (rows.length * 3));
+  const cy = 14 + r;
+  const turn = 6;
+  rows.forEach((row, i) => {
+    const cx = (w * (i + 1)) / (rows.length + 1);
+    const angle = (row.seconds / turn) * Math.PI * 2 - Math.PI / 2;
+    ctx.fillStyle = row.color;
+    ctx.globalAlpha = 0.18;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, -Math.PI / 2, angle);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = ink.rule;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let s = 0; s < turn; s++) {
+      const a = (s / turn) * Math.PI * 2 - Math.PI / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * r * 0.84, cy + Math.sin(a) * r * 0.84);
+      ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = row.color;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(angle) * r * 0.9, cy + Math.sin(angle) * r * 0.9);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.fillStyle = row.color;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+    ctx.fill();
+    label(
+      ctx,
+      `${row.name}  ${row.seconds.toFixed(2)} s`,
+      cx,
+      cy + r + 20,
+      ink.ink,
+      'center',
+      true,
+    );
+    if (row.note) label(ctx, row.note, cx, cy + r + 38, ink.soft, 'center');
+  });
+}
+
 export function CatchUp() {
   return (
     <Explainer
       scene={catchUpScene}
       duration={CATCH}
-      aspect={0.5}
+      aspect={0.8}
       caption={
         <>
-          Each subject counts the seconds its <code>step</code> has been handed. B goes unprobed in
-          the shaded stretch, so it holds still; the next probe hands it the whole gap in one step.
+          Each subject counts the seconds its <code>step</code> has been handed, and its dial shows
+          the count: one turn is 6 s. B goes unprobed in the shaded stretch, so its hand holds
+          still; the next probe hands it the whole gap in one step, and the hand jumps.
         </>
       }
       draw={(ctx, frame, size, ink) => {
-        const top = Math.round(size.h * 0.5);
-        numberLine(ctx, { w: size.w, h: top }, ink, {
+        const stage = Math.round(size.h * 0.36);
+        const away = frame.t >= AWAY.from && frame.t < AWAY.to;
+        dials(
+          ctx,
+          size.w,
+          stage,
+          ink,
+          counters.map((c, i) => ({
+            name: c.name,
+            color: ink.voice(c === left ? 'v2' : 'v1'),
+            seconds: frame.poses[i]?.value ?? 0,
+            note: c === left && away ? 'not probed' : undefined,
+          })),
+        );
+        const top = stage + Math.round((size.h - stage) * 0.42);
+        ctx.save();
+        ctx.translate(0, stage);
+        numberLine(ctx, { w: size.w, h: top - stage }, ink, {
           from: 0,
           to: 6,
           rows: counters.map((c, i) => ({
@@ -99,6 +175,7 @@ export function CatchUp() {
             strong: c === left,
           })),
         });
+        ctx.restore();
         const box = { x: 72, y: top + 12, w: size.w - 136, h: size.h - top - 44 };
         timeline(ctx, box, ink, {
           duration: CATCH,
@@ -175,24 +252,56 @@ function hideScene(c: HideConfig): Scene<typeof tab, Pose, HideConfig> {
   };
 }
 
+/** A lamp riding a track: the sweep places it, the fade lights it. */
+function sweeper(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  ink: Ink,
+  pose: Pose | undefined,
+  hidden: boolean,
+): void {
+  const from = 72;
+  const to = w - 64;
+  const y = h * 0.5;
+  ctx.strokeStyle = ink.rule;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(from, y);
+  ctx.lineTo(to, y);
+  ctx.stroke();
+  const sweep = pose?.sweep;
+  if (sweep === undefined || Number.isNaN(sweep)) {
+    label(ctx, 'The pass is over: no sweep', (from + to) / 2, y - 18, ink.soft, 'center');
+  } else {
+    lamp(ctx, ink, from + sweep * (to - from), y, 12, pose?.level ?? 0, ink.voice('v1'));
+  }
+  if (hidden) label(ctx, 'Hidden: no frames', to, y + 32, ink.soft, 'right');
+}
+
 export default function HideTab() {
   return (
     <Explainer
       scene={hideScene}
       schema={hiding}
       duration={HIDE}
-      aspect={0.5}
+      aspect={0.66}
       caption={
         <>
-          In the shaded stretch the tab is hidden and the host gets no frames. Without{' '}
-          <code>rebase()</code>, the first frame back is 2.5 s later on every clock: the fade has
-          finished and the sweep's one pass is over. With it, both resume where they were.
+          The lamp rides the sweep and glows with the fade. In the shaded stretch the tab is hidden
+          and the host gets no frames. Without <code>rebase()</code>, the first frame back is 2.5 s
+          later on every clock: the fade has finished and the sweep's one pass is over. With it,
+          both resume where they were.
         </>
       }
       draw={(ctx, frame, size, ink) => {
         const pose = frame.poses[0];
-        const top = Math.round(size.h * 0.42);
-        numberLine(ctx, { w: size.w, h: top }, ink, {
+        const stage = Math.round(size.h * 0.22);
+        sweeper(ctx, size.w, stage, ink, pose, frame.hidden);
+        const top = stage + Math.round((size.h - stage) * 0.4);
+        ctx.save();
+        ctx.translate(0, stage);
+        numberLine(ctx, { w: size.w, h: top - stage }, ink, {
           from: 0,
           to: 1,
           rows: [
@@ -200,6 +309,7 @@ export default function HideTab() {
             { label: 'Fade', color: ink.voice('v2'), value: pose?.level },
           ],
         });
+        ctx.restore();
         const box = { x: 72, y: top + 12, w: size.w - 136, h: size.h - top - 44 };
         timeline(ctx, box, ink, {
           duration: HIDE,

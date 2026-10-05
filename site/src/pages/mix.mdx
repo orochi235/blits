@@ -14,7 +14,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 
 A **mix** is made over a kit, and every voice cued on it writes that kit's channels. The things it drives are its **subjects**: letters, parts, bars, whatever the host has. You don't register them. The first time you ask about a subject, the mix starts keeping its state.
 
-Above, three voices play over twelve bars. Wave rolls across all of them, pulse beats on every other one, and swell rises and falls everywhere at once. Each column stacks what each voice adds to that bar, and the line on top is the **pose**: every voice folded together, through the channel's arithmetic, into the one value a host writes. The ledger itemizes one bar; pick a different one with "Ledger subject".
+Above, three voices play over twelve lamps. Wave rolls across all of them, pulse beats on every other one, and swell rises and falls everywhere at once. Each lamp is lit to its **pose**, and the column under it stacks what each voice adds, with the line on top marking the pose: every voice folded together, through the channel's arithmetic, into the one value a host writes. The ledger itemizes one lamp; pick a different one with "Ledger subject".
 
 ## The frame loop
 
@@ -48,7 +48,7 @@ requestAnimationFrame(frame);
 
 ## Reach and rest
 
-`target` picks which subjects a voice reaches. It runs once per subject, the first time the mix sees it, and the answer is kept. Pulse above has `target: (bar) => bar.i % 2 === 0`, so the odd columns never get a pulse block, and the ledger's pulse row reads 0 when you pick an odd bar.
+`target` picks which subjects a voice reaches. It runs once per subject, the first time the mix sees it, and the answer is kept. Pulse above has `target: (bar) => bar.i % 2 === 0`, so the odd lamps never get a pulse pip or block, and the ledger's pulse row reads 0 when you pick an odd one.
 
 `subjects` names the subjects a voice reaches instead: `subjects: [bar]` reaches that bar and no other. Every `target` meets every subject the mix sees, so a scene with one voice per subject should name them, which lets a probe skip the voices that name someone else. A voice takes one or the other, never both.
 

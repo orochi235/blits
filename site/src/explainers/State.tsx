@@ -1,8 +1,9 @@
 import { kit, sum } from '@blits/channels';
 import { patch } from '@blits/patch';
 import { f } from '@weasel-js/labkit';
-import { numberLine, trace } from './kit/draw';
+import { label, numberLine, trace } from './kit/draw';
 import { Explainer } from './kit/Explainer';
+import type { Ink } from './kit/ink';
 import type { Scene } from './kit/scene';
 import { timeline } from './Time';
 
@@ -64,24 +65,108 @@ function scene(c: Config): Scene<Subject, Pose, Config> {
 const MIN = -1;
 const MAX = 2;
 
+/**
+ * Each subject as a weight on a rail, joined by a coil to a post at its target. Past the scale the
+ * weight pins to the edge and says where it really is.
+ */
+function rails(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  ink: Ink,
+  goal: number,
+  rows: { name: string; color: string; x: number | undefined; note?: string }[],
+): void {
+  const left = 72;
+  const right = w - 64;
+  const px = (v: number) => left + ((v - MIN) / (MAX - MIN)) * (right - left);
+  const rowH = (h - 12) / rows.length;
+  rows.forEach((row, i) => {
+    const y = 12 + rowH * (i + 0.55);
+    label(ctx, row.name, left - 18, y + 4, ink.soft, 'right');
+    ctx.strokeStyle = ink.rule;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(left, y + 14);
+    ctx.lineTo(right, y + 14);
+    ctx.stroke();
+
+    const post = px(goal);
+    ctx.strokeStyle = ink.soft;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(post, y - 16);
+    ctx.lineTo(post, y + 14);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (row.x === undefined) return;
+    const off = row.x < MIN ? -1 : row.x > MAX ? 1 : 0;
+    const mass = px(Math.max(MIN, Math.min(MAX, row.x)));
+    coil(ctx, post, mass, y, row.color);
+    ctx.fillStyle = row.color;
+    ctx.globalAlpha = row.note ? 0.45 : 1;
+    ctx.fillRect(mass - 11, y - 11, 22, 22);
+    ctx.globalAlpha = 1;
+    if (off !== 0) {
+      const edge = off < 0 ? left : right;
+      const ay = y - 22;
+      ctx.beginPath();
+      ctx.moveTo(edge, ay);
+      ctx.lineTo(edge - off * 9, ay - 6);
+      ctx.lineTo(edge - off * 9, ay + 6);
+      ctx.closePath();
+      ctx.fill();
+      const text = `off the scale: ${row.x.toFixed(1)}`;
+      label(ctx, text, edge - off * 14, ay + 4, ink.ink, off < 0 ? 'left' : 'right', true);
+    }
+    if (row.note) label(ctx, row.note, right, y - 18, ink.soft, 'right');
+  });
+}
+
+function coil(ctx: CanvasRenderingContext2D, a: number, b: number, y: number, color: string): void {
+  const turns = 12;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(a, y);
+  for (let k = 1; k < turns; k++) ctx.lineTo(a + ((b - a) * k) / turns, y + (k % 2 ? -6 : 6));
+  ctx.lineTo(b, y);
+  ctx.stroke();
+}
+
 export default function State() {
   return (
     <Explainer
       scene={scene}
       schema={config}
       duration={DURATION}
-      aspect={0.52}
+      aspect={0.85}
       caption={
         <>
-          One spring patch, two subjects. The lower one goes unprobed in the shaded stretch, and its
-          next <code>step</code> is handed the whole 1.2 s gap. Uncapped, one Euler step that long
-          throws it far off the scale; with <code>maxDt: 64</code> it takes one short step and
-          carries on.
+          One spring patch, two subjects: each weight is pulled toward the dashed post, which flips
+          between 1 and 0. The lower one goes unprobed in the shaded stretch, and its next{' '}
+          <code>step</code> is handed the whole 1.2 s gap. Uncapped, one Euler step that long throws
+          it far off the scale; with <code>maxDt: 64</code> it takes one short step and carries on.
         </>
       }
       draw={(ctx, frame, size, ink) => {
-        const top = Math.round(size.h * 0.4);
-        numberLine(ctx, { w: size.w, h: top }, ink, {
+        const stage = Math.round(size.h * 0.3);
+        const away = frame.t >= AWAY.from && frame.t < AWAY.to;
+        rails(ctx, size.w, stage, ink, target(frame.t), [
+          { name: 'Steady', color: ink.voice('v1'), x: frame.poses[0]?.x },
+          {
+            name: 'Unprobed',
+            color: ink.voice('v2'),
+            x: frame.poses[1]?.x,
+            note: away ? 'not probed: frozen' : undefined,
+          },
+        ]);
+        const top = stage + Math.round((size.h - stage) * 0.32);
+        ctx.save();
+        ctx.translate(0, stage);
+        numberLine(ctx, { w: size.w, h: top - stage }, ink, {
           from: MIN,
           to: MAX,
           rows: [
@@ -89,6 +174,7 @@ export default function State() {
             { label: 'Unprobed', color: ink.voice('v2'), value: frame.poses[1]?.x, strong: true },
           ],
         });
+        ctx.restore();
 
         const box = { x: 72, y: top + 12, w: size.w - 136, h: size.h - top - 44 };
         timeline(ctx, box, ink, {

@@ -2,7 +2,7 @@ import { kit, sum } from '@blits/channels';
 import { patch } from '@blits/patch';
 import { gate, level, slew } from '@blits/signals';
 import { f } from '@weasel-js/labkit';
-import { label, trace } from './kit/draw';
+import { label, lamp, trace } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import type { Scene } from './kit/scene';
 
@@ -71,7 +71,7 @@ export default function Signal() {
       aspect={0.42}
       caption="The gray line is the level the host writes. Each voice writes 1 and takes its weight from a signal: one slews toward the level, the other gates it."
       draw={(ctx, frame, size, ink, c) => {
-        const side = Math.min(200, size.w * 0.26);
+        const side = Math.min(230, size.w * 0.3);
         const box = { x: 12, y: 12, w: size.w - side - 36, h: size.h - 40 };
         const points = (k: number) =>
           frame.history.map((h) => [h.t, h.values[k] ?? 0] as [number, number]);
@@ -112,26 +112,14 @@ export default function Signal() {
           { name: 'Slewed', value: now[1] ?? 0, color: ink.voice('v1') },
           { name: 'Gated', value: now[2] ?? 0, color: ink.voice('v2') },
         ];
-        const cx = size.w - side / 2 - 8;
-        const r = Math.min(18, (size.h - 40) / 9);
-        lamps.forEach((lamp, i) => {
-          const cy = 12 + r + i * ((size.h - 24 - 2 * r) / 2);
-          ctx.strokeStyle = ink.rule;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(cx - side / 4, cy, r, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.globalAlpha = Math.max(0, Math.min(1, lamp.value));
-          ctx.fillStyle = lamp.color;
-          ctx.beginPath();
-          ctx.arc(cx - side / 4, cy, r, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalAlpha = 1;
-          label(ctx, lamp.name, cx - side / 4 + r + 10, cy - 2, ink.ink);
-          ctx.font = '12px "JetBrains Mono", ui-monospace, Menlo, monospace';
-          ctx.fillStyle = ink.soft;
-          ctx.textAlign = 'left';
-          ctx.fillText(lamp.value.toFixed(3), cx - side / 4 + r + 10, cy + 14);
+        const x = size.w - side + 24;
+        const r = Math.max(8, Math.min(22, (size.h - 40) / 8, side / 7));
+        const step = (size.h - 8 - 4 * r) / 2;
+        lamps.forEach((l, i) => {
+          const cy = 4 + 2 * r + i * step;
+          lamp(ctx, ink, x + r, cy, r, l.value, l.color);
+          label(ctx, l.name, x + 2 * r + 14, cy - 2, ink.ink);
+          label(ctx, l.value.toFixed(3), x + 2 * r + 14, cy + 14, ink.soft, 'left', true);
         });
       }}
     />

@@ -1,8 +1,9 @@
 import { kit, sum } from '@blits/channels';
 import { patch } from '@blits/patch';
 import { f } from '@weasel-js/labkit';
-import { label } from './kit/draw';
+import { label, lamp } from './kit/draw';
 import { Explainer } from './kit/Explainer';
+import type { Ink } from './kit/ink';
 import type { Scene } from './kit/scene';
 
 interface Subject {
@@ -35,6 +36,30 @@ const config = f.schema({
 type Config = ReturnType<typeof config.defaults>;
 
 const TAU = 2 * Math.PI;
+/** The folded height at which a lamp reads fully lit; past it, the lamp glows. */
+const FULL = 0.8;
+
+function rgb(hex: string): [number, number, number] | null {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m?.[1]) return null;
+  const n = Number.parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** The voices' colors blended by what each adds, so a lamp's hue says who is lighting it. */
+function blend(ink: Ink, parts: { color: string; v: number }[]): string {
+  let total = 0;
+  const acc = [0, 0, 0];
+  for (const p of parts) {
+    const c = rgb(p.color);
+    if (!c || p.v <= 0) continue;
+    total += p.v;
+    for (let k = 0; k < 3; k++) acc[k] = (acc[k] ?? 0) + (c[k] ?? 0) * p.v;
+  }
+  if (total === 0) return ink.soft;
+  const [r, g, b] = acc.map((x) => Math.round(x / total));
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 function scene(c: Config): Scene<Subject, Pose, Config> {
   return {
@@ -99,14 +124,17 @@ export default function Mix() {
       scene={scene}
       schema={config}
       duration={8000}
-      aspect={0.4}
-      caption="Each column is one subject. The colored blocks are what each voice adds to it; the line on top is the folded pose. Pulse only reaches the even columns."
+      aspect={0.56}
+      caption="Each lamp is one subject, lit to its folded height and tinted by the voices lighting it; the pips under it are the voices that reach it. Below, each column stacks what each voice adds, and the line on top is the folded pose. Pulse only reaches the even ones."
       draw={(ctx, frame, size, ink, c) => {
         const left = 16;
         const right = size.w - 16;
-        const top = 30;
-        const bottom = size.h - 28;
         const col = (right - left) / COUNT;
+        const r = Math.min(col * 0.32, 20);
+        const lampY = 30 + r * 1.5;
+        const pipY = lampY + r + 14;
+        const top = pipY + 22;
+        const bottom = size.h - 28;
         const bar = col * 0.56;
         const y = (v: number) => bottom - (v / 1.1) * (bottom - top);
 
@@ -133,6 +161,16 @@ export default function Mix() {
             ctx.fillRect(cx - col / 2 + 2, top - 6, col - 4, bottom - top + 6);
             ctx.globalAlpha = 1;
           }
+          const parts = layers.map((l) => ({ color: l.color, v: pose?.[l.key] ?? 0 }));
+          lamp(ctx, ink, cx, lampY, r, (pose?.height ?? 0) / FULL, blend(ink, parts));
+          layers.forEach((l, k) => {
+            if (l.key === 'pulse' && s.i % 2 !== 0) return;
+            const v = parts[k]?.v ?? 0;
+            ctx.fillStyle = l.color;
+            ctx.beginPath();
+            ctx.arc(cx + (k - 1) * 10, pipY, 1.5 + 2.5 * Math.min(1, v / 0.35), 0, TAU);
+            ctx.fill();
+          });
           let base = 0;
           for (const layer of layers) {
             const v = pose?.[layer.key] ?? 0;

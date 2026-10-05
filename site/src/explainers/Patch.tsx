@@ -3,7 +3,7 @@ import { curve } from '@blits/easing';
 import { keys, patch } from '@blits/patch';
 import type { Easing, Patch as P, Setting } from '@blits/types';
 import { f } from '@weasel-js/labkit';
-import { label } from './kit/draw';
+import { label, lamp } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import type { Ink } from './kit/ink';
 import type { Scene } from './kit/scene';
@@ -186,36 +186,118 @@ function plot(
 
 const stub = {} as Setting<void>;
 
+/** How far back, in phase, a rail's ghosts reach: enough to show a snap as one jump. */
+const TRAIL = 0.1;
+const GHOSTS = 10;
+
+/**
+ * One thing a channel drives: a puck gliding along a rail to `value`, trailed by where it was a
+ * moment ago, and a lamp lit to the same value.
+ */
+function rail(
+  ctx: CanvasRenderingContext2D,
+  box: Box,
+  ink: Ink,
+  opts: { name: string; color: string; value: number | undefined; past: (k: number) => number },
+) {
+  const gutter = 52;
+  const x0 = box.x + gutter;
+  const x1 = box.x + box.w - 2.4 * box.h;
+  const cy = box.y + box.h / 2;
+  const px = (v: number) => x0 + ((v - LO) / (HI - LO)) * (x1 - x0);
+  label(ctx, opts.name, box.x, cy + 4, opts.color, 'left', true);
+  ctx.strokeStyle = ink.rule;
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x0, cy);
+  ctx.lineTo(x1, cy);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = ink.soft;
+  for (const v of [0, 1]) {
+    const x = Math.round(px(v)) + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, cy - 9);
+    ctx.lineTo(x, cy + 9);
+    ctx.stroke();
+    label(ctx, String(v), x, box.y + box.h + 2, ink.soft, 'center', true);
+  }
+  const r = Math.min(9, box.h * 0.3);
+  ctx.fillStyle = opts.color;
+  for (let k = GHOSTS; k >= 1; k--) {
+    ctx.globalAlpha = 0.28 * (1 - k / (GHOSTS + 1));
+    ctx.beginPath();
+    ctx.arc(px(opts.past(k)), cy, r * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  if (opts.value !== undefined) {
+    ctx.beginPath();
+    ctx.arc(px(opts.value), cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = ink.ink;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+  lamp(ctx, ink, box.x + box.w - box.h * 0.9, cy, box.h * 0.32, opts.value ?? 0, opts.color);
+}
+
 export default function Patch() {
   return (
     <Explainer
       scene={scene}
       schema={config}
       duration={PERIOD}
-      aspect={0.5}
+      aspect={0.68}
       caption={
         <>
-          The scrubber is the phase: one period of both patches. The <code>patch</code> curve stays
-          put; the <code>keys</code> curve takes whatever easing you pick, on each segment between
-          stops.
+          The scrubber is the phase: one period of both patches. On top, each value drives a puck
+          and a lamp. The <code>patch</code> one glides steadily; the <code>keys</code> one moves
+          with whatever easing you pick, on each segment between stops, and snaps when it's steps.
         </>
       }
       draw={(ctx, frame, size, ink, c) => {
         const phase = (frame.t % PERIOD) / PERIOD;
         const pad = 12;
-        const side = Math.min(size.h - 2 * pad, size.w * 0.3);
-        const left = { x: pad, w: size.w - side - 4 * pad };
-        const rowH = (size.h - 3 * pad) / 2;
         const kp: P<object, Pose, void> = keysPatch(c);
+        const pose = frame.poses[0];
+        const ago = (k: number) => (((phase - (k * TRAIL) / GHOSTS) % 1) + 1) % 1;
+        const railH = Math.max(28, Math.min(44, size.w * 0.055));
+        rail(ctx, { x: pad, y: pad, w: size.w - 2 * pad, h: railH }, ink, {
+          name: 'fn',
+          color: ink.voice('v1'),
+          value: pose?.fn,
+          past: (k) => fnPatch.at(ago(k), subject, stub).fn ?? 0,
+        });
+        rail(ctx, { x: pad, y: 2.4 * pad + railH, w: size.w - 2 * pad, h: railH }, ink, {
+          name: 'keys',
+          color: ink.voice('v2'),
+          value: pose?.keys,
+          past: (k) => kp.at(ago(k), subject, stub).keys ?? 0,
+        });
 
-        plot(ctx, { x: left.x, y: pad, w: left.w, h: rowH }, ink, {
+        const top = 3 * pad + 2 * railH + 18;
+        ctx.strokeStyle = ink.rule;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad, top - pad / 2 - 0.5);
+        ctx.lineTo(size.w - pad, top - pad / 2 - 0.5);
+        ctx.stroke();
+        const plotH = size.h - top;
+        const side = Math.min(plotH - pad, size.w * 0.3);
+        const left = { x: pad, w: size.w - side - 4 * pad };
+        const rowH = (plotH - 2 * pad) / 2;
+
+        plot(ctx, { x: left.x, y: top, w: left.w, h: rowH }, ink, {
           fn: (u) => fnPatch.at(u, subject, stub).fn ?? 0,
           color: ink.voice('v1'),
           at: phase,
           value: frame.alone[0]?.fn,
           title: 'patch(period, at)',
         });
-        plot(ctx, { x: left.x, y: 2 * pad + rowH, w: left.w, h: rowH }, ink, {
+        plot(ctx, { x: left.x, y: top + pad + rowH, w: left.w, h: rowH }, ink, {
           fn: (u) => kp.at(u, subject, stub).keys ?? 0,
           color: ink.voice('v2'),
           at: phase,
@@ -226,7 +308,7 @@ export default function Patch() {
 
         const ease = curve(easingOf(c));
         const seg = phase < 0.5 ? phase / 0.5 : (phase - 0.5) / 0.5;
-        const box = { x: size.w - side - pad, y: pad, w: side, h: side };
+        const box = { x: size.w - side - pad, y: top, w: side, h: side };
         plot(ctx, box, ink, {
           fn: ease,
           color: ink.voice('v2'),
