@@ -85,6 +85,10 @@ version and everything else the patch. Each release lists its changes as **Break
   rather than the latest frame. A motion patch now asks its mix by voice id, where each voice made
   a weak reference and two closures of its own: a one-subject tween voice holds about 250 B less
   (`bench/heapwho.mjs 5000 tweens` 3747 B from 4004, `weasel` 3448 from 3704).
+- A spring, glide or tween playing one object subject finds its number for it through the weak
+  reference it numbered it by, rather than a WeakMap of its own: a one-subject tween voice over an
+  object holds 3610 B, from 3747 (`bench/heapwho.mjs 5000 tweens`). Starting them takes no less
+  time.
 - A pose never holds a patch's own array. Where a channel's `merge` returned its second argument,
   as `last()` does, the mix put that array into the pose as it was: with two voices on a keyed
   array channel, a host editing its pose edited the stop, and every later frame read the edit. The

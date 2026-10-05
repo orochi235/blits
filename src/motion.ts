@@ -261,6 +261,7 @@ interface Shape<I> {
  */
 export class Motions<I> {
   private readonly numbers = new Numbers<I>(this);
+  /** Numbers by subject once a second is numbered: till then the one subject is found by `numbers`. */
   private readonly slots = new Store<I, number>();
   /** Axes per subject; -1 until the first subject sets it. */
   n = -1;
@@ -297,7 +298,7 @@ export class Motions<I> {
 
   /** The patch's number for `subject`, made with its first stretch on first ask. */
   slot(subject: I): number {
-    const known = this.slots.get(subject);
+    const known = this.known(subject);
     if (known !== undefined) return known;
     const x = this.shape.from(subject);
     const v = this.shape.velocity(subject);
@@ -312,16 +313,27 @@ export class Motions<I> {
       this.vs = shared.vs;
     }
     const s = this.numbers.take(subject);
-    this.slots.set(subject, s);
+    if (s === 1) {
+      const first = this.numbers.subject(0);
+      if (first !== absent) this.slots.set(first, 0);
+    }
+    if (this.numbers.size > 1) this.slots.set(subject, s);
     this.grow(s + 1);
     this.runs[this.base(s) + 1] = this.shape.scalar(subject) ? SCALAR : 0;
     this.write(s, { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to });
     return s;
   }
 
+  /** The patch's number for `subject`, undefined where it has none. */
+  private known(subject: I): number | undefined {
+    if (this.numbers.size !== 1) return this.slots.get(subject);
+    const only = this.numbers.subject(0);
+    return only !== absent && (only === subject || Object.is(only, subject)) ? 0 : undefined;
+  }
+
   /** Forgets a subject, so a later ask starts it afresh from `from`. */
   release(subject: I): void {
-    const s = this.slots.get(subject);
+    const s = this.known(subject);
     if (s === undefined) return;
     this.slots.delete(subject);
     this.numbers.release(s);
@@ -486,7 +498,7 @@ export class Motions<I> {
 
   /** Position and velocity at `at`, default the latest frame; undefined until there is one. */
   read(subject: I, at?: number): { x: Float64Array; v: Float64Array; s: number } | undefined {
-    const s = this.slots.get(subject);
+    const s = this.known(subject);
     if (s === undefined) return undefined;
     const when = at ?? this.frame(subject);
     if (Number.isNaN(when)) return undefined;
