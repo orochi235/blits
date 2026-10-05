@@ -1,10 +1,23 @@
 import { type LerpInto, lerpInto } from './channels.js';
-import { envelope, heldTime, passAt, passesOf, phaseAt, weighed } from './clock.js';
+import {
+  type Clock,
+  elapsedWith,
+  envelope,
+  heldTime,
+  passAt,
+  passesOf,
+  phaseAt,
+  rateWith,
+  rebaseWith,
+  timeWith,
+  weighed,
+} from './clock.js';
 import { type Curve, curve } from './easing.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
 import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
 import { type Motions, motionOf, noFrame, noRevive } from './motion.js';
 import { Named } from './named.js';
+import { Pace } from './pace.js';
 import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
@@ -295,14 +308,6 @@ interface Due<I, O> {
   token: number;
 }
 
-/** What sets a voice's clock: its rate, and where it was last anchored. */
-interface Clock {
-  anchorNow: number;
-  anchorElapsed: number;
-  rate: number;
-  ramp: { from: number; to: number; over: number } | null;
-}
-
 /** A voice's clock, weight and fade from one mix time on, kept under `history`. */
 interface Controls extends Clock {
   at: number;
@@ -313,16 +318,6 @@ interface Controls extends Clock {
   outAt: number;
   /** Made by a sync, so it shows in that frame; a host's change between frames shows from the next. */
   sync: boolean;
-}
-
-function elapsedWith(c: Clock, now: number): number {
-  const dt = now - c.anchorNow;
-  const r = c.ramp;
-  if (r === null) return c.anchorElapsed + dt * c.rate;
-  if (dt <= 0) return c.anchorElapsed + dt * r.from;
-  const d = r.to - r.from;
-  if (dt <= r.over) return c.anchorElapsed + r.from * dt + (d * dt * dt) / (2 * r.over);
-  return c.anchorElapsed + r.from * r.over + (d * r.over) / 2 + r.to * (dt - r.over);
 }
 
 /**
@@ -603,26 +598,7 @@ export class Voice<I, O> {
 
   /** The mix time its clock reads `elapsed`, inverting `elapsedAt`; Infinity where it never will. */
   timeAt(elapsed: number): number {
-    const e0 = this.anchorElapsed;
-    const r = this.ramp;
-    if (r === null) {
-      if (this.rate > 0) return this.anchorNow + (elapsed - e0) / this.rate;
-      return elapsed <= e0 ? this.anchorNow : Number.POSITIVE_INFINITY;
-    }
-    if (elapsed <= e0)
-      return r.from > 0 ? this.anchorNow + (elapsed - e0) / r.from : this.anchorNow;
-    const a = (r.to - r.from) / (2 * r.over);
-    const atEnd = e0 + r.from * r.over + a * r.over * r.over;
-    if (elapsed <= atEnd) {
-      const c = e0 - elapsed;
-      const dt =
-        Math.abs(a) < 1e-12
-          ? -c / r.from
-          : (-r.from + Math.sqrt(Math.max(0, r.from * r.from - 4 * a * c))) / (2 * a);
-      return this.anchorNow + dt;
-    }
-    if (r.to <= 0) return Number.POSITIVE_INFINITY;
-    return this.anchorNow + r.over + (elapsed - atEnd) / r.to;
+    return timeWith(this, elapsed);
   }
 
   /** Records this voice's controls as they stand, from mix time `at`. */
@@ -673,22 +649,12 @@ export class Voice<I, O> {
   }
 
   rateAt(now: number): number {
-    const r = this.ramp;
-    if (r === null) return this.rate;
-    const u = (now - this.anchorNow) / r.over;
-    return u >= 1 ? r.to : u <= 0 ? r.from : r.from + (r.to - r.from) * u;
+    return rateWith(this, now);
   }
 
   /** Moves the anchor to `now`, carrying what is left of a ramp. */
   rebase(now: number): void {
-    const rate = this.rateAt(now);
-    this.anchorElapsed = this.elapsedAt(now);
-    const r = this.ramp;
-    if (r !== null) {
-      const left = this.anchorNow + r.over - now;
-      this.ramp = left > 0 ? { from: rate, to: r.to, over: left } : null;
-    }
-    this.anchorNow = now;
+    rebaseWith(this, now);
   }
 }
 
@@ -708,8 +674,9 @@ class Mixer<I, O> implements Mix<I, O> {
    */
   private hostLog: { at: number; fields: Record<string, unknown> }[] = [];
   /**
-   * Marks the host announced on a score: mix time, NaN until the next sync for one announced as
-   * now before any sync; `made` is when it was announced, for a read back to know what was known.
+   * Marks the host announced on a score: `at` in host time, so the mix's rate never moves one, and
+   * NaN until the next sync for one announced as now before any sync; `made` is the mix time it was
+   * announced, for a read back to know what was known.
    */
   private announced: {
     name: string;
@@ -723,9 +690,17 @@ class Mixer<I, O> implements Mix<I, O> {
   /** Each subject's last two poses and when they were probed, for `from: 'current'`. */
   private pose = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();
   private nextId = 1;
-  /** The mix clock: the host's timestamp less every gap `rebase` has taken out. */
+  /**
+   * The mix clock: host time at the mix's rate. Host time is the host's timestamp less every gap
+   * `rebase` has taken out, `u` at the last sync.
+   */
   private now = Number.NaN;
+  private u = Number.NaN;
   private offset = 0;
+  /** The mix's own rate; null while it has never been set, when mix time is host time. */
+  private pace: Pace | null = null;
+  /** Pending voices whose start the host gave, by its host time, kept where the rate puts it. */
+  private pins: Map<Voice<I, O>, number> | null = null;
   private last = Number.NaN;
   private rebasing = false;
   private wantsPose = false;
@@ -869,7 +844,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const start = anchored
       ? Number.POSITIVE_INFINITY
       : spec.start !== undefined
-        ? spec.start - this.offset
+        ? this.mixAt(spec.start - this.offset)
         : Number.isNaN(this.now)
           ? 0
           : this.now;
@@ -890,6 +865,8 @@ class Mixer<I, O> implements Mix<I, O> {
       voice.opened = this.now;
     }
     voice.placing = anchored;
+    if (this.pace !== null && spec.start !== undefined && voice.state === 'pending')
+      this.pin(voice, spec.start - this.offset);
     const motion = voice.motion;
     if (motion !== undefined) {
       this.playing.set(motion, (this.playing.get(motion) ?? 0) + 1);
@@ -946,9 +923,19 @@ class Mixer<I, O> implements Mix<I, O> {
     if (this.rebasing && !Number.isNaN(this.last)) this.offset += timestamp - this.last;
     this.rebasing = false;
     this.last = timestamp;
-    const now = timestamp - this.offset;
-    if (now === this.now) return;
+    const u = timestamp - this.offset;
+    const pace = this.pace;
+    const now = pace === null ? u : pace.sync(u);
+    const later = u !== this.u;
+    this.u = u;
+    // Host time moving while the mix clock stands still lands what waits on host time or the host.
+    if (now === this.now && !(later && pace !== null && this.waits())) return;
     this.move(now);
+  }
+
+  /** Whether a sync that leaves the mix clock where it was still has something to land. */
+  private waits(): boolean {
+    return this.stirred || this.anchored > 0 || (this.pins !== null && this.pins.size > 0);
   }
 
   /** Moves the mix clock to `now`: voices start, finite loops end, and fades finish. */
@@ -964,12 +951,13 @@ class Mixer<I, O> implements Mix<I, O> {
   private moveTo(now: number): void {
     this.now = now;
     this.reducedNow = this.reduced;
-    for (const a of this.announced) if (Number.isNaN(a.at)) a.at = now;
+    for (const a of this.announced) if (Number.isNaN(a.at)) a.at = this.u;
+    if (this.pins !== null && this.pins.size > 0) this.repin();
     if (this.anchored > 0) this.place();
     if (this.announced.length > 0) {
       // Kept while still ahead, or while history reaches it; anchors waiting on one were placed above.
       const reach = now - (this.opts.history?.ms ?? 0);
-      this.announced = this.announced.filter((a) => a.at >= reach);
+      this.announced = this.announced.filter((a) => this.mixAt(a.at) >= reach);
     }
     // A live mix visits only the voices due by now; a projection, which copies few, visits all.
     const visit = this.projecting || this.walkAll ? this.cued : this.popDue(now);
@@ -1286,19 +1274,28 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   project(timestamp: number): Projection<I, O> {
-    const t = timestamp - this.offset;
+    const u = timestamp - this.offset;
+    const pace = this.pace;
+    const t = pace === null ? u : pace.reading(u);
     const c = new Mixer<I, O>(this.kit, { ...this.opts, history: undefined, lanes: false });
     c.projecting = true;
     c.pose = this.pose;
     c.offset = this.offset;
+    c.u = u;
     c.wantsPose = this.wantsPose;
     c.nextId = this.nextId;
     c.reducedNow = this.reducedNow;
     if (Number.isNaN(this.now) || t >= this.now) {
       c.now = this.now;
+      c.pace = pace === null ? null : pace.until(Number.POSITIVE_INFINITY);
       c.cued = this.cued
         .filter((v) => v.state !== 'done')
-        .map((v) => v.copy((subject) => this.carry(v, subject)));
+        .map((v) => {
+          const copy = v.copy((subject) => this.carry(v, subject));
+          const pin = this.pins?.get(v);
+          if (pin !== undefined) c.pin(copy, pin);
+          return copy;
+        });
       c.announced = this.announced.map((a) => ({ ...a }));
       c.count();
       c.move(t);
@@ -1308,6 +1305,7 @@ class Mixer<I, O> implements Mix<I, O> {
       if (t < this.now - history.ms)
         throw new Error(`blits: ${timestamp} is older than this mix's history reaches`);
       c.now = t;
+      c.pace = pace === null ? null : pace.until(u);
       c.backward = true;
       const was = last(this.hostLog, t, true);
       const host = this.opts.host;
@@ -1362,7 +1360,7 @@ class Mixer<I, O> implements Mix<I, O> {
     name: string,
     opts: { at?: number; score?: string; tags?: readonly string[] } = {},
   ): void {
-    const at = opts.at !== undefined ? opts.at - this.offset : this.now;
+    const at = opts.at !== undefined ? opts.at - this.offset : this.u;
     this.announced.push({
       name,
       score: opts.score,
@@ -1376,6 +1374,7 @@ class Mixer<I, O> implements Mix<I, O> {
   marks(from: number, to: number): Marked[] {
     const lo = from - this.offset;
     const hi = to - this.offset;
+    const pace = this.pace;
     const out: (Marked & { order: number })[] = [];
     for (const a of this.announced)
       if (a.at >= lo && a.at <= hi)
@@ -1390,7 +1389,8 @@ class Mixer<I, O> implements Mix<I, O> {
         });
     for (const voice of [...this.cued, ...this.gone]) {
       for (const mark of ['start', 'in', 'out', 'end'] as const) {
-        const t = this.markOf(voice, mark);
+        const m = this.markOf(voice, mark);
+        const t = m === undefined || pace === null ? m : pace.timeOf(m);
         if (t === undefined || t < lo || t > hi) continue;
         out.push({
           timestamp: t + this.offset,
@@ -1448,7 +1448,70 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   get inert(): boolean {
-    return !this.stirred && this.cued.every((v) => this.still(v, this.now));
+    if (this.stirred) return false;
+    // Standing still, a voice changes no pose but by its weight signal, or by an anchor or start
+    // that host time may yet reach.
+    if (this.pace?.stopped(this.u))
+      return this.cued.every(
+        (v) =>
+          v.state === 'done' ||
+          (v.state !== 'pending' &&
+            typeof v.spec.weight !== 'function' &&
+            v.spec.anchor === undefined),
+      );
+    return this.cued.every((v) => this.still(v, this.now));
+  }
+
+  get rate(): number {
+    return this.pace === null ? 1 : this.pace.rateAt(this.u);
+  }
+
+  set rate(r: number) {
+    this.ramp(r, 0);
+  }
+
+  ramp(rate: number, over: number): void {
+    if (!(rate >= 0 && rate < Number.POSITIVE_INFINITY))
+      throw new RangeError(`blits: a mix's rate is a finite number, 0 or more, not ${rate}`);
+    if (this.pace === null) {
+      this.pace = new Pace(this.opts.history !== undefined);
+      // Until now mix time was host time, so a pending voice's start is the host time it was given.
+      for (const v of this.cued)
+        if (v.state === 'pending' && !v.placing && v.spec.start !== undefined) this.pin(v, v.start);
+    }
+    const history = this.opts.history;
+    const reach = history === undefined ? Number.NEGATIVE_INFINITY : this.now - history.ms;
+    this.pace.change(this.u, rate, over, reach);
+    this.stirred = true;
+  }
+
+  /** Mix time at host time `u`, for something pinned there; Infinity while the mix may never get there. */
+  private mixAt(u: number): number {
+    return this.pace === null ? u : this.pace.at(u, this.u);
+  }
+
+  private pin(voice: Voice<I, O>, u: number): void {
+    this.pins ??= new Map();
+    this.pins.set(voice, u);
+  }
+
+  /** Puts each pending voice's start, given in host time, where the mix's rate now puts it. */
+  private repin(): void {
+    const pins = this.pins as Map<Voice<I, O>, number>;
+    for (const [voice, u] of pins) {
+      if (voice.state !== 'pending') pins.delete(voice);
+      else this.startAt(voice, this.mixAt(u));
+    }
+  }
+
+  /** Moves a pending voice's start, its clock with it; false where it is already there. */
+  private startAt(voice: Voice<I, O>, start: number): boolean {
+    if (start === voice.start) return false;
+    voice.start = start;
+    voice.anchorNow = start;
+    voice.anchorElapsed = 0;
+    this.noted(voice);
+    return true;
   }
 
   /** Whether a voice will change no pose from `now` on, short of a change made to it. */
@@ -1736,13 +1799,7 @@ class Mixer<I, O> implements Mix<I, O> {
           const t = by === undefined ? undefined : this.resolve(by, voice);
           if (t !== undefined) {
             const start = anchor.start !== undefined ? t : t - (voice.fade.in ?? 0);
-            if (start !== voice.start) {
-              voice.start = start;
-              voice.anchorNow = start;
-              voice.anchorElapsed = 0;
-              this.noted(voice);
-              moved = true;
-            }
+            if (this.startAt(voice, start)) moved = true;
           }
         }
         if (voice.state !== 'fading') {
@@ -1767,7 +1824,7 @@ class Mixer<I, O> implements Mix<I, O> {
     a: number | NonNullable<Placement['start']>,
     self: Voice<I, O>,
   ): number | undefined {
-    if (typeof a === 'number') return a - this.offset;
+    if (typeof a === 'number') return this.mixAt(a - this.offset);
     let query: string | Query;
     let mark: Mark;
     let by = a.by ?? 0;
@@ -1813,7 +1870,7 @@ class Mixer<I, O> implements Mix<I, O> {
           (q.name === undefined || a.name === q.name) &&
           (q.tag === undefined || a.tags.includes(q.tag))
         )
-          found.push({ order: a.order, t: Number.isNaN(a.at) ? undefined : a.at });
+          found.push({ order: a.order, t: Number.isNaN(a.at) ? undefined : this.mixAt(a.at) });
     if (found.length === 0) return undefined;
     found.sort((x, y) => x.order - y.order);
     const resolver = q.resolver ?? 'last';

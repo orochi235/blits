@@ -1,6 +1,8 @@
 // Whether two builds give the same bits: random scenes (voices of every form, loci, fades, holds,
 // subject fades, drops, retargets, seeks, projections) run through both, every read compared.
 //   node bench/same.mjs <dist-a> <dist-b> [scenes] [first-seed]   SAME_LANES=off runs dist-a without lanes
+// SAME_RATE=1 also changes the mix's own rate, which needs both builds to have one; without it the
+// scenes are what they were before mixes had a rate.
 // `bench/same.sh <rev>` builds a revision and compares it with this tree's dist.
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -9,6 +11,7 @@ const [distA, distB] = process.argv.slice(2, 4);
 if (distA === undefined || distB === undefined)
   throw new Error('usage: node bench/same.mjs <dist-a> <dist-b> [scenes] [first-seed]');
 const scenes = Number(process.argv[4] ?? 300);
+const paced = process.env.SAME_RATE === '1';
 const first = Number(process.argv[5] ?? 1);
 const load = (dir) => import(pathToFileURL(resolve(dir, 'index.js')).href);
 const [A, B] = await Promise.all([load(distA), load(distB)]);
@@ -252,6 +255,17 @@ function run(lib, seed, general = false) {
       if (mo.kind !== 'glide') attempt('to', () => mo.p.to(s, mo.v(s, r() * 6)));
       else attempt('push', () => mo.p.push(s, mo.v(s, r() * 3)));
     }
+    if (paced && chance(0.05)) {
+      const rate = pick([0, 0.4, 1, 2.5]);
+      if (chance(0.5)) {
+        say(`mix rate = ${rate}`);
+        m.rate = rate;
+      } else {
+        const over = pick([40, 300]);
+        say(`mix ramp ${rate} over ${over}`);
+        m.ramp(rate, over);
+      }
+    }
     if (chance(0.01)) {
       say('mute');
       attempt('mute', () => m.mute({ over: 100 }));
@@ -296,6 +310,7 @@ function run(lib, seed, general = false) {
       );
     }
     note(`f${f} state`, [m.live, m.inert, ...handles.map((h) => h.state)]);
+    if (paced) note(`f${f} rate`, [m.rate, m.marks(t - 500, t + 500)]);
     watch(how, order);
   }
   return trace;

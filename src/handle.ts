@@ -1,3 +1,4 @@
+import { retime } from './clock.js';
 import type { Voice } from './mixer.js';
 import type { FadeOptions, Handle } from './types.js';
 
@@ -49,20 +50,12 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   set rate(r: number) {
-    const voice = this.#voice;
-    voice.rebase(this.#host.nowFor(voice));
-    voice.ramp = null;
-    voice.rate = r;
-    this.#host.changed(voice);
+    this.ramp(r, 0);
   }
 
   ramp(r: number, over: number): void {
     const voice = this.#voice;
-    const now = this.#host.nowFor(voice);
-    voice.rebase(now);
-    const from = voice.rateAt(now);
-    voice.ramp = over > 0 && r !== from ? { from, to: r, over } : null;
-    voice.rate = r;
+    retime(voice, this.#host.nowFor(voice), r, over);
     this.#host.changed(voice);
   }
 

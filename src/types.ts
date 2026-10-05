@@ -74,8 +74,8 @@ export interface Keyframe<O> {
  */
 export interface Setting<S = void> {
   /**
-   * The mix clock at this frame: the host's timestamp less any time `rebase` took out. Identical
-   * for every probe in the frame.
+   * The mix clock at this frame: the host's timestamp less any time `rebase` took out, run at the
+   * mix's `rate`. Identical for every probe in the frame.
    */
   timestamp: number;
   /**
@@ -543,6 +543,25 @@ export interface Mix<I, O> {
    * hidden tab comes back. Every voice, fade and subject resumes where it was left.
    */
   rebase(): void;
+  /**
+   * The mix's own playback rate, multiplied into every voice's: 1 is real time and 0 pauses the
+   * whole mix. A negative rate throws, since the mix only goes forward. Setting it changes speed at
+   * once; `ramp` eases into a new one. It scales mix time, which everything a voice owns runs on:
+   * its clock, its fades and a handle's ramp, `stagger`, an anchor's `by`, `stepMs`, `maxDt`,
+   * `history.ms`, every `dt`, and `setting.timestamp`. Timestamps on the host's clock name the same
+   * moment whatever the rate does: a `start`, an anchor given as a number, an announced mark, what
+   * `marks` reports and the time `project` reads, so a start ahead of a paused mix waits for the
+   * host's clock to reach it. A weight signal is still asked at every probe, so one reading host
+   * input follows it while the mix is paused.
+   */
+  rate: number;
+  /**
+   * Moves the mix's rate to `rate` linearly over `over` ms of the host's clock, as `Handle.ramp`
+   * moves a voice's. Mix time integrates the ramp and a voice's clock integrates mix time, so a ramp
+   * on both multiplies and every position stays continuous. A later `rate` write or `ramp` replaces
+   * it.
+   */
+  ramp(rate: number, over: number): void;
   /** The merged pose for one subject at the synced frame. */
   probe(subject: I, out?: O): O;
   /**
@@ -574,8 +593,9 @@ export interface Mix<I, O> {
   readonly live: boolean;
   /**
    * Another frame would change no pose, so a host's frame loop may sleep: every voice is done, held
-   * at a plain weight, or a motion whose every subject has landed on its target. A change made since
-   * the last sync, a retarget included, makes it false until the next.
+   * at a plain weight, or a motion whose every subject has landed on its target. At rate 0 it is
+   * enough that every voice not done has started, at a plain weight, with no anchor. A change made
+   * since the last sync, a retarget or a rate included, makes it false until the next.
    */
   readonly inert: boolean;
   /** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */

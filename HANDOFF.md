@@ -183,8 +183,8 @@ systems now run on it**, on klieg's `main`.
      discussion).
 
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
-   in the hot path and what weasel has that blits doesn't (booking events ahead, a mix-wide time
-   scale, nesting). Delete each item as it is dealt with, and
+   in the hot path and what weasel has that blits doesn't (booking events ahead, nesting). Delete
+   each item as it is dealt with, and
    the file once it is empty. Its speed items matter only if weasel adopts blits: klieg and
    magicsmoke are expected to run about two dozen voices over tens of subjects, under 1,000 subject
    × voice pairs, where a frame costs about 0.2 ms (2026-10-01 guess, not a measured
@@ -340,6 +340,12 @@ systems now run on it**, on klieg's `main`.
   that is wrong is undecided: it is what the host showed, and copying would cost every probe
   without `out` an allocation.
 
+- **Lanes and the general path still disagree on a few random scenes past the first 300.**
+  `SAME_LANES=off node bench/same.mjs dist dist 1 3635` differs on one subject's `gain` at frame 2.
+  With `SAME_RATE=1`, seeds 294, 2816, 3298 and 3635 differ; each reproduces on `9015b0b`'s build
+  with every mix rate write turned off, so mix rates did not cause them. In 294 and 2816 one
+  subject's `off` differs while every voice's `weightOf` agrees; in 3298 and 3635 its `gain`, and
+  in 3298 its `dark` too. Found 2026-10-04 and not traced.
 - **A stale served-page tab will overwrite `vocabulary.picks.json` with whatever set it
   was holding.** It has happened twice — `65d2d71` restored one, and the same loss was in the
   working tree at the start of 2026-09-27's session. Before trusting the picks file, `git diff` it;

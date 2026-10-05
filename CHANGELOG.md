@@ -18,6 +18,13 @@ version and everything else the patch. Each release lists its changes as **Break
   cue order, or only those whose `tags` carry `tag`. A host no longer has to keep every handle `cue`
   returned to know what is playing. Each call makes new handles on the same voices, so compare them
   by `id`; nothing is kept for it until it is called.
+- A rate for the whole mix, `mix.rate` and `mix.ramp(rate, over)`, shaped like a handle's and
+  multiplied into every voice's; 0 pauses the mix. It runs mix time, so everything a voice owns
+  slows with it: its clock, its fades, `stagger`, an anchor's `by`, `stepMs` and every `dt`. A
+  timestamp the host gives or reads stays on the host's clock: a `start`, an anchor given as a
+  number, an announced mark, `marks` and `project`. A paused mix with nothing left to land is
+  `inert`, and `history` keeps every rate change, so `project` reads back through them as it does
+  through a handle's. A mix whose rate is never set reads the same bits as before.
 
 ### Fixed
 

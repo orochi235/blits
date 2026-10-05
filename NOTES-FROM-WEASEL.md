@@ -60,8 +60,6 @@ Open design questions rather than asks. blits may rightly say some of these belo
   edit retracts the booking. blits now has the small half: a patch `send`s timestamped events and
   the host `drain`s them (2026-09-30, for magicsmoke). Booking ahead, retraction and `lateBy` are
   still weasel's alone; wod's sound cues would want them.
-- **Pause and time scale at every level, multiplied.** weasel scales the whole animator, a key and
-  a handle, and multiplies the three. blits has `rate` per voice and nothing mix-wide.
 - **Nesting.** A weasel timeline can hold child timelines at offsets, and the parent owns their
   playback. A blits voice is flat.
 - **Observability that costs nothing unwatched.** Covered without weasel's `watch(listener)`:
