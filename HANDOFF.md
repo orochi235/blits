@@ -13,8 +13,8 @@ weight, and a mix folds them into one value per subject per frame by rules that 
 channel, not the effect. The vocabulary is the deliverable as much as the runtime is — the sources
 are open by design, so the language has to be able to name a seam it does not own. It generalizes
 what klieg does three times over (motion, effects, lighting) and what wod's transition voices do
-once, so klieg, wod, sherpa and magicsmoke can share one vocabulary and one engine. **klieg's three
-systems now run on it**, on klieg's `main`.
+once, so klieg, wod, sherpa and magicsmoke can share one vocabulary and one engine. **klieg, wod and
+magicsmoke run on it**, each on its own `main`.
 
 ## State
 
@@ -26,8 +26,9 @@ systems now run on it**, on klieg's `main`.
   page. The schema page's Score section describes it; `CHANGELOG.md` has it under 0.3.0. One
   behavior change rides along: a finite loop's fade starts when its last pass ended, not at the
   next frame.
-- **klieg's port is merged into klieg's `main`** (2026-10-02), pinned to `@msb235/blits` `0.3.0`
-  exactly in `packages/core/package.json`. All three systems fold through a mix: `Timeline.poseAt`
+- **klieg's port is merged into klieg's `main`** (2026-10-02), and its step two shipped in klieg
+  0.15.0 (merge `77d537d`, 2026-10-05) pinned to `@msb235/blits` `0.4.0` exactly in
+  `packages/core/package.json`. All three systems fold through a mix: `Timeline.poseAt`
   cues a voice per layer of each phase, `EffectFrame` one per effect, and the sign's environment is
   a mix with one subject. The arithmetic did not move: klieg's 1974 vitest cases pass on the fleet,
   and its Playwright specs fail exactly the five they already failed before the port, to the pixel
@@ -60,10 +61,9 @@ systems now run on it**, on klieg's `main`.
   held voice's end is when it is faded, not when its passes run out.
 - **`mix.inert` shipped in 0.4.0** (built 2026-10-03, merge `3228fa7`), for wod's frame loop to
   sleep under a landed wheel while `live` stays true. Mike asked for it and named it through the wod
-  session; the CHANGELOG entry and the schema page's `Mix` block say what counts as inert. As of
-  2026-10-03 **wod had not been told** — its session ended before the message could go; wod's
-  migration spec (`~/src/wod/docs/superpowers/specs/2026-10-03-blits-migration-design.md`,
-  "Prerequisite: blits 0.4.0 `hold`") is waiting on `hold` and `inert`, both now on npm in 0.4.0.
+  session; the CHANGELOG entry and the schema page's `Mix` block say what counts as inert. wod's
+  migration (`~/src/wod/docs/superpowers/specs/2026-10-03-blits-migration-design.md`) is built
+  through its last phase, editor scrub (merge `06ef87d`, 2026-10-04), pinned to 0.4.0.
 - **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
   the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
   is green on all 13 pages. Deployed to `michaelbaker.tech/blits/` by `.github/workflows/site.yml` on every push to `main`.
@@ -350,20 +350,10 @@ systems now run on it**, on klieg's `main`.
    under its semver; the number is Mike's). Its README says how it works. Moving magicsmoke's fizz and tuning onto it
    is a follow-up in magicsmoke's repo.
 
-2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
-   their hand-rolled frame keying onto `slew`, `hinge`'s modes become `weight: signal` and
-   `mix.blend`, and `FrameCtx` becomes `Setting` with klieg's fields on `host`. The schema page's
-   klieg section has the list. Built on klieg's branch `port-step-two` (2026-10-04), not merged or
-   released; this item stands until it lands.
-   klieg's `effects/signal.ts` also keeps its own `peak`, `level` and `dwell` (`dwell` is blits'
-   `slew`) on a `(t, part, ctx)` signature, which is why klieg's signals are invisible to the mix.
-3. **The renames the vocabulary bought, which the port deliberately left alone.** `t` is still `t`
-   on `MotionPiece.offset` and `EffectPiece.at`, `onPhase` and `PhaseEvent` still carry those
-   names, and the tube gradient still calls its own thing `domain`. Each is a break in klieg's
-   published surface — sherpa reads `ctx.phase` — and step one had to leave every baseline where it
-   was, so they wait for a version of klieg that intends to break. Done on the same `port-step-two`
-   branch, unmerged.
-4. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
+2. **klieg's tube gradient still calls its own thing `domain`**, the one rename step two
+   (klieg 0.15.0) left. sherpa still depends on klieg `^0.8.0` and has not moved since
+   2026-09-01; reaching 0.15.0 crosses the `onPhase` → `onMark` rename.
+3. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
    a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
    stock band's width.
 
