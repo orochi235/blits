@@ -105,6 +105,21 @@ describe('slew', () => {
     expect(followed(part, frame(100, 100))).toBeCloseTo(1 - Math.exp(-1), 9);
   });
 
+  it('starts on its input rather than at from when dt is infinite', () => {
+    const inf = Number.POSITIVE_INFINITY;
+    expect(slew<Part>(level<Part>(1), { riseMs: 100, from: 0 })(part, frame(0, inf))).toBe(1);
+    kept = new Map();
+    expect(lag<Part>(level<Part>(1), { riseMs: 100, from: 0 })(part, frame(0, inf))).toBe(1);
+  });
+
+  it('a mix under reduced motion shows a from-started slew on its input from the first frame', () => {
+    const crawl = patch<Part, Pose>(0, () => ({ crawl: 1 }), { writes: ['crawl'] });
+    const m = mix<Part, Pose>(PART, { reduce: true });
+    m.cue({ patch: crawl, weight: slew<Part>(level<Part>(1), { riseMs: 100, from: 0 }) });
+    m.sync(0);
+    expect(m.probe(part).crawl).toBe(1);
+  });
+
   it('answers twice in one frame with one value, so a wrapper probing twice costs nothing', () => {
     const input = level<Part>(1);
     const followed = slew<Part>(input, { riseMs: 100 });
