@@ -320,17 +320,32 @@ systems now run on it**, on klieg's `main`.
 2. **Step two of the port**, which is what the extraction bought: `power`, `kicks` and `dwell` lose
    their hand-rolled frame keying onto `slew`, `hinge`'s modes become `weight: signal` and
    `mix.blend`, and `FrameCtx` becomes `Setting` with klieg's fields on `host`. The schema page's
-   klieg section has the list. Nothing here is started.
+   klieg section has the list. Built on klieg's branch `port-step-two` (2026-10-04), not merged or
+   released; this item stands until it lands.
    klieg's `effects/signal.ts` also keeps its own `peak`, `level` and `dwell` (`dwell` is blits'
    `slew`) on a `(t, part, ctx)` signature, which is why klieg's signals are invisible to the mix.
 3. **The renames the vocabulary bought, which the port deliberately left alone.** `t` is still `t`
    on `MotionPiece.offset` and `EffectPiece.at`, `onPhase` and `PhaseEvent` still carry those
    names, and the tube gradient still calls its own thing `domain`. Each is a break in klieg's
    published surface — sherpa reads `ctx.phase` — and step one had to leave every baseline where it
-   was, so they wait for a version of klieg that intends to break.
+   was, so they wait for a version of klieg that intends to break. Done on the same `port-step-two`
+   branch, unmerged.
 4. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
    a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
    stock band's width.
+5. **What klieg's step two found in blits** (2026-10-04, from klieg's session; none blocks klieg):
+   - **A blend runs every member's `at`, at weight 0 too.** Both the general path (`mixer.ts`, the
+     `voice.patch.at` call in the probe) and the lane path (`lanes.ts`, `call`) run `at` before
+     the weight is looked at, so a stops blend over 8 stops runs 8 patches per subject where 2 carry
+     weight. klieg measured 37 µs → 174 µs for a frame of 60 parts and now returns early on
+     `setting.weight === 0`. `blended()` fixed the 8 signal reads, not this. Skipping is not free to
+     decide: `step` must still run, and `influence` reports a silent voice's delta.
+   - **`setting.host` has no type.** `Setting` and `Signal<I>` take no host parameter (`Signal`
+     fixes `Setting<void>`), so a signal reading a host field goes through a cast; klieg exports
+     `hostOf(setting)` for it. Proposed: `Setting<S, H>` and `Signal<I, H>`.
+   - **`slew` and `lag` start at their input on first sight.** klieg's `dwell` and `track` want to
+     start from rest and wrap the input to fake it (`startAt` in klieg's `effects/signal.ts`).
+     Proposed: a `from` option on both.
 
 ## Loose ends
 
