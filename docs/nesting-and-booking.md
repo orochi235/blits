@@ -1,11 +1,13 @@
-# Nesting and booking — design
+# Nesting — design
 
-**Unbuilt (2026-10-04).** Delete this file once both are built and the schema page describes them.
+**Unbuilt (2026-10-04).** Delete this file once nesting is built and the schema page describes it. Booking is built; the schema page's Time section has it.
 
-**For:** whoever builds these, and Mike, who reviews the design once before building starts.
-**Answers:** how blits takes the last two of weasel's features (`NOTES-FROM-WEASEL.md`, "What weasel
-has that blits doesn't"): a voice that holds voices, and events booked ahead against an outside clock.
-Both build on `mix.rate`, which lands first, because both compose clocks with it.
+**For:** whoever builds it, and Mike, who reviews the design once before building starts.
+**Answers:** how blits takes the last of weasel's features (`NOTES-FROM-WEASEL.md`, "What weasel
+has that blits doesn't"): a voice that holds voices. It builds on `mix.rate`, because it composes
+clocks with it. Booking (`mix.book`, `hits`) is built and maps a hit to host time through the
+voice's own clock and `mix.rate` only, so nesting has to route `src/book.ts`'s hit times (`timeOfHit`,
+and the voice-time bounds in `hits`) through the owner chain.
 
 ## Nesting: `owns`
 
@@ -43,39 +45,4 @@ intro.fade();       // one envelope over both
 - Lanes: a voice's elapsed time is read from its owner chain rather than from the mix clock. The
   phase arithmetic stays the one copy in `clock.ts`. A voice with no owner pays nothing.
 
-## Booking: marks and events taken ahead of time
-
-A host with an outside clock, such as an `AudioContext`, needs to hear about a time before it arrives.
-Patch-sent events can't serve that: `send` runs while a subject catches up, so it isn't known ahead.
-What is known ahead is the plan: the marks in `mix.marks`, and a new per-voice list of **hits**:
-events at voice times.
-
-```ts
-mix.cue({ patch: spin, hits: [{ at: 0, event: 'whoosh' }, { at: 1200, event: 'clunk' }] });
-
-const booker = mix.book({
-  clock: () => audio.currentTime * 1000,   // the outside clock, in ms
-  ahead: 100,                              // how far ahead to book
-  late: 40,                                // skip anything found more than this past
-  take(item, when, lateBy) {               // item: a Marked, or { voice, hit, pass }
-    const src = play(item.event, when / 1000);
-    return { stop: () => src.stop() };     // called if the time moves or the voice leaves
-  },
-});
-```
-
-- **Hits** play once per pass on the voice's clock (`rate`, `ramp`, the owner chain,
-  and `mix.rate` all apply). They are per voice, not per subject: `stagger` does not spread them.
-- **When** maps host time to the outside clock with a smoothed offset sampled at each `sync`. The
-  filter is weasel's: fold 5% of each frame's residual in, and treat a jump past 50 ms as a resync.
-- **Retraction.** Anything that moves a booked time by more than 1 ms, or removes it, calls `stop` on
-  the booking and books it again at the next `sync`. That covers `seek`, `rate`/`ramp` on a voice,
-  owner, or mix, `fade`/`mute`, `rebase`, and an anchor target moving. An item is identified by
-  (voice, mark) or (voice, hit index, pass), so nothing is booked twice.
-- **Late items.** An item first seen already past (a voice cued partway through, or a stalled frame) is
-  taken at `when` = now with `lateBy` > 0, unless `lateBy` exceeds `late`.
-- `book` takes an optional `tag` or `score` so that two bookers can split one mix.
-- `book` returns a handle with `stop()`, which retracts everything still ahead and stops booking.
-- Patch-sent events stay drain-only.
-
-Names decided 2026-10-04: `owns` (Mike), `owner` for the child's field, `hits`, `book`, `take`.
+Names decided 2026-10-04: `owns` (Mike), `owner` for the child's field.

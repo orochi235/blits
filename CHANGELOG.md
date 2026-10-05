@@ -50,6 +50,18 @@ version and everything else the patch. Each release lists its changes as **Break
   through a handle's. A mix whose rate is never set reads the same bits as before, at the same
   cost: every row timed (`fn`, `keys`, `named`, `spring`, `tweens^`, `churn^`, `ahead`, `back`)
   overlaps `9015b0b`'s range over three to five alternated runs on studio.
+- Booking ahead against an outside clock, for a host that schedules on one: sound on an
+  `AudioContext`, MIDI sent with a timestamp, a video loaded before the voice that shows it.
+  `mix.book({ clock, ahead, late, take, tag?, score? })` hands `take` every mark `marks` lists and
+  every hit, `ahead` ms before it comes, with its time on that clock. A hit is a new `VoiceSpec`
+  field, `hits: [{ at, event }]`: events at times on the voice's clock, once per pass, for the
+  voice rather than per subject. A booking whose time moves by more than 1 ms or that goes away (a
+  seek, a rate on the voice or the mix, a fade, a `rebase`, an anchor's target moving, the voice
+  leaving) has the `stop` that `take` returned called and is booked again; an item first seen past
+  is taken at once with `lateBy`, up to `late`. `book` returns a `stop()`. `project` books nothing.
+  A mix with no booker costs what it did: every row timed (`fn`, `keys`, `signal`, `blend`,
+  `named`, `spring`, `tweens`, `churn`, `weasel`, `sparse`) overlaps `c6de97e`'s range over three
+  alternated runs on msb-uai, each row in a process of its own.
 
 ### Fixed
 

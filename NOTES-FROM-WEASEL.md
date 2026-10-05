@@ -54,12 +54,6 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 
 Open design questions rather than asks. blits may rightly say some of these belong in a host.
 
-- **Events on a timeline.** weasel's event tracks fire only on forward crossings of
-  `(previous, playhead]`, and report `lateBy` in ms. With a `booking` they are scheduled 100 ms
-  ahead against an outside clock (an audio engine's `now()`), and a pause, seek, rate change or
-  edit retracts the booking. blits now has the small half: a patch `send`s timestamped events and
-  the host `drain`s them (2026-09-30, for magicsmoke). Booking ahead, retraction and `lateBy` are
-  still weasel's alone; wod's sound cues would want them.
 - **Nesting.** A weasel timeline can hold child timelines at offsets, and the parent owns their
   playback. A blits voice is flat.
 - **Observability that costs nothing unwatched.** Covered without weasel's `watch(listener)`:
