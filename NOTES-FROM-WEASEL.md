@@ -64,10 +64,9 @@ Open design questions rather than asks. blits may rightly say some of these belo
   a handle, and multiplies the three. blits has `rate` per voice and nothing mix-wide.
 - **Nesting.** A weasel timeline can hold child timelines at offsets, and the parent owns their
   playback. A blits voice is flat.
-- **Observability that costs nothing unwatched.** weasel's `watch(listener)` and `live()` build
-  event objects only while something is subscribed. blits now answers "at what weight" per voice
-  and subject (`handle.weightOf`, free unasked, 2026-09-30). "What is playing" still has no answer
-  without holding every handle: a mix cannot list its voices.
+- **Observability that costs nothing unwatched.** Covered without weasel's `watch(listener)`:
+  `mix.voices(tag?)` lists what is playing and `handle.weightOf` says at what weight, each free
+  until asked.
 
 ## What weasel would need before depending on blits
 

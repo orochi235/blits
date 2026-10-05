@@ -12,6 +12,13 @@ version and everything else the patch. Each release lists its changes as **Break
   the patch, as `glide.to(id, 1)`: one taken off it, as `const { to } = glide`, has no patch to act
   on. Its `motion` is a getter on the class rather than its own property.
 
+### Added
+
+- `mix.voices(tag?)`: a handle on every voice still in the mix, pending, live, held or fading, in
+  cue order, or only those whose `tags` carry `tag`. A host no longer has to keep every handle `cue`
+  returned to know what is playing. Each call makes new handles on the same voices, so compare them
+  by `id`; nothing is kept for it until it is called.
+
 ### Fixed
 
 - A pose never holds a patch's own array. Where a channel's `merge` returned its second argument,

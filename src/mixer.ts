@@ -693,7 +693,7 @@ export class Voice<I, O> {
 }
 
 class Mixer<I, O> implements Mix<I, O> {
-  private voices: Voice<I, O>[] = [];
+  private cued: Voice<I, O>[] = [];
   /** Under `history`, voices that have left but that a read back may still reach. */
   private gone: Voice<I, O>[] = [];
   /** Set on a projection's own mixer: it sends nothing, keeps no history, and reads without committing. */
@@ -900,7 +900,7 @@ class Mixer<I, O> implements Mix<I, O> {
       voice.revive = Mixer.reviveHook(this.self, weak);
       motion.revive = voice.revive;
     }
-    this.voices.push(voice);
+    this.cued.push(voice);
     this.index(voice);
     this.changed(voice);
     this.stirred = true;
@@ -972,7 +972,7 @@ class Mixer<I, O> implements Mix<I, O> {
       this.announced = this.announced.filter((a) => a.at >= reach);
     }
     // A live mix visits only the voices due by now; a projection, which copies few, visits all.
-    const visit = this.projecting || this.walkAll ? this.voices : this.popDue(now);
+    const visit = this.projecting || this.walkAll ? this.cued : this.popDue(now);
     for (const voice of visit) {
       if (voice.state === 'done') continue;
       if (Number.isNaN(voice.opened)) voice.opened = now;
@@ -1019,7 +1019,7 @@ class Mixer<I, O> implements Mix<I, O> {
     this.retired = 0;
     let pruned = false;
     let kept = 0;
-    const voices = this.voices;
+    const voices = this.cued;
     for (let i = 0; i < voices.length; i++) {
       const voice = voices[i] as Voice<I, O>;
       if (voice.state !== 'done') {
@@ -1296,7 +1296,7 @@ class Mixer<I, O> implements Mix<I, O> {
     c.reducedNow = this.reducedNow;
     if (Number.isNaN(this.now) || t >= this.now) {
       c.now = this.now;
-      c.voices = this.voices
+      c.cued = this.cued
         .filter((v) => v.state !== 'done')
         .map((v) => v.copy((subject) => this.carry(v, subject)));
       c.announced = this.announced.map((a) => ({ ...a }));
@@ -1317,7 +1317,7 @@ class Mixer<I, O> implements Mix<I, O> {
           : undefined;
       if (was) c.hostThen = was;
       c.announced = this.announced.filter((a) => a.made < t).map((a) => ({ ...a }));
-      c.voices = [...this.voices, ...this.gone]
+      c.cued = [...this.cued, ...this.gone]
         .filter((v) => v.cuedAt <= t && v.doneAt > t)
         .sort((a, b) => a.id - b.id)
         .map((v) => {
@@ -1388,7 +1388,7 @@ class Mixer<I, O> implements Mix<I, O> {
           tags: a.tags,
           order: a.order,
         });
-    for (const voice of [...this.voices, ...this.gone]) {
+    for (const voice of [...this.cued, ...this.gone]) {
       for (const mark of ['start', 'in', 'out', 'end'] as const) {
         const t = this.markOf(voice, mark);
         if (t === undefined || t < lo || t > hi) continue;
@@ -1435,12 +1435,20 @@ class Mixer<I, O> implements Mix<I, O> {
     this.rebasing = true;
   }
 
+  voices(tag?: string): Handle<I>[] {
+    const out: Handle<I>[] = [];
+    for (const voice of this.cued)
+      if (voice.state !== 'done' && (tag === undefined || voice.spec.tags?.includes(tag)))
+        out.push(this.handle(voice));
+    return out;
+  }
+
   get live(): boolean {
-    return this.voices.some((v) => v.state !== 'done');
+    return this.cued.some((v) => v.state !== 'done');
   }
 
   get inert(): boolean {
-    return !this.stirred && this.voices.every((v) => this.still(v, this.now));
+    return !this.stirred && this.cued.every((v) => this.still(v, this.now));
   }
 
   /** Whether a voice will change no pose from `now` on, short of a change made to it. */
@@ -1456,7 +1464,7 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   mute(opts?: { over?: number }): void {
-    for (const voice of this.voices) this.beginFade(voice, { over: opts?.over });
+    for (const voice of this.cued) this.beginFade(voice, { over: opts?.over });
   }
 
   drop(subject: I): void {
@@ -1534,7 +1542,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const mix = this;
     return {
       get voices() {
-        return mix.voices;
+        return mix.cued;
       },
       channels: this.channels,
       names: this.names,
@@ -1706,7 +1714,7 @@ class Mixer<I, O> implements Mix<I, O> {
       if (n === self) throw new Error(`blits: ${name}'s placement waits on itself`);
       if (seen.has(n)) continue;
       seen.add(n);
-      for (const v of this.voices)
+      for (const v of this.cued)
         if (v.spec.name !== undefined && key(v.spec.score, v.spec.name) === n && v.spec.anchor)
           waits.push(...names(v.spec.anchor, v.spec.score));
     }
@@ -1718,9 +1726,9 @@ class Mixer<I, O> implements Mix<I, O> {
    * last gave. Repeated so a chain of anchors settles in one sync.
    */
   private place(): void {
-    for (let round = 0; round <= this.voices.length; round++) {
+    for (let round = 0; round <= this.cued.length; round++) {
       let moved = false;
-      for (const voice of this.voices) {
+      for (const voice of this.cued) {
         const anchor = voice.spec.anchor;
         if (anchor === undefined || voice.state === 'done') continue;
         if (voice.placing && voice.state === 'pending') {
@@ -1789,7 +1797,7 @@ class Mixer<I, O> implements Mix<I, O> {
   private timeOf(q: Query, mark: Mark, self: Voice<I, O>): number | undefined {
     const score = q.score ?? self.spec.score;
     const found: { order: number; t: number | undefined }[] = [];
-    for (const v of [...this.gone, ...this.voices])
+    for (const v of [...this.gone, ...this.cued])
       if (
         v !== self &&
         v.spec.score === score &&
@@ -1867,9 +1875,9 @@ class Mixer<I, O> implements Mix<I, O> {
     this.named = new Store<I, Voice<I, O>[]>();
     this.naming = 0;
     this.general = [];
-    for (const voice of this.voices) this.index(voice);
-    this.loci = this.voices.filter((v) => v.spec.locus !== undefined).length;
-    this.anchored = this.voices.filter((v) => v.spec.anchor !== undefined).length;
+    for (const voice of this.cued) this.index(voice);
+    this.loci = this.cued.filter((v) => v.spec.locus !== undefined).length;
+    this.anchored = this.cued.filter((v) => v.spec.anchor !== undefined).length;
     this.version++;
   }
 
@@ -1963,7 +1971,7 @@ class Mixer<I, O> implements Mix<I, O> {
     if (prev !== undefined && prev.at === now) return;
     const host = this.opts.host as Record<string, unknown>;
     const fields: Record<string, unknown> = {};
-    for (const v of this.voices)
+    for (const v of this.cued)
       for (const f of v.patch.reads ?? none) if (!(f in fields)) fields[f] = clone(host[f]);
     if (prev !== undefined && same(prev.fields, fields)) return;
     log.push({ at: now, fields });
@@ -2012,7 +2020,7 @@ class Mixer<I, O> implements Mix<I, O> {
     for (const name of this.names) out[name] = 'exact';
     const rank = { exact: 0, stepped: 1, held: 2 } as const;
     // A voice still waiting on an anchor nothing has answered may yet play, or stop, by now.
-    for (const voice of this.voices) {
+    for (const voice of this.cued) {
       const anchor = voice.spec.anchor;
       if (anchor === undefined || voice.state === 'done') continue;
       const waiting =

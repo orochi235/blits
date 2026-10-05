@@ -607,7 +607,7 @@ In depth: [Time](../time/). Reference: [`Mix`](../mix/#api-Mix).
 
 ## tag
 
-A tag is a word attached to a voice so other code can pick out a set of voices. A [query](#query) can select voices by tag, and `mix.drain(tag)` collects only the [events](#event) from voices carrying it. A voice can carry many tags, and many voices can share one.
+A tag is a word attached to a voice so other code can pick out a set of voices. A [query](#query) can select voices by tag, `mix.drain(tag)` collects only the [events](#event) from voices carrying it, and `mix.voices(tag)` lists their handles. A voice can carry many tags, and many voices can share one.
 
 ```ts
 dots.cue({ patch: rise, tags: ['intro'], loop: false });

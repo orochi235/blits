@@ -355,7 +355,7 @@ export interface VoiceSpec<I, O> {
 
   /** A `keys` voice whose first stop reads wherever this subject is now. */
   from?: 'current';
-  /** Words a source attaches to this voice, so its events can be drained as a set. */
+  /** Words a source attaches to this voice, so its events and its handle can be taken as a set. */
   tags?: readonly string[];
   /** What other voices call this one by. A label blits never reads. */
   name?: string;
@@ -564,6 +564,12 @@ export interface Mix<I, O> {
   /** Every channel at rest for this subject this frame, so a host can skip the write. */
   atRest(subject: I): boolean;
 
+  /**
+   * A handle on every voice still in the mix, pending, live, held or fading, in the order they were
+   * cued; given a tag, only the voices whose `tags` carry it. Each is a new handle on the same voice
+   * as the one `cue` returned, so compare handles by `id`. Costs nothing until it is asked.
+   */
+  voices(tag?: string): Handle<I>[];
   /** Anything still contributing, fading, or pending. */
   readonly live: boolean;
   /**

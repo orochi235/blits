@@ -315,10 +315,10 @@ describe('project back', () => {
     }
     const inner = m as unknown as {
       gone: unknown[];
-      voices: { log: unknown[] | null; subjects: { get(s: Part): { snaps?: unknown[] } } }[];
+      cued: { log: unknown[] | null; subjects: { get(s: Part): { snaps?: unknown[] } } }[];
     };
     expect(inner.gone.length).toBeLessThanOrEqual(2);
-    const voice = inner.voices[0] as (typeof inner.voices)[number];
+    const voice = inner.cued[0] as (typeof inner.cued)[number];
     expect((voice.log as unknown[]).length).toBeLessThanOrEqual(22);
     expect((voice.subjects.get(a).snaps as unknown[]).length).toBeLessThanOrEqual(12);
   });

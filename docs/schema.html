@@ -406,7 +406,7 @@ interface Setting&lt;S = void&gt; {
      the pose of the frame before this voice first contributes, so it never reads itself. With no
      such frame on record it is this frame's pose with every other voice folded in. */</span>
   from?: 'current';
-  <span class="cm">/** Words a source attaches to its voices, so their events can be drained as a set. */</span>
+  <span class="cm">/** Words a source attaches to its voices, so their events and handles can be taken as a set. */</span>
   tags?: readonly string[];
   <span class="cm">// score</span>
   <span class="cm">/** What other voices call this one by. A label blits never reads. */</span>
@@ -507,6 +507,10 @@ interface Mix&lt;I, O&gt; {
   announce(name: string, opts?: { at?: number; score?: string; tags?: readonly string[] }): void;
   <span class="cm">/** Every mark the plan knows between two timestamps, earliest first. */</span>
   marks(from: number, to: number): Marked[];
+
+  <span class="cm">/** A handle on every voice still in the mix, pending, live, held or fading, in cue order; given a tag, only
+     the voices carrying it. Each is a new handle on the voice `cue` returned one for, so compare by `id`. */</span>
+  voices(tag?: string): Handle&lt;I&gt;[];
 
   <span class="cm">/** Anything still contributing, fading, or pending. A host stops its loop when this is false. `cue` and
      `blend` make it true again at once; the mix never calls back into the host, so restarting the loop is
