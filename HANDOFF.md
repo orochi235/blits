@@ -285,9 +285,9 @@ systems now run on it**, on klieg's `main`.
        almost nothing. A profile against the plain locus puts the difference in the lanes' per-member weight path (`one`,
        `signalled`, and `gatherLocus`). A locus with a motion member, or a signal that keeps state,
        stays on the general path.
-     - **Starting 10k one-subject tween voices** takes about 2.5–2.8 ms to cue and 16–17 for the
-       first frame, against about 3 and 11–12 for `fn` voices (teitou, 2026-10-05, `bench/start.mjs`
-       medians). Cueing caught up once a patch stopped making a buffer before its first subject.
+     - **Starting 10k one-subject tween voices** takes about 2.5–5 ms to cue and 16–18 for the
+       first frame, against about 3–4 and 11–14 for `fn` voices (teitou, 2026-10-05, `bench/start.mjs`
+       medians over three alternated rounds against `66ea692`, which took 6–6.5 and 18–20). Cueing caught up once a patch stopped making a buffer before its first subject.
        What the first frame still allocates per voice, by the code: the patch's first stretch
        (its endpoint arrays, a weak reference, a buffer off the heap) and the voice's own WeakMap
        and record, with collection the largest line of a profile (15%);
