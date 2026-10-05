@@ -32,7 +32,6 @@ export function unreachedOf<I, O>(
     version: Number.NaN,
     loci: null,
     slot: -1,
-    rests: Number.NaN,
   };
   voice.unreached = none;
   return none;
@@ -83,7 +82,6 @@ export function held<I, O>(
     version: Number.NaN,
     loci: null,
     slot: -1,
-    rests: Number.NaN,
   };
   if (this.projecting) {
     held.from = held.stepped;

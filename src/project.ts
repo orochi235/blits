@@ -185,7 +185,6 @@ function recall<I, O>(
     version: Number.NaN,
     loci: null,
     slot: -1,
-    rests: Number.NaN,
     from: stepped,
     unknown: voice.spec.from === 'current',
     replay: live.inputs,

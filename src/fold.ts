@@ -347,7 +347,6 @@ export function linked<I, O>(this: Mixer<I, O>, subject: I): Subject<unknown> | 
   const head = Number.isNaN(now) ? null : this.chain(subject, now);
   this.linkedLaned =
     head !== null && this.lanes?.prepare(head.slot, subject, now, this.version, head) === true;
-  this.linkedHead = head;
   return head;
 }
 

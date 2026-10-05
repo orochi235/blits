@@ -71,8 +71,6 @@ export interface Subject<S> {
   loci: Map<string, Uint8Array> | null;
   /** On the first record: the number lanes index this subject by, -1 without one. */
   slot: number;
-  /** On the first record: twice the mix's `restsKey` at its last probe, plus 1 if the pose rested. */
-  rests: number;
 }
 
 /**

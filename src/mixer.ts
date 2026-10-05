@@ -289,10 +289,9 @@ export class Mixer<I, O> implements Mix<I, O> {
   probe(subject: I, out?: O): O {
     const pose = this.fold(subject, out);
     this.keep(subject, pose, out);
-    if (this.wantsRest) {
-      const head = this.linkedHead;
-      if (head !== null) head.rests = 2 * this.restsKey() + (this.rests(pose) ? 1 : 0);
-    }
+    // Where the lanes answer `atRest` from their own values, there is nothing to keep.
+    if (this.restStamps !== null && !(this.linkedLaned && this.restsLaned()))
+      this.restStamps.set(subject, 2 * this.restsKey() + (this.rests(pose) ? 1 : 0));
     return pose;
   }
 
@@ -325,20 +324,18 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   atRest(subject: I): boolean {
-    this.wantsRest = true;
+    this.restStamps ??= new Store<I, number>();
     const head = this.linked(subject);
-    // A probe this frame answers for the pose it gave the host.
-    if (head !== null) {
-      const since = head.rests - 2 * this.restsKey();
-      if (since >= 0) return since === 1;
-    }
     const laned = this.linkedLaned;
     const lanes = this.lanes as Lanes<I, O>;
     // Every voice on lanes and nothing to clamp: the pose a fold would make is the lanes' values.
-    if (laned && lanes.whole && this.bounded.length === 0) {
+    if (laned && this.restsLaned()) {
       const slot = (head as Subject<unknown>).slot;
       if (!lanes.owes(slot)) return lanes.rests(slot);
     }
+    // A probe this frame answers for the pose it gave the host.
+    const since = (this.restStamps.get(subject) ?? Number.NaN) - 2 * this.restsKey();
+    if (since >= 0) return since === 1;
     this.restScratch ??= {} as O;
     const pose = this.foldWith(subject, this.restScratch, head, laned, true) as Record<
       string,
@@ -439,6 +436,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     }
     if (head !== undefined && head.slot >= 0 && this.lanes !== null) this.lanes.release(head.slot);
     this.pose.delete(subject);
+    this.restStamps?.delete(subject);
     this.chains.delete(subject);
     this.stirred = true;
     // A record of it is only in a voice over every subject, one naming it, or one gone; a ramp out
@@ -485,10 +483,11 @@ export class Mixer<I, O> implements Mix<I, O> {
   readonly folding = new Set<number>();
 
   linkedLaned = false;
-  /** The chain `linked` last returned. */
-  linkedHead: Subject<unknown> | null = null;
-  /** `atRest` has been asked, so each probe records on the subject whether its pose rested. */
-  wantsRest = false;
+  /**
+   * Per subject, twice `restsKey` at its last probe plus 1 if the pose rested; null until `atRest`
+   * is first asked, when probes start writing it.
+   */
+  restStamps: Store<I, number> | null = null;
   /** What a probe's record of rest is good for: moved by a new frame, version or relink. */
   private restsEpoch = 0;
   private restsFrame = Number.NaN;
@@ -496,6 +495,10 @@ export class Mixer<I, O> implements Mix<I, O> {
   private restsRelinks = -1;
   /** The pose `atRest` folds into where no probe this frame answers. */
   private restScratch: O | undefined;
+
+  private restsLaned(): boolean {
+    return (this.lanes as Lanes<I, O>).whole && this.bounded.length === 0;
+  }
 
   private restsKey(): number {
     if (
