@@ -564,6 +564,8 @@ export class Voice<I, O> {
   unreached: Subject<unknown> | null = null;
   /** By subject number, a bit set where `unreached` stands for the subject; null until one is. */
   unreachedBits: Uint32Array | null = null;
+  /** The handle `cue` returned, which `voices` hands back too. */
+  handle: Handle<I> | null = null;
   /**
    * `done` and `played`, made when first asked for, already settled if the voice is: most hosts
    * never await either, and a mix may hold tens of thousands of voices.
@@ -964,7 +966,8 @@ class Mixer<I, O> implements Mix<I, O> {
       voice.note(Number.NEGATIVE_INFINITY);
     }
     this.schedule(voice);
-    return this.handle(voice);
+    voice.handle = this.handle(voice);
+    return voice.handle;
   }
 
   blend(
@@ -1555,7 +1558,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const out: Handle<I>[] = [];
     for (const voice of this.cued)
       if (voice.state !== 'done' && (tag === undefined || voice.spec.tags?.includes(tag)))
-        out.push(this.handle(voice));
+        out.push(voice.handle as Handle<I>);
     return out;
   }
 

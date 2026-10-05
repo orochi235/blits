@@ -675,8 +675,8 @@ export interface Mix<I, O, H = unknown> {
 
   /**
    * A handle on every voice still in the mix, pending, live, held or fading, in the order they were
-   * cued; given a tag, only the voices whose `tags` carry it. Each is a new handle on the same voice
-   * as the one `cue` returned, so compare handles by `id`. Costs nothing until it is asked.
+   * cued; given a tag, only the voices whose `tags` carry it. Each is the handle `cue` returned for
+   * that voice, so a listed handle is `===` the cued one.
    */
   voices(tag?: string): Handle<I>[];
   /** Anything still contributing, fading, or pending. */

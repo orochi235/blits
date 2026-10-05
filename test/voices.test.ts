@@ -42,10 +42,11 @@ describe('mix.voices', () => {
       'pending',
     ]);
     expect(ids(m.voices())).toEqual([held.id, fading.id, live.id, pending.id]);
+    expect(m.voices().every((h, i) => h === [held, fading, live, pending][i])).toBe(true);
     expect(m.voices().map((h) => h.state)).toEqual(['held', 'fading', 'live', 'pending']);
   });
 
-  it('hands back handles that control the voice as the one cue returned does', () => {
+  it('hands back the very handles cue returned', () => {
     const m = mix<Part, Pose>(PART);
     const part = { id: 'a' };
     m.sync(0);
@@ -53,6 +54,7 @@ describe('mix.voices', () => {
     m.sync(50);
     expect(m.probe(part).crawl).toBeCloseTo(5);
     const [listed] = m.voices('x') as [Handle<Part>];
+    expect(listed).toBe(cued);
     listed.weight = 0.5;
     m.sync(50);
     expect(m.probe(part).crawl).toBeCloseTo(2.5);
@@ -91,7 +93,8 @@ describe('mix.voices', () => {
     const m = mix<Part, Pose>(PART);
     const members = m.blend([ramp(), ramp()], () => 0.5, { tags: ['b'] });
     const first = m.voices('b');
-    expect(ids(first)).toEqual(ids(members));
+    expect(first).toHaveLength(2);
+    expect(first.every((h, i) => h === members[i])).toBe(true);
     first.pop();
     expect(m.voices('b')).toHaveLength(2);
   });

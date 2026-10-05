@@ -41,8 +41,8 @@ version and everything else the patch. Each release lists its changes as **Break
   their input, so a follower can climb from rest.
 - `mix.voices(tag?)`: a handle on every voice still in the mix, pending, live, held or fading, in
   cue order, or only those whose `tags` carry `tag`. A host no longer has to keep every handle `cue`
-  returned to know what is playing. Each call makes new handles on the same voices, so compare them
-  by `id`; nothing is kept for it until it is called.
+  returned to know what is playing. Each handle listed is the one `cue` returned for that voice, so
+  it compares `===` with it.
 - A rate for the whole mix, `mix.rate` and `mix.ramp(rate, over)`, shaped like a handle's and
   multiplied into every voice's; 0 pauses the mix. It runs mix time, so everything a voice owns
   slows with it: its clock, its fades, `stagger`, an anchor's `by`, `stepMs` and every `dt`. A

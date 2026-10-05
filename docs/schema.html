@@ -521,7 +521,7 @@ interface Mix&lt;I, O, H = unknown&gt; {
   marks(from: number, to: number): Marked[];
 
   <span class="cm">/** A handle on every voice still in the mix, pending, live, held or fading, in cue order; given a tag, only
-     the voices carrying it. Each is a new handle on the voice `cue` returned one for, so compare by `id`. */</span>
+     the voices carrying it. Each is the handle `cue` returned for that voice. */</span>
   voices(tag?: string): Handle&lt;I&gt;[];
 
   <span class="cm">/** Anything still contributing, fading, or pending. A host stops its loop when this is false. `cue` and
