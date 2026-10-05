@@ -1,5 +1,5 @@
-import type { Voice } from './mixer.js';
 import type { BookedHit, Booker, BookOptions, Hit, Marked } from './types.js';
+import type { Voice } from './voice.js';
 
 /** A clock read further than this from the offset's prediction is a jump, not jitter. */
 const RESYNC_MS = 50;

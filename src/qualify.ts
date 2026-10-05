@@ -4,10 +4,10 @@ import { crowdable } from './crowd.js';
 import { wake } from './fill.js';
 import { Lane, type Laned, type Locus, Per } from './lane.js';
 import type { Lanes } from './lanes.js';
-import type { Voice } from './mixer.js';
 import { bury, compactSparse, join, regroup, retouchRow, sameCrowds } from './rows.js';
 import { settle } from './sample.js';
 import type { Channel } from './types.js';
+import type { Voice } from './voice.js';
 
 /** What qualifying needs of one voice: whether its patch and spec can run on a lane, and its channels. */
 export interface Candidate {

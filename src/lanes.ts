@@ -15,7 +15,6 @@ import {
 import { fold, foldDelta, foldInto, foldRun, gather } from './gather.js';
 import { Begin, type Lane, type Laned, type Locus, Per, Row } from './lane.js';
 import { meet, owable, reach } from './meet.js';
-import type { Subject, Voice } from './mixer.js';
 import type { Watcher } from './motion.js';
 import { type absent, Numbers } from './numbers.js';
 import { Owed } from './owed.js';
@@ -23,6 +22,7 @@ import { requalify, retouch } from './qualify.js';
 import { reading } from './reading.js';
 import { reportedRow, unplace } from './rows.js';
 import type { Channel } from './types.js';
+import type { Subject, Voice } from './voice.js';
 
 /** What a lane fill asks of the mix it belongs to. */
 export interface LaneHost<I, O> {

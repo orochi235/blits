@@ -6,11 +6,11 @@ import { foldLocus, gatherLocus } from './gather.js';
 import { held, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { reach } from './meet.js';
-import type { Subject, Voice } from './mixer.js';
 import { absent } from './numbers.js';
 import { AT, NOTHING, readKeys, type Scratch, seg, segment, shifted, type Track } from './patch.js';
 import { reading } from './reading.js';
 import { move, runMotion } from './sample.js';
+import type { Subject, Voice } from './voice.js';
 
 /** The least prime at least `n`, and 1 below 2. */
 function primeFrom(n: number): number {

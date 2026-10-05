@@ -1,8 +1,8 @@
 import type { Numeric } from './channels.js';
 import { heldTime } from './clock.js';
-import type { Subject, Voice } from './mixer.js';
 import { type Motions, motionOf } from './motion.js';
 import type { Scratch } from './patch.js';
+import type { Subject, Voice } from './voice.js';
 
 /** One laned channel: its arithmetic, and every numbered subject's folded value, `axes` per subject. */
 export interface Laned {

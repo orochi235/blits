@@ -3,10 +3,10 @@ import { KeyRows } from './keyrows.js';
 import { type Laned, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { reach } from './meet.js';
-import type { Voice } from './mixer.js';
 import { type Motions, motionOf } from './motion.js';
 import { open } from './qualify.js';
 import { settle } from './sample.js';
+import type { Voice } from './voice.js';
 
 /** Whether two crowds' channels are the same list. */
 function same(a: readonly Laned[], b: readonly Laned[]): boolean {

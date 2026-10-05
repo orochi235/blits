@@ -1,6 +1,6 @@
 import { clampWeight, elapsedWith, envelope, timeWith } from './clock.js';
-import type { Voice } from './mixer.js';
 import type { Patch } from './types.js';
+import type { Voice } from './voice.js';
 
 /** What an owner is cued with in place of a patch: it writes nothing, so no fold ever meets it. */
 export const ownerPatch: Patch<unknown, unknown, unknown> = Object.freeze({

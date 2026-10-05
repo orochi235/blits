@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clone } from '../src/mixer.js';
+import { clone } from '../src/clone.js';
 
 describe('clone copies what structuredClone copies', () => {
   const shared = [1, 2];

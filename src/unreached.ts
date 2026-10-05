@@ -1,4 +1,4 @@
-import type { Voice } from './mixer.js';
+import type { Voice } from './voice.js';
 
 /** Whether the voice's shared unreached record stands for the subject numbered `slot`. */
 export function unreached<I, O>(voice: Voice<I, O>, slot: number): boolean {

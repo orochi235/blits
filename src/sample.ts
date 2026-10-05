@@ -1,10 +1,10 @@
 import { clampWeight, passAt, weighed } from './clock.js';
 import { type Lane, type Laned, Per, type Positions, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
-import type { Subject } from './mixer.js';
 import type { Motions } from './motion.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
+import type { Subject } from './voice.js';
 
 /**
  * A motion voice's fill: what `one` and `move` do for each subject, in one loop for the common

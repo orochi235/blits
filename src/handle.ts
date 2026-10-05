@@ -1,6 +1,6 @@
 import { retime } from './clock.js';
-import type { Voice } from './mixer.js';
 import type { FadeOptions, Handle } from './types.js';
+import type { Voice } from './voice.js';
 
 /** What a voice's handle asks of the mix that cued it: one per mix, shared by every handle. */
 export interface HandleHost<I, O> {
