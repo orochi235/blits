@@ -4,7 +4,7 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
-## Unreleased
+## 0.5.0
 
 ### Breaking
 

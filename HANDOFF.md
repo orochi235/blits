@@ -18,7 +18,7 @@ magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.4.0 (2026-10-04).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.5.0 (2026-10-05).
 - **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
   blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
@@ -35,7 +35,7 @@ magicsmoke run on it**, each on its own `main`.
   (recorded in klieg's changelog). 0.3.0 needed no change in klieg: its `color` channel is a `hex`,
   but every effect voice plays at full weight with no locus, so the OKLCH blend is never taken. The
   schema page's klieg section says what the port found.
-- **The package, `@msb235/blits` 0.4.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
+- **The package, `@msb235/blits` 0.5.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
   channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
   `motion.ts` (`spring`, `glide`), `tweened.ts` (a tween's closed form, in pieces a fill calls), `clock.ts` (the phase, envelope and weight clamp both fold
