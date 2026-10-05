@@ -60,8 +60,10 @@ systems now run on it**, on klieg's `main`.
   is green on all 13 pages. Deployed to `michaelbaker.tech/blits/` by `.github/workflows/site.yml` on every push to `main`.
   Every explainer draws a stage of what its mix drives above its chart (2026-10-04). Open: the pages
   don't fit a phone, since a 390 px viewport lays out about 640 px wide, and the score's text voice
-  ends the moment it finishes typing, so the line vanishes as the tint comes in. `Blending.tsx` is
-  521 lines and wants splitting.
+  ends the moment it finishes typing, so the line vanishes as the tint comes in. When labkit releases `f.number().endless(word)` (weasel `2432ce316`,
+  unreleased on 2026-10-04), switch the sliders whose right end means never to it:
+  Score's `cut`, Mix's `muteAt` and Voice's `fadeAt` with `'never'`, and State's `cap` with
+  `'uncapped'`. Their readouts show the number until then.
 - `docs/schema.html` — the design: vocabulary, channel table, patches, voices, mix,
   signals, time model, blending, patch state, the engine seam, per-consumer rigs, the klieg port,
   decided-against, tests, open items. Status line says design under review. It reads in the called
