@@ -8,6 +8,11 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A voice holds less while it plays. A store keeps its first id inline rather than in a Map, a
+  voice's small arrays are sized to what they hold, and `setting.keep` is made the first time a
+  patch reads it: a one-subject tween voice keyed by a number, cued and retargeted as weasel's
+  animator does, holds 4.4 KB, from 5.3 (`bench/heapwho.mjs 5000 weasel`, which breaks a voice's
+  bytes down by the field that holds them).
 - A crowd voice that starts or begins fading in the frame the lanes are qualified again plays on
   them. A qualify that kept the crowds as they stood, as when a voice over every subject leaves,
   dropped the news, and the row stayed silent: a voice starting at 50 ms on one subject read nothing

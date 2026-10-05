@@ -287,3 +287,29 @@ describe('a finite loop under stagger', () => {
     expect(m.live).toBe(false);
   });
 });
+
+describe('setting.keep', () => {
+  it('keeps state per subject when a patch takes it apart from the setting', () => {
+    const owner = {};
+    const count = patch<Part, Pose>(
+      0,
+      (_ph, _p, setting) => {
+        const { keep } = setting;
+        const n = keep(owner, () => ({ calls: 0 }));
+        n.calls++;
+        return { crawl: n.calls };
+      },
+      { writes: ['crawl'] },
+    );
+    const m = mix<Part, Pose>(PART, { lanes: false });
+    m.cue({ patch: count });
+    const a = { id: 'a' };
+    const b = { id: 'b' };
+    for (const t of [0, 16, 33]) {
+      m.sync(t);
+      m.probe(a);
+    }
+    m.probe(b);
+    expect([m.probe(a).crawl, m.probe(b).crawl]).toEqual([3, 1]);
+  });
+});

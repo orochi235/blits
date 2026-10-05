@@ -167,6 +167,31 @@ function keeping<I, O>(voice: Voice<I, O>): Setting['keep'] {
   };
 }
 
+/**
+ * A voice's setting. `keep` is made on first read: most patches keep no state, and a closure and
+ * its context per voice cost a one-subject tween voice about 100 bytes.
+ */
+class VoiceSetting<I, O> implements Setting<unknown> {
+  timestamp = 0;
+  dt = 0;
+  elapsed = 0;
+  pass = 0;
+  weight = 0;
+  state: unknown = undefined;
+  private kept: Setting['keep'] | null = null;
+
+  constructor(
+    public host: unknown,
+    readonly send: (event: unknown) => void,
+    private readonly voice: Voice<I, O>,
+  ) {}
+
+  get keep(): Setting['keep'] {
+    if (this.kept === null) this.kept = keeping(this.voice);
+    return this.kept;
+  }
+}
+
 /** A record's band state, made when a rest-less channel first asks. */
 function bandsFor(held: Subject<unknown>, n: number): Uint8Array {
   const bands = new Uint8Array(n);
@@ -552,17 +577,7 @@ export class Voice<I, O> {
     const holds = this.motion === undefined ? spec.hold : undefined;
     this.holdsBefore = holds === 'before' || holds === 'both';
     this.holdsAfter = holds === 'after' || holds === 'both';
-    this.setting = {
-      timestamp: 0,
-      dt: 0,
-      elapsed: 0,
-      pass: 0,
-      weight: 0,
-      state: undefined,
-      host,
-      keep: keeping(this),
-      send,
-    };
+    this.setting = new VoiceSetting(host, send, this);
     this.rate = spec.rate ?? 1;
     this.weight = typeof spec.weight === 'number' ? spec.weight : 1;
     this.anchorNow = start;
