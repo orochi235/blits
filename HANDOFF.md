@@ -354,12 +354,6 @@ systems now run on it**, on klieg's `main`.
   that is wrong is undecided: it is what the host showed, and copying would cost every probe
   without `out` an allocation.
 
-- **Lanes and the general path still disagree on a few random scenes past the first 300.**
-  `SAME_LANES=off node bench/same.mjs dist dist 1 3635` differs on one subject's `gain` at frame 2.
-  With `SAME_RATE=1`, seeds 294, 2816, 3298 and 3635 differ; each reproduces on `9015b0b`'s build
-  with every mix rate write turned off, so mix rates did not cause them. In 294 and 2816 one
-  subject's `off` differs while every voice's `weightOf` agrees; in 3298 and 3635 its `gain`, and
-  in 3298 its `dark` too. Found 2026-10-04 and not traced.
 - **A stale served-page tab will overwrite `vocabulary.picks.json` with whatever set it
   was holding.** It has happened twice — `65d2d71` restored one, and the same loss was in the
   working tree at the start of 2026-09-27's session. Before trusting the picks file, `git diff` it;

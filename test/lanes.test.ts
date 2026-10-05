@@ -1825,6 +1825,25 @@ describe('crowds take voices on and off as they come and go', () => {
       { times: [0, 16, 33, 50, 66, 83], parts: 4 },
     );
   });
+
+  it('with a crowd voice starting in the frame a locus voice off the lanes starts', () => {
+    agree(
+      (m, parts) => {
+        m.cue({
+          patch: glide<Part, Pose, number>('crawl', { from: 1, velocity: 4, ms: 300 }),
+          locus: 'b',
+          start: 50,
+        });
+        const h = m.cue({
+          patch: patch<Part, Pose>(0, () => ({ gain: 0.5 }), { writes: ['gain'] }),
+          subjects: [parts[1] as Part],
+          start: 50,
+        });
+        return { handles: [h] };
+      },
+      { times: [16, 170], parts: 2 },
+    );
+  });
 });
 
 describe('lanes weigh a subject fading out of its voice as the general path does', () => {

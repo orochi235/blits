@@ -125,6 +125,11 @@ version and everything else the patch. Each release lists its changes as **Break
   them. A qualify that kept the crowds as they stood, as when a voice over every subject leaves,
   dropped the news, and the row stayed silent: a voice starting at 50 ms on one subject read nothing
   on the lanes while one over every subject faded out then.
+- A crowd voice that starts or begins fading in the same frame as a voice whose change needs the
+  lanes qualified again plays on them. Taking the frame's changes one at a time stopped at the
+  first that needs a qualify, such as a locus member off the lanes starting, and the qualify that
+  followed never heard of the rest: a voice on one subject starting at 50 ms beside a glide in a
+  locus starting then read nothing on the lanes for good.
 - A subject numbered by a mix, or by a motion patch, is let go once collected even when it was the
   first object numbered and was collected before a second came. Its number, its lane positions and
   its motion state were held for good.

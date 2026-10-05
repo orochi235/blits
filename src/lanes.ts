@@ -1415,6 +1415,11 @@ export class Lanes<I, O> implements Watcher {
   private retouch(): boolean {
     const touched = [...new Set(this.touched)].sort((a, b) => a.id - b.id);
     this.touched.length = 0;
+    // The qualify a false answer calls takes up every touched voice, crowd rows starting included.
+    const qualify = (): false => {
+      this.touched = touched;
+      return false;
+    };
     for (const v of touched) {
       const known = v.id <= this.known;
       if (v.id > this.known) this.known = v.id;
@@ -1431,12 +1436,12 @@ export class Lanes<I, O> implements Watcher {
       if (v.state === 'done' && !known) continue;
       const lane = this.byId.get(v.id);
       if (lane !== undefined) {
-        if (!this.relane(lane)) return false;
+        if (!this.relane(lane)) return qualify();
         continue;
       }
-      if (v.state === 'done') return false;
+      if (v.state === 'done') return qualify();
       // A locus's members are on lanes together or not at all, so one joining may move the others.
-      if (v.spec.locus !== undefined) return false;
+      if (v.spec.locus !== undefined) return qualify();
       const laned = v.slots.some((slot) => this.bySlot[slot] !== undefined);
       const fits = v.slots.length > 0 && this.host.fits(v);
       if (!laned && !fits) {
@@ -1444,7 +1449,7 @@ export class Lanes<I, O> implements Watcher {
         continue;
       }
       if (known || !fits || !laned || v.slots.some((slot) => this.bySlot[slot] === undefined))
-        return false;
+        return qualify();
       if (crowdable(v)) this.join(v, undefined, undefined, this.crowds);
       else this.enlane(v);
     }
