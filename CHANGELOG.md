@@ -123,6 +123,10 @@ version and everything else the patch. Each release lists its changes as **Break
   phase 0 only once a `from: 'current'` voice first reads them, where it made a typed array of
   each as it was built: making and cueing 10k one-subject `keys` voices takes 10.9–11.9 ms on
   teitou, from 13.9–14.8, with their first frame and later frames unchanged.
+- A projection copies each voice into an object V8 keeps in fast mode, where the copy was a
+  dictionary that every read of it looked up by name: a projection made and probed every frame
+  takes 0.57–0.58 ms ahead and 0.74–0.87 back on teitou, from 0.81–0.84 and 0.95–1.09 (`ahead` and
+  `back`, 1000 subjects under three voices, four alternated runs).
 - A pose never holds a patch's own array. Where a channel's `merge` returned its second argument,
   as `last()` does, the mix put that array into the pose as it was: with two voices on a keyed
   array channel, a host editing its pose edited the stop, and every later frame read the edit. The

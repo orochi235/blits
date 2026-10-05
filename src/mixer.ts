@@ -713,7 +713,9 @@ export class Voice<I, O> {
    * filled from `fill`. With `controls` it takes those, as the voice stood at an earlier time.
    */
   copy(fill: (subject: I) => Subject<unknown> | undefined, controls?: Controls): Voice<I, O> {
-    const v = Object.assign(Object.create(Voice.prototype), this) as Voice<I, O>;
+    // A literal keeps the copy in fast mode, where `Object.assign` left it a dictionary that every
+    // read in a projection looked up by name.
+    const v = { __proto__: Voice.prototype, ...this } as unknown as Voice<I, O>;
     const w = v as unknown as Record<string, unknown>;
     w.subjects = new Filled<I, Subject<unknown>>(fill);
     w.setting = { ...this.setting, keep: keeping(v), send: noSend };
