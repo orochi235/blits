@@ -323,3 +323,25 @@ describe('project back', () => {
     expect((voice.subjects.get(a).snaps as unknown[]).length).toBeLessThanOrEqual(12);
   });
 });
+
+describe('a projection retiring a motion voice', () => {
+  it('leaves the live patch asking the live voice for its time', () => {
+    const run = (project: boolean) => {
+      const m = mix<Part, Pose>(K);
+      const a = { id: 'a' };
+      const s = spring<Part, Pose>('x', { from: 0, to: 10 });
+      const h = m.cue({ patch: s, subjects: [a] });
+      m.sync(0);
+      m.probe(a);
+      m.sync(100);
+      m.probe(a);
+      // A fade that ends inside the projection, so the projection retires its copy of the voice.
+      h.fade({ over: 50 });
+      if (project) m.project(400).probe(a);
+      s.to(a, 30);
+      m.sync(116);
+      return m.probe(a).x;
+    };
+    expect(run(true)).toBe(run(false));
+  });
+});

@@ -79,6 +79,12 @@ version and everything else the patch. Each release lists its changes as **Break
   working out again whether it may fold them after the lanes, and a retired voice leaving its lane
   writes no weights back to its records, which nothing reads once it is done. The same `swap`
   frame takes 3.55–3.70 ms on teitou, from 3.77–4.09.
+- A projection that retires a copy of a motion voice leaves the live patch asking the live voice
+  for its time. The copy carried the voice's hooks, and retiring it cut the patch off from the
+  mix: an untimed `to` or `push` after such a projection took its time from the subject's next read
+  rather than the latest frame. A motion patch now asks its mix by voice id, where each voice made
+  a weak reference and two closures of its own: a one-subject tween voice holds about 250 B less
+  (`bench/heapwho.mjs 5000 tweens` 3747 B from 4004, `weasel` 3448 from 3704).
 - A pose never holds a patch's own array. Where a channel's `merge` returned its second argument,
   as `last()` does, the mix put that array into the pose as it was: with two voices on a keyed
   array channel, a host editing its pose edited the stop, and every later frame read the edit. The

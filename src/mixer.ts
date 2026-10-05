@@ -17,7 +17,7 @@ import {
 import { type Curve, curve } from './easing.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
 import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
-import { type Motions, motionOf, noFrame, noRevive } from './motion.js';
+import { type MotionOwner, type Motions, motionOf } from './motion.js';
 import { Named } from './named.js';
 import { Pace } from './pace.js';
 import { type Built, builtOf, durationOf, intosOf, readKeys, type Scratch } from './patch.js';
@@ -515,10 +515,6 @@ export class Voice<I, O> {
   seeks = 0;
   /** Whether its patch has kept state on a record through `setting.keep`, which makes it stateful. */
   keeping = false;
-  /** For a motion patch, the hook it was given to ask the mix for its subjects' voice time. */
-  frame: ((subject: I) => number) | null = null;
-  /** For a motion patch, the hook it was given to bring a subject faded out of this voice back. */
-  revive: ((subject: I) => void) | null = null;
   /** Subjects fading out of this voice alone, by the ramp each started; null while none are. */
   parts: Map<I, { at: number; over: number }> | null = null;
   /** Subjects faded out of this voice, by the mix time each left at; null while none have. */
@@ -817,8 +813,8 @@ class Mixer<I, O> implements Mix<I, O> {
   private general: Voice<I, O>[] = [];
   /** How many voices in the list carry a locus; with none, a fold allocates nothing. */
   private loci = 0;
-  /** The one weak reference every motion patch's hooks hold this mix by. */
-  private self: WeakRef<Mixer<I, O>> | null = null;
+  /** What every motion patch it plays asks for its voice's time, holding this mix weakly. */
+  private owner: MotionOwner | null = null;
   /** How many voices in the list are anchored, so a sync with none skips placing them. */
   private anchored = 0;
   /** Events sent since the last drain, and who is being probed, so `send` knows whose they are. */
@@ -939,12 +935,9 @@ class Mixer<I, O> implements Mix<I, O> {
     const motion = voice.motion;
     if (motion !== undefined) {
       this.playing.set(motion, (this.playing.get(motion) ?? 0) + 1);
-      this.self ??= new WeakRef(this);
-      const weak = new WeakRef(voice);
-      voice.frame = Mixer.frameHook(this.self, weak);
-      motion.frame = voice.frame;
-      voice.revive = Mixer.reviveHook(this.self, weak);
-      motion.revive = voice.revive;
+      this.owner ??= Mixer.ownerOf(new WeakRef(this));
+      motion.owner = this.owner;
+      motion.ownerId = voice.id;
     }
     this.cued.push(voice);
     this.index(voice);
@@ -1795,34 +1788,43 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   /**
-   * What a motion patch asks for its subjects' voice time at the latest frame. It holds the mix and
-   * the voice weakly, so a patch the host keeps does not keep a mix it has let go of alive.
+   * What a motion patch asks of the mix playing it, by its voice's id. It holds the mix weakly, so a
+   * patch the host keeps does not keep a mix it has let go of alive; a retired voice's patch no
+   * longer asks.
    */
-  private static reviveHook<I, O>(
-    mix: WeakRef<Mixer<I, O>>,
-    voice: WeakRef<Voice<I, O>>,
-  ): (subject: I) => void {
-    return (subject) => {
-      const m = mix.deref();
-      if (m === undefined) return;
-      m.stirred = true;
-      const v = voice.deref();
-      if (v === undefined) return;
-      if (v.motion !== undefined && v.named !== null && !v.named.has(subject))
-        m.stray(v.motion, subject);
-      m.unpart(v, subject);
+  private static ownerOf<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
+    return {
+      frame(id, subject) {
+        const m = mix.deref();
+        const v = m?.cuedById(id);
+        return m === undefined || v === undefined ? Number.NaN : m.frameOf(v, subject as I);
+      },
+      revive(id, subject) {
+        const m = mix.deref();
+        if (m === undefined) return;
+        m.stirred = true;
+        const v = m.cuedById(id);
+        if (v === undefined) return;
+        if (v.motion !== undefined && v.named !== null && !v.named.has(subject as I))
+          m.stray(v.motion, subject as I);
+        m.unpart(v, subject as I);
+      },
     };
   }
 
-  private static frameHook<I, O>(
-    mix: WeakRef<Mixer<I, O>>,
-    voice: WeakRef<Voice<I, O>>,
-  ): (subject: I) => number {
-    return (subject) => {
-      const m = mix.deref();
-      const v = voice.deref();
-      return m === undefined || v === undefined ? Number.NaN : m.frameOf(v, subject);
-    };
+  /** The voice in the list with this id, which is in id order. */
+  private cuedById(id: number): Voice<I, O> | undefined {
+    const cued = this.cued;
+    let lo = 0;
+    let hi = cued.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const v = cued[mid] as Voice<I, O>;
+      if (v.id === id) return v;
+      if (v.id < id) lo = mid + 1;
+      else hi = mid - 1;
+    }
+    return undefined;
   }
 
   /**
@@ -2320,7 +2322,7 @@ class Mixer<I, O> implements Mix<I, O> {
     this.parters.add(voice);
     this.forgetIn(voice, subject);
     const motion = voice.motion;
-    if (motion !== undefined && motion.frame === voice.frame) motion.release(subject);
+    if (motion !== undefined && this.owns(motion, voice)) motion.release(subject);
   }
 
   /** Brings a subject faded out of a voice back, to be met afresh on its next probe. */
@@ -2373,13 +2375,15 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   /** Removes a voice, recording that it left at `at`, default now. */
+  /** Whether a motion patch still asks this voice of this mix for its time. */
+  private owns(motion: Motions<I>, voice: Voice<I, O>): boolean {
+    return motion.owner === this.owner && motion.ownerId === voice.id;
+  }
+
   private retire(voice: Voice<I, O>, at?: number): void {
     this.lanes?.touch(voice);
     const motion = voice.motion;
-    if (motion !== undefined && motion.frame === voice.frame) motion.frame = noFrame;
-    if (motion !== undefined && motion.revive === voice.revive) motion.revive = noRevive;
-    voice.frame = null;
-    voice.revive = null;
+    if (motion !== undefined && this.owns(motion, voice)) motion.owner = null;
     voice.state = 'done';
     // The record its setting last wrote to, which a retired voice no longer calls for.
     voice.keepOn = null;

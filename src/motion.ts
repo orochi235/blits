@@ -63,9 +63,16 @@ const EASED = 4;
  */
 const HEAD = 5;
 
-/** A motion patch's `frame` while no mix plays it: no subject has a latest frame. */
-export const noFrame = (): number => Number.NaN;
-export const noRevive = (): void => {};
+/**
+ * The mix playing a patch, asked with its voice's id: an owner and an id, where a pair of closures
+ * cost two functions, their contexts and a weak reference per voice.
+ */
+export interface MotionOwner {
+  /** The subject's voice time at the mix's latest frame; NaN where no frame of the voice met it. */
+  frame(id: number, subject: unknown): number;
+  /** Brings a subject the voice faded out back to it, so a change is not made for nothing. */
+  revive(id: number, subject: unknown): void;
+}
 
 /** What a mix keeping copies of a patch's stretches is told, with its id, when one changes. */
 export interface Watcher {
@@ -274,16 +281,15 @@ export class Motions<I> {
   private pending: (Change[] | undefined)[] | null = null;
   private older: (Segment[] | undefined)[] | null = null;
   /**
-   * The subject's voice time at the mix's latest frame, which an untimed change and a `read` with
-   * no time take; NaN where no frame of the patch's voice has met the subject. Set by the mix that
-   * cues the patch, and put back when its voice retires.
+   * The mix playing the patch and its voice's id, which an untimed change and a `read` with no time
+   * ask for the latest frame. Set by the mix that cues the patch, and cleared when its voice retires.
    */
-  frame: (subject: I) => number = noFrame;
-  /**
-   * Brings a subject its voice faded out back to it, so a change is not made for nothing. Set by
-   * the mix that cues the patch, and put back when its voice retires.
-   */
-  revive: (subject: I) => void = noRevive;
+  owner: MotionOwner | null = null;
+  ownerId = -1;
+
+  private frame(subject: I): number {
+    return this.owner === null ? Number.NaN : this.owner.frame(this.ownerId, subject);
+  }
 
   constructor(private readonly shape: Shape<I>) {
     this.runs = Float64Array.from(shape.law);
@@ -500,7 +506,7 @@ export class Motions<I> {
    * The queue keeps the changes with a time in time order, ahead of any still waiting for one.
    */
   change(subject: I, c: Change): void {
-    this.revive(subject);
+    this.owner?.revive(this.ownerId, subject);
     const s = this.slot(subject);
     this.check(c.to, this.n);
     this.check(c.v, this.n);
