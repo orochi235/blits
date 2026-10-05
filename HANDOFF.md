@@ -341,6 +341,11 @@ systems now run on it**, on klieg's `main`.
 
 ## Loose ends
 
+- **`src/mixer.ts` is 3,500 lines and `src/lanes.ts` 2,700.** Each holds several jobs that
+  should own a module apiece; today's work moved pieces out (`owner.ts`, `book.ts`, `pace.ts`,
+  `owed.ts`, `unreached.ts`, `relink.ts`, `keyrows.ts`) but `owns` still added about 200 lines of
+  wiring to `mixer.ts`. Split both along what owns what before adding to either again.
+
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
   100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k
   `tweens` row and 214 after the 100k one (teitou). A dropped mix is freed
