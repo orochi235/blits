@@ -5,6 +5,7 @@ import { KeyRows } from './keyrows.js';
 import type { Subject, Voice } from './mixer.js';
 import { closed, type Motions, motionOf, type Watcher } from './motion.js';
 import { absent, Numbers } from './numbers.js';
+import { Owed } from './owed.js';
 import { AT, NOTHING, readKeys, type Scratch, seg, segment, shifted, type Track } from './patch.js';
 import { reading } from './reading.js';
 import type { Channel } from './types.js';
@@ -589,13 +590,8 @@ export class Lanes<I, O> implements Watcher {
   /** The lanes the last `meet` gave a position, and whether it placed a crowd row. */
   private readonly met: number[] = [];
   private metCrowd = false;
-  /**
-   * By subject number, the fill in which its probes fold some laned voices on the general path, and
-   * which of `owedLists` names them; subjects meeting the same voices share one list.
-   */
-  private owedFill = new Int32Array(0);
-  private owedAt = new Int32Array(0);
-  private readonly owedLists: number[][] = [];
+  /** By subject number, the laned voices its probes fold on the general path this fill. */
+  private readonly owed = new Owed();
   private laned: Laned[] = [];
   /** By kit slot, the laned channel there. */
   private bySlot: (Laned | undefined)[] = [];
@@ -788,7 +784,7 @@ export class Lanes<I, O> implements Watcher {
       // The fill ran before the subject had these positions. Where every voice it just met folds
       // after every other laned voice, the general path folds just those onto the lanes' values;
       // otherwise it reads the general path all frame.
-      if (lane && per[o + IDLE] === 0 && this.owable(slot)) this.owe(slot);
+      if (lane && per[o + IDLE] === 0 && this.owable(slot)) this.owed.owe(slot, this.met);
       else {
         per[o + FILLED] = 0;
         lane = false;
@@ -992,7 +988,7 @@ export class Lanes<I, O> implements Watcher {
   private owable(slot: number): boolean {
     if (this.metCrowd || this.owes(slot)) return false;
     // Subjects meeting the same lanes in one fill get the same answer, and a list is kept only once true.
-    if (this.metLastOwed()) return true;
+    if (this.owed.last(this.met)) return true;
     const met = this.met;
     let other = Number.NEGATIVE_INFINITY;
     for (const lane of this.lanes) {
@@ -1008,28 +1004,12 @@ export class Lanes<I, O> implements Watcher {
 
   /** Whether the subject at `slot` reads some laned voice from the general path this fill. */
   owes(slot: number): boolean {
-    return this.owedLists.length > 0 && this.owedFill[slot] === this.fills;
-  }
-
-  private owe(slot: number): void {
-    const lists = this.owedLists;
-    if (!this.metLastOwed()) lists.push(this.met.slice());
-    this.owedFill[slot] = this.fills;
-    this.owedAt[slot] = lists.length - 1;
-  }
-
-  /** Whether the lanes `meet` just met are the last list a subject came to owe this fill. */
-  private metLastOwed(): boolean {
-    const met = this.met;
-    const last = this.owedLists[this.owedLists.length - 1];
-    if (last === undefined || last.length !== met.length) return false;
-    for (let i = 0; i < met.length; i++) if (last[i] !== met[i]) return false;
-    return true;
+    return this.owed.owes(slot);
   }
 
   /** Whether the subject at `slot` reads laned voice `id` from the general path this fill. */
   owesVoice(slot: number, id: number): boolean {
-    return (this.owedLists[this.owedAt[slot] as number] as number[]).includes(id);
+    return this.owed.owesVoice(slot, id);
   }
 
   /** The weight the general path gave a voice the subject at `slot` owes, as `weightOf` reports. */
@@ -1178,12 +1158,7 @@ export class Lanes<I, O> implements Watcher {
     const per = new Float64Array(cap * SLOT);
     per.set(this.per);
     this.per = per;
-    const owedFill = new Int32Array(cap);
-    owedFill.set(this.owedFill);
-    this.owedFill = owedFill;
-    const owedAt = new Int32Array(cap);
-    owedAt.set(this.owedAt);
-    this.owedAt = owedAt;
+    this.owed.grow(cap);
     for (const ch of this.laned) {
       const values = new Float64Array(cap * ch.axes);
       values.set(ch.values);
@@ -1726,7 +1701,7 @@ export class Lanes<I, O> implements Watcher {
     this.filling = true;
     try {
       this.fills++;
-      this.owedLists.length = 0;
+      this.owed.begin(this.fills);
       this.now = now;
       this.filledAt = now;
       this.filledVersion = version;
