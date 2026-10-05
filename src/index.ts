@@ -6,6 +6,8 @@ export { glide, spring, tween } from './motion.js';
 export type { KeysOptions, PatchOptions } from './patch.js';
 export { keys, patch } from './patch.js';
 export { gate, lag, level, peak, slew } from './signals.js';
+export type { Ticked, Ticker, TickerOptions } from './ticker.js';
+export { ticker } from './ticker.js';
 export type {
   Anchor,
   BookedHit,

@@ -4,6 +4,20 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- `ticker()`, one frame loop for any number of mixes: `add(mix)` syncs it every frame, `each(fn)`
+  runs after the mixes, and `stay()` holds the loop awake. It runs on animation frames, or on a
+  timer where there are none, as in a worker or Node, or with `via: 'timer'`; `fps` caps the rate on
+  a grid, so a 60 Hz display capped at 30 runs every other frame. It sleeps while every mix is
+  `inert` and wakes when one stirs. A mix or callback that throws stops neither the loop nor the
+  others; the error is thrown again on a microtask.
+- `mix.onStir(fn)`: called when a host call makes the mix need frames again after a sync — a cue,
+  a fade, a rate, a seek, a `drop`, a motion retargeted — once until the next sync, and never
+  during one. A host's loop sleeping on `inert` wakes on it instead of on every path that cues.
+
 ## 0.5.0
 
 ### Breaking
