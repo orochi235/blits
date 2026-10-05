@@ -271,9 +271,12 @@ systems now run on it**, on klieg's `main`.
      signal the unheld time. `SAME_LANES=off bench/same.sh <rev>` compares this tree's lanes with
      a revision's general path. What is still slow, largest first:
      - **A voice over every subject cued among a crowd** (`swap`: 10k tween voices of one subject
-       each, a voice over all of them replaced every frame) costs about 6.0 ms a frame on teitou,
-       from 12.4 at `560f79c`. What is left is each subject meeting the new voice: a record per
-       subject and a relinked chain.
+       each, a voice over all of them replaced every frame) costs about 3.6 ms a frame on teitou,
+       from 12.4 at `560f79c` and 6.2 at `a7d5317`, against 0.83 for the tween voices alone. What
+       is left is spread thin: a record per subject for the new voice and the WeakMap entry that
+       holds it (about a fifth of the profile together), the patch call and its fold on the general
+       path, and collection. Keying a voice's records by subject number would drop the WeakMap
+       for subjects lanes number, at the cost of a second way to find a record.
      - **A blend still costs half again a plain voice**: three voices blended by a signal over
        10k subjects take about 3.2–3.3 ms a frame, three plain ones 2.0 and a plain locus of three
        2.7–2.8 (teitou, `FRAMES=5000`, 10 rounds, 2026-10-04). `mix.blend` now reads its signal

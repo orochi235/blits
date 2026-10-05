@@ -979,6 +979,8 @@ export class Lanes<I, O> implements Watcher {
    */
   private owable(slot: number): boolean {
     if (this.metCrowd || this.owes(slot)) return false;
+    // Subjects meeting the same lanes in one fill get the same answer, and a list is kept only once true.
+    if (this.metLastOwed()) return true;
     const met = this.met;
     let other = Number.NEGATIVE_INFINITY;
     for (const lane of this.lanes) {
@@ -999,13 +1001,18 @@ export class Lanes<I, O> implements Watcher {
 
   private owe(slot: number): void {
     const lists = this.owedLists;
-    const met = this.met;
-    const last = lists[lists.length - 1];
-    let fresh = last === undefined || last.length !== met.length;
-    for (let i = 0; !fresh && i < met.length; i++) fresh = last?.[i] !== met[i];
-    if (fresh) lists.push(met.slice());
+    if (!this.metLastOwed()) lists.push(this.met.slice());
     this.owedFill[slot] = this.fills;
     this.owedAt[slot] = lists.length - 1;
+  }
+
+  /** Whether the lanes `meet` just met are the last list a subject came to owe this fill. */
+  private metLastOwed(): boolean {
+    const met = this.met;
+    const last = this.owedLists[this.owedLists.length - 1];
+    if (last === undefined || last.length !== met.length) return false;
+    for (let i = 0; i < met.length; i++) if (last[i] !== met[i]) return false;
+    return true;
   }
 
   /** Whether the subject at `slot` reads laned voice `id` from the general path this fill. */
@@ -1664,13 +1671,16 @@ export class Lanes<I, O> implements Watcher {
   /** Hands a voice back to the general path, with the weights `weightOf` reports kept on its records. */
   private leave(lane: Lane<I, O>): void {
     if (lane.idle) this.wake(lane);
-    for (let p = 0; p < lane.list.length; p++) {
-      const rec = lane.records[p];
-      const slot = lane.list[p] as number;
-      const w = this.reported(lane, slot);
-      if (rec !== undefined && w !== undefined) rec.weight = w;
-      if (rec !== undefined && lane.motion !== undefined) this.settle(lane, p, slot, rec);
-    }
+    // A retired voice reports no weight, so only a motion's samples are left to settle.
+    const done = lane.voice.state === 'done';
+    if (!done || lane.motion !== undefined)
+      for (let p = 0; p < lane.list.length; p++) {
+        const rec = lane.records[p];
+        const slot = lane.list[p] as number;
+        const w = done ? undefined : this.reported(lane, slot);
+        if (rec !== undefined && w !== undefined) rec.weight = w;
+        if (rec !== undefined && lane.motion !== undefined) this.settle(lane, p, slot, rec);
+      }
     lane.voice.laned = false;
   }
 

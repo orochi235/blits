@@ -75,6 +75,10 @@ version and everything else the patch. Each release lists its changes as **Break
   alone, taking it off or putting it on at its place in voice order, where every chain was linked
   afresh through every voice reaching the subject. The same `swap` frame takes 4.24–4.47 ms on
   teitou, from 4.81–4.93; a voice per subject (`named`) is unchanged.
+- A subject owing the same voices as the one before it in a frame takes that answer rather than
+  working out again whether it may fold them after the lanes, and a retired voice leaving its lane
+  writes no weights back to its records, which nothing reads once it is done. The same `swap`
+  frame takes 3.55–3.70 ms on teitou, from 3.77–4.09.
 - A pose never holds a patch's own array. Where a channel's `merge` returned its second argument,
   as `last()` does, the mix put that array into the pose as it was: with two voices on a keyed
   array channel, a host editing its pose edited the stop, and every later frame read the edit. The
