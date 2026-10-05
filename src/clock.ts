@@ -71,6 +71,17 @@ export function weighed(base: number, fade: number, parting: number): number {
   return clampWeight(base * (fade * parting));
 }
 
+/**
+ * Whether a voice's `at` goes unasked for a subject at `weight`: nothing it returns would fold. A voice
+ * fading to rest is still asked, since its delta is what says it has arrived.
+ */
+export function silent(
+  voice: { readonly out: { readonly rest: boolean } | null },
+  weight: number,
+): boolean {
+  return !(weight > 0) && voice.out?.rest !== true;
+}
+
 /** What sets a clock: its rate, and where it was last anchored. */
 export interface Clock {
   anchorNow: number;

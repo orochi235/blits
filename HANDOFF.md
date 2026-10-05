@@ -333,16 +333,6 @@ systems now run on it**, on klieg's `main`.
 4. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
    a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
    stock band's width.
-5. **What klieg's step two found in blits** (2026-10-04, from klieg's session; none blocks klieg):
-   - **A blend runs every member's `at`, at weight 0 too.** Both the general path (`mixer.ts`, the
-     `voice.patch.at` call in the probe) and the lane path (`lanes.ts`, `call`) run `at` before
-     the weight is looked at, so a stops blend over 8 stops runs 8 patches per subject where 2 carry
-     weight. klieg measured 37 µs → 174 µs for a frame of 60 parts and now returns early on
-     `setting.weight === 0`. `blended()` fixed the 8 signal reads, not this. Skipping is not free to
-     decide: `step` must still run, and `influence` reports a silent voice's delta.
-   - **Built (2026-10-04):** the mix's host type, `mix<I, O, H>`, reaches `setting.host` in every
-     patch and signal, so klieg's `hostOf` cast can go; and `slew`/`lag` take `from`, which
-     replaces klieg's `startAt` wrapper.
 
 ## Loose ends
 

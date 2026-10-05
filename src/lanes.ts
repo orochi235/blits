@@ -1,5 +1,5 @@
 import { foldNumber, lerpNumber, type Numeric, numericOf } from './channels.js';
-import { clampWeight, heldTime, passAt, phaseAt, weighed } from './clock.js';
+import { clampWeight, heldTime, passAt, phaseAt, silent, weighed } from './clock.js';
 import type { Curve } from './easing.js';
 import type { Subject, Voice } from './mixer.js';
 import { closed, type Motions, motionOf, type Watcher } from './motion.js';
@@ -2109,6 +2109,7 @@ export class Lanes<I, O> implements Watcher {
       if (w > 0) this.foldDelta(chans, slot, rec.delta, w);
       return true;
     }
+    if (silent(voice, w)) return true;
     const kept = reading.kept;
     host.ready(voice, subject, rec, elapsed, pass, w);
     if (this.keeps) host.horizon(voice, delay);

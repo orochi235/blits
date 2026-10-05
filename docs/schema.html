@@ -310,14 +310,15 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
   readonly kit?: Partial&lt;Kit&lt;O&gt;&gt;;
   <span class="cm">/** The fields of `setting.host` it reads. `cue` refuses a mix whose host lacks one. */</span>
   readonly reads?: readonly string[];
-  <span class="cm">/** `phase` is 0..1 across one pass, wrapping. */</span>
-  at(phase: number, subject: I, setting: Setting&lt;S&gt;): Partial&lt;O&gt;;
+  <span class="cm">/** `phase` is 0..1 across one pass, wrapping. Not asked for a subject its voice gives no weight, unless the
+     voice is fading to rest; `step` still runs. */</span>
+  at(phase: number, subject: I, setting: Setting&lt;S, H&gt;): Partial&lt;O&gt;;
 
   <span class="cm">/** Per-subject state, created on the first frame this patch sees a subject. */</span>
   state?(subject: I): S;
   <span class="cm">/** Advances state once per subject per probed frame, before that frame's first `at`, by the whole gap
      since that subject last advanced. `dt` is Infinity under reduced motion. */</span>
-  step?(state: S, dt: number, subject: I, setting: Setting&lt;S&gt;): void;
+  step?(state: S, dt: number, subject: I, setting: Setting&lt;S, H&gt;): void;
 
   <span class="cm">/** Present when the patch was authored as keyframes, so an engine that reads data can. */</span>
   readonly keys?: readonly Keyframe&lt;O&gt;[];

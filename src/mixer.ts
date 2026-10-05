@@ -9,6 +9,7 @@ import {
   phaseAt,
   rateWith,
   rebaseWith,
+  silent,
   timeWith,
   weighed,
 } from './clock.js';
@@ -2565,11 +2566,12 @@ class Mixer<I, O> implements Mix<I, O> {
       }
     }
 
-    let delta: Record<string, unknown>;
+    let delta: Record<string, unknown> | null = null;
+    // Keys read even when silent: a `from: 'current'` voice takes its base on its first read.
     if (voice.built) {
       held.phase = phase;
       delta = this.keyed(voice, subject, held);
-    } else {
+    } else if (!silent(voice, weight)) {
       delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
     }
     held.delta = delta;
@@ -2577,6 +2579,7 @@ class Mixer<I, O> implements Mix<I, O> {
     held.seeks = voice.seeks;
     if (history !== undefined) this.remember(voice, held);
     if (reading.kept !== keptBefore && !voice.keeping) this.stateful(voice);
+    if (delta === null) return null;
 
     if (voice.out?.rest && this.isRest(delta)) {
       held.weight = 0;

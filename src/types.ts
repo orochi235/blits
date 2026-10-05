@@ -109,7 +109,7 @@ export interface Setting<S = void, H = unknown> {
    * host drains it, and never calls back. Meant for `step`, where under `stepMs` the timestamp is
    * the interval the event happened in rather than the frame that sampled it. Sent from a stateless
    * patch's `at` while it runs on a lane, it goes out for every subject the mix has met, probed that
-   * frame or not.
+   * frame or not; `at` is not asked for a subject at weight 0, so nothing is sent from it there.
    */
   send(event: unknown): void;
 }
@@ -184,7 +184,10 @@ export interface Patch<I, O, S = void, H = unknown> {
   readonly kit?: Partial<Kit<O>>;
   /** The fields of `setting.host` this patch reads. `cue` refuses a mix whose host lacks one. */
   readonly reads?: readonly string[];
-  /** `phase` is 0..1 across one pass, wrapping. */
+  /**
+   * `phase` is 0..1 across one pass, wrapping. Not asked for a subject its voice gives no weight, unless the voice is fading to rest;
+   * `step` still runs.
+   */
   at(phase: number, subject: I, setting: Setting<S, H>): Partial<O>;
   /** Per-subject state, created on the first frame this patch sees a subject. */
   state?(subject: I): S;

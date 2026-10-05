@@ -172,6 +172,23 @@ describe('handover at rest', () => {
     expect(m.live).toBe(false);
   });
 
+  it('still asks a silent voice fading to rest, so it can arrive', () => {
+    const settling = patch<Part, Pose>(
+      0,
+      (_phase, _p, setting) => ({ crawl: setting.timestamp >= 100 ? 0 : 10 }),
+      { writes: ['crawl'] },
+    );
+    const m = mix<Part, Pose>(PART);
+    const h = m.cue({ patch: settling, weight: 0 });
+    m.sync(0);
+    m.probe(part);
+    h.fade({ at: 'rest' });
+    m.sync(100);
+    m.probe(part);
+    m.sync(116);
+    expect(m.live).toBe(false);
+  });
+
   it('leaves at the deadline for a patch that never rests', async () => {
     const m = mix<Part, Pose>(PART);
     const h = m.cue({ patch: holds('crawl', 10) });
@@ -278,6 +295,38 @@ describe('blend between alternatives', () => {
           // Once lanes fill, a second read in the frame reads what they hold.
           for (const p of parts) m.probe(p);
           expect(calls).toBe(lanes && f > 0 ? parts.length : 2 * parts.length);
+        }
+      });
+
+      it('asks only the members carrying weight, and still steps the silent ones', () => {
+        const asked: number[] = [];
+        let steps = 0;
+        const stop = (value: number) =>
+          patch<Part, Pose, null>(
+            0,
+            () => {
+              asked.push(value);
+              return { crawl: value };
+            },
+            {
+              writes: ['crawl'],
+              state: () => null,
+              step: () => {
+                steps++;
+              },
+            },
+          );
+        const stops = Array.from({ length: 8 }, (_, i) => stop(i * 10));
+        const m = mix<Part, Pose>(PART, { lanes });
+        m.blend(stops, level<Part>(0.5));
+        for (let f = 0; f < 3; f++) {
+          m.sync(f * 16);
+          asked.length = 0;
+          steps = 0;
+          // 0.5 across 8 stops sits between the fourth and fifth, at 35.
+          expect(m.probe(part).crawl).toBeCloseTo(35, 9);
+          expect(asked.sort((a, b) => a - b)).toEqual([30, 40]);
+          expect(steps).toBe(f === 0 ? 0 : 8);
         }
       });
 

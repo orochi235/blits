@@ -8,6 +8,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Breaking
 
+- A patch is not asked for a subject its voice gives no weight: `at` is skipped at weight 0, unless
+  the voice is fading to rest, while `step` still runs. A blend over 8 stops now runs the 2 around
+  its signal per subject rather than all 8. A patch that counted its calls or sent events from `at`
+  at weight 0 no longer sees those frames.
 - A patch's length is `duration`, not `period`: a pass is one run through a patch whether or not
   it loops, and only a looping voice has a period. `period` is still set on every patch `patch`,
   `keys`, `spring`, `glide` and `tween` build, and a patch that sets only `period` still plays,
