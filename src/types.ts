@@ -529,7 +529,12 @@ export type Columns<O> = {
 export interface Mix<I, O> {
   /** Cues a voice. Throws when the engine cannot run the patch's form, or the kit lacks a channel. */
   cue(spec: VoiceSpec<I, O>): Handle<I>;
-  /** N voices whose weights split one signal, cued into one locus so they fold as alternatives. */
+  /**
+   * N voices whose weights split one signal, cued into one locus so they fold as alternatives. The
+   * signal is read once per subject per frame, with the first member's setting, and every member
+   * takes its share of that one reading; a signal keeping state keeps it once, not per member. Off
+   * the lanes, a second probe of a subject in the same frame reads it again.
+   */
   blend(
     patches: readonly Patch<I, O, unknown>[],
     by: Signal<I>,

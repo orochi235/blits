@@ -4,6 +4,7 @@ import { mix } from '../src/mixer.js';
 import { tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 import { level } from '../src/signals.js';
+import type { Setting } from '../src/types.js';
 
 interface Pose {
   gain: number;
@@ -256,6 +257,74 @@ describe('blend between alternatives', () => {
     m.sync(48);
     expect(m.probe(part).crawl).toBeCloseTo(20, 9);
   });
+
+  for (const lanes of [true, false])
+    describe(`with lanes ${lanes ? 'on' : 'off'}`, () => {
+      const parts = Array.from({ length: 5 }, (_, i) => ({ id: `p${i}` }));
+
+      it('reads its signal once per subject read, for every member', () => {
+        let calls = 0;
+        const by = (p: Part) => {
+          calls++;
+          return Number(p.id.slice(1)) / 4;
+        };
+        const m = mix<Part, Pose>(PART, { lanes });
+        m.blend([holds('crawl', 0), holds('crawl', 10), holds('crawl', 20)], by);
+        for (let f = 0; f < 4; f++) {
+          m.sync(f * 16);
+          calls = 0;
+          for (const p of parts) expect(m.probe(p).crawl).toBeCloseTo(Number(p.id.slice(1)) * 5, 9);
+          expect(calls).toBe(parts.length);
+          // Once lanes fill, a second read in the frame reads what they hold.
+          for (const p of parts) m.probe(p);
+          expect(calls).toBe(lanes && f > 0 ? parts.length : 2 * parts.length);
+        }
+      });
+
+      it('steps a signal that keeps state once per subject per frame, through member changes', () => {
+        let steps = 0;
+        const by = (_p: Part, setting: Setting) => {
+          const held = setting.keep(by, () => ({ n: 0 }));
+          held.n++;
+          steps++;
+          return Math.min(1, held.n / 10);
+        };
+        const m = mix<Part, Pose>(PART, { lanes, history: { ms: 1000 } });
+        const [first, second] = m.blend([holds('crawl', 0), holds('crawl', 10)], by);
+        for (let f = 1; f <= 6; f++) {
+          m.sync(f * 16);
+          steps = 0;
+          for (const p of parts) m.probe(p);
+          expect(steps).toBe(parts.length);
+          expect(second?.weightOf(parts[0] as Part)).toBeCloseTo(f / 10, 9);
+        }
+        // A read elsewhere in time steps a copy, not the live state.
+        m.project(200).probe(parts[0] as Part);
+        m.project(40).probe(parts[0] as Part);
+        // The member that read first leaves; the other carries on from the same state.
+        first?.fade({ over: 0 });
+        for (let f = 7; f <= 9; f++) {
+          m.sync(f * 16);
+          steps = 0;
+          for (const p of parts) m.probe(p);
+          expect(steps).toBe(parts.length);
+          expect(second?.weightOf(parts[0] as Part)).toBeCloseTo(f / 10, 9);
+        }
+      });
+
+      it('reads back what an input signal read, under history with inputs', () => {
+        const k = level<Part>(0);
+        const m = mix<Part, Pose>(PART, { lanes, history: { ms: 1000, inputs: true } });
+        m.blend([holds('crawl', 0), holds('crawl', 10), holds('crawl', 20)], k);
+        const seen: number[] = [];
+        for (let f = 0; f < 5; f++) {
+          k.set(f / 4);
+          m.sync(f * 16);
+          seen.push(m.probe(part).crawl);
+        }
+        for (let f = 0; f < 5; f++) expect(m.project(f * 16).probe(part).crawl).toBe(seen[f]);
+      });
+    });
 });
 
 describe('the pose', () => {

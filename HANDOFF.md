@@ -271,11 +271,13 @@ systems now run on it**, on klieg's `main`.
        from 12.4 at `560f79c`. What is left is each subject meeting the new voice: a record per
        subject and a relinked chain.
      - **A blend still costs half again a plain voice**: three voices blended by a signal over
-       10k subjects take about 3.2 ms a frame, three plain ones 2.0 (teitou). `mix.blend` calls
-       its signal once per member and subject; calling it once per subject would cut a third of
-       a three-member blend's signal calls, but changes how often a host's signal runs, so it waits
-       on Mike. A locus with a motion member, or a signal that keeps state, stays on the general
-       path.
+       10k subjects take about 3.2–3.3 ms a frame, three plain ones 2.0 and a plain locus of three
+       2.7–2.8 (teitou, `FRAMES=5000`, 10 rounds, 2026-10-04). `mix.blend` now reads its signal
+       once per subject per frame rather than once per member (Mike's call, 2026-10-04), which
+       measured no different (3.20–3.67 against 3.20–3.53 at `a7d5317`): the bench's signal costs
+       almost nothing. A profile against the plain locus puts the difference in the lanes' per-member weight path (`one`,
+       `signalled`, and `gatherLocus`). A locus with a motion member, or a signal that keeps state,
+       stays on the general path.
      - **Starting 10k one-subject tween voices** takes about 8 ms to cue and 23 for the first frame,
        against about 3 and 11 for `fn` voices (teitou, branch `slow-cases-2`). The rest is
        allocation spread over a `Motions`, its closures, two WeakMaps and three WeakRefs per voice,

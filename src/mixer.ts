@@ -48,6 +48,29 @@ declare function structuredClone<T>(value: T): T;
 
 const slow: unique symbol = Symbol('slow');
 
+/** Numbers every mix's frames apart, so a blend's read is never taken for another mix's or frame's. */
+let frames = 0;
+
+/** A `mix.blend`'s one signal, read once for all its members. */
+interface Blend<I, O> {
+  by: Signal<I>;
+  stops: number;
+  members: Voice<I, O>[];
+  /** The general path's last read: its frame, its subject, and the value. */
+  frame: number;
+  subject: I | undefined;
+  value: number;
+  /** Lanes' reads by subject number: the frame each is from, and the value. */
+  frames: Float64Array;
+  values: Float64Array;
+}
+
+/** A blend member's weight for its signal's read `k`: the members' stops sit evenly along 0..1. */
+function shareOf(k: number, i: number, stops: number): number {
+  const d = stops === 0 ? 0 : Math.abs(k * stops - i);
+  return d >= 1 ? 0 : 1 - d;
+}
+
 /**
  * `structuredClone(v)`, made directly for what records mostly hold — numbers, strings, and plain
  * objects and arrays of them two deep — with what `structuredClone` would give; anything else, or
@@ -501,6 +524,8 @@ export class Voice<I, O> {
   keepOn: Subject<unknown> | null = null;
   /** What `setting.keep` holds when called before any record is. */
   ownKept: Map<object, unknown> | null = null;
+  /** The blend it is a member of, and which. */
+  blend: { of: Blend<I, O>; i: number } | null = null;
   /** The one record of every subject it does not reach. */
   unreached: Subject<unknown> | null = null;
   /**
@@ -696,6 +721,8 @@ class Mixer<I, O> implements Mix<I, O> {
    */
   private now = Number.NaN;
   private u = Number.NaN;
+  /** This mix's frame among every mix's: moved by a sync, and by a control change or drop within one. */
+  private frame = ++frames;
   private offset = 0;
   /** The mix's own rate; null while it has never been set, when mix time is host time. */
   private pace: Pace | null = null;
@@ -907,15 +934,22 @@ class Mixer<I, O> implements Mix<I, O> {
     spec: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'locus'> = {},
   ): Handle<I>[] {
     const locus = `blend:${this.nextId}`;
-    const stops = patches.length - 1;
+    const of: Blend<I, O> = {
+      by,
+      stops: patches.length - 1,
+      members: [],
+      frame: 0,
+      subject: undefined,
+      value: 0,
+      frames: new Float64Array(0),
+      values: new Float64Array(0),
+    };
     return patches.map((patch, i) => {
-      const share = (subject: I, setting: Setting) => {
-        const k = by(subject, setting);
-        const d = stops === 0 ? 0 : Math.abs(k * stops - i);
-        return d >= 1 ? 0 : 1 - d;
-      };
-      const weight: Signal<I> = by.input ? Object.assign(share, { input: true }) : share;
-      return this.cue({ ...spec, patch, weight, locus });
+      const handle = this.cue({ ...spec, patch, weight: by, locus });
+      const voice = this.cued[this.cued.length - 1] as Voice<I, O>;
+      voice.blend = { of, i };
+      of.members.push(voice);
+      return handle;
     });
   }
 
@@ -950,6 +984,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   private moveTo(now: number): void {
     this.now = now;
+    this.frame = ++frames;
     this.reducedNow = this.reduced;
     for (const a of this.announced) if (Number.isNaN(a.at)) a.at = this.u;
     if (this.pins !== null && this.pins.size > 0) this.repin();
@@ -1531,6 +1566,7 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   drop(subject: I): void {
+    this.frame = ++frames;
     const head = this.chains.get(subject);
     // Nothing that kept this head, such as `pull`'s remembered list, may take it as current again.
     if (head !== undefined) {
@@ -1621,10 +1657,13 @@ class Mixer<I, O> implements Mix<I, O> {
         mix.sending.voice = voice;
         mix.sending.subject = subject;
       },
-      signal: (voice, subject, held, elapsed, pass) => {
+      signal: (voice, subject, held, elapsed, pass, slot) => {
+        // A blend member after the first takes the read already made, with no setting to fill.
+        const read = voice.blend === null ? Number.NaN : mix.laneRead(voice, slot);
+        if (!Number.isNaN(read)) return read;
         mix.prime(voice, held, mix.now, elapsed, pass);
         const kept = reading.kept;
-        const base = mix.base(voice, subject, mix.now, held);
+        const base = mix.base(voice, subject, mix.now, held, slot);
         if (reading.kept !== kept && !voice.keeping) mix.stateful(voice);
         return base;
       },
@@ -2135,6 +2174,7 @@ class Mixer<I, O> implements Mix<I, O> {
     return {
       nowFor: (voice) => (Number.isNaN(this.now) ? voice.start : this.now),
       changed: (voice) => {
+        this.frame = ++frames;
         this.noted(voice);
         this.lanes?.refill();
       },
@@ -2386,16 +2426,81 @@ class Mixer<I, O> implements Mix<I, O> {
     return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
   }
 
-  /** A voice's weight for a subject before its fade and ramp: its signal's, or its own number. */
-  private base(voice: Voice<I, O>, subject: I, now: number, held: Subject<unknown>): number {
+  /**
+   * A voice's weight for a subject before its fade and ramp: its signal's, or its own number.
+   * `slot` is the subject's number when lanes ask.
+   */
+  private base(
+    voice: Voice<I, O>,
+    subject: I,
+    now: number,
+    held: Subject<unknown>,
+    slot = -1,
+  ): number {
     this.sending.voice = voice;
     this.sending.subject = subject;
     const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
     if (signal === null) return voice.weight;
     const was = held.replay && last(held.replay, now, true);
-    const base = was ? was.value : signal(subject, voice.setting as Setting);
+    const base = was
+      ? was.value
+      : voice.blend === null
+        ? signal(subject, voice.setting as Setting)
+        : this.blended(voice, subject, held, slot);
     if (signal.input && !was) this.record(held, base);
     return base;
+  }
+
+  /** A blend member's share of its signal's read for this subject this frame, made by the first to ask. */
+  private blended(voice: Voice<I, O>, subject: I, held: Subject<unknown>, slot: number): number {
+    const { of, i } = voice.blend as { of: Blend<I, O>; i: number };
+    const frame = this.frame;
+    if (slot < 0) {
+      if (of.frame === frame && of.subject === subject) return shareOf(of.value, i, of.stops);
+    } else if (slot < of.frames.length) {
+      const read = this.laneRead(voice, slot);
+      if (!Number.isNaN(read)) return read;
+    } else {
+      const size = Math.max(slot + 1, of.frames.length * 2, 64);
+      const frames = new Float64Array(size);
+      const values = new Float64Array(size);
+      frames.set(of.frames);
+      values.set(of.values);
+      of.frames = frames;
+      of.values = values;
+    }
+    const kept = reading.kept;
+    const k = of.by(subject, voice.setting as Setting);
+    if (reading.kept !== kept && !this.projecting) this.shareKept(of, voice, subject, held);
+    if (slot < 0) {
+      of.frame = frame;
+      of.subject = subject;
+      of.value = k;
+    } else {
+      of.frames[slot] = frame;
+      of.values[slot] = k;
+    }
+    return shareOf(k, i, of.stops);
+  }
+
+  /** A blend member's share of the read lanes made of its signal for subject `slot` this frame; NaN for none. */
+  private laneRead(voice: Voice<I, O>, slot: number): number {
+    const { of, i } = voice.blend as { of: Blend<I, O>; i: number };
+    return slot < of.frames.length && of.frames[slot] === this.frame
+      ? shareOf(of.values[slot] as number, i, of.stops)
+      : Number.NaN;
+  }
+
+  /**
+   * A blend's signal kept state on one member's record: the others' records for the subject hold
+   * the same, so whichever member reads next steps it, and every member leaves its lane.
+   */
+  private shareKept(of: Blend<I, O>, voice: Voice<I, O>, subject: I, held: Subject<unknown>): void {
+    for (const m of of.members) {
+      const h = m === voice ? undefined : (m.subjects.get(subject) as Subject<unknown> | undefined);
+      if (h?.reaches && h.kept === null) h.kept = held.kept;
+      this.stateful(m);
+    }
   }
 
   /**

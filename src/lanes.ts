@@ -76,7 +76,7 @@ export interface LaneHost<I, O> {
   /**
    * A voice with a signal weight: the signal's value for a subject the general path has met, before
    * the fade and ramp `weighed` applies, with the setting filled in for the call; makes the voice
-   * stateful if the signal keeps state.
+   * stateful if the signal keeps state. `slot` is the subject's number.
    */
   signal(
     voice: Voice<I, O>,
@@ -84,6 +84,7 @@ export interface LaneHost<I, O> {
     held: Subject<unknown>,
     elapsed: number,
     pass: number,
+    slot: number,
   ): number;
   /** Sets `reading.horizon` for the voice and a subject delayed `delay` voice ms. */
   horizon(voice: Voice<I, O>, delay: number): void;
@@ -1770,7 +1771,7 @@ export class Lanes<I, O> implements Watcher {
     }
     const subject = this.subjectAt(slot);
     if (subject === absent) return 0;
-    const base = this.host.signal(voice, subject, rec, elapsed, pass);
+    const base = this.host.signal(voice, subject, rec, elapsed, pass, slot);
     return weighed(base, fade, voice.parts === null ? 1 : this.host.parting(voice, subject));
   }
 
