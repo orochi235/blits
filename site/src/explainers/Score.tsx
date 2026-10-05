@@ -6,7 +6,7 @@ import { f } from '@weasel-js/labkit';
 import { label, lamp } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import type { Ink } from './kit/ink';
-import type { Frame, Scene, VoiceDef } from './kit/scene';
+import { FRAME, type Frame, type Scene, type VoiceDef } from './kit/scene';
 
 interface Row {
   id: string;
@@ -20,11 +20,13 @@ interface Pose {
 }
 
 const ROW: Row = { id: 'row' };
+const DURATION = 5000;
+const ORB_START = 300;
 
 const config = f.schema({
   flight: f.number(900).range(300, 1600).step(50).label('Orb flight, ms'),
   hold: f.number(600).range(0, 1500).step(50).label('Tint hold, ms'),
-  early: f.boolean(false).label('Cut the orb short at 0.8 s'),
+  cut: f.number(DURATION).range(0, DURATION).step(50).suffix('ms').label('Cut the orb at'),
 });
 type Config = ReturnType<typeof config.defaults>;
 
@@ -35,7 +37,7 @@ function voices(c: Config): VoiceDef<Row, Pose>[] {
       color: 'v1',
       spec: {
         name: 'orb',
-        start: 300,
+        start: ORB_START,
         loop: false,
         fade: { out: 150 },
         patch: keys<Row, Pose>(c.flight, [
@@ -75,9 +77,12 @@ function scene(c: Config): Scene<Row, Pose, Config> {
     kit: kit<Pose>({ orb: sum(), text: sum(), tint: sum() }),
     subjects: () => [ROW],
     voices: () => voices(c),
-    events: () => (c.early ? [{ at: 800, run: (_m, handles) => handles[0]?.fade() }] : []),
+    events: () => (cuts(c) ? [{ at: c.cut, run: (_m, handles) => handles[0]?.fade() }] : []),
   };
 }
+
+/** Whether the cut lands before the orb would have landed on its own; at or after that, nothing to cut. */
+const cuts = (c: Config) => c.cut < ORB_START + c.flight;
 
 /** The marks the plan holds at time `t`, read off a mix played to it. */
 function marksAt(c: Config, t: number): Marked[] {
@@ -86,9 +91,10 @@ function marksAt(c: Config, t: number): Marked[] {
     history: { ms: DURATION },
   });
   const handles = voices(c).map((v) => m.cue(v.spec));
-  m.sync(0);
-  if (c.early && t >= 800) {
-    m.sync(800);
+  if (cuts(c) && t >= c.cut) {
+    // The player runs an event before the first frame at or past it, so the mix last synced a frame earlier.
+    const before = Math.ceil(c.cut / FRAME - 1e-6) * FRAME - FRAME;
+    if (before >= 0) m.sync(before);
     handles[0]?.fade();
   }
   m.sync(t);
@@ -108,7 +114,7 @@ function stage(
   frame: Frame<Row, Pose>,
   c: Config,
 ): void {
-  const LINE = c.early ? 'The orb was cut short.' : 'The orb has landed.';
+  const LINE = cuts(c) ? 'The orb was cut short.' : 'The orb has landed.';
   const pose = frame.poses[0];
   const orb = pose?.orb ?? 0;
   const text = pose?.text ?? 0;
@@ -179,7 +185,6 @@ function stage(
   }
 }
 
-const DURATION = 5000;
 const LANES = ['orb', 'text', 'tint'] as const;
 
 export default function Score() {
@@ -189,7 +194,7 @@ export default function Score() {
       schema={config}
       duration={DURATION}
       aspect={0.8}
-      caption="Above, the scene the score plays: the orb flies, the line types in, the tint washes the stage. Below, each lane is one voice. The bar runs from its start to its end, with its fades shaded; the dashed lines are the anchors it hangs from. Cut the orb short and it fades out mid-flight, and everything after it moves up."
+      caption="Above, the scene the score plays: the orb flies, the line types in, the tint washes the stage. Below, each lane is one voice. The bar runs from its start to its end, with its fades shaded; the dashed lines are the anchors it hangs from. Drag the cut earlier than the landing and the orb fades out mid-flight there, and everything after it moves up with it; at the right end it is never cut."
       draw={(ctx, frame, size, ink, c) => {
         const box = { x: 12, y: 8, w: size.w - 24, h: Math.round(size.h * 0.46) };
         stage(ctx, box, ink, frame, c);
@@ -249,6 +254,22 @@ export default function Score() {
           ctx.stroke();
         }
         ctx.setLineDash([]);
+
+        // Where the cut falls on the orb's lane, so dragging the slider moves a mark you can see.
+        const orbY = top + lane / 2;
+        if (c.cut >= DURATION) {
+          label(ctx, 'never cut', right, orbY - lane * 0.3, ink.soft, 'right');
+        } else {
+          const cx = Math.round(x(c.cut)) + 0.5;
+          ctx.strokeStyle = ink.voice('v1');
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(cx, orbY - lane * 0.4);
+          ctx.lineTo(cx, orbY + lane * 0.4);
+          ctx.stroke();
+          const text = cuts(c) ? 'fade()' : 'fade(): landed already';
+          label(ctx, text, cx + 5, orbY - lane * 0.3, ink.voice('v1'), 'left', true);
+        }
 
         ctx.strokeStyle = ink.ink;
         ctx.lineWidth = 1.5;

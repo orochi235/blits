@@ -20,6 +20,7 @@ interface Pose {
 }
 
 const COUNT = 12;
+const DURATION = 8000;
 const subjects: Subject[] = Array.from({ length: COUNT }, (_, i) => ({ i }));
 
 const config = f.schema({
@@ -31,11 +32,12 @@ const config = f.schema({
   wave: f.number(1).range(0, 1).step(0.05).label('Weight of wave'),
   pulse: f.number(1).range(0, 1).step(0.05).label('Weight of pulse'),
   swell: f.number(0.7).range(0, 1).step(0.05).label('Weight of swell'),
-  mute: f.boolean(true).label('Mute at 5 s'),
+  muteAt: f.number(5000).range(0, DURATION).step(100).suffix('ms').label('Mute at'),
 });
 type Config = ReturnType<typeof config.defaults>;
 
 const TAU = 2 * Math.PI;
+const MUTE_OVER = 1500;
 /** The folded height at which a lamp reads fully lit; past it, the lamp glows. */
 const FULL = 0.8;
 
@@ -113,7 +115,8 @@ function scene(c: Config): Scene<Subject, Pose, Config> {
         },
       },
     ],
-    events: () => (c.mute ? [{ at: 5000, run: (m) => m.mute({ over: 1500 }) }] : []),
+    events: () =>
+      c.muteAt < DURATION ? [{ at: c.muteAt, run: (m) => m.mute({ over: MUTE_OVER }) }] : [],
     ledger: { subject: (s) => (s[c.focus] ?? s[0]) as Subject, channels: ['height'] },
   };
 }
@@ -123,9 +126,9 @@ export default function Mix() {
     <Explainer
       scene={scene}
       schema={config}
-      duration={8000}
+      duration={DURATION}
       aspect={0.56}
-      caption="Each lamp is one subject, lit to its folded height and tinted by the voices lighting it; the pips under it are the voices that reach it. Below, each column stacks what each voice adds, and the line on top is the folded pose. Pulse only reaches the even ones."
+      caption="Each lamp is one subject, lit to its folded height and tinted by the voices lighting it; the pips under it are the voices that reach it. Below, each column stacks what each voice adds, and the line on top is the folded pose. Pulse only reaches the even ones. At the “Mute at” time every voice leaves together; at the right end, never."
       draw={(ctx, frame, size, ink, c) => {
         const left = 16;
         const right = size.w - 16;
@@ -192,7 +195,15 @@ export default function Mix() {
         });
 
         const live = frame.handles.some((h) => h.state !== 'done');
-        label(ctx, live ? 'Live' : 'Not live: every voice is done', left, 18, ink.soft);
+        const when =
+          c.muteAt >= DURATION
+            ? 'never muted'
+            : frame.t < c.muteAt
+              ? `mute() at ${(c.muteAt / 1000).toFixed(1)} s`
+              : frame.t < c.muteAt + MUTE_OVER
+                ? 'muting'
+                : 'muted';
+        label(ctx, live ? `Live, ${when}` : 'Not live: every voice is done', left, 18, ink.soft);
       }}
     />
   );

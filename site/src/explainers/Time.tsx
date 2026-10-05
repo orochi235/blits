@@ -48,7 +48,19 @@ interface Subject {
 const counters: Subject[] = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
 const [, left] = counters as [Subject, Subject, Subject];
 const CATCH = 6000;
-const AWAY = { from: 1500, to: 3700 };
+const AWAY_FROM = 1500;
+
+const catching = f.schema({
+  away: f
+    .number(2200)
+    .range(100, CATCH - AWAY_FROM)
+    .step(100)
+    .suffix('ms')
+    .label('B unprobed for'),
+});
+type CatchConfig = ReturnType<typeof catching.defaults>;
+
+const awayOf = (c: CatchConfig) => ({ from: AWAY_FROM, to: AWAY_FROM + c.away });
 
 interface Tally {
   value: number;
@@ -66,14 +78,16 @@ const tally = patch<Subject, Tally, Count>(
   },
 );
 
-const catchUp: Scene<Subject, Tally, Record<string, never>> = {
-  kit: makeKit<Tally>({ value: sum() }),
-  subjects: () => counters,
-  voices: () => [{ name: 'Seconds', color: 'v1', spec: { patch: tally } }],
-  probing: (t, s) => s !== left || t < AWAY.from || t >= AWAY.to,
-  record: ({ poses }) => poses.map((p) => p.value ?? 0),
-};
-const catchUpScene = () => catchUp;
+function catchUpScene(c: CatchConfig): Scene<Subject, Tally, CatchConfig> {
+  const away = awayOf(c);
+  return {
+    kit: makeKit<Tally>({ value: sum() }),
+    subjects: () => counters,
+    voices: () => [{ name: 'Seconds', color: 'v1', spec: { patch: tally } }],
+    probing: (t, s) => s !== left || t < away.from || t >= away.to,
+    record: ({ poses }) => poses.map((p) => p.value ?? 0),
+  };
+}
 
 /** A stopwatch dial per subject: the hand and the swept wedge both read its counted seconds. */
 function dials(
@@ -138,18 +152,21 @@ export function CatchUp() {
   return (
     <Explainer
       scene={catchUpScene}
+      schema={catching}
       duration={CATCH}
       aspect={0.8}
       caption={
         <>
           Each subject counts the seconds its <code>step</code> has been handed, and its dial shows
           the count: one turn is 6 s. B goes unprobed in the shaded stretch, so its hand holds
-          still; the next probe hands it the whole gap in one step, and the hand jumps.
+          still; the next probe hands it the whole gap in one step, and the hand jumps by as much as
+          it missed.
         </>
       }
-      draw={(ctx, frame, size, ink) => {
+      draw={(ctx, frame, size, ink, cfg) => {
+        const span = awayOf(cfg);
         const stage = Math.round(size.h * 0.36);
-        const away = frame.t >= AWAY.from && frame.t < AWAY.to;
+        const away = frame.t >= span.from && frame.t < span.to;
         dials(
           ctx,
           size.w,
@@ -180,7 +197,7 @@ export function CatchUp() {
         timeline(ctx, box, ink, {
           duration: CATCH,
           t: frame.t,
-          windows: [{ ...AWAY, text: 'B not probed' }],
+          windows: [{ ...span, text: 'B not probed' }],
         });
         trace(
           ctx,
@@ -207,12 +224,15 @@ interface Pose {
 
 const tab = { id: 'tab' };
 const HIDE = 8000;
-const HIDDEN = { from: 2000, to: 4500 };
 
 const hiding = f.schema({
   rebase: f.boolean(false).label('Rebase on return'),
+  hideAt: f.number(2000).range(0, 6000).step(100).suffix('ms').label('Hide the tab at'),
+  hideFor: f.number(2500).range(100, 4000).step(100).suffix('ms').label('Hidden for'),
 });
 type HideConfig = ReturnType<typeof hiding.defaults>;
+
+const hiddenOf = (c: HideConfig) => ({ from: c.hideAt, to: Math.min(HIDE, c.hideAt + c.hideFor) });
 
 function hideScene(c: HideConfig): Scene<typeof tab, Pose, HideConfig> {
   return {
@@ -238,12 +258,12 @@ function hideScene(c: HideConfig): Scene<typeof tab, Pose, HideConfig> {
         },
       },
     ],
-    syncing: (t) => t < HIDDEN.from || t >= HIDDEN.to,
+    syncing: (t) => t < hiddenOf(c).from || t >= hiddenOf(c).to,
     events: () =>
       c.rebase
         ? [
             {
-              at: HIDDEN.to,
+              at: hiddenOf(c).to,
               run: (m) => m.rebase(),
             },
           ]
@@ -289,12 +309,13 @@ export default function HideTab() {
       caption={
         <>
           The lamp rides the sweep and glows with the fade. In the shaded stretch the tab is hidden
-          and the host gets no frames. Without <code>rebase()</code>, the first frame back is 2.5 s
-          later on every clock: the fade has finished and the sweep's one pass is over. With it,
-          both resume where they were.
+          and the host gets no frames. Without <code>rebase()</code>, the first frame back is as
+          much later on every clock as the tab was hidden: hide it long enough and the fade has
+          finished and the sweep's one pass is over. With it, both resume where they were.
         </>
       }
-      draw={(ctx, frame, size, ink) => {
+      draw={(ctx, frame, size, ink, c) => {
+        const span = hiddenOf(c);
         const pose = frame.poses[0];
         const stage = Math.round(size.h * 0.22);
         sweeper(ctx, size.w, stage, ink, pose, frame.hidden);
@@ -314,7 +335,7 @@ export default function HideTab() {
         timeline(ctx, box, ink, {
           duration: HIDE,
           t: frame.t,
-          windows: [{ ...HIDDEN, text: frame.hidden ? 'Tab hidden: no frames' : 'Tab hidden' }],
+          windows: [{ ...span, text: frame.hidden ? 'Tab hidden: no frames' : 'Tab hidden' }],
         });
         const sweep = series(frame.history, 0).filter(([, v]) => !Number.isNaN(v));
         trace(

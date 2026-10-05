@@ -34,14 +34,7 @@ const config = f.schema({
   stagger: f.number(150).range(0, 500).step(10).suffix('ms').label('Stagger per dot'),
   fadeIn: f.number(600).range(0, 2000).step(50).suffix('ms').label('Fade in'),
   fadeOut: f.number(800).range(0, 2000).step(50).suffix('ms').label('Fade out'),
-  fades: f.boolean(true).label('Fade out'),
-  fadeAt: f
-    .number(4500)
-    .range(0, DURATION)
-    .step(100)
-    .suffix('ms')
-    .label('Fade out at')
-    .showIf((c) => c.fades === true),
+  fadeAt: f.number(4500).range(0, DURATION).step(100).suffix('ms').label('Fade out at'),
 });
 type Config = ReturnType<typeof config.defaults>;
 
@@ -54,6 +47,9 @@ const row: Dot[] = Array.from({ length: COUNT }, (_, i) => ({ i }));
 const hop = patch<Dot, Pose>(1000, (phase) => ({ lift: Math.sin(Math.PI * phase), envelope: 1 }), {
   writes: ['lift', 'envelope'],
 });
+
+/** The slider's right end is never: the run loops before it. */
+const fades = (c: Config) => c.fadeAt < DURATION;
 
 function scene(c: Config): Scene<Dot, Pose, Config> {
   const loop = c.loop === 'forever' ? true : c.loop === 'once' ? false : c.passes;
@@ -73,7 +69,7 @@ function scene(c: Config): Scene<Dot, Pose, Config> {
         },
       },
     ],
-    events: () => (c.fades ? [{ at: c.fadeAt, run: (_mix, handles) => handles[0]?.fade() }] : []),
+    events: () => (fades(c) ? [{ at: c.fadeAt, run: (_mix, handles) => handles[0]?.fade() }] : []),
     record: ({ poses }) => poses.map((p) => p.envelope ?? 0),
     ledger: { subject: (s) => s[0] as Dot, channels: ['lift', 'envelope'] },
   };
@@ -90,7 +86,7 @@ export default function Voice() {
         <>
           One voice, seven dots. Each dot starts later by the stagger and fades in from its own
           start; the lines under the row are each dot's weight over time, and the dashed mark is
-          where <code>fade()</code> is called.
+          where <code>fade()</code> is called. With “Fade out at” at its right end, it never is.
         </>
       }
       draw={(ctx, frame, size, ink, c) => {
@@ -123,7 +119,7 @@ export default function Voice() {
 
         const px = (t: number) => box.x + (t / DURATION) * box.w;
         ctx.lineWidth = 1;
-        if (c.fades) {
+        if (fades(c)) {
           ctx.strokeStyle = ink.soft;
           ctx.setLineDash([3, 3]);
           ctx.beginPath();

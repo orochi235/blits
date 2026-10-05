@@ -23,7 +23,9 @@ interface Subject {
 const steady: Subject = { name: 'Probed every frame' };
 const gap: Subject = { name: 'Left unprobed' };
 const DURATION = 6000;
-const AWAY = { from: 1700, to: 2900 };
+const AWAY_FROM = 1700;
+/** The longest gap the slider offers, and so the cap at which capping changes nothing. */
+const MOST = 3000;
 const STIFFNESS = 150;
 const DAMPING = 8;
 
@@ -47,17 +49,20 @@ const spring = patch<Subject, Pose, Spring>(0, (_phase, _s, setting) => ({ x: se
 });
 
 const config = f.schema({
-  capped: f.boolean(false).label('Cap each step at 64 ms'),
+  away: f.number(1200).range(100, MOST).step(100).suffix('ms').label('Left unprobed for'),
+  cap: f.number(MOST).range(16, MOST).step(8).suffix('ms').label('Cap each step at'),
 });
 type Config = ReturnType<typeof config.defaults>;
+
+const awayOf = (c: Config) => ({ from: AWAY_FROM, to: AWAY_FROM + c.away });
 
 function scene(c: Config): Scene<Subject, Pose, Config> {
   return {
     kit: kit<Pose>({ x: sum() }),
     subjects: () => [steady, gap],
     voices: () => [{ name: 'Spring', color: 'v1', spec: { patch: spring } }],
-    options: () => (c.capped ? { maxDt: 64 } : {}),
-    probing: (t, s) => s !== gap || t < AWAY.from || t >= AWAY.to,
+    options: () => (c.cap < MOST ? { maxDt: c.cap } : {}),
+    probing: (t, s) => s !== gap || t < awayOf(c).from || t >= awayOf(c).to,
     record: ({ t, poses }) => [poses[0]?.x ?? 0, poses[1]?.x ?? 0, target(t)],
   };
 }
@@ -147,13 +152,16 @@ export default function State() {
         <>
           One spring patch, two subjects: each weight is pulled toward the dashed post, which flips
           between 1 and 0. The lower one goes unprobed in the shaded stretch, and its next{' '}
-          <code>step</code> is handed the whole 1.2 s gap. Uncapped, one Euler step that long throws
-          it far off the scale; with <code>maxDt: 64</code> it takes one short step and carries on.
+          <code>step</code> is handed the whole gap. Uncapped, at the cap slider's right end, one
+          Euler step that long throws it far off the scale. Bring <code>maxDt</code> down and the
+          step shrinks: a few hundred ms still overshoots, and near a frame it takes one short step
+          and carries on.
         </>
       }
-      draw={(ctx, frame, size, ink) => {
+      draw={(ctx, frame, size, ink, c) => {
+        const span = awayOf(c);
         const stage = Math.round(size.h * 0.3);
-        const away = frame.t >= AWAY.from && frame.t < AWAY.to;
+        const away = frame.t >= span.from && frame.t < span.to;
         rails(ctx, size.w, stage, ink, target(frame.t), [
           { name: 'Steady', color: ink.voice('v1'), x: frame.poses[0]?.x },
           {
@@ -180,7 +188,7 @@ export default function State() {
         timeline(ctx, box, ink, {
           duration: DURATION,
           t: frame.t,
-          windows: [{ ...AWAY, text: 'Not probed' }],
+          windows: [{ ...span, text: c.cap < MOST ? `Not probed, maxDt ${c.cap}` : 'Not probed' }],
         });
         const clamp = (v: number) => Math.max(MIN - 0.2, Math.min(MAX + 0.2, v));
         const points = (i: number): [number, number][] =>

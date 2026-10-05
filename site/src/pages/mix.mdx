@@ -56,7 +56,7 @@ requestAnimationFrame(frame);
 
 ## Clearing up
 
-`mute()` fades every voice out, over `over` ms when you pass it and over each voice's own `fade.out` otherwise. With "Mute at 5 s" on, the explainer calls `mute({ over: 1500 })` and every voice leaves together; once the last is done, the mix is no longer live.
+`mute()` fades every voice out, over `over` ms when you pass it and over each voice's own `fade.out` otherwise. At the "Mute at" time, the explainer calls `mute({ over: 1500 })` and every voice leaves together; once the last is done, the mix is no longer live. At the slider's right end it never mutes.
 
 `drop(subject)` forgets what the mix was keeping for one subject. Call it when a subject goes away for good.
 
