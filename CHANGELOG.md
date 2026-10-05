@@ -64,6 +64,13 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A subject meeting a voice over every subject on a lane does less to meet it. A lane finds a
+  subject's place by its number in an array rather than a Map, the voice's record comes from the
+  chain the probe just linked rather than a second lookup, the voices naming the subject are looked
+  up only when one has started on it since, and the subjects that fold the voice on the general path
+  this frame share one list of it rather than a copy each in a Map. With 10k tween voices of one
+  subject each and a voice over all of them replaced every frame (`swap`), a frame takes
+  4.66–5.13 ms on teitou, from 6.22–6.43.
 - A pose never holds a patch's own array. Where a channel's `merge` returned its second argument,
   as `last()` does, the mix put that array into the pose as it was: with two voices on a keyed
   array channel, a host editing its pose edited the stop, and every later frame read the edit. The

@@ -2146,7 +2146,8 @@ describe('a voice a probe meets late, after every laned voice, folds onto the la
     played?.at?.(16);
     m.sync(16);
     for (const p of parts) m.probe(p);
-    const lanes = (m as unknown as { lanes: { owed: Map<number, number[]> } }).lanes;
-    expect(lanes.owed.size).toBe(parts.length);
+    // Subjects are numbered 0 up in the order they were first probed.
+    const lanes = (m as unknown as { lanes: { owes(slot: number): boolean } }).lanes;
+    expect(parts.filter((_, slot) => lanes.owes(slot))).toHaveLength(parts.length);
   });
 });

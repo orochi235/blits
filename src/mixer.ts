@@ -1326,7 +1326,8 @@ class Mixer<I, O> implements Mix<I, O> {
             slots[n] = slot;
           }
         }
-        const laned = live && lanes?.prepare(slot, subject, now, this.version) === true;
+        const laned =
+          live && lanes?.prepare(slot, subject, now, this.version, heads[n] ?? null) === true;
         if (laned && whole && (lanes as Lanes<I, O>).whole && !(lanes as Lanes<I, O>).owes(slot)) {
           (lanes as Lanes<I, O>).writeLater(slot, columns, n);
           continue;
@@ -1722,7 +1723,11 @@ class Mixer<I, O> implements Mix<I, O> {
       channels: this.channels,
       names: this.names,
       fits: (voice) => mix.fits(voice),
-      meet: (voice, subject) => mix.held(voice, subject, mix.now),
+      meet: (voice, subject, head) => {
+        for (let held = head; held !== null; held = held.next)
+          if (held.voice === voice) return held;
+        return mix.held(voice, subject, mix.now);
+      },
       naming: (subject) => (mix.naming === 0 ? undefined : mix.named.get(subject)),
       slotOf: (subject) => mix.chains.get(subject)?.slot ?? -1,
       envelope: (voice, since) => mix.envelope(voice, mix.now, since),
@@ -3007,7 +3012,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const now = this.now;
     const head = Number.isNaN(now) ? null : this.chain(subject, now);
     this.linkedLaned =
-      head !== null && this.lanes?.prepare(head.slot, subject, now, this.version) === true;
+      head !== null && this.lanes?.prepare(head.slot, subject, now, this.version, head) === true;
     return head;
   }
 

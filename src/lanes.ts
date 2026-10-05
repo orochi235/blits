@@ -54,8 +54,8 @@ export interface LaneHost<I, O> {
   readonly names: readonly string[];
   /** Whether a voice's patch and spec can run on a lane, its channels aside. */
   fits(voice: Voice<I, O>): boolean;
-  /** The voice's record for a subject this probe has already linked it to. */
-  meet(voice: Voice<I, O>, subject: I): Subject<unknown>;
+  /** The voice's record for a subject this probe has already linked it to, from `head` if there. */
+  meet(voice: Voice<I, O>, subject: I, head: Subject<unknown> | null): Subject<unknown>;
   /** The voices whose `subjects` name the subject, in voice order. */
   naming(subject: I): readonly Voice<I, O>[] | undefined;
   /** The subject's number, -1 where it has none yet. */
@@ -237,7 +237,8 @@ export interface Positions<I, O> {
 class Lane<I, O> implements Positions<I, O> {
   /** The subject number at each position. */
   readonly list: number[] = [];
-  private readonly at = new Map<number, number>();
+  /** By subject number, its position plus one, 0 where it has none. */
+  private at = new Int32Array(0);
   /** Whether too few of its subjects were probed lately to fill it: theirs take the general path. */
   idle = false;
   /** The lines it goes idle and busy at, by its patch form. */
@@ -322,14 +323,19 @@ class Lane<I, O> implements Positions<I, O> {
   }
 
   positionOf(slot: number): number {
-    return this.at.get(slot) ?? -1;
+    return slot < this.at.length ? (this.at[slot] as number) - 1 : -1;
   }
 
   /** Gives a subject the voice reaches a position, from what its record fixed on first sight. */
   add(slot: number, held: Subject<unknown>): void {
     const p = this.list.length;
     this.list.push(slot);
-    this.at.set(slot, p);
+    if (slot >= this.at.length) {
+      const at = new Int32Array(Math.max(slot + 1, this.at.length * 2, 64));
+      at.set(this.at);
+      this.at = at;
+    }
+    this.at[slot] = p + 1;
     if ((p + 1) * STRIDE > this.data.length) {
       const data = new Float64Array(Math.max(p + 1, (this.data.length / STRIDE) * 2, 4) * STRIDE);
       data.set(this.data);
@@ -349,13 +355,13 @@ class Lane<I, O> implements Positions<I, O> {
 
   /** A subject lost its number: the last position moves into its place. */
   remove(slot: number): void {
-    const p = this.at.get(slot);
-    if (p === undefined) return;
+    const p = this.positionOf(slot);
+    if (p < 0) return;
     const last = this.list.length - 1;
     if (p !== last) {
       const moved = this.list[last] as number;
       this.list[p] = moved;
-      this.at.set(moved, p);
+      this.at[moved] = p + 1;
       this.data.copyWithin(p * STRIDE, last * STRIDE, (last + 1) * STRIDE);
       this.records[p] = this.records[last];
       this.deltas[p] = this.deltas[last] ?? null;
@@ -363,7 +369,7 @@ class Lane<I, O> implements Positions<I, O> {
       if (n > 0) this.samples.copyWithin(p * n, last * n, (last + 1) * n);
     }
     this.list.pop();
-    this.at.delete(slot);
+    this.at[slot] = 0;
     this.records[last] = undefined;
     this.deltas[last] = null;
   }
@@ -571,8 +577,13 @@ export class Lanes<I, O> implements Watcher {
   /** The lanes the last `meet` gave a position, and whether it placed a crowd row. */
   private readonly met: number[] = [];
   private metCrowd = false;
-  /** By subject number, the laned voices its probes fold on the general path this fill. */
-  private readonly owed = new Map<number, number[]>();
+  /**
+   * By subject number, the fill in which its probes fold some laned voices on the general path, and
+   * which of `owedLists` names them; subjects meeting the same voices share one list.
+   */
+  private owedFill = new Int32Array(0);
+  private owedAt = new Int32Array(0);
+  private readonly owedLists: number[][] = [];
   private laned: Laned[] = [];
   /** By kit slot, the laned channel there. */
   private bySlot: (Laned | undefined)[] = [];
@@ -746,7 +757,13 @@ export class Lanes<I, O> implements Watcher {
    * them. One that a lane has not met yet, newly numbered or newly reached, takes the general path
    * this frame, which is where it is first seen; so does one probed from inside a fill.
    */
-  prepare(slot: number, subject: I, now: number, version: number): boolean {
+  prepare(
+    slot: number,
+    subject: I,
+    now: number,
+    version: number,
+    head: Subject<unknown> | null,
+  ): boolean {
     const ready = this.filled(now, version) ? READY : this.begin(now, version);
     if (ready === GENERAL) return this.general(slot);
     if (slot < 0) return false;
@@ -755,11 +772,11 @@ export class Lanes<I, O> implements Watcher {
     const per = this.per;
     const o = slot * SLOT;
     let lane = per[o + FILLED] === this.fills && per[o + IDLE] === 0;
-    if ((per[o + SEEN] as number) < this.wide && this.meet(slot, subject)) {
+    if ((per[o + SEEN] as number) < this.wide && this.meet(slot, subject, head)) {
       // The fill ran before the subject had these positions. Where every voice it just met folds
       // after every other laned voice, the general path folds just those onto the lanes' values;
       // otherwise it reads the general path all frame.
-      if (lane && per[o + IDLE] === 0 && this.owable(slot)) this.owed.set(slot, this.met.slice());
+      if (lane && per[o + IDLE] === 0 && this.owable(slot)) this.owe(slot);
       else {
         per[o + FILLED] = 0;
         lane = false;
@@ -808,7 +825,7 @@ export class Lanes<I, O> implements Watcher {
         per[o + FILLED] !== fills ||
         per[o + IDLE] !== 0 ||
         (per[o + SEEN] as number) < wide ||
-        (this.owed.size > 0 && this.owed.has(slot))
+        this.owes(slot)
       )
         break;
       if (!((per[o + LANE_PROBE] as number) > frame || (per[o + GENERAL_PROBE] as number) > frame))
@@ -961,7 +978,7 @@ export class Lanes<I, O> implements Watcher {
    * the general path's order.
    */
   private owable(slot: number): boolean {
-    if (this.metCrowd || this.owed.has(slot)) return false;
+    if (this.metCrowd || this.owes(slot)) return false;
     const met = this.met;
     let other = Number.NEGATIVE_INFINITY;
     for (const lane of this.lanes) {
@@ -977,12 +994,23 @@ export class Lanes<I, O> implements Watcher {
 
   /** Whether the subject at `slot` reads some laned voice from the general path this fill. */
   owes(slot: number): boolean {
-    return this.owed.size > 0 && this.owed.has(slot);
+    return this.owedLists.length > 0 && this.owedFill[slot] === this.fills;
+  }
+
+  private owe(slot: number): void {
+    const lists = this.owedLists;
+    const met = this.met;
+    const last = lists[lists.length - 1];
+    let fresh = last === undefined || last.length !== met.length;
+    for (let i = 0; !fresh && i < met.length; i++) fresh = last?.[i] !== met[i];
+    if (fresh) lists.push(met.slice());
+    this.owedFill[slot] = this.fills;
+    this.owedAt[slot] = lists.length - 1;
   }
 
   /** Whether the subject at `slot` reads laned voice `id` from the general path this fill. */
   owesVoice(slot: number, id: number): boolean {
-    return (this.owed.get(slot) as number[]).includes(id);
+    return (this.owedLists[this.owedAt[slot] as number] as number[]).includes(id);
   }
 
   /** The weight the general path gave a voice the subject at `slot` owes, as `weightOf` reports. */
@@ -1035,7 +1063,7 @@ export class Lanes<I, O> implements Watcher {
    * Gives a probed subject a position on every lane that started playing since the subject was last
    * checked and that reaches it. True when any did, so the probe takes the general path.
    */
-  private meet(slot: number, subject: I): boolean {
+  private meet(slot: number, subject: I, head: Subject<unknown> | null): boolean {
     const seen = this.per[slot * SLOT + SEEN] as number;
     const from = seen < 0 ? -1 - seen : seen;
     this.per[slot * SLOT + SEEN] = this.epochs;
@@ -1047,26 +1075,27 @@ export class Lanes<I, O> implements Watcher {
       const lane = dense[i] as Lane<I, O>;
       if (lane.epoch <= from) break;
       if (lane.positionOf(slot) >= 0) continue;
-      const held = this.host.meet(lane.voice, subject);
+      const held = this.host.meet(lane.voice, subject, head);
       if (!held.reaches) continue;
       lane.add(slot, held);
       if (lane.idle) this.reach(slot, 1);
       this.met.push(lane.voice.id);
       met = true;
     }
-    const naming = this.host.naming(subject);
+    // `open` marks every subject a voice naming it starts on, so an unmarked one has none to meet.
+    const naming = seen < 0 ? this.host.naming(subject) : undefined;
     if (naming !== undefined)
       for (const voice of naming) {
         const lane = this.byId.get(voice.id);
         if (lane === undefined) {
-          if (this.place(voice, slot, subject, from)) {
+          if (this.place(voice, slot, subject, from, head)) {
             met = true;
             this.metCrowd = true;
           }
           continue;
         }
         if (lane.epoch <= from || lane.positionOf(slot) >= 0) continue;
-        const held = this.host.meet(voice, subject);
+        const held = this.host.meet(voice, subject, head);
         if (!held.reaches) continue;
         lane.add(slot, held);
         if (lane.idle) this.reach(slot, 1);
@@ -1077,14 +1106,20 @@ export class Lanes<I, O> implements Watcher {
   }
 
   /** Places a crowd voice's row on the subject a probe met, as `Lane.add` adds a position. */
-  private place(voice: Voice<I, O>, slot: number, subject: I, from: number): boolean {
+  private place(
+    voice: Voice<I, O>,
+    slot: number,
+    subject: I,
+    from: number,
+    head: Subject<unknown> | null,
+  ): boolean {
     const c = this.crowdOf.get(voice.id);
     const p = c?.rowOf.get(voice.id);
     if (c === undefined || p === undefined) return false;
     const h = p * c.stride;
     const flags = c.hot[h + H_FLAGS] as number;
     if ((c.hot[h + H_EPOCH] as number) <= from || (flags & F_PLACED) !== 0) return false;
-    const held = this.host.meet(voice, subject);
+    const held = this.host.meet(voice, subject, head);
     if (!held.reaches) return false;
     const o = p * STRIDE;
     c.list[p] = slot;
@@ -1123,6 +1158,12 @@ export class Lanes<I, O> implements Watcher {
     const per = new Float64Array(cap * SLOT);
     per.set(this.per);
     this.per = per;
+    const owedFill = new Int32Array(cap);
+    owedFill.set(this.owedFill);
+    this.owedFill = owedFill;
+    const owedAt = new Int32Array(cap);
+    owedAt.set(this.owedAt);
+    this.owedAt = owedAt;
     for (const ch of this.laned) {
       const values = new Float64Array(cap * ch.axes);
       values.set(ch.values);
@@ -1639,7 +1680,7 @@ export class Lanes<I, O> implements Watcher {
     this.filling = true;
     try {
       this.fills++;
-      this.owed.clear();
+      this.owedLists.length = 0;
       this.now = now;
       this.filledAt = now;
       this.filledVersion = version;
