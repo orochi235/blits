@@ -92,6 +92,19 @@ describe('slew', () => {
     expect(followed(part, frame(200, Number.POSITIVE_INFINITY))).toBe(0);
   });
 
+  it('starts at from on first sight and climbs from there, not from its input', () => {
+    const followed = slew<Part>(level<Part>(1), { riseMs: 100, from: 0 });
+    expect(followed(part, frame(0, 0))).toBe(0);
+    expect(followed(part, frame(50, 50))).toBeCloseTo(0.5, 9);
+    expect(followed(part, frame(100, 50))).toBeCloseTo(1, 9);
+  });
+
+  it('lag starts at from too, and closes the exponential share of the way from it', () => {
+    const followed = lag<Part>(level<Part>(1), { riseMs: 100, from: 0, floor: 0 });
+    expect(followed(part, frame(0, 0))).toBe(0);
+    expect(followed(part, frame(100, 100))).toBeCloseTo(1 - Math.exp(-1), 9);
+  });
+
   it('answers twice in one frame with one value, so a wrapper probing twice costs nothing', () => {
     const input = level<Part>(1);
     const followed = slew<Part>(input, { riseMs: 100 });

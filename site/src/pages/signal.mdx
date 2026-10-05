@@ -27,9 +27,9 @@ bars.cue({ patch: glow, weight: ripple });
 
 `level()` is a signal the host writes. It holds whatever you last `set`, for every subject. In the explainer, the gray line is a level the host sets once a frame from the input you pick.
 
-`slew(of, { riseMs, fallMs })` follows another signal, but no faster than `riseMs` per unit climbing and `fallMs` per unit draining. A tail that dies away is a slew with no rise, and a fade is a slew on a weight. Set the fall long and watch the slewed lamp linger after the level drops.
+`slew(of, { riseMs, fallMs })` follows another signal, but no faster than `riseMs` per unit climbing and `fallMs` per unit draining. A tail that dies away is a slew with no rise, and a fade is a slew on a weight. A slew starts on its input the first time it sees a subject; `from` starts it somewhere else, so `from: 0` climbs from rest. Set the fall long and watch the slewed lamp linger after the level drops.
 
-`lag(of, { riseMs, fallMs })` follows too, but exponentially: `riseMs` and `fallMs` are time constants, and after one of them it has covered 63% of the way. It covers the same share of the distance in every equal stretch of time, so it reads the same however the frames are spaced. An exponential never quite arrives, so within `floor` (one millionth by default) it lands on its input, and the subject can come to rest; `floor: 0` keeps the curve exact.
+`lag(of, { riseMs, fallMs })` follows too, but exponentially: `riseMs` and `fallMs` are time constants, and after one of them it has covered 63% of the way. It covers the same share of the distance in every equal stretch of time, so it reads the same however the frames are spaced. An exponential never quite arrives, so within `floor` (one millionth by default) it lands on its input, and the subject can come to rest; `floor: 0` keeps the curve exact. It takes `from` as a slew does.
 
 `gate(of, { on, off })` turns a signal into on or off across a band. It switches on when its input reaches `on`, off when it falls to `off`, and between the two it holds whatever it last did. Pick "Steps": the level sits at 0.5, inside the band, twice, and the gate stays where it was each time rather than flickering. A slew can't do that job. It slows a crossing down but still crosses, so an input resting on a threshold drags the slewed value onto the threshold with it.
 

@@ -27,6 +27,12 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- A mix's host has a type: `mix<I, O, H>` types its `host` option, and every patch, signal and
+  setting it plays reads `setting.host` as `H`, without a cast. `Setting`, `Patch`, `PatchOptions`,
+  `Signal`, `VoiceSpec`, `MixOptions` and `Mix` take `H` as their last type parameter, `unknown` by
+  default, and the stock signals carry it through.
+- `slew` and `lag` take `from`: where a subject starts the first time they see it, in place of on
+  their input, so a follower can climb from rest.
 - `mix.voices(tag?)`: a handle on every voice still in the mix, pending, live, held or fading, in
   cue order, or only those whose `tags` carry `tag`. A host no longer has to keep every handle `cue`
   returned to know what is playing. Each call makes new handles on the same voices, so compare them

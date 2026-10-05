@@ -340,12 +340,9 @@ systems now run on it**, on klieg's `main`.
      weight. klieg measured 37 µs → 174 µs for a frame of 60 parts and now returns early on
      `setting.weight === 0`. `blended()` fixed the 8 signal reads, not this. Skipping is not free to
      decide: `step` must still run, and `influence` reports a silent voice's delta.
-   - **`setting.host` has no type.** `Setting` and `Signal<I>` take no host parameter (`Signal`
-     fixes `Setting<void>`), so a signal reading a host field goes through a cast; klieg exports
-     `hostOf(setting)` for it. Proposed: `Setting<S, H>` and `Signal<I, H>`.
-   - **`slew` and `lag` start at their input on first sight.** klieg's `dwell` and `track` want to
-     start from rest and wrap the input to fake it (`startAt` in klieg's `effects/signal.ts`).
-     Proposed: a `from` option on both.
+   - **Built (2026-10-04):** the mix's host type, `mix<I, O, H>`, reaches `setting.host` in every
+     patch and signal, so klieg's `hostOf` cast can go; and `slew`/`lag` take `from`, which
+     replaces klieg's `startAt` wrapper.
 
 ## Loose ends
 

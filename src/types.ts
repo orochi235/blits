@@ -72,7 +72,7 @@ export interface Keyframe<O> {
  *
  * @category state
  */
-export interface Setting<S = void> {
+export interface Setting<S = void, H = unknown> {
   /**
    * The mix clock at this frame: the host's timestamp less any time `rebase` took out, run at the
    * mix's `rate`. Identical for every probe in the frame.
@@ -93,8 +93,8 @@ export interface Setting<S = void> {
   weight: number;
   /** This subject's state, when the patch declares one. */
   state: S;
-  /** Anything the host adds for its own patches. */
-  host: unknown;
+  /** Anything the host adds for its own patches: the mix's `host`, typed as its `H`. */
+  host: H;
   /**
    * The state `owner` keeps for this voice and this subject, made by `init` on first ask. The mix
    * holds it, so a read at another time can copy it instead of moving it. A stateful signal keeps
@@ -165,7 +165,7 @@ export type MotionSpec =
  *
  * @category patch
  */
-export interface Patch<I, O, S = void> {
+export interface Patch<I, O, S = void, H = unknown> {
   /**
    * Which authoring form built it: `'fn'` from `patch`, `'keys'` from `keys`, `'motion'` from
    * `spring`, `glide` or `tween`. An engine declares which forms it runs.
@@ -185,14 +185,14 @@ export interface Patch<I, O, S = void> {
   /** The fields of `setting.host` this patch reads. `cue` refuses a mix whose host lacks one. */
   readonly reads?: readonly string[];
   /** `phase` is 0..1 across one pass, wrapping. */
-  at(phase: number, subject: I, setting: Setting<S>): Partial<O>;
+  at(phase: number, subject: I, setting: Setting<S, H>): Partial<O>;
   /** Per-subject state, created on the first frame this patch sees a subject. */
   state?(subject: I): S;
   /**
    * Advances state once per subject per sampled frame, by the whole gap since it last advanced; or,
    * where the mix sets `stepMs`, once per whole interval of that length.
    */
-  step?(state: S, dt: number, subject: I, setting: Setting<S>): void;
+  step?(state: S, dt: number, subject: I, setting: Setting<S, H>): void;
   /** Present when the patch was authored as keyframes, so an engine that reads data can. */
   readonly keys?: readonly Keyframe<O>[];
   /** Present on a `'motion'` patch: its kind and constants, for an engine that reads data. */
@@ -212,7 +212,9 @@ export interface Patch<I, O, S = void> {
  *
  * @category signal
  */
-export type Signal<I> = ((subject: I, setting: Setting) => number) & { readonly input?: boolean };
+export type Signal<I, H = unknown> = ((subject: I, setting: Setting<void, H>) => number) & {
+  readonly input?: boolean;
+};
 
 /**
  * A voice's own ramps in and out, in ms, and the curve both take.
@@ -302,8 +304,8 @@ export interface Marked {
  *
  * @category voice
  */
-export interface VoiceSpec<I, O> {
-  patch: Patch<I, O, unknown>;
+export interface VoiceSpec<I, O, H = unknown> {
+  patch: Patch<I, O, unknown, H>;
   /**
    * Which subjects this voice reaches. Default: all of them. The predicate is fixed at `cue`; it
    * runs per subject the first time the mix sees that subject, and the answer is kept. Every
@@ -349,7 +351,7 @@ export interface VoiceSpec<I, O> {
   hold?: 'before' | 'after' | 'both';
 
   /** Steady weight, or a signal read per subject per frame. Default 1. */
-  weight?: number | Signal<I>;
+  weight?: number | Signal<I, H>;
   /** Ramp in and out, ms. Out applies on `fade()` and when a finite loop ends. */
   fade?: FadeSpec;
   /** Voices sharing a locus are alternatives: the mix folds them through each channel's `lerp`. */
@@ -444,12 +446,12 @@ export interface Handle<I = unknown> {
  *
  * @category mix
  */
-export interface MixOptions {
+export interface MixOptions<H = unknown> {
   engine?: Engine;
   /** Reduced motion: fades and warm-ups snap, `dt` reads Infinity. */
   reduce?: boolean | (() => boolean);
-  /** Merged into every `setting.host`. */
-  host?: unknown;
+  /** Merged into every `setting.host`. Its type is the mix's `H`, which every patch and signal it cues reads. */
+  host?: H;
   /**
    * The band a rest-less channel's influence switches on and off across. It has to clear the frame
    * noise in a real signal; these are placeholders until the klieg port measures one.
@@ -528,9 +530,9 @@ export type Columns<O> = {
  *
  * @category mix
  */
-export interface Mix<I, O> {
+export interface Mix<I, O, H = unknown> {
   /** Cues a voice. Throws when the engine cannot run the patch's form, or the kit lacks a channel. */
-  cue(spec: VoiceSpec<I, O>): Handle<I>;
+  cue(spec: VoiceSpec<I, O, H>): Handle<I>;
   /**
    * N voices whose weights split one signal, cued into one locus so they fold as alternatives. The
    * signal is read once per subject per frame, with the first member's setting, and every member
@@ -538,9 +540,9 @@ export interface Mix<I, O> {
    * the lanes, a second probe of a subject in the same frame reads it again.
    */
   blend(
-    patches: readonly Patch<I, O, unknown>[],
-    by: Signal<I>,
-    spec?: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'locus'>,
+    patches: readonly Patch<I, O, unknown, H>[],
+    by: Signal<I, H>,
+    spec?: Omit<VoiceSpec<I, O, H>, 'patch' | 'weight' | 'locus'>,
   ): Handle<I>[];
 
   /** The host reports the clock, once a frame. Nothing advances at the call. */
@@ -644,5 +646,5 @@ export interface Engine {
   readonly name: string;
   /** Which patch forms this engine can run. A voice it cannot run is refused at `cue`, by name. */
   readonly runs: ReadonlySet<'fn' | 'keys' | 'motion'>;
-  create<I, O>(kit: Kit<O>, opts: MixOptions): Mix<I, O>;
+  create<I, O, H = unknown>(kit: Kit<O>, opts: MixOptions<H>): Mix<I, O, H>;
 }

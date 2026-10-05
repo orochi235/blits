@@ -3145,7 +3145,7 @@ class Mixer<I, O> implements Mix<I, O> {
 export const mixer: Engine = {
   name: 'mixer',
   runs: new Set<'fn' | 'keys' | 'motion'>(['fn', 'keys', 'motion']),
-  create<I, O>(kit: Kit<O>, opts: MixOptions): Mix<I, O> {
+  create<I, O, H = unknown>(kit: Kit<O>, opts: MixOptions<H>): Mix<I, O, H> {
     return new Mixer<I, O>(kit, opts);
   },
 };
@@ -3155,6 +3155,6 @@ export const mixer: Engine = {
  *
  * @category mix
  */
-export function mix<I, O>(kit: Kit<O>, opts: MixOptions = {}): Mix<I, O> {
-  return (opts.engine ?? mixer).create<I, O>(kit, opts);
+export function mix<I, O, H = unknown>(kit: Kit<O>, opts: MixOptions<H> = {}): Mix<I, O, H> {
+  return (opts.engine ?? mixer).create<I, O, H>(kit, opts);
 }

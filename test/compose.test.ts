@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { hex, kit, last, mul, sum, vec } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
-import type { Channel } from '../src/types.js';
+import { level, slew } from '../src/signals.js';
+import type { Channel, Signal } from '../src/types.js';
 
 interface Part {
   id: string;
@@ -90,6 +91,38 @@ describe('patches that read the host', () => {
     m.cue({ patch: follows });
     m.sync(0);
     expect(m.probe(part).crawl).toBe(7);
+  });
+});
+
+describe('a typed host', () => {
+  interface Pose {
+    crawl: number;
+  }
+  interface Host {
+    pointer: number;
+  }
+  const PART = kit<Pose>({ crawl: sum() });
+
+  it('reaches patches and signals as its own type, with no cast', () => {
+    const follows = patch<Part, Pose, void, Host>(
+      0,
+      (_p, _s, setting) => ({ crawl: setting.host.pointer }),
+      { writes: ['crawl'], reads: ['pointer'] },
+    );
+    const near = slew<Part, Host>((_s, setting) => setting.host.pointer / 10, { riseMs: 0 });
+    const m = mix<Part, Pose, Host>(PART, { host: { pointer: 7 } });
+    m.cue({ patch: follows, weight: near });
+    m.cue({ patch: follows, weight: level<Part>(1) });
+    m.sync(0);
+    expect(m.probe(part).crawl).toBeCloseTo(7 * 0.7 + 7, 9);
+  });
+
+  it('is refused by the type of a mix that does not declare it', () => {
+    const near: Signal<Part, Host> = (_s, setting) => setting.host.pointer;
+    const m = mix<Part, Pose>(PART, { host: { pointer: 7 } });
+    const follows = patch<Part, Pose>(0, () => ({ crawl: 1 }), { writes: ['crawl'] });
+    // @ts-expect-error: the mix's host is unknown, so a signal needing a Host cannot play in it.
+    m.cue({ patch: follows, weight: near });
   });
 });
 

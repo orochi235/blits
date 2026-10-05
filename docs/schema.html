@@ -295,7 +295,7 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
 <h2 id="patches">Patches</h2>
 <p>A patch is what an author writes. It is klieg's <code>EffectPiece</code> with three additions: the setting carries absolute time as well as normalized, a patch may declare state, and a patch declares which channels it contributes to.</p>
 
-<pre><code>interface Patch&lt;I, O, S = void&gt; {
+<pre><code>interface Patch&lt;I, O, S = void, H = unknown&gt; {
   <span class="cm">/** Which authoring form built it: `'fn'` from `patch`, `'keys'` from `keys`, `'motion'` from `spring`,
      `glide` or `tween`. An engine declares which forms it runs. */</span>
   readonly form: 'fn' | 'keys' | 'motion';
@@ -327,7 +327,7 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
   clone?(state: S): S;
 }
 
-interface Setting&lt;S = void&gt; {
+interface Setting&lt;S = void, H = unknown&gt; {
   <span class="cm">/** The mix clock at this frame. Identical for every sample in the frame. */</span>
   timestamp: number;
   <span class="cm">/** The gap this subject is catching up by: milliseconds since it last advanced, which is the gap since
@@ -343,8 +343,8 @@ interface Setting&lt;S = void&gt; {
   weight: number;
   <span class="cm">/** This subject's state, when the patch declares one. */</span>
   state: S;
-  <span class="cm">/** Anything the host adds for its own patches: klieg's pointer and pointerInWord go here. */</span>
-  host: unknown;
+  <span class="cm">/** Anything the host adds for its own patches: klieg's pointer and pointerInWord go here. Typed as the mix's `H`. */</span>
+  host: H;
   <span class="cm">/** The state `owner` keeps for this voice and subject, made by `init` on first ask. Held by the mix, so a read at
      another time can copy it; a stateful signal keeps its state here and nowhere else. */</span>
   keep&lt;K&gt;(owner: object, init: () =&gt; K): K;
@@ -370,8 +370,8 @@ interface Setting&lt;S = void&gt; {
 <h2 id="voices">Voices</h2>
 <p>A voice is a patch given a clock and a volume knob. This is the unit that answers "independent state and timeframe": two voices of the same patch are two clocks, two states, two weights.</p>
 
-<pre><code>interface VoiceSpec&lt;I, O&gt; {
-  patch: Patch&lt;I, O, any&gt;;
+<pre><code>interface VoiceSpec&lt;I, O, H = unknown&gt; {
+  patch: Patch&lt;I, O, any, H&gt;;
   <span class="cm">/** Which subjects this voice reaches. Default: all of them. The predicate is fixed at `cue`; it runs per
      subject the first time the mix sees that subject, and the answer is kept for as long as the state is. */</span>
   target?: (subject: I) =&gt; boolean;
@@ -397,7 +397,7 @@ interface Setting&lt;S = void&gt; {
 
   <span class="cm">// weight</span>
   <span class="cm">/** Steady weight, or a signal read per subject per frame. Default 1. */</span>
-  weight?: number | Signal&lt;I&gt;;
+  weight?: number | Signal&lt;I, H&gt;;
   <span class="cm">/** Ramp in and out, ms. Out applies on `fade()` and when a finite loop ends. */</span>
   fade?: { in?: number; out?: number; ease?: Easing };
   <span class="cm">/** Voices sharing a locus are alternatives: the mix folds them into one influence through each
@@ -464,14 +464,14 @@ interface Handle&lt;I&gt; {
 <h2 id="mix">Mix</h2>
 <p>What a host holds. The methods are few because the voices carry the options.</p>
 
-<pre><code>function mix&lt;I, O&gt;(kit: Kit&lt;O&gt;, opts?: MixOptions): Mix&lt;I, O&gt;;
+<pre><code>function mix&lt;I, O, H = unknown&gt;(kit: Kit&lt;O&gt;, opts?: MixOptions&lt;H&gt;): Mix&lt;I, O, H&gt;;
 
-interface MixOptions {
+interface MixOptions&lt;H = unknown&gt; {
   engine?: Engine;                <span class="cm">// default: mixer</span>
   <span class="cm">/** Reduced motion: fades and warm-ups snap, `dt` reads Infinity. Read once at creation, or a signal. */</span>
   reduce?: boolean | (() =&gt; boolean);
-  <span class="cm">/** Merged into every `setting.host`. */</span>
-  host?: unknown;
+  <span class="cm">/** Merged into every `setting.host`. `H` types it for every patch and signal the mix cues, so none needs a cast. */</span>
+  host?: H;
   <span class="cm">/** The band a rest-less channel's influence switches across. Default 0.4 / 0.6, a placeholder. */</span>
   band?: { on: number; off: number };
   <span class="cm">/** The most `dt` a step or signal is handed, however long the gap. Off by default. */</span>
@@ -485,13 +485,13 @@ interface MixOptions {
   lanes?: boolean;
 }
 
-interface Mix&lt;I, O&gt; {
+interface Mix&lt;I, O, H = unknown&gt; {
   <span class="cm">/** Cues a voice. Throws when the engine cannot run the patch's form, or the kit lacks a channel it `writes`. */</span>
-  cue(spec: VoiceSpec&lt;I, O&gt;): Handle&lt;I&gt;;
+  cue(spec: VoiceSpec&lt;I, O, H&gt;): Handle&lt;I&gt;;
   <span class="cm">/** N voices whose weights split one signal, k in 0..1, cued into one locus so they fold as
      alternatives. Two patches crossfade; more make stops. The signal is read once per subject per
      frame, and every member takes its share of that reading. */</span>
-  blend(patches: readonly Patch&lt;I, O&gt;[], by: Signal&lt;I&gt;, spec?: Omit&lt;VoiceSpec&lt;I, O&gt;, 'patch' | 'weight'&gt;): Handle&lt;I&gt;[];
+  blend(patches: readonly Patch&lt;I, O, any, H&gt;[], by: Signal&lt;I, H&gt;, spec?: Omit&lt;VoiceSpec&lt;I, O, H&gt;, 'patch' | 'weight'&gt;): Handle&lt;I&gt;[];
 
   <span class="cm">/** The host reports the clock, once a frame. Nothing advances at the call: it publishes the reading, and
      each subject catches up by the whole gap the first time it is probed afterward. The same timestamp twice
@@ -543,12 +543,12 @@ interface Mix&lt;I, O&gt; {
 <h2 id="signals">Signals</h2>
 <p>A signal is a 0..1 scalar resolved per subject per frame. It is the package's one input type from outside the clock, and it plugs in at exactly two places: a voice's <code>weight</code>, and <code>blend</code>'s selector.</p>
 
-<pre><code>type Signal&lt;I&gt; = ((subject: I, setting: Setting) =&gt; number) &amp; { readonly input?: boolean };
+<pre><code>type Signal&lt;I, H = unknown&gt; = ((subject: I, setting: Setting&lt;void, H&gt;) =&gt; number) &amp; { readonly input?: boolean };
 
 <span class="cm">// stock combinators; klieg's own `near`, `dwell`, `level` are consumers' signals built on these</span>
 function peak&lt;I&gt;(...signals: Signal&lt;I&gt;[]): Signal&lt;I&gt;;          <span class="cm">// max</span>
-function slew&lt;I&gt;(of: Signal&lt;I&gt;, { riseMs, fallMs }): Signal&lt;I&gt;;  <span class="cm">// stateful: rate-limited follow toward its input</span>
-function lag&lt;I&gt;(of: Signal&lt;I&gt;, { riseMs, fallMs, floor }): Signal&lt;I&gt;;  <span class="cm">// stateful: exponential follow, time constants</span>
+function slew&lt;I&gt;(of: Signal&lt;I&gt;, { riseMs, fallMs, from }): Signal&lt;I&gt;;  <span class="cm">// stateful: rate-limited follow toward its input, from `from` or its input</span>
+function lag&lt;I&gt;(of: Signal&lt;I&gt;, { riseMs, fallMs, floor, from }): Signal&lt;I&gt;;  <span class="cm">// stateful: exponential follow, time constants</span>
 function level&lt;I&gt;(initial?: number): Signal&lt;I&gt; &amp; { set(v: number): void };  <span class="cm">// host-written</span>
 function gate&lt;I&gt;(of: Signal&lt;I&gt;, band: { on: number; off: number }): Signal&lt;I&gt;;  <span class="cm">// stateful: holds inside the band</span>
 function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;          <span class="cm">// sugar for on = off = at</span></code></pre>

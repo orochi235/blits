@@ -281,7 +281,7 @@ In depth: [Voice](../voice/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 
 ## host
 
-The host is your code: whatever owns the frame loop, tells the [mix](#mix) the time, asks it for poses, and puts them on screen. blits draws nothing and schedules nothing itself. The host must keep each [subject](#subject) the same object from frame to frame, since the mix keeps state by identity. Whatever the host passes as the mix's `host` option reaches every patch as `setting.host`.
+The host is your code: whatever owns the frame loop, tells the [mix](#mix) the time, asks it for poses, and puts them on screen. blits draws nothing and schedules nothing itself. The host must keep each [subject](#subject) the same object from frame to frame, since the mix keeps state by identity. Whatever the host passes as the mix's `host` option reaches every patch and signal as `setting.host`, typed by the mix's third type parameter: `mix<Dot, DotPose, { pointer: number }>(…)` lets a patch read `setting.host.pointer` with no cast.
 
 ```ts
 function frame(timestamp: number) {

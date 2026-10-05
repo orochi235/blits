@@ -7,7 +7,7 @@ import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js'
  *
  * @category patch
  */
-export interface PatchOptions<I, O, S> {
+export interface PatchOptions<I, O, S, H = unknown> {
   /** The channels this patch contributes to. Every key `at` sets, and no others. Default: `kit`'s. */
   writes?: readonly (keyof O)[];
   /** The channels this patch was written against, which `cue` checks a mix's kit against. */
@@ -15,7 +15,7 @@ export interface PatchOptions<I, O, S> {
   /** The fields of `setting.host` this patch reads, which `cue` checks the mix's host for. */
   reads?: readonly string[];
   state?(subject: I): S;
-  step?(state: S, dt: number, subject: I, setting: Setting<S>): void;
+  step?(state: S, dt: number, subject: I, setting: Setting<S, H>): void;
 }
 
 /**
@@ -23,11 +23,11 @@ export interface PatchOptions<I, O, S> {
  *
  * @category patch
  */
-export function patch<I, O, S = void>(
+export function patch<I, O, S = void, H = unknown>(
   duration: number,
-  at: (phase: number, subject: I, setting: Setting<S>) => Partial<O>,
-  opts: PatchOptions<I, O, S>,
-): Patch<I, O, S> {
+  at: (phase: number, subject: I, setting: Setting<S, H>) => Partial<O>,
+  opts: PatchOptions<I, O, S, H>,
+): Patch<I, O, S, H> {
   const writes = opts.writes ?? (opts.kit ? (Object.keys(opts.kit) as (keyof O)[]) : undefined);
   if (writes === undefined)
     throw new Error('blits: a patch needs writes, or a kit to take them from');
