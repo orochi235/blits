@@ -144,10 +144,26 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** Counts the changes `stir` records, which a frame's record of a probe is current only before. */
   stirs = 0;
 
+  syncing = false;
+  stirFns: (() => void)[] | null = null;
+
   /** Records a change to the mix's voices or controls. */
   stir(): void {
-    this.stirred = true;
     this.stirs++;
+    if (this.stirred) return;
+    this.stirred = true;
+    const fns = this.stirFns;
+    if (fns !== null && !this.syncing) for (const fn of [...fns]) fn();
+  }
+
+  onStir(fn: () => void): () => void {
+    if (this.stirFns === null) this.stirFns = [];
+    const fns = this.stirFns;
+    fns.push(fn);
+    return () => {
+      const i = fns.indexOf(fn);
+      if (i >= 0) fns.splice(i, 1);
+    };
   }
   /**
    * Per subject, the first record of the chain through every live voice that reaches it, or a stub
@@ -270,6 +286,15 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   sync(timestamp: number): void {
+    this.syncing = true;
+    try {
+      this.syncAt(timestamp);
+    } finally {
+      this.syncing = false;
+    }
+  }
+
+  private syncAt(timestamp: number): void {
     if (this.rebasing && !Number.isNaN(this.last)) this.offset += timestamp - this.last;
     this.rebasing = false;
     this.last = timestamp;

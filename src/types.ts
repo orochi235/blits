@@ -751,6 +751,13 @@ export interface Mix<I, O, H = unknown> {
    * since the last sync, a retarget or a rate included, makes it false until the next.
    */
   readonly inert: boolean;
+  /**
+   * Calls `fn` when a host call makes the mix need frames again after a sync: a cue, a fade, a
+   * handle's or the mix's rate, a seek, a `drop`, a motion retargeted. It fires once until the next
+   * sync clears the change, and never during `sync`. Returns a function that unsubscribes `fn`.
+   * A frame loop sleeping on `inert` subscribes here to wake.
+   */
+  onStir(fn: () => void): () => void;
   /** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */
   mute(opts?: { over?: number }): void;
   /** Forgets per-subject state, a motion patch's for the subject included. */

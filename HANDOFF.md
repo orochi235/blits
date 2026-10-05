@@ -187,6 +187,11 @@ magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
+00. **`ticker()` and `mix.onStir` are on `main`, unreleased** (2026-10-05): one frame loop for any
+   number of mixes, on animation frames or a timer, with an `fps` cap. The schema page's
+   pull-based bullet and `Mix` block describe them. wod's `src/clock/ticker.ts` can become it, with
+   `now` set to `document.timeline.currentTime`: a follow-up for wod's repo, not yet raised there.
+
 0. **The playground is on `main`** (merged 2026-10-04, `d9ef787`). A Vite + labkit app at
    `apps/playground`; its README says what it is, how to run it and how it works, and holds what
    stays true of the design.
