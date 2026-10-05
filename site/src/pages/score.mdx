@@ -39,7 +39,7 @@ Each source can keep its own plan as a `score`. Names are looked up within the a
 m.cue({ patch: lead, fade: { in: 50 }, anchor: { in: { before: { writes: 'gain', resolver: 'next' }, by: 200 } } });
 ```
 
-A voice whose anchor has no answer yet waits pending: a name nobody has cued, or the `out` of a voice that loops for good. One whose mark is already past starts partway through, the way playback starts in the middle of a region. While it waits, it follows its target, so cutting the orb short above brings everything after it forward. A placement that waits on itself is refused at `cue`.
+A voice whose anchor has no answer yet waits pending: a name nobody has cued, or the `out` of a voice that repeats forever. One whose mark is already past starts partway through, the way playback starts in the middle of a region. While it waits, it follows its target, so cutting the orb short above brings everything after it forward. A placement that waits on itself is refused at `cue`.
 
 A voice that has left can still be anchored to only while the mix's history reaches it.
 

@@ -39,7 +39,7 @@ A voice starts at the next `sync` unless its spec gives a `start`. From then on 
 
 **Seek** moves a voice's clock to any `elapsed`, forward or back. The phase is recomputed from the new reading, and nothing is run forward to catch up.
 
-**Loop** says how many passes a voice plays: `true` for good, `false` for one, or a number. When a finite loop finishes, the voice leaves the mix, over its fade out if it has one and at once if it doesn't.
+**Loop** says how many passes a voice plays: `true` to repeat forever, `false` for one pass, or a number. When a finite loop finishes, the voice leaves the mix, over its fade out if it has one and at once if it doesn't.
 
 ## Stagger
 
