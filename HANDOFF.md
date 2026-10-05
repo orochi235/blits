@@ -371,6 +371,14 @@ magicsmoke run on it**, each on its own `main`.
   that is wrong is undecided: it is what the host showed, and copying would cost every probe
   without `out` an allocation.
 
+- **`slew` and `lag` hold `from` for a subject's first frame even under reduced motion.**
+  `firstSight` stamps `seen` with that frame, so the first read returns `from` before the
+  `Number.isFinite(setting.dt)` snap can apply; every later frame snaps. klieg's `dwell` and
+  `track` must snap to their input on that first frame (pinned in klieg's `signal.test.ts` and
+  `lighting.test.ts`), so klieg 0.16 keeps its own `startAt` instead of passing `from`
+  (checked 2026-10-05 against 0.5.0). Answering with the input when `dt` is not finite would
+  let klieg drop `startAt`.
+
 - **A stale served-page tab will overwrite `vocabulary.picks.json` with whatever set it
   was holding.** It has happened twice — `65d2d71` restored one, and the same loss was in the
   working tree at the start of 2026-09-27's session. Before trusting the picks file, `git diff` it;
