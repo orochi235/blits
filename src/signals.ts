@@ -45,14 +45,24 @@ interface Slewed {
   seen: number;
 }
 
-/** Where a follower starts for a subject: on its input, or at `from`, seen now so the next frame moves. */
-const firstSight = (target: number, from: number | undefined, now: number): Slewed =>
-  from === undefined ? { value: target, seen: Number.NaN } : { value: from, seen: now };
+/**
+ * Where a follower starts for a subject: on its input, or at `from`, seen now so the next frame
+ * moves. Under reduced motion it starts on its input, since every later frame would snap there.
+ */
+const firstSight = (
+  target: number,
+  from: number | undefined,
+  setting: Setting<void, unknown>,
+): Slewed =>
+  from === undefined || !Number.isFinite(setting.dt)
+    ? { value: target, seen: Number.NaN }
+    : { value: from, seen: setting.timestamp };
 
 /**
  * The package's one decay primitive: follows its input at a rate limit, no faster than `riseMs` per
  * unit climbing or `fallMs` draining. The mix keeps its state per voice and subject, so two voices
- * handed the same slew each follow on their own. A subject starts on its input, or at `from`.
+ * handed the same slew each follow on their own. A subject starts on its input, or at `from`
+ * unless `dt` is infinite.
  *
  * @category signal
  */
@@ -62,7 +72,7 @@ export function slew<I, H = unknown>(
 ): Signal<I, H> {
   const read = (subject: I, setting: Setting<void, H>): number => {
     const target = of(subject, setting);
-    const held = setting.keep<Slewed>(read, () => firstSight(target, from, setting.timestamp));
+    const held = setting.keep<Slewed>(read, () => firstSight(target, from, setting));
     if (setting.timestamp === held.seen) return held.value;
     let next = target;
     if (!Number.isNaN(held.seen) && Number.isFinite(setting.dt)) {
@@ -86,7 +96,7 @@ export function slew<I, H = unknown>(
  * sample it are spaced while the input holds still. `riseMs` and `fallMs` are time constants: after
  * one, 63% of the way is covered. 0 follows at once. Within `floor` of its input it lands on it, so a
  * subject can reach rest; pass 0 to keep the curve exact. The mix keeps its state per voice and subject.
- * A subject starts on its input, or at `from`.
+ * A subject starts on its input, or at `from` unless `dt` is infinite.
  *
  * @category signal
  */
@@ -101,7 +111,7 @@ export function lag<I, H = unknown>(
 ): Signal<I, H> {
   const read = (subject: I, setting: Setting<void, H>): number => {
     const target = of(subject, setting);
-    const held = setting.keep<Slewed>(read, () => firstSight(target, from, setting.timestamp));
+    const held = setting.keep<Slewed>(read, () => firstSight(target, from, setting));
     if (setting.timestamp === held.seen) return held.value;
     let next = target;
     if (!Number.isNaN(held.seen) && Number.isFinite(setting.dt)) {

@@ -26,6 +26,11 @@ version and everything else the patch. Each release lists its changes as **Break
   a fade, a rate, a seek, a `drop`, a motion retargeted — once until the next sync, and never
   during one. A host's loop sleeping on `inert` wakes on it instead of on every path that cues.
 
+### Fixed
+
+- `slew` and `lag` given `from` start a subject on their input when `dt` is infinite, as under
+  reduced motion, rather than showing `from` for its first frame and snapping on the next.
+
 ## 0.5.0
 
 ### Breaking
