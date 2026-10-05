@@ -7,6 +7,8 @@
   --voice-1: #2f66d8;
   --voice-2: #b97f06;
   --voice-3: #c23d7a;
+  /* A lit lamp that is no one voice's: a folded value. */
+  --light: #f2a516;
   --code-bg: #e3e6ea;
   --focus: #2f66d8;
   --serif: 'Source Serif 4', Georgia, serif;
@@ -25,6 +27,7 @@
     --voice-1: #6f9bf2;
     --voice-2: #e6b545;
     --voice-3: #e0739f;
+    --light: #ffc94d;
     --code-bg: #1f242d;
     --focus: #6f9bf2;
   }

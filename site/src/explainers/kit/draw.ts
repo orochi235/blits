@@ -162,3 +162,33 @@ export function label(
   ctx.textAlign = align;
   ctx.fillText(text, x, y);
 }
+
+/**
+ * A lamp lit to `level` (0 dark, 1 full, more glows past full), for a stage showing what a channel
+ * drives: a dim rim always, so a dark lamp still reads as a lamp.
+ */
+export function lamp(
+  ctx: CanvasRenderingContext2D,
+  ink: Ink,
+  x: number,
+  y: number,
+  r: number,
+  level: number,
+  color: string,
+): void {
+  const lit = Math.max(0, Math.min(1, level));
+  const over = Math.max(0, Math.min(1, level - 1));
+  ctx.globalAlpha = 0.12 + 0.88 * lit;
+  ctx.fillStyle = color;
+  // A shadow glows in the lamp's own color; a gradient to 'transparent' grays out on light paper.
+  ctx.shadowColor = color;
+  ctx.shadowBlur = lit > 0 ? r * (1.6 + over) * lit : 0;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = ink.rule;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}

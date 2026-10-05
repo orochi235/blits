@@ -4,6 +4,8 @@ export interface Ink {
   ink: string;
   soft: string;
   rule: string;
+  /** The color a lamp lights for a folded value rather than one voice's. */
+  light: string;
   /** A voice's color: `v1`..`v3` name the three voice slots, anything else is used as given. */
   voice(color: string): string;
 }
@@ -21,6 +23,7 @@ export function readInk(el: Element): Ink {
     ink: get('--ink'),
     soft: get('--ink-soft'),
     rule: get('--rule'),
+    light: get('--light'),
     voice: (color) => slots[color] ?? color,
   };
 }
