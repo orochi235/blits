@@ -8,6 +8,8 @@ export interface HandleHost<I, O> {
   nowFor(voice: Voice<I, O>): number;
   /** A handle write changed the voice: reschedule it, and refill the lanes. */
   changed(voice: Voice<I, O>): void;
+  /** The voice's clock jumped: for an owner, so did every clock it holds. */
+  sought(voice: Voice<I, O>): void;
   fade(voice: Voice<I, O>, opts: FadeOptions<I> | undefined): void;
   weightOf(voice: Voice<I, O>, subject: I): number;
 }
@@ -26,6 +28,10 @@ export class VoiceHandle<I, O> implements Handle<I> {
 
   get state(): Handle<I>['state'] {
     return this.#voice.state;
+  }
+
+  get owner(): Handle<I> | undefined {
+    return this.#voice.owner?.handle ?? undefined;
   }
 
   get played(): Promise<boolean> {
@@ -64,6 +70,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     voice.rebase(this.#host.nowFor(voice));
     voice.anchorElapsed = elapsed;
     voice.seeks++;
+    this.#host.sought(voice);
     this.#host.changed(voice);
   }
 

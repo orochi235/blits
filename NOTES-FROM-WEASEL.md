@@ -48,8 +48,6 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 
 Open design questions rather than asks. blits may rightly say some of these belong in a host.
 
-- **Nesting.** A weasel timeline can hold child timelines at offsets, and the parent owns their
-  playback. A blits voice is flat.
 - **Observability that costs nothing unwatched.** Covered without weasel's `watch(listener)`:
   `mix.voices(tag?)` lists what is playing and `handle.weightOf` says at what weight, each free
   until asked.

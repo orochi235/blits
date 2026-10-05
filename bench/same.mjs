@@ -2,7 +2,8 @@
 // holds, subject fades, drops, retargets, seeks, projections) run through both, every read compared.
 //   node bench/same.mjs <dist-a> <dist-b> [scenes] [first-seed]   SAME_LANES=off runs dist-a without lanes
 // SAME_RATE=1 also changes the mix's own rate, which needs both builds to have one; without it the
-// scenes are what they were before mixes had a rate.
+// scenes are what they were before mixes had a rate. SAME_OWNS=1 also cues owners, which voices
+// play under, and moves them; it needs both builds to have `mix.owns`.
 // `bench/same.sh <rev>` builds a revision and compares it with this tree's dist.
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -12,6 +13,7 @@ if (distA === undefined || distB === undefined)
   throw new Error('usage: node bench/same.mjs <dist-a> <dist-b> [scenes] [first-seed]');
 const scenes = Number(process.argv[4] ?? 300);
 const paced = process.env.SAME_RATE === '1';
+const owning = process.env.SAME_OWNS === '1';
 const first = Number(process.argv[5] ?? 1);
 const load = (dir) => import(pathToFileURL(resolve(dir, 'index.js')).href);
 const [A, B] = await Promise.all([load(distA), load(distB)]);
@@ -194,6 +196,25 @@ function run(lib, seed, general = false) {
     if (hs !== undefined && by === varying) for (const h of hs) timed.add(h);
     say(`blend #${handles.length - patches.length}.. by ${by.name || 'fn'}`, JSON.stringify(spec));
   };
+  const owners = [];
+  const own = () => {
+    const spec = {};
+    if (owners.length > 0 && chance(0.4)) spec.owner = pick(owners);
+    if (chance(0.3)) spec.rate = pick([0.5, 2]);
+    if (chance(0.3)) spec.weight = chance(0.5) ? r() * 1.5 : signal();
+    if (chance(0.4)) spec.fade = { in: pick([0, 50, 200]), out: pick([0, 100, 300]) };
+    if (chance(0.15)) spec.hold = pick(['before', 'after', 'both']);
+    if (chance(0.2)) spec.start = spec.owner ? pick([0, 100]) : t + pick([50, 200]);
+    const h = attempt('owns', () => m.owns(spec));
+    if (h !== undefined) {
+      owners.push(h);
+      handles.push(h);
+    }
+    say(
+      `owns #${handles.length - 1}`,
+      JSON.stringify({ ...spec, owner: owners.indexOf(spec.owner) }),
+    );
+  };
   const cue = () => {
     if (chance(0.15)) return blend();
     const spec = { patch: patchOf() };
@@ -212,6 +233,10 @@ function run(lib, seed, general = false) {
     if (chance(0.2)) spec.stagger = (s) => s.i * 7;
     if (chance(0.15)) spec.hold = pick(['before', 'after', 'both']);
     if (chance(0.1)) spec.start = t + pick([50, 200]);
+    if (owning && owners.length > 0 && chance(0.5)) {
+      spec.owner = pick(owners);
+      if (spec.start !== undefined) spec.start = pick([0, 100, 300]);
+    }
     const h = attempt('cue', () => m.cue(spec));
     if (h !== undefined) handles.push(h);
     say(
@@ -223,6 +248,7 @@ function run(lib, seed, general = false) {
   };
 
   let t = 0;
+  if (owning) for (let o = int(1, 3); o > 0; o--) own();
   for (let v = int(1, 10); v > 0; v--) cue();
   const out = {};
   const columns = {
@@ -236,6 +262,19 @@ function run(lib, seed, general = false) {
     frame = f;
     t += pick([1, 8, 16.7, 16.7, 33, 120]);
     if (chance(0.15)) cue();
+    if (owning && chance(0.04)) own();
+    if (owning && chance(0.06) && owners.length > 0) {
+      const h = pick(owners);
+      const rate = pick([0, 0.5, 1, 2]);
+      if (chance(0.5)) {
+        say(`owner #${handles.indexOf(h)} rate ${rate}`);
+        h.rate = rate;
+      } else {
+        const over = pick([40, 300]);
+        say(`owner #${handles.indexOf(h)} ramp ${rate} over ${over}`);
+        h.ramp(rate, over);
+      }
+    }
     if (chance(0.06) && handles.length > 0) {
       const h = pick(handles);
       const o = chance(0.5) ? { over: pick([0, 100]) } : undefined;
@@ -337,6 +376,7 @@ function run(lib, seed, general = false) {
     }
     note(`f${f} state`, [m.live, m.inert, ...handles.map((h) => h.state)]);
     if (paced) note(`f${f} rate`, [m.rate, m.marks(t - 500, t + 500)]);
+    if (owning) note(`f${f} marks`, m.marks(t - 500, t + 500));
     watch(how, order);
   }
   return trace;

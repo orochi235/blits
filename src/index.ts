@@ -27,6 +27,7 @@ export type {
   Mix,
   MixOptions,
   MotionSpec,
+  OwnerSpec,
   Patch,
   Placement,
   Projection,

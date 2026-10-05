@@ -159,6 +159,37 @@ describe('book', () => {
     expect(two.hits()[2]).toMatchObject({ event: 'clunk', when: 1288, stopped: false });
   });
 
+  it('retracts a child’s hit on its owner’s rate and seek, and books it where they put it', () => {
+    const one = booked();
+    const o = one.m.owns({});
+    cue(one.m, { owner: o });
+    one.sync(0);
+    one.sync(112);
+    o.rate = 2;
+    one.sync(128);
+    expect(one.hits().slice(1)).toEqual([
+      { event: 'clunk', pass: 0, when: 1200, lateBy: 0, stopped: true },
+      { event: 'clunk', pass: 0, when: 1156, lateBy: 0, stopped: false },
+    ]);
+
+    const two = booked();
+    const p = two.m.owns({});
+    cue(two.m, { owner: p, loop: 2 });
+    two.sync(0);
+    two.sync(112);
+    p.seek(150);
+    two.sync(128);
+    expect(two.hits()[1]?.stopped).toBe(true);
+    expect(two.hits()[2]).toEqual({
+      event: 'clunk',
+      pass: 0,
+      when: 1162,
+      lateBy: 0,
+      stopped: false,
+    });
+    expect(two.hits()).toHaveLength(3);
+  });
+
   it('retracts what a fade takes away, and everything when the voice leaves', () => {
     const one = booked();
     const h = cue(one.m, { fade: { out: 50 } });

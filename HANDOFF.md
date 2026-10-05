@@ -187,8 +187,7 @@ systems now run on it**, on klieg's `main`.
      discussion).
 
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: the allocation still
-   in the hot path and what weasel has that blits doesn't (nesting). Delete
-   each item as it is dealt with, and
+   in the hot path. Delete each item as it is dealt with, and
    the file once it is empty. Its speed items matter only if weasel adopts blits: klieg and
    magicsmoke are expected to run about two dozen voices over tens of subjects, under 1,000 subject
    × voice pairs, where a frame costs about 0.2 ms (2026-10-01 guess, not a measured

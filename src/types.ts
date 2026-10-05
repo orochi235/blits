@@ -453,6 +453,48 @@ export interface VoiceSpec<I, O, H = unknown> {
    * events are not known ahead, so they stay drain-only; these are the plan.
    */
   hits?: readonly Hit[];
+  /**
+   * The owner this voice plays under, a handle `owns` returned. Its `start` and `anchor` are then on
+   * the owner's clock, in ms from when the owner starts, and default to where that clock is now; a
+   * bare name in an anchor means a sibling, another voice the owner holds. Its clock runs on the
+   * owner's, so the owner's rate, ramp and seeks move it, and its weight is multiplied by the
+   * owner's weight and fade. Without a `hold` of its own it takes the owner's.
+   */
+  owner?: Handle<I>;
+}
+
+/**
+ * What `owns` takes: an owner has no patch, and plays only through the voices it holds.
+ *
+ * @category voice
+ */
+export interface OwnerSpec<I, H = unknown> {
+  /**
+   * When the owner starts, on its own owner's clock: the host's for an owner on the mix, as a
+   * voice's `start` is. Default: now.
+   */
+  start?: number;
+  /** Its clock's rate, multiplied into every child's own. Default 1. */
+  rate?: number;
+  /**
+   * Multiplied into every child's weight per subject, as the child's own fade is, before the child's
+   * locus folds it: a number, or a signal read per subject per frame. Default 1.
+   */
+  weight?: number | Signal<I, H>;
+  /** One ramp in and out over every child, multiplied into their weights as `weight` is. */
+  fade?: FadeSpec;
+  /** The hold every child without one of its own takes. */
+  hold?: 'before' | 'after' | 'both';
+  /** Words a source attaches to it, as a voice's. */
+  tags?: readonly string[];
+  /** What other voices call it by, among its siblings. */
+  name?: string;
+  /** The plan it belongs to, as a voice's. */
+  score?: string;
+  /** Where it sits relative to its own owner's clock or to other voices, in place of `start`. */
+  anchor?: Placement;
+  /** The owner it plays under, so owners nest. */
+  owner?: Handle<I>;
 }
 
 /**
@@ -490,6 +532,8 @@ export interface Handle<I = unknown> {
   readonly id: number;
   /** `held`: a voice holding after has played every pass and shows its last frame until faded. */
   readonly state: 'pending' | 'live' | 'held' | 'fading' | 'done';
+  /** The handle of the owner this voice plays under; undefined for one on the mix clock. */
+  readonly owner: Handle<I> | undefined;
   /** Live. Writes land on the next sync. */
   weight: number;
   /** Playback rate now. Setting it changes speed at once; `ramp` eases into a new one. */
@@ -625,6 +669,18 @@ export interface Mix<I, O, H = unknown> {
     by: Signal<I, H>,
     spec?: Omit<VoiceSpec<I, O, H>, 'patch' | 'weight' | 'locus'>,
   ): Handle<I>[];
+
+  /**
+   * Cues an owner: a voice with no patch that holds the voices cued with `owner` set to its handle,
+   * and plays them on its own clock, so they can be placed, timed and faded as one. Its handle acts
+   * on all of them: `rate` and `ramp` multiply into theirs, `seek` moves their clocks with its own
+   * and leaves their state where it is, and `weight` and `fade()` multiply into their weights, by
+   * what its `weightOf` reports; it fades as a whole, not by subject or at rest. It is
+   * `played` once every voice it held has finished its passes, and leaves, `done`, with its last; a
+   * fade that ends takes the rest with it. One that never holds a voice stays until faded. Owners
+   * nest. Throws for a `loop`: a pass would have to restart its children.
+   */
+  owns(spec: OwnerSpec<I, H>): Handle<I>;
 
   /** The host reports the clock, once a frame. Nothing advances at the call. */
   sync(timestamp: number): void;

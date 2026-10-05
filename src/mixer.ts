@@ -19,6 +19,22 @@ import { type HandleHost, VoiceHandle } from './handle.js';
 import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
 import { type MotionOwner, type Motions, motionOf } from './motion.js';
 import { Named } from './named.js';
+import {
+  adopt,
+  childPlayed,
+  descendants,
+  Holding,
+  heldByInput,
+  mixTime,
+  orphan,
+  ownedElapsed,
+  ownerPatch,
+  ownerReading,
+  ownersWeight,
+  ownWeight,
+  relink,
+  signalled,
+} from './owner.js';
 import { Pace } from './pace.js';
 import { type Built, builtOf, durationOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
@@ -38,6 +54,7 @@ import type {
   Marked,
   Mix,
   MixOptions,
+  OwnerSpec,
   Patch,
   Placement,
   Projection,
@@ -566,6 +583,8 @@ export class Voice<I, O> {
   unreachedBits: Uint32Array | null = null;
   /** The handle `cue` returned, which `voices` hands back too. */
   handle: Handle<I> | null = null;
+  /** For an owner, the voices it holds; null for any other voice. */
+  holding: Holding<Voice<I, O>> | null;
   /**
    * `done` and `played`, made when first asked for, already settled if the voice is: most hosts
    * never await either, and a mix may hold tens of thousands of voices.
@@ -614,6 +633,7 @@ export class Voice<I, O> {
     if (this.quiet || this.playedAs !== undefined) return;
     this.playedAs = played;
     this.playedSettle?.(played);
+    if (played && this.owner !== null) childPlayed(this.owner);
   }
 
   constructor(
@@ -627,7 +647,10 @@ export class Voice<I, O> {
     channels: readonly Channel<unknown>[],
     host: unknown,
     send: (event: unknown) => void,
+    /** The owner whose clock it runs on, its start included; null for one on the mix clock. */
+    public owner: Voice<I, O> | null,
   ) {
+    this.holding = patch === ownerPatch ? new Holding() : null;
     this.slots = patch.writes.map((k) => slotOf.get(k as string) as number);
     this.named = spec.subjects ? new Named(spec.subjects) : null;
     this.built = patch.form === 'keys' && patch.keys ? builtOf(patch) : null;
@@ -647,8 +670,10 @@ export class Voice<I, O> {
         : Number.POSITIVE_INFINITY;
     this.motion = motionOf<I>(patch);
     const holds = this.motion === undefined ? spec.hold : undefined;
-    this.holdsBefore = holds === 'before' || holds === 'both';
-    this.holdsAfter = holds === 'after' || holds === 'both';
+    // A voice with no hold of its own takes its owner's.
+    const inherits = holds === undefined && this.motion === undefined && owner !== null;
+    this.holdsBefore = inherits ? owner.holdsBefore : holds === 'before' || holds === 'both';
+    this.holdsAfter = inherits ? owner.holdsAfter : holds === 'after' || holds === 'both';
     this.setting = new VoiceSetting(host, send, this);
     this.rate = spec.rate ?? 1;
     this.weight = typeof spec.weight === 'number' ? spec.weight : 1;
@@ -656,13 +681,15 @@ export class Voice<I, O> {
     if (now >= start) this.state = 'live';
   }
 
+  /** What its clock reads at mix time `now`, through its owners' clocks. */
   elapsedAt(now: number): number {
-    return elapsedWith(this, now);
+    return this.owner === null ? elapsedWith(this, now) : ownedElapsed(this, this.owner, now);
   }
 
   /** The mix time its clock reads `elapsed`, inverting `elapsedAt`; Infinity where it never will. */
   timeAt(elapsed: number): number {
-    return timeWith(this, elapsed);
+    const t = timeWith(this, elapsed);
+    return this.owner === null ? t : mixTime(this.owner, t);
   }
 
   /** Records this voice's controls as they stand, from mix time `at`. */
@@ -857,6 +884,8 @@ class Mixer<I, O> implements Mix<I, O> {
   private handles: HandleHost<I, O> | null = null;
   /** What `book` made, still booking; null while there is none. */
   private bookers: Book<I, O>[] | null = null;
+  /** Every owner still in the mix, null until one is cued. */
+  private owners: Voice<I, O>[] | null = null;
 
   constructor(
     private readonly kit: Kit<O>,
@@ -907,36 +936,52 @@ class Mixer<I, O> implements Mix<I, O> {
     if (spec.subjects !== undefined && spec.target !== undefined)
       throw new Error('blits: a voice takes target or subjects, not both');
     const anchor = spec.anchor;
-    if (anchor) this.checkPlacement(spec, anchor);
+    const owner = spec.owner === undefined ? null : this.ownerOf(spec.owner);
+    if (anchor) this.checkPlacement(spec, anchor, owner);
     if (spec.hits !== undefined) checkHits(spec.hits, durationOf(patch));
 
     const anchored =
       anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
+    // A voice an owner holds is placed on the owner's clock: ms from when it starts.
+    const local = owner === null ? this.now : ownerReading(owner, this.now);
     const start = anchored
       ? Number.POSITIVE_INFINITY
-      : spec.start !== undefined
-        ? this.mixAt(spec.start - this.offset)
-        : Number.isNaN(this.now)
-          ? 0
-          : this.now;
+      : owner !== null
+        ? (spec.start ?? (local > 0 ? local : 0))
+        : spec.start !== undefined
+          ? this.mixAt(spec.start - this.offset)
+          : Number.isNaN(this.now)
+            ? 0
+            : this.now;
     const voice = new Voice<I, O>(
       this.nextId++,
       spec,
       patch,
       spec.fade ?? {},
-      this.now,
+      local,
       start,
       this.slotOf,
       this.channels,
       this.opts.host,
       this.send,
+      owner,
     );
+    if (owner !== null) adopt(owner, voice);
+    if (voice.holding !== null) {
+      this.owners ??= [];
+      this.owners.push(voice);
+    }
     if (!Number.isNaN(this.now)) {
       voice.cuedAt = this.now;
       voice.opened = this.now;
     }
     voice.placing = anchored;
-    if (this.pace !== null && spec.start !== undefined && voice.state === 'pending')
+    if (
+      this.pace !== null &&
+      owner === null &&
+      spec.start !== undefined &&
+      voice.state === 'pending'
+    )
       this.pin(voice, spec.start - this.offset);
     const motion = voice.motion;
     if (motion !== undefined) {
@@ -954,7 +999,11 @@ class Mixer<I, O> implements Mix<I, O> {
     if (anchor) {
       this.anchored++;
       this.place();
-      if (!Number.isNaN(this.now) && voice.state === 'pending' && this.now >= voice.start) {
+      if (
+        !Number.isNaN(this.now) &&
+        voice.state === 'pending' &&
+        this.localNow(voice) >= voice.start
+      ) {
         voice.state = 'live';
         this.started(voice);
         this.changed(voice);
@@ -984,6 +1033,31 @@ class Mixer<I, O> implements Mix<I, O> {
       of.members.push(voice);
       return handle;
     });
+  }
+
+  owns(spec: OwnerSpec<I>): Handle<I> {
+    if ((spec as { loop?: unknown }).loop !== undefined)
+      throw new Error('blits: an owner does not loop: a pass would have to restart its children');
+    return this.cue({ ...spec, patch: ownerPatch as Patch<I, O, unknown> });
+  }
+
+  /** The owner a handle names, refused where it is not one of this mix's or has left. */
+  private ownerOf(handle: Handle<I>): Voice<I, O> {
+    const found = this.owners?.find((v) => v.handle === handle);
+    if (found === undefined)
+      throw new Error('blits: owner is not a handle mix.owns returned on this mix');
+    if (found.state === 'done') throw new Error('blits: that owner has left the mix');
+    return found;
+  }
+
+  /** What a voice's own owner's clock reads now: the mix clock for a voice no owner holds. */
+  private localNow(voice: Voice<I, O>): number {
+    return voice.owner === null ? this.now : ownerReading(voice.owner, this.now);
+  }
+
+  /** A voice's start as mix time. */
+  private startOf(voice: Voice<I, O>): number {
+    return voice.owner === null ? voice.start : mixTime(voice.owner, voice.start);
   }
 
   sync(timestamp: number): void {
@@ -1067,8 +1141,11 @@ class Mixer<I, O> implements Mix<I, O> {
       if (voice.state === 'done') continue;
       if (Number.isNaN(voice.opened)) voice.opened = now;
       if ((voice.state === 'live' || voice.state === 'held') && voice.outAt <= now)
-        this.beginFade(voice, {}, Math.max(voice.start, voice.outAt));
-      if (voice.state === 'pending' && now >= voice.start) {
+        this.beginFade(voice, {}, Math.max(this.startOf(voice), voice.outAt));
+      if (
+        voice.state === 'pending' &&
+        (voice.owner === null ? now : ownerReading(voice.owner, now)) >= voice.start
+      ) {
         voice.state = 'live';
         this.started(voice);
         this.changed(voice);
@@ -1081,7 +1158,12 @@ class Mixer<I, O> implements Mix<I, O> {
           // the same at any frame rate and a read at another time can find it.
           if (voice.state === 'live') {
             if (voice.holdsAfter) voice.state = 'held';
-            else this.beginFade(voice, {}, Math.max(voice.start, Math.min(now, voice.timeAt(end))));
+            else
+              this.beginFade(
+                voice,
+                {},
+                Math.max(this.startOf(voice), Math.min(now, voice.timeAt(end))),
+              );
           }
         } else if (voice.state === 'held') voice.state = 'live';
       }
@@ -1122,6 +1204,8 @@ class Mixer<I, O> implements Mix<I, O> {
       this.changed(voice);
       if (voice.named === null) pruned = true;
       else this.unindex(voice);
+      if (voice.holding !== null && this.owners !== null)
+        this.owners = this.owners.filter((v) => v !== voice);
       if (voice.spec.locus !== undefined) this.loci--;
       if (voice.spec.anchor !== undefined) this.anchored--;
     }
@@ -1148,7 +1232,9 @@ class Mixer<I, O> implements Mix<I, O> {
    */
   private dueOf(voice: Voice<I, O>): number {
     if (voice.state === 'done') return Number.POSITIVE_INFINITY;
-    if (Number.isNaN(voice.opened)) return Number.NEGATIVE_INFINITY;
+    // An owner and the voices it holds run on clocks that move with it, so each is visited every frame.
+    if (Number.isNaN(voice.opened) || voice.owner !== null || voice.holding !== null)
+      return Number.NEGATIVE_INFINITY;
     let due = Number.POSITIVE_INFINITY;
     if (voice.parts !== null)
       for (const r of voice.parts.values()) due = Math.min(due, r.at + r.over);
@@ -1400,6 +1486,7 @@ class Mixer<I, O> implements Mix<I, O> {
           return copy;
         });
       ownBlends(c.cued);
+      if (this.owners !== null) relink(c.cued);
       c.announced = this.announced.map((a) => ({ ...a }));
       c.count();
       c.move(t);
@@ -1428,18 +1515,20 @@ class Mixer<I, O> implements Mix<I, O> {
             (subject) => this.recall(v, subject, t),
             last(log, t, (e) => e.sync) ?? (log[0] as Controls),
           );
-          copy.state =
-            t < v.start
-              ? 'pending'
-              : copy.out && copy.out.at <= t
-                ? 'fading'
-                : copy.holdsAfter && copy.elapsedAt(t) >= copy.span + copy.latest
-                  ? 'held'
-                  : 'live';
           if (then !== undefined) copy.setting.host = then;
           return copy;
         });
       ownBlends(c.cued);
+      if (this.owners !== null) relink(c.cued);
+      for (const copy of c.cued)
+        copy.state =
+          (copy.owner === null ? t : ownerReading(copy.owner, t)) < copy.start
+            ? 'pending'
+            : copy.out && copy.out.at <= t
+              ? 'fading'
+              : copy.holdsAfter && copy.elapsedAt(t) >= copy.span + copy.latest
+                ? 'held'
+                : 'live';
       c.count();
     }
     const read = <T>(f: () => T): T => {
@@ -1596,7 +1685,8 @@ class Mixer<I, O> implements Mix<I, O> {
       this.pace = new Pace(this.opts.history !== undefined);
       // Until now mix time was host time, so a pending voice's start is the host time it was given.
       for (const v of this.cued)
-        if (v.state === 'pending' && !v.placing && v.spec.start !== undefined) this.pin(v, v.start);
+        if (v.state === 'pending' && !v.placing && v.owner === null && v.spec.start !== undefined)
+          this.pin(v, v.start);
     }
     const history = this.opts.history;
     const reach = history === undefined ? Number.NEGATIVE_INFINITY : this.now - history.ms;
@@ -1640,7 +1730,7 @@ class Mixer<I, O> implements Mix<I, O> {
     if (typeof voice.spec.weight === 'function' || voice.parts !== null) return false;
     const fadeIn = this.reducedNow ? 0 : (voice.fade.in ?? 0);
     if (fadeIn > 0 && now - this.sinceOf(voice, voice.latest) < fadeIn) return false;
-    if (voice.state === 'held') return true;
+    if (voice.state === 'held' || voice.holding !== null) return true;
     const motion = voice.motion;
     return motion !== undefined && voice.elapsedAt(now) >= voice.latest && motion.landed();
   }
@@ -1674,6 +1764,7 @@ class Mixer<I, O> implements Mix<I, O> {
     const named = this.named.get(subject);
     if (named !== undefined) for (const voice of [...named]) forget(voice);
     for (const voice of this.gone) forget(voice);
+    if (this.owners !== null) for (const voice of this.owners) forget(voice);
     for (const voice of this.parters) {
       forget(voice);
       if (voice.parts?.size === 0) voice.parts = null;
@@ -1743,7 +1834,10 @@ class Mixer<I, O> implements Mix<I, O> {
       },
       naming: (subject) => (mix.naming === 0 ? undefined : mix.named.get(subject)),
       slotOf: (subject) => mix.chains.get(subject)?.slot ?? -1,
-      envelope: (voice, since) => mix.envelope(voice, mix.now, since),
+      envelope: (voice, since) =>
+        voice.owner === null
+          ? mix.envelope(voice, mix.now, since)
+          : mix.envelope(voice, mix.now, since) * mix.ownedBy(voice, undefined as I),
       parting: (voice, subject) => mix.parting(voice, subject, mix.now),
       ready: (voice, subject, held, elapsed, pass, weight) => {
         mix.prime(voice, held, mix.now, elapsed, pass);
@@ -1781,6 +1875,8 @@ class Mixer<I, O> implements Mix<I, O> {
     const patch = voice.patch;
     if (voice.keeping) return false;
     if (voice.state === 'pending' && voice.holdsBefore) return false;
+    // A fill weighs a voice's owners once for every subject, which a signal on one would not be.
+    if (voice.owner !== null && signalled(voice)) return false;
     // A signal reading host input records it per probe under history, which a fill cannot.
     if (typeof spec.weight === 'function' && spec.weight.input && this.opts.history?.inputs)
       return false;
@@ -1893,7 +1989,11 @@ class Mixer<I, O> implements Mix<I, O> {
   // ── internals ──────────────────────────────────────────────────────────────
 
   /** Refuses a placement that names a mark twice on one side, or that waits on itself. */
-  private checkPlacement(spec: VoiceSpec<I, O>, anchor: Placement): void {
+  private checkPlacement(
+    spec: VoiceSpec<I, O>,
+    anchor: Placement,
+    owner: Voice<I, O> | null,
+  ): void {
     if (anchor.start !== undefined && anchor.in !== undefined)
       throw new Error('blits: a placement anchors start or in, not both');
     if (anchor.out !== undefined && anchor.end !== undefined)
@@ -1902,26 +2002,32 @@ class Mixer<I, O> implements Mix<I, O> {
       throw new Error('blits: a voice takes start or an anchored start, not both');
     const name = spec.name;
     if (name === undefined) return;
-    // A voice is known by its score and its name; a bare name in an anchor is in the asker's score.
-    const key = (score: string | undefined, n: string) => `${score ?? ''}\u0000${n}`;
-    const names = (p: Placement, score: string | undefined): string[] =>
+    // A voice is known by its owner, its score and its name; a bare name in an anchor is in the
+    // asker's score under the asker's owner.
+    const key = (o: Voice<I, O> | null, score: string | undefined, n: string) =>
+      `${o?.id ?? 0}\u0000${score ?? ''}\u0000${n}`;
+    const names = (p: Placement, score: string | undefined, o: Voice<I, O> | null): string[] =>
       [p.start, p.in, p.out, p.end].flatMap((a) => {
         if (a === undefined || typeof a === 'number') return [];
         const q = 'of' in a ? a.of : 'after' in a ? a.after : 'with' in a ? a.with : a.before;
-        if (typeof q === 'string') return [key(score, q)];
-        return q.name === undefined ? [] : [key(q.score ?? score, q.name)];
+        if (typeof q === 'string') return [key(o, score, q)];
+        return q.name === undefined ? [] : [key(o, q.score ?? score, q.name)];
       });
-    const self = key(spec.score, name);
+    const self = key(owner, spec.score, name);
     const seen = new Set<string>();
-    const waits = names(anchor, spec.score);
+    const waits = names(anchor, spec.score, owner);
     while (waits.length > 0) {
       const n = waits.pop() as string;
       if (n === self) throw new Error(`blits: ${name}'s placement waits on itself`);
       if (seen.has(n)) continue;
       seen.add(n);
       for (const v of this.cued)
-        if (v.spec.name !== undefined && key(v.spec.score, v.spec.name) === n && v.spec.anchor)
-          waits.push(...names(v.spec.anchor, v.spec.score));
+        if (
+          v.spec.name !== undefined &&
+          key(v.owner, v.spec.score, v.spec.name) === n &&
+          v.spec.anchor
+        )
+          waits.push(...names(v.spec.anchor, v.spec.score, v.owner));
     }
   }
 
@@ -1940,15 +2046,23 @@ class Mixer<I, O> implements Mix<I, O> {
           const by = anchor.start ?? anchor.in;
           const t = by === undefined ? undefined : this.resolve(by, voice);
           if (t !== undefined) {
-            const start = anchor.start !== undefined ? t : t - (voice.fade.in ?? 0);
-            if (this.startAt(voice, start)) moved = true;
+            const o = voice.owner;
+            const fadeIn = voice.fade.in ?? 0;
+            const start =
+              anchor.start !== undefined
+                ? t
+                : o === null
+                  ? t - fadeIn
+                  : ownerReading(o, mixTime(o, t) - fadeIn);
+            if (Number.isFinite(start) && this.startAt(voice, start)) moved = true;
           }
         }
         if (voice.state !== 'fading') {
           const by = anchor.out ?? anchor.end;
           const t = by === undefined ? undefined : this.resolve(by, voice);
           if (t !== undefined) {
-            const at = anchor.out !== undefined ? t : t - (voice.fade.out ?? 0);
+            const m = voice.owner === null ? t : mixTime(voice.owner, t);
+            const at = anchor.out !== undefined ? m : m - (voice.fade.out ?? 0);
             if (at !== voice.outAt) {
               voice.outAt = at;
               this.noted(voice);
@@ -1961,12 +2075,13 @@ class Mixer<I, O> implements Mix<I, O> {
     }
   }
 
-  /** The mix time an anchor answers, or undefined while its target has none. */
+  /** The time an anchor answers on its voice's owner's clock, or undefined while its target has none. */
   private resolve(
     a: number | NonNullable<Placement['start']>,
     self: Voice<I, O>,
   ): number | undefined {
-    if (typeof a === 'number') return this.mixAt(a - this.offset);
+    const o = self.owner;
+    if (typeof a === 'number') return o === null ? this.mixAt(a - this.offset) : a;
     let query: string | Query;
     let mark: Mark;
     let by = a.by ?? 0;
@@ -1985,27 +2100,33 @@ class Mixer<I, O> implements Mix<I, O> {
       by = -by;
     }
     const t = this.timeOf(typeof query === 'string' ? { name: query } : query, mark, self);
-    return t === undefined ? undefined : t + by;
+    if (t === undefined) return undefined;
+    if (o === null) return t + by;
+    const local = ownerReading(o, t);
+    return Number.isFinite(local) ? local + by : undefined;
   }
 
   /**
-   * The time a query answers: `mark` of the voice it picks, among those cued and those that have
+   * The mix time a query answers: `mark` of the voice it picks, among those cued and those that have
    * left, never the asker; or a mark the host announced on the score, which is the same time for
-   * any of the four. Undefined while what it picks has no such time.
+   * any of the four. Undefined while what it picks has no such time. A query naming no score looks
+   * among the asker's siblings, the voices its owner holds.
    */
   private timeOf(q: Query, mark: Mark, self: Voice<I, O>): number | undefined {
     const score = q.score ?? self.spec.score;
+    const anywhere = q.score !== undefined;
     const found: { order: number; t: number | undefined }[] = [];
     for (const v of [...this.gone, ...this.cued])
       if (
         v !== self &&
         v.spec.score === score &&
+        (anywhere || v.owner === self.owner) &&
         (q.name === undefined || v.spec.name === q.name) &&
         (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
         (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes))
       )
         found.push({ order: v.id, t: this.markOf(v, mark) });
-    if (q.writes === undefined)
+    if (q.writes === undefined && (anywhere || self.owner === null))
       for (const a of this.announced)
         if (
           a.score === score &&
@@ -2028,7 +2149,9 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** When a voice reaches a mark, mix time, or undefined while nothing has fixed it. */
   private markOf(voice: Voice<I, O>, mark: Mark): number | undefined {
-    const start = voice.start;
+    if (!Number.isFinite(voice.start)) return undefined;
+    // A mark is known only while every clock above it is fixed.
+    const start = this.startOf(voice);
     if (!Number.isFinite(start)) return undefined;
     if (mark === 'start') return start;
     if (mark === 'in') return start + (voice.fade.in ?? 0);
@@ -2053,7 +2176,12 @@ class Mixer<I, O> implements Mix<I, O> {
   private elapsedThen(voice: Voice<I, O>, t: number): number {
     const log = voice.log;
     const c = log === null ? undefined : last(log, t, true);
-    return elapsedWith(c ?? voice, t);
+    return elapsedWith(c ?? voice, voice.owner === null ? t : this.ownerThen(voice.owner, t));
+  }
+
+  /** What an owner's clock read at an earlier mix time; apart, so `elapsedThen` stays small. */
+  private ownerThen(owner: Voice<I, O>, t: number): number {
+    return this.elapsedThen(owner, t);
   }
 
   /** Records a change to a voice's controls under `history`, and lets go of what it no longer reaches. */
@@ -2263,6 +2391,7 @@ class Mixer<I, O> implements Mix<I, O> {
     // A weight read back from a recording is what the mix used then, so its signal's state is moot.
     const replayed = held.replay !== undefined && last(held.replay, this.now, true) !== undefined;
     if (typeof weight === 'function' && weight.input && !replayed) return 'held';
+    if (voice.owner !== null && heldByInput(voice)) return 'held';
     const reads = voice.patch.reads;
     if (reads !== undefined && reads.length > 0) {
       const then = this.hostThen?.fields;
@@ -2284,19 +2413,39 @@ class Mixer<I, O> implements Mix<I, O> {
 
   private handleHost(): HandleHost<I, O> {
     return {
-      nowFor: (voice) => (Number.isNaN(this.now) ? voice.start : this.now),
+      nowFor: (voice) => {
+        if (Number.isNaN(this.now)) return voice.start;
+        const local = this.localNow(voice);
+        return Number.isFinite(local) ? local : voice.start;
+      },
       changed: (voice) => {
         this.frame = ++frames;
         this.noted(voice);
         this.lanes?.refill();
       },
+      // A delta read before an owner's seek, or a hit booked, is not taken as standing after it.
+      sought: (voice) => {
+        if (voice.holding !== null)
+          descendants(voice, (v) => {
+            v.seeks++;
+            this.schedule(v);
+          });
+      },
       fade: (voice, opts) => {
+        if (
+          voice.holding !== null &&
+          opts !== undefined &&
+          ('subject' in opts || opts.at === 'rest')
+        )
+          throw new Error('blits: an owner fades as a whole, not by subject or at rest');
         if (opts !== undefined && 'subject' in opts)
           this.fadeSubject(voice, opts.subject as I, opts.over);
         else this.beginFade(voice, opts ?? {});
       },
       weightOf: (voice, subject) => {
         if (voice.state === 'done') return 0;
+        if (voice.holding !== null)
+          return ownWeight(voice, this.now, this.reducedNow, (o) => this.ownerBase(o, subject));
         if (voice.laned && this.lanes !== null) {
           const w = this.lanes.weightOf(voice.id, this.chains.get(subject)?.slot ?? -1);
           if (w !== undefined) return w;
@@ -2311,7 +2460,7 @@ class Mixer<I, O> implements Mix<I, O> {
     if (voice.state === 'done' || voice.parted?.has(subject) || voice.parts?.has(subject)) return;
     this.stirred = true;
     const ms = this.reduced ? 0 : (over ?? voice.fade.out ?? 0);
-    const at = Number.isNaN(this.now) ? voice.start : this.now;
+    const at = Number.isNaN(this.now) ? this.startOf(voice) : this.now;
     if (ms === 0) {
       this.part(voice, subject, at);
       return;
@@ -2349,7 +2498,7 @@ class Mixer<I, O> implements Mix<I, O> {
     this.parters.add(voice);
     this.forgetIn(voice, subject);
     const motion = voice.motion;
-    if (motion !== undefined && this.owns(motion, voice)) motion.release(subject);
+    if (motion !== undefined && this.asks(motion, voice)) motion.release(subject);
   }
 
   /** Brings a subject faded out of a voice back, to be met afresh on its next probe. */
@@ -2391,7 +2540,7 @@ class Mixer<I, O> implements Mix<I, O> {
     voice.state = 'fading';
     voice.out = {
       from: 1,
-      at: at ?? (Number.isNaN(this.now) ? voice.start : this.now),
+      at: at ?? (Number.isNaN(this.now) ? this.startOf(voice) : this.now),
       over,
       rest: opts.at === 'rest',
       deadline: opts.deadline,
@@ -2404,14 +2553,14 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** Removes a voice, recording that it left at `at`, default now. */
   /** Whether a motion patch still asks this voice of this mix for its time. */
-  private owns(motion: Motions<I>, voice: Voice<I, O>): boolean {
+  private asks(motion: Motions<I>, voice: Voice<I, O>): boolean {
     return motion.owner === this.owner && motion.ownerId === voice.id;
   }
 
   private retire(voice: Voice<I, O>, at?: number): void {
-    this.lanes?.touch(voice);
+    if (voice.holding === null) this.lanes?.touch(voice);
     const motion = voice.motion;
-    if (motion !== undefined && this.owns(motion, voice)) motion.owner = null;
+    if (motion !== undefined && this.asks(motion, voice)) motion.owner = null;
     voice.state = 'done';
     // The record its setting last wrote to, which a retired voice no longer calls for.
     voice.keepOn = null;
@@ -2419,11 +2568,42 @@ class Mixer<I, O> implements Mix<I, O> {
     voice.doneAt = at ?? (Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now);
     voice.play(false);
     voice.resolve();
+    // An owner takes what it holds with it, and leaves with its last child.
+    if (voice.holding !== null)
+      for (const child of [...voice.holding.children])
+        if (child.state !== 'done') this.retire(child, voice.doneAt);
+    if (voice.owner !== null) {
+      const owner = orphan(voice);
+      if (owner !== null) this.retire(owner, voice.doneAt);
+    }
   }
 
   /** The ramp a voice's own fade envelope applies this frame, 0..1. */
   private envelope(voice: Voice<I, O>, now: number, since: number): number {
     return envelope(voice.fade.in ?? 0, voice.out, voice.ease, this.reducedNow, now, since);
+  }
+
+  /** What every owner above a voice multiplies into its weight for a subject this frame. */
+  private ownedBy(voice: Voice<I, O>, subject: I): number {
+    return ownersWeight(voice, this.now, this.reducedNow, (o) => this.ownerBase(o, subject));
+  }
+
+  /**
+   * An owner's signal read for a subject, once a frame: kept on the owner's record for it, which
+   * no fold links, in `phase`, with the frame it was read in `probed`.
+   */
+  private ownerBase(owner: Voice<I, O>, subject: I): number {
+    const now = this.now;
+    const held = this.held(owner, subject, now, -1);
+    if (held.probed === this.frame) return held.phase;
+    const kept = reading.kept;
+    this.prime(owner, held, now, owner.elapsedAt(now), 0);
+    const base = this.base(owner, subject, now, held);
+    reading.kept = kept;
+    held.stepped = now;
+    held.probed = this.frame;
+    held.phase = base;
+    return base;
   }
 
   /** The record a voice gives every subject it does not reach. */
@@ -2518,9 +2698,11 @@ class Mixer<I, O> implements Mix<I, O> {
    * the rate it is ramping to.
    */
   private sinceOf(voice: Voice<I, O>, delay: number): number {
-    return voice.rate > 0
-      ? voice.anchorNow + (delay - voice.anchorElapsed) / voice.rate
-      : voice.start + delay;
+    const t =
+      voice.rate > 0
+        ? voice.anchorNow + (delay - voice.anchorElapsed) / voice.rate
+        : voice.start + delay;
+    return voice.owner === null ? t : mixTime(voice.owner, t);
   }
 
   private shownOf(voice: Voice<I, O>, since: number): number {
@@ -2540,8 +2722,18 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** The weight a voice gives a subject this frame, with the setting already filled in. */
   private weigh(voice: Voice<I, O>, subject: I, now: number, held: Subject<unknown>): number {
+    if (voice.owner !== null) return this.weighOwned(voice, subject, now, held);
     const base = this.base(voice, subject, now, held);
     const fade = this.envelope(voice, now, held.shown);
+    return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
+  }
+
+  /** `weigh` for a voice an owner holds, its owners' weight folded into its fade. */
+  private weighOwned(voice: Voice<I, O>, subject: I, now: number, held: Subject<unknown>): number {
+    // Its owners first, since a signal on one takes over the setting `base` leaves for the patch.
+    const owned = this.ownedBy(voice, subject);
+    const base = this.base(voice, subject, now, held);
+    const fade = this.envelope(voice, now, held.shown) * owned;
     return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
   }
 
@@ -2964,6 +3156,11 @@ class Mixer<I, O> implements Mix<I, O> {
    * its subjects, and lanes take it on or off.
    */
   private changed(voice: Voice<I, O>): void {
+    // An owner is in no chain and on no lane; what it changes in its children, a fill reads afresh.
+    if (voice.holding !== null) {
+      this.lanes?.refill();
+      return;
+    }
     this.lanes?.touch(voice);
     if (voice.named === null) {
       this.steps.push(voice, ++this.version);
@@ -2978,6 +3175,7 @@ class Mixer<I, O> implements Mix<I, O> {
 
   /** Files a voice under each subject it names, or among the voices that name none. */
   private index(voice: Voice<I, O>): void {
+    if (voice.holding !== null) return;
     if (voice.named === null) {
       this.general.push(voice);
       return;

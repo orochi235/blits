@@ -1174,7 +1174,8 @@ export class Lanes<I, O> implements Watcher {
     this.filledVersion = Number.NaN;
     const touched = this.touched.slice();
     this.touched.length = 0;
-    const present = host.voices.filter((v) => v.state !== 'done');
+    // An owner writes nothing and no fold meets it, so it neither takes a lane nor keeps one whole.
+    const present = host.voices.filter((v) => v.state !== 'done' && v.holding === null);
     for (const v of present) if (v.id > this.known) this.known = v.id;
     const numeric = host.channels.map((c) => numericOf(c) !== undefined);
     // A voice writing nothing has no lane to fill, so it stays where its calls are made.
@@ -1980,7 +1981,7 @@ export class Lanes<I, O> implements Watcher {
     lane.read = false;
     lane.weighed = false;
     // With no fade in or out the envelope is 1 for every subject, which is what it would return.
-    lane.flat = !((voice.fade.in ?? 0) > 0) && voice.out === null;
+    lane.flat = !((voice.fade.in ?? 0) > 0) && voice.out === null && voice.owner === null;
     lane.fade = 1;
   }
 
@@ -2388,6 +2389,7 @@ export class Lanes<I, O> implements Watcher {
     if (v.holdsBefore || v.holdsAfter) f |= F_HOLDS;
     if (
       v.ramp === null &&
+      v.owner === null &&
       !((v.fade.in ?? 0) > 0) &&
       v.out === null &&
       v.parts === null &&

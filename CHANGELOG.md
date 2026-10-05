@@ -64,6 +64,18 @@ version and everything else the patch. Each release lists its changes as **Break
   A mix with no booker costs what it did: every row timed (`fn`, `keys`, `signal`, `blend`,
   `named`, `spring`, `tweens`, `churn`, `weasel`, `sparse`) overlaps `c6de97e`'s range over three
   alternated runs on msb-uai, each row in a process of its own.
+- Owners, for placing, timing and fading voices as one: `mix.owns(spec)` cues a voice with no
+  patch, and a voice cued with `owner: handle` plays under it. A child's `start` and anchors count
+  on the owner's clock, in ms from its start, and a bare name in its anchors means a sibling. The
+  owner's `rate`, `ramp` and `seek` move every child's clock with its own, leaving their state where
+  it is; its `weight`, a number or a signal, and its `fade` multiply into each child's weight per
+  subject; a child with no `hold` takes the owner's. The owner is `played` once every child has
+  finished its passes and leaves with its last child, and its fade ending takes them all. Owners
+  nest, `handle.owner` names a child's owner, and `marks`, hits, `history` and `project` all read
+  through the chain of owner clocks. An owner refuses `loop`. A mix with no owner costs what it
+  did: every row timed (`fn`, `keys`, `signal`, `blend`, `named`, `spring`, `tweens^`, `churn^`,
+  `weasel^`, `swap`, `sparse`) overlaps `995cd97`'s range over four alternated runs on teitou, each
+  row in a process of its own.
 
 ### Fixed
 
