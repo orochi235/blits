@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { qualify } from '../src/lanes.js';
+import { qualify } from '../src/qualify.js';
 
 describe('qualify', () => {
   it('lanes every numeric channel whose writers all fit', () => {

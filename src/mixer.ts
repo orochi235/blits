@@ -14,9 +14,10 @@ import {
   timeWith,
   weighed,
 } from './clock.js';
+import { type Column, clampRun, flush, pullRun, writeLater } from './columns.js';
 import { type Curve, curve } from './easing.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
-import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
+import { type LaneHost, Lanes } from './lanes.js';
 import { type MotionOwner, type Motions, motionOf } from './motion.js';
 import { Named } from './named.js';
 import {
@@ -1394,7 +1395,8 @@ class Mixer<I, O> implements Mix<I, O> {
     try {
       for (let n = 0; n < list.length; n++) {
         if (runs) {
-          n = (lanes as Lanes<I, O>).pullRun(
+          n = pullRun(
+            lanes as Lanes<I, O>,
             slots,
             list,
             was,
@@ -1425,7 +1427,7 @@ class Mixer<I, O> implements Mix<I, O> {
         const laned =
           live && lanes?.prepare(slot, subject, now, this.version, heads[n] ?? null) === true;
         if (laned && whole && (lanes as Lanes<I, O>).whole && !(lanes as Lanes<I, O>).owes(slot)) {
-          (lanes as Lanes<I, O>).writeLater(slot, columns, n);
+          writeLater(lanes as Lanes<I, O>, slot, columns, n);
           continue;
         }
         const head = live ? (heads[n] as Subject<unknown>) : null;
@@ -1435,7 +1437,7 @@ class Mixer<I, O> implements Mix<I, O> {
         for (const c of columns) writeValue(c, pose[c.key], n);
       }
     } finally {
-      lanes?.flush();
+      if (lanes !== null) flush(lanes);
     }
     // Every head is current only if nothing relinked or changed version while they were read.
     const unchanged = live && this.version === version && this.relinks === relinks;
