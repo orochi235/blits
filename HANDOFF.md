@@ -58,6 +58,10 @@ systems now run on it**, on klieg's `main`.
 - **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
   the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
   is green on all 13 pages. Deployed to `michaelbaker.tech/blits/` by `.github/workflows/site.yml` on every push to `main`.
+  Every explainer draws a stage of what its mix drives above its chart (2026-10-04). Open: the pages
+  don't fit a phone, since a 390 px viewport lays out about 640 px wide, and the score's text voice
+  ends the moment it finishes typing, so the line vanishes as the tint comes in. `Blending.tsx` is
+  521 lines and wants splitting.
 - `docs/schema.html` — the design: vocabulary, channel table, patches, voices, mix,
   signals, time model, blending, patch state, the engine seam, per-consumer rigs, the klieg port,
   decided-against, tests, open items. Status line says design under review. It reads in the called
