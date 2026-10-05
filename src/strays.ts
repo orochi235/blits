@@ -40,7 +40,7 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
     revive(id, subject) {
       const m = mix.deref();
       if (m === undefined) return;
-      m.stirred = true;
+      m.stir();
       const v = cuedById(m, id);
       if (v === undefined) return;
       if (v.motion !== undefined && v.named !== null && !v.named.has(subject as I))

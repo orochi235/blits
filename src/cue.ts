@@ -92,7 +92,7 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
   mix.cued.push(voice);
   index(mix, voice);
   changed(mix, voice);
-  mix.stirred = true;
+  mix.stir();
   if (spec.locus !== undefined) mix.loci++;
   if (spec.from === 'current') mix.wantsPose = true;
   if (anchor) {

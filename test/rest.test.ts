@@ -72,4 +72,27 @@ describe.each([true, false])('atRest after a probe, lanes %s', (lanes) => {
     m.cue({ patch: p, loop: true, start: 50 });
     expect(m.atRest(part)).toBe(false);
   });
+
+  it('folds again once a voice is stopped, muted or reweighted after the probe', () => {
+    const { p } = counted();
+    const m = mix<Part, Pose>(PART, { lanes });
+    const changes: ((h: ReturnType<typeof m.cue>) => void)[] = [
+      (h) => h.fade({ over: 0 }),
+      () => m.mute({ over: 0 }),
+      (h) => {
+        h.weight = 0;
+      },
+    ];
+    m.atRest(part);
+    let t = 0;
+    for (const change of changes) {
+      const h = m.cue({ patch: p, loop: true });
+      m.sync((t += 50));
+      m.probe(part);
+      expect(m.atRest(part)).toBe(false);
+      change(h);
+      expect(m.atRest(part)).toBe(true);
+      h.fade({ over: 0 });
+    }
+  });
 });

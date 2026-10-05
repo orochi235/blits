@@ -17,7 +17,7 @@ export function fadeSubject<I, O>(
   over?: number,
 ): void {
   if (voice.state === 'done' || voice.parted?.has(subject) || voice.parts?.has(subject)) return;
-  mix.stirred = true;
+  mix.stir();
   const ms = mix.reduced ? 0 : (over ?? voice.fade.out ?? 0);
   const at = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
   if (ms === 0) {

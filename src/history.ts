@@ -54,7 +54,7 @@ function ownerThen<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>, t: number): numbe
 
 /** Records a change to a voice's controls under `history`, and lets go of what it no longer reaches. */
 export function noted<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
-  mix.stirred = true;
+  mix.stir();
   schedule(mix, voice);
   const log = voice.log;
   if (log === null) return;

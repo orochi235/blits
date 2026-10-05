@@ -141,6 +141,14 @@ export class Mixer<I, O> implements Mix<I, O> {
   reducedNow = false;
   /** Something was changed since the last sync, so the next frame may differ from this one. */
   stirred = false;
+  /** Counts the changes `stir` records, which a frame's record of a probe is current only before. */
+  stirs = 0;
+
+  /** Records a change to the mix's voices or controls. */
+  stir(): void {
+    this.stirred = true;
+    this.stirs++;
+  }
   /**
    * Per subject, the first record of the chain through every live voice that reaches it, or a stub
    * where none does. Relinked when `version` moves, which is whenever the list or a voice's pending
@@ -407,7 +415,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     const history = this.opts.history;
     const reach = history === undefined ? Number.NEGATIVE_INFINITY : this.now - history.ms;
     this.pace.change(this.u, rate, over, reach);
-    this.stirred = true;
+    this.stir();
   }
 
   /** Whether a voice will change no pose from `now` on, short of a change made to it. */
@@ -438,7 +446,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.pose.delete(subject);
     this.restStamps?.delete(subject);
     this.chains.delete(subject);
-    this.stirred = true;
+    this.stir();
     // A record of it is only in a voice over every subject, one naming it, or one gone; a ramp out
     // of a voice that does not name it is in `parters`, and a patch's own state in `motions`.
     const forget = (voice: Voice<I, O>) => {
@@ -493,6 +501,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   private restsFrame = Number.NaN;
   private restsVersion = Number.NaN;
   private restsRelinks = -1;
+  private restsStirs = -1;
   /** The pose `atRest` folds into where no probe this frame answers. */
   private restScratch: O | undefined;
 
@@ -504,12 +513,14 @@ export class Mixer<I, O> implements Mix<I, O> {
     if (
       this.frame !== this.restsFrame ||
       this.version !== this.restsVersion ||
-      this.relinks !== this.restsRelinks
+      this.relinks !== this.restsRelinks ||
+      this.stirs !== this.restsStirs
     ) {
       this.restsEpoch++;
       this.restsFrame = this.frame;
       this.restsVersion = this.version;
       this.restsRelinks = this.relinks;
+      this.restsStirs = this.stirs;
     }
     return this.restsEpoch;
   }
