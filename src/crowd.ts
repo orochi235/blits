@@ -1,3 +1,4 @@
+import { bareRows, clock, Sampled, unbare } from './bare.js';
 import { clampWeight, passAt, phaseAt, weighed } from './clock.js';
 import type { Curve } from './easing.js';
 import { KeyRows } from './keyrows.js';
@@ -66,6 +67,31 @@ export const enum Flag {
   HOLDS = 256,
   /** A keys row whose stops `keys` holds, at `Hot.AT`, with its duration at `Hot.X0` and passes at `Hot.MS`. */
   FLAT = 512,
+  /** The row's patch is a tween. */
+  TWEEN = 1024,
+}
+
+/** The flags of a row `bareRows` takes, under `BARE_MASK`. */
+// biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package; see `Row`
+const enum Bare {
+  // biome-ignore lint/style/useLiteralEnumMembers: tsc folds the flags into a literal
+  MASK = Flag.PLAYING |
+    Flag.FAST |
+    Flag.BARE |
+    Flag.PLACED |
+    Flag.FOLDS |
+    Flag.VOICE |
+    Flag.MOTION |
+    Flag.HOLDS |
+    Flag.FLAT |
+    Flag.TWEEN,
+  // biome-ignore lint/style/useLiteralEnumMembers: tsc folds the flags into a literal
+  WANT = Flag.PLAYING | Flag.FAST | Flag.BARE | Flag.PLACED | Flag.FOLDS | Flag.MOTION | Flag.TWEEN,
+}
+
+/** Whether a row's flags let `bareRows` take it. */
+export function bare(f: number): boolean {
+  return (f & Bare.MASK) === Bare.WANT;
 }
 
 /**
@@ -106,6 +132,9 @@ export class Crowd<I, O> implements Positions<I, O> {
   /** The stops of its `Flag.FLAT` keys rows. */
   keys = new KeyRows();
   readonly scratch: Scratch = [];
+  /** The last fill that ran the crowd's rows, and its `now`, which a `Sampled.BARE` row was sampled at. */
+  bareFill = -1;
+  bareNow = Number.NaN;
 
   constructor(
     readonly chans: Laned[],
@@ -119,6 +148,12 @@ export class Crowd<I, O> implements Positions<I, O> {
   voiceAt(p: number): Voice<I, O> {
     return this.voices[p] as Voice<I, O>;
   }
+
+  fix(p: number): void {
+    unbare(this, p);
+  }
+
+  numbered(): void {}
 
   /** Marks row `p` to copy its stretch from its patch again before the next fill reads it. */
   restale(p: number, flags: number): void {
@@ -198,12 +233,25 @@ export function crowdsUpTo<I, O>(lanes: Lanes<I, O>, id: number): void {
   }
 }
 
-/**
- * A crowd's rows from its cursor up to voice `id`: what `runMotion` does for a lane's subjects,
- * reading each row's voice and stretch from `hot`, and through `move` for whatever `hot` cannot
- * answer, as `runMotion` does.
- */
+/** A crowd's rows from its cursor up to voice `id`, bare tweens in `bareRows` and the rest here. */
 function runCrowd<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, id: number): void {
+  const list = c.list;
+  const hot = c.hot;
+  let p = c.cursor;
+  for (;;) {
+    p = bareRows(lanes, c, p, id);
+    if (p >= list.length || (hot[p * c.stride + Hot.ID] as number) >= id) break;
+    p = rows(lanes, c, p, id);
+  }
+  c.cursor = p;
+}
+
+/**
+ * A crowd's rows from `p` up to voice `id`, until one `bareRows` takes after the first: what
+ * `runMotion` does for a lane's subjects, reading each row's voice and stretch from `hot`, and
+ * through `move` for whatever `hot` cannot answer, as `runMotion` does. Returns where it stopped.
+ */
+function rows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, first: number, id: number): number {
   const data = c.data;
   const hot = c.hot;
   const H = c.stride;
@@ -218,11 +266,13 @@ function runCrowd<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, id: number): void {
   const xs = c.xs;
   const vs = c.vs;
   const samples = c.samples;
-  let p = c.cursor;
+  let p = first;
   for (; p < list.length; p++) {
     const h = p * H;
     if ((hot[h + Hot.ID] as number) >= id) break;
     let f = hot[h + Hot.FLAGS] as number;
+    if (p > first && bare(f)) break;
+    if (data[p * Row.STRIDE + Row.SAMPLED] === Sampled.BARE) unbare(c, p);
     if ((f & Flag.VOICE) !== 0) f = copyVoice(c, p);
     if ((f & Flag.PLAYING) === 0 || (f & Flag.PLACED) === 0) continue;
     const slot = list[p] as number;
@@ -232,10 +282,7 @@ function runCrowd<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, id: number): void {
     const delay = data[o + Row.DELAY] as number;
     const fast = (f & Flag.FAST) !== 0;
     const voice = c.voices[p] as Voice<I, O>;
-    const elapsedNow = fast
-      ? (hot[h + Hot.ELAPSED] as number) +
-        (now - (hot[h + Hot.NOW] as number)) * (hot[h + Hot.RATE] as number)
-      : voice.elapsedAt(now);
+    const elapsedNow = fast ? clock(hot, h, now) : voice.elapsedAt(now);
     let elapsed = elapsedNow - delay;
     if ((f & Flag.HOLDS) !== 0) elapsed = held(voice, elapsed);
     if (!(elapsed >= 0)) {
@@ -324,7 +371,7 @@ function runCrowd<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, id: number): void {
     if ((f & Flag.FOLDS) !== 0) lanes.foldRun(ch, slot, xs, w);
     else lanes.foldInto(ch, slot, (c.motions[p] as Motions<I>).value(ms, xs), w);
   }
-  c.cursor = p;
+  return p;
 }
 
 /** A keys or fn row's contribution, as `one` makes a lane position's. */
@@ -407,6 +454,7 @@ export function freshen<I, O>(c: Crowd<I, O>): void {
 
 /** Copies a crowd row's current stretch from its patch into `hot`; returns the row's flags. */
 function copyStretch<I, O>(c: Crowd<I, O>, p: number, ms: number): number {
+  unbare(c, p);
   const run = c.motions[p] as Motions<I>;
   const h = p * c.stride;
   let f = (c.hot[h + Hot.FLAGS] as number) & ~(Flag.STALE | Flag.BARE | Flag.FOLDS);

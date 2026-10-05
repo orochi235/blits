@@ -1,9 +1,12 @@
+import { Sampled, unbareLane } from './bare.js';
+import { foldNumber } from './channels.js';
 import { clampWeight, passAt, weighed } from './clock.js';
 import { type Lane, type Laned, Per, type Positions, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Motions } from './motion.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
+import { between, left, progress } from './tweened.js';
 import type { Subject } from './voice.js';
 
 /**
@@ -28,6 +31,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
   const probed = lanes.probes !== from;
   const whole = clampWeight(voice.weight);
   const n = run.n;
+  const op = ch.op;
   if (n > 0) {
     if (lane.axes !== n) {
       lane.axes = n;
@@ -41,6 +45,14 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
   }
   const samples = lane.samples;
   const xs = run.xs;
+  const ease = run.ease;
+  // A tween whose stretches tell the lane before they change keeps no sample: see `unbareLane`.
+  if (run.watcher === null) {
+    run.watcher = lanes;
+    run.watchId = voice.id;
+  }
+  const own = ease !== undefined && !signal && run.watcher === lanes && run.watchId === voice.id;
+  const folds = n === ch.axes;
   for (let p = 0; p < list.length; p++) {
     // Its signal just made kept state: no further call this fill, the general path makes them.
     if (signal && voice.keeping) return;
@@ -51,6 +63,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     const delay = data[o + Row.DELAY] as number;
     const elapsed = elapsedNow - delay;
     if (elapsed < 0) {
+      unbareLane(lane, p);
       data[o + Row.WEIGHT] = 0;
       continue;
     }
@@ -81,29 +94,68 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     data[o + Row.WEIGHT] = w;
     if (data[o + Row.MET] === 0) {
       if (Number.isNaN((records[p] as Subject<unknown>).probed)) {
+        unbareLane(lane, p);
         lanes.late.push(slot);
         continue;
       }
       data[o + Row.MET] = 1;
     }
     const ms = data[o + Row.MSLOT] as number;
+    const b = ms < 0 ? -1 : run.bareAt(ms);
     if (
-      ms < 0 ||
+      b < 0 ||
       (probed &&
         ((per[q + Per.LANE_PROBE] as number) > from ||
-          (per[q + Per.GENERAL_PROBE] as number) > from)) ||
-      !run.sampleBare(ms, elapsed, xs, run.vs)
+          (per[q + Per.GENERAL_PROBE] as number) > from))
     ) {
       move(lanes, lane, run, p, slot, records[p] as Subject<unknown>, elapsed, delay, w);
       continue;
     }
+    const runs = run.runs;
+    if (own && folds && run.scalar(ms) === ch.scalar) {
+      if (data[o + Row.SAMPLED] !== Sampled.BARE) {
+        data[o + Row.SAMPLED] = Sampled.BARE;
+        lane.deltas[p] = null;
+      }
+      const share = left(ease, progress(elapsed, runs[b] as number, runs[b + 2] as number));
+      if (w <= 0) continue;
+      const values = ch.values;
+      const base = slot * n;
+      const x = b + 3;
+      const g = x + 2 * n;
+      for (let a = 0; a < n; a++)
+        values[base + a] = foldNumber(
+          op,
+          values[base + a] as number,
+          between(runs[x + a] as number, runs[g + a] as number, share),
+          w,
+        );
+      continue;
+    }
+    if (ease !== undefined) {
+      // A tween's closed form, read straight from its run: release time, seconds, `x0`, `to`.
+      const share = left(ease, progress(elapsed, runs[b] as number, runs[b + 2] as number));
+      const x = b + 3;
+      const g = x + 2 * n;
+      for (let a = 0; a < n; a++)
+        xs[a] = between(runs[x + a] as number, runs[g + a] as number, share);
+    } else run.sampleBare(ms, elapsed, xs, run.vs);
     for (let a = 0; a < n; a++) samples[p * n + a] = xs[a] as number;
     if (lane.deltas[p] !== null) lane.deltas[p] = null;
     data[o + Row.SAMPLED] = fills;
     data[o + Row.SEEKS] = seeks;
     if (w <= 0) continue;
-    if (n === ch.axes && run.scalar(ms) === ch.scalar) lanes.foldRun(ch, slot, xs, w);
-    else lanes.foldInto(ch, slot, run.value(ms, xs), w);
+    if (folds && run.scalar(ms) === ch.scalar) {
+      const values = ch.values;
+      const base = slot * n;
+      for (let a = 0; a < n; a++)
+        values[base + a] = foldNumber(op, values[base + a] as number, xs[a] as number, w);
+    } else lanes.foldInto(ch, slot, run.value(ms, xs), w);
+  }
+  if (own) {
+    lane.bareFill = fills;
+    lane.bareElapsed = elapsedNow;
+    lane.bareSeeks = seeks;
   }
 }
 
@@ -142,6 +194,7 @@ export function move<I, O>(
       if (subject === absent) return;
       ms = run.slot(subject);
       data[o + Row.MSLOT] = ms;
+      lane.numbered(p, ms);
     }
     if (lanes.keeps) lanes.host.horizon(voice, delay);
     else reading.horizon = Number.POSITIVE_INFINITY;
@@ -189,6 +242,7 @@ export function settle<I, O>(
   slot: number,
   held: Subject<unknown>,
 ): void {
+  lane.fix(p);
   const o = p * Row.STRIDE;
   if (
     (held.probed === lanes.now && held.seeks === lane.data[o + Row.SEEKS]) ||

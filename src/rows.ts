@@ -182,6 +182,7 @@ function copyRow<I, O>(
   q: number,
   keys = from.keys,
 ): void {
+  from.fix(p);
   to.list[q] = from.list[p] as number;
   to.data.set(from.data.subarray(p * Row.STRIDE, (p + 1) * Row.STRIDE), q * Row.STRIDE);
   to.hot.set(from.hot.subarray(p * from.stride, (p + 1) * from.stride), q * to.stride);
@@ -218,7 +219,13 @@ function newRow<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, v: Voice<I,
     c.hot[h + Hot.X0] = v.duration;
     c.hot[h + Hot.MS] = v.passes;
   }
-  c.restale(p, Flag.VOICE | (run === undefined ? 0 : Flag.MOTION) | (at >= 0 ? Flag.FLAT : 0));
+  c.restale(
+    p,
+    Flag.VOICE |
+      (run === undefined ? 0 : Flag.MOTION) |
+      (run?.ease === undefined ? 0 : Flag.TWEEN) |
+      (at >= 0 ? Flag.FLAT : 0),
+  );
   c.hot[h + Hot.ID] = v.id;
   c.list[p] = -1;
   const o = p * Row.STRIDE;
@@ -236,6 +243,9 @@ function newRow<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, v: Voice<I,
   }
   c.laws[p] = lawOf(lanes, run);
   c.eases[p] = run.ease;
+  // A lane sharing the patch keeps no samples while it watches it: have it keep them first.
+  const watching = run.watcher === lanes ? lanes.byId.get(run.watchId) : undefined;
+  if (watching !== undefined) for (let q = 0; q < watching.list.length; q++) watching.fix(q);
   run.watcher = lanes;
   run.watchId = v.id;
 }

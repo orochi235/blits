@@ -852,6 +852,42 @@ describe('lanes give motion voices the pose the general path gives', () => {
     );
   });
 
+  for (const change of ['to', 'past', 'weight', 'rate', 'seek', 'fade', 'cue', 'drop'])
+    it(`reads a tween over every subject again after a ${change} between two reads of one frame`, () => {
+      script((m, parts, look) => {
+        const tw = tween<Part, Pose, number[]>('position', {
+          from: [0, 0, 0],
+          to: (p) => [p.id, -1, 2],
+          ms: 400,
+          ease: 'ease-in-out',
+        });
+        const h = m.cue({ patch: tw, stagger: (p) => p.id * 10 });
+        const [a, b, c] = parts as [Part, Part, Part];
+        // A position is sampled bare from its third fill: the first numbers it in the patch.
+        for (const t of [0, 16, 33]) {
+          m.sync(t);
+          for (const p of parts) look(p, [h]);
+        }
+        m.sync(100);
+        look(a, [h]);
+        look(b, [h]);
+        if (change === 'to') tw.to(a, [9, 9, 9]);
+        if (change === 'past') tw.to(a, [9, 9, 9], 50);
+        if (change === 'weight') h.weight = 0.5;
+        if (change === 'rate') h.rate = 3;
+        if (change === 'seek') h.seek(250);
+        if (change === 'fade') h.fade({ over: 0 });
+        if (change === 'cue') m.cue({ patch: pulse() });
+        if (change === 'drop') m.drop(c);
+        look(a, [h]);
+        look(b, [h]);
+        look(c, [h]);
+        look(a, [h]);
+        m.sync(116);
+        for (const p of parts) look(p, [h]);
+      });
+    });
+
   it('for a motion on fewer axes than its channel, beside one on all of them', () => {
     agree(
       (m) => {
@@ -1483,6 +1519,46 @@ describe('a crowd of single-subject motion voices gives the pose the general pat
     agree(play, { times: ramp });
     agree(play, { times: ramp, parts: 90, probe: (t, p) => p.id % 9 === 0 || t > 1400 });
   });
+
+  for (const change of ['to', 'past', 'weight', 'rate', 'seek', 'fade', 'cue', 'drop'])
+    it(`reads a tween per subject again after a ${change} between two reads of one frame`, () => {
+      script((m, parts, look) => {
+        const tweens = parts.map((p) =>
+          tween<Part, Pose, number[]>('position', {
+            from: [0, 0, 0],
+            to: [p.id, -1, 2],
+            ms: 400,
+            ease: 'ease-in-out',
+          }),
+        );
+        const hs = parts.map((p, i) =>
+          m.cue({ patch: tweens[i] as (typeof tweens)[0], subjects: [p] }),
+        );
+        const [a, b, c] = parts as [Part, Part, Part];
+        // A row is sampled bare from its third fill: the first numbers it, the second copies it.
+        for (const t of [0, 16, 33]) {
+          m.sync(t);
+          for (const p of parts) look(p, hs);
+        }
+        m.sync(100);
+        look(a, hs);
+        look(b, hs);
+        if (change === 'to') (tweens[0] as (typeof tweens)[0]).to(a, [9, 9, 9]);
+        if (change === 'past') (tweens[0] as (typeof tweens)[0]).to(a, [9, 9, 9], 50);
+        if (change === 'weight') (hs[0] as Handle<Part>).weight = 0.5;
+        if (change === 'rate') (hs[0] as Handle<Part>).rate = 3;
+        if (change === 'seek') (hs[0] as Handle<Part>).seek(250);
+        if (change === 'fade') (hs[0] as Handle<Part>).fade({ over: 0 });
+        if (change === 'cue') m.cue({ patch: pulse() });
+        if (change === 'drop') m.drop(c);
+        look(a, hs);
+        look(b, hs);
+        look(c, hs);
+        look(a, hs);
+        m.sync(116);
+        for (const p of parts) look(p, hs);
+      });
+    });
 
   it('with voices starting late, finishing, dropped subjects and loops of one pass', () => {
     agree(

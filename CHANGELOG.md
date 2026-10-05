@@ -91,6 +91,15 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A fill samples a tween on a lane or in a crowd and folds it in one loop, calling its closed form
+  and the channel's fold directly, and keeps no copy of the sample: one is worked out again from
+  the tween's stretch when a probe later in the frame needs it. The steady frame no longer
+  allocates 16 B a subject (8 B over one voice). At 10k subjects read by `pull`, a frame takes
+  0.225–0.234 ms against 0.321–0.327 with a tween voice per subject (`tweens^`), 0.269–0.280
+  against 0.350–0.357 with one voice over all of them (`weasel^`), 0.295–0.308 against
+  0.373–0.404 with one voice replaced each frame (`churn^`), and 0.324–0.337 against 0.397–0.468
+  with one subject replaced each frame (`turnover^`) (teitou, eight alternated runs).
+
 - A voice retiring no longer has the mix read every voice it holds to take it out of the list: up
   to 8 a frame are found by their id. At 10k voices with one leaving each frame (`turnover^`), a
   frame takes 0.407–0.416 ms against 0.427–0.436 (teitou, three alternated runs).

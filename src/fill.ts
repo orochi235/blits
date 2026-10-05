@@ -76,6 +76,11 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
         lanes.run(lane);
       }
       if (lanes.crowds.length > 0) crowdsUpTo(lanes, Number.POSITIVE_INFINITY);
+      for (const c of lanes.crowds)
+        if (!c.idle) {
+          c.bareFill = lanes.fills;
+          c.bareNow = now;
+        }
     }
     // With every lane idle there was nothing to fill, and no subject reads a lane this frame.
     if (busy) for (let s = 0; s < size; s++) lanes.per[s * Per.SLOT + Per.FILLED] = lanes.fills;

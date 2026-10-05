@@ -2,6 +2,7 @@ import { type Curve, curve } from './easing.js';
 import { absent, Numbers } from './numbers.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
+import { eased, progress, sloped } from './tweened.js';
 import type { Easing, MotionSpec, Patch, Setting } from './types.js';
 
 /**
@@ -74,9 +75,12 @@ export interface MotionOwner {
   revive(id: number, subject: unknown): void;
 }
 
-/** What a mix keeping copies of a patch's stretches is told, with its id, when one changes. */
+/**
+ * What a mix keeping copies of a patch's stretches is told, with its id and the subject's number,
+ * before one changes.
+ */
 export interface Watcher {
-  stretchChanged(id: number): void;
+  stretchChanged(id: number, s: number): void;
 }
 
 const solved = { y: 0, dy: 0 };
@@ -99,16 +103,6 @@ const LANDED = 8;
  * a sample works them out once rather than once per axis.
  */
 const timed = { e: 0, e2: 0, cos: 0, sin: 0 };
-
-/** How far a tween's slope is read either side of `u`, for an easing that is only a function. */
-const SPAN = 1e-4;
-/**
- * Whether an evaluation wants a tween's velocity, which costs two more reads of its easing. Only
- * `read` reports it; a mix and a retarget never use it.
- */
-let slope = false;
-/** The last tween sample's time, curve and length, and the share of the way it had left to go. */
-const memo = { u: Number.NaN, ease: undefined as Curve | undefined, left: 0 };
 
 /** The law and time `timed` was last worked out for: subjects released together share them. */
 const prepared = {
@@ -278,8 +272,11 @@ export class Motions<I> {
   n = -1;
   private cap = 0;
   private stride = 0;
-  /** The law, then each subject's run; empty until the first subject, the law read from `shape`. */
-  private runs = unsized;
+  /**
+   * The law, then each subject's run; empty until the first subject, the law read from `shape`.
+   * Read outside, at `bareAt`, and written only here.
+   */
+  runs = unsized;
   /**
    * Where `sample` leaves a subject's position and velocity, per axis. Shared by every patch, so
    * read it before the next sample.
@@ -459,13 +456,22 @@ export class Motions<I> {
   }
 
   /**
+   * Where subject `s`'s run starts in `runs` (its release time, then flags, seconds, `x0`, `v0`
+   * and `to`) while it has nothing pending and no earlier stretch kept; -1 for any other.
+   */
+  bareAt(s: number): number {
+    const b = this.base(s);
+    return ((this.runs[b + 1] as number) & (PENDING | OLDER)) !== 0 ? -1 : b;
+  }
+
+  /**
    * A live `sample` at `t` for a subject with nothing pending and no earlier stretch kept, true
    * then; false, writing nothing, for any other, which `quiet` and `sample` take instead.
    */
   sampleBare(s: number, t: number, xo: Float64Array, vo: Float64Array): boolean {
     const runs = this.runs;
-    const b = this.base(s);
-    if (((runs[b + 1] as number) & (PENDING | OLDER)) !== 0) return false;
+    const b = this.bareAt(s);
+    if (b < 0) return false;
     const x = b + 3;
     const n = this.n;
     this.evaluate(
@@ -540,11 +546,11 @@ export class Motions<I> {
     if (Number.isNaN(when)) return undefined;
     const x = new Float64Array(this.n);
     const v = new Float64Array(this.n);
-    slope = true;
+    sloped(true);
     try {
       this.peek(s, when, x, v);
     } finally {
-      slope = false;
+      sloped(false);
     }
     return { x, v, s };
   }
@@ -602,7 +608,7 @@ export class Motions<I> {
   }
 
   private flag(s: number, bit: number, on: boolean): void {
-    this.watcher?.stretchChanged(this.watchId);
+    this.watcher?.stretchChanged(this.watchId, s);
     const i = this.base(s) + 1;
     const flags = this.runs[i] as number;
     this.runs[i] = on ? flags | bit : flags & ~bit;
@@ -614,7 +620,7 @@ export class Motions<I> {
   }
 
   /** Where subject `s`'s run starts in `runs`. */
-  private base(s: number): number {
+  base(s: number): number {
     return HEAD + s * this.stride;
   }
 
@@ -630,7 +636,7 @@ export class Motions<I> {
   private write(s: number, seg: Segment): void {
     const n = this.n;
     const b = this.base(s);
-    this.watcher?.stretchChanged(this.watchId);
+    this.watcher?.stretchChanged(this.watchId, s);
     this.runs[b] = seg.at;
     this.runs[b + 1] = (this.runs[b + 1] as number) & ~LANDED;
     this.runs[b + 2] = seg.ms;
@@ -785,7 +791,7 @@ export function closed(
   vo: Float64Array,
 ): boolean {
   if (law[0] === EASED)
-    return eased(ease as Curve, n, Math.max(0, t - at) / ms, ms, x0, x, to, g, xo, vo);
+    return eased(ease as Curve, n, progress(t, at, ms), ms, x0, x, to, g, xo, vo);
   const dt = Math.max(0, t - at) / 1000;
   const settle = law[1] as number;
   let still = settle > 0;
@@ -803,41 +809,6 @@ export function closed(
       vo[i] = 0;
     }
   return still;
-}
-
-/** A tween's stretch, `dt` seconds after release, kept out of `closed` so a spring's stays small. */
-function eased(
-  ease: Curve,
-  n: number,
-  u: number,
-  ms: number,
-  x0: ArrayLike<number>,
-  x: number,
-  to: ArrayLike<number>,
-  g: number,
-  xo: Float64Array,
-  vo: Float64Array,
-): boolean {
-  // Subjects released together share `u`, so a frame reads a bezier once, not once each.
-  if (u !== memo.u || ease !== memo.ease) {
-    memo.u = u;
-    memo.ease = ease;
-    memo.left = u >= 1 ? 0 : 1 - ease(u);
-  }
-  const left = memo.left;
-  let rate = 0;
-  if (slope && u < 1) {
-    const lo = Math.max(0, u - SPAN);
-    const hi = Math.min(1, u + SPAN);
-    rate = ((ease(hi) - ease(lo)) / (hi - lo)) * (1000 / ms);
-  }
-  for (let i = 0; i < n; i++) {
-    const goal = to[g + i] as number;
-    const gap = (x0[x + i] as number) - goal;
-    xo[i] = left === 0 ? goal : goal + gap * left;
-    vo[i] = -gap * rate;
-  }
-  return left === 0;
 }
 
 /** One `writes` array per channel, shared by every motion patch that writes it. */

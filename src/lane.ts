@@ -1,3 +1,4 @@
+import { unbareLane } from './bare.js';
 import type { Numeric } from './channels.js';
 import { heldTime } from './clock.js';
 import { type Motions, motionOf } from './motion.js';
@@ -112,6 +113,10 @@ export interface Positions<I, O> {
   kept(p: number, xs: Float64Array): void;
   chans: Laned[];
   voiceAt(p: number): Voice<I, O>;
+  /** Makes position `p`'s sample and its stamps hold what its last fill gave it. */
+  fix(p: number): void;
+  /** Position `p`'s subject has number `ms` in its voice's motion patch. */
+  numbered(p: number, ms: number): void;
   motionAt(p: number): Motions<I> | undefined;
 }
 
@@ -174,11 +179,34 @@ export class Lane<I, O> implements Positions<I, O> {
   flat = false;
   /** A motion patch's state, which the lane samples in place of calling the patch. */
   readonly motion: Motions<I> | undefined;
+  /** By the motion patch's number for a subject, its position plus one, 0 where it has none. */
+  private byMotion = new Int32Array(0);
+  /** The last fill `runMotion` ran, and its voice time and seeks, which a `Sampled.BARE` position was sampled at. */
+  bareFill = -1;
+  bareElapsed = Number.NaN;
+  bareSeeks = Number.NaN;
   /** The locus its voice shares, gathered before the voices are folded in order. */
   group: Locus<I, O> | null = null;
 
   voiceAt(): Voice<I, O> {
     return this.voice;
+  }
+
+  fix(p: number): void {
+    unbareLane(this, p);
+  }
+
+  numbered(p: number, ms: number): void {
+    if (ms >= this.byMotion.length) {
+      const at = new Int32Array(Math.max(ms + 1, this.byMotion.length * 2, 64));
+      at.set(this.byMotion);
+      this.byMotion = at;
+    }
+    this.byMotion[ms] = p + 1;
+  }
+
+  positionOfMotion(ms: number): number {
+    return ms < this.byMotion.length ? (this.byMotion[ms] as number) - 1 : -1;
   }
 
   keep(p: number, xs: Float64Array, n: number): void {
@@ -246,7 +274,11 @@ export class Lane<I, O> implements Positions<I, O> {
     const p = this.positionOf(slot);
     if (p < 0) return;
     const last = this.list.length - 1;
+    const ms = this.data[p * Row.STRIDE + Row.MSLOT] as number;
+    if (ms >= 0) this.byMotion[ms] = 0;
     if (p !== last) {
+      const number = this.data[last * Row.STRIDE + Row.MSLOT] as number;
+      if (number >= 0) this.byMotion[number] = p + 1;
       const moved = this.list[last] as number;
       this.list[p] = moved;
       this.at[moved] = p + 1;

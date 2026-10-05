@@ -446,12 +446,20 @@ export class Lanes<I, O> implements Watcher {
     this.cap = cap;
   }
 
-  /** A crowd voice's patch changed a stretch: its copy is read again at the next fill. */
-  stretchChanged(id: number): void {
+  /**
+   * A laned voice's patch is about to change subject `s`'s stretch: a crowd copies it again at the
+   * next fill, and a lane keeps the sample the old one gave.
+   */
+  stretchChanged(id: number, s: number): void {
     const c = this.crowdOf.get(id);
     const p = c?.rowOf.get(id);
-    if (c === undefined || p === undefined) return;
-    c.restale(p, c.hot[p * c.stride + Hot.FLAGS] as number);
+    if (c !== undefined && p !== undefined) {
+      c.restale(p, c.hot[p * c.stride + Hot.FLAGS] as number);
+      return;
+    }
+    const lane = this.byId.get(id);
+    const q = lane === undefined ? -1 : lane.positionOfMotion(s);
+    if (q >= 0) (lane as Lane<I, O>).fix(q);
   }
 
   /** Something on a voice changed: a crowd copies it again at the next fill. */

@@ -314,5 +314,10 @@ function leave<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
       if (rec !== undefined && w !== undefined) rec.weight = w;
       if (rec !== undefined && lane.motion !== undefined) settle(lanes, lane, p, slot, rec);
     }
+  const run = lane.motion;
+  if (run !== undefined && run.watcher === lanes && run.watchId === lane.voice.id) {
+    for (let p = 0; p < lane.list.length; p++) lane.fix(p);
+    run.watcher = null;
+  }
   lane.voice.laned = false;
 }

@@ -37,7 +37,7 @@ systems now run on it**, on klieg's `main`.
 - **The package, `@msb235/blits` 0.4.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
   channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
-  `motion.ts` (`spring`, `glide`), `clock.ts` (the phase, envelope and weight clamp both fold
+  `motion.ts` (`spring`, `glide`), `tweened.ts` (a tween's closed form, in pieces a fill calls), `clock.ts` (the phase, envelope and weight clamp both fold
   paths share), `numbers.ts` (numbers subjects), `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
   objects and a Map for anything else), `types.ts` (the whole public surface, doc-commented). The
   mix is `mixer.ts` (the `Mixer`'s state, its public methods, the engine and `mix`) and a module
@@ -46,8 +46,8 @@ systems now run on it**, on klieg's `main`.
   `chain.ts`, `weigh.ts`, `blend.ts`, `fold.ts` and `locus.ts` (the general path), `pull.ts`,
   `fade.ts`, `strays.ts`, `hosts.ts`, `history.ts`, `project.ts`, `owner.ts`, `book.ts`, `pace.ts`
   and `handle.ts`. Lanes are `lanes.ts` (the `Lanes` class and the probe protocol) with
-  `qualify.ts`, `lane.ts`, `crowd.ts`, `rows.ts`, `meet.ts`, `fill.ts`, `gather.ts`, `sample.ts`
-  and `columns.ts`. What a probe or a fill runs per subject is methods, written in those modules
+  `qualify.ts`, `lane.ts`, `crowd.ts`, `rows.ts`, `meet.ts`, `fill.ts`, `gather.ts`, `sample.ts`,
+  `bare.ts` (tween rows sampled without keeping the sample) and `columns.ts`. What a probe or a fill runs per subject is methods, written in those modules
   as functions taking `this` and installed on the prototype at the foot of `mixer.ts` and
   `lanes.ts`: as plain functions they cost up to 9%. Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
   is lint, typecheck of both `src` and `test`, then the suite, green. `npm run bench`
@@ -326,13 +326,9 @@ systems now run on it**, on klieg's `main`.
        regression at `FRAMES=5000` before chasing it: 330 frames can end before the JIT settles.
 
 1e. **Next for speed: the steady frame of 10k one-voice-per-subject tweens read by `pull`** (`tweens^`,
-   `weasel^`), Mike's go 2026-10-05; to start once the `mixer.ts`/`lanes.ts` split lands. Profiled on
-   teitou at `375be46`: `tweens^` 0.32 ms a frame, `weasel^` 0.35, against 0.031–0.047 for a
+   `weasel^`), Mike's go 2026-10-05. Bare tween rows fill in one loop since 2026-10-05 (`bare.ts`):
+   on teitou `tweens^` takes 0.23 ms a frame and `weasel^` 0.27, against 0.031–0.047 for a
    hand-written loop doing the same arithmetic. In order, each measured before the next:
-   - Fill bare tween rows in one tight loop: no per-fill copy into `samples` or `Row.SAMPLED`/`Row.SEEKS`
-     stamps (recompute through `closed` when asked), `foldNumber` called directly, and the tween's
-     closed form called without the 14-argument `closed` → `eased` hop, split into pieces both
-     share so it stays one copy. Prototyped: −0.08 ms on `tweens^`, −0.09 on `weasel^`.
    - Record a `pull` as a run (first slot and a count) rather than a `writeLater` per subject, and
      rest-fill unlaned columns as one block in `flush`. Prototyped: −0.03 / −0.05, but it slowed
      `churn^` by 0.04, to fix first. Under churn `writeLater` is about 0.28 ms against 0.04 steady
@@ -341,7 +337,6 @@ systems now run on it**, on klieg's `main`.
    - Inferred, smaller: one fill-wide stamp instead of `Per.FILLED` on every subject (~0.01 ms);
      `pullRun`'s remaining per-subject checks (up to ~0.03, but a second pathway for what
      `weightOf` and `pace` read).
-   - A steady frame allocates 16 B a subject in `runCrowd`, likely a user ease's boxed return.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
 
