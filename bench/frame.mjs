@@ -145,6 +145,7 @@ const rows = [
   ['spring-', 10000, 1],
   ['tween-', 10000, 1],
   ['tweenfn-', 10000, 1],
+  ['blend-', 10000, 3],
   ['sparse-', 10000, 1],
   // Read through `pull` into one array per channel instead of a probe per subject.
   ['fn^', 10000, 3],

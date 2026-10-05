@@ -292,10 +292,76 @@ describe('blend between alternatives', () => {
           calls = 0;
           for (const p of parts) expect(m.probe(p).crawl).toBeCloseTo(Number(p.id.slice(1)) * 5, 9);
           expect(calls).toBe(parts.length);
-          // Once lanes fill, a second read in the frame reads what they hold.
           for (const p of parts) m.probe(p);
-          expect(calls).toBe(lanes && f > 0 ? parts.length : 2 * parts.length);
+          expect(calls).toBe(parts.length);
         }
+      });
+
+      it('reads its signal once per subject per frame when a subject is probed again after another', () => {
+        const calls = new Map<string, number>();
+        const by = (p: Part) => {
+          calls.set(p.id, (calls.get(p.id) ?? 0) + 1);
+          return Number(p.id.slice(1)) / 4;
+        };
+        const [a, b] = parts as [Part, Part];
+        const m = mix<Part, Pose>(PART, { lanes });
+        m.blend([holds('crawl', 0), holds('crawl', 10), holds('crawl', 20)], by);
+        for (let f = 0; f < 3; f++) {
+          m.sync(f * 16);
+          calls.clear();
+          m.probe(a);
+          m.probe(b);
+          expect(m.probe(a).crawl).toBeCloseTo(0, 9);
+          expect(m.probe(b).crawl).toBeCloseTo(5, 9);
+          expect([...calls]).toEqual([
+            ['p0', 1],
+            ['p1', 1],
+          ]);
+        }
+        // So does a projection, and its reads leave the mix's frame alone.
+        calls.clear();
+        const ahead = m.project(100);
+        ahead.probe(a);
+        ahead.probe(b);
+        ahead.probe(a);
+        expect([...calls]).toEqual([
+          ['p0', 1],
+          ['p1', 1],
+        ]);
+        m.probe(a);
+        m.probe(b);
+        expect([...calls]).toEqual([
+          ['p0', 1],
+          ['p1', 1],
+        ]);
+      });
+
+      it('reads its signal once per subject per frame for subjects keyed by value', () => {
+        let calls = 0;
+        const by = (id: string) => {
+          calls++;
+          return id === 'a' ? 0 : 1;
+        };
+        const m = mix<string, Pose>(PART, { lanes });
+        m.blend(
+          [
+            patch<string, Pose>(0, () => ({ crawl: 0 }), { writes: ['crawl'] }),
+            patch<string, Pose>(0, () => ({ crawl: 10 }), { writes: ['crawl'] }),
+          ],
+          by,
+        );
+        for (let f = 0; f < 3; f++) {
+          m.sync(f * 16);
+          calls = 0;
+          for (const id of ['a', 'b', 'c', 'a', 'b', 'c']) m.probe(id);
+          expect(calls).toBe(3);
+          expect(m.probe('b').crawl).toBeCloseTo(10, 9);
+        }
+        m.drop('a');
+        calls = 0;
+        m.probe('a');
+        m.probe('a');
+        expect(calls).toBe(1);
       });
 
       it('asks only the members carrying weight, and still steps the silent ones', () => {
@@ -344,9 +410,16 @@ describe('blend between alternatives', () => {
           m.sync(f * 16);
           steps = 0;
           for (const p of parts) m.probe(p);
+          for (const p of parts) m.probe(p);
           expect(steps).toBe(parts.length);
           expect(second?.weightOf(parts[0] as Part)).toBeCloseTo(f / 10, 9);
         }
+        // A projection steps a copy of each subject's state once, however often it probes.
+        steps = 0;
+        const ahead = m.project(200);
+        for (const p of parts) ahead.probe(p);
+        for (const p of parts) ahead.probe(p);
+        expect(steps).toBe(parts.length);
         // A read elsewhere in time steps a copy, not the live state.
         m.project(200).probe(parts[0] as Part);
         m.project(40).probe(parts[0] as Part);

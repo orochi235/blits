@@ -617,8 +617,7 @@ export interface Mix<I, O, H = unknown> {
   /**
    * N voices whose weights split one signal, cued into one locus so they fold as alternatives. The
    * signal is read once per subject per frame, with the first member's setting, and every member
-   * takes its share of that one reading; a signal keeping state keeps it once, not per member. Off
-   * the lanes, a second probe of a subject in the same frame reads it again.
+   * takes its share of that one reading; a signal keeping state keeps it once, not per member.
    */
   blend(
     patches: readonly Patch<I, O, unknown, H>[],

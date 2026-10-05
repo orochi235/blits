@@ -64,9 +64,40 @@ interface Blend<I, O> {
   frame: number;
   subject: I | undefined;
   value: number;
+  /** The general path's read of each subject, for one probed again after another in its frame. */
+  reads: Store<I, { frame: number; value: number }>;
   /** Lanes' reads by subject number: the frame each is from, and the value. */
   frames: Float64Array;
   values: Float64Array;
+}
+
+function blendOf<I, O>(by: Signal<I>, stops: number): Blend<I, O> {
+  return {
+    by,
+    stops,
+    members: [],
+    frame: 0,
+    subject: undefined,
+    value: 0,
+    reads: new Store(),
+    frames: new Float64Array(0),
+    values: new Float64Array(0),
+  };
+}
+
+/** Gives a projection's copies blends of their own, so its reads never overwrite the mix's. */
+function ownBlends<I, O>(voices: Voice<I, O>[]): void {
+  const own = new Map<Blend<I, O>, Blend<I, O>>();
+  for (const v of voices) {
+    if (v.blend === null) continue;
+    let of = own.get(v.blend.of);
+    if (of === undefined) {
+      of = blendOf(v.blend.of.by, v.blend.of.stops);
+      own.set(v.blend.of, of);
+    }
+    v.blend = { of, i: v.blend.i };
+    of.members.push(v);
+  }
 }
 
 /** A blend member's weight for its signal's read `k`: the members' stops sit evenly along 0..1. */
@@ -943,16 +974,7 @@ class Mixer<I, O> implements Mix<I, O> {
     spec: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'locus'> = {},
   ): Handle<I>[] {
     const locus = `blend:${this.nextId}`;
-    const of: Blend<I, O> = {
-      by,
-      stops: patches.length - 1,
-      members: [],
-      frame: 0,
-      subject: undefined,
-      value: 0,
-      frames: new Float64Array(0),
-      values: new Float64Array(0),
-    };
+    const of = blendOf<I, O>(by, patches.length - 1);
     return patches.map((patch, i) => {
       const handle = this.cue({ ...spec, patch, weight: by, locus });
       const voice = this.cued[this.cued.length - 1] as Voice<I, O>;
@@ -1368,6 +1390,7 @@ class Mixer<I, O> implements Mix<I, O> {
           if (pin !== undefined) c.pin(copy, pin);
           return copy;
         });
+      ownBlends(c.cued);
       c.announced = this.announced.map((a) => ({ ...a }));
       c.count();
       c.move(t);
@@ -1407,6 +1430,7 @@ class Mixer<I, O> implements Mix<I, O> {
           if (then !== undefined) copy.setting.host = then;
           return copy;
         });
+      ownBlends(c.cued);
       c.count();
     }
     const read = <T>(f: () => T): T => {
@@ -1635,6 +1659,7 @@ class Mixer<I, O> implements Mix<I, O> {
       voice.motion?.release(subject);
       voice.parts?.delete(subject);
       voice.parted?.delete(subject);
+      voice.blend?.of.reads.delete(subject);
     };
     for (const voice of this.general) forget(voice);
     const named = this.named.get(subject);
@@ -2506,8 +2531,11 @@ class Mixer<I, O> implements Mix<I, O> {
   private blended(voice: Voice<I, O>, subject: I, held: Subject<unknown>, slot: number): number {
     const { of, i } = voice.blend as { of: Blend<I, O>; i: number };
     const frame = this.frame;
+    let cell: { frame: number; value: number } | undefined;
     if (slot < 0) {
       if (of.frame === frame && of.subject === subject) return shareOf(of.value, i, of.stops);
+      cell = of.reads.get(subject);
+      if (cell?.frame === frame) return shareOf(cell.value, i, of.stops);
     } else if (slot < of.frames.length) {
       const read = this.laneRead(voice, slot);
       if (!Number.isNaN(read)) return read;
@@ -2527,6 +2555,11 @@ class Mixer<I, O> implements Mix<I, O> {
       of.frame = frame;
       of.subject = subject;
       of.value = k;
+      if (cell === undefined) of.reads.set(subject, { frame, value: k });
+      else {
+        cell.frame = frame;
+        cell.value = k;
+      }
     } else {
       of.frames[slot] = frame;
       of.values[slot] = k;

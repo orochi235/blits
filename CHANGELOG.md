@@ -26,8 +26,7 @@ version and everything else the patch. Each release lists its changes as **Break
   `setting.pass` sees the first member's even where a member was sought or retimed on its own. A
   signal keeping state, as `slew`, `lag` and `gate` do, keeps one state per subject for the whole
   blend, which carries on when the member that made it leaves; each member kept its own, and those
-  could part ways where members left the lanes in different frames. Off the lanes, a second probe
-  of a subject in the same frame reads the signal again.
+  could part ways where members left the lanes in different frames.
 
 ### Added
 
