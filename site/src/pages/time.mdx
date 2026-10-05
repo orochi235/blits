@@ -25,7 +25,7 @@ The timestamp is milliseconds on any clock that only moves forward. klieg passes
 
 Everything in a frame reads that one timestamp. A second `sync` with the same value does nothing, and every probe between two syncs answers from the same frame, so a subject probed twelve times in a frame still advances once.
 
-A voice's clock is `(timestamp − start) · rate`, which a patch reads as `setting.elapsed`. Its place within the period is the phase the patch is handed. Change a voice's rate and its clock carries on from where it was rather than jumping.
+A voice's clock is `(timestamp − start) · rate`, which a patch reads as `setting.elapsed`. Its place within the current pass is the phase the patch is handed. Change a voice's rate and its clock carries on from where it was rather than jumping.
 
 **`dt` is worked out, never passed in.** It's the time since this subject last advanced. For a subject probed every frame that is one frame. For a subject nobody asked about for two seconds, it is two seconds, handed over in one step. That is what B does above: it stops while unprobed, then catches up by its whole gap the moment it is probed again. [Patch state](../state/) covers what that means for a patch that integrates.
 

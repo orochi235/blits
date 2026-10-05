@@ -18,7 +18,7 @@ import { type Column, clampRun, type LaneHost, Lanes } from './lanes.js';
 import { type Motions, motionOf, noFrame, noRevive } from './motion.js';
 import { Named } from './named.js';
 import { Pace } from './pace.js';
-import { type Built, builtOf, intosOf, readKeys, type Scratch } from './patch.js';
+import { type Built, builtOf, durationOf, intosOf, readKeys, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
 import type {
@@ -490,7 +490,8 @@ export class Voice<I, O> {
   readonly ease: Curve | undefined;
   /** How many passes its `loop` plays, worked out once. */
   readonly passes: number;
-  /** Voice ms its passes last, Infinity for an aperiodic patch or a loop for good. */
+  readonly duration: number;
+  /** Voice ms its passes last, Infinity for a patch with no passes or a loop for good. */
   readonly span: number;
   /** The state behind a motion patch, undefined for any other. */
   readonly motion: Motions<I> | undefined;
@@ -602,9 +603,10 @@ export class Voice<I, O> {
       : undefined;
     this.ease = fade.ease === undefined ? undefined : curve(fade.ease);
     this.passes = passesOf(spec.loop);
+    this.duration = durationOf(patch);
     this.span =
-      patch.period > 0 && Number.isFinite(this.passes)
-        ? patch.period * this.passes
+      this.duration > 0 && Number.isFinite(this.passes)
+        ? this.duration * this.passes
         : Number.POSITIVE_INFINITY;
     this.motion = motionOf<I>(patch);
     const holds = this.motion === undefined ? spec.hold : undefined;
@@ -2523,9 +2525,9 @@ class Mixer<I, O> implements Mix<I, O> {
     // A held subject's clock stands still at the edge it holds: -1 before, 1 after, 0 playing.
     const still = raw < 0 ? -1 : voice.holdsAfter && raw > voice.span ? 1 : 0;
 
-    const period = voice.patch.period;
-    const phase = phaseAt(elapsed, period, voice.passes);
-    const pass = passAt(elapsed, period, voice.passes);
+    const duration = voice.duration;
+    const phase = phaseAt(elapsed, duration, voice.passes);
+    const pass = passAt(elapsed, duration, voice.passes);
 
     this.prime(voice, held, now, elapsed, pass);
     const setting = voice.setting;
@@ -3121,7 +3123,7 @@ class Mixer<I, O> implements Mix<I, O> {
         setting.timestamp = now;
         setting.dt = 0;
         setting.elapsed = elapsed;
-        setting.pass = passAt(elapsed, voice.patch.period, voice.passes);
+        setting.pass = passAt(elapsed, voice.duration, voice.passes);
         setting.weight = 0;
         setting.state = held.state;
         voice.keepOn = held;

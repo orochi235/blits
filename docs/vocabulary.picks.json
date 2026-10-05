@@ -13,7 +13,7 @@
     "sample": "pose",
     "contribution": "influence",
     "context": "setting",
-    "period": "period",
+    "period": "duration",
     "v-add": "cue",
     "v-stop": "fade",
     "v-seek": "seek",

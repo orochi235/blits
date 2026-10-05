@@ -72,7 +72,7 @@ systems now run on it**, on klieg's `main`.
 - **The spec self-review has been done and its findings fixed** (2026-09-27). What the review
   changed, so nobody re-derives it: `sync`, `step` and `Setting.dt` now say that nothing advances
   at the call and each subject catches up by its own whole gap; `mix.mute` takes `over` like
-  `handle.fade`; `duration` is `period` and `t` is `phase`, 0..1 across the period; `pose`,
+  `handle.fade`; `duration` became `period` (reversed on 2026-10-04, below) and `t` became `phase`; `pose`,
   `influence`, `setting`, `period`, `phase`, `system`, `source` and `score` are defined in the
   Vocabulary section; `Easing`, `Keyframe<O>`, `StaggerSpec` and `mixHex` are given; and the
   answers a builder would otherwise have guessed are stated where they belong — `target` runs per
@@ -106,11 +106,15 @@ systems now run on it**, on klieg's `main`.
 - **klieg yields**: where a blits name collides with a klieg name, klieg renames, provided blits
   earns it. Said about `domain`, which klieg's tube gradient uses for something else. Do the rename
   inside the port, not ahead of it.
-- **`phase`** is the fixed name for the normalized position within a period, formerly `t`. It costs
+- **`duration`, not `period`** (2026-10-04, Mike's call): a pass is one run through a patch whether
+  or not it loops, and only a looping voice has a period. `Patch.duration` is the field;
+  `Patch.period` stays as a deprecated alias, set on every built patch and read by `durationOf`
+  where a patch sets only it. Removing the alias is a later breaking release.
+- **`phase`** is the fixed name for the normalized position within a pass, formerly `t`. It costs
   renaming klieg's `onPhase` and `PhaseEvent`, which sherpa consumes through `ctx.phase`.
 - **The vocabulary is called**, every role enshrined on 2026-09-29, and
   `docs/vocabulary.picks.json` is where it lives: delta, channel, kit, subject, patch, voice, mix,
-  signal, handle, engine, pose, influence, setting, timestamp, period, phase, rest, weight, locus,
+  signal, handle, engine, pose, influence, setting, timestamp, duration, phase, rest, weight, locus,
   series, host, source, score, subsystem; for the score, anchor, event, mark, name, tag, query,
   resolver, projection (synonym image), doubt, snapshot, interval; cue, fade, sync, probe, project,
   assess, seek, blend, mute, drop; merge, scale, lerp, fold. The code and the schema page read in

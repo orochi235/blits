@@ -3,7 +3,7 @@ import { type Curve, curve } from './easing.js';
 import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js';
 
 /**
- * What `patch` takes besides its period and its function.
+ * What `patch` takes besides its duration and its function.
  *
  * @category patch
  */
@@ -24,7 +24,7 @@ export interface PatchOptions<I, O, S> {
  * @category patch
  */
 export function patch<I, O, S = void>(
-  period: number,
+  duration: number,
   at: (phase: number, subject: I, setting: Setting<S>) => Partial<O>,
   opts: PatchOptions<I, O, S>,
 ): Patch<I, O, S> {
@@ -33,7 +33,8 @@ export function patch<I, O, S = void>(
     throw new Error('blits: a patch needs writes, or a kit to take them from');
   return {
     form: 'fn',
-    period,
+    duration,
+    period: duration,
     writes,
     kit: opts.kit,
     reads: opts.reads,
@@ -44,7 +45,7 @@ export function patch<I, O, S = void>(
 }
 
 /**
- * What `keys` takes besides its period and its stops.
+ * What `keys` takes besides its duration and its stops.
  *
  * @category patch
  */
@@ -53,7 +54,7 @@ export interface KeysOptions<O> {
   ease?: Easing;
   /** A curve for one channel, where it differs from the rest. */
   easeBy?: (channel: keyof O) => Easing | undefined;
-  /** Milliseconds one channel waits before it starts moving, within the period. */
+  /** Milliseconds one channel waits before it starts moving, within the duration. */
   delayBy?: (channel: keyof O) => number;
   /**
    * How one channel interpolates, where it should differ from the channel's own `lerp`. A mix hands
@@ -105,13 +106,13 @@ export interface Track {
 
 export interface Built {
   tracks: Track[];
-  period: number;
+  duration: number;
 }
 
 function build<O>(
   stops: readonly Keyframe<O>[],
   writes: readonly (keyof O)[],
-  period: number,
+  duration: number,
   opts: KeysOptions<O>,
 ): Built {
   const fallback = opts.ease === undefined ? undefined : curve(opts.ease);
@@ -138,7 +139,7 @@ function build<O>(
       lerp: opts.lerpBy?.(channel) ?? (opts.kit?.[channel]?.lerp as Track['lerp']),
     });
   }
-  return { tracks, period };
+  return { tracks, duration };
 }
 
 /** What `segment` found: nothing to read, one value, or a segment to interpolate along. */
@@ -162,9 +163,9 @@ export const seg = {
 };
 
 /** A track's phase once its channel's own delay applies. */
-export function shifted(track: Track, phase: number, period: number): number {
+export function shifted(track: Track, phase: number, duration: number): number {
   const delay = track.delay;
-  return delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
+  return delay === 0 || duration === 0 ? phase : Math.max(0, (phase * duration - delay) / duration);
 }
 
 /**
@@ -219,7 +220,7 @@ function read(
   lerp: Lerp | undefined,
   /** Units per ms, for a retarget's first segment. */
   slope: unknown,
-  period: number,
+  duration: number,
   into: LerpInto | undefined,
   reuse: unknown[] | undefined,
 ): unknown {
@@ -246,7 +247,7 @@ function read(
   if (slope === undefined || !first) return value;
   const e0 = ease ? ease(1e-6) / 1e-6 : 1;
   const bend = (s: number, a: number, z: number) =>
-    (s * period * len - (z - a) * e0) * u * (1 - u) * (1 - u);
+    (s * duration * len - (z - a) * e0) * u * (1 - u) * (1 - u);
   if (typeof value === 'number' && typeof slope === 'number')
     return value + bend(slope, aValue as number, bValue as number);
   if (Array.isArray(value) && Array.isArray(slope)) {
@@ -303,7 +304,7 @@ export function readKeys(
   intos?: readonly (LerpInto | undefined)[],
   scratch?: Scratch,
 ): Record<string, unknown> {
-  const period = built.period;
+  const duration = built.duration;
   for (let i = 0; i < built.tracks.length; i++) {
     const track = built.tracks[i] as Track;
     const perMs = slopes?.[track.channel];
@@ -311,11 +312,11 @@ export function readKeys(
     lastRead.wrote = undefined;
     const value = read(
       track,
-      shifted(track, phase, period),
+      shifted(track, phase, duration),
       base?.[track.channel],
       lerps?.[i],
-      period === 0 ? undefined : perMs,
-      period,
+      duration === 0 ? undefined : perMs,
+      duration,
       into,
       into === undefined ? undefined : (scratch as Scratch)[i],
     );
@@ -327,13 +328,16 @@ export function readKeys(
   return out;
 }
 
+/** A patch's `duration`, or the deprecated `period` where only that is set. */
+export const durationOf = <I, O, S>(p: Patch<I, O, S>): number => p.duration ?? p.period ?? 0;
+
 const cache = new WeakMap<object, Built>();
 
 /** The built form of a patch's stops, made on first ask for a patch `keys()` did not build. */
 export function builtOf<I, O, S>(p: Patch<I, O, S>): Built {
   let held = cache.get(p);
   if (held === undefined) {
-    held = build(p.keys as readonly Keyframe<O>[], p.writes, p.period, keysOptionsOf(p) ?? {});
+    held = build(p.keys as readonly Keyframe<O>[], p.writes, durationOf(p), keysOptionsOf(p) ?? {});
     cache.set(p, held);
   }
   return held;
@@ -344,11 +348,11 @@ export function evalKeys<O>(
   stops: readonly Keyframe<O>[],
   writes: readonly (keyof O)[],
   phase: number,
-  period: number,
+  duration: number,
   opts: KeysOptions<O>,
   base?: Partial<O>,
 ): Partial<O> {
-  return readKeys(build(stops, writes, period, opts), phase, {}, base as never) as Partial<O>;
+  return readKeys(build(stops, writes, duration, opts), phase, {}, base as never) as Partial<O>;
 }
 
 /**
@@ -357,15 +361,16 @@ export function evalKeys<O>(
  * @category patch
  */
 export function keys<I, O>(
-  period: number,
+  duration: number,
   stops: readonly Keyframe<O>[],
   opts: KeysOptions<O> = {},
 ): Patch<I, O, void> {
   const writes = [...new Set(stops.flatMap((s) => Object.keys(s.delta) as (keyof O)[]))];
-  const made = build(stops, writes, period, opts);
+  const made = build(stops, writes, duration, opts);
   const p: Patch<I, O, void> = {
     form: 'keys',
-    period,
+    duration,
+    period: duration,
     writes,
     kit: opts.kit,
     keys: stops,

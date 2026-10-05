@@ -16,7 +16,7 @@ function reference(
   stops: readonly Keyframe<Pose>[],
   writes: readonly (keyof Pose)[],
   phase: number,
-  period: number,
+  duration: number,
   opts: {
     ease?: (u: number) => number;
     easeBy?: (c: keyof Pose) => ((u: number) => number) | undefined;
@@ -35,7 +35,8 @@ function reference(
   const out: Record<string, unknown> = {};
   for (const channel of writes) {
     const delay = opts.delayBy?.(channel) ?? 0;
-    const ph = delay === 0 || period === 0 ? phase : Math.max(0, (phase * period - delay) / period);
+    const ph =
+      delay === 0 || duration === 0 ? phase : Math.max(0, (phase * duration - delay) / duration);
     const held: { at: number; value: unknown; ease?: (u: number) => number }[] = [];
     if (base?.[channel] !== undefined) held.push({ at: 0, value: base[channel] });
     for (const stop of stops) {

@@ -173,7 +173,7 @@
   <text x="20" y="22" class="sub">voices, each on its own clock</text>
   <rect x="20" y="32" width="170" height="44" rx="3" class="box"/>
   <text x="32" y="50">flicker · loop · w 1.0</text>
-  <text x="32" y="66" class="sub">phase wraps once per period</text>
+  <text x="32" y="66" class="sub">phase wraps once per pass</text>
   <rect x="20" y="86" width="170" height="44" rx="3" class="box hot"/>
   <text x="32" y="104">power · state · w 0.4 ↑</text>
   <text x="32" y="120" class="sub">fading in over 300 ms</text>
@@ -234,8 +234,10 @@
   <dt>Engine</dt><dd>The implementation behind a mix. One ships. The seam is the mix's own interface.</dd>
   <dt>Pose</dt><dd>What one subject looks like at one frame, once every voice has been folded in. Where a delta is partial, a pose is complete: every channel of the kit is filled. This is what a host writes.</dd>
   <dt>Influence</dt><dd>What one voice does to one subject in one frame, once its weight is applied. Not a share of the whole: two voices each contributing <code>gain: 0.1</code> leave the subject at 0.01.</dd>
-  <dt>Period</dt><dd>How long one pass of a patch lasts, in milliseconds. 0 means aperiodic.</dd>
-  <dt>Phase</dt><dd>Where a voice is within its period, 0 to 1, wrapping. The first thing a patch is handed, and what <code>stagger</code> spreads per subject.</dd>
+  <dt>Duration</dt><dd>How long one pass of a patch lasts, in milliseconds, whether or not the voice loops. 0 means the patch has no passes.</dd>
+  <dt>Pass</dt><dd>One run through a patch, phase 0 to 1.</dd>
+  <dt>Period</dt><dd>The duration a looping voice repeats. <code>Patch.period</code> is a deprecated alias for <code>duration</code>.</dd>
+  <dt>Phase</dt><dd>Where a voice is within its current pass, 0 to 1, wrapping. The first thing a patch is handed, and what <code>stagger</code> spreads per subject.</dd>
   <dt>Setting</dt><dd>What a patch may read and did not compute, for one subject this frame: the clock and <code>dt</code> the whole frame shares, the <code>elapsed</code>, <code>pass</code> and <code>weight</code> particular to the voice, its state, and whatever the host added.</dd>
   <dt>System</dt><dd>One complete area of driven behavior: a kit, the subject type it drives, and the mix over them. klieg's motion, effects and lighting are three systems in one host. Two systems never share a mix, so a voice belongs to exactly one.</dd>
   <dt>Source</dt><dd>Whatever decided a voice should exist: a score, a handler on an event, a chain handing over. There is no source type and nothing to implement &mdash; a source calls <code>cue</code> and gets a handle. The word is here so the vocabulary can name the seam it does not own.</dd>
@@ -297,16 +299,18 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
   <span class="cm">/** Which authoring form built it: `'fn'` from `patch`, `'keys'` from `keys`, `'motion'` from `spring`,
      `glide` or `tween`. An engine declares which forms it runs. */</span>
   readonly form: 'fn' | 'keys' | 'motion';
-  <span class="cm">/** Milliseconds one pass lasts. 0 is aperiodic: one pass that never ends, so `phase` and `pass` stay 0,
-     `loop` is ignored, and the patch reads `setting.elapsed` instead. */</span>
-  period: number;
+  <span class="cm">/** Milliseconds one pass lasts, whether or not the voice loops. 0 has no passes: `phase` and `pass`
+     stay 0, `loop` is ignored, and the patch reads `setting.elapsed` instead. */</span>
+  duration: number;
+  <span class="cm">/** @deprecated Use `duration`. A patch that sets only `period` still plays. */</span>
+  readonly period?: number;
   <span class="cm">/** The channels this patch contributes to. Every key `at` sets, and no others. */</span>
   readonly writes: readonly (keyof O)[];
   <span class="cm">/** The channels it was written against. `cue` refuses a kit whose channel of the same name is another kind. */</span>
   readonly kit?: Partial&lt;Kit&lt;O&gt;&gt;;
   <span class="cm">/** The fields of `setting.host` it reads. `cue` refuses a mix whose host lacks one. */</span>
   readonly reads?: readonly string[];
-  <span class="cm">/** `phase` is 0..1 across one period, wrapping. */</span>
+  <span class="cm">/** `phase` is 0..1 across one pass, wrapping. */</span>
   at(phase: number, subject: I, setting: Setting&lt;S&gt;): Partial&lt;O&gt;;
 
   <span class="cm">/** Per-subject state, created on the first frame this patch sees a subject. */</span>
@@ -352,8 +356,8 @@ interface Setting&lt;S = void&gt; {
 <p>Three authoring forms build a patch. All return the same interface, so a voice cannot tell them apart.</p>
 <div class="tbl"><table>
   <tr><th>form</th><th>signature</th><th>what it is</th></tr>
-  <tr><td><code>fn</code></td><td><code>patch(period, at, { writes, state?, step? })</code></td><td>Procedural. Flicker, roving, a hash walk, a starter strike. Only a JS engine can run one.</td></tr>
-  <tr><td><code>keys</code></td><td><code>keys(period, stops, { ease?, easeBy?, delayBy? })</code></td><td>Declarative stops, klieg's transition sugar and wod's keyframes. Data preserved on <code>patch.keys</code> for an engine that reads data instead of calling functions.</td></tr>
+  <tr><td><code>fn</code></td><td><code>patch(duration, at, { writes, state?, step? })</code></td><td>Procedural. Flicker, roving, a hash walk, a starter strike. Only a JS engine can run one.</td></tr>
+  <tr><td><code>keys</code></td><td><code>keys(duration, stops, { ease?, easeBy?, delayBy? })</code></td><td>Declarative stops, klieg's transition sugar and wod's keyframes. Data preserved on <code>patch.keys</code> for an engine that reads data instead of calling functions.</td></tr>
   <tr><td><code>motion</code></td><td><code>spring(writes, opts)</code>, <code>glide(writes, opts)</code>, <code>tween(writes, opts)</code></td><td>Momentum, or an eased curve between two values, solved in closed form per subject; <a href="#motion">below</a>. The kind and its constants are preserved on <code>patch.motion</code>, a <code>MotionSpec</code>.</td></tr>
 </table></div>
 
@@ -557,7 +561,7 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
 <ul>
   <li><b>The mix is pull-based on a host clock.</b> The host owns the frame loop and calls <code>sync(timestamp)</code> with milliseconds on any monotonic clock it likes. klieg passes its <code>Clock.now()</code>; wod passes <code>performance.now()</code>; a test passes integers.</li>
   <li><b>Everything in a frame reads one timestamp.</b> A second <code>sync</code> with the same value is a no-op, and every <code>probe</code> between syncs answers from the same frame. This is what makes state advance once however many probes a wrapper makes.</li>
-  <li><b>A voice's clock is <code>(timestamp − start) · rate</code>.</b> That reading is <code>setting.elapsed</code>, and its position within the period, <code>(elapsed mod period) / period</code>, is the <code>phase</code> the patch is handed first. Both reach the patch. A rate change rebases so <code>elapsed</code> is continuous.</li>
+  <li><b>A voice's clock is <code>(timestamp − start) · rate</code>.</b> That reading is <code>setting.elapsed</code>, and its position within the current pass, <code>(elapsed mod duration) / duration</code>, is the <code>phase</code> the patch is handed first. Both reach the patch. A rate change rebases so <code>elapsed</code> is continuous.</li>
   <li><b>The mix has a rate of its own,</b> <code>mix.rate</code> and <code>mix.ramp(rate, over)</code>, shaped like a handle's and multiplied into every voice's: 0 pauses the whole mix, and a negative rate throws, since the mix only goes forward. It runs the mix clock: mix time is the host's timestamp, less what <code>rebase</code> took out, integrated at the mix's rate, and each voice integrates its own rate over mix time, so a ramp on both multiplies and no position jumps. Everything a voice owns runs on mix time and slows with it, which is what a pause has to mean for a fade caught halfway. A timestamp the host gives or reads stays on the host's clock, so a beat announced from an audio clock stays on the beat when the mix slows, and a start ahead of a paused mix waits for the host's clock to reach it. The mix's own ramp runs over host ms, since a ramp over its own slowing time would never arrive. A change made while paused lands at the next sync as always, and a weight signal is still asked at every probe, so one reading input follows it. At rate 0 the mix is <code>inert</code> once every voice not done has started, at a plain weight, with no anchor. Under <code>history</code> every rate change is kept, and a read back finds mix time through them as it finds a voice's clock through its handle's changes; without it a timestamp from before the last change converts at the rate in force, as one from before a <code>rebase</code> converts at the offset in force. weasel also scales a key and a handle; a mix leaves those levels to tags and to the host.
     <div class="tbl"><table>
       <tr><th>runs on mix time, at the mix's rate</th><th>stays on the host's clock</th></tr>

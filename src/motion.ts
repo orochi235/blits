@@ -806,8 +806,8 @@ class MotionPatch<I, O, V extends Value> {
     }
     this.writes = shared as readonly (keyof O)[];
   }
-  // Fields, not getters: a fill reads `period` off every voice's patch.
   readonly form = 'motion' as const;
+  readonly duration = 0;
   readonly period = 0;
   get motion(): MotionSpec {
     return this.motions.spec();

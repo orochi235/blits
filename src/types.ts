@@ -171,8 +171,10 @@ export interface Patch<I, O, S = void> {
    * `spring`, `glide` or `tween`. An engine declares which forms it runs.
    */
   readonly form: 'fn' | 'keys' | 'motion';
-  /** Milliseconds one pass lasts. 0 is aperiodic: phase and pass stay 0. */
-  readonly period: number;
+  /** Milliseconds one pass lasts, whether or not the voice loops. 0 has no passes: phase and pass stay 0. */
+  readonly duration: number;
+  /** @deprecated Use `duration`. A patch that sets only `period` still plays. */
+  readonly period?: number;
   /** The channels this patch contributes to. Every key `at` sets, and no others. */
   readonly writes: readonly (keyof O)[];
   /**
@@ -182,7 +184,7 @@ export interface Patch<I, O, S = void> {
   readonly kit?: Partial<Kit<O>>;
   /** The fields of `setting.host` this patch reads. `cue` refuses a mix whose host lacks one. */
   readonly reads?: readonly string[];
-  /** `phase` is 0..1 across one period, wrapping. */
+  /** `phase` is 0..1 across one pass, wrapping. */
   at(phase: number, subject: I, setting: Setting<S>): Partial<O>;
   /** Per-subject state, created on the first frame this patch sees a subject. */
   state?(subject: I): S;

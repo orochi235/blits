@@ -61,7 +61,7 @@
 <rect class="box card" x="380" y="252" width="392" height="180" rx="10"/>
 <text class="head" x="400" y="280"><tspan class="strong">voice</tspan> <tspan class="was">(track)</tspan> — one patch, playing</text>
 <text class="row" x="400" y="306"><tspan class="strong">patch</tspan>(t, subject, setting) → delta</text>
-<text class="row" x="400" y="327">clock — start · rate · period ⇒ t</text>
+<text class="row" x="400" y="327">clock — start · rate · duration ⇒ t</text>
 <text class="row" x="400" y="348"><tspan class="strong">weight</tspan> — ramp(now), or a signal</text>
 <text class="row" x="400" y="369">target — where it is heading</text>
 <rect class="box card dashed" x="800" y="252" width="372" height="92" rx="10"/>

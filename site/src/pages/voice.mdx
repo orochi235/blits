@@ -33,7 +33,7 @@ await hop.done;
 
 ## The clock
 
-A voice starts at the next `sync` unless its spec gives a `start`. From then on it counts its own milliseconds, `elapsed`, and phase is `elapsed` divided by the patch's period, wrapped.
+A voice starts at the next `sync` unless its spec gives a `start`. From then on it counts its own milliseconds, `elapsed`, and phase is `elapsed` divided by the patch's duration, wrapped.
 
 **Rate** scales that count: 1 is real time, 2 is double speed, 0 freezes the voice where it is. It's live on the handle, so `handle.rate = 0` pauses one voice while everything else plays on.
 

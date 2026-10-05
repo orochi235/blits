@@ -6,24 +6,24 @@ export function passesOf(loop: boolean | number | undefined): number {
   return l === true ? Number.POSITIVE_INFINITY : l === false ? 1 : l;
 }
 
-/** Whether `elapsed` voice ms is past the last of `passes` passes of a patch of `period` ms. */
-const over = (elapsed: number, period: number, passes: number): boolean =>
-  Number.isFinite(passes) && elapsed >= period * passes;
+/** Whether `elapsed` voice ms is past the last of `passes` passes of a patch of `duration` ms. */
+const over = (elapsed: number, duration: number, passes: number): boolean =>
+  Number.isFinite(passes) && elapsed >= duration * passes;
 
 /**
- * The phase `elapsed` voice ms into a patch of `period` ms playing `passes` passes, held at 1 once
+ * The phase `elapsed` voice ms into a patch of `duration` ms playing `passes` passes, held at 1 once
  * they are done. A pure function rather than one writing phase and pass together, so a hot caller
  * keeps both in registers.
  */
-export function phaseAt(elapsed: number, period: number, passes: number): number {
-  if (!(period > 0)) return 0;
-  return over(elapsed, period, passes) ? 1 : (elapsed % period) / period;
+export function phaseAt(elapsed: number, duration: number, passes: number): number {
+  if (!(duration > 0)) return 0;
+  return over(elapsed, duration, passes) ? 1 : (elapsed % duration) / duration;
 }
 
 /** The pass `elapsed` voice ms falls in, held at the last once they are done. */
-export function passAt(elapsed: number, period: number, passes: number): number {
-  if (!(period > 0)) return 0;
-  return over(elapsed, period, passes) ? passes - 1 : Math.floor(elapsed / period);
+export function passAt(elapsed: number, duration: number, passes: number): number {
+  if (!(duration > 0)) return 0;
+  return over(elapsed, duration, passes) ? passes - 1 : Math.floor(elapsed / duration);
 }
 
 /** A voice's own fade this frame, 0..1: in from `since` over `fadeIn`, and out along its ramp. */

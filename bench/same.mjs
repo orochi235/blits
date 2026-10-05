@@ -89,12 +89,12 @@ function run(lib, seed, general = false) {
     const writes = NUMERIC.filter(() => chance(0.5));
     if (writes.length === 0) writes.push(pick(NUMERIC));
     made = `${kind} ${writes.join(',')}`;
-    const period = pick([0, 200, 500, 1000, 3000]);
+    const duration = pick([0, 200, 500, 1000, 3000]);
     const k = r() * 3;
     if (kind === 'fn') {
       const extra = chance(0.2) ? ['color'] : chance(0.1) ? ['tag'] : [];
       return lib.patch(
-        period,
+        duration,
         (ph, s) => {
           const d = {};
           for (const w of writes)
@@ -113,7 +113,7 @@ function run(lib, seed, general = false) {
     }
     if (kind === 'stateful')
       return lib.patch(
-        period,
+        duration,
         (_ph, s, st) => {
           const d = {};
           for (const w of writes) d[w] = w === 'pos' ? [st.state.x, s.seed, 0] : st.state.x * k;
@@ -138,7 +138,7 @@ function run(lib, seed, general = false) {
         if (e !== undefined && chance(0.5)) stop.ease = e;
         stops.push(stop);
       }
-      return lib.keys(period || 400, stops, chance(0.5) ? { ease: ease() ?? 'linear' } : {});
+      return lib.keys(duration || 400, stops, chance(0.5) ? { ease: ease() ?? 'linear' } : {});
     }
     const channel = pick(['pos', 'off']);
     const v = (s, d) => (channel === 'pos' ? [s.seed + d, d, -d] : s.seed + d);

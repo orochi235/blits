@@ -8,7 +8,7 @@ description: The words blits uses, from anchor to weight, each with a short expl
 
 <p class="lede">The words blits uses, each with a short explanation, an example, and a link to the page that covers it in depth.</p>
 
-[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [handle](#handle) · [`history`](#history) · [`hold`](#hold) · [host](#host) · [influence](#influence) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [locus](#locus) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight)
+[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [handle](#handle) · [`history`](#history) · [`hold`](#hold) · [host](#host) · [influence](#influence) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [locus](#locus) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight)
 
 The examples share one setup: a row of dots that can move up and down, glow, and change color.
 
@@ -149,6 +149,14 @@ const settle = patch<Dot, DotPose, { y: number }>(0, (_phase, _dot, setting) => 
 
 In depth: [Time](../time/), [Patch state](../state/). Reference: [`Setting`](../state/#api-Setting), [`MixOptions`](../mix/#api-MixOptions).
 
+## duration
+
+A patch's duration is how long one [pass](#pass) lasts, in milliseconds, whether or not the voice loops. [Phase](#phase) runs from 0 to 1 across it, then wraps. A duration of 0 means the patch has no passes: phase stays 0, and the patch reads [`elapsed`](#elapsed) if it needs to know the time.
+
+`bob` has a duration of 1000: one bob takes a second.
+
+In depth: [Patch](../patch/). Reference: [`Patch`](../patch/#api-Patch).
+
 ## easing
 
 An easing is a curve that reshapes progress from 0 to 1, as in CSS. blits takes CSS's names, such as `'ease-in-out'`, a `{ bezier: [x1, y1, x2, y2] }`, a `{ steps: n }`, or a plain function. Prefer the data forms: an [engine](#engine) could hand them to the browser or a GPU, but a function can only run on the CPU.
@@ -170,7 +178,7 @@ In depth: [Patch](../patch/#easing-is-data). Reference: [`Easing`](../patch/#api
 
 ## `elapsed`
 
-`setting.elapsed` is how long a [voice](#voice) has been playing, in milliseconds, counted at its own [`rate`](#rate): after one real second, a voice at half speed has 500 elapsed. A patch with a [period](#period) of 0 reads it to know how far along it is.
+`setting.elapsed` is how long a [voice](#voice) has been playing, in milliseconds, counted at its own [`rate`](#rate): after one real second, a voice at half speed has 500 elapsed. A patch with a [duration](#duration) of 0 reads it to know how far along it is.
 
 ```ts
 const wake = patch<Dot, DotPose>(0, (_phase, _dot, setting) => ({ glow: Math.min(1, setting.elapsed / 500) }), {
@@ -343,7 +351,7 @@ In depth: [Locus](../locus/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 
 ## `loop`
 
-`loop` says how many passes a voice plays, a pass being one run through its [period](#period): `true` to repeat forever, `false` for one pass, or a number. When a finite loop runs out, the voice leaves the mix, over its [`fade`](#fade) out if it has one, unless it [holds](#hold) its last frame.
+`loop` says how many passes a voice plays, a [pass](#pass) being one run through its patch: `true` to repeat forever, `false` for one pass, or a number. When a finite loop runs out, the voice leaves the mix, over its [`fade`](#fade) out if it has one, unless it [holds](#hold) its last frame.
 
 ```ts
 dots.cue({ patch: bob, loop: 3 }); // three bobs, then gone
@@ -407,6 +415,14 @@ dots.cue({ patch: bob, anchor: { start: { after: 'intro' } } });
 
 In depth: [Score](../score/#placing-a-voice). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 
+## pass
+
+A pass is one run through a [patch](#patch), from phase 0 to 1, whether or not it [loops](#loop). `setting.pass` counts them from 0.
+
+`dots.cue({ patch: bob, loop: 3 })` plays three passes of `bob`, then leaves.
+
+In depth: [Voice](../voice/). Reference: [`Setting`](../state/#api-Setting).
+
 ## patch
 
 A patch is the effect itself: a function that takes a [phase](#phase) and one [subject](#subject) and returns a [delta](#delta). It doesn't know when it started, how strong it is, or what else is playing; a [voice](#voice) supplies those, so one patch can play on many voices at once. Every patch declares the channels it writes. You write one as a function with `patch`, as keyframes with `keys`, or as motion toward a target with `spring`, `glide`, or `tween`.
@@ -423,15 +439,15 @@ In depth: [Patch](../patch/), [Patch state](../state/). Reference: [`Patch`](../
 
 ## period
 
-A patch's period is how long one pass lasts, in milliseconds. [Phase](#phase) runs from 0 to 1 across it, then wraps. A period of 0 means the patch doesn't repeat: phase stays 0, and the patch reads [`elapsed`](#elapsed) if it needs to know the time.
+Only a voice that [loops](#loop) has a period: the [duration](#duration) of the patch it repeats. `Patch.period` is a deprecated alias for `duration`, kept so a patch that sets it still plays.
 
-`bob` has a period of 1000, so it bobs once a second.
+`bob` cued with `loop: true` has a period of 1000, so it bobs once a second.
 
 In depth: [Patch](../patch/). Reference: [`Patch`](../patch/#api-Patch).
 
 ## phase
 
-Phase is how far a voice is through its [period](#period), from 0 to 1, wrapping. It is the first thing a [patch](#patch) is handed.
+Phase is how far a voice is through its current [pass](#pass), from 0 to 1, wrapping. It is the first thing a [patch](#patch) is handed.
 
 `bob` returns `y: Math.sin(2 * Math.PI * phase)`, so at phase 0.25 a dot is at the top and at 0.75 at the bottom.
 
@@ -441,7 +457,7 @@ In depth: [Patch](../patch/), [Time](../time/).
 
 A pose is what one [subject](#subject) looks like at one frame, with every voice [folded](#fold) in. A [delta](#delta) holds only what one patch writes; a pose holds every channel of the [kit](#kit), at [rest](#rest) where nothing moved it. The one exception is a channel with no rest, such as a color nothing has set, which is left out. The pose is what the [host](#host) puts on screen.
 
-With `bob` a quarter of the way through its period and `dim` at full weight, a dot's pose is `{ y: 1, glow: 0.5 }`.
+With `bob` a quarter of the way through its pass and `dim` at full weight, a dot's pose is `{ y: 1, glow: 0.5 }`.
 
 In depth: [Mix](../mix/).
 
@@ -550,7 +566,7 @@ In depth: [Voice](../voice/#the-clock). Reference: [`Handle`](../voice/#api-Hand
 
 ## setting
 
-The setting is the third argument a [patch](#patch) is handed: everything it may read but didn't compute, for this subject in this frame. It holds the [`timestamp`](#timestamp) and [`dt`](#dt), the voice's [`elapsed`](#elapsed) time and which pass through its [period](#period) it is on, its [weight](#weight), the patch's own state for this subject, and whatever the [host](#host) added. The mix reuses the object, so copy out what you need rather than keeping it.
+The setting is the third argument a [patch](#patch) is handed: everything it may read but didn't compute, for this subject in this frame. It holds the [`timestamp`](#timestamp) and [`dt`](#dt), the voice's [`elapsed`](#elapsed) time and which [pass](#pass) it is on, its [weight](#weight), the patch's own state for this subject, and whatever the [host](#host) added. The mix reuses the object, so copy out what you need rather than keeping it.
 
 ```ts
 const firstBright = patch<Dot, DotPose>(1000, (_phase, _dot, setting) => ({ glow: setting.pass === 0 ? 1 : 0.6 }), {

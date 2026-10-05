@@ -10,9 +10,9 @@ describe('clock', () => {
   });
 
   it('places elapsed time within a pass, and holds phase 1 once the passes are done', () => {
-    const at = (e: number, period: number, passes: number) => ({
-      phase: phaseAt(e, period, passes),
-      pass: passAt(e, period, passes),
+    const at = (e: number, duration: number, passes: number) => ({
+      phase: phaseAt(e, duration, passes),
+      pass: passAt(e, duration, passes),
     });
     expect(at(250, 1000, Number.POSITIVE_INFINITY)).toEqual({ phase: 0.25, pass: 0 });
     expect(at(2250, 1000, Number.POSITIVE_INFINITY)).toEqual({ phase: 0.25, pass: 2 });

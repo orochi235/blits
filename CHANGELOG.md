@@ -8,6 +8,11 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Breaking
 
+- A patch's length is `duration`, not `period`: a pass is one run through a patch whether or not
+  it loops, and only a looping voice has a period. `period` is still set on every patch `patch`,
+  `keys`, `spring`, `glide` and `tween` build, and a patch that sets only `period` still plays,
+  but it is deprecated and a later release removes it.
+
 - A spring, glide or tween's `to`, `push`, `read` and `at` are methods of its class, so call them on
   the patch, as `glide.to(id, 1)`: one taken off it, as `const { to } = glide`, has no patch to act
   on. Its `motion` is a getter on the class rather than its own property.

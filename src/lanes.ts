@@ -1820,12 +1820,12 @@ export class Lanes<I, O> implements Watcher {
         this.intoId = voice.id;
         this.reset(lane);
         const elapsed = voice.elapsedAt(this.now);
-        const period = voice.patch.period;
+        const duration = voice.duration;
         const passes = voice.passes;
         const list = lane.list;
         for (let p = 0; p < list.length; p++) {
           const slot = list[p] as number;
-          if (this.one(lane, p, slot, elapsed, period, passes)) {
+          if (this.one(lane, p, slot, elapsed, duration, passes)) {
             this.meetLocus(g, slot);
             g.sum[slot] = (g.sum[slot] as number) + (lane.data[p * STRIDE + WEIGHT] as number);
           }
@@ -1931,11 +1931,11 @@ export class Lanes<I, O> implements Watcher {
       return;
     }
     const elapsed = voice.elapsedAt(this.now);
-    const period = voice.patch.period;
+    const duration = voice.duration;
     const passes = voice.passes;
     const list = lane.list;
     for (let p = 0; p < list.length; p++) {
-      this.one(lane, p, list[p] as number, elapsed, period, passes);
+      this.one(lane, p, list[p] as number, elapsed, duration, passes);
       // Its patch just made kept state: no further call this fill, the general path makes them.
       if (voice.keeping) return;
     }
@@ -1951,7 +1951,7 @@ export class Lanes<I, O> implements Watcher {
     p: number,
     slot: number,
     elapsedNow: number,
-    period: number,
+    duration: number,
     passes: number,
   ): boolean {
     const host = this.host;
@@ -1970,8 +1970,8 @@ export class Lanes<I, O> implements Watcher {
     if (!lane.placed || !Object.is(elapsed, lane.placedAt)) {
       lane.placed = true;
       lane.placedAt = elapsed;
-      lane.phase = phaseAt(elapsed, period, passes);
-      lane.pass = passAt(elapsed, period, passes);
+      lane.phase = phaseAt(elapsed, duration, passes);
+      lane.pass = passAt(elapsed, duration, passes);
     }
     const since = data[o + SINCE] as number;
     if (!lane.flat && (!lane.weighed || !Object.is(since, lane.weighedSince))) {
@@ -2036,7 +2036,7 @@ export class Lanes<I, O> implements Watcher {
     for (let i = 0; i < tracks.length; i++) {
       const track = tracks[i] as Track;
       const ch = chans[i] as Laned;
-      const found = segment(track, shifted(track, phase, built.period), undefined);
+      const found = segment(track, shifted(track, phase, built.duration), undefined);
       if (found === NOTHING) continue;
       if (found === AT) {
         this.foldInto(ch, slot, seg.a, w);
@@ -2201,7 +2201,7 @@ export class Lanes<I, O> implements Watcher {
           slot,
           c.records[p] as Subject<unknown>,
           elapsed,
-          passAt(elapsed, voice.patch.period, voice.passes),
+          passAt(elapsed, voice.duration, voice.passes),
           this.host.envelope(voice, data[o + SINCE] as number),
         );
         if (Number.isNaN(w)) {
@@ -2276,8 +2276,8 @@ export class Lanes<I, O> implements Watcher {
     delay: number,
     w: number,
   ): void {
-    const period = voice.patch.period;
-    const phase = phaseAt(elapsed, period, voice.passes);
+    const duration = voice.duration;
+    const phase = phaseAt(elapsed, duration, voice.passes);
     if (voice.built !== null) {
       if (w > 0) this.foldKeys(voice, c.chans, phase, slot, w);
       return;
@@ -2294,7 +2294,7 @@ export class Lanes<I, O> implements Watcher {
       slot,
       elapsed,
       phase,
-      passAt(elapsed, period, voice.passes),
+      passAt(elapsed, duration, voice.passes),
       delay,
       w,
     );
@@ -2419,7 +2419,7 @@ export class Lanes<I, O> implements Watcher {
           slot,
           records[p] as Subject<unknown>,
           elapsed,
-          passAt(elapsed, voice.patch.period, voice.passes),
+          passAt(elapsed, voice.duration, voice.passes),
           lane.fade,
         );
         if (Number.isNaN(w)) {

@@ -13,7 +13,7 @@ interface Pose {
   keys: number;
 }
 
-const PERIOD = 3000;
+const DURATION = 3000;
 const NAMES = ['linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out'] as const;
 
 const config = f.schema({
@@ -83,12 +83,12 @@ const STOPS = [
   { at: 1, delta: { keys: 0 } },
 ];
 
-const fnPatch = patch<object, Pose>(PERIOD, (phase) => ({ fn: Math.sin(Math.PI * phase) ** 2 }), {
+const fnPatch = patch<object, Pose>(DURATION, (phase) => ({ fn: Math.sin(Math.PI * phase) ** 2 }), {
   writes: ['fn'],
 });
 
 function keysPatch(c: Config) {
-  return keys<object, Pose>(PERIOD, STOPS, { ease: easingOf(c) });
+  return keys<object, Pose>(DURATION, STOPS, { ease: easingOf(c) });
 }
 
 const subject = { id: 'subject' };
@@ -249,17 +249,17 @@ export default function Patch() {
     <Explainer
       scene={scene}
       schema={config}
-      duration={PERIOD}
+      duration={DURATION}
       aspect={0.68}
       caption={
         <>
-          The scrubber is the phase: one period of both patches. On top, each value drives a puck
-          and a lamp. The <code>patch</code> one glides steadily; the <code>keys</code> one moves
-          with whatever easing you pick, on each segment between stops, and snaps when it's steps.
+          The scrubber is the phase: one pass of both patches. On top, each value drives a puck and
+          a lamp. The <code>patch</code> one glides steadily; the <code>keys</code> one moves with
+          whatever easing you pick, on each segment between stops, and snaps when it's steps.
         </>
       }
       draw={(ctx, frame, size, ink, c) => {
-        const phase = (frame.t % PERIOD) / PERIOD;
+        const phase = (frame.t % DURATION) / DURATION;
         const pad = 12;
         const kp: P<object, Pose, void> = keysPatch(c);
         const pose = frame.poses[0];
@@ -295,14 +295,14 @@ export default function Patch() {
           color: ink.voice('v1'),
           at: phase,
           value: frame.alone[0]?.fn,
-          title: 'patch(period, at)',
+          title: 'patch(duration, at)',
         });
         plot(ctx, { x: left.x, y: top + pad + rowH, w: left.w, h: rowH }, ink, {
           fn: (u) => kp.at(u, subject, stub).keys ?? 0,
           color: ink.voice('v2'),
           at: phase,
           value: frame.alone[1]?.keys,
-          title: 'keys(period, stops)',
+          title: 'keys(duration, stops)',
           stops: STOPS.map((s) => ({ at: s.at, value: s.delta.keys })),
         });
 
