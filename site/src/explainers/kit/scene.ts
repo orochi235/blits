@@ -195,4 +195,5 @@ const inert: Handle = {
   weightOf: () => 0,
   done: Promise.resolve(),
   played: Promise.resolve(false),
+  owner: undefined,
 };
