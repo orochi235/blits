@@ -325,10 +325,12 @@ systems now run on it**, on klieg's `main`.
   (`bench/memory.mjs`), so it is the heap that row grew, not a leak. `AB_EACH=1 bench/ab.sh`
   runs each row in a process of its own.
 
-- **A pose can hold a keyframe's own array.** When a channel has no rest and its `merge` returns
-  its second argument, as a `last()` over arrays does, `apply` puts the delta's array into the
-  pose uncopied. With two voices on a keyed array channel, a host that edits its pose edits the
-  stop. Found 2026-10-01 and not fixed.
+- **A host editing a pose the mix allocated changes what `from: 'current'` reads.** `probe`
+  without `out` keeps the pose it returns as the subject's last, by reference, so a held voice at
+  `[10]` whose pose the host set to `[500]` was retargeted from 500 (checked 2026-10-04). Whether
+  that is wrong is undecided: it is what the host showed, and copying would cost every probe
+  without `out` an allocation.
+
 - **A stale served-page tab will overwrite `vocabulary.picks.json` with whatever set it
   was holding.** It has happened twice — `65d2d71` restored one, and the same loss was in the
   working tree at the start of 2026-09-27's session. Before trusting the picks file, `git diff` it;

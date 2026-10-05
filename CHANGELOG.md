@@ -14,6 +14,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A pose never holds a patch's own array. Where a channel's `merge` returned its second argument,
+  as `last()` does, the mix put that array into the pose as it was: with two voices on a keyed
+  array channel, a host editing its pose edited the stop, and every later frame read the edit. The
+  mix now copies such a value, into the array the pose already holds where one fits.
 - A voice holds less while it plays. A store keeps its first id inline rather than in a Map, a
   voice's small arrays are sized to what they hold, `setting.keep` is made the first time a patch
   reads it, and a spring, glide or tween keeps its methods on its class rather than in closures of

@@ -384,6 +384,19 @@ const near = (a: unknown, b: unknown): boolean => {
 
 const copy = (v: unknown): unknown => (Array.isArray(v) ? [...v] : v);
 
+/**
+ * `merge(acc, b)`, where a result that is `b` itself, as `last()` gives, is copied into `acc` or a
+ * new array: `b` belongs to a patch or the mix's scratch, and a host may edit the pose. `acc` is a
+ * value this fold made.
+ */
+function merged(channel: Channel<unknown>, acc: unknown, b: unknown): unknown {
+  const r = channel.merge(acc, b);
+  if (r !== b || !Array.isArray(r)) return r;
+  if (!Array.isArray(acc) || acc.length !== r.length) return [...r];
+  for (let i = 0; i < r.length; i++) acc[i] = r[i];
+  return acc;
+}
+
 type Values = Record<string, unknown>;
 
 /** Writes a folded pose's value into subject `n`'s places in a column. */
@@ -2690,14 +2703,14 @@ class Mixer<I, O> implements Mix<I, O> {
         // pose[key] is the copy of rest this fold made, so it is ours to write into.
         pose[key] = channel.fold
           ? channel.fold(pose[key], value, weight)
-          : channel.merge(pose[key], channel.scale(value, weight));
+          : merged(channel, pose[key], channel.scale(value, weight));
         continue;
       }
       const bands = held.bands ?? bandsFor(held, slots.length);
       const band = bands[i];
       const on = this.passes(band === 0 ? undefined : band === 1, weight);
       bands[i] = on ? 1 : 2;
-      if (on) pose[key] = pose[key] === undefined ? copy(value) : channel.merge(pose[key], value);
+      if (on) pose[key] = pose[key] === undefined ? copy(value) : merged(channel, pose[key], value);
     }
   }
 
@@ -2885,14 +2898,14 @@ class Mixer<I, O> implements Mix<I, O> {
             // pose[key] is the copy of rest this fold made, so it is ours to write into.
             pose[key] = channel.fold
               ? channel.fold(pose[key], value, weight)
-              : channel.merge(pose[key], channel.scale(value, weight));
+              : merged(channel, pose[key], channel.scale(value, weight));
             continue;
           }
           const band = on[slot] as number;
           const passes = this.passes(band === 0 ? undefined : band === 1, weight);
           on[slot] = passes ? 1 : 2;
           if (passes)
-            pose[key] = pose[key] === undefined ? copy(value) : channel.merge(pose[key], value);
+            pose[key] = pose[key] === undefined ? copy(value) : merged(channel, pose[key], value);
         }
       }
       return pose as O;
