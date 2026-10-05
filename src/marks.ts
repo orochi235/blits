@@ -1,0 +1,76 @@
+import type { Listed } from './book.js';
+import type { Mixer } from './mixer.js';
+import { startOf } from './place.js';
+import type { Mark } from './types.js';
+import { none, type Voice } from './voice.js';
+
+/** The host timestamp the mix clock reads mix time `t` at; Infinity where it never will. */
+export function hostOf<I, O>(mix: Mixer<I, O>, t: number): number {
+  return (mix.pace === null ? t : mix.pace.timeOf(t)) + mix.offset;
+}
+
+/** What the mix clock reads at host time `u`, by the clock in force then. */
+export function readingAt<I, O>(mix: Mixer<I, O>, u: number): number {
+  return mix.pace === null ? u : mix.pace.reading(u);
+}
+
+/** Every mark between two host timestamps, earliest first, with the order that tells each apart. */
+export function listed<I, O>(mix: Mixer<I, O>, from: number, to: number): Listed[] {
+  const lo = from - mix.offset;
+  const hi = to - mix.offset;
+  const out: Listed[] = [];
+  for (const a of mix.announced)
+    if (a.at >= lo && a.at <= hi)
+      out.push({
+        timestamp: a.at + mix.offset,
+        mark: undefined,
+        voice: undefined,
+        score: a.score,
+        name: a.name,
+        tags: a.tags,
+        order: a.order,
+      });
+  for (const voice of [...mix.cued, ...mix.gone]) {
+    for (const mark of ['start', 'in', 'out', 'end'] as const) {
+      const m = markOf(mix, voice, mark);
+      const t = m === undefined ? m : hostOf(mix, m) - mix.offset;
+      if (t === undefined || t < lo || t > hi) continue;
+      out.push({
+        timestamp: t + mix.offset,
+        mark,
+        voice: voice.id,
+        score: voice.spec.score,
+        name: voice.spec.name,
+        tags: voice.spec.tags ?? none,
+        order: voice.id,
+      });
+    }
+  }
+  out.sort((a, b) => a.timestamp - b.timestamp || a.order - b.order);
+  return out;
+}
+
+/** When a voice reaches a mark, mix time, or undefined while nothing has fixed it. */
+export function markOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, mark: Mark): number | undefined {
+  if (!Number.isFinite(voice.start)) return undefined;
+  // A mark is known only while every clock above it is fixed.
+  const start = startOf(voice);
+  if (!Number.isFinite(start)) return undefined;
+  if (mark === 'start') return start;
+  if (mark === 'in') return start + (voice.fade.in ?? 0);
+  const out = voice.out;
+  let outAt: number | undefined;
+  if (out !== null) outAt = out.at;
+  else if (Number.isFinite(voice.outAt)) outAt = voice.outAt;
+  else if (!voice.holdsAfter && Number.isFinite(voice.span)) {
+    const t = voice.timeAt(voice.span + voice.latest);
+    if (Number.isFinite(t)) outAt = Math.max(start, t);
+  }
+  if (mark === 'out') return voice.state === 'done' && outAt === undefined ? voice.doneAt : outAt;
+  if (voice.state === 'done') return voice.doneAt;
+  if (out !== null) {
+    if (out.rest) return out.deadline === undefined ? undefined : out.at + out.deadline;
+    return out.at + out.over;
+  }
+  return outAt === undefined ? undefined : outAt + (mix.reduced ? 0 : (voice.fade.out ?? 0));
+}

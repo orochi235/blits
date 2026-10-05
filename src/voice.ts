@@ -1,6 +1,6 @@
+import type { Blend } from './blend.js';
 import { type Clock, elapsedWith, passesOf, rateWith, rebaseWith, timeWith } from './clock.js';
 import { type Curve, curve } from './easing.js';
-import type { Blend } from './mixer.js';
 import { type Motions, motionOf } from './motion.js';
 import { Named } from './named.js';
 import { childPlayed, Holding, mixTime, ownedElapsed, ownerPatch } from './owner.js';

@@ -1,28 +1,43 @@
-import { Book, type BookHost, checkHits, type Listed } from './book.js';
+import { blended, blendOf, laneRead, shareKept } from './blend.js';
+import type { Book } from './book.js';
+import { aims, chain, linkable } from './chain.js';
 import { type LerpInto, lerpInto } from './channels.js';
-import { elapsedWith, envelope, heldTime, passAt, phaseAt, silent, weighed } from './clock.js';
-import { clone, copy } from './clone.js';
-import { type Column, clampRun, flush, pullRun, writeLater } from './columns.js';
-import { type HandleHost, VoiceHandle } from './handle.js';
-import { type LaneHost, Lanes } from './lanes.js';
-import type { MotionOwner, Motions } from './motion.js';
-import type { Named } from './named.js';
+import { cue } from './cue.js';
+import type { Due } from './due.js';
+import { beginFade, parting } from './fade.js';
 import {
-  adopt,
-  descendants,
-  heldByInput,
-  mixTime,
-  orphan,
-  ownerPatch,
-  ownerReading,
-  ownersWeight,
-  ownWeight,
-  relink,
-  signalled,
-} from './owner.js';
+  apply,
+  baseFor,
+  clamp,
+  fold,
+  folded,
+  foldLoci,
+  foldWith,
+  influence,
+  isRest,
+  type Key,
+  keyed,
+  linked,
+  near,
+  owedBy,
+  passes,
+  read,
+  slopeFor,
+  tick,
+} from './fold.js';
+import type { HandleHost } from './handle.js';
+import { held, shownOf, sinceOf, unreachedOf } from './held.js';
+import { book, laneHost } from './hosts.js';
+import { Lanes } from './lanes.js';
+import { foldLocus, type LocusScratch } from './locus.js';
+import { listed } from './marks.js';
+import type { MotionOwner, Motions } from './motion.js';
+import { move, nextFrame, waits } from './move.js';
+import { ownerPatch } from './owner.js';
 import { Pace } from './pace.js';
-import { type Built, durationOf, readKeys } from './patch.js';
-import { reading } from './reading.js';
+import { pin } from './place.js';
+import { project } from './project.js';
+import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
 import { Store } from './store.js';
 import type {
@@ -30,278 +45,54 @@ import type {
   BookOptions,
   Channel,
   Columns,
-  Doubt,
   Engine,
   Handle,
   Kit,
-  Mark,
   Marked,
   Mix,
   MixOptions,
   OwnerSpec,
   Patch,
-  Placement,
   Projection,
-  Query,
   Sent,
-  Setting,
   Signal,
   VoiceSpec,
 } from './types.js';
-import { unreach, unreached } from './unreached.js';
-import { type Controls, none, type Subject, Voice } from './voice.js';
+import { none, type Subject, type Voice } from './voice.js';
+import {
+  base,
+  capped,
+  fadeOf,
+  horizonFor,
+  ownedBy,
+  ownerBase,
+  prime,
+  weigh,
+  weighOwned,
+} from './weigh.js';
 
-/** Numbers every mix's frames apart, so a blend's read is never taken for another mix's or frame's. */
-let frames = 0;
-
-/** A `mix.blend`'s one signal, read once for all its members. */
-export interface Blend<I, O> {
-  by: Signal<I>;
-  stops: number;
-  members: Voice<I, O>[];
-  /** The general path's last read: its frame, its subject, and the value. */
-  frame: number;
-  subject: I | undefined;
-  value: number;
-  /** The general path's read of each subject, for one probed again after another in its frame. */
-  reads: Store<I, { frame: number; value: number }>;
-  /** Lanes' reads by subject number: the frame each is from, and the value. */
-  frames: Float64Array;
-  values: Float64Array;
-}
-
-function blendOf<I, O>(by: Signal<I>, stops: number): Blend<I, O> {
-  return {
-    by,
-    stops,
-    members: [],
-    frame: 0,
-    subject: undefined,
-    value: 0,
-    reads: new Store(),
-    frames: new Float64Array(0),
-    values: new Float64Array(0),
-  };
-}
-
-/** Gives a projection's copies blends of their own, so its reads never overwrite the mix's. */
-function ownBlends<I, O>(voices: Voice<I, O>[]): void {
-  const own = new Map<Blend<I, O>, Blend<I, O>>();
-  for (const v of voices) {
-    if (v.blend === null) continue;
-    let of = own.get(v.blend.of);
-    if (of === undefined) {
-      of = blendOf(v.blend.of.by, v.blend.of.stops);
-      own.set(v.blend.of, of);
-    }
-    v.blend = { of, i: v.blend.i };
-    of.members.push(v);
-  }
-}
-
-/** A blend member's weight for its signal's read `k`: the members' stops sit evenly along 0..1. */
-function shareOf(k: number, i: number, stops: number): number {
-  const d = stops === 0 ? 0 : Math.abs(k * stops - i);
-  return d >= 1 ? 0 : 1 - d;
-}
-
-export type Key<O> = keyof O & string;
-
-/** A record's band state, made when a rest-less channel first asks. */
-function bandsFor(held: Subject<unknown>, n: number): Uint8Array {
-  const bands = new Uint8Array(n);
-  held.bands = bands;
-  return bands;
-}
-
-/** The first record of a subject no live voice reaches, so a probe of it still makes one lookup. */
-function stub(): Subject<unknown> {
-  return {
-    reaches: false,
-    delay: 0,
-    since: 0,
-    shown: 0,
-    weight: 0,
-    rested: false,
-    bands: null,
-    state: undefined,
-    stepped: 0,
-    ticks: 0,
-    probed: Number.NaN,
-    delta: null,
-    phase: 0,
-    seeks: 0,
-    kept: null,
-    voice: null,
-    next: null,
-    version: Number.NaN,
-    loci: null,
-    slot: -1,
-  };
-}
-
-/**
- * What a fold with a locus in play gathers, kept from one fold to the next: the influences in
- * voice order, each a voice's own or a locus's first member; every locus member; and per channel
- * slot, a locus's folding value, the weight taken into it and the array it owns.
- */
-export interface LocusScratch<I, O> {
-  n: number;
-  voices: (Voice<I, O> | null)[];
-  helds: (Subject<unknown> | null)[];
-  deltas: (Record<string, unknown> | null)[];
-  weights: number[];
-  /** Per influence, -1 for a voice's own, or which of `names` it is. */
-  groups: number[];
-  names: string[];
-  m: number;
-  mVoices: (Voice<I, O> | null)[];
-  mDeltas: (Record<string, unknown> | null)[];
-  mWeights: number[];
-  mGroups: number[];
-  values: unknown[];
-  taken: Float64Array;
-  met: Uint8Array;
-  touched: number[];
-  owned: (number[] | undefined)[];
-}
-
-function locusScratch<I, O>(channels: number): LocusScratch<I, O> {
-  return {
-    n: 0,
-    voices: [],
-    helds: [],
-    deltas: [],
-    weights: [],
-    groups: [],
-    names: [],
-    m: 0,
-    mVoices: [],
-    mDeltas: [],
-    mWeights: [],
-    mGroups: [],
-    values: new Array(channels).fill(undefined),
-    taken: new Float64Array(channels),
-    met: new Uint8Array(channels),
-    touched: [],
-    owned: new Array(channels).fill(undefined),
-  };
-}
-
-/**
- * `value` copied into the array `k` owns for the slot, as long as the channel's rest, where a
- * shorter value leaves the rest's own fill: what the channel's fold and lerp read past its end.
- */
-function own<I, O>(k: LocusScratch<I, O>, slot: number, value: number[], rest: number[]): number[] {
-  let out = k.owned[slot];
-  if (out === undefined) {
-    out = rest.slice();
-    k.owned[slot] = out;
-  }
-  for (let i = 0; i < out.length; i++)
-    out[i] = i < value.length ? (value[i] as number) : (rest[i] as number);
-  return out;
-}
-
-/** One entry in a mix's due queue; stale once its voice has been scheduled again. */
-export interface Due<I, O> {
-  at: number;
-  voice: Voice<I, O>;
-  token: number;
-}
-
-/**
- * The last entry taken before `t`, or at it where `inclusive` says so, as it does for a change a
- * sync made. A host's change between frames is taken strictly: it shows from the next frame on, as
- * it did live.
- */
-function last<T extends { at: number }>(
-  list: readonly T[],
-  t: number,
-  inclusive: boolean | ((e: T) => boolean),
-): T | undefined {
-  let lo = 0;
-  let hi = list.length - 1;
-  let found: T | undefined;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const e = list[mid] as T;
-    if (e.at < t || (e.at === t && (typeof inclusive === 'function' ? inclusive(e) : inclusive))) {
-      found = e;
-      lo = mid + 1;
-    } else hi = mid - 1;
-  }
-  return found;
-}
-
-const near = (a: unknown, b: unknown): boolean => {
-  if (typeof a === 'number' && typeof b === 'number') return Math.abs(a - b) < 1e-9;
-  if (Array.isArray(a) && Array.isArray(b))
-    return a.length === b.length && a.every((v, i) => near(v, b[i]));
-  return a === b;
-};
-
-/**
- * `merge(acc, b)`, where a result that is `b` itself, as `last()` gives, is copied into `acc` or a
- * new array: `b` belongs to a patch or the mix's scratch, and a host may edit the pose. `acc` is a
- * value this fold made.
- */
-function merged(channel: Channel<unknown>, acc: unknown, b: unknown): unknown {
-  const r = channel.merge(acc, b);
-  if (r !== b || !Array.isArray(r)) return r;
-  if (!Array.isArray(acc) || acc.length !== r.length) return [...r];
-  for (let i = 0; i < r.length; i++) acc[i] = r[i];
-  return acc;
-}
-
-export type Values = Record<string, unknown>;
-
-/** Writes a folded pose's value into subject `n`'s places in a column. */
-function writeValue(c: Column, v: unknown, n: number): void {
-  const at = n * c.axes;
-  if (typeof v === 'number' && c.axes === 1) c.out[at] = v;
-  else if (Array.isArray(v) && v.length === c.axes)
-    for (let a = 0; a < c.axes; a++) c.out[at + a] = v[a] as number;
-  else if (v === undefined) c.out.fill(Number.NaN, at, at + c.axes);
-  else
-    throw new TypeError(
-      `blits: pull reads ${c.key} as ${c.axes === 1 ? 'a number' : `${c.axes} numbers`} a subject, and the pose has ${String(v)}`,
-    );
-}
-
-/** Deep equality over plain data, for telling whether a host field changed. */
-function same(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
-  const ka = Object.keys(a);
-  const kb = Object.keys(b);
-  if (ka.length !== kb.length) return false;
-  for (const k of ka)
-    if (!same((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])) return false;
-  return true;
-}
-
-class Mixer<I, O> implements Mix<I, O> {
-  private cued: Voice<I, O>[] = [];
+// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: every member of `Methods` is installed below
+export class Mixer<I, O> implements Mix<I, O> {
+  cued: Voice<I, O>[] = [];
   /** Under `history`, voices that have left but that a read back may still reach. */
-  private gone: Voice<I, O>[] = [];
+  gone: Voice<I, O>[] = [];
   /** Set on a projection's own mixer: it sends nothing, keeps no history, and reads without committing. */
-  private projecting = false;
+  projecting = false;
   /** Set on a projection reading back: a subject it has nothing on starts from its voice's start. */
-  private backward = false;
+  backward = false;
   /** True during a sync, so a control change it makes is recorded as showing in that frame. */
-  private moving = false;
+  moving = false;
   /**
    * Under `history` with `inputs`, the host fields patches read, copied each frame they changed. In
    * a projection reading back, the copy in force then.
    */
-  private hostLog: { at: number; fields: Record<string, unknown> }[] = [];
+  hostLog: { at: number; fields: Record<string, unknown> }[] = [];
   /**
    * Marks the host announced on a score: `at` in host time, so the mix's rate never moves one, and
    * NaN until the next sync for one announced as now before any sync; `made` is the mix time it was
    * announced, for a read back to know what was known.
    */
-  private announced: {
+  announced: {
     name: string;
     score: string | undefined;
     tags: readonly string[];
@@ -309,85 +100,85 @@ class Mixer<I, O> implements Mix<I, O> {
     made: number;
     order: number;
   }[] = [];
-  private hostThen: { fields: Record<string, unknown> } | undefined;
+  hostThen: { fields: Record<string, unknown> } | undefined;
   /** Each subject's last two poses and when they were probed, for `from: 'current'`. */
-  private pose = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();
-  private nextId = 1;
+  pose = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();
+  nextId = 1;
   /**
    * The mix clock: host time at the mix's rate. Host time is the host's timestamp less every gap
    * `rebase` has taken out, `u` at the last sync.
    */
-  private now = Number.NaN;
-  private u = Number.NaN;
+  now = Number.NaN;
+  u = Number.NaN;
   /** This mix's frame among every mix's: moved by a sync, and by a control change or drop within one. */
-  private frame = ++frames;
-  private offset = 0;
+  frame = nextFrame();
+  offset = 0;
   /** The mix's own rate; null while it has never been set, when mix time is host time. */
-  private pace: Pace | null = null;
+  pace: Pace | null = null;
   /** Pending voices whose start the host gave, by its host time, kept where the rate puts it. */
-  private pins: Map<Voice<I, O>, number> | null = null;
-  private last = Number.NaN;
-  private rebasing = false;
-  private wantsPose = false;
+  pins: Map<Voice<I, O>, number> | null = null;
+  last = Number.NaN;
+  rebasing = false;
+  wantsPose = false;
   /** The pose `pull` folds a subject into where it cannot read straight from the lanes. */
-  private scratch: O | undefined;
+  scratch: O | undefined;
   /** The last array `pull` read, by position, with each subject's chain head, to skip the lookup. */
   /** Live voices by the earliest mix time `moveTo` would change each, a binary heap. */
-  private due: Due<I, O>[] = [];
+  due: Due<I, O>[] = [];
   /** Voices retired since `moveTo` last pruned them. */
-  private retired = 0;
+  retired = 0;
   /** Visit every voice each sync, as before the due queue; for tests that compare the two. */
-  private walkAll = false;
-  private pulled: I[] = [];
-  private pulledHeads: (Subject<unknown> | undefined)[] = [];
+  walkAll = false;
+  pulled: I[] = [];
+  pulledHeads: (Subject<unknown> | undefined)[] = [];
   /** Each remembered head's lane slot, and the `version` and `relinks` they were all current at. */
-  private pulledSlots = new Int32Array(0);
-  private pulledVersion = Number.NaN;
-  private pulledRelinks = -1;
+  pulledSlots = new Int32Array(0);
+  pulledVersion = Number.NaN;
+  pulledRelinks = -1;
   /** Counts chains made stale one subject at a time, which `version` does not. */
-  private relinks = 0;
+  relinks = 0;
   /** Read once a sync, so a `reduce` function is not called per voice per subject. */
-  private reducedNow = false;
+  reducedNow = false;
   /** Something was changed since the last sync, so the next frame may differ from this one. */
-  private stirred = false;
+  stirred = false;
   /**
    * Per subject, the first record of the chain through every live voice that reaches it, or a stub
    * where none does. Relinked when `version` moves, which is whenever the list or a voice's pending
    * state changes.
    */
-  private readonly chains = new Store<I, Subject<unknown>>();
-  private version = 0;
-  private readonly steps = new Steps<Voice<I, O>>();
+  readonly chains = new Store<I, Subject<unknown>>();
+  version = 0;
+  readonly steps = new Steps<Voice<I, O>>();
   /** Per subject, the voices whose `subjects` name it, in voice order. */
-  private named = new Store<I, Voice<I, O>[]>();
+  named = new Store<I, Voice<I, O>[]>();
   /** Voices a subject has been faded out of, which `drop` looks in besides those that reach it. */
-  private readonly parters = new Set<Voice<I, O>>();
+  readonly parters = new Set<Voice<I, O>>();
   /**
    * Motion patches that may hold state for a subject no voice still reaching it plays, which `drop`
    * frees besides those voices' own: per subject, a patch a voice naming it left while another
    * voice plays on, or that the host retargeted it on; and any patch a voice over every subject
    * left while another plays on. How many live voices play each motion patch says which.
    */
-  private readonly strays = new Store<I, Motions<I>[]>();
-  private readonly strayAll = new Set<Motions<I>>();
-  private readonly playing = new Map<Motions<I>, number>();
+  readonly strays = new Store<I, Motions<I>[]>();
+  readonly strayAll = new Set<Motions<I>>();
+  readonly playing = new Map<Motions<I>, number>();
   /** How many voices in the list carry `subjects`. */
-  private naming = 0;
+  naming = 0;
   /** The voices in the list that name no subjects, in voice order. */
-  private general: Voice<I, O>[] = [];
+  general: Voice<I, O>[] = [];
   /** How many voices in the list carry a locus; with none, a fold allocates nothing. */
-  private loci = 0;
+  loci = 0;
   /** What every motion patch it plays asks for its voice's time, holding this mix weakly. */
-  private owner: MotionOwner | null = null;
+  owner: MotionOwner | null = null;
   /** How many voices in the list are anchored, so a sync with none skips placing them. */
-  private anchored = 0;
+  anchored = 0;
   /** Events sent since the last drain, and who is being probed, so `send` knows whose they are. */
-  private sent: Sent<I, unknown>[] = [];
-  private sending: { voice: Voice<I, O> | null; subject: I } = {
+  sent: Sent<I, unknown>[] = [];
+  sending: { voice: Voice<I, O> | null; subject: I } = {
     voice: null,
     subject: undefined as I,
   };
-  private readonly send = (event: unknown): void => {
+  readonly send = (event: unknown): void => {
     const { voice, subject } = this.sending;
     if (voice === null || this.projecting) return;
     this.sent.push({
@@ -399,28 +190,28 @@ class Mixer<I, O> implements Mix<I, O> {
     });
   };
   /** The weight `influence` found besides the delta, read by the caller at once. */
-  private w = 0;
+  w = 0;
 
-  private readonly names: Key<O>[];
-  private readonly channels: Channel<unknown>[];
+  readonly names: Key<O>[];
+  readonly channels: Channel<unknown>[];
   /** Slots of the channels that declare bounds, clamped after every fold. */
-  private readonly bounded: number[];
+  readonly bounded: number[];
   /** By slot, a stock array channel's in-place `lerp`. */
-  private readonly lerpsInto: (LerpInto | undefined)[];
+  readonly lerpsInto: (LerpInto | undefined)[];
   /** What a fold with a locus in play gathers into, one per depth of folds under way. */
-  private readonly locusScratch: LocusScratch<I, O>[] = [];
-  private locusDepth = 0;
-  private readonly slotOf = new Map<string, number>();
-  private readonly lanes: Lanes<I, O> | null;
-  private handles: HandleHost<I, O> | null = null;
+  readonly locusScratch: LocusScratch<I, O>[] = [];
+  locusDepth = 0;
+  readonly slotOf = new Map<string, number>();
+  readonly lanes: Lanes<I, O> | null;
+  handles: HandleHost<I, O> | null = null;
   /** What `book` made, still booking; null while there is none. */
-  private bookers: Book<I, O>[] | null = null;
+  bookers: Book<I, O>[] | null = null;
   /** Every owner still in the mix, null until one is cued. */
-  private owners: Voice<I, O>[] | null = null;
+  owners: Voice<I, O>[] | null = null;
 
   constructor(
-    private readonly kit: Kit<O>,
-    private readonly opts: MixOptions,
+    readonly kit: Kit<O>,
+    readonly opts: MixOptions,
   ) {
     this.names = Object.keys(kit as object) as Key<O>[];
     this.channels = this.names.map((k) => kit[k] as Channel<unknown>);
@@ -429,125 +220,23 @@ class Mixer<I, O> implements Mix<I, O> {
     this.names.forEach((k, i) => {
       this.slotOf.set(k, i);
     });
-    this.lanes = opts.lanes === false ? null : new Lanes<I, O>(this.laneHost());
+    this.lanes = opts.lanes === false ? null : new Lanes<I, O>(laneHost(this));
   }
 
-  private get reduced(): boolean {
+  get reduced(): boolean {
     const r = this.opts.reduce;
     return typeof r === 'function' ? r() : r === true;
   }
 
-  private get band(): { on: number; off: number } {
+  get band(): { on: number; off: number } {
     return this.opts.band ?? { on: 0.6, off: 0.4 };
   }
 
   cue(spec: VoiceSpec<I, O>): Handle<I> {
-    const patch = spec.patch;
     const engine = this.opts.engine ?? mixer;
-    if (!engine.runs.has(patch.form))
-      throw new Error(`blits: engine ${engine.name} does not run ${patch.form} patches`);
-    for (const channel of patch.writes) {
-      if (!(channel in (this.kit as object)))
-        throw new Error(`blits: kit has no channel ${String(channel)}, which this patch writes`);
-      const wanted = patch.kit?.[channel] as Channel<unknown> | undefined;
-      const here = this.kit[channel] as Channel<unknown>;
-      if (wanted && wanted !== here && (wanted.kind === undefined || wanted.kind !== here.kind))
-        throw new Error(
-          `blits: channel ${String(channel)} is ${here.kind ?? 'a custom channel'} in this kit, but the patch was written for ${wanted.kind ?? 'a custom channel'}`,
-        );
-    }
-    if (patch.reads) {
-      const host = this.opts.host;
-      for (const field of patch.reads)
-        if (typeof host !== 'object' || host === null || !(field in host))
-          throw new Error(`blits: the patch reads host.${field}, which this mix's host lacks`);
-    }
-    if (spec.from === 'current' && patch.form !== 'keys')
-      throw new Error("blits: from: 'current' needs a keys patch");
-    if (spec.subjects !== undefined && spec.target !== undefined)
-      throw new Error('blits: a voice takes target or subjects, not both');
-    const anchor = spec.anchor;
-    const owner = spec.owner === undefined ? null : this.ownerOf(spec.owner);
-    if (anchor) this.checkPlacement(spec, anchor, owner);
-    if (spec.hits !== undefined) checkHits(spec.hits, durationOf(patch));
-
-    const anchored =
-      anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
-    // A voice an owner holds is placed on the owner's clock: ms from when it starts.
-    const local = owner === null ? this.now : ownerReading(owner, this.now);
-    const start = anchored
-      ? Number.POSITIVE_INFINITY
-      : owner !== null
-        ? (spec.start ?? (local > 0 ? local : 0))
-        : spec.start !== undefined
-          ? this.mixAt(spec.start - this.offset)
-          : Number.isNaN(this.now)
-            ? 0
-            : this.now;
-    const voice = new Voice<I, O>(
-      this.nextId++,
-      spec,
-      patch,
-      spec.fade ?? {},
-      local,
-      start,
-      this.slotOf,
-      this.channels,
-      this.opts.host,
-      this.send,
-      owner,
-    );
-    if (owner !== null) adopt(owner, voice);
-    if (voice.holding !== null) {
-      this.owners ??= [];
-      this.owners.push(voice);
-    }
-    if (!Number.isNaN(this.now)) {
-      voice.cuedAt = this.now;
-      voice.opened = this.now;
-    }
-    voice.placing = anchored;
-    if (
-      this.pace !== null &&
-      owner === null &&
-      spec.start !== undefined &&
-      voice.state === 'pending'
-    )
-      this.pin(voice, spec.start - this.offset);
-    const motion = voice.motion;
-    if (motion !== undefined) {
-      this.playing.set(motion, (this.playing.get(motion) ?? 0) + 1);
-      this.owner ??= Mixer.ownerOf(new WeakRef(this));
-      motion.owner = this.owner;
-      motion.ownerId = voice.id;
-    }
-    this.cued.push(voice);
-    this.index(voice);
-    this.changed(voice);
-    this.stirred = true;
-    if (spec.locus !== undefined) this.loci++;
-    if (spec.from === 'current') this.wantsPose = true;
-    if (anchor) {
-      this.anchored++;
-      this.place();
-      if (
-        !Number.isNaN(this.now) &&
-        voice.state === 'pending' &&
-        this.localNow(voice) >= voice.start
-      ) {
-        voice.state = 'live';
-        this.started(voice);
-        this.changed(voice);
-      }
-    }
-    // After placing, so the controls it starts with are where its anchors put it at the cue.
-    if (this.opts.history) {
-      voice.log = [];
-      voice.note(Number.NEGATIVE_INFINITY);
-    }
-    this.schedule(voice);
-    voice.handle = this.handle(voice);
-    return voice.handle;
+    if (!engine.runs.has(spec.patch.form))
+      throw new Error(`blits: engine ${engine.name} does not run ${spec.patch.form} patches`);
+    return cue(this, spec);
   }
 
   blend(
@@ -572,25 +261,6 @@ class Mixer<I, O> implements Mix<I, O> {
     return this.cue({ ...spec, patch: ownerPatch as Patch<I, O, unknown> });
   }
 
-  /** The owner a handle names, refused where it is not one of this mix's or has left. */
-  private ownerOf(handle: Handle<I>): Voice<I, O> {
-    const found = this.owners?.find((v) => v.handle === handle);
-    if (found === undefined)
-      throw new Error('blits: owner is not a handle mix.owns returned on this mix');
-    if (found.state === 'done') throw new Error('blits: that owner has left the mix');
-    return found;
-  }
-
-  /** What a voice's own owner's clock reads now: the mix clock for a voice no owner holds. */
-  private localNow(voice: Voice<I, O>): number {
-    return voice.owner === null ? this.now : ownerReading(voice.owner, this.now);
-  }
-
-  /** A voice's start as mix time. */
-  private startOf(voice: Voice<I, O>): number {
-    return voice.owner === null ? voice.start : mixTime(voice.owner, voice.start);
-  }
-
   sync(timestamp: number): void {
     if (this.rebasing && !Number.isNaN(this.last)) this.offset += timestamp - this.last;
     this.rebasing = false;
@@ -602,10 +272,10 @@ class Mixer<I, O> implements Mix<I, O> {
     const still = later && now === this.now;
     this.u = u;
     // Host time moving while the mix clock stands still lands what waits on host time or the host.
-    if (now !== this.now || (later && pace !== null && this.waits())) this.move(now);
+    if (now !== this.now || (later && pace !== null && waits(this))) move(this, now);
     // It is a frame too, which asks every weight signal again, so one reading input follows it.
     if (still) {
-      this.frame = ++frames;
+      this.frame = nextFrame();
       this.lanes?.refill();
     }
     const bookers = this.bookers;
@@ -613,232 +283,7 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   book(opts: BookOptions): Booker {
-    if (this.projecting) throw new Error('blits: a projection books nothing');
-    const mix = this;
-    const host: BookHost<I, O> = {
-      get voices() {
-        return mix.cued;
-      },
-      get timestamp() {
-        return mix.last;
-      },
-      get now() {
-        return mix.now;
-      },
-      hostOf: (t) => this.hostOf(t),
-      readingAt: (timestamp) => this.readingAt(timestamp - this.offset),
-      endOf: (voice) => this.markOf(voice, 'end'),
-      marks: (from, to) => this.listed(from, to),
-      unhook: (b) => {
-        const left = (this.bookers ?? []).filter((x) => x !== b);
-        this.bookers = left.length === 0 ? null : left;
-      },
-    };
-    const b = new Book(host, opts);
-    this.bookers = [...(this.bookers ?? []), b];
-    return b;
-  }
-
-  /** Whether a sync that leaves the mix clock where it was still has something to land. */
-  private waits(): boolean {
-    return this.stirred || this.anchored > 0 || (this.pins !== null && this.pins.size > 0);
-  }
-
-  /** Moves the mix clock to `now`: voices start, finite loops end, and fades finish. */
-  private move(now: number): void {
-    this.moving = true;
-    try {
-      this.moveTo(now);
-    } finally {
-      this.moving = false;
-    }
-  }
-
-  private moveTo(now: number): void {
-    this.now = now;
-    this.frame = ++frames;
-    this.reducedNow = this.reduced;
-    for (const a of this.announced) if (Number.isNaN(a.at)) a.at = this.u;
-    if (this.pins !== null && this.pins.size > 0) this.repin();
-    if (this.anchored > 0) this.place();
-    if (this.announced.length > 0) {
-      // Kept while still ahead, or while history reaches it; anchors waiting on one were placed above.
-      const reach = now - (this.opts.history?.ms ?? 0);
-      this.announced = this.announced.filter((a) => this.mixAt(a.at) >= reach);
-    }
-    // A live mix visits only the voices due by now; a projection, which copies few, visits all.
-    const visit = this.projecting || this.walkAll ? this.cued : this.popDue(now);
-    for (const voice of visit) {
-      if (voice.state === 'done') continue;
-      if (Number.isNaN(voice.opened)) voice.opened = now;
-      if ((voice.state === 'live' || voice.state === 'held') && voice.outAt <= now)
-        this.beginFade(voice, {}, Math.max(this.startOf(voice), voice.outAt));
-      if (
-        voice.state === 'pending' &&
-        (voice.owner === null ? now : ownerReading(voice.owner, now)) >= voice.start
-      ) {
-        voice.state = 'live';
-        this.started(voice);
-        this.changed(voice);
-      }
-      if (voice.state !== 'pending' && Number.isFinite(voice.span)) {
-        const end = voice.span + voice.latest;
-        if (voice.elapsedAt(now) >= end) {
-          voice.play(true);
-          // The fade starts when the last pass ended, not at the frame that noticed, so it plays
-          // the same at any frame rate and a read at another time can find it.
-          if (voice.state === 'live') {
-            if (voice.holdsAfter) voice.state = 'held';
-            else
-              this.beginFade(
-                voice,
-                {},
-                Math.max(this.startOf(voice), Math.min(now, voice.timeAt(end))),
-              );
-          }
-        } else if (voice.state === 'held') voice.state = 'live';
-      }
-      // A projection reads a finished ramp as weight 0, and leaves the live voice's subjects be.
-      if (voice.parts !== null && !this.projecting)
-        for (const [subject, r] of voice.parts)
-          if (now - r.at >= r.over) this.part(voice, subject, r.at + r.over);
-      if (voice.state === 'fading' && voice.out) {
-        const { at, over, rest, deadline } = voice.out;
-        const spent = now - at;
-        if (rest) {
-          const out = deadline !== undefined && spent >= deadline;
-          const settled = voice.seen > 0 && voice.restedCount >= voice.seen;
-          if (out) this.retire(voice, at + (deadline as number));
-          else if (settled) this.retire(voice);
-        } else if (spent >= over) this.retire(voice, at + over);
-      }
-      if (!this.projecting) this.schedule(voice);
-    }
-    this.stirred = false;
-    if (this.retired === 0) {
-      this.forget(now);
-      return;
-    }
-    this.retired = 0;
-    let pruned = false;
-    let kept = 0;
-    const voices = this.cued;
-    for (let i = 0; i < voices.length; i++) {
-      const voice = voices[i] as Voice<I, O>;
-      if (voice.state !== 'done') {
-        voices[kept++] = voice;
-        continue;
-      }
-      if (this.opts.history) this.gone.push(voice);
-      else this.parters.delete(voice);
-      this.unplay(voice);
-      this.changed(voice);
-      if (voice.named === null) pruned = true;
-      else this.unindex(voice);
-      if (voice.holding !== null && this.owners !== null)
-        this.owners = this.owners.filter((v) => v !== voice);
-      if (voice.spec.locus !== undefined) this.loci--;
-      if (voice.spec.anchor !== undefined) this.anchored--;
-    }
-    voices.length = kept;
-    if (pruned) this.general = this.general.filter((v) => v.state !== 'done');
-    this.forget(now);
-  }
-
-  /** Lets go of the voices that have left and that history no longer reaches. */
-  private forget(now: number): void {
-    const history = this.opts.history;
-    if (history && this.gone.length > 0) {
-      const reach = now - history.ms;
-      this.gone = this.gone.filter((v) => v.doneAt >= reach);
-    }
-  }
-
-  /**
-   * The earliest mix time `moveTo` would change a voice: its start, its anchored out, the end of
-   * its last pass, the end of its fade or of a subject's ramp out; -Infinity where it must be
-   * visited every frame, Infinity where nothing will happen until a handle or anchor changes it.
-   * Early is safe, since a visit that finds nothing due schedules again; late is not, so anything
-   * that can bring it earlier calls `schedule`.
-   */
-  private dueOf(voice: Voice<I, O>): number {
-    if (voice.state === 'done') return Number.POSITIVE_INFINITY;
-    // An owner and the voices it holds run on clocks that move with it, so each is visited every frame.
-    if (Number.isNaN(voice.opened) || voice.owner !== null || voice.holding !== null)
-      return Number.NEGATIVE_INFINITY;
-    let due = Number.POSITIVE_INFINITY;
-    if (voice.parts !== null)
-      for (const r of voice.parts.values()) due = Math.min(due, r.at + r.over);
-    if (voice.state === 'pending')
-      return Math.min(due, Number.isNaN(voice.start) ? due : voice.start);
-    if (voice.state === 'fading') {
-      const out = voice.out;
-      if (out === null || out.rest) return Number.NEGATIVE_INFINITY;
-      return Math.min(due, out.at + out.over);
-    }
-    due = Math.min(due, voice.outAt);
-    if (Number.isFinite(voice.span)) {
-      const end = voice.span + voice.latest;
-      // A held voice goes live again once its clock is back before its end: by a seek, by a
-      // subject staggered later than any before, or by running backwards, which is checked each
-      // frame while it can.
-      if (voice.state === 'held') {
-        if (voice.rate <= 0 || voice.ramp !== null) return Number.NEGATIVE_INFINITY;
-        if (!Number.isNaN(this.now) && voice.elapsedAt(this.now) < end)
-          return Number.NEGATIVE_INFINITY;
-      }
-      if (voice.state === 'live') due = Math.min(due, voice.timeAt(end));
-    }
-    return due;
-  }
-
-  /** Files a voice in the due queue at its current due, replacing any entry it had. */
-  private schedule(voice: Voice<I, O>): void {
-    if (this.projecting) return;
-    this.lanes?.voiceChanged(voice.id);
-    const token = ++voice.dueToken;
-    const due = this.dueOf(voice);
-    if (due === Number.POSITIVE_INFINITY) return;
-    const heap = this.due;
-    heap.push({ at: Number.isNaN(due) ? Number.NEGATIVE_INFINITY : due, voice, token });
-    let i = heap.length - 1;
-    while (i > 0) {
-      const up = (i - 1) >> 1;
-      if ((heap[up] as Due<I, O>).at <= (heap[i] as Due<I, O>).at) break;
-      [heap[up], heap[i]] = [heap[i] as Due<I, O>, heap[up] as Due<I, O>];
-      i = up;
-    }
-  }
-
-  /** Takes every current entry due by `now` off the queue, in cue order. */
-  private popDue(now: number): Voice<I, O>[] {
-    const heap = this.due;
-    const at = (k: number): number =>
-      k < heap.length ? (heap[k] as Due<I, O>).at : Number.POSITIVE_INFINITY;
-    const out: Voice<I, O>[] = [];
-    while (heap.length > 0 && (heap[0] as Due<I, O>).at <= now) {
-      const top = heap[0] as Due<I, O>;
-      const last = heap.pop() as Due<I, O>;
-      if (heap.length > 0) {
-        heap[0] = last;
-        let i = 0;
-        for (;;) {
-          const l = 2 * i + 1;
-          const r = l + 1;
-          const m0 = at(l) < at(i) ? l : i;
-          const m = at(r) < at(m0) ? r : m0;
-          if (m === i) break;
-          [heap[m], heap[i]] = [heap[i] as Due<I, O>, heap[m] as Due<I, O>];
-          i = m;
-        }
-      }
-      if (top.token === top.voice.dueToken && top.voice.state !== 'done') {
-        top.voice.dueToken++;
-        out.push(top.voice);
-      }
-    }
-    if (out.length > 1) out.sort((a, b) => a.id - b.id);
-    return out;
+    return book(this, opts);
   }
 
   probe(subject: I, out?: O): O {
@@ -847,239 +292,13 @@ class Mixer<I, O> implements Mix<I, O> {
     return pose;
   }
 
-  /** After a probe, keeps the pose a retarget from `'current'` reads as the subject's last. */
-  private keep(subject: I, pose: O, out: O | undefined): void {
-    // Keeping last frame's pose is free when the mix allocated it; a host sampling into its own
-    // object only pays for the copy once something in the mix has asked to retarget from it.
-    let kept: O | undefined;
-    if (out === undefined) kept = pose;
-    else if (this.wantsPose) {
-      kept = {} as O;
-      for (const key of this.names) {
-        const v = (pose as Record<string, unknown>)[key];
-        if (v !== undefined) (kept as Record<string, unknown>)[key] = copy(v);
-      }
-    }
-    if (kept !== undefined) {
-      const rec = this.pose.get(subject);
-      if (rec === undefined)
-        this.pose.set(subject, { pose: kept, at: this.now, prev: undefined, prevAt: Number.NaN });
-      else if (rec.at === this.now) rec.pose = kept;
-      else {
-        rec.prev = rec.pose;
-        rec.prevAt = rec.at;
-        rec.pose = kept;
-        rec.at = this.now;
-      }
-    }
-  }
-
   pull(subjects: Iterable<I>, into: Columns<O>): void {
-    const columns = this.columnsOf(into);
-    const lanes = this.lanes;
-    const now = this.now;
-    if (this.scratch === undefined) this.scratch = {} as O;
-    const scratch = this.scratch;
-    let room = Number.POSITIVE_INFINITY;
-    let tightest = '';
-    for (const c of columns) {
-      const fits = Math.floor(c.out.length / c.axes);
-      if (fits < room) {
-        room = fits;
-        tightest = c.key;
-      }
-    }
-    // Any other iterable is read into an array first, no further than one past the room there is.
-    let list: readonly I[];
-    if (Array.isArray(subjects)) list = subjects as readonly I[];
-    else {
-      const taken: I[] = [];
-      for (const subject of subjects) if (taken.push(subject) > room) break;
-      list = taken;
-    }
-    if (list.length > room)
-      throw new RangeError(
-        `blits: pull's array for ${tightest} has room for ${room} subjects, and was given more`,
-      );
-    const whole = lanes !== null && !this.wantsPose;
-    // An array read again in the same order reuses each position's chain head while it is current:
-    // all of them at once while nothing has relinked since the last pull, else one by one.
-    const was = this.pulled;
-    const heads = this.pulledHeads;
-    was.length = list.length;
-    heads.length = list.length;
-    if (this.pulledSlots.length < list.length) {
-      const slots = new Int32Array(Math.max(64, list.length));
-      slots.set(this.pulledSlots);
-      this.pulledSlots = slots;
-    }
-    const slots = this.pulledSlots;
-    const version = this.version;
-    const relinks = this.relinks;
-    const live = !Number.isNaN(now);
-    const current = live && this.pulledVersion === version && this.pulledRelinks === relinks;
-    // Every subject read from the lanes, at the positions it had last time, goes in one run.
-    const runs = live && whole;
-    try {
-      for (let n = 0; n < list.length; n++) {
-        if (runs) {
-          n = pullRun(
-            lanes as Lanes<I, O>,
-            slots,
-            list,
-            was,
-            current ? null : heads,
-            n,
-            columns,
-            now,
-            this.version,
-          );
-          if (n === list.length) break;
-        }
-        const subject = list[n] as I;
-        let slot = -1;
-        if (live) {
-          if (current && was[n] === subject) slot = slots[n] as number;
-          else {
-            const kept = heads[n];
-            const head =
-              was[n] === subject && kept !== undefined && kept.version === version
-                ? kept
-                : this.chain(subject, now);
-            was[n] = subject;
-            heads[n] = head;
-            slot = head.slot;
-            slots[n] = slot;
-          }
-        }
-        const laned =
-          live && lanes?.prepare(slot, subject, now, this.version, heads[n] ?? null) === true;
-        if (laned && whole && (lanes as Lanes<I, O>).whole && !(lanes as Lanes<I, O>).owes(slot)) {
-          writeLater(lanes as Lanes<I, O>, slot, columns, n);
-          continue;
-        }
-        const head = live ? (heads[n] as Subject<unknown>) : null;
-        const folded = this.foldWith(subject, scratch, head, laned, false);
-        const pose = (this.bounded.length === 0 ? folded : this.clamp(folded as Values)) as Values;
-        this.keep(subject, pose as O, scratch);
-        for (const c of columns) writeValue(c, pose[c.key], n);
-      }
-    } finally {
-      if (lanes !== null) flush(lanes);
-    }
-    // Every head is current only if nothing relinked or changed version while they were read.
-    const unchanged = live && this.version === version && this.relinks === relinks;
-    this.pulledVersion = unchanged ? version : Number.NaN;
-    this.pulledRelinks = relinks;
-  }
-
-  /** The kit slot, width, rest and bounds of every channel `pull` was handed an array for. */
-  private columnsOf(into: Columns<O>): Column[] {
-    const columns: Column[] = [];
-    for (const key of Object.keys(into)) {
-      const out = (into as Record<string, Float64Array | undefined>)[key];
-      if (out === undefined) continue;
-      const slot = this.slotOf.get(key);
-      if (slot === undefined) throw new Error(`blits: pull was handed ${key}, which the kit lacks`);
-      const channel = this.channels[slot] as Channel<unknown>;
-      const rest = channel.rest;
-      const axes = Array.isArray(rest) ? rest.length : 1;
-      const bounds = channel.bounds as readonly [number, number] | undefined;
-      const at = new Float64Array(axes).fill(Number.NaN);
-      if (typeof rest === 'number') at[0] = rest;
-      else if (Array.isArray(rest)) at.set(rest as number[]);
-      if (bounds !== undefined) clampRun(at, 0, axes, bounds);
-      columns.push({ key, slot, axes, out, rest: at, bounds });
-    }
-    return columns;
+    pull(this, subjects, into);
   }
 
   project(timestamp: number): Projection<I, O> {
-    const u = timestamp - this.offset;
-    const pace = this.pace;
-    const t = this.readingAt(u);
     const c = new Mixer<I, O>(this.kit, { ...this.opts, history: undefined, lanes: false });
-    c.projecting = true;
-    c.pose = this.pose;
-    c.offset = this.offset;
-    c.u = u;
-    c.wantsPose = this.wantsPose;
-    c.nextId = this.nextId;
-    c.reducedNow = this.reducedNow;
-    if (Number.isNaN(this.now) || t >= this.now) {
-      c.now = this.now;
-      c.pace = pace === null ? null : pace.until(Number.POSITIVE_INFINITY);
-      c.cued = this.cued
-        .filter((v) => v.state !== 'done')
-        .map((v) => {
-          const copy = v.copy((subject) => this.carry(v, subject));
-          const pin = this.pins?.get(v);
-          if (pin !== undefined) c.pin(copy, pin);
-          return copy;
-        });
-      ownBlends(c.cued);
-      if (this.owners !== null) relink(c.cued);
-      c.announced = this.announced.map((a) => ({ ...a }));
-      c.count();
-      c.move(t);
-    } else {
-      const history = this.opts.history;
-      if (!history) throw new Error('blits: reading back needs a mix made with history');
-      if (t < this.now - history.ms)
-        throw new Error(`blits: ${timestamp} is older than this mix's history reaches`);
-      c.now = t;
-      c.pace = pace === null ? null : pace.until(u);
-      c.backward = true;
-      const was = last(this.hostLog, t, true);
-      const host = this.opts.host;
-      const then =
-        was && typeof host === 'object' && host !== null
-          ? Object.assign(Object.create(host) as object, was.fields)
-          : undefined;
-      if (was) c.hostThen = was;
-      c.announced = this.announced.filter((a) => a.made < t).map((a) => ({ ...a }));
-      c.cued = [...this.cued, ...this.gone]
-        .filter((v) => v.cuedAt <= t && v.doneAt > t)
-        .sort((a, b) => a.id - b.id)
-        .map((v) => {
-          const log = v.log as Controls[];
-          const copy = v.copy(
-            (subject) => this.recall(v, subject, t),
-            last(log, t, (e) => e.sync) ?? (log[0] as Controls),
-          );
-          if (then !== undefined) copy.setting.host = then;
-          return copy;
-        });
-      ownBlends(c.cued);
-      if (this.owners !== null) relink(c.cued);
-      for (const copy of c.cued)
-        copy.state =
-          (copy.owner === null ? t : ownerReading(copy.owner, t)) < copy.start
-            ? 'pending'
-            : copy.out && copy.out.at <= t
-              ? 'fading'
-              : copy.holdsAfter && copy.elapsedAt(t) >= copy.span + copy.latest
-                ? 'held'
-                : 'live';
-      c.count();
-    }
-    const read = <T>(f: () => T): T => {
-      reading.live = false;
-      try {
-        return f();
-      } finally {
-        reading.live = true;
-      }
-    };
-    return {
-      timestamp,
-      probe: (subject, out) => read(() => c.fold(subject, out)),
-      assess: (subject) =>
-        read(() => {
-          c.fold(subject);
-          return c.doubts(subject);
-        }),
-    };
+    return project(this, c, timestamp);
   }
 
   announce(
@@ -1098,53 +317,7 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   marks(from: number, to: number): Marked[] {
-    return this.listed(from, to).map(({ order: _, ...m }) => m);
-  }
-
-  /** The host timestamp the mix clock reads mix time `t` at; Infinity where it never will. */
-  private hostOf(t: number): number {
-    return (this.pace === null ? t : this.pace.timeOf(t)) + this.offset;
-  }
-
-  /** What the mix clock reads at host time `u`, by the clock in force then. */
-  private readingAt(u: number): number {
-    return this.pace === null ? u : this.pace.reading(u);
-  }
-
-  /** Every mark between two host timestamps, earliest first, with the order that tells each apart. */
-  private listed(from: number, to: number): Listed[] {
-    const lo = from - this.offset;
-    const hi = to - this.offset;
-    const out: Listed[] = [];
-    for (const a of this.announced)
-      if (a.at >= lo && a.at <= hi)
-        out.push({
-          timestamp: a.at + this.offset,
-          mark: undefined,
-          voice: undefined,
-          score: a.score,
-          name: a.name,
-          tags: a.tags,
-          order: a.order,
-        });
-    for (const voice of [...this.cued, ...this.gone]) {
-      for (const mark of ['start', 'in', 'out', 'end'] as const) {
-        const m = this.markOf(voice, mark);
-        const t = m === undefined ? m : this.hostOf(m) - this.offset;
-        if (t === undefined || t < lo || t > hi) continue;
-        out.push({
-          timestamp: t + this.offset,
-          mark,
-          voice: voice.id,
-          score: voice.spec.score,
-          name: voice.spec.name,
-          tags: voice.spec.tags ?? none,
-          order: voice.id,
-        });
-      }
-    }
-    out.sort((a, b) => a.timestamp - b.timestamp || a.order - b.order);
-    return out;
+    return listed(this, from, to).map(({ order: _, ...m }) => m);
   }
 
   atRest(subject: I): boolean {
@@ -1160,7 +333,7 @@ class Mixer<I, O> implements Mix<I, O> {
     return this.rests((this.bounded.length === 0 ? pose : this.clamp(pose)) as O);
   }
 
-  private rests(pose: O): boolean {
+  rests(pose: O): boolean {
     for (let i = 0; i < this.names.length; i++) {
       const channel = this.channels[i] as Channel<unknown>;
       const value = (pose as Record<string, unknown>)[this.names[i] as string];
@@ -1218,7 +391,7 @@ class Mixer<I, O> implements Mix<I, O> {
       // Until now mix time was host time, so a pending voice's start is the host time it was given.
       for (const v of this.cued)
         if (v.state === 'pending' && !v.placing && v.owner === null && v.spec.start !== undefined)
-          this.pin(v, v.start);
+          pin(this, v, v.start);
     }
     const history = this.opts.history;
     const reach = history === undefined ? Number.NEGATIVE_INFINITY : this.now - history.ms;
@@ -1226,37 +399,8 @@ class Mixer<I, O> implements Mix<I, O> {
     this.stirred = true;
   }
 
-  /** Mix time at host time `u`, for something pinned there; Infinity while the mix may never get there. */
-  private mixAt(u: number): number {
-    return this.pace === null ? u : this.pace.at(u, this.u);
-  }
-
-  private pin(voice: Voice<I, O>, u: number): void {
-    this.pins ??= new Map();
-    this.pins.set(voice, u);
-  }
-
-  /** Puts each pending voice's start, given in host time, where the mix's rate now puts it. */
-  private repin(): void {
-    const pins = this.pins as Map<Voice<I, O>, number>;
-    for (const [voice, u] of pins) {
-      if (voice.state !== 'pending') pins.delete(voice);
-      else this.startAt(voice, this.mixAt(u));
-    }
-  }
-
-  /** Moves a pending voice's start, its clock with it; false where it is already there. */
-  private startAt(voice: Voice<I, O>, start: number): boolean {
-    if (start === voice.start) return false;
-    voice.start = start;
-    voice.anchorNow = start;
-    voice.anchorElapsed = 0;
-    this.noted(voice);
-    return true;
-  }
-
   /** Whether a voice will change no pose from `now` on, short of a change made to it. */
-  private still(voice: Voice<I, O>, now: number): boolean {
+  still(voice: Voice<I, O>, now: number): boolean {
     if (voice.state === 'done') return true;
     if (voice.state !== 'held' && voice.state !== 'live') return false;
     if (typeof voice.spec.weight === 'function' || voice.parts !== null) return false;
@@ -1268,11 +412,11 @@ class Mixer<I, O> implements Mix<I, O> {
   }
 
   mute(opts?: { over?: number }): void {
-    for (const voice of this.cued) this.beginFade(voice, { over: opts?.over });
+    for (const voice of this.cued) beginFade(this, voice, { over: opts?.over });
   }
 
   drop(subject: I): void {
-    this.frame = ++frames;
+    this.frame = nextFrame();
     const head = this.chains.get(subject);
     // Nothing that kept this head, such as `pull`'s remembered list, may take it as current again.
     if (head !== undefined) {
@@ -1309,28 +453,6 @@ class Mixer<I, O> implements Mix<I, O> {
     for (const motion of this.strayAll) motion.release(subject);
   }
 
-  /** Notes a motion patch that may hold state for a subject no voice playing it reaches. */
-  private stray(motion: Motions<I>, subject: I): void {
-    const list = this.strays.get(subject);
-    if (list === undefined) this.strays.set(subject, [motion]);
-    else if (!list.includes(motion)) list.push(motion);
-  }
-
-  /** A motion voice left the list: if its patch plays on, its subjects' state there may stray. */
-  private unplay(voice: Voice<I, O>): void {
-    const motion = voice.motion;
-    if (motion === undefined) return;
-    const left = (this.playing.get(motion) ?? 1) - 1;
-    if (left <= 0) {
-      this.playing.delete(motion);
-      this.strayAll.delete(motion);
-      return;
-    }
-    this.playing.set(motion, left);
-    if (voice.named === null) this.strayAll.add(motion);
-    else for (const subject of voice.named) this.stray(motion, subject);
-  }
-
   drain<E = unknown>(tag?: string): Sent<I, E>[] {
     const all = this.sent;
     if (all.length === 0) return [];
@@ -1345,1675 +467,59 @@ class Mixer<I, O> implements Mix<I, O> {
     return out.sort((a, b) => a.timestamp - b.timestamp) as Sent<I, E>[];
   }
 
-  private laneHost(): LaneHost<I, O> {
-    const mix = this;
-    return {
-      get voices() {
-        return mix.cued;
-      },
-      channels: this.channels,
-      names: this.names,
-      fits: (voice) => mix.fits(voice),
-      meet: (voice, subject, head, slot) => {
-        for (let held = head; held !== null; held = held.next)
-          if (held.voice === voice) return held;
-        return mix.held(voice, subject, mix.now, slot);
-      },
-      forgot: (slot) => {
-        // Only a voice over every subject keeps bits, and one gone may still be read back.
-        for (const voice of mix.general) unreach(voice, slot, false);
-        for (const voice of mix.gone) unreach(voice, slot, false);
-      },
-      naming: (subject) => (mix.naming === 0 ? undefined : mix.named.get(subject)),
-      slotOf: (subject) => mix.chains.get(subject)?.slot ?? -1,
-      envelope: (voice, since) =>
-        voice.owner === null
-          ? mix.envelope(voice, mix.now, since)
-          : mix.envelope(voice, mix.now, since) * mix.ownedBy(voice, undefined as I),
-      parting: (voice, subject) => mix.parting(voice, subject, mix.now),
-      ready: (voice, subject, held, elapsed, pass, weight) => {
-        mix.prime(voice, held, mix.now, elapsed, pass);
-        voice.setting.weight = weight;
-        mix.sending.voice = voice;
-        mix.sending.subject = subject;
-      },
-      signal: (voice, subject, held, elapsed, pass, slot) => {
-        // A blend member after the first takes the read already made, with no setting to fill.
-        const read = voice.blend === null ? Number.NaN : mix.laneRead(voice, slot);
-        if (!Number.isNaN(read)) return read;
-        mix.prime(voice, held, mix.now, elapsed, pass);
-        const kept = reading.kept;
-        const base = mix.base(voice, subject, mix.now, held, slot);
-        if (reading.kept !== kept && !voice.keeping) mix.stateful(voice);
-        return base;
-      },
-      horizon: (voice, delay) => {
-        reading.horizon = mix.horizonFor(voice, delay, mix.now);
-      },
-      keeps: this.opts.history !== undefined,
-      after: (voice, held) => mix.remember(voice, held),
-      kept: (voice) => mix.stateful(voice),
-    };
-  }
-
-  /**
-   * Whether a voice's patch and spec can run on a lane, its channels aside. A voice whose patch has
-   * kept state on a record through `setting.keep` is stateful from then on, and leaves its lane;
-   * one that starts keeping partway through may advance that state once for one subject not
-   * probed on the frame it starts, which declaring `state` avoids.
-   */
-  private fits(voice: Voice<I, O>): boolean {
-    const spec = voice.spec;
-    const patch = voice.patch;
-    if (voice.keeping) return false;
-    if (voice.state === 'pending' && voice.holdsBefore) return false;
-    // A fill weighs a voice's owners once for every subject, which a signal on one would not be.
-    if (voice.owner !== null && signalled(voice)) return false;
-    // A signal reading host input records it per probe under history, which a fill cannot.
-    if (typeof spec.weight === 'function' && spec.weight.input && this.opts.history?.inputs)
-      return false;
-    // A locus on lanes gathers keys and fn members; a motion member keeps it on the general path.
-    if (spec.locus !== undefined && voice.motion !== undefined) return false;
-    if (spec.from === 'current') return false;
-    if (voice.out?.rest) return false;
-    if (patch.state !== undefined || patch.step !== undefined) return false;
-    if (this.opts.history?.inputs && patch.reads !== undefined && patch.reads.length > 0)
-      return false;
-    const built = voice.built;
-    return (
-      built === null ||
-      built.tracks.every((t, i) => t.lerp === undefined || t.lerp === voice.lerps[i])
-    );
-  }
-
-  /** A voice's patch kept state on a record: it is stateful from now on. */
-  private stateful(voice: Voice<I, O>): void {
-    if (voice.keeping) return;
-    voice.keeping = true;
-    this.lanes?.invalidate();
-  }
-
-  /**
-   * What a motion patch asks of the mix playing it, by its voice's id. It holds the mix weakly, so a
-   * patch the host keeps does not keep a mix it has let go of alive; a retired voice's patch no
-   * longer asks.
-   */
-  private static ownerOf<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
-    return {
-      frame(id, subject) {
-        const m = mix.deref();
-        const v = m?.cuedById(id);
-        return m === undefined || v === undefined ? Number.NaN : m.frameOf(v, subject as I);
-      },
-      revive(id, subject) {
-        const m = mix.deref();
-        if (m === undefined) return;
-        m.stirred = true;
-        const v = m.cuedById(id);
-        if (v === undefined) return;
-        if (v.motion !== undefined && v.named !== null && !v.named.has(subject as I))
-          m.stray(v.motion, subject as I);
-        m.unpart(v, subject as I);
-      },
-    };
-  }
-
-  /** The voice in the list with this id, which is in id order. */
-  private cuedById(id: number): Voice<I, O> | undefined {
-    const cued = this.cued;
-    let lo = 0;
-    let hi = cued.length - 1;
-    while (lo <= hi) {
-      const mid = (lo + hi) >> 1;
-      const v = cued[mid] as Voice<I, O>;
-      if (v.id === id) return v;
-      if (v.id < id) lo = mid + 1;
-      else hi = mid - 1;
-    }
-    return undefined;
-  }
-
-  /**
-   * A subject's voice time at the latest frame, where a motion patch places an untimed change and a
-   * `read` with no time; NaN until the voice has started and met the subject, and while the
-   * subject's own time is still short of its stagger. A retired voice's patch no longer asks.
-   */
-  private frameOf(voice: Voice<I, O>, subject: I): number {
-    if (Number.isNaN(this.now) || voice.state === 'pending') return Number.NaN;
-    const held = voice.subjects.get(subject);
-    if (held === undefined || !held.reaches) return Number.NaN;
-    const t = voice.elapsedAt(this.now) - held.delay;
-    return t < 0 ? Number.NaN : t;
-  }
-
-  /** Fills a voice's setting for a call to its patch, the weight aside. */
-  private prime(
-    voice: Voice<I, O>,
-    held: Subject<unknown>,
-    now: number,
-    elapsed: number,
-    pass: number,
-  ): void {
-    const setting = voice.setting;
-    setting.timestamp = now;
-    setting.dt = this.capped(now - held.stepped);
-    setting.elapsed = elapsed;
-    setting.pass = pass;
-    setting.weight = 0;
-    setting.state = held.state;
-    voice.keepOn = held;
-  }
-
-  /** A gap as a `dt`: Infinity under reduced motion, and no more than `maxDt`. */
-  private capped(gap: number): number {
-    const cap = this.opts.maxDt;
-    return this.reducedNow ? Number.POSITIVE_INFINITY : cap !== undefined && gap > cap ? cap : gap;
-  }
-
-  /** The earliest voice time a read may still ask for, for a subject delayed `delay`. */
-  private horizonFor(voice: Voice<I, O>, delay: number, now: number): number {
-    const history = this.opts.history;
-    return history === undefined
-      ? Number.POSITIVE_INFINITY
-      : this.elapsedThen(voice, now - history.ms) - delay;
-  }
-
-  // ── internals ──────────────────────────────────────────────────────────────
-
-  /** Refuses a placement that names a mark twice on one side, or that waits on itself. */
-  private checkPlacement(
-    spec: VoiceSpec<I, O>,
-    anchor: Placement,
-    owner: Voice<I, O> | null,
-  ): void {
-    if (anchor.start !== undefined && anchor.in !== undefined)
-      throw new Error('blits: a placement anchors start or in, not both');
-    if (anchor.out !== undefined && anchor.end !== undefined)
-      throw new Error('blits: a placement anchors out or end, not both');
-    if (spec.start !== undefined && (anchor.start !== undefined || anchor.in !== undefined))
-      throw new Error('blits: a voice takes start or an anchored start, not both');
-    const name = spec.name;
-    if (name === undefined) return;
-    // A voice is known by its owner, its score and its name; a bare name in an anchor is in the
-    // asker's score under the asker's owner.
-    const key = (o: Voice<I, O> | null, score: string | undefined, n: string) =>
-      `${o?.id ?? 0}\u0000${score ?? ''}\u0000${n}`;
-    const names = (p: Placement, score: string | undefined, o: Voice<I, O> | null): string[] =>
-      [p.start, p.in, p.out, p.end].flatMap((a) => {
-        if (a === undefined || typeof a === 'number') return [];
-        const q = 'of' in a ? a.of : 'after' in a ? a.after : 'with' in a ? a.with : a.before;
-        if (typeof q === 'string') return [key(o, score, q)];
-        return q.name === undefined ? [] : [key(o, q.score ?? score, q.name)];
-      });
-    const self = key(owner, spec.score, name);
-    const seen = new Set<string>();
-    const waits = names(anchor, spec.score, owner);
-    while (waits.length > 0) {
-      const n = waits.pop() as string;
-      if (n === self) throw new Error(`blits: ${name}'s placement waits on itself`);
-      if (seen.has(n)) continue;
-      seen.add(n);
-      for (const v of this.cued)
-        if (
-          v.spec.name !== undefined &&
-          key(v.owner, v.spec.score, v.spec.name) === n &&
-          v.spec.anchor
-        )
-          waits.push(...names(v.spec.anchor, v.spec.score, v.owner));
-    }
-  }
-
-  /**
-   * Fixes every anchored voice's start and out from what its anchors answer now. A start is fixed
-   * while the voice waits and an out until its fade begins; a target that has left keeps the time it
-   * last gave. Repeated so a chain of anchors settles in one sync.
-   */
-  private place(): void {
-    for (let round = 0; round <= this.cued.length; round++) {
-      let moved = false;
-      for (const voice of this.cued) {
-        const anchor = voice.spec.anchor;
-        if (anchor === undefined || voice.state === 'done') continue;
-        if (voice.placing && voice.state === 'pending') {
-          const by = anchor.start ?? anchor.in;
-          const t = by === undefined ? undefined : this.resolve(by, voice);
-          if (t !== undefined) {
-            const o = voice.owner;
-            const fadeIn = voice.fade.in ?? 0;
-            const start =
-              anchor.start !== undefined
-                ? t
-                : o === null
-                  ? t - fadeIn
-                  : ownerReading(o, mixTime(o, t) - fadeIn);
-            if (Number.isFinite(start) && this.startAt(voice, start)) moved = true;
-          }
-        }
-        if (voice.state !== 'fading') {
-          const by = anchor.out ?? anchor.end;
-          const t = by === undefined ? undefined : this.resolve(by, voice);
-          if (t !== undefined) {
-            const m = voice.owner === null ? t : mixTime(voice.owner, t);
-            const at = anchor.out !== undefined ? m : m - (voice.fade.out ?? 0);
-            if (at !== voice.outAt) {
-              voice.outAt = at;
-              this.noted(voice);
-              moved = true;
-            }
-          }
-        }
-      }
-      if (!moved) return;
-    }
-  }
-
-  /** The time an anchor answers on its voice's owner's clock, or undefined while its target has none. */
-  private resolve(
-    a: number | NonNullable<Placement['start']>,
-    self: Voice<I, O>,
-  ): number | undefined {
-    const o = self.owner;
-    if (typeof a === 'number') return o === null ? this.mixAt(a - this.offset) : a;
-    let query: string | Query;
-    let mark: Mark;
-    let by = a.by ?? 0;
-    if ('of' in a) {
-      query = a.of;
-      mark = a.mark;
-    } else if ('after' in a) {
-      query = a.after;
-      mark = 'end';
-    } else if ('with' in a) {
-      query = a.with;
-      mark = 'start';
-    } else {
-      query = a.before;
-      mark = 'start';
-      by = -by;
-    }
-    const t = this.timeOf(typeof query === 'string' ? { name: query } : query, mark, self);
-    if (t === undefined) return undefined;
-    if (o === null) return t + by;
-    const local = ownerReading(o, t);
-    return Number.isFinite(local) ? local + by : undefined;
-  }
-
-  /**
-   * The mix time a query answers: `mark` of the voice it picks, among those cued and those that have
-   * left, never the asker; or a mark the host announced on the score, which is the same time for
-   * any of the four. Undefined while what it picks has no such time. A query naming no score looks
-   * among the asker's siblings, the voices its owner holds.
-   */
-  private timeOf(q: Query, mark: Mark, self: Voice<I, O>): number | undefined {
-    const score = q.score ?? self.spec.score;
-    const anywhere = q.score !== undefined;
-    const found: { order: number; t: number | undefined }[] = [];
-    for (const v of [...this.gone, ...this.cued])
-      if (
-        v !== self &&
-        v.spec.score === score &&
-        (anywhere || v.owner === self.owner) &&
-        (q.name === undefined || v.spec.name === q.name) &&
-        (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
-        (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes))
-      )
-        found.push({ order: v.id, t: this.markOf(v, mark) });
-    if (q.writes === undefined && (anywhere || self.owner === null))
-      for (const a of this.announced)
-        if (
-          a.score === score &&
-          (q.name === undefined || a.name === q.name) &&
-          (q.tag === undefined || a.tags.includes(q.tag))
-        )
-          found.push({ order: a.order, t: Number.isNaN(a.at) ? undefined : this.mixAt(a.at) });
-    if (found.length === 0) return undefined;
-    found.sort((x, y) => x.order - y.order);
-    const resolver = q.resolver ?? 'last';
-    if (resolver === 'first') return found[0]?.t;
-    if (resolver === 'last') return found[found.length - 1]?.t;
-    const times = found.flatMap((e) => (e.t === undefined ? [] : [e.t])).sort((x, y) => x - y);
-    if (resolver === 'next') {
-      const now = Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now;
-      return times.find((t) => t >= now);
-    }
-    return resolver === 'earliest' ? times[0] : times[times.length - 1];
-  }
-
-  /** When a voice reaches a mark, mix time, or undefined while nothing has fixed it. */
-  private markOf(voice: Voice<I, O>, mark: Mark): number | undefined {
-    if (!Number.isFinite(voice.start)) return undefined;
-    // A mark is known only while every clock above it is fixed.
-    const start = this.startOf(voice);
-    if (!Number.isFinite(start)) return undefined;
-    if (mark === 'start') return start;
-    if (mark === 'in') return start + (voice.fade.in ?? 0);
-    const out = voice.out;
-    let outAt: number | undefined;
-    if (out !== null) outAt = out.at;
-    else if (Number.isFinite(voice.outAt)) outAt = voice.outAt;
-    else if (!voice.holdsAfter && Number.isFinite(voice.span)) {
-      const t = voice.timeAt(voice.span + voice.latest);
-      if (Number.isFinite(t)) outAt = Math.max(start, t);
-    }
-    if (mark === 'out') return voice.state === 'done' && outAt === undefined ? voice.doneAt : outAt;
-    if (voice.state === 'done') return voice.doneAt;
-    if (out !== null) {
-      if (out.rest) return out.deadline === undefined ? undefined : out.at + out.deadline;
-      return out.at + out.over;
-    }
-    return outAt === undefined ? undefined : outAt + (this.reduced ? 0 : (voice.fade.out ?? 0));
-  }
-
-  /** A voice's elapsed at an earlier mix time, by the controls it had then. */
-  private elapsedThen(voice: Voice<I, O>, t: number): number {
-    const log = voice.log;
-    const c = log === null ? undefined : last(log, t, true);
-    return elapsedWith(c ?? voice, voice.owner === null ? t : this.ownerThen(voice.owner, t));
-  }
-
-  /** What an owner's clock read at an earlier mix time; apart, so `elapsedThen` stays small. */
-  private ownerThen(owner: Voice<I, O>, t: number): number {
-    return this.elapsedThen(owner, t);
-  }
-
-  /** Records a change to a voice's controls under `history`, and lets go of what it no longer reaches. */
-  private noted(voice: Voice<I, O>): void {
-    this.stirred = true;
-    this.schedule(voice);
-    const log = voice.log;
-    if (log === null) return;
-    voice.note(Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now, this.moving);
-    const reach = this.now - (this.opts.history as { ms: number }).ms;
-    let drop = 0;
-    while (drop + 1 < log.length && (log[drop + 1] as Controls).at <= reach) drop++;
-    if (drop > 0) log.splice(0, drop);
-  }
-
-  /** Recounts what the fold's shortcuts depend on, for a projection's freshly copied voices. */
-  private count(): void {
-    this.named = new Store<I, Voice<I, O>[]>();
-    this.naming = 0;
-    this.general = [];
-    for (const voice of this.cued) this.index(voice);
-    this.loci = this.cued.filter((v) => v.spec.locus !== undefined).length;
-    this.anchored = this.cued.filter((v) => v.spec.anchor !== undefined).length;
-    this.steps.push(null, ++this.version);
-  }
-
-  /** A copy of a subject's record that shares nothing a read could change. */
-  private copyHeld(voice: Voice<I, O>, h: Subject<unknown>): Subject<unknown> {
-    let kept: Map<object, unknown> | null = null;
-    if (h.kept !== null) {
-      kept = new Map();
-      for (const [owner, value] of h.kept) kept.set(owner, clone(value));
-    }
-    const patch = voice.patch;
-    return {
-      ...h,
-      bands: h.bands === null ? null : h.bands.slice(),
-      state:
-        h.state === undefined ? undefined : patch.clone ? patch.clone(h.state) : clone(h.state),
-      kept,
-      probed: Number.NaN,
-      delta: null,
-      phase: 0,
-      seeks: 0,
-      base: h.base === undefined ? undefined : clone(h.base),
-      slope: h.slope === undefined ? undefined : clone(h.slope),
-      snaps: undefined,
-      inputs: undefined,
-      next: null,
-      version: Number.NaN,
-      loci: null,
-      slot: -1,
-    };
-  }
-
-  /** A voice's record of a subject, the one it shares among those it does not reach included. */
-  private recordOf(voice: Voice<I, O>, subject: I): Subject<unknown> | undefined {
-    const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
-    if (held !== undefined || voice.unreachedBits === null) return held;
-    return unreached(voice, this.chains.get(subject)?.slot ?? -1)
-      ? (voice.unreached as Subject<unknown>)
-      : undefined;
-  }
-
-  /** A projection ahead starts each subject from where the live mix holds it. */
-  private carry(voice: Voice<I, O>, subject: I): Subject<unknown> | undefined {
-    const live = this.recordOf(voice, subject);
-    if (live === undefined) return undefined;
-    const h = this.copyHeld(voice, live);
-    h.from = h.stepped;
-    return h;
-  }
-
-  /**
-   * A projection back starts each subject from the latest copy kept at or before `t`, else from its
-   * voice's start with fresh state, which is exact for a voice stepped at a fixed interval.
-   */
-  private recall(voice: Voice<I, O>, subject: I, t: number): Subject<unknown> | undefined {
-    const live = this.recordOf(voice, subject);
-    if (live === undefined) return undefined;
-    const snap = live.snaps && last(live.snaps, t, true);
-    if (snap) {
-      const h = this.copyHeld(voice, snap.held);
-      h.from = h.stepped;
-      h.replay = live.inputs;
-      return h;
-    }
-    const stepped = live.since < t ? live.since : t;
-    return {
-      reaches: live.reaches,
-      delay: live.delay,
-      since: live.since,
-      shown: live.shown,
-      weight: 0,
-      rested: false,
-      bands: null,
-      state:
-        live.reaches && voice.patch.state
-          ? (voice.patch.state(subject) as unknown)
-          : (undefined as unknown),
-      stepped,
-      ticks: 0,
-      probed: Number.NaN,
-      delta: null,
-      phase: 0,
-      seeks: 0,
-      kept: null,
-      voice,
-      next: null,
-      version: Number.NaN,
-      loci: null,
-      slot: -1,
-      from: stepped,
-      unknown: voice.spec.from === 'current',
-      replay: live.inputs,
-    };
-  }
-
-  /** Under `history` with `inputs`, copies the host fields any voice reads, once a frame, when they changed. */
-  private recordHost(now: number): void {
-    const log = this.hostLog;
-    const prev = log[log.length - 1];
-    if (prev !== undefined && prev.at === now) return;
-    const host = this.opts.host as Record<string, unknown>;
-    const fields: Record<string, unknown> = {};
-    for (const v of this.cued)
-      for (const f of v.patch.reads ?? none) if (!(f in fields)) fields[f] = clone(host[f]);
-    if (prev !== undefined && same(prev.fields, fields)) return;
-    log.push({ at: now, fields });
-    const reach = now - (this.opts.history as { ms: number }).ms;
-    while (log.length > 1 && (log[1] as { at: number }).at <= reach) log.shift();
-  }
-
-  /** Under `history` with `inputs`, keeps what an input signal read, each time it changes. */
-  private record(held: Subject<unknown>, value: number): void {
-    const history = this.opts.history;
-    if (!history?.inputs || this.projecting) return;
-    const inputs = held.inputs ?? [];
-    held.inputs = inputs;
-    const prev = inputs[inputs.length - 1];
-    if (prev !== undefined && (prev.value === value || prev.at === this.now)) {
-      if (prev.at === this.now) prev.value = value;
-      return;
-    }
-    inputs.push({ at: this.now, value });
-    const reach = this.now - history.ms;
-    while (inputs.length > 1 && (inputs[1] as { at: number }).at <= reach) inputs.shift();
-  }
-
-  /** Under `history`, keeps a copy of a stateful voice's record for this subject every so often. */
-  private remember(voice: Voice<I, O>, held: Subject<unknown>): void {
-    const history = this.opts.history;
-    if (!history || this.projecting) return;
-    if (
-      voice.patch.step === undefined &&
-      (held.kept === null || held.kept.size === 0) &&
-      held.base === undefined
-    )
-      return;
-    const snaps = held.snaps ?? [];
-    held.snaps = snaps;
-    const prev = snaps[snaps.length - 1];
-    if (prev !== undefined && this.now - prev.at < (history.every ?? 200)) return;
-    snaps.push({ at: this.now, held: this.copyHeld(voice, held) });
-    const reach = this.now - history.ms;
-    while (snaps.length > 1 && (snaps[1] as { at: number }).at <= reach) snaps.shift();
-  }
-
-  /** Per channel, the least sure voice that fed it this frame. */
-  private doubts(subject: I): { [K in keyof O]-?: Doubt } {
-    const out = {} as Record<string, Doubt>;
-    for (const name of this.names) out[name] = 'exact';
-    const rank = { exact: 0, stepped: 1, held: 2 } as const;
-    // A voice still waiting on an anchor nothing has answered may yet play, or stop, by now.
-    for (const voice of this.cued) {
-      const anchor = voice.spec.anchor;
-      if (anchor === undefined || voice.state === 'done') continue;
-      const waiting =
-        (voice.state === 'pending' && !Number.isFinite(voice.start)) ||
-        (voice.state !== 'pending' &&
-          voice.state !== 'fading' &&
-          (anchor.out !== undefined || anchor.end !== undefined) &&
-          !Number.isFinite(voice.outAt));
-      if (!waiting || !this.aims(voice, subject)) continue;
-      for (const slot of voice.slots) out[this.names[slot] as string] = 'held';
-    }
-    for (
-      let held: Subject<unknown> | null = this.chain(subject, this.now);
-      held !== null;
-      held = held.next
-    ) {
-      const voice = held.voice as Voice<I, O> | null;
-      if (voice === null || voice.state === 'done') continue;
-      if (held.weight <= 0) continue;
-      const d = this.doubtOf(voice, held);
-      for (const slot of voice.slots) {
-        const name = this.names[slot] as string;
-        if (rank[d] > rank[out[name] as Doubt]) out[name] = d;
-      }
-    }
-    return out as { [K in keyof O]-?: Doubt };
-  }
-
-  private doubtOf(voice: Voice<I, O>, held: Subject<unknown>): Doubt {
-    const weight = voice.spec.weight;
-    if (held.unknown) return 'held';
-    // A weight read back from a recording is what the mix used then, so its signal's state is moot.
-    const replayed = held.replay !== undefined && last(held.replay, this.now, true) !== undefined;
-    if (typeof weight === 'function' && weight.input && !replayed) return 'held';
-    if (voice.owner !== null && heldByInput(voice)) return 'held';
-    const reads = voice.patch.reads;
-    if (reads !== undefined && reads.length > 0) {
-      const then = this.hostThen?.fields;
-      if (then === undefined || !reads.every((f) => f in then)) return 'held';
-    }
-    if (this.now > (held.from ?? this.now)) {
-      const tick = this.opts.stepMs;
-      const fixed = tick !== undefined && tick > 0 && !this.reducedNow;
-      if ((voice.patch.step && !fixed) || (held.kept !== null && held.kept.size > 0 && !replayed))
-        return 'stepped';
-    }
-    return 'exact';
-  }
-
-  private handle(voice: Voice<I, O>): Handle<I> {
-    this.handles ??= this.handleHost();
-    return new VoiceHandle(voice, this.handles);
-  }
-
-  private handleHost(): HandleHost<I, O> {
-    return {
-      nowFor: (voice) => {
-        if (Number.isNaN(this.now)) return voice.start;
-        const local = this.localNow(voice);
-        return Number.isFinite(local) ? local : voice.start;
-      },
-      changed: (voice) => {
-        this.frame = ++frames;
-        this.noted(voice);
-        this.lanes?.refill();
-      },
-      // A delta read before an owner's seek, or a hit booked, is not taken as standing after it.
-      sought: (voice) => {
-        if (voice.holding !== null)
-          descendants(voice, (v) => {
-            v.seeks++;
-            this.schedule(v);
-          });
-      },
-      fade: (voice, opts) => {
-        if (
-          voice.holding !== null &&
-          opts !== undefined &&
-          ('subject' in opts || opts.at === 'rest')
-        )
-          throw new Error('blits: an owner fades as a whole, not by subject or at rest');
-        if (opts !== undefined && 'subject' in opts)
-          this.fadeSubject(voice, opts.subject as I, opts.over);
-        else this.beginFade(voice, opts ?? {});
-      },
-      weightOf: (voice, subject) => {
-        if (voice.state === 'done') return 0;
-        if (voice.holding !== null)
-          return ownWeight(voice, this.now, this.reducedNow, (o) => this.ownerBase(o, subject));
-        if (voice.laned && this.lanes !== null) {
-          const w = this.lanes.weightOf(voice.id, this.chains.get(subject)?.slot ?? -1);
-          if (w !== undefined) return w;
-        }
-        return (voice.subjects.get(subject) as Subject<unknown> | undefined)?.weight ?? 0;
-      },
-    };
-  }
-
-  /** Starts one subject's ramp out of a voice, or takes it out at once for a ramp of 0. */
-  private fadeSubject(voice: Voice<I, O>, subject: I, over?: number): void {
-    if (voice.state === 'done' || voice.parted?.has(subject) || voice.parts?.has(subject)) return;
-    this.stirred = true;
-    const ms = this.reduced ? 0 : (over ?? voice.fade.out ?? 0);
-    const at = Number.isNaN(this.now) ? this.startOf(voice) : this.now;
-    if (ms === 0) {
-      this.part(voice, subject, at);
-      return;
-    }
-    voice.parts ??= new Map();
-    voice.parts.set(subject, { at, over: ms });
-    this.parters.add(voice);
-    this.schedule(voice);
-    this.lanes?.refill();
-  }
-
-  /** What a subject's own ramp out of a voice leaves of its weight this frame, 0..1. */
-  private parting(voice: Voice<I, O>, subject: I, now: number): number {
-    const r = voice.parts?.get(subject);
-    if (r === undefined) return 1;
-    return envelope(
-      0,
-      { at: r.at, over: r.over, rest: false },
-      voice.ease,
-      this.reducedNow,
-      now,
-      0,
-    );
-  }
-
-  /**
-   * Takes a subject out of one voice for good, as of mix time `at`: the voice forgets its record,
-   * its lane position and a motion patch's state for it, and reaches it no more.
-   */
-  private part(voice: Voice<I, O>, subject: I, at: number): void {
-    voice.parts?.delete(subject);
-    if (voice.parts?.size === 0) voice.parts = null;
-    voice.parted ??= new Map();
-    voice.parted.set(subject, at);
-    this.parters.add(voice);
-    this.forgetIn(voice, subject);
-    const motion = voice.motion;
-    if (motion !== undefined && this.asks(motion, voice)) motion.release(subject);
-  }
-
-  /** Brings a subject faded out of a voice back, to be met afresh on its next probe. */
-  private unpart(voice: Voice<I, O>, subject: I): void {
-    if (voice.parted?.delete(subject) !== true) return;
-    if (voice.parted.size === 0) voice.parted = null;
-    this.forgetIn(voice, subject);
-    const slot = this.chains.get(subject)?.slot ?? -1;
-    if (slot >= 0) this.lanes?.rejoin(slot);
-  }
-
-  /** Drops a voice's record of a subject and relinks the subject's chain without it. */
-  private forgetIn(voice: Voice<I, O>, subject: I): void {
-    const head = this.chains.get(subject);
-    if (head !== undefined && head.slot >= 0) unreach(voice, head.slot, false);
-    const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
-    if (held !== undefined) {
-      voice.subjects.delete(subject);
-      if (held.reaches) voice.seen--;
-      if (held.rested) voice.restedCount--;
-      if (voice.holder === held) voice.holder = null;
-    }
-    if (head === undefined) return;
-    head.version = Number.NaN;
-    this.relinks++;
-    if (voice.laned && head.slot >= 0) this.lanes?.part(voice.id, head.slot);
-    this.lanes?.refill();
-  }
-
-  private beginFade(
-    voice: Voice<I, O>,
-    opts: { over?: number; at?: 'rest'; deadline?: number },
-    at?: number,
-  ): void {
-    if (voice.state === 'done' || voice.state === 'fading') return;
-    const over = this.reduced ? 0 : (opts.over ?? voice.fade.out ?? 0);
-    // A voice is linked into its subjects' chains once it plays, and a fading one plays.
-    if (voice.state === 'pending') this.changed(voice);
-    voice.state = 'fading';
-    voice.out = {
-      from: 1,
-      at: at ?? (Number.isNaN(this.now) ? this.startOf(voice) : this.now),
-      over,
-      rest: opts.at === 'rest',
-      deadline: opts.deadline,
-    };
-    this.noted(voice);
-    if (opts.at === 'rest') this.lanes?.invalidate();
-    else this.lanes?.refill();
-    if (over === 0 && opts.at !== 'rest') this.retire(voice, voice.out.at);
-  }
-
-  /** Removes a voice, recording that it left at `at`, default now. */
-  /** Whether a motion patch still asks this voice of this mix for its time. */
-  private asks(motion: Motions<I>, voice: Voice<I, O>): boolean {
-    return motion.owner === this.owner && motion.ownerId === voice.id;
-  }
-
-  private retire(voice: Voice<I, O>, at?: number): void {
-    if (voice.holding === null) this.lanes?.touch(voice);
-    const motion = voice.motion;
-    if (motion !== undefined && this.asks(motion, voice)) motion.owner = null;
-    voice.state = 'done';
-    // The record its setting last wrote to, which a retired voice no longer calls for.
-    voice.keepOn = null;
-    this.retired++;
-    voice.doneAt = at ?? (Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now);
-    voice.play(false);
-    voice.resolve();
-    // An owner takes what it holds with it, and leaves with its last child.
-    if (voice.holding !== null)
-      for (const child of [...voice.holding.children])
-        if (child.state !== 'done') this.retire(child, voice.doneAt);
-    if (voice.owner !== null) {
-      const owner = orphan(voice);
-      if (owner !== null) this.retire(owner, voice.doneAt);
-    }
-  }
-
-  /** The ramp a voice's own fade envelope applies this frame, 0..1. */
-  private envelope(voice: Voice<I, O>, now: number, since: number): number {
-    return envelope(voice.fade.in ?? 0, voice.out, voice.ease, this.reducedNow, now, since);
-  }
-
-  /** What every owner above a voice multiplies into its weight for a subject this frame. */
-  private ownedBy(voice: Voice<I, O>, subject: I): number {
-    return ownersWeight(voice, this.now, this.reducedNow, (o) => this.ownerBase(o, subject));
-  }
-
-  /**
-   * An owner's signal read for a subject, once a frame: kept on the owner's record for it, which
-   * no fold links, in `phase`, with the frame it was read in `probed`.
-   */
-  private ownerBase(owner: Voice<I, O>, subject: I): number {
-    const now = this.now;
-    const held = this.held(owner, subject, now, -1);
-    if (held.probed === this.frame) return held.phase;
-    const kept = reading.kept;
-    this.prime(owner, held, now, owner.elapsedAt(now), 0);
-    const base = this.base(owner, subject, now, held);
-    reading.kept = kept;
-    held.stepped = now;
-    held.probed = this.frame;
-    held.phase = base;
-    return base;
-  }
-
-  /** The record a voice gives every subject it does not reach. */
-  private unreachedOf(voice: Voice<I, O>, now: number): Subject<unknown> {
-    const since = this.sinceOf(voice, 0);
-    const none: Subject<unknown> = {
-      reaches: false,
-      delay: 0,
-      since,
-      shown: this.shownOf(voice, since),
-      weight: 0,
-      rested: false,
-      bands: null,
-      state: undefined,
-      stepped: now,
-      ticks: 0,
-      probed: Number.NaN,
-      delta: null,
-      phase: 0,
-      seeks: 0,
-      kept: null,
-      voice,
-      next: null,
-      version: Number.NaN,
-      loci: null,
-      slot: -1,
-    };
-    voice.unreached = none;
-    return none;
-  }
-
-  /** What this voice holds for this subject, made on first sight with `target` and `stagger` asked once. */
-  private held(voice: Voice<I, O>, subject: I, now: number, slot: number): Subject<unknown> {
-    if (unreached(voice, slot)) return voice.unreached as Subject<unknown>;
-    let held = voice.subjects.get(subject) as Subject<unknown> | undefined;
-    if (held !== undefined) return held;
-    const reaches = this.aims(voice, subject);
-    if (!reaches) {
-      // Nothing is kept for a subject the voice does not reach, so one record stands for them all:
-      // a voice per subject reached by `target` held one per subject it was asked about. Where lanes
-      // number the subject, a bit by its number says so, where a map entry each grew with voices
-      // times subjects.
-      const none = voice.unreached ?? this.unreachedOf(voice, now);
-      if (slot >= 0 && voice.named === null) unreach(voice, slot, true);
-      else voice.subjects.set(subject, none);
-      return none;
-    }
-    const delay = voice.spec.stagger ? voice.spec.stagger(subject) : 0;
-    const since = this.sinceOf(voice, delay);
-    held = {
-      reaches: true,
-      delay,
-      since,
-      shown: this.shownOf(voice, since),
-      weight: 0,
-      rested: false,
-      bands: null,
-      state: voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
-      stepped: this.backward && since < now ? since : now,
-      ticks: 0,
-      probed: Number.NaN,
-      delta: null,
-      phase: 0,
-      seeks: 0,
-      kept: null,
-      voice,
-      next: null,
-      version: Number.NaN,
-      loci: null,
-      slot: -1,
-    };
-    if (this.projecting) {
-      held.from = held.stepped;
-      held.unknown = this.backward && voice.spec.from === 'current';
-    }
-    voice.subjects.set(subject, held);
-    if (voice.state === 'pending') {
-      voice.early ??= [];
-      voice.early.push(held);
-    }
-    voice.seen++;
-    if (delay > voice.latest) {
-      voice.latest = delay;
-      // A later end can take a held voice live again.
-      if (voice.state === 'held') this.schedule(voice);
-    }
-    return held;
-  }
-
-  /**
-   * When the voice clock reads `delay`, from where it is anchored now; during a ramp this assumes
-   * the rate it is ramping to.
-   */
-  private sinceOf(voice: Voice<I, O>, delay: number): number {
-    const t =
-      voice.rate > 0
-        ? voice.anchorNow + (delay - voice.anchorElapsed) / voice.rate
-        : voice.start + delay;
-    return voice.owner === null ? t : mixTime(voice.owner, t);
-  }
-
-  private shownOf(voice: Voice<I, O>, since: number): number {
-    return voice.holdsBefore && voice.opened < since ? voice.opened : since;
-  }
-
-  /** A voice has gone live: the records it made while pending count from where it started. */
-  private started(voice: Voice<I, O>): void {
-    const early = voice.early;
-    if (early === null) return;
-    voice.early = null;
-    for (const held of early) {
-      held.since = this.sinceOf(voice, held.delay);
-      held.shown = this.shownOf(voice, held.since);
-    }
-  }
-
-  /** The weight a voice gives a subject this frame, with the setting already filled in. */
-  private weigh(voice: Voice<I, O>, subject: I, now: number, held: Subject<unknown>): number {
-    if (voice.owner !== null) return this.weighOwned(voice, subject, now, held);
-    const base = this.base(voice, subject, now, held);
-    const fade = this.envelope(voice, now, held.shown);
-    return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
-  }
-
-  /** `weigh` for a voice an owner holds, its owners' weight folded into its fade. */
-  private weighOwned(voice: Voice<I, O>, subject: I, now: number, held: Subject<unknown>): number {
-    // Its owners first, since a signal on one takes over the setting `base` leaves for the patch.
-    const owned = this.ownedBy(voice, subject);
-    const base = this.base(voice, subject, now, held);
-    const fade = this.envelope(voice, now, held.shown) * owned;
-    return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
-  }
-
-  /**
-   * A voice's weight for a subject before its fade and ramp: its signal's, or its own number.
-   * `slot` is the subject's number when lanes ask.
-   */
-  private base(
-    voice: Voice<I, O>,
-    subject: I,
-    now: number,
-    held: Subject<unknown>,
-    slot = -1,
-  ): number {
-    this.sending.voice = voice;
-    this.sending.subject = subject;
-    const signal = typeof voice.spec.weight === 'function' ? voice.spec.weight : null;
-    if (signal === null) return voice.weight;
-    const was = held.replay && last(held.replay, now, true);
-    const base = was
-      ? was.value
-      : voice.blend === null
-        ? signal(subject, voice.setting as Setting)
-        : this.blended(voice, subject, held, slot);
-    if (signal.input && !was) this.record(held, base);
-    return base;
-  }
-
-  /** A blend member's share of its signal's read for this subject this frame, made by the first to ask. */
-  private blended(voice: Voice<I, O>, subject: I, held: Subject<unknown>, slot: number): number {
-    const { of, i } = voice.blend as { of: Blend<I, O>; i: number };
-    const frame = this.frame;
-    let cell: { frame: number; value: number } | undefined;
-    if (slot < 0) {
-      if (of.frame === frame && of.subject === subject) return shareOf(of.value, i, of.stops);
-      cell = of.reads.get(subject);
-      if (cell?.frame === frame) return shareOf(cell.value, i, of.stops);
-    } else if (slot < of.frames.length) {
-      const read = this.laneRead(voice, slot);
-      if (!Number.isNaN(read)) return read;
-    } else {
-      const size = Math.max(slot + 1, of.frames.length * 2, 64);
-      const frames = new Float64Array(size);
-      const values = new Float64Array(size);
-      frames.set(of.frames);
-      values.set(of.values);
-      of.frames = frames;
-      of.values = values;
-    }
-    const kept = reading.kept;
-    const k = of.by(subject, voice.setting as Setting);
-    if (reading.kept !== kept && !this.projecting) this.shareKept(of, voice, subject, held);
-    if (slot < 0) {
-      of.frame = frame;
-      of.subject = subject;
-      of.value = k;
-      if (cell === undefined) of.reads.set(subject, { frame, value: k });
-      else {
-        cell.frame = frame;
-        cell.value = k;
-      }
-    } else {
-      of.frames[slot] = frame;
-      of.values[slot] = k;
-    }
-    return shareOf(k, i, of.stops);
-  }
-
-  /** A blend member's share of the read lanes made of its signal for subject `slot` this frame; NaN for none. */
-  private laneRead(voice: Voice<I, O>, slot: number): number {
-    const { of, i } = voice.blend as { of: Blend<I, O>; i: number };
-    return slot < of.frames.length && of.frames[slot] === this.frame
-      ? shareOf(of.values[slot] as number, i, of.stops)
-      : Number.NaN;
-  }
-
-  /**
-   * A blend's signal kept state on one member's record: the others' records for the subject hold
-   * the same, so whichever member reads next steps it, and every member leaves its lane.
-   */
-  private shareKept(of: Blend<I, O>, voice: Voice<I, O>, subject: I, held: Subject<unknown>): void {
-    for (const m of of.members) {
-      const h = m === voice ? undefined : (m.subjects.get(subject) as Subject<unknown> | undefined);
-      if (h?.reaches && h.kept === null) h.kept = held.kept;
-      this.stateful(m);
-    }
-  }
-
-  /**
-   * One live voice's delta for one subject this frame, through its record for the subject, or null
-   * when it does not reach. Its weight is left in `w`.
-   */
-  private influence(
-    voice: Voice<I, O>,
-    subject: I,
-    now: number,
-    held: Subject<unknown>,
-  ): Record<string, unknown> | null {
-    held.weight = 0;
-    if (!held.reaches) return null;
-    if (voice.out?.rest && held.rested) return null;
-
-    const raw = voice.elapsedAt(now) - held.delay;
-    if (raw < 0 && !voice.holdsBefore) return null;
-    const elapsed = heldTime(raw, voice.holdsBefore, voice.holdsAfter, voice.span);
-    // A held subject's clock stands still at the edge it holds: -1 before, 1 after, 0 playing.
-    const still = raw < 0 ? -1 : voice.holdsAfter && raw > voice.span ? 1 : 0;
-
-    const duration = voice.duration;
-    const phase = phaseAt(elapsed, duration, voice.passes);
-    const pass = passAt(elapsed, duration, voice.passes);
-
-    this.prime(voice, held, now, elapsed, pass);
-    const setting = voice.setting;
-
-    // A signal that keeps state makes its voice stateful, as a patch that does: a lane would call
-    // it for subjects no probe asked about.
-    const keptAtWeigh = reading.kept;
-    const weight = this.weigh(voice, subject, now, held);
-    if (reading.kept !== keptAtWeigh && !voice.keeping) this.stateful(voice);
-    setting.weight = weight;
-    held.weight = weight;
-
-    if (held.probed === now && held.delta && held.seeks === voice.seeks) {
-      if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
-      this.w = weight;
-      return held.delta;
-    }
-
-    const keptBefore = reading.kept;
-    const history = this.opts.history;
-    if (history?.inputs && voice.patch.reads !== undefined && !this.projecting)
-      this.recordHost(now);
-    reading.horizon = this.horizonFor(voice, held.delay, now);
-
-    const tick = this.opts.stepMs;
-    if (voice.patch.step && held.probed !== now && still >= 0) {
-      // Held after, it steps once more to where its last pass ended, and no further.
-      const to = still === 1 ? voice.timeAt(held.delay + voice.span) : now;
-      if (tick !== undefined && tick > 0 && !this.reducedNow)
-        this.tick(voice, subject, held, tick, to);
-      else if (still === 0 ? now !== held.stepped : to > held.stepped) {
-        if (still === 1) setting.dt = this.capped(to - held.stepped);
-        voice.patch.step(held.state as never, setting.dt, subject, setting as Setting<never>);
-        held.stepped = to;
-      }
-    }
-
-    let delta: Record<string, unknown> | null = null;
-    // Keys read even when silent: a `from: 'current'` voice takes its base on its first read.
-    if (voice.built) {
-      held.phase = phase;
-      delta = this.keyed(voice, subject, held);
-    } else if (!silent(voice, weight)) {
-      delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
-    }
-    held.delta = delta;
-    held.probed = now;
-    held.seeks = voice.seeks;
-    if (history !== undefined) this.remember(voice, held);
-    if (reading.kept !== keptBefore && !voice.keeping) this.stateful(voice);
-    if (delta === null) return null;
-
-    if (voice.out?.rest && this.isRest(delta)) {
-      held.weight = 0;
-      held.rested = true;
-      voice.restedCount++;
-      return null;
-    }
-    this.w = weight;
-    return delta;
-  }
-
-  /** Reads a keys voice's stops at `held.phase` into the subject's delta, through the voice's scratch. */
-  private keyed(voice: Voice<I, O>, subject: I, held: Subject<unknown>): Record<string, unknown> {
-    let base: Record<string, unknown> | undefined;
-    if (voice.spec.from === 'current') {
-      if (held.base === undefined) {
-        held.base = this.baseFor(voice, subject);
-        held.slope = this.slopeFor(voice, subject);
-      }
-      base = held.base;
-    }
-    const delta = readKeys(
-      voice.built as Built,
-      held.phase,
-      held.delta ?? {},
-      base,
-      voice.lerps as never,
-      held.slope,
-      voice.intos,
-      voice.scratch,
-    );
-    held.delta = delta;
-    if (voice.scratch.length > 0) voice.holder = held;
-    return delta;
-  }
-
-  /**
-   * Runs `step` once per whole interval between where this subject last stopped and now, on a grid
-   * counted from when its delay ran out, and leaves the remainder for the next sample. Counting
-   * rather than adding keeps the grid where it is however many samples it is reached through.
-   */
-  private tick(
-    voice: Voice<I, O>,
-    subject: I,
-    held: Subject<unknown>,
-    tick: number,
-    to: number,
-  ): void {
-    const now = this.now;
-    const setting = voice.setting;
-    const frameDt = setting.dt;
-    let n = held.ticks;
-    // The epsilon keeps an interval like 1000 / 120 from landing a hair short of a whole count.
-    const due = Math.floor((to - held.since) / tick + 1e-9);
-    const cap = this.opts.maxDt;
-    if (cap !== undefined) {
-      const most = Math.floor(cap / tick);
-      if (due - n > most) n = due - most;
-    }
-    const step = voice.patch.step as NonNullable<Patch<I, O, unknown>['step']>;
-    setting.dt = tick;
-    for (n++; n <= due; n++) {
-      setting.timestamp = held.since + n * tick;
-      step(held.state as never, tick, subject, setting as Setting<never>);
-    }
-    held.ticks = due > held.ticks ? due : held.ticks;
-    held.stepped = held.since + held.ticks * tick;
-    setting.timestamp = now;
-    setting.dt = frameDt;
-  }
-
-  /**
-   * Stop 0 for a retargeting voice: the subject's pose in the frame before this voice contributes.
-   * With no such frame on record — a voice cued before the subject was ever probed, or a host that
-   * samples into its own object — it is this frame's pose with every other voice folded in.
-   */
-  private baseFor(voice: Voice<I, O>, subject: I): Record<string, unknown> {
-    let prior = this.pose.get(subject)?.pose as Record<string, unknown> | undefined;
-    if (prior === undefined && !this.folding.has(voice.id)) {
-      this.folding.add(voice.id);
-      try {
-        prior = this.fold(subject, undefined, false, voice.id) as Record<string, unknown>;
-      } finally {
-        this.folding.delete(voice.id);
-      }
-    }
-    const base: Record<string, unknown> = {};
-    for (const key of voice.patch.writes as Key<O>[]) {
-      const channel = this.kit[key] as Channel<unknown>;
-      const value = prior?.[key];
-      const fallback = channel.rest;
-      if (value !== undefined) base[key] = copy(value);
-      else if (fallback !== undefined) base[key] = copy(fallback);
-    }
-    return base;
-  }
-
-  /**
-   * How fast each numeric channel this voice writes was moving, from the subject's last two probed
-   * poses, in units per ms. Undefined with fewer than two on record, which starts the voice at rest.
-   */
-  private slopeFor(voice: Voice<I, O>, subject: I): Record<string, unknown> | undefined {
-    const rec = this.pose.get(subject);
-    if (rec?.prev === undefined || !(rec.at > rec.prevAt)) return undefined;
-    const dt = rec.at - rec.prevAt;
-    const now = rec.pose as Record<string, unknown>;
-    const before = rec.prev as Record<string, unknown>;
-    const slope: Record<string, unknown> = {};
-    for (const key of voice.patch.writes as Key<O>[]) {
-      const a = before[key];
-      const b = now[key];
-      if (typeof a === 'number' && typeof b === 'number') slope[key] = (b - a) / dt;
-      else if (Array.isArray(a) && Array.isArray(b) && a.length === b.length)
-        slope[key] = b.map((v, i) => ((v as number) - (a[i] as number)) / dt);
-    }
-    return slope;
-  }
-
-  private isRest(delta: Record<string, unknown>): boolean {
-    for (const key of Object.keys(delta) as Key<O>[]) {
-      if (delta[key] === undefined) continue;
-      const channel = this.kit[key] as Channel<unknown>;
-      if (channel.rest === undefined) return false;
-      if (!near(delta[key], channel.rest)) return false;
-    }
-    return true;
-  }
-
-  /**
-   * Folds one locus's members into one influence through each channel's own `lerp`: its value per
-   * channel goes in `k.values`, the channels in `k.touched` in the order first met, and its weight
-   * is returned. A channel folding by scale takes its value in an array of `k`'s own, lerped in
-   * place, since the fold only reads it.
-   */
-  private foldLocus(k: LocusScratch<I, O>, group: number): number {
-    k.touched.length = 0;
-    let sum = 0;
-    for (let m = 0; m < k.m; m++) if (k.mGroups[m] === group) sum += k.mWeights[m] as number;
-    if (sum <= 0) return 0;
-    const taken = k.taken;
-    for (let m = 0; m < k.m; m++) {
-      if (k.mGroups[m] !== group) continue;
-      const weight = k.mWeights[m] as number;
-      if (weight <= 0) continue;
-      const delta = k.mDeltas[m] as Record<string, unknown>;
-      const slots = (k.mVoices[m] as Voice<I, O>).slots;
-      for (let i = 0; i < slots.length; i++) {
-        const slot = slots[i] as number;
-        const value = delta[this.names[slot] as string];
-        if (value === undefined) continue;
-        const channel = this.channels[slot] as Channel<unknown>;
-        if (k.met[slot] === 0) {
-          k.met[slot] = 1;
-          k.touched.push(slot);
-          taken[slot] = weight;
-          k.values[slot] =
-            this.lerpsInto[slot] !== undefined && channel.scale && Array.isArray(value)
-              ? own(k, slot, value, channel.rest as number[])
-              : copy(value);
-          continue;
-        }
-        const total = (taken[slot] as number) + weight;
-        const was = k.values[slot];
-        const lerp = this.lerpsInto[slot];
-        k.values[slot] =
-          lerp !== undefined && was === k.owned[slot]
-            ? lerp(was as unknown[], was, value, weight / total)
-            : channel.lerp(was, value, weight / total);
-        taken[slot] = total;
-      }
-    }
-    for (let t = 0; t < k.touched.length; t++) k.met[k.touched[t] as number] = 0;
-    return sum > 1 ? 1 : sum;
-  }
-
-  /** Whether a rest-less channel's influence is switched on, across a band rather than an edge. */
-  private passes(was: boolean | undefined, w: number): boolean {
-    const { on, off } = this.band;
-    return w >= on ? true : w <= off ? false : (was ?? w >= on);
-  }
-
-  /**
-   * The first of this subject's records, linked through every live voice that reaches it. A voice
-   * is asked once, through the record it keeps for the subject anyway; a pending one is linked when
-   * it goes live, since `target` is asked on first sight, and sight only comes once a voice plays
-   * or holds before.
-   */
-  private chain(subject: I, now: number): Subject<unknown> {
-    const was = this.chains.get(subject);
-    if (was !== undefined && was.version === this.version) return was;
-    const slot =
-      was !== undefined ? was.slot : this.lanes !== null ? this.lanes.number(subject) : -1;
-    // Where only voices over every subject changed since, those alone are taken off or put on.
-    let first =
-      was === undefined
-        ? undefined
-        : this.steps.patch(was.voice === null ? null : was, was.version, (voice) =>
-            this.linkable(voice, subject, now, slot),
-          );
-    if (first === undefined) {
-      let prev: Subject<unknown> | null = null;
-      first = null;
-      const link = (voice: Voice<I, O>) => {
-        const held = this.linkable(voice, subject, now, slot);
-        if (held === null) return;
-        held.voice = voice;
-        held.next = null;
-        if (prev === null) first = held;
-        else prev.next = held;
-        prev = held;
-      };
-      const named = this.naming === 0 ? undefined : this.named.get(subject);
-      let j = 0;
-      for (const voice of this.general) {
-        while (named !== undefined && j < named.length && (named[j] as Voice<I, O>).id < voice.id)
-          link(named[j++] as Voice<I, O>);
-        link(voice);
-      }
-      while (named !== undefined && j < named.length) link(named[j++] as Voice<I, O>);
-    }
-    const head = first ?? stub();
-    head.version = this.version;
-    if (was !== undefined && was !== head) {
-      head.loci = was.loci;
-      was.loci = null;
-      head.slot = was.slot;
-      was.slot = -1;
-    } else if (was === undefined) head.slot = slot;
-    if (was !== head) this.chains.set(subject, head);
-    return head;
-  }
-
-  /** A voice's record for a subject where its chain links it: the voice plays or holds, and reaches it. */
-  private linkable(
-    voice: Voice<I, O>,
-    subject: I,
-    now: number,
-    slot: number,
-  ): Subject<unknown> | null {
-    const state = voice.state;
-    if (state === 'done' || (state === 'pending' && !voice.holdsBefore)) return null;
-    const held = this.held(voice, subject, now, slot);
-    return held.reaches ? held : null;
-  }
-
-  /** Whether a voice reaches a subject by what its spec says: the subjects it names, or its `target`. */
-  private aims(voice: Voice<I, O>, subject: I): boolean {
-    // A read back to before a subject left still finds it reached.
-    const left = voice.parted?.get(subject);
-    if (left !== undefined && !(this.now < left)) return false;
-    if (voice.named !== null) return voice.named.has(subject);
-    return voice.spec.target ? voice.spec.target(subject) : true;
-  }
-
-  /**
-   * A voice joined or left the list, or started or stopped waiting: the chains it is linked into
-   * are relinked, every subject's for a voice over all of them and only its own for one naming
-   * its subjects, and lanes take it on or off.
-   */
-  private changed(voice: Voice<I, O>): void {
-    // An owner is in no chain and on no lane; what it changes in its children, a fill reads afresh.
-    if (voice.holding !== null) {
-      this.lanes?.refill();
-      return;
-    }
-    this.lanes?.touch(voice);
-    if (voice.named === null) {
-      this.steps.push(voice, ++this.version);
-      return;
-    }
-    for (const subject of voice.named) {
-      const head = this.chains.get(subject);
-      if (head !== undefined) head.version = Number.NaN;
-    }
-    this.relinks++;
-  }
-
-  /** Files a voice under each subject it names, or among the voices that name none. */
-  private index(voice: Voice<I, O>): void {
-    if (voice.holding !== null) return;
-    if (voice.named === null) {
-      this.general.push(voice);
-      return;
-    }
-    this.naming++;
-    for (const subject of voice.named) {
-      const list = this.named.get(subject);
-      if (list === undefined) this.named.set(subject, [voice]);
-      else list.push(voice);
-    }
-  }
-
-  private unindex(voice: Voice<I, O>): void {
-    this.naming--;
-    for (const subject of voice.named as Named<I>) {
-      const list = this.named.get(subject);
-      if (list === undefined) continue;
-      const i = list.indexOf(voice);
-      if (i >= 0) list.splice(i, 1);
-      if (list.length === 0) this.named.delete(subject);
-    }
-  }
-
   /** Voices whose stop 0 is mid-computation, so a fold for one cannot re-enter itself. */
-  private readonly folding = new Set<number>();
+  readonly folding = new Set<number>();
 
-  /** Folds one voice's delta into the pose, its band state kept on the subject's record. */
-  private apply(
-    pose: Record<string, unknown>,
-    voice: Voice<I, O>,
-    held: Subject<unknown>,
-    delta: Record<string, unknown>,
-    weight: number,
-  ): void {
-    const slots = voice.slots;
-    for (let i = 0; i < slots.length; i++) {
-      const slot = slots[i] as number;
-      const key = this.names[slot] as string;
-      const value = delta[key];
-      if (value === undefined) continue;
-      const channel = this.channels[slot] as Channel<unknown>;
-      if (channel.rest !== undefined && channel.scale) {
-        // pose[key] is the copy of rest this fold made, so it is ours to write into.
-        pose[key] = channel.fold
-          ? channel.fold(pose[key], value, weight)
-          : merged(channel, pose[key], channel.scale(value, weight));
-        continue;
-      }
-      const bands = held.bands ?? bandsFor(held, slots.length);
-      const band = bands[i];
-      const on = this.passes(band === 0 ? undefined : band === 1, weight);
-      bands[i] = on ? 1 : 2;
-      if (on) pose[key] = pose[key] === undefined ? copy(value) : merged(channel, pose[key], value);
-    }
-  }
-
-  /** Clamps every bounded channel of a folded pose into its range, in place. */
-  private clamp(pose: Record<string, unknown>): Record<string, unknown> {
-    for (const slot of this.bounded) {
-      const [lo, hi] = (this.channels[slot] as Channel<unknown>).bounds as readonly [
-        number,
-        number,
-      ];
-      const key = this.names[slot] as string;
-      const v = pose[key];
-      if (typeof v === 'number') pose[key] = v < lo ? lo : v > hi ? hi : v;
-      else if (Array.isArray(v))
-        for (let i = 0; i < v.length; i++) {
-          const x = v[i] as number;
-          v[i] = x < lo ? lo : x > hi ? hi : x;
-        }
-    }
-    return pose;
-  }
-
-  private fold(subject: I, out?: O, dry = false, except?: number): O {
-    const pose = this.folded(subject, out, dry, except) as Record<string, unknown>;
-    return (this.bounded.length === 0 ? pose : this.clamp(pose)) as O;
-  }
-
-  private folded(subject: I, out?: O, dry = false, except?: number): O {
-    const head = this.linked(subject);
-    return this.foldWith(subject, out ?? ({} as O), head, this.linkedLaned, dry, except);
-  }
-
-  /**
-   * A subject's chain, linked for this frame, and in `linkedLaned` whether its lanes answer for the
-   * voices on them; a subject numbered since the frame's fill folds every voice, laned ones included.
-   */
-  private linked(subject: I): Subject<unknown> | null {
-    const now = this.now;
-    const head = Number.isNaN(now) ? null : this.chain(subject, now);
-    this.linkedLaned =
-      head !== null && this.lanes?.prepare(head.slot, subject, now, this.version, head) === true;
-    return head;
-  }
-
-  private linkedLaned = false;
-
-  /** The fold after a subject's chain is linked and its lanes asked whether it reads from them. */
-  private foldWith(
-    subject: I,
-    out: O,
-    head: Subject<unknown> | null,
-    laned: boolean,
-    dry: boolean,
-    except?: number,
-  ): O {
-    const now = this.now;
-    const pose = out as Record<string, unknown>;
-    const lanes = this.lanes;
-    const skip = laned ? (lanes as Lanes<I, O>).copies : null;
-    for (let i = 0; i < this.names.length; i++) {
-      if (skip?.[i]) continue;
-      const rest = (this.channels[i] as Channel<unknown>).rest;
-      const key = this.names[i] as string;
-      // Never `delete`: it drops a reused out object into dictionary mode for good.
-      if (rest !== undefined) pose[key] = copy(rest);
-      else if (pose[key] !== undefined) pose[key] = undefined;
-    }
-    if (head === null) return pose as O;
-    // A subject owing lanes it just met folds those voices here, after the lanes' values.
-    let owed = -1;
-    if (laned) {
-      const l = lanes as Lanes<I, O>;
-      l.copy(head.slot, pose);
-      if (l.owes(head.slot)) owed = head.slot;
-      else if (l.whole) return pose as O;
-    }
-    if (this.loci === 0) {
-      for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
-        const voice = held.voice as Voice<I, O> | null;
-        if (voice === null || (laned && voice.laned && !this.owedBy(owed, voice))) continue;
-        if (voice.id === except || voice.state === 'done') continue;
-        const delta = this.read(voice, subject, now, dry, held);
-        if (owed >= 0 && voice.laned) (lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
-        if (delta === null || this.w <= 0) continue;
-        this.apply(pose, voice, held, delta, this.w);
-      }
-      return pose as O;
-    }
-    return this.foldLoci(subject, pose, head, laned, dry, except, owed);
-  }
-
-  /** Whether the subject numbered `owed` reads laned `voice` from the general path this fill. */
-  private owedBy(owed: number, voice: Voice<I, O>): boolean {
-    return owed >= 0 && (this.lanes as Lanes<I, O>).owesVoice(owed, voice.id);
-  }
-
-  /** `foldWith`'s voices with a locus in play: each locus folds at its first member's place. */
-  private foldLoci(
-    subject: I,
-    pose: Record<string, unknown>,
-    head: Subject<unknown>,
-    laned: boolean,
-    dry: boolean,
-    except: number | undefined,
-    owed: number,
-  ): O {
-    const now = this.now;
-    // A patch reading the pose can fold again from inside this one, so each depth has its own.
-    let k = this.locusScratch[this.locusDepth];
-    if (k === undefined) {
-      k = locusScratch<I, O>(this.channels.length);
-      this.locusScratch[this.locusDepth] = k;
-    }
-    this.locusDepth++;
-    try {
-      k.n = 0;
-      k.m = 0;
-      k.names.length = 0;
-      for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
-        const voice = held.voice as Voice<I, O> | null;
-        if (voice === null || (laned && voice.laned && !this.owedBy(owed, voice))) continue;
-        if (voice.id === except || voice.state === 'done') continue;
-        const delta = this.read(voice, subject, now, dry, held);
-        if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
-        if (delta === null) continue;
-        const locus = voice.spec.locus;
-        let group = -1;
-        if (locus !== undefined) {
-          group = k.names.indexOf(locus);
-          const m = k.m++;
-          k.mVoices[m] = voice;
-          k.mDeltas[m] = delta;
-          k.mWeights[m] = this.w;
-          if (group >= 0) {
-            k.mGroups[m] = group;
-            continue;
-          }
-          group = k.names.length;
-          k.names.push(locus);
-          k.mGroups[m] = group;
-        }
-        const n = k.n++;
-        k.voices[n] = voice;
-        k.helds[n] = held;
-        k.deltas[n] = delta;
-        k.weights[n] = locus === undefined ? this.w : 0;
-        k.groups[n] = group;
-      }
-
-      let bands = head.loci;
-      if (bands === null) {
-        bands = new Map();
-        head.loci = bands;
-      }
-
-      for (let n = 0; n < k.n; n++) {
-        const group = k.groups[n] as number;
-        if (group < 0) {
-          const weight = k.weights[n] as number;
-          if (weight > 0)
-            this.apply(
-              pose,
-              k.voices[n] as Voice<I, O>,
-              k.helds[n] as Subject<unknown>,
-              k.deltas[n] as Record<string, unknown>,
-              weight,
-            );
-          continue;
-        }
-        const weight = this.foldLocus(k, group);
-        if (weight <= 0) continue;
-        const name = k.names[group] as string;
-        let on = bands.get(name);
-        if (on === undefined) {
-          on = new Uint8Array(this.channels.length);
-          bands.set(name, on);
-        }
-        for (let t = 0; t < k.touched.length; t++) {
-          const slot = k.touched[t] as number;
-          const value = k.values[slot];
-          k.values[slot] = undefined;
-          const key = this.names[slot] as string;
-          const channel = this.channels[slot] as Channel<unknown>;
-          if (channel.rest !== undefined && channel.scale) {
-            // pose[key] is the copy of rest this fold made, so it is ours to write into.
-            pose[key] = channel.fold
-              ? channel.fold(pose[key], value, weight)
-              : merged(channel, pose[key], channel.scale(value, weight));
-            continue;
-          }
-          const band = on[slot] as number;
-          const passes = this.passes(band === 0 ? undefined : band === 1, weight);
-          on[slot] = passes ? 1 : 2;
-          if (passes)
-            pose[key] = pose[key] === undefined ? copy(value) : merged(channel, pose[key], value);
-        }
-      }
-      return pose as O;
-    } finally {
-      for (let n = 0; n < k.n; n++) {
-        k.voices[n] = null;
-        k.helds[n] = null;
-        k.deltas[n] = null;
-      }
-      for (let m = 0; m < k.m; m++) {
-        k.mVoices[m] = null;
-        k.mDeltas[m] = null;
-      }
-      // Left set only where a channel's lerp threw partway, which the next fold must not inherit.
-      for (let t = 0; t < k.touched.length; t++) {
-        const slot = k.touched[t] as number;
-        k.met[slot] = 0;
-        k.values[slot] = undefined;
-      }
-      k.touched.length = 0;
-      this.locusDepth--;
-    }
-  }
-
-  /** `influence`, or for a dry fold a subject already probed this frame, without advancing it. */
-  private read(
-    voice: Voice<I, O>,
-    subject: I,
-    now: number,
-    dry: boolean,
-    held: Subject<unknown>,
-  ): Record<string, unknown> | null {
-    if (dry) {
-      if (held.reaches && held.probed === now && held.delta && held.seeks === voice.seeks) {
-        const setting = voice.setting;
-        // The setting the probe that read the delta had, but for `dt`: a dry read advances nothing.
-        const elapsed = heldTime(
-          voice.elapsedAt(now) - held.delay,
-          voice.holdsBefore,
-          voice.holdsAfter,
-          voice.span,
-        );
-        setting.timestamp = now;
-        setting.dt = 0;
-        setting.elapsed = elapsed;
-        setting.pass = passAt(elapsed, voice.duration, voice.passes);
-        setting.weight = 0;
-        setting.state = held.state;
-        voice.keepOn = held;
-        this.w = this.weigh(voice, subject, now, held);
-        held.weight = this.w;
-        if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
-        return held.delta;
-      }
-    }
-    return this.influence(voice, subject, now, held);
-  }
+  linkedLaned = false;
 }
+
+// The probe's hot path is methods, installed here from the modules that own them: as functions
+// called directly they made probes and fills up to 9% slower (bench/ab.sh on teitou, 2026-10-05).
+const methods = {
+  fold,
+  folded,
+  linked,
+  foldWith,
+  owedBy,
+  foldLoci,
+  read,
+  influence,
+  keyed,
+  tick,
+  apply,
+  clamp,
+  passes,
+  isRest,
+  baseFor,
+  slopeFor,
+  prime,
+  capped,
+  horizonFor,
+  weigh,
+  weighOwned,
+  base,
+  envelope: fadeOf,
+  ownedBy,
+  ownerBase,
+  blended,
+  laneRead,
+  shareKept,
+  parting,
+  chain,
+  linkable,
+  aims,
+  held,
+  unreachedOf,
+  sinceOf,
+  shownOf,
+  keep,
+  foldLocus,
+};
+type Methods = typeof methods;
+// biome-ignore lint/correctness/noUnusedVariables: merging needs the class's type parameters
+export interface Mixer<I, O> extends Methods {}
+for (const [name, value] of Object.entries(methods))
+  Object.defineProperty(Mixer.prototype, name, { value, writable: true, configurable: true });
 
 /**
  * The one that ships: every form on the CPU, probed per subject on demand.
