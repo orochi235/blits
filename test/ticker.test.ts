@@ -44,7 +44,7 @@ function fake(inert = true) {
     sync(at: number) {
       m.synced.push(at);
     },
-    onStir(fn: () => void) {
+    onWake(fn: () => void) {
       stir = fn;
       return () => {
         stir = undefined;
@@ -59,11 +59,11 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('onStir', () => {
+describe('onWake', () => {
   it('fires once for many cues, again after a sync, and never during one', () => {
     const m = mix<typeof part, Pose>(PART);
     let calls = 0;
-    m.onStir(() => calls++);
+    m.onWake(() => calls++);
     m.cue({ patch: ramp() });
     m.cue({ patch: ramp() });
     expect(calls).toBe(1);
@@ -88,7 +88,7 @@ describe('onStir', () => {
     });
     m.sync(0);
     let calls = 0;
-    m.onStir(() => calls++);
+    m.onWake(() => calls++);
     m.sync(10);
     expect(took).toBeGreaterThan(0);
     expect(calls).toBe(0);
@@ -98,7 +98,7 @@ describe('onStir', () => {
   it('unsubscribes', () => {
     const m = mix<typeof part, Pose>(PART);
     let calls = 0;
-    const off = m.onStir(() => calls++);
+    const off = m.onWake(() => calls++);
     off();
     m.cue({ patch: ramp() });
     expect(calls).toBe(0);
@@ -114,9 +114,9 @@ describe('ticker', () => {
       order.push(`sync ${at}`);
     };
     t.add(a);
-    t.each((at) => order.push(`each ${at}`));
+    t.after((at) => order.push(`after ${at}`));
     step(16);
-    expect(order).toEqual(['sync 16', 'each 16']);
+    expect(order).toEqual(['sync 16', 'after 16']);
   });
 
   it('sleeps once every mix is inert, and wakes when one stirs', () => {
@@ -192,8 +192,8 @@ describe('ticker', () => {
     try {
       t.add(a);
       t.add(b);
-      t.each(() => {
-        throw new Error('each');
+      t.after(() => {
+        throw new Error('after');
       });
       step(16);
       step(32);
@@ -202,7 +202,7 @@ describe('ticker', () => {
       g.queueMicrotask = real;
     }
     expect(b.synced).toEqual([16, 32]);
-    expect(errors.map((e) => (e as Error).message)).toEqual(['a', 'each', 'a', 'each']);
+    expect(errors.map((e) => (e as Error).message)).toEqual(['a', 'after', 'a', 'after']);
   });
 
   it('stop cancels the waiting frame until something wakes it', () => {

@@ -757,7 +757,7 @@ export interface Mix<I, O, H = unknown> {
    * sync clears the change, and never during `sync`. Returns a function that unsubscribes `fn`.
    * A frame loop sleeping on `inert` subscribes here to wake.
    */
-  onStir(fn: () => void): () => void;
+  onWake(fn: () => void): () => void;
   /** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */
   mute(opts?: { over?: number }): void;
   /** Forgets per-subject state, a motion patch's for the subject included. */

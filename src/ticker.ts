@@ -1,8 +1,8 @@
-/** What a ticker runs: a mix, or anything that syncs, sleeps on `inert` and wakes by `onStir`. */
+/** What a ticker runs: a mix, or anything that syncs, sleeps on `inert` and wakes by `onWake`. */
 export interface Ticked {
   sync(timestamp: number): void;
   readonly inert: boolean;
-  onStir(fn: () => void): () => void;
+  onWake(fn: () => void): () => void;
 }
 
 export interface TickerOptions {
@@ -31,13 +31,13 @@ export interface TickerOptions {
 }
 
 export interface Ticker {
-  /** Syncs `mix` every frame from now on, and wakes the loop when it stirs. Returns a remove. */
+  /** Syncs `mix` every frame from now on, and wakes the loop on its `onWake`. Returns a remove. */
   add(mix: Ticked): () => void;
   /** Calls `fn` each frame, after every mix has synced, with the frame's timestamp. Returns an unsubscribe. */
-  each(fn: (timestamp: number) => void): () => void;
+  after(fn: (timestamp: number) => void): () => void;
   /** Keeps frames coming whatever the mixes say, until the returned release is called. */
   stay(): () => void;
-  /** Cancels the waiting frame; the next stir, `stay` or `add` starts the loop again. */
+  /** Cancels the waiting frame; a mix waking, `stay` or `add` starts the loop again. */
   stop(): void;
   /** What the ticker's clock reads now. */
   now(): number;
@@ -57,7 +57,7 @@ const SLACK = 1;
 
 /**
  * One frame loop for any number of mixes. It runs while a mix would still change or something
- * holds it, and sleeps otherwise, until a mix stirs. A mix or `each` callback that throws stops
+ * holds it, and sleeps otherwise, until a mix wakes it. A mix or `after` callback that throws stops
  * neither the loop nor the others: its error is thrown again on a microtask.
  */
 export function ticker(opts: TickerOptions = {}): Ticker {
@@ -72,7 +72,7 @@ export function ticker(opts: TickerOptions = {}): Ticker {
   const interval = fps === undefined ? 0 : 1000 / fps;
 
   const mixes: Ticked[] = [];
-  const unstirs = new Map<Ticked, () => void>();
+  const unwakes = new Map<Ticked, () => void>();
   const fns: ((timestamp: number) => void)[] = [];
   let holds = 0;
   let pending: unknown = null;
@@ -131,20 +131,20 @@ export function ticker(opts: TickerOptions = {}): Ticker {
 
   return {
     add(mix) {
-      if (!unstirs.has(mix)) {
+      if (!unwakes.has(mix)) {
         mixes.push(mix);
-        unstirs.set(mix, mix.onStir(schedule));
+        unwakes.set(mix, mix.onWake(schedule));
       }
       schedule();
       return () => {
-        const unstir = unstirs.get(mix);
-        if (unstir === undefined) return;
-        unstir();
-        unstirs.delete(mix);
+        const unwake = unwakes.get(mix);
+        if (unwake === undefined) return;
+        unwake();
+        unwakes.delete(mix);
         mixes.splice(mixes.indexOf(mix), 1);
       };
     },
-    each(fn) {
+    after(fn) {
       fns.push(fn);
       return () => {
         const i = fns.indexOf(fn);

@@ -531,7 +531,7 @@ interface Mix&lt;I, O, H = unknown&gt; {
   voices(tag?: string): Handle&lt;I&gt;[];
 
   <span class="cm">/** Anything still contributing, fading, or pending. A host stops its loop when this is false. `cue` and
-     `blend` make it true again at once, and `onStir` says so. */</span>
+     `blend` make it true again at once, and `onWake` says so. */</span>
   readonly live: boolean;
   <span class="cm">/** Another frame would change no pose: every voice is done, held at a plain weight, or a motion whose every
      subject has landed, or, at rate 0, every voice has started at a plain weight with no anchor. A host may sleep its loop while this is true and `live` still is. */</span>
@@ -539,7 +539,7 @@ interface Mix&lt;I, O, H = unknown&gt; {
   <span class="cm">/** Calls `fn` when a host call makes the mix need frames again after a sync: a cue, a fade, a rate, a seek, a
      `drop`, a motion retargeted. Once until the next sync, and never during one: the only time the mix calls
      back into the host, and always from inside a call the host made. A sleeping loop wakes on it. */</span>
-  onStir(fn: () =&gt; void): () =&gt; void;
+  onWake(fn: () =&gt; void): () =&gt; void;
   <span class="cm">/** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */</span>
   mute(opts?: { over?: number }): void;
   <span class="cm">/** Forgets per-subject state, a motion patch's included. Call when a subject is retired, or let the WeakMap do it. */</span>
@@ -574,7 +574,7 @@ function gate&lt;I&gt;(of: Signal&lt;I&gt;, at: number): Signal&lt;I&gt;;       
 
 <h2 id="time">Time</h2>
 <ul>
-  <li><b>The mix is pull-based on a host clock.</b> The host owns the frame loop and calls <code>sync(timestamp)</code> with milliseconds on any monotonic clock it likes. klieg passes its <code>Clock.now()</code>; wod passes <code>performance.now()</code>; a test passes integers. A host with no loop of its own can take <code>ticker()</code>'s: it syncs every mix it was given on each animation frame, or on a timer where there are none, as in a worker, sleeps while every mix is <code>inert</code>, wakes on <code>onStir</code>, and caps the rate at <code>fps</code> when asked.</li>
+  <li><b>The mix is pull-based on a host clock.</b> The host owns the frame loop and calls <code>sync(timestamp)</code> with milliseconds on any monotonic clock it likes. klieg passes its <code>Clock.now()</code>; wod passes <code>performance.now()</code>; a test passes integers. A host with no loop of its own can take <code>ticker()</code>'s: it syncs every mix it was given on each animation frame, or on a timer where there are none, as in a worker, sleeps while every mix is <code>inert</code>, wakes on <code>onWake</code>, and caps the rate at <code>fps</code> when asked.</li>
   <li><b>Everything in a frame reads one timestamp.</b> A second <code>sync</code> with the same value is a no-op, and every <code>probe</code> between syncs answers from the same frame. This is what makes state advance once however many probes a wrapper makes.</li>
   <li><b>A voice's clock is <code>(timestamp − start) · rate</code>.</b> That reading is <code>setting.elapsed</code>, and its position within the current pass, <code>(elapsed mod duration) / duration</code>, is the <code>phase</code> the patch is handed first. Both reach the patch. A rate change rebases so <code>elapsed</code> is continuous.</li>
   <li><b>The mix has a rate of its own,</b> <code>mix.rate</code> and <code>mix.ramp(rate, over)</code>, shaped like a handle's and multiplied into every voice's: 0 pauses the whole mix, and a negative rate throws, since the mix only goes forward. It runs the mix clock: mix time is the host's timestamp, less what <code>rebase</code> took out, integrated at the mix's rate, and each voice integrates its own rate over mix time, so a ramp on both multiplies and no position jumps. Everything a voice owns runs on mix time and slows with it, which is what a pause has to mean for a fade caught halfway. A timestamp the host gives or reads stays on the host's clock, so a beat announced from an audio clock stays on the beat when the mix slows, and a start ahead of a paused mix waits for the host's clock to reach it. The mix's own ramp runs over host ms, since a ramp over its own slowing time would never arrive. A change made while paused lands at the next sync as always, and a weight signal is still asked at every probe, so one reading input follows it. At rate 0 the mix is <code>inert</code> once every voice not done has started, at a plain weight, with no anchor. Under <code>history</code> every rate change is kept, and a read back finds mix time through them as it finds a voice's clock through its handle's changes; without it a timestamp from before the last change converts at the rate in force, as one from before a <code>rebase</code> converts at the offset in force. weasel also scales a key and a handle; a mix leaves those levels to tags and to the host.

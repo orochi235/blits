@@ -18,7 +18,7 @@ Above, three voices play over twelve lamps. Wave rolls across all of them, pulse
 
 ## The frame loop
 
-The host owns the loop. The mix never schedules a frame; it only answers, and calls back only through `onStir`, to say a call just made needs frames again. A host with no loop of its own can use `ticker()`, which runs one for any number of mixes and sleeps while they are inert.
+The host owns the loop. The mix never schedules a frame; it only answers, and calls back only through `onWake`, to say a call just made needs frames again. A host with no loop of its own can use `ticker()`, which runs one for any number of mixes and sleeps while they are inert.
 
 ```ts
 import { kit, mix, patch, sum } from '@msb235/blits';
@@ -52,7 +52,7 @@ requestAnimationFrame(frame);
 
 `subjects` names the subjects a voice reaches instead: `subjects: [bar]` reaches that bar and no other. Every `target` meets every subject the mix sees, so a scene with one voice per subject should name them, which lets a probe skip the voices that name someone else. A voice takes one or the other, never both.
 
-`atRest(subject)` is true when every channel of that subject's pose is at its rest, so a host can skip writing it. `live` is true while any voice is still playing, fading or waiting to start. When it goes false, the host can stop its loop. Cueing a voice makes it true again at once, and `onStir` tells the host so; `ticker()` listens for it and restarts its loop.
+`atRest(subject)` is true when every channel of that subject's pose is at its rest, so a host can skip writing it. `live` is true while any voice is still playing, fading or waiting to start. When it goes false, the host can stop its loop. Cueing a voice makes it true again at once, and `onWake` tells the host so; `ticker()` listens for it and restarts its loop.
 
 ## Clearing up
 

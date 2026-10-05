@@ -156,7 +156,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     if (fns !== null && !this.syncing) for (const fn of [...fns]) fn();
   }
 
-  onStir(fn: () => void): () => void {
+  onWake(fn: () => void): () => void {
     if (this.stirFns === null) this.stirFns = [];
     const fns = this.stirFns;
     fns.push(fn);
