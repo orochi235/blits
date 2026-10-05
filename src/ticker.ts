@@ -17,7 +17,7 @@ export interface TickerOptions {
    * default animation frames where they exist, and a timer where they don't, as in a worker
    * without them or in Node.
    */
-  via?: 'frame' | 'timer';
+  grain?: 'frame' | 'timer';
   /**
    * The clock every mix is synced by. By default an animation frame's own timestamp, or
    * `performance.now()` under a timer. A worker's `performance.now()` counts from its own origin,
@@ -65,7 +65,7 @@ export function ticker(opts: TickerOptions = {}): Ticker {
   const perfNow = () => (g.performance === undefined ? Date.now() : g.performance.now());
   const byFrame =
     opts.raf !== undefined ||
-    (opts.via !== 'timer' && typeof g.requestAnimationFrame === 'function');
+    (opts.grain !== 'timer' && typeof g.requestAnimationFrame === 'function');
   const fps = opts.fps ?? (byFrame ? undefined : 60);
   if (fps !== undefined && !(fps > 0 && fps < Number.POSITIVE_INFINITY))
     throw new RangeError(`blits: a ticker's fps is a finite number above 0, not ${fps}`);

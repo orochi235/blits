@@ -232,7 +232,7 @@ describe('ticker', () => {
 
   it('runs on a timer at 60 by default where there are no animation frames', () => {
     vi.useFakeTimers();
-    const t = ticker({ via: 'timer' });
+    const t = ticker({ grain: 'timer' });
     const a = fake(false);
     t.add(a);
     vi.advanceTimersByTime(1000);
@@ -246,7 +246,7 @@ describe('ticker', () => {
 
   it('runs on a timer at the fps given', () => {
     vi.useFakeTimers();
-    const t = ticker({ via: 'timer', fps: 10 });
+    const t = ticker({ grain: 'timer', fps: 10 });
     const a = fake(false);
     t.add(a);
     vi.advanceTimersByTime(1000);
