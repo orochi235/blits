@@ -107,6 +107,10 @@ version and everything else the patch. Each release lists its changes as **Break
   subject each read by `pull` take 0.34–0.36 ms a frame on teitou, from 0.66–1.02, and by probe
   0.81–0.83, from 1.00–1.37. A row whose stops are not plain numbers on its channel's axes reads
   them as before.
+- A `keys` patch keeps its stops' phases in a plain array made with it, and those of the stops after
+  phase 0 only once a `from: 'current'` voice first reads them, where it made a typed array of
+  each as it was built: making and cueing 10k one-subject `keys` voices takes 10.9–11.9 ms on
+  teitou, from 13.9–14.8, with their first frame and later frames unchanged.
 - A pose never holds a patch's own array. Where a channel's `merge` returned its second argument,
   as `last()` does, the mix put that array into the pose as it was: with two voices on a keyed
   array channel, a host editing its pose edited the stop, and every later frame read the edit. The

@@ -100,9 +100,9 @@ export interface Track {
   all: Point[];
   /** The same without stops at 0, which a `from: 'current'` base replaces. */
   tail: Point[];
-  /** The phases of `all` and of `tail`, which the search reads. */
-  ats: Float64Array;
-  tailAts: Float64Array;
+  /** The phases of `all`, which the search reads, and of `tail`, made on its first search. */
+  ats: number[];
+  tailAts: number[] | null;
   delay: number;
   lerp: ((a: never, b: never, u: number) => unknown) | undefined;
 }
@@ -144,8 +144,8 @@ function build<O>(
       channel: channel as string,
       all,
       tail,
-      ats: Float64Array.from(all, (pt) => pt.at),
-      tailAts: Float64Array.from(tail, (pt) => pt.at),
+      ats: all.map((pt) => pt.at),
+      tailAts: null,
       delay: opts.delayBy?.(channel) ?? 0,
       lerp: opts.lerpBy?.(channel) ?? (opts.kit?.[channel]?.lerp as Track['lerp']),
     });
@@ -252,6 +252,7 @@ export function segment(track: Track, phase: number, base: unknown): number {
       seg.a = last === undefined ? base : last.value;
       return AT;
     }
+    track.tailAts ??= pts.map((pt) => pt.at);
     lo = firstPast(track.tailAts, -1, 1, 1, n - 1, phase);
   }
   const b = pts[lo - o] as Point;
