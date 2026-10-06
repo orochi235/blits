@@ -4,11 +4,11 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
-## Unreleased
+## 0.2.0
 
 ### Breaking
 
-- Pins `@msb235/blits` 0.3.0, whose breaking changes are in that package's changelog.
+- Pins `@msb235/blits` 0.6.0, whose breaking changes since 0.2.1 are in that package's changelog.
 
 ## 0.1.0
 

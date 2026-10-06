@@ -355,10 +355,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
 
-1d. **`@msb235/blits-quarks` 0.1.0 is on npm**, published by hand 2026-10-02 because npm refuses
-   trust for a name never published; trusted publishing is registered since, so later versions go out
-   from `quarks-v*` tags. `main` pins it to engine 0.3.0, a breaking change not yet released (0.2.0
-   under its semver; the number is Mike's). Its README says how it works. Moving magicsmoke's fizz and tuning onto it
+1d. **`@msb235/blits-quarks` 0.2.0 is on npm**, pinned to engine 0.6.0 and published from its
+   `quarks-v0.2.0` tag (0.1.0 went out by hand, because npm refuses trust for a name never
+   published). Its README says how it works. Moving magicsmoke's fizz and tuning onto it
    is a follow-up in magicsmoke's repo.
 
 2. **klieg's tube gradient still calls its own thing `domain`**, the one rename step two
