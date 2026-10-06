@@ -3,7 +3,7 @@
 **Status: partly built, plus an unbuilt draft.** Fixed-interval stepping (`stepMs`), closed-form
 motion (`spring`, `glide`), copies of state, the history horizon, recorded input and reading back
 (`mix.project`, `MixOptions.history`) are built, and the schema page's Score section describes them.
-A mix-level rewind, below, is a draft from 2026-10-04, and a history source a client supplies was
+A mix-level rewind, below, is a draft from 2026-10-04, and history kept through weasel-history was
 added to it on 2026-10-06 at weasel's request. None of it is built, and it waits on the decisions it
 lists. Delete this file once every item is built or turned down, moving any decision
 into `docs/schema.html` first.
@@ -46,45 +46,55 @@ Save and load wins only where the horizon or the cost of `history` is the proble
 added later as a pin on history: `save()` holds history from being pruned past that instant, and
 `load` runs the same restore.
 
-### A history source: keeping history where the client says (requested 2026-10-06, unbuilt)
+### History kept through weasel-history (requested 2026-10-06, unbuilt)
 
 weasel's labkit trial clock seeks and plays backward. It wants an instrument whose state builds up
-by running to be scrubbable by blits, from a store the client picks: in memory, the trial record,
-IndexedDB, or a recording loaded from a file. blits still decides when to copy, and it still
-restores and steps forward. The client decides only where the copies live. The sketch as sent:
+by running to be scrubbable by blits, with the client choosing where history lives (labkit would
+keep it in the trial record). Mike wants this built on weasel-history (`@weasel-js/history`, in
+`~/src/weasel/packages/history/src`), not a new interface. Where weasel-history falls short, the
+fix goes into weasel-history, not into a parallel shape in blits. The package has no dependencies,
+so blits can either match its types structurally or depend on it.
 
-```ts
-interface HistorySource<Snap> {
-  put(at: number, snap: Snap): void;
-  nearest(at: number): { at: number; snap: Snap } | null;   // latest copy at or before `at`
-  drop(before: number): void;
-}
-mix(kit, { history: { every: 250, source } })   // default: in memory, today's horizon
-```
+How it maps, read against weasel `cb5b75652` and blits `c441c66`:
 
-This is a variant of rewind from history, not a third alternative to it. It lifts that shape's limit
-of `history.ms`, and the host still does not re-do its calls. The table compares what the sketch
-assumes with what the code does today (read, against `c441c66`):
+| weasel-history | In a mix |
+|---|---|
+| `Op` with `apply(adapter)` / `invert()`, plus `name` and `args` for persisting | each host call: cue, handle writes, `spring.to`/`push`, `announce`, `mute`, `drop`, `level.set` |
+| `createHistory(adapter, { now })` | `now: () => mix.now`, so entry timestamps are mix time |
+| a push after an undo drops the redo stack and reports it through `onEvict` | rewind, then new input replaces the old future |
+| `serialize()` / `restore()` as `(name, args)`, with `rebuildOp` | persisting; `rebuildOp` resolves voice ids back to voices through the mix |
 
-| Sketch assumes | Today | So a source needs |
+What does not fit yet:
+
+| Gap | Why | Where it gets fixed |
 |---|---|---|
-| one copy per instant | copies are per voice and subject, taken when that subject is probed, and kept on its record (`remember`, `history.ts`) | a key for the voice and subject beside `at` |
-| a copy can say what it belongs to | subjects are `WeakMap` keys (`Store`, `store.ts`) and voices are objects; nothing carries an id that outlives the page | an id per subject from the client, and voices keyed by cue id |
-| copies are plain data | `clone` falls back to `structuredClone`, so state is structured-clonable unless a patch's own `clone` returns something else; a record's `kept` is a `Map` keyed by owner `Voice` objects | `kept` keyed by owner id; `patch.clone` held to plain data under a persisting source |
-| state copies are all of history | a rewind also reads the control log (`voice.log`), recorded inputs (`held.inputs`), host fields (`hostLog`) and motion stretches (`older` in `Motions`), all in memory under the same horizon | those logs in the source too, or a horizon that still applies to them |
+| Seeking by time | `goto(n)` takes an entry count, and getting timestamps means `entries()`, which builds a view of every entry | weasel-history: a goto by time, or cheap timestamp access |
+| Time-based horizon | `historyLimit` counts entries; `history.ms` is a span of time | weasel-history: drop entries older than a time |
+| Timestamps don't persist | `SerializedHistoryEntry` has no `timestamp`, and `restore` sets it to 0; coalescing also moves an entry's timestamp to its last push | weasel-history: serialize `timestamp`. blits passes `coalesceWindowMs: 0` |
+| Redo is instant | `redo`/`goto` apply an entry's ops at once; replaying forward needs each op applied when mix time reaches its timestamp, between steps | blits reads the redo stack and applies each entry as it comes due; weasel-history needs a cheap way to read the next redo entry and its time |
+| State copies | a `History` holds ops, not state. blits copies per voice and subject, on a time cadence and only when a subject is probed (`remember`, `history.ts`), keyed by subject objects in a `WeakMap` | stays in blits. Copies are not per entry, so attaching them to entries does not fit. Persisting them needs subject ids from the client (Decision 8) |
+| Reading back without moving | `project(t)` reads controls at `t` by binary search over each voice's control log (`voice.log`) and over `hostLog`, and never mutates the live mix. An op stack answers "what was in force at `t`" only by undoing to `t` | open: keep the per-voice logs as the index `project` reads and treat the `History` as the persisted record, which risks two records of one fact; or make `project` undo and redo against a throwaway adapter |
 
-The last row covers the request's second worry, that a rewind is exact only if host calls made after
-the copy replay as well. blits already logs them when `history` is on. The gap is that the logs live
-only in memory. A source holding nothing but state copies reaches no further back than `history.ms`,
-because the controls at `t` are gone by then.
+`apply` and `invert` themselves suit a mix. The inverse of each host call can be built when the
+call is made: a control write inverts to the controls before it, `cue` inverts to retiring the voice,
+and a retarget inverts to cutting the stretch. Ops have to name voices by id rather than by object,
+so that `rebuildOp` can resolve them after `restore`. A voice that ends on its own, or a subject
+faded out of one, is not a host call, so no op covers it. Both are restored from state, as the
+table under "What the live mix holds" already does.
 
-**Decision 8: does a history source have to survive a page reload, or only change where copies
-live during the session?** If it is session-only, keys stay object references, nothing changes
-about copying, and the work is routing `remember`'s push and prune, and `project`'s lookup, through
-the source. If it must survive a reload, subjects and voices need stable ids, records must be plain
-data, and every log moves into the source. That is the serialization half of save and load. A
-recording loaded from a file also needs the client to re-cue the same voices in the same order, so
-that cue ids line up. Recommended: session-only first, built with the rewind it serves.
+**This reopens Decision 2.** Scrubbing a recorded trial back and then forward again has to replay
+what the host did after `t`, such as a participant's responses. That is the tape, not undo. The draft
+recommends undo, where the future is cut. With weasel-history the two are the same stack read two
+ways: undo pushes a new op after the rewind and drops the redo stack; the tape replays the redo
+stack on time.
+
+**Decision 8: does history have to survive a page reload, or only change where it lives during
+the session?** If it is session-only, ops can hold voice references, state copies stay as they are,
+and the timestamp gaps above don't matter. If it must survive a reload, subjects and voices need
+stable ids, state copies must be plain data (a record's `kept` map is keyed by `Voice` objects
+today), and the copies need a persisted home beside the serialized `History`. A recording loaded
+from a file also needs the client to re-cue the same voices in the same order, so that cue ids
+line up. Recommended: session-only first, built with the rewind it serves.
 
 ### Why a projection cannot just become the live mix
 
@@ -187,7 +197,8 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
 2. **After going back, does what happened after `t` vanish, or play again as it was recorded?**
    Vanishing is undo: the future is cut and the mix plays on fresh. Playing again is a tape: voices
    cued after `t` come back at their times, retargets replay. A tape makes mix time a position,
-   which is the 2026-09-27 decision overturned rather than bent. Recommended: vanish.
+   which is the 2026-09-27 decision overturned rather than bent. Recommended: vanish. Reopened by
+   the weasel-history section above: scrubbing a recorded trial needs the tape.
 3. **When the mix plays past a time again, does it send the events it already sent there?** The host
    drained them once, so sending again duplicates them; not sending means a patch's `send` is no
    longer a record of what played. Recommended: send again, and say so on `rewind`, since the host
