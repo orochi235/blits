@@ -64,7 +64,9 @@ How it maps, read against weasel `cb5b75652` and blits `c441c66`:
 | a push after an undo drops the redo stack and reports it through `onEvict` | rewind, then new input replaces the old future |
 | `serialize()` / `restore()` as `(name, args)`, with `rebuildOp` | persisting; `rebuildOp` resolves voice ids back to voices through the mix |
 
-What does not fit yet:
+What does not fit yet. The weasel-history changes are filed in weasel's `docs/TODO.md` under
+"weasel-history as a rewind log".
+
 
 | Gap | Why | Where it gets fixed |
 |---|---|---|
