@@ -341,12 +341,22 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    `weasel^`), Mike's go 2026-10-05. Bare tween rows fill in one loop (`bare.ts`) and `pull` queues
    runs since 2026-10-05: on teitou `tweens^` takes 0.17 ms a frame and `weasel^` 0.22, against
    0.031–0.047 for a hand-written loop doing the same arithmetic. What is left:
-   - **`probed` reads no faster for allocating less.** Since `chain` and `prepare` read the clock
-     instead of taking it, `linked` gets TurboFan code of its own with both inlined, 521 bytecodes
-     with its callees, and V8 then refuses to inline it anywhere (460 at most), so `probe` and
-     `atRest` call it (`node --trace-turbo-inlining bench/frame.mjs probed`). On main it only ever
-     reached Maglev on its own. What `probed` still allocates is pose data: `foldWith` copying each
-     channel's rest value, and the `fn` voices' returned objects in `fill.ts`'s `call`.
+   - **Inlining `linked` back into `probe` and `atRest` buys no frame time**, so not worth
+     re-proposing. A callee with TurboFan code of its own costs the caller its bytecode plus what
+     that code inlined, times 1.2, against 920 for the whole compile (`--trace-turbo-inlining`):
+     `linked` at 91 + 521 did not fit. Caching `filled` as one stamp that `begin` sets on its way
+     out, and moving `begin` and the per-subject stamping out of `prepare`, took that to 244 and
+     put `linked`, `chain`, `prepare` and `filled` back inline in the bench's read loop; reducing
+     `keep` to its check as well inlined the stamping into `probe` for `named` and `fn`. On
+     msb-uai, 12 own-process runs a side at `FRAMES=5000` against `1981422`: probed 2.224 → 2.188,
+     fn 2.792 → 2.747, named 2.292 → 2.272, probed- 3.924 → 3.906, rest 1.216 → 1.216, every row's
+     runs overlapping the other side's, collections unchanged; without the `keep` change, within
+     ±1.2%. `bench/same.sh` read 0 differ in all four settings. What `probed` still allocates is
+     pose data: `foldWith` copying each channel's rest value, and the `fn` voices' returned objects
+     in `fill.ts`'s `call`.
+   - **`chain`'s `chains.get` takes 8% of `probed`'s CPU samples** on `1981422` (a local
+     `--cpu-prof`): a WeakMap lookup per subject for each probe and again for its `atRest`. Not
+     tried.
    - `pullRun`'s per-subject stamps (`LANE_PROBE`, `LANE_FILL`): written per run instead, they
      would give `weightOf` and `pace` a second place to read the same answer. Not tried.
    - Measured no different, so not worth re-proposing: moving `popDue`'s loop into a function of
