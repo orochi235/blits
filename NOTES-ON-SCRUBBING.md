@@ -3,8 +3,9 @@
 **Status: partly built, plus an unbuilt draft.** Fixed-interval stepping (`stepMs`), closed-form
 motion (`spring`, `glide`), copies of state, the history horizon, recorded input and reading back
 (`mix.project`, `MixOptions.history`) are built, and the schema page's Score section describes them.
-A mix-level rewind, below, is a draft from 2026-10-04: none of it is built, and it waits on the
-decisions it lists. Delete this file once every item is built or turned down, moving any decision
+A mix-level rewind, below, is a draft from 2026-10-04, and a history source a client supplies was
+added to it on 2026-10-06 at weasel's request. None of it is built, and it waits on the decisions it
+lists. Delete this file once every item is built or turned down, moving any decision
 into `docs/schema.html` first.
 
 **For:** whoever works on reading back next. **Answers:** whether and how the live mix can go back,
@@ -44,6 +45,46 @@ what the mix did, the same objection that turned down subject registration in th
 Save and load wins only where the horizon or the cost of `history` is the problem, and it can be
 added later as a pin on history: `save()` holds history from being pruned past that instant, and
 `load` runs the same restore.
+
+### A history source: keeping history where the client says (requested 2026-10-06, unbuilt)
+
+weasel's labkit trial clock seeks and plays backward. It wants an instrument whose state builds up
+by running to be scrubbable by blits, from a store the client picks: in memory, the trial record,
+IndexedDB, or a recording loaded from a file. blits still decides when to copy, and it still
+restores and steps forward. The client decides only where the copies live. The sketch as sent:
+
+```ts
+interface HistorySource<Snap> {
+  put(at: number, snap: Snap): void;
+  nearest(at: number): { at: number; snap: Snap } | null;   // latest copy at or before `at`
+  drop(before: number): void;
+}
+mix(kit, { history: { every: 250, source } })   // default: in memory, today's horizon
+```
+
+This is a variant of rewind from history, not a third alternative to it. It lifts that shape's limit
+of `history.ms`, and the host still does not re-do its calls. The table compares what the sketch
+assumes with what the code does today (read, against `c441c66`):
+
+| Sketch assumes | Today | So a source needs |
+|---|---|---|
+| one copy per instant | copies are per voice and subject, taken when that subject is probed, and kept on its record (`remember`, `history.ts`) | a key for the voice and subject beside `at` |
+| a copy can say what it belongs to | subjects are `WeakMap` keys (`Store`, `store.ts`) and voices are objects; nothing carries an id that outlives the page | an id per subject from the client, and voices keyed by cue id |
+| copies are plain data | `clone` falls back to `structuredClone`, so state is structured-clonable unless a patch's own `clone` returns something else; a record's `kept` is a `Map` keyed by owner `Voice` objects | `kept` keyed by owner id; `patch.clone` held to plain data under a persisting source |
+| state copies are all of history | a rewind also reads the control log (`voice.log`), recorded inputs (`held.inputs`), host fields (`hostLog`) and motion stretches (`older` in `Motions`), all in memory under the same horizon | those logs in the source too, or a horizon that still applies to them |
+
+The last row covers the request's second worry, that a rewind is exact only if host calls made after
+the copy replay as well. blits already logs them when `history` is on. The gap is that the logs live
+only in memory. A source holding nothing but state copies reaches no further back than `history.ms`,
+because the controls at `t` are gone by then.
+
+**Decision 8: does a history source have to survive a page reload, or only change where copies
+live during the session?** If it is session-only, keys stay object references, nothing changes
+about copying, and the work is routing `remember`'s push and prune, and `project`'s lookup, through
+the source. If it must survive a reload, subjects and voices need stable ids, records must be plain
+data, and every log moves into the source. That is the serialization half of save and load. A
+recording loaded from a file also needs the client to re-cue the same voices in the same order, so
+that cue ids line up. Recommended: session-only first, built with the rewind it serves.
 
 ### Why a projection cannot just become the live mix
 
