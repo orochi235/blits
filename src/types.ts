@@ -686,7 +686,11 @@ export interface Mix<I, O, H = unknown> {
    */
   owns(spec: OwnerSpec<I, H>): Handle<I>;
 
-  /** The host reports the clock, once a frame. Nothing advances at the call. */
+  /**
+   * The host reports the clock, once a frame. Nothing advances at the call. Throws for a timestamp
+   * earlier than the last sync's, short of a `rebase`: a mix only goes forward, and `rewind` takes
+   * it back.
+   */
   sync(timestamp: number): void;
   /**
    * The time between the last sync and the next one is not to count: a host calls it when a
@@ -731,9 +735,27 @@ export interface Mix<I, O, H = unknown> {
   /**
    * Reads the mix at another timestamp, on the host's clock, without moving it. Ahead of the last
    * sync it plays what is cued forward; behind it, it needs `history`, and throws for a timestamp
-   * older than the history reaches.
+   * older than the history reaches. Under `history`, a timestamp from before a `rebase` or a
+   * `rewind` reads at the mix time it named when the host passed it; after a rewind, that time
+   * shows what the mix plays there now.
    */
   project(timestamp: number): Projection<I, O>;
+  /**
+   * Moves the mix back to a timestamp on the host's clock, as it stood at the end of that frame,
+   * and plays on from there: what happened after it is undone, not replayed. Voices cued after it
+   * are gone, `done` resolving and `played` false; voices that left after it are back on the
+   * handles the host holds, their `done` and `played` starting over where they had settled since.
+   * Control changes, retargets and pushes, rate changes, announced marks, recorded input and
+   * undrained events from after it are dropped; a subject faded out of a voice or dropped after it
+   * comes back as never seen, and `from: 'current'` voices take their pose afresh. Stateful voices
+   * restart from the copy `history` kept nearest before it and step once to it, exact under
+   * `stepMs`. Playing past a time again sends its events and books its marks and hits again.
+   *
+   * The host goes on passing its own clock: the next `sync` reads the rewound moment plus the
+   * host's time since its last sync. Needs `history`; throws for a timestamp older than the history
+   * reaches or ahead of the last sync.
+   */
+  rewind(timestamp: number): void;
   /**
    * Every channel at rest for this subject this frame, so a host can skip the write. After a probe
    * of the subject this frame, it answers for the pose that probe gave, without folding again.

@@ -61,7 +61,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
     if (voice.state !== 'pending' && Number.isFinite(voice.span)) {
       const end = voice.span + voice.latest;
       if (voice.elapsedAt(now) >= end) {
-        voice.play(true);
+        voice.play(true, now);
         // The fade starts when the last pass ended, not at the frame that noticed, so it plays
         // the same at any frame rate and a read at another time can find it.
         if (voice.state === 'live') {

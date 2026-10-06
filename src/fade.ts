@@ -124,7 +124,7 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
   voice.keepOn = null;
   mix.retired.push(voice);
   voice.doneAt = at ?? (Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now);
-  voice.play(false);
+  voice.play(false, voice.doneAt);
   voice.resolve();
   // An owner takes what it holds with it, and leaves with its last child.
   if (voice.holding !== null)

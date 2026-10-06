@@ -39,6 +39,8 @@ interface Segment {
   x0: number[];
   v0: number[];
   to: number[];
+  /** The change that released it; undefined for a subject's first stretch. */
+  change?: Change;
 }
 
 interface Change {
@@ -49,6 +51,8 @@ interface Change {
   at?: number;
   to?: number[];
   v?: number[];
+  /** The mix clock when it was made, NaN where no mix was playing the patch. */
+  made?: number;
 }
 
 const UNDER = 0;
@@ -73,6 +77,8 @@ export interface MotionOwner {
   frame(id: number, subject: unknown): number;
   /** Brings a subject the voice faded out back to it, so a change is not made for nothing. */
   revive(id: number, subject: unknown): void;
+  /** The mix clock at its latest frame; NaN before the first. */
+  now(): number;
 }
 
 /**
@@ -297,6 +303,8 @@ export class Motions<I> {
    */
   private pending: (Change[] | undefined)[] | null = null;
   private older: (Segment[] | undefined)[] | null = null;
+  /** By subject number, the change that released the stretch it is playing; null until one has. */
+  private causes: (Change | undefined)[] | null = null;
   /**
    * The mix playing the patch and its voice's id, which an untimed change and a `read` with no time
    * ask for the latest frame. Set by the mix that cues the patch, and cleared when its voice retires.
@@ -571,6 +579,7 @@ export class Motions<I> {
     const s = this.slot(subject);
     this.check(c.to, this.n);
     this.check(c.v, this.n);
+    c.made = this.owner === null ? Number.NaN : this.owner.now();
     if (c.at === undefined) {
       const at = this.frame(subject);
       if (!Number.isNaN(at)) c.at = at;
@@ -624,6 +633,50 @@ export class Motions<I> {
   forget(s: number): void {
     if (this.pending !== null) this.pending[s] = undefined;
     if (this.older !== null) this.older[s] = undefined;
+    if (this.causes !== null) this.causes[s] = undefined;
+  }
+
+  /**
+   * Takes back every change made after mix time `t`: each subject plays from its earliest stretch
+   * kept, with the changes made by then queued to be applied again.
+   */
+  rewind(t: number): void {
+    for (let s = 0; s < this.numbers.size; s++)
+      if (this.numbers.subject(s) !== absent) this.cut(s, t);
+  }
+
+  private cut(s: number, t: number): void {
+    const older = this.older?.[s];
+    const pending = this.pending?.[s];
+    const current = this.latest(s);
+    const stretches = older === undefined ? [current] : [...older, current];
+    const kept: Change[] = [];
+    let cut = false;
+    for (const c of [...stretches.slice(1).map((seg) => seg.change), ...(pending ?? [])])
+      if (c === undefined || c.made === undefined || !(c.made > t)) {
+        if (c !== undefined) kept.push(c);
+      } else cut = true;
+    if (!cut) return;
+    if (older !== undefined) {
+      (this.older as (Segment[] | undefined)[])[s] = undefined;
+      this.flag(s, OLDER, false);
+    }
+    this.write(s, stretches[0] as Segment);
+    // Applied again in the order they take effect; one never stamped waits for the next read.
+    const timed = kept
+      .filter((c) => c.at !== undefined)
+      .sort((a, b) => (a.at as number) - (b.at as number));
+    const list = [...timed, ...kept.filter((c) => c.at === undefined)];
+    if (list.length === 0) {
+      if (pending !== undefined) {
+        (this.pending as (Change[] | undefined)[])[s] = undefined;
+        this.flag(s, PENDING, false);
+      }
+      return;
+    }
+    if (this.pending === null) this.pending = [undefined];
+    this.pending[s] = list;
+    this.flag(s, PENDING, true);
   }
 
   /** Where subject `s`'s run starts in `runs`. */
@@ -644,6 +697,10 @@ export class Motions<I> {
     const n = this.n;
     const b = this.base(s);
     this.watcher?.stretchChanged(this.watchId, s);
+    if (seg.change !== undefined || this.causes !== null) {
+      this.causes ??= [];
+      this.causes[s] = seg.change;
+    }
     this.runs[b] = seg.at;
     this.runs[b + 1] = (this.runs[b + 1] as number) & ~LANDED;
     this.runs[b + 2] = seg.ms;
@@ -664,6 +721,7 @@ export class Motions<I> {
       x0: Array.from(this.runs.subarray(x, x + n)),
       v0: Array.from(this.runs.subarray(x + n, x + 2 * n)),
       to: Array.from(this.runs.subarray(x + 2 * n, x + 3 * n)),
+      change: this.causes?.[s],
     };
   }
 
@@ -692,7 +750,7 @@ export class Motions<I> {
     const known = subject === absent ? (undefined as I) : subject;
     const to = this.shape.aim(xs, vs, change.to ?? seg.to, known);
     const ms = subject === absent ? seg.ms : (this.shape.ms?.(known) ?? 0);
-    return { at, ms, x0: xs, v0: vs, to };
+    return { at, ms, x0: xs, v0: vs, to, change };
   }
 
   private commit(s: number, t: number): void {

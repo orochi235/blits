@@ -79,6 +79,8 @@ export class Book<I, O> implements Booker {
   private prev = Number.NaN;
   private round = 0;
   private stopped = false;
+  /** The host time the mix last rewound at: a mark at or before it was taken before the rewind. */
+  private floor = Number.NEGATIVE_INFINITY;
   /** Bookings of marks, by `keyOf`, kept while listed so one already taken is not taken late. */
   private readonly marked = new Map<number, Booking>();
   private readonly tracks = new Map<Voice<I, O>, Track>();
@@ -136,6 +138,31 @@ export class Book<I, O> implements Booker {
     this.host.unhook(this);
   }
 
+  /**
+   * The mix went back to `host.now`: what is booked ahead is stopped, and everything after that
+   * moment is booked again as the mix reaches it again.
+   */
+  rewound(): void {
+    if (this.stopped) return;
+    const last = this.last;
+    for (const b of this.marked.values()) if (b.time > last) b.taken?.stop();
+    for (const t of this.tracks.values())
+      for (const b of t.booked.values()) if (b.time > last) b.taken?.stop();
+    this.marked.clear();
+    this.tracks.clear();
+    const host = this.host;
+    this.floor = host.timestamp;
+    this.prev = host.now;
+    for (const voice of host.voices)
+      if (voice.spec.hits !== undefined && voice.state !== 'done')
+        this.tracks.set(voice, {
+          seenTo: voice.elapsedAt(host.now),
+          seeks: voice.seeks,
+          booked: new Map(),
+          met: this.round,
+        });
+  }
+
   /** Whether a standing booking now falls at host time `time` within `RETIME_MS`. */
   private stands(b: Booking, time: number | undefined): boolean {
     if (time === undefined || !Number.isFinite(time)) return false;
@@ -152,7 +179,7 @@ export class Book<I, O> implements Booker {
     const marked = this.marked;
     const seen = new Set<number>();
     for (const m of listed) {
-      if (!this.fits(m.score, m.tags)) continue;
+      if (!this.fits(m.score, m.tags) || m.timestamp <= this.floor) continue;
       const key = keyOf(m);
       seen.add(key);
       const b = marked.get(key);

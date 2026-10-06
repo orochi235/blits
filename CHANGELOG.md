@@ -6,7 +6,29 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Breaking
+
+- `sync` throws for a timestamp earlier than the last sync's, short of a `rebase`. It used to take
+  one and half work: stateless voices moved back while a stateful patch without `stepMs` was handed
+  a negative `dt`. A host going back calls `rewind`.
+- `Mix` has a `rewind` method, which an engine of its own has to provide.
+
+### Added
+
+- `mix.rewind(timestamp)` moves the live mix back to a timestamp on the host's clock, under
+  `history`, and plays on from there. What came after it is undone: voices cued since are gone,
+  voices that left since are back on the handles the host holds with `done` and `played` starting
+  over, and control changes, retargets, rate changes, announced marks and undrained events from
+  after it are dropped. State steps once from the nearest copy history kept, exact under `stepMs`.
+  Playing past a time again sends its events and books its marks and hits again. The host keeps
+  passing its own clock.
+
 ### Fixed
+
+- `project` reads a timestamp from before a `rebase` at the moment it named: it converted every
+  timestamp with the offset in force now, so a 1000 ms rise synced at 0 and 200, rebased and synced
+  at 10200 read 0 at 200, where the host had seen 20. History keeps each offset, and a timestamp
+  from before a `rewind` maps the same way.
 
 - A probe and `atRest` no longer allocate on the heap to find a subject's voices. Each passed the
   mix's clock, a fractional number, to a function too large for V8 to inline, which stores such a

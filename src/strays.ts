@@ -37,6 +37,9 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
       const v = m === undefined ? undefined : cuedById(m, id);
       return m === undefined || v === undefined ? Number.NaN : frameOf(m, v, subject as I);
     },
+    now() {
+      return mix.deref()?.now ?? Number.NaN;
+    },
     revive(id, subject) {
       const m = mix.deref();
       if (m === undefined) return;

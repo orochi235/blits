@@ -39,6 +39,7 @@ import { pin } from './place.js';
 import { project } from './project.js';
 import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
+import { rewind, shift } from './rewind.js';
 import { Store } from './store.js';
 import type {
   Booker,
@@ -113,6 +114,13 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** This mix's frame among every mix's: moved by a sync, and by a control change or drop within one. */
   frame = nextFrame();
   offset = 0;
+  /**
+   * Under `history`, the offsets in force before each change `rebase` and `rewind` made, oldest
+   * first: a timestamp at or before `after` meant host time less `was`.
+   */
+  shifts: { after: number; was: number }[] = [];
+  /** The mix time of the first sync. */
+  born = Number.NaN;
   /** The mix's own rate; null while it has never been set, when mix time is host time. */
   pace: Pace | null = null;
   /** Pending voices whose start the host gave, by its host time, kept where the rate puts it. */
@@ -170,7 +178,7 @@ export class Mixer<I, O> implements Mix<I, O> {
    * where none does. Relinked when `version` moves, which is whenever the list or a voice's pending
    * state changes.
    */
-  readonly chains = new Store<I, Subject<unknown>>();
+  chains = new Store<I, Subject<unknown>>();
   version = 0;
   readonly steps = new Steps<Voice<I, O>>();
   /** Per subject, the voices whose `subjects` name it, in voice order. */
@@ -204,7 +212,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   };
   readonly send = (event: unknown): void => {
     const { voice, subject } = this.sending;
-    if (voice === null || this.projecting) return;
+    if (voice === null || this.projecting || voice.setting.timestamp <= this.sentTo) return;
     this.sent.push({
       timestamp: voice.setting.timestamp,
       subject,
@@ -213,6 +221,8 @@ export class Mixer<I, O> implements Mix<I, O> {
       event,
     });
   };
+  /** The moment a rewind went back to: what is stepped again up to it was sent the first time. */
+  sentTo = Number.NEGATIVE_INFINITY;
   /** The weight `influence` found besides the delta, read by the caller at once. */
   w = 0;
 
@@ -226,7 +236,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   readonly locusScratch: LocusScratch<I, O>[] = [];
   locusDepth = 0;
   readonly slotOf = new Map<string, number>();
-  readonly lanes: Lanes<I, O> | null;
+  lanes: Lanes<I, O> | null;
   handles: HandleHost<I, O> | null = null;
   /** What `book` made, still booking; null while there is none. */
   bookers: Book<I, O>[] | null = null;
@@ -295,7 +305,14 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   private syncAt(timestamp: number): void {
-    if (this.rebasing && !Number.isNaN(this.last)) this.offset += timestamp - this.last;
+    if (timestamp < this.last && !this.rebasing)
+      throw new RangeError(
+        `blits: sync went back from ${this.last} to ${timestamp}; a mix only goes forward, and rewind takes it back`,
+      );
+    if (this.rebasing && !Number.isNaN(this.last)) {
+      shift(this);
+      this.offset += timestamp - this.last;
+    }
     this.rebasing = false;
     this.last = timestamp;
     const u = timestamp - this.offset;
@@ -305,6 +322,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     const still = later && now === this.now;
     this.u = u;
     // Host time moving while the mix clock stands still lands what waits on host time or the host.
+    if (Number.isNaN(this.born)) this.born = now;
     if (now !== this.now || (later && pace !== null && waits(this))) move(this, now);
     // It is a frame too, which asks every weight signal again, so one reading input follows it.
     if (still) {
@@ -330,6 +348,10 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   pull(subjects: Iterable<I>, into: Columns<O>): void {
     pull(this, subjects, into);
+  }
+
+  rewind(timestamp: number): void {
+    rewind(this, timestamp);
   }
 
   project(timestamp: number): Projection<I, O> {

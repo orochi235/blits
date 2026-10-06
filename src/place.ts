@@ -23,6 +23,7 @@ export function mixAt<I, O>(mix: Mixer<I, O>, u: number): number {
 export function pin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, u: number): void {
   mix.pins ??= new Map();
   mix.pins.set(voice, u);
+  voice.pinned = u;
 }
 
 /** Puts each pending voice's start, given in host time, where the mix's rate now puts it. */

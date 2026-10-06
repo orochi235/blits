@@ -7,6 +7,7 @@ import { move } from './move.js';
 import { heldByInput, ownerReading, relink } from './owner.js';
 import { pin } from './place.js';
 import { reading } from './reading.js';
+import { hostTime } from './rewind.js';
 import { Store } from './store.js';
 import type { Doubt, Projection } from './types.js';
 import { unreached } from './unreached.js';
@@ -18,7 +19,7 @@ export function project<I, O>(
   c: Mixer<I, O>,
   timestamp: number,
 ): Projection<I, O> {
-  const u = timestamp - mix.offset;
+  const u = hostTime(mix, timestamp);
   const pace = mix.pace;
   const t = readingAt(mix, u);
   c.projecting = true;

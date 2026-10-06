@@ -230,6 +230,8 @@ export class Voice<I, O> {
   log: Controls[] | null = null;
   /** Where an anchored `out` or `end` puts its fade's start, mix time; Infinity until known. */
   outAt = Number.POSITIVE_INFINITY;
+  /** The host time a pinned start was given at, NaN for none: a rewind pins it again. */
+  pinned = Number.NaN;
   /** Whether its start is still to be fixed by an anchor, so it waits pending. */
   placing = false;
   /** The record `setting.keep` writes to: the one its patch or signal is being called for. */
@@ -252,6 +254,8 @@ export class Voice<I, O> {
    */
   private finished = false;
   private playedAs: boolean | undefined = undefined;
+  /** The mix time `played` was settled at, so a rewind to before it can open it again. */
+  private playedAt = Number.NaN;
   private donePromise: Promise<void> | null = null;
   private doneSettle: (() => void) | null = null;
   private playedPromise: Promise<boolean> | null = null;
@@ -289,12 +293,41 @@ export class Voice<I, O> {
     this.doneSettle?.();
   }
 
-  /** Its finite loop ended (true) or it left first (false), whichever comes first: `played` resolves. */
-  play(played: boolean): void {
+  /**
+   * Its finite loop ended (true) or it left first (false), whichever comes first, noticed at mix
+   * time `at`: `played` resolves.
+   */
+  play(played: boolean, at: number): void {
     if (this.quiet || this.playedAs !== undefined) return;
     this.playedAs = played;
+    this.playedAt = at;
     this.playedSettle?.(played);
-    if (played && this.owner !== null) childPlayed(this.owner);
+    if (played && this.owner !== null) childPlayed(this.owner, at);
+  }
+
+  /** Whether `played` settled true, which its owner counted. */
+  get passed(): boolean {
+    return this.playedAs === true;
+  }
+
+  /**
+   * A rewind to mix time `t`: `done` and `played`, where they settled after it, start over with
+   * fresh promises. True where `played` had settled true, which its owner counted.
+   */
+  reopen(t: number): boolean {
+    let unplayed = false;
+    if (this.playedAs !== undefined && !(this.playedAt <= t)) {
+      unplayed = this.playedAs;
+      this.playedAs = undefined;
+      this.playedPromise = null;
+      this.playedSettle = null;
+    }
+    if (this.finished && !(this.doneAt <= t)) {
+      this.finished = false;
+      this.donePromise = null;
+      this.doneSettle = null;
+    }
+    return unplayed;
   }
 
   constructor(

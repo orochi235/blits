@@ -103,6 +103,14 @@ export class Pace {
     if (drop > 0) log.splice(0, drop);
   }
 
+  /** Lets go of the clocks set after host time `u`, for a rewind to then. */
+  cut(u: number): void {
+    const log = this.log;
+    let n = 1;
+    while (n < log.length && (log[n] as Clock).anchorNow <= u) n++;
+    log.length = n;
+  }
+
   /** A copy holding the clocks that took effect before host time `u`, for a read back to then. */
   until(u: number): Pace {
     const log = this.log;

@@ -137,12 +137,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 - **Blending** covers all four behaviors he was offered: fade, retarget on interruption, blend
   between alternatives, handover at rest. All reduce to a weight per voice or a channel lerp.
 - **Two clocks, one of them addressable.** Mix time is a reading the host reports, not a position
-  anything sets. Voice time is a position, because `phase` is computed from the reading rather than
+  anything sets, short of a `rewind` under history. Voice time is a position, because `phase` is computed from the reading rather than
   accumulated into. So `seek` has exactly one scope, the voice, and needs no qualifier.
   Decided 2026-09-27.
-- **Reading back is a read, never a move.** The mix still only goes forward; `project(t)` copies
-  state and reads at `t`, with history opt-in and nothing kept without it. A mix-level `seek` is
-  decided against for that reason (2026-10-01, in `NOTES-ON-SCRUBBING.md`).
+- **Reading back is a read; going back is `rewind`.** `project(t)` copies state and reads at `t`,
+  with history opt-in and nothing kept without it. `mix.rewind(t)` (built 2026-10-06, reversing the
+  2026-10-01 decision against moving the mix back) restores the live mix from history and undoes
+  what came after; `sync` refuses to go back. Mike took every recommendation in the draft: the mix
+  goes back by itself, the future vanishes, events are sent again, `done`/`played` start over,
+  timestamps are host time with a log of offsets, a backward `sync` throws, and state steps once
+  without `stepMs`. The schema page's Score section, "Going back", is the record.
 - **The score's shape, picked 2026-10-01 while building it** (Mike asleep; his to overturn): anchors
   are `after` (the target's end), `with` (its start), `before` (its start less `by`) and the general
   `{ of, mark, by }`; a query's resolver is a field, `resolver: 'next'`, not the schema's earlier
