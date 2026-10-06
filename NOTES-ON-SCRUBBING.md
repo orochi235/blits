@@ -228,14 +228,16 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
    Replaying is exact but needs a log of sync timestamps and costs a frame's work per frame replayed.
    Recommended: step once and report `stepped`, as `project` does.
 8. **Does history have to survive a page reload?** In the weasel-history section above.
-9. **Does a host call made while the mix is rewound drop the recorded future after it, as an edit
-   after undo does, or join the recording beside it?** Decision 2 covers scrubbing only. Dropping
-   is weasel-history's behavior for a push. Joining needs a way to merge one call into a recording
-   whose later calls may depend on what came before it. A third answer now exists: weasel-history's
-   `branching: true` (weasel `d1d12e741`) keeps the displaced future as a sibling branch, which
-   `branches()` lists and `switchBranch(id)` restores. If blits takes it, its state copies after the
-   fork belong to the old branch. On a fork they have to be dropped and rebuilt by replay after a
-   switch back, or tagged per branch. Not decided.
+9. **Does a host call made while the mix is rewound drop the recorded future after it, join it, or
+   branch?** **Decided 2026-10-06: branch,** with weasel-history's `branching: true` (weasel
+   `d1d12e741`). The displaced future becomes a sibling that `branches()` lists and
+   `switchBranch(id)` restores. State copies stamped after the fork are dropped at the fork, not
+   tagged per branch, so memory stays bounded by the horizon. Forking and switching back at the fork
+   cost nothing, since both futures share the state there. A later jump forward on a revived branch
+   steps from the fork, as a first jump into unplayed time does: exact under `stepMs`, `stepped`
+   without it. blits' own logs (voice controls, recorded inputs, host fields, motion stretches)
+   would each have to follow the current branch, which favors reading the past from the `History`
+   over keeping them beside it (the "Reading back without moving" gap).
 
 ### Build plan
 
