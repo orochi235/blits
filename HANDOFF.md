@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.5.0 (2026-10-05).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.6.0 (2026-10-05).
 - **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
   blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
@@ -38,7 +38,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   (recorded in klieg's changelog). 0.3.0 needed no change in klieg: its `color` channel is a `hex`,
   but every effect voice plays at full weight with no locus, so the OKLCH blend is never taken. The
   schema page's klieg section says what the port found.
-- **The package, `@msb235/blits` 0.5.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
+- **The package, `@msb235/blits` 0.6.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
   channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
   `motion.ts` (`spring`, `glide`), `tweened.ts` (a tween's closed form, in pieces a fill calls), `clock.ts` (the phase, envelope and weight clamp both fold
@@ -57,7 +57,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   is lint, typecheck of both `src` and `test`, then the suite, green. `npm run bench`
   (`bench/frame.mjs`) measures a frame at scene sizes, GC counts included. Enlisted for the fleet — `.onto/tests` is
   `plugin: node`, `run: npm test`, `runner: vitest` — and green there too.
-- **A voice's `freeze`** (shipped in 0.4.0 as `hold`, renamed 2026-10-05, unreleased): WAAPI's
+- **A voice's `freeze`** (shipped in 0.4.0 as `hold`, renamed in 0.6.0): WAAPI's
   `fill` under blits' own name, for wod's move onto blits — `useSpin` holds its landing angle with
   `fill: 'forwards'` and awaits `animation.finished`, which map to `freeze: 'after'` and
   `handle.played`. The schema page's Freezing paragraph has the design. Mike chose the values

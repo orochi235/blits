@@ -76,8 +76,8 @@ so the engine keeps no dependencies; its README says how it works.
 
 ## Status
 
-v0.5.0, with four consumers. magicsmoke runs every fault on it, wod its wheel, tricks and
-transitions, weasel its animator's tweens, and
+v0.6.0, with five consumers. magicsmoke runs every fault on it, wod its wheel, tricks and
+transitions, weasel its animator's tweens, sherpa its seams, and
 [klieg](https://github.com/orochi235/klieg) composes all three of its systems — letter motion,
 part effects, and the environment a sign is lit by — on a mix each.
 That port was an extraction rather than a rewrite, so it is also the evidence that the arithmetic
