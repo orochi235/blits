@@ -64,16 +64,26 @@ How it maps, read against weasel `cb5b75652` and blits `c441c66`:
 | a push after an undo drops the redo stack and reports it through `onEvict` | rewind, then new input replaces the old future |
 | `serialize()` / `restore()` as `(name, args)`, with `rebuildOp` | persisting; `rebuildOp` resolves voice ids back to voices through the mix |
 
-What does not fit yet. The weasel-history changes are filed in weasel's `docs/TODO.md` under
-"weasel-history as a rewind log".
+What weasel-history added for this (weasel `ef2a1b43c`):
 
+| Need | weasel-history |
+|---|---|
+| Seeking by time | `depthAt(t)`, then `goto(depthAt(t))`; a `goto` that doesn't move is silent, so calling it every frame is cheap |
+| Time-based horizon | `prune(t)` evicts undo entries stamped before `t` through `onEvict`, and never touches redo |
+| Timestamps that persist | `serialize()` writes `timestamp`; blits passes `coalesceWindowMs: 0` so a stamp stays the time of its one push |
+| Replaying on time | `timestampAt(undoDepth())` is the next redo entry's stamp, without allocating; `redo()` once mix time reaches it |
+
+Replaying on time has a catch on blits' side. A host call is stamped with the mix time of the sync
+before it, and on a replay frames rarely land on those times. A `redo()` on the first frame past a
+stamp would apply the call late. So a sync that crosses a stamp has to step to the stamp, redo, and
+step on to the frame. Under `stepMs` the grid absorbs this. Without it, that is one more step per
+replayed call. `depthAt` and `goto` both assume stamps never decrease in time order, which holds
+while a push drops the redo stack and is open again under Decision 9.
+
+Still open:
 
 | Gap | Why | Where it gets fixed |
 |---|---|---|
-| Seeking by time | `goto(n)` takes an entry count, and getting timestamps means `entries()`, which builds a view of every entry | weasel-history: a goto by time, or cheap timestamp access |
-| Time-based horizon | `historyLimit` counts entries; `history.ms` is a span of time | weasel-history: drop entries older than a time |
-| Timestamps don't persist | `SerializedHistoryEntry` has no `timestamp`, and `restore` sets it to 0; coalescing also moves an entry's timestamp to its last push | weasel-history: serialize `timestamp`. blits passes `coalesceWindowMs: 0` |
-| Redo is instant | `redo`/`goto` apply an entry's ops at once; replaying forward needs each op applied when mix time reaches its timestamp, between steps | blits reads the redo stack and applies each entry as it comes due; weasel-history needs a cheap way to read the next redo entry and its time |
 | State copies | a `History` holds ops, not state. blits copies per voice and subject, on a time cadence and only when a subject is probed (`remember`, `history.ts`), keyed by subject objects in a `WeakMap` | stays in blits. Copies are not per entry, so attaching them to entries does not fit. Persisting them needs subject ids from the client (Decision 8) |
 | Reading back without moving | `project(t)` reads controls at `t` by binary search over each voice's control log (`voice.log`) and over `hostLog`, and never mutates the live mix. An op stack answers "what was in force at `t`" only by undoing to `t` | open: keep the per-voice logs as the index `project` reads and treat the `History` as the persisted record, which risks two records of one fact; or make `project` undo and redo against a throwaway adapter |
 
