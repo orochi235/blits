@@ -201,10 +201,6 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
    cued after `t` come back at their times, retargets replay. A tape makes mix time a position,
    which is the 2026-09-27 decision overturned rather than bent. **Decided 2026-10-06: play again.**
    Mike: "we can't have a situation where just scrubbing cuts off a branch of redo history."
-9. **Does a host call made while the mix is rewound drop the recorded future after it, as an edit
-   after undo does, or join the recording beside it?** Decision 2 covers scrubbing only. Dropping
-   is weasel-history's behavior for a push. Joining needs a way to merge one call into a recording
-   whose later calls may depend on what came before it. Not decided.
 3. **When the mix plays past a time again, does it send the events it already sent there?** The host
    drained them once, so sending again duplicates them; not sending means a patch's `send` is no
    longer a record of what played. Recommended: send again, and say so on `rewind`, since the host
@@ -221,6 +217,11 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
 7. **Without `stepMs`, does a rewind step once across the gap or replay each recorded frame?**
    Replaying is exact but needs a log of sync timestamps and costs a frame's work per frame replayed.
    Recommended: step once and report `stepped`, as `project` does.
+8. **Does history have to survive a page reload?** In the weasel-history section above.
+9. **Does a host call made while the mix is rewound drop the recorded future after it, as an edit
+   after undo does, or join the recording beside it?** Decision 2 covers scrubbing only. Dropping
+   is weasel-history's behavior for a push. Joining needs a way to merge one call into a recording
+   whose later calls may depend on what came before it. Not decided.
 
 ### Build plan
 
