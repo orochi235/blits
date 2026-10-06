@@ -231,7 +231,11 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
 9. **Does a host call made while the mix is rewound drop the recorded future after it, as an edit
    after undo does, or join the recording beside it?** Decision 2 covers scrubbing only. Dropping
    is weasel-history's behavior for a push. Joining needs a way to merge one call into a recording
-   whose later calls may depend on what came before it. Not decided.
+   whose later calls may depend on what came before it. A third answer now exists: weasel-history's
+   `branching: true` (weasel `d1d12e741`) keeps the displaced future as a sibling branch, which
+   `branches()` lists and `switchBranch(id)` restores. If blits takes it, its state copies after the
+   fork belong to the old branch. On a fork they have to be dropped and rebuilt by replay after a
+   switch back, or tagged per branch. Not decided.
 
 ### Build plan
 
