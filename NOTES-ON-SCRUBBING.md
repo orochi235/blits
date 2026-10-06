@@ -84,11 +84,11 @@ so that `rebuildOp` can resolve them after `restore`. A voice that ends on its o
 faded out of one, is not a host call, so no op covers it. Both are restored from state, as the
 table under "What the live mix holds" already does.
 
-**This reopens Decision 2.** Scrubbing a recorded trial back and then forward again has to replay
-what the host did after `t`, such as a participant's responses. That is the tape, not undo. The draft
-recommends undo, where the future is cut. With weasel-history the two are the same stack read two
-ways: undo pushes a new op after the rewind and drops the redo stack; the tape replays the redo
-stack on time.
+**Scrubbing replays; it never cuts (Decision 2, decided 2026-10-06).** Moving back and then
+forward again replays what the host did after `t`, such as a participant's responses, and no amount
+of scrubbing loses the recorded future. In weasel-history only a push drops the redo stack, and
+`goto`, `undo` and `redo` never do. The rule therefore holds as long as a seek or scrub is never
+recorded as an op.
 
 **Decision 8: does history have to survive a page reload, or only change where it lives during
 the session?** If it is session-only, ops can hold voice references, state copies stay as they are,
@@ -143,17 +143,17 @@ first. One-syllable alternatives: `back`, `wind`, `roll`, `jump`. For the other 
 
 | Part | After the rewind | How |
 |---|---|---|
-| Voice controls (rate, ramp, weight, fade, seeks, anchored start and out) | as they stood at `t`; later writes are gone | the control log `history` keeps; truncated at `t` |
+| Voice controls (rate, ramp, weight, fade, seeks, anchored start and out) | as they stood at `t`; later writes are kept and apply again as mix time reaches them | the control log `history` keeps, read at `t` |
 | Patch and signal state | the nearest copy at or before `t`, stepped to `t`; fresh state from the voice's start where none was kept | `recall`, `copyHeld`, per subject on first touch |
-| Motion patches (`spring`, `glide`, `tween`) | the stretch in force at `t`; later retargets and pushes are cut | new: a truncate in `Motions` (`motion.ts:249`), whose earlier stretches it already keeps (`older`, `motion.ts:265`) |
-| Voices cued after `t` | retired, `done` resolves, `played` resolves false (decision below) | `retire` |
+| Motion patches (`spring`, `glide`, `tween`) | the stretch in force at `t`; later retargets and pushes apply again at their times | new: reading `Motions` at a time, from the earlier stretches it already keeps (`older`, `motion.ts:265`) |
+| Voices cued after `t` | out of the mix until mix time reaches their cue again, then back on their original handles | new: a voice parked until its start; `done`/`played` per Decision 4 |
 | Voices retired after `t` | back, on their original handles, at the controls they had at `t` | `gone` holds them; re-index, re-hook motion (`retire` unhooks it, `fade.ts`) |
 | Subjects faded out of a voice after `t`, or `drop`ped after `t` | back as never seen: their records were forgotten | the gap the schema page's Open section already names |
 | Lanes and crowds | thrown away and qualified again on the next probe | a fresh `Lanes`, chains relinked; the first frame after pays a full qualify |
 | Undrained events stamped after `t` | discarded | filter `sent` |
 | Events already drained | stay with the host; playing on past those times may send them again (decision below) | |
 | Announced marks | those announced by `t` | the same filter `project` uses (`a.made < t`) |
-| History after `t` | discarded: snapshots, the control log, recorded inputs and host fields | truncate each list |
+| History after `t` | kept: it is the recording that plays again (Decision 9 asks whether a new host call drops it) | |
 | `from: 'current'` poses | discarded; a retarget read from them reads as `held` | clear the pose store |
 | `level` signals and host fields | the host's own; the mix does not set them | |
 
@@ -199,8 +199,12 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
 2. **After going back, does what happened after `t` vanish, or play again as it was recorded?**
    Vanishing is undo: the future is cut and the mix plays on fresh. Playing again is a tape: voices
    cued after `t` come back at their times, retargets replay. A tape makes mix time a position,
-   which is the 2026-09-27 decision overturned rather than bent. Recommended: vanish. Reopened by
-   the weasel-history section above: scrubbing a recorded trial needs the tape.
+   which is the 2026-09-27 decision overturned rather than bent. **Decided 2026-10-06: play again.**
+   Mike: "we can't have a situation where just scrubbing cuts off a branch of redo history."
+9. **Does a host call made while the mix is rewound drop the recorded future after it, as an edit
+   after undo does, or join the recording beside it?** Decision 2 covers scrubbing only. Dropping
+   is weasel-history's behavior for a push. Joining needs a way to merge one call into a recording
+   whose later calls may depend on what came before it. Not decided.
 3. **When the mix plays past a time again, does it send the events it already sent there?** The host
    drained them once, so sending again duplicates them; not sending means a patch's `send` is no
    longer a record of what played. Recommended: send again, and say so on `rewind`, since the host
@@ -226,9 +230,9 @@ Sizes are estimates, not measurements.
 |---|---|---|
 | Restore controls and voice state at `t` | the control log, `project`'s state picker | moving the state picker into a function both call |
 | Restore records lazily | `recall`, `copyHeld` | an epoch on the mix and a check where a record is fetched |
-| Bring back voices that left after `t`, retire those cued after | `gone`, `retire`, `index` | un-retiring: re-hook motion, reset `done`/`played` |
-| Cut motion stretches after `t` | `older`, `prune` | a truncate per subject in `Motions` |
-| Truncate history, inputs, host fields, marks, undrained events | the horizon pruning | a cut at `t` for each list |
+| Bring back voices that left after `t`, park those cued after | `gone`, `retire`, `index` | un-retiring: re-hook motion, reset `done`/`played`; parking until the cue comes due |
+| Read motion stretches at `t` | `older` | a lookup per subject in `Motions` by time |
+| Replay host calls after `t` as mix time reaches them; drop undrained events after `t` | the control log, recorded inputs, host fields | a cursor per list, advanced on sync |
 | Lanes | `Lanes` construction | none beyond discarding it |
 | Offset log, refusing a backward `sync` | | both |
 | Tests | the read-back suite's "equals the pose the mix showed under `stepMs`" | the same against `rewind`, and handles held across it |
