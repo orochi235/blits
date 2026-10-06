@@ -119,8 +119,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 - **Home**: its own repo, here, not klieg's monorepo and not weasel. Package name `blits`: free on
   npm; `@lightningjs/blits` is a live TV framework whose name will win searches.
 - **klieg yields**: where a blits name collides with a klieg name, klieg renames, provided blits
-  earns it. Said about `domain`, which klieg's tube gradient uses for something else. Do the rename
-  inside the port, not ahead of it.
+  earns it. Said about `domain`, which klieg's tube gradient uses for something else; blits took `kit`
+  for the channel set instead, so klieg keeps `domain` (Mike, 2026-10-05).
 - **`duration`, not `period`** (2026-10-04, Mike's call): a pass is one run through a patch whether
   or not it loops, and only a looping voice has a period. `Patch.duration` is the field;
   `Patch.period` stays as a deprecated alias, set on every built patch and read by `durationOf`
@@ -364,9 +364,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    per-subject emitted count from `write`, rate or counts settable by the host, and rounding
    without the `1e-6` slack. Mike's call whether to make them.
 
-2. **klieg's tube gradient still calls its own thing `domain`**, the one rename step two
-   (klieg 0.15.0) left.
-3. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
+2. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
    a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
    stock band's width.
 
