@@ -145,15 +145,14 @@ function readAll<I, O>(
         const head =
           was[n] === subject && kept !== undefined && kept.version === version
             ? kept
-            : mix.chain(subject, now);
+            : mix.chain(subject);
         was[n] = subject;
         heads[n] = head;
         slot = head.slot;
         slots[n] = slot;
       }
     }
-    const laned =
-      live && lanes?.prepare(slot, subject, now, mix.version, heads[n] ?? null) === true;
+    const laned = live && lanes?.prepare(slot, subject, mix.version, heads[n] ?? null) === true;
     if (laned && whole && (lanes as Lanes<I, O>).whole && !(lanes as Lanes<I, O>).owes(slot)) {
       writeLater(lanes as Lanes<I, O>, slot, columns, n);
       continue;

@@ -8,6 +8,15 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A probe and `atRest` no longer allocate on the heap to find a subject's voices. Each passed the
+  mix's clock, a fractional number, to a function too large for V8 to inline, which stores such a
+  number on the heap to pass it; and the function that links a subject's voices made a closure
+  context on every call, though only relinking uses one. Collections over 5000 frames of 10k
+  subjects fall from 666 to 375 with a probe and `atRest` of each (`probed`), 279 to 121 with
+  `atRest` alone (`rest`), 428 to 285 with a voice per subject (`named`), and 741 to 524 with three
+  `fn` voices over every subject (`fn`). A frame takes 0.857 ms against 0.885 for `rest`, 1.263
+  against 1.325 for `named`, and 2.074 against 2.156 for `fn`; `probed`, at 1.507 against 1.504,
+  and the rows read by `pull` are unchanged (teitou, medians of twelve alternated runs).
 - A fill no longer stamps every subject: the lanes keep which fill ran a lane, and a subject is
   stamped only when it is left to the general path. A spring is solved by a function per kind of
   spring, small enough for V8 to inline where it samples, where one function over all four left

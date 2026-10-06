@@ -29,6 +29,8 @@ export interface LaneHost<I, O> {
   readonly voices: readonly Voice<I, O>[];
   readonly channels: readonly Channel<unknown>[];
   readonly names: readonly string[];
+  /** The mix itself, for its clock: a getter V8 does not inline would box `now` on return. */
+  readonly clock: { readonly now: number };
   /** Whether a voice's patch and spec can run on a lane, its channels aside. */
   fits(voice: Voice<I, O>): boolean;
   /** The voice's record for a subject this probe has already linked it to, from `head` if there. */
@@ -274,13 +276,9 @@ export class Lanes<I, O> implements Watcher {
    * them. One that a lane has not met yet, newly numbered or newly reached, takes the general path
    * this frame, which is where it is first seen; so does one probed from inside a fill.
    */
-  prepare(
-    slot: number,
-    subject: I,
-    now: number,
-    version: number,
-    head: Subject<unknown> | null,
-  ): boolean {
+  prepare(slot: number, subject: I, version: number, head: Subject<unknown> | null): boolean {
+    // Read, not passed: a double passed to a call V8 does not inline is boxed, once a probe.
+    const now = this.host.clock.now;
     if (!this.filled(now, version) && this.begin(now, version) === Begin.GENERAL)
       return this.general(slot);
     if (slot < 0) return false;

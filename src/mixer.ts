@@ -1,6 +1,6 @@
 import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
-import { aims, chain, linkable } from './chain.js';
+import { aims, chain, linkable, relink } from './chain.js';
 import { type LerpInto, lerpInto } from './channels.js';
 import { cue } from './cue.js';
 import type { Due } from './due.js';
@@ -584,6 +584,7 @@ const methods = {
   shareKept,
   parting,
   chain,
+  relink,
   linkable,
   aims,
   held,

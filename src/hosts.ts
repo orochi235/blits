@@ -47,6 +47,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
     },
     channels: mix.channels,
     names: mix.names,
+    clock: mix,
     fits: (voice) => fits(mix, voice),
     meet: (voice, subject, head, slot) => {
       for (let held = head; held !== null; held = held.next) if (held.voice === voice) return held;

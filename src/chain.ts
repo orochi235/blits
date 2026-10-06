@@ -34,9 +34,19 @@ function stub(): Subject<unknown> {
  * it goes live, since `target` is asked on first sight, and sight only comes once a voice plays
  * or freezes before.
  */
-export function chain<I, O>(this: Mixer<I, O>, subject: I, now: number): Subject<unknown> {
+export function chain<I, O>(this: Mixer<I, O>, subject: I): Subject<unknown> {
   const was = this.chains.get(subject);
-  if (was !== undefined && was.version === this.version) return was;
+  return was !== undefined && was.version === this.version ? was : this.relink(subject, was);
+}
+
+// Apart from `chain` so that its closures' context is made only when a chain is relinked, and
+// `chain` stays small enough for V8 to inline where a probe links.
+export function relink<I, O>(
+  this: Mixer<I, O>,
+  subject: I,
+  was: Subject<unknown> | undefined,
+): Subject<unknown> {
+  const now = this.now;
   const slot = was !== undefined ? was.slot : this.lanes !== null ? this.lanes.number(subject) : -1;
   // Where only voices over every subject changed since, those alone are taken off or put on.
   let first =

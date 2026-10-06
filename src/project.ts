@@ -209,11 +209,7 @@ function doubts<I, O>(mix: Mixer<I, O>, subject: I): { [K in keyof O]-?: Doubt }
     if (!waiting || !mix.aims(voice, subject)) continue;
     for (const slot of voice.slots) out[mix.names[slot] as string] = 'held';
   }
-  for (
-    let held: Subject<unknown> | null = mix.chain(subject, mix.now);
-    held !== null;
-    held = held.next
-  ) {
+  for (let held: Subject<unknown> | null = mix.chain(subject); held !== null; held = held.next) {
     const voice = held.voice as Voice<I, O> | null;
     if (voice === null || voice.state === 'done') continue;
     if (held.weight <= 0) continue;

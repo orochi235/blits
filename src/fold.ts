@@ -343,10 +343,9 @@ export function folded<I, O>(
  * voices on them; a subject numbered since the frame's fill folds every voice, laned ones included.
  */
 export function linked<I, O>(this: Mixer<I, O>, subject: I): Subject<unknown> | null {
-  const now = this.now;
-  const head = Number.isNaN(now) ? null : this.chain(subject, now);
+  const head = Number.isNaN(this.now) ? null : this.chain(subject);
   this.linkedLaned =
-    head !== null && this.lanes?.prepare(head.slot, subject, now, this.version, head) === true;
+    head !== null && this.lanes?.prepare(head.slot, subject, this.version, head) === true;
   return head;
 }
 

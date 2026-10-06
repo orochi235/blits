@@ -341,12 +341,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    `weasel^`), Mike's go 2026-10-05. Bare tween rows fill in one loop (`bare.ts`) and `pull` queues
    runs since 2026-10-05: on teitou `tweens^` takes 0.17 ms a frame and `weasel^` 0.22, against
    0.031–0.047 for a hand-written loop doing the same arithmetic. What is left:
-   - **`probe` and `atRest` each allocate one heap number a call** in `probed` (heap sampling:
-     `atRest` 230 MB over 1500 frames of 10k subjects, 16 B a call). Inferred, not tested: it is the
-     mix's `now`, a double, boxed to pass to `chain`, which V8 never inlines (over its bytecode
-     limit). A second box came with `prepare` falling out of `atRest`'s inlining, as V8 ranks a
-     callee by call frequency over bytecode size, counting what the callee itself inlines; keep
-     `prepare` small. Reading `now` inside `chain` instead of passing it would test the first.
+   - **`probed` reads no faster for allocating less.** Since `chain` and `prepare` read the clock
+     instead of taking it, `linked` gets TurboFan code of its own with both inlined, 521 bytecodes
+     with its callees, and V8 then refuses to inline it anywhere (460 at most), so `probe` and
+     `atRest` call it (`node --trace-turbo-inlining bench/frame.mjs probed`). On main it only ever
+     reached Maglev on its own. What `probed` still allocates is pose data: `foldWith` copying each
+     channel's rest value, and the `fn` voices' returned objects in `fill.ts`'s `call`.
    - `pullRun`'s per-subject stamps (`LANE_PROBE`, `LANE_FILL`): written per run instead, they
      would give `weightOf` and `pace` a second place to read the same answer. Not tried.
    - Measured no different, so not worth re-proposing: moving `popDue`'s loop into a function of
