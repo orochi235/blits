@@ -187,7 +187,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   the site takes its outline loosely. Local until GitHub Pages, and the workflow exists already.
 
 - **Built 2026-09-30 for magicsmoke**, which now runs every fault on blits (its old engine is
-  deleted; on magicsmoke's `main` since 0.5.0, pinned to `@msb235/blits` `0.3.0` since 2026-10-02): `lag`,
+  deleted; on magicsmoke's `main` since 0.5.0, pinned to `@msb235/blits` `0.6.0` since 2026-10-05): `lag`,
   `handle.weightOf`, `MixOptions.stepMs` and `setting.send` / `mix.drain`. Each is in the schema
   page; magicsmoke's row in the consumer table says how it uses them.
 
@@ -358,8 +358,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 1d. **`@msb235/blits-quarks` 0.2.0 is on npm**, pinned to engine 0.6.0 and published from its
    `quarks-v0.2.0` tag (0.1.0 went out by hand, because npm refuses trust for a name never
-   published). Its README says how it works. Moving magicsmoke's fizz and tuning onto it
-   is a follow-up in magicsmoke's repo.
+   published). Its README says how it works. magicsmoke is on engine 0.6.0 (`08d27df`, not
+   pushed) but its fizz and tuning stay on its own code: the driver doesn't fit without changing
+   what magicsmoke does. Its `docs/HANDOFF.md` has the gaps; the likely driver changes are a
+   per-subject emitted count from `write`, rate or counts settable by the host, and rounding
+   without the `1e-6` slack. Mike's call whether to make them.
 
 2. **klieg's tube gradient still calls its own thing `domain`**, the one rename step two
    (klieg 0.15.0) left.
