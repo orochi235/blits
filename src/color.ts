@@ -1,4 +1,4 @@
-import { last, lerpNumber } from './channels.js';
+import { last, lerpNumber, numericOf, sum, vec } from './channels.js';
 import type { Channel } from './types.js';
 
 const mix = lerpNumber;
@@ -133,8 +133,138 @@ function mixSrgb(a: number, b: number, u: number): number {
  * Color, as 0xrrggbb, blended in OKLCH as `mixHex` does, or with `space: 'srgb'` channel by
  * channel in sRGB, which keeps a port's arithmetic identical to a host that blended that way.
  *
+ * @deprecated Use `color(last(), { lerp: 'oklch' })`, which replaces as this does, and `toHex` at
+ * write. A packed color has no arithmetic to stack with; `color()` averages instead.
  * @category channel
  */
 export function hex(opts?: { space?: 'oklch' | 'srgb' }): Channel<number> {
   return { ...last<number>({ lerp: opts?.space === 'srgb' ? mixSrgb : mixHex }), kind: 'hex' };
+}
+
+/**
+ * How a `color` channel interpolates two colors: straight across OKLab, or in OKLCH with hue the
+ * short way round, as `mixHex` does.
+ *
+ * @category channel
+ */
+export interface ColorOptions {
+  lerp?: 'oklab' | 'oklch';
+}
+
+/** Two OKLab colors with coverage, interpolated in OKLCH: color by `u`, coverage by `u` alongside. */
+function lerpLch(x: number[], y: number[], u: number): number[] {
+  const xw = x[3] ?? 0;
+  const yw = y[3] ?? 0;
+  const w = mix(xw, yw, u);
+  // A color with no coverage has none of its own to keep, so the lerp takes the other end's.
+  const ys = yw > 0 ? 1 / yw : 0;
+  const yL = (y[0] ?? 0) * ys;
+  const yA = (y[1] ?? 0) * ys;
+  const yB = (y[2] ?? 0) * ys;
+  const xs = xw > 0 ? 1 / xw : 0;
+  const xL = xw > 0 ? (x[0] ?? 0) * xs : yL;
+  const xA = xw > 0 ? (x[1] ?? 0) * xs : yA;
+  const xB = xw > 0 ? (x[2] ?? 0) * xs : yB;
+  const toL = yw > 0 ? yL : xL;
+  const toA = yw > 0 ? yA : xA;
+  const toB = yw > 0 ? yB : xB;
+  const xc = Math.sqrt(xA * xA + xB * xB);
+  const yc = Math.sqrt(toA * toA + toB * toB);
+  const xh = Math.atan2(xB, xA);
+  const yh = Math.atan2(toB, toA);
+  const from = xc < GRAY ? yh : xh;
+  const to = yc < GRAY ? xh : yh;
+  let turn = to - from;
+  if (turn > Math.PI) turn -= 2 * Math.PI;
+  else if (turn < -Math.PI) turn += 2 * Math.PI;
+  const C = mix(xc, yc, u);
+  const h = from + turn * u;
+  return [mix(xL, toL, u) * w, C * Math.cos(h) * w, C * Math.sin(h) * w, w];
+}
+
+/**
+ * Color as OKLab `[L, a, b, coverage]`, its merge rule given as `of`. `color()` averages: voices
+ * stack as a premultiplied sum, so a pose holds `[Σw·L, Σw·a, Σw·b, Σw]` and runs on lanes;
+ * `toHex` divides it out and lays it over what is under it. `color(last())` replaces, the last
+ * voice to pass winning, at the coverage it was authored with. `lerp` picks how two colors
+ * interpolate: OKLab, the default, crosses through gray between opposite hues, and `'oklch'`
+ * goes round the hue instead, off lanes.
+ *
+ * @category channel
+ */
+export function color(opts?: ColorOptions): Channel<number[]>;
+export function color(
+  of: Channel<number> | Channel<unknown>,
+  opts?: ColorOptions,
+): Channel<number[]>;
+export function color(
+  ofOrOpts?: Channel<number> | Channel<unknown> | ColorOptions,
+  maybe?: ColorOptions,
+): Channel<number[]> {
+  const of = ofOrOpts !== undefined && 'merge' in ofOrOpts ? ofOrOpts : undefined;
+  const opts = of === undefined ? (ofOrOpts as ColorOptions | undefined) : maybe;
+  const round = opts?.lerp === 'oklch';
+  const space = round ? ', oklch' : '';
+  if (of === undefined || (numericOf(of)?.op === 'sum' && of.bounds === undefined)) {
+    const channel = vec(4, sum());
+    channel.kind = `color(sum${space})`;
+    // A lane interpolates a stock channel straight across, so a lerp of its own takes it off them.
+    return round ? { ...channel, lerp: lerpLch } : channel;
+  }
+  if (of.kind === 'last') {
+    return {
+      kind: `color(last${space})`,
+      merge: (_a, b) => b,
+      lerp: round ? lerpLch : vec(4, sum()).lerp,
+    };
+  }
+  throw new Error(
+    `color takes sum() to average or last() to replace, not ${of.kind ?? 'a channel of its own'}`,
+  );
+}
+
+/**
+ * 0xrrggbb as a `color` value: OKLab `[L, a, b]` at full coverage. Convert keyframe stops once
+ * when authoring them, and call it outside the hot path in an `fn` patch.
+ *
+ * @category channel
+ */
+export function oklab(rgb: number): number[] {
+  lab(rgb);
+  return [LAB[0] as number, LAB[1] as number, LAB[2] as number, 1];
+}
+
+/**
+ * A `color` pose as 0xrrggbb: its color divided out of its coverage, the coverage capped at 1
+ * and laid over `under` in OKLab, then clipped to sRGB per channel. No coverage gives `under`.
+ *
+ * @category channel
+ */
+export function toHex(pose: readonly number[], under = 0x000000): number {
+  const w = pose[3] ?? 0;
+  if (!(w > 0)) return under;
+  const s = 1 / w;
+  const L = (pose[0] ?? 0) * s;
+  const A = (pose[1] ?? 0) * s;
+  const B = (pose[2] ?? 0) * s;
+  if (w >= 1) return fromLab(L, A, B);
+  lab(under);
+  return fromLab(
+    mix(LAB[0] as number, L, w),
+    mix(LAB[1] as number, A, w),
+    mix(LAB[2] as number, B, w),
+  );
+}
+
+/**
+ * A `color` pose as a CSS `oklab()` color with its coverage, capped at 1, as the alpha, for a
+ * host that lets the browser lay it over what is under it.
+ *
+ * @category channel
+ */
+export function css(pose: readonly number[]): string {
+  const w = pose[3] ?? 0;
+  if (!(w > 0)) return 'oklab(0 0 0 / 0)';
+  const s = 1 / w;
+  return `oklab(${(pose[0] ?? 0) * s} ${(pose[1] ?? 0) * s} ${(pose[2] ?? 0) * s} / ${w < 1 ? w : 1})`;
 }

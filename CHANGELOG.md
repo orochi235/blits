@@ -18,6 +18,14 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- `color()`, a channel holding color as OKLab `[L, a, b, coverage]` with its merge rule as a
+  parameter. `color()` averages: voices stack as a premultiplied sum, so it runs on lanes, and the
+  pose carries the summed weight as coverage. `color(last())` replaces. `{ lerp: 'oklch' }`
+  interpolates round the hue instead of across OKLab, off lanes. `oklab(0xrrggbb)` makes a value;
+  `toHex(pose, under)` lays a pose over the subject's own color and `css(pose)` writes an
+  `oklab()` string with the coverage as alpha. `hex` still works, but it is deprecated for
+  `color(last(), { lerp: 'oklch' })`, which replaces and interpolates as it does, and a later
+  release removes it.
 - `mix.span(spec)` cues an owner that lays out the voices it holds in an `order` (`queue`,
   `stagger`, `together`) and fits them into its `duration`, again whenever one joins or leaves.
   Each child says how it may give way with `faster`, `slower`, `overlap`, `skip` and `firm`, and
