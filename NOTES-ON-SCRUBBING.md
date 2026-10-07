@@ -85,7 +85,7 @@ Still open:
 | Gap | Why | Where it gets fixed |
 |---|---|---|
 | State copies | a `History` holds ops, not state. blits copies per voice and subject, on a time cadence and only when a subject is probed (`remember`, `history.ts`), keyed by subject objects in a `WeakMap` | stays in blits. Copies are not per entry, so attaching them to entries does not fit. They are never persisted (Decision 8) |
-| Reading back without moving | `project(t)` reads controls at `t` by binary search over each voice's control log (`voice.log`) and over `hostLog`, and never mutates the live mix. An op stack answers "what was in force at `t`" only by undoing to `t` | open: keep the per-voice logs as the index `project` reads and treat the `History` as the persisted record, which risks two records of one fact; or make `project` undo and redo against a throwaway adapter |
+| Reading back without moving | `project(t)` reads controls at `t` by binary search over each voice's control log (`voice.log`) and over `hostLog`, and never mutates the live mix. An op stack answers "what was in force at `t`" only by undoing to `t` | decided (Decision 10): blits' logs hold what happened up to the playhead, and the `History`'s redo entries hold the recorded calls after it |
 
 `apply` and `invert` themselves suit a mix. The inverse of each host call can be built when the
 call is made: a control write inverts to the controls before it, `cue` inverts to retiring the voice,
@@ -151,9 +151,9 @@ first. One-syllable alternatives: `back`, `wind`, `roll`, `jump`. For the other 
 
 | Part | After the rewind | How |
 |---|---|---|
-| Voice controls (rate, ramp, weight, fade, seeks, anchored start and out) | as they stood at `t`; later writes are kept and apply again as mix time reaches them | the control log `history` keeps, read at `t` |
+| Voice controls (rate, ramp, weight, fade, seeks, anchored start and out) | as they stood at `t`; later writes come back as their calls replay from the `History` | the control log `history` keeps, cut at `t` |
 | Patch and signal state | the nearest copy at or before `t`, stepped to `t`; fresh state from the voice's start where none was kept | `recall`, `copyHeld`, per subject on first touch |
-| Motion patches (`spring`, `glide`, `tween`) | the stretch in force at `t`; later retargets and pushes apply again at their times | new: reading `Motions` at a time, from the earlier stretches it already keeps (`older`, `motion.ts:265`) |
+| Motion patches (`spring`, `glide`, `tween`) | the stretch in force at `t`; later retargets and pushes come back as their calls replay | new: a cut in `Motions` (`motion.ts:249`), whose earlier stretches it already keeps (`older`, `motion.ts:265`) |
 | Voices cued after `t` | out of the mix until mix time reaches their cue again, then back on their original handles | new: a voice parked until its start; `done`/`played` per Decision 4 |
 | Voices retired after `t` | back, on their original handles, at the controls they had at `t` | `gone` holds them; re-index, re-hook motion (`retire` unhooks it, `fade.ts`) |
 | Subjects faded out of a voice after `t`, or `drop`ped after `t` | back as never seen: their records were forgotten | the gap the schema page's Open section already names |
@@ -161,7 +161,7 @@ first. One-syllable alternatives: `back`, `wind`, `roll`, `jump`. For the other 
 | Undrained events stamped after `t` | discarded | filter `sent` |
 | Events already drained | stay with the host; playing on past those times may send them again (decision below) | |
 | Announced marks | those announced by `t` | the same filter `project` uses (`a.made < t`) |
-| History after `t` | kept: it is the recording that plays again (Decision 9 asks whether a new host call drops it) | |
+| History after `t` | blits' own lists are cut at `t`; the host calls after `t` stay in the `History` as redo entries, the recording that plays again | truncate each list |
 | `from: 'current'` poses | discarded; a retarget read from them reads as `held` | clear the pose store |
 | `level` signals and host fields | the host's own; the mix does not set them | |
 
@@ -235,8 +235,20 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
    cost nothing, since both futures share the state there. A later jump forward on a revived branch
    steps from the fork, as a first jump into unplayed time does: exact under `stepMs`, `stepped`
    without it. blits' own logs (voice controls, recorded inputs, host fields, motion stretches)
-   would each have to follow the current branch, which favors reading the past from the `History`
-   over keeping them beside it (the "Reading back without moving" gap).
+   need no branch of their own, because Decision 10 cuts them at the playhead.
+
+10. **Where does blits read the past from: its own logs, or the `History`?** **Decided
+   2026-10-07: both, split at the playhead.** blits' logs (voice controls, recorded inputs, host
+   fields, motion stretches, state copies) hold what happened up to the playhead. A rewind cuts them
+   at `t`, and replay refills them as it goes. The `History`'s redo entries hold the recorded host
+   calls after the playhead. The two never overlap in time, so neither needs a copy of the other,
+   and blits' logs never hold a future, so they never branch. The logs cannot be dropped for the
+   `History`: they hold changes no host call made, such as the entries a sync writes
+   (`voice.note(at, sync)`), along with state. `project(t)` at or behind the playhead reads the logs
+   as it does today. Ahead of it, `project` applies the redo entries stamped by `t` to its throwaway
+   mix, in time order. An op's `invert()` does nothing, because a rewind restores from the logs and
+   state copies, not by undoing calls. `goto(depthAt(t))` then only moves the playhead in the
+   `History`.
 
 ### Build plan
 
@@ -247,8 +259,8 @@ Sizes are estimates, not measurements.
 | Restore controls and voice state at `t` | the control log, `project`'s state picker | moving the state picker into a function both call |
 | Restore records lazily | `recall`, `copyHeld` | an epoch on the mix and a check where a record is fetched |
 | Bring back voices that left after `t`, park those cued after | `gone`, `retire`, `index` | un-retiring: re-hook motion, reset `done`/`played`; parking until the cue comes due |
-| Read motion stretches at `t` | `older` | a lookup per subject in `Motions` by time |
-| Replay host calls after `t` as mix time reaches them; drop undrained events after `t` | the control log, recorded inputs, host fields | a cursor per list, advanced on sync |
+| Cut motion stretches after `t` | `older`, `prune` | a truncate per subject in `Motions` |
+| Cut blits' lists at `t`; replay the `History`'s redo entries as mix time reaches them; drop undrained events after `t` | the horizon pruning; `timestampAt`, `redo` | a cut at `t` per list; a sync that steps to each stamp it crosses |
 | Lanes | `Lanes` construction | none beyond discarding it |
 | Offset log, refusing a backward `sync` | | both |
 | Tests | the read-back suite's "equals the pose the mix showed under `stepMs`" | the same against `rewind`, and handles held across it |
