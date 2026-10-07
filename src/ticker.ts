@@ -45,14 +45,23 @@ export interface TickerOptions {
  * @category mix
  */
 export interface Ticker {
-  /** Syncs `mix` every frame from now on, and wakes the loop on its `onWake`. Returns a remove. */
+  /**
+   * Syncs `mix` every frame from now on, and wakes the loop on its `onWake`. Asks for a frame, even
+   * for a mix it already holds. Returns a remove.
+   */
   add(mix: Ticked): () => void;
   /** Calls `fn` each frame, after every mix has synced, with the frame's timestamp. Returns an unsubscribe. */
   after(fn: (timestamp: number) => void): () => void;
   /** Keeps frames coming whatever the mixes say, until the returned release is called. */
   hold(): () => void;
-  /** Cancels the waiting frame; a mix waking, `hold` or `add` starts the loop again. */
+  /** Cancels the waiting frame; `wake`, a mix waking, `hold` or `add` starts the loop again. */
   stop(): void;
+  /**
+   * Asks for a frame, after which the loop runs or sleeps as the mixes say. A mix changed before
+   * `stop` and not synced since does not wake the loop by itself, since it fires `onWake` once
+   * between syncs.
+   */
+  wake(): void;
   /** What the ticker's clock reads now. */
   now(): number;
 }
@@ -181,6 +190,7 @@ export function ticker(opts: TickerOptions = {}): Ticker {
       if (pending !== null) cancel(pending as number);
       pending = null;
     },
+    wake: schedule,
     now,
   };
 }

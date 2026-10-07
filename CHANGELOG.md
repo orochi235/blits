@@ -36,6 +36,9 @@ version and everything else the patch. Each release lists its changes as **Break
   Where nothing fits, `fallback: 'instant'` jumps the weaker children to their end at once and
   `'overrun'` lets the span run long. A span with a budget stays until it has passed, so late
   children can join, and `handle.fitted` says how the last fit came out.
+- `ticker().wake()` asks for a frame. A mix changed before `stop` and not synced since fires
+  `onWake` no more, so nothing else starts the loop again; `add` asks for a frame too, as it
+  always did, now documented.
 - An anchor can wait on several: `{ all: [...] }` answers the latest of them and `{ any: [...] }`
   the earliest, and both nest.
 - `handle.rise({ over })` turns a fade out around: the voice climbs back from where its fade had

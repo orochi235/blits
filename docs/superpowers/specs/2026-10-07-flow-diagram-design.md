@@ -36,9 +36,9 @@ levels at the top, pose at the bottom.
 - Clicking a channel node replaces the flow with that channel's **fold tree**, under a
   `Flow › color` breadcrumb that leads back.
 
-The flow is static in this version: it redraws when the composition changes, not per frame. It must
-take live values later without a rebuild, so node and edge styles come from callbacks the view
-re-reads (see `DiagramView`), and every node id is stable across edits.
+The flow is static in this version: it redraws when the composition changes, not per frame. Live
+values come later; every node and edge id is stable across edits so that pass can address them, and
+it adds a restyle path to `DiagramView`.
 
 ## The graph: `flowOf(composition)`
 
@@ -47,7 +47,7 @@ A pure function in `apps/playground/src/blits/flow.ts`, no React, returning `{ n
 | Node | Id | Label | From |
 |---|---|---|---|
 | level | `level:<name>` | name and range | `comp.levels` |
-| signal | `sig:<voice>:<field>:<path>` | the op and its arguments, e.g. `slew ↑150 ↓900` | a call to `gate`, `lag`, `peak`, `slew` or `level` in an expression, found with acorn |
+| signal | `sig:<voice>:<field>:<path>` | the op and its arguments, e.g. `slew(riseMs 150, fallMs 900)` | a call to `gate`, `lag`, `peak`, `slew` or `level` in an expression, found with acorn |
 | expr | `expr:<voice>:<field>` | the source, shortened: `1 − level("mix")(s, set)` | an expression that is not a plain chain of signal calls; its inputs are the levels and signals it reads |
 | voice | `voice:<id>` | name in its hue, patch kind and period, `loop` | `comp.voices` |
 | channel | `ch:<name>` | name and rule: `color · hex` | each channel some voice writes; the rule from `KIT` |
@@ -65,7 +65,9 @@ parse becomes one expr node with no inputs. `locus`, `anchor`, joins and spans a
 are view B.
 
 **The fold tree** for a channel is that channel node's ancestors in the same graph, plus a `rest`
-node holding the channel's rest value, laid out with weasel-diagram's `tree`.
+node when the channel has a rest (`KIT[ch].rest`; `hex` has none), drawn by the same widget with
+`layered` running up, so the channel sits at the top. Edges point toward the channel, which suits
+`layered` and not `tree`.
 
 ## weasel-diagram gains
 
@@ -75,23 +77,23 @@ node holding the channel's rest value, laid out with weasel-diagram's `tree`.
 | a barycenter crossing-reduction option on `layered` | `layered` keeps the existing in-rank order, which is right for a hand-arranged diagram and wrong for a generated one with no order to keep; the option stays off by default |
 | `DiagramView`: a read-only view with pan, zoom and node selection, no connect gesture, with style callbacks per node and per edge | a display surface, and the hook live weights will use |
 
-All three are public API with tests and forge stories in weasel. The crossing pass is deterministic:
+All three are public API with tests in weasel, and a demo on weasel's site beside the other diagram
+demos. The crossing pass is deterministic:
 no RNG, same input, same output.
 
 ## Packaging
 
-During development the playground links the local weasel checkout. When done, weasel releases 1.9.0
-and the playground pins it, moving every `@weasel-js/*` from 1.7.3 together (the site too, which
-pins labkit 1.7.3). The weasel work goes on a branch: weasel's `main` holds unpushed commits awaiting
-review.
+First, blits moves every `@weasel-js/*` from 1.7.3 to the published 1.8.1, the site included. During
+development the playground installs a local pack of weasel-diagram from a weasel worktree, so it runs
+against its own `@weasel-js/core`. When done, weasel releases 1.9.0 (Mike's call) and blits pins it
+everywhere. The weasel work stays on a branch until then.
 
 ## Files
 
 | Where | What |
 |---|---|
 | `apps/playground/src/blits/flow.ts` | `flowOf` and the fold-tree subgraph |
-| `apps/playground/src/widgets/FlowDiagram/` | the flow widget and its stories; knows graph data only |
-| `apps/playground/src/widgets/FoldTree/` | the fold tree widget and its stories |
+| `apps/playground/src/widgets/FlowDiagram/` | the widget and its stories, flow and fold; knows graph data only |
 | `apps/playground/src/app/FlowPanel.tsx` | wires the widgets to the composition, selection and breadcrumb |
 | `apps/playground/src/app/App.tsx`, `App.module.css` | the middle column's tabs, the right column's flow |
 | `apps/playground/README.md` | the screen, the panels table, the flow |
@@ -100,8 +102,7 @@ review.
 
 - `flowOf`: vitest in `apps/playground/test`. Each preset gives a fixed node and edge list; a broken
   expression gives one expr node; a failed voice is present and marked.
-- Stories: `FlowDiagram` per preset, plus a wide one with many voices to judge crossings; `FoldTree`
-  per channel rule.
-- weasel: barycenter tests for fewer crossings and determinism; stories for `diagramScene` and
-  `DiagramView`.
+- Stories: `FlowDiagram` per preset, a crowded one with many voices to judge crossings, and a fold.
+- weasel: barycenter tests for fewer crossings and determinism; tests for `diagramScene` and the
+  selection mirror; a site demo for `DiagramView`.
 - `playground:smoke` loads each preset with the flow showing.
