@@ -5015,7 +5015,7 @@
         "lead": "How many times faster than its own rate a voice or span held by a span may play.",
         "items": [
           "Default 1, which is no faster. <code>faster: 2</code> lets the fit play it in half its length.",
-          "Read only under a span; <code>compress</code> is what uses it.",
+          "Read only under a span, by the retiming that runs before any fit.",
           "Read aloud as a field: <code>{ faster: 3, skip: true }</code>."
         ]
       },
@@ -5142,7 +5142,7 @@
         "lead": "How many times slower than its own rate a voice or span held by a span may play.",
         "items": [
           "Default 1, which is no slower. <code>slower: 2</code> lets the fit play it at twice its length.",
-          "Read only under a span; <code>stretch</code> is what uses it, to fill a budget the children would leave empty.",
+          "Read only under a span, by the retiming that runs before any fit, to fill a budget the children would leave empty.",
           "Pairs with the word for faster, so pick the two together."
         ]
       },
