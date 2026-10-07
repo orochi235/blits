@@ -129,6 +129,9 @@ export interface Controls extends Clock {
   /** Where its anchors had placed it then: start, and the start of an anchored fade out. */
   start: number;
   outAt: number;
+  /** A fade the host set for `outAt`: its ramp, NaN for the voice's own `fade.out`. */
+  outOver: number;
+  outSet: boolean;
   /** Made by a sync, so it shows in that frame; a host's change between frames shows from the next. */
   sync: boolean;
 }
@@ -246,6 +249,10 @@ export class Voice<I, O> {
   first: Controls | null = null;
   /** Where an anchored `out` or `end` puts its fade's start, mix time; Infinity until known. */
   outAt = Number.POSITIVE_INFINITY;
+  /** The ramp of a fade the host set for `outAt` with `fade({ at })`; NaN for the voice's own. */
+  outOver = Number.NaN;
+  /** Whether the host set `outAt` with `fade({ at })`, which no anchor moves. */
+  outSet = false;
   /** The host time a pinned start was given at, NaN for none: a seek back pins it again. */
   pinned = Number.NaN;
   /** Whether its start is still to be fixed by an anchor, so it waits pending. */
@@ -371,6 +378,8 @@ export class Voice<I, O> {
     this.out = c.out;
     this.start = c.start;
     this.outAt = c.outAt;
+    this.outOver = c.outOver;
+    this.outSet = c.outSet;
     this.log = null;
     this.state = 'pending';
     this.subjects = new Store();
@@ -470,6 +479,8 @@ export class Voice<I, O> {
       back: this.back,
       start: this.start,
       outAt: this.outAt,
+      outOver: this.outOver,
+      outSet: this.outSet,
     });
   }
 
@@ -501,6 +512,8 @@ export class Voice<I, O> {
       v.back = controls.back;
       v.start = controls.start;
       v.outAt = controls.outAt;
+      v.outOver = controls.outOver;
+      v.outSet = controls.outSet;
     }
     v.quiet = true;
     v.unreached = null;

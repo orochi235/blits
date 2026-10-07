@@ -1,6 +1,6 @@
 import { Book, type BookHost } from './book.js';
 import { schedule } from './due.js';
-import { beginFade, beginRise, fadeSubject } from './fade.js';
+import { beginFade, beginRise, fadeAt, fadeSubject } from './fade.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
 import { noted, remember } from './history.js';
 import type { LaneHost } from './lanes.js';
@@ -157,7 +157,8 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
         throw new Error('blits: an owner fades as a whole, not by subject or at rest');
       if (opts !== undefined && 'subject' in opts)
         fadeSubject(mix, voice, opts.subject as I, opts.over);
-      else beginFade(mix, voice, opts ?? {});
+      else if (typeof opts?.at === 'number') fadeAt(mix, voice, opts.at, opts.over);
+      else beginFade(mix, voice, (opts ?? {}) as { over?: number; at?: 'rest'; deadline?: number });
     },
     rise: (voice, opts) => beginRise(mix, voice, opts ?? {}),
     weightOf: (voice, subject) => {

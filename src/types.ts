@@ -590,8 +590,13 @@ export type FadeOptions<I = unknown> =
   | {
       /** The ramp, ms. Defaults to the voice's own `fade.out`. */
       over?: number;
-      /** Leave per subject at the first frame that subject's contribution is at rest. */
-      at?: 'rest';
+      /**
+       * When the fade begins. A mix time: ahead, the voice plays untouched until then and begins
+       * its fade exactly there, its `out` mark fixed from now, and `rise` before then takes it
+       * back with nothing changed; at or behind now, the fade began then and is partway. `'rest'`:
+       * leave per subject at the first frame that subject's contribution is at rest. Default now.
+       */
+      at?: number | 'rest';
       /** Ms after which the voice leaves whether or not it rested. */
       deadline?: number;
       subject?: never;

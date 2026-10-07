@@ -121,6 +121,14 @@ export function beginRise<I, O>(
   opts: { over?: number },
 ): void {
   const out = voice.out;
+  if (voice.state !== 'fading' && voice.outSet) {
+    // A fade set ahead and not begun is taken back, and the weight never moved.
+    voice.outAt = Number.POSITIVE_INFINITY;
+    voice.outOver = Number.NaN;
+    voice.outSet = false;
+    noted(mix, voice);
+    return;
+  }
   if (voice.state !== 'fading' || out === null) return;
   const at = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
   const over = mix.reduced ? 0 : (opts.over ?? voice.fade.in ?? voice.fade.out ?? 0);
@@ -132,6 +140,29 @@ export function beginRise<I, O>(
   voice.back = over > 0 && from < 1 ? { from, at, over } : null;
   noted(mix, voice);
   mix.lanes?.refill();
+}
+
+/**
+ * Fades a voice out from mix time `at`: ahead, it plays untouched until then and begins its fade
+ * exactly there; at or behind now, the fade began then and is partway.
+ */
+export function fadeAt<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  at: number,
+  over: number | undefined,
+): void {
+  if (voice.state === 'done' || voice.state === 'fading') return;
+  const now = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
+  if (at <= now) {
+    beginFade(mix, voice, { over }, Math.max(startOf(voice), at));
+    mix.stir();
+    return;
+  }
+  voice.outAt = at;
+  voice.outOver = over ?? Number.NaN;
+  voice.outSet = true;
+  noted(mix, voice);
 }
 
 /** Removes a voice, recording that it left at `at`, default now. */

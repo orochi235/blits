@@ -50,7 +50,12 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
     if (voice.state === 'done') continue;
     if (Number.isNaN(voice.opened)) voice.opened = now;
     if ((voice.state === 'live' || voice.state === 'frozen') && voice.outAt <= now)
-      beginFade(mix, voice, {}, Math.max(startOf(voice), voice.outAt));
+      beginFade(
+        mix,
+        voice,
+        { over: Number.isNaN(voice.outOver) ? undefined : voice.outOver },
+        Math.max(startOf(voice), voice.outAt),
+      );
     if (
       voice.state === 'pending' &&
       (voice.owner === null ? now : ownerReading(voice.owner, now)) >= voice.start

@@ -130,7 +130,7 @@ export function place<I, O>(mix: Mixer<I, O>): void {
           if (Number.isFinite(start) && startAt(mix, voice, start)) moved = true;
         }
       }
-      if (voice.state !== 'fading') {
+      if (voice.state !== 'fading' && !voice.outSet) {
         const by = anchor.out ?? anchor.end;
         const t = by === undefined ? undefined : resolve(mix, by, voice);
         if (t !== undefined) {

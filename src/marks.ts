@@ -112,7 +112,8 @@ export function markOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, mark: Mark): 
     if (out.rest) return out.deadline === undefined ? undefined : out.at + out.deadline;
     return out.at + out.over;
   }
-  return outAt === undefined ? undefined : outAt + (mix.reduced ? 0 : (voice.fade.out ?? 0));
+  const over = Number.isNaN(voice.outOver) ? (voice.fade.out ?? 0) : voice.outOver;
+  return outAt === undefined ? undefined : outAt + (mix.reduced ? 0 : over);
 }
 
 /**
