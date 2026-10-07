@@ -101,6 +101,14 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A lane fills only the subjects probed this frame or in the last frame with a probe, not every
+  subject it has met; one probed in neither takes the general path if it is probed before the next
+  fill. Three `keys` voices over 10k subjects, every subject probed once and then 40% each frame
+  (`view`), take 0.561 ms a frame against 0.878. No other row moves past its run-to-run spread:
+  `signal` and `named` at 10k read 1.06 and 1.09 here and 0.96 and 0.91 in a run against the
+  build before (teitou, medians of six alternated runs, each in its own process). A stateless
+  patch's `send` from `at` on a lane now sends only for those subjects, where it sent for every
+  subject the lane had met.
 - A second `seek` or `project` back no longer reaches into time the first one's history had
   already let go of, where it read wrong values: after seeking back to 1600 under `ms: 500` from
   2000, a seek to 1200 read 0 where the mix had shown 90. It throws as a read older than history

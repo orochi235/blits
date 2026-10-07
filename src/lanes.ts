@@ -186,6 +186,11 @@ export class Lanes<I, O> implements Watcher {
   lastDistinct = 0;
   /** Numbered subjects alive. */
   live = 0;
+  /**
+   * The probe count a subject's last probe must pass for this fill to fill it: the start of the
+   * last frame with a probe, or -1 while every subject alive was probed then, when it fills all.
+   */
+  lately = -1;
   filledVersion = Number.NaN;
   qualifiedVersion = Number.NaN;
 
@@ -353,6 +358,23 @@ export class Lanes<I, O> implements Watcher {
   general(slot: number): false {
     if (slot >= 0) this.per[slot * Per.SLOT + Per.GENERAL_PROBE] = ++this.probes;
     return false;
+  }
+
+  /**
+   * Whether this fill leaves the subject at `slot` to the general path, for not having been probed
+   * this frame or the last: a probe of it before the next fill then takes the general path.
+   */
+  unread(slot: number): boolean {
+    const per = this.per;
+    const o = slot * Per.SLOT;
+    const lately = this.lately;
+    if (
+      (per[o + Per.LANE_PROBE] as number) > lately ||
+      (per[o + Per.GENERAL_PROBE] as number) > lately
+    )
+      return false;
+    per[o + Per.FILLED] = this.fills;
+    return true;
   }
 
   /** Whether a probe has read the subject since the frame began, on either path. */

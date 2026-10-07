@@ -459,17 +459,30 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      a cost nobody has measured. Measure that relink before building; if it is near 100 ns a
      subject entering or leaving, a 2% glow saves nearly all of the 1 ms.
 
-5. **Work nobody will see** (2026-10-07, all unbuilt and unmeasured). Prompted by astv speeding
-   100 text animations into 2 s, most of them offscreen. Three cases, by what the host must add:
-
-   | Case | Blits knows already | Host adds |
-   |---|---|---|
-   | offscreen | what the host probes; an unprobed subject costs nothing on the general path | nothing, if lanes stop filling every subject the mix has met (`Mix.drain`'s doc in `src/types.ts`; the `sparse` row) and fill only those probed lately |
-   | too fast to see | each voice's span and the frame's gap | a policy: a voice ending between two syncs jumps to its end, since text that types in must still end typed, or stretches to a minimum number of frames |
-   | flicker | each channel's arithmetic and rate | which channels carry brightness, once on the kit; blits could cap reversals at WCAG's 3 a second per subject, stricter than WCAG's rule, which also weighs flashing area the host alone knows |
-
-   Bench an astv-shaped scene (100 short voices over a list mostly unprobed) before building any.
-   A reach that changes over time (item 4) is one way to say offscreen.
+5. **Work nobody will see** (2026-10-07). Prompted by astv speeding 100 text animations into 2 s,
+   most of them offscreen. Three cases; the first is built, the other two wait on a decision.
+   - **Offscreen, built**: a lane fills only subjects probed this frame or the last (CHANGELOG
+     Unreleased, the schema page's Lanes section). It pays where lanes stay busy over a part
+     view: `view`, three `keys` voices with 40% of 10k subjects probed, 0.561 ms a frame from
+     0.878 (teitou). It does nothing for astv's shape, the `typing` row: 100 voices of 40 rows
+     over 10k rows with 200 probed costs about 0.02 ms a frame either way, because at 2% probed
+     every lane already rests. A profile of it (teitou, 20,000 frames) puts about 55% in the
+     general path's fold, 11% in lane bookkeeping and 11% in voice clocks. astv's real text runs
+     write `last` over row objects, which no lane runs, so this change does not reach them.
+   - **Too fast to see — decide: when a voice is shorter than the gap between two frames, should
+     blits show it at all?** Today it plays as timed: a voice whose whole span falls between two
+     syncs is never sampled mid-way, and is shown only if it freezes after. The choice is between
+     leaving that, jumping straight to its last frame (one frame shown, so text that types in
+     still ends typed), or stretching it to last a minimum number of frames, which moves its end
+     and anything anchored to it. Recommended: a per-voice option defaulting to today, offering
+     the jump; stretching changes timing the host set and that other voices wait on.
+   - **Flicker — decide: should blits limit how often a channel that carries brightness may flip
+     on one subject, and if so, change the output or only warn?** The kit would mark which
+     channels carry brightness; blits can count reversals per subject against WCAG's 3 a second,
+     stricter than WCAG, which also weighs the flashing area only the host knows. Recommended: a
+     development-time warning naming the voice and subject, with no clamping, since a clamp would
+     change the pose silently on a guess about area.
+   A reach that changes over time (item 4) is another way to say offscreen.
 
 6. **Color as a value: `color()` is built** (branch `color`, 2026-10-07); the schema page's
    channel section and the CHANGELOG say what it is. Mike chose that the channel picks its lerp

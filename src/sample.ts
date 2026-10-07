@@ -22,6 +22,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
   const ch = lane.chans[0] as Laned;
   const fills = lanes.fills;
   const from = lanes.frameProbes;
+  const lately = lanes.lately;
   const seeks = voice.seeks;
   const elapsedNow = voice.elapsedAt(lanes.now);
   const flat = lane.flat;
@@ -60,6 +61,10 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     const o = p * Row.STRIDE;
     const q = slot * Per.SLOT;
     if (per[q + Per.LANE_FILL] === fills - 1) data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
+    if (lately >= 0 && lanes.unread(slot)) {
+      unbareLane(lane, p);
+      continue;
+    }
     const delay = data[o + Row.DELAY] as number;
     const elapsed = elapsedNow - delay;
     if (elapsed < 0) {

@@ -100,17 +100,18 @@ export interface Setting<S = void, H = unknown> {
    * The state `owner` keeps for this voice and this subject, made by `init` on first ask. The mix
    * holds it, so a read at another time can copy it instead of moving it. A stateful signal keeps
    * its state here and nowhere else. With lanes on, a patch or weight signal that first calls it
-   * partway through playing can have that state advanced once for one subject not probed on the
-   * frame it starts; one that keeps state from its first call, or a patch that declares `state`,
-   * never does.
+   * partway through playing can have that state advanced once for one subject probed the frame
+   * before it starts and not on that frame; one that keeps state from its first call, or a patch
+   * that declares `state`, never does.
    */
   keep<K>(owner: object, init: () => K): K;
   /**
    * Reports an event at `timestamp`, for this voice and this subject. The mix queues it until the
    * host drains it, and never calls back. Meant for `step`, where under `stepMs` the timestamp is
    * the interval the event happened in rather than the frame that sampled it. Sent from a stateless
-   * patch's `at` while it runs on a lane, it goes out for every subject the mix has met, probed that
-   * frame or not; `at` is not asked for a subject at weight 0, so nothing is sent from it there.
+   * patch's `at` while it runs on a lane, it goes out for every subject the lane fills, probed that
+   * frame or not: each probed that frame or the last; `at` is not asked for a subject at weight 0,
+   * so nothing is sent from it there.
    */
   send(event: unknown): void;
 }
@@ -727,9 +728,9 @@ export interface MixOptions<H = unknown> {
    * Whether a channel may run as a lane: computed for every subject at once in flat arrays, when
    * every voice writing it can run that way. On by default; the pose is the same either way, so
    * turning it off is for ruling a lane out, or for comparing against. Two things differ: a
-   * stateless patch's `setting.send` from `at` sends for every subject a lane fills, probed or not,
-   * and a patch that first calls `setting.keep` partway through playing can advance that state once
-   * more for one unprobed subject (see `Setting.keep`).
+   * stateless patch's `setting.send` from `at` sends for every subject a lane fills, those probed
+   * this frame or the last, and a patch that first calls `setting.keep` partway through playing can
+   * advance that state once more for one subject probed the frame before (see `Setting.keep`).
    */
   lanes?: boolean;
   /**
@@ -1168,8 +1169,8 @@ export interface Mix<I, O, H = unknown> {
    * Every event patches have sent since the last drain, earliest first, in the order they were sent
    * where two share a timestamp. A subject's events are made while it catches up, which is when it is
    * probed, so one nobody probes has sent nothing yet: promptness is the host's, by probing. A
-   * stateless patch's `at` on a lane is the exception: it runs for every subject the mix has met, at
-   * the frame's first probe. Under `stepMs` each carries the end of the interval it happened in, so
+   * stateless patch's `at` on a lane is the exception: it runs at the frame's first probe for every
+   * subject probed that frame or the last. Under `stepMs` each carries the end of the interval it happened in, so
    * what is sent and when does not depend on how the host spaces its probes. Time `rebase` took out
    * sends nothing. Given a tag, it takes only the events of voices carrying it and leaves the rest for
    * whoever drains them.

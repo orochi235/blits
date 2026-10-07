@@ -280,6 +280,7 @@ function rows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, first: number, id: numbe
     const o = p * Row.STRIDE;
     const q = slot * Per.SLOT;
     if (per[q + Per.LANE_FILL] === fills - 1) data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
+    if (lanes.lately >= 0 && lanes.unread(slot)) continue;
     const delay = data[o + Row.DELAY] as number;
     const fast = (f & Flag.FAST) !== 0;
     const voice = c.voices[p] as Voice<I, O>;

@@ -40,6 +40,7 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
   const fills = lanes.fills;
   const from = lanes.frameProbes;
   const probed = lanes.probes !== from;
+  const lately = lanes.lately;
   const now = lanes.now;
   const op = ch.op;
   for (; p < list.length; p++) {
@@ -52,6 +53,15 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
     if (
       probed &&
       ((per[q + Per.LANE_PROBE] as number) > from || (per[q + Per.GENERAL_PROBE] as number) > from)
+    )
+      break;
+    // Left to the general path, as `rows` leaves it.
+    if (
+      lately >= 0 &&
+      !(
+        (per[q + Per.LANE_PROBE] as number) > lately ||
+        (per[q + Per.GENERAL_PROBE] as number) > lately
+      )
     )
       break;
     const elapsed = clock(hot, h, now) - (data[o + Row.DELAY] as number);

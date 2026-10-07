@@ -41,6 +41,7 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
     const decide = lanes.fresh;
     lanes.fresh = false;
     const share = lanes.live > 0 ? lanes.lastDistinct / lanes.live : 1;
+    lanes.lately = share < 1 ? lanes.lastFrom : -1;
     // Deciding which lanes and crowds go idle first, then running them, in voice order: a crowd's
     // rows are folded between the lanes on either side of their voices, as the general path
     // folds every voice in order.
@@ -251,6 +252,7 @@ export function one<I, O>(
   // A probe read this subject from the last fill: keep the weight it read for `weightOf`.
   if (this.per[slot * Per.SLOT + Per.LANE_FILL] === this.fills - 1)
     data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
+  if (this.lately >= 0 && this.unread(slot)) return false;
   const delay = data[o + Row.DELAY] as number;
   const elapsed = frozenAt(voice, elapsedNow - delay);
   if (!(elapsed >= 0)) {

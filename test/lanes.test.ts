@@ -627,11 +627,14 @@ describe('lanes stay identical where a fill and a probe interleave', () => {
       });
       m.sync(0);
       for (const p of parts) m.probe(p);
-      // Subject 0 holds the lane's first position and is not probed again until t > 1000.
+      // Subject 0 holds the lane's first position, and is probed the frame before the patch first
+      // keeps state and not again until t > 1000.
       const crawl: number[][] = [];
       for (const t of times) {
         m.sync(t);
-        crawl.push(parts.map((p) => (p.id !== 0 || t > 1000 ? m.probe(p).crawl : Number.NaN)));
+        crawl.push(
+          parts.map((p) => (p.id !== 0 || t <= 400 || t > 1000 ? m.probe(p).crawl : Number.NaN)),
+        );
       }
       return crawl;
     });
@@ -1442,6 +1445,120 @@ describe('lanes run', () => {
     m.probe(parts[3] as Part);
     // The general path would have called the patch for subject 3 alone.
     expect(seen.sort()).toEqual([0, 1, 2, 3]);
+  });
+});
+
+describe('lanes fill only subjects probed this frame or the last', () => {
+  it('leave a subject probed in neither to the general path', () => {
+    const m = mix<Part, Pose>(K);
+    const calls: number[] = [];
+    const parts = Array.from({ length: 40 }, (_, id) => ({ id }));
+    m.cue({
+      patch: patch<Part, Pose>(
+        0,
+        (_ph, part) => {
+          calls.push(part.id);
+          return { crawl: 1 };
+        },
+        { writes: ['crawl'] },
+      ),
+    });
+    const frame = (t: number, probed: readonly Part[]): number => {
+      calls.length = 0;
+      m.sync(t);
+      for (const part of probed) m.probe(part);
+      return calls.length;
+    };
+    const most = parts.slice(0, 30);
+    frame(0, parts);
+    frame(16, parts);
+    expect(frame(32, most)).toBe(40);
+    // 30 of 40 probed last frame keeps the lane busy: it fills those 30, and the general path
+    // calls for the one probed now that was not probed then.
+    expect(frame(48, [...most, parts[35] as Part])).toBe(31);
+  });
+
+  // Frames 40 ms apart; each subject is left unprobed two frames in every eight, so three
+  // quarters are probed each frame, which keeps every lane busy.
+  const frames = Array.from({ length: 30 }, (_, f) => f * 40);
+  const probe = (t: number, part: Part) => (Math.floor(t / 80) + part.id) % 4 !== 0;
+
+  it('for keys and fn voices with stagger, a fade and a mid-run cue', () => {
+    agree(
+      (m) => {
+        const handles = [
+          m.cue({ patch: pulse(), stagger: (p) => p.id * 7 }),
+          m.cue({ patch: wave(), weight: 0.6, fade: { in: 120 } }),
+        ];
+        return {
+          handles,
+          at: (t) => {
+            if (t === 400) handles.push(m.cue({ patch: pulse(), stagger: (p) => p.id * 3 }));
+            if (t === 600) handles[1]?.fade({ over: 200 });
+          },
+        };
+      },
+      { times: frames, parts: 40, probe },
+    );
+  });
+
+  it('for a spring retargeted on a subject left unprobed, and a glide', () => {
+    agree(
+      (m, parts) => {
+        const s = spring<Part, Pose>('crawl', { from: 0, to: (p) => p.id, stiffness: 120 });
+        const handles = [m.cue({ patch: s, stagger: (p) => p.id * 4 })];
+        return {
+          handles,
+          at: (t) => {
+            if (t === 240) s.to(parts[3] as Part, -20);
+            if (t === 400)
+              handles.push(
+                m.cue({ patch: glide<Part, Pose>('dark', { from: 0, velocity: 2, ms: 300 }) }),
+              );
+          },
+        };
+      },
+      { times: frames, parts: 40, probe },
+    );
+  });
+
+  it('for a crowd of tweens and fn voices, one per subject, beside a keys voice', () => {
+    agree(
+      (m, parts) => {
+        const handles = [m.cue({ patch: pulse() })];
+        for (const p of parts)
+          handles.push(
+            p.id % 2 === 0
+              ? m.cue({
+                  patch: tween<Part, Pose, number[]>('position', {
+                    from: [0, 0, 0],
+                    to: [p.id, -p.id, 1],
+                    ms: 300 + p.id * 20,
+                    ease: 'ease-out',
+                  }),
+                  subjects: [p],
+                })
+              : m.cue({ patch: wave(), subjects: [p] }),
+          );
+        return { handles };
+      },
+      { times: frames, parts: 40, probe },
+    );
+  });
+
+  it('for a blend weighted by a signal', () => {
+    agree(
+      (m) => ({
+        handles: m.blend(
+          [pulse(), wave()],
+          (p: Part, s: Setting) => 0.5 + 0.5 * Math.sin(s.elapsed / 90 + p.id),
+          {
+            fade: { in: 60 },
+          },
+        ),
+      }),
+      { times: frames, parts: 40, probe },
+    );
   });
 });
 

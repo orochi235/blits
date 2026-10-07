@@ -97,8 +97,8 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
 /**
  * Whether a voice's patch and spec can run on a lane, its channels aside. A voice whose patch has
  * kept state on a record through `setting.keep` is stateful from then on, and leaves its lane;
- * one that starts keeping partway through may advance that state once for one subject not
- * probed on the frame it starts, which declaring `state` avoids.
+ * one that starts keeping partway through may advance that state once for one subject probed the
+ * frame before it starts and not on that frame, which declaring `state` avoids.
  */
 export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   const spec = voice.spec;
