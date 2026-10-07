@@ -10,7 +10,7 @@ import { ownerReading } from './owner.js';
 import { refitAll } from './spans.js';
 import { Store } from './store.js';
 import { hostAt, replay } from './tape.js';
-import type { Tape } from './types.js';
+import type { Transport } from './transport.js';
 import type { Controls, Subject, Voice } from './voice.js';
 
 /**
@@ -137,39 +137,48 @@ function stateAt<I, O>(voice: Voice<I, O>, t: number): Voice<I, O>['state'] {
   return 'live';
 }
 
-/** Moves the mix to mix time `t`, as it stood at the end of that frame. */
-export function seek<I, O>(mix: Mixer<I, O>, t: number): void {
-  if (mix.projecting) throw new Error('blits: a projection does not seek');
-  const history = mix.opts.history;
+/** Moves every mix on the transport to mix time `t`, as it stood at the end of that frame. */
+export function seek(transport: Transport, t: number): void {
+  if (transport.projecting) throw new Error('blits: a projection does not seek');
+  const history = transport.history;
   if (!history) throw new Error('blits: seeking needs a mix made with history');
-  const tape = mix.tape;
+  const tape = transport.tape;
   if (tape === undefined)
     throw new Error('blits: seeking needs history.tape, which keeps the calls a seek plays again');
-  if (Number.isNaN(mix.now))
+  if (Number.isNaN(transport.now))
     throw new Error('blits: a mix that has never synced has nothing to seek');
   if (t === Number.POSITIVE_INFINITY) throw new RangeError('blits: a mix seeks to a finite time');
-  if (!(t >= mix.now - history.ms && t >= mix.born))
+  if (!(t >= transport.now - history.ms && t >= transport.born))
     throw new Error(`blits: ${t} is older than this mix's history reaches`);
-  if (t >= mix.now) replay(mix, () => t);
+  if (t >= transport.now) replay(transport, () => t);
   // Under the rate the recorded calls up to `t` set, ahead; behind, under the rate it had then.
-  const u = hostAt(mix, t);
+  const u = hostAt(transport, t);
   if (!Number.isFinite(u)) throw new RangeError(`blits: the mix's rate never reaches ${t}`);
-  if (t >= mix.now) {
-    mix.u = u;
-    move(mix, t);
-  } else back(mix, tape, t, u);
+  if (t >= transport.now) {
+    transport.u = u;
+    for (const m of transport.members) move(m, t);
+  } else {
+    const n = tape.depthAt(t);
+    if (n < tape.undoDepth()) tape.goto(n);
+    // What history kept after `t` is let go; the tape holds the calls that made it.
+    transport.announced = transport.announced.filter((a) => a.made <= t);
+    transport.pace?.cut(u);
+    transport.u = u;
+    transport.now = t;
+    for (const m of transport.members) back(m, t);
+  }
   // The host's clock reads on from here: its next sync reads `t` plus its time since its last.
-  mix.offset = mix.last - u;
-  mix.u = u;
-  mix.stir();
-  const bookers = mix.bookers;
-  if (bookers !== null) for (const b of bookers) b.sought();
+  transport.offset = transport.last - u;
+  transport.u = u;
+  for (const m of transport.members) {
+    m.stir();
+    const bookers = m.bookers;
+    if (bookers !== null) for (const b of bookers) b.sought();
+  }
 }
 
-/** Puts the mix back as it stood at the end of frame `t`, at host time `u`. */
-function back<I, O>(mix: Mixer<I, O>, tape: Tape, t: number, u: number): void {
-  const n = tape.depthAt(t);
-  if (n < tape.undoDepth()) tape.goto(n);
+/** Puts one mix back as it stood at the end of frame `t`, its transport already there. */
+function back<I, O>(mix: Mixer<I, O>, t: number): void {
   const all = [...mix.cued, ...mix.gone].sort((a, b) => a.id - b.id);
   const kept: Voice<I, O>[] = [];
   const gone: Voice<I, O>[] = [];
@@ -243,12 +252,8 @@ function back<I, O>(mix: Mixer<I, O>, tape: Tape, t: number, u: number): void {
 
   // What history kept after `t` is let go; the tape holds the calls that made it.
   mix.hostLog = mix.hostLog.filter((e) => e.at <= t);
-  mix.announced = mix.announced.filter((a) => a.made <= t);
   mix.sent = mix.sent.filter((e) => e.timestamp <= t);
   mix.sentTo = t;
-  mix.pace?.cut(u);
-  mix.u = u;
-  mix.now = t;
   mix.pins = null;
   for (const voice of kept)
     if (voice.state === 'pending' && !Number.isNaN(voice.pinned)) {

@@ -42,7 +42,8 @@ import { Steps } from './relink.js';
 import { seek } from './seek.js';
 import { Fitting, refit } from './spans.js';
 import { Store } from './store.js';
-import { record, replay, tapeOf } from './tape.js';
+import { record } from './tape.js';
+import { type Announced, Transport } from './transport.js';
 import type {
   Booker,
   BookOptions,
@@ -93,44 +94,15 @@ export class Mixer<I, O> implements Mix<I, O> {
    * a projection reading back, the copy in force then.
    */
   hostLog: { at: number; fields: Record<string, unknown> }[] = [];
-  /**
-   * Marks the host announced on a score: `at` in host time, so the mix's rate never moves one, and
-   * NaN until the next sync for one announced as now before any sync; `made` is the mix time it was
-   * announced, for a read back to know what was known.
-   */
-  announced: {
-    name: string;
-    score: string | undefined;
-    tags: readonly string[];
-    at: number;
-    made: number;
-    order: number;
-  }[] = [];
   hostThen: { fields: Record<string, unknown> } | undefined;
   /** Each subject's last two poses and when they were probed, for `from: 'current'`. */
   pose = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();
-  nextId = 1;
-  /**
-   * The mix clock: host time at the mix's rate. Host time is the host's timestamp less every gap
-   * `rebase` has taken out, `u` at the last sync.
-   */
-  now = Number.NaN;
-  u = Number.NaN;
+  /** The clock this mix plays on, which also holds its tape and the marks announced on it. */
+  readonly transport: Transport;
   /** This mix's frame among every mix's: moved by a sync, and by a control change or drop within one. */
   frame = nextFrame();
-  offset = 0;
-  /** The mix time of the first sync. */
-  born = Number.NaN;
-  /** Under `history.tape`, the host's calls by mix time, for `seek`. */
-  readonly tape: Tape | undefined;
-  /** True while the tape makes a recorded call again, so it is not recorded twice. */
-  replaying = false;
-  /** The mix's own rate; null while it has never been set, when mix time is host time. */
-  pace: Pace | null = null;
   /** Pending voices whose start the host gave, by its host time, kept where the rate puts it. */
   pins: Map<Voice<I, O>, number> | null = null;
-  last = Number.NaN;
-  rebasing = false;
   wantsPose = false;
   /** The pose `pull` folds a subject into where it cannot read straight from the lanes. */
   scratch: O | undefined;
@@ -261,7 +233,55 @@ export class Mixer<I, O> implements Mix<I, O> {
       this.slotOf.set(k, i);
     });
     this.lanes = opts.lanes === false ? null : new Lanes<I, O>(laneHost(this));
-    this.tape = tapeOf(this);
+    this.transport = new Transport(opts.history);
+    this.transport.join(this as unknown as Mixer<unknown, unknown>);
+  }
+
+  // The transport's clock, read and written as the mix's own by every module that moves it.
+  get now(): number {
+    return this.transport.now;
+  }
+  set now(v: number) {
+    this.transport.now = v;
+  }
+  get u(): number {
+    return this.transport.u;
+  }
+  set u(v: number) {
+    this.transport.u = v;
+  }
+  get offset(): number {
+    return this.transport.offset;
+  }
+  set offset(v: number) {
+    this.transport.offset = v;
+  }
+  get pace(): Pace | null {
+    return this.transport.pace;
+  }
+  set pace(v: Pace | null) {
+    this.transport.pace = v;
+  }
+  get announced(): Announced[] {
+    return this.transport.announced;
+  }
+  set announced(v: Announced[]) {
+    this.transport.announced = v;
+  }
+  get nextId(): number {
+    return this.transport.nextId;
+  }
+  set nextId(v: number) {
+    this.transport.nextId = v;
+  }
+  get last(): number {
+    return this.transport.last;
+  }
+  get tape(): Tape | undefined {
+    return this.transport.tape;
+  }
+  get replaying(): boolean {
+    return this.transport.replaying;
   }
 
   get reduced(): boolean {
@@ -314,48 +334,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   sync(timestamp: number): void {
-    this.syncing = true;
-    try {
-      this.syncAt(timestamp);
-    } finally {
-      this.syncing = false;
-    }
-  }
-
-  private syncAt(timestamp: number): void {
-    if (timestamp < this.last && !this.rebasing)
-      throw new RangeError(
-        `blits: sync went back from ${this.last} to ${timestamp}; the host's clock only goes forward, and seek moves the mix`,
-      );
-    if (this.rebasing && !Number.isNaN(this.last)) this.offset += timestamp - this.last;
-    this.rebasing = false;
-    this.last = timestamp;
-    const u = timestamp - this.offset;
-    let pace = this.pace;
-    let now = pace === null ? u : pace.sync(u);
-    const later = u !== this.u;
-    const still = later && now === this.now;
-    this.u = u;
-    if (Number.isNaN(this.born)) this.born = now;
-    // Calls the host made before, played again where a seek went back past them; one may set the
-    // mix's rate, which moves where this sync lands.
-    if (this.tape !== undefined && now > this.now) {
-      const reading = () => (this.pace === null ? u : this.pace.reading(u));
-      replay(this, reading);
-      pace = this.pace;
-      now = reading();
-    }
-    // Host time moving while the mix clock stands still lands what waits on host time or the host.
-    if (now !== this.now || (later && pace !== null && waits(this))) move(this, now);
-    const history = this.opts.history;
-    if (this.tape !== undefined && history !== undefined) this.tape.prune(now - history.ms);
-    // It is a frame too, which asks every weight signal again, so one reading input follows it.
-    if (still) {
-      this.frame = nextFrame();
-      this.lanes?.refill();
-    }
-    const bookers = this.bookers;
-    if (bookers !== null) for (const b of bookers) b.sync();
+    this.transport.sync(timestamp);
   }
 
   book(opts: BookOptions): Booker {
@@ -376,7 +355,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   seek(time: number): void {
-    seek(this, time);
+    if (this.projecting) throw new Error('blits: a projection does not seek');
+    seek(this.transport, time);
   }
 
   project(time: number): Projection<I, O> {
@@ -440,7 +420,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   rebase(): void {
-    this.rebasing = true;
+    this.transport.rebase();
   }
 
   voices(tag?: string): Handle<I>[] {
@@ -471,28 +451,15 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   get rate(): number {
-    return this.pace === null ? 1 : this.pace.rateAt(this.u);
+    return this.transport.rate;
   }
 
   set rate(r: number) {
-    this.ramp(r, 0);
+    this.transport.ramp(r, 0);
   }
 
   ramp(rate: number, over: number): void {
-    if (!(rate >= 0 && rate < Number.POSITIVE_INFINITY))
-      throw new RangeError(`blits: a mix's rate is a finite number, 0 or more, not ${rate}`);
-    if (this.pace === null) {
-      this.pace = new Pace(this.opts.history !== undefined);
-      // Until now mix time was host time, so a pending voice's start is the host time it was given.
-      for (const v of this.cued)
-        if (v.state === 'pending' && !v.placing && v.owner === null && v.spec.start !== undefined)
-          pin(this, v, v.start);
-    }
-    const history = this.opts.history;
-    const reach = history === undefined ? Number.NEGATIVE_INFINITY : this.now - history.ms;
-    this.pace.change(this.u, rate, over, reach);
-    this.stir();
-    record(this, 'rate', () => this.ramp(rate, over));
+    this.transport.ramp(rate, over);
   }
 
   /** Whether a voice will change no pose from `now` on, short of a change made to it. */
