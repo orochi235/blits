@@ -470,8 +470,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      machine or the fleet. The fold also costs every other lane a little: `one` sets two fields
      per subject and `foldInto` tests the op. `bench/ab.sh` against `f0f9494` says whether that
      shows; it has not been run.
-   - **The playground's kit still uses `hex()`** (`apps/playground/src/blits/kit.ts`, `keys.ts`),
-     left alone because another session was building the playground on 2026-10-07.
 
 7. **Name the span vocabulary.** `span`, `fit`, `fallback`, `fitted`, `lenient`, `stretch`,
    `collapse`, `compress`, and the hints `faster`, `slower`, `overlap`, `skip`, `firm` are working
