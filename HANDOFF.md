@@ -389,6 +389,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    or `seek`, which are exactly that. Rewrite its opening and "The words" to cover time as well as
    mixing.
 
+4. **Reach is fixed at cue, so a voice whose influence moves pays for every subject it might
+   touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every
+   frame, and `influence` (`src/fold.ts`) runs the patch before anything checks the weight, so a
+   weight of 0 is computed and then dropped. Unmeasured. Two fixes, smallest first: skip the patch
+   when `weigh` returns 0 (a stateful patch's skipped `step` needs care); or let a voice declare a
+   bound that changes over time and index subjects by position, which needs positions from the
+   host — a new public surface, so Mike's call. Bench a glow over 10k subjects before either.
+
 ## Loose ends
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the

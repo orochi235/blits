@@ -247,6 +247,7 @@
 <p>Informal terms are used in design work and in the code but appear nowhere in the public API, so a consumer never has to learn them.</p>
 <dl>
   <dt>Lane</dt><dd>A channel the mix computes for every subject at once, in flat arrays indexed by a number it gives each subject, rather than subject by subject. A channel runs as a lane only while every voice writing it qualifies; otherwise it takes the general path, which folds subject by subject as the mix always has. Lanes are on by default and give the same pose; <code>MixOptions.lanes: false</code> turns them off.</dd>
+  <dt>Reach</dt><dd>Whether a voice acts on a subject at all. A cue's <code>subjects</code> or <code>target</code> decides it, once, the first time the mix sees the subject, and the answer is kept; a subject the voice does not reach is never asked about again. Reach is fixed for the life of the voice: a falloff that varies by frame, such as a glow around the pointer, is a weight, and every reached subject pays for it.</dd>
 </dl>
 
 <h2 id="channels">Channels</h2>
