@@ -3,7 +3,7 @@ import { foldNumber } from './channels.js';
 import { clampWeight, passAt, weighed } from './clock.js';
 import { type Lane, type Laned, Per, type Positions, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
-import type { Motions } from './motion.js';
+import type { Motions } from './motions.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
 import { between, left, progress } from './tweened.js';

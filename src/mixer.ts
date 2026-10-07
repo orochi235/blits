@@ -32,7 +32,7 @@ import { book, laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
 import { foldLocus, type LocusScratch } from './locus.js';
 import { listed } from './marks.js';
-import type { MotionOwner, Motions } from './motion.js';
+import type { MotionOwner, Motions } from './motions.js';
 import { move, nextFrame, waits } from './move.js';
 import { ownerPatch } from './owner.js';
 import type { Pace } from './pace.js';

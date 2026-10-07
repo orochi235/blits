@@ -15,7 +15,7 @@ import {
 import { fold, foldDelta, foldInto, foldRun, gate, gather } from './gather.js';
 import { Begin, type Lane, type Laned, type Locus, Per, Row } from './lane.js';
 import { meet, reach } from './meet.js';
-import type { Watcher } from './motion.js';
+import type { Watcher } from './motions.js';
 import { type absent, Numbers } from './numbers.js';
 import { Owed } from './owed.js';
 import { requalify, retouch } from './qualify.js';

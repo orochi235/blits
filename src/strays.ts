@@ -1,6 +1,6 @@
 import { unpart } from './fade.js';
 import type { Mixer } from './mixer.js';
-import type { MotionOwner, Motions } from './motion.js';
+import type { MotionOwner, Motions } from './motions.js';
 import { record } from './tape.js';
 import type { Voice } from './voice.js';
 

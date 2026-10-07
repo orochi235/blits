@@ -4,7 +4,7 @@ import { copyHeld, last, leftAt } from './history.js';
 import { laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
-import type { Motions } from './motion.js';
+import type { Motions } from './motions.js';
 import { move } from './move.js';
 import { ownerReading } from './owner.js';
 import { refitAll } from './spans.js';

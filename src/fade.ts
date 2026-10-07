@@ -3,7 +3,7 @@ import { envelope } from './clock.js';
 import { schedule } from './due.js';
 import { leave, noted, releasing } from './history.js';
 import type { Mixer } from './mixer.js';
-import type { Motions } from './motion.js';
+import type { Motions } from './motions.js';
 import { orphan } from './owner.js';
 import { startOf } from './place.js';
 import { lingers, refit } from './spans.js';

@@ -1,10 +1,11 @@
 import { bareRows, clock, Sampled, unbare } from './bare.js';
 import { clampWeight, passAt, phaseAt, weighed } from './clock.js';
+import { closed } from './closed.js';
 import type { Curve } from './easing.js';
 import { KeyRows } from './keyrows.js';
 import { frozenAt, type Laned, Per, type Positions, Row, SPARSE } from './lane.js';
 import type { Lanes } from './lanes.js';
-import { closed, type Motions } from './motion.js';
+import type { Motions } from './motions.js';
 import type { Scratch } from './patch.js';
 import { move } from './sample.js';
 import type { Subject, Voice } from './voice.js';

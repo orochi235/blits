@@ -3,7 +3,7 @@ import { bare, type Crowd, Hot } from './crowd.js';
 import type { Curve } from './easing.js';
 import { type Lane, type Laned, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
-import type { Motions } from './motion.js';
+import type { Motions } from './motions.js';
 import { between, left, progress } from './tweened.js';
 
 /**

@@ -1,7 +1,8 @@
 import { unbareLane } from './bare.js';
 import type { Numeric } from './channels.js';
 import { frozenTime } from './clock.js';
-import { type Motions, motionOf } from './motion.js';
+import { motionOf } from './motion.js';
+import type { Motions } from './motions.js';
 import type { Scratch } from './patch.js';
 import type { Subject, Voice } from './voice.js';
 
