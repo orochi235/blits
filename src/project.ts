@@ -10,6 +10,7 @@ import { Store } from './store.js';
 import { hostAt } from './tape.js';
 import { Transport } from './transport.js';
 import type { Doubt, Mix, Projection, TransportProjection } from './types.js';
+import { cover } from './unpage.js';
 import { unreached } from './unreached.js';
 import type { Controls, Subject, Voice } from './voice.js';
 
@@ -28,8 +29,7 @@ export function projectAll(transport: Transport, t: number): TransportProjection
   if (!ahead) {
     const history = transport.history;
     if (!history) throw new Error('blits: reading back needs a mix made with history');
-    if (!transport.reaches(t))
-      throw new Error(`blits: ${t} is older than this mix's history reaches`);
+    cover(transport, t);
   }
   const u = hostAt(transport, t);
   const pace = transport.pace;

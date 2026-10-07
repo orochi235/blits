@@ -207,6 +207,13 @@ export interface Patch<I, O, S = void, H = unknown> {
    * function needs its own.
    */
   clone?(state: S): S;
+  /**
+   * `state` as data that survives `structuredClone`, for a history `store` to keep; `unpack` makes
+   * a state from it again. With a store, a patch with `state` or `step` needs both, or `cue`
+   * refuses it.
+   */
+  pack?(state: S): unknown;
+  unpack?(data: unknown): S;
 }
 
 /**
@@ -410,6 +417,11 @@ export interface SpanHints {
 
 export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
   patch: Patch<I, O, unknown, H>;
+  /**
+   * What `history.revive` rebuilds this spec from, so a history `store` can page the voice out once
+   * it has left. A voice cued without it stays in memory for as long as history reaches it.
+   */
+  as?: Described;
   /**
    * Which subjects this voice reaches. Default: all of them. The predicate is fixed at `cue`; it
    * runs per subject the first time the mix sees that subject, and the answer is kept. Every
@@ -705,7 +717,12 @@ export interface MixOptions<H = unknown> {
    * the host makes on it, its handles and its motion patches, so `seek` can move it and play those
    * calls again.
    */
-  history?: { ms: number; every?: number; inputs?: boolean; tape?: TapeMaker };
+  history?: HistoryOptions;
+  /**
+   * A subject's key, for a history `store`: unique among this mix's subjects for the session. A
+   * string or number subject is its own key; with a store, an object subject needs this.
+   */
+  keyOf?(subject: never): string | number;
   /**
    * Whether a channel may run as a lane: computed for every subject at once in flat arrays, when
    * every voice writing it can run that way. On by default; the pose is the same either way, so
@@ -724,6 +741,92 @@ export interface MixOptions<H = unknown> {
   transport?: Transport;
   /** What `Marked.mix` and errors call this mix. */
   name?: string;
+}
+
+/**
+ * What a mix or transport remembers, for `seek` and `project` to read back: see
+ * `MixOptions.history`.
+ *
+ * @category mix
+ */
+export interface HistoryOptions {
+  /** How much stays in memory, ms of mix time. With a `store`, the rest is paged out, not dropped. */
+  ms: number;
+  every?: number;
+  inputs?: boolean;
+  tape?: TapeMaker;
+  /**
+   * Where history older than `ms` goes instead of being dropped. A `seek` or `project` reaching
+   * past memory needs `prepare` first, or throws `HistoryMiss`. With a store, blits never prunes
+   * the tape: the host bounds it.
+   */
+  store?: HistoryStore;
+  /** Rebuilds a cued voice's spec from the descriptor it was cued with, so the voice can be paged out. */
+  // biome-ignore lint/suspicious/noExplicitAny: a spec of any mix's subjects and pose
+  revive?(d: Described): VoiceSpec<any, any>;
+}
+
+/**
+ * A voice as plain data: `kind` names what built it, and `data` survives `structuredClone`.
+ *
+ * @category mix
+ */
+export interface Described {
+  kind: string;
+  data: unknown;
+}
+
+/**
+ * Where a history `store` keeps what memory let go of. blits decides what is kept and when it is
+ * read back; the store decides where it lives.
+ *
+ * @category mix
+ */
+export interface HistoryStore {
+  /** Records leaving memory. One brought back by a seek may be paged again: keep one per key and `at`. */
+  page(out: readonly Paged[]): void;
+  /**
+   * What a restore to mix time `t` needs, for every mix: from each stream, per voice and subject,
+   * the latest record at or before `t` and every record after it. Returning everything is fine.
+   */
+  load(t: number): Promise<readonly Paged[]>;
+  /** A seek went back to `t`: every record after it is from a future the tape makes again. Forget them. */
+  cut(t: number): void;
+}
+
+/**
+ * What a history record holds: a voice's `controls`, a stateful record's `snap`, an `input`
+ * signal's reading, a subject's record when it `left` a voice, a motion subject's `released` run
+ * or older `stretch`, the `host` fields patches read, or a whole `voice` that has left.
+ *
+ * @category mix
+ */
+export type PagedStream =
+  | 'voice'
+  | 'snap'
+  | 'input'
+  | 'left'
+  | 'released'
+  | 'stretch'
+  | 'host'
+  | 'controls';
+
+/**
+ * One history record leaving memory, as plain data.
+ *
+ * @category mix
+ */
+export interface Paged {
+  /** The mix's `name`; '' for a mix made alone without one. */
+  mix: string;
+  stream: PagedStream;
+  /** The voice's id, for every stream but `host`. */
+  voice?: number;
+  /** The subject's key, for a record of one subject. */
+  subject?: string | number;
+  /** Mix time. */
+  at: number;
+  data: unknown;
 }
 
 /**
@@ -767,6 +870,11 @@ export interface Transport {
    * answers as it did. A mix dropped after the moment sought is back on the transport.
    */
   seek(time: number): void;
+  /**
+   * Loads from the history `store` what `seek(time)` and `project(time)` will need, where that
+   * reaches past memory. Without a store, or within memory, it loads nothing.
+   */
+  prepare(time: number): Promise<void>;
   readonly now: number;
   readonly tape: Tape | undefined;
   /** Puts a named mark on a score every mix on it sees. Throws without a `score`. */
@@ -998,9 +1106,12 @@ export interface Mix<I, O, H = unknown> {
    *
    * The host goes on passing its own clock: the next `sync` reads the moment sought plus the
    * host's time since its last sync. Throws for a time older than history reaches, and before
-   * the first sync.
+   * the first sync. With a history `store`, a time older than memory needs `prepare` first, or
+   * throws `HistoryMiss` before anything moves.
    */
   seek(time: number): void;
+  /** As `Transport.prepare`, for a mix made alone. */
+  prepare(time: number): Promise<void>;
   /**
    * The mix clock at the last sync or seek, which `seek` and `project` take; NaN before the first
    * sync. Host time at the mix's rate, less what `rebase` took out and `seek` moved.

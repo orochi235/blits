@@ -2,6 +2,7 @@ import { listedAll } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { move, nextFrame, waits } from './move.js';
 import { Pace } from './pace.js';
+import { Pager, prepare } from './paging.js';
 import { pin } from './place.js';
 import { projectAll } from './project.js';
 import { seek } from './seek.js';
@@ -70,6 +71,8 @@ export class Transport implements TransportApi {
   /** Numbers voices and announced marks across every member, in the order they were made. */
   nextId = 1;
   readonly tape: Tape | undefined;
+  /** With a history store, what left memory for it; null without one. */
+  readonly pager: Pager | null;
 
   /**
    * `shared` for one the host made, whose mixes may not move it themselves; a mix made alone makes
@@ -80,6 +83,7 @@ export class Transport implements TransportApi {
     readonly shared: boolean,
   ) {
     this.tape = tapeOf(this);
+    this.pager = history?.store === undefined ? null : new Pager(history.store);
   }
 
   /** Whether this is a projection's own transport, which records and seeks nothing. */
@@ -120,6 +124,10 @@ export class Transport implements TransportApi {
 
   seek(time: number): void {
     seek(this, time);
+  }
+
+  prepare(time: number): Promise<void> {
+    return prepare(this, time);
   }
 
   announce(name: string, opts: { at?: number; score: string; tags?: readonly string[] }): void {
@@ -198,9 +206,10 @@ export class Transport implements TransportApi {
     for (const m of this.members) if (moved || (later && pace !== null && waits(m))) move(m, now);
     const history = this.history;
     this.kept();
-    if (this.tape !== undefined && history !== undefined) this.tape.prune(now - history.ms);
+    const reach = this.keepsFrom();
+    if (this.tape !== undefined && history !== undefined) this.tape.prune(reach);
     if (history !== undefined && this.dropped.length > 0)
-      this.dropped = this.dropped.filter((d) => d.at >= now - history.ms);
+      this.dropped = this.dropped.filter((d) => d.at >= reach);
     this.woken = false;
     // It is a frame too, which asks every weight signal again, so one reading input follows it.
     if (still)
@@ -218,16 +227,30 @@ export class Transport implements TransportApi {
     this.rebasing = true;
   }
 
-  /** Moves `floor` past what the mix clock standing at `now` has let go of. */
+  /**
+   * Moves `floor` past what the mix clock standing at `now` has let go of. With a store nothing is
+   * let go: what leaves memory is paged, which moves it.
+   */
   kept(): void {
     const history = this.history;
-    if (history !== undefined && this.now - history.ms > this.floor)
+    if (history !== undefined && this.pager === null && this.now - history.ms > this.floor)
       this.floor = this.now - history.ms;
   }
 
   /** Whether history reaches back to mix time `t`, from memory. */
   reaches(t: number): boolean {
+    if (this.pager !== null) return t >= this.floor;
     return t >= this.floor && t >= this.now - (this.history?.ms ?? 0);
+  }
+
+  /**
+   * The earliest mix time it keeps what no store pages, the tape, dropped mixes, rate changes and
+   * announced marks among them: with a store, all of it, since the host bounds the tape.
+   */
+  keepsFrom(): number {
+    const history = this.history;
+    if (history === undefined) return Number.POSITIVE_INFINITY;
+    return this.pager === null ? this.now - history.ms : Number.NEGATIVE_INFINITY;
   }
 
   get rate(): number {
@@ -249,8 +272,7 @@ export class Transport implements TransportApi {
           if (v.state === 'pending' && !v.placing && v.owner === null && v.spec.start !== undefined)
             pin(m, v, v.start);
     }
-    const history = this.history;
-    const reach = history === undefined ? Number.NEGATIVE_INFINITY : this.now - history.ms;
+    const reach = this.history === undefined ? Number.NEGATIVE_INFINITY : this.keepsFrom();
     this.pace.change(this.u, rate, over, reach);
     for (const m of this.members) m.stir();
     record(this, 'rate', () => this.ramp(rate, over));

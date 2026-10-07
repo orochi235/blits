@@ -39,6 +39,14 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
       if (typeof host !== 'object' || host === null || !(field in host))
         throw new Error(`blits: the patch reads host.${field}, which this mix's host lacks`);
   }
+  if (
+    mix.transport.pager !== null &&
+    (patch.state !== undefined || patch.step !== undefined) &&
+    (patch.pack === undefined || patch.unpack === undefined)
+  )
+    throw new Error(
+      "blits: this mix's history has a store, which keeps a stateful patch's state as data; give the patch pack and unpack",
+    );
   if (spec.from === 'current' && patch.form !== 'keys')
     throw new Error("blits: from: 'current' needs a keys patch");
   if (spec.subjects !== undefined && spec.target !== undefined)

@@ -41,7 +41,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   if (mix.anchored > 0) place(mix);
   if (mix.announced.length > 0) {
     // Kept while still ahead, or while history reaches it; anchors waiting on one were placed above.
-    const reach = now - (mix.opts.history?.ms ?? 0);
+    const reach = mix.opts.history === undefined ? now : mix.transport.keepsFrom();
     mix.announced = mix.announced.filter((a) => mixAt(mix, a.at) >= reach);
   }
   // A live mix visits only the voices due by now; a projection, which copies few, visits all.
@@ -101,7 +101,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   if (mix.owners !== null) lapse(mix, now);
   mix.stirred = false;
   if (mix.retired.length > 0) prune(mix);
-  forget(mix, now);
+  forget(mix);
 }
 
 /** Past this many voices retiring in one frame, one pass over the list beats a search for each. */
@@ -175,10 +175,10 @@ function leave<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
 }
 
 /** Lets go of the voices that have left and that history no longer reaches. */
-export function forget<I, O>(mix: Mixer<I, O>, now: number): void {
+export function forget<I, O>(mix: Mixer<I, O>): void {
   const history = mix.opts.history;
   if (history && mix.gone.length > 0) {
-    const reach = now - history.ms;
+    const reach = mix.transport.keepsFrom();
     mix.gone = mix.gone.filter((v) => v.doneAt >= reach);
   }
 }

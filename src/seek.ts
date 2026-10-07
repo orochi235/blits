@@ -11,6 +11,7 @@ import { refitAll } from './spans.js';
 import { Store } from './store.js';
 import { hostAt, replay } from './tape.js';
 import type { Transport } from './transport.js';
+import { cover, cut } from './unpage.js';
 import type { Controls, Subject, Voice } from './voice.js';
 
 /**
@@ -165,8 +166,9 @@ export function seek(transport: Transport, t: number): void {
   if (Number.isNaN(transport.now))
     throw new Error('blits: a mix that has never synced has nothing to seek');
   if (t === Number.POSITIVE_INFINITY) throw new RangeError('blits: a mix seeks to a finite time');
-  if (!(transport.reaches(t) && t >= transport.born))
+  if (!(t >= transport.born))
     throw new Error(`blits: ${t} is older than this mix's history reaches`);
+  const unpaged = cover(transport, t);
   if (t >= transport.now) replay(transport, () => t);
   // Under the rate the recorded calls up to `t` set, ahead; behind, under the rate it had then.
   const u = hostAt(transport, t);
@@ -184,6 +186,7 @@ export function seek(transport: Transport, t: number): void {
     transport.u = u;
     transport.now = t;
     for (const m of transport.members) back(m, t);
+    cut(transport, t, unpaged);
   }
   // The host's clock reads on from here: its next sync reads `t` plus its time since its last.
   transport.offset = transport.last - u;

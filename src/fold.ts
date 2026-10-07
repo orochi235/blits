@@ -122,7 +122,7 @@ export function contribution<I, O>(
   held.delta = delta;
   held.probed = now;
   held.seeks = voice.seeks;
-  if (history !== undefined) remember(this, voice, held);
+  if (history !== undefined) remember(this, voice, subject, held);
   if (reading.kept !== keptBefore && !voice.keeping) stateful(this, voice);
   if (delta === null) return null;
 

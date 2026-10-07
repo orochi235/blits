@@ -59,6 +59,7 @@ export function held<I, O>(
     else voice.subjects.set(subject, none);
     return none;
   }
+  this.keys?.key(subject);
   const delay = voice.spec.stagger ? voice.spec.stagger(subject) : 0;
   const since = this.sinceOf(voice, delay);
   held = {

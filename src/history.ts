@@ -2,6 +2,8 @@ import { elapsedWith } from './clock.js';
 import { clone } from './clone.js';
 import { schedule } from './due.js';
 import type { Mixer } from './mixer.js';
+import { packHeld } from './pack.js';
+import { pageOut } from './paging.js';
 import { type Controls, none, type Subject, type Voice } from './voice.js';
 
 /**
@@ -62,7 +64,16 @@ export function noted<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   const reach = mix.now - (mix.opts.history as { ms: number }).ms;
   let drop = 0;
   while (drop + 1 < log.length && (log[drop + 1] as Controls).at <= reach) drop++;
-  if (drop > 0) log.splice(0, drop);
+  if (drop > 0) pageOut(mix, 'controls', voice.id, undefined, log.splice(0, drop), copied, reach);
+}
+
+const copied = <T extends object>(e: T): T => ({ ...e });
+
+/** Takes off the front of a list kept by time what a read back to `reach` no longer needs. */
+function older<T extends { at: number }>(list: T[], reach: number): T[] {
+  let n = 0;
+  while (n + 1 < list.length && (list[n + 1] as T).at <= reach) n++;
+  return n === 0 ? [] : list.splice(0, n);
 }
 
 /** A copy of a subject's record that shares nothing a read could change. */
@@ -78,6 +89,7 @@ export function copyHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): Subject
     bands: h.bands === null ? null : h.bands.slice(),
     state: h.state === undefined ? undefined : patch.clone ? patch.clone(h.state) : clone(h.state),
     kept,
+    unkept: h.unkept?.map(clone),
     probed: Number.NaN,
     delta: null,
     phase: 0,
@@ -105,11 +117,17 @@ export function recordHost<I, O>(mix: Mixer<I, O>, now: number): void {
   if (prev !== undefined && same(prev.fields, fields)) return;
   log.push({ at: now, fields });
   const reach = now - (mix.opts.history as { ms: number }).ms;
-  while (log.length > 1 && (log[1] as { at: number }).at <= reach) log.shift();
+  pageOut(mix, 'host', undefined, undefined, older(log, reach), (e) => e.fields, reach);
 }
 
 /** Under `history` with `inputs`, keeps what an input signal read, each time it changes. */
-export function record<I, O>(mix: Mixer<I, O>, held: Subject<unknown>, value: number): void {
+export function record<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  held: Subject<unknown>,
+  value: number,
+): void {
   const history = mix.opts.history;
   if (!history?.inputs || mix.projecting) return;
   const inputs = held.inputs ?? [];
@@ -121,11 +139,18 @@ export function record<I, O>(mix: Mixer<I, O>, held: Subject<unknown>, value: nu
   }
   inputs.push({ at: mix.now, value });
   const reach = mix.now - history.ms;
-  while (inputs.length > 1 && (inputs[1] as { at: number }).at <= reach) inputs.shift();
+  const out = older(inputs, reach);
+  if (out.length > 0)
+    pageOut(mix, 'input', voice.id, mix.keys?.key(subject), out, (e) => e.value, reach);
 }
 
 /** Under `history`, keeps a copy of a stateful voice's record for this subject every so often. */
-export function remember<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): void {
+export function remember<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  held: Subject<unknown>,
+): void {
   const history = mix.opts.history;
   if (!history || mix.projecting) return;
   if (
@@ -140,7 +165,17 @@ export function remember<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subje
   if (prev !== undefined && mix.now - prev.at < (history.every ?? 200)) return;
   snaps.push({ at: mix.now, held: copyHeld(voice, held) });
   const reach = mix.now - history.ms;
-  while (snaps.length > 1 && (snaps[1] as { at: number }).at <= reach) snaps.shift();
+  const out = older(snaps, reach);
+  if (out.length > 0)
+    pageOut(
+      mix,
+      'snap',
+      voice.id,
+      mix.keys?.key(subject),
+      out,
+      (e) => packHeld(voice, e.held),
+      reach,
+    );
 }
 
 /**
@@ -156,7 +191,19 @@ export function leave<I, O>(
   const history = mix.opts.history;
   if (history === undefined || held === undefined) return;
   const reach = mix.now - history.ms;
-  const left = (voice.left ?? []).filter((e) => e.at >= reach);
+  const left: { subject: I; at: number; held: Subject<unknown> }[] = [];
+  for (const e of voice.left ?? [])
+    if (e.at >= reach) left.push(e);
+    else if (mix.keys !== null)
+      pageOut(
+        mix,
+        'left',
+        voice.id,
+        mix.keys.key(e.subject),
+        [e],
+        (x) => packHeld(voice, x.held),
+        reach,
+      );
   left.push({ subject, at: Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now, held });
   voice.left = left;
 }

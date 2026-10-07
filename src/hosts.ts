@@ -89,7 +89,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
       reading.horizon = mix.horizonFor(voice, delay, mix.now);
     },
     keeps: mix.opts.history !== undefined,
-    after: (voice, held) => remember(mix, voice, held),
+    after: (voice, subject, held) => remember(mix, voice, subject, held),
     kept: (voice) => stateful(mix, voice),
   };
 }

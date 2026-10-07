@@ -51,6 +51,8 @@ export interface Subject<S> {
   slope?: Record<string, unknown>;
   /** What `setting.keep` holds for this voice and subject, by owner; null until it holds any. */
   kept: Map<object, unknown> | null;
+  /** Kept state a history store gave back, which each owner takes in turn on its first keep. */
+  unkept?: unknown[];
   /** Under `history`, copies of this record by the mix time they were taken, oldest first. */
   snaps?: { at: number; held: Subject<S> }[];
   /** In a projection: where this record started from, and whether nothing known could be. */
@@ -89,7 +91,9 @@ function keeping<I, O>(voice: Voice<I, O>): Setting['keep'] {
       else held.kept = kept;
     }
     if (kept.has(owner)) return kept.get(owner) as K;
-    const made = init();
+    const unkept = held?.unkept;
+    const made = unkept === undefined ? init() : (unkept.shift() as K);
+    if (unkept?.length === 0 && held !== null) held.unkept = undefined;
     kept.set(owner, made);
     reading.kept++;
     return made;

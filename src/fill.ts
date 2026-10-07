@@ -414,7 +414,7 @@ export function call<I, O>(
   rec.delta = delta;
   rec.probed = this.now;
   rec.seeks = voice.seeks;
-  if (this.keeps) host.after(voice, rec);
+  if (this.keeps) host.after(voice, subject, rec);
   if (reading.kept !== kept && !voice.keeping) host.kept(voice);
   if (w > 0) this.foldDelta(chans, slot, delta, w);
   return true;

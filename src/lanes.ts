@@ -79,7 +79,7 @@ export interface LaneHost<I, O> {
   /** Whether the mix keeps history, so a record a patch call changed may need a copy kept. */
   readonly keeps: boolean;
   /** After a patch call, keeps history of a record that grew kept state. */
-  after(voice: Voice<I, O>, held: Subject<unknown>): void;
+  after(voice: Voice<I, O>, subject: I, held: Subject<unknown>): void;
   /** A patch call left kept state on a record: the voice is stateful from now on. */
   kept(voice: Voice<I, O>): void;
 }

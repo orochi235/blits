@@ -136,6 +136,6 @@ export function base<I, O>(
     : voice.blend === null
       ? signal(subject, voice.setting as Setting)
       : this.blended(voice, subject, held, slot);
-  if (signal.input && !was) record(this, held, base);
+  if (signal.input && !was) record(this, voice, subject, held, base);
   return base;
 }

@@ -16,6 +16,7 @@ export {
 export { mix, mixer } from './mixer.js';
 export type { Motion, Moving, PerSubject, Value } from './motion.js';
 export { glide, spring, tween } from './motion.js';
+export { HistoryMiss } from './paging.js';
 export type { KeysOptions, PatchOptions } from './patch.js';
 export { keys, patch } from './patch.js';
 export { gate, lag, level, peak, slew } from './signals.js';
@@ -29,6 +30,7 @@ export type {
   BookOptions,
   Channel,
   Columns,
+  Described,
   Doubt,
   Easing,
   Engine,
@@ -36,6 +38,8 @@ export type {
   FadeSpec,
   Fitted,
   Handle,
+  HistoryOptions,
+  HistoryStore,
   Hit,
   Keyframe,
   Kit,
@@ -45,6 +49,8 @@ export type {
   MixOptions,
   MotionSpec,
   OwnerSpec,
+  Paged,
+  PagedStream,
   Patch,
   Placement,
   Projection,

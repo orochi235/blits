@@ -1,6 +1,7 @@
 import { unpart } from './fade.js';
 import type { Mixer } from './mixer.js';
 import type { MotionOwner, Motions } from './motions.js';
+import { pageOut } from './paging.js';
 import { record } from './tape.js';
 import type { Voice } from './voice.js';
 
@@ -44,6 +45,12 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
     changed(again) {
       const m = mix.deref();
       if (m !== undefined) record(m, 'motion', again);
+    },
+    page(id, stream, subject, out) {
+      const m = mix.deref();
+      const ms = m?.opts.history?.ms;
+      if (m === undefined || m.keys === null || ms === undefined) return;
+      pageOut(m, stream, id, m.keys.key(subject), out, (e) => e.data, m.now - ms);
     },
     revive(id, subject) {
       const m = mix.deref();

@@ -36,6 +36,7 @@ import type { MotionOwner, Motions } from './motions.js';
 import { move, nextFrame, waits } from './move.js';
 import { ownerPatch } from './owner.js';
 import type { Pace } from './pace.js';
+import { Keys } from './paging.js';
 import { pin } from './place.js';
 import { projectAll } from './project.js';
 import { keep, pull } from './pull.js';
@@ -228,6 +229,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   fitting: Fitting | null = null;
   /** Every owner still in the mix, null until one is cued. */
   owners: Voice<I, O>[] | null = null;
+  /** With a history store, the key each subject is paged under; null without one. */
+  keys: Keys | null = null;
 
   constructor(
     readonly kit: Kit<O>,
@@ -251,6 +254,10 @@ export class Mixer<I, O> implements Mix<I, O> {
       this.opts = { ...opts, history: shared.history };
       this.transport = shared;
     } else this.transport = new Transport(opts.history, false);
+    if (this.transport.pager !== null) {
+      this.keys = new Keys(opts.keyOf);
+      if (shared !== undefined) named(shared, opts.name);
+    }
     this.transport.join(this as unknown as Mixer<unknown, unknown>);
   }
 
@@ -384,6 +391,10 @@ export class Mixer<I, O> implements Mix<I, O> {
   seek(time: number): void {
     if (this.projecting) throw new Error('blits: a projection does not seek');
     seek(this.own('seek'), time);
+  }
+
+  prepare(time: number): Promise<void> {
+    return this.own('prepare').prepare(time);
   }
 
   project(time: number): Projection<I, O> {
@@ -643,6 +654,19 @@ type Methods = typeof methods;
 export interface Mixer<I, O> extends Methods {}
 for (const [name, value] of Object.entries(methods))
   Object.defineProperty(Mixer.prototype, name, { value, writable: true, configurable: true });
+
+/** Refuses a mix joining a transport with a store unnamed, or under a name history still keys records by. */
+function named(transport: Transport, name: string | undefined): void {
+  if (name === undefined)
+    throw new Error(
+      'blits: a mix on a transport whose history has a store needs a name, which its records are keyed by',
+    );
+  const taken = [...transport.members, ...transport.dropped.map((d) => d.mix)];
+  if (taken.some((m) => m.name === name))
+    throw new Error(
+      `blits: a mix named ${name} is already on this transport, or a seek could bring it back`,
+    );
+}
 
 /**
  * The one that ships: every form on the CPU, probed per subject on demand.
