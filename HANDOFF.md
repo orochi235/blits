@@ -466,7 +466,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - **What the `last` lane saves is unmeasured.** `glowl` rows are `glowk` on `color(last())`;
      the only run so far was at a load average near 97, too noisy to quote. Run
      `bench/again.sh 6 glowbase glowc glowk glowl glowbase^ glowc^ glowk^ glowl^` on a quiet
-     machine or the fleet.
+     machine or the fleet. The fold also costs every other lane a little: `one` sets two fields
+     per subject and `foldInto` tests the op. `bench/ab.sh` against `f0f9494` says whether that
+     shows; it has not been run.
    - **The playground's kit still uses `hex()`** (`apps/playground/src/blits/kit.ts`, `keys.ts`),
      left alone because another session was building the playground on 2026-10-07.
 
