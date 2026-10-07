@@ -1964,7 +1964,10 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 11: Release and unlink (gated on Mike)
+### Task 11: Release and unlink (deferred until Mike asks for it)
+
+**Not part of this run.** Mike deferred this task indefinitely on 2026-10-07 and will ask for it. Until
+then the playground runs on the local pack from Task 7, and `HANDOFF.md` says so.
 
 **Files:**
 - Modify: `apps/playground/package.json`, `site/package.json`, `package.json`, `package-lock.json`
