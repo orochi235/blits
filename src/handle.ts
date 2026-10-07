@@ -17,10 +17,21 @@ export interface HandleHost<I, O> {
   record(label: string, again: () => void): void;
 }
 
-/** A voice's handle: the host's only way to control a voice once cued. */
+/** What a handle answers for a voice a history store paged out, which left long ago. */
+export interface Gone {
+  weight: number;
+  played: boolean;
+}
+
+/**
+ * A voice's handle: the host's only way to control a voice once cued. A voice a history store
+ * pages out is let go of here too, so the handle answers as a gone voice's does, and a seek that
+ * revives it puts the revived voice behind the same handle.
+ */
 export class VoiceHandle<I, O> implements Handle<I> {
   readonly id: number;
-  readonly #voice: Voice<I, O>;
+  #voice: Voice<I, O> | null;
+  #gone: Gone | null = null;
   readonly #host: HandleHost<I, O>;
 
   constructor(voice: Voice<I, O>, host: HandleHost<I, O>) {
@@ -29,41 +40,62 @@ export class VoiceHandle<I, O> implements Handle<I> {
     this.#host = host;
   }
 
+  /** The voice behind a handle; null while a history store holds it. */
+  static voiceOf<I, O>(h: VoiceHandle<I, O>): Voice<I, O> | null {
+    return h.#voice;
+  }
+
+  /** Lets go of a voice a history store paged out. */
+  static page<I, O>(h: VoiceHandle<I, O>, gone: Gone): void {
+    h.#voice = null;
+    h.#gone = gone;
+  }
+
+  /** Puts a voice revived from a history store behind the handle it had. */
+  static rehome<I, O>(h: VoiceHandle<I, O>, voice: Voice<I, O>): void {
+    h.#voice = voice;
+    h.#gone = null;
+  }
+
   get state(): Handle<I>['state'] {
-    return this.#voice.state;
+    return this.#voice?.state ?? 'done';
   }
 
   get owner(): Handle<I> | undefined {
-    return this.#voice.owner?.handle ?? undefined;
+    return this.#voice?.owner?.handle ?? undefined;
   }
 
   get played(): Promise<boolean> {
-    return this.#voice.played;
+    return this.#voice?.played ?? Promise.resolve(this.#gone?.played ?? false);
   }
 
   get done(): Promise<void> {
-    return this.#voice.done;
+    return this.#voice?.done ?? Promise.resolve();
   }
 
   /** How a span's children were last fitted; undefined for any voice but a span. */
   get fitted(): Fitted | undefined {
-    return this.#voice.fitting?.report;
+    return this.#voice?.fitting?.report;
   }
 
   get weight(): number {
-    return this.#voice.weight;
+    return this.#voice?.weight ?? this.#gone?.weight ?? 0;
   }
 
+  // A write to a paged voice changes nothing: it had left when the host made it, as it has on replay.
   set weight(w: number) {
-    this.#voice.weight = w;
-    this.#host.changed(this.#voice);
+    const voice = this.#voice;
+    if (voice === null) return;
+    voice.weight = w;
+    this.#host.changed(voice);
     this.#host.record('weight', () => {
       this.weight = w;
     });
   }
 
   get rate(): number {
-    return this.#voice.rateAt(this.#host.nowFor(this.#voice));
+    const voice = this.#voice;
+    return voice === null ? 0 : voice.rateAt(this.#host.nowFor(voice));
   }
 
   set rate(r: number) {
@@ -72,6 +104,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
 
   ramp(r: number, over: number): void {
     const voice = this.#voice;
+    if (voice === null) return;
     retime(voice, this.#host.nowFor(voice), r, over);
     this.#host.changed(voice);
     this.#host.record('rate', () => this.ramp(r, over));
@@ -79,6 +112,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
 
   seek(elapsed: number): void {
     const voice = this.#voice;
+    if (voice === null) return;
     voice.rebase(this.#host.nowFor(voice));
     voice.anchorElapsed = elapsed;
     voice.seeks++;
@@ -88,16 +122,21 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   fade(opts?: FadeOptions<I>): void {
-    this.#host.fade(this.#voice, opts);
+    const voice = this.#voice;
+    if (voice === null) return;
+    this.#host.fade(voice, opts);
     this.#host.record('fade', () => this.fade(opts));
   }
 
   rise(opts?: { over?: number }): void {
-    this.#host.rise(this.#voice, opts);
+    const voice = this.#voice;
+    if (voice === null) return;
+    this.#host.rise(voice, opts);
     this.#host.record('rise', () => this.rise(opts));
   }
 
   weightOf(subject: I): number {
-    return this.#host.weightOf(this.#voice, subject);
+    const voice = this.#voice;
+    return voice === null ? 0 : this.#host.weightOf(voice, subject);
   }
 }

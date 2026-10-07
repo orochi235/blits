@@ -2,6 +2,7 @@ import type { Mixer } from './mixer.js';
 import type { Run } from './motions.js';
 import { type PackedRecord, unpackHeld } from './pack.js';
 import { HistoryMiss, type Keys } from './paging.js';
+import { type PackedVoice, reviveVoice } from './revive.js';
 import type { Transport } from './transport.js';
 import type { Paged } from './types.js';
 import type { Controls, Subject, Voice } from './voice.js';
@@ -21,6 +22,13 @@ export function cover(transport: Transport, t: number): boolean {
   if (loaded === null || loaded.t > t) {
     const last = pager.last;
     throw new HistoryMiss(last?.mix ?? '', last?.stream ?? 'history', t);
+  }
+  for (const m of [...transport.members, ...transport.dropped.map((d) => d.mix)]) {
+    const name = m.name ?? '';
+    const id = m.outs?.missing(loaded.t, (v) =>
+      loaded.records.some((r) => r.stream === 'voice' && r.voice === v && r.mix === name),
+    );
+    if (id !== undefined) throw new HistoryMiss(name, 'voice', t);
   }
   pager.loaded = null;
   unpage(transport, loaded.records);
@@ -56,6 +64,12 @@ function unpage(transport: Transport, records: readonly Paged[]): void {
 function unpageMix(mix: Member, records: readonly Paged[]): void {
   const voices = new Map<number, Voice<unknown, unknown>>();
   for (const v of [...mix.cued, ...mix.gone]) voices.set(v.id, v);
+  for (const r of records)
+    if (r.stream === 'voice' && r.voice !== undefined && !voices.has(r.voice)) {
+      const v = reviveVoice(mix, r.voice, r.data as PackedVoice);
+      voices.set(v.id, v);
+      mix.gone.push(v);
+    }
   const host = records.filter((r) => r.stream === 'host');
   mix.hostLog = before(
     host.map((r) => ({ at: r.at, fields: r.data as Record<string, unknown> })),
@@ -139,7 +153,7 @@ function lives(
     from = e.at;
   }
   const live = voice.subjects.get(subject);
-  if (live !== undefined && live.reaches) out.push([live, records.filter((r) => r.at > from)]);
+  if (live?.reaches) out.push([live, records.filter((r) => r.at > from)]);
   return out;
 }
 

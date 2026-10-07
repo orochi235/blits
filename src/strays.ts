@@ -42,9 +42,13 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
     now() {
       return mix.deref()?.now ?? Number.NaN;
     },
-    changed(again) {
+    changed(id, motion, subject, change) {
       const m = mix.deref();
-      if (m !== undefined) record(m, 'motion', again);
+      if (m === undefined) return;
+      record(m, 'motion', () => {
+        const v = cuedById(m, id) ?? m.gone.find((g) => g.id === id);
+        ((v?.motion as typeof motion | undefined) ?? motion).change(subject, { ...change });
+      });
     },
     page(id, stream, subject, out) {
       const m = mix.deref();

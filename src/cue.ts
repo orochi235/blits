@@ -1,6 +1,7 @@
 import { checkHits } from './book.js';
 import { changed, index } from './chain.js';
 import { schedule } from './due.js';
+import { VoiceHandle } from './handle.js';
 import { started } from './held.js';
 import { handle } from './hosts.js';
 import type { Mixer } from './mixer.js';
@@ -16,37 +17,7 @@ import { type Controls, Voice } from './voice.js';
 
 export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
   const patch = spec.patch;
-  for (const channel of patch.writes) {
-    if (!(channel in (mix.kit as object)))
-      throw new Error(`blits: kit has no channel ${String(channel)}, which this patch writes`);
-    const wanted = patch.kit?.[channel] as Channel<unknown> | undefined;
-    const here = mix.kit[channel] as Channel<unknown>;
-    if (wanted && wanted !== here && (wanted.kind === undefined || wanted.kind !== here.kind))
-      throw new Error(
-        `blits: channel ${String(channel)} is ${here.kind ?? 'a custom channel'} in this kit, but the patch was written for ${wanted.kind ?? 'a custom channel'}`,
-      );
-  }
-  const motion = motionOf<I>(patch);
-  if (motion !== undefined) {
-    const channel = patch.writes[0] as keyof O;
-    const rest = (mix.kit[channel] as Channel<unknown>).rest;
-    if (typeof rest === 'number') motion.cuedOn(String(channel), true);
-    else if (Array.isArray(rest) || ArrayBuffer.isView(rest)) motion.cuedOn(String(channel), false);
-  }
-  if (patch.reads) {
-    const host = mix.opts.host;
-    for (const field of patch.reads)
-      if (typeof host !== 'object' || host === null || !(field in host))
-        throw new Error(`blits: the patch reads host.${field}, which this mix's host lacks`);
-  }
-  if (
-    mix.transport.pager !== null &&
-    (patch.state !== undefined || patch.step !== undefined) &&
-    (patch.pack === undefined || patch.unpack === undefined)
-  )
-    throw new Error(
-      "blits: this mix's history has a store, which keeps a stateful patch's state as data; give the patch pack and unpack",
-    );
+  playable(mix, spec);
   if (spec.from === 'current' && patch.form !== 'keys')
     throw new Error("blits: from: 'current' needs a keys patch");
   if (spec.subjects !== undefined && spec.target !== undefined)
@@ -87,9 +58,49 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
   if (mix.pace !== null && owner === null && spec.start !== undefined && voice.state === 'pending')
     voice.pinned = spec.start - mix.offset;
   enter(mix, voice);
-  voice.handle = handle(mix, voice);
-  record(mix, 'cue', () => recue(mix, voice));
-  return voice.handle;
+  const h = handle(mix, voice) as VoiceHandle<I, O>;
+  voice.handle = h;
+  // By its handle, so a voice a history store paged out and a seek revived is the one cued again.
+  record(mix, 'cue', () => recue(mix, VoiceHandle.voiceOf(h) ?? lost(h)));
+  return h;
+}
+
+/** Refuses a spec whose patch the mix cannot play, or whose state its history cannot keep. */
+export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
+  const patch = spec.patch;
+  for (const channel of patch.writes) {
+    if (!(channel in (mix.kit as object)))
+      throw new Error(`blits: kit has no channel ${String(channel)}, which this patch writes`);
+    const wanted = patch.kit?.[channel] as Channel<unknown> | undefined;
+    const here = mix.kit[channel] as Channel<unknown>;
+    if (wanted && wanted !== here && (wanted.kind === undefined || wanted.kind !== here.kind))
+      throw new Error(
+        `blits: channel ${String(channel)} is ${here.kind ?? 'a custom channel'} in this kit, but the patch was written for ${wanted.kind ?? 'a custom channel'}`,
+      );
+  }
+  const motion = motionOf<I>(patch);
+  if (motion !== undefined) {
+    const channel = patch.writes[0] as keyof O;
+    const rest = (mix.kit[channel] as Channel<unknown>).rest;
+    if (typeof rest === 'number') motion.cuedOn(String(channel), true);
+    else if (Array.isArray(rest) || ArrayBuffer.isView(rest)) motion.cuedOn(String(channel), false);
+  }
+  if (patch.reads) {
+    const host = mix.opts.host;
+    for (const field of patch.reads)
+      if (typeof host !== 'object' || host === null || !(field in host))
+        throw new Error(`blits: the patch reads host.${field}, which this mix's host lacks`);
+  }
+  if (
+    mix.transport.pager !== null &&
+    (patch.state !== undefined || patch.step !== undefined) &&
+    (patch.pack === undefined || patch.unpack === undefined)
+  )
+    throw new Error(
+      "blits: this mix's history has a store, which keeps a stateful patch's state as data; give the patch pack and unpack",
+    );
+  if (spec.as !== undefined && mix.transport.pager !== null && !mix.opts.history?.revive)
+    throw new Error('blits: a voice cued with as needs history.revive to rebuild it from');
 }
 
 /** A voice parked by a seek, cued again as the mix plays past its cue, on the handle it had. */
@@ -98,6 +109,12 @@ function recue<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if ((owner === null ? mix.now : ownerReading(owner, mix.now)) >= voice.start)
     voice.state = 'live';
   enter(mix, voice);
+}
+
+function lost(h: { id: number }): never {
+  throw new Error(
+    `blits: voice ${h.id} is paged out, and the seek that plays its cue again did not load it`,
+  );
 }
 
 /** Puts a voice just made, or parked by a seek, into the mix. */

@@ -281,6 +281,8 @@ export class Voice<I, O> {
   unreachedBits: Uint32Array | null = null;
   /** The handle `cue` returned, which `voices` hands back too. */
   handle: Handle<I> | null = null;
+  /** With a history store, the key of every subject it has a record of; null without one. */
+  keyed: Set<string | number | undefined> | null = null;
   /** For an owner, the voices it holds; null for any other voice. */
   holding: Holding<Voice<I, O>> | null;
   /** For a span, its budget and how its children were last fitted; null for any other voice. */
@@ -340,6 +342,11 @@ export class Voice<I, O> {
     this.playedAt = at;
     this.playedSettle?.(played);
     if (played && this.owner !== null) childPlayed(this.owner, at);
+  }
+
+  /** How `played` settled, and the mix time it did; undefined while it has not. */
+  get settled(): { played: boolean | undefined; at: number } {
+    return { played: this.playedAs, at: this.playedAt };
   }
 
   /** Whether `played` settled true, which its owner counted. */

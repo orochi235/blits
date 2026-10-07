@@ -5,6 +5,7 @@ import { started } from './held.js';
 import type { Mixer } from './mixer.js';
 import { ownerReading } from './owner.js';
 import { mixAt, place, repin, startOf } from './place.js';
+import { pageVoice } from './revive.js';
 import { lapse } from './spans.js';
 import { unplay } from './strays.js';
 import type { Voice } from './voice.js';
@@ -178,7 +179,13 @@ function leave<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
 export function forget<I, O>(mix: Mixer<I, O>): void {
   const history = mix.opts.history;
   if (history && mix.gone.length > 0) {
-    const reach = mix.transport.keepsFrom();
-    mix.gone = mix.gone.filter((v) => v.doneAt >= reach);
+    // With a store a voice that has left pages out where it can, and stays where it cannot.
+    if (mix.transport.pager !== null) {
+      const reach = mix.now - history.ms;
+      mix.gone = mix.gone.filter((v) => v.doneAt >= reach || !pageVoice(mix, v, reach));
+    } else {
+      const reach = mix.transport.keepsFrom();
+      mix.gone = mix.gone.filter((v) => v.doneAt >= reach);
+    }
   }
 }

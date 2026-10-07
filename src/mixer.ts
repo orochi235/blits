@@ -41,6 +41,7 @@ import { pin } from './place.js';
 import { projectAll } from './project.js';
 import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
+import { Outs } from './revive.js';
 import { seek } from './seek.js';
 import { Fitting, refit } from './spans.js';
 import { Store } from './store.js';
@@ -231,6 +232,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   owners: Voice<I, O>[] | null = null;
   /** With a history store, the key each subject is paged under; null without one. */
   keys: Keys | null = null;
+  /** With a history store, the voices it paged out whose handles are still held; null without one. */
+  outs: Outs | null = null;
 
   constructor(
     readonly kit: Kit<O>,
@@ -256,6 +259,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     } else this.transport = new Transport(opts.history, false);
     if (this.transport.pager !== null) {
       this.keys = new Keys(opts.keyOf);
+      this.outs = new Outs();
       if (shared !== undefined) named(shared, opts.name);
     }
     this.transport.join(this as unknown as Mixer<unknown, unknown>);

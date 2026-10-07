@@ -50,8 +50,11 @@ export interface MotionOwner {
   revive(id: number, subject: unknown): void;
   /** The mix clock at its latest frame; NaN before the first. */
   now(): number;
-  /** The host made a change, already given its time, which a seek makes again through `again`. */
-  changed(again: () => void): void;
+  /**
+   * The host made a change, already given its time, which a seek makes again on the patch its
+   * voice plays then: a voice a history store paged out comes back with a patch of its own.
+   */
+  changed<I>(id: number, motion: Motions<I>, subject: I, change: Change): void;
   /** History leaving memory for a subject, which a mix with a history store pages out. */
   page(id: number, stream: 'released' | 'stretch', subject: unknown, out: Paging[]): void;
 }
@@ -569,7 +572,7 @@ export class Motions<I> {
     else this.queue(list, c, c.at);
     reading.moved++;
     const made: Change = { at: c.at, to: c.to, v: c.v };
-    this.owner?.changed(() => this.change(subject, { ...made }));
+    this.owner?.changed(this.ownerId, this, subject, made);
   }
 
   /** Files a change with a time after every one due by then, ahead of those still waiting for one. */
