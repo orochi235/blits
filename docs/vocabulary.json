@@ -4515,23 +4515,23 @@
           "field": "plain",
           "words": [
             {
-              "word": "span",
+              "word": "timed",
               "star": true
             },
             {
-              "word": "run",
+              "word": "capped",
               "star": false
             },
             {
-              "word": "spell",
+              "word": "limited",
               "star": false
             },
             {
-              "word": "stint",
+              "word": "fixed",
               "star": false
             },
             {
-              "word": "round",
+              "word": "allotted",
               "star": false
             }
           ]
@@ -4540,19 +4540,19 @@
           "field": "schedule",
           "words": [
             {
-              "word": "slot",
+              "word": "scheduled",
               "star": true
             },
             {
-              "word": "window",
+              "word": "timeboxed",
               "star": false
             },
             {
-              "word": "timebox",
+              "word": "booked",
               "star": false
             },
             {
-              "word": "block",
+              "word": "slotted",
               "star": false
             }
           ]
@@ -4561,23 +4561,19 @@
           "field": "music",
           "words": [
             {
-              "word": "phrase",
+              "word": "metered",
               "star": true
             },
             {
-              "word": "measure",
+              "word": "paced",
               "star": false
             },
             {
-              "word": "passage",
+              "word": "measured",
               "star": false
             },
             {
-              "word": "bar",
-              "star": false
-            },
-            {
-              "word": "beat",
+              "word": "phrased",
               "star": false
             }
           ]
@@ -4586,19 +4582,19 @@
           "field": "film",
           "words": [
             {
-              "word": "scene",
+              "word": "trimmed",
               "star": false
             },
             {
-              "word": "shot",
+              "word": "locked",
               "star": false
             },
             {
-              "word": "reel",
+              "word": "conformed",
               "star": false
             },
             {
-              "word": "section",
+              "word": "framed",
               "star": false
             }
           ]
@@ -4607,11 +4603,15 @@
           "field": "math",
           "words": [
             {
-              "word": "interval",
+              "word": "bounded",
               "star": true
             },
             {
-              "word": "range",
+              "word": "finite",
+              "star": false
+            },
+            {
+              "word": "closed",
               "star": false
             }
           ]
@@ -4629,7 +4629,7 @@
         "items": [
           "It moves a child only as far as that child's hints allow.",
           "Before any fit, the span retimes its children by one factor toward the budget: faster where they run past it, slower where they leave room. The fit works from there.",
-          "Its sub-operations, each one way of giving way, named in a later pass: <code>overlap</code> starts one before the last ends, <code>skip</code> jumps one to its end, <code>collapse</code> jumps all of them, <code>overrun</code> lets the span run long, and <code>chain</code> tries several in turn.",
+          "Its sub-operations, each one way of giving way and each named on its own: <code>overlap</code> starts one before the last ends, <code>skip</code> jumps one to its end, <code>collapse</code> jumps all of them, <code>overrun</code> lets the span run long, and <code>chain</code> tries several in turn.",
           "The default is overlap, then skip; <code>lenient</code> adds overrun last."
         ]
       },
@@ -7393,6 +7393,944 @@
           "to": "v-join"
         }
       ]
+    },
+    {
+      "key": "fitretime",
+      "title": "retime",
+      "was": "retime(span, kids, plan): FitPlan",
+      "kind": "operation",
+      "gloss": {
+        "lead": "Plays every child of a span faster or slower by one shared factor toward its budget, before any fit runs.",
+        "items": [
+          "Faster where they run past it, each no faster than its <code>faster</code>; slower where they leave room, each no slower than its <code>slower</code>.",
+          "Every span does it; a fit works from the plan it leaves."
+        ]
+      },
+      "groups": [
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "retime",
+              "star": true
+            },
+            {
+              "word": "pace",
+              "star": false
+            },
+            {
+              "word": "tune",
+              "star": false
+            },
+            {
+              "word": "speed",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "rush",
+              "star": false
+            },
+            {
+              "word": "drag",
+              "star": false
+            },
+            {
+              "word": "swing",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "ramp",
+              "star": false
+            },
+            {
+              "word": "conform",
+              "star": false
+            },
+            {
+              "word": "overcrank",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "warp",
+              "star": true
+            },
+            {
+              "word": "flex",
+              "star": false
+            },
+            {
+              "word": "varispeed",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "physics",
+          "words": [
+            {
+              "word": "dilate",
+              "star": true
+            },
+            {
+              "word": "contract",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "engineering",
+          "words": [
+            {
+              "word": "throttle",
+              "star": false
+            },
+            {
+              "word": "govern",
+              "star": false
+            },
+            {
+              "word": "meter",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "rescale",
+              "star": true
+            },
+            {
+              "word": "normalize",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "retime(span, kids, plan): FitPlan",
+      "description": "one rate toward the budget"
+    },
+    {
+      "key": "fitoverlap",
+      "title": "overlap",
+      "was": "overlap(): Fit",
+      "kind": "operation",
+      "gloss": {
+        "lead": "A fit that starts children marked to overlap sooner after the one before, toward all at once, until they fit.",
+        "items": [
+          "Reads the <code>overlap</code> hint, and shares its word.",
+          "First in the default fit."
+        ]
+      },
+      "groups": [
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "overlap",
+              "star": true
+            },
+            {
+              "word": "crowd",
+              "star": false
+            },
+            {
+              "word": "bunch",
+              "star": false
+            },
+            {
+              "word": "squeeze",
+              "star": false
+            },
+            {
+              "word": "hurry",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "crossfade",
+              "star": true
+            },
+            {
+              "word": "layer",
+              "star": false
+            },
+            {
+              "word": "stack",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "dissolve",
+              "star": false
+            },
+            {
+              "word": "lap",
+              "star": false
+            },
+            {
+              "word": "segue",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "traffic",
+          "words": [
+            {
+              "word": "tailgate",
+              "star": false
+            },
+            {
+              "word": "close",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "typesetting",
+          "words": [
+            {
+              "word": "kern",
+              "star": true
+            },
+            {
+              "word": "tighten",
+              "star": false
+            },
+            {
+              "word": "condense",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "computing",
+          "words": [
+            {
+              "word": "pipeline",
+              "star": true
+            },
+            {
+              "word": "interleave",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "telescope",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "translate",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "overlap(): Fit",
+      "description": "start sooner"
+    },
+    {
+      "key": "fitskip",
+      "title": "skip",
+      "was": "skip(): Fit",
+      "kind": "operation",
+      "gloss": {
+        "lead": "A fit that jumps children marked to be skipped to their end, latest first, until they fit.",
+        "items": [
+          "A skipped child still ends where it would have: text that types in still ends typed.",
+          "Second in the default fit; reads the <code>skip</code> hint, and shares its word."
+        ]
+      },
+      "groups": [
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "skip",
+              "star": true
+            },
+            {
+              "word": "drop",
+              "star": false
+            },
+            {
+              "word": "pass",
+              "star": false
+            },
+            {
+              "word": "miss",
+              "star": false
+            },
+            {
+              "word": "forgo",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "cut",
+              "star": true
+            },
+            {
+              "word": "trim",
+              "star": false
+            },
+            {
+              "word": "excise",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "text",
+          "words": [
+            {
+              "word": "elide",
+              "star": true
+            },
+            {
+              "word": "omit",
+              "star": false
+            },
+            {
+              "word": "abridge",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "reading",
+          "words": [
+            {
+              "word": "skim",
+              "star": false
+            },
+            {
+              "word": "scan",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "triage",
+          "words": [
+            {
+              "word": "shed",
+              "star": true
+            },
+            {
+              "word": "sacrifice",
+              "star": false
+            },
+            {
+              "word": "ditch",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "engineering",
+          "words": [
+            {
+              "word": "bypass",
+              "star": false
+            },
+            {
+              "word": "shortcut",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "theater",
+          "words": [
+            {
+              "word": "jump",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "truncate",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "signature": "skip(): Fit",
+      "description": "jump some to their end"
+    },
+    {
+      "key": "fitcollapse",
+      "title": "collapse",
+      "was": "collapse(): Fit",
+      "kind": "operation",
+      "gloss": {
+        "lead": "A fit that jumps every child to its end at once.",
+        "items": [
+          "What a span does when it would rather show the result than any of the motion: a hundred text runs already typed.",
+          "Skips every child whatever its <code>skip</code> hint says."
+        ]
+      },
+      "groups": [
+        {
+          "field": "geometry",
+          "words": [
+            {
+              "word": "collapse",
+              "star": true
+            },
+            {
+              "word": "flatten",
+              "star": false
+            },
+            {
+              "word": "crush",
+              "star": false
+            },
+            {
+              "word": "compact",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "film",
+          "words": [
+            {
+              "word": "cut",
+              "star": true
+            },
+            {
+              "word": "jumpcut",
+              "star": false
+            },
+            {
+              "word": "smashcut",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "text",
+          "words": [
+            {
+              "word": "elide",
+              "star": false
+            },
+            {
+              "word": "omit",
+              "star": false
+            },
+            {
+              "word": "abridge",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "state",
+          "words": [
+            {
+              "word": "snap",
+              "star": true
+            },
+            {
+              "word": "finish",
+              "star": false
+            },
+            {
+              "word": "complete",
+              "star": false
+            },
+            {
+              "word": "conclude",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "motion",
+          "words": [
+            {
+              "word": "leap",
+              "star": false
+            },
+            {
+              "word": "vault",
+              "star": false
+            },
+            {
+              "word": "warp",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "shortcut",
+              "star": false
+            },
+            {
+              "word": "bypass",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "limit",
+              "star": true
+            }
+          ]
+        }
+      ],
+      "signature": "collapse(): Fit",
+      "description": "jump everything to its end"
+    },
+    {
+      "key": "fitoverrun",
+      "title": "overrun",
+      "was": "overrun({ cap }): Fit",
+      "kind": "operation",
+      "gloss": {
+        "lead": "A fit that lets the span run past its budget, up to <code>cap</code> times it or without limit.",
+        "items": [
+          "Last in <code>lenient</code>.",
+          "The fallback has a value for the same thing, for when the fit has given up."
+        ]
+      },
+      "groups": [
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "overrun",
+              "star": true
+            },
+            {
+              "word": "overshoot",
+              "star": false
+            },
+            {
+              "word": "spill",
+              "star": false
+            },
+            {
+              "word": "exceed",
+              "star": false
+            },
+            {
+              "word": "bust",
+              "star": false
+            },
+            {
+              "word": "overstay",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "finance",
+          "words": [
+            {
+              "word": "overspend",
+              "star": true
+            },
+            {
+              "word": "overdraw",
+              "star": false
+            },
+            {
+              "word": "borrow",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "scheduling",
+          "words": [
+            {
+              "word": "slip",
+              "star": true
+            },
+            {
+              "word": "slide",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "computing",
+          "words": [
+            {
+              "word": "overflow",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "time",
+          "words": [
+            {
+              "word": "prolong",
+              "star": false
+            },
+            {
+              "word": "protract",
+              "star": false
+            },
+            {
+              "word": "lengthen",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "linger",
+              "star": false
+            },
+            {
+              "word": "sustain",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "negotiation",
+          "words": [
+            {
+              "word": "concede",
+              "star": false
+            },
+            {
+              "word": "relent",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "extend",
+              "star": true
+            }
+          ]
+        }
+      ],
+      "signature": "overrun({ cap }): Fit",
+      "description": "run past the budget"
+    },
+    {
+      "key": "fitchain",
+      "title": "chain",
+      "was": "chain(...fits): Fit",
+      "kind": "operation",
+      "gloss": {
+        "lead": "A fit that tries other fits in turn, handing each the plan the last one left, and stops once the children fit.",
+        "items": [
+          "The default fit is overlap, then skip; <code>lenient</code> adds overrun."
+        ]
+      },
+      "groups": [
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "chain",
+              "star": true
+            },
+            {
+              "word": "try",
+              "star": false
+            },
+            {
+              "word": "attempt",
+              "star": false
+            },
+            {
+              "word": "string",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "code",
+          "words": [
+            {
+              "word": "pipe",
+              "star": true
+            },
+            {
+              "word": "fallthrough",
+              "star": false
+            },
+            {
+              "word": "coalesce",
+              "star": false
+            },
+            {
+              "word": "thread",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "engineering",
+          "words": [
+            {
+              "word": "cascade",
+              "star": true
+            },
+            {
+              "word": "escalate",
+              "star": false
+            },
+            {
+              "word": "tier",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "networking",
+          "words": [
+            {
+              "word": "retry",
+              "star": false
+            },
+            {
+              "word": "reroute",
+              "star": false
+            },
+            {
+              "word": "hop",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "medicine",
+          "words": [
+            {
+              "word": "triage",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "sports",
+          "words": [
+            {
+              "word": "relay",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "process",
+          "words": [
+            {
+              "word": "funnel",
+              "star": false
+            },
+            {
+              "word": "sift",
+              "star": false
+            },
+            {
+              "word": "filter",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "compose",
+              "star": true
+            }
+          ]
+        }
+      ],
+      "signature": "chain(...fits): Fit",
+      "description": "try fits in turn"
+    },
+    {
+      "key": "fitlenient",
+      "title": "lenient",
+      "was": "lenient({ cap }): Fit",
+      "kind": "operation",
+      "gloss": {
+        "lead": "A fit that gives way every way there is, running past the budget only once the rest are spent.",
+        "items": [
+          "Overlap, then skip, then overrun, after the span's retiming; overruns up to <code>cap</code> times the budget, or without limit.",
+          "The default fit is the same chain without the overrun."
+        ]
+      },
+      "groups": [
+        {
+          "field": "temperament",
+          "words": [
+            {
+              "word": "lenient",
+              "star": true
+            },
+            {
+              "word": "forgiving",
+              "star": false
+            },
+            {
+              "word": "generous",
+              "star": false
+            },
+            {
+              "word": "tolerant",
+              "star": false
+            },
+            {
+              "word": "gentle",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "rules",
+          "words": [
+            {
+              "word": "permissive",
+              "star": true
+            },
+            {
+              "word": "lax",
+              "star": false
+            },
+            {
+              "word": "liberal",
+              "star": false
+            },
+            {
+              "word": "relaxed",
+              "star": false
+            },
+            {
+              "word": "loose",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "material",
+          "words": [
+            {
+              "word": "elastic",
+              "star": false
+            },
+            {
+              "word": "pliant",
+              "star": false
+            },
+            {
+              "word": "flexible",
+              "star": false
+            },
+            {
+              "word": "soft",
+              "star": false
+            },
+            {
+              "word": "supple",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "engineering",
+          "words": [
+            {
+              "word": "besteffort",
+              "star": true
+            },
+            {
+              "word": "graceful",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "plain",
+          "words": [
+            {
+              "word": "anyhow",
+              "star": false
+            },
+            {
+              "word": "easy",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "relax",
+              "star": true
+            }
+          ]
+        }
+      ],
+      "signature": "lenient({ cap }): Fit",
+      "description": "give way every way"
     }
   ],
   "sets": [

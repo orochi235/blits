@@ -11,9 +11,9 @@
     "engine": "engine",
     "rest": "rest",
     "sample": "pose",
-    "contribution": "influence",
+    "contribution": "contribution",
     "context": "setting",
-    "period": "duration",
+    "period": "period",
     "v-add": "cue",
     "v-stop": "fade",
     "v-seek": "seek",
@@ -44,12 +44,12 @@
     "event": "event",
     "checkpoint": "snapshot",
     "v-join": "merge",
-    "v-scale": "scale",
+    "fitstrategy": "fit",
     "v-lerp": "lerp",
-    "v-fold": "fold",
-    "timebase": "transport",
-    "lastpass": "coast",
-    "fitstrategy": "fit"
+    "fitfail": "spill",
+    "timebase": "timebase",
+    "v-scale": "scale",
+    "v-fold": "fold"
   },
   "chosen": {
     "offset": true,
@@ -96,12 +96,12 @@
     "event": true,
     "checkpoint": true,
     "v-join": true,
-    "v-scale": true,
+    "fitstrategy": true,
     "v-lerp": true,
-    "v-fold": true,
+    "fitfail": true,
     "timebase": true,
-    "lastpass": true,
-    "fitstrategy": true
+    "v-scale": true,
+    "v-fold": true
   },
   "written": {
     "piece": "patch",
@@ -111,7 +111,6 @@
   },
   "locked": {
     "sample": true,
-    "contribution": true,
     "period": true,
     "weight": true,
     "v-add": true,
@@ -151,15 +150,12 @@
     "v-sure": true,
     "v-blend": true,
     "v-join": true,
-    "checkpoint": true,
-    "system": true,
-    "v-clear": true,
-    "v-scale": true,
+    "fitstrategy": true,
     "v-lerp": true,
-    "v-fold": true,
-    "timebase": true,
-    "lastpass": true,
-    "fitstrategy": true
+    "fitfail": true,
+    "contribution": true,
+    "v-scale": true,
+    "v-fold": true
   },
   "informal": {
     "spec": true,
@@ -222,7 +218,6 @@
     "phase": "noun",
     "group": "noun",
     "sequence": "noun",
-    "trigger": "noun",
     "timebase": "noun",
     "lastpass": "noun",
     "budgeted": "adjective",
@@ -233,7 +228,8 @@
     "hintslower": "noun",
     "hintoverlap": "noun",
     "hintskip": "noun",
-    "hintfirm": "noun"
+    "hintfirm": "noun",
+    "trigger": "noun"
   },
   "notes": {},
   "starred": {
