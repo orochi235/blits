@@ -48,7 +48,8 @@
     "v-lerp": "lerp",
     "v-fold": "fold",
     "timebase": "transport",
-    "lastpass": "coast"
+    "lastpass": "coast",
+    "fitstrategy": "fit"
   },
   "chosen": {
     "offset": true,
@@ -99,7 +100,8 @@
     "v-lerp": true,
     "v-fold": true,
     "timebase": true,
-    "lastpass": true
+    "lastpass": true,
+    "fitstrategy": true
   },
   "written": {
     "piece": "patch",
@@ -156,7 +158,8 @@
     "v-lerp": true,
     "v-fold": true,
     "timebase": true,
-    "lastpass": true
+    "lastpass": true,
+    "fitstrategy": true
   },
   "informal": {
     "spec": true,

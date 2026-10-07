@@ -136,42 +136,29 @@ function least(lo: number, hi: number, ok: (x: number) => boolean): number {
 }
 
 /**
- * Plays every child faster by one factor, each no faster than its `faster` allows, until they fit.
- *
- * @category score
+ * Moves every child's rate by one factor toward the budget, before the span's fit: faster where
+ * they run past it, each no faster than its `faster` allows, and slower where they leave room in
+ * it, each no slower than its `slower` allows, so they fill it.
  */
-export function compress(): Fit {
-  return (span, kids, plan) => {
-    if (fits(span, kids, plan)) return plan;
+export function retime(span: SpanClaim, kids: readonly Claim[], plan: FitPlan): FitPlan {
+  if (!fits(span, kids, plan)) {
     const top = Math.max(1, ...kids.map((k) => k.faster));
     const at = (f: number): FitPlan => ({
       ...plan,
       rate: kids.map((k, i) => Math.max(plan.rate[i] as number, Math.min(f, k.faster))),
     });
     return at(least(1, top, (f) => fits(span, kids, at(f))));
-  };
-}
-
-/**
- * Plays every child slower by one factor, each no slower than its `slower` allows, so they fill a
- * budget they would leave room in.
- *
- * @category score
- */
-export function stretch(): Fit {
-  return (span, kids, plan) => {
-    if (!Number.isFinite(span.left)) return plan;
-    const room = (p: FitPlan) => layout(span, kids, p).length <= span.left + 1e-9;
-    const top = Math.max(1, ...kids.map((k) => k.slower));
-    const at = (f: number): FitPlan => ({
-      ...plan,
-      rate: kids.map((k, i) => (plan.rate[i] as number) / Math.min(f, k.slower)),
-    });
-    if (!room(plan)) return plan;
-    // The largest factor that still fits: `least` over the factors that do not.
-    const f = least(1, top, (x) => !room(at(x)));
-    return room(at(f)) ? at(f) : at(Math.max(1, f - 1e-9));
-  };
+  }
+  if (!Number.isFinite(span.left)) return plan;
+  const top = Math.max(1, ...kids.map((k) => k.slower));
+  if (top === 1) return plan;
+  const at = (f: number): FitPlan => ({
+    ...plan,
+    rate: kids.map((k, i) => (plan.rate[i] as number) / Math.min(f, k.slower)),
+  });
+  // The largest factor that still fits: `least` over the factors that do not.
+  const f = least(1, top, (x) => !fits(span, kids, at(x)));
+  return fits(span, kids, at(f)) ? at(f) : at(Math.max(1, f - 1e-9));
 }
 
 /**
@@ -248,21 +235,22 @@ export function chain(...fits_: readonly Fit[]): Fit {
 }
 
 /**
- * Every way of giving way, overrunning only once the rest are spent.
+ * Every way of giving way after the span's retiming, overrunning only once the rest are spent.
  *
  * @category score
  */
 export function lenient(opts: { cap?: number } = {}): Fit {
-  return chain(compress(), overlap(), skip(), overrun(opts));
+  return chain(overlap(), skip(), overrun(opts));
 }
 
 /** The fit a span takes without one of its own. */
-export const defaultFit: Fit = chain(compress(), overlap(), skip());
+export const defaultFit: Fit = chain(overlap(), skip());
 
 const rank = { weak: 0, strong: 1, required: 2 } as const;
 
 /**
- * A span's fit settled: the plan, and what it had to do past the strategy. Where the children still
+ * A span's fit settled: the plan, and what it had to do past the strategy, which starts from the
+ * children retimed toward the budget. Where the children still
  * do not fit, a span weaker than `strong` lets them run long; otherwise `fallback` either skips
  * every child weaker than the span (`instant`), or lets them run long (`overrun`).
  */
@@ -272,7 +260,7 @@ export function settle(
   fit: Fit,
   fallback: 'instant' | 'overrun',
 ): { plan: FitPlan; fell: boolean } {
-  let plan = fit(span, kids, plain(span, kids));
+  let plan = fit(span, kids, retime(span, kids, plain(span, kids)));
   if (fits(span, kids, plan) || rank[span.firm] === 0 || fallback === 'overrun')
     return { plan, fell: !fits(span, kids, plan) && rank[span.firm] > 0 };
   plan = {

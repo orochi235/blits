@@ -1,7 +1,7 @@
 import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, sum } from '../src/channels.js';
-import { chain, compress, lenient } from '../src/fit.js';
+import { chain, lenient } from '../src/fit.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import type { Mix } from '../src/types.js';
@@ -133,7 +133,7 @@ describe('spans', () => {
   it('fits a span held by a span through its own rate', () => {
     const m = mix<Row, Pose>(K);
     m.sync(0);
-    const outer = m.span({ name: 'outer', duration: 500, fit: chain(compress()) });
+    const outer = m.span({ name: 'outer', duration: 500, fit: chain() });
     const inner = m.span({ owner: outer, order: 'together', faster: 2, name: 'inner' });
     m.cue({ patch: write(600), loop: false, owner: inner, name: 'a' });
     m.cue({ patch: write(400), loop: false, owner: outer, name: 'b', faster: 2 });
@@ -141,7 +141,7 @@ describe('spans', () => {
     expect(ends(m, 'a')[0]).toBeCloseTo(300);
   });
 
-  it('lets lenient overrun only once compressing is spent', () => {
+  it('lets lenient overrun only once retiming is spent', () => {
     const m = mix<Row, Pose>(K);
     m.sync(0);
     const phase = m.span({ duration: 500, fit: lenient({ cap: 2 }), fallback: 'overrun' });

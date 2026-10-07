@@ -544,7 +544,10 @@ export interface SpanSpec<I, H = unknown> extends OwnerSpec<I, H> {
   order?: Order;
   /** How far through the one before a child starts under `stagger`, 0..1. Default 0.5. */
   share?: number;
-  /** How the children are fitted. Default `chain(compress(), overlap(), skip())`. */
+  /**
+   * How the children are fitted once they are retimed toward the budget, faster or slower as
+   * their hints allow. Default `chain(overlap(), skip())`.
+   */
   fit?: Fit;
   /**
    * What happens where the fit leaves them too long for a span at least `strong`: `instant` jumps

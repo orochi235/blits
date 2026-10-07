@@ -54,9 +54,11 @@ version and everything else the patch. Each release lists its changes as **Break
   release removes it.
 - `mix.span(spec)` cues an owner that lays out the voices it holds in an `order` (`queue`,
   `stagger`, `together`) and fits them into its `duration`, again whenever one joins or leaves.
-  Each child says how it may give way with `faster`, `slower`, `overlap`, `skip` and `firm`, and
-  the span's `fit` decides: `compress`, `overlap`, `skip`, `stretch`, `collapse` and `overrun`
-  are exported, `chain` runs several in turn, and `lenient` is every one with `overrun` last.
+  Each child says how it may give way with `faster`, `slower`, `overlap`, `skip` and `firm`. The
+  span first retimes its children by one factor toward the budget, faster where they run past it
+  and slower where they leave room, each as far as its hints allow; then its `fit` decides the
+  rest: `overlap`, `skip`, `collapse` and `overrun` are exported, `chain` runs several in turn,
+  and `lenient` is every one with `overrun` last.
   Where nothing fits, `fallback: 'instant'` jumps the weaker children to their end at once and
   `'overrun'` lets the span run long. A span with a budget stays until it has passed, so late
   children can join, and `handle.fitted` says how the last fit came out.

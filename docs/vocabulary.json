@@ -4628,8 +4628,9 @@
         "lead": "How a span gets its children inside its budget: a function from one plan to a better one.",
         "items": [
           "It moves a child only as far as that child's hints allow.",
-          "Its sub-operations, each one way of giving way, named in a later pass: <code>compress</code> plays children faster, <code>stretch</code> slower to fill a budget, <code>overlap</code> starts one before the last ends, <code>skip</code> jumps one to its end, <code>collapse</code> jumps all of them, <code>overrun</code> lets the span run long, and <code>chain</code> tries several in turn.",
-          "The default is compress, then overlap, then skip; <code>lenient</code> adds overrun last."
+          "Before any fit, the span retimes its children by one factor toward the budget: faster where they run past it, slower where they leave room. The fit works from there.",
+          "Its sub-operations, each one way of giving way, named in a later pass: <code>overlap</code> starts one before the last ends, <code>skip</code> jumps one to its end, <code>collapse</code> jumps all of them, <code>overrun</code> lets the span run long, and <code>chain</code> tries several in turn.",
+          "The default is overlap, then skip; <code>lenient</code> adds overrun last."
         ]
       },
       "groups": [

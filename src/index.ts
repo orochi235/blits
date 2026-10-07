@@ -6,14 +6,12 @@ export type { Claim, Fit, FitPlan, Order, SpanClaim, Strength } from './fit.js';
 export {
   chain,
   collapse,
-  compress,
   layout,
   lenient,
   overlap,
   overrun,
   plain,
   skip,
-  stretch,
 } from './fit.js';
 export { mix, mixer } from './mixer.js';
 export type { Motion, Moving, PerSubject, Value } from './motion.js';
