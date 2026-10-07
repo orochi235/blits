@@ -46,7 +46,9 @@
     "v-join": "merge",
     "v-scale": "scale",
     "v-lerp": "lerp",
-    "v-fold": "fold"
+    "v-fold": "fold",
+    "timebase": "transport",
+    "lastpass": "coast"
   },
   "chosen": {
     "offset": true,
@@ -95,7 +97,9 @@
     "v-join": true,
     "v-scale": true,
     "v-lerp": true,
-    "v-fold": true
+    "v-fold": true,
+    "timebase": true,
+    "lastpass": true
   },
   "written": {
     "piece": "patch",
@@ -150,7 +154,9 @@
     "v-clear": true,
     "v-scale": true,
     "v-lerp": true,
-    "v-fold": true
+    "v-fold": true,
+    "timebase": true,
+    "lastpass": true
   },
   "informal": {
     "spec": true,
@@ -213,7 +219,9 @@
     "phase": "noun",
     "group": "noun",
     "sequence": "noun",
-    "trigger": "noun"
+    "trigger": "noun",
+    "timebase": "noun",
+    "lastpass": "noun"
   },
   "notes": {},
   "starred": {

@@ -4232,6 +4232,270 @@
         }
       ],
       "description": "ordered chain"
+    },
+    {
+      "key": "timebase",
+      "title": "Timebase",
+      "was": "transport",
+      "kind": "noun",
+      "gloss": {
+        "lead": "One clock several mixes play on, each over its own kit.",
+        "items": [
+          "One sync, one rate, one seek and one tape for every mix on it.",
+          "A score that names itself spans every mix on it, so an anchor in one mix waits on a voice in another; a query naming no score stays in its own mix.",
+          "astv's rail waits on orb flights and text runs that live in other mixes, with other kits."
+        ]
+      },
+      "groups": [
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "transport",
+              "star": true
+            },
+            {
+              "word": "deck",
+              "star": true
+            },
+            {
+              "word": "desk",
+              "star": false
+            },
+            {
+              "word": "playhead",
+              "star": false
+            },
+            {
+              "word": "sequencer",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "conducting",
+          "words": [
+            {
+              "word": "baton",
+              "star": true
+            },
+            {
+              "word": "conductor",
+              "star": false
+            },
+            {
+              "word": "tempo",
+              "star": false
+            },
+            {
+              "word": "metronome",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "ensemble",
+          "words": [
+            {
+              "word": "ensemble",
+              "star": true
+            },
+            {
+              "word": "troupe",
+              "star": false
+            },
+            {
+              "word": "orchestra",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage",
+          "words": [
+            {
+              "word": "show",
+              "star": true
+            },
+            {
+              "word": "house",
+              "star": false
+            },
+            {
+              "word": "program",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "mechanism",
+          "words": [
+            {
+              "word": "spine",
+              "star": true
+            },
+            {
+              "word": "axle",
+              "star": false
+            },
+            {
+              "word": "shaft",
+              "star": false
+            },
+            {
+              "word": "gang",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "frame",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "shared clock"
+    },
+    {
+      "key": "lastpass",
+      "title": "Last pass",
+      "was": "coast",
+      "kind": "noun",
+      "gloss": {
+        "lead": "The mark where a voice's last pass ends, for its latest-staggered subject.",
+        "items": [
+          "Where `played` resolves true: with `out` on a voice that does not freeze, and where a frozen voice starts showing its last frame, long before it is faded.",
+          "A voice that loops for good, or fades before its last pass ends, never reaches it.",
+          "It has to read right on both kinds of voice, so a word for freezing alone does not fit."
+        ]
+      },
+      "groups": [
+        {
+          "field": "motion",
+          "words": [
+            {
+              "word": "coast",
+              "star": true
+            },
+            {
+              "word": "cruise",
+              "star": false
+            },
+            {
+              "word": "glide",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "rest",
+          "words": [
+            {
+              "word": "still",
+              "star": true
+            },
+            {
+              "word": "lull",
+              "star": true
+            },
+            {
+              "word": "hush",
+              "star": false
+            },
+            {
+              "word": "settle",
+              "star": false
+            },
+            {
+              "word": "dwell",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "hill",
+          "words": [
+            {
+              "word": "crest",
+              "star": true
+            },
+            {
+              "word": "brow",
+              "star": false
+            },
+            {
+              "word": "summit",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "waning",
+          "words": [
+            {
+              "word": "wane",
+              "star": false
+            },
+            {
+              "word": "ebb",
+              "star": false
+            },
+            {
+              "word": "recede",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage",
+          "words": [
+            {
+              "word": "tableau",
+              "star": false
+            },
+            {
+              "word": "bow",
+              "star": false
+            },
+            {
+              "word": "button",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "music",
+          "words": [
+            {
+              "word": "fermata",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "done",
+          "words": [
+            {
+              "word": "played",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "math",
+          "words": [
+            {
+              "word": "limit",
+              "star": false
+            }
+          ]
+        }
+      ],
+      "description": "last pass ends"
     }
   ],
   "verbs": [

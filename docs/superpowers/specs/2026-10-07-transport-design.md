@@ -1,6 +1,7 @@
 # Transport: one clock for several mixes
 
-**Status: designed 2026-10-07, not built.** No code exists for anything here.
+**Status: built 2026-10-07 except the history adapter, which is designed in part and unbuilt** (see
+"History behind an adapter"), and owners or spans across mixes, which are a later spec.
 
 For whoever builds it in blits, and for astv, its first consumer. It answers how mixes with
 different kits share one timeline — one sync, rate, seek and tape — and how an anchor in one mix
@@ -175,8 +176,11 @@ not a loss.
   stops being a mode: an adapter that does let go says so by throwing on the read, the same loud
   miss.
 
-The adapter's methods, and its name, are designed when it is built (build order step 4); this
-section fixes the contract they serve.
+**Unbuilt, and waiting on one decision:** history keys records by subject, and a subject may be any
+object, so an adapter that keeps records anywhere but memory needs the host to give each subject a
+key that outlives it (`keyOf(subject): string`, or the host's own ids). Whether blits asks for that
+key, or keeps records it cannot key in memory and only pages out the rest, decides the adapter's
+methods. Until then history lives in memory, and `ms: Infinity` keeps everything.
 
 ## Seek
 
@@ -214,16 +218,15 @@ compiling; `Marked` gains `mix`. Nothing changes for a mix with no shared transp
 
 ## Build order
 
-1. **`coast`**, on a standalone mix. Built (8a80167).
-2. **Private transport:** move the clock out of `Mixer` with no behavior change; the suite is the
-   test.
-3. **Shared transport:** members, the cross-member score lookup, `marks`/`project`/`inert`/`onWake`
-   on the transport, one tape across members, `drop`.
-4. **History adapter:** every record behind it, `prepare`, plain-data state, the in-memory adapter,
-   and the four known gaps closed.
-5. `fade({ over, at })`, for astv's rosters.
-6. `docs/schema.html` (a Transport section), `docs/vocabulary.json` (`transport`, `coast`, the
-   adapter's name), `CHANGELOG.md`, and the site's reference.
+| Step | State |
+|---|---|
+| `coast` on a standalone mix | built |
+| Private transport: the clock out of `Mixer`, no behavior change | built |
+| Shared transport: members, score lookup across them, `marks`/`project`/`inert`/`onWake`, one tape, `drop` | built |
+| Seek gaps: records and motion state of subjects that left, a read ahead past the tape | built |
+| `fade({ over, at })`, for astv's rosters | built |
+| Schema section, naming sheet, changelog | built |
+| History adapter: records behind it, `prepare`, plain-data state with `pack`/`unpack` (`spring`, `glide`, `tween`) | unbuilt; waits on the subject-key decision |
 
 ## Tests
 

@@ -16,9 +16,26 @@ version and everything else the patch. Each release lists its changes as **Break
 - `Mix` has `seek`, `now` and `tape`, which an engine of its own has to provide.
 - `Mix` has `span`, which an engine of its own has to provide.
 - `Mark` has a fifth value, `coast`, so a `switch` over it that checks every case needs one more.
+- `project` ahead of the mix after a `seek` back throws for a time past a call the tape will make
+  again, which it used to leave out; a seek there makes it.
+- An engine of its own is handed `MixOptions.transport` and `name`, and a `Mix` that can share a
+  transport has to keep its clock there.
 
 ### Added
 
+- `transport(opts)` makes one clock several mixes share, each over its own kit, by passing it as
+  `MixOptions.transport` with a `name`. `sync`, `rebase`, `rate`, `ramp` and `seek` on the
+  transport move every mix on it, and a mix's own throw. A query naming a `score` looks in every
+  mix on the transport, so an anchor in one mix waits on a voice in another; one naming no score
+  stays in its own mix. The transport has `announce` (on a named score), `marks`, `project(time)`
+  with `.of(mix)`, `live`, `inert`, `onWake` and `drop(mix)`. One tape records every mix's calls
+  and a seek replays them in the order they were made; under history a seek back before a `drop`
+  puts the mix back. `Marked.mix` names the mix a mark came from, and voice ids are unique across a
+  transport. A mix made alone has a transport of its own, so nothing changes for it.
+- `fade({ at, over })` with `at` a mix time begins the fade exactly there: ahead, the voice plays
+  untouched until then with its `out` and `end` fixed from the call, and `rise` before then takes it
+  back with nothing changed; at or behind now, the fade began then and is partway. It wins over an
+  anchored `out`.
 - A voice **coasts** when its last pass ends, for its latest-staggered subject: the moment
   `played` resolves true. `coast` is a mark like the other four, listed by `marks`, booked by
   `book`, read ahead by `project`, and waited on with `{ of, mark: 'coast' }`. It falls with `out`
@@ -54,6 +71,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- Under `history`, a subject faded out of a voice or dropped after the moment a `seek` or a
+  `project` reads back to comes back with the record it had, and with a motion patch's state for
+  it. It used to come back as never seen, its state started afresh.
 - `project` across a `rebase` reads the moment the host saw: it converted a host timestamp with
   the offset in force now, so a 1000 ms rise synced at 0 and 200, rebased and synced at 10200 read
   0 at 200, where the host had seen 20. Taking mix time, it reads 20.
