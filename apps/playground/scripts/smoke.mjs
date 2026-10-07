@@ -61,6 +61,18 @@ try {
       return false;
     });
     if (!drawn) errors.push('stage drew nothing');
+    const flowDrawn = await page
+      .locator('section[aria-label=flow] canvas')
+      .first()
+      .evaluate((c) => {
+        const g = c.getContext('2d');
+        if (!g) return true; // a WebGL canvas: trust the console check
+        const d = g.getImageData(0, 0, c.width, c.height).data;
+        for (let k = 3; k < d.length; k += 4) if (d[k] > 0) return true;
+        return false;
+      })
+      .catch(() => false);
+    if (!flowDrawn) errors.push('flow drew nothing');
     await page.screenshot({
       path: join(shots, `${String(i + 1).padStart(2, '0')}-${name.replaceAll(' ', '-')}.png`),
     });
