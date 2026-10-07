@@ -476,9 +476,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 7. **Name the span vocabulary — blocks the next release.** `span`, `fit`, `fallback`,
    `fitted`, `lenient`, `stretch`, `collapse`, `compress`, and the hints `faster`, `slower`,
    `overlap`, `skip`, `firm` are working names, on `main` and unreleased; `all`/`any` are picked.
-   Each has 20 candidates in `docs/vocabulary.json` (`11b9e54`), served on :4873; none is picked
-   yet. `stretch` is not among its own candidates: the checker refuses a word that is a role key,
-   and `stretch` is the key of the role picked as `interval`.
+   The sheet (`docs/vocabulary.json`, served on :4873) names `fit` once; the fits themselves
+   (`compress`, `stretch`, `overlap`, `skip`, `collapse`, `overrun`, `chain`, `lenient`) are its
+   sub-operations, listed in its gloss and named in a later pass (Mike, 2026-10-07). None is
+   picked yet.
 
 9. **The history adapter is drafted and unbuilt** (2026-10-07, with astv-f5): the transport
    spec's "History behind an adapter" section, which ends with what is left to settle. Mike has
