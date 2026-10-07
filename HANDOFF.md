@@ -136,17 +136,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   them. `name`, `query` and `resolver` are marked informal.
 - **Blending** covers all four behaviors he was offered: fade, retarget on interruption, blend
   between alternatives, handover at rest. All reduce to a weight per voice or a channel lerp.
-- **Two clocks, one of them addressable.** Mix time is a reading the host reports, not a position
-  anything sets, short of a `rewind` under history. Voice time is a position, because `phase` is computed from the reading rather than
-  accumulated into. So `seek` has exactly one scope, the voice, and needs no qualifier.
-  Decided 2026-09-27.
-- **Reading back is a read; going back is `rewind`.** `project(t)` copies state and reads at `t`,
-  with history opt-in and nothing kept without it. `mix.rewind(t)` (built 2026-10-06, reversing the
-  2026-10-01 decision against moving the mix back) restores the live mix from history and undoes
-  what came after; `sync` refuses to go back. Mike took every recommendation in the draft: the mix
-  goes back by itself, the future vanishes, events are sent again, `done`/`played` start over,
-  timestamps are host time with a log of offsets, a backward `sync` throws, and state steps once
-  without `stepMs`. The schema page's Score section, "Going back", is the record.
+- **Two clocks, both addressable under a tape.** Voice time is a position, because `phase` is
+  computed from the reading rather than accumulated into (decided 2026-09-27). Mix time became one
+  on 2026-10-07, once a seek back replays the host's recorded calls: `mix.seek(t)` moves it, and
+  `seek`, `project` and `mix.now` are all mix time. The 2026-09-27 rule that `seek` has one scope,
+  the voice, fell with that; the mix method was named `seek` by the session that built it, not by
+  Mike, and is his to rename (the draft's other candidates: `rewind`, `back`, `wind`, `roll`, `jump`).
+- **Reading back is a read; moving is `seek`.** `project(t)` copies state and reads at `t`, with
+  history opt-in and nothing kept without it. `mix.seek(t)` (built 2026-10-07, after a first build
+  that cut the future) restores the live mix and replays the host's calls from a weasel-history
+  tape, branching on a new call. weasel asked for it on 2026-10-06 for labkit's trial clock; Mike
+  made each call in the decision list then. The schema page's Score section, "Seeking", is the
+  record.
 - **The score's shape, picked 2026-10-01 while building it** (Mike asleep; his to overturn): anchors
   are `after` (the target's end), `with` (its start), `before` (its start less `by`) and the general
   `{ of, mark, by }`; a query's resolver is a field, `resolver: 'next'`, not the schema's earlier

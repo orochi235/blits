@@ -113,7 +113,7 @@ In depth: [Patch](../patch/). Reference: [`Patch`](../patch/#api-Patch).
 When you read the mix at another time with a [projection](#projection), its `assess(subject)` says how far to trust each channel of the answer. `'exact'` means only the clock and changes the mix already knows about went into it. `'stepped'` means a patch that keeps its own state was moved across the whole gap in one step, so the answer is close but not exact. `'held'` means it depends on something from outside the clock, such as the pointer, whose future nobody knows, so the projection assumed it stays where it is.
 
 ```ts
-const soon = dots.project(now + 1000);
+const soon = dots.project(dots.now + 1000);
 soon.assess(dot); // { y: 'exact', glow: 'held', color: 'exact' }
 ```
 
@@ -272,7 +272,7 @@ With the `history` option, a mix remembers its recent past so a [projection](#pr
 
 ```ts
 const scrubbable = mix<Dot, DotPose>(DOT, { history: { ms: 10_000 } });
-scrubbable.project(now - 3000).probe(dot); // the dot as it was 3 s ago
+scrubbable.project(scrubbable.now - 3000).probe(dot); // the dot as it was 3 s ago
 ```
 
 In depth: [Score](../score/#reading-another-time). Reference: [`MixOptions`](../mix/#api-MixOptions).
@@ -472,10 +472,10 @@ In depth: [Mix](../mix/#the-frame-loop). Reference: [`Mix`](../mix/#api-Mix), [`
 
 ## projection
 
-`mix.project(timestamp)` reads the mix at another time without moving it, and returns a projection. Its `probe` gives the pose a subject would have then, and its `assess` says how far to trust each channel of that pose (see [doubt](#doubt)). Reading ahead plays forward what is already cued; reading back needs [`history`](#history).
+`mix.project(time)` reads the mix at another mix time without moving it, and returns a projection. `mix.now` is the mix time of the last sync. Its `probe` gives the pose a subject would have then, and its `assess` says how far to trust each channel of that pose (see [doubt](#doubt)). Reading ahead plays forward what is already cued; reading back needs [`history`](#history).
 
 ```ts
-dots.project(now + 500).probe(dot); // where the dot will be in half a second
+dots.project(dots.now + 500).probe(dot); // where the dot will be in half a second
 ```
 
 In depth: [Score](../score/#reading-another-time). Reference: [`Projection`](../mix/#api-Projection), [`Mix`](../mix/#api-Mix).
@@ -558,6 +558,13 @@ In depth: [Score](../score/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec),
 ```ts
 const h = dots.cue({ patch: bob });
 h.seek(250); // a quarter of the way through a bob
+```
+
+`mix.seek(time)` moves the whole mix to a mix time, back or forward, and it plays on from there. It needs [`history`](#history) with a `tape`, where the mix records every call you make on it, so that going back and playing on makes those calls again. Unlike a voice's seek, it puts each patch's own state back as it was at that time.
+
+```ts
+const dots = mix<Dot, DotPose>(DOT, { history: { ms: 10_000, tape: createHistory } });
+dots.seek(dots.now - 2000); // two seconds back; what you did since plays again
 ```
 
 In depth: [Voice](../voice/#the-clock). Reference: [`Handle`](../voice/#api-Handle).

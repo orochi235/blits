@@ -65,15 +65,30 @@ for (const next of m.marks(now, now + 2000)) if (next.mark === 'start') prepare(
 
 ## Reading another time
 
-`mix.project(timestamp)` reads the mix at another time without moving it. Its `probe` gives the pose a subject would have then, and `assess` says per channel how sure that is: `exact` where only the clock and known changes drove it, `stepped` where state was advanced across the gap in one go, and `held` where it depends on input from outside the clock, such as a `level` the host sets.
+`mix.project(time)` reads the mix at another mix time without moving it. `mix.now` is the mix time of the last sync, which is the host's clock until the mix's rate, a `rebase` or a `seek` moves it. Its `probe` gives the pose a subject would have then, and `assess` says per channel how sure that is: `exact` where only the clock and known changes drove it, `stepped` where state was advanced across the gap in one go, and `held` where it depends on input from outside the clock, such as a `level` the host sets.
 
 Ahead of the last sync it plays forward what is cued. Behind it, the mix needs `history`:
 
 ```ts
 const m = mix(K, { history: { ms: 10_000 }, stepMs: 5 });
-m.project(performance.now() - 3000).probe(part);
+m.project(m.now - 3000).probe(part);
 ```
 
 With history, the mix keeps what it cued, every change a handle made and when, the voices that have left, and a copy of each stateful voice's state per subject every `every` ms. A read back restores the nearest copy and steps forward from it. Under `stepMs` that is exact, so scrubbing back and forth lands on the pose the mix showed. `spring` and `glide` keep their motion within the horizon, so a retargeted one reads back to where it was. With `history: { ms, inputs: true }` the mix also records what each input signal on a voice's weight read, so a read back over a `level` the host moved is known rather than `held`. A mix without history keeps nothing.
+
+## Seeking
+
+`mix.seek(time)` moves the live mix to a mix time, back or forward, and it plays on from there. It needs `history` with a `tape`: weasel-history's `createHistory`, from `@weasel-js/history`, or anything of the `Tape` shape. The mix records on the tape every call you make on it, its handles and its spring and glide patches, at the mix time you made it.
+
+```ts
+import { createHistory } from '@weasel-js/history';
+
+const m = mix(K, { history: { ms: 10_000, tape: createHistory }, stepMs: 5 });
+m.seek(m.now - 3000);
+```
+
+Going back, the mix puts itself back as it stood then: each voice's clock, weight and fade, the voices that had left since, back on the handles you hold, and each patch's own state from the nearest copy history kept. Voices cued since wait as `pending` until the mix gets to their cue again. Going forward, by a sync or another seek, it makes your recorded calls again at the times you made them, so it plays on as it did, frame for frame under `stepMs`.
+
+Keep passing your own clock to `sync`: the mix carries on from where you sought. A call you make while recorded calls lie ahead starts a new branch, and the tape keeps the old one beside it; `m.tape.branches()` lists them, and `m.tape.switchBranch(id)` picks one to play on.
 
 <ApiEntries word="score" />

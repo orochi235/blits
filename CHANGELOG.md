@@ -10,25 +10,31 @@ version and everything else the patch. Each release lists its changes as **Break
 
 - `sync` throws for a timestamp earlier than the last sync's, short of a `rebase`. It used to take
   one and half work: stateless voices moved back while a stateful patch without `stepMs` was handed
-  a negative `dt`. A host going back calls `rewind`.
-- `Mix` has a `rewind` method, which an engine of its own has to provide.
+  a negative `dt`. A host moving the mix calls `seek`.
+- `project` takes mix time, not the host's timestamp. The two differ only on a mix with its own
+  rate or one that was rebased, where `project(mix.now - 300)` reads 300 ms of mix time back.
+- `Mix` has `seek`, `now` and `tape`, which an engine of its own has to provide.
 
 ### Added
 
-- `mix.rewind(timestamp)` moves the live mix back to a timestamp on the host's clock, under
-  `history`, and plays on from there. What came after it is undone: voices cued since are gone,
-  voices that left since are back on the handles the host holds with `done` and `played` starting
-  over, and control changes, retargets, rate changes, announced marks and undrained events from
-  after it are dropped. State steps once from the nearest copy history kept, exact under `stepMs`.
-  Playing past a time again sends its events and books its marks and hits again. The host keeps
-  passing its own clock.
+- `mix.seek(time)` moves the live mix to a mix time and plays on from there, under `history` with
+  a `tape`. `history.tape` takes weasel-history's `createHistory` (`@weasel-js/history`), or
+  anything of the `Tape` shape, and the mix records every call the host makes on it, its handles
+  and its spring and glide patches. Back, the mix restores itself as it stood at the end of that
+  frame: voices that left since return on the handles the host holds, with `done` and `played`
+  starting over, and voices cued since wait `pending` on theirs. Forward, by a sync or a later
+  seek, the recorded calls play again at the mix times they were made. A call made while recorded
+  calls lie ahead starts a branch, and the tape keeps the old future: `mix.tape.branches()` lists
+  them and `switchBranch` picks one. State steps once from the nearest copy history kept, exact
+  under `stepMs`. Playing past a time again sends its events and books its marks and hits again.
+  The host keeps passing its own clock.
+- `mix.now` reads the mix clock, which `seek` and `project` take.
 
 ### Fixed
 
-- `project` reads a timestamp from before a `rebase` at the moment it named: it converted every
-  timestamp with the offset in force now, so a 1000 ms rise synced at 0 and 200, rebased and synced
-  at 10200 read 0 at 200, where the host had seen 20. History keeps each offset, and a timestamp
-  from before a `rewind` maps the same way.
+- `project` across a `rebase` reads the moment the host saw: it converted a host timestamp with
+  the offset in force now, so a 1000 ms rise synced at 0 and 200, rebased and synced at 10200 read
+  0 at 200, where the host had seen 20. Taking mix time, it reads 20.
 
 - A probe and `atRest` no longer allocate on the heap to find a subject's voices. Each passed the
   mix's clock, a fractional number, to a function too large for V8 to inline, which stores such a
