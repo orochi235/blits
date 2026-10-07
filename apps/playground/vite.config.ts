@@ -18,7 +18,7 @@ export default defineConfig({
   },
   server: {
     host: '::',
-    port: 4881,
+    port: stories ? 4882 : 4881,
     strictPort: true,
     fs: { allow: [searchForWorkspaceRoot(process.cwd())] },
   },

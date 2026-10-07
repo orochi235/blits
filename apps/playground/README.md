@@ -10,7 +10,7 @@ variant mechanism for UI ideas; an idea gets built into the app.
 npm run playground         # from the repo root: field docs from blits' types, then Vite on :: port 4881
 npm run playground:smoke   # build, then play every preset for a second in headless Chromium
 npm run playground:check   # typecheck, the pure tests and the smoke run
-npm run stories -w @blits/playground   # forge stories for the widgets
+npm run stories -w @blits/playground   # forge stories for the widgets, on port 4882
 npx vitest run apps/playground/test    # the pure modules
 ```
 
