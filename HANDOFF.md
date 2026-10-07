@@ -449,9 +449,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    channel section and the CHANGELOG say what it is. Mike chose that the channel picks its lerp
    space (`{ lerp: 'oklab' | 'oklch' }`, OKLab default) after a red-to-cyan render showed OKLab
    washing to pale gray and OKLCH sweeping through the hues between. What is left:
-   - **klieg moves to `color(last(), { lerp: 'oklch' })`** when it next bumps blits. Expected to
-     change no pixels, since every klieg effect voice plays at full weight with no locus; that is
-     inference, so confirm on klieg's Playwright specs before claiming it.
+   - **klieg moves to `color(last(), { lerp: 'oklch' })`** when it next bumps blits; filed in
+     klieg's `TODO.md` (`84c3f8f`).
    - `color({ lerp: 'oklch' })` runs off lanes, since a lane lerps a stock channel straight across.
    - **A glow writing `color()` stays on the lanes**: the bench's `glowk` rows are `glowc` with the
      color on `color()`. Medians of six fresh processes on this Mac under a load average of ~10,
