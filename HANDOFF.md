@@ -423,6 +423,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      unlikely — klieg's lighting, a fade over a whole sign and wod's transitions are unbounded by
      design; `target` is the likelier candidate once bounds absorb its spatial uses.
 
+5. **Work nobody will see** (2026-10-07, all unbuilt and unmeasured). Prompted by astv speeding
+   100 text animations into 2 s, most of them offscreen. Three cases, by what the host must add:
+
+   | Case | Blits knows already | Host adds |
+   |---|---|---|
+   | offscreen | what the host probes; an unprobed subject costs nothing on the general path | nothing, if lanes stop filling every subject the mix has met (`Mix.drain`'s doc in `src/types.ts`; the `sparse` row) and fill only those probed lately |
+   | too fast to see | each voice's span and the frame's gap | a policy: a voice ending between two syncs jumps to its end, since text that types in must still end typed, or stretches to a minimum number of frames |
+   | flicker | each channel's arithmetic and rate | which channels carry brightness, once on the kit; blits could cap reversals at WCAG's 3 a second per subject, stricter than WCAG's rule, which also weighs flashing area the host alone knows |
+
+   Bench an astv-shaped scene (100 short voices over a list mostly unprobed) before building any.
+   A reach that changes over time (item 4) is one way to say offscreen.
+
 ## Loose ends
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
