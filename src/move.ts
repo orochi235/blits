@@ -5,6 +5,7 @@ import { started } from './held.js';
 import type { Mixer } from './mixer.js';
 import { ownerReading } from './owner.js';
 import { mixAt, place, repin, startOf } from './place.js';
+import { lapse } from './spans.js';
 import { unplay } from './strays.js';
 import type { Voice } from './voice.js';
 
@@ -92,6 +93,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
     }
     if (!mix.projecting) schedule(mix, voice);
   }
+  if (mix.owners !== null) lapse(mix, now);
   mix.stirred = false;
   if (mix.retired.length > 0) prune(mix);
   forget(mix, now);

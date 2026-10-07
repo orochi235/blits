@@ -6,6 +6,7 @@ import { Named } from './named.js';
 import { childPlayed, Holding, mixTime, ownedElapsed, ownerPatch } from './owner.js';
 import { type Built, builtOf, durationOf, intosOf, type Scratch } from './patch.js';
 import { reading } from './reading.js';
+import type { Fitting } from './spans.js';
 import { Store } from './store.js';
 import type { Anchor, Channel, FadeSpec, Handle, Patch, Setting, VoiceSpec } from './types.js';
 
@@ -265,6 +266,8 @@ export class Voice<I, O> {
   handle: Handle<I> | null = null;
   /** For an owner, the voices it holds; null for any other voice. */
   holding: Holding<Voice<I, O>> | null;
+  /** For a span, its budget and how its children were last fitted; null for any other voice. */
+  fitting: Fitting | null = null;
   /**
    * `done` and `played`, made when first asked for, already settled if the voice is: most hosts
    * never await either, and a mix may hold tens of thousands of voices.

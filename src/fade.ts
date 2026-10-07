@@ -6,6 +6,7 @@ import type { Mixer } from './mixer.js';
 import type { Motions } from './motion.js';
 import { orphan } from './owner.js';
 import { startOf } from './place.js';
+import { lingers, refit } from './spans.js';
 import { unreach } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
 
@@ -155,7 +156,9 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
     for (const child of [...voice.holding.children])
       if (child.state !== 'done') retire(mix, child, voice.doneAt);
   if (voice.owner !== null) {
+    const span = voice.owner;
     const owner = orphan(voice);
-    if (owner !== null) retire(mix, owner, voice.doneAt);
+    if (owner !== null && !lingers(owner, voice.doneAt)) retire(mix, owner, voice.doneAt);
+    else if (span.fitting !== null && span.state !== 'done') refit(mix, span);
   }
 }

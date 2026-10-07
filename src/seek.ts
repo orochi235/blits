@@ -7,6 +7,7 @@ import type { Mixer } from './mixer.js';
 import type { Motions } from './motion.js';
 import { move } from './move.js';
 import { ownerReading } from './owner.js';
+import { refitAll } from './spans.js';
 import { Store } from './store.js';
 import { hostAt, replay } from './tape.js';
 import type { Tape } from './types.js';
@@ -254,6 +255,7 @@ function back<I, O>(mix: Mixer<I, O>, tape: Tape, t: number, u: number): void {
       mix.pins ??= new Map();
       mix.pins.set(voice, voice.pinned);
     }
+  refitAll(mix);
   mix.due = [];
   for (const voice of kept) schedule(mix, voice);
   mix.stir();

@@ -1,3 +1,4 @@
+import type { Fit, Order, Strength } from './fit.js';
 /**
  * One field of a delta, with its own arithmetic.
  *
@@ -383,7 +384,26 @@ export interface Booker {
  *
  * @category voice
  */
-export interface VoiceSpec<I, O, H = unknown> {
+/**
+ * How a voice or owner held by a span may give way so the span keeps its budget, which the span's
+ * fit reads. Anything it does not allow, it will not do. Read only under a span.
+ *
+ * @category score
+ */
+export interface SpanHints {
+  /** How many times faster than its own rate it may play. Default 1: no faster. */
+  faster?: number;
+  /** How many times slower than its own rate it may play. Default 1: no slower. */
+  slower?: number;
+  /** Whether it may start before the one before it ends, where the span's order would not. */
+  overlap?: boolean;
+  /** Whether it may jump to its end instead of playing. A span held by a span is never skipped. */
+  skip?: boolean;
+  /** How hard its own length holds against the span's budget. Default `weak`. */
+  firm?: Strength;
+}
+
+export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
   patch: Patch<I, O, unknown, H>;
   /**
    * Which subjects this voice reaches. Default: all of them. The predicate is fixed at `cue`; it
@@ -473,7 +493,7 @@ export interface VoiceSpec<I, O, H = unknown> {
  *
  * @category voice
  */
-export interface OwnerSpec<I, H = unknown> {
+export interface OwnerSpec<I, H = unknown> extends SpanHints {
   /**
    * When the owner starts, on its own owner's clock: the host's for an owner on the mix, as a
    * voice's `start` is. Default: now.
@@ -502,6 +522,58 @@ export interface OwnerSpec<I, H = unknown> {
   anchor?: Placement;
   /** The owner it plays under, so owners nest. */
   owner?: Handle<I>;
+}
+
+/**
+ * What `span` takes: an owner with a budget, which lays out the voices it holds in an order and
+ * fits them into the budget.
+ *
+ * @category score
+ */
+export interface SpanSpec<I, H = unknown> extends OwnerSpec<I, H> {
+  /** Its budget, ms on its own clock. Default: none, so its children only keep their order. */
+  duration?: number;
+  /** How hard the budget holds against its children's own lengths. Default `strong`. */
+  firm?: Strength;
+  /** How its children are laid out, in the order they were cued. Default `queue`. */
+  order?: Order;
+  /** How far through the one before a child starts under `stagger`, 0..1. Default 0.5. */
+  share?: number;
+  /** How the children are fitted. Default `chain(compress(), overlap(), skip())`. */
+  fit?: Fit;
+  /**
+   * What happens where the fit leaves them too long for a span at least `strong`: `instant` jumps
+   * every child weaker than the span to its end at once, and `overrun` lets them run long.
+   * Default `instant`.
+   */
+  fallback?: 'instant' | 'overrun';
+}
+
+/**
+ * How a span's last fit came out.
+ *
+ * @category score
+ */
+export interface Fitted {
+  /** Its budget, ms on its own clock; Infinity for none. */
+  budget: number;
+  /** Where its children end, ms on its own clock from its start. */
+  length: number;
+  /** How far `length` runs past the budget, 0 where it does not. */
+  over: number;
+  /** How many children it jumps to their end. */
+  skipped: number;
+  /** Whether the fit failed and `fallback` decided. */
+  fell: boolean;
+}
+
+/**
+ * A span's handle: an owner's, and how its children were last fitted.
+ *
+ * @category score
+ */
+export interface SpanHandle<I = unknown> extends Handle<I> {
+  readonly fitted: Fitted;
 }
 
 /**
@@ -757,6 +829,15 @@ export interface Mix<I, O, H = unknown> {
    * nest. Throws for a `loop`: a pass would have to restart its children.
    */
   owns(spec: OwnerSpec<I, H>): Handle<I>;
+  /**
+   * Cues a span: an owner that lays out the voices it holds in `order` and fits them into its
+   * `duration`, again each time one joins or leaves early. A child's start and rate are the
+   * span's to set, so it takes neither `start` nor an anchored start; its `SpanHints` say how it
+   * may give way. A span with a budget stays until the budget has passed, though its children
+   * finish sooner, so late ones can still join, and its `end` mark is where its children end or
+   * its budget does, whichever is later. A voice that loops for good cannot join one.
+   */
+  span(spec: SpanSpec<I, H>): SpanHandle<I>;
 
   /**
    * The host reports the clock, once a frame. Nothing advances at the call. Throws for a timestamp

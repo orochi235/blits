@@ -40,6 +40,7 @@ import { project } from './project.js';
 import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
 import { seek } from './seek.js';
+import { Fitting, refit } from './spans.js';
 import { Store } from './store.js';
 import { record, replay, tapeOf } from './tape.js';
 import type {
@@ -58,6 +59,8 @@ import type {
   Projection,
   Sent,
   Signal,
+  SpanHandle,
+  SpanSpec,
   Tape,
   VoiceSpec,
 } from './types.js';
@@ -241,6 +244,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   handles: HandleHost<I, O> | null = null;
   /** What `book` made, still booking; null while there is none. */
   bookers: Book<I, O>[] | null = null;
+  /** The fit a span being cued takes, which `cue` hands its voice. */
+  fitting: Fitting | null = null;
   /** Every owner still in the mix, null until one is cued. */
   owners: Voice<I, O>[] | null = null;
 
@@ -295,6 +300,17 @@ export class Mixer<I, O> implements Mix<I, O> {
     if ((spec as { loop?: unknown }).loop !== undefined)
       throw new Error('blits: an owner does not loop: a pass would have to restart its children');
     return this.cue({ ...spec, patch: ownerPatch as Patch<I, O, unknown> });
+  }
+
+  span(spec: SpanSpec<I>): SpanHandle<I> {
+    this.fitting = new Fitting(spec as SpanSpec<unknown>);
+    try {
+      const handle = this.owns(spec);
+      refit(this, this.owners?.find((v) => v.handle === handle) as Voice<I, O>);
+      return handle as SpanHandle<I>;
+    } finally {
+      this.fitting = null;
+    }
   }
 
   sync(timestamp: number): void {

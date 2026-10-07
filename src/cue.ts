@@ -5,9 +5,10 @@ import { started } from './held.js';
 import { handle } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import { motionOf } from './motion.js';
-import { adopt, ownerReading } from './owner.js';
+import { adopt, ownerPatch, ownerReading } from './owner.js';
 import { durationOf } from './patch.js';
 import { checkPlacement, localNow, mixAt, pin, place } from './place.js';
+import { checkChild, refit } from './spans.js';
 import { motionOwner } from './strays.js';
 import { record } from './tape.js';
 import type { Channel, Handle, VoiceSpec } from './types.js';
@@ -50,15 +51,16 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
   const anchored = anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
   // A voice an owner holds is placed on the owner's clock: ms from when it starts.
   const local = owner === null ? mix.now : ownerReading(owner, mix.now);
-  const start = anchored
-    ? Number.POSITIVE_INFINITY
-    : owner !== null
-      ? (spec.start ?? (local > 0 ? local : 0))
-      : spec.start !== undefined
-        ? mixAt(mix, spec.start - mix.offset)
-        : Number.isNaN(mix.now)
-          ? 0
-          : mix.now;
+  const start =
+    anchored || owner?.fitting
+      ? Number.POSITIVE_INFINITY
+      : owner !== null
+        ? (spec.start ?? (local > 0 ? local : 0))
+        : spec.start !== undefined
+          ? mixAt(mix, spec.start - mix.offset)
+          : Number.isNaN(mix.now)
+            ? 0
+            : mix.now;
   const voice = new Voice<I, O>(
     mix.nextId++,
     spec,
@@ -72,6 +74,8 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
     mix.send,
     owner,
   );
+  if (patch === ownerPatch && mix.fitting !== null) voice.fitting = mix.fitting;
+  if (owner?.fitting) checkChild(spec, voice);
   if (mix.pace !== null && owner === null && spec.start !== undefined && voice.state === 'pending')
     voice.pinned = spec.start - mix.offset;
   enter(mix, voice);
@@ -136,6 +140,7 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
       changed(mix, voice);
     }
   }
+  if (owner?.fitting) refit(mix, owner);
   // After placing, so the controls it starts with are where its anchors put it at the cue.
   if (mix.opts.history) {
     voice.log = [];

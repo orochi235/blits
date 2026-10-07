@@ -62,7 +62,10 @@ export function markOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, mark: Mark): 
   let outAt: number | undefined;
   if (out !== null) outAt = out.at;
   else if (Number.isFinite(voice.outAt)) outAt = voice.outAt;
-  else if (!voice.freezesAfter && Number.isFinite(voice.span)) {
+  else if (voice.fitting !== null) {
+    const t = voice.timeAt(voice.fitting.end);
+    if (Number.isFinite(t)) outAt = Math.max(start, t);
+  } else if (!voice.freezesAfter && Number.isFinite(voice.span)) {
     const t = voice.timeAt(voice.span + voice.latest);
     if (Number.isFinite(t)) outAt = Math.max(start, t);
   }

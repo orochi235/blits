@@ -1,5 +1,18 @@
 export type { NumberOptions } from './channels.js';
 export { hex, kit, last, max, mixHex, mul, sum, vec } from './channels.js';
+export type { Claim, Fit, FitPlan, Order, SpanClaim, Strength } from './fit.js';
+export {
+  chain,
+  collapse,
+  compress,
+  layout,
+  lenient,
+  overlap,
+  overrun,
+  plain,
+  skip,
+  stretch,
+} from './fit.js';
 export { mix, mixer } from './mixer.js';
 export type { Motion, Moving, PerSubject, Value } from './motion.js';
 export { glide, spring, tween } from './motion.js';
@@ -20,6 +33,7 @@ export type {
   Engine,
   FadeOptions,
   FadeSpec,
+  Fitted,
   Handle,
   Hit,
   Keyframe,
@@ -37,6 +51,9 @@ export type {
   Sent,
   Setting,
   Signal,
+  SpanHandle,
+  SpanHints,
+  SpanSpec,
   Tape,
   TapeBranch,
   TapeMaker,
