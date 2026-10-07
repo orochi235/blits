@@ -1,85 +1,56 @@
 import { ownBlends } from './blend.js';
 import { index } from './chain.js';
 import { copyHeld, last } from './history.js';
-import type { Mixer } from './mixer.js';
+import { Mixer } from './mixer.js';
 import { move } from './move.js';
 import { heldByInput, ownerReading, relink } from './owner.js';
 import { pin } from './place.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
 import { hostAt } from './tape.js';
-import type { Doubt, Projection } from './types.js';
+import { Transport } from './transport.js';
+import type { Doubt, Mix, Projection, TransportProjection } from './types.js';
 import { unreached } from './unreached.js';
 import type { Controls, Subject, Voice } from './voice.js';
 
-/** A projection to mix time `t` through `c`, a mixer of its own the mix has just made. */
-export function project<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number): Projection<I, O> {
-  const u = hostAt(mix, t);
-  const pace = mix.pace;
-  c.projecting = true;
-  c.pose = mix.pose;
-  c.offset = mix.offset;
-  c.u = u;
-  c.wantsPose = mix.wantsPose;
-  c.nextId = mix.nextId;
-  c.reducedNow = mix.reducedNow;
-  if (Number.isNaN(mix.now) || t >= mix.now) {
-    c.now = mix.now;
-    c.pace = pace === null ? null : pace.until(Number.POSITIVE_INFINITY);
-    c.cued = mix.cued
-      .filter((v) => v.state !== 'done')
-      .map((v) => {
-        const copy = v.copy((subject) => carry(mix, v, subject));
-        const at = mix.pins?.get(v);
-        if (at !== undefined) pin(c, copy, at);
-        return copy;
-      });
-    ownBlends(c.cued);
-    if (mix.owners !== null) relink(c.cued);
-    c.announced = mix.announced.map((a) => ({ ...a }));
-    count(c);
-    move(c, t);
-  } else {
-    const history = mix.opts.history;
+/**
+ * Every mix on a transport read at mix time `t`, through copies of them on a transport of their
+ * own, moved together so an anchor across mixes answers as it would live.
+ */
+export function projectAll(transport: Transport, t: number): TransportProjection {
+  const ahead = Number.isNaN(transport.now) || t >= transport.now;
+  if (!ahead) {
+    const history = transport.history;
     if (!history) throw new Error('blits: reading back needs a mix made with history');
-    if (t < mix.now - history.ms)
+    if (t < transport.now - history.ms)
       throw new Error(`blits: ${t} is older than this mix's history reaches`);
-    c.now = t;
-    c.pace = pace === null ? null : pace.until(u);
-    c.backward = true;
-    const was = last(mix.hostLog, t, true);
-    const host = mix.opts.host;
-    const then =
-      was && typeof host === 'object' && host !== null
-        ? Object.assign(Object.create(host) as object, was.fields)
-        : undefined;
-    if (was) c.hostThen = was;
-    c.announced = mix.announced.filter((a) => a.made < t).map((a) => ({ ...a }));
-    c.cued = [...mix.cued, ...mix.gone]
-      .filter((v) => v.cuedAt <= t && v.doneAt > t)
-      .sort((a, b) => a.id - b.id)
-      .map((v) => {
-        const log = v.log as Controls[];
-        const copy = v.copy(
-          (subject) => recall(mix, v, subject, t),
-          last(log, t, (e) => e.sync) ?? (log[0] as Controls),
-        );
-        if (then !== undefined) copy.setting.host = then;
-        return copy;
-      });
-    ownBlends(c.cued);
-    if (mix.owners !== null) relink(c.cued);
-    for (const copy of c.cued)
-      copy.state =
-        (copy.owner === null ? t : ownerReading(copy.owner, t)) < copy.start
-          ? 'pending'
-          : copy.out && copy.out.at <= t
-            ? 'fading'
-            : copy.freezesAfter && copy.elapsedAt(t) >= copy.span + copy.latest
-              ? 'frozen'
-              : 'live';
-    count(c);
   }
+  const u = hostAt(transport, t);
+  const pace = transport.pace;
+  const c = new Transport(undefined, true);
+  c.offset = transport.offset;
+  c.u = u;
+  c.nextId = transport.nextId;
+  c.now = ahead ? transport.now : t;
+  c.pace = pace === null ? null : pace.until(ahead ? Number.POSITIVE_INFINITY : u);
+  c.announced = (ahead ? transport.announced : transport.announced.filter((a) => a.made < t)).map(
+    (a) => ({ ...a }),
+  );
+  const copies = new Map<Mixer<unknown, unknown>, Mixer<unknown, unknown>>();
+  for (const mix of transport.members) {
+    const copy = new Mixer<unknown, unknown>(mix.kit, {
+      ...mix.opts,
+      history: undefined,
+      lanes: false,
+      transport: c,
+    });
+    copy.slot = mix.slot;
+    copy.projecting = true;
+    copies.set(mix, copy);
+    if (ahead) copyAhead(mix, copy);
+    else copyBack(mix, copy, t);
+  }
+  if (ahead) for (const copy of copies.values()) move(copy, t);
   const read = <T>(f: () => T): T => {
     reading.live = false;
     try {
@@ -90,13 +61,77 @@ export function project<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number): Proj
   };
   return {
     timestamp: t,
-    probe: (subject, out) => read(() => c.fold(subject, out)),
-    assess: (subject) =>
-      read(() => {
-        c.fold(subject);
-        return doubts(c, subject);
-      }),
+    of<I, O, H>(mix: Mix<I, O, H>): Projection<I, O> {
+      const copy = copies.get(mix as unknown as Mixer<unknown, unknown>) as Mixer<I, O> | undefined;
+      if (copy === undefined) throw new Error('blits: that mix is not on this transport');
+      return {
+        timestamp: t,
+        probe: (subject, out) => read(() => copy.fold(subject, out)),
+        assess: (subject) =>
+          read(() => {
+            copy.fold(subject);
+            return doubts(copy, subject);
+          }),
+      };
+    },
   };
+}
+
+/** A mix's copy for a read ahead: its voices as they stand, each subject carried from the live one. */
+function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
+  c.pose = mix.pose;
+  c.wantsPose = mix.wantsPose;
+  c.reducedNow = mix.reducedNow;
+  c.cued = mix.cued
+    .filter((v) => v.state !== 'done')
+    .map((v) => {
+      const copy = v.copy((subject) => carry(mix, v, subject));
+      const at = mix.pins?.get(v);
+      if (at !== undefined) pin(c, copy, at);
+      return copy;
+    });
+  ownBlends(c.cued);
+  if (mix.owners !== null) relink(c.cued);
+  count(c);
+}
+
+/** A mix's copy for a read back to `t`: its voices then, from the controls and copies kept. */
+function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number): void {
+  c.pose = mix.pose;
+  c.wantsPose = mix.wantsPose;
+  c.reducedNow = mix.reducedNow;
+  c.backward = true;
+  const was = last(mix.hostLog, t, true);
+  const host = mix.opts.host;
+  const then =
+    was && typeof host === 'object' && host !== null
+      ? Object.assign(Object.create(host) as object, was.fields)
+      : undefined;
+  if (was) c.hostThen = was;
+  c.cued = [...mix.cued, ...mix.gone]
+    .filter((v) => v.cuedAt <= t && v.doneAt > t)
+    .sort((a, b) => a.id - b.id)
+    .map((v) => {
+      const log = v.log as Controls[];
+      const copy = v.copy(
+        (subject) => recall(mix, v, subject, t),
+        last(log, t, (e) => e.sync) ?? (log[0] as Controls),
+      );
+      if (then !== undefined) copy.setting.host = then;
+      return copy;
+    });
+  ownBlends(c.cued);
+  if (mix.owners !== null) relink(c.cued);
+  for (const copy of c.cued)
+    copy.state =
+      (copy.owner === null ? t : ownerReading(copy.owner, t)) < copy.start
+        ? 'pending'
+        : copy.out && copy.out.at <= t
+          ? 'fading'
+          : copy.freezesAfter && copy.elapsedAt(t) >= copy.span + copy.latest
+            ? 'frozen'
+            : 'live';
+  count(c);
 }
 
 /** Recounts what the fold's shortcuts depend on, for a projection's freshly copied voices. */

@@ -21,6 +21,7 @@ export { keys, patch } from './patch.js';
 export { gate, lag, level, peak, slew } from './signals.js';
 export type { Ticked, Ticker, TickerOptions } from './ticker.js';
 export { ticker } from './ticker.js';
+export { transport } from './transport.js';
 export type {
   Anchor,
   BookedHit,
@@ -58,5 +59,8 @@ export type {
   TapeBranch,
   TapeMaker,
   TapeOp,
+  Transport,
+  TransportOptions,
+  TransportProjection,
   VoiceSpec,
 } from './types.js';

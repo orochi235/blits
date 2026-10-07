@@ -60,36 +60,47 @@ export function checkPlacement<I, O>(
     throw new Error('blits: a voice takes start or an anchored start, not both');
   const name = spec.name;
   if (name === undefined) return;
-  // A voice is known by its owner, its score and its name; a bare name in an anchor is in the
-  // asker's score under the asker's owner.
-  const key = (o: Voice<I, O> | null, score: string | undefined, n: string) =>
-    `${o?.id ?? 0}\u0000${score ?? ''}\u0000${n}`;
-  const named = (a: Anchor, score: string | undefined, o: Voice<I, O> | null): string[] => {
-    if ('all' in a) return a.all.flatMap((m) => named(m, score, o));
-    if ('any' in a) return a.any.flatMap((m) => named(m, score, o));
+  // A voice is known by its owner, its score and its name, and by its mix where it names no score;
+  // a bare name in an anchor is in the asker's score under the asker's owner.
+  const key = (o: Voice<I, O> | null, score: string | undefined, n: string, slot: number) =>
+    `${score === undefined ? slot : ''}\u0000${o?.id ?? 0}\u0000${score ?? ''}\u0000${n}`;
+  const named = (
+    a: Anchor,
+    score: string | undefined,
+    o: Voice<I, O> | null,
+    slot: number,
+  ): string[] => {
+    if ('all' in a) return a.all.flatMap((m) => named(m, score, o, slot));
+    if ('any' in a) return a.any.flatMap((m) => named(m, score, o, slot));
     const q = 'of' in a ? a.of : 'after' in a ? a.after : 'with' in a ? a.with : a.before;
-    if (typeof q === 'string') return [key(o, score, q)];
-    return q.name === undefined ? [] : [key(o, q.score ?? score, q.name)];
+    if (typeof q === 'string') return [key(o, score, q, slot)];
+    return q.name === undefined ? [] : [key(o, q.score ?? score, q.name, slot)];
   };
-  const names = (p: Placement, score: string | undefined, o: Voice<I, O> | null): string[] =>
+  const names = (
+    p: Placement,
+    score: string | undefined,
+    o: Voice<I, O> | null,
+    slot: number,
+  ): string[] =>
     [p.start, p.in, p.out, p.end].flatMap((a) =>
-      a === undefined || typeof a === 'number' ? [] : named(a, score, o),
+      a === undefined || typeof a === 'number' ? [] : named(a, score, o, slot),
     );
-  const self = key(owner, spec.score, name);
+  const self = key(owner, spec.score, name, mix.slot);
   const seen = new Set<string>();
-  const waits = names(anchor, spec.score, owner);
+  const waits = names(anchor, spec.score, owner, mix.slot);
   while (waits.length > 0) {
     const n = waits.pop() as string;
     if (n === self) throw new Error(`blits: ${name}'s placement waits on itself`);
     if (seen.has(n)) continue;
     seen.add(n);
-    for (const v of mix.cued)
-      if (
-        v.spec.name !== undefined &&
-        key(v.owner, v.spec.score, v.spec.name) === n &&
-        v.spec.anchor
-      )
-        waits.push(...names(v.spec.anchor, v.spec.score, v.owner));
+    for (const m of mix.transport.members)
+      for (const v of m.cued as Voice<I, O>[])
+        if (
+          v.spec.name !== undefined &&
+          key(v.owner, v.spec.score, v.spec.name, m.slot) === n &&
+          v.spec.anchor
+        )
+          waits.push(...names(v.spec.anchor, v.spec.score, v.owner, m.slot));
   }
 }
 
@@ -220,20 +231,24 @@ function timeOf<I, O>(
   const score = q.score ?? self.spec.score;
   const anywhere = q.score !== undefined;
   const found: { order: number; t: number | undefined }[] = [];
-  for (const v of [...mix.gone, ...mix.cued])
-    if (
-      v !== self &&
-      v.spec.score === score &&
-      (anywhere || v.owner === self.owner) &&
-      (q.name === undefined || v.spec.name === q.name) &&
-      (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
-      (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes))
-    )
-      found.push({ order: v.id, t: markOf(mix, v, mark) });
+  // A query naming a score looks in every mix on the transport; one naming none, in its own.
+  const mixes = anywhere ? (mix.transport.members as unknown as Mixer<I, O>[]) : [mix];
+  for (const m of mixes)
+    for (const v of [...m.gone, ...m.cued])
+      if (
+        v !== self &&
+        v.spec.score === score &&
+        (anywhere || v.owner === self.owner) &&
+        (q.name === undefined || v.spec.name === q.name) &&
+        (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
+        (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes))
+      )
+        found.push({ order: v.id, t: markOf(m, v, mark) });
   if (q.writes === undefined && (anywhere || self.owner === null))
     for (const a of mix.announced)
       if (
         a.score === score &&
+        (score !== undefined || a.slot === mix.slot) &&
         (q.name === undefined || a.name === q.name) &&
         (q.tag === undefined || a.tags.includes(q.tag))
       )

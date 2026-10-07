@@ -34,16 +34,16 @@ import { listed } from './marks.js';
 import type { MotionOwner, Motions } from './motion.js';
 import { move, nextFrame, waits } from './move.js';
 import { ownerPatch } from './owner.js';
-import { Pace } from './pace.js';
+import type { Pace } from './pace.js';
 import { pin } from './place.js';
-import { project } from './project.js';
+import { projectAll } from './project.js';
 import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
 import { seek } from './seek.js';
 import { Fitting, refit } from './spans.js';
 import { Store } from './store.js';
 import { record } from './tape.js';
-import { type Announced, Transport } from './transport.js';
+import { type Announced, announce, Transport } from './transport.js';
 import type {
   Booker,
   BookOptions,
@@ -99,6 +99,11 @@ export class Mixer<I, O> implements Mix<I, O> {
   pose = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();
   /** The clock this mix plays on, which also holds its tape and the marks announced on it. */
   readonly transport: Transport;
+  /** Its place among the mixes on its transport, in the order they joined. */
+  slot = -1;
+  /** Taken off its transport, so it takes no more calls until a seek puts it back. */
+  dropped = false;
+  readonly name: string | undefined;
   /** This mix's frame among every mix's: moved by a sync, and by a control change or drop within one. */
   frame = nextFrame();
   /** Pending voices whose start the host gave, by its host time, kept where the rate puts it. */
@@ -136,8 +141,10 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.stirs++;
     if (this.stirred) return;
     this.stirred = true;
+    if (this.syncing) return;
     const fns = this.stirFns;
-    if (fns !== null && !this.syncing) for (const fn of [...fns]) fn();
+    if (fns !== null) for (const fn of [...fns]) fn();
+    this.transport.woke();
   }
 
   onWake(fn: () => void): () => void {
@@ -233,8 +240,26 @@ export class Mixer<I, O> implements Mix<I, O> {
       this.slotOf.set(k, i);
     });
     this.lanes = opts.lanes === false ? null : new Lanes<I, O>(laneHost(this));
-    this.transport = new Transport(opts.history);
+    this.name = opts.name;
+    const shared = opts.transport as Transport | undefined;
+    if (shared !== undefined) {
+      if (opts.history !== undefined)
+        throw new Error(
+          'blits: a mix on a transport keeps the history the transport keeps, not its own',
+        );
+      this.opts = { ...opts, history: shared.history };
+      this.transport = shared;
+    } else this.transport = new Transport(opts.history, false);
     this.transport.join(this as unknown as Mixer<unknown, unknown>);
+  }
+
+  /** Throws where the clock is a shared transport's, which only the transport moves. */
+  private own(what: string): Transport {
+    if (this.transport.shared)
+      throw new Error(
+        `blits: ${this.name ?? 'this mix'} plays on a transport, so ${what} goes to the transport`,
+      );
+    return this.transport;
   }
 
   // The transport's clock, read and written as the mix's own by every module that moves it.
@@ -294,6 +319,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   cue(spec: VoiceSpec<I, O>): Handle<I> {
+    this.attached();
     const engine = this.opts.engine ?? mixer;
     if (!engine.runs.has(spec.patch.form))
       throw new Error(`blits: engine ${engine.name} does not run ${spec.patch.form} patches`);
@@ -334,7 +360,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   sync(timestamp: number): void {
-    this.transport.sync(timestamp);
+    this.own('sync').sync(timestamp);
   }
 
   book(opts: BookOptions): Booker {
@@ -356,31 +382,25 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   seek(time: number): void {
     if (this.projecting) throw new Error('blits: a projection does not seek');
-    seek(this.transport, time);
+    seek(this.own('seek'), time);
   }
 
   project(time: number): Projection<I, O> {
-    const c = new Mixer<I, O>(this.kit, { ...this.opts, history: undefined, lanes: false });
-    return project(this, c, time);
+    return projectAll(this.transport, time).of(this);
   }
 
   announce(
     name: string,
     opts: { at?: number; score?: string; tags?: readonly string[] } = {},
   ): void {
-    const at = opts.at !== undefined ? opts.at - this.offset : this.u;
-    const mark = {
-      name,
-      score: opts.score,
-      tags: opts.tags ?? none,
-      at,
-      made: Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now,
-      order: this.nextId++,
-    };
-    this.announced.push(mark);
-    record(this, 'announce', () => {
-      this.announced.push({ ...mark });
-    });
+    this.attached();
+    announce(this.transport, name, opts, this.slot, this.name);
+  }
+
+  /** Throws for a mix taken off its transport. */
+  attached(): void {
+    if (this.dropped)
+      throw new Error(`blits: ${this.name ?? 'this mix'} was dropped from its transport`);
   }
 
   marks(from: number, to: number): Marked[] {
@@ -420,7 +440,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   rebase(): void {
-    this.transport.rebase();
+    this.own('rebase').rebase();
   }
 
   voices(tag?: string): Handle<I>[] {
@@ -455,11 +475,11 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   set rate(r: number) {
-    this.transport.ramp(r, 0);
+    this.own('rate').ramp(r, 0);
   }
 
   ramp(rate: number, over: number): void {
-    this.transport.ramp(rate, over);
+    this.own('ramp').ramp(rate, over);
   }
 
   /** Whether a voice will change no pose from `now` on, short of a change made to it. */

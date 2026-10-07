@@ -1,6 +1,7 @@
 import type { Listed } from './book.js';
 import type { Mixer } from './mixer.js';
 import { startOf } from './place.js';
+import type { Transport } from './transport.js';
 import type { Mark } from './types.js';
 import { none, type Voice } from './voice.js';
 
@@ -16,20 +17,55 @@ export function readingAt<I, O>(mix: Mixer<I, O>, u: number): number {
 
 /** Every mark between two host timestamps, earliest first, with the order that tells each apart. */
 export function listed<I, O>(mix: Mixer<I, O>, from: number, to: number): Listed[] {
+  const out = voiceMarks(mix, from, to);
+  for (const a of announcedMarks(mix.transport, from, to))
+    if (a.score !== undefined || a.slot === mix.slot) out.push(a.listed);
+  return sorted(out);
+}
+
+/** Every mark of every mix on a transport and every one announced on it, earliest first. */
+export function listedAll(transport: Transport, from: number, to: number): Listed[] {
+  const out: Listed[] = [];
+  for (const m of transport.members) out.push(...voiceMarks(m, from, to));
+  for (const a of announcedMarks(transport, from, to)) out.push(a.listed);
+  return sorted(out);
+}
+
+function sorted(out: Listed[]): Listed[] {
+  return out.sort((a, b) => a.timestamp - b.timestamp || a.order - b.order);
+}
+
+function announcedMarks(
+  transport: Transport,
+  from: number,
+  to: number,
+): { score: string | undefined; slot: number; listed: Listed }[] {
+  const lo = from - transport.offset;
+  const hi = to - transport.offset;
+  const out: { score: string | undefined; slot: number; listed: Listed }[] = [];
+  for (const a of transport.announced)
+    if (a.at >= lo && a.at <= hi)
+      out.push({
+        score: a.score,
+        slot: a.slot,
+        listed: {
+          timestamp: a.at + transport.offset,
+          mark: undefined,
+          voice: undefined,
+          score: a.score,
+          name: a.name,
+          tags: a.tags,
+          mix: a.mix,
+          order: a.order,
+        },
+      });
+  return out;
+}
+
+function voiceMarks<I, O>(mix: Mixer<I, O>, from: number, to: number): Listed[] {
   const lo = from - mix.offset;
   const hi = to - mix.offset;
   const out: Listed[] = [];
-  for (const a of mix.announced)
-    if (a.at >= lo && a.at <= hi)
-      out.push({
-        timestamp: a.at + mix.offset,
-        mark: undefined,
-        voice: undefined,
-        score: a.score,
-        name: a.name,
-        tags: a.tags,
-        order: a.order,
-      });
   for (const voice of [...mix.cued, ...mix.gone]) {
     for (const mark of ['start', 'in', 'coast', 'out', 'end'] as const) {
       const m = markOf(mix, voice, mark);
@@ -42,11 +78,11 @@ export function listed<I, O>(mix: Mixer<I, O>, from: number, to: number): Listed
         score: voice.spec.score,
         name: voice.spec.name,
         tags: voice.spec.tags ?? none,
+        mix: mix.name,
         order: voice.id,
       });
     }
   }
-  out.sort((a, b) => a.timestamp - b.timestamp || a.order - b.order);
   return out;
 }
 

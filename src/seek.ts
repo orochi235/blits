@@ -160,6 +160,7 @@ export function seek(transport: Transport, t: number): void {
   } else {
     const n = tape.depthAt(t);
     if (n < tape.undoDepth()) tape.goto(n);
+    transport.undrop(t);
     // What history kept after `t` is let go; the tape holds the calls that made it.
     transport.announced = transport.announced.filter((a) => a.made <= t);
     transport.pace?.cut(u);
