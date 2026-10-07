@@ -76,7 +76,11 @@ export function shareOf(order: Order, stagger: number): number {
   return order === 'queue' ? 1 : order === 'together' ? 0 : stagger;
 }
 
-/** The plan before any fit: every child at its own rate, played, in the span's order. */
+/**
+ * The plan before any fit: every child at its own rate, played, in the span's order.
+ *
+ * @category score
+ */
 export function plain(span: SpanClaim, kids: readonly Claim[]): FitPlan {
   return {
     rate: kids.map(() => 1),
