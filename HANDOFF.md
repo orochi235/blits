@@ -474,12 +474,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      runs overlapping the other side's.
 
 7. **Name the span vocabulary — blocks the next release.** `span`, `fit`, `fallback`,
-   `fitted`, `lenient`, `stretch`, `collapse`, `compress`, and the hints `faster`, `slower`,
+   `fitted`, `lenient`, `collapse`, and the hints `faster`, `slower`,
    `overlap`, `skip`, `firm` are working names, on `main` and unreleased; `all`/`any` are picked.
    The sheet (`docs/vocabulary.json`, served on :4873) names `fit` once; the fits themselves
    (`overlap`, `skip`, `collapse`, `overrun`, `chain`, `lenient`) are its sub-operations, and the
-   retiming every span runs before its fit is another, listed in its gloss and named in a later pass (Mike, 2026-10-07). None is
-   picked yet.
+   retiming every span runs before its fit is another, listed in its gloss and named in a later pass (Mike, 2026-10-07). Only `fit`
+   is picked (`fitstrategy` in the picks file).
 
 9. **The history adapter is drafted and unbuilt** (2026-10-07, with astv-f5): the transport
    spec's "History behind an adapter" section, which ends with what is left to settle. Mike has
