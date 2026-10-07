@@ -317,7 +317,8 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
   <span class="cm">/** The fields of `setting.host` it reads. `cue` refuses a mix whose host lacks one. */</span>
   readonly reads?: readonly string[];
   <span class="cm">/** `phase` is 0..1 across one pass, wrapping. Not asked for a subject its voice gives no weight, unless the
-     voice is fading to rest; `step` still runs. */</span>
+     voice is fading to rest; `step` still runs. A `keys` patch's stops are not read there either, unless its
+     voice is in a locus. */</span>
   at(phase: number, subject: I, setting: Setting&lt;S, H&gt;): Partial&lt;O&gt;;
 
   <span class="cm">/** Per-subject state, created on the first frame this patch sees a subject. */</span>

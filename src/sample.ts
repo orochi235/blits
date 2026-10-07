@@ -117,8 +117,8 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
         data[o + Row.SAMPLED] = Sampled.BARE;
         lane.deltas[p] = null;
       }
-      const share = left(ease, progress(elapsed, runs[b] as number, runs[b + 2] as number));
       if (w <= 0) continue;
+      const share = left(ease, progress(elapsed, runs[b] as number, runs[b + 2] as number));
       const values = ch.values;
       const base = slot * n;
       const x = b + 3;

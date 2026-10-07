@@ -135,12 +135,14 @@ const rows = [
   // difference. A reach bounded to the glow would pay for 2% of it. `glowc` also writes color,
   // as the playground's glow does; hex runs on no lane, so the glow and the voice under it leave
   // the lanes together. `glowk` writes it to a `color()` channel instead,
-  // and `glowl` to a `color(last())`.
+  // and `glowl` to a `color(last())`. `glowkeys` is `glowc` as keys, which a subject at weight 0
+  // does not read.
   ['glowbase', 10000, 1],
   ['glow', 10000, 2],
   ['glowc', 10000, 2],
   ['glowk', 10000, 2],
   ['glowl', 10000, 2],
+  ['glowkeys', 10000, 2],
   // One voice per subject, each targeted at its own: magicsmoke's faults on one shared mix.
   ['own', 100, 1],
   ['own', 1000, 1],
@@ -182,6 +184,7 @@ const rows = [
   ['glowbase-', 10000, 1],
   ['glow-', 10000, 2],
   ['glowc-', 10000, 2],
+  ['glowkeys-', 10000, 2],
   ['probed-', 10000, 2],
   ['sparse-', 10000, 1],
   // Read through `pull` into one array per channel instead of a probe per subject.
@@ -196,6 +199,7 @@ const rows = [
   ['glowc^', 10000, 2],
   ['glowk^', 10000, 2],
   ['glowl^', 10000, 2],
+  ['glowkeys^', 10000, 2],
   ['keyses^', 10000, 1],
   ['churn^', 10000, 1],
   // weasel's churn: the stopped voice's subject leaves for good and a new one arrives, read by
@@ -222,6 +226,8 @@ const chosen =
   only.length > 0
     ? rows.filter(([form, n]) => only.includes(form) || only.includes(`${form}:${n}`))
     : rows;
+// Padded to the longest of every row, so rows run in separate processes still line up.
+const wide = Math.max(...rows.map(([form]) => form.length));
 for (const [i, [form, n, voices]] of chosen.entries()) {
   const off = form.endsWith('-');
   const pulls = form.endsWith('^');
@@ -332,6 +338,14 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       patch: patch(1000, () => ({ gain: 1.5, color: 0xffe08a }), { writes: ['gain', 'color'] }),
       weight: near,
     });
+  if (kind === 'glowkeys')
+    m.cue({
+      patch: keys(1000, [
+        { at: 0, delta: { gain: 1.5, color: 0xffe08a } },
+        { at: 1, delta: { gain: 1.2, color: 0xffffff } },
+      ]),
+      weight: near,
+    });
   for (let v = 0; !own && !glow && kind !== 'blend' && v < voices; v++) {
     const p =
       kind === 'keys'
@@ -415,7 +429,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   await new Promise((r) => setTimeout(r, 0));
   const ns = (ms * 1e6) / (n * voices);
   console.log(
-    `${String(i + 1).padStart(2)}/${chosen.length}  ${form.padEnd(7)} N=${String(n).padStart(6)} V=${voices}` +
+    `${String(i + 1).padStart(2)}/${chosen.length}  ${form.padEnd(wide)} N=${String(n).padStart(6)} V=${voices}` +
       `  ${ms.toFixed(3).padStart(8)} ms/frame  ${ns.toFixed(0).padStart(5)} ns/subject·voice` +
       `  p99 ${p99.toFixed(3).padStart(8)}  worst ${worst.toFixed(3).padStart(8)}` +
       `  first ${first.toFixed(1).padStart(7)} ms` +

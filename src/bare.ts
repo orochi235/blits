@@ -63,11 +63,11 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
       data[o + Row.SAMPLED] = Sampled.BARE;
       c.deltas[p] = null;
     }
+    if (w <= 0) continue;
     const share = left(
       c.eases[p] as Curve,
       progress(elapsed, hot[h + Hot.AT] as number, hot[h + Hot.MS] as number),
     );
-    if (w <= 0) continue;
     const values = ch.values;
     const base = slot * n;
     const x = h + Hot.X0;
