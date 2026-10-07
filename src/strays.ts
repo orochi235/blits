@@ -1,6 +1,7 @@
 import { unpart } from './fade.js';
 import type { Mixer } from './mixer.js';
 import type { MotionOwner, Motions } from './motion.js';
+import { record } from './tape.js';
 import type { Voice } from './voice.js';
 
 /** Notes a motion patch that may hold state for a subject no voice playing it reaches. */
@@ -39,6 +40,10 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
     },
     now() {
       return mix.deref()?.now ?? Number.NaN;
+    },
+    changed(again) {
+      const m = mix.deref();
+      if (m !== undefined) record(m, 'motion', again);
     },
     revive(id, subject) {
       const m = mix.deref();

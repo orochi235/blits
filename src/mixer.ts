@@ -39,8 +39,9 @@ import { pin } from './place.js';
 import { project } from './project.js';
 import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
-import { rewind, shift } from './rewind.js';
+import { seek } from './seek.js';
 import { Store } from './store.js';
+import { record, replay, tapeOf } from './tape.js';
 import type {
   Booker,
   BookOptions,
@@ -57,6 +58,7 @@ import type {
   Projection,
   Sent,
   Signal,
+  Tape,
   VoiceSpec,
 } from './types.js';
 import { none, type Subject, type Voice } from './voice.js';
@@ -114,13 +116,12 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** This mix's frame among every mix's: moved by a sync, and by a control change or drop within one. */
   frame = nextFrame();
   offset = 0;
-  /**
-   * Under `history`, the offsets in force before each change `rebase` and `rewind` made, oldest
-   * first: a timestamp at or before `after` meant host time less `was`.
-   */
-  shifts: { after: number; was: number }[] = [];
   /** The mix time of the first sync. */
   born = Number.NaN;
+  /** Under `history.tape`, the host's calls by mix time, for `seek`. */
+  readonly tape: Tape | undefined;
+  /** True while the tape makes a recorded call again, so it is not recorded twice. */
+  replaying = false;
   /** The mix's own rate; null while it has never been set, when mix time is host time. */
   pace: Pace | null = null;
   /** Pending voices whose start the host gave, by its host time, kept where the rate puts it. */
@@ -255,6 +256,7 @@ export class Mixer<I, O> implements Mix<I, O> {
       this.slotOf.set(k, i);
     });
     this.lanes = opts.lanes === false ? null : new Lanes<I, O>(laneHost(this));
+    this.tape = tapeOf(this);
   }
 
   get reduced(): boolean {
@@ -307,23 +309,30 @@ export class Mixer<I, O> implements Mix<I, O> {
   private syncAt(timestamp: number): void {
     if (timestamp < this.last && !this.rebasing)
       throw new RangeError(
-        `blits: sync went back from ${this.last} to ${timestamp}; a mix only goes forward, and rewind takes it back`,
+        `blits: sync went back from ${this.last} to ${timestamp}; the host's clock only goes forward, and seek moves the mix`,
       );
-    if (this.rebasing && !Number.isNaN(this.last)) {
-      shift(this);
-      this.offset += timestamp - this.last;
-    }
+    if (this.rebasing && !Number.isNaN(this.last)) this.offset += timestamp - this.last;
     this.rebasing = false;
     this.last = timestamp;
     const u = timestamp - this.offset;
-    const pace = this.pace;
-    const now = pace === null ? u : pace.sync(u);
+    let pace = this.pace;
+    let now = pace === null ? u : pace.sync(u);
     const later = u !== this.u;
     const still = later && now === this.now;
     this.u = u;
-    // Host time moving while the mix clock stands still lands what waits on host time or the host.
     if (Number.isNaN(this.born)) this.born = now;
+    // Calls the host made before, played again where a seek went back past them; one may set the
+    // mix's rate, which moves where this sync lands.
+    if (this.tape !== undefined && now > this.now) {
+      const reading = () => (this.pace === null ? u : this.pace.reading(u));
+      replay(this, reading);
+      pace = this.pace;
+      now = reading();
+    }
+    // Host time moving while the mix clock stands still lands what waits on host time or the host.
     if (now !== this.now || (later && pace !== null && waits(this))) move(this, now);
+    const history = this.opts.history;
+    if (this.tape !== undefined && history !== undefined) this.tape.prune(now - history.ms);
     // It is a frame too, which asks every weight signal again, so one reading input follows it.
     if (still) {
       this.frame = nextFrame();
@@ -350,13 +359,13 @@ export class Mixer<I, O> implements Mix<I, O> {
     pull(this, subjects, into);
   }
 
-  rewind(timestamp: number): void {
-    rewind(this, timestamp);
+  seek(time: number): void {
+    seek(this, time);
   }
 
-  project(timestamp: number): Projection<I, O> {
+  project(time: number): Projection<I, O> {
     const c = new Mixer<I, O>(this.kit, { ...this.opts, history: undefined, lanes: false });
-    return project(this, c, timestamp);
+    return project(this, c, time);
   }
 
   announce(
@@ -364,13 +373,17 @@ export class Mixer<I, O> implements Mix<I, O> {
     opts: { at?: number; score?: string; tags?: readonly string[] } = {},
   ): void {
     const at = opts.at !== undefined ? opts.at - this.offset : this.u;
-    this.announced.push({
+    const mark = {
       name,
       score: opts.score,
       tags: opts.tags ?? none,
       at,
       made: Number.isNaN(this.now) ? Number.NEGATIVE_INFINITY : this.now,
       order: this.nextId++,
+    };
+    this.announced.push(mark);
+    record(this, 'announce', () => {
+      this.announced.push({ ...mark });
     });
   }
 
@@ -463,6 +476,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     const reach = history === undefined ? Number.NEGATIVE_INFINITY : this.now - history.ms;
     this.pace.change(this.u, rate, over, reach);
     this.stir();
+    record(this, 'rate', () => this.ramp(rate, over));
   }
 
   /** Whether a voice will change no pose from `now` on, short of a change made to it. */
@@ -479,6 +493,7 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   mute(opts?: { over?: number }): void {
     for (const voice of this.cued) beginFade(this, voice, { over: opts?.over });
+    record(this, 'mute', () => this.mute(opts));
   }
 
   drop(subject: I): void {
@@ -518,6 +533,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     if (strays !== undefined) for (const motion of strays) motion.release(subject);
     this.strays.delete(subject);
     for (const motion of this.strayAll) motion.release(subject);
+    record(this, 'drop', () => this.drop(subject));
   }
 
   drain<E = unknown>(tag?: string): Sent<I, E>[] {

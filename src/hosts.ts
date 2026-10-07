@@ -10,6 +10,7 @@ import { nextFrame } from './move.js';
 import { descendants, ownWeight, signalled } from './owner.js';
 import { localNow } from './place.js';
 import { reading } from './reading.js';
+import { record } from './tape.js';
 import type { Booker, BookOptions, Handle } from './types.js';
 import { unreach } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
@@ -168,5 +169,6 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       }
       return (voice.subjects.get(subject) as Subject<unknown> | undefined)?.weight ?? 0;
     },
+    record: (label, again) => record(mix, label, again),
   };
 }

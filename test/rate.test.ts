@@ -48,15 +48,17 @@ function play(
   build: (m: Mix<Part, Pose>, at: number) => void,
   frames: number[],
   opts: MixOptions = {},
-): { m: Mix<Part, Pose>; poses: Map<number, Pose> } {
+): { m: Mix<Part, Pose>; poses: Map<number, Pose>; times: Map<number, number> } {
   const m = mix<Part, Pose>(K, opts);
   const poses = new Map<number, Pose>();
+  const times = new Map<number, number>();
   for (const t of frames) {
     m.sync(t);
     build(m, t);
     poses.set(t, { ...m.probe(a) });
+    times.set(t, m.now);
   }
-  return { m, poses };
+  return { m, poses, times };
 }
 
 describe('mix rate', () => {
@@ -304,7 +306,7 @@ describe('mix rate', () => {
     const frames = every(0, 1200, 16);
 
     it('reads ahead to what the mix probes when it gets there', () => {
-      const { poses } = play(scene, frames, { stepMs: 4 });
+      const { poses, times } = play(scene, frames, { stepMs: 4 });
       for (const from of [0, 96, 160, 400, 480, 560]) {
         const m = mix<Part, Pose>(K, { stepMs: 4 });
         for (const t of frames.filter((f) => f <= from)) {
@@ -315,14 +317,17 @@ describe('mix rate', () => {
         // Ahead the mix plays on at the rate it has, so read only up to the next change.
         const next = [96, 400, 560, 800, 1200].find((c) => c > from) as number;
         for (const t of frames.filter((f) => f > from && f <= next))
-          expect(m.project(t).probe(a), `${from} → ${t}`).toEqual(poses.get(t));
+          expect(m.project(times.get(t) as number).probe(a), `${from} → ${t}`).toEqual(
+            poses.get(t),
+          );
       }
     });
 
     it('reads back to the pose the mix showed, through mix rate changes', () => {
       const opts: MixOptions = { history: { ms: 5000, every: 50 }, stepMs: 4 };
-      const { m, poses } = play(scene, frames, opts);
-      for (const t of frames.slice(0, -1)) expect(m.project(t).probe(a)).toEqual(poses.get(t));
+      const { m, poses, times } = play(scene, frames, opts);
+      for (const t of frames.slice(0, -1))
+        expect(m.project(times.get(t) as number).probe(a), `${t}`).toEqual(poses.get(t));
     });
 
     it('reads a paused spring back and ahead without moving it', () => {
@@ -335,7 +340,10 @@ describe('mix rate', () => {
       m.rate = 0;
       m.sync(300);
       expect(m.probe(a).x).toBe(at100);
-      expect(m.project(1000).probe(a).x).toBe(at100);
+      expect(m.now).toBe(100);
+      // Mix time 1000, which the paused mix has yet to reach, reads the spring all but landed.
+      expect(m.project(1000).probe(a).x).toBeCloseTo(100, 2);
+      expect(m.probe(a).x).toBe(at100);
       expect(m.project(50).probe(a).x).toBeLessThan(at100);
     });
   });

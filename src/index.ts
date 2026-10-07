@@ -37,5 +37,9 @@ export type {
   Sent,
   Setting,
   Signal,
+  Tape,
+  TapeBranch,
+  TapeMaker,
+  TapeOp,
   VoiceSpec,
 } from './types.js';

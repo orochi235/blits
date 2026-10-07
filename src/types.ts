@@ -606,9 +606,11 @@ export interface MixOptions<H = unknown> {
    * read back restores the nearest copy and steps forward from it. Off by default, and a mix without
    * it keeps nothing. With `inputs`, it also keeps what each input signal on a voice's weight read
    * per subject, and the host fields patches `reads`, each time they changed, so a read back over a
-   * `level` or a pointer is known rather than held.
+   * `level` or a pointer is known rather than held. With `tape`, the mix also records every call
+   * the host makes on it, its handles and its motion patches, so `seek` can move it and play those
+   * calls again.
    */
-  history?: { ms: number; every?: number; inputs?: boolean };
+  history?: { ms: number; every?: number; inputs?: boolean; tape?: TapeMaker };
   /**
    * Whether a channel may run as a lane: computed for every subject at once in flat arrays, when
    * every voice writing it can run that way. On by default; the pose is the same either way, so
@@ -619,6 +621,66 @@ export interface MixOptions<H = unknown> {
    */
   lanes?: boolean;
 }
+
+/**
+ * One host call a mix recorded on its tape: `apply` makes it again, and `invert` does nothing,
+ * since a mix goes back by restoring what it kept rather than by undoing calls.
+ *
+ * @category mix
+ */
+export interface TapeOp {
+  apply(adapter: unknown): void;
+  invert(): TapeOp;
+  label?: string;
+}
+
+/**
+ * One future a tape keeps at its current entry: the calls the host made after the mix last went
+ * back here, before it made new ones.
+ *
+ * @category mix
+ */
+export interface TapeBranch {
+  /** Its first entry's id, which `switchBranch` takes. */
+  id: number;
+  label: string;
+  timestamp: number;
+  /** How many entries run along it from here. */
+  length: number;
+  /** Whether the mix plays it on from here. */
+  current: boolean;
+}
+
+/**
+ * Where a mix keeps the host's calls, by mix time, for `seek`. weasel-history's `History`
+ * (`@weasel-js/history`) has this shape. A host reads `branches` and calls `switchBranch` to pick
+ * which recorded future plays on; moving it any other way is the mix's job.
+ *
+ * @category mix
+ */
+export interface Tape {
+  recordEntry(ops: TapeOp[], label: string): void;
+  undoDepth(): number;
+  timestampAt(i: number): number | undefined;
+  depthAt(t: number): number;
+  goto(n: number): void;
+  redo(): void;
+  prune(t: number): void;
+  branches(): readonly TapeBranch[];
+  switchBranch(id: number): void;
+}
+
+/**
+ * Makes a mix's tape: weasel-history's `createHistory` is one. The mix passes the clock it stamps
+ * calls with, branching on, so a call made after going back keeps the old future as a branch, and
+ * coalescing off.
+ *
+ * @category mix
+ */
+export type TapeMaker = (
+  adapter: unknown,
+  opts: { now: () => number; branching: boolean; coalesceWindowMs: number },
+) => Tape;
 
 /**
  * How sure a projection is of one channel: `exact` where only the clock and known changes drove
@@ -637,7 +699,7 @@ export type Doubt = 'exact' | 'stepped' | 'held';
  * @category mix
  */
 export interface Projection<I, O> {
-  /** The timestamp it reads at, on the host's clock. */
+  /** The mix time it reads at. */
   readonly timestamp: number;
   /** The merged pose for one subject at this projection's timestamp. */
   probe(subject: I, out?: O): O;
@@ -688,8 +750,8 @@ export interface Mix<I, O, H = unknown> {
 
   /**
    * The host reports the clock, once a frame. Nothing advances at the call. Throws for a timestamp
-   * earlier than the last sync's, short of a `rebase`: a mix only goes forward, and `rewind` takes
-   * it back.
+   * earlier than the last sync's, short of a `rebase`: the host's clock only goes forward, and
+   * `seek` moves the mix.
    */
   sync(timestamp: number): void;
   /**
@@ -733,29 +795,41 @@ export interface Mix<I, O, H = unknown> {
    */
   pull(subjects: Iterable<I>, into: Columns<O>): void;
   /**
-   * Reads the mix at another timestamp, on the host's clock, without moving it. Ahead of the last
-   * sync it plays what is cued forward; behind it, it needs `history`, and throws for a timestamp
-   * older than the history reaches. Under `history`, a timestamp from before a `rebase` or a
-   * `rewind` reads at the mix time it named when the host passed it; after a rewind, that time
-   * shows what the mix plays there now.
+   * Reads the mix at another mix time, without moving it. Ahead of the mix it plays what is cued
+   * forward, not what a tape recorded after a `seek` back; behind it, it needs `history`, and
+   * throws for a time older than the history reaches.
    */
-  project(timestamp: number): Projection<I, O>;
+  project(time: number): Projection<I, O>;
   /**
-   * Moves the mix back to a timestamp on the host's clock, as it stood at the end of that frame,
-   * and plays on from there: what happened after it is undone, not replayed. Voices cued after it
-   * are gone, `done` resolving and `played` false; voices that left after it are back on the
-   * handles the host holds, their `done` and `played` starting over where they had settled since.
-   * Control changes, retargets and pushes, rate changes, announced marks, recorded input and
-   * undrained events from after it are dropped; a subject faded out of a voice or dropped after it
-   * comes back as never seen, and `from: 'current'` voices take their pose afresh. Stateful voices
-   * restart from the copy `history` kept nearest before it and step once to it, exact under
-   * `stepMs`. Playing past a time again sends its events and books its marks and hits again.
+   * Moves the mix to mix time `time`, as it stood at the end of that frame, and plays on from
+   * there. Needs `history` with a `tape`, which records the host's calls by mix time.
    *
-   * The host goes on passing its own clock: the next `sync` reads the rewound moment plus the
-   * host's time since its last sync. Needs `history`; throws for a timestamp older than the history
-   * reaches or ahead of the last sync.
+   * Back, the mix restores itself: controls, records, voices and marks as they stood then. Voices
+   * that left after it are back on the handles the host holds, their `done` and `played` starting
+   * over where they had settled since. Voices cued after it wait as `pending` until the mix plays
+   * their cue again. Stateful voices restart from the copy `history` kept nearest before it and
+   * step once to it, exact under `stepMs`. A subject faded out of a voice or dropped after it comes
+   * back as never seen, and `from: 'current'` voices take their pose afresh. Recorded input and
+   * host fields after it are let go: after a seek back, signals and host fields read live again.
+   *
+   * Forward, through a sync or a later seek, the mix plays the recorded calls again at the mix
+   * times they were made: cues, handle writes, fades, retargets and pushes, its rate, marks,
+   * `mute` and `drop`. A call the host makes while there are recorded calls ahead starts a new
+   * branch, and the tape keeps the old future beside it; `tape.switchBranch` picks one back.
+   * Playing past a time again sends its events and books its marks and hits again.
+   *
+   * The host goes on passing its own clock: the next `sync` reads the moment sought plus the
+   * host's time since its last sync. Throws for a time older than history reaches, and before
+   * the first sync.
    */
-  rewind(timestamp: number): void;
+  seek(time: number): void;
+  /**
+   * The mix clock at the last sync or seek, which `seek` and `project` take; NaN before the first
+   * sync. Host time at the mix's rate, less what `rebase` took out and `seek` moved.
+   */
+  readonly now: number;
+  /** The tape `history.tape` made, undefined without one. */
+  readonly tape: Tape | undefined;
   /**
    * Every channel at rest for this subject this frame, so a host can skip the write. After a probe
    * of the subject this frame, it answers for the pose that probe gave, without folding again.

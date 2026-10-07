@@ -9,8 +9,9 @@ import { adopt, ownerReading } from './owner.js';
 import { durationOf } from './patch.js';
 import { checkPlacement, localNow, mixAt, pin, place } from './place.js';
 import { motionOwner } from './strays.js';
+import { record } from './tape.js';
 import type { Channel, Handle, VoiceSpec } from './types.js';
-import { Voice } from './voice.js';
+import { type Controls, Voice } from './voice.js';
 
 export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
   const patch = spec.patch;
@@ -71,6 +72,29 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
     mix.send,
     owner,
   );
+  if (mix.pace !== null && owner === null && spec.start !== undefined && voice.state === 'pending')
+    voice.pinned = spec.start - mix.offset;
+  enter(mix, voice);
+  voice.handle = handle(mix, voice);
+  record(mix, 'cue', () => recue(mix, voice));
+  return voice.handle;
+}
+
+/** A voice parked by a seek, cued again as the mix plays past its cue, on the handle it had. */
+function recue<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
+  const owner = voice.owner;
+  if ((owner === null ? mix.now : ownerReading(owner, mix.now)) >= voice.start)
+    voice.state = 'live';
+  enter(mix, voice);
+}
+
+/** Puts a voice just made, or parked by a seek, into the mix. */
+function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
+  const spec = voice.spec;
+  const owner = voice.owner;
+  const anchor = spec.anchor;
+  const anchored = anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
+  const motion = voice.motion;
   if (owner !== null) adopt(owner, voice);
   if (voice.holding !== null) {
     mix.owners ??= [];
@@ -81,15 +105,19 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
     voice.opened = mix.now;
   }
   voice.placing = anchored;
-  if (mix.pace !== null && owner === null && spec.start !== undefined && voice.state === 'pending')
-    pin(mix, voice, spec.start - mix.offset);
+  // A start the host gave by its own clock, where the mix's rate puts it.
+  if (!Number.isNaN(voice.pinned) && voice.state === 'pending') pin(mix, voice, voice.pinned);
   if (motion !== undefined) {
     mix.playing.set(motion, (mix.playing.get(motion) ?? 0) + 1);
     mix.owner ??= motionOwner(new WeakRef(mix));
     motion.owner = mix.owner;
     motion.ownerId = voice.id;
   }
-  mix.cued.push(voice);
+  // In id order, which a voice cued again after later ones keeps by going in at its place.
+  const cued = mix.cued;
+  let i = cued.length;
+  while (i > 0 && (cued[i - 1] as Voice<I, O>).id > voice.id) i--;
+  cued.splice(i, 0, voice);
   index(mix, voice);
   changed(mix, voice);
   mix.stir();
@@ -112,10 +140,9 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
   if (mix.opts.history) {
     voice.log = [];
     voice.note(Number.NEGATIVE_INFINITY);
+    voice.first ??= voice.log[0] as Controls;
   }
   schedule(mix, voice);
-  voice.handle = handle(mix, voice);
-  return voice.handle;
 }
 
 /** The owner a handle names, refused where it is not one of this mix's or has left. */

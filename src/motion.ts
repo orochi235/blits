@@ -79,6 +79,8 @@ export interface MotionOwner {
   revive(id: number, subject: unknown): void;
   /** The mix clock at its latest frame; NaN before the first. */
   now(): number;
+  /** The host made a change, already given its time, which a seek makes again through `again`. */
+  changed(again: () => void): void;
 }
 
 /**
@@ -592,6 +594,8 @@ export class Motions<I> {
     } else if (c.at === undefined) list.push(c);
     else this.queue(list, c, c.at);
     reading.moved++;
+    const made: Change = { at: c.at, to: c.to, v: c.v };
+    this.owner?.changed(() => this.change(subject, { ...made }));
   }
 
   /** Files a change with a time after every one due by then, ahead of those still waiting for one. */

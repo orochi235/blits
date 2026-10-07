@@ -12,6 +12,8 @@ export interface HandleHost<I, O> {
   sought(voice: Voice<I, O>): void;
   fade(voice: Voice<I, O>, opts: FadeOptions<I> | undefined): void;
   weightOf(voice: Voice<I, O>, subject: I): number;
+  /** Records a write the host made, which `again` makes once more where a seek replays it. */
+  record(label: string, again: () => void): void;
 }
 
 /** A voice's handle: the host's only way to control a voice once cued. */
@@ -49,6 +51,9 @@ export class VoiceHandle<I, O> implements Handle<I> {
   set weight(w: number) {
     this.#voice.weight = w;
     this.#host.changed(this.#voice);
+    this.#host.record('weight', () => {
+      this.weight = w;
+    });
   }
 
   get rate(): number {
@@ -63,6 +68,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     const voice = this.#voice;
     retime(voice, this.#host.nowFor(voice), r, over);
     this.#host.changed(voice);
+    this.#host.record('rate', () => this.ramp(r, over));
   }
 
   seek(elapsed: number): void {
@@ -72,10 +78,12 @@ export class VoiceHandle<I, O> implements Handle<I> {
     voice.seeks++;
     this.#host.sought(voice);
     this.#host.changed(voice);
+    this.#host.record('seek', () => this.seek(elapsed));
   }
 
   fade(opts?: FadeOptions<I>): void {
     this.#host.fade(this.#voice, opts);
+    this.#host.record('fade', () => this.fade(opts));
   }
 
   weightOf(subject: I): number {

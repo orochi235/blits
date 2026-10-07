@@ -170,7 +170,7 @@ export class Voice<I, O> {
   anchorElapsed = 0;
   ramp: { from: number; to: number; over: number } | null = null;
   out: Ramp | null = null;
-  readonly subjects = new Store<I, Subject<unknown>>();
+  subjects = new Store<I, Subject<unknown>>();
   /** The subjects its spec names, or null where it names none. */
   readonly named: Named<I> | null;
   /** Kit slot of each channel the patch writes, in `writes` order. */
@@ -228,6 +228,8 @@ export class Voice<I, O> {
   doneAt = Number.POSITIVE_INFINITY;
   /** Under `history`, its controls after each change, oldest first. */
   log: Controls[] | null = null;
+  /** Under `history`, its controls as `cue` left them, which a voice parked by a seek takes back. */
+  first: Controls | null = null;
   /** Where an anchored `out` or `end` puts its fade's start, mix time; Infinity until known. */
   outAt = Number.POSITIVE_INFINITY;
   /** The host time a pinned start was given at, NaN for none: a rewind pins it again. */
@@ -328,6 +330,48 @@ export class Voice<I, O> {
       this.doneSettle = null;
     }
     return unplayed;
+  }
+
+  /**
+   * A seek back to before its cue: out of the mix, as `cue` left it, until the mix plays the cue
+   * again. What it played since is forgotten, and `done` and `played` start over where they had
+   * settled.
+   */
+  park(): void {
+    this.reopen(Number.NEGATIVE_INFINITY);
+    const c = this.first as Controls;
+    this.anchorNow = c.anchorNow;
+    this.anchorElapsed = c.anchorElapsed;
+    this.rate = c.rate;
+    this.ramp = c.ramp;
+    this.weight = c.weight;
+    this.out = c.out;
+    this.start = c.start;
+    this.outAt = c.outAt;
+    this.log = null;
+    this.state = 'pending';
+    this.subjects = new Store();
+    this.scratch = [];
+    this.holder = null;
+    this.laned = false;
+    this.seeks++;
+    this.keeping = false;
+    this.parts = null;
+    this.parted = null;
+    this.opened = Number.NaN;
+    this.dueToken++;
+    this.early = null;
+    this.seen = 0;
+    this.latest = 0;
+    this.restedCount = 0;
+    this.cuedAt = Number.NEGATIVE_INFINITY;
+    this.doneAt = Number.POSITIVE_INFINITY;
+    this.placing = false;
+    this.keepOn = null;
+    this.ownKept = null;
+    this.unreached = null;
+    this.unreachedBits = null;
+    if (this.holding !== null) this.holding = new Holding();
   }
 
   constructor(

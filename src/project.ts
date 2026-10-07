@@ -1,27 +1,21 @@
 import { ownBlends } from './blend.js';
 import { index } from './chain.js';
 import { copyHeld, last } from './history.js';
-import { readingAt } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { move } from './move.js';
 import { heldByInput, ownerReading, relink } from './owner.js';
 import { pin } from './place.js';
 import { reading } from './reading.js';
-import { hostTime } from './rewind.js';
 import { Store } from './store.js';
+import { hostAt } from './tape.js';
 import type { Doubt, Projection } from './types.js';
 import { unreached } from './unreached.js';
 import type { Controls, Subject, Voice } from './voice.js';
 
-/** A projection to `timestamp` through `c`, a mixer of its own the mix has just made. */
-export function project<I, O>(
-  mix: Mixer<I, O>,
-  c: Mixer<I, O>,
-  timestamp: number,
-): Projection<I, O> {
-  const u = hostTime(mix, timestamp);
+/** A projection to mix time `t` through `c`, a mixer of its own the mix has just made. */
+export function project<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number): Projection<I, O> {
+  const u = hostAt(mix, t);
   const pace = mix.pace;
-  const t = readingAt(mix, u);
   c.projecting = true;
   c.pose = mix.pose;
   c.offset = mix.offset;
@@ -49,7 +43,7 @@ export function project<I, O>(
     const history = mix.opts.history;
     if (!history) throw new Error('blits: reading back needs a mix made with history');
     if (t < mix.now - history.ms)
-      throw new Error(`blits: ${timestamp} is older than this mix's history reaches`);
+      throw new Error(`blits: ${t} is older than this mix's history reaches`);
     c.now = t;
     c.pace = pace === null ? null : pace.until(u);
     c.backward = true;
@@ -95,7 +89,7 @@ export function project<I, O>(
     }
   };
   return {
-    timestamp,
+    timestamp: t,
     probe: (subject, out) => read(() => c.fold(subject, out)),
     assess: (subject) =>
       read(() => {
