@@ -392,12 +392,25 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 4. **Reach is fixed at cue, so a voice whose influence moves pays for every subject it might
    touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every
    frame, and `influence` (`src/fold.ts`) runs the patch before anything checks the weight, so a
-   weight of 0 is computed and then dropped. Unmeasured. Two fixes, smallest first: skip the patch
-   when `weigh` returns 0 (a stateful patch's skipped `step` needs care); or let a voice declare a
-   bound that changes over time and index subjects by position, which needs positions from the
-   host — a new public surface. If built, it is opt-in (decided 2026-10-07): a voice with no bound
-   keeps today's behavior, and whether unbounded voices are ever deprecated is left open. Bench a
-   glow over 10k subjects before either.
+   weight of 0 is computed and then dropped. Unmeasured; bench a glow over 10k subjects before
+   building anything. Two fixes, smallest first:
+   - Skip the patch when `weigh` returns 0. A stateful patch's skipped `step` needs care.
+   - Declared bounds, the design to evaluate (unbuilt). The mix takes subject positions from the
+     host, and reach may be declared at three levels, each optional, each meaning "everywhere"
+     when absent; a voice's reach is where all three overlap:
+
+     | Declared on | Knows | Example | Changes |
+     |---|---|---|---|
+     | voice (`subjects`/`target`, today) | which subjects this cue is for | only the left sign | fixed at cue |
+     | patch | the effect's footprint by phase | a ripple growing 0 → 200 px | with phase |
+     | signal | where it is nonzero | within 80 px of the pointer | with host input |
+
+     A bound on a mix without positions is refused at cue. Channels take no reach. The hazard is
+     a bound declared too small, which clips the effect silently; a dev check could sample a few
+     subjects outside it and warn on a nonzero influence. Opt-in (decided 2026-10-07): with no
+     bound, behavior is today's. Whether unbounded voices are ever deprecated is left open, and
+     unlikely — klieg's lighting, a fade over a whole sign and wod's transitions are unbounded by
+     design; `target` is the likelier candidate once bounds absorb its spatial uses.
 
 ## Loose ends
 
