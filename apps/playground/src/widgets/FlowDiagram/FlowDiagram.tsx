@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { linesOf, styleOf } from './style';
 import type { Flow } from './types';
 
+// diagramScene sets text in sans-serif; labels paint blank unless the family is registered.
 registerCanvasFont('sans-serif');
 
 export interface FlowDiagramProps {
@@ -11,6 +12,7 @@ export interface FlowDiagramProps {
   width: number;
   height: number;
   direction?: LayoutDirection;
+  minScale?: number;
   selected?: string | null;
   onSelect?: (id: string | null) => void;
 }
@@ -20,6 +22,7 @@ export function FlowDiagram({
   width,
   height,
   direction = 'down',
+  minScale = 0.75,
   selected,
   onSelect,
 }: FlowDiagramProps) {
@@ -38,6 +41,7 @@ export function FlowDiagram({
       specs={specs}
       width={width}
       height={height}
+      minScale={minScale}
       selected={selected}
       onSelect={onSelect}
     />
