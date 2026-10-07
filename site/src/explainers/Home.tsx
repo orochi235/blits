@@ -86,7 +86,9 @@ export default function Home() {
       format={{
         color: (v) =>
           tinted(v as number[] | undefined)
-            ? `#${toHex(v as number[]).toString(16).padStart(6, '0')}`
+            ? `#${toHex(v as number[])
+                .toString(16)
+                .padStart(6, '0')}`
             : '—',
       }}
       draw={(ctx, frame, size, ink) => {

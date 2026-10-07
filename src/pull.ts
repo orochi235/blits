@@ -1,3 +1,4 @@
+import { axesOf } from './channels.js';
 import { copy } from './clone.js';
 import { type Column, clampRun, flush, pullRun, writeLater } from './columns.js';
 import type { Values } from './fold.js';
@@ -175,7 +176,7 @@ function columnsOf<I, O>(mix: Mixer<I, O>, into: Columns<O>): Column[] {
     if (slot === undefined) throw new Error(`blits: pull was handed ${key}, which the kit lacks`);
     const channel = mix.channels[slot] as Channel<unknown>;
     const rest = channel.rest;
-    const axes = Array.isArray(rest) ? rest.length : 1;
+    const axes = axesOf(channel);
     const bounds = channel.bounds as readonly [number, number] | undefined;
     const at = new Float64Array(axes).fill(Number.NaN);
     if (typeof rest === 'number') at[0] = rest;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { kit, max, mul, sum, vec } from '../src/channels.js';
+import { kit, last, max, mul, sum, vec } from '../src/channels.js';
+import { color, oklab } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
@@ -14,6 +15,8 @@ interface Pose {
   opacity: number;
   /** A one-axis vector, which is an array, not a number. */
   bend: number[];
+  /** Rest-less: absent from a pose until some voice passes the band. */
+  tint?: number[];
 }
 const K = kit<Pose>({
   gain: mul(),
@@ -22,6 +25,7 @@ const K = kit<Pose>({
   position: vec(3, sum()),
   opacity: mul({ bounds: [0, 1] }),
   bend: vec(1, sum()),
+  tint: color(last()),
 });
 const every = Object.keys(K) as (keyof Pose)[];
 
@@ -33,7 +37,7 @@ type Played = { handles?: Handle<Part>[]; at?: (t: number) => void } | undefined
 type Play = (m: Mix<Part, Pose>, parts: Part[]) => Played;
 
 function snapshot(pose: Pose): Pose {
-  const copy = {} as Record<keyof Pose, number | number[]>;
+  const copy = {} as Record<keyof Pose, number | number[] | undefined>;
   for (const key of every) {
     const v = pose[key];
     copy[key] = Array.isArray(v) ? [...v] : v;
@@ -64,6 +68,7 @@ function pulled(m: Mix<Part, Pose>, parts: readonly Part[]): Pose[] {
     position: new Float64Array(k * 3),
     opacity: new Float64Array(k),
     bend: new Float64Array(k),
+    tint: new Float64Array(k * 4),
   };
   m.pull(parts, cols);
   return parts.map((_, i) => ({
@@ -73,6 +78,9 @@ function pulled(m: Mix<Part, Pose>, parts: readonly Part[]): Pose[] {
     position: [...cols.position.subarray(i * 3, i * 3 + 3)],
     opacity: cols.opacity[i] as number,
     bend: [cols.bend[i] as number],
+    tint: Number.isNaN(cols.tint[i * 4] as number)
+      ? undefined
+      : [...cols.tint.subarray(i * 4, i * 4 + 4)],
   }));
 }
 
@@ -2270,5 +2278,92 @@ describe('a voice a probe meets late, after every laned voice, folds onto the la
     // Subjects are numbered 0 up in the order they were first probed.
     const lanes = (m as unknown as { lanes: { owes(slot: number): boolean } }).lanes;
     expect(parts.filter((_, slot) => lanes.owes(slot))).toHaveLength(parts.length);
+  });
+});
+
+describe('a color(last()) channel runs on lanes, the last voice past the band winning', () => {
+  const RED = oklab(0xff0000);
+  const BLUE = oklab(0x0000ff);
+  const swing = (p: Part, s: Setting) => 0.5 + 0.5 * Math.sin(s.elapsed / 90 + p.id);
+  const paint = (c: number[]) => patch<Part, Pose>(0, () => ({ tint: c }), { writes: ['tint'] });
+
+  it('puts the channel on lanes', () => {
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: paint(RED) });
+    m.sync(0);
+    m.probe({ id: 0 });
+    m.sync(16);
+    m.probe({ id: 0 });
+    const lanes = (m as unknown as { lanes: { laned: { name: string }[] } }).lanes;
+    expect(lanes.laned.map((c) => c.name)).toContain('tint');
+  });
+
+  it('with a later voice fading in and out across the band over an earlier one', () => {
+    agree(
+      (m) => {
+        m.cue({ patch: paint(RED) });
+        const h = m.cue({ patch: paint(BLUE), fade: { in: 400 } });
+        return {
+          handles: [h],
+          at: (t) => {
+            if (t === 1000) h.fade({ over: 700 });
+          },
+        };
+      },
+      { times: [0, 16, 100, 150, 200, 250, 300, 400, 1000, 1100, 1300, 1450, 1500, 1700, 1800] },
+    );
+  });
+
+  it('with a signal weight swinging through the band, so the band holds between frames', () => {
+    agree(
+      (m) => {
+        const h = m.cue({ patch: paint(BLUE), weight: swing });
+        return { handles: [h] };
+      },
+      { times: Array.from({ length: 40 }, (_, i) => i * 23) },
+    );
+  });
+
+  it('alongside other channels, from keys and fn voices, read sparsely', () => {
+    agree(
+      (m) => {
+        const k = m.cue({
+          patch: keys<Part, Pose>(600, [
+            { at: 0, delta: { tint: RED, gain: 0.5 } },
+            { at: 1, delta: { tint: BLUE, gain: 1.5 } },
+          ]),
+          fade: { in: 200 },
+        });
+        const f = m.cue({
+          patch: patch<Part, Pose>(
+            500,
+            (phase, p) => (phase < 0.5 ? { tint: RED, crawl: p.id } : { crawl: -p.id }),
+            { writes: ['tint', 'crawl'] },
+          ),
+          weight: swing,
+        });
+        return { handles: [k, f] };
+      },
+      {
+        times: Array.from({ length: 30 }, (_, i) => i * 37),
+        probe: (t, p) => (t / 37 + p.id) % 3 !== 0,
+      },
+    );
+  });
+
+  it('kept on the general path by a locus or a voice naming one subject, which fold it elsewhere', () => {
+    agree(
+      (m, parts) => {
+        m.cue({ patch: paint(RED), locus: 'pair', weight: swing });
+        m.cue({ patch: paint(BLUE), locus: 'pair' });
+        const one = m.cue({
+          patch: paint(oklab(0x00ff00)),
+          subjects: [parts[2] as Part],
+          fade: { in: 300 },
+        });
+        return { handles: [one] };
+      },
+      { times: Array.from({ length: 20 }, (_, i) => i * 41) },
+    );
   });
 });

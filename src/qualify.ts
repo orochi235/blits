@@ -157,11 +157,13 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     if (!on) return;
     const channel = host.channels[slot] as Channel<unknown>;
     const n = numericOf(channel) as Numeric;
-    const rest = channel.rest as number | number[];
+    // A rest-less channel's values are NaN until some voice passes the band: absent from the pose.
+    const rest = (channel.rest ?? Number.NaN) as number | number[];
+    const scalar = typeof rest === 'number' && n.axes === 1;
     const ch: Laned = {
       name: host.names[slot] as string,
       op: n.op,
-      scalar: typeof rest === 'number',
+      scalar,
       rest: typeof rest === 'number' ? rest : (rest[0] as number),
       axes: n.axes,
       values: new Float64Array(lanes.cap * n.axes),

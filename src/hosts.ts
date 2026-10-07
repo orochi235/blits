@@ -1,4 +1,6 @@
 import { Book, type BookHost } from './book.js';
+import { numericOf } from './channels.js';
+import { crowdable } from './crowd.js';
 import { schedule } from './due.js';
 import { beginFade, beginRise, fadeSubject } from './fade.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
@@ -11,7 +13,7 @@ import { descendants, ownWeight, signalled } from './owner.js';
 import { localNow } from './place.js';
 import { reading } from './reading.js';
 import { record } from './tape.js';
-import type { Booker, BookOptions, Handle } from './types.js';
+import type { Booker, BookOptions, Channel, Handle } from './types.js';
 import { unreach } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
 
@@ -59,6 +61,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
       for (const voice of mix.general) unreach(voice, slot, false);
       for (const voice of mix.gone) unreach(voice, slot, false);
     },
+    passes: (was, w) => mix.passes(was, w),
     naming: (subject) => (mix.naming === 0 ? undefined : mix.named.get(subject)),
     slotOf: (subject) => mix.chains.get(subject)?.slot ?? -1,
     envelope: (voice, since) =>
@@ -110,6 +113,12 @@ export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   // A locus on lanes gathers keys and fn members; a motion member keeps it on the general path.
   if (spec.locus !== undefined && voice.motion !== undefined) return false;
   if (spec.from === 'current') return false;
+  // A rest-less channel's band is read on the record `one` folds; crowds, motions and loci fold elsewhere.
+  if (
+    (voice.motion !== undefined || spec.locus !== undefined || crowdable(voice)) &&
+    voice.slots.some((s) => numericOf(mix.channels[s] as Channel<unknown>)?.op === 'last')
+  )
+    return false;
   if (voice.out?.rest) return false;
   if (patch.state !== undefined || patch.step !== undefined) return false;
   if (mix.opts.history?.inputs && patch.reads !== undefined && patch.reads.length > 0) return false;

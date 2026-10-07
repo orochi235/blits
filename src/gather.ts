@@ -1,6 +1,7 @@
 import { foldNumber, lerpNumber } from './channels.js';
 import { type Lane, type Laned, type Locus, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
+import type { Subject } from './voice.js';
 
 /** `xs`, or a copy at least `n` long where it is shorter. */
 function sized(xs: Float64Array, n: number): Float64Array {
@@ -194,6 +195,7 @@ export function foldInto<I, O>(
     gatherInto(this, this.into, ch, slot, value, w);
     return;
   }
+  if (ch.op === 'last' && !this.gate(ch, w)) return;
   const values = ch.values;
   if (ch.scalar) {
     values[slot] = foldNumber(ch.op, values[slot] as number, value as number, w);
@@ -207,4 +209,21 @@ export function foldInto<I, O>(
     const v = arr === null ? ch.rest : (arr[a] ?? ch.rest);
     values[base + a] = foldNumber(ch.op, values[base + a] as number, v, w);
   }
+}
+
+/**
+ * Whether a rest-less channel's influence passes the band, for the record `one` is folding: the
+ * general path's `apply` decides it from the same band state on the same record, so a subject
+ * moving between the paths carries it.
+ */
+export function gate<I, O>(this: Lanes<I, O>, ch: Laned, w: number): boolean {
+  const lane = this.folding as Lane<I, O>;
+  const rec = this.rec as Subject<unknown>;
+  const i = lane.chans.indexOf(ch);
+  const bands = rec.bands ?? new Uint8Array(lane.chans.length);
+  rec.bands = bands;
+  const band = bands[i];
+  const on = this.host.passes(band === 0 ? undefined : band === 1, w);
+  bands[i] = on ? 1 : 2;
+  return on;
 }

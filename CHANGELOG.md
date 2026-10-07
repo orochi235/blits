@@ -23,7 +23,9 @@ version and everything else the patch. Each release lists its changes as **Break
   pose carries the summed weight as coverage. `color(last())` replaces. `{ lerp: 'oklch' }`
   interpolates round the hue instead of across OKLab, off lanes. `oklab(0xrrggbb)` makes a value;
   `toHex(pose, under)` lays a pose over the subject's own color and `css(pose)` writes an
-  `oklab()` string with the coverage as alpha. `hex` still works, but it is deprecated for
+  `oklab()` string with the coverage as alpha. `color(last())` runs on lanes too, the last voice
+  past the band winning, unless a voice writing it is a motion, sits in a locus or names one
+  subject. `hex` still works, but it is deprecated for
   `color(last(), { lerp: 'oklch' })`, which replaces and interpolates as it does, and a later
   release removes it.
 - `mix.span(spec)` cues an owner that lays out the voices it holds in an `order` (`queue`,

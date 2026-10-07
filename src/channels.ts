@@ -20,9 +20,12 @@ export function lerpInto(channel: Channel<unknown>): LerpInto | undefined {
   return inPlace.get(channel);
 }
 
-/** What a lane needs of a stock numeric channel beyond the channel: its arithmetic by name, its axes. */
+/**
+ * What a lane needs of a stock numeric channel beyond the channel: its arithmetic by name, its axes.
+ * `'last'` has no rest: the last influence to pass the band replaces, and a weight only gates it.
+ */
 export interface Numeric {
-  op: 'sum' | 'mul' | 'max';
+  op: 'sum' | 'mul' | 'max' | 'last';
   axes: number;
 }
 
@@ -43,11 +46,30 @@ export function numericOf(channel: Channel<unknown>): Numeric | undefined {
   return numerics.get(channel);
 }
 
+/** Vouches for a stock channel made outside this module, as `color` makes its own. */
+export function vouch(channel: Channel<unknown>, numeric: Numeric): void {
+  numerics.set(channel, numeric);
+}
+
+const widths = new WeakMap<object, number>();
+
+/** Records how many numbers a rest-less array channel holds a subject, which its rest cannot say. */
+export function widen(channel: Channel<unknown>, axes: number): void {
+  widths.set(channel, axes);
+}
+
+/** How many numbers a channel holds a subject: its rest's length, a recorded width, or one. */
+export function axesOf(channel: Channel<unknown>): number {
+  const rest = channel.rest;
+  return Array.isArray(rest) ? rest.length : (widths.get(channel) ?? 1);
+}
+
 /** `merge(acc, scale(v, w))` for a stock numeric channel, in exactly its arithmetic. */
 export function foldNumber(op: Numeric['op'], acc: number, v: number, w: number): number {
   if (op === 'sum') return add(acc, times(v, w));
   if (op === 'mul') return product(acc, toward(v, w));
-  return larger(acc, times(v, w));
+  if (op === 'max') return larger(acc, times(v, w));
+  return v;
 }
 
 /**

@@ -12,7 +12,7 @@ import {
   signalled,
   subjectAt,
 } from './fill.js';
-import { fold, foldDelta, foldInto, foldRun, gather } from './gather.js';
+import { fold, foldDelta, foldInto, foldRun, gate, gather } from './gather.js';
 import { Begin, type Lane, type Laned, type Locus, Per, Row } from './lane.js';
 import { meet, reach } from './meet.js';
 import type { Watcher } from './motion.js';
@@ -72,6 +72,8 @@ export interface LaneHost<I, O> {
     pass: number,
     slot: number,
   ): number;
+  /** Whether a rest-less channel's influence passes the band, as the general path decides it. */
+  passes(was: boolean | undefined, w: number): boolean;
   /** Sets `reading.horizon` for the voice and a subject delayed `delay` voice ms. */
   horizon(voice: Voice<I, O>, delay: number): void;
   /** Whether the mix keeps history, so a record a patch call changed may need a copy kept. */
@@ -100,6 +102,9 @@ export class Lanes<I, O> implements Watcher {
   overlap = false;
   /** The loci whose voices are on lanes, every member of each on one. */
   loci: Locus<I, O>[] = [];
+  /** The lane and record `one` is folding, whose band state a rest-less channel reads. */
+  folding: Lane<I, O> | null = null;
+  rec: Subject<unknown> | null = null;
   /** While a fill gathers a locus: that locus and the member gathering, where folds go instead. */
   into: Locus<I, O> | null = null;
   intoId = 0;
@@ -384,6 +389,10 @@ export class Lanes<I, O> implements Watcher {
   rests(slot: number): boolean {
     for (const ch of this.laned) {
       const values = ch.values;
+      if (ch.op === 'last') {
+        if (!Number.isNaN(values[slot * ch.axes] as number)) return false;
+        continue;
+      }
       if (ch.scalar) {
         if (!(Math.abs((values[slot] as number) - ch.rest) < 1e-9)) return false;
         continue;
@@ -404,6 +413,11 @@ export class Lanes<I, O> implements Watcher {
     for (let c = 0; c < laned.length; c++) {
       const ch = laned[c] as Laned;
       const axes = ch.axes;
+      // Never `delete`: it drops a reused out object into dictionary mode for good.
+      if (ch.op === 'last' && Number.isNaN(ch.values[slot * axes] as number)) {
+        if (pose[ch.name] !== undefined) pose[ch.name] = undefined;
+        continue;
+      }
       if (ch.scalar) {
         pose[ch.name] = ch.values[slot] as number;
         continue;
@@ -485,6 +499,7 @@ const methods = {
   foldDelta,
   foldRun,
   foldInto,
+  gate,
 };
 type Methods = typeof methods;
 // biome-ignore lint/correctness/noUnusedVariables: merging needs the class's type parameters

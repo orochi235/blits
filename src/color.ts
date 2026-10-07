@@ -1,4 +1,4 @@
-import { last, lerpNumber, numericOf, sum, vec } from './channels.js';
+import { last, lerpNumber, numericOf, sum, vec, vouch, widen } from './channels.js';
 import type { Channel } from './types.js';
 
 const mix = lerpNumber;
@@ -212,11 +212,14 @@ export function color(
     return round ? { ...channel, lerp: lerpLch } : channel;
   }
   if (of.kind === 'last') {
-    return {
+    const channel: Channel<number[]> = {
       kind: `color(last${space})`,
       merge: (_a, b) => b,
       lerp: round ? lerpLch : vec(4, sum()).lerp,
     };
+    widen(channel, 4);
+    if (!round) vouch(channel, { op: 'last', axes: 4 });
+    return channel;
   }
   throw new Error(
     `color takes sum() to average or last() to replace, not ${of.kind ?? 'a channel of its own'}`,

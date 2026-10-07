@@ -449,8 +449,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    channel section and the CHANGELOG say what it is. Mike chose that the channel picks its lerp
    space (`{ lerp: 'oklab' | 'oklch' }`, OKLab default) after a red-to-cyan render showed OKLab
    washing to pale gray and OKLCH sweeping through the hues between. What is left:
-   - **The site still uses `hex()`** in `Home.tsx`, `index.mdx`, `channel.mdx` and `glossary.mdx`.
-     Move them to `color()` with `toHex`/`css` at draw, or the docs teach the deprecated channel.
    - **klieg moves to `color(last(), { lerp: 'oklch' })`** when it next bumps blits. Expected to
      change no pixels, since every klieg effect voice plays at full weight with no locus; that is
      inference, so confirm on klieg's Playwright specs before claiming it.
@@ -459,14 +457,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      color on `color()`. Medians of six fresh processes on this Mac under a load average of ~10,
      so trust the differences and not the absolute numbers: what the glow adds over `glowbase` fell
      from 3.10 to 1.19 ms through `pull`, and from 1.69 to 1.35 ms through `probe`.
-   - **A lane fold for `last`**, independent of the rest: last to pass wins behind the band, a
-     byte per voice per subject holding band state, the value stored as it is. `color(last())`,
-     `hex` while it lasts, and every `last` channel then run on lanes; it is what the `glowc^` row
-     in item 4 pays 1.2 ms for. Three hazards, all from reading the code: lanes must fold `last`
-     in voice order, which `sum`/`mul`/`max` never needed; band state must move with a voice
-     between the lane and the general path, or a mid-band weight pops for a frame; and keyframe
-     interpolation on the lane goes through the channel's own lerp (`src/fill.ts`), a conversion
-     per subject per frame.
+   - **`color(last())` runs on lanes** (OKLab lerp only), as a lane op `'last'`: the band state
+     stays on each voice's record for the subject, which the lane already holds, so it moves
+     between the lane and the general path for free (`gate` in `src/gather.ts`). A voice writing a
+     `last` channel that is a motion, sits in a locus or names one subject keeps the channel off
+     lanes, since crowds, motions and loci fold elsewhere (`fits` in `src/hosts.ts`). `hex` and a
+     plain `last()` stay off: hex's lerp is not straight across, and `last()` holds anything.
+   - **What the `last` lane saves is unmeasured.** `glowl` rows are `glowk` on `color(last())`;
+     the only run so far was at a load average near 97, too noisy to quote. Run
+     `bench/again.sh 6 glowbase glowc glowk glowl glowbase^ glowc^ glowk^ glowl^` on a quiet
+     machine or the fleet.
+   - **The playground's kit still uses `hex()`** (`apps/playground/src/blits/kit.ts`, `keys.ts`),
+     left alone because another session was building the playground on 2026-10-07.
 
 7. **Name the span vocabulary.** `span`, `fit`, `fallback`, `fitted`, `lenient`, `stretch`,
    `collapse`, `compress`, and the hints `faster`, `slower`, `overlap`, `skip`, `firm` are working
