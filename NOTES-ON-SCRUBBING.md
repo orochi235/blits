@@ -247,8 +247,13 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
    (`voice.note(at, sync)`), along with state. `project(t)` at or behind the playhead reads the logs
    as it does today. Ahead of it, `project` applies the redo entries stamped by `t` to its throwaway
    mix, in time order. An op's `invert()` does nothing, because a rewind restores from the logs and
-   state copies, not by undoing calls. `goto(depthAt(t))` then only moves the playhead in the
-   `History`.
+   state copies, not by undoing calls. That leaves three rules for blits' use of the `History`
+   (weasel `02f638fb7`):
+   - `goto` only backward. A forward `goto` applies every call in between at once, so a jump ahead
+     of the playhead replays one `redo()` per stamp, stepping to each, never `goto(depthAt(t))`.
+     `switchBranch` applies nothing, so it is safe at the fork.
+   - No journals: `Journal.cancel` undoes through `invert`, which here does nothing.
+   - An op's `apply` returns nothing. One returning `false` or `'noop'` gets its entry dropped.
 
 ### Build plan
 
