@@ -1,14 +1,11 @@
-import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { spring } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 import { slew } from '../src/signals.js';
-import type { BookedHit, Handle, Mix, MixOptions, TapeMaker } from '../src/types.js';
-import { tape } from './tape.js';
+import type { BookedHit, Handle, Mix, MixOptions } from '../src/types.js';
 
 interface Pose {
   x: number;
@@ -84,8 +81,8 @@ const busy: Scene = (m, t, h) => {
   if (t === 640) m.rate = 0.5;
 };
 
-const kept = (make: TapeMaker = tape): MixOptions => ({
-  history: { ms: 5000, every: 50, tape: make },
+const kept = (): MixOptions => ({
+  history: { ms: 5000, every: 50, tape },
   stepMs: 4,
 });
 
@@ -565,32 +562,5 @@ describe('project', () => {
     expect(m.probe(a).x).toBeCloseTo(20, 9);
     expect(m.project(200).probe(a).x).toBeCloseTo(20, 9);
     expect(m.project(100).probe(a).x).toBeCloseTo(10, 9);
-  });
-});
-
-// The tape a host passes in practice: weasel-history, read from a local weasel checkout, where
-// there is one. Its published build lacks what a tape needs until its next release.
-const weasel = join(homedir(), 'src/weasel/packages/history/src/index.ts');
-describe.skipIf(!existsSync(weasel))('seek on weasel-history', () => {
-  it('plays the host calls again and keeps a branch, as on the stand-in', async () => {
-    const { createHistory } = (await import(weasel)) as { createHistory: TapeMaker };
-    const frames = every(0, 1200, 16);
-    for (const t of [208, 496, 656])
-      replays(play(busy, frames, [a, b], kept(createHistory)), frames, t, busyAt(t));
-    const run = play(busy, frames, [a, b], kept(createHistory));
-    run.m.seek(400);
-    run.m.sync(1216);
-    (run.h.drift as { weight: number }).weight = 0.2;
-    run.m.seek(408);
-    const branches = run.m.tape?.branches() ?? [];
-    expect(branches.map((x) => [x.label, x.current])).toEqual([
-      ['seek', false],
-      ['weight', true],
-    ]);
-    run.m.tape?.switchBranch((branches[0] as { id: number }).id);
-    for (const f of frames.filter((f) => f > 408)) {
-      run.m.sync(1216 + (f - 408));
-      expect(probes(run.m)).toEqual(run.poses.get(f));
-    }
   });
 });
