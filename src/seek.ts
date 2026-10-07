@@ -42,7 +42,7 @@ function restore<I, O>(
 }
 
 /**
- * A voice's records after a rewind: each subject's is put back from the records it had, the first
+ * A voice's records after a seek back: each subject's is put back from the records it had, the first
  * time it is asked for, since the subjects a store holds cannot be listed.
  */
 class Restored<I> extends Store<I, Subject<unknown>> {
@@ -162,7 +162,7 @@ export function seek<I, O>(mix: Mixer<I, O>, t: number): void {
   mix.u = u;
   mix.stir();
   const bookers = mix.bookers;
-  if (bookers !== null) for (const b of bookers) b.rewound();
+  if (bookers !== null) for (const b of bookers) b.sought();
 }
 
 /** Puts the mix back as it stood at the end of frame `t`, at host time `u`. */

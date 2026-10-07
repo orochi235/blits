@@ -232,7 +232,7 @@ export class Voice<I, O> {
   first: Controls | null = null;
   /** Where an anchored `out` or `end` puts its fade's start, mix time; Infinity until known. */
   outAt = Number.POSITIVE_INFINITY;
-  /** The host time a pinned start was given at, NaN for none: a rewind pins it again. */
+  /** The host time a pinned start was given at, NaN for none: a seek back pins it again. */
   pinned = Number.NaN;
   /** Whether its start is still to be fixed by an anchor, so it waits pending. */
   placing = false;
@@ -256,7 +256,7 @@ export class Voice<I, O> {
    */
   private finished = false;
   private playedAs: boolean | undefined = undefined;
-  /** The mix time `played` was settled at, so a rewind to before it can open it again. */
+  /** The mix time `played` was settled at, so a seek back to before it can open it again. */
   private playedAt = Number.NaN;
   private donePromise: Promise<void> | null = null;
   private doneSettle: (() => void) | null = null;
@@ -313,7 +313,7 @@ export class Voice<I, O> {
   }
 
   /**
-   * A rewind to mix time `t`: `done` and `played`, where they settled after it, start over with
+   * A seek back to mix time `t`: `done` and `played`, where they settled after it, start over with
    * fresh promises. True where `played` had settled true, which its owner counted.
    */
   reopen(t: number): boolean {

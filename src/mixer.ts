@@ -222,7 +222,7 @@ export class Mixer<I, O> implements Mix<I, O> {
       event,
     });
   };
-  /** The moment a rewind went back to: what is stepped again up to it was sent the first time. */
+  /** The moment a seek went back to: what is stepped again up to it was sent the first time. */
   sentTo = Number.NEGATIVE_INFINITY;
   /** The weight `influence` found besides the delta, read by the caller at once. */
   w = 0;

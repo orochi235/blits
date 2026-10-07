@@ -79,7 +79,7 @@ export class Book<I, O> implements Booker {
   private prev = Number.NaN;
   private round = 0;
   private stopped = false;
-  /** The host time the mix last rewound at: a mark at or before it was taken before the rewind. */
+  /** The host time the mix last sought at: a mark at or before it was taken before the seek. */
   private floor = Number.NEGATIVE_INFINITY;
   /** Bookings of marks, by `keyOf`, kept while listed so one already taken is not taken late. */
   private readonly marked = new Map<number, Booking>();
@@ -139,10 +139,10 @@ export class Book<I, O> implements Booker {
   }
 
   /**
-   * The mix went back to `host.now`: what is booked ahead is stopped, and everything after that
-   * moment is booked again as the mix reaches it again.
+   * The mix was sought to `host.now`, back or ahead: what is booked ahead is stopped, and
+   * everything after that moment is booked as the mix reaches it.
    */
-  rewound(): void {
+  sought(): void {
     if (this.stopped) return;
     const last = this.last;
     for (const b of this.marked.values()) if (b.time > last) b.taken?.stop();

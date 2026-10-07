@@ -761,7 +761,7 @@ export interface Mix<I, O, H = unknown> {
   rebase(): void;
   /**
    * The mix's own playback rate, multiplied into every voice's: 1 is real time and 0 pauses the
-   * whole mix. A negative rate throws, since the mix only goes forward. Setting it changes speed at
+   * whole mix. A negative rate throws: the mix plays only forward, and `seek` moves it back. Setting it changes speed at
    * once; `ramp` eases into a new one. It scales mix time, which everything a voice owns runs on:
    * its clock, its fades and a handle's ramp, `stagger`, an anchor's `by`, `stepMs`, `maxDt`,
    * `history.ms`, every `dt`, and `setting.timestamp`. Timestamps on the host's clock name the same
