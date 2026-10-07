@@ -202,8 +202,9 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
 
 1. **Which shape: does the mix go back by itself, from the history it keeps, or does the host save
    snapshots and re-do its own calls after loading one?** Turns on whether a host has to keep a log
-   of its own calls, whether rewinding needs `history`, and how far back it can reach. Recommended:
-   the mix goes back by itself.
+   of its own calls, whether rewinding needs `history`, and how far back it can reach. **Decided
+   2026-10-07: the mix goes back by itself,** from its own logs, with host calls after `t` replayed
+   from a weasel-history `History` (Decision 10).
 2. **After going back, does what happened after `t` vanish, or play again as it was recorded?**
    Vanishing is undo: the future is cut and the mix plays on fresh. Playing again is a tape: voices
    cued after `t` come back at their times, retargets replay. A tape makes mix time a position,
@@ -211,20 +212,21 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
    Mike: "we can't have a situation where just scrubbing cuts off a branch of redo history."
 3. **When the mix plays past a time again, does it send the events it already sent there?** The host
    drained them once, so sending again duplicates them; not sending means a patch's `send` is no
-   longer a record of what played. Recommended: send again, and say so on `rewind`, since the host
-   knows it rewound.
+   longer a record of what played. **Decided 2026-10-07: send again,** and say so on `rewind`,
+   since the host knows it rewound.
 4. **When a voice that had finished comes back, do `done` and `played` start over?** They already
    resolved and cannot un-resolve. Starting over gives a later `await` a fresh promise; anyone already
-   awaiting saw the old one resolve. Recommended: start over.
+   awaiting saw the old one resolve. **Decided 2026-10-07: start over.**
 5. **Do `rewind(t)` and `project(t)` take the host's clock or the mix clock?** Host time is what a host
    has, but once a rewind or a `rebase` has moved the offset, one host time no longer names one
-   moment (see Found while drafting). Recommended: host time, with the mix keeping a log of offsets
-   so each host time maps to exactly one mix time.
+   moment (see Found while drafting). **Decided 2026-10-07: mix time.** Once the mix replays a
+   recording, mix time is a position on it, and one host time can name two moments. labkit's trial
+   clock is a position too.
 6. **Should `sync` with an earlier timestamp throw once `rewind` exists?** Today it is accepted and
-   half works (below). Recommended: throw, and point at `rewind`.
+   half works (below). **Decided 2026-10-07: throw,** and point at `rewind`.
 7. **Without `stepMs`, does a rewind step once across the gap or replay each recorded frame?**
    Replaying is exact but needs a log of sync timestamps and costs a frame's work per frame replayed.
-   Recommended: step once and report `stepped`, as `project` does.
+   **Decided 2026-10-07: step once** and report `stepped`, as `project` does.
 8. **Does history have to survive a page reload?** **Decided 2026-10-06: no,** session only; see
    the weasel-history section above.
 9. **Does a host call made while the mix is rewound drop the recorded future after it, join it, or
