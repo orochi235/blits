@@ -108,15 +108,19 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   Pinned to semanticore `7dac96e`. The built page is not committed here; `serve` rebuilds on every
   edit and adds undo/redo, snapshots, cross-off and chat, none of which the hand page had.
 
-- **The flow diagram (view A) is on `main` locally, unpushed.** The playground's right column
-  draws a composition's signal flow with `@weasel-js/diagram`. Do not push `main` while
-  `apps/playground/package.json` points at the gitignored `.weasel/` tarball: `npm ci` in CI would
-  fail (a machine that has run `link-diagram.sh` installs from its npm cache, so local runs pass).
-  Pushing waits on plan Task 11 (the weasel 1.9.0 release, Mike's call) or on Mike choosing to
-  commit the tarball. Do not rerun `apps/playground/scripts/link-diagram.sh` until 1.9.0: the
-  weasel branch's diagram now needs its unreleased core, which the script does not pack. Views B, C and D and the mixer desk are the roadmap in the spec:
-  `docs/superpowers/specs/2026-10-07-flow-diagram-design.md`, plan beside it in
-  `docs/superpowers/plans/2026-10-07-flow-diagram.md`.
+- **The playground's diagrams, after view A.** View A, the signal flow, is built; the playground's
+  README ("The flow") describes it. Next, each with a spec of its own when it starts:
+
+  | | View | Answers |
+  |---|---|---|
+  | B | Timing graph: voices linked by `anchor`, `all`/`any` joins and spans, `locus` groups as containers | what waits on what |
+  | C | A and B together, as two views of one composition or one diagram with both kinds of edge | both |
+  | D | Editable: dragging port to port authors an anchor, or wires a weight to a signal | the diagram as an input |
+
+  Also wanted, unscheduled: a mixer-desk drawing of A, each channel a horizontal bus ending in its
+  rule and each voice a vertical strip tapping the buses it writes. `flowOf` builds the graph from
+  the playground's `Composition`; once the UI settles, a public `describe()` on `Mix` should make
+  the same shape for any host, and `flowOf` becomes a thin adapter.
 
 ## Decided in conversation, and in no doc
 

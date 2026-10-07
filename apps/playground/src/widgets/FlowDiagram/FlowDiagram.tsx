@@ -42,6 +42,7 @@ export function FlowDiagram({
       width={width}
       height={height}
       minScale={minScale}
+      anchor="start"
       selected={selected}
       onSelect={onSelect}
     />

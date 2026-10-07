@@ -1,10 +1,9 @@
-import type { Anchor, Placement } from '@msb235/blits';
+import type { Anchor, Mark } from '@msb235/blits';
 import type { Clip, ClipEdit, Edge, Hatch, Link } from '@pg/widgets/ScoreLanes';
 import type { Composition, Voice } from './composition';
 import { compileExpr, type Scope, scopeOf } from './expr';
 import type { Subject } from './stage';
 
-type Mark = keyof Placement;
 const edgeOfMark = (m: Mark): Edge => (m === 'start' || m === 'in' ? 'start' : 'end');
 
 /** When the first subject starts after the voice's start, and how long until the last does. */
