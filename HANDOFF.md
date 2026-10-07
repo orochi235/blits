@@ -111,7 +111,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 - **The flow diagram (view A) is on `main` locally, unpushed.** The playground's right column
   draws a composition's signal flow with `@weasel-js/diagram`. Do not push `main` while
   `apps/playground/package.json` points at the gitignored `.weasel/` tarball: `npm ci` in CI would
-  fail. Pushing waits on plan Task 11 (the weasel 1.9.0 release, Mike's call) or on Mike choosing to
+  fail (a machine that has run `link-diagram.sh` installs from its npm cache, so local runs pass).
+  Pushing waits on plan Task 11 (the weasel 1.9.0 release, Mike's call) or on Mike choosing to
   commit the tarball. Run `apps/playground/scripts/link-diagram.sh` after any weasel-diagram
   change. Views B, C and D and the mixer desk are the roadmap in the spec:
   `docs/superpowers/specs/2026-10-07-flow-diagram-design.md`, plan beside it in
@@ -478,13 +479,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    on a release.
 
 ## Loose ends
-
-- **`npm ci` fails on a clean machine until weasel 1.9.0 ships**, so `site.yml` (every push to
-  `main`) and `release.yml` fail too. The playground installs `@weasel-js/diagram` from
-  `file:.weasel/weasel-js-diagram-1.8.1.tgz`, which `apps/playground/scripts/link-diagram.sh`
-  packs and `.gitignore` leaves out; a machine that has run that script installs from its npm
-  cache, so local runs pass. Merged anyway on Mike's call (2026-10-07). Once 1.9.0 is on npm,
-  depend on it and delete the script and `.weasel/`.
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
   100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k
