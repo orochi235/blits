@@ -61,7 +61,7 @@ orbs.probe(id, out);                         // probing stays per mix
 | `marks(from, to)` | Every member's marks and every announced mark, earliest first. |
 | `project(time)` | Every member read at `time`; `.of(mix)` gives that mix's `Projection`. |
 | `live`, `inert`, `onWake(fn)` | Any member live; every member inert; fires when any member stirs. |
-| `drop(mix)` | Takes a member off: it is no longer synced and its recorded calls no longer replay. A seek back past the drop does not bring it back. |
+| `drop(mix)` | Takes a member off: it is no longer synced, and its calls stop. Under `history` the drop is recorded: a seek back before it brings the member back, and the transport keeps a dropped member while history reaches the drop. Without `history` a drop is final and the member is let go. |
 
 `opts` takes `history: { ms, tape }`. A member's `MixOptions.history` keeps only
 `every` and `inputs`. Giving it `ms` or `tape` throws: reach and tape are the transport's.
@@ -69,7 +69,12 @@ orbs.probe(id, out);                         // probing stays per mix
 ### `MixOptions`
 
 `transport?: Transport` and `name?: string`. `name` is what `Marked.mix` reports and what errors
-say. A mix joins at the transport's `now`, and has nothing before it.
+say. A mix joins at the transport's `now`: a seek back before that finds it empty. A voice it cues
+with an earlier `start` still plays partway, as on a standalone mix.
+
+A transport without `history` keeps nothing and cannot `seek`. A host that rebuilds its mixes when
+its clock goes back, re-cueing from its own state, can keep doing so with a fresh transport;
+`seek` is for hosts that do not re-derive their cues.
 
 ### A member mix
 
@@ -181,6 +186,9 @@ compiling; `Marked` gains `mix`. Nothing changes for a mix with no shared transp
 - A host call after a seek back branches the transport's tape; neither member replays the old
   future.
 - A member's `sync`, `seek`, `rebase`, `ramp` and `rate` write throw.
+- Under `history`, a seek back before a `drop` brings the member back with its voices, and playing
+  forward drops it again; without `history` a dropped member is let go.
+- A member that joins late and cues a voice with an earlier `start` plays it partway.
 - `inert` holds only while every member is inert, and `onWake` fires on a cue in any member.
 - Cue before sync at the moment an anchored start resolves holds the start back.
 
