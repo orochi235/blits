@@ -395,7 +395,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    weight of 0 is computed and then dropped. Unmeasured. Two fixes, smallest first: skip the patch
    when `weigh` returns 0 (a stateful patch's skipped `step` needs care); or let a voice declare a
    bound that changes over time and index subjects by position, which needs positions from the
-   host — a new public surface, so Mike's call. Bench a glow over 10k subjects before either.
+   host — a new public surface. If built, it is opt-in (decided 2026-10-07): a voice with no bound
+   keeps today's behavior, and whether unbounded voices are ever deprecated is left open. Bench a
+   glow over 10k subjects before either.
 
 ## Loose ends
 
