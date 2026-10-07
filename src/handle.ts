@@ -11,6 +11,7 @@ export interface HandleHost<I, O> {
   /** The voice's clock jumped: for an owner, so did every clock it holds. */
   sought(voice: Voice<I, O>): void;
   fade(voice: Voice<I, O>, opts: FadeOptions<I> | undefined): void;
+  rise(voice: Voice<I, O>, opts: { over?: number } | undefined): void;
   weightOf(voice: Voice<I, O>, subject: I): number;
   /** Records a write the host made, which `again` makes once more where a seek replays it. */
   record(label: string, again: () => void): void;
@@ -84,6 +85,11 @@ export class VoiceHandle<I, O> implements Handle<I> {
   fade(opts?: FadeOptions<I>): void {
     this.#host.fade(this.#voice, opts);
     this.#host.record('fade', () => this.fade(opts));
+  }
+
+  rise(opts?: { over?: number }): void {
+    this.#host.rise(this.#voice, opts);
+    this.#host.record('rise', () => this.rise(opts));
   }
 
   weightOf(subject: I): number {

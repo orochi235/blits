@@ -1,6 +1,6 @@
 import { Book, type BookHost } from './book.js';
 import { schedule } from './due.js';
-import { beginFade, fadeSubject } from './fade.js';
+import { beginFade, beginRise, fadeSubject } from './fade.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
 import { noted, remember } from './history.js';
 import type { LaneHost } from './lanes.js';
@@ -159,6 +159,7 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
         fadeSubject(mix, voice, opts.subject as I, opts.over);
       else beginFade(mix, voice, opts ?? {});
     },
+    rise: (voice, opts) => beginRise(mix, voice, opts ?? {}),
     weightOf: (voice, subject) => {
       if (voice.state === 'done') return 0;
       if (voice.holding !== null)

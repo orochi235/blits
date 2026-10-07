@@ -109,6 +109,30 @@ export function beginFade<I, O>(
   if (over === 0 && opts.at !== 'rest') retire(mix, voice, voice.out.at);
 }
 
+/**
+ * Turns a fading voice around: it climbs back from where its fade out had got to, up the same
+ * curve, at the whole curve per `over` ms. A fade waiting for rest is taken back at once. A voice
+ * not fading is left as it is.
+ */
+export function beginRise<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  opts: { over?: number },
+): void {
+  const out = voice.out;
+  if (voice.state !== 'fading' || out === null) return;
+  const at = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
+  const over = mix.reduced ? 0 : (opts.over ?? voice.fade.in ?? voice.fade.out ?? 0);
+  const left = out.rest || out.over === 0 ? 1 : 1 - (at - out.at) / out.over;
+  const from = left < 0 ? 0 : left > 1 ? 1 : left;
+  voice.out = null;
+  voice.outAt = Number.POSITIVE_INFINITY;
+  voice.state = 'live';
+  voice.back = over > 0 && from < 1 ? { from, at, over } : null;
+  noted(mix, voice);
+  mix.lanes?.refill();
+}
+
 /** Removes a voice, recording that it left at `at`, default now. */
 /** Whether a motion patch still asks this voice of this mix for its time. */
 function asks<I, O>(mix: Mixer<I, O>, motion: Motions<I>, voice: Voice<I, O>): boolean {

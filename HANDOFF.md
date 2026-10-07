@@ -389,6 +389,91 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    or `seek`, which are exactly that. Rewrite its opening and "The words" to cover time as well as
    mixing.
 
+4. **Reach is fixed at cue, so a voice whose influence moves pays for every subject it might
+   touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every
+   frame, and `influence` (`src/fold.ts`) runs the patch before anything checks the weight, so a
+   weight of 0 is computed and then dropped. Measured on teitou (2026-10-07, `bench/again.sh 6`
+   over the `glow*` rows, medians of six fresh processes): a glow over 10k subjects adds
+
+   | Read | glow writing `gain` | glow writing `gain` and `color` |
+   |---|---:|---:|
+   | probe | 0.46 ms | 0.94 ms |
+   | probe, lanes off | 0.41 ms | 0.43 ms |
+   | `pull` | 0.45 ms | 1.66 ms |
+
+   to a 0.47–1.43 ms frame. A bounded reach would save most of the 0.4–0.5 ms, since only 2% of
+   subjects are in range. The larger cost is the `color` column: hex runs on no lane, so the
+   glow's voice and the voice under it leave the lanes together, and `pull` pays 1.2 ms more for
+   it than for the bound. Two fixes for reach, smallest first:
+   - Skip the patch when `weigh` returns 0. A stateful patch's skipped `step` needs care.
+   - Declared bounds, the design to evaluate (unbuilt). The mix takes subject positions from the
+     host, and reach may be declared at three levels, each optional, each meaning "everywhere"
+     when absent; a voice's reach is where all three overlap:
+
+     | Declared on | Knows | Example | Changes |
+     |---|---|---|---|
+     | voice (`subjects`/`target`, today) | which subjects this cue is for | only the left sign | fixed at cue |
+     | patch | the effect's footprint by phase | a ripple growing 0 → 200 px | with phase |
+     | signal | where it is nonzero | within 80 px of the pointer | with host input |
+
+     A bound on a mix without positions is refused at cue. Channels take no reach. The hazard is
+     a bound declared too small, which clips the effect silently; a dev check could sample a few
+     subjects outside it and warn on a nonzero influence. Opt-in (decided 2026-10-07): with no
+     bound, behavior is today's. Whether unbounded voices are ever deprecated is left open, and
+     unlikely — klieg's lighting, a fade over a whole sign and wod's transitions are unbounded by
+     design; `target` is the likelier candidate once bounds absorb its spatial uses.
+
+5. **Work nobody will see** (2026-10-07, all unbuilt and unmeasured). Prompted by astv speeding
+   100 text animations into 2 s, most of them offscreen. Three cases, by what the host must add:
+
+   | Case | Blits knows already | Host adds |
+   |---|---|---|
+   | offscreen | what the host probes; an unprobed subject costs nothing on the general path | nothing, if lanes stop filling every subject the mix has met (`Mix.drain`'s doc in `src/types.ts`; the `sparse` row) and fill only those probed lately |
+   | too fast to see | each voice's span and the frame's gap | a policy: a voice ending between two syncs jumps to its end, since text that types in must still end typed, or stretches to a minimum number of frames |
+   | flicker | each channel's arithmetic and rate | which channels carry brightness, once on the kit; blits could cap reversals at WCAG's 3 a second per subject, stricter than WCAG's rule, which also weighs flashing area the host alone knows |
+
+   Bench an astv-shaped scene (100 short voices over a list mostly unprobed) before building any.
+   A reach that changes over time (item 4) is one way to say offscreen.
+
+6. **Color as a value, its merge rule as a parameter** (2026-10-07, unbuilt). `hex` ties three
+   choices together: the value is a color, it is stored packed as `0xrrggbb`, and voices replace
+   one another. The last came from klieg's port (`rig.ts`, klieg `5764ebc`: "`color` replaces,
+   having no arithmetic of its own to contribute with"), which holds for the packing, not for color.
+   Decided in conversation: uncouple them, as `vec(n, of)` already does for numbers.
+   - **`color(of?)`.** The value is OKLab `[L, a, b]` whichever the rule. `color()` averages: a
+     premultiplied `sum` underneath, `[L, a, b, 1]` scaled by the mix's weight, so the fold yields
+     `Σw·color` and `Σw`; on lanes today. The pose carries color plus coverage (decided
+     2026-10-07): blits knows no subject's own color, so the host lays the result over its base at
+     write, as klieg's `light` does with color and amount (`hinge.ts`). The pose holds the fold as
+     it stands, premultiplied `[Σw·L, Σw·a, Σw·b, Σw]`, so the fold, lanes and `pull` need no
+     finishing step; the write helper divides, caps coverage at 1, composites over the base and
+     encodes, clipping out-of-gamut values per channel as `mixHex` does. `color(last())` replaces, the last to pass winning behind the band.
+     `mul` and `max` per OKLab axis mean nothing anyone asks for, so the kit refuses them; a tint
+     (multiplying by a filter color) is a channel of its own, as are hue shift (`sum`), chroma and
+     lightness (`mul`).
+   - **OKLab, not OKLCH, as the store**: several voices average per axis there, and OKLCH's hue
+     wraps (the plain mean of 350° and 10° is 180°). Before settling it, look at a red-to-cyan
+     crossfade, which goes through gray; if that reads wrong, a two-voice crossfade can still
+     interpolate in OKLCH, as a locus blend does today, while stacking stays in OKLab.
+   - **Conversion at the edges.** Keyframe stops convert once when authored. An `fn` patch returns
+     a value every frame, so blits ships a helper such as `oklab(0xff0000)` for it to call once
+     outside the hot path, and one that encodes to hex or a CSS string at write. This replaces
+     `mixHex`'s per-blend conversion, measured at 45–210 ns against 8 ns in sRGB (CHANGELOG
+     0.3.0).
+   - **`hex` deprecated as `color(last())` with packed storage**, not kept as a peer. klieg should
+     move with no change in pixels: every klieg effect voice plays at full weight with no locus
+     (see State above), so its color is only ever replaced, never interpolated, and replacement
+     agrees in any space. That is inference; confirm against klieg's Playwright specs before
+     claiming it in klieg. The schema's "color replaces" line goes.
+   - **A lane fold for `last`**, independent of the rest: last to pass wins behind the band, a
+     byte per voice per subject holding band state, the value stored as it is. `color(last())`,
+     `hex` while it lasts, and every `last` channel then run on lanes; it is what the `glowc^` row
+     in item 4 pays 1.2 ms for. Three hazards, all from reading the code: lanes must fold `last`
+     in voice order, which `sum`/`mul`/`max` never needed; band state must move with a voice
+     between the lane and the general path, or a mid-band weight pops for a frame; and keyframe
+     interpolation on the lane goes through the channel's own lerp (`src/fill.ts`), a conversion
+     per subject per frame.
+
 ## Loose ends
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the

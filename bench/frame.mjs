@@ -110,6 +110,14 @@ const rows = [
   // The same three voices weighted by a signal, and `mix.blend` between them, which is both.
   ['signal', 10000, 3],
   ['blend', 10000, 3],
+  // A glow around a pointer circling a 100x100 grid, weighted to 0 beyond 8 cells (about 2% of
+  // subjects), over a voice on every subject; and that voice alone, so the glow's cost is the
+  // difference. A reach bounded to the glow would pay for 2% of it. `glowc` also writes color,
+  // as the playground's glow does; hex runs on no lane, so the glow and the voice under it leave
+  // the lanes together.
+  ['glowbase', 10000, 1],
+  ['glow', 10000, 2],
+  ['glowc', 10000, 2],
   // One voice per subject, each targeted at its own: magicsmoke's faults on one shared mix.
   ['own', 100, 1],
   ['own', 1000, 1],
@@ -148,6 +156,9 @@ const rows = [
   ['tween-', 10000, 1],
   ['tweenfn-', 10000, 1],
   ['blend-', 10000, 3],
+  ['glowbase-', 10000, 1],
+  ['glow-', 10000, 2],
+  ['glowc-', 10000, 2],
   ['probed-', 10000, 2],
   ['sparse-', 10000, 1],
   // Read through `pull` into one array per channel instead of a probe per subject.
@@ -157,6 +168,9 @@ const rows = [
   ['spring^', 10000, 1],
   ['tween^', 10000, 1],
   ['tweenfn^', 10000, 1],
+  ['glowbase^', 10000, 1],
+  ['glow^', 10000, 2],
+  ['glowc^', 10000, 2],
   ['keyses^', 10000, 1],
   ['churn^', 10000, 1],
   // weasel's churn: the stopped voice's subject leaves for good and a new one arrives, read by
@@ -194,8 +208,16 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   });
   const weasel = kind.startsWith('weasel');
   const turnover = kind === 'turnover';
+  const glow = kind.startsWith('glow');
+  const side = Math.round(Math.sqrt(n));
   const subjects = Array.from({ length: n }, (_, j) =>
-    weasel ? `n${j}` : turnover ? j : { seed: j * 0.37 },
+    weasel
+      ? `n${j}`
+      : turnover
+        ? j
+        : glow
+          ? { seed: j * 0.37, x: j % side, y: Math.floor(j / side) }
+          : { seed: j * 0.37 },
   );
   if (weasel)
     for (let j = 0; j < n; j++)
@@ -226,6 +248,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   let turn = 0;
   let shared = kind === 'swap' ? m.cue({ patch: flicker(0) }) : null;
   const churn = () => {
+    if (glow) aim();
     if (shared !== null) {
       shared.fade({ over: 0 });
       shared = m.cue({ patch: flicker(turn++ % 3) });
@@ -263,7 +286,23 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   // Weighted per subject by a signal holding no state: three voices, or a blend between three.
   const by = (s) => 0.5 + 0.5 * Math.sin(s.seed);
   if (kind === 'blend') m.blend([flicker(0), flicker(1), flicker(2)], by, { fade: { in: 100 } });
-  for (let v = 0; !own && kind !== 'blend' && v < voices; v++) {
+  const pointer = { x: 0, y: 0 };
+  const RADIUS = 8;
+  const near = (s) => Math.max(0, 1 - Math.hypot(s.x - pointer.x, s.y - pointer.y) / RADIUS);
+  const aim = () => {
+    const a = t / 2000;
+    pointer.x = side / 2 + (side / 3) * Math.cos(a);
+    pointer.y = side / 2 + (side / 3) * Math.sin(a);
+  };
+  if (glow) m.cue({ patch: flicker(0) });
+  if (kind === 'glow')
+    m.cue({ patch: patch(1000, () => ({ gain: 1.5 }), { writes: ['gain'] }), weight: near });
+  if (kind === 'glowc')
+    m.cue({
+      patch: patch(1000, () => ({ gain: 1.5, color: 0xffe08a }), { writes: ['gain', 'color'] }),
+      weight: near,
+    });
+  for (let v = 0; !own && !glow && kind !== 'blend' && v < voices; v++) {
     const p =
       kind === 'keys'
         ? bounce()

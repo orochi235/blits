@@ -26,7 +26,10 @@ export function passAt(elapsed: number, duration: number, passes: number): numbe
   return over(elapsed, duration, passes) ? passes - 1 : Math.floor(elapsed / duration);
 }
 
-/** A voice's own fade this frame, 0..1: in from `since` over `fadeIn`, and out along its ramp. */
+/**
+ * A voice's own fade this frame, 0..1: in from `since` over `fadeIn`, out along its ramp, and back
+ * up the same curve where a fade out was turned around.
+ */
 export function envelope(
   fadeIn: number,
   out: { at: number; over: number; rest: boolean } | null,
@@ -34,10 +37,15 @@ export function envelope(
   reduced: boolean,
   now: number,
   since: number,
+  back: { from: number; at: number; over: number } | null = null,
 ): number {
   let w = 1;
   if (fadeIn > 0 && !reduced) {
     const u = (now - since) / fadeIn;
+    if (u < 1) w *= ease ? ease(Math.max(0, u)) : Math.max(0, u);
+  }
+  if (back && !reduced) {
+    const u = back.from + (now - back.at) / back.over;
     if (u < 1) w *= ease ? ease(Math.max(0, u)) : Math.max(0, u);
   }
   if (out && !out.rest) {

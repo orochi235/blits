@@ -75,6 +75,11 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
     if (voice.parts !== null && !mix.projecting)
       for (const [subject, r] of voice.parts)
         if (now - r.at >= r.over) part(mix, voice, subject, r.at + r.over);
+    const back = voice.back;
+    if (back !== null && now >= back.at + (1 - back.from) * back.over && !mix.projecting) {
+      voice.back = null;
+      mix.lanes?.refill();
+    }
     if (voice.state === 'fading' && voice.out) {
       const { at, over, rest, deadline } = voice.out;
       const spent = now - at;
