@@ -150,9 +150,7 @@ describe('foldOf', () => {
   });
 
   it('has no rest node for a channel without a rest', () => {
-    expect(foldOf(flowOf(crossfade), 'color').nodes.some((n) => n.kind === 'rest')).toBe(
-      KIT.color.rest !== undefined,
-    );
+    expect(foldOf(flowOf(crossfade), 'color').nodes.some((n) => n.kind === 'rest')).toBe(false);
   });
 
   it('is empty when nothing writes the channel', () => {
@@ -161,9 +159,6 @@ describe('foldOf', () => {
 
   it('formats a vector rest', () => {
     const fold = foldOf(flowOf(staggerWave), 'offset');
-    if (KIT.offset.rest)
-      expect(fold.nodes.find((n) => n.kind === 'rest')?.detail).toBe(
-        `[${KIT.offset.rest.join(', ')}]`,
-      );
+    expect(fold.nodes.find((n) => n.kind === 'rest')?.detail).toBe('[0, 0]');
   });
 });
