@@ -1,8 +1,9 @@
 import type { Composition, Voice } from '@pg/blits/composition';
-import { flowOf, writesOf } from '@pg/blits/flow';
+import { flowOf, foldOf, writesOf } from '@pg/blits/flow';
 import { KIT } from '@pg/blits/kit';
 import crossfade from '@pg/blits/presets/crossfade';
 import pointerGlow from '@pg/blits/presets/pointer-glow';
+import staggerWave from '@pg/blits/presets/stagger-wave';
 import { describe, expect, it } from 'vitest';
 
 const edges = (c: Composition, faulted?: Set<string>) =>
@@ -118,5 +119,51 @@ describe('writesOf', () => {
     ).toEqual(['scale', 'color']);
     expect(writesOf({ kind: 'fn', period: 1, writes: ['turn'], at: '' })).toEqual(['turn']);
     expect(writesOf({ kind: 'spring', channel: 'offset', opts: {} })).toEqual(['offset']);
+  });
+});
+
+describe('foldOf', () => {
+  it('keeps only what reaches the channel', () => {
+    const fold = foldOf(flowOf(crossfade), 'scale');
+    expect(new Set(fold.nodes.map((n) => n.id))).toEqual(
+      new Set([
+        'ch:scale',
+        'voice:warm',
+        'voice:cool',
+        'expr:warm:weight',
+        'level:mix',
+        'rest:scale',
+      ]),
+    );
+    expect(fold.edges.some((e) => e.to === 'pose')).toBe(false);
+  });
+
+  it('adds the rest the channel folds from, when it has one', () => {
+    const fold = foldOf(flowOf(crossfade), 'scale');
+    expect(fold.nodes.find((n) => n.id === 'rest:scale')).toMatchObject({
+      kind: 'rest',
+      detail: String(KIT.scale.rest),
+    });
+    expect(fold.edges).toContainEqual(
+      expect.objectContaining({ from: 'rest:scale', to: 'ch:scale' }),
+    );
+  });
+
+  it('has no rest node for a channel without a rest', () => {
+    expect(foldOf(flowOf(crossfade), 'color').nodes.some((n) => n.kind === 'rest')).toBe(
+      KIT.color.rest !== undefined,
+    );
+  });
+
+  it('is empty when nothing writes the channel', () => {
+    expect(foldOf(flowOf(crossfade), 'turn')).toEqual({ nodes: [], edges: [] });
+  });
+
+  it('formats a vector rest', () => {
+    const fold = foldOf(flowOf(staggerWave), 'offset');
+    if (KIT.offset.rest)
+      expect(fold.nodes.find((n) => n.kind === 'rest')?.detail).toBe(
+        `[${KIT.offset.rest.join(', ')}]`,
+      );
   });
 });

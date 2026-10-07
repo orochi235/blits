@@ -199,3 +199,31 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
   for (const ch of CHANNELS) if (written.has(ch)) b.edge(`ch:${ch}`, 'pose');
   return { nodes: [...b.nodes.values()], edges: [...b.edges.values()] };
 }
+
+const restText = (rest: unknown) => (Array.isArray(rest) ? `[${rest.join(', ')}]` : String(rest));
+
+/** What reaches one channel: its ancestors in `flow`, plus the rest it folds
+ *  from when it has one. Empty when nothing writes the channel. */
+export function foldOf(flow: Flow, ch: ChannelName): Flow {
+  const root = `ch:${ch}`;
+  if (!flow.nodes.some((n) => n.id === root)) return { nodes: [], edges: [] };
+  const keep = new Set([root]);
+  const queue = [root];
+  for (let id = queue.pop(); id !== undefined; id = queue.pop()) {
+    for (const e of flow.edges) {
+      if (e.to === id && !keep.has(e.from)) {
+        keep.add(e.from);
+        queue.push(e.from);
+      }
+    }
+  }
+  const nodes = flow.nodes.filter((n) => keep.has(n.id));
+  const edges = flow.edges.filter((e) => keep.has(e.from) && keep.has(e.to));
+  const rest = KIT[ch].rest;
+  if (rest !== undefined) {
+    const id = `rest:${ch}`;
+    nodes.push({ id, kind: 'rest', label: 'rest', detail: restText(rest) });
+    edges.push({ id: `${id}->${root}`, from: id, to: root });
+  }
+  return { nodes, edges };
+}
