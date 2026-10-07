@@ -464,17 +464,26 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      `last` channel that is a motion, sits in a locus or names one subject keeps the channel off
      lanes, since crowds, motions and loci fold elsewhere (`fits` in `src/hosts.ts`). `hex` and a
      plain `last()` stay off: hex's lerp is not straight across, and `last()` holds anything.
-   - **What the `last` lane saves is unmeasured.** `glowl` rows are `glowk` on `color(last())`;
-     the only run so far was at a load average near 97, too noisy to quote. Run
-     `bench/again.sh 6 glowbase glowc glowk glowl glowbase^ glowc^ glowk^ glowl^` on a quiet
-     machine or the fleet. The fold also costs every other lane a little: `one` sets two fields
-     per subject and `foldInto` tests the op. `bench/ab.sh` against `f0f9494` says whether that
-     shows; it has not been run.
+   - **What the `last` lane saves**, measured on teitou (2026-10-07, idle, `bench/again.sh 6`,
+     medians of six fresh processes, ms a frame): through `pull`, `glowl^` 1.09 against
+     `glowk^` 1.03 and `glowc^` 2.14, over `glowbase^` 0.48; through `probe`, `glowl` 1.60,
+     `glowk` 1.70, `glowc` 1.88, over `glowbase` 1.08. So a glow on `color(last())` costs what
+     one on `color()` does, and half what a hex glow does through `pull`. What the `last` op
+     costs every other lane does not show: `AB_EACH=1 bench/ab.sh f0f9494 HEAD 6` read
+     `fn^`, `tweens^`, `weasel^`, `keyses^`, `blend` and `glowc^` within 0.96–1.04×, every row's
+     runs overlapping the other side's.
 
-7. **Name the span vocabulary.** `span`, `fit`, `fallback`, `fitted`, `lenient`, `stretch`,
-   `collapse`, `compress`, and the hints `faster`, `slower`, `overlap`, `skip`, `firm` are working
-   names, on `main` and unreleased; `all`/`any` are picked. They go through semanticore with
-   the rest of `docs/vocabulary.json` before a release carries them.
+7. **Name the span vocabulary — blocks the next release.** `span`, `fit`, `fallback`,
+   `fitted`, `lenient`, `stretch`, `collapse`, `compress`, and the hints `faster`, `slower`,
+   `overlap`, `skip`, `firm` are working names, on `main` and unreleased; `all`/`any` are picked.
+   Each has 20 candidates in `docs/vocabulary.json` (`11b9e54`), served on :4873; none is picked
+   yet. `stretch` is not among its own candidates: the checker refuses a word that is a role key,
+   and `stretch` is the key of the role picked as `interval`.
+
+9. **The history adapter is drafted and unbuilt** (2026-10-07, with astv-f5): the transport
+   spec's "History behind an adapter" section, which ends with what is left to settle. Mike has
+   not reviewed it. astv marked its text-run weight `input` (astv `522624e0`) and will name
+   mixes and describe voices as the draft asks once it exists.
 
 8. **astv's phase on a span.** astv's `scheduleMarks` (`packages/engine/draw/text/changeOrder.ts`)
    is what a `queue` or `stagger` span with a budget replaces; astv pins blits 0.4.0, so this waits

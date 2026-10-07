@@ -1,6 +1,6 @@
 # Transport: one clock for several mixes
 
-**Status: built 2026-10-07 except the history adapter, which is designed in part and unbuilt** (see
+**Status: built 2026-10-07 except the history adapter, which is drafted with astv and unbuilt** (see
 "History behind an adapter"), and owners or spans across mixes, which are a later spec.
 
 For whoever builds it in blits, and for astv, its first consumer. It answers how mixes with
@@ -158,29 +158,92 @@ with its record and its motion state, and `from: 'current'` voices already kept 
 
 ## History behind an adapter
 
-Blits decides what history keeps and when to read it back; the host decides where it lives. Every
-kind of record goes through one adapter the host passes as `history`, generalizing the `tape` slot
-weasel-history's `createHistory` fills today: state copies, the tape of calls, recorded inputs and
-host fields, departed voices, announced marks, dropped members. Blits holds none of it itself, so
-below the adapter nothing is ever just gone; a record the adapter does not have in hand is a load,
-not a loss.
+**Drafted 2026-10-07 with astv-f5, unbuilt; Mike has not reviewed it.** Blits decides what history keeps and when it reads it
+back. With a `store`, the host decides where the older part lives. Nothing is ever just gone
+below the store: a record that isn't in memory has to be loaded, and blits never treats it as lost.
+Without a store, nothing changes: `ms` bounds what is kept and older records are dropped.
 
-- **Reads are synchronous.** `await t.prepare(time)` asks the adapter to bring in what a seek or a
-  read back to `time` needs; `t.seek(time)` and `project(time)` stay synchronous. A read the
-  adapter cannot answer throws a typed error naming what was missing, so a host that did not
-  prepare finds out at once and never gets a partial restore.
-- **Records are plain data.** A patch's `state` must survive `structuredClone`, or the patch
-  provides `pack(state)` and `unpack(data)`; `spring` and `glide` provide them. A stateful patch
-  with neither is refused at `cue` on a mix with history, not at the seek that would need it.
-- **Keeping everything in memory is one adapter,** shipped with blits, which never lets go. `ms`
-  stops being a mode: an adapter that does let go says so by throwing on the read, the same loud
-  miss.
+History holds two kinds of record, and only one kind is paged out:
 
-**Unbuilt, and waiting on one decision:** history keys records by subject, and a subject may be any
-object, so an adapter that keeps records anywhere but memory needs the host to give each subject a
-key that outlives it (`keyOf(subject): string`, or the host's own ids). Whether blits asks for that
-key, or keeps records it cannot key in memory and only pages out the rest, decides the adapter's
-methods. Until then history lives in memory, and `ms: Infinity` keeps everything.
+| Kind | What | Paged out |
+|---|---|---|
+| data | per subject: state copies (`snaps`), recorded inputs, a subject's record when it left a voice, a motion lane's released runs; per mix: host fields, a voice's control log | yes, as plain data |
+| structure | the voices a seek may bring back, as cued | yes, when the host can rebuild the voice from a descriptor; otherwise kept in memory |
+| membership | the mixes on the transport, dropped ones a seek may bring back; announced marks | no: few |
+
+The tape is not in either kind. The host already owns it through `history.tape`.
+
+```ts
+interface HistoryOptions {
+  ms: number;              // how much stays in memory; with a store, the rest is paged out, not dropped
+  every?: number;
+  inputs?: boolean;
+  tape?: TapeMaker;
+  store?: HistoryStore;
+  /** Rebuilds a cued voice from the descriptor it was cued with, so the voice can be paged out. */
+  revive?: (d: Described) => VoiceSpec<unknown, unknown>;
+}
+
+interface Described { kind: string; data: unknown }   // data survives structuredClone
+// VoiceSpec gains `as?: Described`: what `revive` rebuilds this voice's spec from.
+
+interface HistoryStore {
+  /** Records leaving memory, earliest first within each stream. */
+  page(out: readonly Paged[]): void;
+  /** Every record a restore to mix time `t` needs, from the streams the store holds. */
+  load(t: number): Promise<readonly Paged[]>;
+}
+
+interface Paged {
+  mix: string;                       // the member's `name`
+  stream: 'voice' | 'snap' | 'input' | 'left' | 'released' | 'host' | 'controls';
+  voice?: number;                    // the voice's id in its mix
+  subject?: string | number;
+  at: number;                        // mix time
+  data: unknown;                     // survives structuredClone
+}
+
+transport.prepare(t: number): Promise<void>;   // loads what `seek(t)` and `project(t)` will need
+class HistoryMiss extends Error { mix: string; stream: string; at: number }
+```
+
+- **`seek` and `project` stay synchronous.** A read reaching past memory into records that were
+  not loaded throws `HistoryMiss`, which names what was missing, before anything moves, so the
+  restore is never partial. A host that calls `await t.prepare(t0)` first never sees it. astv
+  rewinds only by a user scrub in a replay or film, so it can wait on `prepare` (astv-f5, 2026-10-07).
+- **Records are keyed by mix and subject.** A string or number subject is its own key, since
+  subjects only need to be unique within their own mix: astv's `r<row>` repeats across windows.
+  With a `store`, the first time a mix sees an object subject it throws, unless the mix was made
+  with `keyOf(subject): string | number`. Keeping those subjects in memory instead would let memory
+  grow without anyone noticing. Keys need to last only as long as the session, not across a
+  reload: astv's flights, runs and roster instances are numbered by a per-mix counter.
+- **Patch state has to be plain data.** A patch's `state` must survive `structuredClone`, or the
+  patch provides `pack(state)` and `unpack(data)`; `spring` and `glide` do. With a `store`, a
+  stateful patch with neither is refused at `cue`, not at the seek that would need it.
+- **A voice pages out when it was cued with a descriptor.** Its patch, weight and reach are code,
+  so blits cannot write them down. A voice cued with `as: { kind, data }` pages out as that
+  descriptor plus its controls, and `revive` rebuilds the spec when a seek brings it back. A voice
+  cued without `as` stays in memory. Memory is then bounded by `ms` alone only when every voice
+  that gets cued has a descriptor, which is true of astv: its flights, text runs, progress clocks,
+  roster voices and glides are all built from plain data. astv cues voices without end over a long
+  session, since a roster cues one per arrival, so leaving voices in memory would not bound it.
+  astv never gives history up (a rewind never forgets), so no `forget` verb is offered.
+- **A mix's `name` is unique across everything history can restore,** not only among live
+  members, since records key on it and voice ids restart in each mix. Joining a transport under
+  the name of a dropped mix a seek could still bring back throws. astv adds a generation to a
+  reopened window's mix (`runs:<pageId>#2`).
+- **A weight that reads host state must be marked `input`** for a seek to read it as it was.
+  Only a signal with `input: true` is recorded per subject (`history.inputs`); a plain function
+  is called again after a seek and reads the host as it is now. astv's text runs weigh by its
+  live ownership map, so astv marks that signal `input`.
+
+**What is left to settle before building:**
+- Whether `load` returns everything a restore needs for every mix on the transport (simple,
+  possibly large) or takes the mixes and subjects the read touches. astv seeks rarely, so the
+  simple form is the default until a consumer measures the cost.
+- A subject's record keeps a stateful signal's state keyed by the signal object (`Subject.kept`).
+  A revived voice has new signal objects, so paged state has to be keyed by where the signal sits
+  in the spec instead. That is unsolved.
 
 ## Seek
 
