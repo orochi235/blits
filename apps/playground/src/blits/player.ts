@@ -1,7 +1,7 @@
 import type { Handle, Patch } from '@msb235/blits';
 import { type Built, FRAME } from './compile';
 import type { Level } from './composition';
-import type { Pose } from './kit';
+import type { Mixed } from './kit';
 import type { Subject } from './stage';
 
 export interface Columns {
@@ -21,8 +21,8 @@ export const WINDOW = 3000;
 /** The picked subject at one frame: the mix's pose, each voice's solo pose, each voice's `weightOf`. */
 interface Sample {
   t: number;
-  full: Pose;
-  solos: ReadonlyMap<string, Pose>;
+  full: Mixed;
+  solos: ReadonlyMap<string, Mixed>;
   weights: ReadonlyMap<string, number>;
 }
 
@@ -32,7 +32,11 @@ export interface History {
 }
 
 // Probes write into a pose the mix reuses, so each is copied before the next.
-const copied = (p: Pose): Pose => ({ ...p, offset: [...p.offset] });
+const copied = (p: Mixed): Mixed => ({
+  ...p,
+  offset: [...p.offset],
+  ...(p.color ? { color: [...p.color] } : {}),
+});
 
 export class Player {
   built: Built;
@@ -54,7 +58,7 @@ export class Player {
       offset: new Float64Array(n * 2),
       turn: new Float64Array(n),
       scale: new Float64Array(n),
-      color: new Float64Array(n),
+      color: new Float64Array(n * 4),
       opacity: new Float64Array(n),
       glow: new Float64Array(n),
     };
@@ -134,7 +138,7 @@ export class Player {
    */
   live(
     id: string,
-    act: (handle: Handle<Subject>, patch: Patch<Subject, Pose, unknown>, heard: boolean) => void,
+    act: (handle: Handle<Subject>, patch: Patch<Subject, Mixed, unknown>, heard: boolean) => void,
   ): void {
     const handle = this.built.handles.get(id);
     const patch = this.built.patches.get(id);
@@ -195,7 +199,7 @@ export class Player {
     const subject = this.picked === null ? undefined : this.subjects[this.picked];
     if (subject === undefined || this.frame < 0) return;
     const { mix, solos, handles } = this.built;
-    const soloPoses = new Map<string, Pose>();
+    const soloPoses = new Map<string, Mixed>();
     const weights = new Map<string, number>();
     for (const [id, solo] of solos) soloPoses.set(id, copied(solo.probe(subject)));
     for (const [id, handle] of handles) weights.set(id, handle.weightOf(subject));

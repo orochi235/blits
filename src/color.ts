@@ -243,7 +243,7 @@ export function oklab(rgb: number): number[] {
  *
  * @category channel
  */
-export function toHex(pose: readonly number[], under = 0x000000): number {
+export function toHex(pose: ArrayLike<number>, under = 0x000000): number {
   const w = pose[3] ?? 0;
   if (!(w > 0)) return under;
   const s = 1 / w;
@@ -265,7 +265,7 @@ export function toHex(pose: readonly number[], under = 0x000000): number {
  *
  * @category channel
  */
-export function css(pose: readonly number[]): string {
+export function css(pose: ArrayLike<number>): string {
   const w = pose[3] ?? 0;
   if (!(w > 0)) return 'oklab(0 0 0 / 0)';
   const s = 1 / w;

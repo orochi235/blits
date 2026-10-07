@@ -1,12 +1,21 @@
+import { toHex } from '@msb235/blits';
 import type { Composition } from '@pg/blits/composition';
-import { CHANNELS, type ChannelName, type Pose } from '@pg/blits/kit';
+import { CHANNELS, type ChannelName, type Mixed } from '@pg/blits/kit';
 import type { Player } from '@pg/blits/player';
 import { ChannelPlot, type Series } from '@pg/widgets/ChannelPlot';
 import { useSyncExternalStore } from 'react';
 import s from './App.module.css';
 
-const plotted = (pose: Pose | undefined, ch: ChannelName) =>
-  pose === undefined ? Number.NaN : ch === 'offset' ? (pose.offset[1] ?? Number.NaN) : pose[ch];
+const plotted = (pose: Mixed | undefined, ch: ChannelName) =>
+  pose === undefined
+    ? Number.NaN
+    : ch === 'offset'
+      ? (pose.offset[1] ?? Number.NaN)
+      : ch === 'color'
+        ? pose.color === undefined
+          ? Number.NaN
+          : toHex(pose.color)
+        : pose[ch];
 
 export interface InspectorProps {
   player: Player;
