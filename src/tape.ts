@@ -19,7 +19,11 @@ export function tapeOf(transport: Transport): Tape | undefined {
 
 /** Records a host call, which `again` makes once more when the mix plays past it after a seek. */
 export function record(
-  on: { readonly tape: Tape | undefined; readonly replaying: boolean; readonly projecting: boolean },
+  on: {
+    readonly tape: Tape | undefined;
+    readonly replaying: boolean;
+    readonly projecting: boolean;
+  },
   label: string,
   again: () => void,
 ): void {

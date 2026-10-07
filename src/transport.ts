@@ -92,8 +92,7 @@ export class Transport {
     }
     // Host time moving while the mix clock stands still lands what waits on host time or the host.
     const moved = now !== this.now;
-    for (const m of this.members)
-      if (moved || (later && pace !== null && waits(m))) move(m, now);
+    for (const m of this.members) if (moved || (later && pace !== null && waits(m))) move(m, now);
     const history = this.history;
     if (this.tape !== undefined && history !== undefined) this.tape.prune(now - history.ms);
     // It is a frame too, which asks every weight signal again, so one reading input follows it.
