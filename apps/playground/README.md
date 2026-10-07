@@ -14,6 +14,9 @@ npm run stories -w @blits/playground   # forge stories for the widgets, on port 
 npx vitest run apps/playground/test    # the pure modules
 ```
 
+Until weasel 1.9.0 ships, a fresh install needs `apps/playground/scripts/link-diagram.sh` first. It
+packs weasel-diagram from its worktree, and `npm install` fails without that pack.
+
 blits comes from the repo's own `src/index.ts` through the `@msb235/blits` alias, never the built
 `dist`, and app code imports itself through `@pg/*`. The site's nav links here when the site runs
 in dev. `scripts/docs.mjs` pulls the doc comments of `VoiceSpec` and `Handle` out of blits' types
@@ -24,9 +27,9 @@ into `src/generated/docs.json` (gitignored), which the panels show as tooltips o
 The stage is top left, with a dots/letters switch above it and, beside the switch, the columns and
 rows or the text; clicking a subject picks it for the inspector, top middle. The right column holds
 the flow. The middle column has two tabs: **Plots**, the inspector, and **Voice**, which holds the
-levels, voice and patch panels. Selecting a clip, on the score or in the flow, opens Voice. The score fills the bottom,
-with the transport above it: play and pause, rate, loop, a slider per level, and the live toggle.
-The header holds the preset menu, the title and the length.
+levels, voice and patch panels. Selecting a clip, on the score or in the flow, opens Voice. The
+score fills the bottom, with the transport above it: play and pause, rate, loop, a slider per
+level, and the live toggle. The header holds the preset menu, the title and the length.
 
 These composition edits go through the same history as every other, so undo, storage and share
 cover them, and `src/blits/edit.ts` holds each one to the `MAX_*` caps `load` enforces. Switching
