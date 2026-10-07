@@ -192,6 +192,7 @@ const inert: Handle = {
   seek() {},
   fade() {},
   ramp() {},
+  rise() {},
   weightOf: () => 0,
   done: Promise.resolve(),
   played: Promise.resolve(false),

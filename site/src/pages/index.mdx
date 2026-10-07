@@ -35,13 +35,13 @@ These words carry the rest, and each has a page with a live explainer.
 The host owns the frame loop. Once a frame it tells the mix what time it is, then asks for the subjects it is about to draw:
 
 ```ts
-import { hex, kit, max, mix, mul, patch, sum, vec } from '@msb235/blits';
+import { color, kit, max, mix, mul, patch, sum, vec } from '@msb235/blits';
 
 const PART = kit<PartPose>({
   gain: mul(),
   dark: max(),
   position: vec(3, sum()),
-  color: hex(),
+  color: color(),
 });
 
 const flicker = patch<Part, PartPose>(
