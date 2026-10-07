@@ -116,6 +116,7 @@ describe('book', () => {
     expect(took.map((t) => [(t.item as Marked).mark, t.when, t.stopped])).toEqual([
       ['start', 1300, false],
       ['in', 1300, false],
+      ['coast', 1700, false],
       ['out', 1700, false],
       ['end', 1700, false],
     ]);

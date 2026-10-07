@@ -330,6 +330,11 @@ export class Voice<I, O> {
     return this.playedAs === true;
   }
 
+  /** Whether `played` settled false: it left before its last pass ended. */
+  get unplayed(): boolean {
+    return this.playedAs === false;
+  }
+
   /**
    * A seek back to mix time `t`: `done` and `played`, where they settled after it, start over with
    * fresh promises. True where `played` had settled true, which its owner counted.

@@ -15,9 +15,16 @@ version and everything else the patch. Each release lists its changes as **Break
   rate or one that was rebased, where `project(mix.now - 300)` reads 300 ms of mix time back.
 - `Mix` has `seek`, `now` and `tape`, which an engine of its own has to provide.
 - `Mix` has `span`, which an engine of its own has to provide.
+- `Mark` has a fifth value, `coast`, so a `switch` over it that checks every case needs one more.
 
 ### Added
 
+- A voice **coasts** when its last pass ends, for its latest-staggered subject: the moment
+  `played` resolves true. `coast` is a mark like the other four, listed by `marks`, booked by
+  `book`, read ahead by `project`, and waited on with `{ of, mark: 'coast' }`. It falls with `out`
+  on a voice that does not freeze, and where a frozen voice starts showing its last frame, which
+  has no `out` until it is faded. An owner coasts with its last child, a span where its fit ends. A
+  voice that loops for good, or fades before its last pass ends, never coasts.
 - `mix.span(spec)` cues an owner that lays out the voices it holds in an `order` (`queue`,
   `stagger`, `together`) and fits them into its `duration`, again whenever one joins or leaves.
   Each child says how it may give way with `faster`, `slower`, `overlap`, `skip` and `firm`, and

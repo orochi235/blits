@@ -31,7 +31,7 @@ export function listed<I, O>(mix: Mixer<I, O>, from: number, to: number): Listed
         order: a.order,
       });
   for (const voice of [...mix.cued, ...mix.gone]) {
-    for (const mark of ['start', 'in', 'out', 'end'] as const) {
+    for (const mark of ['start', 'in', 'coast', 'out', 'end'] as const) {
       const m = markOf(mix, voice, mark);
       const t = m === undefined ? m : hostOf(mix, m) - mix.offset;
       if (t === undefined || t < lo || t > hi) continue;
@@ -58,6 +58,7 @@ export function markOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, mark: Mark): 
   if (!Number.isFinite(start)) return undefined;
   if (mark === 'start') return start;
   if (mark === 'in') return start + (voice.fade.in ?? 0);
+  if (mark === 'coast') return coastOf(mix, voice, start);
   const out = voice.out;
   let outAt: number | undefined;
   if (out !== null) outAt = out.at;
@@ -76,4 +77,29 @@ export function markOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, mark: Mark): 
     return out.at + out.over;
   }
   return outAt === undefined ? undefined : outAt + (mix.reduced ? 0 : (voice.fade.out ?? 0));
+}
+
+/**
+ * When a voice's last pass ends, mix time: an owner's when its fit ends, or its last child's. None
+ * for a voice that never ends its passes, or that leaves or begins to fade before they end.
+ */
+function coastOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, start: number): number | undefined {
+  if (voice.unplayed) return undefined;
+  let t: number | undefined;
+  if (voice.fitting !== null) t = voice.timeAt(voice.fitting.end);
+  else if (voice.holding !== null) {
+    const children = voice.holding.children;
+    if (children.length === 0) return undefined;
+    t = Number.NEGATIVE_INFINITY;
+    for (const child of children) {
+      const c = markOf(mix, child, 'coast');
+      if (c === undefined) return undefined;
+      t = Math.max(t, c);
+    }
+  } else if (Number.isFinite(voice.span)) t = voice.timeAt(voice.span + voice.latest);
+  if (t === undefined || !Number.isFinite(t)) return undefined;
+  t = Math.max(start, t);
+  const cut =
+    voice.out !== null ? voice.out.at : voice.state === 'done' ? voice.doneAt : voice.outAt;
+  return cut < t ? undefined : t;
 }

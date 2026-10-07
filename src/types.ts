@@ -232,12 +232,15 @@ export interface FadeSpec {
 }
 
 /**
- * The four times a voice is known by on the mix clock: when its fade in begins (`start`), when it is
- * fully in (`in`), when its fade out begins (`out`), and when it is gone (`end`).
+ * The times a voice is known by on the mix clock: when its fade in begins (`start`), when it is
+ * fully in (`in`), when its last pass ends (`coast`), when its fade out begins (`out`), and when it
+ * is gone (`end`). A voice coasts when `played` resolves true, for its latest-staggered subject: at
+ * its `out` where it does not freeze, and where it starts showing its last frame where it does. A
+ * voice that loops for good, or fades before its last pass ends, never coasts.
  *
  * @category score
  */
-export type Mark = 'start' | 'in' | 'out' | 'end';
+export type Mark = 'start' | 'in' | 'coast' | 'out' | 'end';
 
 /**
  * Selects voices by what the plan knows of them, never by a channel's value, within the asking

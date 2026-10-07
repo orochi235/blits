@@ -122,6 +122,7 @@ describe('mix rate', () => {
     expect(marks).toEqual([
       [1, 'start', 0],
       [1, 'in', 200],
+      [1, 'coast', 600],
       [1, 'out', 600],
       [1, 'end', 800],
       [2, 'start', 900],

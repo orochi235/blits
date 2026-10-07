@@ -42,10 +42,12 @@ describe('placement', () => {
     expect(at(m, 0, 5000)).toEqual([
       '100 orb start',
       '100 orb in',
+      '400 orb coast',
       '400 orb out',
       '400 orb end',
       '400 text start',
       '400 text in',
+      '640 text coast',
       '640 text out',
       '640 text end',
       '640 tint start',
@@ -167,10 +169,12 @@ describe('marks', () => {
       m.cue({ patch: hold(400), name: `s${k}`, tags: ['step'], start: k * 800, loop: false });
     m.cue({ patch: hold(500), name: 'idle' });
     expect(m.marks(900, 2500).map((e) => `${e.timestamp} ${e.name} ${e.mark}`)).toEqual([
+      '1200 s1 coast',
       '1200 s1 out',
       '1200 s1 end',
       '1600 s2 start',
       '1600 s2 in',
+      '2000 s2 coast',
       '2000 s2 out',
       '2000 s2 end',
       '2400 s3 start',

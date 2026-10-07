@@ -282,9 +282,9 @@ export class Book<I, O> implements Booker {
   }
 }
 
-const markIndex = { start: 1, in: 2, out: 3, end: 4 } as const;
+const markIndex = { start: 1, in: 2, coast: 3, out: 4, end: 5 } as const;
 
-/** A mark's identity: its voice and which of the four, or the announcement. */
+/** A mark's identity: its voice and which of its marks, or the announcement. */
 function keyOf(m: Listed): number {
-  return m.order * 5 + (m.mark === undefined ? 0 : markIndex[m.mark]);
+  return m.order * 6 + (m.mark === undefined ? 0 : markIndex[m.mark]);
 }

@@ -209,7 +209,7 @@ describe('freeze after', () => {
         .marks(0, 10_000)
         .filter((k) => k.voice === h.id)
         .map((k) => k.mark),
-    ).toEqual(['start', 'in']);
+    ).toEqual(['start', 'in', 'coast']);
     h.fade();
     m.sync(510);
     expect(next.state).toBe('live');
