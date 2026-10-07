@@ -165,7 +165,7 @@ export function seek(transport: Transport, t: number): void {
   if (Number.isNaN(transport.now))
     throw new Error('blits: a mix that has never synced has nothing to seek');
   if (t === Number.POSITIVE_INFINITY) throw new RangeError('blits: a mix seeks to a finite time');
-  if (!(t >= transport.now - history.ms && t >= transport.born))
+  if (!(transport.reaches(t) && t >= transport.born))
     throw new Error(`blits: ${t} is older than this mix's history reaches`);
   if (t >= transport.now) replay(transport, () => t);
   // Under the rate the recorded calls up to `t` set, ahead; behind, under the rate it had then.
@@ -188,6 +188,7 @@ export function seek(transport: Transport, t: number): void {
   // The host's clock reads on from here: its next sync reads `t` plus its time since its last.
   transport.offset = transport.last - u;
   transport.u = u;
+  transport.kept();
   for (const m of transport.members) {
     m.stir();
     const bookers = m.bookers;

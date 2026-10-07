@@ -58,6 +58,8 @@ export class Transport implements TransportApi {
   offset = 0;
   /** The mix time of the first sync. */
   born = Number.NaN;
+  /** The earliest mix time what history keeps in memory restores exactly. */
+  floor = Number.NEGATIVE_INFINITY;
   last = Number.NaN;
   rebasing = false;
   /** The rate; null while it has never been set, when mix time is host time. */
@@ -195,6 +197,7 @@ export class Transport implements TransportApi {
     const moved = now !== this.now;
     for (const m of this.members) if (moved || (later && pace !== null && waits(m))) move(m, now);
     const history = this.history;
+    this.kept();
     if (this.tape !== undefined && history !== undefined) this.tape.prune(now - history.ms);
     if (history !== undefined && this.dropped.length > 0)
       this.dropped = this.dropped.filter((d) => d.at >= now - history.ms);
@@ -213,6 +216,18 @@ export class Transport implements TransportApi {
 
   rebase(): void {
     this.rebasing = true;
+  }
+
+  /** Moves `floor` past what the mix clock standing at `now` has let go of. */
+  kept(): void {
+    const history = this.history;
+    if (history !== undefined && this.now - history.ms > this.floor)
+      this.floor = this.now - history.ms;
+  }
+
+  /** Whether history reaches back to mix time `t`, from memory. */
+  reaches(t: number): boolean {
+    return t >= this.floor && t >= this.now - (this.history?.ms ?? 0);
   }
 
   get rate(): number {

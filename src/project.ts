@@ -28,7 +28,7 @@ export function projectAll(transport: Transport, t: number): TransportProjection
   if (!ahead) {
     const history = transport.history;
     if (!history) throw new Error('blits: reading back needs a mix made with history');
-    if (t < transport.now - history.ms)
+    if (!transport.reaches(t))
       throw new Error(`blits: ${t} is older than this mix's history reaches`);
   }
   const u = hostAt(transport, t);
