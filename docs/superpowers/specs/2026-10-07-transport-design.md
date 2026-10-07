@@ -63,8 +63,9 @@ orbs.probe(id, out);                         // probing stays per mix
 | `live`, `inert`, `onWake(fn)` | Any member live; every member inert; fires when any member stirs. |
 | `drop(mix)` | Takes a member off: it is no longer synced, and its calls stop. Under `history` the drop is recorded: a seek back before it brings the member back, and the transport keeps a dropped member while history reaches the drop. Without `history` a drop is final and the member is let go. |
 
-`opts` takes `history: { ms, tape }`. A member's `MixOptions.history` keeps only
-`every` and `inputs`. Giving it `ms` or `tape` throws: reach and tape are the transport's.
+`opts` takes `history: { ms, every, inputs, tape }`, which every member takes whole: members of
+one transport remember the same things for the same time. A member's `MixOptions.history` throws.
+`ms: Infinity` keeps everything for good.
 
 ### `MixOptions`
 
@@ -128,6 +129,34 @@ transport's rates like every other mark. No sugar form: anchors write `{ of, mar
 The rail needs it because astv freezes its text runs and progress clocks (`freeze: 'both'`), and a
 frozen voice's `end` comes only when it is faded.
 
+## What history keeps
+
+A transport either keeps nothing or keeps everything within its reach. There is no middle where
+something comes back silently missing: a host may treat a seek's success as a guarantee, and astv
+does, reloading from its own state only when a seek says it cannot.
+
+| `history` | `seek` and reading back |
+|---|---|
+| none | throw: the transport plays forward only |
+| `{ ms }` | everything within `ms` comes back exactly as it was; older throws |
+| `{ ms: Infinity }` | everything, for good |
+
+"Everything" is every voice, control, record, subject, owner, member, announced mark, recorded input
+and host field, and the tape's branches. Booking is the one thing a seek does not replay, and that is
+by design: a booker is told the seek happened and books again. `inputs: false` is the one opt-out: a
+host that sets it says signals and host fields read live after a seek, and `assess` reports what
+they fed as `held`. A stateful voice restored without
+`stepMs` is stepped across the gap rather than replayed, and `assess` reports it as `stepped`.
+
+**Known gaps in blits today,** each fixed on this branch before it merges, with a test:
+
+| Gap | What happens now |
+|---|---|
+| A subject faded out of a voice, or dropped, after the time sought | comes back as never seen |
+| `from: 'current'` voices | take their pose afresh |
+| Recorded input and host fields after the time sought | let go, so switching back to that branch of the tape reads them live |
+| `project` ahead after a seek back | plays what is cued, not what the tape recorded, so it disagrees with `seek` to the same time |
+
 ## Seek
 
 The transport holds the one tape. Each recorded call carries the transport time and the member it
@@ -186,6 +215,8 @@ compiling; `Marked` gains `mix`. Nothing changes for a mix with no shared transp
 - A host call after a seek back branches the transport's tape; neither member replays the old
   future.
 - A member's `sync`, `seek`, `rebase`, `ramp` and `rate` write throw.
+- Each known gap above: a seek back and forward over it restores exactly what was there.
+- `ms: Infinity` reaches the first sync after any amount of play.
 - Under `history`, a seek back before a `drop` brings the member back with its voices, and playing
   forward drops it again; without `history` a dropped member is let go.
 - A member that joins late and cues a voice with an earlier `start` plays it partway.
