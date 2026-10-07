@@ -505,10 +505,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    retiming every span runs before its fit is another, listed in its gloss and named in a later pass (Mike, 2026-10-07). Only `fit`
    is picked (`fitstrategy` in the picks file).
 
-9. **The history adapter is drafted and unbuilt** (2026-10-07, with astv-f5): the transport
-   spec's "History behind an adapter" section, which ends with what is left to settle. Mike has
-   not reviewed it. astv marked its text-run weight `input` (astv `522624e0`) and will name
-   mixes and describe voices as the draft asks once it exists.
+9. **The history adapter is built** (2026-10-07, branch `worktree-agent-a522529eca4aeae84`,
+   unmerged): `history.store`, `prepare`, `HistoryMiss`, `keyOf`, `as`/`revive`, `pack`/`unpack`.
+   The schema page's "History behind a store" describes it, and the spec section lists the calls
+   made in building (state kept by order, `store.cut`, the `stretch` stream). Mike has not reviewed
+   the design. astv marked its text-run weight `input` (astv `522624e0`); it now names its mixes,
+   describes its voices with `as` and gives a store once it moves to a release with this.
 
 8. **astv's phase on a span.** astv's `scheduleMarks` (`packages/engine/draw/text/changeOrder.ts`)
    is what a `queue` or `stagger` span with a budget replaces; astv pins blits 0.4.0, so this waits

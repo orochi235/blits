@@ -495,7 +495,10 @@ interface MixOptions&lt;H = unknown&gt; {
   <span class="cm">/** Run every `step` once per interval of this many ms instead of once by the frame's gap. Off by default. */</span>
   stepMs?: number;
   <span class="cm">/** How far back `project` may read, and how often a stateful voice's state is copied on the way. Off by default. */</span>
-  history?: { ms: number; every?: number; inputs?: boolean };
+  history?: { ms: number; every?: number; inputs?: boolean; tape?: TapeMaker; store?: HistoryStore;
+             revive?(d: Described): VoiceSpec };
+  <span class="cm">/** A subject's key for a history `store`, where subjects are objects. */</span>
+  keyOf?(subject: I): string | number;
   <span class="cm">/** Whether a channel may run as a lane. On by default; the pose is the same either way, apart from
      a stateless patch's `send` from `at` and a patch that starts keeping state partway through. */</span>
   lanes?: boolean;
@@ -535,6 +538,8 @@ interface Mix&lt;I, O, H = unknown&gt; {
   <span class="cm">/** Moves the mix to a mix time under `history` with a `tape`, and plays on from there, making the host's
      recorded calls again as it passes them. See Score. */</span>
   seek(time: number): void;
+  <span class="cm">/** Loads from the history `store` what a seek or read to `time` needs, where that is past memory. */</span>
+  prepare(time: number): Promise&lt;void&gt;;
   <span class="cm">/** Where the mix records the host's calls: weasel-history's `History`, made by `history.tape`. */</span>
   readonly tape: Tape | undefined;
   <span class="cm">/** Puts a named mark on a score, now or at a timestamp, for anchors to target. */</span>
@@ -781,9 +786,10 @@ t.sync(now); <span class="cm">// once a frame, after the frame's cues</span></co
   <li><b>Reading and waking.</b> <code>t.marks</code> lists every mix&rsquo;s; <code>t.project(time).of(mix)</code> reads every mix at once, so anchors across them answer, and a mix&rsquo;s own <code>project</code> does the same and returns its part. <code>t.inert</code> holds while every mix is inert, and <code>t.onWake</code> fires once a change in any mix needs frames.</li>
   <li><b>Seeking.</b> One tape records every mix&rsquo;s calls. Back, each mix restores itself; forward, the tape makes the calls again in the order they were made, every mix moved to each call&rsquo;s time first, so an anchor across mixes answers as it did live. A call after a seek back branches the whole transport. A mix&rsquo;s history is the transport&rsquo;s, and a mix given its own throws.</li>
   <li><b>Joining and leaving.</b> A mix joins at the transport&rsquo;s <code>now</code> and plays a voice cued with an earlier <code>start</code> partway, as a mix alone does. <code>t.drop(mix)</code> takes one off; under history a seek back before the drop puts it back as it was and playing on drops it again, and without history it is let go.</li>
-  <li><b>What history keeps.</b> Everything within its reach comes back exactly, or the read throws: a seek or read back older than history, and a read ahead past a call the tape will make again. <code>ms: Infinity</code> keeps everything. Recorded input after a seek back is let go and read live, and <code>assess</code> says so.</li>
+  <li><b>What history keeps.</b> Everything within its reach comes back exactly, or the read throws: a seek or read back older than history, and a read ahead past a call the tape will make again. <code>ms: Infinity</code> keeps everything. Recorded input after a seek back is let go and read live, and <code>assess</code> says so. A seek back moves the reach with it only as far as what was kept: a second seek further back than the first one's memory throws.</li>
+  <li id="store"><b>History behind a store.</b> With <code>history.store</code>, what <code>ms</code> would drop is handed to <code>store.page</code> as plain data instead, and nothing is ever just gone: <code>ms</code> bounds memory, not reach. A seek or read past memory needs <code>await t.prepare(time)</code> first, which calls <code>store.load(time)</code>; without it, it throws <code>HistoryMiss</code>, naming the mix, before anything moves. A seek back calls <code>store.cut(time)</code>, since what was paged after it is from a future the tape makes again. <code>load</code> returns everything a restore needs for every mix; a store that returns all it holds is correct. Records are keyed by the mix&rsquo;s <code>name</code>, which every mix on a transport with a store needs, the voice&rsquo;s id and the subject&rsquo;s key: a string or number subject is its own, and an object subject needs <code>keyOf</code>, or the mix throws the first time it meets one. A patch with <code>state</code> or <code>step</code> gives <code>pack</code> and <code>unpack</code>, or <code>cue</code> refuses it; spring, glide and tween runs are paged by blits itself. What a stateful signal keeps goes by the order its owners first kept it on the record, since a signal is code no store can hold, and the same code keeps in the same order. A voice cued with <code>as: { kind, data }</code> leaves memory once history no longer reaches its end, and <code>history.revive</code> builds it again when a seek needs it, behind the handle the host holds; one cued without <code>as</code>, an owner, a span, a blend member or a voice still holding a join&rsquo;s answers stays in memory. With a store blits never prunes the tape, nor dropped mixes, rate changes or announced marks: the host bounds the tape. Built 2026-10-07.</li>
 </ul>
-<p>Designed and built 2026-10-07 (<code>docs/superpowers/specs/2026-10-07-transport-design.md</code>). Not built: history behind a host adapter, and owners or spans holding voices in another mix.</p>
+<p>Designed and built 2026-10-07 (<code>docs/superpowers/specs/2026-10-07-transport-design.md</code>). Not built: owners or spans holding voices in another mix.</p>
 
 <h2 id="state">Patch state</h2>
 <p>klieg built three stateful patches in one week, <code>power</code>, <code>kicks</code> and <code>dwell</code>, and each rediscovered the same three rules: key state by the subject object, step once per frame by the gap in the timestamp, snap under infinite <code>dt</code>. Those rules are the package's, applied by the mix, and a patch declares only what its state is and how it advances.</p>

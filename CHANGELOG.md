@@ -24,6 +24,7 @@ version and everything else the patch. Each release lists its changes as **Break
   again, which it used to leave out; a seek there makes it.
 - An engine of its own is handed `MixOptions.transport` and `name`, and a `Mix` that can share a
   transport has to keep its clock there.
+- `Mix` and `Transport` have `prepare`, which an engine of its own has to provide.
 
 ### Added
 
@@ -87,9 +88,23 @@ version and everything else the patch. Each release lists its changes as **Break
   under `stepMs`. Playing past a time again sends its events and books its marks and hits again.
   The host keeps passing its own clock.
 - `mix.now` reads the mix clock, which `seek` and `project` take.
+- `history.store` pages out what `history.ms` would drop, as plain data, so `ms` bounds memory
+  rather than how far back a seek reaches. `store.page` takes records leaving memory,
+  `store.load(t)` gives back what a restore to `t` needs, and `store.cut(t)` forgets what a seek
+  back left behind. `transport.prepare(t)` (and `mix.prepare` for a mix alone) loads before a seek
+  or read past memory; without it, it throws `HistoryMiss` before anything moves. Object subjects
+  need `MixOptions.keyOf`, a patch with `state` or `step` needs `pack` and `unpack` (which `patch`
+  now takes), and every mix on a transport with a store needs a unique `name`. A voice cued with
+  `as: { kind, data }` leaves memory once it has left and history no longer reaches its end, and
+  `history.revive` builds its spec again when a seek needs it, behind the handle the host holds.
+  With a store, blits never prunes the tape; the host bounds it. Without one, nothing changes.
 
 ### Fixed
 
+- A second `seek` or `project` back no longer reaches into time the first one's history had
+  already let go of, where it read wrong values: after seeking back to 1600 under `ms: 500` from
+  2000, a seek to 1200 read 0 where the mix had shown 90. It throws as a read older than history
+  does.
 - Under `history`, a subject faded out of a voice or dropped after the moment a `seek` or a
   `project` reads back to comes back with the record it had, and with a motion patch's state for
   it. It used to come back as never seen, its state started afresh.

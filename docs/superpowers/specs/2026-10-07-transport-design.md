@@ -1,7 +1,7 @@
 # Transport: one clock for several mixes
 
-**Status: built 2026-10-07 except the history adapter, which is drafted with astv and unbuilt** (see
-"History behind an adapter"), and owners or spans across mixes, which are a later spec.
+**Status: built 2026-10-07, the history adapter included** (see "History behind an adapter"), except
+owners or spans across mixes, which are a later spec.
 
 For whoever builds it in blits, and for astv, its first consumer. It answers how mixes with
 different kits share one timeline — one sync, rate, seek and tape — and how an anchor in one mix
@@ -158,7 +158,8 @@ with its record and its motion state, and `from: 'current'` voices already kept 
 
 ## History behind an adapter
 
-**Drafted 2026-10-07 with astv-f5, unbuilt; Mike has not reviewed it.** Blits decides what history keeps and when it reads it
+**Drafted 2026-10-07 with astv-f5 and built the same day; Mike has not reviewed it.** The schema
+page's "History behind a store" describes what shipped. Blits decides what history keeps and when it reads it
 back. With a `store`, the host decides where the older part lives. Nothing is ever just gone
 below the store: a record that isn't in memory has to be loaded, and blits never treats it as lost.
 Without a store, nothing changes: `ms` bounds what is kept and older records are dropped.
@@ -192,11 +193,13 @@ interface HistoryStore {
   page(out: readonly Paged[]): void;
   /** Every record a restore to mix time `t` needs, from the streams the store holds. */
   load(t: number): Promise<readonly Paged[]>;
+  /** A seek went back to `t`: forget every record after it. */
+  cut(t: number): void;
 }
 
 interface Paged {
   mix: string;                       // the member's `name`
-  stream: 'voice' | 'snap' | 'input' | 'left' | 'released' | 'host' | 'controls';
+  stream: 'voice' | 'snap' | 'input' | 'left' | 'released' | 'stretch' | 'host' | 'controls';
   voice?: number;                    // the voice's id in its mix
   subject?: string | number;
   at: number;                        // mix time
@@ -237,13 +240,22 @@ class HistoryMiss extends Error { mix: string; stream: string; at: number }
   is called again after a seek and reads the host as it is now. astv's text runs weigh by its
   live ownership map, so astv marks that signal `input`.
 
-**What is left to settle before building:**
-- Whether `load` returns everything a restore needs for every mix on the transport (simple,
-  possibly large) or takes the mixes and subjects the read touches. astv seeks rarely, so the
-  simple form is the default until a consumer measures the cost.
-- A subject's record keeps a stateful signal's state keyed by the signal object (`Subject.kept`).
-  A revived voice has new signal objects, so paged state has to be keyed by where the signal sits
-  in the spec instead. That is unsolved.
+**Settled in building (2026-10-07):**
+
+| Question | Answer |
+|---|---|
+| What `load(t)` returns | Everything a restore needs for every mix; a store returning all it holds is correct. |
+| Keying paged kept state | By the order its owners first kept it on the record, not by a path in the spec: `peak(slew(a), slew(b))` hides two owners inside a closure no path reaches, and `setting.keep` takes any object. A revived record hands each owner the next value on its first keep. |
+| Futures a seek back leaves | `HistoryStore` gains `cut(t)`: records paged after `t` came from a future the tape makes again, and would otherwise come back beside the new one. |
+| A record paged again | One a seek brought back into memory is paged again later; the store keeps one per key and `at`. |
+| Motion state | Spring, glide and tween keep their runs in the patch, not in `state`, so blits pages them itself: released runs, and older stretches as a stream of their own, `stretch`. |
+| The tape, dropped mixes, rate changes, announced marks | Never pruned with a store; the host bounds the tape. |
+| Which voices page out | Those cued with `as`, unless an owner, a span, a blend member or holding join answers. A paged voice's handle answers as a gone voice's (writes do nothing) and gets the revived voice back. |
+| Mix names | Required on a shared transport with a store, unique across members and dropped mixes. |
+
+Also found and fixed while building: without a store, a seek back moved the reach check back with
+`now`, so a second seek could land in time already dropped and read wrong values; the transport now
+keeps a floor, the earliest time memory restores.
 
 ## Seek
 
@@ -289,7 +301,7 @@ compiling; `Marked` gains `mix`. Nothing changes for a mix with no shared transp
 | Seek gaps: records and motion state of subjects that left, a read ahead past the tape | built |
 | `fade({ over, at })`, for astv's rosters | built |
 | Schema section, naming sheet, changelog | built |
-| History adapter: records behind it, `prepare`, plain-data state with `pack`/`unpack` (`spring`, `glide`, `tween`) | unbuilt; waits on the subject-key decision |
+| History adapter: records behind it, `prepare`, plain-data state with `pack`/`unpack` (`spring`, `glide`, `tween`) | built |
 
 ## Tests
 
