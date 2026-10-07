@@ -1,0 +1,26 @@
+.panel {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--wzl-space-xs);
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-xs);
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg);
+}
+
+.canvas {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.empty {
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg-muted);
+}

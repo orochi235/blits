@@ -7,15 +7,15 @@ import { subjectsOf } from '@pg/blits/stage';
 import { Stage } from '@pg/blits/stages/Stage';
 import { type ClipEdit, ScoreLanes } from '@pg/widgets/ScoreLanes';
 import { LabShell } from '@weasel-js/labkit';
+import { Tab, TabList, TabPanel, Tabs } from '@weasel-js/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import s from './App.module.css';
-import { CompFields, LevelsPanel, StageControls } from './CompositionControls';
+import { CompFields, StageControls } from './CompositionControls';
+import { FlowPanel } from './FlowPanel';
 import { Inspector } from './Inspector';
-import { LivePanel } from './LivePanel';
-import { PatchPanel } from './PatchPanel';
 import { Transport } from './Transport';
 import { useComposition } from './useComposition';
-import { VoicePanel } from './VoicePanel';
+import { VoiceColumn } from './VoiceColumn';
 
 /** The most wall time one tick plays, so a hidden tab coming back does not replay seconds at once. */
 const MAX_TICK_MS = 250;
@@ -74,6 +74,13 @@ export function App() {
   const [loop, setLoop] = useState(true);
   const [live, setLive] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const [tab, setTab] = useState<'plots' | 'voice'>('plots');
+  const faultKey = player.built.errors.map((e) => e.voice ?? '').join('|');
+  const faulted = useMemo(() => new Set(faultKey.split('|').filter(Boolean)), [faultKey]);
+  const pickVoice = (id: string | null) => {
+    setSelected(id);
+    if (id !== null) setTab('voice');
+  };
   const [picked, setPicked] = useState<number | null>(0);
   const shown = picked !== null && picked < subjects.length ? picked : null;
   useEffect(() => player.pick(shown), [player, shown]);
@@ -151,7 +158,7 @@ export function App() {
     if (compRef.current.voices.length >= MAX_VOICES) return;
     const v = freshVoice(compRef.current.voices);
     set({ ...compRef.current, voices: [...compRef.current.voices, v] });
-    setSelected(v.id);
+    pickVoice(v.id);
   };
   const deleteVoice = (id: string) => {
     set({ ...compRef.current, voices: compRef.current.voices.filter((v) => v.id !== id) });
@@ -211,68 +218,35 @@ export function App() {
           />
         </section>
         <section className={s.inspector} aria-label="inspector">
-          <Inspector player={player} comp={comp} />
+          <Tabs selectedKey={tab} onSelectionChange={(k) => setTab(k as 'plots' | 'voice')}>
+            <TabList aria-label="middle column">
+              <Tab id="plots">Plots</Tab>
+              <Tab id="voice">Voice</Tab>
+            </TabList>
+            <TabPanel id="plots">
+              <Inspector player={player} comp={comp} />
+            </TabPanel>
+            <TabPanel id="voice">
+              <VoiceColumn
+                comp={comp}
+                onComp={set}
+                voice={voice}
+                player={player}
+                live={live}
+                shared={shared}
+                linkRef={linkRef}
+                onAddVoice={addVoice}
+                onDeleteVoice={deleteVoice}
+                onVoice={setVoice}
+                onShare={copyLink}
+                onCloseShare={() => setShared(null)}
+                onActed={tick}
+              />
+            </TabPanel>
+          </Tabs>
         </section>
-        <aside className={s.side} aria-label="voice and patch">
-          <div className={s.row}>
-            <button
-              type="button"
-              onClick={addVoice}
-              disabled={comp.voices.length >= MAX_VOICES}
-              title={comp.voices.length >= MAX_VOICES ? `at most ${MAX_VOICES} voices` : undefined}
-            >
-              add voice
-            </button>
-            <button type="button" onClick={copyLink}>
-              share
-            </button>
-            {shared?.copied && <span role="status">link copied</span>}
-          </div>
-          {shared && !shared.copied && (
-            <div className={s.row} role="status">
-              <label className={s.row}>
-                copy this link
-                <input
-                  readOnly
-                  value={shared.url}
-                  ref={linkRef}
-                  onFocus={(e) => e.target.select()}
-                />
-              </label>
-              <button type="button" onClick={() => setShared(null)}>
-                close
-              </button>
-            </div>
-          )}
-          <LevelsPanel comp={comp} onChange={set} />
-          {voice && (
-            <VoicePanel
-              key={voice.id}
-              voice={voice}
-              errors={player.built.errors}
-              faults={player.built.faults.get(voice.id)}
-              onChange={setVoice}
-              onDelete={() => deleteVoice(voice.id)}
-            />
-          )}
-          {voice && live && (
-            <LivePanel
-              key={`${voice.id} live`}
-              player={player}
-              comp={comp}
-              voice={voice}
-              onActed={tick}
-            />
-          )}
-          {voice && (
-            <PatchPanel
-              key={`${voice.id} patch`}
-              voice={voice}
-              errors={player.built.errors}
-              playhead={player.t}
-              onChange={setVoice}
-            />
-          )}
+        <aside className={s.side} aria-label="flow">
+          <FlowPanel comp={comp} faulted={faulted} selected={selected} onVoice={pickVoice} />
         </aside>
         <section className={s.score}>
           <Transport
@@ -300,7 +274,7 @@ export function App() {
             duration={comp.length}
             playhead={player.t}
             selected={selected}
-            onSelect={setSelected}
+            onSelect={pickVoice}
             onScrub={scrub}
             onEdit={edit}
           />
