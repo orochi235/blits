@@ -22,8 +22,9 @@ into `src/generated/docs.json` (gitignored), which the panels show as tooltips o
 ## The screen
 
 The stage is top left, with a dots/letters switch above it and, beside the switch, the columns and
-rows or the text; clicking a subject picks it for the inspector, top middle. The levels panel, then
-the voice and patch panels for the selected clip, run down the right. The score fills the bottom,
+rows or the text; clicking a subject picks it for the inspector, top middle. The right column holds
+the flow. The middle column has two tabs: **Plots**, the inspector, and **Voice**, which holds the
+levels, voice and patch panels. Selecting a clip, on the score or in the flow, opens Voice. The score fills the bottom,
 with the transport above it: play and pause, rate, loop, a slider per level, and the live toggle.
 The header holds the preset menu, the title and the length.
 
@@ -106,6 +107,16 @@ edges; `src/blits/score.ts` turns voices into clips and the widget's edits back 
 A voice whose period is 0, an aperiodic `fn` or a motion voice, has no passes, so its right edge
 does not drag.
 
+## The flow
+
+The right column draws the composition's signal flow, top to bottom: levels, the signal ops and
+expressions they feed, the voices those weigh, the channels each voice writes with the rule each
+folds by (`KIT[ch].kind`), and the pose. `flowOf` in `src/blits/flow.ts` builds it from the
+composition alone, finding the levels and signal calls in each `weight`, `stagger` and `target`
+with acorn; `FlowDiagram` draws it with `@weasel-js/diagram`. A voice that failed to compile, or a
+level an expression names that the composition lacks, is outlined red. Clicking a channel shows its
+fold: everything that reaches it, and the rest it folds from, under a breadcrumb back.
+
 ## The panels
 
 | Panel     | Shows                                                                                   |
@@ -163,7 +174,7 @@ One `Composition` per file in `src/blits/presets/`.
 
 ## Widgets
 
-`src/widgets/` holds `ScoreLanes`, `ExprInput`, `CodePane` and `ChannelPlot`. They are written to
+`src/widgets/` holds `ScoreLanes`, `ExprInput`, `CodePane`, `ChannelPlot` and `FlowDiagram`. They are written to
 move to weasel later: plain props, CSS modules on weasel's theme tokens, a forge story each, and
 **no imports from blits or from `@pg/blits`**. The adapters in `src/blits/` and `src/app/` map blits
 onto them.
