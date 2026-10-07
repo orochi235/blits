@@ -446,6 +446,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      through gray where `mixHex` turns round the hue circle. The schema's "color replaces" line
      becomes "color can replace". `hex` stays: klieg keeps it unless klieg chooses otherwise,
      since moving changes its pixels.
+
+     OKLab rather than OKLCH as the store, since several voices average per axis there and OKLCH's
+     hue wraps (the plain mean of 350° and 10° is 180°). Converting on authoring and once per
+     subject at write replaces `mixHex`'s per-blend conversion, measured at 45–210 ns against
+     8 ns in sRGB (CHANGELOG 0.3.0). Before settling it, look at a red-to-cyan crossfade going
+     through gray; if that reads wrong, a two-voice crossfade can still interpolate in OKLCH, as a
+     locus blend does today, while stacking stays in OKLab. Hue shift (`sum`), chroma and
+     lightness (`mul`) can be channels of their own on top.
    - **A lane fold for `last` channels**: last to pass wins, gated by the band, with a
      per-subject array holding each band's state and the value stored as it is. `hex` and every
      `last` channel then run on lanes with today's output; it is what the `glowc^` row in item 4
