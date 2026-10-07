@@ -1,6 +1,6 @@
 // Loads the built playground once per preset in headless Chromium, plays a second, and fails on any
-// console error, page error, or a stage that drew nothing. `--shots <dir>` keeps the screenshots,
-// which otherwise go to a temp directory removed on exit.
+// console error, page error, a stage that drew nothing, or a flow that drew nothing. `--shots <dir>`
+// keeps the screenshots, which otherwise go to a temp directory removed on exit.
 import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
