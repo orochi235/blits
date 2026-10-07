@@ -17,6 +17,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- `handle.rise({ over })` turns a fade out around: the voice climbs back from where its fade had
+  got to, up the same curve, and plays on as if never faded, so a host can take back a leave
+  without the jump a fresh fade in from 0 makes. It is recorded, so history and `seek` replay it.
+  A fade waiting for rest is taken back at once; a voice not fading is left as it is.
 - `mix.seek(time)` moves the live mix to a mix time and plays on from there, under `history` with
   a `tape`. `history.tape` takes weasel-history's `createHistory` (`@weasel-js/history`), or
   anything of the `Tape` shape, and the mix records every call the host makes on it, its handles

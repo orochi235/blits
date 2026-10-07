@@ -23,6 +23,8 @@ function dueOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): number {
   let due = Number.POSITIVE_INFINITY;
   if (voice.parts !== null)
     for (const r of voice.parts.values()) due = Math.min(due, r.at + r.over);
+  const back = voice.back;
+  if (back !== null) due = Math.min(due, back.at + (1 - back.from) * back.over);
   if (voice.state === 'pending')
     return Math.min(due, Number.isNaN(voice.start) ? due : voice.start);
   if (voice.state === 'fading') {

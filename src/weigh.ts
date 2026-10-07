@@ -51,7 +51,15 @@ export function fadeOf<I, O>(
   now: number,
   since: number,
 ): number {
-  return envelope(voice.fade.in ?? 0, voice.out, voice.ease, this.reducedNow, now, since);
+  return envelope(
+    voice.fade.in ?? 0,
+    voice.out,
+    voice.ease,
+    this.reducedNow,
+    now,
+    since,
+    voice.back,
+  );
 }
 
 /** What every owner above a voice multiplies into its weight for a subject this frame. */

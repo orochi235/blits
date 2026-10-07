@@ -124,6 +124,7 @@ export interface Controls extends Clock {
   at: number;
   weight: number;
   out: Ramp | null;
+  back: Rise | null;
   /** Where its anchors had placed it then: start, and the start of an anchored fade out. */
   start: number;
   outAt: number;
@@ -157,6 +158,16 @@ export interface Ramp {
   deadline?: number;
 }
 
+/**
+ * A climb back from a fade out that was turned around: from `from`, the place along the fade's
+ * curve it had reached, at mix time `at`, rising at the whole curve per `over` ms.
+ */
+export interface Rise {
+  from: number;
+  at: number;
+  over: number;
+}
+
 export class Voice<I, O> {
   state: 'pending' | 'live' | 'frozen' | 'fading' | 'done' = 'pending';
   rate: number;
@@ -170,6 +181,8 @@ export class Voice<I, O> {
   anchorElapsed = 0;
   ramp: { from: number; to: number; over: number } | null = null;
   out: Ramp | null = null;
+  /** A fade out turned around, still climbing back; null once back in, or never turned. */
+  back: Rise | null = null;
   subjects = new Store<I, Subject<unknown>>();
   /** The subjects its spec names, or null where it names none. */
   readonly named: Named<I> | null;
@@ -443,6 +456,7 @@ export class Voice<I, O> {
       ramp: this.ramp,
       weight: this.weight,
       out: this.out,
+      back: this.back,
       start: this.start,
       outAt: this.outAt,
     });
@@ -473,6 +487,7 @@ export class Voice<I, O> {
       v.ramp = controls.ramp;
       v.weight = controls.weight;
       v.out = controls.out;
+      v.back = controls.back;
       v.start = controls.start;
       v.outAt = controls.outAt;
     }

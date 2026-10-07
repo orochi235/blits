@@ -39,6 +39,7 @@ function frame(timestamp: number) {
 document.addEventListener('visibilitychange', () => document.hidden || m.rebase());
 
 handle.fade({ over: 500 }); // the voice ramps out and leaves
+handle.rise({ over: 500 }); // or, before it is gone, climbs back from where it had got to
 ```
 
 ## The words

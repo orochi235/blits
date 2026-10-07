@@ -198,7 +198,11 @@ export function reset<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
   lane.read = false;
   lane.weighed = false;
   // With no fade in or out the envelope is 1 for every subject, which is what it would return.
-  lane.flat = !((voice.fade.in ?? 0) > 0) && voice.out === null && voice.owner === null;
+  lane.flat =
+    !((voice.fade.in ?? 0) > 0) &&
+    voice.out === null &&
+    voice.back === null &&
+    voice.owner === null;
   lane.fade = 1;
 }
 

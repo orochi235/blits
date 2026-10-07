@@ -555,6 +555,13 @@ export interface Handle<I = unknown> {
   seek(elapsed: number): void;
   fade(opts?: FadeOptions<I>): void;
   /**
+   * Turns a fade out around: the voice climbs back from where its fade had got to, up the same
+   * curve, over `over` ms for the whole curve (default its `fade.in`, else its `fade.out`), and
+   * plays on as if never faded. A fade waiting for rest is taken back at once; a voice not fading
+   * is left as it is. A voice whose own end began the fade starts it again at its next frame.
+   */
+  rise(opts?: { over?: number }): void;
+  /**
    * The weight this voice gave `subject` the last frame that subject was probed: after its fades
    * and its weight signal, before a locus folds it with its alternatives. 0 for a subject it does
    * not reach, has not started on and does not freeze before, has left at rest, or has never been

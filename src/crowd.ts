@@ -422,6 +422,7 @@ function copyVoice<I, O>(c: Crowd<I, O>, p: number): number {
     v.owner === null &&
     !((v.fade.in ?? 0) > 0) &&
     v.out === null &&
+    v.back === null &&
     v.parts === null &&
     !v.keeping &&
     typeof v.spec.weight !== 'function'

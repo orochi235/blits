@@ -100,7 +100,9 @@ export function ownWeight<I, O>(
   const b = typeof owner.spec.weight === 'function' ? base(owner) : owner.weight;
   const start = owner.owner === null ? owner.start : mixTime(owner.owner, owner.start);
   const since = owner.freezesBefore && owner.opened < start ? owner.opened : start;
-  return clampWeight(b * envelope(owner.fade.in ?? 0, owner.out, owner.ease, reduced, now, since));
+  return clampWeight(
+    b * envelope(owner.fade.in ?? 0, owner.out, owner.ease, reduced, now, since, owner.back),
+  );
 }
 
 /** What every owner above a voice multiplies into its weight. */
