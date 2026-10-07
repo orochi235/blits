@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@weasel-js/core": "1.8.1",
+    "@weasel-js/diagram": "file:.weasel/weasel-js-diagram-1.8.1.tgz",
     "@weasel-js/labkit": "1.8.1",
     "@weasel-js/theme": "1.8.1",
     "@weasel-js/ui": "1.8.1",
