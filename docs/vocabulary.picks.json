@@ -13,7 +13,7 @@
     "sample": "pose",
     "contribution": "contribution",
     "context": "setting",
-    "period": "period",
+    "period": "duration",
     "v-add": "cue",
     "v-stop": "fade",
     "v-seek": "seek",
@@ -47,9 +47,17 @@
     "fitstrategy": "fit",
     "v-lerp": "lerp",
     "fitfail": "spill",
-    "timebase": "timebase",
+    "timebase": "transport",
     "v-scale": "scale",
-    "v-fold": "fold"
+    "v-fold": "fold",
+    "v-fitretime": "rescale",
+    "v-fitoverlap": "condense",
+    "v-fitskip": "shed",
+    "v-fitcollapse": "conclude",
+    "v-fitoverrun": "overrun",
+    "v-fitlenient": "lax",
+    "v-fitchain": "pipe",
+    "lastpass": "coast"
   },
   "chosen": {
     "offset": true,
@@ -101,7 +109,15 @@
     "fitfail": true,
     "timebase": true,
     "v-scale": true,
-    "v-fold": true
+    "v-fold": true,
+    "v-fitretime": true,
+    "v-fitoverlap": true,
+    "v-fitskip": true,
+    "v-fitcollapse": true,
+    "v-fitoverrun": true,
+    "v-fitlenient": true,
+    "v-fitchain": true,
+    "lastpass": true
   },
   "written": {
     "piece": "patch",
@@ -155,7 +171,19 @@
     "fitfail": true,
     "contribution": true,
     "v-scale": true,
-    "v-fold": true
+    "v-fold": true,
+    "v-fitlenient": true,
+    "v-fitoverrun": true,
+    "v-fitcollapse": true,
+    "v-fitskip": true,
+    "v-fitoverlap": true,
+    "v-fitretime": true,
+    "v-fitchain": true,
+    "checkpoint": true,
+    "system": true,
+    "v-clear": true,
+    "timebase": true,
+    "lastpass": true
   },
   "informal": {
     "spec": true,
@@ -220,7 +248,7 @@
     "sequence": "noun",
     "timebase": "noun",
     "lastpass": "noun",
-    "budgeted": "adjective",
+    "span": "noun",
     "fitstrategy": "noun",
     "fitfail": "noun",
     "fitreport": "noun",
@@ -248,6 +276,9 @@
     ],
     "v-join": [
       "merge"
+    ],
+    "v-fitoverlap": [
+      "compress"
     ]
   }
 }

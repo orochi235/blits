@@ -4498,7 +4498,7 @@
       "description": "last pass ends"
     },
     {
-      "key": "budgeted",
+      "key": "span",
       "title": "Span",
       "was": "span(spec)",
       "kind": "noun",
@@ -4515,23 +4515,23 @@
           "field": "plain",
           "words": [
             {
-              "word": "timed",
-              "star": true
-            },
-            {
-              "word": "capped",
+              "word": "bout",
               "star": false
             },
             {
-              "word": "limited",
+              "word": "run",
               "star": false
             },
             {
-              "word": "fixed",
+              "word": "spell",
               "star": false
             },
             {
-              "word": "allotted",
+              "word": "stint",
+              "star": false
+            },
+            {
+              "word": "round",
               "star": false
             }
           ]
@@ -4540,19 +4540,19 @@
           "field": "schedule",
           "words": [
             {
-              "word": "scheduled",
+              "word": "slot",
               "star": true
             },
             {
-              "word": "timeboxed",
+              "word": "window",
               "star": false
             },
             {
-              "word": "booked",
+              "word": "timebox",
               "star": false
             },
             {
-              "word": "slotted",
+              "word": "block",
               "star": false
             }
           ]
@@ -4561,19 +4561,23 @@
           "field": "music",
           "words": [
             {
-              "word": "metered",
+              "word": "phrase",
               "star": true
             },
             {
-              "word": "paced",
+              "word": "measure",
               "star": false
             },
             {
-              "word": "measured",
+              "word": "passage",
               "star": false
             },
             {
-              "word": "phrased",
+              "word": "bar",
+              "star": false
+            },
+            {
+              "word": "beat",
               "star": false
             }
           ]
@@ -4582,19 +4586,19 @@
           "field": "film",
           "words": [
             {
-              "word": "trimmed",
+              "word": "scene",
               "star": false
             },
             {
-              "word": "locked",
+              "word": "shot",
               "star": false
             },
             {
-              "word": "conformed",
+              "word": "reel",
               "star": false
             },
             {
-              "word": "framed",
+              "word": "section",
               "star": false
             }
           ]
@@ -4603,21 +4607,17 @@
           "field": "math",
           "words": [
             {
-              "word": "bounded",
+              "word": "interval",
               "star": true
             },
             {
-              "word": "finite",
-              "star": false
-            },
-            {
-              "word": "closed",
+              "word": "range",
               "star": false
             }
           ]
         }
       ],
-      "description": "budgeted owner"
+      "description": "a budgeted owner"
     },
     {
       "key": "fitstrategy",
