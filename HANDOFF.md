@@ -442,8 +442,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    Decided in conversation: uncouple them, as `vec(n, of)` already does for numbers.
    - **`color(of?)`.** The value is OKLab `[L, a, b]` whichever the rule. `color()` averages: a
      premultiplied `sum` underneath, `[L, a, b, 1]` scaled by the mix's weight, so the fold yields
-     `Σw·color` and `Σw`, resolved at write with any weight short of 1 blended from the subject's
-     own color; on lanes today. `color(last())` replaces, the last to pass winning behind the band.
+     `Σw·color` and `Σw`; on lanes today. The pose carries color plus coverage (decided
+     2026-10-07): blits knows no subject's own color, so the host lays the result over its base at
+     write, as klieg's `light` does with color and amount (`hinge.ts`). The pose holds the fold as
+     it stands, premultiplied `[Σw·L, Σw·a, Σw·b, Σw]`, so the fold, lanes and `pull` need no
+     finishing step; the write helper divides, caps coverage at 1, composites over the base and
+     encodes, clipping out-of-gamut values per channel as `mixHex` does. `color(last())` replaces, the last to pass winning behind the band.
      `mul` and `max` per OKLab axis mean nothing anyone asks for, so the kit refuses them; a tint
      (multiplying by a filter color) is a channel of its own, as are hue shift (`sum`), chroma and
      lightness (`mul`).
