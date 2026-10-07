@@ -445,36 +445,20 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    Bench an astv-shaped scene (100 short voices over a list mostly unprobed) before building any.
    A reach that changes over time (item 4) is one way to say offscreen.
 
-6. **Color as a value, its merge rule as a parameter** (2026-10-07, unbuilt). `hex` ties three
-   choices together: the value is a color, it is stored packed as `0xrrggbb`, and voices replace
-   one another. The last came from klieg's port (`rig.ts`, klieg `5764ebc`: "`color` replaces,
-   having no arithmetic of its own to contribute with"), which holds for the packing, not for color.
-   Decided in conversation: uncouple them, as `vec(n, of)` already does for numbers.
-   - **`color(of?)`.** The value is OKLab `[L, a, b]` whichever the rule. `color()` averages: a
-     premultiplied `sum` underneath, `[L, a, b, 1]` scaled by the mix's weight, so the fold yields
-     `Σw·color` and `Σw`; on lanes today. The pose carries color plus coverage (decided
-     2026-10-07): blits knows no subject's own color, so the host lays the result over its base at
-     write, as klieg's `light` does with color and amount (`hinge.ts`). The pose holds the fold as
-     it stands, premultiplied `[Σw·L, Σw·a, Σw·b, Σw]`, so the fold, lanes and `pull` need no
-     finishing step; the write helper divides, caps coverage at 1, composites over the base and
-     encodes, clipping out-of-gamut values per channel as `mixHex` does. `color(last())` replaces, the last to pass winning behind the band.
-     `mul` and `max` per OKLab axis mean nothing anyone asks for, so the kit refuses them; a tint
-     (multiplying by a filter color) is a channel of its own, as are hue shift (`sum`), chroma and
-     lightness (`mul`).
-   - **OKLab, not OKLCH, as the store**: several voices average per axis there, and OKLCH's hue
-     wraps (the plain mean of 350° and 10° is 180°). Before settling it, look at a red-to-cyan
-     crossfade, which goes through gray; if that reads wrong, a two-voice crossfade can still
-     interpolate in OKLCH, as a locus blend does today, while stacking stays in OKLab.
-   - **Conversion at the edges.** Keyframe stops convert once when authored. An `fn` patch returns
-     a value every frame, so blits ships a helper such as `oklab(0xff0000)` for it to call once
-     outside the hot path, and one that encodes to hex or a CSS string at write. This replaces
-     `mixHex`'s per-blend conversion, measured at 45–210 ns against 8 ns in sRGB (CHANGELOG
-     0.3.0).
-   - **`hex` deprecated as `color(last())` with packed storage**, not kept as a peer. klieg should
-     move with no change in pixels: every klieg effect voice plays at full weight with no locus
-     (see State above), so its color is only ever replaced, never interpolated, and replacement
-     agrees in any space. That is inference; confirm against klieg's Playwright specs before
-     claiming it in klieg. The schema's "color replaces" line goes.
+6. **Color as a value: `color()` is built** (branch `color`, 2026-10-07); the schema page's
+   channel section and the CHANGELOG say what it is. Mike chose that the channel picks its lerp
+   space (`{ lerp: 'oklab' | 'oklch' }`, OKLab default) after a red-to-cyan render showed OKLab
+   washing to pale gray and OKLCH sweeping through the hues between. What is left:
+   - **The site still uses `hex()`** in `Home.tsx`, `index.mdx`, `channel.mdx` and `glossary.mdx`.
+     Move them to `color()` with `toHex`/`css` at draw, or the docs teach the deprecated channel.
+   - **klieg moves to `color(last(), { lerp: 'oklch' })`** when it next bumps blits. Expected to
+     change no pixels, since every klieg effect voice plays at full weight with no locus; that is
+     inference, so confirm on klieg's Playwright specs before claiming it.
+   - `color({ lerp: 'oklch' })` runs off lanes, since a lane lerps a stock channel straight across.
+   - **A glow writing `color()` stays on the lanes**: the bench's `glowk` rows are `glowc` with the
+     color on `color()`. Medians of six fresh processes on this Mac under a load average of ~10,
+     so trust the differences and not the absolute numbers: what the glow adds over `glowbase` fell
+     from 3.10 to 1.19 ms through `pull`, and from 1.69 to 1.35 ms through `probe`.
    - **A lane fold for `last`**, independent of the rest: last to pass wins behind the band, a
      byte per voice per subject holding band state, the value stored as it is. `color(last())`,
      `hex` while it lasts, and every `last` channel then run on lanes; it is what the `glowc^` row
