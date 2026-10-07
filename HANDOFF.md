@@ -470,6 +470,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
+- **`npm ci` fails on a clean machine until weasel 1.9.0 ships**, so `site.yml` (every push to
+  `main`) and `release.yml` fail too. The playground installs `@weasel-js/diagram` from
+  `file:.weasel/weasel-js-diagram-1.8.1.tgz`, which `apps/playground/scripts/link-diagram.sh`
+  packs and `.gitignore` leaves out; a machine that has run that script installs from its npm
+  cache, so local runs pass. Merged anyway on Mike's call (2026-10-07). Once 1.9.0 is on npm,
+  depend on it and delete the script and `.weasel/`.
+
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
   100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k
   `tweens` row and 214 after the 100k one (teitou). A dropped mix is freed
