@@ -1,6 +1,6 @@
 import { index } from './chain.js';
 import { schedule } from './due.js';
-import { copyHeld, last } from './history.js';
+import { copyHeld, last, leftAt } from './history.js';
 import { laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
@@ -50,14 +50,21 @@ class Restored<I> extends Store<I, Subject<unknown>> {
   constructor(
     private readonly was: Store<I, Subject<unknown>>,
     private readonly make: (live: Subject<unknown>) => Subject<unknown> | undefined,
+    private readonly left: (key: I) => Subject<unknown> | undefined,
   ) {
     super();
   }
 
+  /** Subjects whose record has been put back or deleted, which `left` no longer answers for. */
+  private readonly settled = new Store<I, true>();
+
   override get(key: I): Subject<unknown> | undefined {
     const v = super.get(key);
     if (v !== undefined) return v;
-    const live = this.was.get(key);
+    // A subject that left after the moment sought had the record it left with, whatever it has now.
+    const kept = this.settled.get(key) === undefined ? this.left(key) : undefined;
+    this.settled.set(key, true);
+    const live = kept ?? this.was.get(key);
     if (live === undefined) return undefined;
     this.was.delete(key);
     const made = this.make(live);
@@ -68,6 +75,7 @@ class Restored<I> extends Store<I, Subject<unknown>> {
   override delete(key: I): void {
     super.delete(key);
     this.was.delete(key);
+    this.settled.set(key, true);
   }
 }
 
@@ -118,17 +126,24 @@ function restoreVoice<I, O>(voice: Voice<I, O>, t: number): void {
   voice.unreached = null;
   voice.unreachedBits = null;
   voice.seeks++;
-  voice.subjects = new Restored(voice.subjects, (live) => {
-    const h = restore(voice, live, t);
-    if (h === undefined) return h;
-    if (h.reaches) voice.seen++;
-    if (h.rested) voice.restedCount++;
-    if (voice.state === 'pending') {
-      voice.early ??= [];
-      voice.early.push(h);
-    }
-    return h;
-  });
+  const left = voice.left;
+  voice.left = left === null ? null : left.filter((e) => e.at <= t);
+  const future = left === null ? [] : left.filter((e) => e.at > t);
+  voice.subjects = new Restored(
+    voice.subjects,
+    (live) => {
+      const h = restore(voice, live, t);
+      if (h === undefined) return h;
+      if (h.reaches) voice.seen++;
+      if (h.rested) voice.restedCount++;
+      if (voice.state === 'pending') {
+        voice.early ??= [];
+        voice.early.push(h);
+      }
+      return h;
+    },
+    (key) => leftAt(future, key, t),
+  );
 }
 
 /** Each voice's state at mix time `t`, once every clock above it is back where it was. */

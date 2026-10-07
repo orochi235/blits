@@ -1,6 +1,6 @@
 import { ownBlends } from './blend.js';
 import { index } from './chain.js';
-import { copyHeld, last } from './history.js';
+import { copyHeld, last, leftAt } from './history.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
 import { heldByInput, ownerReading, relink } from './owner.js';
@@ -19,6 +19,12 @@ import type { Controls, Subject, Voice } from './voice.js';
  */
 export function projectAll(transport: Transport, t: number): TransportProjection {
   const ahead = Number.isNaN(transport.now) || t >= transport.now;
+  const tape = transport.tape;
+  const next = ahead && tape !== undefined ? tape.timestampAt(tape.undoDepth()) : undefined;
+  if (next !== undefined && next <= t)
+    throw new Error(
+      `blits: the tape holds calls at ${next} that a read ahead to ${t} cannot play; seek there to see them`,
+    );
   if (!ahead) {
     const history = transport.history;
     if (!history) throw new Error('blits: reading back needs a mix made with history');
@@ -181,7 +187,7 @@ function recall<I, O>(
   subject: I,
   t: number,
 ): Subject<unknown> | undefined {
-  const live = recordOf(mix, voice, subject);
+  const live = leftAt(voice.left, subject, t) ?? recordOf(mix, voice, subject);
   if (live === undefined) return undefined;
   const snap = live.snaps && last(live.snaps, t, true);
   if (snap) {

@@ -361,6 +361,14 @@ export class Motions<I> {
       this.xs = shared.xs;
       this.vs = shared.vs;
     }
+    const s = this.take(subject);
+    this.runs[this.base(s) + 1] = scalar ? SCALAR : 0;
+    this.write(s, { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to });
+    return s;
+  }
+
+  /** Numbers `subject`, with room for its run. */
+  private take(subject: I): number {
     const s = this.numbers.take(subject);
     if (s === 1) {
       const first = this.numbers.subject(0);
@@ -368,8 +376,6 @@ export class Motions<I> {
     }
     if (this.numbers.size > 1) this.slots.set(subject, s);
     this.grow(s + 1);
-    this.runs[this.base(s) + 1] = scalar ? SCALAR : 0;
-    this.write(s, { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to });
     return s;
   }
 
@@ -380,12 +386,70 @@ export class Motions<I> {
     return only !== absent && (only === subject || Object.is(only, subject)) ? 0 : undefined;
   }
 
-  /** Forgets a subject, so a later ask starts it afresh from `from`. */
-  release(subject: I): void {
+  /**
+   * Subjects released at a mix time a rewind may still reach, with their run as it stood, so a
+   * rewind before the release plays them on from there. Empty without history.
+   */
+  private released: {
+    subject: I;
+    at: number;
+    flags: number;
+    stretches: Segment[];
+    pending: Change[] | undefined;
+  }[] = [];
+
+  /**
+   * Forgets a subject, so a later ask starts it afresh from `from`. Given the mix time `at`, under
+   * history, its run is kept for a rewind before then, until `reach` passes it.
+   */
+  release(subject: I, at?: number, reach = Number.NEGATIVE_INFINITY): void {
     const s = this.known(subject);
     if (s === undefined) return;
+    if (at !== undefined) {
+      const older = this.older?.[s];
+      const pending = this.pending?.[s];
+      this.released = this.released.filter((e) => e.at >= reach);
+      this.released.push({
+        subject,
+        at,
+        flags: this.runs[this.base(s) + 1] as number,
+        stretches: older === undefined ? [this.latest(s)] : [...older, this.latest(s)],
+        pending: pending === undefined ? undefined : [...pending],
+      });
+    }
     this.slots.delete(subject);
     this.numbers.release(s);
+  }
+
+  /** Puts back each subject released after mix time `t`, as it stood when released. */
+  private unrelease(t: number): void {
+    const back = this.released.filter((e) => e.at > t).sort((a, b) => a.at - b.at);
+    if (back.length === 0) return;
+    this.released = this.released.filter((e) => e.at <= t);
+    const done = new Set<I>();
+    for (const e of back) {
+      if (done.has(e.subject)) continue;
+      done.add(e.subject);
+      const now = this.known(e.subject);
+      if (now !== undefined) {
+        this.slots.delete(e.subject);
+        this.numbers.release(now);
+      }
+      const s = this.take(e.subject);
+      this.runs[this.base(s) + 1] = e.flags & ~(OLDER | PENDING);
+      const latest = e.stretches[e.stretches.length - 1] as Segment;
+      this.write(s, latest);
+      if (e.stretches.length > 1) {
+        if (this.older === null) this.older = [undefined];
+        this.older[s] = e.stretches.slice(0, -1);
+        this.flag(s, OLDER, true);
+      }
+      if (e.pending !== undefined) {
+        if (this.pending === null) this.pending = [undefined];
+        this.pending[s] = e.pending;
+        this.flag(s, PENDING, true);
+      }
+    }
   }
 
   /**
@@ -645,6 +709,7 @@ export class Motions<I> {
    * kept, with the changes made by then queued to be applied again.
    */
   rewind(t: number): void {
+    this.unrelease(t);
     for (let s = 0; s < this.numbers.size; s++)
       if (this.numbers.subject(s) !== absent) this.cut(s, t);
   }

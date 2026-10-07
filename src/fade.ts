@@ -1,7 +1,7 @@
 import { changed } from './chain.js';
 import { envelope } from './clock.js';
 import { schedule } from './due.js';
-import { noted } from './history.js';
+import { leave, noted, releasing } from './history.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motion.js';
 import { orphan } from './owner.js';
@@ -56,7 +56,7 @@ export function part<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I, at:
   mix.parters.add(voice);
   forgetIn(mix, voice, subject);
   const motion = voice.motion;
-  if (motion !== undefined && asks(mix, motion, voice)) motion.release(subject);
+  if (motion !== undefined && asks(mix, motion, voice)) motion.release(subject, ...releasing(mix));
 }
 
 /** Brings a subject faded out of a voice back, to be met afresh on its next probe. */
@@ -74,6 +74,7 @@ function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void 
   if (head !== undefined && head.slot >= 0) unreach(voice, head.slot, false);
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined) {
+    leave(mix, voice, subject, held);
     voice.subjects.delete(subject);
     if (held.reaches) voice.seen--;
     if (held.rested) voice.restedCount--;

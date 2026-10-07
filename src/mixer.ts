@@ -27,6 +27,7 @@ import {
 } from './fold.js';
 import type { HandleHost } from './handle.js';
 import { held, shownOf, sinceOf, unreachedOf } from './held.js';
+import { leave, releasing } from './history.js';
 import { book, laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
 import { foldLocus, type LocusScratch } from './locus.js';
@@ -514,9 +515,11 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.stir();
     // A record of it is only in a voice over every subject, one naming it, or one gone; a ramp out
     // of a voice that does not name it is in `parters`, and a patch's own state in `motions`.
+    const kept = releasing(this);
     const forget = (voice: Voice<I, O>) => {
+      leave(this, voice, subject, voice.subjects.get(subject));
       voice.subjects.delete(subject);
-      voice.motion?.release(subject);
+      voice.motion?.release(subject, ...kept);
       voice.parts?.delete(subject);
       voice.parted?.delete(subject);
       voice.blend?.of.reads.delete(subject);
@@ -533,9 +536,9 @@ export class Mixer<I, O> implements Mix<I, O> {
       if (voice.parts === null && voice.parted === null) this.parters.delete(voice);
     }
     const strays = this.strays.get(subject);
-    if (strays !== undefined) for (const motion of strays) motion.release(subject);
+    if (strays !== undefined) for (const motion of strays) motion.release(subject, ...kept);
     this.strays.delete(subject);
-    for (const motion of this.strayAll) motion.release(subject);
+    for (const motion of this.strayAll) motion.release(subject, ...kept);
     record(this, 'drop', () => this.drop(subject));
   }
 

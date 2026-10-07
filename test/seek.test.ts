@@ -250,7 +250,7 @@ describe('seek', () => {
     expect(m.drain().map((e) => e.event)).toEqual([40]);
   });
 
-  it('brings back a subject faded out of a voice after the moment as never seen, until the fade plays again', () => {
+  it('brings back a subject faded out of a voice after the moment as it stood, until the fade plays again', () => {
     const m = mix<Part, Pose>(K, { history: { ms: 5000, tape }, stepMs: 5 });
     m.sync(0);
     const h = m.cue({ patch: drift() });
@@ -265,7 +265,7 @@ describe('seek', () => {
     expect(h.weightOf(a)).toBe(0);
     m.seek(180);
     m.sync(245);
-    // Its record was forgotten, so it starts afresh from its voice's start, on the same grid.
+    // Its record is back; on a fixed grid it matches one played from the voice's start.
     const fresh = mix<Part, Pose>(K, { stepMs: 5 });
     fresh.sync(0);
     fresh.cue({ patch: drift() });

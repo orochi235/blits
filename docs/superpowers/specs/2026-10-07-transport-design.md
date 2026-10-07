@@ -148,14 +148,12 @@ host that sets it says signals and host fields read live after a seek, and `asse
 they fed as `held`. A stateful voice restored without
 `stepMs` is stepped across the gap rather than replayed, and `assess` reports it as `stepped`.
 
-**Known gaps in blits today,** each fixed on this branch before it merges, with a test:
-
-| Gap | What happens now |
-|---|---|
-| A subject faded out of a voice, or dropped, after the time sought | comes back as never seen |
-| `from: 'current'` voices | take their pose afresh |
-| Recorded input and host fields after the time sought | let go, so switching back to that branch of the tape reads them live |
-| `project` ahead after a seek back | plays what is cued, not what the tape recorded, so it disagrees with `seek` to the same time |
+**What a seek does not replay, by design and said so:** recorded input and host fields after the
+moment sought are let go, so signals and host fields read live from there, the tape's other
+branches included, and `assess` reports what they fed as `held`. A read ahead past a call the tape
+will play again throws rather than leave the call out. Four gaps the first draft listed were tested
+on this branch: a subject faded out of a voice or dropped after the moment sought now comes back
+with its record and its motion state, and `from: 'current'` voices already kept their pose.
 
 ## History behind an adapter
 

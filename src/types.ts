@@ -968,8 +968,10 @@ export interface Mix<I, O, H = unknown> {
   pull(subjects: Iterable<I>, into: Columns<O>): void;
   /**
    * Reads the mix at another mix time, without moving it. Ahead of the mix it plays what is cued
-   * forward, not what a tape recorded after a `seek` back; behind it, it needs `history`, and
-   * throws for a time older than the history reaches.
+   * forward, and throws for a time past a call the tape will play again after a `seek` back, which
+   * only a seek there makes; behind it, it needs `history`, and throws for a time older than the
+   * history reaches. On a transport it reads every mix on it together, so anchors across them
+   * answer.
    */
   project(time: number): Projection<I, O>;
   /**
@@ -981,8 +983,9 @@ export interface Mix<I, O, H = unknown> {
    * over where they had settled since. Voices cued after it wait as `pending` until the mix plays
    * their cue again. Stateful voices restart from the copy `history` kept nearest before it and
    * step once to it, exact under `stepMs`. A subject faded out of a voice or dropped after it comes
-   * back as never seen, and `from: 'current'` voices take their pose afresh. Recorded input and
-   * host fields after it are let go: after a seek back, signals and host fields read live again.
+   * back with the record it had, a motion patch's state included. Recorded input and host fields
+   * after it are let go: after a seek back, signals and host fields read live again, and `assess`
+   * reports what they fed as `held`.
    *
    * Forward, through a sync or a later seek, the mix plays the recorded calls again at the mix
    * times they were made: cues, handle writes, fades, retargets and pushes, its rate, marks,

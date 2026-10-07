@@ -142,3 +142,41 @@ export function remember<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subje
   const reach = mix.now - history.ms;
   while (snaps.length > 1 && (snaps[1] as { at: number }).at <= reach) snaps.shift();
 }
+
+/**
+ * Under history, keeps the record a subject had when it left a voice, faded out of it or dropped,
+ * for a seek or a read back to before then; without history, keeps nothing.
+ */
+export function leave<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  held: Subject<unknown> | undefined,
+): void {
+  const history = mix.opts.history;
+  if (history === undefined || held === undefined) return;
+  const reach = mix.now - history.ms;
+  const left = (voice.left ?? []).filter((e) => e.at >= reach);
+  left.push({ subject, at: Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now, held });
+  voice.left = left;
+}
+
+/** The record a subject had at mix time `t` and left a voice with after it, if it left after `t`. */
+export function leftAt<I>(
+  left: readonly { subject: I; at: number; held: Subject<unknown> }[] | null,
+  subject: I,
+  t: number,
+): Subject<unknown> | undefined {
+  let found: { at: number; held: Subject<unknown> } | undefined;
+  for (const e of left ?? [])
+    if (e.at > t && Object.is(e.subject, subject) && (found === undefined || e.at < found.at))
+      found = e;
+  return found?.held;
+}
+
+/** The mix time a motion patch keeps a released subject from, and how far back, under history. */
+export function releasing<I, O>(mix: Mixer<I, O>): [at?: number, reach?: number] {
+  const history = mix.opts.history;
+  if (history === undefined || Number.isNaN(mix.now)) return [];
+  return [mix.now, mix.now - history.ms];
+}

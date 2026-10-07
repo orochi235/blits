@@ -215,6 +215,11 @@ export class Voice<I, O> {
   parts: Map<I, { at: number; over: number }> | null = null;
   /** Subjects faded out of this voice, by the mix time each left at; null while none have. */
   parted: Map<I, number> | null = null;
+  /**
+   * Under history, the records of subjects that left this voice, by the mix time each left at,
+   * while a seek or a read back may reach them; null while none have.
+   */
+  left: { subject: I; at: number; held: Subject<unknown> }[] | null = null;
   readonly ease: Curve | undefined;
   /** How many passes its `loop` plays, worked out once. */
   readonly passes: number;
