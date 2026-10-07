@@ -7,7 +7,7 @@ import { childPlayed, Holding, mixTime, ownedElapsed, ownerPatch } from './owner
 import { type Built, builtOf, durationOf, intosOf, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
-import type { Channel, FadeSpec, Handle, Patch, Setting, VoiceSpec } from './types.js';
+import type { Anchor, Channel, FadeSpec, Handle, Patch, Setting, VoiceSpec } from './types.js';
 
 export const none: readonly string[] = Object.freeze([]);
 
@@ -249,6 +249,8 @@ export class Voice<I, O> {
   pinned = Number.NaN;
   /** Whether its start is still to be fixed by an anchor, so it waits pending. */
   placing = false;
+  /** What each member of a join last answered, kept for once its target has left. */
+  answers: Map<Anchor, number> | null = null;
   /** The record `setting.keep` writes to: the one its patch or signal is being called for. */
   keepOn: Subject<unknown> | null = null;
   /** What `setting.keep` holds when called before any record is. */
@@ -380,6 +382,7 @@ export class Voice<I, O> {
     this.cuedAt = Number.NEGATIVE_INFINITY;
     this.doneAt = Number.POSITIVE_INFINITY;
     this.placing = false;
+    this.answers = null;
     this.keepOn = null;
     this.ownKept = null;
     this.unreached = null;

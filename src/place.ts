@@ -2,7 +2,7 @@ import { noted } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { mixTime, ownerReading } from './owner.js';
-import type { Mark, Placement, Query, VoiceSpec } from './types.js';
+import type { Anchor, Mark, Placement, Query, VoiceSpec } from './types.js';
 import { none, type Voice } from './voice.js';
 
 /** What a voice's own owner's clock reads now: the mix clock for a voice no owner holds. */
@@ -64,13 +64,17 @@ export function checkPlacement<I, O>(
   // asker's score under the asker's owner.
   const key = (o: Voice<I, O> | null, score: string | undefined, n: string) =>
     `${o?.id ?? 0}\u0000${score ?? ''}\u0000${n}`;
+  const named = (a: Anchor, score: string | undefined, o: Voice<I, O> | null): string[] => {
+    if ('all' in a) return a.all.flatMap((m) => named(m, score, o));
+    if ('any' in a) return a.any.flatMap((m) => named(m, score, o));
+    const q = 'of' in a ? a.of : 'after' in a ? a.after : 'with' in a ? a.with : a.before;
+    if (typeof q === 'string') return [key(o, score, q)];
+    return q.name === undefined ? [] : [key(o, q.score ?? score, q.name)];
+  };
   const names = (p: Placement, score: string | undefined, o: Voice<I, O> | null): string[] =>
-    [p.start, p.in, p.out, p.end].flatMap((a) => {
-      if (a === undefined || typeof a === 'number') return [];
-      const q = 'of' in a ? a.of : 'after' in a ? a.after : 'with' in a ? a.with : a.before;
-      if (typeof q === 'string') return [key(o, score, q)];
-      return q.name === undefined ? [] : [key(o, q.score ?? score, q.name)];
-    });
+    [p.start, p.in, p.out, p.end].flatMap((a) =>
+      a === undefined || typeof a === 'number' ? [] : named(a, score, o),
+    );
   const self = key(owner, spec.score, name);
   const seen = new Set<string>();
   const waits = names(anchor, spec.score, owner);
@@ -141,6 +145,28 @@ function resolve<I, O>(
 ): number | undefined {
   const o = self.owner;
   if (typeof a === 'number') return o === null ? mixAt(mix, a - mix.offset) : a;
+  if ('all' in a) {
+    let latest = Number.NEGATIVE_INFINITY;
+    for (const m of a.all) {
+      const t = member(mix, m, self);
+      if (t === undefined) return undefined;
+      latest = Math.max(latest, t);
+    }
+    return a.all.length === 0 ? undefined : latest;
+  }
+  if ('any' in a) {
+    // A member still unknown may yet answer earlier than every known one, until one has passed.
+    const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : localNow(mix, self);
+    let earliest = Number.POSITIVE_INFINITY;
+    let unknown = false;
+    for (const m of a.any) {
+      const t = member(mix, m, self);
+      if (t === undefined) unknown = true;
+      else earliest = Math.min(earliest, t);
+    }
+    if (earliest === Number.POSITIVE_INFINITY) return undefined;
+    return unknown && earliest > now ? undefined : earliest;
+  }
   let query: string | Query;
   let mark: Mark;
   let by = a.by ?? 0;
@@ -163,6 +189,20 @@ function resolve<I, O>(
   if (o === null) return t + by;
   const local = ownerReading(o, t);
   return Number.isFinite(local) ? local + by : undefined;
+}
+
+/**
+ * What one member of a join answers, or the time it last gave once its target has left, as a lone
+ * anchor keeps its voice where its target last put it.
+ */
+function member<I, O>(mix: Mixer<I, O>, a: Anchor, self: Voice<I, O>): number | undefined {
+  const t = resolve(mix, a, self);
+  if (t === undefined) return self.answers?.get(a);
+  if (!mix.projecting) {
+    self.answers ??= new Map();
+    self.answers.set(a, t);
+  }
+  return t;
 }
 
 /**

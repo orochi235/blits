@@ -259,7 +259,8 @@ export interface Query {
 /**
  * A time given by another voice: `mark` of the voice `of` selects, moved by `by` ms. `after` is
  * sugar for that voice's `end`, `with` for its `start`, and `before` for its start less `by`. A
- * string selects by name.
+ * string selects by name. `all` is the latest of its anchors, known once every one is; `any` the
+ * earliest, known once one has passed or every one is known.
  *
  * @category score
  */
@@ -267,7 +268,9 @@ export type Anchor =
   | { of: string | Query; mark: Mark; by?: number }
   | { after: string | Query; by?: number }
   | { with: string | Query; by?: number }
-  | { before: string | Query; by?: number };
+  | { before: string | Query; by?: number }
+  | { all: readonly Anchor[] }
+  | { any: readonly Anchor[] };
 
 /**
  * Where a voice sits on the mix clock: at most one of `start` and `in`, and at most one of `out`
