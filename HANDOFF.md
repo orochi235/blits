@@ -412,21 +412,26 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 4. **Reach is fixed at cue, so a voice whose contribution moves pays for every subject it might
    touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every
-   frame, and `contribution` (`src/fold.ts`) runs the patch before anything checks the weight, so a
-   weight of 0 is computed and then dropped. Measured on teitou (2026-10-07, `bench/again.sh 6`
-   over the `glow*` rows, medians of six fresh processes): a glow over 10k subjects adds
+   frame. Its patch is not the cost: `at` has been skipped at weight 0 since 2026-10-04, and a
+   `keys` patch's stops are now too (outside a locus, where a delta makes a voice a member; `step`
+   still runs, since a skipped step cannot leave state as a run one would). What is left for each
+   of the 98% of subjects out of range is visiting its record: `contribution`'s bookkeeping, the
+   signal call, the envelope. Measured on studio (2026-10-07, M1 Max, load average 2.2–3.3 from
+   other jobs; `bench/again.sh 6` and `AB_EACH=1 bench/ab.sh` against `main` over the `glow*`
+   rows, medians of six fresh processes), a glow over 10k subjects adds to the voice under it
 
-   | Read | glow writing `gain` | glow writing `gain` and `color` |
-   |---|---:|---:|
-   | probe | 0.46 ms | 0.94 ms |
-   | probe, lanes off | 0.41 ms | 0.43 ms |
-   | `pull` | 0.45 ms | 1.66 ms |
+   | Read | glow, `gain` | glow, `gain` + `hex` | glow, `gain` + `color()` | `keys` glow, `gain` + `hex` |
+   |---|---:|---:|---:|---:|
+   | probe | 0.91 ms | 1.52 ms | 1.25 ms | 1.47 ms |
+   | probe, lanes off | 1.01 ms | 1.10 ms | – | 1.22 ms |
+   | `pull` | 1.01 ms | 2.96 ms | 1.21 ms | 3.02 ms |
 
-   to a 0.47–1.43 ms frame. A bounded reach would save most of the 0.4–0.5 ms, since only 2% of
-   subjects are in range. The larger cost is the `color` column: hex runs on no lane, so the
-   glow's voice and the voice under it leave the lanes together, and `pull` pays 1.2 ms more for
-   it than for the bound. Two fixes for reach, smallest first:
-   - Skip the patch when `weigh` returns 0. A stateful patch's skipped `step` needs care.
+   on a 2.10 ms frame (0.84 by `pull`). The `keys` glow (`glowkeys`) was 5.05–5.37 ms a frame
+   before the skip and is 3.58–3.73 after, 0.70–0.73 of it; every `fn` glow row is within ±5%
+   of `main`. A `hex` column still takes the glow's voice and the one under it off the lanes;
+   `color()` runs on them and costs `pull` 0.2 ms over `gain` alone, so that half is solved by
+   moving to `color()`, not by reach.
+   - The skip, done (2026-10-07).
    - Declared bounds, the design to evaluate (unbuilt). The mix takes subject positions from the
      host, and reach may be declared at three levels, each optional, each meaning "everywhere"
      when absent; a voice's reach is where all three overlap:
@@ -443,6 +448,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      bound, behavior is today's. Whether unbounded voices are ever deprecated is left open, and
      unlikely — klieg's lighting, a fade over a whole sign and wod's transitions are unbounded by
      design; `target` is the likelier candidate once bounds absorb its spatial uses.
+
+     What bounds would still save, after the skip: the record walk, about 0.9–1.0 ms per 10k
+     subjects on studio (100 ns a subject; a local profile of `glow-` puts the glow's own
+     functions at about 30% of the frame). Only a bound the mix can answer without visiting
+     each subject saves it: a per-subject test against a radius is the signal call again.
+     So the signal bound pays only with a spatial query over the host's positions, kept current
+     as they move, and the patch bound is the same query with a radius that changes by phase.
+     A reach that changes each frame also moves subjects on and off a voice's chain and lane,
+     a cost nobody has measured. Measure that relink before building; if it is near 100 ns a
+     subject entering or leaving, a 2% glow saves nearly all of the 1 ms.
 
 5. **Work nobody will see** (2026-10-07, all unbuilt and unmeasured). Prompted by astv speeding
    100 text animations into 2 s, most of them offscreen. Three cases, by what the host must add:

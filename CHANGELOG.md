@@ -8,6 +8,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Breaking
 
+- A `keys` patch's stops are not read for a subject its voice gives no weight, as `at` already
+  was not, unless the voice is fading to rest or is in a locus. A `lerp` or `lerpBy` that counted
+  its calls no longer sees those frames. A `from: 'current'` voice still takes its base on its
+  first read.
 - `sync` throws for a timestamp earlier than the last sync's, short of a `rebase`. It used to take
   one and half work: stateless voices moved back while a stateful patch without `stepMs` was handed
   a negative `dt`. A host moving the mix calls `seek`.

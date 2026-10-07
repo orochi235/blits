@@ -187,7 +187,7 @@ export interface Patch<I, O, S = void, H = unknown> {
   readonly reads?: readonly string[];
   /**
    * `phase` is 0..1 across one pass, wrapping. Not asked for a subject its voice gives no weight, unless the voice is fading to rest;
-   * `step` still runs.
+   * `step` still runs. A `keys` patch's stops are not read there either, unless its voice is in a locus.
    */
   at(phase: number, subject: I, setting: Setting<S, H>): Partial<O>;
   /** Per-subject state, created on the first frame this patch sees a subject. */
