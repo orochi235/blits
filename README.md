@@ -11,14 +11,14 @@ transitions, extracted so those repos, sherpa and magicsmoke can share one vocab
 engine.
 
 ```ts
-import { hex, kit, max, mix, mul, patch, sum, vec } from '@msb235/blits';
+import { color, kit, max, mix, mul, patch, sum, vec } from '@msb235/blits';
 
 // What a part of a sign can move on. The arithmetic lives here and nowhere else.
 const PART = kit<PartPose>({
   gain: mul(),
   dark: max(),
   position: vec(3, sum()),
-  color: hex(),
+  color: color(),
 });
 
 const flicker = patch<Part, PartPose>(
