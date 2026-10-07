@@ -117,6 +117,18 @@ const weaselFn = () =>
     { writes: ['position'] },
   );
 
+// A text run over 40 rows, the `k`th of 100 typing in over 2 s: each row types in after the last.
+const RUN = 40;
+const typing = (k) =>
+  patch(
+    2000,
+    (ph, s) => {
+      const u = Math.min(1, Math.max(0, (ph * 2000 - k * 20) / 300));
+      return { gain: Math.min(1, Math.max(0, u * RUN - s.row)) };
+    },
+    { writes: ['gain'] },
+  );
+
 const rows = [
   ['fn', 100, 1],
   ['fn', 1000, 1],
@@ -175,6 +187,12 @@ const rows = [
   ['probed', 10000, 2],
   // Lanes fill every subject they have met: this one probes all 10k once, then 5% each frame.
   ['sparse', 10000, 1],
+  // astv's text runs: 100 voices of 40 rows each, typing in one after another over 2 s and again,
+  // shown frozen before and after; every row is probed once, then a view of 200 rows each frame.
+  ['typing', 10000, 100],
+  // Three keys voices over every subject, all probed once and then a view of 40% each frame,
+  // which keeps their lanes busy.
+  ['view', 10000, 3],
   // The same rows with lanes off, for the comparison in one run.
   ['keys-', 10000, 3],
   ['spring-', 10000, 1],
@@ -187,6 +205,8 @@ const rows = [
   ['glowkeys-', 10000, 2],
   ['probed-', 10000, 2],
   ['sparse-', 10000, 1],
+  ['typing-', 10000, 100],
+  ['view-', 10000, 3],
   // Read through `pull` into one array per channel instead of a probe per subject.
   ['fn^', 10000, 3],
   ['keys^', 1000, 3],
@@ -248,7 +268,9 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
         ? j
         : glow
           ? { seed: j * 0.37, x: j % side, y: Math.floor(j / side) }
-          : { seed: j * 0.37 },
+          : kind === 'typing'
+            ? { seed: j * 0.37, row: j % 100 }
+            : { seed: j * 0.37 },
   );
   if (weasel)
     for (let j = 0; j < n; j++)
@@ -313,6 +335,14 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   };
   if (kind === 'keyses')
     for (const mine of subjects) m.cue({ patch: keysTo(mine), subjects: [mine] });
+  if (kind === 'typing')
+    for (let k = 0; k < voices; k++)
+      m.cue({
+        patch: typing(k),
+        subjects: subjects.slice(k * 100, k * 100 + RUN),
+        loop: true,
+        freeze: 'both',
+      });
   if (kind === 'fns') for (const mine of subjects) m.cue({ patch: fnTo(mine), subjects: [mine] });
   // Weighted per subject by a signal holding no state: three voices, or a blend between three.
   const by = (s) => 0.5 + 0.5 * Math.sin(s.seed);
@@ -346,9 +376,9 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       ]),
       weight: near,
     });
-  for (let v = 0; !own && !glow && kind !== 'blend' && v < voices; v++) {
+  for (let v = 0; !own && !glow && kind !== 'blend' && kind !== 'typing' && v < voices; v++) {
     const p =
-      kind === 'keys'
+      kind === 'keys' || kind === 'view'
         ? bounce()
         : kind === 'spring'
           ? settle()
@@ -370,7 +400,14 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       weight: kind === 'signal' ? by : undefined,
     });
   }
-  let probed = kind === 'sparse' ? subjects.filter((_, j) => j % 20 === 0) : subjects;
+  let probed =
+    kind === 'sparse'
+      ? subjects.filter((_, j) => j % 20 === 0)
+      : kind === 'typing'
+        ? subjects.slice(0, 200)
+        : kind === 'view'
+          ? subjects.slice(0, n * 0.4)
+          : subjects;
   const scratch = {};
   const columns = {
     gain: new Float64Array(n),
