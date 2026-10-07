@@ -10,16 +10,13 @@ Until this lands, `main` must not be pushed: `apps/playground/package.json` inst
 
 ## Before weasel 1.9.0 is released
 
-Open items on weasel's `diagram-from-data` branch, raised by the final review and sent to the weasel
-session; check which are done before releasing:
-
-- Re-clicking the selected node should fire `onSelect` (`useMirroredSelection` only reports a pick
-  that differs from the prop), so the playground's Voice tab opens on a re-click as it does from the
-  score.
-- The `diagram-data` demo hint says "Drag to pan", but `DiagramView` binds no drag-pan.
-- The core changeset for `fitViewToBounds`'s `anchor` says `patch`; it adds an option.
-- `diagramScene` doesn't guard duplicate node ids or duplicate `(from, to, label)` edges.
-- Barycenter tests lack a back-edge case, a case of more than two ranks, and re-layout idempotence.
+Weasel's `diagram-from-data` branch, as of `63d0bf89f`, also carries fixes from the final review:
+a re-click on the selected node fires `onSelect` (through a new `SceneCanvas` `onClick` in core),
+drag-pan in `DiagramView`, a guard on duplicate ids in `diagramScene`, and fuller barycenter tests.
+These depend on the branch's `@weasel-js/core` and `@weasel-js/routing`, so the playground gets them
+only with 1.9.0. **Do not rerun `link-diagram.sh` before then**: it packs diagram alone, and that
+diagram calls a `SceneCanvas` prop that core 1.8.1 lacks, which breaks flow selection. Mike has the
+changeset level (`patch` vs `minor`) to decide.
 
 ### Task 11: Release and unlink (deferred until Mike asks for it)
 

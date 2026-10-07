@@ -15,7 +15,9 @@ npx vitest run apps/playground/test    # the pure modules
 ```
 
 Until weasel 1.9.0 ships, a fresh install needs `apps/playground/scripts/link-diagram.sh` first. It
-packs weasel-diagram from its worktree, and `npm install` fails without that pack.
+packs weasel-diagram from its worktree, and `npm install` fails without that pack. Pack from weasel
+`1b228637c`, the commit the playground was checked against: later commits on that branch need an
+unreleased `@weasel-js/core`, which the script does not pack.
 
 blits comes from the repo's own `src/index.ts` through the `@msb235/blits` alias, never the built
 `dist`, and app code imports itself through `@pg/*`. The site's nav links here when the site runs

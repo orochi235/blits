@@ -113,8 +113,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `apps/playground/package.json` points at the gitignored `.weasel/` tarball: `npm ci` in CI would
   fail (a machine that has run `link-diagram.sh` installs from its npm cache, so local runs pass).
   Pushing waits on plan Task 11 (the weasel 1.9.0 release, Mike's call) or on Mike choosing to
-  commit the tarball. Run `apps/playground/scripts/link-diagram.sh` after any weasel-diagram
-  change. Views B, C and D and the mixer desk are the roadmap in the spec:
+  commit the tarball. Do not rerun `apps/playground/scripts/link-diagram.sh` until 1.9.0: the
+  weasel branch's diagram now needs its unreleased core, which the script does not pack. Views B, C and D and the mixer desk are the roadmap in the spec:
   `docs/superpowers/specs/2026-10-07-flow-diagram-design.md`, plan beside it in
   `docs/superpowers/plans/2026-10-07-flow-diagram.md`.
 
