@@ -1,4 +1,4 @@
-# Handoff — blits, 2026-10-03
+# Handoff — blits
 
 **For:** the next session on blits. **Answers:** what blits is meant to be, what exists, what was
 decided in conversation and lives nowhere else, and what comes next. The design is in
@@ -208,12 +208,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
-00. **`ticker()` shipped in 0.6.0, and wod runs on it** (wod `bd70c78`, 2026-10-05, not pushed).
-   One gap wod hit: the ticker has no `wake()`. After `stop()`, a mix changed before the stop
-   never fires `onWake` again, so the loop stays asleep; wod re-`add`s its mixes on mount, which
-   asks for a frame. A `wake()`, or `add` documented as asking for a frame even for a mix it
-   already holds, would make that less subtle.
-
 0. **The playground is on `main`** (merged 2026-10-04, `d9ef787`). A Vite + labkit app at
    `apps/playground`; its README says what it is, how to run it and how it works, and holds what
    stays true of the design.
@@ -393,12 +387,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
    stock band's width.
 
-3. **The README pitches blits as concurrent mixing only**, and an astv session (2026-10-07) read it
-   and judged blits wrong for sequencing and scrubbing: "ordering, which a timeline answers; blits
-   is built for mixing effects that run at once." The README never mentions the score, `project`
-   or `seek`, which are exactly that. Rewrite its opening and "The words" to cover time as well as
-   mixing.
-
 4. **Reach is fixed at cue, so a voice whose influence moves pays for every subject it might
    touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every
    frame, and `influence` (`src/fold.ts`) runs the patch before anything checks the weight, so a
@@ -486,7 +474,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 7. **Name the span vocabulary.** `span`, `fit`, `fallback`, `fitted`, `lenient`, `stretch`,
    `collapse`, `compress`, and the hints `faster`, `slower`, `overlap`, `skip`, `firm` are working
-   names, shipped unreleased on `spans`; `all`/`any` are picked. They go through semanticore with
+   names, on `main` and unreleased; `all`/`any` are picked. They go through semanticore with
    the rest of `docs/vocabulary.json` before a release carries them.
 
 8. **astv's phase on a span.** astv's `scheduleMarks` (`packages/engine/draw/text/changeOrder.ts`)
