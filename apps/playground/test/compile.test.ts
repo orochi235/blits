@@ -1,7 +1,7 @@
-import { glide, keys, mix, patch, spring, tween } from '@msb235/blits';
-import { compile, FRAME } from '@pg/blits/compile';
+import { glide, keys, mix, patch, spring, toHex, tween } from '@msb235/blits';
+import { compile, FRAME, mixedStop } from '@pg/blits/compile';
 import type { Composition, PatchSource, Voice } from '@pg/blits/composition';
-import { KIT, type Pose } from '@pg/blits/kit';
+import { KIT, type Mixed } from '@pg/blits/kit';
 import { subjectsOf } from '@pg/blits/stage';
 import { describe, expect, it } from 'vitest';
 
@@ -26,7 +26,7 @@ const comp = (voices: Voice[]): Composition => ({
 const subjects = subjectsOf({ kind: 'dots', cols: 3, rows: 2 });
 
 /** Plays both mixes frame by frame and compares every subject's pose, to the bit. */
-function same(a: ReturnType<typeof mix<(typeof subjects)[0], Pose>>, b: typeof a, ms = 1500) {
+function same(a: ReturnType<typeof mix<(typeof subjects)[0], Mixed>>, b: typeof a, ms = 1500) {
   for (let t = 0; t <= ms; t += FRAME) {
     a.sync(t);
     b.sync(t);
@@ -52,7 +52,7 @@ describe('compile', () => {
       ]),
       subjects,
     );
-    const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+    const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({ patch: keys(500, stops), loop: 2, stagger: (s) => s.col * 100, fade: { in: 200 } });
     expect(built.errors).toEqual([]);
     same(built.mix, hand);
@@ -76,9 +76,9 @@ describe('compile', () => {
       ]),
       subjects,
     );
-    const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+    const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({
-      patch: patch<(typeof subjects)[0], Pose, { n: number }>(
+      patch: patch<(typeof subjects)[0], Mixed, { n: number }>(
         300,
         (phase, s, set) => ({ turn: set.state.n + phase * s.col }),
         {
@@ -107,9 +107,9 @@ describe('compile', () => {
       ]),
       subjects,
     );
-    const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+    const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({
-      patch: spring<(typeof subjects)[0], Pose, number[]>('offset', {
+      patch: spring<(typeof subjects)[0], Mixed, number[]>('offset', {
         to: (s) => [s.col * 10, 0],
         from: [0, 0],
         stiffness: 120,
@@ -132,9 +132,9 @@ describe('compile', () => {
       ]),
       subjects,
     );
-    const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+    const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({
-      patch: glide<(typeof subjects)[0], Pose, number>('turn', {
+      patch: glide<(typeof subjects)[0], Mixed, number>('turn', {
         from: 0,
         velocity: (s) => s.col * 40,
         ms: 400,
@@ -163,9 +163,9 @@ describe('compile', () => {
       ]),
       subjects,
     );
-    const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+    const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({
-      patch: tween<(typeof subjects)[0], Pose, number>('scale', {
+      patch: tween<(typeof subjects)[0], Mixed, number>('scale', {
         from: 1,
         to: (s) => 1 + s.row,
         ms: (s) => 300 + s.col * 100,
@@ -193,9 +193,9 @@ describe('compile', () => {
       ]),
       subjects,
     );
-    const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+    const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({
-      patch: spring<(typeof subjects)[0], Pose, number[]>('offset', {
+      patch: spring<(typeof subjects)[0], Mixed, number[]>('offset', {
         to: (s) => (s.col === 1 ? [0, 0] : [s.col * 10, 0]),
         from: [5, 5],
       }),
@@ -262,9 +262,9 @@ describe('compile', () => {
       ]),
       subjects,
     );
-    const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+    const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({
-      patch: tween<(typeof subjects)[0], Pose, number>('scale', {
+      patch: tween<(typeof subjects)[0], Mixed, number>('scale', {
         from: 2,
         to: 3,
         ms: (s) => (s.col === 1 ? FRAME : 500),
@@ -297,16 +297,16 @@ describe('compile', () => {
       ]),
       subjects,
     );
-    const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+    const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({
-      patch: tween<(typeof subjects)[0], Pose, number>('scale', {
+      patch: tween<(typeof subjects)[0], Mixed, number>('scale', {
         from: 2,
         to: 3,
         ms: (s) => (s.col === 0 ? FRAME : s.col * 100),
       }),
     });
     hand.cue({
-      patch: spring<(typeof subjects)[0], Pose, number[]>('offset', {
+      patch: spring<(typeof subjects)[0], Mixed, number[]>('offset', {
         to: (s) => (s.col === 2 ? [0, 0] : [s.col, 0]),
         from: [5, 5],
       }),
@@ -338,9 +338,9 @@ describe('compile', () => {
     const order = [layer('a', 0.1, 0xff0000), layer('b', 0.2, 0x00ff00), layer('c', 0.3, 0x0000ff)];
     for (const voices of [order, [...order].reverse()]) {
       const built = compile(comp(voices), subjects);
-      const hand = mix<(typeof subjects)[0], Pose>(KIT, { stepMs: FRAME });
+      const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
       for (const v of voices)
-        if (v.patch.kind === 'keys') hand.cue({ patch: keys(100, v.patch.stops) });
+        if (v.patch.kind === 'keys') hand.cue({ patch: keys(100, v.patch.stops.map(mixedStop)) });
       same(built.mix, hand, 100);
     }
     const forward = compile(comp(order), subjects).mix;
@@ -349,8 +349,8 @@ describe('compile', () => {
     back.sync(0);
     const s0 = subjects[0] as never;
     expect(forward.probe(s0).turn).not.toBe(back.probe(s0).turn);
-    expect(forward.probe(s0).color).toBe(0x0000ff);
-    expect(back.probe(s0).color).toBe(0xff0000);
+    expect(toHex(forward.probe(s0).color)).toBe(0x0000ff);
+    expect(toHex(back.probe(s0).color)).toBe(0xff0000);
   });
 
   it('skips a voice with a bad expression, names the field, and keeps the rest', () => {

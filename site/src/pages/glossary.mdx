@@ -11,7 +11,7 @@ description: The words blits uses, from anchor to weight, each with a short expl
 The examples share one setup: a row of dots that can move up and down, glow, and change color.
 
 ```ts
-import { hex, keys, kit, mix, mul, patch, sum } from '@msb235/blits';
+import { color, keys, kit, mix, mul, oklab, patch, sum } from '@msb235/blits';
 
 interface Dot {
   i: number;
@@ -19,10 +19,10 @@ interface Dot {
 interface DotPose {
   y: number;
   glow: number;
-  color: number;
+  color: number[];
 }
 
-const DOT = kit<DotPose>({ y: sum(), glow: mul(), color: hex() });
+const DOT = kit<DotPose>({ y: sum(), glow: mul(), color: color() });
 const dots = mix<Dot, DotPose>(DOT);
 
 const bob = patch<Dot, DotPose>(1000, (phase) => ({ y: Math.sin(2 * Math.PI * phase) }), {
@@ -71,7 +71,7 @@ In depth: [Blending](../blending/#blend-between-alternatives), [Locus](../locus/
 
 ## channel
 
-A channel is one field of a [pose](#pose), together with its arithmetic: how two voices writing it [`merge`](#merge), and its [rest](#rest), the value that changes nothing. Because the channel owns the arithmetic, two voices can write the same field without knowing about each other. blits ships `sum`, `mul` (multiply), `max`, `last` (the later value wins), `vec` for a list of numbers, and `hex` for colors. A channel of your own is four functions, of which only `merge` and `lerp` are required.
+A channel is one field of a [pose](#pose), together with its arithmetic: how two voices writing it [`merge`](#merge), and its [rest](#rest), the value that changes nothing. Because the channel owns the arithmetic, two voices can write the same field without knowing about each other. blits ships `sum`, `mul` (multiply), `max`, `last` (the later value wins), `vec` for a list of numbers, and `color` for colors. A channel of your own is four functions, of which only `merge` and `lerp` are required.
 
 ```ts
 import type { Channel } from '@msb235/blits';
@@ -86,7 +86,7 @@ const brightest: Channel<number> = {
 
 This one keeps the brightest value written to it, as `max` does.
 
-In depth: [Channel and kit](../channel/). Reference: [`Channel`](../channel/#api-Channel), [`sum`](../channel/#api-sum), [`mul`](../channel/#api-mul), [`hex`](../channel/#api-hex).
+In depth: [Channel and kit](../channel/). Reference: [`Channel`](../channel/#api-Channel), [`sum`](../channel/#api-sum), [`mul`](../channel/#api-mul), [`color`](../channel/#api-color).
 
 ## `cue`
 
@@ -307,7 +307,7 @@ In depth: [Blending](../blending/), [Locus](../locus/).
 A kit lists the [channels](#channel) one kind of [pose](#pose) is made of, one per field. Every [mix](#mix) is built over a kit, and a [patch](#patch) that writes a field the kit doesn't have is refused when it is [cued](#cue).
 
 ```ts
-const DOT = kit<DotPose>({ y: sum(), glow: mul(), color: hex() });
+const DOT = kit<DotPose>({ y: sum(), glow: mul(), color: color() });
 ```
 
 In depth: [Channel and kit](../channel/). Reference: [`kit`](../channel/#api-kit), [`Kit`](../channel/#api-Kit).
@@ -328,10 +328,10 @@ A [channel](#channel)'s `lerp(a, b, u)` finds the value a fraction `u` of the wa
 
 ```ts
 sum().lerp(0, 10, 0.25); // 2.5
-hex().lerp(0xff0000, 0x0000ff, 0.5); // a purple halfway from red to blue
+color().lerp(oklab(0xff0000), oklab(0x0000ff), 0.5); // halfway from red to blue, in OKLab
 ```
 
-Reference: [`Channel`](../channel/#api-Channel), [`mixHex`](../channel/#api-mixHex).
+Reference: [`Channel`](../channel/#api-Channel), [`color`](../channel/#api-color).
 
 ## locus
 

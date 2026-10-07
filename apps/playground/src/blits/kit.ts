@@ -1,5 +1,6 @@
-import { hex, type Kit, kit, max, mul, sum, vec } from '@msb235/blits';
+import { color, type Kit, kit, last, max, mul, sum, vec } from '@msb235/blits';
 
+/** What an author writes: color as 0xrrggbb, as the color picker and the presets hold it. */
 export interface Pose {
   offset: number[];
   turn: number;
@@ -8,6 +9,9 @@ export interface Pose {
   opacity: number;
   glow: number;
 }
+
+/** What the mix folds: color as OKLab with coverage, which `compile` turns each authored color into. */
+export type Mixed = Omit<Pose, 'color'> & { color: number[] };
 
 export type ChannelName = keyof Pose;
 
@@ -20,11 +24,11 @@ export const CHANNELS: readonly ChannelName[] = [
   'glow',
 ];
 
-export const KIT: Kit<Pose> = kit<Pose>({
+export const KIT: Kit<Mixed> = kit<Mixed>({
   offset: vec(2, sum()),
   turn: sum(),
   scale: mul(),
-  color: hex(),
+  color: color(last(), { lerp: 'oklch' }),
   opacity: mul({ bounds: [0, 1] }),
   glow: max(),
 });

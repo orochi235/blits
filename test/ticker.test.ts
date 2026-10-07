@@ -216,6 +216,34 @@ describe('ticker', () => {
     expect(a.synced).toEqual([16]);
   });
 
+  it('wake starts a stopped loop over a mix changed before the stop', () => {
+    const { t, step, waiting } = harness();
+    const m = mix<typeof part, Pose>(PART);
+    t.add(m);
+    m.cue({ patch: ramp(), subjects: [part] });
+    t.stop();
+    m.cue({ patch: ramp(), subjects: [part] });
+    expect(waiting()).toBe(0);
+    t.wake();
+    expect(waiting()).toBe(1);
+    step(16);
+    expect(m.probe(part).crawl).toBeCloseTo(3.2);
+    expect(waiting()).toBe(1);
+  });
+
+  it('wake gives one frame and sleeps again when nothing needs it', () => {
+    const { t, step, waiting } = harness();
+    const a = fake();
+    t.add(a);
+    step(16);
+    t.wake();
+    t.wake();
+    expect(waiting()).toBe(1);
+    step(32);
+    expect(a.synced).toEqual([16, 32]);
+    expect(waiting()).toBe(0);
+  });
+
   it('caps the rate on a grid', () => {
     const { t, step } = harness(30);
     const a = fake(false);

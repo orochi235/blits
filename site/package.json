@@ -12,9 +12,9 @@
   "dependencies": {
     "@astrojs/mdx": "^8.0.2",
     "@astrojs/react": "^7.0.0",
-    "@weasel-js/core": "1.7.3",
-    "@weasel-js/labkit": "1.7.3",
-    "@weasel-js/theme": "1.7.3",
+    "@weasel-js/core": "1.8.1",
+    "@weasel-js/labkit": "1.8.1",
+    "@weasel-js/theme": "1.8.1",
     "astro": "^7.3.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

@@ -1,3 +1,4 @@
+import { toHex } from '@msb235/blits';
 import { hexOf } from '../color';
 import type { StageSpec } from '../composition';
 import type { Columns } from '../player';
@@ -13,6 +14,10 @@ export const DEFAULT_PALETTE: Palette = { base: '#7aa2ff', pick: '#ff6b8b' };
 
 export const cssColor = (c: number, base = DEFAULT_PALETTE.base) =>
   c === 0 || !Number.isFinite(c) ? base : hexOf(c);
+
+/** Subject `i`'s color in a `pull` column of OKLab with coverage, as 0xrrggbb; NaN where unwritten. */
+export const hexAt = (col: Float64Array, i: number) =>
+  Number.isNaN(col[i * 4] as number) ? Number.NaN : toHex(col.subarray(i * 4, i * 4 + 4));
 
 type Shape = (ctx: CanvasRenderingContext2D, r: number, i: number) => void;
 
@@ -58,7 +63,7 @@ function paint(
   const y = p.y + (cols.offset[i * 2 + 1] ?? 0);
   const r = Math.max(0, p.size * (cols.scale[i] ?? 1));
   const glow = cols.glow[i] ?? 0;
-  const color = cssColor(cols.color[i] ?? 0, palette.base);
+  const color = cssColor(hexAt(cols.color, i), palette.base);
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(((cols.turn[i] ?? 0) * Math.PI) / 180);

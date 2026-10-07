@@ -1,4 +1,5 @@
-import { hex, kit, mixHex, mul, sum } from '@blits/channels';
+import { kit, mul, sum } from '@blits/channels';
+import { color, css, oklab, toHex } from '@blits/color';
 import { keys, patch } from '@blits/patch';
 import { f } from '@weasel-js/labkit';
 import { label } from './kit/draw';
@@ -11,7 +12,7 @@ interface Swatch {
 interface Pose {
   gain: number;
   lift: number;
-  color?: number;
+  color?: number[];
 }
 
 const config = f.schema({
@@ -23,7 +24,7 @@ type Config = ReturnType<typeof config.defaults>;
 
 const swatches: Swatch[] = [0, 1, 2, 3, 4].map((i) => ({ i }));
 
-const PART = kit<Pose>({ gain: mul(), lift: sum(), color: hex() });
+const PART = kit<Pose>({ gain: mul(), lift: sum(), color: color({ lerp: 'oklch' }) });
 
 const pulse = patch<Swatch, Pose>(
   2400,
@@ -44,12 +45,12 @@ const wave = keys<Swatch, Pose>(
 const tint = keys<Swatch, Pose>(
   6000,
   [
-    { at: 0, delta: { color: 0x2f66d8 } },
-    { at: 0.33, delta: { color: 0xc23d7a } },
-    { at: 0.66, delta: { color: 0xd99a12 } },
-    { at: 1, delta: { color: 0x2f66d8 } },
+    { at: 0, delta: { color: oklab(0x2f66d8) } },
+    { at: 0.33, delta: { color: oklab(0xc23d7a) } },
+    { at: 0.66, delta: { color: oklab(0xd99a12) } },
+    { at: 1, delta: { color: oklab(0x2f66d8) } },
   ],
-  { lerpBy: (c) => (c === 'color' ? (mixHex as never) : undefined) },
+  {},
 );
 
 function scene(c: Config): Scene<Swatch, Pose, Config> {
@@ -71,7 +72,8 @@ function scene(c: Config): Scene<Swatch, Pose, Config> {
   };
 }
 
-const css = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
+/** A tint with no coverage leaves the swatch its own color. */
+const tinted = (v: number[] | undefined): v is number[] => v !== undefined && (v[3] ?? 0) > 0;
 
 export default function Home() {
   return (
@@ -81,7 +83,14 @@ export default function Home() {
       duration={12000}
       aspect={0.36}
       caption="Five subjects under three voices. Each voice runs on its own clock, and the mix folds whatever is playing into one pose per swatch: its gain, its lift and its color. Switch a voice off and the others carry on."
-      format={{ color: (v) => (typeof v === 'number' ? css(v) : '—') }}
+      format={{
+        color: (v) =>
+          tinted(v as number[] | undefined)
+            ? `#${toHex(v as number[])
+                .toString(16)
+                .padStart(6, '0')}`
+            : '—',
+      }}
       draw={(ctx, frame, size, ink) => {
         const n = frame.subjects.length;
         const gap = size.w / (n + 1);
@@ -91,7 +100,7 @@ export default function Home() {
           const cx = gap * (i + 1);
           const y = base - side - (pose.lift ?? 0) * size.h * 0.3;
           ctx.globalAlpha = 0.25 + 0.75 * Math.max(0, Math.min(1, pose.gain ?? 1));
-          ctx.fillStyle = pose.color === undefined ? ink.soft : css(pose.color);
+          ctx.fillStyle = tinted(pose.color) ? css(pose.color) : ink.soft;
           ctx.fillRect(cx - side / 2, y, side, side);
           ctx.globalAlpha = 1;
         });

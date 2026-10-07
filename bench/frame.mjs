@@ -4,9 +4,29 @@
 // collections during the timed frames and the ms they paused for. WINDOW=2500 also prints the mean
 // of each run of that many frames, for a cost that drifts as the run goes on.
 import { PerformanceObserver } from 'node:perf_hooks';
-import { hex, keys, kit, max, mix, mul, patch, spring, sum, tween, vec } from '../dist/index.js';
+import {
+  color,
+  hex,
+  keys,
+  kit,
+  last,
+  max,
+  mix,
+  mul,
+  oklab,
+  patch,
+  spring,
+  sum,
+  tween,
+  vec,
+} from '../dist/index.js';
 
 const K = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: hex() });
+// The same with color averaging as `color()`, which runs on lanes where hex does not.
+const KC = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: color() });
+// And with it replacing as `color(last())`, which runs on lanes too.
+const KL = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: color(last()) });
+const AMBER = oklab(0xffe08a);
 
 let gcs = 0;
 let paused = 0;
@@ -114,10 +134,13 @@ const rows = [
   // subjects), over a voice on every subject; and that voice alone, so the glow's cost is the
   // difference. A reach bounded to the glow would pay for 2% of it. `glowc` also writes color,
   // as the playground's glow does; hex runs on no lane, so the glow and the voice under it leave
-  // the lanes together.
+  // the lanes together. `glowk` writes it to a `color()` channel instead,
+  // and `glowl` to a `color(last())`.
   ['glowbase', 10000, 1],
   ['glow', 10000, 2],
   ['glowc', 10000, 2],
+  ['glowk', 10000, 2],
+  ['glowl', 10000, 2],
   // One voice per subject, each targeted at its own: magicsmoke's faults on one shared mix.
   ['own', 100, 1],
   ['own', 1000, 1],
@@ -171,6 +194,8 @@ const rows = [
   ['glowbase^', 10000, 1],
   ['glow^', 10000, 2],
   ['glowc^', 10000, 2],
+  ['glowk^', 10000, 2],
+  ['glowl^', 10000, 2],
   ['keyses^', 10000, 1],
   ['churn^', 10000, 1],
   // weasel's churn: the stopped voice's subject leaves for good and a new one arrives, read by
@@ -202,7 +227,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   const pulls = form.endsWith('^');
   const kind = off || pulls ? form.slice(0, -1) : form;
   const scrub = kind === 'ahead' || kind === 'back';
-  const m = mix(K, {
+  const m = mix(kind === 'glowk' ? KC : kind === 'glowl' ? KL : K, {
     ...(kind === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {}),
     lanes: !off,
   });
@@ -297,6 +322,11 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   if (glow) m.cue({ patch: flicker(0) });
   if (kind === 'glow')
     m.cue({ patch: patch(1000, () => ({ gain: 1.5 }), { writes: ['gain'] }), weight: near });
+  if (kind === 'glowk' || kind === 'glowl')
+    m.cue({
+      patch: patch(1000, () => ({ gain: 1.5, color: AMBER }), { writes: ['gain', 'color'] }),
+      weight: near,
+    });
   if (kind === 'glowc')
     m.cue({
       patch: patch(1000, () => ({ gain: 1.5, color: 0xffe08a }), { writes: ['gain', 'color'] }),
@@ -332,7 +362,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     gain: new Float64Array(n),
     dark: new Float64Array(n),
     position: new Float64Array(n * 3),
-    color: new Float64Array(n),
+    color: new Float64Array(kind === 'glowk' || kind === 'glowl' ? n * 4 : n),
   };
   const read = (list) => {
     if (kind === 'rest') for (const s of list) m.atRest(s);

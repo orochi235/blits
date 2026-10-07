@@ -1,6 +1,6 @@
 # Flow diagram: a composition's signal flow in the playground
 
-**Status: designed 2026-10-07, not built.** No code exists for anything here.
+**Status: view A is built and merged to `main` (unpushed), except the release step (plan Task 11, deferred until Mike asks).** Until then the playground runs on a local pack of weasel-diagram.
 
 For whoever builds the playground's diagrams, in blits and in weasel. It answers what the playground
 draws to show where a channel's value comes from, and what `@weasel-js/diagram` gains to draw it.

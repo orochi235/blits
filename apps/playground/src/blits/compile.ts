@@ -2,9 +2,11 @@ import {
   type VoiceSpec as BlitsVoiceSpec,
   glide,
   type Handle,
+  type Keyframe,
   keys,
   type Mix,
   mix,
+  oklab,
   type Patch,
   patch,
   type Signal,
@@ -13,7 +15,7 @@ import {
 } from '@msb235/blits';
 import { type Composition, type Expr, isExpr, type PatchSource, type Voice } from './composition';
 import { compileExpr, type Faults, type Scope, scopeOf } from './expr';
-import { type ChannelName, KIT, type Pose } from './kit';
+import { type ChannelName, KIT, type Mixed, type Pose } from './kit';
 import type { Subject } from './stage';
 
 export const FRAME = 1000 / 60;
@@ -26,22 +28,22 @@ export interface FieldError {
 }
 
 export interface Built {
-  mix: Mix<Subject, Pose>;
-  solos: Map<string, Mix<Subject, Pose>>;
+  mix: Mix<Subject, Mixed>;
+  solos: Map<string, Mix<Subject, Mixed>>;
   /** Every voice cued in each solo mix, by solo then voice id, so a live change can reach them. */
   soloVoices: Map<string, Voices>;
   handles: Map<string, Handle<Subject>>;
-  patches: Map<string, Patch<Subject, Pose, unknown>>;
+  patches: Map<string, Patch<Subject, Mixed, unknown>>;
   levels: Map<string, { set(v: number): void }>;
   faults: Map<string, Faults>;
   errors: FieldError[];
 }
 
-type Spec = BlitsVoiceSpec<Subject, Pose>;
+type Spec = BlitsVoiceSpec<Subject, Mixed>;
 
 export interface Voices {
   handles: Map<string, Handle<Subject>>;
-  patches: Map<string, Patch<Subject, Pose, unknown>>;
+  patches: Map<string, Patch<Subject, Mixed, unknown>>;
 }
 
 /** One voice's spec, or the errors that kept it from being built. */
@@ -82,7 +84,7 @@ function specOf(
   const weight = isExpr(v.weight) ? fn<Signal<Subject>>('weight', v.weight, 0) : v.weight;
   if (errors.length > 0 || made === undefined || weight === undefined) return { errors };
   const spec: Spec = {
-    patch: made as Patch<Subject, Pose, unknown>,
+    patch: made as Patch<Subject, Mixed, unknown>,
     start: v.start,
     rate: v.rate,
     loop: v.loop,
@@ -134,12 +136,21 @@ function fallbackOf(channel: ChannelName, key: string): number | number[] {
   return key === 'velocity' ? zero : 0;
 }
 
+/** An authored delta as the mix folds it: its 0xrrggbb color in OKLab. */
+const mixedDelta = (d: Partial<Pose>): Partial<Mixed> =>
+  typeof d.color === 'number' ? { ...d, color: oklab(d.color) } : (d as Partial<Mixed>);
+
+export const mixedStop = (k: Keyframe<Pose>): Keyframe<Mixed> => ({
+  ...k,
+  delta: mixedDelta(k.delta),
+});
+
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
-function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Pose, unknown> | undefined {
+function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Mixed, unknown> | undefined {
   if (p.kind === 'keys') {
     try {
-      return keys<Subject, Pose>(p.period, p.stops, p.ease ? { ease: p.ease } : {});
+      return keys<Subject, Mixed>(p.period, p.stops.map(mixedStop), p.ease ? { ease: p.ease } : {});
     } catch (err) {
       fail('stops', messageOf(err));
       return undefined;
@@ -159,11 +170,13 @@ function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Pose, unkno
       : undefined;
     if (!at || (p.state && !state) || (p.step && !step)) return undefined;
     try {
-      return patch<Subject, Pose, unknown>(p.period, at as never, {
+      const authored = at as unknown as (...a: unknown[]) => Partial<Pose>;
+      const mixed = (...a: unknown[]) => mixedDelta(authored(...a));
+      return patch<Subject, Mixed, unknown>(p.period, mixed as never, {
         writes: p.writes,
         ...(state ? { state } : {}),
         ...(step ? { step: step as never } : {}),
-      }) as Patch<Subject, Pose, unknown>;
+      }) as Patch<Subject, Mixed, unknown>;
     } catch (err) {
       fail('writes', messageOf(err));
       return undefined;
@@ -203,9 +216,9 @@ function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Pose, unkno
   if (p.kind === 'tween' && p.ease) opts.ease = p.ease;
   const maker = p.kind === 'spring' ? spring : p.kind === 'glide' ? glide : tween;
   try {
-    return maker<Subject, Pose, number | number[]>(p.channel, opts as never) as unknown as Patch<
+    return maker<Subject, Mixed, number | number[]>(p.channel, opts as never) as unknown as Patch<
       Subject,
-      Pose,
+      Mixed,
       unknown
     >;
   } catch (err) {
@@ -226,9 +239,9 @@ export function compile(
 
   // Specs are built afresh per mix: a motion patch keeps its state on itself and plays on one voice.
   const make = (only: string | null) => {
-    const m = mix<Subject, Pose>(KIT, { stepMs: FRAME });
+    const m = mix<Subject, Mixed>(KIT, { stepMs: FRAME });
     const handles = new Map<string, Handle<Subject>>();
-    const cued = new Map<string, Patch<Subject, Pose, unknown>>();
+    const cued = new Map<string, Patch<Subject, Mixed, unknown>>();
     const named = new Set<string>();
     for (const v of c.voices) {
       if (named.has(v.name)) {
@@ -276,7 +289,7 @@ export function compile(
     return { m, handles, patches: cued };
   };
   const full = make(null);
-  const solos = new Map<string, Mix<Subject, Pose>>();
+  const solos = new Map<string, Mix<Subject, Mixed>>();
   const soloVoices = new Map<string, Voices>();
   if (opts.solos)
     for (const id of full.handles.keys()) {

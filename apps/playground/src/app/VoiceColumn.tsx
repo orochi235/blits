@@ -1,0 +1,92 @@
+import type { Composition, Voice } from '@pg/blits/composition';
+import { MAX_VOICES } from '@pg/blits/composition';
+import type { Player } from '@pg/blits/player';
+import type { RefObject } from 'react';
+import s from './App.module.css';
+import { LevelsPanel } from './CompositionControls';
+import { LivePanel } from './LivePanel';
+import { PatchPanel } from './PatchPanel';
+import { VoicePanel } from './VoicePanel';
+
+export interface VoiceColumnProps {
+  comp: Composition;
+  onComp: (c: Composition) => void;
+  voice: Voice | undefined;
+  player: Player;
+  live: boolean;
+  shared: { copied: boolean; url: string } | null;
+  linkRef: RefObject<HTMLInputElement | null>;
+  onAddVoice: () => void;
+  onDeleteVoice: (id: string) => void;
+  onVoice: (v: Voice) => void;
+  onShare: () => void;
+  onCloseShare: () => void;
+  onActed: () => void;
+}
+
+export function VoiceColumn(p: VoiceColumnProps) {
+  const { voice } = p;
+  return (
+    <div className={s.voiceColumn}>
+      <div className={s.row}>
+        <button
+          type="button"
+          onClick={p.onAddVoice}
+          disabled={p.comp.voices.length >= MAX_VOICES}
+          title={p.comp.voices.length >= MAX_VOICES ? `at most ${MAX_VOICES} voices` : undefined}
+        >
+          add voice
+        </button>
+        <button type="button" onClick={p.onShare}>
+          share
+        </button>
+        {p.shared?.copied && <span role="status">link copied</span>}
+      </div>
+      {p.shared && !p.shared.copied && (
+        <div className={s.row} role="status">
+          <label className={s.row}>
+            copy this link
+            <input
+              readOnly
+              value={p.shared.url}
+              ref={p.linkRef}
+              onFocus={(e) => e.target.select()}
+            />
+          </label>
+          <button type="button" onClick={p.onCloseShare}>
+            close
+          </button>
+        </div>
+      )}
+      <LevelsPanel comp={p.comp} onChange={p.onComp} />
+      {voice && (
+        <VoicePanel
+          key={voice.id}
+          voice={voice}
+          errors={p.player.built.errors}
+          faults={p.player.built.faults.get(voice.id)}
+          onChange={p.onVoice}
+          onDelete={() => p.onDeleteVoice(voice.id)}
+        />
+      )}
+      {voice && p.live && (
+        <LivePanel
+          key={`${voice.id} live`}
+          player={p.player}
+          comp={p.comp}
+          voice={voice}
+          onActed={p.onActed}
+        />
+      )}
+      {voice && (
+        <PatchPanel
+          key={`${voice.id} patch`}
+          voice={voice}
+          errors={p.player.built.errors}
+          playhead={p.player.t}
+          onChange={p.onVoice}
+        />
+      )}
+    </div>
+  );
+}

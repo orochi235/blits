@@ -1,4 +1,4 @@
-# Handoff — blits, 2026-10-03
+# Handoff — blits
 
 **For:** the next session on blits. **Answers:** what blits is meant to be, what exists, what was
 decided in conversation and lives nowhere else, and what comes next. The design is in
@@ -108,6 +108,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   Pinned to semanticore `7dac96e`. The built page is not committed here; `serve` rebuilds on every
   edit and adds undo/redo, snapshots, cross-off and chat, none of which the hand page had.
 
+- **The flow diagram (view A) is on `main` locally, unpushed.** The playground's right column
+  draws a composition's signal flow with `@weasel-js/diagram`. Do not push `main` while
+  `apps/playground/package.json` points at the gitignored `.weasel/` tarball: `npm ci` in CI would
+  fail (a machine that has run `link-diagram.sh` installs from its npm cache, so local runs pass).
+  Pushing waits on plan Task 11 (the weasel 1.9.0 release, Mike's call) or on Mike choosing to
+  commit the tarball. Do not rerun `apps/playground/scripts/link-diagram.sh` until 1.9.0: the
+  weasel branch's diagram now needs its unreleased core, which the script does not pack. Views B, C and D and the mixer desk are the roadmap in the spec:
+  `docs/superpowers/specs/2026-10-07-flow-diagram-design.md`, plan beside it in
+  `docs/superpowers/plans/2026-10-07-flow-diagram.md`.
+
 ## Decided in conversation, and in no doc
 
 - **Approach**: a mixer of tracks, over a signal graph and over keyframes-only. Chosen 2026-09-15.
@@ -207,12 +217,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   record.
 
 ## Next, in order
-
-00. **`ticker()` shipped in 0.6.0, and wod runs on it** (wod `bd70c78`, 2026-10-05, not pushed).
-   One gap wod hit: the ticker has no `wake()`. After `stop()`, a mix changed before the stop
-   never fires `onWake` again, so the loop stays asleep; wod re-`add`s its mixes on mount, which
-   asks for a frame. A `wake()`, or `add` documented as asking for a frame even for a mix it
-   already holds, would make that less subtle.
 
 0. **The playground is on `main`** (merged 2026-10-04, `d9ef787`). A Vite + labkit app at
    `apps/playground`; its README says what it is, how to run it and how it works, and holds what
@@ -393,12 +397,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
    stock band's width.
 
-3. **The README pitches blits as concurrent mixing only**, and an astv session (2026-10-07) read it
-   and judged blits wrong for sequencing and scrubbing: "ordering, which a timeline answers; blits
-   is built for mixing effects that run at once." The README never mentions the score, `project`
-   or `seek`, which are exactly that. Rewrite its opening and "The words" to cover time as well as
-   mixing.
-
 4. **Reach is fixed at cue, so a voice whose influence moves pays for every subject it might
    touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every
    frame, and `influence` (`src/fold.ts`) runs the patch before anything checks the weight, so a
@@ -445,48 +443,35 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    Bench an astv-shaped scene (100 short voices over a list mostly unprobed) before building any.
    A reach that changes over time (item 4) is one way to say offscreen.
 
-6. **Color as a value, its merge rule as a parameter** (2026-10-07, unbuilt). `hex` ties three
-   choices together: the value is a color, it is stored packed as `0xrrggbb`, and voices replace
-   one another. The last came from klieg's port (`rig.ts`, klieg `5764ebc`: "`color` replaces,
-   having no arithmetic of its own to contribute with"), which holds for the packing, not for color.
-   Decided in conversation: uncouple them, as `vec(n, of)` already does for numbers.
-   - **`color(of?)`.** The value is OKLab `[L, a, b]` whichever the rule. `color()` averages: a
-     premultiplied `sum` underneath, `[L, a, b, 1]` scaled by the mix's weight, so the fold yields
-     `Σw·color` and `Σw`; on lanes today. The pose carries color plus coverage (decided
-     2026-10-07): blits knows no subject's own color, so the host lays the result over its base at
-     write, as klieg's `light` does with color and amount (`hinge.ts`). The pose holds the fold as
-     it stands, premultiplied `[Σw·L, Σw·a, Σw·b, Σw]`, so the fold, lanes and `pull` need no
-     finishing step; the write helper divides, caps coverage at 1, composites over the base and
-     encodes, clipping out-of-gamut values per channel as `mixHex` does. `color(last())` replaces, the last to pass winning behind the band.
-     `mul` and `max` per OKLab axis mean nothing anyone asks for, so the kit refuses them; a tint
-     (multiplying by a filter color) is a channel of its own, as are hue shift (`sum`), chroma and
-     lightness (`mul`).
-   - **OKLab, not OKLCH, as the store**: several voices average per axis there, and OKLCH's hue
-     wraps (the plain mean of 350° and 10° is 180°). Before settling it, look at a red-to-cyan
-     crossfade, which goes through gray; if that reads wrong, a two-voice crossfade can still
-     interpolate in OKLCH, as a locus blend does today, while stacking stays in OKLab.
-   - **Conversion at the edges.** Keyframe stops convert once when authored. An `fn` patch returns
-     a value every frame, so blits ships a helper such as `oklab(0xff0000)` for it to call once
-     outside the hot path, and one that encodes to hex or a CSS string at write. This replaces
-     `mixHex`'s per-blend conversion, measured at 45–210 ns against 8 ns in sRGB (CHANGELOG
-     0.3.0).
-   - **`hex` deprecated as `color(last())` with packed storage**, not kept as a peer. klieg should
-     move with no change in pixels: every klieg effect voice plays at full weight with no locus
-     (see State above), so its color is only ever replaced, never interpolated, and replacement
-     agrees in any space. That is inference; confirm against klieg's Playwright specs before
-     claiming it in klieg. The schema's "color replaces" line goes.
-   - **A lane fold for `last`**, independent of the rest: last to pass wins behind the band, a
-     byte per voice per subject holding band state, the value stored as it is. `color(last())`,
-     `hex` while it lasts, and every `last` channel then run on lanes; it is what the `glowc^` row
-     in item 4 pays 1.2 ms for. Three hazards, all from reading the code: lanes must fold `last`
-     in voice order, which `sum`/`mul`/`max` never needed; band state must move with a voice
-     between the lane and the general path, or a mid-band weight pops for a frame; and keyframe
-     interpolation on the lane goes through the channel's own lerp (`src/fill.ts`), a conversion
-     per subject per frame.
+6. **Color as a value: `color()` is built** (branch `color`, 2026-10-07); the schema page's
+   channel section and the CHANGELOG say what it is. Mike chose that the channel picks its lerp
+   space (`{ lerp: 'oklab' | 'oklch' }`, OKLab default) after a red-to-cyan render showed OKLab
+   washing to pale gray and OKLCH sweeping through the hues between. What is left:
+   - **klieg moves to `color(last(), { lerp: 'oklch' })`** when it next bumps blits; filed in
+     klieg's `TODO.md` (`84c3f8f`).
+   - `color({ lerp: 'oklch' })` runs off lanes, since a lane lerps a stock channel straight across.
+   - **A glow writing `color()` stays on the lanes**: the bench's `glowk` rows are `glowc` with the
+     color on `color()`. Medians of six fresh processes on this Mac under a load average of ~10,
+     so trust the differences and not the absolute numbers: what the glow adds over `glowbase` fell
+     from 3.10 to 1.19 ms through `pull`, and from 1.69 to 1.35 ms through `probe`.
+   - **`color(last())` runs on lanes** (OKLab lerp only), as a lane op `'last'`: the band state
+     stays on each voice's record for the subject, which the lane already holds, so it moves
+     between the lane and the general path for free (`gate` in `src/gather.ts`). A voice writing a
+     `last` channel that is a motion, sits in a locus or names one subject keeps the channel off
+     lanes, since crowds, motions and loci fold elsewhere (`fits` in `src/hosts.ts`). `hex` and a
+     plain `last()` stay off: hex's lerp is not straight across, and `last()` holds anything.
+   - **What the `last` lane saves is unmeasured.** `glowl` rows are `glowk` on `color(last())`;
+     the only run so far was at a load average near 97, too noisy to quote. Run
+     `bench/again.sh 6 glowbase glowc glowk glowl glowbase^ glowc^ glowk^ glowl^` on a quiet
+     machine or the fleet. The fold also costs every other lane a little: `one` sets two fields
+     per subject and `foldInto` tests the op. `bench/ab.sh` against `f0f9494` says whether that
+     shows; it has not been run.
+   - **The playground's kit still uses `hex()`** (`apps/playground/src/blits/kit.ts`, `keys.ts`),
+     left alone because another session was building the playground on 2026-10-07.
 
 7. **Name the span vocabulary.** `span`, `fit`, `fallback`, `fitted`, `lenient`, `stretch`,
    `collapse`, `compress`, and the hints `faster`, `slower`, `overlap`, `skip`, `firm` are working
-   names, shipped unreleased on `spans`; `all`/`any` are picked. They go through semanticore with
+   names, on `main` and unreleased; `all`/`any` are picked. They go through semanticore with
    the rest of `docs/vocabulary.json` before a release carries them.
 
 8. **astv's phase on a span.** astv's `scheduleMarks` (`packages/engine/draw/text/changeOrder.ts`)

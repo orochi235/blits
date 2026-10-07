@@ -30,7 +30,7 @@ leaving.fade();
 
 ## Which channels it changes
 
-Switch the channel to `sum` and the two curves lie on top of each other. On `sum`, blending and then scaling is the same arithmetic as scaling and then adding, so a locus changes nothing there. On `mul`, `max` and `last` it's the difference between an alternative and a pile-up: `max` without a locus reads half the gain at the midpoint, and in a locus a `hex` color blends from one alternative to the other instead of switching.
+Switch the channel to `sum` and the two curves lie on top of each other. On `sum`, blending and then scaling is the same arithmetic as scaling and then adding, so a locus changes nothing there. On `mul`, `max` and `last` it's the difference between an alternative and a pile-up: `max` without a locus reads half the gain at the midpoint, and in a locus a `color(last())` color blends from one alternative to the other instead of switching.
 
 A locus whose weights sum below 1 is faded toward rest by that sum, and one whose weights sum above 1 counts as 1. Every stock channel has a `lerp`, so any of them can be folded this way.
 

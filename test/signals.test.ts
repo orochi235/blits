@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { hex, kit, mul, sum } from '../src/channels.js';
+import { kit, mul, sum } from '../src/channels.js';
+import { hex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import { gate, lag, level, peak, slew } from '../src/signals.js';

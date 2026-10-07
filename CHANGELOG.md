@@ -42,6 +42,16 @@ version and everything else the patch. Each release lists its changes as **Break
   on a voice that does not freeze, and where a frozen voice starts showing its last frame, which
   has no `out` until it is faded. An owner coasts with its last child, a span where its fit ends. A
   voice that loops for good, or fades before its last pass ends, never coasts.
+- `color()`, a channel holding color as OKLab `[L, a, b, coverage]` with its merge rule as a
+  parameter. `color()` averages: voices stack as a premultiplied sum, so it runs on lanes, and the
+  pose carries the summed weight as coverage. `color(last())` replaces. `{ lerp: 'oklch' }`
+  interpolates round the hue instead of across OKLab, off lanes. `oklab(0xrrggbb)` makes a value;
+  `toHex(pose, under)` lays a pose over the subject's own color and `css(pose)` writes an
+  `oklab()` string with the coverage as alpha. `color(last())` runs on lanes too, the last voice
+  past the band winning, unless a voice writing it is a motion, sits in a locus or names one
+  subject. `hex` still works, but it is deprecated for
+  `color(last(), { lerp: 'oklch' })`, which replaces and interpolates as it does, and a later
+  release removes it.
 - `mix.span(spec)` cues an owner that lays out the voices it holds in an `order` (`queue`,
   `stagger`, `together`) and fits them into its `duration`, again whenever one joins or leaves.
   Each child says how it may give way with `faster`, `slower`, `overlap`, `skip` and `firm`, and
@@ -50,6 +60,9 @@ version and everything else the patch. Each release lists its changes as **Break
   Where nothing fits, `fallback: 'instant'` jumps the weaker children to their end at once and
   `'overrun'` lets the span run long. A span with a budget stays until it has passed, so late
   children can join, and `handle.fitted` says how the last fit came out.
+- `ticker().wake()` asks for a frame. A mix changed before `stop` and not synced since fires
+  `onWake` no more, so nothing else starts the loop again; `add` asks for a frame too, as it
+  always did, now documented.
 - An anchor can wait on several: `{ all: [...] }` answers the latest of them and `{ any: [...] }`
   the earliest, and both nest.
 - `handle.rise({ over })` turns a fade out around: the voice climbs back from where its fade had

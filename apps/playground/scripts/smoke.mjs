@@ -1,12 +1,37 @@
 // Loads the built playground once per preset in headless Chromium, plays a second, and fails on any
-// console error, page error, or a stage that drew nothing. `--shots <dir>` keeps the screenshots,
-// which otherwise go to a temp directory removed on exit.
+// console error, page error, a stage that drew nothing, or a flow that drew nothing. `--shots <dir>`
+// keeps the screenshots, which otherwise go to a temp directory removed on exit.
 import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+
+// Pixels differing from the corner-pixel background by more than 24 in any channel. A flow canvas is
+// WebGL, so it is read from a Playwright screenshot rather than from the canvas.
+const FLOW_INK_MIN = 200;
+async function inkPixels(b64) {
+  const img = new Image();
+  img.src = `data:image/png;base64,${b64}`;
+  await img.decode();
+  const c = document.createElement('canvas');
+  c.width = img.width;
+  c.height = img.height;
+  const g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height).data;
+  let n = 0;
+  for (let k = 0; k < d.length; k += 4) {
+    if (
+      Math.abs(d[k] - d[0]) > 24 ||
+      Math.abs(d[k + 1] - d[1]) > 24 ||
+      Math.abs(d[k + 2] - d[2]) > 24
+    )
+      n++;
+  }
+  return n;
+}
 
 const root = fileURLToPath(new URL('../dist/', import.meta.url));
 const types = {
@@ -61,6 +86,13 @@ try {
       return false;
     });
     if (!drawn) errors.push('stage drew nothing');
+    const flowPng = await page
+      .locator('section[aria-label=flow] canvas')
+      .first()
+      .screenshot({ timeout: 5000 })
+      .catch(() => null);
+    const flowInk = flowPng ? await page.evaluate(inkPixels, flowPng.toString('base64')) : 0;
+    if (flowInk < FLOW_INK_MIN) errors.push('flow drew nothing');
     await page.screenshot({
       path: join(shots, `${String(i + 1).padStart(2, '0')}-${name.replaceAll(' ', '-')}.png`),
     });

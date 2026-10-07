@@ -21,16 +21,16 @@ Every stock channel but `last` has a **rest**: the value that changes nothing. I
 A **kit** names the channels one kind of pose is made of:
 
 ```ts
-import { hex, kit, max, mul, sum, vec } from '@msb235/blits';
+import { color, kit, max, mul, sum, vec } from '@msb235/blits';
 
 const PART = kit<PartPose>({
   gain: mul(),
   dark: max(),
   position: vec(3, sum()),
-  color: hex(),
+  color: color(),
 });
 ```
 
-`vec(n, of)` runs one channel's arithmetic down an axis list, and `hex` is a `last` that interpolates colors, for blending between alternatives. A consumer can declare a channel of its own: it's four functions, and only `merge` and `lerp` are required.
+`vec(n, of)` runs one channel's arithmetic down an axis list, and `color()` holds a color as OKLab with a coverage: voices stacked on it average, `color(last())` replaces instead, and `{ lerp: 'oklch' }` crossfades round the hue. `oklab(0xrrggbb)` makes a value, and `toHex(pose, under)` or `css(pose)` turns a pose back into something to draw. A consumer can declare a channel of its own: it's four functions, and only `merge` and `lerp` are required.
 
 <ApiEntries word="channel" />

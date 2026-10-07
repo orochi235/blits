@@ -285,6 +285,8 @@ export function one<I, O>(
     }
   } else w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
   data[o + Row.WEIGHT] = w;
+  this.folding = lane;
+  this.rec = lane.records[p] ?? null;
   if (voice.built !== null) {
     if (!lane.read || !Object.is(elapsed, lane.readAt)) {
       this.readKeyed(voice, lane.phase, lane.delta, lane.scratch);

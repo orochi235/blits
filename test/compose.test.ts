@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { hex, kit, last, mul, sum, vec } from '../src/channels.js';
+import { kit, last, mul, sum, vec } from '../src/channels.js';
+import { hex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
 import { level, slew } from '../src/signals.js';

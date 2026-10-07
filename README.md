@@ -1,22 +1,24 @@
 # blits
 
-Concurrent effects, mixed. Each effect runs on its own clock with its own state and weight, and a
-mix folds them into one value per subject per frame by rules that belong to the channel, not the
-effect.
+Effects over time, at once or in order. Each effect runs on its own clock with its own state and
+weight. Effects that overlap are folded by a mix into one value per subject per frame, by rules
+that belong to the channel, not the effect. Effects that follow one another are placed on a score,
+at a time or against another effect's start or end, and the mix can be read ahead, read back, and
+moved to any moment, as a scrubber does.
 
 It is the thing klieg does three times over — motion, effects, lighting — and wod does once for
 transitions, extracted so those repos, sherpa and magicsmoke can share one vocabulary and one
 engine.
 
 ```ts
-import { hex, kit, max, mix, mul, patch, sum, vec } from '@msb235/blits';
+import { color, kit, max, mix, mul, patch, sum, vec } from '@msb235/blits';
 
 // What a part of a sign can move on. The arithmetic lives here and nowhere else.
 const PART = kit<PartPose>({
   gain: mul(),
   dark: max(),
   position: vec(3, sum()),
-  color: hex(),
+  color: color(),
 });
 
 const flicker = patch<Part, PartPose>(
@@ -42,13 +44,34 @@ handle.fade({ over: 500 }); // the voice ramps out and leaves
 handle.rise({ over: 500 }); // or, before it is gone, climbs back from where it had got to
 ```
 
+In order, on the same mix:
+
+```ts
+// Place a voice at a time on the host's clock, or against another voice's marks.
+m.cue({ patch: typeIn, name: 'title', start: 1000, loop: false });
+m.cue({ patch: tint, loop: false, anchor: { start: { after: 'title', by: 200 } } });
+
+// A span fits the voices it holds into a budget, one after another by default.
+const intro = m.span({ duration: 2000 });
+for (const line of lines) m.cue({ patch: typeIn, loop: false, owner: intro });
+
+// Read the mix half a second ahead without moving it, or move it: a scrubber.
+const next = m.project(m.now + 500).probe(part);
+m.seek(1200); // back as well as forward, given `history` with a tape
+```
+
 ## The words
 
-Ten of them carry the rest: **delta** (a partial record of channel values), **channel** (one field
+These carry the rest: **delta** (a partial record of channel values), **channel** (one field
 with its own arithmetic), **kit** (the channel set for one kind of delta), **subject** (what is
 driven), **patch** (a pure function of phase and a subject), **voice** (a patch with its own clock
 and weight), **mix** (the live voices over one kit), **signal** (a 0..1 scalar from outside the
 clock), **handle** (the live controls on one voice), **engine** (the implementation behind a mix).
+
+For time: **score** (the plan a source's voices are placed on), **mark** (a voice's start, fade-in
+done, fade-out begun, or end, or a named point the host announces), **anchor** (a time given by
+another voice's mark), **span** (an owner fitting the voices it holds into a duration), **project**
+(read the mix at another time without moving it), **seek** (move the mix to a time and play on).
 
 The design — the full vocabulary, the channel table, the time model, blending, the engine seam, and
 what is still open — is `docs/schema.html`, which ships in the package: open it from
