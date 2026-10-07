@@ -84,7 +84,7 @@ Still open:
 
 | Gap | Why | Where it gets fixed |
 |---|---|---|
-| State copies | a `History` holds ops, not state. blits copies per voice and subject, on a time cadence and only when a subject is probed (`remember`, `history.ts`), keyed by subject objects in a `WeakMap` | stays in blits. Copies are not per entry, so attaching them to entries does not fit. Persisting them needs subject ids from the client (Decision 8) |
+| State copies | a `History` holds ops, not state. blits copies per voice and subject, on a time cadence and only when a subject is probed (`remember`, `history.ts`), keyed by subject objects in a `WeakMap` | stays in blits. Copies are not per entry, so attaching them to entries does not fit. They are never persisted (Decision 8) |
 | Reading back without moving | `project(t)` reads controls at `t` by binary search over each voice's control log (`voice.log`) and over `hostLog`, and never mutates the live mix. An op stack answers "what was in force at `t`" only by undoing to `t` | open: keep the per-voice logs as the index `project` reads and treat the `History` as the persisted record, which risks two records of one fact; or make `project` undo and redo against a throwaway adapter |
 
 `apply` and `invert` themselves suit a mix. The inverse of each host call can be built when the
@@ -100,13 +100,11 @@ of scrubbing loses the recorded future. In weasel-history only a push drops the 
 `goto`, `undo` and `redo` never do. The rule therefore holds as long as a seek or scrub is never
 recorded as an op.
 
-**Decision 8: does history have to survive a page reload, or only change where it lives during
-the session?** If it is session-only, ops can hold voice references, state copies stay as they are,
-and the timestamp gaps above don't matter. If it must survive a reload, subjects and voices need
-stable ids, state copies must be plain data (a record's `kept` map is keyed by `Voice` objects
-today), and the copies need a persisted home beside the serialized `History`. A recording loaded
-from a file also needs the client to re-cue the same voices in the same order, so that cue ids
-line up. Recommended: session-only first, built with the rewind it serves.
+**Decision 8: history lives only for the session; it does not survive a page reload (decided
+2026-10-06).** Ops can hold voices by reference, so no `rebuildOp` and no voice ids are needed.
+State copies stay as they are, keyed by subject objects and allowed to hold non-plain data. blits
+never calls `serialize()` or `restore()`. A client may persist its own records, such as labkit's
+trial record, but blits cannot scrub a mix rebuilt from them after a reload.
 
 ### Why a projection cannot just become the live mix
 
@@ -227,7 +225,8 @@ reads `t`. The host goes on passing its own monotonic clock, and the next `sync(
 7. **Without `stepMs`, does a rewind step once across the gap or replay each recorded frame?**
    Replaying is exact but needs a log of sync timestamps and costs a frame's work per frame replayed.
    Recommended: step once and report `stepped`, as `project` does.
-8. **Does history have to survive a page reload?** In the weasel-history section above.
+8. **Does history have to survive a page reload?** **Decided 2026-10-06: no,** session only; see
+   the weasel-history section above.
 9. **Does a host call made while the mix is rewound drop the recorded future after it, join it, or
    branch?** **Decided 2026-10-06: branch,** with weasel-history's `branching: true` (weasel
    `d1d12e741`). The displaced future becomes a sibling that `branches()` lists and
