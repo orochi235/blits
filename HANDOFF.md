@@ -392,8 +392,19 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 4. **Reach is fixed at cue, so a voice whose influence moves pays for every subject it might
    touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every
    frame, and `influence` (`src/fold.ts`) runs the patch before anything checks the weight, so a
-   weight of 0 is computed and then dropped. Unmeasured; bench a glow over 10k subjects before
-   building anything. Two fixes, smallest first:
+   weight of 0 is computed and then dropped. Measured on teitou (2026-10-07, `bench/again.sh 6`
+   over the `glow*` rows, medians of six fresh processes): a glow over 10k subjects adds
+
+   | Read | glow writing `gain` | glow writing `gain` and `color` |
+   |---|---:|---:|
+   | probe | 0.46 ms | 0.94 ms |
+   | probe, lanes off | 0.41 ms | 0.43 ms |
+   | `pull` | 0.45 ms | 1.66 ms |
+
+   to a 0.47–1.43 ms frame. A bounded reach would save most of the 0.4–0.5 ms, since only 2% of
+   subjects are in range. The larger cost is the `color` column: hex runs on no lane, so the
+   glow's voice and the voice under it leave the lanes together, and `pull` pays 1.2 ms more for
+   it than for the bound. Two fixes for reach, smallest first:
    - Skip the patch when `weigh` returns 0. A stateful patch's skipped `step` needs care.
    - Declared bounds, the design to evaluate (unbuilt). The mix takes subject positions from the
      host, and reach may be declared at three levels, each optional, each meaning "everywhere"
