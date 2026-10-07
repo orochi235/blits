@@ -4,7 +4,7 @@ import { kit, last, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import { transport } from '../src/transport.js';
-import type { Mix, Transport } from '../src/types.js';
+import type { Marked, TransportOptions } from '../src/types.js';
 
 // Two kits that never fold together, as astv's flights and text runs.
 interface Flight {
@@ -20,13 +20,13 @@ const fly = (ms: number) => patch<string, Flight>(ms, (phase) => ({ u: phase }),
 const type = (ms: number) =>
   patch<string, Row>(ms, (phase) => ({ chars: Math.round(phase * 10) }), { writes: ['chars'] });
 
-const starts = (t: Transport | Mix<string, never>, name: string) =>
+const starts = (t: { marks(from: number, to: number): Marked[] }, name: string) =>
   t
     .marks(0, 100_000)
     .filter((e) => e.name === name && e.mark === 'start')
     .map((e) => e.timestamp);
 
-const stage = (history?: Parameters<typeof transport>[0]['history']) => {
+const stage = (history?: TransportOptions['history']) => {
   const t = transport({ history });
   const orbs = mix<string, Flight>(FLIGHT, { transport: t, name: 'orbs' });
   const runs = mix<string, Row>(ROWS, { transport: t, name: 'runs' });
