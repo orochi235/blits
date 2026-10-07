@@ -1,7 +1,7 @@
 # Spans and joins: fitting voices into a time budget
 
 **Status: designed 2026-10-07, not built.** No code exists for anything here. `span`, `fit`, the
-hints and the last-resort option are working names awaiting the naming pass; `all`/`any` are
+hints, the last-resort option and `lenient` are working names awaiting the naming pass; `all`/`any` are
 picked.
 
 For whoever builds the score's next layer. It answers how a consumer gives a group of voices a
@@ -95,6 +95,7 @@ type Fit = (span: { left: number; firm: Strength; order: Order }, kids: readonly
 | `collapse()` | applies every remaining child at one virtual instant |
 | `overrun({ cap })` | lets the span run long, up to `cap` |
 | `chain(...fits)` | tries each in turn, handing the shortfall left to the next |
+| `lenient({ cap })` | `chain(compress(), overlap(), skip(), overrun({ cap }))`: every way of giving, overrunning only once the rest are spent |
 
 The default fit is `chain(compress(), overlap(), skip())`. Overrunning is opt-in: it is never in the
 default chain, and a span overruns only through `overrun()` or `fallback: 'overrun'`.
