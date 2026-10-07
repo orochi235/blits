@@ -1,5 +1,6 @@
 export type { NumberOptions } from './channels.js';
-export { hex, kit, last, max, mixHex, mul, sum, vec } from './channels.js';
+export { kit, last, max, mul, sum, vec } from './channels.js';
+export { hex, mixHex } from './color.js';
 export type { Claim, Fit, FitPlan, Order, SpanClaim, Strength } from './fit.js';
 export {
   chain,

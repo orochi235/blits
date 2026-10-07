@@ -1,16 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  foldNumber,
-  hex,
-  kit,
-  last,
-  max,
-  mixHex,
-  mul,
-  numericOf,
-  sum,
-  vec,
-} from '../src/channels.js';
+import { foldNumber, kit, last, max, mul, numericOf, sum, vec } from '../src/channels.js';
+import { hex, mixHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
 import type { Channel } from '../src/types.js';
