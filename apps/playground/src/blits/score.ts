@@ -44,7 +44,8 @@ function targetOf(a: number | Anchor | undefined): { name: string; edge: Edge } 
   if ('after' in a) [n, edge] = [name(a.after), 'end'];
   else if ('with' in a) [n, edge] = [name(a.with), 'start'];
   else if ('before' in a) [n, edge] = [name(a.before), 'start'];
-  else [n, edge] = [name(a.of), edgeOfMark(a.mark)];
+  else if ('of' in a) [n, edge] = [name(a.of), edgeOfMark(a.mark)];
+  else return null;
   return n ? { name: n, edge } : null;
 }
 

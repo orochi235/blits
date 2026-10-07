@@ -81,6 +81,17 @@ describe('clipsOf', () => {
     const d = { ...c, voices: [v({ id: 'x', anchor: { start: { after: 'nobody' } } })] };
     expect(clipsOf(d, subjects).links).toEqual([]);
   });
+  it('a join anchor, all or any, draws no link', () => {
+    const d = {
+      ...c,
+      voices: [
+        v({ id: 'a' }),
+        v({ id: 'b' }),
+        v({ id: 'x', anchor: { start: { all: [{ after: 'a' }, { after: 'b' }] } } }),
+      ],
+    };
+    expect(clipsOf(d, subjects).links).toEqual([]);
+  });
 });
 
 describe('applyEdit', () => {
