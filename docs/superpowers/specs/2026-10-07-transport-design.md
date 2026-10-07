@@ -157,6 +157,29 @@ they fed as `held`. A stateful voice restored without
 | Recorded input and host fields after the time sought | let go, so switching back to that branch of the tape reads them live |
 | `project` ahead after a seek back | plays what is cued, not what the tape recorded, so it disagrees with `seek` to the same time |
 
+## History behind an adapter
+
+Blits decides what history keeps and when to read it back; the host decides where it lives. Every
+kind of record goes through one adapter the host passes as `history`, generalizing the `tape` slot
+weasel-history's `createHistory` fills today: state copies, the tape of calls, recorded inputs and
+host fields, departed voices, announced marks, dropped members. Blits holds none of it itself, so
+below the adapter nothing is ever just gone; a record the adapter does not have in hand is a load,
+not a loss.
+
+- **Reads are synchronous.** `await t.prepare(time)` asks the adapter to bring in what a seek or a
+  read back to `time` needs; `t.seek(time)` and `project(time)` stay synchronous. A read the
+  adapter cannot answer throws a typed error naming what was missing, so a host that did not
+  prepare finds out at once and never gets a partial restore.
+- **Records are plain data.** A patch's `state` must survive `structuredClone`, or the patch
+  provides `pack(state)` and `unpack(data)`; `spring` and `glide` provide them. A stateful patch
+  with neither is refused at `cue` on a mix with history, not at the seek that would need it.
+- **Keeping everything in memory is one adapter,** shipped with blits, which never lets go. `ms`
+  stops being a mode: an adapter that does let go says so by throwing on the read, the same loud
+  miss.
+
+The adapter's methods, and its name, are designed when it is built (build order step 4); this
+section fixes the contract they serve.
+
 ## Seek
 
 The transport holds the one tape. Each recorded call carries the transport time and the member it
@@ -193,14 +216,16 @@ compiling; `Marked` gains `mix`. Nothing changes for a mix with no shared transp
 
 ## Build order
 
-1. **`coast`**, on a standalone mix. astv's rail can wait on frozen runs within one mix as soon as
-   this ships.
+1. **`coast`**, on a standalone mix. Built (8a80167).
 2. **Private transport:** move the clock out of `Mixer` with no behavior change; the suite is the
    test.
 3. **Shared transport:** members, the cross-member score lookup, `marks`/`project`/`inert`/`onWake`
    on the transport, one tape across members, `drop`.
-4. `docs/schema.html` (a Transport section, `coast` in Marks), `docs/vocabulary.json` (both words),
-   `CHANGELOG.md`, and the site's reference.
+4. **History adapter:** every record behind it, `prepare`, plain-data state, the in-memory adapter,
+   and the four known gaps closed.
+5. `fade({ over, at })`, for astv's rosters.
+6. `docs/schema.html` (a Transport section), `docs/vocabulary.json` (`transport`, `coast`, the
+   adapter's name), `CHANGELOG.md`, and the site's reference.
 
 ## Tests
 
