@@ -10,7 +10,7 @@ interface Subject {
   i: number;
 }
 
-// `wave`, `pulse` and `swell` each carry one voice's influence alone, so the stage can stack them
+// `wave`, `pulse` and `swell` each carry one voice's contribution alone, so the stage can stack them
 // per subject; `height` is the pose a host would write.
 interface Pose {
   height: number;

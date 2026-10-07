@@ -20,7 +20,7 @@ function twoOnLast(opts: { lanes?: boolean } = {}): { m: Mix<object, Pose>; stop
   return { m, stops };
 }
 
-/** A channel with a rest whose `merge` and `scale` both hand back the influence they were given. */
+/** A channel with a rest whose `merge` and `scale` both hand back the contribution they were given. */
 const replace: Channel<number[]> = {
   rest: [0, 0, 0],
   merge: (_a, b) => b,
@@ -88,7 +88,7 @@ describe('a pose never holds a patch’s own array', () => {
     ]);
   });
 
-  it('a custom channel with rest whose merge and scale hand back the influence', () => {
+  it('a custom channel with rest whose merge and scale hand back the contribution', () => {
     const stop = [4, 5, 6];
     const m = mix<object, Pose>(kit({ p: replace }));
     m.cue({ patch: keys<object, Pose>(100, [{ at: 0, delta: { p: stop } }]), loop: true });

@@ -178,7 +178,7 @@ describe('keys', () => {
     ]);
     const frozen = JSON.stringify([loop, retarget]);
     const stock = vec(3, sum());
-    // Borrows vec's lerp, but its merge hands the influence itself to the pose, so a read must not
+    // Borrows vec's lerp, but its merge hands the contribution itself to the pose, so a read must not
     // reuse that array.
     const stockLast: Channel<number[]> = { lerp: stock.lerp, merge: (_a, b) => b };
     // The same arithmetic through lerps with no in-place form, which allocate as reads used to.

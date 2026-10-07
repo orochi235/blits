@@ -4,7 +4,7 @@ import type { Channel } from './types.js';
 import type { Subject, Voice } from './voice.js';
 
 /**
- * What a fold with a locus in play gathers, kept from one fold to the next: the influences in
+ * What a fold with a locus in play gathers, kept from one fold to the next: the contributions in
  * voice order, each a voice's own or a locus's first member; every locus member; and per channel
  * slot, a locus's folding value, the weight taken into it and the array it owns.
  */
@@ -14,7 +14,7 @@ export interface LocusScratch<I, O> {
   helds: (Subject<unknown> | null)[];
   deltas: (Record<string, unknown> | null)[];
   weights: number[];
-  /** Per influence, -1 for a voice's own, or which of `names` it is. */
+  /** Per contribution, -1 for a voice's own, or which of `names` it is. */
   groups: number[];
   names: string[];
   m: number;
@@ -72,7 +72,7 @@ export function own<I, O>(
 }
 
 /**
- * Folds one locus's members into one influence through each channel's own `lerp`: its value per
+ * Folds one locus's members into one contribution through each channel's own `lerp`: its value per
  * channel goes in `k.values`, the channels in `k.touched` in the order first met, and its weight
  * is returned. A channel folding by scale takes its value in an array of `k`'s own, lerped in
  * place, since the fold only reads it.

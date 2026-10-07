@@ -58,7 +58,7 @@ m.blend([flat, arch, ramp], mood);
 mood.set(0.25); // half flat, half arch
 ```
 
-The voices a blend cues share a [locus](../locus/): the mix treats them as alternatives, folding them into one influence through each channel's lerp before it merges that with anything else. That's what keeps two gains of 0.06 at 0.06 halfway through, instead of multiplying them. Only the two patches either side of `by` run: a patch at weight 0 isn't asked, so a blend over eight stops costs two patches per subject, not eight.
+The voices a blend cues share a [locus](../locus/): the mix treats them as alternatives, folding them into one contribution through each channel's lerp before it merges that with anything else. That's what keeps two gains of 0.06 at 0.06 halfway through, instead of multiplying them. Only the two patches either side of `by` run: a patch at weight 0 isn't asked, so a blend over eight stops costs two patches per subject, not eight.
 
 ## Handover at rest
 

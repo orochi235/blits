@@ -212,7 +212,7 @@ export function foldInto<I, O>(
 }
 
 /**
- * Whether a rest-less channel's influence passes the band, for the record `one` is folding: the
+ * Whether a rest-less channel's contribution passes the band, for the record `one` is folding: the
  * general path's `apply` decides it from the same band state on the same record, so a subject
  * moving between the paths carries it.
  */

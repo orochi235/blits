@@ -19,7 +19,7 @@ export interface Channel<V> {
   bounds?: readonly [min: number, max: number];
   /** Identity. Absent means the channel has none: it replaces rather than contributes. */
   rest?: V;
-  /** Fold two influences into one. */
+  /** Fold two contributions into one. */
   merge(a: V, b: V): V;
   /** Fade toward `rest` by weight 0..1. Required when `rest` is set; absent otherwise. */
   scale?(v: V, w: number): V;
@@ -27,7 +27,7 @@ export interface Channel<V> {
   lerp(a: V, b: V, u: number): V;
   /**
    * Optional: `merge(into, scale(v, w))`, written into `into` and returned, so a channel whose
-   * values are objects need not allocate per influence. The mix only hands it a value it made.
+   * values are objects need not allocate per contribution. The mix only hands it a value it made.
    */
   fold?(into: V, v: V, w: number): V;
 }
@@ -678,7 +678,7 @@ export interface MixOptions<H = unknown> {
   /** Merged into every `setting.host`. Its type is the mix's `H`, which every patch and signal it cues reads. */
   host?: H;
   /**
-   * The band a rest-less channel's influence switches on and off across. It has to clear the frame
+   * The band a rest-less channel's contribution switches on and off across. It has to clear the frame
    * noise in a real signal; these are placeholders until the klieg port measures one.
    */
   band?: { on: number; off: number };

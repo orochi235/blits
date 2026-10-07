@@ -232,7 +232,7 @@ export function run<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
 
 /**
  * One subject's contribution from a lane's voice. True where the voice gave the subject a delta,
- * as the general path's `influence` does where it returns one, which is what makes a voice in a
+ * as the general path's `contribution` does where it returns one, which is what makes a voice in a
  * locus one of its members for the subject.
  */
 export function one<I, O>(
@@ -410,7 +410,7 @@ export function call<I, O>(
   if (this.keeps) host.horizon(voice, delay);
   else reading.horizon = Number.POSITIVE_INFINITY;
   const delta = voice.patch.at(phase, subject, voice.setting as never) as Record<string, unknown>;
-  // What `influence` leaves on the record, so a probe on the general path this frame reuses it.
+  // What `contribution` leaves on the record, so a probe on the general path this frame reuses it.
   rec.delta = delta;
   rec.probed = this.now;
   rec.seeks = voice.seeks;

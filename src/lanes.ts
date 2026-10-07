@@ -72,7 +72,7 @@ export interface LaneHost<I, O> {
     pass: number,
     slot: number,
   ): number;
-  /** Whether a rest-less channel's influence passes the band, as the general path decides it. */
+  /** Whether a rest-less channel's contribution passes the band, as the general path decides it. */
   passes(was: boolean | undefined, w: number): boolean;
   /** Sets `reading.horizon` for the voice and a subject delayed `delay` voice ms. */
   horizon(voice: Voice<I, O>, delay: number): void;

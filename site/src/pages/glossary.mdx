@@ -6,7 +6,7 @@ description: The words blits uses, from anchor to weight, each with a short expl
 
 # Glossary
 
-[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [`freeze`](#freeze) · [handle](#handle) · [`history`](#history) · [host](#host) · [influence](#influence) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [locus](#locus) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight)
+[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [contribution](#contribution) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [`freeze`](#freeze) · [handle](#handle) · [`history`](#history) · [host](#host) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [locus](#locus) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight)
 
 The examples share one setup: a row of dots that can move up and down, glow, and change color.
 
@@ -87,6 +87,14 @@ const brightest: Channel<number> = {
 This one keeps the brightest value written to it, as `max` does.
 
 In depth: [Channel and kit](../channel/). Reference: [`Channel`](../channel/#api-Channel), [`sum`](../channel/#api-sum), [`mul`](../channel/#api-mul), [`color`](../channel/#api-color).
+
+## contribution
+
+A contribution is what one [voice](#voice) actually does to one [subject](#subject) in one frame: its [delta](#delta) after its [weight](#weight) has pulled it toward [rest](#rest). It isn't a share of the result. Two voices that each contribute a glow of 0.5 leave the dot at 0.25, since `glow` multiplies.
+
+`dim` at weight 0.5 has a contribution of `glow: 0.75`, halfway from rest at 1 toward its 0.5.
+
+In depth: [Blending](../blending/), [Locus](../locus/).
 
 ## `cue`
 
@@ -235,7 +243,7 @@ In depth: [Voice](../voice/#fades), [Blending](../blending/#fade-in-and-out). Re
 
 ## `fold`
 
-To fold is to combine every [influence](#influence) on one [subject](#subject) into its [pose](#pose), channel by channel, starting from each channel's [rest](#rest) and applying its [`merge`](#merge) one influence at a time. A [channel](#channel) may also supply its own `fold` function, which does the same job by writing into an existing value instead of making a new one.
+To fold is to combine every [contribution](#contribution) on one [subject](#subject) into its [pose](#pose), channel by channel, starting from each channel's [rest](#rest) and applying its [`merge`](#merge) one contribution at a time. A [channel](#channel) may also supply its own `fold` function, which does the same job by writing into an existing value instead of making a new one.
 
 Two voices write `glow`, one 0.5 and the other 0.8. `glow` multiplies, so starting from its rest of 1 the dot's glow folds to 0.4.
 
@@ -294,14 +302,6 @@ requestAnimationFrame(frame);
 
 In depth: [Mix](../mix/#the-frame-loop), [Time](../time/). Reference: [`MixOptions`](../mix/#api-MixOptions).
 
-## influence
-
-An influence is what one [voice](#voice) actually does to one [subject](#subject) in one frame: its [delta](#delta) after its [weight](#weight) has pulled it toward [rest](#rest). It isn't a share of the result. Two voices that each contribute a glow of 0.5 leave the dot at 0.25, since `glow` multiplies.
-
-`dim` at weight 0.5 has an influence of `glow: 0.75`, halfway from rest at 1 toward its 0.5.
-
-In depth: [Blending](../blending/), [Locus](../locus/).
-
 ## kit
 
 A kit lists the [channels](#channel) one kind of [pose](#pose) is made of, one per field. Every [mix](#mix) is built over a kit, and a [patch](#patch) that writes a field the kit doesn't have is refused when it is [cued](#cue).
@@ -335,7 +335,7 @@ Reference: [`Channel`](../channel/#api-Channel), [`color`](../channel/#api-color
 
 ## locus
 
-Voices given the same `locus` name are alternatives, not layers: as one fades out and another fades in, a subject should look like one or the other, never both stacked. The mix first blends a locus's members into one [influence](#influence) with each channel's [`lerp`](#lerp), by their shares of the locus's total [weight](#weight), then [folds](#fold) that in with everything else.
+Voices given the same `locus` name are alternatives, not layers: as one fades out and another fades in, a subject should look like one or the other, never both stacked. The mix first blends a locus's members into one [contribution](#contribution) with each channel's [`lerp`](#lerp), by their shares of the locus's total [weight](#weight), then [folds](#fold) that in with everything else.
 
 ```ts
 const old = dots.cue({ patch: dim, locus: 'light', fade: { out: 1000 } });

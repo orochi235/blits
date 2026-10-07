@@ -22,7 +22,7 @@ export function lerpInto(channel: Channel<unknown>): LerpInto | undefined {
 
 /**
  * What a lane needs of a stock numeric channel beyond the channel: its arithmetic by name, its axes.
- * `'last'` has no rest: the last influence to pass the band replaces, and a weight only gates it.
+ * `'last'` has no rest: the last contribution to pass the band replaces, and a weight only gates it.
  */
 export interface Numeric {
   op: 'sum' | 'mul' | 'max' | 'last';
@@ -141,7 +141,7 @@ export function max(opts?: NumberOptions): Channel<number> {
 }
 
 /**
- * A channel with no rest: the last influence to pass wins, and a weight can only gate it. The
+ * A channel with no rest: the last contribution to pass wins, and a weight can only gate it. The
  * default `lerp` steps at the midpoint, which is all a value with no arithmetic can promise; a
  * consumer with a real interpolation passes its own, as `hex` does.
  *

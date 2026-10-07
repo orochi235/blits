@@ -48,7 +48,7 @@ export type Values = Record<string, unknown>;
  * One live voice's delta for one subject this frame, through its record for the subject, or null
  * when it does not reach. Its weight is left in `w`.
  */
-export function influence<I, O>(
+export function contribution<I, O>(
   this: Mixer<I, O>,
   voice: Voice<I, O>,
   subject: I,
@@ -260,7 +260,7 @@ export function isRest<I, O>(this: Mixer<I, O>, delta: Record<string, unknown>):
   return true;
 }
 
-/** Whether a rest-less channel's influence is switched on, across a band rather than an edge. */
+/** Whether a rest-less channel's contribution is switched on, across a band rather than an edge. */
 export function passes<I, O>(this: Mixer<I, O>, was: boolean | undefined, w: number): boolean {
   const { on, off } = this.band;
   return w >= on ? true : w <= off ? false : (was ?? w >= on);
@@ -524,7 +524,7 @@ export function foldLoci<I, O>(
   }
 }
 
-/** `influence`, or for a dry fold a subject already probed this frame, without advancing it. */
+/** `contribution`, or for a dry fold a subject already probed this frame, without advancing it. */
 export function read<I, O>(
   this: Mixer<I, O>,
   voice: Voice<I, O>,
@@ -556,5 +556,5 @@ export function read<I, O>(
       return held.delta;
     }
   }
-  return this.influence(voice, subject, now, held);
+  return this.contribution(voice, subject, now, held);
 }

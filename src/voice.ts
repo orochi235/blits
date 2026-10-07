@@ -27,7 +27,7 @@ export interface Subject<S> {
   /** Left at rest during a handover, so it stops contributing. */
   rested: boolean;
   /**
-   * Per written channel, whether a rest-less influence is on: 0 unknown, 1 on, 2 off; null until
+   * Per written channel, whether a rest-less contribution is on: 0 unknown, 1 on, 2 off; null until
    * a rest-less channel asks.
    */
   bands: Uint8Array | null;
@@ -65,7 +65,7 @@ export interface Subject<S> {
   next: Subject<unknown> | null;
   /**
    * On the first record, which the mix keeps per subject so a probe makes one lookup: the `version`
-   * the chain was linked at, and per locus, by channel slot, whether a rest-less influence is on:
+   * the chain was linked at, and per locus, by channel slot, whether a rest-less contribution is on:
    * 0 never decided, 1 on, 2 off.
    */
   version: number;

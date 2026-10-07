@@ -88,7 +88,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   changed, so nobody re-derives it: `sync`, `step` and `Setting.dt` now say that nothing advances
   at the call and each subject catches up by its own whole gap; `mix.mute` takes `over` like
   `handle.fade`; `duration` became `period` (reversed on 2026-10-04, below) and `t` became `phase`; `pose`,
-  `influence`, `setting`, `period`, `phase`, `system`, `source` and `score` are defined in the
+  `contribution`, `setting`, `period`, `phase`, `system`, `source` and `score` are defined in the
   Vocabulary section; `Easing`, `Keyframe<O>`, `StaggerSpec` and `mixHex` are given; and the
   answers a builder would otherwise have guessed are stated where they belong — `target` runs per
   subject on first sight, `seek` moves the clock and never runs state forward, `setting.weight` is
@@ -143,11 +143,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   renaming klieg's `onPhase` and `PhaseEvent`, which sherpa consumes through `ctx.phase`.
 - **The vocabulary is called**, every role enshrined on 2026-09-29, and
   `docs/vocabulary.picks.json` is where it lives: delta, channel, kit, subject, patch, voice, mix,
-  signal, handle, engine, pose, influence, setting, timestamp, duration, phase, rest, weight, locus,
+  signal, handle, engine, pose, contribution, setting, timestamp, duration, phase, rest, weight, locus,
   series, host, source, score, subsystem; for the score, anchor, event, mark, name, tag, query,
   resolver, projection (synonym image), doubt, snapshot, interval; cue, fade, sync, probe, project,
   assess, seek, blend, mute, drop; merge, scale, lerp, fold. The code and the schema page read in
-  them. `name`, `query` and `resolver` are marked informal.
+  them. `name`, `query` and `resolver` are marked informal. `contribution` replaced `influence` on
+  2026-10-07, Mike's call; it is internal, so nothing exported changed.
 - **Blending** covers all four behaviors he was offered: fade, retarget on interruption, blend
   between alternatives, handover at rest. All reduce to a weight per voice or a channel lerp.
 - **Two clocks, both addressable under a tape.** Voice time is a position, because `phase` is
@@ -185,7 +186,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   invariant — two voices in a locus at weight 1 look like one at weight 1 — false on every channel
   but `sum`: two at 0.5 on `mul` give `(1 + (v − 1) / 2)²`, so a shared gain of 0.06 read 0.28.
   A locus is alternatives, so the mix folds its members through the channel's own `lerp` by their
-  share of the summed weight, and that one influence contributes at `min(1, Σw)`. On `sum` it is
+  share of the summed weight, and that one contribution counts at `min(1, Σw)`. On `sum` it is
   identically `w₁a + w₂b`, so klieg's baselines hold and the port stays an extraction. Mike had no
   view and asked me to take it; decided 2026-09-27, and the alternative (per-channel
   normalization) is in the page's Decided against.
@@ -401,9 +402,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
    stock band's width.
 
-4. **Reach is fixed at cue, so a voice whose influence moves pays for every subject it might
+4. **Reach is fixed at cue, so a voice whose contribution moves pays for every subject it might
    touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every
-   frame, and `influence` (`src/fold.ts`) runs the patch before anything checks the weight, so a
+   frame, and `contribution` (`src/fold.ts`) runs the patch before anything checks the weight, so a
    weight of 0 is computed and then dropped. Measured on teitou (2026-10-07, `bench/again.sh 6`
    over the `glow*` rows, medians of six fresh processes): a glow over 10k subjects adds
 
@@ -430,7 +431,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
      A bound on a mix without positions is refused at cue. Channels take no reach. The hazard is
      a bound declared too small, which clips the effect silently; a dev check could sample a few
-     subjects outside it and warn on a nonzero influence. Opt-in (decided 2026-10-07): with no
+     subjects outside it and warn on a nonzero contribution. Opt-in (decided 2026-10-07): with no
      bound, behavior is today's. Whether unbounded voices are ever deprecated is left open, and
      unlikely — klieg's lighting, a fade over a whole sign and wod's transitions are unbounded by
      design; `target` is the likelier candidate once bounds absorb its spatial uses.

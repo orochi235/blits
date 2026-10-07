@@ -223,8 +223,8 @@
 <h2 id="vocab">Vocabulary</h2>
 <p>Every other name in the package is built from these.</p>
 <dl>
-  <dt>Delta</dt><dd>A partial record of channel values. A patch writes only the channels it drives; an absent channel means no influence.</dd>
-  <dt>Channel</dt><dd>One field of a delta, with its own arithmetic: how two influences merge, what rest is if there is one, how to scale toward rest, how to lerp.</dd>
+  <dt>Delta</dt><dd>A partial record of channel values. A patch writes only the channels it drives; an absent channel means no contribution.</dd>
+  <dt>Channel</dt><dd>One field of a delta, with its own arithmetic: how two contributions merge, what rest is if there is one, how to scale toward rest, how to lerp.</dd>
   <dt>Kit</dt><dd>The channel set for one kind of delta. klieg's pose, klieg's part, wod's presence are each a kit.</dd>
   <dt>Subject</dt><dd>What is being driven: a letter, a part, a wedge, a page, or a unit value for a system with no subject dimension such as klieg's lighting.</dd>
   <dt>Patch</dt><dd>A pure function of phase and a subject that returns a delta. Optionally stateful. This is klieg's word and it keeps it.</dd>
@@ -234,7 +234,7 @@
   <dt>Handle</dt><dd>What <code>cue</code> returns: the live controls on one voice, and its completion.</dd>
   <dt>Engine</dt><dd>The implementation behind a mix. One ships. The seam is the mix's own interface.</dd>
   <dt>Pose</dt><dd>What one subject looks like at one frame, once every voice has been folded in. Where a delta is partial, a pose is complete: every channel of the kit is filled. This is what a host writes.</dd>
-  <dt>Influence</dt><dd>What one voice does to one subject in one frame, once its weight is applied. Not a share of the whole: two voices each contributing <code>gain: 0.1</code> leave the subject at 0.01.</dd>
+  <dt>Contribution</dt><dd>What one voice does to one subject in one frame, once its weight is applied. Not a share of the whole: two voices each contributing <code>gain: 0.1</code> leave the subject at 0.01.</dd>
   <dt>Duration</dt><dd>How long one pass of a patch lasts, in milliseconds, whether or not the voice loops. 0 means the patch has no passes.</dd>
   <dt>Pass</dt><dd>One run through a patch, phase 0 to 1.</dd>
   <dt>Period</dt><dd>The duration a looping voice repeats. <code>Patch.period</code> is a deprecated alias for <code>duration</code>.</dd>
@@ -263,7 +263,7 @@
   bounds?: readonly [min: number, max: number];
   <span class="cm">/** Identity. Absent means the channel has none: it replaces rather than contributes. */</span>
   rest?: V;
-  <span class="cm">/** Fold two influences into one. */</span>
+  <span class="cm">/** Fold two contributions into one. */</span>
   merge(a: V, b: V): V;
   <span class="cm">/** Fade toward `rest` by weight 0..1. Required when `rest` is set; absent otherwise. */</span>
   scale?(v: V, w: number): V;
@@ -287,7 +287,7 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
 
 <p><b>Color is a value; how it merges is a parameter.</b> A <code>color</code> value is OKLab <code>[L, a, b, coverage]</code>, and <code>oklab(0xrrggbb)</code> makes one at full coverage. <code>color()</code> averages: voices stack as a premultiplied sum, so the pose is <code>[Σw·L, Σw·a, Σw·b, Σw]</code>, which lanes and <code>pull</code> fold as any <code>vec(4, sum())</code>. blits knows no subject's own color, so the host lays the result over its base at write: <code>toHex(pose, under)</code> divides the coverage out, caps it at 1, mixes over <code>under</code> in OKLab and clips to sRGB per channel, and <code>css(pose)</code> writes an <code>oklab()</code> with the coverage as alpha. <code>color(last())</code> replaces, the last voice to pass winning behind the band. <code>mul</code> and <code>max</code> per OKLab axis mean nothing anyone asks for, so <code>color</code> refuses them; a tint, a hue shift, chroma and lightness are channels of their own. OKLab is the store because voices average per axis there, and OKLCH's hue wraps. How two colors interpolate is the channel's choice, <code>{ lerp: 'oklab' | 'oklch' }</code>: OKLab, the default, crosses opposite hues through a pale gray, and OKLCH goes round the hue as <code>mixHex</code> does, at the cost of leaving the lanes.</p>
 
-<p>A channel with no rest cannot fade. The mix handles that in one way: below a weight threshold the influence is dropped, above it the value passes through whole. That is the rule hinge's blend mode already applies to color, and it is stated here once so no consumer rediscovers it. <b>The threshold is a band, not an edge</b> &mdash; it drops at <code>off</code> and passes at <code>on</code>, and between the two it holds whatever it last did. One edge chatters: a weight resting on it is carried back and forth by frame noise, and every crossing drops or restores the whole influence. Retargeting is the way a rest-less channel does move smoothly, since a lerp from a sampled value needs no identity.</p>
+<p>A channel with no rest cannot fade. The mix handles that in one way: below a weight threshold the contribution is dropped, above it the value passes through whole. That is the rule hinge's blend mode already applies to color, and it is stated here once so no consumer rediscovers it. <b>The threshold is a band, not an edge</b> &mdash; it drops at <code>off</code> and passes at <code>on</code>, and between the two it holds whatever it last did. One edge chatters: a weight resting on it is carried back and forth by frame noise, and every crossing drops or restores the whole contribution. Retargeting is the way a rest-less channel does move smoothly, since a lerp from a sampled value needs no identity.</p>
 
 <p>The stock set is not the limit: a consumer that needs arithmetic it lacks writes its own <code>Channel</code>, and nothing in the mix knows the difference. sherpa's <code>transform</code> is one, composed by the host from whatever it puts in a matrix.</p>
 
@@ -372,7 +372,7 @@ interface Setting&lt;S = void, H = unknown&gt; {
 
 <p>Two small names the page leans on: <code>Easing</code> is a curve on 0..1, given as data where it can be &mdash; CSS&rsquo;s names (<code>'ease-in-out'</code>), <code>{ bezier: [x1, y1, x2, y2] }</code> or <code>{ steps, jump? }</code>, which a WAAPI or GPU engine can read &mdash; or as a <code>(u: number) =&gt; number</code>, which only the CPU engine runs, and <code>Keyframe&lt;O&gt;</code> is one stop, <code>{ at: number; delta: Partial&lt;O&gt;; ease?: Easing }</code>, kept on <code>patch.keys</code> so an engine can read what a <code>keys</code> patch is made of. <code>hex</code>, deprecated for <code>color(last(), { lerp: 'oklch' })</code>, holds 0xrrggbb, and <code>mixHex</code> is its <code>lerp</code>, which blends in OKLCH with hue taken the short way round, so a crossfade between hues keeps its lightness and saturation; a mix outside sRGB&rsquo;s gamut is clipped per channel. <code>hex({ space: 'srgb' })</code> blends red, green and blue each on its own instead, as klieg&rsquo;s light channel does.</p>
 
-<p>Wrappers stay wrappers. klieg's <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>hinge</code> and <code>partition</code> take a patch and return a patch, and none of them changes except to pass <code>writes</code> through &mdash; a wrapper reshapes one influence and never adds a channel to it. Composition at the patch level is for reshaping one influence; composition at the mix level is for running several. The two do not merge.</p>
+<p>Wrappers stay wrappers. klieg's <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>hinge</code> and <code>partition</code> take a patch and return a patch, and none of them changes except to pass <code>writes</code> through &mdash; a wrapper reshapes one contribution and never adds a channel to it. Composition at the patch level is for reshaping one contribution; composition at the mix level is for running several. The two do not merge.</p>
 
 <h2 id="voices">Voices</h2>
 <p>A voice is a patch given a clock and a volume knob. This is the unit that answers "independent state and timeframe": two voices of the same patch are two clocks, two states, two weights.</p>
@@ -407,7 +407,7 @@ interface Setting&lt;S = void, H = unknown&gt; {
   weight?: number | Signal&lt;I, H&gt;;
   <span class="cm">/** Ramp in and out, ms. Out applies on `fade()` and when a finite loop ends. */</span>
   fade?: { in?: number; out?: number; ease?: Easing };
-  <span class="cm">/** Voices sharing a locus are alternatives: the mix folds them into one influence through each
+  <span class="cm">/** Voices sharing a locus are alternatives: the mix folds them into one contribution through each
      channel's `lerp` before anything else sees them. A crossfade between two behaviors, not what
      klieg's phases are: those layer. */</span>
   locus?: string;
@@ -487,7 +487,7 @@ interface MixOptions&lt;H = unknown&gt; {
   reduce?: boolean | (() =&gt; boolean);
   <span class="cm">/** Merged into every `setting.host`. `H` types it for every patch and signal the mix cues, so none needs a cast. */</span>
   host?: H;
-  <span class="cm">/** The band a rest-less channel's influence switches across. Default 0.4 / 0.6, a placeholder. */</span>
+  <span class="cm">/** The band a rest-less channel's contribution switches across. Default 0.4 / 0.6, a placeholder. */</span>
   band?: { on: number; off: number };
   <span class="cm">/** The most `dt` a step or signal is handed, however long the gap. Off by default. */</span>
   maxDt?: number;
@@ -643,11 +643,11 @@ mix.book({
   <tr><td>Retarget on interruption</td><td><code>from: 'current'</code> on a <code>keys</code> voice takes stop 0 from the subject's pose in the frame before it first contributes &mdash; every other voice folded in, itself excluded &mdash; and lerps from there through the channel's <code>lerp</code>. It also leaves at the velocity the subject had, taken from its last two probed poses: the first segment gains <code>c·u(1−u)²</code>, which is zero at both ends and flat at the end, so the segment's own curve still lands on its stop while the start matches the subject's speed. A subject that was still leaves at rest. With fewer than two poses on record, as on a mix whose host probes into its own object before any retarget is cued, it starts on the segment's own curve.</td><td>wod's base-sampling. New to klieg: a regroup could tween from mid-float instead of carrying it away.</td></tr>
 </table></div>
 
-<p><b>A locus is folded by <code>lerp</code>, not by scaling and merging.</b> Voices sharing a <code>locus</code> are alternatives in time, so the mix combines them into one influence first: each member weighted by its share of the locus's summed weight, through the channel's own <code>lerp</code>, in cue order. That one influence then contributes at weight <code>min(1, &Sigma;w)</code> and is scaled toward rest like any other. On a <code>sum</code> channel this is exactly <code>w&#8321;a + w&#8322;b</code>, the arithmetic klieg's timeline already runs, so the cap it was written as is a special case of the fold rather than a rule of its own. On <code>mul</code>, <code>max</code> and <code>last</code> it is the difference between an alternative and a pile-up: two voices halfway through a handover, both holding a gain of 0.06, fold to 0.06 &mdash; which is what one alternative means &mdash; where scaling and merging reads 0.28, the product of two half-scaled copies. A grouped voice may write only channels that have a <code>lerp</code>, which every stock channel does. Cue order is visible only to a <code>lerp</code> that is not linear, such as a hue taking the short way round.</p>
+<p><b>A locus is folded by <code>lerp</code>, not by scaling and merging.</b> Voices sharing a <code>locus</code> are alternatives in time, so the mix combines them into one contribution first: each member weighted by its share of the locus's summed weight, through the channel's own <code>lerp</code>, in cue order. That one contribution then contributes at weight <code>min(1, &Sigma;w)</code> and is scaled toward rest like any other. On a <code>sum</code> channel this is exactly <code>w&#8321;a + w&#8322;b</code>, the arithmetic klieg's timeline already runs, so the cap it was written as is a special case of the fold rather than a rule of its own. On <code>mul</code>, <code>max</code> and <code>last</code> it is the difference between an alternative and a pile-up: two voices halfway through a handover, both holding a gain of 0.06, fold to 0.06 &mdash; which is what one alternative means &mdash; where scaling and merging reads 0.28, the product of two half-scaled copies. A grouped voice may write only channels that have a <code>lerp</code>, which every stock channel does. Cue order is visible only to a <code>lerp</code> that is not linear, such as a hue taking the short way round.</p>
 
 <div class="callout">
   <div class="eyebrow">the one rule</div>
-  <p>A weight scales an influence toward its channel's rest. A lerp moves between two values. Every blend is one or the other, chosen by the channel. A consumer that needs a third arithmetic adds a channel, not a mix option.</p>
+  <p>A weight scales a contribution toward its channel's rest. A lerp moves between two values. Every blend is one or the other, chosen by the channel. A consumer that needs a third arithmetic adds a channel, not a mix option.</p>
 </div>
 
 <h2 id="motion">Springs, glides and tweens</h2>
@@ -810,7 +810,7 @@ t.sync(now); <span class="cm">// once a frame, after the frame's cues</span></co
 
 export const mixer: Engine;   <span class="cm">// the one that ships</span></code></pre>
 
-<p><b>mixer</b> runs every form on the CPU, samples per subject on demand except where a channel runs as a lane (<a href="#lanes">below</a>), and is the extraction of what klieg does today. It folds each influence into the subject's accumulator as it probes, rather than collecting every layer and merging at the end as klieg's <code>EffectFrame</code> does: weights are scalars that no pose depends on, so they resolve for the subject first, and a locus folds to one influence before that influence is merged. That order is what would let a later revision hand patches one scratch object to write into instead of returning a fresh partial per patch per subject per frame, which <code>writes</code> makes safe to hand out without clearing. What later engines would look like, so the seam is judged against something real and none of them is being built:</p>
+<p><b>mixer</b> runs every form on the CPU, samples per subject on demand except where a channel runs as a lane (<a href="#lanes">below</a>), and is the extraction of what klieg does today. It folds each contribution into the subject's accumulator as it probes, rather than collecting every layer and merging at the end as klieg's <code>EffectFrame</code> does: weights are scalars that no pose depends on, so they resolve for the subject first, and a locus folds to one contribution before that contribution is merged. That order is what would let a later revision hand patches one scratch object to write into instead of returning a fresh partial per patch per subject per frame, which <code>writes</code> makes safe to hand out without clearing. What later engines would look like, so the seam is judged against something real and none of them is being built:</p>
 <ul>
   <li><b>A baked engine</b> runs <code>keys</code> voices only and emits Web Animations or CSS keyframes, so a DOM consumer like wod gets compositor-thread playback. It refuses <code>fn</code> and <code>motion</code> patches at <code>cue</code>.</li>
   <li><b>A recording engine</b> wraps another engine and captures every pose into keyframes, turning a procedural patch into data for the baked one.</li>
@@ -898,7 +898,7 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>Catch-up.</b> A subject unsampled for three frames steps by the whole gap on the fourth.</li>
   <li><b>Fade continuity.</b> A voice stopped mid-pass with a fade produces no frame-to-frame jump larger than its per-frame ramp, on every channel with rest.</li>
   <li><b>Retarget continuity.</b> A <code>from: 'current'</code> voice cued on a moving subject has a first pose equal to the subject's previous pose.</li>
-  <li><b>Band quiet.</b> A signal held inside a <code>gate</code>'s band for a whole pass produces no switch, whatever it does inside it. Same for a rest-less channel's influence under a weight that wanders between <code>off</code> and <code>on</code>.</li>
+  <li><b>Band quiet.</b> A signal held inside a <code>gate</code>'s band for a whole pass produces no switch, whatever it does inside it. Same for a rest-less channel's contribution under a weight that wanders between <code>off</code> and <code>on</code>.</li>
   <li><b>Locus fold.</b> Two voices in a locus driving the same value produce that value, on every stock channel &mdash; the invariant the old cap met on <code>sum</code> alone. At unequal values they produce the channel's <code>lerp</code> at their weight ratio, which on <code>sum</code> is the number scaling and merging already gives and is what keeps klieg's baselines green. A locus whose weights sum below 1 scales the folded value toward rest by the sum; above 1 it caps at 1.</li>
   <li><b>Handover.</b> <code>fade({ at: 'rest' })</code> removes per subject at the first resting frame, and at the deadline for a patch that never rests.</li>
   <li><b>Declared writes.</b> A patch's <code>at</code> sets no key outside its <code>writes</code>, on every subject and every pass. A voice whose patch writes a channel the kit lacks throws at <code>cue</code> naming both.</li>

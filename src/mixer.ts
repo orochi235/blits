@@ -9,11 +9,11 @@ import {
   apply,
   baseFor,
   clamp,
+  contribution,
   fold,
   folded,
   foldLoci,
   foldWith,
-  influence,
   isRest,
   type Key,
   keyed,
@@ -207,7 +207,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   };
   /** The moment a seek went back to: what is stepped again up to it was sent the first time. */
   sentTo = Number.NEGATIVE_INFINITY;
-  /** The weight `influence` found besides the delta, read by the caller at once. */
+  /** The weight `contribution` found besides the delta, read by the caller at once. */
   w = 0;
 
   readonly names: Key<O>[];
@@ -605,7 +605,7 @@ const methods = {
   owedBy,
   foldLoci,
   read,
-  influence,
+  contribution,
   keyed,
   tick,
   apply,

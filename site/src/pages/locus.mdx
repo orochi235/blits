@@ -1,7 +1,7 @@
 ---
 layout: ../layouts/Page.astro
 title: Locus
-description: Voices sharing a locus are alternatives. The mix folds them into one influence before it applies them, so a handover reads the value both agree on.
+description: Voices sharing a locus are alternatives. The mix folds them into one contribution before it applies them, so a handover reads the value both agree on.
 ---
 import Locus from '../explainers/Locus';
 
@@ -15,7 +15,7 @@ Two voices both write a gain of 0.06, and A hands over to B. Halfway through, ea
 
 Without a locus, the mix treats them as two effects stacked on each other. Each is faded halfway toward rest (on `mul`, rest is 1), so each contributes 0.53, and the channel multiplies them: 0.53 × 0.53 reads 0.28. The light brightens in the middle of a handover between two voices that both say "dim". That's the "Without the locus" lamp flaring, and the hump in its curve.
 
-With both voices in one **locus**, the mix treats them as alternatives. It first folds the locus into one influence, blending the members through the channel's own `lerp`, each by its share of the locus's summed weight. That one influence then contributes at weight `min(1, Σw)`, faded toward rest like any other. Both members say 0.06, so the blend says 0.06, and at a summed weight of 1 the subject reads 0.06 the whole way across.
+With both voices in one **locus**, the mix treats them as alternatives. It first folds the locus into one contribution, blending the members through the channel's own `lerp`, each by its share of the locus's summed weight. That one contribution then contributes at weight `min(1, Σw)`, faded toward rest like any other. Both members say 0.06, so the blend says 0.06, and at a summed weight of 1 the subject reads 0.06 the whole way across.
 
 ```ts
 import { kit, mix, mul, patch } from '@msb235/blits';

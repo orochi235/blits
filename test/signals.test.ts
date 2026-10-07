@@ -55,7 +55,7 @@ describe('band quiet', () => {
     expect(held(part, frame(216, 16))).toBe(0);
   });
 
-  it("a rest-less channel's influence holds inside the band rather than flickering", () => {
+  it("a rest-less channel's contribution holds inside the band rather than flickering", () => {
     const k = level<Part>(1);
     const m = mix<Part, Pose>(PART, { band: { on: 0.6, off: 0.4 } });
     m.cue({
