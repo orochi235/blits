@@ -1,10 +1,19 @@
-/** What a ticker runs: a mix, or anything that syncs, sleeps on `inert` and wakes by `onWake`. */
+/**
+ * What a ticker runs: a mix, or anything that syncs, sleeps on `inert` and wakes by `onWake`.
+ *
+ * @category mix
+ */
 export interface Ticked {
   sync(timestamp: number): void;
   readonly inert: boolean;
   onWake(fn: () => void): () => void;
 }
 
+/**
+ * How a ticker paces its frames and reads its clock.
+ *
+ * @category mix
+ */
 export interface TickerOptions {
   /**
    * The most frames a second it syncs. Under animation frames it skips a frame that comes sooner
@@ -30,6 +39,11 @@ export interface TickerOptions {
   caf?: (id: number) => void;
 }
 
+/**
+ * One frame loop that syncs the mixes added to it.
+ *
+ * @category mix
+ */
 export interface Ticker {
   /** Syncs `mix` every frame from now on, and wakes the loop on its `onWake`. Returns a remove. */
   add(mix: Ticked): () => void;
@@ -59,6 +73,8 @@ const SLACK = 1;
  * One frame loop for any number of mixes. It runs while a mix would still change or something
  * holds it, and sleeps otherwise, until a mix wakes it. A mix or `after` callback that throws stops
  * neither the loop nor the others: its error is thrown again on a microtask.
+ *
+ * @category mix
  */
 export function ticker(opts: TickerOptions = {}): Ticker {
   const g = globalThis as unknown as Clocks;
