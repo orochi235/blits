@@ -435,29 +435,40 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    Bench an astv-shaped scene (100 short voices over a list mostly unprobed) before building any.
    A reach that changes over time (item 4) is one way to say offscreen.
 
-6. **Color that blends** (2026-10-07, unbuilt). `hex` replaces because klieg's port carried over
-   its rule (`rig.ts`, klieg `5764ebc`: "`color` replaces, having no arithmetic of its own to
-   contribute with"), which holds for a packed `0xrrggbb` and not for color. Two independent items:
-   - **A `paint` channel beside `hex`.** A patch writes `[L, a, b, 1]` in OKLab into what is
-     `vec(4, sum())` underneath; the mix's weight premultiplies it, so the fold yields
-     `Σw·color` and `Σw`, and a helper resolves that at write time, blending any weight short of 1
-     from the subject's own color. A true weighted average at every weight, a smooth hand back to
-     the subject's color, and on lanes today. OKLab averages straight, so red to cyan passes
-     through gray where `mixHex` turns round the hue circle. The schema's "color replaces" line
-     becomes "color can replace". `hex` stays: klieg keeps it unless klieg chooses otherwise,
-     since moving changes its pixels.
-
-     OKLab rather than OKLCH as the store, since several voices average per axis there and OKLCH's
-     hue wraps (the plain mean of 350° and 10° is 180°). Converting on authoring and once per
-     subject at write replaces `mixHex`'s per-blend conversion, measured at 45–210 ns against
-     8 ns in sRGB (CHANGELOG 0.3.0). Before settling it, look at a red-to-cyan crossfade going
-     through gray; if that reads wrong, a two-voice crossfade can still interpolate in OKLCH, as a
-     locus blend does today, while stacking stays in OKLab. Hue shift (`sum`), chroma and
-     lightness (`mul`) can be channels of their own on top.
-   - **A lane fold for `last` channels**: last to pass wins, gated by the band, with a
-     per-subject array holding each band's state and the value stored as it is. `hex` and every
-     `last` channel then run on lanes with today's output; it is what the `glowc^` row in item 4
-     pays 1.2 ms for. Blending between voices and loci stays on the general path.
+6. **Color as a value, its merge rule as a parameter** (2026-10-07, unbuilt). `hex` ties three
+   choices together: the value is a color, it is stored packed as `0xrrggbb`, and voices replace
+   one another. The last came from klieg's port (`rig.ts`, klieg `5764ebc`: "`color` replaces,
+   having no arithmetic of its own to contribute with"), which holds for the packing, not for color.
+   Decided in conversation: uncouple them, as `vec(n, of)` already does for numbers.
+   - **`color(of?)`.** The value is OKLab `[L, a, b]` whichever the rule. `color()` averages: a
+     premultiplied `sum` underneath, `[L, a, b, 1]` scaled by the mix's weight, so the fold yields
+     `Σw·color` and `Σw`, resolved at write with any weight short of 1 blended from the subject's
+     own color; on lanes today. `color(last())` replaces, the last to pass winning behind the band.
+     `mul` and `max` per OKLab axis mean nothing anyone asks for, so the kit refuses them; a tint
+     (multiplying by a filter color) is a channel of its own, as are hue shift (`sum`), chroma and
+     lightness (`mul`).
+   - **OKLab, not OKLCH, as the store**: several voices average per axis there, and OKLCH's hue
+     wraps (the plain mean of 350° and 10° is 180°). Before settling it, look at a red-to-cyan
+     crossfade, which goes through gray; if that reads wrong, a two-voice crossfade can still
+     interpolate in OKLCH, as a locus blend does today, while stacking stays in OKLab.
+   - **Conversion at the edges.** Keyframe stops convert once when authored. An `fn` patch returns
+     a value every frame, so blits ships a helper such as `oklab(0xff0000)` for it to call once
+     outside the hot path, and one that encodes to hex or a CSS string at write. This replaces
+     `mixHex`'s per-blend conversion, measured at 45–210 ns against 8 ns in sRGB (CHANGELOG
+     0.3.0).
+   - **`hex` deprecated as `color(last())` with packed storage**, not kept as a peer. klieg should
+     move with no change in pixels: every klieg effect voice plays at full weight with no locus
+     (see State above), so its color is only ever replaced, never interpolated, and replacement
+     agrees in any space. That is inference; confirm against klieg's Playwright specs before
+     claiming it in klieg. The schema's "color replaces" line goes.
+   - **A lane fold for `last`**, independent of the rest: last to pass wins behind the band, a
+     byte per voice per subject holding band state, the value stored as it is. `color(last())`,
+     `hex` while it lasts, and every `last` channel then run on lanes; it is what the `glowc^` row
+     in item 4 pays 1.2 ms for. Three hazards, all from reading the code: lanes must fold `last`
+     in voice order, which `sum`/`mul`/`max` never needed; band state must move with a voice
+     between the lane and the general path, or a mid-band weight pops for a frame; and keyframe
+     interpolation on the lane goes through the channel's own lerp (`src/fill.ts`), a conversion
+     per subject per frame.
 
 ## Loose ends
 
