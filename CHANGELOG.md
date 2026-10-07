@@ -14,9 +14,20 @@ version and everything else the patch. Each release lists its changes as **Break
 - `project` takes mix time, not the host's timestamp. The two differ only on a mix with its own
   rate or one that was rebased, where `project(mix.now - 300)` reads 300 ms of mix time back.
 - `Mix` has `seek`, `now` and `tape`, which an engine of its own has to provide.
+- `Mix` has `span`, which an engine of its own has to provide.
 
 ### Added
 
+- `mix.span(spec)` cues an owner that lays out the voices it holds in an `order` (`queue`,
+  `stagger`, `together`) and fits them into its `duration`, again whenever one joins or leaves.
+  Each child says how it may give way with `faster`, `slower`, `overlap`, `skip` and `firm`, and
+  the span's `fit` decides: `compress`, `overlap`, `skip`, `stretch`, `collapse` and `overrun`
+  are exported, `chain` runs several in turn, and `lenient` is every one with `overrun` last.
+  Where nothing fits, `fallback: 'instant'` jumps the weaker children to their end at once and
+  `'overrun'` lets the span run long. A span with a budget stays until it has passed, so late
+  children can join, and `handle.fitted` says how the last fit came out.
+- An anchor can wait on several: `{ all: [...] }` answers the latest of them and `{ any: [...] }`
+  the earliest, and both nest.
 - `handle.rise({ over })` turns a fade out around: the voice climbs back from where its fade had
   got to, up the same curve, and plays on as if never faded, so a host can take back a leave
   without the jump a fresh fade in from 0 makes. It is recorded, so history and `seek` replay it.

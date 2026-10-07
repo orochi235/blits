@@ -196,6 +196,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `handle.weightOf`, `MixOptions.stepMs` and `setting.send` / `mix.drain`. Each is in the schema
   page; magicsmoke's row in the consumer table says how it uses them.
 
+- **Spans and joins (built 2026-10-07, on branch `spans`).** Mike's framing: consumers declare
+  what they want of time, and blits resolves competing duration claims from the hints they give;
+  any strategy is acceptable as long as declaring it is easy and it just works. He picked a span
+  with fit strategies over a constraint solver and over a helper the host calls; that `overrun` is
+  opt-in and never in the default; that collapsing everything left to an instant is a choice; that
+  joins are `all`/`any`, not first/last, which read as the ends of a range; and asked for
+  `lenient` as a convenience. He rejected `give` as the name for the children's hints, which are
+  now plain fields on the spec. The schema page's Score section, "Spans" and "Joins", is the
+  record.
+
 ## Next, in order
 
 00. **`ticker()` shipped in 0.6.0, and wod runs on it** (wod `bd70c78`, 2026-10-05, not pushed).
@@ -473,6 +483,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      between the lane and the general path, or a mid-band weight pops for a frame; and keyframe
      interpolation on the lane goes through the channel's own lerp (`src/fill.ts`), a conversion
      per subject per frame.
+
+7. **Name the span vocabulary.** `span`, `fit`, `fallback`, `fitted`, `lenient`, `stretch`,
+   `collapse`, `compress`, and the hints `faster`, `slower`, `overlap`, `skip`, `firm` are working
+   names, shipped unreleased on `spans`; `all`/`any` are picked. They go through semanticore with
+   the rest of `docs/vocabulary.json` before a release carries them.
+
+8. **astv's phase on a span.** astv's `scheduleMarks` (`packages/engine/draw/text/changeOrder.ts`)
+   is what a `queue` or `stagger` span with a budget replaces; astv pins blits 0.4.0, so this waits
+   on a release.
 
 ## Loose ends
 
