@@ -435,6 +435,22 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    Bench an astv-shaped scene (100 short voices over a list mostly unprobed) before building any.
    A reach that changes over time (item 4) is one way to say offscreen.
 
+6. **Color that blends** (2026-10-07, unbuilt). `hex` replaces because klieg's port carried over
+   its rule (`rig.ts`, klieg `5764ebc`: "`color` replaces, having no arithmetic of its own to
+   contribute with"), which holds for a packed `0xrrggbb` and not for color. Two independent items:
+   - **A `paint` channel beside `hex`.** A patch writes `[L, a, b, 1]` in OKLab into what is
+     `vec(4, sum())` underneath; the mix's weight premultiplies it, so the fold yields
+     `Σw·color` and `Σw`, and a helper resolves that at write time, blending any weight short of 1
+     from the subject's own color. A true weighted average at every weight, a smooth hand back to
+     the subject's color, and on lanes today. OKLab averages straight, so red to cyan passes
+     through gray where `mixHex` turns round the hue circle. The schema's "color replaces" line
+     becomes "color can replace". `hex` stays: klieg keeps it unless klieg chooses otherwise,
+     since moving changes its pixels.
+   - **A lane fold for `last` channels**: last to pass wins, gated by the band, with a
+     per-subject array holding each band's state and the value stored as it is. `hex` and every
+     `last` channel then run on lanes with today's output; it is what the `glowc^` row in item 4
+     pays 1.2 ms for. Blending between voices and loci stays on the general path.
+
 ## Loose ends
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
