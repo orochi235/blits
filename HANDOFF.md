@@ -378,15 +378,23 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      ±1.2%. `bench/same.sh` read 0 differ in all four settings. What `probed` still allocates is
      pose data: `foldWith` copying each channel's rest value, and the `fn` voices' returned objects
      in `fill.ts`'s `call`.
-   - **`chain`'s `chains.get` takes 8% of `probed`'s CPU samples** on `1981422` (a local
-     `--cpu-prof`): a WeakMap lookup per subject for each probe and again for its `atRest`. Not
-     tried.
-   - `pullRun`'s per-subject stamps (`LANE_PROBE`, `LANE_FILL`): written per run instead, they
-     would give `weightOf` and `pace` a second place to read the same answer. Not tried.
-   - Measured no different, so not worth re-proposing: moving `popDue`'s loop into a function of
-     its own (`due.ts`). It ends `popDue` deoptimizing at its tail on every frame a voice comes due
-     (`node --trace-deopt`, 252 in 600 frames of `churn^`), which a `turnover^` profile charges
-     42–49% of the frame, yet no row moved (eight runs a side, teitou).
+   - Measured no different, so not worth re-proposing:
+     - Moving `popDue`'s loop into a function of its own (`due.ts`). It ends `popDue` deoptimizing
+       at its tail on every frame a voice comes due (`node --trace-deopt`, 252 in 600 frames of
+       `churn^`), which a `turnover^` profile charges 42–49% of the frame, yet no row moved (eight
+       runs a side, teitou).
+     - Skipping `atRest`'s second `chains.get` after a probe of the same subject, though a local
+       `--cpu-prof` charged `chains.get` 8% of `probed`'s samples. `chain` kept the last subject
+       and head it answered and returned them while the head's version was current. On teitou, six own-process runs a side at `FRAMES=5000` against `13f7df1`:
+       probed 1.559 → 1.516 ms, fn (10k) 2.084 → 2.121, named (10k) 1.347 → 1.342, probed-
+       2.663 → 2.667, rest 0.943 → 0.964, tweens^ 0.165 → 0.166, weasel^ 0.220 → 0.217, every
+       row's runs overlapping; `bench/same.sh` read 0 differ with lanes on and off. The probe's
+       own lookup has no way around it short of a per-subject handle the host holds.
+   - Not tried, and not to try: writing `pullRun`'s `LANE_PROBE` and `LANE_FILL` once per run
+     instead of per subject. `weightOf` (`Lanes.reported`) and every pace loop (`bare.ts`,
+     `sample.ts`, `crowd.ts`) read them by slot, so each would also have to find the run holding
+     its slot, a second place for the same answer; and `pullRun` reads both stamps per subject
+     anyway to count `distinct`, so the saving is a store per subject.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
 
