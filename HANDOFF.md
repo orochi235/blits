@@ -140,8 +140,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   computed from the reading rather than accumulated into (decided 2026-09-27). Mix time became one
   on 2026-10-07, once a seek back replays the host's recorded calls: `mix.seek(t)` moves it, and
   `seek`, `project` and `mix.now` are all mix time. The 2026-09-27 rule that `seek` has one scope,
-  the voice, fell with that; the mix method was named `seek` by the session that built it, not by
-  Mike, and is his to rename (the draft's other candidates: `rewind`, `back`, `wind`, `roll`, `jump`).
+  the voice, fell with that. The session that built the mix method named it `seek`, and Mike kept
+  the name on 2026-10-07: one word at both scopes, as in a media player.
 - **Reading back is a read; moving is `seek`.** `project(t)` copies state and reads at `t`, with
   history opt-in and nothing kept without it. `mix.seek(t)` (built 2026-10-07, after a first build
   that cut the future) restores the live mix and replays the host's calls from a weasel-history
@@ -382,6 +382,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 2. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
    a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
    stock band's width.
+
+3. **The README pitches blits as concurrent mixing only**, and an astv session (2026-10-07) read it
+   and judged blits wrong for sequencing and scrubbing: "ordering, which a timeline answers; blits
+   is built for mixing effects that run at once." The README never mentions the score, `project`
+   or `seek`, which are exactly that. Rewrite its opening and "The words" to cover time as well as
+   mixing.
 
 ## Loose ends
 
