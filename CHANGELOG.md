@@ -4,7 +4,7 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
-## Unreleased
+## 0.7.0
 
 ### Breaking
 
@@ -61,7 +61,7 @@ version and everything else the patch. Each release lists its changes as **Break
   release removes it.
 - `mix.span(spec)` cues an owner that lays out the voices it holds in an `order` (`queue`,
   `stagger`, `together`) and fits them into its `duration`, again whenever one joins or leaves.
-  Each child says how it may give way with `faster`, `slower`, `overlap`, `skip` and `priority`. The
+  Each child says how it may give way with `faster`, `slower`, `overlap`, `ballast` and `priority`. The
   span first retimes its children by one factor toward the budget, faster where they run past it
   and slower where they leave room, each as far as its hints allow; then its `fit` decides the
   rest: `condense`, `shed`, `conclude` and `overrun` are exported, `pipe` runs several in turn,

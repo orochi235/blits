@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.6.0 (2026-10-05).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.7.0 (2026-10-07).
 - **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
   blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
@@ -510,9 +510,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 7. **The span vocabulary is picked and settled** (2026-10-07). `span` and `fit` kept their names;
    `fallback` became `spill`, the fits `condense`, `shed`, `conclude`, `overrun`, `pipe` and `lax`,
    the retiming `rescale` (internal), `handle.fitted` became `handle.result` (type `FitResult`) and
-   the hint `firm` became `priority`; `faster`, `slower` and `overlap` kept theirs. The hint `skip`
-   was picked as `pass` and is **not renamed in the code**: `pass` is already public as a number,
-   `setting.pass` and a hit's `pass`, the loop pass a voice is in. Mike to choose.
+   the hint `firm` became `priority` and `skip` became `ballast`; `faster`, `slower` and `overlap`
+   kept theirs. `pass` was picked for `skip` first and dropped: it is already public as a number,
+   `setting.pass`, the loop pass a voice is in. Shipped in 0.7.0.
 
 9. **The history adapter is built** (2026-10-07, merged to `main`):
    `history.store`, `prepare`, `HistoryMiss`, `keyOf`, `as`/`revive`, `pack`/`unpack`.
