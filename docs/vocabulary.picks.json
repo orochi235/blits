@@ -58,7 +58,13 @@
     "v-fitlenient": "lax",
     "v-fitchain": "pipe",
     "lastpass": "coast",
-    "span": "span"
+    "span": "span",
+    "hintfaster": "faster",
+    "hintoverlap": "overlap",
+    "hintskip": "pass",
+    "hintfirm": "priority",
+    "hintslower": "slower",
+    "fitreport": "result"
   },
   "chosen": {
     "offset": true,
@@ -119,7 +125,13 @@
     "v-fitlenient": true,
     "v-fitchain": true,
     "lastpass": true,
-    "span": true
+    "span": true,
+    "hintfaster": true,
+    "hintoverlap": true,
+    "hintskip": true,
+    "hintfirm": true,
+    "hintslower": true,
+    "fitreport": true
   },
   "written": {
     "piece": "patch",
@@ -185,14 +197,24 @@
     "system": true,
     "v-clear": true,
     "timebase": true,
-    "lastpass": true
+    "lastpass": true,
+    "span": true,
+    "hintoverlap": true,
+    "hintfirm": true,
+    "hintskip": true,
+    "hintslower": true,
+    "hintfaster": true,
+    "fitreport": true
   },
   "informal": {
     "spec": true,
     "label": true,
     "query": true,
     "reducer": true,
-    "v-clear": true
+    "v-clear": true,
+    "hintslower": true,
+    "hintfaster": true,
+    "fitreport": true
   },
   "struck": {
     "offset": {
@@ -281,6 +303,9 @@
     ],
     "v-fitoverlap": [
       "compress"
+    ],
+    "fitreport": [
+      "adjusted"
     ]
   }
 }
