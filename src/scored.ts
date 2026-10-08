@@ -46,15 +46,17 @@ function put<I, O>(by: Map<string, Set<Voice<I, O>>>, voice: Voice<I, O>): void 
 }
 
 /** The voices of `mix` cued on `score` and not yet gone, in no order. */
-export function scored<I, O>(mix: Mixer<I, O>, score: string): Iterable<Voice<I, O>> {
+export function scored<I, O>(mix: Mixer<I, O>, score: string): ReadonlySet<Voice<I, O>> {
   const ix = mix.scored;
   if (ix.cued !== mix.cued) {
     ix.by = new Map();
     for (const v of mix.cued) put(ix.by, v);
     ix.cued = mix.cued;
   }
-  return ix.by.get(score) ?? [];
+  return ix.by.get(score) ?? noVoices;
 }
+
+const noVoices: ReadonlySet<never> = new Set();
 
 /** The voices of `mix` cued on `score` that have gone, in the order they left. */
 export function scoredGone<I, O>(mix: Mixer<I, O>, score: string): readonly Voice<I, O>[] {

@@ -329,10 +329,13 @@ function timeOf<I, O>(
       for (const v of [...m.gone, ...m.cued]) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
       continue;
     }
+    // Most mixes on a busy transport hold nothing on the score at all.
+    const cued = scored(m, score);
     const list = scoredGone(m, score);
+    if (cued.size === 0 && list.length === 0) continue;
     // `next` asks what is still ahead of now, which a running pick cannot keep.
     if (resolver === 'next') {
-      for (const v of scored(m, score)) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
+      for (const v of cued) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
       for (const v of list) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
       continue;
     }
@@ -347,7 +350,7 @@ function timeOf<I, O>(
     ) {
       const live = new Pick(resolver, Number.NEGATIVE_INFINITY);
       let keeps = true;
-      for (const v of scored(m, score)) {
+      for (const v of cued) {
         if (!matches(v)) continue;
         if (v.owner !== null || v.holding !== null || v.fitting !== null) keeps = false;
         live.take(v.id, markOf(m, v, mark));
