@@ -2,15 +2,17 @@ import type { Mixer } from './mixer.js';
 import type { Voice } from './voice.js';
 
 /**
- * A mix's voices, cued and gone, by the score they were cued on, for an anchor that asks for a
- * score's marks. Without it every such anchor read every voice of every mix on the transport each
- * frame, the thousands history keeps among them. Built over the lists it saw: a seek or a copy that
- * replaces either one rebuilds it on the next read.
+ * A mix's voices by the score they were cued on, for an anchor that asks for a score's marks: the
+ * cued ones as a set, the gone ones in the order they left, which an anchor reads once each. Built
+ * over the lists it saw: a seek or a copy that replaces either rebuilds that half on the next read.
+ * A score whose gone voices history lets go of gets a fresh list, so a read of the old one starts
+ * over.
  */
 export class ScoreIndex<I, O> {
   cued: readonly Voice<I, O>[] | null = null;
-  gone: readonly Voice<I, O>[] | null = null;
   by = new Map<string, Set<Voice<I, O>>>();
+  gone: readonly Voice<I, O>[] | null = null;
+  goneBy = new Map<string, Voice<I, O>[]>();
 }
 
 function put<I, O>(by: Map<string, Set<Voice<I, O>>>, voice: Voice<I, O>): void {
@@ -21,29 +23,81 @@ function put<I, O>(by: Map<string, Set<Voice<I, O>>>, voice: Voice<I, O>): void 
   else set.add(voice);
 }
 
-/** The voices of `mix` cued on `score`, cued and gone, in no order. */
+/** The voices of `mix` cued on `score` and not yet gone, in no order. */
 export function scored<I, O>(mix: Mixer<I, O>, score: string): Iterable<Voice<I, O>> {
   const ix = mix.scored;
-  if (ix.cued !== mix.cued || ix.gone !== mix.gone) {
+  if (ix.cued !== mix.cued) {
     ix.by = new Map();
     for (const v of mix.cued) put(ix.by, v);
-    for (const v of mix.gone) put(ix.by, v);
     ix.cued = mix.cued;
-    ix.gone = mix.gone;
   }
   return ix.by.get(score) ?? [];
 }
 
-/** A voice now in `cued` or `gone` that was in neither. */
-export function scoredAdd<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
+/** The voices of `mix` cued on `score` that have gone, in the order they left. */
+export function scoredGone<I, O>(mix: Mixer<I, O>, score: string): readonly Voice<I, O>[] {
   const ix = mix.scored;
-  if (ix.cued === mix.cued && ix.gone === mix.gone) put(ix.by, voice);
+  if (ix.gone !== mix.gone) {
+    ix.goneBy = new Map();
+    for (const v of mix.gone) goneAdd(ix.goneBy, v);
+    ix.gone = mix.gone;
+  }
+  return ix.goneBy.get(score) ?? none;
 }
 
-/** Voices now in neither list. */
+const none: readonly never[] = [];
+
+function goneAdd<I, O>(by: Map<string, Voice<I, O>[]>, voice: Voice<I, O>): void {
+  const score = voice.spec.score;
+  if (score === undefined) return;
+  const list = by.get(score);
+  if (list === undefined) by.set(score, [voice]);
+  else list.push(voice);
+}
+
+/** A voice just pushed onto `gone`. */
+export function scoredLeft<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
+  const ix = mix.scored;
+  if (ix.gone === mix.gone) goneAdd(ix.goneBy, voice);
+}
+
+/**
+ * Gone voices history let go of, out of `was`; `mix.gone` is already what is left, whether that
+ * is `was` cut in place or a new list.
+ */
+export function scoredCut<I, O>(
+  mix: Mixer<I, O>,
+  was: readonly Voice<I, O>[],
+  out: readonly Voice<I, O>[],
+): void {
+  const ix = mix.scored;
+  if (ix.gone !== was) return;
+  ix.gone = mix.gone;
+  const by = new Map<string, Set<Voice<I, O>>>();
+  for (const v of out) {
+    const score = v.spec.score;
+    if (score === undefined) continue;
+    const set = by.get(score);
+    if (set === undefined) by.set(score, new Set([v]));
+    else set.add(v);
+  }
+  for (const [score, gone] of by) {
+    const left = (ix.goneBy.get(score) ?? []).filter((v) => !gone.has(v));
+    if (left.length === 0) ix.goneBy.delete(score);
+    else ix.goneBy.set(score, left);
+  }
+}
+
+/** A voice just cued. */
+export function scoredAdd<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
+  const ix = mix.scored;
+  if (ix.cued === mix.cued) put(ix.by, voice);
+}
+
+/** Voices no longer cued. */
 export function scoredRemove<I, O>(mix: Mixer<I, O>, voices: Iterable<Voice<I, O>>): void {
   const ix = mix.scored;
-  if (ix.cued !== mix.cued || ix.gone !== mix.gone) return;
+  if (ix.cued !== mix.cued) return;
   for (const v of voices) {
     const score = v.spec.score;
     if (score === undefined) continue;

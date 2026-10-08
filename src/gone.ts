@@ -1,5 +1,5 @@
 import type { Mixer } from './mixer.js';
-import { scoredRemove } from './scored.js';
+import { scoredCut } from './scored.js';
 import { Store } from './store.js';
 import type { Voice } from './voice.js';
 
@@ -89,8 +89,8 @@ export function keepGone<I, O>(mix: Mixer<I, O>, keep: (v: Voice<I, O>) => boole
     (keep(v) ? kept : out).push(v);
   }
   remove(ix, out);
-  scoredRemove(mix, out);
   mix.gone = kept;
+  scoredCut(mix, list, out);
   ix.of = kept;
   ix.count = kept.length;
 }
@@ -124,6 +124,6 @@ export function expireGone<I, O>(mix: Mixer<I, O>, reach: number): void {
   }
   list.splice(0, end, ...kept);
   remove(ix, out);
-  scoredRemove(mix, out);
+  scoredCut(mix, list, out);
   ix.count = list.length;
 }

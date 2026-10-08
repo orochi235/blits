@@ -269,6 +269,8 @@ export class Voice<I, O> {
   placing = false;
   /** What each member of a join last answered, kept for once its target has left. */
   answers: Map<Anchor, number> | null = null;
+  /** What each of its anchors' queries has read of each mix's gone voices (`place.ts`'s `Fold`). */
+  folds: Map<unknown, Map<unknown, unknown>> | null = null;
   /** The record `setting.keep` writes to: the one its patch or signal is being called for. */
   keepOn: Subject<unknown> | null = null;
   /** What `setting.keep` holds when called before any record is. */
@@ -417,6 +419,7 @@ export class Voice<I, O> {
     this.doneAt = Number.POSITIVE_INFINITY;
     this.placing = false;
     this.answers = null;
+    this.folds = null;
     this.keepOn = null;
     this.ownKept = null;
     this.unreached = null;

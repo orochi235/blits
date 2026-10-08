@@ -3,7 +3,7 @@ import type { Run } from './motions.js';
 import { type PackedRecord, unpackHeld } from './pack.js';
 import { HistoryMiss, type Keys } from './paging.js';
 import { type PackedVoice, reviveVoice } from './revive.js';
-import { scoredAdd } from './scored.js';
+import { scoredLeft } from './scored.js';
 import type { Transport } from './transport.js';
 import type { Paged } from './types.js';
 import type { Controls, Subject, Voice } from './voice.js';
@@ -70,7 +70,7 @@ function unpageMix(mix: Member, records: readonly Paged[]): void {
       const v = reviveVoice(mix, r.voice, r.data as PackedVoice);
       voices.set(v.id, v);
       mix.gone.push(v);
-      scoredAdd(mix, v);
+      scoredLeft(mix, v);
     }
   const host = records.filter((r) => r.stream === 'host');
   mix.hostLog = before(

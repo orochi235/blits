@@ -7,7 +7,7 @@ import type { Mixer } from './mixer.js';
 import { ownerReading } from './owner.js';
 import { mixAt, place, repin, startOf } from './place.js';
 import { pageVoice } from './revive.js';
-import { scoredRemove } from './scored.js';
+import { scoredLeft, scoredRemove } from './scored.js';
 import { lapse } from './spans.js';
 import { unplay } from './strays.js';
 import type { Voice } from './voice.js';
@@ -165,11 +165,11 @@ function indexOf<I, O>(voices: readonly Voice<I, O>[], voice: Voice<I, O>): numb
 
 /** Lets go of a retired voice's place in the mix; whether it was among the voices naming no subject. */
 function leave<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
-  if (mix.opts.history) mix.gone.push(voice);
-  else {
-    mix.parters.delete(voice);
-    scoredRemove(mix, [voice]);
-  }
+  scoredRemove(mix, [voice]);
+  if (mix.opts.history) {
+    mix.gone.push(voice);
+    scoredLeft(mix, voice);
+  } else mix.parters.delete(voice);
   unplay(mix, voice);
   changed(mix, voice);
   if (voice.named !== null) unindex(mix, voice);

@@ -2,7 +2,7 @@ import { noted } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { mixTime, ownerReading } from './owner.js';
-import { scored } from './scored.js';
+import { scored, scoredGone } from './scored.js';
 import type { Anchor, Mark, Placement, Query, VoiceSpec } from './types.js';
 import { none, type Voice } from './voice.js';
 
@@ -196,7 +196,7 @@ function resolve<I, O>(
     mark = 'start';
     by = -by;
   }
-  const t = timeOf(mix, typeof query === 'string' ? { name: query } : query, mark, self);
+  const t = timeOf(mix, query, mark, self);
   if (t === undefined) return undefined;
   if (o === null) return t + by;
   const local = ownerReading(o, t);
@@ -217,6 +217,77 @@ function member<I, O>(mix: Mixer<I, O>, a: Anchor, self: Voice<I, O>): number | 
   return t;
 }
 
+/** Picks among the times a query meets, as its resolver says, in the order they are met. */
+class Pick {
+  any = false;
+  firstOrder = Number.POSITIVE_INFINITY;
+  lastOrder = Number.NEGATIVE_INFINITY;
+  first: number | undefined;
+  last: number | undefined;
+  pick: number | undefined;
+  constructor(
+    readonly resolver: NonNullable<Query['resolver']>,
+    readonly now: number,
+  ) {}
+  take(order: number, t: number | undefined): void {
+    this.any = true;
+    if (order < this.firstOrder) {
+      this.firstOrder = order;
+      this.first = t;
+    }
+    if (order > this.lastOrder) {
+      this.lastOrder = order;
+      this.last = t;
+    }
+    if (t !== undefined) this.consider(t);
+  }
+  /** Takes what `o` picked as though its times had been met here. */
+  merge(o: Pick): void {
+    if (!o.any) return;
+    this.any = true;
+    if (o.firstOrder < this.firstOrder) {
+      this.firstOrder = o.firstOrder;
+      this.first = o.first;
+    }
+    if (o.lastOrder > this.lastOrder) {
+      this.lastOrder = o.lastOrder;
+      this.last = o.last;
+    }
+    if (o.pick !== undefined) this.consider(o.pick);
+  }
+  private consider(t: number): void {
+    const p = this.pick;
+    if (
+      this.resolver === 'earliest'
+        ? p === undefined || t < p
+        : this.resolver === 'latest'
+          ? p === undefined || t > p
+          : this.resolver === 'next' && t >= this.now && (p === undefined || t < p)
+    )
+      this.pick = t;
+  }
+  answer(): number | undefined {
+    if (!this.any) return undefined;
+    if (this.resolver === 'first') return this.first;
+    if (this.resolver === 'last') return this.last;
+    return this.pick;
+  }
+}
+
+/**
+ * What one anchor has read of one mix's gone voices on its score. A gone voice's marks no longer
+ * move, so each is read once as it arrives at the end of the list; a list replaced, by a seek or by
+ * history letting go of some, starts the read over. A gone voice an owner still holds reads on that
+ * owner's clock, so it is read again each time.
+ */
+interface Fold<I, O> {
+  list: readonly Voice<I, O>[];
+  mark: Mark;
+  seen: number;
+  pick: Pick;
+  owned: Voice<I, O>[];
+}
+
 /**
  * The mix time a query answers: `mark` of the voice it picks, among those cued and those that have
  * left, never the asker; or a mark the host announced on the score, which is the same time for
@@ -225,56 +296,47 @@ function member<I, O>(mix: Mixer<I, O>, a: Anchor, self: Voice<I, O>): number | 
  */
 function timeOf<I, O>(
   mix: Mixer<I, O>,
-  q: Query,
+  key: string | Query,
   mark: Mark,
   self: Voice<I, O>,
 ): number | undefined {
+  const q = typeof key === 'string' ? { name: key } : key;
   const score = q.score ?? self.spec.score;
   const anywhere = q.score !== undefined;
-  // Picked as they come, not sorted: an anchor on a busy score meets every voice history keeps.
   const resolver = q.resolver ?? 'last';
   const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
-  let any = false;
-  let firstOrder = Number.POSITIVE_INFINITY;
-  let lastOrder = Number.NEGATIVE_INFINITY;
-  let first: number | undefined;
-  let last: number | undefined;
-  let pick: number | undefined;
-  const take = (order: number, t: number | undefined) => {
-    any = true;
-    if (order < firstOrder) {
-      firstOrder = order;
-      first = t;
-    }
-    if (order > lastOrder) {
-      lastOrder = order;
-      last = t;
-    }
-    if (t === undefined) return;
-    if (
-      resolver === 'earliest'
-        ? pick === undefined || t < pick
-        : resolver === 'latest'
-          ? pick === undefined || t > pick
-          : resolver === 'next' && t >= now && (pick === undefined || t < pick)
-    )
-      pick = t;
-  };
+  const picked = new Pick(resolver, now);
+  const matches = (v: Voice<I, O>) =>
+    v !== self &&
+    v.spec.score === score &&
+    (anywhere || v.owner === self.owner) &&
+    (q.name === undefined || v.spec.name === q.name) &&
+    (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
+    (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes));
   // A query naming a score looks in every mix on the transport; one naming none, in its own.
   const mixes = anywhere ? (mix.transport.members as unknown as Mixer<I, O>[]) : [mix];
-  const among = (m: Mixer<I, O>): Iterable<Voice<I, O>> =>
-    score === undefined || m.projecting ? [...m.gone, ...m.cued] : scored(m, score);
-  for (const m of mixes)
-    for (const v of among(m))
-      if (
-        v !== self &&
-        v.spec.score === score &&
-        (anywhere || v.owner === self.owner) &&
-        (q.name === undefined || v.spec.name === q.name) &&
-        (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
-        (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes))
-      )
-        take(v.id, markOf(m, v, mark));
+  for (const m of mixes) {
+    if (score === undefined || m.projecting || mix.projecting) {
+      for (const v of [...m.gone, ...m.cued]) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
+      continue;
+    }
+    for (const v of scored(m, score)) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
+    // `next` asks what is still ahead of now, which a running pick cannot keep.
+    const list = scoredGone(m, score);
+    if (resolver === 'next') {
+      for (const v of list) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
+      continue;
+    }
+    const fold = foldOf(m, list, key, mark, self, resolver);
+    for (; fold.seen < list.length; fold.seen++) {
+      const v = list[fold.seen] as Voice<I, O>;
+      if (!matches(v)) continue;
+      if (v.owner === null) fold.pick.take(v.id, markOf(m, v, mark));
+      else fold.owned.push(v);
+    }
+    picked.merge(fold.pick);
+    for (const v of fold.owned) picked.take(v.id, markOf(m, v, mark));
+  }
   if (q.writes === undefined && (anywhere || self.owner === null))
     for (const a of mix.announced)
       if (
@@ -283,9 +345,35 @@ function timeOf<I, O>(
         (q.name === undefined || a.name === q.name) &&
         (q.tag === undefined || a.tags.includes(q.tag))
       )
-        take(a.order, Number.isNaN(a.at) ? undefined : mixAt(mix, a.at));
-  if (!any) return undefined;
-  if (resolver === 'first') return first;
-  if (resolver === 'last') return last;
-  return pick;
+        picked.take(a.order, Number.isNaN(a.at) ? undefined : mixAt(mix, a.at));
+  return picked.answer();
+}
+
+/** `self`'s read of `m`'s gone voices for one query, started over where the list has changed under it. */
+function foldOf<I, O>(
+  m: Mixer<I, O>,
+  list: readonly Voice<I, O>[],
+  key: string | Query,
+  mark: Mark,
+  self: Voice<I, O>,
+  resolver: NonNullable<Query['resolver']>,
+): Fold<I, O> {
+  self.folds ??= new Map();
+  let byMix = self.folds.get(key) as Map<Mixer<I, O>, Fold<I, O>> | undefined;
+  if (byMix === undefined) {
+    byMix = new Map();
+    self.folds.set(key, byMix as Map<unknown, unknown>);
+  }
+  let fold = byMix.get(m);
+  if (fold === undefined || fold.list !== list || fold.mark !== mark) {
+    fold = {
+      list,
+      mark,
+      seen: 0,
+      pick: new Pick(resolver, Number.NEGATIVE_INFINITY),
+      owned: [],
+    };
+    byMix.set(m, fold);
+  }
+  return fold;
 }
