@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
   type Claim,
-  chain,
-  collapse,
+  conclude,
+  condense,
   defaultFit,
+  lax,
   layout,
-  lenient,
-  overlap,
   overrun,
+  pipe,
   plain,
-  retime,
+  rescale,
   type SpanClaim,
   settle,
-  skip,
+  shed,
 } from '../src/fit.js';
 
 const kid = (natural: number, hints: Partial<Claim> = {}): Claim => ({
@@ -58,9 +58,9 @@ describe('strategies', () => {
   it('retimes faster evenly, each child no faster than it allows', () => {
     const s = span(200);
     const kids = [kid(200, { faster: 4 }), kid(200, { faster: 4 })];
-    expect(layout(s, kids, retime(s, kids, plain(s, kids))).length).toBeCloseTo(200);
+    expect(layout(s, kids, rescale(s, kids, plain(s, kids))).length).toBeCloseTo(200);
     const capped = [kid(200, { faster: 4 }), kid(200, { faster: 1.25 })];
-    const p = retime(s, capped, plain(s, capped));
+    const p = rescale(s, capped, plain(s, capped));
     expect(p.rate[1]).toBe(1.25);
     expect(layout(s, capped, p).length).toBeGreaterThan(200);
   });
@@ -68,32 +68,32 @@ describe('strategies', () => {
   it('overlaps only the children that allow it', () => {
     const s = span(150);
     const kids = [kid(100), kid(100, { overlap: true })];
-    expect(length(s, kids, overlap())).toBeCloseTo(150);
+    expect(length(s, kids, condense())).toBeCloseTo(150);
     const stiff = [kid(100), kid(100)];
-    expect(length(s, stiff, overlap())).toBe(200);
+    expect(length(s, stiff, condense())).toBe(200);
   });
 
   it('skips the latest children that allow it, until the rest fit', () => {
     const s = span(250);
     const kids = [kid(100, { skip: true }), kid(100, { skip: true }), kid(100, { skip: true })];
-    const p = skip()(s, kids, plain(s, kids));
+    const p = shed()(s, kids, plain(s, kids));
     expect(p.skip).toEqual([false, false, true]);
   });
 
   it('collapses every child to an instant', () => {
     const s = span(250);
     const kids = [kid(100), kid(100)];
-    expect(length(s, kids, collapse())).toBe(0);
+    expect(length(s, kids, conclude())).toBe(0);
   });
 
   it('retimes slower to fill the budget, each child no slower than it allows', () => {
     const s = span(400);
     const kids = [kid(100, { slower: 4 }), kid(100, { slower: 4 })];
-    expect(layout(s, kids, retime(s, kids, plain(s, kids))).length).toBeCloseTo(400, 3);
+    expect(layout(s, kids, rescale(s, kids, plain(s, kids))).length).toBeCloseTo(400, 3);
     const some = [kid(100, { slower: 1.5 }), kid(100)];
-    expect(layout(s, some, retime(s, some, plain(s, some))).length).toBeCloseTo(250, 3);
+    expect(layout(s, some, rescale(s, some, plain(s, some))).length).toBeCloseTo(250, 3);
     const stiff = [kid(100), kid(100)];
-    expect(retime(s, stiff, plain(s, stiff)).rate).toEqual([1, 1]);
+    expect(rescale(s, stiff, plain(s, stiff)).rate).toEqual([1, 1]);
   });
 
   it('retimes before any fit, so a chain with room still fills the budget', () => {
@@ -114,7 +114,7 @@ describe('strategies', () => {
   it('chains strategies, stopping once the children fit', () => {
     const s = span(100);
     const kids = [kid(100, { faster: 2, skip: true }), kid(100, { faster: 2, skip: true })];
-    const p = chain(overlap(), skip())(s, kids, retime(s, kids, plain(s, kids)));
+    const p = pipe(condense(), shed())(s, kids, rescale(s, kids, plain(s, kids)));
     expect(p.skip).toEqual([false, false]);
     expect(layout(s, kids, p).length).toBeCloseTo(100);
   });
@@ -122,7 +122,7 @@ describe('strategies', () => {
   it('lenient gives every way before it overruns', () => {
     const s = span(100);
     const kids = [kid(400, { faster: 2 })];
-    const p = lenient({ cap: 2 })(s, kids, retime(s, kids, plain(s, kids)));
+    const p = lax({ cap: 2 })(s, kids, rescale(s, kids, plain(s, kids)));
     expect(p.rate[0]).toBe(2);
     expect(p.allow).toBe(100);
   });

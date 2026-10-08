@@ -5268,7 +5268,7 @@
       "gloss": {
         "lead": "Whether a child may start before the one before it ends, where the span's order would not have it.",
         "items": [
-          "Read only under a span; the <code>overlap</code> fit is what uses it, and shares the word.",
+          "Read only under a span, by the fit that starts children sooner.",
           "Text runs that may type over each other's tail, rather than each waiting its turn.",
           "Read aloud as a field: <code>{ overlap: true }</code>."
         ]
@@ -5396,7 +5396,7 @@
         "lead": "Whether a child may jump to its end instead of playing, so the span keeps its budget.",
         "items": [
           "A skipped child still ends where it would have: text that types in still ends typed.",
-          "A span held by a span is never skipped. The <code>skip</code> fit uses it, and shares the word; <code>collapse</code> skips every child.",
+          "A span held by a span is never skipped. The fit that jumps children to their end reads it; the one that jumps every child ignores it.",
           "Read aloud as a field: <code>{ skip: true }</code>."
         ]
       },

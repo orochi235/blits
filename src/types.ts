@@ -559,7 +559,7 @@ export interface SpanSpec<I, H = unknown> extends OwnerSpec<I, H> {
   share?: number;
   /**
    * How the children are fitted once they are retimed toward the budget, faster or slower as
-   * their hints allow. Default `chain(overlap(), skip())`.
+   * their hints allow. Default `pipe(condense(), shed())`.
    */
   fit?: Fit;
   /**
@@ -567,7 +567,7 @@ export interface SpanSpec<I, H = unknown> extends OwnerSpec<I, H> {
    * every child weaker than the span to its end at once, and `overrun` lets them run long.
    * Default `instant`.
    */
-  fallback?: 'instant' | 'overrun';
+  spill?: 'instant' | 'overrun';
 }
 
 /**
@@ -584,7 +584,7 @@ export interface Fitted {
   over: number;
   /** How many children it jumps to their end. */
   skipped: number;
-  /** Whether the fit failed and `fallback` decided. */
+  /** Whether the fit failed and `spill` decided. */
   fell: boolean;
 }
 

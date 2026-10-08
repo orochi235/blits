@@ -140,7 +140,7 @@ function least(lo: number, hi: number, ok: (x: number) => boolean): number {
  * they run past it, each no faster than its `faster` allows, and slower where they leave room in
  * it, each no slower than its `slower` allows, so they fill it.
  */
-export function retime(span: SpanClaim, kids: readonly Claim[], plan: FitPlan): FitPlan {
+export function rescale(span: SpanClaim, kids: readonly Claim[], plan: FitPlan): FitPlan {
   if (!fits(span, kids, plan)) {
     const top = Math.max(1, ...kids.map((k) => k.faster));
     const at = (f: number): FitPlan => ({
@@ -167,7 +167,7 @@ export function retime(span: SpanClaim, kids: readonly Claim[], plan: FitPlan): 
  *
  * @category score
  */
-export function overlap(): Fit {
+export function condense(): Fit {
   return (span, kids, plan) => {
     if (fits(span, kids, plan) || !kids.some((k) => k.overlap)) return plan;
     const at = (s: number): FitPlan => ({ ...plan, share: s });
@@ -182,7 +182,7 @@ export function overlap(): Fit {
  *
  * @category score
  */
-export function skip(): Fit {
+export function shed(): Fit {
   return (span, kids, plan) => {
     let p = plan;
     for (let i = kids.length - 1; i >= 0 && !fits(span, kids, p); i--) {
@@ -200,7 +200,7 @@ export function skip(): Fit {
  *
  * @category score
  */
-export function collapse(): Fit {
+export function conclude(): Fit {
   return (_span, kids, plan) => ({ ...plan, skip: kids.map(() => true) });
 }
 
@@ -223,7 +223,7 @@ export function overrun(opts: { cap?: number } = {}): Fit {
  *
  * @category score
  */
-export function chain(...fits_: readonly Fit[]): Fit {
+export function pipe(...fits_: readonly Fit[]): Fit {
   return (span, kids, plan) => {
     let p = plan;
     for (const f of fits_) {
@@ -239,29 +239,29 @@ export function chain(...fits_: readonly Fit[]): Fit {
  *
  * @category score
  */
-export function lenient(opts: { cap?: number } = {}): Fit {
-  return chain(overlap(), skip(), overrun(opts));
+export function lax(opts: { cap?: number } = {}): Fit {
+  return pipe(condense(), shed(), overrun(opts));
 }
 
 /** The fit a span takes without one of its own. */
-export const defaultFit: Fit = chain(overlap(), skip());
+export const defaultFit: Fit = pipe(condense(), shed());
 
 const rank = { weak: 0, strong: 1, required: 2 } as const;
 
 /**
  * A span's fit settled: the plan, and what it had to do past the strategy, which starts from the
  * children retimed toward the budget. Where the children still
- * do not fit, a span weaker than `strong` lets them run long; otherwise `fallback` either skips
+ * do not fit, a span weaker than `strong` lets them run long; otherwise `spill` either skips
  * every child weaker than the span (`instant`), or lets them run long (`overrun`).
  */
 export function settle(
   span: SpanClaim,
   kids: readonly Claim[],
   fit: Fit,
-  fallback: 'instant' | 'overrun',
+  spill: 'instant' | 'overrun',
 ): { plan: FitPlan; fell: boolean } {
-  let plan = fit(span, kids, retime(span, kids, plain(span, kids)));
-  if (fits(span, kids, plan) || rank[span.firm] === 0 || fallback === 'overrun')
+  let plan = fit(span, kids, rescale(span, kids, plain(span, kids)));
+  if (fits(span, kids, plan) || rank[span.firm] === 0 || spill === 'overrun')
     return { plan, fell: !fits(span, kids, plan) && rank[span.firm] > 0 };
   plan = {
     ...plan,

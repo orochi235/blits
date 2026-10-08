@@ -211,13 +211,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `handle.weightOf`, `MixOptions.stepMs` and `setting.send` / `mix.drain`. Each is in the schema
   page; magicsmoke's row in the consumer table says how it uses them.
 
-- **Spans and joins (built 2026-10-07, on branch `spans`).** Mike's framing: consumers declare
+- **Spans and joins (built 2026-10-07, merged).** Mike's framing: consumers declare
   what they want of time, and blits resolves competing duration claims from the hints they give;
   any strategy is acceptable as long as declaring it is easy and it just works. He picked a span
   with fit strategies over a constraint solver and over a helper the host calls; that `overrun` is
   opt-in and never in the default; that collapsing everything left to an instant is a choice; that
   joins are `all`/`any`, not first/last, which read as the ends of a range; and asked for
-  `lenient` as a convenience. He rejected `give` as the name for the children's hints, which are
+  `lax` (then `lenient`) as a convenience. He rejected `give` as the name for the children's hints, which are
   now plain fields on the spec. The schema page's Score section, "Spans" and "Joins", is the
   record.
 
@@ -504,13 +504,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      `fn^`, `tweens^`, `weasel^`, `keyses^`, `blend` and `glowc^` within 0.96–1.04×, every row's
      runs overlapping the other side's.
 
-7. **Name the span vocabulary — blocks the next release.** `span`, `fit`, `fallback`,
-   `fitted`, `lenient`, `collapse`, and the hints `faster`, `slower`,
-   `overlap`, `skip`, `firm` are working names, on `main` and unreleased; `all`/`any` are picked.
-   The sheet (`docs/vocabulary.json`, served on :4873) names `fit` once; the fits themselves
-   (`overlap`, `skip`, `collapse`, `overrun`, `chain`, `lenient`) are its sub-operations, and the
-   retiming every span runs before its fit is another, listed in its gloss and named in a later pass (Mike, 2026-10-07). Only `fit`
-   is picked (`fitstrategy` in the picks file).
+7. **The span vocabulary is picked and in the code, except `fitted` and the hints** (2026-10-07).
+   `span` and `fit` kept their names; `fallback` became `spill`, and the fits became `condense`,
+   `shed`, `conclude`, `overrun`, `pipe` and `lax`, with the retiming before any fit `rescale`
+   (internal). `fitted` and the hints `faster`, `slower`, `overlap`, `skip`, `firm` keep their
+   working names and are unpicked on the sheet; whether they ship as they are is Mike's call.
+   The hints `overlap` and `skip` no longer share a word with the fits that read them.
 
 9. **The history adapter is built** (2026-10-07, branch `worktree-agent-a522529eca4aeae84`,
    unmerged): `history.store`, `prepare`, `HistoryMiss`, `keyOf`, `as`/`revive`, `pack`/`unpack`.

@@ -64,9 +64,9 @@ version and everything else the patch. Each release lists its changes as **Break
   Each child says how it may give way with `faster`, `slower`, `overlap`, `skip` and `firm`. The
   span first retimes its children by one factor toward the budget, faster where they run past it
   and slower where they leave room, each as far as its hints allow; then its `fit` decides the
-  rest: `overlap`, `skip`, `collapse` and `overrun` are exported, `chain` runs several in turn,
-  and `lenient` is every one with `overrun` last.
-  Where nothing fits, `fallback: 'instant'` jumps the weaker children to their end at once and
+  rest: `condense`, `shed`, `conclude` and `overrun` are exported, `pipe` runs several in turn,
+  and `lax` is every one with `overrun` last.
+  Where nothing fits, `spill: 'instant'` jumps the weaker children to their end at once and
   `'overrun'` lets the span run long. A span with a budget stays until it has passed, so late
   children can join, and `handle.fitted` says how the last fit came out.
 - `ticker().wake()` asks for a frame. A mix changed before `stop` and not synced since fires

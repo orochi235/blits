@@ -731,9 +731,9 @@ phase.fitted;   <span class="cm">// { budget, length, over, skipped, fell }</spa
     <tr><th>On the span</th><th>Means</th></tr>
     <tr><td><code>duration</code></td><td>Its budget, ms on its own clock. Without one the span only keeps its children's order, which makes it a sequencer for voices that arrive late.</td></tr>
     <tr><td><code>order</code>, <code>share</code></td><td><code>queue</code> starts each child once the one before ends, <code>stagger</code> starts it <code>share</code> of the way through (0.5), <code>together</code> starts them all at once. Children are laid out in the order they were cued.</td></tr>
-    <tr><td><code>fit</code></td><td>A strategy, a plain function from the span's claim and its children's claims to a rate and a skip per child. It starts from the children already retimed: before any fit, the span moves every child's rate by one factor toward its budget, faster where they run past it and slower where they leave room, each as far as its <code>faster</code> or <code>slower</code> allows. Default <code>chain(overlap(), skip())</code>.</td></tr>
+    <tr><td><code>fit</code></td><td>A strategy, a plain function from the span's claim and its children's claims to a rate and a skip per child. It starts from the children already retimed: before any fit, the span moves every child's rate by one factor toward its budget, faster where they run past it and slower where they leave room, each as far as its <code>faster</code> or <code>slower</code> allows. Default <code>pipe(condense(), shed())</code>.</td></tr>
     <tr><td><code>firm</code></td><td>How hard its length holds, <code>weak</code>, <code>strong</code> (default) or <code>required</code>: against its children here, and against its own span when it is held by one.</td></tr>
-    <tr><td><code>fallback</code></td><td>What happens when the fit leaves the children too long for a span at least <code>strong</code>: <code>instant</code> (default) jumps every child weaker than the span to its end at once, so the budget holds; <code>overrun</code> lets them run long. A <code>weak</code> span runs long and does not count it as falling back.</td></tr>
+    <tr><td><code>spill</code></td><td>What happens when the fit leaves the children too long for a span at least <code>strong</code>: <code>instant</code> (default) jumps every child weaker than the span to its end at once, so the budget holds; <code>overrun</code> lets them run long. A <code>weak</code> span runs long and does not count it as falling back.</td></tr>
   </table></div>
   <div class="tbl"><table>
     <tr><th>On a child</th><th>Means</th></tr>
@@ -744,12 +744,12 @@ phase.fitted;   <span class="cm">// { budget, length, over, skipped, fell }</spa
   </table></div>
   <div class="tbl"><table>
     <tr><th>Strategy</th><th>Does</th></tr>
-    <tr><td><code>overlap()</code></td><td>Starts children allowing it sooner after the one before, toward all at once.</td></tr>
-    <tr><td><code>skip()</code></td><td>Jumps children allowing it to their end, latest first.</td></tr>
-    <tr><td><code>collapse()</code></td><td>Jumps every child to its end at one instant.</td></tr>
+    <tr><td><code>condense()</code></td><td>Starts children allowing it sooner after the one before, toward all at once.</td></tr>
+    <tr><td><code>shed()</code></td><td>Jumps children allowing it to their end, latest first.</td></tr>
+    <tr><td><code>conclude()</code></td><td>Jumps every child to its end at one instant.</td></tr>
     <tr><td><code>overrun({ cap })</code></td><td>Lets the span run up to <code>cap</code> times its budget, or without limit.</td></tr>
-    <tr><td><code>chain(...fits)</code></td><td>Tries each in turn, handing the plan on, until the children fit.</td></tr>
-    <tr><td><code>lenient({ cap })</code></td><td><code>chain(overlap(), skip(), overrun({ cap }))</code>: every way of giving way, running long only once the rest are spent.</td></tr>
+    <tr><td><code>pipe(...fits)</code></td><td>Tries each in turn, handing the plan on, until the children fit.</td></tr>
+    <tr><td><code>lax({ cap })</code></td><td><code>pipe(condense(), shed(), overrun({ cap }))</code>: every way of giving way, running long only once the rest are spent.</td></tr>
   </table></div>
   A strategy of the host's own takes the same arguments; <code>layout</code> says where a plan puts each child and how long they take, and <code>plain</code> is the plan before any fit. A child's start and rate are the span's: it takes no <code>start</code> or anchored start, a rate the host writes on its handle lasts until the next fit, and a voice that loops for good or a plain owner is refused. The span fits again when a child joins and when one leaves, and after a seek. Only what is still to come moves: a playing child keeps its place and changes rate without a jump, as a handle's <code>rate</code> write does, and a pending one is placed. A fit sees only the children that have arrived, so late ones are squeezed into what is left. A skipped child lands on its final state at that moment and its <code>end</code> mark is there, but the events its patch would have sent on the way are not sent. A span with a budget stays until the budget has passed, though its children finish sooner, so a late child can still join, and its <code>end</code> mark is wherever its children end or its budget does, whichever is later. A span held by a span is fitted through its own rate. A fit is made on the live mix and logged as the children's control changes, so a read back, a seek and its replay all see it, and the tape records nothing for it. Designed and built 2026-10-07.</li>
   <li><b>What comes next.</b> <code>mix.marks(from, to)</code> lists every mark the plan has fixed in a range, with each voice's id, name and tags. One nothing has fixed is left out.</li>

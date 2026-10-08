@@ -13,7 +13,7 @@ export class Fitting {
   readonly budget: number;
   readonly claim: Omit<SpanClaim, 'left'>;
   readonly fit: Fit;
-  readonly fallback: 'instant' | 'overrun';
+  readonly spill: 'instant' | 'overrun';
   /** Where its children end or its budget does, whichever is later, ms on its own clock. */
   end: number;
   report: Fitted;
@@ -26,7 +26,7 @@ export class Fitting {
     this.budget = budget;
     this.claim = { budget, firm: spec.firm ?? 'strong', order: spec.order ?? 'queue', share };
     this.fit = spec.fit ?? defaultFit;
-    this.fallback = spec.fallback ?? 'instant';
+    this.spill = spec.spill ?? 'instant';
     this.end = Number.isFinite(budget) ? budget : 0;
     this.report = { budget, length: 0, over: 0, skipped: 0, fell: false };
   }
@@ -86,7 +86,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>): void {
     };
   });
   const claim: SpanClaim = { ...fitting.claim, left: fitting.budget - local };
-  const { plan, fell } = settle(claim, claims, fitting.fit, fitting.fallback);
+  const { plan, fell } = settle(claim, claims, fitting.fit, fitting.spill);
   const { at, length } = layout(claim, claims, plan);
   kids.forEach((c, i) => {
     const rate = (c.spec.rate ?? 1) * (plan.rate[i] as number);

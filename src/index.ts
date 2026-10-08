@@ -4,14 +4,14 @@ export type { ColorOptions } from './color.js';
 export { color, css, hex, mixHex, oklab, toHex } from './color.js';
 export type { Claim, Fit, FitPlan, Order, SpanClaim, Strength } from './fit.js';
 export {
-  chain,
-  collapse,
+  conclude,
+  condense,
+  lax,
   layout,
-  lenient,
-  overlap,
   overrun,
+  pipe,
   plain,
-  skip,
+  shed,
 } from './fit.js';
 export { mix, mixer } from './mixer.js';
 export type { Motion, Moving, PerSubject, Value } from './motion.js';
