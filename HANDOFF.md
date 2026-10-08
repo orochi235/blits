@@ -102,10 +102,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
   ```
   cd ~/src/semanticore && node bin/semanticore.js check <job>   # 20-word rule, placeholders
-  node bin/semanticore.js serve ~/src/blits/docs/vocabulary.json --port 4871
+  node bin/semanticore.js serve ~/src/blits/docs/vocabulary.json --port 4873
   ```
 
-  Pinned to semanticore `7dac96e`. The built page is not committed here; `serve` rebuilds on every
+  Pinned to semanticore `0c1df0c` (2026-10-07). The built page is not committed here; `serve` rebuilds on every
   edit and adds undo/redo, snapshots, cross-off and chat, none of which the hand page had.
 
 - **The playground's diagrams, after view A.** View A, the signal flow, is built; the playground's
@@ -536,7 +536,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   that is wrong is undecided: it is what the host showed, and copying would cost every probe
   without `out` an allocation.
 
-- **A stale served-page tab will overwrite `vocabulary.picks.json` with whatever set it
-  was holding.** It has happened twice — `65d2d71` restored one, and the same loss was in the
-  working tree at the start of 2026-09-27's session. Before trusting the picks file, `git diff` it;
-  before reloading the served page, make sure no old tab is open on it.
+- **A stale served-page tab overwrote `vocabulary.picks.json` four times**, most recently three
+  times on 2026-10-07: the page kept its own picks in the browser and posted them whole on every
+  click. semanticore `0c1df0c` posts only the roles a change touched. Until every browser that had
+  the page open has reloaded on that build, `git diff` the picks file before trusting it.
