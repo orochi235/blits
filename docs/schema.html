@@ -161,7 +161,7 @@
   <h1>An effects schema, and the API around it</h1>
   <p class="lede">A small runtime package for concurrent effects. Each effect runs on its own clock with its own state and weight, and a mix folds them into one value per subject per frame by rules that belong to the channel, not the effect.</p>
   <p class="meta"><b>For:</b> whoever builds <code>blits</code>, and whoever ports klieg, wod, sherpa or magicsmoke onto it. <b>Answers:</b> what the vocabulary is, what an author writes, what a host calls, and where a second engine would plug in. The package implements this page; where the two differ, the code in <code>src/</code> is the one that runs.</p>
-  <span class="status">Built · v0.6.0 · design 2026-09-15, package 2026-09-28</span>
+  <span class="status">Built · v0.7.0 · design 2026-09-15, package 2026-09-28</span>
 </header>
 
 <h2 id="picture">In one picture</h2>
@@ -724,7 +724,7 @@ intro.fade();       <span class="cm">// one envelope over both</span></code></pr
   What stays on the mix clock is what a voice's own rate leaves there: a child's fades, its <code>dt</code> and <code>setting.timestamp</code>, as a voice at half rate still fades over its <code>fade.out</code> in mix ms. An owner's fade in counts from its start. <code>mix.voices()</code> lists owners and children alike, and <code>handle.owner</code> names a child's owner. <code>marks</code> maps a child's marks to the host clock through every owner's clock, and lists one only while every clock above it is fixed. A hit a child books sits on that same chain, so an owner's rate or seek retracts it and books it again. Under <code>history</code> an owner's control changes are kept like a voice's, so a read back or ahead composes them. On lanes a child's clock is read through its owners and their weight folded into its fade, the same arithmetic the general path takes; a child whose owner weighs by a signal runs on the general path. A mix with no owner pays nothing for them.</li>
   <li id="spans"><b>Spans.</b> <code>mix.span(spec)</code> cues an owner that lays out the voices it holds and fits them into a budget, so a host says what it wants once instead of scheduling every child. astv's phase was the case: meant to last a fixed time, its text changes ran back to back at their own lengths and pushed it to 15 times that.
 <pre><code>const phase = mix.span({ name: 'phase', duration: 2000, order: 'queue' });
-mix.cue({ patch: writeChange(text), owner: phase, faster: 4, skip: true });
+mix.cue({ patch: writeChange(text), owner: phase, faster: 4, ballast: true });
 mix.cue({ patch: next, anchor: { start: { after: 'phase' } } });   <span class="cm">// at 2000, or wherever the children end, if later</span>
 phase.result;   <span class="cm">// { budget, length, over, skipped, fell }</span></code></pre>
   <div class="tbl"><table>
@@ -739,7 +739,7 @@ phase.result;   <span class="cm">// { budget, length, over, skipped, fell }</spa
     <tr><th>On a child</th><th>Means</th></tr>
     <tr><td><code>faster</code>, <code>slower</code></td><td>How many times faster or slower than its own rate it may play, which the span's retiming reads before its fit. Default 1: neither.</td></tr>
     <tr><td><code>overlap</code></td><td>It may start before the one before it ends where the order would not have it.</td></tr>
-    <tr><td><code>skip</code></td><td>It may jump to its end instead of playing. A span held by a span is never skipped.</td></tr>
+    <tr><td><code>ballast</code></td><td>It may jump to its end instead of playing. A span held by a span is never skipped.</td></tr>
     <tr><td><code>priority</code></td><td>How hard its own length holds against the span's budget. Default <code>weak</code>.</td></tr>
   </table></div>
   <div class="tbl"><table>

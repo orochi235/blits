@@ -61,7 +61,7 @@
     "span": "span",
     "hintfaster": "faster",
     "hintoverlap": "overlap",
-    "hintskip": "pass",
+    "hintskip": "ballast",
     "hintfirm": "priority",
     "hintslower": "slower",
     "fitreport": "result"
@@ -137,7 +137,8 @@
     "piece": "patch",
     "label": "name",
     "reducer": "resolver",
-    "sequence": "series"
+    "sequence": "series",
+    "hintskip": "ballast"
   },
   "locked": {
     "sample": true,

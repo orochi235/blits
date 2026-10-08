@@ -411,7 +411,7 @@ export interface SpanHints {
   /** Whether it may start before the one before it ends, where the span's order would not. */
   overlap?: boolean;
   /** Whether it may jump to its end instead of playing. A span held by a span is never skipped. */
-  skip?: boolean;
+  ballast?: boolean;
   /** How hard its own length holds against the span's budget. Default `weak`. */
   priority?: Strength;
 }

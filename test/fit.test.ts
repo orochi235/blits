@@ -21,7 +21,7 @@ const kid = (natural: number, hints: Partial<Claim> = {}): Claim => ({
   faster: 1,
   slower: 1,
   overlap: false,
-  skip: false,
+  ballast: false,
   priority: 'weak',
   ...hints,
 });
@@ -75,7 +75,11 @@ describe('strategies', () => {
 
   it('skips the latest children that allow it, until the rest fit', () => {
     const s = span(250);
-    const kids = [kid(100, { skip: true }), kid(100, { skip: true }), kid(100, { skip: true })];
+    const kids = [
+      kid(100, { ballast: true }),
+      kid(100, { ballast: true }),
+      kid(100, { ballast: true }),
+    ];
     const p = shed()(s, kids, plain(s, kids));
     expect(p.skip).toEqual([false, false, true]);
   });
@@ -98,7 +102,7 @@ describe('strategies', () => {
 
   it('retimes before any fit, so a chain with room still fills the budget', () => {
     const s = span(400);
-    const kids = [kid(100, { slower: 4, skip: true }), kid(100, { slower: 4, skip: true })];
+    const kids = [kid(100, { slower: 4, ballast: true }), kid(100, { slower: 4, ballast: true })];
     const { plan } = settle(s, kids, defaultFit, 'instant');
     expect(plan.skip).toEqual([false, false]);
     expect(layout(s, kids, plan).length).toBeCloseTo(400, 3);
@@ -113,7 +117,7 @@ describe('strategies', () => {
 
   it('chains strategies, stopping once the children fit', () => {
     const s = span(100);
-    const kids = [kid(100, { faster: 2, skip: true }), kid(100, { faster: 2, skip: true })];
+    const kids = [kid(100, { faster: 2, ballast: true }), kid(100, { faster: 2, ballast: true })];
     const p = pipe(condense(), shed())(s, kids, rescale(s, kids, plain(s, kids)));
     expect(p.skip).toEqual([false, false]);
     expect(layout(s, kids, p).length).toBeCloseTo(100);

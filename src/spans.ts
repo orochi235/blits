@@ -86,7 +86,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>): void {
       faster: Math.max(1, s.faster ?? 1),
       slower: Math.max(1, s.slower ?? 1),
       overlap: s.overlap === true,
-      skip: s.skip === true && c.holding === null,
+      ballast: s.ballast === true && c.holding === null,
       priority: s.priority ?? 'weak',
     };
   });

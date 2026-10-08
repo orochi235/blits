@@ -30,7 +30,7 @@ export interface Claim {
   /** Whether it may run alongside the one before it where the span's order would not have it. */
   overlap: boolean;
   /** Whether it may jump to its end instead of playing. */
-  skip: boolean;
+  ballast: boolean;
   priority: Strength;
 }
 
@@ -186,7 +186,7 @@ export function shed(): Fit {
   return (span, kids, plan) => {
     let p = plan;
     for (let i = kids.length - 1; i >= 0 && !fits(span, kids, p); i--) {
-      if (!(kids[i] as Claim).skip || p.skip[i]) continue;
+      if (!(kids[i] as Claim).ballast || p.skip[i]) continue;
       const s = p.skip.slice();
       s[i] = true;
       p = { ...p, skip: s };
