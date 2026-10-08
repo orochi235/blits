@@ -309,6 +309,21 @@ describe('transport', () => {
     expect(() => t.drop(runs)).toThrow(/not on this transport/);
   });
 
+  it('keeps the tape to what history reaches, give or take its pruning step', () => {
+    const { t, orbs } = stage({ ms: 2000, tape });
+    t.sync(0);
+    for (let k = 1; k <= 600; k++) {
+      orbs.cue({ patch: fly(10), subjects: [`f${k}`], loop: false });
+      t.sync(k * 16);
+    }
+    const kept = (t as unknown as { tape: { undoDepth(): number } }).tape.undoDepth();
+    // A call a frame for 2 s is 125; the step lets go of them a second at a time.
+    expect(kept).toBeGreaterThanOrEqual(125);
+    expect(kept).toBeLessThanOrEqual(125 + 63);
+    // Still sought within reach after the tape let go of what came before it.
+    expect(() => t.seek(600 * 16 - 1500)).not.toThrow();
+  });
+
   it('reaches its first sync with history that never lets go', () => {
     const { t, orbs } = stage({ ms: Number.POSITIVE_INFINITY, tape });
     t.sync(0);

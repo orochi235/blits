@@ -7,6 +7,10 @@ import { pin } from './place.js';
 import { projectAll } from './project.js';
 import { seek } from './seek.js';
 import { record, replay, tapeOf } from './tape.js';
+
+/** How far the tape's reach moves before it is pruned again, ms of mix time. */
+const TAPE_STEP_MS = 1000;
+
 import type {
   Marked,
   Mix,
@@ -63,6 +67,8 @@ export class Transport implements TransportApi {
   floor = Number.NEGATIVE_INFINITY;
   last = Number.NaN;
   rebasing = false;
+  /** The reach the tape was last pruned to. */
+  taped = Number.NEGATIVE_INFINITY;
   /** The rate; null while it has never been set, when mix time is host time. */
   pace: Pace | null = null;
   /** True while the tape makes a recorded call again, so it is not recorded twice. */
@@ -207,7 +213,12 @@ export class Transport implements TransportApi {
     const history = this.history;
     this.kept();
     const reach = this.keepsFrom();
-    if (this.tape !== undefined && history !== undefined) this.tape.prune(reach);
+    // In steps: the tape shifts every entry it keeps to let go of the oldest, and one a second
+    // behind reach is never played again.
+    if (this.tape !== undefined && history !== undefined && !(reach - this.taped < TAPE_STEP_MS)) {
+      this.tape.prune(reach);
+      this.taped = reach;
+    }
     if (history !== undefined && this.dropped.length > 0)
       this.dropped = this.dropped.filter((d) => d.at >= reach);
     this.woken = false;
