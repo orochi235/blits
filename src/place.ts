@@ -2,7 +2,7 @@ import { noted } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { mixTime, ownerReading } from './owner.js';
-import { scored, scoredGone, scoreVersion } from './scored.js';
+import { holders, scored, scoredGone, scoreVersion, unhold } from './scored.js';
 import type { Anchor, Mark, Placement, Query, VoiceSpec } from './types.js';
 import { none, type Voice } from './voice.js';
 
@@ -322,17 +322,29 @@ function timeOf<I, O>(
     (q.name === undefined || v.spec.name === q.name) &&
     (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
     (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes));
-  // A query naming a score looks in every mix on the transport; one naming none, in its own.
-  const mixes = anywhere ? (mix.transport.members as unknown as Mixer<I, O>[]) : [mix];
-  for (const m of mixes) {
+  // A query naming a score looks in every mix on the transport that holds a voice on it; one
+  // naming none, in its own.
+  const listed = anywhere && score !== undefined && !mix.projecting;
+  const mixes = !anywhere
+    ? [mix]
+    : listed
+      ? holders(mix, score)
+      : (mix.transport.members as unknown as Mixer<I, O>[]);
+  for (let i = 0; i < mixes.length; i++) {
+    const m = mixes[i] as Mixer<I, O>;
     if (score === undefined || m.projecting || mix.projecting) {
       for (const v of [...m.gone, ...m.cued]) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
       continue;
     }
-    // Most mixes on a busy transport hold nothing on the score at all.
     const cued = scored(m, score);
     const list = scoredGone(m, score);
-    if (cued.size === 0 && list.length === 0) continue;
+    if (cued.size === 0 && list.length === 0) {
+      if (listed) {
+        unhold(m, score);
+        i--;
+      }
+      continue;
+    }
     // `next` asks what is still ahead of now, which a running pick cannot keep.
     if (resolver === 'next') {
       for (const v of cued) if (matches(v)) picked.take(v.id, markOf(m, v, mark));

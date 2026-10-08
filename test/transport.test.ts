@@ -5,6 +5,7 @@ import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import { transport } from '../src/transport.js';
 import type { Marked, TransportOptions } from '../src/types.js';
+import { memoryStore } from './store.js';
 
 // Two kits that never fold together, as astv's flights and text runs.
 interface Flight {
@@ -432,5 +433,77 @@ describe('transport', () => {
     for (let k = 1; k <= 100; k++) t.sync(k * 1000);
     t.seek(50);
     expect(orbs.probe('f').u).toBeCloseTo(0.5, 9);
+  });
+
+  it('finds a voice cued on a score by a mix an earlier read found holding nothing there', () => {
+    const { t, orbs, runs } = stage();
+    t.sync(0);
+    orbs.cue({ patch: fly(100), name: 'a', score: 's', loop: false });
+    t.sync(200);
+    // Nothing on 's' is named 'z', so this waits, reading 's' every frame after 'a' has gone.
+    runs.cue({
+      patch: type(100),
+      name: 'w',
+      loop: false,
+      anchor: { start: { after: { score: 's', name: 'z' } } },
+    });
+    t.sync(210);
+    orbs.cue({ patch: fly(100), name: 'b', score: 's', loop: false });
+    runs.cue({
+      patch: type(100),
+      name: 'w2',
+      loop: false,
+      anchor: { start: { after: { score: 's', name: 'b' } } },
+    });
+    t.sync(220);
+    expect(starts(runs, 'w2')).toEqual([310]);
+  });
+
+  it('finds the voices on a score of a mix put back by a seek before its drop', () => {
+    const { t, orbs, runs } = stage({ ms: 10_000, tape });
+    t.sync(0);
+    orbs.cue({ patch: fly(300), name: 'f', score: 's', subjects: ['f'], loop: false });
+    t.sync(20);
+    t.drop(orbs);
+    t.sync(40);
+    t.seek(10);
+    runs.cue({
+      patch: type(100),
+      name: 'w',
+      loop: false,
+      anchor: { start: { after: { score: 's', name: 'f' } } },
+    });
+    t.sync(50);
+    const end = t.marks(0, 10_000).find((m) => m.name === 'f' && m.mark === 'end');
+    expect(starts(runs, 'w')).toEqual([end?.timestamp]);
+  });
+
+  it('finds the voices on a score of a mix a seek pages back in', async () => {
+    const f = () => ({ patch: fly(100), name: 'f', score: 's', subjects: ['f'], loop: false });
+    const t = transport({ history: { ms: 100, every: 50, tape, store: memoryStore(), revive: f } });
+    const orbs = mix<string, Flight>(FLIGHT, { transport: t, name: 'orbs' });
+    const runs = mix<string, Row>(ROWS, { transport: t, name: 'runs' });
+    t.sync(0);
+    orbs.cue({ ...f(), as: { kind: 'f', data: {} } });
+    // Waits on 's' every frame, after history has paged 'f' out.
+    runs.cue({
+      patch: type(100),
+      subjects: ['r'],
+      loop: false,
+      anchor: { start: { after: { score: 's', name: 'z' } } },
+    });
+    for (let k = 1; k <= 40; k++) t.sync(k * 16);
+    await t.prepare(50);
+    t.seek(50);
+    runs.cue({
+      patch: type(100),
+      name: 'w',
+      subjects: ['r'],
+      loop: false,
+      anchor: { start: { after: { score: 's', name: 'f' } } },
+    });
+    t.sync(660);
+    const end = t.marks(0, 10_000).find((m) => m.name === 'f' && m.mark === 'end');
+    expect(starts(runs, 'w')).toEqual([end?.timestamp]);
   });
 });

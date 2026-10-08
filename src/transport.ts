@@ -5,6 +5,7 @@ import { Pace } from './pace.js';
 import { Pager, prepare } from './paging.js';
 import { pin } from './place.js';
 import { projectAll } from './project.js';
+import { type ScoreHolders, scoredDrop, scoredJoin } from './scored.js';
 import { seek } from './seek.js';
 import { record, replay, tapeOf } from './tape.js';
 
@@ -53,6 +54,7 @@ export class Transport implements TransportApi {
   dropped: { mix: Member; at: number }[] = [];
   /** Numbers the mixes as they join, for their order and for whose unnamed score a mark is on. */
   slots = 0;
+  holders: ScoreHolders = new Map();
   private wakeFns: (() => void)[] = [];
   /** Whether it has woken since the last sync, so it wakes once. */
   private woken = false;
@@ -103,6 +105,7 @@ export class Transport implements TransportApi {
     const i = this.members.findIndex((m) => m.slot > slot);
     if (i < 0) this.members.push(mix);
     else this.members.splice(i, 0, mix);
+    scoredJoin(mix);
   }
 
   drop<I, O, H>(mix: Mix<I, O, H>): void {
@@ -110,6 +113,7 @@ export class Transport implements TransportApi {
     const i = this.members.indexOf(m);
     if (i < 0) throw new Error(`blits: ${m.name ?? 'that mix'} is not on this transport`);
     this.members.splice(i, 1);
+    scoredDrop(m);
     m.dropped = true;
     if (this.history !== undefined) {
       this.dropped.push({ mix: m, at: this.now });

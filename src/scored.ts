@@ -15,6 +15,60 @@ export class ScoreIndex<I, O> {
   goneBy = new Map<string, Voice<I, O>[]>();
   /** Bumped for a score each time a voice on it is cued, retimed, retired or leaves. */
   versions = new Map<string, number>();
+  /** The scores whose list on the transport names this mix. */
+  held = new Set<string>();
+}
+
+type Member = Mixer<unknown, unknown>;
+
+/**
+ * Per score, the mixes on a transport that may hold a voice on it, cued or gone, in the
+ * transport's order. Never short of one that does; one found holding none is let go on that read.
+ */
+export type ScoreHolders = Map<string, Member[]>;
+
+function hold<I, O>(mix: Mixer<I, O>, score: string): void {
+  const held = mix.scored.held;
+  // A dropped mix is off the transport's lists until a seek puts it back, and `scoredJoin` then.
+  if (held.has(score) || mix.dropped) return;
+  held.add(score);
+  const by = mix.transport.holders;
+  const m = mix as unknown as Member;
+  const list = by.get(score);
+  if (list === undefined) {
+    by.set(score, [m]);
+    return;
+  }
+  const i = list.findIndex((o) => o.slot > m.slot);
+  if (i < 0) list.push(m);
+  else list.splice(i, 0, m);
+}
+
+/** The mixes on `mix`'s transport that may hold a voice on `score`; the list is the transport's own. */
+export function holders<I, O>(mix: Mixer<I, O>, score: string): readonly Mixer<I, O>[] {
+  return (mix.transport.holders.get(score) ?? none) as unknown as readonly Mixer<I, O>[];
+}
+
+/** Takes `mix` off `score`'s list, having found it holds nothing there. */
+export function unhold<I, O>(mix: Mixer<I, O>, score: string): void {
+  mix.scored.held.delete(score);
+  const by = mix.transport.holders;
+  const list = by.get(score);
+  if (list === undefined) return;
+  const i = list.indexOf(mix as unknown as Member);
+  if (i >= 0) list.splice(i, 1);
+  if (list.length === 0) by.delete(score);
+}
+
+/** A mix joining its transport, with whatever voices it already has. */
+export function scoredJoin<I, O>(mix: Mixer<I, O>): void {
+  for (const v of mix.cued) if (v.spec.score !== undefined) hold(mix, v.spec.score);
+  for (const v of mix.gone) if (v.spec.score !== undefined) hold(mix, v.spec.score);
+}
+
+/** A mix leaving its transport. */
+export function scoredDrop<I, O>(mix: Mixer<I, O>): void {
+  for (const score of [...mix.scored.held]) unhold(mix, score);
 }
 
 /**
@@ -81,6 +135,7 @@ function goneAdd<I, O>(by: Map<string, Voice<I, O>[]>, voice: Voice<I, O>): void
 
 /** A voice just pushed onto `gone`. */
 export function scoredLeft<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
+  if (voice.spec.score !== undefined) hold(mix, voice.spec.score);
   const ix = mix.scored;
   if (ix.gone === mix.gone) goneAdd(ix.goneBy, voice);
 }
@@ -115,6 +170,7 @@ export function scoredCut<I, O>(
 /** A voice just cued. */
 export function scoredAdd<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   scoreTouched(mix, voice);
+  if (voice.spec.score !== undefined) hold(mix, voice.spec.score);
   const ix = mix.scored;
   if (ix.cued === mix.cued) put(ix.by, voice);
 }
