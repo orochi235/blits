@@ -47,6 +47,18 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   tween patch per ease and duration. `bench/churnwho.mjs` (`SHARED=1` for one shared patch)
   diffs the heap per churned voice.
 
+- **A `keys` read costs several times weasel's own keyframe sampler.** weasel's `sampleTrack`
+  reads one `keys` patch per track (`patch.at(phase)`, one numeric channel, four stops) since
+  2026-10-08. Measured on teitou, Node 26.10, blits 0.7.0, plain node, 10k tracks each read once a
+  frame, ms per frame over three rounds: weasel's old binary search and lerp 0.058–0.076;
+  `patch.at` 0.33–0.40; `readKeys` into one reused out object 0.31–0.32; `segment` plus a plain
+  lerp, skipping `read` 0.22. So the fresh `{}` per read is about a sixth of it, `read`'s generic
+  path (slope check, `lastRead`, `interpolate`'s type tests) about a third, and the search itself
+  is still three times a plain binary search. Suggestion, untested: a public read that takes an
+  out object, and a single-channel numeric fast path. weasel's script was
+  `tests/perf/scratch/sample-cost.mjs` (not committed); the committed bench is weasel's
+  `tests/perf/bench/timeline-sampling.bench.ts`.
+
 ## What weasel has that blits doesn't
 
 Open design questions rather than asks. blits may rightly say some of these belong in a host.
