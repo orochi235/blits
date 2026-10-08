@@ -101,11 +101,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   any more:
 
   ```
-  cd ~/src/semanticore && node bin/semanticore.js check <job>   # 20-word rule, placeholders
+  cd ~/src/semanticore
+  git pull --ff-only
+  node bin/semanticore.js check ~/src/blits/docs/vocabulary.json   # 20-word rule, placeholders
   node bin/semanticore.js serve ~/src/blits/docs/vocabulary.json --port 4873
   ```
 
-  Pinned to semanticore `0c1df0c` (2026-10-07). The built page is not committed here; `serve` rebuilds on every
+  Run semanticore at its `main` HEAD. If that won't render the sheet, fall back to `0c1df0c`, the
+  last build known to render it (2026-10-07). The built page is not committed here; `serve` rebuilds on every
   edit and adds undo/redo, snapshots, cross-off and chat, none of which the hand page had.
 
 - **The playground's diagrams, after view A.** View A, the signal flow, is built; the playground's
