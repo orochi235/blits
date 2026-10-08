@@ -4,6 +4,22 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## 0.7.1
+
+### Fixed
+
+- Under `history`, a mix whose subjects come and go no longer slows as the voices that have left
+  pile up. `drop` and a freed slot visit only the voices that left that can hold the subject,
+  history lets go of them from the front of the list, and the tape is pruned a second at a time
+  rather than every sync. A 200-subject roster replacing 4 subjects a frame climbed to about 1.2 ms
+  a frame as 14,000 voices that had left built up; it now holds at about 0.065 ms.
+- An anchor naming a score reads only the voices on that score, and only in the mixes on the
+  transport that hold one; it reads each voice that has left once rather than every frame, and
+  picks in one pass instead of sorting. astv's busy stage, whose rail waits on the latest `coast`
+  of its motion score, takes about 0.45 ms a frame in astv's motion bench, against 4.3 ms on 0.7.0.
+  With 200 mixes on scores of their own beside it, a frame's sync takes about 14 µs, against 21
+  before the transport listed the mixes holding each score (Node, medians of six alternated runs).
+
 ## 0.7.0
 
 ### Breaking

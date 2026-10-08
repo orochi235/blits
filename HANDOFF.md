@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.7.0 (2026-10-07).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.7.1 (2026-10-08).
 - **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
   blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
