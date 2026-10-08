@@ -57,7 +57,8 @@
     "v-fitoverrun": "overrun",
     "v-fitlenient": "lax",
     "v-fitchain": "pipe",
-    "lastpass": "coast"
+    "lastpass": "coast",
+    "span": "span"
   },
   "chosen": {
     "offset": true,
@@ -117,7 +118,8 @@
     "v-fitoverrun": true,
     "v-fitlenient": true,
     "v-fitchain": true,
-    "lastpass": true
+    "lastpass": true,
+    "span": true
   },
   "written": {
     "piece": "patch",
