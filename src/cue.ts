@@ -9,6 +9,7 @@ import { motionOf } from './motion.js';
 import { adopt, ownerPatch, ownerReading } from './owner.js';
 import { durationOf } from './patch.js';
 import { checkPlacement, localNow, mixAt, pin, place } from './place.js';
+import { scoredAdd } from './scored.js';
 import { checkChild, refit } from './spans.js';
 import { motionOwner } from './strays.js';
 import { record } from './tape.js';
@@ -147,6 +148,7 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   let i = cued.length;
   while (i > 0 && (cued[i - 1] as Voice<I, O>).id > voice.id) i--;
   cued.splice(i, 0, voice);
+  scoredAdd(mix, voice);
   index(mix, voice);
   changed(mix, voice);
   mix.stir();

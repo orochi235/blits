@@ -2,6 +2,7 @@ import { noted } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { mixTime, ownerReading } from './owner.js';
+import { scored } from './scored.js';
 import type { Anchor, Mark, Placement, Query, VoiceSpec } from './types.js';
 import { none, type Voice } from './voice.js';
 
@@ -230,11 +231,41 @@ function timeOf<I, O>(
 ): number | undefined {
   const score = q.score ?? self.spec.score;
   const anywhere = q.score !== undefined;
-  const found: { order: number; t: number | undefined }[] = [];
+  // Picked as they come, not sorted: an anchor on a busy score meets every voice history keeps.
+  const resolver = q.resolver ?? 'last';
+  const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
+  let any = false;
+  let firstOrder = Number.POSITIVE_INFINITY;
+  let lastOrder = Number.NEGATIVE_INFINITY;
+  let first: number | undefined;
+  let last: number | undefined;
+  let pick: number | undefined;
+  const take = (order: number, t: number | undefined) => {
+    any = true;
+    if (order < firstOrder) {
+      firstOrder = order;
+      first = t;
+    }
+    if (order > lastOrder) {
+      lastOrder = order;
+      last = t;
+    }
+    if (t === undefined) return;
+    if (
+      resolver === 'earliest'
+        ? pick === undefined || t < pick
+        : resolver === 'latest'
+          ? pick === undefined || t > pick
+          : resolver === 'next' && t >= now && (pick === undefined || t < pick)
+    )
+      pick = t;
+  };
   // A query naming a score looks in every mix on the transport; one naming none, in its own.
   const mixes = anywhere ? (mix.transport.members as unknown as Mixer<I, O>[]) : [mix];
+  const among = (m: Mixer<I, O>): Iterable<Voice<I, O>> =>
+    score === undefined || m.projecting ? [...m.gone, ...m.cued] : scored(m, score);
   for (const m of mixes)
-    for (const v of [...m.gone, ...m.cued])
+    for (const v of among(m))
       if (
         v !== self &&
         v.spec.score === score &&
@@ -243,7 +274,7 @@ function timeOf<I, O>(
         (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
         (q.writes === undefined || (v.patch.writes as readonly unknown[]).includes(q.writes))
       )
-        found.push({ order: v.id, t: markOf(m, v, mark) });
+        take(v.id, markOf(m, v, mark));
   if (q.writes === undefined && (anywhere || self.owner === null))
     for (const a of mix.announced)
       if (
@@ -252,16 +283,9 @@ function timeOf<I, O>(
         (q.name === undefined || a.name === q.name) &&
         (q.tag === undefined || a.tags.includes(q.tag))
       )
-        found.push({ order: a.order, t: Number.isNaN(a.at) ? undefined : mixAt(mix, a.at) });
-  if (found.length === 0) return undefined;
-  found.sort((x, y) => x.order - y.order);
-  const resolver = q.resolver ?? 'last';
-  if (resolver === 'first') return found[0]?.t;
-  if (resolver === 'last') return found[found.length - 1]?.t;
-  const times = found.flatMap((e) => (e.t === undefined ? [] : [e.t])).sort((x, y) => x - y);
-  if (resolver === 'next') {
-    const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
-    return times.find((t) => t >= now);
-  }
-  return resolver === 'earliest' ? times[0] : times[times.length - 1];
+        take(a.order, Number.isNaN(a.at) ? undefined : mixAt(mix, a.at));
+  if (!any) return undefined;
+  if (resolver === 'first') return first;
+  if (resolver === 'last') return last;
+  return pick;
 }

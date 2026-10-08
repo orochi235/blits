@@ -42,6 +42,7 @@ import { projectAll } from './project.js';
 import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
 import { Outs } from './revive.js';
+import { ScoreIndex } from './scored.js';
 import { seek } from './seek.js';
 import { Fitting, refit } from './spans.js';
 import { Store } from './store.js';
@@ -87,6 +88,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** Under `history`, voices that have left but that a read back may still reach. */
   gone: Voice<I, O>[] = [];
   goneIx = new GoneIndex<I, O>();
+  scored = new ScoreIndex<I, O>();
   /** Set on a projection's own mixer: it sends nothing, keeps no history, and reads without committing. */
   projecting = false;
   /** Set on a projection reading back: a subject it has nothing on starts from its voice's start. */
