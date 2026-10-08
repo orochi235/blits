@@ -3,6 +3,7 @@ import { numericOf } from './channels.js';
 import { crowdable } from './crowd.js';
 import { schedule } from './due.js';
 import { beginFade, beginRise, fadeAt, fadeSubject } from './fade.js';
+import { goneIndex } from './gone.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
 import { noted, remember } from './history.js';
 import type { LaneHost } from './lanes.js';
@@ -59,7 +60,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
     forgot: (slot) => {
       // Only a voice over every subject keeps bits, and one gone may still be read back.
       for (const voice of mix.general) unreach(voice, slot, false);
-      for (const voice of mix.gone) unreach(voice, slot, false);
+      for (const voice of goneIndex(mix).general) unreach(voice, slot, false);
     },
     passes: (was, w) => mix.passes(was, w),
     naming: (subject) => (mix.naming === 0 ? undefined : mix.named.get(subject)),

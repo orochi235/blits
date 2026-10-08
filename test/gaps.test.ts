@@ -61,6 +61,50 @@ describe('a seek back restores what left after it', () => {
     expect(m.probe('a').x).toBe(at384);
   });
 
+  it('brings back what a gone voice held for a subject dropped after the voice left', () => {
+    for (const named of [true, false]) {
+      const m = mix<string, Pose>(K, { ...H, stepMs: 16 });
+      m.sync(0);
+      // A voice over 'b' as well, gone with it, which the drop of 'a' must leave as it was.
+      const h = m.cue({ patch: drift(), ...(named ? { subjects: ['a', 'b'] } : {}) });
+      frames(m, 16, 384);
+      m.probe('b');
+      const at384 = m.probe('a').x;
+      const b384 = m.probe('b').x;
+      m.sync(400);
+      m.probe('a');
+      h.fade({ over: 0 });
+      m.sync(450);
+      m.drop('a');
+      // Its record moved out of the gone voice, which still holds 'b'.
+      const gone = (m as unknown as { gone: { subjects: { get(s: string): unknown } }[] }).gone;
+      expect(gone.map((v) => [v.subjects.get('a'), v.subjects.get('b') !== undefined])).toEqual([
+        [undefined, true],
+      ]);
+      m.sync(500);
+      m.seek(384);
+      expect(m.probe('a').x).toBe(at384);
+      expect(m.probe('b').x).toBe(b384);
+    }
+  });
+
+  it('lets go of gone voices past history and still drops a subject one of them named', () => {
+    const m = mix<string, Pose>(K, { history: { ms: 200, tape }, stepMs: 16 });
+    m.sync(0);
+    for (let k = 0; k < 40; k++) {
+      const h = m.cue({ patch: drift(), subjects: [`s${k}`] });
+      m.sync(16 * (k + 1));
+      m.probe(`s${k}`);
+      h.fade({ over: 0 });
+    }
+    m.sync(16 * 41);
+    for (let k = 0; k < 40; k++) m.drop(`s${k}`);
+    const inner = m as unknown as { gone: unknown[] };
+    // Only what the last 200 ms reaches is still kept.
+    expect(inner.gone.length).toBeLessThan(40);
+    expect(inner.gone.length).toBeGreaterThan(0);
+  });
+
   it("brings back a motion patch's state for a subject dropped after the moment sought", () => {
     const m = mix<string, Pose>(K, { ...H, stepMs: 16 });
     const s = spring<string, Pose>('x', { to: 0, stiffness: 200, damping: 10 });

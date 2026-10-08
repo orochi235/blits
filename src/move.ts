@@ -1,6 +1,7 @@
 import { changed, unindex } from './chain.js';
 import { popDue, schedule } from './due.js';
 import { beginFade, part, retire } from './fade.js';
+import { expireGone, keepGone } from './gone.js';
 import { started } from './held.js';
 import type { Mixer } from './mixer.js';
 import { ownerReading } from './owner.js';
@@ -182,10 +183,9 @@ export function forget<I, O>(mix: Mixer<I, O>): void {
     // With a store a voice that has left pages out where it can, and stays where it cannot.
     if (mix.transport.pager !== null) {
       const reach = mix.now - history.ms;
-      mix.gone = mix.gone.filter((v) => v.doneAt >= reach || !pageVoice(mix, v, reach));
+      keepGone(mix, (v) => v.doneAt >= reach || !pageVoice(mix, v, reach));
     } else {
-      const reach = mix.transport.keepsFrom();
-      mix.gone = mix.gone.filter((v) => v.doneAt >= reach);
+      expireGone(mix, mix.transport.keepsFrom());
     }
   }
 }

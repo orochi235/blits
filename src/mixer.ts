@@ -25,6 +25,7 @@ import {
   slopeFor,
   tick,
 } from './fold.js';
+import { GoneIndex, goneIndex } from './gone.js';
 import type { HandleHost } from './handle.js';
 import { held, shownOf, sinceOf, unreachedOf } from './held.js';
 import { leave, releasing } from './history.js';
@@ -85,6 +86,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   cued: Voice<I, O>[] = [];
   /** Under `history`, voices that have left but that a read back may still reach. */
   gone: Voice<I, O>[] = [];
+  goneIx = new GoneIndex<I, O>();
   /** Set on a projection's own mixer: it sends nothing, keeps no history, and reads without committing. */
   projecting = false;
   /** Set on a projection reading back: a subject it has nothing on starts from its voice's start. */
@@ -541,7 +543,10 @@ export class Mixer<I, O> implements Mix<I, O> {
     for (const voice of this.general) forget(voice);
     const named = this.named.get(subject);
     if (named !== undefined) for (const voice of [...named]) forget(voice);
-    for (const voice of this.gone) forget(voice);
+    const gone = goneIndex(this);
+    for (const voice of gone.general) forget(voice);
+    const goneNaming = gone.named.get(subject);
+    if (goneNaming !== undefined) for (const voice of goneNaming) forget(voice);
     if (this.owners !== null) for (const voice of this.owners) forget(voice);
     for (const voice of this.parters) {
       forget(voice);
