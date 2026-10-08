@@ -413,7 +413,7 @@ export interface SpanHints {
   /** Whether it may jump to its end instead of playing. A span held by a span is never skipped. */
   skip?: boolean;
   /** How hard its own length holds against the span's budget. Default `weak`. */
-  firm?: Strength;
+  priority?: Strength;
 }
 
 export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
@@ -552,7 +552,7 @@ export interface SpanSpec<I, H = unknown> extends OwnerSpec<I, H> {
   /** Its budget, ms on its own clock. Default: none, so its children only keep their order. */
   duration?: number;
   /** How hard the budget holds against its children's own lengths. Default `strong`. */
-  firm?: Strength;
+  priority?: Strength;
   /** How its children are laid out, in the order they were cued. Default `queue`. */
   order?: Order;
   /** How far through the one before a child starts under `stagger`, 0..1. Default 0.5. */
@@ -575,7 +575,7 @@ export interface SpanSpec<I, H = unknown> extends OwnerSpec<I, H> {
  *
  * @category score
  */
-export interface Fitted {
+export interface FitResult {
   /** Its budget, ms on its own clock; Infinity for none. */
   budget: number;
   /** Where its children end, ms on its own clock from its start. */
@@ -594,7 +594,7 @@ export interface Fitted {
  * @category score
  */
 export interface SpanHandle<I = unknown> extends Handle<I> {
-  readonly fitted: Fitted;
+  readonly result: FitResult;
 }
 
 /**

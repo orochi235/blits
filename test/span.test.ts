@@ -50,7 +50,7 @@ describe('spans', () => {
       m.cue({ patch: write(400), loop: false, owner: phase, name: `c${i}`, faster: 4 });
     expect(ends(m, 'c11')).toEqual([2000]);
     expect(ends(m, 'phase')).toEqual([2000]);
-    expect(phase.fitted).toMatchObject({ budget: 2000, over: 0, skipped: 0, fell: false });
+    expect(phase.result).toMatchObject({ budget: 2000, over: 0, skipped: 0, fell: false });
   });
 
   it('collapses children that cannot give way, by default, and the budget holds', () => {
@@ -59,7 +59,7 @@ describe('spans', () => {
     const phase = m.span({ name: 'phase', duration: 500 });
     m.cue({ patch: write(400), loop: false, owner: phase, name: 'a' });
     m.cue({ patch: write(400), loop: false, owner: phase, name: 'b' });
-    expect(phase.fitted).toMatchObject({ skipped: 2, fell: true, over: 0 });
+    expect(phase.result).toMatchObject({ skipped: 2, fell: true, over: 0 });
     expect(ends(m, 'phase')).toEqual([500]);
     m.sync(1);
     expect(m.probe({ id: 'r' }).x).toBe(0);
@@ -71,17 +71,17 @@ describe('spans', () => {
     const phase = m.span({ name: 'phase', duration: 500, spill: 'overrun' });
     m.cue({ patch: write(400), loop: false, owner: phase });
     m.cue({ patch: write(400), loop: false, owner: phase });
-    expect(phase.fitted).toMatchObject({ over: 300, fell: true, skipped: 0 });
+    expect(phase.result).toMatchObject({ over: 300, fell: true, skipped: 0 });
     expect(ends(m, 'phase')).toEqual([800]);
   });
 
   it('runs long without saying so where its budget is weak', () => {
     const m = mix<Row, Pose>(K);
     m.sync(0);
-    const phase = m.span({ duration: 500, firm: 'weak' });
+    const phase = m.span({ duration: 500, priority: 'weak' });
     m.cue({ patch: write(400), loop: false, owner: phase });
     m.cue({ patch: write(400), loop: false, owner: phase });
-    expect(phase.fitted).toMatchObject({ over: 300, fell: false });
+    expect(phase.result).toMatchObject({ over: 300, fell: false });
   });
 
   it('fits late arrivals into what is left, speeding up the one playing without a jump', () => {
@@ -146,8 +146,8 @@ describe('spans', () => {
     m.sync(0);
     const phase = m.span({ duration: 500, fit: lax({ cap: 2 }), spill: 'overrun' });
     m.cue({ patch: write(1500), loop: false, owner: phase, faster: 2 });
-    expect(phase.fitted.length).toBeCloseTo(750);
-    expect(phase.fitted.fell).toBe(false);
+    expect(phase.result.length).toBeCloseTo(750);
+    expect(phase.result.fell).toBe(false);
   });
 
   it('refuses a child with a start of its own, one that never ends, and a plain owner', () => {

@@ -507,15 +507,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      `fn^`, `tweens^`, `weasel^`, `keyses^`, `blend` and `glowc^` within 0.96–1.04×, every row's
      runs overlapping the other side's.
 
-7. **The span vocabulary is picked and in the code, except `fitted` and the hints** (2026-10-07).
-   `span` and `fit` kept their names; `fallback` became `spill`, and the fits became `condense`,
-   `shed`, `conclude`, `overrun`, `pipe` and `lax`, with the retiming before any fit `rescale`
-   (internal). `fitted` and the hints `faster`, `slower`, `overlap`, `skip`, `firm` keep their
-   working names and are unpicked on the sheet; whether they ship as they are is Mike's call.
-   The hints `overlap` and `skip` no longer share a word with the fits that read them.
+7. **The span vocabulary is picked and settled** (2026-10-07). `span` and `fit` kept their names;
+   `fallback` became `spill`, the fits `condense`, `shed`, `conclude`, `overrun`, `pipe` and `lax`,
+   the retiming `rescale` (internal), `handle.fitted` became `handle.result` (type `FitResult`) and
+   the hint `firm` became `priority`; `faster`, `slower` and `overlap` kept theirs. The hint `skip`
+   was picked as `pass` and is **not renamed in the code**: `pass` is already public as a number,
+   `setting.pass` and a hit's `pass`, the loop pass a voice is in. Mike to choose.
 
-9. **The history adapter is built** (2026-10-07, branch `worktree-agent-a522529eca4aeae84`,
-   unmerged): `history.store`, `prepare`, `HistoryMiss`, `keyOf`, `as`/`revive`, `pack`/`unpack`.
+9. **The history adapter is built** (2026-10-07, merged to `main`):
+   `history.store`, `prepare`, `HistoryMiss`, `keyOf`, `as`/`revive`, `pack`/`unpack`.
    The schema page's "History behind a store" describes it, and the spec section lists the calls
    made in building (state kept by order, `store.cut`, the `stretch` stream). Mike has not reviewed
    the design. astv marked its text-run weight `input` (astv `522624e0`); it now names its mixes,

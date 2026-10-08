@@ -36,7 +36,7 @@ export type {
   Engine,
   FadeOptions,
   FadeSpec,
-  Fitted,
+  FitResult,
   Handle,
   HistoryOptions,
   HistoryStore,

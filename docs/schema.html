@@ -726,13 +726,13 @@ intro.fade();       <span class="cm">// one envelope over both</span></code></pr
 <pre><code>const phase = mix.span({ name: 'phase', duration: 2000, order: 'queue' });
 mix.cue({ patch: writeChange(text), owner: phase, faster: 4, skip: true });
 mix.cue({ patch: next, anchor: { start: { after: 'phase' } } });   <span class="cm">// at 2000, or wherever the children end, if later</span>
-phase.fitted;   <span class="cm">// { budget, length, over, skipped, fell }</span></code></pre>
+phase.result;   <span class="cm">// { budget, length, over, skipped, fell }</span></code></pre>
   <div class="tbl"><table>
     <tr><th>On the span</th><th>Means</th></tr>
     <tr><td><code>duration</code></td><td>Its budget, ms on its own clock. Without one the span only keeps its children's order, which makes it a sequencer for voices that arrive late.</td></tr>
     <tr><td><code>order</code>, <code>share</code></td><td><code>queue</code> starts each child once the one before ends, <code>stagger</code> starts it <code>share</code> of the way through (0.5), <code>together</code> starts them all at once. Children are laid out in the order they were cued.</td></tr>
     <tr><td><code>fit</code></td><td>A strategy, a plain function from the span's claim and its children's claims to a rate and a skip per child. It starts from the children already retimed: before any fit, the span moves every child's rate by one factor toward its budget, faster where they run past it and slower where they leave room, each as far as its <code>faster</code> or <code>slower</code> allows. Default <code>pipe(condense(), shed())</code>.</td></tr>
-    <tr><td><code>firm</code></td><td>How hard its length holds, <code>weak</code>, <code>strong</code> (default) or <code>required</code>: against its children here, and against its own span when it is held by one.</td></tr>
+    <tr><td><code>priority</code></td><td>How hard its length holds, <code>weak</code>, <code>strong</code> (default) or <code>required</code>: against its children here, and against its own span when it is held by one.</td></tr>
     <tr><td><code>spill</code></td><td>What happens when the fit leaves the children too long for a span at least <code>strong</code>: <code>instant</code> (default) jumps every child weaker than the span to its end at once, so the budget holds; <code>overrun</code> lets them run long. A <code>weak</code> span runs long and does not count it as falling back.</td></tr>
   </table></div>
   <div class="tbl"><table>
@@ -740,7 +740,7 @@ phase.fitted;   <span class="cm">// { budget, length, over, skipped, fell }</spa
     <tr><td><code>faster</code>, <code>slower</code></td><td>How many times faster or slower than its own rate it may play, which the span's retiming reads before its fit. Default 1: neither.</td></tr>
     <tr><td><code>overlap</code></td><td>It may start before the one before it ends where the order would not have it.</td></tr>
     <tr><td><code>skip</code></td><td>It may jump to its end instead of playing. A span held by a span is never skipped.</td></tr>
-    <tr><td><code>firm</code></td><td>How hard its own length holds against the span's budget. Default <code>weak</code>.</td></tr>
+    <tr><td><code>priority</code></td><td>How hard its own length holds against the span's budget. Default <code>weak</code>.</td></tr>
   </table></div>
   <div class="tbl"><table>
     <tr><th>Strategy</th><th>Does</th></tr>

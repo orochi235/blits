@@ -61,14 +61,14 @@ version and everything else the patch. Each release lists its changes as **Break
   release removes it.
 - `mix.span(spec)` cues an owner that lays out the voices it holds in an `order` (`queue`,
   `stagger`, `together`) and fits them into its `duration`, again whenever one joins or leaves.
-  Each child says how it may give way with `faster`, `slower`, `overlap`, `skip` and `firm`. The
+  Each child says how it may give way with `faster`, `slower`, `overlap`, `skip` and `priority`. The
   span first retimes its children by one factor toward the budget, faster where they run past it
   and slower where they leave room, each as far as its hints allow; then its `fit` decides the
   rest: `condense`, `shed`, `conclude` and `overrun` are exported, `pipe` runs several in turn,
   and `lax` is every one with `overrun` last.
   Where nothing fits, `spill: 'instant'` jumps the weaker children to their end at once and
   `'overrun'` lets the span run long. A span with a budget stays until it has passed, so late
-  children can join, and `handle.fitted` says how the last fit came out.
+  children can join, and `handle.result` says how the last fit came out.
 - `ticker().wake()` asks for a frame. A mix changed before `stop` and not synced since fires
   `onWake` no more, so nothing else starts the loop again; `add` asks for a frame too, as it
   always did, now documented.

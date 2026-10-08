@@ -31,7 +31,7 @@ export interface Claim {
   overlap: boolean;
   /** Whether it may jump to its end instead of playing. */
   skip: boolean;
-  firm: Strength;
+  priority: Strength;
 }
 
 /**
@@ -44,7 +44,7 @@ export interface SpanClaim {
   left: number;
   /** Its whole budget. */
   budget: number;
-  firm: Strength;
+  priority: Strength;
   order: Order;
   /** How far through the one before a staggered child starts, 0..1. */
   share: number;
@@ -261,11 +261,11 @@ export function settle(
   spill: 'instant' | 'overrun',
 ): { plan: FitPlan; fell: boolean } {
   let plan = fit(span, kids, rescale(span, kids, plain(span, kids)));
-  if (fits(span, kids, plan) || rank[span.firm] === 0 || spill === 'overrun')
-    return { plan, fell: !fits(span, kids, plan) && rank[span.firm] > 0 };
+  if (fits(span, kids, plan) || rank[span.priority] === 0 || spill === 'overrun')
+    return { plan, fell: !fits(span, kids, plan) && rank[span.priority] > 0 };
   plan = {
     ...plan,
-    skip: kids.map((k, i) => (plan.skip[i] as boolean) || rank[k.firm] < rank[span.firm]),
+    skip: kids.map((k, i) => (plan.skip[i] as boolean) || rank[k.priority] < rank[span.priority]),
   };
   return { plan, fell: true };
 }

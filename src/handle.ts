@@ -1,5 +1,5 @@
 import { retime } from './clock.js';
-import type { FadeOptions, Fitted, Handle } from './types.js';
+import type { FadeOptions, FitResult, Handle } from './types.js';
 import type { Voice } from './voice.js';
 
 /** What a voice's handle asks of the mix that cued it: one per mix, shared by every handle. */
@@ -74,7 +74,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   /** How a span's children were last fitted; undefined for any voice but a span. */
-  get fitted(): Fitted | undefined {
+  get result(): FitResult | undefined {
     return this.#voice?.fitting?.report;
   }
 

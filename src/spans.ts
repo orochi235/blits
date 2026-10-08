@@ -5,7 +5,7 @@ import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
 import { ownerReading } from './owner.js';
-import type { Fitted, SpanSpec, VoiceSpec } from './types.js';
+import type { FitResult, SpanSpec, VoiceSpec } from './types.js';
 import type { Voice } from './voice.js';
 
 /** What a span keeps beside its owner: its claim, its fit, and how the last fit came out. */
@@ -16,7 +16,7 @@ export class Fitting {
   readonly spill: 'instant' | 'overrun';
   /** Where its children end or its budget does, whichever is later, ms on its own clock. */
   end: number;
-  report: Fitted;
+  report: FitResult;
 
   constructor(spec: SpanSpec<unknown>) {
     const budget = spec.duration ?? Number.POSITIVE_INFINITY;
@@ -24,7 +24,12 @@ export class Fitting {
     const share = spec.share ?? 0.5;
     if (!(share >= 0 && share <= 1)) throw new Error('blits: a span staggers by a share in 0..1');
     this.budget = budget;
-    this.claim = { budget, firm: spec.firm ?? 'strong', order: spec.order ?? 'queue', share };
+    this.claim = {
+      budget,
+      priority: spec.priority ?? 'strong',
+      order: spec.order ?? 'queue',
+      share,
+    };
     this.fit = spec.fit ?? defaultFit;
     this.spill = spec.spill ?? 'instant';
     this.end = Number.isFinite(budget) ? budget : 0;
@@ -82,7 +87,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>): void {
       slower: Math.max(1, s.slower ?? 1),
       overlap: s.overlap === true,
       skip: s.skip === true && c.holding === null,
-      firm: s.firm ?? 'weak',
+      priority: s.priority ?? 'weak',
     };
   });
   const claim: SpanClaim = { ...fitting.claim, left: fitting.budget - local };

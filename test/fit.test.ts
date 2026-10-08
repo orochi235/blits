@@ -22,14 +22,14 @@ const kid = (natural: number, hints: Partial<Claim> = {}): Claim => ({
   slower: 1,
   overlap: false,
   skip: false,
-  firm: 'weak',
+  priority: 'weak',
   ...hints,
 });
 
 const span = (left: number, more: Partial<SpanClaim> = {}): SpanClaim => ({
   left,
   budget: left,
-  firm: 'strong',
+  priority: 'strong',
   order: 'queue',
   share: 0.5,
   ...more,
@@ -131,7 +131,7 @@ describe('strategies', () => {
 describe('settle', () => {
   it('collapses the children weaker than the span when nothing else fits', () => {
     const s = span(100);
-    const kids = [kid(300), kid(300, { firm: 'required' })];
+    const kids = [kid(300), kid(300, { priority: 'required' })];
     const { plan, fell } = settle(s, kids, defaultFit, 'instant');
     expect(fell).toBe(true);
     expect(plan.skip).toEqual([true, false]);
@@ -143,7 +143,7 @@ describe('settle', () => {
       fell: true,
       plan: { skip: [false] },
     });
-    expect(settle(span(100, { firm: 'weak' }), kids, defaultFit, 'instant')).toMatchObject({
+    expect(settle(span(100, { priority: 'weak' }), kids, defaultFit, 'instant')).toMatchObject({
       fell: false,
       plan: { skip: [false] },
     });
