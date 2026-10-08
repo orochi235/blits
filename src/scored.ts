@@ -13,6 +13,28 @@ export class ScoreIndex<I, O> {
   by = new Map<string, Set<Voice<I, O>>>();
   gone: readonly Voice<I, O>[] | null = null;
   goneBy = new Map<string, Voice<I, O>[]>();
+  /** Bumped for a score each time a voice on it is cued, retimed, retired or leaves. */
+  versions = new Map<string, number>();
+}
+
+/**
+ * A voice on its score was cued, retimed, retired or left: what was read of the score is stale. A
+ * host can still retime a gone voice through a handle it kept, so `retimed` on a done voice
+ * replaces its score's gone list too, which starts every read of it over.
+ */
+export function scoreTouched<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, retimed = false): void {
+  const score = voice.spec.score;
+  if (score === undefined) return;
+  const ix = mix.scored;
+  ix.versions.set(score, (ix.versions.get(score) ?? 0) + 1);
+  if (!retimed || voice.state !== 'done') return;
+  const gone = ix.goneBy.get(score);
+  if (gone !== undefined) ix.goneBy.set(score, [...gone]);
+}
+
+/** How many times `score` has been touched in `mix`. */
+export function scoreVersion<I, O>(mix: Mixer<I, O>, score: string): number {
+  return mix.scored.versions.get(score) ?? 0;
 }
 
 function put<I, O>(by: Map<string, Set<Voice<I, O>>>, voice: Voice<I, O>): void {
@@ -90,12 +112,14 @@ export function scoredCut<I, O>(
 
 /** A voice just cued. */
 export function scoredAdd<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
+  scoreTouched(mix, voice);
   const ix = mix.scored;
   if (ix.cued === mix.cued) put(ix.by, voice);
 }
 
 /** Voices no longer cued. */
 export function scoredRemove<I, O>(mix: Mixer<I, O>, voices: Iterable<Voice<I, O>>): void {
+  for (const v of voices) scoreTouched(mix, v);
   const ix = mix.scored;
   if (ix.cued !== mix.cued) return;
   for (const v of voices) {

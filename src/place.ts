@@ -2,7 +2,7 @@ import { noted } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { mixTime, ownerReading } from './owner.js';
-import { scored, scoredGone } from './scored.js';
+import { scored, scoredGone, scoreVersion } from './scored.js';
 import type { Anchor, Mark, Placement, Query, VoiceSpec } from './types.js';
 import { none, type Voice } from './voice.js';
 
@@ -286,6 +286,15 @@ interface Fold<I, O> {
   seen: number;
   pick: Pick;
   owned: Voice<I, O>[];
+  /**
+   * What the cued voices on the score answered, kept while no voice on it has been cued, retimed,
+   * retired or has left since, the cued list is the one it read, and reduced motion is as it was.
+   * Null where one of them reads another voice's clock (an owner's, a fit's, its children's).
+   */
+  live: Pick | null;
+  liveOf: readonly Voice<I, O>[] | null;
+  liveVersion: number;
+  liveReduced: boolean;
 }
 
 /**
@@ -320,14 +329,35 @@ function timeOf<I, O>(
       for (const v of [...m.gone, ...m.cued]) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
       continue;
     }
-    for (const v of scored(m, score)) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
-    // `next` asks what is still ahead of now, which a running pick cannot keep.
     const list = scoredGone(m, score);
+    // `next` asks what is still ahead of now, which a running pick cannot keep.
     if (resolver === 'next') {
+      for (const v of scored(m, score)) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
       for (const v of list) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
       continue;
     }
     const fold = foldOf(m, list, key, mark, self, resolver);
+    const version = scoreVersion(m, score);
+    const reduced = m.reduced;
+    if (
+      fold.live === null ||
+      fold.liveOf !== m.cued ||
+      fold.liveVersion !== version ||
+      fold.liveReduced !== reduced
+    ) {
+      const live = new Pick(resolver, Number.NEGATIVE_INFINITY);
+      let keeps = true;
+      for (const v of scored(m, score)) {
+        if (!matches(v)) continue;
+        if (v.owner !== null || v.holding !== null || v.fitting !== null) keeps = false;
+        live.take(v.id, markOf(m, v, mark));
+      }
+      fold.live = live;
+      fold.liveOf = keeps ? m.cued : null;
+      fold.liveVersion = version;
+      fold.liveReduced = reduced;
+    }
+    picked.merge(fold.live);
     for (; fold.seen < list.length; fold.seen++) {
       const v = list[fold.seen] as Voice<I, O>;
       if (!matches(v)) continue;
@@ -372,6 +402,10 @@ function foldOf<I, O>(
       seen: 0,
       pick: new Pick(resolver, Number.NEGATIVE_INFINITY),
       owned: [],
+      live: null,
+      liveOf: null,
+      liveVersion: -1,
+      liveReduced: false,
     };
     byMix.set(m, fold);
   }

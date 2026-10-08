@@ -4,6 +4,7 @@ import { schedule } from './due.js';
 import type { Mixer } from './mixer.js';
 import { packHeld } from './pack.js';
 import { pageOut } from './paging.js';
+import { scoreTouched } from './scored.js';
 import { type Controls, none, type Subject, type Voice } from './voice.js';
 
 /**
@@ -56,6 +57,7 @@ function ownerThen<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>, t: number): numbe
 
 /** Records a change to a voice's controls under `history`, and lets go of what it no longer reaches. */
 export function noted<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
+  scoreTouched(mix, voice, true);
   mix.stir();
   schedule(mix, voice);
   const log = voice.log;

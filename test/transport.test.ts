@@ -135,84 +135,106 @@ describe('transport', () => {
     expect(starts(t, 'step13')).toEqual([1500]);
   });
 
-  it('answers an anchor on a score as a read of every voice would, as voices go and history lets them go', () => {
-    const resolvers = ['earliest', 'latest', 'first', 'last'] as const;
-    const marks = ['start', 'coast', 'end'] as const;
-    const { t, orbs, runs } = stage({ ms: 2000, tape });
-    t.sync(0);
-    // Each waits pending for good, its start the anchor's answer moved far ahead.
-    const BY = 1_000_000;
-    for (const resolver of resolvers)
-      for (const mark of marks)
-        runs.cue({
-          patch: type(100),
-          name: `${resolver} ${mark}`,
-          loop: false,
-          anchor: { start: { of: { score: 's', tag: 'motion', resolver }, mark, by: BY } },
-        });
-    const expected = (resolver: (typeof resolvers)[number], mark: (typeof marks)[number]) => {
-      const all = t
-        .marks(Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY)
-        .filter((e) => e.score === 's' && e.tags.includes('motion') && e.mark === mark);
-      if (all.length === 0) return undefined;
-      const by = (f: (a: Marked, b: Marked) => number) => (all.sort(f)[0] as Marked).timestamp;
-      const at =
-        resolver === 'earliest'
-          ? by((a, b) => a.timestamp - b.timestamp)
-          : resolver === 'latest'
-            ? by((a, b) => b.timestamp - a.timestamp)
-            : resolver === 'first'
-              ? by((a, b) => (a.voice as number) - (b.voice as number))
-              : by((a, b) => (b.voice as number) - (a.voice as number));
-      return at + BY;
-    };
-    const placed = (name: string) =>
-      t
-        .marks(BY, Number.POSITIVE_INFINITY)
-        .filter((e) => e.name === name && e.mark === 'start')
-        .map((e) => e.timestamp);
-    const check = () => {
+  it.each([
+    ['under history', true],
+    ['without history', false],
+  ])(
+    'answers an anchor on a score as a read of every voice would, as voices come, change and go, %s',
+    (_, kept) => {
+      const resolvers = ['earliest', 'latest', 'first', 'last'] as const;
+      const marks = ['start', 'coast', 'end'] as const;
+      const { t, orbs, runs } = stage(kept ? { ms: 2000, tape } : undefined);
+      t.sync(0);
+      // Each waits pending for good, its start the anchor's answer moved far ahead.
+      const BY = 1_000_000;
       for (const resolver of resolvers)
-        for (const mark of marks) {
-          const want = expected(resolver, mark);
-          if (want !== undefined)
-            expect([resolver, mark, placed(`${resolver} ${mark}`)]).toEqual([
-              resolver,
-              mark,
-              [want],
-            ]);
-        }
-    };
-    const next = (() => {
-      let s = 7;
-      return () => {
-        s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-        return s / 2 ** 32;
-      };
-    })();
-    let now = 0;
-    const run = (frames: number) => {
-      for (let f = 0; f < frames; f++) {
-        now += 16;
-        // Some long, some short, so the one that finishes last is often not the last cued.
-        if (f % 5 === 0)
-          orbs.cue({
-            patch: fly(50 + Math.floor(next() * 900)),
-            score: 's',
-            tags: ['motion'],
+        for (const mark of marks)
+          runs.cue({
+            patch: type(100),
+            name: `${resolver} ${mark}`,
             loop: false,
+            anchor: { start: { of: { score: 's', tag: 'motion', resolver }, mark, by: BY } },
           });
-        if (f % 7 === 0)
-          orbs.cue({ patch: fly(100), score: 'other', tags: ['motion'], loop: false });
-        t.sync(now);
-        if (f % 10 === 0) check();
-      }
-    };
-    run(400);
-    t.seek(now - 1200);
-    check();
-    run(200);
-  });
+      const expected = (resolver: (typeof resolvers)[number], mark: (typeof marks)[number]) => {
+        const all = t
+          .marks(Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY)
+          .filter((e) => e.score === 's' && e.tags.includes('motion') && e.mark === mark);
+        if (all.length === 0) return undefined;
+        const by = (f: (a: Marked, b: Marked) => number) => (all.sort(f)[0] as Marked).timestamp;
+        const at =
+          resolver === 'earliest'
+            ? by((a, b) => a.timestamp - b.timestamp)
+            : resolver === 'latest'
+              ? by((a, b) => b.timestamp - a.timestamp)
+              : resolver === 'first'
+                ? by((a, b) => (a.voice as number) - (b.voice as number))
+                : by((a, b) => (b.voice as number) - (a.voice as number));
+        return at + BY;
+      };
+      const placed = (name: string) =>
+        t
+          .marks(BY, Number.POSITIVE_INFINITY)
+          .filter((e) => e.name === name && e.mark === 'start')
+          .map((e) => e.timestamp);
+      const check = () => {
+        for (const resolver of resolvers)
+          for (const mark of marks) {
+            // A voice faded before its last pass never coasts, which `first` and `last` answer as
+            // unknown, and a list of marks cannot show.
+            if (mark === 'coast' && (resolver === 'first' || resolver === 'last')) continue;
+            const want = expected(resolver, mark);
+            if (want !== undefined)
+              expect([resolver, mark, placed(`${resolver} ${mark}`)]).toEqual([
+                resolver,
+                mark,
+                [want],
+              ]);
+          }
+      };
+      const next = (() => {
+        let s = 7;
+        return () => {
+          s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+          return s / 2 ** 32;
+        };
+      })();
+      let now = 0;
+      const live: ReturnType<typeof orbs.cue>[] = [];
+      const run = (frames: number) => {
+        for (let f = 0; f < frames; f++) {
+          now += 16;
+          // Some long, some short, so the one that finishes last is often not the last cued.
+          if (f % 5 === 0)
+            live.push(
+              orbs.cue({
+                patch: fly(50 + Math.floor(next() * 900)),
+                score: 's',
+                tags: ['motion'],
+                loop: false,
+                // Retired frames after its fade begins, not in the same sync.
+                fade: { out: 120 },
+              }),
+            );
+          // The host retimes or fades one in flight now and then, which moves its marks.
+          if (f % 5 === 2 && live.length > 0) {
+            const h = live[Math.floor(next() * live.length)];
+            if (next() < 0.5) h?.ramp(0.5 + next(), 100);
+            else h?.fade({ over: 50 });
+          }
+          if (f % 7 === 0)
+            orbs.cue({ patch: fly(100), score: 'other', tags: ['motion'], loop: false });
+          t.sync(now);
+          // A retime reaches the anchors waiting on it at the next sync.
+          if (f % 10 === 0 || f % 5 === 3) check();
+        }
+      };
+      run(400);
+      if (!kept) return;
+      t.seek(now - 1200);
+      check();
+      run(200);
+    },
+  );
 
   it('lists every mix and every announced mark, each naming its mix', () => {
     const { t, orbs, runs } = stage();

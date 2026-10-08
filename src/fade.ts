@@ -6,6 +6,7 @@ import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
 import { orphan } from './owner.js';
 import { startOf } from './place.js';
+import { scoreTouched } from './scored.js';
 import { lingers, refit } from './spans.js';
 import { unreach } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
@@ -177,6 +178,7 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
   const motion = voice.motion;
   if (motion !== undefined && asks(mix, motion, voice)) motion.owner = null;
   voice.state = 'done';
+  scoreTouched(mix, voice);
   // The record its setting last wrote to, which a retired voice no longer calls for.
   voice.keepOn = null;
   mix.retired.push(voice);
