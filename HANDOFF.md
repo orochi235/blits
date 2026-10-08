@@ -401,8 +401,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
 
-1d. **`@msb235/blits-quarks` 0.3.0 is on npm**, pinned to engine 0.7.0 and published from its
-   `quarks-v0.3.0` tag (0.1.0 went out by hand, because npm refuses trust for a name never
+1d. **`@msb235/blits-quarks` 0.3.1 is on npm**, pinned to engine 0.7.1 and published from its
+   `quarks-v0.3.1` tag (0.1.0 went out by hand, because npm refuses trust for a name never
    published). Its README says how it works. magicsmoke is on engine 0.6.0 (`08d27df`, not
    pushed) but its fizz and tuning stay on its own code: the driver doesn't fit without changing
    what magicsmoke does. Its `docs/HANDOFF.md` has the gaps; the likely driver changes are a
