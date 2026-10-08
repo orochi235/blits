@@ -469,19 +469,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      every lane already rests. A profile of it (teitou, 20,000 frames) puts about 55% in the
      general path's fold, 11% in lane bookkeeping and 11% in voice clocks. astv's real text runs
      write `last` over row objects, which no lane runs, so this change does not reach them.
-   - **Too fast to see — decide: when a voice is shorter than the gap between two frames, should
-     blits show it at all?** Today it plays as timed: a voice whose whole span falls between two
-     syncs is never sampled mid-way, and is shown only if it freezes after. The choice is between
-     leaving that, jumping straight to its last frame (one frame shown, so text that types in
-     still ends typed), or stretching it to last a minimum number of frames, which moves its end
-     and anything anchored to it. Recommended: a per-voice option defaulting to today, offering
-     the jump; stretching changes timing the host set and that other voices wait on.
-   - **Flicker — decide: should blits limit how often a channel that carries brightness may flip
-     on one subject, and if so, change the output or only warn?** The kit would mark which
-     channels carry brightness; blits can count reversals per subject against WCAG's 3 a second,
-     stricter than WCAG, which also weighs the flashing area only the host knows. Recommended: a
-     development-time warning naming the voice and subject, with no clamping, since a clamp would
-     change the pose silently on a guess about area.
+   - **Too fast to see — decided: no change** (Mike, 2026-10-07). A voice too brief to affect the
+     scene is not shown: one whose whole span falls between two syncs is never sampled mid-way,
+     and shows only by freezing after. No jump, no stretch to a minimum number of frames.
+   - **Flicker — decided: opt-in only, for now** (Mike, 2026-10-07). Flicker, or protection from it,
+     is something a host adds to its own pipeline; blits marks no brightness channels and counts
+     nothing on its own. Nothing is built; an opt-in limiter would be a signal or channel wrapper,
+     and could warn rather than clamp.
    A reach that changes over time (item 4) is another way to say offscreen.
 
 6. **Color as a value: `color()` is built** (branch `color`, 2026-10-07); the schema page's
