@@ -1,4 +1,4 @@
-// Pulls the doc comments of VoiceSpec, Handle and MixOptions members out of blits' types for field tooltips.
+// Pulls the doc comments of VoiceSpec, Handle, Mix and MixOptions members out of blits' types for field tooltips.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Application } from 'typedoc';
@@ -17,7 +17,7 @@ const textOf = (comment) =>
     .join('')
     .trim();
 const out = {};
-for (const name of ['VoiceSpec', 'Handle', 'MixOptions']) {
+for (const name of ['VoiceSpec', 'Handle', 'Mix', 'MixOptions']) {
   const decl = project?.getChildByName(name);
   for (const child of decl?.children ?? []) {
     const text = textOf(child.comment) ?? textOf(child.signatures?.[0]?.comment);

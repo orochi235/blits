@@ -134,6 +134,19 @@ describe('Player', () => {
     expect(bits(p.columns)).toEqual(want);
   });
 
+  it('a live mix rate reaches the full mix and every solo, until a rebuild', () => {
+    const p = player();
+    p.seek(100);
+    p.liveMix((m) => {
+      m.rate = 0.5;
+    });
+    expect(p.livened).toBe(true);
+    expect(p.built.mix.rate).toBe(0.5);
+    for (const m of p.built.solos.values()) expect(m.rate).toBe(0.5);
+    p.rebuild(c.levels);
+    expect(p.built.mix.rate).toBe(1);
+  });
+
   it('a solo pulls one voice', () => {
     const p = player();
     p.seek(400);

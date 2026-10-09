@@ -1,6 +1,7 @@
 import type { Level } from '@pg/blits/composition';
 import { Transport as WeaselTransport } from '@weasel-js/ui';
 import s from './App.module.css';
+import { docOf } from './docs';
 
 export interface TransportProps {
   playing: boolean;
@@ -13,6 +14,9 @@ export interface TransportProps {
   length: number;
   live: boolean;
   onLive(l: boolean): void;
+  /** The full mix's own rate: its voices slow while the score's clock runs on. */
+  mixRate: number;
+  onMixRate(r: number): void;
   /** Whether a live change is in force; the next edit or seek back drops it. */
   livened: boolean;
   levels: readonly Level[];
@@ -39,6 +43,21 @@ export function Transport(p: TransportProps) {
         <input type="checkbox" checked={p.live} onChange={(e) => p.onLive(e.target.checked)} />
         live
       </label>
+      {p.live && (
+        <label className={s.level} title={docOf('Mix.rate')}>
+          mix rate
+          <input
+            type="number"
+            min={0}
+            step={0.25}
+            value={p.mixRate}
+            onChange={(e) => {
+              const r = e.target.valueAsNumber;
+              if (Number.isFinite(r) && r >= 0) p.onMixRate(r);
+            }}
+          />
+        </label>
+      )}
       {p.levels.map((l) => (
         <label key={l.name} className={s.level}>
           {l.name}

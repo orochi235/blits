@@ -1,4 +1,4 @@
-import type { Handle, Patch } from '@msb235/blits';
+import type { Handle, Mix, Patch } from '@msb235/blits';
 import { type Built, FRAME } from './compile';
 import type { Level } from './composition';
 import type { Mixed } from './kit';
@@ -149,6 +149,13 @@ export class Player {
       const p = voices.patches.get(id);
       if (h && p) act(h, p, solo === id);
     }
+    this.isLive = true;
+  }
+
+  /** Acts on the full mix and every solo mix as they run; lasts as long as `live`'s changes. */
+  liveMix(act: (mix: Mix<Subject, Mixed>) => void): void {
+    act(this.built.mix);
+    for (const m of this.built.solos.values()) act(m);
     this.isLive = true;
   }
 

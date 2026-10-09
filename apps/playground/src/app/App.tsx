@@ -280,6 +280,13 @@ export function App() {
             live={live}
             onLive={setLive}
             livened={player.livened}
+            mixRate={player.built.mix.rate}
+            onMixRate={(r) => {
+              player.liveMix((m) => {
+                m.rate = r;
+              });
+              tick();
+            }}
             levels={comp.levels}
             moved={player.moved}
             onLevel={(name, v) => {
