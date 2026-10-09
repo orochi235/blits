@@ -585,6 +585,27 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 
+14. **The 2026-10-09 code review, steps 3–9.** The review is the doc "blits code review,
+    2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5); its findings
+    are numbered there. Steps 1 and 2 are built on `review-fixes`: the local fixes, the lanes
+    fuzzer (`test/differential.test.ts`), the determinism suite (`test/determinism.test.ts`) and
+    `npm run test:general`. Step 3 (issue B) and step 4 (issue A) are next; fixing either flips seeds
+    on `determinism.test.ts`'s known lists, which then have to be updated. Open beyond the doc:
+    - **An anchor to a voice that already left waits forever** without history, and keeps the mix
+      awake. It cannot be told from one waiting on a voice not cued yet, which is by design;
+      remembering departed names is Mike's call. `{start: {after: 'a'}, end: {with: 'a'}}`, an end
+      before the start, is silently never played.
+    - **Finding #10 is cause C in `determinism.test.ts`**: a fade-out due before a voice's first live
+      frame is skipped on that frame (cue `start: 100`, `fade({ over: 200, at: 82 })` at 32: x at
+      128 reads 10.0 at 32 ms frames, 8.6 at 16 ms, 7.7 by rights).
+    - **`project` after a subject is faded out of a voice and then dropped** reads the voice on lanes
+      and nothing off them; after the `drop` both paths show the subject live again, which `fade`'s
+      docs say only a motion's `to` does. Repro in `differential.test.ts`'s `dropAfterFade` skip.
+    - **Finding #18**: a `last()` or OKLCH channel in a locus picks by cue order, not weight.
+    - **The weight-0 band reset runs on the general path only** (`unband` in `fold.ts`). Lanes reach
+      it through the shared record in every case the tests and the fuzzer cover; a lane that skips a
+      subject at weight 0 without the general path visiting it would keep a stale band.
+
 ## Loose ends
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
