@@ -136,7 +136,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   canvas on the page is view-only; the Voice tab's `Timeline` probably is not. weasel's
   `docs/TODO.md` holds the general fix, "A canvas's keyboard shortcuts claim keys page-wide".
   On 1.9.2 the flow diagram's labels render in Times: weasel quoted `sans-serif` as a family name.
-  Fixed in weasel `c0e44a135` (unreleased as of 2026-10-09); the next weasel bump picks it up.
+  Fixed in weasel `6a1afa10e` (unreleased as of 2026-10-09); the next weasel bump picks it up.
   Still missing, and blocking view B: container nodes for `locus` groups, weasel `docs/TODO.md`,
   "(P2) Diagram groups".
 
