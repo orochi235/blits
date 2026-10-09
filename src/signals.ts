@@ -79,7 +79,8 @@ export function slew<I, H = unknown>(
       const gap = target - held.value;
       const ms = gap > 0 ? riseMs : fallMs;
       if (ms > 0) {
-        const step = (setting.timestamp - held.seen) / ms;
+        // No longer than `dt`, which `maxDt` caps, as every step is.
+        const step = Math.min(setting.timestamp - held.seen, setting.dt) / ms;
         next = gap > 0 ? Math.min(target, held.value + step) : Math.max(target, held.value - step);
       }
     }
@@ -117,7 +118,7 @@ export function lag<I, H = unknown>(
     if (!Number.isNaN(held.seen) && Number.isFinite(setting.dt)) {
       const ms = target > held.value ? riseMs : fallMs;
       if (ms > 0) {
-        const gap = setting.timestamp - held.seen;
+        const gap = Math.min(setting.timestamp - held.seen, setting.dt);
         next = held.value + (target - held.value) * (1 - Math.exp(-gap / ms));
         if (Math.abs(target - next) <= floor) next = target;
       }

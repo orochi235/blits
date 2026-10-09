@@ -228,3 +228,20 @@ describe('peak', () => {
     expect(peak(a, b)(part, frame(16, 16))).toBe(0.2);
   });
 });
+
+describe.each([
+  ['slew', () => slew<Part>(() => 1, { riseMs: 1000, from: 0 })],
+  ['lag', () => lag<Part>(() => 1, { riseMs: 1000, from: 0 })],
+] as const)('%s under maxDt', (_name, make) => {
+  it('moves by no more than maxDt across a long gap', () => {
+    const m = mix<Part, Pose>(PART, { maxDt: 50, lanes: false });
+    const crawl = patch<Part, Pose>(0, () => ({ crawl: 1 }), { writes: ['crawl'] });
+    m.cue({ patch: crawl, weight: make() });
+    m.sync(0);
+    expect(m.probe(part).crawl).toBe(0);
+    m.sync(10_000);
+    const w = m.probe(part).crawl;
+    expect(w).toBeGreaterThan(0);
+    expect(w).toBeLessThanOrEqual(0.05 + 1e-9);
+  });
+});
