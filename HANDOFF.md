@@ -585,37 +585,44 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 
-14. **The 2026-10-09 code review, steps 3–9.** The review is the doc "blits code review,
+14. **The 2026-10-09 code review, steps 5–9.** The review is the doc "blits code review,
     2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5); its findings
-    are numbered there, and its Status section says which steps are done. Steps 1 and 2 are on
-    `main` (`1206569`): the local fixes, the lanes fuzzer (`test/differential.test.ts`), the
-    determinism suite (`test/determinism.test.ts`) and `npm run test:general`. Step 3 (issue B) is
-    on `main` too (`493fb15`): every voice keeps the clocks it ran on (`src/origin.ts`), and a
-    subject's origin is when its voice's clock first read its delay on them.
+    are numbered there, and its Status section says which steps are done. Steps 1 to 4 are on
+    `main`: the local fixes, the lanes fuzzer (`test/differential.test.ts`), the determinism suite
+    (`test/determinism.test.ts`, which now holds no known failure over 150 seeds per property and
+    variant), issue B (`src/origin.ts`), and issue A with findings #10 and #13.
     **Mike, 2026-10-09: work steps 3 to 9, then item 12's audit, chaining sessions (the
     `pass-the-baton` skill) until the whole plan is finished**, each session updating this item and
-    the doc's Status section as a step lands. Next is step 4 (issue A); fixing it flips seeds on
-    `determinism.test.ts`'s known lists, which then have to be updated. Each
-    step goes in a worktree off `main`, since another session works on the playground and item 13
-    in a worktree of its own; ask it before editing this file, and merge with `--ff-only` once both
-    `onto test` and the lanes-off suite pass on the fleet. Step 6's version bump and publish are
-    Mike's call: stop and ask there, never bump to 1.0.0. Measure any hot-path change with
-    `AB_EACH=1 bench/ab.sh <origin/main sha> . <rounds> <rows>` on a fleet node (`.` is the synced
-    working tree). Open beyond the doc:
+    the doc's Status section as a step lands. Next is step 5 (lanes invalidation; #6, #15 and #16
+    stand as expected-to-fail tests). Each step goes in a worktree off `main`, since another session
+    works on the playground and item 13 in a worktree of its own; ask it before editing this file,
+    and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. Step
+    6's version bump and publish are Mike's call: stop and ask there, never bump to 1.0.0. Measure
+    any hot-path change with `AB_EACH=1 bench/ab.sh <origin/main sha> . <rounds> <rows>` on a fleet
+    node (`.` is the synced working tree). Decided while building, and open beyond the doc:
     - **Step 3 took the doc's proposed default, exact catch-up**: a stateful subject met late steps
       from its origin, capped by `maxDt`. The per-voice `catchUp: 'fresh'` alternative is not built.
       A voice keeps at most 256 past clocks; past that, an origin on a clock it dropped is worked
       back from the oldest it kept.
-    - **The seeds tagged B that still failed after step 3 are #4**: each seeks a handle past the
-      voice's end, which files it done before its cue. They are on the A lists now.
+    - **Step 4 numbers frames, not calls**: `Transport.seq` is bumped by each sync, seek and call
+      the tape plays again, and history entries carry the frame they were made in; within a frame,
+      list order and the existing `sync` flag tell calls apart. The tape stamps calls with host
+      time, which replay needs to land a call made during rate 0 at its own frame. A seek or read
+      to mix time `t` lands on the last frame at or before `t`; `seek({ frame })`, which the doc
+      offers for an earlier frame at the same mix time, is not built.
+    - **`HistoryStore.cut` now takes a `seq`, and a store keys records by `seq`, not `at`**, which
+      changes the store contract: step 6's release notes have to say so.
+    - **A seek onto a frame's own time no longer moves the mix again**, except that anchors are
+      placed again where history has already let go of a voice that moment still knew
+      (`Transport.forgotTo`): the restored placement could name a voice the mix no longer lists.
+    - **A handle `seek` on a pending voice whose pinned start is still ahead is undone when the
+      start arrives**: `startAt` in `place.ts` sets the clock back to 0. Found 2026-10-09 through
+      determinism seed `ahead`/full/139; whether the seek or the start should win is undecided.
     - **A placement whose end comes before its start**, `{start: {after: 'a'}, end: {with: 'a'}}`,
       is silently never played. An anchor to a voice that already left now resolves
       (`src/departed.ts`): decided 2026-10-09 to keep mixes without history, since history roughly
       doubles a stepped patch's frame cost and holds about 500 B per subject per copy, and to keep
       departed voices' marks on every mix instead.
-    - **Finding #10 is cause C in `determinism.test.ts`**: a fade-out due before a voice's first live
-      frame is skipped on that frame (cue `start: 100`, `fade({ over: 200, at: 82 })` at 32: x at
-      128 reads 10.0 at 32 ms frames, 8.6 at 16 ms, 7.7 by rights).
     - **`project` after a subject is faded out of a voice and then dropped** reads the voice on lanes
       and nothing off them; after the `drop` both paths show the subject live again, which `fade`'s
       docs say only a motion's `to` does. Repro in `differential.test.ts`'s `dropAfterFade` skip.
