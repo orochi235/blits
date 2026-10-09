@@ -520,15 +520,18 @@ export function foldLoci<I, O>(
         k.values[slot] = undefined;
         const key = this.names[slot] as string;
         const channel = this.channels[slot] as Channel<unknown>;
+        // A channel folds at the weight of the members that wrote it, not the whole locus.
+        const taken = k.taken[slot] as number;
+        const w = taken > 1 ? 1 : taken;
         if (channel.rest !== undefined && channel.scale) {
           // pose[key] is the copy of rest this fold made, so it is ours to write into.
           pose[key] = channel.fold
-            ? channel.fold(pose[key], value, weight)
-            : merged(channel, pose[key], channel.scale(value, weight));
+            ? channel.fold(pose[key], value, w)
+            : merged(channel, pose[key], channel.scale(value, w));
           continue;
         }
         const band = on[slot] as number;
-        const passes = this.passes(band === 0 ? undefined : band === 1, weight);
+        const passes = this.passes(band === 0 ? undefined : band === 1, w);
         on[slot] = passes ? 1 : 2;
         if (passes)
           pose[key] = pose[key] === undefined ? copy(value) : merged(channel, pose[key], value);

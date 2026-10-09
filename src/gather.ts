@@ -114,10 +114,12 @@ export function foldLocus<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, g: Locus<I
     if (g.met[slot] !== fills || g.first[slot] !== id) continue;
     const sum = g.sum[slot] as number;
     if (sum <= 0) continue;
-    const w = sum > 1 ? 1 : sum;
     for (let k = 0; k < g.values.length; k++) {
       const takenAt = g.taken[k];
-      if (takenAt === undefined || !((takenAt[slot] as number) > 0)) continue;
+      const taken = takenAt === undefined ? 0 : (takenAt[slot] as number);
+      if (!(taken > 0)) continue;
+      // A channel folds at the weight of the members that wrote it, not the whole locus.
+      const w = taken > 1 ? 1 : taken;
       const ch = lanes.laned[k] as Laned;
       const values = g.values[k] as Float64Array;
       const into = ch.values;

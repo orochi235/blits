@@ -564,3 +564,21 @@ describe('fading one subject out of a voice', () => {
     expect(m.probe(a).crawl).toBeCloseTo(5, 9);
   });
 });
+
+describe.each([true, false])('a channel only some locus members write, lanes %s', (lanes) => {
+  it('folds at the weight of the members that write it, not the whole locus', () => {
+    const both = keys<Part, Pose>(0, [{ at: 0, delta: { crawl: 10, dark: 0.8 } }]);
+    const one = keys<Part, Pose>(0, [{ at: 0, delta: { crawl: 20 } }]);
+    const m = mix<Part, Pose>(PART, { lanes });
+    const a = m.cue({ patch: both, locus: 'swap', weight: 0.5 });
+    const b = m.cue({ patch: one, locus: 'swap', weight: 0.5 });
+    m.sync(0);
+    expect(m.probe(part).crawl).toBeCloseTo(15);
+    expect(m.probe(part).dark).toBeCloseTo(0.4);
+    a.weight = 0.01;
+    b.weight = 0.99;
+    m.sync(16);
+    expect(m.probe(part).crawl).toBeCloseTo(19.9);
+    expect(m.probe(part).dark).toBeCloseTo(0.008);
+  });
+});
