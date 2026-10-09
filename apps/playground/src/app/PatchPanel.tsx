@@ -1,4 +1,4 @@
-import { hexOf } from '@pg/blits/color';
+import type { Easing } from '@msb235/blits';
 import type { FieldError } from '@pg/blits/compile';
 import {
   type Expr,
@@ -13,9 +13,12 @@ import { CHANNELS, type ChannelName, KIT } from '@pg/blits/kit';
 import { CodePane } from '@pg/widgets/CodePane';
 import { ExprInput } from '@pg/widgets/ExprInput';
 import type { SampledTrack } from '@weasel-js/core';
-import { EasingPicker, type KeyEditorCtx, Timeline } from '@weasel-js/ui';
+import { Timeline } from '@weasel-js/ui';
 import { useState } from 'react';
 import s from './App.module.css';
+import { ChannelTiming } from './ChannelTiming';
+import { EaseField } from './EaseField';
+import { KeyEditor } from './KeyEditor';
 import { WaveFields } from './WaveFields';
 
 type Kind = PatchSource['kind'];
@@ -29,7 +32,11 @@ const OPTIONS: Record<Motion['kind'], readonly string[]> = {
   tween: ['from', 'to', 'ms'],
 };
 
-const NAMED_EASES = ['linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out'] as const;
+/** The patch with `ease` set, or dropped so blits' default applies. */
+function eased<P extends { ease?: Easing }>(p: P, ease: Easing | undefined): P {
+  const { ease: _, ...rest } = p;
+  return (ease === undefined ? rest : { ...rest, ease }) as P;
+}
 
 /** Errors on the patch as a whole, which no single field shows; so are errors on options it has no field for. */
 const WHOLE = new Set(['stops', 'writes', 'opts']);
@@ -72,50 +79,6 @@ function parsed(text: string): number | number[] | Expr | undefined {
       return v as number | number[];
   } catch {}
   return { code: t };
-}
-
-/** The selected key's value as inputs shaped to its channel, and the curve into it. */
-function KeyEditor({ key: k, track, commit, setEasing }: KeyEditorCtx) {
-  const ch = track.label as ChannelName;
-  const set = (value: unknown) => commit({ ...k, value });
-  const num = (value: number, on: (n: number) => void, label: string) => (
-    <input
-      key={label}
-      type="number"
-      step="any"
-      aria-label={label}
-      value={value}
-      onChange={(e) => {
-        if (Number.isFinite(e.target.valueAsNumber)) on(e.target.valueAsNumber);
-      }}
-    />
-  );
-  return (
-    <div className={s.field}>
-      <div className={s.row}>
-        {ch} at {Math.round(k.t)} ms
-        {ch === 'color' ? (
-          <input
-            type="color"
-            aria-label="color"
-            value={hexOf(k.value as number)}
-            onChange={(e) => set(Number.parseInt(e.target.value.slice(1), 16))}
-          />
-        ) : Array.isArray(k.value) ? (
-          (k.value as number[]).map((x, i) =>
-            num(
-              x,
-              (n) => set((k.value as number[]).map((y, j) => (j === i ? n : y))),
-              `${ch} ${i}`,
-            ),
-          )
-        ) : (
-          num(k.value as number, set, ch)
-        )}
-      </div>
-      <EasingPicker value={k.easing} onChange={setEasing} />
-    </div>
-  );
 }
 
 export interface PatchPanelProps {
@@ -195,24 +158,32 @@ export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelP
         </ul>
       )}
       {p.kind === 'keys' && (
-        <div className={s.timeline}>
-          <Timeline
-            tracks={tracksOf(p.stops, p.period)}
-            duration={p.period}
-            playhead={phase}
-            mode={mode}
-            onModeChange={setMode}
-            transport={false}
-            onScrub={() => {}}
-            renderKeyEditor={KeyEditor}
-            onChange={(tracks) =>
-              set({
-                ...p,
-                stops: stopsOf(tracks as SampledTrack<unknown>[], p.period, p.stops),
-              })
-            }
+        <>
+          <div className={s.timeline}>
+            <Timeline
+              tracks={tracksOf(p.stops, p.period)}
+              duration={p.period}
+              playhead={phase}
+              mode={mode}
+              onModeChange={setMode}
+              transport={false}
+              onScrub={() => {}}
+              renderKeyEditor={KeyEditor}
+              onChange={(tracks) =>
+                set({
+                  ...p,
+                  stops: stopsOf(tracks as SampledTrack<unknown>[], p.period, p.stops),
+                })
+              }
+            />
+          </div>
+          <EaseField
+            label="ease, every segment no stop overrides"
+            value={p.ease}
+            onChange={(ease) => set(eased(p, ease))}
           />
-        </div>
+          <ChannelTiming patch={p} onChange={set} />
+        </>
       )}
       {p.kind === 'fn' && (
         <>
@@ -283,21 +254,7 @@ export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelP
             />
           ))}
           {p.kind === 'tween' && (
-            <label className={s.row}>
-              ease
-              <select
-                value={typeof p.ease === 'string' ? p.ease : 'ease'}
-                onChange={(e) =>
-                  set({ ...p, ease: e.target.value as (typeof NAMED_EASES)[number] })
-                }
-              >
-                {NAMED_EASES.map((x) => (
-                  <option key={x} value={x}>
-                    {x}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <EaseField label="ease" value={p.ease} onChange={(ease) => set(eased(p, ease))} />
           )}
         </>
       )}

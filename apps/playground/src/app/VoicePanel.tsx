@@ -5,6 +5,7 @@ import { ExprInput } from '@pg/widgets/ExprInput';
 import { type ConfigField, ControlPanel, fromConfigFields } from '@weasel-js/labkit';
 import s from './App.module.css';
 import { docOf } from './docs';
+import { EaseField } from './EaseField';
 import { WeightField } from './WeightField';
 
 const FIELDS: ConfigField[] = [
@@ -112,6 +113,16 @@ export function VoicePanel({ voice: v, errors, faults, onChange, onDelete }: Voi
         config={config}
         setConfig={(path, value) => onChange(written(v, path, value))}
       />
+      <div title={docOf('VoiceSpec.fade')}>
+        <EaseField
+          label="fade ease"
+          value={v.fade.ease}
+          onChange={(ease) => {
+            const { ease: _, ...fade } = v.fade;
+            onChange({ ...v, fade: ease === undefined ? fade : { ...fade, ease } });
+          }}
+        />
+      </div>
       {loose.length > 0 && (
         <div role="alert">
           <ul className={s.errors} aria-label="voice errors">

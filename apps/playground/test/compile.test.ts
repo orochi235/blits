@@ -144,6 +144,39 @@ describe('compile', () => {
     same(built.mix, hand);
   });
 
+  it('a keys voice with per-channel eases and delays gives the hand-written poses', () => {
+    const stops = [
+      { at: 0, delta: { scale: 1, turn: 0 } },
+      { at: 1, delta: { scale: 2, turn: 90 } },
+    ];
+    const built = compile(
+      comp([
+        voice({
+          id: 'k',
+          patch: {
+            kind: 'keys',
+            period: 1000,
+            stops,
+            ease: 'ease-in',
+            easeBy: { turn: { steps: 4, jump: 'end' } },
+            delayBy: { scale: 250 },
+          },
+        }),
+      ]),
+      subjects,
+    );
+    const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
+    hand.cue({
+      patch: keys<(typeof subjects)[0], Mixed>(1000, stops.map(mixedStop), {
+        ease: 'ease-in',
+        easeBy: (ch) => (ch === 'turn' ? { steps: 4, jump: 'end' } : undefined),
+        delayBy: (ch) => (ch === 'scale' ? 250 : 0),
+      }),
+    });
+    expect(built.errors).toEqual([]);
+    same(built.mix, hand);
+  });
+
   it('a wave voice gives the hand-written poses, swinging scale around its rest', () => {
     const swing = voice({
       id: 'w',

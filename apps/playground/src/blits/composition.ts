@@ -18,7 +18,16 @@ export type StageSpec =
   | { kind: 'letters'; text: string };
 
 export type PatchSource =
-  | { kind: 'keys'; period: number; stops: Keyframe<Pose>[]; ease?: Easing }
+  | {
+      kind: 'keys';
+      period: number;
+      stops: Keyframe<Pose>[];
+      ease?: Easing;
+      /** A curve for one channel, where it differs from `ease`. */
+      easeBy?: Partial<Record<ChannelName, Easing>>;
+      /** Milliseconds a channel waits before it starts moving. */
+      delayBy?: Partial<Record<ChannelName, number>>;
+    }
   | { kind: 'fn'; period: number; writes: ChannelName[]; at: string; state?: string; step?: string }
   | {
       kind: 'wave';

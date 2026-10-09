@@ -151,7 +151,12 @@ const messageOf = (err: unknown) => (err instanceof Error ? err.message : String
 function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Mixed, unknown> | undefined {
   if (p.kind === 'keys') {
     try {
-      return keys<Subject, Mixed>(p.period, p.stops.map(mixedStop), p.ease ? { ease: p.ease } : {});
+      const { easeBy, delayBy } = p;
+      return keys<Subject, Mixed>(p.period, p.stops.map(mixedStop), {
+        ...(p.ease ? { ease: p.ease } : {}),
+        ...(easeBy ? { easeBy: (ch) => easeBy[ch] } : {}),
+        ...(delayBy ? { delayBy: (ch) => delayBy[ch] ?? 0 } : {}),
+      });
     } catch (err) {
       fail('stops', messageOf(err));
       return undefined;

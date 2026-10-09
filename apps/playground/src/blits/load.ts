@@ -33,6 +33,8 @@ const easing = (v: unknown) =>
   (obj(v) && Array.isArray(v.bezier) && v.bezier.length === 4 && v.bezier.every(num)) ||
   (obj(v) && count(v.steps) && opt(v.jump, oneOf('start', 'end')));
 
+const byChannel = (ok: (v: unknown) => boolean) => (v: unknown) =>
+  obj(v) && Object.entries(v).every(([k, x]) => channel(k) && ok(x));
 const stop = (v: unknown) => obj(v) && num(v.at) && obj(v.delta) && opt(v.ease, easing);
 const option = (v: unknown) => num(v) || (Array.isArray(v) && v.every(num)) || expr(v);
 
@@ -40,7 +42,14 @@ function patch(p: unknown): boolean {
   if (!obj(p)) return false;
   switch (p.kind) {
     case 'keys':
-      return num(p.period) && Array.isArray(p.stops) && p.stops.every(stop) && opt(p.ease, easing);
+      return (
+        num(p.period) &&
+        Array.isArray(p.stops) &&
+        p.stops.every(stop) &&
+        opt(p.ease, easing) &&
+        opt(p.easeBy, byChannel(easing)) &&
+        opt(p.delayBy, byChannel(num))
+      );
     case 'fn':
       return (
         num(p.period) &&

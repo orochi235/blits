@@ -30,6 +30,14 @@ describe('load', () => {
       { kind: 'glide', channel: 'turn', opts: { from: { code: '(s) => s.col' } } },
       { kind: 'tween', channel: 'scale', opts: { from: 1, to: 2, ms: 300 }, ease: 'ease-out' },
       { kind: 'wave', period: 800, shape: 'saw', cycles: 2, phase: 0.5, depth: { glow: 1 } },
+      {
+        kind: 'keys',
+        period: 900,
+        stops: [],
+        ease: { steps: 3, jump: 'start' },
+        easeBy: { scale: 'ease-in', turn: { bezier: [0, 0, 1, 1] } },
+        delayBy: { scale: 200 },
+      },
     ];
     for (const patch of kinds) expect(load(withVoice({ patch }))).not.toBeNull();
     const extras = {
@@ -91,6 +99,8 @@ describe('load', () => {
       withVoice({ patch: { kind: 'spring', channel: 'size', opts: {} } }),
       withVoice({ patch: { kind: 'spring', channel: 'turn', opts: { to: 'far' } } }),
       withVoice({ patch: { kind: 'shake', period: 1 } }),
+      withVoice({ patch: { kind: 'keys', period: 1, stops: [], easeBy: { size: 'ease' } } }),
+      withVoice({ patch: { kind: 'keys', period: 1, stops: [], delayBy: { scale: '200' } } }),
       withVoice({
         patch: { kind: 'wave', period: 1, shape: 'zigzag', cycles: 1, phase: 0, depth: {} },
       }),
