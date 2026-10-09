@@ -794,7 +794,7 @@ export interface Described {
  * @category mix
  */
 export interface HistoryStore {
-  /** Records leaving memory. One brought back by a seek may be paged again: keep one per key and `at`. */
+  /** Records leaving memory. One brought back by a seek may be paged again: keep one per key and `seq`. */
   page(out: readonly Paged[]): void;
   /**
    * What a restore to mix time `t` needs, for every mix: from each stream, per voice and subject,
@@ -811,7 +811,8 @@ export interface HistoryStore {
 /**
  * What a history record holds: a voice's `controls`, a stateful record's `snap`, an `input`
  * signal's reading, a subject's record when it `left` a voice, a motion subject's `released` run
- * or older `stretch`, the `host` fields patches read, or a whole `voice` that has left.
+ * or older `stretch`, the `host` fields patches read, a whole `voice` that has left, or the
+ * transport's own: a `mark` announced on it, a change of its `pace`, and a `frame` it played.
  *
  * @category mix
  */
@@ -823,7 +824,10 @@ export type PagedStream =
   | 'released'
   | 'stretch'
   | 'host'
-  | 'controls';
+  | 'controls'
+  | 'mark'
+  | 'pace'
+  | 'frame';
 
 /**
  * One history record leaving memory, as plain data.
@@ -831,12 +835,12 @@ export type PagedStream =
  * @category mix
  */
 export interface Paged {
-  /** The mix's `name`; '' for a mix made alone without one. */
+  /** The mix's `name`; '' for a mix made alone without one, and for the transport's own records. */
   mix: string;
   stream: PagedStream;
   /** The voice's id, for every stream but `host`. */
   voice?: number;
-  /** The subject's key, for a record of one subject. */
+  /** The subject's key, for a record of one subject; for a `mark`, the number it was announced as. */
   subject?: string | number;
   /** Mix time. */
   at: number;

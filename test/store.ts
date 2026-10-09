@@ -1,9 +1,9 @@
 import type { HistoryStore, Paged } from '../src/types.js';
 
-/** A history store that keeps every record as plain data, one per key and time, and hands all back. */
+/** A history store that keeps every record as plain data, one per key and frame, and hands all back. */
 export function memoryStore(): HistoryStore & { held: Map<string, Paged>; loads: number } {
   const held = new Map<string, Paged>();
-  const id = (p: Paged) => [p.mix, p.stream, p.voice, p.subject, p.at].join('|');
+  const id = (p: Paged) => [p.mix, p.stream, p.voice, p.subject, p.seq].join('|');
   const store = {
     held,
     loads: 0,

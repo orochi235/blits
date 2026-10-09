@@ -1,10 +1,11 @@
 import type { Mixer } from './mixer.js';
 import type { Run } from './motions.js';
+import type { Paced } from './pace.js';
 import { type PackedRecord, unpackHeld } from './pack.js';
 import { HistoryMiss, type Keys } from './paging.js';
 import { type PackedVoice, reviveVoice } from './revive.js';
 import { scoredLeft } from './scored.js';
-import type { Transport } from './transport.js';
+import type { Announced, Transport } from './transport.js';
 import type { Paged } from './types.js';
 import type { Controls, Subject, Voice } from './voice.js';
 
@@ -48,6 +49,7 @@ export function cut(transport: Transport, seq: number, unpaged: boolean): void {
 
 /** Puts records a store gave back into memory ahead of what it still holds, as if never paged. */
 function unpage(transport: Transport, records: readonly Paged[]): void {
+  unpageTransport(transport, records);
   const mixes = new Map<string, Member>();
   for (const m of [...transport.members, ...transport.dropped.map((d) => d.mix)])
     mixes.set(m.name ?? '', m);
@@ -60,6 +62,23 @@ function unpage(transport: Transport, records: readonly Paged[]): void {
     else list.push(r);
   }
   for (const [m, list] of by) unpageMix(m, list);
+}
+
+/** The transport's own records: its rate changes, the frames it played and the marks announced on it. */
+function unpageTransport(transport: Transport, records: readonly Paged[]): void {
+  const own = records.filter((r) => r.mix === '' && r.voice === undefined);
+  const paces = own.filter((r) => r.stream === 'pace').map((r) => r.data as Paced);
+  if (paces.length > 0) transport.pace?.unshed(paces);
+  const frames = own
+    .filter((r) => r.stream === 'frame')
+    .map((r) => ({ seq: r.seq, at: r.at, u: r.data as number }));
+  transport.frames = before(frames, transport.frames);
+  const held = new Set(transport.announced.map((a) => a.order));
+  const marks = own
+    .filter((r) => r.stream === 'mark' && !held.has((r.data as Announced).order))
+    .map((r) => r.data as Announced);
+  if (marks.length > 0)
+    transport.announced = [...marks, ...transport.announced].sort((a, b) => a.order - b.order);
 }
 
 function unpageMix(mix: Member, records: readonly Paged[]): void {

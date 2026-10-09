@@ -127,6 +127,52 @@ describe('history with a store', () => {
       }
     });
 
+  it('pages its rate changes, marks and frames, and brings them back for a seek past memory', async () => {
+    // Rate 0 holds mix time at 256 from 256 to 336, where a cue waits on a mark announced then.
+    const scene: Scene = (m, t, h) => {
+      if (t === 0) busy(m, t, h);
+      if (t === 128) m.rate = 2;
+      if (t === 192) m.rate = 1;
+      if (t === 256) m.rate = 0;
+      if (t === 288) {
+        m.announce('beat', { at: 300 });
+        h.on = m.cue({ patch: fall, name: 'on', anchor: { start: { of: 'beat' } } });
+      }
+      if (t === 336) m.rate = 1;
+    };
+    const frames = every(0, 1600, 16);
+    const store = memoryStore();
+    const run = play(scene, frames, paged(store));
+    const streams = new Set([...store.held.values()].map((p) => p.stream));
+    expect(
+      [...streams].filter((s) => s === 'pace' || s === 'mark' || s === 'frame').sort(),
+    ).toEqual(['frame', 'mark', 'pace']);
+    const t = run.m as unknown as { transport: { frames: unknown[]; announced: unknown[] } };
+    expect(t.transport.frames.length).toBeLessThan(16);
+    expect(t.transport.announced).toEqual([]);
+    for (const f of [192, 288, 320, 352]) {
+      const again = play(scene, frames, paged());
+      const mixT = new Map<number, number>();
+      const probe = mix<Part, Pose>(KP, paged());
+      const hs: Record<string, Handle<Part>> = {};
+      for (const g of frames) {
+        probe.sync(g);
+        scene(probe, g, hs);
+        mixT.set(g, probe.now);
+      }
+      const at = mixT.get(f) as number;
+      // Rate 0 held mix time from 256 to 336: a seek there lands on the last of those frames.
+      const landing = Math.max(...frames.filter((g) => mixT.get(g) === at));
+      await again.m.prepare(at);
+      again.m.seek(at);
+      expect(probes(again.m)).toEqual(again.poses.get(landing));
+      for (const g of frames.filter((g) => g > landing)) {
+        again.m.sync(1600 + (g - landing));
+        expect(probes(again.m)).toEqual(again.poses.get(g));
+      }
+    }
+  });
+
   it('throws HistoryMiss before anything moves when nothing was prepared', () => {
     const frames = every(0, 1200, 16);
     const run = play(busy, frames, paged());

@@ -2,7 +2,7 @@ import { listedAll } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { move, nextFrame, waits } from './move.js';
 import { Pace } from './pace.js';
-import { Pager, prepare } from './paging.js';
+import { Pager, pageTransport, prepare } from './paging.js';
 import { pin } from './place.js';
 import { projectAll } from './project.js';
 import { type ScoreHolders, scoredDrop, scoredJoin } from './scored.js';
@@ -265,6 +265,7 @@ export class Transport implements TransportApi {
     let n = 0;
     while (n + 1 < frames.length && (frames[n + 1] as Frame).at <= reach) n++;
     if (n > 0) frames.splice(0, n);
+    pageTransport(this);
     this.woken = false;
     // It is a frame too, which asks every weight signal again, so one reading input follows it.
     if (still)
@@ -356,7 +357,7 @@ export class Transport implements TransportApi {
             pin(m, v, v.start);
     }
     const reach = this.history === undefined ? Number.NEGATIVE_INFINITY : this.keepsFrom();
-    this.pace.change(this.u, rate, over, reach);
+    this.pace.change(this.u, rate, over, reach, this.seq);
     for (const m of this.members) m.stir();
     record(this, 'rate', () => this.ramp(rate, over));
   }

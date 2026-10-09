@@ -1,5 +1,5 @@
 import type { Mixer } from './mixer.js';
-import type { Transport } from './transport.js';
+import type { Announced, Frame, Transport } from './transport.js';
 import type { HistoryStore, Paged, PagedStream } from './types.js';
 
 /**
@@ -74,8 +74,8 @@ export class Keys {
 }
 
 /**
- * Hands records leaving memory to the store, the last of any that share a time, which is the one
- * a read finds. `reach` is how far back memory still reaches.
+ * Hands records leaving memory to the store, the last of any made in one frame, which is the one a
+ * read finds. `reach` is how far back memory still reaches.
  */
 export function pageOut<I, O, E extends { at: number; seq: number }>(
   mix: Mixer<I, O>,
@@ -92,7 +92,7 @@ export function pageOut<I, O, E extends { at: number; seq: number }>(
   const records: Paged[] = [];
   for (let i = 0; i < out.length; i++) {
     const e = out[i] as E;
-    if (i + 1 < out.length && (out[i + 1] as E).at === e.at) continue;
+    if (i + 1 < out.length && (out[i + 1] as E).seq === e.seq) continue;
     const r: Paged = { mix: name, stream, at: e.at, seq: e.seq, data: data(e) };
     if (voice !== undefined) r.voice = voice;
     if (subject !== undefined) r.subject = subject;
@@ -109,6 +109,43 @@ export function page(transport: Transport, records: Paged[], reach: number): voi
   const last = records[records.length - 1] as Paged;
   pager.last = { mix: last.mix, stream: last.stream };
   if (reach > transport.floor) transport.floor = reach;
+}
+
+/**
+ * With a store, hands it what the transport itself keeps from before memory's reach: announced
+ * marks, changes of its rate, and frames, the last at or before the reach staying.
+ */
+export function pageTransport(transport: Transport): void {
+  const history = transport.history;
+  if (history === undefined || transport.pager === null) return;
+  const reach = transport.now - history.ms;
+  const records: Paged[] = [];
+  const frames = transport.frames;
+  let n = 0;
+  while (n + 1 < frames.length && (frames[n + 1] as Frame).at <= reach) n++;
+  for (const f of frames.splice(0, n))
+    records.push({ mix: '', stream: 'frame', at: f.at, seq: f.seq, data: f.u });
+  const pace = transport.pace;
+  const timeOf = (u: number) => (pace === null ? u : pace.reading(u));
+  if (transport.announced.some((a) => timeOf(a.at) < reach)) {
+    const kept: Announced[] = [];
+    for (const a of transport.announced)
+      if (timeOf(a.at) < reach)
+        records.push({
+          mix: '',
+          stream: 'mark',
+          subject: a.order,
+          at: timeOf(a.at),
+          seq: a.seq,
+          data: a,
+        });
+      else kept.push(a);
+    transport.announced = kept;
+  }
+  if (pace !== null)
+    for (const c of pace.shed(reach))
+      records.push({ mix: '', stream: 'pace', at: c.anchorElapsed, seq: c.seq, data: c });
+  if (records.length > 0) page(transport, records, reach);
 }
 
 /** Loads what a seek or read to `t` needs where it reaches past memory. */

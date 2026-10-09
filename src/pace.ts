@@ -1,5 +1,10 @@
 import { type Clock, elapsedWith, rateWith, retime, timeWith } from './clock.js';
 
+/** A clock in a pace's log, with the frame that set it, which a history store's cut goes by. */
+export interface Paced extends Clock {
+  seq: number;
+}
+
 /**
  * A mix's own rate, as a clock: mix time as a function of host time, which here means the host's
  * timestamp less what `rebase` took out. Each entry is the clock from the host time it took effect,
@@ -8,17 +13,19 @@ import { type Clock, elapsedWith, rateWith, retime, timeWith } from './clock.js'
  * stays as it was.
  */
 export class Pace {
-  private log: Clock[];
+  private log: Paced[];
 
   constructor(
     private readonly keeps: boolean,
-    log: Clock[] = [{ anchorNow: 0, anchorElapsed: 0, rate: 1, ramp: null }],
+    log: Paced[] = [
+      { anchorNow: 0, anchorElapsed: 0, rate: 1, ramp: null, seq: Number.NEGATIVE_INFINITY },
+    ],
   ) {
     this.log = log;
   }
 
-  private get clock(): Clock {
-    return this.log[this.log.length - 1] as Clock;
+  private get clock(): Paced {
+    return this.log[this.log.length - 1] as Paced;
   }
 
   /** Set before the first sync, the clock waits to be anchored there, reading host time until then. */
@@ -37,7 +44,7 @@ export class Pace {
     if (this.waiting) return u;
     const log = this.log;
     let i = log.length - 1;
-    while (i > 0 && (log[i] as Clock).anchorNow > u) i--;
+    while (i > 0 && (log[i] as Paced).anchorNow > u) i--;
     return elapsedWith(log[i] as Clock, u);
   }
 
@@ -59,7 +66,7 @@ export class Pace {
     if (this.waiting) return t;
     const log = this.log;
     let i = 0;
-    while (i + 1 < log.length && t > (log[i + 1] as Clock).anchorElapsed) i++;
+    while (i + 1 < log.length && t > (log[i + 1] as Paced).anchorElapsed) i++;
     return timeWith(log[i] as Clock, t);
   }
 
@@ -79,13 +86,13 @@ export class Pace {
   }
 
   /**
-   * Sets the rate from host time `u`, at once or over `over` host ms, the way a handle sets a
-   * voice's. Under history, lets go of the entries a read no longer reaches: those over before mix
-   * time `reach`.
+   * Sets the rate from host time `u`, in frame `seq`, at once or over `over` host ms, the way a
+   * handle sets a voice's. Under history, lets go of the entries a read no longer reaches: those
+   * over before mix time `reach`.
    */
-  change(u: number, rate: number, over: number, reach: number): void {
+  change(u: number, rate: number, over: number, reach: number, seq: number): void {
     const was = this.clock;
-    const next = { ...was };
+    const next = { ...was, seq };
     if (Number.isNaN(u) || this.waiting) {
       const from = this.rateAt(Number.NaN);
       next.ramp = over > 0 && rate !== from ? { from, to: rate, over } : null;
@@ -98,16 +105,29 @@ export class Pace {
     const log = this.log;
     if (this.keeps && was.anchorNow < u) log.push(next);
     else log[log.length - 1] = next;
+    this.shed(reach);
+  }
+
+  /** Lets go of the clocks over before mix time `reach`, and answers them. */
+  shed(reach: number): Paced[] {
+    const log = this.log;
     let drop = 0;
-    while (drop + 1 < log.length && (log[drop + 1] as Clock).anchorElapsed <= reach) drop++;
-    if (drop > 0) log.splice(0, drop);
+    while (drop + 1 < log.length && (log[drop + 1] as Paced).anchorElapsed <= reach) drop++;
+    return drop > 0 ? log.splice(0, drop) : [];
+  }
+
+  /** Puts back clocks a history store kept, ahead of the oldest still held. */
+  unshed(back: readonly Paced[]): void {
+    const first = (this.log[0] as Paced).anchorNow;
+    const older = back.filter((c) => c.anchorNow < first).sort((a, b) => a.anchorNow - b.anchorNow);
+    if (older.length > 0) this.log = [...older, ...this.log];
   }
 
   /** Lets go of the clocks set after host time `u`, for a seek back to then. */
   cut(u: number): void {
     const log = this.log;
     let n = 1;
-    while (n < log.length && (log[n] as Clock).anchorNow <= u) n++;
+    while (n < log.length && (log[n] as Paced).anchorNow <= u) n++;
     log.length = n;
   }
 
@@ -115,7 +135,7 @@ export class Pace {
   until(u: number): Pace {
     const log = this.log;
     let n = 1;
-    while (n < log.length && (log[n] as Clock).anchorNow < u) n++;
+    while (n < log.length && (log[n] as Paced).anchorNow < u) n++;
     return new Pace(this.keeps, log.slice(0, n));
   }
 }
