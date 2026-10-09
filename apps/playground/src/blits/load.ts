@@ -2,6 +2,7 @@ import {
   type Composition,
   type Level,
   MAX_COLS,
+  MAX_GROUPS,
   MAX_LENGTH,
   MAX_LEVELS,
   MAX_ROWS,
@@ -10,6 +11,7 @@ import {
 } from './composition';
 import { CSS } from './easing';
 import { levelsOk } from './edit';
+import { parentOf, treeFault } from './groups';
 import { CHANNELS, SWINGS } from './kit';
 
 type Rec = Record<string, unknown>;
@@ -86,6 +88,17 @@ const fade = (v: unknown) => obj(v) && opt(v.in, num) && opt(v.out, num) && opt(
 // blits answers an anchor it cannot place by leaving the voice pending, so only the shape is checked.
 const placement = (v: unknown) => obj(v) && Object.values(v).every((x) => num(x) || obj(x));
 
+const bool = (v: unknown) => typeof v === 'boolean';
+const freeze = oneOf('before', 'after', 'both');
+const strength = oneOf('weak', 'strong', 'required');
+const hints = (v: unknown) =>
+  obj(v) &&
+  opt(v.faster, num) &&
+  opt(v.slower, num) &&
+  opt(v.overlap, bool) &&
+  opt(v.ballast, bool) &&
+  opt(v.priority, strength);
+
 const voice = (v: unknown) =>
   obj(v) &&
   str(v.id) &&
@@ -93,17 +106,57 @@ const voice = (v: unknown) =>
   num(v.hue) &&
   num(v.start) &&
   num(v.rate) &&
-  (typeof v.loop === 'boolean' || num(v.loop)) &&
+  (bool(v.loop) || num(v.loop)) &&
   (num(v.weight) || expr(v.weight)) &&
   fade(v.fade) &&
   patch(v.patch) &&
   opt(v.stagger, expr) &&
   opt(v.target, expr) &&
-  opt(v.freeze, oneOf('before', 'after', 'both')) &&
-  opt(v.hold, oneOf('before', 'after', 'both')) &&
+  opt(v.freeze, freeze) &&
+  opt(v.hold, freeze) &&
   opt(v.locus, str) &&
   opt(v.from, oneOf('current')) &&
-  opt(v.anchor, placement);
+  opt(v.anchor, placement) &&
+  opt(v.owner, str) &&
+  opt(v.hints, hints);
+
+const fitStep = (v: unknown) =>
+  obj(v) &&
+  (oneOf('condense', 'shed', 'conclude')(v.kind) ||
+    (v.kind === 'overrun' && opt(v.cap, num)) ||
+    (v.kind === 'code' && str(v.code)));
+const spanSettings = (v: unknown) =>
+  obj(v) &&
+  opt(v.duration, num) &&
+  opt(v.priority, strength) &&
+  opt(v.order, oneOf('queue', 'stagger', 'together')) &&
+  opt(v.share, (x) => num(x) && x >= 0 && x <= 1) &&
+  opt(v.spill, oneOf('instant', 'overrun')) &&
+  opt(v.fit, (x) => Array.isArray(x) && x.every(fitStep));
+
+const group = (v: unknown) =>
+  obj(v) &&
+  str(v.id) &&
+  str(v.name) &&
+  num(v.hue) &&
+  oneOf('owner', 'span')(v.kind) &&
+  opt(v.owner, str) &&
+  num(v.start) &&
+  num(v.rate) &&
+  (num(v.weight) || expr(v.weight)) &&
+  fade(v.fade) &&
+  opt(v.freeze, freeze) &&
+  opt(v.anchor, placement) &&
+  opt(v.hints, hints) &&
+  (v.kind === 'span' ? opt(v.span, spanSettings) : v.span === undefined);
+
+/** Whether the groups' `owner` links make a tree that blits can cue. */
+function groupsOk(c: Composition): boolean {
+  const groups = c.groups ?? [];
+  const ids = [...c.voices, ...groups].map((x) => x.id);
+  if (new Set(ids).size !== ids.length || treeFault(c) !== null) return false;
+  return !groups.some((g) => g.kind === 'owner' && parentOf(c, g.id)?.kind === 'span');
+}
 
 const level = (v: unknown) => obj(v) && str(v.name) && num(v.value) && num(v.min) && num(v.max);
 
@@ -152,7 +205,10 @@ export function load(raw: unknown): Composition | null {
   if (!Array.isArray(levels) || levels.length > MAX_LEVELS || !levels.every(level)) return null;
   if (!levelsOk(levels as Level[])) return null;
   if (!Array.isArray(voices) || voices.length > MAX_VOICES || !voices.every(voice)) return null;
-  if (new Set(voices.map((v) => (v as Rec).id)).size !== voices.length) return null;
+  const { groups } = raw;
+  if (!opt(groups, (g) => Array.isArray(g) && g.length <= MAX_GROUPS && g.every(group)))
+    return null;
+  if (!groupsOk(raw as unknown as Composition)) return null;
   // Saved and shared before blits named it `freeze`.
   for (const v of voices as Rec[])
     if ('hold' in v) {

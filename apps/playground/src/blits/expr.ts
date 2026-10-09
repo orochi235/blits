@@ -1,4 +1,4 @@
-import { gate, lag, level, peak, type Signal, slew } from '@msb235/blits';
+import { type Fit, gate, lag, layout, level, peak, plain, type Signal, slew } from '@msb235/blits';
 import { parse } from 'acorn';
 import type { Expr, Level } from './composition';
 import type { Subject } from './stage';
@@ -45,37 +45,47 @@ function syntaxLineOf(code: string): number | null {
   }
 }
 
-export function compileExpr<F extends (...args: never[]) => unknown>(
-  expr: Expr,
-  scope: Scope,
-  fallback: ReturnType<F>,
+/** `code` compiled with `scope`'s names bound; a throw when it runs answers `fallback(...args)`. */
+function compileIn<F extends (...args: never[]) => unknown>(
+  code: string,
+  scope: Record<string, unknown>,
+  fallback: (...args: Parameters<F>) => ReturnType<F>,
 ): Compiled<F> {
   let made: unknown;
   try {
-    made = new Function('slew', 'lag', 'peak', 'gate', 'level', bodyOf(expr.code))(
-      slew,
-      lag,
-      peak,
-      gate,
-      (name: string) => scope.level(name),
-    );
+    made = new Function(...Object.keys(scope), bodyOf(code))(...Object.values(scope));
   } catch (err) {
-    const line = err instanceof SyntaxError ? syntaxLineOf(expr.code) : lineOf(err);
+    const line = err instanceof SyntaxError ? syntaxLineOf(code) : lineOf(err);
     return { error: message(err), line };
   }
   if (typeof made !== 'function') return { error: 'must be a function', line: null };
   const inner = made as (...args: unknown[]) => unknown;
   const faults: Faults = { count: 0, first: null };
-  const fn = ((...args: unknown[]) => {
+  const fn = ((...args: Parameters<F>) => {
     try {
       return inner(...args);
     } catch (err) {
       faults.count++;
       faults.first ??= message(err);
-      return fallback;
+      return fallback(...args);
     }
   }) as unknown as F;
   // A signal marked `input` must keep its mark through the wrapper, or a read back trusts it.
   if ((inner as { input?: boolean }).input) (fn as unknown as { input: boolean }).input = true;
   return { fn, faults };
 }
+
+export const compileExpr = <F extends (...args: never[]) => unknown>(
+  expr: Expr,
+  scope: Scope,
+  fallback: ReturnType<F>,
+): Compiled<F> =>
+  compileIn<F>(
+    expr.code,
+    { slew, lag, peak, gate, level: (name: string) => scope.level(name) },
+    () => fallback,
+  );
+
+/** A span's fit, `(span, kids, plan) => plan`, with blits' `plain` and `layout` in scope. */
+export const compileFit = (code: string): Compiled<Fit> =>
+  compileIn<Fit>(code, { plain, layout }, (_span, _kids, plan) => plan);

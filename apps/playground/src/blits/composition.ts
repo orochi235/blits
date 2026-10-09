@@ -1,4 +1,4 @@
-import type { Easing, Keyframe, Placement, WaveShape } from '@msb235/blits';
+import type { Easing, Keyframe, Order, Placement, Strength, WaveShape } from '@msb235/blits';
 import type { ChannelName, Pose, Rules, SwingName } from './kit';
 
 /** Source of a function: `(s) => …` for a subject, a signal such as `slew(level('x'), …)`. */
@@ -61,7 +61,63 @@ export interface Voice {
   locus?: string;
   from?: 'current';
   anchor?: Placement;
+  /** The group's id it plays under. */
+  owner?: string;
+  /** Read only when its group is a span. */
+  hints?: Hints;
 }
+
+/** blits' `SpanHints`. */
+export interface Hints {
+  faster?: number;
+  slower?: number;
+  overlap?: boolean;
+  ballast?: boolean;
+  priority?: Strength;
+}
+
+export type FitStep =
+  | { kind: 'condense' }
+  | { kind: 'shed' }
+  | { kind: 'conclude' }
+  | { kind: 'overrun'; cap?: number }
+  /** `(span, kids, plan) => plan`, with `plain` and `layout` in scope. */
+  | { kind: 'code'; code: string };
+
+export interface SpanSettings {
+  duration?: number;
+  priority?: Strength;
+  order?: Order;
+  share?: number;
+  spill?: 'instant' | 'overrun';
+  /** Unset: blits' default fit. */
+  fit?: FitStep[];
+}
+
+/** An owner (`mix.owns`) or a span (`mix.span`), holding the voices and groups that name it. */
+export interface Group {
+  id: string;
+  name: string;
+  hue: number;
+  kind: 'owner' | 'span';
+  /** The parent group's id. */
+  owner?: string;
+  start: number;
+  rate: number;
+  weight: number | Expr;
+  fade: { in?: number; out?: number; ease?: Easing };
+  freeze?: 'before' | 'after' | 'both';
+  anchor?: Placement;
+  /** Read only when the parent is a span. */
+  hints?: Hints;
+  /** Only on kind 'span'. */
+  span?: SpanSettings;
+}
+
+export const FIT_PRESETS = {
+  default: [{ kind: 'condense' }, { kind: 'shed' }],
+  lax: [{ kind: 'condense' }, { kind: 'shed' }, { kind: 'overrun' }],
+} as const satisfies Record<string, FitStep[]>;
 
 /** blits' `MixOptions` a composition may set; each unset one keeps the default `compile` gives. */
 export interface MixSettings {
@@ -79,6 +135,7 @@ export interface Composition {
   length: number;
   levels: Level[];
   voices: Voice[];
+  groups?: Group[];
   mix?: MixSettings;
   /** Each channel's fold rule, where it differs from `DEFAULT_RULES`. */
   rules?: Partial<Rules>;
@@ -104,3 +161,4 @@ export const MAX_TEXT = 200;
 export const MAX_LENGTH = 120_000;
 export const MAX_VOICES = 64;
 export const MAX_LEVELS = 16;
+export const MAX_GROUPS = 16;

@@ -2,6 +2,7 @@ import {
   type Composition,
   type Level,
   MAX_COLS,
+  MAX_GROUPS,
   MAX_LENGTH,
   MAX_LEVELS,
   MAX_ROWS,
@@ -55,6 +56,9 @@ export function addLevel(levels: readonly Level[]): Level[] {
   while (names.has(`level ${n}`)) n++;
   return [...levels, { name: `level ${n}`, value: 0, min: 0, max: 1 }];
 }
+
+/** Whether the composition holds `MAX_GROUPS` groups, so no edit may add another. */
+export const groupsFull = (c: Composition) => (c.groups?.length ?? 0) >= MAX_GROUPS;
 
 export const removeLevel = (levels: readonly Level[], i: number): Level[] =>
   levels.filter((_, k) => k !== i);

@@ -1,6 +1,7 @@
 import {
   type Composition,
   MAX_COLS,
+  MAX_GROUPS,
   MAX_LENGTH,
   MAX_LEVELS,
   MAX_ROWS,
@@ -208,5 +209,100 @@ describe('load levels', () => {
 
   it('refuses duplicate names', () => {
     expect(load(withLevels([lv(), lv()]))).toBeNull();
+  });
+});
+
+describe('load groups', () => {
+  const grp = (over: Record<string, unknown> = {}) => ({
+    id: 'g',
+    name: 'g',
+    hue: 30,
+    kind: 'owner',
+    start: 0,
+    rate: 1,
+    weight: 1,
+    fade: {},
+    ...over,
+  });
+  const span = (over: Record<string, unknown> = {}) =>
+    grp({ id: 's', name: 's', kind: 'span', owner: 'g', span: {}, ...over });
+  const nested = (groups: unknown[], voiceOver: Record<string, unknown> = {}) => ({
+    ...copy(),
+    voices: [{ ...voice(), owner: 's', hints: { faster: 2, ballast: true }, ...voiceOver }],
+    groups,
+  });
+
+  it('round-trips a nested composition', () => {
+    const c = nested([
+      grp({ weight: { code: "level('x')" }, fade: { in: 200 }, freeze: 'after' }),
+      span({
+        hints: { overlap: true, priority: 'strong' },
+        span: {
+          duration: 600,
+          priority: 'required',
+          order: 'stagger',
+          share: 0.3,
+          spill: 'overrun',
+          fit: [
+            { kind: 'condense' },
+            { kind: 'shed' },
+            { kind: 'conclude' },
+            { kind: 'overrun', cap: 1.5 },
+            { kind: 'code', code: '(span, kids, plan) => plan' },
+          ],
+        },
+      }),
+    ]);
+    expect(load(JSON.parse(JSON.stringify(c)))).toEqual(c);
+    expect(fromHash(`#${toHash(c as unknown as Composition)}`)).toEqual(c);
+  });
+
+  it('accepts MAX_GROUPS and refuses one more', () => {
+    const groups = (n: number) => Array.from({ length: n }, (_, i) => grp({ id: `g${i}` }));
+    expect(load({ ...copy(), groups: groups(MAX_GROUPS) })).not.toBeNull();
+    expect(load({ ...copy(), groups: groups(MAX_GROUPS + 1) })).toBeNull();
+  });
+
+  it('refuses a cycle', () => {
+    const groups = [grp({ owner: 'h' }), grp({ id: 'h', owner: 'g' })];
+    expect(load({ ...copy(), groups })).toBeNull();
+  });
+
+  it('refuses an unknown owner, on a voice or a group', () => {
+    expect(load(withVoice({ owner: 'nope' }))).toBeNull();
+    expect(load({ ...copy(), groups: [grp({ owner: 'nope' })] })).toBeNull();
+  });
+
+  it('refuses an owner held by a span, but not a span held by one', () => {
+    expect(load(nested([grp(), span(), grp({ id: 'o', owner: 's' })]))).toBeNull();
+    expect(load(nested([grp(), span(), span({ id: 't', owner: 's' })]))).not.toBeNull();
+  });
+
+  it('refuses an id a voice and a group share, or two groups share', () => {
+    expect(load(nested([grp(), span({ id: voice().id })]))).toBeNull();
+    expect(load({ ...copy(), groups: [grp(), grp()] })).toBeNull();
+  });
+
+  it('refuses a bad group or hints field', () => {
+    const bad: unknown[][] = [
+      [grp({ kind: 'bundle' })],
+      [grp({ span: {} })],
+      [grp({ rate: '1' })],
+      [grp({ fade: undefined })],
+      [grp({ freeze: 'always' })],
+      [grp(), span({ span: { priority: 'firm' } })],
+      [grp(), span({ span: { order: 'shuffle' } })],
+      [grp(), span({ span: { share: 1.5 } })],
+      [grp(), span({ span: { spill: 'drop' } })],
+      [grp(), span({ span: { duration: '600' } })],
+      [grp(), span({ span: { fit: [{ kind: 'squeeze' }] } })],
+      [grp(), span({ span: { fit: [{ kind: 'overrun', cap: 'big' }] } })],
+      [grp(), span({ span: { fit: [{ kind: 'code' }] } })],
+      [grp(), span({ span: { fit: { kind: 'shed' } } })],
+      [grp(), span({ hints: { faster: 'x' } })],
+      [grp(), span({ hints: { priority: 'firm' } })],
+    ];
+    for (const groups of bad) expect(load(nested(groups)), JSON.stringify(groups)).toBeNull();
+    expect(load(nested([grp(), span()], { hints: { overlap: 1 } }))).toBeNull();
   });
 });

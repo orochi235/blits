@@ -1,8 +1,10 @@
 import { compile } from '@pg/blits/compile';
 import {
   type Composition,
+  type Group,
   type Level,
   MAX_COLS,
+  MAX_GROUPS,
   MAX_LENGTH,
   MAX_LEVELS,
   MAX_ROWS,
@@ -12,6 +14,7 @@ import {
   addLevel,
   DEFAULT_DOTS,
   DEFAULT_TEXT,
+  groupsFull,
   lettersOf,
   removeLevel,
   renameLevel,
@@ -99,5 +102,26 @@ describe('level edits', () => {
       expect(built.errors).toEqual([]);
       expect(built.levels.has('k')).toBe(false);
     }
+  });
+});
+
+describe('group cap', () => {
+  it('is full at MAX_GROUPS, which load still accepts', () => {
+    const group = (i: number): Group => ({
+      id: `g${i}`,
+      name: `g${i}`,
+      hue: 0,
+      kind: 'owner',
+      start: 0,
+      rate: 1,
+      weight: 1,
+      fade: {},
+    });
+    const groups = (n: number) => Array.from({ length: n }, (_, i) => group(i));
+    expect(groupsFull(DEFAULT)).toBe(false);
+    expect(groupsFull({ ...DEFAULT, groups: groups(MAX_GROUPS - 1) })).toBe(false);
+    const full = { ...DEFAULT, groups: groups(MAX_GROUPS) };
+    expect(groupsFull(full)).toBe(true);
+    expect(load(full)).not.toBeNull();
   });
 });
