@@ -157,17 +157,7 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
     mix.send,
     null,
   );
-  voice.anchorNow = d.anchorNow;
-  voice.anchorElapsed = d.anchorElapsed;
-  voice.rate = d.rate;
-  voice.ramp = d.ramp;
-  voice.weight = d.weight;
-  voice.out = d.out;
-  voice.back = d.back;
-  voice.outAt = d.outAt;
-  voice.outOver = d.outOver;
-  voice.outSet = d.outSet;
-  voice.rebuilds = d.rebuilds;
+  voice.take(d);
   voice.cuedAt = d.cuedAt;
   voice.doneAt = d.doneAt;
   voice.opened = d.opened;

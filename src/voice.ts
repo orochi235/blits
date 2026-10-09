@@ -386,6 +386,22 @@ export class Voice<I, O> {
     return unplayed;
   }
 
+  /** Takes on a set of controls: its clock, weight, fades and where its anchors put it. */
+  take(c: Omit<Controls, 'at' | 'sync'>): void {
+    this.anchorNow = c.anchorNow;
+    this.anchorElapsed = c.anchorElapsed;
+    this.rate = c.rate;
+    this.ramp = c.ramp;
+    this.weight = c.weight;
+    this.out = c.out;
+    this.back = c.back;
+    this.start = c.start;
+    this.outAt = c.outAt;
+    this.outOver = c.outOver;
+    this.outSet = c.outSet;
+    this.rebuilds = c.rebuilds;
+  }
+
   /**
    * A seek back to before its cue: out of the mix, as `cue` left it, until the mix plays the cue
    * again. What it played since is forgotten, and `done` and `played` start over where they had
@@ -393,18 +409,7 @@ export class Voice<I, O> {
    */
   park(): void {
     this.reopen(Number.NEGATIVE_INFINITY);
-    const c = this.first as Controls;
-    this.anchorNow = c.anchorNow;
-    this.anchorElapsed = c.anchorElapsed;
-    this.rate = c.rate;
-    this.ramp = c.ramp;
-    this.weight = c.weight;
-    this.out = c.out;
-    this.start = c.start;
-    this.outAt = c.outAt;
-    this.outOver = c.outOver;
-    this.outSet = c.outSet;
-    this.rebuilds = c.rebuilds;
+    this.take(this.first as Controls);
     this.log = null;
     this.state = 'pending';
     this.subjects = new Store();
@@ -529,20 +534,7 @@ export class Voice<I, O> {
     v.laned = false;
     v.log = null;
     v.early = null;
-    if (controls) {
-      v.anchorNow = controls.anchorNow;
-      v.anchorElapsed = controls.anchorElapsed;
-      v.rate = controls.rate;
-      v.ramp = controls.ramp;
-      v.weight = controls.weight;
-      v.out = controls.out;
-      v.back = controls.back;
-      v.start = controls.start;
-      v.outAt = controls.outAt;
-      v.outOver = controls.outOver;
-      v.outSet = controls.outSet;
-      v.rebuilds = controls.rebuilds;
-    }
+    if (controls) v.take(controls);
     v.quiet = true;
     v.unreached = null;
     v.unreachedBits = null;

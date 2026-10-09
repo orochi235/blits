@@ -564,3 +564,23 @@ describe('project', () => {
     expect(m.project(100).probe(a).x).toBeCloseTo(10, 9);
   });
 });
+
+describe('seek back over a rise', () => {
+  it('reads what playing straight through read, after a seek to before the cue', () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 100_000, every: 50, tape }, stepMs: 4 });
+    let h: Handle<Part> | undefined;
+    const seen = new Map<number, number>();
+    for (const t of every(0, 700, 16)) {
+      m.sync(t);
+      if (t === 128) h = m.cue({ patch: wave, loop: 2, fade: { out: 60 }, start: 176 });
+      if (t === 384 && h) h.rate = 3;
+      // During the voice's own fade out at the end of its last pass.
+      if (t === 640) h?.rise({ over: 60 });
+      seen.set(t, m.probe({ id: 'a' }).x);
+    }
+    for (const t of [96, 320, 0, 256]) {
+      m.seek(t);
+      expect(m.probe({ id: 'a' }).x).toBeCloseTo(seen.get(t) as number, 9);
+    }
+  });
+});
