@@ -125,19 +125,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   the playground's `Composition`; once the UI settles, a public `describe()` on `Mix` should make
   the same shape for any host, and `flowOf` becomes a thin adapter.
 
-  weasel's branch `diagram-scene-knobs` (unmerged, unreleased as of 2026-10-08) widens
-  `diagramScene`: per-box outline, rows, ports, padding/gap, pinned and min size; per-edge ports,
-  router, waypoints, dash and markers; layout by name; `DiagramView` maxScale, fitPadding,
-  background and a controlled view. It also makes `DiagramView` editable, which view D needs: new
-  specs reconcile instead of remounting, `onMove` reports dragged nodes, `onConnect` reports a
-  port-to-port edge for the host to add, `canConnect` and `portOptions` configure ports, and a ref
-  runs `layout()`. When a release carries it (watch weasel's `packages/diagram/CHANGELOG.md`), bump
-  the playground's exact weasel pin and fix the size drift (body padding becomes a uniform 8).
-  The same branch stops a view-only `DiagramView` claiming the space bar page-wide (weasel
-  `975c1542e`). The playground's capture-phase space listener in `App.tsx` works around that claim:
-  drop it on the bump if every weasel canvas on the page is still view-only, and keep it once one is
-  editable. weasel's `docs/TODO.md` holds the general fix, "A canvas's keyboard shortcuts claim keys
-  page-wide".
+  The playground is on weasel 1.9.2, which widens `diagramScene` (per-box outline, rows, ports,
+  padding/gap, pinned and min size; per-edge ports, router, waypoints, dash and markers; layout by
+  name) and makes `DiagramView` editable, which view D needs: `onMove` reports dragged nodes,
+  `onConnect` reports a port-to-port edge for the host to add, `canConnect` and `portOptions`
+  configure ports, and a ref runs `layout()`. New specs reconcile instead of remounting.
+  1.9.2 does not carry the fix that stops a view-only `DiagramView` claiming the space bar page-wide
+  (weasel `975c1542e`, on its `diagram-scene-knobs` branch), so the playground's capture-phase space
+  listener in `App.tsx` stays. Once a release carries it, drop the listener only if every weasel
+  canvas on the page is view-only; the Voice tab's `Timeline` probably is not. weasel's
+  `docs/TODO.md` holds the general fix, "A canvas's keyboard shortcuts claim keys page-wide".
   Still missing, and blocking view B: container nodes for `locus` groups, weasel `docs/TODO.md`,
   "(P2) Diagram groups".
 
