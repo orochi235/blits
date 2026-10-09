@@ -2,7 +2,7 @@ import { changed, unindex } from './chain.js';
 import { popDue, schedule } from './due.js';
 import { beginFade, part, retire } from './fade.js';
 import { expireGone, keepGone } from './gone.js';
-import { started } from './held.js';
+import { reorigin } from './held.js';
 import type { Mixer } from './mixer.js';
 import { ownerReading } from './owner.js';
 import { mixAt, place, repin, startOf } from './place.js';
@@ -65,7 +65,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
       (voice.owner === null ? now : ownerReading(voice.owner, now)) >= voice.start
     ) {
       voice.state = 'live';
-      started(mix, voice);
+      reorigin(mix, voice, now);
       changed(mix, voice);
     }
     if (voice.state !== 'pending' && Number.isFinite(voice.span)) {

@@ -1,4 +1,5 @@
 import { departedMatches } from './departed.js';
+import { reorigin } from './held.js';
 import { noted } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
@@ -43,6 +44,8 @@ function startAt<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, start: number): boo
   voice.start = start;
   voice.anchorNow = start;
   voice.anchorElapsed = 0;
+  voice.clocks = null;
+  reorigin(mix, voice, mix.now);
   noted(mix, voice);
   return true;
 }

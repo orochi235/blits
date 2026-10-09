@@ -119,6 +119,10 @@ export function contribution<I, O>(
   if (voice.patch.step && held.probed !== now && still >= 0) {
     // Frozen after, it steps once more to where its last pass ended, and no further.
     const to = still === 1 ? voice.timeAt(held.delay + voice.span) : now;
+    if (held.stepped < held.since) {
+      held.stepped = held.since;
+      setting.dt = this.capped(now - held.since);
+    }
     if (tick !== undefined && tick > 0 && !this.reducedNow)
       this.tick(voice, subject, held, tick, to);
     else if (still === 0 ? now !== held.stepped : to > held.stepped) {

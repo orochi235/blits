@@ -212,9 +212,10 @@ describe('a subject reached by one voice, then two, then one', () => {
     expect(m.probe(part).crawl).toBe(1);
     const second = m.cue({ patch: counter });
     m.sync(32);
-    expect(m.probe(part).crawl).toBe(2 + 0);
+    // The second, met at 32, steps once from its start at 16.
+    expect(m.probe(part).crawl).toBe(2 + 1);
     m.sync(48);
-    expect(m.probe(part).crawl).toBe(3 + 1);
+    expect(m.probe(part).crawl).toBe(3 + 2);
     second.fade();
     m.sync(64);
     expect(m.probe(part).crawl).toBe(4);
@@ -231,7 +232,8 @@ describe('a subject reached by one voice, then two, then one', () => {
     m.cue({ patch: counter, target: (s) => s === a });
     m.sync(16);
     m.sync(32);
-    expect(m.probe(a).crawl).toBe(0);
+    // Met at 32, it steps once from its start at 0.
+    expect(m.probe(a).crawl).toBe(1);
     const after = m.probe(b);
     expect(Object.is(after.crawl, before.crawl)).toBe(true);
   });

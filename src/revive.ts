@@ -3,6 +3,7 @@ import { VoiceHandle } from './handle.js';
 import { handle } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import type { Run } from './motions.js';
+import type { Past } from './origin.js';
 import { type PackedRecord, packHeld, unpackHeld } from './pack.js';
 import { type Key, type Keys, pageOut } from './paging.js';
 import type { Described, VoiceSpec } from './types.js';
@@ -23,6 +24,8 @@ interface PackedVoice {
   outOver: number;
   outSet: boolean;
   rebuilds: number;
+  past: number;
+  clocks: Past[] | null;
   cuedAt: number;
   doneAt: number;
   opened: number;
@@ -120,6 +123,8 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     outOver: voice.outOver,
     outSet: voice.outSet,
     rebuilds: voice.rebuilds,
+    past: voice.clocks?.length ?? 0,
+    clocks: voice.clocks,
     cuedAt: voice.cuedAt,
     doneAt: voice.doneAt,
     opened: voice.opened,
@@ -157,6 +162,7 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
     mix.send,
     null,
   );
+  voice.clocks = d.clocks;
   voice.take(d);
   voice.cuedAt = d.cuedAt;
   voice.doneAt = d.doneAt;

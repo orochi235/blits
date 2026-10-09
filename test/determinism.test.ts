@@ -11,38 +11,37 @@ type Variant = keyof typeof variants;
 interface Known {
   seeds: number;
   A?: number[];
-  B?: number[];
   C?: number[];
   unknown?: number[];
 }
 
-// The known failures of issues A and B in the 2026-10-09 review, by cause. A: history keyed on mix
-// time (rate 0, backdated fades, same-frame calls). B: `sinceOf` works a subject's fade-in and step
-// origin back from the voice's current controls. C: a fade-out due before a voice's first live
-// frame is skipped on that frame. `shrink` in ./fuzz/program.ts reduces a seed to its cause.
+// The known failures of issue A in the 2026-10-09 review, by cause. A: history keyed on mix time
+// (rate 0, backdated fades and handle seeks past the end, same-frame calls). C: a fade-out due
+// before a voice's first live frame is skipped on that frame. `shrink` in ./fuzz/program.ts reduces
+// a seed to its cause.
 const known: Record<Property, Record<Variant, Known>> = {
   seek: {
-    plain: { seeds: 150, A: [14, 34, 96, 150], B: [56, 92, 137] },
+    plain: { seeds: 150, A: [14, 34, 56, 92, 96, 150] },
     full: { seeds: 30, A: [4, 7, 8, 9, 12, 15, 20, 29, 30] },
   },
   behind: {
-    plain: { seeds: 150, A: [54, 83], B: [56, 144] },
+    plain: { seeds: 150, A: [54, 56, 83, 144] },
     full: { seeds: 30, A: [4, 7, 9, 12, 15, 29, 30] },
   },
   ahead: {
     plain: { seeds: 150 },
-    full: { seeds: 150, A: [139], unknown: [1] },
+    full: { seeds: 150, A: [139] },
   },
   dt: {
-    plain: { seeds: 150, B: [144], C: [43, 74] },
-    full: { seeds: 150, B: [19, 57, 144], C: [74, 99] },
+    plain: { seeds: 150, C: [43, 74] },
+    full: { seeds: 150, C: [74, 99] },
   },
 };
 
 function guards(prop: Property) {
   for (const variant of Object.keys(variants) as Variant[]) {
-    const { seeds, A = [], B = [], C = [], unknown = [] } = known[prop][variant];
-    const expected = new Set([...A, ...B, ...C, ...unknown]);
+    const { seeds, A = [], C = [], unknown = [] } = known[prop][variant];
+    const expected = new Set([...A, ...C, ...unknown]);
     it(`${variant} programs, seeds 1 to ${seeds}: only the known failures fail`, () => {
       const unexpected: string[] = [];
       const fixed = new Set(expected);

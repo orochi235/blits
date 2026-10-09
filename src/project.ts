@@ -91,7 +91,7 @@ function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
   c.cued = mix.cued
     .filter((v) => v.state !== 'done')
     .map((v) => {
-      const copy = v.copy((subject) => carry(mix, v, subject));
+      const copy: Voice<I, O> = v.copy((subject) => carry(mix, v, subject, c, copy));
       const at = mix.pins?.get(v);
       if (at !== undefined) pin(c, copy, at);
       return copy;
@@ -164,15 +164,24 @@ function recordOf<I, O>(
     : undefined;
 }
 
-/** A projection ahead starts each subject from where the live mix holds it. */
+/**
+ * A projection ahead starts each subject from where the live mix holds it, its `since` worked out
+ * again where it was still ahead, since the copy's clock may have moved it.
+ */
 function carry<I, O>(
   mix: Mixer<I, O>,
   voice: Voice<I, O>,
   subject: I,
+  c: Mixer<I, O>,
+  copy: Voice<I, O>,
 ): Subject<unknown> | undefined {
   const live = recordOf(mix, voice, subject);
   if (live === undefined) return undefined;
   const h = copyHeld(voice, live);
+  if (h.reaches && !(h.since <= mix.now)) {
+    h.since = c.sinceOf(copy, h.delay);
+    h.shown = c.shownOf(copy, h.since);
+  }
   h.from = h.stepped;
   return h;
 }

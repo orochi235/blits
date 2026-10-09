@@ -1,4 +1,5 @@
 import { retime } from './clock.js';
+import { leave } from './origin.js';
 import type { Doubt, FadeOptions, FitResult, Handle, SeekOptions } from './types.js';
 import type { Voice } from './voice.js';
 
@@ -108,7 +109,9 @@ export class VoiceHandle<I, O> implements Handle<I> {
   ramp(r: number, over: number): void {
     const voice = this.#voice;
     if (voice === null) return;
-    retime(voice, this.#host.nowFor(voice), r, over);
+    const u = this.#host.nowFor(voice);
+    leave(voice, u);
+    retime(voice, u, r, over);
     this.#host.changed(voice);
     this.#host.record('rate', () => this.ramp(r, over));
   }
@@ -116,7 +119,9 @@ export class VoiceHandle<I, O> implements Handle<I> {
   seek(elapsed: number, opts?: SeekOptions): Doubt {
     const voice = this.#voice;
     if (voice === null) return 'exact';
-    voice.rebase(this.#host.nowFor(voice));
+    const u = this.#host.nowFor(voice);
+    leave(voice, u);
+    voice.rebase(u);
     voice.anchorElapsed = elapsed;
     voice.seeks++;
     const doubt = this.#host.sought(voice, opts?.state !== 'keep');

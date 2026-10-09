@@ -128,7 +128,7 @@ function restoreVoice<I, O>(voice: Voice<I, O>, t: number): void {
       if (h === undefined) return h;
       if (h.reaches) voice.seen++;
       if (h.rested) voice.restedCount++;
-      if (voice.state === 'pending') {
+      if (!(h.since <= t)) {
         voice.early ??= [];
         voice.early.push(h);
       }

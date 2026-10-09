@@ -139,8 +139,9 @@ describe('catch-up', () => {
       m.sync(now);
       m.probe(watched);
     }
+    // Met at 48, it catches up from its start at 0 in one step.
     m.probe(ignored);
-    expect(gaps).toEqual([16, 16, 16]);
+    expect(gaps).toEqual([16, 16, 16, 48]);
 
     m.sync(64);
     m.probe(ignored);

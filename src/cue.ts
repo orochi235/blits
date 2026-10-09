@@ -3,7 +3,7 @@ import { changed, index } from './chain.js';
 import { copyable } from './clone.js';
 import { schedule } from './due.js';
 import { VoiceHandle } from './handle.js';
-import { started } from './held.js';
+import { reorigin } from './held.js';
 import { handle } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import { motionOf } from './motion.js';
@@ -177,7 +177,7 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
       localNow(mix, voice) >= voice.start
     ) {
       voice.state = 'live';
-      started(mix, voice);
+      reorigin(mix, voice, mix.now);
       changed(mix, voice);
     }
   }

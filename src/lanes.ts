@@ -493,6 +493,22 @@ export class Lanes<I, O> implements Watcher {
     if (q >= 0) (lane as Lane<I, O>).fix(q);
   }
 
+  /** A voice's clock moved the `shown` of records it had already placed: copies them again. */
+  reshown(id: number): void {
+    const c = this.crowdOf.get(id);
+    const p = c?.rowOf.get(id);
+    if (c !== undefined && p !== undefined) {
+      const held = c.records[p];
+      if (held !== undefined) c.data[p * Row.STRIDE + Row.SINCE] = held.shown;
+    }
+    const lane = this.byId.get(id);
+    if (lane === undefined) return;
+    for (let q = 0; q < lane.list.length; q++) {
+      const held = lane.records[q];
+      if (held !== undefined) lane.data[q * Row.STRIDE + Row.SINCE] = held.shown;
+    }
+  }
+
   /** Something on a voice changed: a crowd copies it again at the next fill. */
   voiceChanged(id: number): void {
     const c = this.crowdOf.get(id);

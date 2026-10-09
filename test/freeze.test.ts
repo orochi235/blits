@@ -128,8 +128,8 @@ describe('freeze before', () => {
     m.probe(part);
     m.sync(400);
     m.probe(part);
-    // One step to the end of its last pass, then none.
-    expect(steps).toEqual([150, 50]);
+    // One step from where its delay ran out at 100, one to the end of its last pass, then none.
+    expect(steps).toEqual([50, 50]);
     expect(elapsed.at(-1)).toBe(100);
   });
 });

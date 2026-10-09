@@ -1,9 +1,11 @@
 import { elapsedWith, retime } from './clock.js';
 import { retire } from './fade.js';
 import { type Claim, defaultFit, type Fit, layout, type SpanClaim, settle } from './fit.js';
+import { reorigin } from './held.js';
 import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
+import { leave } from './origin.js';
 import { ownerReading } from './owner.js';
 import type { FitResult, SpanSpec, VoiceSpec } from './types.js';
 import type { Voice } from './voice.js';
@@ -106,22 +108,26 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>): void {
         c.anchorElapsed = elapsed;
         c.rate = rate;
         c.ramp = null;
+        c.clocks = null;
         moved = true;
       }
     } else {
       if (skipped) {
+        leave(c, local);
         c.rebase(local);
         c.anchorElapsed = c.span;
         c.seeks++;
         moved = true;
       }
       if (c.rate !== rate || c.ramp !== null) {
+        leave(c, local);
         retime(c, local, rate, 0);
         moved = true;
       }
     }
     if (moved) {
       mix.frame = nextFrame();
+      reorigin(mix, c, mix.now);
       noted(mix, c);
     }
   });

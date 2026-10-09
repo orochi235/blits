@@ -4,6 +4,7 @@ import { type Curve, curve } from './easing.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
 import { Named } from './named.js';
+import type { Past } from './origin.js';
 import { childPlayed, Holding, mixTime, ownedElapsed, ownerPatch } from './owner.js';
 import { type Built, builtOf, durationOf, intosOf, type Scratch } from './patch.js';
 import { reading } from './reading.js';
@@ -140,6 +141,8 @@ export interface Controls extends Clock {
   outOver: number;
   outSet: boolean;
   rebuilds: number;
+  /** How many of the voice's past clocks it had then. */
+  past: number;
   /** Shows in its own frame: made by a sync, or before anything read the mix that frame. */
   sync: boolean;
 }
@@ -245,8 +248,13 @@ export class Voice<I, O> {
   opened = Number.NaN;
   /** Which of its entries in the mix's due queue is current; older ones are skipped when popped. */
   dueToken = 0;
-  /** Records made while it was pending, whose `since` its start may since have moved. */
+  /**
+   * Records whose `since` was still ahead when last worked out, which a later start, rate change
+   * or seek moves; null while none are.
+   */
   early: Subject<unknown>[] | null = null;
+  /** The clocks it ran on before its current one, where a subject's origin may lie; null for none. */
+  clocks: Past[] | null = null;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: Setting<unknown>;
   /** Every subject this voice has been asked about, so a handover knows when it is finished. */
@@ -400,6 +408,9 @@ export class Voice<I, O> {
     this.outOver = c.outOver;
     this.outSet = c.outSet;
     this.rebuilds = c.rebuilds;
+    const clocks = this.clocks;
+    if (clocks !== null && clocks.length !== c.past)
+      this.clocks = c.past === 0 ? null : clocks.slice(0, c.past);
   }
 
   /**
@@ -513,6 +524,7 @@ export class Voice<I, O> {
       outOver: this.outOver,
       outSet: this.outSet,
       rebuilds: this.rebuilds,
+      past: this.clocks?.length ?? 0,
     });
   }
 
@@ -535,6 +547,7 @@ export class Voice<I, O> {
     v.log = null;
     v.early = null;
     if (controls) v.take(controls);
+    if (v.clocks === this.clocks && v.clocks !== null) v.clocks = v.clocks.slice();
     v.quiet = true;
     v.unreached = null;
     v.unreachedBits = null;

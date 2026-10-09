@@ -5,6 +5,7 @@ import { schedule } from './due.js';
 import { beginFade, beginRise, fadeAt, fadeSubject } from './fade.js';
 import { goneIndex } from './gone.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
+import { reorigin } from './held.js';
 import { noted, remember } from './history.js';
 import type { LaneHost } from './lanes.js';
 import { hostOf, listed, markOf, readingAt } from './marks.js';
@@ -171,6 +172,8 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
     },
     changed: (voice) => {
       mix.frame = nextFrame();
+      reorigin(mix, voice, mix.now);
+      if (voice.holding !== null) descendants(voice, (v) => reorigin(mix, v, mix.now));
       noted(mix, voice);
       mix.lanes?.refill();
     },

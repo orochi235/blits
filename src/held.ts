@@ -1,6 +1,6 @@
 import { schedule } from './due.js';
 import type { Mixer } from './mixer.js';
-import { mixTime } from './owner.js';
+import { originOf } from './origin.js';
 import { unreach, unreached } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
 
@@ -75,7 +75,7 @@ export function held<I, O>(
     rested: false,
     bands: null,
     state: voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
-    stepped: this.backward && since < now ? since : now,
+    stepped: since < now ? since : now,
     ticks: 0,
     probed: Number.NaN,
     delta: null,
@@ -94,9 +94,15 @@ export function held<I, O>(
     held.unknown = this.backward && voice.spec.from === 'current';
   }
   voice.subjects.set(subject, held);
-  if (voice.state === 'pending') {
-    voice.early ??= [];
-    voice.early.push(held);
+  if (!(since <= now)) {
+    const early = (voice.early ??= []);
+    // Prunes at each doubling, so records whose origin has passed are not kept to the voice's end.
+    if (early.length >= 64 && (early.length & (early.length - 1)) === 0) {
+      let kept = 0;
+      for (const h of early) if (!(h.since <= now)) early[kept++] = h;
+      early.length = kept;
+    }
+    early.push(held);
   }
   voice.seen++;
   if (delay > voice.latest) {
@@ -108,28 +114,33 @@ export function held<I, O>(
 }
 
 /**
- * When the voice clock reads `delay`, from where it is anchored now; during a ramp this assumes
- * the rate it is ramping to.
+ * The mix time the voice clock first read `delay`, or will by its controls now. A stateful voice
+ * counts from its last seek that rebuilt state, as its records do.
  */
 export function sinceOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, delay: number): number {
-  const t =
-    voice.rate > 0
-      ? voice.anchorNow + (delay - voice.anchorElapsed) / voice.rate
-      : voice.start + delay;
-  return voice.owner === null ? t : mixTime(voice.owner, t);
+  const p = voice.patch;
+  return originOf(voice, delay, p.state !== undefined || p.step !== undefined || voice.keeping);
 }
 
 export function shownOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, since: number): number {
   return voice.freezesBefore && voice.opened < since ? voice.opened : since;
 }
 
-/** A voice has gone live: the records it made while pending count from where it started. */
-export function started<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
+/**
+ * A voice's start or clock moved, or it went live at `now`: the records whose `since` was still
+ * ahead count from where its clock now puts them.
+ */
+export function reorigin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
   const early = voice.early;
   if (early === null) return;
-  voice.early = null;
+  let kept = 0;
   for (const held of early) {
     held.since = mix.sinceOf(voice, held.delay);
     held.shown = mix.shownOf(voice, held.since);
+    if (held.ticks === 0 && held.stepped > held.since) held.stepped = held.since;
+    if (!(held.since <= now)) early[kept++] = held;
   }
+  early.length = kept;
+  if (kept === 0) voice.early = null;
+  mix.lanes?.reshown(voice.id);
 }
