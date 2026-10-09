@@ -14,8 +14,8 @@ export function memoryStore(): HistoryStore & { held: Map<string, Paged>; loads:
       store.loads++;
       return [...held.values()].map((p) => structuredClone(p));
     },
-    cut(t: number) {
-      for (const [k, p] of held) if (p.at > t) held.delete(k);
+    cut(seq: number) {
+      for (const [k, p] of held) if (p.seq > seq) held.delete(k);
     },
   };
   return store;

@@ -584,3 +584,189 @@ describe('seek back over a rise', () => {
     }
   });
 });
+
+const kept100k = (): MixOptions => ({ history: { ms: 100_000, every: 50, tape }, stepMs: 4 });
+
+/** The mix time at each host frame of `scene`. */
+function mixTimes(scene: Scene, frames: number[]): Map<number, number> {
+  const m = mix<Part, Pose>(K, kept100k());
+  const h: Record<string, Handle<Part>> = {};
+  const out = new Map<number, number>();
+  for (const t of frames) {
+    m.sync(t);
+    scene(m, t, h);
+    out.set(t, m.now);
+  }
+  return out;
+}
+
+/** Plays `scene` through, seeks back to the frame the host synced at `t` and plays on. */
+function seeksBack(scene: Scene, t: number) {
+  const frames = every(0, 1200, 16);
+  const run = play(scene, frames, [a, b], kept100k());
+  const ref = play(scene, frames, [a, b], kept100k());
+  const at = mixTimes(scene, frames).get(t) as number;
+  replays(run, frames, t, at);
+  return { ref, at };
+}
+
+const projected = (m: Mix<Part, Pose>, at: number) => {
+  const p = m.project(at);
+  return [a, b].map((s) => ({ ...p.probe(s) }));
+};
+
+describe('seek and read back, by the frame a change was decided in', () => {
+  it('keeps a voice whose fade was given a time before the moment but decided after it', () => {
+    const scene: Scene = (m, t, h) => {
+      if (t === 64)
+        h.v = m.cue({
+          patch: wave,
+          fade: { in: 50, out: 60 },
+          freeze: 'before',
+          start: m.now - 30,
+        });
+      if (t === 128) h.v?.fade({ over: 0, at: m.now - 40 });
+    };
+    const { ref, at } = seeksBack(scene, 96);
+    expect(projected(ref.m, at)).toEqual(ref.poses.get(96));
+  });
+
+  it('keeps a voice a handle sought past its end after the moment', () => {
+    const scene: Scene = (m, t, h) => {
+      if (t === 96) h.v = m.cue({ patch: wave, loop: false, fade: { in: 50 }, freeze: 'before' });
+      if (t === 224) h.v?.seek(800);
+    };
+    const { ref } = seeksBack(scene, 96);
+    expect(projected(ref.m, 160)).toEqual(ref.poses.get(160));
+  });
+
+  it('keeps a fade begun before its voice starts, so a later rise turns it', () => {
+    seeksBack((m, t, h) => {
+      if (t === 32)
+        h.v = m.cue({
+          patch: wave,
+          loop: 2,
+          fade: { out: 0 },
+          freeze: 'after',
+          start: m.now + 100,
+        });
+      if (t === 64) h.v?.fade({ over: 200, at: m.now - 40 });
+      if (t === 320) h.v?.rise({ over: 150 });
+    }, 96);
+  });
+
+  it('lands on the last frame at a mix time rate 0 held there', () => {
+    const scene: Scene = (m, t, h) => {
+      if (t === 480) m.rate = 0;
+      if (t === 576)
+        h.v = m.cue({
+          patch: drift(),
+          loop: false,
+          fade: { out: 60 },
+          freeze: 'both',
+          rate: 0.5,
+          start: m.now + 100,
+        });
+      if (t === 640) m.rate = 1;
+    };
+    // Mix time 480 stands from the frame at 480 to the one at 640.
+    const frames = every(0, 1200, 16);
+    const run = play(scene, frames, [a, b], kept100k());
+    expect(projected(run.m, 480)).toEqual(run.poses.get(640));
+    replays(run, frames, 640, 480);
+  });
+
+  it('goes forward through frames rate 0 held at a mix time, to the last of them', () => {
+    const scene: Scene = (m, t, h) => {
+      if (t === 480) m.rate = 0;
+      if (t === 576) h.v = m.cue({ patch: drift(), loop: false, rate: 0.5, start: m.now });
+      if (t === 640) m.rate = 1;
+    };
+    const run = play(scene, every(0, 800, 16), [a, b], kept100k());
+    const ref = play(scene, every(0, 800, 16), [a, b], kept100k());
+    run.m.seek(96);
+    run.m.seek(480);
+    expect(probes(run.m)).toEqual(ref.poses.get(640));
+  });
+
+  it('plays a call made while rate 0 held the clock again at its own frame', () => {
+    seeksBack((m, t, h) => {
+      if (t === 160) m.rate = 0;
+      if (t === 224)
+        h.v = m.cue({
+          patch: wave,
+          loop: false,
+          fade: { out: 150 },
+          weight: 0.5,
+          rate: 2,
+          start: m.now,
+        });
+      if (t === 320) m.rate = 2;
+    }, 96);
+  });
+
+  it('finds the rate unset again before the frame that first set it', () => {
+    seeksBack((m, t, h) => {
+      if (t === 96)
+        h.v = m.cue({ patch: wave, fade: { out: 60 }, freeze: 'before', start: m.now + 100 });
+      if (t === 160) (h.v as { rate: number }).rate = 2;
+      if (t === 192) m.rate = 0.5;
+    }, 96);
+  });
+
+  it('lands at the end of a frame its calls changed, and leaves what follows to the next', () => {
+    seeksBack((m, t, h) => {
+      if (t === 512) {
+        h.v = m.cue({
+          patch: ramp,
+          loop: false,
+          fade: { out: 150 },
+          weight: 0.5,
+          rate: 2,
+          start: m.now - 30,
+        });
+        h.v.seek(350);
+      }
+      if (t === 640) m.rate = 0.5;
+    }, 512);
+  });
+});
+
+describe('a voice clock moved outright', () => {
+  it('fades in from where a handle seek put the voice origin', () => {
+    seeksBack((m, t, h) => {
+      if (t === 32)
+        h.v = m.cue({
+          patch: drift(),
+          loop: false,
+          fade: { in: 50, out: 150 },
+          freeze: 'both',
+          start: m.now + 48,
+        });
+      if (t === 64) m.rate = 0;
+      if (t === 224) h.v?.seek(800);
+      if (t === 480) m.rate = 2;
+    }, 480);
+  });
+
+  it('reads the same projected ahead as played, once a pinned start moves its clock', () => {
+    const scene: Scene = (m, t, h) => {
+      if (t === 96) m.rate = 2;
+      if (t === 320) m.rate = 0;
+      if (t === 448)
+        h.v = m.cue({
+          patch: wave,
+          loop: false,
+          fade: { out: 150 },
+          freeze: 'before',
+          weight: 0.5,
+          rate: 2,
+          start: m.now - 30,
+        });
+      if (t === 512) h.v?.seek(100);
+    };
+    const full = play(scene, every(0, 800, 16), [a, b], kept100k());
+    const early = play(scene, every(0, 656, 16), [a, b], kept100k());
+    expect(projected(early.m, early.m.now)).toEqual(full.poses.get(672));
+  });
+});

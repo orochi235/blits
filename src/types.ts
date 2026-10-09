@@ -801,8 +801,11 @@ export interface HistoryStore {
    * the latest record at or before `t` and every record after it. Returning everything is fine.
    */
   load(t: number): Promise<readonly Paged[]>;
-  /** A seek went back to `t`: every record after it is from a future the tape makes again. Forget them. */
-  cut(t: number): void;
+  /**
+   * A seek went back to frame `seq`: every record whose `seq` is greater is from a future the tape
+   * makes again. Forget them.
+   */
+  cut(seq: number): void;
 }
 
 /**
@@ -837,6 +840,11 @@ export interface Paged {
   subject?: string | number;
   /** Mix time. */
   at: number;
+  /**
+   * The transport's frame it was made in. Rate 0 holds mix time still across frames, and a fade
+   * given a time already passed is filed behind the frame that decided it, so a cut goes by this.
+   */
+  seq: number;
   data: unknown;
 }
 
@@ -1101,14 +1109,15 @@ export interface Mix<I, O, H = unknown> {
   /**
    * Reads the mix at another mix time, without moving it. Ahead of the mix it plays what is cued
    * forward, and throws for a time past a call the tape will play again after a `seek` back, which
-   * only a seek there makes; behind it, it needs `history`, and throws for a time older than the
-   * history reaches. On a transport it reads every mix on it together, so anchors across them
+   * only a seek there makes; behind it, it needs `history`, reads the last frame at or before
+   * `time` as that frame showed, and throws for a time older than the history reaches. On a transport it reads every mix on it together, so anchors across them
    * answer.
    */
   project(time: number): Projection<I, O>;
   /**
    * Moves the mix to mix time `time`, as it stood at the end of that frame, and plays on from
-   * there. Needs `history` with a `tape`, which records the host's calls by mix time.
+   * there; where rate 0 held the clock at `time` for several frames, the last of them. Needs
+   * `history` with a `tape`, which records the host's calls by the host time they were made at.
    *
    * Back, the mix restores itself: controls, records, voices and marks as they stood then. Voices
    * that left after it are back on the handles the host holds, their `done` and `played` starting
@@ -1119,8 +1128,8 @@ export interface Mix<I, O, H = unknown> {
    * after it are let go: after a seek back, signals and host fields read live again, and `assess`
    * reports what they fed as `held`.
    *
-   * Forward, through a sync or a later seek, the mix plays the recorded calls again at the mix
-   * times they were made: cues, handle writes, fades, retargets and pushes, its rate, marks,
+   * Forward, through a sync or a later seek, the mix plays the recorded calls again in the frames
+   * they were made in: cues, handle writes, fades, retargets and pushes, its rate, marks,
    * `mute` and `drop`. A call the host makes while there are recorded calls ahead starts a new
    * branch, and the tape keeps the old future beside it; `tape.switchBranch` picks one back.
    * Playing past a time again sends its events and books its marks and hits again.

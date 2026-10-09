@@ -27,7 +27,7 @@ export function fadeSubject<I, O>(
     return;
   }
   voice.parts ??= new Map();
-  voice.parts.set(subject, { at, over: ms });
+  voice.parts.set(subject, { at, over: ms, seq: mix.transport.seq });
   mix.parters.add(voice);
   schedule(mix, voice);
   mix.lanes?.refill();
@@ -53,7 +53,7 @@ export function part<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I, at:
   voice.parts?.delete(subject);
   if (voice.parts?.size === 0) voice.parts = null;
   voice.parted ??= new Map();
-  voice.parted.set(subject, at);
+  voice.parted.set(subject, { at, seq: mix.transport.seq });
   mix.parters.add(voice);
   forgetIn(mix, voice, subject);
   const motion = voice.motion;
@@ -183,7 +183,8 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
   voice.keepOn = null;
   mix.retired.push(voice);
   voice.doneAt = at ?? (Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now);
-  voice.play(false, voice.doneAt);
+  voice.doneSeq = mix.transport.seq;
+  voice.play(false, voice.doneAt, voice.doneSeq);
   voice.resolve();
   // An owner takes what it holds with it, and leaves with its last child.
   if (voice.holding !== null)

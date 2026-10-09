@@ -1,6 +1,6 @@
 import { ownBlends } from './blend.js';
 import { index } from './chain.js';
-import { copyHeld, last, leftAt } from './history.js';
+import { copyHeld, last, lastWithin, leftAt } from './history.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
 import { heldByInput, ownerReading, relink } from './owner.js';
@@ -8,7 +8,7 @@ import { pin } from './place.js';
 import { reading } from './reading.js';
 import { Store } from './store.js';
 import { hostAt } from './tape.js';
-import { Transport } from './transport.js';
+import { type Cut, Transport, within } from './transport.js';
 import type { Doubt, Mix, Projection, TransportProjection } from './types.js';
 import { cover } from './unpage.js';
 import { unreached } from './unreached.js';
@@ -21,27 +21,38 @@ import type { Controls, Subject, Voice } from './voice.js';
 export function projectAll(transport: Transport, t: number): TransportProjection {
   const ahead = Number.isNaN(transport.now) || t >= transport.now;
   const tape = transport.tape;
-  const next = ahead && tape !== undefined ? tape.timestampAt(tape.undoDepth()) : undefined;
+  const stamp = ahead && tape !== undefined ? tape.timestampAt(tape.undoDepth()) : undefined;
+  const pace = transport.pace;
+  const next = stamp === undefined || pace === null ? stamp : pace.reading(stamp);
   if (next !== undefined && next <= t)
     throw new Error(
       `blits: the tape holds calls at ${next} that a read ahead to ${t} cannot play; seek there to see them`,
     );
+  // Behind, the last frame at or before `t`, read as it showed when `t` is that frame's own time.
+  let cut: Cut = { seq: transport.seq, strict: false };
+  let u = hostAt(transport, t);
   if (!ahead) {
     const history = transport.history;
     if (!history) throw new Error('blits: reading back needs a mix made with history');
     cover(transport, t);
+    const frame = transport.frameAt(t);
+    if (frame !== undefined) {
+      cut = { seq: frame.seq, strict: frame.at === t };
+      if (frame.at === t) u = frame.u;
+    }
   }
-  const u = hostAt(transport, t);
-  const pace = transport.pace;
   const c = new Transport(undefined, true);
   c.offset = transport.offset;
   c.u = u;
   c.nextId = transport.nextId;
   c.now = ahead ? transport.now : t;
-  c.pace = pace === null ? null : pace.until(ahead ? Number.POSITIVE_INFINITY : u);
-  c.announced = (ahead ? transport.announced : transport.announced.filter((a) => a.made < t)).map(
-    (a) => ({ ...a }),
-  );
+  c.pace =
+    pace === null || !within(cut, transport.pacedSeq)
+      ? null
+      : pace.until(ahead ? Number.POSITIVE_INFINITY : u);
+  c.announced = (
+    ahead ? transport.announced : transport.announced.filter((a) => within(cut, a.seq))
+  ).map((a) => ({ ...a }));
   const copies = new Map<Mixer<unknown, unknown>, Mixer<unknown, unknown>>();
   for (const mix of transport.members) {
     const copy = new Mixer<unknown, unknown>(mix.kit, {
@@ -54,7 +65,7 @@ export function projectAll(transport: Transport, t: number): TransportProjection
     copy.projecting = true;
     copies.set(mix, copy);
     if (ahead) copyAhead(mix, copy);
-    else copyBack(mix, copy, t);
+    else copyBack(mix, copy, t, cut);
   }
   if (ahead) for (const copy of copies.values()) move(copy, t);
   const read = <T>(f: () => T): T => {
@@ -101,13 +112,14 @@ function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
   count(c);
 }
 
-/** A mix's copy for a read back to `t`: its voices then, from the controls and copies kept. */
-function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number): void {
+/** A mix's copy for a read back to `t`, cut at `cut`: its voices then, from the controls and copies kept. */
+function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): void {
   c.pose = mix.pose;
   c.wantsPose = mix.wantsPose;
   c.reducedNow = mix.reducedNow;
   c.backward = true;
-  const was = last(mix.hostLog, t, true);
+  // Copied as the frame's first probe began, so its own frame shows it.
+  const was = lastWithin(mix.hostLog, { seq: cut.seq, strict: false });
   const host = mix.opts.host;
   const then =
     was && typeof host === 'object' && host !== null
@@ -115,13 +127,13 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number): void {
       : undefined;
   if (was) c.hostThen = was;
   c.cued = [...mix.cued, ...mix.gone]
-    .filter((v) => v.cuedAt <= t && v.doneAt > t)
+    .filter((v) => v.cuedSeq <= cut.seq && !within(cut, v.doneSeq, true))
     .sort((a, b) => a.id - b.id)
     .map((v) => {
       const log = v.log as Controls[];
       const copy = v.copy(
-        (subject) => recall(mix, v, subject, t),
-        last(log, t, (e) => e.sync) ?? (log[0] as Controls),
+        (subject) => recall(mix, v, subject, t, cut),
+        lastWithin(log, cut) ?? (log[0] as Controls),
       );
       if (then !== undefined) copy.setting.host = then;
       return copy;
@@ -129,14 +141,13 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number): void {
   ownBlends(c.cued);
   if (mix.owners !== null) relink(c.cued);
   for (const copy of c.cued)
-    copy.state =
-      (copy.owner === null ? t : ownerReading(copy.owner, t)) < copy.start
+    copy.state = copy.out
+      ? 'fading'
+      : (copy.owner === null ? t : ownerReading(copy.owner, t)) < copy.start
         ? 'pending'
-        : copy.out && copy.out.at <= t
-          ? 'fading'
-          : copy.freezesAfter && copy.elapsedAt(t) >= copy.span + copy.latest
-            ? 'frozen'
-            : 'live';
+        : copy.freezesAfter && copy.elapsedAt(t) >= copy.span + copy.latest
+          ? 'frozen'
+          : 'live';
   count(c);
 }
 
@@ -195,8 +206,9 @@ function recall<I, O>(
   voice: Voice<I, O>,
   subject: I,
   t: number,
+  cut: Cut,
 ): Subject<unknown> | undefined {
-  const live = leftAt(voice.left, subject, t) ?? recordOf(mix, voice, subject);
+  const live = leftAt(voice.left, subject, cut) ?? recordOf(mix, voice, subject);
   if (live === undefined) return undefined;
   const snap = live.snaps && last(live.snaps, t, true);
   if (snap) {

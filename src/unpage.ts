@@ -9,7 +9,7 @@ import type { Paged } from './types.js';
 import type { Controls, Subject, Voice } from './voice.js';
 
 type Member = Mixer<unknown, unknown>;
-type Left = { subject: unknown; at: number; held: Subject<unknown> };
+type Left = { subject: unknown; at: number; seq: number; held: Subject<unknown> };
 
 /**
  * Makes memory reach mix time `t` for a seek or read there, from what `prepare` loaded; true where
@@ -37,13 +37,13 @@ export function cover(transport: Transport, t: number): boolean {
   return true;
 }
 
-/** A seek back to `t`: what the store and `prepare` hold after it is from a future the tape makes again. */
-export function cut(transport: Transport, t: number, unpaged: boolean): void {
+/** A seek back to frame `seq`: what the store and `prepare` hold after it is from a future the tape makes again. */
+export function cut(transport: Transport, seq: number, unpaged: boolean): void {
   const pager = transport.pager;
   if (pager === null) return;
-  if (unpaged) pager.store.cut(t);
+  if (unpaged) pager.store.cut(seq);
   const loaded = pager.loaded;
-  if (loaded !== null) loaded.records = loaded.records.filter((r) => r.at <= t);
+  if (loaded !== null) loaded.records = loaded.records.filter((r) => r.seq <= seq);
 }
 
 /** Puts records a store gave back into memory ahead of what it still holds, as if never paged. */
@@ -52,7 +52,7 @@ function unpage(transport: Transport, records: readonly Paged[]): void {
   for (const m of [...transport.members, ...transport.dropped.map((d) => d.mix)])
     mixes.set(m.name ?? '', m);
   const by = new Map<Member, Paged[]>();
-  for (const r of [...records].sort((a, b) => a.at - b.at)) {
+  for (const r of [...records].sort((a, b) => a.seq - b.seq)) {
     const m = mixes.get(r.mix);
     if (m === undefined) continue;
     const list = by.get(m);
@@ -74,7 +74,7 @@ function unpageMix(mix: Member, records: readonly Paged[]): void {
     }
   const host = records.filter((r) => r.stream === 'host');
   mix.hostLog = before(
-    host.map((r) => ({ at: r.at, fields: r.data as Record<string, unknown> })),
+    host.map((r) => ({ at: r.at, seq: r.seq, fields: r.data as Record<string, unknown> })),
     mix.hostLog,
   );
   const byVoice = new Map<number, Paged[]>();
@@ -101,16 +101,20 @@ function unpageVoice(voice: Voice<unknown, unknown>, records: readonly Paged[], 
   const left = voice.left ?? [];
   for (const r of of('left')) {
     const subject = keys.subject(r.subject);
-    if (!left.some((e) => e.at === r.at && Object.is(e.subject, subject)))
-      left.push({ subject, at: r.at, held: unpackHeld(voice, r.data as PackedRecord) });
+    if (!left.some((e) => e.seq === r.seq && Object.is(e.subject, subject)))
+      left.push({ subject, at: r.at, seq: r.seq, held: unpackHeld(voice, r.data as PackedRecord) });
   }
-  left.sort((a, b) => a.at - b.at);
+  left.sort((a, b) => a.seq - b.seq);
   voice.left = left.length === 0 ? null : left;
   for (const [key, list] of bySubject(of('snap'))) {
     const subject = keys.subject(key);
     for (const [held, snaps] of lives(voice, subject, list))
       held.snaps = before(
-        snaps.map((r) => ({ at: r.at, held: unpackHeld(voice, r.data as PackedRecord) })),
+        snaps.map((r) => ({
+          at: r.at,
+          seq: r.seq,
+          held: unpackHeld(voice, r.data as PackedRecord),
+        })),
         held.snaps ?? [],
       );
   }
@@ -118,13 +122,14 @@ function unpageVoice(voice: Voice<unknown, unknown>, records: readonly Paged[], 
     const subject = keys.subject(key);
     for (const [held, inputs] of lives(voice, subject, list))
       held.inputs = before(
-        inputs.map((r) => ({ at: r.at, value: r.data as number })),
+        inputs.map((r) => ({ at: r.at, seq: r.seq, value: r.data as number })),
         held.inputs ?? [],
       );
   }
   const motion = voice.motion;
   if (motion === undefined) return;
-  for (const r of of('released')) motion.reclaim(keys.subject(r.subject), r.at, r.data as Run);
+  for (const r of of('released'))
+    motion.reclaim(keys.subject(r.subject), r.at, r.seq, r.data as Run);
   for (const [key, list] of bySubject(of('stretch'))) motion.restretch(keys.subject(key), list);
 }
 
@@ -151,24 +156,24 @@ function lives(
   const out: [Subject<unknown>, Paged[]][] = [];
   let from = Number.NEGATIVE_INFINITY;
   for (const e of left) {
-    out.push([e.held, records.filter((r) => r.at > from && r.at <= e.at)]);
-    from = e.at;
+    out.push([e.held, records.filter((r) => r.seq > from && r.seq <= e.seq)]);
+    from = e.seq;
   }
   const live = voice.subjects.get(subject);
-  if (live?.reaches) out.push([live, records.filter((r) => r.at > from)]);
+  if (live?.reaches) out.push([live, records.filter((r) => r.seq > from)]);
   return out;
 }
 
 /**
- * `loaded`, in time order, ahead of `list`: those older than its first entry, the last of any that
- * share a time, which is the one a read finds.
+ * `loaded`, in the order it was made, ahead of `list`: those older than its first entry, the last
+ * of any that share a frame, which is the one a read finds.
  */
-function before<T extends { at: number }>(loaded: readonly T[], list: T[]): T[] {
-  const first = list[0]?.at ?? Number.POSITIVE_INFINITY;
+function before<T extends { seq: number }>(loaded: readonly T[], list: T[]): T[] {
+  const first = list[0]?.seq ?? Number.POSITIVE_INFINITY;
   const out: T[] = [];
   for (const e of loaded) {
-    if (!(e.at < first)) continue;
-    if (out.length > 0 && (out[out.length - 1] as T).at === e.at) out[out.length - 1] = e;
+    if (!(e.seq < first)) continue;
+    if (out.length > 0 && (out[out.length - 1] as T).seq === e.seq) out[out.length - 1] = e;
     else out.push(e);
   }
   return out.length === 0 ? list : [...out, ...list];

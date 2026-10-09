@@ -111,7 +111,7 @@ export class Mixer<I, O> implements Mix<I, O> {
    * Under `history` with `inputs`, the host fields patches read, copied each frame they changed. In
    * a projection reading back, the copy in force then.
    */
-  hostLog: { at: number; fields: Record<string, unknown> }[] = [];
+  hostLog: { at: number; seq: number; fields: Record<string, unknown> }[] = [];
   hostThen: { fields: Record<string, unknown> } | undefined;
   /** Each subject's last two poses and when they were probed, for `from: 'current'`. */
   pose = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();

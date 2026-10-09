@@ -22,8 +22,8 @@ export interface PackedRecord {
   kept: unknown[] | null;
   base?: Record<string, unknown>;
   slope?: Record<string, unknown>;
-  snaps?: [at: number, held: PackedRecord][];
-  inputs?: { at: number; value: number }[];
+  snaps?: [at: number, seq: number, held: PackedRecord][];
+  inputs?: { at: number; seq: number; value: number }[];
 }
 
 /** A voice's record of one subject as plain data, its patch's `pack` taking its state. */
@@ -46,7 +46,7 @@ export function packHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): PackedR
   };
   if (h.base !== undefined) p.base = clone(h.base);
   if (h.slope !== undefined) p.slope = clone(h.slope);
-  if (h.snaps !== undefined) p.snaps = h.snaps.map((s) => [s.at, packHeld(voice, s.held)]);
+  if (h.snaps !== undefined) p.snaps = h.snaps.map((s) => [s.at, s.seq, packHeld(voice, s.held)]);
   if (h.inputs !== undefined) p.inputs = h.inputs.map((e) => ({ ...e }));
   return p;
 }
@@ -81,7 +81,7 @@ export function unpackHeld<I, O>(voice: Voice<I, O>, p: PackedRecord): Subject<u
   if (p.base !== undefined) h.base = p.base;
   if (p.slope !== undefined) h.slope = p.slope;
   if (p.snaps !== undefined)
-    h.snaps = p.snaps.map(([at, held]) => ({ at, held: unpackHeld(voice, held) }));
+    h.snaps = p.snaps.map(([at, seq, held]) => ({ at, seq, held: unpackHeld(voice, held) }));
   if (p.inputs !== undefined) h.inputs = p.inputs;
   return h;
 }

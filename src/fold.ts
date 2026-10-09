@@ -62,6 +62,7 @@ function rebuild<I, O>(
   held.kept = null;
   held.unkept = undefined;
   held.since = mix.sinceOf(voice, held.delay);
+  held.shown = mix.shownOf(voice, held.since);
   held.ticks = 0;
   held.stepped = held.since < now ? held.since : now;
   held.probed = Number.NaN;

@@ -1,12 +1,13 @@
 import { index } from './chain.js';
 import { schedule } from './due.js';
-import { copyHeld, last, leftAt } from './history.js';
+import { copyHeld, last, lastWithin, leftAt } from './history.js';
 import { laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
-import { move } from './move.js';
+import { move, nextFrame } from './move.js';
 import { ownerReading } from './owner.js';
+import { place } from './place.js';
 import { refitAll } from './spans.js';
 import { Store } from './store.js';
 import { hostAt, replay } from './tape.js';
@@ -93,20 +94,22 @@ function park<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   voice.park();
 }
 
-/** Puts a voice's controls and records back as they stood at mix time `t`. */
-function restoreVoice<I, O>(voice: Voice<I, O>, t: number): void {
+/** Puts a voice's controls and records back as they stood at mix time `t`, the end of frame `seq`. */
+function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq: number): void {
+  const cut = { seq, strict: false };
   const log = voice.log as Controls[];
-  const c = last(log, t, true) ?? (log[0] as Controls);
+  const c = lastWithin(log, cut) ?? (log[0] as Controls);
   log.length = log.indexOf(c) + 1;
   voice.take(c);
-  if (voice.reopen(t) && voice.owner?.holding) voice.owner.holding.played--;
+  if (voice.reopen(seq) && voice.owner?.holding) voice.owner.holding.played--;
   voice.doneAt = Number.POSITIVE_INFINITY;
+  voice.doneSeq = Number.POSITIVE_INFINITY;
   if (voice.parts !== null) {
-    for (const [subject, r] of voice.parts) if (r.at > t) voice.parts.delete(subject);
+    for (const [subject, r] of voice.parts) if (r.seq > seq) voice.parts.delete(subject);
     if (voice.parts.size === 0) voice.parts = null;
   }
   if (voice.parted !== null) {
-    for (const [subject, at] of voice.parted) if (at > t) voice.parted.delete(subject);
+    for (const [subject, p] of voice.parted) if (p.seq > seq) voice.parted.delete(subject);
     if (voice.parted.size === 0) voice.parted = null;
   }
   voice.seen = 0;
@@ -119,8 +122,8 @@ function restoreVoice<I, O>(voice: Voice<I, O>, t: number): void {
   voice.unreachedBits = null;
   voice.seeks++;
   const left = voice.left;
-  voice.left = left === null ? null : left.filter((e) => e.at <= t);
-  const future = left === null ? [] : left.filter((e) => e.at > t);
+  voice.left = left === null ? null : left.filter((e) => e.seq <= seq);
+  const future = left === null ? [] : left.filter((e) => e.seq > seq);
   voice.subjects = new Restored(
     voice.subjects,
     (live) => {
@@ -129,19 +132,26 @@ function restoreVoice<I, O>(voice: Voice<I, O>, t: number): void {
       if (h.reaches) voice.seen++;
       if (h.rested) voice.restedCount++;
       if (!(h.since <= t)) {
+        // Kept while its origin was still ahead: where the controls put back place it now.
+        h.since = mix.sinceOf(voice, h.delay);
+        h.shown = mix.shownOf(voice, h.since);
+        if (h.ticks === 0 && h.stepped > h.since) h.stepped = h.since;
+      }
+      if (!(h.since <= t)) {
         voice.early ??= [];
         voice.early.push(h);
       }
       return h;
     },
-    (key) => leftAt(future, key, t),
+    (key) => leftAt(future, key, cut),
   );
 }
 
 /** Each voice's state at mix time `t`, once every clock above it is back where it was. */
 function stateAt<I, O>(voice: Voice<I, O>, t: number): Voice<I, O>['state'] {
+  // A fade begins at once, even one whose ramp starts later, at the voice's start.
+  if (voice.out !== null) return 'fading';
   if ((voice.owner === null ? t : ownerReading(voice.owner, t)) < voice.start) return 'pending';
-  if (voice.out !== null && voice.out.at <= t) return 'fading';
   if (voice.freezesAfter && voice.elapsedAt(t) >= voice.span + voice.latest) return 'frozen';
   return 'live';
 }
@@ -160,28 +170,40 @@ export function seek(transport: Transport, t: number): void {
   if (!(t >= transport.born))
     throw new Error(`blits: ${t} is older than this mix's history reaches`);
   const unpaged = cover(transport, t);
-  if (t >= transport.now) replay(transport, () => t);
-  // Under the rate the recorded calls up to `t` set, ahead; behind, under the rate it had then.
-  const u = hostAt(transport, t);
-  if (!Number.isFinite(u)) throw new RangeError(`blits: the mix's rate never reaches ${t}`);
   if (t >= transport.now) {
+    // Ahead, under the rate the recorded calls up to `t` set, past any frames rate 0 held at `t`.
+    const last = replay(
+      transport,
+      (at) => (transport.pace === null ? at : transport.pace.reading(at)) <= t,
+    );
+    const u = Number.isNaN(last) ? hostAt(transport, t) : Math.max(last, hostAt(transport, t));
+    if (!Number.isFinite(u)) throw new RangeError(`blits: the mix's rate never reaches ${t}`);
     transport.u = u;
     for (const m of transport.members) move(m, t);
   } else {
-    const n = tape.depthAt(t);
-    if (n < tape.undoDepth()) tape.goto(n);
-    transport.undrop(t);
-    // What history kept after `t` is let go; the tape holds the calls that made it.
-    transport.announced = transport.announced.filter((a) => a.made <= t);
-    transport.pace?.cut(u);
+    const frame = transport.frameAt(t);
+    if (frame === undefined)
+      throw new Error(`blits: ${t} is older than this mix's history reaches`);
+    // On the frame itself, its own host time: rate 0 may have held the clock there for several.
+    const u = frame.at === t ? frame.u : hostAt(transport, t);
+    const seq = frame.seq;
+    tape.goto(tape.depthAt(u));
+    transport.undrop(seq);
+    // What history kept after the frame is let go; the tape holds the calls that made it.
+    transport.announced = transport.announced.filter((a) => a.seq <= seq);
+    transport.frames = transport.frames.filter((f) => f.seq <= seq);
+    if (transport.pacedSeq > seq) {
+      transport.pace = null;
+      transport.pacedSeq = Number.POSITIVE_INFINITY;
+    } else transport.pace?.cut(u);
     transport.u = u;
     transport.now = t;
-    for (const m of transport.members) back(m, t);
-    cut(transport, t, unpaged);
+    for (const m of transport.members) back(m, t, seq, frame.at < t);
+    cut(transport, seq, unpaged);
   }
+  transport.tick(t);
   // The host's clock reads on from here: its next sync reads `t` plus its time since its last.
-  transport.offset = transport.last - u;
-  transport.u = u;
+  transport.offset = transport.last - transport.u;
   transport.kept();
   for (const m of transport.members) {
     m.stir();
@@ -190,8 +212,11 @@ export function seek(transport: Transport, t: number): void {
   }
 }
 
-/** Puts one mix back as it stood at the end of frame `t`, its transport already there. */
-function back<I, O>(mix: Mixer<I, O>, t: number): void {
+/**
+ * Puts one mix back as it stood at mix time `t`, the end of frame `seq`, its transport already
+ * there; `on` past that frame's own time, where it moves on to `t`.
+ */
+function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void {
   const all = [...mix.cued, ...mix.gone].sort((a, b) => a.id - b.id);
   const kept: Voice<I, O>[] = [];
   const gone: Voice<I, O>[] = [];
@@ -199,10 +224,10 @@ function back<I, O>(mix: Mixer<I, O>, t: number): void {
   const motions = new Set<Motions<I>>();
   for (const voice of all) if (voice.motion !== undefined) motions.add(voice.motion);
   for (const voice of all)
-    if (voice.cuedAt > t) park(mix, voice);
-    else if (voice.doneAt <= t) gone.push(voice);
+    if (voice.cuedSeq > seq) park(mix, voice);
+    else if (voice.doneSeq <= seq) gone.push(voice);
     else kept.push(voice);
-  for (const voice of kept) restoreVoice(voice, t);
+  for (const voice of kept) restoreVoice(mix, voice, t, seq);
   for (const voice of kept) voice.state = stateAt(voice, t);
   mix.cued = kept;
   mix.gone = gone;
@@ -260,11 +285,11 @@ function back<I, O>(mix: Mixer<I, O>, t: number): void {
   }
   for (const motion of motions) {
     if (oldLanes !== null && motion.watcher === oldLanes) motion.watcher = null;
-    motion.rewind(t);
+    motion.rewind(seq);
   }
 
   // What history kept after `t` is let go; the tape holds the calls that made it.
-  mix.hostLog = mix.hostLog.filter((e) => e.at <= t);
+  mix.hostLog = mix.hostLog.filter((e) => e.seq <= seq);
   mix.sent = mix.sent.filter((e) => e.timestamp <= t);
   mix.sentTo = t;
   mix.pins = null;
@@ -277,5 +302,13 @@ function back<I, O>(mix: Mixer<I, O>, t: number): void {
   mix.due = [];
   for (const voice of kept) schedule(mix, voice);
   mix.stir();
-  move(mix, t);
+  // On the frame's own time its move is behind it: a second would land what the next frame does.
+  if (on) move(mix, t);
+  else {
+    mix.frame = nextFrame();
+    mix.reducedNow = mix.reduced;
+    // A voice history let go of may have placed an anchor then: placed again from what it holds.
+    const ms = (mix.opts.history as { ms: number }).ms;
+    if (mix.anchored > 0 && mix.transport.forgotTo >= t - ms) place(mix);
+  }
 }

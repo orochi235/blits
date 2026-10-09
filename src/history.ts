@@ -5,6 +5,7 @@ import type { Mixer } from './mixer.js';
 import { packHeld } from './pack.js';
 import { pageOut } from './paging.js';
 import { scoreTouched } from './scored.js';
+import { type Cut, within } from './transport.js';
 import { type Controls, none, type Subject, type Voice } from './voice.js';
 
 /**
@@ -24,6 +25,28 @@ export function last<T extends { at: number }>(
     const mid = (lo + hi) >> 1;
     const e = list[mid] as T;
     if (e.at < t || (e.at === t && (typeof inclusive === 'function' ? inclusive(e) : inclusive))) {
+      found = e;
+      lo = mid + 1;
+    } else hi = mid - 1;
+  }
+  return found;
+}
+
+/**
+ * The last entry of a list kept in the order it was made that falls inside `cut`, an entry made
+ * before its frame was read counting as `early`.
+ */
+export function lastWithin<T extends { seq: number; sync?: boolean }>(
+  list: readonly T[],
+  cut: Cut,
+): T | undefined {
+  let lo = 0;
+  let hi = list.length - 1;
+  let found: T | undefined;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const e = list[mid] as T;
+    if (within(cut, e.seq, e.sync)) {
       found = e;
       lo = mid + 1;
     } else hi = mid - 1;
@@ -62,7 +85,11 @@ export function noted<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   schedule(mix, voice);
   const log = voice.log;
   if (log === null) return;
-  voice.note(Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now, mix.moving || !mix.looked);
+  voice.note(
+    Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now,
+    mix.transport.seq,
+    mix.moving || !mix.looked,
+  );
   const reach = mix.now - (mix.opts.history as { ms: number }).ms;
   let drop = 0;
   while (drop + 1 < log.length && (log[drop + 1] as Controls).at <= reach) drop++;
@@ -111,13 +138,14 @@ export function copyHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): Subject
 export function recordHost<I, O>(mix: Mixer<I, O>, now: number): void {
   const log = mix.hostLog;
   const prev = log[log.length - 1];
-  if (prev !== undefined && prev.at === now) return;
+  const seq = mix.transport.seq;
+  if (prev !== undefined && prev.seq === seq) return;
   const host = mix.opts.host as Record<string, unknown>;
   const fields: Record<string, unknown> = {};
   for (const v of mix.cued)
     for (const f of v.patch.reads ?? none) if (!(f in fields)) fields[f] = clone(host[f]);
   if (prev !== undefined && same(prev.fields, fields)) return;
-  log.push({ at: now, fields });
+  log.push({ at: now, seq, fields });
   const reach = now - (mix.opts.history as { ms: number }).ms;
   pageOut(mix, 'host', undefined, undefined, older(log, reach), (e) => e.fields, reach);
 }
@@ -139,7 +167,7 @@ export function record<I, O>(
     if (prev.at === mix.now) prev.value = value;
     return;
   }
-  inputs.push({ at: mix.now, value });
+  inputs.push({ at: mix.now, seq: mix.transport.seq, value });
   const reach = mix.now - history.ms;
   const out = older(inputs, reach);
   if (out.length > 0)
@@ -165,7 +193,7 @@ export function remember<I, O>(
   held.snaps = snaps;
   const prev = snaps[snaps.length - 1];
   if (prev !== undefined && mix.now - prev.at < (history.every ?? 200)) return;
-  snaps.push({ at: mix.now, held: copyHeld(voice, held) });
+  snaps.push({ at: mix.now, seq: mix.transport.seq, held: copyHeld(voice, held) });
   const reach = mix.now - history.ms;
   const out = older(snaps, reach);
   if (out.length > 0)
@@ -193,7 +221,7 @@ export function leave<I, O>(
   const history = mix.opts.history;
   if (history === undefined || held === undefined) return;
   const reach = mix.now - history.ms;
-  const left: { subject: I; at: number; held: Subject<unknown> }[] = [];
+  const left: { subject: I; at: number; seq: number; held: Subject<unknown> }[] = [];
   for (const e of voice.left ?? [])
     if (e.at >= reach) left.push(e);
     else if (mix.keys !== null)
@@ -206,26 +234,32 @@ export function leave<I, O>(
         (x) => packHeld(voice, x.held),
         reach,
       );
-  left.push({ subject, at: Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now, held });
+  left.push({
+    subject,
+    at: Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now,
+    seq: mix.transport.seq,
+    held,
+  });
   voice.left = left;
 }
 
-/** The record a subject had at mix time `t` and left a voice with after it, if it left after `t`. */
+/** The record a subject had at `cut` and left a voice with after it, if it left after `cut`. */
 export function leftAt<I>(
-  left: readonly { subject: I; at: number; held: Subject<unknown> }[] | null,
+  left: readonly { subject: I; seq: number; held: Subject<unknown> }[] | null,
   subject: I,
-  t: number,
+  cut: Cut,
 ): Subject<unknown> | undefined {
-  let found: { at: number; held: Subject<unknown> } | undefined;
   for (const e of left ?? [])
-    if (e.at > t && Object.is(e.subject, subject) && (found === undefined || e.at < found.at))
-      found = e;
-  return found?.held;
+    if (!within(cut, e.seq) && Object.is(e.subject, subject)) return e.held;
+  return undefined;
 }
 
-/** The mix time a motion patch keeps a released subject from, and how far back, under history. */
-export function releasing<I, O>(mix: Mixer<I, O>): [at?: number, reach?: number] {
+/**
+ * The mix time a motion patch keeps a released subject from, how far back, and the frame, under
+ * history.
+ */
+export function releasing<I, O>(mix: Mixer<I, O>): [at?: number, reach?: number, seq?: number] {
   const history = mix.opts.history;
   if (history === undefined || Number.isNaN(mix.now)) return [];
-  return [mix.now, mix.now - history.ms];
+  return [mix.now, mix.now - history.ms, mix.transport.seq];
 }

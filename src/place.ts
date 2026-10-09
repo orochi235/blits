@@ -45,6 +45,8 @@ function startAt<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, start: number): boo
   voice.anchorNow = start;
   voice.anchorElapsed = 0;
   voice.clocks = null;
+  // A clock moved outright, as a seek moves it: what a record computed at this mix time is stale.
+  voice.seeks++;
   reorigin(mix, voice, mix.now);
   noted(mix, voice);
   return true;

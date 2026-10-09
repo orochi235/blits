@@ -57,9 +57,9 @@ export function orphan<I, O>(child: Voice<I, O>): Voice<I, O> | null {
 }
 
 /** A child finished its passes: its owner has played once every child it held has. */
-export function childPlayed<I, O>(owner: Voice<I, O>, at: number): void {
+export function childPlayed<I, O>(owner: Voice<I, O>, at: number, seq: number): void {
   const h = owner.holding as Holding<Voice<I, O>>;
-  if (++h.played === h.kids) owner.play(true, at);
+  if (++h.played === h.kids) owner.play(true, at, seq);
 }
 
 /** Every voice an owner holds, its children's children included. */

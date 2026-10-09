@@ -30,6 +30,8 @@ export interface Change {
   v?: number[];
   /** The mix clock when it was made, NaN where no mix was playing the patch. */
   made?: number;
+  /** The frame it was made in, which a rewind partitions by; NaN where no mix was playing the patch. */
+  seq?: number;
 }
 
 /**
@@ -50,6 +52,8 @@ export interface MotionOwner {
   revive(id: number, subject: unknown): void;
   /** The mix clock at its latest frame; NaN before the first. */
   now(): number;
+  /** The number of the frame the mix is playing. */
+  seq(): number;
   /**
    * The host made a change, already given its time, which a seek makes again on the patch its
    * voice plays then: a voice a history store paged out comes back with a patch of its own.
@@ -59,9 +63,10 @@ export interface MotionOwner {
   page(id: number, stream: 'released' | 'stretch', subject: unknown, out: Paging[]): void;
 }
 
-/** A record of a motion patch's history leaving memory, at a mix time. */
+/** A record of a motion patch's history leaving memory, at a mix time and frame. */
 export interface Paging {
   at: number;
+  seq: number;
   data: unknown;
 }
 
@@ -259,32 +264,35 @@ export class Motions<I> {
    * Subjects released at a mix time a rewind may still reach, with their run as it stood, so a
    * rewind before the release plays them on from there. Empty without history.
    */
-  private released: ({ subject: I; at: number } & Run)[] = [];
+  private released: ({ subject: I; at: number; seq: number } & Run)[] = [];
 
   /**
-   * Forgets a subject, so a later ask starts it afresh from `from`. Given the mix time `at`, under
-   * history, its run is kept for a rewind before then, until `reach` passes it.
+   * Forgets a subject, so a later ask starts it afresh from `from`. Given the mix time `at` and frame
+   * `seq`, under history, its run is kept for a rewind before then, until `reach` passes it.
    */
-  release(subject: I, at?: number, reach = Number.NEGATIVE_INFINITY): void {
+  release(subject: I, at?: number, reach = Number.NEGATIVE_INFINITY, seq = Number.NaN): void {
     const s = this.known(subject);
     if (s === undefined) return;
     if (at !== undefined) {
       const kept: typeof this.released = [];
       for (const e of this.released)
         if (e.at >= reach) kept.push(e);
-        else this.owner?.page(this.ownerId, 'released', e.subject, [{ at: e.at, data: runOf(e) }]);
+        else
+          this.owner?.page(this.ownerId, 'released', e.subject, [
+            { at: e.at, seq: e.seq, data: runOf(e) },
+          ]);
       this.released = kept;
-      this.released.push({ subject, at, ...this.runAt(s) });
+      this.released.push({ subject, at, seq, ...this.runAt(s) });
     }
     this.slots.delete(subject);
     this.numbers.release(s);
   }
 
-  /** Puts back each subject released after mix time `t`, as it stood when released. */
-  private unrelease(t: number): void {
-    const back = this.released.filter((e) => e.at > t).sort((a, b) => a.at - b.at);
+  /** Puts back each subject released after frame `seq`, as it stood when released. */
+  private unrelease(seq: number): void {
+    const back = this.released.filter((e) => e.seq > seq).sort((a, b) => a.seq - b.seq);
     if (back.length === 0) return;
-    this.released = this.released.filter((e) => e.at <= t);
+    this.released = this.released.filter((e) => e.seq <= seq);
     const done = new Set<I>();
     for (const e of back) {
       if (done.has(e.subject)) continue;
@@ -335,25 +343,25 @@ export class Motions<I> {
   }
 
   /** A released run a history store gave back, for a rewind to before its release. */
-  reclaim(subject: I, at: number, run: Run): void {
-    if (this.released.some((e) => e.at === at && Object.is(e.subject, subject))) return;
-    this.released.push({ subject, at, ...run });
+  reclaim(subject: I, at: number, seq: number, run: Run): void {
+    if (this.released.some((e) => e.seq === seq && Object.is(e.subject, subject))) return;
+    this.released.push({ subject, at, seq, ...run });
   }
 
   /**
-   * Stretches a history store gave back, each by the mix time it was in force by: each life of the
+   * Stretches a history store gave back, each by the frame it was in force by: each life of the
    * subject, ended by a release, takes those from its own, ahead of the earliest it still keeps.
    */
   restretch(subject: I, back: readonly Paging[]): void {
     const lives = this.released
       .filter((e) => Object.is(e.subject, subject))
-      .sort((x, y) => x.at - y.at);
+      .sort((x, y) => x.seq - y.seq);
     let from = Number.NEGATIVE_INFINITY;
     const within = (to: number) =>
-      back.filter((r) => r.at > from && r.at <= to).map((r) => r.data as Segment);
+      back.filter((r) => r.seq > from && r.seq <= to).map((r) => r.data as Segment);
     for (const e of lives) {
-      e.stretches = ahead(within(e.at), e.stretches);
-      from = e.at;
+      e.stretches = ahead(within(e.seq), e.stretches);
+      from = e.seq;
     }
     const s = this.known(subject);
     if (s === undefined) return;
@@ -559,6 +567,7 @@ export class Motions<I> {
     this.check(c.to, this.n);
     this.check(c.v, this.n);
     c.made = this.owner === null ? Number.NaN : this.owner.now();
+    c.seq = this.owner === null ? Number.NaN : this.owner.seq();
     if (c.at === undefined) {
       const at = this.frame(subject);
       if (!Number.isNaN(at)) c.at = at;
@@ -618,16 +627,16 @@ export class Motions<I> {
   }
 
   /**
-   * Takes back every change made after mix time `t`: each subject plays from its earliest stretch
+   * Takes back every change made after frame `seq`: each subject plays from its earliest stretch
    * kept, with the changes made by then queued to be applied again.
    */
-  rewind(t: number): void {
-    this.unrelease(t);
+  rewind(seq: number): void {
+    this.unrelease(seq);
     for (let s = 0; s < this.numbers.size; s++)
-      if (this.numbers.subject(s) !== absent) this.cut(s, t);
+      if (this.numbers.subject(s) !== absent) this.cut(s, seq);
   }
 
-  private cut(s: number, t: number): void {
+  private cut(s: number, seq: number): void {
     const older = this.older?.[s];
     const pending = this.pending?.[s];
     const current = this.latest(s);
@@ -635,7 +644,7 @@ export class Motions<I> {
     const kept: Change[] = [];
     let cut = false;
     for (const c of [...stretches.slice(1).map((seg) => seg.change), ...(pending ?? [])])
-      if (c === undefined || c.made === undefined || !(c.made > t)) {
+      if (c === undefined || c.seq === undefined || !(c.seq > seq)) {
         if (c !== undefined) kept.push(c);
       } else cut = true;
     if (!cut) return;
@@ -778,12 +787,15 @@ export class Motions<I> {
   }
 
   /**
-   * The mix time a stretch was in force by, which a store keys it under: when the change that
-   * ended it was made, which falls in the same life of the subject.
+   * The mix time and frame a stretch was in force by, which a store keys it under: when the change
+   * that ended it was made, which falls in the same life of the subject.
    */
-  private made(next: Segment): number {
-    const made = next.change?.made;
-    return made === undefined || Number.isNaN(made) ? (this.owner?.now() ?? Number.NaN) : made;
+  private made(next: Segment): { at: number; seq: number } {
+    const c = next.change;
+    const made = c?.made;
+    if (made === undefined || Number.isNaN(made))
+      return { at: this.owner?.now() ?? Number.NaN, seq: this.owner?.seq() ?? Number.NaN };
+    return { at: made, seq: c?.seq ?? Number.NaN };
   }
 
   /** Lets go of stretches older than the one in force at `reading.horizon`. */
@@ -805,10 +817,7 @@ export class Motions<I> {
         this.ownerId,
         'stretch',
         subject,
-        out.map((seg, i) => ({
-          at: this.made(out[i + 1] ?? list[0] ?? this.latest(s)),
-          data: seg,
-        })),
+        out.map((seg, i) => ({ ...this.made(out[i + 1] ?? list[0] ?? this.latest(s)), data: seg })),
       );
     if (list.length === 0) {
       (this.older as (Segment[] | undefined)[])[s] = undefined;

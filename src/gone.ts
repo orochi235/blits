@@ -72,6 +72,14 @@ export function goneIndex<I, O>(mix: Mixer<I, O>): GoneIndex<I, O> {
   return ix;
 }
 
+/** Hands voices let go of from `gone` to the departed index, noting the latest that left. */
+function forgot<I, O>(mix: Mixer<I, O>, out: readonly Voice<I, O>[]): void {
+  for (const v of out) {
+    mix.departed.add(mix, v);
+    if (v.doneAt > mix.transport.forgotTo) mix.transport.forgotTo = v.doneAt;
+  }
+}
+
 /**
  * Keeps the gone voices `keep` says yes to, asking it once each, and takes the rest out of the
  * index one by one. Leaves `gone` as it was when every one stays.
@@ -89,7 +97,7 @@ export function keepGone<I, O>(mix: Mixer<I, O>, keep: (v: Voice<I, O>) => boole
     (keep(v) ? kept : out).push(v);
   }
   remove(ix, out);
-  for (const v of out) mix.departed.add(mix, v);
+  forgot(mix, out);
   mix.gone = kept;
   scoredCut(mix, list, out);
   ix.of = kept;
@@ -125,7 +133,7 @@ export function expireGone<I, O>(mix: Mixer<I, O>, reach: number): void {
   }
   list.splice(0, end, ...kept);
   remove(ix, out);
-  for (const v of out) mix.departed.add(mix, v);
+  forgot(mix, out);
   scoredCut(mix, list, out);
   ix.count = list.length;
 }

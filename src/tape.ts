@@ -6,12 +6,15 @@ import type { Tape, TapeOp } from './types.js';
 /** What a recorded call's `invert` gives: a mix goes back by restoring, never by undoing a call. */
 const undone: TapeOp = { apply() {}, invert: () => undone };
 
-/** The tape `history.tape` makes for a transport, stamping each call with the mix time it was made at. */
+/**
+ * The tape `history.tape` makes for a transport, stamping each call with the host time it was made
+ * at: rate 0 holds mix time still across frames, and host time tells them apart.
+ */
 export function tapeOf(transport: Transport): Tape | undefined {
   const make = transport.history?.tape;
   if (make === undefined) return undefined;
   return make(transport, {
-    now: () => (Number.isNaN(transport.now) ? Number.NEGATIVE_INFINITY : transport.now),
+    now: () => (Number.isNaN(transport.u) ? Number.NEGATIVE_INFINITY : transport.u),
     branching: true,
     coalesceWindowMs: 0,
   });
@@ -45,21 +48,25 @@ export function hostAt(clock: { readonly pace: Pace | null }, t: number): number
 }
 
 /**
- * Makes the recorded calls due by mix time `to()` again, each with every mix on the transport
- * moved to the time it was made at, as the host made it then. `to` is asked again after every
- * call, since a call may change the rate and so where a host time lands.
+ * Makes the recorded calls `due` by the host time each was made at again, each in a frame of its
+ * own with every mix on the transport moved to where it stood then, as the host made it. Answers
+ * the host time of the last frame it played, NaN for none.
  */
-export function replay(transport: Transport, to: () => number): void {
+export function replay(transport: Transport, due: (u: number) => boolean): number {
   const tape = transport.tape;
-  if (tape === undefined) return;
+  if (tape === undefined) return Number.NaN;
   const u = transport.u;
+  let last = Number.NaN;
   try {
     for (;;) {
       const at = tape.timestampAt(tape.undoDepth());
-      if (at === undefined || !(at <= to())) return;
-      if (at > transport.now) {
-        transport.u = hostAt(transport, at);
-        for (const m of transport.members) move(m, at);
+      if (at === undefined || !due(at)) return last;
+      if (at !== last) {
+        last = at;
+        transport.u = at;
+        const now = transport.pace === null ? at : transport.pace.reading(at);
+        if (now > transport.now) for (const m of transport.members) move(m, now);
+        transport.tick(transport.now);
       }
       transport.replaying = true;
       try {

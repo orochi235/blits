@@ -146,6 +146,7 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   }
   if (!Number.isNaN(mix.now)) {
     voice.cuedAt = mix.now;
+    voice.cuedSeq = mix.transport.seq;
     voice.opened = mix.now;
   }
   voice.placing = anchored;
@@ -185,7 +186,7 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   // After placing, so the controls it starts with are where its anchors put it at the cue.
   if (mix.opts.history) {
     voice.log = [];
-    voice.note(Number.NEGATIVE_INFINITY);
+    voice.note(Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY);
     voice.first ??= voice.log[0] as Controls;
   }
   schedule(mix, voice);

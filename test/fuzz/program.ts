@@ -12,7 +12,7 @@ interface Part {
   id: string;
 }
 const K = kit<Pose>({ x: sum(), gain: mul() });
-const subjects: Part[] = [{ id: 'a' }, { id: 'b' }];
+export const subjects: Part[] = [{ id: 'a' }, { id: 'b' }];
 
 const wave = patch<Part, Pose>(400, (p) => ({ x: Math.sin(p * 2 * Math.PI) * 10 }), {
   writes: ['x'],
@@ -232,8 +232,20 @@ export const checkedAt: Record<Property, number[]> = {
   dt: [0],
 };
 
+/**
+ * The frame a seek or read to frame `t`'s mix time lands on: the last frame at that mix time, since
+ * rate 0 can hold the clock there for several.
+ */
+function landing(ref: ReturnType<typeof play>, t: number): number {
+  const at = ref.mixT.get(t);
+  let last = t;
+  for (const f of frames) if (f > t && ref.mixT.get(f) === at) last = f;
+  return last;
+}
+
 /** Plays straight through to `last`, seeks back to the mix time of frame `t`, and plays on. */
-function seekThenPlay(ops: Op[], ref: ReturnType<typeof play>, t: number): string | null {
+function seekThenPlay(ops: Op[], ref: ReturnType<typeof play>, from: number): string | null {
+  const t = landing(ref, from);
   const run = play(ops, frames, kept());
   run.m.seek(ref.mixT.get(t) as number);
   if (differs(probes(run.m), ref.poses.get(t)))
@@ -255,9 +267,8 @@ function checkOne(prop: Property, ops: Op[], t: number, ref: () => ReturnType<ty
     case 'behind': {
       const r = ref();
       const got = probes(r.m.project(r.mixT.get(t) as number));
-      return differs(got, r.poses.get(t))
-        ? `project(${t}) behind got ${fmt(got)} want ${fmt(r.poses.get(t))}`
-        : null;
+      const want = r.poses.get(landing(r, t));
+      return differs(got, want) ? `project(${t}) behind got ${fmt(got)} want ${fmt(want)}` : null;
     }
     case 'ahead': {
       const r = ref();

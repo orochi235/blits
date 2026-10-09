@@ -95,7 +95,8 @@ export function held<I, O>(
   }
   voice.subjects.set(subject, held);
   if (!(since <= now)) {
-    const early = (voice.early ??= []);
+    voice.early ??= [];
+    const early = voice.early;
     // Prunes at each doubling, so records whose origin has passed are not kept to the voice's end.
     if (early.length >= 64 && (early.length & (early.length - 1)) === 0) {
       let kept = 0;

@@ -57,12 +57,12 @@ export interface Subject<S> {
   /** Kept state a history store gave back, which each owner takes in turn on its first keep. */
   unkept?: unknown[];
   /** Under `history`, copies of this record by the mix time they were taken, oldest first. */
-  snaps?: { at: number; held: Subject<S> }[];
+  snaps?: { at: number; seq: number; held: Subject<S> }[];
   /** In a projection: where this record started from, and whether nothing known could be. */
   from?: number;
   unknown?: boolean;
   /** Under `history` with `inputs`, what an input weight signal read for this subject, when it changed. */
-  inputs?: { at: number; value: number }[];
+  inputs?: { at: number; seq: number; value: number }[];
   /** In a projection reading back: that record, to read in place of the signal. */
   replay?: { at: number; value: number }[];
   /** The voice this is the record of; null on a subject's stub. */
@@ -131,6 +131,8 @@ class VoiceSetting<I, O> implements Setting<unknown> {
 /** A voice's clock, weight and fade from one mix time on, kept under `history`. */
 export interface Controls extends Clock {
   at: number;
+  /** The frame it was made in. */
+  seq: number;
   weight: number;
   out: Ramp | null;
   back: Rise | null;
@@ -225,14 +227,14 @@ export class Voice<I, O> {
   /** Whether its patch has kept state on a record through `setting.keep`, which makes it stateful. */
   keeping = false;
   /** Subjects fading out of this voice alone, by the ramp each started; null while none are. */
-  parts: Map<I, { at: number; over: number }> | null = null;
-  /** Subjects faded out of this voice, by the mix time each left at; null while none have. */
-  parted: Map<I, number> | null = null;
+  parts: Map<I, { at: number; over: number; seq: number }> | null = null;
+  /** Subjects faded out of this voice, by the mix time and frame each left at; null while none have. */
+  parted: Map<I, { at: number; seq: number }> | null = null;
   /**
-   * Under history, the records of subjects that left this voice, by the mix time each left at,
-   * while a seek or a read back may reach them; null while none have.
+   * Under history, the records of subjects that left this voice, by the mix time and frame each
+   * left at, while a seek or a read back may reach them; null while none have.
    */
-  left: { subject: I; at: number; held: Subject<unknown> }[] | null = null;
+  left: { subject: I; at: number; seq: number; held: Subject<unknown> }[] | null = null;
   readonly ease: Curve | undefined;
   /** How many passes its `loop` plays, worked out once. */
   readonly passes: number;
@@ -264,8 +266,12 @@ export class Voice<I, O> {
   restedCount = 0;
   /** The mix time it was cued at; -Infinity before the first sync. */
   cuedAt = Number.NEGATIVE_INFINITY;
-  /** The mix time it left at. */
+  /** The frame it was cued in. */
+  cuedSeq = Number.NEGATIVE_INFINITY;
+  /** The mix time it left at, which a fade or seek given a time already passed puts behind now. */
   doneAt = Number.POSITIVE_INFINITY;
+  /** The frame its leaving was decided in, which a seek or read back partitions by. */
+  doneSeq = Number.POSITIVE_INFINITY;
   /** Under `history`, its controls after each change, oldest first. */
   log: Controls[] | null = null;
   /** Under `history`, its controls as `cue` left them, which a voice parked by a seek takes back. */
@@ -308,8 +314,10 @@ export class Voice<I, O> {
    */
   private finished = false;
   private playedAs: boolean | undefined = undefined;
-  /** The mix time `played` was settled at, so a seek back to before it can open it again. */
+  /** The mix time `played` was settled at. */
   private playedAt = Number.NaN;
+  /** The frame `played` was settled in, so a seek back to before it can open it again. */
+  private playedSeq = Number.NaN;
   private donePromise: Promise<void> | null = null;
   private doneSettle: (() => void) | null = null;
   private playedPromise: Promise<boolean> | null = null;
@@ -351,17 +359,18 @@ export class Voice<I, O> {
    * Its finite loop ended (true) or it left first (false), whichever comes first, noticed at mix
    * time `at`: `played` resolves.
    */
-  play(played: boolean, at: number): void {
+  play(played: boolean, at: number, seq: number): void {
     if (this.quiet || this.playedAs !== undefined) return;
     this.playedAs = played;
     this.playedAt = at;
+    this.playedSeq = seq;
     this.playedSettle?.(played);
-    if (played && this.owner !== null) childPlayed(this.owner, at);
+    if (played && this.owner !== null) childPlayed(this.owner, at, seq);
   }
 
-  /** How `played` settled, and the mix time it did; undefined while it has not. */
-  get settled(): { played: boolean | undefined; at: number } {
-    return { played: this.playedAs, at: this.playedAt };
+  /** How `played` settled, and the mix time and frame it did; undefined while it has not. */
+  get settled(): { played: boolean | undefined; at: number; seq: number } {
+    return { played: this.playedAs, at: this.playedAt, seq: this.playedSeq };
   }
 
   /** Whether `played` settled true, which its owner counted. */
@@ -375,18 +384,18 @@ export class Voice<I, O> {
   }
 
   /**
-   * A seek back to mix time `t`: `done` and `played`, where they settled after it, start over with
+   * A seek back to frame `seq`: `done` and `played`, where they settled after it, start over with
    * fresh promises. True where `played` had settled true, which its owner counted.
    */
-  reopen(t: number): boolean {
+  reopen(seq: number): boolean {
     let unplayed = false;
-    if (this.playedAs !== undefined && !(this.playedAt <= t)) {
+    if (this.playedAs !== undefined && !(this.playedSeq <= seq)) {
       unplayed = this.playedAs;
       this.playedAs = undefined;
       this.playedPromise = null;
       this.playedSettle = null;
     }
-    if (this.finished && !(this.doneAt <= t)) {
+    if (this.finished && !(this.doneSeq <= seq)) {
       this.finished = false;
       this.donePromise = null;
       this.doneSettle = null;
@@ -395,7 +404,7 @@ export class Voice<I, O> {
   }
 
   /** Takes on a set of controls: its clock, weight, fades and where its anchors put it. */
-  take(c: Omit<Controls, 'at' | 'sync'>): void {
+  take(c: Omit<Controls, 'at' | 'seq' | 'sync'>): void {
     this.anchorNow = c.anchorNow;
     this.anchorElapsed = c.anchorElapsed;
     this.rate = c.rate;
@@ -438,7 +447,9 @@ export class Voice<I, O> {
     this.latest = 0;
     this.restedCount = 0;
     this.cuedAt = Number.NEGATIVE_INFINITY;
+    this.cuedSeq = Number.NEGATIVE_INFINITY;
     this.doneAt = Number.POSITIVE_INFINITY;
+    this.doneSeq = Number.POSITIVE_INFINITY;
     this.placing = false;
     this.answers = null;
     this.folds = null;
@@ -507,10 +518,11 @@ export class Voice<I, O> {
     return this.owner === null ? t : mixTime(this.owner, t);
   }
 
-  /** Records this voice's controls as they stand, from mix time `at`. */
-  note(at: number, sync = false): void {
+  /** Records this voice's controls as they stand, from mix time `at` in frame `seq`. */
+  note(at: number, seq: number, sync = false): void {
     this.log?.push({
       at,
+      seq,
       sync,
       anchorNow: this.anchorNow,
       anchorElapsed: this.anchorElapsed,

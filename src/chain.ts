@@ -107,7 +107,7 @@ export function linkable<I, O>(
 export function aims<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, subject: I): boolean {
   // A read back to before a subject left still finds it reached.
   const left = voice.parted?.get(subject);
-  if (left !== undefined && !(this.now < left)) return false;
+  if (left !== undefined && !(this.now < left.at)) return false;
   if (voice.named !== null) return voice.named.has(subject);
   return voice.spec.target ? voice.spec.target(subject) : true;
 }

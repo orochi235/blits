@@ -24,16 +24,16 @@ import type {
 
 /**
  * A mark the host announced on a score: `at` in host time, so the rate never moves one, and NaN
- * until the next sync for one announced as now before any sync; `made` is the mix time it was
- * announced, for a read back to know what was known.
+ * until the next sync for one announced as now before any sync.
  */
 export interface Announced {
   name: string;
   score: string | undefined;
   tags: readonly string[];
   at: number;
-  made: number;
   order: number;
+  /** The frame it was announced in, for a read back to know what was known. */
+  seq: number;
   /** The slot of the mix that announced it, -1 for the transport; only it sees an unnamed score. */
   slot: number;
   /** That mix's name, for `Marked.mix`. */
@@ -41,6 +41,28 @@ export interface Announced {
 }
 
 type Member = Mixer<unknown, unknown>;
+
+/**
+ * One frame on the transport: its number, the mix time it stood at and the host time it was made
+ * at. Rate 0 holds mix time still across frames, so only the number tells two of them apart.
+ */
+export interface Frame {
+  seq: number;
+  at: number;
+  u: number;
+}
+
+/** Where history is cut for a seek or read: what frame `seq` made, and before it, is kept. */
+export interface Cut {
+  seq: number;
+  /** For a read of what a frame showed: of that frame's own changes, only those made before it was read. */
+  strict: boolean;
+}
+
+/** Whether a change made in frame `seq` falls inside `cut`; `early` for one made before the frame was read. */
+export function within(cut: Cut, seq: number, early = false): boolean {
+  return seq < cut.seq || (seq === cut.seq && (!cut.strict || early));
+}
 
 /**
  * The clock its mixes play on: host time less what `rebase` took out, at the rate its `pace`
@@ -51,7 +73,7 @@ export class Transport implements TransportApi {
   /** The mixes on it, in the order they joined. */
   members: Member[] = [];
   /** Under history, mixes dropped while a seek back may still reach them, by when. */
-  dropped: { mix: Member; at: number }[] = [];
+  dropped: { mix: Member; at: number; seq: number }[] = [];
   /** Numbers the mixes as they join, for their order and for whose unnamed score a mark is on. */
   slots = 0;
   holders: ScoreHolders = new Map();
@@ -60,6 +82,10 @@ export class Transport implements TransportApi {
   private woken = false;
   /** The mix clock at the last sync or seek. */
   now = Number.NaN;
+  /** The number of the frame being played: each sync, seek and call played again by the tape begins one. */
+  seq = 0;
+  /** Under history, the frames a seek or read back may reach, oldest first. */
+  frames: Frame[] = [];
   /** Host time at the last sync: the host's timestamp less every gap `rebase` took out. */
   u = Number.NaN;
   offset = 0;
@@ -73,6 +99,10 @@ export class Transport implements TransportApi {
   taped = Number.NEGATIVE_INFINITY;
   /** The rate; null while it has never been set, when mix time is host time. */
   pace: Pace | null = null;
+  /** The latest mix time a voice any mix on it let go of from `gone` had left at. */
+  forgotTo = Number.NEGATIVE_INFINITY;
+  /** The frame the rate was first set in, which a seek or read back to before it finds unset. */
+  pacedSeq = Number.POSITIVE_INFINITY;
   /** True while the tape makes a recorded call again, so it is not recorded twice. */
   replaying = false;
   announced: Announced[] = [];
@@ -116,16 +146,16 @@ export class Transport implements TransportApi {
     scoredDrop(m);
     m.dropped = true;
     if (this.history !== undefined) {
-      this.dropped.push({ mix: m, at: this.now });
+      this.dropped.push({ mix: m, at: this.now, seq: this.seq });
       record(this, 'drop', () => this.drop(mix));
     }
   }
 
-  /** A seek back to `t`: every mix dropped after it is back on, as it stood then. */
-  undrop(t: number): void {
-    const back = this.dropped.filter((d) => d.at > t);
+  /** A seek back to frame `seq`: every mix dropped after it is back on, as it stood then. */
+  undrop(seq: number): void {
+    const back = this.dropped.filter((d) => d.seq > seq);
     if (back.length === 0) return;
-    this.dropped = this.dropped.filter((d) => d.at <= t);
+    this.dropped = this.dropped.filter((d) => d.seq <= seq);
     for (const d of back) {
       d.mix.dropped = false;
       this.join(d.mix, d.mix.slot);
@@ -207,15 +237,19 @@ export class Transport implements TransportApi {
     if (Number.isNaN(this.born)) this.born = now;
     // Calls the host made before, played again where a seek went back past them; one may set the
     // rate, which moves where this sync lands.
-    if (this.tape !== undefined && now > this.now) {
-      const reading = () => (this.pace === null ? u : this.pace.reading(u));
-      replay(this, reading);
+    // A call played again at this sync's own host time began its frame, moved there before it.
+    let begun = false;
+    if (this.tape !== undefined && later) {
+      begun = replay(this, (at) => at <= u) === u;
       pace = this.pace;
-      now = reading();
+      now = pace === null ? u : pace.reading(u);
     }
-    // Host time moving while the mix clock stands still lands what waits on host time or the host.
-    const moved = now !== this.now;
-    for (const m of this.members) if (moved || (later && pace !== null && waits(m))) move(m, now);
+    if (!begun) {
+      this.tick(now);
+      // Host time moving while the mix clock stands still lands what waits on host time or the host.
+      const moved = now !== this.now;
+      for (const m of this.members) if (moved || (later && pace !== null && waits(m))) move(m, now);
+    }
     const history = this.history;
     this.kept();
     const reach = this.keepsFrom();
@@ -227,6 +261,10 @@ export class Transport implements TransportApi {
     }
     if (history !== undefined && this.dropped.length > 0)
       this.dropped = this.dropped.filter((d) => d.at >= reach);
+    const frames = this.frames;
+    let n = 0;
+    while (n + 1 < frames.length && (frames[n + 1] as Frame).at <= reach) n++;
+    if (n > 0) frames.splice(0, n);
     this.woken = false;
     // It is a frame too, which asks every weight signal again, so one reading input follows it.
     if (still)
@@ -238,6 +276,33 @@ export class Transport implements TransportApi {
       const bookers = m.bookers;
       if (bookers !== null) for (const b of bookers) b.sync();
     }
+  }
+
+  /** Begins a frame at mix time `at` and the host time the transport stands at. */
+  tick(at: number): void {
+    const seq = ++this.seq;
+    if (this.history !== undefined) this.frames.push({ seq, at, u: this.u });
+    for (const m of this.members) m.looked = false;
+  }
+
+  /**
+   * The frame a seek or read to mix time `t` lands on: the last one standing at or before `t`,
+   * since rate 0 can hold the clock at `t` for many.
+   */
+  frameAt(t: number): Frame | undefined {
+    const frames = this.frames;
+    let lo = 0;
+    let hi = frames.length - 1;
+    let found: Frame | undefined;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const f = frames[mid] as Frame;
+      if (f.at <= t) {
+        found = f;
+        lo = mid + 1;
+      } else hi = mid - 1;
+    }
+    return found;
   }
 
   rebase(): void {
@@ -283,6 +348,7 @@ export class Transport implements TransportApi {
       throw new RangeError(`blits: a mix's rate is a finite number, 0 or more, not ${rate}`);
     if (this.pace === null) {
       this.pace = new Pace(this.history !== undefined);
+      this.pacedSeq = this.seq;
       // Until now mix time was host time, so a pending voice's start is the host time it was given.
       for (const m of this.members)
         for (const v of m.cued)
@@ -310,14 +376,14 @@ export function announce(
     score: opts.score,
     tags: opts.tags ?? [],
     at,
-    made: Number.isNaN(transport.now) ? Number.NEGATIVE_INFINITY : transport.now,
     order: transport.nextId++,
+    seq: transport.seq,
     slot,
     mix,
   };
   transport.announced.push(mark);
   record(transport, 'announce', () => {
-    transport.announced.push({ ...mark });
+    transport.announced.push({ ...mark, seq: transport.seq });
   });
 }
 

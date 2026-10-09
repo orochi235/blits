@@ -27,7 +27,9 @@ interface PackedVoice {
   past: number;
   clocks: Past[] | null;
   cuedAt: number;
+  cuedSeq: number;
   doneAt: number;
+  doneSeq: number;
   opened: number;
   pinned: number;
   latest: number;
@@ -36,11 +38,12 @@ interface PackedVoice {
   log: Controls[] | null;
   played: boolean | undefined;
   playedAt: number;
+  playedSeq: number;
   records: [Key, PackedRecord][];
   runs: [Key, Run][];
-  left: [Key, number, PackedRecord][];
-  parts: [Key, number, number][];
-  parted: [Key, number][];
+  left: [Key, number, number, PackedRecord][];
+  parts: [Key, number, number, number][];
+  parted: [Key, number, number][];
 }
 
 /**
@@ -89,7 +92,15 @@ export function pageVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, reach: num
   if (!pageable(voice)) return false;
   const keys = mix.keys as Keys;
   const data = packVoice(voice, keys);
-  pageOut(mix, 'voice', voice.id, undefined, [{ at: voice.doneAt }], () => data, reach);
+  pageOut(
+    mix,
+    'voice',
+    voice.id,
+    undefined,
+    [{ at: voice.doneAt, seq: voice.doneSeq }],
+    () => data,
+    reach,
+  );
   const h = voice.handle as VoiceHandle<I, O>;
   VoiceHandle.page(h, { weight: voice.weight, played: voice.settled.played === true });
   (mix.outs as Outs).add(voice.id, voice.doneAt, h);
@@ -126,7 +137,9 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     past: voice.clocks?.length ?? 0,
     clocks: voice.clocks,
     cuedAt: voice.cuedAt,
+    cuedSeq: voice.cuedSeq,
     doneAt: voice.doneAt,
+    doneSeq: voice.doneSeq,
     opened: voice.opened,
     pinned: voice.pinned,
     latest: voice.latest,
@@ -135,11 +148,17 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     log: voice.log,
     played: settled.played,
     playedAt: settled.at,
+    playedSeq: settled.seq,
     records,
     runs,
-    left: (voice.left ?? []).map((e) => [keys.key(e.subject), e.at, packHeld(voice, e.held)]),
-    parts: [...(voice.parts ?? [])].map(([s, r]) => [keys.key(s), r.at, r.over]),
-    parted: [...(voice.parted ?? [])].map(([s, at]) => [keys.key(s), at]),
+    left: (voice.left ?? []).map((e) => [
+      keys.key(e.subject),
+      e.at,
+      e.seq,
+      packHeld(voice, e.held),
+    ]),
+    parts: [...(voice.parts ?? [])].map(([s, r]) => [keys.key(s), r.at, r.over, r.seq]),
+    parted: [...(voice.parted ?? [])].map(([s, p]) => [keys.key(s), p.at, p.seq]),
   };
 }
 
@@ -165,7 +184,9 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
   voice.clocks = d.clocks;
   voice.take(d);
   voice.cuedAt = d.cuedAt;
+  voice.cuedSeq = d.cuedSeq;
   voice.doneAt = d.doneAt;
+  voice.doneSeq = d.doneSeq;
   voice.opened = d.opened;
   voice.pinned = d.pinned;
   voice.latest = d.latest;
@@ -173,7 +194,7 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
   voice.first = d.first;
   voice.log = d.log;
   voice.state = 'done';
-  if (d.played !== undefined) voice.play(d.played, d.playedAt);
+  if (d.played !== undefined) voice.play(d.played, d.playedAt, d.playedSeq);
   voice.resolve();
   const keys = mix.keys as Keys;
   const subjectOf = (key: Key) => keys.subject(key) as I;
@@ -184,15 +205,18 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
   }
   for (const [key, run] of d.runs) voice.motion?.unpack(subjectOf(key), run);
   if (d.left.length > 0)
-    voice.left = d.left.map(([key, at, p]) => ({
+    voice.left = d.left.map(([key, at, seq, p]) => ({
       subject: subjectOf(key),
       at,
+      seq,
       held: unpackHeld(voice, p),
     }));
   if (d.parts.length > 0)
-    voice.parts = new Map(d.parts.map(([key, at, over]) => [subjectOf(key), { at, over }]));
+    voice.parts = new Map(
+      d.parts.map(([key, at, over, seq]) => [subjectOf(key), { at, over, seq }]),
+    );
   if (d.parted.length > 0)
-    voice.parted = new Map(d.parted.map(([key, at]) => [subjectOf(key), at]));
+    voice.parted = new Map(d.parted.map(([key, at, seq]) => [subjectOf(key), { at, seq }]));
   const h = mix.outs?.take(id) as VoiceHandle<I, O> | undefined;
   if (h === undefined) voice.handle = handle(mix, voice);
   else {

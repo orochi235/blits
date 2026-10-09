@@ -77,7 +77,7 @@ export class Keys {
  * Hands records leaving memory to the store, the last of any that share a time, which is the one
  * a read finds. `reach` is how far back memory still reaches.
  */
-export function pageOut<I, O, E extends { at: number }>(
+export function pageOut<I, O, E extends { at: number; seq: number }>(
   mix: Mixer<I, O>,
   stream: PagedStream,
   voice: number | undefined,
@@ -93,7 +93,7 @@ export function pageOut<I, O, E extends { at: number }>(
   for (let i = 0; i < out.length; i++) {
     const e = out[i] as E;
     if (i + 1 < out.length && (out[i + 1] as E).at === e.at) continue;
-    const r: Paged = { mix: name, stream, at: e.at, data: data(e) };
+    const r: Paged = { mix: name, stream, at: e.at, seq: e.seq, data: data(e) };
     if (voice !== undefined) r.voice = voice;
     if (subject !== undefined) r.subject = subject;
     records.push(r);
