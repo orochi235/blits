@@ -589,17 +589,25 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5); its findings
     are numbered there, and its Status section says which steps are done. Steps 1 and 2 are on
     `main` (`1206569`): the local fixes, the lanes fuzzer (`test/differential.test.ts`), the
-    determinism suite (`test/determinism.test.ts`) and `npm run test:general`.
+    determinism suite (`test/determinism.test.ts`) and `npm run test:general`. Step 3 (issue B) is
+    on `main` too (`493fb15`): every voice keeps the clocks it ran on (`src/origin.ts`), and a
+    subject's origin is when its voice's clock first read its delay on them.
     **Mike, 2026-10-09: work steps 3 to 9, then item 12's audit, chaining sessions (the
     `pass-the-baton` skill) until the whole plan is finished**, each session updating this item and
-    the doc's Status section as a step lands. Next is step 3 (issue B), then step 4 (issue A); fixing
-    either flips seeds on `determinism.test.ts`'s known lists, which then have to be updated. Each
+    the doc's Status section as a step lands. Next is step 4 (issue A); fixing it flips seeds on
+    `determinism.test.ts`'s known lists, which then have to be updated. Each
     step goes in a worktree off `main`, since another session works on the playground and item 13
     in a worktree of its own; ask it before editing this file, and merge with `--ff-only` once both
     `onto test` and the lanes-off suite pass on the fleet. Step 6's version bump and publish are
     Mike's call: stop and ask there, never bump to 1.0.0. Measure any hot-path change with
     `AB_EACH=1 bench/ab.sh <origin/main sha> . <rounds> <rows>` on a fleet node (`.` is the synced
     working tree). Open beyond the doc:
+    - **Step 3 took the doc's proposed default, exact catch-up**: a stateful subject met late steps
+      from its origin, capped by `maxDt`. The per-voice `catchUp: 'fresh'` alternative is not built.
+      A voice keeps at most 256 past clocks; past that, an origin on a clock it dropped is worked
+      back from the oldest it kept.
+    - **The seeds tagged B that still failed after step 3 are #4**: each seeks a handle past the
+      voice's end, which files it done before its cue. They are on the A lists now.
     - **A placement whose end comes before its start**, `{start: {after: 'a'}, end: {with: 'a'}}`,
       is silently never played. An anchor to a voice that already left now resolves
       (`src/departed.ts`): decided 2026-10-09 to keep mixes without history, since history roughly
