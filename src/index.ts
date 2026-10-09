@@ -71,3 +71,5 @@ export type {
   TransportProjection,
   VoiceSpec,
 } from './types.js';
+export type { WaveOptions, WaveShape } from './wave.js';
+export { wave, waveAt, waveOptionsOf } from './wave.js';
