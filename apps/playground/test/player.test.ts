@@ -94,6 +94,22 @@ describe('Player', () => {
     for (let i = 0; i < at90.length; i++) expect(back[i]).toBeCloseTo(at90[i] as number, 6);
   });
 
+  it('a live change survives a seek back by mix.seek, and plays again going forward', () => {
+    const p = player();
+    p.seekBy = 'seek';
+    p.seek(30 * FRAME);
+    p.live('sp', (h) => {
+      h.weight = 0;
+    });
+    p.seek(40 * FRAME);
+    expect(p.built.handles.get('sp')?.weight).toBe(0);
+    p.seek(20 * FRAME);
+    expect(p.built.handles.get('sp')?.weight).toBe(1);
+    p.seek(40 * FRAME);
+    expect(p.built.handles.get('sp')?.weight).toBe(0);
+    expect(p.livened).toBe(true);
+  });
+
   it('a scrub back replays a moved level at its current value', () => {
     const moved = player();
     moved.setLevel('k', 0.5);
