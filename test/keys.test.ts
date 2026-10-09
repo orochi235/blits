@@ -37,7 +37,13 @@ function reference(
   for (const channel of writes) {
     const delay = opts.delayBy?.(channel) ?? 0;
     const ph =
-      delay === 0 || duration === 0 ? phase : Math.max(0, (phase * duration - delay) / duration);
+      delay === 0 || duration === 0
+        ? phase
+        : delay >= duration
+          ? phase >= 1
+            ? 1
+            : 0
+          : Math.max(0, (phase * duration - delay) / (duration - delay));
     const held: { at: number; value: unknown; ease?: (u: number) => number }[] = [];
     if (base?.[channel] !== undefined) held.push({ at: 0, value: base[channel] });
     for (const stop of stops) {
@@ -334,5 +340,35 @@ describe('a retarget from the current pose under an easing with no starting slop
       expect(x).toBeGreaterThan(-50);
       expect(x).toBeLessThan(250);
     }
+  });
+});
+
+describe.each([true, false])('a channel given a delay, lanes %s', (lanes) => {
+  it('waits, then travels in the time left and lands with the rest', () => {
+    type P = { x: number; y: number };
+    const m = mix<{ id: number }, P>(kit<P>({ x: sum(), y: sum() }), { lanes });
+    m.cue({
+      patch: keys<{ id: number }, P>(
+        1000,
+        [
+          { at: 0, delta: { x: 0, y: 0 } },
+          { at: 1, delta: { x: 100, y: 100 } },
+        ],
+        { delayBy: (c) => (c === 'x' ? 200 : 0) },
+      ),
+      loop: false,
+      freeze: 'after',
+    });
+    const s = { id: 1 };
+    m.sync(0);
+    m.probe(s);
+    m.sync(200);
+    expect(m.probe(s).x).toBeCloseTo(0);
+    m.sync(600);
+    expect(m.probe(s).x).toBeCloseTo(50);
+    m.sync(1000);
+    expect(m.probe(s)).toEqual({ x: 100, y: 100 });
+    m.sync(1500);
+    expect(m.probe(s)).toEqual({ x: 100, y: 100 });
   });
 });

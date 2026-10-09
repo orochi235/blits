@@ -60,7 +60,7 @@ export interface KeysOptions<O> {
   ease?: Easing;
   /** A curve for one channel, where it differs from the rest. */
   easeBy?: (channel: keyof O) => Easing | undefined;
-  /** Milliseconds one channel waits before it starts moving, within the duration. */
+  /** Milliseconds one channel waits before it starts moving; it then travels in the time left. */
   delayBy?: (channel: keyof O) => number;
   /**
    * How one channel interpolates, where it should differ from the channel's own `lerp`. A mix hands
@@ -200,7 +200,10 @@ export function shifted(track: Track, phase: number, duration: number): number {
 
 /** A phase once a channel's delay of `delay` ms in a duration of `duration` applies. */
 export function shift(delay: number, phase: number, duration: number): number {
-  return delay === 0 || duration === 0 ? phase : Math.max(0, (phase * duration - delay) / duration);
+  if (delay === 0 || duration === 0) return phase;
+  // The channel travels in what is left after its wait, so it lands with the rest at phase 1.
+  if (delay >= duration) return phase >= 1 ? 1 : 0;
+  return Math.max(0, (phase * duration - delay) / (duration - delay));
 }
 
 /**
