@@ -1,8 +1,11 @@
-import type { Clip } from '@pg/widgets/ScoreLanes';
+import type { Clip, Header } from '@pg/widgets/ScoreLanes';
 import {
+  blockEnd,
   clipEnd,
   clipPolygon,
+  factorText,
   groupBrackets,
+  laneCount,
   passLines,
   scaleOf,
 } from '@pg/widgets/ScoreLanes/geometry';
@@ -22,6 +25,17 @@ const clip = (c: Partial<Clip>): Clip => ({
   freezeBefore: false,
   freezeAfter: false,
   ...c,
+});
+
+const header = (h: Partial<Header>): Header => ({
+  id: 'h',
+  lane: 0,
+  depth: 0,
+  label: 'h',
+  hue: 40,
+  start: 0,
+  end: 1000,
+  ...h,
 });
 
 describe('geometry', () => {
@@ -80,5 +94,28 @@ describe('geometry', () => {
       ['y', 1],
       ['z', 0],
     ]);
+  });
+  it('counts lanes over clips and headers', () => {
+    expect(laneCount([], [])).toBe(1);
+    expect(laneCount([clip({ lane: 1 })], [header({ lane: 3 })])).toBe(4);
+  });
+  it('ends a header’s block at the next row no deeper than it', () => {
+    const outer = header({ id: 'o', lane: 0, depth: 0 });
+    const inner = header({ id: 'i', lane: 1, depth: 1 });
+    const clips = [
+      clip({ id: 'a', lane: 2, depth: 2 }),
+      clip({ id: 'b', lane: 3, depth: 1 }),
+      clip({ id: 'c', lane: 4 }),
+    ];
+    expect(blockEnd(outer, clips, [outer, inner])).toBe(3);
+    expect(blockEnd(inner, clips, [outer, inner])).toBe(2);
+    expect(blockEnd(header({ lane: 5 }), clips, [])).toBe(5);
+  });
+  it('shows a factor other than 1 to two places at most', () => {
+    expect(factorText(1)).toBe('');
+    expect(factorText(undefined)).toBe('');
+    expect(factorText(1.3)).toBe('×1.3');
+    expect(factorText(2)).toBe('×2');
+    expect(factorText(1 / 3)).toBe('×0.33');
   });
 });

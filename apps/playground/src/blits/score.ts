@@ -1,8 +1,11 @@
-import type { Anchor, Mark } from '@msb235/blits';
-import type { Clip, ClipEdit, Edge, Hatch, Link } from '@pg/widgets/ScoreLanes';
-import { type Composition, periodOf, type Voice } from './composition';
+import type { Anchor, Handle, Mark, SpanHandle } from '@msb235/blits';
+import type { Clip, ClipEdit, Edge, Hatch, Header, Link } from '@pg/widgets/ScoreLanes';
+import type { Built } from './compile';
+import { type Composition, type Group, periodOf, type Voice } from './composition';
 import { compileExpr, type Scope, scopeOf } from './expr';
+import { rowsOf, underSpan } from './groups';
 import { without } from './keyed';
+import { clockOf, type Placed, placedOf } from './placed';
 import type { Subject } from './stage';
 
 const edgeOfMark = (m: Mark): Edge => (m === 'start' || m === 'in' ? 'start' : 'end');
@@ -50,33 +53,124 @@ function targetOf(a: number | Anchor | undefined): { name: string; edge: Edge } 
   return n ? { name: n, edge } : null;
 }
 
+/** The ms one pass lasts on the score and how many there are; a voice at rate 0 or below never ends. */
+function lengthOf(period: number, rate: number, passes: number) {
+  return rate > 0 ? { pass: period / rate, passes } : { pass: 0, passes: Number.POSITIVE_INFINITY };
+}
+
+function clipOf(v: Voice, lane: number, subjects: readonly Subject[], scope: Scope): Clip {
+  const freeze = freezeOf(v);
+  const spread = spreadOf(v, subjects, scope);
+  const clip: Clip = {
+    id: v.id,
+    lane,
+    label: `${v.name} · ${v.patch.kind}`,
+    hue: v.hue,
+    start: v.start,
+    ...lengthOf(periodOf(v.patch) ?? 0, v.rate, passesOf(v)),
+    fadeIn: v.fade.in ?? 0,
+    fadeOut: v.fade.out ?? 0,
+    spread: spread.ms,
+    freezeBefore: freeze === 'before' || freeze === 'both',
+    freezeAfter: freeze === 'after' || freeze === 'both',
+    locked: v.anchor?.start !== undefined || v.anchor?.in !== undefined,
+  };
+  if (spread.at !== 0) clip.spreadAt = spread.at;
+  if (v.locus !== undefined) clip.group = v.locus;
+  return clip;
+}
+
+/** A span's child as its fit left it: where it starts, how fast it plays, or that it was skipped. */
+function fitted(clip: Clip, v: Voice, h: Handle<Subject> | undefined, p: Placed | undefined) {
+  clip.locked = true;
+  if (!h || p?.start === undefined) return;
+  const period = periodOf(v.patch) ?? 0;
+  const above = clockOf(h.owner);
+  clip.start = p.start;
+  if (p.end === p.start && period > 0 && v.rate > 0) {
+    clip.skipped = true;
+    Object.assign(clip, lengthOf(period, v.rate * above, clip.passes));
+    return;
+  }
+  Object.assign(clip, lengthOf(period, h.rate * above, clip.passes));
+  const factor = h.rate / v.rate;
+  if (Number.isFinite(factor) && Math.abs(factor - 1) > 1e-9) clip.factor = factor;
+}
+
+type Laying = ScoreOptions & { placed?: Map<string, Placed> };
+
+function headerOf(g: Group, lane: number, depth: number, folded: boolean, o: Laying): Header {
+  const p = o.placed?.get(g.id);
+  const start = p?.start ?? g.start;
+  const h: Header = {
+    id: g.id,
+    lane,
+    depth,
+    label: `${g.name} · ${g.kind}`,
+    hue: g.hue,
+    start,
+    end: p?.coast ?? p?.end ?? Number.POSITIVE_INFINITY,
+    folded,
+  };
+  if (g.kind !== 'span') return h;
+  const handle = o.built?.groupHandles.get(g.id) as SpanHandle<Subject> | undefined;
+  const clock = clockOf(handle);
+  if (handle && p && clock > 0) {
+    const r = handle.result;
+    if (Number.isFinite(r.budget)) h.budget = start + r.budget / clock;
+    if (r.over > 0) h.over = r.over / clock;
+    h.fell = r.fell;
+  } else if (g.span?.duration !== undefined && g.rate > 0)
+    h.budget = start + g.span.duration / g.rate;
+  return h;
+}
+
+export interface ScoreOptions {
+  /**
+   * The composition compiled and never synced, to place what spans hold and each group's extent
+   * where blits put them. Without it, everything sits where its own fields say.
+   */
+  built?: Built;
+  /** Groups whose members are hidden. */
+  folded?: ReadonlySet<string>;
+}
+
+export interface Score {
+  clips: Clip[];
+  links: Link[];
+  headers: Header[];
+}
+
+/** The score of `c`: a lane per voice and per group, in `rowsOf` order, less what folds hide. */
 export function clipsOf(
   c: Composition,
   subjects: readonly Subject[],
-): { clips: Clip[]; links: Link[] } {
+  opts: ScoreOptions = {},
+): Score {
   const scope = scopeOf(c.levels);
-  const clips = c.voices.map((v, lane): Clip => {
-    const freeze = freezeOf(v);
-    const spread = spreadOf(v, subjects, scope);
-    const clip: Clip = {
-      id: v.id,
-      lane,
-      label: `${v.name} · ${v.patch.kind}`,
-      hue: v.hue,
-      start: v.start,
-      pass: periodOf(v.patch) ?? 0,
-      passes: passesOf(v),
-      fadeIn: v.fade.in ?? 0,
-      fadeOut: v.fade.out ?? 0,
-      spread: spread.ms,
-      freezeBefore: freeze === 'before' || freeze === 'both',
-      freezeAfter: freeze === 'after' || freeze === 'both',
-      locked: v.anchor?.start !== undefined || v.anchor?.in !== undefined,
-    };
-    if (spread.at !== 0) clip.spreadAt = spread.at;
-    if (v.locus !== undefined) clip.group = v.locus;
-    return clip;
-  });
+  const o: Laying = { ...opts, ...(opts.built ? { placed: placedOf(opts.built) } : {}) };
+  const voices = new Map(c.voices.map((v) => [v.id, v]));
+  const groups = new Map((c.groups ?? []).map((g) => [g.id, g]));
+  const clips: Clip[] = [];
+  const headers: Header[] = [];
+  let hideBelow = Number.POSITIVE_INFINITY;
+  for (const row of rowsOf(c)) {
+    if (row.depth > hideBelow) continue;
+    hideBelow = Number.POSITIVE_INFINITY;
+    const lane = clips.length + headers.length;
+    const g = row.kind === 'group' ? groups.get(row.id) : undefined;
+    const v = row.kind === 'voice' ? voices.get(row.id) : undefined;
+    if (g) {
+      const folded = opts.folded?.has(g.id) ?? false;
+      headers.push(headerOf(g, lane, row.depth, folded, o));
+      if (folded) hideBelow = row.depth;
+    } else if (v) {
+      const clip = clipOf(v, lane, subjects, scope);
+      if (row.depth > 0) clip.depth = row.depth;
+      if (underSpan(c, v.id)) fitted(clip, v, o.built?.handles.get(v.id), o.placed?.get(v.id));
+      clips.push(clip);
+    }
+  }
   const links: Link[] = [];
   for (const v of c.voices) {
     for (const edge of ['start', 'end'] as const) {
@@ -87,7 +181,7 @@ export function clipsOf(
       if (t && to) links.push({ from: { clip: v.id, edge }, to: { clip: to.id, edge: t.edge } });
     }
   }
-  return { clips, links };
+  return { clips, links, headers };
 }
 
 function freshLocus(c: Composition): string {

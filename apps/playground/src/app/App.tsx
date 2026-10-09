@@ -3,7 +3,7 @@ import { type Composition, MAX_VOICES, type Voice } from '@pg/blits/composition'
 import { FRAME } from '@pg/blits/frame';
 import { Player, type SeekBy } from '@pg/blits/player';
 import { DEFAULT, PRESETS } from '@pg/blits/presets';
-import { applyEdit, clipsOf } from '@pg/blits/score';
+import { applyEdit } from '@pg/blits/score';
 import { subjectsOf } from '@pg/blits/stage';
 import { Stage } from '@pg/blits/stages/Stage';
 import { type ClipEdit, ScoreLanes } from '@pg/widgets/ScoreLanes';
@@ -13,9 +13,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import s from './App.module.css';
 import { CompFields, StageControls } from './CompositionControls';
 import { FlowPanel } from './FlowPanel';
+import { freshVoice } from './freshVoice';
 import { Inspector } from './Inspector';
 import { Transport } from './Transport';
 import { useComposition } from './useComposition';
+import { useScore } from './useScore';
 import { VoiceColumn } from './VoiceColumn';
 
 /** The most wall time one tick plays, so a hidden tab coming back does not replay seconds at once. */
@@ -23,35 +25,6 @@ const MAX_TICK_MS = 250;
 
 /** How long "link copied" stays up. */
 const NOTICE_MS = 3000;
-
-let made = 0;
-const freshId = () =>
-  typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `v${Date.now()}-${++made}`;
-
-function freshVoice(voices: readonly Voice[]): Voice {
-  const names = new Set(voices.map((v) => v.name));
-  let n = voices.length + 1;
-  while (names.has(`voice ${n}`)) n++;
-  return {
-    id: freshId(),
-    name: `voice ${n}`,
-    hue: (voices.length * 67) % 360,
-    start: 0,
-    rate: 1,
-    loop: true,
-    weight: 1,
-    fade: {},
-    patch: {
-      kind: 'keys',
-      period: 1000,
-      stops: [
-        { at: 0, delta: { glow: 0 } },
-        { at: 0.5, delta: { glow: 1 }, ease: 'ease-in-out' },
-        { at: 1, delta: { glow: 0 }, ease: 'ease-in-out' },
-      ],
-    },
-  };
-}
 
 export function App() {
   const { comp, set, undo, redo, share } = useComposition(DEFAULT);
@@ -169,7 +142,7 @@ export function App() {
     return () => window.removeEventListener('keydown', key, true);
   }, [play, playing]);
 
-  const { clips, links } = useMemo(() => clipsOf(comp, subjects), [comp, subjects]);
+  const { clips, links, headers, fold } = useScore(comp, subjects);
   const scrub = (t: number) => {
     player.seek(Math.min(Math.max(t, 0), comp.length));
     tick();
@@ -304,6 +277,8 @@ export function App() {
           <ScoreLanes
             clips={clips}
             links={links}
+            headers={headers}
+            onFold={fold}
             duration={comp.length}
             playhead={player.t}
             selected={selected}

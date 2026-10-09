@@ -1,4 +1,9 @@
-import type { Clip } from './index';
+import type { Clip, Header } from './index';
+
+/** The score's width in its own units; the svg scales to fit. */
+export const WIDTH = 1000;
+/** How far a label indents per depth. */
+export const INDENT = 12;
 
 /** Most passes a clip shows dividers for, and most its end handle snaps to. */
 export const MAX_PASSES = 200;
@@ -73,3 +78,20 @@ export function groupBrackets(clips: readonly Clip[]): Bracket[] {
       return { group, hue, from, to, depth };
     });
 }
+
+export const laneCount = (clips: readonly Clip[], headers: readonly Header[]): number =>
+  Math.max(1, ...clips.map((c) => c.lane + 1), ...headers.map((h) => h.lane + 1));
+
+/** The last lane of `h`'s block: every lane below it holding a row deeper than it. */
+export function blockEnd(h: Header, clips: readonly Clip[], headers: readonly Header[]): number {
+  const depths = new Map<number, number>();
+  for (const c of clips) depths.set(c.lane, c.depth ?? 0);
+  for (const x of headers) depths.set(x.lane, x.depth);
+  let last = h.lane;
+  for (let d = depths.get(last + 1); d !== undefined && d > h.depth; d = depths.get(last + 1))
+    last++;
+  return last;
+}
+
+export const factorText = (f: number | undefined): string =>
+  f === undefined || f === 1 ? '' : `×${Math.round(f * 100) / 100}`;

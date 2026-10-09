@@ -14,6 +14,24 @@ export interface Clip {
   freezeAfter: boolean;
   group?: string;
   locked?: boolean; // start is set elsewhere (anchored): body drag disabled
+  depth?: number; // headers above it; the label indents per step
+  factor?: number; // its rate over its own, shown after the label when not 1
+  skipped?: boolean; // jumped to its end: an outline at its natural length
+}
+
+/** A lane heading the clips and headers below it that sit deeper, up to the next that does not. */
+export interface Header {
+  id: string;
+  lane: number;
+  depth: number;
+  label: string;
+  hue: number;
+  start: number; // ms
+  end: number; // ms; Infinity = open-ended
+  budget?: number; // ms on the score where its budget ends
+  over?: number; // ms past the budget
+  fell?: boolean;
+  folded?: boolean;
 }
 export type Edge = 'start' | 'end';
 export interface Link {
@@ -37,6 +55,8 @@ export interface ScoreLanesProps {
   onSelect(id: string | null): void;
   onEdit(edit: ClipEdit): void;
   onScrub(t: number): void;
+  headers?: readonly Header[];
+  onFold?(id: string, folded: boolean): void;
   laneHeight?: number; // default 36
   labelWidth?: number; // default 140
 }

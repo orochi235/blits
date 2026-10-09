@@ -1,8 +1,11 @@
-import type { Composition, Voice } from '@pg/blits/composition';
+import { compile } from '@pg/blits/compile';
+import type { Composition, PatchSource, Voice } from '@pg/blits/composition';
 import { applyEdit, clipsOf } from '@pg/blits/score';
 import { subjectsOf } from '@pg/blits/stage';
 import { type Clip, type ClipEdit, hatchOf } from '@pg/widgets/ScoreLanes';
+import { clipEnd } from '@pg/widgets/ScoreLanes/geometry';
 import { describe, expect, it } from 'vitest';
+import { comp, group, voice } from './helpers';
 
 const v = (x: Partial<Voice> & Pick<Voice, 'id'>): Voice => ({
   name: x.id,
@@ -91,6 +94,113 @@ describe('clipsOf', () => {
       ],
     };
     expect(clipsOf(d, subjects).links).toEqual([]);
+  });
+});
+
+describe('a clip’s rate', () => {
+  it('divides its length', () => {
+    const d = {
+      ...c,
+      voices: [v({ id: 'x', start: 100, rate: 2, patch: { ...KEYS, period: 500 } })],
+    };
+    expect(clipEnd(clipsOf(d, subjects).clips[0] as Clip)).toBe(600);
+  });
+  it('at 0 or below, never ends and has no passes', () => {
+    for (const rate of [0, -1]) {
+      const d = { ...c, voices: [v({ id: 'x', rate })] };
+      expect(clipsOf(d, subjects).clips[0]).toMatchObject({
+        pass: 0,
+        passes: Number.POSITIVE_INFINITY,
+      });
+    }
+  });
+});
+
+const KEYS: Extract<PatchSource, { kind: 'keys' }> = {
+  kind: 'keys',
+  period: 400,
+  stops: [{ at: 0, delta: { glow: 1 } }],
+};
+const once = (id: string, over: Partial<Voice> = {}) =>
+  voice({ id, patch: KEYS, loop: false, ...over });
+
+describe('groups on the score', () => {
+  // A span of 700 ms under an owner at rate 2 holding three 400 ms voices in a queue: `b` may run
+  // twice as fast and is, `c` is ballast and is shed.
+  const g = comp(
+    [
+      once('a', { owner: 's' }),
+      once('b', { owner: 's', hints: { faster: 2 } }),
+      once('c', { owner: 's', hints: { ballast: true } }),
+      once('x', { start: 300 }),
+    ],
+    [
+      group({ id: 'o', start: 200, rate: 2 }),
+      group({ id: 's', kind: 'span', owner: 'o', span: { duration: 700 } }),
+    ],
+  );
+  const built = compile(g, subjects);
+  const laid = clipsOf(g, subjects, { built });
+  const clip = (id: string) => laid.clips.find((x) => x.id === id);
+
+  it('lays rows out depth-first, a header above its members', () => {
+    expect(laid.headers.map((h) => [h.id, h.lane, h.depth])).toEqual([
+      ['o', 0, 0],
+      ['s', 1, 1],
+    ]);
+    expect(laid.clips.map((x) => [x.id, x.lane, x.depth])).toEqual([
+      ['a', 2, 2],
+      ['b', 3, 2],
+      ['c', 4, 2],
+      ['x', 5, undefined],
+    ]);
+  });
+  it('places a span’s children where blits put them, each after the last, locked', () => {
+    expect(clip('a')).toMatchObject({ start: 200, pass: 200, passes: 1, locked: true });
+    expect(clip('b')).toMatchObject({ start: 400, pass: 100, factor: 2, locked: true });
+    expect(clip('a')).not.toHaveProperty('factor');
+  });
+  it('shows a shed child skipped, at its natural length', () => {
+    expect(clip('c')).toMatchObject({ start: 500, pass: 200, skipped: true });
+    expect(clip('b')).not.toHaveProperty('skipped');
+  });
+  it('gives a span’s header its extent, budget and fit', () => {
+    const [o, s] = laid.headers;
+    expect(s).toMatchObject({ label: 's · span', start: 200, end: 550, budget: 550, fell: false });
+    expect(s).not.toHaveProperty('over');
+    expect(o).toMatchObject({ label: 'o · owner', start: 200, end: 550 });
+    expect(o).not.toHaveProperty('budget');
+  });
+  it('shows how far a span runs over its budget', () => {
+    const tight = {
+      ...g,
+      groups: g.groups?.map((x) =>
+        x.id === 's' ? { ...x, span: { duration: 300, fit: [{ kind: 'overrun' as const }] } } : x,
+      ),
+    };
+    const s = clipsOf(tight, subjects, { built: compile(tight, subjects) }).headers[1];
+    expect(s?.budget).toBe(350);
+    expect(s?.over).toBeGreaterThan(0);
+  });
+  it('without a build, places by the composition’s own fields', () => {
+    const plain = clipsOf(g, subjects);
+    expect(plain.clips.find((x) => x.id === 'b')).toMatchObject({ start: 0, locked: true });
+    expect(plain.headers[1]).toMatchObject({
+      start: 0,
+      end: Number.POSITIVE_INFINITY,
+      budget: 700,
+    });
+  });
+  it('a folded group hides everything under it', () => {
+    const folded = clipsOf(g, subjects, { built, folded: new Set(['s']) });
+    expect(folded.headers.map((h) => [h.id, h.folded])).toEqual([
+      ['o', false],
+      ['s', true],
+    ]);
+    expect(folded.clips.map((x) => [x.id, x.lane])).toEqual([['x', 2]]);
+    const outer = clipsOf(g, subjects, { folded: new Set(['o']) });
+    expect(outer.headers.map((h) => h.id)).toEqual(['o']);
+    expect(outer.clips.map((x) => x.id)).toEqual(['x']);
   });
 });
 

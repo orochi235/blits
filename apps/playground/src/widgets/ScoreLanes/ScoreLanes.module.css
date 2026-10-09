@@ -135,3 +135,65 @@
   stroke-width: 2;
   pointer-events: none;
 }
+
+.factor {
+  fill: var(--wzl-fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.skipped {
+  fill: none;
+  stroke-dasharray: 4 3;
+  stroke-width: 1.5;
+}
+
+.headerBand {
+  fill: var(--wzl-surface-raised);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.headerLabel {
+  fill: var(--wzl-fg);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fold {
+  fill: var(--wzl-fg-muted);
+  font-size: var(--wzl-font-size-md);
+  cursor: pointer;
+}
+
+.fold:hover {
+  fill: var(--wzl-fg);
+}
+
+.fell {
+  fill: var(--wzl-danger);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.headerBar {
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.selected .headerBar {
+  opacity: 1;
+  stroke: var(--wzl-fg);
+  stroke-width: 1.5;
+}
+
+.over {
+  fill: var(--wzl-danger);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.budget {
+  stroke: var(--wzl-warning);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
