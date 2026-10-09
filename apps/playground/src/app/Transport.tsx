@@ -1,4 +1,5 @@
 import type { Level } from '@pg/blits/composition';
+import type { SeekBy } from '@pg/blits/player';
 import { Transport as WeaselTransport } from '@weasel-js/ui';
 import s from './App.module.css';
 import { docOf } from './docs';
@@ -14,6 +15,9 @@ export interface TransportProps {
   length: number;
   live: boolean;
   onLive(l: boolean): void;
+  /** How a scrub back moves the mixes. */
+  seekBy: SeekBy;
+  onSeekBy(s: SeekBy): void;
   /** The full mix's own rate: its voices slow while the score's clock runs on. */
   mixRate: number;
   onMixRate(r: number): void;
@@ -39,6 +43,13 @@ export function Transport(p: TransportProps) {
         onLoopChange={(l) => p.onLoop(l !== false && l !== 0)}
         onRateChange={p.onRate}
       />
+      <label className={s.level} title={docOf('Mix.seek')}>
+        scrub by
+        <select value={p.seekBy} onChange={(e) => p.onSeekBy(e.target.value as SeekBy)}>
+          <option value="replay">replay from 0</option>
+          <option value="seek">mix.seek</option>
+        </select>
+      </label>
       <label className={s.live}>
         <input type="checkbox" checked={p.live} onChange={(e) => p.onLive(e.target.checked)} />
         live

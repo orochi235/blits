@@ -26,6 +26,7 @@ export function Inspector({ player, comp }: InspectorProps) {
   const { picked, samples: h } = useSyncExternalStore(player.subscribe, player.getSnapshot);
   if (picked === null || h.length === 0)
     return <p className={s.row}>Click a subject on the stage to plot its channels.</p>;
+  const doubts = player.doubts();
   const times = h.map((x) => x.t);
   const t = times[times.length - 1] ?? 0;
   // A voice that gave this subject no weight in the window would only draw a flat line at rest.
@@ -33,7 +34,8 @@ export function Inspector({ player, comp }: InspectorProps) {
   return (
     <div className={s.plots}>
       <p className={s.row}>
-        subject {picked} · thin: each voice alone · thick: the mix · offset plots y
+        subject {picked} · thin: each voice alone · thick: the mix · offset plots y · beside each
+        channel, how sure blits is of it now
       </p>
       {CHANNELS.map((ch) => {
         const series: Series[] = voices.map((v) => ({
@@ -48,7 +50,8 @@ export function Inspector({ player, comp }: InspectorProps) {
           values: h.map((x) => plotted(x.full, ch)),
           thick: true,
         });
-        return <ChannelPlot key={ch} label={ch} times={times} series={series} playhead={t} />;
+        const label = doubts ? `${ch} · ${doubts[ch]}` : ch;
+        return <ChannelPlot key={ch} label={label} times={times} series={series} playhead={t} />;
       })}
       <ChannelPlot
         label="weightOf"

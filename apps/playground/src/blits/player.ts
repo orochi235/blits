@@ -1,4 +1,4 @@
-import type { Handle, Mix, Patch } from '@msb235/blits';
+import type { Doubt, Handle, Mix, Patch } from '@msb235/blits';
 import { type Built, FRAME } from './compile';
 import type { Level } from './composition';
 import type { Mixed } from './kit';
@@ -38,9 +38,18 @@ const copied = (p: Mixed): Mixed => ({
   ...(p.color ? { color: [...p.color] } : {}),
 });
 
+/**
+ * How the player moves back: `replay` rebuilds and plays from 0, so a scrub shows what playback
+ * showed; `seek` calls blits' `mix.seek`, which restores from history and is as sure as it says.
+ */
+export type SeekBy = 'replay' | 'seek';
+
 export class Player {
   built: Built;
   t = 0;
+  seekBy: SeekBy = 'replay';
+  // Frames of host clock synced since the mixes were built; it only goes forward, even across a seek.
+  private hostFrame = -1;
   readonly columns: Columns;
   private frame = -1;
   private readonly scratch: Columns;
@@ -86,9 +95,18 @@ export class Player {
   seek(t: number): void {
     const target = frameOf(t);
     if (target === this.frame) return;
-    if (target < this.frame) this.built = this.fresh();
+    if (target < this.frame && !(this.seekBy === 'seek' && this.seekBack(target)))
+      this.built = this.fresh();
     for (let f = this.frame + 1; f <= target; f++) this.step(f);
     this.emit();
+  }
+
+  /** The picked subject's pose, per channel, as sure as blits' `assess` says; null with none picked. */
+  doubts(): { [K in keyof Mixed]: Doubt } | null {
+    const subject = this.picked === null ? undefined : this.subjects[this.picked];
+    if (subject === undefined || this.frame < 0) return null;
+    const { mix } = this.built;
+    return mix.project(mix.now).assess(subject);
   }
 
   /**
@@ -179,10 +197,32 @@ export class Player {
     this.authored = next;
   }
 
+  /** Moves every mix back to `target` with `mix.seek`; false where history cannot reach it. */
+  private seekBack(target: number): boolean {
+    const { mix, solos } = this.built;
+    const time = target * FRAME;
+    const host = this.hostFrame * FRAME;
+    try {
+      for (const m of [mix, ...solos.values()]) {
+        m.seek(time);
+        m.sync(host);
+      }
+    } catch {
+      return false;
+    }
+    mix.pull(this.subjects, this.columns);
+    this.frame = target;
+    this.t = time;
+    this.samples = this.samples.filter((s) => s.t <= time);
+    this.record();
+    return true;
+  }
+
   private fresh(): Built {
     const built = this.build();
     for (const [name, value] of this.slid) built.levels.get(name)?.set(value);
     this.frame = -1;
+    this.hostFrame = -1;
     this.isLive = false;
     this.samples = [];
     return built;
@@ -190,11 +230,13 @@ export class Player {
 
   private step(f: number): void {
     const t = f * FRAME;
+    this.hostFrame++;
+    const host = this.hostFrame * FRAME;
     const { mix, solos } = this.built;
-    mix.sync(t);
+    mix.sync(host);
     mix.pull(this.subjects, this.columns);
     for (const solo of solos.values()) {
-      solo.sync(t);
+      solo.sync(host);
       solo.pull(this.subjects, this.scratch);
     }
     this.frame = f;

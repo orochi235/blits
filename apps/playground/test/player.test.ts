@@ -71,6 +71,29 @@ describe('Player', () => {
     expect(bits(fresh.columns)).toEqual(snaps.get(60));
   });
 
+  it('seeking back with mix.seek lands near what playback showed, and says how sure it is', () => {
+    const replay = player();
+    const seeker = player();
+    seeker.pick(3);
+    seeker.seekBy = 'seek';
+    for (let f = 0; f <= 90; f++) {
+      replay.seek(f * FRAME);
+      seeker.seek(f * FRAME);
+    }
+    const at90 = [...replay.columns.offset];
+    replay.seek(40 * FRAME);
+    seeker.seek(40 * FRAME);
+    expect(seeker.t).toBe(40 * FRAME);
+    const want = [...replay.columns.offset];
+    const got = [...seeker.columns.offset];
+    for (let i = 0; i < want.length; i++) expect(got[i]).toBeCloseTo(want[i] as number, 6);
+    // The spring and the slewed weight carry state, which blits steps across the gap.
+    expect(seeker.doubts()).toMatchObject({ offset: 'stepped', scale: 'exact' });
+    for (let f = 41; f <= 90; f++) seeker.seek(f * FRAME);
+    const back = [...seeker.columns.offset];
+    for (let i = 0; i < at90.length; i++) expect(back[i]).toBeCloseTo(at90[i] as number, 6);
+  });
+
   it('a scrub back replays a moved level at its current value', () => {
     const moved = player();
     moved.setLevel('k', 0.5);

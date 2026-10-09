@@ -26,8 +26,11 @@ rows or the text; clicking a subject picks it for the inspector, top middle. The
 the flow. The middle column has two tabs: **Plots**, the inspector, and **Voice**, which holds the
 levels, voice and patch panels. Selecting a clip, on the score or in the flow, opens Voice. The
 score fills the bottom, with the transport above it: play and pause, rate, loop, a slider per
-level, and the live toggle, with the mix's own `rate` beside it in live mode: the transport's rate
-slows the playground's clock, while the mix's slows the voices as the score's clock runs on. Space plays and pauses from anywhere but a text field or the score's
+level, a choice of how a scrub back moves the mixes, and the live toggle, with the mix's own `rate` beside it in live mode: the transport's rate
+slows the playground's clock, while the mix's slows the voices as the score's clock runs on.
+A scrub back either replays from 0, which shows exactly what playback showed, or calls blits'
+`mix.seek`, which restores from the history every mix keeps. Either way the inspector labels each
+channel with blits' `assess` answer for the picked subject: `exact`, `stepped`, or `held`. Space plays and pauses from anywhere but a text field or the score's
 own handles, which take it themselves. The header holds the preset menu, the title and the length.
 
 These composition edits go through the same history as every other, so undo, storage and share

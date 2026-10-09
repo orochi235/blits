@@ -15,6 +15,7 @@ import {
   tween,
   wave,
 } from '@msb235/blits';
+import { createHistory as tape } from '@weasel-js/history';
 import {
   type Composition,
   type Expr,
@@ -249,6 +250,9 @@ function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Mixed, unkn
   }
 }
 
+/** History kept past the composition's length, ms, so a seek to its end never falls short. */
+const HISTORY_SLACK = 1000;
+
 /** The options every mix of a composition is made with. */
 export function mixOptionsOf(s: MixSettings = {}): MixOptions {
   return {
@@ -271,7 +275,11 @@ export function compile(
 
   // Specs are built afresh per mix: a motion patch keeps its state on itself and plays on one voice.
   const make = (only: string | null) => {
-    const m = mix<Subject, Mixed>(KIT, mixOptionsOf(c.mix));
+    // History lets the player seek back with blits' own `seek` rather than replaying from 0.
+    const m = mix<Subject, Mixed>(KIT, {
+      ...mixOptionsOf(c.mix),
+      history: { ms: c.length + HISTORY_SLACK, inputs: true, tape },
+    });
     const handles = new Map<string, Handle<Subject>>();
     const cued = new Map<string, Patch<Subject, Mixed, unknown>>();
     const named = new Set<string>();

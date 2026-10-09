@@ -1,6 +1,6 @@
 import { compile, FRAME } from '@pg/blits/compile';
 import { type Composition, MAX_VOICES, type Voice } from '@pg/blits/composition';
-import { Player } from '@pg/blits/player';
+import { Player, type SeekBy } from '@pg/blits/player';
 import { DEFAULT, PRESETS } from '@pg/blits/presets';
 import { applyEdit, clipsOf } from '@pg/blits/score';
 import { subjectsOf } from '@pg/blits/stage';
@@ -73,6 +73,10 @@ export function App() {
   const [rate, setRate] = useState(1);
   const [loop, setLoop] = useState(true);
   const [live, setLive] = useState(false);
+  const [seekBy, setSeekBy] = useState<SeekBy>('replay');
+  useEffect(() => {
+    player.seekBy = seekBy;
+  }, [player, seekBy]);
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<'plots' | 'voice'>('plots');
   const faultKey = player.built.errors.map((e) => e.voice ?? '').join('|');
@@ -280,6 +284,8 @@ export function App() {
             live={live}
             onLive={setLive}
             livened={player.livened}
+            seekBy={seekBy}
+            onSeekBy={setSeekBy}
             mixRate={player.built.mix.rate}
             onMixRate={(r) => {
               player.liveMix((m) => {
