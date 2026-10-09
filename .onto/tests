@@ -1,5 +1,5 @@
 # How `onto test` runs this repository's suite on another node.
-enlist: 4
+enlist: 6
 plugin: node
 run: node_modules/.bin/vitest run
 runner: vitest
