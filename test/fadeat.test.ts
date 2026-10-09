@@ -27,6 +27,20 @@ describe('fade at', () => {
     expect(m.probe('a').x).toBeCloseTo(0.84, 9);
   });
 
+  it('begins at its time on a voice that started since the last frame, whatever the frame rate', () => {
+    // Starts at 100 and fades from 110: one frame at 128 passes both.
+    const at = (frames: number[]) => {
+      const m = mix<string, Pose>(K);
+      m.sync(0);
+      const h = m.cue({ patch: one, subjects: ['a'], start: 100 });
+      h.fade({ at: 110, over: 100 });
+      for (const t of frames) m.sync(t);
+      return m.probe('a').x;
+    };
+    expect(at([128])).toBeCloseTo(0.82, 9);
+    expect(at([96, 112, 128])).toBeCloseTo(0.82, 9);
+  });
+
   it('starts partway for an at already past', () => {
     const m = mix<string, Pose>(K);
     m.sync(0);

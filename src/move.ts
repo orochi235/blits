@@ -53,13 +53,6 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   for (const voice of visit) {
     if (voice.state === 'done') continue;
     if (Number.isNaN(voice.opened)) voice.opened = now;
-    if ((voice.state === 'live' || voice.state === 'frozen') && voice.outAt <= now)
-      beginFade(
-        mix,
-        voice,
-        { over: Number.isNaN(voice.outOver) ? undefined : voice.outOver },
-        Math.max(startOf(voice), voice.outAt),
-      );
     if (
       voice.state === 'pending' &&
       (voice.owner === null ? now : ownerReading(voice.owner, now)) >= voice.start
@@ -68,6 +61,14 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
       reorigin(mix, voice, now);
       changed(mix, voice);
     }
+    // After it starts, so a fade due by now on a voice that started since the last frame begins.
+    if ((voice.state === 'live' || voice.state === 'frozen') && voice.outAt <= now)
+      beginFade(
+        mix,
+        voice,
+        { over: Number.isNaN(voice.outOver) ? undefined : voice.outOver },
+        Math.max(startOf(voice), voice.outAt),
+      );
     if (voice.state !== 'pending' && Number.isFinite(voice.span)) {
       const end = voice.span + voice.latest;
       if (voice.elapsedAt(now) >= end) {
