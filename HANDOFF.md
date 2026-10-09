@@ -594,8 +594,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `pass-the-baton` skill) until the whole plan is finished**, each session updating this item and
     the doc's Status section as a step lands. Next is step 3 (issue B), then step 4 (issue A); fixing
     either flips seeds on `determinism.test.ts`'s known lists, which then have to be updated. Each
-    step goes in a worktree off `main`, since another session works in the main checkout on the
-    playground and item 13; ask it before editing this file, and merge with `--ff-only` once both
+    step goes in a worktree off `main`, since another session works on the playground and item 13
+    in a worktree of its own; ask it before editing this file, and merge with `--ff-only` once both
     `onto test` and the lanes-off suite pass on the fleet. Step 6's version bump and publish are
     Mike's call: stop and ask there, never bump to 1.0.0. Measure any hot-path change with
     `AB_EACH=1 bench/ab.sh <origin/main sha> . <rounds> <rows>` on a fleet node (`.` is the synced
