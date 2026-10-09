@@ -575,15 +575,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     2026-10-09: `wave`; every ease (`keys` `ease`, `easeBy`, `delayBy`, `fade.ease`, a tween's bezier
     and steps); the live panel's `fade` options, `rise`, `rate` setter and `seek`'s `Doubt`; the
     mix options `stepMs`, `maxDt`, `reduce` and `lanes`; the mix's own `rate`; scrubbing by
-    `mix.seek` with `assess` per channel; and each channel's fold rule. Still to build, in Mike's
-    order:
-    - Spans and fits (`span`, `layout`, `condense`, `shed`, `lax`, `overrun`, `pipe`, `plain`,
-      `conclude`, span hints, `FitResult`). The largest build; it wants a design first.
-    - Owner voices (`owns`, `owner`) and `mix.blend`.
+    `mix.seek` with `assess` per channel; each channel's fold rule; and owners and spans (`owns`,
+    `owner`, `span` with its hints, every fit step and a code fit over `plain` and `layout`,
+    `FitResult`), drawn as header lanes on the score. Still to build, in Mike's order:
+    - `mix.blend`.
     - Marks, hits and events: `marks`, `announce`, `hits` and `book`, `send` and `drain`, `tags`
       and `score`, and anchors beyond `after`/`with` by name.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
+    Open in what is built: the score draws an owner's endless members running past the owner's
+    end (the owner fade preset's three clips run to the score's edge while the owner ends at
+    2.8 s), since a member has no end mark at cue and `Clip` has no way to show a cut; and a
+    header draws no fade slopes.
 
 14. **The 2026-10-09 code review, steps 5–9.** The review is the doc "blits code review,
     2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5); its findings
