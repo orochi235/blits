@@ -88,3 +88,22 @@ describe('fade at', () => {
     expect(m.probe('a').x).toBe(1);
   });
 });
+
+describe.each([true, false])('a fade out begun during a fade in, lanes %s', (lanes) => {
+  it('only ever falls, from the weight the fade in had reached', () => {
+    const m = mix<string, Pose>(K, { lanes });
+    m.sync(0);
+    const h = m.cue({ patch: one, fade: { in: 1000 } });
+    const seen: number[] = [];
+    for (let t = 0; t <= 1100; t += 100) {
+      m.sync(t);
+      if (t === 100) h.fade({ over: 1000 });
+      seen.push(m.probe('a').x);
+    }
+    expect(seen[1]).toBeCloseTo(0.1);
+    for (let i = 2; i < seen.length; i++)
+      expect(seen[i] as number).toBeLessThanOrEqual(seen[i - 1] as number);
+    expect(seen[6]).toBeCloseTo(0.05);
+    expect(seen.at(-1)).toBe(0);
+  });
+});

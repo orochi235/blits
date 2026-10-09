@@ -41,7 +41,9 @@ export function envelope(
 ): number {
   let w = 1;
   if (fadeIn > 0 && !reduced) {
-    const u = (now - since) / fadeIn;
+    // A fade in stops climbing where a fade out begins, or the two ramps multiply into a rise.
+    const end = out && !out.rest && out.at < now ? out.at : now;
+    const u = (end - since) / fadeIn;
     if (u < 1) w *= ease ? ease(Math.max(0, u)) : Math.max(0, u);
   }
   if (back && !reduced) {
