@@ -571,21 +571,19 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `docs/schema.html`, the README, and the playground README are checked against the code as it
     then stands. Stale claims are corrected, and comments that fail the comment bar are cut.
 
-13. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). `wave`
-    is in. What it still lacks, the most instructive first, with my rough estimate of the build:
+13. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). Built
+    2026-10-09: `wave`; every ease (`keys` `ease`, `easeBy`, `delayBy`, `fade.ease`, a tween's bezier
+    and steps); the live panel's `fade` options, `rise`, `rate` setter and `seek`'s `Doubt`; the
+    mix options `stepMs`, `maxDt`, `reduce` and `lanes`; the mix's own `rate`; scrubbing by
+    `mix.seek` with `assess` per channel; and each channel's fold rule. Still to build, in Mike's
+    order:
     - Spans and fits (`span`, `layout`, `condense`, `shed`, `lax`, `overrun`, `pipe`, `plain`,
-      `conclude`, span hints, `FitResult`): none of it is reachable. The largest build.
-    - Seek and how sure it is: the player rebuilds and replays from 0 (`player.ts`), so
-      `mix.seek`/`project`/`assess` and the `Doubt` that `handle.seek` returns are never shown.
-    - Each channel's fold rule: the kit is fixed in `kit.ts`; choosing `sum`/`mul`/`max`/`last`,
-      `bounds`, and `color`'s averaging or `lerp` is not offered.
+      `conclude`, span hints, `FitResult`). The largest build; it wants a design first.
     - Owner voices (`owns`, `owner`) and `mix.blend`.
     - Marks, hits and events: `marks`, `announce`, `hits` and `book`, `send` and `drain`, `tags`
       and `score`, and anchors beyond `after`/`with` by name.
-    - Small controls: `keys` `ease`, `easeBy` and `delayBy`; `fade.ease`; a tween's bezier and steps
-      eases; `handle.fade` options; the `rate` setter and `rise`; `stepMs`; `mix.rate`; `ticker`.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
-    without a store. Order is Mike's call; proposed: small controls, seek, fold rules, then spans.
+    without a store, and `ticker`, which would change only how the playground drives its frames.
 
 ## Loose ends
 
