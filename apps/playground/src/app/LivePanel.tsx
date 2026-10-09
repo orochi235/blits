@@ -1,4 +1,4 @@
-import type { Moving, spring, Value } from '@msb235/blits';
+import type { Doubt, Moving, spring, Value } from '@msb235/blits';
 import { refusalOf } from '@pg/blits/compile';
 import { type Composition, isMotion, type Voice } from '@pg/blits/composition';
 import { compileExpr, scopeOf } from '@pg/blits/expr';
@@ -9,6 +9,7 @@ import { ExprInput } from '@pg/widgets/ExprInput';
 import { useState } from 'react';
 import s from './App.module.css';
 import { docOf } from './docs';
+import { FadeControls } from './FadeControls';
 
 /** A spring's or a tween's patch, which take `to`; a glide takes only `push`, which every one does. */
 type Aimed = ReturnType<typeof spring<Subject, Mixed, Value>>;
@@ -17,12 +18,17 @@ export interface LivePanelProps {
   player: Player;
   comp: Composition;
   voice: Voice;
+  /** The subject picked on the stage. */
+  subject: Subject | undefined;
   /** Called after each live change, so the panel and the badge redraw. */
   onActed(): void;
 }
 
-export function LivePanel({ player, comp, voice: v, onActed }: LivePanelProps) {
+export function LivePanel({ player, comp, voice: v, subject, onActed }: LivePanelProps) {
   const [seekMs, setSeekMs] = useState(0);
+  const [keep, setKeep] = useState(false);
+  const [doubt, setDoubt] = useState<Doubt | null>(null);
+  const [rateTo, setRateTo] = useState(1);
   const [rampTo, setRampTo] = useState(0.25);
   const [rampOver, setRampOver] = useState(500);
   const [aimCode, setAimCode] = useState('');
@@ -82,10 +88,8 @@ export function LivePanel({ player, comp, voice: v, onActed }: LivePanelProps) {
         />
         <output className={s.readout}>{handle.weight.toFixed(2)}</output>
       </label>
+      <FadeControls subject={subject} act={(fn) => act(v.id, fn)} />
       <div className={s.row}>
-        <button type="button" onClick={() => act(v.id, (h) => h.fade())}>
-          fade
-        </button>
         <label className={s.row} title={docOf('Handle.seek')}>
           seek
           <input
@@ -96,9 +100,49 @@ export function LivePanel({ player, comp, voice: v, onActed }: LivePanelProps) {
             onChange={(e) => setSeekMs(e.target.valueAsNumber || 0)}
           />
         </label>
-        <button type="button" onClick={() => act(v.id, (h) => h.seek(seekMs))}>
+        <label className={s.row}>
+          <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
+          keep state
+        </label>
+        <button
+          type="button"
+          onClick={() =>
+            act(v.id, (h, _, heard) => {
+              const d = h.seek(seekMs, keep ? { state: 'keep' } : {});
+              if (heard) setDoubt(d);
+            })
+          }
+        >
           go
         </button>
+        {doubt && (
+          <output className={s.readout} title={docOf('Handle.seek')}>
+            {doubt}
+          </output>
+        )}
+      </div>
+      <div className={s.row} title={docOf('Handle.rate')}>
+        <label className={s.row}>
+          rate
+          <input
+            type="number"
+            min={0}
+            step={0.05}
+            value={rateTo}
+            onChange={(e) => setRateTo(e.target.valueAsNumber || 0)}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() =>
+            act(v.id, (h) => {
+              h.rate = rateTo;
+            })
+          }
+        >
+          set
+        </button>
+        <output className={s.readout}>now {handle.rate.toFixed(2)}</output>
       </div>
       <div className={s.row} title={docOf('Handle.ramp')}>
         <label className={s.row}>

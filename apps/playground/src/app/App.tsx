@@ -250,6 +250,7 @@ export function App() {
                 onComp={set}
                 voice={voice}
                 player={player}
+                subject={shown !== null ? subjects[shown] : undefined}
                 live={live}
                 shared={shared}
                 linkRef={linkRef}

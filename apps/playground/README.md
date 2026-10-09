@@ -126,7 +126,7 @@ fold: everything that reaches it, and the rest it folds from, under a breadcrumb
 | Voice     | the spec fields, each with blits' doc comment on hover; `stagger`, `target` and `weight` as expressions |
 | Weight    | a number, or a signal expression; a menu inserts common signals                         |
 | Patch     | a kind menu (switching starts a blank patch of that kind), then by kind: a weasel `Timeline` track per channel for `keys`, with an `EasingPicker` per key; code panes for `fn`; numbers or expressions per option for motion |
-| Live      | in live mode only: weight, fade, seek, ramp, and for a motion voice a per-subject `to` (a glide's `velocity`, by `push`) |
+| Live      | in live mode only: weight; `fade` with its `over`, `at` (a mix time or `'rest'`), `deadline` or the picked `subject`, and `rise`; `seek`, showing the `Doubt` it answers, with `state: 'keep'`; the `rate` setter and `ramp`; and for a motion voice a per-subject `to` (a glide's `velocity`, by `push`) |
 | Inspector | for the picked subject, a plot per channel over the last 3 s: each voice alone thin, the mix thick; then each voice's `weightOf` |
 
 Every voice's errors show on their own field. Two voices with one name are an error on the second

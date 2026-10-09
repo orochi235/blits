@@ -1,6 +1,7 @@
 import type { Composition, Voice } from '@pg/blits/composition';
 import { MAX_VOICES } from '@pg/blits/composition';
 import type { Player } from '@pg/blits/player';
+import type { Subject } from '@pg/blits/stage';
 import type { RefObject } from 'react';
 import s from './App.module.css';
 import { LevelsPanel } from './CompositionControls';
@@ -13,6 +14,8 @@ export interface VoiceColumnProps {
   onComp: (c: Composition) => void;
   voice: Voice | undefined;
   player: Player;
+  /** The subject picked on the stage, if any. */
+  subject: Subject | undefined;
   live: boolean;
   shared: { copied: boolean; url: string } | null;
   linkRef: RefObject<HTMLInputElement | null>;
@@ -75,6 +78,7 @@ export function VoiceColumn(p: VoiceColumnProps) {
           player={p.player}
           comp={p.comp}
           voice={voice}
+          subject={p.subject}
           onActed={p.onActed}
         />
       )}
