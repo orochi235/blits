@@ -112,12 +112,21 @@ const stage = (v: unknown) =>
   ((v.kind === 'dots' && count(v.cols, MAX_COLS) && count(v.rows, MAX_ROWS)) ||
     (v.kind === 'letters' && str(v.text) && [...v.text].length <= MAX_TEXT));
 
+const positive = (v: unknown) => num(v) && v > 0;
+const mixSettings = (v: unknown) =>
+  obj(v) &&
+  opt(v.stepMs, (x) => x === 'off' || positive(x)) &&
+  opt(v.maxDt, positive) &&
+  opt(v.reduce, (x) => typeof x === 'boolean') &&
+  opt(v.lanes, (x) => typeof x === 'boolean');
+
 /** `raw` as a composition when it is a version 1 one of the right shape, else null. */
 export function load(raw: unknown): Composition | null {
   if (!obj(raw) || raw.version !== 1) return null;
   if (!str(raw.title) || !num(raw.length) || raw.length <= 0 || raw.length > MAX_LENGTH)
     return null;
   if (!stage(raw.stage)) return null;
+  if (!opt(raw.mix, mixSettings)) return null;
   const { levels, voices } = raw;
   if (!Array.isArray(levels) || levels.length > MAX_LEVELS || !levels.every(level)) return null;
   if (!levelsOk(levels as Level[])) return null;

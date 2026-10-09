@@ -1,6 +1,7 @@
 import type { FieldError } from '@pg/blits/compile';
 import type { Voice } from '@pg/blits/composition';
 import type { Faults } from '@pg/blits/expr';
+import { withKey } from '@pg/blits/keyed';
 import { ExprInput } from '@pg/widgets/ExprInput';
 import { type ConfigField, ControlPanel, fromConfigFields } from '@weasel-js/labkit';
 import s from './App.module.css';
@@ -117,10 +118,7 @@ export function VoicePanel({ voice: v, errors, faults, onChange, onDelete }: Voi
         <EaseField
           label="fade ease"
           value={v.fade.ease}
-          onChange={(ease) => {
-            const { ease: _, ...fade } = v.fade;
-            onChange({ ...v, fade: ease === undefined ? fade : { ...fade, ease } });
-          }}
+          onChange={(ease) => onChange({ ...v, fade: withKey(v.fade, 'ease', ease) })}
         />
       </div>
       {loose.length > 0 && (

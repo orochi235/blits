@@ -1,5 +1,6 @@
 import type { WaveShape } from '@msb235/blits';
 import type { PatchSource } from '@pg/blits/composition';
+import { withKey } from '@pg/blits/keyed';
 import { KIT, SWINGS, type SwingName } from '@pg/blits/kit';
 import s from './App.module.css';
 
@@ -36,8 +37,7 @@ function NumberField(p: {
 
 export function WaveFields({ patch: p, onChange }: { patch: Wave; onChange(p: Wave): void }) {
   const setDepth = (ch: SwingName, d: number | undefined) => {
-    const { [ch]: _, ...rest } = p.depth;
-    onChange({ ...p, depth: d === undefined ? rest : { ...rest, [ch]: d } });
+    onChange({ ...p, depth: withKey(p.depth, ch, d) });
   };
   return (
     <>

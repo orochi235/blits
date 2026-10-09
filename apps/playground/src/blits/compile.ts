@@ -5,6 +5,7 @@ import {
   type Keyframe,
   keys,
   type Mix,
+  type MixOptions,
   mix,
   oklab,
   type Patch,
@@ -14,7 +15,14 @@ import {
   tween,
   wave,
 } from '@msb235/blits';
-import { type Composition, type Expr, isExpr, type PatchSource, type Voice } from './composition';
+import {
+  type Composition,
+  type Expr,
+  isExpr,
+  type MixSettings,
+  type PatchSource,
+  type Voice,
+} from './composition';
 import { compileExpr, type Faults, type Scope, scopeOf } from './expr';
 import { type ChannelName, KIT, type Mixed, type Pose } from './kit';
 import type { Subject } from './stage';
@@ -241,6 +249,16 @@ function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Mixed, unkn
   }
 }
 
+/** The options every mix of a composition is made with. */
+export function mixOptionsOf(s: MixSettings = {}): MixOptions {
+  return {
+    ...(s.stepMs !== 'off' ? { stepMs: s.stepMs ?? FRAME } : {}),
+    ...(s.maxDt !== undefined ? { maxDt: s.maxDt } : {}),
+    ...(s.reduce !== undefined ? { reduce: s.reduce } : {}),
+    ...(s.lanes !== undefined ? { lanes: s.lanes } : {}),
+  };
+}
+
 export function compile(
   c: Composition,
   subjects: readonly Subject[],
@@ -253,7 +271,7 @@ export function compile(
 
   // Specs are built afresh per mix: a motion patch keeps its state on itself and plays on one voice.
   const make = (only: string | null) => {
-    const m = mix<Subject, Mixed>(KIT, { stepMs: FRAME });
+    const m = mix<Subject, Mixed>(KIT, mixOptionsOf(c.mix));
     const handles = new Map<string, Handle<Subject>>();
     const cued = new Map<string, Patch<Subject, Mixed, unknown>>();
     const named = new Set<string>();

@@ -48,8 +48,12 @@ interface Composition {
   length: number;                        // ms the score shows
   levels: { name: string; value: number; min: number; max: number }[];
   voices: Voice[];                       // cue order, which is fold order
+  mix?: { stepMs?: number | 'off'; maxDt?: number; reduce?: boolean; lanes?: boolean };
 }
 ```
+
+`mix` holds the `MixOptions` every mix of the composition is made with; the Voice tab's mix panel
+edits them. Unset, `stepMs` is one frame and the rest are blits' defaults.
 
 A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `loop`, `stagger`, `target`,
 `freeze`, `weight`, `fade`, `locus`, `from`, `anchor`), so the voice panel teaches the real spec, plus

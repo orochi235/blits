@@ -1,4 +1,3 @@
-import type { Easing } from '@msb235/blits';
 import type { FieldError } from '@pg/blits/compile';
 import {
   type Expr,
@@ -8,6 +7,7 @@ import {
   periodOf,
   type Voice,
 } from '@pg/blits/composition';
+import { withKey } from '@pg/blits/keyed';
 import { stopsOf, tracksOf } from '@pg/blits/keys';
 import { CHANNELS, type ChannelName, KIT } from '@pg/blits/kit';
 import { CodePane } from '@pg/widgets/CodePane';
@@ -31,12 +31,6 @@ const OPTIONS: Record<Motion['kind'], readonly string[]> = {
   glide: ['from', 'velocity', 'ms', 'settle'],
   tween: ['from', 'to', 'ms'],
 };
-
-/** The patch with `ease` set, or dropped so blits' default applies. */
-function eased<P extends { ease?: Easing }>(p: P, ease: Easing | undefined): P {
-  const { ease: _, ...rest } = p;
-  return (ease === undefined ? rest : { ...rest, ease }) as P;
-}
 
 /** Errors on the patch as a whole, which no single field shows; so are errors on options it has no field for. */
 const WHOLE = new Set(['stops', 'writes', 'opts']);
@@ -180,7 +174,7 @@ export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelP
           <EaseField
             label="ease, every segment no stop overrides"
             value={p.ease}
-            onChange={(ease) => set(eased(p, ease))}
+            onChange={(ease) => set(withKey(p, 'ease', ease))}
           />
           <ChannelTiming patch={p} onChange={set} />
         </>
@@ -247,14 +241,16 @@ export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelP
               value={textOf(p.opts[k])}
               error={err(`opts.${k}`)?.error ?? null}
               onCommit={(text) => {
-                const { [k]: _, ...rest } = p.opts;
-                const next = parsed(text);
-                set({ ...p, opts: next === undefined ? rest : { ...rest, [k]: next } });
+                set({ ...p, opts: withKey(p.opts, k, parsed(text)) });
               }}
             />
           ))}
           {p.kind === 'tween' && (
-            <EaseField label="ease" value={p.ease} onChange={(ease) => set(eased(p, ease))} />
+            <EaseField
+              label="ease"
+              value={p.ease}
+              onChange={(ease) => set(withKey(p, 'ease', ease))}
+            />
           )}
         </>
       )}

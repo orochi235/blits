@@ -1,5 +1,6 @@
 import type { PatchSource } from '@pg/blits/composition';
 import { writesOf } from '@pg/blits/flow';
+import { withKey } from '@pg/blits/keyed';
 import type { ChannelName } from '@pg/blits/kit';
 import s from './App.module.css';
 import { EaseField } from './EaseField';
@@ -12,14 +13,8 @@ function within<V>(
   ch: ChannelName,
   x: V | undefined,
 ): Partial<Record<ChannelName, V>> | undefined {
-  const { [ch]: _, ...rest } = by ?? {};
-  const next = x === undefined ? rest : { ...rest, [ch]: x };
+  const next = withKey(by ?? {}, ch, x);
   return Object.keys(next).length > 0 ? next : undefined;
-}
-
-function written<K extends 'easeBy' | 'delayBy'>(p: Keys, key: K, by: Keys[K]): Keys {
-  const { [key]: _, ...rest } = p;
-  return (by === undefined ? rest : { ...rest, [key]: by }) as Keys;
 }
 
 /** Each keyed channel's own delay and curve: blits' `delayBy` and `easeBy`. */
@@ -44,7 +39,7 @@ export function ChannelTiming({ patch: p, onChange }: { patch: Keys; onChange(p:
                 onChange={(e) => {
                   const n = e.target.valueAsNumber;
                   if (!Number.isFinite(n) || n < 0) return;
-                  onChange(written(p, 'delayBy', within(p.delayBy, ch, n === 0 ? undefined : n)));
+                  onChange(withKey(p, 'delayBy', within(p.delayBy, ch, n === 0 ? undefined : n)));
                 }}
               />
               ms
@@ -53,7 +48,7 @@ export function ChannelTiming({ patch: p, onChange }: { patch: Keys; onChange(p:
               label={`${ch} ease`}
               inherit="the patch's ease"
               value={p.easeBy?.[ch]}
-              onChange={(ease) => onChange(written(p, 'easeBy', within(p.easeBy, ch, ease)))}
+              onChange={(ease) => onChange(withKey(p, 'easeBy', within(p.easeBy, ch, ease)))}
             />
           </div>
         );

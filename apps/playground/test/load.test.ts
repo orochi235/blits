@@ -52,6 +52,8 @@ describe('load', () => {
     };
     expect(load(withVoice(extras))).not.toBeNull();
     expect(load({ ...copy(), stage: { kind: 'letters', text: 'hi' } })).not.toBeNull();
+    const mixed = { stepMs: 'off', maxDt: 50, reduce: true, lanes: false };
+    expect(load({ ...copy(), mix: mixed })?.mix).toEqual(mixed);
   });
 
   it('reads a voice saved with hold as freeze', () => {
@@ -77,6 +79,9 @@ describe('load', () => {
       { ...copy(), stage: { kind: 'grid', cols: 2, rows: 2 } },
       { ...copy(), stage: { kind: 'letters' } },
       { ...copy(), length: -1 },
+      { ...copy(), mix: { stepMs: 0 } },
+      { ...copy(), mix: { maxDt: 'big' } },
+      { ...copy(), mix: { reduce: 1 } },
       { ...copy(), levels: [{ name: 'lift', value: 1 }] },
       { ...copy(), voices: [voice(), voice()] },
       withVoice({ hue: '210' }),

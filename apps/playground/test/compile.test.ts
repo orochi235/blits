@@ -1,5 +1,5 @@
 import { glide, keys, mix, patch, spring, toHex, tween, wave } from '@msb235/blits';
-import { compile, FRAME, mixedStop } from '@pg/blits/compile';
+import { compile, FRAME, mixedStop, mixOptionsOf } from '@pg/blits/compile';
 import type { Composition, PatchSource, Voice } from '@pg/blits/composition';
 import { KIT, type Mixed } from '@pg/blits/kit';
 import { subjectsOf } from '@pg/blits/stage';
@@ -33,6 +33,18 @@ function same(a: ReturnType<typeof mix<(typeof subjects)[0], Mixed>>, b: typeof 
     for (const s of subjects) expect(a.probe(s)).toStrictEqual(b.probe(s));
   }
 }
+
+describe('mixOptionsOf', () => {
+  it('steps every frame by default, and passes each setting a composition makes', () => {
+    expect(mixOptionsOf()).toEqual({ stepMs: FRAME });
+    expect(mixOptionsOf({ stepMs: 'off', maxDt: 40, reduce: true, lanes: false })).toEqual({
+      maxDt: 40,
+      reduce: true,
+      lanes: false,
+    });
+    expect(mixOptionsOf({ stepMs: 5 })).toEqual({ stepMs: 5 });
+  });
+});
 
 describe('compile', () => {
   it('a keys voice gives the poses the hand-written cue gives', () => {

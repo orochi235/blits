@@ -6,6 +6,7 @@ import type { RefObject } from 'react';
 import s from './App.module.css';
 import { LevelsPanel } from './CompositionControls';
 import { LivePanel } from './LivePanel';
+import { MixPanel } from './MixPanel';
 import { PatchPanel } from './PatchPanel';
 import { VoicePanel } from './VoicePanel';
 
@@ -62,6 +63,7 @@ export function VoiceColumn(p: VoiceColumnProps) {
         </div>
       )}
       <LevelsPanel comp={p.comp} onChange={p.onComp} />
+      <MixPanel comp={p.comp} onChange={p.onComp} />
       {voice && (
         <VoicePanel
           key={voice.id}

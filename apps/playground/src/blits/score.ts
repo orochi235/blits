@@ -2,6 +2,7 @@ import type { Anchor, Mark } from '@msb235/blits';
 import type { Clip, ClipEdit, Edge, Hatch, Link } from '@pg/widgets/ScoreLanes';
 import { type Composition, periodOf, type Voice } from './composition';
 import { compileExpr, type Scope, scopeOf } from './expr';
+import { without } from './keyed';
 import type { Subject } from './stage';
 
 const edgeOfMark = (m: Mark): Edge => (m === 'start' || m === 'in' ? 'start' : 'end');
@@ -94,11 +95,6 @@ function freshLocus(c: Composition): string {
   let n = 1;
   while (used.has(`group ${n}`)) n++;
   return `group ${n}`;
-}
-
-function without<T extends object, K extends keyof T>(o: T, key: K): Omit<T, K> {
-  const { [key]: _, ...rest } = o;
-  return rest;
 }
 
 /** `edit` applied to voice `v`, or `v` itself when the edit leaves its clip as it was. */

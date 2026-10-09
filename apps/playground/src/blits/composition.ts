@@ -63,6 +63,15 @@ export interface Voice {
   anchor?: Placement;
 }
 
+/** blits' `MixOptions` a composition may set; each unset one keeps the default `compile` gives. */
+export interface MixSettings {
+  /** A fixed interval for every `step`, ms, or `'off'` to step by the frame's gap. Default a frame. */
+  stepMs?: number | 'off';
+  maxDt?: number;
+  reduce?: boolean;
+  lanes?: boolean;
+}
+
 export interface Composition {
   version: 1;
   title: string;
@@ -70,6 +79,7 @@ export interface Composition {
   length: number;
   levels: Level[];
   voices: Voice[];
+  mix?: MixSettings;
 }
 
 /** A patch that moves one channel toward a target rather than playing a fixed pass. */
