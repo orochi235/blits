@@ -13,6 +13,18 @@ version and everything else the patch. Each release lists its changes as **Break
   `elapsed` at the next probe, on the `stepMs` grid where there is one. It left state where it was,
   so a spring seeked back to 0 read about 111 where a fresh one reads 0. `seek(elapsed, { state:
   'keep' })` keeps the old behavior. The same holds for an owner's seek and its children.
+- A `keys` channel given a `delayBy` waits, then travels in the time left, landing with the other
+  channels at the end of the duration, as klieg's own `delayBy` does. It shifted the phase without
+  compressing it, so a channel waiting 200 ms of 1000 stopped 80% of the way there.
+- In a `locus`, each channel folds at the summed weight of the members that write it, not the whole
+  locus's. A channel only one member writes fades with that member rather than holding at full
+  weight until it snaps to rest.
+- `cue` refuses a `loop` that is not `true`, `false` or a whole number of passes; `spring` refuses
+  a stiffness or mass that is not positive, or a negative damping; `glide` refuses an `ms` that is
+  not positive. Each played wrongly: a fractional loop jumped at its end, and a spring with no
+  stiffness snapped to its target.
+- `sync(NaN)` throws. It slipped past the check that the clock only goes forward.
+- `{ steps, jump: 'start' }` reads `1/n` at 0, as CSS does. It read 0.
 
 ### Added
 
@@ -24,9 +36,27 @@ version and everything else the patch. Each release lists its changes as **Break
   up to `depth` either side of its rest in `kit` (0 without one), as a sine, triangle, saw, or
   square, `cycles` times a pass. It is an `fn` patch, and `waveOptionsOf` reads its options back for
   an engine that reads data; `waveAt` is the unit wave.
+- `Channel.copy`, for a channel whose `rest` is an object the mix cannot copy itself, such as a class
+  instance, and that has `fold`; `cue` refuses such a channel without one. The mix copies arrays,
+  typed arrays and plain objects itself.
+- `npm run test:general` runs the suite with lanes off, so every test checks the general path
+  against the lanes.
 
 ### Fixed
 
+- A channel whose `rest` is an object or a typed array had it handed to `fold` by reference, so it
+  accumulated across frames and every subject's pose shared it.
+- `fade()` during a fade-in made the weight rise before it fell: the fade-in kept climbing under
+  the fade-out. It now stops where the fade-out begins.
+- A seek put a voice's controls back without its rise ramp, so a seek to before a later `rise()`
+  read the voice at 0.
+- A `from: 'current'` retarget under an easing that jumps or leaves vertically at its start
+  (`steps` with `jump: 'start'`, `bezier [0,1,0,1]`) threw the value hundreds of thousands out. Such
+  an easing now takes no slope bend.
+- A channel with no `rest` stayed switched on across a weight of 0, so a weight going 0.7, 0, 0.5
+  found it on at 0.5.
+- `slew` and `lag` step by no more than `maxDt`, as `step` does. After a long gap a slew finished
+  at once.
 - A `keys` patch reads a channel whose stops are all plain numbers, lerped straight across, by a
   search and lerp of its own, giving the same bits: `patch.at` over 10,000 four-stop tracks takes
   about 0.70 of the time it did.
