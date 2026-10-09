@@ -1391,7 +1391,7 @@ describe('lanes go idle below a share of subjects probed and fill again above it
   });
 
   it('skips an idle lane and fills a busy one', () => {
-    const m = mix<Part, Pose>(K);
+    const m = mix<Part, Pose>(K, { lanes: true });
     const calls: number[] = [];
     const parts = Array.from({ length: 40 }, (_, id) => ({ id }));
     m.cue({
@@ -1425,7 +1425,7 @@ describe('lanes go idle below a share of subjects probed and fill again above it
 
 describe('lanes run', () => {
   it("fill every numbered subject at the frame's first probe", () => {
-    const m = mix<Part, Pose>(K);
+    const m = mix<Part, Pose>(K, { lanes: true });
     const seen: number[] = [];
     const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
     m.cue({
@@ -1450,7 +1450,7 @@ describe('lanes run', () => {
 
 describe('lanes fill only subjects probed this frame or the last', () => {
   it('leave a subject probed in neither to the general path', () => {
-    const m = mix<Part, Pose>(K);
+    const m = mix<Part, Pose>(K, { lanes: true });
     const calls: number[] = [];
     const parts = Array.from({ length: 40 }, (_, id) => ({ id }));
     m.cue({
@@ -1894,7 +1894,7 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
   });
 
   it('calls a fn voice per subject from the fill, once per frame each', () => {
-    const m = mix<Part, Pose>(K);
+    const m = mix<Part, Pose>(K, { lanes: true });
     const seen: number[] = [];
     const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
     for (const p of parts)
@@ -1941,7 +1941,7 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
       }),
       { times: ramp },
     );
-    const m = mix<Part, Pose>(K);
+    const m = mix<Part, Pose>(K, { lanes: true });
     const p = { id: 3 };
     m.cue({ patch: both(1e16), subjects: [p] });
     m.cue({
@@ -2090,7 +2090,7 @@ describe('a voice weighted by a signal runs on lanes while the signal keeps no s
 
   /** How many subjects a fn voice's patch is called for on a frame probing two of six. */
   const calls = (weight: (p: Part, s: Setting) => number) => {
-    const m = mix<Part, Pose>(K);
+    const m = mix<Part, Pose>(K, { lanes: true });
     const parts = Array.from({ length: 6 }, (_, id) => ({ id }));
     const seen = new Set<number>();
     m.cue({
@@ -2282,7 +2282,7 @@ describe('a locus of keys and fn voices runs on lanes and folds as the general p
   });
 
   it('fills a blend from the lanes', () => {
-    const m = mix<Part, Pose>(K);
+    const m = mix<Part, Pose>(K, { lanes: true });
     const parts = Array.from({ length: 6 }, (_, id) => ({ id }));
     const seen = new Set<number>();
     const counted = (k: number) =>
@@ -2384,7 +2384,7 @@ describe('a voice a probe meets late, after every laned voice, folds onto the la
   });
 
   it('owes the voice rather than sending the subject to the general path', () => {
-    const m = mix<Part, Pose>(K);
+    const m = mix<Part, Pose>(K, { lanes: true });
     const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
     const played = swap(false)(m, parts);
     m.sync(0);
@@ -2405,7 +2405,7 @@ describe('a color(last()) channel runs on lanes, the last voice past the band wi
   const paint = (c: number[]) => patch<Part, Pose>(0, () => ({ tint: c }), { writes: ['tint'] });
 
   it('puts the channel on lanes', () => {
-    const m = mix<Part, Pose>(K);
+    const m = mix<Part, Pose>(K, { lanes: true });
     m.cue({ patch: paint(RED) });
     m.sync(0);
     m.probe({ id: 0 });

@@ -83,6 +83,12 @@ import {
 } from './weigh.js';
 
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: every member of `Methods` is installed below
+/**
+ * What a mix takes where its options say nothing. Not exported from the package: the suite turns
+ * `lanes` off to run every test on the general path, which is what makes each one an equivalence check.
+ */
+export const defaults = { lanes: true };
+
 export class Mixer<I, O> implements Mix<I, O> {
   cued: Voice<I, O>[] = [];
   /** Under `history`, voices that have left but that a read back may still reach. */
@@ -254,7 +260,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.names.forEach((k, i) => {
       this.slotOf.set(k, i);
     });
-    this.lanes = opts.lanes === false ? null : new Lanes<I, O>(laneHost(this));
+    this.lanes = (opts.lanes ?? defaults.lanes) ? new Lanes<I, O>(laneHost(this)) : null;
     this.name = opts.name;
     const shared = opts.transport as Transport | undefined;
     if (shared !== undefined) {
