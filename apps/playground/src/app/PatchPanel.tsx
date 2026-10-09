@@ -1,6 +1,13 @@
 import { hexOf } from '@pg/blits/color';
 import type { FieldError } from '@pg/blits/compile';
-import type { Expr, PatchSource, Voice } from '@pg/blits/composition';
+import {
+  type Expr,
+  isMotion,
+  type Motion,
+  type PatchSource,
+  periodOf,
+  type Voice,
+} from '@pg/blits/composition';
 import { stopsOf, tracksOf } from '@pg/blits/keys';
 import { CHANNELS, type ChannelName, KIT } from '@pg/blits/kit';
 import { CodePane } from '@pg/widgets/CodePane';
@@ -9,11 +16,11 @@ import type { SampledTrack } from '@weasel-js/core';
 import { EasingPicker, type KeyEditorCtx, Timeline } from '@weasel-js/ui';
 import { useState } from 'react';
 import s from './App.module.css';
+import { WaveFields } from './WaveFields';
 
 type Kind = PatchSource['kind'];
-type Motion = Extract<PatchSource, { kind: 'spring' | 'glide' | 'tween' }>;
 
-const KINDS: readonly Kind[] = ['keys', 'fn', 'spring', 'glide', 'tween'];
+const KINDS: readonly Kind[] = ['keys', 'fn', 'wave', 'spring', 'glide', 'tween'];
 
 /** Every option each motion takes, required ones first; an empty field leaves blits' default. */
 const OPTIONS: Record<Motion['kind'], readonly string[]> = {
@@ -39,6 +46,8 @@ function blank(kind: Kind): PatchSource {
     };
   if (kind === 'fn')
     return { kind, period: 1000, writes: ['turn'], at: '(phase) => ({ turn: phase * 360 })' };
+  if (kind === 'wave')
+    return { kind, period: 1000, shape: 'sine', cycles: 1, phase: 0, depth: { scale: 0.25 } };
   if (kind === 'spring')
     return {
       kind,
@@ -123,14 +132,14 @@ export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelP
   const set = (patch: PatchSource) => onChange({ ...v, patch });
   const mine = errors.filter((e) => e.voice === v.id);
   const err = (field: string) => mine.find((e) => e.field === field);
-  const shown = p.kind === 'keys' || p.kind === 'fn' ? [] : OPTIONS[p.kind];
+  const shown = isMotion(p) ? OPTIONS[p.kind] : [];
   const whole = mine.filter(
     (e) =>
       WHOLE.has(e.field) ||
       (e.field.startsWith('opts.') && !shown.includes(e.field.slice('opts.'.length))),
   );
-  const phase =
-    'period' in p && p.period > 0 ? Math.max(0, (playhead - v.start) * v.rate) % p.period : 0;
+  const period = periodOf(p) ?? 0;
+  const phase = period > 0 ? Math.max(0, (playhead - v.start) * v.rate) % period : 0;
 
   return (
     <section className={s.panel} aria-label="patch">
@@ -145,7 +154,7 @@ export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelP
             ))}
           </select>
         </label>
-        {(p.kind === 'keys' || p.kind === 'fn') && (
+        {!isMotion(p) && (
           <label className={s.row}>
             period
             <input
@@ -160,7 +169,7 @@ export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelP
             />
           </label>
         )}
-        {p.kind !== 'keys' && p.kind !== 'fn' && (
+        {isMotion(p) && (
           <label className={s.row}>
             channel
             <select
@@ -252,7 +261,8 @@ export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelP
           />
         </>
       )}
-      {p.kind !== 'keys' && p.kind !== 'fn' && (
+      {p.kind === 'wave' && <WaveFields patch={p} onChange={set} />}
+      {isMotion(p) && (
         <>
           {OPTIONS[p.kind].map((k) => (
             <ExprInput

@@ -113,12 +113,22 @@ describe('flowOf', () => {
 });
 
 describe('writesOf', () => {
-  it('reads keys, fn and motion patches', () => {
+  it('reads keys, fn, wave and motion patches', () => {
     expect(
       writesOf({ kind: 'keys', period: 1, stops: [{ at: 0, delta: { scale: 1, color: 0 } }] }),
     ).toEqual(['scale', 'color']);
     expect(writesOf({ kind: 'fn', period: 1, writes: ['turn'], at: '' })).toEqual(['turn']);
     expect(writesOf({ kind: 'spring', channel: 'offset', opts: {} })).toEqual(['offset']);
+    expect(
+      writesOf({
+        kind: 'wave',
+        period: 1,
+        shape: 'sine',
+        cycles: 1,
+        phase: 0,
+        depth: { glow: 1, turn: 2 },
+      }),
+    ).toEqual(['turn', 'glow']);
   });
 });
 

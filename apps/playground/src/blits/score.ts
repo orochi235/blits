@@ -1,6 +1,6 @@
 import type { Anchor, Mark } from '@msb235/blits';
 import type { Clip, ClipEdit, Edge, Hatch, Link } from '@pg/widgets/ScoreLanes';
-import type { Composition, Voice } from './composition';
+import { type Composition, periodOf, type Voice } from './composition';
 import { compileExpr, type Scope, scopeOf } from './expr';
 import type { Subject } from './stage';
 
@@ -63,7 +63,7 @@ export function clipsOf(
       label: `${v.name} · ${v.patch.kind}`,
       hue: v.hue,
       start: v.start,
-      pass: v.patch.kind === 'keys' || v.patch.kind === 'fn' ? v.patch.period : 0,
+      pass: periodOf(v.patch) ?? 0,
       passes: passesOf(v),
       fadeIn: v.fade.in ?? 0,
       fadeOut: v.fade.out ?? 0,

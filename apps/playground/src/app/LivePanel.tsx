@@ -1,6 +1,6 @@
 import type { Moving, spring, Value } from '@msb235/blits';
 import { refusalOf } from '@pg/blits/compile';
-import type { Composition, Voice } from '@pg/blits/composition';
+import { type Composition, isMotion, type Voice } from '@pg/blits/composition';
 import { compileExpr, scopeOf } from '@pg/blits/expr';
 import type { Mixed } from '@pg/blits/kit';
 import type { Player } from '@pg/blits/player';
@@ -33,11 +33,11 @@ export function LivePanel({ player, comp, voice: v, onActed }: LivePanelProps) {
     player.live(id, fn);
     onActed();
   };
-  const motion = v.patch.kind === 'spring' || v.patch.kind === 'glide' || v.patch.kind === 'tween';
+  const motion = isMotion(v.patch);
   const aimKey = v.patch.kind === 'glide' ? 'velocity' : 'to';
   const aim = (code: string) => {
     const p = v.patch;
-    if (p.kind === 'keys' || p.kind === 'fn' || code.trim() === '') return;
+    if (!isMotion(p) || code.trim() === '') return;
     const channel = p.channel;
     const r = compileExpr<(s: Subject) => unknown>({ code }, scopeOf(comp.levels), undefined);
     if ('error' in r) return setAimError(r.error);

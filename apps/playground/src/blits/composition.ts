@@ -1,5 +1,5 @@
-import type { Easing, Keyframe, Placement } from '@msb235/blits';
-import type { ChannelName, Pose } from './kit';
+import type { Easing, Keyframe, Placement, WaveShape } from '@msb235/blits';
+import type { ChannelName, Pose, SwingName } from './kit';
 
 /** Source of a function: `(s) => …` for a subject, a signal such as `slew(level('x'), …)`. */
 export interface Expr {
@@ -20,6 +20,14 @@ export type StageSpec =
 export type PatchSource =
   | { kind: 'keys'; period: number; stops: Keyframe<Pose>[]; ease?: Easing }
   | { kind: 'fn'; period: number; writes: ChannelName[]; at: string; state?: string; step?: string }
+  | {
+      kind: 'wave';
+      period: number;
+      shape: WaveShape;
+      cycles: number;
+      phase: number;
+      depth: Partial<Record<SwingName, number>>;
+    }
   | {
       kind: 'spring' | 'glide' | 'tween';
       channel: ChannelName;
@@ -54,6 +62,16 @@ export interface Composition {
   levels: Level[];
   voices: Voice[];
 }
+
+/** A patch that moves one channel toward a target rather than playing a fixed pass. */
+export type Motion = Extract<PatchSource, { kind: 'spring' | 'glide' | 'tween' }>;
+
+export const isMotion = (p: PatchSource): p is Motion =>
+  p.kind === 'spring' || p.kind === 'glide' || p.kind === 'tween';
+
+/** How long one pass of a patch runs, for the kinds that have a fixed pass. */
+export const periodOf = (p: PatchSource): number | undefined =>
+  p.kind === 'keys' || p.kind === 'fn' || p.kind === 'wave' ? p.period : undefined;
 
 export const isExpr = (v: unknown): v is Expr =>
   typeof v === 'object' && v !== null && typeof (v as Expr).code === 'string';

@@ -1,4 +1,4 @@
-import { glide, keys, mix, patch, spring, toHex, tween } from '@msb235/blits';
+import { glide, keys, mix, patch, spring, toHex, tween, wave } from '@msb235/blits';
 import { compile, FRAME, mixedStop } from '@pg/blits/compile';
 import type { Composition, PatchSource, Voice } from '@pg/blits/composition';
 import { KIT, type Mixed } from '@pg/blits/kit';
@@ -142,6 +142,36 @@ describe('compile', () => {
     });
     expect(built.errors).toEqual([]);
     same(built.mix, hand);
+  });
+
+  it('a wave voice gives the hand-written poses, swinging scale around its rest', () => {
+    const swing = voice({
+      id: 'w',
+      patch: {
+        kind: 'wave',
+        period: 600,
+        shape: 'triangle',
+        cycles: 2,
+        phase: 0.25,
+        depth: { scale: 0.5, turn: 30 },
+      },
+    });
+    const built = compile(comp([swing]), subjects);
+    const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
+    hand.cue({
+      patch: wave<(typeof subjects)[0], Mixed>(600, {
+        shape: 'triangle',
+        cycles: 2,
+        phase: 0.25,
+        depth: { scale: 0.5, turn: 30 },
+        kit: KIT,
+      }),
+    });
+    expect(built.errors).toEqual([]);
+    same(built.mix, hand);
+    const fresh = compile(comp([swing]), subjects).mix;
+    fresh.sync(0);
+    expect(fresh.probe(subjects[0] as (typeof subjects)[0]).scale).toBeCloseTo(1.5, 9);
   });
 
   it('a tween voice gives the hand-written poses', () => {

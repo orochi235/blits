@@ -12,6 +12,7 @@ import {
   type Signal,
   spring,
   tween,
+  wave,
 } from '@msb235/blits';
 import { type Composition, type Expr, isExpr, type PatchSource, type Voice } from './composition';
 import { compileExpr, type Faults, type Scope, scopeOf } from './expr';
@@ -181,6 +182,14 @@ function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Mixed, unkn
       fail('writes', messageOf(err));
       return undefined;
     }
+  }
+  if (p.kind === 'wave') {
+    const { period, shape, cycles, phase, depth } = p;
+    return wave<Subject, Mixed>(period, { shape, cycles, phase, depth, kit: KIT }) as Patch<
+      Subject,
+      Mixed,
+      unknown
+    >;
   }
   let ok = true;
   const bad = (field: string, error: string) => {

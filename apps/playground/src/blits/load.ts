@@ -10,7 +10,7 @@ import {
 } from './composition';
 import { CSS } from './easing';
 import { levelsOk } from './edit';
-import { CHANNELS } from './kit';
+import { CHANNELS, SWINGS } from './kit';
 
 type Rec = Record<string, unknown>;
 
@@ -49,6 +49,15 @@ function patch(p: unknown): boolean {
         str(p.at) &&
         opt(p.state, str) &&
         opt(p.step, str)
+      );
+    case 'wave':
+      return (
+        num(p.period) &&
+        oneOf('sine', 'triangle', 'saw', 'square')(p.shape) &&
+        num(p.cycles) &&
+        num(p.phase) &&
+        obj(p.depth) &&
+        Object.entries(p.depth).every(([k, d]) => SWINGS.includes(k as never) && num(d))
       );
     case 'spring':
     case 'glide':

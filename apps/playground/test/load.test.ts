@@ -29,6 +29,7 @@ describe('load', () => {
       { kind: 'spring', channel: 'offset', opts: { to: [0, 4], stiffness: 120 } },
       { kind: 'glide', channel: 'turn', opts: { from: { code: '(s) => s.col' } } },
       { kind: 'tween', channel: 'scale', opts: { from: 1, to: 2, ms: 300 }, ease: 'ease-out' },
+      { kind: 'wave', period: 800, shape: 'saw', cycles: 2, phase: 0.5, depth: { glow: 1 } },
     ];
     for (const patch of kinds) expect(load(withVoice({ patch }))).not.toBeNull();
     const extras = {
@@ -90,6 +91,22 @@ describe('load', () => {
       withVoice({ patch: { kind: 'spring', channel: 'size', opts: {} } }),
       withVoice({ patch: { kind: 'spring', channel: 'turn', opts: { to: 'far' } } }),
       withVoice({ patch: { kind: 'shake', period: 1 } }),
+      withVoice({
+        patch: { kind: 'wave', period: 1, shape: 'zigzag', cycles: 1, phase: 0, depth: {} },
+      }),
+      withVoice({
+        patch: { kind: 'wave', period: 1, shape: 'sine', cycles: 1, phase: 0, depth: { color: 1 } },
+      }),
+      withVoice({
+        patch: {
+          kind: 'wave',
+          period: 1,
+          shape: 'sine',
+          cycles: 1,
+          phase: 0,
+          depth: { turn: 'x' },
+        },
+      }),
     ];
     for (const c of bad) expect(load(c), JSON.stringify(c).slice(0, 200)).toBeNull();
   });

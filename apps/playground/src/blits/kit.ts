@@ -24,6 +24,11 @@ export const CHANNELS: readonly ChannelName[] = [
   'glow',
 ];
 
+/** The channels the mix folds as one number, which a wave can swing. */
+export type SwingName = { [K in keyof Mixed]: Mixed[K] extends number ? K : never }[keyof Mixed];
+
+export const SWINGS: readonly SwingName[] = ['turn', 'scale', 'opacity', 'glow'];
+
 export const KIT: Kit<Mixed> = kit<Mixed>({
   offset: vec(2, sum()),
   turn: sum(),

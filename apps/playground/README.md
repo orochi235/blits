@@ -59,6 +59,7 @@ an `id`, a `name`, a `hue` and a `patch`. A `PatchSource` is one of:
 |------------------------------|------------------------------------------------------------------------|
 | `keys`                       | `period`, `stops` (blits `Keyframe`s of the pose), an optional `ease`  |
 | `fn`                         | `period`, the channels it `writes`, and the source of `at`, `state`, `step` |
+| `wave`                       | `period`, `shape`, `cycles`, `phase`, and a `depth` for each one-number channel; it swings around the kit's rest |
 | `spring`, `glide`, `tween`   | the `channel` it moves and its `opts`; a tween also takes an `ease`    |
 
 An `Expr` is `{ code }`, the source of a function: `(s) => …` over a subject for `stagger` and

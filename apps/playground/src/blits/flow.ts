@@ -6,9 +6,10 @@ import {
   isExpr,
   type Level,
   type PatchSource,
+  periodOf,
   type Voice,
 } from './composition';
-import { CHANNELS, type ChannelName, KIT } from './kit';
+import { CHANNELS, type ChannelName, KIT, type SwingName } from './kit';
 import { subjectsOf } from './stage';
 
 const OPS = new Set(['gate', 'lag', 'peak', 'slew']);
@@ -63,12 +64,14 @@ export function writesOf(p: PatchSource): ChannelName[] {
     return CHANNELS.filter((c) => seen.has(c));
   }
   if (p.kind === 'fn') return CHANNELS.filter((c) => p.writes.includes(c));
+  if (p.kind === 'wave') return CHANNELS.filter((c) => p.depth[c as SwingName] !== undefined);
   return [p.channel];
 }
 
 function voiceDetail(v: Voice): string {
   const parts: string[] = [v.patch.kind];
-  if (v.patch.kind === 'keys' || v.patch.kind === 'fn') parts.push(`${v.patch.period} ms`);
+  const period = periodOf(v.patch);
+  if (period !== undefined) parts.push(`${period} ms`);
   if (v.loop === true) parts.push('loop');
   else if (typeof v.loop === 'number') parts.push(`×${v.loop}`);
   if (typeof v.weight === 'number') parts.push(`w ${v.weight}`);
