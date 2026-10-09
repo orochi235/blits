@@ -130,6 +130,14 @@ export function App() {
     return () => cancelAnimationFrame(id);
   }, [playing, rate, loop, player, tick]);
 
+  const play = useCallback(
+    (on: boolean) => {
+      if (on && player.t >= compRef.current.length - FRAME) player.seek(0);
+      setPlaying(on);
+    },
+    [player],
+  );
+
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return;
@@ -141,6 +149,20 @@ export function App() {
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
   }, [undo, redo]);
+
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== ' ' || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+      // The score's handles take space themselves; a button's or canvas's own use of it is cancelled.
+      const skip = 'input, textarea, select, [contenteditable], [tabindex]:not(button, canvas)';
+      if ((e.target as HTMLElement).closest(skip)) return;
+      e.preventDefault();
+      if (!e.repeat) play(!playing);
+    };
+    // Capture, because weasel's canvases claim space for their hand tool on the window.
+    window.addEventListener('keydown', key, true);
+    return () => window.removeEventListener('keydown', key, true);
+  }, [play, playing]);
 
   const { clips, links } = useMemo(() => clipsOf(comp, subjects), [comp, subjects]);
   const scrub = (t: number) => {
@@ -169,10 +191,6 @@ export function App() {
     const failed = () => setShared({ copied: false, url });
     if (!navigator.clipboard?.writeText) return failed();
     navigator.clipboard.writeText(url).then(() => setShared({ copied: true, url }), failed);
-  };
-  const play = (on: boolean) => {
-    if (on && player.t >= comp.length - FRAME) player.seek(0);
-    setPlaying(on);
   };
 
   const loadPreset = (name: string) => {

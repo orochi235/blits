@@ -26,7 +26,8 @@ rows or the text; clicking a subject picks it for the inspector, top middle. The
 the flow. The middle column has two tabs: **Plots**, the inspector, and **Voice**, which holds the
 levels, voice and patch panels. Selecting a clip, on the score or in the flow, opens Voice. The
 score fills the bottom, with the transport above it: play and pause, rate, loop, a slider per
-level, and the live toggle. The header holds the preset menu, the title and the length.
+level, and the live toggle. Space plays and pauses from anywhere but a text field or the score's
+own handles, which take it themselves. The header holds the preset menu, the title and the length.
 
 These composition edits go through the same history as every other, so undo, storage and share
 cover them, and `src/blits/edit.ts` holds each one to the `MAX_*` caps `load` enforces. Switching
