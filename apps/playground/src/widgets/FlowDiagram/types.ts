@@ -1,4 +1,12 @@
-export type FlowKind = 'level' | 'signal' | 'expr' | 'voice' | 'channel' | 'pose' | 'rest';
+export type FlowKind =
+  | 'level'
+  | 'signal'
+  | 'expr'
+  | 'group'
+  | 'voice'
+  | 'channel'
+  | 'pose'
+  | 'rest';
 export interface FlowNode {
   id: string;
   kind: FlowKind;

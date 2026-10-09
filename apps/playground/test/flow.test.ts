@@ -5,6 +5,7 @@ import crossfade from '@pg/blits/presets/crossfade';
 import pointerGlow from '@pg/blits/presets/pointer-glow';
 import staggerWave from '@pg/blits/presets/stagger-wave';
 import { describe, expect, it } from 'vitest';
+import { group } from './helpers';
 
 const edges = (c: Composition, faulted?: Set<string>) =>
   flowOf(c, faulted).edges.map((e) => [e.from, e.to, e.label ?? ''] as const);
@@ -105,6 +106,28 @@ describe('flowOf', () => {
     expect(
       flowOf(crossfade, new Set(['warm'])).nodes.find((n) => n.id === 'voice:warm')?.faulted,
     ).toBe(true);
+  });
+
+  it('puts a group between the signals and the voices it holds', () => {
+    const c: Composition = {
+      ...comp(
+        [voice({ id: 'a', owner: 'g' }), voice({ id: 'b', owner: 'g' }), voice({ id: 'c' })],
+        [{ name: 'x', value: 1, min: 0, max: 1 }],
+      ),
+      groups: [
+        group({ id: 'g', weight: { code: "level('x')" } }),
+        group({ id: 'k', kind: 'span', owner: 'g', span: { duration: 2000 } }),
+      ],
+    };
+    expect(node(c, 'group:g')).toMatchObject({ kind: 'group', label: 'g', detail: 'owner' });
+    expect(node(c, 'group:k')?.detail).toBe('span · 2000 ms · w 1');
+    const e = edges(c);
+    expect(e).toContainEqual(['level:x', 'group:g', 'weight']);
+    expect(e).toContainEqual(['group:g', 'voice:a', '']);
+    expect(e).toContainEqual(['group:g', 'voice:b', '']);
+    expect(e).toContainEqual(['group:g', 'group:k', '']);
+    expect(e.filter(([, to]) => to === 'voice:c')).toEqual([]);
+    expect(flowOf(c, new Set(['g'])).nodes.find((n) => n.id === 'group:g')?.faulted).toBe(true);
   });
 
   it('gives an empty composition a pose and nothing else', () => {

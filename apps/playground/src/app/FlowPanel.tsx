@@ -9,9 +9,9 @@ import { useSize } from './useSize';
 
 export interface FlowPanelProps {
   comp: Composition;
-  /** Ids of voices that failed to compile. */
+  /** Ids of voices and groups that failed to compile. */
   faulted: ReadonlySet<string>;
-  /** The selected voice's id. */
+  /** The selected voice's or group's id. */
   selected: string | null;
   onVoice: (id: string) => void;
 }
@@ -28,8 +28,11 @@ export function FlowPanel({ comp, faulted, selected, onVoice }: FlowPanelProps) 
     [flow, fold, comp.rules],
   );
   const [size, ref] = useSize();
+  const nodeOf = (id: string) =>
+    comp.groups?.some((g) => g.id === id) ? `group:${id}` : `voice:${id}`;
   const pick = (id: string | null) => {
     if (id?.startsWith('voice:')) onVoice(id.slice('voice:'.length));
+    else if (id?.startsWith('group:')) onVoice(id.slice('group:'.length));
     else if (id?.startsWith('ch:') && !fold) setFold(id.slice('ch:'.length) as ChannelName);
   };
   return (
@@ -57,7 +60,7 @@ export function FlowPanel({ comp, faulted, selected, onVoice }: FlowPanelProps) 
               width={size.width}
               height={size.height}
               direction={fold ? 'up' : 'down'}
-              selected={selected ? `voice:${selected}` : null}
+              selected={selected ? nodeOf(selected) : null}
               onSelect={pick}
             />
           )

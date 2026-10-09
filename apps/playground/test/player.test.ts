@@ -283,6 +283,27 @@ describe('Player', () => {
     expect(solo.glow[0]).toBe(0);
   });
 
+  it("records each group's weightOf beside its voices'", () => {
+    const g = {
+      ...compOf(
+        [
+          {
+            ...voice({ id: 'a', patch: { kind: 'keys', period: 1000, stops: [] } }),
+            owner: 'o',
+          },
+        ],
+        [group({ id: 'o', weight: 0.5 })],
+      ),
+      stage: c.stage,
+    };
+    const p = new Player(() => compile(g, subjects, { solos: true }), subjects);
+    p.pick(0);
+    p.seek(500);
+    const last = p.getSnapshot().samples.at(-1);
+    expect(last?.weights.get('o')).toBe(0.5);
+    expect(last?.weights.get('a')).toBe(0.5);
+  });
+
   it('records the picked subject through play, a seek back and a rebuild, keeping the last window', () => {
     const p = player();
     const seen: number[] = [];

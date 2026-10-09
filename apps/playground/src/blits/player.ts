@@ -19,7 +19,7 @@ const frameOf = (t: number) => Math.max(0, Math.floor(t / FRAME + 1e-9));
 /** How much history the picked subject keeps, ms of score time. */
 export const WINDOW = 3000;
 
-/** The picked subject at one frame: the mix's pose, each voice's solo pose, each voice's `weightOf`. */
+/** The picked subject at one frame: the mix's pose, each voice's solo pose, each voice's and group's `weightOf`. */
 interface Sample {
   t: number;
   full: Mixed;
@@ -258,11 +258,12 @@ export class Player {
   private record(): void {
     const subject = this.picked === null ? undefined : this.subjects[this.picked];
     if (subject === undefined || this.frame < 0) return;
-    const { mix, solos, handles } = this.built;
+    const { mix, solos, handles, groupHandles } = this.built;
     const soloPoses = new Map<string, Mixed>();
     const weights = new Map<string, number>();
     for (const [id, solo] of solos) soloPoses.set(id, copied(solo.probe(subject)));
     for (const [id, handle] of handles) weights.set(id, handle.weightOf(subject));
+    for (const [id, handle] of groupHandles) weights.set(id, handle.weightOf(subject));
     const h = this.samples;
     if (h.length > 0 && (h[h.length - 1] as Sample).t === this.t) h.pop();
     h.push({ t: this.t, full: copied(mix.probe(subject)), solos: soloPoses, weights });

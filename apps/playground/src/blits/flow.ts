@@ -4,6 +4,7 @@ import { parseExpressionAt } from 'acorn';
 import {
   type Composition,
   type Expr,
+  type Group,
   isExpr,
   type Level,
   type PatchSource,
@@ -79,6 +80,13 @@ function voiceDetail(v: Voice): string {
   return parts.join(' · ');
 }
 
+function groupDetail(g: Group): string {
+  const parts: string[] = [g.kind];
+  if (g.span?.duration !== undefined) parts.push(`${g.span.duration} ms`);
+  if (typeof g.weight === 'number') parts.push(`w ${g.weight}`);
+  return parts.join(' · ');
+}
+
 class Builder {
   readonly nodes = new Map<string, FlowNode>();
   readonly edges = new Map<string, FlowEdge>();
@@ -146,7 +154,7 @@ class Builder {
     return found;
   }
 
-  field(v: Voice, field: (typeof FIELDS)[number], expr: Expr): string {
+  field(v: { id: string }, field: (typeof FIELDS)[number], expr: Expr): string {
     const path = `${v.id}:${field}`;
     const root = parse(expr.code);
     const whole = root && this.signal(root, expr.code, `${path}:0`);
@@ -162,13 +170,25 @@ class Builder {
   }
 }
 
-/** The signal flow of a composition: what feeds each voice, what each voice
+/** The signal flow of a composition: what feeds each group and voice, what each voice
  *  writes, and how each channel folds into the pose. `faulted` holds the ids
- *  of voices that failed to compile; they are drawn, marked. */
+ *  of voices and groups that failed to compile; they are drawn, marked. */
 export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set()): Flow {
   const kit = kitOf(comp.rules);
   const b = new Builder(new Map(comp.levels.map((l) => [l.name, l])));
   for (const l of comp.levels) b.level(l.name);
+  for (const g of comp.groups ?? []) {
+    const id = b.node({
+      id: `group:${g.id}`,
+      kind: 'group',
+      label: g.name,
+      detail: groupDetail(g),
+      hue: g.hue,
+      ...(faulted.has(g.id) ? { faulted: true } : {}),
+    });
+    if (isExpr(g.weight)) b.edge(b.field(g, 'weight', g.weight), id, 'weight');
+    if (g.owner !== undefined) b.edge(`group:${g.owner}`, id);
+  }
   const written = new Set<ChannelName>();
   const writes: [string, ChannelName][] = [];
   for (const v of comp.voices) {
@@ -184,6 +204,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       const e = v[field];
       if (isExpr(e)) b.edge(b.field(v, field, e), id, field);
     }
+    if (v.owner !== undefined) b.edge(`group:${v.owner}`, id);
     for (const ch of writesOf(v.patch)) {
       written.add(ch);
       writes.push([id, ch]);
