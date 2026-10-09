@@ -239,8 +239,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    the file once it is empty. Its speed items matter only if weasel adopts blits: klieg and
    magicsmoke are expected to run about two dozen voices over tens of subjects, under 1,000 subject
    × voice pairs, where a frame costs about 0.2 ms (2026-10-01 guess, not a measured
-   workload). `NOTES-ON-SCRUBBING.md` holds the one undecided reading-back item,
-   `handle.seek` on a stateful voice.
+   workload). `NOTES-ON-SCRUBBING.md` holds the one unbuilt reading-back item:
+   a read ahead after a seek back plays what is cued, not what the tape recorded.
 
 1a. **Lanes are built and merged into `project`** (2026-10-02). The schema page's Lanes section
    says what they are, what qualifies and the two places the pose path differs; the `'motion'` form

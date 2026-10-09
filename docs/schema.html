@@ -442,10 +442,11 @@ interface Handle&lt;I&gt; {
   <span class="cm">/** Live. Writes land on the next sync. */</span>
   weight: number;
   rate: number;
-  <span class="cm">/** Moves this voice's clock, forward or back. Phase is computed from the reading rather than accumulated
-     into, so nothing has to unwind: state is left where it is and is never run forward to meet the new
-     position. Mix time is not addressable this way, and nothing outside this voice moves. */</span>
-  seek(elapsed: number): void;
+  <span class="cm">/** Moves this voice's clock, forward or back, and an owner's children with it. Each subject's state is made
+     fresh and stepped from the voice's start to `elapsed` at its next probe, unless `state: 'keep'` leaves it
+     where it was. Answers how sure that leaves it, as `assess` does. Mix time is not addressable this way,
+     and nothing outside this voice moves. */</span>
+  seek(elapsed: number, opts?: { state?: 'rebuild' | 'keep' }): 'exact' | 'stepped' | 'held';
   <span class="cm">/** Moves the rate to `rate` linearly over `over` mix ms. The voice clock integrates it, so speed eases too. */</span>
   ramp(rate: number, over: number): void;
   <span class="cm">/** Ramps out over `fade.out` unless given a fade here; `at: 'rest'` waits per subject for a resting pose first.
@@ -707,7 +708,7 @@ interface Projection&lt;I, O&gt; {
 mix.cue({ patch: slide, owner: intro, start: 0, name: 'slide' });
 mix.cue({ patch: glow, owner: intro, anchor: { start: { after: 'slide' } } });
 intro.rate = 0.5;   <span class="cm">// both run at half speed</span>
-intro.seek(800);    <span class="cm">// both move; their state stays where it is</span>
+intro.seek(800);    <span class="cm">// both move, their state made again for where they now are</span>
 intro.fade();       <span class="cm">// one envelope over both</span></code></pre>
   <div class="tbl"><table>
     <tr><th>On the owner</th><th>What it does to the voices it holds</th></tr>
@@ -715,7 +716,7 @@ intro.fade();       <span class="cm">// one envelope over both</span></code></pr
     <tr><td>a child's <code>start</code> and <code>anchor</code></td><td>Counted on the owner's clock, in ms from when the owner starts. With neither, a child starts where that clock is when it is cued.</td></tr>
     <tr><td>bare names in a child's anchors</td><td>Resolve among its siblings, the voices the same owner holds. A query naming a <code>score</code> looks at any depth.</td></tr>
     <tr><td><code>rate</code>, <code>ramp</code></td><td>Multiply into each child's own rate: a child's clock reads its owner's clock where a voice's reads the mix's.</td></tr>
-    <tr><td><code>seek</code></td><td>Moves the owner's clock, and every child's phase with it. State stays where it is, as for a voice's own seek.</td></tr>
+    <tr><td><code>seek</code></td><td>Moves the owner's clock, and every child's phase with it. Each child's state is rebuilt, or kept, as for a voice's own seek.</td></tr>
     <tr><td><code>weight</code> (a number or a signal), <code>fade</code></td><td>Multiply into each child's weight per subject, as the child's own fade does.</td></tr>
     <tr><td><code>freeze</code></td><td>Taken by every child with no freeze of its own.</td></tr>
     <tr><td><code>played</code>, <code>done</code></td><td><code>played</code> once every child has finished its passes. The owner leaves once it has held a voice and has none left; a fade that ends takes its children with it.</td></tr>
@@ -764,7 +765,8 @@ phase.result;   <span class="cm">// { budget, length, over, skipped, fell }</spa
       <li><b>Reading ahead past the tape.</b> A read ahead of the mix after a seek back throws for a time past a call the tape will make again: a recorded call is bound to the live mix and its voices, and a projection is a copy, so it would leave the call out. A seek there makes it.</li>
     </ul>
     Decided 2026-10-06 and 2026-10-07, reversing the 2026-10-01 decision that mix time is only ever a reading. The mix goes back by itself rather than through snapshots the host saves and loads, since a host-kept log of its own calls would be a second record of what the mix did. What happened after <code>t</code> plays again rather than vanishing, because scrubbing must never cut off a recorded future. A call made while rewound branches rather than dropping the old future, and the mix drops its own copies of state after the fork rather than keeping them per branch, so memory stays inside the horizon. History lives only for the session. The mix's own logs hold what happened up to the playhead and the tape holds the calls after it, so nothing is recorded twice and the logs never branch. A recorded call's <code>invert</code> does nothing, since the mix restores rather than undoing; so the mix moves its tape back only with <code>goto</code>, forward one <code>redo</code> at a time, and opens no journals.</li>
-  <li><b>How sure.</b> <code>assess</code> says per channel <code>held</code> where a voice feeding it reads input from outside the clock with no recording of it (a signal marked <code>input</code>, a patch that <code>reads</code> host fields, or a <code>from: 'current'</code> start read back with nothing kept), <code>stepped</code> where state crossed a gap in one go without <code>stepMs</code>, or a stateful signal did, and <code>exact</code> otherwise. The least sure voice decides. Under <code>stepMs</code> a read back lands on the pose the mix showed, so a scrub back and forth gives the same picture.</li>
+  <li><b>How sure.</b> <code>assess</code> says per channel <code>held</code> where a voice feeding it reads input from outside the clock with no recording of it (a signal marked <code>input</code>, a patch that <code>reads</code> host fields, or a <code>from: 'current'</code> start read back with nothing kept), <code>stepped</code> where state crossed a gap in one go without <code>stepMs</code>, or a stateful signal did, and <code>exact</code> otherwise. The least sure voice decides. Under <code>stepMs</code> a read back lands on the pose the mix showed, so a scrub back and forth gives the same picture. A control change the host makes between a sync and the frame's first probe or pull showed in that frame, so a read back shows it there; one made after shows from the next frame.</li>
+  <li><b>A voice's own seek.</b> <code>handle.seek(elapsed)</code> moves one voice's clock, which leaves the state its patch steps and its signals keep belonging to the old position. By default each subject's state is rebuilt: made fresh and stepped from the voice's start to the new position at its next probe, on the <code>stepMs</code> grid where there is one, so under <code>stepMs</code> it lands where a voice cued fresh and played there would. <code>state: 'keep'</code> leaves it as it was. The seek answers how sure the state now is: <code>exact</code> for a voice with no state, or rebuilt under <code>stepMs</code> with no <code>maxDt</code>; <code>stepped</code> where it was caught up in one step, or a signal's kept state was started over; <code>held</code> where it was kept, or depends on host fields or an input weight a rebuild cannot know. A rebuild does not read <code>history</code> yet: starting from a copy kept near the new position would save the stepping, and could make state fed by recorded input exact. Decided and built 2026-10-08.</li>
   <li><b>Cost.</b> A projection copies each subject's record on first probe: about 3&nbsp;ms for 1000 subjects under three voices, three times a live frame (<code>npm run bench</code>, rows <code>ahead</code> and <code>back</code>). That is cheap enough to make one per frame for a continuous scrub. History costs one control entry per handle change and one copy per stateful subject per <code>every</code>, all dropped past the horizon.</li>
 </ul>
 

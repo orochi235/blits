@@ -4,6 +4,27 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Breaking
+
+- `handle.seek(elapsed)` rebuilds each subject's state for the new position: fresh from the
+  patch's `state`, with what signals keep started over, and stepped from the voice's start to
+  `elapsed` at the next probe, on the `stepMs` grid where there is one. It left state where it was,
+  so a spring seeked back to 0 read about 111 where a fresh one reads 0. `seek(elapsed, { state:
+  'keep' })` keeps the old behavior. The same holds for an owner's seek and its children.
+
+### Added
+
+- `handle.seek` answers how sure the state it leaves is, as a `Doubt`: `exact`, `stepped` or
+  `held`. `SeekOptions` is exported.
+
+### Fixed
+
+- Under `history`, a read back to a frame in which the host changed a voice between the sync and
+  the first probe shows the change in that frame, as the live probe did. It showed from the next
+  frame.
+
 ## 0.7.1
 
 ### Fixed
