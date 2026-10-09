@@ -566,6 +566,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     It would also need mix time converted to the outside clock when `mix.rate` is not 1, and
     scrubbing waits on the read-ahead item in `NOTES-ON-SCRUBBING.md`.
 
+12. **A full docs and comments audit, once the fixes from the 2026-10-09 code review land.**
+    Every doc comment in `src/` (the site's API reference is generated from them),
+    `docs/schema.html`, the README, and the playground README are checked against the code as it
+    then stands. Stale claims are corrected, and comments that fail the comment bar are cut.
+
 ## Loose ends
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
