@@ -125,6 +125,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   the playground's `Composition`; once the UI settles, a public `describe()` on `Mix` should make
   the same shape for any host, and `flowOf` becomes a thin adapter.
 
+  weasel is widening `diagramScene` (in progress 2026-10-08): per-box outline, rows, ports,
+  padding/gap, pinned and min size; per-edge ports, router, waypoints, dash and markers; layout by
+  name; `DiagramView` maxScale, fitPadding, background and a controlled view. When it ships, bump
+  the playground's exact weasel pin and fix the size drift (body padding becomes a uniform 8).
+  Still missing from weasel, and blocking views B and D: container nodes for `locus` groups, and an
+  editable `DiagramView` (it refits on every new specs array).
+
 ## Decided in conversation, and in no doc
 
 - **Approach**: a mixer of tracks, over a signal graph and over keyframes-only. Chosen 2026-09-15.
