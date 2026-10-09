@@ -46,8 +46,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 - An anchor cued after its target had left waited for good, and kept the mix from coming to rest,
   unless the mix's history still reached the target. A mix now keeps the marks of the first and last
-  voice to leave under each name, tag and channel, so the anchor places its voice as it would have
-  while the target was there. It holds that much and no more, however many voices leave.
+  voice to leave under each name, tag and channel, and an anchor no voice the mix still knows answers
+  reads those, placing its voice as it would have while the target was there. It holds that much and
+  no more, however many voices leave.
 - A channel whose `rest` is an object or a typed array had it handed to `fold` by reference, so it
   accumulated across frames and every subject's pose shared it.
 - `fade()` during a fade-in made the weight rise before it fell: the fade-in kept climbing under

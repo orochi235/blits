@@ -331,13 +331,15 @@ function timeOf<I, O>(
     : listed
       ? holders(mix, score)
       : (mix.transport.members as unknown as Mixer<I, O>[]);
+  // Voices forgotten on leaving answer only where no voice the mix still knows does.
   const owner = self.owner?.id ?? -1;
+  const forgotten = new Pick(resolver, now);
   for (let i = 0; i < mixes.length; i++) {
     const m = mixes[i] as Mixer<I, O>;
     let departed = false;
     for (const d of m.departed.all)
       if (departedMatches(d, q, score, anywhere, owner)) {
-        picked.take(d.id, d.marks[mark]);
+        forgotten.take(d.id, d.marks[mark]);
         departed = true;
       }
     if (score === undefined || m.projecting || mix.projecting) {
@@ -399,7 +401,7 @@ function timeOf<I, O>(
         (q.tag === undefined || a.tags.includes(q.tag))
       )
         picked.take(a.order, Number.isNaN(a.at) ? undefined : mixAt(mix, a.at));
-  return picked.answer();
+  return (picked.any ? picked : forgotten).answer();
 }
 
 /** `self`'s read of `m`'s gone voices for one query, started over where the list has changed under it. */

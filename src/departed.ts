@@ -6,8 +6,9 @@ import { none, type Voice } from './voice.js';
 const MARKS: readonly Mark[] = ['start', 'in', 'coast', 'out', 'end'];
 
 /**
- * What a mix without history keeps of a voice that has left: what a query matches it by, and the
- * times of its marks, so an anchor cued after it left still finds it.
+ * What a mix keeps of a voice it has forgotten, on leaving without history or past history's reach:
+ * what a query matches it by and the times of its marks, so an anchor that no voice the mix still
+ * knows answers can find it.
  */
 export interface Departed {
   readonly id: number;

@@ -368,6 +368,27 @@ describe('an anchor to a voice that has already left, without history', () => {
     expect((m as unknown as { departed: { all: Set<unknown> } }).departed.all.size).toBe(2);
   });
 
+  it('answers only where no voice still in the mix does', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: hold(100), loop: false, name: 'a' });
+    run(m, 10, 300);
+    m.cue({ patch: hold(1000), loop: false, name: 'a' });
+    m.sync(310);
+    const b = m.cue({
+      patch: hold(10),
+      loop: false,
+      anchor: { start: { of: { name: 'a', resolver: 'first' }, mark: 'start', by: 1000 } },
+    });
+    // The `a` still playing started at 300; the first `a`, long gone, at 0.
+    let t = 310;
+    while (b.state === 'pending' && t < 3000) {
+      t += 10;
+      m.sync(t);
+    }
+    expect(t).toBe(1300);
+  });
+
   it('finds one that has left even past the reach of history', () => {
     const m = mix<Row, Pose>(K, { history: { ms: 200 } });
     m.sync(0);
