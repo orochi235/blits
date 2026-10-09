@@ -7,6 +7,16 @@ import { transport } from '../src/transport.js';
 import type { Marked, TransportOptions } from '../src/types.js';
 import { memoryStore } from './store.js';
 
+describe('a timestamp that is not a number', () => {
+  it('is refused, and leaves the clock where it was', () => {
+    const m = mix<string, { x: number }>(kit<{ x: number }>({ x: sum() }));
+    m.sync(1000);
+    expect(() => m.sync(Number.NaN)).toThrow(RangeError);
+    expect(m.now).toBe(1000);
+    expect(() => m.sync(10)).toThrow(/went back/);
+  });
+});
+
 // Two kits that never fold together, as astv's flights and text runs.
 interface Flight {
   u: number;

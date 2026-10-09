@@ -189,6 +189,8 @@ export class Transport implements TransportApi {
   }
 
   private syncAt(timestamp: number): void {
+    if (Number.isNaN(timestamp))
+      throw new RangeError('blits: sync was given NaN; it takes the host clock as a number');
     if (timestamp < this.last && !this.rebasing)
       throw new RangeError(
         `blits: sync went back from ${this.last} to ${timestamp}; the host's clock only goes forward, and seek moves the mix`,
