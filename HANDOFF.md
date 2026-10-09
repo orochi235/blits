@@ -532,6 +532,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    is what a `queue` or `stagger` span with a budget replaces; astv pins blits 0.4.0, so this waits
    on a release.
 
+10. **Two copies of blits disagree about patches and channels each one made.** A `keys` patch with
+    `ease: 'ease-in'` built by one copy of `dist/` and cued on a mix from another read `50`
+    halfway where the same copy reads `31.5` (measured 2026-10-08 by a survey agent; not yet
+    repeated in a test). `keysOptionsOf` keeps a patch's options in a module-level WeakMap
+    (`src/patch.ts`) that the other copy cannot see, and `channels.ts` (`inPlace`, `numerics`,
+    `widths`) and `easing.ts` (`built`) keep channel and easing facts the same way, so a channel
+    bundle exported by a package like blits-quarks is likely affected too. blits-quarks lists
+    blits as an exact-pinned dependency, not a peer, so two copies are the expected install.
+    The fix is to carry these facts on the objects themselves (or a `Symbol.for` registry), and
+    whether adapter packages take blits as a `peerDependency` is Mike's call.
+
 ## Loose ends
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
