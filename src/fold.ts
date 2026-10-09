@@ -291,6 +291,14 @@ export function isRest<I, O>(this: Mixer<I, O>, delta: Record<string, unknown>):
   return true;
 }
 
+/**
+ * A record's band state once its voice is skipped at weight 0: off, as `passes` would have said, so
+ * a weight that comes back inside the band does not find it still on.
+ */
+export function unband(held: Subject<unknown> | null | undefined): void {
+  if (held?.bands) held.bands.fill(2);
+}
+
 /** Whether a rest-less channel's contribution is switched on, across a band rather than an edge. */
 export function passes<I, O>(this: Mixer<I, O>, was: boolean | undefined, w: number): boolean {
   const { on, off } = this.band;
@@ -419,6 +427,7 @@ export function foldWith<I, O>(
       if (voice.id === except || voice.state === 'done') continue;
       const delta = this.read(voice, subject, now, dry, held);
       if (owed >= 0 && voice.laned) (lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
+      if (!(held.weight > 0)) unband(held);
       if (delta === null || this.w <= 0) continue;
       this.apply(pose, voice, held, delta, this.w);
     }
@@ -504,11 +513,15 @@ export function foldLoci<I, O>(
             k.deltas[n] as Record<string, unknown>,
             weight,
           );
+        else unband(k.helds[n]);
         continue;
       }
       const weight = this.foldLocus(k, group);
-      if (weight <= 0) continue;
       const name = k.names[group] as string;
+      if (!(weight > 0)) {
+        bands.get(name)?.fill(2);
+        continue;
+      }
       let on = bands.get(name);
       if (on === undefined) {
         on = new Uint8Array(this.channels.length);

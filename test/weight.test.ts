@@ -152,3 +152,35 @@ describe('a voice at weight 0', () => {
     expect(m.probe(a).crawl).toBeCloseTo(7, 9);
   });
 });
+
+describe.each([
+  ['fn', true],
+  ['fn', false],
+  ['keys', true],
+  ['keys', false],
+] as const)('a channel with no rest, a %s voice with lanes %s', (form, lanes) => {
+  it('forgets it was on once its voice falls to weight 0', () => {
+    type T = { tag: string };
+    const TAG = kit<T>({ tag: last() });
+    const p =
+      form === 'fn'
+        ? patch<Part, T>(0, () => ({ tag: 'on' }), { writes: ['tag'] })
+        : keys<Part, T>(100, [{ at: 0, delta: { tag: 'on' } }]);
+    const m = mix<Part, T>(TAG, { lanes });
+    const h = m.cue({ patch: p });
+    const all = Array.from({ length: 40 }, (_, i) => ({ id: `p${i}` }));
+    const a = all[0] as Part;
+    const seen: (string | undefined)[] = [];
+    for (const [t, w] of [
+      [0, 0.7],
+      [16, 0],
+      [32, 0.5],
+    ] as const) {
+      h.weight = w;
+      m.sync(t);
+      for (const s of all) m.probe(s);
+      seen.push(m.probe(a).tag);
+    }
+    expect(seen).toEqual(['on', undefined, undefined]);
+  });
+});
