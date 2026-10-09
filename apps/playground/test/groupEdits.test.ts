@@ -68,6 +68,16 @@ describe('joinGroup', () => {
     expect(vo(bare, 'a')).not.toHaveProperty('anchor');
   });
 
+  it('joining a span makes an endless loop one pass; a motion voice keeps its loop', () => {
+    const spring = voice({ id: 'm', patch: { kind: 'spring', channel: 'scale', opts: {} } });
+    const c = comp([vv('a', { loop: true }), vv('b', { loop: 3 }), spring], [span('s')]);
+    const d = ['a', 'b', 'm'].reduce((x, id) => joinGroup(x, id, 's'), c);
+    expect(vo(d, 'a')?.loop).toBe(1);
+    expect(vo(d, 'b')?.loop).toBe(3);
+    expect(vo(d, 'm')?.loop).toBe(true);
+    loads(d);
+  });
+
   it('a group joining a span drops its start and start anchor', () => {
     const c = comp(
       [vv('a', { owner: 'k' })],

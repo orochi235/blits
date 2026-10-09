@@ -1,14 +1,18 @@
-import type { Composition, Group, Voice } from './composition';
+import { type Composition, type Group, isMotion, type Voice } from './composition';
 import { groupsFull } from './edit';
 import { ancestorsOf, rowsOf } from './groups';
 import { withKey, without } from './keyed';
 
 type Member = Voice | Group;
 
-/** `x` fitted to sit under `parent`: a span places it, and only a span reads its hints. */
+/**
+ * `x` fitted to sit under `parent`: a span places it and needs it to end, and only a span reads its
+ * hints. A motion voice under a span keeps its error: nothing here can make it end.
+ */
 function placedUnder<T extends Member>(x: T, parent: Group | undefined): T {
   let out = withKey<Member, 'owner'>(x, 'owner', parent?.id);
   if (parent?.kind === 'span') {
+    if ('loop' in out && out.loop === true && !isMotion(out.patch)) out = { ...out, loop: 1 };
     const anchor = out.anchor && without(without(out.anchor, 'start'), 'in');
     out = withKey(
       { ...out, start: 0 },
