@@ -7,7 +7,7 @@ export type FitError = { error: string; line: number | null; step: number };
 /** A step list as blits' fit, or the first code step's error. Undefined steps: blits' default. */
 export function fitOf(
   steps: FitStep[] | undefined,
-  compileCode: (code: string) => Compiled<Fit>,
+  compileCode: (code: string, step: number) => Compiled<Fit>,
 ): Fit | undefined | FitError {
   if (steps === undefined) return undefined;
   const fits: Fit[] = [];
@@ -16,7 +16,7 @@ export function fitOf(
       fits.push(stock(s));
       continue;
     }
-    const made = compileCode(s.code);
+    const made = compileCode(s.code, i);
     if ('error' in made) return { ...made, step: i };
     fits.push(made.fn);
   }

@@ -27,8 +27,16 @@ export interface CueContext {
 type GroupSpec = SpanSpec<Subject>;
 type Made<S> = { spec: S } | { errors: FieldError[] };
 
-/** One group's spec, or the errors that kept it from being built. */
-function groupSpecOf(g: Group, scope: Scope, faults: Faults[]): Made<GroupSpec> {
+/** Where `faults` keeps code fit step `step` of group `id`'s own count, beside the group's total. */
+export const fitFaultKey = (id: string, step: number) => `${id} span.fit.${step}`;
+
+/** One group's spec, or the errors that kept it from being built; each code fit step's faults by step. */
+function groupSpecOf(
+  g: Group,
+  scope: Scope,
+  faults: Faults[],
+  steps: Map<number, Faults>,
+): Made<GroupSpec> {
   const errors: FieldError[] = [];
   const fail = (field: string, error: string, line: number | null) =>
     errors.push({ voice: g.id, field, error, line });
@@ -42,9 +50,12 @@ function groupSpecOf(g: Group, scope: Scope, faults: Faults[]): Made<GroupSpec> 
     }
   }
   const s = g.kind === 'span' ? (g.span ?? {}) : undefined;
-  const made = fitOf(s?.fit, (code) => {
+  const made = fitOf(s?.fit, (code, step) => {
     const r = compileFit(code);
-    if (!('error' in r)) faults.push(r.faults);
+    if (!('error' in r)) {
+      faults.push(r.faults);
+      steps.set(step, r.faults);
+    }
     return r;
   });
   const fit = made !== undefined && 'error' in made ? undefined : made;
@@ -120,8 +131,9 @@ export function cueAll(c: Composition, m: Mix<Subject, Mixed>, cx: CueContext): 
     const under = parent?.kind === 'span';
     const refused = under ? spanRefusals(x) : [];
     const list: Faults[] = [];
+    const steps = new Map<number, Faults>();
     const r: Made<Spec | GroupSpec> =
-      'patch' in x ? specOf(x, cx.scope, list, cx.kit) : groupSpecOf(x, cx.scope, list);
+      'patch' in x ? specOf(x, cx.scope, list, cx.kit) : groupSpecOf(x, cx.scope, list, steps);
     if (refused.length > 0 || 'errors' in r) {
       report(...refused, ...('errors' in r ? r.errors : []));
       continue;
@@ -144,7 +156,9 @@ export function cueAll(c: Composition, m: Mix<Subject, Mixed>, cx: CueContext): 
       no('cue', messageOf(err));
       continue;
     }
-    if (cx.only === null) cx.faults.set(x.id, faultsOf(list));
+    if (cx.only !== null) continue;
+    cx.faults.set(x.id, faultsOf(list));
+    for (const [i, f] of steps) cx.faults.set(fitFaultKey(x.id, i), f);
   }
   return out;
 }

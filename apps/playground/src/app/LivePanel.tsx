@@ -1,74 +1,43 @@
-import type { Doubt, Moving, spring, Value } from '@msb235/blits';
-import { type Composition, isMotion, type Voice } from '@pg/blits/composition';
-import { compileExpr, scopeOf } from '@pg/blits/expr';
-import type { Mixed } from '@pg/blits/kit';
+import type { Doubt } from '@msb235/blits';
+import { type Composition, isMotion } from '@pg/blits/composition';
 import type { Player } from '@pg/blits/player';
-import { refusalOf } from '@pg/blits/spec';
 import type { Subject } from '@pg/blits/stage';
-import { ExprInput } from '@pg/widgets/ExprInput';
 import { useState } from 'react';
+import { AimField } from './AimField';
 import s from './App.module.css';
 import { docOf } from './docs';
 import { FadeControls } from './FadeControls';
 
-/** A spring's or a tween's patch, which take `to`; a glide takes only `push`, which every one does. */
-type Aimed = ReturnType<typeof spring<Subject, Mixed, Value>>;
-
 export interface LivePanelProps {
   player: Player;
   comp: Composition;
-  voice: Voice;
+  /** The voice's or group's id. */
+  id: string;
   /** The subject picked on the stage. */
   subject: Subject | undefined;
   /** Called after each live change, so the panel and the badge redraw. */
   onActed(): void;
 }
 
-export function LivePanel({ player, comp, voice: v, subject, onActed }: LivePanelProps) {
+export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps) {
   const [seekMs, setSeekMs] = useState(0);
   const [keep, setKeep] = useState(false);
   const [doubt, setDoubt] = useState<Doubt | null>(null);
   const [rateTo, setRateTo] = useState(1);
   const [rampTo, setRampTo] = useState(0.25);
   const [rampOver, setRampOver] = useState(500);
-  const [aimCode, setAimCode] = useState('');
-  const [aimError, setAimError] = useState<string | null>(null);
-  const handle = player.built.handles.get(v.id);
-  if (!handle) return <p className={s.row}>{v.name} is not running: fix its errors first.</p>;
-  const act: Player['live'] = (id, fn) => {
-    player.live(id, fn);
+  const v = comp.voices.find((x) => x.id === id);
+  const name = (v ?? comp.groups?.find((g) => g.id === id))?.name ?? id;
+  const handle = player.handleOf(id);
+  if (!handle) return <p className={s.row}>{name} is not running: fix its errors first.</p>;
+  const act: Player['live'] = (at, fn) => {
+    player.live(at, fn);
     onActed();
   };
-  const motion = isMotion(v.patch);
-  const aimKey = v.patch.kind === 'glide' ? 'velocity' : 'to';
-  const aim = (code: string) => {
-    const p = v.patch;
-    if (!isMotion(p) || code.trim() === '') return;
-    const channel = p.channel;
-    const r = compileExpr<(s: Subject) => unknown>({ code }, scopeOf(comp.levels), undefined);
-    if ('error' in r) return setAimError(r.error);
-    const refuse = refusalOf(channel, aimKey);
-    let wrong: string | null = null;
-    const values = player.subjects.map((subject) => {
-      const out = r.fn(subject);
-      const why = out === undefined ? null : refuse(out);
-      wrong ??= why;
-      return why === null ? out : undefined;
-    });
-    setAimError(wrong ? `${aimKey} ${wrong}` : r.faults.first);
-    act(v.id, (_, patch) => {
-      player.subjects.forEach((subject, i) => {
-        const value = values[i] as Value | undefined;
-        if (value === undefined) return;
-        if (aimKey === 'to') (patch as unknown as Aimed).to(subject, value);
-        else (patch as unknown as Moving<Subject, Mixed, Value>).push(subject, value);
-      });
-    });
-  };
   return (
-    <section className={s.panel} aria-label={`live ${v.name}`}>
+    <section className={s.panel} aria-label={`live ${name}`}>
       <p className={s.row}>
-        live · {v.name} · {handle.state}
+        live · {name} · {handle.state}
       </p>
       <label className={s.row} title={docOf('Handle.weight')}>
         weight
@@ -80,15 +49,15 @@ export function LivePanel({ player, comp, voice: v, subject, onActed }: LivePane
           value={handle.weight}
           onChange={(e) => {
             const w = Number(e.target.value);
-            // Elsewhere the voice plays silent beside another's solo, and must stay so.
-            act(v.id, (h, _, heard) => {
+            // Elsewhere a voice plays silent beside another's solo, and must stay so.
+            act(id, (h, _, heard) => {
               if (heard) h.weight = w;
             });
           }}
         />
         <output className={s.readout}>{handle.weight.toFixed(2)}</output>
       </label>
-      <FadeControls subject={subject} act={(fn) => act(v.id, fn)} />
+      <FadeControls subject={subject} whole={!v} act={(fn) => act(id, fn)} />
       <div className={s.row}>
         <label className={s.row} title={docOf('Handle.seek')}>
           seek
@@ -107,7 +76,7 @@ export function LivePanel({ player, comp, voice: v, subject, onActed }: LivePane
         <button
           type="button"
           onClick={() =>
-            act(v.id, (h, _, heard) => {
+            act(id, (h, _, heard) => {
               const d = h.seek(seekMs, keep ? { state: 'keep' } : {});
               if (heard) setDoubt(d);
             })
@@ -135,7 +104,7 @@ export function LivePanel({ player, comp, voice: v, subject, onActed }: LivePane
         <button
           type="button"
           onClick={() =>
-            act(v.id, (h) => {
+            act(id, (h) => {
               h.rate = rateTo;
             })
           }
@@ -165,26 +134,12 @@ export function LivePanel({ player, comp, voice: v, subject, onActed }: LivePane
             onChange={(e) => setRampOver(e.target.valueAsNumber || 0)}
           />
         </label>
-        <button type="button" onClick={() => act(v.id, (h) => h.ramp(rampTo, rampOver))}>
+        <button type="button" onClick={() => act(id, (h) => h.ramp(rampTo, rampOver))}>
           ramp
         </button>
       </div>
-      {motion && (
-        <ExprInput
-          label={aimKey === 'to' ? 'retarget' : 'push'}
-          placeholder={aimKey === 'to' ? '(s) => [0, 40]' : '(s) => [200, 0]'}
-          value={aimCode}
-          error={aimError}
-          onCommit={(code) => {
-            setAimCode(code);
-            aim(code);
-          }}
-        />
-      )}
-      {motion && (
-        <button type="button" disabled={aimCode.trim() === ''} onClick={() => aim(aimCode)}>
-          {aimKey === 'to' ? 'retarget' : 'push'} again
-        </button>
+      {v && isMotion(v.patch) && (
+        <AimField comp={comp} player={player} id={id} patch={v.patch} act={act} />
       )}
     </section>
   );

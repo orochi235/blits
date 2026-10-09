@@ -105,6 +105,29 @@ describe('a clip’s rate', () => {
     };
     expect(clipEnd(clipsOf(d, subjects).clips[0] as Clip)).toBe(600);
   });
+  // blits runs `fade.in` and `fade.out` on mix time whatever the voice's or its owners' rates, so
+  // the score draws and drags them in score ms as they are.
+  it('leaves fades in mix ms, as blits runs them at any rate', () => {
+    const d = comp(
+      [voice({ id: 'x', patch: KEYS, loop: 4, rate: 2, owner: 'o', fade: { in: 400 } })],
+      [group({ id: 'o', rate: 2 })],
+    );
+    const built = compile(d, subjects);
+    const h = built.handles.get('x');
+    const s0 = subjects[0] as (typeof subjects)[number];
+    for (const t of [0, 100, 200]) {
+      built.mix.sync(t);
+      built.mix.probe(s0);
+    }
+    expect(h?.weightOf(s0)).toBeCloseTo(0.5, 6);
+    const marks = built.mix.marks(Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY);
+    const of = (m: string) => marks.find((x) => x.voice === h?.id && x.mark === m)?.timestamp;
+    expect((of('in') ?? 0) - (of('start') ?? 0)).toBe(400);
+    expect(clipsOf(d, subjects, { built }).clips[0]).toMatchObject({ fadeIn: 400 });
+    expect(applyEdit(d, { clip: 'x', kind: 'fadeIn', ms: 300 }, built).voices[0]?.fade.in).toBe(
+      300,
+    );
+  });
   it('at 0 or below, never ends and has no passes', () => {
     for (const rate of [0, -1]) {
       const d = { ...c, voices: [v({ id: 'x', rate })] };

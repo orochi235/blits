@@ -9,6 +9,8 @@ type When = 'now' | 'rest' | 'at';
 export interface FadeControlsProps {
   /** The subject picked on the stage, which a fade can take out of the voice alone. */
   subject: Subject | undefined;
+  /** An owner fades as a whole: neither by subject nor at rest. */
+  whole?: boolean;
   act(fn: (h: Handle<Subject>) => void): void;
 }
 
@@ -18,7 +20,7 @@ const ms = (text: string) => {
 };
 
 /** `handle.fade` with every option it takes, and `rise` to turn a fade back. */
-export function FadeControls({ subject, act }: FadeControlsProps) {
+export function FadeControls({ subject, whole = false, act }: FadeControlsProps) {
   const [over, setOver] = useState('');
   const [when, setWhen] = useState<When>('now');
   const [at, setAt] = useState('0');
@@ -55,21 +57,23 @@ export function FadeControls({ subject, act }: FadeControlsProps) {
       <legend>fade</legend>
       <div className={s.row}>
         {field('over', over, setOver)}
-        <label className={s.row}>
-          <input
-            type="checkbox"
-            checked={one}
-            disabled={subject === undefined}
-            onChange={(e) => setOne(e.target.checked)}
-          />
-          only the picked subject
-        </label>
+        {!whole && (
+          <label className={s.row}>
+            <input
+              type="checkbox"
+              checked={one}
+              disabled={subject === undefined}
+              onChange={(e) => setOne(e.target.checked)}
+            />
+            only the picked subject
+          </label>
+        )}
       </div>
       {!one && (
         <div className={s.row}>
           <select aria-label="when" value={when} onChange={(e) => setWhen(e.target.value as When)}>
             <option value="now">now</option>
-            <option value="rest">at rest, per subject</option>
+            {!whole && <option value="rest">at rest, per subject</option>}
             <option value="at">at mix time</option>
           </select>
           {when === 'at' && field('ms', at, setAt)}

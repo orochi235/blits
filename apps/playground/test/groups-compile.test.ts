@@ -10,6 +10,7 @@ import {
 } from '@msb235/blits';
 import { compile } from '@pg/blits/compile';
 import type { PatchSource, Voice } from '@pg/blits/composition';
+import { fitFaultKey } from '@pg/blits/cueGroups';
 import { FRAME } from '@pg/blits/frame';
 import { KIT, type Mixed } from '@pg/blits/kit';
 import type { Subject } from '@pg/blits/stage';
@@ -203,7 +204,10 @@ describe('compiling groups', () => {
             kind: 'span',
             span: {
               duration: 200,
-              fit: [{ kind: 'code', code: '() => { throw new Error("f"); }' }],
+              fit: [
+                { kind: 'condense' },
+                { kind: 'code', code: '() => { throw new Error("f"); }' },
+              ],
             },
           }),
         ],
@@ -218,6 +222,8 @@ describe('compiling groups', () => {
     expect(built.faults.get('o')).toMatchObject({ first: 'w' });
     expect(built.faults.get('o')?.count).toBeGreaterThan(0);
     expect(built.faults.get('s')).toMatchObject({ first: 'f' });
+    expect(built.faults.get(fitFaultKey('s', 1))).toMatchObject({ first: 'f' });
+    expect(built.faults.has(fitFaultKey('s', 0))).toBe(false);
   });
 
   it('a name is unique across voices and groups', () => {

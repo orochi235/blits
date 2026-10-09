@@ -1,7 +1,6 @@
 import { compile } from '@pg/blits/compile';
-import { type Composition, MAX_VOICES, type Voice } from '@pg/blits/composition';
-import { FRAME } from '@pg/blits/frame';
-import { addGroup } from '@pg/blits/groupEdits';
+import { type Composition, type Group, MAX_VOICES, type Voice } from '@pg/blits/composition';
+import { addGroup, deleteGroup, setGroup } from '@pg/blits/groupEdits';
 import { Player, type SeekBy } from '@pg/blits/player';
 import { DEFAULT, PRESETS } from '@pg/blits/presets';
 import { applyEdit } from '@pg/blits/score';
@@ -18,11 +17,9 @@ import { freshVoice } from './freshVoice';
 import { Inspector } from './Inspector';
 import { Transport } from './Transport';
 import { useComposition } from './useComposition';
+import { usePlayback } from './usePlayback';
 import { useScore } from './useScore';
 import { VoiceColumn } from './VoiceColumn';
-
-/** The most wall time one tick plays, so a hidden tab coming back does not replay seconds at once. */
-const MAX_TICK_MS = 250;
 
 /** How long "link copied" stays up. */
 const NOTICE_MS = 3000;
@@ -44,9 +41,9 @@ export function App() {
   }, [subjects]);
   const [frame, setFrame] = useState(0);
   const tick = useCallback(() => setFrame((f) => f + 1), []);
-  const [playing, setPlaying] = useState(true);
   const [rate, setRate] = useState(1);
   const [loop, setLoop] = useState(true);
+  const { playing, play } = usePlayback(player, compRef, { rate, loop, tick });
   const [live, setLive] = useState(false);
   const [seekBy, setSeekBy] = useState<SeekBy>('replay');
   useEffect(() => {
@@ -81,43 +78,6 @@ export function App() {
   }, [comp, player, tick]);
 
   useEffect(() => {
-    if (!playing) return;
-    let prev = performance.now();
-    let owed = 0;
-    let id = requestAnimationFrame(function step(now) {
-      owed += Math.min(now - prev, MAX_TICK_MS) * rate;
-      prev = now;
-      const frames = Math.floor(owed / FRAME);
-      if (frames > 0) {
-        owed -= frames * FRAME;
-        const length = compRef.current.length;
-        let t = player.t + frames * FRAME;
-        if (t > length) {
-          if (!loop) {
-            player.seek(length);
-            tick();
-            setPlaying(false);
-            return;
-          }
-          t = length > 0 ? t % length : 0;
-        }
-        player.seek(t);
-        tick();
-      }
-      id = requestAnimationFrame(step);
-    });
-    return () => cancelAnimationFrame(id);
-  }, [playing, rate, loop, player, tick]);
-
-  const play = useCallback(
-    (on: boolean) => {
-      if (on && player.t >= compRef.current.length - FRAME) player.seek(0);
-      setPlaying(on);
-    },
-    [player],
-  );
-
-  useEffect(() => {
     const key = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== 'z') return;
       if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return;
@@ -129,20 +89,6 @@ export function App() {
     return () => window.removeEventListener('keydown', key);
   }, [undo, redo]);
 
-  useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if (e.key !== ' ' || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-      // The score's handles take space themselves; a button's or canvas's own use of it is cancelled.
-      const skip = 'input, textarea, select, [contenteditable], [tabindex]:not(button, canvas)';
-      if ((e.target as HTMLElement).closest(skip)) return;
-      e.preventDefault();
-      if (!e.repeat) play(!playing);
-    };
-    // Capture, because weasel's canvases claim space for their hand tool on the window.
-    window.addEventListener('keydown', key, true);
-    return () => window.removeEventListener('keydown', key, true);
-  }, [play, playing]);
-
   const { clips, links, headers, built, fold } = useScore(comp, subjects);
   const scrub = (t: number) => {
     player.seek(Math.min(Math.max(t, 0), comp.length));
@@ -150,6 +96,7 @@ export function App() {
   };
   const edit = (e: ClipEdit) => set(applyEdit(compRef.current, e, built));
   const voice = comp.voices.find((v) => v.id === selected);
+  const group = comp.groups?.find((g) => g.id === selected);
   const setVoice = (next: Voice) =>
     set({
       ...compRef.current,
@@ -163,6 +110,17 @@ export function App() {
   };
   const deleteVoice = (id: string) => {
     set({ ...compRef.current, voices: compRef.current.voices.filter((v) => v.id !== id) });
+    setSelected(null);
+  };
+  const addGroupOf = (kind: Group['kind']) => {
+    const was = compRef.current;
+    const next = addGroup(was, kind);
+    if (next === was) return;
+    set(next);
+    pickVoice(next.groups?.at(-1)?.id ?? null);
+  };
+  const removeGroup = (id: string) => {
+    set(deleteGroup(compRef.current, id));
     setSelected(null);
   };
   const copyLink = () => {
@@ -228,15 +186,18 @@ export function App() {
                 comp={comp}
                 onComp={set}
                 voice={voice}
+                group={group}
                 player={player}
                 subject={shown !== null ? subjects[shown] : undefined}
                 live={live}
                 shared={shared}
                 linkRef={linkRef}
                 onAddVoice={addVoice}
-                onAddGroup={(kind) => set(addGroup(compRef.current, kind))}
+                onAddGroup={addGroupOf}
                 onDeleteVoice={deleteVoice}
                 onVoice={setVoice}
+                onGroup={(g) => set(setGroup(compRef.current, g))}
+                onDeleteGroup={removeGroup}
                 onShare={copyLink}
                 onCloseShare={() => setShared(null)}
                 onActed={tick}

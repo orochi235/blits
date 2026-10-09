@@ -1,0 +1,45 @@
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--wzl-space-xs);
+}
+
+.step {
+  display: grid;
+  gap: var(--wzl-space-xs);
+}
+
+.kind {
+  min-width: 9ch;
+}
+
+/* Each value sits in a cell as wide as its widest, so a changing number never moves its neighbors. */
+.result {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(5, auto);
+  justify-content: start;
+  column-gap: var(--wzl-space-md);
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg);
+}
+
+.result div {
+  display: grid;
+  text-align: end;
+}
+
+.result dt {
+  color: var(--wzl-fg-muted);
+}
+
+.result dd {
+  margin: 0;
+  min-width: 9ch;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+}

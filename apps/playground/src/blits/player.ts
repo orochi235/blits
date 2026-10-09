@@ -149,25 +149,34 @@ export class Player {
     this.built.solos.get(id)?.pull(this.subjects, out);
   }
 
+  /** Voice or group `id`'s handle in the full mix. */
+  handleOf(id: string): Handle<Subject> | undefined {
+    return this.built.handles.get(id) ?? this.built.groupHandles.get(id);
+  }
+
   /**
-   * Acts on voice `id` as it runs, in the full mix and in every solo mix, where it plays silent
-   * beside the soloed voice but still keeps time for whatever is anchored to it. `heard` is true
-   * for the copies that sound, the full mix's and its own solo's: a weight belongs only on those.
-   * The change lasts until the next rebuild: an edit, or a seek back by replay. A seek back by
-   * `mix.seek` keeps it, as the mix's tape plays it again.
+   * Acts on voice or group `id` as it runs, in the full mix and in every solo mix, where a voice
+   * plays silent beside the soloed one but still keeps time for whatever is anchored to it. `heard`
+   * is true for the copies that sound: a voice's in the full mix and its own solo, a group's in
+   * every mix, since each solo plays every group at its own weight. A weight belongs only on those;
+   * a group has no patch. The change lasts until the next rebuild: an edit, or a seek back by
+   * replay. A seek back by `mix.seek` keeps it, as the mix's tape plays it again.
    */
   live(
     id: string,
-    act: (handle: Handle<Subject>, patch: Patch<Subject, Mixed, unknown>, heard: boolean) => void,
+    act: (
+      handle: Handle<Subject>,
+      patch: Patch<Subject, Mixed, unknown> | undefined,
+      heard: boolean,
+    ) => void,
   ): void {
-    const handle = this.built.handles.get(id);
-    const patch = this.built.patches.get(id);
-    if (!handle || !patch) return;
-    act(handle, patch, true);
-    for (const [solo, voices] of this.built.soloVoices) {
-      const h = voices.handles.get(id);
-      const p = voices.patches.get(id);
-      if (h && p) act(h, p, solo === id);
+    const handle = this.handleOf(id);
+    if (!handle) return;
+    const group = this.built.groupHandles.has(id);
+    act(handle, this.built.patches.get(id), true);
+    for (const [solo, cued] of this.built.soloVoices) {
+      const h = cued.handles.get(id) ?? cued.groupHandles.get(id);
+      if (h) act(h, cued.patches.get(id), group || solo === id);
     }
     this.isLive = true;
   }

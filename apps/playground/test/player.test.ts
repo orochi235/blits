@@ -5,6 +5,7 @@ import { CHANNELS } from '@pg/blits/kit';
 import { type Columns, Player, WINDOW } from '@pg/blits/player';
 import { subjectsOf } from '@pg/blits/stage';
 import { describe, expect, it } from 'vitest';
+import { comp as compOf, group, voice } from './helpers';
 
 const c: Composition = {
   version: 1,
@@ -252,6 +253,34 @@ describe('Player', () => {
     p.solo('x', solo);
     expect(p.columns.glow[0]).toBeGreaterThan(0);
     expect(bits({ ...solo, turn: p.columns.turn })).toEqual(bits(p.columns));
+  });
+
+  it('a live change to a group reaches its handle in the full mix and every solo, weight included', () => {
+    const keys = (id: string, delta: Record<string, number>) =>
+      voice({ id, patch: { kind: 'keys', period: 1000, stops: [{ at: 0, delta }] } });
+    const g = {
+      ...compOf(
+        [{ ...keys('a', { glow: 0.7 }), owner: 'o' }, keys('b', { turn: 30 })],
+        [group({ id: 'o' })],
+      ),
+      stage: c.stage,
+    };
+    const p = new Player(() => compile(g, subjects, { solos: true }), subjects);
+    p.seek(500);
+    expect(p.handleOf('o')).toBe(p.built.groupHandles.get('o'));
+    const heard: boolean[] = [];
+    p.live('o', (h, patch, loud) => {
+      expect(patch).toBeUndefined();
+      heard.push(loud);
+      h.weight = 0;
+    });
+    expect(heard).toEqual([true, true, true]);
+    p.seek(1000);
+    expect(p.columns.glow[0]).toBe(0);
+    expect(p.columns.turn[0]).toBeGreaterThan(0);
+    const solo = Player.columnsFor(subjects.length);
+    p.solo('a', solo);
+    expect(solo.glow[0]).toBe(0);
   });
 
   it('records the picked subject through play, a seek back and a rebuild, keeping the last window', () => {

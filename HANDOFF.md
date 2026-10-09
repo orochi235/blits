@@ -627,6 +627,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       and nothing off them; after the `drop` both paths show the subject live again, which `fade`'s
       docs say only a motion's `to` does. Repro in `differential.test.ts`'s `dropAfterFade` skip.
     - **Finding #18**: a `last()` or OKLCH channel in a locus picks by cue order, not weight.
+    - **A span's start refit plays a child its cue-time fit skipped** (found 2026-10-09). A span
+      of `duration: 1500` holding three 1000 ms keys voices, one `faster: 2`, reports at cue
+      `{ skipped: 3, fell: true }`. On the first sync the first two are done at once, but the
+      third plays all 1000 ms and the result reads `{ length: 1000, skipped: 0, fell: false }`.
+      `leftOf` in `src/spans.ts` reads a pending child as having all of its length left, ignoring
+      the `anchorElapsed = c.span` the skip gave it. The playground's score draws the cue-time fit,
+      so it shows all three skipped while the third plays.
     - **The weight-0 band reset runs on the general path only** (`unband` in `fold.ts`). Lanes reach
       it through the shared record in every case the tests and the fuzzer cover; a lane that skips a
       subject at weight 0 without the general path visiting it would keep a stale band.
