@@ -409,13 +409,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      `sample.ts`, `crowd.ts`) read them by slot, so each would also have to find the run holding
      its slot, a second place for the same answer; and `pullRun` reads both stamps per subject
      anyway to count `distinct`, so the saving is a store per subject.
-   - **Make a `keys` patch read cheaper** (asked by weasel, 2026-10-08). weasel's `sampleTrack`
-     reads one `keys` patch per track through `patch.at(phase)`, and blits' read path is most of
-     what that costs: 0.33–0.40 ms a frame at 10k tracks against 0.058–0.076 for weasel's old
-     binary search and lerp. The breakdown and weasel's two untested suggestions, a public read
-     into an out object and a fast path for one numeric channel with no base and no slope, are in
-     `NOTES-FROM-WEASEL.md` under "Speed". weasel's bench is
-     `tests/perf/bench/timeline-sampling.bench.ts`.
+   - **A cheaper `keys` patch read, asked by weasel 2026-10-08: built for plain-number tracks**
+     (`bce8fa3`). `NOTES-FROM-WEASEL.md` under "Speed" has the numbers, and why there is no
+     public read into an out object. Left: rerun weasel's `tests/perf/bench/timeline-sampling.bench.ts`
+     against it.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
 

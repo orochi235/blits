@@ -58,6 +58,13 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   out object, and a single-channel numeric fast path. weasel's script was
   `tests/perf/scratch/sample-cost.mjs` (not committed); the committed bench is weasel's
   `tests/perf/bench/timeline-sampling.bench.ts`.
+  Since `bce8fa3` (2026-10-08), a track whose stops are all plain numbers, lerped straight across,
+  is read by its own binary search and lerp over flat arrays, bit for bit what the general read
+  gives. In `bench/keys.mjs` (weasel's shape, this Mac under a load average of about 11, six
+  alternated rounds) `patch.at` reads 0.796 ms a frame against 1.134 before. A public read into
+  a reused out object was built and measured slower than `at` (0.87 against 0.78 ms), so it was
+  dropped: when the caller reads one field V8 removes `at`'s fresh object. Not yet measured: the
+  same through weasel's own bench.
 
 ## What weasel has that blits doesn't
 

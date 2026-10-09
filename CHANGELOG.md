@@ -23,6 +23,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A `keys` patch reads a channel whose stops are all plain numbers, lerped straight across, by a
+  search and lerp of its own, giving the same bits: `patch.at` over 10,000 four-stop tracks takes
+  about 0.70 of the time it did.
 - Two copies of blits loaded together, as a library pinning its own copy brings, read each other's
   patches and channels: a `keys` patch one copy made kept its easing on the other's mix, which read
   it linear, and the facts a stock channel carries for lanes are shared too.
