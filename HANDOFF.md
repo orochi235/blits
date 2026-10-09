@@ -133,6 +133,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   port-to-port edge for the host to add, `canConnect` and `portOptions` configure ports, and a ref
   runs `layout()`. When a release carries it (watch weasel's `packages/diagram/CHANGELOG.md`), bump
   the playground's exact weasel pin and fix the size drift (body padding becomes a uniform 8).
+  The same branch stops a view-only `DiagramView` claiming the space bar page-wide (weasel
+  `975c1542e`). The playground's capture-phase space listener in `App.tsx` works around that claim:
+  drop it on the bump if every weasel canvas on the page is still view-only, and keep it once one is
+  editable. weasel's `docs/TODO.md` holds the general fix, "A canvas's keyboard shortcuts claim keys
+  page-wide".
   Still missing, and blocking view B: container nodes for `locus` groups, weasel `docs/TODO.md`,
   "(P2) Diagram groups".
 
