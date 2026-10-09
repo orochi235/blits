@@ -587,10 +587,19 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 14. **The 2026-10-09 code review, steps 3–9.** The review is the doc "blits code review,
     2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5); its findings
-    are numbered there. Steps 1 and 2 are built on `review-fixes`: the local fixes, the lanes
-    fuzzer (`test/differential.test.ts`), the determinism suite (`test/determinism.test.ts`) and
-    `npm run test:general`. Step 3 (issue B) and step 4 (issue A) are next; fixing either flips seeds
-    on `determinism.test.ts`'s known lists, which then have to be updated. Open beyond the doc:
+    are numbered there, and its Status section says which steps are done. Steps 1 and 2 are on
+    `main` (`1206569`): the local fixes, the lanes fuzzer (`test/differential.test.ts`), the
+    determinism suite (`test/determinism.test.ts`) and `npm run test:general`.
+    **Mike, 2026-10-09: work steps 3 to 9, then item 12's audit, chaining sessions (the
+    `pass-the-baton` skill) until the whole plan is finished**, each session updating this item and
+    the doc's Status section as a step lands. Next is step 3 (issue B), then step 4 (issue A); fixing
+    either flips seeds on `determinism.test.ts`'s known lists, which then have to be updated. Each
+    step goes in a worktree off `main`, since another session works in the main checkout on the
+    playground and item 13; ask it before editing this file, and merge with `--ff-only` once both
+    `onto test` and the lanes-off suite pass on the fleet. Step 6's version bump and publish are
+    Mike's call: stop and ask there, never bump to 1.0.0. Measure any hot-path change with
+    `AB_EACH=1 bench/ab.sh <origin/main sha> . <rounds> <rows>` on a fleet node (`.` is the synced
+    working tree). Open beyond the doc:
     - **A placement whose end comes before its start**, `{start: {after: 'a'}, end: {with: 'a'}}`,
       is silently never played. An anchor to a voice that already left now resolves
       (`src/departed.ts`): decided 2026-10-09 to keep mixes without history, since history roughly
