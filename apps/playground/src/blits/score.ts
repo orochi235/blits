@@ -58,41 +58,46 @@ function lengthOf(period: number, rate: number, passes: number) {
   return rate > 0 ? { pass: period / rate, passes } : { pass: 0, passes: Number.POSITIVE_INFINITY };
 }
 
-function clipOf(v: Voice, lane: number, subjects: readonly Subject[], scope: Scope): Clip {
+/** Voice `v`'s clip, its voice ms drawn as score ms at `clock` voice ms per score ms. */
+function clipOf(
+  v: Voice,
+  lane: number,
+  subjects: readonly Subject[],
+  scope: Scope,
+  clock: number,
+): Clip {
   const freeze = freezeOf(v);
   const spread = spreadOf(v, subjects, scope);
+  const k = clock > 0 ? clock : 1;
   const clip: Clip = {
     id: v.id,
     lane,
     label: `${v.name} · ${v.patch.kind}`,
     hue: v.hue,
     start: v.start,
-    ...lengthOf(periodOf(v.patch) ?? 0, v.rate, passesOf(v)),
+    ...lengthOf(periodOf(v.patch) ?? 0, clock, passesOf(v)),
     fadeIn: v.fade.in ?? 0,
     fadeOut: v.fade.out ?? 0,
-    spread: spread.ms,
+    spread: spread.ms / k,
     freezeBefore: freeze === 'before' || freeze === 'both',
     freezeAfter: freeze === 'after' || freeze === 'both',
     locked: v.anchor?.start !== undefined || v.anchor?.in !== undefined,
   };
-  if (spread.at !== 0) clip.spreadAt = spread.at;
+  if (spread.at !== 0) clip.spreadAt = spread.at / k;
   if (v.locus !== undefined) clip.group = v.locus;
   return clip;
 }
 
-/** A span's child as its fit left it: where it starts, how fast it plays, or that it was skipped. */
-function fitted(clip: Clip, v: Voice, h: Handle<Subject> | undefined, p: Placed | undefined) {
-  clip.locked = true;
-  if (!h || p?.start === undefined) return;
-  const period = periodOf(v.patch) ?? 0;
-  const above = clockOf(h.owner);
+/** A clip where blits put it: its `start` mark, and for a span's child how its fit left it. */
+function placeFrom(clip: Clip, v: Voice, h: Handle<Subject>, p: Placed) {
+  if (p.start === undefined) return;
   clip.start = p.start;
+  const period = periodOf(v.patch) ?? 0;
   if (p.end === p.start && period > 0 && v.rate > 0) {
     clip.skipped = true;
-    Object.assign(clip, lengthOf(period, v.rate * above, clip.passes));
+    Object.assign(clip, lengthOf(period, v.rate * clockOf(h.owner), clip.passes));
     return;
   }
-  Object.assign(clip, lengthOf(period, h.rate * above, clip.passes));
   const factor = h.rate / v.rate;
   if (Number.isFinite(factor) && Math.abs(factor - 1) > 1e-9) clip.factor = factor;
 }
@@ -127,8 +132,8 @@ function headerOf(g: Group, lane: number, depth: number, folded: boolean, o: Lay
 
 export interface ScoreOptions {
   /**
-   * The composition compiled and never synced, to place what spans hold and each group's extent
-   * where blits put them. Without it, everything sits where its own fields say.
+   * The composition compiled and never synced, to place every clip and each group's extent where
+   * blits put them. Without it, everything sits where its own fields say.
    */
   built?: Built;
   /** Groups whose members are hidden. */
@@ -165,9 +170,12 @@ export function clipsOf(
       headers.push(headerOf(g, lane, row.depth, folded, o));
       if (folded) hideBelow = row.depth;
     } else if (v) {
-      const clip = clipOf(v, lane, subjects, scope);
+      const h = o.built?.handles.get(v.id);
+      const p = o.placed?.get(v.id);
+      const clip = clipOf(v, lane, subjects, scope, h ? clockOf(h) : v.rate);
       if (row.depth > 0) clip.depth = row.depth;
-      if (underSpan(c, v.id)) fitted(clip, v, o.built?.handles.get(v.id), o.placed?.get(v.id));
+      if (underSpan(c, v.id)) clip.locked = true;
+      if (h && p) placeFrom(clip, v, h, p);
       clips.push(clip);
     }
   }
@@ -192,10 +200,18 @@ function freshLocus(c: Composition): string {
 }
 
 /** `edit` applied to voice `v`, or `v` itself when the edit leaves its clip as it was. */
-function edited(c: Composition, v: Voice, edit: Exclude<ClipEdit, { kind: 'group' }>): Voice {
+function edited(
+  c: Composition,
+  v: Voice,
+  edit: Exclude<ClipEdit, { kind: 'group' }>,
+  built: Built | undefined,
+): Voice {
   switch (edit.kind) {
-    case 'move':
-      return edit.start === v.start ? v : { ...v, start: edit.start };
+    case 'move': {
+      if (underSpan(c, v.id)) return v;
+      const start = startOf(v, edit.start, built);
+      return start === v.start ? v : { ...v, start };
+    }
     case 'passes':
       if (edit.passes === passesOf(v)) return v;
       return { ...v, loop: Number.isFinite(edit.passes) ? edit.passes : true };
@@ -209,6 +225,7 @@ function edited(c: Composition, v: Voice, edit: Exclude<ClipEdit, { kind: 'group
     case 'link': {
       const to = c.voices.find((x) => x.id === edit.link.to.clip);
       if (!to || to.id === v.id) return v;
+      if (edit.link.from.edge === 'start' && underSpan(c, v.id)) return v;
       const [mark, other]: [Mark, Mark] =
         edit.link.from.edge === 'start' ? ['start', 'in'] : ['end', 'out'];
       const now = targetOf(v.anchor?.[mark] ?? v.anchor?.[other]);
@@ -219,12 +236,24 @@ function edited(c: Composition, v: Voice, edit: Exclude<ClipEdit, { kind: 'group
   }
 }
 
-export function applyEdit(c: Composition, edit: ClipEdit): Composition {
+/**
+ * The `start` a clip moved to score ms `to` gives voice `v`: the move from where `built` drew it,
+ * on the voice's owner's clock.
+ */
+function startOf(v: Voice, to: number, built: Built | undefined): number {
+  const h = built?.handles.get(v.id);
+  const drawn = h && built ? placedOf(built).get(v.id)?.start : undefined;
+  if (!h || drawn === undefined) return to;
+  return Math.max(0, v.start + (to - drawn) * clockOf(h.owner));
+}
+
+/** `edit` applied to `c`; `built` is the build `clipsOf` drew from, so a move is read as it was. */
+export function applyEdit(c: Composition, edit: ClipEdit, built?: Built): Composition {
   if (edit.kind === 'group') return regrouped(c, edit.clip, edit.with);
   let changed = false;
   const voices = c.voices.map((v) => {
     if (v.id !== edit.clip) return v;
-    const next = edited(c, v, edit);
+    const next = edited(c, v, edit, built);
     changed ||= next !== v;
     return next;
   });

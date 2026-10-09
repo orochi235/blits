@@ -1,6 +1,7 @@
 import { compile } from '@pg/blits/compile';
 import { type Composition, MAX_VOICES, type Voice } from '@pg/blits/composition';
 import { FRAME } from '@pg/blits/frame';
+import { addGroup } from '@pg/blits/groupEdits';
 import { Player, type SeekBy } from '@pg/blits/player';
 import { DEFAULT, PRESETS } from '@pg/blits/presets';
 import { applyEdit } from '@pg/blits/score';
@@ -142,12 +143,12 @@ export function App() {
     return () => window.removeEventListener('keydown', key, true);
   }, [play, playing]);
 
-  const { clips, links, headers, fold } = useScore(comp, subjects);
+  const { clips, links, headers, built, fold } = useScore(comp, subjects);
   const scrub = (t: number) => {
     player.seek(Math.min(Math.max(t, 0), comp.length));
     tick();
   };
-  const edit = (e: ClipEdit) => set(applyEdit(compRef.current, e));
+  const edit = (e: ClipEdit) => set(applyEdit(compRef.current, e, built));
   const voice = comp.voices.find((v) => v.id === selected);
   const setVoice = (next: Voice) =>
     set({
@@ -233,6 +234,7 @@ export function App() {
                 shared={shared}
                 linkRef={linkRef}
                 onAddVoice={addVoice}
+                onAddGroup={(kind) => set(addGroup(compRef.current, kind))}
                 onDeleteVoice={deleteVoice}
                 onVoice={setVoice}
                 onShare={copyLink}

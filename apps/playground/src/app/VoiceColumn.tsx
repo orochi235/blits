@@ -1,5 +1,8 @@
-import type { Composition, Voice } from '@pg/blits/composition';
-import { MAX_VOICES } from '@pg/blits/composition';
+import type { Composition, Group, Voice } from '@pg/blits/composition';
+import { MAX_GROUPS, MAX_VOICES } from '@pg/blits/composition';
+import { groupsFull } from '@pg/blits/edit';
+import { joinGroup } from '@pg/blits/groupEdits';
+import { underSpan } from '@pg/blits/groups';
 import { kitOf } from '@pg/blits/kit';
 import type { Player } from '@pg/blits/player';
 import type { Subject } from '@pg/blits/stage';
@@ -23,6 +26,7 @@ export interface VoiceColumnProps {
   shared: { copied: boolean; url: string } | null;
   linkRef: RefObject<HTMLInputElement | null>;
   onAddVoice: () => void;
+  onAddGroup: (kind: Group['kind']) => void;
   onDeleteVoice: (id: string) => void;
   onVoice: (v: Voice) => void;
   onShare: () => void;
@@ -43,6 +47,19 @@ export function VoiceColumn(p: VoiceColumnProps) {
         >
           add voice
         </button>
+        <select
+          aria-label="add group"
+          value=""
+          disabled={groupsFull(p.comp)}
+          title={groupsFull(p.comp) ? `at most ${MAX_GROUPS} groups` : undefined}
+          onChange={(e) => p.onAddGroup(e.target.value as Group['kind'])}
+        >
+          <option value="" disabled>
+            add group
+          </option>
+          <option value="owner">owner</option>
+          <option value="span">span</option>
+        </select>
         <button type="button" onClick={p.onShare}>
           share
         </button>
@@ -71,6 +88,9 @@ export function VoiceColumn(p: VoiceColumnProps) {
         <VoicePanel
           key={voice.id}
           voice={voice}
+          comp={p.comp}
+          spanned={underSpan(p.comp, voice.id)}
+          onJoin={(to) => p.onComp(joinGroup(p.comp, voice.id, to))}
           errors={p.player.built.errors}
           faults={p.player.built.faults.get(voice.id)}
           onChange={p.onVoice}

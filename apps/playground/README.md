@@ -16,7 +16,7 @@ npx vitest run apps/playground/test    # the pure modules
 
 blits comes from the repo's own `src/index.ts` through the `@msb235/blits` alias, never the built
 `dist`, and app code imports itself through `@pg/*`. The site's nav links here when the site runs
-in dev. `scripts/docs.mjs` pulls the doc comments of `VoiceSpec` and `Handle` out of blits' types
+in dev. `scripts/docs.mjs` pulls the doc comments of `VoiceSpec`, `Handle`, `Mix`, `MixOptions`, `SpanHints`, `OwnerSpec`, and `SpanSpec` out of blits' types
 into `src/generated/docs.json` (gitignored), which the panels show as tooltips on each field.
 
 ## The screen

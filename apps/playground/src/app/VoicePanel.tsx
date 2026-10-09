@@ -1,4 +1,4 @@
-import type { Voice } from '@pg/blits/composition';
+import type { Composition, Voice } from '@pg/blits/composition';
 import type { Faults } from '@pg/blits/expr';
 import { withKey } from '@pg/blits/keyed';
 import type { FieldError } from '@pg/blits/spec';
@@ -7,6 +7,8 @@ import { type ConfigField, ControlPanel, fromConfigFields } from '@weasel-js/lab
 import s from './App.module.css';
 import { docOf } from './docs';
 import { EaseField } from './EaseField';
+import { HintsFields } from './HintsFields';
+import { OwnerField } from './OwnerField';
 import { WeightField } from './WeightField';
 
 const FIELDS: ConfigField[] = [
@@ -27,7 +29,6 @@ const FIELDS: ConfigField[] = [
   { key: 'locus', label: 'locus', type: 'text', default: '' },
   { key: 'fromCurrent', label: "from: 'current'", type: 'checkbox', default: false },
 ];
-const resolved = fromConfigFields(FIELDS);
 /** The `VoiceSpec` member each row writes, whose doc comment it shows. */
 const SPEC_KEY: Record<string, string> = {
   name: 'name',
@@ -41,20 +42,28 @@ const SPEC_KEY: Record<string, string> = {
   locus: 'locus',
   fromCurrent: 'from',
 };
-// `manual` keeps a row's label from toggling it to `auto`, which a voice field has no meaning for.
-for (const [key, leaf] of Object.entries(resolved.group.children))
-  Object.assign(leaf, { manual: true, description: docOf(`VoiceSpec.${SPEC_KEY[key]}`) ?? '' });
-const SCHEMA = {
-  ...resolved,
-  sections: [
-    { at: '', label: 'timing', paths: ['start', 'rate', 'repeat', 'passes'] },
-    { at: '', label: 'fade', paths: ['fadeIn', 'fadeOut'] },
-    { at: '', label: 'blending', paths: ['freeze', 'locus', 'fromCurrent'] },
-  ],
-};
+
+function schemaOf(fields: ConfigField[]) {
+  const resolved = fromConfigFields(fields);
+  // `manual` keeps a row's label from toggling it to `auto`, which a voice field has no meaning for.
+  for (const [key, leaf] of Object.entries(resolved.group.children))
+    Object.assign(leaf, { manual: true, description: docOf(`VoiceSpec.${SPEC_KEY[key]}`) ?? '' });
+  const has = (path: string) => fields.some((f) => f.key === path);
+  return {
+    ...resolved,
+    sections: [
+      { at: '', label: 'timing', paths: ['start', 'rate', 'repeat', 'passes'].filter(has) },
+      { at: '', label: 'fade', paths: ['fadeIn', 'fadeOut'] },
+      { at: '', label: 'blending', paths: ['freeze', 'locus', 'fromCurrent'] },
+    ],
+  };
+}
+const SCHEMA = schemaOf(FIELDS);
+/** Under a span, `start` is drawn on its own, disabled, since the span places the voice. */
+const SPAN_SCHEMA = schemaOf(FIELDS.filter((f) => f.key !== 'start'));
 
 /** Errors on fields this panel has no input for, shown in a list of their own. */
-const LOOSE = new Set(['name', 'cue']);
+const LOOSE = new Set(['name', 'cue', 'start', 'anchor', 'loop']);
 
 /** One edited row of the control panel, written back into the voice it came from. */
 function written(v: Voice, path: string, value: unknown): Voice {
@@ -84,13 +93,18 @@ function written(v: Voice, path: string, value: unknown): Voice {
 
 export interface VoicePanelProps {
   voice: Voice;
+  comp: Composition;
+  /** Under a span, which places it: no start of its own, and hints for the span's fit. */
+  spanned: boolean;
+  onJoin(owner: string | null): void;
   errors: FieldError[];
   faults: Faults | undefined;
   onChange(v: Voice): void;
   onDelete(): void;
 }
 
-export function VoicePanel({ voice: v, errors, faults, onChange, onDelete }: VoicePanelProps) {
+export function VoicePanel(p: VoicePanelProps) {
+  const { voice: v, errors, faults, onChange, onDelete, spanned } = p;
   const mine = errors.filter((e) => e.voice === v.id);
   const errorOf = (field: string) => mine.find((e) => e.field === field)?.error ?? null;
   const loose = mine.filter((e) => LOOSE.has(e.field));
@@ -110,10 +124,27 @@ export function VoicePanel({ voice: v, errors, faults, onChange, onDelete }: Voi
     <section className={s.panel} aria-label={`voice ${v.name}`}>
       <ControlPanel
         title={`voice · ${v.name}`}
-        schema={SCHEMA}
+        schema={spanned ? SPAN_SCHEMA : SCHEMA}
         config={config}
         setConfig={(path, value) => onChange(written(v, path, value))}
       />
+      {spanned && (
+        <label className={s.row} title={docOf('VoiceSpec.start')}>
+          start
+          <input type="number" className={s.number} value={v.start} disabled readOnly />
+          <span className={s.note}>a span places it</span>
+        </label>
+      )}
+      <OwnerField
+        comp={p.comp}
+        id={v.id}
+        doc={docOf('VoiceSpec.owner')}
+        error={errorOf('owner')}
+        onChange={p.onJoin}
+      />
+      {spanned && (
+        <HintsFields hints={v.hints} onChange={(h) => onChange(withKey(v, 'hints', h))} />
+      )}
       <div title={docOf('VoiceSpec.fade')}>
         <EaseField
           label="fade ease"
@@ -164,6 +195,7 @@ export function VoicePanel({ voice: v, errors, faults, onChange, onDelete }: Voi
       )}
       <p className={s.row} title={docOf('VoiceSpec.anchor')}>
         anchor: {v.anchor ? JSON.stringify(v.anchor) : 'none'}
+        {spanned && <span className={s.note}>its start: a span places it</span>}
         {v.anchor && (
           <button type="button" onClick={() => onChange({ ...v, anchor: undefined })}>
             clear
