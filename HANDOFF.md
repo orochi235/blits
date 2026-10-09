@@ -550,6 +550,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the driver scaffold
     the survey proposed is the magicsmoke question in item 1d.
 
+11. **A Tone.js adapter, and the windowed read it wants** (spiked 2026-10-08, undecided). The
+    spike in `spikes/tone/` showed a mix driving Tone on the audio clock through `project` and
+    `book` alone: booked notes land on the sample through a rate change and a seek, and curves
+    stay within 0.671 Hz on a 5 ms grid, against 71.938 Hz for a host writing values each frame.
+    Its README has the table and the gaps. Two things to decide and build:
+    - Whether the adapter becomes a package beside blits-quarks.
+    - A read of the mix over a window, returning a run of values or a `keys` voice's own
+      breakpoints as exact ramps, in place of a `project` per grid point (31 a frame, about
+      0.23 ms, and only as exact as the grid). Useful beyond audio.
+    It would also need mix time converted to the outside clock when `mix.rate` is not 1, and
+    scrubbing waits on the read-ahead item in `NOTES-ON-SCRUBBING.md`.
+
 ## Loose ends
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
