@@ -92,6 +92,25 @@ npm run site:smoke   # build, then load every page headless and fail on any erro
 `.github/workflows/site.yml` deploys it to GitHub Pages. It runs only by hand until Pages is enabled
 on the repo.
 
+## Writing patches for blits in another library
+
+A library that ships patches exports them with the channels they write, as a `Kit` of its own
+for the host to spread into its kit, and checks them in its own tests against
+`@msb235/blits/testing`:
+
+```ts
+import { checkPatch, setting } from '@msb235/blits/testing';
+
+expect(checkPatch(glow, { subject, kit })).toEqual([]); // each string names a problem
+glow.at(0.5, subject, setting({ weight: 0.5 })); // a Setting for calling a patch outside a mix
+```
+
+`checkPatch` reads the patch across its phase from fresh state and reports what a mix cannot rely
+on: writing outside `writes`, a delta that changes between identical reads, a touched subject,
+state shared between subjects, a `step` that lands differently from the same start, a `clone`,
+`pack` or `unpack` that does not give back an equal state, a missing host field, and a kit that
+`cue` would refuse. Two copies of blits loaded together read each other's patches and channels.
+
 ## Packages
 
 `packages/quarks` is `@msb235/blits-quarks`, a driver that turns poses into

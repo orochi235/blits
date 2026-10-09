@@ -32,7 +32,7 @@ export function last<T extends { at: number }>(
 }
 
 /** Deep equality over plain data, for telling whether a host field changed. */
-function same(a: unknown, b: unknown): boolean {
+export function same(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null) return false;
   const ka = Object.keys(a);

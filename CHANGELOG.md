@@ -16,11 +16,16 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- `@msb235/blits/testing`, for a library writing patches: `setting()` makes a `Setting` to call a
+  patch outside a mix, and `checkPatch(patch, { subject, kit })` lists what a mix cannot rely on.
 - `handle.seek` answers how sure the state it leaves is, as a `Doubt`: `exact`, `stepped` or
   `held`. `SeekOptions` is exported.
 
 ### Fixed
 
+- Two copies of blits loaded together, as a library pinning its own copy brings, read each other's
+  patches and channels: a `keys` patch one copy made kept its easing on the other's mix, which read
+  it linear, and the facts a stock channel carries for lanes are shared too.
 - Under `history`, a read back to a frame in which the host changed a voice between the sync and
   the first probe shows the change in that frame, as the live probe did. It showed from the next
   frame.

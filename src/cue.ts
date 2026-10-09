@@ -13,7 +13,7 @@ import { scoredAdd } from './scored.js';
 import { checkChild, refit } from './spans.js';
 import { motionOwner } from './strays.js';
 import { record } from './tape.js';
-import type { Channel, Handle, VoiceSpec } from './types.js';
+import type { Channel, Handle, Kit, Patch, VoiceSpec } from './types.js';
 import { type Controls, Voice } from './voice.js';
 
 export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
@@ -66,19 +66,24 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
   return h;
 }
 
-/** Refuses a spec whose patch the mix cannot play, or whose state its history cannot keep. */
-export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
-  const patch = spec.patch;
+/** Refuses a patch writing a channel `kit` lacks, or holds as another kind than it was written for. */
+export function fitsKit<I, O, S, H>(patch: Patch<I, O, S, H>, kit: Kit<O>): void {
   for (const channel of patch.writes) {
-    if (!(channel in (mix.kit as object)))
+    if (!(channel in (kit as object)))
       throw new Error(`blits: kit has no channel ${String(channel)}, which this patch writes`);
     const wanted = patch.kit?.[channel] as Channel<unknown> | undefined;
-    const here = mix.kit[channel] as Channel<unknown>;
+    const here = kit[channel] as Channel<unknown>;
     if (wanted && wanted !== here && (wanted.kind === undefined || wanted.kind !== here.kind))
       throw new Error(
         `blits: channel ${String(channel)} is ${here.kind ?? 'a custom channel'} in this kit, but the patch was written for ${wanted.kind ?? 'a custom channel'}`,
       );
   }
+}
+
+/** Refuses a spec whose patch the mix cannot play, or whose state its history cannot keep. */
+export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
+  const patch = spec.patch;
+  fitsKit(patch, mix.kit);
   const motion = motionOf<I>(patch);
   if (motion !== undefined) {
     const channel = patch.writes[0] as keyof O;
