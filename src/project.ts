@@ -215,6 +215,7 @@ function recall<I, O>(
     delta: null,
     phase: 0,
     seeks: 0,
+    rebuilt: voice.rebuilds,
     kept: null,
     voice,
     next: null,

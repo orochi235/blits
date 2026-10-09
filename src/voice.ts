@@ -45,6 +45,8 @@ export interface Subject<S> {
   phase: number;
   /** The voice's `seeks` when `delta` was read, so a seek later in the frame reads it again. */
   seeks: number;
+  /** The voice's `rebuilds` when its state was last made, so a seek's rebuild reaches it once. */
+  rebuilt: number;
   /** Stop 0 for a `from: 'current'` voice, taken the first frame this subject is seen. */
   base?: Record<string, unknown>;
   /** The pose's velocity per channel at that moment, units per ms, so the first segment leaves at it. */
@@ -137,7 +139,8 @@ export interface Controls extends Clock {
   /** A fade the host set for `outAt`: its ramp, NaN for the voice's own `fade.out`. */
   outOver: number;
   outSet: boolean;
-  /** Made by a sync, so it shows in that frame; a host's change between frames shows from the next. */
+  rebuilds: number;
+  /** Shows in its own frame: made by a sync, or before anything read the mix that frame. */
   sync: boolean;
 }
 
@@ -214,6 +217,8 @@ export class Voice<I, O> {
   laned = false;
   /** How many times it has been sought, so a delta read before a seek is not handed out after it. */
   seeks = 0;
+  /** Seeks that rebuild state; a record stamped with fewer makes its state again before stepping. */
+  rebuilds = 0;
   /** Whether its patch has kept state on a record through `setting.keep`, which makes it stateful. */
   keeping = false;
   /** Subjects fading out of this voice alone, by the ramp each started; null while none are. */
@@ -399,6 +404,7 @@ export class Voice<I, O> {
     this.outAt = c.outAt;
     this.outOver = c.outOver;
     this.outSet = c.outSet;
+    this.rebuilds = c.rebuilds;
     this.log = null;
     this.state = 'pending';
     this.subjects = new Store();
@@ -501,6 +507,7 @@ export class Voice<I, O> {
       outAt: this.outAt,
       outOver: this.outOver,
       outSet: this.outSet,
+      rebuilds: this.rebuilds,
     });
   }
 
@@ -534,6 +541,7 @@ export class Voice<I, O> {
       v.outAt = controls.outAt;
       v.outOver = controls.outOver;
       v.outSet = controls.outSet;
+      v.rebuilds = controls.rebuilds;
     }
     v.quiet = true;
     v.unreached = null;

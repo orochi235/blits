@@ -19,6 +19,7 @@ function stub(): Subject<unknown> {
     delta: null,
     phase: 0,
     seeks: 0,
+    rebuilt: 0,
     kept: null,
     voice: null,
     next: null,

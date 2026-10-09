@@ -650,10 +650,14 @@ export interface Handle<I = unknown> {
    */
   ramp(rate: number, over: number): void;
   /**
-   * Moves this voice's clock, forward or back. Phase is computed from the reading rather than
-   * accumulated into, so state is left where it is and never run forward to meet the new position.
+   * Moves this voice's clock, forward or back, and for an owner every clock it holds. By default
+   * each subject's state (a patch's `state`, what `setting.keep` holds) is made fresh and stepped
+   * again from the voice's start up to `elapsed` on its next probe; `state: 'keep'` leaves it where
+   * it was. Answers how sure the state now is: `exact` for a voice with none, or rebuilt under
+   * `stepMs` with no `maxDt`; `stepped` where it was caught up in one step or holds signal state;
+   * `held` where it was kept, or depends on host fields or an input weight the rebuild cannot know.
    */
-  seek(elapsed: number): void;
+  seek(elapsed: number, opts?: SeekOptions): Doubt;
   fade(opts?: FadeOptions<I>): void;
   /**
    * Turns a fade out around: the voice climbs back from where its fade had got to, up the same
@@ -956,6 +960,16 @@ export type TapeMaker = (
   adapter: unknown,
   opts: { now: () => number; branching: boolean; coalesceWindowMs: number },
 ) => Tape;
+
+/**
+ * What `Handle.seek` does with each subject's state: `rebuild` (the default) makes it fresh and
+ * steps it to the new position; `keep` leaves it as it was.
+ *
+ * @category voice
+ */
+export interface SeekOptions {
+  state?: 'rebuild' | 'keep';
+}
 
 /**
  * How sure a projection is of one channel: `exact` where only the clock and known changes drove

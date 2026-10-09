@@ -45,6 +45,29 @@ function merged(channel: Channel<unknown>, acc: unknown, b: unknown): unknown {
 export type Values = Record<string, unknown>;
 
 /**
+ * A record after a seek that rebuilds: fresh state, stepped again from where the voice's clock now
+ * puts this subject's start, which under `stepMs` lands where a voice cued fresh would.
+ */
+function rebuild<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  now: number,
+  held: Subject<unknown>,
+): void {
+  held.rebuilt = voice.rebuilds;
+  const patch = voice.patch;
+  if (patch.state === undefined && patch.step === undefined && held.kept === null) return;
+  held.state = patch.state ? (patch.state(subject) as unknown) : undefined;
+  held.kept = null;
+  held.unkept = undefined;
+  held.since = mix.sinceOf(voice, held.delay);
+  held.ticks = 0;
+  held.stepped = held.since < now ? held.since : now;
+  held.probed = Number.NaN;
+}
+
+/**
  * One live voice's delta for one subject this frame, through its record for the subject, or null
  * when it does not reach. Its weight is left in `w`.
  */
@@ -58,6 +81,7 @@ export function contribution<I, O>(
   held.weight = 0;
   if (!held.reaches) return null;
   if (voice.out?.rest && held.rested) return null;
+  if (held.rebuilt !== voice.rebuilds) rebuild(this, voice, subject, now, held);
 
   const raw = voice.elapsedAt(now) - held.delay;
   if (raw < 0 && !voice.freezesBefore) return null;

@@ -101,7 +101,7 @@ describe('mix.owns', () => {
     for (const t of [100, 250, 400, 700]) expect(x(n, t)).toBeCloseTo(x(p, t), 9);
   });
 
-  it('moves its children with a seek and leaves their state where it is', () => {
+  it("moves its children with a seek, and with state: 'keep' leaves their state where it is", () => {
     const m = mix<Part, Pose>(K);
     m.sync(0);
     const o = m.owns({});
@@ -109,13 +109,23 @@ describe('mix.owns', () => {
     const d = m.cue({ patch: drift(), owner: o, subjects: [b] });
     expect(x(m, 100)).toBe(100);
     const before = x(m, 100, b);
-    o.seek(1000);
+    expect(o.seek(1000, { state: 'keep' })).toBe('held');
     expect(x(m, 100)).toBe(1000);
-    // Seeking moves the clock; the integrator is not run forward to meet it.
     expect(x(m, 100, b)).toBe(before);
     expect(x(m, 150)).toBe(1050);
     expect(c.state).toBe('live');
     expect(d.state).toBe('live');
+  });
+
+  it('rebuilds its children’s state with a seek', () => {
+    const m = mix<Part, Pose>(K);
+    m.sync(0);
+    const o = m.owns({});
+    m.cue({ patch: drift(), owner: o, subjects: [b] });
+    x(m, 100, b);
+    expect(o.seek(1000)).toBe('stepped');
+    // Fresh state, caught up over the child's 1000 ms in one step, which lands on 50.
+    expect(x(m, 100, b)).toBe(50);
   });
 
   it('multiplies its weight, a number or a signal, and its fade into each child’s', () => {

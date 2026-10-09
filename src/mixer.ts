@@ -96,6 +96,11 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** True during a sync, so a control change it makes is recorded as showing in that frame. */
   moving = false;
   /**
+   * Whether a probe or pull has read the mix since its clock last moved. A control change made
+   * before that shows in this frame live, so it is recorded as showing in it.
+   */
+  looked = false;
+  /**
    * Under `history` with `inputs`, the host fields patches read, copied each frame they changed. In
    * a projection reading back, the copy in force then.
    */
@@ -383,6 +388,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   probe(subject: I, out?: O): O {
+    this.looked = true;
     const pose = this.fold(subject, out);
     this.keep(subject, pose, out);
     // Where the lanes answer `atRest` from their own values, there is nothing to keep.
@@ -392,6 +398,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   pull(subjects: Iterable<I>, into: Columns<O>): void {
+    this.looked = true;
     pull(this, subjects, into);
   }
 

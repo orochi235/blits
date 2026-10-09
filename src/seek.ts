@@ -108,6 +108,7 @@ function restoreVoice<I, O>(voice: Voice<I, O>, t: number): void {
   voice.outAt = c.outAt;
   voice.outOver = c.outOver;
   voice.outSet = c.outSet;
+  voice.rebuilds = c.rebuilds;
   if (voice.reopen(t) && voice.owner?.holding) voice.owner.holding.played--;
   voice.doneAt = Number.POSITIVE_INFINITY;
   if (voice.parts !== null) {

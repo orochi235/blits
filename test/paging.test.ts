@@ -167,13 +167,14 @@ describe('history with a store', () => {
     const run = play(busy, frames, paged());
     await run.m.prepare(400);
     run.m.seek(400);
-    // A different future from 400: no drop, and a voice of its own.
+    // A different future from 528, where the tape's calls before it play again: no drop, and a
+    // voice of its own.
     const other = mix<Part, Pose>(KP, paged());
     const h: Record<string, Handle<Part>> = {};
     const again = new Map<number, Pose[]>();
     for (const t of frames) {
       other.sync(t);
-      if (t <= 400) busy(other, t, h);
+      if (t < 528) busy(other, t, h);
       if (t === 528) other.cue({ patch: fall, weight: 0.3 });
       again.set(t, probes(other));
     }

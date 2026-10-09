@@ -62,11 +62,29 @@ describe('one frame, one answer', () => {
     m.probe(part);
     m.sync(100);
     expect(m.probe(part).gain).toBeCloseTo(1.1, 9);
-    h.seek(600);
+    h.seek(600, { state: 'keep' });
     const after = m.probe(part);
     expect(after.gain).toBeCloseTo(1.6, 9);
     expect(after.crawl).toBe(1);
     expect(steps).toBe(1);
+  });
+
+  it('a probe after a rebuilding seek in the same frame reads state stepped to where it went', () => {
+    const p = patch<Part, Pose, { n: number }>(1000, (_phase, _part, s) => ({ crawl: s.state.n }), {
+      writes: ['crawl'],
+      state: () => ({ n: 0 }),
+      step: (state) => {
+        state.n++;
+      },
+    });
+    const m = mix<Part, Pose>(PART, { lanes: false, stepMs: 100 });
+    const h = m.cue({ patch: p });
+    const part = { id: 'a' };
+    m.sync(0);
+    m.sync(100);
+    expect(m.probe(part).crawl).toBe(1);
+    h.seek(600);
+    expect(m.probe(part).crawl).toBe(6);
   });
 
   it('a voice faded before its start plays once its start arrives, with no other cue', () => {
@@ -214,7 +232,7 @@ describe('the clock', () => {
     ]);
   });
 
-  it('seek moves the clock and leaves state where it was', () => {
+  it("seek with state: 'keep' moves the clock and leaves state where it was", () => {
     let ticks = 0;
     const p = patch<Part, Pose, { n: number }>(
       1000,
@@ -237,7 +255,7 @@ describe('the clock', () => {
     m.probe(part);
     expect(ticks).toBe(1);
 
-    h.seek(4000);
+    expect(h.seek(4000, { state: 'keep' })).toBe('held');
     m.sync(200);
     const pose = m.probe(part);
     // Phase jumped to 4000 + 100 ms of playback; state advanced once for the frame, not to 4000.

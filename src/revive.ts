@@ -22,6 +22,7 @@ interface PackedVoice {
   outAt: number;
   outOver: number;
   outSet: boolean;
+  rebuilds: number;
   cuedAt: number;
   doneAt: number;
   opened: number;
@@ -118,6 +119,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     outAt: voice.outAt,
     outOver: voice.outOver,
     outSet: voice.outSet,
+    rebuilds: voice.rebuilds,
     cuedAt: voice.cuedAt,
     doneAt: voice.doneAt,
     opened: voice.opened,
@@ -165,6 +167,7 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
   voice.outAt = d.outAt;
   voice.outOver = d.outOver;
   voice.outSet = d.outSet;
+  voice.rebuilds = d.rebuilds;
   voice.cuedAt = d.cuedAt;
   voice.doneAt = d.doneAt;
   voice.opened = d.opened;

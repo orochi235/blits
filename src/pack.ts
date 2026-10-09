@@ -13,6 +13,7 @@ export interface PackedRecord {
   state: unknown;
   stepped: number;
   ticks: number;
+  rebuilt: number;
   /**
    * What `setting.keep` held, in the order its owners first kept it. An owner is code, which no
    * store keeps, and a voice revived from a descriptor has new ones; the same code keeps in the same
@@ -40,6 +41,7 @@ export function packHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): PackedR
     state: h.state === undefined ? undefined : patch.pack ? patch.pack(h.state) : clone(h.state),
     stepped: h.stepped,
     ticks: h.ticks,
+    rebuilt: h.rebuilt,
     kept: kept.length === 0 ? null : kept.map(clone),
   };
   if (h.base !== undefined) p.base = clone(h.base);
@@ -67,6 +69,7 @@ export function unpackHeld<I, O>(voice: Voice<I, O>, p: PackedRecord): Subject<u
     delta: null,
     phase: 0,
     seeks: 0,
+    rebuilt: p.rebuilt,
     kept: null,
     voice,
     next: null,

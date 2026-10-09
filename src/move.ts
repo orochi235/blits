@@ -37,6 +37,7 @@ export function move<I, O>(mix: Mixer<I, O>, now: number): void {
 
 function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   mix.now = now;
+  mix.looked = false;
   mix.frame = nextFrame();
   mix.reducedNow = mix.reduced;
   for (const a of mix.announced) if (Number.isNaN(a.at)) a.at = mix.u;

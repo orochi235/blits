@@ -1,5 +1,5 @@
 import { retime } from './clock.js';
-import type { FadeOptions, FitResult, Handle } from './types.js';
+import type { Doubt, FadeOptions, FitResult, Handle, SeekOptions } from './types.js';
 import type { Voice } from './voice.js';
 
 /** What a voice's handle asks of the mix that cued it: one per mix, shared by every handle. */
@@ -8,8 +8,11 @@ export interface HandleHost<I, O> {
   nowFor(voice: Voice<I, O>): number;
   /** A handle write changed the voice: reschedule it, and refill the lanes. */
   changed(voice: Voice<I, O>): void;
-  /** The voice's clock jumped: for an owner, so did every clock it holds. */
-  sought(voice: Voice<I, O>): void;
+  /**
+   * The voice's clock jumped: for an owner, so did every clock it holds. With `rebuild`, their
+   * state is made again for where they now are. How sure that leaves it.
+   */
+  sought(voice: Voice<I, O>, rebuild: boolean): Doubt;
   fade(voice: Voice<I, O>, opts: FadeOptions<I> | undefined): void;
   rise(voice: Voice<I, O>, opts: { over?: number } | undefined): void;
   weightOf(voice: Voice<I, O>, subject: I): number;
@@ -110,15 +113,16 @@ export class VoiceHandle<I, O> implements Handle<I> {
     this.#host.record('rate', () => this.ramp(r, over));
   }
 
-  seek(elapsed: number): void {
+  seek(elapsed: number, opts?: SeekOptions): Doubt {
     const voice = this.#voice;
-    if (voice === null) return;
+    if (voice === null) return 'exact';
     voice.rebase(this.#host.nowFor(voice));
     voice.anchorElapsed = elapsed;
     voice.seeks++;
-    this.#host.sought(voice);
+    const doubt = this.#host.sought(voice, opts?.state !== 'keep');
     this.#host.changed(voice);
-    this.#host.record('seek', () => this.seek(elapsed));
+    this.#host.record('seek', () => this.seek(elapsed, opts));
+    return doubt;
   }
 
   fade(opts?: FadeOptions<I>): void {

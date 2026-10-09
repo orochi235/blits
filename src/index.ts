@@ -55,6 +55,7 @@ export type {
   Placement,
   Projection,
   Query,
+  SeekOptions,
   Sent,
   Setting,
   Signal,

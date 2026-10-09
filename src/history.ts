@@ -8,9 +8,9 @@ import { scoreTouched } from './scored.js';
 import { type Controls, none, type Subject, type Voice } from './voice.js';
 
 /**
- * The last entry taken before `t`, or at it where `inclusive` says so, as it does for a change a
- * sync made. A host's change between frames is taken strictly: it shows from the next frame on, as
- * it did live.
+ * The last entry taken before `t`, or at it where `inclusive` says so, as it does for a change made
+ * by a sync or before the frame was read. A host's change after the frame's probes is taken
+ * strictly: it shows from the next frame on, as it did live.
  */
 export function last<T extends { at: number }>(
   list: readonly T[],
@@ -62,7 +62,7 @@ export function noted<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   schedule(mix, voice);
   const log = voice.log;
   if (log === null) return;
-  voice.note(Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now, mix.moving);
+  voice.note(Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now, mix.moving || !mix.looked);
   const reach = mix.now - (mix.opts.history as { ms: number }).ms;
   let drop = 0;
   while (drop + 1 < log.length && (log[drop + 1] as Controls).at <= reach) drop++;

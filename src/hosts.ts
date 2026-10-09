@@ -14,7 +14,7 @@ import { descendants, ownWeight, signalled } from './owner.js';
 import { localNow } from './place.js';
 import { reading } from './reading.js';
 import { record } from './tape.js';
-import type { Booker, BookOptions, Channel, Handle } from './types.js';
+import type { Booker, BookOptions, Channel, Doubt, Handle } from './types.js';
 import { unreach } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
 
@@ -131,6 +131,26 @@ export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
 }
 
 /** A voice's patch kept state on a record: it is stateful from now on. */
+const RANK = { exact: 0, stepped: 1, held: 2 } as const;
+
+/** How sure a seek leaves a voice's state: kept is held; rebuilt is exact only on a fixed step. */
+function seekDoubt<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, rebuild: boolean): Doubt {
+  const patch = voice.patch;
+  if (patch.state === undefined && patch.step === undefined && !voice.keeping) return 'exact';
+  if (!rebuild) return 'held';
+  const weight = voice.spec.weight;
+  if (
+    (patch.reads !== undefined && patch.reads.length > 0) ||
+    (typeof weight === 'function' && weight.input)
+  )
+    return 'held';
+  if (voice.keeping) return 'stepped';
+  if (patch.step === undefined) return 'exact';
+  const tick = mix.opts.stepMs;
+  const fixed = tick !== undefined && tick > 0 && !mix.reducedNow && mix.opts.maxDt === undefined;
+  return fixed ? 'exact' : 'stepped';
+}
+
 export function stateful<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if (voice.keeping) return;
   voice.keeping = true;
@@ -155,12 +175,18 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       mix.lanes?.refill();
     },
     // A delta read before an owner's seek, or a hit booked, is not taken as standing after it.
-    sought: (voice) => {
+    sought: (voice, rebuild) => {
+      if (rebuild) voice.rebuilds++;
+      let doubt = seekDoubt(mix, voice, rebuild);
       if (voice.holding !== null)
         descendants(voice, (v) => {
           v.seeks++;
+          if (rebuild) v.rebuilds++;
+          const d = seekDoubt(mix, v, rebuild);
+          if (RANK[d] > RANK[doubt]) doubt = d;
           schedule(mix, v);
         });
+      return doubt;
     },
     fade: (voice, opts) => {
       if (voice.holding !== null && opts !== undefined && ('subject' in opts || opts.at === 'rest'))

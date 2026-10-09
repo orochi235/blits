@@ -209,6 +209,22 @@ describe('project back', () => {
     }
   });
 
+  it('shows a change made before anything read the frame in that frame, and one made after from the next', () => {
+    const a = { id: 'a' };
+    const m = mix<Part, Pose>(K, { history: { ms: 5000, every: 50 } });
+    const h = m.cue({
+      patch: patch<Part, Pose>(1000, (p) => ({ x: p * 1000 }), { writes: ['x'] }),
+    });
+    const poses = new Map<number, number>();
+    for (let t = 0; t <= 600; t += 16) {
+      m.sync(t);
+      if (t === 480) h.seek(100);
+      poses.set(t, m.probe(a).x);
+      if (t === 528) h.seek(0);
+    }
+    for (const t of [464, 480, 496, 528, 544]) expect(m.project(t).probe(a).x).toBe(poses.get(t));
+  });
+
   it('gives the same picture on a round trip back and forth', () => {
     const a = { id: 'a' };
     const m = mix<Part, Pose>(K, { history: { ms: 10_000, every: 100 }, stepMs: 5 });
