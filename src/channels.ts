@@ -1,3 +1,4 @@
+import { shared } from './shared.js';
 import type { Channel, Kit } from './types.js';
 
 /** The stock numeric channels' `lerp`, which `vec` applies per axis and lanes call directly. */
@@ -10,7 +11,7 @@ const mix = lerpNumber;
  */
 export type LerpInto = (out: unknown[] | undefined, a: unknown, b: unknown, u: number) => unknown[];
 
-const inPlace = new WeakMap<object, LerpInto>();
+const inPlace = shared<object, LerpInto>('lerp-into@1');
 
 /**
  * The in-place form of a stock array channel's `lerp`. Keyed by the channel rather than its `lerp`,
@@ -36,7 +37,7 @@ const product = (a: number, b: number): number => a * b;
 const toward = (v: number, w: number): number => 1 + (v - 1) * w;
 const larger = (a: number, b: number): number => (a > b ? a : b);
 
-const numerics = new WeakMap<object, Numeric>();
+const numerics = shared<object, Numeric>('numeric@1');
 
 /**
  * The stock arithmetic of a channel `sum`, `mul`, `max` or `vec` made, keyed by the object itself,
@@ -51,7 +52,7 @@ export function vouch(channel: Channel<unknown>, numeric: Numeric): void {
   numerics.set(channel, numeric);
 }
 
-const widths = new WeakMap<object, number>();
+const widths = shared<object, number>('width@1');
 
 /** Records how many numbers a rest-less array channel holds a subject, which its rest cannot say. */
 export function widen(channel: Channel<unknown>, axes: number): void {

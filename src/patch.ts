@@ -1,5 +1,6 @@
 import { type LerpInto, lerpInto } from './channels.js';
 import { type Curve, curve } from './easing.js';
+import { shared } from './shared.js';
 import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js';
 
 /**
@@ -70,7 +71,7 @@ export interface KeysOptions<O> {
   kit?: Partial<Kit<O>>;
 }
 
-const options = new WeakMap<Patch<never, never, never>, KeysOptions<unknown>>();
+const options = shared<Patch<never, never, never>, KeysOptions<unknown>>('keys-options@1');
 
 /** The options a `keys` patch was built with, for an engine reading its stops rather than calling it. */
 export function keysOptionsOf<I, O, S>(p: Patch<I, O, S>): KeysOptions<O> | undefined {
