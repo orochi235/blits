@@ -1,0 +1,7 @@
+{
+  "name": "blits-tone-spike",
+  "private": true,
+  "type": "module",
+  "scripts": { "serve": "node serve.mjs" },
+  "dependencies": { "tone": "15.1.22" }
+}
