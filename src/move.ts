@@ -170,7 +170,10 @@ function leave<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   if (mix.opts.history) {
     mix.gone.push(voice);
     scoredLeft(mix, voice);
-  } else mix.parters.delete(voice);
+  } else {
+    mix.parters.delete(voice);
+    mix.departed.add(mix, voice);
+  }
   unplay(mix, voice);
   changed(mix, voice);
   if (voice.named !== null) unindex(mix, voice);

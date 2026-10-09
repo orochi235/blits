@@ -591,10 +591,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     fuzzer (`test/differential.test.ts`), the determinism suite (`test/determinism.test.ts`) and
     `npm run test:general`. Step 3 (issue B) and step 4 (issue A) are next; fixing either flips seeds
     on `determinism.test.ts`'s known lists, which then have to be updated. Open beyond the doc:
-    - **An anchor to a voice that already left waits forever** without history, and keeps the mix
-      awake. It cannot be told from one waiting on a voice not cued yet, which is by design;
-      remembering departed names is Mike's call. `{start: {after: 'a'}, end: {with: 'a'}}`, an end
-      before the start, is silently never played.
+    - **A placement whose end comes before its start**, `{start: {after: 'a'}, end: {with: 'a'}}`,
+      is silently never played. An anchor to a voice that already left now resolves
+      (`src/departed.ts`): decided 2026-10-09 to keep mixes without history, since history roughly
+      doubles a stepped patch's frame cost and holds about 500 B per subject per copy, and to keep
+      departed voices' marks on every mix instead.
     - **Finding #10 is cause C in `determinism.test.ts`**: a fade-out due before a voice's first live
       frame is skipped on that frame (cue `start: 100`, `fade({ over: 200, at: 82 })` at 32: x at
       128 reads 10.0 at 32 ms frames, 8.6 at 16 ms, 7.7 by rights).

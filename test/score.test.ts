@@ -304,3 +304,104 @@ describe('announced marks', () => {
     expect(mine.state).toBe('live');
   });
 });
+
+describe('an anchor to a voice that has already left, without history', () => {
+  const run = (m: ReturnType<typeof mix<Row, Pose>>, from: number, to: number) => {
+    for (let t = from; t <= to; t += 10) m.sync(t);
+  };
+
+  it('places it as a mix with history does, and the mix comes to rest', () => {
+    const states = (history: boolean) => {
+      const m = mix<Row, Pose>(K, history ? { history: { ms: 10_000 } } : {});
+      m.sync(0);
+      m.cue({ patch: hold(100), loop: false, name: 'a' });
+      run(m, 10, 300);
+      const b = m.cue({ patch: hold(500), loop: false, anchor: { start: { after: 'a' } } });
+      const seen: string[] = [];
+      for (let t = 310; t <= 900; t += 100) {
+        m.sync(t);
+        seen.push(b.state);
+      }
+      return { seen, inert: m.inert };
+    };
+    const without = states(false);
+    expect(without).toEqual(states(true));
+    expect(without.seen).toEqual(['live', 'live', 'live', 'done', 'done', 'done']);
+    expect(without.inert).toBe(true);
+  });
+
+  it('reads the last to leave under a name by default, and the first when asked', () => {
+    const follows = (resolver: 'last' | 'first') => {
+      const m = mix<Row, Pose>(K);
+      m.sync(0);
+      m.cue({ patch: hold(100), loop: false, name: 'a' });
+      run(m, 10, 150);
+      m.cue({ patch: hold(100), loop: false, name: 'a' });
+      run(m, 160, 400);
+      const b = m.cue({
+        patch: hold(10),
+        loop: false,
+        anchor: { start: { after: { name: 'a', resolver }, by: 1000 } },
+      });
+      let t = 400;
+      while (b.state === 'pending' && t < 3000) {
+        t += 10;
+        m.sync(t);
+      }
+      return t;
+    };
+    // The first `a` ended at 100 and the second at 250; each follower starts 1000 ms after its own.
+    expect([follows('last'), follows('first')]).toEqual([1250, 1100]);
+  });
+
+  it('keeps no more than the first and last voice under a name, however many leave', () => {
+    const m = mix<Row, Pose>(K);
+    let t = 0;
+    m.sync(t);
+    for (let i = 0; i < 200; i++) {
+      m.cue({ patch: hold(10), loop: false, name: 'a', tags: ['row'] });
+      for (let k = 0; k < 3; k++) {
+        t += 10;
+        m.sync(t);
+      }
+    }
+    expect((m as unknown as { departed: { all: Set<unknown> } }).departed.all.size).toBe(2);
+  });
+
+  it('finds one that has left even past the reach of history', () => {
+    const m = mix<Row, Pose>(K, { history: { ms: 200 } });
+    m.sync(0);
+    m.cue({ patch: hold(100), loop: false, name: 'a' });
+    run(m, 10, 1000);
+    const b = m.cue({ patch: hold(10), loop: false, anchor: { start: { after: 'a', by: 2000 } } });
+    let t = 1000;
+    while (b.state === 'pending' && t < 5000) {
+      t += 10;
+      m.sync(t);
+    }
+    expect(t).toBe(2100);
+  });
+
+  it("lets go of an owner's voices once the owner has left", () => {
+    const m = mix<Row, Pose>(K);
+    let t = 0;
+    m.sync(t);
+    for (let i = 0; i < 50; i++) {
+      const owner = m.owns({});
+      m.cue({ patch: hold(10), loop: false, name: 'child', owner });
+      for (let k = 0; k < 3; k++) {
+        t += 10;
+        m.sync(t);
+      }
+      owner.fade({ over: 0 });
+      for (let k = 0; k < 2; k++) {
+        t += 10;
+        m.sync(t);
+      }
+    }
+    // The owners themselves stay, as first and last of their unnamed set; none of their children.
+    expect(
+      (m as unknown as { departed: { all: Set<unknown> } }).departed.all.size,
+    ).toBeLessThanOrEqual(2);
+  });
+});

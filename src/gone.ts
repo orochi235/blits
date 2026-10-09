@@ -89,6 +89,7 @@ export function keepGone<I, O>(mix: Mixer<I, O>, keep: (v: Voice<I, O>) => boole
     (keep(v) ? kept : out).push(v);
   }
   remove(ix, out);
+  for (const v of out) mix.departed.add(mix, v);
   mix.gone = kept;
   scoredCut(mix, list, out);
   ix.of = kept;
@@ -124,6 +125,7 @@ export function expireGone<I, O>(mix: Mixer<I, O>, reach: number): void {
   }
   list.splice(0, end, ...kept);
   remove(ix, out);
+  for (const v of out) mix.departed.add(mix, v);
   scoredCut(mix, list, out);
   ix.count = list.length;
 }

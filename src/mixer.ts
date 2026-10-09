@@ -3,6 +3,7 @@ import type { Book } from './book.js';
 import { aims, chain, linkable, relink } from './chain.js';
 import { type LerpInto, lerpInto } from './channels.js';
 import { cue } from './cue.js';
+import { DepartedIndex } from './departed.js';
 import type { Due } from './due.js';
 import { beginFade, parting } from './fade.js';
 import {
@@ -82,13 +83,13 @@ import {
   weighOwned,
 } from './weigh.js';
 
-// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: every member of `Methods` is installed below
 /**
  * What a mix takes where its options say nothing. Not exported from the package: the suite turns
  * `lanes` off to run every test on the general path, which is what makes each one an equivalence check.
  */
 export const defaults = { lanes: true };
 
+// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: every member of `Methods` is installed below
 export class Mixer<I, O> implements Mix<I, O> {
   cued: Voice<I, O>[] = [];
   /** Under `history`, voices that have left but that a read back may still reach. */
@@ -185,6 +186,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   named = new Store<I, Voice<I, O>[]>();
   /** Voices a subject has been faded out of, which `drop` looks in besides those that reach it. */
   readonly parters = new Set<Voice<I, O>>();
+  /** Without history, what an anchor can still find of the voices that have left. */
+  readonly departed = new DepartedIndex();
   /**
    * Motion patches that may hold state for a subject no voice still reaching it plays, which `drop`
    * frees besides those voices' own: per subject, a patch a voice naming it left while another

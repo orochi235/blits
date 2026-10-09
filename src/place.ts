@@ -1,3 +1,4 @@
+import { departedMatches } from './departed.js';
 import { noted } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
@@ -330,15 +331,22 @@ function timeOf<I, O>(
     : listed
       ? holders(mix, score)
       : (mix.transport.members as unknown as Mixer<I, O>[]);
+  const owner = self.owner?.id ?? -1;
   for (let i = 0; i < mixes.length; i++) {
     const m = mixes[i] as Mixer<I, O>;
+    let departed = false;
+    for (const d of m.departed.all)
+      if (departedMatches(d, q, score, anywhere, owner)) {
+        picked.take(d.id, d.marks[mark]);
+        departed = true;
+      }
     if (score === undefined || m.projecting || mix.projecting) {
       for (const v of [...m.gone, ...m.cued]) if (matches(v)) picked.take(v.id, markOf(m, v, mark));
       continue;
     }
     const cued = scored(m, score);
     const list = scoredGone(m, score);
-    if (cued.size === 0 && list.length === 0) {
+    if (cued.size === 0 && list.length === 0 && !departed) {
       if (listed) {
         unhold(m, score);
         i--;
