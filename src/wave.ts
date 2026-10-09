@@ -21,10 +21,11 @@ export interface WaveOptions<O> {
   cycles?: number;
   /** Where in its cycle the wave starts, 0..1. Default 0. */
   phase?: number;
-  /** Peak value per channel; the wave swings between -depth and +depth. Its keys are the patch's
-   *  writes, and only a channel holding a number can take one. */
+  /** Peak swing per channel, either side of the channel's rest. Its keys are the patch's writes,
+   *  and only a channel holding a number can take one. */
   depth: { [K in keyof O as NonNullable<O[K]> extends number ? K : never]?: number };
-  /** The channels this wave was written against, which `cue` checks a mix's kit against. */
+  /** The channels this wave was written against, which `cue` checks a mix's kit against. Each
+   *  channel swings around its rest here, so a `mul` channel pulses around 1; without it, around 0. */
   kit?: Partial<Kit<O>>;
 }
 
@@ -55,7 +56,8 @@ export function waveOptionsOf<I, O, S>(p: Patch<I, O, S>): WaveOptions<O> | unde
 }
 
 /**
- * A periodic swing on each channel `depth` names, around 0: an LFO for a bob, a sway or a pulse.
+ * A periodic swing on each channel `depth` names, around its rest: an LFO for a bob, a sway or a
+ * pulse.
  *
  * @category patch
  */
@@ -66,13 +68,18 @@ export function wave<I, O>(duration: number, opts: WaveOptions<O>): Patch<I, O, 
   const depth: Record<string, number | undefined> = opts.depth;
   const writes = Object.keys(depth) as (keyof O)[];
   const depths = writes.map((c) => depth[c as string] as number);
+  const rests = writes.map((c) => {
+    const rest = opts.kit?.[c]?.rest;
+    return typeof rest === 'number' ? rest : 0;
+  });
   const p = patch<I, O, void>(
     duration,
     (phase) => {
       const unit = waveAt(shape, phase * cycles + start);
       const out: Partial<O> = {};
       for (let i = 0; i < writes.length; i++)
-        out[writes[i] as keyof O] = ((depths[i] as number) * unit) as O[keyof O];
+        out[writes[i] as keyof O] = ((rests[i] as number) +
+          (depths[i] as number) * unit) as O[keyof O];
       return out;
     },
     { writes, kit: opts.kit },

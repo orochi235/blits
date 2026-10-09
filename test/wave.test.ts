@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kit, sum } from '../src/channels.js';
+import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { keys } from '../src/patch.js';
 import { type WaveShape, wave, waveAt, waveOptionsOf } from '../src/wave.js';
@@ -83,6 +83,13 @@ describe('wave', () => {
     const p = wave<unknown, Bob>(500, opts);
     expect(waveOptionsOf(p)).toBe(opts);
     expect(waveOptionsOf(keys<unknown, Bob>(500, [{ at: 0, delta: { x: 1 } }]))).toBeUndefined();
+  });
+
+  it('swings each channel around its rest in the kit it is given', () => {
+    const k = kit<Bob>({ x: sum(), y: mul() });
+    const p = wave<unknown, Bob>(1000, { shape: 'square', depth: { x: 2, y: 0.25 }, kit: k });
+    expect(read(p, 0.1)).toEqual({ x: 2, y: 1.25 });
+    expect(read(p, 0.6)).toEqual({ x: -2, y: 0.75 });
   });
 
   it('plays as a looping voice in a mix', () => {

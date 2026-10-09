@@ -20,10 +20,10 @@ version and everything else the patch. Each release lists its changes as **Break
   patch outside a mix, and `checkPatch(patch, { subject, kit })` lists what a mix cannot rely on.
 - `handle.seek` answers how sure the state it leaves is, as a `Doubt`: `exact`, `stepped` or
   `held`. `SeekOptions` is exported.
-- `wave(duration, { shape, cycles, phase, depth })` swings each numeric channel `depth` names
-  between -depth and +depth, as a sine, triangle, saw, or square, `cycles` times a pass. It is an
-  `fn` patch, and `waveOptionsOf` reads its options back for an engine that reads data; `waveAt` is
-  the unit wave.
+- `wave(duration, { shape, cycles, phase, depth, kit })` swings each numeric channel `depth` names
+  up to `depth` either side of its rest in `kit` (0 without one), as a sine, triangle, saw, or
+  square, `cycles` times a pass. It is an `fn` patch, and `waveOptionsOf` reads its options back for
+  an engine that reads data; `waveAt` is the unit wave.
 
 ### Fixed
 
