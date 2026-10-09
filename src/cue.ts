@@ -89,6 +89,9 @@ export function fitsKit<I, O, S, H>(patch: Patch<I, O, S, H>, kit: Kit<O>): void
 /** Refuses a spec whose patch the mix cannot play, or whose state its history cannot keep. */
 export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
   const patch = spec.patch;
+  const loop = spec.loop;
+  if (typeof loop === 'number' && !(Number.isInteger(loop) && loop >= 1))
+    throw new RangeError(`blits: loop takes true, false or a whole number of passes, not ${loop}`);
   fitsKit(patch, mix.kit);
   const motion = motionOf<I>(patch);
   if (motion !== undefined) {

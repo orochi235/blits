@@ -127,3 +127,12 @@ describe('voices leaving', () => {
     }
   });
 });
+
+describe('a loop that is not a whole number of passes', () => {
+  it.each([2.5, 0, -1, Number.NaN])('is refused: %d', (loop) => {
+    type P = { x: number };
+    const m = mix<string, P>(kit<P>({ x: sum() }));
+    const p = keys<string, P>(100, [{ at: 0, delta: { x: 1 } }]);
+    expect(() => m.cue({ patch: p, loop })).toThrow(RangeError);
+  });
+});

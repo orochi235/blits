@@ -91,7 +91,8 @@ export function curve(easing: Easing): Curve {
     const start = easing.jump === 'start';
     made = (u) => {
       const c = u <= 0 ? 0 : u >= 1 ? 1 : u;
-      return (start ? Math.ceil(c * n) : Math.floor(c * n)) / n;
+      // CSS: jump-start has already taken its first step at 0, and neither form passes n.
+      return (start ? Math.min(n, Math.floor(c * n) + 1) : Math.floor(c * n)) / n;
     };
     starts.set(made, start ? Number.POSITIVE_INFINITY : 0);
   }

@@ -282,6 +282,10 @@ export function spring<I, O, V extends Value = number>(
   const k = opts.stiffness ?? 170;
   const c = opts.damping ?? 26;
   const m = opts.mass ?? 1;
+  if (!(k > 0) || !(m > 0) || !(c >= 0))
+    throw new RangeError(
+      'blits: a spring takes a positive stiffness and mass, and damping of 0 or more',
+    );
   const settle = opts.settle ?? 1e-4;
   const w0 = Math.sqrt(k / m);
   const zeta = c / (2 * Math.sqrt(k * m));
@@ -316,6 +320,7 @@ export function glide<I, O, V extends Value = number>(
   },
 ): Moving<I, O, V> {
   const ms = opts.ms ?? 325;
+  if (!(ms > 0)) throw new RangeError('blits: a glide takes a positive ms');
   const tau = ms / 1000;
   const settle = opts.settle ?? 1e-4;
   const shape = new GlideShape(

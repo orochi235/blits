@@ -680,3 +680,29 @@ describe('a subject faded out of a motion voice', () => {
     expect(froms).toEqual(['a', 'a']);
   });
 });
+
+describe('motion constants a law cannot run on', () => {
+  it.each([{ stiffness: 0 }, { mass: 0 }, { damping: -1 }, { stiffness: Number.NaN }])(
+    'are refused by spring: %j',
+    (opts) => {
+      expect(() => spring<{ id: number }, { x: number }>('x', { to: () => 0, ...opts })).toThrow(
+        RangeError,
+      );
+    },
+  );
+
+  it.each([0, -5, Number.NaN])('are refused by glide: ms %d', (ms) => {
+    expect(() => glide<{ id: number }, { x: number }>('x', { from: () => 0, ms })).toThrow(
+      RangeError,
+    );
+  });
+});
+
+describe('steps that jump at the start', () => {
+  it('have taken their first step at 0, as CSS does, and end on 1', () => {
+    const c = curve({ steps: 4, jump: 'start' });
+    expect([0, 0.1, 0.25, 0.5, 0.99, 1].map(c)).toEqual([0.25, 0.25, 0.5, 0.75, 1, 1]);
+    const e = curve({ steps: 4 });
+    expect([0, 0.1, 0.25, 0.5, 0.99, 1].map(e)).toEqual([0, 0, 0.25, 0.5, 0.75, 1]);
+  });
+});
