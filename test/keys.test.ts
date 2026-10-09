@@ -3,7 +3,7 @@ import { kit, mul, sum, vec } from '../src/channels.js';
 import { hex, mixHex } from '../src/color.js';
 import { curve } from '../src/easing.js';
 import { mix } from '../src/mixer.js';
-import { evalKeys, keys } from '../src/patch.js';
+import { evalKeys, keys, patch } from '../src/patch.js';
 import type { Channel, Keyframe } from '../src/types.js';
 
 interface Pose {
@@ -300,5 +300,39 @@ describe('keyed stops interpolate through the channel', () => {
       { kit: { color: hex() } },
     );
     expect(p.at(0.5, subject, undefined as never).color).toBe(mixHex(0xff0000, 0x0000ff, 0.5));
+  });
+});
+
+describe('a retarget from the current pose under an easing with no starting slope', () => {
+  type P = { x: number };
+  const K1 = kit<P>({ x: sum() });
+  const s = { id: 1 };
+  it.each([
+    [{ steps: 4, jump: 'start' } as const],
+    [{ bezier: [0, 1, 0, 1] } as const],
+    [{ steps: 4 } as const],
+    ['linear' as const],
+  ])('stays between where it was and where it goes, with %j', (ease) => {
+    const m = mix<typeof s, P>(K1, { lanes: false });
+    const mover = m.cue({
+      patch: patch<typeof s, P>(10_000, (ph) => ({ x: ph * 10_000 }), { writes: ['x'] }),
+    });
+    for (let t = 0; t <= 32; t += 16) {
+      m.sync(t);
+      m.probe(s);
+    }
+    mover.fade({ over: 0 });
+    m.cue({
+      patch: keys<typeof s, P>(1000, [{ at: 1, delta: { x: 100 } }], { ease }),
+      from: 'current',
+      loop: false,
+      freeze: 'after',
+    });
+    for (const dt of [16, 100, 250, 500, 1000]) {
+      m.sync(32 + dt);
+      const x = m.probe(s).x;
+      expect(x).toBeGreaterThan(-50);
+      expect(x).toBeLessThan(250);
+    }
   });
 });

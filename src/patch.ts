@@ -1,5 +1,5 @@
 import { type LerpInto, lerpInto, lerpNumber } from './channels.js';
-import { type Curve, curve } from './easing.js';
+import { type Curve, curve, startSlope } from './easing.js';
 import { shared } from './shared.js';
 import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js';
 
@@ -356,7 +356,8 @@ function read(
   // Leaving a retarget's base, bend the first segment so it starts at the slope the subject had:
   // add c·u(1−u)², which is 0 at both ends, flat at the end, and fixes the slope at the start.
   if (slope === undefined || !first) return value;
-  const e0 = ease ? ease(1e-6) / 1e-6 : 1;
+  const e0 = ease ? startSlope(ease) : 1;
+  if (e0 === Number.POSITIVE_INFINITY) return value;
   const bend = (s: number, a: number, z: number) =>
     (s * duration * len - (z - a) * e0) * u * (1 - u) * (1 - u);
   if (typeof value === 'number' && typeof slope === 'number')

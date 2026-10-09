@@ -48,6 +48,30 @@ const named: Record<Exclude<Easing, object | ((u: number) => number)>, Curve> = 
 
 const built = new WeakMap<object, Curve>();
 
+/** Each built curve's slope at 0, where its definition gives one: Infinity for a jump. */
+const starts = new WeakMap<Curve, number>([[linear, 1]]);
+
+/** A bezier's slope at u = 0: dy/dx as t leaves 0, by the first control point that moves x. */
+function bezierStart(x1: number, y1: number, x2: number, y2: number): number {
+  if (x1 > 0) return y1 / x1;
+  if (y1 > 0) return Number.POSITIVE_INFINITY;
+  if (x2 > 0) return y2 / x2;
+  return y2 > 0 ? Number.POSITIVE_INFINITY : 1;
+}
+
+/**
+ * How fast a curve leaves 0, for bending a retarget to the speed the subject had: Infinity where
+ * the curve jumps or leaves vertically, so no finite bend can match it.
+ */
+export function startSlope(c: Curve): number {
+  const known = starts.get(c);
+  if (known !== undefined) return known;
+  const h = 1e-6;
+  const v = c(h);
+  // Past a thousandth of the way within a millionth of the time: a jump, not a slope.
+  return v > 1e-3 ? Number.POSITIVE_INFINITY : v / h;
+}
+
 /** The function an easing names. Resolved once where a patch or voice is built, not per frame. */
 export function curve(easing: Easing): Curve {
   if (typeof easing === 'function') return easing;
@@ -59,14 +83,17 @@ export function curve(easing: Easing): Curve {
   const held = built.get(easing);
   if (held) return held;
   let made: Curve;
-  if ('bezier' in easing) made = bezier(...easing.bezier);
-  else {
+  if ('bezier' in easing) {
+    made = bezier(...easing.bezier);
+    starts.set(made, bezierStart(...easing.bezier));
+  } else {
     const n = easing.steps;
     const start = easing.jump === 'start';
     made = (u) => {
       const c = u <= 0 ? 0 : u >= 1 ? 1 : u;
       return (start ? Math.ceil(c * n) : Math.floor(c * n)) / n;
     };
+    starts.set(made, start ? Number.POSITIVE_INFINITY : 0);
   }
   built.set(easing, made);
   return made;
