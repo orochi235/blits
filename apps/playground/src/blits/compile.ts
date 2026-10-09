@@ -3,6 +3,7 @@ import {
   glide,
   type Handle,
   type Keyframe,
+  type Kit,
   keys,
   type Mix,
   type MixOptions,
@@ -25,7 +26,7 @@ import {
   type Voice,
 } from './composition';
 import { compileExpr, type Faults, type Scope, scopeOf } from './expr';
-import { type ChannelName, KIT, type Mixed, type Pose } from './kit';
+import { type ChannelName, KIT, kitOf, type Mixed, type Pose } from './kit';
 import type { Subject } from './stage';
 
 export const FRAME = 1000 / 60;
@@ -61,6 +62,7 @@ function specOf(
   v: Voice,
   scope: Scope,
   faults: Faults[],
+  kit: Kit<Mixed>,
 ): { spec: Spec } | { errors: FieldError[] } {
   const errors: FieldError[] = [];
   const fn = <F extends (...a: never[]) => unknown>(
@@ -86,7 +88,7 @@ function specOf(
       return fallback;
     }) as unknown as F;
   };
-  const made = patchOf(v.patch, fn, (field, error) =>
+  const made = patchOf(v.patch, kit, fn, (field, error) =>
     errors.push({ voice: v.id, field, error, line: null }),
   );
   const stagger = v.stagger ? fn<(s: Subject) => number>('stagger', v.stagger, 0) : undefined;
@@ -128,9 +130,14 @@ const REQUIRED = { spring: ['to'], glide: ['from'], tween: ['from', 'to', 'ms'] 
 const finite = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
 
 /** Why blits would refuse `out` for this motion option, or null when it takes it. */
-export function refusalOf(channel: ChannelName, key: string): (out: unknown) => string | null {
+export function refusalOf(
+  channel: ChannelName,
+  key: string,
+  kit: Kit<Mixed> = KIT,
+): (out: unknown) => string | null {
   if (key === 'ms') return (out) => (finite(out) && out > 0 ? null : 'takes a positive number');
-  const rest = KIT[channel].rest;
+  // A channel's shape is the same under every rule, but `last` has no rest to read it from.
+  const rest = kit[channel].rest ?? KIT[channel].rest;
   if (!Array.isArray(rest)) return (out) => (finite(out) ? null : 'takes a number');
   const n = rest.length;
   return (out) =>
@@ -138,8 +145,8 @@ export function refusalOf(channel: ChannelName, key: string): (out: unknown) => 
 }
 
 /** What a motion option gives a subject its expression throws on: a value the channel can take. */
-function fallbackOf(channel: ChannelName, key: string): number | number[] {
-  const rest = KIT[channel].rest as number | number[] | undefined;
+function fallbackOf(channel: ChannelName, key: string, kit: Kit<Mixed>): number | number[] {
+  const rest = (kit[channel].rest ?? KIT[channel].rest) as number | number[] | undefined;
   const zero = Array.isArray(rest) ? rest.map(() => 0) : 0;
   if (key === 'to' || key === 'from') return rest ?? zero;
   if (key === 'ms') return FRAME;
@@ -157,7 +164,12 @@ export const mixedStop = (k: Keyframe<Pose>): Keyframe<Mixed> => ({
 
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
-function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Mixed, unknown> | undefined {
+function patchOf(
+  p: PatchSource,
+  kit: Kit<Mixed>,
+  fn: Fn,
+  fail: Fail,
+): Patch<Subject, Mixed, unknown> | undefined {
   if (p.kind === 'keys') {
     try {
       const { easeBy, delayBy } = p;
@@ -199,7 +211,7 @@ function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Mixed, unkn
   }
   if (p.kind === 'wave') {
     const { period, shape, cycles, phase, depth } = p;
-    return wave<Subject, Mixed>(period, { shape, cycles, phase, depth, kit: KIT }) as Patch<
+    return wave<Subject, Mixed>(period, { shape, cycles, phase, depth, kit }) as Patch<
       Subject,
       Mixed,
       unknown
@@ -216,7 +228,7 @@ function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Mixed, unkn
     if (!isExpr(v)) {
       const wrong =
         PER_SUBJECT.has(k) || (p.kind === 'tween' && k === 'ms')
-          ? refusalOf(p.channel, k)(v)
+          ? refusalOf(p.channel, k, kit)(v)
           : finite(v)
             ? null
             : 'takes a number';
@@ -228,8 +240,8 @@ function patchOf(p: PatchSource, fn: Fn, fail: Fail): Patch<Subject, Mixed, unkn
       const f = fn<(s: Subject) => unknown>(
         `opts.${k}`,
         v,
-        fallbackOf(p.channel, k),
-        refusalOf(p.channel, k),
+        fallbackOf(p.channel, k, kit),
+        refusalOf(p.channel, k, kit),
       );
       if (f) opts[k] = f;
       else ok = false;
@@ -270,13 +282,14 @@ export function compile(
 ): Built {
   const scope = scopeOf(c.levels);
   const { levels } = scope;
+  const kit = kitOf(c.rules);
   const errors: FieldError[] = [];
   const faults = new Map<string, Faults>();
 
   // Specs are built afresh per mix: a motion patch keeps its state on itself and plays on one voice.
   const make = (only: string | null) => {
     // History lets the player seek back with blits' own `seek` rather than replaying from 0.
-    const m = mix<Subject, Mixed>(KIT, {
+    const m = mix<Subject, Mixed>(kit, {
       ...mixOptionsOf(c.mix),
       history: { ms: c.length + HISTORY_SLACK, inputs: true, tape },
     });
@@ -296,7 +309,7 @@ export function compile(
       }
       named.add(v.name);
       const list: Faults[] = [];
-      const r = specOf(v, scope, list);
+      const r = specOf(v, scope, list, kit);
       if ('errors' in r) {
         if (only === null) errors.push(...r.errors);
         continue;

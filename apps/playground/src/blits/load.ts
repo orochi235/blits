@@ -120,13 +120,34 @@ const mixSettings = (v: unknown) =>
   opt(v.reduce, (x) => typeof x === 'boolean') &&
   opt(v.lanes, (x) => typeof x === 'boolean');
 
+const bounds = (v: unknown) =>
+  Array.isArray(v) && v.length === 2 && v.every(num) && (v[0] as number) < (v[1] as number);
+const numberRule =
+  (...rules: string[]) =>
+  (v: unknown) =>
+    obj(v) &&
+    rules.includes(v.rule as string) &&
+    opt(v.bounds, bounds) &&
+    !(v.rule === 'last' && v.bounds !== undefined);
+const NUMBER_RULES = ['sum', 'mul', 'max', 'last'];
+const RULE_CHECKS: Record<string, (v: unknown) => boolean> = {
+  offset: numberRule('sum', 'mul', 'max'),
+  turn: numberRule(...NUMBER_RULES),
+  scale: numberRule(...NUMBER_RULES),
+  opacity: numberRule(...NUMBER_RULES),
+  glow: numberRule(...NUMBER_RULES),
+  color: (v) => obj(v) && oneOf('replace', 'average')(v.rule) && oneOf('oklch', 'oklab')(v.lerp),
+};
+const rules = (v: unknown) =>
+  obj(v) && Object.entries(v).every(([ch, r]) => RULE_CHECKS[ch]?.(r) === true);
+
 /** `raw` as a composition when it is a version 1 one of the right shape, else null. */
 export function load(raw: unknown): Composition | null {
   if (!obj(raw) || raw.version !== 1) return null;
   if (!str(raw.title) || !num(raw.length) || raw.length <= 0 || raw.length > MAX_LENGTH)
     return null;
   if (!stage(raw.stage)) return null;
-  if (!opt(raw.mix, mixSettings)) return null;
+  if (!opt(raw.mix, mixSettings) || !opt(raw.rules, rules)) return null;
   const { levels, voices } = raw;
   if (!Array.isArray(levels) || levels.length > MAX_LEVELS || !levels.every(level)) return null;
   if (!levelsOk(levels as Level[])) return null;

@@ -1,3 +1,4 @@
+import type { Kit } from '@msb235/blits';
 import type { FieldError } from '@pg/blits/compile';
 import {
   type Expr,
@@ -9,7 +10,7 @@ import {
 } from '@pg/blits/composition';
 import { withKey } from '@pg/blits/keyed';
 import { stopsOf, tracksOf } from '@pg/blits/keys';
-import { CHANNELS, type ChannelName, KIT } from '@pg/blits/kit';
+import { CHANNELS, type ChannelName, type Mixed } from '@pg/blits/kit';
 import { CodePane } from '@pg/widgets/CodePane';
 import { ExprInput } from '@pg/widgets/ExprInput';
 import type { SampledTrack } from '@weasel-js/core';
@@ -77,13 +78,15 @@ function parsed(text: string): number | number[] | Expr | undefined {
 
 export interface PatchPanelProps {
   voice: Voice;
+  /** The composition's kit, whose rests the fields show. */
+  kit: Kit<Mixed>;
   errors: FieldError[];
   /** Score time, ms. */
   playhead: number;
   onChange(v: Voice): void;
 }
 
-export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelProps) {
+export function PatchPanel({ voice: v, kit, errors, playhead, onChange }: PatchPanelProps) {
   const p = v.patch;
   const [mode, setMode] = useState<'dope' | 'graph'>('dope');
   const set = (patch: PatchSource) => onChange({ ...v, patch });
@@ -226,7 +229,7 @@ export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelP
           />
         </>
       )}
-      {p.kind === 'wave' && <WaveFields patch={p} onChange={set} />}
+      {p.kind === 'wave' && <WaveFields patch={p} kit={kit} onChange={set} />}
       {isMotion(p) && (
         <>
           {OPTIONS[p.kind].map((k) => (
@@ -235,7 +238,7 @@ export function PatchPanel({ voice: v, errors, playhead, onChange }: PatchPanelP
               label={k}
               placeholder={
                 k === 'to' || k === 'from' || k === 'velocity'
-                  ? `${JSON.stringify(KIT[p.channel].rest)} or (s) => …`
+                  ? `${JSON.stringify(kit[p.channel].rest ?? 0)} or (s) => …`
                   : 'default'
               }
               value={textOf(p.opts[k])}

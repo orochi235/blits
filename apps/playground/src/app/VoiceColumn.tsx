@@ -1,5 +1,6 @@
 import type { Composition, Voice } from '@pg/blits/composition';
 import { MAX_VOICES } from '@pg/blits/composition';
+import { kitOf } from '@pg/blits/kit';
 import type { Player } from '@pg/blits/player';
 import type { Subject } from '@pg/blits/stage';
 import type { RefObject } from 'react';
@@ -8,6 +9,7 @@ import { LevelsPanel } from './CompositionControls';
 import { LivePanel } from './LivePanel';
 import { MixPanel } from './MixPanel';
 import { PatchPanel } from './PatchPanel';
+import { RulesPanel } from './RulesPanel';
 import { VoicePanel } from './VoicePanel';
 
 export interface VoiceColumnProps {
@@ -64,6 +66,7 @@ export function VoiceColumn(p: VoiceColumnProps) {
       )}
       <LevelsPanel comp={p.comp} onChange={p.onComp} />
       <MixPanel comp={p.comp} onChange={p.onComp} />
+      <RulesPanel comp={p.comp} onChange={p.onComp} />
       {voice && (
         <VoicePanel
           key={voice.id}
@@ -88,6 +91,7 @@ export function VoiceColumn(p: VoiceColumnProps) {
         <PatchPanel
           key={`${voice.id} patch`}
           voice={voice}
+          kit={kitOf(p.comp.rules)}
           errors={p.player.built.errors}
           playhead={p.player.t}
           onChange={p.onVoice}

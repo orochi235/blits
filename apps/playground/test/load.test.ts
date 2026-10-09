@@ -54,6 +54,12 @@ describe('load', () => {
     expect(load({ ...copy(), stage: { kind: 'letters', text: 'hi' } })).not.toBeNull();
     const mixed = { stepMs: 'off', maxDt: 50, reduce: true, lanes: false };
     expect(load({ ...copy(), mix: mixed })?.mix).toEqual(mixed);
+    const rules = {
+      scale: { rule: 'sum', bounds: [0, 3] },
+      turn: { rule: 'last' },
+      color: { rule: 'average', lerp: 'oklab' },
+    };
+    expect(load({ ...copy(), rules })?.rules).toEqual(rules);
   });
 
   it('reads a voice saved with hold as freeze', () => {
@@ -82,6 +88,11 @@ describe('load', () => {
       { ...copy(), mix: { stepMs: 0 } },
       { ...copy(), mix: { maxDt: 'big' } },
       { ...copy(), mix: { reduce: 1 } },
+      { ...copy(), rules: { offset: { rule: 'last' } } },
+      { ...copy(), rules: { turn: { rule: 'last', bounds: [0, 1] } } },
+      { ...copy(), rules: { scale: { rule: 'sum', bounds: [2, 1] } } },
+      { ...copy(), rules: { color: { rule: 'replace' } } },
+      { ...copy(), rules: { size: { rule: 'sum' } } },
       { ...copy(), levels: [{ name: 'lift', value: 1 }] },
       { ...copy(), voices: [voice(), voice()] },
       withVoice({ hue: '210' }),

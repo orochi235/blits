@@ -1,3 +1,4 @@
+import type { Kit } from '@msb235/blits';
 import type { Flow, FlowEdge, FlowNode } from '@pg/widgets/FlowDiagram/types';
 import { parseExpressionAt } from 'acorn';
 import {
@@ -9,7 +10,7 @@ import {
   periodOf,
   type Voice,
 } from './composition';
-import { CHANNELS, type ChannelName, KIT, type SwingName } from './kit';
+import { CHANNELS, type ChannelName, KIT, kitOf, type Mixed, type SwingName } from './kit';
 import { subjectsOf } from './stage';
 
 const OPS = new Set(['gate', 'lag', 'peak', 'slew']);
@@ -165,6 +166,7 @@ class Builder {
  *  writes, and how each channel folds into the pose. `faulted` holds the ids
  *  of voices that failed to compile; they are drawn, marked. */
 export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set()): Flow {
+  const kit = kitOf(comp.rules);
   const b = new Builder(new Map(comp.levels.map((l) => [l.name, l])));
   for (const l of comp.levels) b.level(l.name);
   const written = new Set<ChannelName>();
@@ -189,7 +191,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
   }
   for (const ch of CHANNELS) {
     if (written.has(ch))
-      b.node({ id: `ch:${ch}`, kind: 'channel', label: ch, detail: KIT[ch].kind ?? 'custom' });
+      b.node({ id: `ch:${ch}`, kind: 'channel', label: ch, detail: kit[ch].kind ?? 'custom' });
   }
   for (const [id, ch] of writes) b.edge(id, `ch:${ch}`);
   const subjects = subjectsOf(comp.stage).length;
@@ -207,7 +209,7 @@ const restText = (rest: unknown) => (Array.isArray(rest) ? `[${rest.join(', ')}]
 
 /** What reaches one channel: its ancestors in `flow`, plus the rest it folds
  *  from when it has one. Empty when nothing writes the channel. */
-export function foldOf(flow: Flow, ch: ChannelName): Flow {
+export function foldOf(flow: Flow, ch: ChannelName, kit: Kit<Mixed> = KIT): Flow {
   const root = `ch:${ch}`;
   if (!flow.nodes.some((n) => n.id === root)) return { nodes: [], edges: [] };
   const keep = new Set([root]);
@@ -222,7 +224,7 @@ export function foldOf(flow: Flow, ch: ChannelName): Flow {
   }
   const nodes = flow.nodes.filter((n) => keep.has(n.id));
   const edges = flow.edges.filter((e) => keep.has(e.from) && keep.has(e.to));
-  const rest = KIT[ch].rest;
+  const rest = kit[ch].rest;
   if (rest !== undefined) {
     const id = `rest:${ch}`;
     nodes.push({ id, kind: 'rest', label: 'rest', detail: restText(rest) });

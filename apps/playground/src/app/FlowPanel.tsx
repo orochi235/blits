@@ -1,6 +1,6 @@
 import type { Composition } from '@pg/blits/composition';
 import { flowOf, foldOf } from '@pg/blits/flow';
-import type { ChannelName } from '@pg/blits/kit';
+import { type ChannelName, kitOf } from '@pg/blits/kit';
 import { FlowDiagram } from '@pg/widgets/FlowDiagram';
 import { useMemo, useRef, useState } from 'react';
 import s from './FlowPanel.module.css';
@@ -23,7 +23,10 @@ export function FlowPanel({ comp, faulted, selected, onVoice }: FlowPanelProps) 
   const key = flowKey(built);
   if (kept.current.key !== key) kept.current = { key, flow: built };
   const flow = kept.current.flow;
-  const shown = useMemo(() => (fold ? foldOf(flow, fold) : flow), [flow, fold]);
+  const shown = useMemo(
+    () => (fold ? foldOf(flow, fold, kitOf(comp.rules)) : flow),
+    [flow, fold, comp.rules],
+  );
   const [size, ref] = useSize();
   const pick = (id: string | null) => {
     if (id?.startsWith('voice:')) onVoice(id.slice('voice:'.length));

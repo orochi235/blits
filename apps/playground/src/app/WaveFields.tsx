@@ -1,7 +1,7 @@
-import type { WaveShape } from '@msb235/blits';
+import type { Kit, WaveShape } from '@msb235/blits';
 import type { PatchSource } from '@pg/blits/composition';
 import { withKey } from '@pg/blits/keyed';
-import { KIT, SWINGS, type SwingName } from '@pg/blits/kit';
+import { type Mixed, SWINGS, type SwingName } from '@pg/blits/kit';
 import s from './App.module.css';
 
 type Wave = Extract<PatchSource, { kind: 'wave' }>;
@@ -35,7 +35,15 @@ function NumberField(p: {
   );
 }
 
-export function WaveFields({ patch: p, onChange }: { patch: Wave; onChange(p: Wave): void }) {
+export function WaveFields({
+  patch: p,
+  kit,
+  onChange,
+}: {
+  patch: Wave;
+  kit: Kit<Mixed>;
+  onChange(p: Wave): void;
+}) {
   const setDepth = (ch: SwingName, d: number | undefined) => {
     onChange({ ...p, depth: withKey(p.depth, ch, d) });
   };
@@ -81,7 +89,7 @@ export function WaveFields({ patch: p, onChange }: { patch: Wave; onChange(p: Wa
                   checked={d !== undefined}
                   onChange={(e) => setDepth(ch, e.target.checked ? START[ch] : undefined)}
                 />
-                {ch} (rest {String(KIT[ch].rest)})
+                {ch} (rest {String(kit[ch].rest ?? 0)})
               </label>
               {d !== undefined && (
                 <input

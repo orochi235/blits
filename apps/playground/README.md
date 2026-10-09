@@ -53,11 +53,18 @@ interface Composition {
   levels: { name: string; value: number; min: number; max: number }[];
   voices: Voice[];                       // cue order, which is fold order
   mix?: { stepMs?: number | 'off'; maxDt?: number; reduce?: boolean; lanes?: boolean };
+  rules?: Partial<Rules>;                // each channel's fold rule, where it differs from the default
 }
 ```
 
 `mix` holds the `MixOptions` every mix of the composition is made with; the Voice tab's mix panel
 edits them. Unset, `stepMs` is one frame and the rest are blits' defaults.
+
+`rules` picks each channel's fold rule, from which `kitOf` in `src/blits/kit.ts` makes the kit
+every mix, wave, and flow node reads. A number channel takes `sum`, `mul`, `max`, or `last`, and
+all but `last` take `bounds`; `offset` folds its two numbers alike, so not by `last`; `color`
+replaces or averages, interpolated in OKLCH or OKLab. The fold rules panel edits them and shows the
+kind each makes.
 
 A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `loop`, `stagger`, `target`,
 `freeze`, `weight`, `fade`, `locus`, `from`, `anchor`), so the voice panel teaches the real spec, plus

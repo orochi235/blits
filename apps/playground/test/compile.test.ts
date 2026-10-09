@@ -1,7 +1,7 @@
 import { glide, keys, mix, patch, spring, toHex, tween, wave } from '@msb235/blits';
 import { compile, FRAME, mixedStop, mixOptionsOf } from '@pg/blits/compile';
 import type { Composition, PatchSource, Voice } from '@pg/blits/composition';
-import { KIT, type Mixed } from '@pg/blits/kit';
+import { KIT, kitOf, type Mixed } from '@pg/blits/kit';
 import { subjectsOf } from '@pg/blits/stage';
 import { describe, expect, it } from 'vitest';
 
@@ -43,6 +43,26 @@ describe('mixOptionsOf', () => {
       lanes: false,
     });
     expect(mixOptionsOf({ stepMs: 5 })).toEqual({ stepMs: 5 });
+  });
+});
+
+describe('kitOf', () => {
+  it('makes the default kit with no rules, and each channel a rule names', () => {
+    const kinds = (k: typeof KIT) =>
+      Object.fromEntries(Object.entries(k).map(([c, ch]) => [c, ch.kind]));
+    expect(kinds(kitOf())).toEqual({
+      offset: 'vec(2, sum)',
+      turn: 'sum',
+      scale: 'mul',
+      color: 'color(last, oklch)',
+      opacity: 'mul[0, 1]',
+      glow: 'max',
+    });
+    const k = kitOf({
+      scale: { rule: 'sum', bounds: [0, 3] },
+      color: { rule: 'average', lerp: 'oklab' },
+    });
+    expect(kinds(k)).toMatchObject({ scale: 'sum[0, 3]', color: 'color(sum)' });
   });
 });
 
@@ -217,6 +237,23 @@ describe('compile', () => {
     const fresh = compile(comp([swing]), subjects).mix;
     fresh.sync(0);
     expect(fresh.probe(subjects[0] as (typeof subjects)[0]).scale).toBeCloseTo(1.5, 9);
+  });
+
+  it('folds by the rules a composition names', () => {
+    const rules = { scale: { rule: 'max' as const }, turn: { rule: 'last' as const } };
+    const stops = [{ at: 0, delta: { scale: 1.5, turn: 30 } }];
+    const keyed = (id: string, start: number): Voice =>
+      voice({ id, start, patch: { kind: 'keys', period: 1000, stops } });
+    const built = compile({ ...comp([keyed('a', 0), keyed('b', 500)]), rules }, subjects);
+    const hand = mix<(typeof subjects)[0], Mixed>(kitOf(rules), { stepMs: FRAME });
+    for (const start of [0, 500])
+      hand.cue({
+        patch: keys<(typeof subjects)[0], Mixed>(1000, stops.map(mixedStop)),
+        start,
+        loop: true,
+      });
+    expect(built.errors).toEqual([]);
+    same(built.mix, hand);
   });
 
   it('a tween voice gives the hand-written poses', () => {

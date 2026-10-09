@@ -1,5 +1,5 @@
 import type { Easing, Keyframe, Placement, WaveShape } from '@msb235/blits';
-import type { ChannelName, Pose, SwingName } from './kit';
+import type { ChannelName, Pose, Rules, SwingName } from './kit';
 
 /** Source of a function: `(s) => …` for a subject, a signal such as `slew(level('x'), …)`. */
 export interface Expr {
@@ -80,6 +80,8 @@ export interface Composition {
   levels: Level[];
   voices: Voice[];
   mix?: MixSettings;
+  /** Each channel's fold rule, where it differs from `DEFAULT_RULES`. */
+  rules?: Partial<Rules>;
 }
 
 /** A patch that moves one channel toward a target rather than playing a fixed pass. */
