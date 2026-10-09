@@ -152,7 +152,8 @@ export class Player {
    * Acts on voice `id` as it runs, in the full mix and in every solo mix, where it plays silent
    * beside the soloed voice but still keeps time for whatever is anchored to it. `heard` is true
    * for the copies that sound, the full mix's and its own solo's: a weight belongs only on those.
-   * The change lasts until the next rebuild: an edit, or a seek back.
+   * The change lasts until the next rebuild: an edit, or a seek back by replay. A seek back by
+   * `mix.seek` keeps it, as the mix's tape plays it again.
    */
   live(
     id: string,

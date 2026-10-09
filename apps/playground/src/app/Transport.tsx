@@ -21,7 +21,7 @@ export interface TransportProps {
   /** The full mix's own rate: its voices slow while the score's clock runs on. */
   mixRate: number;
   onMixRate(r: number): void;
-  /** Whether a live change is in force; the next edit or seek back drops it. */
+  /** Whether a live change is in force; the next edit drops it, and a replay back does too. */
   livened: boolean;
   levels: readonly Level[];
   /** Slider values in force; a level absent here shows the composition's value. */
@@ -85,7 +85,9 @@ export function Transport(p: TransportProps) {
       {(p.live || p.livened) && (
         <span className={s.badge} role="status">
           {p.livened
-            ? 'live changes in force: the next edit or scrub back drops them'
+            ? p.seekBy === 'seek'
+              ? 'live changes in force: the next edit drops them; mix.seek replays them'
+              : 'live changes in force: the next edit or scrub back drops them'
             : 'live: changes are temporary'}
         </span>
       )}
