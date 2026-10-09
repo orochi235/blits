@@ -9,6 +9,12 @@ interface Bob {
   y: number;
 }
 
+interface Sprite {
+  tint?: number;
+  at: readonly number[];
+  label: string;
+}
+
 const read = (p: ReturnType<typeof wave<unknown, Bob>>, phase: number) =>
   p.at(phase, {}, undefined as never);
 
@@ -45,6 +51,14 @@ describe('wave', () => {
     expect(read(p, 0.25).x).toBeCloseTo(2, 12);
     expect(read(p, 0.25).y).toBeCloseTo(-5, 12);
     expect(read(p, 0.75).x).toBeCloseTo(-2, 12);
+  });
+
+  it('takes a depth only for a channel holding a number', () => {
+    wave<unknown, Sprite>(1000, { depth: { tint: 1 } });
+    // @ts-expect-error: a vector channel cannot swing around a number.
+    wave<unknown, Sprite>(1000, { depth: { at: 1 } });
+    // @ts-expect-error: nor can a string channel.
+    wave<unknown, Sprite>(1000, { depth: { label: 1 } });
   });
 
   it('writes only the channels depth names', () => {

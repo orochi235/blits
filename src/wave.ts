@@ -21,8 +21,9 @@ export interface WaveOptions<O> {
   cycles?: number;
   /** Where in its cycle the wave starts, 0..1. Default 0. */
   phase?: number;
-  /** Peak value per channel; the wave swings between -depth and +depth. Its keys are the patch's writes. */
-  depth: { [K in keyof O]?: number };
+  /** Peak value per channel; the wave swings between -depth and +depth. Its keys are the patch's
+   *  writes, and only a channel holding a number can take one. */
+  depth: { [K in keyof O as NonNullable<O[K]> extends number ? K : never]?: number };
   /** The channels this wave was written against, which `cue` checks a mix's kit against. */
   kit?: Partial<Kit<O>>;
 }
@@ -62,8 +63,9 @@ export function wave<I, O>(duration: number, opts: WaveOptions<O>): Patch<I, O, 
   const shape = opts.shape ?? 'sine';
   const cycles = opts.cycles ?? 1;
   const start = opts.phase ?? 0;
-  const writes = Object.keys(opts.depth) as (keyof O)[];
-  const depths = writes.map((c) => opts.depth[c] as number);
+  const depth: Record<string, number | undefined> = opts.depth;
+  const writes = Object.keys(depth) as (keyof O)[];
+  const depths = writes.map((c) => depth[c as string] as number);
   const p = patch<I, O, void>(
     duration,
     (phase) => {
