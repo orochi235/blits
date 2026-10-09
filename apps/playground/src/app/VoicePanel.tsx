@@ -1,7 +1,7 @@
-import type { FieldError } from '@pg/blits/compile';
 import type { Voice } from '@pg/blits/composition';
 import type { Faults } from '@pg/blits/expr';
 import { withKey } from '@pg/blits/keyed';
+import type { FieldError } from '@pg/blits/spec';
 import { ExprInput } from '@pg/widgets/ExprInput';
 import { type ConfigField, ControlPanel, fromConfigFields } from '@weasel-js/labkit';
 import s from './App.module.css';

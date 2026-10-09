@@ -1,5 +1,6 @@
-import { compile, FRAME } from '@pg/blits/compile';
+import { compile } from '@pg/blits/compile';
 import type { Composition } from '@pg/blits/composition';
+import { FRAME } from '@pg/blits/frame';
 import { CHANNELS } from '@pg/blits/kit';
 import { type Columns, Player, WINDOW } from '@pg/blits/player';
 import { subjectsOf } from '@pg/blits/stage';

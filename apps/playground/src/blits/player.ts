@@ -1,6 +1,7 @@
 import type { Doubt, Handle, Mix, Patch } from '@msb235/blits';
-import { type Built, FRAME } from './compile';
+import type { Built } from './compile';
 import type { Level } from './composition';
+import { FRAME } from './frame';
 import type { Mixed } from './kit';
 import type { Subject } from './stage';
 

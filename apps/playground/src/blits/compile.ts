@@ -1,265 +1,26 @@
-import {
-  type VoiceSpec as BlitsVoiceSpec,
-  glide,
-  type Handle,
-  type Keyframe,
-  type Kit,
-  keys,
-  type Mix,
-  type MixOptions,
-  mix,
-  oklab,
-  type Patch,
-  patch,
-  type Signal,
-  spring,
-  tween,
-  wave,
-} from '@msb235/blits';
+import { type Handle, type Mix, type MixOptions, mix, type Patch } from '@msb235/blits';
 import { createHistory as tape } from '@weasel-js/history';
-import {
-  type Composition,
-  type Expr,
-  isExpr,
-  type MixSettings,
-  type PatchSource,
-  type Voice,
-} from './composition';
-import { compileExpr, type Faults, type Scope, scopeOf } from './expr';
-import { type ChannelName, KIT, kitOf, type Mixed, type Pose } from './kit';
+import type { Composition, MixSettings } from './composition';
+import { cueAll, type Voices } from './cueGroups';
+import { type Faults, scopeOf } from './expr';
+import { FRAME } from './frame';
+import { kitOf, type Mixed } from './kit';
+import type { FieldError } from './spec';
 import type { Subject } from './stage';
-
-export const FRAME = 1000 / 60;
-
-export interface FieldError {
-  voice: string | null;
-  field: string;
-  error: string;
-  line: number | null;
-}
 
 export interface Built {
   mix: Mix<Subject, Mixed>;
   solos: Map<string, Mix<Subject, Mixed>>;
-  /** Every voice cued in each solo mix, by solo then voice id, so a live change can reach them. */
+  /** Every voice and group cued in each solo mix, by solo then id, so a live change can reach them. */
   soloVoices: Map<string, Voices>;
   handles: Map<string, Handle<Subject>>;
   patches: Map<string, Patch<Subject, Mixed, unknown>>;
+  /** Each group's handle in the full mix; a span's is a `SpanHandle`. */
+  groupHandles: Map<string, Handle<Subject>>;
   levels: Map<string, { set(v: number): void }>;
+  /** By voice or group id. */
   faults: Map<string, Faults>;
   errors: FieldError[];
-}
-
-type Spec = BlitsVoiceSpec<Subject, Mixed>;
-
-export interface Voices {
-  handles: Map<string, Handle<Subject>>;
-  patches: Map<string, Patch<Subject, Mixed, unknown>>;
-}
-
-/** One voice's spec, or the errors that kept it from being built. */
-function specOf(
-  v: Voice,
-  scope: Scope,
-  faults: Faults[],
-  kit: Kit<Mixed>,
-): { spec: Spec } | { errors: FieldError[] } {
-  const errors: FieldError[] = [];
-  const fn = <F extends (...a: never[]) => unknown>(
-    field: string,
-    expr: Expr,
-    fallback: ReturnType<F>,
-    takes?: (out: unknown) => string | null,
-  ): F | undefined => {
-    const r = compileExpr<F>(expr, scope, fallback);
-    if ('error' in r) {
-      errors.push({ voice: v.id, field, error: r.error, line: r.line });
-      return undefined;
-    }
-    faults.push(r.faults);
-    if (!takes) return r.fn;
-    const inner = r.fn as unknown as (...a: unknown[]) => unknown;
-    return ((...a: unknown[]) => {
-      const out = inner(...a);
-      const wrong = takes(out);
-      if (wrong === null) return out;
-      r.faults.count++;
-      r.faults.first ??= `${field} ${wrong}`;
-      return fallback;
-    }) as unknown as F;
-  };
-  const made = patchOf(v.patch, kit, fn, (field, error) =>
-    errors.push({ voice: v.id, field, error, line: null }),
-  );
-  const stagger = v.stagger ? fn<(s: Subject) => number>('stagger', v.stagger, 0) : undefined;
-  const target = v.target ? fn<(s: Subject) => boolean>('target', v.target, false) : undefined;
-  const weight = isExpr(v.weight) ? fn<Signal<Subject>>('weight', v.weight, 0) : v.weight;
-  if (errors.length > 0 || made === undefined || weight === undefined) return { errors };
-  const spec: Spec = {
-    patch: made as Patch<Subject, Mixed, unknown>,
-    start: v.start,
-    rate: v.rate,
-    loop: v.loop,
-    weight,
-    fade: v.fade,
-    name: v.name,
-  };
-  if (stagger) spec.stagger = stagger;
-  if (target) spec.target = target;
-  if (v.freeze) spec.freeze = v.freeze;
-  if (v.locus) spec.locus = v.locus;
-  if (v.from) spec.from = v.from;
-  if (v.anchor) {
-    spec.anchor = v.anchor;
-    if (v.anchor.start !== undefined || v.anchor.in !== undefined) delete spec.start;
-  }
-  return { spec };
-}
-
-type Fn = <F extends (...a: never[]) => unknown>(
-  field: string,
-  expr: Expr,
-  fallback: ReturnType<F>,
-  takes?: (out: unknown) => string | null,
-) => F | undefined;
-type Fail = (field: string, error: string) => void;
-
-const PER_SUBJECT = new Set(['to', 'from', 'velocity']);
-const REQUIRED = { spring: ['to'], glide: ['from'], tween: ['from', 'to', 'ms'] } as const;
-
-const finite = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
-
-/** Why blits would refuse `out` for this motion option, or null when it takes it. */
-export function refusalOf(
-  channel: ChannelName,
-  key: string,
-  kit: Kit<Mixed> = KIT,
-): (out: unknown) => string | null {
-  if (key === 'ms') return (out) => (finite(out) && out > 0 ? null : 'takes a positive number');
-  // A channel's shape is the same under every rule, but `last` has no rest to read it from.
-  const rest = kit[channel].rest ?? KIT[channel].rest;
-  if (!Array.isArray(rest)) return (out) => (finite(out) ? null : 'takes a number');
-  const n = rest.length;
-  return (out) =>
-    Array.isArray(out) && out.length === n && out.every(finite) ? null : `takes ${n} numbers`;
-}
-
-/** What a motion option gives a subject its expression throws on: a value the channel can take. */
-function fallbackOf(channel: ChannelName, key: string, kit: Kit<Mixed>): number | number[] {
-  const rest = (kit[channel].rest ?? KIT[channel].rest) as number | number[] | undefined;
-  const zero = Array.isArray(rest) ? rest.map(() => 0) : 0;
-  if (key === 'to' || key === 'from') return rest ?? zero;
-  if (key === 'ms') return FRAME;
-  return key === 'velocity' ? zero : 0;
-}
-
-/** An authored delta as the mix folds it: its 0xrrggbb color in OKLab. */
-const mixedDelta = (d: Partial<Pose>): Partial<Mixed> =>
-  typeof d.color === 'number' ? { ...d, color: oklab(d.color) } : (d as Partial<Mixed>);
-
-export const mixedStop = (k: Keyframe<Pose>): Keyframe<Mixed> => ({
-  ...k,
-  delta: mixedDelta(k.delta),
-});
-
-const messageOf = (err: unknown) => (err instanceof Error ? err.message : String(err));
-
-function patchOf(
-  p: PatchSource,
-  kit: Kit<Mixed>,
-  fn: Fn,
-  fail: Fail,
-): Patch<Subject, Mixed, unknown> | undefined {
-  if (p.kind === 'keys') {
-    try {
-      const { easeBy, delayBy } = p;
-      return keys<Subject, Mixed>(p.period, p.stops.map(mixedStop), {
-        ...(p.ease ? { ease: p.ease } : {}),
-        ...(easeBy ? { easeBy: (ch) => easeBy[ch] } : {}),
-        ...(delayBy ? { delayBy: (ch) => delayBy[ch] ?? 0 } : {}),
-      });
-    } catch (err) {
-      fail('stops', messageOf(err));
-      return undefined;
-    }
-  }
-  if (p.kind === 'fn') {
-    const at = fn<(phase: number, s: Subject, set: never) => Partial<Pose>>(
-      'at',
-      { code: p.at },
-      {},
-    );
-    const state = p.state
-      ? fn<(s: Subject) => unknown>('state', { code: p.state }, undefined)
-      : undefined;
-    const step = p.step
-      ? fn<(st: unknown, dt: number) => void>('step', { code: p.step }, undefined)
-      : undefined;
-    if (!at || (p.state && !state) || (p.step && !step)) return undefined;
-    try {
-      const authored = at as unknown as (...a: unknown[]) => Partial<Pose>;
-      const mixed = (...a: unknown[]) => mixedDelta(authored(...a));
-      return patch<Subject, Mixed, unknown>(p.period, mixed as never, {
-        writes: p.writes,
-        ...(state ? { state } : {}),
-        ...(step ? { step: step as never } : {}),
-      }) as Patch<Subject, Mixed, unknown>;
-    } catch (err) {
-      fail('writes', messageOf(err));
-      return undefined;
-    }
-  }
-  if (p.kind === 'wave') {
-    const { period, shape, cycles, phase, depth } = p;
-    return wave<Subject, Mixed>(period, { shape, cycles, phase, depth, kit }) as Patch<
-      Subject,
-      Mixed,
-      unknown
-    >;
-  }
-  let ok = true;
-  const bad = (field: string, error: string) => {
-    fail(field, error);
-    ok = false;
-  };
-  for (const k of REQUIRED[p.kind]) if (p.opts[k] === undefined) bad(`opts.${k}`, 'is required');
-  const opts: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(p.opts)) {
-    if (!isExpr(v)) {
-      const wrong =
-        PER_SUBJECT.has(k) || (p.kind === 'tween' && k === 'ms')
-          ? refusalOf(p.channel, k, kit)(v)
-          : finite(v)
-            ? null
-            : 'takes a number';
-      if (wrong !== null) bad(`opts.${k}`, wrong);
-      opts[k] = v;
-    } else if (!PER_SUBJECT.has(k) && !(p.kind === 'tween' && k === 'ms')) {
-      bad(`opts.${k}`, 'takes a number');
-    } else {
-      const f = fn<(s: Subject) => unknown>(
-        `opts.${k}`,
-        v,
-        fallbackOf(p.channel, k, kit),
-        refusalOf(p.channel, k, kit),
-      );
-      if (f) opts[k] = f;
-      else ok = false;
-    }
-  }
-  if (!ok) return undefined;
-  if (p.kind === 'tween' && p.ease) opts.ease = p.ease;
-  const maker = p.kind === 'spring' ? spring : p.kind === 'glide' ? glide : tween;
-  try {
-    return maker<Subject, Mixed, number | number[]>(p.channel, opts as never) as unknown as Patch<
-      Subject,
-      Mixed,
-      unknown
-    >;
-  } catch (err) {
-    fail('opts', messageOf(err));
-    return undefined;
-  }
 }
 
 /** History kept past the composition's length, ms, so a seek to its end never falls short. */
@@ -281,7 +42,6 @@ export function compile(
   opts: { solos?: boolean } = {},
 ): Built {
   const scope = scopeOf(c.levels);
-  const { levels } = scope;
   const kit = kitOf(c.rules);
   const errors: FieldError[] = [];
   const faults = new Map<string, Faults>();
@@ -293,53 +53,7 @@ export function compile(
       ...mixOptionsOf(c.mix),
       history: { ms: c.length + HISTORY_SLACK, inputs: true, tape },
     });
-    const handles = new Map<string, Handle<Subject>>();
-    const cued = new Map<string, Patch<Subject, Mixed, unknown>>();
-    const named = new Set<string>();
-    for (const v of c.voices) {
-      if (named.has(v.name)) {
-        if (only === null)
-          errors.push({
-            voice: v.id,
-            field: 'name',
-            error: `another voice is named "${v.name}"`,
-            line: null,
-          });
-        continue;
-      }
-      named.add(v.name);
-      const list: Faults[] = [];
-      const r = specOf(v, scope, list, kit);
-      if ('errors' in r) {
-        if (only === null) errors.push(...r.errors);
-        continue;
-      }
-      const spec = only === null || only === v.id ? r.spec : { ...r.spec, weight: 0 };
-      try {
-        handles.set(v.id, m.cue(spec));
-        cued.set(v.id, spec.patch);
-      } catch (err) {
-        if (only === null)
-          errors.push({
-            voice: v.id,
-            field: 'cue',
-            error: messageOf(err),
-            line: null,
-          });
-        continue;
-      }
-      if (only === null) {
-        faults.set(v.id, {
-          get count() {
-            return list.reduce((n, f) => n + f.count, 0);
-          },
-          get first() {
-            return list.find((f) => f.first)?.first ?? null;
-          },
-        });
-      }
-    }
-    return { m, handles, patches: cued };
+    return { m, ...cueAll(c, m, { scope, kit, only, errors, faults }) };
   };
   const full = make(null);
   const solos = new Map<string, Mix<Subject, Mixed>>();
@@ -357,7 +71,8 @@ export function compile(
     soloVoices,
     handles: full.handles,
     patches: full.patches,
-    levels,
+    groupHandles: full.groupHandles,
+    levels: scope.levels,
     faults,
     errors,
   };

@@ -1,38 +1,11 @@
 import { glide, keys, mix, patch, spring, toHex, tween, wave } from '@msb235/blits';
-import { compile, FRAME, mixedStop, mixOptionsOf } from '@pg/blits/compile';
-import type { Composition, PatchSource, Voice } from '@pg/blits/composition';
+import { compile, mixOptionsOf } from '@pg/blits/compile';
+import type { PatchSource, Voice } from '@pg/blits/composition';
+import { FRAME } from '@pg/blits/frame';
 import { KIT, kitOf, type Mixed } from '@pg/blits/kit';
-import { subjectsOf } from '@pg/blits/stage';
+import { mixedStop } from '@pg/blits/spec';
 import { describe, expect, it } from 'vitest';
-
-const voice = (v: Partial<Voice> & Pick<Voice, 'id' | 'patch'>): Voice => ({
-  name: v.id,
-  hue: 0,
-  start: 0,
-  rate: 1,
-  loop: true,
-  weight: 1,
-  fade: {},
-  ...v,
-});
-const comp = (voices: Voice[]): Composition => ({
-  version: 1,
-  title: 't',
-  stage: { kind: 'dots', cols: 3, rows: 2 },
-  length: 2000,
-  levels: [],
-  voices,
-});
-const subjects = subjectsOf({ kind: 'dots', cols: 3, rows: 2 });
-
-/** Plays both mixes frame by frame and compares every subject's pose, to the bit. */
-function same(a: ReturnType<typeof mix<(typeof subjects)[0], Mixed>>, b: typeof a, ms = 1500) {
-  for (let t = 0; t <= ms; t += FRAME) {
-    a.sync(t);
-    b.sync(t);
-    for (const s of subjects) expect(a.probe(s)).toStrictEqual(b.probe(s));
-  }
-}
+import { comp, same, subjects, voice } from './helpers';
 
 describe('mixOptionsOf', () => {
   it('steps every frame by default, and passes each setting a composition makes', () => {

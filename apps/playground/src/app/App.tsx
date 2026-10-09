@@ -1,5 +1,6 @@
-import { compile, FRAME } from '@pg/blits/compile';
+import { compile } from '@pg/blits/compile';
 import { type Composition, MAX_VOICES, type Voice } from '@pg/blits/composition';
+import { FRAME } from '@pg/blits/frame';
 import { Player, type SeekBy } from '@pg/blits/player';
 import { DEFAULT, PRESETS } from '@pg/blits/presets';
 import { applyEdit, clipsOf } from '@pg/blits/score';

@@ -10,10 +10,10 @@ import {
   type SpanHints,
   shed,
 } from '@msb235/blits';
-import { FRAME } from '@pg/blits/compile';
 import type { FitStep } from '@pg/blits/composition';
 import { compileFit } from '@pg/blits/expr';
 import { fitOf } from '@pg/blits/fit';
+import { FRAME } from '@pg/blits/frame';
 import { KIT, type Mixed } from '@pg/blits/kit';
 import type { Subject } from '@pg/blits/stage';
 import { describe, expect, it } from 'vitest';

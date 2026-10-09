@@ -1,4 +1,5 @@
-import { compile, FRAME } from '@pg/blits/compile';
+import { compile } from '@pg/blits/compile';
+import { FRAME } from '@pg/blits/frame';
 import { load } from '@pg/blits/load';
 import { Player } from '@pg/blits/player';
 import { DEFAULT, PRESETS } from '@pg/blits/presets';

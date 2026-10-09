@@ -1,9 +1,9 @@
 import type { Doubt, Moving, spring, Value } from '@msb235/blits';
-import { refusalOf } from '@pg/blits/compile';
 import { type Composition, isMotion, type Voice } from '@pg/blits/composition';
 import { compileExpr, scopeOf } from '@pg/blits/expr';
 import type { Mixed } from '@pg/blits/kit';
 import type { Player } from '@pg/blits/player';
+import { refusalOf } from '@pg/blits/spec';
 import type { Subject } from '@pg/blits/stage';
 import { ExprInput } from '@pg/widgets/ExprInput';
 import { useState } from 'react';

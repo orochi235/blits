@@ -1,5 +1,4 @@
 import type { Kit } from '@msb235/blits';
-import type { FieldError } from '@pg/blits/compile';
 import {
   type Expr,
   isMotion,
@@ -11,6 +10,7 @@ import {
 import { withKey } from '@pg/blits/keyed';
 import { stopsOf, tracksOf } from '@pg/blits/keys';
 import { CHANNELS, type ChannelName, type Mixed } from '@pg/blits/kit';
+import type { FieldError } from '@pg/blits/spec';
 import { CodePane } from '@pg/widgets/CodePane';
 import { ExprInput } from '@pg/widgets/ExprInput';
 import type { SampledTrack } from '@weasel-js/core';

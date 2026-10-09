@@ -1,5 +1,5 @@
-import { FRAME } from '@pg/blits/compile';
 import type { Composition, MixSettings } from '@pg/blits/composition';
+import { FRAME } from '@pg/blits/frame';
 import { withKey } from '@pg/blits/keyed';
 import s from './App.module.css';
 import { docOf } from './docs';

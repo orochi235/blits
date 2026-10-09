@@ -1,39 +1,17 @@
 import type { Composition, Group, Voice } from '@pg/blits/composition';
 import { ancestorsOf, parentOf, rowsOf, treeFault, underSpan } from '@pg/blits/groups';
 import { describe, expect, it } from 'vitest';
+import { comp, group as g, voice as v } from './helpers';
 
-const voice = (id: string, owner?: string): Voice => ({
-  id,
-  name: id,
-  hue: 0,
-  patch: { kind: 'keys', period: 400, stops: [] },
-  start: 0,
-  rate: 1,
-  loop: false,
-  weight: 1,
-  fade: {},
-  ...(owner ? { owner } : {}),
-});
-const group = (id: string, kind: Group['kind'] = 'owner', owner?: string): Group => ({
-  id,
-  name: id,
-  hue: 0,
-  kind,
-  start: 0,
-  rate: 1,
-  weight: 1,
-  fade: {},
-  ...(owner ? { owner } : {}),
-});
-const comp = (voices: Voice[], groups?: Group[]): Composition => ({
-  version: 1,
-  title: 't',
-  stage: { kind: 'dots', cols: 2, rows: 1 },
-  length: 1000,
-  levels: [],
-  voices,
-  ...(groups ? { groups } : {}),
-});
+const voice = (id: string, owner?: string): Voice =>
+  v({
+    id,
+    patch: { kind: 'keys', period: 400, stops: [] },
+    loop: false,
+    ...(owner ? { owner } : {}),
+  });
+const group = (id: string, kind: Group['kind'] = 'owner', owner?: string): Group =>
+  g({ id, kind, ...(owner ? { owner } : {}) });
 const rows = (c: Composition) => rowsOf(c).map((r) => `${r.id}:${r.depth}`);
 
 describe('rowsOf', () => {
