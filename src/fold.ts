@@ -396,10 +396,11 @@ export function foldWith<I, O>(
   const skip = laned ? (lanes as Lanes<I, O>).copies : null;
   for (let i = 0; i < this.names.length; i++) {
     if (skip?.[i]) continue;
-    const rest = (this.channels[i] as Channel<unknown>).rest;
+    const channel = this.channels[i] as Channel<unknown>;
+    const rest = channel.rest;
     const key = this.names[i] as string;
     // Never `delete`: it drops a reused out object into dictionary mode for good.
-    if (rest !== undefined) pose[key] = copy(rest);
+    if (rest !== undefined) pose[key] = channel.copy ? channel.copy(rest) : copy(rest);
     else if (pose[key] !== undefined) pose[key] = undefined;
   }
   if (head === null) return pose as O;

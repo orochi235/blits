@@ -1,5 +1,6 @@
 import { checkHits } from './book.js';
 import { changed, index } from './chain.js';
+import { copyable } from './clone.js';
 import { schedule } from './due.js';
 import { VoiceHandle } from './handle.js';
 import { started } from './held.js';
@@ -73,6 +74,11 @@ export function fitsKit<I, O, S, H>(patch: Patch<I, O, S, H>, kit: Kit<O>): void
       throw new Error(`blits: kit has no channel ${String(channel)}, which this patch writes`);
     const wanted = patch.kit?.[channel] as Channel<unknown> | undefined;
     const here = kit[channel] as Channel<unknown>;
+    const rest = here.rest;
+    if (here.fold && !here.copy && typeof rest === 'object' && rest !== null && !copyable(rest))
+      throw new Error(
+        `blits: channel ${String(channel)} folds into a copy of its rest, which the mix cannot copy; give the channel a copy`,
+      );
     if (wanted && wanted !== here && (wanted.kind === undefined || wanted.kind !== here.kind))
       throw new Error(
         `blits: channel ${String(channel)} is ${here.kind ?? 'a custom channel'} in this kit, but the patch was written for ${wanted.kind ?? 'a custom channel'}`,

@@ -30,6 +30,12 @@ export interface Channel<V> {
    * values are objects need not allocate per contribution. The mix only hands it a value it made.
    */
   fold?(into: V, v: V, w: number): V;
+  /**
+   * Optional: a fresh copy of `v`, which the mix makes of `rest` for `fold` to write into. The mix
+   * copies arrays, typed arrays and plain objects itself; a channel whose `rest` is anything else,
+   * such as a class instance, and that has `fold`, needs this or `cue` refuses it.
+   */
+  copy?(v: V): V;
 }
 
 /**

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
+import type { Channel } from '../src/types.js';
 
 interface Pose {
   gain: number;
@@ -95,5 +96,99 @@ describe.each([true, false])('atRest after a probe, lanes %s', (lanes) => {
       expect(m.atRest(part)).toBe(true);
       h.fade({ over: 0 });
     }
+  });
+});
+
+describe("a channel's rest", () => {
+  type V = { a: number };
+  class Box {
+    constructor(public a: number) {}
+  }
+  const plain = (): Channel<V> => ({
+    rest: { a: 0 },
+    merge: (x, y) => ({ a: x.a + y.a }),
+    scale: (v, w) => ({ a: v.a * w }),
+    fold: (into, v, w) => {
+      into.a += v.a * w;
+      return into;
+    },
+    lerp: (x, y, u) => ({ a: x.a + (y.a - x.a) * u }),
+  });
+  const typed = (): Channel<Float32Array> => ({
+    rest: new Float32Array(2),
+    merge: (x, y) => x.map((v, i) => v + (y[i] as number)) as Float32Array,
+    scale: (v, w) => v.map((x) => x * w) as Float32Array,
+    fold: (into, v, w) => {
+      for (let i = 0; i < 2; i++) into[i] = (into[i] as number) + (v[i] as number) * w;
+      return into;
+    },
+    lerp: (x, y, u) => x.map((v, i) => v + ((y[i] as number) - v) * u) as Float32Array,
+  });
+
+  it('is never written into by a fold, across frames or subjects', () => {
+    const o = plain();
+    const f = typed();
+    type P = { o: V; f: Float32Array };
+    const m = mix<Part, P>(kit<P>({ o, f }), { lanes: false });
+    m.cue({
+      patch: patch<Part, P>(0, () => ({ o: { a: 1 }, f: new Float32Array([1, 1]) }), {
+        writes: ['o', 'f'],
+      }),
+    });
+    const poses: P[] = [];
+    for (let t = 0; t < 3; t++) {
+      m.sync(t * 16);
+      poses.push(m.probe({ id: 'a' }), m.probe({ id: 'b' }));
+    }
+    expect(o.rest).toEqual({ a: 0 });
+    expect([...(f.rest as Float32Array)]).toEqual([0, 0]);
+    for (const p of poses) {
+      expect(p.o).toEqual({ a: 1 });
+      expect([...p.f]).toEqual([1, 1]);
+    }
+    expect(poses[0]?.o).not.toBe(poses[1]?.o);
+  });
+
+  it('copies through the channel when it says how', () => {
+    const copies: Box[] = [];
+    const box: Channel<Box> = {
+      rest: new Box(0),
+      copy: (v) => {
+        const b = new Box(v.a);
+        copies.push(b);
+        return b;
+      },
+      merge: (x, y) => new Box(x.a + y.a),
+      scale: (v, w) => new Box(v.a * w),
+      fold: (into, v, w) => {
+        into.a += v.a * w;
+        return into;
+      },
+      lerp: (x, y, u) => new Box(x.a + (y.a - x.a) * u),
+    };
+    type P = { b: Box };
+    const m = mix<Part, P>(kit<P>({ b: box }), { lanes: false });
+    m.cue({ patch: patch<Part, P>(0, () => ({ b: new Box(2) }), { writes: ['b'] }) });
+    m.sync(0);
+    const p = m.probe(part);
+    expect(p.b).toBeInstanceOf(Box);
+    expect(p.b.a).toBe(2);
+    expect((box.rest as Box).a).toBe(0);
+    expect(copies.length).toBeGreaterThan(0);
+  });
+
+  it('refuses a cue when fold would write into an object it cannot copy', () => {
+    const box: Channel<Box> = {
+      rest: new Box(0),
+      merge: (x, y) => new Box(x.a + y.a),
+      scale: (v, w) => new Box(v.a * w),
+      fold: (into) => into,
+      lerp: (x) => x,
+    };
+    type P = { b: Box };
+    const m = mix<Part, P>(kit<P>({ b: box }));
+    expect(() =>
+      m.cue({ patch: patch<Part, P>(0, () => ({ b: new Box(2) }), { writes: ['b'] }) }),
+    ).toThrow(/copy/);
   });
 });

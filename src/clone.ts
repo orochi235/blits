@@ -48,6 +48,20 @@ function copied(v: unknown, depth: number): unknown {
   return out;
 }
 
+/** A copy a fold may write into: arrays, typed arrays and plain objects copied, the rest as is. */
 export function copy(v: unknown): unknown {
-  return Array.isArray(v) ? [...v] : v;
+  if (typeof v !== 'object' || v === null) return v;
+  if (Array.isArray(v)) return [...v];
+  if (ArrayBuffer.isView(v)) return (v as unknown as { slice(): unknown }).slice();
+  return plainObject(v) ? clone(v) : v;
+}
+
+/** Whether `copy` can copy `v` faithfully, when it is an object. */
+export function copyable(v: object): boolean {
+  return Array.isArray(v) || ArrayBuffer.isView(v) || plainObject(v);
+}
+
+function plainObject(v: object): boolean {
+  const proto = Object.getPrototypeOf(v);
+  return proto === Object.prototype || proto === null;
 }
