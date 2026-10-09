@@ -1,4 +1,4 @@
-import { type LerpInto, lerpInto } from './channels.js';
+import { type LerpInto, lerpInto, lerpNumber } from './channels.js';
 import { type Curve, curve } from './easing.js';
 import { shared } from './shared.js';
 import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js';
@@ -111,6 +111,8 @@ export interface Track {
   tailAts: number[] | null;
   delay: number;
   lerp: ((a: never, b: never, u: number) => unknown) | undefined;
+  /** Where every stop is a plain number lerped straight across: the stops flat, for `readNumber`. */
+  numbers: { ats: Float64Array; values: Float64Array; eases: (Curve | undefined)[] } | null;
 }
 
 export interface Built {
@@ -146,6 +148,11 @@ function build<O>(
     }
     all.sort((x, y) => x.at - y.at);
     const tail = all.filter((pt) => pt.at !== 0);
+    const lerp = opts.lerpBy?.(channel) ?? (opts.kit?.[channel]?.lerp as Track['lerp']);
+    const plain =
+      all.length > 0 &&
+      (lerp === undefined || lerp === (lerpNumber as Lerp)) &&
+      all.every((pt) => typeof pt.value === 'number');
     tracks.push({
       channel: channel as string,
       all,
@@ -153,7 +160,14 @@ function build<O>(
       ats: all.map((pt) => pt.at),
       tailAts: null,
       delay: opts.delayBy?.(channel) ?? 0,
-      lerp: opts.lerpBy?.(channel) ?? (opts.kit?.[channel]?.lerp as Track['lerp']),
+      lerp,
+      numbers: plain
+        ? {
+            ats: Float64Array.from(all, (pt) => pt.at),
+            values: Float64Array.from(all, (pt) => pt.value as number),
+            eases: all.map((pt) => pt.ease),
+          }
+        : null,
     });
   }
   return { tracks, duration };
@@ -276,6 +290,31 @@ export function segment(track: Track, phase: number, base: unknown): number {
   return BETWEEN;
 }
 
+/**
+ * A plain-number track at a phase, in exactly `segment`'s and `read`'s arithmetic: the stop at or
+ * past the phase by binary search, the fraction before easing, then a straight lerp.
+ */
+function readNumber(t: NonNullable<Track['numbers']>, phase: number): number {
+  const ats = t.ats;
+  const values = t.values;
+  const n = ats.length;
+  if (phase <= (ats[0] as number)) return values[0] as number;
+  if (phase >= (ats[n - 1] as number)) return values[n - 1] as number;
+  let lo = 1;
+  let hi = n - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if ((ats[mid] as number) >= phase) hi = mid;
+    else lo = mid + 1;
+  }
+  const a = ats[lo - 1] as number;
+  const u = (phase - a) / ((ats[lo] as number) - a);
+  const ease = t.eases[lo];
+  const eased = ease ? ease(u) : u;
+  const from = values[lo - 1] as number;
+  return from + ((values[lo] as number) - from) * eased;
+}
+
 /** Reads one track at a phase; `base` as `segment` takes it. */
 function read(
   track: Track,
@@ -288,6 +327,14 @@ function read(
   into: LerpInto | undefined,
   reuse: unknown[] | undefined,
 ): unknown {
+  const numbers = track.numbers;
+  if (
+    numbers !== null &&
+    base === undefined &&
+    slope === undefined &&
+    (lerp === undefined || lerp === (lerpNumber as Lerp) || track.lerp !== undefined)
+  )
+    return readNumber(numbers, phase);
   const found = segment(track, phase, base);
   if (found === NOTHING) return undefined;
   if (found === AT) return seg.a;
