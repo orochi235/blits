@@ -838,6 +838,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **The weight-0 band reset runs on the general path only** (`unband` in `fold.ts`). Lanes reach
       it through the shared record in every case the tests and the fuzzer cover; a lane that skips a
       subject at weight 0 without the general path visiting it would keep a stale band.
+15. **0.8.0 costs more a frame than 0.7.1 in astv's Node motion bench, cause not found**
+    (reported by astv, 2026-10-10; not reproduced here). Its `packages/engine/playback/motion.bench.ts`
+    on msb-uai, history on, two runs a version: text runs +34% to +50% (6 changes of 5 rows, 19.6
+    to 29.5 µs a frame), its busy stage +20% (344 to 413 µs), flights +17% to +32%, and a
+    1000-key roster +2%. The gap shrinks as the roster grows, so it reads as a cost per frame or
+    per cue rather than per subject. In the app the two are level (blits `sync` 0.207 ms on both).
+    Nothing has been profiled. Reproduce in `~/src/astv`: `MOTION_ONLY=1
+    probes/blits-version-bench.sh <out dir> 0.7.1` on a fleet node; astv's `docs/performance.md`,
+    "Findings", has the full table. Next: bisect `v0.7.1..v0.8.0` with that bench.
 
 ## Loose ends
 
