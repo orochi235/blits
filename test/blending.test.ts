@@ -173,6 +173,17 @@ describe('handover at rest', () => {
     expect(m.live).toBe(false);
   });
 
+  for (const lanes of [true, false])
+    it(`finds a subject at rest that was probed in the frame before the fade began${lanes ? '' : ', without lanes'}`, () => {
+      const m = mix<Part, Pose>(PART, { lanes });
+      const h = m.cue({ patch: holds('crawl', 0) });
+      m.sync(0);
+      m.probe(part);
+      h.fade({ at: 'rest' });
+      m.probe(part);
+      expect(h.weightOf(part)).toBe(0);
+    });
+
   it('still asks a silent voice fading to rest, so it can arrive', () => {
     const settling = patch<Part, Pose>(
       0,

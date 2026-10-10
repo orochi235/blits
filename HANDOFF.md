@@ -754,13 +754,21 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       voice whose handle was written to are refused, not because they cannot be read but because
       the fuzzer (`standing` in `test/fuzz/program.ts`) found frames that depended on when a sync
       noticed a change, and refusing was exact. Each could be let in with the fuzzer's say-so.
-    - **`angle` and `quat` never run on a lane**, and step 8 has not changed that. `angle` is not
-      quite `sum`: its `scale` takes the value the short way round before the weight, and its
-      `lerp` goes the short way, where lanes call `lerpNumber` in `keyrows.ts`, `fill.ts` and
-      `gather.ts`. So a lane needs the channel's `turn`, and the wrap wherever a value is folded
-      (`flatten` in `keyfill.ts`, `foldInto`, `foldRun`, both loops of `runMotion`, a crowd's rows,
-      `KeyRows.fold`). `quat` folds four numbers as one, which no lane loop does. The fuzzer's kit
-      (`test/fuzz`) has neither channel: add them there first, or nothing checks the lane.
+    - **`angle` and `quat` never run on a lane, and the fuzzer can now check one that does**
+      (2026-10-09): its kit (`test/fuzz/scene.ts`) has `heading: angle()` and `spin: quat()`,
+      written by `fn`, keys, wave and motion patches. Adding them found two defects apart from
+      either channel, both fixed: a handle `seek` in the cue's frame put a subject's origin
+      before the voice began (`originOf` skipped a clock that read the delay as it was left), and
+      a fade to rest begun after a probe in the same frame was not seen until the next
+      (`beginFade` now bumps `voice.seeks`, as `touch` does). **The lanes are next, and not
+      begun.** `angle` is not quite `sum`: its `scale` takes the value the short way round before
+      the weight, and its `lerp` goes the short way, where lanes call `lerpNumber` in
+      `keyrows.ts`, `fill.ts` and `gather.ts`. So a lane needs the channel's `turn`, and the wrap
+      wherever a value is folded (`flatten` in `keyfill.ts`, `foldInto`, `foldRun`, both loops of
+      `runMotion`, a crowd's rows, `KeyRows.fold`). `quat` folds four numbers as one, which no
+      lane loop does. Every one of those loops is at the edge of V8's inlining budget, no bench
+      row writes either channel, and no consumer uses them yet: put the wrap in functions of
+      their own, add a bench row first, and confirm the rows that write neither read level.
     - **Left from the doc's "Patch options" paragraph**: a negative voice rate is still accepted
       (`test/lanes.test.ts` cues one, and whether a voice may play backward is undecided), and a
       key `at` returns outside `writes` is still dropped without a word. The doc's per-voice

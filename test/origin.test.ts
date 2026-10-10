@@ -113,6 +113,22 @@ describe("a subject's origin does not depend on when the host first probes it", 
     expect(late.gain).toBeCloseTo(probed.gain, 9);
   });
 
+  for (const lanes of [true, false])
+    it(`a handle seek in the frame of the cue leaves the fade-in where it began, probed before it or not${lanes ? '' : ', without lanes'}`, () => {
+      const run = (before: boolean) => {
+        const m = mix<Part, Pose>(K, { lanes });
+        m.sync(0);
+        const h = m.cue({ patch: fall, start: 0, fade: { in: 100 } });
+        if (before) m.probe(a);
+        h.seek(150);
+        m.sync(60);
+        return m.probe(a).gain;
+      };
+      // 210 ms into the fall is 0.44, faded in by 0.6.
+      expect(run(true)).toBeCloseTo(1 - 0.6 * (1 - 0.44), 9);
+      expect(run(false)).toBeCloseTo(run(true), 9);
+    });
+
   it('a stateful voice seeked before its first probe is rebuilt from where the seek puts it', () => {
     const spec = () => ({ patch: drift(), start: 0 });
     const calls = { 40: (_m: Mix<Part, Pose>, h: Handle<Part>) => void h.seek(150) };

@@ -119,8 +119,12 @@ export function beginFade<I, O>(
   const over = mix.reduced ? 0 : (opts.over ?? voice.fade.out ?? 0);
   // A voice is linked into its subjects' chains once it plays, and a fading one plays.
   if (voice.state === 'pending') changed(mix, voice);
-  // A fade at rest marks each subject's record as it comes to rest.
-  if (opts.at === 'rest') unshare(mix, voice);
+  // A fade at rest marks each subject's record as it comes to rest, at its next read: one already
+  // read this frame is read again, as after `touch`.
+  if (opts.at === 'rest') {
+    unshare(mix, voice);
+    voice.seeks++;
+  }
   voice.state = 'fading';
   voice.out = {
     from: 1,

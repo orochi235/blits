@@ -3,6 +3,7 @@ import { color } from '../../src/color.js';
 import { mix } from '../../src/mixer.js';
 import { spring, tween } from '../../src/motion.js';
 import { keys, patch } from '../../src/patch.js';
+import { angle, quat } from '../../src/rotation.js';
 import { level, slew } from '../../src/signals.js';
 import type {
   Channel,
@@ -25,6 +26,8 @@ export interface Pose {
   tint?: number[];
   pick: number;
   odd: number;
+  heading: number;
+  spin: number[];
 }
 export interface Part {
   id: number;
@@ -47,12 +50,25 @@ const makeKit = () =>
     tint: color(),
     pick: last(),
     odd,
+    heading: angle(),
+    spin: quat(),
   });
-const CHANNELS = ['gain', 'crawl', 'dark', 'position', 'opacity', 'tint', 'pick', 'odd'] as const;
+const CHANNELS = [
+  'gain',
+  'crawl',
+  'dark',
+  'position',
+  'opacity',
+  'tint',
+  'pick',
+  'odd',
+  'heading',
+  'spin',
+] as const;
 type Ch = (typeof CHANNELS)[number];
-const WAVED = ['gain', 'crawl', 'dark', 'opacity', 'odd'] as const;
+const WAVED = ['gain', 'crawl', 'dark', 'opacity', 'odd', 'heading'] as const;
 type WavedCh = (typeof WAVED)[number];
-const MOVED = ['crawl', 'gain', 'dark', 'opacity'] as const;
+const MOVED = ['crawl', 'gain', 'dark', 'opacity', 'heading'] as const;
 type MovedCh = (typeof MOVED)[number];
 type Val = number | number[];
 
@@ -192,7 +208,16 @@ export interface Scene {
   frames: Frame[];
 }
 
+/** `q` as a unit quaternion, the identity where it has no length. */
+const unit = (q: number[]): number[] => {
+  const n = Math.hypot(...q);
+  return n > 0 ? q.map((x) => x / n) : [0, 0, 0, 1];
+};
+
 const value = (ch: Ch, r: Rng): Val => {
+  // Past a turn either way, and often on the half turn, where the short way has two answers.
+  if (ch === 'heading') return Math.round(r.f() * 64 - 32) * 22.5;
+  if (ch === 'spin') return unit([r.f() - 0.5, r.f() - 0.5, r.f() - 0.5, r.f() - 0.5]);
   if (ch === 'position') return [r.f() * 4 - 2, r.f() * 4 - 2, r.f() * 4 - 2];
   if (ch === 'tint') return [r.f(), r.f() * 0.2 - 0.1, r.f() * 0.2 - 0.1, r.f()];
   if (ch === 'pick') return r.i(5);
@@ -258,7 +283,9 @@ function build(d: PatchDesc): Built {
         writes.forEach((w, i) => {
           const v = vals[i] as Val;
           o[w] = Array.isArray(v)
-            ? v.map((x) => x * (1 + 0.3 * s))
+            ? w === 'spin'
+              ? unit(v.map((x, i) => x + 0.3 * s * (i + 1)))
+              : v.map((x) => x * (1 + 0.3 * s))
             : w !== 'pick'
               ? v + 0.5 * s
               : v;
@@ -538,6 +565,8 @@ export function play(s: Scene, lanes: boolean, drop: Dropped = new Set()): strin
           tint: new Float64Array(4 * n),
           pick: new Float64Array(n),
           odd: new Float64Array(n),
+          heading: new Float64Array(n),
+          spin: new Float64Array(4 * n),
         } satisfies Columns<Pose>;
         e.m.pull(ps, cols);
         const read = Object.entries(cols).map(([c, a]) => `${c}:${Array.from(a).join(',')}`);

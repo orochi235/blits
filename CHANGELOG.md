@@ -92,6 +92,12 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A handle `seek` made in the frame its voice was cued in put every subject's origin before the
+  voice began, so the fade in read as over at once, and under a fade out a subject first probed
+  after the seek read a weight the others did not. The origin is now the cue's frame, as it is for
+  a seek in any later frame.
+- `fade({ at: 'rest' })` begun after a subject's probe in the same frame finds that subject at rest
+  at its next probe, where it stayed in the voice until the frame after.
 - Seeking back many times no longer throws `Maximum call stack size exceeded`. Every `seek` to an
   earlier time wrapped each voice's records in another layer, kept for the life of the mix, so a
   scrubbed mix grew with every seek and a subject not probed since was found through all of them:
