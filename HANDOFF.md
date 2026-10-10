@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.7.1 (2026-10-08).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.8.0 (2026-10-10).
 - **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
   blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
@@ -63,7 +63,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `handle.played`. The schema page's Freezing paragraph has the design. Mike chose the values
   `before`/`after`/`both`, that a frozen voice's end is when it is faded, not when its passes run
   out, and the name `freeze` once the ticker's `hold()` took the word; the state is
-  `'frozen'`, and the alias `hold` is removed in the unreleased batch (2026-10-10). wod (`anglePatch.ts`, `transition/tracks.ts`'s `'held'`) and
+  `'frozen'`, and the alias `hold` is removed in 0.8.0. wod (`anglePatch.ts`, `transition/tracks.ts`'s `'held'`) and
   klieg (`compositor.ts`) change when they move past 0.5.0.
 - **`mix.inert` shipped in 0.4.0** (built 2026-10-03, merge `3228fa7`), for wod's frame loop to
   sleep under a landed wheel while `live` stays true. Mike asked for it and named it through the wod
@@ -155,7 +155,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   for the channel set instead, so klieg keeps `domain` (Mike, 2026-10-05).
 - **`duration`, not `period`** (2026-10-04, Mike's call): a pass is one run through a patch whether
   or not it loops, and only a looping voice has a period. `Patch.duration` is the field;
-  the alias `Patch.period` is removed in the unreleased batch (2026-10-10).
+  the alias `Patch.period` is removed in 0.8.0.
 - **`phase`** is the fixed name for the normalized position within a pass, formerly `t`. It costs
   renaming klieg's `onPhase` and `PhaseEvent`, which sherpa consumes through `ctx.phase`.
 - **The vocabulary is called**, every role enshrined on 2026-09-29, and
@@ -320,7 +320,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      leaves the general path or a lane, rather than a crowd, still requalifies every voice.
      Reading keys stops as flat numbers measured no different and was reverted.
    - **The slow cases after 0.4.0, worked overnight 2026-10-04** (branch `slow-cases`, Mike
-     asleep). `CHANGELOG.md`'s Unreleased section lists what landed, with numbers: crowds of
+     asleep). `CHANGELOG.md`'s 0.8.0 section lists what landed, with numbers: crowds of
      several channels, in-place crowd compaction, an allocation-free locus fold, read backs
      without `structuredClone`, a spring's shared time terms, and per-voice memory cut by a sixth.
      Every change was checked bit for bit with `bench/same.sh <rev>` (random scenes through two
@@ -483,7 +483,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 5. **Work nobody will see** (2026-10-07). Prompted by astv speeding 100 text animations into 2 s,
    most of them offscreen. Three cases; the first is built, the other two wait on a decision.
    - **Offscreen, built**: a lane fills only subjects probed this frame or the last (CHANGELOG
-     Unreleased, the schema page's Lanes section). It pays where lanes stay busy over a part
+     0.8.0, the schema page's Lanes section). It pays where lanes stay busy over a part
      view: `view`, three `keys` voices with 40% of 10k subjects probed, 0.561 ms a frame from
      0.878 (teitou). It does nothing for astv's shape, the `typing` row: 100 voices of 40 rows
      over 10k rows with 200 probed costs about 0.02 ms a frame either way, because at 2% probed
@@ -610,20 +610,19 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     skips nothing), the determinism suite (`test/determinism.test.ts`, whose only known failures
     are the two `now` seeds below), issue B (`src/origin.ts`), issue A with findings #10 and #13,
     lanes invalidation (#6, #15, #16), and step 7's public surface, listed in the changelog's
-    Unreleased section.
+    0.8.0 section.
     **Mike, 2026-10-09: work steps 3 to 9, then item 12's audit, chaining sessions (the
     `pass-the-baton` skill) until the whole plan is finished**, each session updating this item and
     the doc's Status section as a step lands. Step 6 is built (`b5dfa51`: `prepack` builds from an
-    empty `dist`, the tarball carries `./testing`, and the changelog lists steps 3 to 5) except the
-    release: **Mike, 2026-10-09: hold the release**, so 0.7.1 stays published. Releases are batched:
-    keep adding to the changelog's Unreleased section as steps land, and don't ask to publish per
-    step; it ships as one release when Mike says. Until things settle, a consumer that needs
-    unreleased blits links the local checkout, and versions are reconciled at that release. Steps 8
+    empty `dist`, the tarball carries `./testing`, and the changelog lists steps 3 to 5), and the
+    whole plan shipped as 0.8.0 (2026-10-10). Releases are batched: add an Unreleased section to
+    the changelog as work lands, and don't ask to publish per step; it ships as one release when
+    Mike says. Until then a consumer that needs unreleased blits links the local checkout. Steps 8
     and 9 are on `main`, and item 12's audit is done: **the plan is finished.** Each
     step goes in a worktree off `main`, since another session
     works on the playground and item 13 in a worktree of its own; ask it before editing this file,
-    and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. Step
-    6's version bump and publish are Mike's call, never 1.0.0. Measure
+    and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. A
+    version bump and publish are Mike's call, never 1.0.0. Measure
     any hot-path change with `AB_EACH=1 bench/ab.sh <origin/main sha> . <rounds> <rows>` on a fleet
     node (`.` is the synced working tree). `onto do` sends files, not commits, so the first
     revision has to be one `origin` has; `AB_BENCH=bench/frame.mjs` makes both sides print
@@ -653,7 +652,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       `nextFrame()`), `reducedNow`, `relinks`, `pins`, `gone`, `pose` and `retired`.
     - **Step 9, the names: settled by Mike, 2026-10-10.** The engine stays `mixer`, and `Tape`
       keeps every method, so weasel's `createHistory` still passes straight in. The deprecated
-      `hold`, `period`, and `hex()` are removed in the unreleased batch (the changelog's Breaking
+      `hold`, `period`, and `hex()` are removed in 0.8.0 (the changelog's Breaking
       list has what replaces each). One consumer has to change before it moves past 0.7.1: astv sets
       `hold` on voices in `packages/engine` (`glide.ts`, `turns.ts`, `textRuns.ts`,
       `progressClocks.ts`), asked of the session astv-05 on 2026-10-10 and not confirmed. wod is
