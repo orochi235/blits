@@ -2,6 +2,7 @@ import { checkHits } from './book.js';
 import { changed, index } from './chain.js';
 import { copyable } from './clone.js';
 import { schedule } from './due.js';
+import { shares } from './everyone.js';
 import { finiteRate, plainWeight, VoiceHandle } from './handle.js';
 import { reorigin } from './held.js';
 import { handle } from './hosts.js';
@@ -166,6 +167,7 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   while (i > 0 && (cued[i - 1] as Voice<I, O>).id > voice.id) i--;
   cued.splice(i, 0, voice);
   scoredAdd(mix, voice);
+  voice.sharing = shares(mix, voice);
   index(mix, voice);
   changed(mix, voice);
   mix.stir();

@@ -1,4 +1,5 @@
 import { schedule } from './due.js';
+import { everyoneOf, sighted, unsight, weightAt } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { originOf } from './origin.js';
 import { record } from './record.js';
@@ -28,6 +29,10 @@ export function held<I, O>(
   subject: I,
   slot: number,
 ): Subject<unknown> {
+  if (voice.sharing) {
+    const all = everyoneOf(this, voice);
+    if (all !== null) return all;
+  }
   if (unreached(voice, slot)) return voice.unreached as Subject<unknown>;
   let held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined) return held;
@@ -76,7 +81,13 @@ export function held<I, O>(
     }
     early.push(held);
   }
-  voice.seen++;
+  // A subject a voice saw while it shared one record was counted then, and has its weight kept.
+  if (sighted(voice, slot)) {
+    held.weight = weightAt(voice, slot);
+    // Its patch has been called for it, which a lane asks before calling it there.
+    held.probed = voice.sharedAt;
+    unsight(voice, slot);
+  } else voice.seen++;
   if (delay > voice.latest) {
     voice.latest = delay;
     // A later end can take a frozen voice live again.

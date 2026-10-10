@@ -1,3 +1,5 @@
+import { everyoneOf, sight } from './everyone.js';
+import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import type { Named } from './named.js';
 import { record } from './record.js';
@@ -82,6 +84,11 @@ export function linkable<I, O>(
 ): Subject<unknown> | null {
   const state = voice.state;
   if (state === 'done' || (state === 'pending' && !voice.freezesBefore)) return null;
+  // A voice sharing one record is in no chain: a fold takes it from `sharers` at its place.
+  if (voice.sharing && everyoneOf(this, voice) !== null) {
+    sight(voice, slot, (this.lanes as Lanes<I, O>).cap);
+    return null;
+  }
   const held = this.held(voice, subject, slot);
   return held.reaches ? held : null;
 }
@@ -123,6 +130,12 @@ export function index<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if (voice.holding !== null) return;
   if (voice.named === null) {
     mix.general.push(voice);
+    if (voice.sharing) {
+      const sharers = mix.sharers;
+      let i = sharers.length;
+      while (i > 0 && (sharers[i - 1] as Voice<I, O>).id > voice.id) i--;
+      sharers.splice(i, 0, voice);
+    }
     return;
   }
   mix.naming++;

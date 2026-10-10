@@ -245,6 +245,7 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
   mix.named = new Store();
   mix.naming = 0;
   mix.general = [];
+  mix.sharers = [];
   for (const voice of kept) index(mix, voice);
   mix.owners = kept.some((v) => v.holding !== null) ? kept.filter((v) => v.holding !== null) : null;
   mix.loci = kept.filter((v) => v.spec.locus !== undefined).length;

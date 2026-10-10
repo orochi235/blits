@@ -2,6 +2,7 @@ import { Book, type BookHost } from './book.js';
 import { numericOf } from './channels.js';
 import { crowdable } from './crowd.js';
 import { schedule } from './due.js';
+import { unshare, unsight, weightAt } from './everyone.js';
 import { beginFade, beginRise, fadeAt, fadeSubject } from './fade.js';
 import { goneIndex } from './gone.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
@@ -61,7 +62,10 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
     },
     forgot: (slot) => {
       // Only a voice over every subject keeps bits, and one gone may still be read back.
-      for (const voice of mix.general) unreach(voice, slot, false);
+      for (const voice of mix.general) {
+        unreach(voice, slot, false);
+        if (voice.sighted !== null) unsight(voice, slot);
+      }
       for (const voice of goneIndex(mix).general) unreach(voice, slot, false);
     },
     passes: (was, w) => mix.passes(was, w),
@@ -158,6 +162,8 @@ function seekDoubt<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, rebuild: boolean)
 export function stateful<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if (voice.keeping) return;
   voice.keeping = true;
+  // The call that kept state was for the subject last sent to, whose record the state is on.
+  if (voice.sharing) unshare(mix, voice, mix.sending.subject as I);
   mix.lanes?.invalidate();
 }
 
@@ -207,10 +213,12 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       if (voice.state === 'done') return 0;
       if (voice.holding !== null)
         return ownWeight(voice, mix.now, mix.reducedNow, (o) => mix.ownerBase(o, subject));
+      const slot = mix.lanes === null ? -1 : (mix.chains.get(subject)?.slot ?? -1);
       if (voice.laned && mix.lanes !== null) {
-        const w = mix.lanes.weightOf(voice.id, mix.chains.get(subject)?.slot ?? -1);
+        const w = mix.lanes.weightOf(voice.id, slot);
         if (w !== undefined) return w;
       }
+      if (voice.sharing) return weightAt(voice, slot);
       return (voice.subjects.get(subject) as Subject<unknown> | undefined)?.weight ?? 0;
     },
     record: (label, again) => record(mix, label, again),

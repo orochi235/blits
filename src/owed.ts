@@ -36,18 +36,18 @@ export class Owed {
     return (this.lists[this.at[slot] as number] as number[]).includes(id);
   }
 
-  /** The subject at `slot` owes the voices `met`, which the caller may reuse after. */
-  owe(slot: number, met: readonly number[]): void {
-    if (!this.last(met)) this.lists.push(met.slice());
+  /** The subject at `slot` owes the first `n` voices of `met`, which the caller may reuse after. */
+  owe(slot: number, met: readonly number[], n: number): void {
+    if (!this.last(met, n)) this.lists.push(met.slice(0, n));
     this.fill[slot] = this.now;
     this.at[slot] = this.lists.length - 1;
   }
 
-  /** Whether `met` is the last list a subject came to owe this fill. */
-  last(met: readonly number[]): boolean {
+  /** Whether the first `n` of `met` are the last list a subject came to owe this fill. */
+  last(met: readonly number[], n: number): boolean {
     const last = this.lists[this.lists.length - 1];
-    if (last === undefined || last.length !== met.length) return false;
-    for (let i = 0; i < met.length; i++) if (last[i] !== met[i]) return false;
+    if (last === undefined || last.length !== n) return false;
+    for (let i = 0; i < n; i++) if (last[i] !== met[i]) return false;
     return true;
   }
 }

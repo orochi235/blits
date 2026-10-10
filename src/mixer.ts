@@ -14,6 +14,7 @@ import {
   fold,
   folded,
   foldLoci,
+  foldSharers,
   foldWith,
   isRest,
   type Key,
@@ -23,6 +24,7 @@ import {
   owedBy,
   passes,
   read,
+  shared,
   slopeFor,
   tick,
 } from './fold.js';
@@ -204,6 +206,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   naming = 0;
   /** The voices in the list that name no subjects, in voice order. */
   general: Voice<I, O>[] = [];
+  /** Those of `general` that keep one record for every subject, in voice order: see `everyone.ts`. */
+  sharers: Voice<I, O>[] = [];
   /** How many voices in the list carry a locus; with none, a fold allocates nothing. */
   loci = 0;
   /** What every motion patch it plays asks for its voice's time, holding this mix weakly. */
@@ -652,6 +656,8 @@ const methods = {
   foldWith,
   owedBy,
   foldLoci,
+  foldSharers,
+  shared,
   read,
   contribution,
   keyed,

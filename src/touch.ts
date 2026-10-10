@@ -19,6 +19,8 @@ export function touch<I, O>(mix: Mixer<I, O>, subject?: I): void {
     // No voice's `seeks` is below 0, so no record stamped with it reads as current.
     let held: Subject<unknown> | null = mix.chains.get(subject) ?? null;
     for (; held !== null; held = held.next) held.seeks = -1;
+    // One record for every subject: its delta is read again for them all.
+    for (const voice of mix.sharers) if (voice.everyone !== null) voice.everyone.seeks = -1;
   }
   mix.lanes?.refill();
   mix.stir();

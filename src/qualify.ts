@@ -1,6 +1,7 @@
 import { type Numeric, numericOf } from './channels.js';
 import { flush } from './columns.js';
 import { crowdable } from './crowd.js';
+import { weighAt } from './everyone.js';
 import { wake } from './fill.js';
 import { Lane, type Laned, type Locus, Per } from './lane.js';
 import type { Lanes } from './lanes.js';
@@ -313,7 +314,10 @@ function leave<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
       const rec = lane.records[p];
       const slot = lane.list[p] as number;
       const w = done ? undefined : lanes.reported(lane, slot);
-      if (rec !== undefined && w !== undefined) rec.weight = w;
+      if (rec !== undefined && w !== undefined) {
+        if (lane.voice.sharing) weighAt(lane.voice, slot, w, lanes.cap);
+        else rec.weight = w;
+      }
       if (rec !== undefined && lane.motion !== undefined) settle(lanes, lane, p, slot, rec);
     }
   const run = lane.motion;

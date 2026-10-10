@@ -148,7 +148,10 @@ function prune<I, O>(mix: Mixer<I, O>): void {
     }
     voices.length = kept;
   }
-  if (pruned) mix.general = mix.general.filter((v) => v.state !== 'done');
+  if (pruned) {
+    mix.general = mix.general.filter((v) => v.state !== 'done');
+    if (mix.sharers.length > 0) mix.sharers = mix.sharers.filter((v) => v.state !== 'done');
+  }
 }
 
 /** The voice's place in a list in id order, or -1 where it is not there. */

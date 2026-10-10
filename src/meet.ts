@@ -12,17 +12,22 @@ import type { Subject, Voice } from './voice.js';
 export function owable<I, O>(lanes: Lanes<I, O>, slot: number): boolean {
   if (lanes.metCrowd || lanes.owes(slot)) return false;
   // Subjects meeting the same lanes in one fill get the same answer, and a list is kept only once true.
-  if (lanes.owed.last(lanes.met)) return true;
   const met = lanes.met;
+  const n = lanes.metN;
+  if (lanes.owed.last(met, n)) return true;
   let other = Number.NEGATIVE_INFINITY;
   for (const lane of lanes.lanes) {
     const id = lane.voice.id;
-    if (id > other && !met.includes(id)) other = id;
+    if (id <= other) continue;
+    const at = met.indexOf(id);
+    if (at < 0 || at >= n) other = id;
   }
   for (const c of lanes.crowds)
     if (c.size > 0) other = Math.max(other, c.hot[(c.size - 1) * c.stride + Hot.ID] as number);
-  for (const id of met)
+  for (let i = 0; i < n; i++) {
+    const id = met[i] as number;
     if (id <= other || (lanes.byId.get(id) as Lane<I, O>).group !== null) return false;
+  }
   return true;
 }
 
@@ -42,7 +47,7 @@ export function meet<I, O>(
   const from = seen < 0 ? -1 - seen : seen;
   lanes.per[slot * Per.SLOT + Per.SEEN] = lanes.epochs;
   let met = false;
-  lanes.met.length = 0;
+  lanes.metN = 0;
   lanes.metCrowd = false;
   const dense = lanes.dense;
   for (let i = dense.length - 1; i >= 0; i--) {
@@ -53,7 +58,7 @@ export function meet<I, O>(
     if (!held.reaches) continue;
     lane.add(slot, held);
     if (lane.idle) reach(lanes, slot, 1);
-    lanes.met.push(lane.voice.id);
+    lanes.met[lanes.metN++] = lane.voice.id;
     met = true;
   }
   // `open` marks every subject a voice naming it starts on, so an unmarked one has none to meet.
@@ -73,7 +78,7 @@ export function meet<I, O>(
       if (!held.reaches) continue;
       lane.add(slot, held);
       if (lane.idle) reach(lanes, slot, 1);
-      lanes.met.push(voice.id);
+      lanes.met[lanes.metN++] = voice.id;
       met = true;
     }
   if (!met) return lane;
@@ -82,7 +87,7 @@ export function meet<I, O>(
   // otherwise it reads the general path all frame.
   const o = slot * Per.SLOT;
   if (lane && lanes.per[o + Per.IDLE] === 0 && owable(lanes, slot)) {
-    lanes.owed.owe(slot, lanes.met);
+    lanes.owed.owe(slot, lanes.met, lanes.metN);
     return true;
   }
   lanes.per[o + Per.FILLED] = lanes.fills;

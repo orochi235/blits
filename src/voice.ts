@@ -326,6 +326,18 @@ export class Voice<I, O> {
   unreached: Subject<unknown> | null = null;
   /** By subject number, a bit set where `unreached` stands for the subject; null until one is. */
   unreachedBits: Uint32Array | null = null;
+  /** Whether one record stands for every subject: see `shares` in `everyone.ts`. */
+  sharing = false;
+  /** That record, null until a chain first asks and once the voice shares no more. */
+  everyone: Subject<unknown> | null = null;
+  /** The subject `everyone`'s delta was read for, where its patch reads the subject. */
+  sharedFor: I | undefined = undefined;
+  /** The `now` `everyone` was last read at when the voice stopped sharing it; NaN for never. */
+  sharedAt = Number.NaN;
+  /** While sharing, by subject number: a bit where a chain has asked about the subject. */
+  sighted: Uint32Array | null = null;
+  /** While sharing, by subject number: the weight last given the subject on the general path. */
+  weights: Float64Array | null = null;
   /** The handle `cue` returned, which `voices` hands back too. */
   handle: Handle<I> | null = null;
   /** With a history store, the key of every subject it has a record of; null without one. */
@@ -483,6 +495,11 @@ export class Voice<I, O> {
     this.ownKept = null;
     this.unreached = null;
     this.unreachedBits = null;
+    this.sharing = false;
+    this.everyone = null;
+    this.sharedFor = undefined;
+    this.sighted = null;
+    this.weights = null;
     if (this.holding !== null) this.holding = new Holding();
   }
 
@@ -589,6 +606,11 @@ export class Voice<I, O> {
     v.quiet = true;
     v.unreached = null;
     v.unreachedBits = null;
+    v.sharing = false;
+    v.everyone = null;
+    v.sharedFor = undefined;
+    v.sighted = null;
+    v.weights = null;
     return v;
   }
 

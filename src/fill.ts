@@ -416,7 +416,12 @@ export function call<I, O>(
   const subject = this.subjectAt(slot);
   if (subject === absent) return false;
   // Called already this frame, by the general path or a fill before a refill: reuse, as a probe does.
-  if (rec.probed === this.now && rec.delta !== null && rec.seeks === voice.seeks) {
+  if (
+    rec.probed === this.now &&
+    rec.delta !== null &&
+    rec.seeks === voice.seeks &&
+    (rec !== voice.everyone || voice.sharedFor === subject)
+  ) {
     if (w > 0) this.foldDelta(chans, slot, rec.delta);
     return true;
   }
@@ -430,6 +435,7 @@ export function call<I, O>(
   rec.delta = delta;
   rec.probed = this.now;
   rec.seeks = voice.seeks;
+  if (rec === voice.everyone) voice.sharedFor = subject;
   if (this.keeps) host.after(voice, subject, rec);
   if (reading.kept !== kept && !voice.keeping) host.kept(voice);
   if (w > 0) this.foldDelta(chans, slot, delta);

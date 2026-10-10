@@ -17,7 +17,7 @@ import { fold, foldDelta, foldInto, foldRun, gate, gather } from './gather.js';
 import { Arg, Begin, type Lane, type Laned, type Locus, Per, Row } from './lane.js';
 import { meet, reach } from './meet.js';
 import type { Watcher } from './motions.js';
-import { type absent, Numbers } from './numbers.js';
+import { absent, Numbers } from './numbers.js';
 import { Owed } from './owed.js';
 import { requalify, retouch } from './qualify.js';
 import { reading } from './reading.js';
@@ -113,8 +113,13 @@ export class Lanes<I, O> implements Watcher {
   intoId = 0;
   readonly lawsByKey = new Map<string, Float64Array>();
   lastLaw: Float64Array | null = null;
-  /** The lanes the last `meet` gave a position, and whether it placed a crowd row. */
+  /**
+   * The lanes the last `meet` gave a position, the first `metN` of `met`, and whether it placed a
+   * crowd row. Counted, not cut to length: an array emptied by its length takes new room at its
+   * next push, about 150 B a subject met (the `swap` row, bench/allocs.mjs, 2026-10-09).
+   */
   readonly met: number[] = [];
+  metN = 0;
   metCrowd = false;
   /** By subject number, the laned voices its probes fold on the general path this fill. */
   readonly owed = new Owed();
@@ -485,6 +490,20 @@ export class Lanes<I, O> implements Watcher {
     const lane = this.byId.get(id);
     const q = lane === undefined ? -1 : lane.positionOfMotion(s);
     if (q >= 0) (lane as Lane<I, O>).fix(q);
+  }
+
+  /**
+   * A voice that kept one record for every subject keeps one each from now on: each of its lane's
+   * positions takes the record `of` gives its subject.
+   */
+  rerecord(id: number, of: (subject: I, slot: number) => Subject<unknown>): void {
+    const lane = this.byId.get(id);
+    if (lane === undefined) return;
+    for (let p = 0; p < lane.list.length; p++) {
+      const slot = lane.list[p] as number;
+      const subject = this.subjectAt(slot);
+      if (subject !== absent) lane.records[p] = of(subject as I, slot);
+    }
   }
 
   /** A voice's clock moved the `shown` of records it had already placed: copies them again. */

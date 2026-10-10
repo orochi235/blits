@@ -1,5 +1,6 @@
 import { frozenTime, passAt, phaseAt, silent } from './clock.js';
 import { copy as copyValue } from './clone.js';
+import { readFor, weighAt } from './everyone.js';
 import { recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
 import type { Lanes } from './lanes.js';
@@ -108,7 +109,12 @@ export function contribution<I, O>(
   setting.weight = weight;
   held.weight = weight;
 
-  if (held.probed === now && held.delta && held.seeks === voice.seeks) {
+  if (
+    held.probed === now &&
+    held.delta &&
+    held.seeks === voice.seeks &&
+    readFor(voice, held, subject)
+  ) {
     if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
     this.w = weight;
     return held.delta;
@@ -156,6 +162,7 @@ export function contribution<I, O>(
   held.delta = delta;
   held.probed = now;
   held.seeks = voice.seeks;
+  if (held === voice.everyone) voice.sharedFor = subject;
   if (history !== undefined) remember(this, voice, subject, held);
   if (reading.kept !== keptBefore && !voice.keeping) stateful(this, voice);
   if (delta === null) return null;
@@ -370,6 +377,42 @@ export function bound(channel: Channel<unknown>, v: unknown): unknown {
   return v;
 }
 
+/**
+ * Whether a fold's next voice is its chain's next record, `held`, and not the next voice sharing
+ * one record, `sharers[q]`: the two lists are each in voice order, and a fold takes them as one.
+ */
+export function chainFirst<I, O>(
+  held: Subject<unknown> | null,
+  sharers: readonly Voice<I, O>[],
+  q: number,
+): boolean {
+  if (held === null) return false;
+  if (q >= sharers.length || held.voice === null) return true;
+  const next = sharers[q] as Voice<I, O>;
+  return next.id > (held.voice as Voice<I, O>).id;
+}
+
+/**
+ * After a fold read a sharing voice for the subject numbered `slot`: keeps the weight it gave, and
+ * gives the fold's place in `sharers`, which moves back where the read made the voice share no more.
+ */
+export function shared<I, O>(
+  this: Mixer<I, O>,
+  voice: Voice<I, O>,
+  slot: number,
+  rec: Subject<unknown>,
+  q: number,
+): number {
+  if (voice.sharing) {
+    weighAt(voice, slot, rec.weight, (this.lanes as Lanes<I, O>).cap);
+    return q;
+  }
+  const sharers = this.sharers;
+  let i = 0;
+  while (i < sharers.length && (sharers[i] as Voice<I, O>).id < voice.id) i++;
+  return i;
+}
+
 export function fold<I, O>(
   this: Mixer<I, O>,
   subject: I,
@@ -400,7 +443,8 @@ export function linked<I, O>(this: Mixer<I, O>, subject: I): Subject<unknown> | 
   const head = Number.isNaN(this.now) ? null : this.chain(subject);
   this.linkedLaned =
     head !== null && this.lanes?.prepare(head.slot, subject, this.version, head) === true;
-  return head;
+  // A patch call in that fill kept state, and its voice, which shared one record, joins the chains.
+  return head !== null && head.version !== this.version ? this.chain(subject) : head;
 }
 
 /** The fold after a subject's chain is linked and its lanes asked whether it reads from them. */
@@ -443,9 +487,16 @@ export function foldWith<I, O>(
     else if (l.whole) return pose as O;
   }
   if (this.loci === 0) {
+    // The voices sharing one record are in no chain: each folds before the first chain record
+    // that comes after it in voice order, and the rest after the last.
+    const sharers = this.sharers;
+    let q = 0;
     for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
       const voice = held.voice as Voice<I, O> | null;
-      if (voice === null || (laned && voice.laned && !this.owedBy(owed, voice))) continue;
+      if (voice === null) continue;
+      if (q < sharers.length && (sharers[q] as Voice<I, O>).id < voice.id)
+        q = this.foldSharers(pose, subject, head, q, voice.id, laned, dry, except, owed);
+      if (laned && voice.laned && !this.owedBy(owed, voice)) continue;
       if (voice.id === except || voice.state === 'done') continue;
       const delta = this.read(voice, subject, now, dry, held);
       if (owed >= 0 && voice.laned) (lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
@@ -453,9 +504,46 @@ export function foldWith<I, O>(
       if (delta === null || this.w <= 0) continue;
       this.apply(pose, voice, held, delta, this.w);
     }
+    if (q < sharers.length)
+      this.foldSharers(pose, subject, head, q, Number.MAX_SAFE_INTEGER, laned, dry, except, owed);
     return pose as O;
   }
   return this.foldLoci(subject, pose, head, laned, dry, except, owed);
+}
+
+/**
+ * Folds the voices sharing one record from `sharers[q]` up to the first whose id is `before` or
+ * more, as `foldWith` folds a chain's records, and gives the place it stopped at.
+ */
+export function foldSharers<I, O>(
+  this: Mixer<I, O>,
+  pose: Record<string, unknown>,
+  subject: I,
+  head: Subject<unknown>,
+  q: number,
+  before: number,
+  laned: boolean,
+  dry: boolean,
+  except: number | undefined,
+  owed: number,
+): number {
+  const sharers = this.sharers;
+  const now = this.now;
+  while (q < sharers.length) {
+    const voice = sharers[q] as Voice<I, O>;
+    if (voice.id >= before) break;
+    q++;
+    const rec = voice.state === 'pending' ? null : voice.everyone;
+    if (rec === null) continue;
+    if (laned && voice.laned && !this.owedBy(owed, voice)) continue;
+    if (voice.id === except || voice.state === 'done') continue;
+    const delta = this.read(voice, subject, now, dry, rec);
+    if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, rec.weight);
+    q = this.shared(voice, head.slot, rec, q);
+    if (delta === null || this.w <= 0) continue;
+    this.apply(pose, voice, rec, delta, this.w);
+  }
+  return q;
 }
 
 /** Whether the subject numbered `owed` reads laned `voice` from the general path this fill. */
@@ -486,12 +574,28 @@ export function foldLoci<I, O>(
     k.n = 0;
     k.m = 0;
     k.names.length = 0;
-    for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
-      const voice = held.voice as Voice<I, O> | null;
-      if (voice === null || (laned && voice.laned && !this.owedBy(owed, voice))) continue;
+    const sharers = this.sharers;
+    let q = 0;
+    let at: Subject<unknown> | null = head;
+    while (at !== null || q < sharers.length) {
+      const mine = chainFirst(at, sharers, q);
+      let voice: Voice<I, O> | null;
+      let rec: Subject<unknown> | null;
+      if (mine) {
+        rec = at as Subject<unknown>;
+        voice = rec.voice as Voice<I, O> | null;
+        at = rec.next;
+      } else {
+        voice = sharers[q++] as Voice<I, O>;
+        rec = voice.state === 'pending' ? null : voice.everyone;
+      }
+      if (voice === null || rec === null) continue;
+      if (laned && voice.laned && !this.owedBy(owed, voice)) continue;
       if (voice.id === except || voice.state === 'done') continue;
+      const held: Subject<unknown> = rec;
       const delta = this.read(voice, subject, now, dry, held);
       if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
+      if (!mine) q = this.shared(voice, head.slot, held, q);
       if (delta === null) continue;
       const locus = voice.spec.locus;
       let group = -1;
@@ -604,7 +708,13 @@ export function read<I, O>(
   held: Subject<unknown>,
 ): Record<string, unknown> | null {
   if (dry) {
-    if (held.reaches && held.probed === now && held.delta && held.seeks === voice.seeks) {
+    if (
+      held.reaches &&
+      held.probed === now &&
+      held.delta &&
+      held.seeks === voice.seeks &&
+      readFor(voice, held, subject)
+    ) {
       const setting = voice.setting;
       // The setting the probe that read the delta had, but for `dt`: a dry read advances nothing.
       const elapsed = frozenTime(

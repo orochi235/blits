@@ -1,5 +1,6 @@
 import { ownBlends } from './blend.js';
 import { index } from './chain.js';
+import { sighted } from './everyone.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
@@ -163,6 +164,7 @@ export function count<I, O>(mix: Mixer<I, O>): void {
   mix.named = new Store<I, Voice<I, O>[]>();
   mix.naming = 0;
   mix.general = [];
+  mix.sharers = [];
   for (const voice of mix.cued) index(mix, voice);
   mix.loci = mix.cued.filter((v) => v.spec.locus !== undefined).length;
   mix.anchored = mix.cued.filter((v) => v.spec.anchor !== undefined).length;
@@ -175,6 +177,11 @@ function recordOf<I, O>(
   voice: Voice<I, O>,
   subject: I,
 ): Subject<unknown> | undefined {
+  // A voice sharing one record has that for every subject a chain has asked it about.
+  if (voice.sharing)
+    return sighted(voice, mix.chains.get(subject)?.slot ?? -1)
+      ? (voice.everyone as Subject<unknown>)
+      : undefined;
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined || voice.unreachedBits === null) return held;
   return unreached(voice, mix.chains.get(subject)?.slot ?? -1)

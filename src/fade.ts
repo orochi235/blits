@@ -1,6 +1,7 @@
 import { changed } from './chain.js';
 import { envelope } from './clock.js';
 import { schedule } from './due.js';
+import { unshare } from './everyone.js';
 import { leave, noted, releasing } from './history.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
@@ -19,6 +20,7 @@ export function fadeSubject<I, O>(
   over?: number,
 ): void {
   if (voice.state === 'done' || voice.parted?.has(subject) || voice.parts?.has(subject)) return;
+  unshare(mix, voice);
   mix.stir();
   const ms = mix.reduced ? 0 : (over ?? voice.fade.out ?? 0);
   const at = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
@@ -117,6 +119,8 @@ export function beginFade<I, O>(
   const over = mix.reduced ? 0 : (opts.over ?? voice.fade.out ?? 0);
   // A voice is linked into its subjects' chains once it plays, and a fading one plays.
   if (voice.state === 'pending') changed(mix, voice);
+  // A fade at rest marks each subject's record as it comes to rest.
+  if (opts.at === 'rest') unshare(mix, voice);
   voice.state = 'fading';
   voice.out = {
     from: 1,
