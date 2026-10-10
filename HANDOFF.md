@@ -838,15 +838,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **The weight-0 band reset runs on the general path only** (`unband` in `fold.ts`). Lanes reach
       it through the shared record in every case the tests and the fuzzer cover; a lane that skips a
       subject at weight 0 without the general path visiting it would keep a stale band.
-15. **0.8.0 costs more a frame than 0.7.1 in astv's Node motion bench, cause not found**
-    (reported by astv, 2026-10-10; not reproduced here). Its `packages/engine/playback/motion.bench.ts`
-    on msb-uai, history on, two runs a version: text runs +34% to +50% (6 changes of 5 rows, 19.6
-    to 29.5 µs a frame), its busy stage +20% (344 to 413 µs), flights +17% to +32%, and a
-    1000-key roster +2%. The gap shrinks as the roster grows, so it reads as a cost per frame or
-    per cue rather than per subject. In the app the two are level (blits `sync` 0.207 ms on both).
-    Nothing has been profiled. Reproduce in `~/src/astv`: `MOTION_ONLY=1
-    probes/blits-version-bench.sh <out dir> 0.7.1` on a fleet node; astv's `docs/performance.md`,
-    "Findings", has the full table. Next: bisect `v0.7.1..v0.8.0` with that bench.
+15. **0.8.0 costs more a frame than 0.7.1 under `history`; fixed on `main`, unreleased**
+    (2026-10-10). astv's `packages/engine/playback/motion.bench.ts` showed it: text runs +36% to
+    +47%, its busy stage +13%. A bisect with that bench found two commits, `c40e2bc` (a sync
+    spliced the oldest frame off the list of every frame in reach) and `0d1fb48` (a contribution's
+    object was deep-copied each frame on a channel nothing folds into). `src/frames.ts` and
+    `first` in `src/clone.ts` are the fixes, and astv measured every regressed row back within 3%
+    of 0.7.1 on msb-uai; the changelog's Unreleased section has the numbers. Left unexplained, at
+    1 to 2 µs a frame with runs that disagree: astv's glides (+8%) and progress clocks (+39%).
+    To measure a blits build against astv's bench: `MOTION_ONLY=1 probes/blits-version-bench.sh
+    <out dir> 0.7.1` in `~/src/astv` on a fleet node.
 
 ## Loose ends
 

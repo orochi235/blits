@@ -4,6 +4,19 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A frame under `history` costs what it did in 0.7.1 again. 0.8.0 added two costs to every frame:
+  a sync shifted the whole list of frames history can reach to let go of the oldest, 7,200 of
+  them at 60 fps under the default 120 s; and an object a voice gave a channel with no `rest` to
+  fold into, such as `last<Row>()`, was copied for every subject on every frame. The frames now
+  leave from the front without a shift, and such a channel's pose holds the patch's own object, as
+  in 0.7.1; an array is still copied. astv's motion bench on one machine, mean µs a frame over
+  two runs, 0.7.1, 0.8.0, then this: one window landing 6 text changes of 5 rows, 19.6, 28.8,
+  19.5; its busy stage, 354.6, 402.2, 340.7; 10 flights a second, 6.4, 8.0, 6.6.
+
 ## 0.8.0
 
 ### Breaking
