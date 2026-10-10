@@ -643,6 +643,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       (2026-10-09), so whether those rows read level again is one A/B away:
       `bench/ab.sh 27acb2d . 7 keys:10000 tween:10000 fn:10000` with `FRAMES=3000`. At 300
       frames a run those rows swing 5% between runs of one build and settle nothing.
+    - **Mike, 2026-10-09: bound the tuning.** One A/B to confirm a change's win and at most one
+      more for a suspected loss; a delta inside the bench's spread gets a line here, not
+      another cycle. The rest of this item, step 9 and item 12's audit come before any more of
+      it.
     - **Step 8, tried beside it and backed out for moving no number**: growing a lane's arrays to
       the number of subjects probed last frame at its first position, and handing `LaneHost.ready`
       its numbers through `Lanes.arg`.
