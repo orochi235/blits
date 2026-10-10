@@ -599,10 +599,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     release: **Mike, 2026-10-09: hold the release**, so 0.7.1 stays published. Releases are batched:
     keep adding to the changelog's Unreleased section as steps land, and don't ask to publish per
     step; it ships as one release when Mike says. Until things settle, a consumer that needs
-    unreleased blits links the local checkout, and versions are reconciled at that release. Step 8
-    is on `main` but for `angle` and `quat` on a lane (see "Step 8" below), and step 9 is begun
-    (see "Step 9"). **Next, in order: the rest of step 9, `angle` and `quat` on a lane, then item
-    12's audit.** Each
+    unreleased blits links the local checkout, and versions are reconciled at that release. Steps 8
+    and 9 are on `main` but for step 9's names, which are Mike's (see "Step 9, the names").
+    **Next: item 12's audit.** Each
     step goes in a worktree off `main`, since another session
     works on the playground and item 13 in a worktree of its own; ask it before editing this file,
     and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. Step
@@ -789,21 +788,26 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       voice whose handle was written to are refused, not because they cannot be read but because
       the fuzzer (`standing` in `test/fuzz/program.ts`) found frames that depended on when a sync
       noticed a change, and refusing was exact. Each could be let in with the fuzzer's say-so.
-    - **`angle` and `quat` never run on a lane, and the fuzzer can now check one that does**
-      (2026-10-09): its kit (`test/fuzz/scene.ts`) has `heading: angle()` and `spin: quat()`,
-      written by `fn`, keys, wave and motion patches. Adding them found two defects apart from
-      either channel, both fixed: a handle `seek` in the cue's frame put a subject's origin
-      before the voice began (`originOf` skipped a clock that read the delay as it was left), and
-      a fade to rest begun after a probe in the same frame was not seen until the next
-      (`beginFade` now bumps `voice.seeks`, as `touch` does). **The lanes are next, and not
-      begun.** `angle` is not quite `sum`: its `scale` takes the value the short way round before
-      the weight, and its `lerp` goes the short way, where lanes call `lerpNumber` in
-      `keyrows.ts`, `fill.ts` and `gather.ts`. So a lane needs the channel's `turn`, and the wrap
-      wherever a value is folded (`flatten` in `keyfill.ts`, `foldInto`, `foldRun`, both loops of
-      `runMotion`, a crowd's rows, `KeyRows.fold`). `quat` folds four numbers as one, which no
-      lane loop does. Every one of those loops is at the edge of V8's inlining budget, no bench
-      row writes either channel, and no consumer uses them yet: put the wrap in functions of
-      their own, add a bench row first, and confirm the rows that write neither read level.
+    - **Step 8, `angle` and `quat` on a lane, built 2026-10-10** (`src/turns.ts`,
+      `test/turns.test.ts`; the fuzzer's kit has had both since 2026-10-09). An angle is vouched
+      as a sum with a `turn`, and its value is taken the short way round where it enters a fold.
+      A quat is vouched as `'own'`: its four numbers are lifted out of the lane, folded or lerped
+      by the channel's own `fold` and `lerp`, and written back, and its lane starts each fill
+      from `[0, 0, 0, 1]`. A laned channel that is neither gated nor a rotation is `plain`, and
+      the per-subject loops (`foldInto`, `flatten`, `foldKeys`) test that flag where they tested
+      for `'last'`, so a plain channel runs the code it ran. Not on the fast loops: a quat in a
+      keys voice or a motion goes through `foldInto` per subject, a crowd's keys row on either
+      channel reads its voice's stops and not `KeyRows`, and neither folds bare. A vec of angles
+      and a `color` over one stay off lanes.
+      teitou, 5 rounds at 3,000 frames against `ddf7d9e`: the new `turn` row (keys writing both,
+      a `fn` and a tween on the angle, 10k subjects) 0.578, 2.88 to 1.67 ms a frame and 3.9 MB a
+      frame to 0.8; `turn-` 0.941, from `multiply` and `slerp` no longer allocating. Rows that
+      write neither: `keys` 1.012, `signal` 1.022, `tween` 0.979, `fn` 0.987, `locus` 0.971,
+      `tweens` 0.990, `keyses` 0.997, `fns` 0.969, `springs` 1.005, `named` 1.000, `keys-` 0.995.
+      `keys` and `signal` are inside what one build swings and were not run again.
+      The fuzzer found one disagreement while it was built, fixed: a `fn` voice silent at weight 0
+      counted as a member of its locus on a lane and not on the general path, which moved where
+      the locus folds in the order. Only a quat shows it, since nothing else fails to commute.
     - **Left from the doc's "Patch options" paragraph**: a negative voice rate is still accepted
       (`test/lanes.test.ts` cues one, and whether a voice may play backward is undecided), and a
       key `at` returns outside `writes` is still dropped without a word. The doc's per-voice
