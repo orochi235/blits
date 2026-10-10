@@ -33,7 +33,7 @@ export function MixPanel({
         <input
           type="number"
           min={1}
-          step={1}
+          step="any"
           aria-label="stepMs"
           disabled={stepOff}
           value={stepOff ? '' : (m.stepMs ?? Math.round(FRAME * 100) / 100)}
@@ -49,7 +49,7 @@ export function MixPanel({
         <input
           type="number"
           min={1}
-          step={10}
+          step="any"
           placeholder="off"
           value={m.maxDt ?? ''}
           onChange={(e) => {
