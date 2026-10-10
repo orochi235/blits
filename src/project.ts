@@ -1,6 +1,5 @@
 import { ownBlends } from './blend.js';
-import { index } from './chain.js';
-import { detour, open, sighted, weightAt } from './everyone.js';
+import { open, sighted, weightAt } from './everyone.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
@@ -8,8 +7,8 @@ import { heldByInput, ownerReading, relink } from './owner.js';
 import { pin } from './place.js';
 import { reading } from './reading.js';
 import { record } from './record.js';
+import { recount } from './roster.js';
 import { copyStanding, stands } from './standing.js';
-import { Store } from './store.js';
 import { hostAt } from './tape.js';
 import { type Cut, Transport, within } from './transport.js';
 import type { Doubt, Mix, Projection, TransportProjection } from './types.js';
@@ -99,9 +98,7 @@ export function projectAll(transport: Transport, t: number): TransportProjection
 
 /** A mix's copy for a read ahead: its voices as they stand, each subject carried from the live one. */
 function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
-  c.pose = mix.pose;
-  c.wantsPose = mix.wantsPose;
-  c.reducedNow = mix.reducedNow;
+  mirror(mix, c);
   c.cued = mix.cued
     .filter((v) => v.state !== 'done')
     .map((v) => {
@@ -116,14 +113,12 @@ function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
     });
   ownBlends(c.cued);
   if (mix.owners !== null) relink(c.cued);
-  count(c);
+  recount(c);
 }
 
 /** A mix's copy for a read back to `t`, cut at `cut`: its voices then, from the controls and copies kept. */
 function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): void {
-  c.pose = mix.pose;
-  c.wantsPose = mix.wantsPose;
-  c.reducedNow = mix.reducedNow;
+  mirror(mix, c);
   c.backward = true;
   // Copied as the frame's first probe began, so its own frame shows it.
   const was = lastWithin(mix.hostLog, { seq: cut.seq, strict: false });
@@ -148,7 +143,7 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
   ownBlends(c.cued);
   if (mix.owners !== null) relink(c.cued);
   stateAt(c, t);
-  count(c);
+  recount(c);
 }
 
 /** Sets each copied voice's state to what its clock and fade make it at `t`. */
@@ -163,17 +158,11 @@ export function stateAt<I, O>(c: Mixer<I, O>, t: number): void {
           : 'live';
 }
 
-/** Recounts what the fold's shortcuts depend on, for a projection's freshly copied voices. */
-export function count<I, O>(mix: Mixer<I, O>): void {
-  mix.named = new Store<I, Voice<I, O>[]>();
-  mix.naming = 0;
-  mix.general = [];
-  mix.sharers = [];
-  for (const voice of mix.cued) index(mix, voice);
-  mix.loci = mix.cued.filter((v) => v.spec.locus !== undefined).length;
-  detour(mix);
-  mix.anchored = mix.cued.filter((v) => v.spec.anchor !== undefined).length;
-  mix.steps.push(null, ++mix.version);
+/** Gives a projection's copy what it reads of the live mix as it is, before its voices are copied. */
+export function mirror<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
+  c.pose = mix.pose;
+  c.wantsPose = mix.wantsPose;
+  c.reducedNow = mix.reducedNow;
 }
 
 /** A voice's record of a subject, the one it shares among those it does not reach included. */

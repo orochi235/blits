@@ -617,10 +617,27 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       them, so no importer changed. TypeDoc gives the same 108 entries with the same content; it
       orders a page by file, so the site's mix page now lists history and tape, then `MixOptions`
       to `Mix`, then the transport, where `MixOptions` led.
-    - **Step 9, not built.** A narrow interface in front of `Mixer`, whose fields 26 modules reach
-      into: not begun, and the review gives no shape for it, so read which fields each module
-      takes before proposing one. The names are Mike's to settle and nobody has asked him yet:
-      `mix` against `mixer`, `Tape`'s weasel-style methods, and the deprecated `period`.
+    - **Step 9, an owner for what is kept in step with the voice list, built 2026-10-10**
+      (`src/roster.ts`, `test/owners.test.ts`). Read by name, 27 modules take 126 of `Mixer`'s
+      members and no one interface in front of them is narrow: `fold.ts` takes 48 and `seek.ts`
+      38, because the mixer's own methods live in those modules. What the reading did show is
+      fields assigned from several modules that each had to remember the others: the counts a
+      fold and a sync skip work by (`named`, `naming`, `general`, `sharers`, `loci`, `anchored`,
+      `owners`) were kept by `cue.ts` and `move.ts` and rebuilt twice, in `seek.ts` and
+      `project.ts`. `enlist`, `delist` and `recount` in `roster.ts` now do all of it, `unpull` in
+      `pull.ts` forgets what `pull` last read, and `mirror` in `project.ts` is the three fields
+      every projection's copy takes from the live mix. `test/owners.test.ts` lists which modules
+      may assign each of those fields and fails for any other; it reads assignments by name, so
+      a `push` or `splice` gets past it. A projection's copy still keeps no `owners` list, as
+      before, so `lapse` never runs on one: not checked whether that is meant.
+      Not done: a view type per module (a `Pick` of `Mixer` for each of the 13 modules taking
+      under ten members) was weighed and left, since it would name what each reads without
+      stopping anything. Still assigned from several modules: `frame` (five, each one line,
+      `nextFrame()`), `reducedNow`, `relinks`, `pins`, `gone`, `pose` and `retired`.
+    - **Step 9, the names: asked 2026-10-10, not answered.** `mixer` (the stock engine, two
+      letters from `mix`), `Tape`'s weasel-style methods, and the deprecated `period` are Mike's
+      to settle. No consumer imports `mixer` or sets `period` (grep of klieg, weasel, astv,
+      sherpa, wod and magicsmoke, 2026-10-10); weasel and astv pass a tape.
     - **Step 8, built 2026-10-09**: a probe into `out` reuses its arrays (breaking, in the
       changelog), a motion voice off lanes reuses its record's delta (`src/moved.ts`), a keys lane
       fills in one loop (`src/keyfill.ts`), a fill's methods hand each other numbers through

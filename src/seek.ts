@@ -1,6 +1,4 @@
-import { index } from './chain.js';
 import { schedule } from './due.js';
-import { detour } from './everyone.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
@@ -10,7 +8,9 @@ import type { Motions } from './motions.js';
 import { move, nextFrame } from './move.js';
 import { ownerReading } from './owner.js';
 import { place } from './place.js';
+import { unpull } from './pull.js';
 import { Restored } from './restored.js';
+import { recount } from './roster.js';
 import { refitAll } from './spans.js';
 import { Store } from './store.js';
 import { hostAt, replay } from './tape.js';
@@ -208,27 +208,15 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
   const oldLanes = mix.lanes;
   if (oldLanes !== null) mix.lanes = new Lanes<I, O>(laneHost(mix));
   mix.chains = new Store();
-  mix.named = new Store();
-  mix.naming = 0;
-  mix.general = [];
-  mix.sharers = [];
-  for (const voice of kept) index(mix, voice);
   mix.owners = kept.some((v) => v.holding !== null) ? kept.filter((v) => v.holding !== null) : null;
-  mix.loci = kept.filter((v) => v.spec.locus !== undefined).length;
-  detour(mix);
-  mix.anchored = kept.filter((v) => v.spec.anchor !== undefined).length;
+  recount(mix);
   mix.parters.clear();
   for (const voice of [...kept, ...gone])
     if (voice.parts !== null || voice.parted !== null) mix.parters.add(voice);
-  mix.steps.push(null, ++mix.version);
   mix.relinks++;
   mix.pose = new Store();
   if (mix.restStamps !== null) mix.restStamps = new Store();
-  mix.pulled = [];
-  mix.pulledHeads = [];
-  mix.pulledSlots = new Int32Array(0);
-  mix.pulledVersion = Number.NaN;
-  mix.pulledRelinks = -1;
+  unpull(mix);
   for (const voice of [...kept, ...gone]) {
     voice.unreached = null;
     voice.unreachedBits = null;

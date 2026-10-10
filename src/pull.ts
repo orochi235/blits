@@ -186,3 +186,12 @@ function columnsOf<I, O>(mix: Mixer<I, O>, into: Columns<O>): Column[] {
   }
   return columns;
 }
+
+/** Forgets the array `pull` last read, whose heads a seek has made stale. */
+export function unpull<I, O>(mix: Mixer<I, O>): void {
+  mix.pulled = [];
+  mix.pulledHeads = [];
+  mix.pulledSlots = new Int32Array(0);
+  mix.pulledVersion = Number.NaN;
+  mix.pulledRelinks = -1;
+}

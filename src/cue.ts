@@ -1,8 +1,8 @@
 import { checkHits } from './book.js';
-import { changed, index } from './chain.js';
+import { changed } from './chain.js';
 import { copyable } from './clone.js';
 import { schedule } from './due.js';
-import { detour, shares } from './everyone.js';
+import { shares } from './everyone.js';
 import { finiteRate, plainWeight, VoiceHandle } from './handle.js';
 import { reorigin } from './held.js';
 import { handle } from './hosts.js';
@@ -11,6 +11,7 @@ import { motionOf } from './motion.js';
 import { adopt, ownerPatch, ownerReading } from './owner.js';
 import { durationOf } from './patch.js';
 import { checkPlacement, localNow, mixAt, pin, place } from './place.js';
+import { enlist } from './roster.js';
 import { scoredAdd } from './scored.js';
 import { checkChild, refit } from './spans.js';
 import { motionOwner } from './strays.js';
@@ -143,10 +144,6 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   const anchored = anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
   const motion = voice.motion;
   if (owner !== null) adopt(owner, voice);
-  if (voice.holding !== null) {
-    mix.owners ??= [];
-    mix.owners.push(voice);
-  }
   if (!Number.isNaN(mix.now)) {
     voice.cuedAt = mix.now;
     voice.cuedSeq = mix.transport.seq;
@@ -168,14 +165,11 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   cued.splice(i, 0, voice);
   scoredAdd(mix, voice);
   voice.sharing = shares(mix, voice);
-  index(mix, voice);
+  enlist(mix, voice);
   changed(mix, voice);
   mix.stir();
-  if (spec.locus !== undefined) mix.loci++;
-  detour(mix);
   if (spec.from === 'current') mix.wantsPose = true;
   if (anchor) {
-    mix.anchored++;
     place(mix);
     if (
       !Number.isNaN(mix.now) &&

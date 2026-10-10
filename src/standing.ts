@@ -2,7 +2,8 @@ import { ownBlends } from './blend.js';
 import type { Mixer } from './mixer.js';
 import { relink } from './owner.js';
 import { pin } from './place.js';
-import { count, recall, stateAt } from './project.js';
+import { mirror, recall, stateAt } from './project.js';
+import { recount } from './roster.js';
 import type { Cut, Transport } from './transport.js';
 import type { Voice } from './voice.js';
 
@@ -54,9 +55,7 @@ export function stands(transport: Transport, t: number): void {
 
 /** A mix's copy for a read back to `t` with no history: its voices as they stand, each at `t`. */
 export function copyStanding<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): void {
-  c.pose = mix.pose;
-  c.wantsPose = mix.wantsPose;
-  c.reducedNow = mix.reducedNow;
+  mirror(mix, c);
   c.backward = true;
   c.cued = mix.cued
     .filter((v) => v.state !== 'done')
@@ -71,5 +70,5 @@ export function copyStanding<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, 
   ownBlends(c.cued);
   if (mix.owners !== null) relink(c.cued);
   stateAt(c, t);
-  count(c);
+  recount(c);
 }

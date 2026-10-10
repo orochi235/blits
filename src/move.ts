@@ -1,4 +1,4 @@
-import { changed, unindex } from './chain.js';
+import { changed } from './chain.js';
 import { popDue, schedule } from './due.js';
 import { detour } from './everyone.js';
 import { beginFade, part, retire } from './fade.js';
@@ -8,6 +8,7 @@ import type { Mixer } from './mixer.js';
 import { ownerReading } from './owner.js';
 import { mixAt, place, repin, startOf } from './place.js';
 import { pageVoice } from './revive.js';
+import { delist } from './roster.js';
 import { scoredLeft, scoredRemove } from './scored.js';
 import { lapse } from './spans.js';
 import { unplay } from './strays.js';
@@ -186,12 +187,7 @@ function leave<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   }
   unplay(mix, voice);
   changed(mix, voice);
-  if (voice.named !== null) unindex(mix, voice);
-  if (voice.holding !== null && mix.owners !== null)
-    mix.owners = mix.owners.filter((v) => v !== voice);
-  if (voice.spec.locus !== undefined) mix.loci--;
-  detour(mix);
-  if (voice.spec.anchor !== undefined) mix.anchored--;
+  delist(mix, voice);
   return voice.named === null;
 }
 
