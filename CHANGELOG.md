@@ -144,6 +144,16 @@ version and everything else the patch. Each release lists its changes as **Break
   then reported none skipped.
 - A pose read NaN for a voice still waiting on a `start` the host gave, once the voice was set to
   rate 0 while the mix's rate was 0. It reads as any voice before its start does.
+- A frame allocates much less, which is most of what made the garbage collector run during one. A
+  probe into `out` reuses its arrays, a motion voice off lanes reuses its last delta, and a fill
+  no longer boxes a number per subject. `bench/frame.mjs`, 10,000 subjects probed into one `out`:
+  three `keys` voices went from 1.8 MB a frame to 0.16 MB and take 0.81 of the time; a `tween`
+  voice from 0.72 MB to 0.02 MB, 0.90 of the time; a `tween` voice with lanes off from 2.6 MB to
+  0.32 MB, 0.82 of the time.
+- Under `history`, dropping subjects and reading them back each took time that grew with the square
+  of how many had left: every drop went through every record its voice had kept, and so did every
+  read back. 8,000 subjects dropped in one frame took 173 ms and take 7; reading them back took 180
+  ms and takes 3 (`bench/drops.mjs`).
 
 ## 0.7.1
 

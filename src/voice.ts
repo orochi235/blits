@@ -1,6 +1,7 @@
 import type { Blend } from './blend.js';
 import { type Clock, elapsedWith, passesOf, rateWith, rebaseWith, timeWith } from './clock.js';
 import { type Curve, curve } from './easing.js';
+import type { Leavings } from './leavings.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
 import { Named } from './named.js';
@@ -259,7 +260,7 @@ export class Voice<I, O> {
    * Under history, the records of subjects that left this voice, by the mix time and frame each
    * left at, while a seek or a read back may reach them; null while none have.
    */
-  left: Left<I>[] | null = null;
+  left: Leavings<I> | null = null;
   readonly ease: Curve | undefined;
   /** How many passes its `loop` plays, worked out once. */
   readonly passes: number;

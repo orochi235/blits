@@ -1,6 +1,7 @@
 import { playable } from './cue.js';
 import { VoiceHandle } from './handle.js';
 import { handle } from './hosts.js';
+import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
 import type { Run } from './motions.js';
 import type { Past } from './origin.js';
@@ -151,7 +152,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     playedSeq: settled.seq,
     records,
     runs,
-    left: (voice.left ?? []).map((e) => [
+    left: (voice.left?.all() ?? []).map((e) => [
       keys.key(e.subject),
       e.at,
       e.seq,
@@ -205,14 +206,15 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
     voice.keyed.add(key);
   }
   for (const [key, run] of d.runs) voice.motion?.unpack(subjectOf(key), run);
-  if (d.left.length > 0)
-    voice.left = d.left.map(([key, at, seq, p, sync]) => ({
+  voice.left = Leavings.from(
+    d.left.map(([key, at, seq, p, sync]) => ({
       subject: subjectOf(key),
       at,
       seq,
       sync,
       held: unpackHeld(voice, p),
-    }));
+    })),
+  );
   if (d.parts.length > 0)
     voice.parts = new Map(
       d.parts.map(([key, at, over, seq]) => [subjectOf(key), { at, over, seq }]),

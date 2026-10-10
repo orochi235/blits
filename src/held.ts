@@ -1,6 +1,7 @@
 import { schedule } from './due.js';
 import type { Mixer } from './mixer.js';
 import { originOf } from './origin.js';
+import { record } from './record.js';
 import { unreach, unreached } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
 
@@ -11,29 +12,11 @@ export function unreachedOf<I, O>(
   now: number,
 ): Subject<unknown> {
   const since = this.sinceOf(voice, 0);
-  const none: Subject<unknown> = {
-    reaches: false,
-    delay: 0,
-    since,
-    shown: this.shownOf(voice, since),
-    weight: 0,
-    rested: false,
-    bands: null,
-    state: undefined,
-    stepped: now,
-    ticks: 0,
-    probed: Number.NaN,
-    delta: null,
-    phase: 0,
-    seeks: 0,
-    rebuilt: voice.rebuilds,
-    kept: null,
-    voice,
-    next: null,
-    version: Number.NaN,
-    loci: null,
-    slot: -1,
-  };
+  const none = record(voice, false, undefined);
+  none.since = since;
+  none.shown = this.shownOf(voice, since);
+  none.stepped = now;
+  none.rebuilt = voice.rebuilds;
   voice.unreached = none;
   return none;
 }
@@ -66,29 +49,17 @@ export function held<I, O>(
   }
   const delay = voice.spec.stagger ? voice.spec.stagger(subject) : 0;
   const since = this.sinceOf(voice, delay);
-  held = {
-    reaches: true,
-    delay,
-    since,
-    shown: this.shownOf(voice, since),
-    weight: 0,
-    rested: false,
-    bands: null,
-    state: voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
-    stepped: since < now ? since : now,
-    ticks: 0,
-    probed: Number.NaN,
-    delta: null,
-    phase: 0,
-    seeks: 0,
-    rebuilt: voice.rebuilds,
-    kept: null,
+  const shown = this.shownOf(voice, since);
+  held = record(
     voice,
-    next: null,
-    version: Number.NaN,
-    loci: null,
-    slot: -1,
-  };
+    true,
+    voice.patch.state ? (voice.patch.state(subject) as unknown) : (undefined as unknown),
+  );
+  held.delay = delay;
+  held.since = since;
+  held.shown = shown;
+  held.stepped = since < now ? since : now;
+  held.rebuilt = voice.rebuilds;
   if (this.projecting) {
     held.from = held.stepped;
     held.unknown = this.backward && voice.spec.from === 'current';

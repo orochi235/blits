@@ -1,12 +1,13 @@
 import { elapsedWith } from './clock.js';
 import { clone } from './clone.js';
 import { schedule } from './due.js';
+import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
 import { packHeld } from './pack.js';
 import { pageOut } from './paging.js';
 import { scoreTouched } from './scored.js';
 import { type Cut, within } from './transport.js';
-import { type Controls, type Left, none, type Subject, type Voice } from './voice.js';
+import { type Controls, none, type Subject, type Voice } from './voice.js';
 
 /**
  * The last entry taken before `t`, or at it where `inclusive` says so, as it does for a change made
@@ -221,19 +222,24 @@ export function leave<I, O>(
   const history = mix.opts.history;
   if (history === undefined || held === undefined) return;
   const reach = mix.now - history.ms;
-  const left: Left<I>[] = [];
-  for (const e of voice.left ?? [])
-    if (e.at >= reach) left.push(e);
-    else if (mix.keys !== null)
-      pageOut(
-        mix,
-        'left',
-        voice.id,
-        mix.keys.key(e.subject),
-        [e],
-        (x) => [packHeld(voice, x.held), x.sync],
-        reach,
-      );
+  const left = voice.left ?? new Leavings<I>();
+  voice.left = left;
+  const keys = mix.keys;
+  left.expire(
+    reach,
+    keys === null
+      ? null
+      : (e) =>
+          pageOut(
+            mix,
+            'left',
+            voice.id,
+            keys.key(e.subject),
+            [e],
+            (x) => [packHeld(voice, x.held), x.sync],
+            reach,
+          ),
+  );
   left.push({
     subject,
     at: Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now,
@@ -241,18 +247,6 @@ export function leave<I, O>(
     sync: mix.syncing,
     held,
   });
-  voice.left = left;
-}
-
-/** The record a subject had at `cut` and left a voice with after it, if it left after `cut`. */
-export function leftAt<I>(
-  left: readonly Left<I>[] | null,
-  subject: I,
-  cut: Cut,
-): Subject<unknown> | undefined {
-  for (const e of left ?? [])
-    if (!within(cut, e.seq, e.sync) && Object.is(e.subject, subject)) return e.held;
-  return undefined;
 }
 
 /**

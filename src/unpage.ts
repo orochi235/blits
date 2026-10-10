@@ -1,3 +1,4 @@
+import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
 import type { Run } from './motions.js';
 import type { Paced } from './pace.js';
@@ -10,7 +11,6 @@ import type { Paged } from './types.js';
 import type { Controls, Subject, Voice } from './voice.js';
 
 type Member = Mixer<unknown, unknown>;
-type Left = { subject: unknown; at: number; seq: number; held: Subject<unknown> };
 
 /**
  * Makes memory reach mix time `t` for a seek or read there, from what `prepare` loaded; true where
@@ -117,15 +117,18 @@ function unpageVoice(voice: Voice<unknown, unknown>, records: readonly Paged[], 
       of('controls').map((r) => r.data as Controls),
       voice.log,
     );
-  const left = voice.left ?? [];
-  for (const r of of('left')) {
-    const subject = keys.subject(r.subject);
-    if (left.some((e) => e.seq === r.seq && Object.is(e.subject, subject))) continue;
-    const [p, sync] = r.data as [PackedRecord, boolean];
-    left.push({ subject, at: r.at, seq: r.seq, sync, held: unpackHeld(voice, p) });
+  const paged = of('left');
+  if (paged.length > 0) {
+    const left = [...(voice.left?.all() ?? [])];
+    for (const r of paged) {
+      const subject = keys.subject(r.subject);
+      if (left.some((e) => e.seq === r.seq && Object.is(e.subject, subject))) continue;
+      const [p, sync] = r.data as [PackedRecord, boolean];
+      left.push({ subject, at: r.at, seq: r.seq, sync, held: unpackHeld(voice, p) });
+    }
+    left.sort((a, b) => a.seq - b.seq);
+    voice.left = Leavings.from(left);
   }
-  left.sort((a, b) => a.seq - b.seq);
-  voice.left = left.length === 0 ? null : left;
   for (const [key, list] of bySubject(of('snap'))) {
     const subject = keys.subject(key);
     for (const [held, snaps] of lives(voice, subject, list))
@@ -172,7 +175,7 @@ function lives(
   subject: unknown,
   records: readonly Paged[],
 ): [Subject<unknown>, Paged[]][] {
-  const left: Left[] = (voice.left ?? []).filter((e) => Object.is(e.subject, subject));
+  const left = voice.left?.of(subject) ?? [];
   const out: [Subject<unknown>, Paged[]][] = [];
   let from = Number.NEGATIVE_INFINITY;
   for (const e of left) {

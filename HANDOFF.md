@@ -599,13 +599,43 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     release: **Mike, 2026-10-09: hold the release**, so 0.7.1 stays published. Releases are batched:
     keep adding to the changelog's Unreleased section as steps land, and don't ask to publish per
     step; it ships as one release when Mike says. Until things settle, a consumer that needs
-    unreleased blits links the local checkout, and versions are reconciled at that release. Next is step 8. Each
+    unreleased blits links the local checkout, and versions are reconciled at that release. Step 8
+    is part built and on `main` (see "Step 8" below); next is the rest of it, then step 9. Each
     step goes in a worktree off `main`, since another session
     works on the playground and item 13 in a worktree of its own; ask it before editing this file,
     and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. Step
     6's version bump and publish are Mike's call, never 1.0.0. Measure
     any hot-path change with `AB_EACH=1 bench/ab.sh <origin/main sha> . <rounds> <rows>` on a fleet
-    node (`.` is the synced working tree). Decided while building, and open beyond the doc:
+    node (`.` is the synced working tree). `onto do` sends files, not commits, so the first
+    revision has to be one `origin` has; `AB_BENCH=bench/frame.mjs` makes both sides print
+    `kB/frame`, `bench/medians.mjs <output>` reduces a run to medians, and `bench/allocs.mjs <row>`
+    lists the functions that allocate. Decided while building, and open beyond the doc:
+    - **Step 8, built 2026-10-09**: a probe into `out` reuses its arrays (breaking, in the
+      changelog), a motion voice off lanes reuses its record's delta (`src/moved.ts`), a keys lane
+      fills in one loop (`src/keyfill.ts`), a fill's methods hand each other numbers through
+      `Lanes.arg`, every record comes from `record()` (`src/record.ts`; 6 hidden classes became 2
+      in a mix with history and `from: 'current'`), and what left a voice is a queue with an index
+      by subject (`src/leavings.ts`; `bench/drops.mjs`). teitou, 5 rounds: geometric mean 0.904
+      over 24 rows, 0.909 over 19 general-path rows.
+    - **Step 8, not built**, in the review's order:
+      - One shared record for a stateless, untargeted voice, and records shared with a projection.
+        A record is a link in its subject's chain (`next`) and holds that subject's delay, weight,
+        band state and the frame's delta, so sharing one means the chain stops being linked through
+        records first. That is a design change nobody has drawn yet.
+      - A seek's restore layers, which wrap one another (`Restored` in `seek.ts`); not measured.
+      - A motion patch's number for a subject kept on the record. It changes on `release` and
+        `unpack`, so a kept one needs a count that says it is stale.
+    - **Step 8, measured and left**: the `keys` row still allocates about 16 B a probe in
+      `foldWith`, cause not found; two guesses were built and backed out for changing nothing (a
+      site of its own per scalar channel in `copy`, and folding a delta's number where
+      `foldDelta` reads it). Still boxed: a locus's `gatherInto`, a crowd's `KeyRows.fold`, and
+      what `host.signal` returns. The rest of the `fn` rows' allocation is the bench's own patch
+      returning an object a call (about 72 B). Under `from: 'current'`, `keep` still copies a pose
+      a probe into `out`.
+    - **The `out` change has not been checked against consumers.** klieg
+      (`motion/compositor.ts`), weasel (`scene/poseOverrides.ts`) and astv (six sites under
+      `packages/engine`) probe into `out`; whether any keeps an array across two probes has to be
+      read before they take the release.
     - **Step 3 took the doc's proposed default, exact catch-up**: a stateful subject met late steps
       from its origin, capped by `maxDt`. The per-voice `catchUp: 'fresh'` alternative is not built.
       A voice keeps at most 256 past clocks; past that, an origin on a clock it dropped is worked
@@ -662,8 +692,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       voice whose handle was written to are refused, not because they cannot be read but because
       the fuzzer (`standing` in `test/fuzz/program.ts`) found frames that depended on when a sync
       noticed a change, and refusing was exact. Each could be let in with the fuzzer's say-so.
-    - **`angle` and `quat` never run on a lane.** `angle` folds as `sum` does and differs only in
-      `lerp`, which lanes call as `lerpNumber` in `keyrows.ts`, `fill.ts` and `gather.ts`.
+    - **`angle` and `quat` never run on a lane**, and step 8 has not changed that. `angle` is not
+      quite `sum`: its `scale` takes the value the short way round before the weight, and its
+      `lerp` goes the short way, where lanes call `lerpNumber` in `keyrows.ts`, `fill.ts` and
+      `gather.ts`. So a lane needs the channel's `turn`, and the wrap wherever a value is folded
+      (`flatten` in `keyfill.ts`, `foldInto`, `foldRun`, both loops of `runMotion`, a crowd's rows,
+      `KeyRows.fold`). `quat` folds four numbers as one, which no lane loop does. The fuzzer's kit
+      (`test/fuzz`) has neither channel: add them there first, or nothing checks the lane.
     - **Left from the doc's "Patch options" paragraph**: a negative voice rate is still accepted
       (`test/lanes.test.ts` cues one, and whether a voice may play backward is undecided), and a
       key `at` returns outside `writes` is still dropped without a word. The doc's per-voice
@@ -673,11 +708,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       or ahead of the mix moves its copy, which lands what the live mix lands only at its next
       sync: a voice a handle `seek` put past its end has left, and an anchor on a voice just faded
       is placed. The same class as issue B, decided by when the host looks.
-    - **A pose can read NaN** (found 2026-10-09, live `probe`, with history or without): a pending
-      voice whose `start` the host gave, set to rate 0 while the mix's rate is 0, reads NaN from
-      the next sync on. The pinned start is at infinity while the mix stands still, and the clock
-      multiplies that by the voice's rate of 0. Repro: cue a `freeze: 'both'` voice with `start`
-      100 ms ahead, then `mix.rate = 0` and `handle.rate = 0`, sync, probe.
     - **The weight-0 band reset runs on the general path only** (`unband` in `fold.ts`). Lanes reach
       it through the shared record in every case the tests and the fuzzer cover; a lane that skips a
       subject at weight 0 without the general path visiting it would keep a stale band.

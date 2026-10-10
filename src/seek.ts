@@ -1,8 +1,9 @@
 import { index } from './chain.js';
 import { schedule } from './due.js';
-import { copyHeld, last, lastWithin, leftAt } from './history.js';
+import { copyHeld, last, lastWithin } from './history.js';
 import { laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
+import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
 import { move, nextFrame } from './move.js';
@@ -121,9 +122,9 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   voice.unreached = null;
   voice.unreachedBits = null;
   voice.seeks++;
-  const left = voice.left;
-  voice.left = left === null ? null : left.filter((e) => e.seq <= seq);
-  const future = left === null ? [] : left.filter((e) => e.seq > seq);
+  const left = voice.left?.all() ?? [];
+  voice.left = Leavings.from(left.filter((e) => e.seq <= seq));
+  const future = Leavings.from(left.filter((e) => e.seq > seq));
   voice.subjects = new Restored(
     voice.subjects,
     (live) => {
@@ -143,7 +144,7 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
       }
       return h;
     },
-    (key) => leftAt(future, key, cut),
+    (key) => future?.at(key, cut),
   );
 }
 

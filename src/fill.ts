@@ -254,8 +254,6 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
   const host = this.host;
   const voice = lane.voice;
   const elapsedNow = lane.elapsedNow;
-  const duration = voice.duration;
-  const passes = voice.passes;
   const arg = this.arg;
   const data = lane.data;
   const o = p * Row.STRIDE;
@@ -272,8 +270,8 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
   if (!lane.placed || !same(elapsed, lane.placedAt)) {
     lane.placed = true;
     lane.placedAt = elapsed;
-    lane.phase = phaseAt(elapsed, duration, passes);
-    lane.pass = passAt(elapsed, duration, passes);
+    lane.phase = phaseAt(elapsed, voice.duration, voice.passes);
+    lane.pass = passAt(elapsed, voice.duration, voice.passes);
   }
   const since = data[o + Row.SINCE] as number;
   if (!lane.flat && (!lane.weighed || !same(since, lane.weighedSince))) {
@@ -398,7 +396,8 @@ export function readKeyed<I, O>(
 /**
  * Calls a stateless fn voice's patch for a subject its general path has met, and folds the delta,
  * at the voice time, phase, pass, delay and weight in `Arg`; false for a subject the host has let
- * go of.
+ * go of. As arguments those cost nothing where V8 inlines the call and 31 bytes a call where it
+ * does not, which differs by V8 version: Node 26.1 does not (2026-10-09).
  */
 export function call<I, O>(
   this: Lanes<I, O>,

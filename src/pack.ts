@@ -1,4 +1,5 @@
 import { clone } from './clone.js';
+import { record } from './record.js';
 import type { Subject, Voice } from './voice.js';
 
 /** A subject's record as plain data, for a history store. */
@@ -54,29 +55,21 @@ export function packHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): PackedR
 /** A record made again from `packHeld`'s data, for `voice`. */
 export function unpackHeld<I, O>(voice: Voice<I, O>, p: PackedRecord): Subject<unknown> {
   const patch = voice.patch;
-  const h: Subject<unknown> = {
-    reaches: p.reaches,
-    delay: p.delay,
-    since: p.since,
-    shown: p.shown,
-    weight: p.weight,
-    rested: p.rested,
-    bands: p.bands === null ? null : Uint8Array.from(p.bands),
-    state: p.state === undefined ? undefined : patch.unpack ? patch.unpack(p.state) : p.state,
-    stepped: p.stepped,
-    ticks: p.ticks,
-    probed: Number.NaN,
-    delta: null,
-    phase: 0,
-    seeks: 0,
-    rebuilt: p.rebuilt,
-    kept: null,
+  const bands = p.bands === null ? null : Uint8Array.from(p.bands);
+  const h = record(
     voice,
-    next: null,
-    version: Number.NaN,
-    loci: null,
-    slot: -1,
-  };
+    p.reaches,
+    p.state === undefined ? undefined : patch.unpack ? patch.unpack(p.state) : p.state,
+  );
+  h.delay = p.delay;
+  h.since = p.since;
+  h.shown = p.shown;
+  h.weight = p.weight;
+  h.rested = p.rested;
+  h.bands = bands;
+  h.stepped = p.stepped;
+  h.ticks = p.ticks;
+  h.rebuilt = p.rebuilt;
   if (p.kept !== null) h.unkept = p.kept;
   if (p.base !== undefined) h.base = p.base;
   if (p.slope !== undefined) h.slope = p.slope;

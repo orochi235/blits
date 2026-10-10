@@ -1,11 +1,12 @@
 import { ownBlends } from './blend.js';
 import { index } from './chain.js';
-import { copyHeld, last, lastWithin, leftAt } from './history.js';
+import { copyHeld, last, lastWithin } from './history.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
 import { heldByInput, ownerReading, relink } from './owner.js';
 import { pin } from './place.js';
 import { reading } from './reading.js';
+import { record } from './record.js';
 import { copyStanding, stands } from './standing.js';
 import { Store } from './store.js';
 import { hostAt } from './tape.js';
@@ -214,7 +215,7 @@ export function recall<I, O>(
   t: number,
   cut: Cut,
 ): Subject<unknown> | undefined {
-  const live = leftAt(voice.left, subject, cut) ?? recordOf(mix, voice, subject);
+  const live = voice.left?.at(subject, cut) ?? recordOf(mix, voice, subject);
   if (live === undefined) return undefined;
   const snap = live.snaps && last(live.snaps, t, true);
   if (snap) {
@@ -224,35 +225,22 @@ export function recall<I, O>(
     return h;
   }
   const stepped = live.since < t ? live.since : t;
-  return {
-    reaches: live.reaches,
-    delay: live.delay,
-    since: live.since,
-    shown: live.shown,
-    weight: 0,
-    rested: false,
-    bands: null,
-    state:
-      live.reaches && voice.patch.state
-        ? (voice.patch.state(subject) as unknown)
-        : (undefined as unknown),
-    stepped,
-    ticks: 0,
-    probed: Number.NaN,
-    delta: null,
-    phase: 0,
-    seeks: 0,
-    rebuilt: voice.rebuilds,
-    kept: null,
+  const h = record(
     voice,
-    next: null,
-    version: Number.NaN,
-    loci: null,
-    slot: -1,
-    from: stepped,
-    unknown: voice.spec.from === 'current',
-    replay: live.inputs,
-  };
+    live.reaches,
+    live.reaches && voice.patch.state
+      ? (voice.patch.state(subject) as unknown)
+      : (undefined as unknown),
+  );
+  h.delay = live.delay;
+  h.since = live.since;
+  h.shown = live.shown;
+  h.stepped = stepped;
+  h.rebuilt = voice.rebuilds;
+  h.from = stepped;
+  h.unknown = voice.spec.from === 'current';
+  h.replay = live.inputs;
+  return h;
 }
 
 /** Per channel, the least sure voice that fed it this frame. */

@@ -1,32 +1,11 @@
 import type { Mixer } from './mixer.js';
 import type { Named } from './named.js';
+import { record } from './record.js';
 import type { Subject, Voice } from './voice.js';
 
 /** The first record of a subject no live voice reaches, so a probe of it still makes one lookup. */
 function stub(): Subject<unknown> {
-  return {
-    reaches: false,
-    delay: 0,
-    since: 0,
-    shown: 0,
-    weight: 0,
-    rested: false,
-    bands: null,
-    state: undefined,
-    stepped: 0,
-    ticks: 0,
-    probed: Number.NaN,
-    delta: null,
-    phase: 0,
-    seeks: 0,
-    rebuilt: 0,
-    kept: null,
-    voice: null,
-    next: null,
-    version: Number.NaN,
-    loci: null,
-    slot: -1,
-  };
+  return record(null, false, undefined);
 }
 
 /**
