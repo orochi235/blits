@@ -584,13 +584,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 
-14. **The 2026-10-09 code review, steps 5–9.** The review is the doc "blits code review,
+14. **The 2026-10-09 code review, steps 8–9.** The review is the doc "blits code review,
     2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5); its findings
-    are numbered there, and its Status section says which steps are done. Steps 1 to 5 are on
+    are numbered there, and its Status section says which steps are done. Steps 1 to 5 and 7 are on
     `main`: the local fixes, the lanes fuzzer (`test/differential.test.ts`, which now masks and
-    skips nothing), the determinism suite (`test/determinism.test.ts`, which holds no known
-    failure over 150 seeds per property and variant), issue B (`src/origin.ts`), issue A with
-    findings #10 and #13, and lanes invalidation (#6, #15, #16).
+    skips nothing), the determinism suite (`test/determinism.test.ts`, whose only known failures
+    are the two `now` seeds below), issue B (`src/origin.ts`), issue A with findings #10 and #13,
+    lanes invalidation (#6, #15, #16), and step 7's public surface, listed in the changelog's
+    Unreleased section.
     **Mike, 2026-10-09: work steps 3 to 9, then item 12's audit, chaining sessions (the
     `pass-the-baton` skill) until the whole plan is finished**, each session updating this item and
     the doc's Status section as a step lands. Step 6 is built (`b5dfa51`: `prepack` builds from an
@@ -598,7 +599,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     release: **Mike, 2026-10-09: hold the release**, so 0.7.1 stays published. Releases are batched:
     keep adding to the changelog's Unreleased section as steps land, and don't ask to publish per
     step; it ships as one release when Mike says. Until things settle, a consumer that needs
-    unreleased blits links the local checkout, and versions are reconciled at that release. Next is step 7. Each
+    unreleased blits links the local checkout, and versions are reconciled at that release. Next is step 8. Each
     step goes in a worktree off `main`, since another session
     works on the playground and item 13 in a worktree of its own; ask it before editing this file,
     and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. Step
@@ -645,6 +646,38 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       the same calls on a subject never faded read 0.767: the change waits for a motion slot the
       subject gets only when probed. The same class as issue B, decided by when the host looks.
     - **Finding #18**: a `last()` or OKLCH channel in a locus picks by cue order, not weight.
+    - **Step 7's names and shapes were chosen while building, and Mike has not seen them**
+      (2026-10-09). Beyond the plan's own names: the type `Vec<N>`; `angle({ turn })` with `turn`
+      defaulting to 360; `input(read, of?)`, whose `touch()` reports a change; a keys patch's
+      options as the flat fields `ease`, `easeBy`, `delayBy` and `lerpBy`, and a wave's as
+      `patch.wave`, with `waveOptionsOf` removed; `handle.to` and `push` throwing for a patch
+      that takes neither, and `read` giving undefined; and `fold` switching a rest-less channel on
+      at 0.6, a mix's default band. Each is one rename away while nothing is released.
+    - **No consumer uses step 7 yet.** The workarounds the doc's "Universal applicability" table
+      lists are still in klieg, sherpa, weasel and wod; the playground session takes
+      `apps/playground` (`LivePanel`'s cast, `expr.ts`'s flag). klieg's `level` needs
+      `input(...)` and a `touch()` in its `set` to get its lanes back.
+    - **A read back with no history answers a narrow case** (`src/standing.ts`): every voice as
+      cued, read by its clock alone. A voice an anchor places, an owner and what it holds, and a
+      voice whose handle was written to are refused, not because they cannot be read but because
+      the fuzzer (`standing` in `test/fuzz/program.ts`) found frames that depended on when a sync
+      noticed a change, and refusing was exact. Each could be let in with the fuzzer's say-so.
+    - **`angle` and `quat` never run on a lane.** `angle` folds as `sum` does and differs only in
+      `lerp`, which lanes call as `lerpNumber` in `keyrows.ts`, `fill.ts` and `gather.ts`.
+    - **Left from the doc's "Patch options" paragraph**: a negative voice rate is still accepted
+      (`test/lanes.test.ts` cues one, and whether a voice may play backward is undecided), and a
+      key `at` returns outside `writes` is still dropped without a word. The doc's per-voice
+      `stepMs` row (magicsmoke's mix per fault) is not built, and no reason against it is recorded.
+    - **`project(mix.now)` is not always what `probe` gives** (found 2026-10-09; `now` in
+      `test/determinism.test.ts`, seeds plain 144 and full 1, with history or without). A read at
+      or ahead of the mix moves its copy, which lands what the live mix lands only at its next
+      sync: a voice a handle `seek` put past its end has left, and an anchor on a voice just faded
+      is placed. The same class as issue B, decided by when the host looks.
+    - **A pose can read NaN** (found 2026-10-09, live `probe`, with history or without): a pending
+      voice whose `start` the host gave, set to rate 0 while the mix's rate is 0, reads NaN from
+      the next sync on. The pinned start is at infinity while the mix stands still, and the clock
+      multiplies that by the voice's rate of 0. Repro: cue a `freeze: 'both'` voice with `start`
+      100 ms ahead, then `mix.rate = 0` and `handle.rate = 0`, sync, probe.
     - **The weight-0 band reset runs on the general path only** (`unband` in `fold.ts`). Lanes reach
       it through the shared record in every case the tests and the fuzzer cover; a lane that skips a
       subject at weight 0 without the general path visiting it would keep a stale band.
