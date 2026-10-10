@@ -711,16 +711,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     1 to 2 µs a frame with runs that disagree: astv's glides (+8%) and progress clocks (+39%).
     To measure a blits build against astv's bench: `MOTION_ONLY=1 probes/blits-version-bench.sh
     <out dir> 0.7.1` in `~/src/astv` on a fleet node.
-16. **`setting.dt` is not the gap since the last frame for a patch with no `step`** (found
-    2026-10-10, not fixed). `prime` in `weigh.ts` sets it to `now - held.stepped`, and only a patch
-    with a `step` moves `held.stepped` (`fold.ts`), so a stateless patch or a signal reads the
-    time since its subject's origin, growing every frame, where `Setting.dt`'s doc says the gap
-    since the subject last advanced. A mix synced at 0, 16, 48 and 64 hands a `fn` patch 0, 16,
-    48 and 64, on 0.7.0 and 0.8.1 alike, lanes on or off. `slew` and `lag` are not caught, since
-    they take the lesser of `dt` and their own gap. klieg promises its effect patches a frame
-    delta and has a test marked `it.fails` for this (klieg `TODO.md`). A fix has to say what
-    `dt` is on a lane fill and on a record shared by every subject, which keeps no time for
-    each.
+16. **`setting.dt` for a patch with no `step` is fixed** (2026-10-10; the changelog's Unreleased
+    section, `test/dt.test.ts`). Mike chose the gap since the subject was last sampled over the
+    gap since the last sync. What it left:
+    - **A read ahead or back still rates such a patch `exact`**, though the `dt` it hands is one
+      sample's gap and not what frame-by-frame play hands. Rating it `stepped` needs the mix to
+      know the patch read `dt`, which means a getter on the setting, untimed.
+    - **The first `dt` after a voice stops sharing its record counts from the subject's origin**,
+      since each subject's own record starts fresh (`unshare` in `everyone.ts`).
+    - klieg's `it.fails` test for this (klieg `TODO.md`) should pass on the next blits release.
 
 ## Loose ends
 

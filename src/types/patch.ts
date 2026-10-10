@@ -45,7 +45,8 @@ export interface Setting<S = void, H = unknown> {
    * The gap this subject is catching up by: milliseconds since it last advanced, which is the gap
    * since the previous sync only for a subject sampled every frame. Infinity under reduced motion;
    * no more than `maxDt` where the mix sets one. Inside a `step` under `stepMs`, it is `stepMs`, and
-   * `timestamp` is the end of that interval.
+   * `timestamp` is the end of that interval. A lane samples a subject for one frame after its last
+   * probe. A read by `project` is one sample, so its gap is not the gap a frame of play has.
    */
   dt: number;
   /** Milliseconds this voice has been playing, rate applied. */

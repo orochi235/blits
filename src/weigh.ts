@@ -17,6 +17,8 @@ export function prime<I, O>(
 ): void {
   const setting = voice.setting;
   setting.timestamp = now;
+  // With no step to move it, `stepped` follows the call before this frame's.
+  if (voice.patch.step === undefined && held.probed < now) held.stepped = held.probed;
   setting.dt = this.capped(now - held.stepped);
   setting.elapsed = elapsed;
   setting.pass = pass;
@@ -76,6 +78,8 @@ export function ownerBase<I, O>(this: Mixer<I, O>, owner: Voice<I, O>, subject: 
   const held = this.held(owner, subject, -1);
   if (held.probed === this.frame) return held.phase;
   const kept = reading.kept;
+  // An owner's record keeps a frame in `probed`, not a time, so `prime` leaves its `stepped` be.
+  held.probed = Number.NaN;
   this.prime(owner, held, now, owner.elapsedAt(now), 0);
   const base = this.base(owner, subject, now, held);
   reading.kept = kept;

@@ -129,6 +129,8 @@ export function open<I, O>(voice: Voice<I, O>, rec: Subject<unknown>, slot: numb
   if (voice.built !== null) return;
   const stamps = voice.stamps;
   const o = slot * Stamp.SIZE;
+  // A subject never read counts its `dt` from the voice's origin, not another subject's last call.
+  rec.stepped = rec.since;
   if (stamps === null || o >= stamps.length) {
     rec.probed = Number.NaN;
     rec.seeks = 0;

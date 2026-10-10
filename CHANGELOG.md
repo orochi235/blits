@@ -27,6 +27,11 @@ version and everything else the patch. Each release lists its changes as **Break
   with none skipped at cue, had 199 skipped once synced every 16 ms. A read ahead never fitted
   again, so `project` showed a child retimed by `faster` up to a frame ahead of the mix.
 
+- `setting.dt` is the gap since the subject was last sampled for a patch with no `step`, and for
+  a weight signal, as its doc says. It was the time since the subject's origin, growing every
+  frame: a mix synced at 16, 48, and 64 handed such a patch 16, 48, and 64, and now hands it 16,
+  32, and 16.
+
 ## 0.8.1
 
 ### Fixed
