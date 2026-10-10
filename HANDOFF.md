@@ -637,7 +637,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **Step 9, the names: asked 2026-10-10, not answered.** `mixer` (the stock engine, two
       letters from `mix`), `Tape`'s weasel-style methods, and the deprecated `period` are Mike's
       to settle. No consumer imports `mixer` or sets `period` (grep of klieg, weasel, astv,
-      sherpa, wod and magicsmoke, 2026-10-10); weasel and astv pass a tape.
+      sherpa, wod and magicsmoke, 2026-10-10); weasel and astv pass a tape. What he was offered,
+      with the recommendation first: for the engine, `stock` (its doc comment's own word), `cpu`
+      or keeping `mixer`, out of a field of 45; for `Tape`, keep every method, since a host calls
+      only `branches` and `switchBranch` and weasel's `createHistory` passes straight in, against
+      renaming those two or all of them behind a wrapper blits would ship; for `period`, remove
+      it in the unreleased batch, and say whether `hold` and the old hex color channel go with
+      it (consumers not checked for those two). The question was put in the session blits-ac,
+      which has ended: ask again if no answer is on record here.
     - **Step 8, built 2026-10-09**: a probe into `out` reuses its arrays (breaking, in the
       changelog), a motion voice off lanes reuses its record's delta (`src/moved.ts`), a keys lane
       fills in one loop (`src/keyfill.ts`), a fill's methods hand each other numbers through
