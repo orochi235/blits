@@ -1,9 +1,11 @@
 // Per-frame cost of a mix at scene sizes. Run with `npm run bench`, which builds dist first.
 // Rows print as they finish; `first` is the first frame, where each voice meets each subject;
 // `p99` and `worst` are single frames, where a collection landing mid-frame shows; `gc` counts
-// collections during the timed frames and the ms they paused for. WINDOW=2500 also prints the mean
+// collections during the timed frames and the ms they paused for, and `kB/frame` is what a timed
+// frame allocated, the row's own patches included. WINDOW=2500 also prints the mean
 // of each run of that many frames, for a cost that drifts as the run goes on.
 import { PerformanceObserver } from 'node:perf_hooks';
+import { getHeapStatistics } from 'node:v8';
 import {
   color,
   hex,
@@ -438,6 +440,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   await new Promise((r) => setTimeout(r, 0));
   const before = gcs;
   const pausedBefore = paused;
+  const allocatedBefore = getHeapStatistics().total_allocated_bytes;
   const each = new Float64Array(frames);
   for (let f = 0; f < frames; f++) {
     const f0 = performance.now();
@@ -459,6 +462,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       );
     }
   }
+  const kb = (getHeapStatistics().total_allocated_bytes - allocatedBefore) / frames / 1024;
   const ms = each.reduce((a, b) => a + b, 0) / frames;
   each.sort();
   const p99 = each[Math.ceil(frames * 0.99) - 1];
@@ -470,6 +474,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       `  ${ms.toFixed(3).padStart(8)} ms/frame  ${ns.toFixed(0).padStart(5)} ns/subject·voice` +
       `  p99 ${p99.toFixed(3).padStart(8)}  worst ${worst.toFixed(3).padStart(8)}` +
       `  first ${first.toFixed(1).padStart(7)} ms` +
-      `  gc ${String(gcs - before).padStart(4)} ${(paused - pausedBefore).toFixed(1).padStart(6)} ms`,
+      `  gc ${String(gcs - before).padStart(4)} ${(paused - pausedBefore).toFixed(1).padStart(6)} ms` +
+      `  ${kb.toFixed(1).padStart(8)} kB/frame`,
   );
 }
