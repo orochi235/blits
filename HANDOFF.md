@@ -27,10 +27,20 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   behavior change rides along: a finite loop's fade starts when its last pass ended, not at the
   next frame.
 - **klieg's port is merged into klieg's `main`** (2026-10-02), and its step two shipped in klieg
-  0.15.0 (merge `77d537d`, 2026-10-05). klieg 0.16.0 pins `@msb235/blits` `0.5.0` exactly in
-  `packages/core/package.json` and reads `setting.host` through `mix<I, O, H>`.
-- **sherpa is on blits 0.5.0 (exact) and klieg `^0.16.0`** (2026-10-05), with one deduped blits
-  copy. Its seams run on a blits mix, and its klieg pages hold on clicks and stages through
+  0.15.0 (merge `77d537d`, 2026-10-05). klieg reads `setting.host` through `mix<I, O, H>`.
+- **Which blits each consumer pins** (2026-10-10; every one exact but astv's):
+
+  | Consumer | Pins | Waits on |
+  |---|---|---|
+  | astv | `^0.8.1` | astv's session, asked to make it exact |
+  | wod, magicsmoke, portfolio, agnew | `0.8.1` | nothing; committed, not pushed |
+  | klieg | `0.8.1` on `main`, 0.7.0 in 0.16.7 on npm | a klieg release, Mike's call |
+  | sherpa | `0.6.0` | that klieg release, to keep one blits copy |
+  | weasel core and labkit | `0.7.0` on `main`, `0.8.1` on branch `blits-0.8` (`9d54d0a10`) | a merge and a weasel release, Mike's calls |
+
+  klieg's labs, agnew's lab, and the playground carry a second blits copy until a weasel release
+  moves.
+- **sherpa runs on klieg**, with one deduped blits copy. Its seams run on a blits mix, and its klieg pages hold on clicks and stages through
   `dismiss: 'host'` and `advance()`, paced on klieg's `active` and `stage` marks. All three systems fold through a mix: `Timeline.poseAt`
   cues a voice per layer of each phase, `EffectFrame` one per effect, and the sign's environment is
   a mix with one subject. The arithmetic did not move: klieg's 1974 vitest cases pass on the fleet,
@@ -38,7 +48,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   (recorded in klieg's changelog). 0.3.0 needed no change in klieg: its `color` channel is a `hex`,
   but every effect voice plays at full weight with no locus, so the OKLCH blend is never taken. The
   schema page's klieg section says what the port found.
-- **The package, `@msb235/blits` 0.6.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
+- **The package, `@msb235/blits` 0.8.1 on npm.** `src/` is the whole of it: `channels.ts` (the stock
   channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
   and the stops built once per channel that `from: 'current'` reuses),
   `motion.ts` (`spring`, `glide`), `tweened.ts` (a tween's closed form, in pieces a fill calls), `clock.ts` (the phase, envelope and weight clamp both fold
@@ -63,22 +73,21 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `handle.played`. The schema page's Freezing paragraph has the design. Mike chose the values
   `before`/`after`/`both`, that a frozen voice's end is when it is faded, not when its passes run
   out, and the name `freeze` once the ticker's `hold()` took the word; the state is
-  `'frozen'`, and the alias `hold` is removed in 0.8.0. wod (`anglePatch.ts`, `transition/tracks.ts`'s `'held'`) and
-  klieg (`compositor.ts`) change when they move past 0.5.0.
+  `'frozen'`, and the alias `hold` is removed in 0.8.0.
 - **`mix.inert` shipped in 0.4.0** (built 2026-10-03, merge `3228fa7`), for wod's frame loop to
   sleep under a landed wheel while `live` stays true. Mike asked for it and named it through the wod
   session; the CHANGELOG entry and the schema page's `Mix` block say what counts as inert. wod's
   migration (`~/src/wod/docs/superpowers/specs/2026-10-03-blits-migration-design.md`) is built
-  through its last phase, editor scrub (merge `06ef87d`, 2026-10-04), pinned to 0.4.0.
+  through its last phase, editor scrub (merge `06ef87d`, 2026-10-04).
 - **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
   the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
-  is green on all 13 pages. Deployed to `michaelbaker.tech/blits/` by `.github/workflows/site.yml` on every push to `main`.
+  is green on all 15 pages. Deployed to `michaelbaker.tech/blits/` by `.github/workflows/site.yml` on every push to `main`;
+  that workflow also runs the site's typecheck, which `npm run check` does not.
   Every explainer draws a stage of what its mix drives above its chart (2026-10-04). Open: the pages
   don't fit a phone, since a 390 px viewport lays out about 640 px wide, and the score's text voice
-  ends the moment it finishes typing, so the line vanishes as the tint comes in. When labkit releases `f.number().endless(word)` (weasel `2432ce316`,
-  unreleased on 2026-10-04), switch the sliders whose right end means never to it:
-  Score's `cut`, Mix's `muteAt` and Voice's `fadeAt` with `'never'`, and State's `cap` with
-  `'uncapped'`. Their readouts show the number until then.
+  ends the moment it finishes typing, so the line vanishes as the tint comes in. The sliders whose
+  right end means never (Score's `cut`, Mix's `muteAt`, Voice's `fadeAt`, State's `cap`) are on
+  labkit's `endless`, which stores `Infinity` at that stop.
 - `docs/schema.html` — the design: vocabulary, channel table, patches, voices, mix,
   signals, time model, blending, patch state, the engine seam, per-consumer rigs, the klieg port,
   decided-against, tests, open items. Status line says design under review. It reads in the called
@@ -224,7 +233,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   the site takes its outline loosely. Local until GitHub Pages, and the workflow exists already.
 
 - **Built 2026-09-30 for magicsmoke**, which now runs every fault on blits (its old engine is
-  deleted; on magicsmoke's `main` since 0.5.0, pinned to `@msb235/blits` `0.6.0` since 2026-10-05): `lag`,
+  deleted; on magicsmoke's `main` since 0.5.0): `lag`,
   `handle.weightOf`, `MixOptions.stepMs` and `setting.send` / `mix.drain`. Each is in the schema
   page; magicsmoke's row in the consumer table says how it uses them.
 
@@ -421,8 +430,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 1d. **`@msb235/blits-quarks` 0.4.0 is on npm**, pinned to engine 0.8.1 and published from its
    `quarks-v0.4.0` tag (0.1.0 went out by hand, because npm refuses trust for a name never
-   published). Its README says how it works. magicsmoke is on engine 0.6.0 (`08d27df`, not
-   pushed) but its fizz and tuning stay on its own code: the driver doesn't fit without changing
+   published). Its README says how it works. magicsmoke is on engine 0.8.1 but its fizz and tuning stay on its own code: the driver doesn't fit without changing
    what magicsmoke does. Its `docs/HANDOFF.md` has the gaps; the likely driver changes are a
    per-subject emitted count from `write`, rate or counts settable by the host, and rounding
    without the `1e-6` slack. Mike's call whether to make them.
@@ -503,8 +511,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    channel section and the CHANGELOG say what it is. Mike chose that the channel picks its lerp
    space (`{ lerp: 'oklab' | 'oklch' }`, OKLab default) after a red-to-cyan render showed OKLab
    washing to pale gray and OKLCH sweeping through the hues between. What is left:
-   - **klieg moves to `color(last(), { lerp: 'oklch' })`** when it next bumps blits; filed in
-     klieg's `TODO.md` (`84c3f8f`).
    - `color({ lerp: 'oklch' })` runs off lanes, since a lane lerps a stock channel straight across.
    - **A glow writing `color()` stays on the lanes**: the bench's `glowk` rows are `glowc` with the
      color on `color()`. Medians of six fresh processes on this Mac under a load average of ~10,
@@ -540,8 +546,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    describes its voices with `as` and gives a store once it moves to a release with this.
 
 8. **astv's phase on a span.** astv's `scheduleMarks` (`packages/engine/draw/text/changeOrder.ts`)
-   is what a `queue` or `stagger` span with a budget replaces; astv pins blits 0.4.0, so this waits
-   on a release.
+   is what a `queue` or `stagger` span with a budget replaces. astv is on 0.8.1, which has spans,
+   so nothing in blits holds this up.
 
 10. **Two copies of blits loaded together share what each knows of its patches and channels**
     (`773d088`, 2026-10-08): `keys` options and the stock channels' lane facts sit in WeakMaps
@@ -603,242 +609,96 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 
-14. **The 2026-10-09 code review, steps 8–9.** The review is the doc "blits code review,
-    2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5); its findings
-    are numbered there, and its Status section says which steps are done. Steps 1 to 5 and 7 are on
-    `main`: the local fixes, the lanes fuzzer (`test/differential.test.ts`, which now masks and
-    skips nothing), the determinism suite (`test/determinism.test.ts`, whose only known failures
-    are the two `now` seeds below), issue B (`src/origin.ts`), issue A with findings #10 and #13,
-    lanes invalidation (#6, #15, #16), and step 7's public surface, listed in the changelog's
-    0.8.0 section.
-    **Mike, 2026-10-09: work steps 3 to 9, then item 12's audit, chaining sessions (the
-    `pass-the-baton` skill) until the whole plan is finished**, each session updating this item and
-    the doc's Status section as a step lands. Step 6 is built (`b5dfa51`: `prepack` builds from an
-    empty `dist`, the tarball carries `./testing`, and the changelog lists steps 3 to 5), and the
-    whole plan shipped as 0.8.0 (2026-10-10). Releases are batched: add an Unreleased section to
-    the changelog as work lands, and don't ask to publish per step; it ships as one release when
-    Mike says. Until then a consumer that needs unreleased blits links the local checkout. Steps 8
-    and 9 are on `main`, and item 12's audit is done: **the plan is finished.** Each
-    step goes in a worktree off `main`, since another session
-    works on the playground and item 13 in a worktree of its own; ask it before editing this file,
-    and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. A
-    version bump and publish are Mike's call, never 1.0.0; an engine release is followed by a
-    blits-quarks release pinned to it, without asking (Mike, 2026-10-10). Measure
-    any hot-path change with `AB_EACH=1 bench/ab.sh <origin/main sha> . <rounds> <rows>` on a fleet
-    node (`.` is the synced working tree). `onto do` sends files, not commits, so the first
-    revision has to be one `origin` has; `AB_BENCH=bench/frame.mjs` makes both sides print
-    `kB/frame`, `bench/medians.mjs <output>` reduces a run to medians, and `bench/allocs.mjs <row>`
-    lists the functions that allocate. Decided while building, and open beyond the doc:
-    - **Step 9, `types.ts` split by domain, built 2026-10-09**: `src/types/` holds `channel`,
-      `patch`, `place`, `voice`, `history`, `transport` and `mix`, and `src/types.ts` re-exports
-      them, so no importer changed. TypeDoc gives the same 108 entries with the same content; it
-      orders a page by file, so the site's mix page now lists history and tape, then `MixOptions`
-      to `Mix`, then the transport, where `MixOptions` led.
-    - **Step 9, an owner for what is kept in step with the voice list, built 2026-10-10**
-      (`src/roster.ts`, `test/owners.test.ts`). Read by name, 27 modules take 126 of `Mixer`'s
-      members and no one interface in front of them is narrow: `fold.ts` takes 48 and `seek.ts`
-      38, because the mixer's own methods live in those modules. What the reading did show is
-      fields assigned from several modules that each had to remember the others: the counts a
-      fold and a sync skip work by (`named`, `naming`, `general`, `sharers`, `loci`, `anchored`,
-      `owners`) were kept by `cue.ts` and `move.ts` and rebuilt twice, in `seek.ts` and
-      `project.ts`. `enlist`, `delist` and `recount` in `roster.ts` now do all of it, `unpull` in
-      `pull.ts` forgets what `pull` last read, and `mirror` in `project.ts` is the three fields
-      every projection's copy takes from the live mix. `test/owners.test.ts` lists which modules
-      may assign each of those fields and fails for any other; it reads assignments by name, so
-      a `push` or `splice` gets past it. A projection's copy still keeps no `owners` list, as
-      before, so `lapse` never runs on one: not checked whether that is meant.
-      Not done: a view type per module (a `Pick` of `Mixer` for each of the 13 modules taking
-      under ten members) was weighed and left, since it would name what each reads without
-      stopping anything. Still assigned from several modules: `frame` (five, each one line,
-      `nextFrame()`), `reducedNow`, `relinks`, `pins`, `gone`, `pose` and `retired`.
-    - **Step 9, the names: settled by Mike, 2026-10-10.** The engine stays `mixer`, and `Tape`
-      keeps every method, so weasel's `createHistory` still passes straight in. The deprecated
-      `hold`, `period`, and `hex()` are removed in 0.8.0 (the changelog's Breaking
-      list has what replaces each). One consumer has to change before it moves past 0.7.1: astv sets
-      `hold` on voices in `packages/engine` (`glide.ts`, `turns.ts`, `textRuns.ts`,
-      `progressClocks.ts`), asked of the session astv-05 on 2026-10-10 and not confirmed. wod is
-      off `hex()` (wod `a16f7c9`).
-      The playground's composition format has a `period` field of its own, which is not the
-      removed one.
-    - **Step 8, built 2026-10-09**: a probe into `out` reuses its arrays (breaking, in the
-      changelog), a motion voice off lanes reuses its record's delta (`src/moved.ts`), a keys lane
-      fills in one loop (`src/keyfill.ts`), a fill's methods hand each other numbers through
-      `Lanes.arg`, every record comes from `record()` (`src/record.ts`; 6 hidden classes became 2
-      in a mix with history and `from: 'current'`), and what left a voice is a queue with an index
-      by subject (`src/leavings.ts`; `bench/drops.mjs`). teitou, 5 rounds: geometric mean 0.904
-      over 24 rows, 0.909 over 19 general-path rows.
-    - **Step 8, one record for a voice over every subject, built 2026-10-09** (`src/everyone.ts`,
-      `test/everyone.test.ts`). `shares` says which voices qualify: no subjects, target, stagger,
-      locus, anchor or signal weight, no state, not motion, not `from: 'current'`, not frozen
-      before, and only channels with a rest. Such a voice is in no chain: a fold takes it from
-      `mix.sharers` at its place in voice order (`foldDetour`, `foldSharers`), and its one record
-      is pointed at a subject before each read and taken back after (`open`, `shut`), so its patch
-      is still called once a frame for a subject. By subject number it keeps a bit for "a chain
-      asked", the last weight, and for a called patch when it was last called and what it gave.
-      A subject faded out of it alone, a fade at rest, state kept through `setting.keep`, or an
-      origin still ahead turns it back (`unshare`). It needs lanes for the numbers, so **a mix
-      with lanes off never shares, which is what makes the lanes fuzzer its check**. A read ahead
-      copies the one record; a read back and a standing read do not share.
-      Also in that change: `Steps.patch` takes the mix and the subject, not a closure (138 B a
-      subject relinked), and `Lanes.met` is counted, not emptied by its length (150 B a subject
-      met).
-      teitou, 9 rounds against `27acb2d`: `swap` 0.74 (9.3 to 2.7 MB a frame), `ahead` 0.80
-      (2.4 to 1.5 MB), `keys-` 1.001, `tweenfn-` 1.005.
-    - **Open measurement: the laned steady rows, as merged, are not measured.** Before the last
-      restructure `keys` 10k×3 read 1.03, `tween` 1.05 and `fn` 1.01 at 3,000 frames a run, and
-      `tween` shares nothing, so the cost was code every probe runs: a check in `linked` and a
-      longer `foldWith`. The restructure put `linked` and `pull` back to main's text and
-      `foldWith`'s loop behind one number, `mix.detours`, which is 0 unless a mix has a locus or
-      a sharing voice; everything else is in `foldDetour`. Mike stopped the tuning there
-      (2026-10-09), so whether those rows read level again is one A/B away:
-      `bench/ab.sh 27acb2d . 7 keys:10000 tween:10000 fn:10000` with `FRAMES=3000`. At 300
-      frames a run those rows swing 5% between runs of one build and settle nothing.
-    - **Mike, 2026-10-09: bound the tuning.** One A/B to confirm a change's win and at most one
-      more for a suspected loss; a delta inside the bench's spread gets a line here, not
-      another cycle. The rest of this item, step 9 and item 12's audit come before any more of
-      it.
-    - **Step 8, a motion patch's number on the record, built 2026-10-09** (`src/moved.ts`,
-      `test/moved.test.ts`). A motion voice off lanes asked its patch for the subject's number
-      every probe. The record keeps it beside the patch's count of numbers given up
-      (`Motions.freed`, bumped in `forget`), and asks again when that count has moved. teitou, 7
-      rounds against `79022cb`: `tween-` 0.90, `spring-` 0.89, `keys-` 1.007.
-    - **Step 8, a seek's restore layers, built 2026-10-09** (`src/restored.ts`,
-      `test/restored.test.ts`). They were a crash and not only a cost: every seek back wrapped
-      each voice's store in another, and 20,000 seeks overflowed the stack. A voice now has one
-      `Restored` for every seek. By subject it keeps the count of seeks its record was last put
-      back at, and a record behind is put back to the earliest moment sought since. The two
-      things flattening had to prove both hold: restoring to `t1` and then `t2` is restoring to
-      the lesser (the test "reads nothing past an earlier seek"), and only the first seek after
-      a record's last write can hold a leaving for it, since every leaving reads or deletes the
-      record where it stands. No bench row seeks, so its cost is not measured. The fuzzer's new
-      `again` property (seek back, play on with no probe, seek again) failed full seeds 54, 56
-      and 60 on the layered store and fails 56 alone now.
-    - **A rate set on a pending voice ran its clock past 0 before its start, fixed 2026-10-10**
-      (`ramp` in `handle.ts`; `again` full 56 in `test/determinism.test.ts`, which now has no
-      known failure). The seed read as "a stepped subject first met late reads other than one
-      probed all along", and the late one was right. `h.rate = 3` on a voice still pending took
-      the new rate from that moment, so the clock read 0 ahead of `voice.start` while the voice
-      stayed pending until it. A subject the voice froze before then played and stepped its state
-      early, and a later `mix.rate` put the start back by its pin with that state kept. A rate
-      above 0 now applies from the start. A rate of 0 is still taken at once, which holds the
-      clock before its start for good, as a pause should: anchored at the start it would read 0
-      and the voice would count as begun. The same family as the handle `seek` on a pending
-      voice below, which is still undecided.
-    - **Step 8, tried beside it and backed out for moving no number**: growing a lane's arrays to
-      the number of subjects probed last frame at its first position, and handing `LaneHost.ready`
-      its numbers through `Lanes.arg`.
-    - **`kB/frame` on a row whose patch returns an object a call reads one of two values from run
-      to run on one build** (found 2026-10-09): `fn` 10k×3 read 2,442 or 4,318 on this machine,
-      and no semi-space flag moved it either way. Take a row's allocation from a median over
-      rounds on a fleet node, never from one local run.
-    - **Step 8, not built**, in the review's order:
-      - Records shared by a read back or a standing read, and by voices `shares` turns away that
-        could keep their difference by subject number too: a stagger, a signal weight, a motion.
-    - **Step 8, measured and left**: the `keys` row still allocates about 16 B a probe in
-      `foldWith`, cause not found; two guesses were built and backed out for changing nothing (a
-      site of its own per scalar channel in `copy`, and folding a delta's number where
-      `foldDelta` reads it). Still boxed: a locus's `gatherInto`, a crowd's `KeyRows.fold`, and
-      what `host.signal` returns. The rest of the `fn` rows' allocation is the bench's own patch
-      returning an object a call (about 72 B). Under `from: 'current'`, `keep` still copies a pose
-      a probe into `out`.
-    - **The `out` change reverses a guarantee a test held, and Mike has not seen it.**
-      `test/solo.test.ts` said a reused `out` "never has an array the host kept from it written
-      into"; the review's plan asked for the reuse and for the contract to say so, so the test now
-      says the array is the same one, and that a probe with no `out` is never written into. To
-      undo it, drop the two reuse branches (`foldWith` in `fold.ts`, `copy` in `copyout.ts`): the
-      `tween` row then allocates about 0.7 MB a frame again.
-    - **The `out` change has not been checked against consumers.** klieg
-      (`motion/compositor.ts`), weasel (`scene/poseOverrides.ts`) and astv (six sites under
-      `packages/engine`) probe into `out`; whether any keeps an array across two probes has to be
-      read before they take the release.
-    - **Step 3 took the doc's proposed default, exact catch-up**: a stateful subject met late steps
-      from its origin, capped by `maxDt`. The per-voice `catchUp: 'fresh'` alternative is not built.
-      A voice keeps at most 256 past clocks; past that, an origin on a clock it dropped is worked
-      back from the oldest it kept.
-    - **Step 4 numbers frames, not calls**: `Transport.seq` is bumped by each sync, seek and call
-      the tape plays again, and history entries carry the frame they were made in; within a frame,
-      list order and the existing `sync` flag tell calls apart. The tape stamps calls with host
-      time, which replay needs to land a call made during rate 0 at its own frame. A seek or read
-      to mix time `t` lands on the last frame at or before `t`; `seek({ frame })`, which the doc
-      offers for an earlier frame at the same mix time, is not built.
-    - **`HistoryStore.cut` now takes a `seq`, and a store keys records by `seq`, not `at`**, which
-      changes the store contract: step 6's release notes have to say so.
-    - **A seek onto a frame's own time no longer moves the mix again**, except that anchors are
-      placed again where history has already let go of a voice that moment still knew
-      (`Transport.forgotTo`): the restored placement could name a voice the mix no longer lists.
-    - **A handle `seek` on a pending voice whose pinned start is still ahead is undone when the
-      start arrives**: `startAt` in `place.ts` sets the clock back to 0. Found 2026-10-09 through
-      determinism seed `ahead`/full/139; whether the seek or the start should win is undecided.
-    - **A placement whose end comes before its start**, `{start: {after: 'a'}, end: {with: 'a'}}`,
-      is silently never played. An anchor to a voice that already left now resolves
-      (`src/departed.ts`): decided 2026-10-09 to keep mixes without history, since history roughly
-      doubles a stepped patch's frame cost and holds about 500 B per subject per copy, and to keep
-      departed voices' marks on every mix instead.
-    - **Step 5: what a lane fill depends on is `Lanes.current`**: the clock, the mix's version, a
-      motion's retargets and pushes, and a `level` set, which bumps `reading.inputs`. What lanes
-      cannot hear of keeps its voice off them (`fits` in `hosts.ts`): an input signal not built on
-      `level` and a patch reading host fields. **Cost to consumers**: klieg's own `level` is a
-      hand-flagged input signal, so klieg's level-weighted voices now take the general path; step
-      7's `input(fn)` could give a host's own input a way to report its changes.
-    - **`drop` still forgets a subject's fade out of a voice**, so a dropped subject shows live in
-      that voice again; decided 2026-10-09 because keeping the entry would hold every dropped subject
-      in a strong `Map`. `fade`'s and `drop`'s docs now say so.
-    - **A store's `left` records now hold `[record, sync]`**, so a read of what a frame showed counts
-      a subject that left during its sync: another store-format change for step 6's release notes.
-    - **A retarget that brings a faded-out subject back starts its new tween at the subject's next
-      probe, not at the `to` call** (found 2026-10-09; both paths agree). With a tween of 300 ms
-      faded out of a subject at 0 and retargeted to 0.6 at 450, a probe at 500 reads 0.800, where
-      the same calls on a subject never faded read 0.767: the change waits for a motion slot the
-      subject gets only when probed. The same class as issue B, decided by when the host looks.
-    - **Finding #18**: a `last()` or OKLCH channel in a locus picks by cue order, not weight.
-    - **Step 7's names and shapes were chosen while building, and Mike has not seen them**
-      (2026-10-09). Beyond the plan's own names: the type `Vec<N>`; `angle({ turn })` with `turn`
-      defaulting to 360; `input(read, of?)`, whose `touch()` reports a change; a keys patch's
-      options as the flat fields `ease`, `easeBy`, `delayBy` and `lerpBy`, and a wave's as
-      `patch.wave`, with `waveOptionsOf` removed; `handle.to` and `push` throwing for a patch
-      that takes neither, and `read` giving undefined; and `fold` switching a rest-less channel on
-      at 0.6, a mix's default band. Each is one rename away while nothing is released.
-    - **No consumer uses step 7 yet.** The workarounds the doc's "Universal applicability" table
-      lists are still in klieg, sherpa, weasel and wod; the playground session takes
-      `apps/playground` (`LivePanel`'s cast, `expr.ts`'s flag). klieg's `level` needs
-      `input(...)` and a `touch()` in its `set` to get its lanes back.
-    - **A read back with no history answers a narrow case** (`src/standing.ts`): every voice as
-      cued, read by its clock alone. A voice an anchor places, an owner and what it holds, and a
-      voice whose handle was written to are refused, not because they cannot be read but because
-      the fuzzer (`standing` in `test/fuzz/program.ts`) found frames that depended on when a sync
-      noticed a change, and refusing was exact. Each could be let in with the fuzzer's say-so.
-    - **Step 8, `angle` and `quat` on a lane, built 2026-10-10** (`src/turns.ts`,
-      `test/turns.test.ts`; the fuzzer's kit has had both since 2026-10-09). An angle is vouched
-      as a sum with a `turn`, and its value is taken the short way round where it enters a fold.
-      A quat is vouched as `'own'`: its four numbers are lifted out of the lane, folded or lerped
-      by the channel's own `fold` and `lerp`, and written back, and its lane starts each fill
-      from `[0, 0, 0, 1]`. A laned channel that is neither gated nor a rotation is `plain`, and
-      the per-subject loops (`foldInto`, `flatten`, `foldKeys`) test that flag where they tested
-      for `'last'`, so a plain channel runs the code it ran. Not on the fast loops: a quat in a
-      keys voice or a motion goes through `foldInto` per subject, a crowd's keys row on either
-      channel reads its voice's stops and not `KeyRows`, and neither folds bare. A vec of angles
-      and a `color` over one stay off lanes.
-      teitou, 5 rounds at 3,000 frames against `ddf7d9e`: the new `turn` row (keys writing both,
-      a `fn` and a tween on the angle, 10k subjects) 0.588, 2.88 to 1.70 ms a frame and 3.9 MB a
-      frame to 0.8; `turn-` 0.941, from `multiply` and `slerp` no longer allocating. Rows that
-      write neither: `keys` 1.012, `signal` 1.022, `named` 1.012, `tween` 0.987, `fn` 0.988,
-      `locus` 0.994, `tweens` 0.998, `keyses` 0.999, `fns` 0.969, `springs` 1.005, `keys-` 0.995.
-      `keys`, `signal`, and `named` are inside what one build swings and were not run again.
-      The fuzzer found one disagreement while it was built, fixed: a `fn` voice silent at weight 0
-      counted as a member of its locus on a lane and not on the general path, which moved where
-      the locus folds in the order. Only a quat shows it, since nothing else fails to commute.
-    - **Left from the doc's "Patch options" paragraph**: a negative voice rate is still accepted
-      (`test/lanes.test.ts` cues one, and whether a voice may play backward is undecided), and a
-      key `at` returns outside `writes` is still dropped without a word. The doc's per-voice
-      `stepMs` row (magicsmoke's mix per fault) is not built, and no reason against it is recorded.
-    - **`project(mix.now)` is not always what `probe` gives** (found 2026-10-09; `now` in
-      `test/determinism.test.ts`, seeds plain 144 and full 1, with history or without). A read at
-      or ahead of the mix moves its copy, which lands what the live mix lands only at its next
-      sync: a voice a handle `seek` put past its end has left, and an anchor on a voice just faded
-      is placed. The same class as issue B, decided by when the host looks.
-    - **The weight-0 band reset runs on the general path only** (`unband` in `fold.ts`). Lanes reach
-      it through the shared record in every case the tests and the fuzzer cover; a lane that skips a
-      subject at weight 0 without the general path visiting it would keep a stale band.
+14. **What the 2026-10-09 code review left.** The review is the doc "blits code review,
+    2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5), with its
+    findings numbered there. Its whole plan is built and shipped as 0.8.0; the changelog's 0.8.0
+    section says what changed, and this item holds only what is still open. Measure any hot-path
+    change with `AB_EACH=1 bench/ab.sh <origin/main sha> . <rounds> <rows>` on a fleet node (`.`
+    is the synced working tree, and the first revision has to be one `origin` has);
+    `AB_BENCH=bench/frame.mjs` makes both sides print `kB/frame`, `bench/medians.mjs <output>`
+    reduces a run to medians, and `bench/allocs.mjs <row>` lists the functions that allocate.
+    - **Mike has not seen two things chosen while building.**
+      - **A probe into `out` reuses its arrays, which reverses a guarantee a test held.**
+        `test/solo.test.ts` said a reused `out` "never has an array the host kept from it written
+        into"; it now says the array is the same one, and that a probe with no `out` is never
+        written into. To undo it, drop the two reuse branches (`foldWith` in `fold.ts`, `copy` in
+        `copyout.ts`): the `tween` row then allocates about 0.7 MB a frame again. No consumer is
+        caught by it (read 2026-10-10): klieg's two `poseAt` callers read the numbers out at
+        once, and weasel's `poseOverrides.ts` and astv's six sites have no vec or color channel.
+      - **Step 7's names and shapes**: the type `Vec<N>`; `angle({ turn })` with `turn`
+        defaulting to 360; `input(read, of?)`, whose `touch()` reports a change; a keys patch's
+        options as the flat fields `ease`, `easeBy`, `delayBy` and `lerpBy`, and a wave's as
+        `patch.wave`, with `waveOptionsOf` removed; `handle.to` and `push` throwing for a patch
+        that takes neither, and `read` giving undefined; and `fold` switching a rest-less channel
+        on at 0.6, a mix's default band. All of it shipped in 0.8.0, so a rename is now a break.
+    - **Undecided behavior**, each found by the fuzzers or while building:
+      - **A handle `seek` on a pending voice whose pinned start is still ahead is undone when
+        the start arrives**: `startAt` in `place.ts` sets the clock back to 0 (determinism seed
+        `ahead`/full/139). Whether the seek or the start should win is undecided. A rate of 0 on
+        a pending voice is the same family: it is taken at once and holds the clock before its
+        start for good.
+      - **A placement whose end comes before its start**, `{start: {after: 'a'}, end: {with:
+        'a'}}`, is silently never played.
+      - **A retarget that brings a faded-out subject back starts its new tween at the subject's
+        next probe, not at the `to` call** (both paths agree). With a tween of 300 ms faded out
+        of a subject at 0 and retargeted to 0.6 at 450, a probe at 500 reads 0.800, where the
+        same calls on a subject never faded read 0.767.
+      - **`project(mix.now)` is not always what `probe` gives** (`now` in
+        `test/determinism.test.ts`, seeds plain 144 and full 1, with history or without). A read
+        at or ahead of the mix moves its copy, which lands what the live mix lands only at its
+        next sync: a voice a handle `seek` put past its end has left, and an anchor on a voice
+        just faded is placed.
+      - **Finding #18**: a `last()` or OKLCH channel in a locus picks by cue order, not weight.
+      - **A negative voice rate is still accepted** (`test/lanes.test.ts` cues one), and whether
+        a voice may play backward is undecided.
+      - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one: not
+        checked whether that is meant.
+      - **The weight-0 band reset runs on the general path only** (`unband` in `fold.ts`). Lanes
+        reach it through the shared record in every case the tests and the fuzzer cover; a lane
+        that skips a subject at weight 0 without the general path visiting it would keep a stale
+        band.
+    - **Not built**, and nothing recorded against any of it:
+      - Records shared by a read back or a standing read, and by voices `shares` (in
+        `everyone.ts`) turns away that could keep their difference by subject number too: a
+        stagger, a signal weight, a motion.
+      - `catchUp: 'fresh'` per voice; exact catch-up is the default, and a voice keeps at most
+        256 past clocks.
+      - `seek({ frame })`, for an earlier frame at the same mix time.
+      - Per-voice `stepMs` (magicsmoke's mix per fault), and a report of a key `at` returns
+        outside `writes`, which is still dropped without a word.
+      - A read back with no history beyond the narrow case in `src/standing.ts`: a voice an
+        anchor places, an owner and what it holds, and a voice whose handle was written to are
+        refused because the fuzzer (`standing` in `test/fuzz/program.ts`) found frames that
+        depended on when a sync noticed a change. Each could be let in with the fuzzer's say-so.
+      - A view type per module (a `Pick` of `Mixer` for each of the 13 modules taking under ten
+        members) was weighed and left, since it would name what each reads without stopping
+        anything. Still assigned from several modules: `frame`, `reducedNow`, `relinks`, `pins`,
+        `gone`, `pose` and `retired`. `test/owners.test.ts` reads assignments by name, so a
+        `push` or `splice` gets past it.
+      - A quat in a keys voice or a motion goes through `foldInto` per subject, a crowd's keys
+        row on an angle or quat reads its voice's stops and not `KeyRows`, and a vec of angles
+        and a `color` over one stay off lanes.
+    - **Measured, and where it stands:**
+      - **The laned steady rows read level as merged** (teitou, 2026-10-10, 7 rounds at 3,000
+        frames against `27acb2d`): `keys` 10k×3 0.953, `tween` 1.023, `fn` 1.027, geometric
+        mean 1.001, every row's runs overlapping the other side's.
+      - **The `keys` row still allocates about 16 B a probe in `foldWith`, cause not found**;
+        two guesses were built and backed out for changing nothing (a site of its own per scalar
+        channel in `copy`, and folding a delta's number where `foldDelta` reads it). Still boxed:
+        a locus's `gatherInto`, a crowd's `KeyRows.fold`, and what `host.signal` returns. Under
+        `from: 'current'`, `keep` still copies a pose a probe into `out`.
+      - **Tried and backed out for moving no number**: growing a lane's arrays to the number of
+        subjects probed last frame at its first position, and handing `LaneHost.ready` its
+        numbers through `Lanes.arg`.
+      - **`kB/frame` on a row whose patch returns an object a call reads one of two values from
+        run to run on one build**: `fn` 10k×3 read 2,442 or 4,318 on this machine. Take a row's
+        allocation from a median over rounds on a fleet node, never from one local run.
+      - **No bench row seeks**, so what `src/restored.ts` costs is not measured.
+    - **Few consumers use step 7 yet.** klieg's `level` is built on `input` with a `touch()` in
+      its `set` (klieg `c32d440`, unreleased); whether its level-weighted voices then run on
+      lanes is not checked. The other workarounds the doc's "Universal applicability" table
+      lists are still in klieg, sherpa, weasel and wod, and in `apps/playground` (`LivePanel`'s
+      cast, `expr.ts`'s flag).
 15. **0.8.0 costs more a frame than 0.7.1 under `history`; fixed in 0.8.1**
     (2026-10-10). astv's `packages/engine/playback/motion.bench.ts` showed it: text runs +36% to
     +47%, its busy stage +13%. A bisect with that bench found two commits, `c40e2bc` (a sync
@@ -849,6 +709,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     1 to 2 µs a frame with runs that disagree: astv's glides (+8%) and progress clocks (+39%).
     To measure a blits build against astv's bench: `MOTION_ONLY=1 probes/blits-version-bench.sh
     <out dir> 0.7.1` in `~/src/astv` on a fleet node.
+16. **`setting.dt` is not the gap since the last frame for a patch with no `step`** (found
+    2026-10-10, not fixed). `prime` in `weigh.ts` sets it to `now - held.stepped`, and only a patch
+    with a `step` moves `held.stepped` (`fold.ts`), so a stateless patch or a signal reads the
+    time since its subject's origin, growing every frame, where `Setting.dt`'s doc says the gap
+    since the subject last advanced. A mix synced at 0, 16, 48 and 64 hands a `fn` patch 0, 16,
+    48 and 64, on 0.7.0 and 0.8.1 alike, lanes on or off. `slew` and `lag` are not caught, since
+    they take the lesser of `dt` and their own gap. klieg promises its effect patches a frame
+    delta and has a test marked `it.fails` for this (klieg `TODO.md`). A fix has to say what
+    `dt` is on a lane fill and on a record shared by every subject, which keeps no time for
+    each.
 
 ## Loose ends
 
