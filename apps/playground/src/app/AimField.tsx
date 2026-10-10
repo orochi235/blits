@@ -1,15 +1,11 @@
-import type { Moving, spring, Value } from '@msb235/blits';
+import type { Value } from '@msb235/blits';
 import { type Composition, isMotion, type Motion } from '@pg/blits/composition';
 import { compileExpr, scopeOf } from '@pg/blits/expr';
-import type { Mixed } from '@pg/blits/kit';
 import type { Player } from '@pg/blits/player';
 import { refusalOf } from '@pg/blits/spec';
 import type { Subject } from '@pg/blits/stage';
 import { ExprInput } from '@pg/widgets/ExprInput';
 import { useState } from 'react';
-
-/** A spring's or a tween's patch, which take `to`; a glide takes only `push`, which every one does. */
-type Aimed = ReturnType<typeof spring<Subject, Mixed, Value>>;
 
 export interface AimFieldProps {
   comp: Composition;
@@ -38,12 +34,12 @@ export function AimField({ comp, player, id, patch: p, act }: AimFieldProps) {
       return why === null ? out : undefined;
     });
     setError(wrong ? `${key} ${wrong}` : r.faults.first);
-    act(id, (_, patch) => {
+    act(id, (handle) => {
       player.subjects.forEach((subject, i) => {
         const value = values[i] as Value | undefined;
         if (value === undefined) return;
-        if (key === 'to') (patch as unknown as Aimed).to(subject, value);
-        else (patch as unknown as Moving<Subject, Mixed, Value>).push(subject, value);
+        if (key === 'to') handle.to(subject, value);
+        else handle.push(subject, value);
       });
     });
   };

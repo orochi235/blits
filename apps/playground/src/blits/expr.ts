@@ -1,4 +1,15 @@
-import { type Fit, gate, lag, layout, level, peak, plain, type Signal, slew } from '@msb235/blits';
+import {
+  type Fit,
+  gate,
+  input,
+  lag,
+  layout,
+  level,
+  peak,
+  plain,
+  type Signal,
+  slew,
+} from '@msb235/blits';
 import { parse } from 'acorn';
 import type { Expr, Level } from './composition';
 import type { Subject } from './stage';
@@ -70,9 +81,11 @@ function compileIn<F extends (...args: never[]) => unknown>(
       return fallback(...args);
     }
   }) as unknown as F;
-  // A signal marked `input` must keep its mark through the wrapper, or a read back trusts it.
-  if ((inner as { input?: boolean }).input) (fn as unknown as { input: boolean }).input = true;
-  return { fn, faults };
+  // The wrapper has to stay an input where `inner` is one, or a read back trusts it.
+  return {
+    fn: input(fn as unknown as Signal<unknown>, [inner as Signal<unknown>]) as unknown as F,
+    faults,
+  };
 }
 
 export const compileExpr = <F extends (...args: never[]) => unknown>(
