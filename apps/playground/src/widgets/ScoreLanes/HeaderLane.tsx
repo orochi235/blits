@@ -1,6 +1,6 @@
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { hueColor } from '../hue';
-import { INDENT, type Scale, WIDTH } from './geometry';
+import { INDENT, type Scale, slopePolygon, WIDTH } from './geometry';
 import type { Header } from './index';
 import { activates, seconds } from './keys';
 import s from './ScoreLanes.module.css';
@@ -24,13 +24,18 @@ export interface HeaderLaneProps {
   onFold?(id: string, folded: boolean): void;
 }
 
-/** A group's lane: its fold button and label, a bar over its extent, and a span's budget. */
+/** A group's lane: its fold button and label, a bar over its extent with its fades, and a span's budget. */
 export function HeaderLane(p: HeaderLaneProps) {
   const { header: hd, scale, laneTop, laneH, duration } = p;
   const mid = laneTop + laneH / 2;
   const foldX = 6 + INDENT * hd.depth;
-  const x0 = scale.x(Math.max(0, hd.start));
-  const x1 = scale.x(Math.min(hd.end, duration));
+  const start = Math.max(0, hd.start);
+  const bar = {
+    start,
+    end: Math.max(hd.end, scale.t(scale.x(start) + BAR_MIN_W)),
+    fadeIn: hd.fadeIn ?? 0,
+    fadeOut: hd.fadeOut ?? 0,
+  };
   const select = (e: PointerEvent) => {
     e.stopPropagation();
     p.onSelect(hd.id);
@@ -90,13 +95,9 @@ export function HeaderLane(p: HeaderLaneProps) {
       )}
       {hd.start <= duration && (
         // biome-ignore lint/a11y/useSemanticElements: an SVG shape cannot be a <button>
-        <rect
+        <polygon
           className={s.headerBar}
-          x={x0}
-          y={mid - BAR_H / 2}
-          width={Math.max(BAR_MIN_W, x1 - x0)}
-          height={BAR_H}
-          rx={2}
+          points={slopePolygon(bar, scale, mid - BAR_H / 2, BAR_H, duration)}
           fill={hueColor(hd.hue)}
           role="button"
           tabIndex={0}

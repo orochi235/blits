@@ -17,6 +17,7 @@ export interface Clip {
   depth?: number; // headers above it; the label indents per step
   factor?: number; // its rate over its own, shown after the label when not 1
   skipped?: boolean; // jumped to its end: an outline at its natural length
+  cut?: { at: number; fade: number }; // ms where a group above ends it, and that group's fade out
 }
 
 /** A lane heading the clips and headers below it that sit deeper, up to the next that does not. */
@@ -28,6 +29,8 @@ export interface Header {
   hue: number;
   start: number; // ms
   end: number; // ms; Infinity = open-ended
+  fadeIn?: number;
+  fadeOut?: number;
   budget?: number; // ms on the score where its budget ends
   over?: number; // ms past the budget
   fell?: boolean;

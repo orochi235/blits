@@ -6,15 +6,26 @@ export type Handle = 'body' | 'fadeIn' | 'fadeOut' | 'end';
 export function dragEdit(c: Clip, handle: Handle, dt: number): ClipEdit | null {
   if (handle === 'body')
     return c.locked ? null : { clip: c.id, kind: 'move', start: Math.max(0, c.start + dt) };
-  if (handle === 'end') {
-    if (c.pass <= 0) return null;
-    if (!Number.isFinite(c.passes)) return { clip: c.id, kind: 'passes', passes: 1 };
-    const passes = Math.round(c.passes + dt / c.pass);
-    return { clip: c.id, kind: 'passes', passes: Math.min(MAX_PASSES, Math.max(1, passes)) };
-  }
+  if (handle === 'end') return endEdit(c, dt);
   const was = handle === 'fadeIn' ? c.fadeIn : c.fadeOut;
   const ms = Math.min(fadeRoom(c, handle), Math.max(0, was + (handle === 'fadeIn' ? dt : -dt)));
   return { clip: c.id, kind: handle, ms };
+}
+
+/**
+ * The end dragged `dt`, snapped to whole passes. Under a group's cut it snaps to the cut too, and
+ * no further: reaching the cut keeps passes that already reach it, or takes the fewest that do.
+ */
+function endEdit(c: Clip, dt: number): ClipEdit | null {
+  if (c.pass <= 0) return null;
+  const room = c.cut ? (c.cut.at - c.start) / c.pass : Number.POSITIVE_INFINITY;
+  if (!Number.isFinite(c.passes) && !Number.isFinite(room))
+    return { clip: c.id, kind: 'passes', passes: 1 };
+  const target = Math.min(c.passes, room) + dt / c.pass;
+  const whole = Math.min(MAX_PASSES, Math.max(1, Math.round(target)));
+  const passes = (n: number): ClipEdit => ({ clip: c.id, kind: 'passes', passes: n });
+  if (whole < room && Math.abs(target - whole) <= room - target) return passes(whole);
+  return c.passes >= room ? null : passes(Math.min(MAX_PASSES, Math.ceil(room)));
 }
 
 /** The longest a fade can be: the clip's length less the other fade. */

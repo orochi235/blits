@@ -89,3 +89,23 @@ describe('groupDrop', () => {
     expect(groupDrop(clips, 'c', 3)).toBeNull();
   });
 });
+
+describe('the end of a clip its group cuts', () => {
+  const cut = { at: 1700, fade: 0 }; // 3.2 passes from 100
+  const open = clip({ passes: Number.POSITIVE_INFINITY, cut });
+  it('stays at the cut, unchanged, for a drag right or none', () => {
+    expect(dragEdit(open, 'end', 0)).toBeNull();
+    expect(dragEdit(open, 'end', 400)).toBeNull();
+    expect(dragEdit(clip({ passes: 5, cut }), 'end', 30)).toBeNull();
+  });
+  it('snaps left to whole passes that end before the cut', () => {
+    expect(dragEdit(open, 'end', -80)).toEqual({ clip: 'a', kind: 'passes', passes: 3 });
+    expect(dragEdit(open, 'end', -300)).toEqual({ clip: 'a', kind: 'passes', passes: 3 });
+    expect(dragEdit(open, 'end', -700)).toEqual({ clip: 'a', kind: 'passes', passes: 2 });
+    expect(dragEdit(open, 'end', -5000)).toEqual({ clip: 'a', kind: 'passes', passes: 1 });
+  });
+  it('stops a shorter clip at the fewest passes that reach the cut', () => {
+    expect(dragEdit(clip({ cut }), 'end', 300)).toEqual({ clip: 'a', kind: 'passes', passes: 3 });
+    expect(dragEdit(clip({ cut }), 'end', 5000)).toEqual({ clip: 'a', kind: 'passes', passes: 4 });
+  });
+});

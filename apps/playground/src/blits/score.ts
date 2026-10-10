@@ -1,11 +1,12 @@
-import type { Anchor, Handle, Mark, SpanHandle } from '@msb235/blits';
+import type { Anchor, Handle, Mark } from '@msb235/blits';
 import type { Clip, ClipEdit, Edge, Hatch, Header, Link } from '@pg/widgets/ScoreLanes';
 import type { Built } from './compile';
-import { type Composition, type Group, periodOf, type Voice } from './composition';
+import { type Composition, periodOf, type Voice } from './composition';
 import { compileExpr, type Scope, scopeOf } from './expr';
 import { rowsOf, underSpan } from './groups';
 import { without } from './keyed';
 import { clockOf, type Placed, placedOf } from './placed';
+import { cutUnder, headerOf, type Laying } from './scoreHeaders';
 import type { Subject } from './stage';
 
 const edgeOfMark = (m: Mark): Edge => (m === 'start' || m === 'in' ? 'start' : 'end');
@@ -102,34 +103,6 @@ function placeFrom(clip: Clip, v: Voice, h: Handle<Subject>, p: Placed) {
   if (Number.isFinite(factor) && Math.abs(factor - 1) > 1e-9) clip.factor = factor;
 }
 
-type Laying = ScoreOptions & { placed?: Map<string, Placed> };
-
-function headerOf(g: Group, lane: number, depth: number, folded: boolean, o: Laying): Header {
-  const p = o.placed?.get(g.id);
-  const start = p?.start ?? g.start;
-  const h: Header = {
-    id: g.id,
-    lane,
-    depth,
-    label: `${g.name} · ${g.kind}`,
-    hue: g.hue,
-    start,
-    end: p?.coast ?? p?.end ?? Number.POSITIVE_INFINITY,
-    folded,
-  };
-  if (g.kind !== 'span') return h;
-  const handle = o.built?.groupHandles.get(g.id) as SpanHandle<Subject> | undefined;
-  const clock = clockOf(handle);
-  if (handle && p && clock > 0) {
-    const r = handle.result;
-    if (Number.isFinite(r.budget)) h.budget = start + r.budget / clock;
-    if (r.over > 0) h.over = r.over / clock;
-    h.fell = r.fell;
-  } else if (g.span?.duration !== undefined && g.rate > 0)
-    h.budget = start + g.span.duration / g.rate;
-  return h;
-}
-
 export interface ScoreOptions {
   /**
    * The composition compiled and never synced, to place every clip and each group's extent where
@@ -153,21 +126,25 @@ export function clipsOf(
   opts: ScoreOptions = {},
 ): Score {
   const scope = scopeOf(c.levels);
-  const o: Laying = { ...opts, ...(opts.built ? { placed: placedOf(opts.built) } : {}) };
+  const o: Laying = opts.built ? { built: opts.built, placed: placedOf(opts.built) } : {};
   const voices = new Map(c.voices.map((v) => [v.id, v]));
   const groups = new Map((c.groups ?? []).map((g) => [g.id, g]));
   const clips: Clip[] = [];
   const headers: Header[] = [];
   let hideBelow = Number.POSITIVE_INFINITY;
+  const above: Header[] = [];
   for (const row of rowsOf(c)) {
     if (row.depth > hideBelow) continue;
     hideBelow = Number.POSITIVE_INFINITY;
+    while ((above.at(-1)?.depth ?? -1) >= row.depth) above.pop();
     const lane = clips.length + headers.length;
     const g = row.kind === 'group' ? groups.get(row.id) : undefined;
     const v = row.kind === 'voice' ? voices.get(row.id) : undefined;
     if (g) {
       const folded = opts.folded?.has(g.id) ?? false;
-      headers.push(headerOf(g, lane, row.depth, folded, o));
+      const header = headerOf(g, lane, row.depth, folded, o);
+      headers.push(header);
+      above.push(header);
       if (folded) hideBelow = row.depth;
     } else if (v) {
       const h = o.built?.handles.get(v.id);
@@ -176,6 +153,8 @@ export function clipsOf(
       if (row.depth > 0) clip.depth = row.depth;
       if (underSpan(c, v.id)) clip.locked = true;
       if (h && p) placeFrom(clip, v, h, p);
+      const cut = cutUnder(above);
+      if (cut) clip.cut = cut;
       clips.push(clip);
     }
   }

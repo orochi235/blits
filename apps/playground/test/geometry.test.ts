@@ -8,6 +8,8 @@ import {
   laneCount,
   passLines,
   scaleOf,
+  shownEnd,
+  slopePolygon,
 } from '@pg/widgets/ScoreLanes/geometry';
 import { describe, expect, it } from 'vitest';
 
@@ -117,5 +119,41 @@ describe('geometry', () => {
     expect(factorText(1.3)).toBe('×1.3');
     expect(factorText(2)).toBe('×2');
     expect(factorText(1 / 3)).toBe('×0.33');
+  });
+});
+
+describe('a clip cut short by its group', () => {
+  const s = scaleOf(1000, 1000, 0);
+  const open = clip({ passes: Number.POSITIVE_INFINITY, fadeOut: 100 });
+  it('ends at the cut when it would run past it', () => {
+    expect(shownEnd(clip({ cut: { at: 800, fade: 0 } }))).toBe(800);
+    expect(shownEnd(clip({ cut: { at: 1500, fade: 0 } }))).toBe(1000);
+    expect(shownEnd(open)).toBe(Number.POSITIVE_INFINITY);
+  });
+  it('slopes out over the group’s fade, ending at the cut', () => {
+    expect(clipPolygon({ ...open, cut: { at: 800, fade: 200 } }, s, 0, 10, 1000)).toBe(
+      '0,10 0,0 600,0 800,10',
+    );
+  });
+  it('keeps its own fade out where that starts sooner', () => {
+    const own = clip({ passes: 2, fadeOut: 400, cut: { at: 900, fade: 100 } });
+    expect(clipPolygon(own, s, 0, 10, 1000)).toBe('0,10 0,0 600,0 900,10');
+  });
+  it('ignores a cut it ends before', () => {
+    const early = clip({ passes: 1, fadeOut: 100, cut: { at: 800, fade: 300 } });
+    expect(clipPolygon(early, s, 0, 10, 1000)).toBe('0,10 0,0 400,0 500,10');
+  });
+});
+
+describe('slopePolygon', () => {
+  const s = scaleOf(1000, 1000, 0);
+  it('slopes both ends of an extent', () => {
+    expect(slopePolygon({ start: 100, end: 900, fadeIn: 200, fadeOut: 100 }, s, 0, 8, 1000)).toBe(
+      '100,8 300,0 800,0 900,8',
+    );
+  });
+  it('runs an endless extent flat to the view end', () => {
+    const e = { start: 0, end: Number.POSITIVE_INFINITY, fadeIn: 0, fadeOut: 300 };
+    expect(slopePolygon(e, s, 0, 8, 600)).toBe('0,8 0,0 600,0 600,8');
   });
 });

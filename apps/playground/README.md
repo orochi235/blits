@@ -186,7 +186,8 @@ header, and its members sit under it, indented one step per depth.
 | hatched extension      | `freeze`                      | the clip's menu                                          |
 | shared color bracket   | `locus`                       | drag a lane label onto another's, or the clip's menu     |
 | dashed link            | `anchor`                      | Alt-drag from an edge to another clip's edge             |
-| header bar             | a group, from its start to where its children end | ▾ folds its members away; click to select |
+| header bar             | a group, from its start to its end, sloped by its `fade` | ▾ folds its members away; click to select |
+| clip cut at a group's end | a member still playing when a group above it ends, sloped by that group's `fade.out` | the right edge stops at the cut; dragging it left snaps to whole passes before it |
 | budget line, red hatch | a span's `duration`, and `result.over` past it; "fell" when `spill` decided | the group panel |
 | clip under a span      | where the fit put it, ×1.5 after the label for a fitted rate | locked; the span places it |
 | dashed outline         | a child the fit skipped, at its natural length | none                                    |

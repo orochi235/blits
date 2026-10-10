@@ -125,7 +125,17 @@ function Harness() {
 export const Arrangement: StoryObj<typeof ScoreLanes> = { render: () => <Harness /> };
 
 const HEADERS: Header[] = [
-  { id: 'scene', lane: 0, depth: 0, label: 'scene · owner', hue: 200, start: 500, end: 4200 },
+  {
+    id: 'scene',
+    lane: 0,
+    depth: 0,
+    label: 'scene · owner',
+    hue: 200,
+    start: 500,
+    end: 4200,
+    fadeIn: 300,
+    fadeOut: 400,
+  },
   {
     id: 'intro',
     lane: 1,
@@ -170,6 +180,8 @@ const MEMBERS: Clip[] = [
     hue: 90,
     start: 3300,
     pass: 900,
+    passes: Number.POSITIVE_INFINITY,
+    cut: { at: 4200, fade: 400 },
     depth: 1,
     locked: false,
   },

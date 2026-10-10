@@ -63,3 +63,33 @@ describe('clips placed from a build', () => {
     expect(applyEdit(spanned, { clip: 'a', kind: 'link', link })).toBe(spanned);
   });
 });
+
+describe('a group that ends', () => {
+  const looped = (id: string, owner: string) =>
+    voice({ id, owner, patch: { kind: 'keys', period: 800, stops: [{ at: 0, delta: {} }] } });
+  const band = group({
+    id: 'band',
+    start: 300,
+    fade: { in: 400, out: 400 },
+    anchor: { end: 2800 },
+  });
+  const c = comp(
+    [looped('a', 'band'), looped('b', 'inner')],
+    [band, group({ id: 'inner', owner: 'band' })],
+  );
+  const score = clipsOf(c, subjects, { built: compile(c, subjects) });
+
+  it('cuts its members at its end, with its fade out', () => {
+    const cut = { at: 2800, fade: 400 };
+    expect(score.clips.find((x) => x.id === 'a')?.cut).toEqual(cut);
+    expect(score.clips.find((x) => x.id === 'b')?.cut).toEqual(cut);
+  });
+  it('gives its header its fades', () => {
+    expect(score.headers[0]).toMatchObject({ end: 2800, fadeIn: 400, fadeOut: 400 });
+  });
+  it('cuts nothing when it never ends', () => {
+    const free = comp([looped('a', 'o')], [group({ id: 'o' })]);
+    const clips = clipsOf(free, subjects, { built: compile(free, subjects) }).clips;
+    expect(clips[0]?.cut).toBeUndefined();
+  });
+});

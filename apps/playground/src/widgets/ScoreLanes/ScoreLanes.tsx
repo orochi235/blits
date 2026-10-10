@@ -2,7 +2,7 @@ import { type KeyboardEvent, type PointerEvent, useId, useMemo, useRef, useState
 import { hueColor } from '../hue';
 import { ClipLane } from './ClipLane';
 import { dragEdit, groupDrop, type Handle } from './drag';
-import { blockEnd, clipEnd, groupBrackets, laneCount, scaleOf, WIDTH } from './geometry';
+import { blockEnd, groupBrackets, laneCount, scaleOf, shownEnd, WIDTH } from './geometry';
 import { HeaderLane } from './HeaderLane';
 import type { Clip, ClipEdit, Edge, ScoreLanesProps } from './index';
 import { activates, nudge } from './keys';
@@ -89,10 +89,10 @@ export function ScoreLanes(props: ScoreLanesProps) {
           c.lane === lane &&
           c.id !== drag.link.clip &&
           t >= c.start &&
-          t <= Math.min(clipEnd(c), duration),
+          t <= Math.min(shownEnd(c), duration),
       );
       if (hit) {
-        const edge: Edge = t - hit.start < Math.min(clipEnd(hit), duration) - t ? 'start' : 'end';
+        const edge: Edge = t - hit.start < Math.min(shownEnd(hit), duration) - t ? 'start' : 'end';
         onEdit({
           clip: drag.link.clip,
           kind: 'link',
@@ -136,7 +136,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
     const c = clips.find((x) => x.id === id);
     if (!c) return null;
     return {
-      x: scale.x(edge === 'start' ? c.start : Math.min(clipEnd(c), duration)),
+      x: scale.x(edge === 'start' ? c.start : Math.min(shownEnd(c), duration)),
       y: RULER + c.lane * laneH + laneH / 2,
     };
   };

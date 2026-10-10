@@ -27,20 +27,47 @@ export function clipEnd(c: Clip): number {
   return c.start + (c.pass > 0 ? c.pass * c.passes : 0);
 }
 
-export function clipPolygon(c: Clip, s: Scale, top: number, h: number, viewEnd: number): string {
-  const end = Math.min(clipEnd(c), viewEnd);
-  const open = !Number.isFinite(clipEnd(c));
-  const x0 = s.x(c.start);
+/** Where the clip's group cuts it, when that comes before its own end. */
+export const cutOf = (c: Clip): Clip['cut'] => (c.cut && c.cut.at < clipEnd(c) ? c.cut : undefined);
+
+/** Where the clip is drawn to: its own end, or its group's cut. */
+export const shownEnd = (c: Clip): number => cutOf(c)?.at ?? clipEnd(c);
+
+export interface Extent {
+  start: number;
+  end: number; // Infinity = open-ended
+  fadeIn: number;
+  fadeOut: number;
+}
+
+/** A bar over `e` with its fades as slopes; an open end runs flat to `viewEnd`. */
+export function slopePolygon(e: Extent, s: Scale, top: number, h: number, viewEnd: number): string {
+  const open = !Number.isFinite(e.end);
+  const end = Math.min(e.end, viewEnd);
+  const x0 = s.x(e.start);
   const x1 = s.x(end);
-  const inX = s.x(c.start + c.fadeIn);
-  const outX = open ? x1 : s.x(end - c.fadeOut);
+  const inX = s.x(e.start + e.fadeIn);
+  const outX = open ? x1 : s.x(end - e.fadeOut);
   const fmt = (x: number, y: number) => `${Math.round(x * 100) / 100},${y}`;
   return [fmt(x0, top + h), fmt(inX, top), fmt(outX, top), fmt(x1, top + h)].join(' ');
 }
 
+export function clipPolygon(c: Clip, s: Scale, top: number, h: number, viewEnd: number): string {
+  const cut = cutOf(c);
+  const own = clipEnd(c) - c.fadeOut;
+  const fadeOut = cut ? cut.at - Math.max(c.start, Math.min(own, cut.at - cut.fade)) : c.fadeOut;
+  return slopePolygon(
+    { start: c.start, end: shownEnd(c), fadeIn: c.fadeIn, fadeOut },
+    s,
+    top,
+    h,
+    viewEnd,
+  );
+}
+
 export function passLines(c: Clip, viewEnd: number): number[] {
   if (c.pass <= 0) return [];
-  const end = Math.min(clipEnd(c), viewEnd);
+  const end = Math.min(shownEnd(c), viewEnd);
   const out: number[] = [];
   for (let t = c.start + c.pass; t < end - 1e-9 && out.length < MAX_PASSES; t += c.pass)
     out.push(t);

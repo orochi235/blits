@@ -3,13 +3,14 @@ import type { KeyboardEvent, PointerEvent } from 'react';
 import { hueColor } from '../hue';
 import { dragEdit, fadeRoom, type Handle, hatchOf } from './drag';
 import {
-  clipEnd,
   clipPolygon,
+  cutOf,
   factorText,
   INDENT,
   MAX_PASSES,
   passLines,
   type Scale,
+  shownEnd,
   WIDTH,
 } from './geometry';
 import type { Clip, ClipEdit, Hatch } from './index';
@@ -84,8 +85,9 @@ export function ClipLane(p: ClipLaneProps) {
   const { raw, clip: c, scale, duration, labelW, hatchMask } = p;
   const top = p.laneTop + 4;
   const h = p.laneH - 12;
-  const open = !Number.isFinite(clipEnd(c));
-  const end = Math.min(clipEnd(c), duration);
+  const cut = cutOf(c);
+  const open = !Number.isFinite(shownEnd(c));
+  const end = Math.min(shownEnd(c), duration);
   const length = open ? duration : end - c.start;
   const fill = hueColor(c.hue);
   const factor = factorText(c.factor);
@@ -157,7 +159,7 @@ export function ClipLane(p: ClipLaneProps) {
           fill={fill}
         />
       )}
-      {c.freezeAfter && !open && end < duration && (
+      {c.freezeAfter && !open && !cut && end < duration && (
         <rect
           className={s.hatch}
           x={scale.x(end)}
@@ -183,7 +185,7 @@ export function ClipLane(p: ClipLaneProps) {
         onPointerDown={(e) => p.onBegin(e, raw, 'fadeIn')}
         onKeyDown={(e) => p.onKeyEdit(e, raw, 'fadeIn')}
       />
-      {!open && (
+      {!open && !cut && (
         <circle
           className={s.handle}
           cx={scale.x(end - c.fadeOut)}
@@ -212,8 +214,12 @@ export function ClipLane(p: ClipLaneProps) {
           aria-label={`${c.label} passes`}
           aria-valuemin={1}
           aria-valuemax={MAX_PASSES}
-          aria-valuenow={c.passes}
-          aria-valuetext={`${c.passes} ${c.passes === 1 ? 'pass' : 'passes'}`}
+          aria-valuenow={Number.isFinite(c.passes) ? c.passes : undefined}
+          aria-valuetext={
+            cut
+              ? `cut at ${seconds(cut.at)} by its group`
+              : `${c.passes} ${c.passes === 1 ? 'pass' : 'passes'}`
+          }
           onPointerDown={(e) => p.onBegin(e, raw, 'end')}
           onKeyDown={(e) => p.onKeyEdit(e, raw, 'end')}
         />
