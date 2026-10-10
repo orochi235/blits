@@ -125,7 +125,10 @@ export class VoiceHandle<I, O> implements Handle<I> {
     const voice = this.#voice;
     if (voice === null) return;
     voice.written = true;
-    const u = this.#host.nowFor(voice);
+    const now = this.#host.nowFor(voice);
+    // A pending voice's clock reads 0 at its start, and a rate taken from now would cross 0 sooner:
+    // a subject it freezes before would play, and step, ahead of a voice that has not started.
+    const u = voice.state === 'pending' && voice.start > now && r > 0 ? voice.start : now;
     leave(voice, u);
     retime(voice, u, r, over);
     this.#host.changed(voice);

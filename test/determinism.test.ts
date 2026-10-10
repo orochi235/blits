@@ -16,9 +16,7 @@ interface Known {
 // A seed that starts failing is a regression; `shrink` in ./fuzz/program.ts reduces it to its cause.
 const known: Record<Property, Record<Variant, Known>> = {
   seek: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  // A stepped subject first met late, under a start pinned before the cue and rates changed
-  // since, reads other than one probed all along (full 56), with one seek as with two.
-  again: { plain: { seeds: 150 }, full: { seeds: 150, unknown: [56] } },
+  again: { plain: { seeds: 150 }, full: { seeds: 150 } },
   behind: { plain: { seeds: 150 }, full: { seeds: 150 } },
   ahead: { plain: { seeds: 150 }, full: { seeds: 150 } },
   dt: { plain: { seeds: 150 }, full: { seeds: 150 } },

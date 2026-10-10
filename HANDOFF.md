@@ -697,14 +697,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       record where it stands. No bench row seeks, so its cost is not measured. The fuzzer's new
       `again` property (seek back, play on with no probe, seek again) failed full seeds 54, 56
       and 60 on the layered store and fails 56 alone now.
-    - **A stepped subject first met late reads other than one probed all along** (found
-      2026-10-09; `again` full 56 in `test/determinism.test.ts`). Shrunk, it is a `drift` voice
-      cued at 192 with `start: 100`, `rate: 0.5`, a fade and `freeze: 'both'`, then `h.rate = 3`
-      at 256 and `mix.rate = 0.5` at 288: after a seek to 96 and no probe since, a subject first
-      probed at frame 320 reads 2.9404 where one probed every frame read 5.7079. One seek shows
-      it as two do, on the layered store as on this one. Step 3's exact catch-up is meant to make
-      the two equal; which of the pinned start, the voice rate and the mix rate breaks it is not
-      found.
+    - **A rate set on a pending voice ran its clock past 0 before its start, fixed 2026-10-10**
+      (`ramp` in `handle.ts`; `again` full 56 in `test/determinism.test.ts`, which now has no
+      known failure). The seed read as "a stepped subject first met late reads other than one
+      probed all along", and the late one was right. `h.rate = 3` on a voice still pending took
+      the new rate from that moment, so the clock read 0 ahead of `voice.start` while the voice
+      stayed pending until it. A subject the voice froze before then played and stepped its state
+      early, and a later `mix.rate` put the start back by its pin with that state kept. A rate
+      above 0 now applies from the start. A rate of 0 is still taken at once, which holds the
+      clock before its start for good, as a pause should: anchored at the start it would read 0
+      and the voice would count as begun. The same family as the handle `seek` on a pending
+      voice below, which is still undecided.
     - **Step 8, tried beside it and backed out for moving no number**: growing a lane's arrays to
       the number of subjects probed last frame at its first position, and handing `LaneHost.ready`
       its numbers through `Lanes.arg`.

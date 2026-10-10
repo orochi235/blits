@@ -383,6 +383,23 @@ describe('mix rate', () => {
       }
   });
 
+  it('applies a rate set on a pending voice from its start, which stays where it was', () => {
+    for (const lanes of [true, false])
+      for (const freeze of ['both', undefined] as const) {
+        const m = mix<Part, Pose>(K, { lanes });
+        m.sync(0);
+        const h = m.cue({ patch: clock, start: 100, freeze });
+        m.sync(48);
+        h.rate = 3;
+        // From now, the clock would read 0 at 67 and 69 here.
+        m.sync(90);
+        expect(h.state, `lanes ${lanes}, freeze ${freeze}`).toBe('pending');
+        expect(m.probe(a).x, `lanes ${lanes}, freeze ${freeze}`).toBe(0);
+        m.sync(110);
+        expect(m.probe(a).x, `lanes ${lanes}, freeze ${freeze}`).toBeCloseTo(30, 9);
+      }
+  });
+
   it('gives the same bits with lanes on and off', () => {
     const run = (lanes: boolean) => {
       const m = mix<Part, Pose>(K, { lanes });

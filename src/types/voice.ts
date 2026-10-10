@@ -260,7 +260,10 @@ export interface Handle<I = unknown> {
   readonly owner: Handle<I> | undefined;
   /** Live. Writes land on the next sync. */
   weight: number;
-  /** Playback rate now. Setting it changes speed at once; `ramp` eases into a new one. */
+  /**
+   * Playback rate now. Setting it changes speed at once; `ramp` eases into a new one. On a voice
+   * still pending, a rate above 0 applies from the voice's start, which stays where it is.
+   */
   rate: number;
   /**
    * Moves the rate to `rate` linearly over `over` mix ms, so a pause or a slow-motion eases in
