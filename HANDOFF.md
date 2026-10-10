@@ -654,9 +654,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **Step 9, the names: settled by Mike, 2026-10-10.** The engine stays `mixer`, and `Tape`
       keeps every method, so weasel's `createHistory` still passes straight in. The deprecated
       `hold`, `period`, and `hex()` are removed in the unreleased batch (the changelog's Breaking
-      list has what replaces each). Consumers, which change when they move past 0.7.1: astv sets
+      list has what replaces each). One consumer has to change before it moves past 0.7.1: astv sets
       `hold` on voices in `packages/engine` (`glide.ts`, `turns.ts`, `textRuns.ts`,
-      `progressClocks.ts`), and wod, pinned to 0.6.0, has `color: hex()` in `src/clock/motion.ts`.
+      `progressClocks.ts`), asked of the session astv-05 on 2026-10-10 and not confirmed. wod is
+      off `hex()` (wod `a16f7c9`, committed and not pushed).
       The playground's composition format has a `period` field of its own, which is not the
       removed one.
     - **Step 8, built 2026-10-09**: a probe into `out` reuses its arrays (breaking, in the
