@@ -31,8 +31,19 @@ version and everything else the patch. Each release lists its changes as **Break
   marks, rate changes and frames too, as `mark`, `pace` and `frame` records with `mix: ''`, and a
   `left` record's `data` is now `[record, sync]`. A store written for 0.7 forgets the wrong records
   on a seek back.
+- `vec(3, sum())` is typed `Channel<[number, number, number]>`, a tuple of the length it was given,
+  so a kit over a tuple pose needs no cast. A length that is not a literal still gives
+  `Channel<number[]>`. Types only: code that calls such a channel's `merge`, `scale` or `lerp`
+  itself with a `number[]` annotates the channel as `Channel<number[]>`.
 
 ### Added
+
+- `angle({ turn })`, a channel for a rotation about one axis: it adds as `sum` does, and `lerp` and
+  a weight below 1 go the short way round, so 350 to 10 passes 0. `turn` is one full turn in the
+  channel's unit, default 360.
+- `quat()`, a channel for a rotation in space as a unit quaternion `[x, y, z, w]`: contributions
+  compose in cue order, and `lerp` and a weight take the short arc.
+- `Vec<N>`, the tuple of `N` numbers a `vec` channel holds.
 
 - `@msb235/blits/testing`, for a library writing patches: `setting()` makes a `Setting` to call a
   patch outside a mix, and `checkPatch(patch, { subject, kit })` lists what a mix cannot rely on.

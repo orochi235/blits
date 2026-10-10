@@ -162,7 +162,7 @@ export function last<V>(opts?: { lerp?: (a: V, b: V, u: number) => V }): Channel
  * every fraction written into that copy, keeps one element kind: a pose's arrays then look alike to
  * every fold, whichever path made them.
  */
-function doubles(n: number, v: number): number[] {
+export function doubles(n: number, v: number): number[] {
   if (n === 0) return [];
   const a = [0.5];
   for (let i = 1; i < n; i++) a.push(0.5);
@@ -170,12 +170,24 @@ function doubles(n: number, v: number): number[] {
   return a;
 }
 
+type Tuple<N extends number, T extends number[] = []> = T['length'] extends N
+  ? T
+  : Tuple<N, [...T, number]>;
+
+/**
+ * `N` numbers: a tuple where `N` is a literal, as `Vec<3>` is `[number, number, number]`, and
+ * `number[]` where it is only known to be a number.
+ *
+ * @category channel
+ */
+export type Vec<N extends number> = number extends N ? number[] : Tuple<N>;
+
 /**
  * Vec3 position, premultiplied light: one channel's arithmetic applied down an axis list.
  *
  * @category channel
  */
-export function vec(n: number, of: Channel<number>): Channel<number[]> {
+export function vec<N extends number>(n: N, of: Channel<number>): Channel<Vec<N>> {
   const rest = of.rest === undefined ? undefined : doubles(n, of.rest);
   const scale = of.scale;
   const fill = of.rest ?? 0;
@@ -213,7 +225,7 @@ export function vec(n: number, of: Channel<number>): Channel<number[]> {
   inPlace.set(channel, lerpTo as LerpInto);
   const inner = numerics.get(of);
   if (inner !== undefined && inner.axes === 1) numerics.set(channel, { ...inner, axes: n });
-  return channel;
+  return channel as Channel<unknown> as Channel<Vec<N>>;
 }
 
 /**

@@ -82,7 +82,7 @@ describe('channel laws', () => {
   });
 
   it('vec: the laws hold down every axis', () => {
-    const channel = vec(3, sum());
+    const channel: Channel<number[]> = vec(3, sum());
     const rest = channel.rest as number[];
     const scale = channel.scale as (v: number[], w: number) => number[];
     expect(rest).toEqual([0, 0, 0]);
@@ -123,7 +123,7 @@ describe('channel laws', () => {
   });
 
   it('vec: a missing axis reads as the channel rest, not zero', () => {
-    const channel = vec(3, mul());
+    const channel: Channel<number[]> = vec(3, mul());
     expect(channel.merge([2, 2], [1, 1, 1])).toEqual([2, 2, 1]);
     expect(channel.lerp([2, 2], [1, 1, 1], 0.5)).toEqual([1.5, 1.5, 1]);
     expect(channel.scale?.([2, 2], 1)).toEqual([2, 2, 1]);

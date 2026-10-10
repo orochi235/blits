@@ -183,7 +183,7 @@ describe('keys', () => {
       { at: 1, delta: { p: [0, 1, 0] } },
     ]);
     const frozen = JSON.stringify([loop, retarget]);
-    const stock = vec(3, sum());
+    const stock: Channel<number[]> = vec(3, sum());
     // Borrows vec's lerp, but its merge hands the contribution itself to the pose, so a read must not
     // reuse that array.
     const stockLast: Channel<number[]> = { lerp: stock.lerp, merge: (_a, b) => b };

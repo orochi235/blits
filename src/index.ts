@@ -1,4 +1,4 @@
-export type { NumberOptions } from './channels.js';
+export type { NumberOptions, Vec } from './channels.js';
 export { kit, last, max, mul, sum, vec } from './channels.js';
 export type { ColorOptions } from './color.js';
 export { color, css, hex, mixHex, oklab, toHex } from './color.js';
@@ -19,6 +19,8 @@ export { glide, spring, tween } from './motion.js';
 export { HistoryMiss } from './paging.js';
 export type { KeysOptions, PatchOptions } from './patch.js';
 export { keys, patch } from './patch.js';
+export type { AngleOptions } from './rotation.js';
+export { angle, quat } from './rotation.js';
 export { gate, lag, level, peak, slew } from './signals.js';
 export type { Ticked, Ticker, TickerOptions } from './ticker.js';
 export { ticker } from './ticker.js';
