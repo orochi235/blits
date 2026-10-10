@@ -25,6 +25,12 @@ version and everything else the patch. Each release lists its changes as **Break
   stiffness snapped to its target.
 - `sync(NaN)` throws. It slipped past the check that the clock only goes forward.
 - `{ steps, jump: 'start' }` reads `1/n` at 0, as CSS does. It read 0.
+- A history store's contract changed. `cut` takes the `seq` of the frame a seek went back to, not
+  a mix time, and every `Paged` record carries the `seq` it was made in; keep one record per key
+  and `seq`, since rate 0 lets several frames share a mix time. The transport pages its announced
+  marks, rate changes and frames too, as `mark`, `pace` and `frame` records with `mix: ''`, and a
+  `left` record's `data` is now `[record, sync]`. A store written for 0.7 forgets the wrong records
+  on a seek back.
 
 ### Added
 
@@ -71,6 +77,29 @@ version and everything else the patch. Each release lists its changes as **Break
 - Under `history`, a read back to a frame in which the host changed a voice between the sync and
   the first probe shows the change in that frame, as the live probe did. It showed from the next
   frame.
+- A subject's fade-in start and step origin came from its voice's rate and anchor as they stood at
+  the subject's first probe, so a rate change, ramp or handle seek before then moved them and the
+  numbers depended on when the host had looked. Every voice now keeps the clocks it ran on, and a
+  subject's origin is when its voice's clock first read the subject's delay. A stateful subject met
+  late steps from that origin, capped by `maxDt`, where it started stepping from first sight. A
+  read ahead no longer loses a stateful voice whose anchored start falls inside it.
+- A seek or read back was keyed on mix time, which rate 0, a backdated `fade({ at })` and several
+  handle calls in one frame can all share, so it could restore the wrong moment or drop a voice
+  whose fade was backdated. The transport now numbers its frames, history entries carry the frame
+  they were made in, and a seek or read to mix time `t` lands on the last frame at or before `t`.
+  The tape stamps calls by host time, so frames rate 0 holds at one mix time stay apart.
+- A frame that passed both a voice's start and the `fade({ at })` set for it began the fade a frame
+  late, so 16 ms and 32 ms frames disagreed.
+- With a history store, the transport kept every announced mark, rate change and frame for good, and
+  a long run slowed quadratically: 20,000 frames took 19.8 s, against 0.17 s now.
+- Lanes and the general path disagreed in three places. A `level` set between two probes in one
+  frame now reaches the next probe on lanes too; `inert` reads the same for a motion voice at weight
+  0, which lanes kept awake until it landed; and `project` reads a subject faded out of a voice as
+  out of it after a retarget or a `drop` brought it back, on both paths. A voice weighted by an input
+  signal not built on `level`, or whose patch reads host fields, never runs on a lane, since a
+  change to either between two probes would not reach it.
+- A span that skipped several children at cue played the last of them in full on the next sync, and
+  then reported none skipped.
 
 ## 0.7.1
 
