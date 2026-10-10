@@ -619,8 +619,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     keep adding to the changelog's Unreleased section as steps land, and don't ask to publish per
     step; it ships as one release when Mike says. Until things settle, a consumer that needs
     unreleased blits links the local checkout, and versions are reconciled at that release. Steps 8
-    and 9 are on `main` but for step 9's names, which are Mike's (see "Step 9, the names"), and
-    item 12's audit is done. **Nothing in the plan is left to build until he answers.** Each
+    and 9 are on `main`, and item 12's audit is done: **the plan is finished.** Each
     step goes in a worktree off `main`, since another session
     works on the playground and item 13 in a worktree of its own; ask it before editing this file,
     and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. Step
@@ -652,17 +651,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       under ten members) was weighed and left, since it would name what each reads without
       stopping anything. Still assigned from several modules: `frame` (five, each one line,
       `nextFrame()`), `reducedNow`, `relinks`, `pins`, `gone`, `pose` and `retired`.
-    - **Step 9, the names: asked 2026-10-10, not answered.** `mixer` (the stock engine, two
-      letters from `mix`), `Tape`'s weasel-style methods, and the deprecated `period` are Mike's
-      to settle. No consumer imports `mixer` or sets `period` (grep of klieg, weasel, astv,
-      sherpa, wod and magicsmoke, 2026-10-10); weasel and astv pass a tape. What he was offered,
-      with the recommendation first: for the engine, `stock` (its doc comment's own word), `cpu`
-      or keeping `mixer`, out of a field of 45; for `Tape`, keep every method, since a host calls
-      only `branches` and `switchBranch` and weasel's `createHistory` passes straight in, against
-      renaming those two or all of them behind a wrapper blits would ship; for `period`, remove
-      it in the unreleased batch, and say whether `hold` and the old hex color channel go with
-      it (consumers not checked for those two). The question was put in the session blits-ac,
-      which has ended: ask again if no answer is on record here.
+    - **Step 9, the names: settled by Mike, 2026-10-10.** The engine stays `mixer`, and `Tape`
+      keeps every method, so weasel's `createHistory` still passes straight in. The deprecated
+      `hold`, `period`, and `hex()` are removed in the unreleased batch (the changelog's Breaking
+      list has what replaces each). Consumers, which change when they move past 0.7.1: astv sets
+      `hold` on voices in `packages/engine` (`glide.ts`, `turns.ts`, `textRuns.ts`,
+      `progressClocks.ts`), and wod, pinned to 0.6.0, has `color: hex()` in `src/clock/motion.ts`.
+      The playground's composition format has a `period` field of its own, which is not the
+      removed one.
     - **Step 8, built 2026-10-09**: a probe into `out` reuses its arrays (breaking, in the
       changelog), a motion voice off lanes reuses its record's delta (`src/moved.ts`), a keys lane
       fills in one loop (`src/keyfill.ts`), a fill's methods hand each other numbers through
