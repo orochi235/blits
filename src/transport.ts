@@ -101,6 +101,16 @@ export class Transport implements TransportApi {
   pace: Pace | null = null;
   /** The latest mix time a voice any mix on it let go of from `gone` had left at. */
   forgotTo = Number.NEGATIVE_INFINITY;
+  /**
+   * The latest mix time a host changed a mix on it, or a voice or a subject left one: without
+   * history, the earliest time a read back still finds the mixes as they stand now.
+   */
+  settled = Number.NEGATIVE_INFINITY;
+
+  /** Records a change or a leaving at the mix time now; before the first sync, nothing. */
+  settle(): void {
+    if (this.now > this.settled) this.settled = this.now;
+  }
   /** The frame the rate was first set in, which a seek or read back to before it finds unset. */
   pacedSeq = Number.POSITIVE_INFINITY;
   /** True while the tape makes a recorded call again, so it is not recorded twice. */
@@ -308,6 +318,7 @@ export class Transport implements TransportApi {
 
   rebase(): void {
     this.rebasing = true;
+    this.settle();
   }
 
   /**
@@ -383,6 +394,7 @@ export function announce(
     mix,
   };
   transport.announced.push(mark);
+  transport.settle();
   record(transport, 'announce', () => {
     transport.announced.push({ ...mark, seq: transport.seq });
   });

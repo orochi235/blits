@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { check, type ProgramOptions, type Property, program } from './fuzz/program.js';
+import { check, type ProgramOptions, type Property, program, standing } from './fuzz/program.js';
 
 const variants = {
   plain: {},
@@ -19,6 +19,10 @@ const known: Record<Property, Record<Variant, Known>> = {
   behind: { plain: { seeds: 150 }, full: { seeds: 150 } },
   ahead: { plain: { seeds: 150 }, full: { seeds: 150 } },
   dt: { plain: { seeds: 150 }, full: { seeds: 150 } },
+  standing: { plain: { seeds: 150 }, full: { seeds: 150 } },
+  // A read at the mix's own time lands what the next sync would: a voice sought past its end has
+  // left (plain 144), and an anchor on a voice just faded is placed (full 1).
+  now: { plain: { seeds: 150, unknown: [144] }, full: { seeds: 150, unknown: [1] } },
 };
 
 function guards(prop: Property) {
@@ -46,3 +50,19 @@ describe('project-behind: projecting to an earlier frame matches what it showed'
   guards('behind'));
 describe('project-ahead: projecting from the last call matches playing on', () => guards('ahead'));
 describe('frame spacing: 32 and 48 ms frames match 16 ms frames', () => guards('dt'));
+describe('project-now: projecting to the mix’s own time matches what it probes', () =>
+  guards('now'));
+describe('project-behind with no history: a read back matches what the frame showed, or refuses', () => {
+  guards('standing');
+  // Where no handle is written to, most reads answer, which the programs above seldom allow.
+  it('programs of cues, drops and touches alone, seeds 1 to 1000: every answer matches', () => {
+    const before = standing.answered;
+    const failures: string[] = [];
+    for (let seed = 1; seed <= 1000; seed++) {
+      const failure = check('standing', program(seed, { cuesOnly: true }));
+      if (failure !== null) failures.push(`seed ${seed}: ${failure}`);
+    }
+    expect(failures).toEqual([]);
+    expect(standing.answered - before).toBeGreaterThan(20_000);
+  });
+});

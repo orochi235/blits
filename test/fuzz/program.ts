@@ -39,6 +39,8 @@ export interface ProgramOptions {
   mixRate?: boolean;
   /** Whether handles seek. Default true. */
   hseek?: boolean;
+  /** No handle is written to: every call is a cue, a `drop` or a `touch`. */
+  cuesOnly?: boolean;
 }
 
 /** One host call, made right after the sync at host time `at`. */
@@ -70,7 +72,16 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
     const k = Math.floor(r() * 3);
     for (let j = 0; j < k; j++) {
       const kind = r();
-      if (kind < 0.45 || n === 0) {
+      if (opts.cuesOnly && n > 0 && kind >= 0.8) {
+        const all = kind >= 0.9;
+        ops.push({
+          at: t,
+          desc: all ? 'mix.touch()' : 'mix.drop(a)',
+          run: (m) => (all ? m.touch() : m.drop(subjects[0] as Part)),
+        });
+        continue;
+      }
+      if (kind < 0.45 || n === 0 || opts.cuesOnly) {
         const i = n++;
         const pk = pick(opts.stateful ? ['wave', 'ramp', 'drift'] : ['wave', 'ramp']);
         const loop = pick<boolean | number>([true, false, 2]);
@@ -222,15 +233,23 @@ const frames = every(0, 1600, 16);
 const kept = (): MixOptions => ({ history: { ms: 100000, every: 50, tape }, stepMs: 4 });
 const fmt = (xs: number[] | undefined) => (xs ? xs.map((x) => +x.toFixed(6)).join(',') : 'none');
 
-export type Property = 'seek' | 'behind' | 'ahead' | 'dt';
+export type Property = 'seek' | 'behind' | 'ahead' | 'dt' | 'standing' | 'now';
 
-/** The host frames each property checks at; `dt` checks every frame. */
+/**
+ * The host frames each property checks at; `dt` checks every frame, and `standing` reads every
+ * earlier frame back from each.
+ */
 export const checkedAt: Record<Property, number[]> = {
   seek: [96, 320, 512, 704],
   behind: [64, 160, 320, 480, 640],
   ahead: [672, 800, 1008, 1408],
   dt: [0],
+  standing: [160, 320, 480, 656, 1600],
+  now: [160, 320, 480, 656],
 };
+
+/** How many reads back with no history have answered, so a suite can tell the check is not idle. */
+export const standing = { answered: 0 };
 
 /**
  * The frame a seek or read to frame `t`'s mix time lands on: the last frame at that mix time, since
@@ -282,6 +301,41 @@ function checkOne(prop: Property, ops: Op[], t: number, ref: () => ReturnType<ty
       return differs(got, r.poses.get(t))
         ? `project(${t}) from 656 got ${fmt(got)} want ${fmt(r.poses.get(t))}`
         : null;
+    }
+    case 'now': {
+      // Stopped at `t`, after that frame's calls: a read at the mix's own time is what it probes.
+      const run = play(
+        ops,
+        frames.filter((f) => f <= t),
+        kept(),
+      );
+      const want = probes(run.m);
+      const got = probes(run.m.project(run.m.now));
+      return differs(got, want) ? `project(now) at ${t} got ${fmt(got)} want ${fmt(want)}` : null;
+    }
+    case 'standing': {
+      // No history: a read back answers with what the frame showed, or says it needs history.
+      const run = play(
+        ops,
+        frames.filter((f) => f <= t),
+        {},
+      );
+      for (const f of frames) {
+        // A frame at the mix time the run stopped on, as rate 0 leaves several, is no read back.
+        if (f >= t || !((run.mixT.get(f) as number) < run.m.now)) break;
+        let got: number[];
+        try {
+          got = probes(run.m.project(run.mixT.get(f) as number));
+        } catch (e) {
+          if ((e as Error).message.includes('needs a mix made with history')) continue;
+          throw e;
+        }
+        standing.answered++;
+        const want = run.poses.get(landing(run, f));
+        if (differs(got, want))
+          return `with no history, project(${f}) from ${t} got ${fmt(got)} want ${fmt(want)}`;
+      }
+      return null;
     }
     case 'dt': {
       const a = play(ops, frames, { stepMs: 4 });

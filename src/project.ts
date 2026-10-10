@@ -6,6 +6,7 @@ import { move } from './move.js';
 import { heldByInput, ownerReading, relink } from './owner.js';
 import { pin } from './place.js';
 import { reading } from './reading.js';
+import { copyStanding, stands } from './standing.js';
 import { Store } from './store.js';
 import { hostAt } from './tape.js';
 import { type Cut, Transport, within } from './transport.js';
@@ -31,16 +32,15 @@ export function projectAll(transport: Transport, t: number): TransportProjection
   // Behind, the last frame at or before `t`, read as it showed when `t` is that frame's own time.
   let cut: Cut = { seq: transport.seq, strict: false };
   let u = hostAt(transport, t);
-  if (!ahead) {
-    const history = transport.history;
-    if (!history) throw new Error('blits: reading back needs a mix made with history');
+  const kept = transport.history !== undefined;
+  if (!ahead && kept) {
     cover(transport, t);
     const frame = transport.frameAt(t);
     if (frame !== undefined) {
       cut = { seq: frame.seq, strict: frame.at === t };
       if (frame.at === t) u = frame.u;
     }
-  }
+  } else if (!ahead) stands(transport, t);
   const c = new Transport(undefined, true);
   c.offset = transport.offset;
   c.u = u;
@@ -65,7 +65,8 @@ export function projectAll(transport: Transport, t: number): TransportProjection
     copy.projecting = true;
     copies.set(mix, copy);
     if (ahead) copyAhead(mix, copy);
-    else copyBack(mix, copy, t, cut);
+    else if (kept) copyBack(mix, copy, t, cut);
+    else copyStanding(mix, copy, t, cut);
   }
   if (ahead) for (const copy of copies.values()) move(copy, t);
   const read = <T>(f: () => T): T => {
@@ -140,6 +141,12 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
     });
   ownBlends(c.cued);
   if (mix.owners !== null) relink(c.cued);
+  stateAt(c, t);
+  count(c);
+}
+
+/** Sets each copied voice's state to what its clock and fade make it at `t`. */
+export function stateAt<I, O>(c: Mixer<I, O>, t: number): void {
   for (const copy of c.cued)
     copy.state = copy.out
       ? 'fading'
@@ -148,11 +155,10 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
         : copy.freezesAfter && copy.elapsedAt(t) >= copy.span + copy.latest
           ? 'frozen'
           : 'live';
-  count(c);
 }
 
 /** Recounts what the fold's shortcuts depend on, for a projection's freshly copied voices. */
-function count<I, O>(mix: Mixer<I, O>): void {
+export function count<I, O>(mix: Mixer<I, O>): void {
   mix.named = new Store<I, Voice<I, O>[]>();
   mix.naming = 0;
   mix.general = [];
@@ -201,7 +207,7 @@ function carry<I, O>(
  * A projection back starts each subject from the latest copy kept at or before `t`, else from its
  * voice's start with fresh state, which is exact for a voice stepped at a fixed interval.
  */
-function recall<I, O>(
+export function recall<I, O>(
   mix: Mixer<I, O>,
   voice: Voice<I, O>,
   subject: I,

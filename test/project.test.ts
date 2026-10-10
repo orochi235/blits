@@ -167,10 +167,10 @@ describe('project ahead', () => {
 });
 
 describe('project back', () => {
-  it('needs history, and only reaches as far back as it keeps', () => {
+  it('needs history for a voice that keeps state, and only reaches as far back as it keeps', () => {
     const a = { id: 'a' };
     const without = mix<Part, Pose>(K);
-    without.cue({ patch: wave });
+    without.cue({ patch: drift() });
     without.sync(0);
     without.sync(100);
     expect(() => without.project(50)).toThrow(/history/);

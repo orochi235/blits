@@ -158,6 +158,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** Records a change to the mix's voices or controls. */
   stir(): void {
     this.stirs++;
+    // A change a sync makes follows from the clock; one a host makes does not.
+    if (!this.moving) this.transport.settle();
     if (this.stirred) return;
     this.stirred = true;
     if (this.syncing) return;
@@ -531,7 +533,10 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   mute(opts?: { over?: number }): void {
-    for (const voice of this.cued) beginFade(this, voice, { over: opts?.over });
+    for (const voice of this.cued) {
+      voice.written = true;
+      beginFade(this, voice, { over: opts?.over });
+    }
     record(this, 'mute', () => this.mute(opts));
   }
 

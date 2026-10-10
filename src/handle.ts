@@ -103,6 +103,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     plainWeight(w);
     const voice = this.#voice;
     if (voice === null) return;
+    voice.written = true;
     voice.weight = w;
     this.#host.changed(voice);
     this.#host.record('weight', () => {
@@ -123,6 +124,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     finiteRate(r);
     const voice = this.#voice;
     if (voice === null) return;
+    voice.written = true;
     const u = this.#host.nowFor(voice);
     leave(voice, u);
     retime(voice, u, r, over);
@@ -133,6 +135,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   seek(elapsed: number, opts?: SeekOptions): Doubt {
     const voice = this.#voice;
     if (voice === null) return 'exact';
+    voice.written = true;
     const u = this.#host.nowFor(voice);
     leave(voice, u);
     voice.rebase(u);
@@ -147,6 +150,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   fade(opts?: FadeOptions<I>): void {
     const voice = this.#voice;
     if (voice === null) return;
+    voice.written = true;
     this.#host.fade(voice, opts);
     this.#host.record('fade', () => this.fade(opts));
   }
@@ -154,6 +158,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   rise(opts?: { over?: number }): void {
     const voice = this.#voice;
     if (voice === null) return;
+    voice.written = true;
     this.#host.rise(voice, opts);
     this.#host.record('rise', () => this.rise(opts));
   }

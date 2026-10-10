@@ -237,6 +237,8 @@ export class Voice<I, O> {
    * after it.
    */
   seeks = 0;
+  /** Whether the host has written to its handle, so it no longer plays as it was cued. */
+  written = false;
   /** How many of `seeks` were the mix's `touch`, which moves no clock. */
   touches = 0;
   /** How many times its clock has jumped, which a booker counts hits again from. */

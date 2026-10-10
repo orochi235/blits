@@ -49,6 +49,13 @@ version and everything else the patch. Each release lists its changes as **Break
 - `fold(kit, deltas, weights?)` folds deltas into one pose by a kit's arithmetic with no mix and no
   clock: what a mix gives for voices contributing those deltas at those weights, every weight 1
   where none is given.
+- `project(time)` reads an earlier time on a mix made without `history`, where how the mix stands
+  now says what it showed then: every voice plays as it was cued and reads by its clock alone (no
+  state, motion, anchor or owner, no write to its handle, no channel without a rest at a weight
+  that moves), the mix's rate was never set, and `time` is no earlier than the last cue, `drop`,
+  `touch`, `announce` or `rebase`, or the last frame a voice left in. Anywhere else it throws and
+  says which of those it met, where it threw for any time behind the mix. A host that cued its
+  voices once need not build a second mix to read an earlier frame.
 - `handle.to`, `handle.push` and `handle.read` reach the `to`, `push` and `read` of the motion
   patch a voice plays, so a host holding only the handle need not keep the patch or cast it. `to`
   and `push` throw for a voice whose patch does not take them; `read` gives undefined.

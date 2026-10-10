@@ -1144,9 +1144,15 @@ export interface Mix<I, O, H = unknown> {
   /**
    * Reads the mix at another mix time, without moving it. Ahead of the mix it plays what is cued
    * forward, and throws for a time past a call the tape will play again after a `seek` back, which
-   * only a seek there makes; behind it, it needs `history`, reads the last frame at or before
-   * `time` as that frame showed, and throws for a time older than the history reaches. On a transport it reads every mix on it together, so anchors across them
-   * answer.
+   * only a seek there makes; behind it, with `history`, it reads the last frame at or before `time`
+   * as that frame showed, and throws for a time older than the history reaches. On a transport it
+   * reads every mix on it together, so anchors across them answer.
+   *
+   * Without `history` it reads back only where how the mix stands now says what it showed then,
+   * and throws otherwise, saying why. Every voice has to play as it was cued and read by its clock
+   * alone: no state, motion, anchor or owner, no write to its handle, and no channel without a rest
+   * at a weight that moves. The mix's rate has never been set. And `time` is no earlier than the
+   * last cue, `drop`, `touch`, `announce` or `rebase`, or the last frame a voice left in.
    */
   project(time: number): Projection<I, O>;
   /**

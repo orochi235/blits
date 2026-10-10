@@ -203,6 +203,8 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
   mix.retired.push(voice);
   voice.doneAt = at ?? (Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now);
   voice.doneSeq = mix.transport.seq;
+  // The frames up to this one showed it, though its fade ended before: it leaves the list now.
+  mix.transport.settle();
   voice.play(false, voice.doneAt, voice.doneSeq);
   voice.resolve();
   // An owner takes what it holds with it, and leaves with its last child.
