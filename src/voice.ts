@@ -236,6 +236,8 @@ export class Voice<I, O> {
   seeks = 0;
   /** Seeks that rebuild state; a record stamped with fewer makes its state again before stepping. */
   rebuilds = 0;
+  /** Whether its span's last fit jumped it to its end, which leaves it no time in that fit. */
+  skipped = false;
   /** Whether its patch has kept state on a record through `setting.keep`, which makes it stateful. */
   keeping = false;
   /** Subjects fading out of this voice alone, by the ramp each started; null while none are. */

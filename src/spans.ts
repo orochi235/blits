@@ -98,6 +98,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>): void {
   kids.forEach((c, i) => {
     const rate = (c.spec.rate ?? 1) * (plan.rate[i] as number);
     const skipped = (plan.skip[i] as boolean) && c.holding === null;
+    c.skipped = skipped;
     let moved = false;
     if (c.state === 'pending') {
       const start = local + (at[i] as number);

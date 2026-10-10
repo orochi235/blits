@@ -42,6 +42,22 @@ describe('spans', () => {
     expect(startOf(m, 'c')).toEqual([500]);
   });
 
+  it('keeps every child skipped at cue skipped as they leave', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    const s = m.span({ name: 'seq', duration: 1500 });
+    m.cue({ patch: write(1000), loop: false, owner: s, name: 'a' });
+    m.cue({ patch: write(1000), loop: false, owner: s, name: 'b' });
+    m.cue({ patch: write(1000), loop: false, owner: s, name: 'c', faster: 2 });
+    expect(s.result).toMatchObject({ skipped: 3, fell: true });
+    const read = [16, 500, 1000].map((t) => {
+      m.sync(t);
+      return m.probe({ id: 'r' }).x;
+    });
+    expect(read).toEqual([0, 0, 0]);
+    expect(s.result).toMatchObject({ skipped: 3, fell: true });
+  });
+
   it("fits astv's phase: twelve changes into 2s, each allowed four times faster", () => {
     const m = mix<Row, Pose>(K);
     m.sync(0);

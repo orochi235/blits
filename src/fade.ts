@@ -213,6 +213,8 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
     const span = voice.owner;
     const owner = orphan(voice);
     if (owner !== null && !lingers(owner, voice.doneAt)) retire(mix, owner, voice.doneAt);
-    else if (span.fitting !== null && span.state !== 'done') refit(mix, span);
+    // A child the fit skipped had no time in it, so the rest of the fit stands: fitting again
+    // between siblings skipped together would play the ones still to leave.
+    else if (span.fitting !== null && span.state !== 'done' && !voice.skipped) refit(mix, span);
   }
 }
