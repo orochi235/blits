@@ -1,4 +1,4 @@
-import { copy } from './clone.js';
+import { copy, first } from './clone.js';
 import { bound, merged } from './fold.js';
 import type { Channel, Kit } from './types.js';
 
@@ -40,7 +40,7 @@ export function fold<O>(
           ? channel.fold(pose[key], value, w)
           : merged(channel, pose[key], channel.scale(value, w));
       else if (w >= ON)
-        pose[key] = pose[key] === undefined ? copy(value) : merged(channel, pose[key], value);
+        pose[key] = pose[key] === undefined ? first(value) : merged(channel, pose[key], value);
     }
   }
   for (const key of names) {

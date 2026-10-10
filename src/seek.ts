@@ -148,7 +148,7 @@ export function seek(transport: Transport, t: number): void {
     transport.u = u;
     for (const m of transport.members) move(m, t);
   } else {
-    const frame = transport.frameAt(t);
+    const frame = transport.frames.at(t);
     if (frame === undefined)
       throw new Error(`blits: ${t} is older than this mix's history reaches`);
     // On the frame itself, its own host time: rate 0 may have held the clock there for several.
@@ -158,7 +158,7 @@ export function seek(transport: Transport, t: number): void {
     transport.undrop(seq);
     // What history kept after the frame is let go; the tape holds the calls that made it.
     transport.announced = transport.announced.filter((a) => a.seq <= seq);
-    transport.frames = transport.frames.filter((f) => f.seq <= seq);
+    transport.frames.set(transport.frames.all().filter((f) => f.seq <= seq));
     if (transport.pacedSeq > seq) {
       transport.pace = null;
       transport.pacedSeq = Number.POSITIVE_INFINITY;

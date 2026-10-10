@@ -1,4 +1,4 @@
-import { copy } from './clone.js';
+import { first } from './clone.js';
 import type { Mixer } from './mixer.js';
 import type { Channel } from './types.js';
 import type { Subject, Voice } from './voice.js';
@@ -101,7 +101,7 @@ export function foldLocus<I, O>(this: Mixer<I, O>, k: LocusScratch<I, O>, group:
         k.values[slot] =
           this.lerpsInto[slot] !== undefined && channel.scale && Array.isArray(value)
             ? own(k, slot, value, channel.rest as number[])
-            : copy(value);
+            : first(value);
         continue;
       }
       const total = (taken[slot] as number) + weight;

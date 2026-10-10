@@ -1,5 +1,5 @@
 import { frozenTime, passAt, phaseAt, silent } from './clock.js';
-import { copy as copyValue } from './clone.js';
+import { copy as copyValue, first } from './clone.js';
 import { open as openRecord, shut as shutRecord, weighAt } from './everyone.js';
 import { recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
@@ -345,7 +345,7 @@ export function apply<I, O>(
     const band = bands[i];
     const on = this.passes(band === 0 ? undefined : band === 1, weight);
     bands[i] = on ? 1 : 2;
-    if (on) pose[key] = pose[key] === undefined ? copy(value) : merged(channel, pose[key], value);
+    if (on) pose[key] = pose[key] === undefined ? first(value) : merged(channel, pose[key], value);
   }
 }
 
@@ -706,7 +706,7 @@ export function foldLoci<I, O>(
         const passes = this.passes(band === 0 ? undefined : band === 1, w);
         on[slot] = passes ? 1 : 2;
         if (passes)
-          pose[key] = pose[key] === undefined ? copy(value) : merged(channel, pose[key], value);
+          pose[key] = pose[key] === undefined ? first(value) : merged(channel, pose[key], value);
       }
     }
     return pose as O;

@@ -56,6 +56,14 @@ export function copy(v: unknown): unknown {
   return plainObject(v) ? clone(v) : v;
 }
 
+/**
+ * A value that starts a channel no fold writes into: only `merged` touches it after, and that
+ * writes into arrays alone, so an object is the patch's own, not a copy made each frame.
+ */
+export function first(v: unknown): unknown {
+  return Array.isArray(v) ? [...v] : v;
+}
+
 /** Whether `copy` can copy `v` faithfully, when it is an object. */
 export function copyable(v: object): boolean {
   return Array.isArray(v) || ArrayBuffer.isView(v) || plainObject(v);

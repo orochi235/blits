@@ -1,3 +1,4 @@
+import { Frames } from './frames.js';
 import { listedAll } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { move, nextFrame, waits } from './move.js';
@@ -88,7 +89,7 @@ export class Transport implements TransportApi {
    */
   seq = 0;
   /** Under history, the frames a seek or read back may reach, oldest first. */
-  frames: Frame[] = [];
+  frames = new Frames();
   /** Host time at the last sync: the host's timestamp less every gap `rebase` took out. */
   u = Number.NaN;
   offset = 0;
@@ -274,10 +275,7 @@ export class Transport implements TransportApi {
     }
     if (history !== undefined && this.dropped.length > 0)
       this.dropped = this.dropped.filter((d) => d.at >= reach);
-    const frames = this.frames;
-    let n = 0;
-    while (n + 1 < frames.length && (frames[n + 1] as Frame).at <= reach) n++;
-    if (n > 0) frames.splice(0, n);
+    this.frames.shed(reach);
     pageTransport(this);
     this.woken = false;
     // It is a frame too, which asks every weight signal again, so one reading input follows it.
@@ -297,26 +295,6 @@ export class Transport implements TransportApi {
     const seq = ++this.seq;
     if (this.history !== undefined) this.frames.push({ seq, at, u: this.u });
     for (const m of this.members) m.looked = false;
-  }
-
-  /**
-   * The frame a seek or read to mix time `t` lands on: the last one standing at or before `t`,
-   * since rate 0 can hold the clock at `t` for many.
-   */
-  frameAt(t: number): Frame | undefined {
-    const frames = this.frames;
-    let lo = 0;
-    let hi = frames.length - 1;
-    let found: Frame | undefined;
-    while (lo <= hi) {
-      const mid = (lo + hi) >> 1;
-      const f = frames[mid] as Frame;
-      if (f.at <= t) {
-        found = f;
-        lo = mid + 1;
-      } else hi = mid - 1;
-    }
-    return found;
   }
 
   rebase(): void {

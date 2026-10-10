@@ -36,7 +36,7 @@ export function projectAll(transport: Transport, t: number): TransportProjection
   const kept = transport.history !== undefined;
   if (!ahead && kept) {
     cover(transport, t);
-    const frame = transport.frameAt(t);
+    const frame = transport.frames.at(t);
     if (frame !== undefined) {
       cut = { seq: frame.seq, strict: frame.at === t };
       if (frame.at === t) u = frame.u;

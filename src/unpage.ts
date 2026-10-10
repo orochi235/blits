@@ -72,7 +72,7 @@ function unpageTransport(transport: Transport, records: readonly Paged[]): void 
   const frames = own
     .filter((r) => r.stream === 'frame')
     .map((r) => ({ seq: r.seq, at: r.at, u: r.data as number }));
-  transport.frames = before(frames, transport.frames);
+  transport.frames.set(before(frames, transport.frames.all()));
   const held = new Set(transport.announced.map((a) => a.order));
   const marks = own
     .filter((r) => r.stream === 'mark' && !held.has((r.data as Announced).order))

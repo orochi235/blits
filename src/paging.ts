@@ -1,5 +1,5 @@
 import type { Mixer } from './mixer.js';
-import type { Announced, Frame, Transport } from './transport.js';
+import type { Announced, Transport } from './transport.js';
 import type { HistoryStore, Paged, PagedStream } from './types.js';
 
 /**
@@ -120,11 +120,9 @@ export function pageTransport(transport: Transport): void {
   if (history === undefined || transport.pager === null) return;
   const reach = transport.now - history.ms;
   const records: Paged[] = [];
-  const frames = transport.frames;
-  let n = 0;
-  while (n + 1 < frames.length && (frames[n + 1] as Frame).at <= reach) n++;
-  for (const f of frames.splice(0, n))
-    records.push({ mix: '', stream: 'frame', at: f.at, seq: f.seq, data: f.u });
+  transport.frames.shed(reach, (f) =>
+    records.push({ mix: '', stream: 'frame', at: f.at, seq: f.seq, data: f.u }),
+  );
   const pace = transport.pace;
   const timeOf = (u: number) => (pace === null ? u : pace.reading(u));
   if (transport.announced.some((a) => timeOf(a.at) < reach)) {
