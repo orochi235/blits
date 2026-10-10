@@ -82,7 +82,10 @@ export class Transport implements TransportApi {
   private woken = false;
   /** The mix clock at the last sync or seek. */
   now = Number.NaN;
-  /** The number of the frame being played: each sync, seek and call played again by the tape begins one. */
+  /**
+   * The number of the frame being played: each sync and seek begins one, and so does each host
+   * time the tape plays calls again at.
+   */
   seq = 0;
   /** Under history, the frames a seek or read back may reach, oldest first. */
   frames: Frame[] = [];
@@ -139,7 +142,7 @@ export class Transport implements TransportApi {
     return this.members.some((m) => m.projecting);
   }
 
-  /** Takes a mix on, after every mix that joined before it; `slot` keeps a copy's in place. */
+  /** Takes a mix on, after every mix that joined before it; `slot` keeps one a seek puts back in place. */
   join(mix: Member, slot = this.slots++): void {
     mix.slot = slot;
     const i = this.members.findIndex((m) => m.slot > slot);

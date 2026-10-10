@@ -7,7 +7,7 @@ const SPAN = 1e-4;
  * `read` asks for it; a mix and a retarget never use it.
  */
 let slope = false;
-/** The last tween sample's time, curve and length, and the share of the way it had left to go. */
+/** The last tween sample's progress and curve, and the share of the way it had left to go. */
 const memo = { u: Number.NaN, ease: undefined as Curve | undefined, left: 0 };
 
 /** Turns the velocity `eased` works out on or off. */

@@ -295,7 +295,7 @@ interface Fold<I, O> {
   /**
    * What the cued voices on the score answered, kept while no voice on it has been cued, retimed,
    * retired or has left since, the cued list is the one it read, and reduced motion is as it was.
-   * Null where one of them reads another voice's clock (an owner's, a fit's, its children's).
+   * Not kept where one of them reads another voice's clock (an owner's, a fit's, its children's).
    */
   live: Pick | null;
   liveOf: readonly Voice<I, O>[] | null;
@@ -306,7 +306,7 @@ interface Fold<I, O> {
 /**
  * The mix time a query answers: `mark` of the voice it picks, among those cued and those that have
  * left, never the asker; or a mark the host announced on the score, which is the same time for
- * any of the four. Undefined while what it picks has no such time. A query naming no score looks
+ * any mark. Undefined while what it picks has no such time. A query naming no score looks
  * among the asker's siblings, the voices its owner holds.
  */
 function timeOf<I, O>(

@@ -201,7 +201,7 @@ export function shift(delay: number, phase: number, duration: number): number {
 /**
  * Where `phase` falls among `n` stop phases `ats[off + k * stride]`, in order: -2 for no stops, -1
  * at or before the first, `n` at or past the last, and otherwise the first stop past it, where the
- * segment from the one before ends. With `segment`'s, the one copy of the search.
+ * segment from the one before ends. `segment` and `readNumber` make the same search.
  */
 export function locate(
   ats: ArrayLike<number>,
@@ -239,8 +239,8 @@ export function fraction(phase: number, a: number, b: number): number {
 }
 
 /**
- * Finds where one track is at a phase, into `seg`: the one copy of the search, which `read` and a
- * lane folding stops straight into a subject's values both make. `base` stands in for the value at
+ * Finds where one track is at a phase, into `seg`: the search `read` and a lane folding stops
+ * straight into a subject's values both make. `base` stands in for the value at
  * phase 0, which is how `from: 'current'` starts a voice wherever the subject already is.
  */
 export function segment(track: Track, phase: number, base: unknown): number {

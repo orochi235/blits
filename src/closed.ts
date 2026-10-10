@@ -122,7 +122,7 @@ function solveGlide(law: Float64Array, y0: number): void {
 }
 
 /**
- * A stretch `t` voice ms into it, released at `at` from `x0` moving at `v0` toward `to` (each read
+ * A stretch at voice time `t`, released at `at` from `x0` moving at `v0` toward `to` (each read
  * from its offset), into `xo` and `vo`: the one copy of the closed forms, which `law` (a patch's
  * `[form, settle, k1, k2, k3]`, the head of a patch's buffer or a copy of it) picks between. A tween reads `ease` and
  * `ms`, the stretch's length, dividing in milliseconds so a boundary lands exactly; every other

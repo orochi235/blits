@@ -103,7 +103,7 @@ One kit, `src/blits/kit.ts`, drives both stages, so any composition plays on eit
 | `offset`  | `vec(2, sum())`           | moves        | slides, lifts   |
 | `turn`    | `sum()`                   | turns a tick | tilts           |
 | `scale`   | `mul()`                   | size         | size            |
-| `color`   | `hex()`                   | fill         | tint            |
+| `color`   | `color(last(), { lerp: 'oklch' })` | fill | tint            |
 | `opacity` | `mul({ bounds: [0, 1] })` | alpha        | alpha           |
 | `glow`    | `max()`                   | halo         | halo            |
 
@@ -200,7 +200,7 @@ so the score draws the fit blits made at cue.
 
 The right column draws the composition's signal flow, top to bottom: levels, the signal ops and
 expressions they feed, the groups and voices those weigh, each group feeding what it holds, the channels each voice writes with the rule each
-folds by (`KIT[ch].kind`), and the pose. `flowOf` in `src/blits/flow.ts` builds it from the
+folds by (its `kind` in the composition's kit), and the pose. `flowOf` in `src/blits/flow.ts` builds it from the
 composition alone, finding the levels and signal calls in each `weight`, `stagger` and `target`
 with acorn; `FlowDiagram` draws it with `@weasel-js/diagram`. A voice or group that failed to compile, or a
 level an expression names that the composition lacks, is outlined red. Clicking a channel shows its
@@ -230,7 +230,8 @@ owner or a span; deleting a group moves what it held up to its parent.
 - **Play and scrub.** The `Player` (`src/blits/player.ts`) advances in whole 1000/60 ms frames and
   pulls every subject every frame, in every mix, so live play and a replay give the same poses.
   Scrubbing forward plays ahead; scrubbing back rebuilds and replays from 0, because a stateful
-  signal or a spring reads each frame's gap.
+  signal or a spring reads each frame's gap, or calls `mix.seek` where the transport's scrub choice
+  says so, falling back to the replay where history cannot reach.
 - **The inspector reads only public API.** Each solo mix plays one voice and is read with `probe`;
   blits exposes no per-voice contribution, and the playground does not reach inside for one. The
   Player records the picked subject's history as it steps, so a plot never replays anything.
@@ -240,8 +241,8 @@ owner or a span; deleting a group moves what it held up to its parent.
 - **Live mode.** While the transport's live toggle is on, the live panel acts on the running
   handles instead of the composition. A change reaches the voice in the full mix and in every solo
   mix, where it plays silent but keeps time for anything anchored to it; a weight lands only where
-  the voice is heard. A badge says the changes are in force; the next edit or backward scrub drops
-  them.
+  the voice is heard. A badge says the changes are in force; the next edit drops them, and so does a
+  backward scrub by replay, while one by `mix.seek` plays them again.
 - **State.** The current composition is kept in `localStorage`; undo and redo (Cmd/Ctrl-Z,
   Shift for redo) use labkit's pure undo-stack functions. Share copies a link carrying the
   composition as base64url of its UTF-8 JSON in `#c=…`; the app loads it once and clears it from

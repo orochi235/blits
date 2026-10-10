@@ -171,7 +171,8 @@ export function condense(): Fit {
   return (span, kids, plan) => {
     if (fits(span, kids, plan) || !kids.some((k) => k.overlap)) return plan;
     const at = (s: number): FitPlan => ({ ...plan, share: s });
-    // `least` finds the smallest x that fits; the share wanted is the largest, so search 1 - share.
+    // `least` finds the smallest x that fits; the share wanted is the largest, so search how far
+    // under the plan's it is.
     const x = least(0, plan.share, (d) => fits(span, kids, at(plan.share - d)));
     return at(plan.share - x);
   };

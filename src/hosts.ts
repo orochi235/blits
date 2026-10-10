@@ -138,7 +138,6 @@ export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   );
 }
 
-/** A voice's patch kept state on a record: it is stateful from now on. */
 const RANK = { exact: 0, stepped: 1, held: 2 } as const;
 
 /** How sure a seek leaves a voice's state: kept is held; rebuilt is exact only on a fixed step. */
@@ -159,6 +158,7 @@ function seekDoubt<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, rebuild: boolean)
   return fixed ? 'exact' : 'stepped';
 }
 
+/** A voice's patch kept state on a record: it is stateful from now on. */
 export function stateful<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if (voice.keeping) return;
   voice.keeping = true;

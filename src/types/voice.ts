@@ -35,6 +35,11 @@ export interface SpanHints {
   priority?: Strength;
 }
 
+/**
+ * What `cue` takes: a patch, and the clock, weight and reach it plays with.
+ *
+ * @category voice
+ */
 export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
   patch: Patch<I, O, unknown, H>;
   /**
@@ -239,8 +244,8 @@ export type FadeOptions<I = unknown> =
   | {
       /**
        * The one subject to fade out of this voice, which plays on for the rest. Once the ramp ends
-       * the voice forgets the subject and reaches it no more, until a motion patch's `to` or the
-       * mix's `drop` brings it back, met afresh: `from`, `target` and `stagger` asked again.
+       * the voice forgets the subject and reaches it no more, until a motion patch's `to` or `push`
+       * or the mix's `drop` brings it back, met afresh: `from`, `target` and `stagger` asked again.
        */
       subject: I;
       /** The ramp, ms. Defaults to the voice's own `fade.out`; 0 takes the subject out at once. */
@@ -258,7 +263,7 @@ export interface Handle<I = unknown> {
   readonly state: 'pending' | 'live' | 'frozen' | 'fading' | 'done';
   /** The handle of the owner this voice plays under; undefined for one on the mix clock. */
   readonly owner: Handle<I> | undefined;
-  /** Live. Writes land on the next sync. */
+  /** Live. A write shows at the next probe. */
   weight: number;
   /**
    * Playback rate now. Setting it changes speed at once; `ramp` eases into a new one. On a voice
@@ -280,6 +285,10 @@ export interface Handle<I = unknown> {
    * `held` where it was kept, or depends on host fields or an input weight the rebuild cannot know.
    */
   seek(elapsed: number, opts?: SeekOptions): Doubt;
+  /**
+   * Fades the voice out, or one subject out of it, as `FadeOptions` says. A voice already fading or
+   * done is left as it is.
+   */
   fade(opts?: FadeOptions<I>): void;
   /**
    * Turns a fade out around: the voice climbs back from where its fade had got to, up the same

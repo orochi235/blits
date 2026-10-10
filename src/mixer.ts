@@ -126,20 +126,23 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** Taken off its transport, so it takes no more calls until a seek puts it back. */
   dropped = false;
   readonly name: string | undefined;
-  /** This mix's frame among every mix's: moved by a sync, and by a control change or drop within one. */
+  /**
+   * This mix's frame among every mix's: moved by a sync or seek, and by a control change, drop,
+   * or touch within one.
+   */
   frame = nextFrame();
   /** Pending voices whose start the host gave, by its host time, kept where the rate puts it. */
   pins: Map<Voice<I, O>, number> | null = null;
   wantsPose = false;
   /** The pose `pull` folds a subject into where it cannot read straight from the lanes. */
   scratch: O | undefined;
-  /** The last array `pull` read, by position, with each subject's chain head, to skip the lookup. */
   /** Live voices by the earliest mix time `moveTo` would change each, a binary heap. */
   due: Due<I, O>[] = [];
   /** Voices retired since `moveTo` last pruned them, in the order they retired. */
   retired: Voice<I, O>[] = [];
   /** Visit every voice each sync, as before the due queue; for tests that compare the two. */
   walkAll = false;
+  /** The last array `pull` read, by position, with each subject's chain head, to skip the lookup. */
   pulled: I[] = [];
   pulledHeads: (Subject<unknown> | undefined)[] = [];
   /** Each remembered head's lane slot, and the `version` and `relinks` they were all current at. */
@@ -182,8 +185,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
   /**
    * Per subject, the first record of the chain through every live voice that reaches it, or a stub
-   * where none does. Relinked when `version` moves, which is whenever the list or a voice's pending
-   * state changes.
+   * where none does. Relinked when `version` moves, or when a voice naming the subject marks its
+   * head stale: see `changed` in `chain.ts`.
    */
   chains = new Store<I, Subject<unknown>>();
   version = 0;
@@ -192,7 +195,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   named = new Store<I, Voice<I, O>[]>();
   /** Voices a subject has been faded out of, which `drop` looks in besides those that reach it. */
   readonly parters = new Set<Voice<I, O>>();
-  /** Without history, what an anchor can still find of the voices that have left. */
+  /** What an anchor can still find of voices that left without history, or past its reach. */
   readonly departed = new DepartedIndex();
   /**
    * Motion patches that may hold state for a subject no voice still reaching it plays, which `drop`
@@ -625,7 +628,7 @@ export class Mixer<I, O> implements Mix<I, O> {
    * is first asked, when probes start writing it.
    */
   restStamps: Store<I, number> | null = null;
-  /** What a probe's record of rest is good for: moved by a new frame, version or relink. */
+  /** What a probe's record of rest is good for: moved by a new frame, version, relink, or stir. */
   private restsEpoch = 0;
   private restsFrame = Number.NaN;
   private restsVersion = Number.NaN;

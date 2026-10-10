@@ -72,7 +72,7 @@ export const enum Flag {
   TWEEN = 1024,
 }
 
-/** The flags of a row `bareRows` takes, under `BARE_MASK`. */
+/** The flags of a row `bareRows` takes, under `MASK`. */
 // biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package; see `Row`
 const enum Bare {
   // biome-ignore lint/style/useLiteralEnumMembers: tsc folds the flags into a literal
@@ -96,7 +96,7 @@ export function bare(f: number): boolean {
 }
 
 /**
- * Every laned voice on one channel that reaches a single subject, a row each, in voice order: the
+ * Every laned voice on the same channels that reaches one subject, a row each, in voice order: the
  * per-subject numbers a lane keeps, and a copy of what a fill reads of the voice and, for a motion
  * voice, its patch, so a fill over 100k of them reads a few flat arrays instead of 100k voices,
  * lanes and patch buffers. Each copy is written when its source changes: the voice's by
@@ -122,7 +122,7 @@ export class Crowd<I, O> implements Positions<I, O> {
   readonly line = SPARSE.other;
   /** Where the fill now under way has reached. */
   cursor = 0;
-  /** Rows whose voices have left, kept in place until the crowds are next rebuilt. */
+  /** Rows whose voices have left, kept in place until the crowd is compacted or rebuilt. */
   dead = 0;
   /** Whether some row is `Flag.STALE`, for `freshen` to copy before the fill's loop. */
   stale = false;
@@ -193,7 +193,6 @@ export class Crowd<I, O> implements Positions<I, O> {
     return this.list.length;
   }
 
-  /** Makes room for `rows` rows. */
   reserve(rows: number): void {
     if (rows * Row.STRIDE <= this.data.length) return;
     const cap = Math.max(rows, (this.data.length / Row.STRIDE) * 2, 16);
@@ -234,7 +233,7 @@ export function crowdsUpTo<I, O>(lanes: Lanes<I, O>, id: number): void {
   }
 }
 
-/** A crowd's rows from its cursor up to voice `id`, bare tweens in `bareRows` and the rest here. */
+/** A crowd's rows from its cursor up to voice `id`, bare tweens in `bareRows`, others in `rows`. */
 function runCrowd<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, id: number): void {
   const list = c.list;
   const hot = c.hot;
@@ -248,7 +247,7 @@ function runCrowd<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, id: number): void {
 }
 
 /**
- * A crowd's rows from `p` up to voice `id`, until one `bareRows` takes after the first: what
+ * A crowd's rows from `first` up to voice `id`, until one `bareRows` takes after the first: what
  * `runMotion` does for a lane's subjects, reading each row's voice and stretch from `hot`, and
  * through `move` for whatever `hot` cannot answer, as `runMotion` does. Returns where it stopped.
  */

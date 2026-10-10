@@ -43,8 +43,8 @@ const larger = (a: number, b: number): number => (a > b ? a : b);
 const numerics = shared<object, Numeric>('numeric@1');
 
 /**
- * The stock arithmetic of a channel `sum`, `mul`, `max` or `vec` made, keyed by the object itself,
- * so a custom channel that claims a stock `kind` is not trusted with a lane.
+ * The stock arithmetic of a channel `sum`, `mul`, `max` or `vec` made, or `vouch` was given, keyed
+ * by the object itself, so a custom channel that claims a stock `kind` is not trusted with a lane.
  */
 export function numericOf(channel: Channel<unknown>): Numeric | undefined {
   return numerics.get(channel);
@@ -68,7 +68,10 @@ export function axesOf(channel: Channel<unknown>): number {
   return Array.isArray(rest) ? rest.length : (widths.get(channel) ?? 1);
 }
 
-/** `merge(acc, scale(v, w))` for a stock numeric channel, in exactly its arithmetic. */
+/**
+ * `merge(acc, scale(v, w))` for a stock numeric channel, in exactly its arithmetic. Not for an
+ * `'own'` channel, and an angle's `v` is taken the short way round first.
+ */
 export function foldNumber(op: Numeric['op'], acc: number, v: number, w: number): number {
   if (op === 'sum') return add(acc, times(v, w));
   if (op === 'mul') return product(acc, toward(v, w));

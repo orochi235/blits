@@ -97,7 +97,7 @@ export class Lanes<I, O> implements Watcher {
   /** The lanes over every subject that have started playing, by epoch. */
   dense: Lane<I, O>[] = [];
   readonly byId = new Map<number, Lane<I, O>>();
-  /** The crowds of single-subject motion voices, one per channel, and which holds each voice. */
+  /** The crowds of single-subject voices, one per list of channels, and which holds each voice. */
   crowds: Crowd<I, O>[] = [];
   readonly crowdOf = new Map<number, Crowd<I, O>>();
   /** Whether two crowds share a channel, so their rows must interleave in voice order. */
@@ -358,8 +358,9 @@ export class Lanes<I, O> implements Watcher {
       this.fresh = true;
     }
     if (this.filling) return Begin.GENERAL;
-    // The mix's version moves only when a voice over every subject comes, goes, starts or stops
-    // waiting, each of which touches it, so a version past a qualify that stands is a set of touches.
+    // Past a qualify that stands, the mix's version moves when a voice over every subject comes,
+    // goes, starts or stops waiting, each of which touches it, or stops sharing one record, which
+    // moves no voice on or off a lane: so with voices touched it is a set of touches.
     if (this.qualifiedVersion !== version) {
       if (!Number.isNaN(this.qualifiedVersion) && this.touched.length > 0 && retouch(this))
         this.qualifiedVersion = version;

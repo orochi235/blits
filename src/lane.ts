@@ -127,8 +127,8 @@ export interface Paced {
 }
 
 /**
- * Where a motion voice's per-subject numbers live, by position: a lane of one voice, or the crowd
- * of single-subject motion voices, whose positions each belong to a voice of their own.
+ * Where a motion voice's per-subject numbers live, by position: a lane of one voice, or a crowd
+ * of single-subject voices, whose positions each belong to a voice of their own.
  */
 export interface Positions<I, O> {
   /** `STRIDE` numbers per position. */

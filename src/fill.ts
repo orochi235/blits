@@ -56,7 +56,7 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
     for (const lane of lanes.lanes) {
       if (decide) {
         // A lane with few subjects, such as one naming its own, goes by the share of all probed;
-        // one with a single subject shares nothing a fill could save, as a solo lane does not.
+        // one with a single subject shares nothing a fill could save.
         const line = lane.line;
         const n = lane.list.length;
         if (n >= 64) pace(lanes, lane);

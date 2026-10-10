@@ -152,7 +152,6 @@ function queue<I, O>(
   lanes.queued = k + 1;
 }
 
-/** Makes room in the queue for `runs` runs. */
 function room<I, O>(lanes: Lanes<I, O>, runs: number): void {
   if (runs <= lanes.queueSlots.length) return;
   const size = Math.max(64, runs, lanes.queueSlots.length * 2);

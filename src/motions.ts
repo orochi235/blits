@@ -134,7 +134,7 @@ export interface Shape<I> {
   scalarEvery(): boolean | undefined;
   /** A tween's easing, which its law cannot hold; undefined, but present, on every other shape. */
   ease: Curve | undefined;
-  /** A tween's seconds for a stretch the subject starts now; undefined, but present, on the rest. */
+  /** A tween's ms for a stretch the subject starts now; undefined, but present, on the rest. */
   ms: ((subject: I) => number) | undefined;
   /** The patch's kind and constants, as `Patch.motion` reports them. */
   spec(): MotionSpec;
@@ -146,7 +146,7 @@ export interface Shape<I> {
  * The one copy, read by `at` and by a mix's lane alike.
  *
  * After the law, each subject's run of `stride` numbers is its release time, its flags, a tween's
- * seconds for the stretch, then `x0`, `v0` and `to` per axis. A live sample reads this one buffer and nothing else the patch owns: at
+ * ms for the stretch, then `x0`, `v0` and `to` per axis. A live sample reads this one buffer and nothing else the patch owns: at
  * 10k springs of one subject each, a buffer per field, a map lookup per sample and the law in an
  * object of its own took a call from 130 ns to 490.
  */
@@ -406,7 +406,7 @@ export class Motions<I> {
   }
 
   /**
-   * Copies subject `s`'s current stretch into `out` from `o` as its release time, its seconds, then
+   * Copies subject `s`'s current stretch into `out` from `o` as its release time, its ms, then
    * `x0`, `v0` and `to` per axis; false, copying nothing, while it has a change pending or an
    * earlier stretch kept, which only `sample` handles.
    */
@@ -460,7 +460,7 @@ export class Motions<I> {
   }
 
   /**
-   * Where subject `s`'s run starts in `runs` (its release time, then flags, seconds, `x0`, `v0`
+   * Where subject `s`'s run starts in `runs` (its release time, then flags, ms, `x0`, `v0`
    * and `to`) while it has nothing pending and no earlier stretch kept; -1 for any other.
    */
   bareAt(s: number): number {

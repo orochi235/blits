@@ -48,9 +48,9 @@ export function hostAt(clock: { readonly pace: Pace | null }, t: number): number
 }
 
 /**
- * Makes the recorded calls `due` by the host time each was made at again, each in a frame of its
- * own with every mix on the transport moved to where it stood then, as the host made it. Answers
- * the host time of the last frame it played, NaN for none.
+ * Makes the recorded calls `due` by the host time each was made at again, each host time's in a
+ * frame of its own with every mix on the transport moved to where it stood then, as the host made
+ * them. Answers the host time of the last frame it played, NaN for none.
  */
 export function replay(transport: Transport, due: (u: number) => boolean): number {
   const tape = transport.tape;

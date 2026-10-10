@@ -69,7 +69,7 @@ and weight), **mix** (the live voices over one kit), **signal** (a 0..1 scalar f
 clock), **handle** (the live controls on one voice), **engine** (the implementation behind a mix).
 
 For time: **score** (the plan a source's voices are placed on), **mark** (a voice's start, fade-in
-done, fade-out begun, or end, or a named point the host announces), **anchor** (a time given by
+done, last pass ended, fade-out begun, or end, or a named point the host announces), **anchor** (a time given by
 another voice's mark), **span** (an owner fitting the voices it holds into a duration), **project**
 (read the mix at another time without moving it), **seek** (move the mix to a time and play on).
 
@@ -89,8 +89,7 @@ npm run site         # dev server on port 4880
 npm run site:smoke   # build, then load every page headless and fail on any error
 ```
 
-`.github/workflows/site.yml` deploys it to GitHub Pages. It runs only by hand until Pages is enabled
-on the repo.
+`.github/workflows/site.yml` deploys it to GitHub Pages on every push to `main`, and by hand.
 
 ## Writing patches for blits in another library
 

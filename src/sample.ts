@@ -138,7 +138,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
       continue;
     }
     if (ease !== undefined) {
-      // A tween's closed form, read straight from its run: release time, seconds, `x0`, `to`.
+      // A tween's closed form, read straight from its run: release time, length, `x0`, `to`.
       const share = left(ease, progress(elapsed, runs[b] as number, runs[b + 2] as number));
       const x = b + 3;
       const g = x + 2 * n;

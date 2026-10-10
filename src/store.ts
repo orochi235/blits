@@ -5,9 +5,9 @@ const noStrong = new Map<never, never>();
 /**
  * Per-subject storage keyed by identity. Objects go in a WeakMap and are forgotten when the host
  * drops them; anything else — a string id, the unit subject of a mix with no subject dimension —
- * goes in a Map that only `drop` and `clear` empty, which is why a host keying by value should
- * call `drop`. Each map is made when first written, since a mix holds a store per voice and patch;
- * until then it is a shared empty one, so the field always holds a map.
+ * goes in a Map that only `delete` and `clear` empty, which is why a host keying by value should
+ * call `Mix.drop`. Each map is made when first written, since a mix holds a store per voice and
+ * patch; until then it is a shared empty one, so the field always holds a map.
  */
 export class Store<K, V> {
   private weak: WeakMap<object, V> = noWeak;

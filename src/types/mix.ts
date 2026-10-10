@@ -131,7 +131,7 @@ export interface Mix<I, O, H = unknown> {
    * Cues an owner: a voice with no patch that holds the voices cued with `owner` set to its handle,
    * and plays them on its own clock, so they can be placed, timed and faded as one. Its handle acts
    * on all of them: `rate` and `ramp` multiply into theirs, `seek` moves their clocks with its own
-   * and leaves their state where it is, and `weight` and `fade()` multiply into their weights, by
+   * and rebuilds their state as it does a voice's, and `weight` and `fade()` multiply into their weights, by
    * what its `weightOf` reports; it fades as a whole, not by subject or at rest. It is
    * `played` once every voice it held has finished its passes, and leaves, `done`, with its last; a
    * fade that ends takes the rest with it. One that never holds a voice stays until faded. Owners
@@ -181,8 +181,8 @@ export interface Mix<I, O, H = unknown> {
   /**
    * The merged pose for one subject at the synced frame, written into `out` when given. Without
    * it, each call makes a new object, so a host reading every subject every frame passes `out` or
-   * reads by `pull`. An array `out` already holds for a `vec` channel, or a `color` that averages
-   * in OKLab or runs on a lane, is written in place where it is the channel's length, so a host that
+   * reads by `pull`. An array `out` already holds for a `vec` channel, a `quat` that
+   * runs on a lane, or a `color` that averages in OKLab or runs on a lane, is written in place where it is the channel's length, so a host that
    * kept one from an earlier probe into the same `out` sees it change: copy what has to outlast the
    * next probe.
    */
@@ -206,7 +206,7 @@ export interface Mix<I, O, H = unknown> {
    *
    * Without `history` it reads back only where how the mix stands now says what it showed then,
    * and throws otherwise, saying why. Every voice has to play as it was cued and read by its clock
-   * alone: no state, motion, anchor or owner, no write to its handle, and no channel without a rest
+   * alone: no state, motion, `from: 'current'`, anchor or owner, no write to its handle, and no channel without a rest
    * at a weight that moves. The mix's rate has never been set. And `time` is no earlier than the
    * last cue, `drop`, `touch`, `announce` or `rebase`, or the last frame a voice left in.
    */
@@ -298,7 +298,8 @@ export interface Mix<I, O, H = unknown> {
   announce(name: string, opts?: { at?: number; score?: string; tags?: readonly string[] }): void;
   /**
    * Every mark the plan knows between two timestamps on the host's clock, earliest first: when
-   * voices start, are fully in, begin to fade and are gone, and what the host announced. A mark
+   * voices start, are fully in, end their last pass, begin to fade and are gone, and what the host
+   * announced. A mark
    * nothing has fixed yet, such as the out of a voice that loops for good, is not listed.
    */
   marks(from: number, to: number): Marked[];

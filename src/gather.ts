@@ -65,7 +65,10 @@ function meetLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, slot: number): void
   for (const taken of g.taken) if (taken !== undefined) taken[slot] = 0;
 }
 
-/** A member's value for one channel of a subject, lerped into its locus: `foldLocus`'s step. */
+/**
+ * A member's value for one channel of a subject, lerped into its locus: the step of the general
+ * path's `foldLocus`.
+ */
 function gatherInto<I, O>(
   lanes: Lanes<I, O>,
   g: Locus<I, O>,

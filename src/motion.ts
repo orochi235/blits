@@ -45,6 +45,8 @@ export type Moving<I, O, V extends Value> = Patch<I, O, void> & {
    * Where `subject` is and how fast it moves at voice time `at`, default the mix's latest frame,
    * counting every change due by then. With no time given, undefined until a frame of its voice
    * has met the subject, while the subject is still inside its stagger, and once that voice is gone.
+   * At any time, undefined for a subject the patch has never met or changed, or that the mix
+   * dropped.
    */
   read(subject: I, at?: number): Motion<V> | undefined;
   /**

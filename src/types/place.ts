@@ -85,7 +85,7 @@ export interface Marked {
  * @category score
  */
 export interface Hit<E = unknown> {
-  /** Voice ms into each pass: 0 up to the patch's `duration`, or any time at all for a patch with none. */
+  /** Voice ms into each pass: 0 up to the patch's `duration`, or any time from 0 for a patch with none. */
   at: number;
   event: E;
 }
@@ -128,8 +128,8 @@ export interface BookOptions<E = unknown> {
   late: number;
   /**
    * Called once per item: a mark as `marks` lists it, or a hit. `when` is on the outside clock;
-   * `lateBy` is how many host ms past the item was when first seen, 0 for one booked ahead, which
-   * is then taken at the clock's now. Return a `stop` to hear about a booking whose time moved by
+   * `lateBy` is how many host ms past the item was when first seen, which is then taken at the
+   * clock's now; it is 0 for one booked ahead. Return a `stop` to hear about a booking whose time moved by
    * more than 1 ms or that went away (a seek, a rate or ramp on the voice or the mix, a fade, a
    * `rebase`, an anchor's target moving, the voice leaving); the item is then booked again, at its
    * new time, at the same sync.
@@ -150,9 +150,3 @@ export interface Booker {
   /** Stops every booking still ahead, and books nothing more. */
   stop(): void;
 }
-
-/**
- * What `cue` takes: a patch, and the clock, weight and reach it plays with.
- *
- * @category voice
- */

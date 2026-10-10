@@ -103,7 +103,7 @@ const firstSight = (
     : { value: from, seen: setting.timestamp };
 
 /**
- * The package's one decay primitive: follows its input at a rate limit, no faster than `riseMs` per
+ * The package's linear decay primitive: follows its input at a rate limit, no faster than `riseMs` per
  * unit climbing or `fallMs` draining. The mix keeps its state per voice and subject, so two voices
  * handed the same slew each follow on their own. A subject starts on its input, or at `from`
  * unless `dt` is infinite.

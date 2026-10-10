@@ -77,9 +77,9 @@ export function regroup<I, O>(lanes: Lanes<I, O>, members: Voice<I, O>[]): void 
 }
 
 /**
- * Gives a voice the next row of its channel's crowd, made if there is none: a copy of the row it
+ * Gives a voice the next row of its channels' crowd, made if there is none: a copy of the row it
  * had in `from` at `at`, or a new one. `old` holds the crowds being replaced, whose idle state a
- * new crowd on the same channel keeps. Rows stay in voice order only because voices join in it.
+ * new crowd on the same channels keeps. Rows stay in voice order only because voices join in it.
  */
 export function join<I, O>(
   lanes: Lanes<I, O>,
@@ -123,8 +123,8 @@ export function retouchRow<I, O>(
 }
 
 /**
- * Compacts every crowd a quarter or more empty rows: each fill walks every row, and at half a
- * crowd replacing a voice a frame carried as many empty rows as live ones.
+ * Compacts every crowd a quarter or more empty rows, past 64 of them: each fill walks every row,
+ * and at half a crowd replacing a voice a frame carried as many empty rows as live ones.
  */
 export function compactSparse<I, O>(lanes: Lanes<I, O>): void {
   for (const c of lanes.crowds) if (c.dead > 64 && c.dead * 4 >= c.size) compact(c);
@@ -162,7 +162,7 @@ function compact<I, O>(c: Crowd<I, O>): void {
   c.dead = 0;
 }
 
-/** A crowd voice left: its row stays, empty, until the crowds are next rebuilt. */
+/** A crowd voice left: its row stays, empty, until the crowd is compacted or rebuilt. */
 export function bury<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number): void {
   const v = c.voices[p] as Voice<I, O>;
   leaveCrowd(lanes, c, p);

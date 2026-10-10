@@ -6,7 +6,7 @@ import type { Voice } from './voice.js';
 
 /** What a voice's handle asks of the mix that cued it: one per mix, shared by every handle. */
 export interface HandleHost<I, O> {
-  /** The mix clock, or the voice's start before the first sync. */
+  /** The mix clock, or its owner's for a voice one holds; the voice's start before either reads. */
   nowFor(voice: Voice<I, O>): number;
   /** A handle write changed the voice: reschedule it, and refill the lanes. */
   changed(voice: Voice<I, O>): void;

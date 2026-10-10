@@ -84,7 +84,7 @@ export interface Paged {
   /** The mix's `name`; '' for a mix made alone without one, and for the transport's own records. */
   mix: string;
   stream: PagedStream;
-  /** The voice's id, for every stream but `host`. */
+  /** The voice's id, for every stream but `host` and the transport's own. */
   voice?: number;
   /** The subject's key, for a record of one subject; for a `mark`, the number it was announced as. */
   subject?: string | number;
@@ -128,7 +128,7 @@ export interface TapeBranch {
 }
 
 /**
- * Where a mix keeps the host's calls, by mix time, for `seek`. weasel-history's `History`
+ * Where a mix keeps the host's calls, by host time, for `seek`. weasel-history's `History`
  * (`@weasel-js/history`) has this shape. A host reads `branches` and calls `switchBranch` to pick
  * which recorded future plays on; moving it any other way is the mix's job.
  *

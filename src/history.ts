@@ -9,11 +9,7 @@ import { scoreTouched } from './scored.js';
 import { type Cut, within } from './transport.js';
 import { type Controls, none, type Subject, type Voice } from './voice.js';
 
-/**
- * The last entry taken before `t`, or at it where `inclusive` says so, as it does for a change made
- * by a sync or before the frame was read. A host's change after the frame's probes is taken
- * strictly: it shows from the next frame on, as it did live.
- */
+/** The last entry taken before `t`, or at it where `inclusive` says so. */
 export function last<T extends { at: number }>(
   list: readonly T[],
   t: number,

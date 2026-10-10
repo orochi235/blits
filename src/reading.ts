@@ -21,8 +21,8 @@ export const reading = {
    */
   moved: 0,
   /**
-   * How many times a `level` has been set, in any mix, so a fill can tell an input moved since it
-   * read it. One count for every mix, as `moved` is.
+   * How many changes an `input` signal has reported, in any mix, so a fill can tell an input moved
+   * since it read it. One count for every mix, as `moved` is.
    */
   inputs: 0,
 };

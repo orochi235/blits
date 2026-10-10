@@ -194,12 +194,12 @@ export function fadeAt<I, O>(
   noted(mix, voice);
 }
 
-/** Removes a voice, recording that it left at `at`, default now. */
 /** Whether a motion patch still asks this voice of this mix for its time. */
 function asks<I, O>(mix: Mixer<I, O>, motion: Motions<I>, voice: Voice<I, O>): boolean {
   return motion.owner === mix.owner && motion.ownerId === voice.id;
 }
 
+/** Removes a voice, recording that it left at `at`, default now. */
 export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number): void {
   if (voice.holding === null) mix.lanes?.touch(voice);
   const motion = voice.motion;
