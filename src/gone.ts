@@ -15,14 +15,15 @@ export class GoneIndex<I, O> {
   count = 0;
   general: Voice<I, O>[] = [];
   named = new Store<I, Voice<I, O>[]>();
-  /** The latest `doneAt` in `of`, and how far any voice finished before one listed ahead of it. */
+  /** The latest `reachedTo` in `of`, and how far any voice's falls before one listed ahead of it. */
   latest = Number.NEGATIVE_INFINITY;
   slack = 0;
 }
 
 function add<I, O>(ix: GoneIndex<I, O>, voice: Voice<I, O>): void {
-  if (voice.doneAt < ix.latest) ix.slack = Math.max(ix.slack, ix.latest - voice.doneAt);
-  else ix.latest = voice.doneAt;
+  const to = voice.reachedTo;
+  if (to < ix.latest) ix.slack = Math.max(ix.slack, ix.latest - to);
+  else ix.latest = to;
   if (voice.named === null) {
     ix.general.push(voice);
     return;
@@ -105,14 +106,14 @@ export function keepGone<I, O>(mix: Mixer<I, O>, keep: (v: Voice<I, O>) => boole
 }
 
 /**
- * Lets go of the gone voices that finished before `reach`. Voices go in about the order they
- * finish, so only the front can hold one: past the point where a voice finished `slack` after
- * `reach`, none behind it finished before `reach`.
+ * Lets go of the gone voices no seek or read back to `reach` finds playing: those that finished
+ * before it, in a frame before it. Voices go in about that order, so only the front can hold one:
+ * past the point where a voice is reached `slack` after `reach`, none behind it falls before.
  */
 export function expireGone<I, O>(mix: Mixer<I, O>, reach: number): void {
   const ix = goneIndex(mix);
   if (!Number.isFinite(ix.slack)) {
-    keepGone(mix, (v) => v.doneAt >= reach);
+    keepGone(mix, (v) => v.reachedTo >= reach);
     return;
   }
   const list = mix.gone;
@@ -120,7 +121,7 @@ export function expireGone<I, O>(mix: Mixer<I, O>, reach: number): void {
   let end = 0;
   let any = false;
   for (let seen = Number.NEGATIVE_INFINITY; end < list.length && seen < edge; end++) {
-    const done = (list[end] as Voice<I, O>).doneAt;
+    const done = (list[end] as Voice<I, O>).reachedTo;
     if (done < reach) any = true;
     if (done > seen) seen = done;
   }
@@ -129,7 +130,7 @@ export function expireGone<I, O>(mix: Mixer<I, O>, reach: number): void {
   const out: Voice<I, O>[] = [];
   for (let i = 0; i < end; i++) {
     const v = list[i] as Voice<I, O>;
-    (v.doneAt < reach ? out : kept).push(v);
+    (v.reachedTo < reach ? out : kept).push(v);
   }
   list.splice(0, end, ...kept);
   remove(ix, out);

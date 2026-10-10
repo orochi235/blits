@@ -39,10 +39,10 @@ export function cover(transport: Transport, t: number): boolean {
 }
 
 /** A seek back to frame `seq`: what the store and `prepare` hold after it is from a future the tape makes again. */
-export function cut(transport: Transport, seq: number, unpaged: boolean): void {
+export function cut(transport: Transport, seq: number): void {
   const pager = transport.pager;
   if (pager === null) return;
-  if (unpaged) pager.store.cut(seq);
+  pager.store.cut(seq);
   const loaded = pager.loaded;
   if (loaded !== null) loaded.records = loaded.records.filter((r) => r.seq <= seq);
 }

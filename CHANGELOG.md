@@ -4,6 +4,23 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A seek back inside `history.ms` plays the host's calls again when the mix's rate is above 1.
+  The tape was let go of by mix time while its calls are stamped in host time, so at rate 2 a call
+  made 250 ms of host time before a seek back was already gone and never played again.
+- A voice taken out with a time already older than history reaches, such as `fade({ at })` given
+  a moment long past, comes back for a seek or a read back to before that call. It was forgotten
+  at the next sync, so `seek` and `project` to the frame before the call found no voice.
+- A `HistoryStore` is told of every seek back through `cut`, as its doc says. It was told only
+  when the seek read records from the store, so a mark announced with a past `at`, paged at once,
+  stayed in the store after a seek back to before it was announced.
+- A `color(last())` channel on a lane switches off when its voice's weight falls to 0, as it does
+  off lanes. A lane left it on, so a weight coming back inside the band (0.4 to 0.6 by default)
+  showed the color where a mix with `lanes: false` showed none.
+
 ## 0.8.1
 
 ### Fixed

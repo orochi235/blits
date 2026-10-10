@@ -198,7 +198,7 @@ export function forget<I, O>(mix: Mixer<I, O>): void {
     // With a store a voice that has left pages out where it can, and stays where it cannot.
     if (mix.transport.pager !== null) {
       const reach = mix.now - history.ms;
-      keepGone(mix, (v) => v.doneAt >= reach || !pageVoice(mix, v, reach));
+      keepGone(mix, (v) => v.reachedTo >= reach || !pageVoice(mix, v, reach));
     } else {
       expireGone(mix, mix.transport.keepsFrom());
     }

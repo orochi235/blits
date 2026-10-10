@@ -301,6 +301,13 @@ export class Voice<I, O> {
   doneAt = Number.POSITIVE_INFINITY;
   /** The frame its leaving was decided in, which a seek or read back partitions by. */
   doneSeq = Number.POSITIVE_INFINITY;
+  /** The mix time of that frame, later than `doneAt` for a leaving put behind now. */
+  decidedAt = Number.NEGATIVE_INFINITY;
+
+  /** The latest mix time a seek or read back to finds it still playing. */
+  get reachedTo(): number {
+    return this.doneAt > this.decidedAt ? this.doneAt : this.decidedAt;
+  }
   /** Under `history`, its controls after each change, oldest first. */
   log: Controls[] | null = null;
   /** Under `history`, its controls as `cue` left them, which a voice parked by a seek takes back. */

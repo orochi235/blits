@@ -136,7 +136,7 @@ export function seek(transport: Transport, t: number): void {
   if (t === Number.POSITIVE_INFINITY) throw new RangeError('blits: a mix seeks to a finite time');
   if (!(t >= transport.born))
     throw new Error(`blits: ${t} is older than this mix's history reaches`);
-  const unpaged = cover(transport, t);
+  cover(transport, t);
   if (t >= transport.now) {
     // Ahead, under the rate the recorded calls up to `t` set, past any frames rate 0 held at `t`.
     const last = replay(
@@ -166,7 +166,7 @@ export function seek(transport: Transport, t: number): void {
     transport.u = u;
     transport.now = t;
     for (const m of transport.members) back(m, t, seq, frame.at < t);
-    cut(transport, seq, unpaged);
+    cut(transport, seq);
   }
   transport.tick(t);
   // The host's clock reads on from here: its next sync reads `t` plus its time since its last.

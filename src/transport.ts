@@ -8,7 +8,7 @@ import { pin } from './place.js';
 import { projectAll } from './project.js';
 import { type ScoreHolders, scoredDrop, scoredJoin } from './scored.js';
 import { seek } from './seek.js';
-import { record, replay, tapeOf } from './tape.js';
+import { hostAt, record, replay, tapeOf } from './tape.js';
 
 /** How far the tape's reach moves before it is pruned again, ms of mix time. */
 const TAPE_STEP_MS = 1000;
@@ -270,7 +270,8 @@ export class Transport implements TransportApi {
     // In steps: the tape shifts every entry it keeps to let go of the oldest, and one a second
     // behind reach is never played again.
     if (this.tape !== undefined && history !== undefined && !(reach - this.taped < TAPE_STEP_MS)) {
-      this.tape.prune(reach);
+      const from = hostAt(this, reach);
+      if (from < Number.POSITIVE_INFINITY) this.tape.prune(from);
       this.taped = reach;
     }
     if (history !== undefined && this.dropped.length > 0)

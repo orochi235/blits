@@ -559,13 +559,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the driver scaffold
     the survey proposed is the magicsmoke question in item 1d.
 
-11. **A Tone.js adapter, and the windowed read it wants** (spiked 2026-10-08, undecided). The
+11. **A Tone.js adapter, and the windowed read it wants** (spiked 2026-10-08; unbuilt). The
     spike in `spikes/tone/` showed a mix driving Tone on the audio clock through `project` and
     `book` alone: booked notes land on the sample through a rate change and a seek, and curves
     stay within 0.671 Hz on a 5 ms grid, against 71.938 Hz for a host writing values each frame.
-    Its README has the table and the gaps. Two things to decide and build:
-    - Whether the adapter becomes a package beside blits-quarks.
-    - A read of the mix over a window, returning a run of values or a `keys` voice's own
+    Its README has the table and the gaps.
+    - **The adapter is a package beside blits-quarks** (Mike, 2026-10-10): in `packages/`, pinned
+      to an exact engine, Tone as a peer, released with the engine as quarks is. Not started.
+    - Undecided: a read of the mix over a window, returning a run of values or a `keys` voice's own
       breakpoints as exact ramps, in place of a `project` per grid point (31 a frame, about
       0.23 ms, and only as exact as the grid). Useful beyond audio.
     It would also need mix time converted to the outside clock when `mix.rate` is not 1, and
@@ -586,15 +587,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       locus, and single-subject voices (`fits` in `hosts.ts`).
     - **Not checked**: the page's timings and its table of consumers' kits, which are other
       repos' facts, and the playground README's gestures against the widget code.
-    Two things the reading turned up in the code, neither run:
-    - **The tape is pruned by mix time and stamped by host time.** `tapeOf` in `tape.ts` stamps a
-      call with `transport.u`, and `syncAt` in `transport.ts` prunes it to `keepsFrom()`, which
-      is `now - history.ms` in mix time. They agree until a mix's rate is set. Above rate 1 mix
-      time runs ahead, so the tape would let go of calls a seek back inside `history.ms` still
-      has to play again; below 1 it keeps more than it needs. A test at rate 2 would settle it.
-    - **`HistoryStore.cut` is called only when the seek took records from the store** (`cut` in
-      `unpage.ts`), where its doc says a seek back to a frame calls it. A seek back within memory
-      never tells the store. It may be meant, since nothing newer is usually paged.
+    The two things that reading turned up in the code were run on 2026-10-10 and both were real;
+    the changelog's Unreleased section has them, with a third found on the way (a voice faded
+    with a time already past was forgotten by a seek back). `test/taperate.test.ts`,
+    `test/fadeat.test.ts`, and `test/paging.test.ts` hold them.
 
 13. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). Built
     2026-10-09: `wave`; every ease (`keys` `ease`, `easeBy`, `delayBy`, `fade.ease`, a tween's bezier
@@ -651,12 +647,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - **Finding #18**: a `last()` or OKLCH channel in a locus picks by cue order, not weight.
       - **A negative voice rate is still accepted** (`test/lanes.test.ts` cues one), and whether
         a voice may play backward is undecided.
-      - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one: not
-        checked whether that is meant.
-      - **The weight-0 band reset runs on the general path only** (`unband` in `fold.ts`). Lanes
-        reach it through the shared record in every case the tests and the fuzzer cover; a lane
-        that skips a subject at weight 0 without the general path visiting it would keep a stale
-        band.
+      - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one. Run
+        2026-10-10 and no pose was found to depend on it: a read ahead of nested spans, fitted
+        by `pipe` and by `lax`, with an anchor after the outer one, matched the same scene
+        synced frame by frame, since a child and an anchor are placed from a span's budget
+        whether or not the span has left. A copy given the list read the same. What did differ,
+        with the list or without: a child retimed by `faster` reads one unit in the last place
+        apart from the synced mix, from the frame it starts. Not traced.
     - **Not built**, and nothing recorded against any of it:
       - Records shared by a read back or a standing read, and by voices `shares` (in
         `everyone.ts`) turns away that could keep their difference by subject number too: a

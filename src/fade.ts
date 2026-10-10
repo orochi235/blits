@@ -209,7 +209,9 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
   // The record its setting last wrote to, which a retired voice no longer calls for.
   voice.keepOn = null;
   mix.retired.push(voice);
-  voice.doneAt = at ?? (Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now);
+  const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
+  voice.doneAt = at ?? now;
+  voice.decidedAt = now;
   voice.doneSeq = mix.transport.seq;
   // The frames up to this one showed it, though its fade ended before: it leaves the list now.
   mix.transport.settle();

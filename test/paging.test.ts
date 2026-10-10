@@ -234,6 +234,20 @@ describe('history with a store', () => {
     expect(probes(run.m)).toEqual(again.get(704));
   });
 
+  it('tells the store of a seek back within memory, which can hold a record made after it', () => {
+    const store = memoryStore();
+    const m = mix<string, P>(K, { history: { ms: 100, every: 50, tape, store } });
+    for (let t = 0; t <= 1200; t += 16) {
+      m.sync(t);
+      // Older than memory reaches the moment it is made, so it pages at the next sync.
+      if (t === 1152) m.announce('beat', { at: 900 });
+    }
+    const marks = () => [...store.held.values()].filter((r) => r.stream === 'mark');
+    expect(marks()).toHaveLength(1);
+    m.seek(1136);
+    expect(marks()).toEqual([]);
+  });
+
   it('needs keyOf for a subject that is not a string or number', () => {
     const m = mix<Part, Pose>(KP, { history: { ms: 100, tape, store: memoryStore() } });
     m.sync(0);

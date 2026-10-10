@@ -101,6 +101,21 @@ describe('fade at', () => {
     expect(h.state).toBe('live');
     expect(m.probe('a').x).toBe(1);
   });
+
+  it('given a time already out of history, still comes back for a seek or read to before the call', () => {
+    const m = mix<string, Pose>(K, { history: { ms: 100, tape } });
+    m.sync(0);
+    const h = m.cue({ patch: one, subjects: ['a'] });
+    for (let t = 16; t <= 1200; t += 16) {
+      m.sync(t);
+      if (t === 1152) h.fade({ at: 900, over: 50 });
+    }
+    expect(m.probe('a').x).toBe(0);
+    expect(m.project(1136).probe('a').x).toBe(1);
+    m.seek(1136);
+    expect(h.state).toBe('live');
+    expect(m.probe('a').x).toBe(1);
+  });
 });
 
 describe.each([true, false])('a fade out begun during a fade in, lanes %s', (lanes) => {

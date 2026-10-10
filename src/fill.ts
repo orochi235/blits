@@ -3,6 +3,7 @@ import { passAt, phaseAt, same, silent, weighed } from './clock.js';
 import { flush } from './columns.js';
 import { crowdsUpTo, freshen } from './crowd.js';
 import { open as openRecord, shut as shutRecord } from './everyone.js';
+import { unband } from './fold.js';
 import { foldLocus, gatherLocus } from './gather.js';
 import { runKeys } from './keyfill.js';
 import { Arg, frozenAt, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
@@ -295,6 +296,7 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
   const elapsed = frozenAt(voice, elapsedNow - delay);
   if (!(elapsed >= 0)) {
     data[o + Row.WEIGHT] = 0;
+    unband(lane.records[p]);
     return false;
   }
   if (!lane.placed || !same(elapsed, lane.placedAt)) {
@@ -316,11 +318,13 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
     arg[Arg.FADE] = lane.fade;
     if (!this.signalled(voice, slot, lane.records[p] as Subject<unknown>)) {
       data[o + Row.WEIGHT] = 0;
+      unband(lane.records[p]);
       return false;
     }
     w = arg[Arg.WEIGHT] as number;
   } else w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
   data[o + Row.WEIGHT] = w;
+  if (!(w > 0)) unband(lane.records[p]);
   this.folding = lane;
   this.rec = lane.records[p] ?? null;
   if (voice.built !== null) {
