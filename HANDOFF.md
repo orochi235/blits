@@ -657,7 +657,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       list has what replaces each). One consumer has to change before it moves past 0.7.1: astv sets
       `hold` on voices in `packages/engine` (`glide.ts`, `turns.ts`, `textRuns.ts`,
       `progressClocks.ts`), asked of the session astv-05 on 2026-10-10 and not confirmed. wod is
-      off `hex()` (wod `a16f7c9`, committed and not pushed).
+      off `hex()` (wod `a16f7c9`).
       The playground's composition format has a `period` field of its own, which is not the
       removed one.
     - **Step 8, built 2026-10-09**: a probe into `out` reuses its arrays (breaking, in the
