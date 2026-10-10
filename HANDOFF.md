@@ -714,9 +714,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 16. **`setting.dt` for a patch with no `step` is fixed** (2026-10-10; the changelog's Unreleased
     section, `test/dt.test.ts`). Mike chose the gap since the subject was last sampled over the
     gap since the last sync. What it left:
-    - **A read ahead or back still rates such a patch `exact`**, though the `dt` it hands is one
-      sample's gap and not what frame-by-frame play hands. Rating it `stepped` needs the mix to
-      know the patch read `dt`, which means a getter on the setting, untimed.
+    - **A read ahead or back still rates such a patch `exact`, left so by Mike (2026-10-10)**,
+      though the `dt` it hands is one sample's gap and not what frame-by-frame play hands.
+      Rating it `stepped` needs the mix to know the patch read `dt`, which means a getter on the
+      setting, untimed. Reopen it if a host scrubs a patch that reads `dt` and sees it jump.
     - **The first `dt` after a voice stops sharing its record counts from the subject's origin**,
       since each subject's own record starts fresh (`unshare` in `everyone.ts`).
     - klieg's `it.fails` test for this (klieg `TODO.md`) should pass on the next blits release.
