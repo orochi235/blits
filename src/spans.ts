@@ -49,10 +49,10 @@ export function checkChild<I, O>(spec: VoiceSpec<I, O>, child: Voice<I, O>): voi
     throw new Error('blits: a span cannot fit a voice that never ends');
 }
 
-/** A span's own clock at the mix's now, from 0 while it has not started. */
-function clockOf<I, O>(mix: Mixer<I, O>, span: Voice<I, O>): number {
-  if (Number.isNaN(mix.now)) return 0;
-  const t = ownerReading(span, mix.now);
+/** A span's own clock at mix time `at`, from 0 while it has not started. */
+function clockOf<I, O>(span: Voice<I, O>, at: number): number {
+  if (Number.isNaN(at)) return 0;
+  const t = ownerReading(span, at);
   return Number.isFinite(t) ? Math.max(0, t) : 0;
 }
 
@@ -68,14 +68,15 @@ function leftOf<I, O>(child: Voice<I, O>, local: number): number {
 }
 
 /**
- * Lays out a span's children and fits them into what is left of its budget, from its clock now.
- * Only what is still to come moves: a playing child keeps its place and may change rate, a
- * pending one is placed. A span held by a span is fitted again by its own span after.
+ * Lays out a span's children and fits them into what is left of its budget, from its clock at mix
+ * time `from`, default now. Only what is still to come moves: a playing child keeps its place and
+ * may change rate, a pending one is placed. A span held by a span is fitted again by its own span
+ * after.
  */
-export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>): void {
+export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now): void {
   const fitting = span.fitting as Fitting;
   if (mix.projecting || span.state === 'done') return;
-  const local = clockOf(mix, span);
+  const local = clockOf(span, from);
   const kids = (span.holding?.children ?? []).filter(
     (c) =>
       c.state !== 'done' && c.state !== 'frozen' && c.state !== 'fading' && leftOf(c, local) > 0,
@@ -147,7 +148,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>): void {
   if (end !== fitting.end) {
     fitting.end = end;
     noted(mix, span);
-    if (span.owner?.fitting) refit(mix, span.owner);
+    if (span.owner?.fitting) refit(mix, span.owner, from);
   }
 }
 

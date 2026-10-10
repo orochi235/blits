@@ -227,6 +227,7 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
     if (owner !== null && !lingers(owner, voice.doneAt)) retire(mix, owner, voice.doneAt);
     // A child the fit skipped had no time in it, so the rest of the fit stands: fitting again
     // between siblings skipped together would play the ones still to leave.
-    else if (span.fitting !== null && span.state !== 'done' && !voice.skipped) refit(mix, span);
+    else if (span.fitting !== null && span.state !== 'done' && !voice.skipped)
+      refit(mix, span, voice.doneAt);
   }
 }

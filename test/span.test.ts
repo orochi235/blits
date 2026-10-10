@@ -117,6 +117,24 @@ describe('spans', () => {
     expect(ends(m, 'd')[0]).toBeCloseTo(2000);
   });
 
+  it('plays children shorter than a frame, each from where the one before it ended', () => {
+    const build = () => {
+      const m = mix<Row, Pose>(K);
+      m.sync(0);
+      const s = m.span({ duration: 2000 });
+      for (let i = 0; i < 200; i++) m.cue({ patch: write(10), loop: false, owner: s });
+      return { m, s };
+    };
+    const { m, s } = build();
+    const ahead = build().m;
+    for (let t = 16; t < 2000; t += 16) {
+      m.sync(t);
+      expect(m.probe({ id: 'r' }).x, `at ${t}`).toBeCloseTo((t % 10) / 10);
+      expect(m.probe({ id: 'r' }).x, `ahead to ${t}`).toBe(ahead.project(t).probe({ id: 'r' }).x);
+    }
+    expect(s.result).toMatchObject({ skipped: 0, fell: false });
+  });
+
   it('gives the rest more room when a child leaves early', () => {
     const m = mix<Row, Pose>(K);
     m.sync(0);

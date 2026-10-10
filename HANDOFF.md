@@ -651,9 +651,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         2026-10-10 and no pose was found to depend on it: a read ahead of nested spans, fitted
         by `pipe` and by `lax`, with an anchor after the outer one, matched the same scene
         synced frame by frame, since a child and an anchor are placed from a span's budget
-        whether or not the span has left. A copy given the list read the same. What did differ,
-        with the list or without: a child retimed by `faster` reads one unit in the last place
-        apart from the synced mix, from the frame it starts. Not traced.
+        whether or not the span has left. A copy given the list read the same. A child retimed
+        by `faster` did read apart from the synced mix, which was the mix's fault and is fixed
+        (the changelog's Unreleased section; `test/span.test.ts`).
     - **Not built**, and nothing recorded against any of it:
       - Records shared by a read back or a standing read, and by voices `shares` (in
         `everyone.ts`) turns away that could keep their difference by subject number too: a

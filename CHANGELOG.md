@@ -21,6 +21,12 @@ version and everything else the patch. Each release lists its changes as **Break
   off lanes. A lane left it on, so a weight coming back inside the band (0.4 to 0.6 by default)
   showed the color where a mix with `lanes: false` showed none.
 
+- A span's children play from where the one before each ended, not from the frame that noticed
+  it. Each child leaving fitted the rest again from the sync's time, so the next started up to a
+  frame late and the rest sped up to make room: 200 children of 10 ms in a 2000 ms span, fitted
+  with none skipped at cue, had 199 skipped once synced every 16 ms. A read ahead never fitted
+  again, so `project` showed a child retimed by `faster` up to a frame ahead of the mix.
+
 ## 0.8.1
 
 ### Fixed
