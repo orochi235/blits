@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.8.0 (2026-10-10).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.8.1 (2026-10-10).
 - **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
   blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
@@ -838,13 +838,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **The weight-0 band reset runs on the general path only** (`unband` in `fold.ts`). Lanes reach
       it through the shared record in every case the tests and the fuzzer cover; a lane that skips a
       subject at weight 0 without the general path visiting it would keep a stale band.
-15. **0.8.0 costs more a frame than 0.7.1 under `history`; fixed on `main`, unreleased**
+15. **0.8.0 costs more a frame than 0.7.1 under `history`; fixed in 0.8.1**
     (2026-10-10). astv's `packages/engine/playback/motion.bench.ts` showed it: text runs +36% to
     +47%, its busy stage +13%. A bisect with that bench found two commits, `c40e2bc` (a sync
     spliced the oldest frame off the list of every frame in reach) and `0d1fb48` (a contribution's
     object was deep-copied each frame on a channel nothing folds into). `src/frames.ts` and
     `first` in `src/clone.ts` are the fixes, and astv measured every regressed row back within 3%
-    of 0.7.1 on msb-uai; the changelog's Unreleased section has the numbers. Left unexplained, at
+    of 0.7.1 on msb-uai; the changelog's 0.8.1 section has the numbers. Left unexplained, at
     1 to 2 µs a frame with runs that disagree: astv's glides (+8%) and progress clocks (+39%).
     To measure a blits build against astv's bench: `MOTION_ONLY=1 probes/blits-version-bench.sh
     <out dir> 0.7.1` in `~/src/astv` on a fleet node.
