@@ -1,5 +1,5 @@
 import { foldNumber, lerpNumber } from './channels.js';
-import { type Lane, type Laned, type Locus, Row } from './lane.js';
+import { Arg, type Lane, type Laned, type Locus, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Subject } from './voice.js';
 
@@ -38,13 +38,11 @@ export function gatherLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>): void {
       if (lane.idle || voice.state === 'pending' || voice.state === 'done') continue;
       lanes.intoId = voice.id;
       lanes.reset(lane);
-      const elapsed = voice.elapsedAt(lanes.now);
-      const duration = voice.duration;
-      const passes = voice.passes;
+      lane.elapsedNow = voice.elapsedAt(lanes.now);
       const list = lane.list;
       for (let p = 0; p < list.length; p++) {
         const slot = list[p] as number;
-        if (lanes.one(lane, p, slot, elapsed, duration, passes)) {
+        if (lanes.one(lane, p, slot)) {
           meetLocus(lanes, g, slot);
           g.sum[slot] =
             (g.sum[slot] as number) + (lane.data[p * Row.STRIDE + Row.WEIGHT] as number);
@@ -73,8 +71,8 @@ function gatherInto<I, O>(
   ch: Laned,
   slot: number,
   value: unknown,
-  w: number,
 ): void {
+  const w = lanes.arg[Arg.WEIGHT] as number;
   meetLocus(lanes, g, slot);
   const k = ch.index;
   let values = g.values[k];
@@ -140,64 +138,54 @@ export function gather<I, O>(
   for (let i = 0; i < chans.length; i++) lane.values[i] = delta[(chans[i] as Laned).name];
 }
 
-/** Folds what `gather` read into a subject's laned values. */
-export function fold<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, slot: number, w: number): void {
+/** Folds what `gather` read into a subject's laned values, at `Arg.WEIGHT`. */
+export function fold<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, slot: number): void {
   const chans = lane.chans;
-  for (let i = 0; i < chans.length; i++) this.foldInto(chans[i] as Laned, slot, lane.values[i], w);
+  for (let i = 0; i < chans.length; i++) this.foldInto(chans[i] as Laned, slot, lane.values[i]);
 }
 
 /**
- * Folds a delta a patch returned into a subject's laned values. The first few channels are read
- * at a site of their own, which in most mixes sees one channel name and stays fast, where one
- * site reading every name in turn slows every read.
+ * Folds a delta a patch returned into a subject's laned values, at `Arg.WEIGHT`. The first few
+ * channels are read at a site of their own, which in most mixes sees one channel name and stays
+ * fast, where one site reading every name in turn slows every read.
  */
 export function foldDelta<I, O>(
   this: Lanes<I, O>,
   chans: readonly Laned[],
   slot: number,
   delta: Record<string, unknown>,
-  w: number,
 ): void {
   const n = chans.length;
   let ch = chans[0] as Laned;
-  if (n > 0) this.foldInto(ch, slot, delta[ch.name], w);
+  if (n > 0) this.foldInto(ch, slot, delta[ch.name]);
   ch = chans[1] as Laned;
-  if (n > 1) this.foldInto(ch, slot, delta[ch.name], w);
+  if (n > 1) this.foldInto(ch, slot, delta[ch.name]);
   ch = chans[2] as Laned;
-  if (n > 2) this.foldInto(ch, slot, delta[ch.name], w);
+  if (n > 2) this.foldInto(ch, slot, delta[ch.name]);
   for (let i = 3; i < n; i++) {
     ch = chans[i] as Laned;
-    this.foldInto(ch, slot, delta[ch.name], w);
+    this.foldInto(ch, slot, delta[ch.name]);
   }
 }
 
 /** Folds a motion sample's axes, kept apart from `foldInto` so neither reads two array kinds. */
-export function foldRun<I, O>(
-  this: Lanes<I, O>,
-  ch: Laned,
-  slot: number,
-  xs: Float64Array,
-  w: number,
-): void {
+export function foldRun<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, xs: Float64Array): void {
+  const w = this.arg[Arg.WEIGHT] as number;
   const values = ch.values;
   const base = slot * ch.axes;
   for (let a = 0; a < ch.axes; a++)
     values[base + a] = foldNumber(ch.op, values[base + a] as number, xs[a] as number, w);
 }
 
-export function foldInto<I, O>(
-  this: Lanes<I, O>,
-  ch: Laned,
-  slot: number,
-  value: unknown,
-  w: number,
-): void {
+/** Folds one channel's value into a subject's laned values, or its locus, at `Arg.WEIGHT`. */
+export function foldInto<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, value: unknown): void {
   if (value === undefined) return;
   if (this.into !== null) {
-    gatherInto(this, this.into, ch, slot, value, w);
+    gatherInto(this, this.into, ch, slot, value);
     return;
   }
-  if (ch.op === 'last' && !this.gate(ch, w)) return;
+  if (ch.op === 'last' && !this.gate(ch)) return;
+  const w = this.arg[Arg.WEIGHT] as number;
   const values = ch.values;
   if (ch.scalar) {
     values[slot] = foldNumber(ch.op, values[slot] as number, value as number, w);
@@ -218,7 +206,8 @@ export function foldInto<I, O>(
  * general path's `apply` decides it from the same band state on the same record, so a subject
  * moving between the paths carries it.
  */
-export function gate<I, O>(this: Lanes<I, O>, ch: Laned, w: number): boolean {
+export function gate<I, O>(this: Lanes<I, O>, ch: Laned): boolean {
+  const w = this.arg[Arg.WEIGHT] as number;
   const lane = this.folding as Lane<I, O>;
   const rec = this.rec as Subject<unknown>;
   const i = lane.chans.indexOf(ch);

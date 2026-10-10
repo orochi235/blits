@@ -111,6 +111,31 @@ describe('a pose never holds a patch’s own array', () => {
     expect([...p]).toEqual([4, 5, 6]);
   });
 
+  it('a stock vec channel writes into the array out already holds, and never into its rest', () => {
+    for (const lanes of [true, false]) {
+      const rest = vec(3, sum());
+      const m = mix<{ k: number }, Pose>(kit({ p: rest }), { lanes });
+      m.cue({
+        patch: keys<{ k: number }, Pose>(100, [{ at: 0, delta: { p: [4, 5, 6] } }]),
+        weight: (s) => s.k,
+        loop: true,
+      });
+      const a = { k: 1 };
+      const b = { k: 0.5 };
+      const out = {} as Pose;
+      m.sync(0);
+      const first = m.probe(a, out).p;
+      expect(first).toEqual([4, 5, 6]);
+      expect(m.probe(b, out).p).toBe(first);
+      expect(first).toEqual([2, 2.5, 3]);
+      expect(m.probe(a).p).toEqual([4, 5, 6]);
+      // The kit's own rest handed back as `out` is replaced, not written.
+      const own = { p: rest.rest as number[] };
+      expect(m.probe(a, own).p).not.toBe(rest.rest);
+      expect(rest.rest).toEqual([0, 0, 0]);
+    }
+  });
+
   it('a stock vec channel, on lanes and off, still hands out arrays of its own', () => {
     for (const lanes of [true, false]) {
       const stop = [4, 5, 6];

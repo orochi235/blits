@@ -1,3 +1,4 @@
+import { same } from './clock.js';
 import type { Curve } from './easing.js';
 import { eased, progress } from './tweened.js';
 
@@ -32,7 +33,7 @@ function prepare(law: Float64Array, t: number): void {
   const k2 = law[3] as number;
   const k3 = law[4] as number;
   const p = prepared;
-  if (Object.is(t, p.t) && form === p.form && k1 === p.k1 && k2 === p.k2 && k3 === p.k3) return;
+  if (same(t, p.t) && form === p.form && k1 === p.k1 && k2 === p.k2 && k3 === p.k3) return;
   p.form = form;
   p.k1 = k1;
   p.k2 = k2;

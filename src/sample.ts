@@ -1,7 +1,7 @@
 import { Sampled, unbareLane } from './bare.js';
 import { foldNumber } from './channels.js';
-import { clampWeight, passAt, weighed } from './clock.js';
-import { type Lane, type Laned, Per, type Positions, Row } from './lane.js';
+import { clampWeight, passAt, same, weighed } from './clock.js';
+import { Arg, type Lane, type Laned, Per, type Positions, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Motions } from './motions.js';
 import { absent } from './numbers.js';
@@ -31,6 +31,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
   // On a frame's first fill no probe has read a subject yet, so none needs `move` for that.
   const probed = lanes.probes !== from;
   const whole = clampWeight(voice.weight);
+  const arg = lanes.arg;
   const n = run.n;
   const op = ch.op;
   if (n > 0) {
@@ -67,14 +68,14 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     }
     const delay = data[o + Row.DELAY] as number;
     const elapsed = elapsedNow - delay;
-    if (elapsed < 0) {
+    if (!(elapsed >= 0)) {
       unbareLane(lane, p);
       data[o + Row.WEIGHT] = 0;
       continue;
     }
     if (!flat) {
       const since = data[o + Row.SINCE] as number;
-      if (!lane.weighed || !Object.is(since, lane.weighedSince)) {
+      if (!lane.weighed || !same(since, lane.weighedSince)) {
         lane.fade = lanes.host.envelope(voice, since);
         lane.weighed = true;
         lane.weighedSince = since;
@@ -82,18 +83,14 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     }
     let w: number;
     if (signal) {
-      w = lanes.signalled(
-        voice,
-        slot,
-        records[p] as Subject<unknown>,
-        elapsed,
-        passAt(elapsed, voice.duration, voice.passes),
-        lane.fade,
-      );
-      if (Number.isNaN(w)) {
+      arg[Arg.ELAPSED] = elapsed;
+      arg[Arg.PASS] = passAt(elapsed, voice.duration, voice.passes);
+      arg[Arg.FADE] = lane.fade;
+      if (!lanes.signalled(voice, slot, records[p] as Subject<unknown>)) {
         data[o + Row.WEIGHT] = 0;
         continue;
       }
+      w = arg[Arg.WEIGHT] as number;
     } else
       w = flat && !parts ? whole : weighed(voice.weight, lane.fade, lanes.parting(voice, slot));
     data[o + Row.WEIGHT] = w;
@@ -113,7 +110,10 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
         ((per[q + Per.LANE_PROBE] as number) > from ||
           (per[q + Per.GENERAL_PROBE] as number) > from))
     ) {
-      move(lanes, lane, run, p, slot, records[p] as Subject<unknown>, elapsed, delay, w);
+      arg[Arg.ELAPSED] = elapsed;
+      arg[Arg.DELAY] = delay;
+      arg[Arg.WEIGHT] = w;
+      move(lanes, lane, run, p, slot, records[p] as Subject<unknown>);
       continue;
     }
     const runs = run.runs;
@@ -155,7 +155,10 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
       const base = slot * n;
       for (let a = 0; a < n; a++)
         values[base + a] = foldNumber(op, values[base + a] as number, xs[a] as number, w);
-    } else lanes.foldInto(ch, slot, run.value(ms, xs), w);
+    } else {
+      arg[Arg.WEIGHT] = w;
+      lanes.foldInto(ch, slot, run.value(ms, xs));
+    }
   }
   if (own) {
     lane.bareFill = fills;
@@ -168,7 +171,8 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
  * A motion voice's value for a subject, sampled from the patch's state as its `at` would, but only
  * where that sample changes nothing: one with a change to stamp, commit or let go of goes to the
  * general path, which samples it if and when a probe asks, as it would with no lanes. A probe
- * this frame already read keeps the value it read, as the general path's record would.
+ * this frame already read keeps the value it read, as the general path's record would. The
+ * subject's voice time, delay and weight are in `Arg`.
  */
 export function move<I, O>(
   lanes: Lanes<I, O>,
@@ -177,10 +181,10 @@ export function move<I, O>(
   p: number,
   slot: number,
   held: Subject<unknown>,
-  elapsed: number,
-  delay: number,
-  w: number,
 ): void {
+  const elapsed = lanes.arg[Arg.ELAPSED] as number;
+  const delay = lanes.arg[Arg.DELAY] as number;
+  const w = lanes.arg[Arg.WEIGHT] as number;
   const voice = lane.voiceAt(p);
   const data = lane.data;
   const o = p * Row.STRIDE;
@@ -219,14 +223,14 @@ export function move<I, O>(
     data[o + Row.SEEKS] = voice.seeks;
     if (w <= 0) return;
     // A sample of other axes than the channel's folds as the general path folds it.
-    if (n === ch.axes && run.scalar(ms) === ch.scalar) lanes.foldRun(ch, slot, run.xs, w);
-    else lanes.foldInto(ch, slot, run.value(ms, run.xs), w);
+    if (n === ch.axes && run.scalar(ms) === ch.scalar) lanes.foldRun(ch, slot, run.xs);
+    else lanes.foldInto(ch, slot, run.value(ms, run.xs));
     return;
   }
   lane.deltas[p] = delta;
   data[o + Row.SAMPLED] = lanes.fills;
   data[o + Row.SEEKS] = voice.seeks;
-  if (w > 0) lanes.foldInto(ch, slot, delta[ch.name], w);
+  if (w > 0) lanes.foldInto(ch, slot, delta[ch.name]);
 }
 
 /** The delta a motion voice's last sample for position `p` made, built from `samples`. */

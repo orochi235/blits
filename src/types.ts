@@ -1128,7 +1128,10 @@ export interface Mix<I, O, H = unknown> {
   /**
    * The merged pose for one subject at the synced frame, written into `out` when given. Without
    * it, each call makes a new object, so a host reading every subject every frame passes `out` or
-   * reads by `pull`.
+   * reads by `pull`. An array `out` already holds for a `vec` channel, or a `color` that averages
+   * in OKLab or runs on a lane, is written in place where it is the channel's length, so a host that
+   * kept one from an earlier probe into the same `out` sees it change: copy what has to outlast the
+   * next probe.
    */
   probe(subject: I, out?: O): O;
   /**

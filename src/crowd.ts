@@ -3,7 +3,7 @@ import { clampWeight, passAt, phaseAt, weighed } from './clock.js';
 import { closed } from './closed.js';
 import type { Curve } from './easing.js';
 import { KeyRows } from './keyrows.js';
-import { frozenAt, type Laned, Per, type Positions, Row, SPARSE } from './lane.js';
+import { Arg, frozenAt, type Laned, Per, type Positions, Row, SPARSE } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Motions } from './motions.js';
 import type { Scratch } from './patch.js';
@@ -257,6 +257,7 @@ function rows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, first: number, id: numbe
   const hot = c.hot;
   const H = c.stride;
   const per = lanes.per;
+  const arg = lanes.arg;
   const list = c.list;
   const ch = c.chans[0] as Laned;
   const n = c.axes;
@@ -294,18 +295,16 @@ function rows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, first: number, id: numbe
     let w: number;
     if (fast) w = hot[h + Hot.WEIGHT] as number;
     else if (typeof voice.spec.weight === 'function') {
-      w = lanes.signalled(
-        voice,
-        slot,
-        c.records[p] as Subject<unknown>,
-        elapsed,
-        passAt(elapsed, voice.duration, voice.passes),
-        lanes.host.envelope(voice, data[o + Row.SINCE] as number),
-      );
-      if (Number.isNaN(w)) {
+      // The envelope first: it may call out, and `signalled` reads `arg` as it starts.
+      const fade = lanes.host.envelope(voice, data[o + Row.SINCE] as number);
+      arg[Arg.ELAPSED] = elapsed;
+      arg[Arg.PASS] = passAt(elapsed, voice.duration, voice.passes);
+      arg[Arg.FADE] = fade;
+      if (!lanes.signalled(voice, slot, c.records[p] as Subject<unknown>)) {
         data[o + Row.WEIGHT] = 0;
         continue;
       }
+      w = arg[Arg.WEIGHT] as number;
     } else
       w = weighed(
         voice.weight,
@@ -324,8 +323,11 @@ function rows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, first: number, id: numbe
         );
       continue;
     }
+    arg[Arg.ELAPSED] = elapsed;
+    arg[Arg.DELAY] = delay;
+    arg[Arg.WEIGHT] = w;
     if ((f & Flag.MOTION) === 0) {
-      lanes.row(c, p, voice, slot, elapsed, delay, w);
+      lanes.row(c, p, voice, slot);
       continue;
     }
     if (data[o + Row.MET] === 0) {
@@ -344,7 +346,7 @@ function rows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, first: number, id: numbe
           (per[q + Per.GENERAL_PROBE] as number) > from))
     ) {
       const run = c.motions[p] as Motions<I>;
-      move(lanes, c, run, p, slot, c.records[p] as Subject<unknown>, elapsed, delay, w);
+      move(lanes, c, run, p, slot, c.records[p] as Subject<unknown>);
       // The first sample numbered the subject in the patch: copy its stretch from the next fill.
       if (ms < 0) c.restale(p, hot[h + Hot.FLAGS] as number);
       continue;
@@ -370,27 +372,29 @@ function rows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, first: number, id: numbe
     data[o + Row.SAMPLED] = fills;
     data[o + Row.SEEKS] = hot[h + Hot.SEEKS] as number;
     if (w <= 0) continue;
-    if ((f & Flag.FOLDS) !== 0) lanes.foldRun(ch, slot, xs, w);
-    else lanes.foldInto(ch, slot, (c.motions[p] as Motions<I>).value(ms, xs), w);
+    if ((f & Flag.FOLDS) !== 0) lanes.foldRun(ch, slot, xs);
+    else lanes.foldInto(ch, slot, (c.motions[p] as Motions<I>).value(ms, xs));
   }
   return p;
 }
 
-/** A keys or fn row's contribution, as `one` makes a lane position's. */
+/**
+ * A keys or fn row's contribution, as `one` makes a lane position's, at the voice time, delay and
+ * weight in `Arg`.
+ */
 export function row<I, O>(
   this: Lanes<I, O>,
   c: Crowd<I, O>,
   p: number,
   voice: Voice<I, O>,
   slot: number,
-  elapsed: number,
-  delay: number,
-  w: number,
 ): void {
+  const arg = this.arg;
+  const elapsed = arg[Arg.ELAPSED] as number;
   const duration = voice.duration;
-  const phase = phaseAt(elapsed, duration, voice.passes);
+  arg[Arg.PHASE] = phaseAt(elapsed, duration, voice.passes);
   if (voice.built !== null) {
-    if (w > 0) this.foldKeys(voice, c.chans, phase, slot, w);
+    if ((arg[Arg.WEIGHT] as number) > 0) this.foldKeys(voice, c.chans, slot);
     return;
   }
   const rec = c.records[p] as Subject<unknown>;
@@ -398,17 +402,8 @@ export function row<I, O>(
     this.late.push(slot);
     return;
   }
-  this.call(
-    voice,
-    c.chans,
-    rec,
-    slot,
-    elapsed,
-    phase,
-    passAt(elapsed, duration, voice.passes),
-    delay,
-    w,
-  );
+  arg[Arg.PASS] = passAt(elapsed, duration, voice.passes);
+  this.call(voice, c.chans, rec, slot);
 }
 
 /** Copies what a fill reads of a crowd row's voice into `hot`; returns the row's flags. */

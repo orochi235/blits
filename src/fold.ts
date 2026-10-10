@@ -5,6 +5,7 @@ import { stateful } from './hosts.js';
 import type { Lanes } from './lanes.js';
 import { locusScratch } from './locus.js';
 import type { Mixer } from './mixer.js';
+import { moved } from './moved.js';
 import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
 import type { Channel, Patch, Setting } from './types.js';
@@ -85,10 +86,12 @@ export function contribution<I, O>(
   if (held.rebuilt !== voice.rebuilds) rebuild(this, voice, subject, now, held);
 
   const raw = voice.elapsedAt(now) - held.delay;
-  if (raw < 0 && !voice.freezesBefore) return null;
+  // Not `raw < 0`: see `frozenTime` for the clock that reads NaN before its start.
+  const early = !(raw >= 0);
+  if (early && !voice.freezesBefore) return null;
   const elapsed = frozenTime(raw, voice.freezesBefore, voice.freezesAfter, voice.span);
   // A frozen subject's clock stands still at the edge it freezes at: -1 before, 1 after, 0 playing.
-  const still = raw < 0 ? -1 : voice.freezesAfter && raw > voice.span ? 1 : 0;
+  const still = early ? -1 : voice.freezesAfter && raw > voice.span ? 1 : 0;
 
   const duration = voice.duration;
   const phase = phaseAt(elapsed, duration, voice.passes);
@@ -145,6 +148,8 @@ export function contribution<I, O>(
   } else if (voice.built) {
     held.phase = phase;
     delta = this.keyed(voice, subject, held);
+  } else if (voice.motion !== undefined) {
+    delta = moved(voice.motion, voice.patch.writes[0] as string, subject, setting, held.delta);
   } else {
     delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
   }
@@ -418,8 +423,15 @@ export function foldWith<I, O>(
     const rest = channel.rest;
     const key = this.names[i] as string;
     // Never `delete`: it drops a reused out object into dictionary mode for good.
-    if (rest !== undefined) pose[key] = channel.copy ? channel.copy(rest) : copy(rest);
-    else if (pose[key] !== undefined) pose[key] = undefined;
+    if (rest === undefined) {
+      if (pose[key] !== undefined) pose[key] = undefined;
+      continue;
+    }
+    // A stock array channel never keeps the pose's array, so one a last fold left in `out` is ours.
+    const held = this.lerpsInto[i] === undefined ? undefined : pose[key];
+    if (Array.isArray(held) && held !== rest && held.length === (rest as unknown[]).length) {
+      for (let a = 0; a < held.length; a++) held[a] = (rest as unknown[])[a];
+    } else pose[key] = channel.copy ? channel.copy(rest) : copy(rest);
   }
   if (head === null) return pose as O;
   // A subject owing lanes it just met folds those voices here, after the lanes' values.

@@ -61,11 +61,21 @@ export function envelope(
 
 /**
  * A subject's voice time `raw` once the voice's freezes apply: 0 before it starts if it freezes
- * before, else NaN, where it shows nothing; `span` once its passes end if it freezes after.
+ * before, else NaN, where it shows nothing; `span` once its passes end if it freezes after. A `raw`
+ * of NaN is before its start: a pending voice at rate 0 whose pinned start a mix at rate 0 puts at
+ * infinity reads its clock as infinity times 0.
  */
 export function frozenTime(raw: number, before: boolean, after: boolean, span: number): number {
-  if (raw < 0) return before ? 0 : Number.NaN;
+  if (!(raw >= 0)) return before ? 0 : Number.NaN;
   return after && raw > span ? span : raw;
+}
+
+/**
+ * `Object.is` for two numbers, which V8 answers by boxing both where it does not inline the call: 32
+ * bytes a subject in a fill's loop (bench/allocs.mjs, 2026-10-09).
+ */
+export function same(a: number, b: number): boolean {
+  return a === b ? a !== 0 || 1 / a === 1 / b : Number.isNaN(a) && Number.isNaN(b);
 }
 
 /** A weight held to 0..1. */

@@ -1,4 +1,5 @@
 import type { Column } from './columns.js';
+import { copy } from './copyout.js';
 import { type Crowd, Flag, Hot, row } from './crowd.js';
 import {
   call,
@@ -13,7 +14,7 @@ import {
   subjectAt,
 } from './fill.js';
 import { fold, foldDelta, foldInto, foldRun, gate, gather } from './gather.js';
-import { Begin, type Lane, type Laned, type Locus, Per, Row } from './lane.js';
+import { Arg, Begin, type Lane, type Laned, type Locus, Per, Row } from './lane.js';
 import { meet, reach } from './meet.js';
 import type { Watcher } from './motions.js';
 import { type absent, Numbers } from './numbers.js';
@@ -105,6 +106,8 @@ export class Lanes<I, O> implements Watcher {
   /** The lane and record `one` is folding, whose band state a rest-less channel reads. */
   folding: Lane<I, O> | null = null;
   rec: Subject<unknown> | null = null;
+  /** The numbers a fill's methods hand each other: see `Arg`. */
+  readonly arg = new Float64Array(Arg.SIZE);
   /** While a fill gathers a locus: that locus and the member gathering, where folds go instead. */
   into: Locus<I, O> | null = null;
   intoId = 0;
@@ -443,29 +446,6 @@ export class Lanes<I, O> implements Watcher {
     return true;
   }
 
-  /** Writes a subject's laned values into a pose, each array channel into a new array. */
-  copy(slot: number, pose: Record<string, unknown>): void {
-    const laned = this.laned;
-    for (let c = 0; c < laned.length; c++) {
-      const ch = laned[c] as Laned;
-      const axes = ch.axes;
-      // Never `delete`: it drops a reused out object into dictionary mode for good.
-      if (ch.op === 'last' && Number.isNaN(ch.values[slot * axes] as number)) {
-        if (pose[ch.name] !== undefined) pose[ch.name] = undefined;
-        continue;
-      }
-      if (ch.scalar) {
-        pose[ch.name] = ch.values[slot] as number;
-        continue;
-      }
-      // Made as the general path makes it, a copy of rest, so poses from either path share a shape.
-      const arr = [...ch.start];
-      const base = slot * axes;
-      for (let a = 0; a < axes; a++) arr[a] = ch.values[base + a] as number;
-      pose[ch.name] = arr;
-    }
-  }
-
   forget(slot: number): void {
     this.host.forgot(slot);
     this.live--;
@@ -536,6 +516,7 @@ export class Lanes<I, O> implements Watcher {
 // A fill's per-subject path is methods, installed here from the modules that own them: as
 // functions called directly they made fills 5-8% slower (bench/ab.sh on teitou, 2026-10-05).
 const methods = {
+  copy,
   row,
   signalled,
   parting,

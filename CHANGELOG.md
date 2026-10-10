@@ -37,6 +37,11 @@ version and everything else the patch. Each release lists its changes as **Break
   so a kit over a tuple pose needs no cast. A length that is not a literal still gives
   `Channel<number[]>`. Types only: code that calls such a channel's `merge`, `scale` or `lerp`
   itself with a `number[]` annotates the channel as `Channel<number[]>`.
+- `probe(subject, out)` writes into the array `out` already holds for a `vec` channel, or a `color`
+  that averages in OKLab or runs on a lane, where that array is the channel's length. It put a new
+  array there on every probe. A host that kept `out.position` from one probe and compared it with
+  the next now holds the same array both times: copy what has to outlast the next probe. A probe
+  with no `out` still makes its own arrays.
 
 ### Added
 
@@ -137,6 +142,8 @@ version and everything else the patch. Each release lists its changes as **Break
   change to either between two probes would not reach it.
 - A span that skipped several children at cue played the last of them in full on the next sync, and
   then reported none skipped.
+- A pose read NaN for a voice still waiting on a `start` the host gave, once the voice was set to
+  rate 0 while the mix's rate was 0. It reads as any voice before its start does.
 
 ## 0.7.1
 

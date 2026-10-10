@@ -366,6 +366,23 @@ describe('mix rate', () => {
     });
   });
 
+  it('reads a pending voice at rate 0 as before its start while the mix stands still', () => {
+    for (const lanes of [true, false])
+      for (const freeze of ['both', undefined] as const) {
+        const m = mix<Part, Pose>(K, { lanes });
+        m.sync(0);
+        const h = m.cue({ patch: fall, start: 100, freeze });
+        m.rate = 0;
+        h.rate = 0;
+        m.sync(16);
+        m.probe(a);
+        m.sync(32);
+        expect(m.probe(a).gain, `lanes ${lanes}, freeze ${freeze}`).toBe(
+          freeze === 'both' ? 0.5 : 1,
+        );
+      }
+  });
+
   it('gives the same bits with lanes on and off', () => {
     const run = (lanes: boolean) => {
       const m = mix<Part, Pose>(K, { lanes });

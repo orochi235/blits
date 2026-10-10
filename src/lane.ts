@@ -66,6 +66,26 @@ export const enum Begin {
   READY = 1,
 }
 
+/**
+ * Where each number a fill hands from one of its methods to the next sits in `Lanes.arg`. Passed as
+ * an argument, a double is boxed wherever V8 does not inline the call: 16 bytes a number a subject
+ * (bench/allocs.mjs, 2026-10-09). The caller writes them just before the call, and the callee reads
+ * them before it calls anything else.
+ */
+// biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package
+export const enum Arg {
+  /** The weight to fold at. */
+  WEIGHT = 0,
+  /** The subject's voice time, its freezes applied. */
+  ELAPSED = 1,
+  PHASE = 2,
+  PASS = 3,
+  DELAY = 4,
+  /** The voice's own fade, for `signalled`. */
+  FADE = 5,
+  SIZE = 6,
+}
+
 /** Where each of a subject's `SLOT` numbers in `Lanes.per` sits. */
 // biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package
 export const enum Per {
@@ -163,6 +183,9 @@ export class Lane<I, O> implements Positions<I, O> {
   chans: Laned[] = [];
   /** The value read for each of `chans`, for the subject being folded. */
   values: unknown[] = [];
+  /** A keys read's `values` as numbers, each channel's axes side by side, and how each folds. */
+  nums = new Float64Array(0);
+  kinds = new Uint8Array(0);
   /**
    * Within one fill, the last elapsed placed and the last `since` weighed, with what they gave, so
    * subjects sharing a delay or a start share the arithmetic: the same inputs give the same bits.
@@ -178,6 +201,8 @@ export class Lane<I, O> implements Positions<I, O> {
   fade = 1;
   /** Whether the voice has no fade in or out this fill, so its envelope is 1 for every subject. */
   flat = false;
+  /** The voice's clock at this fill, set before `one` runs its subjects. */
+  elapsedNow = 0;
   /** A motion patch's state, which the lane samples in place of calling the patch. */
   readonly motion: Motions<I> | undefined;
   /** By the motion patch's number for a subject, its position plus one, 0 where it has none. */

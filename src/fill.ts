@@ -1,9 +1,10 @@
 import { foldNumber, lerpNumber } from './channels.js';
-import { passAt, phaseAt, silent, weighed } from './clock.js';
+import { passAt, phaseAt, same, silent, weighed } from './clock.js';
 import { flush } from './columns.js';
 import { crowdsUpTo, freshen } from './crowd.js';
 import { foldLocus, gatherLocus } from './gather.js';
-import { frozenAt, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
+import { runKeys } from './keyfill.js';
+import { Arg, frozenAt, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { reach } from './meet.js';
 import { absent } from './numbers.js';
@@ -152,28 +153,38 @@ export function wake<I, O>(lanes: Lanes<I, O>, lane: Paced): void {
 }
 
 /**
- * A voice with a signal weight: its weight for the subject at `slot` under the voice's fade `fade`,
- * through the general path's own arithmetic; NaN where that path has not made the voice's first
- * call for the subject, which it then makes this frame, so a signal that keeps state is first
- * called where the general path would call it.
+ * A voice with a signal weight: its weight for the subject at `slot`, left in `Arg.WEIGHT`, at the
+ * voice time, pass and fade in `Arg.ELAPSED`, `Arg.PASS` and `Arg.FADE`, through the general path's
+ * own arithmetic. False where that path has not made the voice's first call for the subject, which
+ * it then makes this frame, so a signal that keeps state is first called where the general path
+ * would call it.
  */
 export function signalled<I, O>(
   this: Lanes<I, O>,
   voice: Voice<I, O>,
   slot: number,
   rec: Subject<unknown>,
-  elapsed: number,
-  pass: number,
-  fade: number,
-): number {
+): boolean {
+  const arg = this.arg;
+  const elapsed = arg[Arg.ELAPSED] as number;
+  const pass = arg[Arg.PASS] as number;
+  const fade = arg[Arg.FADE] as number;
   if (Number.isNaN(rec.probed)) {
     this.late.push(slot);
-    return Number.NaN;
+    return false;
   }
   const subject = this.subjectAt(slot);
-  if (subject === absent) return 0;
+  if (subject === absent) {
+    arg[Arg.WEIGHT] = 0;
+    return true;
+  }
   const base = this.host.signal(voice, subject, rec, elapsed, pass, slot);
-  return weighed(base, fade, voice.parts === null ? 1 : this.host.parting(voice, subject));
+  arg[Arg.WEIGHT] = weighed(
+    base,
+    fade,
+    voice.parts === null ? 1 : this.host.parting(voice, subject),
+  );
+  return true;
 }
 
 /** What a subject's own ramp out of a voice leaves of its weight: 1 with none. */
@@ -221,12 +232,14 @@ export function run<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
     runMotion(this, lane, lane.motion);
     return;
   }
-  const elapsed = voice.elapsedAt(this.now);
-  const duration = voice.duration;
-  const passes = voice.passes;
+  if (voice.built !== null && typeof voice.spec.weight !== 'function') {
+    runKeys(this, lane);
+    return;
+  }
+  lane.elapsedNow = voice.elapsedAt(this.now);
   const list = lane.list;
   for (let p = 0; p < list.length; p++) {
-    this.one(lane, p, list[p] as number, elapsed, duration, passes);
+    this.one(lane, p, list[p] as number);
     // Its patch just made kept state: no further call this fill, the general path makes them.
     if (voice.keeping) return;
   }
@@ -237,17 +250,13 @@ export function run<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
  * as the general path's `contribution` does where it returns one, which is what makes a voice in a
  * locus one of its members for the subject.
  */
-export function one<I, O>(
-  this: Lanes<I, O>,
-  lane: Lane<I, O>,
-  p: number,
-  slot: number,
-  elapsedNow: number,
-  duration: number,
-  passes: number,
-): boolean {
+export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: number): boolean {
   const host = this.host;
   const voice = lane.voice;
+  const elapsedNow = lane.elapsedNow;
+  const duration = voice.duration;
+  const passes = voice.passes;
+  const arg = this.arg;
   const data = lane.data;
   const o = p * Row.STRIDE;
   // A probe read this subject from the last fill: keep the weight it read for `weightOf`.
@@ -260,44 +269,43 @@ export function one<I, O>(
     data[o + Row.WEIGHT] = 0;
     return false;
   }
-  if (!lane.placed || !Object.is(elapsed, lane.placedAt)) {
+  if (!lane.placed || !same(elapsed, lane.placedAt)) {
     lane.placed = true;
     lane.placedAt = elapsed;
     lane.phase = phaseAt(elapsed, duration, passes);
     lane.pass = passAt(elapsed, duration, passes);
   }
   const since = data[o + Row.SINCE] as number;
-  if (!lane.flat && (!lane.weighed || !Object.is(since, lane.weighedSince))) {
+  if (!lane.flat && (!lane.weighed || !same(since, lane.weighedSince))) {
     lane.fade = host.envelope(voice, since);
     lane.weighed = true;
     lane.weighedSince = since;
   }
   let w: number;
   if (typeof voice.spec.weight === 'function') {
-    w = this.signalled(
-      voice,
-      slot,
-      lane.records[p] as Subject<unknown>,
-      elapsed,
-      lane.pass,
-      lane.fade,
-    );
-    if (Number.isNaN(w)) {
+    arg[Arg.ELAPSED] = elapsed;
+    arg[Arg.PASS] = lane.pass;
+    arg[Arg.FADE] = lane.fade;
+    if (!this.signalled(voice, slot, lane.records[p] as Subject<unknown>)) {
       data[o + Row.WEIGHT] = 0;
       return false;
     }
+    w = arg[Arg.WEIGHT] as number;
   } else w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
   data[o + Row.WEIGHT] = w;
   this.folding = lane;
   this.rec = lane.records[p] ?? null;
   if (voice.built !== null) {
-    if (!lane.read || !Object.is(elapsed, lane.readAt)) {
+    if (!lane.read || !same(elapsed, lane.readAt)) {
       this.readKeyed(voice, lane.phase, lane.delta, lane.scratch);
       lane.read = true;
       lane.readAt = elapsed;
       this.gather(lane, lane.delta);
     }
-    if (w > 0) this.fold(lane, slot, w);
+    if (w > 0) {
+      arg[Arg.WEIGHT] = w;
+      this.fold(lane, slot);
+    }
     return true;
   }
   const rec = lane.records[p] as Subject<unknown>;
@@ -307,26 +315,31 @@ export function one<I, O>(
     return false;
   }
   // A motion patch needs the subject only to number it, so the lookup waits until then.
+  arg[Arg.ELAPSED] = elapsed;
+  arg[Arg.DELAY] = delay;
+  arg[Arg.WEIGHT] = w;
   if (lane.motion !== undefined) {
-    move(this, lane, lane.motion, p, slot, rec, elapsed, delay, w);
+    move(this, lane, lane.motion, p, slot, rec);
     return true;
   }
-  return this.call(voice, lane.chans, rec, slot, elapsed, lane.phase, lane.pass, delay, w);
+  arg[Arg.PHASE] = lane.phase;
+  arg[Arg.PASS] = lane.pass;
+  return this.call(voice, lane.chans, rec, slot);
 }
 
 /**
- * A keys voice's stops at `phase` folded straight into a subject's values, without a delta: what
- * `readKeyed` then `foldDelta` give, through the same segment search and the stock channels' own
- * lerp, which is all a laned keys voice can use.
+ * A keys voice's stops at `Arg.PHASE` folded straight into a subject's values at `Arg.WEIGHT`,
+ * without a delta: what `readKeyed` then `foldDelta` give, through the same segment search and the
+ * stock channels' own lerp, which is all a laned keys voice can use.
  */
 export function foldKeys<I, O>(
   this: Lanes<I, O>,
   voice: Voice<I, O>,
   chans: readonly Laned[],
-  phase: number,
   slot: number,
-  w: number,
 ): void {
+  const phase = this.arg[Arg.PHASE] as number;
+  const w = this.arg[Arg.WEIGHT] as number;
   const built = voice.built as NonNullable<Voice<I, O>['built']>;
   const tracks = built.tracks;
   for (let i = 0; i < tracks.length; i++) {
@@ -335,7 +348,7 @@ export function foldKeys<I, O>(
     const found = segment(track, shifted(track, phase, built.duration), undefined);
     if (found === NOTHING) continue;
     if (found === AT) {
-      this.foldInto(ch, slot, seg.a, w);
+      this.foldInto(ch, slot, seg.a);
       continue;
     }
     const a = seg.a;
@@ -346,7 +359,6 @@ export function foldKeys<I, O>(
         ch,
         slot,
         (voice.lerps[i] as (a: unknown, b: unknown, u: number) => unknown)(a, b, u),
-        w,
       );
       continue;
     }
@@ -384,8 +396,9 @@ export function readKeyed<I, O>(
 }
 
 /**
- * Calls a stateless fn voice's patch for a subject its general path has met, and folds the delta;
- * false for a subject the host has let go of.
+ * Calls a stateless fn voice's patch for a subject its general path has met, and folds the delta,
+ * at the voice time, phase, pass, delay and weight in `Arg`; false for a subject the host has let
+ * go of.
  */
 export function call<I, O>(
   this: Lanes<I, O>,
@@ -393,18 +406,19 @@ export function call<I, O>(
   chans: readonly Laned[],
   rec: Subject<unknown>,
   slot: number,
-  elapsed: number,
-  phase: number,
-  pass: number,
-  delay: number,
-  w: number,
 ): boolean {
+  const arg = this.arg;
+  const elapsed = arg[Arg.ELAPSED] as number;
+  const phase = arg[Arg.PHASE] as number;
+  const pass = arg[Arg.PASS] as number;
+  const delay = arg[Arg.DELAY] as number;
+  const w = arg[Arg.WEIGHT] as number;
   const host = this.host;
   const subject = this.subjectAt(slot);
   if (subject === absent) return false;
   // Called already this frame, by the general path or a fill before a refill: reuse, as a probe does.
   if (rec.probed === this.now && rec.delta !== null && rec.seeks === voice.seeks) {
-    if (w > 0) this.foldDelta(chans, slot, rec.delta, w);
+    if (w > 0) this.foldDelta(chans, slot, rec.delta);
     return true;
   }
   if (silent(voice, w)) return true;
@@ -419,6 +433,6 @@ export function call<I, O>(
   rec.seeks = voice.seeks;
   if (this.keeps) host.after(voice, subject, rec);
   if (reading.kept !== kept && !voice.keeping) host.kept(voice);
-  if (w > 0) this.foldDelta(chans, slot, delta, w);
+  if (w > 0) this.foldDelta(chans, slot, delta);
   return true;
 }
