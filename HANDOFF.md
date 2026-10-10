@@ -595,11 +595,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `pass-the-baton` skill) until the whole plan is finished**, each session updating this item and
     the doc's Status section as a step lands. Step 6 is built (`b5dfa51`: `prepack` builds from an
     empty `dist`, the tarball carries `./testing`, and the changelog lists steps 3 to 5) except the
-    release: **Mike, 2026-10-09: hold the release**, so 0.7.1 stays published. Next is step 7. Each
+    release: **Mike, 2026-10-09: hold the release**, so 0.7.1 stays published. Releases are batched:
+    keep adding to the changelog's Unreleased section as steps land, and don't ask to publish per
+    step; it ships as one release when Mike says. Next is step 7. Each
     step goes in a worktree off `main`, since another session
     works on the playground and item 13 in a worktree of its own; ask it before editing this file,
     and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. Step
-    6's version bump and publish are Mike's call: stop and ask there, never bump to 1.0.0. Measure
+    6's version bump and publish are Mike's call, never 1.0.0. Measure
     any hot-path change with `AB_EACH=1 bench/ab.sh <origin/main sha> . <rounds> <rows>` on a fleet
     node (`.` is the synced working tree). Decided while building, and open beyond the doc:
     - **Step 3 took the doc's proposed default, exact catch-up**: a stateful subject met late steps
