@@ -720,6 +720,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **The first `dt` after a voice stops sharing its record counts from the subject's origin**,
       since each subject's own record starts fresh (`unshare` in `everyone.ts`).
     - klieg's `it.fails` test for this (klieg `TODO.md`) should pass on the next blits release.
+    - **Timed level** (msb-uai, 2026-10-10, 7 rounds at 3,000 frames against `da6e613`, 17 rows
+      over `fn`, `named`, `probed`, `blend`, `glowl`, `keys`, and `typing`, geometric mean 0.998),
+      but `blend` allocated 3,441 kB a frame from 2,974: the write to `stepped` was boxed. Making
+      the field a double from the start (`record.ts`) read 2,994 on this Mac at 300 frames; the
+      fleet run was not repeated after it.
 
 ## Loose ends
 
