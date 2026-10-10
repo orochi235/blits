@@ -3,7 +3,7 @@ import { kit, mul, sum } from '../src/channels.js';
 import { hex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
-import { gate, lag, level, peak, slew } from '../src/signals.js';
+import { gate, heard, input, lag, level, peak, slew } from '../src/signals.js';
 import type { Setting } from '../src/types.js';
 
 interface Pose {
@@ -168,6 +168,28 @@ describe('slew', () => {
     expect(slew(level<Part>(0), { riseMs: 100 }).input).toBe(true);
     expect(gate(peak(level<Part>(0)), 0.5).input).toBe(true);
     expect(slew<Part>(() => 0.5, { riseMs: 100 }).input).toBeUndefined();
+  });
+});
+
+describe('input', () => {
+  it('marks a host’s own read as an input, and one built on others as they are', () => {
+    const own = input<Part>(() => 0.5);
+    expect(own.input).toBe(true);
+    expect(own(part, frame(0, 16))).toBe(0.5);
+    const plain = (): number => 0.25;
+    expect(input<Part>((p, s) => own(p, s) * 2, [own]).input).toBe(true);
+    expect(input<Part>((p, s) => plain() + own(p, s), [plain, own]).input).toBe(true);
+    expect(input<Part>(() => plain(), [plain]).input).toBeUndefined();
+  });
+
+  it('reports its changes through what is built on it, unless a hand-flagged signal is among them', () => {
+    const own = input<Part>(() => 0.5);
+    const flagged = Object.assign((): number => 1, { input: true });
+    expect(heard(own)).toBe(true);
+    expect(heard(gate(peak(own), 0.5))).toBe(true);
+    expect(heard(input<Part>((p, s) => own(p, s), [own]))).toBe(true);
+    expect(heard(input<Part>((p, s) => own(p, s) * flagged(), [own, flagged]))).toBe(false);
+    expect(heard(level<Part>(0))).toBe(true);
   });
 });
 

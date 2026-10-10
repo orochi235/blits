@@ -1,7 +1,7 @@
 import { reading } from './reading.js';
 import type { Setting, Signal } from './types.js';
 
-/** Input signals whose every change bumps `reading.inputs`: `level`, and those built only on one. */
+/** Input signals whose every change bumps `reading.inputs`: `input`'s, and those built only on them. */
 const told = new WeakSet<object>();
 
 /** Whether a change to an input signal reaches `reading.inputs`, so a lane fill can see it. */
@@ -35,25 +35,52 @@ export function peak<I, H = unknown>(...signals: readonly Signal<I, H>[]): Signa
   }, signals);
 }
 
+const touch = (): void => {
+  reading.inputs++;
+};
+
 /**
- * A signal the host writes. klieg's `level`. A voice weighted by it, or by `peak`, `slew`, `lag` or
- * `gate` over it, keeps its lane, since every `set` reaches the lanes; one weighted by an input
- * signal of the host's own making never runs on a lane.
+ * Marks `read` as a signal driven from outside the clock, which a host's own signal has to be for
+ * `assess` and a history's `inputs` to treat it as one. Two uses:
+ *
+ * `input(read)` is an input of the host's own: a pointer, a volume, a value in a store. The host
+ * calls `touch()` after each change to what `read` reads, and a voice weighted by the signal, or by
+ * `peak`, `slew`, `lag` or `gate` over it, keeps its lane. A change nobody reports shows once the
+ * mix's clock next moves.
+ *
+ * `input(read, of)` is a signal built on others, as a wrapper that clamps one is: `of` lists every
+ * signal `read` calls, and the result is an input where any of them is, and reports its changes
+ * where they all do.
+ *
+ * @category signal
+ */
+export function input<I, H = unknown>(
+  read: (subject: I, setting: Setting<void, H>) => number,
+  of?: readonly Signal<I, H>[],
+): Signal<I, H> & { touch(): void } {
+  if (of !== undefined) return Object.assign(marked(read, of), { touch });
+  told.add(read);
+  return Object.assign(read, { input: true, touch });
+}
+
+/**
+ * A signal the host writes: `input` over one number, with `set` reporting each change. klieg's
+ * `level`.
  *
  * @category signal
  */
 export function level<I, H = unknown>(initial = 0): Signal<I, H> & { set(v: number): void } {
   let value = initial;
-  const signal = Object.assign(() => value, {
-    input: true,
-    set(v: number) {
-      if (Object.is(v, value)) return;
-      value = v;
-      reading.inputs++;
+  return Object.assign(
+    input<I, H>(() => value),
+    {
+      set(v: number) {
+        if (Object.is(v, value)) return;
+        value = v;
+        touch();
+      },
     },
-  }) as Signal<I, H> & { set(v: number): void };
-  told.add(signal);
-  return signal;
+  );
 }
 
 interface Slewed {

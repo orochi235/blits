@@ -3,7 +3,7 @@ import { kit, max, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
-import { level } from '../src/signals.js';
+import { input, level, peak } from '../src/signals.js';
 import { diverge, type SceneOptions, scene } from './fuzz/scene.js';
 
 interface Sweep {
@@ -131,6 +131,28 @@ describe('divergences found in review, each a missed input or a side effect out 
       });
     };
     expect(read(true)).toEqual(read(false));
+  });
+
+  it('an input of the host’s own, touched between probes, reaches the next probe from its lane', () => {
+    const read = (lanes: boolean) => {
+      let v = 1;
+      const m = mix<Part, { x: number }>(kit({ x: sum() }), { lanes });
+      const [a, b] = [{ id: 0 }, { id: 1 }];
+      const weight = input<Part>(() => v);
+      m.cue({ patch: keys(400, ramp), weight: peak(weight) });
+      const got = [82, 83, 84].flatMap((t) => {
+        m.sync(t);
+        const first = m.probe(a).x;
+        v = v === 1 ? 0.5 : 1;
+        weight.touch();
+        return [first, m.probe(b).x, m.probe(a).x];
+      });
+      const laned = (m as unknown as { lanes: { laned: unknown[] } | null }).lanes?.laned.length;
+      return { got, laned };
+    };
+    const on = read(true);
+    expect(on.got).toEqual(read(false).got);
+    expect(on.laned).toBe(1);
   });
 
   it('a host field changed between probes reaches the next probe', () => {

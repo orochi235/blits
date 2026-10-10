@@ -738,8 +738,8 @@ export interface MixOptions<H = unknown> {
    * Whether a channel may run as a lane: computed for every subject at once in flat arrays, when
    * every voice writing it can run that way. On by default; what a host reads is the same either
    * way (`probe`, `pull`, `atRest`, `weightOf`, `inert` and `project`), so turning it off is for
-   * ruling a lane out, or for comparing against. A voice weighted by an input signal not built on
-   * `level`, or whose patch reads host fields, never runs on a lane, since a change to either
+   * ruling a lane out, or for comparing against. A voice weighted by an input signal `input` did not
+   * make, or whose patch reads host fields, never runs on a lane, since a change to either
    * between two probes would not reach it. Two things differ: a
    * stateless patch's `setting.send` from `at` sends for every subject a lane fills, those probed
    * this frame or the last, and a patch that first calls `setting.keep` partway through playing can
