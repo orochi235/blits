@@ -49,6 +49,9 @@ version and everything else the patch. Each release lists its changes as **Break
 - `fold(kit, deltas, weights?)` folds deltas into one pose by a kit's arithmetic with no mix and no
   clock: what a mix gives for voices contributing those deltas at those weights, every weight 1
   where none is given.
+- `handle.to`, `handle.push` and `handle.read` reach the `to`, `push` and `read` of the motion
+  patch a voice plays, so a host holding only the handle need not keep the patch or cast it. `to`
+  and `push` throw for a voice whose patch does not take them; `read` gives undefined.
 - `input(read)` makes a signal of the host's own that reads something outside the clock. The host
   calls its `touch()` after each change, and a voice weighted by it keeps its lane, where one
   weighted by a signal flagged `input` by hand never runs on one. `input(read, of)` marks a signal

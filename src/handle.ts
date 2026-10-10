@@ -1,4 +1,5 @@
 import { retime } from './clock.js';
+import { type Motion, motionOf, type Value } from './motion.js';
 import { leave } from './origin.js';
 import type { Doubt, FadeOptions, FitResult, Handle, SeekOptions } from './types.js';
 import type { Voice } from './voice.js';
@@ -161,4 +162,36 @@ export class VoiceHandle<I, O> implements Handle<I> {
     const voice = this.#voice;
     return voice === null ? 0 : this.#host.weightOf(voice, subject);
   }
+
+  // The patch records each of these itself, so a seek plays them again without the handle.
+  to(subject: I, target: Value, at?: number): void {
+    const voice = this.#voice;
+    if (voice !== null) moves(voice.patch, 'to', 'a spring or a tween').to(subject, target, at);
+  }
+
+  push(subject: I, velocity: Value, at?: number): void {
+    const voice = this.#voice;
+    if (voice !== null)
+      moves(voice.patch, 'push', 'a spring or a glide').push(subject, velocity, at);
+  }
+
+  read(subject: I, at?: number): Motion<Value> | undefined {
+    const voice = this.#voice;
+    if (voice === null || motionOf(voice.patch) === undefined) return undefined;
+    return (voice.patch as unknown as Moves<I>).read(subject, at);
+  }
+}
+
+/** What a motion patch may be asked through its voice's handle; each kind has `read` and one or both of the rest. */
+interface Moves<I> {
+  to(subject: I, target: Value, at?: number): void;
+  push(subject: I, velocity: Value, at?: number): void;
+  read(subject: I, at?: number): Motion<Value> | undefined;
+}
+
+/** A voice's patch as a motion that takes `verb`, or a throw naming the kinds that do. */
+function moves<I>(patch: object, verb: 'to' | 'push', kinds: string): Moves<I> {
+  if (motionOf(patch) === undefined || typeof (patch as Partial<Moves<I>>)[verb] !== 'function')
+    throw new Error(`blits: ${verb} needs a voice playing ${kinds}`);
+  return patch as Moves<I>;
 }

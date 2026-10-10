@@ -1,4 +1,5 @@
 import type { Fit, Order, Strength } from './fit.js';
+import type { Motion, Value } from './motion.js';
 import type { WaveOptions } from './wave.js';
 /**
  * One field of a delta, with its own arithmetic.
@@ -692,6 +693,21 @@ export interface Handle<I = unknown> {
    * Costs nothing until it is asked.
    */
   weightOf(subject: I): number;
+  /**
+   * Heads `subject` for `target`, for a voice playing a `spring` or a `tween`: the patch's own `to`,
+   * reached without holding the patch. Throws for any other voice.
+   */
+  to(subject: I, target: Value, at?: number): void;
+  /**
+   * Sets `subject` moving at `velocity`, units per second, for a voice playing a `spring` or a
+   * `glide`: the patch's own `push`. Throws for any other voice.
+   */
+  push(subject: I, velocity: Value, at?: number): void;
+  /**
+   * Where `subject` is and how fast it moves, for a voice playing a motion patch: the patch's own
+   * `read`. Undefined for any other voice, and wherever the patch's `read` is.
+   */
+  read(subject: I, at?: number): Motion<Value> | undefined;
   /** Resolves when the voice has been removed from the mix, however that happened. */
   readonly done: Promise<void>;
   /**
