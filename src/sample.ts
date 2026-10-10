@@ -186,6 +186,9 @@ export function move<I, O>(
   const o = p * Row.STRIDE;
   const ch = lane.chans[0] as Laned;
   settle(lanes, lane, p, slot, held);
+  // The general path never samples a voice at weight 0, so the motion neither numbers the subject
+  // nor runs on for it, and `inert` reads the same.
+  if (!(w > 0)) return;
   const delta = held.delta;
   if (
     delta === null ||

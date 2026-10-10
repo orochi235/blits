@@ -626,8 +626,8 @@ export type FadeOptions<I = unknown> =
   | {
       /**
        * The one subject to fade out of this voice, which plays on for the rest. Once the ramp ends
-       * the voice forgets the subject and reaches it no more, until a motion patch's `to` brings it
-       * back, met afresh: `from`, `target` and `stagger` asked again.
+       * the voice forgets the subject and reaches it no more, until a motion patch's `to` or the
+       * mix's `drop` brings it back, met afresh: `from`, `target` and `stagger` asked again.
        */
       subject: I;
       /** The ramp, ms. Defaults to the voice's own `fade.out`; 0 takes the subject out at once. */
@@ -736,8 +736,11 @@ export interface MixOptions<H = unknown> {
   keyOf?(subject: never): string | number;
   /**
    * Whether a channel may run as a lane: computed for every subject at once in flat arrays, when
-   * every voice writing it can run that way. On by default; the pose is the same either way, so
-   * turning it off is for ruling a lane out, or for comparing against. Two things differ: a
+   * every voice writing it can run that way. On by default; what a host reads is the same either
+   * way (`probe`, `pull`, `atRest`, `weightOf`, `inert` and `project`), so turning it off is for
+   * ruling a lane out, or for comparing against. A voice weighted by an input signal not built on
+   * `level`, or whose patch reads host fields, never runs on a lane, since a change to either
+   * between two probes would not reach it. Two things differ: a
    * stateless patch's `setting.send` from `at` sends for every subject a lane fills, those probed
    * this frame or the last, and a patch that first calls `setting.keep` partway through playing can
    * advance that state once more for one subject probed the frame before (see `Setting.keep`).
@@ -1183,7 +1186,10 @@ export interface Mix<I, O, H = unknown> {
   onWake(fn: () => void): () => void;
   /** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */
   mute(opts?: { over?: number }): void;
-  /** Forgets per-subject state, a motion patch's for the subject included. */
+  /**
+   * Forgets per-subject state, a motion patch's for the subject included, and any fade of the
+   * subject out of a voice, so nothing keeps the subject alive.
+   */
   drop(subject: I): void;
   /**
    * Puts a named mark on a score, for anchors to target as they target a voice's marks: a voice

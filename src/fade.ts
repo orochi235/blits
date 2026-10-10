@@ -62,11 +62,30 @@ export function part<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I, at:
 
 /** Brings a subject faded out of a voice back, to be met afresh on its next probe. */
 export function unpart<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
-  if (voice.parted?.delete(subject) !== true) return;
+  if (voice.parted?.has(subject) !== true) return;
+  // `forgetIn` keeps the subject's own record for a read back; without one, keep the voice's.
+  if (voice.subjects.get(subject) === undefined)
+    leave(mix, voice, subject, leftWith(mix, voice, subject));
+  voice.parted.delete(subject);
   if (voice.parted.size === 0) voice.parted = null;
   forgetIn(mix, voice, subject);
   const slot = mix.chains.get(subject)?.slot ?? -1;
   if (slot >= 0) mix.lanes?.rejoin(slot);
+}
+
+/**
+ * The record a read back finds a subject left a voice with: its own, or the voice's record for
+ * subjects it does not reach while faded out of it, since a probe on either path may have left a
+ * record of that or none.
+ */
+export function leftWith<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+): Subject<unknown> | undefined {
+  const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
+  if (held !== undefined || voice.parted?.has(subject) !== true) return held;
+  return voice.unreached ?? mix.unreachedOf(voice, mix.now);
 }
 
 /** Drops a voice's record of a subject and relinks the subject's chain without it. */

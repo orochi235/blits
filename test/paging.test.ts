@@ -136,7 +136,7 @@ describe('history with a store', () => {
       if (t === 256) m.rate = 0;
       if (t === 288) {
         m.announce('beat', { at: 300 });
-        h.on = m.cue({ patch: fall, name: 'on', anchor: { start: { of: 'beat' } } });
+        h.on = m.cue({ patch: fall, name: 'on', anchor: { start: { with: 'beat' } } });
       }
       if (t === 336) m.rate = 1;
     };

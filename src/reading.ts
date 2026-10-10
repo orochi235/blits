@@ -20,4 +20,9 @@ export const reading = {
    * One count for every mix: a change to a spring in one mix refills the lanes of all of them.
    */
   moved: 0,
+  /**
+   * How many times a `level` has been set, in any mix, so a fill can tell an input moved since it
+   * read it. One count for every mix, as `moved` is.
+   */
+  inputs: 0,
 };

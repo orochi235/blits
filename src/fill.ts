@@ -91,6 +91,7 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
       lanes.holding = false;
     }
     lanes.moved = reading.moved;
+    lanes.inputs = reading.inputs;
   } finally {
     lanes.filling = false;
     lanes.late.length = 0;

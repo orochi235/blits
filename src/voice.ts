@@ -12,6 +12,18 @@ import type { Fitting } from './spans.js';
 import { Store } from './store.js';
 import type { Anchor, Channel, FadeSpec, Handle, Patch, Setting, VoiceSpec } from './types.js';
 
+/**
+ * A subject's record as it left a voice, faded out of it or dropped: the mix time and frame it
+ * left at, and `sync` where the frame's sync made it, before the frame was read.
+ */
+export interface Left<I> {
+  subject: I;
+  at: number;
+  seq: number;
+  sync: boolean;
+  held: Subject<unknown>;
+}
+
 export const none: readonly string[] = Object.freeze([]);
 
 /** Everything one voice holds for one subject, chained through the next voice that reaches it. */
@@ -234,7 +246,7 @@ export class Voice<I, O> {
    * Under history, the records of subjects that left this voice, by the mix time and frame each
    * left at, while a seek or a read back may reach them; null while none have.
    */
-  left: { subject: I; at: number; seq: number; held: Subject<unknown> }[] | null = null;
+  left: Left<I>[] | null = null;
   readonly ease: Curve | undefined;
   /** How many passes its `loop` plays, worked out once. */
   readonly passes: number;

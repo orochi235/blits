@@ -1,12 +1,23 @@
+import { reading } from './reading.js';
 import type { Setting, Signal } from './types.js';
+
+/** Input signals whose every change bumps `reading.inputs`: `level`, and those built only on one. */
+const told = new WeakSet<object>();
+
+/** Whether a change to an input signal reaches `reading.inputs`, so a lane fill can see it. */
+export const heard = (signal: object): boolean => told.has(signal);
 
 const inputOf = (signals: readonly { readonly input?: boolean }[]): boolean =>
   signals.some((s) => s.input);
 
 const marked = <I, H>(
   read: (subject: I, setting: Setting<void, H>) => number,
-  input: boolean,
-): Signal<I, H> => (input ? Object.assign(read, { input: true }) : read) as Signal<I, H>;
+  of: readonly Signal<I, H>[],
+): Signal<I, H> => {
+  if (!inputOf(of)) return read as Signal<I, H>;
+  if (of.every((s) => !s.input || told.has(s))) told.add(read);
+  return Object.assign(read, { input: true }) as Signal<I, H>;
+};
 
 /**
  * The loudest of several signals.
@@ -21,22 +32,28 @@ export function peak<I, H = unknown>(...signals: readonly Signal<I, H>[]): Signa
       if (v > out) out = v;
     }
     return out;
-  }, inputOf(signals));
+  }, signals);
 }
 
 /**
- * A signal the host writes. klieg's `level`.
+ * A signal the host writes. klieg's `level`. A voice weighted by it, or by `peak`, `slew`, `lag` or
+ * `gate` over it, keeps its lane, since every `set` reaches the lanes; one weighted by an input
+ * signal of the host's own making never runs on a lane.
  *
  * @category signal
  */
 export function level<I, H = unknown>(initial = 0): Signal<I, H> & { set(v: number): void } {
   let value = initial;
-  return Object.assign(() => value, {
+  const signal = Object.assign(() => value, {
     input: true,
     set(v: number) {
+      if (Object.is(v, value)) return;
       value = v;
+      reading.inputs++;
     },
   }) as Signal<I, H> & { set(v: number): void };
+  told.add(signal);
+  return signal;
 }
 
 interface Slewed {
@@ -88,7 +105,7 @@ export function slew<I, H = unknown>(
     held.seen = setting.timestamp;
     return next;
   };
-  return marked(read, inputOf([of]));
+  return marked(read, [of]);
 }
 
 /**
@@ -127,7 +144,7 @@ export function lag<I, H = unknown>(
     held.seen = setting.timestamp;
     return next;
   };
-  return marked(read, inputOf([of]));
+  return marked(read, [of]);
 }
 
 interface Gated {
@@ -156,5 +173,5 @@ export function gate<I, H = unknown>(
     }
     return held.on ? 1 : 0;
   };
-  return marked(read, inputOf([of]));
+  return marked(read, [of]);
 }

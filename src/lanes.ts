@@ -171,8 +171,9 @@ export class Lanes<I, O> implements Watcher {
   keeps = false;
   now = Number.NaN;
   filledAt = Number.NaN;
-  /** `reading.moved` at the last fill, so a retarget or push between two probes refills. */
+  /** `reading.moved` and `reading.inputs` at the last fill: see `current`. */
   moved = 0;
+  inputs = 0;
   /** The `now` of the latest probe, and the probe count before its first, to tell a probe this frame. */
   frameAt = Number.NaN;
   frameProbes = 0;
@@ -310,13 +311,26 @@ export class Lanes<I, O> implements Watcher {
   /** Whether this frame's lanes are filled and nothing since asks `begin` to look again. */
   filled(now: number, version: number): boolean {
     return (
-      this.filledAt === now &&
       this.frameAt === now &&
-      this.filledVersion === version &&
       this.qualifiedVersion === version &&
-      this.moved === reading.moved &&
       this.touched.length === 0 &&
-      !this.filling
+      !this.filling &&
+      this.current(now, version)
+    );
+  }
+
+  /**
+   * Whether the last fill still stands: everything a fill reads that can change between two probes,
+   * each stamped by `fillAll`. The clock; the mix's version, which voices coming, going, starting
+   * and stopping move; a motion's retargets and pushes; and a `level` set. Whatever else can change
+   * between probes keeps its voice off lanes in `fits`.
+   */
+  current(now: number, version: number): boolean {
+    return (
+      this.filledAt === now &&
+      this.filledVersion === version &&
+      this.moved === reading.moved &&
+      this.inputs === reading.inputs
     );
   }
 
@@ -343,7 +357,7 @@ export class Lanes<I, O> implements Watcher {
       else requalify(this, version);
     } else if (this.touched.length > 0 && !retouch(this)) requalify(this, version);
     if (this.laned.length === 0) return Begin.GENERAL;
-    if (this.filledAt !== now || this.filledVersion !== version || this.moved !== reading.moved) {
+    if (!this.current(now, version)) {
       fillAll(this, now, version);
       // A patch call in that fill made kept state, which took its voice off its lane: fill without it.
       if (this.qualifiedVersion !== version) {

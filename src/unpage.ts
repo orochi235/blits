@@ -120,8 +120,9 @@ function unpageVoice(voice: Voice<unknown, unknown>, records: readonly Paged[], 
   const left = voice.left ?? [];
   for (const r of of('left')) {
     const subject = keys.subject(r.subject);
-    if (!left.some((e) => e.seq === r.seq && Object.is(e.subject, subject)))
-      left.push({ subject, at: r.at, seq: r.seq, held: unpackHeld(voice, r.data as PackedRecord) });
+    if (left.some((e) => e.seq === r.seq && Object.is(e.subject, subject))) continue;
+    const [p, sync] = r.data as [PackedRecord, boolean];
+    left.push({ subject, at: r.at, seq: r.seq, sync, held: unpackHeld(voice, p) });
   }
   left.sort((a, b) => a.seq - b.seq);
   voice.left = left.length === 0 ? null : left;

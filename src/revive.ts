@@ -41,7 +41,7 @@ interface PackedVoice {
   playedSeq: number;
   records: [Key, PackedRecord][];
   runs: [Key, Run][];
-  left: [Key, number, number, PackedRecord][];
+  left: [Key, number, number, PackedRecord, boolean][];
   parts: [Key, number, number, number][];
   parted: [Key, number, number][];
 }
@@ -156,6 +156,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
       e.at,
       e.seq,
       packHeld(voice, e.held),
+      e.sync,
     ]),
     parts: [...(voice.parts ?? [])].map(([s, r]) => [keys.key(s), r.at, r.over, r.seq]),
     parted: [...(voice.parted ?? [])].map(([s, p]) => [keys.key(s), p.at, p.seq]),
@@ -205,10 +206,11 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
   }
   for (const [key, run] of d.runs) voice.motion?.unpack(subjectOf(key), run);
   if (d.left.length > 0)
-    voice.left = d.left.map(([key, at, seq, p]) => ({
+    voice.left = d.left.map(([key, at, seq, p, sync]) => ({
       subject: subjectOf(key),
       at,
       seq,
+      sync,
       held: unpackHeld(voice, p),
     }));
   if (d.parts.length > 0)

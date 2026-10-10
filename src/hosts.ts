@@ -14,6 +14,7 @@ import { nextFrame } from './move.js';
 import { descendants, ownWeight, signalled } from './owner.js';
 import { localNow } from './place.js';
 import { reading } from './reading.js';
+import { heard } from './signals.js';
 import { record } from './tape.js';
 import type { Booker, BookOptions, Channel, Doubt, Handle } from './types.js';
 import { unreach } from './unreached.js';
@@ -109,9 +110,12 @@ export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   if (voice.state === 'pending' && voice.freezesBefore) return false;
   // A fill weighs a voice's owners once for every subject, which a signal on one would not be.
   if (voice.owner !== null && signalled(voice)) return false;
-  // A signal reading host input records it per probe under history, which a fill cannot.
-  if (typeof spec.weight === 'function' && spec.weight.input && mix.opts.history?.inputs)
-    return false;
+  // What can change between two probes without `Lanes.current` hearing of it keeps a voice off:
+  // an input signal that does not report its changes, one that history records per probe, and a
+  // host field.
+  const w = spec.weight;
+  if (typeof w === 'function' && w.input && (mix.opts.history?.inputs || !heard(w))) return false;
+  if (patch.reads !== undefined && patch.reads.length > 0) return false;
   // A locus on lanes gathers keys and fn members; a motion member keeps it on the general path.
   if (spec.locus !== undefined && voice.motion !== undefined) return false;
   if (spec.from === 'current') return false;
@@ -123,7 +127,6 @@ export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
     return false;
   if (voice.out?.rest) return false;
   if (patch.state !== undefined || patch.step !== undefined) return false;
-  if (mix.opts.history?.inputs && patch.reads !== undefined && patch.reads.length > 0) return false;
   const built = voice.built;
   return (
     built === null ||

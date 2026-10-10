@@ -362,9 +362,7 @@ export function scene(seed: number, options: SceneOptions = {}): Scene {
           part: r.i(parts),
           over: r.pick([0, 100, 250]),
         };
-        // Known divergence #6: lanes ignore a level set within a frame already synced.
-        const withinFrame = frames.at(-1)?.t === t;
-        if (!(what === 'level' && withinFrame)) ops.push(op);
+        ops.push(op);
       }
     }
     const probe = Array.from({ length: parts + (f > 3 ? r.i(3) : 0) }, (_, i) => i).filter(() =>
@@ -385,12 +383,6 @@ interface Env {
   levels: ReturnType<typeof level<Part>>[];
   owners: Handle<Part>[];
   errs: string[];
-  /** `voice:part` for every subject faded out of a voice. */
-  fadedOut: Set<string>;
-  /** Parts a retarget met again after a voice faded them out: known divergence #15 in `project`. */
-  remet: Set<number>;
-  /** Whether a motion voice sat at weight 0 at the last frame: known divergence #16 in `inert`. */
-  wasZero: boolean;
 }
 const partOf = (e: Env, i: number): Part => {
   let p = e.parts[i];
@@ -467,14 +459,12 @@ function act(e: Env, d: Do): void {
         break;
       case 'fadeSub':
         h.fade({ subject: part, over });
-        e.fadedOut.add(`${d.voice}:${d.part}`);
         break;
       case 'level':
         e.levels[Math.floor(x * e.levels.length)]?.set(Math.round(x * 4) / 4);
         break;
       case 'retarget':
         e.retargets[d.voice]?.(part, x * 3);
-        if (e.fadedOut.has(`${d.voice}:${d.part}`)) e.remet.add(d.part);
         break;
       case 'owner': {
         const o = e.owners[Math.floor(x * e.owners.length)];
@@ -507,11 +497,6 @@ function snap(p: Pose): string {
   return JSON.stringify(o);
 }
 
-// Known divergence #16: lanes and the general path disagree on `inert` while a motion voice
-// (one with a retarget) sits at weight 0, and for the first frame after it leaves 0.
-const motionAtZero = (e: Env): boolean =>
-  e.handles.some((h, v) => h && e.retargets[v] && h.state !== 'done' && h.weight === 0);
-
 /** Item keys the shrinker drops: `f.j` for op j of frame f, `fpi` for the probe of part i in frame f. */
 type Dropped = ReadonlySet<string>;
 
@@ -529,9 +514,6 @@ export function play(s: Scene, lanes: boolean, drop: Dropped = new Set()): strin
     levels: [],
     owners: [],
     errs: [],
-    fadedOut: new Set(),
-    remet: new Set(),
-    wasZero: false,
   };
   const out: string[] = [];
   const reuse = {} as Pose;
@@ -566,7 +548,7 @@ export function play(s: Scene, lanes: boolean, drop: Dropped = new Set()): strin
         const a = snap(e.m.probe(part));
         const b = snap(e.m.probe(part, reuse));
         if (o.history) {
-          const past = e.remet.has(i) ? '(#15)' : snap(e.m.project(fr.t - 150).probe(part));
+          const past = snap(e.m.project(fr.t - 150).probe(part));
           out.push(`t=${fr.t} p${i} proj ${past}`);
         }
         out.push(`t=${fr.t} p${i} ${a}`);
@@ -576,10 +558,7 @@ export function play(s: Scene, lanes: boolean, drop: Dropped = new Set()): strin
       const w = e.handles.map((h) =>
         h ? probe.map((i) => h.weightOf(partOf(e, i))).join(',') : '-',
       );
-      const zero = motionAtZero(e);
-      const known = zero || e.wasZero;
-      e.wasZero = zero;
-      const inert = !o.inert ? '' : known ? ' inert (#16)' : ` inert ${e.m.inert}`;
+      const inert = o.inert ? ` inert ${e.m.inert}` : '';
       out.push(`t=${fr.t} w ${w.join('|')}${inert}`);
     });
   } catch (err) {

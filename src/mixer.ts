@@ -5,7 +5,7 @@ import { type LerpInto, lerpInto } from './channels.js';
 import { cue } from './cue.js';
 import { DepartedIndex } from './departed.js';
 import type { Due } from './due.js';
-import { beginFade, parting } from './fade.js';
+import { beginFade, leftWith, parting } from './fade.js';
 import {
   apply,
   baseFor,
@@ -551,7 +551,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     // of a voice that does not name it is in `parters`, and a patch's own state in `motions`.
     const kept = releasing(this);
     const forget = (voice: Voice<I, O>) => {
-      leave(this, voice, subject, voice.subjects.get(subject));
+      leave(this, voice, subject, leftWith(this, voice, subject));
       voice.subjects.delete(subject);
       voice.motion?.release(subject, ...kept);
       voice.parts?.delete(subject);

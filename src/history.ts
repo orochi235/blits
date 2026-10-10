@@ -6,7 +6,7 @@ import { packHeld } from './pack.js';
 import { pageOut } from './paging.js';
 import { scoreTouched } from './scored.js';
 import { type Cut, within } from './transport.js';
-import { type Controls, none, type Subject, type Voice } from './voice.js';
+import { type Controls, type Left, none, type Subject, type Voice } from './voice.js';
 
 /**
  * The last entry taken before `t`, or at it where `inclusive` says so, as it does for a change made
@@ -221,7 +221,7 @@ export function leave<I, O>(
   const history = mix.opts.history;
   if (history === undefined || held === undefined) return;
   const reach = mix.now - history.ms;
-  const left: { subject: I; at: number; seq: number; held: Subject<unknown> }[] = [];
+  const left: Left<I>[] = [];
   for (const e of voice.left ?? [])
     if (e.at >= reach) left.push(e);
     else if (mix.keys !== null)
@@ -231,13 +231,14 @@ export function leave<I, O>(
         voice.id,
         mix.keys.key(e.subject),
         [e],
-        (x) => packHeld(voice, x.held),
+        (x) => [packHeld(voice, x.held), x.sync],
         reach,
       );
   left.push({
     subject,
     at: Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now,
     seq: mix.transport.seq,
+    sync: mix.syncing,
     held,
   });
   voice.left = left;
@@ -245,12 +246,12 @@ export function leave<I, O>(
 
 /** The record a subject had at `cut` and left a voice with after it, if it left after `cut`. */
 export function leftAt<I>(
-  left: readonly { subject: I; seq: number; held: Subject<unknown> }[] | null,
+  left: readonly Left<I>[] | null,
   subject: I,
   cut: Cut,
 ): Subject<unknown> | undefined {
   for (const e of left ?? [])
-    if (!within(cut, e.seq) && Object.is(e.subject, subject)) return e.held;
+    if (!within(cut, e.seq, e.sync) && Object.is(e.subject, subject)) return e.held;
   return undefined;
 }
 

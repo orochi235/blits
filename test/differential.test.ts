@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { kit, max, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { spring, tween } from '../src/motion.js';
-import { keys } from '../src/patch.js';
+import { keys, patch } from '../src/patch.js';
 import { level } from '../src/signals.js';
 import { diverge, type SceneOptions, scene } from './fuzz/scene.js';
 
@@ -13,9 +13,6 @@ interface Sweep {
   /** Seeds left out, each with why. */
   skip?: Record<number, string>;
 }
-// A subject faded out of a voice, then dropped: `project` to a time it was faded reads the voice's
-// value on lanes and nothing off them. Not one of #6, #15, #16; left out until it is filed.
-const dropAfterFade = 'project after a subject is faded out of a voice and then dropped';
 const SWEEPS: Sweep[] = [
   { name: 'default', options: {}, seeds: 2000 },
   { name: 'many subjects', options: { many: true }, seeds: 1000 },
@@ -25,7 +22,6 @@ const SWEEPS: Sweep[] = [
     name: 'history',
     options: { history: true },
     seeds: 1000,
-    skip: { 191: dropAfterFade, 248: dropAfterFade, 498: dropAfterFade, 770: dropAfterFade },
   },
 ];
 
@@ -51,8 +47,13 @@ interface Part {
   id: number;
 }
 
-describe('known divergences', () => {
-  it.fails('#6: a level set between two probes in one frame reaches the second probe', () => {
+const ramp = [
+  { at: 0, delta: { x: 1 } },
+  { at: 1, delta: { x: 2 } },
+];
+
+describe('divergences found in review, each a missed input or a side effect out of order', () => {
+  it('#6: a level set between two probes in one frame reaches the second probe', () => {
     const read = (lanes: boolean) => {
       const m = mix<Part, { x: number }>(kit({ x: sum() }), { lanes });
       const a = { id: 0 };
@@ -76,7 +77,7 @@ describe('known divergences', () => {
     expect(read(true)).toEqual(read(false));
   });
 
-  it.fails('#15: project reads a subject faded out of a motion voice as gone, after a retarget meets it again', () => {
+  it('#15: project reads a subject faded out of a motion voice as gone, after a retarget meets it again', () => {
     const read = (lanes: boolean) => {
       const m = mix<Part, { gain: number }>(kit({ gain: mul() }), {
         lanes,
@@ -103,7 +104,7 @@ describe('known divergences', () => {
     expect(read(true)).toBe(read(false));
   });
 
-  it.fails('#16: inert agrees for a motion voice at weight 0', () => {
+  it('#16: inert agrees for a motion voice at weight 0', () => {
     const read = (lanes: boolean) => {
       const m = mix<Part, { dark: number }>(kit({ dark: max() }), { lanes });
       m.cue({ patch: spring<Part, { dark: number }>('dark', { from: 0, to: 1 }), weight: 0 });
@@ -115,5 +116,57 @@ describe('known divergences', () => {
       });
     };
     expect(read(true)).toEqual(read(false));
+  });
+  it('an input signal blits cannot hear from, set between probes, reaches the next probe', () => {
+    const read = (lanes: boolean) => {
+      let v = 1;
+      const m = mix<Part, { x: number }>(kit({ x: sum() }), { lanes });
+      const [a, b] = [{ id: 0 }, { id: 1 }];
+      m.cue({ patch: keys(400, ramp), weight: Object.assign(() => v, { input: true }) });
+      return [82, 83, 84].flatMap((t) => {
+        m.sync(t);
+        const first = m.probe(a).x;
+        v = v === 1 ? 0.5 : 1;
+        return [first, m.probe(b).x, m.probe(a).x];
+      });
+    };
+    expect(read(true)).toEqual(read(false));
+  });
+
+  it('a host field changed between probes reaches the next probe', () => {
+    const read = (lanes: boolean) => {
+      const host = { k: 1 };
+      const m = mix<Part, { x: number }, typeof host>(kit({ x: sum() }), { lanes, host });
+      const [a, b] = [{ id: 0 }, { id: 1 }];
+      m.cue({
+        patch: patch(1000, (_p, _s, st) => ({ x: st.host.k }), { writes: ['x'], reads: ['k'] }),
+      });
+      return [82, 83, 84].flatMap((t) => {
+        m.sync(t);
+        const first = m.probe(a).x;
+        host.k++;
+        return [first, m.probe(b).x, m.probe(a).x];
+      });
+    };
+    expect(read(true)).toEqual(read(false));
+  });
+
+  it('project reads a subject faded out of a voice, then dropped, as out of it', () => {
+    const read = (lanes: boolean) => {
+      const m = mix<Part, { x: number }>(kit({ x: sum() }), { lanes, history: { ms: 3000 } });
+      const a = { id: 0 };
+      const h = m.cue({ patch: keys(1000, ramp) });
+      m.sync(0);
+      m.probe(a);
+      h.fade({ subject: a, over: 100 });
+      m.sync(300);
+      m.probe(a);
+      m.sync(400);
+      m.drop(a);
+      m.sync(500);
+      return [m.project(300).probe(a).x, m.probe(a).x];
+    };
+    expect(read(true)).toEqual([0, 1.5]);
+    expect(read(false)).toEqual([0, 1.5]);
   });
 });
