@@ -32,7 +32,13 @@ const config = f.schema({
   wave: f.number(1).range(0, 1).step(0.05).label('Weight of wave'),
   pulse: f.number(1).range(0, 1).step(0.05).label('Weight of pulse'),
   swell: f.number(0.7).range(0, 1).step(0.05).label('Weight of swell'),
-  muteAt: f.number(5000).range(0, DURATION).step(100).suffix('ms').label('Mute at'),
+  muteAt: f
+    .number(5000)
+    .range(0, DURATION)
+    .step(100)
+    .suffix('ms')
+    .endless('never')
+    .label('Mute at'),
 });
 type Config = ReturnType<typeof config.defaults>;
 

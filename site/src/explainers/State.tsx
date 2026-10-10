@@ -50,7 +50,13 @@ const spring = patch<Subject, Pose, Spring>(0, (_phase, _s, setting) => ({ x: se
 
 const config = f.schema({
   away: f.number(1200).range(100, MOST).step(100).suffix('ms').label('Left unprobed for'),
-  cap: f.number(MOST).range(16, MOST).step(8).suffix('ms').label('Cap each step at'),
+  cap: f
+    .number(Number.POSITIVE_INFINITY)
+    .range(16, MOST)
+    .step(8)
+    .suffix('ms')
+    .endless('uncapped')
+    .label('Cap each step at'),
 });
 type Config = ReturnType<typeof config.defaults>;
 

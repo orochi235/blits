@@ -26,7 +26,13 @@ const ORB_START = 300;
 const config = f.schema({
   flight: f.number(900).range(300, 1600).step(50).label('Orb flight, ms'),
   hold: f.number(600).range(0, 1500).step(50).label('Tint hold, ms'),
-  cut: f.number(DURATION).range(0, DURATION).step(50).suffix('ms').label('Cut the orb at'),
+  cut: f
+    .number(Number.POSITIVE_INFINITY)
+    .range(0, DURATION)
+    .step(50)
+    .suffix('ms')
+    .endless('never')
+    .label('Cut the orb at'),
 });
 type Config = ReturnType<typeof config.defaults>;
 

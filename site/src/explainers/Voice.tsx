@@ -34,7 +34,13 @@ const config = f.schema({
   stagger: f.number(150).range(0, 500).step(10).suffix('ms').label('Stagger per dot'),
   fadeIn: f.number(600).range(0, 2000).step(50).suffix('ms').label('Fade in'),
   fadeOut: f.number(800).range(0, 2000).step(50).suffix('ms').label('Fade out'),
-  fadeAt: f.number(4500).range(0, DURATION).step(100).suffix('ms').label('Fade out at'),
+  fadeAt: f
+    .number(4500)
+    .range(0, DURATION)
+    .step(100)
+    .suffix('ms')
+    .endless('never')
+    .label('Fade out at'),
 });
 type Config = ReturnType<typeof config.defaults>;
 
