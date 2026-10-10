@@ -566,10 +566,30 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     It would also need mix time converted to the outside clock when `mix.rate` is not 1, and
     scrubbing waits on the read-ahead item in `NOTES-ON-SCRUBBING.md`.
 
-12. **A full docs and comments audit, once the fixes from the 2026-10-09 code review land.**
-    Every doc comment in `src/` (the site's API reference is generated from them),
-    `docs/schema.html`, the README, and the playground README are checked against the code as it
-    then stands. Stale claims are corrected, and comments that fail the comment bar are cut.
+12. **The docs and comments audit is done (2026-10-10), and what it left is below.** Every
+    comment in `src/`, `docs/schema.html`, the README, and the playground README were read against
+    the code and corrected where a claim was false; few comments failed the comment bar, and two
+    were cut. Left, each needing more than a correction:
+    - **The schema page's interface listings are abridged, and nothing says whether they should
+      track the types.** `Handle` lacks `rise`, `to`, `push`, and `read`; `Mix` lacks `span` and
+      `touch`; `Channel` lacks `fold` and `copy`; `Patch` lacks `ease`, `easeBy`, `delayBy`,
+      `lerpBy`, `wave`, `pack`, and `unpack`; `MixOptions` lacks `transport` and `name`.
+    - **Nowhere in the schema page or the README**: `fold(kit, deltas, weights?)`, `Vec<N>`,
+      `mix.touch`, `Channel.copy`, `npm run test:general`, and that a probe into `out` reuses the
+      arrays it holds (the page says only "written in place").
+    - **The lanes table does not say** that a `color(last())` channel leaves its lane for motion,
+      locus, and single-subject voices (`fits` in `hosts.ts`).
+    - **Not checked**: the page's timings and its table of consumers' kits, which are other
+      repos' facts, and the playground README's gestures against the widget code.
+    Two things the reading turned up in the code, neither run:
+    - **The tape is pruned by mix time and stamped by host time.** `tapeOf` in `tape.ts` stamps a
+      call with `transport.u`, and `syncAt` in `transport.ts` prunes it to `keepsFrom()`, which
+      is `now - history.ms` in mix time. They agree until a mix's rate is set. Above rate 1 mix
+      time runs ahead, so the tape would let go of calls a seek back inside `history.ms` still
+      has to play again; below 1 it keeps more than it needs. A test at rate 2 would settle it.
+    - **`HistoryStore.cut` is called only when the seek took records from the store** (`cut` in
+      `unpage.ts`), where its doc says a seek back to a frame calls it. A seek back within memory
+      never tells the store. It may be meant, since nothing newer is usually paged.
 
 13. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). Built
     2026-10-09: `wave`; every ease (`keys` `ease`, `easeBy`, `delayBy`, `fade.ease`, a tween's bezier
@@ -600,8 +620,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     keep adding to the changelog's Unreleased section as steps land, and don't ask to publish per
     step; it ships as one release when Mike says. Until things settle, a consumer that needs
     unreleased blits links the local checkout, and versions are reconciled at that release. Steps 8
-    and 9 are on `main` but for step 9's names, which are Mike's (see "Step 9, the names").
-    **Next: item 12's audit.** Each
+    and 9 are on `main` but for step 9's names, which are Mike's (see "Step 9, the names"), and
+    item 12's audit is done. **Nothing in the plan is left to build until he answers.** Each
     step goes in a worktree off `main`, since another session
     works on the playground and item 13 in a worktree of its own; ask it before editing this file,
     and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. Step
