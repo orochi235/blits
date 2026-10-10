@@ -632,6 +632,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       what `host.signal` returns. The rest of the `fn` rows' allocation is the bench's own patch
       returning an object a call (about 72 B). Under `from: 'current'`, `keep` still copies a pose
       a probe into `out`.
+    - **The `out` change reverses a guarantee a test held, and Mike has not seen it.**
+      `test/solo.test.ts` said a reused `out` "never has an array the host kept from it written
+      into"; the review's plan asked for the reuse and for the contract to say so, so the test now
+      says the array is the same one, and that a probe with no `out` is never written into. To
+      undo it, drop the two reuse branches (`foldWith` in `fold.ts`, `copy` in `copyout.ts`): the
+      `tween` row then allocates about 0.7 MB a frame again.
     - **The `out` change has not been checked against consumers.** klieg
       (`motion/compositor.ts`), weasel (`scene/poseOverrides.ts`) and astv (six sites under
       `packages/engine`) probe into `out`; whether any keeps an array across two probes has to be

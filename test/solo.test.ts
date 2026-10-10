@@ -75,7 +75,8 @@ function agrees(cue: (m: Mix<Part, Pose>) => (t: number) => void, times: number[
       run.at(t);
       run.m.sync(t);
       run.fresh.push(run.m.probe(part));
-      run.reused.push({ ...run.m.probe(part, run.out) });
+      // Copied through: the next probe writes into the arrays `out` holds.
+      run.reused.push(structuredClone(run.m.probe(part, run.out)));
     }
   const [alone, crowded] = runs as [(typeof runs)[0], (typeof runs)[0]];
   times.forEach((_, i) => {
@@ -169,21 +170,21 @@ describe('a reused out object', () => {
     m.sync(16);
     m.probe({ id: 'a' }, out);
     expect(out.color).toBeUndefined();
-    expect(out.position).not.toBe(was);
-    expect(was).toEqual([0, 0, 2]);
+    // A stock array channel's value goes into the array `out` already holds.
+    expect(out.position).toBe(was);
   });
 
-  it('never has an array the host kept from it written into', () => {
+  it('never writes into an array a probe with no out handed back', () => {
     const m = mix<Part, Pose>(PART);
     m.cue({ patch: all });
     const out = {} as Pose;
     m.sync(0);
-    m.probe({ id: 'a' }, out);
-    const kept = out.position;
+    const kept = m.probe({ id: 'a' }).position;
     const copy = [...kept];
     for (let t = 16; t < 200; t += 16) {
       m.sync(t);
       m.probe({ id: 'a' }, out);
+      m.probe({ id: 'a' });
     }
     expect(kept).toEqual(copy);
   });
