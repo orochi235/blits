@@ -2,6 +2,7 @@ import { foldNumber } from './channels.js';
 import { clampWeight, frozenTime, phaseAt, same, weighed } from './clock.js';
 import { Arg, type Lane, type Laned, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
+import { shortWay } from './turns.js';
 
 /**
  * A keys voice's fill outside a locus, its weight a number: what `one` does for each subject, in
@@ -88,7 +89,7 @@ export function runKeys<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
   }
 }
 
-/** How a keys read's value for a channel folds: not at all, as numbers, or through the band. */
+/** How a keys read's value for a channel folds: not at all, as numbers, or through `foldInto`. */
 // biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package
 const enum Kind {
   ABSENT = 0,
@@ -111,7 +112,7 @@ function flatten(
     const ch = chans[i] as Laned;
     const value = read[i];
     if (value === undefined) kinds[i] = Kind.ABSENT;
-    else if (ch.op === 'last') kinds[i] = Kind.GATED;
+    else if (!ch.plain) kinds[i] = unplain(ch, value, nums, k);
     else {
       kinds[i] = Kind.NUMBERS;
       if (ch.scalar) nums[k] = value as number;
@@ -124,4 +125,14 @@ function flatten(
     }
     k += ch.axes;
   }
+}
+
+/**
+ * `flatten` for a channel that is not plain. An angle's number is taken the short way round here,
+ * and then folds as the sum it is; a rest-less channel and a quat fold through `foldInto`.
+ */
+function unplain(ch: Laned, value: unknown, nums: Float64Array, k: number): Kind {
+  if (!(ch.turn > 0)) return Kind.GATED;
+  nums[k] = shortWay(value as number, ch.turn);
+  return Kind.NUMBERS;
 }

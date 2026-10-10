@@ -54,7 +54,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     run.watchId = voice.id;
   }
   const own = ease !== undefined && !signal && run.watcher === lanes && run.watchId === voice.id;
-  const folds = n === ch.axes;
+  const folds = n === ch.axes && ch.plain;
   for (let p = 0; p < list.length; p++) {
     // Its signal just made kept state: no further call this fill, the general path makes them.
     if (signal && voice.keeping) return;

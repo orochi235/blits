@@ -205,7 +205,11 @@ export function color(
   const opts = of === undefined ? (ofOrOpts as ColorOptions | undefined) : maybe;
   const round = opts?.lerp === 'oklch';
   const space = round ? ', oklch' : '';
-  if (of === undefined || (numericOf(of)?.op === 'sum' && of.bounds === undefined)) {
+  const stock = of === undefined ? undefined : numericOf(of);
+  if (
+    of === undefined ||
+    (stock?.op === 'sum' && stock.turn === undefined && of.bounds === undefined)
+  ) {
     const channel = vec(4, sum());
     channel.kind = `color(sum${space})`;
     // A lane interpolates a stock channel straight across, so a lerp of its own takes it off them.

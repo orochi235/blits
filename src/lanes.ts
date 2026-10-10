@@ -14,7 +14,7 @@ import {
   signalled,
   subjectAt,
 } from './fill.js';
-import { fold, foldDelta, foldInto, foldRun, gate, gather } from './gather.js';
+import { fold, foldDelta, foldInto, foldRun, gate, gather, unplain } from './gather.js';
 import { Arg, Begin, type Lane, type Laned, type Locus, Per, Row } from './lane.js';
 import { meet, reach } from './meet.js';
 import type { Watcher } from './motions.js';
@@ -554,6 +554,7 @@ const methods = {
   foldRun,
   foldInto,
   gate,
+  unplain,
 };
 type Methods = typeof methods;
 // biome-ignore lint/correctness/noUnusedVariables: merging needs the class's type parameters

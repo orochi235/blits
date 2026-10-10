@@ -164,6 +164,9 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     const ch: Laned = {
       name: host.names[slot] as string,
       op: n.op,
+      plain: n.op !== 'last' && n.op !== 'own' && n.turn === undefined,
+      turn: n.turn ?? 0,
+      channel,
       scalar,
       rest: typeof rest === 'number' ? rest : (rest[0] as number),
       axes: n.axes,

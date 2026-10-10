@@ -47,9 +47,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 - `angle({ turn })`, a channel for a rotation about one axis: it adds as `sum` does, and `lerp` and
   a weight below 1 go the short way round, so 350 to 10 passes 0. `turn` is one full turn in the
-  channel's unit, default 360.
+  channel's unit, default 360. It runs on lanes.
 - `quat()`, a channel for a rotation in space as a unit quaternion `[x, y, z, w]`: contributions
-  compose in cue order, and `lerp` and a weight take the short arc.
+  compose in cue order, and `lerp` and a weight take the short arc. It runs on lanes, through its
+  own `fold`.
 - `Vec<N>`, the tuple of `N` numbers a `vec` channel holds.
 - `fold(kit, deltas, weights?)` folds deltas into one pose by a kit's arithmetic with no mix and no
   clock: what a mix gives for voices contributing those deltas at those weights, every weight 1

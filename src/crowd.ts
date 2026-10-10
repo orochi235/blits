@@ -460,7 +460,7 @@ function copyStretch<I, O>(c: Crowd<I, O>, p: number, ms: number): number {
   const ch = c.chans[0] as Laned;
   if (run.n === c.axes && run.stretchInto(ms, c.hot, h + Hot.AT)) {
     f |= Flag.BARE;
-    if (run.scalar(ms) === ch.scalar) f |= Flag.FOLDS;
+    if (run.scalar(ms) === ch.scalar && ch.plain) f |= Flag.FOLDS;
   }
   c.hot[h + Hot.FLAGS] = f;
   return f;

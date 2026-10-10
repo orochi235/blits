@@ -4,6 +4,7 @@ import { frozenTime } from './clock.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
 import type { Scratch } from './patch.js';
+import type { Channel } from './types.js';
 import type { Subject, Voice } from './voice.js';
 
 /** One laned channel: its arithmetic, and every numbered subject's folded value, `axes` per subject. */
@@ -12,6 +13,12 @@ export interface Laned {
   /** Its value is a number, its rest a number; otherwise an array, which `vec(1)` is too. */
   scalar: boolean;
   op: Numeric['op'];
+  /** Its values fold as its `op` alone: not through a band as `'last'` does, and not a rotation. */
+  plain: boolean;
+  /** An angle's full turn, and 0 for any other channel. */
+  turn: number;
+  /** The channel, whose own `fold` and `lerp` an `'own'` lane calls. */
+  channel: Channel<unknown>;
   rest: number;
   axes: number;
   values: Float64Array;

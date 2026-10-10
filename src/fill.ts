@@ -12,6 +12,7 @@ import { absent } from './numbers.js';
 import { AT, NOTHING, readKeys, type Scratch, seg, segment, shifted, type Track } from './patch.js';
 import { reading } from './reading.js';
 import { move, runMotion } from './sample.js';
+import { rested } from './turns.js';
 import type { Subject, Voice } from './voice.js';
 
 // V8 reads a local const as a constant, where it reads an import from its module on every call.
@@ -75,7 +76,7 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
       if (!c.idle && c.size > 0) busy = true;
     }
     if (busy) {
-      for (const ch of lanes.laned) ch.values.fill(ch.rest, 0, size * ch.axes);
+      for (const ch of lanes.laned) rested(ch, size);
       for (const g of lanes.loci) gatherLocus(lanes, g);
       for (const lane of lanes.lanes) {
         if (lane.idle) continue;
@@ -381,7 +382,7 @@ export function foldKeys<I, O>(
     const a = seg.a;
     const b = seg.b;
     const u = seg.eased;
-    if (ch.scalar) {
+    if (ch.scalar || !ch.plain) {
       this.foldInto(
         ch,
         slot,
@@ -424,8 +425,8 @@ export function readKeyed<I, O>(
 
 /**
  * Calls a stateless fn voice's patch for a subject its general path has met, and folds the delta,
- * at the voice time, phase, pass, delay and weight in `Arg`; false for a subject the host has let
- * go of. As arguments those cost nothing where V8 inlines the call and 31 bytes a call where it
+ * at the voice time, phase, pass, delay and weight in `Arg`; false where it gave no delta, for a
+ * subject the host has let go of or a weight the voice is silent at. As arguments those cost nothing where V8 inlines the call and 31 bytes a call where it
  * does not, which differs by V8 version: Node 26.1 does not (2026-10-09).
  */
 export function call<I, O>(
@@ -449,7 +450,7 @@ export function call<I, O>(
     if (w > 0) this.foldDelta(chans, slot, rec.delta);
     return true;
   }
-  if (silent(voice, w)) return true;
+  if (silent(voice, w)) return false;
   const kept = reading.kept;
   host.ready(voice, subject, rec, elapsed, pass, w);
   if (this.keeps) host.horizon(voice, delay);

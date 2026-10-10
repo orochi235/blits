@@ -1,6 +1,7 @@
 import { foldNumber, lerpNumber } from './channels.js';
 import { Arg, type Lane, type Laned, type Locus, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
+import { shortWay, turnFrom, turnInto, turnToward } from './turns.js';
 import type { Subject } from './voice.js';
 
 /** `xs`, or a copy at least `n` long where it is shorter. */
@@ -86,7 +87,8 @@ function gatherInto<I, O>(
   const taken = takenAt[slot] as number;
   const total = taken + w;
   const u = w / total;
-  if (ch.scalar) {
+  if (!ch.plain) turnToward(ch, values, slot * ch.axes, value, taken, u);
+  else if (ch.scalar) {
     values[slot] =
       taken === 0 ? (value as number) : lerpNumber(values[slot] as number, value as number, u);
   } else {
@@ -122,6 +124,10 @@ export function foldLocus<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, g: Locus<I
       const values = g.values[k] as Float64Array;
       const into = ch.values;
       const base = slot * ch.axes;
+      if (!ch.plain) {
+        turnFrom(ch, into, base, values, base, w);
+        continue;
+      }
       for (let a = 0; a < ch.axes; a++)
         into[base + a] = foldNumber(ch.op, into[base + a] as number, values[base + a] as number, w);
     }
@@ -170,6 +176,10 @@ export function foldDelta<I, O>(
 
 /** Folds a motion sample's axes, kept apart from `foldInto` so neither reads two array kinds. */
 export function foldRun<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, xs: Float64Array): void {
+  if (!ch.plain) {
+    this.unplain(ch, slot, ch.scalar ? xs[0] : xs);
+    return;
+  }
   const w = this.arg[Arg.WEIGHT] as number;
   const values = ch.values;
   const base = slot * ch.axes;
@@ -184,7 +194,7 @@ export function foldInto<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, value
     gatherInto(this, this.into, ch, slot, value);
     return;
   }
-  if (ch.op === 'last' && !this.gate(ch)) return;
+  if (!ch.plain && !this.unplain(ch, slot, value)) return;
   const w = this.arg[Arg.WEIGHT] as number;
   const values = ch.values;
   if (ch.scalar) {
@@ -217,4 +227,18 @@ export function gate<I, O>(this: Lanes<I, O>, ch: Laned): boolean {
   const on = this.host.passes(band === 0 ? undefined : band === 1, w);
   bands[i] = on ? 1 : 2;
   return on;
+}
+
+/**
+ * `foldInto` for a channel that is not plain, at `Arg.WEIGHT`. A rest-less one asks its band, and
+ * true is a pass, which `foldInto` then folds; a rotation is folded here, so false.
+ */
+export function unplain<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, value: unknown): boolean {
+  if (ch.op === 'last') return this.gate(ch);
+  const w = this.arg[Arg.WEIGHT] as number;
+  const values = ch.values;
+  // An angle here and not through `turnInto`, where its weight would cross a call as a boxed double.
+  if (ch.turn > 0) values[slot] = (values[slot] as number) + shortWay(value as number, ch.turn) * w;
+  else turnInto(ch, values, slot * ch.axes, value, w);
+  return false;
 }

@@ -24,10 +24,13 @@ export function lerpInto(channel: Channel<unknown>): LerpInto | undefined {
 /**
  * What a lane needs of a stock numeric channel beyond the channel: its arithmetic by name, its axes.
  * `'last'` has no rest: the last contribution to pass the band replaces, and a weight only gates it.
+ * `'own'` folds its axes as one value, through the channel's own `fold`.
  */
 export interface Numeric {
-  op: 'sum' | 'mul' | 'max' | 'last';
+  op: 'sum' | 'mul' | 'max' | 'last' | 'own';
   axes: number;
+  /** An angle's full turn: each value is taken the short way round before it folds. */
+  turn?: number;
 }
 
 /** The stock channels' arithmetic, once: their `merge` and `scale` are these, and so is `foldNumber`. */
@@ -224,7 +227,8 @@ export function vec<N extends number>(n: N, of: Channel<number>): Channel<Vec<N>
   };
   inPlace.set(channel, lerpTo as LerpInto);
   const inner = numerics.get(of);
-  if (inner !== undefined && inner.axes === 1) numerics.set(channel, { ...inner, axes: n });
+  if (inner !== undefined && inner.axes === 1 && inner.turn === undefined)
+    numerics.set(channel, { ...inner, axes: n });
   return channel as Channel<unknown> as Channel<Vec<N>>;
 }
 
