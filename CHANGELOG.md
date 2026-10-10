@@ -44,6 +44,9 @@ version and everything else the patch. Each release lists its changes as **Break
 - `quat()`, a channel for a rotation in space as a unit quaternion `[x, y, z, w]`: contributions
   compose in cue order, and `lerp` and a weight take the short arc.
 - `Vec<N>`, the tuple of `N` numbers a `vec` channel holds.
+- `fold(kit, deltas, weights?)` folds deltas into one pose by a kit's arithmetic with no mix and no
+  clock: what a mix gives for voices contributing those deltas at those weights, every weight 1
+  where none is given.
 
 - `@msb235/blits/testing`, for a library writing patches: `setting()` makes a `Setting` to call a
   patch outside a mix, and `checkPatch(patch, { subject, kit })` lists what a mix cannot rely on.

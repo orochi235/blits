@@ -22,6 +22,7 @@ export { keys, patch } from './patch.js';
 export type { AngleOptions } from './rotation.js';
 export { angle, quat } from './rotation.js';
 export { gate, lag, level, peak, slew } from './signals.js';
+export { fold } from './stack.js';
 export type { Ticked, Ticker, TickerOptions } from './ticker.js';
 export { ticker } from './ticker.js';
 export { transport } from './transport.js';

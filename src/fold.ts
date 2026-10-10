@@ -34,7 +34,7 @@ export function near(a: unknown, b: unknown): boolean {
  * new array: `b` belongs to a patch or the mix's scratch, and a host may edit the pose. `acc` is a
  * value this fold made.
  */
-function merged(channel: Channel<unknown>, acc: unknown, b: unknown): unknown {
+export function merged(channel: Channel<unknown>, acc: unknown, b: unknown): unknown {
   const r = channel.merge(acc, b);
   if (r !== b || !Array.isArray(r)) return r;
   if (!Array.isArray(acc) || acc.length !== r.length) return [...r];
@@ -347,17 +347,22 @@ export function clamp<I, O>(
   pose: Record<string, unknown>,
 ): Record<string, unknown> {
   for (const slot of this.bounded) {
-    const [lo, hi] = (this.channels[slot] as Channel<unknown>).bounds as readonly [number, number];
     const key = this.names[slot] as string;
-    const v = pose[key];
-    if (typeof v === 'number') pose[key] = v < lo ? lo : v > hi ? hi : v;
-    else if (Array.isArray(v))
-      for (let i = 0; i < v.length; i++) {
-        const x = v[i] as number;
-        v[i] = x < lo ? lo : x > hi ? hi : x;
-      }
+    pose[key] = bound(this.channels[slot] as Channel<unknown>, pose[key]);
   }
   return pose;
+}
+
+/** A folded value held to its channel's bounds: a number clamped, an array clamped in place. */
+export function bound(channel: Channel<unknown>, v: unknown): unknown {
+  const [lo, hi] = channel.bounds as readonly [number, number];
+  if (typeof v === 'number') return v < lo ? lo : v > hi ? hi : v;
+  if (Array.isArray(v))
+    for (let i = 0; i < v.length; i++) {
+      const x = v[i] as number;
+      v[i] = x < lo ? lo : x > hi ? hi : x;
+    }
+  return v;
 }
 
 export function fold<I, O>(
