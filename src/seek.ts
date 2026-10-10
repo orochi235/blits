@@ -10,6 +10,7 @@ import type { Motions } from './motions.js';
 import { move, nextFrame } from './move.js';
 import { ownerReading } from './owner.js';
 import { place } from './place.js';
+import { Restored } from './restored.js';
 import { refitAll } from './spans.js';
 import { Store } from './store.js';
 import { hostAt, replay } from './tape.js';
@@ -44,43 +45,6 @@ function restore<I, O>(
   h.snaps = snaps.slice(0, snaps.indexOf(snap) + 1);
   h.inputs = inputs;
   return h;
-}
-
-/**
- * A voice's records after a seek back: each subject's is put back from the records it had, the first
- * time it is asked for, since the subjects a store holds cannot be listed.
- */
-class Restored<I> extends Store<I, Subject<unknown>> {
-  constructor(
-    private readonly was: Store<I, Subject<unknown>>,
-    private readonly make: (live: Subject<unknown>) => Subject<unknown> | undefined,
-    private readonly left: (key: I) => Subject<unknown> | undefined,
-  ) {
-    super();
-  }
-
-  /** Subjects whose record has been put back or deleted, which `left` no longer answers for. */
-  private readonly settled = new Store<I, true>();
-
-  override get(key: I): Subject<unknown> | undefined {
-    const v = super.get(key);
-    if (v !== undefined) return v;
-    // A subject that left after the moment sought had the record it left with, whatever it has now.
-    const kept = this.settled.get(key) === undefined ? this.left(key) : undefined;
-    this.settled.set(key, true);
-    const live = kept ?? this.was.get(key);
-    if (live === undefined) return undefined;
-    this.was.delete(key);
-    const made = this.make(live);
-    if (made !== undefined) super.set(key, made);
-    return made;
-  }
-
-  override delete(key: I): void {
-    super.delete(key);
-    this.was.delete(key);
-    this.settled.set(key, true);
-  }
 }
 
 /** Takes a voice cued after the moment sought out of the mix, until the tape cues it again. */
@@ -126,27 +90,28 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   const left = voice.left?.all() ?? [];
   voice.left = Leavings.from(left.filter((e) => e.seq <= seq));
   const future = Leavings.from(left.filter((e) => e.seq > seq));
-  voice.subjects = new Restored(
-    voice.subjects,
-    (live) => {
-      const h = restore(voice, live, t);
+  let records = voice.subjects;
+  if (!(records instanceof Restored)) {
+    records = new Restored(records, (live, least, top) => {
+      const h = restore(voice, live, least);
       if (h === undefined) return h;
       if (h.reaches) voice.seen++;
       if (h.rested) voice.restedCount++;
-      if (!(h.since <= t)) {
+      if (!(h.since <= least)) {
         // Kept while its origin was still ahead: where the controls put back place it now.
         h.since = mix.sinceOf(voice, h.delay);
         h.shown = mix.shownOf(voice, h.since);
         if (h.ticks === 0 && h.stepped > h.since) h.stepped = h.since;
       }
-      if (!(h.since <= t)) {
+      if (!(h.since <= top)) {
         voice.early ??= [];
         voice.early.push(h);
       }
       return h;
-    },
-    (key) => future?.at(key, cut),
-  );
+    });
+    voice.subjects = records;
+  }
+  (records as Restored<I>).back(t, cut, future);
 }
 
 /** Each voice's state at mix time `t`, once every clock above it is back where it was. */

@@ -92,6 +92,11 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- Seeking back many times no longer throws `Maximum call stack size exceeded`. Every `seek` to an
+  earlier time wrapped each voice's records in another layer, kept for the life of the mix, so a
+  scrubbed mix grew with every seek and a subject not probed since was found through all of them:
+  20,000 seeks overflowed the stack. A voice now keeps one store however often the mix seeks. Two
+  seeks back with no probe between could also read a wrong pose, as two fuzzer programs did.
 - An anchor cued after its target had left waited for good, and kept the mix from coming to rest,
   unless the mix's history still reached the target. A mix now keeps the marks of the first and last
   voice to leave under each name, tag and channel, and an anchor no voice the mix still knows answers

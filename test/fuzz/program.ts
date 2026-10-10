@@ -233,7 +233,7 @@ const frames = every(0, 1600, 16);
 const kept = (): MixOptions => ({ history: { ms: 100000, every: 50, tape }, stepMs: 4 });
 const fmt = (xs: number[] | undefined) => (xs ? xs.map((x) => +x.toFixed(6)).join(',') : 'none');
 
-export type Property = 'seek' | 'behind' | 'ahead' | 'dt' | 'standing' | 'now';
+export type Property = 'seek' | 'again' | 'behind' | 'ahead' | 'dt' | 'standing' | 'now';
 
 /**
  * The host frames each property checks at; `dt` checks every frame, and `standing` reads every
@@ -241,6 +241,7 @@ export type Property = 'seek' | 'behind' | 'ahead' | 'dt' | 'standing' | 'now';
  */
 export const checkedAt: Record<Property, number[]> = {
   seek: [96, 320, 512, 704],
+  again: [96, 320, 512, 704],
   behind: [64, 160, 320, 480, 640],
   ahead: [672, 800, 1008, 1408],
   dt: [0],
@@ -279,10 +280,41 @@ function seekThenPlay(ops: Op[], ref: ReturnType<typeof play>, from: number): st
   return null;
 }
 
+/**
+ * Seeks back to frame `from`, plays to the end with no probe, seeks to the next checked frame
+ * round, earlier or later than the first, and plays on: every record is put back for two seeks.
+ */
+function seekAgain(ops: Op[], ref: ReturnType<typeof play>, from: number): string | null {
+  const first = landing(ref, from);
+  const at = checkedAt.again;
+  const t = landing(ref, at[(at.indexOf(from) + 1) % at.length] as number);
+  const run = play(ops, frames, kept());
+  const last = frames[frames.length - 1] as number;
+  run.m.seek(ref.mixT.get(first) as number);
+  let host = last;
+  for (const f of frames) {
+    if (f <= first) continue;
+    host = last + (f - first);
+    run.m.sync(host);
+  }
+  run.m.seek(ref.mixT.get(t) as number);
+  if (differs(probes(run.m), ref.poses.get(t)))
+    return `seek(${first}), seek(${t}) got ${fmt(probes(run.m))} want ${fmt(ref.poses.get(t))}`;
+  for (const f of frames) {
+    if (f <= t) continue;
+    run.m.sync(host + (f - t));
+    if (differs(probes(run.m), ref.poses.get(f)))
+      return `seek(${first}), seek(${t}) then frame ${f} got ${fmt(probes(run.m))} want ${fmt(ref.poses.get(f))}`;
+  }
+  return null;
+}
+
 function checkOne(prop: Property, ops: Op[], t: number, ref: () => ReturnType<typeof play>) {
   switch (prop) {
     case 'seek':
       return seekThenPlay(ops, ref(), t);
+    case 'again':
+      return seekAgain(ops, ref(), t);
     case 'behind': {
       const r = ref();
       const got = probes(r.m.project(r.mixT.get(t) as number));

@@ -647,6 +647,30 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       more for a suspected loss; a delta inside the bench's spread gets a line here, not
       another cycle. The rest of this item, step 9 and item 12's audit come before any more of
       it.
+    - **Step 8, a motion patch's number on the record, built 2026-10-09** (`src/moved.ts`,
+      `test/moved.test.ts`). A motion voice off lanes asked its patch for the subject's number
+      every probe. The record keeps it beside the patch's count of numbers given up
+      (`Motions.freed`, bumped in `forget`), and asks again when that count has moved. teitou, 7
+      rounds against `79022cb`: `tween-` 0.90, `spring-` 0.89, `keys-` 1.007.
+    - **Step 8, a seek's restore layers, built 2026-10-09** (`src/restored.ts`,
+      `test/restored.test.ts`). They were a crash and not only a cost: every seek back wrapped
+      each voice's store in another, and 20,000 seeks overflowed the stack. A voice now has one
+      `Restored` for every seek. By subject it keeps the count of seeks its record was last put
+      back at, and a record behind is put back to the earliest moment sought since. The two
+      things flattening had to prove both hold: restoring to `t1` and then `t2` is restoring to
+      the lesser (the test "reads nothing past an earlier seek"), and only the first seek after
+      a record's last write can hold a leaving for it, since every leaving reads or deletes the
+      record where it stands. No bench row seeks, so its cost is not measured. The fuzzer's new
+      `again` property (seek back, play on with no probe, seek again) failed full seeds 54, 56
+      and 60 on the layered store and fails 56 alone now.
+    - **A stepped subject first met late reads other than one probed all along** (found
+      2026-10-09; `again` full 56 in `test/determinism.test.ts`). Shrunk, it is a `drift` voice
+      cued at 192 with `start: 100`, `rate: 0.5`, a fade and `freeze: 'both'`, then `h.rate = 3`
+      at 256 and `mix.rate = 0.5` at 288: after a seek to 96 and no probe since, a subject first
+      probed at frame 320 reads 2.9404 where one probed every frame read 5.7079. One seek shows
+      it as two do, on the layered store as on this one. Step 3's exact catch-up is meant to make
+      the two equal; which of the pinned start, the voice rate and the mix rate breaks it is not
+      found.
     - **Step 8, tried beside it and backed out for moving no number**: growing a lane's arrays to
       the number of subjects probed last frame at its first position, and handing `LaneHost.ready`
       its numbers through `Lanes.arg`.
@@ -657,17 +681,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **Step 8, not built**, in the review's order:
       - Records shared by a read back or a standing read, and by voices `shares` turns away that
         could keep their difference by subject number too: a stagger, a signal weight, a motion.
-      - A seek's restore layers, which wrap one another (`Restored` in `seek.ts`); not measured.
-        Read 2026-10-09: every `mix.seek` wraps each voice's store in a new `Restored` that
-        keeps the last, so a subject probed between seeks is found one layer down, and only one
-        never probed walks them all. The cost is the chain itself: it grows by a layer a voice a
-        seek for as long as the mix lives, and that subject's first probe recurses its whole
-        depth. Flattening has two things to prove first: that restoring to `t1` and then to
-        `t2` is restoring to the lesser of the two (a seek back cuts what came after, so a later
-        seek forward must not read past the cut), and how each layer's `left` records, the
-        subjects that left after its moment, combine.
-      - A motion patch's number for a subject kept on the record. It changes on `release` and
-        `unpack`, so a kept one needs a count that says it is stale.
     - **Step 8, measured and left**: the `keys` row still allocates about 16 B a probe in
       `foldWith`, cause not found; two guesses were built and backed out for changing nothing (a
       site of its own per scalar channel in `copy`, and folding a delta's number where
