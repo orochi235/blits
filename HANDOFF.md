@@ -597,7 +597,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     empty `dist`, the tarball carries `./testing`, and the changelog lists steps 3 to 5) except the
     release: **Mike, 2026-10-09: hold the release**, so 0.7.1 stays published. Releases are batched:
     keep adding to the changelog's Unreleased section as steps land, and don't ask to publish per
-    step; it ships as one release when Mike says. Next is step 7. Each
+    step; it ships as one release when Mike says. Until things settle, a consumer that needs
+    unreleased blits links the local checkout, and versions are reconciled at that release. Next is step 7. Each
     step goes in a worktree off `main`, since another session
     works on the playground and item 13 in a worktree of its own; ask it before editing this file,
     and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. Step
