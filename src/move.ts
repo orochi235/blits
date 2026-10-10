@@ -1,5 +1,6 @@
 import { changed, unindex } from './chain.js';
 import { popDue, schedule } from './due.js';
+import { detour } from './everyone.js';
 import { beginFade, part, retire } from './fade.js';
 import { expireGone, keepGone } from './gone.js';
 import { reorigin } from './held.js';
@@ -38,6 +39,10 @@ export function move<I, O>(mix: Mixer<I, O>, now: number): void {
 function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   mix.now = now;
   mix.looked = false;
+  if (mix.unshared) {
+    mix.unshared = false;
+    detour(mix);
+  }
   mix.frame = nextFrame();
   mix.reducedNow = mix.reduced;
   for (const a of mix.announced) if (Number.isNaN(a.at)) a.at = mix.u;
@@ -151,6 +156,7 @@ function prune<I, O>(mix: Mixer<I, O>): void {
   if (pruned) {
     mix.general = mix.general.filter((v) => v.state !== 'done');
     if (mix.sharers.length > 0) mix.sharers = mix.sharers.filter((v) => v.state !== 'done');
+    detour(mix);
   }
 }
 
@@ -184,6 +190,7 @@ function leave<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   if (voice.holding !== null && mix.owners !== null)
     mix.owners = mix.owners.filter((v) => v !== voice);
   if (voice.spec.locus !== undefined) mix.loci--;
+  detour(mix);
   if (voice.spec.anchor !== undefined) mix.anchored--;
   return voice.named === null;
 }

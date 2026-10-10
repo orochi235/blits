@@ -1,6 +1,6 @@
 import { frozenTime, passAt, phaseAt, silent } from './clock.js';
 import { copy as copyValue } from './clone.js';
-import { readFor, weighAt } from './everyone.js';
+import { open as openRecord, shut as shutRecord, weighAt } from './everyone.js';
 import { recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
 import type { Lanes } from './lanes.js';
@@ -16,6 +16,8 @@ export type Key<O> = keyof O & string;
 
 // V8 reads a local const as a constant, where it reads an import from its module on every call.
 const copy = copyValue;
+const open = openRecord;
+const shut = shutRecord;
 
 /** A record's band state, made when a rest-less channel first asks. */
 function bandsFor(held: Subject<unknown>, n: number): Uint8Array {
@@ -109,12 +111,7 @@ export function contribution<I, O>(
   setting.weight = weight;
   held.weight = weight;
 
-  if (
-    held.probed === now &&
-    held.delta &&
-    held.seeks === voice.seeks &&
-    readFor(voice, held, subject)
-  ) {
+  if (held.probed === now && held.delta && held.seeks === voice.seeks) {
     if (voice.holder !== held && voice.scratch.length > 0) this.keyed(voice, subject, held);
     this.w = weight;
     return held.delta;
@@ -162,7 +159,6 @@ export function contribution<I, O>(
   held.delta = delta;
   held.probed = now;
   held.seeks = voice.seeks;
-  if (held === voice.everyone) voice.sharedFor = subject;
   if (history !== undefined) remember(this, voice, subject, held);
   if (reading.kept !== keptBefore && !voice.keeping) stateful(this, voice);
   if (delta === null) return null;
@@ -393,8 +389,9 @@ export function chainFirst<I, O>(
 }
 
 /**
- * After a fold read a sharing voice for the subject numbered `slot`: keeps the weight it gave, and
- * gives the fold's place in `sharers`, which moves back where the read made the voice share no more.
+ * After a fold read a sharing voice for the subject numbered `slot`: keeps the weight it gave and
+ * what the read left on its record, and gives the fold's place in `sharers`, which moves back where
+ * the read made the voice share no more.
  */
 export function shared<I, O>(
   this: Mixer<I, O>,
@@ -404,7 +401,11 @@ export function shared<I, O>(
   q: number,
 ): number {
   if (voice.sharing) {
-    weighAt(voice, slot, rec.weight, (this.lanes as Lanes<I, O>).cap);
+    // A projection numbers no subject, and keeps nothing by subject.
+    if (slot < 0) return q;
+    const cap = (this.lanes as Lanes<I, O>).cap;
+    weighAt(voice, slot, rec.weight, cap);
+    shut(voice, rec, slot, cap);
     return q;
   }
   const sharers = this.sharers;
@@ -443,8 +444,7 @@ export function linked<I, O>(this: Mixer<I, O>, subject: I): Subject<unknown> | 
   const head = Number.isNaN(this.now) ? null : this.chain(subject);
   this.linkedLaned =
     head !== null && this.lanes?.prepare(head.slot, subject, this.version, head) === true;
-  // A patch call in that fill kept state, and its voice, which shared one record, joins the chains.
-  return head !== null && head.version !== this.version ? this.chain(subject) : head;
+  return head;
 }
 
 /** The fold after a subject's chain is linked and its lanes asked whether it reads from them. */
@@ -457,7 +457,6 @@ export function foldWith<I, O>(
   dry: boolean,
   except?: number,
 ): O {
-  const now = this.now;
   const pose = out as Record<string, unknown>;
   const lanes = this.lanes;
   const skip = laned ? (lanes as Lanes<I, O>).copies : null;
@@ -486,17 +485,11 @@ export function foldWith<I, O>(
     if (l.owes(head.slot)) owed = head.slot;
     else if (l.whole) return pose as O;
   }
-  if (this.loci === 0) {
-    // The voices sharing one record are in no chain: each folds before the first chain record
-    // that comes after it in voice order, and the rest after the last.
-    const sharers = this.sharers;
-    let q = 0;
+  if (this.detours === 0) {
+    const now = this.now;
     for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
       const voice = held.voice as Voice<I, O> | null;
-      if (voice === null) continue;
-      if (q < sharers.length && (sharers[q] as Voice<I, O>).id < voice.id)
-        q = this.foldSharers(pose, subject, head, q, voice.id, laned, dry, except, owed);
-      if (laned && voice.laned && !this.owedBy(owed, voice)) continue;
+      if (voice === null || (laned && voice.laned && !this.owedBy(owed, voice))) continue;
       if (voice.id === except || voice.state === 'done') continue;
       const delta = this.read(voice, subject, now, dry, held);
       if (owed >= 0 && voice.laned) (lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
@@ -504,11 +497,49 @@ export function foldWith<I, O>(
       if (delta === null || this.w <= 0) continue;
       this.apply(pose, voice, held, delta, this.w);
     }
-    if (q < sharers.length)
-      this.foldSharers(pose, subject, head, q, Number.MAX_SAFE_INTEGER, laned, dry, except, owed);
     return pose as O;
   }
-  return this.foldLoci(subject, pose, head, laned, dry, except, owed);
+  return this.foldDetour(subject, pose, head, laned, dry, except, owed);
+}
+
+/**
+ * `foldWith`'s voices in a mix with a locus or a voice sharing one record in it. The chain is taken
+ * again where a voice stopped sharing since it was linked, as a patch call in this probe's fill can
+ * make one do. With no locus, the chain's records fold in voice order, and each voice sharing one
+ * record, which is in no chain, before the first chain record that comes after it.
+ */
+export function foldDetour<I, O>(
+  this: Mixer<I, O>,
+  subject: I,
+  pose: Record<string, unknown>,
+  linkedHead: Subject<unknown>,
+  laned: boolean,
+  dry: boolean,
+  except: number | undefined,
+  owed: number,
+): O {
+  const head = linkedHead.version === this.version ? linkedHead : this.chain(subject);
+  if (this.loci !== 0) return this.foldLoci(subject, pose, head, laned, dry, except, owed);
+  const now = this.now;
+  const lanes = this.lanes;
+  const sharers = this.sharers;
+  let q = 0;
+  for (let held: Subject<unknown> | null = head; held !== null; held = held.next) {
+    const voice = held.voice as Voice<I, O> | null;
+    if (voice === null) continue;
+    if (q < sharers.length && (sharers[q] as Voice<I, O>).id < voice.id)
+      q = this.foldSharers(pose, subject, head, q, voice.id, laned, dry, except, owed);
+    if (laned && voice.laned && !this.owedBy(owed, voice)) continue;
+    if (voice.id === except || voice.state === 'done') continue;
+    const delta = this.read(voice, subject, now, dry, held);
+    if (owed >= 0 && voice.laned) (lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
+    if (!(held.weight > 0)) unband(held);
+    if (delta === null || this.w <= 0) continue;
+    this.apply(pose, voice, held, delta, this.w);
+  }
+  if (q < sharers.length)
+    this.foldSharers(pose, subject, head, q, Number.MAX_SAFE_INTEGER, laned, dry, except, owed);
+  return pose as O;
 }
 
 /**
@@ -537,6 +568,7 @@ export function foldSharers<I, O>(
     if (rec === null) continue;
     if (laned && voice.laned && !this.owedBy(owed, voice)) continue;
     if (voice.id === except || voice.state === 'done') continue;
+    open(voice, rec, head.slot);
     const delta = this.read(voice, subject, now, dry, rec);
     if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, rec.weight);
     q = this.shared(voice, head.slot, rec, q);
@@ -593,6 +625,7 @@ export function foldLoci<I, O>(
       if (laned && voice.laned && !this.owedBy(owed, voice)) continue;
       if (voice.id === except || voice.state === 'done') continue;
       const held: Subject<unknown> = rec;
+      if (!mine) open(voice, held, head.slot);
       const delta = this.read(voice, subject, now, dry, held);
       if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
       if (!mine) q = this.shared(voice, head.slot, held, q);
@@ -708,13 +741,7 @@ export function read<I, O>(
   held: Subject<unknown>,
 ): Record<string, unknown> | null {
   if (dry) {
-    if (
-      held.reaches &&
-      held.probed === now &&
-      held.delta &&
-      held.seeks === voice.seeks &&
-      readFor(voice, held, subject)
-    ) {
+    if (held.reaches && held.probed === now && held.delta && held.seeks === voice.seeks) {
       const setting = voice.setting;
       // The setting the probe that read the delta had, but for `dt`: a dry read advances nothing.
       const elapsed = frozenTime(

@@ -158,12 +158,7 @@ function readAll<I, O>(
       writeLater(lanes as Lanes<I, O>, slot, columns, n);
       continue;
     }
-    let head = live ? (heads[n] as Subject<unknown>) : null;
-    // As `linked` does: a fill's patch call can put a voice that shared one record into the chains.
-    if (head !== null && head.version !== mix.version) {
-      head = mix.chain(subject);
-      heads[n] = head;
-    }
+    const head = live ? (heads[n] as Subject<unknown>) : null;
     const folded = mix.foldWith(subject, scratch, head, laned, false);
     const pose = (mix.bounded.length === 0 ? folded : mix.clamp(folded as Values)) as Values;
     mix.keep(subject, pose as O, scratch);

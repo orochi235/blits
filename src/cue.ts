@@ -2,7 +2,7 @@ import { checkHits } from './book.js';
 import { changed, index } from './chain.js';
 import { copyable } from './clone.js';
 import { schedule } from './due.js';
-import { shares } from './everyone.js';
+import { detour, shares } from './everyone.js';
 import { finiteRate, plainWeight, VoiceHandle } from './handle.js';
 import { reorigin } from './held.js';
 import { handle } from './hosts.js';
@@ -172,6 +172,7 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   changed(mix, voice);
   mix.stir();
   if (spec.locus !== undefined) mix.loci++;
+  detour(mix);
   if (spec.from === 'current') mix.wantsPose = true;
   if (anchor) {
     mix.anchored++;

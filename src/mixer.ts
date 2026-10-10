@@ -12,6 +12,7 @@ import {
   clamp,
   contribution,
   fold,
+  foldDetour,
   folded,
   foldLoci,
   foldSharers,
@@ -208,6 +209,13 @@ export class Mixer<I, O> implements Mix<I, O> {
   general: Voice<I, O>[] = [];
   /** Those of `general` that keep one record for every subject, in voice order: see `everyone.ts`. */
   sharers: Voice<I, O>[] = [];
+  /**
+   * Whether a voice stopped sharing this frame: a probe or pull under way then holds chains linked
+   * before it joined them, and takes each again.
+   */
+  unshared = false;
+  /** 0 where a fold is a walk of the chain: see `detour` in `everyone.ts`. */
+  detours = 0;
   /** How many voices in the list carry a locus; with none, a fold allocates nothing. */
   loci = 0;
   /** What every motion patch it plays asks for its voice's time, holding this mix weakly. */
@@ -656,6 +664,7 @@ const methods = {
   foldWith,
   owedBy,
   foldLoci,
+  foldDetour,
   foldSharers,
   shared,
   read,

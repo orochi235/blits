@@ -617,11 +617,42 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       in a mix with history and `from: 'current'`), and what left a voice is a queue with an index
       by subject (`src/leavings.ts`; `bench/drops.mjs`). teitou, 5 rounds: geometric mean 0.904
       over 24 rows, 0.909 over 19 general-path rows.
+    - **Step 8, one record for a voice over every subject, built 2026-10-09** (`src/everyone.ts`,
+      `test/everyone.test.ts`). `shares` says which voices qualify: no subjects, target, stagger,
+      locus, anchor or signal weight, no state, not motion, not `from: 'current'`, not frozen
+      before, and only channels with a rest. Such a voice is in no chain: a fold takes it from
+      `mix.sharers` at its place in voice order (`foldDetour`, `foldSharers`), and its one record
+      is pointed at a subject before each read and taken back after (`open`, `shut`), so its patch
+      is still called once a frame for a subject. By subject number it keeps a bit for "a chain
+      asked", the last weight, and for a called patch when it was last called and what it gave.
+      A subject faded out of it alone, a fade at rest, state kept through `setting.keep`, or an
+      origin still ahead turns it back (`unshare`). It needs lanes for the numbers, so **a mix
+      with lanes off never shares, which is what makes the lanes fuzzer its check**. A read ahead
+      copies the one record; a read back and a standing read do not share.
+      Also in that change: `Steps.patch` takes the mix and the subject, not a closure (138 B a
+      subject relinked), and `Lanes.met` is counted, not emptied by its length (150 B a subject
+      met).
+      teitou, 9 rounds against `27acb2d`: `swap` 0.74 (9.3 to 2.7 MB a frame), `ahead` 0.80
+      (2.4 to 1.5 MB), `keys-` 1.001, `tweenfn-` 1.005.
+    - **Open measurement: the laned steady rows, as merged, are not measured.** Before the last
+      restructure `keys` 10k×3 read 1.03, `tween` 1.05 and `fn` 1.01 at 3,000 frames a run, and
+      `tween` shares nothing, so the cost was code every probe runs: a check in `linked` and a
+      longer `foldWith`. The restructure put `linked` and `pull` back to main's text and
+      `foldWith`'s loop behind one number, `mix.detours`, which is 0 unless a mix has a locus or
+      a sharing voice; everything else is in `foldDetour`. Mike stopped the tuning there
+      (2026-10-09), so whether those rows read level again is one A/B away:
+      `bench/ab.sh 27acb2d . 7 keys:10000 tween:10000 fn:10000` with `FRAMES=3000`. At 300
+      frames a run those rows swing 5% between runs of one build and settle nothing.
+    - **Step 8, tried beside it and backed out for moving no number**: growing a lane's arrays to
+      the number of subjects probed last frame at its first position, and handing `LaneHost.ready`
+      its numbers through `Lanes.arg`.
+    - **`kB/frame` on a row whose patch returns an object a call reads one of two values from run
+      to run on one build** (found 2026-10-09): `fn` 10k×3 read 2,442 or 4,318 on this machine,
+      and no semi-space flag moved it either way. Take a row's allocation from a median over
+      rounds on a fleet node, never from one local run.
     - **Step 8, not built**, in the review's order:
-      - One shared record for a stateless, untargeted voice, and records shared with a projection.
-        A record is a link in its subject's chain (`next`) and holds that subject's delay, weight,
-        band state and the frame's delta, so sharing one means the chain stops being linked through
-        records first. That is a design change nobody has drawn yet.
+      - Records shared by a read back or a standing read, and by voices `shares` turns away that
+        could keep their difference by subject number too: a stagger, a signal weight, a motion.
       - A seek's restore layers, which wrap one another (`Restored` in `seek.ts`); not measured.
       - A motion patch's number for a subject kept on the record. It changes on `release` and
         `unpack`, so a kept one needs a count that says it is stale.

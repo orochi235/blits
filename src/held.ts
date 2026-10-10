@@ -1,5 +1,5 @@
 import { schedule } from './due.js';
-import { everyoneOf, sighted, unsight, weightAt } from './everyone.js';
+import { everyoneOf, inherit, sighted } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { originOf } from './origin.js';
 import { record } from './record.js';
@@ -81,13 +81,9 @@ export function held<I, O>(
     }
     early.push(held);
   }
-  // A subject a voice saw while it shared one record was counted then, and has its weight kept.
-  if (sighted(voice, slot)) {
-    held.weight = weightAt(voice, slot);
-    // Its patch has been called for it, which a lane asks before calling it there.
-    held.probed = voice.sharedAt;
-    unsight(voice, slot);
-  } else voice.seen++;
+  // A subject a voice saw while it shared one record was counted then.
+  if (sighted(voice, slot)) inherit(voice, held, slot);
+  else voice.seen++;
   if (delay > voice.latest) {
     voice.latest = delay;
     // A later end can take a frozen voice live again.

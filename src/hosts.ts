@@ -163,7 +163,7 @@ export function stateful<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if (voice.keeping) return;
   voice.keeping = true;
   // The call that kept state was for the subject last sent to, whose record the state is on.
-  if (voice.sharing) unshare(mix, voice, mix.sending.subject as I);
+  if (voice.sharing) unshare(mix, voice, true, mix.sending.subject as I);
   mix.lanes?.invalidate();
 }
 

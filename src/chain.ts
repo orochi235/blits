@@ -86,7 +86,8 @@ export function linkable<I, O>(
   if (state === 'done' || (state === 'pending' && !voice.freezesBefore)) return null;
   // A voice sharing one record is in no chain: a fold takes it from `sharers` at its place.
   if (voice.sharing && everyoneOf(this, voice) !== null) {
-    sight(voice, slot, (this.lanes as Lanes<I, O>).cap);
+    // A projection numbers no subject, and keeps nothing by subject.
+    if (slot >= 0) sight(voice, slot, (this.lanes as Lanes<I, O>).cap);
     return null;
   }
   const held = this.held(voice, subject, slot);

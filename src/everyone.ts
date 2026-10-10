@@ -7,10 +7,14 @@ import type { Subject, Voice } from './voice.js';
 /**
  * Whether a voice can keep one record for every subject, decided when it is cued. A record holds
  * what a voice knows of one subject; where the voice is over every subject with no stagger, keeps
- * no state and writes only channels with a rest, every subject's record would read the same but for
- * the weight last given it, so the voice keeps that by subject number and one record for the rest.
- * It needs lanes for the numbers. What only shows later (a subject faded out of it alone, a fade at
- * rest, state kept through `setting.keep`) turns it back with `unshare`.
+ * no state, weighs every subject alike and writes only channels with a rest, a subject's record
+ * differs from another's only in the weight last given it and in what its patch was last called
+ * for it. The voice keeps those by subject number (`weights`, and for a patch that is called,
+ * `stamps` and `deltas`) and one record, `everyone`, that `open` points at a subject before a read
+ * and `shut` takes back after. About 32 B a subject where a record and its place in the voice's
+ * store took about 370 (bench/allocs.mjs on the `swap` row, 2026-10-09). It needs lanes for the
+ * numbers. What only shows later (a subject faded out of it alone, a fade at rest, state kept
+ * through `setting.keep`) turns it back with `unshare`.
  */
 export function shares<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   const spec = voice.spec;
@@ -25,14 +29,13 @@ export function shares<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
     spec.locus === undefined &&
     spec.anchor === undefined &&
     spec.from !== 'current' &&
+    typeof spec.weight !== 'function' &&
     patch.state === undefined &&
     patch.step === undefined &&
-    // A host field can change between two probes of one frame, and a record of its own keeps the
-    // delta a subject's first probe read.
-    (patch.reads === undefined || patch.reads.length === 0) &&
     voice.motion === undefined &&
     voice.owner === null &&
     voice.holding === null &&
+    voice.blend === null &&
     !voice.freezesBefore &&
     voice.slots.every((s) => {
       const channel = mix.channels[s] as Channel<unknown>;
@@ -59,15 +62,6 @@ export function everyoneOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): Subject<
   all.rebuilt = voice.rebuilds;
   voice.everyone = all;
   return all;
-}
-
-/**
- * Whether a record's delta was read for this subject: a record of its own always was; the one a
- * sharing voice keeps for every subject was where its patch is keys, which read no subject, or
- * where this is the subject it was last called for.
- */
-export function readFor<I, O>(voice: Voice<I, O>, held: Subject<unknown>, subject: I): boolean {
-  return held !== voice.everyone || voice.built !== null || voice.sharedFor === subject;
 }
 
 /** Whether a chain has asked a sharing voice about the subject numbered `slot`. */
@@ -117,6 +111,71 @@ export function weighAt<I, O>(voice: Voice<I, O>, slot: number, w: number, cap: 
   weights[slot] = w;
 }
 
+/** Where a subject's two numbers sit in `stamps`: the `now` and the `seeks` of its last read. */
+// biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package
+const enum Stamp {
+  SIZE = 2,
+  PROBED = 0,
+  SEEKS = 1,
+}
+
+/**
+ * Points a sharing voice's record at the subject numbered `slot` before a read: it holds when the
+ * voice's patch was last called for that subject and the delta it gave, as a record of the
+ * subject's own would, so the patch is called once a frame for a subject however its probes fall
+ * among other subjects'. A keys voice reads no subject, so its record needs no pointing.
+ */
+export function open<I, O>(voice: Voice<I, O>, rec: Subject<unknown>, slot: number): void {
+  if (voice.built !== null) return;
+  const stamps = voice.stamps;
+  const o = slot * Stamp.SIZE;
+  if (stamps === null || o >= stamps.length) {
+    rec.probed = Number.NaN;
+    rec.seeks = 0;
+    rec.delta = null;
+    return;
+  }
+  const at = stamps[o + Stamp.PROBED] as number;
+  rec.probed = at;
+  rec.seeks = stamps[o + Stamp.SEEKS] as number;
+  // A subject never read holds no delta, and its place in `deltas` may never have been written.
+  rec.delta = Number.isNaN(at)
+    ? null
+    : ((voice.deltas as Subject<unknown>['delta'][])[slot] ?? null);
+}
+
+/** Takes back what a read left on a sharing voice's record for the subject numbered `slot`. */
+export function shut<I, O>(
+  voice: Voice<I, O>,
+  rec: Subject<unknown>,
+  slot: number,
+  cap: number,
+): void {
+  if (voice.built !== null) return;
+  let stamps = voice.stamps;
+  const o = slot * Stamp.SIZE;
+  if (stamps === null || o >= stamps.length) {
+    if (Number.isNaN(rec.probed)) return;
+    const grown = new Float64Array(Math.max(slot + 1, cap) * Stamp.SIZE).fill(Number.NaN);
+    if (stamps !== null) grown.set(stamps);
+    voice.stamps = grown;
+    stamps = grown;
+    voice.deltas ??= [];
+  }
+  stamps[o + Stamp.PROBED] = rec.probed;
+  stamps[o + Stamp.SEEKS] = rec.seeks;
+  (voice.deltas as Subject<unknown>['delta'][])[slot] = rec.delta;
+}
+
+/** Makes stale what a sharing voice last read for the subject numbered `slot`, as `touch` asks. */
+export function restamp<I, O>(voice: Voice<I, O>, slot: number): void {
+  const stamps = voice.stamps;
+  const o = slot * Stamp.SIZE;
+  if (stamps !== null && slot >= 0 && o < stamps.length) stamps[o + Stamp.SEEKS] = -1;
+  // A keys voice's one record holds its one delta.
+  if (voice.built !== null && voice.everyone !== null) voice.everyone.seeks = -1;
+}
+
 /** A subject's number was let go of: the next subject to take it is one the voice has not seen. */
 export function unsight<I, O>(voice: Voice<I, O>, slot: number): void {
   const bits = voice.sighted;
@@ -125,30 +184,58 @@ export function unsight<I, O>(voice: Voice<I, O>, slot: number): void {
     bits[word] = (bits[word] as number) & ~(1 << (slot & 31));
   const weights = voice.weights;
   if (weights !== null && slot < weights.length) weights[slot] = 0;
+  const stamps = voice.stamps;
+  const o = slot * Stamp.SIZE;
+  if (stamps !== null && o < stamps.length) {
+    stamps[o + Stamp.PROBED] = Number.NaN;
+    (voice.deltas as Subject<unknown>['delta'][])[slot] = null;
+  }
 }
 
 /**
- * Turns a sharing voice back to a record per subject, made as each is next asked for with the
- * weight kept for it. `keeper` is the subject its one record was just called for and holds kept
- * state of, which takes that record as its own. A lane's positions take their own records now,
- * since each held the one.
+ * Turns a sharing voice back to a record per subject, each made as it is next asked for from what
+ * the voice kept for the subject. With `kept`, a call just kept state on its one record, which is
+ * open on `keeper`, the subject called for: that subject takes the record as its own. A lane's
+ * positions take their own records now, since each held the one.
  */
-export function unshare<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, keeper?: I): void {
+export function unshare<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  kept = false,
+  keeper?: I,
+): void {
   if (!voice.sharing) return;
   voice.sharing = false;
   const all = voice.everyone;
   voice.everyone = null;
-  voice.sharedFor = undefined;
-  voice.sharedAt = all === null ? Number.NaN : all.probed;
   const at = mix.sharers.indexOf(voice);
   if (at >= 0) mix.sharers.splice(at, 1);
-  const slot = keeper === undefined ? -1 : (mix.chains.get(keeper)?.slot ?? -1);
-  if (all !== null && sighted(voice, slot)) {
-    unsight(voice, slot);
+  const slot = kept ? (mix.chains.get(keeper as I)?.slot ?? -1) : -1;
+  // A projection numbers no subject, so its copy's record is the keeper's without being asked.
+  if (all !== null && kept && (mix.projecting || sighted(voice, slot))) {
+    if (slot >= 0) unsight(voice, slot);
     voice.subjects.set(keeper as I, all);
   } else if (voice.holder === all) voice.holder = null;
-  mix.lanes?.rerecord(voice.id, (subject, slot) => mix.held(voice, subject, slot));
+  mix.lanes?.rerecord(voice.id, (subject, s) => mix.held(voice, subject, s));
   // Every chain links it from here on.
   if (voice.state !== 'done') mix.steps.push(voice, ++mix.version);
+  mix.unshared = true;
+  detour(mix);
   mix.lanes?.refill();
+}
+
+/**
+ * Counts what makes a mix's fold more than a walk of each chain: a locus, a voice sharing one
+ * record, a voice that stopped sharing this frame. Called wherever one of the three changes, so
+ * `foldWith` asks one number.
+ */
+export function detour<I, O>(mix: Mixer<I, O>): void {
+  mix.detours = mix.loci + mix.sharers.length + (mix.unshared ? 1 : 0);
+}
+
+/** Gives a record just made for a subject a sharing voice had seen what the voice kept for it. */
+export function inherit<I, O>(voice: Voice<I, O>, held: Subject<unknown>, slot: number): void {
+  held.weight = weightAt(voice, slot);
+  open(voice, held, slot);
+  unsight(voice, slot);
 }

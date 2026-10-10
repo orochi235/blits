@@ -330,14 +330,16 @@ export class Voice<I, O> {
   sharing = false;
   /** That record, null until a chain first asks and once the voice shares no more. */
   everyone: Subject<unknown> | null = null;
-  /** The subject `everyone`'s delta was read for, where its patch reads the subject. */
-  sharedFor: I | undefined = undefined;
-  /** The `now` `everyone` was last read at when the voice stopped sharing it; NaN for never. */
-  sharedAt = Number.NaN;
   /** While sharing, by subject number: a bit where a chain has asked about the subject. */
   sighted: Uint32Array | null = null;
   /** While sharing, by subject number: the weight last given the subject on the general path. */
   weights: Float64Array | null = null;
+  /**
+   * While sharing a patch that is called, by subject number: when it was last called for the
+   * subject and at what `seeks`, side by side, and the delta that call gave.
+   */
+  stamps: Float64Array | null = null;
+  deltas: (Record<string, unknown> | null)[] | null = null;
   /** The handle `cue` returned, which `voices` hands back too. */
   handle: Handle<I> | null = null;
   /** With a history store, the key of every subject it has a record of; null without one. */
@@ -497,9 +499,10 @@ export class Voice<I, O> {
     this.unreachedBits = null;
     this.sharing = false;
     this.everyone = null;
-    this.sharedFor = undefined;
     this.sighted = null;
     this.weights = null;
+    this.stamps = null;
+    this.deltas = null;
     if (this.holding !== null) this.holding = new Holding();
   }
 
@@ -585,9 +588,15 @@ export class Voice<I, O> {
 
   /**
    * A copy for a projection: its own setting, which sends nothing, and its own per-subject records,
-   * filled from `fill`. With `controls` it takes those, as the voice stood at an earlier time.
+   * filled from `fill`. With `controls` it takes those, as the voice stood at an earlier time. With
+   * `share`, a voice keeping one record for every subject gives its copy a copy of that one, which
+   * a read ahead starts every subject from; `fill` then serves only a copy that shares no more.
    */
-  copy(fill: (subject: I) => Subject<unknown> | undefined, controls?: Controls): Voice<I, O> {
+  copy(
+    fill: (subject: I) => Subject<unknown> | undefined,
+    controls?: Controls,
+    share = false,
+  ): Voice<I, O> {
     // A literal keeps the copy in fast mode, where `Object.assign` left it a dictionary that every
     // read in a projection looked up by name.
     const v = { __proto__: Voice.prototype, ...this } as unknown as Voice<I, O>;
@@ -606,11 +615,15 @@ export class Voice<I, O> {
     v.quiet = true;
     v.unreached = null;
     v.unreachedBits = null;
-    v.sharing = false;
-    v.everyone = null;
-    v.sharedFor = undefined;
+    const all = share && this.sharing ? this.everyone : null;
+    v.sharing = all !== null;
+    // Its delta is the live voice's to write into, and a keys voice's is in the live scratch.
+    v.everyone =
+      all === null ? null : { ...all, delta: null, probed: Number.NaN, from: all.stepped };
     v.sighted = null;
     v.weights = null;
+    v.stamps = null;
+    v.deltas = null;
     return v;
   }
 

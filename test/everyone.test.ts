@@ -57,6 +57,7 @@ describe('a voice over every subject', () => {
     own({ freeze: 'both' });
     own({ from: 'current' });
     own({ locus: 'a' });
+    own({ weight: (p) => (p.id === 3 ? 1 : 0.5) });
     own({}, { lanes: false });
     own({}, { history: { ms: 1000 } });
     own({
@@ -132,6 +133,46 @@ describe('a voice over every subject', () => {
     }
     expect(voice.sharing).toBe(false);
     for (const p of parts) expect(voice.subjects.get(p)?.kept?.get(owner)).toEqual({ n: 3 });
+  });
+
+  it('calls its patch once a frame for a subject, however its probes fall among other subjects', () => {
+    for (const lanes of [true, false]) {
+      const calls = new Map<number, number>();
+      const m = mix<Part, Pose>(K, { lanes });
+      const parts = Array.from({ length: 5 }, (_, id) => ({ id }));
+      const h = m.cue({
+        patch: patch<Part, Pose>(
+          1000,
+          (_phase, p) => {
+            calls.set(p.id, (calls.get(p.id) ?? 0) + 1);
+            return { x: p.id };
+          },
+          { writes: ['x'] },
+        ),
+      });
+      expect(voiceOf(h).sharing).toBe(lanes);
+      for (const t of [0, 16, 32, 48]) {
+        calls.clear();
+        m.sync(t);
+        for (const p of parts) m.probe(p);
+        for (const p of [...parts].reverse()) expect(m.probe(p).x).toBe(p.id);
+        m.atRest(parts[2] as Part);
+        expect([...calls.values()], `lanes ${lanes} t=${t}`).toEqual(parts.map(() => 1));
+      }
+    }
+  });
+
+  it('is read ahead from a copy of its one record, and stays as it was', () => {
+    const { m, parts, voice } = played();
+    const ahead = m.project(300);
+    expect(parts.map((p) => ahead.probe(p).x)).toEqual(parts.map(() => 3));
+    expect(ahead.assess(parts[0] as Part).x).toBe('exact');
+    // A subject the live mix has never probed reads as the voice gives every subject.
+    expect(ahead.probe({ id: 99 }).x).toBe(3);
+    expect(voice.sharing).toBe(true);
+    for (const p of parts) expect(voice.subjects.get(p)).toBeUndefined();
+    m.sync(300);
+    expect(parts.map((p) => m.probe(p).x)).toEqual(parts.map(() => 3));
   });
 
   it('reads a subject again after touch(subject)', () => {

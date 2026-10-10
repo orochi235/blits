@@ -2,6 +2,7 @@ import { foldNumber, lerpNumber } from './channels.js';
 import { passAt, phaseAt, same, silent, weighed } from './clock.js';
 import { flush } from './columns.js';
 import { crowdsUpTo, freshen } from './crowd.js';
+import { open as openRecord, shut as shutRecord } from './everyone.js';
 import { foldLocus, gatherLocus } from './gather.js';
 import { runKeys } from './keyfill.js';
 import { Arg, frozenAt, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
@@ -12,6 +13,10 @@ import { AT, NOTHING, readKeys, type Scratch, seg, segment, shifted, type Track 
 import { reading } from './reading.js';
 import { move, runMotion } from './sample.js';
 import type { Subject, Voice } from './voice.js';
+
+// V8 reads a local const as a constant, where it reads an import from its module on every call.
+const open = openRecord;
+const shut = shutRecord;
 
 /** The least prime at least `n`, and 1 below 2. */
 function primeFrom(n: number): number {
@@ -238,10 +243,34 @@ export function run<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
   }
   lane.elapsedNow = voice.elapsedAt(this.now);
   const list = lane.list;
+  if (voice.sharing) {
+    this.runEveryone(lane);
+    return;
+  }
   for (let p = 0; p < list.length; p++) {
     this.one(lane, p, list[p] as number);
     // Its patch just made kept state: no further call this fill, the general path makes them.
     if (voice.keeping) return;
+  }
+}
+
+/**
+ * `run`'s loop for a voice keeping one record for every subject: the record is pointed at each
+ * subject before its call and taken back after, so `one` and `call` read it as a record of the
+ * subject's own. A loop of its own, which leaves theirs as they were for every other voice.
+ */
+export function runEveryone<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
+  const voice = lane.voice;
+  const rec = voice.everyone as Subject<unknown>;
+  const list = lane.list;
+  const cap = this.cap;
+  for (let p = 0; p < list.length; p++) {
+    const slot = list[p] as number;
+    open(voice, rec, slot);
+    this.one(lane, p, slot);
+    // Its patch just made kept state, and the record is now that subject's own.
+    if (voice.keeping) return;
+    shut(voice, rec, slot, cap);
   }
 }
 
@@ -416,12 +445,7 @@ export function call<I, O>(
   const subject = this.subjectAt(slot);
   if (subject === absent) return false;
   // Called already this frame, by the general path or a fill before a refill: reuse, as a probe does.
-  if (
-    rec.probed === this.now &&
-    rec.delta !== null &&
-    rec.seeks === voice.seeks &&
-    (rec !== voice.everyone || voice.sharedFor === subject)
-  ) {
+  if (rec.probed === this.now && rec.delta !== null && rec.seeks === voice.seeks) {
     if (w > 0) this.foldDelta(chans, slot, rec.delta);
     return true;
   }
@@ -435,7 +459,6 @@ export function call<I, O>(
   rec.delta = delta;
   rec.probed = this.now;
   rec.seeks = voice.seeks;
-  if (rec === voice.everyone) voice.sharedFor = subject;
   if (this.keeps) host.after(voice, subject, rec);
   if (reading.kept !== kept && !voice.keeping) host.kept(voice);
   if (w > 0) this.foldDelta(chans, slot, delta);

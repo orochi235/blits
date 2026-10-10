@@ -1,5 +1,6 @@
 import { index } from './chain.js';
 import { schedule } from './due.js';
+import { detour } from './everyone.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
@@ -249,6 +250,7 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
   for (const voice of kept) index(mix, voice);
   mix.owners = kept.some((v) => v.holding !== null) ? kept.filter((v) => v.holding !== null) : null;
   mix.loci = kept.filter((v) => v.spec.locus !== undefined).length;
+  detour(mix);
   mix.anchored = kept.filter((v) => v.spec.anchor !== undefined).length;
   mix.parters.clear();
   for (const voice of [...kept, ...gone])

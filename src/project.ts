@@ -1,6 +1,6 @@
 import { ownBlends } from './blend.js';
 import { index } from './chain.js';
-import { sighted } from './everyone.js';
+import { detour, open, sighted, weightAt } from './everyone.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
@@ -105,7 +105,11 @@ function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
   c.cued = mix.cued
     .filter((v) => v.state !== 'done')
     .map((v) => {
-      const copy: Voice<I, O> = v.copy((subject) => carry(mix, v, subject, c, copy));
+      const copy: Voice<I, O> = v.copy(
+        (subject) => carry(mix, v, subject, c, copy),
+        undefined,
+        true,
+      );
       const at = mix.pins?.get(v);
       if (at !== undefined) pin(c, copy, at);
       return copy;
@@ -167,6 +171,7 @@ export function count<I, O>(mix: Mixer<I, O>): void {
   mix.sharers = [];
   for (const voice of mix.cued) index(mix, voice);
   mix.loci = mix.cued.filter((v) => v.spec.locus !== undefined).length;
+  detour(mix);
   mix.anchored = mix.cued.filter((v) => v.spec.anchor !== undefined).length;
   mix.steps.push(null, ++mix.version);
 }
@@ -177,11 +182,16 @@ function recordOf<I, O>(
   voice: Voice<I, O>,
   subject: I,
 ): Subject<unknown> | undefined {
-  // A voice sharing one record has that for every subject a chain has asked it about.
-  if (voice.sharing)
-    return sighted(voice, mix.chains.get(subject)?.slot ?? -1)
-      ? (voice.everyone as Subject<unknown>)
-      : undefined;
+  // A voice sharing one record has that for every subject a chain has asked it about, pointed at
+  // the subject for the caller to copy from.
+  if (voice.sharing) {
+    const slot = mix.chains.get(subject)?.slot ?? -1;
+    if (!sighted(voice, slot)) return undefined;
+    const all = voice.everyone as Subject<unknown>;
+    open(voice, all, slot);
+    all.weight = weightAt(voice, slot);
+    return all;
+  }
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined || voice.unreachedBits === null) return held;
   return unreached(voice, mix.chains.get(subject)?.slot ?? -1)
@@ -268,16 +278,19 @@ function doubts<I, O>(mix: Mixer<I, O>, subject: I): { [K in keyof O]-?: Doubt }
     if (!waiting || !mix.aims(voice, subject)) continue;
     for (const slot of voice.slots) out[mix.names[slot] as string] = 'held';
   }
-  for (let held: Subject<unknown> | null = mix.chain(subject); held !== null; held = held.next) {
-    const voice = held.voice as Voice<I, O> | null;
-    if (voice === null || voice.state === 'done') continue;
-    if (held.weight <= 0) continue;
+  const feed = (voice: Voice<I, O>, held: Subject<unknown>) => {
+    if (voice.state === 'done' || held.weight <= 0) return;
     const d = doubtOf(mix, voice, held);
     for (const slot of voice.slots) {
       const name = mix.names[slot] as string;
       if (rank[d] > rank[out[name] as Doubt]) out[name] = d;
     }
-  }
+  };
+  for (let held: Subject<unknown> | null = mix.chain(subject); held !== null; held = held.next)
+    if (held.voice !== null) feed(held.voice as Voice<I, O>, held);
+  // A voice sharing one record is in no chain; its record holds the weight the fold just gave.
+  for (const voice of mix.sharers)
+    if (voice.everyone !== null && voice.state !== 'pending') feed(voice, voice.everyone);
   return out as { [K in keyof O]-?: Doubt };
 }
 

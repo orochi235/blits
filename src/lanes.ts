@@ -10,6 +10,7 @@ import {
   readKeyed,
   reset,
   run,
+  runEveryone,
   signalled,
   subjectAt,
 } from './fill.js';
@@ -542,6 +543,7 @@ const methods = {
   subjectAt,
   reset,
   run,
+  runEveryone,
   one,
   foldKeys,
   readKeyed,

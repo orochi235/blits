@@ -150,6 +150,13 @@ version and everything else the patch. Each release lists its changes as **Break
   three `keys` voices went from 1.8 MB a frame to 0.16 MB and take 0.81 of the time; a `tween`
   voice from 0.72 MB to 0.02 MB, 0.90 of the time; a `tween` voice with lanes off from 2.6 MB to
   0.32 MB, 0.82 of the time.
+- Cueing a voice over every subject costs much less. A voice with no `subjects`, `target`,
+  `stagger` or signal weight, whose patch keeps no state, kept a record for each subject probed;
+  it keeps one for them all, and a read ahead copies that one. `bench/frame.mjs`, 10,000 subjects
+  each under a `tween` voice of its own, with a voice over all of them replaced every frame: 9.3 MB
+  a frame to 2.7 MB, in 0.74 of the time. A read 500 ms ahead of 1,000 subjects under three voices,
+  made and probed every frame: 2.4 MB to 1.5 MB, in 0.80 of the time. A mix made with
+  `lanes: false`, or with `history`, keeps a record for each subject as before.
 - Under `history`, dropping subjects and reading them back each took time that grew with the square
   of how many had left: every drop went through every record its voice had kept, and so did every
   read back. 8,000 subjects dropped in one frame took 173 ms and take 7; reading them back took 180
