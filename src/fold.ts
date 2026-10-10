@@ -152,7 +152,7 @@ export function contribution<I, O>(
     held.phase = phase;
     delta = this.keyed(voice, subject, held);
   } else if (voice.motion !== undefined) {
-    delta = moved(voice.motion, voice.patch.writes[0] as string, subject, setting, held.delta);
+    delta = moved(voice.motion, voice.patch.writes[0] as string, subject, setting, held);
   } else {
     delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
   }

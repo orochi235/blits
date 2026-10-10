@@ -154,6 +154,8 @@ export class Motions<I> {
   private readonly numbers = new Numbers<I>(this);
   /** Numbers by subject once a second is numbered: till then the one subject is found by `numbers`. */
   private readonly slots = new Store<I, number>();
+  /** How many numbers have been given up, so a number kept elsewhere can tell it is stale. */
+  freed = 0;
   /** Axes per subject; -1 until the first subject sets it. */
   n = -1;
   private cap = 0;
@@ -621,6 +623,7 @@ export class Motions<I> {
   }
 
   forget(s: number): void {
+    this.freed++;
     if (this.pending !== null) this.pending[s] = undefined;
     if (this.older !== null) this.older[s] = undefined;
     if (this.causes !== null) this.causes[s] = undefined;

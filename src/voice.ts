@@ -91,6 +91,9 @@ export interface Subject<S> {
   loci: Map<string, Uint8Array> | null;
   /** On the first record: the number lanes index this subject by, -1 without one. */
   slot: number;
+  /** A motion voice's number for this subject in its patch, good while `freed` is the patch's own. */
+  run: number;
+  freed: number;
 }
 
 /**
