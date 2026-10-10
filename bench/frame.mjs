@@ -9,12 +9,12 @@ import { getHeapStatistics } from 'node:v8';
 import {
   angle,
   color,
-  hex,
   keys,
   kit,
   last,
   max,
   mix,
+  mixHex,
   mul,
   oklab,
   patch,
@@ -25,8 +25,8 @@ import {
   vec,
 } from '../dist/index.js';
 
-const K = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: hex() });
-// The same with color averaging as `color()`, which runs on lanes where hex does not.
+const K = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: last({ lerp: mixHex }) });
+// The same with color averaging as `color()`, which runs on lanes where a packed color does not.
 const KC = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: color() });
 // And with it replacing as `color(last())`, which runs on lanes too.
 const KL = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: color(last()) });
@@ -162,7 +162,7 @@ const rows = [
   // A glow around a pointer circling a 100x100 grid, weighted to 0 beyond 8 cells (about 2% of
   // subjects), over a voice on every subject; and that voice alone, so the glow's cost is the
   // difference. A reach bounded to the glow would pay for 2% of it. `glowc` also writes color,
-  // as the playground's glow does; hex runs on no lane, so the glow and the voice under it leave
+  // as the playground's glow does; a packed color runs on no lane, so the glow and the voice under it leave
   // the lanes together. `glowk` writes it to a `color()` channel instead,
   // and `glowl` to a `color(last())`. `glowkeys` is `glowc` as keys, which a subject at weight 0
   // does not read.

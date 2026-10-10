@@ -1799,7 +1799,7 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
                 }),
           subjects: [p],
           loop: i % 4 < 2 ? 2 : true,
-          hold: i % 3 === 0 ? 'both' : i % 3 === 1 ? 'after' : undefined,
+          freeze: i % 3 === 0 ? 'both' : i % 3 === 1 ? 'after' : undefined,
           start: i % 5 === 0 ? 300 : 0,
           fade: i % 3 === 2 ? { in: 150, out: 200 } : undefined,
           weight: i % 4 === 1 ? 0.5 : 1,

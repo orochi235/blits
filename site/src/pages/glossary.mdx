@@ -251,7 +251,7 @@ In depth: [Mix](../mix/). Reference: [`Channel`](../channel/#api-Channel).
 
 ## `freeze`
 
-A voice normally shows nothing before it starts or after it finishes. `freeze: 'before'` shows each [subject](#subject) the voice's first frame while it waits to start, `'after'` keeps the last frame once a finite [`loop`](#loop) has played out, and `'both'` does both. A voice freezing after stays, `frozen`, in the mix until you [`fade`](#fade) it. The name is SMIL's for the same thing; `hold`, its name before 0.6.0, still works and is deprecated.
+A voice normally shows nothing before it starts or after it finishes. `freeze: 'before'` shows each [subject](#subject) the voice's first frame while it waits to start, `'after'` keeps the last frame once a finite [`loop`](#loop) has played out, and `'both'` does both. A voice freezing after stays, `frozen`, in the mix until you [`fade`](#fade) it. The name is SMIL's for the same thing.
 
 ```ts
 dots.cue({ patch: rise, loop: false, stagger: (dot) => dot.i * 100, freeze: 'after' });
@@ -437,8 +437,7 @@ In depth: [Patch](../patch/), [Patch state](../state/). Reference: [`Patch`](../
 
 ## period
 
-Only a voice that [loops](#loop) has a period: the [duration](#duration) of the patch it repeats. `Patch.period` is a deprecated alias for `duration`, kept so a patch that sets it still plays.
-
+Only a voice that [loops](#loop) has a period: the [duration](#duration) of the patch it repeats.
 `bob` cued with `loop: true` has a period of 1000, so it bobs once a second.
 
 In depth: [Patch](../patch/). Reference: [`Patch`](../patch/#api-Patch).

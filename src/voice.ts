@@ -7,7 +7,7 @@ import type { Motions } from './motions.js';
 import { Named } from './named.js';
 import type { Past } from './origin.js';
 import { childPlayed, Holding, mixTime, ownedElapsed, ownerPatch } from './owner.js';
-import { type Built, builtOf, durationOf, intosOf, type Scratch } from './patch.js';
+import { type Built, builtOf, intosOf, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import type { Fitting } from './spans.js';
 import { Store } from './store.js';
@@ -536,13 +536,13 @@ export class Voice<I, O> {
       : undefined;
     this.ease = fade.ease === undefined ? undefined : curve(fade.ease);
     this.passes = passesOf(spec.loop);
-    this.duration = durationOf(patch);
+    this.duration = patch.duration;
     this.span =
       this.duration > 0 && Number.isFinite(this.passes)
         ? this.duration * this.passes
         : Number.POSITIVE_INFINITY;
     this.motion = motionOf<I>(patch);
-    const freezes = this.motion === undefined ? (spec.freeze ?? spec.hold) : undefined;
+    const freezes = this.motion === undefined ? spec.freeze : undefined;
     // A voice with no freeze of its own takes its owner's.
     const inherits = freezes === undefined && this.motion === undefined && owner !== null;
     this.freezesBefore = inherits

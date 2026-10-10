@@ -79,7 +79,6 @@ class MotionPatch<I, O, V extends Value> {
   }
   readonly form = 'motion' as const;
   readonly duration = 0;
-  readonly period = 0;
   get motion(): MotionSpec {
     return this.motions.spec();
   }

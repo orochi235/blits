@@ -237,7 +237,7 @@
   <dt>Contribution</dt><dd>What one voice does to one subject in one frame, once its weight is applied. Not a share of the whole: two voices each contributing <code>gain: 0.1</code> leave the subject at 0.01.</dd>
   <dt>Duration</dt><dd>How long one pass of a patch lasts, in milliseconds, whether or not the voice loops. 0 means the patch has no passes.</dd>
   <dt>Pass</dt><dd>One run through a patch, phase 0 to 1.</dd>
-  <dt>Period</dt><dd>The duration a looping voice repeats. <code>Patch.period</code> is a deprecated alias for <code>duration</code>.</dd>
+  <dt>Period</dt><dd>The duration a looping voice repeats.</dd>
   <dt>Phase</dt><dd>Where a voice is within its current pass, 0 to 1, wrapping. The first thing a patch is handed, and what <code>stagger</code> spreads per subject.</dd>
   <dt>Setting</dt><dd>What a patch may read and did not compute, for one subject this frame: the clock and <code>dt</code> the whole frame shares, the <code>elapsed</code>, <code>pass</code> and <code>weight</code> particular to the voice, its state, and whatever the host added.</dd>
   <dt>System</dt><dd>One complete area of driven behavior: a kit, the subject type it drives, and the mix over them. klieg's motion, effects and lighting are three systems in one host. Two systems never share a mix, so a voice belongs to exactly one.</dd>
@@ -310,8 +310,6 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
   <span class="cm">/** Milliseconds one pass lasts, whether or not the voice loops. 0 has no passes: `phase` and `pass`
      stay 0, `loop` is ignored, and the patch reads `setting.elapsed` instead. */</span>
   duration: number;
-  <span class="cm">/** @deprecated Use `duration`. A patch that sets only `period` still plays. */</span>
-  readonly period?: number;
   <span class="cm">/** The channels this patch contributes to. Every key `at` sets, and no others. */</span>
   readonly writes: readonly (keyof O)[];
   <span class="cm">/** The channels it was written against. `cue` refuses a kit whose channel of the same name is another kind. */</span>
@@ -375,7 +373,7 @@ interface Setting&lt;S = void, H = unknown&gt; {
 
 <p><code>writes</code> is the patch's half of the contract the rest of the package already states: a channel kit declares what a consumer has, an engine declares its <code>runs</code> set, and both are checked at <code>cue</code>. Without it the only way to learn what a patch touches is to call it, per subject, per frame. With it the mix refuses a patch contributing a channel the kit lacks, resolves each voice's channels once at <code>cue</code> instead of walking the whole kit per probe, and can answer what a voice affects without probing it. A <code>keys</code> patch derives it from its stops.</p>
 
-<p>Two small names the page leans on: <code>Easing</code> is a curve on 0..1, given as data where it can be &mdash; CSS&rsquo;s names (<code>'ease-in-out'</code>), <code>{ bezier: [x1, y1, x2, y2] }</code> or <code>{ steps, jump? }</code>, which a WAAPI or GPU engine can read &mdash; or as a <code>(u: number) =&gt; number</code>, which only the CPU engine runs, and <code>Keyframe&lt;O&gt;</code> is one stop, <code>{ at: number; delta: Partial&lt;O&gt;; ease?: Easing }</code>, kept on <code>patch.keys</code> so an engine can read what a <code>keys</code> patch is made of. <code>hex</code>, deprecated for <code>color(last(), { lerp: 'oklch' })</code>, holds 0xrrggbb, and <code>mixHex</code> is its <code>lerp</code>, which blends in OKLCH with hue taken the short way round, so a crossfade between hues keeps its lightness and saturation; a mix outside sRGB&rsquo;s gamut is clipped per channel. <code>hex({ space: 'srgb' })</code> blends red, green and blue each on its own instead, as klieg&rsquo;s light channel does.</p>
+<p>Two small names the page leans on: <code>Easing</code> is a curve on 0..1, given as data where it can be &mdash; CSS&rsquo;s names (<code>'ease-in-out'</code>), <code>{ bezier: [x1, y1, x2, y2] }</code> or <code>{ steps, jump? }</code>, which a WAAPI or GPU engine can read &mdash; or as a <code>(u: number) =&gt; number</code>, which only the CPU engine runs, and <code>Keyframe&lt;O&gt;</code> is one stop, <code>{ at: number; delta: Partial&lt;O&gt;; ease?: Easing }</code>, kept on <code>patch.keys</code> so an engine can read what a <code>keys</code> patch is made of. <code>mixHex</code> is a <code>lerp</code> for a color kept as 0xrrggbb, which blends in OKLCH with hue taken the short way round, so a crossfade between hues keeps its lightness and saturation; a mix outside sRGB&rsquo;s gamut is clipped per channel.</p>
 
 <p>Wrappers stay wrappers. klieg's <code>turns</code>, <code>roving</code>, <code>intermittent</code>, <code>hinge</code> and <code>partition</code> take a patch and return a patch, and none of them changes except to pass <code>writes</code> through &mdash; a wrapper reshapes one contribution and never adds a channel to it. Composition at the patch level is for reshaping one contribution; composition at the mix level is for running several. The two do not merge.</p>
 
@@ -404,7 +402,7 @@ interface Setting&lt;S = void, H = unknown&gt; {
      kept, like <code>target</code>; the subject's fade in starts when the voice clock reaches it. */</span>
   stagger?: (subject: I) =&gt; number;
   <span class="cm">/** Show the first frame before a subject starts, the last after its passes run out, or both. Default: neither,
-     so the voice shows nothing outside its passes. See Freezing. <code>hold</code>, its name before 0.6.0, still works and is deprecated. */</span>
+     so the voice shows nothing outside its passes. See Freezing. */</span>
   freeze?: 'before' | 'after' | 'both';
 
   <span class="cm">// weight</span>

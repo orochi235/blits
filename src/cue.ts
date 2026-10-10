@@ -9,7 +9,6 @@ import { handle } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import { motionOf } from './motion.js';
 import { adopt, ownerPatch, ownerReading } from './owner.js';
-import { durationOf } from './patch.js';
 import { checkPlacement, localNow, mixAt, pin, place } from './place.js';
 import { enlist } from './roster.js';
 import { scoredAdd } from './scored.js';
@@ -29,7 +28,7 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
   const anchor = spec.anchor;
   const owner = spec.owner === undefined ? null : ownerOf(mix, spec.owner);
   if (anchor) checkPlacement(mix, spec, anchor, owner);
-  if (spec.hits !== undefined) checkHits(spec.hits, durationOf(patch));
+  if (spec.hits !== undefined) checkHits(spec.hits, patch.duration);
 
   const anchored = anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
   // A voice an owner holds is placed on the owner's clock: ms from when it starts.

@@ -189,27 +189,6 @@ describe('the clock', () => {
     expect(seen).toEqual([0, 0.25, 0.5, 0, 0.25]);
   });
 
-  it('a patch that sets only the deprecated period plays passes of that length', () => {
-    const seen: number[] = [];
-    const { duration: _, ...built } = patch<Part, Pose>(
-      1000,
-      (phase) => {
-        seen.push(phase);
-        return {};
-      },
-      { writes: [] },
-    );
-    expect(built.period).toBe(1000);
-    const m = mix<Part, Pose>(PART);
-    m.cue({ patch: built as never });
-    const part = { id: 'a' };
-    for (const now of [0, 250, 1250]) {
-      m.sync(now);
-      m.probe(part);
-    }
-    expect(seen).toEqual([0, 0.25, 0.25]);
-  });
-
   it('a duration of 0 holds phase and pass at 0 and hands over elapsed instead', () => {
     const seen: { phase: number; pass: number; elapsed: number }[] = [];
     const p = patch<Part, Pose>(

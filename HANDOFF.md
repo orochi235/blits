@@ -62,8 +62,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `fill: 'forwards'` and awaits `animation.finished`, which map to `freeze: 'after'` and
   `handle.played`. The schema page's Freezing paragraph has the design. Mike chose the values
   `before`/`after`/`both`, that a frozen voice's end is when it is faded, not when its passes run
-  out, and the name `freeze` once the ticker's `hold()` took the word; `hold` stays a deprecated
-  alias, and the state is `'frozen'`. wod (`anglePatch.ts`, `transition/tracks.ts`'s `'held'`) and
+  out, and the name `freeze` once the ticker's `hold()` took the word; the state is
+  `'frozen'`, and the alias `hold` is removed in the unreleased batch (2026-10-10). wod (`anglePatch.ts`, `transition/tracks.ts`'s `'held'`) and
   klieg (`compositor.ts`) change when they move past 0.5.0.
 - **`mix.inert` shipped in 0.4.0** (built 2026-10-03, merge `3228fa7`), for wod's frame loop to
   sleep under a landed wheel while `live` stays true. Mike asked for it and named it through the wod
@@ -155,8 +155,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   for the channel set instead, so klieg keeps `domain` (Mike, 2026-10-05).
 - **`duration`, not `period`** (2026-10-04, Mike's call): a pass is one run through a patch whether
   or not it loops, and only a looping voice has a period. `Patch.duration` is the field;
-  `Patch.period` stays as a deprecated alias, set on every built patch and read by `durationOf`
-  where a patch sets only it. Removing the alias is a later breaking release.
+  the alias `Patch.period` is removed in the unreleased batch (2026-10-10).
 - **`phase`** is the fixed name for the normalized position within a pass, formerly `t`. It costs
   renaming klieg's `onPhase` and `PhaseEvent`, which sherpa consumes through `ctx.phase`.
 - **The vocabulary is called**, every role enshrined on 2026-09-29, and

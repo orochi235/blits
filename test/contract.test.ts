@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { kit, mul, sum } from '../src/channels.js';
-import { hex } from '../src/color.js';
+import { kit, last, mul, sum } from '../src/channels.js';
+import { mixHex } from '../src/color.js';
 import { mix, mixer } from '../src/mixer.js';
 import { spring } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
@@ -212,7 +212,9 @@ describe('the mix as a host sees it', () => {
   });
 
   it('a reused out object carries nothing from one subject to the next', () => {
-    const m = mix<Part, { gain: number; color?: number }>(kit({ gain: mul(), color: hex() }));
+    const m = mix<Part, { gain: number; color?: number }>(
+      kit({ gain: mul(), color: last<number>({ lerp: mixHex }) }),
+    );
     const a = { id: 'a' };
     m.cue({
       patch: patch<Part, { gain: number; color?: number }>(0, () => ({ color: 0xff0000 }), {

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { kit, mul, sum } from '../src/channels.js';
-import { hex } from '../src/color.js';
+import { kit, last, mul, sum } from '../src/channels.js';
+import { mixHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
 import { gate, heard, input, lag, level, peak, slew } from '../src/signals.js';
@@ -11,7 +11,7 @@ interface Pose {
   crawl: number;
   color: number;
 }
-const PART = kit<Pose>({ gain: mul(), crawl: sum(), color: hex() });
+const PART = kit<Pose>({ gain: mul(), crawl: sum(), color: last<number>({ lerp: mixHex }) });
 interface Part {
   id: string;
 }

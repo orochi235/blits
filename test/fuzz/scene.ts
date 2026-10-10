@@ -182,7 +182,6 @@ interface Cue {
   loop?: false | number;
   start?: number;
   freeze?: 'before' | 'after' | 'both';
-  hold?: 'before' | 'after' | 'both';
   rate?: number;
   stagger: number;
   owner?: { rate: number; weight: number; fade?: { in: number; out: number }; start?: number };
@@ -365,7 +364,11 @@ export function scene(seed: number, options: SceneOptions = {}): Scene {
         if (r.p(0.3)) cue.loop = r.pick([false, 2] as const);
         if (r.p(0.2)) cue.start = t + r.pick([0, 50, 200, -100]);
         if (r.p(0.2)) cue.freeze = r.pick(['before', 'after', 'both'] as const);
-        if (r.p(0.15)) cue.hold = r.pick(['before', 'after', 'both'] as const);
+        // A second draw, taken whether or not it is used, so every seed keeps the scene it had.
+        if (r.p(0.15)) {
+          const again = r.pick(['before', 'after', 'both'] as const);
+          cue.freeze ??= again;
+        }
         if (r.p(0.2)) cue.rate = r.pick([0.5, 2, 0, -1]);
         cue.stagger = r.p(0.2) ? r.pick([30, 100]) : 0;
         if (o.owners && r.p(0.4))
@@ -429,7 +432,6 @@ function cue(e: Env, c: Cue): void {
   if (c.loop !== undefined) s.loop = c.loop;
   if (c.start !== undefined) s.start = c.start;
   if (c.freeze) s.freeze = c.freeze;
-  if (c.hold) s.hold = c.hold;
   if (c.rate !== undefined) s.rate = c.rate;
   const stagger = c.stagger;
   if (stagger) s.stagger = (p) => p.id * stagger;

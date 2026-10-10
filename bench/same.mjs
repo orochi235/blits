@@ -57,7 +57,7 @@ function run(lib, seed, general = false) {
     dark: lib.max(),
     off: lib.sum(),
     pos: lib.vec(3, lib.sum()),
-    color: lib.hex(),
+    color: lib.last({ lerp: lib.mixHex }),
     tag: lib.last(),
   });
   const opts = { lanes: chance(0.7) && !general };
@@ -203,7 +203,7 @@ function run(lib, seed, general = false) {
     if (chance(0.3)) spec.rate = pick([0.5, 2]);
     if (chance(0.3)) spec.weight = chance(0.5) ? r() * 1.5 : signal();
     if (chance(0.4)) spec.fade = { in: pick([0, 50, 200]), out: pick([0, 100, 300]) };
-    if (chance(0.15)) spec.hold = pick(['before', 'after', 'both']);
+    if (chance(0.15)) spec.freeze = pick(['before', 'after', 'both']);
     if (chance(0.2)) spec.start = spec.owner ? pick([0, 100]) : t + pick([50, 200]);
     const h = attempt('owns', () => m.owns(spec));
     if (h !== undefined) {
@@ -231,7 +231,7 @@ function run(lib, seed, general = false) {
     if (chance(0.3)) spec.loop = chance(0.5) ? true : int(1, 3);
     if (chance(0.2)) spec.rate = pick([0.5, 2]);
     if (chance(0.2)) spec.stagger = (s) => s.i * 7;
-    if (chance(0.15)) spec.hold = pick(['before', 'after', 'both']);
+    if (chance(0.15)) spec.freeze = pick(['before', 'after', 'both']);
     if (chance(0.1)) spec.start = t + pick([50, 200]);
     if (owning && owners.length > 0 && chance(0.5)) {
       spec.owner = pick(owners);

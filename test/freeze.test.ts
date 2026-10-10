@@ -287,18 +287,3 @@ describe('played', () => {
     expect(await h.played).toBe(false);
   });
 });
-
-describe('hold, the deprecated name for freeze', () => {
-  it('still freezes, and freeze wins where both are set', () => {
-    const m = mix<Part, Pose>(PART);
-    const old = m.cue({ patch: ramp(), loop: 1, hold: 'after' });
-    const both = m.cue({ patch: ramp(), loop: 1, hold: 'after', freeze: 'before' });
-    m.sync(0);
-    m.probe(part);
-    m.sync(200);
-    m.probe(part);
-    m.sync(210);
-    expect(old.state).toBe('frozen');
-    expect(both.state).not.toBe('frozen');
-  });
-});

@@ -42,6 +42,12 @@ version and everything else the patch. Each release lists its changes as **Break
   array there on every probe. A host that kept `out.position` from one probe and compared it with
   the next now holds the same array both times: copy what has to outlast the next probe. A probe
   with no `out` still makes its own arrays.
+- The deprecated names are removed. A voice's or an owner's `hold` is `freeze`, as since 0.6.0. A
+  patch's `period` is `duration`: a hand-made patch that set only `period` now has no duration.
+  `hex()` is gone, and `hex({ space: 'srgb' })` with it: `last<number>({ lerp: mixHex })` is the
+  same channel for a color kept as 0xrrggbb, and `color(last(), { lerp: 'oklch' })` with `toHex`
+  at write is the one that also runs with `color()`'s coverage. Nothing blends red, green and blue
+  each on its own any more; a host that wants that gives `last` a `lerp` of its own.
 
 ### Added
 

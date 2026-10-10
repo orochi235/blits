@@ -37,7 +37,7 @@ const acts: Act[] = [
         loop: [true, false, 2, 3][pick(4)] as boolean | number,
         fade: { in: pick(2) * 100, out: pick(2) * 150 },
         stagger: pick(2) === 0 ? undefined : (r) => r.id * 40,
-        hold: ([undefined, 'before', 'after', 'both'] as const)[pick(4)],
+        freeze: ([undefined, 'before', 'after', 'both'] as const)[pick(4)],
       }),
     ),
   (m, hs, rs, pick) =>

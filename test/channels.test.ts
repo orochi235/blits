@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { foldNumber, kit, last, max, mul, numericOf, sum, vec } from '../src/channels.js';
-import { hex, mixHex } from '../src/color.js';
+import { mixHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
 import type { Channel } from '../src/types.js';
@@ -129,24 +129,14 @@ describe('channel laws', () => {
     expect(channel.scale?.([2, 2], 1)).toEqual([2, 2, 1]);
   });
 
-  it('hex: lerps in OKLCH and ends where it was told to', () => {
+  it('mixHex: lerps in OKLCH and ends where it was told to', () => {
     expect(mixHex(0x000000, 0xffffff, 0)).toBe(0x000000);
     expect(mixHex(0x000000, 0xffffff, 1)).toBe(0xffffff);
     expect(mixHex(0x000000, 0xffffff, 0.5)).toBe(0x636363);
     expect(mixHex(0xff0000, 0x0000ff, 0.5)).toBe(0xba00c2);
-    expect(hex().merge(0x112233, 0x445566)).toBe(0x445566);
   });
 
-  it("hex: space 'srgb' blends red, green and blue each on its own", () => {
-    const srgb = hex({ space: 'srgb' });
-    expect(srgb.kind).toBe('hex');
-    expect(srgb.lerp(0x000000, 0xffffff, 0.5)).toBe(0x808080);
-    expect(srgb.lerp(0xff0000, 0x0000ff, 0.5)).toBe(0x800080);
-    expect(srgb.lerp(0x112233, 0x445566, 0)).toBe(0x112233);
-    expect(hex().lerp(0xff0000, 0x0000ff, 0.5)).toBe(mixHex(0xff0000, 0x0000ff, 0.5));
-  });
-
-  it('hex: a gray end takes the other end’s hue rather than swinging through one of its own', () => {
+  it('mixHex: a gray end takes the other end’s hue rather than swinging through one of its own', () => {
     expect(mixHex(0x808080, 0xff0000, 0.5)).toBe(0xc66356);
     expect(mixHex(0xff0000, 0x808080, 0.5)).toBe(0xc66356);
   });
@@ -223,7 +213,7 @@ describe('numericOf and foldNumber', () => {
     expect(numericOf(mul({ bounds: [0, 1] }))).toEqual({ op: 'mul', axes: 1 });
     expect(numericOf(max())).toEqual({ op: 'max', axes: 1 });
     expect(numericOf(vec(3, sum()))).toEqual({ op: 'sum', axes: 3 });
-    expect(numericOf(hex())).toBeUndefined();
+    expect(numericOf(last<number>({ lerp: mixHex }))).toBeUndefined();
     expect(numericOf({ ...sum() })).toBeUndefined();
   });
 

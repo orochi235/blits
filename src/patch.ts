@@ -37,7 +37,6 @@ export function patch<I, O, S = void, H = unknown>(
   return {
     form: 'fn',
     duration,
-    period: duration,
     writes,
     kit: opts.kit,
     reads: opts.reads,
@@ -435,9 +434,6 @@ export function readKeys(
   return out;
 }
 
-/** A patch's `duration`, or the deprecated `period` where only that is set. */
-export const durationOf = <I, O, S>(p: Patch<I, O, S>): number => p.duration ?? p.period ?? 0;
-
 const cache = new WeakMap<object, Built>();
 
 /**
@@ -447,7 +443,7 @@ const cache = new WeakMap<object, Built>();
 export function builtOf<I, O, S>(p: Patch<I, O, S>): Built {
   let held = cache.get(p);
   if (held === undefined) {
-    held = build(p.keys as readonly Keyframe<O>[], p.writes, durationOf(p), p);
+    held = build(p.keys as readonly Keyframe<O>[], p.writes, p.duration, p);
     cache.set(p, held);
   }
   return held;
@@ -480,7 +476,6 @@ export function keys<I, O>(
   const p: Patch<I, O, void> = {
     form: 'keys',
     duration,
-    period: duration,
     writes,
     kit: opts.kit,
     keys: stops,

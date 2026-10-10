@@ -137,8 +137,6 @@ export interface Patch<I, O, S = void, H = unknown> {
   readonly form: 'fn' | 'keys' | 'motion';
   /** Milliseconds one pass lasts, whether or not the voice loops. 0 has no passes: phase and pass stay 0. */
   readonly duration: number;
-  /** @deprecated Use `duration`. A patch that sets only `period` still plays. */
-  readonly period?: number;
   /** The channels this patch contributes to. Every key `at` sets, and no others. */
   readonly writes: readonly (keyof O)[];
   /**

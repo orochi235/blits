@@ -91,8 +91,6 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    * nothing to a motion patch, which keeps its target already. Default: neither.
    */
   freeze?: 'before' | 'after' | 'both';
-  /** @deprecated Use `freeze`. A voice that sets only `hold` still freezes; `freeze` wins over it. */
-  hold?: 'before' | 'after' | 'both';
 
   /** Steady weight, or a signal read per subject per frame. Default 1. */
   weight?: number | Signal<I, H>;
@@ -152,8 +150,6 @@ export interface OwnerSpec<I, H = unknown> extends SpanHints {
   fade?: FadeSpec;
   /** The freeze every child without one of its own takes. */
   freeze?: 'before' | 'after' | 'both';
-  /** @deprecated Use `freeze`. An owner that sets only `hold` still freezes; `freeze` wins over it. */
-  hold?: 'before' | 'after' | 'both';
   /** Words a source attaches to it, as a voice's. */
   tags?: readonly string[];
   /** What other voices call it by, among its siblings. */

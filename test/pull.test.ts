@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { kit, mul, sum, vec } from '../src/channels.js';
-import { hex } from '../src/color.js';
+import { kit, last, mul, sum, vec } from '../src/channels.js';
+import { mixHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { keys } from '../src/patch.js';
 
@@ -9,7 +9,11 @@ interface Pose {
   position: number[];
   color?: number;
 }
-const K = kit<Pose>({ gain: mul(), position: vec(2, sum()), color: hex() });
+const K = kit<Pose>({
+  gain: mul(),
+  position: vec(2, sum()),
+  color: last<number>({ lerp: mixHex }),
+});
 const parts = [{ id: 0 }, { id: 1 }, { id: 2 }];
 
 describe('pull', () => {

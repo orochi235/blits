@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { kit, last, mul, sum, vec } from '../src/channels.js';
-import { hex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
 import { level, slew } from '../src/signals.js';
@@ -54,10 +53,9 @@ describe('patches written against a kit', () => {
   });
 
   it('give the stock channels kinds, and a last with its own lerp none', () => {
-    expect([sum().kind, mul().kind, hex().kind, last().kind, vec(3, sum()).kind]).toEqual([
+    expect([sum().kind, mul().kind, last().kind, vec(3, sum()).kind]).toEqual([
       'sum',
       'mul',
-      'hex',
       'last',
       'vec(3, sum)',
     ]);

@@ -1,4 +1,4 @@
-import { last, lerpNumber, numericOf, sum, vec, vouch, widen } from './channels.js';
+import { lerpNumber, numericOf, sum, vec, vouch, widen } from './channels.js';
 import type { Channel } from './types.js';
 
 const mix = lerpNumber;
@@ -112,33 +112,6 @@ export function mixHex(a: number, b: number, u: number): number {
   if (turn > Math.PI) turn -= 2 * Math.PI;
   else if (turn < -Math.PI) turn += 2 * Math.PI;
   return fromOklch(mix(al, slotL[sb] as number, u), mix(ac, bc, u), from + turn * u);
-}
-
-const clamp255 = (v: number) => (v < 0 ? 0 : v > 255 ? 255 : Math.round(v));
-
-/** Each of red, green and blue on its own, as klieg's light channel blends. */
-function mixSrgb(a: number, b: number, u: number): number {
-  const ar = (a >> 16) & 0xff;
-  const ag = (a >> 8) & 0xff;
-  const ab = a & 0xff;
-  const br = (b >> 16) & 0xff;
-  const bg = (b >> 8) & 0xff;
-  const bb = b & 0xff;
-  return (
-    (clamp255(mix(ar, br, u)) << 16) | (clamp255(mix(ag, bg, u)) << 8) | clamp255(mix(ab, bb, u))
-  );
-}
-
-/**
- * Color, as 0xrrggbb, blended in OKLCH as `mixHex` does, or with `space: 'srgb'` channel by
- * channel in sRGB, which keeps a port's arithmetic identical to a host that blended that way.
- *
- * @deprecated Use `color(last(), { lerp: 'oklch' })`, which replaces as this does, and `toHex` at
- * write. A packed color has no arithmetic to stack with; `color()` averages instead.
- * @category channel
- */
-export function hex(opts?: { space?: 'oklch' | 'srgb' }): Channel<number> {
-  return { ...last<number>({ lerp: opts?.space === 'srgb' ? mixSrgb : mixHex }), kind: 'hex' };
 }
 
 /**

@@ -14,7 +14,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 
 A patch is a pure function of **phase** and a subject. It returns a **delta**, a partial pose holding only the channels it has something to say about. It doesn't know when it started, how loud it is or what else is playing; a voice gives it those. The same patch can play on ten voices at once.
 
-**Duration** is how many milliseconds one **pass** lasts, whether or not the voice loops, and **phase** runs from 0 to 1 across it, then wraps. A duration of 0 means the patch has no passes: phase stays 0, and the patch reads `setting.elapsed` instead if it needs time. Only a looping voice has a period, the duration it repeats; `Patch.period` survives as a deprecated alias for `duration`.
+**Duration** is how many milliseconds one **pass** lasts, whether or not the voice loops, and **phase** runs from 0 to 1 across it, then wraps. A duration of 0 means the patch has no passes: phase stays 0, and the patch reads `setting.elapsed` instead if it needs time. Only a looping voice has a period, the duration it repeats.
 
 Every patch declares its **writes**: the channels it may contribute to. The mix checks them against the kit when the patch is cued, so a patch that writes a channel the kit lacks is refused there rather than failing a frame later, and the mix never has to call a patch to learn what it touches.
 

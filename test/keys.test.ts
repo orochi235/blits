@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { kit, mul, sum, vec } from '../src/channels.js';
-import { hex, mixHex } from '../src/color.js';
+import { kit, last, mul, sum, vec } from '../src/channels.js';
+import { mixHex } from '../src/color.js';
 import { curve } from '../src/easing.js';
 import { mix } from '../src/mixer.js';
 import { evalKeys, keys, patch } from '../src/patch.js';
@@ -243,7 +243,7 @@ describe('keyed stops interpolate through the channel', () => {
       return a + d * u;
     },
   };
-  const LIT = kit<Lit>({ color: hex(), angle: wrapped });
+  const LIT = kit<Lit>({ color: last<number>({ lerp: mixHex }), angle: wrapped });
   const subject = { id: 'a' };
 
   it("reads a keyed color through the mix's hex lerp, not as a packed integer", () => {
@@ -303,7 +303,7 @@ describe('keyed stops interpolate through the channel', () => {
         { at: 0, delta: { color: 0xff0000 } },
         { at: 1, delta: { color: 0x0000ff } },
       ],
-      { kit: { color: hex() } },
+      { kit: { color: last<number>({ lerp: mixHex }) } },
     );
     expect(p.at(0.5, subject, undefined as never).color).toBe(mixHex(0xff0000, 0x0000ff, 0.5));
   });
@@ -400,7 +400,7 @@ describe.each([true, false])('a copy of a keys patch, lanes %s', (lanes) => {
   });
 
   it('keeps its easing and delay under a new duration', () => {
-    const long = { ...made, duration: 2000, period: 2000 };
+    const long = { ...made, duration: 2000 };
     const want = keys<typeof s, P>(2000, made.keys ?? [], {
       ease: 'ease-in',
       delayBy: (c) => (c === 'x' ? 200 : 0),
