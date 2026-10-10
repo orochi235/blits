@@ -57,7 +57,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
     fits: (voice) => fits(mix, voice),
     meet: (voice, subject, head, slot) => {
       for (let held = head; held !== null; held = held.next) if (held.voice === voice) return held;
-      return mix.held(voice, subject, mix.now, slot);
+      return mix.held(voice, subject, slot);
     },
     forgot: (slot) => {
       // Only a voice over every subject keeps bits, and one gone may still be read back.

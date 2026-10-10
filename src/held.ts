@@ -26,12 +26,12 @@ export function held<I, O>(
   this: Mixer<I, O>,
   voice: Voice<I, O>,
   subject: I,
-  now: number,
   slot: number,
 ): Subject<unknown> {
   if (unreached(voice, slot)) return voice.unreached as Subject<unknown>;
   let held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined) return held;
+  const now = this.now;
   const reaches = this.aims(voice, subject);
   if (!reaches) {
     // Nothing is kept for a subject the voice does not reach, so one record stands for them all:

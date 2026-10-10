@@ -73,7 +73,7 @@ export function ownedBy<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, subject: I)
  */
 export function ownerBase<I, O>(this: Mixer<I, O>, owner: Voice<I, O>, subject: I): number {
   const now = this.now;
-  const held = this.held(owner, subject, now, -1);
+  const held = this.held(owner, subject, -1);
   if (held.probed === this.frame) return held.phase;
   const kept = reading.kept;
   this.prime(owner, held, now, owner.elapsedAt(now), 0);

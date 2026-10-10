@@ -19,43 +19,19 @@ export function chain<I, O>(this: Mixer<I, O>, subject: I): Subject<unknown> {
   return was !== undefined && was.version === this.version ? was : this.relink(subject, was);
 }
 
-// Apart from `chain` so that its closures' context is made only when a chain is relinked, and
-// `chain` stays small enough for V8 to inline where a probe links.
+// Apart from `chain`, which stays small enough for V8 to inline where a probe links.
 export function relink<I, O>(
   this: Mixer<I, O>,
   subject: I,
   was: Subject<unknown> | undefined,
 ): Subject<unknown> {
-  const now = this.now;
   const slot = was !== undefined ? was.slot : this.lanes !== null ? this.lanes.number(subject) : -1;
   // Where only voices over every subject changed since, those alone are taken off or put on.
   let first =
     was === undefined
       ? undefined
-      : this.steps.patch(was.voice === null ? null : was, was.version, (voice) =>
-          this.linkable(voice, subject, now, slot),
-        );
-  if (first === undefined) {
-    let prev: Subject<unknown> | null = null;
-    first = null;
-    const link = (voice: Voice<I, O>) => {
-      const held = this.linkable(voice, subject, now, slot);
-      if (held === null) return;
-      held.voice = voice;
-      held.next = null;
-      if (prev === null) first = held;
-      else prev.next = held;
-      prev = held;
-    };
-    const named = this.naming === 0 ? undefined : this.named.get(subject);
-    let j = 0;
-    for (const voice of this.general) {
-      while (named !== undefined && j < named.length && (named[j] as Voice<I, O>).id < voice.id)
-        link(named[j++] as Voice<I, O>);
-      link(voice);
-    }
-    while (named !== undefined && j < named.length) link(named[j++] as Voice<I, O>);
-  }
+      : this.steps.patch(was.voice === null ? null : was, was.version, this, subject, slot);
+  if (first === undefined) first = linkAll(this, subject, slot);
   const head = first ?? stub();
   head.version = this.version;
   if (was !== undefined && was !== head) {
@@ -68,17 +44,45 @@ export function relink<I, O>(
   return head;
 }
 
+/** A subject's chain linked afresh through every voice that reaches it, in voice order. */
+function linkAll<I, O>(mix: Mixer<I, O>, subject: I, slot: number): Subject<unknown> | null {
+  let first: Subject<unknown> | null = null;
+  let prev: Subject<unknown> | null = null;
+  const named = mix.naming === 0 ? undefined : mix.named.get(subject);
+  let j = 0;
+  const general = mix.general;
+  for (let i = 0; i <= general.length; i++) {
+    const voice = i < general.length ? (general[i] as Voice<I, O>) : null;
+    // The voices naming the subject that come before this one, then this one.
+    for (;;) {
+      const mine = named !== undefined && j < named.length ? (named[j] as Voice<I, O>) : null;
+      const next = mine !== null && (voice === null || mine.id < voice.id) ? mine : voice;
+      if (next === null) break;
+      if (next === mine) j++;
+      const held = mix.linkable(next, subject, slot);
+      if (held !== null) {
+        held.voice = next;
+        held.next = null;
+        if (prev === null) first = held;
+        else prev.next = held;
+        prev = held;
+      }
+      if (next === voice) break;
+    }
+  }
+  return first;
+}
+
 /** A voice's record for a subject where its chain links it: the voice plays or freezes, and reaches it. */
 export function linkable<I, O>(
   this: Mixer<I, O>,
   voice: Voice<I, O>,
   subject: I,
-  now: number,
   slot: number,
 ): Subject<unknown> | null {
   const state = voice.state;
   if (state === 'done' || (state === 'pending' && !voice.freezesBefore)) return null;
-  const held = this.held(voice, subject, now, slot);
+  const held = this.held(voice, subject, slot);
   return held.reaches ? held : null;
 }
 

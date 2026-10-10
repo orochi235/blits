@@ -184,7 +184,7 @@ export class Mixer<I, O> implements Mix<I, O> {
    */
   chains = new Store<I, Subject<unknown>>();
   version = 0;
-  readonly steps = new Steps<Voice<I, O>>();
+  readonly steps = new Steps<Voice<I, O>, I>();
   /** Per subject, the voices whose `subjects` name it, in voice order. */
   named = new Store<I, Voice<I, O>[]>();
   /** Voices a subject has been faded out of, which `drop` looks in besides those that reach it. */
