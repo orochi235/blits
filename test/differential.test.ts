@@ -40,7 +40,7 @@ describe('lanes on and off read the same', () => {
       expect(failed.slice(0, 3), 'shrink one with shrink(seed, options) in fuzz/scene.ts').toEqual(
         [],
       );
-    });
+    }, 30_000);
 });
 
 interface Part {

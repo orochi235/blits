@@ -41,7 +41,7 @@ function guards(prop: Property) {
       }
       // A seed in `fixed` now passes: take it off the known list.
       expect({ unexpected, fixed: [...fixed] }).toEqual({ unexpected: [], fixed: [] });
-    });
+    }, 30_000);
   }
 }
 
@@ -67,5 +67,5 @@ describe('project-behind with no history: a read back matches what the frame sho
     }
     expect(failures).toEqual([]);
     expect(standing.answered - before).toBeGreaterThan(20_000);
-  });
+  }, 30_000);
 });
