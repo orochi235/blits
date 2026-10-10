@@ -690,6 +690,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - **`kB/frame` on a row whose patch returns an object a call reads one of two values from
         run to run on one build**: `fn` 10k×3 read 2,442 or 4,318 on this machine. Take a row's
         allocation from a median over rounds on a fleet node, never from one local run.
+      - **A lane switching a band off at weight 0 costs the `glowl` rows about 3%** and nothing
+        else (teitou, 2026-10-10, 7 rounds at 3,000 frames against `da6e613`, 19 rows, geometric
+        mean 1.003): `glowl` 1.680 to 1.736 ms, `glowl^` 1.201 to 1.236. `unband` fills the
+        record's bands for every subject at weight 0 every frame; filling only on the frame the
+        weight reaches 0 would take it back, untried.
       - **No bench row seeks**, so what `src/restored.ts` costs is not measured.
     - **Few consumers use step 7 yet.** klieg's `level` is built on `input` with a `touch()` in
       its `set` (klieg `c32d440`, unreleased); whether its level-weighted voices then run on
