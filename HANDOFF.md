@@ -43,7 +43,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   and the stops built once per channel that `from: 'current'` reuses),
   `motion.ts` (`spring`, `glide`), `tweened.ts` (a tween's closed form, in pieces a fill calls), `clock.ts` (the phase, envelope and weight clamp both fold
   paths share), `numbers.ts` (numbers subjects), `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
-  objects and a Map for anything else), `types.ts` (the whole public surface, doc-commented). The
+  objects and a Map for anything else), `types.ts` (the whole public surface, doc-commented: a barrel over `types/`, a file a domain). The
   mix is `mixer.ts` (the `Mixer`'s state, its public methods, the engine and `mix`) and a module
   per part it owns: `voice.ts` (a voice and its record of a subject), `cue.ts`, `place.ts`
   (anchors), `marks.ts`, `move.ts` and `due.ts` (the clock moving, the voices due), `held.ts`,
@@ -600,7 +600,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     keep adding to the changelog's Unreleased section as steps land, and don't ask to publish per
     step; it ships as one release when Mike says. Until things settle, a consumer that needs
     unreleased blits links the local checkout, and versions are reconciled at that release. Step 8
-    is part built and on `main` (see "Step 8" below); next is the rest of it, then step 9. Each
+    is on `main` but for `angle` and `quat` on a lane (see "Step 8" below), and step 9 is begun
+    (see "Step 9"). **Next, in order: the rest of step 9, `angle` and `quat` on a lane, then item
+    12's audit.** Each
     step goes in a worktree off `main`, since another session
     works on the playground and item 13 in a worktree of its own; ask it before editing this file,
     and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. Step
@@ -610,6 +612,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     revision has to be one `origin` has; `AB_BENCH=bench/frame.mjs` makes both sides print
     `kB/frame`, `bench/medians.mjs <output>` reduces a run to medians, and `bench/allocs.mjs <row>`
     lists the functions that allocate. Decided while building, and open beyond the doc:
+    - **Step 9, `types.ts` split by domain, built 2026-10-09**: `src/types/` holds `channel`,
+      `patch`, `place`, `voice`, `history`, `transport` and `mix`, and `src/types.ts` re-exports
+      them, so no importer changed. TypeDoc gives the same 108 entries with the same content; it
+      orders a page by file, so the site's mix page now lists history and tape, then `MixOptions`
+      to `Mix`, then the transport, where `MixOptions` led.
+    - **Step 9, not built.** A narrow interface in front of `Mixer`, whose fields 26 modules reach
+      into: not begun, and the review gives no shape for it, so read which fields each module
+      takes before proposing one. The names are Mike's to settle and nobody has asked him yet:
+      `mix` against `mixer`, `Tape`'s weasel-style methods, and the deprecated `period`.
     - **Step 8, built 2026-10-09**: a probe into `out` reuses its arrays (breaking, in the
       changelog), a motion voice off lanes reuses its record's delta (`src/moved.ts`), a keys lane
       fills in one loop (`src/keyfill.ts`), a fill's methods hand each other numbers through
