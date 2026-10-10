@@ -7,6 +7,7 @@
 import { PerformanceObserver } from 'node:perf_hooks';
 import { getHeapStatistics } from 'node:v8';
 import {
+  angle,
   color,
   hex,
   keys,
@@ -17,6 +18,7 @@ import {
   mul,
   oklab,
   patch,
+  quat,
   spring,
   sum,
   tween,
@@ -81,6 +83,19 @@ const tweenFn = () =>
     },
     { writes: ['position'] },
   );
+
+// Rotations: an angle, which sums the short way round, and a quat, which composes. Keys writing
+// both across 0, a `fn` writing the angle past a whole turn, and a tween on it.
+const KR = kit({ heading: angle(), spin: quat() });
+const sway = () =>
+  keys(1000, [
+    { at: 0, delta: { heading: 350, spin: [0, 0, 0, 1] } },
+    { at: 0.5, delta: { heading: 10, spin: [0, Math.SQRT1_2, 0, Math.SQRT1_2] }, ease: smooth },
+    { at: 1, delta: { heading: 350, spin: [0, 0, 0, 1] } },
+  ]);
+const veer = () =>
+  patch(1000, (ph, s) => ({ heading: 720 * ph + s.seed }), { writes: ['heading'] });
+const swing = () => tween('heading', { from: 0, to: (s) => 90 + s.seed, ms: LONG, ease: smooth });
 
 // A voice per subject doing a tween's job, as keys and as a `fn`, each with its own endpoints.
 const keysTo = (s) =>
@@ -195,6 +210,8 @@ const rows = [
   // Three keys voices over every subject, all probed once and then a view of 40% each frame,
   // which keeps their lanes busy.
   ['view', 10000, 3],
+  // A keys, a `fn` and a tween voice writing an angle, the keys a quat too.
+  ['turn', 10000, 3],
   // The same rows with lanes off, for the comparison in one run.
   ['keys-', 10000, 3],
   ['spring-', 10000, 1],
@@ -209,6 +226,7 @@ const rows = [
   ['sparse-', 10000, 1],
   ['typing-', 10000, 100],
   ['view-', 10000, 3],
+  ['turn-', 10000, 3],
   // Read through `pull` into one array per channel instead of a probe per subject.
   ['fn^', 10000, 3],
   ['keys^', 1000, 3],
@@ -255,7 +273,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   const pulls = form.endsWith('^');
   const kind = off || pulls ? form.slice(0, -1) : form;
   const scrub = kind === 'ahead' || kind === 'back';
-  const m = mix(kind === 'glowk' ? KC : kind === 'glowl' ? KL : K, {
+  const m = mix(kind === 'turn' ? KR : kind === 'glowk' ? KC : kind === 'glowl' ? KL : K, {
     ...(kind === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {}),
     lanes: !off,
   });
@@ -382,19 +400,21 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     const p =
       kind === 'keys' || kind === 'view'
         ? bounce()
-        : kind === 'spring'
-          ? settle()
-          : kind === 'tween' || ((kind === 'rest' || kind === 'probed') && v === 0)
-            ? glideTo()
-            : kind === 'tweenfn'
-              ? tweenFn()
-              : kind === 'weasel'
-                ? weaselTween()
-                : kind === 'weaselfn'
-                  ? weaselFn()
-                  : scrub && v === 0
-                    ? drift()
-                    : flicker(v);
+        : kind === 'turn'
+          ? [sway, veer, swing][v]()
+          : kind === 'spring'
+            ? settle()
+            : kind === 'tween' || ((kind === 'rest' || kind === 'probed') && v === 0)
+              ? glideTo()
+              : kind === 'tweenfn'
+                ? tweenFn()
+                : kind === 'weasel'
+                  ? weaselTween()
+                  : kind === 'weaselfn'
+                    ? weaselFn()
+                    : scrub && v === 0
+                      ? drift()
+                      : flicker(v);
     m.cue({
       patch: p,
       fade: { in: 100 },
