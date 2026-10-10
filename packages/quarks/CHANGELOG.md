@@ -4,6 +4,16 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
+## 0.4.0
+
+### Breaking
+
+- Pins `@msb235/blits` 0.8.1, whose breaking changes since 0.7.1 are in that package's changelog.
+
+### Added
+
+- `channels` is typed `Kit<Emission>`, so it goes where the engine takes a kit with no cast.
+
 ## 0.3.1
 
 ### Fixed

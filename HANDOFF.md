@@ -419,8 +419,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
 
-1d. **`@msb235/blits-quarks` 0.3.1 is on npm**, pinned to engine 0.7.1 and published from its
-   `quarks-v0.3.1` tag (0.1.0 went out by hand, because npm refuses trust for a name never
+1d. **`@msb235/blits-quarks` 0.4.0 is on npm**, pinned to engine 0.8.1 and published from its
+   `quarks-v0.4.0` tag (0.1.0 went out by hand, because npm refuses trust for a name never
    published). Its README says how it works. magicsmoke is on engine 0.6.0 (`08d27df`, not
    pushed) but its fizz and tuning stay on its own code: the driver doesn't fit without changing
    what magicsmoke does. Its `docs/HANDOFF.md` has the gaps; the likely driver changes are a
@@ -622,7 +622,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     step goes in a worktree off `main`, since another session
     works on the playground and item 13 in a worktree of its own; ask it before editing this file,
     and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. A
-    version bump and publish are Mike's call, never 1.0.0. Measure
+    version bump and publish are Mike's call, never 1.0.0; an engine release is followed by a
+    blits-quarks release pinned to it, without asking (Mike, 2026-10-10). Measure
     any hot-path change with `AB_EACH=1 bench/ab.sh <origin/main sha> . <rounds> <rows>` on a fleet
     node (`.` is the synced working tree). `onto do` sends files, not commits, so the first
     revision has to be one `origin` has; `AB_BENCH=bench/frame.mjs` makes both sides print
