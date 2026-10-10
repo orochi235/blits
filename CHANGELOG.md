@@ -24,6 +24,8 @@ version and everything else the patch. Each release lists its changes as **Break
   not positive. Each played wrongly: a fractional loop jumped at its end, and a spring with no
   stiffness snapped to its target.
 - `sync(NaN)` throws. It slipped past the check that the clock only goes forward.
+- A voice refuses a rate that is not finite and a weight that is NaN, at `cue` and on its handle.
+  Both were accepted. A negative voice rate still is.
 - `{ steps, jump: 'start' }` reads `1/n` at 0, as CSS does. It read 0.
 - A history store's contract changed. `cut` takes the `seq` of the frame a seek went back to, not
   a mix time, and every `Paged` record carries the `seq` it was made in; keep one record per key
@@ -58,8 +60,12 @@ version and everything else the patch. Each release lists its changes as **Break
   `held`. `SeekOptions` is exported.
 - `wave(duration, { shape, cycles, phase, depth, kit })` swings each numeric channel `depth` names
   up to `depth` either side of its rest in `kit` (0 without one), as a sine, triangle, saw, or
-  square, `cycles` times a pass. It is an `fn` patch, and `waveOptionsOf` reads its options back for
-  an engine that reads data; `waveAt` is the unit wave.
+  square, `cycles` times a pass. It is an `fn` patch that keeps its options on `patch.wave` for an
+  engine that reads data; `waveAt` is the unit wave.
+- A `keys` patch carries the options it was given as fields: `ease`, `easeBy`, `delayBy` and
+  `lerpBy`, beside `keys` and `kit`. They were kept in a table keyed by the patch object, so a copy
+  such as `{ ...p, duration: 2000 }` lost its easing; a copy now plays by the fields it carries,
+  and may change one.
 - `Channel.copy`, for a channel whose `rest` is an object the mix cannot copy itself, such as a class
   instance, and that has `fold`; `cue` refuses such a channel without one. The mix copies arrays,
   typed arrays and plain objects itself.

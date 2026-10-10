@@ -75,6 +75,23 @@ describe('mix rate', () => {
     expect(m.rate).toBe(0.5);
   });
 
+  it('a voice refuses a rate that is not finite and a weight that is NaN, cued or written', () => {
+    const m = mix<Part, Pose>(K);
+    expect(() => m.cue({ patch: clock, rate: Number.NaN })).toThrow(RangeError);
+    expect(() => m.cue({ patch: clock, weight: Number.NaN })).toThrow(RangeError);
+    const h = m.cue({ patch: clock, rate: 2, weight: 0.5 });
+    expect(() => {
+      h.rate = Number.NaN;
+    }).toThrow(RangeError);
+    expect(() => h.ramp(Number.POSITIVE_INFINITY, 100)).toThrow(RangeError);
+    expect(() => {
+      h.weight = Number.NaN;
+    }).toThrow(RangeError);
+    expect(h.rate).toBe(2);
+    expect(h.weight).toBe(0.5);
+    expect(m.voices()).toHaveLength(1);
+  });
+
   it('multiplies into every voice rate, and a rate change keeps the clock continuous', () => {
     const m = mix<Part, Pose>(K);
     m.sync(0);

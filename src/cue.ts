@@ -2,7 +2,7 @@ import { checkHits } from './book.js';
 import { changed, index } from './chain.js';
 import { copyable } from './clone.js';
 import { schedule } from './due.js';
-import { VoiceHandle } from './handle.js';
+import { finiteRate, plainWeight, VoiceHandle } from './handle.js';
 import { reorigin } from './held.js';
 import { handle } from './hosts.js';
 import type { Mixer } from './mixer.js';
@@ -92,6 +92,8 @@ export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
   const loop = spec.loop;
   if (typeof loop === 'number' && !(Number.isInteger(loop) && loop >= 1))
     throw new RangeError(`blits: loop takes true, false or a whole number of passes, not ${loop}`);
+  if (spec.rate !== undefined) finiteRate(spec.rate);
+  if (typeof spec.weight === 'number') plainWeight(spec.weight);
   fitsKit(patch, mix.kit);
   const motion = motionOf<I>(patch);
   if (motion !== undefined) {

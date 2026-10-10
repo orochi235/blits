@@ -21,6 +21,17 @@ export interface HandleHost<I, O> {
   record(label: string, again: () => void): void;
 }
 
+/** Refuses a voice rate no clock can run at. */
+export function finiteRate(rate: number): void {
+  if (!Number.isFinite(rate))
+    throw new RangeError(`blits: a voice's rate is a finite number, not ${rate}`);
+}
+
+/** Refuses a voice weight that is no number: NaN would fold into every channel the voice writes. */
+export function plainWeight(weight: number): void {
+  if (Number.isNaN(weight)) throw new RangeError('blits: a voice’s weight is a number, not NaN');
+}
+
 /** What a handle answers for a voice a history store paged out, which left long ago. */
 export interface Gone {
   weight: number;
@@ -88,6 +99,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
 
   // A write to a paged voice changes nothing: it had left when the host made it, as it has on replay.
   set weight(w: number) {
+    plainWeight(w);
     const voice = this.#voice;
     if (voice === null) return;
     voice.weight = w;
@@ -107,6 +119,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   ramp(r: number, over: number): void {
+    finiteRate(r);
     const voice = this.#voice;
     if (voice === null) return;
     const u = this.#host.nowFor(voice);

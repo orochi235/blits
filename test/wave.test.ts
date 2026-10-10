@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { keys } from '../src/patch.js';
-import { type WaveShape, wave, waveAt, waveOptionsOf } from '../src/wave.js';
+import { type WaveShape, wave, waveAt } from '../src/wave.js';
 
 interface Bob {
   x: number;
@@ -78,11 +78,25 @@ describe('wave', () => {
     expect(read(half, 0.5).x).toBeCloseTo(1, 12);
   });
 
-  it('hands back the options it was built with', () => {
+  it('keeps the options it was built with on the patch', () => {
     const opts = { shape: 'saw' as const, cycles: 3, phase: 0.1, depth: { x: 1 } };
     const p = wave<unknown, Bob>(500, opts);
-    expect(waveOptionsOf(p)).toBe(opts);
-    expect(waveOptionsOf(keys<unknown, Bob>(500, [{ at: 0, delta: { x: 1 } }]))).toBeUndefined();
+    expect(p.wave).toBe(opts);
+    expect(keys<unknown, Bob>(500, [{ at: 0, delta: { x: 1 } }]).wave).toBeUndefined();
+  });
+
+  it('a copy plays by the options it carries', () => {
+    const p = wave<unknown, Bob>(1000, { shape: 'square', depth: { x: 2 } });
+    const longer = { ...p, duration: 4000 };
+    expect(read(longer, 0.25).x).toBe(2);
+    const deeper = { ...p, wave: { ...p.wave, depth: { x: 5 } } };
+    expect(read(deeper, 0.25).x).toBe(5);
+    expect(read(deeper, 0.75).x).toBe(-5);
+    expect(read(p, 0.25).x).toBe(2);
+    const m = mix<string, Bob>(kit<Bob>({ x: sum(), y: mul() }));
+    m.cue({ patch: deeper, start: 0 });
+    m.sync(250);
+    expect(m.probe('a').x).toBe(5);
   });
 
   it('swings each channel around its rest in the kit it is given', () => {

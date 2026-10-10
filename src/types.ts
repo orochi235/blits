@@ -1,4 +1,5 @@
 import type { Fit, Order, Strength } from './fit.js';
+import type { WaveOptions } from './wave.js';
 /**
  * One field of a delta, with its own arithmetic.
  *
@@ -206,6 +207,17 @@ export interface Patch<I, O, S = void, H = unknown> {
   step?(state: S, dt: number, subject: I, setting: Setting<S, H>): void;
   /** Present when the patch was authored as keyframes, so an engine that reads data can. */
   readonly keys?: readonly Keyframe<O>[];
+  /**
+   * Present on a `keys` patch that was given them: what `keys` took besides its stops, each as
+   * `KeysOptions` describes it. They are read off the patch, so a copy that changes one, as
+   * `{ ...p, ease: 'linear' }` does, plays by its own.
+   */
+  readonly ease?: Easing;
+  easeBy?(channel: keyof O): Easing | undefined;
+  delayBy?(channel: keyof O): number;
+  lerpBy?(channel: keyof O): ((a: never, b: never, u: number) => unknown) | undefined;
+  /** Present on a `wave` patch: what `wave` took, which a copy may change as it may a `keys` field. */
+  readonly wave?: WaveOptions<O>;
   /** Present on a `'motion'` patch: its kind and constants, for an engine that reads data. */
   readonly motion?: MotionSpec;
   /**

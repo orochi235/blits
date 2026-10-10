@@ -372,3 +372,50 @@ describe.each([true, false])('a channel given a delay, lanes %s', (lanes) => {
     expect(m.probe(s)).toEqual({ x: 100, y: 100 });
   });
 });
+
+describe.each([true, false])('a copy of a keys patch, lanes %s', (lanes) => {
+  type P = { x: number; y: number };
+  const s = { id: 1 };
+  const made = keys<typeof s, P>(
+    1000,
+    [
+      { at: 0, delta: { x: 0, y: 0 } },
+      { at: 1, delta: { x: 100, y: 100 } },
+    ],
+    { ease: 'ease-in', delayBy: (c) => (c === 'x' ? 200 : 0) },
+  );
+  const at = (p: typeof made, t: number): P => {
+    const m = mix<typeof s, P>(kit<P>({ x: sum(), y: sum() }), { lanes });
+    m.cue({ patch: p, start: 0, loop: false, freeze: 'after' });
+    m.sync(t);
+    return m.probe(s);
+  };
+  const alone = (p: typeof made, phase: number) => p.at(phase, s, undefined as never);
+
+  it('carries its options as fields, and only those it was given', () => {
+    expect(made.ease).toBe('ease-in');
+    expect(made.delayBy?.('x')).toBe(200);
+    expect('easeBy' in made).toBe(false);
+    expect('ease' in keys<typeof s, P>(1000, [{ at: 0, delta: { x: 0 } }])).toBe(false);
+  });
+
+  it('keeps its easing and delay under a new duration', () => {
+    const long = { ...made, duration: 2000, period: 2000 };
+    const want = keys<typeof s, P>(2000, made.keys ?? [], {
+      ease: 'ease-in',
+      delayBy: (c) => (c === 'x' ? 200 : 0),
+    });
+    for (const t of [100, 600, 1100, 1900]) {
+      expect(at(long, t)).toEqual(at(want, t));
+      expect(alone(long, t / 2000)).toEqual(alone(want, t / 2000));
+    }
+    expect(at(long, 1000).y).toBeLessThan(40);
+  });
+
+  it('plays by a field the copy changed', () => {
+    const straight = { ...made, ease: 'linear' as const, delayBy: undefined };
+    expect(at(straight, 500)).toEqual({ x: 50, y: 50 });
+    expect(alone(straight, 0.5)).toEqual({ x: 50, y: 50 });
+    expect(at(made, 500).y).toBeLessThan(40);
+  });
+});

@@ -1,5 +1,4 @@
 import { patch } from './patch.js';
-import { shared } from './shared.js';
 import type { Kit, Patch } from './types.js';
 
 /**
@@ -48,42 +47,61 @@ export function waveAt(shape: WaveShape, x: number): number {
   }
 }
 
-const options = shared<Patch<never, never, never>, WaveOptions<unknown>>('wave-options@1');
+/** A wave's options worked out once: what each call of `at` reads. */
+interface Plan {
+  shape: WaveShape;
+  cycles: number;
+  start: number;
+  writes: string[];
+  depths: number[];
+  rests: number[];
+}
 
-/** The options a `wave` patch was built with, for an engine reading the wave rather than calling it. */
-export function waveOptionsOf<I, O, S>(p: Patch<I, O, S>): WaveOptions<O> | undefined {
-  return options.get(p as unknown as Patch<never, never, never>) as WaveOptions<O> | undefined;
+const plans = new WeakMap<object, Plan>();
+
+function planOf<O>(opts: WaveOptions<O>): Plan {
+  let plan = plans.get(opts);
+  if (plan === undefined) {
+    const depth: Record<string, number | undefined> = opts.depth;
+    const writes = Object.keys(depth);
+    plan = {
+      shape: opts.shape ?? 'sine',
+      cycles: opts.cycles ?? 1,
+      start: opts.phase ?? 0,
+      writes,
+      depths: writes.map((c) => depth[c] as number),
+      rests: writes.map((c) => {
+        const rest = opts.kit?.[c as keyof O]?.rest;
+        return typeof rest === 'number' ? rest : 0;
+      }),
+    };
+    plans.set(opts, plan);
+  }
+  return plan;
 }
 
 /**
  * A periodic swing on each channel `depth` names, around its rest: an LFO for a bob, a sway or a
- * pulse.
+ * pulse. An `fn` patch that keeps its options on `patch.wave`, for an engine reading the wave
+ * rather than calling it.
  *
  * @category patch
  */
 export function wave<I, O>(duration: number, opts: WaveOptions<O>): Patch<I, O, void> {
-  const shape = opts.shape ?? 'sine';
-  const cycles = opts.cycles ?? 1;
-  const start = opts.phase ?? 0;
-  const depth: Record<string, number | undefined> = opts.depth;
-  const writes = Object.keys(depth) as (keyof O)[];
-  const depths = writes.map((c) => depth[c as string] as number);
-  const rests = writes.map((c) => {
-    const rest = opts.kit?.[c]?.rest;
-    return typeof rest === 'number' ? rest : 0;
-  });
-  const p = patch<I, O, void>(
+  const own = planOf(opts);
+  const made = patch<I, O, void>(
     duration,
-    (phase) => {
-      const unit = waveAt(shape, phase * cycles + start);
-      const out: Partial<O> = {};
-      for (let i = 0; i < writes.length; i++)
-        out[writes[i] as keyof O] = ((rests[i] as number) +
-          (depths[i] as number) * unit) as O[keyof O];
-      return out;
+    // A copy of the patch carries this `at` with a `wave` of its own, which it is read by.
+    function at(this: Patch<I, O, void>, phase) {
+      const plan = this.wave === opts ? own : planOf(this.wave as WaveOptions<O>);
+      const unit = waveAt(plan.shape, phase * plan.cycles + plan.start);
+      const out: Record<string, number> = {};
+      for (let i = 0; i < plan.writes.length; i++)
+        out[plan.writes[i] as string] =
+          (plan.rests[i] as number) + (plan.depths[i] as number) * unit;
+      return out as Partial<O>;
     },
-    { writes, kit: opts.kit },
+    { writes: own.writes as (keyof O)[], kit: opts.kit },
   );
-  options.set(p as unknown as Patch<never, never, never>, opts as WaveOptions<unknown>);
-  return p;
+  return { ...made, wave: opts };
 }

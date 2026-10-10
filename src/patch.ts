@@ -1,6 +1,5 @@
 import { type LerpInto, lerpInto, lerpNumber } from './channels.js';
 import { type Curve, curve, startSlope } from './easing.js';
-import { shared } from './shared.js';
 import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js';
 
 /**
@@ -69,13 +68,6 @@ export interface KeysOptions<O> {
   lerpBy?: (channel: keyof O) => ((a: never, b: never, u: number) => unknown) | undefined;
   /** The channels these stops were written against, which `cue` checks a mix's kit against. */
   kit?: Partial<Kit<O>>;
-}
-
-const options = shared<Patch<never, never, never>, KeysOptions<unknown>>('keys-options@1');
-
-/** The options a `keys` patch was built with, for an engine reading its stops rather than calling it. */
-export function keysOptionsOf<I, O, S>(p: Patch<I, O, S>): KeysOptions<O> | undefined {
-  return options.get(p as unknown as Patch<never, never, never>) as KeysOptions<O> | undefined;
 }
 
 const linear = (a: number, b: number, u: number) => a + (b - a) * u;
@@ -448,11 +440,14 @@ export const durationOf = <I, O, S>(p: Patch<I, O, S>): number => p.duration ?? 
 
 const cache = new WeakMap<object, Built>();
 
-/** The built form of a patch's stops, made on first ask for a patch `keys()` did not build. */
+/**
+ * The built form of a patch's stops, made on first ask for a patch `keys()` did not build: a copy
+ * of one, or one another copy of blits made, each read by the fields it carries.
+ */
 export function builtOf<I, O, S>(p: Patch<I, O, S>): Built {
   let held = cache.get(p);
   if (held === undefined) {
-    held = build(p.keys as readonly Keyframe<O>[], p.writes, durationOf(p), keysOptionsOf(p) ?? {});
+    held = build(p.keys as readonly Keyframe<O>[], p.writes, durationOf(p), p);
     cache.set(p, held);
   }
   return held;
@@ -489,9 +484,22 @@ export function keys<I, O>(
     writes,
     kit: opts.kit,
     keys: stops,
-    at: (phase) => readKeys(made, phase, {}) as Partial<O>,
+    ...given(opts),
+    // A copy of the patch carries this `at` with fields of its own, which it is read by.
+    at(phase) {
+      return readKeys(this === p ? made : builtOf(this), phase, {}) as Partial<O>;
+    },
   };
-  options.set(p as unknown as Patch<never, never, never>, opts as KeysOptions<unknown>);
   cache.set(p, made);
   return p;
+}
+
+/** The `keys` options a patch carries as fields, those given only: an absent one adds no key. */
+function given<O>(opts: KeysOptions<O>): Partial<Patch<never, O>> {
+  const out: { -readonly [K in keyof Patch<never, O>]?: Patch<never, O>[K] } = {};
+  if (opts.ease !== undefined) out.ease = opts.ease;
+  if (opts.easeBy !== undefined) out.easeBy = opts.easeBy;
+  if (opts.delayBy !== undefined) out.delayBy = opts.delayBy;
+  if (opts.lerpBy !== undefined) out.lerpBy = opts.lerpBy;
+  return out;
 }
