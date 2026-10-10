@@ -81,7 +81,7 @@ export function FitSteps({ steps, onChange, errorOf, faultsOf, doc }: FitStepsPr
                       type="number"
                       className={s.number}
                       min={1}
-                      step={0.1}
+                      step="any"
                       placeholder="none"
                       value={step.cap ?? ''}
                       onChange={(e) => {

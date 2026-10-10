@@ -33,7 +33,7 @@ export function WeightField({ value, error, onChange }: WeightFieldProps) {
           <input
             type="number"
             aria-label="weight value"
-            step={0.05}
+            step="any"
             min={0}
             max={1}
             value={value}

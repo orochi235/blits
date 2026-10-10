@@ -64,7 +64,7 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
           <input
             type="number"
             min={0}
-            step={50}
+            step="any"
             value={seekMs}
             onChange={(e) => setSeekMs(e.target.valueAsNumber || 0)}
           />
@@ -96,7 +96,7 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
           <input
             type="number"
             min={0}
-            step={0.05}
+            step="any"
             value={rateTo}
             onChange={(e) => setRateTo(e.target.valueAsNumber || 0)}
           />
@@ -119,7 +119,7 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
           <input
             type="number"
             min={0}
-            step={0.05}
+            step="any"
             value={rampTo}
             onChange={(e) => setRampTo(e.target.valueAsNumber || 0)}
           />
@@ -129,7 +129,7 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
           <input
             type="number"
             min={0}
-            step={50}
+            step="any"
             value={rampOver}
             onChange={(e) => setRampOver(e.target.valueAsNumber || 0)}
           />

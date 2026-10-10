@@ -583,9 +583,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       and `score`, and anchors beyond `after`/`with` by name.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
-    Open in what is built: the panels' ms fields step by 50 from 0 (fades, `over`, a key's `at`),
-    so a typed 125 fails the browser's step check and reads invalid; `MixPanel` takes
-    `step="any"` for the same fault, at the cost of spinner arrows moving by 1.
 
 14. **The 2026-10-09 code review, steps 5–9.** The review is the doc "blits code review,
     2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5); its findings

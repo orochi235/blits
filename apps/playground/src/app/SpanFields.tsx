@@ -53,7 +53,7 @@ export function SpanFields({ span: sp, onChange, errorOf, faultsOf, result }: Sp
           type="number"
           className={s.number}
           min={0}
-          step={50}
+          step="any"
           placeholder="none"
           value={sp.duration ?? ''}
           onChange={(e) => {

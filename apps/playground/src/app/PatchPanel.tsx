@@ -120,7 +120,7 @@ export function PatchPanel({ voice: v, kit, errors, playhead, onChange }: PatchP
             <input
               type="number"
               min={0}
-              step={50}
+              step="any"
               value={p.period}
               onChange={(e) => {
                 const n = e.target.valueAsNumber;

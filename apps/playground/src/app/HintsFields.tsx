@@ -25,7 +25,7 @@ export function HintsFields({
       <input
         type="number"
         min={1}
-        step={0.1}
+        step="any"
         value={h[key] ?? 1}
         onChange={(e) => {
           const n = e.target.valueAsNumber;

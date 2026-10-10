@@ -11,19 +11,13 @@ const SHAPES: readonly WaveShape[] = ['sine', 'triangle', 'saw', 'square'];
 /** A depth a channel starts at when ticked: a visible swing on its own scale. */
 const START: Record<SwingName, number> = { turn: 15, scale: 0.25, opacity: 0.5, glow: 1 };
 
-function NumberField(p: {
-  label: string;
-  value: number;
-  step: number;
-  min?: number;
-  onChange(n: number): void;
-}) {
+function NumberField(p: { label: string; value: number; min?: number; onChange(n: number): void }) {
   return (
     <label className={s.row}>
       {p.label}
       <input
         type="number"
-        step={p.step}
+        step="any"
         min={p.min}
         value={p.value}
         onChange={(e) => {
@@ -66,14 +60,12 @@ export function WaveFields({
         <NumberField
           label="cycles"
           value={p.cycles}
-          step={0.5}
           min={0}
           onChange={(cycles) => onChange({ ...p, cycles })}
         />
         <NumberField
           label="phase"
           value={p.phase}
-          step={0.05}
           onChange={(phase) => onChange({ ...p, phase })}
         />
       </div>

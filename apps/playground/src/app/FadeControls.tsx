@@ -44,7 +44,7 @@ export function FadeControls({ subject, whole = false, act }: FadeControlsProps)
       <input
         type="number"
         min={0}
-        step={50}
+        step="any"
         placeholder="default"
         value={value}
         onChange={(e) => set(e.target.value)}

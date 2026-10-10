@@ -33,7 +33,7 @@ export function ChannelTiming({ patch: p, onChange }: { patch: Keys; onChange(p:
               <input
                 type="number"
                 min={0}
-                step={50}
+                step="any"
                 aria-label={`${ch} delay`}
                 value={delay ?? 0}
                 onChange={(e) => {
