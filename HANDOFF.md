@@ -803,11 +803,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       channel reads its voice's stops and not `KeyRows`, and neither folds bare. A vec of angles
       and a `color` over one stay off lanes.
       teitou, 5 rounds at 3,000 frames against `ddf7d9e`: the new `turn` row (keys writing both,
-      a `fn` and a tween on the angle, 10k subjects) 0.578, 2.88 to 1.67 ms a frame and 3.9 MB a
+      a `fn` and a tween on the angle, 10k subjects) 0.588, 2.88 to 1.70 ms a frame and 3.9 MB a
       frame to 0.8; `turn-` 0.941, from `multiply` and `slerp` no longer allocating. Rows that
-      write neither: `keys` 1.012, `signal` 1.022, `tween` 0.979, `fn` 0.987, `locus` 0.971,
-      `tweens` 0.990, `keyses` 0.997, `fns` 0.969, `springs` 1.005, `named` 1.000, `keys-` 0.995.
-      `keys` and `signal` are inside what one build swings and were not run again.
+      write neither: `keys` 1.012, `signal` 1.022, `named` 1.012, `tween` 0.987, `fn` 0.988,
+      `locus` 0.994, `tweens` 0.998, `keyses` 0.999, `fns` 0.969, `springs` 1.005, `keys-` 0.995.
+      `keys`, `signal`, and `named` are inside what one build swings and were not run again.
       The fuzzer found one disagreement while it was built, fixed: a `fn` voice silent at weight 0
       counted as a member of its locus on a lane and not on the general path, which moved where
       the locus folds in the order. Only a quat shows it, since nothing else fails to commute.
