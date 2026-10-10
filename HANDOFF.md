@@ -654,6 +654,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - Records shared by a read back or a standing read, and by voices `shares` turns away that
         could keep their difference by subject number too: a stagger, a signal weight, a motion.
       - A seek's restore layers, which wrap one another (`Restored` in `seek.ts`); not measured.
+        Read 2026-10-09: every `mix.seek` wraps each voice's store in a new `Restored` that
+        keeps the last, so a subject probed between seeks is found one layer down, and only one
+        never probed walks them all. The cost is the chain itself: it grows by a layer a voice a
+        seek for as long as the mix lives, and that subject's first probe recurses its whole
+        depth. Flattening has two things to prove first: that restoring to `t1` and then to
+        `t2` is restoring to the lesser of the two (a seek back cuts what came after, so a later
+        seek forward must not read past the cut), and how each layer's `left` records, the
+        subjects that left after its moment, combine.
       - A motion patch's number for a subject kept on the record. It changes on `release` and
         `unpack`, so a kept one needs a count that says it is stale.
     - **Step 8, measured and left**: the `keys` row still allocates about 16 B a probe in
