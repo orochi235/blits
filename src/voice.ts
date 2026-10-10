@@ -232,8 +232,17 @@ export class Voice<I, O> {
   holder: Subject<unknown> | null = null;
   /** Whether its channels run as lanes this frame, so the general fold passes it by. */
   laned = false;
-  /** How many times it has been sought, so a delta read before a seek is not handed out after it. */
+  /**
+   * How many times it has been sought or touched, so a delta read before either is not handed out
+   * after it.
+   */
   seeks = 0;
+  /** How many of `seeks` were the mix's `touch`, which moves no clock. */
+  touches = 0;
+  /** How many times its clock has jumped, which a booker counts hits again from. */
+  get jumps(): number {
+    return this.seeks - this.touches;
+  }
   /** Seeks that rebuild state; a record stamped with fewer makes its state again before stepping. */
   rebuilds = 0;
   /** Whether its span's last fit jumped it to its end, which leaves it no time in that fit. */

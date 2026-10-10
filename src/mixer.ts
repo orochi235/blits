@@ -48,6 +48,7 @@ import { seek } from './seek.js';
 import { Fitting, refit } from './spans.js';
 import { Store } from './store.js';
 import { record } from './tape.js';
+import { touch } from './touch.js';
 import { type Announced, announce, Transport } from './transport.js';
 import type {
   Booker,
@@ -577,6 +578,11 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.strays.delete(subject);
     for (const motion of this.strayAll) motion.release(subject, ...kept);
     record(this, 'drop', () => this.drop(subject));
+  }
+
+  touch(subject?: I): void {
+    this.attached();
+    touch(this, subject);
   }
 
   drain<E = unknown>(tag?: string): Sent<I, E>[] {

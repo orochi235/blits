@@ -52,6 +52,9 @@ version and everything else the patch. Each release lists its changes as **Break
 - `handle.to`, `handle.push` and `handle.read` reach the `to`, `push` and `read` of the motion
   patch a voice plays, so a host holding only the handle need not keep the patch or cast it. `to`
   and `push` throw for a voice whose patch does not take them; `read` gives undefined.
+- `mix.touch(subject?)` says that something a patch reads from outside the mix changed since the
+  last sync, so the next probe calls the patch again where it would have answered with what it
+  read this frame: for one subject, or for all. A host need not move the clock to show the change.
 - `input(read)` makes a signal of the host's own that reads something outside the clock. The host
   calls its `touch()` after each change, and a voice weighted by it keeps its lane, where one
   weighted by a signal flagged `input` by hand never runs on one. `input(read, of)` marks a signal

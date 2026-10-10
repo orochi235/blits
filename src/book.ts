@@ -55,8 +55,8 @@ interface Booking {
 interface Track {
   /** Voice ms scanned up to, so a hit behind it is not taken again. */
   seenTo: number;
-  /** The voice's `seeks` when last looked at. */
-  seeks: number;
+  /** The voice's `jumps` when last looked at. */
+  jumps: number;
   /** Bookings by pass and index, while still ahead or come due this sync. */
   booked: Map<number, Booking>;
   /** The sync it was last seen at, so one whose voice left is let go. */
@@ -157,7 +157,7 @@ export class Book<I, O> implements Booker {
       if (voice.spec.hits !== undefined && voice.state !== 'done')
         this.tracks.set(voice, {
           seenTo: voice.elapsedAt(host.now),
-          seeks: voice.seeks,
+          jumps: voice.jumps,
           booked: new Map(),
           met: this.round,
         });
@@ -210,13 +210,13 @@ export class Book<I, O> implements Booker {
       if (!this.fits(voice.spec.score, voice.spec.tags ?? none)) continue;
       let t = this.tracks.get(voice);
       if (t === undefined) {
-        t = { seenTo: Number.NEGATIVE_INFINITY, seeks: voice.seeks, booked: new Map(), met: round };
+        t = { seenTo: Number.NEGATIVE_INFINITY, jumps: voice.jumps, booked: new Map(), met: round };
         this.tracks.set(voice, t);
       }
       t.met = round;
       // A seek counts from where it put the clock: what it jumped over is not late.
-      if (t.seeks !== voice.seeks) {
-        t.seeks = voice.seeks;
+      if (t.jumps !== voice.jumps) {
+        t.jumps = voice.jumps;
         t.seenTo = voice.elapsedAt(prev);
       }
       const end = host.endOf(voice);

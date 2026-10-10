@@ -1220,6 +1220,14 @@ export interface Mix<I, O, H = unknown> {
    */
   drop(subject: I): void;
   /**
+   * Says that something a patch reads from outside the mix has changed since the last sync, such as
+   * a table its `at` looks a subject up in, so the next probe calls the patch again where it would
+   * have answered with what it read this frame. Given a subject, for that subject only; with none,
+   * for every subject. The clock stays where it is and no `step` runs again, and it wakes a frame
+   * loop sleeping on `inert`, as any change does.
+   */
+  touch(subject?: I): void;
+  /**
    * Puts a named mark on a score, for anchors to target as they target a voice's marks: a voice
    * placed `{ with: 'reply' }` waits until the host announces `reply`. `at` is a timestamp on the
    * host's clock, default now, and may lie ahead, so a read ahead sees it. A mark stays while it is
