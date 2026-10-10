@@ -586,14 +586,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 14. **The 2026-10-09 code review, steps 5–9.** The review is the doc "blits code review,
     2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5); its findings
-    are numbered there, and its Status section says which steps are done. Steps 1 to 4 are on
-    `main`: the local fixes, the lanes fuzzer (`test/differential.test.ts`), the determinism suite
-    (`test/determinism.test.ts`, which now holds no known failure over 150 seeds per property and
-    variant), issue B (`src/origin.ts`), and issue A with findings #10 and #13.
+    are numbered there, and its Status section says which steps are done. Steps 1 to 5 are on
+    `main`: the local fixes, the lanes fuzzer (`test/differential.test.ts`, which now masks and
+    skips nothing), the determinism suite (`test/determinism.test.ts`, which holds no known
+    failure over 150 seeds per property and variant), issue B (`src/origin.ts`), issue A with
+    findings #10 and #13, and lanes invalidation (#6, #15, #16).
     **Mike, 2026-10-09: work steps 3 to 9, then item 12's audit, chaining sessions (the
     `pass-the-baton` skill) until the whole plan is finished**, each session updating this item and
-    the doc's Status section as a step lands. Next is step 5 (lanes invalidation; #6, #15 and #16
-    stand as expected-to-fail tests). Each step goes in a worktree off `main`, since another session
+    the doc's Status section as a step lands. Next is step 6, whose version bump and publish wait
+    on Mike. Each step goes in a worktree off `main`, since another session
     works on the playground and item 13 in a worktree of its own; ask it before editing this file,
     and merge with `--ff-only` once both `onto test` and the lanes-off suite pass on the fleet. Step
     6's version bump and publish are Mike's call: stop and ask there, never bump to 1.0.0. Measure
@@ -622,17 +623,23 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       (`src/departed.ts`): decided 2026-10-09 to keep mixes without history, since history roughly
       doubles a stepped patch's frame cost and holds about 500 B per subject per copy, and to keep
       departed voices' marks on every mix instead.
-    - **`project` after a subject is faded out of a voice and then dropped** reads the voice on lanes
-      and nothing off them; after the `drop` both paths show the subject live again, which `fade`'s
-      docs say only a motion's `to` does. Repro in `differential.test.ts`'s `dropAfterFade` skip.
+    - **Step 5: what a lane fill depends on is `Lanes.current`**: the clock, the mix's version, a
+      motion's retargets and pushes, and a `level` set, which bumps `reading.inputs`. What lanes
+      cannot hear of keeps its voice off them (`fits` in `hosts.ts`): an input signal not built on
+      `level` and a patch reading host fields. **Cost to consumers**: klieg's own `level` is a
+      hand-flagged input signal, so klieg's level-weighted voices now take the general path; step
+      7's `input(fn)` could give a host's own input a way to report its changes.
+    - **`drop` still forgets a subject's fade out of a voice**, so a dropped subject shows live in
+      that voice again; decided 2026-10-09 because keeping the entry would hold every dropped subject
+      in a strong `Map`. `fade`'s and `drop`'s docs now say so.
+    - **A store's `left` records now hold `[record, sync]`**, so a read of what a frame showed counts
+      a subject that left during its sync: another store-format change for step 6's release notes.
+    - **A retarget that brings a faded-out subject back starts its new tween at the subject's next
+      probe, not at the `to` call** (found 2026-10-09; both paths agree). With a tween of 300 ms
+      faded out of a subject at 0 and retargeted to 0.6 at 450, a probe at 500 reads 0.800, where
+      the same calls on a subject never faded read 0.767: the change waits for a motion slot the
+      subject gets only when probed. The same class as issue B, decided by when the host looks.
     - **Finding #18**: a `last()` or OKLCH channel in a locus picks by cue order, not weight.
-    - **A span's start refit plays a child its cue-time fit skipped** (found 2026-10-09). A span
-      of `duration: 1500` holding three 1000 ms keys voices, one `faster: 2`, reports at cue
-      `{ skipped: 3, fell: true }`. On the first sync the first two are done at once, but the
-      third plays all 1000 ms and the result reads `{ length: 1000, skipped: 0, fell: false }`.
-      `leftOf` in `src/spans.ts` reads a pending child as having all of its length left, ignoring
-      the `anchorElapsed = c.span` the skip gave it. The playground's score draws the cue-time fit,
-      so it shows all three skipped while the third plays.
     - **The weight-0 band reset runs on the general path only** (`unband` in `fold.ts`). Lanes reach
       it through the shared record in every case the tests and the fuzzer cover; a lane that skips a
       subject at weight 0 without the general path visiting it would keep a stale band.
