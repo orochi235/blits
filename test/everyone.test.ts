@@ -24,7 +24,7 @@ const voiceOf = (h: Handle<Part>) =>
 
 /** A mix with one voice cued from `spec`, synced to 100 with every part probed. */
 function played(spec: Partial<VoiceSpec<Part, Pose>> = {}, opts: MixOptions = {}) {
-  const m = mix<Part, Pose>(K, opts);
+  const m = mix<Part, Pose>(K, { lanes: true, ...opts });
   const parts = Array.from({ length: 40 }, (_, id) => ({ id }));
   const h = m.cue({ patch: ramp(), ...spec });
   m.sync(0);
@@ -108,7 +108,7 @@ describe('a voice over every subject', () => {
 
   it('gives a patch that starts keeping state the record it was called on', () => {
     const owner = {};
-    const m = mix<Part, Pose>(K);
+    const m = mix<Part, Pose>(K, { lanes: true });
     const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
     const h = m.cue({
       patch: patch<Part, Pose>(
@@ -177,7 +177,7 @@ describe('a voice over every subject', () => {
 
   it('reads a subject again after touch(subject)', () => {
     let k = 1;
-    const m = mix<Part, Pose>(K);
+    const m = mix<Part, Pose>(K, { lanes: true });
     const [a, b] = [{ id: 0 }, { id: 1 }];
     m.cue({ patch: patch<Part, Pose>(1000, () => ({ x: k }), { writes: ['x'] }) });
     m.sync(0);
