@@ -624,8 +624,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       100 ms ahead with no setting; a clip with a `seek` or a rate below 0 does not set `loop`
       by its right edge; and an `all`/`any` anchor, or one that selects by tag or `writes`,
       draws no link on the score.
-    - Seen only by its tests, not in a browser: dragging a blended clip, the anchor field's
-      error for bad JSON, and a booking struck out when blits takes it back.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 
@@ -738,7 +736,22 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         so it was backed out: `glowl` 2.359 to 2.393 ms and `glowl^` 1.680 to 1.691 (msb-uai,
         2026-10-10, 7 rounds at 3,000 frames against `350991c`, every row's runs overlapping,
         on a node whose runs spread 6% to 14%). So the repeat fill is not shown to be the cost.
-      - **No bench row seeks**, so what `src/restored.ts` costs is not measured.
+      - **A seek back and its return cost about 30 ms at 10,000 subjects, almost none of it
+        in `src/restored.ts`** (teitou, 2026-10-11, `bench/again.sh 5`, medians, ms a frame).
+        The `kept` rows sync and probe a mix keeping 5 s of history and a tape; the `seek` rows
+        also seek it 300 ms back and to where it was before every sync.
+
+        | Subjects | `kept` | `seek` | A seek back and return |
+        |---:|---:|---:|---:|
+        |  1,000 | 0.480 |  2.134 |  1.654 |
+        | 10,000 | 5.594 | 35.968 | 30.374 |
+
+        A profile of `seek` at 10,000 (600 frames) puts 47% in `tick` and 18% in the row's own
+        `step`: each subject's stateful patch is stepped again over the 300 ms at `stepMs` 5,
+        60 steps a subject. `copyHeld` is 9% of the time and half of what the row allocates
+        (31.7 MB a frame against 8.9 for `kept`); `Restored`'s `get` and `since` are under 1%.
+        So a seek's cost is restepping state, which a state copy nearer the sought time, or a
+        coarser `stepMs`, would cut. Not tried: why `tick` takes 2.6 times its `step`.
     - **Few consumers use step 7 yet.** klieg's `level` is built on `input` with a `touch()` in
       its `set` (klieg `c32d440`, unreleased); whether its level-weighted voices then run on
       lanes is not checked. The other workarounds the doc's "Universal applicability" table

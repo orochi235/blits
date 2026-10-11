@@ -6,6 +6,7 @@
 // of each run of that many frames, for a cost that drifts as the run goes on.
 import { PerformanceObserver } from 'node:perf_hooks';
 import { getHeapStatistics } from 'node:v8';
+import { createHistory } from '@weasel-js/history';
 import {
   angle,
   color,
@@ -254,6 +255,13 @@ const rows = [
   // 300 ms back on a mix keeping 5 s of history.
   ['ahead', 1000, 3],
   ['back', 1000, 3],
+  // A mix keeping 5 s of history and its calls, synced and probed each frame; and the same sought
+  // 300 ms back and to where it was before each sync, so every subject's record is put back at
+  // its next probe. The difference is what a seek back and its return cost.
+  ['kept', 1000, 3],
+  ['seek', 1000, 3],
+  ['kept', 10000, 3],
+  ['seek', 10000, 3],
 ];
 
 // FRAMES=20000 for a profile long enough to sample a fast row.
@@ -273,8 +281,10 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   const pulls = form.endsWith('^');
   const kind = off || pulls ? form.slice(0, -1) : form;
   const scrub = kind === 'ahead' || kind === 'back';
+  const taped = kind === 'kept' || kind === 'seek';
   const m = mix(kind === 'turn' ? KR : kind === 'glowk' ? KC : kind === 'glowl' ? KL : K, {
     ...(kind === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {}),
+    ...(taped ? { history: { ms: 5000, every: 50, tape: createHistory }, stepMs: 5 } : {}),
     lanes: !off,
   });
   const weasel = kind.startsWith('weasel');
@@ -412,7 +422,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
                   ? weaselTween()
                   : kind === 'weaselfn'
                     ? weaselFn()
-                    : scrub && v === 0
+                    : (scrub || taped) && v === 0
                       ? drift()
                       : flicker(v);
     m.cue({
@@ -470,6 +480,11 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     } else {
       t += 16.7;
       churn();
+      if (kind === 'seek') {
+        const now = m.now;
+        m.seek(now - 300);
+        m.seek(now);
+      }
       m.sync(t);
       read(probed);
     }
