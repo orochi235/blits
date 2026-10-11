@@ -572,7 +572,20 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       not expose the host time of its last sync.
     - **The release workflow's edit has not run**: the pin checks and the publish step now
       apply to any driver directory instead of naming quarks.
-    Never run: a real browser `AudioContext`, and a native `AudioParam` as a target.
+    Never run: a native `AudioParam` as a target.
+    - **`apps/fireworks` plays one mix through this driver and the quarks one** (2026-10-10; its
+      README says how). It ran in headless Chromium's `AudioContext` with Tone `Param` targets:
+      shells rose and bloomed, a meter on Tone's output showed each bang, and ramping `mix.rate`
+      between 0.3 and 2 threw nothing. Nobody has listened to it. What writing it against
+      both drivers turned up, each Mike's to decide:
+      - Both packages export `drive`, so a file using both aliases them.
+      - `write` takes the synced timestamp here and the frame's gap in ms on quarks.
+      - A hit carries no subject, so each shell's bang and crackles ride in its own voice's
+        `hits`, with what `play` needs (pan, size) in the event.
+      - A subject binds one `Target` per channel, so each rising shell borrows an oscillator
+        from a pool, and one launched with the pool empty has no whistle.
+      - `loop` defaults to looping for good: both of a shell's voices needed `loop: false`, and
+        without it the rise replayed on top of the bloom with nothing refused.
     Undecided, and what would close the README's gaps:
     - A read of the mix over a window, returning a run of values or a `keys` voice's own
       breakpoints as exact ramps, in place of a `project` per grid point (31 a write, and only
