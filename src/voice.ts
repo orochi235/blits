@@ -15,7 +15,15 @@ import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
 import { Named } from './named.js';
 import type { Past } from './origin.js';
-import { childPlayed, Holding, mixTime, ownedElapsed, ownerPatch, ownerReading } from './owner.js';
+import {
+  childPlayed,
+  Holding,
+  mixTime,
+  ownedElapsed,
+  ownerPatch,
+  ownerReading,
+  turnedBack,
+} from './owner.js';
 import { type Built, builtOf, intosOf, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import type { Fitting } from './spans.js';
@@ -620,14 +628,16 @@ export class Voice<I, O> {
    */
   endsAt(): number {
     if (this.turns) return Number.POSITIVE_INFINITY;
-    let t: number;
-    if (this.backs) {
+    const backs = this.backs;
+    let to: number;
+    if (backs !== (this.owner !== null && turnedBack(this))) {
       if (this.beginless) return Number.POSITIVE_INFINITY;
-      t = backWith(this, this.soonest);
+      to = this.soonest;
     } else {
       if (!Number.isFinite(this.span)) return Number.POSITIVE_INFINITY;
-      t = timeWith(this, this.span + this.latest);
+      to = this.span + this.latest;
     }
+    const t = backs ? backWith(this, to) : timeWith(this, to);
     return this.owner === null ? t : mixTime(this.owner, t);
   }
 

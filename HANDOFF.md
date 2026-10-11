@@ -685,12 +685,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         whether or not the span has left. A copy given the list read the same. A child retimed
         by `faster` did read apart from the synced mix, which was the mix's fault and is fixed
         (the changelog's Unreleased section; `test/span.test.ts`).
-      - **A voice whose owner runs backward leaves without its fade out** (found
-        2026-10-10 by a scratch run, no test yet): with the owner at rate -1 the child left at
-        the frame that noticed it had reached its start, skipping its `fade.out` of 100 ms; its
-        `start` mark moved from 0 to 200, and it listed no `coast`, `out`, or `end`. The schema
-        page's "Not built" line says only that such a voice "is not told when the owner runs
-        back".
+      - **A voice whose owner runs backward now leaves over its fade out** (2026-10-11; the
+        changelog's Unreleased section, `test/backward.test.ts`). Chosen while fixing it, Mike's
+        to overturn: an owner run back to its start stays while it holds a child and leaves
+        with its last, where it left at its own start and took them all. Left as found: such
+        a child's `start` and `in` marks read where the owner's clock will next read the
+        child's start (400 for an owner turned back at 200), as any retime of an owner moves
+        them; and a child that itself runs backward under a backward owner, forward overall,
+        has no test.
     - **Not built**, and nothing recorded against any of it:
       - Records shared by a read back or a standing read, and by voices `shares` (in
         `everyone.ts`) turns away that could keep their difference by subject number too: a

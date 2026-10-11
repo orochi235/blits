@@ -1,4 +1,4 @@
-import { clampWeight, elapsedWith, envelope, timeWith } from './clock.js';
+import { backWith, clampWeight, elapsedWith, envelope, timeWith } from './clock.js';
 import type { Patch } from './types.js';
 import type { Voice } from './voice.js';
 
@@ -36,8 +36,15 @@ export function ownedElapsed<I, O>(voice: Voice<I, O>, owner: Voice<I, O>, now: 
 
 /** The mix time an owner's clock reads `t`, by its controls now; Infinity where it never will. */
 export function mixTime<I, O>(owner: Voice<I, O>, t: number): number {
-  const up = timeWith(owner, t);
+  const up = owner.backs ? backWith(owner, t) : timeWith(owner, t);
   return owner.owner === null ? up : mixTime(owner.owner, up);
+}
+
+/** Whether an odd number of the owners above a voice run back, which turns its clock around. */
+export function turnedBack<I, O>(voice: Voice<I, O>): boolean {
+  let back = false;
+  for (let o = voice.owner; o !== null; o = o.owner) if (o.backs) back = !back;
+  return back;
 }
 
 /** Takes a child into its owner. */

@@ -83,7 +83,11 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
       const at = voice.elapsedAt(now);
       const back = way < 0;
       const atStart = !voice.beginless && at <= voice.soonest;
-      const over = back ? atStart : Number.isFinite(voice.span) && at >= voice.span + voice.latest;
+      // An owner run back to its start stays for what it holds, and leaves with its last child.
+      const holds = voice.holding !== null && voice.holding.children.length > 0;
+      const over = back
+        ? atStart && !holds
+        : Number.isFinite(voice.span) && at >= voice.span + voice.latest;
       if (over) {
         voice.play(true, now, mix.transport.seq);
         // The fade starts when its passes ran out, not at the frame that noticed, so it plays

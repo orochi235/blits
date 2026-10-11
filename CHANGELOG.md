@@ -75,6 +75,12 @@ version and everything else the patch. Each release lists its changes as **Break
   with none skipped at cue, had 199 skipped once synced every 16 ms. A read ahead never fitted
   again, so `project` showed a child retimed by `faster` up to a frame ahead of the mix.
 
+- A voice whose owner runs backward leaves over its `fade.out` from where it reached its start,
+  as one turned back by its own handle does. An owner run back to its start left at once and
+  took every voice it held with it, so a child with a 100 ms `fade.out` vanished in one frame
+  and listed no `coast`, `out`, or `end` mark. An owner at its start now stays for what it
+  holds and leaves with its last child.
+
 - `setting.dt` is the gap since the subject was last sampled for a patch with no `step`, and for
   a weight signal, as its doc says. It was the time since the subject's origin, growing every
   frame: a mix synced at 16, 48, and 64 handed such a patch 16, 48, and 64, and now hands it 16,

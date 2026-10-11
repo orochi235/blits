@@ -285,6 +285,52 @@ describe.each([true, false])('a loop for good cued backward, lanes %s', (lanes) 
   });
 });
 
+describe.each([true, false])('a voice whose owner runs backward, lanes %s', (lanes) => {
+  const turnedAt200 = (fade: { out?: number }) => {
+    const m = mix<Part, Pose>(K, { lanes });
+    m.sync(0);
+    const owner = m.owns({});
+    const h = m.cue({ owner, patch: ramp, loop: false, fade });
+    m.sync(200);
+    owner.rate = -1;
+    return { m, owner, h };
+  };
+
+  it('runs to its start and leaves over its fade out, showing its first frame', async () => {
+    const { m, owner, h } = turnedAt200({ out: 100 });
+    m.sync(300);
+    expect(m.probe(a).x).toBeCloseTo(200, 9);
+    // It reaches its start at 400, between two frames, and the fade counts from there.
+    m.sync(390);
+    expect(h.state).toBe('live');
+    m.sync(430);
+    expect(h.state).toBe('fading');
+    expect(owner.state).toBe('live');
+    expect(m.probe(a).x).toBeCloseTo(70, 9);
+    m.sync(500);
+    expect(h.state).toBe('done');
+    expect(owner.state).toBe('done');
+    expect(await h.played).toBe(true);
+  });
+
+  it('gives its marks: it coasts and fades where it reaches its start', () => {
+    const { m, h } = turnedAt200({ out: 100 });
+    m.sync(250);
+    const at = (mark: string) =>
+      m.marks(0, 1000).find((k) => k.voice === h.id && k.mark === mark)?.timestamp;
+    expect([at('coast'), at('out'), at('end')]).toEqual([400, 400, 500]);
+  });
+
+  it('with no fade out leaves at its start, and its owner with it', () => {
+    const { m, owner, h } = turnedAt200({});
+    m.sync(390);
+    expect(h.state).toBe('live');
+    m.sync(410);
+    expect(h.state).toBe('done');
+    expect(owner.state).toBe('done');
+  });
+});
+
 describe('what a seek leaves alone', () => {
   it('a fade in counts from the voice’s start, not from where the seek put its clock', () => {
     for (const lanes of [true, false]) {
