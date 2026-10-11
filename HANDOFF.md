@@ -564,7 +564,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     0.9.0 with Tone as a peer, and a `tone-v*` tag releases it as `quarks-v*` does quarks. npm
     refuses trust for a name never published, so 0.1.0 goes out by hand, as quarks' did. Mike
     has not seen its names (`drive`, `attach`, `detach`, `write`, `cancel`, and the options
-    `ahead`, `step`, `late`, `clock`, `take`, `tag`, `score`) or these calls made in building:
+    `ahead`, `grid`, `late`, `clock`, `take`, `tag`, `score`) or these calls made in building:
     - **Its tests take `node-web-audio-api` as a dev dependency**, a prebuilt native binary of
       about 40 MB, so Tone's offline render runs in Node with no audio device.
     - **`src/link.ts` repeats two engine constants**: the driver keeps its own host-to-audio

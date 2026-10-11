@@ -38,7 +38,7 @@ tone.write(now);    // the timestamp you just synced to
 
 A value written to a parameter once a frame is late by up to a frame, steps where the mix curves,
 and stops for as long as the frame loop stalls. So the driver never writes the present. Each
-`write` it reads the mix at points `step` ms apart from now to `ahead` ms out, with
+`write` it reads the mix at points `grid` ms apart from now to `ahead` ms out, with
 `mix.project`, and schedules a linear ramp to each on the audio clock, replacing what the last
 `write` scheduled. Hits and marks go through `mix.book`, which hands each one over before it comes
 and again if a seek or a rate change moves it.
@@ -50,8 +50,8 @@ and a 200 ms one. The tests hold these bounds:
 
 | Case | `freq` error, max (Hz) |
 |---|---:|
-| 5 ms `step` (the default) | 0.68 |
-| 25 ms `step` | 3.90 |
+| 5 ms `grid` (the default) | 0.68 |
+| 25 ms `grid` | 3.90 |
 | inside the 200 ms stall, 150 ms `ahead` | above 20 |
 | inside the 200 ms stall, 250 ms `ahead` | 0.68 |
 | audio clock read up to 1 ms off each frame | 1.00 |
@@ -66,7 +66,7 @@ the mix is heard only once the next `write` replaces the curve, which a stall al
 ## API
 
 - **`drive(mix, options?)`** returns the driver. Options, all optional:
-  - `ahead`, default 150, and `step`, default 5: how far ahead a curve is written and how far
+  - `ahead`, default 150, and `grid`, default 5: how far ahead a curve is written and how far
     apart its points are, in ms on the audio clock.
   - `take(item, time, lateBy)`: called for each mark and hit within `ahead`, with `time` in
     seconds on the audio clock, to hand to Tone as it is. `item` is what `mix.book` gives its
@@ -91,8 +91,8 @@ of each frame's difference and starting over on a jump past 50 ms, such as a sus
 
 ## What it does not do yet
 
-- **A curve is only as exact as its grid.** The error grows with the square of `step`, and a jump
-  in the mix that falls between two points is played as a ramp across one step. A read of the mix
+- **A curve is only as exact as its grid.** The error grows with the square of `grid`, and a jump
+  in the mix that falls between two points is played as a ramp from one point to the next. A read of the mix
   over a window, giving a `keys` voice's breakpoints as exact ramps, is undecided in the engine;
   until then each point is one `mix.project`, 31 a `write` at the defaults.
 - **A `mix.ramp` is approximated.** `project` takes mix time, and the engine does not say what

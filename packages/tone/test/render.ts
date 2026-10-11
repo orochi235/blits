@@ -15,7 +15,7 @@ import {
 
 export interface RenderOptions {
   acts?: readonly Act[];
-  step?: number;
+  grid?: number;
   ahead?: number;
   /** How far the host's clock reads past the audio clock, ms. */
   skew?: number;
@@ -64,7 +64,7 @@ export async function render(opts: RenderOptions = {}): Promise<Rendered> {
       };
       const driver = drive(m, {
         clock: () => read / 1000,
-        step: opts.step,
+        grid: opts.grid,
         ahead: opts.ahead,
         take,
       });

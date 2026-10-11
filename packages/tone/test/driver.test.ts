@@ -34,7 +34,7 @@ function recorder() {
 describe('attach and write', () => {
   it('writes each subject its own values, a point a step from the clock to ahead', () => {
     const m = climbing();
-    const d = drive(m, { clock: () => 2, ahead: 20, step: 10 });
+    const d = drive(m, { clock: () => 2, ahead: 20, grid: 10 });
     const a = recorder();
     const b = recorder();
     d.attach('a', { x: a.target });
@@ -49,7 +49,7 @@ describe('attach and write', () => {
 
   it('ends a grid that does not divide ahead on ahead itself', () => {
     const m = climbing();
-    const d = drive(m, { clock: () => 0, ahead: 25, step: 10 });
+    const d = drive(m, { clock: () => 0, ahead: 25, grid: 10 });
     const a = recorder();
     d.attach('a', { x: a.target });
     m.sync(0);
@@ -69,7 +69,7 @@ describe('attach and write', () => {
   it('carries on from where the mix was after a rebase', () => {
     const m = climbing();
     let clock = 0;
-    const d = drive(m, { clock: () => clock, ahead: 10, step: 10 });
+    const d = drive(m, { clock: () => clock, ahead: 10, grid: 10 });
     const a = recorder();
     d.attach('a', { x: a.target });
     m.sync(100);
@@ -107,8 +107,8 @@ describe('attach and write', () => {
   it.each([
     { ahead: -1 },
     { ahead: Number.NaN },
-    { step: 0 },
-    { step: Number.POSITIVE_INFINITY },
+    { grid: 0 },
+    { grid: Number.POSITIVE_INFINITY },
     { late: -1 },
   ])('refuses %o', (opts) => {
     expect(() => drive(climbing(), opts)).toThrow(RangeError);
@@ -119,7 +119,7 @@ describe('attach and write', () => {
     await Tone.Offline(
       () => {
         const m = climbing();
-        const d = drive(m, { ahead: 10, step: 10 });
+        const d = drive(m, { ahead: 10, grid: 10 });
         d.attach('a', { x: a.target });
         m.sync(700);
         d.write(700);

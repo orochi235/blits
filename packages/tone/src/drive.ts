@@ -20,7 +20,7 @@ export interface DriveOptions<E = unknown> {
    */
   ahead?: number;
   /** The spacing of a curve's points on the audio clock, ms. Default 5. */
-  step?: number;
+  grid?: number;
   /** As `BookOptions.late`: how late an item first seen may be and still play, ms. Default 50. */
   late?: number;
   /** The audio clock, in seconds. Default Tone's `immediate`. */
@@ -64,7 +64,7 @@ function ms(name: string, value: number, least: number): number {
 
 export function drive<I, O, E = unknown>(mix: Mix<I, O>, opts: DriveOptions<E> = {}): Driver<I, O> {
   const ahead = ms('ahead', opts.ahead ?? 150, 0);
-  const step = ms('step', opts.step ?? 5, Number.MIN_VALUE);
+  const grid = ms('grid', opts.grid ?? 5, Number.MIN_VALUE);
   const late = ms('late', opts.late ?? 50, 0);
   const seconds = opts.clock ?? immediate;
   const bound = new Map<I, Bound<O>>();
@@ -124,9 +124,9 @@ export function drive<I, O, E = unknown>(mix: Mix<I, O>, opts: DriveOptions<E> =
 
       // Mix time runs `rate` ms to the audio clock's one, so a paused mix has one point to write.
       const rate = mix.rate;
-      const points = rate > 0 ? Math.ceil((to - from) / step - 1e-9) : 0;
+      const points = rate > 0 ? Math.ceil((to - from) / grid - 1e-9) : 0;
       for (let i = 0; i <= points; i++) {
-        const at = Math.min(from + i * step, to);
+        const at = Math.min(from + i * grid, to);
         const projection = mix.project(now + (at - est) * rate);
         for (const [subject, b] of bound) {
           projection.probe(subject, b.pose);

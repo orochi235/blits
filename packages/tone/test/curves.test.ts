@@ -33,10 +33,10 @@ const STALL = [3200, 3420] as const;
 
 describe('curves and notes through retimes, seeks, and stalled frames', () => {
   it.each([
-    { step: 5, freq: 0.68, gain: 1e-4 },
-    { step: 25, freq: 3.9, gain: 2e-3 },
-  ])('a $step ms grid stays within $freq Hz of the mix', async ({ step, freq, gain }) => {
-    const r = await render({ acts, step });
+    { grid: 5, freq: 0.68, gain: 1e-4 },
+    { grid: 25, freq: 3.9, gain: 2e-3 },
+  ])('a $grid ms grid stays within $freq Hz of the mix', async ({ grid, freq, gain }) => {
+    const r = await render({ acts, grid });
     const ref = reference(acts, r.done);
     expect(worst(r.freq, ref, 'freq', STALL)).toBeLessThan(freq);
     expect(worst(r.gain, ref, 'gain', STALL)).toBeLessThan(gain);
