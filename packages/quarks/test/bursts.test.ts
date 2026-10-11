@@ -28,9 +28,9 @@ describe('bursts', () => {
     const q = drive(m, { kit: K, bursts: 'sparks' });
     q.attach(a, s, { at: [1, 0, 0] });
     q.attach(b, s, { at: [0, 2, 0] });
-    for (let f = 0; f < 3; f++) {
+    for (let f = 0; f <= 3; f++) {
       m.sync(f * 100);
-      q.write(100);
+      q.write();
     }
     expect(
       born(s)
@@ -54,7 +54,7 @@ describe('bursts', () => {
     for (let f = 0; f < 3; f++) {
       m.sync(f * 100);
       m.probe(b);
-      q.write(100);
+      q.write();
     }
     expect(s.particleNum).toBe(3);
     expect(m.drain('other')).toHaveLength(1);
@@ -69,7 +69,7 @@ describe('bursts', () => {
     q.attach(a, s, { at: [0, 0, 0] });
     for (let f = 0; f < 3; f++) {
       m.sync(f * 100);
-      q.write(100);
+      q.write();
     }
     expect(s.particleNum).toBe(0);
   });
@@ -86,9 +86,9 @@ describe('bursts', () => {
     });
     q.attach(b, s, { at: [0, 2, 0] });
     m.sync(0);
-    q.write(100);
+    q.write();
     m.sync(100);
-    expect(() => q.write(100)).toThrow('gone');
+    expect(() => q.write()).toThrow('gone');
     expect(born(s).map((p) => p.position.y)).toEqual([2, 2, 2]);
   });
 });

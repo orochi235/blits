@@ -1,4 +1,5 @@
 import { kit, type Mix, mix } from '@msb235/blits';
+import { createHistory as tape } from '@weasel-js/history';
 import { ConeEmitter, ConstantValue } from 'three.quarks';
 import { describe, expect, it } from 'vitest';
 import { channels, drive, type Emission } from '../src/index.js';
@@ -8,8 +9,9 @@ const K = kit<Emission>(channels);
 const a: Spot = { id: 'a' };
 const b: Spot = { id: 'b' };
 
+/** A first write, which owes nothing, then `frames` more, each `dt` ms on. */
 function run(frames: number, dt: number, m: Mix<Spot, Emission>, w: () => void) {
-  for (let f = 0; f < frames; f++) {
+  for (let f = 0; f <= frames; f++) {
     m.sync(f * dt);
     w();
   }
@@ -24,7 +26,7 @@ describe('drive', () => {
     const q = drive(m, { kit: K });
     q.attach(a, s, { at: [1, 0, 0] });
     q.attach(b, s, { at: () => ({ x: 0, y: 2, z: 0 }) });
-    run(10, 100, m, () => q.write(100));
+    run(10, 100, m, () => q.write());
     const fromA = born(s).filter((p) => p.position.x === 1);
     const fromB = born(s).filter((p) => p.position.y === 2);
     expect(fromA).toHaveLength(10);
@@ -40,7 +42,7 @@ describe('drive', () => {
     m.cue({ patch: hold({ rate: 2.5 }), subjects: [a] });
     const q = drive(m, { kit: K });
     q.attach(a, s, { at: [0, 0, 0] });
-    run(1000, 16, m, () => q.write(16));
+    run(1000, 16, m, () => q.write());
     expect(s.particleNum).toBe(40);
   });
 
@@ -50,7 +52,7 @@ describe('drive', () => {
     m.cue({ patch: hold({ rate: 7 }), subjects: [a] });
     const q = drive(m, { kit: K });
     q.attach(a, s, { at: [0, 0, 0] });
-    run(1440, 1000 / 144, m, () => q.write(1000 / 144));
+    run(1440, 1000 / 144, m, () => q.write());
     expect(s.particleNum).toBe(70);
   });
 
@@ -60,12 +62,12 @@ describe('drive', () => {
     const inf = m.cue({ patch: hold({ rate: Number.POSITIVE_INFINITY }), subjects: [a] });
     const q = drive(m, { kit: K });
     q.attach(a, s, { at: [0, 0, 0] });
-    run(2, 100, m, () => q.write(100));
+    run(2, 100, m, () => q.write());
     expect(s.particleNum).toBe(0);
     inf.weight = 0;
     m.cue({ patch: hold({ rate: 10 }), subjects: [a] });
-    m.sync(1000);
-    q.write(100);
+    m.sync(300);
+    q.write();
     expect(s.particleNum).toBe(1);
   });
 
@@ -77,7 +79,7 @@ describe('drive', () => {
     m.cue({ patch: hold({ rate: 10 }), subjects: [a] });
     const q = drive(m, { kit: K });
     q.attach(a, s, { at: [1, 2, 3] });
-    run(1, 100, m, () => q.write(100));
+    run(1, 100, m, () => q.write());
     const [p] = born(s);
     expect(p?.velocity.y).toBeCloseTo(5);
     expect(p?.position.toArray()).toEqual([1, 2, 3]);
@@ -89,7 +91,7 @@ describe('drive', () => {
     m.cue({ patch: hold({ rate: 10, offset: [0, 0, 3] }), subjects: [a] });
     const q = drive(m, { kit: K });
     q.attach(a, s, { at: [1, 0, 0] });
-    run(1, 100, m, () => q.write(100));
+    run(1, 100, m, () => q.write());
     expect(born(s).map((p) => p.position.toArray())).toEqual([[1, 0, 3]]);
   });
 
@@ -99,12 +101,12 @@ describe('drive', () => {
     const neg = m.cue({ patch: hold({ rate: -5 }), subjects: [a] });
     const q = drive(m, { kit: K });
     q.attach(a, s, { at: [0, 0, 0] });
-    run(10, 100, m, () => q.write(100));
+    run(10, 100, m, () => q.write());
     expect(s.particleNum).toBe(0);
     neg.weight = 0;
     m.cue({ patch: hold({ rate: 10 }), subjects: [a] });
-    m.sync(1000);
-    q.write(100);
+    m.sync(1100);
+    q.write();
     expect(s.particleNum).toBe(1);
   });
 
@@ -118,7 +120,7 @@ describe('drive', () => {
     m.cue({ patch: hold({ rate: 10 }), subjects: [a] });
     const q = drive(m, { kit: K });
     q.attach(a, s, { at: [0, 0, 0] });
-    run(1, 100, m, () => q.write(100));
+    run(1, 100, m, () => q.write());
     expect(s.particleNum).toBe(1);
   });
 
@@ -128,15 +130,15 @@ describe('drive', () => {
     m.cue({ patch: hold({ rate: 10, speed: 2 }), subjects: [a] });
     const q = drive(m, { kit: K });
     q.attach(a, s, { at: [0, 0, 0] });
-    run(1, 100, m, () => q.write(100));
+    run(1, 100, m, () => q.write());
     q.detach(a);
-    m.sync(100);
-    q.write(100);
+    m.sync(200);
+    q.write();
     expect(s.particleNum).toBe(1);
     (s.startSpeed as ConstantValue).value = 8;
     q.attach(a, s, { at: [0, 0, 0] });
-    m.sync(200);
-    q.write(100);
+    m.sync(300);
+    q.write();
     expect(born(s).map((p) => p.startSpeed)).toEqual([10, 16]);
   });
 
@@ -154,12 +156,14 @@ describe('drive', () => {
     });
     q.attach(b, s, { at: [0, 2, 0] });
     m.sync(0);
-    expect(() => q.write(100)).toThrow('gone');
+    q.write();
+    m.sync(100);
+    expect(() => q.write()).toThrow('gone');
     expect((s.startSpeed as ConstantValue).value).toBe(5);
     expect(born(s).map((p) => p.position.y)).toEqual([2]);
     gone = false;
-    m.sync(100);
-    q.write(100);
+    m.sync(200);
+    q.write();
     expect(born(s).filter((p) => p.position.x === 1)).toHaveLength(1);
   });
 
@@ -172,17 +176,44 @@ describe('drive', () => {
     const q = drive(m, { kit: K });
     q.attach(a, s, { at: [0, 0, 0] });
     m.sync(0);
-    expect(() => q.write(100)).toThrow('behavior failed');
+    q.write();
+    m.sync(100);
+    expect(() => q.write()).toThrow('behavior failed');
     expect((s.startSpeed as ConstantValue).value).toBe(5);
     fail.on = false;
     const q2 = drive(m, { kit: K });
     q2.attach(b, s, { at: [0, 0, 0] });
-    m.sync(100);
-    q.write(100);
-    q2.write(100);
+    m.sync(200);
+    q.write();
+    q2.write();
     // quarks has already added the particle whose behavior threw, so it is here too.
     expect([...new Set(born(s).map((p) => p.startSpeed))]).toEqual([15]);
     expect((s.startSpeed as ConstantValue).value).toBe(5);
+  });
+
+  it('owes for mix time: half at half rate, and nothing for a rebased gap or a seek ahead', () => {
+    const m = mix<Spot, Emission>(K, { history: { ms: 120_000, tape } });
+    const s = system();
+    m.cue({ patch: hold({ rate: 10 }), subjects: [a] });
+    const q = drive(m, { kit: K });
+    q.attach(a, s, { at: [0, 0, 0] });
+    run(10, 100, m, () => q.write());
+    expect(s.particleNum).toBe(10);
+    m.rate = 0.5;
+    for (let t = 1100; t <= 2000; t += 100) {
+      m.sync(t);
+      q.write();
+    }
+    expect(s.particleNum).toBe(15);
+    m.rate = 1;
+    m.rebase();
+    m.sync(60_000);
+    q.write();
+    expect(s.particleNum).toBe(15);
+    m.seek(m.now + 5000);
+    m.sync(60_100);
+    q.write();
+    expect(s.particleNum).toBe(16);
   });
 
   it('refuses a subject attached twice', () => {

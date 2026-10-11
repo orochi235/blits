@@ -567,9 +567,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `ahead`, `grid`, `late`, `clock`, `take`, `tag`, `score`) or these calls made in building:
     - **Its tests take `node-web-audio-api` as a dev dependency**, a prebuilt native binary of
       about 40 MB, so Tone's offline render runs in Node with no audio device.
-    - **`src/link.ts` repeats two engine constants**: the driver keeps its own host-to-audio
-      offset by the rule `mix.book` uses (5% slew, restart past 50 ms), because the engine does
-      not expose the host time of its last sync.
+    - **Neither driver can be released before the engine's next minor** (2026-10-11). Both
+      `write()`s take nothing now and read `mix.timestamp`, and tone maps time by a booker's
+      `at`; both are in the engine's Unreleased section. Their pins still say 0.9.0.
     - **The release workflow's edit has not run for a driver**: the pin checks and the publish
       step now apply to any driver directory instead of naming quarks.
     - **`node-web-audio-api` 2.2.0 frees a channel's samples under a live array**
@@ -585,9 +585,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       between 0.3 and 2 threw nothing. Nobody has listened to it. What writing it against
       both drivers turned up, each Mike's to decide:
       - Both packages export `drive`, so a file using both aliases them.
-      - `write` takes the synced timestamp here and the frame's gap in ms on quarks.
-      - A hit carries no subject, so each shell's bang and crackles ride in its own voice's
-        `hits`, with what `take` needs (pan, size) in the event.
+      - A booked hit carries its voice's `subjects` now (2026-10-11); fireworks still packs pan
+        and size into each event and could read them off the shell.
       - A subject binds one `Target` per channel, so each rising shell borrows an oscillator
         from a pool, and one launched with the pool empty has no whistle.
       - `loop` defaults to looping for good: both of a shell's voices needed `loop: false`, and

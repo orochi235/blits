@@ -4,6 +4,15 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
+## Unreleased
+
+### Breaking
+
+- `write()` takes nothing. It owes each subject its `rate` for the mix time since the last write,
+  read from the mix: the first write owes nothing, a mix at half rate emits half, and time
+  `rebase` took out or a seek ahead emits nothing. It took the frame's `dt` in ms.
+- Needs `mix.timestamp`, which `@msb235/blits` has after 0.9.0.
+
 ## 0.5.0
 
 ### Breaking

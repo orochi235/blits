@@ -20,7 +20,7 @@ quarks.attach(fault, fizzSystem, { at: () => fault.at });
 
 // each frame
 m.sync(now);
-quarks.write(dt);           // dt in ms
+quarks.write();
 batch.update(dt / 1000);    // your own BatchedRenderer
 ```
 
@@ -53,8 +53,8 @@ event `{ count }` a patch `send`s under the tag you gave `drive`.
   Attaching a subject twice throws.
 - **`detach(subject)`** unbinds it. Detaching a system's last subject puts its authored values back
   and forgets them, so a later `attach` captures whatever you have set since.
-- **`write(dt)`**, `dt` in ms, after `mix.sync`: probes each attached subject, adds `rate × dt` to
-  its carry and emits the whole particles, adds the floored `count` of each burst drained for it,
+- **`write()`**, after `mix.sync`: probes each attached subject, adds `rate` times the mix time
+  since the last write to its carry and emits the whole particles, adds the floored `count` of each burst drained for it,
   and emits them all at `at + offset` with that subject's values. A rate or count at or below 0,
   or not finite, adds nothing, and a burst for a subject not attached is ignored. Particles leave
   at the subject's position but with the emitter's world rotation and scale, as of its last
@@ -78,8 +78,8 @@ tags; the driver takes only the one you gave it.
   editing one, while the system is attached is not seen: the driver keeps writing to the captured
   generator and puts the captured values back each frame. Detach every subject on the system,
   change it, and attach again.
-- `write` emits everything `rate × dt` owes at once, so a long `dt`, such as the first frame
-  after a hidden tab, bursts a whole gap's worth of particles. The driver does not clamp it: when
-  you call `mix.rebase()` after a gap, leave the gap out of the `dt` you hand `write` too, or clamp
-  `dt` yourself.
+- `write` emits everything a frame owes at once, so a long frame bursts its whole gap's worth of
+  particles. The first write owes nothing, and neither does time `mix.rebase()` took out or a seek
+  ahead. A long gap you sync straight through is emitted in full: call `mix.rebase()` first for a
+  gap you do not want played.
 - What quarks does to a particle after birth (forces, behaviors, color over life) stays quarks'.

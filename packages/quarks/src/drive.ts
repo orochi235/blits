@@ -26,8 +26,11 @@ export interface DriveOptions<O> {
 export interface Driver<I> {
   attach(subject: I, system: ParticleSystem, opts: AttachOptions): void;
   detach(subject: I): void;
-  /** Probes every attached subject and emits its particles, `dt` ms after the last write. */
-  write(dt: number): void;
+  /**
+   * Probes every attached subject and emits what its `rate` owes for the mix time since the last
+   * write. Call it after `mix.sync`; the first write owes nothing.
+   */
+  write(): void;
 }
 
 interface Bound<O> {
@@ -67,6 +70,9 @@ export function drive<I, O extends Partial<Emission>>(
 
   // Floating-point drift in `rate × dt` lands a hair under a whole particle; this much is ignored.
   const SLACK = 1e-6;
+
+  let now = Number.NaN;
+  let timestamp = Number.NaN;
 
   const emit = (b: Bound<O>): void => {
     const at = typeof b.at === 'function' ? b.at() : b.at;
@@ -134,7 +140,12 @@ export function drive<I, O extends Partial<Emission>>(
       }
     },
 
-    write(dt) {
+    write() {
+      // Mix time passed, held to the host's gap at the mix's rate so a seek ahead owes nothing.
+      const gone = Math.min(mix.now - now, (mix.timestamp - timestamp) * mix.rate);
+      const dt = gone > 0 ? gone : 0;
+      now = mix.now;
+      timestamp = mix.timestamp;
       for (const [subject, b] of bound) {
         mix.probe(subject, b.pose);
         const owed = (b.pose.rate ?? 0) * dt;

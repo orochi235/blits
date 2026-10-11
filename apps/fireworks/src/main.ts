@@ -76,7 +76,7 @@ start.addEventListener('click', async () => {
     }
     m.sync(now);
     const dt = gap * m.rate;
-    sparks.write(dt);
+    sparks.write();
     sound.write();
     sky.render(dt / 1000);
   };
