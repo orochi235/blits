@@ -55,8 +55,9 @@ function fresh<I, O>(voice: Voice<I, O>): number {
  */
 export function originOf<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boolean): number {
   const past = voice.clocks;
-  let t = Number.NaN;
-  if (past !== null) {
+  // A voice with no first pass shows every subject from its start, whatever its stagger.
+  let t = voice.beginless ? voice.start : Number.NaN;
+  if (past !== null && Number.isNaN(t)) {
     for (let i = rebuilt ? fresh(voice) : 0; i < past.length; i++) {
       const p = past[i] as Past;
       const at = timeWith(p, elapsed);

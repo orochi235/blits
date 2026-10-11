@@ -49,9 +49,12 @@ export interface Setting<S = void, H = unknown> {
    * probe. A read by `project` is one sample, so its gap is not the gap a frame of play has.
    */
   dt: number;
-  /** Milliseconds this voice has been playing, rate applied. */
+  /**
+   * Milliseconds this voice has been playing, rate applied. Below 0 only for a voice with no end
+   * cued backward, which plays into the passes before its first.
+   */
   elapsed: number;
-  /** Which pass this is, 0 first. */
+  /** Which pass this is, 0 first; below 0 where `elapsed` is. */
   pass: number;
   /** This voice's weight for this subject this frame, after fades, signals and any locus. */
   weight: number;

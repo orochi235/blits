@@ -4,7 +4,7 @@ import { copyable } from './clone.js';
 import { schedule } from './due.js';
 import { shares } from './everyone.js';
 import { finiteRate, plainWeight, VoiceHandle } from './handle.js';
-import { reorigin } from './held.js';
+import { begin } from './held.js';
 import { handle } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import { motionOf } from './motion.js';
@@ -94,6 +94,8 @@ export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
   if (typeof loop === 'number' && !(Number.isInteger(loop) && loop >= 1))
     throw new RangeError(`blits: loop takes true, false or a whole number of passes, not ${loop}`);
   if (spec.rate !== undefined) finiteRate(spec.rate);
+  if (spec.seek !== undefined && !Number.isFinite(spec.seek))
+    throw new RangeError(`blits: a voice's seek is a finite number of ms, not ${spec.seek}`);
   if (typeof spec.weight === 'number') plainWeight(spec.weight);
   fitsKit(patch, mix.kit);
   const motion = motionOf<I>(patch);
@@ -170,15 +172,8 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if (spec.from === 'current') mix.wantsPose = true;
   if (anchor) {
     place(mix);
-    if (
-      !Number.isNaN(mix.now) &&
-      voice.state === 'pending' &&
-      localNow(mix, voice) >= voice.start
-    ) {
-      voice.state = 'live';
-      reorigin(mix, voice, mix.now);
-      changed(mix, voice);
-    }
+    if (!Number.isNaN(mix.now) && voice.state === 'pending' && localNow(mix, voice) >= voice.start)
+      begin(mix, voice, mix.now);
   }
   if (owner?.fitting) refit(mix, owner);
   // After placing, so the controls it starts with are where its anchors put it at the cue.

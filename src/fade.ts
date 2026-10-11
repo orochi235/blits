@@ -112,13 +112,14 @@ function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void 
 export function beginFade<I, O>(
   mix: Mixer<I, O>,
   voice: Voice<I, O>,
-  opts: { over?: number; at?: 'rest'; deadline?: number },
+  opts: { over?: number; at?: 'rest'; deadline?: number; back?: boolean },
   at?: number,
 ): void {
   if (voice.state === 'done' || voice.state === 'fading') return;
   const over = mix.reduced ? 0 : (opts.over ?? voice.fade.out ?? 0);
   // A voice is linked into its subjects' chains once it plays, and a fading one plays.
-  if (voice.state === 'pending') changed(mix, voice);
+  const waiting = voice.state === 'pending';
+  if (waiting) changed(mix, voice);
   // A fade at rest marks each subject's record as it comes to rest, at its next read: one already
   // read this frame is read again, as after `touch`.
   if (opts.at === 'rest') {
@@ -133,8 +134,10 @@ export function beginFade<I, O>(
     rest: opts.at === 'rest',
     deadline: opts.deadline,
   };
+  if (opts.back) voice.out.back = true;
   noted(mix, voice);
-  if (opts.at === 'rest') mix.lanes?.invalidate();
+  // A fade at rest, from a voice's start, or of a voice yet to start takes it off its lane.
+  if (opts.at === 'rest' || opts.back || waiting) mix.lanes?.invalidate();
   else mix.lanes?.refill();
   if (over === 0 && opts.at !== 'rest') retire(mix, voice, voice.out.at);
 }

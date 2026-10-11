@@ -1,4 +1,4 @@
-import { frozenTime, passAt, phaseAt, silent } from './clock.js';
+import { passAt, phaseAt, phaseBefore, silent } from './clock.js';
 import { copy as copyValue, first } from './clone.js';
 import { open as openRecord, shut as shutRecord, weighAt } from './everyone.js';
 import { recordHost, remember } from './history.js';
@@ -88,19 +88,16 @@ export function contribution<I, O>(
   if (voice.out?.rest && held.rested) return null;
   if (held.rebuilt !== voice.rebuilds) rebuild(this, voice, subject, now, held);
 
-  // A pending voice shows the frame it will start on: its clock is anchored at its start, and
-  // read at any time before would have a voice sought ahead, or running back, play before then.
-  const pending = voice.state === 'pending';
-  const raw = (pending ? voice.anchorElapsed : voice.elapsedAt(now)) - held.delay;
-  // Not `raw < 0`: see `frozenTime` for the clock that reads NaN before its start.
-  const early = pending || !(raw >= 0);
-  if (early && !voice.freezesBefore) return null;
-  const elapsed = frozenTime(raw, voice.freezesBefore, voice.freezesAfter, voice.span);
+  const raw = voice.rawAt(now, held.delay);
+  const early = voice.before(raw, now);
+  if (early && !voice.holdsFirst) return null;
+  const elapsed = voice.shownAt(raw);
   // A frozen subject's clock stands still at the edge it freezes at: -1 before, 1 after, 0 playing.
   const still = early ? -1 : voice.freezesAfter && raw > voice.span ? 1 : 0;
 
   const duration = voice.duration;
-  const phase = phaseAt(elapsed, duration, voice.passes);
+  const phase =
+    elapsed < 0 ? phaseBefore(elapsed, duration) : phaseAt(elapsed, duration, voice.passes);
   const pass = passAt(elapsed, duration, voice.passes);
 
   this.prime(voice, held, now, elapsed, pass);
@@ -126,19 +123,27 @@ export function contribution<I, O>(
   reading.horizon = this.horizonFor(voice, held.delay, now);
 
   const tick = this.opts.stepMs;
-  if (voice.patch.step && held.probed !== now && still >= 0) {
-    // Frozen after, it steps once more to where its last pass ended, and no further.
-    const to = still === 1 ? voice.timeAt(held.delay + voice.span) : now;
-    if (held.stepped < held.since) {
-      held.stepped = held.since;
-      setting.dt = this.capped(now - held.since);
-    }
-    if (tick !== undefined && tick > 0 && !this.reducedNow)
-      this.tick(voice, subject, held, tick, to);
-    else if (still === 0 ? now !== held.stepped : to > held.stepped) {
-      if (still === 1) setting.dt = this.capped(to - held.stepped);
-      voice.patch.step(held.state as never, setting.dt, subject, setting as Setting<never>);
-      held.stepped = to;
+  if (voice.patch.step && held.probed !== now) {
+    // Frozen after, it steps once more to where its last pass ended, and no further; run back
+    // past its start, to where it reached it. Before a start it has yet to reach, it does not step.
+    const to =
+      still === 0
+        ? now
+        : still === 1
+          ? voice.timeAt(held.delay + voice.span)
+          : voice.ranBackTo(held.delay, now);
+    if (!Number.isNaN(to)) {
+      if (held.stepped < held.since) {
+        held.stepped = held.since;
+        setting.dt = this.capped(now - held.since);
+      }
+      if (tick !== undefined && tick > 0 && !this.reducedNow)
+        this.tick(voice, subject, held, tick, to);
+      else if (still === 0 ? now !== held.stepped : to > held.stepped) {
+        if (still !== 0) setting.dt = this.capped(to - held.stepped);
+        voice.patch.step(held.state as never, setting.dt, subject, setting as Setting<never>);
+        held.stepped = to;
+      }
     }
   }
 
@@ -747,12 +752,7 @@ export function read<I, O>(
     if (held.reaches && held.probed === now && held.delta && held.seeks === voice.seeks) {
       const setting = voice.setting;
       // The setting the probe that read the delta had, but for `dt`: a dry read advances nothing.
-      const elapsed = frozenTime(
-        voice.elapsedAt(now) - held.delay,
-        voice.freezesBefore,
-        voice.freezesAfter,
-        voice.span,
-      );
+      const elapsed = voice.shownAt(voice.rawAt(now, held.delay));
       setting.timestamp = now;
       setting.dt = 0;
       setting.elapsed = elapsed;

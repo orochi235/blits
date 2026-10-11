@@ -1,12 +1,21 @@
 import type { Blend } from './blend.js';
-import { type Clock, elapsedWith, passesOf, rateWith, rebaseWith, timeWith } from './clock.js';
+import {
+  backWith,
+  type Clock,
+  elapsedWith,
+  frozenTime,
+  passesOf,
+  rateWith,
+  rebaseWith,
+  timeWith,
+} from './clock.js';
 import { type Curve, curve } from './easing.js';
 import type { Leavings } from './leavings.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
 import { Named } from './named.js';
 import type { Past } from './origin.js';
-import { childPlayed, Holding, mixTime, ownedElapsed, ownerPatch } from './owner.js';
+import { childPlayed, Holding, mixTime, ownedElapsed, ownerPatch, ownerReading } from './owner.js';
 import { type Built, builtOf, intosOf, type Scratch } from './patch.js';
 import { reading } from './reading.js';
 import type { Fitting } from './spans.js';
@@ -189,6 +198,8 @@ export interface Ramp {
   over: number;
   rest: boolean;
   deadline?: number;
+  /** Begun where the voice ran back to its start, whose first frame it holds through the fade. */
+  back?: boolean;
 }
 
 /**
@@ -272,6 +283,12 @@ export class Voice<I, O> {
   readonly span: number;
   /** The state behind a motion patch, undefined for any other. */
   readonly motion: Motions<I> | undefined;
+  /**
+   * Whether it has no first pass: cued backward with no end to start from, it plays from 0 into
+   * the pass before, so no time on its clock is before its start. Never a motion, whose stretches
+   * begin at 0.
+   */
+  readonly beginless: boolean;
   /** Its `freeze`, for a patch it applies to: motion keeps its target already. */
   readonly freezesBefore: boolean;
   readonly freezesAfter: boolean;
@@ -292,6 +309,8 @@ export class Voice<I, O> {
   seen = 0;
   /** The longest stagger of any subject seen, so a finite loop waits for the last of them. */
   latest = 0;
+  /** The least stagger of any subject seen, 0 or below, which a voice running back ends at. */
+  soonest = 0;
   restedCount = 0;
   /** The mix time it was cued at; -Infinity before the first sync. */
   cuedAt = Number.NEGATIVE_INFINITY;
@@ -495,6 +514,7 @@ export class Voice<I, O> {
     this.early = null;
     this.seen = 0;
     this.latest = 0;
+    this.soonest = 0;
     this.restedCount = 0;
     this.cuedAt = Number.NEGATIVE_INFINITY;
     this.cuedSeq = Number.NEGATIVE_INFINITY;
@@ -559,7 +579,11 @@ export class Voice<I, O> {
     this.setting = new VoiceSetting(host, send, this);
     this.rate = spec.rate ?? 1;
     this.weight = typeof spec.weight === 'number' ? spec.weight : 1;
+    const endless = !Number.isFinite(this.span);
+    this.beginless = this.rate < 0 && endless && this.motion === undefined;
     this.anchorNow = start;
+    // Where it starts: a voice cued backward at its end, where it has one.
+    this.anchorElapsed = spec.seek ?? (this.rate < 0 && !endless ? this.span : 0);
     if (now >= start) this.state = 'live';
   }
 
@@ -572,6 +596,88 @@ export class Voice<I, O> {
   timeAt(elapsed: number): number {
     const t = timeWith(this, elapsed);
     return this.owner === null ? t : mixTime(this.owner, t);
+  }
+
+  /**
+   * Whether its clock runs back by its controls: at a rate below 0, or on a ramp between rates
+   * neither of which is above it. A ramp through 0 says neither way until it has turned.
+   */
+  get backs(): boolean {
+    const r = this.ramp;
+    return r === null ? this.rate < 0 : r.from <= 0 && r.to <= 0 && (r.from < 0 || r.to < 0);
+  }
+
+  /** Whether its ramp takes its rate through 0, which turns its clock around partway. */
+  get turns(): boolean {
+    const r = this.ramp;
+    return r !== null && r.from * r.to < 0;
+  }
+
+  /**
+   * The mix time its passes run out by its controls now: its last pass's end running forward, its
+   * first pass's start running back. Infinity where they never do, and while a ramp has yet to
+   * turn it around.
+   */
+  endsAt(): number {
+    if (this.turns) return Number.POSITIVE_INFINITY;
+    let t: number;
+    if (this.backs) {
+      if (this.beginless) return Number.POSITIVE_INFINITY;
+      t = backWith(this, this.soonest);
+    } else {
+      if (!Number.isFinite(this.span)) return Number.POSITIVE_INFINITY;
+      t = timeWith(this, this.span + this.latest);
+    }
+    return this.owner === null ? t : mixTime(this.owner, t);
+  }
+
+  /**
+   * The mix time its clock ran back to `elapsed` by `now`, by its controls now: where a subject
+   * `elapsed` into it reached its start. NaN where it has not, and for a voice an owner holds.
+   */
+  ranBackTo(elapsed: number, now: number): number {
+    if (this.beginless || !this.backs || this.owner !== null) return Number.NaN;
+    const t = backWith(this, elapsed);
+    return t >= this.anchorNow && t <= now ? t : Number.NaN;
+  }
+
+  /** Whether it has yet to start at mix time `now`: pending, or fading out from before its start. */
+  unstarted(now: number): boolean {
+    const state = this.state;
+    if (state === 'pending') return true;
+    if (state !== 'fading') return false;
+    return !((this.owner === null ? now : ownerReading(this.owner, now)) >= this.start);
+  }
+
+  /**
+   * A subject's voice time at mix time `now`, `delay` into the voice, before its freezes apply. A
+   * voice yet to start reads where it will: its clock is anchored there, and read at any time
+   * before would have a voice sought ahead, or running back, play before its start.
+   */
+  rawAt(now: number, delay: number): number {
+    return (this.unstarted(now) ? this.anchorElapsed : this.elapsedAt(now)) - delay;
+  }
+
+  /**
+   * Whether a subject at `raw` is before its start at mix time `now`: it shows nothing, or its
+   * first frame frozen.
+   */
+  before(raw: number, now: number): boolean {
+    // Not `raw < 0`: see `frozenTime` for the clock that reads NaN before its start.
+    return (!(raw >= 0) && !this.beginless) || this.unstarted(now);
+  }
+
+  /**
+   * Whether a subject before its start shows its first frame: the voice freezes before, or is
+   * fading out from where it ran back to its start, as one fading from its end shows its last.
+   */
+  get holdsFirst(): boolean {
+    return this.freezesBefore || this.out?.back === true;
+  }
+
+  /** A subject's voice time at `raw` once the voice's freezes apply; NaN where it shows nothing. */
+  shownAt(raw: number): number {
+    return this.beginless ? raw : frozenTime(raw, this.holdsFirst, this.freezesAfter, this.span);
   }
 
   /** Records this voice's controls as they stand, from mix time `at` in frame `seq`. */

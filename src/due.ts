@@ -27,23 +27,28 @@ function dueOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): number {
   if (back !== null) due = Math.min(due, back.at + (1 - back.from) * back.over);
   if (voice.state === 'pending')
     return Math.min(due, Number.isNaN(voice.start) ? due : voice.start);
+  // A ramp through 0 turns the clock around, which is looked for each frame until it has.
+  if (voice.turns) return Number.NEGATIVE_INFINITY;
   if (voice.state === 'fading') {
     const out = voice.out;
     if (out === null || out.rest) return Number.NEGATIVE_INFINITY;
     return Math.min(due, out.at + out.over);
   }
   due = Math.min(due, voice.outAt);
-  if (Number.isFinite(voice.span)) {
-    const end = voice.span + voice.latest;
-    // A frozen voice goes live again once its clock is back before its end: by a seek, by a
-    // subject staggered later than any before, or by running backwards, which is checked each
-    // frame while it can.
-    if (voice.state === 'frozen') {
-      if (voice.rate <= 0 || voice.ramp !== null) return Number.NEGATIVE_INFINITY;
-      if (!Number.isNaN(mix.now) && voice.elapsedAt(mix.now) < end) return Number.NEGATIVE_INFINITY;
-    }
-    if (voice.state === 'live') due = Math.min(due, voice.timeAt(end));
+  if (voice.state === 'frozen') {
+    const at = Number.isNaN(mix.now) ? Number.NaN : voice.elapsedAt(mix.now);
+    // Frozen at its start, having run back to it, it stays while its rate is never above 0,
+    // until a handle or a subject staggered ahead of every other moves it.
+    const r = voice.ramp;
+    const never = r === null ? voice.rate <= 0 : r.from <= 0 && r.to <= 0;
+    if (never && !voice.beginless && at <= voice.soonest) return due;
+    // Frozen at its end, it goes live again once its clock is back before it: by a seek, by a
+    // subject staggered later than any before, or by running back, which is checked each frame
+    // while it can.
+    if (voice.rate <= 0 || r !== null) return Number.NEGATIVE_INFINITY;
+    if (at < voice.span + voice.latest) return Number.NEGATIVE_INFINITY;
   }
+  if (voice.state === 'live') due = Math.min(due, voice.endsAt());
   return due;
 }
 

@@ -135,8 +135,8 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
     .sort((a, b) => a.id - b.id)
     .map((v) => {
       const log = v.log as Controls[];
-      const copy = v.copy(
-        (subject) => recall(mix, v, subject, t, cut),
+      const copy: Voice<I, O> = v.copy(
+        (subject) => recall(mix, v, subject, t, cut, c, copy),
         lastWithin(log, cut) ?? (log[0] as Controls),
       );
       if (then !== undefined) copy.setting.host = then;
@@ -222,6 +222,8 @@ export function recall<I, O>(
   subject: I,
   t: number,
   cut: Cut,
+  c?: Mixer<I, O>,
+  copy?: Voice<I, O>,
 ): Subject<unknown> | undefined {
   const live = voice.left?.at(subject, cut) ?? recordOf(mix, voice, subject);
   if (live === undefined) return undefined;
@@ -232,7 +234,10 @@ export function recall<I, O>(
     h.replay = live.inputs;
     return h;
   }
-  const stepped = live.since < t ? live.since : t;
+  // Its origin by the controls the voice had then: a seek or an anchor has moved a waiting
+  // voice's since.
+  const since = c === undefined || copy === undefined ? live.since : c.sinceOf(copy, live.delay);
+  const stepped = since < t ? since : t;
   const h = record(
     voice,
     live.reaches,
@@ -241,8 +246,8 @@ export function recall<I, O>(
       : (undefined as unknown),
   );
   h.delay = live.delay;
-  h.since = live.since;
-  h.shown = live.shown;
+  h.since = since;
+  h.shown = c === undefined || copy === undefined ? live.shown : c.shownOf(copy, since);
   h.stepped = stepped;
   h.rebuilt = voice.rebuilds;
   h.from = stepped;

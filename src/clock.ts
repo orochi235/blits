@@ -148,6 +148,33 @@ export function timeWith(c: Clock, elapsed: number): number {
   return c.anchorNow + r.over + (elapsed - atEnd) / r.to;
 }
 
+/**
+ * The time a clock running back reads `elapsed`: `timeWith` for the clock that reads the negative
+ * of this one, which runs forward where this runs back.
+ */
+export function backWith(c: Clock, elapsed: number): number {
+  const r = c.ramp;
+  return timeWith(
+    {
+      anchorNow: c.anchorNow,
+      anchorElapsed: -c.anchorElapsed,
+      rate: -c.rate,
+      ramp: r === null ? null : { from: -r.from, to: -r.to, over: r.over },
+    },
+    -elapsed,
+  );
+}
+
+/**
+ * The phase of a time before 0, for a loop with no first pass: where the pass before 0, and each
+ * one before that, would read it.
+ */
+export function phaseBefore(elapsed: number, duration: number): number {
+  if (!(duration > 0)) return 0;
+  const into = elapsed % duration;
+  return (into < 0 ? into + duration : into) / duration;
+}
+
 /** A clock's rate at `now`. */
 export function rateWith(c: Clock, now: number): number {
   const r = c.ramp;

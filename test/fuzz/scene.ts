@@ -433,6 +433,8 @@ function cue(e: Env, c: Cue): void {
   if (c.start !== undefined) s.start = c.start;
   if (c.freeze) s.freeze = c.freeze;
   if (c.rate !== undefined) s.rate = c.rate;
+  // Drawn from nothing, so every seed keeps the scene it had.
+  if (c.rate === 2 || c.rate === -1 || c.start !== undefined) s.seek = 130;
   const stagger = c.stagger;
   if (stagger) s.stagger = (p) => p.id * stagger;
   if (c.subjects) s.subjects = c.subjects.map((i) => partOf(e, i));
@@ -481,7 +483,8 @@ function act(e: Env, d: Do): void {
         h.weight = Math.round(x * 4) / 4;
         break;
       case 'rate':
-        h.rate = [0, 0.5, 1, 3][Math.floor(x * 4)] as number;
+        // The top of the range runs back, taken from 3's share so every other draw reads as it did.
+        h.rate = x >= 0.9 ? -1 : ([0, 0.5, 1, 3][Math.floor(x * 4)] as number);
         break;
       case 'seek':
         h.seek(x * 800);

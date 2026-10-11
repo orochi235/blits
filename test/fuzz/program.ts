@@ -88,8 +88,10 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
         const fade = { in: pick([0, 50, 120]), out: pick([0, 60, 150]) };
         const freeze = pick([undefined, 'after', 'before', 'both'] as const);
         const weight = pick([1, 0.5]);
-        const rate = pick([1, 1, 2, 0.5]);
+        const rate = pick([1, 1, 2, 0.5, 1, 1, -1, -0.5]);
         const startOff = pick([undefined, 0, 48, 100, -30]);
+        // Drawn from nothing, so every seed keeps the draws it had.
+        const seek = startOff === 48 || rate === 2 ? 130 : undefined;
         const anchor =
           opts.anchors && i > 0 && r() < 0.4
             ? {
@@ -98,7 +100,7 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
                 by: pick([0, 40, -20]),
               }
             : null;
-        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight} rate=${rate} start=${startOff} anchor=${JSON.stringify(anchor)}`;
+        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}`;
         ops.push({
           at: t,
           desc,
@@ -109,6 +111,7 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
               fade,
               weight,
               rate,
+              seek,
               name: `v${i}`,
             };
             if (freeze) spec.freeze = freeze;
@@ -132,7 +135,7 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
       const tgt = Math.floor(r() * n);
       const what = r();
       if (what < 0.2) {
-        const v = pick([0, 0.5, 1, 2, 3]);
+        const v = pick([0, 0.5, 1, 2, 3, -1]);
         ops.push({ at: t, desc: `h${tgt}.rate=${v}`, run: (_m, h) => setRate(h[tgt], v) });
       } else if (what < 0.35) {
         const v = pick([0.2, 0.7, 1]);

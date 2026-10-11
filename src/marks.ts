@@ -102,8 +102,8 @@ export function markOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, mark: Mark): 
   else if (voice.fitting !== null) {
     const t = voice.timeAt(voice.fitting.end);
     if (Number.isFinite(t)) outAt = Math.max(start, t);
-  } else if (!voice.freezesAfter && Number.isFinite(voice.span)) {
-    const t = voice.timeAt(voice.span + voice.latest);
+  } else if (!(voice.backs ? voice.freezesBefore : voice.freezesAfter)) {
+    const t = voice.endsAt();
     if (Number.isFinite(t)) outAt = Math.max(start, t);
   }
   if (mark === 'out') return voice.state === 'done' && outAt === undefined ? voice.doneAt : outAt;
@@ -133,7 +133,7 @@ function coastOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, start: number): num
       if (c === undefined) return undefined;
       t = Math.max(t, c);
     }
-  } else if (Number.isFinite(voice.span)) t = voice.timeAt(voice.span + voice.latest);
+  } else t = voice.endsAt();
   if (t === undefined || !Number.isFinite(t)) return undefined;
   t = Math.max(start, t);
   const cut =

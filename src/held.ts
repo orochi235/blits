@@ -1,7 +1,9 @@
+import { changed } from './chain.js';
 import { schedule } from './due.js';
 import { everyoneOf, inherit, sighted } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { originOf } from './origin.js';
+import { startOf } from './place.js';
 import { record } from './record.js';
 import { unreach, unreached } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
@@ -89,6 +91,11 @@ export function held<I, O>(
     // A later end can take a frozen voice live again.
     if (voice.state === 'frozen') schedule(this, voice);
   }
+  if (delay < voice.soonest) {
+    voice.soonest = delay;
+    // An earlier start moves where a voice running back ends.
+    schedule(this, voice);
+  }
   return held;
 }
 
@@ -101,8 +108,29 @@ export function sinceOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, delay: numb
   return originOf(voice, delay, p.state !== undefined || p.step !== undefined || voice.keeping);
 }
 
+/**
+ * The mix time a subject's fade in counts from: `since`, but no earlier than its voice starts,
+ * where a voice sought ahead of its start has a subject's delay run out before it; and from when
+ * the voice first showed, for one freezing before.
+ */
 export function shownOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, since: number): number {
-  return voice.freezesBefore && voice.opened < since ? voice.opened : since;
+  const start = startOf(voice);
+  const from = since < start ? start : since;
+  return voice.freezesBefore && voice.opened < from ? voice.opened : from;
+}
+
+/**
+ * A pending voice starts at `now`. Starting anywhere but 0 it was sought there, so a record made
+ * while it waited is made again for where its clock is.
+ */
+export function begin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
+  voice.state = 'live';
+  if (voice.anchorElapsed !== 0) {
+    voice.seeks++;
+    voice.rebuilds++;
+  }
+  reorigin(mix, voice, now);
+  changed(mix, voice);
 }
 
 /**

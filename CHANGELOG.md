@@ -27,11 +27,32 @@ version and everything else the patch. Each release lists its changes as **Break
   rate above 0 always did. At rate 0 the voice starts on time and holds its first frame, where
   it stopped its clock short of its start for good and never showed.
 
+- A voice playing backward ends where it starts. When its clock runs back to 0, `played`
+  resolves and it leaves over `fade.out`, showing its first frame through the fade, or holds
+  that frame where it freezes before; its `coast`, `out`, and `end` marks are there. A voice at
+  a rate below 0 showed nothing once past its start and never left the mix. A stateful patch
+  steps once more to the moment its subject reached its start.
+- A voice cued at a rate below 0 with no `seek` starts at its end, where it started at 0 and
+  was over at once.
+- A fade in counts from no earlier than its voice's start. A subject whose delay had already run
+  out when the voice started (a negative `stagger`, or a seek made in the frame of the cue)
+  came in with its fade partway or done.
+
+### Added
+
+- `seek` on a cue: where in itself the voice starts, in voice ms.
+- A voice with no end cued backward, a loop for good or a patch with no duration, plays from 0
+  into the pass before, with `setting.pass` and `setting.elapsed` below 0. It runs on the
+  general path.
+- `handle.ramp` through 0 eases a voice into reverse, or out of it.
+
 ### Fixed
 
 - `project(mix.now)` reads what `probe` does. It landed what the next sync would, so after a
   handle `seek` past a voice's end it showed the voice gone while the mix still showed its last
   frame, and after a fade it placed a voice anchored on the faded one a frame early.
+- A read back of a voice that was pending counts each subject's origin from the controls the
+  voice had then, not from where a later seek, rate, or anchor has since put it.
 
 - A seek back inside `history.ms` plays the host's calls again when the mix's rate is above 1.
   The tape was let go of by mix time while its calls are stamped in host time, so at rate 2 a call

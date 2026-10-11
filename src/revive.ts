@@ -34,6 +34,8 @@ interface PackedVoice {
   opened: number;
   pinned: number;
   latest: number;
+  /** Absent from a store written before a voice kept it. */
+  soonest?: number;
   keeping: boolean;
   first: Controls | null;
   log: Controls[] | null;
@@ -144,6 +146,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     opened: voice.opened,
     pinned: voice.pinned,
     latest: voice.latest,
+    soonest: voice.soonest,
     keeping: voice.keeping,
     first: voice.first,
     log: voice.log,
@@ -192,6 +195,7 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
   voice.opened = d.opened;
   voice.pinned = d.pinned;
   voice.latest = d.latest;
+  voice.soonest = d.soonest ?? 0;
   voice.keeping = d.keeping;
   voice.first = d.first;
   voice.log = d.log;

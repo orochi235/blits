@@ -38,6 +38,8 @@ const acts: Act[] = [
         fade: { in: pick(2) * 100, out: pick(2) * 150 },
         stagger: pick(2) === 0 ? undefined : (r) => r.id * 40,
         freeze: ([undefined, 'before', 'after', 'both'] as const)[pick(4)],
+        rate: [1, 1, 1, -1, -0.5][pick(5)],
+        seek: [undefined, undefined, 60, 900][pick(4)],
       }),
     ),
   (m, hs, rs, pick) =>
@@ -61,7 +63,8 @@ const acts: Act[] = [
     const h = hs[pick(hs.length)];
     if (h) h.rate = [0, 0.5, 1, 2, -1][pick(5)] as number;
   },
-  (_m, hs, _rs, pick) => hs[pick(hs.length)]?.ramp([0, 0.5, 2][pick(3)] as number, 50 + pick(400)),
+  (_m, hs, _rs, pick) =>
+    hs[pick(hs.length)]?.ramp([0, 0.5, 2, -1][pick(4)] as number, 50 + pick(400)),
   (_m, hs, _rs, pick) => hs[pick(hs.length)]?.seek(pick(1500)),
   (_m, hs, _rs, pick) => {
     const h = hs[pick(hs.length)];

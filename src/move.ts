@@ -1,10 +1,13 @@
 import { changed } from './chain.js';
+import { elapsedWith } from './clock.js';
 import { popDue, schedule } from './due.js';
 import { detour } from './everyone.js';
 import { beginFade, part, retire } from './fade.js';
 import { expireGone, keepGone } from './gone.js';
-import { reorigin } from './held.js';
+import { begin } from './held.js';
+import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
+import { leave as leaveClock } from './origin.js';
 import { ownerReading } from './owner.js';
 import { mixAt, place, repin, startOf } from './place.js';
 import { pageVoice } from './revive.js';
@@ -62,11 +65,8 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
     if (
       voice.state === 'pending' &&
       (voice.owner === null ? now : ownerReading(voice.owner, now)) >= voice.start
-    ) {
-      voice.state = 'live';
-      reorigin(mix, voice, now);
-      changed(mix, voice);
-    }
+    )
+      begin(mix, voice, now);
     // After it starts, so a fade due by now on a voice that started since the last frame begins.
     if ((voice.state === 'live' || voice.state === 'frozen') && voice.outAt <= now)
       beginFade(
@@ -75,18 +75,30 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
         { over: Number.isNaN(voice.outOver) ? undefined : voice.outOver },
         Math.max(startOf(voice), voice.outAt),
       );
-    if (voice.state !== 'pending' && Number.isFinite(voice.span)) {
-      const end = voice.span + voice.latest;
-      if (voice.elapsedAt(now) >= end) {
+    if (voice.state !== 'pending') {
+      if (voice.turns) turn(mix, voice, now);
+      // Its passes run out at its end running forward, and at its start running back. A clock
+      // standing still at or before its start is where it was: waiting, or frozen there.
+      const way = heading(voice, now);
+      const at = voice.elapsedAt(now);
+      const back = way < 0;
+      const atStart = !voice.beginless && at <= voice.soonest;
+      const over = back ? atStart : Number.isFinite(voice.span) && at >= voice.span + voice.latest;
+      if (over) {
         voice.play(true, now, mix.transport.seq);
-        // The fade starts when the last pass ended, not at the frame that noticed, so it plays
+        // The fade starts when its passes ran out, not at the frame that noticed, so it plays
         // the same at any frame rate and a read at another time can find it.
         if (voice.state === 'live') {
-          if (voice.freezesAfter) voice.state = 'frozen';
+          if (back ? voice.freezesBefore : voice.freezesAfter) voice.state = 'frozen';
           else
-            beginFade(mix, voice, {}, Math.max(startOf(voice), Math.min(now, voice.timeAt(end))));
+            beginFade(
+              mix,
+              voice,
+              { back },
+              Math.max(startOf(voice), Math.min(now, voice.endsAt())),
+            );
         }
-      } else if (voice.state === 'frozen') voice.state = 'live';
+      } else if (voice.state === 'frozen' && !(atStart && way === 0)) voice.state = 'live';
     }
     // A projection reads a finished ramp as weight 0, and leaves the live voice's subjects be.
     if (voice.parts !== null && !mix.projecting)
@@ -113,6 +125,32 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   mix.stirred = false;
   if (mix.retired.length > 0) prune(mix);
   forget(mix);
+}
+
+/**
+ * Which way a voice's clock is running at mix time `now`, through every owner above it: above 0
+ * forward, below 0 back, 0 standing still.
+ */
+function heading<I, O>(voice: Voice<I, O>, now: number): number {
+  let way = 1;
+  for (let v: Voice<I, O> | null = voice; v !== null; v = v.owner)
+    way *= Math.sign(v.rateAt(v.owner === null ? now : ownerReading(v.owner, now)));
+  return way;
+}
+
+/**
+ * A ramp through 0 has turned a voice's clock around by `now`: the clock is anchored again where
+ * it turned, so it runs one way from there and the time it reads any position is one time.
+ */
+function turn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
+  const r = voice.ramp as NonNullable<Voice<I, O>['ramp']>;
+  const at = voice.anchorNow + (r.over * r.from) / (r.from - r.to);
+  if ((voice.owner === null ? now : ownerReading(voice.owner, now)) < at) return;
+  leaveClock(voice, at);
+  voice.anchorElapsed = elapsedWith(voice, at);
+  voice.ramp = { from: 0, to: r.to, over: voice.anchorNow + r.over - at };
+  voice.anchorNow = at;
+  noted(mix, voice);
 }
 
 /** Past this many voices retiring in one frame, one pass over the list beats a search for each. */

@@ -602,6 +602,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - `mix.blend`.
     - Marks, hits and events: `marks`, `announce`, `hits` and `book`, `send` and `drain`, `tags`
       and `score`, and anchors beyond `after`/`with` by name.
+    - A cue's `seek` and a rate below 0, both new on 2026-10-10.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 
@@ -627,16 +628,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `patch.wave`, with `waveOptionsOf` removed; `handle.to` and `push` throwing for a patch
         that takes neither, and `read` giving undefined; and `fold` switching a rest-less channel
         on at 0.6, a mix's default band. All of it shipped in 0.8.0, so a rename is now a break.
-    - **Decided 2026-10-10 (Mike), unbuilt until each is struck from this list:**
-      - A cue takes `seek`, a position in elapsed milliseconds, through the same pathway as
-        `handle.seek`. Blank is 0 for a forward voice and the end for a backward one; an endless
-        loop cued backward starts at 0 and plays into the pass before. A voice running back
-        past 0 ends as one running past its end does, and `freeze: 'before'` holds it.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
-      - **A voice may play backward** (decided 2026-10-10: a valid use is not refused because
-        no consumer has it yet). A negative rate is accepted (`test/lanes.test.ts` cues one), but
-        what it does is neither defined nor tested: where a voice cued at a negative rate starts,
-        and what happens when one runs back past 0.
+      - **Backward play is built (2026-10-10); the schema page's "Starting partway, and playing
+        backward" is the record, and its last sentence lists what is not built.** Mike's calls:
+        a valid use is not refused because no consumer has it yet; a cue takes `seek`; blank,
+        a voice cued backward starts at its end. Chosen while building, his to overturn: a
+        fade in counts from no earlier than the voice's start (so `seek` does not use it up),
+        and a voice with no end cued backward has no first pass, a property of the cue and
+        not of the rate it has later. A voice fading from its start, one with no first pass,
+        and one faded before it started run off lanes. What the hot path costs for it
+        (`rawAt`, `before`, and `shownAt` in `contribution`) is not timed.
       - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one. Run
         2026-10-10 and no pose was found to depend on it: a read ahead of nested spans, fitted
         by `pipe` and by `lax`, with an anchor after the outer one, matched the same scene

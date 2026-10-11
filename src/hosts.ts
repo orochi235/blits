@@ -111,7 +111,10 @@ export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   const spec = voice.spec;
   const patch = voice.patch;
   if (voice.keeping) return false;
-  if (voice.state === 'pending' && voice.freezesBefore) return false;
+  // Waiting to start, a voice shows the frame it will start on, which no fill reads its clock for.
+  if ((voice.freezesBefore || voice.state === 'fading') && voice.unstarted(mix.now)) return false;
+  // A fill takes a time before 0 as before a subject's start, which no time is for this voice.
+  if (voice.beginless || voice.out?.back === true) return false;
   // A fill weighs a voice's owners once for every subject, which a signal on one would not be.
   if (voice.owner !== null && signalled(voice)) return false;
   // What can change between two probes without `Lanes.current` hearing of it keeps a voice off:

@@ -68,8 +68,21 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    * `performance.now()` share an origin, `Date.now()` does not. Default: the next sync.
    */
   start?: number;
-  /** Playback rate. 1 is real time; 0 freezes. */
+  /**
+   * Playback rate. 1 is real time; 0 freezes; below 0 plays backward, to end where the voice
+   * starts as a voice playing forward ends where its last pass does: `played` resolves, and it
+   * leaves over `fade.out` or, freezing before, holds its first frame.
+   */
   rate?: number;
+  /**
+   * Where in itself the voice starts, in voice ms, as `seek` on its handle sets. Default 0, or
+   * for a voice cued backward its end: `duration` times its passes. A voice with no end cued
+   * backward (a loop for good, or a patch with no duration) starts at 0 and has no first pass
+   * either: it plays into the pass before, `setting.pass` and `setting.elapsed` below 0, for
+   * every subject from the voice's start whatever its stagger. A motion's stretches begin at 0,
+   * so one cued backward with no `seek` has ended as it starts.
+   */
+  seek?: number;
   /**
    * true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its
    * passes are done for the latest-staggered subject it has seen — over `fade.out` where one is

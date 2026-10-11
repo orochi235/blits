@@ -37,6 +37,7 @@ export function shares<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
     voice.holding === null &&
     voice.blend === null &&
     !voice.freezesBefore &&
+    !voice.beginless &&
     voice.slots.every((s) => {
       const channel = mix.channels[s] as Channel<unknown>;
       return channel.rest !== undefined && numericOf(channel)?.op !== 'last';
