@@ -18,6 +18,7 @@ export interface Clip {
   factor?: number; // its rate over its own, shown after the label when not 1
   skipped?: boolean; // jumped to its end: an outline at its natural length
   cut?: { at: number; fade: number }; // ms where a group above ends it, and that group's fade out
+  into?: number; // ms of its first pass already behind its start; default 0
   ticks?: readonly number[]; // ms into each pass where a notch sits
 }
 

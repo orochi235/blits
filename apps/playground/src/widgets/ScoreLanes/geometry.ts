@@ -69,7 +69,11 @@ export function passLines(c: Clip, viewEnd: number): number[] {
   if (c.pass <= 0) return [];
   const end = Math.min(shownEnd(c), viewEnd);
   const out: number[] = [];
-  for (let t = c.start + c.pass; t < end - 1e-9 && out.length < MAX_PASSES; t += c.pass)
+  for (
+    let t = c.start + c.pass - (c.into ?? 0);
+    t < end - 1e-9 && out.length < MAX_PASSES;
+    t += c.pass
+  )
     out.push(t);
   return out;
 }

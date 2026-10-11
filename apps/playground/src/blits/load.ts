@@ -113,6 +113,7 @@ const voice = (v: unknown) =>
   num(v.hue) &&
   num(v.start) &&
   num(v.rate) &&
+  opt(v.seek, num) &&
   (bool(v.loop) || num(v.loop)) &&
   (num(v.weight) || expr(v.weight)) &&
   fade(v.fade) &&

@@ -69,7 +69,7 @@ all but `last` take `bounds`; `offset` folds its two numbers alike, so not by `l
 replaces or averages, interpolated in OKLCH or OKLab. The fold rules panel edits them and shows the
 kind each makes.
 
-A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `loop`, `stagger`, `target`,
+A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `seek`, `loop`, `stagger`, `target`,
 `freeze`, `weight`, `fade`, `locus`, `from`, `anchor`, `tags`, `score`, `hits`), so the voice panel teaches the real spec, plus
 an `id`, a `name`, a `hue`, a `patch`, the `owner` group it plays under, and the `hints` a span
 reads. A `PatchSource` is one of:
@@ -212,6 +212,7 @@ header, and its members sit under it, indented one step per depth.
 | clip body              | `start`                       | drag sideways; locked while anchored                     |
 | sloped ends            | `fade.in` / `fade.out`, mix ms at any rate | drag the slope's top corner                 |
 | dividers inside        | passes of the period          | drag the right edge, snapping to whole passes: `loop`    |
+| a shorter clip, "· backward" after the label | a `seek`, or a rate below 0: what is left to play from where it starts, back to 0 at a rate below 0 | the voice panel; its right edge does not set `loop` |
 | arrow at the end       | `loop: true`                  | drag it back to make the loop finite                     |
 | thin bar under it      | stagger spread, first to last | none; `stagger` is an expression                         |
 | hatched extension      | `freeze`                      | the clip's menu                                          |
@@ -226,7 +227,9 @@ header, and its members sit under it, indented one step per depth.
 | dashed outline         | a child the fit skipped, at its natural length | none                                    |
 
 A voice whose period is 0, an aperiodic `fn` or a motion voice, has no passes, so its right edge
-does not drag. Placements come from the compiled mix's marks (`mix.marks`) before its first frame,
+does not drag. A voice at rate 0 never ends, and neither does one cued backward that loops for
+good, which has no end to start from. `playOf` in `src/blits/clip.ts` works out what a `seek` and
+a rate leave to play, and a test holds it to blits' `coast` mark. Placements come from the compiled mix's marks (`mix.marks`) before its first frame,
 so the score draws the fit blits made at cue.
 
 ## The flow
@@ -243,11 +246,11 @@ fold: everything that reaches it, and the rest it folds from, under a breadcrumb
 
 | Panel     | Shows                                                                                   |
 |-----------|-----------------------------------------------------------------------------------------|
-| Voice     | the spec fields, each with blits' doc comment on hover; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `score`, and `hits` |
+| Voice     | the spec fields, each with blits' doc comment on hover; `rate` from -4 to 4 and a `seek`, blank for blits' default; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `score`, and `hits` |
 | Group     | in place of Voice and Patch when a header is selected: name, kind, `owner`, start and anchor (not under a span), rate, weight, fade, freeze, hints under a span; for a span its `duration`, `priority`, `order`, `share` (for `stagger`), `spill`, the fit steps (add, remove, reorder, presets; a code step in a code pane), and the live `FitResult` |
 | Weight    | a number, or a signal expression; a menu inserts common signals                         |
 | Patch     | a kind menu (switching starts a blank patch of that kind), then by kind: a weasel `Timeline` track per channel for `keys`, with an `EasingPicker` per key; code panes for `fn`; numbers or expressions per option for motion |
-| Live      | in live mode only: weight; `fade` with its `over`, `at` (a mix time or `'rest'`), `deadline` or the picked `subject`, and `rise`; `seek`, showing the `Doubt` it answers, with `state: 'keep'`; the `rate` setter and `ramp`; and for a motion voice a per-subject `to` (a glide's `velocity`, by `push`). A selected group gets the same on its handle in every mix, less `to`, and fades only as a whole |
+| Live      | in live mode only: weight; `fade` with its `over`, `at` (a mix time or `'rest'`), `deadline` or the picked `subject`, and `rise`; `seek`, showing the `Doubt` it answers, with `state: 'keep'`; the `rate` setter and `ramp`, which take a rate below 0 for a voice and not for a group; and for a motion voice a per-subject `to` (a glide's `velocity`, by `push`). A selected group gets the same on its handle in every mix, less `to`, and fades only as a whole |
 | Events    | the announced marks, to add, name, time, and remove; in live mode, `announce` a name now; a tag to book and drain by; then `mix.marks` for the running mix, what `mix.book` handed over, and what `mix.drain` returned, newest first |
 | Inspector | for the picked subject, a plot per channel over the last 3 s: each voice alone thin, the mix thick; then each voice's `weightOf`, and each enclosing group's |
 
@@ -301,6 +304,7 @@ One `Composition` per file in `src/blits/presets/`.
 | owner fade      | an owner fading three voices in and out as one, its weight a level |
 | span fit        | 2.9 s of voices in a 2 s span: one sped up (`faster`), one alongside (`overlap`), one shed (`ballast`), and 100 ms over, inside `overrun`'s 1.2 cap |
 | marks and hits  | a voice tagged `lead` with two hits a pass, one anchored to its `coast` by tag, one waiting on the announced mark `beat`, and an fn voice that sends its pass number |
+| backward        | one sweep three ways: forward, cued at rate -1 from its end, and cued with a `seek` halfway in |
 
 ## Widgets
 
@@ -328,6 +332,7 @@ the typecheck, the tests and the smoke run.
 ## Not in this version
 
 - Reading back (`history` and `project` at a past time), as a panel of its own.
+- A `seek` or a rate below 0 on a group: blits does not tell a held voice its owner ran back.
 - `tags`, `score`, and `hits` on a group; a booker with a clock other than the player's own.
 - Recording level moves.
 - Saving to a file.

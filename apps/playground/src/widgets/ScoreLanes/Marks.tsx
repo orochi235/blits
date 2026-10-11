@@ -30,11 +30,12 @@ export function tickTimes(c: Clip, viewEnd: number): number[] {
   const ticks = c.ticks ?? [];
   const end = Math.min(shownEnd(c), viewEnd);
   const out: number[] = [];
-  const passes = c.pass > 0 ? Math.min(c.passes, MAX_PASSES) : 1;
-  for (let i = 0; i < passes && c.start + i * c.pass <= end; i++)
+  const first = c.start - (c.into ?? 0);
+  const passes = c.pass > 0 ? Math.min(c.passes + 1, MAX_PASSES) : 1;
+  for (let i = 0; i < passes && first + i * c.pass <= end; i++)
     for (const at of ticks) {
-      const t = c.start + i * c.pass + at;
-      if (t <= end + 1e-9 && out.length < MAX_PASSES) out.push(t);
+      const t = first + i * c.pass + at;
+      if (t >= c.start - 1e-9 && t < end - 1e-9 && out.length < MAX_PASSES) out.push(t);
     }
   return out;
 }

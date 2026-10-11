@@ -1,44 +1,17 @@
-import type { Anchor, Handle, Mark } from '@msb235/blits';
-import type { Clip, ClipEdit, Edge, Hatch, Header, Link, ScoreMark } from '@pg/widgets/ScoreLanes';
+import type { Anchor, Mark } from '@msb235/blits';
+import type { Clip, ClipEdit, Edge, Header, Link, ScoreMark } from '@pg/widgets/ScoreLanes';
 import { blendOf, syncBlend } from './blend';
+import { clipOf, freezeOf, passesOf, placeFrom, startsPartway } from './clip';
 import type { Built } from './compile';
-import { type Composition, periodOf, type Voice } from './composition';
-import { compileExpr, type Scope, scopeOf } from './expr';
+import type { Composition, Voice } from './composition';
+import { scopeOf } from './expr';
 import { rowsOf, underSpan } from './groups';
 import { without } from './keyed';
-import { clockOf, type Placed, placedOf } from './placed';
+import { clockOf, placedOf } from './placed';
 import { cutUnder, headerOf, type Laying } from './scoreHeaders';
 import type { Subject } from './stage';
 
 const edgeOfMark = (m: Mark): Edge => (m === 'start' || m === 'in' ? 'start' : 'end');
-
-/** When the first subject starts after the voice's start, and how long until the last does. */
-function spreadOf(
-  v: Voice,
-  subjects: readonly Subject[],
-  scope: Scope,
-): { at: number; ms: number } {
-  const none = { at: 0, ms: 0 };
-  if (!v.stagger) return none;
-  const r = compileExpr<(s: Subject) => number>(v.stagger, scope, 0);
-  if ('error' in r) return none;
-  let first = Number.POSITIVE_INFINITY;
-  let last = Number.NEGATIVE_INFINITY;
-  for (const s of subjects) {
-    const d = Number(r.fn(s));
-    if (!Number.isFinite(d)) continue;
-    first = Math.min(first, d);
-    last = Math.max(last, d);
-  }
-  return Number.isFinite(first) ? { at: first, ms: last - first } : none;
-}
-
-const passesOf = (v: Voice) =>
-  v.loop === true ? Number.POSITIVE_INFINITY : v.loop === false ? 1 : v.loop;
-
-function freezeOf(v: Voice): Hatch {
-  return v.freeze ?? null;
-}
 
 /** The voice name and edge an anchor points at, when it selects by name. */
 function targetOf(a: number | Anchor | undefined): { name: string; edge: Edge } | null {
@@ -53,56 +26,6 @@ function targetOf(a: number | Anchor | undefined): { name: string; edge: Edge } 
   // A join waits on several voices, so it points at no one of them.
   else return null;
   return n ? { name: n, edge } : null;
-}
-
-/** The ms one pass lasts on the score and how many there are; a voice at rate 0 or below never ends. */
-function lengthOf(period: number, rate: number, passes: number) {
-  return rate > 0 ? { pass: period / rate, passes } : { pass: 0, passes: Number.POSITIVE_INFINITY };
-}
-
-/** Voice `v`'s clip, its voice ms drawn as score ms at `clock` voice ms per score ms. */
-function clipOf(
-  v: Voice,
-  lane: number,
-  subjects: readonly Subject[],
-  scope: Scope,
-  clock: number,
-): Clip {
-  const freeze = freezeOf(v);
-  const spread = spreadOf(v, subjects, scope);
-  const k = clock > 0 ? clock : 1;
-  const clip: Clip = {
-    id: v.id,
-    lane,
-    label: `${v.name} · ${v.patch.kind}`,
-    hue: v.hue,
-    start: v.start,
-    ...lengthOf(periodOf(v.patch) ?? 0, clock, passesOf(v)),
-    fadeIn: v.fade.in ?? 0,
-    fadeOut: v.fade.out ?? 0,
-    spread: spread.ms / k,
-    freezeBefore: freeze === 'before' || freeze === 'both',
-    freezeAfter: freeze === 'after' || freeze === 'both',
-    locked: v.anchor?.start !== undefined || v.anchor?.in !== undefined,
-  };
-  if (spread.at !== 0) clip.spreadAt = spread.at / k;
-  if (v.locus !== undefined) clip.group = v.locus;
-  if (v.hits?.length) clip.ticks = v.hits.map((h) => h.at / k);
-  return clip;
-}
-
-/** A clip where blits put it: its `start` mark, and for a span's child how its fit left it. */
-function placeFrom(clip: Clip, v: Voice, h: Handle<Subject>, p: Placed) {
-  if (p.start === undefined) return;
-  clip.start = p.start;
-  const period = periodOf(v.patch) ?? 0;
-  if (p.end === p.start && period > 0 && v.rate > 0) {
-    clip.skipped = true;
-    Object.assign(clip, lengthOf(period, v.rate * clockOf(h.owner), clip.passes));
-    return;
-  }
-  const factor = h.rate / v.rate;
-  if (Number.isFinite(factor) && Math.abs(factor - 1) > 1e-9) clip.factor = factor;
 }
 
 export interface ScoreOptions {
@@ -198,7 +121,8 @@ function edited(
       return start === v.start ? v : { ...v, start };
     }
     case 'passes':
-      if (edit.passes === passesOf(v)) return v;
+      // Its clip shows what is left to play, which is not its `loop`.
+      if (startsPartway(v) || edit.passes === passesOf(v)) return v;
       return { ...v, loop: Number.isFinite(edit.passes) ? edit.passes : true };
     case 'fadeIn':
       return edit.ms === (v.fade.in ?? 0) ? v : { ...v, fade: { ...v.fade, in: edit.ms } };

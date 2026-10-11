@@ -128,9 +128,9 @@ describe('a clip’s rate', () => {
       300,
     );
   });
-  it('at 0 or below, never ends and has no passes', () => {
-    for (const rate of [0, -1]) {
-      const d = { ...c, voices: [v({ id: 'x', rate })] };
+  it('at 0, or backward with no end to start from, never ends and has no passes', () => {
+    for (const over of [{ rate: 0 }, { rate: -1, loop: true }]) {
+      const d = { ...c, voices: [v({ id: 'x', ...over })] };
       expect(clipsOf(d, subjects).clips[0]).toMatchObject({
         pass: 0,
         passes: Number.POSITIVE_INFINITY,

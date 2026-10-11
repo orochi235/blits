@@ -7,6 +7,7 @@ import type { Composition, Expr, Voice } from './composition';
 const SHARED = [
   'start',
   'rate',
+  'seek',
   'loop',
   'stagger',
   'target',

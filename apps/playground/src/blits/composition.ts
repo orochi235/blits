@@ -52,6 +52,8 @@ export interface Voice {
   patch: PatchSource;
   start: number;
   rate: number;
+  /** Where in itself it starts, voice ms. Unset: 0, or its end at a rate below 0. */
+  seek?: number;
   loop: boolean | number;
   stagger?: Expr;
   target?: Expr;

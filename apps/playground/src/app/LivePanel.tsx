@@ -95,7 +95,7 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
           rate
           <input
             type="number"
-            min={0}
+            min={v ? undefined : 0}
             step="any"
             value={rateTo}
             onChange={(e) => setRateTo(e.target.valueAsNumber || 0)}
@@ -118,7 +118,7 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
           ramp to
           <input
             type="number"
-            min={0}
+            min={v ? undefined : 0}
             step="any"
             value={rampTo}
             onChange={(e) => setRampTo(e.target.valueAsNumber || 0)}

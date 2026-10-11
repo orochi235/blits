@@ -1,0 +1,80 @@
+import { keys, mix } from '@msb235/blits';
+import { playOf } from '@pg/blits/clip';
+import { compile } from '@pg/blits/compile';
+import type { PatchSource, Voice } from '@pg/blits/composition';
+import { FRAME } from '@pg/blits/frame';
+import { KIT, type Mixed } from '@pg/blits/kit';
+import { load } from '@pg/blits/load';
+import { placedOf } from '@pg/blits/placed';
+import { applyEdit, clipsOf } from '@pg/blits/score';
+import type { Subject } from '@pg/blits/stage';
+import { passLines } from '@pg/widgets/ScoreLanes/geometry';
+import { tickTimes } from '@pg/widgets/ScoreLanes/Marks';
+import { describe, expect, it } from 'vitest';
+import { comp, same, subjects, voice } from './helpers';
+
+const stops = [
+  { at: 0, delta: { scale: 1 } },
+  { at: 1, delta: { scale: 2 } },
+];
+const KEYS: PatchSource = { kind: 'keys', period: 400, stops };
+const twice = (over: Partial<Voice> = {}) => voice({ id: 'a', patch: KEYS, loop: 2, ...over });
+const hand = () => mix<Subject, Mixed>(KIT, { stepMs: FRAME });
+
+describe('a voice cued partway or backward', () => {
+  it.each([
+    ['a seek', { seek: 300 }],
+    ['a rate below 0', { rate: -1 }],
+    ['both', { rate: -2, seek: 500, freeze: 'before' as const }],
+  ])('gives the poses of the hand-written cue with %s', (_, over) => {
+    const built = compile(comp([twice({ start: 100, ...over })]), subjects);
+    expect(built.errors).toEqual([]);
+    const m = hand();
+    m.cue({ patch: keys(400, stops), loop: 2, start: 100, ...over });
+    same(built.mix, m);
+  });
+
+  it('draws what is left to play, where blits ends it', () => {
+    const cases: [Partial<Voice>, number][] = [
+      [{ seek: 300 }, 500],
+      [{ rate: -1 }, 800],
+      [{ rate: -2, seek: 500 }, 250],
+      [{ rate: 2, seek: 100 }, 350],
+    ];
+    for (const [over, length] of cases) {
+      const c = comp([twice({ start: 100, ...over })]);
+      const built = compile(c, subjects);
+      const [clip] = clipsOf(c, subjects, { built }).clips;
+      if (!clip) throw new Error('no clip');
+      expect(clip.pass * clip.passes).toBeCloseTo(length, 9);
+      expect(placedOf(built).get('a')?.coast).toBeCloseTo(100 + length, 9);
+    }
+  });
+
+  it('puts the pass dividers and hit ticks where the passes turn', () => {
+    expect(playOf(400, 1, 2, 300)).toEqual({ pass: 400, passes: 1.25, into: 300 });
+    expect(playOf(400, -1, 2)).toEqual({ pass: 400, passes: 2 });
+    expect(playOf(400, -2, 2, 500)).toEqual({ pass: 200, passes: 1.25, into: 150 });
+    expect(playOf(400, -1, Number.POSITIVE_INFINITY).passes).toBe(Number.POSITIVE_INFINITY);
+    expect(playOf(400, 0, 2).pass).toBe(0);
+    const c = comp([twice({ seek: 300, hits: [{ at: 50, event: 'x' }] })]);
+    const [clip] = clipsOf(c, subjects).clips;
+    if (!clip) throw new Error('no clip');
+    expect(passLines(clip, 2000)).toEqual([100]);
+    expect(tickTimes(clip, 2000)).toEqual([150]);
+    const back = clipsOf(comp([twice({ rate: -1, hits: [{ at: 50, event: 'x' }] })]), subjects);
+    expect(back.clips[0]?.label).toBe('a · keys · backward');
+    expect(back.clips[0]?.ticks).toBeUndefined();
+  });
+
+  it('leaves loop alone when its right edge is dragged', () => {
+    const c = comp([twice({ seek: 300 })]);
+    expect(applyEdit(c, { clip: 'a', kind: 'passes', passes: 1 })).toBe(c);
+  });
+
+  it('loads a seek, and refuses one that is no number', () => {
+    const c = comp([twice({ seek: 300, rate: -1 })]);
+    expect(load(JSON.parse(JSON.stringify(c)))).toEqual(c);
+    expect(load(comp([twice({ seek: 'end' as never })]))).toBeNull();
+  });
+});
