@@ -23,6 +23,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- `project(mix.now)` reads what `probe` does. It landed what the next sync would, so after a
+  handle `seek` past a voice's end it showed the voice gone while the mix still showed its last
+  frame, and after a fade it placed a voice anchored on the faded one a frame early.
+
 - A seek back inside `history.ms` plays the host's calls again when the mix's rate is above 1.
   The tape was let go of by mix time while its calls are stamped in host time, so at rate 2 a call
   made 250 ms of host time before a seek back was already gone and never played again.

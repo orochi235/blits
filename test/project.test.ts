@@ -361,3 +361,24 @@ describe('a projection retiring a motion voice', () => {
     expect(run(true)).toBe(run(false));
   });
 });
+
+describe("a read at the mix's own time", () => {
+  it('lands nothing, so it shows what a probe does until the next sync', () => {
+    for (const lanes of [true, false]) {
+      const m = mix<Part, Pose>(K, { lanes });
+      const a = { id: 'a' };
+      m.sync(0);
+      const h = m.cue({ patch: ramp, loop: false });
+      m.sync(100);
+      m.probe(a);
+      // Past its end: the voice leaves at the next sync, and holds its last frame until then.
+      h.seek(900);
+      const now = m.probe(a).gain;
+      expect(now, `lanes ${lanes}`).toBeCloseTo(0.2, 9);
+      expect(m.project(m.now).probe(a).gain, `lanes ${lanes}`).toBe(now);
+      expect(m.project(m.now + 1).probe(a).gain, `lanes ${lanes}`).toBe(1);
+      m.sync(116);
+      expect(m.probe(a).gain, `lanes ${lanes}`).toBe(1);
+    }
+  });
+});

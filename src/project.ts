@@ -69,7 +69,9 @@ export function projectAll(transport: Transport, t: number): TransportProjection
     else if (kept) copyBack(mix, copy, t, cut);
     else copyStanding(mix, copy, t, cut);
   }
-  if (ahead) for (const copy of copies.values()) move(copy, t);
+  // A read at the mix's own time lands nothing, as a probe does not: what the host has done since
+  // the last sync shows at the next one.
+  if (ahead && t !== transport.now) for (const copy of copies.values()) move(copy, t);
   const read = <T>(f: () => T): T => {
     reading.live = false;
     try {

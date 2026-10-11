@@ -635,18 +635,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `handle.seek`. Blank is 0 for a forward voice and the end for a backward one; an endless
         loop cued backward starts at 0 and plays into the pass before. A voice running back
         past 0 ends as one running past its end does, and `freeze: 'before'` holds it.
-      - `project(mix.now)` lands nothing, so it reads as `probe` does.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
       - **A handle `seek` on a pending voice whose pinned start is still ahead is undone when
         the start arrives**: `startAt` in `place.ts` sets the clock back to 0 (determinism seed
         `ahead`/full/139). Whether the seek or the start should win is undecided. A rate of 0 on
         a pending voice is the same family: it is taken at once and holds the clock before its
         start for good.
-      - **`project(mix.now)` is not always what `probe` gives** (`now` in
-        `test/determinism.test.ts`, seeds plain 144 and full 1, with history or without). A read
-        at or ahead of the mix moves its copy, which lands what the live mix lands only at its
-        next sync: a voice a handle `seek` put past its end has left, and an anchor on a voice
-        just faded is placed.
       - **A voice may play backward** (decided 2026-10-10: a valid use is not refused because
         no consumer has it yet). A negative rate is accepted (`test/lanes.test.ts` cues one), but
         what it does is neither defined nor tested: where a voice cued at a negative rate starts,

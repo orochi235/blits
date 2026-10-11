@@ -21,9 +21,7 @@ const known: Record<Property, Record<Variant, Known>> = {
   ahead: { plain: { seeds: 150 }, full: { seeds: 150 } },
   dt: { plain: { seeds: 150 }, full: { seeds: 150 } },
   standing: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  // A read at the mix's own time lands what the next sync would: a voice sought past its end has
-  // left (plain 144), and an anchor on a voice just faded is placed (full 1).
-  now: { plain: { seeds: 150, unknown: [144] }, full: { seeds: 150, unknown: [1] } },
+  now: { plain: { seeds: 150 }, full: { seeds: 150 } },
 };
 
 function guards(prop: Property) {
