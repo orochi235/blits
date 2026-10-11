@@ -597,11 +597,22 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     mix options `stepMs`, `maxDt`, `reduce` and `lanes`; the mix's own `rate`; scrubbing by
     `mix.seek` with `assess` per channel; each channel's fold rule; and owners and spans (`owns`,
     `owner`, `span` with its hints, every fit step and a code fit over `plain` and `layout`,
-    `FitResult`), drawn as header lanes on the score. Still to build, in Mike's order:
-    - `mix.blend`.
-    - Marks, hits and events: `marks`, `announce`, `hits` and `book`, `send` and `drain`, `tags`
-      and `score`, and anchors beyond `after`/`with` by name.
-    - A cue's `seek` and a rate below 0, both new on 2026-10-10.
+    `FitResult`), drawn as header lanes on the score. Built 2026-10-10, each with a preset:
+    `mix.blend` (a locus cued as one blend by a signal); marks, hits, and events (an Events tab
+    with `marks`, `announce`, `book`, and `drain`, a voice's `tags`, `score`, and hits, and any
+    anchor typed as JSON); and a cue's `seek` with a rate below 0. What that left:
+    - **The inspector restates the share each member of a blend gets** (`shareOf` in
+      `apps/playground/src/blits/blend.ts`), which blits keeps private in `src/blend.ts`: its
+      solo plots drift if that arithmetic changes. The way through is a public read of a
+      member's share, undesigned.
+    - **`mix.blend` takes one spec, so one `name`**: every member answers to the first voice's
+      name in an anchor, and none can be anchored to by its own.
+    - Groups take no `tags`, `score`, hits, `seek`, or negative rate; the booker reads a fixed
+      100 ms ahead with no setting; a clip with a `seek` or a rate below 0 does not set `loop`
+      by its right edge; and an `all`/`any` anchor, or one that selects by tag or `writes`,
+      draws no link on the score.
+    - Seen only by its tests, not in a browser: dragging a blended clip, the anchor field's
+      error for bad JSON, and a booking struck out when blits takes it back.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 
