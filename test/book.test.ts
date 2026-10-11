@@ -288,6 +288,29 @@ describe('book', () => {
     expect(took.length).toBeGreaterThan(0);
   });
 
+  it("hands a hit its voice's subjects, and none for a voice that names none", () => {
+    const { m, sync, took } = booked();
+    cue(m, { subjects: [a, b], hits: [{ at: 0, event: 'named' }] });
+    cue(m, { hits: [{ at: 0, event: 'open' }] });
+    sync(0);
+    const by = new Map(
+      took.map((t) => [(t.item as BookedHit).event, (t.item as BookedHit).subjects]),
+    );
+    expect(by.get('named')).toEqual([a, b]);
+    expect(by.has('open')).toBe(true);
+    expect(by.get('open')).toBeUndefined();
+  });
+
+  it('says where a host time falls on the outside clock, and the timestamp it last synced to', () => {
+    const { m, booker, sync } = booked();
+    expect(booker.at(0)).toBeNaN();
+    expect(m.timestamp).toBeNaN();
+    sync(16);
+    expect(m.timestamp).toBe(16);
+    expect(booker.at(16)).toBe(1016);
+    expect(booker.at(66)).toBe(1066);
+  });
+
   it('refuses a hit outside a pass', () => {
     const m = mix<Part, Pose>(K);
     expect(() => m.cue({ patch: still, hits: [{ at: 400, event: 0 }] })).toThrow(RangeError);

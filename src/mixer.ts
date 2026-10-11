@@ -346,6 +346,9 @@ export class Mixer<I, O> implements Mix<I, O> {
   set nextId(v: number) {
     this.transport.nextId = v;
   }
+  get timestamp(): number {
+    return this.transport.last;
+  }
   get last(): number {
     return this.transport.last;
   }
@@ -410,8 +413,8 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.own('sync').sync(timestamp);
   }
 
-  book(opts: BookOptions): Booker {
-    return book(this, opts);
+  book<E = unknown>(opts: BookOptions<E, I>): Booker {
+    return book(this, opts as BookOptions<unknown, I>);
   }
 
   probe(subject: I, out?: O): O {

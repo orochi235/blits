@@ -63,9 +63,9 @@ interface Track {
   met: number;
 }
 
-interface Due {
+interface Due<I> {
   time: number;
-  item: Marked | BookedHit;
+  item: Marked | BookedHit<unknown, I>;
   into: Map<number, Booking>;
   key: number;
 }
@@ -84,11 +84,11 @@ export class Book<I, O> implements Booker {
   /** Bookings of marks, by `keyOf`, kept while listed so one already taken is not taken late. */
   private readonly marked = new Map<number, Booking>();
   private readonly tracks = new Map<Voice<I, O>, Track>();
-  private readonly due: Due[] = [];
+  private readonly due: Due<I>[] = [];
 
   constructor(
     private readonly host: BookHost<I, O>,
-    private readonly opts: BookOptions,
+    private readonly opts: BookOptions<unknown, I>,
   ) {}
 
   /** Books what comes within `ahead` of this sync, and retracts what moved. */
@@ -161,6 +161,10 @@ export class Book<I, O> implements Booker {
           booked: new Map(),
           met: this.round,
         });
+  }
+
+  at(timestamp: number): number {
+    return this.est + (timestamp - this.last);
   }
 
   /** Whether a standing booking now falls at host time `time` within `RETIME_MS`. */
@@ -245,7 +249,7 @@ export class Book<I, O> implements Booker {
           if (t.booked.has(key)) continue;
           const time = this.timeOfHit(voice, hits, pass, i, end);
           if (time === undefined || !Number.isFinite(time)) continue;
-          const item: BookedHit = {
+          const item: BookedHit<unknown, I> = {
             timestamp: time,
             voice: voice.id,
             hit: i,
@@ -254,6 +258,7 @@ export class Book<I, O> implements Booker {
             score: voice.spec.score,
             name: voice.spec.name,
             tags: voice.spec.tags ?? none,
+            subjects: voice.named?.list,
           };
           this.due.push({ time, item, into: t.booked, key });
         }

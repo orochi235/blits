@@ -98,7 +98,7 @@ export interface Hit<E = unknown> {
  *
  * @category score
  */
-export interface BookedHit<E = unknown> {
+export interface BookedHit<E = unknown, I = unknown> {
   /** On the host's clock. */
   timestamp: number;
   voice: number;
@@ -110,6 +110,8 @@ export interface BookedHit<E = unknown> {
   score: string | undefined;
   name: string | undefined;
   tags: readonly string[];
+  /** The subjects its voice names with `subjects`; undefined for a voice that names none. */
+  subjects: readonly I[] | undefined;
 }
 
 /**
@@ -117,7 +119,7 @@ export interface BookedHit<E = unknown> {
  *
  * @category score
  */
-export interface BookOptions<E = unknown> {
+export interface BookOptions<E = unknown, I = unknown> {
   /**
    * The outside clock, in ms: `audio.currentTime * 1000`, `performance.now()`, or whatever the host
    * schedules against. Read once a sync. The mix maps its host time onto it by an offset that folds
@@ -137,7 +139,11 @@ export interface BookOptions<E = unknown> {
    * `rebase`, an anchor's target moving, the voice leaving); the item is then booked again, at its
    * new time, at the same sync.
    */
-  take(item: Marked | BookedHit<E>, when: number, lateBy: number): { cancel(): void } | undefined;
+  take(
+    item: Marked | BookedHit<E, I>,
+    when: number,
+    lateBy: number,
+  ): { cancel(): void } | undefined;
   /** Book only the voices, and announced marks, carrying this tag. */
   tag?: string;
   /** Book only this score's voices and marks. */
@@ -152,4 +158,9 @@ export interface BookOptions<E = unknown> {
 export interface Booker {
   /** Cancels every booking still ahead, and books nothing more. */
   cancel(): void;
+  /**
+   * Where host `timestamp` falls on the outside clock, by the offset as the last sync left it;
+   * NaN before the first sync.
+   */
+  at(timestamp: number): number;
 }

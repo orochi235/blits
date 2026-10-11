@@ -245,6 +245,8 @@ export interface Mix<I, O, H = unknown> {
    * sync. Host time at the mix's rate, less what `rebase` took out and `seek` moved.
    */
   readonly now: number;
+  /** The host's timestamp at the last sync; NaN before the first. */
+  readonly timestamp: number;
   /** The tape `history.tape` made, undefined without one. */
   readonly tape: Tape | undefined;
   /**
@@ -323,7 +325,7 @@ export interface Mix<I, O, H = unknown> {
    * its voice and which mark, a hit by its voice, index and pass. `project` books nothing, and
    * nothing about booking is replayed under `history`. A mix with no booker pays nothing for it.
    */
-  book<E = unknown>(opts: BookOptions<E>): Booker;
+  book<E = unknown>(opts: BookOptions<E, I>): Booker;
 }
 
 /**

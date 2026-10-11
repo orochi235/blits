@@ -11,6 +11,15 @@ version and everything else the patch. Each release lists its changes as **Break
 - A booker is ended with `cancel()`, and `take` returns `{ cancel() }` to hear that its item moved
   or went away. Both were `stop`: `mix.book(...).stop()` and `{ stop() }`.
 
+### Added
+
+- A booked hit carries `subjects`: the ones its voice names with `subjects`, or undefined for a
+  voice that names none. `BookedHit` and `BookOptions` take the subject type as a second
+  parameter.
+- `at(timestamp)` on a booker: where a host time falls on the outside clock, by the offset the
+  booker keeps.
+- `mix.timestamp`: the host's timestamp at the last sync.
+
 ## 0.9.0
 
 ### Breaking

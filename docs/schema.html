@@ -593,6 +593,8 @@ interface Mix&lt;I, O, H = unknown&gt; {
   atRest(subject: I): boolean;
   <span class="cm">/** The mix clock at the last sync or seek, which `seek` and `project` take; NaN before the first sync. */</span>
   readonly now: number;
+  <span class="cm">/** The host's timestamp at the last sync; NaN before the first. */</span>
+  readonly timestamp: number;
   <span class="cm">/** The mix read at another mix time without moving it: ahead plays what is cued forward, behind needs `history` unless
      every voice still plays as it was cued. */</span>
   project(time: number): Projection&lt;I, O&gt;;
@@ -633,7 +635,8 @@ interface Mix&lt;I, O, H = unknown&gt; {
   drain&lt;E&gt;(tag?: string): { timestamp: number; subject: I; voice: number; tags: readonly string[]; event: E }[];
   <span class="cm">/** Hands the host each mark and hit `ahead` ms before it comes, on a clock of its own, and cancels what moves. See Time. */</span>
   book&lt;E&gt;(opts: { clock: () =&gt; number; ahead: number; late: number; tag?: string; score?: string;
-    take(item: Marked | BookedHit&lt;E&gt;, when: number, lateBy: number): { cancel(): void } | undefined }): { cancel(): void };
+    take(item: Marked | BookedHit&lt;E, I&gt;, when: number, lateBy: number): { cancel(): void } | undefined }):
+    { cancel(): void; at(timestamp: number): number };
 }</code></pre>
 
 <p>A probe walks the voices that may reach its subject, not every voice. With no <code>target</code> in the mix that is all of them, so nothing is kept; once a voice targets, each subject keeps the list of voices whose <code>target</code> took it, rebuilt when a voice is cued, starts or leaves. One voice per subject on a shared mix then costs one voice per probe: 1000 subjects, each with its own voice, took 95&nbsp;ms a frame before the list and 0.45&nbsp;ms after (<code>npm run bench</code>, rows <code>own</code>). Building the list still asks every <code>target</code> of every new subject, so the first frame of that scene took 500&ndash;580&nbsp;ms. A voice that names its subjects with <code>subjects</code> is filed under each of them at <code>cue</code>, and a subject's list is built from the voices filed under it and those that name none: the same scene's first frame took 1.0&nbsp;ms, and 10.6&nbsp;ms at 10,000 subjects (rows <code>named</code>).</p>

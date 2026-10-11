@@ -21,7 +21,7 @@ import type { Booker, BookOptions, Channel, Doubt, Handle } from './types.js';
 import { unreach } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
 
-export function book<I, O>(mix: Mixer<I, O>, opts: BookOptions): Booker {
+export function book<I, O>(mix: Mixer<I, O>, opts: BookOptions<unknown, I>): Booker {
   if (mix.projecting) throw new Error('blits: a projection books nothing');
   const host: BookHost<I, O> = {
     get voices() {
