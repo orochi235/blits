@@ -86,7 +86,7 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
   /**
    * true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its
    * passes are done for the latest-staggered subject it has seen — over `fade.out` where one is
-   * set, at once where none is — unless it freezes after.
+   * set, at once where none is — unless it freezes after. Default: true.
    */
   loop?: boolean | number;
   /**
