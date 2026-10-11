@@ -645,8 +645,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         next sync: a voice a handle `seek` put past its end has left, and an anchor on a voice
         just faded is placed.
       - **Finding #18**: a `last()` or OKLCH channel in a locus picks by cue order, not weight.
-      - **A negative voice rate is still accepted** (`test/lanes.test.ts` cues one), and whether
-        a voice may play backward is undecided.
+      - **A voice may play backward** (decided 2026-10-10: a valid use is not refused because
+        no consumer has it yet). A negative rate is accepted (`test/lanes.test.ts` cues one), but
+        what it does is neither defined nor tested: where a voice cued at a negative rate starts,
+        and what happens when one runs back past 0.
       - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one. Run
         2026-10-10 and no pose was found to depend on it: a read ahead of nested spans, fitted
         by `pipe` and by `lax`, with an anchor after the outer one, matched the same scene
