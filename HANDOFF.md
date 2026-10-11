@@ -751,7 +751,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         60 steps a subject. `copyHeld` is 9% of the time and half of what the row allocates
         (31.7 MB a frame against 8.9 for `kept`); `Restored`'s `get` and `since` are under 1%.
         So a seek's cost is restepping state, which a state copy nearer the sought time, or a
-        coarser `stepMs`, would cut. Not tried: why `tick` takes 2.6 times its `step`.
+        coarser `stepMs`, would cut. `tick`'s share is its loop with `step` inlined into it (a
+        line profile puts it on the `for`): about 27 ns a step.
     - **Few consumers use step 7 yet.** klieg's `level` is built on `input` with a `touch()` in
       its `set` (klieg `c32d440`, unreleased); whether its level-weighted voices then run on
       lanes is not checked. The other workarounds the doc's "Universal applicability" table
