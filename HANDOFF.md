@@ -627,7 +627,20 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `patch.wave`, with `waveOptionsOf` removed; `handle.to` and `push` throwing for a patch
         that takes neither, and `read` giving undefined; and `fold` switching a rest-less channel
         on at 0.6, a mix's default band. All of it shipped in 0.8.0, so a rename is now a break.
-    - **Undecided behavior**, each found by the fuzzers or while building:
+    - **Decided 2026-10-10 (Mike), unbuilt until each is struck from this list:**
+      - A handle `seek` on a pending voice wins over its pinned start: the voice starts on time,
+        already at the sought position. A rate of 0 on a pending voice follows the rule a
+        positive rate does: it starts on time and then holds.
+      - A cue takes `seek`, a position in elapsed milliseconds, through the same pathway as
+        `handle.seek`. Blank is 0 for a forward voice and the end for a backward one; an endless
+        loop cued backward starts at 0 and plays into the pass before. A voice running back
+        past 0 ends as one running past its end does, and `freeze: 'before'` holds it.
+      - A placement whose end comes before its start is an instant, with a dev warning.
+      - A retarget of a faded-out subject starts its tween at the `to` call, not the next probe.
+      - A `last()` channel in a locus takes its heaviest member, ties to the later cue. An OKLCH
+        channel in a locus stays order-dependent, and the schema page is to say so.
+      - `project(mix.now)` lands nothing, so it reads as `probe` does.
+    - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
       - **A handle `seek` on a pending voice whose pinned start is still ahead is undone when
         the start arrives**: `startAt` in `place.ts` sets the clock back to 0 (determinism seed
         `ahead`/full/139). Whether the seek or the start should win is undecided. A rate of 0 on
