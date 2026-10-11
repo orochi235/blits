@@ -572,7 +572,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       not expose the host time of its last sync.
     - **The release workflow's edit has not run**: the pin checks and the publish step now
       apply to any driver directory instead of naming quarks.
-    Never run: a native `AudioParam` as a target.
     - **`apps/fireworks` plays one mix through this driver and the quarks one** (2026-10-10; its
       README says how). It ran in headless Chromium's `AudioContext` with Tone `Param` targets:
       shells rose and bloomed, a meter on Tone's output showed each bang, and ramping `mix.rate`
