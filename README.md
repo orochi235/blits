@@ -135,7 +135,12 @@ Zero runtime dependencies, ESM only, types included.
 
 ```
 npm install
-npm run check   # lint, typecheck, test
+npm run check          # lint, typecheck, test
+npm run test:general   # the tests again with lanes off
 ```
+
+A lane is a channel the mix computes for every subject at once, and the general path is the same
+fold made subject by subject. `test:general` turns lanes off in every mix that does not set `lanes`
+itself, so the whole suite runs on the general path.
 
 MIT.
