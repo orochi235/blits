@@ -267,8 +267,14 @@
   merge(a: V, b: V): V;
   <span class="cm">/** Fade toward `rest` by weight 0..1. Required when `rest` is set; absent otherwise. */</span>
   scale?(v: V, w: number): V;
-  <span class="cm">/** Interpolate, for retargeting and for blending alternatives. */</span>
+  <span class="cm">/** Interpolate, for retargeting, for blending alternatives, and for folding a locus. */</span>
   lerp(a: V, b: V, u: number): V;
+  <span class="cm">/** `merge(into, scale(v, w))`, written into `into` and returned, so a channel whose values are objects need not
+     allocate per contribution. The mix only hands it a value it made. */</span>
+  fold?(into: V, v: V, w: number): V;
+  <span class="cm">/** A fresh copy of `v`, which the mix makes of `rest` for `fold` to write into. The mix copies arrays, typed
+     arrays, and plain objects itself. */</span>
+  copy?(v: V): V;
 }
 
 type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&gt;&gt; };</code></pre>
@@ -309,7 +315,7 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
   readonly form: 'fn' | 'keys' | 'motion';
   <span class="cm">/** Milliseconds one pass lasts, whether or not the voice loops. 0 has no passes: `phase` and `pass`
      stay 0, `loop` is ignored, and the patch reads `setting.elapsed` instead. */</span>
-  duration: number;
+  readonly duration: number;
   <span class="cm">/** The channels this patch contributes to. Every key `at` sets, and no others. */</span>
   readonly writes: readonly (keyof O)[];
   <span class="cm">/** The channels it was written against. `cue` refuses a kit whose channel of the same name is another kind. */</span>
@@ -329,10 +335,22 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
 
   <span class="cm">/** Present when the patch was authored as keyframes, so an engine that reads data can. */</span>
   readonly keys?: readonly Keyframe&lt;O&gt;[];
+  <span class="cm">/** Present on a `keys` patch that was given them: what `keys` took besides its stops. They are read off the
+     patch, so a copy that changes one, as `{ ...p, ease: 'linear' }` does, plays by its own. */</span>
+  readonly ease?: Easing;
+  easeBy?(channel: keyof O): Easing | undefined;
+  delayBy?(channel: keyof O): number;
+  lerpBy?(channel: keyof O): ((a: never, b: never, u: number) =&gt; unknown) | undefined;
+  <span class="cm">/** Present on a `wave` patch: what `wave` took, which a copy may change as it may a `keys` field. */</span>
+  readonly wave?: WaveOptions&lt;O&gt;;
   <span class="cm">/** Present on a `'motion'` patch: its kind and constants, for an engine that reads data. */</span>
   readonly motion?: MotionSpec;
   <span class="cm">/** A copy of `state` sharing nothing with it, for a read at another time. Default `structuredClone`. */</span>
   clone?(state: S): S;
+  <span class="cm">/** `state` as data that survives `structuredClone`, for a history `store` to keep, and a state made from that
+     data again. With a store, a patch with `state` or `step` needs both, or `cue` refuses it. */</span>
+  pack?(state: S): unknown;
+  unpack?(data: unknown): S;
 }
 
 interface Setting&lt;S = void, H = unknown&gt; {
@@ -380,8 +398,12 @@ interface Setting&lt;S = void, H = unknown&gt; {
 <h2 id="voices">Voices</h2>
 <p>A voice is a patch given a clock and a volume knob. This is the unit that answers "independent state and timeframe": two voices of the same patch are two clocks, two states, two weights.</p>
 
-<pre><code>interface VoiceSpec&lt;I, O, H = unknown&gt; {
-  patch: Patch&lt;I, O, any, H&gt;;
+<pre><code><span class="cm">/** `SpanHints` are `faster`, `slower`, `overlap`, `ballast`, and `priority`, read only under a span. See Spans. */</span>
+interface VoiceSpec&lt;I, O, H = unknown&gt; extends SpanHints {
+  patch: Patch&lt;I, O, unknown, H&gt;;
+  <span class="cm">/** What `history.revive` builds this spec from again, so a history `store` can page the voice out once it has
+     left. See History behind a store. */</span>
+  as?: Described;
   <span class="cm">/** Which subjects this voice reaches. Default: all of them. The predicate is fixed at `cue`; it runs per
      subject the first time the mix sees that subject, and the answer is kept for as long as the state is. */</span>
   target?: (subject: I) =&gt; boolean;
@@ -397,7 +419,7 @@ interface Setting&lt;S = void, H = unknown&gt; {
   rate?: number;
   <span class="cm">/** Where in itself the voice starts, in voice ms. Default 0, or its end for one cued backward. */</span>
   seek?: number;
-  <span class="cm">/** true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its passes are done — over <code>fade.out</code> where one is set, at once where none is — unless it holds after. */</span>
+  <span class="cm">/** true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its passes are done — over <code>fade.out</code> where one is set, at once where none is — unless it freezes after. */</span>
   loop?: boolean | number;
   <span class="cm">/** Per-subject delay in voice ms. klieg's stagger grammar stays klieg's and passes in the one
      thing the mix needs: how long this subject waits. Asked once per subject on first sight and
@@ -437,14 +459,15 @@ interface Setting&lt;S = void, H = unknown&gt; {
   owner?: Handle&lt;I&gt;;
 }
 
-interface Handle&lt;I&gt; {
+interface Handle&lt;I = unknown&gt; {
   readonly id: number;
   <span class="cm">/** <code>frozen</code>: a voice freezing after has played every pass and shows its last frame until faded. */</span>
   readonly state: 'pending' | 'live' | 'frozen' | 'fading' | 'done';
   <span class="cm">/** The owner's handle, for a voice an owner holds. */</span>
   readonly owner: Handle&lt;I&gt; | undefined;
-  <span class="cm">/** Live. Writes land on the next sync. */</span>
+  <span class="cm">/** Live. A write shows at the next probe. */</span>
   weight: number;
+  <span class="cm">/** Playback rate now. Setting it changes speed at once; `ramp` eases into a new one. */</span>
   rate: number;
   <span class="cm">/** Moves this voice's clock, forward or back, and an owner's children with it. Each subject's state is made
      fresh and stepped from the voice's start to `elapsed` at its next probe, unless `state: 'keep'` leaves it
@@ -456,9 +479,20 @@ interface Handle&lt;I&gt; {
   <span class="cm">/** Ramps out over `fade.out` unless given a fade here; `at: 'rest'` waits per subject for a resting pose first.
      Given a `subject`, fades that subject alone out of this voice, which plays on for the rest. */</span>
   fade(opts?: { over?: number; at?: number | 'rest'; deadline?: number } | { subject: I; over?: number }): void;
+  <span class="cm">/** Turns a fade out around: the voice climbs back from where its fade had got to, up the same curve, over `over`
+     ms for the whole curve (default its `fade.in`, else its `fade.out`), and plays on as if never faded. A fade
+     waiting for rest is taken back at once; a voice not fading is left as it is. */</span>
+  rise(opts?: { over?: number }): void;
   <span class="cm">/** The weight this voice gave `subject` the last frame it was probed: after fades and its signal, before a
      locus folds it. 0 where it gave none. One number on a record the mix keeps anyway, so free unasked. */</span>
   weightOf(subject: I): number;
+  <span class="cm">/** A motion patch's own `to`, `push`, and `read`, reached without holding the patch; `at` is a voice time. `to`
+     throws for a voice not playing a `spring` or a `tween`, and `push` for one not playing a `spring` or a `glide`;
+     `read` gives undefined for a voice playing no motion patch. `Value` is a number or an array of them, and
+     `Motion` is `{ value, velocity }`. See Springs, glides and tweens. */</span>
+  to(subject: I, target: Value, at?: number): void;
+  push(subject: I, velocity: Value, at?: number): void;
+  read(subject: I, at?: number): Motion&lt;Value&gt; | undefined;
   <span class="cm">/** Resolves when the voice has been removed from the mix, however that happened. */</span>
   readonly done: Promise&lt;void&gt;;
   <span class="cm">/** Resolves true when a finite loop's last pass ends, for the latest-staggered subject it has seen, and false
@@ -490,11 +524,11 @@ interface Handle&lt;I&gt; {
 
 interface MixOptions&lt;H = unknown&gt; {
   engine?: Engine;                <span class="cm">// default: mixer</span>
-  <span class="cm">/** Reduced motion: fades and warm-ups snap, `dt` reads Infinity. Read once at creation, or a signal. */</span>
+  <span class="cm">/** Reduced motion: fades and warm-ups snap, `dt` reads Infinity. A function is asked once a sync. */</span>
   reduce?: boolean | (() =&gt; boolean);
   <span class="cm">/** Merged into every `setting.host`. `H` types it for every patch and signal the mix cues, so none needs a cast. */</span>
   host?: H;
-  <span class="cm">/** The band a rest-less channel's contribution switches across. Default 0.4 / 0.6, a placeholder. */</span>
+  <span class="cm">/** The band a rest-less channel's contribution switches across. Default on at 0.6 and off at 0.4, a placeholder. */</span>
   band?: { on: number; off: number };
   <span class="cm">/** The most `dt` a step or signal is handed, however long the gap. Off by default. */</span>
   maxDt?: number;
@@ -504,10 +538,15 @@ interface MixOptions&lt;H = unknown&gt; {
   history?: { ms: number; every?: number; inputs?: boolean; tape?: TapeMaker; store?: HistoryStore;
              revive?(d: Described): VoiceSpec };
   <span class="cm">/** A subject's key for a history `store`, where subjects are objects. */</span>
-  keyOf?(subject: I): string | number;
+  keyOf?(subject: never): string | number;
   <span class="cm">/** Whether a channel may run as a lane. On by default; the pose is the same either way, apart from
      a stateless patch's `send` from `at` and a patch that starts keeping state partway through. */</span>
   lanes?: boolean;
+  <span class="cm">/** The transport this mix plays on, shared with other mixes so they keep one clock. Its history is the
+     transport's, so the mix takes no `history` of its own. See Transport. */</span>
+  transport?: Transport;
+  <span class="cm">/** What `Marked.mix` and errors call this mix. */</span>
+  name?: string;
 }
 
 interface Mix&lt;I, O, H = unknown&gt; {
@@ -519,6 +558,9 @@ interface Mix&lt;I, O, H = unknown&gt; {
   blend(patches: readonly Patch&lt;I, O, any, H&gt;[], by: Signal&lt;I, H&gt;, spec?: Omit&lt;VoiceSpec&lt;I, O, H&gt;, 'patch' | 'weight' | 'locus'&gt;): Handle&lt;I&gt;[];
   <span class="cm">/** An owner: a voice with no patch that plays the voices cued with `owner: handle` on its own clock. See Score. */</span>
   owns(spec: OwnerSpec&lt;I, H&gt;): Handle&lt;I&gt;;
+  <span class="cm">/** A span: an owner that lays out the voices it holds in `order` and fits them into its `duration`. Its handle
+     also carries `result`, how the last fit came out. See Score. */</span>
+  span(spec: SpanSpec&lt;I, H&gt;): SpanHandle&lt;I&gt;;
 
   <span class="cm">/** The host reports the clock, once a frame. Nothing advances at the call: it publishes the reading, and
      each subject catches up by the whole gap the first time it is probed afterward. The same timestamp twice
@@ -572,6 +614,9 @@ interface Mix&lt;I, O, H = unknown&gt; {
   mute(opts?: { over?: number }): void;
   <span class="cm">/** Forgets per-subject state, a motion patch's included. Call when a subject is retired, or let the WeakMap do it. */</span>
   drop(subject: I): void;
+  <span class="cm">/** Says that something a patch reads from outside the mix has changed since the last sync, so the next probe
+     calls the patch again: for one subject, or with none for every subject. */</span>
+  touch(subject?: I): void;
   <span class="cm">/** Every event sent since the last drain, earliest first. Drain after probing. */</span>
   drain&lt;E&gt;(tag?: string): { timestamp: number; subject: I; voice: number; tags: readonly string[]; event: E }[];
   <span class="cm">/** Hands the host each mark and hit `ahead` ms before it comes, on a clock of its own, and stops what moves. See Time. */</span>
@@ -822,7 +867,7 @@ t.sync(now); <span class="cm">// once a frame, after the frame's cues</span></co
   <span class="cm">/** Which patch forms this engine can run. A voice whose patch it cannot run is refused at `cue`, by name. */</span>
   readonly runs: ReadonlySet&lt;'fn' | 'keys' | 'motion'&gt;;
   <span class="cm">/** Builds the mix. Everything on `Mix` is the engine's to implement. */</span>
-  create&lt;I, O&gt;(kit: Kit&lt;O&gt;, opts: MixOptions): Mix&lt;I, O&gt;;
+  create&lt;I, O, H = unknown&gt;(kit: Kit&lt;O&gt;, opts: MixOptions&lt;H&gt;): Mix&lt;I, O, H&gt;;
 }
 
 export const mixer: Engine;   <span class="cm">// the one that ships</span></code></pre>
