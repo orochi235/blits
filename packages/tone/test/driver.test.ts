@@ -159,7 +159,7 @@ describe('play', () => {
   });
 });
 
-describe('detach and stop', () => {
+describe('detach and cancel', () => {
   it('holds a detached subject where it had got to', async () => {
     let at = Number.NaN;
     const r = await render({
@@ -175,12 +175,12 @@ describe('detach and stop', () => {
     expect(r.freq[sampleAt(3900)]).toBe(held);
   });
 
-  it('stops the notes booked ahead, and holds every subject', async () => {
+  it('cancels the notes booked ahead, and holds every subject', async () => {
     let at = Number.NaN;
     const r = await render({
       each: (f, driver) => {
         if (f < 1700 || !Number.isNaN(at)) return;
-        driver.stop();
+        driver.cancel();
         at = f;
       },
     });

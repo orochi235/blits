@@ -43,8 +43,8 @@ export interface Driver<I, O> {
   detach(subject: I): void;
   /** Writes every attached subject's curves from now to `ahead`, after `mix.sync(timestamp)`. */
   write(timestamp: number): void;
-  /** Detaches every subject and stops what `play` has booked ahead. */
-  stop(): void;
+  /** Detaches every subject and cancels what `play` has booked ahead. */
+  cancel(): void;
 }
 
 interface Bound<O> {
@@ -138,7 +138,7 @@ export function drive<I, O, E = unknown>(mix: Mix<I, O>, opts: DriveOptions<E> =
       }
     },
 
-    stop() {
+    cancel() {
       booker?.stop();
       const time = seconds();
       for (const b of bound.values()) hold(b, time);

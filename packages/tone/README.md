@@ -82,7 +82,7 @@ the mix is heard only once the next `write` replaces the curve, which a stall al
   value they had reached.
 - **`write(timestamp)`**, after `mix.sync(timestamp)` with the same timestamp: schedules every
   attached subject's curves. Before the mix's first sync it does nothing.
-- **`stop()`** detaches every subject and stops what `play` booked ahead.
+- **`cancel()`** detaches every subject and cancels what `play` booked ahead.
 
 The host's clock need not be the audio clock: sync the mix to `performance.now()` or a frame's
 timestamp as usual. The driver keeps the offset between the two as `mix.book` does, folding in 5%
