@@ -572,25 +572,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     It would also need mix time converted to the outside clock when `mix.rate` is not 1, and
     scrubbing waits on the read-ahead item in `NOTES-ON-SCRUBBING.md`.
 
-12. **The docs and comments audit is done (2026-10-10), and what it left is below.** Every
-    comment in `src/`, `docs/schema.html`, the README, and the playground README were read against
-    the code and corrected where a claim was false; few comments failed the comment bar, and two
-    were cut. Left, each needing more than a correction:
-    - **The schema page's interface listings are abridged, and nothing says whether they should
-      track the types.** `Handle` lacks `rise`, `to`, `push`, and `read`; `Mix` lacks `span` and
-      `touch`; `Channel` lacks `fold` and `copy`; `Patch` lacks `ease`, `easeBy`, `delayBy`,
-      `lerpBy`, `wave`, `pack`, and `unpack`; `MixOptions` lacks `transport` and `name`.
-    - **Nowhere in the schema page or the README**: `fold(kit, deltas, weights?)`, `Vec<N>`,
-      `mix.touch`, `Channel.copy`, `npm run test:general`, and that a probe into `out` reuses the
-      arrays it holds (the page says only "written in place").
-    - **The lanes table does not say** that a `color(last())` channel leaves its lane for motion,
-      locus, and single-subject voices (`fits` in `hosts.ts`).
+12. **What the docs audit left** (2026-10-10). The schema page's interface listings now carry
+    every public member, and the page and README cover what the audit found missing.
+    - **The Time section's "Calls land on the next sync … Nothing changes mid-frame" contradicts
+      the weight setter**, which writes the voice at once, and the page's own "How sure" bullet.
+    - **The Patches forms table abridges its option lists**: `patch` also takes `kit`, `reads`,
+      `pack`, and `unpack`, and `keys` takes `kit`.
     - **Not checked**: the page's timings and its table of consumers' kits, which are other
       repos' facts, and the playground README's gestures against the widget code.
-    The two things that reading turned up in the code were run on 2026-10-10 and both were real;
-    the changelog's Unreleased section has them, with a third found on the way (a voice faded
-    with a time already past was forgotten by a seek back). `test/taperate.test.ts`,
-    `test/fadeat.test.ts`, and `test/paging.test.ts` hold them.
 
 13. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). Built
     2026-10-09: `wave`; every ease (`keys` `ease`, `easeBy`, `delayBy`, `fade.ease`, a tween's bezier
@@ -650,6 +639,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         whether or not the span has left. A copy given the list read the same. A child retimed
         by `faster` did read apart from the synced mix, which was the mix's fault and is fixed
         (the changelog's Unreleased section; `test/span.test.ts`).
+      - **A voice whose owner runs backward leaves without its fade out** (found
+        2026-10-10 by a scratch run, no test yet): with the owner at rate -1 the child left at
+        the frame that noticed it had reached its start, skipping its `fade.out` of 100 ms; its
+        `start` mark moved from 0 to 200, and it listed no `coast`, `out`, or `end`. The schema
+        page's "Not built" line says only that such a voice "is not told when the owner runs
+        back".
     - **Not built**, and nothing recorded against any of it:
       - Records shared by a read back or a standing read, and by voices `shares` (in
         `everyone.ts`) turns away that could keep their difference by subject number too: a
@@ -720,8 +715,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **Timed level** (msb-uai, 2026-10-10, 7 rounds at 3,000 frames against `da6e613`, 17 rows
       over `fn`, `named`, `probed`, `blend`, `glowl`, `keys`, and `typing`, geometric mean 0.998),
       but `blend` allocated 3,441 kB a frame from 2,974: the write to `stepped` was boxed. Making
-      the field a double from the start (`record.ts`) read 2,994 on this Mac at 300 frames; the
-      fleet run was not repeated after it.
+      the field a double from the start (`record.ts`) took it back: 2,982 on teitou at `e51cd85`
+      against 2,974 at `da6e613` (medians of 7 rounds).
 
 ## Loose ends
 
