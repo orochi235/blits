@@ -428,7 +428,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
 
-1d. **`@msb235/blits-quarks` 0.4.0 is on npm**, pinned to engine 0.8.1 and published from its
+1d. **`@msb235/blits-quarks` 0.5.0 is on npm**, pinned to engine 0.9.0 and published from its
    `quarks-v0.4.0` tag (0.1.0 went out by hand, because npm refuses trust for a name never
    published). Its README says how it works. magicsmoke is on engine 0.8.1 but its fizz and tuning stay on its own code: the driver doesn't fit without changing
    what magicsmoke does. Its `docs/HANDOFF.md` has the gaps; the likely driver changes are a
@@ -561,7 +561,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 11. **`@msb235/blits-tone` 0.1.0 is built in `packages/tone` and not published** (2026-10-10).
     Its README says what it is, how it works, and what it does not do; it is pinned to engine
-    0.8.1 with Tone as a peer, and a `tone-v*` tag releases it as `quarks-v*` does quarks. npm
+    0.9.0 with Tone as a peer, and a `tone-v*` tag releases it as `quarks-v*` does quarks. npm
     refuses trust for a name never published, so 0.1.0 goes out by hand, as quarks' did. Mike
     has not seen its names (`drive`, `attach`, `detach`, `write`, `stop`, and the options
     `ahead`, `step`, `late`, `clock`, `play`, `tag`, `score`) or these calls made in building:
@@ -570,8 +570,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **`src/link.ts` repeats two engine constants**: the driver keeps its own host-to-audio
       offset by the rule `mix.book` uses (5% slew, restart past 50 ms), because the engine does
       not expose the host time of its last sync.
-    - **The release workflow's edit has not run**: the pin checks and the publish step now
-      apply to any driver directory instead of naming quarks.
+    - **The release workflow's edit has not run for a driver**: the pin checks and the publish
+      step now apply to any driver directory instead of naming quarks.
+    - **`node-web-audio-api` 2.2.0 frees a channel's samples under a live array**
+      (2026-10-11): the `Float32Array` from `getChannelData` reads freed memory once its
+      `AudioBuffer` is collected. `render` in `test/render.ts` returned such arrays and dropped
+      the buffer, so a second render in one test killed the worker with SIGSEGV on the release
+      workflow's Linux runner (`clock.test.ts`, 8 runs of 8) and read junk on macOS. `render` now
+      copies them. Not reported upstream. To see it: render an `OfflineAudioContext`, keep only
+      the array, call `gc()`, and read it.
     - **`apps/fireworks` plays one mix through this driver and the quarks one** (2026-10-10; its
       README says how). It ran in headless Chromium's `AudioContext` with Tone `Param` targets:
       shells rose and bloomed, a meter on Tone's output showed each bang, and ramping `mix.rate`
