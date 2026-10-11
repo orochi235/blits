@@ -1,0 +1,50 @@
+{
+  "name": "@msb235/blits-tone",
+  "version": "0.1.0",
+  "description": "Drives Tone.js from a blits mix on the audio clock: each subject's channels as parameter curves read ahead, and its hits and marks scheduled before they come",
+  "keywords": [
+    "audio",
+    "tone",
+    "web-audio",
+    "blits",
+    "effects"
+  ],
+  "license": "MIT",
+  "author": "orochi235",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orochi235/blits.git",
+    "directory": "packages/tone"
+  },
+  "homepage": "https://github.com/orochi235/blits/tree/main/packages/tone#readme",
+  "bugs": "https://github.com/orochi235/blits/issues",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@msb235/blits": "0.8.1"
+  },
+  "peerDependencies": {
+    "tone": "^15.1.22"
+  },
+  "devDependencies": {
+    "node-web-audio-api": "^2.2.0",
+    "tone": "^15.1.22"
+  }
+}
