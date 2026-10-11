@@ -228,7 +228,7 @@ function run(lib, seed, general = false) {
     if (chance(0.25)) spec.locus = pick(['a', 'b']);
     if (chance(0.3)) spec.weight = chance(0.2) ? r() * 1.8 : signal();
     if (chance(0.4)) spec.fade = { in: pick([0, 50, 200]), out: pick([0, 100, 300]) };
-    if (chance(0.3)) spec.loop = chance(0.5) ? true : int(1, 3);
+    spec.loop = chance(0.3) && !chance(0.5) ? int(1, 3) : true;
     if (chance(0.2)) spec.rate = pick([0.5, 2]);
     if (chance(0.2)) spec.stagger = (s) => s.i * 7;
     if (chance(0.15)) spec.freeze = pick(['before', 'after', 'both']);

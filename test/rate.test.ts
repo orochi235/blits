@@ -130,7 +130,7 @@ describe('mix rate', () => {
     m.sync(0);
     m.rate = 0.5;
     m.cue({ patch: fall, name: 'f', loop: false, fade: { in: 100, out: 100 } });
-    m.cue({ patch: wave, anchor: { start: { after: 'f', by: 50 } } });
+    m.cue({ patch: wave, anchor: { start: { after: 'f', by: 50 } }, loop: true });
     m.sync(100);
     // 50 mix ms into the pass, and halfway through a 100 ms fade in.
     const g = 0.5 + (0.2 - 0.5) * (50 / 300);

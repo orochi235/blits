@@ -32,16 +32,19 @@ export function scene(m: Mix<string, Pose>, start = 0): Handles {
         { at: 1, delta: { freq: 200 } },
       ]),
       start,
+      loop: true,
     }),
     swell: m.cue({
       patch: patch<string, Pose>(1000, (p) => ({ gain: 0.5 + 0.5 * Math.sin(2 * Math.PI * p) }), {
         writes: ['gain'],
       }),
       start,
+      loop: true,
     }),
     notes: m.cue({
       patch: patch<string, Pose>(1000, () => ({}), { writes: [] }),
       start,
+      loop: true,
       hits: HITS.map((at) => ({ at, event: 'note' })),
     }),
   };

@@ -180,7 +180,7 @@ describe('the clock', () => {
       { writes: [] },
     );
     const m = mix<Part, Pose>(PART);
-    m.cue({ patch: p });
+    m.cue({ patch: p, loop: true });
     const part = { id: 'a' };
     for (const now of [0, 250, 500, 1000, 1250]) {
       m.sync(now);
@@ -227,7 +227,7 @@ describe('the clock', () => {
       },
     );
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: p });
+    const h = m.cue({ patch: p, loop: true });
     const part = { id: 'a' };
     m.sync(0);
     m.probe(part);

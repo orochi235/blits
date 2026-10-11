@@ -28,7 +28,12 @@ describe('coast', () => {
     const m = mix<string, Pose>(K);
     m.sync(0);
     m.cue({ patch: hold(300), name: 'run', loop: 2, freeze: 'both' });
-    m.cue({ patch: hold(100), name: 'next', anchor: { start: { of: 'run', mark: 'coast' } } });
+    m.cue({
+      patch: hold(100),
+      name: 'next',
+      anchor: { start: { of: 'run', mark: 'coast' } },
+      loop: true,
+    });
     m.sync(700);
     expect(marksOf(m, 'run')).toEqual(['start@0', 'in@0', 'coast@600']);
     expect(marksOf(m, 'next')[0]).toBe('start@600');

@@ -227,7 +227,7 @@ describe('freeze after', () => {
 
   it('does nothing to a voice that loops for good', () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp(), freeze: 'after' });
+    const h = m.cue({ patch: ramp(), freeze: 'after', loop: true });
     m.sync(0);
     m.sync(250);
     expect(h.state).toBe('live');
@@ -278,7 +278,7 @@ describe('played', () => {
 
   it('resolves false for a voice that loops for good, once it leaves', async () => {
     const m = mix<Part, Pose>(PART);
-    const h = m.cue({ patch: ramp() });
+    const h = m.cue({ patch: ramp(), loop: true });
     m.sync(0);
     m.sync(500);
     expect(await settled(h.played)).toBe('pending');

@@ -22,15 +22,18 @@ function scene(m) {
         { at: 1, delta: { freq: 200 } },
       ]),
       start: 0,
+      loop: true,
     }),
     swell: m.cue({
       patch: patch(1000, (p) => ({ gain: 0.5 + 0.5 * Math.sin(2 * Math.PI * p) }), { writes: ['gain'] }),
       start: 0,
+      loop: true,
     }),
     notes: m.cue({
       patch: patch(1000, () => ({}), { writes: [] }),
       start: 0,
       hits: HITS.map((at) => ({ at, event: 'note' })),
+      loop: true,
     }),
   };
 }

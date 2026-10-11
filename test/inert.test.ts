@@ -49,7 +49,7 @@ describe('inert', () => {
     expect(m.inert).toBe(true);
     m.sync(0);
     expect(m.inert).toBe(true);
-    m.cue({ patch: ramp() });
+    m.cue({ patch: ramp(), loop: true });
     expect(m.inert).toBe(false);
     for (const t of [10, 1000, 100_000]) {
       m.sync(t);

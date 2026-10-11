@@ -3,7 +3,7 @@ import { clampWeight, passAt, passesOf, phaseAt } from '../src/clock.js';
 
 describe('clock', () => {
   it('counts passes from a loop', () => {
-    expect(passesOf(undefined)).toBe(Number.POSITIVE_INFINITY);
+    expect(passesOf(undefined)).toBe(1);
     expect(passesOf(true)).toBe(Number.POSITIVE_INFINITY);
     expect(passesOf(false)).toBe(1);
     expect(passesOf(3)).toBe(3);

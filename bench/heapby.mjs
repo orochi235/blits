@@ -57,7 +57,7 @@ await new Promise((r) => setTimeout(r, 0));
 const before = byConstructor();
 const subjects = Array.from({ length: N }, (_, j) => ({ seed: j * 0.37 }));
 const m = mix(K);
-for (const s of subjects) m.cue({ patch: make[form](s), subjects: [s] });
+for (const s of subjects) m.cue({ patch: make[form](s), subjects: [s], loop: true });
 const out = {};
 m.sync(16);
 for (const s of subjects) m.probe(s, out);

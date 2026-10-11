@@ -624,6 +624,7 @@ describe('lanes stay identical where a fill and a probe interleave', () => {
           },
           { writes: ['crawl'] },
         ),
+        loop: true,
       });
       m.sync(0);
       for (const p of parts) m.probe(p);

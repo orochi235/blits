@@ -83,6 +83,7 @@ describe('compile', () => {
     );
     const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({
+      loop: true,
       patch: patch<(typeof subjects)[0], Mixed, { n: number }>(
         300,
         (phase, s, set) => ({ turn: set.state.n + phase * s.col }),
@@ -172,6 +173,7 @@ describe('compile', () => {
     );
     const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({
+      loop: true,
       patch: keys<(typeof subjects)[0], Mixed>(1000, stops.map(mixedStop), {
         ease: 'ease-in',
         easeBy: (ch) => (ch === 'turn' ? { steps: 4, jump: 'end' } : undefined),
@@ -197,6 +199,7 @@ describe('compile', () => {
     const built = compile(comp([swing]), subjects);
     const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
     hand.cue({
+      loop: true,
       patch: wave<(typeof subjects)[0], Mixed>(600, {
         shape: 'triangle',
         cycles: 2,

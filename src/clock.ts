@@ -2,7 +2,7 @@ import type { Curve } from './easing.js';
 
 /** How many passes a voice's `loop` plays. */
 export function passesOf(loop: boolean | number | undefined): number {
-  const l = loop ?? true;
+  const l = loop ?? false;
   return l === true ? Number.POSITIVE_INFINITY : l === false ? 1 : l;
 }
 

@@ -157,7 +157,7 @@ describe('seek', () => {
     expect(() => untaped.seek(0)).toThrow(/tape/);
     const m = mix<Part, Pose>(K, { history: { ms: 500, tape } });
     expect(() => m.seek(0)).toThrow(/never synced/);
-    m.cue({ patch: wave });
+    m.cue({ patch: wave, loop: true });
     for (const t of every(0, 1000, 100)) m.sync(t);
     expect(() => m.seek(400)).toThrow(/older/);
     expect(() => m.seek(Number.POSITIVE_INFINITY)).toThrow(RangeError);

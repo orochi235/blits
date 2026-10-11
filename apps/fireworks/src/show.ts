@@ -68,12 +68,11 @@ function hits(shell: Shell): Hit<Sound>[] {
 /** Cues a shell: it rises, then blooms. The handle is the bloom's, done when the shell is over. */
 export function cue(m: Mix<Shell, Pose>, shell: Shell): Handle<Shell> {
   const owner = m.owns({});
-  m.cue({ owner, patch: rise, subjects: [shell], loop: false });
+  m.cue({ owner, patch: rise, subjects: [shell] });
   return m.cue({
     owner,
     start: RISE_MS,
     patch: bloom,
-    loop: false,
     subjects: [shell],
     tags: [BURSTS],
     hits: hits(shell),

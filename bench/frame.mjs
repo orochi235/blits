@@ -316,8 +316,10 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     kind === 'swap' ||
     kind === 'fns';
   if (kind === 'own')
-    for (const mine of subjects) m.cue({ patch: flicker(0), target: (s) => s === mine });
-  if (kind === 'named') for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine] });
+    for (const mine of subjects)
+      m.cue({ patch: flicker(0), target: (s) => s === mine, loop: true });
+  if (kind === 'named')
+    for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine], loop: true });
   if (kind === 'springs') for (const mine of subjects) m.cue({ patch: settle(), subjects: [mine] });
   const glideOf = (mine) =>
     turnover
@@ -329,12 +331,12 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       : [];
   // Replaces the voice of one subject a frame, walking through them all.
   let turn = 0;
-  let shared = kind === 'swap' ? m.cue({ patch: flicker(0) }) : null;
+  let shared = kind === 'swap' ? m.cue({ patch: flicker(0), loop: true }) : null;
   const churn = () => {
     if (glow) aim();
     if (shared !== null) {
       shared.fade({ over: 0 });
-      shared = m.cue({ patch: flicker(turn++ % 3) });
+      shared = m.cue({ patch: flicker(turn++ % 3), loop: true });
       return;
     }
     if (turnover) {
@@ -364,7 +366,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     handles[k] = m.cue({ patch: glideTo(), subjects: [subjects[k]] });
   };
   if (kind === 'keyses')
-    for (const mine of subjects) m.cue({ patch: keysTo(mine), subjects: [mine] });
+    for (const mine of subjects) m.cue({ patch: keysTo(mine), subjects: [mine], loop: true });
   if (kind === 'typing')
     for (let k = 0; k < voices; k++)
       m.cue({
@@ -373,7 +375,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
         loop: true,
         freeze: 'both',
       });
-  if (kind === 'fns') for (const mine of subjects) m.cue({ patch: fnTo(mine), subjects: [mine] });
+  if (kind === 'fns')
+    for (const mine of subjects) m.cue({ patch: fnTo(mine), subjects: [mine], loop: true });
   // Weighted per subject by a signal holding no state: three voices, or a blend between three.
   const by = (s) => 0.5 + 0.5 * Math.sin(s.seed);
   if (kind === 'blend') m.blend([flicker(0), flicker(1), flicker(2)], by, { fade: { in: 100 } });
@@ -385,18 +388,24 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     pointer.x = side / 2 + (side / 3) * Math.cos(a);
     pointer.y = side / 2 + (side / 3) * Math.sin(a);
   };
-  if (glow) m.cue({ patch: flicker(0) });
+  if (glow) m.cue({ patch: flicker(0), loop: true });
   if (kind === 'glow')
-    m.cue({ patch: patch(1000, () => ({ gain: 1.5 }), { writes: ['gain'] }), weight: near });
+    m.cue({
+      patch: patch(1000, () => ({ gain: 1.5 }), { writes: ['gain'] }),
+      weight: near,
+      loop: true,
+    });
   if (kind === 'glowk' || kind === 'glowl')
     m.cue({
       patch: patch(1000, () => ({ gain: 1.5, color: AMBER }), { writes: ['gain', 'color'] }),
       weight: near,
+      loop: true,
     });
   if (kind === 'glowc')
     m.cue({
       patch: patch(1000, () => ({ gain: 1.5, color: 0xffe08a }), { writes: ['gain', 'color'] }),
       weight: near,
+      loop: true,
     });
   if (kind === 'glowkeys')
     m.cue({
@@ -405,6 +414,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
         { at: 1, delta: { gain: 1.2, color: 0xffffff } },
       ]),
       weight: near,
+      loop: true,
     });
   for (let v = 0; !own && !glow && kind !== 'blend' && kind !== 'typing' && v < voices; v++) {
     const p =
@@ -430,6 +440,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       fade: { in: 100 },
       locus: kind === 'locus' ? 'one' : undefined,
       weight: kind === 'signal' ? by : undefined,
+      loop: true,
     });
   }
   let probed =

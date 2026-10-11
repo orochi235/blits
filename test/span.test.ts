@@ -191,7 +191,7 @@ describe('spans', () => {
     expect(() => m.cue({ patch: write(100), owner: s, start: 50, loop: false })).toThrow(
       /no start of its own/,
     );
-    expect(() => m.cue({ patch: write(100), owner: s })).toThrow(/never ends/);
+    expect(() => m.cue({ patch: write(100), owner: s, loop: true })).toThrow(/never ends/);
     expect(() => m.owns({ owner: s })).toThrow(/not owners/);
   });
 

@@ -235,7 +235,7 @@ describe.each([true, false])('a loop for good cued backward, lanes %s', (lanes) 
   it('starts at 0 and plays into the pass before, and the one before that', () => {
     const m = mix<Part, Pose>(K, { lanes });
     m.sync(0);
-    const h = m.cue({ patch: told, rate: -1 });
+    const h = m.cue({ patch: told, rate: -1, loop: true });
     passes.length = 0;
     expect(m.probe(a).x).toBeCloseTo(100, 9);
     m.sync(60);
@@ -254,6 +254,7 @@ describe.each([true, false])('a loop for good cued backward, lanes %s', (lanes) 
     m.cue({
       patch: told,
       rate: -1,
+      loop: true,
       fade: { in: 100 },
       stagger: (s) => (s.id === 'late' ? 90 : 0),
     });
@@ -274,7 +275,7 @@ describe.each([true, false])('a loop for good cued backward, lanes %s', (lanes) 
   it('turned back in flight, where it was cued forward, ends at its start', () => {
     const m = mix<Part, Pose>(K, { lanes });
     m.sync(0);
-    const h = m.cue({ patch: told });
+    const h = m.cue({ patch: told, loop: true });
     m.sync(700);
     m.probe(a);
     h.rate = -1;

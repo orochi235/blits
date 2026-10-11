@@ -83,6 +83,7 @@ export function makeMix(voices, subjects) {
       weight: d.weight,
       fade: { in: d.fadeIn, ease: d.fadeEase },
       stagger: (s) => stagger(s.i, v),
+      loop: true,
     });
   }
   return m;

@@ -57,9 +57,9 @@ const same = (got: Pose, want: Pose) => {
 /** Voices that play, loop, wait and freeze, and never leave. */
 const staying: Scene = (m, t) => {
   if (!Number.isNaN(t)) return;
-  m.cue({ patch: wave, start: 0, fade: { in: 100 }, stagger: (s) => s.id * 40 });
+  m.cue({ patch: wave, start: 0, fade: { in: 100 }, stagger: (s) => s.id * 40, loop: true });
   m.cue({ patch: ramp, start: 200, loop: 2, freeze: 'both' });
-  m.cue({ patch: wave, start: 500, weight: 0.5, rate: 2 });
+  m.cue({ patch: wave, start: 500, weight: 0.5, rate: 2, loop: true });
   m.cue({
     patch: ramp,
     start: 100,
@@ -145,7 +145,7 @@ describe('project back with no history', () => {
 
   it('reads back to a drop and to a touch, and no further', () => {
     const dropped = play((mx, t) => {
-      if (Number.isNaN(t)) mx.cue({ patch: wave, start: 0, fade: { in: 400 } });
+      if (Number.isNaN(t)) mx.cue({ patch: wave, start: 0, fade: { in: 400 }, loop: true });
       if (t === 200) mx.drop(a);
     });
     expect(() => dropped.m.project(150)).toThrow(/at 200/);

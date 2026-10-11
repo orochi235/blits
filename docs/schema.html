@@ -425,7 +425,7 @@ interface VoiceSpec&lt;I, O, H = unknown&gt; extends SpanHints {
   <span class="cm">/** Where in itself the voice starts, in voice ms, as `seek` on its handle sets. Default 0, or its end for one
      cued backward. Refused where it is not a finite number. */</span>
   seek?: number;
-  <span class="cm">/** true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its passes are done — over <code>fade.out</code> where one is set, at once where none is — unless it freezes after. */</span>
+  <span class="cm">/** true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its passes are done — over <code>fade.out</code> where one is set, at once where none is — unless it freezes after. Default: false. */</span>
   loop?: boolean | number;
   <span class="cm">/** Per-subject delay in voice ms. klieg's stagger grammar stays klieg's and passes in the one
      thing the mix needs: how long this subject waits. Asked once per subject on first sight and

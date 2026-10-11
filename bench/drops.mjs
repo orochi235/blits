@@ -8,7 +8,7 @@ const K = kit({ x: sum() });
 const run = (n, history) => {
   const m = mix(K, history ? { history: { ms: 5000 } } : {});
   const subjects = Array.from({ length: n }, (_, i) => ({ i }));
-  m.cue({ patch: patch(1000, (ph, s) => ({ x: ph + s.i }), { writes: ['x'] }) });
+  m.cue({ patch: patch(1000, (ph, s) => ({ x: ph + s.i }), { writes: ['x'] }), loop: true });
   for (let t = 16; t <= 160; t += 16) {
     m.sync(t);
     for (const s of subjects) m.probe(s);

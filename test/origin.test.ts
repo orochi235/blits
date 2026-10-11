@@ -93,6 +93,7 @@ describe("a subject's origin does not depend on when the host first probes it", 
     const spec = () => ({
       patch: fall,
       start: 0,
+      loop: true,
       fade: { in: 100 },
       stagger: (p: Part) => p.at ?? 0,
     });

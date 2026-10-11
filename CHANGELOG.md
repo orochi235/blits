@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Breaking
+
+- A voice plays one pass unless told otherwise: `loop` defaults to `false`, where it defaulted to
+  `true`. A `cue` that left `loop` out and relied on looping for good now needs `loop: true`. A
+  patch with no duration, and a motion patch, have no passes and play as before.
+
 ## 0.10.0
 
 ### Breaking

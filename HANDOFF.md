@@ -19,6 +19,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 ## State
 
 - `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.10.0 (2026-10-11).
+- **Unreleased, breaking: `loop` defaults to one pass** (Mike, 2026-10-11; it defaulted to
+  looping for good). It waits for the next minor. No consumer has been checked: each one's `cue`
+  calls that leave `loop` out on a patch with a duration need a look before it takes that version.
 - **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
   blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with

@@ -89,7 +89,11 @@ describe('fade at', () => {
   it('wins over an anchored out, and a seek back restores it', () => {
     const m = mix<string, Pose>(K, { history: { ms: 10_000, tape } });
     m.sync(0);
-    m.cue({ patch: patch<string, Pose>(2000, () => ({ x: 0 }), { writes: ['x'] }), name: 'cut' });
+    m.cue({
+      patch: patch<string, Pose>(2000, () => ({ x: 0 }), { writes: ['x'] }),
+      name: 'cut',
+      loop: true,
+    });
     const h = m.cue({ patch: one, subjects: ['a'], anchor: { out: { after: 'cut' } } });
     m.sync(100);
     h.fade({ at: 600, over: 0 });

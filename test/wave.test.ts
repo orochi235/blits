@@ -108,7 +108,7 @@ describe('wave', () => {
 
   it('plays as a looping voice in a mix', () => {
     const m = mix<object, Bob>(kit({ x: sum(), y: sum() }));
-    m.cue({ patch: wave<object, Bob>(1000, { depth: { x: 3 } }) });
+    m.cue({ patch: wave<object, Bob>(1000, { depth: { x: 3 } }), loop: true });
     const subject = {};
     m.sync(0);
     m.probe(subject);

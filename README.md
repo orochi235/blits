@@ -28,7 +28,7 @@ const flicker = patch<Part, PartPose>(
 );
 
 const m = mix<Part, PartPose>(PART);
-const handle = m.cue({ patch: flicker, fade: { in: 300, out: 300 } });
+const handle = m.cue({ patch: flicker, loop: true, fade: { in: 300, out: 300 } });
 
 // Once a frame: tell the mix what time it is, then ask for the parts you are about to draw.
 function frame(timestamp: number) {
@@ -48,12 +48,12 @@ In order, on the same mix:
 
 ```ts
 // Place a voice at a time on the host's clock, or against another voice's marks.
-m.cue({ patch: typeIn, name: 'title', start: 1000, loop: false });
-m.cue({ patch: tint, loop: false, anchor: { start: { after: 'title', by: 200 } } });
+m.cue({ patch: typeIn, name: 'title', start: 1000 });
+m.cue({ patch: tint, anchor: { start: { after: 'title', by: 200 } } });
 
 // A span fits the voices it holds into a budget, one after another by default.
 const intro = m.span({ duration: 2000 });
-for (const line of lines) m.cue({ patch: typeIn, loop: false, owner: intro });
+for (const line of lines) m.cue({ patch: typeIn, owner: intro });
 
 // Read the mix half a second ahead without moving it, or move it: a scrubber.
 const next = m.project(m.now + 500).probe(part);

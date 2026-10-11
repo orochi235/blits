@@ -40,8 +40,8 @@ for (const [i, form] of forms.entries()) {
   for (const s of subjects)
     m.cue(
       form === 'targets'
-        ? { patch: make.named(), target: (x) => x === s }
-        : { patch: make[form](s), subjects: [s] },
+        ? { patch: make.named(), target: (x) => x === s, loop: true }
+        : { patch: make[form](s), subjects: [s], loop: true },
     );
   const cued = await heap();
   const out = {};

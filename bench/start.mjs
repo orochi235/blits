@@ -48,7 +48,7 @@ for (const [i, form] of forms.entries()) {
     const subjects = Array.from({ length: N }, (_, j) => ({ seed: j * 0.37 }));
     const out = {};
     const t0 = performance.now();
-    for (const s of subjects) m.cue({ patch: make[form](s), subjects: [s] });
+    for (const s of subjects) m.cue({ patch: make[form](s), subjects: [s], loop: true });
     const t1 = performance.now();
     m.sync(16);
     for (const s of subjects) m.probe(s, out);
