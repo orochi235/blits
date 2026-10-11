@@ -6,6 +6,12 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Breaking
+
+- A stock `last()` channel in a locus takes its heaviest member's value, and the later cued of
+  two as heavy. It stepped through its members in cue order, so three voices at weights 0.3,
+  0.3, and 0.4 showed the second. Two members read as before.
+
 ### Fixed
 
 - A seek back inside `history.ms` plays the host's calls again when the mix's rate is above 1.

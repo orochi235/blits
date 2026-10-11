@@ -24,6 +24,8 @@ export interface LocusScratch<I, O> {
   mGroups: number[];
   values: unknown[];
   taken: Float64Array;
+  /** Per slot of a stock `last` channel, the weight of the member its value came from. */
+  heaviest: Float64Array;
   met: Uint8Array;
   touched: number[];
   owned: (number[] | undefined)[];
@@ -45,6 +47,7 @@ export function locusScratch<I, O>(channels: number): LocusScratch<I, O> {
     mGroups: [],
     values: new Array(channels).fill(undefined),
     taken: new Float64Array(channels),
+    heaviest: new Float64Array(channels),
     met: new Uint8Array(channels),
     touched: [],
     owned: new Array(channels).fill(undefined),
@@ -74,7 +77,8 @@ export function own<I, O>(
 /**
  * Folds one locus's members into one contribution through each channel's own `lerp`: its value per
  * channel goes in `k.values`, the channels in `k.touched` in the order first met, and its weight
- * is returned. A channel folding by scale takes its value in an array of `k`'s own, lerped in
+ * is returned. A stock `last` channel has nothing to lerp, so it takes its heaviest member's value,
+ * the later cued of two as heavy. A channel folding by scale takes its value in an array of `k`'s own, lerped in
  * place, since the fold only reads it.
  */
 export function foldLocus<I, O>(this: Mixer<I, O>, k: LocusScratch<I, O>, group: number): number {
@@ -98,6 +102,7 @@ export function foldLocus<I, O>(this: Mixer<I, O>, k: LocusScratch<I, O>, group:
         k.met[slot] = 1;
         k.touched.push(slot);
         taken[slot] = weight;
+        k.heaviest[slot] = weight;
         k.values[slot] =
           this.lerpsInto[slot] !== undefined && channel.scale && Array.isArray(value)
             ? own(k, slot, value, channel.rest as number[])
@@ -105,13 +110,20 @@ export function foldLocus<I, O>(this: Mixer<I, O>, k: LocusScratch<I, O>, group:
         continue;
       }
       const total = (taken[slot] as number) + weight;
+      taken[slot] = total;
+      if (channel.kind === 'last') {
+        if (weight >= (k.heaviest[slot] as number)) {
+          k.heaviest[slot] = weight;
+          k.values[slot] = first(value);
+        }
+        continue;
+      }
       const was = k.values[slot];
       const lerp = this.lerpsInto[slot];
       k.values[slot] =
         lerp !== undefined && was === k.owned[slot]
           ? lerp(was as unknown[], was, value, weight / total)
           : channel.lerp(was, value, weight / total);
-      taken[slot] = total;
     }
   }
   for (let t = 0; t < k.touched.length; t++) k.met[k.touched[t] as number] = 0;

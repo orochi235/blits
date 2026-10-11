@@ -637,8 +637,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         past 0 ends as one running past its end does, and `freeze: 'before'` holds it.
       - A placement whose end comes before its start is an instant, with a dev warning.
       - A retarget of a faded-out subject starts its tween at the `to` call, not the next probe.
-      - A `last()` channel in a locus takes its heaviest member, ties to the later cue. An OKLCH
-        channel in a locus stays order-dependent, and the schema page is to say so.
       - `project(mix.now)` lands nothing, so it reads as `probe` does.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
       - **A handle `seek` on a pending voice whose pinned start is still ahead is undone when
@@ -657,7 +655,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         at or ahead of the mix moves its copy, which lands what the live mix lands only at its
         next sync: a voice a handle `seek` put past its end has left, and an anchor on a voice
         just faded is placed.
-      - **Finding #18**: a `last()` or OKLCH channel in a locus picks by cue order, not weight.
       - **A voice may play backward** (decided 2026-10-10: a valid use is not refused because
         no consumer has it yet). A negative rate is accepted (`test/lanes.test.ts` cues one), but
         what it does is neither defined nor tested: where a voice cued at a negative rate starts,

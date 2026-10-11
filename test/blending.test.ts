@@ -593,3 +593,31 @@ describe.each([true, false])('a channel only some locus members write, lanes %s'
     expect(m.probe(part).dark).toBeCloseTo(0.008);
   });
 });
+
+describe.each([true, false])('a last() channel in a locus, lanes %s', (lanes) => {
+  interface Named {
+    word: string;
+    gain: number;
+  }
+  const K = kit<Named>({ word: last<string>(), gain: mul() });
+  const says = (word: string) => patch<Part, Named>(0, () => ({ word }), { writes: ['word'] });
+  const read = (weights: number[]) => {
+    const m = mix<Part, Named>(K, { lanes });
+    weights.forEach((weight, i) => {
+      m.cue({ patch: says('abc'[i] as string), locus: 'pick', weight });
+    });
+    m.sync(0);
+    return m.probe(part).word;
+  };
+
+  it('takes its heaviest member, wherever that member was cued', () => {
+    expect(read([0.3, 0.3, 0.4])).toBe('c');
+    expect(read([0.4, 0.3, 0.3])).toBe('a');
+    expect(read([0.2, 0.5, 0.3])).toBe('b');
+  });
+
+  it('takes the later cue of two equally heavy', () => {
+    expect(read([0.5, 0.5])).toBe('b');
+    expect(read([0.4, 0.2, 0.4])).toBe('c');
+  });
+});
