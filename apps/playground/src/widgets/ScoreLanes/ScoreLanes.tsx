@@ -6,6 +6,7 @@ import { blockEnd, groupBrackets, laneCount, scaleOf, shownEnd, WIDTH } from './
 import { HeaderLane } from './HeaderLane';
 import type { Clip, ClipEdit, Edge, ScoreLanesProps } from './index';
 import { activates, nudge } from './keys';
+import { MarkLines } from './Marks';
 import { Ruler } from './Ruler';
 import s from './ScoreLanes.module.css';
 
@@ -280,6 +281,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
           {groupDrag.label}
         </text>
       )}
+      <MarkLines marks={props.marks ?? []} scale={scale} duration={duration} height={height} />
       <line
         className={s.playhead}
         x1={scale.x(playhead)}

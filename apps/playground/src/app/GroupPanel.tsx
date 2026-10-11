@@ -5,13 +5,13 @@ import type { Faults } from '@pg/blits/expr';
 import { withKey } from '@pg/blits/keyed';
 import type { FieldError } from '@pg/blits/spec';
 import { ControlPanel } from '@weasel-js/labkit';
+import { AnchorRow } from './AnchorRow';
 import s from './App.module.css';
 import { docOf } from './docs';
 import { HintsFields } from './HintsFields';
 import { OwnerField } from './OwnerField';
 import { SpanFields } from './SpanFields';
 import {
-  AnchorRow,
   FadeEase,
   FaultLine,
   LooseErrors,
@@ -118,7 +118,15 @@ export function GroupPanel(p: GroupPanelProps) {
         />
       </div>
       <FaultLine faults={p.faultsOf(g.id)} />
-      {!spanned && <AnchorRow x={g} doc={doc('anchor')} spanned={false} onChange={onChange} />}
+      {!spanned && (
+        <AnchorRow
+          x={g}
+          doc={doc('anchor')}
+          spanned={false}
+          other={p.comp.voices[0]?.name}
+          onChange={onChange}
+        />
+      )}
       {g.kind === 'span' && (
         <SpanFields
           span={g.span ?? {}}

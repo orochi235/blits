@@ -102,31 +102,6 @@ export function FadeEase<T extends Timed>({
   );
 }
 
-/** `x`'s anchor as data, with a clear button; under a span, which places it, a note says so. */
-export function AnchorRow<T extends Timed>({
-  x,
-  doc,
-  spanned,
-  onChange,
-}: {
-  x: T;
-  doc: string | undefined;
-  spanned: boolean;
-  onChange(next: T): void;
-}) {
-  return (
-    <p className={s.row} title={doc}>
-      anchor: {x.anchor ? JSON.stringify(x.anchor) : 'none'}
-      {spanned && <span className={s.note}>its start: a span places it</span>}
-      {x.anchor && (
-        <button type="button" onClick={() => onChange(withKey(x, 'anchor', undefined))}>
-          clear
-        </button>
-      )}
-    </p>
-  );
-}
-
 /** Errors on fields a panel has no input for, in a list of their own. */
 export function LooseErrors({ errors, label }: { errors: FieldError[]; label: string }) {
   if (errors.length === 0) return null;

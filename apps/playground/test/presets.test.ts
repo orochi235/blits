@@ -88,6 +88,7 @@ it('has the presets the spec lists, the first the default', () => {
     'fold rules',
     'owner fade',
     'span fit',
+    'marks and hits',
   ]);
   expect(DEFAULT).toBe(PRESETS[0]?.comp);
 });

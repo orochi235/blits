@@ -3,6 +3,7 @@ import blend from './blend';
 import crossfade from './crossfade';
 import foldRules from './fold-rules';
 import freezeHandover from './freeze-handover';
+import marksHits from './marks-hits';
 import ownerFade from './owner-fade';
 import pointerGlow from './pointer-glow';
 import spanFit from './span-fit';
@@ -19,6 +20,7 @@ export const PRESETS: { name: string; comp: Composition }[] = [
   { name: 'fold rules', comp: foldRules },
   { name: 'owner fade', comp: ownerFade },
   { name: 'span fit', comp: spanFit },
+  { name: 'marks and hits', comp: marksHits },
 ];
 
 export const DEFAULT: Composition = staggerWave;

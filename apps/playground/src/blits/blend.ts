@@ -16,6 +16,9 @@ const SHARED = [
   'anchor',
   'owner',
   'hints',
+  'tags',
+  'score',
+  'hits',
 ] as const satisfies readonly (keyof Voice)[];
 
 export interface Blend {

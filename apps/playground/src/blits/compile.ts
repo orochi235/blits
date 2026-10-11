@@ -53,6 +53,7 @@ export function compile(
       ...mixOptionsOf(c.mix),
       history: { ms: c.length + HISTORY_SLACK, inputs: true, tape },
     });
+    for (const { name, at, ...opts } of c.announced ?? []) m.announce(name, { at, ...opts });
     return { m, ...cueAll(c, m, { scope, kit, only, errors, faults }) };
   };
   const full = make(null);

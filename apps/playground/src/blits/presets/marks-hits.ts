@@ -1,0 +1,97 @@
+import type { Composition } from '../composition';
+
+const c: Composition = {
+  version: 1,
+  title: 'marks and hits',
+  stage: { kind: 'dots', cols: 8, rows: 3 },
+  length: 6000,
+  levels: [],
+  announced: [{ name: 'beat', at: 3000 }],
+  voices: [
+    {
+      id: 'lead',
+      name: 'lead',
+      hue: 40,
+      start: 200,
+      rate: 1,
+      loop: 2,
+      weight: 1,
+      fade: { in: 100, out: 200 },
+      tags: ['lead', 'sound'],
+      hits: [
+        { at: 0, event: 'tick' },
+        { at: 400, event: 'tock' },
+      ],
+      patch: {
+        kind: 'keys',
+        period: 800,
+        stops: [
+          { at: 0, delta: { glow: 0 } },
+          { at: 0.5, delta: { glow: 1 }, ease: 'ease-out' },
+          { at: 1, delta: { glow: 0 }, ease: 'ease-in' },
+        ],
+      },
+    },
+    {
+      id: 'reply',
+      name: 'reply',
+      hue: 190,
+      start: 0,
+      rate: 1,
+      loop: 1,
+      weight: 1,
+      fade: { in: 150, out: 150 },
+      anchor: { start: { of: { tag: 'lead' }, mark: 'coast', by: 100 } },
+      patch: {
+        kind: 'keys',
+        period: 700,
+        stops: [
+          { at: 0, delta: { scale: 1 } },
+          { at: 0.5, delta: { scale: 1.6 }, ease: 'ease-in-out' },
+          { at: 1, delta: { scale: 1 }, ease: 'ease-in-out' },
+        ],
+      },
+    },
+    {
+      id: 'on-beat',
+      name: 'on beat',
+      hue: 300,
+      start: 0,
+      rate: 1,
+      loop: 2,
+      weight: 1,
+      fade: { out: 200 },
+      anchor: { start: { with: 'beat' } },
+      stagger: { code: '(s) => s.col * 40' },
+      patch: {
+        kind: 'keys',
+        period: 600,
+        stops: [
+          { at: 0, delta: { turn: 0 } },
+          { at: 1, delta: { turn: 180 }, ease: 'ease-in-out' },
+        ],
+      },
+    },
+    {
+      id: 'count',
+      name: 'count',
+      hue: 110,
+      start: 0,
+      rate: 1,
+      loop: true,
+      weight: 1,
+      fade: {},
+      tags: ['count'],
+      target: { code: '(s) => s.index === 0' },
+      patch: {
+        kind: 'fn',
+        period: 1000,
+        writes: ['opacity'],
+        at: '() => ({})',
+        state: '() => ({ pass: -1 })',
+        step: '(st, dt, s, set) => {\n  if (set.pass === st.pass) return;\n  st.pass = set.pass;\n  set.send({ pass: set.pass });\n}',
+      },
+    },
+  ],
+};
+export default c;

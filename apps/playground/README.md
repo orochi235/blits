@@ -23,8 +23,8 @@ into `src/generated/docs.json` (gitignored), which the panels show as tooltips o
 
 The stage is top left, with a dots/letters switch above it and, beside the switch, the columns and
 rows or the text; clicking a subject picks it for the inspector, top middle. The right column holds
-the flow. The middle column has two tabs: **Plots**, the inspector, and **Voice**, which holds the
-levels, voice and patch panels. Selecting a clip, on the score or in the flow, opens Voice. The
+the flow. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
+levels, voice and patch panels; and **Events**, what the score knows and reports. Selecting a clip, on the score or in the flow, opens Voice. The
 score fills the bottom, with the transport above it: play and pause, rate, loop, a slider per
 level, a choice of how a scrub back moves the mixes, and the live toggle, with the mix's own `rate` beside it in live mode: the transport's rate
 slows the playground's clock, while the mix's slows the voices as the score's clock runs on.
@@ -54,6 +54,7 @@ interface Composition {
   voices: Voice[];                       // cue order, which is fold order
   groups?: Group[];                      // owners and spans; see Groups
   blends?: Record<string, Expr>;         // by locus: the signal `mix.blend` splits; see Blends
+  announced?: { name: string; at: number; score?: string; tags?: string[] }[];  // `mix.announce`
   mix?: { stepMs?: number | 'off'; maxDt?: number; reduce?: boolean; lanes?: boolean };
   rules?: Partial<Rules>;                // each channel's fold rule, where it differs from the default
 }
@@ -69,7 +70,7 @@ replaces or averages, interpolated in OKLCH or OKLab. The fold rules panel edits
 kind each makes.
 
 A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `loop`, `stagger`, `target`,
-`freeze`, `weight`, `fade`, `locus`, `from`, `anchor`), so the voice panel teaches the real spec, plus
+`freeze`, `weight`, `fade`, `locus`, `from`, `anchor`, `tags`, `score`, `hits`), so the voice panel teaches the real spec, plus
 an `id`, a `name`, a `hue`, a `patch`, the `owner` group it plays under, and the `hints` a span
 reads. A `PatchSource` is one of:
 
@@ -94,6 +95,23 @@ the stop's old ease in place.
 
 A subject is `{ index, row, col, x, y, char }`, with `x` and `y` from 0 to 1. Dots fill `row`, `col`,
 `x` and `y`; letters fill `index` and `char`, with `col` equal to `index`.
+
+## Marks, hits, and events
+
+`announced` holds the marks the composition puts on a score: `compile` calls `mix.announce(name,
+{ at })` for each on every mix before it cues, so `{"start": {"with": "beat"}}` waits for one. A
+voice's `anchor` is blits' `Placement` as data, typed as JSON in the voice or group panel and
+checked by `placementFault` in `src/blits/anchor.ts`, which `load` uses too: `start` or `in`, and
+`out` or `end`, each a time or an anchor by `of` and `mark`, `after`, `with`, `before`, `all`, or
+`any`, selecting by name or by a query of `name`, `tag`, `writes`, `score`, and `resolver`. A
+voice's `hits` are events at voice ms into each pass, each event a string.
+
+The `Player` keeps an `EventLog` (`src/blits/events.ts`) on the full mix: a booker made with
+`mix.book` against the host clock, 100 ms ahead, which records every mark and hit it is handed and
+strikes one out when blits takes the booking back; and what `mix.drain` returns after each frame.
+An fn patch sends with `set.send(event)` in its `at` or `step`. Each list keeps its newest 200,
+and starts over when the mixes are rebuilt. With a tag set, the booker and the drain take only
+voices carrying it, and the rest of what was sent is drained and thrown away.
 
 ## Blends
 
@@ -198,7 +216,9 @@ header, and its members sit under it, indented one step per depth.
 | thin bar under it      | stagger spread, first to last | none; `stagger` is an expression                         |
 | hatched extension      | `freeze`                      | the clip's menu                                          |
 | shared color bracket   | `locus`; "· blend" after the label where `mix.blend` cues it | drag a lane label onto another's, or the clip's menu |
-| dashed link            | `anchor`                      | Alt-drag from an edge to another clip's edge             |
+| dashed link            | `anchor`, where it names one voice | Alt-drag from an edge to another clip's edge for `after` or `with`; the voice panel for the rest |
+| notch on the top edge  | a hit, every pass             | the voice panel                                          |
+| dotted line down the score | an announced mark, named on the ruler | the Events tab                                 |
 | header bar             | a group, from its start to its end, sloped by its `fade` | ▾ folds its members away; click to select |
 | clip cut at a group's end | a member still playing when a group above it ends, sloped by that group's `fade.out` | the right edge stops at the cut; dragging it left snaps to whole passes before it |
 | budget line, red hatch | a span's `duration`, and `result.over` past it; "fell" when `spill` decided | the group panel |
@@ -223,11 +243,12 @@ fold: everything that reaches it, and the rest it folds from, under a breadcrumb
 
 | Panel     | Shows                                                                                   |
 |-----------|-----------------------------------------------------------------------------------------|
-| Voice     | the spec fields, each with blits' doc comment on hover; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight` |
+| Voice     | the spec fields, each with blits' doc comment on hover; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `score`, and `hits` |
 | Group     | in place of Voice and Patch when a header is selected: name, kind, `owner`, start and anchor (not under a span), rate, weight, fade, freeze, hints under a span; for a span its `duration`, `priority`, `order`, `share` (for `stagger`), `spill`, the fit steps (add, remove, reorder, presets; a code step in a code pane), and the live `FitResult` |
 | Weight    | a number, or a signal expression; a menu inserts common signals                         |
 | Patch     | a kind menu (switching starts a blank patch of that kind), then by kind: a weasel `Timeline` track per channel for `keys`, with an `EasingPicker` per key; code panes for `fn`; numbers or expressions per option for motion |
 | Live      | in live mode only: weight; `fade` with its `over`, `at` (a mix time or `'rest'`), `deadline` or the picked `subject`, and `rise`; `seek`, showing the `Doubt` it answers, with `state: 'keep'`; the `rate` setter and `ramp`; and for a motion voice a per-subject `to` (a glide's `velocity`, by `push`). A selected group gets the same on its handle in every mix, less `to`, and fades only as a whole |
+| Events    | the announced marks, to add, name, time, and remove; in live mode, `announce` a name now; a tag to book and drain by; then `mix.marks` for the running mix, what `mix.book` handed over, and what `mix.drain` returned, newest first |
 | Inspector | for the picked subject, a plot per channel over the last 3 s: each voice alone thin, the mix thick; then each voice's `weightOf`, and each enclosing group's |
 
 Every voice's errors show on their own field. Two voices or groups with one name are an error on
@@ -279,6 +300,7 @@ One `Composition` per file in `src/blits/presets/`.
 | fold rules      | one delta through `sum`, `mul` and `max`                      |
 | owner fade      | an owner fading three voices in and out as one, its weight a level |
 | span fit        | 2.9 s of voices in a 2 s span: one sped up (`faster`), one alongside (`overlap`), one shed (`ballast`), and 100 ms over, inside `overrun`'s 1.2 cap |
+| marks and hits  | a voice tagged `lead` with two hits a pass, one anchored to its `coast` by tag, one waiting on the announced mark `beat`, and an fn voice that sends its pass number |
 
 ## Widgets
 
@@ -305,6 +327,7 @@ the typecheck, the tests and the smoke run.
 
 ## Not in this version
 
-- Reading back (`history` and `project` at a past time) and drained events, as panels of their own.
+- Reading back (`history` and `project` at a past time), as a panel of its own.
+- `tags`, `score`, and `hits` on a group; a booker with a clock other than the player's own.
 - Recording level moves.
 - Saving to a file.

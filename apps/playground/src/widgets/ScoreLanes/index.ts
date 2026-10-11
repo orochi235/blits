@@ -18,6 +18,7 @@ export interface Clip {
   factor?: number; // its rate over its own, shown after the label when not 1
   skipped?: boolean; // jumped to its end: an outline at its natural length
   cut?: { at: number; fade: number }; // ms where a group above ends it, and that group's fade out
+  ticks?: readonly number[]; // ms into each pass where a notch sits
 }
 
 /** A lane heading the clips and headers below it that sit deeper, up to the next that does not. */
@@ -35,6 +36,11 @@ export interface Header {
   over?: number; // ms past the budget
   fell?: boolean;
   folded?: boolean;
+}
+/** A named time, drawn down every lane. */
+export interface ScoreMark {
+  at: number; // ms
+  label: string;
 }
 export type Edge = 'start' | 'end';
 export interface Link {
@@ -59,6 +65,7 @@ export interface ScoreLanesProps {
   onEdit(edit: ClipEdit): void;
   onScrub(t: number): void;
   headers?: readonly Header[];
+  marks?: readonly ScoreMark[];
   onFold?(id: string, folded: boolean): void;
   laneHeight?: number; // default 36
   labelWidth?: number; // default 140

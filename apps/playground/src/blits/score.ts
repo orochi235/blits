@@ -1,5 +1,5 @@
 import type { Anchor, Handle, Mark } from '@msb235/blits';
-import type { Clip, ClipEdit, Edge, Hatch, Header, Link } from '@pg/widgets/ScoreLanes';
+import type { Clip, ClipEdit, Edge, Hatch, Header, Link, ScoreMark } from '@pg/widgets/ScoreLanes';
 import { blendOf, syncBlend } from './blend';
 import type { Built } from './compile';
 import { type Composition, periodOf, type Voice } from './composition';
@@ -87,6 +87,7 @@ function clipOf(
   };
   if (spread.at !== 0) clip.spreadAt = spread.at / k;
   if (v.locus !== undefined) clip.group = v.locus;
+  if (v.hits?.length) clip.ticks = v.hits.map((h) => h.at / k);
   return clip;
 }
 
@@ -118,6 +119,8 @@ export interface Score {
   clips: Clip[];
   links: Link[];
   headers: Header[];
+  /** The marks the composition announces. */
+  marks: ScoreMark[];
 }
 
 /** The score of `c`: a lane per voice and per group, in `rowsOf` order, less what folds hide. */
@@ -170,7 +173,8 @@ export function clipsOf(
       if (t && to) links.push({ from: { clip: v.id, edge }, to: { clip: to.id, edge: t.edge } });
     }
   }
-  return { clips, links, headers };
+  const marks = (c.announced ?? []).map((a) => ({ at: a.at, label: a.name }));
+  return { clips, links, headers, marks };
 }
 
 function freshLocus(c: Composition): string {

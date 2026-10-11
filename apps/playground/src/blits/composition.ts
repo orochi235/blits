@@ -1,4 +1,4 @@
-import type { Easing, Keyframe, Order, Placement, Strength, WaveShape } from '@msb235/blits';
+import type { Easing, Hit, Keyframe, Order, Placement, Strength, WaveShape } from '@msb235/blits';
 import type { ChannelName, Pose, Rules, SwingName } from './kit';
 
 /** Source of a function: `(s) => …` for a subject, a signal such as `slew(level('x'), …)`. */
@@ -65,6 +65,17 @@ export interface Voice {
   owner?: string;
   /** Read only when its group is a span. */
   hints?: Hints;
+  tags?: string[];
+  score?: string;
+  hits?: Hit<string>[];
+}
+
+/** A mark the host puts on a score with `mix.announce`, at a time on the composition's clock. */
+export interface Announced {
+  name: string;
+  at: number;
+  score?: string;
+  tags?: string[];
 }
 
 /** blits' `SpanHints`. */
@@ -138,6 +149,7 @@ export interface Composition {
   groups?: Group[];
   /** Each locus `mix.blend` cues, with the signal its voices' weights split. */
   blends?: Record<string, Expr>;
+  announced?: Announced[];
   mix?: MixSettings;
   /** Each channel's fold rule, where it differs from `DEFAULT_RULES`. */
   rules?: Partial<Rules>;
@@ -164,3 +176,6 @@ export const MAX_LENGTH = 120_000;
 export const MAX_VOICES = 64;
 export const MAX_LEVELS = 16;
 export const MAX_GROUPS = 16;
+export const MAX_ANNOUNCED = 32;
+export const MAX_HITS = 32;
+export const MAX_TAGS = 8;

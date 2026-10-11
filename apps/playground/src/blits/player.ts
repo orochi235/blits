@@ -1,6 +1,7 @@
 import type { Doubt, Handle, Mix, Patch } from '@msb235/blits';
 import type { Built } from './compile';
 import type { Level } from './composition';
+import { EventLog } from './events';
 import { FRAME } from './frame';
 import type { Mixed } from './kit';
 import type { Subject } from './stage';
@@ -49,6 +50,8 @@ export class Player {
   built: Built;
   t = 0;
   seekBy: SeekBy = 'replay';
+  /** What the full mix booked and sent since it was last built. */
+  readonly events = new EventLog();
   // Frames of host clock synced since the mixes were built; it only goes forward, even across a seek.
   private hostFrame = -1;
   readonly columns: Columns;
@@ -222,6 +225,8 @@ export class Player {
       return false;
     }
     mix.pull(this.subjects, this.columns);
+    this.events.cut(time);
+    this.events.drain(this.built);
     this.frame = target;
     this.t = time;
     this.samples = this.samples.filter((s) => s.t <= time);
@@ -236,6 +241,7 @@ export class Player {
     this.hostFrame = -1;
     this.isLive = false;
     this.samples = [];
+    this.events.attach(built, () => this.hostFrame * FRAME);
     return built;
   }
 
@@ -250,6 +256,7 @@ export class Player {
       solo.sync(host);
       solo.pull(this.subjects, this.scratch);
     }
+    this.events.drain(this.built);
     this.frame = f;
     this.t = t;
     this.record();

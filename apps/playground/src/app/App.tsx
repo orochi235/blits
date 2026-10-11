@@ -13,6 +13,7 @@ import { Tab, TabList, TabPanel, Tabs } from '@weasel-js/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import s from './App.module.css';
 import { CompFields, StageControls } from './CompositionControls';
+import { EventsPanel } from './EventsPanel';
 import { FlowPanel } from './FlowPanel';
 import { freshVoice } from './freshVoice';
 import { Inspector } from './Inspector';
@@ -21,6 +22,8 @@ import { useComposition } from './useComposition';
 import { usePlayback } from './usePlayback';
 import { useScore } from './useScore';
 import { VoiceColumn } from './VoiceColumn';
+
+type MiddleTab = 'plots' | 'voice' | 'events';
 
 /** How long "link copied" stays up. */
 const NOTICE_MS = 3000;
@@ -51,7 +54,7 @@ export function App() {
     player.seekBy = seekBy;
   }, [player, seekBy]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [tab, setTab] = useState<'plots' | 'voice'>('plots');
+  const [tab, setTab] = useState<MiddleTab>('plots');
   const faultKey = player.built.errors.map((e) => e.voice ?? '').join('|');
   const faulted = useMemo(() => new Set(faultKey.split('|').filter(Boolean)), [faultKey]);
   const pickVoice = (id: string | null) => {
@@ -90,7 +93,7 @@ export function App() {
     return () => window.removeEventListener('keydown', key);
   }, [undo, redo]);
 
-  const { clips, links, headers, built, fold } = useScore(comp, subjects);
+  const { clips, links, headers, marks, built, fold } = useScore(comp, subjects);
   const scrub = (t: number) => {
     player.seek(Math.min(Math.max(t, 0), comp.length));
     tick();
@@ -171,10 +174,11 @@ export function App() {
           />
         </section>
         <section className={s.inspector} aria-label="inspector">
-          <Tabs selectedKey={tab} onSelectionChange={(k) => setTab(k as 'plots' | 'voice')}>
+          <Tabs selectedKey={tab} onSelectionChange={(k) => setTab(k as MiddleTab)}>
             <TabList aria-label="middle column">
               <Tab id="plots">Plots</Tab>
               <Tab id="voice">Voice</Tab>
+              <Tab id="events">Events</Tab>
             </TabList>
             <TabPanel id="plots">
               <Inspector player={player} comp={comp} />
@@ -200,6 +204,9 @@ export function App() {
                 onCloseShare={() => setShared(null)}
                 onActed={tick}
               />
+            </TabPanel>
+            <TabPanel id="events">
+              <EventsPanel player={player} comp={comp} onComp={set} live={live} onActed={tick} />
             </TabPanel>
           </Tabs>
         </section>
@@ -239,6 +246,7 @@ export function App() {
             clips={clips}
             links={links}
             headers={headers}
+            marks={marks}
             onFold={fold}
             duration={comp.length}
             playhead={player.t}

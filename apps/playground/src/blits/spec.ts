@@ -79,6 +79,9 @@ export function specOf(
   if (v.freeze) spec.freeze = v.freeze;
   if (v.locus) spec.locus = v.locus;
   if (v.from) spec.from = v.from;
+  if (v.tags?.length) spec.tags = v.tags;
+  if (v.score) spec.score = v.score;
+  if (v.hits?.length) spec.hits = v.hits;
   if (v.anchor) {
     spec.anchor = v.anchor;
     if (v.anchor.start !== undefined || v.anchor.in !== undefined) delete spec.start;

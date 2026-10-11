@@ -5,13 +5,14 @@ import { withKey } from '@pg/blits/keyed';
 import type { FieldError } from '@pg/blits/spec';
 import { ExprInput } from '@pg/widgets/ExprInput';
 import { type ConfigField, ControlPanel } from '@weasel-js/labkit';
+import { AnchorRow } from './AnchorRow';
 import s from './App.module.css';
 import { BlendField } from './BlendField';
 import { docOf } from './docs';
 import { HintsFields } from './HintsFields';
+import { MarksFields } from './MarksFields';
 import { OwnerField } from './OwnerField';
 import {
-  AnchorRow,
   FadeEase,
   FaultLine,
   LooseErrors,
@@ -165,7 +166,14 @@ export function VoicePanel(p: VoicePanelProps) {
         />
       )}
       <FaultLine faults={faults} />
-      <AnchorRow x={v} doc={docOf('VoiceSpec.anchor')} spanned={spanned} onChange={onChange} />
+      <AnchorRow
+        x={v}
+        doc={docOf('VoiceSpec.anchor')}
+        spanned={spanned}
+        other={p.comp.voices.find((o) => o.id !== v.id)?.name}
+        onChange={onChange}
+      />
+      <MarksFields voice={v} onChange={onChange} />
       <button type="button" onClick={onDelete}>
         delete voice
       </button>

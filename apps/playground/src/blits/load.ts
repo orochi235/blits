@@ -1,11 +1,15 @@
+import { placementFault } from './anchor';
 import {
   type Composition,
   type Level,
+  MAX_ANNOUNCED,
   MAX_COLS,
   MAX_GROUPS,
+  MAX_HITS,
   MAX_LENGTH,
   MAX_LEVELS,
   MAX_ROWS,
+  MAX_TAGS,
   MAX_TEXT,
   MAX_VOICES,
 } from './composition';
@@ -85,8 +89,11 @@ function patch(p: unknown): boolean {
 }
 
 const fade = (v: unknown) => obj(v) && opt(v.in, num) && opt(v.out, num) && opt(v.ease, easing);
-// blits answers an anchor it cannot place by leaving the voice pending, so only the shape is checked.
-const placement = (v: unknown) => obj(v) && Object.values(v).every((x) => num(x) || obj(x));
+const placement = (v: unknown) => placementFault(v) === null;
+const texts = (max: number) => (v: unknown) => Array.isArray(v) && v.length <= max && v.every(str);
+const hit = (v: unknown) => obj(v) && num(v.at) && v.at >= 0 && str(v.event);
+const announced = (v: unknown) =>
+  obj(v) && str(v.name) && num(v.at) && opt(v.score, str) && opt(v.tags, texts(MAX_TAGS));
 
 const bool = (v: unknown) => typeof v === 'boolean';
 const freeze = oneOf('before', 'after', 'both');
@@ -118,7 +125,10 @@ const voice = (v: unknown) =>
   opt(v.from, oneOf('current')) &&
   opt(v.anchor, placement) &&
   opt(v.owner, str) &&
-  opt(v.hints, hints);
+  opt(v.hints, hints) &&
+  opt(v.tags, texts(MAX_TAGS)) &&
+  opt(v.score, str) &&
+  opt(v.hits, (x) => Array.isArray(x) && x.length <= MAX_HITS && x.every(hit));
 
 const fitStep = (v: unknown) =>
   obj(v) &&
@@ -201,6 +211,10 @@ export function load(raw: unknown): Composition | null {
     return null;
   if (!stage(raw.stage)) return null;
   if (!opt(raw.mix, mixSettings) || !opt(raw.rules, rules)) return null;
+  if (
+    !opt(raw.announced, (a) => Array.isArray(a) && a.length <= MAX_ANNOUNCED && a.every(announced))
+  )
+    return null;
   if (!opt(raw.blends, (b) => obj(b) && Object.values(b).every(expr))) return null;
   const { levels, voices } = raw;
   if (!Array.isArray(levels) || levels.length > MAX_LEVELS || !levels.every(level)) return null;
