@@ -636,8 +636,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         fade in counts from no earlier than the voice's start (so `seek` does not use it up),
         and a voice with no end cued backward has no first pass, a property of the cue and
         not of the rate it has later. A voice fading from its start, one with no first pass,
-        and one faded before it started run off lanes. What the hot path costs for it
-        (`rawAt`, `before`, and `shownAt` in `contribution`) is not timed.
+        and one faded before it started run off lanes. Timed with everything else since
+        `da6e613` (teitou, 2026-10-10, 7 rounds, `e51cd85` against `da6e613`, 14 rows over
+        `fn`, `named`, `probed`, `blend`, `keys`, and `typing`, geometric mean 1.011): every
+        row's runs overlap the other side's but `blend`, 2.976 to 3.128 ms a frame (1.05×,
+        2.93–3.03 against 3.07–3.19). Not traced to a commit: `64a5860`, which changed a
+        locus's fold on a `last()` channel, is in that range beside the backward-play ones
+        (`rawAt`, `before`, and `shownAt` in `contribution`).
       - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one. Run
         2026-10-10 and no pose was found to depend on it: a read ahead of nested spans, fitted
         by `pipe` and by `lax`, with an anchor after the outer one, matched the same scene
