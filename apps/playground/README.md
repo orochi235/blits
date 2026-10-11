@@ -53,6 +53,7 @@ interface Composition {
   levels: { name: string; value: number; min: number; max: number }[];
   voices: Voice[];                       // cue order, which is fold order
   groups?: Group[];                      // owners and spans; see Groups
+  blends?: Record<string, Expr>;         // by locus: the signal `mix.blend` splits; see Blends
   mix?: { stepMs?: number | 'off'; maxDt?: number; reduce?: boolean; lanes?: boolean };
   rules?: Partial<Rules>;                // each channel's fold rule, where it differs from the default
 }
@@ -93,6 +94,18 @@ the stop's old ease in place.
 
 A subject is `{ index, row, col, x, y, char }`, with `x` and `y` from 0 to 1. Dots fill `row`, `col`,
 `x` and `y`; letters fill `index` and `char`, with `col` equal to `index`.
+
+## Blends
+
+A locus named in `blends` is cued with `mix.blend(patches, by, spec)` instead of a `cue` per voice:
+its voices' weights are shares of the one signal, each voice a stop spaced evenly from 0 to 1 in
+cue order, and each voice's own `weight` goes unread. `mix.blend` takes one spec for all of them,
+so everything but `id`, `name`, `hue`, and `patch` is held the same on every member:
+`src/blits/blend.ts` makes an edit to one member on all, and gives a voice that joins what the
+others share. A member loaded with a field that differs errors on its `locus`. The members are
+cued together where the first sits and answer to its name in an anchor, since the one spec carries
+one `name`. In a solo mix they are plain voices of one locus, the soloed one weighted by its share,
+which the playground computes itself because blits exposes no member's share.
 
 ## The kit
 
@@ -184,7 +197,7 @@ header, and its members sit under it, indented one step per depth.
 | arrow at the end       | `loop: true`                  | drag it back to make the loop finite                     |
 | thin bar under it      | stagger spread, first to last | none; `stagger` is an expression                         |
 | hatched extension      | `freeze`                      | the clip's menu                                          |
-| shared color bracket   | `locus`                       | drag a lane label onto another's, or the clip's menu     |
+| shared color bracket   | `locus`; "· blend" after the label where `mix.blend` cues it | drag a lane label onto another's, or the clip's menu |
 | dashed link            | `anchor`                      | Alt-drag from an edge to another clip's edge             |
 | header bar             | a group, from its start to its end, sloped by its `fade` | ▾ folds its members away; click to select |
 | clip cut at a group's end | a member still playing when a group above it ends, sloped by that group's `fade.out` | the right edge stops at the cut; dragging it left snaps to whole passes before it |
@@ -210,7 +223,7 @@ fold: everything that reaches it, and the rest it folds from, under a breadcrumb
 
 | Panel     | Shows                                                                                   |
 |-----------|-----------------------------------------------------------------------------------------|
-| Voice     | the spec fields, each with blits' doc comment on hover; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled |
+| Voice     | the spec fields, each with blits' doc comment on hover; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight` |
 | Group     | in place of Voice and Patch when a header is selected: name, kind, `owner`, start and anchor (not under a span), rate, weight, fade, freeze, hints under a span; for a span its `duration`, `priority`, `order`, `share` (for `stagger`), `spill`, the fit steps (add, remove, reorder, presets; a code step in a code pane), and the live `FitResult` |
 | Weight    | a number, or a signal expression; a menu inserts common signals                         |
 | Patch     | a kind menu (switching starts a blank patch of that kind), then by kind: a weasel `Timeline` track per channel for `keys`, with an `EasingPicker` per key; code panes for `fn`; numbers or expressions per option for motion |
@@ -259,6 +272,7 @@ One `Composition` per file in `src/blits/presets/`.
 |-----------------|---------------------------------------------------------------|
 | stagger wave    | `stagger` as an expression of column, with `fade.in`; the default |
 | crossfade       | two voices in one `locus`, weight handed between them by a level |
+| blend           | three voices in one `mix.blend`, split across the stage by column and slid by a level |
 | spring retarget | `spring` on `offset`, retargeted from live mode               |
 | freeze handover | `freeze: 'after'`, the next voice's start fading the last out |
 | pointer glow    | weight as `slew(level('mouse'))`                              |

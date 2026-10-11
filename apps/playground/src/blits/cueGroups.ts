@@ -1,5 +1,7 @@
 import type { Handle, Kit, Mix, Patch, Signal, SpanSpec } from '@msb235/blits';
+import { type Blend, blendOf, strayOf } from './blend';
 import { type Composition, type Group, isExpr, isMotion, type Voice } from './composition';
+import { cueBlend } from './cueBlend';
 import { compileExpr, compileFit, type Faults, type Scope } from './expr';
 import { fitOf } from './fit';
 import { rowsOf } from './groups';
@@ -99,34 +101,44 @@ const faultsOf = (list: Faults[]): Faults => ({
   },
 });
 
+/** A voice or group ready to cue: its spec, and the faults its expressions keep. */
+interface Ready<S = Spec | GroupSpec> {
+  x: Voice | Group;
+  spec: S;
+  list: Faults[];
+  steps: Map<number, Faults>;
+}
+
 /**
- * Cues every group and voice of `c` on `m` in `rowsOf` order, each group before what it holds. A
- * voice or group with errors is left out, and so is everything under a group left out.
+ * Cues every group and voice of `c` on `m` in `rowsOf` order, each group before what it holds, and
+ * a blend's voices together where its first one sits. A voice or group with errors is left out,
+ * and so is everything under a group left out.
  */
 export function cueAll(c: Composition, m: Mix<Subject, Mixed>, cx: CueContext): Voices {
   const voices = new Map(c.voices.map((v) => [v.id, v]));
   const groups = new Map((c.groups ?? []).map((g) => [g.id, g]));
   const out: Voices = { handles: new Map(), patches: new Map(), groupHandles: new Map() };
   const named = new Map<string, 'voice' | 'group'>();
+  const blended = new Set<string>();
   const report = (...e: FieldError[]) => {
     if (cx.only === null) cx.errors.push(...e);
   };
+  const fail = (x: Voice | Group, field: string, error: string) =>
+    report({ voice: x.id, field, error, line: null });
 
-  for (const row of rowsOf(c)) {
-    const x = row.kind === 'voice' ? voices.get(row.id) : groups.get(row.id);
-    if (!x) continue;
-    const no = (field: string, error: string) => report({ voice: x.id, field, error, line: null });
+  const ready = (x: Voice | Group): Ready | undefined => {
     const earlier = named.get(x.name);
     if (earlier) {
-      no('name', `${earlier === 'voice' ? 'another voice' : 'a group'} is named "${x.name}"`);
-      continue;
+      const what = earlier === 'voice' ? 'another voice' : 'a group';
+      fail(x, 'name', `${what} is named "${x.name}"`);
+      return undefined;
     }
-    named.set(x.name, row.kind);
+    named.set(x.name, 'patch' in x ? 'voice' : 'group');
     const parent = x.owner === undefined ? undefined : groups.get(x.owner);
     const owner = x.owner === undefined ? undefined : out.groupHandles.get(x.owner);
     if (x.owner !== undefined && !owner) {
-      no('owner', `its group "${parent?.name ?? x.owner}" has errors`);
-      continue;
+      fail(x, 'owner', `its group "${parent?.name ?? x.owner}" has errors`);
+      return undefined;
     }
     const under = parent?.kind === 'span';
     const refused = under ? spanRefusals(x) : [];
@@ -136,29 +148,78 @@ export function cueAll(c: Composition, m: Mix<Subject, Mixed>, cx: CueContext): 
       'patch' in x ? specOf(x, cx.scope, list, cx.kit) : groupSpecOf(x, cx.scope, list, steps);
     if (refused.length > 0 || 'errors' in r) {
       report(...refused, ...('errors' in r ? r.errors : []));
-      continue;
+      return undefined;
     }
     const spec = { ...r.spec, ...(owner ? { owner } : {}) };
     if (under) {
       delete spec.start;
       Object.assign(spec, x.hints);
     }
-    try {
-      if ('patch' in spec) {
-        const solo = cx.only === null || cx.only === x.id;
-        out.handles.set(x.id, m.cue(solo ? spec : { ...spec, weight: 0 }));
-        out.patches.set(x.id, spec.patch);
-      } else {
-        const span = 'kind' in x && x.kind === 'span';
-        out.groupHandles.set(x.id, span ? m.span(spec) : m.owns(spec));
-      }
-    } catch (err) {
-      no('cue', messageOf(err));
-      continue;
-    }
-    if (cx.only !== null) continue;
+    return { x, spec, list, steps };
+  };
+
+  const keep = ({ x, list, steps }: Ready) => {
+    if (cx.only !== null) return;
     cx.faults.set(x.id, faultsOf(list));
     for (const [i, f] of steps) cx.faults.set(fitFaultKey(x.id, i), f);
+  };
+
+  const cueMembers = (blend: Blend) => {
+    const lead = blend.members[0] as Voice;
+    const members = blend.members.flatMap((v) => {
+      const stray = strayOf(lead, v);
+      if (stray !== null)
+        fail(
+          v,
+          'locus',
+          `a blend plays its voices by one spec: its ${stray} is not ${lead.name}'s`,
+        );
+      const r = stray === null ? ready(v) : undefined;
+      return r && 'patch' in r.spec ? [{ ...r, id: v.id, spec: r.spec }] : [];
+    });
+    const first = members[0];
+    if (!first) return;
+    const by = compileExpr<Signal<Subject>>(blend.by, cx.scope, 0);
+    if ('error' in by)
+      return report({ voice: first.id, field: 'blend', error: by.error, line: by.line });
+    first.list.push(by.faults);
+    try {
+      const handles = cueBlend(m, members, by.fn, blend.locus, cx.only);
+      members.forEach((r, i) => {
+        out.handles.set(r.id, handles[i] as Handle<Subject>);
+        out.patches.set(r.id, r.spec.patch);
+        keep(r);
+      });
+    } catch (err) {
+      fail(first.x, 'cue', messageOf(err));
+    }
+  };
+
+  for (const row of rowsOf(c)) {
+    const x = row.kind === 'voice' ? voices.get(row.id) : groups.get(row.id);
+    if (!x) continue;
+    const blend = 'patch' in x ? blendOf(c, x) : undefined;
+    if (blend) {
+      if (!blended.has(blend.locus)) cueMembers(blend);
+      blended.add(blend.locus);
+      continue;
+    }
+    const r = ready(x);
+    if (!r) continue;
+    try {
+      if ('patch' in r.spec) {
+        const solo = cx.only === null || cx.only === x.id;
+        out.handles.set(x.id, m.cue(solo ? r.spec : { ...r.spec, weight: 0 }));
+        out.patches.set(x.id, r.spec.patch);
+      } else {
+        const span = 'kind' in x && x.kind === 'span';
+        out.groupHandles.set(x.id, span ? m.span(r.spec) : m.owns(r.spec));
+      }
+    } catch (err) {
+      fail(x, 'cue', messageOf(err));
+      continue;
+    }
+    keep(r);
   }
   return out;
 }

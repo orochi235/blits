@@ -1,10 +1,12 @@
-import type { Composition, Voice } from '@pg/blits/composition';
+import { blendOf } from '@pg/blits/blend';
+import type { Composition, Expr, Voice } from '@pg/blits/composition';
 import type { Faults } from '@pg/blits/expr';
 import { withKey } from '@pg/blits/keyed';
 import type { FieldError } from '@pg/blits/spec';
 import { ExprInput } from '@pg/widgets/ExprInput';
 import { type ConfigField, ControlPanel } from '@weasel-js/labkit';
 import s from './App.module.css';
+import { BlendField } from './BlendField';
 import { docOf } from './docs';
 import { HintsFields } from './HintsFields';
 import { OwnerField } from './OwnerField';
@@ -50,7 +52,7 @@ const SPAN_SCHEMA = schemaOf(
 );
 
 /** Errors on fields this panel has no input for, shown in a list of their own. */
-const LOOSE = new Set(['name', 'cue', 'start', 'anchor', 'loop']);
+const LOOSE = new Set(['name', 'cue', 'start', 'anchor', 'loop', 'locus']);
 
 /** One edited row of the control panel, written back into the voice it came from. */
 function written(v: Voice, path: string, value: unknown): Voice {
@@ -76,6 +78,8 @@ export interface VoicePanelProps {
   /** Under a span, which places it: no start of its own, and hints for the span's fit. */
   spanned: boolean;
   onJoin(owner: string | null): void;
+  /** Blends the voice's locus by a signal, or unblends it. */
+  onBlend(by: Expr | undefined): void;
   errors: FieldError[];
   faults: Faults | undefined;
   onChange(v: Voice): void;
@@ -86,6 +90,10 @@ export function VoicePanel(p: VoicePanelProps) {
   const { voice: v, errors, faults, onChange, onDelete, spanned } = p;
   const mine = errors.filter((e) => e.voice === v.id);
   const errorOf = (field: string) => mine.find((e) => e.field === field)?.error ?? null;
+  const blend = blendOf(p.comp, v);
+  const blendError = errors.find(
+    (e) => e.field === 'blend' && blend?.members.some((m) => m.id === e.voice),
+  );
   const config = {
     ...sharedConfig(v),
     repeat: v.loop === true,
@@ -138,13 +146,24 @@ export function VoicePanel(p: VoicePanelProps) {
           onCommit={(code) => onChange({ ...v, target: code ? { code } : undefined })}
         />
       </div>
-      <div title={docOf('VoiceSpec.weight')}>
-        <WeightField
-          value={v.weight}
-          error={errorOf('weight')}
-          onChange={(weight) => onChange({ ...v, weight })}
+      {!blend && (
+        <div title={docOf('VoiceSpec.weight')}>
+          <WeightField
+            value={v.weight}
+            error={errorOf('weight')}
+            onChange={(weight) => onChange({ ...v, weight })}
+          />
+        </div>
+      )}
+      {v.locus !== undefined && (
+        <BlendField
+          locus={v.locus}
+          blend={blend}
+          id={v.id}
+          error={blendError?.error ?? null}
+          onChange={p.onBlend}
         />
-      </div>
+      )}
       <FaultLine faults={faults} />
       <AnchorRow x={v} doc={docOf('VoiceSpec.anchor')} spanned={spanned} onChange={onChange} />
       <button type="button" onClick={onDelete}>

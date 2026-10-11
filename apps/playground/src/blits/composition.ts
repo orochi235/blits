@@ -136,6 +136,8 @@ export interface Composition {
   levels: Level[];
   voices: Voice[];
   groups?: Group[];
+  /** Each locus `mix.blend` cues, with the signal its voices' weights split. */
+  blends?: Record<string, Expr>;
   mix?: MixSettings;
   /** Each channel's fold rule, where it differs from `DEFAULT_RULES`. */
   rules?: Partial<Rules>;

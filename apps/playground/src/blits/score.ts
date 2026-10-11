@@ -1,5 +1,6 @@
 import type { Anchor, Handle, Mark } from '@msb235/blits';
 import type { Clip, ClipEdit, Edge, Hatch, Header, Link } from '@pg/widgets/ScoreLanes';
+import { blendOf, syncBlend } from './blend';
 import type { Built } from './compile';
 import { type Composition, periodOf, type Voice } from './composition';
 import { compileExpr, type Scope, scopeOf } from './expr';
@@ -152,6 +153,7 @@ export function clipsOf(
       const clip = clipOf(v, lane, subjects, scope, h ? clockOf(h) : v.rate);
       if (row.depth > 0) clip.depth = row.depth;
       if (underSpan(c, v.id)) clip.locked = true;
+      if (blendOf(c, v)) clip.label += ' · blend';
       if (h && p) placeFrom(clip, v, h, p);
       const cut = cutUnder(above);
       if (cut) clip.cut = cut;
@@ -228,7 +230,8 @@ function startOf(v: Voice, to: number, built: Built | undefined): number {
 
 /** `edit` applied to `c`; `built` is the build `clipsOf` drew from, so a move is read as it was. */
 export function applyEdit(c: Composition, edit: ClipEdit, built?: Built): Composition {
-  if (edit.kind === 'group') return regrouped(c, edit.clip, edit.with);
+  if (edit.kind === 'group')
+    return syncBlend(regrouped(c, edit.clip, edit.with), edit.with ?? edit.clip);
   let changed = false;
   const voices = c.voices.map((v) => {
     if (v.id !== edit.clip) return v;
@@ -236,7 +239,7 @@ export function applyEdit(c: Composition, edit: ClipEdit, built?: Built): Compos
     changed ||= next !== v;
     return next;
   });
-  return changed ? { ...c, voices } : c;
+  return changed ? syncBlend({ ...c, voices }, edit.clip) : c;
 }
 
 /**

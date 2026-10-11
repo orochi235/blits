@@ -201,6 +201,7 @@ export function load(raw: unknown): Composition | null {
     return null;
   if (!stage(raw.stage)) return null;
   if (!opt(raw.mix, mixSettings) || !opt(raw.rules, rules)) return null;
+  if (!opt(raw.blends, (b) => obj(b) && Object.values(b).every(expr))) return null;
   const { levels, voices } = raw;
   if (!Array.isArray(levels) || levels.length > MAX_LEVELS || !levels.every(level)) return null;
   if (!levelsOk(levels as Level[])) return null;

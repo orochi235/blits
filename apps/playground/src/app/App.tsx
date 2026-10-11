@@ -1,3 +1,4 @@
+import { syncBlend, withVoice } from '@pg/blits/blend';
 import { compile } from '@pg/blits/compile';
 import { type Composition, type Group, MAX_VOICES, type Voice } from '@pg/blits/composition';
 import { addGroup, deleteGroup, setGroup } from '@pg/blits/groupEdits';
@@ -97,11 +98,7 @@ export function App() {
   const edit = (e: ClipEdit) => set(applyEdit(compRef.current, e, built));
   const voice = comp.voices.find((v) => v.id === selected);
   const group = comp.groups?.find((g) => g.id === selected);
-  const setVoice = (next: Voice) =>
-    set({
-      ...compRef.current,
-      voices: compRef.current.voices.map((v) => (v.id === next.id ? next : v)),
-    });
+  const setVoice = (next: Voice) => set(withVoice(compRef.current, next));
   const addVoice = () => {
     if (compRef.current.voices.length >= MAX_VOICES) return;
     const v = freshVoice(compRef.current.voices);
@@ -109,7 +106,8 @@ export function App() {
     pickVoice(v.id);
   };
   const deleteVoice = (id: string) => {
-    set({ ...compRef.current, voices: compRef.current.voices.filter((v) => v.id !== id) });
+    const voices = compRef.current.voices.filter((v) => v.id !== id);
+    set(syncBlend({ ...compRef.current, voices }, id));
     setSelected(null);
   };
   const addGroupOf = (kind: Group['kind']) => {

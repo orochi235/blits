@@ -70,13 +70,14 @@ export function writesOf(p: PatchSource): ChannelName[] {
   return [p.channel];
 }
 
-function voiceDetail(v: Voice): string {
+function voiceDetail(v: Voice, blended: boolean): string {
   const parts: string[] = [v.patch.kind];
   const period = periodOf(v.patch);
   if (period !== undefined) parts.push(`${period} ms`);
   if (v.loop === true) parts.push('loop');
   else if (typeof v.loop === 'number') parts.push(`×${v.loop}`);
-  if (typeof v.weight === 'number') parts.push(`w ${v.weight}`);
+  if (blended) parts.push('blend');
+  else if (typeof v.weight === 'number') parts.push(`w ${v.weight}`);
   return parts.join(' · ');
 }
 
@@ -192,17 +193,19 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
   const written = new Set<ChannelName>();
   const writes: [string, ChannelName][] = [];
   for (const v of comp.voices) {
+    const by = v.locus === undefined ? undefined : comp.blends?.[v.locus];
     const id = b.node({
       id: `voice:${v.id}`,
       kind: 'voice',
       label: v.name,
-      detail: voiceDetail(v),
+      detail: voiceDetail(v, by !== undefined),
       hue: v.hue,
       ...(faulted.has(v.id) ? { faulted: true } : {}),
     });
+    if (by) b.edge(b.field({ id: `blend:${v.locus}` }, 'weight', by), id, 'blend');
     for (const field of FIELDS) {
       const e = v[field];
-      if (isExpr(e)) b.edge(b.field(v, field, e), id, field);
+      if (isExpr(e) && !(by && field === 'weight')) b.edge(b.field(v, field, e), id, field);
     }
     if (v.owner !== undefined) b.edge(`group:${v.owner}`, id);
     for (const ch of writesOf(v.patch)) {

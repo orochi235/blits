@@ -81,6 +81,7 @@ it('has the presets the spec lists, the first the default', () => {
   expect(PRESETS.map((x) => x.name)).toEqual([
     'stagger wave',
     'crossfade',
+    'blend',
     'spring retarget',
     'freeze handover',
     'pointer glow',
