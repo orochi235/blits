@@ -559,18 +559,28 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the driver scaffold
     the survey proposed is the magicsmoke question in item 1d.
 
-11. **A Tone.js adapter, and the windowed read it wants** (spiked 2026-10-08; unbuilt). The
-    spike in `spikes/tone/` showed a mix driving Tone on the audio clock through `project` and
-    `book` alone: booked notes land on the sample through a rate change and a seek, and curves
-    stay within 0.671 Hz on a 5 ms grid, against 71.938 Hz for a host writing values each frame.
-    Its README has the table and the gaps.
-    - **The adapter is a package beside blits-quarks** (Mike, 2026-10-10): in `packages/`, pinned
-      to an exact engine, Tone as a peer, released with the engine as quarks is. Not started.
-    - Undecided: a read of the mix over a window, returning a run of values or a `keys` voice's own
-      breakpoints as exact ramps, in place of a `project` per grid point (31 a frame, about
-      0.23 ms, and only as exact as the grid). Useful beyond audio.
-    It would also need mix time converted to the outside clock when `mix.rate` is not 1, and
-    scrubbing waits on the read-ahead item in `NOTES-ON-SCRUBBING.md`.
+11. **`@msb235/blits-tone` 0.1.0 is built in `packages/tone` and not published** (2026-10-10).
+    Its README says what it is, how it works, and what it does not do; it is pinned to engine
+    0.8.1 with Tone as a peer, and a `tone-v*` tag releases it as `quarks-v*` does quarks. npm
+    refuses trust for a name never published, so 0.1.0 goes out by hand, as quarks' did. Mike
+    has not seen its names (`drive`, `attach`, `detach`, `write`, `stop`, and the options
+    `ahead`, `step`, `late`, `clock`, `play`, `tag`, `score`) or these calls made in building:
+    - **Its tests take `node-web-audio-api` as a dev dependency**, a prebuilt native binary of
+      about 40 MB, so Tone's offline render runs in Node with no audio device.
+    - **`src/link.ts` repeats two engine constants**: the driver keeps its own host-to-audio
+      offset by the rule `mix.book` uses (5% slew, restart past 50 ms), because the engine does
+      not expose the host time of its last sync.
+    - **The release workflow's edit has not run**: the pin checks and the publish step now
+      apply to any driver directory instead of naming quarks.
+    Never run: a real browser `AudioContext`, and a native `AudioParam` as a target.
+    Undecided, and what would close the README's gaps:
+    - A read of the mix over a window, returning a run of values or a `keys` voice's own
+      breakpoints as exact ramps, in place of a `project` per grid point (31 a write, and only
+      as exact as the grid). Useful beyond audio.
+    - Mix time converted to the outside clock while `mix.rate` ramps; the driver reads
+      `mix.rate` as it stands at each write, which drifts during a ramp (3.59 Hz in its test).
+    - Scrubbing waits on the read-ahead item in `NOTES-ON-SCRUBBING.md`: after a seek back under
+      `history`, `project` ahead throws and `write` throws with it.
 
 12. **What the docs audit left** (2026-10-10). The schema page's interface listings now carry
     every public member, and the page and README cover what the audit found missing.
