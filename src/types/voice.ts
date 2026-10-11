@@ -263,7 +263,8 @@ export interface Handle<I = unknown> {
   weight: number;
   /**
    * Playback rate now. Setting it changes speed at once; `ramp` eases into a new one. On a voice
-   * still pending, a rate above 0 applies from the voice's start, which stays where it is.
+   * still pending, a rate or a ramp applies from the voice's start, which stays where it is: at
+   * rate 0 it starts on time and holds its first frame.
    */
   rate: number;
   /**
@@ -279,6 +280,8 @@ export interface Handle<I = unknown> {
    * it was. Answers how sure the state now is: `exact` for a voice with none, or rebuilt under
    * `stepMs` with no `maxDt`; `stepped` where it was caught up in one step or holds signal state;
    * `held` where it was kept, or depends on host fields or an input weight the rebuild cannot know.
+   * A voice still pending starts on time, already at `elapsed`, and one that freezes before shows
+   * that frame while it waits.
    */
   seek(elapsed: number, opts?: SeekOptions): Doubt;
   /**

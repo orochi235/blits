@@ -125,12 +125,16 @@ export class VoiceHandle<I, O> implements Handle<I> {
     const voice = this.#voice;
     if (voice === null) return;
     voice.written = true;
-    const now = this.#host.nowFor(voice);
-    // A pending voice's clock reads 0 at its start, and a rate taken from now would cross 0 sooner:
-    // a subject it freezes before would play, and step, ahead of a voice that has not started.
-    const u = voice.state === 'pending' && voice.start > now && r > 0 ? voice.start : now;
-    leave(voice, u);
-    retime(voice, u, r, over);
+    if (voice.state === 'pending') {
+      // Its clock is anchored at its start, wherever that comes, and its rate is taken from there.
+      const from = voice.ramp === null ? voice.rate : voice.ramp.from;
+      voice.ramp = over > 0 && r !== from ? { from, to: r, over } : null;
+      voice.rate = r;
+    } else {
+      const now = this.#host.nowFor(voice);
+      leave(voice, now);
+      retime(voice, now, r, over);
+    }
     this.#host.changed(voice);
     this.#host.record('rate', () => this.ramp(r, over));
   }
@@ -139,9 +143,12 @@ export class VoiceHandle<I, O> implements Handle<I> {
     const voice = this.#voice;
     if (voice === null) return 'exact';
     voice.written = true;
-    const u = this.#host.nowFor(voice);
-    leave(voice, u);
-    voice.rebase(u);
+    // A pending voice's clock is anchored at its start, so it starts there on time.
+    if (voice.state !== 'pending') {
+      const u = this.#host.nowFor(voice);
+      leave(voice, u);
+      voice.rebase(u);
+    }
     voice.anchorElapsed = elapsed;
     voice.seeks++;
     const doubt = this.#host.sought(voice, opts?.state !== 'keep');

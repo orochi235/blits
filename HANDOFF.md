@@ -628,19 +628,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         that takes neither, and `read` giving undefined; and `fold` switching a rest-less channel
         on at 0.6, a mix's default band. All of it shipped in 0.8.0, so a rename is now a break.
     - **Decided 2026-10-10 (Mike), unbuilt until each is struck from this list:**
-      - A handle `seek` on a pending voice wins over its pinned start: the voice starts on time,
-        already at the sought position. A rate of 0 on a pending voice follows the rule a
-        positive rate does: it starts on time and then holds.
       - A cue takes `seek`, a position in elapsed milliseconds, through the same pathway as
         `handle.seek`. Blank is 0 for a forward voice and the end for a backward one; an endless
         loop cued backward starts at 0 and plays into the pass before. A voice running back
         past 0 ends as one running past its end does, and `freeze: 'before'` holds it.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
-      - **A handle `seek` on a pending voice whose pinned start is still ahead is undone when
-        the start arrives**: `startAt` in `place.ts` sets the clock back to 0 (determinism seed
-        `ahead`/full/139). Whether the seek or the start should win is undecided. A rate of 0 on
-        a pending voice is the same family: it is taken at once and holds the clock before its
-        start for good.
       - **A voice may play backward** (decided 2026-10-10: a valid use is not refused because
         no consumer has it yet). A negative rate is accepted (`test/lanes.test.ts` cues one), but
         what it does is neither defined nor tested: where a voice cued at a negative rate starts,

@@ -20,6 +20,12 @@ version and everything else the patch. Each release lists its changes as **Break
 - A `to` or `push` that brings back a subject faded out of its voice is made at the frame of
   the call, as one for a subject never faded is. It was made at the subject's next read, so how
   far the motion had got depended on when the host next probed the subject.
+- A handle `seek` on a pending voice holds: the voice starts on time, already at the sought
+  position, and one freezing before shows that frame while it waits. The seek was taken from
+  the moment of the call, and lost outright when an anchor or the mix's rate moved the start.
+- A rate of 0, a negative rate, or a ramp set on a pending voice applies from its start, as a
+  rate above 0 always did. At rate 0 the voice starts on time and holds its first frame, where
+  it stopped its clock short of its start for good and never showed.
 
 ### Fixed
 

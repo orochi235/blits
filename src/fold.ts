@@ -88,9 +88,12 @@ export function contribution<I, O>(
   if (voice.out?.rest && held.rested) return null;
   if (held.rebuilt !== voice.rebuilds) rebuild(this, voice, subject, now, held);
 
-  const raw = voice.elapsedAt(now) - held.delay;
+  // A pending voice shows the frame it will start on: its clock is anchored at its start, and
+  // read at any time before would have a voice sought ahead, or running back, play before then.
+  const pending = voice.state === 'pending';
+  const raw = (pending ? voice.anchorElapsed : voice.elapsedAt(now)) - held.delay;
   // Not `raw < 0`: see `frozenTime` for the clock that reads NaN before its start.
-  const early = !(raw >= 0);
+  const early = pending || !(raw >= 0);
   if (early && !voice.freezesBefore) return null;
   const elapsed = frozenTime(raw, voice.freezesBefore, voice.freezesAfter, voice.span);
   // A frozen subject's clock stands still at the edge it freezes at: -1 before, 1 after, 0 playing.
