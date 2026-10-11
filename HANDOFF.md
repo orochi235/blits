@@ -565,10 +565,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     version goes out from a `tone-v*` tag, as `quarks-v*` does quarks; that path has not run. Mike
     settled its names on 2026-10-11 (`drive`, `attach`, `detach`, `write`, `cancel`, and the
     options `ahead`, `grid`, `late`, `clock`, `take`, `tag`, `score`). Calls made in building:
-    - **Open: its tests take `node-web-audio-api` as a dev dependency**, a prebuilt native
-      binary of about 40 MB, so Tone's offline render runs in Node with no audio device. Left
-      on 2026-10-11 after the freed-memory fault below was worked around; running the tests in a
-      headless browser's `OfflineAudioContext` would drop it.
+    - **Its tests take `node-web-audio-api` as a dev dependency**, a prebuilt native binary of
+      about 40 MB, so Tone's offline render runs in Node with no audio device. Mike accepted it
+      on 2026-10-11.
     - **`node-web-audio-api` 2.2.0 frees a channel's samples under a live array**
       (2026-10-11): the `Float32Array` from `getChannelData` reads freed memory once its
       `AudioBuffer` is collected. `render` in `test/render.ts` returned such arrays and dropped
