@@ -52,7 +52,8 @@ export type Moving<I, O, V extends Value> = Patch<I, O, void> & {
   /**
    * Sets `subject` moving at `velocity`, units per second, from voice time `at`, default the mix's
    * latest frame; for a subject no frame of its voice has met yet, or still inside its stagger, its
-   * first read, after any change with a time due by then.
+   * first read, after any change with a time due by then. A subject faded out of the voice comes
+   * back at the latest frame too, however long it is before it is next read.
    */
   push(subject: I, velocity: V, at?: number): void;
 };
@@ -276,7 +277,8 @@ export function spring<I, O, V extends Value = number>(
   /**
    * Heads `subject` for `target` from voice time `at`, keeping its velocity: by default the mix's
    * latest frame, or for a subject no frame of its voice has met yet, or still inside its stagger,
-   * its first read, after any change with a time due by then.
+   * its first read, after any change with a time due by then. A subject faded out of the voice
+   * comes back at the latest frame too, however long it is before it is next read.
    */
   to(subject: I, target: V, at?: number): void;
 } {
@@ -358,7 +360,8 @@ export function tween<I, O, V extends Value = number>(
   /**
    * Heads `subject` for `target` from voice time `at`, over a full `ms` from where it is: by default
    * the mix's latest frame, or for a subject no frame of its voice has met yet, or still inside its
-   * stagger, its first read, after any change with a time due by then.
+   * stagger, its first read, after any change with a time due by then. A subject faded out of the
+   * voice comes back at the latest frame too, however long it is before it is next read.
    */
   to(subject: I, target: V, at?: number): void;
 } {

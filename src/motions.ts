@@ -48,8 +48,11 @@ const HEAD = 5;
 export interface MotionOwner {
   /** The subject's voice time at the mix's latest frame; NaN where no frame of the voice met it. */
   frame(id: number, subject: unknown): number;
-  /** Brings a subject the voice faded out back to it, so a change is not made for nothing. */
-  revive(id: number, subject: unknown): void;
+  /**
+   * Brings a subject the voice faded out back to it, so a change is not made for nothing: its
+   * voice time now, which a change bringing it back is made at; NaN for any other subject.
+   */
+  revive(id: number, subject: unknown): number;
   /** The mix clock at its latest frame; NaN before the first. */
   now(): number;
   /** The number of the frame the mix is playing. */
@@ -564,7 +567,7 @@ export class Motions<I> {
    * The queue keeps the changes with a time in time order, ahead of any still waiting for one.
    */
   change(subject: I, c: Change): void {
-    this.owner?.revive(this.ownerId, subject);
+    const back = this.owner === null ? Number.NaN : this.owner.revive(this.ownerId, subject);
     const s = this.slot(subject);
     this.check(c.to, this.n);
     this.check(c.v, this.n);
@@ -573,6 +576,7 @@ export class Motions<I> {
     if (c.at === undefined) {
       const at = this.frame(subject);
       if (!Number.isNaN(at)) c.at = at;
+      else if (!Number.isNaN(back)) c.at = back;
     }
     const list = this.pending?.[s];
     if (list === undefined) {

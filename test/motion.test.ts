@@ -673,11 +673,52 @@ describe('a subject faded out of a motion voice', () => {
     m.sync(300);
     t.to(a, 0);
     m.sync(316);
-    // Its first stretch began at voice time 0 and is long over, so the new one leaves from 100.
-    expect(m.probe(a).x).toBe(100);
+    // Its first stretch began at voice time 0 and is long over, so the new one leaves from 100,
+    // at the call.
+    expect(m.probe(a).x).toBeCloseTo(84, 9);
     m.sync(366);
-    expect(m.probe(a).x).toBeCloseTo(50, 9);
+    expect(m.probe(a).x).toBeCloseTo(34, 9);
     expect(froms).toEqual(['a', 'a']);
+  });
+
+  it('is retargeted from the `to` call, whenever it is next probed, as one never faded is', () => {
+    const read = (faded: boolean, lanes: boolean, probeAt: number) => {
+      const t = tween<Part, Pose>('x', { from: 0, to: 1, ms: 300 });
+      const m = mix<Part, Pose>(K, { lanes });
+      const h = m.cue({ patch: t });
+      const a = { id: 'a' };
+      m.sync(0);
+      m.probe(a);
+      if (faded) h.fade({ subject: a, over: 0 });
+      m.sync(450);
+      if (!faded) m.probe(a);
+      h.to(a, 0.6);
+      for (let now = 466; now < probeAt; now += 16) m.sync(now);
+      m.sync(probeAt);
+      return m.probe(a).x;
+    };
+    for (const lanes of [true, false]) {
+      const never = read(false, lanes, 500);
+      expect(read(true, lanes, 500), `lanes ${lanes}`).toBeCloseTo(never, 9);
+      expect(never).not.toBe(1);
+      expect(read(true, lanes, 600), `lanes ${lanes}`).toBeCloseTo(read(false, lanes, 600), 9);
+    }
+  });
+
+  it('retargeted inside its stagger waits for its first read, as a subject never met does', () => {
+    const t = tween<Part, Pose>('x', { from: 0, to: 100, ms: 100, ease: 'linear' });
+    const m = mix<Part, Pose>(K);
+    const h = m.cue({ patch: t, stagger: () => 200 });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    h.fade({ subject: a, over: 0 });
+    m.sync(100);
+    h.to(a, 0);
+    m.sync(400);
+    expect(m.probe(a).x).toBe(100);
+    m.sync(450);
+    expect(m.probe(a).x).toBeCloseTo(50, 9);
   });
 });
 

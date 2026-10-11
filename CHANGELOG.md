@@ -17,6 +17,9 @@ version and everything else the patch. Each release lists its changes as **Break
   showed a whole fade from its start. An `end` that leaves less room than `fade.out` now
   shortens the fade to finish when asked, where the fade ran its whole length past it, and an
   `out` before the start is reported at the start, where its fade always began.
+- A `to` or `push` that brings back a subject faded out of its voice is made at the frame of
+  the call, as one for a subject never faded is. It was made at the subject's next read, so how
+  far the motion had got depended on when the host next probed the subject.
 
 ### Fixed
 

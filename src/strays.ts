@@ -61,13 +61,16 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
     },
     revive(id, subject) {
       const m = mix.deref();
-      if (m === undefined) return;
+      if (m === undefined) return Number.NaN;
       m.stir();
       const v = cuedById(m, id);
-      if (v === undefined) return;
+      if (v === undefined) return Number.NaN;
       if (v.motion !== undefined && v.named !== null && !v.named.has(subject as I))
         stray(m, v.motion, subject as I);
+      if (v.parted?.has(subject as I) !== true) return Number.NaN;
       unpart(m, v, subject as I);
+      // Its record is gone until it is next read, so its stagger is asked here as it will be there.
+      return timeIn(m, v, v.spec.stagger ? v.spec.stagger(subject as I) : 0);
     },
   };
 }
@@ -93,9 +96,14 @@ export function cuedById<I, O>(mix: Mixer<I, O>, id: number): Voice<I, O> | unde
  * subject's own time is still short of its stagger. A retired voice's patch no longer asks.
  */
 export function frameOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): number {
-  if (Number.isNaN(mix.now) || voice.state === 'pending') return Number.NaN;
   const held = voice.subjects.get(subject);
   if (held === undefined || !held.reaches) return Number.NaN;
-  const t = voice.elapsedAt(mix.now) - held.delay;
+  return timeIn(mix, voice, held.delay);
+}
+
+/** The voice time at the latest frame of a subject staggered by `delay`; NaN before it has any. */
+function timeIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, delay: number): number {
+  if (Number.isNaN(mix.now) || voice.state === 'pending') return Number.NaN;
+  const t = voice.elapsedAt(mix.now) - delay;
   return t < 0 ? Number.NaN : t;
 }

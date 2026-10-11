@@ -635,7 +635,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `handle.seek`. Blank is 0 for a forward voice and the end for a backward one; an endless
         loop cued backward starts at 0 and plays into the pass before. A voice running back
         past 0 ends as one running past its end does, and `freeze: 'before'` holds it.
-      - A retarget of a faded-out subject starts its tween at the `to` call, not the next probe.
       - `project(mix.now)` lands nothing, so it reads as `probe` does.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
       - **A handle `seek` on a pending voice whose pinned start is still ahead is undone when
@@ -643,10 +642,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `ahead`/full/139). Whether the seek or the start should win is undecided. A rate of 0 on
         a pending voice is the same family: it is taken at once and holds the clock before its
         start for good.
-      - **A retarget that brings a faded-out subject back starts its new tween at the subject's
-        next probe, not at the `to` call** (both paths agree). With a tween of 300 ms faded out
-        of a subject at 0 and retargeted to 0.6 at 450, a probe at 500 reads 0.800, where the
-        same calls on a subject never faded read 0.767.
       - **`project(mix.now)` is not always what `probe` gives** (`now` in
         `test/determinism.test.ts`, seeds plain 144 and full 1, with history or without). A read
         at or ahead of the mix moves its copy, which lands what the live mix lands only at its
