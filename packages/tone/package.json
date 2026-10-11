@@ -35,7 +35,7 @@
   ],
   "scripts": {
     "build": "tsc -b",
-    "prepack": "npm run build"
+    "prepack": "rm -rf dist .tsbuildinfo && npm run build"
   },
   "dependencies": {
     "@msb235/blits": "0.10.0"
