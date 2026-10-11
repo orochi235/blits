@@ -88,10 +88,11 @@ export async function render(opts: RenderOptions = {}): Promise<Rendered> {
     3,
     SR,
   );
+  // Copies: node-web-audio-api's arrays read freed memory once their AudioBuffer is collected.
   return {
-    freq: buffer.getChannelData(0),
-    gain: buffer.getChannelData(1),
-    notes: buffer.getChannelData(2),
+    freq: buffer.getChannelData(0).slice(),
+    gain: buffer.getChannelData(1).slice(),
+    notes: buffer.getChannelData(2).slice(),
     done,
   };
 }
