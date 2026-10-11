@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "paths": {
+      "@fw/*": ["./src/*"],
+      "@msb235/blits": ["../../src/index.ts"],
+      "@msb235/blits-quarks": ["../../packages/quarks/src/index.ts"],
+      "@msb235/blits-tone": ["../../packages/tone/src/index.ts"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}
