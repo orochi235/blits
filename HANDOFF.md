@@ -559,10 +559,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the driver scaffold
     the survey proposed is the magicsmoke question in item 1d.
 
-11. **`@msb235/blits-tone` 0.1.0 is built in `packages/tone` and not published** (2026-10-10).
-    Its README says what it is, how it works, and what it does not do; it is pinned to engine
-    0.10.0 with Tone as a peer, and a `tone-v*` tag releases it as `quarks-v*` does quarks. npm
-    refuses trust for a name never published, so 0.1.0 goes out by hand, as quarks' did. Mike
+11. **`@msb235/blits-tone` 0.1.0 is on npm** (2026-10-11), published by hand from
+    `packages/tone` and pinned to engine 0.10.0 with Tone as a peer. Its README says what it is,
+    how it works, and what it does not do. Trusted publishing is registered for it, so the next
+    version goes out from a `tone-v*` tag, as `quarks-v*` does quarks; that path has not run. Mike
     settled its names on 2026-10-11 (`drive`, `attach`, `detach`, `write`, `cancel`, and the
     options `ahead`, `grid`, `late`, `clock`, `take`, `tag`, `score`). Calls made in building:
     - **Open: its tests take `node-web-audio-api` as a dev dependency**, a prebuilt native
