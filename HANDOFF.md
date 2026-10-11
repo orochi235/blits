@@ -717,9 +717,19 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - **The laned steady rows read level as merged** (teitou, 2026-10-10, 7 rounds at 3,000
         frames against `27acb2d`): `keys` 10k×3 0.953, `tween` 1.023, `fn` 1.027, geometric
         mean 1.001, every row's runs overlapping the other side's.
-      - **The `keys` row still allocates about 16 B a probe in `foldWith`, cause not found**;
-        two guesses were built and backed out for changing nothing (a site of its own per scalar
-        channel in `copy`, and folding a delta's number where `foldDelta` reads it). Still boxed:
+      - **The `keys` row's 16 B a probe is the lane's scalar copied into the pose**
+        (found 2026-10-11): `pose[ch.name] = ch.values[slot]` in `src/copyout.ts`, which a heap
+        profile charges to `foldWith` because V8 inlines it there. The value comes out of a
+        Float64Array as a raw double and the store is keyed by a name that varies, so V8
+        boxes it in a new HeapNumber each time. Measured on the row's scene at 10,000 subjects
+        (this Mac, `total_allocated_bytes` over 300 frames): 16.6 B a probe as it stands, 0.9
+        with the store skipped once the field holds a number, 0.4 storing an integer, and 16.6
+        to 17.0 whatever shape the host's `out` starts with. Built and backed out for changing
+        nothing, on top of the two guesses before (a site of its own per scalar channel in
+        `copy`, and folding a delta's number where `foldDelta` reads it): a store site per lane
+        position. What is left is a store V8 can see the field of, which means a function
+        made per kit from source text, or reading through `pull`, which never boxes.
+        Still boxed:
         a locus's `gatherInto`, a crowd's `KeyRows.fold`, and what `host.signal` returns. Under
         `from: 'current'`, `keep` still copies a pose a probe into `out`.
       - **Tried and backed out for moving no number**: growing a lane's arrays to the number of
