@@ -63,8 +63,15 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   gives. In `bench/keys.mjs` (weasel's shape, this Mac under a load average of about 11, six
   alternated rounds) `patch.at` reads 0.796 ms a frame against 1.134 before. A public read into
   a reused out object was built and measured slower than `at` (0.87 against 0.78 ms), so it was
-  dropped: when the caller reads one field V8 removes `at`'s fresh object. Not yet measured: the
-  same through weasel's own bench.
+  dropped: when the caller reads one field V8 removes `at`'s fresh object. Through weasel's
+  own bench on blits 0.8.1 (teitou, 2026-10-10, mean ms a frame over three passes, beside the
+  0.7.0 passes in weasel's `docs/proposals/2026-09-30-animator-on-blits.md`): 100 tracks
+  0.0033 / 0.0033 / 0.0036 from 0.0042 / 0.0041 / 0.0040; 1,000 tracks 0.0434 / 0.0534 / 0.0476
+  from 0.0527 / 0.0466 / 0.0550; 10,000 tracks 0.4090 / 1.0230 / 0.4198 from 0.4722 / 0.4863 /
+  1.0391, against 0.16–0.19 for weasel's old sampler. One pass in three reads about 1.0 at
+  10,000 on both versions, and both passes on studio read 1.17, so the row has a slow mode
+  nobody has explained. Around each `patch.at`, weasel's `sampleTrack` makes two `Map` reads
+  and a call through a stored function, a share this bench does not separate.
 
 ## What weasel has that blits doesn't
 

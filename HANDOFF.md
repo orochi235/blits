@@ -423,8 +423,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      anyway to count `distinct`, so the saving is a store per subject.
    - **A cheaper `keys` patch read, asked by weasel 2026-10-08: built for plain-number tracks**
      (`bce8fa3`). `NOTES-FROM-WEASEL.md` under "Speed" has the numbers, and why there is no
-     public read into an out object. Left: rerun weasel's `tests/perf/bench/timeline-sampling.bench.ts`
-     against it.
+     public read into an out object, and what weasel's own bench reads on 0.8.1: about 0.41 ms
+     at 10,000 tracks from 0.48, with a slow mode near 1.0 on both versions.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
 
