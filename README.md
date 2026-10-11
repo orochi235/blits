@@ -123,7 +123,7 @@ do yet.
 
 ## Status
 
-v0.9.0, with five consumers. magicsmoke runs every fault on it, wod its wheel, tricks and
+v0.10.0, with five consumers. magicsmoke runs every fault on it, wod its wheel, tricks and
 transitions, weasel its animator's tweens, sherpa its seams, and
 [klieg](https://github.com/orochi235/klieg) composes all three of its systems — letter motion,
 part effects, and the environment a sign is lit by — on a mix each.
