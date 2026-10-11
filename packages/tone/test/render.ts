@@ -80,7 +80,7 @@ export async function render(opts: RenderOptions = {}): Promise<Rendered> {
           act.run(m, h);
           done[k] = f;
         });
-        driver.write(f + skew);
+        driver.write();
         opts.each?.(f, driver, m, h);
       }
     },

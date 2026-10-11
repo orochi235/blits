@@ -30,7 +30,7 @@ describe('a native AudioParam as a target', () => {
     for (const f of frameTimes()) {
       read = f;
       m.sync(f);
-      driver.write(f);
+      driver.write();
     }
 
     const buffer = await context.startRendering();

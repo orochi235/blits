@@ -31,7 +31,7 @@ tone.attach(voice, { freq: osc.frequency, gain: amp.gain });
 
 // each frame
 m.sync(now);
-tone.write(now);    // the timestamp you just synced to
+tone.write();
 ```
 
 ## Reading ahead
@@ -72,7 +72,7 @@ the mix is heard only once the next `write` replaces the curve, which a stall al
     seconds on the audio clock, to hand to Tone as it is. `item` is what `mix.book` gives its
     `take`: a hit carries `hit` and its `event`, and a mark has neither. Return a `cancel` to be
     told the item moved or went away; it is then played again at its new time. Without `take`
-    the driver books nothing.
+    no mark or hit is played.
   - `late`, default 50, `tag`, and `score`: passed to `mix.book` as they are.
   - `clock`: the audio clock in seconds, default `Tone.immediate`.
 - **`attach(subject, targets)`** binds a subject's channels to parameters: `targets` maps a
@@ -81,13 +81,14 @@ the mix is heard only once the next `write` replaces the curve, which a stall al
   twice throws.
 - **`detach(subject)`** unbinds it and cancels what was scheduled ahead, so its targets hold the
   value they had reached.
-- **`write(timestamp)`**, after `mix.sync(timestamp)` with the same timestamp: schedules every
-  attached subject's curves. Before the mix's first sync it does nothing.
-- **`cancel()`** detaches every subject and cancels what `take` booked ahead.
+- **`write()`**, after `mix.sync`: schedules every attached subject's curves from that sync on.
+  Before the mix's first sync it does nothing.
+- **`cancel()`** detaches every subject and cancels what `take` booked ahead. The driver is done
+  after it; drive the mix again to play on.
 
 The host's clock need not be the audio clock: sync the mix to `performance.now()` or a frame's
-timestamp as usual. The driver keeps the offset between the two as `mix.book` does, folding in 5%
-of each frame's difference and starting over on a jump past 50 ms, such as a suspended context.
+timestamp as usual. The driver maps one onto the other by the offset `mix.book` keeps, which folds in
+5% of each frame's difference and starts over on a jump past 50 ms, such as a suspended context.
 
 ## What it does not do yet
 

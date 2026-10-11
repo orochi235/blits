@@ -1,6 +1,5 @@
-import type { BookedHit, Booker, Marked, Mix } from '@msb235/blits';
+import type { BookedHit, Marked, Mix } from '@msb235/blits';
 import { immediate } from 'tone';
-import { Link } from './link.js';
 
 /** What the driver schedules on: a Tone `Param` or `Signal`, or a native `AudioParam`. */
 export interface Target {
@@ -13,7 +12,7 @@ export type Targets<O> = {
   [K in keyof O as NonNullable<O[K]> extends number ? K : never]?: Target;
 };
 
-export interface DriveOptions<E = unknown> {
+export interface DriveOptions<E = unknown, I = unknown> {
   /**
    * How far ahead curves are written and items booked, ms. It has to outlast the longest gap
    * between two writes. Default 150.
@@ -28,10 +27,10 @@ export interface DriveOptions<E = unknown> {
   /**
    * Called once for each mark and hit within `ahead`, as `BookOptions.take` is, with `time` in
    * seconds on the audio clock. Return a `cancel` to hear that the item moved or went away; it is
-   * then played again at its new time. Without `take` the driver books nothing.
+   * then played again at its new time. Without `take` no mark or hit is played.
    */
   take?: (
-    item: Marked | BookedHit<E>,
+    item: Marked | BookedHit<E, I>,
     time: number,
     lateBy: number,
   ) => { cancel(): void } | undefined;
@@ -45,9 +44,12 @@ export interface Driver<I, O> {
   attach(subject: I, targets: Targets<O>): void;
   /** Unbinds the subject; its targets hold the value they had reached. */
   detach(subject: I): void;
-  /** Writes every attached subject's curves from now to `ahead`, after `mix.sync(timestamp)`. */
-  write(timestamp: number): void;
-  /** Detaches every subject and cancels what `take` has booked ahead. */
+  /** Writes every attached subject's curves from the last sync to `ahead`. Call it after `mix.sync`. */
+  write(): void;
+  /**
+   * Detaches every subject and cancels what `take` has booked ahead. The driver is done: `write`
+   * does nothing after it.
+   */
   cancel(): void;
 }
 
@@ -62,32 +64,34 @@ function ms(name: string, value: number, least: number): number {
   return value;
 }
 
-export function drive<I, O, E = unknown>(mix: Mix<I, O>, opts: DriveOptions<E> = {}): Driver<I, O> {
+export function drive<I, O, E = unknown>(
+  mix: Mix<I, O>,
+  opts: DriveOptions<E, I> = {},
+): Driver<I, O> {
   const ahead = ms('ahead', opts.ahead ?? 150, 0);
   const grid = ms('grid', opts.grid ?? 5, Number.MIN_VALUE);
   const late = ms('late', opts.late ?? 50, 0);
   const seconds = opts.clock ?? immediate;
   const bound = new Map<I, Bound<O>>();
-  const link = new Link();
+  let done = false;
 
-  // The booker reads the clock once a sync; `write` takes that reading, so both map by one.
+  // The booker reads the clock once a sync; `write` takes that reading and the booker's own
+  // mapping of host time onto it, so curves and booked items land on one.
   let reading = Number.NaN;
   const clock = (): number => {
     reading = seconds() * 1000;
     return reading;
   };
 
-  let booker: Booker | undefined;
   const take = opts.take;
-  if (take !== undefined)
-    booker = mix.book<E>({
-      clock,
-      ahead,
-      late,
-      tag: opts.tag,
-      score: opts.score,
-      take: (item, when, lateBy) => take(item, when / 1000, lateBy),
-    });
+  const booker = mix.book<E>({
+    clock,
+    ahead,
+    late,
+    tag: opts.tag,
+    score: opts.score,
+    take: (item, when, lateBy) => take?.(item, when / 1000, lateBy),
+  });
 
   const hold = (b: Bound<O>, time: number): void => {
     for (const [, target] of b.targets) target.cancelAndHoldAtTime(time);
@@ -109,13 +113,12 @@ export function drive<I, O, E = unknown>(mix: Mix<I, O>, opts: DriveOptions<E> =
       hold(b, seconds());
     },
 
-    write(timestamp) {
+    write() {
       const now = mix.now;
-      if (Number.isNaN(now)) return;
-      const read = Number.isNaN(reading) ? clock() : reading;
+      if (done || Number.isNaN(now) || bound.size === 0) return;
+      const read = Number.isNaN(reading) ? seconds() * 1000 : reading;
       reading = Number.NaN;
-      const est = link.read(timestamp, read);
-      if (bound.size === 0) return;
+      const est = booker.at(mix.timestamp);
 
       // Audio ms: the estimate may trail the clock, and nothing is scheduled behind the clock.
       const from = Math.max(est, read);
@@ -140,7 +143,8 @@ export function drive<I, O, E = unknown>(mix: Mix<I, O>, opts: DriveOptions<E> =
     },
 
     cancel() {
-      booker?.cancel();
+      done = true;
+      booker.cancel();
       const time = seconds();
       for (const b of bound.values()) hold(b, time);
       bound.clear();

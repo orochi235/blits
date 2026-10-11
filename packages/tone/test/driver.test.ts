@@ -40,7 +40,7 @@ describe('attach and write', () => {
     d.attach('a', { x: a.target });
     d.attach('b', { x: b.target });
     m.sync(0);
-    d.write(0);
+    d.write();
     expect(a.holds).toEqual([2]);
     expect(a.ramps.map((r) => r.value)).toEqual([0, 10, 20]);
     expect(b.ramps.map((r) => r.value)).toEqual([100, 110, 120]);
@@ -53,7 +53,7 @@ describe('attach and write', () => {
     const a = recorder();
     d.attach('a', { x: a.target });
     m.sync(0);
-    d.write(0);
+    d.write();
     expect(a.ramps.map((r) => r.value)).toEqual([0, 10, 20, 25]);
   });
 
@@ -61,7 +61,7 @@ describe('attach and write', () => {
     const d = drive(climbing(), { clock: () => 0 });
     const a = recorder();
     d.attach('a', { x: a.target });
-    d.write(0);
+    d.write();
     expect(a.holds).toEqual([]);
     expect(a.ramps).toEqual([]);
   });
@@ -73,11 +73,11 @@ describe('attach and write', () => {
     const a = recorder();
     d.attach('a', { x: a.target });
     m.sync(100);
-    d.write(100);
+    d.write();
     m.rebase();
     clock = 5;
     m.sync(5100);
-    d.write(5100);
+    d.write();
     expect(a.ramps.slice(2)).toEqual([
       { value: 100, time: 5 },
       { value: 110, time: 5.01 },
@@ -93,7 +93,7 @@ describe('attach and write', () => {
     vi.spyOn(m, 'project').mockImplementation(() => {
       throw new Error('no reading ahead');
     });
-    expect(() => d.write(0)).toThrow('no reading ahead');
+    expect(() => d.write()).toThrow('no reading ahead');
     expect(a.holds).toEqual([0]);
     expect(a.ramps).toEqual([]);
   });
@@ -122,7 +122,7 @@ describe('attach and write', () => {
         const d = drive(m, { ahead: 10, grid: 10 });
         d.attach('a', { x: a.target });
         m.sync(700);
-        d.write(700);
+        d.write();
       },
       0.01,
       1,
@@ -133,13 +133,6 @@ describe('attach and write', () => {
 });
 
 describe('take', () => {
-  it('books nothing without it', () => {
-    const m = climbing();
-    const book = vi.spyOn(m, 'book');
-    drive(m, { clock: () => 0 });
-    expect(book).not.toHaveBeenCalled();
-  });
-
   it('hands over the tagged voices only, at a time in seconds on the audio clock', () => {
     const m = mix<string, Level>(kit({ x: sum() }));
     const silent = patch<string, Level>(1000, () => ({}), { writes: [] });
