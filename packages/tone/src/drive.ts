@@ -28,9 +28,9 @@ export interface DriveOptions<E = unknown> {
   /**
    * Called once for each mark and hit within `ahead`, as `BookOptions.take` is, with `time` in
    * seconds on the audio clock. Return a function to hear that the item moved or went away; it is
-   * then played again at its new time. Without `play` the driver books nothing.
+   * then played again at its new time. Without `take` the driver books nothing.
    */
-  play?: (item: Marked | BookedHit<E>, time: number, lateBy: number) => (() => void) | undefined;
+  take?: (item: Marked | BookedHit<E>, time: number, lateBy: number) => (() => void) | undefined;
   /** Play only the voices, and announced marks, carrying this tag. */
   tag?: string;
   /** Play only this score's voices and marks. */
@@ -43,7 +43,7 @@ export interface Driver<I, O> {
   detach(subject: I): void;
   /** Writes every attached subject's curves from now to `ahead`, after `mix.sync(timestamp)`. */
   write(timestamp: number): void;
-  /** Detaches every subject and cancels what `play` has booked ahead. */
+  /** Detaches every subject and cancels what `take` has booked ahead. */
   cancel(): void;
 }
 
@@ -74,8 +74,8 @@ export function drive<I, O, E = unknown>(mix: Mix<I, O>, opts: DriveOptions<E> =
   };
 
   let booker: Booker | undefined;
-  const play = opts.play;
-  if (play !== undefined)
+  const take = opts.take;
+  if (take !== undefined)
     booker = mix.book<E>({
       clock,
       ahead,
@@ -83,7 +83,7 @@ export function drive<I, O, E = unknown>(mix: Mix<I, O>, opts: DriveOptions<E> =
       tag: opts.tag,
       score: opts.score,
       take(item, when, lateBy) {
-        const stop = play(item, when / 1000, lateBy);
+        const stop = take(item, when / 1000, lateBy);
         return stop === undefined ? undefined : { stop };
       },
     });

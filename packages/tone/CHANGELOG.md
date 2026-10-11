@@ -10,5 +10,5 @@ section here.
 
 - `drive(mix, options?)`, `attach`, `detach`, `write`, and `cancel`: each `write` reads the mix
   ahead on a grid and schedules a subject's channels as linear ramps on the Tone parameters bound
-  to them, and `play` is handed each hit and mark before it comes, at its time on the audio clock.
+  to them, and `take` is handed each hit and mark before it comes, at its time on the audio clock.
   Pins `@msb235/blits` 0.9.0.

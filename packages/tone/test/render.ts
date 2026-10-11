@@ -54,7 +54,7 @@ export async function render(opts: RenderOptions = {}): Promise<Rendered> {
       const m = make();
       const h = scene(m, skew);
       let read = 0;
-      const play: DriveOptions['play'] = (item, time) => {
+      const take: DriveOptions['take'] = (item, time) => {
         if (!('hit' in item)) return undefined;
         const src = raw.createConstantSource();
         Tone.connect(src, merge, 0, 2);
@@ -66,7 +66,7 @@ export async function render(opts: RenderOptions = {}): Promise<Rendered> {
         clock: () => read / 1000,
         step: opts.step,
         ahead: opts.ahead,
-        play,
+        take,
       });
       driver.attach(SUBJECT, { freq, gain });
 

@@ -132,7 +132,7 @@ describe('attach and write', () => {
   });
 });
 
-describe('play', () => {
+describe('take', () => {
   it('books nothing without it', () => {
     const m = climbing();
     const book = vi.spyOn(m, 'book');
@@ -149,7 +149,7 @@ describe('play', () => {
     drive<string, Level, string>(m, {
       clock: () => 2,
       tag: 'drums',
-      play: (item, time) => {
+      take: (item, time) => {
         if ('hit' in item) played.push([item.event, time]);
         return undefined;
       },

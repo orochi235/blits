@@ -25,7 +25,7 @@ then a bloom placed on the owner's clock where the rise ends.
 
 The quarks driver reads each shell's pose every frame and emits into one particle system
 (`src/sky.ts`). The Tone driver reads the same pose a little ahead and schedules the whistle on an
-oscillator the shell borrows from a pool of six, and hands each hit to `play` before it comes, at
+oscillator the shell borrows from a pool of six, and hands each hit to `take` before it comes, at
 its time on the audio clock (`src/sound.ts`). A shell launched while all six whistles are in the
 air rises silently and still bangs.
 

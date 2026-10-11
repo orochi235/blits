@@ -29,7 +29,7 @@ start.addEventListener('click', async () => {
   await Tone.start();
   const sounds = createSounds();
   const sound = driveSound<Shell, Pose, Sound>(m, {
-    play: (item, time) => {
+    take: (item, time) => {
       if ('hit' in item) sounds.play(item.event, time);
       return undefined;
     },

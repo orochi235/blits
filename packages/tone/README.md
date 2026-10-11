@@ -22,7 +22,7 @@ osc.connect(amp);
 const drum = new Tone.MembraneSynth().toDestination();
 
 const tone = drive(m, {
-  play: (item, time) => {
+  take: (item, time) => {
     if ('hit' in item) drum.triggerAttackRelease('C2', '8n', time);
   },
 });
@@ -67,10 +67,10 @@ the mix is heard only once the next `write` replaces the curve, which a stall al
 - **`drive(mix, options?)`** returns the driver. Options, all optional:
   - `ahead`, default 150, and `step`, default 5: how far ahead a curve is written and how far
     apart its points are, in ms on the audio clock.
-  - `play(item, time, lateBy)`: called for each mark and hit within `ahead`, with `time` in
+  - `take(item, time, lateBy)`: called for each mark and hit within `ahead`, with `time` in
     seconds on the audio clock, to hand to Tone as it is. `item` is what `mix.book` gives its
     `take`: a hit carries `hit` and its `event`, and a mark has neither. Return a function to be
-    told the item moved or went away; it is then played again at its new time. Without `play`
+    told the item moved or went away; it is then played again at its new time. Without `take`
     the driver books nothing.
   - `late`, default 50, `tag`, and `score`: passed to `mix.book` as they are.
   - `clock`: the audio clock in seconds, default `Tone.immediate`.
@@ -82,7 +82,7 @@ the mix is heard only once the next `write` replaces the curve, which a stall al
   value they had reached.
 - **`write(timestamp)`**, after `mix.sync(timestamp)` with the same timestamp: schedules every
   attached subject's curves. Before the mix's first sync it does nothing.
-- **`cancel()`** detaches every subject and cancels what `play` booked ahead.
+- **`cancel()`** detaches every subject and cancels what `take` booked ahead.
 
 The host's clock need not be the audio clock: sync the mix to `performance.now()` or a frame's
 timestamp as usual. The driver keeps the offset between the two as `mix.book` does, folding in 5%
