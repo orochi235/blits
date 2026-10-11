@@ -583,14 +583,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - Both packages export `drive`, so a file using both aliases them. Kept, 2026-10-11.
       - A booked hit carries its voice's `subjects` now (2026-10-11); fireworks still packs pan
         and size into each event and could read them off the shell.
-      - **Open: a subject binds one `Target` per channel**, so each rising shell borrows an
-        oscillator from a pool, and one launched with the pool empty has no whistle. Left on
-        2026-10-11: that is the host's polyphony, and more targets per channel would not give a
-        shell a voice of its own. What would is undecided.
-      - **Open: `loop` defaults to looping for good.** Both of a shell's voices needed
-        `loop: false`, and without it the rise replayed on top of the bloom with nothing
-        refused. Left on 2026-10-11: it is the engine's default for every consumer, so changing
-        it or warning on it is a call about the engine.
+      - **A subject binds one `Target` per channel, and that stays** (Mike, 2026-10-11). Each
+        rising shell borrows an oscillator from the app's own pool, and one launched with the
+        pool empty has no whistle. A host that wants every subject heard builds a synth per
+        subject and attaches it; the driver's README says so.
     Undecided, and what would close the README's gaps:
     - A read of the mix over a window, returning a run of values or a `keys` voice's own
       breakpoints as exact ramps, in place of a `project` per grid point (31 a write, and only

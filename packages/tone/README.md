@@ -78,7 +78,8 @@ the mix is heard only once the next `write` replaces the curve, which a stall al
 - **`attach(subject, targets)`** binds a subject's channels to parameters: `targets` maps a
   channel name to a Tone `Param` or `Signal`, or a native `AudioParam`. Values are scheduled in
   the target's own units. Only a channel holding one number takes a target. Attaching a subject
-  twice throws.
+  twice throws. The driver builds no synths: a subject that should sound on its own needs a
+  synth of its own, which the host builds and attaches.
 - **`detach(subject)`** unbinds it and cancels what was scheduled ahead, so its targets hold the
   value they had reached.
 - **`write()`**, after `mix.sync`: schedules every attached subject's curves from that sync on.
