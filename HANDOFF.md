@@ -563,10 +563,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     Its README says what it is, how it works, and what it does not do; it is pinned to engine
     0.9.0 with Tone as a peer, and a `tone-v*` tag releases it as `quarks-v*` does quarks. npm
     refuses trust for a name never published, so 0.1.0 goes out by hand, as quarks' did. Mike
-    has not seen its names (`drive`, `attach`, `detach`, `write`, `cancel`, and the options
-    `ahead`, `grid`, `late`, `clock`, `take`, `tag`, `score`) or these calls made in building:
-    - **Its tests take `node-web-audio-api` as a dev dependency**, a prebuilt native binary of
-      about 40 MB, so Tone's offline render runs in Node with no audio device.
+    settled its names on 2026-10-11 (`drive`, `attach`, `detach`, `write`, `cancel`, and the
+    options `ahead`, `grid`, `late`, `clock`, `take`, `tag`, `score`). Calls made in building:
+    - **Open: its tests take `node-web-audio-api` as a dev dependency**, a prebuilt native
+      binary of about 40 MB, so Tone's offline render runs in Node with no audio device. Left
+      on 2026-10-11 after the freed-memory fault below was worked around; running the tests in a
+      headless browser's `OfflineAudioContext` would drop it.
     - **Neither driver can be released before the engine's next minor** (2026-10-11). Both
       `write()`s take nothing now and read `mix.timestamp`, and tone maps time by a booker's
       `at`; both are in the engine's Unreleased section. Their pins still say 0.9.0.
@@ -583,14 +585,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       README says how). It ran in headless Chromium's `AudioContext` with Tone `Param` targets:
       shells rose and bloomed, a meter on Tone's output showed each bang, and ramping `mix.rate`
       between 0.3 and 2 threw nothing. Nobody has listened to it. What writing it against
-      both drivers turned up, each Mike's to decide:
-      - Both packages export `drive`, so a file using both aliases them.
+      both drivers turned up:
+      - Both packages export `drive`, so a file using both aliases them. Kept, 2026-10-11.
       - A booked hit carries its voice's `subjects` now (2026-10-11); fireworks still packs pan
         and size into each event and could read them off the shell.
-      - A subject binds one `Target` per channel, so each rising shell borrows an oscillator
-        from a pool, and one launched with the pool empty has no whistle.
-      - `loop` defaults to looping for good: both of a shell's voices needed `loop: false`, and
-        without it the rise replayed on top of the bloom with nothing refused.
+      - **Open: a subject binds one `Target` per channel**, so each rising shell borrows an
+        oscillator from a pool, and one launched with the pool empty has no whistle. Left on
+        2026-10-11: that is the host's polyphony, and more targets per channel would not give a
+        shell a voice of its own. What would is undecided.
+      - **Open: `loop` defaults to looping for good.** Both of a shell's voices needed
+        `loop: false`, and without it the rise replayed on top of the bloom with nothing
+        refused. Left on 2026-10-11: it is the engine's default for every consumer, so changing
+        it or warning on it is a call about the engine.
     Undecided, and what would close the README's gaps:
     - A read of the mix over a window, returning a run of values or a `keys` voice's own
       breakpoints as exact ramps, in place of a `project` per grid point (31 a write, and only
