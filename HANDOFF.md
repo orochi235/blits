@@ -670,8 +670,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         disturbing that last pair. Step by step: `0937ca1` to `64a5860` 0.990, `64a5860` to
         `2f2fb10` 0.978, `2f2fb10` to `e51cd85` 1.021, every pair's runs overlapping. So it
         is level through `0937ca1`, which clears the `setting.dt` fix, and arrives after it in
-        steps smaller than the 3% a pair of runs resolves. A CPU profile of the row at each
-        end would find it where another A/B would not.
+        steps smaller than the 3% a pair of runs resolves. A CPU profile at each end
+        (`bench/profab.sh da6e613 e51cd85 blend`, teitou, 2026-10-11, one run a side at 5,000
+        frames, 2.974 and 3.110 ms) names no function: every share is within a point of the
+        other side's, so the 0.136 ms is spread over `call`, `foldWith`, `foldLocus`, and
+        `gatherLocus` at 0.02 to 0.03 ms each, none of which changed in the range. What `one`
+        gained there, its `unband` at weight 0 for the member a blend leaves out, is 0.7% of
+        the later profile, about 0.02 ms. That reads as V8 laying out or inlining the same code
+        differently, which `--trace-turbo-inlining` on both builds would confirm or rule out.
       - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one. Run
         2026-10-10 and no pose was found to depend on it: a read ahead of nested spans, fitted
         by `pipe` and by `lax`, with an anchor after the outer one, matched the same scene
