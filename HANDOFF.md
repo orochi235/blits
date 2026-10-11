@@ -569,8 +569,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       binary of about 40 MB, so Tone's offline render runs in Node with no audio device. Left
       on 2026-10-11 after the freed-memory fault below was worked around; running the tests in a
       headless browser's `OfflineAudioContext` would drop it.
-    - **The release workflow's edit has not run for a driver**: the pin checks and the publish
-      step now apply to any driver directory instead of naming quarks.
     - **`node-web-audio-api` 2.2.0 frees a channel's samples under a live array**
       (2026-10-11): the `Float32Array` from `getChannelData` reads freed memory once its
       `AudioBuffer` is collected. `render` in `test/render.ts` returned such arrays and dropped
