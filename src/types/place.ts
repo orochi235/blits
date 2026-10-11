@@ -132,12 +132,12 @@ export interface BookOptions<E = unknown> {
   /**
    * Called once per item: a mark as `marks` lists it, or a hit. `when` is on the outside clock;
    * `lateBy` is how many host ms past the item was when first seen, which is then taken at the
-   * clock's now; it is 0 for one booked ahead. Return a `stop` to hear about a booking whose time moved by
+   * clock's now; it is 0 for one booked ahead. Return a `cancel` to hear about a booking whose time moved by
    * more than 1 ms or that went away (a seek, a rate or ramp on the voice or the mix, a fade, a
    * `rebase`, an anchor's target moving, the voice leaving); the item is then booked again, at its
    * new time, at the same sync.
    */
-  take(item: Marked | BookedHit<E>, when: number, lateBy: number): { stop(): void } | undefined;
+  take(item: Marked | BookedHit<E>, when: number, lateBy: number): { cancel(): void } | undefined;
   /** Book only the voices, and announced marks, carrying this tag. */
   tag?: string;
   /** Book only this score's voices and marks. */
@@ -150,6 +150,6 @@ export interface BookOptions<E = unknown> {
  * @category score
  */
 export interface Booker {
-  /** Stops every booking still ahead, and books nothing more. */
-  stop(): void;
+  /** Cancels every booking still ahead, and books nothing more. */
+  cancel(): void;
 }

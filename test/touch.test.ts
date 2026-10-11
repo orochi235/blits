@@ -125,7 +125,7 @@ describe.each([true, false])('touch, lanes %s', (lanes) => {
       late: 40,
       take(item) {
         if ('hit' in item) took.push(item);
-        return { stop: () => {} };
+        return { cancel: () => {} };
       },
     });
     m.cue({

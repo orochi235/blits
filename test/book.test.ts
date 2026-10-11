@@ -19,7 +19,7 @@ interface Took {
   item: Marked | BookedHit;
   when: number;
   lateBy: number;
-  stopped: boolean;
+  canceled: boolean;
 }
 
 /** A mix with a booker on an outside clock that reads host time plus `skew`, and what it took. */
@@ -33,11 +33,11 @@ function booked(opts: Partial<BookOptions> = {}, skew = 1000) {
     ahead: 100,
     late: 40,
     take(item, when, lateBy) {
-      const t: Took = { item, when, lateBy, stopped: false };
+      const t: Took = { item, when, lateBy, canceled: false };
       took.push(t);
       return {
-        stop: () => {
-          t.stopped = true;
+        cancel: () => {
+          t.canceled = true;
         },
       };
     },
@@ -55,7 +55,13 @@ function booked(opts: Partial<BookOptions> = {}, skew = 1000) {
       .filter((t) => 'hit' in t.item)
       .map((t) => {
         const h = t.item as BookedHit;
-        return { event: h.event, pass: h.pass, when: t.when, lateBy: t.lateBy, stopped: t.stopped };
+        return {
+          event: h.event,
+          pass: h.pass,
+          when: t.when,
+          lateBy: t.lateBy,
+          canceled: t.canceled,
+        };
       });
   return { m, clock, took, booker, sync, run, hits };
 }
@@ -76,11 +82,11 @@ describe('book', () => {
     const { m, sync, hits } = booked();
     cue(m);
     sync(0);
-    expect(hits()).toEqual([{ event: 'whoosh', pass: 0, when: 1000, lateBy: 0, stopped: false }]);
+    expect(hits()).toEqual([{ event: 'whoosh', pass: 0, when: 1000, lateBy: 0, canceled: false }]);
     sync(96);
     expect(hits()).toHaveLength(1);
     sync(112);
-    expect(hits()[1]).toEqual({ event: 'clunk', pass: 0, when: 1200, lateBy: 0, stopped: false });
+    expect(hits()[1]).toEqual({ event: 'clunk', pass: 0, when: 1200, lateBy: 0, canceled: false });
   });
 
   it('books nothing twice across frames, and once per pass of a loop', () => {
@@ -95,7 +101,7 @@ describe('book', () => {
       ['whoosh', 2, 1800],
       ['clunk', 2, 2000],
     ]);
-    expect(hits().every((h) => !h.stopped && h.lateBy === 0)).toBe(true);
+    expect(hits().every((h) => !h.canceled && h.lateBy === 0)).toBe(true);
   });
 
   it('fires a hit once per voice, not once per staggered subject', () => {
@@ -113,7 +119,7 @@ describe('book', () => {
     const { m, run, took } = booked();
     m.cue({ patch: still, loop: false, start: 300, name: 'late' });
     run(0, 800);
-    expect(took.map((t) => [(t.item as Marked).mark, t.when, t.stopped])).toEqual([
+    expect(took.map((t) => [(t.item as Marked).mark, t.when, t.canceled])).toEqual([
       ['start', 1300, false],
       ['in', 1300, false],
       ['coast', 1700, false],
@@ -127,12 +133,12 @@ describe('book', () => {
     const h = cue(m, { loop: 2 });
     sync(0);
     sync(112);
-    expect(hits()[1]).toMatchObject({ event: 'clunk', when: 1200, stopped: false });
+    expect(hits()[1]).toMatchObject({ event: 'clunk', when: 1200, canceled: false });
     h.seek(150);
     sync(128);
     // The seek was made at mix time 112, so clunk is 50 ms from there.
-    expect(hits()[1]?.stopped).toBe(true);
-    expect(hits()[2]).toEqual({ event: 'clunk', pass: 0, when: 1162, lateBy: 0, stopped: false });
+    expect(hits()[1]?.canceled).toBe(true);
+    expect(hits()[2]).toEqual({ event: 'clunk', pass: 0, when: 1162, lateBy: 0, canceled: false });
   });
 
   it('retracts on a voice rate and on a mix rate', () => {
@@ -143,8 +149,8 @@ describe('book', () => {
     h.rate = 2;
     one.sync(128);
     expect(one.hits().slice(1)).toEqual([
-      { event: 'clunk', pass: 0, when: 1200, lateBy: 0, stopped: true },
-      { event: 'clunk', pass: 0, when: 1156, lateBy: 0, stopped: false },
+      { event: 'clunk', pass: 0, when: 1200, lateBy: 0, canceled: true },
+      { event: 'clunk', pass: 0, when: 1156, lateBy: 0, canceled: false },
     ]);
 
     const two = booked();
@@ -154,10 +160,10 @@ describe('book', () => {
     two.m.rate = 0.5;
     two.sync(128);
     // Half speed from 112 puts clunk's remaining 88 ms at 176.
-    expect(two.hits()[1]?.stopped).toBe(true);
+    expect(two.hits()[1]?.canceled).toBe(true);
     expect(two.hits()).toHaveLength(2);
     two.sync(224);
-    expect(two.hits()[2]).toMatchObject({ event: 'clunk', when: 1288, stopped: false });
+    expect(two.hits()[2]).toMatchObject({ event: 'clunk', when: 1288, canceled: false });
   });
 
   it('retracts a child’s hit on its owner’s rate and seek, and books it where they put it', () => {
@@ -169,8 +175,8 @@ describe('book', () => {
     o.rate = 2;
     one.sync(128);
     expect(one.hits().slice(1)).toEqual([
-      { event: 'clunk', pass: 0, when: 1200, lateBy: 0, stopped: true },
-      { event: 'clunk', pass: 0, when: 1156, lateBy: 0, stopped: false },
+      { event: 'clunk', pass: 0, when: 1200, lateBy: 0, canceled: true },
+      { event: 'clunk', pass: 0, when: 1156, lateBy: 0, canceled: false },
     ]);
 
     const two = booked();
@@ -180,13 +186,13 @@ describe('book', () => {
     two.sync(112);
     p.seek(150);
     two.sync(128);
-    expect(two.hits()[1]?.stopped).toBe(true);
+    expect(two.hits()[1]?.canceled).toBe(true);
     expect(two.hits()[2]).toEqual({
       event: 'clunk',
       pass: 0,
       when: 1162,
       lateBy: 0,
-      stopped: false,
+      canceled: false,
     });
     expect(two.hits()).toHaveLength(3);
   });
@@ -199,7 +205,7 @@ describe('book', () => {
     h.fade();
     one.sync(128);
     // Faded at 112 over 50 ms, the voice is gone at 162, before clunk at 200.
-    expect(one.hits()[1]?.stopped).toBe(true);
+    expect(one.hits()[1]?.canceled).toBe(true);
 
     const two = booked();
     const g = cue(two.m);
@@ -207,7 +213,7 @@ describe('book', () => {
     two.sync(112);
     g.fade();
     two.sync(128);
-    expect(two.hits()[1]?.stopped).toBe(true);
+    expect(two.hits()[1]?.canceled).toBe(true);
     two.run(144, 600);
     expect(two.hits()).toHaveLength(2);
   });
@@ -219,7 +225,7 @@ describe('book', () => {
     one.sync(16);
     // The whoosh at -10 was first seen at 16.
     expect(one.hits()).toEqual([
-      { event: 'whoosh', pass: 0, when: 1016, lateBy: 26, stopped: false },
+      { event: 'whoosh', pass: 0, when: 1016, lateBy: 26, canceled: false },
     ]);
 
     const two = booked({ late: 40 });
@@ -239,7 +245,7 @@ describe('book', () => {
       pass: 0,
       when: 1230,
       lateBy: 30,
-      stopped: false,
+      canceled: false,
     });
   });
 
@@ -256,17 +262,17 @@ describe('book', () => {
     expect(hits()).toHaveLength(2);
     clock.skew = 1100;
     sync(144);
-    expect(hits()[1]?.stopped).toBe(true);
+    expect(hits()[1]?.canceled).toBe(true);
     expect(hits()[2]?.when).toBe(1300);
   });
 
-  it('stops everything ahead on stop, and books nothing after', () => {
+  it('cancels everything ahead on cancel, and books nothing after', () => {
     const { m, booker, sync, run, hits } = booked();
     cue(m, { loop: 4 });
     sync(0);
     sync(112);
-    booker.stop();
-    expect(hits().map((h) => h.stopped)).toEqual([false, true]);
+    booker.cancel();
+    expect(hits().map((h) => h.canceled)).toEqual([false, true]);
     run(128, 2000);
     expect(hits()).toHaveLength(2);
   });

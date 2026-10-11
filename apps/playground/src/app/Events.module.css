@@ -31,7 +31,7 @@
   white-space: pre;
 }
 
-.stopped {
+.canceled {
   color: var(--wzl-fg-muted);
   text-decoration: line-through;
 }

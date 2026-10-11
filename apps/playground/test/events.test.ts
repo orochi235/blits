@@ -103,7 +103,7 @@ describe('the event log', () => {
 
   it('books each hit once a pass, and the marks, ahead of time', () => {
     const p = play();
-    const hits = p.events.booked.filter((b) => 'hit' in b.item && !b.stopped);
+    const hits = p.events.booked.filter((b) => 'hit' in b.item && !b.canceled);
     expect(hits.map((b) => 'hit' in b.item && [b.item.event, b.item.pass])).toEqual([
       ['tick', 0],
       ['tock', 0],

@@ -139,7 +139,7 @@ async function render(mode, { step = 5, ahead = 150 } = {}) {
           take: (item, when) => {
             if (!('hit' in item)) return undefined;
             const src = impulse(raw, merge, when);
-            return { stop: () => src.disconnect() };
+            return { cancel: () => src.disconnect() };
           },
         });
       let prev = Number.NEGATIVE_INFINITY;

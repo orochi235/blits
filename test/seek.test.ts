@@ -304,17 +304,17 @@ describe('seek', () => {
   it('books hits after the moment again as the mix reaches them again', () => {
     const m = mix<Part, Pose>(K, kept());
     let host = 0;
-    const took: { hit: BookedHit; stopped: boolean }[] = [];
+    const took: { hit: BookedHit; canceled: boolean }[] = [];
     m.book({
       clock: () => host,
       ahead: 50,
       late: 40,
       take(item) {
-        const t = { hit: item as BookedHit, stopped: false };
+        const t = { hit: item as BookedHit, canceled: false };
         if ('hit' in item) took.push(t);
         return {
-          stop: () => {
-            t.stopped = true;
+          cancel: () => {
+            t.canceled = true;
           },
         };
       },

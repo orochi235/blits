@@ -24,6 +24,7 @@ const drum = new Tone.MembraneSynth().toDestination();
 const tone = drive(m, {
   take: (item, time) => {
     if ('hit' in item) drum.triggerAttackRelease('C2', '8n', time);
+    return undefined;
   },
 });
 tone.attach(voice, { freq: osc.frequency, gain: amp.gain });
@@ -69,7 +70,7 @@ the mix is heard only once the next `write` replaces the curve, which a stall al
     apart its points are, in ms on the audio clock.
   - `take(item, time, lateBy)`: called for each mark and hit within `ahead`, with `time` in
     seconds on the audio clock, to hand to Tone as it is. `item` is what `mix.book` gives its
-    `take`: a hit carries `hit` and its `event`, and a mark has neither. Return a function to be
+    `take`: a hit carries `hit` and its `event`, and a mark has neither. Return a `cancel` to be
     told the item moved or went away; it is then played again at its new time. Without `take`
     the driver books nothing.
   - `late`, default 50, `tag`, and `score`: passed to `mix.book` as they are.

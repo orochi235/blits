@@ -12,7 +12,7 @@ export interface Booked {
   item: Marked | BookedHit;
   when: number;
   lateBy: number;
-  stopped: boolean;
+  canceled: boolean;
 }
 
 const push = <T>(list: T[], item: T) => {
@@ -33,7 +33,7 @@ export class EventLog {
 
   /** Starts over on a new build, booking against `clock`, the host's. */
   attach(built: Built, clock: () => number): void {
-    this.booker?.stop();
+    this.booker?.cancel();
     this.booked = [];
     this.sent = [];
     this.booker = built.mix.book({
@@ -42,11 +42,11 @@ export class EventLog {
       late: Number.POSITIVE_INFINITY,
       ...(this.tag ? { tag: this.tag } : {}),
       take: (item, when, lateBy) => {
-        const entry: Booked = { item, when, lateBy, stopped: false };
+        const entry: Booked = { item, when, lateBy, canceled: false };
         push(this.booked, entry);
         return {
-          stop: () => {
-            entry.stopped = true;
+          cancel: () => {
+            entry.canceled = true;
           },
         };
       },

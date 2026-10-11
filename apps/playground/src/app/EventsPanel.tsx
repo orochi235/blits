@@ -111,7 +111,7 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
           .reverse()
           .map((b, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: a booking taken back and made again repeats
-            <tr key={i} className={b.stopped ? e.stopped : undefined}>
+            <tr key={i} className={b.canceled ? e.canceled : undefined}>
               <td className={e.num}>{ms(b.when)}</td>
               <td className={e.num}>{ms(b.lateBy)}</td>
               <td>

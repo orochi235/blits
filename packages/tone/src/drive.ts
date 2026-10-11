@@ -27,10 +27,14 @@ export interface DriveOptions<E = unknown> {
   clock?: () => number;
   /**
    * Called once for each mark and hit within `ahead`, as `BookOptions.take` is, with `time` in
-   * seconds on the audio clock. Return a function to hear that the item moved or went away; it is
+   * seconds on the audio clock. Return a `cancel` to hear that the item moved or went away; it is
    * then played again at its new time. Without `take` the driver books nothing.
    */
-  take?: (item: Marked | BookedHit<E>, time: number, lateBy: number) => (() => void) | undefined;
+  take?: (
+    item: Marked | BookedHit<E>,
+    time: number,
+    lateBy: number,
+  ) => { cancel(): void } | undefined;
   /** Play only the voices, and announced marks, carrying this tag. */
   tag?: string;
   /** Play only this score's voices and marks. */
@@ -82,10 +86,7 @@ export function drive<I, O, E = unknown>(mix: Mix<I, O>, opts: DriveOptions<E> =
       late,
       tag: opts.tag,
       score: opts.score,
-      take(item, when, lateBy) {
-        const stop = take(item, when / 1000, lateBy);
-        return stop === undefined ? undefined : { stop };
-      },
+      take: (item, when, lateBy) => take(item, when / 1000, lateBy),
     });
 
   const hold = (b: Bound<O>, time: number): void => {
@@ -139,7 +140,7 @@ export function drive<I, O, E = unknown>(mix: Mix<I, O>, opts: DriveOptions<E> =
     },
 
     cancel() {
-      booker?.stop();
+      booker?.cancel();
       const time = seconds();
       for (const b of bound.values()) hold(b, time);
       bound.clear();

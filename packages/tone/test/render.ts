@@ -60,7 +60,7 @@ export async function render(opts: RenderOptions = {}): Promise<Rendered> {
         Tone.connect(src, merge, 0, 2);
         src.start(time);
         src.stop(time + 2 / SR);
-        return () => src.disconnect();
+        return { cancel: () => src.disconnect() };
       };
       const driver = drive(m, {
         clock: () => read / 1000,

@@ -5,7 +5,7 @@ import type { Voice } from './voice.js';
 const RESYNC_MS = 50;
 /** The share of each frame's residual folded into the offset. */
 const SLEW = 0.05;
-/** A booking whose time moves by more than this is stopped and taken again. */
+/** A booking whose time moves by more than this is canceled and taken again. */
 const RETIME_MS = 1;
 
 const none: readonly string[] = [];
@@ -28,7 +28,7 @@ export interface BookHost<I, O> {
   /** Mix time a voice is gone at, where something has fixed it. */
   endOf(voice: Voice<I, O>): number | undefined;
   marks(from: number, to: number): Listed[];
-  /** The booker stopped: forget it. */
+  /** The booker canceled: forget it. */
   unhook(booker: Book<I, O>): void;
 }
 
@@ -48,7 +48,7 @@ interface Booking {
   time: number;
   /** Outside-clock time it was booked for, before holding it to the clock's now. */
   at: number;
-  taken: { stop(): void } | undefined;
+  taken: { cancel(): void } | undefined;
 }
 
 /** A voice with hits, as one booker follows it. */
@@ -78,7 +78,7 @@ export class Book<I, O> implements Booker {
   /** The mix clock at the previous sync, where a voice's clock change counts from. */
   private prev = Number.NaN;
   private round = 0;
-  private stopped = false;
+  private canceled = false;
   /** The host time the mix last sought at: a mark at or before it was taken before the seek. */
   private floor = Number.NEGATIVE_INFINITY;
   /** Bookings of marks, by `keyOf`, kept while listed so one already taken is not taken late. */
@@ -93,7 +93,7 @@ export class Book<I, O> implements Booker {
 
   /** Books what comes within `ahead` of this sync, and retracts what moved. */
   sync(): void {
-    if (this.stopped) return;
+    if (this.canceled) return;
     const host = this.host;
     const now = host.timestamp;
     const c = this.opts.clock();
@@ -127,27 +127,27 @@ export class Book<I, O> implements Booker {
       for (const [k, b] of t.booked) if (b.time <= now) t.booked.delete(k);
   }
 
-  stop(): void {
-    if (this.stopped) return;
-    this.stopped = true;
-    for (const b of this.marked.values()) if (b.time > this.last) b.taken?.stop();
+  cancel(): void {
+    if (this.canceled) return;
+    this.canceled = true;
+    for (const b of this.marked.values()) if (b.time > this.last) b.taken?.cancel();
     for (const t of this.tracks.values())
-      for (const b of t.booked.values()) if (b.time > this.last) b.taken?.stop();
+      for (const b of t.booked.values()) if (b.time > this.last) b.taken?.cancel();
     this.marked.clear();
     this.tracks.clear();
     this.host.unhook(this);
   }
 
   /**
-   * The mix was sought to `host.now`, back or ahead: what is booked ahead is stopped, and
+   * The mix was sought to `host.now`, back or ahead: what is booked ahead is canceled, and
    * everything after that moment is booked as the mix reaches it.
    */
   sought(): void {
-    if (this.stopped) return;
+    if (this.canceled) return;
     const last = this.last;
-    for (const b of this.marked.values()) if (b.time > last) b.taken?.stop();
+    for (const b of this.marked.values()) if (b.time > last) b.taken?.cancel();
     for (const t of this.tracks.values())
-      for (const b of t.booked.values()) if (b.time > last) b.taken?.stop();
+      for (const b of t.booked.values()) if (b.time > last) b.taken?.cancel();
     this.marked.clear();
     this.tracks.clear();
     const host = this.host;
@@ -185,7 +185,7 @@ export class Book<I, O> implements Booker {
       const b = marked.get(key);
       if (b !== undefined) {
         if (b.time <= now || this.stands(b, m.timestamp)) continue;
-        b.taken?.stop();
+        b.taken?.cancel();
         marked.delete(key);
       }
       const { order: _, ...item } = m;
@@ -193,7 +193,7 @@ export class Book<I, O> implements Booker {
     }
     for (const [key, b] of marked)
       if (!seen.has(key)) {
-        if (b.time > now) b.taken?.stop();
+        if (b.time > now) b.taken?.cancel();
         marked.delete(key);
       }
   }
@@ -226,7 +226,7 @@ export class Book<I, O> implements Booker {
         if (b.time <= now) continue;
         const time = this.timeOfHit(voice, hits, Math.floor(key / n), key % n, end);
         if (this.stands(b, time)) continue;
-        b.taken?.stop();
+        b.taken?.cancel();
         t.booked.delete(key);
         moved = true;
       }
@@ -262,7 +262,7 @@ export class Book<I, O> implements Booker {
     }
     for (const [voice, t] of this.tracks) {
       if (t.met === round) continue;
-      for (const b of t.booked.values()) if (b.time > now) b.taken?.stop();
+      for (const b of t.booked.values()) if (b.time > now) b.taken?.cancel();
       this.tracks.delete(voice);
     }
   }

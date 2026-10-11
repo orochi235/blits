@@ -631,9 +631,9 @@ interface Mix&lt;I, O, H = unknown&gt; {
   touch(subject?: I): void;
   <span class="cm">/** Every event sent since the last drain, earliest first. Drain after probing. */</span>
   drain&lt;E&gt;(tag?: string): { timestamp: number; subject: I; voice: number; tags: readonly string[]; event: E }[];
-  <span class="cm">/** Hands the host each mark and hit `ahead` ms before it comes, on a clock of its own, and stops what moves. See Time. */</span>
+  <span class="cm">/** Hands the host each mark and hit `ahead` ms before it comes, on a clock of its own, and cancels what moves. See Time. */</span>
   book&lt;E&gt;(opts: { clock: () =&gt; number; ahead: number; late: number; tag?: string; score?: string;
-    take(item: Marked | BookedHit&lt;E&gt;, when: number, lateBy: number): { stop(): void } | undefined }): { stop(): void };
+    take(item: Marked | BookedHit&lt;E&gt;, when: number, lateBy: number): { cancel(): void } | undefined }): { cancel(): void };
 }</code></pre>
 
 <p>A probe walks the voices that may reach its subject, not every voice. With no <code>target</code> in the mix that is all of them, so nothing is kept; once a voice targets, each subject keeps the list of voices whose <code>target</code> took it, rebuilt when a voice is cued, starts or leaves. One voice per subject on a shared mix then costs one voice per probe: 1000 subjects, each with its own voice, took 95&nbsp;ms a frame before the list and 0.45&nbsp;ms after (<code>npm run bench</code>, rows <code>own</code>). Building the list still asks every <code>target</code> of every new subject, so the first frame of that scene took 500&ndash;580&nbsp;ms. A voice that names its subjects with <code>subjects</code> is filed under each of them at <code>cue</code>, and a subject's list is built from the voices filed under it and those that name none: the same scene's first frame took 1.0&nbsp;ms, and 10.6&nbsp;ms at 10,000 subjects (rows <code>named</code>).</p>
@@ -697,7 +697,7 @@ mix.book({
   take(item) {
     if ('hit' in item || item.mark !== 'start') return;
     const video = load(clips[item.name]);
-    return { stop: () =&gt; video.release() };
+    return { cancel: () =&gt; video.release() };
   },
 });</code></pre>
     A hit plays once per pass, for the voice and never per subject, so <code>stagger</code> does not spread it; it sits on the voice clock exactly where a mark does, through the voice's rate, ramp and seeks, its owners', and <code>mix.rate</code>. Booking runs at each <code>sync</code> and takes whatever falls within <code>ahead</code> host ms, which has to cover the longest gap between syncs. <code>when</code> is on the outside clock, by an offset that folds in 5% of each frame's difference and starts over from the clock's own reading on a jump past 50&nbsp;ms (weasel's filter). Nothing is booked twice: a mark is known by its voice and which mark, a hit by its voice, index and pass. A booking whose time moves by more than 1&nbsp;ms, or that goes away, has its <code>stop</code> called and is booked again at the same sync: a seek, a rate or ramp on the voice, an owner or the mix, a fade or <code>mute</code>, a <code>rebase</code>, an anchor's target moving, the voice leaving. A fade takes away the hits after the voice is gone, and the hits within the fade still play. An item first seen already past, from a voice cued partway through or a stalled frame, is taken at the outside clock's now with <code>lateBy</code> in host ms, unless that is more than <code>late</code>. What a seek jumps over is not late; it is skipped. Hits come as the voice clock runs forward, so a voice run backwards books none. <code>tag</code> and <code>score</code> split one mix between bookers, and <code>stop()</code> on what <code>book</code> returns stops every booking still ahead. <code>project</code> books nothing, and under <code>history</code> nothing about booking is kept or replayed: a read back says what was planned, not what was booked. A mix with no booker pays nothing for it.</li>
