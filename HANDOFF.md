@@ -649,10 +649,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         and one faded before it started run off lanes. Timed with everything else since
         `da6e613` (teitou, 2026-10-10, 7 rounds, `e51cd85` against `da6e613`, 14 rows over
         `fn`, `named`, `probed`, `blend`, `keys`, and `typing`, geometric mean 1.011): every
-        row's runs overlap the other side's but `blend`, 2.976 to 3.128 ms a frame (1.05×,
-        2.93–3.03 against 3.07–3.19). Not traced to a commit: `64a5860`, which changed a
-        locus's fold on a `last()` channel, is in that range beside the backward-play ones
-        (`rawAt`, `before`, and `shownAt` in `contribution`).
+        row's runs overlap the other side's but `blend`.
+      - **`blend` reads about 5% slower at `e51cd85` than at `da6e613`, and no one commit
+        shows it** (teitou, 2026-10-10, `AB_EACH=1 bench/ab.sh` over `blend` alone, 7 rounds at
+        5,000 frames, medians in ms a frame). The whole range: 2.937 to 3.105, 1.057, the runs
+        apart but for one. Against `da6e613` each time: `ed0eab9` 2.945 to 2.949, `717a5be`
+        2.940 to 2.943, `0937ca1` 2.946 to 2.955, `2f2fb10` 2.945 to 3.161 with another job
+        disturbing that last pair. Step by step: `0937ca1` to `64a5860` 0.990, `64a5860` to
+        `2f2fb10` 0.978, `2f2fb10` to `e51cd85` 1.021, every pair's runs overlapping. So it
+        is level through `0937ca1`, which clears the `setting.dt` fix, and arrives after it in
+        steps smaller than the 3% a pair of runs resolves. A CPU profile of the row at each
+        end would find it where another A/B would not.
       - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one. Run
         2026-10-10 and no pose was found to depend on it: a read ahead of nested spans, fitted
         by `pipe` and by `lax`, with an anchor after the outer one, matched the same scene
