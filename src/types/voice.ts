@@ -65,7 +65,9 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
 
   /**
    * When the voice starts, in ms on the host's clock, the one it passes `sync`: a rAF timestamp and
-   * `performance.now()` share an origin, `Date.now()` does not. Default: the next sync.
+   * `performance.now()` share an origin, `Date.now()` does not. Default: the time the mix last
+   * synced to, and 0 for a voice cued before the first sync, which that sync finds already as far
+   * in as its timestamp.
    */
   start?: number;
   /**

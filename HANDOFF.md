@@ -596,10 +596,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 12. **What the docs audit left** (2026-10-10). The schema page's interface listings now carry
     every public member, and the page and README cover what the audit found missing.
-    - **The Time section's "Calls land on the next sync … Nothing changes mid-frame" contradicts
-      the weight setter**, which writes the voice at once (`set weight` in `src/handle.ts`), and
-      the page's own "How sure" bullet. Whether `fade` and the other calls also land at once was
-      not read, so the bullet is not yet rewritten.
+    - **A voice cued before the mix's first sync starts at 0 on the host's clock, not at that
+      sync** (measured 2026-10-11): a one-pass 1 s voice cued before `sync(5000)` has ended
+      when it is first probed. `VoiceSpec.start` said "Default: the next sync" and now says
+      what happens. Whether it should start at the first sync instead is Mike's call; a page
+      that cues before its first `requestAnimationFrame` meets it.
     - **Not checked**: the page's timings and its table of consumers' kits, which are other
       repos' facts, and the playground README's gestures against the widget code.
 

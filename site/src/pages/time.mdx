@@ -45,7 +45,7 @@ The next sync then takes the gap out of the mix's clock, and every voice, fade a
 
 The host's clock is whatever it passes to `sync`, and a voice's `start` has to be on the same one. A `requestAnimationFrame` timestamp and `performance.now()` share an origin, so they mix freely. `Date.now()` counts from 1970 and does not.
 
-A handle's `weight`, `rate` and `fade` can be set at any time on the host's side, and they land on the next sync. Nothing changes partway through a frame.
+A handle's `weight`, `rate`, and `fade` can be set at any time on the host's side, and they land at once, at the time the mix last synced to: the next `probe` shows them. A subject probed before such a call and again after it in one frame reads two poses, so make a frame's calls before its probes.
 
 ## Reference
 
