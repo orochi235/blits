@@ -428,7 +428,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
 
-1d. **`@msb235/blits-quarks` 0.5.0 is on npm**, pinned to engine 0.9.0 and published from its
+1d. **`@msb235/blits-quarks` 0.6.0 is on npm**, pinned to engine 0.10.0 and published from its
    `quarks-v0.4.0` tag (0.1.0 went out by hand, because npm refuses trust for a name never
    published). Its README says how it works. magicsmoke is on engine 0.8.1 but its fizz and tuning stay on its own code: the driver doesn't fit without changing
    what magicsmoke does. Its `docs/HANDOFF.md` has the gaps; the likely driver changes are a
@@ -561,7 +561,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 11. **`@msb235/blits-tone` 0.1.0 is built in `packages/tone` and not published** (2026-10-10).
     Its README says what it is, how it works, and what it does not do; it is pinned to engine
-    0.9.0 with Tone as a peer, and a `tone-v*` tag releases it as `quarks-v*` does quarks. npm
+    0.10.0 with Tone as a peer, and a `tone-v*` tag releases it as `quarks-v*` does quarks. npm
     refuses trust for a name never published, so 0.1.0 goes out by hand, as quarks' did. Mike
     settled its names on 2026-10-11 (`drive`, `attach`, `detach`, `write`, `cancel`, and the
     options `ahead`, `grid`, `late`, `clock`, `take`, `tag`, `score`). Calls made in building:
@@ -569,9 +569,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       binary of about 40 MB, so Tone's offline render runs in Node with no audio device. Left
       on 2026-10-11 after the freed-memory fault below was worked around; running the tests in a
       headless browser's `OfflineAudioContext` would drop it.
-    - **Neither driver can be released before the engine's next minor** (2026-10-11). Both
-      `write()`s take nothing now and read `mix.timestamp`, and tone maps time by a booker's
-      `at`; both are in the engine's Unreleased section. Their pins still say 0.9.0.
     - **The release workflow's edit has not run for a driver**: the pin checks and the publish
       step now apply to any driver directory instead of naming quarks.
     - **`node-web-audio-api` 2.2.0 frees a channel's samples under a live array**
