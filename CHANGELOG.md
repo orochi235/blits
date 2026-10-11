@@ -45,6 +45,8 @@ version and everything else the patch. Each release lists its changes as **Break
   into the pass before, with `setting.pass` and `setting.elapsed` below 0. It runs on the
   general path.
 - `handle.ramp` through 0 eases a voice into reverse, or out of it.
+- `@msb235/blits-tone`, a package in `packages/tone` that drives Tone.js from a mix on the audio
+  clock. Its own changelog has what it does.
 
 ### Fixed
 

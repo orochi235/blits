@@ -116,6 +116,11 @@ state shared between subjects, a `step` that lands differently from the same sta
 [three.quarks](https://github.com/Alchemist0823/three.quarks) particles. It is published separately
 so the engine keeps no dependencies; its README says how it works.
 
+`packages/tone` is `@msb235/blits-tone`, a driver that schedules a mix on the audio clock through
+[Tone.js](https://tonejs.github.io): channels as parameter curves read ahead, and hits and marks at
+their sample. It is published separately for the same reason, and its README says what it does not
+do yet.
+
 ## Status
 
 v0.8.1, with five consumers. magicsmoke runs every fault on it, wod its wheel, tricks and
