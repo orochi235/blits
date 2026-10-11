@@ -387,8 +387,8 @@ interface Setting&lt;S = void, H = unknown&gt; {
 <p>Three authoring forms build a patch. All return the same interface, so a voice cannot tell them apart.</p>
 <div class="tbl"><table>
   <tr><th>form</th><th>signature</th><th>what it is</th></tr>
-  <tr><td><code>fn</code></td><td><code>patch(duration, at, { writes, state?, step? })</code></td><td>Procedural. Flicker, roving, a hash walk, a starter strike. Only a JS engine can run one.</td></tr>
-  <tr><td><code>keys</code></td><td><code>keys(duration, stops, { ease?, easeBy?, delayBy?, lerpBy? })</code></td><td>Declarative stops, klieg's transition sugar and wod's keyframes. Data preserved on <code>patch.keys</code>, and the options on the patch as fields of their own names, for an engine that reads data instead of calling functions.</td></tr>
+  <tr><td><code>fn</code></td><td><code>patch(duration, at, { writes?, kit?, reads?, state?, step?, pack?, unpack? })</code></td><td>Procedural. Flicker, roving, a hash walk, a starter strike. Only a JS engine can run one.</td></tr>
+  <tr><td><code>keys</code></td><td><code>keys(duration, stops, { ease?, easeBy?, delayBy?, lerpBy?, kit? })</code></td><td>Declarative stops, klieg's transition sugar and wod's keyframes. Data preserved on <code>patch.keys</code>, and the options on the patch as fields of their own names, for an engine that reads data instead of calling functions.</td></tr>
   <tr><td><code>motion</code></td><td><code>spring(writes, opts)</code>, <code>glide(writes, opts)</code>, <code>tween(writes, opts)</code></td><td>Momentum, or an eased curve between two values, solved in closed form per subject; <a href="#motion">below</a>. The kind and its constants are preserved on <code>patch.motion</code>, a <code>MotionSpec</code>.</td></tr>
 </table></div>
 

@@ -575,9 +575,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 12. **What the docs audit left** (2026-10-10). The schema page's interface listings now carry
     every public member, and the page and README cover what the audit found missing.
     - **The Time section's "Calls land on the next sync … Nothing changes mid-frame" contradicts
-      the weight setter**, which writes the voice at once, and the page's own "How sure" bullet.
-    - **The Patches forms table abridges its option lists**: `patch` also takes `kit`, `reads`,
-      `pack`, and `unpack`, and `keys` takes `kit`.
+      the weight setter**, which writes the voice at once (`set weight` in `src/handle.ts`), and
+      the page's own "How sure" bullet. Whether `fade` and the other calls also land at once was
+      not read, so the bullet is not yet rewritten.
     - **Not checked**: the page's timings and its table of consumers' kits, which are other
       repos' facts, and the playground README's gestures against the widget code.
 
