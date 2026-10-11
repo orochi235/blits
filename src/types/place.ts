@@ -47,7 +47,10 @@ export type Anchor =
  * Where a voice sits on the mix clock: at most one of `start` and `in`, and at most one of `out`
  * and `end`, each a timestamp on the host's clock or an anchor to another voice. A voice whose
  * anchor has no answer yet waits pending; one whose anchored mark is already past starts partway
- * through, as playback does from the middle of a region.
+ * through, as playback does from the middle of a region. A fade out begins no earlier than the
+ * voice starts: an `end` that leaves less room than `fade.out` shortens the fade to fit, and one
+ * before the start makes the voice an instant, which starts and ends at its start and shows
+ * nothing.
  *
  * @category score
  */

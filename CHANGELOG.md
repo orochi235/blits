@@ -11,6 +11,12 @@ version and everything else the patch. Each release lists its changes as **Break
 - A stock `last()` channel in a locus takes its heaviest member's value, and the later cued of
   two as heavy. It stepped through its members in cue order, so three voices at weights 0.3,
   0.3, and 0.4 showed the second. Two members read as before.
+- A placement whose `end` comes before its start is an instant: the voice starts and ends at its
+  start, shows nothing, and warns once outside production. Its `end` mark was reported ahead of
+  its `start`, so a voice anchored after it started before it did, and with a `fade.out` it
+  showed a whole fade from its start. An `end` that leaves less room than `fade.out` now
+  shortens the fade to finish when asked, where the fade ran its whole length past it, and an
+  `out` before the start is reported at the start, where its fade always began.
 
 ### Fixed
 

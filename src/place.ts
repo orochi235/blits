@@ -1,3 +1,4 @@
+import { same } from './clock.js';
 import { departedMatches } from './departed.js';
 import { reorigin } from './held.js';
 import { noted } from './history.js';
@@ -7,6 +8,7 @@ import { mixTime, ownerReading } from './owner.js';
 import { holders, scored, scoredGone, scoreVersion, unhold } from './scored.js';
 import type { Anchor, Mark, Placement, Query, VoiceSpec } from './types.js';
 import { none, type Voice } from './voice.js';
+import { warnOnce } from './warn.js';
 
 /** What a voice's own owner's clock reads now: the mix clock for a voice no owner holds. */
 export function localNow<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): number {
@@ -142,9 +144,25 @@ export function place<I, O>(mix: Mixer<I, O>): void {
         const t = by === undefined ? undefined : resolve(mix, by, voice);
         if (t !== undefined) {
           const m = voice.owner === null ? t : mixTime(voice.owner, t);
-          const at = anchor.out !== undefined ? m : m - (voice.fade.out ?? 0);
-          if (at !== voice.outAt) {
+          const start = startOf(voice);
+          let at = anchor.out !== undefined ? m : m - (voice.fade.out ?? 0);
+          let over = Number.NaN;
+          // A fade out begins no earlier than its voice starts, and one that has to end by `m`
+          // is shortened to; an end before the start leaves the voice an instant at its start.
+          if (at < start && Number.isFinite(start)) {
+            at = start;
+            if (anchor.end !== undefined) {
+              over = m > start ? m - start : 0;
+              if (m < start && !mix.projecting)
+                warnOnce(
+                  voice,
+                  `${voice.spec.name ?? `voice ${voice.id}`}'s placement ends before it starts, so it plays as an instant`,
+                );
+            }
+          }
+          if (at !== voice.outAt || !same(over, voice.outOver)) {
             voice.outAt = at;
+            voice.outOver = over;
             noted(mix, voice);
             moved = true;
           }

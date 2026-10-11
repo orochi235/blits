@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
+import type { Anchor } from '../src/types.js';
 
 interface Pose {
   x: number;
@@ -424,5 +425,94 @@ describe('an anchor to a voice that has already left, without history', () => {
     expect(
       (m as unknown as { departed: { all: Set<unknown> } }).departed.all.size,
     ).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('a placement whose end comes before its start', () => {
+  const scene = (lanes: boolean, end: Anchor, out = 200) => {
+    const m = mix<Row, Pose>(K, { lanes });
+    m.sync(0);
+    m.cue({ patch: hold(300), name: 'a', start: 100, loop: false });
+    const b = m.cue({
+      patch: dim(1000),
+      name: 'b',
+      fade: { out },
+      anchor: { start: { after: 'a' }, end },
+    });
+    m.cue({ patch: hold(100), name: 'c', loop: false, anchor: { start: { after: 'b' } } });
+    return { m, b };
+  };
+
+  it('is an instant: it starts and ends at its start, and what waits on it follows', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    for (const lanes of [true, false]) {
+      const { m, b } = scene(lanes, { with: 'a' });
+      expect(at(m, 0, 5000).filter((l) => / [bc] /.test(l))).toEqual([
+        '400 b start',
+        '400 b in',
+        '400 b out',
+        '400 b end',
+        '400 c start',
+        '400 c in',
+        '500 c coast',
+        '500 c out',
+        '500 c end',
+      ]);
+      const row = { id: 'r' };
+      for (let t = 16; t <= 480; t += 16) {
+        m.sync(t);
+        expect(m.probe(row).gain, `lanes ${lanes} at ${t}`).toBe(1);
+      }
+      expect(b.state).toBe('done');
+    }
+    warn.mockRestore();
+  });
+
+  it('warns once, naming the voice', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { m } = scene(true, { with: 'a' });
+    for (let t = 16; t <= 480; t += 16) m.sync(t);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toMatch(/b's placement ends before it starts/);
+    warn.mockRestore();
+  });
+
+  it('shortens the fade of an end that leaves it less room than fade.out', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    for (const lanes of [true, false]) {
+      // a ends at 400, so b starts there and is to be gone 80 ms on.
+      const { m } = scene(lanes, { after: 'a', by: 80 });
+      expect(at(m, 0, 5000).filter((l) => / b /.test(l))).toEqual([
+        '400 b start',
+        '400 b in',
+        '400 b out',
+        '480 b end',
+      ]);
+      const row = { id: 'r' };
+      m.sync(440);
+      expect(m.probe(row).gain, `lanes ${lanes}`).toBeCloseTo(0.75);
+      m.sync(480);
+      expect(m.probe(row).gain, `lanes ${lanes}`).toBe(1);
+    }
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('keeps an out before the start at the start, where its fade begins', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: hold(300), name: 'a', start: 100, loop: false });
+    m.cue({
+      patch: dim(1000),
+      name: 'b',
+      fade: { out: 200 },
+      anchor: { start: { after: 'a' }, out: { with: 'a' } },
+    });
+    expect(at(m, 0, 5000).filter((l) => / b /.test(l))).toEqual([
+      '400 b start',
+      '400 b in',
+      '400 b out',
+      '600 b end',
+    ]);
   });
 });
