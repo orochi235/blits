@@ -2,6 +2,7 @@ import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
 import { aims, chain, linkable, relink } from './chain.js';
 import { type LerpInto, lerpInto } from './channels.js';
+import type { Column } from './columns.js';
 import { cue } from './cue.js';
 import { DepartedIndex } from './departed.js';
 import type { Due } from './due.js';
@@ -149,6 +150,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   pulledSlots = new Int32Array(0);
   pulledVersion = Number.NaN;
   pulledRelinks = -1;
+  /** What `pull` knows of each channel it has written, by name; none until the first pull. */
+  pullColumns: Map<string, Column> | null = null;
   /** Counts chains made stale one subject at a time, which `version` does not. */
   relinks = 0;
   /** Read once a sync, so a `reduce` function is not called per voice per subject. */
