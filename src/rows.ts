@@ -176,6 +176,11 @@ export function bury<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number): void 
   c.dead++;
 }
 
+/** Copies `n` numbers of a row; a view of them to hand `set` was three objects a row moved. */
+function carry(from: Float64Array, a: number, to: Float64Array, b: number, n: number): void {
+  for (let i = 0; i < n; i++) to[b + i] = from[a + i] as number;
+}
+
 function copyRow<I, O>(
   from: Crowd<I, O>,
   p: number,
@@ -185,11 +190,11 @@ function copyRow<I, O>(
 ): void {
   from.fix(p);
   to.list[q] = from.list[p] as number;
-  to.data.set(from.data.subarray(p * Row.STRIDE, (p + 1) * Row.STRIDE), q * Row.STRIDE);
-  to.hot.set(from.hot.subarray(p * from.stride, (p + 1) * from.stride), q * to.stride);
+  carry(from.data, p * Row.STRIDE, to.data, q * Row.STRIDE, Row.STRIDE);
+  carry(from.hot, p * from.stride, to.hot, q * to.stride, from.stride);
   copyKeys(keys, to, q);
   if (((from.hot[p * from.stride + Hot.FLAGS] as number) & Flag.STALE) !== 0) to.stale = true;
-  to.samples.set(from.samples.subarray(p * from.axes, (p + 1) * from.axes), q * to.axes);
+  carry(from.samples, p * from.axes, to.samples, q * to.axes, from.axes);
   to.deltas[q] = from.deltas[p] ?? null;
   to.records[q] = from.records[p];
   to.voices[q] = from.voices[p] as Voice<I, O>;
