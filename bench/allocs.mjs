@@ -2,6 +2,7 @@
 // functions that allocated the most, worst first, with the line each begins at. Sampled, so a share
 // of the whole and not a byte count: `kB/frame` in the row's own line is the count.
 //   node bench/allocs.mjs keys:10000     TOP (default 25) is how many functions to print.
+// BENCH=./reach.mjs profiles that file's rows instead.
 import { Session } from 'node:inspector/promises';
 
 const session = new Session();
@@ -11,7 +12,7 @@ await session.post('HeapProfiler.startSampling', {
   includeObjectsCollectedByMajorGC: true,
   includeObjectsCollectedByMinorGC: true,
 });
-await import('./frame.mjs');
+await import(process.env.BENCH ?? './frame.mjs');
 const { profile } = await session.post('HeapProfiler.stopSampling');
 const self = new Map();
 let total = 0;

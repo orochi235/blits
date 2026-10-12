@@ -2,7 +2,8 @@
 // Rows print as they finish; `first` is the first frame, where each voice meets each subject;
 // `p99` and `worst` are single frames, where a collection landing mid-frame shows; `gc` counts
 // collections during the timed frames and the ms they paused for, and `kB/frame` is what a timed
-// frame allocated, the row's own patches included. WINDOW=2500 also prints the mean
+// frame allocated, the row's own patches included; `p50` is the median frame, which other jobs on
+// a shared node move less than the mean. WINDOW=2500 also prints the mean
 // of each run of that many frames, for a cost that drifts as the run goes on.
 import { PerformanceObserver } from 'node:perf_hooks';
 import { getHeapStatistics } from 'node:v8';
@@ -511,6 +512,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   const kb = (getHeapStatistics().total_allocated_bytes - allocatedBefore) / frames / 1024;
   const ms = each.reduce((a, b) => a + b, 0) / frames;
   each.sort();
+  const p50 = each[(frames - 1) >> 1];
   const p99 = each[Math.ceil(frames * 0.99) - 1];
   const worst = each[frames - 1];
   await new Promise((r) => setTimeout(r, 0));
@@ -518,7 +520,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   console.log(
     `${String(i + 1).padStart(2)}/${chosen.length}  ${form.padEnd(wide)} N=${String(n).padStart(6)} V=${voices}` +
       `  ${ms.toFixed(3).padStart(8)} ms/frame  ${ns.toFixed(0).padStart(5)} ns/subject·voice` +
-      `  p99 ${p99.toFixed(3).padStart(8)}  worst ${worst.toFixed(3).padStart(8)}` +
+      `  p50 ${p50.toFixed(3).padStart(8)}  p99 ${p99.toFixed(3).padStart(8)}  worst ${worst.toFixed(3).padStart(8)}` +
       `  first ${first.toFixed(1).padStart(7)} ms` +
       `  gc ${String(gcs - before).padStart(4)} ${(paused - pausedBefore).toFixed(1).padStart(6)} ms` +
       `  ${kb.toFixed(1).padStart(8)} kB/frame`,
