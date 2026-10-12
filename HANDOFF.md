@@ -19,7 +19,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 ## State
 
 - `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.10.0 (2026-10-11).
-- **Unreleased on `main`, not pushed** (2026-10-11): a read ahead after a seek back that plays
+- **Unreleased on `main`** (2026-10-11): a read ahead after a seek back that plays
   the tape's calls, a voice's own `stepMs`, and three fixes found on the way. The changelog's
   Unreleased section lists them. Chosen while building, Mike's to overturn: the name `stepMs` on a voice's spec, with 0 meaning the frame's gap; that a read
   ahead moves the tape forward and back, which the tape's subscribers hear; and which two calls
