@@ -6,7 +6,10 @@
 // play under, and moves them; it needs both builds to have `mix.owns`. SAME_SEEK=1 gives every mix
 // history with a tape and a fixed step more often than not, and seeks the mix back before a sync,
 // in some scenes before every one, mostly returning to where it was; what it decides comes from a
-// generator of its own, so the scene is otherwise the one the seed makes without it.
+// generator of its own, so the scene is otherwise the one the seed makes without it. SAME_WAIT=1
+// has some cues play a stepped patch under a stagger with `freeze: 'before'`, and moves their
+// clocks while subjects wait on their delays, again from a generator of its own; with SAME_SEEK
+// those are the records a seek puts back from a copy kept before their start.
 // `bench/same.sh <rev>` builds a revision and compares it with this tree's dist.
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -19,6 +22,7 @@ const scenes = Number(process.argv[4] ?? 300);
 const paced = process.env.SAME_RATE === '1';
 const owning = process.env.SAME_OWNS === '1';
 const seeking = process.env.SAME_SEEK === '1';
+const waiting = process.env.SAME_WAIT === '1';
 const first = Number(process.argv[5] ?? 1);
 const load = (dir) => import(pathToFileURL(resolve(dir, 'index.js')).href);
 const [A, B] = await Promise.all([load(distA), load(distB)]);
@@ -77,6 +81,9 @@ function run(lib, seed, general = false) {
     if (q() < 0.6) opts.stepMs ??= among([4, 8, 16]);
     if (q() < 0.1) opts.maxDt = 100;
   }
+  const w = rng(seed ^ 0x3a17);
+  const from = (xs) => xs[Math.floor(w() * xs.length)];
+  const waits = [];
   const m = lib.mix(K, opts);
   const subjects = Array.from({ length: int(1, 40) }, (_, i) => ({ i, seed: r() * 10 }));
   const ease = () => pick(['linear', 'ease', 'ease-in', 'ease-out', (u) => u * u, undefined]);
@@ -251,8 +258,25 @@ function run(lib, seed, general = false) {
       spec.owner = pick(owners);
       if (spec.start !== undefined) spec.start = pick([0, 100, 300]);
     }
+    const waited = waiting && w() < 0.4;
+    if (waited) {
+      const k = from([0.5, 1, 2]);
+      const gap = from([7, 25, 60]);
+      spec.patch = lib.patch(0, (_ph, s, st) => ({ off: st.state.x * k + s.seed }), {
+        writes: ['off'],
+        state: () => ({ x: 0 }),
+        step: (st, dt) => {
+          st.x += (1 - st.x) * Math.min(1, dt / 300);
+        },
+      });
+      spec.loop = true;
+      spec.stagger = (s) => s.i * gap;
+      spec.freeze = 'before';
+      made = `waiting off, ${gap} ms apart`;
+    }
     const h = attempt('cue', () => m.cue(spec));
     if (h !== undefined) handles.push(h);
+    if (h !== undefined && waited) waits.push(h);
     say(
       `cue #${handles.length - 1} ${made} reach=${reach}`,
       spec.subjects ? `[${spec.subjects.map((s) => s.i)}]` : '',
@@ -317,6 +341,16 @@ function run(lib, seed, general = false) {
       const at = r() * 500;
       say(`seek #${handles.indexOf(h)} ${at}`);
       if (!timed.has(h)) attempt('seek', () => h.seek(at));
+    }
+    if (waiting && waits.length > 0 && w() < 0.2) {
+      const h = from(waits);
+      const how = from(['rate', 'ramp', 'keep']);
+      const to = from([0.5, 2, 3]);
+      const at = w() * 300;
+      say(`waiting #${handles.indexOf(h)} ${how} ${how === 'keep' ? at : to}`);
+      if (how === 'rate') h.rate = to;
+      else if (how === 'ramp') attempt('ramp', () => h.ramp(to, 200));
+      else attempt('seek', () => h.seek(at, { state: 'keep' }));
     }
     if (chance(0.04)) {
       const s = pick(subjects);
