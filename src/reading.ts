@@ -25,4 +25,10 @@ export const reading = {
    * since it read it. One count for every mix, as `moved` is.
    */
   inputs: 0,
+  /**
+   * While a read ahead that played its tape's calls reads: the retargets and pushes those calls
+   * made, by motion patch and then subject, in time order. A patch applies them with its own and
+   * commits none. Null for every other read.
+   */
+  ahead: null as Map<object, Map<unknown, unknown[]>> | null,
 };

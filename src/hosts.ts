@@ -16,6 +16,7 @@ import { descendants, ownWeight, signalled } from './owner.js';
 import { localNow } from './place.js';
 import { reading } from './reading.js';
 import { heard } from './signals.js';
+import { cuedById } from './strays.js';
 import { record } from './tape.js';
 import type { Booker, BookOptions, Channel, Doubt, Handle } from './types.js';
 import { unreach } from './unreached.js';
@@ -224,6 +225,14 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       if (voice.sharing) return weightAt(voice, slot);
       return (voice.subjects.get(subject) as Subject<unknown> | undefined)?.weight ?? 0;
     },
-    record: (label, again) => record(mix, label, again),
+    record: (h, label, again) =>
+      record(mix, label, (stage) => {
+        const to = stage.mix(mix);
+        if (to === mix) again(h);
+        else if (to !== undefined) {
+          const voice = cuedById(to, h.id);
+          if (voice !== undefined) again(handle(to, voice) as VoiceHandle<I, O>);
+        }
+      }),
   };
 }

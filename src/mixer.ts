@@ -49,8 +49,8 @@ import { Outs } from './revive.js';
 import { ScoreIndex } from './scored.js';
 import { seek } from './seek.js';
 import { Fitting, refit } from './spans.js';
-import { Store } from './store.js';
-import { record } from './tape.js';
+import { Masked, Store } from './store.js';
+import { record, unplayable } from './tape.js';
 import { touch } from './touch.js';
 import { type Announced, announce, Transport } from './transport.js';
 import type {
@@ -555,7 +555,7 @@ export class Mixer<I, O> implements Mix<I, O> {
       voice.written = true;
       beginFade(this, voice, { over: opts?.over });
     }
-    record(this, 'mute', () => this.mute(opts));
+    record(this, 'mute', (stage) => stage.mix(this)?.mute(opts));
   }
 
   drop(subject: I): void {
@@ -567,6 +567,8 @@ export class Mixer<I, O> implements Mix<I, O> {
       this.relinks++;
     }
     if (head !== undefined && head.slot >= 0 && this.lanes !== null) this.lanes.release(head.slot);
+    // A read ahead's copy reads the live mix's poses, and so hides one where the mix deletes it.
+    if (this.projecting && !(this.pose instanceof Masked)) this.pose = new Masked(this.pose);
     this.pose.delete(subject);
     this.restStamps?.delete(subject);
     this.chains.delete(subject);
@@ -574,10 +576,15 @@ export class Mixer<I, O> implements Mix<I, O> {
     // A record of it is only in a voice over every subject, one naming it, or one gone; a ramp out
     // of a voice that does not name it is in `parters`, and a patch's own state in `motions`.
     const kept = releasing(this);
+    // A motion patch's state is the live mix's alone: a read ahead cannot start a subject afresh in it.
+    const release = (motion: Motions<I>) => {
+      if (!this.projecting) motion.release(subject, ...kept);
+      else if (motion.holds(subject)) unplayable('a drop of a subject a motion patch holds');
+    };
     const forget = (voice: Voice<I, O>) => {
       leave(this, voice, subject, leftWith(this, voice, subject));
       voice.subjects.delete(subject);
-      voice.motion?.release(subject, ...kept);
+      if (voice.motion !== undefined) release(voice.motion);
       voice.parts?.delete(subject);
       voice.parted?.delete(subject);
       voice.blend?.of.reads.delete(subject);
@@ -597,10 +604,10 @@ export class Mixer<I, O> implements Mix<I, O> {
       if (voice.parts === null && voice.parted === null) this.parters.delete(voice);
     }
     const strays = this.strays.get(subject);
-    if (strays !== undefined) for (const motion of strays) motion.release(subject, ...kept);
+    if (strays !== undefined) for (const motion of strays) release(motion);
     this.strays.delete(subject);
-    for (const motion of this.strayAll) motion.release(subject, ...kept);
-    record(this, 'drop', () => this.drop(subject));
+    for (const motion of this.strayAll) release(motion);
+    record(this, 'drop', (stage) => stage.mix(this)?.drop(subject));
   }
 
   touch(subject?: I): void {

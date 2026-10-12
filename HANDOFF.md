@@ -265,8 +265,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    the file once it is empty. Its speed items matter only if weasel adopts blits: klieg and
    magicsmoke are expected to run about two dozen voices over tens of subjects, under 1,000 subject
    × voice pairs, where a frame costs about 0.2 ms (2026-10-01 guess, not a measured
-   workload). `NOTES-ON-SCRUBBING.md` holds the one unbuilt reading-back item:
-   a read ahead after a seek back plays what is cued, not what the tape recorded.
+   workload).
 
 1a. **Lanes are built and merged into `project`** (2026-10-02). The schema page's Lanes section
    says what they are, what qualifies and the two places the pose path differs; the `'motion'` form
@@ -596,8 +595,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       as exact as the grid). Useful beyond audio.
     - Mix time converted to the outside clock while `mix.rate` ramps; the driver reads
       `mix.rate` as it stands at each write, which drifts during a ramp (3.59 Hz in its test).
-    - Scrubbing waits on the read-ahead item in `NOTES-ON-SCRUBBING.md`: after a seek back under
-      `history`, `project` ahead throws and `write` throws with it.
+    - Scrubbing is untested: after a seek back under `history`, `project` ahead threw past a
+      recorded call and `write` threw with it. The engine plays those calls since 2026-10-11
+      (the changelog's Unreleased section), which blits-tone, pinned to 0.10.0, does not have;
+      its README's "Scrubbing" line goes when it is pinned to an engine that does and tested.
 
 12. **What the docs audit left** (2026-10-10). The schema page's interface listings now carry
     every public member, and the page and README cover what the audit found missing.

@@ -117,6 +117,11 @@ export class Transport implements TransportApi {
   }
   /** The frame the rate was first set in, which a seek or read back to before it finds unset. */
   pacedSeq = Number.POSITIVE_INFINITY;
+  /**
+   * On a read ahead's own transport, the retargets and pushes its tape's calls made, which
+   * `reading.ahead` hands the motion patches while it reads.
+   */
+  ahead = new Map<object, Map<unknown, unknown[]>>();
   /** True while the tape makes a recorded call again, so it is not recorded twice. */
   replaying = false;
   announced: Announced[] = [];
@@ -161,7 +166,10 @@ export class Transport implements TransportApi {
     m.dropped = true;
     if (this.history !== undefined) {
       this.dropped.push({ mix: m, at: this.now, seq: this.seq });
-      record(this, 'drop', () => this.drop(mix));
+      record(this, 'drop', (stage) => {
+        const to = stage.mix(m);
+        if (to !== undefined) stage.transport(this).drop(to as unknown as Mix<I, O, H>);
+      });
     }
   }
 
@@ -341,7 +349,8 @@ export class Transport implements TransportApi {
     if (!(rate >= 0 && rate < Number.POSITIVE_INFINITY))
       throw new RangeError(`blits: a mix's rate is a finite number, 0 or more, not ${rate}`);
     if (this.pace === null) {
-      this.pace = new Pace(this.history !== undefined);
+      // A read ahead keeps every clock too: it moves once across calls a mix met frame by frame.
+      this.pace = new Pace(this.history !== undefined || this.projecting);
       this.pacedSeq = this.seq;
       // Until now mix time was host time, so a pending voice's start is the host time it was given.
       for (const m of this.members)
@@ -352,7 +361,7 @@ export class Transport implements TransportApi {
     const reach = this.history === undefined ? Number.NEGATIVE_INFINITY : this.keepsFrom();
     this.pace.change(this.u, rate, over, reach, this.seq);
     for (const m of this.members) m.stir();
-    record(this, 'rate', () => this.ramp(rate, over));
+    record(this, 'rate', (stage) => stage.transport(this).ramp(rate, over));
   }
 }
 
@@ -377,8 +386,9 @@ export function announce(
   };
   transport.announced.push(mark);
   transport.settle();
-  record(transport, 'announce', () => {
-    transport.announced.push({ ...mark, seq: transport.seq });
+  record(transport, 'announce', (stage) => {
+    const to = stage.transport(transport);
+    to.announced.push({ ...mark, seq: to.seq });
   });
 }
 

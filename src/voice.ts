@@ -184,17 +184,26 @@ export interface Controls extends Clock {
 
 /** A store that fills a missing entry from `make` on first ask. */
 class Filled<K, V> extends Store<K, V> {
+  /** Keys deleted here, which are made afresh by whoever asks and never again by `make`. */
+  private gone: Store<K, true> | null = null;
+
   constructor(private readonly make: (key: K) => V | undefined) {
     super();
   }
 
   override get(key: K): V | undefined {
     let v = super.get(key);
-    if (v === undefined) {
+    if (v === undefined && this.gone?.get(key) !== true) {
       v = this.make(key);
       if (v !== undefined) super.set(key, v);
     }
     return v;
+  }
+
+  override delete(key: K): void {
+    super.delete(key);
+    this.gone ??= new Store();
+    this.gone.set(key, true);
   }
 }
 

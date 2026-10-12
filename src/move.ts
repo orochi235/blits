@@ -68,7 +68,17 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
     )
       begin(mix, voice, now);
     // After it starts, so a fade due by now on a voice that started since the last frame begins.
-    if ((voice.state === 'live' || voice.state === 'frozen') && voice.outAt <= now)
+    // Not one set for after its passes run out, where a move across both would begin it first.
+    if (
+      (voice.state === 'live' || voice.state === 'frozen') &&
+      voice.outAt <= now &&
+      !(
+        voice.state === 'live' &&
+        !voice.freezesAfter &&
+        !voice.freezesBefore &&
+        voice.endsAt() < voice.outAt
+      )
+    )
       beginFade(
         mix,
         voice,

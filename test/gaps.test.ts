@@ -172,14 +172,14 @@ describe('a seek back restores what left after it', () => {
     expect(again).toEqual(live.slice((224 - 32) / 16));
   });
 
-  it('refuses a read ahead past calls the tape will play again, rather than leave them out', () => {
+  it('plays the calls the tape holds for a read ahead past them', () => {
     const m = mix<string, Pose>(K, H);
     m.sync(0);
     m.sync(100);
     m.cue({ patch: patch<string, Pose>(0, () => ({ x: 1 }), { writes: ['x'] }) });
     m.sync(200);
     m.seek(50);
-    expect(() => m.project(150)).toThrow(/tape/);
+    expect(m.project(150).probe('a').x).toBe(1);
     expect(m.project(80).probe('a').x).toBe(0);
   });
 });

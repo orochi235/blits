@@ -18,8 +18,11 @@ export interface HandleHost<I, O> {
   fade(voice: Voice<I, O>, opts: FadeOptions<I> | undefined): void;
   rise(voice: Voice<I, O>, opts: { over?: number } | undefined): void;
   weightOf(voice: Voice<I, O>, subject: I): number;
-  /** Records a write the host made, which `again` makes once more where a seek replays it. */
-  record(label: string, again: () => void): void;
+  /**
+   * Records a write the host made through `h`, which `again` makes once more where a seek replays
+   * it, on the handle it is given: `h`, or a read ahead's handle on its copy of the voice.
+   */
+  record(h: VoiceHandle<I, O>, label: string, again: (h: VoiceHandle<I, O>) => void): void;
 }
 
 /** Refuses a voice rate no clock can run at. */
@@ -106,8 +109,8 @@ export class VoiceHandle<I, O> implements Handle<I> {
     voice.written = true;
     voice.weight = w;
     this.#host.changed(voice);
-    this.#host.record('weight', () => {
-      this.weight = w;
+    this.#host.record(this, 'weight', (h) => {
+      h.weight = w;
     });
   }
 
@@ -136,7 +139,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
       retime(voice, now, r, over);
     }
     this.#host.changed(voice);
-    this.#host.record('rate', () => this.ramp(r, over));
+    this.#host.record(this, 'rate', (h) => h.ramp(r, over));
   }
 
   seek(elapsed: number, opts?: SeekOptions): Doubt {
@@ -153,7 +156,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     voice.seeks++;
     const doubt = this.#host.sought(voice, opts?.state !== 'keep');
     this.#host.changed(voice);
-    this.#host.record('seek', () => this.seek(elapsed, opts));
+    this.#host.record(this, 'seek', (h) => h.seek(elapsed, opts));
     return doubt;
   }
 
@@ -162,7 +165,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     if (voice === null) return;
     voice.written = true;
     this.#host.fade(voice, opts);
-    this.#host.record('fade', () => this.fade(opts));
+    this.#host.record(this, 'fade', (h) => h.fade(opts));
   }
 
   rise(opts?: { over?: number }): void {
@@ -170,7 +173,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     if (voice === null) return;
     voice.written = true;
     this.#host.rise(voice, opts);
-    this.#host.record('rise', () => this.rise(opts));
+    this.#host.record(this, 'rise', (h) => h.rise(opts));
   }
 
   weightOf(subject: I): number {

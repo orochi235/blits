@@ -1,8 +1,8 @@
 import { unpart } from './fade.js';
 import type { Mixer } from './mixer.js';
-import type { MotionOwner, Motions } from './motions.js';
+import type { Change, MotionOwner, Motions } from './motions.js';
 import { pageOut } from './paging.js';
-import { record } from './tape.js';
+import { record, unplayable } from './tape.js';
 import type { Voice } from './voice.js';
 
 /** Notes a motion patch that may hold state for a subject no voice playing it reaches. */
@@ -48,7 +48,10 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
     changed(id, motion, subject, change) {
       const m = mix.deref();
       if (m === undefined) return;
-      record(m, 'motion', () => {
+      record(m, 'motion', (stage) => {
+        const to = stage.mix(m);
+        if (to === undefined) return;
+        if (to !== m) return changeAhead(to, id, motion, subject, change);
         const v = cuedById(m, id) ?? m.gone.find((g) => g.id === id);
         ((v?.motion as typeof motion | undefined) ?? motion).change(subject, { ...change });
       });
@@ -73,6 +76,50 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
       return timeIn(m, v, v.spec.stagger ? v.spec.stagger(subject as I) : 0);
     },
   };
+}
+
+/**
+ * A retarget or push the tape holds, made for a read ahead: kept on its transport for the patch
+ * to apply as it reads, since the patch's own state is the live mix's.
+ */
+function changeAhead<I, O>(
+  to: Mixer<I, O>,
+  id: number,
+  motion: object,
+  given: unknown,
+  change: Change,
+): void {
+  const subject = given as I;
+  const v = cuedById(to, id);
+  let at = change.at;
+  if (v !== undefined) {
+    // As the patch asks its mix live: a subject faded out of the voice is back, and a change with
+    // no time takes the voice's at this frame, or the subject's own where it is yet to be met.
+    const parted = v.parted?.has(subject) === true;
+    if (parted) unpart(to, v, subject);
+    if (at === undefined) {
+      const frame = frameOf(to, v, subject);
+      const back = parted ? timeIn(to, v, v.spec.stagger ? v.spec.stagger(subject) : 0) : frame;
+      if (!Number.isNaN(frame)) at = frame;
+      else if (!Number.isNaN(back)) at = back;
+    }
+  }
+  if (at === undefined) unplayable('a change to a motion made before its voice met the subject');
+  const stamped = at;
+  const made = to.transport.ahead;
+  let bySubject = made.get(motion);
+  if (bySubject === undefined) {
+    bySubject = new Map();
+    made.set(motion, bySubject);
+  }
+  const list = bySubject.get(subject) as Change[] | undefined;
+  const c: Change = { at, to: change.to, v: change.v };
+  if (list === undefined) bySubject.set(subject, [c]);
+  else {
+    let i = list.length;
+    while (i > 0 && ((list[i - 1] as Change).at as number) > stamped) i--;
+    list.splice(i, 0, c);
+  }
 }
 
 /** The voice in the list with this id, which is in id order. */

@@ -200,8 +200,9 @@ export interface Mix<I, O, H = unknown> {
   /**
    * Reads the mix at another mix time, without moving it. At the mix's own time it reads what
    * `probe` does: what the host has done since the last sync lands at the next. Ahead of the mix
-   * it plays what is cued forward, and throws for a time past a call the tape will play again after a `seek` back, which
-   * only a seek there makes; behind it, with `history`, it reads the last frame at or before `time`
+   * it plays what is cued forward, with the calls the tape holds after a `seek` back, and throws
+   * for the two a copy cannot take: a `drop` of a subject a motion patch holds, and a retarget or
+   * push made before its voice met the subject. Behind it, with `history`, it reads the last frame at or before `time`
    * as that frame showed, and throws for a time older than the history reaches. On a transport it
    * reads every mix on it together, so anchors across them answer.
    *

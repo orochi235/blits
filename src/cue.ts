@@ -1,3 +1,4 @@
+import { type Blend, blendOf } from './blend.js';
 import { checkHits } from './book.js';
 import { changed } from './chain.js';
 import { copyable } from './clone.js';
@@ -8,13 +9,13 @@ import { begin } from './held.js';
 import { handle } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import { motionOf } from './motion.js';
-import { adopt, ownerPatch, ownerReading } from './owner.js';
+import { adopt, Holding, ownerPatch, ownerReading } from './owner.js';
 import { checkPlacement, localNow, mixAt, pin, place } from './place.js';
 import { enlist } from './roster.js';
 import { scoredAdd } from './scored.js';
 import { checkChild, refit } from './spans.js';
-import { motionOwner } from './strays.js';
-import { record } from './tape.js';
+import { cuedById, motionOwner } from './strays.js';
+import { record, unplayable } from './tape.js';
 import type { Channel, Handle, Kit, Patch, VoiceSpec } from './types.js';
 import { type Controls, Voice } from './voice.js';
 
@@ -64,7 +65,12 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
   const h = handle(mix, voice) as VoiceHandle<I, O>;
   voice.handle = h;
   // By its handle, so a voice a history store paged out and a seek revived is the one cued again.
-  record(mix, 'cue', () => recue(mix, VoiceHandle.voiceOf(h) ?? lost(h)));
+  record(mix, 'cue', (stage) => {
+    const parked = VoiceHandle.voiceOf(h) ?? lost(h);
+    const to = stage.mix(mix);
+    if (to === mix) recue(mix, parked);
+    else if (to !== undefined) recue(to, aheadOf(to, parked));
+  });
   return h;
 }
 
@@ -131,6 +137,37 @@ function recue<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   enter(mix, voice);
 }
 
+/** Each read ahead's own blends, by the live blend its copies' members were cued in. */
+const blends = new WeakMap<object, Map<Blend<unknown, unknown>, Blend<unknown, unknown>>>();
+
+/** A read ahead's copy of a voice a seek parked, as its cue left it, for the copy `to` to cue. */
+function aheadOf<I, O>(to: Mixer<I, O>, parked: Voice<I, O>): Voice<I, O> {
+  const copy = parked.copy(() => undefined);
+  if (parked.owner !== null) {
+    const owner = cuedById(to, parked.owner.id);
+    if (owner === undefined || owner.holding === null)
+      unplayable('a cue under an owner that has left');
+    copy.owner = owner;
+  }
+  if (copy.holding !== null) copy.holding = new Holding();
+  if (copy.blend !== null) {
+    let own = blends.get(to);
+    if (own === undefined) {
+      own = new Map();
+      blends.set(to, own);
+    }
+    const live = copy.blend.of as Blend<unknown, unknown>;
+    let of = own.get(live) as Blend<I, O> | undefined;
+    if (of === undefined) {
+      of = blendOf(copy.blend.of.by, copy.blend.of.stops);
+      own.set(live, of as Blend<unknown, unknown>);
+    }
+    copy.blend = { of, i: copy.blend.i };
+    of.members.push(copy);
+  }
+  return copy;
+}
+
 function lost(h: { id: number }): never {
   throw new Error(
     `blits: voice ${h.id} is paged out, and the seek that plays its cue again did not load it`,
@@ -153,7 +190,8 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   voice.placing = anchored;
   // A start the host gave by its own clock, where the mix's rate puts it.
   if (!Number.isNaN(voice.pinned) && voice.state === 'pending') pin(mix, voice, voice.pinned);
-  if (motion !== undefined) {
+  // A read ahead's copy leaves the patch asking the live mix for its time.
+  if (motion !== undefined && !mix.projecting) {
     mix.playing.set(motion, (mix.playing.get(motion) ?? 0) + 1);
     mix.owner ??= motionOwner(new WeakRef(mix));
     motion.owner = mix.owner;

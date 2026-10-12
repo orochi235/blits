@@ -236,7 +236,7 @@ const frames = every(0, 1600, 16);
 const kept = (): MixOptions => ({ history: { ms: 100000, every: 50, tape }, stepMs: 4 });
 const fmt = (xs: number[] | undefined) => (xs ? xs.map((x) => +x.toFixed(6)).join(',') : 'none');
 
-export type Property = 'seek' | 'again' | 'behind' | 'ahead' | 'dt' | 'standing' | 'now';
+export type Property = 'seek' | 'again' | 'behind' | 'ahead' | 'taped' | 'dt' | 'standing' | 'now';
 
 /**
  * The host frames each property checks at; `dt` checks every frame, and `standing` reads every
@@ -247,6 +247,7 @@ export const checkedAt: Record<Property, number[]> = {
   again: [96, 320, 512, 704],
   behind: [64, 160, 320, 480, 640],
   ahead: [672, 800, 1008, 1408],
+  taped: [96, 320, 512],
   dt: [0],
   standing: [160, 320, 480, 656, 1600],
   now: [160, 320, 480, 656],
@@ -312,12 +313,41 @@ function seekAgain(ops: Op[], ref: ReturnType<typeof play>, from: number): strin
   return null;
 }
 
+/**
+ * Plays straight through, seeks back to frame `from`, and reads ahead to every fourth frame after
+ * it, past the calls the tape holds; then plays on, as a mix never read ahead does.
+ */
+function seekThenRead(ops: Op[], ref: ReturnType<typeof play>, from: number): string | null {
+  const t = landing(ref, from);
+  const run = play(ops, frames, kept());
+  run.m.seek(ref.mixT.get(t) as number);
+  for (const f of frames) {
+    const at = ref.mixT.get(f) as number;
+    if (f <= t || f % 64 !== 0 || !(at > run.m.now)) continue;
+    // A mix time rate 0 held the clock at is many frames, and a read there is one of them.
+    if (ref.mixT.get(f - 16) === at || ref.mixT.get(f + 16) === at) continue;
+    const got = probes(run.m.project(at));
+    const want = ref.poses.get(f);
+    if (differs(got, want)) return `seek(${t}), project(${f}) got ${fmt(got)} want ${fmt(want)}`;
+  }
+  const last = frames[frames.length - 1] as number;
+  for (const f of frames) {
+    if (f <= t) continue;
+    run.m.sync(last + (f - t));
+    if (differs(probes(run.m), ref.poses.get(f)))
+      return `seek(${t}), reads ahead, then frame ${f} got ${fmt(probes(run.m))} want ${fmt(ref.poses.get(f))}`;
+  }
+  return null;
+}
+
 function checkOne(prop: Property, ops: Op[], t: number, ref: () => ReturnType<typeof play>) {
   switch (prop) {
     case 'seek':
       return seekThenPlay(ops, ref(), t);
     case 'again':
       return seekAgain(ops, ref(), t);
+    case 'taped':
+      return seekThenRead(ops, ref(), t);
     case 'behind': {
       const r = ref();
       const got = probes(r.m.project(r.mixT.get(t) as number));

@@ -63,6 +63,27 @@ export class Store<K, V> {
   }
 }
 
+/**
+ * A store over another, for a copy that must not write the one it reads: what is set or deleted
+ * here stays here, and a key deleted here is no longer read from the one under it.
+ */
+export class Masked<K, V> extends Store<K, V> {
+  private readonly hidden = new Store<K, true>();
+
+  constructor(private readonly under: Store<K, V>) {
+    super();
+  }
+
+  override get(key: K): V | undefined {
+    return super.get(key) ?? (this.hidden.get(key) ? undefined : this.under.get(key));
+  }
+
+  override delete(key: K): void {
+    super.delete(key);
+    this.hidden.set(key, true);
+  }
+}
+
 /** No key held inline. */
 const none: unique symbol = Symbol('none');
 

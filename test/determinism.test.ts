@@ -19,6 +19,7 @@ const known: Record<Property, Record<Variant, Known>> = {
   again: { plain: { seeds: 150 }, full: { seeds: 150 } },
   behind: { plain: { seeds: 150 }, full: { seeds: 150 } },
   ahead: { plain: { seeds: 150 }, full: { seeds: 150 } },
+  taped: { plain: { seeds: 150 }, full: { seeds: 150 } },
   dt: { plain: { seeds: 150 }, full: { seeds: 150 } },
   standing: { plain: { seeds: 150 }, full: { seeds: 150 } },
   now: { plain: { seeds: 150 }, full: { seeds: 150 } },
@@ -50,6 +51,8 @@ describe('seek-again: a second seek, with no probe since the first, matches play
 describe('project-behind: projecting to an earlier frame matches what it showed', () =>
   guards('behind'));
 describe('project-ahead: projecting from the last call matches playing on', () => guards('ahead'));
+describe('project-ahead after a seek back: projecting past the calls the tape holds matches what they showed', () =>
+  guards('taped'));
 describe('frame spacing: 32 and 48 ms frames match 16 ms frames', () => guards('dt'));
 describe('project-now: projecting to the mix’s own time matches what it probes', () =>
   guards('now'));

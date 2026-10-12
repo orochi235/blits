@@ -364,7 +364,7 @@ describe('stepMs', () => {
     x: number;
     v: number;
   }
-  // Semi-implicit Euler toward 100: the integrator NOTES-ON-SCRUBBING.md measured drifting by frame rate.
+  // Semi-implicit Euler toward 100, an integrator that drifts by frame rate.
   const spring = () =>
     patch<Part, Pose, Spring>(0, (_p, _s, setting) => ({ crawl: setting.state.x }), {
       writes: ['crawl'],

@@ -128,6 +128,8 @@ export function begin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): 
   if (voice.anchorElapsed !== 0) {
     voice.seeks++;
     voice.rebuilds++;
+    // Kept with its controls, so a seek back to after this puts back the count its records hold.
+    voice.note(now, mix.transport.seq, true);
   }
   reorigin(mix, voice, now);
   changed(mix, voice);

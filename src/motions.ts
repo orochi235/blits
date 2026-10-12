@@ -317,6 +317,11 @@ export class Motions<I> {
     };
   }
 
+  /** Whether the patch holds a run for `subject`. */
+  holds(subject: I): boolean {
+    return this.known(subject) !== undefined;
+  }
+
   /** A subject's run as plain data, for a voice leaving memory; undefined where it has none. */
   pack(subject: I): Run | undefined {
     const s = this.known(subject);
@@ -604,7 +609,7 @@ export class Motions<I> {
   /** Every change due by `t` applied to a copy of the stretch playing then, committing nothing. */
   private peek(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
     let seg = this.playing(s, t);
-    const list = this.pending?.[s];
+    const list = this.dueTo(s);
     if (list !== undefined)
       for (const change of list) {
         const a = change.at;
@@ -612,6 +617,21 @@ export class Motions<I> {
         if (a >= seg.at) seg = this.applied(s, seg, change, a);
       }
     this.evaluateSegment(seg, t, xo, vo);
+  }
+
+  /** Subject `s`'s changes waiting, with those a read ahead's tape made filed among them by time. */
+  private dueTo(s: number): readonly Change[] | undefined {
+    const own = this.pending?.[s];
+    const ahead = reading.ahead?.get(this);
+    if (ahead === undefined) return own;
+    const subject = this.numbers.subject(s);
+    const made = subject === absent ? undefined : (ahead.get(subject) as Change[] | undefined);
+    if (made === undefined) return own;
+    if (own === undefined) return made;
+    // The patch's own were made first, and a stable sort keeps them first at one time.
+    return [...own.filter((c) => c.at !== undefined), ...made].sort(
+      (a, b) => (a.at as number) - (b.at as number),
+    );
   }
 
   private check(a: readonly number[] | undefined, n: number): void {

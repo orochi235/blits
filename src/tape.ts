@@ -1,7 +1,32 @@
+import type { Mixer } from './mixer.js';
 import { move } from './move.js';
 import type { Pace } from './pace.js';
 import type { Transport } from './transport.js';
 import type { Tape, TapeOp } from './types.js';
+
+/**
+ * Where a recorded call is made again: on the mixes the host made it on, or, for a read ahead, on
+ * its copies of them.
+ */
+export interface Stage {
+  transport(of: Transport): Transport;
+  /** The mix standing for `of`; undefined where a read ahead has no copy of it. */
+  mix<I, O>(of: Mixer<I, O>): Mixer<I, O> | undefined;
+}
+
+const live: Stage = { transport: (of) => of, mix: (of) => of };
+
+/** The stage the tape is playing calls on; the live one outside a read ahead's replay. */
+let stage = live;
+/** What a call threw on a read ahead's stage, for `replay` to throw once the tape has the entry back. */
+let failed: { error: unknown } | undefined;
+
+/** Refuses a recorded call a read ahead's copies cannot take. */
+export function unplayable(what: string): never {
+  throw new Error(
+    `blits: the tape holds ${what}, which a read ahead cannot play; seek there to see it`,
+  );
+}
 
 /** What a recorded call's `invert` gives: a mix goes back by restoring, never by undoing a call. */
 const undone: TapeOp = { apply() {}, invert: () => undone };
@@ -20,7 +45,10 @@ export function tapeOf(transport: Transport): Tape | undefined {
   });
 }
 
-/** Records a host call, which `again` makes once more when the mix plays past it after a seek. */
+/**
+ * Records a host call, which `again` makes once more when the mix plays past it after a seek, or
+ * when a read ahead does, on the stage it is given.
+ */
 export function record(
   on: {
     readonly tape: Tape | undefined;
@@ -28,14 +56,21 @@ export function record(
     readonly projecting: boolean;
   },
   label: string,
-  again: () => void,
+  again: (stage: Stage) => void,
 ): void {
   const tape = on.tape;
   if (tape === undefined || on.replaying || on.projecting) return;
   const op: TapeOp = {
     label,
     apply() {
-      again();
+      if (stage === live) again(stage);
+      // Thrown inside the tape's `redo`, it would leave the tape without the entry.
+      else
+        try {
+          again(stage);
+        } catch (e) {
+          failed ??= { error: e };
+        }
     },
     invert: () => undone,
   };
@@ -50,12 +85,18 @@ export function hostAt(clock: { readonly pace: Pace | null }, t: number): number
 /**
  * Makes the recorded calls `due` by the host time each was made at again, each host time's in a
  * frame of its own with every mix on the transport moved to where it stood then, as the host made
- * them. Answers the host time of the last frame it played, NaN for none.
+ * them. Answers the host time of the last frame it played, NaN for none. Given `onto` and the
+ * stage of its copies, it makes them on those, and the caller puts the tape back.
  */
-export function replay(transport: Transport, due: (u: number) => boolean): number {
+export function replay(
+  transport: Transport,
+  due: (u: number) => boolean,
+  onto: Transport = transport,
+  on: Stage = live,
+): number {
   const tape = transport.tape;
   if (tape === undefined) return Number.NaN;
-  const u = transport.u;
+  const u = onto.u;
   let last = Number.NaN;
   try {
     for (;;) {
@@ -63,19 +104,26 @@ export function replay(transport: Transport, due: (u: number) => boolean): numbe
       if (at === undefined || !due(at)) return last;
       if (at !== last) {
         last = at;
-        transport.u = at;
-        const now = transport.pace === null ? at : transport.pace.reading(at);
-        if (now > transport.now) for (const m of transport.members) move(m, now);
-        transport.tick(transport.now);
+        onto.u = at;
+        const now = onto.pace === null ? at : onto.pace.reading(at);
+        if (now > onto.now) for (const m of onto.members) move(m, now);
+        onto.tick(onto.now);
       }
       transport.replaying = true;
+      stage = on;
       try {
         tape.redo();
       } finally {
         transport.replaying = false;
+        stage = live;
+      }
+      if (failed !== undefined) {
+        const { error } = failed;
+        failed = undefined;
+        throw error;
       }
     }
   } finally {
-    transport.u = u;
+    onto.u = u;
   }
 }

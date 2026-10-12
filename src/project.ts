@@ -9,9 +9,9 @@ import { reading } from './reading.js';
 import { record } from './record.js';
 import { recount } from './roster.js';
 import { copyStanding, stands } from './standing.js';
-import { hostAt } from './tape.js';
+import { hostAt, replay } from './tape.js';
 import { type Cut, Transport, within } from './transport.js';
-import type { Doubt, Mix, Projection, TransportProjection } from './types.js';
+import type { Doubt, Mix, Projection, Tape, TransportProjection } from './types.js';
 import { cover } from './unpage.js';
 import { unreached } from './unreached.js';
 import type { Controls, Subject, Voice } from './voice.js';
@@ -23,13 +23,7 @@ import type { Controls, Subject, Voice } from './voice.js';
 export function projectAll(transport: Transport, t: number): TransportProjection {
   const ahead = Number.isNaN(transport.now) || t >= transport.now;
   const tape = transport.tape;
-  const stamp = ahead && tape !== undefined ? tape.timestampAt(tape.undoDepth()) : undefined;
   const pace = transport.pace;
-  const next = stamp === undefined || pace === null ? stamp : pace.reading(stamp);
-  if (next !== undefined && next <= t)
-    throw new Error(
-      `blits: the tape holds calls at ${next} that a read ahead to ${t} cannot play; seek there to see them`,
-    );
   // Behind, the last frame at or before `t`, read as it showed when `t` is that frame's own time.
   let cut: Cut = { seq: transport.seq, strict: false };
   let u = hostAt(transport, t);
@@ -71,13 +65,19 @@ export function projectAll(transport: Transport, t: number): TransportProjection
   }
   // A read at the mix's own time lands nothing, as a probe does not: what the host has done since
   // the last sync shows at the next one.
-  if (ahead && t !== transport.now) for (const copy of copies.values()) move(copy, t);
+  if (ahead && t !== transport.now) {
+    if (tape !== undefined) playAhead(transport, tape, c, copies, t);
+    // A call played at `t` itself moved the copies there before it, as a sync does.
+    if (c.now !== t) for (const copy of c.members) move(copy, t);
+  }
   const read = <T>(f: () => T): T => {
     reading.live = false;
+    reading.ahead = c.ahead.size > 0 ? c.ahead : null;
     try {
       return f();
     } finally {
       reading.live = true;
+      reading.ahead = null;
     }
   };
   return {
@@ -96,6 +96,39 @@ export function projectAll(transport: Transport, t: number): TransportProjection
       };
     },
   };
+}
+
+/**
+ * Makes the calls the tape holds up to mix time `t` on a read ahead's copies, as a seek there
+ * makes them on the mixes, and puts the tape back where it stood.
+ */
+function playAhead(
+  transport: Transport,
+  tape: Tape,
+  c: Transport,
+  copies: Map<Mixer<unknown, unknown>, Mixer<unknown, unknown>>,
+  t: number,
+): void {
+  const due = (at: number) => (c.pace === null ? at : c.pace.reading(at)) <= t;
+  const depth = tape.undoDepth();
+  const next = tape.timestampAt(depth);
+  if (next === undefined || !due(next)) return;
+  // A call may write what a copy shares with the voice it was copied from.
+  for (const copy of c.members)
+    for (const v of copy.cued) {
+      if (v.parts !== null) v.parts = new Map(v.parts);
+      if (v.parted !== null) v.parted = new Map(v.parted);
+    }
+  let last: number;
+  try {
+    last = replay(transport, due, c, {
+      transport: () => c,
+      mix: (of) => copies.get(of as unknown as Mixer<unknown, unknown>) as typeof of | undefined,
+    });
+  } finally {
+    tape.goto(depth);
+  }
+  c.u = Math.max(last, hostAt(c, t));
 }
 
 /** A mix's copy for a read ahead: its voices as they stand, each subject carried from the live one. */

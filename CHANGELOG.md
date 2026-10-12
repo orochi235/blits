@@ -12,6 +12,22 @@ version and everything else the patch. Each release lists its changes as **Break
   `true`. A `cue` that left `loop` out and relied on looping for good now needs `loop: true`. A
   patch with no duration, and a motion patch, have no passes and play as before.
 
+### Added
+
+- A read ahead after a seek back plays the calls the tape holds: `project(t)` past a recorded
+  call threw, and now makes the call on its copies as a seek there makes it on the mix. It still
+  throws for a `drop` of a subject a motion patch holds, and for a retarget or push made before
+  its voice had met the subject. The tape moves forward and back while the read is made.
+
+### Fixed
+
+- A fade set for a time after a voice's passes run out no longer begins in place of the voice
+  ending, where one frame crossed both: `fade({ at })` on a voice with no `freeze` that ended
+  before `at` played on, held at its last frame, until the fade finished.
+- A voice cued with `seek`, or sought while pending, keeps its count of rebuilds with its
+  controls when it starts. A seek back to after its start, then a handle `seek` played again
+  before the subject was read, left the subject's state as it was rather than rebuilding it.
+
 ## 0.10.0
 
 ### Breaking
