@@ -97,6 +97,13 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 
 Open design questions rather than asks. blits may rightly say some of these belong in a host.
 
+- **A weight per axis of a `vec` channel, and an angle that lerps the short way.** weasel's
+  animator held a value on a target as voices sharing a `locus`, weighted by `weight`, until
+  2026-10-11. It now cues one voice per target and folds the holds itself
+  (`packages/core/src/animation/engine/holds.ts`), for two things a locus could not do: a hold
+  that covers some components of the value and not others, such as an IK arm beside clips
+  holding the rest of a rig, and holds on an angle that meet at their average direction, not
+  each the short way from rest. weasel uses neither `locus` nor a voice `weight` any more.
 - **Observability that costs nothing unwatched.** Covered without weasel's `watch(listener)`:
   `mix.voices(tag?)` lists what is playing and `handle.weightOf` says at what weight, each free
   until asked.
