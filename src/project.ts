@@ -1,4 +1,5 @@
 import { ownBlends } from './blend.js';
+import { heldAt } from './chain.js';
 import { stepOf } from './clock.js';
 import { open, sighted, weightAt } from './everyone.js';
 import { copyHeld, last, lastWithin } from './history.js';
@@ -174,6 +175,14 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
         lastWithin(log, cut) ?? (log[0] as Controls),
       );
       if (then !== undefined) copy.setting.host = then;
+      if (copy.parted !== null)
+        for (const [subject, p] of copy.parted) {
+          // A ramp that has ended since was still running at `t`.
+          if (p.ramp === undefined || !(t < p.at)) continue;
+          const parts = copy.parts === v.parts ? new Map(v.parts) : copy.parts;
+          parts?.set(subject, p.ramp);
+          copy.parts = parts;
+        }
       return copy;
     });
   ownBlends(c.cued);
@@ -259,7 +268,9 @@ export function recall<I, O>(
   c?: Mixer<I, O>,
   copy?: Voice<I, O>,
 ): Subject<unknown> | undefined {
-  const live = voice.left?.at(subject, cut) ?? recordOf(mix, voice, subject);
+  const live =
+    voice.left?.at(subject, cut) ??
+    heldAt(voice, subject, recordOf(mix, voice, subject), t, cut.seq);
   if (live === undefined) return undefined;
   const snap = live.snaps && last(live.snaps, t, true);
   if (snap) {

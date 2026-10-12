@@ -320,7 +320,7 @@ export interface Handle<I = unknown> {
    * The weight this voice gave `subject` the last frame that subject was probed: after its fades
    * and its weight signal, before a locus folds it with its alternatives. 0 for a subject it does
    * not reach, has not started on and does not freeze before, has left at rest, or has never been
-   * probed for; 0 once done.
+   * probed for; 0 once done, and 0 after `mix.seek` goes back until the subject is probed again.
    * Costs nothing until it is asked.
    */
   weightOf(subject: I): number;

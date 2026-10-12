@@ -1,3 +1,4 @@
+import { heldAt } from './chain.js';
 import { schedule } from './due.js';
 import { apart, copyHeld, last, lastWithin } from './history.js';
 import { laneHost } from './hosts.js';
@@ -21,7 +22,9 @@ import type { Controls, Subject, Voice } from './voice.js';
 /**
  * A voice's record of one subject as it stood at mix time `t`, from the latest copy kept by then;
  * undefined for a stateful record first made after `t`, which is met afresh. A stateless record
- * holds nothing that moves with time, so it is copied whenever it was made.
+ * holds nothing that moves with time, so it is copied whenever it was made. The weight its last
+ * probe by `t` read is not kept, and a lane holds it apart from the record, so the record reads 0
+ * until the next probe.
  */
 function restore<I, O>(
   voice: Voice<I, O>,
@@ -37,12 +40,14 @@ function restore<I, O>(
     if (h.stepped > t) h.stepped = t;
     // Whether it had rested by `t` is not kept; the next probe finds it again.
     h.rested = false;
+    h.weight = 0;
     h.inputs = inputs;
     return h;
   }
   const snap = last(snaps, t, true);
   if (snap === undefined) return undefined;
   const h = copyHeld(voice, snap.held);
+  h.weight = 0;
   h.snaps = snaps.slice(0, snaps.indexOf(snap) + 1);
   h.inputs = inputs;
   if (voice.patch.step !== undefined && (snap.ahead !== undefined || t - snap.at >= every)) {
@@ -81,7 +86,13 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
     if (voice.parts.size === 0) voice.parts = null;
   }
   if (voice.parted !== null) {
-    for (const [subject, p] of voice.parted) if (p.seq > seq) voice.parted.delete(subject);
+    for (const [subject, p] of voice.parted) {
+      if (p.seq <= seq) continue;
+      voice.parted.delete(subject);
+      if (p.ramp === undefined || p.ramp.seq > seq) continue;
+      voice.parts ??= new Map();
+      voice.parts.set(subject, p.ramp);
+    }
     if (voice.parted.size === 0) voice.parted = null;
   }
   voice.seen = 0;
@@ -99,7 +110,9 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   let records = voice.subjects;
   if (!(records instanceof Restored)) {
     const every = apart(mix.opts.history as { every?: number });
-    records = new Restored(records, (live, least, top) => {
+    const now = (subject: I, held: Subject<unknown> | undefined, least: number, seq: number) =>
+      heldAt(voice, subject, held, least, seq);
+    records = new Restored(records, now, (live, least, top) => {
       const h = restore(voice, live, least, every);
       if (h === undefined) return h;
       if (h.reaches) voice.seen++;
