@@ -3,10 +3,14 @@
 //   node bench/same.mjs <dist-a> <dist-b> [scenes] [first-seed]   SAME_LANES=off runs dist-a without lanes
 // SAME_RATE=1 also changes the mix's own rate, which needs both builds to have one; without it the
 // scenes are what they were before mixes had a rate. SAME_OWNS=1 also cues owners, which voices
-// play under, and moves them; it needs both builds to have `mix.owns`.
+// play under, and moves them; it needs both builds to have `mix.owns`. SAME_SEEK=1 gives every mix
+// history with a tape and a fixed step more often than not, and seeks the mix back before a sync,
+// in some scenes before every one, mostly returning to where it was; what it decides comes from a
+// generator of its own, so the scene is otherwise the one the seed makes without it.
 // `bench/same.sh <rev>` builds a revision and compares it with this tree's dist.
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { createHistory } from '@weasel-js/history';
 
 const [distA, distB] = process.argv.slice(2, 4);
 if (distA === undefined || distB === undefined)
@@ -14,6 +18,7 @@ if (distA === undefined || distB === undefined)
 const scenes = Number(process.argv[4] ?? 300);
 const paced = process.env.SAME_RATE === '1';
 const owning = process.env.SAME_OWNS === '1';
+const seeking = process.env.SAME_SEEK === '1';
 const first = Number(process.argv[5] ?? 1);
 const load = (dir) => import(pathToFileURL(resolve(dir, 'index.js')).href);
 const [A, B] = await Promise.all([load(distA), load(distB)]);
@@ -63,6 +68,15 @@ function run(lib, seed, general = false) {
   const opts = { lanes: chance(0.7) && !general };
   if (chance(0.15)) opts.history = { ms: 2000, inputs: chance(0.5) };
   if (chance(0.15)) opts.stepMs = pick([4, 8, 16]);
+  const q = rng(seed ^ 0x5eec);
+  const among = (xs) => xs[Math.floor(q() * xs.length)];
+  const every = among([20, 50, undefined]);
+  const always = q() < 0.4;
+  if (seeking) {
+    opts.history = { ms: 2000, inputs: opts.history?.inputs, every, tape: createHistory };
+    if (q() < 0.6) opts.stepMs ??= among([4, 8, 16]);
+    if (q() < 0.1) opts.maxDt = 100;
+  }
   const m = lib.mix(K, opts);
   const subjects = Array.from({ length: int(1, 40) }, (_, i) => ({ i, seed: r() * 10 }));
   const ease = () => pick(['linear', 'ease', 'ease-in', 'ease-out', (u) => u * u, undefined]);
@@ -334,6 +348,18 @@ function run(lib, seed, general = false) {
     if (chance(0.01)) {
       say('mute');
       attempt('mute', () => m.mute({ over: 100 }));
+    }
+    if (seeking && f > 2 && (always || q() < 0.1)) {
+      const now = m.now;
+      const back = among([30, 120, 300, 700]);
+      say(`mix seek ${back} back`);
+      attempt('mix seek', () => m.seek(now - back));
+      if (q() < 0.2)
+        note(
+          `f${f} sought`,
+          attempt('probe', () => m.probe(among(subjects))),
+        );
+      if (q() < 0.8) attempt('mix seek', () => m.seek(now));
     }
     attempt('sync', () => m.sync(t));
 
