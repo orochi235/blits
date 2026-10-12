@@ -39,6 +39,14 @@ version and everything else the patch. Each release lists its changes as **Break
   and the next record put back from it steps on from there: 67 to 74 steps at every frame. It
   shows the same values. Under `maxDt`, without `stepMs`, or for a patch that `reads` a host
   field, a record steps from the copy as before.
+- A seek back, or a read back, places a subject whose start had moved while it waited where the
+  move put it. A copy of a record kept while its `stagger` delay was running, on a voice with
+  `freeze: 'before'`, holds the start as it was then; a rate, a ramp, a `seek` with
+  `state: 'keep'`, an owner's rate or the mix's rate then moved that start, and a record put back
+  from the copy to a moment past the old start kept the old one, so its `step` ran on from the
+  wrong time. A seek lets go of the later copies, so a mix sought back before every frame showed
+  it at every frame from then on; `project(t)` showed it for `t` up to one copy's interval past
+  the move.
 
 ## 0.10.0
 

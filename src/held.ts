@@ -135,6 +135,13 @@ export function begin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): 
   changed(mix, voice);
 }
 
+/** Counts a record whose `since` was still ahead from where its voice's clock now puts it. */
+export function origin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): void {
+  held.since = mix.sinceOf(voice, held.delay);
+  held.shown = mix.shownOf(voice, held.since);
+  if (held.ticks === 0 && held.stepped > held.since) held.stepped = held.since;
+}
+
 /**
  * A voice's start or clock moved, or it went live at `now`: the records whose `since` was still
  * ahead count from where its clock now puts them.
@@ -144,9 +151,7 @@ export function reorigin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number
   if (early === null) return;
   let kept = 0;
   for (const held of early) {
-    held.since = mix.sinceOf(voice, held.delay);
-    held.shown = mix.shownOf(voice, held.since);
-    if (held.ticks === 0 && held.stepped > held.since) held.stepped = held.since;
+    origin(mix, voice, held);
     if (!(held.since <= now)) early[kept++] = held;
   }
   early.length = kept;

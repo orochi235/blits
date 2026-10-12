@@ -52,6 +52,8 @@ export interface Ahead<S> {
   /** The record the last seek put back, and the moment it sought, until that record steps. */
   put: Subject<S> | null;
   sought: number;
+  /** The `since` of the record put back, which the steps in `state` were counted from. */
+  since: number;
   at: number;
   ticks: number;
   /** Undefined until a record has stepped on from the copy. */

@@ -1,6 +1,7 @@
 import { ownBlends } from './blend.js';
 import { stepOf } from './clock.js';
 import { open, sighted, weightAt } from './everyone.js';
+import { origin } from './held.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
@@ -264,6 +265,8 @@ export function recall<I, O>(
   const snap = live.snaps && last(live.snaps, t, true);
   if (snap) {
     const h = copyHeld(voice, snap.held);
+    // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
+    if (c !== undefined && copy !== undefined && !(h.since <= snap.at)) origin(c, copy, h);
     h.from = h.stepped;
     h.replay = live.inputs;
     return h;

@@ -243,7 +243,7 @@ function ahead<I, O>(
   if (mix.opts.maxDt !== undefined || (reads !== undefined && reads.length > 0)) return;
   // Stepped, rebuilt or placed anew since it was put back, its steps are no longer the copy's.
   const was = from.held;
-  if (held.ticks !== was.ticks || held.since !== was.since || held.rebuilt !== was.rebuilt) return;
+  if (held.ticks !== was.ticks || held.since !== got.since || held.rebuilt !== was.rebuilt) return;
   const at = got.sought;
   const usable = got.state !== undefined && got.ticks <= dueBy(held, tick, to);
   if (usable) {

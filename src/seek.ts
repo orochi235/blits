@@ -1,4 +1,5 @@
 import { schedule } from './due.js';
+import { origin } from './held.js';
 import { apart, copyHeld, last, lastWithin } from './history.js';
 import { laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
@@ -24,6 +25,7 @@ import type { Controls, Subject, Voice } from './voice.js';
  * holds nothing that moves with time, so it is copied whenever it was made.
  */
 function restore<I, O>(
+  mix: Mixer<I, O>,
   voice: Voice<I, O>,
   live: Subject<unknown>,
   t: number,
@@ -38,6 +40,7 @@ function restore<I, O>(
     // Whether it had rested by `t` is not kept; the next probe finds it again.
     h.rested = false;
     h.inputs = inputs;
+    if (!(h.since <= t)) origin(mix, voice, h);
     return h;
   }
   const snap = last(snaps, t, true);
@@ -45,10 +48,24 @@ function restore<I, O>(
   const h = copyHeld(voice, snap.held);
   h.snaps = snaps.slice(0, snaps.indexOf(snap) + 1);
   h.inputs = inputs;
+  // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
+  if (!(h.since <= snap.at)) origin(mix, voice, h);
   if (voice.patch.step !== undefined && (snap.ahead !== undefined || t - snap.at >= every)) {
-    snap.ahead ??= { put: null, sought: t, at: snap.at, ticks: snap.held.ticks, state: undefined };
-    snap.ahead.put = h;
-    snap.ahead.sought = t;
+    const ahead = snap.ahead;
+    // Steps counted from a start that has moved since are not this record's.
+    if (ahead === undefined || ahead.since !== h.since)
+      snap.ahead = {
+        put: h,
+        sought: t,
+        since: h.since,
+        at: snap.at,
+        ticks: h.ticks,
+        state: undefined,
+      };
+    else {
+      ahead.put = h;
+      ahead.sought = t;
+    }
   }
   return h;
 }
@@ -100,16 +117,10 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   if (!(records instanceof Restored)) {
     const every = apart(mix.opts.history as { every?: number });
     records = new Restored(records, (live, least, top) => {
-      const h = restore(voice, live, least, every);
+      const h = restore(mix, voice, live, least, every);
       if (h === undefined) return h;
       if (h.reaches) voice.seen++;
       if (h.rested) voice.restedCount++;
-      if (!(h.since <= least)) {
-        // Kept while its origin was still ahead: where the controls put back place it now.
-        h.since = mix.sinceOf(voice, h.delay);
-        h.shown = mix.shownOf(voice, h.since);
-        if (h.ticks === 0 && h.stepped > h.since) h.stepped = h.since;
-      }
       if (!(h.since <= top)) {
         voice.early ??= [];
         voice.early.push(h);
