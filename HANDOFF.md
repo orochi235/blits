@@ -763,23 +763,40 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         so it was backed out: `glowl` 2.359 to 2.393 ms and `glowl^` 1.680 to 1.691 (msb-uai,
         2026-10-10, 7 rounds at 3,000 frames against `350991c`, every row's runs overlapping,
         on a node whose runs spread 6% to 14%). So the repeat fill is not shown to be the cost.
-      - **A seek back and its return cost about 30 ms at 10,000 subjects, almost none of it
-        in `src/restored.ts`** (teitou, 2026-10-11, `bench/again.sh 5`, medians, ms a frame).
-        The `kept` rows sync and probe a mix keeping 5 s of history and a tape; the `seek` rows
-        also seek it 300 ms back and to where it was before every sync.
+      - **A seek back and its return cost about 20 ms at 10,000 subjects, most of it copying
+        records** (msb-uai, 2026-10-11, `AB_EACH=1 bench/ab.sh 657f3f2 . 9`, medians, ms a
+        frame). The `kept` rows sync and probe a mix keeping 5 s of history and a tape; the
+        `seek` rows also seek it 300 ms back and to where it was before every sync.
 
-        | Subjects | `kept` | `seek` | A seek back and return |
-        |---:|---:|---:|---:|
-        |  1,000 | 0.480 |  2.134 |  1.654 |
-        | 10,000 | 5.594 | 35.968 | 30.374 |
+        | Subjects | `kept` | `seek` | A seek back and return | `seek` on `657f3f2` |
+        |---:|---:|---:|---:|---:|
+        |  1,000 | 0.666 |  1.785 |  1.119 |  2.961 |
+        | 10,000 | 6.810 | 27.385 | 20.575 | 38.793 |
 
-        A profile of `seek` at 10,000 (600 frames) puts 47% in `tick` and 18% in the row's own
-        `step`: each subject's stateful patch is stepped again over the 300 ms at `stepMs` 5,
-        60 steps a subject. `copyHeld` is 9% of the time and half of what the row allocates
-        (31.7 MB a frame against 8.9 for `kept`); `Restored`'s `get` and `since` are under 1%.
-        So a seek's cost is restepping state, which a state copy nearer the sought time, or a
-        coarser `stepMs`, would cut. `tick`'s share is its loop with `step` inlined into it (a
-        line profile puts it on the `for`): about 27 ns a step.
+        Before `1b72ed9` the row's cost grew with every frame: a seek lets go of the copies
+        made after the moment it sought, so each subject stepped from the copy before the
+        first seek, 70 steps at the first frame and 1,069 at the 300th (`bench/steps.mjs`),
+        and 1,200 frames ran at 80 to 118 ms a frame against 29 now (teitou). The copy a
+        record is put back from now keeps its state stepped ahead to near the moment sought
+        (`ahead` in `src/fold.ts`), under `stepMs` with no `maxDt` for a patch that `reads`
+        no host field, and a subject steps 67 to 74 times a frame. A profile of `seek` at
+        10,000 (600 frames, teitou) now puts 25% in `copyHeld`, 20% in collection, 3% in
+        `tick` and 2% in the row's `step`: a subject's record is copied twice a frame, once
+        put back and once kept at the probe, and the kept one is let go by the next seek.
+        The row allocates 34.9 MB a frame against 9.3 for `kept`. The lever left is those
+        copies and the generic `clone` of the state. Reasoned and untested: a `step` that
+        reads `setting.weight`, `elapsed` or `pass` can give different bits after repeated
+        seeks, since steps taken up from the copy ran under an earlier probe's setting.
+      - **A copy's `since` goes stale when a control moves a start still ahead** (found
+        2026-10-11, not fixed). With `stagger` and `freeze: 'before'`, a rate change or a
+        `seek(…, { state: 'keep' })` while a subject's delay is running moves its start; the
+        copy keeps the old one, and a restore trusts it once the moment sought is past it.
+        A mix sought back before every frame then steps the subject early: 23 of 120 such
+        scenes differed from a mix never sought.
+      - **Lanes on and off disagree under mix seeks** (found 2026-10-11, not fixed):
+        `SAME_SEEK=1 SAME_LANES=off node bench/same.mjs <dist> <dist> 1000 20000` on
+        `657f3f2` against itself differs in 33 of 1,000 scenes, and in none without
+        `SAME_SEEK`. Seed 20063 is the shortest.
     - **Few consumers use step 7 yet.** klieg's `level` is built on `input` with a `touch()` in
       its `set` (klieg `c32d440`, unreleased); whether its level-weighted voices then run on
       lanes is not checked. The other workarounds the doc's "Universal applicability" table
