@@ -37,13 +37,12 @@
     "build": "tsc -b",
     "prepack": "rm -rf dist .tsbuildinfo && npm run build"
   },
-  "dependencies": {
-    "@msb235/blits": "0.10.0"
-  },
   "peerDependencies": {
+    "@msb235/blits": "^0.10.0",
     "tone": "^15.1.22"
   },
   "devDependencies": {
+    "@msb235/blits": "0.10.0",
     "node-web-audio-api": "^2.2.0",
     "tone": "^15.1.22"
   }

@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
+## Unreleased
+
+### Breaking
+
+- `@msb235/blits` is a peer dependency, `^0.10.0`, where it was a dependency pinned to one
+  version. The host installs the engine, so the driver and the host share one copy.
+
 ## 0.6.0
 
 ### Breaking

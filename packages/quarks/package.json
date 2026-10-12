@@ -37,14 +37,13 @@
     "build": "tsc -b",
     "prepack": "rm -rf dist .tsbuildinfo && npm run build"
   },
-  "dependencies": {
-    "@msb235/blits": "0.10.0"
-  },
   "peerDependencies": {
+    "@msb235/blits": "^0.10.0",
     "three": ">=0.185.0 <1.0.0",
     "three.quarks": "^0.17.1"
   },
   "devDependencies": {
+    "@msb235/blits": "0.10.0",
     "@types/three": "^0.185.4",
     "three": "^0.185.1",
     "three.quarks": "^0.17.1"
