@@ -790,12 +790,20 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         copies and the generic `clone` of the state. Reasoned and untested: a `step` that
         reads `setting.weight`, `elapsed` or `pass` can give different bits after repeated
         seeks, since steps taken up from the copy ran under an earlier probe's setting.
-      - **A copy's `since` goes stale when a control moves a start still ahead** (found
-        2026-10-11, not fixed). With `stagger` and `freeze: 'before'`, a rate change or a
-        `seek(…, { state: 'keep' })` while a subject's delay is running moves its start; the
-        copy keeps the old one, and a restore trusts it once the moment sought is past it.
-        A mix sought back before every frame then steps the subject early: 23 of 120 such
-        scenes differed from a mix never sought.
+      - **A subject sought back before its start with `state: 'keep'` shows state that depends on
+        when it was last probed** (found 2026-10-11, not fixed). `contribution` in `src/fold.ts`
+        does not step a subject before its start, so one a kept seek moves back there holds the
+        steps its last probe ran: with no history and no mix seek, a mix probed every frame
+        showed 80 steps and one probed every fourth frame 70. A record a mix seek puts back holds
+        its copy's steps instead, so a mix sought back before every frame differs from one never
+        sought until the delay runs out again: 5 of the 120 scenes that found a copy's stale
+        start (fixed in `214909d`), each a kept seek made after the delay ran out on a voice with
+        `freeze: 'before'`. Fixing it means choosing what that pose should be. Seen once and not
+        chased: under a mix rate of 0.5 the same loop left the next sync's `now` an ulp off.
+        `SAME_WAIT=1` in `bench/same.mjs` makes scenes of this shape.
+      - **The fleet's copy of blits has a stale `node_modules`** (found 2026-10-11): its
+        `@weasel-js/history` has no `timestampAt`, so the bench's `kept` and `seek` rows fail
+        there until a job installs afresh.
       - **Lanes on and off disagree under mix seeks** (found 2026-10-11, not fixed):
         `SAME_SEEK=1 SAME_LANES=off node bench/same.mjs <dist> <dist> 1000 20000` on
         `657f3f2` against itself differs in 33 of 1,000 scenes, and in none without
