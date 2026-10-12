@@ -51,12 +51,16 @@ export function projectAll(transport: Transport, t: number): TransportProjection
   ).map((a) => ({ ...a }));
   const copies = new Map<Mixer<unknown, unknown>, Mixer<unknown, unknown>>();
   for (const mix of transport.members) {
-    const copy = new Mixer<unknown, unknown>(mix.kit, {
-      ...mix.opts,
-      history: undefined,
-      lanes: false,
-      transport: c,
-    });
+    const copy = new Mixer<unknown, unknown>(
+      mix.kit,
+      {
+        ...mix.opts,
+        history: undefined,
+        lanes: false,
+        transport: c,
+      },
+      null,
+    );
     copy.slot = mix.slot;
     copy.projecting = true;
     copies.set(mix, copy);

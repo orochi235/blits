@@ -276,6 +276,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   constructor(
     readonly kit: Kit<O>,
     readonly opts: MixOptions,
+    /** The lanes an entry was built with; null in one that leaves them out. */
+    readonly lanesOf: typeof Lanes | null,
   ) {
     this.names = Object.keys(kit as object) as Key<O>[];
     this.channels = this.names.map((k) => kit[k] as Channel<unknown>);
@@ -284,7 +286,10 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.names.forEach((k, i) => {
       this.slotOf.set(k, i);
     });
-    this.lanes = (opts.lanes ?? defaults.lanes) ? new Lanes<I, O>(laneHost(this)) : null;
+    if (lanesOf === null && opts.lanes === true)
+      throw new Error("blits: '@msb235/blits/lean' has no lanes; take mix from '@msb235/blits'");
+    this.lanes =
+      lanesOf !== null && (opts.lanes ?? defaults.lanes) ? new lanesOf<I, O>(laneHost(this)) : null;
     this.name = opts.name;
     const shared = opts.transport as Transport | undefined;
     if (shared !== undefined) {
@@ -373,8 +378,8 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   cue(spec: VoiceSpec<I, O>): Handle<I> {
     this.attached();
-    const engine = this.opts.engine ?? mixer;
-    if (!engine.runs.has(spec.patch.form))
+    const engine = this.opts.engine;
+    if (engine !== undefined && !engine.runs.has(spec.patch.form))
       throw new Error(`blits: engine ${engine.name} does not run ${spec.patch.form} patches`);
     return cue(this, spec);
   }
@@ -745,7 +750,7 @@ export const mixer: Engine = {
   name: 'mixer',
   runs: new Set<'fn' | 'keys' | 'motion'>(['fn', 'keys', 'motion']),
   create<I, O, H = unknown>(kit: Kit<O>, opts: MixOptions<H>): Mix<I, O, H> {
-    return new Mixer<I, O>(kit, opts);
+    return new Mixer<I, O>(kit, opts, Lanes);
   },
 };
 

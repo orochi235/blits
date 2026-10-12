@@ -14,6 +14,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- `@msb235/blits/lean`: the package with a `mix` that leaves lanes out, for a host whose scenes
+  are too small to need them. It gives the same poses, and a bundle of `mix`, `kit`, `sum` and
+  `patch` is 44.5 kB gzipped against 59.9 from the main entry (esbuild, minified). `lanes: true`
+  is refused there. Its engine is exported as `lean`.
 - A read ahead after a seek back plays the calls the tape holds: `project(t)` past a recorded
   call threw, and now makes the call on its copies as a seek there makes it on the mix. It still
   throws for a `drop` of a subject a motion patch holds, and for a retarget or push made before

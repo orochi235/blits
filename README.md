@@ -91,6 +91,17 @@ npm run site:smoke   # build, then load every page headless and fail on any erro
 
 `.github/workflows/site.yml` deploys it to GitHub Pages on every push to `main`, and by hand.
 
+## A smaller bundle
+
+Lanes, which work a channel out for every subject at once, are about a quarter of the package. A
+host with tens of subjects does not need them:
+
+```ts
+import { kit, mix, patch, sum } from '@msb235/blits/lean';
+```
+
+Everything else is the same and so are the poses. `lanes: true` is refused there.
+
 ## Writing patches for blits in another library
 
 A library that ships patches exports them with the channels they write, as a `Kit` of its own

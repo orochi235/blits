@@ -1,7 +1,6 @@
 import { schedule } from './due.js';
 import { apart, copyHeld, last, lastWithin } from './history.js';
 import { laneHost } from './hosts.js';
-import { Lanes } from './lanes.js';
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
@@ -214,7 +213,7 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
 
   // Rebuilt from the voices that are back: the lanes, the chains and every count the fold reads.
   const oldLanes = mix.lanes;
-  if (oldLanes !== null) mix.lanes = new Lanes<I, O>(laneHost(mix));
+  if (oldLanes !== null && mix.lanesOf !== null) mix.lanes = new mix.lanesOf<I, O>(laneHost(mix));
   mix.chains = new Store();
   mix.owners = kept.some((v) => v.holding !== null) ? kept.filter((v) => v.holding !== null) : null;
   recount(mix);
