@@ -7,6 +7,9 @@
 // history with a tape and a fixed step more often than not, and seeks the mix back before a sync,
 // in some scenes before every one, mostly returning to where it was; what it decides comes from a
 // generator of its own, so the scene is otherwise the one the seed makes without it.
+// SAME_SHRINK=1 takes the first seed alone: it leaves out every call and read the scene still
+// differs without, up to the frame it first differed in, and prints what the scene does with
+// `[n]` and the call's kind under each one still made.
 // `bench/same.sh <rev>` builds a revision and compares it with this tree's dist.
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -35,8 +38,10 @@ function rng(seed) {
 }
 
 const NUMERIC = ['gain', 'dark', 'off', 'pos'];
+const none = new Set();
 
-function run(lib, seed, general = false) {
+function run(lib, seed, general = false, left = none, kept = null) {
+  let calls = 0;
   const r = rng(seed);
   const pick = (xs) => xs[Math.floor(r() * xs.length)];
   const chance = (p) => r() < p;
@@ -49,6 +54,12 @@ function run(lib, seed, general = false) {
       : v;
   const note = (label, v) => trace.push(`${label} ${JSON.stringify(v, sorted)}`);
   const attempt = (label, f) => {
+    // A sync is never left out: the frames stay the scene's.
+    if (label !== 'sync') {
+      const id = calls++;
+      if (left.has(id)) return undefined;
+      kept?.push(`  [${id}] f${frame} ${label}`);
+    }
     try {
       return f();
     } catch (e) {
@@ -86,6 +97,7 @@ function run(lib, seed, general = false) {
   const traced = process.env.SAME_TRACE === String(seed) && !general;
   const say = (...what) => {
     if (traced) console.error(`f${frame} t=${t}`, ...what);
+    kept?.push(`f${frame} t=${t} ${what.join(' ')}`);
   };
   const watched = process.env.SAME_TRACE === String(seed) && process.env.SAME_WATCH !== undefined;
   const watch = (how, order) => {
@@ -408,20 +420,56 @@ function run(lib, seed, general = false) {
   return trace;
 }
 
+const frameOf = (line) => Number(/^f(\d+) /.exec(line ?? '')?.[1] ?? Number.NaN);
+
+/** The first line two runs of `seed` differ at, no later than frame `last`; undefined where none does. */
+function differs(seed, left = none, last = Number.POSITIVE_INFINITY) {
+  const a = run(A, seed, process.env.SAME_LANES === 'off', left);
+  const b = run(B, seed, false, left);
+  const n = Math.max(a.length, b.length);
+  for (let i = 0; i < n; i++) {
+    if (frameOf(a[i] ?? b[i]) > last) return undefined;
+    if (a[i] !== b[i]) return { at: i, a: a[i], b: b[i] };
+  }
+  return undefined;
+}
+
+if (process.env.SAME_SHRINK === '1') {
+  const whole = differs(first);
+  if (whole === undefined) {
+    console.log(`seed ${first}: same`);
+    process.exit(0);
+  }
+  const last = frameOf(whole.a ?? whole.b);
+  const all = [];
+  run(B, first, false, none, all);
+  const left = new Set();
+  for (let again = true; again; ) {
+    again = false;
+    for (let id = all.filter((l) => l.startsWith('  [')).length - 1; id >= 0; id--) {
+      if (left.has(id)) continue;
+      left.add(id);
+      if (differs(first, left, last) === undefined) left.delete(id);
+      else again = true;
+    }
+  }
+  const kept = [];
+  run(B, first, false, left, kept);
+  const d = differs(first, left, last);
+  for (const line of kept) {
+    if (frameOf(line.replace(/^ {2}\[\d+\] /, '')) > last) break;
+    console.log(line);
+  }
+  console.log(`seed ${first}: differs at line ${d.at}\n  a: ${d.a}\n  b: ${d.b}`);
+  process.exit(1);
+}
+
 let bad = 0;
 for (let seed = first; seed < first + scenes; seed++) {
-  const a = run(A, seed, process.env.SAME_LANES === 'off');
-  const b = run(B, seed);
-  const n = Math.max(a.length, b.length);
-  let at = -1;
-  for (let i = 0; i < n; i++)
-    if (a[i] !== b[i]) {
-      at = i;
-      break;
-    }
-  if (at >= 0) {
+  const d = differs(seed);
+  if (d !== undefined) {
     bad++;
-    console.log(`seed ${seed}: differs at line ${at}\n  a: ${a[at]}\n  b: ${b[at]}`);
+    console.log(`seed ${seed}: differs at line ${d.at}\n  a: ${d.a}\n  b: ${d.b}`);
   }
   if ((seed - first + 1) % 50 === 0) {
     console.log(`${seed - first + 1}/${scenes}  ${bad} differ`);

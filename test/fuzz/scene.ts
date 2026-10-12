@@ -1,3 +1,4 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { kit, last, max, mul, sum, vec } from '../../src/channels.js';
 import { color } from '../../src/color.js';
 import { mix } from '../../src/mixer.js';
@@ -97,6 +98,11 @@ export interface SceneOptions {
   history?: boolean;
   /** 10 to 39 subjects instead of 2 to 6. */
   many?: boolean;
+  /**
+   * Keep history with a tape, and seek the mix back before some syncs, in some scenes before every
+   * one, mostly returning to where it was.
+   */
+  seek?: boolean;
 }
 type Resolved = Required<SceneOptions>;
 const resolve = (o: SceneOptions): Resolved => ({
@@ -107,6 +113,7 @@ const resolve = (o: SceneOptions): Resolved => ({
   pull: o.pull ?? false,
   history: o.history ?? false,
   many: o.many ?? false,
+  seek: o.seek ?? false,
 });
 
 function rng(seed: number) {
@@ -200,6 +207,8 @@ export interface Frame {
   t: number;
   ops: Op[];
   probe: number[];
+  /** A seek of the mix `back` ms before the sync, and whether it then seeks to where it was. */
+  seek?: { back: number; returns: boolean };
 }
 export interface Scene {
   seed: number;
@@ -335,6 +344,9 @@ export function scene(seed: number, options: SceneOptions = {}): Scene {
   const r = rng(seed);
   const parts = o.many ? 10 + r.i(30) : 2 + r.i(5);
   const frames: Frame[] = [];
+  // A generator of its own, so every seed keeps the scene it makes without seeks.
+  const q = rng(seed ^ 0x5eec);
+  const always = q.p(0.4);
   let t = r.pick([0, 0, 1000]);
   let voices = 0;
   const count = 6 + r.i(14);
@@ -398,7 +410,10 @@ export function scene(seed: number, options: SceneOptions = {}): Scene {
     const probe = Array.from({ length: parts + (f > 3 ? r.i(3) : 0) }, (_, i) => i).filter(() =>
       r.p(0.8),
     );
-    frames.push({ t, ops, probe });
+    const fr: Frame = { t, ops, probe };
+    if (o.seek && f > 1 && (always || q.p(0.15)))
+      fr.seek = { back: q.pick([30, 120, 300, 700]), returns: q.p(0.8) };
+    frames.push(fr);
     const dt = r.pick([0, 16, 16, 33, 100, 250, 1, 400]);
     t += !o.sameTime && dt === 0 ? 7 : dt;
   }
@@ -529,7 +544,10 @@ function snap(p: Pose): string {
   return JSON.stringify(o);
 }
 
-/** Item keys the shrinker drops: `f.j` for op j of frame f, `fpi` for the probe of part i in frame f. */
+/**
+ * Item keys the shrinker drops: `f.j` for op j of frame f, `fpi` for the probe of part i in frame
+ * f, `fs` for frame f's seek.
+ */
 type Dropped = ReadonlySet<string>;
 
 /** Plays `s` on one mix and lists everything a host can read from it, one line per reading. */
@@ -538,7 +556,11 @@ export function play(s: Scene, lanes: boolean, drop: Dropped = new Set()): strin
   const e: Env = {
     m: mix<Part, Pose>(makeKit(), {
       lanes,
-      ...(o.history ? { history: { ms: 3000, every: 100 } } : {}),
+      ...(o.seek
+        ? { history: { ms: 3000, every: 100, tape } }
+        : o.history
+          ? { history: { ms: 3000, every: 100 } }
+          : {}),
     }),
     parts: Array.from({ length: 10 }, (_, id) => ({ id })),
     handles: [],
@@ -557,6 +579,15 @@ export function play(s: Scene, lanes: boolean, drop: Dropped = new Set()): strin
         else act(e, op);
       });
       const probe = fr.probe.filter((i) => !drop.has(`${f}p${i}`));
+      if (fr.seek !== undefined && !drop.has(`${f}s`)) {
+        const now = e.m.now;
+        try {
+          e.m.seek(now - fr.seek.back);
+          if (fr.seek.returns) e.m.seek(now);
+        } catch (err) {
+          e.errs.push(`seek: ${String(err).slice(0, 80)}`);
+        }
+      }
       e.m.sync(fr.t);
       if (o.pull && probe.length) {
         const ps = probe.map((i) => partOf(e, i));
@@ -584,6 +615,16 @@ export function play(s: Scene, lanes: boolean, drop: Dropped = new Set()): strin
         if (o.history) {
           const past = snap(e.m.project(fr.t - 150).probe(part));
           out.push(`t=${fr.t} p${i} proj ${past}`);
+        }
+        if (o.seek) {
+          const at = e.m.now - 150;
+          let past: string;
+          try {
+            past = snap(e.m.project(at).probe(part));
+          } catch (err) {
+            past = String(err).slice(0, 80);
+          }
+          out.push(`t=${fr.t} p${i} proj ${at} ${past}`);
         }
         out.push(`t=${fr.t} p${i} ${a}`);
         out.push(`t=${fr.t} p${i} reuse ${b}`);
@@ -624,8 +665,12 @@ export function describe(s: Scene, drop: Dropped = new Set()): string {
   s.frames.forEach((fr, f) => {
     const ops = fr.ops.filter((_, j) => !drop.has(`${f}.${j}`));
     const probe = fr.probe.filter((i) => !drop.has(`${f}p${i}`));
-    if (ops.length || probe.length)
-      lines.push(`t=${fr.t} probe=${probe} ${ops.map((op) => JSON.stringify(op)).join(' ; ')}`);
+    const seek =
+      fr.seek !== undefined && !drop.has(`${f}s`) ? ` seek=${JSON.stringify(fr.seek)}` : '';
+    if (ops.length || probe.length || seek)
+      lines.push(
+        `t=${fr.t} probe=${probe}${seek} ${ops.map((op) => JSON.stringify(op)).join(' ; ')}`,
+      );
   });
   return lines.join('\n');
 }
@@ -643,6 +688,7 @@ export function shrink(seed: number, options: SceneOptions = {}): string {
       items.push(`${f}.${j}`);
     });
     for (const i of fr.probe) items.push(`${f}p${i}`);
+    if (fr.seek !== undefined) items.push(`${f}s`);
   });
   const drop = new Set<string>();
   for (let pass = 0; pass < 3; pass++)
