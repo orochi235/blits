@@ -29,7 +29,9 @@ const cueOn = (id) => {
   glide.to(id, [id, 1, 0], 0);
   return h;
 };
-let probed = Array.from({ length: N }, (_, j) => j);
+// Swapped in place: a copy of the list a frame, as the frame bench's `turnover^` row makes, is 8 B
+// a subject of the host's own that would be counted as the churn's.
+const probed = Array.from({ length: N }, (_, j) => j);
 const handles = probed.map(cueOn);
 const columns = { position: new Float64Array(N * 3) };
 let t = 0;
@@ -41,7 +43,6 @@ const frame = (churn) => {
     handles[k].fade({ over: 0 });
     m.drop(probed[k]);
     const fresh = N + turn;
-    probed = probed.slice();
     probed[k] = probed[N - 1];
     handles[k] = handles[N - 1];
     probed[N - 1] = fresh;
