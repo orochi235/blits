@@ -56,8 +56,7 @@ reports on its own. Reading it:
   time to the audio clock itself. The probe retimed only handles, which leave mix time on the
   host's clock.
 - **After a `mix.seek` back under `history`, a read ahead past a recorded call threw**, which
-  would have stopped this adapter. The engine plays those calls since 2026-10-11; the adapter is
-  untested against it.
+  would have stopped this adapter. The engine plays those calls since 2026-10-11.
 
 ## Running it
 

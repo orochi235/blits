@@ -601,10 +601,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       as exact as the grid). Useful beyond audio.
     - Mix time converted to the outside clock while `mix.rate` ramps; the driver reads
       `mix.rate` as it stands at each write, which drifts during a ramp (3.59 Hz in its test).
-    - Scrubbing is untested: after a seek back under `history`, `project` ahead threw past a
-      recorded call and `write` threw with it. The engine plays those calls since 2026-10-11
-      (the changelog's Unreleased section), which blits-tone, pinned to 0.10.0, does not have;
-      its README's "Scrubbing" line goes when it is pinned to an engine that does and tested.
+    - Scrubbing works against the engine's source: after a seek back under `history`, `write`
+      reads through a recorded call (`packages/tone/test/driver.test.ts`, 2026-10-11), where
+      `project` threw and `write` with it. blits-tone on npm is pinned to 0.10.0, which still
+      throws; its README's "Scrubbing" line goes when it is pinned to the next engine.
 
 12. **What the docs audit left** (2026-10-10). The schema page's interface listings now carry
     every public member, and the page and README cover what the audit found missing.

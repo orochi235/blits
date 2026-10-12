@@ -1,4 +1,5 @@
 import { kit, mix, patch, sum } from '@msb235/blits';
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it, vi } from 'vitest';
 import type { Target } from '../src/index.js';
 import { drive, Tone } from './audio.js';
@@ -180,5 +181,25 @@ describe('detach and cancel', () => {
     // Notes fall every 250 ms, so one at 1750 was booked, 150 ms ahead, when the driver stopped.
     expect(Math.max(...onsets(r.notes))).toBe(1500);
     expect(r.freq[sampleAt(3900)]).toBe(r.freq[sampleAt(at + 1)]);
+  });
+});
+
+describe('scrubbing', () => {
+  it('writes through a call the tape holds after a seek back', () => {
+    const m = mix<string, Level>(kit({ x: sum() }), { history: { ms: 10_000, tape } });
+    const step = patch<string, Level>(0, () => ({ x: 50 }), { writes: ['x'] });
+    m.sync(0);
+    m.sync(100);
+    m.cue({ patch: step });
+    m.sync(200);
+    m.seek(90);
+    const a = recorder();
+    const d = drive(m, { clock: () => 0, ahead: 20, grid: 10 });
+    d.attach('a', { x: a.target });
+    // The host's clock runs on from the seek: 5 ms later the mix reads 95.
+    m.sync(205);
+    d.write();
+    // The cue was made at 100, which the second point reaches.
+    expect(a.ramps.map((r) => r.value)).toEqual([0, 50, 50]);
   });
 });
