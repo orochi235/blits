@@ -829,6 +829,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - **The fleet's copy of blits has a stale `node_modules`** (found 2026-10-11): its
         `@weasel-js/history` has no `timestampAt`, so the bench's `kept` and `seek` rows fail
         there until a job installs afresh.
+      - **Two changes in the lanes-under-seeks fix (`3fd3eac`) await a yes or a reversal**
+        (2026-10-11). `weightOf` reads 0 after a seek back until the subject is probed again,
+        and a write to the handle of a voice waiting for its cue after a seek back is ignored
+        where it used to branch the tape. Both sit under Fixed in the changelog; the second may
+        belong under Breaking.
+      - **The stale-start fix (`214909d`) has no clean timing** (2026-10-11): three rounds on a
+        busy orochi moved the `kept` and `seek` rows up to 24% both ways. Rerun those rows with
+        `AB_EACH=1 bench/ab.sh` on an idle node.
       - **A mix seek hangs on one scene** (found 2026-10-11, not fixed):
         `SAME_SEEK=1 SAME_RATE=1 SAME_OWNS=1 node bench/same.mjs <dist> <dist> 1 72600` never
         returns, with lanes on or off; its last calls are a `mute` and a seek 300 ms back in a
