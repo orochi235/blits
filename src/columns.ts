@@ -214,6 +214,9 @@ function rests<I, O>(lanes: Lanes<I, O>, c: Column, runs: number): void {
   }
 }
 
+/** The longest run of values `copies` copies itself: `set` takes a view, an object a run. */
+const VIEWED = 256;
+
 /** Copies a laned channel's values for every queued run into its rows. */
 function copies<I, O>(lanes: Lanes<I, O>, c: Column, values: Float64Array, runs: number): void {
   const slots = lanes.queueSlots;
@@ -225,7 +228,7 @@ function copies<I, O>(lanes: Lanes<I, O>, c: Column, values: Float64Array, runs:
     const at = (rows[r] as number) * axes;
     const base = (slots[r] as number) * axes;
     const span = (counts[r] as number) * axes;
-    if (span > 64) out.set(values.subarray(base, base + span), at);
+    if (span > VIEWED) out.set(values.subarray(base, base + span), at);
     else for (let i = 0; i < span; i++) out[at + i] = values[base + i] as number;
   }
 }
