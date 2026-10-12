@@ -1,6 +1,6 @@
 import { changed } from './chain.js';
 import { elapsedWith } from './clock.js';
-import { popDue, schedule } from './due.js';
+import { byId, popDue, schedule } from './due.js';
 import { detour } from './everyone.js';
 import { beginFade, part, retire } from './fade.js';
 import { expireGone, keepGone } from './gone.js';
@@ -181,7 +181,7 @@ function prune<I, O>(mix: Mixer<I, O>): void {
   let at: number[] | null = null;
   // A projection's list holds copies of voices gone before it, which only a pass takes out.
   if (retired.length <= SEARCHED && !mix.projecting) {
-    if (retired.length > 1) retired.sort((a, b) => a.id - b.id);
+    byId(retired);
     at = [];
     for (let k = 0; k < retired.length; k++) {
       const voice = retired[k] as Voice<I, O>;

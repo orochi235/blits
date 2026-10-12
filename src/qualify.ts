@@ -1,6 +1,7 @@
 import { type Numeric, numericOf } from './channels.js';
 import { flush } from './columns.js';
 import { crowdable } from './crowd.js';
+import { byId } from './due.js';
 import { weighAt } from './everyone.js';
 import { wake } from './fill.js';
 import { Lane, type Laned, type Locus, Per } from './lane.js';
@@ -223,8 +224,12 @@ export function open<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): number {
  * A crowd a quarter empty rows is compacted.
  */
 export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
-  const touched = [...new Set(lanes.touched)].sort((a, b) => a.id - b.id);
-  lanes.touched.length = 0;
+  const touched = byId(lanes.touched);
+  lanes.touched = [];
+  let kept = 0;
+  for (let i = 0; i < touched.length; i++)
+    if (i === 0 || touched[i] !== touched[i - 1]) touched[kept++] = touched[i] as Voice<I, O>;
+  touched.length = kept;
   // The qualify a false answer calls takes up every touched voice, crowd rows starting included.
   const qualify = (): false => {
     lanes.touched = touched;
