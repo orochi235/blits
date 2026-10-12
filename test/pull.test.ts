@@ -56,6 +56,22 @@ describe('pull', () => {
     expect([...gain]).toEqual([1, 1, 1]);
   });
 
+  it('writes the arrays this call was handed, leaving an earlier call’s alone', () => {
+    const m = mix<{ id: number }, Pose>(K);
+    m.cue({ patch: keys(100, [{ at: 0, delta: { gain: 0.5, position: [2, 3] } }]) });
+    m.sync(0);
+    const first = { gain: new Float64Array(3), position: new Float64Array(6) };
+    m.pull(parts, first);
+    first.gain.fill(-1);
+    first.position.fill(-1);
+    const second = { gain: new Float64Array(3), position: new Float64Array(6) };
+    m.pull(parts, second);
+    expect([...second.gain]).toEqual([0.5, 0.5, 0.5]);
+    expect([...second.position]).toEqual([2, 3, 2, 3, 2, 3]);
+    expect([...first.gain]).toEqual([-1, -1, -1]);
+    expect([...first.position]).toEqual([-1, -1, -1, -1, -1, -1]);
+  });
+
   it('throws when an array is too short for the subjects', () => {
     const m = mix<{ id: number }, Pose>(K);
     m.sync(0);

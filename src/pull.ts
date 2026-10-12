@@ -166,12 +166,23 @@ function readAll<I, O>(
   }
 }
 
-/** The kit slot, width, rest and bounds of every channel `pull` was handed an array for. */
+/**
+ * The kit slot, width, rest and bounds of every channel `pull` was handed an array for: one record
+ * a channel for the mix's life, pointed at the array this call was handed.
+ */
 function columnsOf<I, O>(mix: Mixer<I, O>, into: Columns<O>): Column[] {
   const columns: Column[] = [];
+  mix.pullColumns ??= new Map();
+  const known = mix.pullColumns;
   for (const key of Object.keys(into)) {
     const out = (into as Record<string, Float64Array | undefined>)[key];
     if (out === undefined) continue;
+    const had = known.get(key);
+    if (had !== undefined) {
+      had.out = out;
+      columns.push(had);
+      continue;
+    }
     const slot = mix.slotOf.get(key);
     if (slot === undefined) throw new Error(`blits: pull was handed ${key}, which the kit lacks`);
     const channel = mix.channels[slot] as Channel<unknown>;
@@ -182,7 +193,9 @@ function columnsOf<I, O>(mix: Mixer<I, O>, into: Columns<O>): Column[] {
     if (typeof rest === 'number') at[0] = rest;
     else if (Array.isArray(rest)) at.set(rest as number[]);
     if (bounds !== undefined) clampRun(at, 0, axes, bounds);
-    columns.push({ key, slot, axes, out, rest: at, bounds });
+    const column = { key, slot, axes, out, rest: at, bounds };
+    known.set(key, column);
+    columns.push(column);
   }
   return columns;
 }
