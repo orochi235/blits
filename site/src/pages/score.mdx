@@ -98,7 +98,7 @@ const m = mix(K, { history: { ms: 10_000, tape: createHistory }, stepMs: 5 });
 m.seek(m.now - 3000);
 ```
 
-Going back, the mix puts itself back as it stood then: each voice's clock, weight and fade, the voices that had left since, back on the handles you hold, and each patch's own state from the nearest copy history kept. Voices cued since wait as `pending` until the mix gets to their cue again. Going forward, by a sync or another seek, it makes your recorded calls again at the times you made them, so it plays on as it did, frame for frame under `stepMs`.
+Going back, the mix puts itself back as it stood then: each voice's clock, weight and fade, the voices that had left since, back on the handles you hold, and each patch's own state from the nearest copy history kept. Voices cued since wait as `pending` until the mix gets to their cue again, and writing to the handle of one that is waiting does nothing. Going forward, by a sync or another seek, it makes your recorded calls again at the times you made them, so it plays on as it did, frame for frame under `stepMs`.
 
 Keep passing your own clock to `sync`: the mix carries on from where you sought. A call you make while recorded calls lie ahead starts a new branch, and the tape keeps the old one beside it; `m.tape.branches()` lists them, and `m.tape.switchBranch(id)` picks one to play on.
 

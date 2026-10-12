@@ -19,18 +19,26 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
    * Each seek back sought to an earlier moment than every one after it, oldest first: the earliest
    * moment sought since seek `n` is that of the first here at or after it.
    */
-  private readonly least: { n: number; t: number }[] = [];
+  private readonly least: { n: number; t: number; seq: number }[] = [];
   /** By seek, the records subjects left with after its moment, and where it cut; null until one has any. */
   private futures: Map<number, { left: Leavings<I>; cut: Cut }> | null = null;
   /** The latest seek's moment. */
   private t = Number.NaN;
 
   /**
-   * `own` holds the records as they stood before the first seek. `make` puts a record back as it
-   * stood at `t`, undefined where it had none then; `top` is the latest seek's moment.
+   * `own` holds the records as they stood before the first seek, and `now` gives the one a subject
+   * that has not left since has there, as a seek to `t`, the end of frame `seq`, takes it. `make`
+   * puts a record back as it stood at `t`, undefined where it had none then; `top` is the latest
+   * seek's moment.
    */
   constructor(
     private readonly own: Store<I, Subject<unknown>>,
+    private readonly now: (
+      key: I,
+      held: Subject<unknown> | undefined,
+      t: number,
+      seq: number,
+    ) => Subject<unknown> | undefined,
     private readonly make: (
       live: Subject<unknown>,
       t: number,
@@ -45,7 +53,7 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
     const n = ++this.n;
     const least = this.least;
     while (least.length > 0 && (least[least.length - 1] as { t: number }).t >= t) least.pop();
-    least.push({ n, t });
+    least.push({ n, t, seq: cut.seq });
     this.t = t;
     if (left !== null) {
       this.futures ??= new Map();
@@ -53,8 +61,8 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
     }
   }
 
-  /** The earliest moment sought by seek `from` or any after it. */
-  private since(from: number): number {
+  /** The earliest moment sought by seek `from` or any after it, and the frame it ended. */
+  private since(from: number): { t: number; seq: number } {
     const least = this.least;
     let lo = 0;
     let hi = least.length - 1;
@@ -63,7 +71,7 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
       if ((least[mid] as { n: number }).n >= from) hi = mid;
       else lo = mid + 1;
     }
-    return (least[lo] as { t: number }).t;
+    return least[lo] as { t: number; seq: number };
   }
 
   override get(key: I): Subject<unknown> | undefined {
@@ -73,9 +81,9 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
     // A subject that left after the moment the next seek sought had the record it left with,
     // whatever it has now. Leaving is a write, so no later seek's leavings can hold it.
     const future = this.futures?.get(at + 1);
-    const live = future?.left.at(key, future.cut) ?? this.own.get(key);
-    if (live === undefined) return undefined;
-    const made = this.make(live, this.since(at + 1), this.t);
+    const { t, seq } = this.since(at + 1);
+    const live = future?.left.at(key, future.cut) ?? this.now(key, this.own.get(key), t, seq);
+    const made = live && this.make(live, t, this.t);
     if (made === undefined) this.own.delete(key);
     else this.own.set(key, made);
     return made;

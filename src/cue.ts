@@ -185,6 +185,7 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   const anchor = spec.anchor;
   const anchored = anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
   const motion = voice.motion;
+  voice.parked = false;
   if (owner !== null) adopt(owner, voice);
   if (!Number.isNaN(mix.now)) {
     voice.cuedAt = mix.now;

@@ -8,7 +8,7 @@ import type { Past } from './origin.js';
 import { type PackedRecord, packHeld, unpackHeld } from './pack.js';
 import { type Key, type Keys, pageOut } from './paging.js';
 import type { Described, VoiceSpec } from './types.js';
-import { type Controls, type Ramp, type Rise, Voice } from './voice.js';
+import { type Controls, type Parting, type Ramp, type Rise, Voice } from './voice.js';
 
 /** A voice that has left, as plain data: the descriptor it was cued with, its controls and its records. */
 interface PackedVoice {
@@ -46,7 +46,8 @@ interface PackedVoice {
   runs: [Key, Run][];
   left: [Key, number, number, PackedRecord, boolean][];
   parts: [Key, number, number, number][];
-  parted: [Key, number, number][];
+  /** With the ramp that took the subject out; absent from a store written before a voice kept it. */
+  parted: [Key, number, number, Parting?][];
 }
 
 /**
@@ -163,7 +164,9 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
       e.sync,
     ]),
     parts: [...(voice.parts ?? [])].map(([s, r]) => [keys.key(s), r.at, r.over, r.seq]),
-    parted: [...(voice.parted ?? [])].map(([s, p]) => [keys.key(s), p.at, p.seq]),
+    parted: [...(voice.parted ?? [])].map(([s, p]) =>
+      p.ramp === undefined ? [keys.key(s), p.at, p.seq] : [keys.key(s), p.at, p.seq, p.ramp],
+    ),
   };
 }
 
@@ -224,7 +227,12 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
       d.parts.map(([key, at, over, seq]) => [subjectOf(key), { at, over, seq }]),
     );
   if (d.parted.length > 0)
-    voice.parted = new Map(d.parted.map(([key, at, seq]) => [subjectOf(key), { at, seq }]));
+    voice.parted = new Map(
+      d.parted.map(([key, at, seq, ramp]) => [
+        subjectOf(key),
+        { at, seq, ramp: ramp ?? undefined },
+      ]),
+    );
   const h = mix.outs?.take(id) as VoiceHandle<I, O> | undefined;
   if (h === undefined) voice.handle = handle(mix, voice);
   else {

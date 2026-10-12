@@ -23,6 +23,7 @@ const SWEEPS: Sweep[] = [
     options: { history: true },
     seeds: 1000,
   },
+  { name: 'seek', options: { seek: true }, seeds: 2000 },
 ];
 
 describe('lanes on and off read the same', () => {

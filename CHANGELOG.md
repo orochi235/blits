@@ -55,6 +55,21 @@ version and everything else the patch. Each release lists its changes as **Break
   wrong time. A seek lets go of the later copies, so a mix sought back before every frame showed
   it at every frame from then on; `project(t)` showed it for `t` up to one copy's interval past
   the move.
+- A seek back to before a subject faded out of a voice finds the voice reaching it again, where
+  the voice had not met the subject before the fade. The subject stayed out of the voice with
+  `lanes: false`, and with lanes on for a voice naming its `subjects`; otherwise lanes brought it
+  back, so the two paths read differently. A read back to before the fade, `project(t)`, left
+  it out on both, and reaches it now.
+- A seek or a read back into a subject's ramp out of a voice, `fade({ subject, over })`, finds
+  the ramp once it has ended. The subject read at full weight there, and after a seek it stayed
+  in the voice at full weight for good.
+- `weightOf` reads 0 after a seek back until the subject is probed again. What a subject's last
+  probe by then read is not kept, and it reported a weight from after the moment sought, or one
+  older than its last probe for a voice on a lane, so the two paths read differently.
+- A write to the handle of a voice waiting for its cue after a seek back changes nothing, and the
+  tape does not record it. It put the voice on the mix's schedule, so the voice started at its
+  start time outside the mix, folded in but missing from `voices()`, and it branched the tape,
+  which left the voice's cue in the old future.
 
 ## 0.10.0
 

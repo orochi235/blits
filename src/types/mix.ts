@@ -221,11 +221,12 @@ export interface Mix<I, O, H = unknown> {
    * Back, the mix restores itself: controls, records, voices and marks as they stood then. Voices
    * that left after it are back on the handles the host holds, their `done` and `played` starting
    * over where they had settled since. Voices cued after it wait as `pending` until the mix plays
-   * their cue again. Stateful voices restart from the copy `history` kept nearest before it and
-   * step once to it, exact under `stepMs`. A subject faded out of a voice or dropped after it comes
-   * back with the record it had, a motion patch's state included. Recorded input and host fields
-   * after it are let go: after a seek back, signals and host fields read live again, and `assess`
-   * reports what they fed as `held`.
+   * their cue again, and a write to the handle of one waiting changes nothing. Stateful voices
+   * restart from the copy `history` kept nearest before it and step once to it, exact under
+   * `stepMs`. A subject faded out of a voice or dropped after it comes back with the record it
+   * had, a motion patch's state included. Recorded input and host fields after it are let go:
+   * after a seek back, signals and host fields read live again, and `assess` reports what they
+   * fed as `held`.
    *
    * Forward, through a sync or a later seek, the mix plays the recorded calls again in the frames
    * they were made in: cues, handle writes, fades, retargets and pushes, its rate, marks,

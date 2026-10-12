@@ -42,6 +42,19 @@ export interface Left<I> {
   held: Subject<unknown>;
 }
 
+/** A subject's ramp out of one voice: when it began, how long it runs, and the frame it was asked in. */
+export interface Parting {
+  at: number;
+  over: number;
+  seq: number;
+}
+
+export interface Parted {
+  at: number;
+  seq: number;
+  ramp: Parting | undefined;
+}
+
 export const none: readonly string[] = Object.freeze([]);
 
 /**
@@ -300,9 +313,12 @@ export class Voice<I, O> {
   /** Whether its patch has kept state on a record through `setting.keep`, which makes it stateful. */
   keeping = false;
   /** Subjects fading out of this voice alone, by the ramp each started; null while none are. */
-  parts: Map<I, { at: number; over: number; seq: number }> | null = null;
-  /** Subjects faded out of this voice, by the mix time and frame each left at; null while none have. */
-  parted: Map<I, { at: number; seq: number }> | null = null;
+  parts: Map<I, Parting> | null = null;
+  /**
+   * Subjects faded out of this voice, by the mix time and frame each left at, and the ramp that
+   * took it out, which a seek or a read back into it puts back; null while none have.
+   */
+  parted: Map<I, Parted> | null = null;
   /**
    * Under history, the records of subjects that left this voice, by the mix time and frame each
    * left at, while a seek or a read back may reach them; null while none have.
@@ -345,6 +361,8 @@ export class Voice<I, O> {
   /** The least stagger of any subject seen, 0 or below, which a voice running back ends at. */
   soonest = 0;
   restedCount = 0;
+  /** Whether a seek back to before its cue has it out of the mix, until the mix plays the cue again. */
+  parked = false;
   /** The mix time it was cued at; -Infinity before the first sync. */
   cuedAt = Number.NEGATIVE_INFINITY;
   /** The frame it was cued in. */
@@ -532,6 +550,7 @@ export class Voice<I, O> {
   park(): void {
     this.reopen(Number.NEGATIVE_INFINITY);
     this.take(this.first as Controls);
+    this.parked = true;
     this.log = null;
     this.state = 'pending';
     this.subjects = new Store();

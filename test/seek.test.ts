@@ -770,3 +770,96 @@ describe('a voice clock moved outright', () => {
     expect(projected(early.m, early.m.now)).toEqual(full.poses.get(672));
   });
 });
+
+describe.each([true, false])(
+  'seek and read back over a subject leaving a voice, lanes %s',
+  (lanes) => {
+    const line = patch<Part, Pose>(1000, (phase) => ({ x: 1 + phase }), { writes: ['x'] });
+    const made = () => mix<Part, Pose>(K, { ...kept(), lanes });
+    const xs = (m: { probe(s: Part): Pose }) => [a, b].map((s) => m.probe(s).x);
+
+    it('reaches a subject again that faded out before the voice had met it', () => {
+      const m = made();
+      const h = m.cue({ patch: line });
+      for (const t of [50, 100]) {
+        m.sync(t);
+        m.probe(a);
+      }
+      h.fade({ subject: b, over: 0 });
+      m.sync(200);
+      expect(xs(m)).toEqual([1.2, 0]);
+      expect(xs(m.project(60))).toEqual([1.06, 1.06]);
+      m.seek(60);
+      expect(xs(m)).toEqual([1.06, 1.06]);
+      expect(h.weightOf(b)).toBe(1);
+      // 100 of the host's ms later the mix reads 160, having faded it out again at 100.
+      m.sync(300);
+      expect(xs(m)).toEqual([1.16, 0]);
+    });
+
+    it('puts back the ramp a subject was leaving on, once the ramp has ended', () => {
+      const m = made();
+      const h = m.cue({ patch: line });
+      const seen = new Map<number, number[]>();
+      for (const t of [0, 100, 120, 140, 160, 200, 220]) {
+        m.sync(t);
+        seen.set(t, xs(m));
+        if (t === 100) h.fade({ subject: b, over: 80 });
+      }
+      expect(seen.get(140)?.[1]).toBeCloseTo(1.14 * 0.5, 12);
+      expect(seen.get(220)).toEqual([1.22, 0]);
+      expect(xs(m.project(140))).toEqual(seen.get(140));
+      m.seek(140);
+      expect(xs(m)).toEqual(seen.get(140));
+      m.sync(240);
+      expect(xs(m)).toEqual(seen.get(160));
+      m.sync(300);
+      expect(xs(m)).toEqual(seen.get(220));
+      expect(h.weightOf(b)).toBe(0);
+    });
+
+    it('reports no weight for a subject until it is probed again', () => {
+      const m = made();
+      const h = m.cue({ patch: line });
+      for (const t of [50, 100, 150, 200]) {
+        m.sync(t);
+        xs(m);
+        if (t === 100) h.weight = 0.4;
+      }
+      m.seek(60);
+      m.seek(200);
+      expect(h.weightOf(b)).toBe(0);
+      m.probe(b);
+      expect(h.weightOf(b)).toBe(0.4);
+      expect(h.weightOf(a)).toBe(0);
+    });
+  },
+);
+
+describe('seek back to before a cue', () => {
+  it('leaves the voice waiting for its cue whatever the host writes to its handle', () => {
+    const m = mix<Part, Pose>(K, kept());
+    m.sync(0);
+    m.cue({ patch: wave });
+    m.sync(100);
+    const later = m.cue({ patch: ramp });
+    m.sync(200);
+    const gain = m.probe(a).gain;
+    m.seek(50);
+    later.weight = 0.5;
+    later.rate = 2;
+    later.seek(100);
+    later.fade({ over: 100 });
+    later.rise();
+    expect(later.state).toBe('pending');
+    expect(m.tape?.branches()).toHaveLength(1);
+    m.sync(240);
+    expect(later.state).toBe('pending');
+    expect(m.probe(a).gain).toBe(1);
+    // 150 of the host's ms after the seek the mix reads 200, having cued it again at 100.
+    m.sync(350);
+    expect(later.state).toBe('live');
+    expect(later.weight).toBe(1);
+    expect(m.probe(a).gain).toBe(gain);
+  });
+});

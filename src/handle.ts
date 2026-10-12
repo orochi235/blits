@@ -101,10 +101,19 @@ export class VoiceHandle<I, O> implements Handle<I> {
     return this.#voice?.weight ?? this.#gone?.weight ?? 0;
   }
 
-  // A write to a paged voice changes nothing: it had left when the host made it, as it has on replay.
+  /**
+   * The voice a write reaches: none while a history store holds it, or a seek back to before its
+   * cue has it waiting. It had left, or was yet to be cued, when the host made the write, as on
+   * replay, so the write changes nothing and the tape does not take it.
+   */
+  get #cued(): Voice<I, O> | null {
+    const voice = this.#voice;
+    return voice === null || voice.parked ? null : voice;
+  }
+
   set weight(w: number) {
     plainWeight(w);
-    const voice = this.#voice;
+    const voice = this.#cued;
     if (voice === null) return;
     voice.written = true;
     voice.weight = w;
@@ -125,7 +134,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
 
   ramp(r: number, over: number): void {
     finiteRate(r);
-    const voice = this.#voice;
+    const voice = this.#cued;
     if (voice === null) return;
     voice.written = true;
     if (voice.state === 'pending') {
@@ -143,7 +152,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   seek(elapsed: number, opts?: SeekOptions): Doubt {
-    const voice = this.#voice;
+    const voice = this.#cued;
     if (voice === null) return 'exact';
     voice.written = true;
     // A pending voice's clock is anchored at its start, so it starts there on time.
@@ -161,7 +170,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   fade(opts?: FadeOptions<I>): void {
-    const voice = this.#voice;
+    const voice = this.#cued;
     if (voice === null) return;
     voice.written = true;
     this.#host.fade(voice, opts);
@@ -169,7 +178,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   rise(opts?: { over?: number }): void {
-    const voice = this.#voice;
+    const voice = this.#cued;
     if (voice === null) return;
     voice.written = true;
     this.#host.rise(voice, opts);

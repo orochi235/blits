@@ -96,11 +96,36 @@ export function linkable<I, O>(
 
 /** Whether a voice reaches a subject by what its spec says: the subjects it names, or its `target`. */
 export function aims<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, subject: I): boolean {
+  return aimsAt(voice, subject, this.now);
+}
+
+/** As `aims` at mix time `now`, counting a subject as faded out only by frame `seq`. */
+function aimsAt<I, O>(
+  voice: Voice<I, O>,
+  subject: I,
+  now: number,
+  seq = Number.POSITIVE_INFINITY,
+): boolean {
   // A read back to before a subject left still finds it reached.
   const left = voice.parted?.get(subject);
-  if (left !== undefined && !(this.now < left.at)) return false;
+  if (left !== undefined && !(now < left.at) && left.seq <= seq) return false;
   if (voice.named !== null) return voice.named.has(subject);
   return voice.spec.target ? voice.spec.target(subject) : true;
+}
+
+/**
+ * The record a voice has of a subject now, as a seek or a read back to mix time `now` and frame
+ * `seq` takes it: none where it says only that the voice does not reach a subject it reached
+ * then, before the subject faded out of it. The subject had no record then, and is met afresh.
+ */
+export function heldAt<I, O>(
+  voice: Voice<I, O>,
+  subject: I,
+  held: Subject<unknown> | undefined,
+  now: number,
+  seq: number,
+): Subject<unknown> | undefined {
+  return held !== undefined && !held.reaches && aimsAt(voice, subject, now, seq) ? undefined : held;
 }
 
 /**

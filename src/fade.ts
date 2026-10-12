@@ -52,10 +52,11 @@ export function parting<I, O>(
  * its lane position and a motion patch's state for it, and reaches it no more.
  */
 export function part<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I, at: number): void {
+  const ramp = voice.parts?.get(subject);
   voice.parts?.delete(subject);
   if (voice.parts?.size === 0) voice.parts = null;
   voice.parted ??= new Map();
-  voice.parted.set(subject, { at, seq: mix.transport.seq });
+  voice.parted.set(subject, { at, seq: mix.transport.seq, ramp });
   mix.parters.add(voice);
   forgetIn(mix, voice, subject);
   const motion = voice.motion;
