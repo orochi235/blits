@@ -31,6 +31,14 @@ version and everything else the patch. Each release lists its changes as **Break
 - A voice cued with `seek`, or sought while pending, keeps its count of rebuilds with its
   controls when it starts. A seek back to after its start, then a handle `seek` played again
   before the subject was read, left the subject's state as it was rather than rebuilding it.
+- A mix sought back time after time no longer steps a subject from the same copy of its state,
+  further each time. A seek lets go of the copies made after the moment it sought, so a mix
+  sought 300 ms back and to where it was before every frame stepped each subject from the copy
+  before its first seek: 70 steps at the first frame and 1069 at the 300th, at `stepMs` 5. The
+  copy a record is put back from now keeps its state stepped ahead to near the moment sought,
+  and the next record put back from it steps on from there: 67 to 74 steps at every frame. It
+  shows the same values. Under `maxDt`, without `stepMs`, or for a patch that `reads` a host
+  field, a record steps from the copy as before.
 
 ## 0.10.0
 
