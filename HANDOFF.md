@@ -25,8 +25,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   ahead moves the tape forward and back, which the tape's subscribers hear; and which two calls
   it still refuses (the schema page's "Reading ahead past the tape").
 - **Unreleased, breaking: `loop` defaults to one pass** (Mike, 2026-10-11; it defaulted to
-  looping for good). It waits for the next minor. No consumer has been checked: each one's `cue`
-  calls that leave `loop` out on a patch with a duration need a look before it takes that version.
+  looping for good). It waits for the next minor. Every consumer's cues were read at its `origin`
+  head (2026-10-11): one relied on the old default, klieg's lighting voice
+  (`packages/core/src/render/lighting.ts`), whose sweep would leave after one period. klieg
+  `dee96ba` gives it `loop: true`, committed on klieg's `main` and not pushed. No consumer test
+  leaned on looping. The site's explainers and samples did, and now ask for it.
 - **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
   blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
   log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
@@ -36,18 +39,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   next frame.
 - **klieg's port is merged into klieg's `main`** (2026-10-02), and its step two shipped in klieg
   0.15.0 (merge `77d537d`, 2026-10-05). klieg reads `setting.host` through `mix<I, O, H>`.
-- **Which blits each consumer pins** (2026-10-10; every one exact but astv's):
+- **Which blits each consumer pins**, read from each `origin` head on 2026-10-11:
 
-  | Consumer | Pins | Waits on |
-  |---|---|---|
-  | astv | `^0.8.1` | astv's session, asked to make it exact |
-  | wod, magicsmoke, portfolio, agnew | `0.8.1` | nothing; committed, not pushed |
-  | klieg | `0.8.1` on `main`, 0.7.0 in 0.16.7 on npm | a klieg release, Mike's call |
-  | sherpa | `0.6.0` | that klieg release, to keep one blits copy |
-  | weasel core and labkit | `0.7.0` on `main`, `0.8.1` on branch `blits-0.8` (`9d54d0a10`) | a merge and a weasel release, Mike's calls |
+  | Consumer | Pins |
+  |---|---|
+  | astv, weasel core and labkit, agnew | `0.8.1` |
+  | klieg | `0.7.0` |
+  | wod, sherpa, magicsmoke | `0.6.0` |
+  | portfolio | `0.4.0` |
 
-  klieg's labs, agnew's lab, and the playground carry a second blits copy until a weasel release
-  moves.
+  This file said until then that wod, magicsmoke, portfolio and klieg's `main` were on 0.8.1 in
+  commits not pushed. No ref in the clones under `~/src` holds such a commit, so those moves are
+  either on another machine or were never made. sherpa follows klieg, to keep one blits copy.
 - **sherpa runs on klieg**, with one deduped blits copy. Its seams run on a blits mix, and its klieg pages hold on clicks and stages through
   `dismiss: 'host'` and `advance()`, paced on klieg's `active` and `stage` marks. All three systems fold through a mix: `Timeline.poseAt`
   cues a voice per layer of each phase, `EffectFrame` one per effect, and the sign's environment is
@@ -91,9 +94,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
   is green on all 15 pages. Deployed to `michaelbaker.tech/blits/` by `.github/workflows/site.yml` on every push to `main`;
   that workflow also runs the site's typecheck, which `npm run check` does not.
-  Every explainer draws a stage of what its mix drives above its chart (2026-10-04). Open: the pages
-  don't fit a phone, since a 390 px viewport lays out about 640 px wide, and the score's text voice
-  ends the moment it finishes typing, so the line vanishes as the tint comes in. The sliders whose
+  Every explainer draws a stage of what its mix drives above its chart (2026-10-04). `site:smoke` also
+  fails a page laid out wider than a 390 px viewport. The sliders whose
   right end means never (Score's `cut`, Mix's `muteAt`, Voice's `fadeAt`, State's `cap`) are on
   labkit's `endless`, which stores `Infinity` at that stop.
 - `docs/schema.html` — the design: vocabulary, channel table, patches, voices, mix,
@@ -559,8 +561,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 10. **Two copies of blits loaded together share what each knows of its patches and channels**
     (`773d088`, 2026-10-08): `keys` options and the stock channels' lane facts sit in WeakMaps
     under `Symbol.for` names (`src/shared.ts`), versioned so copies that disagree on a shape keep
-    apart; `test/copies.test.ts` loads a second copy of `patch.js`. Open, Mike's call: whether
-    adapter packages, blits-quarks first, take blits as a `peerDependency` instead of pinning it.
+    apart; `test/copies.test.ts` loads a second copy of `patch.js`. blits-quarks and blits-tone
+    take blits as a peer dependency, `^0.10.0`, on `main` since 2026-10-11 (Mike's call), unreleased
+    in both; the range has to be widened with each engine minor.
     A spring made by another copy is not recognized as a motion (`instanceof MotionPatch` in
     `src/motion.ts`), so it plays through `at` off the lanes; it reads the same, untested for speed.
     `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the driver scaffold
@@ -580,7 +583,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       `AudioBuffer` is collected. `render` in `test/render.ts` returned such arrays and dropped
       the buffer, so a second render in one test killed the worker with SIGSEGV on the release
       workflow's Linux runner (`clock.test.ts`, 8 runs of 8) and read junk on macOS. `render` now
-      copies them. Not reported upstream. To see it: render an `OfflineAudioContext`, keep only
+      copies them. Upstream knows: ircam-ismm/node-web-audio-api issue 80, open since before
+      2.2.0, describes the same read. To see it: render an `OfflineAudioContext`, keep only
       the array, call `gc()`, and read it.
     - **`apps/fireworks` plays one mix through this driver and the quarks one** (2026-10-10; its
       README says how). It ran in headless Chromium's `AudioContext` with Tone `Param` targets:
