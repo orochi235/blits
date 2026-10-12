@@ -108,6 +108,17 @@ function ahead(segs: readonly Segment[], list: Segment[]): Segment[] {
 let shared = { xs: new Float64Array(4), vs: new Float64Array(4) };
 /** What a patch's `xs` and `vs` are before its first subject sets its axes. */
 const unsized = new Float64Array(0);
+/** Where `applied` reads a stretch at the time a change lands; copied out before it returns. */
+let landing = { x: new Float64Array(4), v: new Float64Array(4) };
+/** Where `numbers` gathers what it copies, kept an array of doubles so every copy is one too. */
+const gathered = [0.5];
+
+/** `n` numbers of `from` from `at`, as an array of their own. */
+function numbers(from: Float64Array, at: number, n: number): number[] {
+  // `Array.from` walks a typed array by its iterator: about 500 B a call for three axes.
+  for (let i = 0; i < n; i++) gathered[i] = from[at + i] as number;
+  return gathered.slice(0, n);
+}
 
 /**
  * A subject's flags: its value is a number; it has changes pending; it has older stretches; the
@@ -736,9 +747,9 @@ export class Motions<I> {
     return {
       at: this.runs[this.base(s)] as number,
       ms: this.runs[this.base(s) + 2] as number,
-      x0: Array.from(this.runs.subarray(x, x + n)),
-      v0: Array.from(this.runs.subarray(x + n, x + 2 * n)),
-      to: Array.from(this.runs.subarray(x + 2 * n, x + 3 * n)),
+      x0: numbers(this.runs, x, n),
+      v0: numbers(this.runs, x + n, n),
+      to: numbers(this.runs, x + 2 * n, n),
       change: this.causes?.[s],
     };
   }
@@ -759,11 +770,12 @@ export class Motions<I> {
   }
 
   private applied(s: number, seg: Segment, change: Change, at: number): Segment {
-    const x = new Float64Array(this.n);
-    const v = new Float64Array(this.n);
+    const n = this.n;
+    if (landing.x.length < n) landing = { x: new Float64Array(n), v: new Float64Array(n) };
+    const { x, v } = landing;
     this.evaluateSegment(seg, at, x, v);
-    const xs = Array.from(x);
-    const vs = change.v ?? Array.from(v);
+    const xs = numbers(x, 0, n);
+    const vs = change.v ?? numbers(v, 0, n);
     const subject = this.numbers.subject(s);
     const known = subject === absent ? (undefined as I) : subject;
     const to = this.shape.aim(xs, vs, change.to ?? seg.to, known);
@@ -817,8 +829,7 @@ export class Motions<I> {
    * The mix time and frame a stretch was in force by, which a store keys it under: when the change
    * that ended it was made, which falls in the same life of the subject.
    */
-  private made(next: Segment): { at: number; seq: number } {
-    const c = next.change;
+  private made(c: Change | undefined): { at: number; seq: number } {
     const made = c?.made;
     if (made === undefined || Number.isNaN(made))
       return { at: this.owner?.now() ?? Number.NaN, seq: this.owner?.seq() ?? Number.NaN };
@@ -844,7 +855,10 @@ export class Motions<I> {
         this.ownerId,
         'stretch',
         subject,
-        out.map((seg, i) => ({ ...this.made(out[i + 1] ?? list[0] ?? this.latest(s)), data: seg })),
+        out.map((seg, i) => {
+          const next = out[i + 1] ?? list[0];
+          return { ...this.made(next === undefined ? this.causes?.[s] : next.change), data: seg };
+        }),
       );
     if (list.length === 0) {
       (this.older as (Segment[] | undefined)[])[s] = undefined;
