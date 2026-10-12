@@ -65,7 +65,8 @@ const opts = (every?: number, extra: Partial<MixOptions> = {}): MixOptions => ({
 });
 
 interface Loop {
-  cue?: object;
+  /** The voice's spec but for its patch; a function makes it on each mix. */
+  cue?: object | ((m: Mix<string, Pose>) => object);
   /** Made on both mixes after each sync. */
   calls?: (m: Mix<string, Pose>, f: number, h: Handle<string>) => void;
   /** False where the two mixes are not held to show the same. */
@@ -86,7 +87,7 @@ function looped(
   const made = [make(), make()];
   const [sought, plain] = made.map(({ p }) => {
     const m = mix<string, Pose>(K, o);
-    return { m, h: m.cue({ patch: p, ...cue }) };
+    return { m, h: m.cue({ patch: p, ...(typeof cue === 'function' ? cue(m) : cue) }) };
   }) as [{ m: Mix<string, Pose>; h: Handle<string> }, { m: Mix<string, Pose>; h: Handle<string> }];
   const count = (made[0] as ReturnType<typeof drift>).count;
   const steps: number[] = [];
@@ -200,6 +201,91 @@ describe('a mix sought back and to where it was, every frame', () => {
         expect(subjects.map((s) => sought.probe(s).x)).toEqual(shown.get(at[f] as number));
       }
     }
+  });
+
+  // A copy kept while a start was ahead holds the start as it was then; a seek cuts the copies
+  // after the moment it sought, so every later one puts the record back from that copy.
+  describe('where a start is moved while a voice freezing before it waits', () => {
+    const waits = (delay: number) => ({
+      stagger: (s: string) => (s === 'a' ? 0 : delay),
+      freeze: 'before' as const,
+    });
+    const moves: Record<string, (h: Handle<string>, delay: number) => void> = {
+      'a faster rate': (h) => {
+        (h as { rate: number }).rate = 2;
+      },
+      'a slower rate': (h) => {
+        (h as { rate: number }).rate = 0.5;
+      },
+      'a ramp': (h) => h.ramp(0.25, 300),
+      'a seek that keeps state': (h, delay) => void h.seek(delay - 200, { state: 'keep' }),
+    };
+    for (const [what, move] of Object.entries(moves))
+      for (const delay of [600, 900])
+        it(`shows what it showed after ${what}, ${delay} ms into a stagger`, () => {
+          looped(120, opts(), {
+            cue: waits(delay),
+            calls: (_m, f, h) => {
+              if (f === 27) move(h, delay);
+            },
+          });
+        });
+
+    for (const rate of [0.5, 2])
+      it(`shows what it showed after its owner's rate goes to ${rate}`, () => {
+        const owners = new Map<Mix<string, Pose>, Handle<string>>();
+        looped(120, opts(), {
+          cue: (m) => {
+            const owner = m.owns({});
+            owners.set(m, owner);
+            return { owner, ...waits(600) };
+          },
+          calls: (m, f) => {
+            if (f === 27) (owners.get(m) as { rate: number }).rate = rate;
+          },
+        });
+      });
+
+    it("shows what it showed after the mix's rate moves a start given in host time", () => {
+      looped(120, opts(), {
+        cue: { start: 500, ...waits(200) },
+        calls: (m, f) => {
+          if (f === 20) m.rate = 2;
+        },
+      });
+    });
+
+    it('steps a subject whose start moved again over no more than the way back', () => {
+      const { steps } = looped(330, opts(50), {
+        cue: waits(600),
+        calls: (_m, f, h) => {
+          if (f === 27) (h as { rate: number }).rate = 0.5;
+        },
+      });
+      expect(Math.max(...steps.slice(40))).toBeLessThanOrEqual(
+        Math.ceil((BACK + 50 + 2 * FRAME) / STEP),
+      );
+    });
+
+    it('shows what it showed after an anchor places its start', () => {
+      looped(120, opts(), {
+        cue: { anchor: { start: { with: 'go' } }, ...waits(300) },
+        calls: (m, f) => {
+          if (f === 27) m.announce('go');
+        },
+      });
+    });
+
+    it('reads back the frames after the move as it showed them', () => {
+      const { plain, shown } = looped(60, opts(), {
+        cue: waits(600),
+        calls: (_m, f, h) => {
+          if (f === 27) (h as { rate: number }).rate = 2;
+        },
+      });
+      for (const [at, poses] of shown)
+        expect(subjects.map((s) => plain.project(at).probe(s).x)).toEqual(poses);
+    });
   });
 
   it('steps a voice frozen after its last pass no further than its end', () => {
