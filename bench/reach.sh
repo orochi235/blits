@@ -14,7 +14,7 @@ if ((${#rows[@]} == 0)); then
     rows+=("glowbase$read" "glow$read")
     for way in part drop own; do
       for k in 0 2 20 200; do rows+=("$way:$k$read"); done
-      rows+=("$way/20$read" "$way/200$read")
+      rows+=("$way/200$read")
     done
   done
 fi

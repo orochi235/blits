@@ -9,7 +9,9 @@
 //         subject crossing either way, so every voice meets it afresh and `target` is asked again.
 //   own   a glow voice for each subject in reach, cued as it enters and faded as it leaves.
 // Rows are named `<way>:<K>[:<W>]`; `<way>/<K>` takes its turns apart, K entering on one frame and
-// K leaving two frames on with a still frame after each, and prints each of the four frames' mean.
+// K leaving two frames on with a still frame after each, and prints each of the four frames' median.
+// `p50` and `calls` are the median frame and the median time a frame spent in those calls: on a
+// node other jobs share, a mean is mostly the frames they interrupted.
 // A trailing `-` turns lanes off and `^` reads by `pull`, as in bench/frame.mjs.
 //   node bench/reach.mjs part:20 part/200^      FRAMES (default 300) as in bench/frame.mjs.
 // Every row ends by checking that the glow weighs exactly the subjects in its window.
@@ -159,9 +161,8 @@ for (const [i, row] of chosen.entries()) {
   const pausedBefore = paused;
   const allocatedBefore = getHeapStatistics().total_allocated_bytes;
   const each = new Float64Array(frames);
-  const byPhase = [0, 0, 0, 0];
-  const inPhase = [0, 0, 0, 0];
-  let calling = 0;
+  const calling = new Float64Array(frames);
+  const byPhase = [[], [], [], []];
   for (let f = 0; f < frames; f++) {
     const f0 = performance.now();
     t += 16.7;
@@ -171,13 +172,14 @@ for (const [i, row] of chosen.entries()) {
     read();
     const f2 = performance.now();
     each[f] = f2 - f0;
-    calling += f1 - f0;
-    byPhase[phase] += f2 - f0;
-    inPhase[phase]++;
+    calling[f] = f1 - f0;
+    byPhase[phase].push(f2 - f0);
   }
   const kb = (getHeapStatistics().total_allocated_bytes - allocatedBefore) / frames / 1024;
   const ms = each.reduce((a, b) => a + b, 0) / frames;
+  const middle = (xs) => xs.sort((a, b) => a - b)[(xs.length - 1) >> 1] ?? Number.NaN;
   each.sort();
+  const p50 = each[(frames - 1) >> 1];
   const p99 = each[Math.ceil(frames * 0.99) - 1];
   await new Promise((r) => setTimeout(r, 0));
 
@@ -191,14 +193,12 @@ for (const [i, row] of chosen.entries()) {
   if (weighed !== size) throw new Error(`bench/reach.mjs: ${row} weighs ${weighed} of ${size}`);
 
   const turns = apart
-    ? PHASES.map(
-        (name, p) => `  ${name} ${(byPhase[p] / Math.max(1, inPhase[p])).toFixed(4).padStart(8)}`,
-      ).join('')
+    ? PHASES.map((name, p) => `  ${name} ${middle(byPhase[p]).toFixed(4).padStart(8)}`).join('')
     : '';
   console.log(
     `${String(i + 1).padStart(2)}/${chosen.length}  ${row.padEnd(wide)} N=${String(N).padStart(6)} W=${String(reach).padStart(4)}` +
-      `  ${ms.toFixed(4).padStart(8)} ms/frame  calls ${(calling / frames).toFixed(4).padStart(7)}` +
-      `  p99 ${p99.toFixed(3).padStart(8)}` +
+      `  ${ms.toFixed(4).padStart(8)} ms/frame  p50 ${p50.toFixed(4).padStart(8)}` +
+      `  calls ${middle(calling).toFixed(4).padStart(7)}  p99 ${p99.toFixed(3).padStart(8)}` +
       `  gc ${String(gcs - before).padStart(4)} ${(paused - pausedBefore).toFixed(1).padStart(6)} ms` +
       `  ${kb.toFixed(1).padStart(8)} kB/frame${turns}`,
   );
