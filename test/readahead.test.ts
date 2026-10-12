@@ -148,6 +148,25 @@ describe('a read ahead after a seek back', () => {
     }
   });
 
+  it('seeks forward onto a call the tape holds without landing its frame twice', () => {
+    const scene: Scene = (m, t, h) => {
+      if (t === 160)
+        h.ramp = m.cue({
+          patch: ramp,
+          fade: { in: 50, out: 150 },
+          weight: 0.5,
+          seek: 130,
+          start: 208,
+        });
+      // The voice ended at 378 and is fading: a second landing at 512 would begin the fade again.
+      if (t === 512) h.ramp?.rise({ over: 0 });
+    };
+    const run = play(scene);
+    run.m.seek(96);
+    run.m.seek(512);
+    expect(probes(run.m)).toEqual(run.poses.get(512));
+  });
+
   it('refuses a drop of a subject a motion patch holds, and leaves the tape holding it', () => {
     const s = spring<Part, Pose>('x', { from: 0, to: 100 });
     const m = mix<Part, Pose>(K, kept());

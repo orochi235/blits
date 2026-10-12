@@ -146,7 +146,8 @@ export function seek(transport: Transport, t: number): void {
     const u = Number.isNaN(last) ? hostAt(transport, t) : Math.max(last, hostAt(transport, t));
     if (!Number.isFinite(u)) throw new RangeError(`blits: the mix's rate never reaches ${t}`);
     transport.u = u;
-    for (const m of transport.members) move(m, t);
+    // A call played at `t` itself moved the mixes there before it, as a sync does.
+    if (Number.isNaN(last) || transport.now !== t) for (const m of transport.members) move(m, t);
   } else {
     const frame = transport.frames.at(t);
     if (frame === undefined)

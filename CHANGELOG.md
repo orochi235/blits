@@ -26,6 +26,8 @@ version and everything else the patch. Each release lists its changes as **Break
 - A fade set for a time after a voice's passes run out no longer begins in place of the voice
   ending, where one frame crossed both: `fade({ at })` on a voice with no `freeze` that ended
   before `at` played on, held at its last frame, until the fade finished.
+- A seek forward to the time of a recorded call lands that frame once. It landed it again after
+  the call, so a `rise` played there on a voice past its end began the voice's fade over.
 - A voice cued with `seek`, or sought while pending, keeps its count of rebuilds with its
   controls when it starts. A seek back to after its start, then a handle `seek` played again
   before the subject was read, left the subject's state as it was rather than rebuilding it.
