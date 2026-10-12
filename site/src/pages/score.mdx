@@ -12,7 +12,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 
 <Score client:only="react" />
 
-Every voice has four **marks** on the mix clock: `start`, when its fade in begins; `in`, when it is at full weight; `out`, when its fade out begins; and `end`, when it is gone. Above, an orb flies in, its row's text arrives once it lands, and a tint comes in as the text finishes, holds, then fades.
+Every voice has five **marks** on the mix clock: `start`, when its fade in begins; `in`, when it is at full weight; `coast`, when its last pass ends; `out`, when its fade out begins; and `end`, when it is gone. Above, an orb flies in, its row's text arrives once it lands, and a tint comes in as the text finishes, holds, then fades.
 
 ## Placing a voice
 
@@ -37,7 +37,7 @@ m.cue({
 });
 ```
 
-The text freezes on its last frame, so the line stays up and the voice has no `end` until something fades it. The tint hangs from its `coast` instead, a fifth mark: when a voice's last pass ends.
+The text freezes on its last frame, so the line stays up and the voice has no `end` until something fades it. The tint hangs from its `coast` instead.
 
 `after` is the other voice's `end`, `with` is its `start`, and `before` is its start less `by`. The general form names the mark: `{ of: 'orb', mark: 'in', by: 50 }`. Anchoring `in` or `end` takes the voice's own fade into account, so `anchor: { in: 12_400 }` means fully in at 12.4 s.
 
@@ -68,7 +68,7 @@ A voice waiting on a mark nobody has announced stays pending, and a read ahead s
 
 ## What comes next
 
-`mix.marks(from, to)` lists every mark the plan knows between two timestamps, earliest first: each voice's four, with its id, name and tags, and every announced mark. A mark nothing has fixed yet is left out.
+`mix.marks(from, to)` lists every mark the plan knows between two timestamps, earliest first: each voice's own, with its id, name and tags, and every announced mark. A mark nothing has fixed yet is left out.
 
 ```ts
 for (const next of m.marks(now, now + 2000)) if (next.mark === 'start') prepare(next.name);

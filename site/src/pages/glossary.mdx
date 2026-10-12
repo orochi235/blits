@@ -359,7 +359,7 @@ In depth: [Voice](../voice/#the-clock). Reference: [`VoiceSpec`](../voice/#api-V
 
 ## mark
 
-A mark is a named moment on the mix's clock that an [anchor](#anchor) can wait for. Every voice has four: `start`, when its fade in begins; `in`, when it reaches full weight; `out`, when its fade out begins; and `end`, when it is gone. The [host](#host) adds its own with `mix.announce(name)`, for a moment only it knows about, such as a reply from a server. `mix.marks(from, to)` lists every mark due between two times.
+A mark is a named moment on the mix's clock that an [anchor](#anchor) can wait for. Every voice has five: `start`, when its fade in begins; `in`, when it reaches full weight; `coast`, when its last pass ends; `out`, when its fade out begins; and `end`, when it is gone. A voice that loops for good never coasts, and one that freezes on its last frame has no `end` until it is faded. The [host](#host) adds its own with `mix.announce(name)`, for a moment only it knows about, such as a reply from a server. `mix.marks(from, to)` lists every mark due between two times.
 
 ```ts
 dots.cue({ patch: rise, anchor: { start: { with: 'reply' } } }); // waits
