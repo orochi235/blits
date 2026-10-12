@@ -135,6 +135,24 @@ export function VoicePanel(p: VoicePanelProps) {
           voice ms it starts at{v.rate < 0 ? ', playing back to 0' : ''}
         </span>
       </label>
+      {v.patch.kind === 'fn' && v.patch.step !== undefined && (
+        <label className={s.row} title={docOf('VoiceSpec.stepMs')}>
+          stepMs
+          <input
+            type="number"
+            className={s.number}
+            min={0}
+            step={1}
+            placeholder="the mix's"
+            value={v.stepMs ?? ''}
+            onChange={(e) => {
+              const ms = e.target.valueAsNumber;
+              onChange(withKey(v, 'stepMs', Number.isFinite(ms) && ms >= 0 ? ms : undefined));
+            }}
+          />
+          <span className={s.note}>its own step interval; 0 steps by the frame</span>
+        </label>
+      )}
       <OwnerField
         comp={p.comp}
         id={v.id}

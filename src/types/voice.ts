@@ -86,6 +86,11 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    */
   seek?: number;
   /**
+   * The interval this voice's `step` runs at, in ms of mix time, in place of the mix's `stepMs`.
+   * 0 steps it once a frame by the frame's gap, whatever the mix sets. Default: the mix's.
+   */
+  stepMs?: number;
+  /**
    * true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its
    * passes are done for the latest-staggered subject it has seen — over `fade.out` where one is
    * set, at once where none is — unless it freezes after. Default: false.

@@ -1,4 +1,5 @@
 import { ownBlends } from './blend.js';
+import { stepOf } from './clock.js';
 import { open, sighted, weightAt } from './everyone.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { Mixer } from './mixer.js';
@@ -336,8 +337,7 @@ function doubtOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unkno
     if (then === undefined || !reads.every((f) => f in then)) return 'held';
   }
   if (mix.now > (held.from ?? mix.now)) {
-    const tick = mix.opts.stepMs;
-    const fixed = tick !== undefined && tick > 0 && !mix.reducedNow;
+    const fixed = stepOf(mix, voice) !== undefined;
     if ((voice.patch.step && !fixed) || (held.kept !== null && held.kept.size > 0 && !replayed))
       return 'stepped';
   }

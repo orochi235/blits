@@ -77,4 +77,10 @@ describe('a voice cued partway or backward', () => {
     expect(load(JSON.parse(JSON.stringify(c)))).toEqual(c);
     expect(load(comp([twice({ seek: 'end' as never })]))).toBeNull();
   });
+
+  it("loads a voice's own stepMs, and refuses one below 0", () => {
+    const c = comp([twice({ stepMs: 8 })]);
+    expect(load(JSON.parse(JSON.stringify(c)))).toEqual(c);
+    expect(load(comp([twice({ stepMs: -1 })]))).toBeNull();
+  });
 });

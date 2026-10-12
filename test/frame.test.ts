@@ -394,6 +394,47 @@ describe('stepMs', () => {
     expect(at300(30)).not.toBeCloseTo(at300(144), 1);
   });
 
+  it("steps a voice at its own interval, in place of the mix's or where the mix has none", () => {
+    const counts = (mixStep: number | undefined, voiceStep: number | undefined) => {
+      const dts: number[] = [];
+      const m = mix<Part, Pose>(PART, { stepMs: mixStep });
+      m.cue({
+        patch: patch<Part, Pose, null>(0, () => ({}), {
+          writes: [],
+          state: () => null,
+          step: (_s, dt) => {
+            dts.push(dt);
+          },
+        }),
+        stepMs: voiceStep,
+      });
+      const part = { id: 'a' };
+      for (const t of [0, 16, 48]) {
+        m.sync(t);
+        m.probe(part);
+      }
+      return dts;
+    };
+    expect(counts(undefined, 8)).toEqual([8, 8, 8, 8, 8, 8]);
+    expect(counts(4, 8)).toEqual([8, 8, 8, 8, 8, 8]);
+    // 0 turns the mix's interval off for the voice: once a frame, by the frame's gap.
+    expect(counts(4, 0)).toEqual([16, 32]);
+    expect(counts(4, undefined)).toHaveLength(12);
+    const m = mix<Part, Pose>(PART);
+    expect(() => m.cue({ patch: spring(), stepMs: -1 })).toThrow(/stepMs/);
+    expect(() => m.cue({ patch: spring(), stepMs: Number.NaN })).toThrow(/stepMs/);
+  });
+
+  it('rates a seek of a voice stepped at its own interval exact, as under the mix’s', () => {
+    const m = mix<Part, Pose>(PART);
+    const own = m.cue({ patch: spring(), stepMs: 5 });
+    const free = m.cue({ patch: spring() });
+    m.sync(0);
+    m.sync(100);
+    expect(own.seek(20)).toBe('exact');
+    expect(free.seek(20)).toBe('stepped');
+  });
+
   it('hands step the interval and the time each interval ends, carrying the remainder', () => {
     const calls: [number, number][] = [];
     const m = mix<Part, Pose>(PART, { stepMs: 5 });

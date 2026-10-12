@@ -1,5 +1,6 @@
 import { Book, type BookHost } from './book.js';
 import { numericOf } from './channels.js';
+import { stepOf } from './clock.js';
 import { crowdable } from './crowd.js';
 import { schedule } from './due.js';
 import { unshare, unsight, weightAt } from './everyone.js';
@@ -157,8 +158,7 @@ function seekDoubt<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, rebuild: boolean)
     return 'held';
   if (voice.keeping) return 'stepped';
   if (patch.step === undefined) return 'exact';
-  const tick = mix.opts.stepMs;
-  const fixed = tick !== undefined && tick > 0 && !mix.reducedNow && mix.opts.maxDt === undefined;
+  const fixed = stepOf(mix, voice) !== undefined && mix.opts.maxDt === undefined;
   return fixed ? 'exact' : 'stepped';
 }
 

@@ -18,6 +18,8 @@ version and everything else the patch. Each release lists its changes as **Break
   call threw, and now makes the call on its copies as a seek there makes it on the mix. It still
   throws for a `drop` of a subject a motion patch holds, and for a retarget or push made before
   its voice had met the subject. The tape moves forward and back while the read is made.
+- `stepMs` on a voice's spec: the interval its `step` runs at, in place of the mix's. 0 steps it
+  once a frame by the frame's gap.
 
 ### Fixed
 

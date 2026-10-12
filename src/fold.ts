@@ -1,4 +1,4 @@
-import { passAt, phaseAt, phaseBefore, silent } from './clock.js';
+import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue, first } from './clone.js';
 import { open as openRecord, shut as shutRecord, weighAt } from './everyone.js';
 import { recordHost, remember } from './history.js';
@@ -122,7 +122,6 @@ export function contribution<I, O>(
   if (history?.inputs && voice.patch.reads !== undefined && !this.projecting) recordHost(this, now);
   reading.horizon = this.horizonFor(voice, held.delay, now);
 
-  const tick = this.opts.stepMs;
   if (voice.patch.step && held.probed !== now) {
     // Frozen after, it steps once more to where its last pass ended, and no further; run back
     // past its start, to where it reached it. Before a start it has yet to reach, it does not step.
@@ -137,8 +136,8 @@ export function contribution<I, O>(
         held.stepped = held.since;
         setting.dt = this.capped(now - held.since);
       }
-      if (tick !== undefined && tick > 0 && !this.reducedNow)
-        this.tick(voice, subject, held, tick, to);
+      const tick = stepOf(this, voice);
+      if (tick !== undefined) this.tick(voice, subject, held, tick, to);
       else if (still === 0 ? now !== held.stepped : to > held.stepped) {
         if (still !== 0) setting.dt = this.capped(to - held.stepped);
         voice.patch.step(held.state as never, setting.dt, subject, setting as Setting<never>);

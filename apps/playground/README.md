@@ -69,7 +69,7 @@ all but `last` take `bounds`; `offset` folds its two numbers alike, so not by `l
 replaces or averages, interpolated in OKLCH or OKLab. The fold rules panel edits them and shows the
 kind each makes.
 
-A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `seek`, `loop`, `stagger`, `target`,
+A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `seek`, `stepMs`, `loop`, `stagger`, `target`,
 `freeze`, `weight`, `fade`, `locus`, `from`, `anchor`, `tags`, `score`, `hits`), so the voice panel teaches the real spec, plus
 an `id`, a `name`, a `hue`, a `patch`, the `owner` group it plays under, and the `hints` a span
 reads. A `PatchSource` is one of:
@@ -246,7 +246,7 @@ fold: everything that reaches it, and the rest it folds from, under a breadcrumb
 
 | Panel     | Shows                                                                                   |
 |-----------|-----------------------------------------------------------------------------------------|
-| Voice     | the spec fields, each with blits' doc comment on hover; `rate` from -4 to 4 and a `seek`, blank for blits' default; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `score`, and `hits` |
+| Voice     | the spec fields, each with blits' doc comment on hover; `rate` from -4 to 4 and a `seek`, blank for blits' default; for a patch with a `step`, its own `stepMs`, blank for the mix's; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `score`, and `hits` |
 | Group     | in place of Voice and Patch when a header is selected: name, kind, `owner`, start and anchor (not under a span), rate, weight, fade, freeze, hints under a span; for a span its `duration`, `priority`, `order`, `share` (for `stagger`), `spill`, the fit steps (add, remove, reorder, presets; a code step in a code pane), and the live `FitResult` |
 | Weight    | a number, or a signal expression; a menu inserts common signals                         |
 | Patch     | a kind menu (switching starts a blank patch of that kind), then by kind: a weasel `Timeline` track per channel for `keys`, with an `EasingPicker` per key; code panes for `fn`; numbers or expressions per option for motion |

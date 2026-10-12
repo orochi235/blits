@@ -54,6 +54,8 @@ export interface Voice {
   rate: number;
   /** Where in itself it starts, voice ms. Unset: 0, or its end at a rate below 0. */
   seek?: number;
+  /** Its own interval for `step`, ms, in place of the mix's; 0 steps by the frame's gap. */
+  stepMs?: number;
   loop: boolean | number;
   stagger?: Expr;
   target?: Expr;

@@ -80,6 +80,7 @@ export function specOf(
   if (v.locus) spec.locus = v.locus;
   if (v.from) spec.from = v.from;
   if (v.seek !== undefined) spec.seek = v.seek;
+  if (v.stepMs !== undefined) spec.stepMs = v.stepMs;
   if (v.tags?.length) spec.tags = v.tags;
   if (v.score) spec.score = v.score;
   if (v.hits?.length) spec.hits = v.hits;

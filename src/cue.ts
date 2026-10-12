@@ -102,6 +102,10 @@ export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
   if (spec.rate !== undefined) finiteRate(spec.rate);
   if (spec.seek !== undefined && !Number.isFinite(spec.seek))
     throw new RangeError(`blits: a voice's seek is a finite number of ms, not ${spec.seek}`);
+  if (spec.stepMs !== undefined && !(spec.stepMs >= 0 && spec.stepMs < Number.POSITIVE_INFINITY))
+    throw new RangeError(
+      `blits: a voice's stepMs is a finite number of ms, 0 or more, not ${spec.stepMs}`,
+    );
   if (typeof spec.weight === 'number') plainWeight(spec.weight);
   fitsKit(patch, mix.kit);
   const motion = motionOf<I>(patch);

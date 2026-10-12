@@ -205,3 +205,15 @@ export function retime(c: Clock, now: number, rate: number, over: number): void 
   c.ramp = over > 0 && rate !== from ? { from, to: rate, over } : null;
   c.rate = rate;
 }
+
+/**
+ * The fixed interval a voice's `step` runs at: its own `stepMs`, else the mix's. Undefined where
+ * it steps once a frame by the frame's gap, as every voice does under reduced motion.
+ */
+export function stepOf(
+  mix: { readonly opts: { readonly stepMs?: number }; readonly reducedNow: boolean },
+  voice: { readonly spec: { readonly stepMs?: number } },
+): number | undefined {
+  const tick = voice.spec.stepMs ?? mix.opts.stepMs;
+  return tick !== undefined && tick > 0 && !mix.reducedNow ? tick : undefined;
+}

@@ -705,8 +705,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - `catchUp: 'fresh'` per voice; exact catch-up is the default, and a voice keeps at most
         256 past clocks.
       - `seek({ frame })`, for an earlier frame at the same mix time.
-      - Per-voice `stepMs` (magicsmoke's mix per fault), and a report of a key `at` returns
-        outside `writes`, which is still dropped without a word.
+      - A report of a key `at` returns outside `writes`, which a mix still drops without a
+        word; `checkPatch` in `@msb235/blits/testing` reports it. A voice's own `stepMs` is
+        built (2026-10-11, the changelog's Unreleased section), so magicsmoke's faults could
+        share one mix; magicsmoke still makes one per fault.
       - A read back with no history beyond the narrow case in `src/standing.ts`: a voice an
         anchor places, an owner and what it holds, and a voice whose handle was written to are
         refused because the fuzzer (`standing` in `test/fuzz/program.ts`) found frames that
