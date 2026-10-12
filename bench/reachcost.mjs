@@ -2,7 +2,8 @@
 // glow over every subject and the voice under it, then what one subject entering or leaving costs.
 //   node bench/reachcost.mjs <files holding reach.sh's output...>
 // Frames are read twice, by each run's median frame (`p50`) and by its mean (`ms/frame`). A pair
-// is one subject leaving and one entering in a frame: a `<way>:<K>` row less `<way>:0`, by K.
+// is one subject leaving and one entering in a frame, or for `stale` one chain linked again: a
+// `<way>:<K>` row less `<way>:0`, by K.
 // Entering and leaving apart come from a `<way>/<K>` row, each from one process: its frame of K
 // entering less the still frame after it, and the same for leaving, so both sides of a difference
 // read the same number of subjects in reach.
@@ -45,7 +46,7 @@ const READS = [
   ['-', 'probe, lanes off'],
   ['^', 'pull'],
 ];
-const WAYS = ['part', 'drop', 'own'];
+const WAYS = ['part', 'drop', 'own', 'stale'];
 const KS = [0, 2, 20, 200];
 const lead = (read, way) => `${read.padEnd(17)} ${way.padEnd(4)}`;
 const head = `${'read'.padEnd(17)} ${'way'.padEnd(4)}`;
@@ -72,6 +73,9 @@ for (const [stat, title] of [
       console.log(`${lead(read, way)} ${ms(base)} ${ms(glow)}${cells.join('')}`);
     }
   }
+  console.log(
+    `own:0:0, no glow at all:${READS.map(([mark, read]) => `  ${read} ${ms(of(`own:0:0${mark}`, pick)).trim()}`).join('')}`,
+  );
   console.log(`\n${title}: ns a pair, one subject leaving and one entering`);
   console.log(
     head +

@@ -16,6 +16,8 @@ if ((${#rows[@]} == 0)); then
       for k in 0 2 20 200; do rows+=("$way:$k$read"); done
       rows+=("$way/200$read")
     done
+    for k in 0 2 20 200; do rows+=("stale:$k$read"); done
+    rows+=("own:0:0$read")
   done
 fi
 total=$((rounds * ${#rows[@]}))
@@ -24,7 +26,7 @@ done=0
 for ((r = 1; r <= rounds; r++)); do
   for row in "${rows[@]}"; do
     case "$row" in
-      part[:/]* | drop[:/]* | own[:/]*) bench=reach.mjs ;;
+      part[:/]* | drop[:/]* | own[:/]* | stale:*) bench=reach.mjs ;;
       *) bench=frame.mjs ;;
     esac
     node "$root/bench/$bench" "$row" | sed "s|^ 1/1 |r$r |"

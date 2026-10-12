@@ -8,6 +8,11 @@
 //   drop  one glow voice whose `target` answers by the window. `mix.drop(subject)` forgets a
 //         subject crossing either way, so every voice meets it afresh and `target` is asked again.
 //   own   a glow voice for each subject in reach, cued as it enters and faded as it leaves.
+//   stale nothing enters or leaves: K subjects in reach have their chains marked stale each
+//         frame, as a voice naming them marks them when it comes or goes (`changed` in
+//         src/chain.ts), so each links again to the records it had. Not public either; it says how
+//         much of a row's cost is a relink happening at all.
+// `own:0:0` is the voice under the glow alone, which bench/frame.mjs's `glowbase` is too.
 // Rows are named `<way>:<K>[:<W>]`; `<way>/<K>` takes its turns apart, K entering on one frame and
 // K leaving two frames on with a still frame after each, and prints each of the four frames' median.
 // `p50` and `calls` are the median frame and the median time a frame spent in those calls: on a
@@ -56,12 +61,13 @@ const PHASES = ['enter', 'after', 'leave', 'after'];
 for (const [i, row] of chosen.entries()) {
   const off = row.endsWith('-');
   const pulls = row.endsWith('^');
-  const spec = /^(part|drop|own)([:/])(\d+)(?::(\d+))?$/.exec(
+  const spec = /^(part|drop|own|stale)([:/])(\d+)(?::(\d+))?$/.exec(
     off || pulls ? row.slice(0, -1) : row,
   );
   if (spec === null) throw new Error(`bench/reach.mjs: no row ${row}`);
   const way = spec[1];
   const apart = spec[2] === '/';
+  if (apart && way === 'stale') throw new Error(`bench/reach.mjs: no row ${row}`);
   const k = Number(spec[3]);
   const reach = Number(spec[4] ?? REACH);
 
@@ -93,7 +99,7 @@ for (const [i, row] of chosen.entries()) {
       patch: shape,
       weight: lit,
       loop: true,
-      target: way === 'drop' ? within : undefined,
+      target: way === 'part' ? undefined : within,
     });
     voice = VoiceHandle.voiceOf(glow);
     if (way === 'part') for (let j = size; j < N; j++) glow.fade({ subject: order[j], over: 0 });
@@ -126,10 +132,19 @@ for (const [i, row] of chosen.entries()) {
     size -= k;
     for (let j = 0; j < k; j++) leave(order[(from + j) % N]);
   };
+  const mark = () => {
+    for (let j = 0; j < k; j++) {
+      const head = m.chains.get(order[(lo + ((turn * k + j) % size)) % N]);
+      if (head === undefined) continue;
+      head.version = Number.NaN;
+      m.relinks++;
+    }
+  };
   let turn = 0;
   const churn = () => {
     const phase = turn++ % 4;
-    if (!apart) {
+    if (way === 'stale') mark();
+    else if (!apart) {
       shrink();
       grow();
     } else if (phase === 0) grow();
