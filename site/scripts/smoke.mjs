@@ -1,5 +1,6 @@
 // Loads every page of the built site in headless Chromium, runs its explainers, scrubs back once,
-// and fails on any console error or page error. `--shots <dir>` also saves a screenshot per page.
+// and fails on any console error or page error, or on a page laid out wider than a phone's
+// viewport. `--shots <dir>` also saves a screenshot per page at each width.
 import { createReadStream, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, relative, resolve } from 'node:path';
@@ -52,6 +53,28 @@ const pages = [];
 })(root);
 pages.sort();
 
+const PHONE = { width: 390, height: 844 };
+
+/** The page's layout width, and the elements whose right edge sets it past the viewport. */
+function overflowing() {
+  const limit = document.documentElement.clientWidth;
+  const by = [];
+  for (const el of document.querySelectorAll('body *')) {
+    const { right, width } = el.getBoundingClientRect();
+    if (right <= limit + 0.5 || width === 0) continue;
+    // Scrolled within a parent that clips, so it widens nothing.
+    let clipped = false;
+    for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+      if (getComputedStyle(p).overflowX !== 'visible') clipped = true;
+    }
+    if (clipped) continue;
+    const cls =
+      typeof el.className === 'string' && el.className ? `.${el.className.split(' ')[0]}` : '';
+    by.push(`${el.tagName.toLowerCase()}${cls} ${Math.round(right)}`);
+  }
+  return { width: document.documentElement.scrollWidth, by: by.slice(0, 6) };
+}
+
 const browser = await chromium.launch({ headless: true });
 let failed = 0;
 for (const [i, path] of pages.entries()) {
@@ -71,6 +94,16 @@ for (const [i, path] of pages.entries()) {
   if (shots) {
     const name = path === '/' ? 'home' : path.replaceAll('/', '');
     await page.screenshot({ path: join(shots, `${name}.png`), fullPage: true });
+  }
+  await page.setViewportSize(PHONE);
+  await page.waitForTimeout(200);
+  const wide = await page.evaluate(overflowing);
+  if (wide.width > PHONE.width) {
+    errors.push(`lays out ${wide.width} px wide at ${PHONE.width}: ${wide.by.join(', ')}`);
+  }
+  if (shots) {
+    const name = path === '/' ? 'home' : path.replaceAll('/', '');
+    await page.screenshot({ path: join(shots, `${name}-phone.png`), fullPage: true });
   }
   const ok = errors.length === 0;
   if (!ok) failed++;

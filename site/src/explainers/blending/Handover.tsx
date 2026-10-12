@@ -53,7 +53,7 @@ function handoverScene(c: HandoverConfig): Scene<Hopper, { lift: number }, Hando
       {
         name: 'hop',
         color: 'v1',
-        spec: { patch: hop, stagger: (d: Hopper) => d.i * 170 },
+        spec: { patch: hop, loop: true, stagger: (d: Hopper) => d.i * 170 },
       },
     ],
     events: () => [

@@ -98,8 +98,8 @@ function scene(c: Config): Scene<typeof subject, Pose, Config> {
     kit: kit<Pose>({ fn: sum(), keys: sum() }),
     subjects: () => [subject],
     voices: () => [
-      { name: 'patch', color: 'v1', spec: { patch: fnPatch } },
-      { name: 'keys', color: 'v2', spec: { patch: keysPatch(c) } },
+      { name: 'patch', color: 'v1', spec: { patch: fnPatch, loop: true } },
+      { name: 'keys', color: 'v2', spec: { patch: keysPatch(c), loop: true } },
     ],
     ledger: { subject: () => subject, channels: ['fn', 'keys'] },
   };

@@ -58,6 +58,7 @@ function voices(c: Config): VoiceDef<Row, Pose>[] {
       spec: {
         name: 'text',
         loop: false,
+        freeze: 'after',
         anchor: { start: { after: 'orb' } },
         patch: keys<Row, Pose>(700, [
           { at: 0, delta: { text: 0 } },
@@ -71,7 +72,10 @@ function voices(c: Config): VoiceDef<Row, Pose>[] {
       spec: {
         name: 'tint',
         fade: { in: 200, out: 1400 },
-        anchor: { in: { after: 'text' }, out: { after: 'text', by: c.hold } },
+        anchor: {
+          in: { of: 'text', mark: 'coast' },
+          out: { of: 'text', mark: 'coast', by: c.hold },
+        },
         patch: patch<Row, Pose>(0, () => ({ tint: 1 }), { writes: ['tint'] }),
       },
     },
@@ -200,7 +204,7 @@ export default function Score() {
       schema={config}
       duration={DURATION}
       aspect={0.8}
-      caption="Above, the scene the score plays: the orb flies, the line types in, the tint washes the stage. Below, each lane is one voice. The bar runs from its start to its end, with its fades shaded; the dashed lines are the anchors it hangs from. Drag the cut earlier than the landing and the orb fades out mid-flight there, and everything after it moves up with it; at the right end it is never cut."
+      caption="Above, the scene the score plays: the orb flies, the line types in, the tint washes the stage. Below, each lane is one voice. The bar runs from its start to its end, with its fades shaded, and the text's bar runs on pale while it holds its last frame; the dashed lines are the anchors it hangs from. Drag the cut earlier than the landing and the orb fades out mid-flight there, and everything after it moves up with it; at the right end it is never cut."
       draw={(ctx, frame, size, ink, c) => {
         const box = { x: 12, y: 8, w: size.w - 24, h: Math.round(size.h * 0.46) };
         stage(ctx, box, ink, frame, c);
@@ -232,9 +236,9 @@ export default function Score() {
           ctx.globalAlpha = 0.25;
           ctx.fillRect(x(s), y - h / 2, x(stop) - x(s), h);
           ctx.globalAlpha = 1;
-          // Full weight between in and out, solid.
+          // Full weight between in and out, solid; a frozen last frame stays pale.
           const a = inn ?? s;
-          const b = out ?? stop;
+          const b = out ?? markOf(name, 'coast') ?? stop;
           ctx.fillRect(x(a), y - h / 2, Math.max(0, x(b) - x(a)), h);
           // What it contributes now.
           const v = (pose?.[name] as number | undefined) ?? 0;
@@ -242,15 +246,15 @@ export default function Score() {
           ctx.fillRect(x(frame.t) + 3, y + h / 2 - v * h, 4, v * h);
         });
 
-        // Anchors: text starts at the orb's end; the tint is in at the text's end.
+        // Anchors: text starts at the orb's end; the tint is in as the text's last pass ends.
         ctx.strokeStyle = ink.soft;
         ctx.setLineDash([3, 3]);
         ctx.lineWidth = 1;
-        for (const [from, to] of [
-          ['orb', 'text'],
-          ['text', 'tint'],
+        for (const [from, to, mark] of [
+          ['orb', 'text', 'end'],
+          ['text', 'tint', 'coast'],
         ] as const) {
-          const t = markOf(from, 'end');
+          const t = markOf(from, mark);
           if (t === undefined) continue;
           const i = LANES.indexOf(from);
           const j = LANES.indexOf(to);

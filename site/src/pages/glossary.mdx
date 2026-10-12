@@ -235,7 +235,7 @@ Reference: [`Setting`](../state/#api-Setting), [`Sent`](../state/#api-Sent), [`M
 A voice's `fade` option gives it ramps: `in` is how many milliseconds it takes to reach full [weight](#weight), and `out` how long it takes to leave. `handle.fade()` starts the ramp out and removes the voice at the end. Pass `{ over }` for a different length, `{ at: 'rest' }` to keep full weight and leave each subject the moment it comes to [rest](#rest), or `{ subject }` to fade one subject out while the voice plays on for the others.
 
 ```ts
-const h = dots.cue({ patch: bob, fade: { in: 300, out: 800 } });
+const h = dots.cue({ patch: bob, loop: true, fade: { in: 300, out: 800 } });
 h.fade(); // ramps out over 800 ms, then leaves the mix
 ```
 
@@ -266,7 +266,7 @@ In depth: [Voice](../voice/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 A handle is what [`cue`](#cue) returns: the live controls for one [voice](#voice). Through it you change the voice's [weight](#weight) and [rate](#rate), [`seek`](#seek) its clock, and [`fade`](#fade) it out, and each change lands at the next [`sync`](#sync). `done` is a promise that resolves once the voice has left the mix, however it left.
 
 ```ts
-const h = dots.cue({ patch: bob });
+const h = dots.cue({ patch: bob, loop: true });
 h.rate = 0; // pauses this voice; every other voice plays on
 h.fade();
 await h.done;
@@ -349,7 +349,7 @@ In depth: [Locus](../locus/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 
 ## `loop`
 
-`loop` says how many passes a voice plays, a [pass](#pass) being one run through its patch: `true` to repeat forever, `false` for one pass, or a number. When a finite loop runs out, the voice leaves the mix, over its [`fade`](#fade) out if it has one, unless it [freezes](#freeze) on its last frame.
+`loop` says how many passes a voice plays, a [pass](#pass) being one run through its patch: `true` to repeat forever, `false` for one pass, or a number. Left out, a voice plays one pass. When a finite loop runs out, the voice leaves the mix, over its [`fade`](#fade) out if it has one, unless it [freezes](#freeze) on its last frame.
 
 ```ts
 dots.cue({ patch: bob, loop: 3 }); // three bobs, then gone
@@ -408,7 +408,7 @@ A voice's `name` lets another voice's [anchor](#anchor) refer to it without hold
 
 ```ts
 dots.cue({ patch: rise, name: 'intro', loop: false });
-dots.cue({ patch: bob, anchor: { start: { after: 'intro' } } });
+dots.cue({ patch: bob, loop: true, anchor: { start: { after: 'intro' } } });
 ```
 
 In depth: [Score](../score/#placing-a-voice). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
@@ -499,7 +499,7 @@ In depth: [Score](../score/#placing-a-voice). Reference: [`Query`](../score/#api
 A voice's `rate` is its playback speed: 1 is real time, 2 is double speed, and 0 freezes it. Setting it on the [handle](#handle) changes speed at once; `ramp(rate, over)` eases into a new speed over that many milliseconds.
 
 ```ts
-const h = dots.cue({ patch: bob });
+const h = dots.cue({ patch: bob, loop: true });
 h.ramp(0, 300); // slows to a stop over 300 ms
 ```
 
@@ -555,7 +555,7 @@ In depth: [Score](../score/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec),
 `handle.seek(elapsed)` moves one voice's clock to a given time, forward or back, and nothing else in the mix moves. [Phase](#phase) is worked out again from the new time. Any state the patch keeps is left as it was, not run forward to catch up.
 
 ```ts
-const h = dots.cue({ patch: bob });
+const h = dots.cue({ patch: bob, loop: true });
 h.seek(250); // a quarter of the way through a bob
 ```
 
@@ -601,7 +601,7 @@ In depth: [Signal](../signal/). Reference: [`Signal`](../signal/#api-Signal), [`
 `stagger` delays each [subject](#subject)'s start by its own number of milliseconds, so one voice can ripple along a row. The mix asks once per subject and keeps the answer. The delay counts on the voice's clock, so it speeds up and slows down with its [`rate`](#rate).
 
 ```ts
-dots.cue({ patch: bob, stagger: (dot) => dot.i * 100 }); // a wave along the row
+dots.cue({ patch: bob, loop: true, stagger: (dot) => dot.i * 100 }); // a wave along the row
 ```
 
 In depth: [Voice](../voice/#stagger). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
@@ -631,7 +631,7 @@ A tag is a word attached to a voice so other code can pick out a set of voices. 
 
 ```ts
 dots.cue({ patch: rise, tags: ['intro'], loop: false });
-dots.cue({ patch: bob, anchor: { start: { after: { tag: 'intro' } } } });
+dots.cue({ patch: bob, loop: true, anchor: { start: { after: { tag: 'intro' } } } });
 ```
 
 In depth: [Score](../score/#placing-a-voice). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec), [`Query`](../score/#api-Query).
@@ -642,7 +642,7 @@ In depth: [Score](../score/#placing-a-voice). Reference: [`VoiceSpec`](../voice/
 
 ```ts
 dots.cue({ patch: dim, target: (dot) => dot.i % 2 === 0 }); // every other dot
-dots.cue({ patch: bob, subjects: [dot] }); // just this one
+dots.cue({ patch: bob, loop: true, subjects: [dot] }); // just this one
 ```
 
 In depth: [Mix](../mix/#reach-and-rest). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
@@ -652,7 +652,7 @@ In depth: [Mix](../mix/#reach-and-rest). Reference: [`VoiceSpec`](../voice/#api-
 The timestamp is the time the [host](#host) passes to [`sync`](#sync): milliseconds on any clock that only goes forward. A `requestAnimationFrame` timestamp and `performance.now()` count from the same moment, so they can be used together; `Date.now()` counts from 1970 and can't. A voice's `start` must be on the same clock. A patch reads the current timestamp as `setting.timestamp`.
 
 ```ts
-dots.cue({ patch: bob, start: now + 500 }); // starts in half a second
+dots.cue({ patch: bob, loop: true, start: now + 500 }); // starts in half a second
 ```
 
 In depth: [Time](../time/). Reference: [`Setting`](../state/#api-Setting).
@@ -662,8 +662,8 @@ In depth: [Time](../time/). Reference: [`Setting`](../state/#api-Setting).
 A voice is a [patch](#patch) playing: the patch plus a clock, a [weight](#weight), and the subjects it reaches. Two voices of the same patch are two clocks and two weights, and neither knows about the other. You start one with [`cue`](#cue) and steer it through its [handle](#handle).
 
 ```ts
-dots.cue({ patch: bob });
-dots.cue({ patch: bob, rate: 3, weight: 0.2 }); // a small, fast bob on top of the slow one
+dots.cue({ patch: bob, loop: true });
+dots.cue({ patch: bob, loop: true, rate: 3, weight: 0.2 }); // a small, fast bob on top of the slow one
 ```
 
 In depth: [Voice](../voice/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec), [`Handle`](../voice/#api-Handle).
@@ -673,7 +673,7 @@ In depth: [Voice](../voice/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec),
 A voice's weight is how much of it is on, from 0 to 1. Each voice's values are pulled toward [rest](#rest) by its weight before they are combined, so at 0 a voice changes nothing and at 1 it has its full effect. A weight can be a fixed number, a [signal](#signal) read for each subject every frame, or ramped by a [`fade`](#fade), and you can change it through the [handle](#handle) while the voice plays.
 
 ```ts
-const h = dots.cue({ patch: bob, weight: 0.3 }); // bobs at 30% of the height
+const h = dots.cue({ patch: bob, loop: true, weight: 0.3 }); // bobs at 30% of the height
 h.weight = 1;
 ```
 

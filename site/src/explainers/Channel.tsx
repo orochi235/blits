@@ -48,6 +48,7 @@ function scene(c: Config): Scene<typeof subject, Pose, Config> {
               writes: ['value'],
             },
           ),
+          loop: true,
           weight: c.weightB,
         },
       },

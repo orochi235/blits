@@ -19,7 +19,7 @@ A weight scales what a voice contributes toward its channel's rest, so at 0 the 
 A voice's `fade` gives it ramps: `in` runs from the moment it starts, `out` from the moment it's told to leave, and `ease` shapes both. The ramp is only a weight, so it takes every channel the voice writes toward rest at once, each by its own arithmetic.
 
 ```ts
-const h = m.cue({ patch: wave, fade: { in: 1000, out: 1200, ease: 'ease-in-out' } });
+const h = m.cue({ patch: wave, loop: true, fade: { in: 1000, out: 1200, ease: 'ease-in-out' } });
 
 h.fade(); // over its own fade.out
 h.fade({ over: 300 }); // or over a ramp given here

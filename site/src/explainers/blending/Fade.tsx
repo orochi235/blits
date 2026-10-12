@@ -50,6 +50,7 @@ function fadeScene(c: FadeConfig): Scene<Dot, Lifted, FadeConfig> {
         color: 'v1',
         spec: {
           patch: wave,
+          loop: true,
           fade: { in: 1000, out: 1200, ease: c.ease as Easing },
         },
       },

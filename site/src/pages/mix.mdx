@@ -29,6 +29,7 @@ bars.cue({
   patch: patch(1200, (phase) => ({ height: 0.5 - 0.5 * Math.cos(2 * Math.PI * phase) }), {
     writes: ['height'],
   }),
+  loop: true,
   target: (bar) => bar.i % 2 === 0,
 });
 

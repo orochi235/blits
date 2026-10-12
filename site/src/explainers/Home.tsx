@@ -56,14 +56,18 @@ const tint = keys<Swatch, Pose>(
 function scene(c: Config): Scene<Swatch, Pose, Config> {
   const voices: VoiceDef<Swatch, Pose>[] = [];
   if (c.pulse)
-    voices.push({ name: 'Pulse', color: 'v1', spec: { patch: pulse, fade: { in: 400 } } });
+    voices.push({
+      name: 'Pulse',
+      color: 'v1',
+      spec: { patch: pulse, loop: true, fade: { in: 400 } },
+    });
   if (c.wave)
     voices.push({
       name: 'Wave',
       color: 'v2',
-      spec: { patch: wave, stagger: (s) => s.i * 140, fade: { in: 400 } },
+      spec: { patch: wave, loop: true, stagger: (s) => s.i * 140, fade: { in: 400 } },
     });
-  if (c.tint) voices.push({ name: 'Tint', color: 'v3', spec: { patch: tint } });
+  if (c.tint) voices.push({ name: 'Tint', color: 'v3', spec: { patch: tint, loop: true } });
   return {
     kit: PART,
     subjects: () => swatches,

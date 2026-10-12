@@ -411,7 +411,7 @@ pre code {
 
 @media (max-width: 760px) {
   .frame {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .rail {
     position: static;

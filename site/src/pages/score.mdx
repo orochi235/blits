@@ -20,13 +20,24 @@ A voice takes a `name`, and a placement in `anchor`: at most one of `start` and 
 
 ```ts
 m.cue({ patch: flight, name: 'orb', start: 300, loop: false });
-m.cue({ patch: arrive, name: 'text', loop: false, anchor: { start: { after: 'orb' } } });
+m.cue({
+  patch: arrive,
+  name: 'text',
+  loop: false,
+  freeze: 'after',
+  anchor: { start: { after: 'orb' } },
+});
 m.cue({
   patch: tint,
   fade: { in: 200, out: 1400 },
-  anchor: { in: { after: 'text' }, out: { after: 'text', by: 600 } },
+  anchor: {
+    in: { of: 'text', mark: 'coast' },
+    out: { of: 'text', mark: 'coast', by: 600 },
+  },
 });
 ```
+
+The text freezes on its last frame, so the line stays up and the voice has no `end` until something fades it. The tint hangs from its `coast` instead, a fifth mark: when a voice's last pass ends.
 
 `after` is the other voice's `end`, `with` is its `start`, and `before` is its start less `by`. The general form names the mark: `{ of: 'orb', mark: 'in', by: 50 }`. Anchoring `in` or `end` takes the voice's own fade into account, so `anchor: { in: 12_400 }` means fully in at 12.4 s.
 
