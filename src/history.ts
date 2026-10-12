@@ -102,6 +102,12 @@ function older<T extends { at: number }>(list: T[], reach: number): T[] {
   return n === 0 ? [] : list.splice(0, n);
 }
 
+/** A copy of the state a voice's patch keeps for a subject. */
+export function copyState<I, O>(voice: Voice<I, O>, state: unknown): unknown {
+  const patch = voice.patch;
+  return patch.clone ? patch.clone(state) : clone(state);
+}
+
 /** A copy of a subject's record that shares nothing a read could change. */
 export function copyHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): Subject<unknown> {
   let kept: Map<object, unknown> | null = null;
@@ -109,11 +115,10 @@ export function copyHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): Subject
     kept = new Map();
     for (const [owner, value] of h.kept) kept.set(owner, clone(value));
   }
-  const patch = voice.patch;
   return {
     ...h,
     bands: h.bands === null ? null : h.bands.slice(),
-    state: h.state === undefined ? undefined : patch.clone ? patch.clone(h.state) : clone(h.state),
+    state: h.state === undefined ? undefined : copyState(voice, h.state),
     kept,
     unkept: h.unkept?.map(clone),
     probed: Number.NaN,
@@ -171,6 +176,11 @@ export function record<I, O>(
     pageOut(mix, 'input', voice.id, mix.keys?.key(subject), out, (e) => e.value, reach);
 }
 
+/** How far apart, in mix ms, a record's copies are kept. */
+export function apart(history: { readonly every?: number }): number {
+  return history.every ?? 200;
+}
+
 /** Under `history`, keeps a copy of a stateful voice's record for this subject every so often. */
 export function remember<I, O>(
   mix: Mixer<I, O>,
@@ -189,7 +199,7 @@ export function remember<I, O>(
   const snaps = held.snaps ?? [];
   held.snaps = snaps;
   const prev = snaps[snaps.length - 1];
-  if (prev !== undefined && mix.now - prev.at < (history.every ?? 200)) return;
+  if (prev !== undefined && mix.now - prev.at < apart(history)) return;
   snaps.push({ at: mix.now, seq: mix.transport.seq, held: copyHeld(voice, held) });
   const reach = mix.now - history.ms;
   const out = older(snaps, reach);

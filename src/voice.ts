@@ -44,6 +44,20 @@ export interface Left<I> {
 
 export const none: readonly string[] = Object.freeze([]);
 
+/**
+ * What a copy of a record keeps for the seeks that put a record back from it: the copy's state
+ * stepped on to `ticks`, as it stood near `at`, a moment one of them sought.
+ */
+export interface Ahead<S> {
+  /** The record the last seek put back, and the moment it sought, until that record steps. */
+  put: Subject<S> | null;
+  sought: number;
+  at: number;
+  ticks: number;
+  /** Undefined until a record has stepped on from the copy. */
+  state: S | undefined;
+}
+
 /** Everything one voice holds for one subject, chained through the next voice that reaches it. */
 export interface Subject<S> {
   /** The voice's `target` answer, fixed on first sight. */
@@ -87,7 +101,7 @@ export interface Subject<S> {
   /** Kept state a history store gave back, which each owner takes in turn on its first keep. */
   unkept?: unknown[];
   /** Under `history`, copies of this record by the mix time they were taken, oldest first. */
-  snaps?: { at: number; seq: number; held: Subject<S> }[];
+  snaps?: { at: number; seq: number; held: Subject<S>; ahead?: Ahead<S> }[];
   /** In a projection: where this record started from, and whether nothing known could be. */
   from?: number;
   unknown?: boolean;

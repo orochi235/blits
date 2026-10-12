@@ -1,7 +1,7 @@
 import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue, first } from './clone.js';
 import { open as openRecord, shut as shutRecord, weighAt } from './everyone.js';
-import { recordHost, remember } from './history.js';
+import { apart, copyState, recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
 import type { Lanes } from './lanes.js';
 import { locusScratch } from './locus.js';
@@ -137,8 +137,12 @@ export function contribution<I, O>(
         setting.dt = this.capped(now - held.since);
       }
       const tick = stepOf(this, voice);
-      if (tick !== undefined) this.tick(voice, subject, held, tick, to);
-      else if (still === 0 ? now !== held.stepped : to > held.stepped) {
+      if (tick !== undefined) {
+        // Never probed, it may be a record a seek put back.
+        if (Number.isNaN(held.probed) && held.snaps !== undefined)
+          ahead(this, voice, subject, held, held.snaps, tick, to);
+        this.tick(voice, subject, held, tick, to);
+      } else if (still === 0 ? now !== held.stepped : to > held.stepped) {
         if (still !== 0) setting.dt = this.capped(to - held.stepped);
         voice.patch.step(held.state as never, setting.dt, subject, setting as Setting<never>);
         held.stepped = to;
@@ -210,6 +214,51 @@ export function keyed<I, O>(
   return delta;
 }
 
+/** How many whole intervals of `tick` a subject's step grid holds by mix time `to`. */
+function dueBy(held: Subject<unknown>, tick: number, to: number): number {
+  // The epsilon keeps an interval like 1000 / 120 from landing a hair short of a whole count.
+  return Math.floor((to - held.since) / tick + 1e-9);
+}
+
+/**
+ * The first step of a record a seek put back from a copy: takes up the state that copy was last
+ * stepped ahead to, where the steps due now run past it, and keeps the copy's stepped ahead to the
+ * moment sought, so a mix sought back time after time does not step from the copy each time. Only
+ * where the same steps give the same state: a fixed interval, no `maxDt`, no host field read.
+ */
+function ahead<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  subject: I,
+  held: Subject<unknown>,
+  snaps: NonNullable<Subject<unknown>['snaps']>,
+  tick: number,
+  to: number,
+): void {
+  const from = snaps[snaps.length - 1];
+  const got = from?.ahead;
+  if (from === undefined || got === undefined || got.put !== held) return;
+  got.put = null;
+  const reads = voice.patch.reads;
+  if (mix.opts.maxDt !== undefined || (reads !== undefined && reads.length > 0)) return;
+  // Stepped, rebuilt or placed anew since it was put back, its steps are no longer the copy's.
+  const was = from.held;
+  if (held.ticks !== was.ticks || held.since !== was.since || held.rebuilt !== was.rebuilt) return;
+  const at = got.sought;
+  const usable = got.state !== undefined && got.ticks <= dueBy(held, tick, to);
+  if (usable) {
+    held.state = copyState(voice, got.state);
+    voice.setting.state = held.state;
+    held.ticks = got.ticks;
+  }
+  const last = usable ? got.at : from.at;
+  if (!(at < to) || at - last < apart(mix.opts.history as { every?: number })) return;
+  mix.tick(voice, subject, held, tick, at);
+  got.state = copyState(voice, held.state);
+  got.ticks = held.ticks;
+  got.at = at;
+}
+
 /**
  * Runs `step` once per whole interval between where this subject last stopped and now, on a grid
  * counted from when its delay ran out, and leaves the remainder for the next sample. Counting
@@ -227,8 +276,7 @@ export function tick<I, O>(
   const setting = voice.setting;
   const frameDt = setting.dt;
   let n = held.ticks;
-  // The epsilon keeps an interval like 1000 / 120 from landing a hair short of a whole count.
-  const due = Math.floor((to - held.since) / tick + 1e-9);
+  const due = dueBy(held, tick, to);
   const cap = this.opts.maxDt;
   if (cap !== undefined) {
     const most = Math.floor(cap / tick);

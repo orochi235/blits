@@ -1,5 +1,5 @@
 import { schedule } from './due.js';
-import { copyHeld, last, lastWithin } from './history.js';
+import { apart, copyHeld, last, lastWithin } from './history.js';
 import { laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
 import { Leavings } from './leavings.js';
@@ -27,6 +27,7 @@ function restore<I, O>(
   voice: Voice<I, O>,
   live: Subject<unknown>,
   t: number,
+  every: number,
 ): Subject<unknown> | undefined {
   const inputs = live.inputs?.filter((e) => e.at <= t);
   const snaps = live.snaps;
@@ -44,6 +45,11 @@ function restore<I, O>(
   const h = copyHeld(voice, snap.held);
   h.snaps = snaps.slice(0, snaps.indexOf(snap) + 1);
   h.inputs = inputs;
+  if (voice.patch.step !== undefined && (snap.ahead !== undefined || t - snap.at >= every)) {
+    snap.ahead ??= { put: null, sought: t, at: snap.at, ticks: snap.held.ticks, state: undefined };
+    snap.ahead.put = h;
+    snap.ahead.sought = t;
+  }
   return h;
 }
 
@@ -92,8 +98,9 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   const future = Leavings.from(left.filter((e) => e.seq > seq));
   let records = voice.subjects;
   if (!(records instanceof Restored)) {
+    const every = apart(mix.opts.history as { every?: number });
     records = new Restored(records, (live, least, top) => {
-      const h = restore(voice, live, least);
+      const h = restore(voice, live, least, every);
       if (h === undefined) return h;
       if (h.reaches) voice.seen++;
       if (h.rested) voice.restedCount++;
