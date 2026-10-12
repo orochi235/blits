@@ -22,10 +22,18 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   puts the tween gap down to its own per-animation reads (about 0.5 ms, being removed) and a
   drop it still defers a frame.
 - **Churn, what is left** (`turnover^`, weasel's shape: each frame one subject leaves for good and
-  a new one comes, read by `pull` over a list kept dense by swap-remove; teitou, 2026-10-04,
-  `ae6565f`). 0.41–0.42 ms a frame against 0.32–0.33 for the same voices steady (`tweens^`). In
-  the profile: `flush` writing row by row once the swaps have left slots out of list order. `popDue` shows at up to 14%, but that is a Maglev deopt loop on its
-  fresh `out` array, and removing the deopts saved no time. A user ease runs once per subject once
+  a new one comes, read by `pull` over a list kept dense by swap-remove; teitou, 2026-10-11,
+  `f0283d6`, 8 own-process runs at `FRAMES=5000` beside other jobs). 0.36–0.74 ms a frame, median
+  0.40, against 0.18–0.25, median 0.18, for the same voices steady (`tweens^`). Two things to know
+  when reading the row. At `FRAMES=5000` its 10 s tweens land by frame 600 and the voices stay,
+  held, so most of the run times landed tweens (run on a Mac: 1,000 such voices were all still
+  cued at frame 1,300). And its `kB/frame`, about 136, is mostly the row's own copy of its list
+  each frame: it read 136.6 before and 135.9 after a change that took 8.5 KB off a churned voice
+  by `bench/churnwho.mjs`, the same shape with the list swapped in place. Read blits' share
+  there. In a profile of 2026-10-04: `flush` writing row by row once the swaps have left slots
+  out of list order, about 3,500 runs a frame at 10k, most of one to three subjects (counted on
+  a Mac, 2026-10-11). `popDue` shows at up to 14%, but that is a Maglev deopt loop on its fresh
+  `out` array, and removing the deopts saved no time. A user ease runs once per subject once
   start times differ, where voices started together share one call a frame: a cubic
   `1 - (1 - u) ** 3` costs about 0.1 ms at 10k against a line. Retargeting each tween as it is
   cued, as weasel's codec does, costs nothing further (`RETARGET=1 bench/scatter.mjs`).
@@ -35,17 +43,29 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   weasel's vitest row read 8×, which weasel puts down to collection landing in its few measured
   iterations, untraced. Not worth chasing until it shows outside a microbench.
 
-- **Reusing a retired voice's records was prototyped and measured no help to weasel**
-  (2026-10-05, teitou; the prototype was deleted). Pooling everything
-  blits allocates per voice halved what a churned voice leaves alive (2,819 to 1,424 B with a patch
-  per voice), but weasel's loop after churn moved 0.487 to 0.466 ms, inside teitou's ±0.08 noise,
-  against 0.21 with no voice. On blits `6c4b3bf` that loop already reads 0.47–0.49, not 0.4.0's
-  0.66–0.75. The gap left does not scale with blits' survivors; untested candidates are the host's
-  own patch per voice (about 0.9 KB, which blits cannot recycle) and the 14–25 KB of garbage blits
-  makes per churned voice (lane compaction `subarray`, `retouch`'s Set and sort, `Array.from` in
-  motion's `latest` and `applied`). The next run that would decide it: weasel's codec on one shared
-  tween patch per ease and duration. `bench/churnwho.mjs` (`SHARED=1` for one shared patch)
-  diffs the heap per churned voice.
+- **Neither what a churned voice leaves alive nor the garbage it makes is weasel's gap.**
+  Reusing a retired voice's records was prototyped (2026-10-05, teitou; the prototype was
+  deleted): pooling everything blits allocates per voice halved what a churned voice leaves alive
+  (2,819 to 1,424 B with a patch per voice), but weasel's loop after churn moved 0.487 to 0.466
+  ms, inside teitou's ±0.08 noise, against 0.21 with no voice. On blits `6c4b3bf` that loop
+  already reads 0.47–0.49, not 0.4.0's 0.66–0.75. The garbage went from 21.5 to 13 KB per churned
+  voice (2026-10-11, teitou, `bench/churnwho.mjs` at 5,000 voices, three passes a side; 20.6 to
+  12 with `SHARED=1` for one shared patch), and no time came with it: `turnover^` read 0.433 and
+  0.399 ms and `churn^` 0.324 and 0.308 (medians of 8 own-process runs a side at `FRAMES=5000`
+  against `657f3f2`, every row's runs overlapping the other side's, ten rows, geometric mean
+  0.971, on a node running other jobs). What went, in KB per churned voice as each was measured
+  alone: `Array.from` over a `subarray` in motion's `latest` and `applied`, about 500 B a call
+  for three axes, with a `latest` that `prune` made to read one field (5.0); the three views a
+  crowd row was copied through when compaction moved it (1.1); `retouch`'s Set, spread and sort
+  (1.0); the view `pull` copied a run of 65 to 256 values through (1.4). `pull` also kept nothing
+  of a channel between calls: 0.35 KB a call for one vec channel, and 1.1 to 1.7 kB a frame off
+  the bench's four-channel rows (`tweens^` 6.6 to 4.9). What a churned voice still allocates, by
+  a sampling heap profile on a Mac: the new voice, its handle and its patch (about 3 KB, which is
+  what pooling covered), its entry and keys in the departed index (about 1.3), `drop`'s closures
+  (0.8), the copies of a stretch a retarget keeps (about 1), and the 3 KB a frame that steady
+  frames allocate too, in code that runs once a frame. Nothing was tried against those. Left
+  untested: the host's own patch per voice (about 0.9 KB, which blits cannot recycle), which
+  weasel's codec on one shared tween patch per ease and duration would decide.
 
 - **A `keys` read costs several times weasel's own keyframe sampler.** weasel's `sampleTrack`
   reads one `keys` patch per track (`patch.at(phase)`, one numeric channel, four stops) since

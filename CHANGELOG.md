@@ -31,6 +31,10 @@ version and everything else the patch. Each release lists its changes as **Break
 - A voice cued with `seek`, or sought while pending, keeps its count of rebuilds with its
   controls when it starts. A seek back to after its start, then a handle `seek` played again
   before the subject was read, left the subject's state as it was rather than rebuilding it.
+- Replacing a voice makes less garbage. A one-subject tween voice retargeted as it is cued, while
+  another leaves and its subject is dropped, allocates about 13 KB, from 21.5
+  (`bench/churnwho.mjs`, 5,000 voices), and a `pull` keeps what it knows of a channel between
+  calls, about 1.2 KB a call for four channels. Frame time is unchanged.
 
 ## 0.10.0
 
