@@ -146,9 +146,19 @@ export function changed<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   }
   for (const subject of voice.named) {
     const head = mix.chains.get(subject);
-    if (head !== undefined) head.version = Number.NaN;
+    if (head !== undefined) unlink(mix, head);
   }
   mix.relinks++;
+}
+
+/**
+ * Makes one subject's chain stale, to be linked again at its next read, and counts it in `relinks`,
+ * which its number is stamped with for `pull`.
+ */
+export function unlink<I, O>(mix: Mixer<I, O>, head: Subject<unknown>): void {
+  head.version = Number.NaN;
+  const at = ++mix.relinks;
+  if (head.slot >= 0 && mix.lanes !== null) mix.lanes.unlinked[head.slot] = at;
 }
 
 /** Files a voice under each subject it names, or among the voices that name none. */

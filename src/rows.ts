@@ -19,7 +19,10 @@ function same(a: readonly Laned[], b: readonly Laned[]): boolean {
 /** Takes a crowd row off its subject, to be placed again if a probe meets it again. */
 export function unplace<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number): void {
   const slot = c.list[p] as number;
-  if (c.idle && slot >= 0) reach(lanes, slot, -1);
+  if (slot >= 0) {
+    if (c.idle) reach(lanes, slot, -1);
+    lanes.placed.remove(slot, (c.voices[p] as Voice<I, O>).id);
+  }
   c.list[p] = -1;
   c.records[p] = undefined;
   c.deltas[p] = null;
@@ -280,6 +283,8 @@ function leaveCrowd<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number): void {
   const slot = c.list[p] as number;
   const rec = c.records[p];
   if (slot >= 0) {
+    // Its row is emptied or left behind with its crowd, so the subject has it placed no longer.
+    lanes.placed.remove(slot, (c.voices[p] as Voice<I, O>).id);
     if (c.idle) reach(lanes, slot, -1);
     const w = reportedRow(lanes, c, p, slot);
     if (rec !== undefined && w !== undefined) rec.weight = w;

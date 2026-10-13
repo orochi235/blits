@@ -1,4 +1,4 @@
-import { changed } from './chain.js';
+import { changed, unlink } from './chain.js';
 import { envelope } from './clock.js';
 import { schedule } from './due.js';
 import { unshare } from './everyone.js';
@@ -104,8 +104,7 @@ function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void 
     if (voice.holder === held) voice.holder = null;
   }
   if (head === undefined) return;
-  head.version = Number.NaN;
-  mix.relinks++;
+  unlink(mix, head);
   if (voice.laned && head.slot >= 0) mix.lanes?.part(voice.id, head.slot);
   mix.lanes?.refill();
 }

@@ -1,6 +1,6 @@
 import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
-import { aims, chain, linkable, relink } from './chain.js';
+import { aims, chain, linkable, relink, unlink } from './chain.js';
 import { type LerpInto, lerpInto } from './channels.js';
 import type { Column } from './columns.js';
 import { cue } from './cue.js';
@@ -146,7 +146,10 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** The last array `pull` read, by position, with each subject's chain head, to skip the lookup. */
   pulled: I[] = [];
   pulledHeads: (Subject<unknown> | undefined)[] = [];
-  /** Each remembered head's lane slot, and the `version` and `relinks` they were all current at. */
+  /**
+   * Each remembered head's lane slot, -1 at a position with none, and the `version` and `relinks`
+   * they were all current at.
+   */
   pulledSlots = new Int32Array(0);
   pulledVersion = Number.NaN;
   pulledRelinks = -1;
@@ -570,10 +573,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.frame = nextFrame();
     const head = this.chains.get(subject);
     // Nothing that kept this head, such as `pull`'s remembered list, may take it as current again.
-    if (head !== undefined) {
-      head.version = Number.NaN;
-      this.relinks++;
-    }
+    if (head !== undefined) unlink(this, head);
     if (head !== undefined && head.slot >= 0 && this.lanes !== null) this.lanes.release(head.slot);
     // A read ahead's copy reads the live mix's poses, and so hides one where the mix deletes it.
     if (this.projecting && !(this.pose instanceof Masked)) this.pose = new Masked(this.pose);

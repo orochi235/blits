@@ -26,16 +26,17 @@ export function clampRun(
 
 /**
  * For a `pull` of a list it read last time in the same order, with every voice on a lane, where
- * `heads` holds each position's remembered chain head unless all are known current: what
+ * each position's remembered chain head was current when the mix's `relinks` read `since`: what
  * `prepare` and `writeLater` do for each subject from position `from`, while the subject reads
- * from the lanes; returns the first position that does not, or the list's length.
+ * from the lanes and its head has not been made stale since; returns the first position that does
+ * not, or the list's length.
  */
 export function pullRun<I, O>(
   lanes: Lanes<I, O>,
   slots: Int32Array,
   list: readonly I[],
   was: readonly I[],
-  heads: readonly ({ version: number } | undefined)[] | null,
+  since: number,
   from: number,
   columns: readonly Column[],
   now: number,
@@ -49,6 +50,8 @@ export function pullRun<I, O>(
   const wide = lanes.wide;
   const frame = lanes.frameProbes;
   const subjects = lanes.subjects;
+  const unlinked = lanes.unlinked;
+  const current = since === Number.POSITIVE_INFINITY;
   if (columns !== lanes.queuedFor) {
     flush(lanes);
     lanes.queuedFor = columns;
@@ -64,11 +67,12 @@ export function pullRun<I, O>(
   let start = from;
   for (; n < list.length; n++) {
     const subject = list[n] as I;
-    if (was[n] !== subject || (heads !== null && heads[n]?.version !== version)) break;
+    if (was[n] !== subject) break;
     const slot = slots[n] as number;
     const o = slot * Per.SLOT;
     if (
       slot < 0 ||
+      (!current && !((unlinked[slot] as number) <= since)) ||
       (per[o + Per.FILLED] as number) >= busy ||
       per[o + Per.IDLE] !== 0 ||
       (per[o + Per.SEEN] as number) < wide ||

@@ -78,19 +78,29 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
   // all of them at once while nothing has relinked since the last pull, else one by one.
   const was = mix.pulled;
   const heads = mix.pulledHeads;
-  was.length = list.length;
-  heads.length = list.length;
   if (mix.pulledSlots.length < list.length) {
-    const slots = new Int32Array(Math.max(64, list.length));
+    const slots = new Int32Array(Math.max(64, list.length)).fill(-1);
     slots.set(mix.pulledSlots);
     mix.pulledSlots = slots;
   }
+  // A position the list no longer has, or has anew, holds no head: its slot says so.
+  if (list.length < was.length) mix.pulledSlots.fill(-1, list.length, was.length);
+  was.length = list.length;
+  heads.length = list.length;
   const version = mix.version;
   const relinks = mix.relinks;
   const live = !Number.isNaN(now);
   const current = live && mix.pulledVersion === version && mix.pulledRelinks === relinks;
+  // Which remembered heads `pullRun` takes as current: all while nothing has changed; those
+  // `unlink` has not stamped since `pulledRelinks` while the version they were linked at stands;
+  // none otherwise.
+  const since = current
+    ? Number.POSITIVE_INFINITY
+    : live && mix.pulledVersion === version
+      ? mix.pulledRelinks
+      : -1;
   try {
-    readAll(mix, list, columns, live, current, whole);
+    readAll(mix, list, columns, live, current, since, whole);
   } finally {
     if (lanes !== null) flush(lanes);
   }
@@ -111,6 +121,7 @@ function readAll<I, O>(
   columns: readonly Column[],
   live: boolean,
   current: boolean,
+  since: number,
   whole: boolean,
 ): void {
   const lanes = mix.lanes;
@@ -124,17 +135,7 @@ function readAll<I, O>(
   const runs = live && whole;
   for (let n = 0; n < list.length; n++) {
     if (runs) {
-      n = pullRun(
-        lanes as Lanes<I, O>,
-        slots,
-        list,
-        was,
-        current ? null : heads,
-        n,
-        columns,
-        now,
-        mix.version,
-      );
+      n = pullRun(lanes as Lanes<I, O>, slots, list, was, since, n, columns, now, mix.version);
       if (n === list.length) break;
     }
     const subject = list[n] as I;

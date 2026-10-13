@@ -20,6 +20,7 @@ import { meet, reach } from './meet.js';
 import type { Watcher } from './motions.js';
 import { absent, Numbers } from './numbers.js';
 import { Owed } from './owed.js';
+import { Placed } from './placed.js';
 import { requalify, retouch } from './qualify.js';
 import { reading } from './reading.js';
 import { reportedRow, unplace } from './rows.js';
@@ -100,6 +101,13 @@ export class Lanes<I, O> implements Watcher {
   /** The crowds of single-subject voices, one per list of channels, and which holds each voice. */
   crowds: Crowd<I, O>[] = [];
   readonly crowdOf = new Map<number, Crowd<I, O>>();
+  /** Which crowd voices' rows are placed on each subject. */
+  readonly placed = new Placed();
+  /**
+   * By subject number, the mix's `relinks` when the subject's chain was last made stale by itself,
+   * so `pull` tells a head it remembers is stale without reading the head.
+   */
+  unlinked = new Float64Array(0);
   /** Whether two crowds share a channel, so their rows must interleave in voice order. */
   overlap = false;
   /** The loci whose voices are on lanes, every member of each on one. */
@@ -457,8 +465,13 @@ export class Lanes<I, O> implements Watcher {
     this.host.forgot(slot);
     this.live--;
     for (const lane of this.lanes) lane.remove(slot);
-    for (const c of this.crowds)
-      for (let p = 0; p < c.size; p++) if (c.list[p] === slot) unplace(this, c, p);
+    const placed = this.placed;
+    for (let id = placed.any(slot); id !== 0; id = placed.any(slot)) {
+      const c = this.crowdOf.get(id);
+      const p = c?.rowOf.get(id);
+      if (c !== undefined && p !== undefined && c.list[p] === slot) unplace(this, c, p);
+      else placed.remove(slot, id);
+    }
     if (slot < this.cap) this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
     this.subjects[slot] = undefined;
   }
@@ -470,6 +483,10 @@ export class Lanes<I, O> implements Watcher {
     per.set(this.per);
     this.per = per;
     this.owed.grow(cap);
+    this.placed.grow(cap);
+    const unlinked = new Float64Array(cap);
+    unlinked.set(this.unlinked);
+    this.unlinked = unlinked;
     for (const ch of this.laned) {
       const values = new Float64Array(cap * ch.axes);
       values.set(ch.values);

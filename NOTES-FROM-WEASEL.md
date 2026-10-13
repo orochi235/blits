@@ -37,24 +37,32 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   start times differ, where voices started together share one call a frame: a cubic
   `1 - (1 - u) ** 3` costs about 0.1 ms at 10k against a line. Retargeting each tween as it is
   cued, as weasel's codec does, costs nothing further (`RETARGET=1 bench/scatter.mjs`).
-- **Stopping a subject's voice costs time in step with how many subjects the mix holds**
-  (weasel, orochi, 2026-10-11, blits 0.10.0, plain Node 26;
-  `node tests/perf/target-reads/run.mjs churn 1000 10000` in weasel). With N tweens running, one
-  subject each, and 100 canceled and started again a frame:
+- **Stopping a subject's voice and reading its replacement, what is left** (`bench/restart.mjs`,
+  the shape weasel's codec drives: a tween voice per subject read by `pull`, 100 of them stopped,
+  dropped, and cued again a frame; orochi under a load average of about 11, Node 26.11,
+  2026-10-13, three alternated runs each, before being `14c49b2`):
 
-  | N | cancel, each | start, each | the frame after | the frame after that | steady frame |
-  |---:|---:|---:|---:|---:|---:|
-  | 1,000 | 5.2 µs | 1.2 µs | 1.06 ms | 0.12 ms | 0.08 ms |
-  | 10,000 | 20.9 µs | 2.3 µs | 4.10 ms | 1.77 ms | 0.93 ms |
+  | N | stop, each | the frame after | the frame after that | steady frame |
+  |---:|---:|---:|---:|---:|
+  | 1,000, before | 2.17–2.26 µs | 0.74–0.77 ms | 0.06 ms | 0.03 ms |
+  | 1,000 | 0.86–0.92 µs | 0.48–0.51 ms | 0.06 ms | 0.03 ms |
+  | 10,000, before | 15.4–15.7 µs | 1.99–2.15 ms | 0.48–0.52 ms | 0.28 ms |
+  | 10,000 | 2.4–2.9 µs | 1.26–1.43 ms | 0.47–0.54 ms | 0.28 ms |
 
-  In the CPU profile at 10,000, `Lanes.forget` is 11 to 14% of all time and `Crowd`'s
-  `get size` another 4 to 7%: `forget` walks every crowd's whole `list` looking for the slot
-  (`for (let p = 0; p < c.size; p++) if (c.list[p] === slot)`), about 2 ns a subject held.
-  `unindex` in `chain.js` is 4 to 6%, an `indexOf` and `splice` per named subject. A slot's
-  place in each crowd, kept beside the list, would make `forget` cost the same at any N. The
-  frame after the restarts costs about 10 µs a restarted voice at 1,000 and 32 at 10,000;
-  `pullRun`, `latest`, and `prune` lead blits' share of it, and weasel's own lane and codec
-  code is under 4%.
+  At 40,000, over two runs of 150 rounds, a stop went from 55 µs to 4.2–4.5 and the frame after
+  from 7.5–8.1 ms to 3.3–3.4. Four things changed. `Lanes.forget` finds a subject's crowd rows in
+  `Lanes.placed`, where it walked every crowd's rows. `pull` tells a remembered chain head is
+  stale by a stamp per subject number (`Lanes.unlinked`), where it loaded every head it
+  remembered once any chain had been relinked: that load was about half the frame after at
+  40,000. A patch copies a stretch out of its buffer with a loop, where `Array.from` on a view
+  made `latest` 10% of the profile. `prune` searches for each retired voice up to one in 32 of
+  the list. What is left of the frame after at 10,000, timed apart in one run: about 0.3 ms
+  cueing the voices, 0.2 in `sync`, and 0.9 in the pull, against 0.46 for a frame with nothing
+  changing once churn has left slots out of list order (the item above). The profile there is
+  flat: `departed.add`, `retouch`, `copyRow` as a crowd closes up, a patch's first `grow`, each
+  under 4%. A stop still grows with N, less than in step with it; untraced, and a map read over
+  more subjects would do it. weasel has not timed this through its own harness, which reads
+  0.10.0 from npm.
 - **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a
   `fn` voice in plain Node: about 35 ms warm against 16, and 80–90 cold against 28–42 (weasel,
   orochi under load, 2026-10-02). A cold run in blits' own shape read the other way, 34 against 49.

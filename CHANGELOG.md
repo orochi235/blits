@@ -70,6 +70,13 @@ version and everything else the patch. Each release lists its changes as **Break
   tape does not record it. It put the voice on the mix's schedule, so the voice started at its
   start time outside the mix, folded in but missing from `voices()`, and it branched the tape,
   which left the voice's cue in the old future.
+- Dropping a subject no longer costs time in step with how many subjects the mix holds. With a
+  tween voice per subject, stopping one voice and dropping its subject cost 2.2 µs among 1,000
+  subjects and 15.6 among 10,000; it costs 0.9 and 2.6 (`bench/restart.mjs`).
+- The first `pull` after a voice naming a subject comes or goes, or a subject is dropped, no
+  longer reads every subject's chain to find the ones that changed, and a retargeted tween copies
+  its stretch without an iterator. The frame after 100 voices are replaced among 10,000 took
+  about 2.1 ms and takes about 1.35.
 
 ## 0.10.0
 

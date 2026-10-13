@@ -167,12 +167,17 @@ function turn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
   noted(mix, voice);
 }
 
-/** Past this many voices retiring in one frame, one pass over the list beats a search for each. */
+/**
+ * Past this many voices retiring in one frame, and more than one in `SPARSE` of the list, one pass
+ * over the list beats a search for each.
+ */
 const SEARCHED = 8;
+const SPARSE = 32;
 
 /**
- * Takes the voices retired since the last prune out of the list, in list order. A few are found by
- * their id, which the list is in order of, so the voices still in it are not read.
+ * Takes the voices retired since the last prune out of the list, in list order. A few, or a small
+ * share of a long list, are found by their id, which the list is in order of, so the voices still
+ * in it are not read.
  */
 function prune<I, O>(mix: Mixer<I, O>): void {
   const retired = mix.retired;
@@ -180,7 +185,7 @@ function prune<I, O>(mix: Mixer<I, O>): void {
   const voices = mix.cued;
   let at: number[] | null = null;
   // A projection's list holds copies of voices gone before it, which only a pass takes out.
-  if (retired.length <= SEARCHED && !mix.projecting) {
+  if ((retired.length <= SEARCHED || retired.length * SPARSE <= voices.length) && !mix.projecting) {
     byId(retired);
     at = [];
     for (let k = 0; k < retired.length; k++) {
@@ -196,7 +201,14 @@ function prune<I, O>(mix: Mixer<I, O>): void {
   let pruned = false;
   if (at !== null) {
     for (const voice of retired) pruned = leave(mix, voice) || pruned;
-    for (let k = at.length - 1; k >= 0; k--) voices.splice(at[k] as number, 1);
+    // Closed up in one pass from the first to go: a splice for each moves the tail once a voice.
+    let kept = at[0] as number;
+    let k = 0;
+    for (let i = kept; i < voices.length; i++) {
+      if (at[k] === i) k++;
+      else voices[kept++] = voices[i] as Voice<I, O>;
+    }
+    voices.length = kept;
   } else {
     let kept = 0;
     for (let i = 0; i < voices.length; i++) {
