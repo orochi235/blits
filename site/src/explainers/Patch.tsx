@@ -24,7 +24,6 @@ const config = f.schema({
       { value: 'bezier', label: 'cubic-bezier' },
       { value: 'steps', label: 'steps' },
     ])
-    .radio()
     .label('Curve')
     .section('Easing of the keys', { pack: 'one-up' }),
   x1: f
