@@ -1,4 +1,5 @@
 import type { Composition } from '../composition';
+import anchors from './anchors';
 import backward from './backward';
 import blend from './blend';
 import crossfade from './crossfade';
@@ -22,6 +23,7 @@ export const PRESETS: { name: string; comp: Composition }[] = [
   { name: 'owner fade', comp: ownerFade },
   { name: 'span fit', comp: spanFit },
   { name: 'marks and hits', comp: marksHits },
+  { name: 'anchors', comp: anchors },
   { name: 'backward', comp: backward },
 ];
 
