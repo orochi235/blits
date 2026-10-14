@@ -1,5 +1,5 @@
 // Loads the built playground once per preset in headless Chromium, plays a second, and fails on any
-// console error, page error, a stage that drew nothing, or a flow that drew nothing. `--shots <dir>`
+// console error, page error, a stage that drew nothing, or a flow or timing diagram that drew nothing. `--shots <dir>`
 // keeps the screenshots, which otherwise go to a temp directory removed on exit.
 import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -93,6 +93,15 @@ try {
       .catch(() => null);
     const flowInk = flowPng ? await page.evaluate(inkPixels, flowPng.toString('base64')) : 0;
     if (flowInk < FLOW_INK_MIN) errors.push('flow drew nothing');
+    await page.getByRole('tab', { name: 'Timing' }).click();
+    await page.waitForTimeout(300);
+    const timingPng = await page
+      .locator('section[aria-label=timing] canvas')
+      .first()
+      .screenshot({ timeout: 5000 })
+      .catch(() => null);
+    const timingInk = timingPng ? await page.evaluate(inkPixels, timingPng.toString('base64')) : 0;
+    if (timingInk < FLOW_INK_MIN) errors.push('timing drew nothing');
     await page.screenshot({
       path: join(shots, `${String(i + 1).padStart(2, '0')}-${name.replaceAll(' ', '-')}.png`),
     });

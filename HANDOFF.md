@@ -130,32 +130,36 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   last build known to render it (2026-10-07). The built page is not committed here; `serve` rebuilds on every
   edit and adds undo/redo, snapshots, cross-off and chat, none of which the hand page had.
 
-- **The playground's diagrams, after view A.** View A, the signal flow, is built; the playground's
-  README ("The flow") describes it. Next, each with a spec of its own when it starts:
+- **The playground's diagrams, after views A and B.** View A, the signal flow, and view B, the
+  timing graph, are built; the playground's README ("The flow", "The timing") describes them. Next,
+  each with a spec of its own when it starts:
 
   | | View | Answers |
   |---|---|---|
-  | B | Timing graph: voices linked by `anchor`, `all`/`any` joins and spans, `locus` groups as containers | what waits on what |
   | C | A and B together, as two views of one composition or one diagram with both kinds of edge | both |
   | D | Editable: dragging port to port authors an anchor, or wires a weight to a signal | the diagram as an input |
+
+  View B boxes owners and spans, not loci: a weasel diagram group holds each node once, a voice has
+  both an owner and a locus, and voices of one locus may sit under different owners. A locus is
+  named on its voices instead. Chosen 2026-10-13 without a decision from the owner, who said to
+  build it; reverse it by boxing loci in `timingOf` and drawing owners as nodes with edges.
 
   Also wanted, unscheduled: a mixer-desk drawing of A, each channel a horizontal bus ending in its
   rule and each voice a vertical strip tapping the buses it writes. `flowOf` builds the graph from
   the playground's `Composition`; once the UI settles, a public `describe()` on `Mix` should make
   the same shape for any host, and `flowOf` becomes a thin adapter.
 
-  The playground is on weasel 1.10.0, which widens `diagramScene` (per-box outline, rows, ports,
-  padding/gap, pinned and min size; per-edge ports, router, waypoints, dash and markers; layout by
-  name) and makes `DiagramView` editable, which view D needs: `onMove` reports dragged nodes,
-  `onConnect` reports a port-to-port edge for the host to add, `canConnect` and `portOptions`
-  configure ports, and a ref runs `layout()`. New specs reconcile instead of remounting.
-  It also has diagram groups, which view B needs for `locus` groups and nothing here uses yet: a
-  box around member nodes that the layered and tree layouts keep together, and that may hold
-  other groups.
-  `usePlayback`'s Space listener is an ordinary one, no longer in the capture phase: a view-only
-  `DiagramView` has left the page's keys alone since weasel 1.9.3. An editable one listens
-  page-wide again by default, so view D passes `enableKeybindings={false}` or the capture comes
-  back.
+  The playground is on weasel 1.10.0, whose `DiagramView` is editable, which view D needs: `onMove`
+  reports dragged nodes, `onConnect` reports a port-to-port edge for the host to add, `canConnect`
+  and `portOptions` configure ports, and a ref runs `layout()`. An editable one listens for keys
+  page-wide by default, so view D passes `enableKeybindings={false}`, or `usePlayback`'s Space
+  listener has to go back to the capture phase.
+
+  Two weasel gaps view B works around or lives with. A group's box is sized by its members alone,
+  so a label wider than they are runs out of it; `FlowDiagram` holds each box's first member wide
+  enough, by a guess of 7 px a character, and that goes once weasel sizes the box by its label. And
+  an edge label is placed without regard to nodes, so in the `anchors` preset `after +100 ms` sits
+  over the query node above it.
 
 ## Decided in conversation, and in no doc
 

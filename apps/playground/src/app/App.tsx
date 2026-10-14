@@ -17,6 +17,7 @@ import { EventsPanel } from './EventsPanel';
 import { FlowPanel } from './FlowPanel';
 import { freshVoice } from './freshVoice';
 import { Inspector } from './Inspector';
+import { TimingPanel } from './TimingPanel';
 import { Transport } from './Transport';
 import { useComposition } from './useComposition';
 import { usePlayback } from './usePlayback';
@@ -24,6 +25,7 @@ import { useScore } from './useScore';
 import { VoiceColumn } from './VoiceColumn';
 
 type MiddleTab = 'plots' | 'voice' | 'events';
+type SideTab = 'flow' | 'timing';
 
 /** How long "link copied" stays up. */
 const NOTICE_MS = 3000;
@@ -55,6 +57,7 @@ export function App() {
   }, [player, seekBy]);
   const [selected, setSelected] = useState<string | null>(null);
   const [tab, setTab] = useState<MiddleTab>('plots');
+  const [side, setSide] = useState<SideTab>('flow');
   const faultKey = player.built.errors.map((e) => e.voice ?? '').join('|');
   const faulted = useMemo(() => new Set(faultKey.split('|').filter(Boolean)), [faultKey]);
   const pickVoice = (id: string | null) => {
@@ -210,8 +213,29 @@ export function App() {
             </TabPanel>
           </Tabs>
         </section>
-        <aside className={s.side} aria-label="flow">
-          <FlowPanel comp={comp} faulted={faulted} selected={selected} onVoice={pickVoice} />
+        <aside className={s.side} aria-label="diagrams">
+          <Tabs
+            className={s.sideTabs}
+            selectedKey={side}
+            onSelectionChange={(k) => setSide(k as SideTab)}
+          >
+            <TabList aria-label="right column">
+              <Tab id="flow">Flow</Tab>
+              <Tab id="timing">Timing</Tab>
+            </TabList>
+            <TabPanel id="flow" className={s.sidePanel}>
+              <FlowPanel comp={comp} faulted={faulted} selected={selected} onVoice={pickVoice} />
+            </TabPanel>
+            <TabPanel id="timing" className={s.sidePanel}>
+              <TimingPanel
+                comp={comp}
+                faulted={faulted}
+                player={player}
+                selected={selected}
+                onVoice={pickVoice}
+              />
+            </TabPanel>
+          </Tabs>
         </aside>
         <section className={s.score}>
           <Transport

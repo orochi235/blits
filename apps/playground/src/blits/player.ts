@@ -191,6 +191,11 @@ export class Player {
     this.isLive = true;
   }
 
+  /** The time every mix was last synced to, on the host's clock. */
+  get host(): number {
+    return this.hostFrame * FRAME;
+  }
+
   /** Whether a live change is in force, which the next rebuild drops. */
   get livened(): boolean {
     return this.isLive;

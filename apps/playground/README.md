@@ -23,8 +23,8 @@ into `src/generated/docs.json` (gitignored), which the panels show as tooltips o
 
 The stage is top left, with a dots/letters switch above it and, beside the switch, the columns and
 rows or the text; clicking a subject picks it for the inspector, top middle. The right column holds
-the flow. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
-levels, voice and patch panels; and **Events**, what the score knows and reports. Selecting a clip, on the score or in the flow, opens Voice. The
+the diagrams, on two tabs: **Flow** and **Timing**. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
+levels, voice and patch panels; and **Events**, what the score knows and reports. Selecting a clip, on the score or in either diagram, opens Voice. The
 score fills the bottom, with the transport above it: play and pause, rate, loop, a slider per
 level, a choice of how a scrub back moves the mixes, and the live toggle, with the mix's own `rate` beside it in live mode: the transport's rate
 slows the playground's clock, while the mix's slows the voices as the score's clock runs on.
@@ -242,6 +242,24 @@ with acorn; `FlowDiagram` draws it with `@weasel-js/diagram`. A voice or group t
 level an expression names that the composition lacks, is outlined red. Clicking a channel shows its
 fold: everything that reaches it, and the rest it folds from, under a breadcrumb back.
 
+## The timing
+
+The right column's Timing tab draws what waits on what. An edge runs from each voice, group or
+announced mark an anchor names to what it places, labeled with the mark it sets and how: `start
+after +200 ms`, `out with`, `in its coast`. An `all` or `any` is a node its anchors feed. A query
+that selects among voices (`{ tag }`, `{ writes }`, a `resolver`) is a node too, fed by a dashed
+edge from every voice it could pick. A name no voice or group has is a mark, with the time the
+composition announces it, or `when the host announces it`. An owner or span is a box around what it
+holds, boxes nesting as the groups do; a span's children are chained by a dashed edge, `then` under
+`queue` and the share under `stagger`. A voice no anchor starts says where it starts, and a
+`locus` is named on its voices: a box holds one thing, and a voice has both an owner and a locus.
+
+`timingOf` in `src/blits/timing.ts` builds it from the composition alone. `lit` then reads the
+player's full mix each frame: a voice or group still `pending` has a dashed outline, one playing a
+heavy one, one `done` a faint one, and an edge is dim until what it waits on has happened. An edge
+that sets a mark is met when its own voice has passed that mark. One into a join or a query is met
+when its source's state says the awaited mark is behind it, which ignores the anchor's `by`.
+
 ## The panels
 
 | Panel     | Shows                                                                                   |
@@ -304,11 +322,12 @@ One `Composition` per file in `src/blits/presets/`.
 | owner fade      | an owner fading three voices in and out as one, its weight a level |
 | span fit        | 2.9 s of voices in a 2 s span: one sped up (`faster`), one alongside (`overlap`), one shed (`ballast`), and 100 ms over, inside `overrun`'s 1.2 cap |
 | marks and hits  | a voice tagged `lead` with two hits a pass, one anchored to its `coast` by tag, one waiting on the announced mark `beat`, and an fn voice that sends its pass number |
+| anchors         | one voice waiting on an `all` of a voice and the mark `beat`, one on an `any` of a voice and a tag query, a queue span anchored after the first, and a voice anchored to the span's `end` |
 | backward        | one sweep three ways: forward, cued at rate -1 from its end, and cued with a `seek` halfway in |
 
 ## Widgets
 
-`src/widgets/` holds `ScoreLanes`, `ExprInput`, `CodePane`, `ChannelPlot` and `FlowDiagram`. They are written to
+`src/widgets/` holds `ScoreLanes`, `ExprInput`, `CodePane`, `ChannelPlot` and `FlowDiagram`, which draws both the flow and the timing. They are written to
 move to weasel later: plain props, CSS modules on weasel's theme tokens, a forge story each, and
 **no imports from blits or from `@pg/blits`**. The adapters in `src/blits/` and `src/app/` map blits
 onto them.
@@ -321,7 +340,7 @@ span the poses of hand-written `owns` or `span`; each fit-step list matches its 
 a stateful voice lands on the pose continuous play showed; the score round-trips voice to clip to
 edit to voice; a bad expression errors on its field while compile still returns; a composition
 edit stays inside what `load` accepts; every preset compiles and plays clean. The smoke run covers
-the rest in a real browser, failing on a console error, a page error or a blank stage; `--shots <dir>` keeps its screenshots, which otherwise go to a
+the rest in a real browser, failing on a console error, a page error, or a blank stage, flow or timing diagram; `--shots <dir>` keeps its screenshots, which otherwise go to a
 temp directory removed on exit.
 
 The root `npm run check` lints the playground and runs its tests, but leaves out its typecheck and
