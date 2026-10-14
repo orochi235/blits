@@ -13,7 +13,7 @@ import { CHANNELS, type ChannelName, type Mixed } from '@pg/blits/kit';
 import type { FieldError } from '@pg/blits/spec';
 import { CodePane } from '@pg/widgets/CodePane';
 import { ExprInput } from '@pg/widgets/ExprInput';
-import type { SampledTrack } from '@weasel-js/core';
+import type { SampledTrack } from '@weasel-js/animator';
 import { Timeline } from '@weasel-js/ui';
 import { useState } from 'react';
 import s from './App.module.css';
