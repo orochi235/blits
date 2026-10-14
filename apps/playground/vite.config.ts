@@ -15,6 +15,16 @@ export default defineConfig({
       '@msb235/blits': at('../../src/index.ts'),
       '@pg': at('./src'),
     },
+    // A weasel package symlinked to a local checkout would otherwise bring that checkout's copies.
+    dedupe: [
+      'react',
+      'react-dom',
+      '@weasel-js/animator',
+      '@weasel-js/core',
+      '@weasel-js/font',
+      '@weasel-js/geom',
+      '@weasel-js/simulation',
+    ],
   },
   server: {
     host: '::',
