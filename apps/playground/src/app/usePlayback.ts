@@ -64,9 +64,8 @@ export function usePlayback(
       e.preventDefault();
       if (!e.repeat) play(!playing);
     };
-    // Capture, because weasel's canvases claim space for their hand tool on the window.
-    window.addEventListener('keydown', key, true);
-    return () => window.removeEventListener('keydown', key, true);
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
   }, [play, playing]);
 
   return { playing, play };

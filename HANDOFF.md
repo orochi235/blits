@@ -144,20 +144,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   the playground's `Composition`; once the UI settles, a public `describe()` on `Mix` should make
   the same shape for any host, and `flowOf` becomes a thin adapter.
 
-  The playground is on weasel 1.9.2, which widens `diagramScene` (per-box outline, rows, ports,
+  The playground is on weasel 1.10.0, which widens `diagramScene` (per-box outline, rows, ports,
   padding/gap, pinned and min size; per-edge ports, router, waypoints, dash and markers; layout by
   name) and makes `DiagramView` editable, which view D needs: `onMove` reports dragged nodes,
   `onConnect` reports a port-to-port edge for the host to add, `canConnect` and `portOptions`
   configure ports, and a ref runs `layout()`. New specs reconcile instead of remounting.
-  1.9.2 does not carry the fix that stops a view-only `DiagramView` claiming the space bar page-wide
-  (weasel `975c1542e`, on its `diagram-scene-knobs` branch), so the playground's capture-phase space
-  listener in `App.tsx` stays. Once a release carries it, drop the listener only if every weasel
-  canvas on the page is view-only; the Voice tab's `Timeline` probably is not. weasel's
-  `docs/TODO.md` holds the general fix, "A canvas's keyboard shortcuts claim keys page-wide".
-  On 1.9.2 the flow diagram's labels render in Times: weasel quoted `sans-serif` as a family name.
-  Fixed in weasel `6a1afa10e` (unreleased as of 2026-10-09); the next weasel bump picks it up.
-  Still missing, and blocking view B: container nodes for `locus` groups, weasel `docs/TODO.md`,
-  "(P2) Diagram groups".
+  It also has diagram groups, which view B needs for `locus` groups and nothing here uses yet: a
+  box around member nodes that the layered and tree layouts keep together, and that may hold
+  other groups.
+  `usePlayback`'s Space listener is an ordinary one, no longer in the capture phase: a view-only
+  `DiagramView` has left the page's keys alone since weasel 1.9.3. An editable one listens
+  page-wide again by default, so view D passes `enableKeybindings={false}` or the capture comes
+  back.
 
 ## Decided in conversation, and in no doc
 
@@ -897,6 +895,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   and `(reading 'voice')` without (run 2026-10-13 on `14c49b2`). The position `pull` remembers
   nothing for is a hole, which equals `undefined`, so `readAll` takes it for a subject it read
   last time and uses a head it never kept.
+
+- **A plot's lowest y label and its first x label print over each other** when a time tick falls
+  near the plot's left edge: the blend preset's offset plot read "-0.500" at 1.52 s (seen
+  2026-10-13 on weasel 1.10.0, not checked on 1.9.2). `ChannelPlot` asks `Plot2D` for both sets
+  of labels `inside`.
 
 - **A host editing a pose the mix allocated changes what `from: 'current'` reads.** `probe`
   without `out` keeps the pose it returns as the subject's last, by reference, so a held voice at

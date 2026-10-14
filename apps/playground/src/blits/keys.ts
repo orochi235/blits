@@ -1,5 +1,5 @@
 import { type Keyframe, mixHex } from '@msb235/blits';
-import type { SampledTrack } from '@weasel-js/core';
+import type { SampledTrack } from '@weasel-js/animator';
 import { toBlits, toWeasel } from './easing';
 import { CHANNELS, type ChannelName, type Pose } from './kit';
 
