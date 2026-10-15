@@ -155,11 +155,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   page-wide by default, so view D passes `enableKeybindings={false}`, or `usePlayback`'s Space
   listener has to go back to the capture phase.
 
-  The diagram's edge routing and label-sized group boxes are in weasel's unpushed branch
-  `diagram-routes` (worktree `~/src/weasel/.claude/worktrees/diagram-routes`), not in a release.
-  Until one ships, this machine's `apps/playground/node_modules/@weasel-js/diagram` is a symlink
-  to that worktree's package, which `npm ci` replaces with 1.10.0 from npm. Once weasel releases,
-  pin the new version and delete this paragraph.
+  The diagram's edge routing and label-sized group boxes are on weasel's `main` (merge
+  `fd255d91b`, 2026-10-14) but in no release. Until one ships, this machine's
+  `apps/playground/node_modules/@weasel-js/diagram` is a symlink to the package in the worktree
+  `~/src/weasel/.claude/worktrees/diagram-routes`, detached at that merge; `npm ci` replaces it
+  with 1.10.0 from npm. Once weasel releases, pin the new version, delete this paragraph, and
+  remove that worktree.
 
   An edge label is still placed without regard to nodes, so on a short edge it can overlap the box
   it leaves or enters (`anchors`: `start its end +200 ms` over `pair`). That gap is filed in
