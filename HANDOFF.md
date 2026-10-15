@@ -158,7 +158,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   The diagram's edge routing and label-sized group boxes are on weasel's `main` (merge
   `fd255d91b`, 2026-10-14) but in no release. Until one ships, this machine's
   `apps/playground/node_modules/@weasel-js/diagram` is a symlink to the package in the worktree
-  `~/src/weasel/.claude/worktrees/diagram-routes`, detached at that merge; `npm ci` replaces it
+  `~/src/weasel/.claude/worktrees/diagram-routes`, now detached at `8e1f050cf`, which adds
+  weasel's reworked `layered` layout on its local `main` (unpushed as of 2026-10-15); `npm ci` replaces it
   with 1.10.0 from npm. Once weasel releases, pin the new version, delete this paragraph, and
   remove that worktree.
 
