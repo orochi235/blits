@@ -1,8 +1,53 @@
 import type { Composition, MixSettings } from '@pg/blits/composition';
 import { FRAME } from '@pg/blits/frame';
 import { withKey } from '@pg/blits/keyed';
+import { ControlPanel, f, resolveConfigSchema } from '@weasel-js/labkit';
 import s from './App.module.css';
+import { drafted } from './CompositionControls';
 import { docOf } from './docs';
+
+/** What maxDt turns on at, having no value of its own until one is typed. */
+const MAX_DT = 50;
+const FRAME_MS = Math.round(FRAME * 100) / 100;
+
+const SCHEMA = resolveConfigSchema(
+  f.schema({
+    step: f
+      .boolean(true)
+      .manual()
+      .label('fixed step')
+      .describe(docOf('MixOptions.stepMs') ?? ''),
+    stepMs: f
+      .number(FRAME_MS)
+      .label('step every')
+      .suffix('ms')
+      .describe(docOf('MixOptions.stepMs') ?? '')
+      .render(drafted())
+      .enableIf((c) => c.step === true),
+    capped: f
+      .boolean(false)
+      .manual()
+      .label('cap dt')
+      .describe(docOf('MixOptions.maxDt') ?? ''),
+    maxDt: f
+      .number(MAX_DT)
+      .label('maxDt')
+      .suffix('ms')
+      .describe(docOf('MixOptions.maxDt') ?? '')
+      .render(drafted())
+      .enableIf((c) => c.capped === true),
+    reduce: f
+      .boolean(false)
+      .manual()
+      .label('reduced motion')
+      .describe(docOf('MixOptions.reduce') ?? ''),
+    lanes: f
+      .boolean(true)
+      .manual()
+      .label('lanes')
+      .describe(docOf('MixOptions.lanes') ?? ''),
+  }),
+);
 
 /** The `MixOptions` a composition sets for every mix it plays in. */
 export function MixPanel({
@@ -17,63 +62,34 @@ export function MixPanel({
     const next = withKey(m, key, value);
     onChange(withKey(comp, 'mix', Object.keys(next).length > 0 ? next : undefined));
   };
-  const stepOff = m.stepMs === 'off';
+  const positive = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && v > 0;
+  const config = {
+    step: m.stepMs !== 'off',
+    stepMs: typeof m.stepMs === 'number' ? m.stepMs : FRAME_MS,
+    capped: m.maxDt !== undefined,
+    maxDt: m.maxDt ?? MAX_DT,
+    reduce: m.reduce === true,
+    lanes: m.lanes !== false,
+  };
+  const write = (path: string, value: unknown) => {
+    switch (path) {
+      case 'step':
+        return set('stepMs', value ? undefined : 'off');
+      case 'stepMs':
+        return positive(value) && set('stepMs', value as number);
+      case 'capped':
+        return set('maxDt', value ? MAX_DT : undefined);
+      case 'maxDt':
+        return positive(value) && set('maxDt', value as number);
+      case 'reduce':
+        return set('reduce', value === true || undefined);
+      case 'lanes':
+        return set('lanes', value ? undefined : false);
+    }
+  };
   return (
-    <fieldset className={s.panel} aria-label="mix">
-      <legend>mix</legend>
-      <div className={s.row} title={docOf('MixOptions.stepMs')}>
-        <label className={s.row}>
-          <input
-            type="checkbox"
-            checked={!stepOff}
-            onChange={(e) => set('stepMs', e.target.checked ? undefined : 'off')}
-          />
-          step every
-        </label>
-        <input
-          type="number"
-          min={1}
-          step="any"
-          aria-label="stepMs"
-          disabled={stepOff}
-          value={stepOff ? '' : (m.stepMs ?? Math.round(FRAME * 100) / 100)}
-          onChange={(e) => {
-            const n = e.target.valueAsNumber;
-            if (Number.isFinite(n) && n > 0) set('stepMs', n);
-          }}
-        />
-        ms
-      </div>
-      <label className={s.row} title={docOf('MixOptions.maxDt')}>
-        maxDt
-        <input
-          type="number"
-          min={1}
-          step="any"
-          placeholder="off"
-          value={m.maxDt ?? ''}
-          onChange={(e) => {
-            const n = e.target.valueAsNumber;
-            set('maxDt', Number.isFinite(n) && n > 0 ? n : undefined);
-          }}
-        />
-      </label>
-      <label className={s.row} title={docOf('MixOptions.reduce')}>
-        <input
-          type="checkbox"
-          checked={m.reduce === true}
-          onChange={(e) => set('reduce', e.target.checked || undefined)}
-        />
-        reduced motion
-      </label>
-      <label className={s.row} title={docOf('MixOptions.lanes')}>
-        <input
-          type="checkbox"
-          checked={m.lanes !== false}
-          onChange={(e) => set('lanes', e.target.checked ? undefined : false)}
-        />
-        lanes
-      </label>
-    </fieldset>
+    <section className={s.panel} aria-label="mix">
+      <ControlPanel title="mix" collapsible schema={SCHEMA} config={config} setConfig={write} />
+    </section>
   );
 }

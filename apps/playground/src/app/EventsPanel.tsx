@@ -2,13 +2,44 @@ import type { Composition } from '@pg/blits/composition';
 import { withAhead } from '@pg/blits/edit';
 import { AHEAD } from '@pg/blits/events';
 import type { Player } from '@pg/blits/player';
-import { ExprInput } from '@pg/widgets/ExprInput';
+import { ControlPanel, f, resolveConfigSchema } from '@weasel-js/labkit';
+import { Button, PropertyRow } from '@weasel-js/ui';
 import { type ReactNode, useState } from 'react';
 import { AnnouncedFields } from './AnnouncedFields';
 import s from './App.module.css';
-import { Draft, numberOf } from './CompositionControls';
+import { drafted } from './CompositionControls';
 import { docOf } from './docs';
 import e from './Events.module.css';
+
+const BOOKS = {
+  tag: f
+    .string('')
+    .label('book and drain only the tag')
+    .placeholder('every voice and group')
+    .describe(docOf('Mix.drain') ?? '')
+    .render(drafted({ layout: 'block', span: true })),
+  ahead: f
+    .number(AHEAD)
+    .label('book ahead')
+    .suffix('ms')
+    .step(10)
+    .describe(docOf('BookOptions.ahead') ?? '')
+    .render(drafted({ layout: 'inline', name: 'book ahead in ms' })),
+};
+// Two schemas rather than a `showIf`: a section whose rows are all hidden still draws its heading.
+const BOOKER = resolveConfigSchema(f.schema(BOOKS));
+const BOOKER_LIVE = resolveConfigSchema(
+  f.schema({
+    ...BOOKS,
+    name: f
+      .string('beat')
+      .manual()
+      .label('announce')
+      .describe(docOf('Mix.announce') ?? '')
+      .section('live'),
+    now: f.custom('now', null).section('live'),
+  }),
+);
 
 /** The most rows a list draws, newest first. */
 const SHOWN = 60;
@@ -55,50 +86,45 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
   const who = (voice: number | undefined, fallback?: string) =>
     (voice === undefined ? undefined : names.get(voice)) ?? fallback ?? '';
   const marks = built.mix.marks(Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY);
+  const write = (path: string, value: unknown) => {
+    if (path === 'name') setName(String(value));
+    if (path === 'tag') {
+      events.tag = String(value).trim() || undefined;
+      player.rebuild();
+      onActed();
+    }
+    // blits' default is kept as no value, so a composition goes on following it.
+    if (path === 'ahead') onComp(withAhead(comp, value === AHEAD ? undefined : (value as number)));
+  };
   return (
     <div className={s.voiceColumn}>
       <AnnouncedFields comp={comp} onChange={onComp} />
-      {live && (
-        <div className={s.row} title={docOf('Mix.announce')}>
-          <label className={s.row}>
-            announce
-            <input className={s.text} value={name} onChange={(x) => setName(x.target.value)} />
-          </label>
-          <button
-            type="button"
-            disabled={name.trim() === ''}
-            onClick={() => {
-              player.liveMix((m) => m.announce(name.trim()));
-              onActed();
-            }}
-          >
-            now
-          </button>
-        </div>
-      )}
-      <div title={docOf('Mix.drain')}>
-        <ExprInput
-          label="book and drain only the tag"
-          placeholder="every voice and group"
-          value={events.tag ?? ''}
-          onCommit={(tag) => {
-            events.tag = tag.trim() || undefined;
-            player.rebuild();
-            onActed();
+      <section className={s.panel} aria-label="booker">
+        <ControlPanel
+          title="booker"
+          pack="one-up"
+          layout="inline"
+          schema={live ? BOOKER_LIVE : BOOKER}
+          config={{ tag: events.tag ?? '', ahead: comp.book?.ahead ?? AHEAD, name }}
+          setConfig={write}
+          renderers={{
+            now: () => (
+              <PropertyRow group layout="inline" label="">
+                <Button
+                  size="sm"
+                  disabled={name.trim() === ''}
+                  onClick={() => {
+                    player.liveMix((m) => m.announce(name.trim()));
+                    onActed();
+                  }}
+                >
+                  announce now
+                </Button>
+              </PropertyRow>
+            ),
           }}
         />
-      </div>
-      <div className={s.row} title={docOf('BookOptions.ahead')}>
-        <Draft
-          label="book ahead in ms"
-          caption="book ahead"
-          type="number"
-          value={comp.book?.ahead ?? ''}
-          placeholder={String(AHEAD)}
-          onCommit={(t) => onComp(withAhead(comp, t.trim() === '' ? undefined : numberOf(t)))}
-          unit="ms"
-        />
-      </div>
+      </section>
       <h3 className={s.heading} title={docOf('Mix.marks')}>
         marks · mix.marks, on the host’s clock
       </h3>

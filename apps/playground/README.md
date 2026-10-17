@@ -24,7 +24,7 @@ into `src/generated/docs.json` (gitignored), which the panels show as tooltips o
 The stage is top left, with a dots/letters switch above it and, beside the switch, the columns and
 rows or the text; clicking a subject picks it for the inspector, top middle. The right column holds
 the diagrams, on four tabs: **Flow**, **Timing**, **Both** and **Desk**. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
-levels, voice and patch panels; and **Events**, what the score knows and reports. Selecting a clip, on the score or in any diagram, opens Voice. The
+selected voice's or group's panels and below them the composition's levels, mix and fold rules; and **Events**, what the score knows and reports. Selecting a clip, on the score or in any diagram, opens Voice. The
 score fills the bottom, with the transport above it: play and pause, loop, rate, a choice of how a
 scrub back moves the mixes, ‹ and › to step one frame, the live toggle with the mix's own `rate`
 beside it in live mode, and a slider per level. The transport's rate slows the playground's clock,
@@ -45,7 +45,8 @@ cover them, and `src/blits/edit.ts` holds each one to the `MAX_*` caps `load` en
 the stage's kind starts from 12 by 6 dots or the text `blits`. A level's name must be unique and not
 blank, and its bounds may not cross; its value is held inside them. Each of these fields commits on
 Enter or leaving it, so typing is one undo step, and Escape puts back what it held; so do the
-booker's read-ahead and every expression field. A code pane commits on Cmd/Ctrl-Enter or leaving
+booker's tag and read-ahead, every field of the mix, fold rules and announced marks panels, and
+every expression field. A number field left blank puts back what it held. A code pane commits on Cmd/Ctrl-Enter or leaving
 it, and Tab indents. The panels' other text and number fields commit on every keystroke, each an
 undo step. Removing or renaming a level an expression names is allowed: the expression then reads
 0, with no error.
@@ -77,8 +78,10 @@ edits them. Unset, `stepMs` is one frame and the rest are blits' defaults.
 `rules` picks each channel's fold rule, from which `kitOf` in `src/blits/kit.ts` makes the kit
 every mix, wave, and flow node reads. A number channel takes `sum`, `mul`, `max`, or `last`, and
 all but `last` take `bounds`; `offset` folds its two numbers alike, so not by `last`; `color`
-replaces or averages, interpolated in OKLCH or OKLab. The fold rules panel edits them and shows the
-kind each makes.
+replaces or averages, interpolated in OKLCH or OKLab. The fold rules panel has a row per
+channel: its rule, a `bounds` switch whose lower and upper bound show on a row beneath while it is
+on, the kind where it says more than the rule (offset's `vec(2, sum)`), and, for a channel that
+differs from blits' default, its name in the accent color and a button back to the default.
 
 A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `seek`, `stepMs`, `catchUp`, `loop`, `stagger`, `target`,
 `freeze`, `weight`, `fade`, `locus`, `from`, `anchor`, `tags`, `score`, `hits`, `marks`), so the voice panel teaches the real spec, plus
@@ -363,7 +366,10 @@ at least 24 px apart; a desk with more voices than fit grows wider and the tab s
 | Weight    | a number, or a signal expression; a menu inserts common signals                         |
 | Patch     | a labkit `ControlPanel`: the kind (switching starts a blank patch of that kind) and its period or channel, then by kind: for `keys` a weasel `Timeline` track per channel, with an `EasingPicker` per key, the patch's ease, and a `ControlMatrix` of each channel's own wait and ease (`delayBy`, `easeBy`), which inherit the patch's until set; for `fn` the channels it writes and its code panes; for `wave` shape, cycles, phase and a depth per channel; for a motion a number or an expression per option, written on Enter, with its error under it. An ease is one row: steps or a curve, converting to bezier, and its plot |
 | Live      | in live mode only, a labkit `ControlPanel`: weight; `fade` with its `over`, `at` (a mix time or `'rest'`), `deadline` or the picked `subject`, and `rise` (`over` and `deadline` start auto, which leaves blits' default; click the label to set one); `seek`, showing the `Doubt` it answers, with `state: 'keep'`; the `rate` setter and `ramp`, which take a rate below 0 for a voice and not for a group; and for a motion voice a per-subject `to` (a glide's `velocity`, by `push`). A selected group gets the same on its handle in every mix, less `to`, and fades only as a whole |
-| Events    | the announced marks, to add, name, time, and remove; in live mode, `announce` a name now; a tag to book and drain by; how far ahead the booker reads, blank for 100 ms; then `mix.marks` for the running mix, what `mix.book` handed over, and what `mix.drain` returned, newest first |
+| Events    | the announced marks, to add, name, time, and remove; in live mode, `announce` a name now; a tag to book and drain by; how far ahead the booker reads, 100 ms unless set, and typing 100 unsets it; then `mix.marks` for the running mix, what `mix.book` handed over, and what `mix.drain` returned, newest first |
+| Levels    | per level, its name, value, min and max, and a remove button; add level                  |
+| Mix       | `stepMs` with a switch for a fixed step, `maxDt` with a switch to cap it, reduced motion, and lanes |
+| Fold rules | a row per channel; see [A composition](#a-composition)                                  |
 | Inspector | for the picked subject, a plot per channel over the last 3 s: each voice alone thin, the mix thick; then each voice's `weightOf`, and each enclosing group's |
 
 Every voice's errors show on their own field. Two voices or groups with one name are an error on
