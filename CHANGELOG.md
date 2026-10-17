@@ -45,6 +45,13 @@ version and everything else the patch. Each release lists its changes as **Break
   origin. The `stepMs` grid still counts from the origin, the fade-in is unchanged, and a handle
   `seek` still rebuilds from the voice's start. Its state depends on when the host first looked,
   so a read that meets such a subject late assesses it `held`.
+- A read ahead stops at each known event between now and the time read: each call the tape holds,
+  and each mark `marks` would list. A subject asked about is read at every stop, so a patch that
+  steps takes one step per stretch and a signal that keeps state sees each boundary: a voice
+  starting on the way meets its subject at its start, where it met it at the time read. `assess`
+  says `exact` for a stateful signal a read ahead fed, where it said `stepped`. The stops are made
+  only while a voice has a `step` or a signal weight; otherwise a read ahead crosses the gap in
+  one go as before.
 
 ### Fixed
 

@@ -5,13 +5,15 @@ const variants = {
   plain: {},
   full: { anchors: true, stateful: true, mixRate: true },
   fresh: { anchors: true, stateful: true, mixRate: true, fresh: true },
+  slewed: { cuesOnly: true, stateful: true, slewed: true },
 } satisfies Record<string, ProgramOptions>;
 type Variant = keyof typeof variants;
 
-/** Seeds 1 to `seeds` are checked; `unknown` lists the ones failing today. */
+/** Seeds 1 to `seeds` are checked; `unknown` lists the ones failing today, `todo` a whole gap. */
 interface Known {
   seeds: number;
   unknown?: number[];
+  todo?: string;
 }
 
 const all = { seeds: 150 };
@@ -20,22 +22,46 @@ const all = { seeds: 150 };
 // wherever a subject can be first met other than frame by frame: in a read ahead, after frames
 // played with no probe, or at a different frame spacing. Reads with no history refuse state.
 const known: Record<Property, Partial<Record<Variant, Known>>> = {
-  seek: { plain: all, full: all, fresh: all },
-  again: { plain: all, full: all },
-  behind: { plain: all, full: all, fresh: all },
-  ahead: { plain: all, full: all },
-  taped: { plain: all, full: all },
-  dt: { plain: all, full: all },
-  standing: { plain: all, full: all },
-  now: { plain: all, full: all, fresh: all },
-  frame: { plain: all, full: all, fresh: all },
+  seek: { plain: all, full: all, fresh: all, slewed: all },
+  again: {
+    plain: all,
+    full: all,
+    slewed: { seeds: 150, todo: "a second seek puts a slew's state back wrong; see HANDOFF" },
+  },
+  behind: {
+    plain: all,
+    full: all,
+    fresh: all,
+    slewed: {
+      seeds: 150,
+      todo: "a read back after a drop shows the slew's old state; see HANDOFF",
+    },
+  },
+  ahead: { plain: all, full: all, slewed: all },
+  taped: { plain: all, full: all, slewed: all },
+  dt: { plain: all, full: all, slewed: all },
+  standing: { plain: all, full: all, slewed: all },
+  now: { plain: all, full: all, fresh: all, slewed: all },
+  frame: {
+    plain: all,
+    full: all,
+    fresh: all,
+    slewed: {
+      seeds: 150,
+      todo: "a read back shows a slew's state wrong, as behind does; see HANDOFF",
+    },
+  },
 };
 
 function guards(prop: Property) {
   for (const variant of Object.keys(variants) as Variant[]) {
     const entry = known[prop][variant];
     if (entry === undefined) continue;
-    const { seeds, unknown = [] } = entry;
+    const { seeds, unknown = [], todo } = entry;
+    if (todo !== undefined) {
+      it.todo(`${variant} programs: ${todo}`);
+      continue;
+    }
     const expected = new Set(unknown);
     it(`${variant} programs, seeds 1 to ${seeds}: only the known failures fail`, () => {
       const unexpected: string[] = [];

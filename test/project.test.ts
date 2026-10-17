@@ -139,6 +139,36 @@ describe('project ahead', () => {
     expect(p.probe(a).x).toBeCloseTo((poses.get(400) as Pose).x, 9);
   });
 
+  it('steps at each known event on the way, so a voice starting there meets its subject at its start', () => {
+    const a = { id: 'a' };
+    const b = { id: 'b' };
+    const rise = slew<Part, unknown>(() => 1, { riseMs: 200, from: 0 });
+    const scene = (m: Mix<Part, Pose>, t: number) => {
+      if (t === 0) m.cue({ patch: wave, start: 96, loop: false, weight: rise, fade: { out: 80 } });
+    };
+    const frames = every(0, 600, 16);
+    const { poses } = play(scene, frames, a);
+    const m = mix<Part, Pose>(K);
+    m.sync(0);
+    scene(m, 0);
+    m.probe(a);
+    for (const t of [112, 208, 480, 528]) {
+      const p = m.project(t);
+      expect(p.probe(a).x, `project(${t})`).toBeCloseTo((poses.get(t) as Pose).x, 9);
+      expect(p.probe(b).x, `project(${t}), never probed`).toBeCloseTo((poses.get(t) as Pose).x, 9);
+      expect(p.assess(a).x).toBe('exact');
+    }
+  });
+
+  it('says exact for a stateful signal it read at every known event', () => {
+    const a = { id: 'a' };
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: wave, weight: slew(() => 1, { riseMs: 200, from: 0 }) });
+    m.sync(0);
+    m.probe(a);
+    expect(m.project(150).assess(a).x).toBe('exact');
+  });
+
   it('says held for a channel fed by input from outside the clock', () => {
     const a = { id: 'a' };
     const m = mix<Part, Pose>(K);

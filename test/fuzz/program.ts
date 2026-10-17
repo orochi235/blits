@@ -2,6 +2,7 @@ import { createHistory as tape } from '@weasel-js/history';
 import { kit, mul, sum } from '../../src/channels.js';
 import { mix } from '../../src/mixer.js';
 import { keys, patch } from '../../src/patch.js';
+import { slew } from '../../src/signals.js';
 import type { Handle, Mark, Mix, MixOptions, VoiceSpec } from '../../src/types.js';
 
 interface Pose {
@@ -43,6 +44,11 @@ export interface ProgramOptions {
   cuesOnly?: boolean;
   /** Stateful cues at weight 0.5 catch up `fresh`. */
   fresh?: boolean;
+  /**
+   * Weight each cue that starts at its call by a `slew` rising from 0, whose state a read ahead
+   * meets at the call. A start elsewhere would meet it at the next frame, which no read can know.
+   */
+  slewed?: boolean;
 }
 
 /** One host call, made right after the sync at host time `at`. */
@@ -104,7 +110,8 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
             : null;
         // Drawn from nothing too.
         const catchUp = opts.fresh && pk === 'drift' && weight === 0.5 ? 'fresh' : undefined;
-        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}${catchUp ? ' catchUp=fresh' : ''}`;
+        const slewed = opts.slewed && anchor === null && startOff !== 48 && startOff !== 100;
+        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight}${slewed ? ' slewed' : ''} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}${catchUp ? ' catchUp=fresh' : ''}`;
         ops.push({
           at: t,
           desc,
@@ -113,7 +120,7 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
               patch: pk === 'wave' ? wave : pk === 'ramp' ? ramp : drift(),
               loop,
               fade,
-              weight,
+              weight: slewed ? slew(() => weight, { riseMs: 200, from: 0 }) : weight,
               rate,
               seek,
               name: `v${i}`,
