@@ -506,7 +506,8 @@ interface Handle&lt;I = unknown&gt; {
   fade(opts?: { over?: number; at?: number | 'rest'; deadline?: number } | { subject: I; over?: number }): void;
   <span class="cm">/** Turns a fade out around: the voice climbs back from where its fade had got to, up the same curve, over `over`
      ms for the whole curve (default its `fade.in`, else its `fade.out`), and plays on as if never faded. A fade
-     waiting for rest is taken back at once; a voice not fading is left as it is. */</span>
+     waiting for rest is taken back at once; a voice not fading is left as it is. A voice faded before its start
+     goes back to `pending` and starts on time. */</span>
   rise(opts?: { over?: number }): void;
   <span class="cm">/** The weight this voice gave `subject` the last frame it was probed: after fades and its signal, before a
      locus folds it. 0 where it gave none. One number on a record the mix keeps anyway, so free unasked. */</span>

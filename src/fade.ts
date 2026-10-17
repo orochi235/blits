@@ -6,7 +6,7 @@ import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
-import { type Holding, orphan } from './owner.js';
+import { type Holding, orphan, ownerReading } from './owner.js';
 import { startOf } from './place.js';
 import { scoreTouched } from './scored.js';
 import { lingers, refit } from './spans.js';
@@ -167,12 +167,18 @@ export function beginRise<I, O>(
   const over = mix.reduced ? 0 : (opts.over ?? voice.fade.in ?? voice.fade.out ?? 0);
   const left = out.rest || out.over === 0 ? 1 : 1 - (at - out.at) / out.over;
   const from = left < 0 ? 0 : left > 1 ? 1 : left;
+  // A voice faded before its start waits for it again, as a seek back finds it.
+  const waiting =
+    Number.isNaN(mix.now) ||
+    (voice.owner === null ? at : ownerReading(voice.owner, at)) < voice.start;
   voice.out = null;
   voice.outAt = Number.POSITIVE_INFINITY;
-  voice.state = 'live';
+  voice.state = waiting ? 'pending' : 'live';
   voice.back = over > 0 && from < 1 ? { from, at, over } : null;
+  if (waiting) changed(mix, voice);
   noted(mix, voice);
-  mix.lanes?.refill();
+  if (waiting) mix.lanes?.invalidate();
+  else mix.lanes?.refill();
 }
 
 /**

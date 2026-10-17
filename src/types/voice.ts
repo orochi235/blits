@@ -366,7 +366,8 @@ export interface Handle<I = unknown> {
    * Turns a fade out around: the voice climbs back from where its fade had got to, up the same
    * curve, over `over` ms for the whole curve (default its `fade.in`, else its `fade.out`), and
    * plays on as if never faded. A fade waiting for rest is taken back at once; a voice not fading
-   * is left as it is. A voice whose own end began the fade starts it again at its next frame.
+   * is left as it is. A voice whose own end began the fade starts it again at its next frame. A
+   * voice faded before its start goes back to `pending` and starts on time.
    */
   rise(opts?: { over?: number }): void;
   /**

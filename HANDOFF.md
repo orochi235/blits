@@ -86,14 +86,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   - *The playground draws a mark inside a clip as a labeled line across it,* only where the
     compiled mix placed it (no field-derived fallback), and a link to one lands on that line
     (`Link.to.mark` in `widgets/ScoreLanes`). The score's Alt-drag still links only to edges.
-- **A gap the `inside` fuzz variant found, not fixed** (2026-10-17; `test/determinism.test.ts`
-  lists seed 11 as known under `seek`, `again`, `taped` and `frame`). A voice pending on an
-  anchor is faded with a time already past (`fade({ over: 80, at: now - 40 })`) and then risen;
-  a seek back to before both plays on differently from playing straight through. It does not need
-  a mark placed inside a voice: anchoring the voice to `{ of: 'v0', mark: 'start', by: 320 }`
-  fails the same way. Shrunk program: `wave` loop for good, seek 130, start 144; `drift` loop 2,
-  seek 130, `anchor: { start: { of: 'v0', mark: 'start', by: 320 } }`, both cued at 96;
-  `h1.fade` at 192, `h1.rise({ over: 0 })` at 224; `seek(320)` then the frame at 352.
 - **Unreleased, breaking: `loop` defaults to one pass** (Mike, 2026-10-11; it defaulted to
   looping for good). It waits for the next minor. Every consumer's cues were read at its `origin`
   head (2026-10-11): one relied on the old default, klieg's lighting voice

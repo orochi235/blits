@@ -77,6 +77,39 @@ describe.each([{ lanes: false }, { lanes: true }])('handle.rise, lanes $lanes', 
     expect(at(m, 50)).toBeCloseTo(5, 9);
   });
 
+  it('leaves a voice faded before its start pending, to start on time as if never faded', () => {
+    const m = mix<Part, Pose>(K, { lanes });
+    at(m, 0);
+    const h = m.cue({ patch: crawl, start: 500, seek: 100 });
+    at(m, 100);
+    h.fade({ over: 80, at: 60 });
+    at(m, 200);
+    h.rise({ over: 0 });
+    expect(h.state).toBe('pending');
+    expect(at(m, 450)).toBe(0);
+    expect(h.state).toBe('pending');
+    expect(at(m, 500)).toBe(10);
+    expect(h.state).toBe('live');
+  });
+
+  it('leaves a voice faded while it waits on an anchor pending', () => {
+    const m = mix<Part, Pose>(K, { lanes });
+    at(m, 0);
+    m.cue({ patch: crawl, subjects: [{ id: 'b' }], start: 100, name: 'first' });
+    const h = m.cue({
+      patch: crawl,
+      seek: 100,
+      anchor: { start: { of: 'first', mark: 'start', by: 400 } },
+    });
+    at(m, 150);
+    h.fade({ over: 80, at: 110 });
+    at(m, 200);
+    h.rise({ over: 0 });
+    expect(h.state).toBe('pending');
+    expect(at(m, 450)).toBe(0);
+    expect(at(m, 500)).toBe(10);
+  });
+
   it('climbs back at once under reduced motion', () => {
     const m = mix<Part, Pose>(K, { lanes, reduce: true });
     const h = m.cue({ patch: crawl, fade: { out: 100 } });
