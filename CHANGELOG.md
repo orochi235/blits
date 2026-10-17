@@ -48,6 +48,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A voice running back from past its end shows nothing until it reaches its passes, unless it
+  freezes after, as a voice playing forward shows nothing before its start unless it freezes
+  before. It showed its last frame: `rate: -1, seek: 600` on a 300 ms pass showed it for its
+  first 300 ms, and so did a child its owner, turned back, had put past its end.
 - `pull` reads `undefined` at a position its list has gained. A list read as `[undefined]` and
   then as `[undefined, undefined]` threw, reading the new position as the subject it read there
   last time.

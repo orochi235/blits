@@ -732,9 +732,19 @@ export class Voice<I, O> {
     return this.freezesBefore || this.out?.back === true;
   }
 
+  /**
+   * Whether a subject past the end of its passes shows nothing: its clock runs back, so it has yet
+   * to reach them, and it does not freeze after.
+   */
+  get hidesPast(): boolean {
+    return !this.freezesAfter && this.backs !== (this.owner !== null && turnedBack(this));
+  }
+
   /** A subject's voice time at `raw` once the voice's freezes apply; NaN where it shows nothing. */
   shownAt(raw: number): number {
-    return this.beginless ? raw : frozenTime(raw, this.holdsFirst, this.freezesAfter, this.span);
+    if (this.beginless) return raw;
+    if (raw > this.span && this.hidesPast) return Number.NaN;
+    return frozenTime(raw, this.holdsFirst, this.freezesAfter, this.span);
   }
 
   /** Records this voice's controls as they stand, from mix time `at` in frame `seq`. */

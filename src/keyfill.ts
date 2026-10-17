@@ -26,6 +26,7 @@ export function runKeys<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
   const before = voice.freezesBefore;
   const after = voice.freezesAfter;
   const span = voice.span;
+  const hides = voice.hidesPast;
   const flat = lane.flat;
   const parts = voice.parts !== null;
   const whole = clampWeight(voice.weight);
@@ -41,7 +42,8 @@ export function runKeys<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
     if (per[slot * Per.SLOT + Per.LANE_FILL] === fills - 1)
       data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
     if (lately >= 0 && lanes.unread(slot)) continue;
-    const elapsed = frozenTime(elapsedNow - (data[o + Row.DELAY] as number), before, after, span);
+    const raw = elapsedNow - (data[o + Row.DELAY] as number);
+    const elapsed = raw > span && hides ? Number.NaN : frozenTime(raw, before, after, span);
     if (!(elapsed >= 0)) {
       data[o + Row.WEIGHT] = 0;
       unband(records[p]);

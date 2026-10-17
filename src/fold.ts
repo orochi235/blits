@@ -92,6 +92,7 @@ export function contribution<I, O>(
   const early = voice.before(raw, now);
   if (early && !voice.holdsFirst) return null;
   const elapsed = voice.shownAt(raw);
+  if (Number.isNaN(elapsed)) return null;
   // A frozen subject's clock stands still at the edge it freezes at: -1 before, 1 after, 0 playing.
   const still = early ? -1 : voice.freezesAfter && raw > voice.span ? 1 : 0;
 

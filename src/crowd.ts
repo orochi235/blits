@@ -64,7 +64,7 @@ export const enum Flag {
   VOICE = 64,
   /** The row's voice is a motion voice; otherwise its patch is keys or a stateless fn. */
   MOTION = 128,
-  /** The voice freezes before or after, so its clock is read from the voice. */
+  /** The voice freezes, or may run back past its end, so its clock is read from the voice. */
   FREEZES = 256,
   /** A keys row whose stops `keys` holds, at `Hot.AT`, with its duration at `Hot.X0` and passes at `Hot.MS`. */
   FLAT = 512,
@@ -412,7 +412,13 @@ function copyVoice<I, O>(c: Crowd<I, O>, p: number): number {
   let f =
     (c.hot[h + Hot.FLAGS] as number) & ~(Flag.VOICE | Flag.PLAYING | Flag.FAST | Flag.FREEZES);
   if (v.state === 'live' || v.state === 'frozen' || v.state === 'fading') f |= Flag.PLAYING;
-  if (v.freezesBefore || v.freezesAfter) f |= Flag.FREEZES;
+  // A keys or fn voice an owner holds can turn back with the owner, which copies it no more.
+  if (
+    v.freezesBefore ||
+    v.freezesAfter ||
+    (v.motion === undefined && (v.owner !== null || v.hidesPast))
+  )
+    f |= Flag.FREEZES;
   if (
     v.ramp === null &&
     v.owner === null &&

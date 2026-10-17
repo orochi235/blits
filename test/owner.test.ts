@@ -313,13 +313,32 @@ describe.each([true, false])('an owner cued partway or backward, lanes %s', (lan
     m.sync(0);
     const o = m.owns({ rate: -1, seek: 300 });
     const c = m.cue({ patch: ramp, loop: false, owner: o, start: 0 });
-    // The child ends at its owner's 100 ms, so it waits, past its end, until mix 200.
-    expect(m.probe(a).y).toBe(10);
+    // The child ends at its owner's 100 ms: past its end, it shows nothing until mix 200.
+    expect(m.probe(a).y).toBe(0);
     m.sync(250);
     expect(m.probe(a).y).toBeCloseTo(5, 9);
     expect(m.marks(0, 1000).find((k) => k.voice === c.id && k.mark === 'end')?.timestamp).toBe(300);
     m.sync(310);
     expect([c.state, o.state]).toEqual(['done', 'done']);
+  });
+
+  it('turned back past its children’s end, shows each nothing until it reaches it', () => {
+    const m = mix<Part, Pose>(K, { lanes });
+    // A child per subject, each naming its one, so on lanes they share a crowd.
+    const parts = [a, ...Array.from({ length: 5 }, (_, i) => ({ id: `${i}` }))];
+    m.sync(0);
+    const o = m.owns({});
+    for (const p of parts) m.cue({ patch: ramp, loop: false, owner: o, start: 0, subjects: [p] });
+    const shown = [0, 50, 100, 150, 200, 250].map((t) => {
+      m.sync(t);
+      if (t === 50) {
+        o.seek(250);
+        o.rate = -1;
+      }
+      for (const p of parts) m.probe(p);
+      return m.probe(a).y;
+    });
+    expect(shown).toEqual([0, 0, 0, 0, 10, 5]);
   });
 
   it('cued backward with no seek, runs back from 0, so a child at 0 leaves at once', () => {
