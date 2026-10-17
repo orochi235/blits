@@ -38,8 +38,9 @@ export function ChannelPlot({
         height={height}
         xRange={[xMin, xMax]}
         yRange={[yMin, yMax]}
+        className={s.surface}
         axes={false}
-        xTicks={{ labels: 'inside' }}
+        xTicks={{ labels: 'outside' }}
         yTicks={{ labels: 'inside' }}
         aria-label={label}
       >

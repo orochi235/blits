@@ -5,6 +5,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+.surface {
+  /* Room below for the time labels, which sit outside so they never meet the value labels. */
+  margin-block-end: calc(var(--wzl-font-size-xs) + 6px);
+}
+
 .label {
   font-family: var(--wzl-font-ui);
   font-size: var(--wzl-font-size-xs);
