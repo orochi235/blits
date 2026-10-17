@@ -1,5 +1,5 @@
 import { keys, mix } from '@msb235/blits';
-import { setBlend, shareOf, stopOf, syncBlend, withVoice } from '@pg/blits/blend';
+import { setBlend, stopOf, syncBlend, withVoice } from '@pg/blits/blend';
 import { compile } from '@pg/blits/compile';
 import type { Composition, PatchSource, Voice } from '@pg/blits/composition';
 import { flowOf } from '@pg/blits/flow';
@@ -59,10 +59,33 @@ describe('a blend', () => {
     }
   });
 
-  it('shares one reading as hats over evenly spaced stops', () => {
+  it('spaces its stops evenly from 0 to 1', () => {
     expect([0, 1, 2].map((i) => stopOf(i, 3))).toEqual([0, 0.5, 1]);
-    expect([0, 1, 2].map((i) => shareOf(0.25, i, 3))).toEqual([0.5, 0.5, 0]);
-    expect(shareOf(0.7, 0, 1)).toBe(1);
+  });
+
+  it('cues each member under its own name, tags, and hits', () => {
+    const c = blended([
+      member(0, { tags: ['low'] }),
+      member(1),
+      member(2, { hits: [{ at: 0, event: 'top' }] }),
+      voice({ id: 'w', patch: patchOf(7), anchor: { start: { with: 'm2', by: 50 } } }),
+    ]);
+    for (const solos of [false, true]) {
+      const built = compile(c, subjects, { solos });
+      expect(built.errors).toEqual([]);
+      const mixes = [built.mix, ...built.solos.values()];
+      for (const m of mixes) {
+        m.sync(0);
+        const starts = m.marks(0, 1000).filter((x) => x.mark === 'start');
+        expect(starts.map((x) => [x.name, x.timestamp])).toEqual([
+          ['m0', 0],
+          ['m1', 0],
+          ['m2', 0],
+          ['w', 50],
+        ]);
+        expect(m.voices('low')).toHaveLength(1);
+      }
+    }
   });
 
   it('errors on its signal, and on a member whose spec strays', () => {
@@ -76,7 +99,7 @@ describe('a blend', () => {
 });
 
 describe('editing a blend', () => {
-  it('makes an edit to one member on all, and leaves the patch and name alone', () => {
+  it('makes an edit to one member on all, and leaves its patch, name, tags, and hits alone', () => {
     const c = three();
     const next = withVoice(c, {
       ...member(1),
@@ -87,6 +110,9 @@ describe('editing a blend', () => {
     expect(next.voices.map((v) => v.rate)).toEqual([2, 2, 2]);
     expect(next.voices.map((v) => v.stagger?.code)).toEqual(['(s) => 9', '(s) => 9', '(s) => 9']);
     expect(next.voices.map((v) => v.name)).toEqual(['m0', 'mid', 'm2']);
+    const tagged = withVoice(c, { ...member(1), tags: ['mid'], hits: [{ at: 0, event: 'x' }] });
+    expect(tagged.voices.map((v) => v.tags)).toEqual([undefined, ['mid'], undefined]);
+    expect(tagged.voices.map((v) => v.hits?.length)).toEqual([undefined, 1, undefined]);
     expect(next.voices[0]?.patch).toBe(c.voices[0]?.patch);
   });
 

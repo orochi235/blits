@@ -1,6 +1,7 @@
 import { stateful } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import { reading } from './reading.js';
+import { shareOf } from './signals.js';
 import { Store } from './store.js';
 import type { Setting, Signal } from './types.js';
 import type { Subject, Voice } from './voice.js';
@@ -48,12 +49,6 @@ export function ownBlends<I, O>(voices: Voice<I, O>[]): void {
     v.blend = { of, i: v.blend.i };
     of.members.push(v);
   }
-}
-
-/** A blend member's weight for its signal's read `k`: the members' stops sit evenly along 0..1. */
-function shareOf(k: number, i: number, stops: number): number {
-  const d = stops === 0 ? 0 : Math.abs(k * stops - i);
-  return d >= 1 ? 0 : 1 - d;
 }
 
 /** A blend member's share of its signal's read for this subject this frame, made by the first to ask. */

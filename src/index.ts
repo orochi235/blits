@@ -21,13 +21,14 @@ export type { KeysOptions, PatchOptions } from './patch.js';
 export { keys, patch } from './patch.js';
 export type { AngleOptions } from './rotation.js';
 export { angle, quat } from './rotation.js';
-export { gate, input, lag, level, peak, slew } from './signals.js';
+export { gate, input, lag, level, peak, share, slew } from './signals.js';
 export { fold } from './stack.js';
 export type { Ticked, Ticker, TickerOptions } from './ticker.js';
 export { ticker } from './ticker.js';
 export { transport } from './transport.js';
 export type {
   Anchor,
+  BlendMember,
   BookedHit,
   Booker,
   BookOptions,
