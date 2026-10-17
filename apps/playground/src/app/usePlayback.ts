@@ -8,7 +8,7 @@ const MAX_TICK_MS = 250;
 
 /**
  * Plays `player` on the animation frame at `rate`, looping at the composition's length or stopping
- * there, and toggles with Space from anywhere but a text field or the score's own handles.
+ * there, and toggles with Space from anywhere but a text field or a control that uses it.
  */
 export function usePlayback(
   player: Player,
@@ -56,16 +56,28 @@ export function usePlayback(
   );
 
   useEffect(() => {
-    const key = (e: KeyboardEvent) => {
-      if (e.key !== ' ' || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-      // The score's handles take space themselves; a button's or canvas's own use of it is canceled.
-      const skip = 'input, textarea, select, [contenteditable], [tabindex]:not(button, canvas)';
-      if ((e.target as HTMLElement).closest(skip)) return;
+    const space = (e: KeyboardEvent) =>
+      e.key === ' ' && !(e.metaKey || e.ctrlKey || e.altKey || e.shiftKey);
+    const toggle = (e: KeyboardEvent) => {
       e.preventDefault();
       if (!e.repeat) play(!playing);
     };
+    // A handle that takes space itself cancels it first; a button's own use of it is canceled.
+    const key = (e: KeyboardEvent) => {
+      if (!space(e) || e.defaultPrevented) return;
+      if ((e.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) return;
+      toggle(e);
+    };
+    // A tab swallows space without using it, so it is heard on the way down.
+    const tab = (e: KeyboardEvent) => {
+      if (space(e) && (e.target as HTMLElement).closest('[role="tab"]')) toggle(e);
+    };
     window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
+    window.addEventListener('keydown', tab, true);
+    return () => {
+      window.removeEventListener('keydown', key);
+      window.removeEventListener('keydown', tab, true);
+    };
   }, [play, playing]);
 
   return { playing, play };

@@ -25,23 +25,30 @@ The stage is top left, with a dots/letters switch above it and, beside the switc
 rows or the text; clicking a subject picks it for the inspector, top middle. The right column holds
 the diagrams, on four tabs: **Flow**, **Timing**, **Both** and **Desk**. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
 levels, voice and patch panels; and **Events**, what the score knows and reports. Selecting a clip, on the score or in any diagram, opens Voice. The
-score fills the bottom, with the transport above it: play and pause, rate, loop, a slider per
-level, a choice of how a scrub back moves the mixes, ‹ and › to step one frame, and the live toggle, with the mix's own `rate` beside it in live mode: the transport's rate
-slows the playground's clock, while the mix's slows the voices as the score's clock runs on.
+score fills the bottom, with the transport above it: play and pause, loop, rate, a choice of how a
+scrub back moves the mixes, ‹ and › to step one frame, the live toggle with the mix's own `rate`
+beside it in live mode, and a slider per level. The transport's rate slows the playground's clock,
+while the mix's slows the voices as the score's clock runs on.
 A scrub back either replays from 0, which shows exactly what playback showed, or calls blits'
 `mix.seek({ frame })` with the frame each mix played at that point of the score, which restores
 from the history every mix keeps. By `mix.seek`, the transport shows the full mix's `now` and
 `seq`: at a mix rate of 0 the score runs on while `now` holds, so each frame held at one mix time
-has its own place on the score, and scrubbing or stepping there reaches it. Either way the inspector labels each
-channel with blits' `assess` answer for the picked subject: `exact`, `stepped`, or `held`. Space plays and pauses from anywhere but a text field or the score's
-own handles, which take it themselves. The header holds the preset menu, the title and the length.
+has its own place on the score, and scrubbing or stepping there reaches it. Either way the
+inspector labels each channel with blits' `assess` answer for the picked subject: `exact`,
+`stepped`, or `held`. Space plays and pauses from anywhere but a text field, a menu, or a control
+that uses Space itself: a clip or group header on the score and a strip on the desk select theirs
+instead. On a focused button, a tab or a slider, Space plays rather than pressing it. The header
+holds the preset menu, the title and the length.
 
 These composition edits go through the same history as every other, so undo, storage and share
 cover them, and `src/blits/edit.ts` holds each one to the `MAX_*` caps `load` enforces. Switching
 the stage's kind starts from 12 by 6 dots or the text `blits`. A level's name must be unique and not
-blank, and its bounds may not cross; its value is held inside them. A text or number field commits
-on Enter or leaving it, so typing is one undo step. Removing or renaming a level an expression names
-is allowed: the expression then reads 0, with no error.
+blank, and its bounds may not cross; its value is held inside them. Each of these fields commits on
+Enter or leaving it, so typing is one undo step, and Escape puts back what it held; so do the
+booker's read-ahead and every expression field. A code pane commits on Cmd/Ctrl-Enter or leaving
+it, and Tab indents. The panels' other text and number fields commit on every keystroke, each an
+undo step. Removing or renaming a level an expression names is allowed: the expression then reads
+0, with no error.
 
 ## A composition
 
@@ -227,11 +234,11 @@ header, and its members sit under it, indented one step per depth.
 | sloped ends            | `fade.in` / `fade.out`, mix ms at any rate | drag the slope's top corner                 |
 | dividers inside        | passes of the period          | drag the right edge, snapping to whole passes: `loop`    |
 | a shorter clip, "· backward" after the label | a `seek`, or a rate below 0: what is left to play from where it starts, back to 0 at a rate below 0 | drag the right edge, snapping to what each whole `loop` leaves: `loop`, the fewest that leave that much; the voice panel for the rest |
-| arrow at the end       | `loop: true`                  | drag it back to make the loop finite                     |
+| arrow at the end       | `loop: true`                  | drag it either way, or press Enter on it, for `loop: 1`      |
 | thin bar under it      | stagger spread, first to last | none; `stagger` is an expression                         |
 | hatched extension      | `freeze`                      | the clip's menu                                          |
 | shared color bracket   | `locus`; "· blend" after the label where `mix.blend` cues it | drag a lane label onto another's, or the clip's menu |
-| dashed link            | `anchor`, where it names one voice | Alt-drag from an edge to another clip's edge for `after` or `with`; the voice panel for the rest |
+| dashed link            | `anchor`, where it names one voice | Alt-drag from the body (the start) or the right edge (the end) onto another clip, which takes the nearer of its edges: its end for `after`, its start for `with`; the voice panel for the rest |
 | dotted link, close dots | an `all`: one link from each voice it waits on | the voice panel; an Alt-drag from the edge replaces the join |
 | dotted link, wide dots | an `any`, or a query by `tag`, `writes` or a `resolver`: one link from each voice it could wait on | the voice panel; an Alt-drag from the edge replaces it |
 | notch on the top edge  | a hit, every pass             | the voice panel                                          |
@@ -241,6 +248,11 @@ header, and its members sit under it, indented one step per depth.
 | budget line, red hatch | a span's `duration`, and `result.over` past it; "fell" when `spill` decided | the group panel |
 | clip under a span      | where the fit put it, ×1.5 after the label for a fitted rate | locked; the span places it |
 | dashed outline         | a child the fit skipped, at its natural length | none                                    |
+
+A clip's menu, the ⋯ beside its label once it is selected, sets the hatch and groups it with
+another lane's voice or out of its locus. Every handle takes keys too: the arrow keys move a body
+or a fade 100 ms, 1 s with Shift, and a right edge one pass; Enter or Space selects a clip or a
+header, and folds from ▾; the ruler scrubs with the arrow keys, Home and End.
 
 A voice whose period is 0, an aperiodic `fn` or a motion voice, has no passes, so its right edge
 does not drag. A voice at rate 0 never ends, and neither does one cued backward that loops for
@@ -315,10 +327,10 @@ its source is a signal; a `stagger` or `target` expression as a whole may not.
 
 While editing, nodes drag, and an edit keeps every node where it stood, laying out only what is
 new. Where a node was dragged to is kept for as long as the page is open, across tabs and edits,
-but not in the composition, its undo history or a shared link; **lay out** forgets it. Off edit,
-the diagram lays itself out afresh after each edit, as Flow and Timing do. The editable view passes
-`enableKeybindings={false}` to weasel's `DiagramView`, which otherwise listens for keys page-wide
-and would take Space from the transport.
+but not in the composition, its undo history or a shared link, and it holds off edit too; **lay
+out** forgets it. Off edit, every node not dragged is laid out afresh after each edit, as Flow and
+Timing do. The editable view passes `enableKeybindings={false}` to weasel's `DiagramView`, which
+otherwise listens for keys page-wide and would take Space from the transport.
 
 ## The desk
 
@@ -384,9 +396,10 @@ owner or a span; deleting a group moves what it held up to its parent.
   the voice is heard. A badge says the changes are in force; the next edit drops them, and so does a
   backward scrub by replay, while one by `mix.seek` plays them again.
 - **State.** The current composition is kept in `localStorage`; undo and redo (Cmd/Ctrl-Z,
-  Shift for redo) use labkit's pure undo-stack functions. Share copies a link carrying the
-  composition as base64url of its UTF-8 JSON in `#c=…`; the app loads it once and clears it from
-  the address bar, so a reload keeps later edits. Every loaded composition, from a link or from
+  Shift for redo, outside a text field, which keeps its own) use labkit's pure undo-stack
+  functions. Share, on the Voice tab, copies a link carrying the composition as base64url of its
+  UTF-8 JSON in `#c=…`, or shows it to copy by hand where the clipboard refuses; the app loads it
+  once and clears it from the address bar, so a reload keeps later edits. Every loaded composition, from a link or from
   storage, passes `load` (`src/blits/load.ts`): a wrong `version`, a missing field or a size past
   the `MAX_*` caps in `composition.ts` falls back to the default preset rather than a blank page.
   Nothing is written to disk.
