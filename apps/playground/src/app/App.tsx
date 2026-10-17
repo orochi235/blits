@@ -12,6 +12,7 @@ import { LabShell } from '@weasel-js/labkit';
 import { Tab, TabList, TabPanel, Tabs } from '@weasel-js/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import s from './App.module.css';
+import { BothPanel } from './BothPanel';
 import { CompFields, StageControls } from './CompositionControls';
 import { DeskPanel } from './DeskPanel';
 import { EventsPanel } from './EventsPanel';
@@ -26,7 +27,7 @@ import { useScore } from './useScore';
 import { VoiceColumn } from './VoiceColumn';
 
 type MiddleTab = 'plots' | 'voice' | 'events';
-type SideTab = 'flow' | 'timing' | 'desk';
+type SideTab = 'flow' | 'timing' | 'both' | 'desk';
 
 /** How long "link copied" stays up. */
 const NOTICE_MS = 3000;
@@ -223,6 +224,7 @@ export function App() {
             <TabList aria-label="right column">
               <Tab id="flow">Flow</Tab>
               <Tab id="timing">Timing</Tab>
+              <Tab id="both">Both</Tab>
               <Tab id="desk">Desk</Tab>
             </TabList>
             <TabPanel id="flow" className={s.sidePanel}>
@@ -235,6 +237,16 @@ export function App() {
                 player={player}
                 selected={selected}
                 onVoice={pickVoice}
+              />
+            </TabPanel>
+            <TabPanel id="both" className={s.sidePanel}>
+              <BothPanel
+                comp={comp}
+                faulted={faulted}
+                player={player}
+                selected={selected}
+                onVoice={pickVoice}
+                onComp={set}
               />
             </TabPanel>
             <TabPanel id="desk" className={s.sidePanel}>

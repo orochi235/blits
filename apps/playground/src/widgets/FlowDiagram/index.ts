@@ -1,2 +1,11 @@
 export { FlowDiagram, type FlowDiagramProps } from './FlowDiagram';
-export type { Flow, FlowBox, FlowEdge, FlowKind, FlowNode, FlowTone } from './types';
+export type {
+  Flow,
+  FlowBox,
+  FlowEdge,
+  FlowEnd,
+  FlowKind,
+  FlowNode,
+  FlowPortTone,
+  FlowTone,
+} from './types';

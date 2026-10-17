@@ -88,9 +88,15 @@ function groupDetail(g: Group): string {
   return parts.join(' · ');
 }
 
+/** A flow, with the source of each node that stands for a signal: a level, a signal call, or a whole `weight`. */
+export interface SignalFlow extends Flow {
+  code: ReadonlyMap<string, string>;
+}
+
 class Builder {
   readonly nodes = new Map<string, FlowNode>();
   readonly edges = new Map<string, FlowEdge>();
+  readonly code = new Map<string, string>();
   constructor(private readonly levels: ReadonlyMap<string, Level>) {}
 
   node(n: FlowNode): string {
@@ -105,6 +111,7 @@ class Builder {
 
   level(name: string): string {
     const l = this.levels.get(name);
+    this.code.set(`level:${name}`, `level(${JSON.stringify(name)})`);
     return this.node({
       id: `level:${name}`,
       kind: 'level',
@@ -131,6 +138,7 @@ class Builder {
       kind: 'signal',
       label: clip(`${op}(${parts.join(', ')})`),
     });
+    this.code.set(id, code.slice(n.start, n.end));
     for (const input of inputs) this.edge(input, id);
     return id;
   }
@@ -166,6 +174,7 @@ class Builder {
       label: clip(bodyOf(expr.code)),
       ...(root ? {} : { faulted: true }),
     });
+    if (root && field === 'weight') this.code.set(id, expr.code);
     if (root) for (const input of this.inputs(root, expr.code, `${path}:e`)) this.edge(input, id);
     return id;
   }
@@ -174,7 +183,7 @@ class Builder {
 /** The signal flow of a composition: what feeds each group and voice, what each voice
  *  writes, and how each channel folds into the pose. `faulted` holds the ids
  *  of voices and groups that failed to compile; they are drawn, marked. */
-export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set()): Flow {
+export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set()): SignalFlow {
   const kit = kitOf(comp.rules);
   const b = new Builder(new Map(comp.levels.map((l) => [l.name, l])));
   for (const l of comp.levels) b.level(l.name);
@@ -226,7 +235,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
     detail: `× ${subjects} ${comp.stage.kind === 'dots' ? 'dots' : 'letters'}`,
   });
   for (const ch of CHANNELS) if (written.has(ch)) b.edge(`ch:${ch}`, 'pose');
-  return { nodes: [...b.nodes.values()], edges: [...b.edges.values()] };
+  return { nodes: [...b.nodes.values()], edges: [...b.edges.values()], code: b.code };
 }
 
 const restText = (rest: unknown) => (Array.isArray(rest) ? `[${rest.join(', ')}]` : String(rest));

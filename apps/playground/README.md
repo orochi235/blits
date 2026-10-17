@@ -23,8 +23,8 @@ into `src/generated/docs.json` (gitignored), which the panels show as tooltips o
 
 The stage is top left, with a dots/letters switch above it and, beside the switch, the columns and
 rows or the text; clicking a subject picks it for the inspector, top middle. The right column holds
-the diagrams, on three tabs: **Flow**, **Timing** and **Desk**. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
-levels, voice and patch panels; and **Events**, what the score knows and reports. Selecting a clip, on the score or in either diagram, opens Voice. The
+the diagrams, on four tabs: **Flow**, **Timing**, **Both** and **Desk**. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
+levels, voice and patch panels; and **Events**, what the score knows and reports. Selecting a clip, on the score or in any diagram, opens Voice. The
 score fills the bottom, with the transport above it: play and pause, rate, loop, a slider per
 level, a choice of how a scrub back moves the mixes, and the live toggle, with the mix's own `rate` beside it in live mode: the transport's rate
 slows the playground's clock, while the mix's slows the voices as the score's clock runs on.
@@ -269,6 +269,44 @@ heavy one, one `done` a faint one, and an edge is dim until what it waits on has
 that sets a mark is met when its own voice has passed that mark. One into a join or a query is met
 when its source's state says the awaited mark is behind it, which ignores the anchor's `by`.
 
+## Both
+
+The right column's Both tab draws the flow and the timing as one diagram: every node of either, the
+flow's edges in blue and the timing's in amber, lit as the Timing tab lights them. A voice or group
+carries both details, what it plays over where it starts. Owners and spans are the timing's boxes,
+so the flow's edge from a group to each thing it holds is left out; a group's weight still feeds
+its box. `bothOf` in `src/blits/both.ts` merges `flowOf` and `lit(timingOf(…))`.
+
+It is one diagram rather than the two views side by side, linked by selection: the column is too
+narrow for two, and stacked they halve each other's height. One layered layout ranks both kinds of
+edge, so what waits on a voice sits below it, above the channels it writes.
+
+## Editing the diagram
+
+The Both tab's **edit** box makes the diagram an input. Each voice and group shows three dots, and
+each level, signal, whole `weight` and mark one; dragging a dot onto another is an edit, through
+the same history as every other, so undo, storage and share cover it:
+
+| Drag                                                      | Becomes                                              |
+|-----------------------------------------------------------|------------------------------------------------------|
+| a level's, signal's or `weight`'s bottom dot (blue) onto a voice's or group's top dot (blue) | its `weight`, the source of that signal; for a voice in a blend, the blend's signal |
+| a voice's or group's left dot (start) or right dot (end), amber, onto another's left or right | the second's `start` or `end` anchored `{ with }` the first's start or `{ after }` its end, dropping its `in` or `out` |
+| a mark's bottom dot (amber) onto a left or right dot      | that `start` or `end` anchored `{ with }` the mark   |
+
+A drag made the other way, from a top or a start onto a signal or a mark, is read in reverse. A dot
+lands only where the edit changes something and `load` accepts the result; a start under a span is
+the span's to place, so it takes nothing, as on the score. `wired` in `src/blits/wire.ts` is the
+whole rule, and the score's Alt-drag between clip edges writes its anchor through the same
+`waitOn` in `src/blits/anchor.ts`. A signal inside a `stagger` or `target` may be dragged too, since
+its source is a signal; a `stagger` or `target` expression as a whole may not.
+
+While editing, nodes drag, and an edit keeps every node where it stood, laying out only what is
+new. Where a node was dragged to is kept for as long as the page is open, across tabs and edits,
+but not in the composition, its undo history or a shared link; **lay out** forgets it. Off edit,
+the diagram lays itself out afresh after each edit, as Flow and Timing do. The editable view passes
+`enableKeybindings={false}` to weasel's `DiagramView`, which otherwise listens for keys page-wide
+and would take Space from the transport.
+
 ## The desk
 
 The right column's Desk tab draws the flow as a mixing desk. Each channel the composition writes
@@ -354,7 +392,7 @@ One `Composition` per file in `src/blits/presets/`.
 
 ## Widgets
 
-`src/widgets/` holds `ScoreLanes`, `ExprInput`, `CodePane`, `ChannelPlot`, `FlowDiagram`, which draws both the flow and the timing, and `MixerDesk`, which draws the desk. They are written to
+`src/widgets/` holds `ScoreLanes`, `ExprInput`, `CodePane`, `ChannelPlot`, `FlowDiagram`, which draws the flow, the timing and both at once, and `MixerDesk`, which draws the desk. They are written to
 move to weasel later: plain props, CSS modules on weasel's theme tokens, a forge story each, and
 **no imports from blits or from `@pg/blits`**. The adapters in `src/blits/` and `src/app/` map blits
 onto them.
@@ -366,8 +404,8 @@ a composition gives, to the bit, the poses the matching hand-written `cue` gives
 span the poses of hand-written `owns` or `span`; each fit-step list matches its `pipe(...)`; a scrub back over
 a stateful voice lands on the pose continuous play showed; the score round-trips voice to clip to
 edit to voice; a bad expression errors on its field while compile still returns; a composition
-edit stays inside what `load` accepts; every preset compiles and plays clean. The smoke run covers
-the rest in a real browser, failing on a console error, a page error, or a blank stage, flow, timing or desk diagram; `--shots <dir>` keeps its screenshots, which otherwise go to a
+edit stays inside what `load` accepts; a drag between two diagram dots makes the edit it describes or none; every preset compiles and plays clean. The smoke run covers
+the rest in a real browser, failing on a console error, a page error, or a blank stage, flow, timing, both or desk diagram; `--shots <dir>` keeps its screenshots, which otherwise go to a
 temp directory removed on exit.
 
 The root `npm run check` lints the playground and runs its tests, but leaves out its typecheck and

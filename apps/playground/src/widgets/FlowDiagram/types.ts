@@ -27,6 +27,8 @@ export interface FlowEdge {
   to: string;
   label?: string;
   dashed?: boolean;
+  /** Drawn in the timing color, apart from the flow's edges. */
+  timing?: boolean;
   /** Whether what it waits on has happened; unset draws it plain. */
   met?: boolean;
 }
@@ -44,3 +46,10 @@ export interface Flow {
   edges: FlowEdge[];
   boxes?: FlowBox[];
 }
+/** A port of a node: the node's id and the port's compass name, `n`, `e`, `s` or `w`. */
+export interface FlowEnd {
+  node: string;
+  port: string;
+}
+/** Which kind of edge a port makes, which it is drawn in the color of. */
+export type FlowPortTone = 'flow' | 'timing';
