@@ -77,8 +77,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     compiled mix placed it (no field-derived fallback), and a link to one lands on that line
     (`Link.to.mark` in `widgets/ScoreLanes`). The score's Alt-drag still links only to edges.
   - The playground's `player.test.ts` "seeking back with mix.seek … says how sure it is" fails on
-    this branch's base too (`offset` reads `exact`, the test wants `stepped`): the read-ahead
-    `assess` change, which the seek and `doubtOf` work owns.
+    this branch's base too (`offset` reads `exact`, the test wants `stepped`); not traced here,
+    and it sits in the seek and `doubtOf` work running beside this.
 - **A gap the `inside` fuzz variant found, not fixed** (2026-10-17; `test/determinism.test.ts`
   lists seed 11 as known under `seek`, `again`, `taped` and `frame`). A voice pending on an
   anchor is faded with a time already past (`fade({ over: 80, at: now - 40 })`) and then risen;
