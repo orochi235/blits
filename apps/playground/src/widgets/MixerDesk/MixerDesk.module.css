@@ -1,0 +1,124 @@
+.desk {
+  display: block;
+  font-family: var(--wzl-font-ui);
+  font-variant-numeric: tabular-nums;
+  /* The flow diagram's channel green. */
+  --desk-bus: #3f9a52;
+}
+
+.busLabel {
+  font-size: 11px;
+  fill: var(--wzl-fg);
+  text-anchor: end;
+}
+
+.bus {
+  stroke: var(--desk-bus);
+  stroke-width: 2;
+}
+
+.busEnd {
+  fill: none;
+  stroke: var(--desk-bus);
+  stroke-width: 2;
+}
+
+.rule {
+  fill: var(--wzl-surface-sunken);
+  stroke: var(--desk-bus);
+  stroke-width: 1;
+}
+
+.ruleText {
+  font-family: var(--wzl-font-mono);
+  font-size: 9px;
+  fill: var(--wzl-fg-muted);
+}
+
+.value {
+  font-family: var(--wzl-font-mono);
+  font-size: 10px;
+  fill: var(--wzl-fg);
+  text-anchor: end;
+}
+
+.swatch {
+  stroke: var(--wzl-line);
+  stroke-width: 1;
+}
+
+.strip,
+.bracket {
+  cursor: pointer;
+  outline: none;
+}
+
+.hit {
+  fill: transparent;
+}
+
+.strip:hover .hit,
+.bracket:hover .hit {
+  fill: var(--wzl-surface-raised);
+}
+
+.strip.picked .hit,
+.bracket.picked .hit {
+  fill: var(--wzl-surface-raised);
+  stroke: var(--wzl-accent);
+  stroke-width: 1;
+}
+
+.strip:focus-visible .hit,
+.bracket:focus-visible .hit {
+  stroke: var(--wzl-focus-ring);
+  stroke-width: 2;
+}
+
+.stripLabel {
+  font-size: 11px;
+  fill: var(--wzl-fg);
+}
+
+.stripLine {
+  stroke-width: 2;
+  opacity: 0.55;
+}
+
+.tap {
+  stroke-width: 1.5;
+}
+
+.well {
+  fill: var(--wzl-surface-sunken);
+  stroke: var(--wzl-line-subtle);
+  stroke-width: 1;
+}
+
+.readout {
+  font-size: 9px;
+  fill: var(--wzl-fg-muted);
+  text-anchor: middle;
+}
+
+.bracketLine {
+  fill: none;
+  stroke-width: 2;
+}
+
+.bracketText {
+  font-size: 10px;
+  fill: var(--wzl-fg);
+  text-anchor: middle;
+}
+
+.stripLabel.faulted,
+.bracketText.faulted {
+  fill: var(--wzl-danger);
+}
+
+.stripLine.faulted,
+.bracketLine.faulted {
+  stroke: var(--wzl-danger);
+  stroke-dasharray: 4 3;
+}

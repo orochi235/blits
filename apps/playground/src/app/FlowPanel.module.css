@@ -19,6 +19,11 @@
   overflow: hidden;
 }
 
+.scroll {
+  min-height: 0;
+  overflow: auto;
+}
+
 .empty {
   font-family: var(--wzl-font-ui);
   font-size: var(--wzl-font-size-xs);
