@@ -735,7 +735,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       ending before its start already does, over a fault count the host reads, which blits has no
       pattern for; and only the first delta each voice's `at` returns is checked, in
       `contribution` (`src/fold.ts`), which makes every voice's first call, so the lanes' fills
-      check nothing. Per frame that is one boolean read per `fn` call on the general path. To
+      check nothing. Per frame that is one boolean read per `fn` call on the general path, which
+      reads level (msb-uai, 2026-10-17, 10 rounds, `AB_EACH=1 bench/ab.sh da301d9 650b3e9` over
+      `fn` and `named`, geometric mean 0.992, every row within 0.96–1.02). To
       reverse, drop `checkWrites` and `unchecked` from `src/voice.ts` and the line calling it.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
       - **Backward play is built (2026-10-10); the schema page's "Starting partway, and playing
