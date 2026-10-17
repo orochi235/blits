@@ -10,6 +10,13 @@
 export type Mark = 'start' | 'in' | 'coast' | 'out' | 'end';
 
 /**
+ * A mark by name: one of a voice's own five, or one it places inside itself with `marks`.
+ *
+ * @category score
+ */
+export type MarkName = Mark | (string & {});
+
+/**
  * Selects voices by what the plan knows of them, never by a channel's value, within the asking
  * voice's own score unless it names another. Where several match,
  * the resolver picks one: `last` cued (the default), `first` cued, `next` (the earliest whose mark
@@ -28,7 +35,8 @@ export interface Query {
 }
 
 /**
- * A time given by another voice: `mark` of the voice `of` selects, moved by `by` ms. `after` is
+ * A time given by another voice: `mark` of the voice `of` selects, moved by `by` ms, where `mark`
+ * is one of its five or one it places inside itself with `marks`. `after` is
  * sugar for that voice's `end`, `with` for its `start`, and `before` for its start less `by`. A
  * string selects by name. `all` is the latest of its anchors, known once every one is; `any` the
  * earliest, known once one has passed or every one is known.
@@ -36,7 +44,7 @@ export interface Query {
  * @category score
  */
 export type Anchor =
-  | { of: string | Query; mark: Mark; by?: number }
+  | { of: string | Query; mark: MarkName; by?: number }
   | { after: string | Query; by?: number }
   | { with: string | Query; by?: number }
   | { before: string | Query; by?: number }
@@ -70,8 +78,8 @@ export interface Placement {
 export interface Marked {
   /** On the host's clock. */
   timestamp: number;
-  /** Which of a voice's this is; undefined for an announced mark. */
-  mark: Mark | undefined;
+  /** Which of a voice's this is, one of its five or one it placed inside itself; undefined for an announced mark. */
+  mark: MarkName | undefined;
   /** The voice it belongs to; undefined for an announced mark. */
   voice: number | undefined;
   score: string | undefined;

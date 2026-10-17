@@ -148,6 +148,14 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    */
   hits?: readonly Hit[];
   /**
+   * Named marks inside the voice, beside its five, each at voice ms into a pass as a hit's `at` is:
+   * `{ drop: 340 }`. An anchor names one as it names the five, `{ of: 'lead', mark: 'drop' }`, and
+   * `marks` lists it and `book` books it under its name. Each is reached once: on the first pass
+   * that reaches it from where the voice starts, while its clock runs forward and before it ends.
+   * A name cannot be one of the five.
+   */
+  marks?: Readonly<Record<string, number>>;
+  /**
    * The owner this voice plays under, a handle `owns` returned. Its `start` and `anchor` are then on
    * the owner's clock, in ms from when the owner starts, and default to where that clock is now; a
    * bare name in an anchor means a sibling, another voice the owner holds. Its clock runs on the
@@ -221,6 +229,8 @@ export interface OwnerSpec<I, H = unknown> extends SpanHints {
    * booked once, while it plays: none past where it leaves, and none while its clock runs back.
    */
   hits?: readonly Hit[];
+  /** Named marks at times on its own clock, as a voice's `marks`. */
+  marks?: Readonly<Record<string, number>>;
   /** The owner it plays under, so owners nest. */
   owner?: Handle<I>;
 }

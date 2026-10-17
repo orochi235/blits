@@ -6,7 +6,7 @@ import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { mixTime, ownerReading } from './owner.js';
 import { holders, scored, scoredGone, scoreVersion, unhold } from './scored.js';
-import type { Anchor, Mark, Placement, Query, VoiceSpec } from './types.js';
+import type { Anchor, MarkName, Placement, Query, VoiceSpec } from './types.js';
 import { none, type Voice } from './voice.js';
 import { warnOnce } from './warn.js';
 
@@ -203,7 +203,7 @@ function resolve<I, O>(
     return unknown && earliest > now ? undefined : earliest;
   }
   let query: string | Query;
-  let mark: Mark;
+  let mark: MarkName;
   let by = a.by ?? 0;
   if ('of' in a) {
     query = a.of;
@@ -305,7 +305,7 @@ class Pick {
  */
 interface Fold<I, O> {
   list: readonly Voice<I, O>[];
-  mark: Mark;
+  mark: MarkName;
   seen: number;
   pick: Pick;
   owned: Voice<I, O>[];
@@ -329,7 +329,7 @@ interface Fold<I, O> {
 function timeOf<I, O>(
   mix: Mixer<I, O>,
   key: string | Query,
-  mark: Mark,
+  mark: MarkName,
   self: Voice<I, O>,
 ): number | undefined {
   const q = typeof key === 'string' ? { name: key } : key;
@@ -431,7 +431,7 @@ function foldOf<I, O>(
   m: Mixer<I, O>,
   list: readonly Voice<I, O>[],
   key: string | Query,
-  mark: Mark,
+  mark: MarkName,
   self: Voice<I, O>,
   resolver: NonNullable<Query['resolver']>,
 ): Fold<I, O> {

@@ -5,6 +5,7 @@ const variants = {
   plain: {},
   full: { anchors: true, stateful: true, mixRate: true },
   fresh: { anchors: true, stateful: true, mixRate: true, fresh: true },
+  inside: { anchors: true, stateful: true, mixRate: true, inside: true },
   slewed: { cuesOnly: true, stateful: true, slewed: true },
 } satisfies Record<string, ProgramOptions>;
 type Variant = keyof typeof variants;
@@ -17,34 +18,40 @@ interface Known {
 }
 
 const all = { seeds: 150 };
+// Seed 11 fades and then rises a voice still pending on an anchor; a seek back to before either
+// plays on differently. Anchoring the voice to its target's start does the same; see HANDOFF.
+const pendingFade = { seeds: 150, unknown: [11] };
 // A seed that starts failing is a regression; `shrink` in ./fuzz/program.ts reduces it to its cause.
 // A `fresh` voice depends on when a subject was first probed, by design, so the variant is left out
 // wherever a subject can be first met other than frame by frame: in a read ahead, after frames
 // played with no probe, or at a different frame spacing. Reads with no history refuse state.
 const known: Record<Property, Partial<Record<Variant, Known>>> = {
-  seek: { plain: all, full: all, fresh: all, slewed: all },
+  seek: { plain: all, full: all, inside: pendingFade, fresh: all, slewed: all },
   again: {
     plain: all,
     full: all,
+    inside: pendingFade,
     slewed: { seeds: 150, todo: "a second seek puts a slew's state back wrong; see HANDOFF" },
   },
   behind: {
     plain: all,
     full: all,
+    inside: all,
     fresh: all,
     slewed: {
       seeds: 150,
       todo: "a read back after a drop shows the slew's old state; see HANDOFF",
     },
   },
-  ahead: { plain: all, full: all, slewed: all },
-  taped: { plain: all, full: all, slewed: all },
-  dt: { plain: all, full: all, slewed: all },
-  standing: { plain: all, full: all, slewed: all },
-  now: { plain: all, full: all, fresh: all, slewed: all },
+  ahead: { plain: all, full: all, inside: all, slewed: all },
+  taped: { plain: all, full: all, inside: pendingFade, slewed: all },
+  dt: { plain: all, full: all, inside: all, slewed: all },
+  standing: { plain: all, full: all, inside: all, slewed: all },
+  now: { plain: all, full: all, inside: all, fresh: all, slewed: all },
   frame: {
     plain: all,
     full: all,
+    inside: pendingFade,
     fresh: all,
     slewed: {
       seeds: 150,

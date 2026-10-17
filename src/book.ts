@@ -32,10 +32,15 @@ export interface BookHost<I, O> {
   unhook(booker: Book<I, O>): void;
 }
 
+/** Whether voice ms `at` falls in a pass of a patch `duration` long: 0 up to it, or 0 on for none. */
+export function inPass(at: number, duration: number): boolean {
+  return at >= 0 && (duration > 0 ? at < duration : Number.isFinite(at));
+}
+
 /** Refuses hits a voice could never play. */
 export function checkHits(hits: readonly Hit[], duration: number): void {
   for (const h of hits)
-    if (!(h.at >= 0) || (duration > 0 ? !(h.at < duration) : !Number.isFinite(h.at)))
+    if (!inPass(h.at, duration))
       throw new RangeError(
         duration > 0
           ? `blits: a hit's at is voice ms into a pass, 0 up to ${duration}, not ${h.at}`
@@ -66,8 +71,8 @@ interface Track {
 interface Due<I> {
   time: number;
   item: Marked | BookedHit<unknown, I>;
-  into: Map<number, Booking>;
-  key: number;
+  into: Map<number | string, Booking>;
+  key: number | string;
 }
 
 /** One `book` call: maps host time onto the outside clock and takes each item once. */
@@ -82,7 +87,7 @@ export class Book<I, O> implements Booker {
   /** The host time the mix last sought at: a mark at or before it was taken before the seek. */
   private floor = Number.NEGATIVE_INFINITY;
   /** Bookings of marks, by `keyOf`, kept while listed so one already taken is not taken late. */
-  private readonly marked = new Map<number, Booking>();
+  private readonly marked = new Map<number | string, Booking>();
   private readonly tracks = new Map<Voice<I, O>, Track>();
   private readonly due: Due<I>[] = [];
 
@@ -181,7 +186,7 @@ export class Book<I, O> implements Booker {
   private marks(now: number): void {
     const listed = this.host.marks(now - this.opts.late, now + this.opts.ahead);
     const marked = this.marked;
-    const seen = new Set<number>();
+    const seen = new Set<number | string>();
     for (const m of listed) {
       if (!this.fits(m.score, m.tags) || m.timestamp <= this.floor) continue;
       const key = keyOf(m);
@@ -292,9 +297,23 @@ export class Book<I, O> implements Booker {
   }
 }
 
-const markIndex = { start: 1, in: 2, coast: 3, out: 4, end: 5 } as const;
-
 /** A mark's identity: its voice and which of its marks, or the announcement. */
-function keyOf(m: Listed): number {
-  return m.order * 6 + (m.mark === undefined ? 0 : markIndex[m.mark]);
+function keyOf(m: Listed): number | string {
+  const k = m.order * 6;
+  switch (m.mark) {
+    case undefined:
+      return k;
+    case 'start':
+      return k + 1;
+    case 'in':
+      return k + 2;
+    case 'coast':
+      return k + 3;
+    case 'out':
+      return k + 4;
+    case 'end':
+      return k + 5;
+    default:
+      return `${m.order}\u0000${m.mark}`;
+  }
 }

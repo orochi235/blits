@@ -1,12 +1,29 @@
-import type { Listed } from './book.js';
+import { inPass, type Listed } from './book.js';
 import type { Mixer } from './mixer.js';
 import { startOf } from './place.js';
 import type { Transport } from './transport.js';
-import type { Mark } from './types.js';
+import type { Mark, MarkName } from './types.js';
 import { none, type Voice } from './voice.js';
 
 /** A voice's marks, in the order `marks` lists those at one time. */
 export const voiceMarks = ['start', 'in', 'coast', 'out', 'end'] as const satisfies readonly Mark[];
+
+/** Refuses marks placed inside a voice under one of its own five names, or that it could never reach. */
+export function checkMarks(marks: Readonly<Record<string, number>>, duration: number): void {
+  for (const name of Object.keys(marks)) {
+    if ((voiceMarks as readonly string[]).includes(name))
+      throw new Error(
+        `blits: ${name} is one of a voice's own marks; a mark placed inside it needs another name`,
+      );
+    const at = marks[name] as number;
+    if (!inPass(at, duration))
+      throw new RangeError(
+        duration > 0
+          ? `blits: mark ${name} is voice ms into a pass, 0 up to ${duration}, not ${at}`
+          : `blits: mark ${name} is voice ms, 0 or more, not ${at}`,
+      );
+  }
+}
 
 /** The host timestamp the mix clock reads mix time `t` at; Infinity where it never will. */
 export function hostOf<I, O>(mix: Mixer<I, O>, t: number): number {
@@ -70,27 +87,43 @@ function marksOf<I, O>(mix: Mixer<I, O>, from: number, to: number): Listed[] {
   const hi = to - mix.offset;
   const out: Listed[] = [];
   for (const voice of [...mix.cued, ...mix.gone]) {
-    for (const mark of voiceMarks) {
-      const m = markOf(mix, voice, mark);
-      const t = m === undefined ? m : hostOf(mix, m) - mix.offset;
-      if (t === undefined || t < lo || t > hi) continue;
-      out.push({
-        timestamp: t + mix.offset,
-        mark,
-        voice: voice.id,
-        score: voice.spec.score,
-        name: voice.spec.name,
-        tags: voice.spec.tags ?? none,
-        mix: mix.name,
-        order: voice.id,
-      });
-    }
+    for (const mark of voiceMarks) listOne(mix, voice, mark, lo, hi, out);
+    const inner = voice.spec.marks;
+    if (inner !== undefined)
+      for (const mark of Object.keys(inner)) listOne(mix, voice, mark, lo, hi, out);
   }
   return out;
 }
 
+function listOne<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  mark: MarkName,
+  lo: number,
+  hi: number,
+  out: Listed[],
+): void {
+  const m = markOf(mix, voice, mark);
+  const t = m === undefined ? m : hostOf(mix, m) - mix.offset;
+  if (t === undefined || t < lo || t > hi) return;
+  out.push({
+    timestamp: t + mix.offset,
+    mark,
+    voice: voice.id,
+    score: voice.spec.score,
+    name: voice.spec.name,
+    tags: voice.spec.tags ?? none,
+    mix: mix.name,
+    order: voice.id,
+  });
+}
+
 /** When a voice reaches a mark, mix time, or undefined while nothing has fixed it. */
-export function markOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, mark: Mark): number | undefined {
+export function markOf<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  mark: MarkName,
+): number | undefined {
   if (!Number.isFinite(voice.start)) return undefined;
   // A mark is known only while every clock above it is fixed.
   const start = startOf(voice);
@@ -98,6 +131,7 @@ export function markOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, mark: Mark): 
   if (mark === 'start') return start;
   if (mark === 'in') return start + (voice.fade.in ?? 0);
   if (mark === 'coast') return coastOf(mix, voice, start);
+  if (mark !== 'out' && mark !== 'end') return insideOf(mix, voice, start, mark);
   const out = voice.out;
   let outAt: number | undefined;
   // An owner leaves with its last child, over no fade of its own.
@@ -126,6 +160,35 @@ export function markOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, mark: Mark): 
   if (leaves) return outAt;
   const over = Number.isNaN(voice.outOver) ? (voice.fade.out ?? 0) : voice.outOver;
   return outAt === undefined ? undefined : outAt + (mix.reduced ? 0 : over);
+}
+
+/** Voice ms within which a mark placed inside a voice counts as reached where the voice starts. */
+const REACHED = 1e-9;
+
+/**
+ * When a voice reaches a mark it placed inside itself, mix time: `at` into the first pass that
+ * reaches it from where the voice starts, while its clock runs forward and before it ends. None for
+ * a mark it does not place.
+ */
+function insideOf<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  start: number,
+  name: string,
+): number | undefined {
+  const marks = voice.spec.marks;
+  if (marks === undefined || !Object.hasOwn(marks, name) || voice.backs) return undefined;
+  const at = marks[name] as number;
+  const from = voice.elapsedAt(start);
+  const d = voice.duration;
+  let pass = 0;
+  if (d > 0) pass = Math.max(0, Math.ceil((from - at) / d - REACHED));
+  else if (at < from - REACHED) return undefined;
+  if (pass >= voice.passes) return undefined;
+  const t = voice.timeAt(pass * d + at);
+  if (!Number.isFinite(t)) return undefined;
+  const end = markOf(mix, voice, 'end');
+  return end !== undefined && t >= end ? undefined : Math.max(start, t);
 }
 
 /**

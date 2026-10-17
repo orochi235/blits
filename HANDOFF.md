@@ -54,6 +54,33 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   - *A subject the live mix never probed is read at every stop,* as if probed all along.
   - Each stop copies every voice and reads each asked-for subject once, so a read across many
     events of a stateful mix costs that many reads; nobody has benched it.
+- **Unreleased: marks placed inside a voice** (2026-10-17; the schema page's Score section).
+  `marks: { drop: 340 }` on a voice's, owner's or span's spec, named beside the five; anchors,
+  `marks`, `book`, a read ahead's stops and the departed record all see them. Chosen while
+  building, Mike's to overturn:
+  - *A spec field of its own, not a name on a hit.* A hit is an event handed over every pass; a
+    mark is a name an anchor takes, reached once, so the two differ in both payload and count.
+    They share the range rule (`inPass` in `src/book.ts`) and the clock mapping (`timeAt`). To
+    name hits instead, give `Hit` a `name`, read it in `insideOf` (`src/marks.ts`) and drop
+    `marks` from the specs and `checkMarks`.
+  - *Reached once,* on the first pass that reaches it from where the voice starts, so a voice
+    looping for good has one `drop` and `marks(-Infinity, Infinity)` stays finite. Per pass would
+    need a pass index on `Marked` and an anchor rule for which pass. `insideOf` holds the rule.
+  - *Not reached while the clock runs back, nor at or past the voice's `end`,* as a hit is not.
+    Drop the `voice.backs` and `end` tests in `insideOf` to change either.
+  - *`MarkName` (`Mark | (string & {})`) is exported,* and `Marked.mark` and an anchor's `mark`
+    widen to it, listed as breaking in the changelog. An anchor naming a mark its target does not
+    place waits pending, as one naming a voice nobody cued does; nothing warns.
+  - *A blend's members share the spec's marks;* `BlendMember` takes no `marks` of its own, since
+    marks are timing and the spec times every member alike.
+- **A gap the `inside` fuzz variant found, not fixed** (2026-10-17; `test/determinism.test.ts`
+  lists seed 11 as known under `seek`, `again`, `taped` and `frame`). A voice pending on an
+  anchor is faded with a time already past (`fade({ over: 80, at: now - 40 })`) and then risen;
+  a seek back to before both plays on differently from playing straight through. It does not need
+  a mark placed inside a voice: anchoring the voice to `{ of: 'v0', mark: 'start', by: 320 }`
+  fails the same way. Shrunk program: `wave` loop for good, seek 130, start 144; `drift` loop 2,
+  seek 130, `anchor: { start: { of: 'v0', mark: 'start', by: 320 } }`, both cued at 96;
+  `h1.fade` at 192, `h1.rise({ over: 0 })` at 224; `seek(320)` then the frame at 352.
 - **Gaps the slewed fuzz variant found, not fixed** (2026-10-17; `test/determinism.test.ts`
   marks them `todo`). Both fail on `main` too, and neither involves a read ahead. A second seek
   with no probe since the first puts back a `slew` weight's state wrong (`again`, most seeds), and
@@ -504,9 +531,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    per-subject emitted count from `write`, rate or counts settable by the host, and rounding
    without the `1e-6` slack. Mike's call whether to make them.
 
-2. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
-   a voice; tags absorbing loci), color's lerp space and the stock band's width. Splitting a read
-   ahead at known events was built 2026-10-17 (see State).
+2. **The remaining opens** are in the schema page: what the score still lacks (tags absorbing
+   loci), color's lerp space and the stock band's width. Splitting a read ahead at known events,
+   and marks placed inside a voice, were built 2026-10-17 (see State).
 
 4. **Reach is fixed at cue, so a voice whose contribution moves pays for every subject it might
    touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every

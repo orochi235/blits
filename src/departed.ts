@@ -1,9 +1,7 @@
-import { markOf } from './marks.js';
+import { markOf, voiceMarks } from './marks.js';
 import type { Mixer } from './mixer.js';
-import type { Mark, Query } from './types.js';
+import type { MarkName, Query } from './types.js';
 import { none, type Voice } from './voice.js';
-
-const MARKS: readonly Mark[] = ['start', 'in', 'coast', 'out', 'end'];
 
 /**
  * What a mix keeps of a voice it has forgotten, on leaving without history or past history's reach:
@@ -18,7 +16,8 @@ export interface Departed {
   readonly name: string | undefined;
   readonly tags: readonly string[];
   readonly writes: readonly unknown[];
-  readonly marks: Readonly<Record<Mark, number | undefined>>;
+  /** Its five, and those it placed inside itself. */
+  readonly marks: Readonly<Partial<Record<MarkName, number>>>;
   /** How many of the index's ends hold it. */
   held: number;
 }
@@ -34,8 +33,11 @@ export class DepartedIndex {
   add<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
     // Nothing can be cued beside a voice whose owner has gone, so nothing will ask for it.
     if (voice.owner?.state === 'done') return;
-    const marks = {} as Record<Mark, number | undefined>;
-    for (const mark of MARKS) marks[mark] = markOf(mix, voice, mark);
+    const marks: Partial<Record<MarkName, number>> = Object.create(null);
+    for (const mark of voiceMarks) marks[mark] = markOf(mix, voice, mark);
+    const inner = voice.spec.marks;
+    if (inner !== undefined)
+      for (const mark of Object.keys(inner)) marks[mark] = markOf(mix, voice, mark);
     const d: Departed = {
       id: voice.id,
       score: voice.spec.score,
