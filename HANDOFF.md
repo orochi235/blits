@@ -156,11 +156,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   listener has to go back to the capture phase.
 
   weasel 1.10.1 (2026-10-15) carries the diagram's edge routing and label-sized group boxes, but
-  not weasel's reworked `layered` layout, which is on weasel's local `main` and unpushed. Until a
-  release has it, this machine's `apps/playground/node_modules/@weasel-js/diagram` is a symlink to
-  the package in the worktree `~/src/weasel/.claude/worktrees/diagram-routes`, detached at
-  `8e1f050cf`; `npm ci` or `npm install` replaces it with 1.10.1 from npm. Once weasel releases the
-  layered layout, pin that version, delete this paragraph, and remove that worktree.
+  not weasel's reworked `layered` layout, which is on weasel's `origin/main` (2026-10-17) and in no
+  release. Until one has it, this machine's `apps/playground/node_modules/@weasel-js/diagram` is a
+  symlink to `~/src/weasel/packages/diagram`, whose `dist` is whatever that checkout last built;
+  `npm ci` or `npm install` replaces it with 1.10.1 from npm. Once weasel releases the layered
+  layout, pin that version and delete this paragraph.
 
   An edge label is still placed without regard to nodes, so on a short edge it can overlap the box
   it leaves or enters (`anchors`: `start its end +200 ms` over `pair`). That gap is filed in
