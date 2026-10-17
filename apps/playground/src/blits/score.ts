@@ -80,7 +80,7 @@ export function clipsOf(
       if (row.depth > 0) clip.depth = row.depth;
       if (underSpan(c, v.id)) clip.locked = true;
       if (blendOf(c, v)) clip.label += ' · blend';
-      if (h && p) placeFrom(clip, v, h, p);
+      if (h && p) placeFrom(clip, v, h, p, above.at(-1)?.start);
       const cut = cutUnder(above);
       if (cut) clip.cut = cut;
       clips.push(clip);

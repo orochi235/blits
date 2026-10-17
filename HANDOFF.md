@@ -670,7 +670,38 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       member's share, undesigned.
     - **`mix.blend` takes one spec, so one `name`**: every member answers to the first voice's
       name in an anchor, and none can be anchored to by its own.
-    - Groups take no `tags`, `score`, hits, `seek`, or negative rate; the booker reads a fixed
+    - **Groups take `tags`, `score`, hits, `seek`, and a rate below 0** (2026-10-17, unreleased).
+      blits already ran an owner's children back with it and read an owner's `tags` and
+      `score`; what was missing was `hits` and `seek` on `OwnerSpec`, now added. Chosen while
+      building, Mike's to overturn:
+      - **A group's `tags` and `score` select the group alone.** A booker or `drain` by tag
+        takes its marks and hits, not its members'; a member carries only its own. To reverse,
+        have `fits` in `src/book.ts`, `drain` in `src/mixer.ts` and the anchor query in
+        `src/place.ts` read tags up the owner chain.
+      - **An owner's hits are at ms on its own clock, booked once**, since an owner does not
+        loop; one behind its `seek` is taken late, as a voice's is. Per-pass would need passes,
+        which owners refuse.
+      - **An owner cued backward with no `seek` starts at 0**, so a child placed after 0 leaves
+        at once: an owner has no end of its own at its cue to start from. To reverse, pick a
+        default (the last child's end once it is cued) and set it in `Voice`'s constructor.
+      - **`mix.span` refuses a rate below 0.** Cued backward, a span placed none of its
+        children, which waited for good. Building it means `refit` in `src/spans.ts` laying
+        children out from the span's seek down to 0, placing each by its end, with `clockOf`,
+        `lingers` and `lapse` reading a clock that runs back; that is a rework of the fit, not
+        a guard. A span turned back by its handle once it plays already runs its children back.
+        The playground makes a span's rate below 0 a field error on `rate`, and only an owner's
+        rate slider goes below 0.
+    - **Found while building, undecided** (measured 2026-10-17):
+      - An owner turned back does not bring back a child that has already left: two children
+        back to back, the owner turned at 450, the first never shows again and the owner leaves
+        with the second at 600.
+      - Under `history` an owner's `out` and `end` marks are listed one frame after its last
+        child ends (266.7 against 250 at a 16.7 ms frame); without `history` none are listed
+        once it has left.
+      - A voice running back from past its end shows its last frame until it reaches it,
+        though it has no `freeze`: `rate: -1, seek: 600` on a 300 ms pass shows the end frame
+        for its first 300 ms.
+    - The booker reads a fixed
       100 ms ahead with no setting; a clip with a `seek` or a rate below 0 does not set `loop`
       by its right edge; and an `all`/`any` anchor, or one that selects by tag or `writes`,
       draws no link on the score.

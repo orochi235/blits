@@ -1,7 +1,7 @@
 import { keys, mix } from '@msb235/blits';
 import { playOf } from '@pg/blits/clip';
 import { compile } from '@pg/blits/compile';
-import type { PatchSource, Voice } from '@pg/blits/composition';
+import type { Composition, Group, PatchSource, Voice } from '@pg/blits/composition';
 import { FRAME } from '@pg/blits/frame';
 import { KIT, type Mixed } from '@pg/blits/kit';
 import { load } from '@pg/blits/load';
@@ -11,7 +11,7 @@ import type { Subject } from '@pg/blits/stage';
 import { passLines } from '@pg/widgets/ScoreLanes/geometry';
 import { tickTimes } from '@pg/widgets/ScoreLanes/Marks';
 import { describe, expect, it } from 'vitest';
-import { comp, same, subjects, voice } from './helpers';
+import { comp, group, same, subjects, voice } from './helpers';
 
 const stops = [
   { at: 0, delta: { scale: 1 } },
@@ -82,5 +82,43 @@ describe('a voice cued partway or backward', () => {
     const c = comp([twice({ stepMs: 8 })]);
     expect(load(JSON.parse(JSON.stringify(c)))).toEqual(c);
     expect(load(comp([twice({ stepMs: -1 })]))).toBeNull();
+  });
+});
+
+describe('a group cued partway or backward', () => {
+  const under = (g: Partial<Group>) =>
+    comp(
+      [voice({ id: 'a', patch: KEYS, loop: false, start: 100, owner: 'g' })],
+      [group({ id: 'g', start: 50, ...g })],
+    );
+  const drawn = (c: Composition) => clipsOf(c, subjects, { built: compile(c, subjects) });
+
+  it('draws a member under a group run back from where it comes back to its end', () => {
+    const [clip] = drawn(under({ rate: -1, seek: 700 })).clips;
+    expect(clip).toMatchObject({ start: 250, pass: 400, passes: 1, label: 'a · keys · backward' });
+    expect(clip?.skipped).toBeUndefined();
+    // A seek partway into the member draws only what is left, from the group's start.
+    const [part] = drawn(under({ rate: -1, seek: 300 })).clips;
+    expect(part).toMatchObject({ start: 50, pass: 400, passes: 0.5 });
+  });
+
+  it("notches a group's hits on its header, from its seek to its end, and none running back", () => {
+    const hits = [
+      { at: 50, event: 'behind' },
+      { at: 300, event: 'b' },
+      { at: 2000, event: 'past' },
+    ];
+    const [header] = drawn(under({ rate: 2, seek: 100, hits })).headers;
+    expect(header).toMatchObject({ start: 50, end: 250, ticks: [150] });
+    const [back] = drawn(under({ rate: -1, seek: 700, hits })).headers;
+    expect(back?.ticks).toBeUndefined();
+    expect(back?.label).toBe('g · owner · backward');
+  });
+
+  it("loads a group's seek, tags, score, and hits, and refuses a bad hit", () => {
+    const c = under({ seek: 100, tags: ['band'], score: 's', hits: [{ at: 0, event: 'e' }] });
+    expect(load(JSON.parse(JSON.stringify(c)))).toEqual(c);
+    expect(load(under({ hits: [{ at: -1, event: 'e' }] }))).toBeNull();
+    expect(load(under({ seek: 'end' as never }))).toBeNull();
   });
 });

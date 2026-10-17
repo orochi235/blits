@@ -14,6 +14,7 @@ import { fitFaultKey } from '@pg/blits/cueGroups';
 import { FRAME } from '@pg/blits/frame';
 import { KIT, type Mixed } from '@pg/blits/kit';
 import type { Subject } from '@pg/blits/stage';
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { comp, group, same, subjects, voice } from './helpers';
 
@@ -250,4 +251,73 @@ describe('compiling groups', () => {
     const silent = compile(comp([a, { ...b, weight: 0 }], groups), subjects).mix;
     same(built.solos.get('a') as Mix<Subject, Mixed>, silent);
   });
+
+  it("an owner's seek, rate below 0, tags, score, and hits give the hand-written owns", () => {
+    const hits = [
+      { at: 100, event: 'up' },
+      { at: 900, event: 'late' },
+    ];
+    const cases = [
+      { seek: 300, tags: ['band'], score: 'intro', hits },
+      { rate: -1, seek: 700, tags: ['band'], hits },
+    ];
+    for (const over of cases) {
+      const built = compile(
+        comp([once('a', { start: 100, owner: 'g' })], [group({ id: 'g', start: 50, ...over })]),
+        subjects,
+      );
+      expect(built.errors).toEqual([]);
+      // As compile makes it: history keeps what left, so its marks are still listed and booked.
+      const m = mix<Subject, Mixed>(KIT, { stepMs: FRAME, history: { ms: 3000, tape } });
+      const h = m.owns({ start: 50, rate: 1, weight: 1, fade: {}, ...over });
+      m.cue({ patch: keys(400, stops), start: 100, loop: false, owner: h });
+      const took = [bookOn(built.mix), bookOn(m)];
+      same(built.mix, m);
+      expect(took[0]).toEqual(took[1]);
+      const events = took[1]?.map((t) => (t as unknown[])[0]);
+      // Behind its seek, 'up' is taken late, as a voice's is; running back, it books none.
+      expect(events?.filter((e) => e === 'up' || e === 'late')).toEqual(
+        over.rate === undefined ? ['up'] : [],
+      );
+      const marks = (x: Mix<Subject, Mixed>) => x.marks(0, 5000).map((k) => [k.tags, k.score]);
+      expect(marks(built.mix)).toEqual(marks(m));
+    }
+  });
+
+  it('a span with a rate below 0 is a field error on its rate', () => {
+    const built = compile(
+      comp([once('a', { owner: 's' })], [group({ id: 's', kind: 'span', rate: -1 })]),
+      subjects,
+    );
+    expect(built.errors).toEqual([
+      {
+        voice: 's',
+        field: 'rate',
+        error: 'a span lays out its members forward, so it takes none below 0',
+        line: null,
+      },
+      { voice: 'a', field: 'owner', error: 'its group "s" has errors', line: null },
+    ]);
+  });
 });
+
+/** Every hit and mark `m` books as it plays, on a clock that reads the host's. */
+function bookOn(m: Mix<Subject, Mixed>) {
+  const took: unknown[] = [];
+  let host = 0;
+  m.book({
+    clock: () => host,
+    ahead: 100,
+    late: Number.POSITIVE_INFINITY,
+    take(item, when) {
+      took.push(['hit' in item ? item.event : item.mark, item.tags, item.score, when]);
+      return undefined;
+    },
+  });
+  const sync = m.sync.bind(m);
+  m.sync = (t: number) => {
+    host = t;
+    sync(t);
+  };
+  return took;
+}

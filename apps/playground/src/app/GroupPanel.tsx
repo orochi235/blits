@@ -4,11 +4,12 @@ import { fitFaultKey } from '@pg/blits/cueGroups';
 import type { Faults } from '@pg/blits/expr';
 import { withKey } from '@pg/blits/keyed';
 import type { FieldError } from '@pg/blits/spec';
-import { ControlPanel } from '@weasel-js/labkit';
+import { type ConfigField, ControlPanel } from '@weasel-js/labkit';
 import { AnchorRow } from './AnchorRow';
 import s from './App.module.css';
 import { docOf } from './docs';
 import { HintsFields } from './HintsFields';
+import { MarksFields } from './MarksFields';
 import { OwnerField } from './OwnerField';
 import { SpanFields } from './SpanFields';
 import {
@@ -16,6 +17,7 @@ import {
   FaultLine,
   LooseErrors,
   memberOf,
+  SeekField,
   SHARED,
   schemaOf,
   sharedConfig,
@@ -29,6 +31,8 @@ const SECTIONS = [
   { label: 'blending', paths: ['freeze'] },
 ];
 const FIELDS = Object.values(SHARED);
+// An owner runs back below 0, and its members with it; a span lays them out forward only.
+const OWNER_FIELDS = FIELDS.map((f) => (f.key === 'rate' ? ({ ...f, min: -4 } as ConfigField) : f));
 const specOf = (kind: Group['kind']) => (kind === 'span' ? 'SpanSpec' : 'OwnerSpec');
 const docFor = (kind: Group['kind']) => (key: string) => docOf(`${specOf(kind)}.${memberOf(key)}`);
 const schemas = new Map<string, ReturnType<typeof schemaOf>>();
@@ -37,7 +41,8 @@ function schemaFor(kind: Group['kind'], spanned: boolean) {
   const key = `${kind} ${spanned}`;
   let schema = schemas.get(key);
   if (!schema) {
-    const fields = spanned ? FIELDS.filter((f) => f.key !== 'start') : FIELDS;
+    const all = kind === 'owner' ? OWNER_FIELDS : FIELDS;
+    const fields = spanned ? all.filter((f) => f.key !== 'start') : all;
     schema = schemaOf(fields, docFor(kind), SECTIONS);
     schemas.set(key, schema);
   }
@@ -45,7 +50,7 @@ function schemaFor(kind: Group['kind'], spanned: boolean) {
 }
 
 /** Errors on fields this panel has no input for, shown in a list of their own. */
-const LOOSE = new Set(['name', 'cue', 'start', 'anchor']);
+const LOOSE = new Set(['name', 'cue', 'start', 'rate', 'anchor']);
 
 export interface GroupPanelProps {
   group: Group;
@@ -98,6 +103,13 @@ export function GroupPanel(p: GroupPanelProps) {
           </option>
         </select>
       </label>
+      <SeekField
+        x={g}
+        doc={doc('seek')}
+        placeholder="0"
+        note={`ms its clock starts at${g.rate < 0 ? ', running back to 0' : ''}`}
+        onChange={onChange}
+      />
       <OwnerField
         comp={p.comp}
         id={g.id}
@@ -136,6 +148,7 @@ export function GroupPanel(p: GroupPanelProps) {
           result={p.result}
         />
       )}
+      <MarksFields x={g} onChange={onChange} />
       <button type="button" onClick={p.onDelete}>
         delete group
       </button>

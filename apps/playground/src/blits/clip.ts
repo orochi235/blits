@@ -94,11 +94,24 @@ export function clipOf(
   return clip;
 }
 
-/** A clip where blits put it: its `start` mark, and for a span's child how its fit left it. */
-export function placeFrom(clip: Clip, v: Voice, h: Handle<Subject>, p: Placed) {
+/**
+ * A clip where blits put it: its `start` mark, and for a span's child how its fit left it. Under a
+ * group running back, its `start` mark is where it runs back to its start and leaves, so it is
+ * drawn from where its group's clock comes back to its end, or from `from`, its group's start.
+ */
+export function placeFrom(clip: Clip, v: Voice, h: Handle<Subject>, p: Placed, from?: number) {
   if (p.start === undefined) return;
   clip.start = p.start;
   const period = periodOf(v.patch) ?? 0;
+  const clock = clockOf(h);
+  if (clockOf(h.owner) < 0) {
+    const length = clip.pass * clip.passes;
+    if (!(period > 0) || !Number.isFinite(length)) return;
+    const enter = Math.max(from ?? Number.NEGATIVE_INFINITY, p.start - length);
+    Object.assign(clip, playOf(period, clock, passesOf(v), (p.start - enter) * Math.abs(clock)));
+    clip.start = enter;
+    return;
+  }
   if (p.end === p.start && period > 0 && v.rate > 0) {
     clip.skipped = true;
     Object.assign(clip, playOf(period, v.rate * clockOf(h.owner), clip.passes));

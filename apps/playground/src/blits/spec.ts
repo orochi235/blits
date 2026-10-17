@@ -4,6 +4,7 @@ import {
   type Keyframe,
   type Kit,
   keys,
+  type OwnerSpec,
   oklab,
   type Patch,
   patch,
@@ -81,14 +82,21 @@ export function specOf(
   if (v.from) spec.from = v.from;
   if (v.seek !== undefined) spec.seek = v.seek;
   if (v.stepMs !== undefined) spec.stepMs = v.stepMs;
-  if (v.tags?.length) spec.tags = v.tags;
-  if (v.score) spec.score = v.score;
-  if (v.hits?.length) spec.hits = v.hits;
+  markInto(spec, v);
   if (v.anchor) {
     spec.anchor = v.anchor;
     if (v.anchor.start !== undefined || v.anchor.in !== undefined) delete spec.start;
   }
   return { spec };
+}
+
+type Marks = Pick<Voice, 'tags' | 'score' | 'hits'>;
+
+/** Copies a voice's or group's `tags`, `score`, and `hits` onto its spec, leaving out empty ones. */
+export function markInto(spec: Pick<OwnerSpec<Subject>, 'tags' | 'score' | 'hits'>, x: Marks) {
+  if (x.tags?.length) spec.tags = x.tags;
+  if (x.score) spec.score = x.score;
+  if (x.hits?.length) spec.hits = x.hits;
 }
 
 type Fn = <F extends (...a: never[]) => unknown>(
