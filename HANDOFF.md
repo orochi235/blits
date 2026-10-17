@@ -130,14 +130,22 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   last build known to render it (2026-10-07). The built page is not committed here; `serve` rebuilds on every
   edit and adds undo/redo, snapshots, cross-off and chat, none of which the hand page had.
 
-- **The playground's diagrams, after views A, B and C.** View A, the signal flow, view B, the
-  timing graph, and view C, both as one diagram, are built; the playground's README ("The flow",
-  "The timing", "Both") describes them. Next, view D: editable, dragging port to port authors an
-  anchor or wires a weight to a signal, making the diagram an input.
+- **The playground's diagrams.** Views A to D are built: the signal flow, the timing graph, both
+  as one diagram, and that diagram editable; the playground's README ("The flow", "The timing",
+  "Both", "Editing the diagram") describes them.
 
-  Chosen while building, Mike's to overturn: view C is one diagram with both kinds of edge, not
-  the two views linked side by side (the right column is too narrow for two). Reverse it by
-  replacing `BothPanel` with a `FlowPanel` over a `TimingPanel`, sharing `selected`.
+  Chosen while building, Mike's to overturn:
+  - View C is one diagram with both kinds of edge, not the two views linked side by side (the
+    right column is too narrow for two). Reverse it by replacing `BothPanel` with a `FlowPanel`
+    over a `TimingPanel`, sharing `selected`.
+  - View D is the Both tab behind an **edit** box, not a tab of its own, and Flow and Timing stay
+    read-only. Reverse it by giving those panels the same `FlowDiagram` editing props.
+  - A port's meaning is its compass side: a voice's or group's top takes a weight, its left is its
+    start, its right its end; a signal or mark gives from its bottom. weasel's default ports are
+    kept so layout is unchanged; the unused ones are hidden. Reverse it by giving nodes their own
+    `ports` in `FlowDiagram`, and rewriting `roleOf` in `src/blits/wire.ts`.
+  - Dragged node positions last the page's life, outside the composition and its undo; reverse it
+    by storing them in the composition (a new optional field, which `load` would have to accept).
 
   View B boxes owners and spans, not loci: a weasel diagram group holds each node once, a voice has
   both an owner and a locus, and voices of one locus may sit under different owners. A locus is
@@ -148,12 +156,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   rule and each voice a vertical strip tapping the buses it writes. `flowOf` builds the graph from
   the playground's `Composition`; once the UI settles, a public `describe()` on `Mix` should make
   the same shape for any host, and `flowOf` becomes a thin adapter.
-
-  The playground is on weasel 1.10.1, whose `DiagramView` is editable, which view D needs: `onMove`
-  reports dragged nodes, `onConnect` reports a port-to-port edge for the host to add, `canConnect`
-  and `portOptions` configure ports, and a ref runs `layout()`. An editable one listens for keys
-  page-wide by default, so view D passes `enableKeybindings={false}`, or `usePlayback`'s Space
-  listener has to go back to the capture phase.
 
   weasel 1.10.1 (2026-10-15) carries the diagram's edge routing and label-sized group boxes, but
   not weasel's reworked `layered` layout, which is on weasel's `origin/main` (2026-10-17) and in no

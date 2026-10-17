@@ -1,5 +1,6 @@
 import type { Anchor, Mark } from '@msb235/blits';
 import type { Clip, ClipEdit, Edge, Header, Link, ScoreMark } from '@pg/widgets/ScoreLanes';
+import { waitOn } from './anchor';
 import { blendOf, syncBlend } from './blend';
 import { clipOf, freezeOf, passesOf, placeFrom, startsPartway } from './clip';
 import type { Built } from './compile';
@@ -139,8 +140,7 @@ function edited(
         edit.link.from.edge === 'start' ? ['start', 'in'] : ['end', 'out'];
       const now = targetOf(v.anchor?.[mark] ?? v.anchor?.[other]);
       if (now?.name === to.name && now.edge === edit.link.to.edge) return v;
-      const anchor: Anchor = edit.link.to.edge === 'end' ? { after: to.name } : { with: to.name };
-      return { ...v, anchor: { ...without(v.anchor ?? {}, other), [mark]: anchor } };
+      return { ...v, anchor: waitOn(v.anchor, edit.link.from.edge, to.name, edit.link.to.edge) };
     }
   }
 }

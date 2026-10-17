@@ -1,6 +1,6 @@
 import type { EdgeStyle, NodeStyle } from '@weasel-js/diagram';
 import { hueColor } from '../hue';
-import type { FlowBox, FlowEdge, FlowKind, FlowNode, FlowTone } from './types';
+import type { FlowBox, FlowEdge, FlowKind, FlowNode, FlowPortTone, FlowTone } from './types';
 
 export const FAULT = '#e5484d';
 const FILL = '#16222c';
@@ -62,3 +62,5 @@ export function edgeStyleOf(e: Pick<FlowEdge, 'dashed' | 'met' | 'timing'>): Edg
     ...(e.dashed ? { dash: DASH } : {}),
   };
 }
+
+export const portColorOf = (tone: FlowPortTone) => (tone === 'timing' ? TIMING : EDGE);

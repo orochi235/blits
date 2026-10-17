@@ -103,6 +103,8 @@ try {
       const ink = png ? await page.evaluate(inkPixels, png.toString('base64')) : 0;
       if (ink < FLOW_INK_MIN) errors.push(`${label} drew nothing`);
     }
+    await page.getByLabel('edit').check();
+    await page.waitForTimeout(200);
     await page.screenshot({
       path: join(shots, `${String(i + 1).padStart(2, '0')}-${name.replaceAll(' ', '-')}.png`),
     });

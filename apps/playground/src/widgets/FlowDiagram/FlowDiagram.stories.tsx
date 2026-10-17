@@ -2,6 +2,7 @@ import { bothOf } from '@pg/blits/both';
 import { flowOf, foldOf } from '@pg/blits/flow';
 import { PRESETS } from '@pg/blits/presets';
 import { timingOf } from '@pg/blits/timing';
+import { toneOf, wired } from '@pg/blits/wire';
 import type { Meta, StoryObj } from '@weasel-js/forge';
 import { useState } from 'react';
 import { FlowDiagram } from './index';
@@ -65,3 +66,30 @@ export const Both: Story = {
     return <FlowDiagram flow={bothOf(flowOf(comp), timingOf(comp))} width={360} height={900} />;
   },
 };
+
+function Editing() {
+  const [comp, setComp] = useState(PRESETS.find((p) => p.name === 'owner fade')!.comp);
+  const [positions, setPositions] = useState(new Map<string, { x: number; y: number }>());
+  const flow = flowOf(comp);
+  return (
+    <FlowDiagram
+      flow={bothOf(flow, timingOf(comp))}
+      width={360}
+      height={700}
+      positions={positions}
+      hold
+      onMove={(moves) =>
+        setPositions((was) => new Map([...was, ...moves.map((m) => [m.id, m] as const)]))
+      }
+      onConnect={(a, b) => {
+        const next = wired(comp, flow.code, a, b);
+        if (next) setComp(next);
+      }}
+      canConnect={(a, b) => wired(comp, flow.code, a, b) !== null}
+      portTone={(node, port) => toneOf(flow.code, node, port)}
+    />
+  );
+}
+
+/** View D: drag an amber dot to another to anchor, a blue one onto a top to weight; nodes drag. */
+export const Editable: Story = { render: () => <Editing /> };

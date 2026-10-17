@@ -244,6 +244,7 @@ export function App() {
                 player={player}
                 selected={selected}
                 onVoice={pickVoice}
+                onComp={set}
               />
             </TabPanel>
           </Tabs>

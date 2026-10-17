@@ -62,6 +62,20 @@ export function placementFault(p: unknown): string | null {
   return null;
 }
 
+/**
+ * `p` with its `slot` side waiting on the start or the end of `name`: `start` replaces `start` or
+ * `in`, `end` replaces `end` or `out`, as `{ with }` for a start and `{ after }` for an end.
+ */
+export function waitOn(
+  p: Placement | undefined,
+  slot: 'start' | 'end',
+  name: string,
+  edge: 'start' | 'end',
+): Placement {
+  const { [slot === 'start' ? 'in' : 'out']: _, ...rest } = p ?? {};
+  return { ...rest, [slot]: edge === 'end' ? { after: name } : { with: name } };
+}
+
 /** A placement typed as JSON; blank is none. */
 export function parsePlacement(text: string): { placement?: Placement } | { error: string } {
   if (text.trim() === '') return {};

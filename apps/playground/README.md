@@ -272,6 +272,32 @@ It is one diagram rather than the two views side by side, linked by selection: t
 narrow for two, and stacked they halve each other's height. One layered layout ranks both kinds of
 edge, so what waits on a voice sits below it, above the channels it writes.
 
+## Editing the diagram
+
+The Both tab's **edit** box makes the diagram an input. Each voice and group shows three dots, and
+each level, signal, whole `weight` and mark one; dragging a dot onto another is an edit, through
+the same history as every other, so undo, storage and share cover it:
+
+| Drag                                                      | Becomes                                              |
+|-----------------------------------------------------------|------------------------------------------------------|
+| a level's, signal's or `weight`'s bottom dot (blue) onto a voice's or group's top dot (blue) | its `weight`, the source of that signal; for a voice in a blend, the blend's signal |
+| a voice's or group's left dot (start) or right dot (end), amber, onto another's left or right | the second's `start` or `end` anchored `{ with }` the first's start or `{ after }` its end, dropping its `in` or `out` |
+| a mark's bottom dot (amber) onto a left or right dot      | that `start` or `end` anchored `{ with }` the mark   |
+
+A drag made the other way, from a top or a start onto a signal or a mark, is read in reverse. A dot
+lands only where the edit changes something and `load` accepts the result; a start under a span is
+the span's to place, so it takes nothing, as on the score. `wired` in `src/blits/wire.ts` is the
+whole rule, and the score's Alt-drag between clip edges writes its anchor through the same
+`waitOn` in `src/blits/anchor.ts`. A signal inside a `stagger` or `target` may be dragged too, since
+its source is a signal; a `stagger` or `target` expression as a whole may not.
+
+While editing, nodes drag, and an edit keeps every node where it stood, laying out only what is
+new. Where a node was dragged to is kept for as long as the page is open, across tabs and edits,
+but not in the composition, its undo history or a shared link; **lay out** forgets it. Off edit,
+the diagram lays itself out afresh after each edit, as Flow and Timing do. The editable view passes
+`enableKeybindings={false}` to weasel's `DiagramView`, which otherwise listens for keys page-wide
+and would take Space from the transport.
+
 ## The panels
 
 | Panel     | Shows                                                                                   |
@@ -351,7 +377,7 @@ a composition gives, to the bit, the poses the matching hand-written `cue` gives
 span the poses of hand-written `owns` or `span`; each fit-step list matches its `pipe(...)`; a scrub back over
 a stateful voice lands on the pose continuous play showed; the score round-trips voice to clip to
 edit to voice; a bad expression errors on its field while compile still returns; a composition
-edit stays inside what `load` accepts; every preset compiles and plays clean. The smoke run covers
+edit stays inside what `load` accepts; a drag between two diagram dots makes the edit it describes or none; every preset compiles and plays clean. The smoke run covers
 the rest in a real browser, failing on a console error, a page error, or a blank stage, flow, timing or both diagram; `--shots <dir>` keeps its screenshots, which otherwise go to a
 temp directory removed on exit.
 
