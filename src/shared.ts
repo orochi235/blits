@@ -1,4 +1,10 @@
 /**
+ * The package version, for a fact whose shape follows the code too closely to version by hand:
+ * copies of different releases keep apart. `test/copies.test.ts` holds it to `package.json`.
+ */
+export const release = '0.10.0';
+
+/**
  * A WeakMap every copy of blits loaded in one realm shares, so a fact one copy records about a
  * patch or channel it made is read by another copy's mix. The name carries a version, bumped when
  * what is stored changes shape, so copies that disagree on the shape keep apart.

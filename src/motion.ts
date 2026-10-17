@@ -1,6 +1,7 @@
 import { COAST, CRITICAL, EASED, OVER, UNDER } from './closed.js';
 import { type Curve, curve } from './easing.js';
 import { Motions, type Shape } from './motions.js';
+import { release } from './shared.js';
 import type { Easing, MotionSpec, Patch, Setting } from './types.js';
 
 /**
@@ -58,6 +59,12 @@ export type Moving<I, O, V extends Value> = Patch<I, O, void> & {
   push(subject: I, velocity: V, at?: number): void;
 };
 
+/**
+ * What marks a motion patch to every copy of blits of this release loaded in one realm, so a
+ * spring another copy made runs on this copy's lanes; it gives the patch's state.
+ */
+const MOTIONS = Symbol.for(`@msb235/blits/motions@${release}`);
+
 /** One `writes` array per channel, shared by every motion patch that writes it. */
 const writesOf = new Map<PropertyKey, readonly PropertyKey[]>();
 
@@ -82,6 +89,9 @@ class MotionPatch<I, O, V extends Value> {
   readonly duration = 0;
   get motion(): MotionSpec {
     return this.motions.spec();
+  }
+  get [MOTIONS](): Motions<I> {
+    return this.motions;
   }
   at(_phase: number, subject: I, setting: Setting<void>): Partial<O> {
     const state = this.motions;
@@ -115,9 +125,14 @@ class GlidePatch<I, O, V extends Value> extends MotionPatch<I, O, V> {
   }
 }
 
-/** The state behind a `'motion'` patch, for an engine that reads it directly. */
+/**
+ * The state behind a `'motion'` patch, for an engine that reads it directly; a patch another copy
+ * of the same release made counts.
+ */
 export function motionOf<I>(p: object): Motions<I> | undefined {
-  return p instanceof MotionPatch ? (p.motions as Motions<I>) : undefined;
+  return p instanceof MotionPatch
+    ? (p.motions as Motions<I>)
+    : (p as { [MOTIONS]?: Motions<I> })[MOTIONS];
 }
 
 /**
