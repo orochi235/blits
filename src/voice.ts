@@ -29,6 +29,7 @@ import { reading } from './reading.js';
 import type { Fitting } from './spans.js';
 import { Store } from './store.js';
 import type { Anchor, Channel, FadeSpec, Handle, Patch, Setting, VoiceSpec } from './types.js';
+import { warnOnce } from './warn.js';
 
 /**
  * A subject's record as it left a voice, faded out of it or dropped: the mix time and frame it
@@ -343,6 +344,8 @@ export class Voice<I, O> {
   readonly freezesAfter: boolean;
   /** The mix time it first showed: when it was cued, or the first sync after. */
   opened = Number.NaN;
+  /** Whether no delta its patch's `at` returned has been checked against `writes` yet. */
+  unchecked = true;
   /** Which of its entries in the mix's due queue is current; older ones are skipped when popped. */
   dueToken = 0;
   /**
@@ -805,4 +808,20 @@ export class Voice<I, O> {
   rebase(now: number): void {
     rebaseWith(this, now);
   }
+}
+
+/**
+ * Warns, once a patch outside production, of a key the first delta `voice` read returns outside its
+ * patch's `writes`, which the mix drops.
+ */
+export function checkWrites<I, O>(voice: Voice<I, O>, delta: object | null): void {
+  voice.unchecked = false;
+  if (delta === null || typeof delta !== 'object') return;
+  const writes = voice.patch.writes as readonly PropertyKey[];
+  for (const key in delta)
+    if (!writes.includes(key))
+      warnOnce(
+        voice.patch,
+        `${voice.spec.name ?? `voice ${voice.id}`}'s patch returns ${key} from at(), which is not in its writes, so the mix drops it`,
+      );
 }

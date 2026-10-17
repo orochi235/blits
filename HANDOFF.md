@@ -607,8 +607,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     apart; `test/copies.test.ts` loads a second copy of `patch.js`. blits-quarks and blits-tone
     take blits as a peer dependency, `^0.10.0`, on `main` since 2026-10-11 (Mike's call), unreleased
     in both; the range has to be widened with each engine minor.
-    A spring made by another copy is not recognized as a motion (`instanceof MotionPatch` in
-    `src/motion.ts`), so it plays through `at` off the lanes; it reads the same, untested for speed.
+    A motion patch another copy made runs on lanes too (2026-10-17, unreleased), known by a
+    `Symbol.for` getter on the patch's prototype. Chosen while building, Mike's to overturn: the
+    mark is named for the release (`release` in `src/shared.ts`, held to `package.json` by
+    `test/copies.test.ts`), not a hand-bumped `@1`, because the mix calls a wide, often-changed
+    surface of the other copy's `Motions`; so an unreleased checkout and the release it grew from
+    wrongly agree. To reverse, name the mark `motions@1` in `src/motion.ts` and drop `release`.
     `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the driver scaffold
     the survey proposed is the magicsmoke question in item 1d.
 
@@ -707,6 +711,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `patch.wave`, with `waveOptionsOf` removed; `handle.to` and `push` throwing for a patch
         that takes neither, and `read` giving undefined; and `fold` switching a rest-less channel
         on at 0.6, a mix's default band. All of it shipped in 0.8.0, so a rename is now a break.
+    - **A key `at` returns outside `writes` is warned of** (2026-10-17, unreleased). Chosen while
+      building, Mike's to overturn: a `warnOnce` per patch outside production, as a placement
+      ending before its start already does, over a fault count the host reads, which blits has no
+      pattern for; and only the first delta each voice's `at` returns is checked, in
+      `contribution` (`src/fold.ts`), which makes every voice's first call, so the lanes' fills
+      check nothing. Per frame that is one boolean read per `fn` call on the general path. To
+      reverse, drop `checkWrites` and `unchecked` from `src/voice.ts` and the line calling it.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
       - **Backward play is built (2026-10-10); the schema page's "Starting partway, and playing
         backward" is the record, and its last sentence lists what is not built.** Mike's calls:
@@ -757,10 +768,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - `catchUp: 'fresh'` per voice; exact catch-up is the default, and a voice keeps at most
         256 past clocks.
       - `seek({ frame })`, for an earlier frame at the same mix time.
-      - A report of a key `at` returns outside `writes`, which a mix still drops without a
-        word; `checkPatch` in `@msb235/blits/testing` reports it. A voice's own `stepMs` is
-        built (2026-10-11, the changelog's Unreleased section), so magicsmoke's faults could
-        share one mix; magicsmoke still makes one per fault.
+      - magicsmoke's faults could share one mix now that a voice has its own `stepMs`;
+        magicsmoke still makes one per fault.
       - A read back with no history beyond the narrow case in `src/standing.ts`: a voice an
         anchor places, an owner and what it holds, and a voice whose handle was written to are
         refused because the fuzzer (`standing` in `test/fuzz/program.ts`) found frames that
