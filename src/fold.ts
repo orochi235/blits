@@ -10,7 +10,7 @@ import { moved } from './moved.js';
 import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
 import type { Channel, Patch, Setting } from './types.js';
-import type { Subject, Voice } from './voice.js';
+import { checkWrites, type Subject, type Voice } from './voice.js';
 
 export type Key<O> = keyof O & string;
 
@@ -166,6 +166,7 @@ export function contribution<I, O>(
     delta = moved(voice.motion, voice.patch.writes[0] as string, subject, setting, held);
   } else {
     delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
+    if (voice.unchecked) checkWrites(voice, delta);
   }
   held.delta = delta;
   held.probed = now;

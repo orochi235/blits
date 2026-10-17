@@ -141,7 +141,11 @@ export interface Patch<I, O, S = void, H = unknown> {
   readonly form: 'fn' | 'keys' | 'motion';
   /** Milliseconds one pass lasts, whether or not the voice loops. 0 has no passes: phase and pass stay 0. */
   readonly duration: number;
-  /** The channels this patch contributes to. Every key `at` sets, and no others. */
+  /**
+   * The channels this patch contributes to. Every key `at` sets, and no others: a mix drops any
+   * other key, and warns once per patch outside production when it finds one in the first delta a
+   * voice's `at` returns.
+   */
   readonly writes: readonly (keyof O)[];
   /**
    * The channels this patch was written against. `cue` refuses a mix whose channel of the same name

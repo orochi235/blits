@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { kit, last, mul, sum } from '../src/channels.js';
 import { mixHex } from '../src/color.js';
 import { mix, mixer } from '../src/mixer.js';
@@ -38,6 +38,45 @@ describe('declared writes', () => {
         for (const key of Object.keys(delta)) expect(p.writes).toContain(key);
       }
     }
+  });
+
+  it('a key at returns outside writes is dropped, and warned of once per patch', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    for (const lanes of [true, false]) {
+      warn.mockClear();
+      const p = patch<Part, Pose>(100, (phase) => ({ crawl: phase * 10, gain: 0.5 }), {
+        writes: ['crawl'],
+      });
+      const m = mix<Part, Pose>(PART, { lanes });
+      m.cue({ patch: p, name: 'glow' });
+      m.cue({ patch: p });
+      for (const now of [0, 16, 32]) {
+        m.sync(now);
+        for (const subject of [{ id: 'a' }, { id: 'b' }])
+          expect(m.probe(subject).gain, `lanes ${lanes}`).toBe(1);
+      }
+      expect(warn, `lanes ${lanes}`).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]?.[0]).toMatch(/glow's patch returns gain from at\(\)/);
+    }
+    warn.mockRestore();
+  });
+
+  it('a patch keeping to its writes, and any patch in production, warns of nothing', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const run = (p: ReturnType<typeof patch<Part, Pose>>) => {
+      const m = mix<Part, Pose>(PART);
+      m.cue({ patch: p });
+      for (const now of [0, 16, 32]) {
+        m.sync(now);
+        m.probe(part);
+      }
+    };
+    run(patch<Part, Pose>(100, (phase) => ({ crawl: phase }), { writes: ['crawl'] }));
+    vi.stubEnv('NODE_ENV', 'production');
+    run(patch<Part, Pose>(100, () => ({ crawl: 1, gain: 0.5 }), { writes: ['crawl'] }));
+    vi.unstubAllEnvs();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('a voice whose patch writes a channel the kit lacks throws at cue, naming both', () => {
