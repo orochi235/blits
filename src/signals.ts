@@ -35,6 +35,25 @@ export function peak<I, H = unknown>(...signals: readonly Signal<I, H>[]): Signa
   }, signals);
 }
 
+/** A blend member's share of its signal's read `k`: the members' stops sit evenly along 0..1. */
+export function shareOf(k: number, i: number, stops: number): number {
+  const d = stops === 0 ? 0 : Math.abs(k * stops - i);
+  return d >= 1 ? 0 : 1 - d;
+}
+
+/**
+ * Member `i` of `n`'s share of `by`, as `mix.blend` weighs it: the hat of `by`'s read at the
+ * member's stop, the stops spaced evenly from 0 to 1. Weights a voice outside a blend as one of
+ * its members, such as one member played alone.
+ *
+ * @category signal
+ */
+export function share<I, H = unknown>(by: Signal<I, H>, i: number, n: number): Signal<I, H> {
+  if (!Number.isInteger(n) || n < 1 || !Number.isInteger(i) || i < 0 || i >= n)
+    throw new Error(`blits: share wants a member 0 to ${n - 1}, not ${i}`);
+  return marked<I, H>((subject, setting) => shareOf(by(subject, setting), i, n - 1), [by]);
+}
+
 const touch = (): void => {
   reading.inputs++;
 };

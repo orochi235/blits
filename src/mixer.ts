@@ -55,6 +55,7 @@ import { record, unplayable } from './tape.js';
 import { touch } from './touch.js';
 import { type Announced, announce, Transport } from './transport.js';
 import type {
+  BlendMember,
   Booker,
   BookOptions,
   Channel,
@@ -388,14 +389,26 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   blend(
-    patches: readonly Patch<I, O, unknown>[],
+    members: readonly (Patch<I, O, unknown> | BlendMember<I, O>)[],
     by: Signal<I>,
     spec: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'locus'> = {},
   ): Handle<I>[] {
     const locus = `blend:${this.nextId}`;
-    const of = blendOf<I, O>(by, patches.length - 1);
-    return patches.map((patch, i) => {
-      const handle = this.cue({ ...spec, patch, weight: by, locus });
+    const of = blendOf<I, O>(by, members.length - 1);
+    return members.map((member, i) => {
+      const own: VoiceSpec<I, O> = {
+        ...spec,
+        patch: member as Patch<I, O, unknown>,
+        weight: by,
+        locus,
+      };
+      if ('patch' in member) {
+        own.patch = member.patch;
+        if (member.name !== undefined) own.name = member.name;
+        if (member.tags !== undefined) own.tags = member.tags;
+        if (member.hits !== undefined) own.hits = member.hits;
+      }
+      const handle = this.cue(own);
       const voice = this.cued[this.cued.length - 1] as Voice<I, O>;
       voice.blend = { of, i };
       of.members.push(voice);

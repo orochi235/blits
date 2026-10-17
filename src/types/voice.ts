@@ -149,6 +149,23 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
 }
 
 /**
+ * One of `mix.blend`'s members, with the labels it carries in place of the spec's: each set here
+ * replaces the spec's for this member alone. The rest of the spec times and places every member
+ * alike, so they stay one blend.
+ *
+ * @category blending
+ */
+export interface BlendMember<I, O, H = unknown> {
+  patch: Patch<I, O, unknown, H>;
+  /** What other voices call this member by. Default: the spec's `name`. */
+  name?: string;
+  /** Default: the spec's `tags`. */
+  tags?: readonly string[];
+  /** Events at times on this member's clock, as a voice's `hits`. Default: the spec's. */
+  hits?: readonly Hit[];
+}
+
+/**
  * What `owns` takes: an owner has no patch, and plays only through the voices it holds.
  *
  * @category voice

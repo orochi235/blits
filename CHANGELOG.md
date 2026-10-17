@@ -24,6 +24,11 @@ version and everything else the patch. Each release lists its changes as **Break
   its voice had met the subject. The tape moves forward and back while the read is made.
 - `stepMs` on a voice's spec: the interval its `step` runs at, in place of the mix's. 0 steps it
   once a frame by the frame's gap.
+- `share(by, i, n)`: member `i` of `n`'s share of a signal, as `mix.blend` weighs it, to weight a
+  voice outside the blend as that member, such as one member played alone.
+- `mix.blend` takes a `BlendMember`, `{ patch, name?, tags?, hits? }`, in place of a bare patch, so
+  a member answers to its own name in an anchor and carries its own tags and hits. Bare patches
+  take the spec's as before.
 
 ### Fixed
 

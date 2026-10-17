@@ -4,7 +4,7 @@ import { mixHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
-import { level } from '../src/signals.js';
+import { level, share } from '../src/signals.js';
 import type { Setting } from '../src/types.js';
 
 interface Pose {
@@ -459,6 +459,86 @@ describe('blend between alternatives', () => {
         for (let f = 0; f < 5; f++) expect(m.project(f * 16).probe(part).crawl).toBe(seen[f]);
       });
     });
+});
+
+describe("a blend member's share", () => {
+  it("is the hat of its signal at the member's stop", () => {
+    const k = level<Part>(0.25);
+    const read = (i: number, n: number) => share(k, i, n)(part, {} as Setting);
+    expect([0, 1, 2].map((i) => read(i, 3))).toEqual([0.5, 0.5, 0]);
+    expect(read(0, 1)).toBe(1);
+    expect(share(k, 1, 2).input).toBe(true);
+    expect(() => share(k, 3, 3)).toThrow(/member/);
+  });
+
+  it('weighs a plain voice as the blend weighs its member', () => {
+    const k = level<Part>(0);
+    const m = mix<Part, Pose>(PART);
+    const members = m.blend([holds('crawl', 0), holds('crawl', 10), holds('crawl', 20)], k);
+    const alone = mix<Part, Pose>(PART);
+    const solos = [0, 1, 2].map((i) =>
+      alone.cue({ patch: holds('crawl', 0), weight: share(k, i, 3) }),
+    );
+    for (const [f, at] of [0, 0.2, 0.5, 0.9, 1].entries()) {
+      k.set(at);
+      m.sync(f * 16);
+      alone.sync(f * 16);
+      m.probe(part);
+      alone.probe(part);
+      for (const i of [0, 1, 2])
+        expect(solos[i]?.weightOf(part)).toBeCloseTo(members[i]?.weightOf(part) as number, 12);
+    }
+  });
+});
+
+describe("a blend member's own labels", () => {
+  const lasting = (crawl: number) =>
+    patch<Part, Pose>(400, () => ({ crawl }), { writes: ['crawl'] });
+  const members = () => [
+    { patch: lasting(0), name: 'calm', tags: ['soft'] },
+    lasting(10),
+    { patch: lasting(20), name: 'busy', hits: [{ at: 0, event: 'go' }] },
+  ];
+
+  it("takes its own name, tags and hits in place of the spec's", () => {
+    const m = mix<Part, Pose>(PART);
+    const booked: { name?: string }[] = [];
+    m.book({
+      clock: () => 0,
+      ahead: 100,
+      take: (item) => {
+        if ('hit' in item) booked.push(item);
+        return { cancel() {} };
+      },
+    });
+    const [calm, plain, busy] = m.blend(members(), level<Part>(0), {
+      name: 'tone',
+      tags: ['all'],
+      start: 50,
+    });
+    expect(m.voices('soft')).toEqual([calm]);
+    expect(m.voices('all')).toEqual([plain, busy]);
+    m.sync(0);
+    const names = m
+      .marks(0, 100)
+      .filter((x) => x.mark === 'start')
+      .map((x) => x.name);
+    expect(names).toEqual(['calm', 'tone', 'busy']);
+    m.sync(16);
+    expect(booked.map((b) => b.name)).toEqual(['busy']);
+  });
+
+  it('can be anchored to by its own name', () => {
+    const m = mix<Part, Pose>(PART);
+    m.sync(0);
+    m.blend(members(), level<Part>(0), { name: 'tone', start: 100 });
+    const later = m.cue({ patch: lasting(1), name: 'later', anchor: { start: { with: 'busy' } } });
+    m.sync(16);
+    expect(m.marks(0, 1000).find((x) => x.name === 'later' && x.mark === 'start')?.timestamp).toBe(
+      100,
+    );
+    expect(later.state).toBe('pending');
+  });
 });
 
 describe('the pose', () => {

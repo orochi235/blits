@@ -3,7 +3,7 @@ import type { HistoryOptions, Tape } from './history.js';
 import type { Patch, Sent, Signal } from './patch.js';
 import type { Booker, BookOptions, Marked } from './place.js';
 import type { Transport } from './transport.js';
-import type { Handle, OwnerSpec, SpanHandle, SpanSpec, VoiceSpec } from './voice.js';
+import type { BlendMember, Handle, OwnerSpec, SpanHandle, SpanSpec, VoiceSpec } from './voice.js';
 
 /**
  * How a mix is built: its engine, reduced motion, the host, and its limits.
@@ -119,10 +119,12 @@ export interface Mix<I, O, H = unknown> {
   /**
    * N voices whose weights split one signal, cued into one locus so they fold as alternatives. The
    * signal is read once per subject per frame, with the first member's setting, and every member
-   * takes its share of that one reading; a signal keeping state keeps it once, not per member.
+   * takes its share of that one reading, which `share` reads outside the blend; a signal keeping
+   * state keeps it once, not per member. One `spec` cues them all, and a member given as a
+   * `BlendMember` carries its own `name`, `tags` and `hits` in place of the spec's.
    */
   blend(
-    patches: readonly Patch<I, O, unknown, H>[],
+    members: readonly (Patch<I, O, unknown, H> | BlendMember<I, O, H>)[],
     by: Signal<I, H>,
     spec?: Omit<VoiceSpec<I, O, H>, 'patch' | 'weight' | 'locus'>,
   ): Handle<I>[];
