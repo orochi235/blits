@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react';
 
 /**
  * The score of `comp`, and the folds it is viewed with, which are not part of the composition.
- * A compile of its own that never syncs reads where blits placed each clip; `built` is that
+ * A compile of its own that syncs only at 0 reads where blits placed each clip; `built` is that
  * compile, which `applyEdit` reads a move against.
  */
 export function useScore(
