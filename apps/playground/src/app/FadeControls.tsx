@@ -50,6 +50,7 @@ export function fadeNodes({ whole, picked, onFade, onRise }: FadeNodesProps) {
             one: f
               .boolean(false)
               .label('only the picked subject')
+              .manual()
               .enableIf(() => picked),
           }),
       when: f
@@ -59,24 +60,30 @@ export function fadeNodes({ whole, picked, onFade, onRise }: FadeNodesProps) {
           { value: 'at', label: 'at mix time' },
         ])
         .label('when')
+        .manual()
         .showIf(many),
       at: f
         .number(FADE.at)
         .label('at')
+        .manual()
         .range(0, 1e9)
         .input()
         .step(50)
         .suffix('ms')
         .showIf({ all: [many, { path: 'fade.when', is: 'at' }] }),
-      deadline: f
-        .number(FADE.deadline)
-        .label('deadline')
-        .range(0, 1e9)
-        .input()
-        .step(50)
-        .suffix('ms')
-        .describe(BLITS_DEFAULT)
-        .showIf({ all: [many, { path: 'fade.when', is: 'rest' }] }),
+      ...(whole
+        ? {}
+        : {
+            deadline: f
+              .number(FADE.deadline)
+              .label('deadline')
+              .range(0, 1e9)
+              .input()
+              .step(50)
+              .suffix('ms')
+              .describe(BLITS_DEFAULT)
+              .showIf({ all: [many, { path: 'fade.when', is: 'rest' }] }),
+          }),
       act: f
         .group({
           fade: f

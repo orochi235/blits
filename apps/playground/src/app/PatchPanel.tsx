@@ -14,10 +14,11 @@ import type { FieldError } from '@pg/blits/spec';
 import { CodePane } from '@pg/widgets/CodePane';
 import type { SampledTrack } from '@weasel-js/animator';
 import { ControlPanel, type ControlRenderer, f, resolveConfigSchema } from '@weasel-js/labkit';
-import { PropertyControl, PropertyRow, Timeline } from '@weasel-js/ui';
+import { Timeline } from '@weasel-js/ui';
 import { useMemo, useState } from 'react';
 import s from './App.module.css';
 import { ChannelTiming } from './ChannelTiming';
+import { DraftRow, drafted } from './CompositionControls';
 import { EaseField } from './EaseField';
 import { KeyEditor } from './KeyEditor';
 import m from './PatchLive.module.css';
@@ -83,7 +84,7 @@ const isKind = (kind: Kind) => ({ path: 'kind', is: kind });
 
 /** Every patch kind's rows; a kind's own show only while it is picked. */
 function schemaOf() {
-  const custom = (kind: string) => f.custom<null>(kind, null);
+  const custom = (kind: string) => f.custom<null>(kind, null).manual();
   return resolveConfigSchema(
     f.schema({
       kind: f
@@ -93,12 +94,14 @@ function schemaOf() {
       period: f
         .number(1000)
         .label('period')
+        .manual()
         .range(0, 1e9)
         .input()
         .step(10)
         .suffix('ms')
+        .render(drafted())
         .showIf({ not: MOTION }),
-      channel: f.enum<ChannelName>('offset', CHANNELS).label('channel').showIf(MOTION),
+      channel: f.enum<ChannelName>('offset', CHANNELS).label('channel').manual().showIf(MOTION),
       keys: f
         .group({ timeline: custom('timeline'), ease: custom('ease'), timing: custom('timing') })
         .as('fragment')
@@ -106,7 +109,9 @@ function schemaOf() {
       fn: f
         .group({
           writes: f
-            .group(Object.fromEntries(CHANNELS.map((ch) => [ch, f.boolean(false).label(ch)])))
+            .group(
+              Object.fromEntries(CHANNELS.map((ch) => [ch, f.boolean(false).label(ch).manual()])),
+            )
             .label('writes'),
           at: custom('code'),
           state: custom('code'),
@@ -131,7 +136,7 @@ function schemaOf() {
   );
 }
 
-/** An option that takes a number or an expression, written on Enter or on leaving the field. */
+/** An option that takes a number or an expression, written on Enter or blur, with its error under it. */
 function ExprRow(p: {
   label: string;
   value: string;
@@ -140,24 +145,22 @@ function ExprRow(p: {
   onCommit(text: string): void;
 }) {
   return (
-    <PropertyRow group span label={p.label} layout="block">
-      <div className={m.wide}>
-        <PropertyControl
-          kind="string"
-          name={p.label}
-          className={m.code}
-          value={p.value}
-          placeholder={p.placeholder}
-          onInput={() => {}}
-          onChange={p.onCommit}
-        />
-        {p.error && (
-          <span className={m.error} role="alert">
-            {p.error}
-          </span>
-        )}
-      </div>
-    </PropertyRow>
+    <div className={m.wide}>
+      <DraftRow
+        span
+        layout="block"
+        kind="string"
+        label={p.label}
+        value={p.value}
+        placeholder={p.placeholder}
+        onCommit={(t) => p.onCommit(String(t))}
+      />
+      {p.error && (
+        <span className={m.error} role="alert">
+          {p.error}
+        </span>
+      )}
+    </div>
   );
 }
 

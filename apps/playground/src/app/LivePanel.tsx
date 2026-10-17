@@ -66,7 +66,7 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
   };
   // A voice plays backward below 0; a group's rate does not go below it.
   const rate = (def: number) =>
-    v ? f.number(def).step(0.05) : f.number(def).range(0, 1000).input().step(0.05);
+    (v ? f.number(def).step(0.05) : f.number(def).range(0, 1000).input().step(0.05)).manual();
 
   const rated = `rate · now ${handle.rate.toFixed(2)}`;
   const schema = resolveConfigSchema(
@@ -74,6 +74,7 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
       weight: f
         .number(1)
         .label('weight')
+        .manual()
         .range(0, 2)
         .step(0.01)
         .describe(docOf('Handle.weight') ?? ''),
@@ -88,10 +89,11 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
           ms: f
             .number(0)
             .label('seek to')
+            .manual()
             .step(10)
             .suffix('ms')
             .describe(docOf('Handle.seek') ?? ''),
-          keep: f.boolean(false).label('keep state'),
+          keep: f.boolean(false).label('keep state').manual(),
           go: f
             .action(() =>
               act(id, (h, _, heard) => {
@@ -128,12 +130,25 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
           to: rate(HELD.ramp.to)
             .label('ramp to')
             .describe(docOf('Handle.ramp') ?? ''),
-          over: f.number(HELD.ramp.over).label('over').range(0, 1e6).input().step(50).suffix('ms'),
+          over: f
+            .number(HELD.ramp.over)
+            .label('over')
+            .manual()
+            .range(0, 1e6)
+            .input()
+            .step(50)
+            .suffix('ms'),
           go: f.action(() => act(id, (h) => h.ramp(held.ramp.to, held.ramp.over))).label('ramp'),
         })
         .as('bar')
         .section(rated, ONE_UP),
-      ...(v && isMotion(v.patch) ? { aim: f.custom<null>('aim', null).section(v.patch.kind === 'glide' ? 'push' : 'retarget', ONE_UP) } : {}),
+      ...(v && isMotion(v.patch)
+        ? {
+            aim: f
+              .custom<null>('aim', null)
+              .section(v.patch.kind === 'glide' ? 'push' : 'retarget', ONE_UP),
+          }
+        : {}),
     }),
   );
 

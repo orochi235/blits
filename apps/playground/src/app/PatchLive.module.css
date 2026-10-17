@@ -74,8 +74,3 @@
 .key .values > * {
   flex: 1;
 }
-
-.code input,
-input.code {
-  font-family: var(--wzl-font-mono);
-}

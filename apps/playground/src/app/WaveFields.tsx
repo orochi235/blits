@@ -4,6 +4,7 @@ import { withKey } from '@pg/blits/keyed';
 import { type Mixed, SWINGS, type SwingName } from '@pg/blits/kit';
 import { type ControlRenderer, f } from '@weasel-js/labkit';
 import { PropertyControl, PropertyRow } from '@weasel-js/ui';
+import { drafted } from './CompositionControls';
 import m from './PatchLive.module.css';
 
 type Wave = Extract<PatchSource, { kind: 'wave' }>;
@@ -17,9 +18,9 @@ const START: Record<SwingName, number> = { turn: 15, scale: 0.25, opacity: 0.5, 
 export function waveNodes() {
   return f
     .group({
-      shape: f.enum<WaveShape>('sine', SHAPES).label('shape'),
-      cycles: f.number(1).label('cycles').range(0, 1000).input().step(1),
-      phase: f.number(0).label('phase').step(0.05),
+      shape: f.enum<WaveShape>('sine', SHAPES).label('shape').manual(),
+      cycles: f.number(1).label('cycles').range(0, 1000).input().step(1).render(drafted()),
+      phase: f.number(0).label('phase').step(0.05).render(drafted()),
       depth: f
         .group(Object.fromEntries(SWINGS.map((ch) => [ch, f.custom<null>('depth', null)])))
         .label("depth, either side of each channel's rest"),
