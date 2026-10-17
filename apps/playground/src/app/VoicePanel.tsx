@@ -127,22 +127,45 @@ export function VoicePanel(p: VoicePanelProps) {
         onChange={onChange}
       />
       {v.patch.kind === 'fn' && v.patch.step !== undefined && (
-        <label className={s.row} title={docOf('VoiceSpec.stepMs')}>
-          stepMs
-          <input
-            type="number"
-            className={s.number}
-            min={0}
-            step={1}
-            placeholder="the mix's"
-            value={v.stepMs ?? ''}
-            onChange={(e) => {
-              const ms = e.target.valueAsNumber;
-              onChange(withKey(v, 'stepMs', Number.isFinite(ms) && ms >= 0 ? ms : undefined));
-            }}
-          />
-          <span className={s.note}>its own step interval; 0 steps by the frame</span>
-        </label>
+        <>
+          <label className={s.row} title={docOf('VoiceSpec.stepMs')}>
+            stepMs
+            <input
+              type="number"
+              className={s.number}
+              min={0}
+              step={1}
+              placeholder="the mix's"
+              value={v.stepMs ?? ''}
+              onChange={(e) => {
+                const ms = e.target.valueAsNumber;
+                onChange(withKey(v, 'stepMs', Number.isFinite(ms) && ms >= 0 ? ms : undefined));
+              }}
+            />
+            <span className={s.note}>its own step interval; 0 steps by the frame</span>
+          </label>
+          <label className={s.row} title={docOf('VoiceSpec.catchUp')}>
+            catchUp
+            <select
+              value={v.catchUp ?? 'exact'}
+              onChange={(e) =>
+                onChange(
+                  withKey(
+                    v,
+                    'catchUp',
+                    e.target.value === 'fresh' ? ('fresh' as const) : undefined,
+                  ),
+                )
+              }
+            >
+              <option value="exact">exact (default)</option>
+              <option value="fresh">fresh</option>
+            </select>
+            <span className={s.note}>
+              a subject met late steps from its origin, or from first sight
+            </span>
+          </label>
+        </>
       )}
       <OwnerField
         comp={p.comp}

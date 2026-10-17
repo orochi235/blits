@@ -122,6 +122,7 @@ const voice = (v: unknown) =>
   num(v.rate) &&
   opt(v.seek, num) &&
   opt(v.stepMs, (x) => num(x) && x >= 0) &&
+  opt(v.catchUp, oneOf('exact', 'fresh')) &&
   (bool(v.loop) || num(v.loop)) &&
   (num(v.weight) || expr(v.weight)) &&
   fade(v.fade) &&

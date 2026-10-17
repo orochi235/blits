@@ -56,6 +56,8 @@ export interface Voice {
   seek?: number;
   /** Its own interval for `step`, ms, in place of the mix's; 0 steps by the frame's gap. */
   stepMs?: number;
+  /** How a stateful subject met late starts stepping. Unset: `exact`. */
+  catchUp?: 'exact' | 'fresh';
   loop: boolean | number;
   stagger?: Expr;
   target?: Expr;

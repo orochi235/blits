@@ -99,6 +99,61 @@ describe('compile', () => {
     same(built.mix, hand);
   });
 
+  it("a fn voice's catchUp reaches its cue: fresh skips the steps from a mid-frame start to the frame", () => {
+    const turns = (catchUp?: 'fresh') => {
+      const built = compile(
+        comp([
+          voice({
+            id: 'f',
+            stepMs: 1,
+            start: 10,
+            ...(catchUp ? { catchUp } : {}),
+            patch: {
+              kind: 'fn',
+              period: 300,
+              writes: ['turn'],
+              at: '(phase, s, set) => ({ turn: set.state.n })',
+              state: '() => ({ n: 0 })',
+              step: '(st) => { st.n++; }',
+            },
+          }),
+        ]),
+        subjects,
+      );
+      expect(built.errors).toEqual([]);
+      return built.mix;
+    };
+    const hand = mix<(typeof subjects)[0], Mixed>(KIT, { stepMs: FRAME });
+    hand.cue({
+      loop: true,
+      start: 10,
+      stepMs: 1,
+      catchUp: 'fresh',
+      patch: patch<(typeof subjects)[0], Mixed, { n: number }>(
+        300,
+        (_phase, _s, set) => ({ turn: set.state.n }),
+        {
+          writes: ['turn'],
+          state: () => ({ n: 0 }),
+          step: (st) => {
+            st.n++;
+          },
+        },
+      ),
+    });
+    same(turns('fresh'), hand);
+    const exact = turns();
+    const fresh = turns('fresh');
+    const [late] = subjects as [(typeof subjects)[0]];
+    for (let t = 0; t <= 10 * FRAME; t += FRAME) {
+      exact.sync(t);
+      fresh.sync(t);
+      exact.probe(late);
+      fresh.probe(late);
+    }
+    expect(fresh.probe(late).turn).toBeLessThan(exact.probe(late).turn);
+  });
+
   it('a spring voice gives the hand-written poses', () => {
     const built = compile(
       comp([
