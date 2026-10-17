@@ -24,9 +24,17 @@ version and everything else the patch. Each release lists its changes as **Break
   its voice had met the subject. The tape moves forward and back while the read is made.
 - `stepMs` on a voice's spec: the interval its `step` runs at, in place of the mix's. 0 steps it
   once a frame by the frame's gap.
+- A mix warns, once per patch and outside production, when the first delta a voice's `at` returns
+  holds a key outside the patch's `writes`, naming the voice and the key. The mix still drops the
+  key, as it always has; `checkPatch` in `@msb235/blits/testing` still finds one returned only on
+  some subjects or phases.
 
 ### Fixed
 
+- A spring, glide or tween made by another copy of blits of the same release, loaded beside this
+  one, runs as a motion on this copy's mix: on lanes, and retargeted, pushed and read through its
+  handle, which refused it. It played through `at` off the lanes. Copies of different releases
+  still keep apart.
 - A fade set for a time after a voice's passes run out no longer begins in place of the voice
   ending, where one frame crossed both: `fade({ at })` on a voice with no `freeze` that ended
   before `at` played on, held at its last frame, until the fade finished.
