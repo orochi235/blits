@@ -1,3 +1,4 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
@@ -187,6 +188,100 @@ describe('mix.owns', () => {
     expect(o.state).toBe('done');
     expect(played).toBe(true);
     expect(m.marks(0, 1000).find((k) => k.voice === o.id && k.mark === 'end')?.timestamp).toBe(200);
+  });
+
+  it.each([false, true])(
+    'lists its out and end at its last child’s end while it plays, and its coast once it left, history %s',
+    (kept) => {
+      const m = mix<Part, Pose>(K, kept ? { history: { ms: 1000 } } : {});
+      m.sync(0);
+      const o = m.owns({ fade: { out: 100 } });
+      m.cue({ patch: ramp, loop: false, owner: o, start: 150 });
+      const marks = () =>
+        m
+          .marks(0, 1000)
+          .filter((k) => k.voice === o.id)
+          .map((k) => [k.mark, k.timestamp]);
+      // It leaves with its last child, so over none of its own fade out.
+      const all = [
+        ['start', 0],
+        ['in', 0],
+        ['coast', 250],
+        ['out', 250],
+        ['end', 250],
+      ];
+      m.sync(100);
+      expect(marks()).toEqual(all);
+      // A voice that left is listed only within history's reach, an owner as any other.
+      m.sync(300);
+      expect(marks()).toEqual(kept ? all : []);
+    },
+  );
+
+  it('keeps its coast through a seek back past a child that left', () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 5000, tape } });
+    m.sync(0);
+    const o = m.owns({});
+    m.cue({ patch: ramp, loop: false, owner: o, start: 0 });
+    const late = m.cue({ patch: ramp, loop: false, owner: o, start: 50, fade: { out: 100 } });
+    const coast = () => m.marks(0, 1000).find((k) => k.voice === o.id && k.mark === 'coast');
+    m.sync(110);
+    m.sync(120);
+    expect(coast()?.timestamp).toBe(150);
+    // Faded before its pass ends, the second child leaves the owner with no coast at all.
+    late.fade();
+    m.sync(250);
+    expect(o.state).toBe('done');
+    expect(coast()).toBeUndefined();
+    // Marks are on the host clock, which the seek leaves at 250 as the mix's goes back to 110.
+    m.seek(110);
+    expect(coast()?.timestamp).toBe(150 + 140);
+    // The fade made again takes it away again.
+    m.sync(400);
+    expect(late.state).toBe('done');
+    expect(coast()).toBeUndefined();
+  });
+
+  it('has its out and end booked ahead, as a voice’s are', () => {
+    const m = mix<Part, Pose>(K);
+    let host = 0;
+    const took: unknown[] = [];
+    m.sync(0);
+    const o = m.owns({});
+    m.cue({ patch: ramp, loop: false, owner: o, start: 150 });
+    m.book({
+      clock: () => host,
+      ahead: 100,
+      late: Number.POSITIVE_INFINITY,
+      take(item, when, lateBy) {
+        if (!('hit' in item) && item.voice === o.id && item.mark !== 'start' && item.mark !== 'in')
+          took.push([item.mark, when, lateBy]);
+        return undefined;
+      },
+    });
+    for (const t of [100, 200, 300]) {
+      host = t;
+      m.sync(t);
+    }
+    expect(took).toEqual([
+      ['coast', 250, 0],
+      ['out', 250, 0],
+      ['end', 250, 0],
+    ]);
+  });
+
+  it('lists no out or end while a child’s end is unknown', () => {
+    const m = mix<Part, Pose>(K);
+    m.sync(0);
+    const o = m.owns({});
+    m.cue({ patch: ramp, loop: false, owner: o });
+    m.cue({ patch: ramp, loop: true, owner: o });
+    expect(
+      m
+        .marks(0, 5000)
+        .filter((k) => k.voice === o.id)
+        .map((k) => k.mark),
+    ).toEqual(['start', 'in']);
   });
 
   it('takes its children with it when its fade ends, and plays false', async () => {

@@ -3,9 +3,10 @@ import { envelope } from './clock.js';
 import { schedule } from './due.js';
 import { unshare } from './everyone.js';
 import { leave, noted, releasing } from './history.js';
+import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
-import { orphan } from './owner.js';
+import { type Holding, orphan } from './owner.js';
 import { startOf } from './place.js';
 import { scoreTouched } from './scored.js';
 import { lingers, refit } from './spans.js';
@@ -202,6 +203,12 @@ function asks<I, O>(mix: Mixer<I, O>, motion: Motions<I>, voice: Voice<I, O>): b
   return motion.owner === mix.owner && motion.ownerId === voice.id;
 }
 
+/** What a child leaving tells its owner of when the owner coasts. */
+function leaving<I, O>(mix: Mixer<I, O>, child: Voice<I, O>): void {
+  const h = (child.owner as Voice<I, O>).holding as Holding<Voice<I, O>>;
+  h.left(child.passed ? markOf(mix, child, 'coast') : undefined, child.doneSeq);
+}
+
 /** Removes a voice, recording that it left at `at`, default now. */
 export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number): void {
   if (voice.holding === null) mix.lanes?.touch(voice);
@@ -226,6 +233,7 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
       if (child.state !== 'done') retire(mix, child, voice.doneAt);
   if (voice.owner !== null) {
     const span = voice.owner;
+    leaving(mix, voice);
     const owner = orphan(voice);
     if (owner !== null && !lingers(owner, voice.doneAt)) retire(mix, owner, voice.doneAt);
     // A child the fit skipped had no time in it, so the rest of the fit stands: fitting again

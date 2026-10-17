@@ -52,6 +52,11 @@ version and everything else the patch. Each release lists its changes as **Break
   freezes after, as a voice playing forward shows nothing before its start unless it freezes
   before. It showed its last frame: `rate: -1, seek: 600` on a 300 ms pass showed it for its
   first 300 ms, and so did a child its owner, turned back, had put past its end.
+- An owner's `out` and `end` marks are known while it plays, at its last child's end, once every
+  child's end is. They were fixed only when it left, so `marks` listed them only then and only
+  under `history`, a booker took them a frame late, an anchor to an owner's end waited until it
+  left, and without `history` they were never booked. Its `coast` stays listed once it has left,
+  where it went with its last child.
 - `pull` reads `undefined` at a position its list has gained. A list read as `[undefined]` and
   then as `[undefined, undefined]` threw, reading the new position as the subject it read there
   last time.

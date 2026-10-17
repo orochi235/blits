@@ -97,11 +97,19 @@ export function markOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, mark: Mark): 
   if (mark === 'coast') return coastOf(mix, voice, start);
   const out = voice.out;
   let outAt: number | undefined;
+  // An owner leaves with its last child, over no fade of its own.
+  let leaves = false;
   if (out !== null) outAt = out.at;
   else if (Number.isFinite(voice.outAt)) outAt = voice.outAt;
   else if (voice.fitting !== null) {
     const t = voice.timeAt(voice.fitting.end);
     if (Number.isFinite(t)) outAt = Math.max(start, t);
+  } else if (voice.holding !== null) {
+    const t = lastChild(mix, voice.holding.children, 'end');
+    if (t !== undefined) {
+      outAt = Math.max(start, t);
+      leaves = true;
+    }
   } else if (!(voice.backs ? voice.freezesBefore : voice.freezesAfter)) {
     const t = voice.endsAt();
     if (Number.isFinite(t)) outAt = Math.max(start, t);
@@ -112,6 +120,7 @@ export function markOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, mark: Mark): 
     if (out.rest) return out.deadline === undefined ? undefined : out.at + out.deadline;
     return out.at + out.over;
   }
+  if (leaves) return outAt;
   const over = Number.isNaN(voice.outOver) ? (voice.fade.out ?? 0) : voice.outOver;
   return outAt === undefined ? undefined : outAt + (mix.reduced ? 0 : over);
 }
@@ -125,13 +134,12 @@ function coastOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, start: number): num
   let t: number | undefined;
   if (voice.fitting !== null) t = voice.timeAt(voice.fitting.end);
   else if (voice.holding !== null) {
-    const children = voice.holding.children;
-    if (children.length === 0) return undefined;
-    t = Number.NEGATIVE_INFINITY;
-    for (const child of children) {
-      const c = markOf(mix, child, 'coast');
-      if (c === undefined) return undefined;
-      t = Math.max(t, c);
+    const h = voice.holding;
+    if (h.cutSeq !== Number.POSITIVE_INFINITY) return undefined;
+    if (h.children.length === 0) t = voice.state === 'done' ? h.coast : undefined;
+    else {
+      t = lastChild(mix, h.children, 'coast');
+      if (t !== undefined) t = Math.max(t, h.coast);
     }
   } else t = voice.endsAt();
   if (t === undefined || !Number.isFinite(t)) return undefined;
@@ -139,4 +147,20 @@ function coastOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, start: number): num
   const cut =
     voice.out !== null ? voice.out.at : voice.state === 'done' ? voice.doneAt : voice.outAt;
   return cut < t ? undefined : t;
+}
+
+/** The latest of the children's `mark`; undefined for none, or while one has not fixed it. */
+function lastChild<I, O>(
+  mix: Mixer<I, O>,
+  children: readonly Voice<I, O>[],
+  mark: Mark,
+): number | undefined {
+  if (children.length === 0) return undefined;
+  let t = Number.NEGATIVE_INFINITY;
+  for (const child of children) {
+    const c = markOf(mix, child, mark);
+    if (c === undefined) return undefined;
+    if (c > t) t = c;
+  }
+  return t;
 }
