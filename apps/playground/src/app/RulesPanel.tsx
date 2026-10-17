@@ -9,45 +9,49 @@ import {
   type NumberRuleSpec,
   type Rules,
 } from '@pg/blits/kit';
+import {
+  type ConfigEntry,
+  ControlPanel,
+  type ControlRenderer,
+  f,
+  resolveConfigSchema,
+} from '@weasel-js/labkit';
+import { Button, PropertyControl, PropertyRow, ResetIcon } from '@weasel-js/ui';
+import { useMemo } from 'react';
 import s from './App.module.css';
-import r from './RulesPanel.module.css';
+import { actionRow, useLatest } from './CompositionControls';
+import r from './Rows.module.css';
 
 type NumberChannel = Exclude<keyof Rules, 'color'>;
 
 const NUMBER_RULES: readonly NumberRule[] = ['sum', 'mul', 'max', 'last'];
+const ignore = () => {};
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const bandOf = (ch: string) => `${ch}Bounds`;
+const label = (spec: Rules[keyof Rules]) =>
+  'lerp' in spec
+    ? `${spec.rule}, ${spec.lerp}`
+    : spec.bounds
+      ? `${spec.rule} [${spec.bounds.join(', ')}]`
+      : spec.rule;
 
-function BoundsFields({
-  ch,
-  spec,
-  onChange,
-}: {
-  ch: string;
-  spec: NumberRuleSpec;
-  onChange(b: [number, number] | undefined): void;
-}) {
-  const [lo, hi] = spec.bounds ?? [Number.NaN, Number.NaN];
-  const edit = (i: 0 | 1, n: number) => {
-    const next: [number, number] = [i === 0 ? n : lo, i === 1 ? n : hi];
-    if (next.some(Number.isNaN)) onChange(undefined);
-    else if (next[0] < next[1]) onChange(next);
-  };
-  const field = (i: 0 | 1, value: number) => (
-    <input
-      type="number"
-      step="any"
-      className={r.bound}
-      aria-label={`${ch} ${i === 0 ? 'lower' : 'upper'} bound`}
-      placeholder={i === 0 ? 'min' : 'max'}
-      value={Number.isNaN(value) ? '' : value}
-      onChange={(e) => edit(i, e.target.value === '' ? Number.NaN : e.target.valueAsNumber)}
-    />
-  );
-  return (
-    <>
-      {field(0, lo)}
-      {field(1, hi)}
-    </>
-  );
+/** A row per channel, whose renderer draws it, a bounds row under each bounded one, and a reset for all. */
+function rulesSchema(reset: { current: () => void }) {
+  const shape: Record<string, ConfigEntry> = {};
+  for (const ch of CHANNELS) {
+    shape[ch] = f.custom('rule', null).label(ch);
+    if (ch !== 'color')
+      shape[bandOf(ch)] = f
+        .custom('bounds', null)
+        .label('bounds')
+        .showIf((c) => c[bandOf(ch)] === true);
+  }
+  shape.reset = f
+    .action(() => reset.current())
+    .label("all to blits' defaults")
+    .render(actionRow)
+    .enableIf((c) => c.changed === true);
+  return resolveConfigSchema(f.schema(shape));
 }
 
 /** Each channel's fold rule, which the composition's kit is made from. */
@@ -61,74 +65,160 @@ export function RulesPanel({
   const rules = { ...DEFAULT_RULES, ...comp.rules };
   const kit = kitOf(comp.rules);
   const set = <K extends keyof Rules>(ch: K, spec: Rules[K]) => {
-    const same = JSON.stringify(spec) === JSON.stringify(DEFAULT_RULES[ch]);
-    const next = withKey(comp.rules ?? {}, ch, same ? undefined : spec);
+    const next = withKey(comp.rules ?? {}, ch, same(spec, DEFAULT_RULES[ch]) ? undefined : spec);
     onChange(withKey(comp, 'rules', Object.keys(next).length > 0 ? next : undefined));
   };
-  const numberRow = (ch: NumberChannel) => {
+  const reset = useLatest(() => onChange(withKey(comp, 'rules', undefined)));
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the reset is read through its ref
+  const schema = useMemo(() => rulesSchema(reset), []);
+  const config: Record<string, unknown> = { changed: comp.rules !== undefined };
+  for (const ch of CHANNELS) {
     const spec = rules[ch];
-    const options = ch === 'offset' ? NUMBER_RULES.filter((r) => r !== 'last') : NUMBER_RULES;
-    return (
-      <>
-        <select
-          aria-label={`${ch} rule`}
-          value={spec.rule}
-          onChange={(e) => {
-            const rule = e.target.value as NumberRule;
-            set(ch, rule === 'last' ? { rule } : ({ ...spec, rule } as Rules[typeof ch]));
-          }}
+    if (!('lerp' in spec)) config[bandOf(ch)] = spec.rule !== 'last' && spec.bounds !== undefined;
+  }
+
+  const select = (
+    name: string,
+    value: string,
+    options: readonly string[],
+    to: (v: string) => void,
+  ) => (
+    <PropertyControl
+      kind="enum"
+      className={r.select}
+      name={name}
+      value={value}
+      options={options.map((o) => ({ value: o, label: o }))}
+      onChange={to}
+    />
+  );
+  const back = (ch: keyof Rules) => (
+    <span className={same(rules[ch], DEFAULT_RULES[ch]) ? r.idle : undefined}>
+      <Button
+        iconOnly
+        variant="ghost"
+        size="sm"
+        ariaLabel={`default ${ch} rule`}
+        tooltip={`back to blits' default: ${label(DEFAULT_RULES[ch])}`}
+        onClick={() => set(ch, DEFAULT_RULES[ch])}
+      >
+        <ResetIcon />
+      </Button>
+    </span>
+  );
+
+  const numberRow =
+    (ch: NumberChannel): ControlRenderer =>
+    () => {
+      const spec = rules[ch];
+      const options = ch === 'offset' ? NUMBER_RULES.filter((x) => x !== 'last') : NUMBER_RULES;
+      const kind = kit[ch].kind ?? 'custom';
+      return (
+        <PropertyRow
+          group
+          layout="inline"
+          label={ch}
+          changed={!same(spec, DEFAULT_RULES[ch])}
+          // The kind only says more than the rule where the channel is not one plain number.
+          hint={kind !== spec.rule && !spec.bounds ? kind : undefined}
         >
-          {options.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-        {spec.rule !== 'last' && (
-          <BoundsFields
-            ch={ch}
-            spec={spec}
-            onChange={(b) => set(ch, withKey(spec, 'bounds', b) as Rules[typeof ch])}
-          />
-        )}
-      </>
+          <span className={r.controls}>
+            {select(`${ch} rule`, spec.rule, options, (v) => {
+              const rule = v as NumberRule;
+              set(ch, rule === 'last' ? { rule } : ({ ...spec, rule } as Rules[typeof ch]));
+            })}
+            {spec.rule !== 'last' && (
+              <PropertyControl
+                kind="boolean"
+                control="toggle"
+                name="bounds"
+                value={spec.bounds !== undefined}
+                onChange={(on: boolean) =>
+                  set(
+                    ch,
+                    withKey(
+                      spec,
+                      'bounds',
+                      on ? (DEFAULT_RULES[ch].bounds ?? [0, 1]) : undefined,
+                    ) as Rules[typeof ch],
+                  )
+                }
+              />
+            )}
+            {back(ch)}
+          </span>
+        </PropertyRow>
+      );
+    };
+
+  const boundsRow =
+    (ch: NumberChannel): ControlRenderer =>
+    () => {
+      const spec: NumberRuleSpec = rules[ch];
+      const [lo, hi] = spec.bounds ?? [0, 1];
+      // Bounds that would cross are refused, and the field shows what it held.
+      const edit = (i: 0 | 1) => (n: number) => {
+        const next: [number, number] = i === 0 ? [n, hi] : [lo, n];
+        if (next[0] < next[1]) set(ch, { ...spec, bounds: next } as Rules[typeof ch]);
+      };
+      const field = (i: 0 | 1) => (
+        <PropertyControl
+          kind="number"
+          name={`${ch} ${i === 0 ? 'lower' : 'upper'} bound`}
+          className={r.bound}
+          value={i === 0 ? lo : hi}
+          step={0.1}
+          onInput={ignore}
+          onChange={edit(i)}
+        />
+      );
+      return (
+        <PropertyRow group layout="inline" label={`${ch} bounds`}>
+          <span className={r.controls}>
+            {field(0)}
+            <span className={r.to}>to</span>
+            {field(1)}
+          </span>
+        </PropertyRow>
+      );
+    };
+
+  const colorRow: ControlRenderer = () => {
+    const spec: ColorRuleSpec = rules.color;
+    return (
+      <PropertyRow group layout="inline" label="color" changed={!same(spec, DEFAULT_RULES.color)}>
+        <span className={r.controls}>
+          {select('color rule', spec.rule, ['replace', 'average'], (v) =>
+            set('color', { ...spec, rule: v as ColorRuleSpec['rule'] }),
+          )}
+          <span className={r.to}>in</span>
+          {select('color lerp', spec.lerp, ['oklch', 'oklab'], (v) =>
+            set('color', { ...spec, lerp: v as ColorRuleSpec['lerp'] }),
+          )}
+          {back('color')}
+        </span>
+      </PropertyRow>
     );
   };
-  const colorRow = (spec: ColorRuleSpec) => (
-    <>
-      <select
-        aria-label="color rule"
-        value={spec.rule}
-        onChange={(e) => set('color', { ...spec, rule: e.target.value as ColorRuleSpec['rule'] })}
-      >
-        <option value="replace">replace</option>
-        <option value="average">average</option>
-      </select>
-      <select
-        aria-label="color lerp"
-        value={spec.lerp}
-        onChange={(e) => set('color', { ...spec, lerp: e.target.value as ColorRuleSpec['lerp'] })}
-      >
-        <option value="oklch">oklch</option>
-        <option value="oklab">oklab</option>
-      </select>
-    </>
-  );
+
+  const renderers: Record<string, ControlRenderer> = { color: colorRow };
+  for (const ch of CHANNELS) {
+    if (ch === 'color') continue;
+    renderers[ch] = numberRow(ch);
+    renderers[bandOf(ch)] = boundsRow(ch);
+  }
   return (
-    <fieldset className={s.panel} aria-label="fold rules">
-      <legend>fold rules</legend>
-      {CHANNELS.map((ch) => (
-        <div key={ch} className={s.row}>
-          <span>{ch}</span>
-          {ch === 'color' ? colorRow(rules.color) : numberRow(ch)}
-          <output className={s.readout}>{kit[ch].kind ?? 'custom'}</output>
-        </div>
-      ))}
-      {comp.rules && (
-        <button type="button" onClick={() => onChange(withKey(comp, 'rules', undefined))}>
-          default rules
-        </button>
-      )}
-    </fieldset>
+    <section className={s.panel} aria-label="fold rules">
+      <ControlPanel
+        title="fold rules"
+        collapsible
+        pack="one-up"
+        layout="inline"
+        schema={schema}
+        config={config}
+        setConfig={ignore}
+        renderers={renderers}
+      />
+    </section>
   );
 }
