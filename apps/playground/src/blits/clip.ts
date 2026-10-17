@@ -2,7 +2,7 @@ import type { Handle } from '@msb235/blits';
 import { type Clip, type Hatch, MAX_PASSES } from '@pg/widgets/ScoreLanes';
 import { periodOf, type Voice } from './composition';
 import { compileExpr, type Scope } from './expr';
-import { clockOf, type Placed } from './placed';
+import { clockOf, innerOf, type Placed } from './placed';
 import type { Subject } from './stage';
 
 /** When the first subject starts after the voice's start, and how long until the last does. */
@@ -120,6 +120,8 @@ export function clipOf(
 export function placeFrom(clip: Clip, v: Voice, h: Handle<Subject>, p: Placed, from?: number) {
   if (p.start === undefined) return;
   clip.start = p.start;
+  const inner = innerOf(v.marks, p);
+  if (inner.length > 0) clip.inner = inner;
   const period = periodOf(v.patch) ?? 0;
   const clock = clockOf(h);
   if (clockOf(h.owner) < 0) {

@@ -516,3 +516,133 @@ describe('a placement whose end comes before its start', () => {
     ]);
   });
 });
+
+describe('marks placed inside a voice', () => {
+  it('lists each beside the five, at its voice ms on the mix clock', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: hold(1000), name: 'a', start: 100, rate: 2, marks: { drop: 340, rise: 0 } });
+    expect(at(m, 0, 1000)).toEqual([
+      '100 a start',
+      '100 a in',
+      '100 a rise',
+      '270 a drop',
+      '600 a coast',
+      '600 a out',
+      '600 a end',
+    ]);
+  });
+
+  it('places another voice by one, and moves it with its voice', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    const a = m.cue({ patch: hold(1000), name: 'a', start: 100, marks: { drop: 340 } });
+    const b = m.cue({
+      patch: hold(100),
+      name: 'b',
+      anchor: { start: { of: 'a', mark: 'drop', by: 10 } },
+    });
+    expect(at(m, 0, 500).filter((l) => / b start/.test(l))).toEqual(['450 b start']);
+    m.sync(200);
+    a.rate = 2;
+    m.sync(210);
+    // 100 voice ms in at 200, so 340 is reached 120 mix ms later.
+    expect(at(m, 0, 500).filter((l) => / b start/.test(l))).toEqual(['330 b start']);
+    m.sync(330);
+    expect(b.state).toBe('live');
+  });
+
+  it('is reached once: on the first pass at or after where the voice starts', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: hold(1000), name: 'a', start: 0, loop: 3, seek: 1500, marks: { drop: 340 } });
+    m.cue({ patch: hold(1000), name: 'b', start: 0, loop: true, marks: { drop: 340 } });
+    expect(at(m, 0, 10_000).filter((l) => / drop/.test(l))).toEqual(['340 b drop', '840 a drop']);
+  });
+
+  it('is not reached past where its voice ends, nor while its clock runs back', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: hold(1000), name: 'a', start: 0, marks: { drop: 800 }, anchor: { end: 500 } });
+    m.cue({ patch: hold(1000), name: 'b', start: 0, rate: -1, marks: { drop: 300 } });
+    m.cue({ patch: hold(1000), name: 'c', start: 0, marks: { drop: 300 }, anchor: { end: 500 } });
+    expect(at(m, 0, 10_000).filter((l) => / drop/.test(l))).toEqual(['300 c drop']);
+  });
+
+  it('waits pending on a mark its target does not declare, an inherited name included', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: hold(1000), name: 'a', start: 0, marks: { drop: 340 } });
+    const b = m.cue({ patch: hold(100), anchor: { start: { of: 'a', mark: 'toString' } } });
+    const c = m.cue({ patch: hold(100), anchor: { start: { of: 'a', mark: 'lift' } } });
+    m.sync(2000);
+    expect([b.state, c.state]).toEqual(['pending', 'pending']);
+  });
+
+  it("refuses a mark named as one of the five, or outside a pass of its voice's patch", () => {
+    const m = mix<Row, Pose>(K);
+    expect(() => m.cue({ patch: hold(1000), marks: { end: 10 } })).toThrow(/one of a voice's own/);
+    expect(() => m.cue({ patch: hold(1000), marks: { drop: 1000 } })).toThrow(/0 up to 1000/);
+    expect(() => m.cue({ patch: hold(1000), marks: { drop: -1 } })).toThrow(/0 up to 1000/);
+    expect(() => m.cue({ patch: hold(0), marks: { drop: Number.NaN } })).toThrow(/0 or more/);
+    expect(() => m.owns({ marks: { start: 0 } })).toThrow(/one of a voice's own/);
+    m.cue({ patch: hold(0), marks: { drop: 5000 } });
+  });
+
+  it("puts an owner's on its own clock", () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    const o = m.owns({ name: 'o', start: 100, rate: 0.5, marks: { drop: 200 } });
+    m.cue({ patch: hold(1000), owner: o, start: 0 });
+    expect(at(m, 0, 10_000).filter((l) => / drop/.test(l))).toEqual(['500 o drop']);
+  });
+
+  it('answers an anchor once its voice has left, with no history', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    m.cue({ patch: hold(100), name: 'a', loop: false, marks: { drop: 40 } });
+    for (let t = 10; t <= 300; t += 10) m.sync(t);
+    const b = m.cue({
+      patch: hold(1000),
+      loop: false,
+      anchor: { start: { of: 'a', mark: 'drop' }, end: { of: 'a', mark: 'drop', by: 400 } },
+    });
+    m.sync(310);
+    expect(b.state).toBe('live');
+    m.sync(450);
+    expect(b.state).toBe('done');
+  });
+
+  it('is booked as a mark, by its name', () => {
+    const m = mix<Row, Pose>(K);
+    let host = 0;
+    const took: string[] = [];
+    m.book({
+      clock: () => host,
+      ahead: 100,
+      late: 40,
+      take(item, when) {
+        if ('mark' in item) took.push(`${when} ${item.name} ${item.mark}`);
+        return undefined;
+      },
+    });
+    m.cue({ patch: hold(1000), name: 'a', start: 0, marks: { drop: 340 } });
+    for (host = 0; host <= 1200; host += 16) m.sync(host);
+    expect(took.filter((t) => / drop/.test(t))).toEqual(['340 a drop']);
+  });
+
+  it('is a stop for a read ahead, as the five are', () => {
+    const read: number[] = [];
+    const weight = (_r: Row, s: { timestamp: number }) => {
+      read.push(s.timestamp);
+      return 1;
+    };
+    const m = mix<Row, Pose>(K);
+    m.cue({ patch: hold(1000), start: 0, weight, marks: { drop: 340 } });
+    m.sync(0);
+    m.probe({ id: 'r' });
+    read.length = 0;
+    m.project(600).probe({ id: 'r' });
+    expect(read).toContain(340);
+  });
+});

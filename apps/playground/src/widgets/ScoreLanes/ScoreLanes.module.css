@@ -223,6 +223,20 @@
   text-anchor: end;
 }
 
+.inner {
+  pointer-events: none;
+}
+
+.inner line {
+  stroke: var(--wzl-fg);
+  stroke-width: 1.5;
+}
+
+.inner text {
+  fill: var(--wzl-fg);
+  font-size: var(--wzl-font-size-xs);
+}
+
 .tick {
   fill: var(--wzl-surface-sunken);
   opacity: 0.7;

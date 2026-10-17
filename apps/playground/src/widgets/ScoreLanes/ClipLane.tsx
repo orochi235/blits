@@ -15,7 +15,7 @@ import {
 } from './geometry';
 import type { Clip, ClipEdit, Hatch } from './index';
 import { activates, seconds } from './keys';
-import { ClipTicks } from './Marks';
+import { ClipTicks, InnerMarks } from './Marks';
 import s from './ScoreLanes.module.css';
 
 const MENU_W = 28;
@@ -151,6 +151,9 @@ export function ClipLane(p: ClipLaneProps) {
           <line key={t} className={s.pass} x1={scale.x(t)} x2={scale.x(t)} y1={top} y2={top + h} />
         ))}
       {!c.skipped && <ClipTicks clip={c} scale={scale} top={top} duration={duration} />}
+      {!c.skipped && c.inner && (
+        <InnerMarks marks={c.inner} scale={scale} top={top} h={h} duration={duration} />
+      )}
       {c.spread > 0 && (
         <rect
           className={s.spread}

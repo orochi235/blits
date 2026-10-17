@@ -49,6 +49,7 @@ export type {
   Kit,
   Mark,
   Marked,
+  MarkName,
   Mix,
   MixOptions,
   MotionSpec,

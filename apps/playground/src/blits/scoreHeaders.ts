@@ -2,7 +2,7 @@ import type { SpanHandle } from '@msb235/blits';
 import type { Clip, Header } from '@pg/widgets/ScoreLanes';
 import type { Built } from './compile';
 import type { Group } from './composition';
-import { clockOf, type Placed } from './placed';
+import { clockOf, innerOf, type Placed } from './placed';
 import type { Subject } from './stage';
 
 export interface Laying {
@@ -36,6 +36,8 @@ export function headerOf(
   if (g.fade.out) h.fadeOut = g.fade.out;
   const ticks = hitTimes(g, start, h.end, clock);
   if (ticks.length > 0) h.ticks = ticks;
+  const inner = p ? innerOf(g.marks, p) : [];
+  if (inner.length > 0) h.inner = inner;
   if (g.kind !== 'span') return h;
   if (handle && p && clock > 0) {
     const r = handle.result;

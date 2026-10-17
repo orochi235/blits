@@ -1,11 +1,12 @@
-import type { Placement } from '@msb235/blits';
+import type { Mark, Placement } from '@msb235/blits';
 
 type Rec = Record<string, unknown>;
 const obj = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const str = (v: unknown): v is string => typeof v === 'string';
 
-const MARKS = ['start', 'in', 'coast', 'out', 'end'];
+/** A voice's own five marks, which a mark placed inside it cannot be named. */
+export const MARKS: readonly string[] = ['start', 'in', 'coast', 'out', 'end'] satisfies Mark[];
 const RESOLVERS = ['last', 'first', 'next', 'earliest', 'latest'];
 const QUERY = ['score', 'name', 'tag', 'writes', 'resolver'];
 const SUGAR = ['after', 'with', 'before'];
@@ -38,7 +39,8 @@ function anchorFault(a: unknown, depth = 0): string | null {
   if ('of' in a) {
     const odd = extra(a, ['of', 'mark', 'by']);
     if (odd !== undefined) return `an anchor has no "${odd}"`;
-    if (!MARKS.includes(a.mark as string)) return `mark is one of ${MARKS.join(', ')}`;
+    if (!str(a.mark) || a.mark === '')
+      return `mark is one of ${MARKS.join(', ')}, or a mark placed inside the voice`;
     return queryFault(a.of);
   }
   const kind = SUGAR.filter((k) => k in a);
@@ -97,6 +99,9 @@ export const PLACEMENTS: Record<string, (name: string) => Placement> = {
   'start 200 ms before it': (name) => ({ start: { before: name, by: 200 } }),
   'start when its last pass ends': (name) => ({ start: { of: name, mark: 'coast' } }),
   'be fully in 100 ms after it is': (name) => ({ in: { of: name, mark: 'in', by: 100 } }),
+  'start at the mark "peak" it places inside itself': (name) => ({
+    start: { of: name, mark: 'peak' },
+  }),
   'fade out when it starts': (name) => ({ out: { with: name } }),
   'start at 1 s, be gone by 3 s': () => ({ start: 1000, end: 3000 }),
   'start with the mark "beat"': () => ({ start: { with: 'beat' } }),

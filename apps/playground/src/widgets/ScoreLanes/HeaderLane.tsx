@@ -3,7 +3,7 @@ import { hueColor } from '../hue';
 import { INDENT, type Scale, slopePolygon, WIDTH } from './geometry';
 import type { Header } from './index';
 import { activates, seconds } from './keys';
-import { Notches } from './Marks';
+import { InnerMarks, Notches } from './Marks';
 import s from './ScoreLanes.module.css';
 
 const BAR_H = 8;
@@ -113,6 +113,15 @@ export function HeaderLane(p: HeaderLaneProps) {
           times={hd.ticks.filter((t) => t >= 0 && t <= duration)}
           scale={scale}
           top={mid - BAR_H / 2}
+        />
+      )}
+      {hd.start <= duration && hd.inner && (
+        <InnerMarks
+          marks={hd.inner}
+          scale={scale}
+          top={mid - BAR_H / 2}
+          h={BAR_H}
+          duration={duration}
         />
       )}
       {budget !== null && (

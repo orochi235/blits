@@ -11,9 +11,18 @@ version and everything else the patch. Each release lists its changes as **Break
 - A voice plays one pass unless told otherwise: `loop` defaults to `false`, where it defaulted to
   `true`. A `cue` that left `loop` out and relied on looping for good now needs `loop: true`. A
   patch with no duration, and a motion patch, have no passes and play as before.
+- `Marked.mark` and an anchor's `mark` are a `MarkName`, one of a voice's five or a name it placed
+  inside itself, where they were a `Mark`. Code that reads `mark` as one of the five, such as an
+  exhaustive `switch`, needs a case for the rest.
 
 ### Added
 
+- `marks` on a voice's, an owner's and a span's spec: named marks inside it beside its five, each
+  at voice ms into a pass, `marks: { drop: 340 }`. An anchor names one as it names the five,
+  `{ of: 'lead', mark: 'drop' }`; `marks` lists it, `book` books it under its name, and a read
+  ahead stops at it. Each is reached once, on the first pass that reaches it from where the voice
+  starts, while its clock runs forward and before it ends. A name of one of the five, and a time
+  outside a pass, are refused at `cue`.
 - `@msb235/blits/lean`: the package with a `mix` that leaves lanes out, for a host whose scenes
   are too small to need them. It gives the same poses, and a bundle of `mix`, `kit`, `sum` and
   `patch` is 44.5 kB gzipped against 59.9 from the main entry (esbuild, minified). `lanes: true`

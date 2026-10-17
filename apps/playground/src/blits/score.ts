@@ -1,6 +1,6 @@
-import type { Anchor, Mark, Query } from '@msb235/blits';
+import type { Anchor, Mark, MarkName, Query } from '@msb235/blits';
 import type { Clip, ClipEdit, Edge, Header, Link, ScoreMark } from '@pg/widgets/ScoreLanes';
-import { waitOn } from './anchor';
+import { MARKS, waitOn } from './anchor';
 import { blendOf, syncBlend } from './blend';
 import { clipOf, freezeOf, passesOf, placeFrom, playOf, startsPartway, stopsOf } from './clip';
 import type { Built } from './compile';
@@ -13,10 +13,14 @@ import { cutUnder, headerOf, type Laying } from './scoreHeaders';
 import type { Subject } from './stage';
 import { timingOf } from './timing';
 
-const edgeOfMark = (m: Mark): Edge => (m === 'start' || m === 'in' ? 'start' : 'end');
+const edgeOfMark = (m: MarkName): Edge => (m === 'start' || m === 'in' ? 'start' : 'end');
+/** The mark a link meets in place of an edge: one placed inside the voice. */
+const innerMark = (m: MarkName) => (MARKS.includes(m) ? {} : { mark: m });
 
 /** The voice name and edge an anchor points at, when it selects by name alone. */
-function targetOf(a: number | Anchor | undefined): { name: string; edge: Edge } | null {
+function targetOf(
+  a: number | Anchor | undefined,
+): { name: string; edge: Edge; mark?: string } | null {
   if (a === undefined || typeof a === 'number') return null;
   const name = (q: unknown) => {
     if (typeof q === 'string') return q;
@@ -31,7 +35,7 @@ function targetOf(a: number | Anchor | undefined): { name: string; edge: Edge } 
   else if ('of' in a) [n, edge] = [name(a.of), edgeOfMark(a.mark)];
   // A join waits on several voices, so it points at no one of them; `joinedLinks` draws those.
   else return null;
-  return n ? { name: n, edge } : null;
+  return n ? { name: n, edge, ...('of' in a ? innerMark(a.mark) : {}) } : null;
 }
 
 export interface ScoreOptions {
@@ -99,7 +103,11 @@ export function clipsOf(
         edge === 'start' ? (v.anchor?.start ?? v.anchor?.in) : (v.anchor?.end ?? v.anchor?.out);
       const t = targetOf(a);
       const to = t && c.voices.find((x) => x.id !== v.id && x.name === t.name);
-      if (t && to) links.push({ from: { clip: v.id, edge }, to: { clip: to.id, edge: t.edge } });
+      if (t && to)
+        links.push({
+          from: { clip: v.id, edge },
+          to: { clip: to.id, edge: t.edge, ...(t.mark ? { mark: t.mark } : {}) },
+        });
     }
   }
   links.push(...joinedLinks(c));
@@ -122,8 +130,12 @@ function joinedLinks(c: Composition): Link[] {
     const every = all && n?.kind === 'join' && n.label === 'all';
     for (const e of into.get(node) ?? []) {
       if (e.from.startsWith('voice:')) {
-        const to = { clip: e.from.slice('voice:'.length), edge: edgeOfMark(e.mark) };
-        const key = `${from.clip}.${from.edge}-${to.clip}.${to.edge}`;
+        const to = {
+          clip: e.from.slice('voice:'.length),
+          edge: edgeOfMark(e.mark),
+          ...innerMark(e.mark),
+        };
+        const key = `${from.clip}.${from.edge}-${to.clip}.${to.mark ?? to.edge}`;
         if (to.clip !== from.clip && !out.has(key))
           out.set(key, { from, to, join: every ? 'all' : 'any' });
       } else if (e.from.startsWith('join:') || e.from.startsWith('query:'))
@@ -185,7 +197,7 @@ function edited(
       const [mark, other]: [Mark, Mark] =
         edit.link.from.edge === 'start' ? ['start', 'in'] : ['end', 'out'];
       const now = targetOf(v.anchor?.[mark] ?? v.anchor?.[other]);
-      if (now?.name === to.name && now.edge === edit.link.to.edge) return v;
+      if (now?.name === to.name && now.edge === edit.link.to.edge && !now.mark) return v;
       return { ...v, anchor: waitOn(v.anchor, edit.link.from.edge, to.name, edit.link.to.edge) };
     }
   }

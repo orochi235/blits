@@ -1,9 +1,13 @@
-import type { Handle, Mark } from '@msb235/blits';
+import type { Handle, MarkName } from '@msb235/blits';
+import type { ScoreMark } from '@pg/widgets/ScoreLanes';
 import type { Built } from './compile';
 import type { Subject } from './stage';
 
-/** A voice's or group's marks, in composition ms; a mark nothing has fixed yet is absent. */
-export type Placed = Partial<Record<Mark, number>>;
+/**
+ * A voice's or group's marks, its five and those placed inside it, in composition ms; a mark
+ * nothing has fixed yet is absent.
+ */
+export type Placed = Partial<Record<MarkName, number>>;
 
 /**
  * Where `built`'s mix put each voice and group, by id, read from `mix.marks`. `built` must not have
@@ -21,9 +25,19 @@ export function placedOf(built: Built): Map<string, Placed> {
   for (const m of built.mix.marks(Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY)) {
     const id = m.voice === undefined ? undefined : ids.get(m.voice);
     if (id === undefined || m.mark === undefined) continue;
-    const p = out.get(id) ?? {};
+    const p = out.get(id) ?? (Object.create(null) as Placed);
     out.set(id, p);
     p[m.mark] = m.timestamp;
+  }
+  return out;
+}
+
+/** Where blits put each of the marks a voice or group placed inside itself, by its name. */
+export function innerOf(marks: Record<string, number> | undefined, p: Placed): ScoreMark[] {
+  const out: ScoreMark[] = [];
+  for (const label of Object.keys(marks ?? {})) {
+    const at = p[label];
+    if (at !== undefined) out.push({ at, label });
   }
   return out;
 }

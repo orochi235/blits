@@ -29,12 +29,13 @@ describe('a placement typed as JSON', () => {
     expect(
       parsePlacement('{"in": {"of": {"tag": "x", "resolver": "next"}, "mark": "coast"}}'),
     ).toEqual({ placement: { in: { of: { tag: 'x', resolver: 'next' }, mark: 'coast' } } });
+    expect(placementFault({ start: { of: 'a', mark: 'drop' } })).toBeNull();
   });
 
   it.each([
     ['{"start": 1, "in": 2}', 'one of start and in'],
     ['{"begin": 1}', '"begin"'],
-    ['{"start": {"of": "a", "mark": "middle"}}', 'mark is one of'],
+    ['{"start": {"of": "a", "mark": ""}}', 'mark is one of'],
     ['{"start": {"after": "a", "with": "b"}}', 'takes one of'],
     ['{"start": {"after": {"tagged": "x"}}}', '"tagged"'],
     ['{"start": {"all": []}}', 'a list of anchors'],
@@ -78,6 +79,24 @@ describe('marks, tags, and announced marks', () => {
     expect(built.handles.get('b')?.state).toBe('pending');
     expect(placedOf(built).get('b')).toBeUndefined();
     expect(placedOf(built).get('c')?.start).toBe(400);
+  });
+
+  it('places a voice by a mark placed inside another, and draws both on the score', () => {
+    const c = comp([
+      once('a', { start: 100, marks: { drop: 120 } }),
+      once('b', { anchor: { start: { of: 'a', mark: 'drop', by: 30 } } }),
+    ]);
+    const built = compile(c, subjects);
+    expect(built.errors).toEqual([]);
+    expect(placedOf(built).get('b')?.start).toBe(250);
+    const score = clipsOf(c, subjects, { built });
+    expect(score.clips.find((x) => x.id === 'a')?.inner).toEqual([{ at: 220, label: 'drop' }]);
+    expect(score.links).toContainEqual({
+      from: { clip: 'b', edge: 'start' },
+      to: { clip: 'a', edge: 'end', mark: 'drop' },
+    });
+    expect(load(c)).not.toBeNull();
+    expect(load({ ...c, voices: [{ ...c.voices[0], marks: { drop: -1 } }] })).toBeNull();
   });
 
   it('reads tags from text', () => {

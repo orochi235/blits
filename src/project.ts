@@ -221,6 +221,12 @@ function nextEvent(tape: Tape | undefined, c: Transport, t: number): number {
         const at = markOf(m, v, mark);
         if (at !== undefined && at > now && at < e) e = at;
       }
+      const inner = v.spec.marks;
+      if (inner !== undefined)
+        for (const mark of Object.keys(inner)) {
+          const at = markOf(m, v, mark);
+          if (at !== undefined && at > now && at < e) e = at;
+        }
     }
   for (const a of c.announced) {
     const at = c.pace === null ? a.at : c.pace.at(a.at, c.u);

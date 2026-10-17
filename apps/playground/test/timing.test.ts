@@ -137,6 +137,23 @@ describe('lit', () => {
     expect(met(900, 'voice:intro', 'join:either:start')).toBe(false);
   });
 
+  it('meets a mark placed inside a voice once the voice has reached it', () => {
+    const c = comp([
+      voice({ id: 'a', patch: keys, loop: false, marks: { drop: 300 } }),
+      voice({ id: 'b', patch: keys, anchor: { start: { all: [{ of: 'a', mark: 'drop' }] } } }),
+    ]);
+    const subs = subjectsOf(c.stage);
+    const drop = (ms: number) => {
+      const p = new Player(() => compile(c, subs), subs, { levels: c.levels });
+      p.seek(ms);
+      const f = lit(timingOf(c), liveOf(p.built, p.host));
+      return f.edges.find((e) => e.from === 'voice:a' && e.to === 'join:b:start');
+    };
+    expect(drop(200)?.label).toBe('its drop');
+    expect(drop(200)?.met).toBe(false);
+    expect(drop(400)?.met).toBe(true);
+  });
+
   it("tones a span's box, and meets each child's turn as it starts", () => {
     expect(tone(2500, 'group:pair')).toBe('waiting');
     expect(tone(3000, 'group:pair')).toBe('playing');

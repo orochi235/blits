@@ -49,6 +49,8 @@ export interface ProgramOptions {
    * meets at the call. A start elsewhere would meet it at the next frame, which no read can know.
    */
   slewed?: boolean;
+  /** Every cue places a mark `hit` inside itself, and an anchor to another's `in` names it instead. */
+  inside?: boolean;
 }
 
 /** One host call, made right after the sync at host time `at`. */
@@ -111,7 +113,7 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
         // Drawn from nothing too.
         const catchUp = opts.fresh && pk === 'drift' && weight === 0.5 ? 'fresh' : undefined;
         const slewed = opts.slewed && anchor === null && startOff !== 48 && startOff !== 100;
-        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight}${slewed ? ' slewed' : ''} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}${catchUp ? ' catchUp=fresh' : ''}`;
+        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight}${slewed ? ' slewed' : ''} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}${catchUp ? ' catchUp=fresh' : ''}${opts.inside ? ' marks={hit:70}' : ''}`;
         ops.push({
           at: t,
           desc,
@@ -125,6 +127,7 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
               seek,
               name: `v${i}`,
             };
+            if (opts.inside) spec.marks = { hit: 70 };
             if (freeze) spec.freeze = freeze;
             if (catchUp) spec.catchUp = catchUp;
             if (anchor) {
@@ -136,7 +139,11 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
                     ? { after: of, by }
                     : how === 'with'
                       ? { with: of, by }
-                      : { of, mark: how satisfies Mark, by },
+                      : {
+                          of,
+                          mark: opts.inside && how === 'in' ? 'hit' : (how satisfies Mark),
+                          by,
+                        },
               };
             } else if (startOff !== undefined) spec.start = m.now + startOff;
             h[i] = m.cue(spec);
