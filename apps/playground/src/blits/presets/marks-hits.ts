@@ -22,6 +22,7 @@ const c: Composition = {
         { at: 0, event: 'tick' },
         { at: 400, event: 'tock' },
       ],
+      marks: { peak: 400 },
       patch: {
         kind: 'keys',
         period: 800,
@@ -49,6 +50,25 @@ const c: Composition = {
           { at: 0, delta: { scale: 1 } },
           { at: 0.5, delta: { scale: 1.6 }, ease: 'ease-in-out' },
           { at: 1, delta: { scale: 1 }, ease: 'ease-in-out' },
+        ],
+      },
+    },
+    {
+      id: 'flash',
+      name: 'flash',
+      hue: 10,
+      start: 0,
+      rate: 1,
+      loop: 1,
+      weight: 1,
+      fade: { out: 150 },
+      anchor: { start: { of: 'lead', mark: 'peak' } },
+      patch: {
+        kind: 'keys',
+        period: 300,
+        stops: [
+          { at: 0, delta: { scale: 1.4 } },
+          { at: 1, delta: { scale: 1 }, ease: 'ease-out' },
         ],
       },
     },

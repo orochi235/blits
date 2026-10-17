@@ -21,6 +21,7 @@ export interface Clip {
   into?: number; // ms of its first pass already behind its start; default 0
   ticks?: readonly number[]; // ms into each pass where a notch sits
   stops?: readonly number[]; // the passes its end snaps to, ascending; default every whole number
+  inner?: readonly ScoreMark[]; // named times inside it, ms on the score
 }
 
 /** A lane heading the clips and headers below it that sit deeper, up to the next that does not. */
@@ -39,6 +40,7 @@ export interface Header {
   fell?: boolean;
   folded?: boolean;
   ticks?: number[]; // ms on the score, a notch on its bar at each
+  inner?: readonly ScoreMark[]; // named times inside it, ms on the score
 }
 /** A named time, drawn down every lane. */
 export interface ScoreMark {
@@ -48,7 +50,8 @@ export interface ScoreMark {
 export type Edge = 'start' | 'end';
 export interface Link {
   from: { clip: string; edge: Edge };
-  to: { clip: string; edge: Edge };
+  /** `mark` names one of the clip's `inner` marks, which the link meets in place of the edge. */
+  to: { clip: string; edge: Edge; mark?: string };
   /** One of several the `from` edge waits on: every one of them (`all`), or one (`any`). */
   join?: 'all' | 'any';
 }

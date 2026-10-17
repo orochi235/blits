@@ -62,3 +62,30 @@ export function Notches(p: { times: readonly number[]; scale: Scale; top: number
     </>
   );
 }
+
+/** Named times inside a clip or a header's bar: a line across it from `top`, `h` tall, labeled. */
+export function InnerMarks(p: {
+  marks: readonly ScoreMark[];
+  scale: Scale;
+  top: number;
+  h: number;
+  duration: number;
+}) {
+  return (
+    <g className={s.inner} aria-hidden>
+      {p.marks
+        .filter((m) => m.at >= 0 && m.at <= p.duration)
+        .map((m) => {
+          const x = p.scale.x(m.at);
+          return (
+            <g key={m.label}>
+              <line x1={x} x2={x} y1={p.top} y2={p.top + p.h} />
+              <text x={x + 2} y={p.top + p.h - 2}>
+                {m.label}
+              </text>
+            </g>
+          );
+        })}
+    </g>
+  );
+}

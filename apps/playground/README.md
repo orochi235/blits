@@ -81,7 +81,7 @@ replaces or averages, interpolated in OKLCH or OKLab. The fold rules panel edits
 kind each makes.
 
 A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `seek`, `stepMs`, `catchUp`, `loop`, `stagger`, `target`,
-`freeze`, `weight`, `fade`, `locus`, `from`, `anchor`, `tags`, `score`, `hits`), so the voice panel teaches the real spec, plus
+`freeze`, `weight`, `fade`, `locus`, `from`, `anchor`, `tags`, `score`, `hits`, `marks`), so the voice panel teaches the real spec, plus
 an `id`, a `name`, a `hue`, a `patch`, the `owner` group it plays under, and the `hints` a span
 reads. A `PatchSource` is one of:
 
@@ -116,7 +116,8 @@ checked by `placementFault` in `src/blits/anchor.ts`, which `load` uses too: `st
 `out` or `end`, each a time or an anchor by `of` and `mark`, `after`, `with`, `before`, `all`, or
 `any`, selecting by name or by a query of `name`, `tag`, `writes`, `score`, and `resolver`. A
 voice's `hits` are events at voice ms into each pass, each event a string; a group's are at ms on
-its own clock, once.
+its own clock, once. Its `marks` name times inside it the same way, `{ "peak": 400 }`, which an
+anchor names by `of` and `mark` beside the five; blits reaches each once, on the first pass.
 
 The `Player` keeps an `EventLog` (`src/blits/events.ts`) on the full mix: a booker made with
 `mix.book` against the host clock, reading `book.ahead` ms ahead (100 unset, at most 5000), which records every mark and hit it is handed and
@@ -167,6 +168,7 @@ interface Group {
   anchor?: Placement;
   tags?: string[]; score?: string;
   hits?: Hit<string>[];                  // at ms on its own clock, booked once
+  marks?: Record<string, number>;        // named, at ms on its own clock
   hints?: Hints;                         // read only when the parent is a span
   span?: {                               // only on kind 'span'
     duration?: number; priority?: Strength; order?: Order; share?: number;
@@ -242,6 +244,7 @@ header, and its members sit under it, indented one step per depth.
 | dotted link, close dots | an `all`: one link from each voice it waits on | the voice panel; an Alt-drag from the edge replaces the join |
 | dotted link, wide dots | an `any`, or a query by `tag`, `writes` or a `resolver`: one link from each voice it could wait on | the voice panel; an Alt-drag from the edge replaces it |
 | notch on the top edge  | a hit, every pass             | the voice panel                                          |
+| labeled line across it | a mark placed inside it, where blits put it; a link to it lands there | the voice panel |
 | dotted line down the score | an announced mark, named on the ruler | the Events tab                                 |
 | header bar             | a group, from its start to its end, sloped by its `fade` | ▾ folds its members away; click to select |
 | clip cut at a group's end | a member still playing when a group above it ends, sloped by that group's `fade.out` | the right edge stops at the cut; dragging it left snaps to whole passes before it |
@@ -354,7 +357,7 @@ at least 24 px apart; a desk with more voices than fit grows wider and the tab s
 
 | Panel     | Shows                                                                                   |
 |-----------|-----------------------------------------------------------------------------------------|
-| Voice     | the spec fields, each with blits' doc comment on hover; `rate` from -4 to 4 and a `seek`, blank for blits' default; for a patch with a `step`, its own `stepMs`, blank for the mix's, and `catchUp`; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `score`, and `hits` |
+| Voice     | the spec fields, each with blits' doc comment on hover; `rate` from -4 to 4 and a `seek`, blank for blits' default; for a patch with a `step`, its own `stepMs`, blank for the mix's, and `catchUp`; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `score`, `hits`, and `marks` |
 | Group     | in place of Voice and Patch when a header is selected: name, kind, `owner`, start and anchor (not under a span), rate, weight, fade, freeze, hints under a span; for a span its `duration`, `priority`, `order`, `share` (for `stagger`), `spill`, the fit steps (add, remove, reorder, presets; a code step in a code pane), and the live `FitResult` |
 | Weight    | a number, or a signal expression; a menu inserts common signals                         |
 | Patch     | a kind menu (switching starts a blank patch of that kind), then by kind: a weasel `Timeline` track per channel for `keys`, with an `EasingPicker` per key; code panes for `fn`; numbers or expressions per option for motion |
@@ -419,7 +422,7 @@ One `Composition` per file in `src/blits/presets/`.
 | fold rules      | one delta through `sum`, `mul` and `max`                      |
 | owner fade      | an owner fading three voices in and out as one, its weight a level |
 | span fit        | 2.9 s of voices in a 2 s span: one sped up (`faster`), one alongside (`overlap`), one shed (`ballast`), and 100 ms over, inside `overrun`'s 1.2 cap |
-| marks and hits  | a voice tagged `lead` with two hits a pass, one anchored to its `coast` by tag, one waiting on the announced mark `beat`, and an fn voice that sends its pass number |
+| marks and hits  | a voice tagged `lead` with two hits a pass and a mark `peak` inside it, one voice anchored to `peak`, one to its `coast` by tag, one waiting on the announced mark `beat`, and an fn voice that sends its pass number |
 | anchors         | one voice waiting on an `all` of a voice and the mark `beat`, one on an `any` of a voice and a tag query, a queue span anchored after the first, and a voice anchored to the span's `end` |
 | backward        | one sweep three ways: forward, cued at rate -1 from its end, and cued with a `seek` halfway in |
 

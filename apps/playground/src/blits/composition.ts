@@ -74,6 +74,8 @@ export interface Voice {
   tags?: string[];
   score?: string;
   hits?: Hit<string>[];
+  /** Named marks at voice ms into a pass, which anchors name beside the five. */
+  marks?: Record<string, number>;
 }
 
 /** A mark the host puts on a score with `mix.announce`, at a time on the composition's clock. */
@@ -136,6 +138,8 @@ export interface Group {
   score?: string;
   /** Events at ms on its own clock, booked once while it plays. */
   hits?: Hit<string>[];
+  /** Named marks at ms on its own clock. */
+  marks?: Record<string, number>;
 }
 
 export const FIT_PRESETS = {
@@ -198,5 +202,6 @@ export const MAX_LEVELS = 16;
 export const MAX_GROUPS = 16;
 export const MAX_ANNOUNCED = 32;
 export const MAX_HITS = 32;
+export const MAX_MARKS = 8;
 export const MAX_TAGS = 8;
 export const MAX_AHEAD = 5000;

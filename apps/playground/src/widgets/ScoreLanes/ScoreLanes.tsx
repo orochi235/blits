@@ -133,11 +133,12 @@ export function ScoreLanes(props: ScoreLanesProps) {
       onSelect(clip.id);
     } else keyEdit(e, clip, 'body');
   };
-  const edgeAt = (id: string, edge: Edge) => {
+  const edgeAt = (id: string, edge: Edge, mark?: string) => {
     const c = clips.find((x) => x.id === id);
     if (!c) return null;
+    const inner = mark === undefined ? undefined : c.inner?.find((m) => m.label === mark);
     return {
-      x: scale.x(edge === 'start' ? c.start : Math.min(shownEnd(c), duration)),
+      x: scale.x(inner ? inner.at : edge === 'start' ? c.start : Math.min(shownEnd(c), duration)),
       y: RULER + c.lane * laneH + laneH / 2,
     };
   };
@@ -262,12 +263,12 @@ export function ScoreLanes(props: ScoreLanesProps) {
       ))}
       {links.map((l) => {
         const a = edgeAt(l.from.clip, l.from.edge);
-        const b = edgeAt(l.to.clip, l.to.edge);
+        const b = edgeAt(l.to.clip, l.to.edge, l.to.mark);
         if (!a || !b) return null;
         const midY = (a.y + b.y) / 2;
         return (
           <path
-            key={`${l.from.clip}.${l.from.edge}-${l.to.clip}.${l.to.edge}`}
+            key={`${l.from.clip}.${l.from.edge}-${l.to.clip}.${l.to.mark ?? l.to.edge}`}
             className={l.join ? `${s.link} ${l.join === 'all' ? s.linkAll : s.linkAny}` : s.link}
             d={`M${b.x} ${b.y} C ${b.x} ${midY}, ${a.x} ${midY}, ${a.x} ${a.y}`}
           />

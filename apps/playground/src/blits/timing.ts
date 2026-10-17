@@ -1,4 +1,4 @@
-import type { Anchor, Handle, Mark, Query } from '@msb235/blits';
+import type { Anchor, Handle, Mark, MarkName, Query } from '@msb235/blits';
 import type { Flow, FlowBox, FlowEdge, FlowNode, FlowTone } from '@pg/widgets/FlowDiagram/types';
 import type { Built } from './compile';
 import type { Composition, Group, Voice } from './composition';
@@ -9,8 +9,8 @@ type Slot = 'start' | 'in' | 'out' | 'end';
 const SLOTS: readonly Slot[] = ['start', 'in', 'out', 'end'];
 
 export interface TimingEdge extends FlowEdge {
-  /** The mark of `from` it waits on. */
-  mark: Mark;
+  /** The mark of `from` it waits on: one of its five, or one placed inside it. */
+  mark: MarkName;
   /** What of `to` it sets: one of its marks, or its turn in a span. Unset into a join or a query. */
   sets?: Slot | 'turn';
 }
@@ -27,7 +27,7 @@ const ms = (n: number) => `${n} ms`;
 const moved = (by: number | undefined) => (by ? ` ${by > 0 ? '+' : '−'}${ms(Math.abs(by))}` : '');
 
 /** Whom a one-voice anchor asks, the mark it waits on, and how an edge says so. */
-function leafOf(a: Leaf): { q: string | Query; mark: Mark; text: string } {
+function leafOf(a: Leaf): { q: string | Query; mark: MarkName; text: string } {
   if ('after' in a) return { q: a.after, mark: 'end', text: `after${moved(a.by)}` };
   if ('with' in a) return { q: a.with, mark: 'start', text: `with${moved(a.by)}` };
   if ('before' in a)
@@ -81,7 +81,7 @@ class Builder {
   }
 
   /** The node `asker`'s anchor waits on for `q`: a voice, a group, a mark, or a query over voices. */
-  source(q: string | Query, asker: Item, mark: Mark, path: string): string {
+  source(q: string | Query, asker: Item, mark: MarkName, path: string): string {
     const score = (typeof q === 'string' ? undefined : q.score) ?? (asker as Voice).score;
     const within = (x: Item) => !isVoice(x) || x.score === score;
     const plain = typeof q === 'string' || (!q.tag && !q.writes && !q.resolver);
@@ -223,20 +223,34 @@ export function timingOf(c: Composition, faulted: ReadonlySet<string> = new Set(
 
 export type Phase = Handle<unknown>['state'];
 
-/** What a running mix says of a composition: each voice's and group's state by id, and the marks announced so far. */
+/**
+ * What a running mix says of a composition: each voice's and group's state by id, the marks
+ * announced so far, and whether a voice or group has reached a mark placed inside it.
+ */
 export interface Live {
   phaseOf(id: string): Phase | undefined;
   heard: ReadonlySet<string>;
+  passed(id: string, mark: string): boolean | undefined;
 }
 
 /** `built`'s full mix as it stands, with `host` the time it was last synced to. */
 export function liveOf(built: Built, host: number): Live {
   const heard = new Set<string>();
-  for (const m of built.mix.marks(Number.NEGATIVE_INFINITY, host))
-    if (m.voice === undefined && m.name !== undefined && m.timestamp <= host) heard.add(m.name);
+  const inner = new Set<string>();
+  for (const m of built.mix.marks(Number.NEGATIVE_INFINITY, host)) {
+    if (m.timestamp > host) continue;
+    if (m.voice === undefined && m.name !== undefined) heard.add(m.name);
+    else if (m.voice !== undefined && m.mark !== undefined && !Object.hasOwn(PAST, m.mark))
+      inner.add(`${m.voice}\u0000${m.mark}`);
+  }
+  const handleOf = (id: string) => built.handles.get(id) ?? built.groupHandles.get(id);
   return {
-    phaseOf: (id) => (built.handles.get(id) ?? built.groupHandles.get(id))?.state,
+    phaseOf: (id) => handleOf(id)?.state,
     heard,
+    passed: (id, mark) => {
+      const h = handleOf(id);
+      return h === undefined ? undefined : inner.has(`${h.id}\u0000${mark}`);
+    },
   };
 }
 
@@ -268,7 +282,7 @@ export function lit(t: Timing, live: Live): Flow {
       : undefined;
   const kind = new Map(t.nodes.map((n) => [n.id, n]));
   const into = (node: string) => t.edges.filter((e) => e.to === node);
-  const reached = (node: string, mark: Mark): boolean | undefined => {
+  const reached = (node: string, mark: MarkName): boolean | undefined => {
     const n = kind.get(node);
     if (n?.kind === 'mark') return live.heard.has(n.label);
     if (n?.kind === 'query') return into(node).some((e) => reached(e.from, mark) === true);
@@ -276,8 +290,12 @@ export function lit(t: Timing, live: Live): Flow {
       const each = into(node).map((e) => reached(e.from, e.mark) === true);
       return n.label === 'all' ? each.every(Boolean) : each.some(Boolean);
     }
+    if (!Object.hasOwn(PAST, mark))
+      return node.startsWith('voice:') || node.startsWith('group:')
+        ? live.passed(node.slice(node.indexOf(':') + 1), mark)
+        : undefined;
     const p = phase(node);
-    return p === undefined ? undefined : PAST[mark].includes(p);
+    return p === undefined ? undefined : PAST[mark as Mark].includes(p);
   };
   const met = (e: TimingEdge): boolean | undefined => {
     if (e.sets === undefined) return reached(e.from, e.mark);

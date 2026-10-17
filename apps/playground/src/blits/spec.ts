@@ -91,13 +91,17 @@ export function specOf(
   return { spec };
 }
 
-type Marks = Pick<Voice, 'tags' | 'score' | 'hits'>;
+type Marks = Pick<Voice, 'tags' | 'score' | 'hits' | 'marks'>;
 
-/** Copies a voice's or group's `tags`, `score`, and `hits` onto its spec, leaving out empty ones. */
-export function markInto(spec: Pick<OwnerSpec<Subject>, 'tags' | 'score' | 'hits'>, x: Marks) {
+/** Copies a voice's or group's `tags`, `score`, `hits`, and `marks` onto its spec, leaving out empty ones. */
+export function markInto(
+  spec: Pick<OwnerSpec<Subject>, 'tags' | 'score' | 'hits' | 'marks'>,
+  x: Marks,
+) {
   if (x.tags?.length) spec.tags = x.tags;
   if (x.score) spec.score = x.score;
   if (x.hits?.length) spec.hits = x.hits;
+  if (x.marks && Object.keys(x.marks).length > 0) spec.marks = x.marks;
 }
 
 type Fn = <F extends (...a: never[]) => unknown>(

@@ -9,6 +9,7 @@ import {
   MAX_HITS,
   MAX_LENGTH,
   MAX_LEVELS,
+  MAX_MARKS,
   MAX_ROWS,
   MAX_TAGS,
   MAX_TEXT,
@@ -107,11 +108,18 @@ const hints = (v: unknown) =>
   opt(v.ballast, bool) &&
   opt(v.priority, strength);
 
-/** A voice's or group's `tags`, `score`, and `hits`. */
+/** A voice's or group's `tags`, `score`, `hits`, and `marks`. */
 const marked = (v: Rec) =>
   opt(v.tags, texts(MAX_TAGS)) &&
   opt(v.score, str) &&
-  opt(v.hits, (x) => Array.isArray(x) && x.length <= MAX_HITS && x.every(hit));
+  opt(v.hits, (x) => Array.isArray(x) && x.length <= MAX_HITS && x.every(hit)) &&
+  opt(
+    v.marks,
+    (x) =>
+      obj(x) &&
+      Object.keys(x).length <= MAX_MARKS &&
+      Object.values(x).every((at) => num(at) && at >= 0),
+  );
 
 const voice = (v: unknown) =>
   obj(v) &&
