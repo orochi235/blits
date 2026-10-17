@@ -1,0 +1,48 @@
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-xs);
+}
+
+.bound {
+  width: 9ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.at {
+  width: 12ch;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Doubled to outrank the text field's own width, whose sheet may load after this one. */
+.fill.fill {
+  align-self: stretch;
+  width: auto;
+  max-width: none;
+}
+
+/* Keeps its room while hidden, so the controls before it stay put. */
+.idle {
+  visibility: hidden;
+}
+
+.select {
+  min-width: 11ch;
+}
+
+.to {
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg-muted);
+}
+
+/* Fields on one line, outside any panel: the header's and the stage's. */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-md);
+}
+
+.bar > * {
+  flex: none;
+}

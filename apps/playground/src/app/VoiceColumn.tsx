@@ -89,9 +89,6 @@ export function VoiceColumn(p: VoiceColumnProps) {
           </button>
         </div>
       )}
-      <LevelsPanel comp={p.comp} onChange={p.onComp} />
-      <MixPanel comp={p.comp} onChange={p.onComp} />
-      <RulesPanel comp={p.comp} onChange={p.onComp} />
       {voice && (
         <VoicePanel
           key={voice.id}
@@ -142,6 +139,10 @@ export function VoiceColumn(p: VoiceColumnProps) {
           onChange={p.onVoice}
         />
       )}
+      {/* What the whole composition shares, below what is selected, which is what a click here edits. */}
+      <LevelsPanel comp={p.comp} onChange={p.onComp} />
+      <MixPanel comp={p.comp} onChange={p.onComp} />
+      <RulesPanel comp={p.comp} onChange={p.onComp} />
     </div>
   );
 }
