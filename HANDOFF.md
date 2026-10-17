@@ -1070,12 +1070,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
-- **`main` fails one test as of `6ef4985` (2026-10-17):** `apps/playground/test/player.test.ts`,
-  "seeking back with mix.seek …", wants `assess` to say `stepped` after a seek back and gets
-  `exact`. The read-ahead merge made `doubtOf` (`src/project.ts`) call kept signal state `stepped`
-  only on a read back, and nothing marks a live record a seek stepped from a copy. Being fixed on
-  the branch for the slewed fuzz gaps; delete this once it merges.
-
 - **weasel gaps blits met on 2026-10-17, sent to the weasel-64 session to file in weasel's
   `docs/TODO.md`; check they landed there.** `ThemeProvider` drops an invalid `selection` mode
   (`'auto'`) without a word, and labkit's panels inherit the page's ink (worked around in
