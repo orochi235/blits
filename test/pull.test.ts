@@ -199,3 +199,17 @@ describe('pull reading the same array again', () => {
       frame();
     });
 });
+
+describe('pull reading a list that grows', () => {
+  for (const lanes of [true, false])
+    it(`reads undefined at a position it has not read before, lanes ${lanes ? 'on' : 'off'}`, () => {
+      const m = mix<undefined, Pose>(K, { lanes });
+      const patch = keys<undefined, Pose>(100, [{ at: 0, delta: { gain: 0.5 } }]);
+      m.cue({ patch, subjects: [undefined] });
+      m.sync(16);
+      m.pull([undefined], { gain: new Float64Array(1) });
+      const gain = new Float64Array(2);
+      m.pull([undefined, undefined], { gain });
+      expect([...gain]).toEqual([0.5, 0.5]);
+    });
+});

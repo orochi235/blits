@@ -898,13 +898,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   (`bench/memory.mjs`), so it is the heap that row grew, not a leak. `AB_EACH=1 bench/ab.sh`
   runs each row in a process of its own.
 
-- **`pull` throws on a list that gains `undefined` at a new position.** A mix whose one subject
-  is `undefined`, pulled as `[undefined]` and then as `[undefined, undefined]` with nothing
-  changed between, throws `Cannot read properties of undefined (reading 'version')` with lanes
-  and `(reading 'voice')` without (run 2026-10-13 on `14c49b2`). The position `pull` remembers
-  nothing for is a hole, which equals `undefined`, so `readAll` takes it for a subject it read
-  last time and uses a head it never kept.
-
 - **A plot's lowest y label and its first x label print over each other** when a time tick falls
   near the plot's left edge: the blend preset's offset plot read "-0.500" at 1.52 s (seen
   2026-10-13 on weasel 1.10.0, not checked on 1.9.2). `ChannelPlot` asks `Plot2D` for both sets

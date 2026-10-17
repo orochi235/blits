@@ -7,6 +7,9 @@ import type { Mixer } from './mixer.js';
 import type { Channel, Columns } from './types.js';
 import type { Subject } from './voice.js';
 
+/** What `pull` remembers at a position it has read no subject at. */
+const UNREAD: unknown = Symbol('unread');
+
 /** Writes a folded pose's value into subject `n`'s places in a column. */
 function writeValue(c: Column, v: unknown, n: number): void {
   const at = n * c.axes;
@@ -85,6 +88,8 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
   }
   // A position the list no longer has, or has anew, holds no head: its slot says so.
   if (list.length < was.length) mix.pulledSlots.fill(-1, list.length, was.length);
+  // A new position holds a mark no subject equals: a hole would read as `undefined`, a subject.
+  for (let n = was.length; n < list.length; n++) was.push(UNREAD as I);
   was.length = list.length;
   heads.length = list.length;
   const version = mix.version;

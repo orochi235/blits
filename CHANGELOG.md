@@ -27,6 +27,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- `pull` reads `undefined` at a position its list has gained. A list read as `[undefined]` and
+  then as `[undefined, undefined]` threw, reading the new position as the subject it read there
+  last time.
 - A fade set for a time after a voice's passes run out no longer begins in place of the voice
   ending, where one frame crossed both: `fade({ at })` on a voice with no `freeze` that ended
   before `at` played on, held at its last frame, until the fade finished.
