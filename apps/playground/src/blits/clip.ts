@@ -1,5 +1,5 @@
 import type { Handle } from '@msb235/blits';
-import type { Clip, Hatch } from '@pg/widgets/ScoreLanes';
+import { type Clip, type Hatch, MAX_PASSES } from '@pg/widgets/ScoreLanes';
 import { periodOf, type Voice } from './composition';
 import { compileExpr, type Scope } from './expr';
 import { clockOf, type Placed } from './placed';
@@ -62,6 +62,23 @@ export function playOf(
   return { pass, passes: left, ...(into > 0 ? { into } : {}) };
 }
 
+/**
+ * What is left to play of voice `v` cued partway or backward at each finite `loop` from 1 to
+ * `MAX_PASSES`, as `playOf` counts it: the passes its right edge snaps to. Two loops that leave
+ * the same give one stop.
+ */
+export function stopsOf(v: Voice): { loop: number; passes: number }[] {
+  const period = periodOf(v.patch) ?? 0;
+  const out: { loop: number; passes: number }[] = [];
+  if (period <= 0 || v.rate === 0) return out;
+  for (let loop = 1; loop <= MAX_PASSES; loop++) {
+    const { passes } = playOf(period, v.rate, loop, v.seek);
+    const last = out.at(-1)?.passes ?? 0;
+    if (passes > last + 1e-9) out.push({ loop, passes });
+  }
+  return out;
+}
+
 /** Voice `v`'s clip, its voice ms drawn as score ms at `clock` voice ms per score ms. */
 export function clipOf(
   v: Voice,
@@ -88,6 +105,7 @@ export function clipOf(
     locked: v.anchor?.start !== undefined || v.anchor?.in !== undefined,
   };
   if (spread.at !== 0) clip.spreadAt = spread.at / k;
+  if (startsPartway(v) && clip.pass > 0) clip.stops = stopsOf(v).map((s) => s.passes);
   if (v.locus !== undefined) clip.group = v.locus;
   // blits books no hit of a voice running backward.
   if (v.hits?.length && clock > 0) clip.ticks = v.hits.map((h) => h.at / k);

@@ -55,6 +55,7 @@ describe('load', () => {
     expect(load({ ...copy(), stage: { kind: 'letters', text: 'hi' } })).not.toBeNull();
     const mixed = { stepMs: 'off', maxDt: 50, reduce: true, lanes: false };
     expect(load({ ...copy(), mix: mixed })?.mix).toEqual(mixed);
+    expect(load({ ...copy(), book: { ahead: 0 } })?.book).toEqual({ ahead: 0 });
     const rules = {
       scale: { rule: 'sum', bounds: [0, 3] },
       turn: { rule: 'last' },
@@ -89,6 +90,9 @@ describe('load', () => {
       { ...copy(), mix: { stepMs: 0 } },
       { ...copy(), mix: { maxDt: 'big' } },
       { ...copy(), mix: { reduce: 1 } },
+      { ...copy(), book: { ahead: -1 } },
+      { ...copy(), book: { ahead: 1e9 } },
+      { ...copy(), book: { ahead: '100' } },
       { ...copy(), rules: { offset: { rule: 'last' } } },
       { ...copy(), rules: { turn: { rule: 'last', bounds: [0, 1] } } },
       { ...copy(), rules: { scale: { rule: 'sum', bounds: [2, 1] } } },

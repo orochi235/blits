@@ -23,10 +23,11 @@ interface DraftProps {
   /** Visible text around the input; `label` alone names it for assistive tech. */
   caption?: string;
   unit?: string;
+  placeholder?: string;
 }
 
 /** An input that commits on Enter or blur, so typing makes one undo step, not one per key. */
-function Draft(p: DraftProps) {
+export function Draft(p: DraftProps) {
   const { label, value, onCommit, type = 'text', className, maxLength, caption, unit } = p;
   // null while not editing, so a refused edit shows the value it left in place.
   const id = useId();
@@ -47,6 +48,7 @@ function Draft(p: DraftProps) {
       className={type === 'number' ? (className ?? s.number) : className}
       value={draft ?? String(value)}
       maxLength={maxLength}
+      placeholder={p.placeholder}
       spellCheck={false}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
@@ -64,7 +66,7 @@ function Draft(p: DraftProps) {
 }
 
 /** A number field's text as a number; blank is not 0. */
-const numberOf = (text: string) => (text.trim() === '' ? Number.NaN : Number(text));
+export const numberOf = (text: string) => (text.trim() === '' ? Number.NaN : Number(text));
 
 export interface CompProps {
   comp: Composition;

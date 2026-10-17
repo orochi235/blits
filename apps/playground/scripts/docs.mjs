@@ -1,4 +1,4 @@
-// Pulls the doc comments of VoiceSpec, Handle, Mix, MixOptions, SpanHints, OwnerSpec, SpanSpec, and FitResult members out of blits' types for field tooltips.
+// Pulls the doc comments of VoiceSpec, Handle, Mix, MixOptions, BookOptions, SpanHints, OwnerSpec, SpanSpec, and FitResult members out of blits' types for field tooltips.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Application } from 'typedoc';
@@ -22,6 +22,7 @@ for (const name of [
   'Handle',
   'Mix',
   'MixOptions',
+  'BookOptions',
   'SpanHints',
   'OwnerSpec',
   'SpanSpec',

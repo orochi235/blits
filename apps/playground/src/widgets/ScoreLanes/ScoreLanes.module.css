@@ -130,6 +130,17 @@
   pointer-events: none;
 }
 
+.linkAll {
+  stroke-dasharray: 1 3;
+  stroke-linecap: round;
+}
+
+.linkAny {
+  stroke-dasharray: 1 7;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
 .playhead {
   stroke: var(--wzl-danger);
   stroke-width: 2;

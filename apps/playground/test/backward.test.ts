@@ -67,9 +67,14 @@ describe('a voice cued partway or backward', () => {
     expect(back.clips[0]?.ticks).toBeUndefined();
   });
 
-  it('leaves loop alone when its right edge is dragged', () => {
+  it('sets loop by its right edge, to the loop that leaves what the clip shows', () => {
     const c = comp([twice({ seek: 300 })]);
     expect(applyEdit(c, { clip: 'a', kind: 'passes', passes: 1 })).toBe(c);
+    const longer = applyEdit(c, { clip: 'a', kind: 'passes', passes: 2.25 });
+    expect(longer.voices[0]?.loop).toBe(3);
+    const built = compile(longer, subjects);
+    const [clip] = clipsOf(longer, subjects, { built }).clips;
+    expect(placedOf(built).get('a')?.coast).toBeCloseTo(clip ? clip.pass * clip.passes : 0, 9);
   });
 
   it('loads a seek, and refuses one that is no number', () => {

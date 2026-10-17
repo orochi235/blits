@@ -268,7 +268,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
         return (
           <path
             key={`${l.from.clip}.${l.from.edge}-${l.to.clip}.${l.to.edge}`}
-            className={s.link}
+            className={l.join ? `${s.link} ${l.join === 'all' ? s.linkAll : s.linkAny}` : s.link}
             d={`M${b.x} ${b.y} C ${b.x} ${midY}, ${a.x} ${midY}, ${a.x} ${a.y}`}
           />
         );

@@ -55,6 +55,21 @@ describe('dragEdit', () => {
       ms: 300,
     });
   });
+  it('snaps the end to the nearest of its stops, where it has them', () => {
+    const partway = clip({ passes: 1.25, stops: [0.25, 1.25, 2.25] });
+    const to = (passes: number) => ({ clip: 'a', kind: 'passes', passes });
+    expect(dragEdit(partway, 'end', 200)).toEqual(to(1.25));
+    expect(dragEdit(partway, 'end', 300)).toEqual(to(2.25));
+    expect(dragEdit(partway, 'end', -5000)).toEqual(to(0.25));
+    expect(dragEdit(partway, 'end', 1e9)).toEqual(to(2.25));
+    const open = clip({ passes: Number.POSITIVE_INFINITY, stops: [0.25, 1.25] });
+    expect(dragEdit(open, 'end', 0)).toEqual(to(0.25));
+    expect(dragEdit(clip({ stops: [] }), 'end', 300)).toBeNull();
+    const cut = { at: 1100, fade: 0 }; // 2 passes from 100
+    expect(dragEdit(clip({ passes: 0.25, stops: [0.25, 1.25, 2.25], cut }), 'end', 5000)).toEqual(
+      to(2.25),
+    );
+  });
   it('caps passes at MAX_PASSES', () => {
     expect(dragEdit(clip({}), 'end', 1e9)).toEqual({
       clip: 'a',

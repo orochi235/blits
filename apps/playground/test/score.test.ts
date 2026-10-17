@@ -84,16 +84,39 @@ describe('clipsOf', () => {
     const d = { ...c, voices: [v({ id: 'x', anchor: { start: { after: 'nobody' } } })] };
     expect(clipsOf(d, subjects).links).toEqual([]);
   });
-  it('a join anchor, all or any, draws no link', () => {
+  it('a join anchor links from each voice it waits on, all or any', () => {
     const d = {
       ...c,
       voices: [
         v({ id: 'a' }),
-        v({ id: 'b' }),
-        v({ id: 'x', anchor: { start: { all: [{ after: 'a' }, { after: 'b' }] } } }),
+        v({ id: 'b', tags: ['t'] }),
+        v({ id: 'x', anchor: { start: { all: [{ after: 'a' }, { with: 'b' }] } } }),
+        v({ id: 'y', anchor: { end: { any: [{ after: 'a' }, { after: { tag: 't' } }] } } }),
       ],
     };
-    expect(clipsOf(d, subjects).links).toEqual([]);
+    expect(clipsOf(d, subjects).links).toEqual([
+      { from: { clip: 'x', edge: 'start' }, to: { clip: 'a', edge: 'end' }, join: 'all' },
+      { from: { clip: 'x', edge: 'start' }, to: { clip: 'b', edge: 'start' }, join: 'all' },
+      { from: { clip: 'y', edge: 'end' }, to: { clip: 'a', edge: 'end' }, join: 'any' },
+      { from: { clip: 'y', edge: 'end' }, to: { clip: 'b', edge: 'end' }, join: 'any' },
+    ]);
+  });
+  it('a query links from every voice it could pick, as any, and never from its own', () => {
+    const d = {
+      ...c,
+      voices: [
+        v({ id: 'a', tags: ['t'] }),
+        v({ id: 'b', tags: ['t'] }),
+        v({ id: 'x', tags: ['t'], anchor: { in: { of: { tag: 't' }, mark: 'coast' } } }),
+        v({ id: 'y', anchor: { start: { all: [{ after: { writes: 'glow', name: 'a' } }] } } }),
+        v({ id: 'z', anchor: { start: { after: { tag: 'nobody' } } } }),
+      ],
+    };
+    expect(clipsOf(d, subjects).links).toEqual([
+      { from: { clip: 'x', edge: 'start' }, to: { clip: 'a', edge: 'end' }, join: 'any' },
+      { from: { clip: 'x', edge: 'start' }, to: { clip: 'b', edge: 'end' }, join: 'any' },
+      { from: { clip: 'y', edge: 'start' }, to: { clip: 'a', edge: 'end' }, join: 'any' },
+    ]);
   });
 });
 
@@ -307,13 +330,23 @@ function sameEdits(clip: Clip, all: ReturnType<typeof clipsOf>): ClipEdit[] {
     (o) => o.id !== clip.id && o.group !== undefined && o.group === clip.group,
   );
   if (mate) edits.push({ clip: clip.id, kind: 'group', with: mate.id });
+  // A joined link is drawn, not dragged: dragging one replaces the join with that one anchor.
   for (const link of all.links)
-    if (link.from.clip === clip.id) edits.push({ clip: clip.id, kind: 'link', link });
+    if (link.from.clip === clip.id && !link.join) edits.push({ clip: clip.id, kind: 'link', link });
   return edits;
 }
 
 describe('voice → clip → edit → voice', () => {
-  const grouped = { ...c, voices: [...c.voices, v({ id: 'e', locus: 'g' })] };
+  const grouped = {
+    ...c,
+    voices: [
+      ...c.voices,
+      v({ id: 'e', locus: 'g' }),
+      v({ id: 'f', seek: 300 }),
+      v({ id: 'g', rate: -1, loop: true }),
+      v({ id: 'h', rate: -2, seek: 500, anchor: { start: { any: [{ after: 'a' }] } } }),
+    ],
+  };
   it('an edit carrying a clip’s own values leaves its voice unchanged', () => {
     const all = clipsOf(grouped, subjects);
     for (const clip of all.clips)
@@ -337,5 +370,33 @@ describe('voice → clip → edit → voice', () => {
     expect(cc).toMatchObject({ freezeBefore: true, freezeAfter: false });
     expect(cc?.group).toBeDefined();
     expect(dd).toMatchObject({ fadeIn: 30 });
+  });
+  it('a clip cued partway or backward snaps its right edge to a loop’s worth', () => {
+    const d = {
+      ...c,
+      voices: [v({ id: 'f', seek: 300 }), v({ id: 'g', rate: -1 }), v({ id: 'h', seek: 900 })],
+    };
+    const [f, g, h] = clipsOf(d, subjects).clips;
+    expect(f?.stops?.slice(0, 3)).toEqual([0.25, 1.25, 2.25]);
+    expect(g?.stops?.slice(0, 3)).toEqual([1, 2, 3]);
+    expect(h?.stops?.slice(0, 2)).toEqual([0.75, 1.75]);
+    const edits: ClipEdit[] = [
+      { clip: 'f', kind: 'passes', passes: 3.25 },
+      { clip: 'g', kind: 'passes', passes: 5 },
+      { clip: 'h', kind: 'passes', passes: 0.75 },
+    ];
+    let e = d;
+    for (const edit of edits) e = applyEdit(e, edit);
+    expect(e.voices.map((x) => x.loop)).toEqual([4, 5, 3]);
+    expect(clipsOf(e, subjects).clips.map((x) => x.passes)).toEqual([3.25, 5, 0.75]);
+    expect(applyEdit(d, { clip: 'f', kind: 'passes', passes: 2 })).toBe(d);
+  });
+  it('a backward clip with a seek stops where the seek leaves no more to add', () => {
+    const d = { ...c, voices: [v({ id: 'h', rate: -1, seek: 500, loop: 1 })] };
+    const [h] = clipsOf(d, subjects).clips;
+    expect(h?.stops).toEqual([1, 1.25]);
+    const longer = applyEdit(d, { clip: 'h', kind: 'passes', passes: 1.25 });
+    expect(at(longer, 'h')?.loop).toBe(2);
+    expect(clipsOf(longer, subjects).clips[0]?.passes).toBe(1.25);
   });
 });

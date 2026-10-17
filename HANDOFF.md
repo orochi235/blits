@@ -689,10 +689,22 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `mix.blend` (a locus cued as one blend by a signal); marks, hits, and events (an Events tab
     with `marks`, `announce`, `book`, and `drain`, a voice's `tags`, `score`, and hits, and any
     anchor typed as JSON); and a cue's `seek` with a rate below 0. What that left:
-    - Groups take no `tags`, `score`, hits, `seek`, or negative rate; the booker reads a fixed
-      100 ms ahead with no setting; a clip with a `seek` or a rate below 0 does not set `loop`
-      by its right edge; and an `all`/`any` anchor, or one that selects by tag or `writes`,
-      draws no link on the score.
+    - Groups take no `tags`, `score`, hits, `seek`, or negative rate.
+    - **Chosen while building, Mike's to overturn** (2026-10-17, the score's joined links, a
+      partway clip's right edge, and the booker's read-ahead):
+      - A join or query anchor draws a dotted link from each voice `timingOf` says it could
+        wait on: close dots for `all`, wide for `any` or a query, and a query inside an `all`
+        counts as `any`. To change the look, edit `.linkAll`/`.linkAny` in
+        `ScoreLanes.module.css`; to drop them, remove `joinedLinks` in `score.ts`.
+      - A query that also names (`{ name, tag }`) now draws as a query, not a dashed link to
+        that name, so the score agrees with the Timing tab. `targetOf` in `score.ts` holds it.
+      - A partway clip's right edge snaps to what each whole `loop` leaves (`stopsOf` in
+        `clip.ts`), and the edit sets the fewest loops that leave that much; backward with a
+        `seek`, the edge stops at the seek. Reverse by restoring the `startsPartway` early return
+        in `score.ts`'s `passes` case.
+      - The read-ahead is saved in the composition as `book.ahead`, 0 to `MAX_AHEAD` (5000 ms),
+        while the book-and-drain tag stays per-session on the `EventLog`. Moving the tag to
+        `book.tag` would save and share it too.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 

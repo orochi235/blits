@@ -1,29 +1,34 @@
-import type { Anchor, Mark } from '@msb235/blits';
+import type { Anchor, Mark, Query } from '@msb235/blits';
 import type { Clip, ClipEdit, Edge, Header, Link, ScoreMark } from '@pg/widgets/ScoreLanes';
 import { blendOf, syncBlend } from './blend';
-import { clipOf, freezeOf, passesOf, placeFrom, startsPartway } from './clip';
+import { clipOf, freezeOf, passesOf, placeFrom, playOf, startsPartway, stopsOf } from './clip';
 import type { Built } from './compile';
-import type { Composition, Voice } from './composition';
+import { type Composition, periodOf, type Voice } from './composition';
 import { scopeOf } from './expr';
 import { rowsOf, underSpan } from './groups';
 import { without } from './keyed';
 import { clockOf, placedOf } from './placed';
 import { cutUnder, headerOf, type Laying } from './scoreHeaders';
 import type { Subject } from './stage';
+import { timingOf } from './timing';
 
 const edgeOfMark = (m: Mark): Edge => (m === 'start' || m === 'in' ? 'start' : 'end');
 
-/** The voice name and edge an anchor points at, when it selects by name. */
+/** The voice name and edge an anchor points at, when it selects by name alone. */
 function targetOf(a: number | Anchor | undefined): { name: string; edge: Edge } | null {
   if (a === undefined || typeof a === 'number') return null;
-  const name = (q: unknown) => (typeof q === 'string' ? q : (q as { name?: string }).name);
+  const name = (q: unknown) => {
+    if (typeof q === 'string') return q;
+    const x = q as Query;
+    return x.tag || x.writes || x.resolver ? undefined : x.name;
+  };
   let n: string | undefined;
   let edge: Edge;
   if ('after' in a) [n, edge] = [name(a.after), 'end'];
   else if ('with' in a) [n, edge] = [name(a.with), 'start'];
   else if ('before' in a) [n, edge] = [name(a.before), 'start'];
   else if ('of' in a) [n, edge] = [name(a.of), edgeOfMark(a.mark)];
-  // A join waits on several voices, so it points at no one of them.
+  // A join waits on several voices, so it points at no one of them; `joinedLinks` draws those.
   else return null;
   return n ? { name: n, edge } : null;
 }
@@ -96,8 +101,42 @@ export function clipsOf(
       if (t && to) links.push({ from: { clip: v.id, edge }, to: { clip: to.id, edge: t.edge } });
     }
   }
+  links.push(...joinedLinks(c));
   const marks = (c.announced ?? []).map((a) => ({ at: a.at, label: a.name }));
   return { clips, links, headers, marks };
+}
+
+/**
+ * A link from each voice an `all`, an `any`, or a query anchor could wait on, as the Timing tab
+ * resolves them: `all` when every step from the anchor to that voice is an `all`, else `any`.
+ */
+function joinedLinks(c: Composition): Link[] {
+  const t = timingOf(c);
+  const kinds = new Map(t.nodes.map((n) => [n.id, n]));
+  const into = new Map<string, typeof t.edges>();
+  for (const e of t.edges) into.set(e.to, [...(into.get(e.to) ?? []), e]);
+  const out = new Map<string, Link>();
+  const walk = (node: string, from: Link['from'], all: boolean) => {
+    const n = kinds.get(node);
+    const every = all && n?.kind === 'join' && n.label === 'all';
+    for (const e of into.get(node) ?? []) {
+      if (e.from.startsWith('voice:')) {
+        const to = { clip: e.from.slice('voice:'.length), edge: edgeOfMark(e.mark) };
+        const key = `${from.clip}.${from.edge}-${to.clip}.${to.edge}`;
+        if (to.clip !== from.clip && !out.has(key))
+          out.set(key, { from, to, join: every ? 'all' : 'any' });
+      } else if (e.from.startsWith('join:') || e.from.startsWith('query:'))
+        walk(e.from, from, every);
+    }
+  };
+  for (const v of c.voices)
+    for (const e of into.get(`voice:${v.id}`) ?? []) {
+      if (e.sets === undefined || e.sets === 'turn') continue;
+      if (!e.from.startsWith('join:') && !e.from.startsWith('query:')) continue;
+      const edge: Edge = e.sets === 'start' || e.sets === 'in' ? 'start' : 'end';
+      walk(e.from, { clip: v.id, edge }, true);
+    }
+  return [...out.values()];
 }
 
 function freshLocus(c: Composition): string {
@@ -120,10 +159,17 @@ function edited(
       const start = startOf(v, edit.start, built);
       return start === v.start ? v : { ...v, start };
     }
-    case 'passes':
-      // Its clip shows what is left to play, which is not its `loop`.
-      if (startsPartway(v) || edit.passes === passesOf(v)) return v;
-      return { ...v, loop: Number.isFinite(edit.passes) ? edit.passes : true };
+    case 'passes': {
+      if (!startsPartway(v)) {
+        if (edit.passes === passesOf(v)) return v;
+        return { ...v, loop: Number.isFinite(edit.passes) ? edit.passes : true };
+      }
+      // Its clip shows what is left to play, so the loop is the fewest that leave that much.
+      const left = playOf(periodOf(v.patch) ?? 0, v.rate, passesOf(v), v.seek).passes;
+      if (edit.passes === left) return v;
+      const stop = stopsOf(v).find((s) => Math.abs(s.passes - edit.passes) < 1e-9);
+      return stop && stop.loop !== v.loop ? { ...v, loop: stop.loop } : v;
+    }
     case 'fadeIn':
       return edit.ms === (v.fade.in ?? 0) ? v : { ...v, fade: { ...v.fade, in: edit.ms } };
     case 'fadeOut':

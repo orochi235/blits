@@ -2,6 +2,7 @@ import { type Handle, type Mix, type MixOptions, mix, type Patch } from '@msb235
 import { createHistory as tape } from '@weasel-js/history';
 import type { Composition, MixSettings } from './composition';
 import { cueAll, type Voices } from './cueGroups';
+import { AHEAD } from './events';
 import { type Faults, scopeOf } from './expr';
 import { FRAME } from './frame';
 import { kitOf, type Mixed } from './kit';
@@ -21,6 +22,8 @@ export interface Built {
   /** By voice or group id. */
   faults: Map<string, Faults>;
   errors: FieldError[];
+  /** How far ahead the player's booker reads, ms: the composition's `book.ahead`, or `AHEAD`. */
+  ahead: number;
 }
 
 /** History kept past the composition's length, ms, so a seek to its end never falls short. */
@@ -76,5 +79,6 @@ export function compile(
     levels: scope.levels,
     faults,
     errors,
+    ahead: c.book?.ahead ?? AHEAD,
   };
 }
