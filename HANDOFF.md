@@ -898,11 +898,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   (`bench/memory.mjs`), so it is the heap that row grew, not a leak. `AB_EACH=1 bench/ab.sh`
   runs each row in a process of its own.
 
-- **A plot's lowest y label and its first x label print over each other** when a time tick falls
-  near the plot's left edge: the blend preset's offset plot read "-0.500" at 1.52 s (seen
-  2026-10-13 on weasel 1.10.0, not checked on 1.9.2). `ChannelPlot` asks `Plot2D` for both sets
-  of labels `inside`.
-
 - **The site's control panels are dark on a light page, and their dim text is hard to read**: a
   section title, a field's label and a radio's unselected options draw in a muted color on near
   black (seen 2026-10-13 on the Patch page, deployed and local alike).
