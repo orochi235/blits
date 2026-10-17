@@ -1,100 +1,115 @@
-import type { FadeOptions, Handle } from '@msb235/blits';
+import type { FadeOptions } from '@msb235/blits';
 import type { Subject } from '@pg/blits/stage';
-import { useState } from 'react';
-import s from './App.module.css';
+import { f } from '@weasel-js/labkit';
 import { docOf } from './docs';
 
 type When = 'now' | 'rest' | 'at';
 
-export interface FadeControlsProps {
-  /** The subject picked on the stage, which a fade can take out of the voice alone. */
-  subject: Subject | undefined;
+/** What the fade rows hold, under `fade` in the live panel's config. */
+export interface FadeConfig {
+  over: number;
+  one: boolean;
+  when: When;
+  at: number;
+  deadline: number;
+}
+
+export const FADE: FadeConfig = { over: 300, one: false, when: 'now', at: 0, deadline: 1000 };
+
+/** The fade rows left auto at the start, which leave blits' default for the option. */
+export const FADE_AUTO = ['fade.over', 'fade.deadline'];
+
+const BLITS_DEFAULT = "Click the label to leave it auto, which is blits' default.";
+
+export interface FadeNodesProps {
   /** An owner fades as a whole: neither by subject nor at rest. */
-  whole?: boolean;
-  act(fn: (h: Handle<Subject>) => void): void;
+  whole: boolean;
+  /** Whether a subject is picked on the stage, which a fade can take out of the voice alone. */
+  picked: boolean;
+  onFade(): void;
+  onRise(): void;
 }
 
-const ms = (text: string) => {
-  const n = Number(text);
-  return text.trim() !== '' && Number.isFinite(n) && n >= 0 ? n : undefined;
-};
+/** `handle.fade` with every option it takes, and `rise` to turn a fade back, as a group of live panel rows. */
+export function fadeNodes({ whole, picked, onFade, onRise }: FadeNodesProps) {
+  // An empty `all` holds: a whole owner has no `one` row to read.
+  const many = whole ? { all: [] } : { path: 'fade.one', is: false };
+  return f
+    .group({
+      over: f
+        .number(FADE.over)
+        .label('over')
+        .range(0, 1e6)
+        .input()
+        .step(50)
+        .suffix('ms')
+        .describe(BLITS_DEFAULT),
+      ...(whole
+        ? {}
+        : {
+            one: f
+              .boolean(false)
+              .label('only the picked subject')
+              .enableIf(() => picked),
+          }),
+      when: f
+        .enum<When>('now', [
+          { value: 'now', label: 'now' },
+          ...(whole ? [] : [{ value: 'rest', label: 'at rest, per subject' }]),
+          { value: 'at', label: 'at mix time' },
+        ])
+        .label('when')
+        .showIf(many),
+      at: f
+        .number(FADE.at)
+        .label('at')
+        .range(0, 1e9)
+        .input()
+        .step(50)
+        .suffix('ms')
+        .showIf({ all: [many, { path: 'fade.when', is: 'at' }] }),
+      deadline: f
+        .number(FADE.deadline)
+        .label('deadline')
+        .range(0, 1e9)
+        .input()
+        .step(50)
+        .suffix('ms')
+        .describe(BLITS_DEFAULT)
+        .showIf({ all: [many, { path: 'fade.when', is: 'rest' }] }),
+      act: f
+        .group({
+          fade: f
+            .action(onFade)
+            .label('fade')
+            .describe(docOf('Handle.fade') ?? ''),
+          rise: f
+            .action(onRise)
+            .label('rise')
+            .describe(docOf('Handle.rise') ?? ''),
+        })
+        .as('bar'),
+    })
+    .label('fade')
+    .section('fade', { pack: 'one-up' });
+}
 
-/** `handle.fade` with every option it takes, and `rise` to turn a fade back. */
-export function FadeControls({ subject, whole = false, act }: FadeControlsProps) {
-  const [over, setOver] = useState('');
-  const [when, setWhen] = useState<When>('now');
-  const [at, setAt] = useState('0');
-  const [deadline, setDeadline] = useState('');
-  const [one, setOne] = useState(false);
-
-  const opts = (): FadeOptions<Subject> => {
-    const o = ms(over);
-    if (one && subject !== undefined) return { subject, ...(o !== undefined ? { over: o } : {}) };
-    const d = ms(deadline);
-    return {
-      ...(o !== undefined ? { over: o } : {}),
-      ...(when === 'rest' ? { at: 'rest' as const } : {}),
-      ...(when === 'at' && ms(at) !== undefined ? { at: ms(at) } : {}),
-      ...(when === 'rest' && d !== undefined ? { deadline: d } : {}),
-    };
+/** The options `handle.fade` takes from the rows; an auto row leaves its option out. */
+export function fadeOptions(
+  c: FadeConfig,
+  auto: ReadonlySet<string>,
+  subject: Subject | undefined,
+): FadeOptions<Subject> {
+  const over = auto.has('fade.over') ? {} : { over: c.over };
+  if (c.one && subject !== undefined) return { subject, ...over };
+  return {
+    ...over,
+    ...(c.when === 'rest' ? { at: 'rest' as const } : {}),
+    ...(c.when === 'at' ? { at: c.at } : {}),
+    ...(c.when === 'rest' && !auto.has('fade.deadline') ? { deadline: c.deadline } : {}),
   };
-  const field = (label: string, value: string, set: (v: string) => void, title?: string) => (
-    <label className={s.row} title={title}>
-      {label}
-      <input
-        type="number"
-        min={0}
-        step="any"
-        placeholder="default"
-        value={value}
-        onChange={(e) => set(e.target.value)}
-      />
-    </label>
-  );
-
-  return (
-    <fieldset className={s.field} title={docOf('Handle.fade')}>
-      <legend>fade</legend>
-      <div className={s.row}>
-        {field('over', over, setOver)}
-        {!whole && (
-          <label className={s.row}>
-            <input
-              type="checkbox"
-              checked={one}
-              disabled={subject === undefined}
-              onChange={(e) => setOne(e.target.checked)}
-            />
-            only the picked subject
-          </label>
-        )}
-      </div>
-      {!one && (
-        <div className={s.row}>
-          <select aria-label="when" value={when} onChange={(e) => setWhen(e.target.value as When)}>
-            <option value="now">now</option>
-            {!whole && <option value="rest">at rest, per subject</option>}
-            <option value="at">at mix time</option>
-          </select>
-          {when === 'at' && field('ms', at, setAt)}
-          {when === 'rest' && field('deadline', deadline, setDeadline)}
-        </div>
-      )}
-      <div className={s.row}>
-        <button type="button" onClick={() => act((h) => h.fade(opts()))}>
-          fade
-        </button>
-        <button
-          type="button"
-          title={docOf('Handle.rise')}
-          onClick={() => {
-            const o = ms(over);
-            act((h) => h.rise(o !== undefined ? { over: o } : {}));
-          }}
-        >
-          rise
-        </button>
-      </div>
-    </fieldset>
-  );
 }
+
+/** The options `handle.rise` takes: only `over`. */
+export const riseOptions = (c: FadeConfig, auto: ReadonlySet<string>) =>
+  auto.has('fade.over') ? {} : { over: c.over };

@@ -1,0 +1,81 @@
+/* A row the panel cannot draw as a labkit field, given the grid's whole width. */
+.wide {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--wzl-space-xs);
+  min-width: 0;
+}
+
+/* Timeline is a flex column that collapses in a box with no height. */
+.timeline {
+  grid-column: 1 / -1;
+  height: 240px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ease {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--wzl-space-xs);
+  min-width: 0;
+}
+
+/* EasingPicker names its menu "Easing" in visible text; the row's own label already says it. */
+.curve label {
+  display: flex;
+  align-items: center;
+  font-size: 0;
+}
+
+.curve select {
+  font-size: var(--wzl-font-size-xs);
+}
+
+.count {
+  width: 7ch;
+}
+
+.errors {
+  margin: 0;
+  padding-inline-start: var(--wzl-space-md);
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-danger);
+}
+
+.error {
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-danger);
+}
+
+.key {
+  display: grid;
+  gap: var(--wzl-space-xs);
+}
+
+.values {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-xs);
+}
+
+.values > * {
+  min-width: 0;
+}
+
+.values > :last-child {
+  flex: 1;
+}
+
+.key .values > * {
+  flex: 1;
+}
+
+.code input,
+input.code {
+  font-family: var(--wzl-font-mono);
+}
