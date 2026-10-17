@@ -11,6 +11,7 @@ import {
   resolveConfigSchema,
 } from '@weasel-js/labkit';
 import { drafted } from './CompositionControls';
+import { docOf } from './docs';
 import { EaseField, easeName } from './EaseField';
 
 type Keys = Extract<PatchSource, { kind: 'keys' }>;
@@ -51,11 +52,11 @@ export function ChannelTiming({ patch: p, onChange }: { patch: Keys; onChange(p:
       delay: (patch ? f.number(0).enableIf(() => false) : f.number(0).range(0, 60000).input())
         .step(10)
         .suffix('ms')
-        .describe("blits' delayBy: ms this channel waits before its keys start.")
+        .describe(docOf('KeysOptions.delayBy') ?? '')
         .render(drafted()),
       ease: f
         .custom<string>('ease', 'linear')
-        .describe("blits' easeBy: the curve this channel takes between its stops.")
+        .describe(docOf('KeysOptions.easeBy') ?? '')
         .render(ease),
     });
   const schema = resolveConfigSchema(

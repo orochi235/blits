@@ -232,16 +232,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   scrolls sideways instead of squeezing (`MIN_PITCH` in `MixerDesk/layout.ts`); only channels
   something writes get a bus, as in the flow.
 
-  weasel 1.10.1 (2026-10-15) carries the diagram's edge routing and label-sized group boxes, but
-  not weasel's reworked `layered` layout, which is on weasel's `origin/main` (2026-10-17) and in no
-  release. Until one has it, this machine's `apps/playground/node_modules/@weasel-js/diagram` is a
-  symlink to `~/src/weasel/packages/diagram`, whose `dist` is whatever that checkout last built;
-  `npm ci` or `npm install` replaces it with 1.10.1 from npm. Once weasel releases the layered
-  layout, pin that version and delete this paragraph. The Both tab's edit mode also uses three port options only weasel's
-  `main` has (`showsPort`, `shape`, and a `fill` per port), so against 1.10.1 from npm the
-  playground fails its typecheck in `src/widgets/FlowDiagram/FlowDiagram.tsx`, though it still runs
-  and its smoke run passes; `npm run check` leaves the playground's typecheck out, so CI is
-  unaffected.
+  The playground runs on weasel 1.10.1 from npm, which lacks two things weasel's `main` has: the
+  reworked `layered` layout, and three port options the Both tab's edit mode uses (`showsPort`,
+  `shape`, and a `fill` per port). So the edit mode draws no dots, and the playground fails its
+  typecheck in `src/widgets/FlowDiagram/FlowDiagram.tsx`, though it runs and its smoke run passes;
+  `npm run check` leaves the playground's typecheck out, so CI is unaffected. Linking
+  `~/src/weasel/packages/diagram` in, as this machine did until 2026-10-17, no longer works: its
+  `dist` now imports `@weasel-js/font/metrics`, which font 1.10.1 lacks, and the playground dedupes
+  font to its own copy, so the dev server fails. Once weasel releases these, pin that version and
+  delete this paragraph.
 
   An edge label is still placed without regard to nodes, so on a short edge it can overlap the box
   it leaves or enters (`anchors`: `start its end +200 ms` over `pair`). That gap is filed in

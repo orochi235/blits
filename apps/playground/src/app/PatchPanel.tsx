@@ -19,6 +19,7 @@ import { useMemo, useState } from 'react';
 import s from './App.module.css';
 import { ChannelTiming } from './ChannelTiming';
 import { drafted } from './CompositionControls';
+import { docOf } from './docs';
 import { EaseField } from './EaseField';
 import { KeyEditor } from './KeyEditor';
 import m from './PatchLive.module.css';
@@ -104,7 +105,11 @@ function schemaOf() {
         .showIf({ not: MOTION }),
       channel: f.enum<ChannelName>('offset', CHANNELS).label('channel').manual().showIf(MOTION),
       keys: f
-        .group({ timeline: custom('timeline'), ease: custom('ease'), timing: custom('timing') })
+        .group({
+          timeline: custom('timeline'),
+          ease: custom('ease').describe(docOf('KeysOptions.ease') ?? ''),
+          timing: custom('timing'),
+        })
         .as('fragment')
         .showIf(isKind('keys')),
       fn: f
@@ -126,8 +131,17 @@ function schemaOf() {
           kind,
           f
             .group({
-              ...Object.fromEntries(OPTIONS[kind].map((k) => [k, custom('expr').label(k)])),
-              ...(kind === 'tween' ? { ease: custom('ease') } : {}),
+              ...Object.fromEntries(
+                OPTIONS[kind].map((k) => [
+                  k,
+                  custom('expr')
+                    .label(k)
+                    .describe(docOf(`${kind}.${k}`) ?? ''),
+                ]),
+              ),
+              ...(kind === 'tween'
+                ? { ease: custom('ease').describe(docOf('tween.ease') ?? '') }
+                : {}),
             })
             .as('fragment')
             .showIf(isKind(kind)),

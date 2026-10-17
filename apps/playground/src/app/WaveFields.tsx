@@ -5,6 +5,7 @@ import { type Mixed, SWINGS, type SwingName } from '@pg/blits/kit';
 import { type ControlRenderer, f } from '@weasel-js/labkit';
 import { PropertyControl, PropertyRow } from '@weasel-js/ui';
 import { drafted } from './CompositionControls';
+import { docOf } from './docs';
 import m from './PatchLive.module.css';
 
 type Wave = Extract<PatchSource, { kind: 'wave' }>;
@@ -14,16 +15,26 @@ const SHAPES: readonly WaveShape[] = ['sine', 'triangle', 'saw', 'square'];
 /** A depth a channel starts at when ticked: a visible swing on its own scale. */
 const START: Record<SwingName, number> = { turn: 15, scale: 0.25, opacity: 0.5, glow: 1 };
 
+const doc = (key: string) => docOf(`WaveOptions.${key}`) ?? '';
+
 /** A wave patch's rows, under `wave` in the patch panel's schema; each swing channel's row is drawn by `depthRenderers`. */
 export function waveNodes() {
   return f
     .group({
-      shape: f.enum<WaveShape>('sine', SHAPES).label('shape').manual(),
-      cycles: f.number(1).label('cycles').range(0, 1000).input().step(1).render(drafted()),
-      phase: f.number(0).label('phase').step(0.05).render(drafted()),
+      shape: f.enum<WaveShape>('sine', SHAPES).label('shape').describe(doc('shape')).manual(),
+      cycles: f
+        .number(1)
+        .label('cycles')
+        .describe(doc('cycles'))
+        .range(0, 1000)
+        .input()
+        .step(1)
+        .render(drafted()),
+      phase: f.number(0).label('phase').describe(doc('phase')).step(0.05).render(drafted()),
       depth: f
         .group(Object.fromEntries(SWINGS.map((ch) => [ch, f.custom<null>('depth', null)])))
-        .label("depth, either side of each channel's rest"),
+        .label("depth, either side of each channel's rest")
+        .describe(doc('depth')),
     })
     .as('fragment');
 }

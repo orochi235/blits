@@ -20,6 +20,9 @@ export const FADE: FadeConfig = { over: 300, one: false, when: 'now', at: 0, dea
 export const FADE_AUTO = ['fade.over', 'fade.deadline'];
 
 const BLITS_DEFAULT = "Click the label to leave it auto, which is blits' default.";
+/** A fade option's blits doc comment, then `note`. */
+const described = (key: string, note = '') =>
+  [docOf(`FadeOptions.${key}`), note].filter(Boolean).join(' ');
 
 export interface FadeNodesProps {
   /** An owner fades as a whole: neither by subject nor at rest. */
@@ -43,13 +46,14 @@ export function fadeNodes({ whole, picked, onFade, onRise }: FadeNodesProps) {
         .input()
         .step(50)
         .suffix('ms')
-        .describe(BLITS_DEFAULT),
+        .describe(described('over', BLITS_DEFAULT)),
       ...(whole
         ? {}
         : {
             one: f
               .boolean(false)
               .label('only the picked subject')
+              .describe(described('subject'))
               .manual()
               .enableIf(() => picked),
           }),
@@ -60,6 +64,7 @@ export function fadeNodes({ whole, picked, onFade, onRise }: FadeNodesProps) {
           { value: 'at', label: 'at mix time' },
         ])
         .label('when')
+        .describe(described('at'))
         .manual()
         .showIf(many),
       at: f
@@ -81,7 +86,7 @@ export function fadeNodes({ whole, picked, onFade, onRise }: FadeNodesProps) {
               .input()
               .step(50)
               .suffix('ms')
-              .describe(BLITS_DEFAULT)
+              .describe(described('deadline', BLITS_DEFAULT))
               .showIf({ all: [many, { path: 'fade.when', is: 'rest' }] }),
           }),
       act: f
