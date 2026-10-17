@@ -785,12 +785,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         - Show nothing: forward, each subject drops its contribution at its own end, a visible
           change to every staggered finite voice shipped in 0.10.0. A staggered entrance would
           snap each subject back as it finishes, rather than hold until the voice fades.
-    - **Not yet timed on the fleet** (2026-10-17, `4a6cc4e`): a voice running back past its
-      end showing nothing put one comparison per subject on the general path (`shownAt` in
-      `src/voice.ts`, and an `isNaN` in `contribution` in `src/fold.ts`), on a keys lane
-      (`runKeys` in `src/keyfill.ts`), and on a fn lane (`frozenAt` in `src/lane.ts`), and sends
-      crowd rows of a keys or fn voice an owner holds, or one running back, through `frozenAt`
-      (`copyVoice` in `src/crowd.ts`). Time `keys`, `fn` and a row with owners against `b1f65d4`.
+    - **Timed, small and accepted under the tuning bound** (2026-10-17, `4a6cc4e`, with the
+      read-ahead stops): a voice running back past its end showing nothing put one comparison per
+      subject on the general path (`shownAt` in `src/voice.ts`, an `isNaN` in `contribution` in
+      `src/fold.ts`), on a keys lane (`runKeys` in `src/keyfill.ts`) and a fn lane (`frozenAt` in
+      `src/lane.ts`), and sends crowd rows of a keys or fn voice an owner holds, or one running
+      back, through `frozenAt` (`copyVoice` in `src/crowd.ts`). On studio (7 rounds,
+      `AB_EACH=1 bench/ab.sh 0b51634 6ef4985`, 19 rows) the geometric mean is 1.008: `own`
+      1.02–1.03, `typing` 1.03, `keys` and `fn` 1.00–1.02, `ahead` 1.006 with 5% more kB a frame,
+      the rest within 1.00 ± 0.02. If it is worth winning back, `own` and `keys` are where to look.
     - **Chosen while building, Mike's to overturn** (2026-10-17, the score's joined links, a
       partway clip's right edge, and the booker's read-ahead):
       - A join or query anchor draws a dotted link from each voice `timingOf` says it could
