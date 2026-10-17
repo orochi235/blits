@@ -32,6 +32,8 @@ version and everything else the patch. Each release lists its changes as **Break
 
 - `mix.span` refuses a rate below 0. A span cued backward placed none of its children, which
   waited for good, and never left. Its handle's `rate` still turns one that plays.
+- A voice whose patch has no duration books no hits while its clock runs back, as every other
+  voice does. One cued backward booked each hit ahead of it.
 - A fade set for a time after a voice's passes run out no longer begins in place of the voice
   ending, where one frame crossed both: `fade({ at })` on a voice with no `freeze` that ended
   before `at` played on, held at its last frame, until the fade finished.

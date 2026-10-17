@@ -239,6 +239,11 @@ export class Book<I, O> implements Booker {
       const hi = voice.elapsedAt(hiAt);
       if (!(hi > t.seenTo)) continue;
       const lo = Math.max(t.seenTo, voice.elapsedAt(loAt));
+      // Its clock runs back: hits come only as it runs forward.
+      if (!(lo <= hi)) {
+        t.seenTo = hi;
+        continue;
+      }
       const d = voice.duration;
       const last = d > 0 ? Math.min(voice.passes - 1, Math.floor(hi / d)) : 0;
       for (let pass = d > 0 ? Math.max(0, Math.floor(lo / d)) : 0; pass <= last; pass++) {

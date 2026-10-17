@@ -358,6 +358,21 @@ describe('an owner’s hits', () => {
     expect(hits()).toEqual([]);
   });
 
+  it('books none while its clock runs back, nor does a voice cued backward', () => {
+    const { m, run, hits } = booked();
+    const o = m.owns({ rate: -1, seek: 500, hits: [{ at: 100, event: 'owned' }] });
+    cue(m, { owner: o, start: 0, hits: [] });
+    cue(m, { rate: -1 });
+    m.cue({
+      patch: patch<Part, Pose>(0, () => ({ x: 1 }), { writes: ['x'] }),
+      rate: -1,
+      seek: 300,
+      hits: [{ at: 100, event: 'bare' }],
+    });
+    run(0, 1000);
+    expect(hits()).toEqual([]);
+  });
+
   it('refuses a hit at no time on its clock', () => {
     const m = mix<Part, Pose>(K);
     expect(() => m.owns({ hits: [{ at: -1, event: 'x' }] })).toThrow(/hit/);
