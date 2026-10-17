@@ -7,9 +7,11 @@
 }
 
 /* Timeline is a flex column that collapses in a box with no height. */
+/* Timeline is a flex column that collapses with no height: the ruler, a row per track (`--tracks`),
+   and room for the key editor it opens under them. */
 .timeline {
   grid-column: 1 / -1;
-  height: 240px;
+  height: calc(var(--tracks, 2) * 25px + 84px);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -45,7 +47,6 @@
   font-size: var(--wzl-font-size-xs);
   color: var(--wzl-danger);
 }
-
 
 .key {
   display: grid;

@@ -15,7 +15,7 @@ import { CodePane } from '@pg/widgets/CodePane';
 import type { SampledTrack } from '@weasel-js/animator';
 import { ControlPanel, type ControlRenderer, f, resolveConfigSchema } from '@weasel-js/labkit';
 import { Timeline } from '@weasel-js/ui';
-import { useMemo, useState } from 'react';
+import { type CSSProperties, useMemo, useState } from 'react';
 import s from './App.module.css';
 import { ChannelTiming } from './ChannelTiming';
 import { drafted } from './CompositionControls';
@@ -230,10 +230,11 @@ export function PatchPanel({ voice: v, kit, errors, playhead, onChange }: PatchP
 
   const renderers: Record<string, ControlRenderer> = {};
   if (p.kind === 'keys') {
+    const tracks = tracksOf(p.stops, p.period);
     renderers['keys.timeline'] = () => (
-      <div className={m.timeline}>
+      <div className={m.timeline} style={{ '--tracks': tracks.length } as CSSProperties}>
         <Timeline
-          tracks={tracksOf(p.stops, p.period)}
+          tracks={tracks}
           duration={p.period}
           playhead={phase}
           mode={mode}
