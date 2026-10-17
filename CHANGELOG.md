@@ -64,6 +64,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- `rise` on a voice faded before its start leaves it `pending`, to start on time and follow its
+  anchor again, as a seek back finds it. It went `live` at once and played from where its clock
+  would have read 0, ahead of its start, so a seek back played on differently from playing
+  straight through.
 - A read back to the frame a `drop` was made in, before anything read the mix that frame, shows
   the subject met afresh, as the frame did. It showed the record the subject had before the drop,
   a slewed weight's state included, in `project(t)` and `project({ frame })`.
