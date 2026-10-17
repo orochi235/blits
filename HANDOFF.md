@@ -898,10 +898,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   (`bench/memory.mjs`), so it is the heap that row grew, not a leak. `AB_EACH=1 bench/ab.sh`
   runs each row in a process of its own.
 
-- **The site's control panels are dark on a light page, and their dim text is hard to read**: a
-  section title, a field's label and a radio's unselected options draw in a muted color on near
-  black (seen 2026-10-13 on the Patch page, deployed and local alike).
-
 - **A host editing a pose the mix allocated changes what `from: 'current'` reads.** `probe`
   without `out` keeps the pose it returns as the subject's last, by reference, so a held voice at
   `[10]` whose pose the host set to `[500]` was retargeted from 500 (checked 2026-10-04). Whether

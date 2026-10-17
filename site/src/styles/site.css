@@ -236,6 +236,11 @@ pre code {
 
 /* Explainers */
 
+/* The controls draw in the theme's ink, not the page's, so their text suits their own surface. */
+.explainer-theme {
+  color: var(--wzl-fg);
+}
+
 .explainer {
   margin: 2rem 0 2.5rem;
 }

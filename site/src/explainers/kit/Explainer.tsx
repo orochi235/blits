@@ -1,5 +1,5 @@
 import { ControlPanel, interstellarTheme, resolveConfigSchema } from '@weasel-js/labkit';
-import { ThemeProvider } from '@weasel-js/theme/react';
+import { ThemeProvider, useResolvedColorMode } from '@weasel-js/theme/react';
 import '@weasel-js/labkit/styles.css';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { type Ink, readInk } from './ink';
@@ -30,8 +30,10 @@ export interface Size {
 const noConfig = { defaults: () => ({}) } as unknown as Schema<never>;
 
 export function Explainer<I, O, C>(props: ExplainerProps<I, O, C>) {
+  // A selection takes a mode, not a preference: `'auto'` there falls back to the theme's dark.
+  const mode = useResolvedColorMode('auto');
   return (
-    <ThemeProvider theme={interstellarTheme} selection={{ mode: 'auto' }}>
+    <ThemeProvider theme={interstellarTheme} selection={{ mode }} className="explainer-theme">
       <ExplainerBody {...props} />
     </ThemeProvider>
   );
