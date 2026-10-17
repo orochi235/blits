@@ -1,97 +1,71 @@
-import type { FitResult, Order, Strength } from '@msb235/blits';
-import type { SpanSettings } from '@pg/blits/composition';
-import type { Faults } from '@pg/blits/expr';
+import type { FitStep, SpanSettings } from '@pg/blits/composition';
 import { withKey } from '@pg/blits/keyed';
-import s from './App.module.css';
+import { f } from '@weasel-js/labkit';
 import { docOf } from './docs';
-import { FitReadout } from './FitReadout';
-import { FitSteps } from './FitSteps';
+import { resultRow } from './FitReadout';
+import { fitRow } from './FitSteps';
+import { optional, optionalNumber } from './SpecFields';
 
-const STRENGTHS: Strength[] = ['weak', 'strong', 'required'];
-const ORDERS: Order[] = ['queue', 'stagger', 'together'];
-const SPILLS: NonNullable<SpanSettings['spill']>[] = ['instant', 'overrun'];
+const d = (key: string) => docOf(`SpanSpec.${key}`) ?? '';
+/** A choice whose blank leaves blits' default, named in its label. */
+const choice = (key: string, options: readonly string[], fallback: string) =>
+  f
+    .enum('', [
+      { value: '', label: `default (${fallback})` },
+      ...options.map((value) => ({ value, label: value })),
+    ])
+    .describe(d(key));
 
-export interface SpanFieldsProps {
-  span: SpanSettings;
-  onChange(span: SpanSettings): void;
-  errorOf(field: string): { error: string; line: number | null } | null;
-  faultsOf(step: number): Faults | undefined;
-  /** How the running span last fitted its children; undefined while it is not running. */
-  result: FitResult | undefined;
-}
+/** A span's own settings, at `span.<key>`: its budget, how it lays out and fits what it holds, and how it last fitted. */
+export const spanGroup = f
+  .group({
+    duration: optional()
+      .describe(d('duration'))
+      .render(optionalNumber({ placeholder: 'none', min: 0, step: 10, unit: 'ms' })),
+    priority: choice('priority', ['weak', 'strong', 'required'], 'strong'),
+    order: choice('order', ['queue', 'stagger', 'together'], 'queue'),
+    share: f
+      .number(0.5)
+      .range(0, 1)
+      .step(0.05)
+      .describe(d('share'))
+      .showIf({ path: 'span.order', is: 'stagger' }),
+    spill: choice('spill', ['instant', 'overrun'], 'instant'),
+    fit: f.custom<FitStep[] | undefined>('fit', undefined).describe(d('fit')).render(fitRow),
+    result: f.label('fit result').render(resultRow),
+  })
+  .label('span');
 
-/** A span's own settings: its budget and how it lays out and fits what it holds. */
-export function SpanFields({ span: sp, onChange, errorOf, faultsOf, result }: SpanFieldsProps) {
-  const set = <K extends keyof SpanSettings>(key: K, value: SpanSettings[K] | undefined) =>
-    onChange(withKey(sp, key, value));
-  const choice = <K extends 'priority' | 'order' | 'spill'>(
-    key: K,
-    options: readonly NonNullable<SpanSettings[K]>[],
-    fallback: string,
-  ) => (
-    <label className={s.row} title={docOf(`SpanSpec.${key}`)}>
-      {key}
-      <select
-        value={sp[key] ?? ''}
-        onChange={(e) => set(key, (e.target.value || undefined) as SpanSettings[K])}
-      >
-        <option value="">default ({fallback})</option>
-        {options.map((x) => (
-          <option key={x} value={x}>
-            {x}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-  return (
-    <fieldset className={s.panel} aria-label="span">
-      <legend>span</legend>
-      <label className={s.row} title={docOf('SpanSpec.duration')}>
-        duration
-        <input
-          type="number"
-          className={s.number}
-          min={0}
-          step="any"
-          placeholder="none"
-          value={sp.duration ?? ''}
-          onChange={(e) => {
-            const n = e.target.valueAsNumber;
-            set('duration', Number.isFinite(n) && n >= 0 ? n : undefined);
-          }}
-        />
-        ms
-      </label>
-      {choice('priority', STRENGTHS, 'strong')}
-      {choice('order', ORDERS, 'queue')}
-      {sp.order === 'stagger' && (
-        <label className={s.row} title={docOf('SpanSpec.share')}>
-          share
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.05}
-            value={sp.share ?? 0.5}
-            onChange={(e) => set('share', Number(e.target.value))}
-          />
-          <output className={s.readout}>{(sp.share ?? 0.5).toFixed(2)}</output>
-        </label>
-      )}
-      {choice('spill', SPILLS, 'instant')}
-      <FitSteps
-        steps={sp.fit}
-        onChange={(fit) => set('fit', fit)}
-        errorOf={(i) => errorOf(`span.fit.${i}`)}
-        faultsOf={faultsOf}
-        doc={docOf('SpanSpec.fit')}
-      />
-      {result ? (
-        <FitReadout result={result} />
-      ) : (
-        <p className={s.note}>not running: no fit to show</p>
-      )}
-    </fieldset>
-  );
+/** The span rows' values. */
+export const spanConfig = (sp: SpanSettings) => ({
+  duration: sp.duration,
+  priority: sp.priority ?? '',
+  order: sp.order ?? '',
+  share: sp.share ?? 0.5,
+  spill: sp.spill ?? '',
+  fit: sp.fit,
+});
+
+/** `sp` with the row at `span.<key>` written. */
+export function writtenSpan(sp: SpanSettings, key: string, value: unknown): SpanSettings {
+  switch (key) {
+    case 'duration': {
+      const n = value as number | undefined;
+      return withKey(
+        sp,
+        'duration',
+        n !== undefined && Number.isFinite(n) && n >= 0 ? n : undefined,
+      );
+    }
+    case 'priority':
+    case 'order':
+    case 'spill':
+      return withKey(sp, key, (value || undefined) as SpanSettings[typeof key]);
+    case 'share':
+      return withKey(sp, 'share', value as number);
+    case 'fit':
+      return withKey(sp, 'fit', value as FitStep[] | undefined);
+    default:
+      return sp;
+  }
 }
