@@ -24,6 +24,27 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   Unreleased section lists them. Chosen while building, Mike's to overturn: the name `stepMs` on a voice's spec, with 0 meaning the frame's gap; that a read
   ahead moves the tape forward and back, which the tape's subscribers hear; and which two calls
   it still refuses (the schema page's "Reading ahead past the tape").
+- **Unreleased: a read ahead stops at known events** (2026-10-17; the schema page's "Reading
+  ahead at known events"). Chosen while building, Mike's to overturn:
+  - *Which events count:* each call the tape holds, and each mark `marks` would list (a voice's
+    five and the announced ones). Pass boundaries of a loop that goes on are not events. To
+    narrow or widen, edit `nextEvent` in `src/project.ts`.
+  - *Stops only while a voice could carry state:* a patch with `step`, or a weight that is a
+    function. Otherwise the read crosses in one go as before, so stateless mixes pay one pass over
+    the voices. To stop always, drop the `carries` checks in `playAhead` and `nextEvent`.
+  - *`assess` says `exact` for a stateful signal on a read ahead,* by the 2026-09-29 rule that one
+    step across a stretch with no event in it is as good as any number; a signal following a
+    clock-driven input is then exact only to the stretch. A patch `step` without `stepMs` stays
+    `stepped`, and a read back still says `stepped` for signal state stepped from a copy. To go
+    back, drop `mix.backward` from the `kept` test in `doubtOf`.
+  - *A subject the live mix never probed is read at every stop,* as if probed all along.
+  - Each stop copies every voice and reads each asked-for subject once, so a read across many
+    events of a stateful mix costs that many reads; nobody has benched it.
+- **Gaps the slewed fuzz variant found, not fixed** (2026-10-17; `test/determinism.test.ts`
+  marks them `todo`). Both fail on `main` too, and neither involves a read ahead. A second seek
+  with no probe since the first puts back a `slew` weight's state wrong (`again`, most seeds), and
+  a read back to the frame of a `drop` shows the dropped subject's old slew state, where the frame
+  showed it met fresh (`behind`, e.g. seed 8: a slewed cue at 64, `drop(a)` at 160, read at 160).
 - **Unreleased, breaking: `loop` defaults to one pass** (Mike, 2026-10-11; it defaulted to
   looping for good). It waits for the next minor. Every consumer's cues were read at its `origin`
   head (2026-10-11): one relied on the old default, klieg's lighting voice
@@ -455,8 +476,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    without the `1e-6` slack. Mike's call whether to make them.
 
 2. **The remaining opens** are in the schema page: what the score still lacks (marks placed inside
-   a voice; tags absorbing loci; splitting a read ahead at known events), color's lerp space and the
-   stock band's width.
+   a voice; tags absorbing loci), color's lerp space and the stock band's width. Splitting a read
+   ahead at known events was built 2026-10-17 (see State).
 
 4. **Reach is fixed at cue, so a voice whose contribution moves pays for every subject it might
    touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every

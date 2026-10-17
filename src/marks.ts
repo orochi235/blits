@@ -5,6 +5,9 @@ import type { Transport } from './transport.js';
 import type { Mark } from './types.js';
 import { none, type Voice } from './voice.js';
 
+/** A voice's marks, in the order `marks` lists those at one time. */
+export const voiceMarks = ['start', 'in', 'coast', 'out', 'end'] as const satisfies readonly Mark[];
+
 /** The host timestamp the mix clock reads mix time `t` at; Infinity where it never will. */
 export function hostOf<I, O>(mix: Mixer<I, O>, t: number): number {
   return (mix.pace === null ? t : mix.pace.timeOf(t)) + mix.offset;
@@ -17,7 +20,7 @@ export function readingAt<I, O>(mix: Mixer<I, O>, u: number): number {
 
 /** Every mark between two host timestamps, earliest first, with the order that tells each apart. */
 export function listed<I, O>(mix: Mixer<I, O>, from: number, to: number): Listed[] {
-  const out = voiceMarks(mix, from, to);
+  const out = marksOf(mix, from, to);
   for (const a of announcedMarks(mix.transport, from, to))
     if (a.score !== undefined || a.slot === mix.slot) out.push(a.listed);
   return sorted(out);
@@ -26,7 +29,7 @@ export function listed<I, O>(mix: Mixer<I, O>, from: number, to: number): Listed
 /** Every mark of every mix on a transport and every one announced on it, earliest first. */
 export function listedAll(transport: Transport, from: number, to: number): Listed[] {
   const out: Listed[] = [];
-  for (const m of transport.members) out.push(...voiceMarks(m, from, to));
+  for (const m of transport.members) out.push(...marksOf(m, from, to));
   for (const a of announcedMarks(transport, from, to)) out.push(a.listed);
   return sorted(out);
 }
@@ -62,12 +65,12 @@ function announcedMarks(
   return out;
 }
 
-function voiceMarks<I, O>(mix: Mixer<I, O>, from: number, to: number): Listed[] {
+function marksOf<I, O>(mix: Mixer<I, O>, from: number, to: number): Listed[] {
   const lo = from - mix.offset;
   const hi = to - mix.offset;
   const out: Listed[] = [];
   for (const voice of [...mix.cued, ...mix.gone]) {
-    for (const mark of ['start', 'in', 'coast', 'out', 'end'] as const) {
+    for (const mark of voiceMarks) {
       const m = markOf(mix, voice, mark);
       const t = m === undefined ? m : hostOf(mix, m) - mix.offset;
       if (t === undefined || t < lo || t > hi) continue;

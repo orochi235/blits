@@ -4,6 +4,7 @@ import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { spring } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
+import { slew } from '../src/signals.js';
 import { transport } from '../src/transport.js';
 import type { Handle, Mix, MixOptions } from '../src/types.js';
 
@@ -120,6 +121,13 @@ describe('a read ahead after a seek back', () => {
       }
       if (t === 320) m.blend([wave, saw], (s) => (s === a ? 0.25 : 1), { loop: true });
       if (t === 480) h.owner?.fade({ over: 100 });
+    }, 208));
+
+  it('meets a subject at the call that cued its voice, for a signal that keeps state', () =>
+    readsAhead((m, t) => {
+      if (t === 304) m.cue({ patch: wave, weight: slew(() => 1, { riseMs: 200, from: 0 }) });
+      if (t === 400)
+        m.cue({ patch: saw, start: 448, weight: slew(() => 0.5, { riseMs: 300, from: 0 }) });
     }, 208));
 
   it('reads every mix on a transport, an anchor across them answering', () => {

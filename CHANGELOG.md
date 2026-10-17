@@ -24,6 +24,13 @@ version and everything else the patch. Each release lists its changes as **Break
   its voice had met the subject. The tape moves forward and back while the read is made.
 - `stepMs` on a voice's spec: the interval its `step` runs at, in place of the mix's. 0 steps it
   once a frame by the frame's gap.
+- A read ahead stops at each known event between now and the time read: each call the tape holds,
+  and each mark `marks` would list. A subject asked about is read at every stop, so a patch that
+  steps takes one step per stretch and a signal that keeps state sees each boundary: a voice
+  starting on the way meets its subject at its start, where it met it at the time read. `assess`
+  says `exact` for a stateful signal a read ahead fed, where it said `stepped`. The stops are made
+  only while a voice has a `step` or a signal weight; otherwise a read ahead crosses the gap in
+  one go as before.
 
 ### Fixed
 

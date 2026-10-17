@@ -4,30 +4,47 @@ import { check, type ProgramOptions, type Property, program, standing } from './
 const variants = {
   plain: {},
   full: { anchors: true, stateful: true, mixRate: true },
+  slewed: { cuesOnly: true, stateful: true, slewed: true },
 } satisfies Record<string, ProgramOptions>;
 type Variant = keyof typeof variants;
 
-/** Seeds 1 to `seeds` are checked; `unknown` lists the ones failing today. */
+/** Seeds 1 to `seeds` are checked; `unknown` lists the ones failing today, `todo` a whole gap. */
 interface Known {
   seeds: number;
   unknown?: number[];
+  todo?: string;
 }
 
 // A seed that starts failing is a regression; `shrink` in ./fuzz/program.ts reduces it to its cause.
 const known: Record<Property, Record<Variant, Known>> = {
-  seek: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  again: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  behind: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  ahead: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  taped: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  dt: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  standing: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  now: { plain: { seeds: 150 }, full: { seeds: 150 } },
+  seek: { plain: { seeds: 150 }, full: { seeds: 150 }, slewed: { seeds: 150 } },
+  again: {
+    plain: { seeds: 150 },
+    full: { seeds: 150 },
+    slewed: { seeds: 150, todo: "a second seek puts a slew's state back wrong; see HANDOFF" },
+  },
+  behind: {
+    plain: { seeds: 150 },
+    full: { seeds: 150 },
+    slewed: {
+      seeds: 150,
+      todo: "a read back after a drop shows the slew's old state; see HANDOFF",
+    },
+  },
+  ahead: { plain: { seeds: 150 }, full: { seeds: 150 }, slewed: { seeds: 150 } },
+  taped: { plain: { seeds: 150 }, full: { seeds: 150 }, slewed: { seeds: 150 } },
+  dt: { plain: { seeds: 150 }, full: { seeds: 150 }, slewed: { seeds: 150 } },
+  standing: { plain: { seeds: 150 }, full: { seeds: 150 }, slewed: { seeds: 150 } },
+  now: { plain: { seeds: 150 }, full: { seeds: 150 }, slewed: { seeds: 150 } },
 };
 
 function guards(prop: Property) {
   for (const variant of Object.keys(variants) as Variant[]) {
-    const { seeds, unknown = [] } = known[prop][variant];
+    const { seeds, unknown = [], todo } = known[prop][variant];
+    if (todo !== undefined) {
+      it.todo(`${variant} programs: ${todo}`);
+      continue;
+    }
     const expected = new Set(unknown);
     it(`${variant} programs, seeds 1 to ${seeds}: only the known failures fail`, () => {
       const unexpected: string[] = [];

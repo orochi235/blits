@@ -76,7 +76,7 @@ export interface MixOptions<H = unknown> {
 /**
  * How sure a projection is of one channel: `exact` where only the clock and known changes drove
  * it; `stepped` where state was advanced across a gap in one go, which is as good as the patch's
- * step makes it; `held` where it depends on input from outside the clock, whose value at that time
+ * step makes it, or a signal's state was read back from a copy; `held` where it depends on input from outside the clock, whose value at that time
  * is not known, so the value it had is held.
  *
  * @category mix
@@ -200,7 +200,9 @@ export interface Mix<I, O, H = unknown> {
   /**
    * Reads the mix at another mix time, without moving it. At the mix's own time it reads what
    * `probe` does: what the host has done since the last sync lands at the next. Ahead of the mix
-   * it plays what is cued forward, with the calls the tape holds after a `seek` back, and throws
+   * it plays what is cued forward, with the calls the tape holds after a `seek` back, and while a
+   * voice could carry state (a patch that steps, a signal weight) it reads each subject asked about
+   * at every known event on the way: each call, and each mark `marks` would list. It throws
    * for the two a copy cannot take: a `drop` of a subject a motion patch holds, and a retarget or
    * push made before its voice met the subject. Behind it, with `history`, it reads the last frame at or before `time`
    * as that frame showed, and throws for a time older than the history reaches. On a transport it
