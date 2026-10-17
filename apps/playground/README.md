@@ -115,15 +115,15 @@ voices carrying it, and the rest of what was sent is drained and thrown away.
 
 ## Blends
 
-A locus named in `blends` is cued with `mix.blend(patches, by, spec)` instead of a `cue` per voice:
+A locus named in `blends` is cued with `mix.blend(members, by, spec)` instead of a `cue` per voice:
 its voices' weights are shares of the one signal, each voice a stop spaced evenly from 0 to 1 in
-cue order, and each voice's own `weight` goes unread. `mix.blend` takes one spec for all of them,
-so everything but `id`, `name`, `hue`, and `patch` is held the same on every member:
-`src/blits/blend.ts` makes an edit to one member on all, and gives a voice that joins what the
-others share. A member loaded with a field that differs errors on its `locus`. The members are
-cued together where the first sits and answer to its name in an anchor, since the one spec carries
-one `name`. In a solo mix they are plain voices of one locus, the soloed one weighted by its share,
-which the playground computes itself because blits exposes no member's share.
+cue order, and each voice's own `weight` goes unread. Each member is a `BlendMember` carrying its
+own `patch`, `name`, `tags`, and `hits`, so it answers to its own name in an anchor; `mix.blend`
+takes one spec for everything else, so that is held the same on every member: `src/blits/blend.ts`
+makes an edit to one member on all, and gives a voice that joins what the others share. A member
+loaded with a shared field that differs errors on its `locus`. The members are cued together where
+the first sits. In a solo mix they are plain voices of one locus, the soloed one weighted by blits'
+`share` of the signal.
 
 ## The kit
 

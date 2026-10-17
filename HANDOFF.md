@@ -24,6 +24,20 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   Unreleased section lists them. Chosen while building, Mike's to overturn: the name `stepMs` on a voice's spec, with 0 meaning the frame's gap; that a read
   ahead moves the tape forward and back, which the tape's subscribers hear; and which two calls
   it still refuses (the schema page's "Reading ahead past the tape").
+- **Unreleased: `share(by, i, n)` and `BlendMember`** (2026-10-17), from item 13. The playground's
+  solo mixes weight a member by `share` and its blends cue each member under its own name, tags and
+  hits. Chosen while building, Mike's to overturn:
+  - **The public read is a signal, not a read on `Handle` or `Mix`.** A solo plot needs the share
+    as the weight of a voice in another mix, and `Handle.weightOf` already reports a member's weight
+    in its own. To reverse, drop `share` from `signals.ts` and `index.ts`; `cueBlend.ts` in the
+    playground is its one caller.
+  - **`n` counts the members** (as `mix.blend`'s array does), not the stops, and an `i` outside
+    `0..n-1` throws.
+  - **A member is an entry in `mix.blend`'s array**, `{ patch, name?, tags?, hits? }`, beside bare
+    patches, rather than a second array of specs. It carries only labels: not `score`, since a
+    member in another score would resolve the shared anchor to another voice and start apart.
+  - **A member's `tags` replace the spec's** rather than adding to them, as `name` and `hits` do.
+    To merge instead, concatenate in `Mixer.blend` (`src/mixer.ts`).
 - **Unreleased, breaking: `loop` defaults to one pass** (Mike, 2026-10-11; it defaulted to
   looping for good). It waits for the next minor. Every consumer's cues were read at its `origin`
   head (2026-10-11): one relied on the old default, klieg's lighting voice
@@ -664,12 +678,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `mix.blend` (a locus cued as one blend by a signal); marks, hits, and events (an Events tab
     with `marks`, `announce`, `book`, and `drain`, a voice's `tags`, `score`, and hits, and any
     anchor typed as JSON); and a cue's `seek` with a rate below 0. What that left:
-    - **The inspector restates the share each member of a blend gets** (`shareOf` in
-      `apps/playground/src/blits/blend.ts`), which blits keeps private in `src/blend.ts`: its
-      solo plots drift if that arithmetic changes. The way through is a public read of a
-      member's share, undesigned.
-    - **`mix.blend` takes one spec, so one `name`**: every member answers to the first voice's
-      name in an anchor, and none can be anchored to by its own.
     - Groups take no `tags`, `score`, hits, `seek`, or negative rate; the booker reads a fixed
       100 ms ahead with no setting; a clip with a `seek` or a rate below 0 does not set `loop`
       by its right edge; and an `all`/`any` anchor, or one that selects by tag or `writes`,

@@ -2,7 +2,8 @@ import type { Composition, Expr, Voice } from './composition';
 
 /**
  * What `mix.blend` takes once for all its voices, so every member of a blend holds the same value.
- * A member keeps its own `id`, `name`, `hue`, and `patch`; its `weight` is the blend's signal's.
+ * A member keeps its own `id`, `hue`, and the `patch`, `name`, `tags`, and `hits` blits lets a
+ * `BlendMember` carry; its `weight` is the blend's signal's.
  */
 const SHARED = [
   'start',
@@ -17,9 +18,7 @@ const SHARED = [
   'anchor',
   'owner',
   'hints',
-  'tags',
   'score',
-  'hits',
 ] as const satisfies readonly (keyof Voice)[];
 
 export interface Blend {
@@ -38,15 +37,6 @@ export function blendOf(c: Composition, v: Pick<Voice, 'locus'>): Blend | undefi
 
 /** Where member `i` of `n` is the whole blend: its signal's value there. */
 export const stopOf = (i: number, n: number) => (n > 1 ? i / (n - 1) : 0);
-
-/**
- * Member `i` of `n`'s share of a blend whose signal reads `k`. blits keeps this to itself, and a
- * solo mix needs it to play one member with the others silent.
- */
-export function shareOf(k: number, i: number, n: number): number {
-  const d = n > 1 ? Math.abs(k * (n - 1) - i) : 0;
-  return d >= 1 ? 0 : 1 - d;
-}
 
 /** The first shared field `v` holds differently from `lead`, or null when it matches. */
 export function strayOf(lead: Voice, v: Voice): (typeof SHARED)[number] | null {
