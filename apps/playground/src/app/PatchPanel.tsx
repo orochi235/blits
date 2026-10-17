@@ -18,10 +18,11 @@ import { Timeline } from '@weasel-js/ui';
 import { useMemo, useState } from 'react';
 import s from './App.module.css';
 import { ChannelTiming } from './ChannelTiming';
-import { DraftRow, drafted } from './CompositionControls';
+import { drafted } from './CompositionControls';
 import { EaseField } from './EaseField';
 import { KeyEditor } from './KeyEditor';
 import m from './PatchLive.module.css';
+import { ExprRow, Row } from './SpecFields';
 import { depthRenderers, waveConfig, waveNodes, writtenWave } from './WaveFields';
 
 type Kind = PatchSource['kind'];
@@ -125,7 +126,7 @@ function schemaOf() {
           kind,
           f
             .group({
-              ...Object.fromEntries(OPTIONS[kind].map((k) => [k, custom('expr')])),
+              ...Object.fromEntries(OPTIONS[kind].map((k) => [k, custom('expr').label(k)])),
               ...(kind === 'tween' ? { ease: custom('ease') } : {}),
             })
             .as('fragment')
@@ -133,34 +134,6 @@ function schemaOf() {
         ]),
       ),
     }),
-  );
-}
-
-/** An option that takes a number or an expression, written on Enter or blur, with its error under it. */
-function ExprRow(p: {
-  label: string;
-  value: string;
-  placeholder: string;
-  error: string | undefined;
-  onCommit(text: string): void;
-}) {
-  return (
-    <div className={m.wide}>
-      <DraftRow
-        span
-        layout="block"
-        kind="string"
-        label={p.label}
-        value={p.value}
-        placeholder={p.placeholder}
-        onCommit={(t) => p.onCommit(String(t))}
-      />
-      {p.error && (
-        <span className={m.error} role="alert">
-          {p.error}
-        </span>
-      )}
-    </div>
   );
 }
 
@@ -282,18 +255,20 @@ export function PatchPanel({ voice: v, kit, errors, playhead, onChange }: PatchP
   if (p.kind === 'wave') Object.assign(renderers, depthRenderers(p, kit, set));
   if (isMotion(p)) {
     for (const k of OPTIONS[p.kind])
-      renderers[`${p.kind}.${k}`] = () => (
-        <ExprRow
-          label={k}
-          placeholder={
-            k === 'to' || k === 'from' || k === 'velocity'
-              ? `${JSON.stringify(kit[p.channel].rest ?? 0)} or (s) => …`
-              : 'default'
-          }
-          value={textOf(p.opts[k])}
-          error={err(`opts.${k}`)?.error}
-          onCommit={(text) => set({ ...p, opts: withKey(p.opts, k, parsed(text)) })}
-        />
+      renderers[`${p.kind}.${k}`] = (row) => (
+        <Row row={row} wide>
+          <ExprRow
+            row={row}
+            placeholder={
+              k === 'to' || k === 'from' || k === 'velocity'
+                ? `${JSON.stringify(kit[p.channel].rest ?? 0)} or (s) => …`
+                : 'default'
+            }
+            value={textOf(p.opts[k])}
+            error={err(`opts.${k}`)?.error ?? null}
+            onCommit={(text) => set({ ...p, opts: withKey(p.opts, k, parsed(text)) })}
+          />
+        </Row>
       );
     if (p.kind === 'tween')
       renderers['tween.ease'] = () => (

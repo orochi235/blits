@@ -214,7 +214,7 @@ export const optional = () => f.custom<number | undefined>('optional-number', un
 
 /**
  * An expression typed as code, committed on Enter or blur as one step, its compile error under it.
- * The label is the row's; the input keeps its own for assistive tech only.
+ * The label is the row's, and names the input for assistive tech.
  */
 export function ExprRow({
   row,
@@ -230,15 +230,14 @@ export function ExprRow({
   onCommit?(code: string): void;
 }) {
   return (
-    <div className={g.expr}>
-      <ExprInput
-        label={row.pref.name}
-        placeholder={placeholder}
-        value={value}
-        error={error}
-        onCommit={onCommit}
-      />
-    </div>
+    <ExprInput
+      label={row.pref.name}
+      hideLabel
+      placeholder={placeholder}
+      value={value}
+      error={error}
+      onCommit={onCommit}
+    />
   );
 }
 
@@ -256,15 +255,14 @@ function CodeRow({ row, placeholder }: { row: PrefRenderContext; placeholder: st
   );
 }
 
-/** The ease both fades take; the picker carries its own label. */
+/** The ease both fades take, on a row of its own. */
 export const fadeEaseRow: ControlRenderer = (row) => (
-  <div className={g.wide} title={row.pref.description || undefined}>
-    <EaseField
-      label={row.pref.name}
-      value={row.value as Timed['fade']['ease']}
-      onChange={(ease) => row.setValue(ease)}
-    />
-  </div>
+  <EaseField
+    label={row.pref.name}
+    description={row.pref.description || undefined}
+    value={row.value as Timed['fade']['ease']}
+    onChange={(ease) => row.setValue(ease)}
+  />
 );
 
 /** Removes the voice or group. */

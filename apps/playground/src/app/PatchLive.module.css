@@ -46,11 +46,6 @@
   color: var(--wzl-danger);
 }
 
-.error {
-  font-family: var(--wzl-font-ui);
-  font-size: var(--wzl-font-size-xs);
-  color: var(--wzl-danger);
-}
 
 .key {
   display: grid;
