@@ -184,8 +184,8 @@ export class Transport implements TransportApi {
     }
   }
 
-  seek(time: number): void {
-    seek(this, time);
+  seek(to: number | { readonly frame: number }): void {
+    seek(this, to);
   }
 
   prepare(time: number): Promise<void> {
@@ -202,8 +202,8 @@ export class Transport implements TransportApi {
     return listedAll(this, from, to).map(({ order: _, ...m }) => m);
   }
 
-  project(time: number): TransportProjection {
-    return projectAll(this, time);
+  project(at: number | { readonly frame: number }): TransportProjection {
+    return projectAll(this, at);
   }
 
   get live(): boolean {

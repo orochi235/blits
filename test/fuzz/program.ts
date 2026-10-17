@@ -41,6 +41,8 @@ export interface ProgramOptions {
   hseek?: boolean;
   /** No handle is written to: every call is a cue, a `drop` or a `touch`. */
   cuesOnly?: boolean;
+  /** Stateful cues at weight 0.5 catch up `fresh`. */
+  fresh?: boolean;
 }
 
 /** One host call, made right after the sync at host time `at`. */
@@ -100,7 +102,9 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
                 by: pick([0, 40, -20]),
               }
             : null;
-        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}`;
+        // Drawn from nothing too.
+        const catchUp = opts.fresh && pk === 'drift' && weight === 0.5 ? 'fresh' : undefined;
+        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}${catchUp ? ' catchUp=fresh' : ''}`;
         ops.push({
           at: t,
           desc,
@@ -115,6 +119,7 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
               name: `v${i}`,
             };
             if (freeze) spec.freeze = freeze;
+            if (catchUp) spec.catchUp = catchUp;
             if (anchor) {
               const of = `v${anchor.prev}`;
               const { how, by } = anchor;
@@ -217,6 +222,7 @@ export function play(ops: Op[], frames: number[], opts: MixOptions) {
   const h: Handle<Part>[] = [];
   const poses = new Map<number, number[]>();
   const mixT = new Map<number, number>();
+  const seqs = new Map<number, number>();
   for (const t of frames) {
     m.sync(t);
     for (const op of ops) {
@@ -228,15 +234,25 @@ export function play(ops: Op[], frames: number[], opts: MixOptions) {
     }
     poses.set(t, probes(m));
     mixT.set(t, m.now);
+    seqs.set(t, m.seq);
   }
-  return { m, poses, mixT };
+  return { m, poses, mixT, seqs };
 }
 
 const frames = every(0, 1600, 16);
 const kept = (): MixOptions => ({ history: { ms: 100000, every: 50, tape }, stepMs: 4 });
 const fmt = (xs: number[] | undefined) => (xs ? xs.map((x) => +x.toFixed(6)).join(',') : 'none');
 
-export type Property = 'seek' | 'again' | 'behind' | 'ahead' | 'taped' | 'dt' | 'standing' | 'now';
+export type Property =
+  | 'seek'
+  | 'again'
+  | 'behind'
+  | 'ahead'
+  | 'taped'
+  | 'dt'
+  | 'standing'
+  | 'now'
+  | 'frame';
 
 /**
  * The host frames each property checks at; `dt` checks every frame, and `standing` reads every
@@ -251,6 +267,7 @@ export const checkedAt: Record<Property, number[]> = {
   dt: [0],
   standing: [160, 320, 480, 656, 1600],
   now: [160, 320, 480, 656],
+  frame: [96, 320, 512, 704],
 };
 
 /** How many reads back with no history have answered, so a suite can tell the check is not idle. */
@@ -340,8 +357,36 @@ function seekThenRead(ops: Op[], ref: ReturnType<typeof play>, from: number): st
   return null;
 }
 
+/**
+ * Reads back and seeks to a frame by its number: the first frame at frame `from`'s mix time, which
+ * a seek or read by time cannot reach where rate 0 held the clock there for several. Then plays on.
+ */
+function seekToFrame(ops: Op[], ref: ReturnType<typeof play>, from: number): string | null {
+  const at = ref.mixT.get(from);
+  let t = from;
+  while (t > 0 && ref.mixT.get(t - 16) === at) t -= 16;
+  const seq = ref.seqs.get(t) as number;
+  const read = probes(ref.m.project({ frame: seq }));
+  if (differs(read, ref.poses.get(t)))
+    return `project({ frame }) at ${t} got ${fmt(read)} want ${fmt(ref.poses.get(t))}`;
+  const run = play(ops, frames, kept());
+  run.m.seek({ frame: seq });
+  if (differs(probes(run.m), ref.poses.get(t)))
+    return `seek({ frame }) at ${t} got ${fmt(probes(run.m))} want ${fmt(ref.poses.get(t))}`;
+  const last = frames[frames.length - 1] as number;
+  for (const f of frames) {
+    if (f <= t) continue;
+    run.m.sync(last + (f - t));
+    if (differs(probes(run.m), ref.poses.get(f)))
+      return `seek({ frame }) at ${t} then frame ${f} got ${fmt(probes(run.m))} want ${fmt(ref.poses.get(f))}`;
+  }
+  return null;
+}
+
 function checkOne(prop: Property, ops: Op[], t: number, ref: () => ReturnType<typeof play>) {
   switch (prop) {
+    case 'frame':
+      return seekToFrame(ops, ref(), t);
     case 'seek':
       return seekThenPlay(ops, ref(), t);
     case 'again':

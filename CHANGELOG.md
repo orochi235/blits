@@ -36,6 +36,15 @@ version and everything else the patch. Each release lists its changes as **Break
 - `hits` and `seek` on an owner's and a span's spec. A hit is an event at a time on the owner's
   clock, booked once while the owner plays, with its `score` and `tags`; a seek is where that clock
   starts, so an owner cued at a rate below 0 with a seek plays its children back from there.
+- `seek({ frame })` and `project({ frame })`, on a mix and a transport, reach a frame by its
+  number, which `mix.seq` and `transport.seq` read. Rate 0 can hold mix time still across several
+  frames, and a seek or read by time lands on the last of them; by number it lands on any one
+  history still holds.
+- `catchUp: 'fresh'` on a voice's spec: a stateful subject first probed after its delay ran out
+  starts stepping from that probe with fresh state, where the default, `exact`, steps it from its
+  origin. The `stepMs` grid still counts from the origin, the fade-in is unchanged, and a handle
+  `seek` still rebuilds from the voice's start. Its state depends on when the host first looked,
+  so a read that meets such a subject late assesses it `held`.
 
 ### Fixed
 

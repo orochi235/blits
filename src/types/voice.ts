@@ -91,6 +91,15 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    */
   stepMs?: number;
   /**
+   * How a stateful subject first probed after its delay ran out starts stepping. `exact` steps it
+   * from that origin, in one step capped by `maxDt` or every `stepMs` interval since, so its state
+   * is the same however late the host looked. `fresh` starts it from the probe that first meets it,
+   * with fresh state and no catch-up, on the `stepMs` grid counted from the origin: cheaper for a
+   * subject met long after its voice started, and probe-dependent by design. A subject met on time,
+   * and a handle `seek`'s rebuild, step the same either way. Default: `exact`.
+   */
+  catchUp?: 'exact' | 'fresh';
+  /**
    * true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its
    * passes are done for the latest-staggered subject it has seen — over `fade.out` where one is
    * set, at once where none is — unless it freezes after. Default: false.

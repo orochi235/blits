@@ -737,6 +737,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - The read-ahead is saved in the composition as `book.ahead`, 0 to `MAX_AHEAD` (5000 ms),
         while the book-and-drain tag stays per-session on the `EventLog`. Moving the tag to
         `book.tag` would save and share it too.
+    - Not offered yet (2026-10-17, built in blits since): a voice's `catchUp: 'fresh'`, and
+      scrubbing to one of several frames rate 0 held at one mix time by `seek({ frame })`.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 
@@ -771,6 +773,27 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       reads level (msb-uai, 2026-10-17, 10 rounds, `AB_EACH=1 bench/ab.sh da301d9 650b3e9` over
       `fn` and `named`, geometric mean 0.992, every row within 0.96–1.02). To
       reverse, drop `checkWrites` and `unchecked` from `src/voice.ts` and the line calling it.
+      - **Chosen while building, Mike's to overturn: `seek({ frame })` takes the number a new
+        `mix.seq` / `transport.seq` reads** (2026-10-17, unreleased). The getter is `seq` because
+        `frame` is already an internal field on `Mixer` and `HistoryRecord.seq` already names the
+        frame number publicly; the option is `frame`, as the review named it. `project({ frame })`
+        came along so reads and seeks answer the same question one way. A frame number is opaque
+        (not an index among frames at one time), and one history no longer holds throws. To rename,
+        change `seq` in `src/types/mix.ts`, `src/types/transport.ts` and the getter in
+        `src/mixer.ts`; nothing else reads it.
+      - **Chosen while building, Mike's to overturn: what `catchUp: 'fresh'` covers** (2026-10-17,
+        unreleased). The review's row said "fresh keeps today's behavior", meaning before
+        `493fb15`, so it touches only where a stateful record met late starts stepping: from the
+        first probe, with fresh state. The `stepMs` grid still counts from the origin (the
+        record's `ticks` start at the intervals already passed, `meet` in `src/held.ts`), the
+        fade-in still counts from the origin, a handle `seek`'s rebuild still steps from the voice's
+        start, and a signal's kept state is unaffected (signals measure their own gap). A
+        projection that meets such a subject late marks it `unknown`, so `assess` says `held`.
+        The determinism suite's `fresh` variant runs `seek`, `behind`, `now` and `frame` but not
+        `again`, `ahead`, `taped` or `dt`, where a subject is first met other than frame by frame
+        and fresh differs by design. The 256-past-clock cap is unchanged: a fresh voice's fade-in
+        still reads them. To make fresh also cover rebuilds, call `meet` from `rebuild` in
+        `src/fold.ts`.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
       - **Backward play is built (2026-10-10); the schema page's "Starting partway, and playing
         backward" is the record, and its last sentence lists what is not built.** Mike's calls:

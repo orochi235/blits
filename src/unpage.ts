@@ -6,7 +6,7 @@ import { type PackedRecord, unpackHeld } from './pack.js';
 import { HistoryMiss, type Keys } from './paging.js';
 import { type PackedVoice, reviveVoice } from './revive.js';
 import { scoredLeft } from './scored.js';
-import type { Announced, Transport } from './transport.js';
+import type { Announced, Frame, Transport } from './transport.js';
 import type { Paged } from './types.js';
 import type { Controls, Subject, Voice } from './voice.js';
 
@@ -36,6 +36,35 @@ export function cover(transport: Transport, t: number): boolean {
   unpage(transport, loaded.records);
   transport.floor = loaded.t;
   return true;
+}
+
+/**
+ * The frame numbered `seq` for a seek or read to it, memory made to reach it from what `prepare`
+ * loaded. Throws before anything moves for a frame history does not hold.
+ */
+export function coverFrame(transport: Transport, seq: number): Frame {
+  if (!Number.isInteger(seq))
+    throw new RangeError(`blits: a frame is a number \`seq\` read, not ${seq}`);
+  let frame = transport.frames.numbered(seq);
+  const pager = transport.pager;
+  if (frame === undefined && pager !== null && seq <= transport.seq) {
+    const paged = pager.loaded?.records.find(
+      (r) => r.stream === 'frame' && r.mix === '' && r.seq === seq,
+    );
+    if (paged !== undefined) {
+      cover(transport, paged.at);
+      frame = transport.frames.numbered(seq);
+    } else if (seq < (transport.frames.all()[0]?.seq ?? Number.POSITIVE_INFINITY))
+      throw new Error(
+        `blits: frame ${seq} reaches past memory; await prepare with its mix time first`,
+      );
+  }
+  if (frame === undefined)
+    throw new Error(
+      `blits: frame ${seq} is not one this mix's history holds: not played yet, let go, or after a moment a seek went back to`,
+    );
+  cover(transport, frame.at);
+  return frame;
 }
 
 /** A seek back to frame `seq`: what the store and `prepare` hold after it is from a future the tape makes again. */
