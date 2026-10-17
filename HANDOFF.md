@@ -737,8 +737,26 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - The read-ahead is saved in the composition as `book.ahead`, 0 to `MAX_AHEAD` (5000 ms),
         while the book-and-drain tag stays per-session on the `EventLog`. Moving the tag to
         `book.tag` would save and share it too.
-    - Not offered yet (2026-10-17, built in blits since): a voice's `catchUp: 'fresh'`, and
-      scrubbing to one of several frames rate 0 held at one mix time by `seek({ frame })`.
+    - **Chosen while building, Mike's to overturn** (2026-10-17, a voice's `catchUp` and
+      scrubbing by `seek({ frame })`):
+      - A scrub back by `mix.seek` now always seeks by frame: the Player keeps each mix's `seq`
+        for every score frame it showed and passes that, so each frame rate 0 held at one mix
+        time is reached by scrubbing to its place on the score, with ‹ › on the transport to step
+        one frame and a readout of the full mix's `now` and `seq`. There is no separate stepper
+        over the held frames alone. Reverse by passing `target * FRAME` to `m.seek` in
+        `seekBack` (`src/blits/player.ts`), which lands on the last held frame.
+      - The Events list's seek cut now goes by the full mix's `now`, the clock `Sent.timestamp`
+        reads, not score time; they differ only under a live mix rate.
+      - `catchUp` shows in the voice panel only for an fn patch with a `step`, as `stepMs` does,
+        since blits reads it only there. `stepMs` and `catchUp` are now held alike across a
+        blend's members, as `mix.blend` takes them once; before, a member's own `stepMs` was
+        silently dropped for the first member's. Reverse by removing them from `SHARED` in
+        `src/blits/blend.ts`.
+    - **Found while building** (measured 2026-10-17): a seek lands at the end of a frame, so a
+      live change made at score frame f shows on seeking back to f, though play first showed it
+      at f + 1; `player.test.ts` holds this. And in the Player, which meets every subject every
+      frame, `catchUp: 'fresh'` differs from `exact` only for a voice starting partway through a
+      frame with a `stepMs` under one frame; a `stagger` changes nothing.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 

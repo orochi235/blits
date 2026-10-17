@@ -26,10 +26,13 @@ rows or the text; clicking a subject picks it for the inspector, top middle. The
 the diagrams, on four tabs: **Flow**, **Timing**, **Both** and **Desk**. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
 levels, voice and patch panels; and **Events**, what the score knows and reports. Selecting a clip, on the score or in any diagram, opens Voice. The
 score fills the bottom, with the transport above it: play and pause, rate, loop, a slider per
-level, a choice of how a scrub back moves the mixes, and the live toggle, with the mix's own `rate` beside it in live mode: the transport's rate
+level, a choice of how a scrub back moves the mixes, ‹ and › to step one frame, and the live toggle, with the mix's own `rate` beside it in live mode: the transport's rate
 slows the playground's clock, while the mix's slows the voices as the score's clock runs on.
 A scrub back either replays from 0, which shows exactly what playback showed, or calls blits'
-`mix.seek`, which restores from the history every mix keeps. Either way the inspector labels each
+`mix.seek({ frame })` with the frame each mix played at that point of the score, which restores
+from the history every mix keeps. By `mix.seek`, the transport shows the full mix's `now` and
+`seq`: at a mix rate of 0 the score runs on while `now` holds, so each frame held at one mix time
+has its own place on the score, and scrubbing or stepping there reaches it. Either way the inspector labels each
 channel with blits' `assess` answer for the picked subject: `exact`, `stepped`, or `held`. Space plays and pauses from anywhere but a text field or the score's
 own handles, which take it themselves. The header holds the preset menu, the title and the length.
 
@@ -70,7 +73,7 @@ all but `last` take `bounds`; `offset` folds its two numbers alike, so not by `l
 replaces or averages, interpolated in OKLCH or OKLab. The fold rules panel edits them and shows the
 kind each makes.
 
-A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `seek`, `stepMs`, `loop`, `stagger`, `target`,
+A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `seek`, `stepMs`, `catchUp`, `loop`, `stagger`, `target`,
 `freeze`, `weight`, `fade`, `locus`, `from`, `anchor`, `tags`, `score`, `hits`), so the voice panel teaches the real spec, plus
 an `id`, a `name`, a `hue`, a `patch`, the `owner` group it plays under, and the `hints` a span
 reads. A `PatchSource` is one of:
@@ -339,7 +342,7 @@ at least 24 px apart; a desk with more voices than fit grows wider and the tab s
 
 | Panel     | Shows                                                                                   |
 |-----------|-----------------------------------------------------------------------------------------|
-| Voice     | the spec fields, each with blits' doc comment on hover; `rate` from -4 to 4 and a `seek`, blank for blits' default; for a patch with a `step`, its own `stepMs`, blank for the mix's; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `score`, and `hits` |
+| Voice     | the spec fields, each with blits' doc comment on hover; `rate` from -4 to 4 and a `seek`, blank for blits' default; for a patch with a `step`, its own `stepMs`, blank for the mix's, and `catchUp`; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `score`, and `hits` |
 | Group     | in place of Voice and Patch when a header is selected: name, kind, `owner`, start and anchor (not under a span), rate, weight, fade, freeze, hints under a span; for a span its `duration`, `priority`, `order`, `share` (for `stagger`), `spill`, the fit steps (add, remove, reorder, presets; a code step in a code pane), and the live `FitResult` |
 | Weight    | a number, or a signal expression; a menu inserts common signals                         |
 | Patch     | a kind menu (switching starts a blank patch of that kind), then by kind: a weasel `Timeline` track per channel for `keys`, with an `EasingPicker` per key; code panes for `fn`; numbers or expressions per option for motion |
@@ -361,7 +364,14 @@ owner or a span; deleting a group moves what it held up to its parent.
   pulls every subject every frame, in every mix, so live play and a replay give the same poses.
   Scrubbing forward plays ahead; scrubbing back rebuilds and replays from 0, because a stateful
   signal or a spring reads each frame's gap, or calls `mix.seek` where the transport's scrub choice
-  says so, falling back to the replay where history cannot reach.
+  says so, falling back to the replay where history cannot reach. The Player keeps each mix's
+  `seq` for every frame it showed and seeks by that, not by time, so a score frame lands on the
+  frame it showed even where a mix rate other than 1 has parted mix time from score time. A seek
+  lands at the end of a frame, so a live change made at a frame shows when seeking to it, a frame
+  sooner than play showed it. Because every subject is met every frame, a voice's `catchUp:
+  'fresh'` changes anything only when the voice starts partway through a frame and its `stepMs`
+  is shorter than one: it skips the steps from its start to that frame. A subject waiting out a
+  `stagger` is already met, so it steps the same either way.
 - **The inspector reads only public API.** Each solo mix plays one voice and is read with `probe`;
   blits exposes no per-voice contribution, and the playground does not reach inside for one. The
   Player records the picked subject's history as it steps, so a plot never replays anything.

@@ -112,6 +112,46 @@ describe('Player', () => {
     expect(p.livened).toBe(true);
   });
 
+  it('a seek back by mix.seek reaches each of the frames rate 0 held at one mix time', () => {
+    const turn = compOf([
+      voice({
+        id: 'k',
+        patch: { kind: 'keys', period: 1000, stops: [{ at: 0, delta: { turn: 30 } }] },
+      }),
+    ]);
+    const p = new Player(() => compile(turn, subjects, { solos: true }), subjects);
+    p.seekBy = 'seek';
+    p.seek(30 * FRAME);
+    p.liveMix((m) => {
+      m.rate = 0;
+    });
+    p.seek(35 * FRAME);
+    const held = p.clock;
+    const before = [...p.columns.turn];
+    p.live('k', (h) => {
+      h.weight = 0;
+    });
+    p.seek(45 * FRAME);
+    const after = [...p.columns.turn];
+    expect(p.clock.now).toBe(held.now);
+    expect(p.clock.seq).toBeGreaterThan(held.seq);
+    expect(after).not.toEqual(before);
+    p.seek(33 * FRAME);
+    expect(p.clock.now).toBe(held.now);
+    expect([...p.columns.turn]).toEqual(before);
+    expect(p.built.handles.get('k')?.weight).toBe(1);
+    p.seek(40 * FRAME);
+    expect([...p.columns.turn]).toEqual(after);
+    p.seek(36 * FRAME);
+    expect([...p.columns.turn]).toEqual(after);
+    // The write was made during frame 35, and a seek lands at the end of a frame.
+    p.seek(35 * FRAME);
+    expect([...p.columns.turn]).toEqual(after);
+    p.seek(34 * FRAME);
+    expect([...p.columns.turn]).toEqual(before);
+    expect(p.livened).toBe(true);
+  });
+
   it('a scrub back replays a moved level at its current value', () => {
     const moved = player();
     moved.setLevel('k', 0.5);
