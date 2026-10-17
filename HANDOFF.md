@@ -679,7 +679,27 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       what happens. Whether it should start at the first sync instead is Mike's call; a page
       that cues before its first `requestAnimationFrame` meets it.
     - **Not checked**: the page's timings and its table of consumers' kits, which are other
-      repos' facts, and the playground README's gestures against the widget code.
+      repos' facts.
+    - **The playground README's gestures were checked against the widget code** on 2026-10-17,
+      each one driven in headless Chromium where the code left doubt. Space now plays from a
+      focused tab, slider or button, as the README said it would; the README now gives the
+      transport's real order, the score's keyboard path and clip menu, what the arrow and an
+      Alt-drag from the body do, which fields commit on Enter, and that dragged Both positions
+      hold off edit. Left open:
+      - **A clip anchored to a voice cued after it draws at its own `start`** (seen on the
+        score, 2026-10-17): in `fold rules`, Alt-dragging `mul a`'s body onto `mul b`'s start
+        writes `{"start":{"with":"mul b"}}`, and the clip still reads "starts 0.00s, anchored"
+        though `mul b` starts at 1 s. `placedOf` reads `mix.marks` before the first frame,
+        when blits has not placed it. What it plays was not checked.
+      - **Most panel fields commit on every keystroke**, so typing `1500` into a mark's time is
+        four undo steps; only the stage, title, length, level, read-ahead and expression fields
+        go through `Draft` or `ExprInput`. The README says so; whether the rest should commit
+        on Enter too is Mike's call.
+      - **With weasel 1.10.1 from npm, the typecheck fails and the Both tab's edit mode shows no
+        dots** (measured 2026-10-17 after `npm ci` in a worktree): `FlowDiagram` passes
+        `portOptions` fields (`shape`, `showsPort`, a `fill` function) that only the symlinked
+        `~/src/weasel/packages/diagram` has. Every fresh clone meets it until weasel releases
+        them.
 
 13. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). Built
     2026-10-09: `wave`; every ease (`keys` `ease`, `easeBy`, `delayBy`, `fade.ease`, a tween's bezier
