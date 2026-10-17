@@ -70,9 +70,26 @@ const CLIPS: Clip[] = [
     passes: Number.POSITIVE_INFINITY,
     fadeIn: 400,
   },
+  {
+    ...base,
+    id: 'rewind',
+    lane: 5,
+    label: 'rewind · keys · backward',
+    hue: 330,
+    start: 3200,
+    pass: 400,
+    passes: 1.25,
+    into: 300,
+    stops: [1, 1.25],
+    locked: true,
+  },
 ];
 const LINKS: Link[] = [
   { from: { clip: 'spin', edge: 'start' }, to: { clip: 'wave', edge: 'end' } },
+  { from: { clip: 'rewind', edge: 'start' }, to: { clip: 'spin', edge: 'end' }, join: 'all' },
+  { from: { clip: 'rewind', edge: 'start' }, to: { clip: 'settle', edge: 'start' }, join: 'all' },
+  { from: { clip: 'drift', edge: 'end' }, to: { clip: 'wave', edge: 'end' }, join: 'any' },
+  { from: { clip: 'drift', edge: 'end' }, to: { clip: 'settle', edge: 'end' }, join: 'any' },
 ];
 
 function apply(clips: Clip[], e: ClipEdit): Clip[] {

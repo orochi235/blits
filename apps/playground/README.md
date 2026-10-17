@@ -16,7 +16,7 @@ npx vitest run apps/playground/test    # the pure modules
 
 blits comes from the repo's own `src/index.ts` through the `@msb235/blits` alias, never the built
 `dist`, and app code imports itself through `@pg/*`. The site's nav links here when the site runs
-in dev. `scripts/docs.mjs` pulls the doc comments of `VoiceSpec`, `Handle`, `Mix`, `MixOptions`, `SpanHints`, `OwnerSpec`, `SpanSpec`, and `FitResult` out of blits' types
+in dev. `scripts/docs.mjs` pulls the doc comments of `VoiceSpec`, `Handle`, `Mix`, `MixOptions`, `BookOptions`, `SpanHints`, `OwnerSpec`, `SpanSpec`, and `FitResult` out of blits' types
 into `src/generated/docs.json` (gitignored), which the panels show as tooltips on each field.
 
 ## The screen
@@ -56,6 +56,7 @@ interface Composition {
   blends?: Record<string, Expr>;         // by locus: the signal `mix.blend` splits; see Blends
   announced?: { name: string; at: number; score?: string; tags?: string[] }[];  // `mix.announce`
   mix?: { stepMs?: number | 'off'; maxDt?: number; reduce?: boolean; lanes?: boolean };
+  book?: { ahead?: number };             // how far ahead the Events tab's booker reads, ms
   rules?: Partial<Rules>;                // each channel's fold rule, where it differs from the default
 }
 ```
@@ -107,7 +108,7 @@ checked by `placementFault` in `src/blits/anchor.ts`, which `load` uses too: `st
 voice's `hits` are events at voice ms into each pass, each event a string.
 
 The `Player` keeps an `EventLog` (`src/blits/events.ts`) on the full mix: a booker made with
-`mix.book` against the host clock, 100 ms ahead, which records every mark and hit it is handed and
+`mix.book` against the host clock, reading `book.ahead` ms ahead (100 unset, at most 5000), which records every mark and hit it is handed and
 strikes one out when blits takes the booking back; and what `mix.drain` returns after each frame.
 An fn patch sends with `set.send(event)` in its `at` or `step`. Each list keeps its newest 200,
 and starts over when the mixes are rebuilt. With a tag set, the booker and the drain take only
@@ -212,12 +213,14 @@ header, and its members sit under it, indented one step per depth.
 | clip body              | `start`                       | drag sideways; locked while anchored                     |
 | sloped ends            | `fade.in` / `fade.out`, mix ms at any rate | drag the slope's top corner                 |
 | dividers inside        | passes of the period          | drag the right edge, snapping to whole passes: `loop`    |
-| a shorter clip, "· backward" after the label | a `seek`, or a rate below 0: what is left to play from where it starts, back to 0 at a rate below 0 | the voice panel; its right edge does not set `loop` |
+| a shorter clip, "· backward" after the label | a `seek`, or a rate below 0: what is left to play from where it starts, back to 0 at a rate below 0 | drag the right edge, snapping to what each whole `loop` leaves: `loop`, the fewest that leave that much; the voice panel for the rest |
 | arrow at the end       | `loop: true`                  | drag it back to make the loop finite                     |
 | thin bar under it      | stagger spread, first to last | none; `stagger` is an expression                         |
 | hatched extension      | `freeze`                      | the clip's menu                                          |
 | shared color bracket   | `locus`; "· blend" after the label where `mix.blend` cues it | drag a lane label onto another's, or the clip's menu |
 | dashed link            | `anchor`, where it names one voice | Alt-drag from an edge to another clip's edge for `after` or `with`; the voice panel for the rest |
+| dotted link, close dots | an `all`: one link from each voice it waits on | the voice panel; an Alt-drag from the edge replaces the join |
+| dotted link, wide dots | an `any`, or a query by `tag`, `writes` or a `resolver`: one link from each voice it could wait on | the voice panel; an Alt-drag from the edge replaces it |
 | notch on the top edge  | a hit, every pass             | the voice panel                                          |
 | dotted line down the score | an announced mark, named on the ruler | the Events tab                                 |
 | header bar             | a group, from its start to its end, sloped by its `fade` | ▾ folds its members away; click to select |
@@ -228,9 +231,15 @@ header, and its members sit under it, indented one step per depth.
 
 A voice whose period is 0, an aperiodic `fn` or a motion voice, has no passes, so its right edge
 does not drag. A voice at rate 0 never ends, and neither does one cued backward that loops for
-good, which has no end to start from. `playOf` in `src/blits/clip.ts` works out what a `seek` and
+good, which has no end to start from. A voice backward with a `seek` stops growing at its right
+edge once the loop reaches the seek. `playOf` in `src/blits/clip.ts` works out what a `seek` and
 a rate leave to play, and a test holds it to blits' `coast` mark. Placements come from the compiled mix's marks (`mix.marks`) before its first frame,
 so the score draws the fit blits made at cue.
+
+The dotted links come from `timingOf`, so the score and the Timing tab agree on which voices an
+anchor could wait on. A link is `all` only when every step from the anchor to that voice is an
+`all`; a query inside an `all` still picks one voice, so its links are `any`. A group or a mark at
+the far end draws no link.
 
 ## The flow
 
@@ -269,7 +278,7 @@ when its source's state says the awaited mark is behind it, which ignores the an
 | Weight    | a number, or a signal expression; a menu inserts common signals                         |
 | Patch     | a kind menu (switching starts a blank patch of that kind), then by kind: a weasel `Timeline` track per channel for `keys`, with an `EasingPicker` per key; code panes for `fn`; numbers or expressions per option for motion |
 | Live      | in live mode only: weight; `fade` with its `over`, `at` (a mix time or `'rest'`), `deadline` or the picked `subject`, and `rise`; `seek`, showing the `Doubt` it answers, with `state: 'keep'`; the `rate` setter and `ramp`, which take a rate below 0 for a voice and not for a group; and for a motion voice a per-subject `to` (a glide's `velocity`, by `push`). A selected group gets the same on its handle in every mix, less `to`, and fades only as a whole |
-| Events    | the announced marks, to add, name, time, and remove; in live mode, `announce` a name now; a tag to book and drain by; then `mix.marks` for the running mix, what `mix.book` handed over, and what `mix.drain` returned, newest first |
+| Events    | the announced marks, to add, name, time, and remove; in live mode, `announce` a name now; a tag to book and drain by; how far ahead the booker reads, blank for 100 ms; then `mix.marks` for the running mix, what `mix.book` handed over, and what `mix.drain` returned, newest first |
 | Inspector | for the picked subject, a plot per channel over the last 3 s: each voice alone thin, the mix thick; then each voice's `weightOf`, and each enclosing group's |
 
 Every voice's errors show on their own field. Two voices or groups with one name are an error on
@@ -353,5 +362,6 @@ the typecheck, the tests and the smoke run.
 - Reading back (`history` and `project` at a past time), as a panel of its own.
 - A `seek` or a rate below 0 on a group: blits does not tell a held voice its owner ran back.
 - `tags`, `score`, and `hits` on a group; a booker with a clock other than the player's own.
+- A link on the score for an anchor on a group, or to one: header lanes take no links.
 - Recording level moves.
 - Saving to a file.

@@ -20,6 +20,7 @@ export interface Clip {
   cut?: { at: number; fade: number }; // ms where a group above ends it, and that group's fade out
   into?: number; // ms of its first pass already behind its start; default 0
   ticks?: readonly number[]; // ms into each pass where a notch sits
+  stops?: readonly number[]; // the passes its end snaps to, ascending; default every whole number
 }
 
 /** A lane heading the clips and headers below it that sit deeper, up to the next that does not. */
@@ -47,6 +48,8 @@ export type Edge = 'start' | 'end';
 export interface Link {
   from: { clip: string; edge: Edge };
   to: { clip: string; edge: Edge };
+  /** One of several the `from` edge waits on: every one of them (`all`), or one (`any`). */
+  join?: 'all' | 'any';
 }
 export type Hatch = 'before' | 'after' | 'both' | null;
 export type ClipEdit =
@@ -73,4 +76,5 @@ export interface ScoreLanesProps {
 }
 
 export { hatchOf } from './drag';
+export { MAX_PASSES } from './geometry';
 export { ScoreLanes } from './ScoreLanes';

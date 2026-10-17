@@ -1,10 +1,12 @@
 import type { Composition } from '@pg/blits/composition';
+import { withAhead } from '@pg/blits/edit';
 import { AHEAD } from '@pg/blits/events';
 import type { Player } from '@pg/blits/player';
 import { ExprInput } from '@pg/widgets/ExprInput';
 import { type ReactNode, useState } from 'react';
 import { AnnouncedFields } from './AnnouncedFields';
 import s from './App.module.css';
+import { Draft, numberOf } from './CompositionControls';
 import { docOf } from './docs';
 import e from './Events.module.css';
 
@@ -84,6 +86,17 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
           }}
         />
       </div>
+      <div className={s.row} title={docOf('BookOptions.ahead')}>
+        <Draft
+          label="book ahead in ms"
+          caption="book ahead"
+          type="number"
+          value={comp.book?.ahead ?? ''}
+          placeholder={String(AHEAD)}
+          onCommit={(t) => onComp(withAhead(comp, t.trim() === '' ? undefined : numberOf(t)))}
+          unit="ms"
+        />
+      </div>
       <h3 className={s.heading} title={docOf('Mix.marks')}>
         marks · mix.marks, on the host’s clock
       </h3>
@@ -101,7 +114,7 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
         ))}
       />
       <h3 className={s.heading} title={docOf('Mix.book')}>
-        booked · mix.book, {AHEAD} ms ahead
+        booked · mix.book, {built.ahead} ms ahead
       </h3>
       <Table
         label="booked"

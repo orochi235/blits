@@ -143,6 +143,12 @@ export interface MixSettings {
   lanes?: boolean;
 }
 
+/** How the player's `mix.book` reads the score; unset, `AHEAD` in `events.ts`. */
+export interface BookSettings {
+  /** How far ahead of the host clock it books, ms, from 0 to `MAX_AHEAD`. */
+  ahead?: number;
+}
+
 export interface Composition {
   version: 1;
   title: string;
@@ -155,6 +161,7 @@ export interface Composition {
   blends?: Record<string, Expr>;
   announced?: Announced[];
   mix?: MixSettings;
+  book?: BookSettings;
   /** Each channel's fold rule, where it differs from `DEFAULT_RULES`. */
   rules?: Partial<Rules>;
 }
@@ -183,3 +190,4 @@ export const MAX_GROUPS = 16;
 export const MAX_ANNOUNCED = 32;
 export const MAX_HITS = 32;
 export const MAX_TAGS = 8;
+export const MAX_AHEAD = 5000;

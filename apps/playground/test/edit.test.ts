@@ -3,6 +3,7 @@ import {
   type Composition,
   type Group,
   type Level,
+  MAX_AHEAD,
   MAX_COLS,
   MAX_GROUPS,
   MAX_LENGTH,
@@ -21,6 +22,7 @@ import {
   sizeDots,
   switchStage,
   tuneLevel,
+  withAhead,
   withLength,
 } from '@pg/blits/edit';
 import { load } from '@pg/blits/load';
@@ -62,6 +64,21 @@ describe('length', () => {
     expect(withLength(DEFAULT, -5).length).toBe(1);
     expect(withLength(DEFAULT, Number.NaN)).toBe(DEFAULT);
     expect(withLength(DEFAULT, DEFAULT.length)).toBe(DEFAULT);
+  });
+});
+
+describe('booking ahead', () => {
+  it('rounds and clamps to 0..MAX_AHEAD, blank going back to the default', () => {
+    expect(withAhead(DEFAULT, 1e9).book).toEqual({ ahead: MAX_AHEAD });
+    expect(withAhead(DEFAULT, -5).book).toEqual({ ahead: 0 });
+    expect(withAhead(DEFAULT, 12.6).book).toEqual({ ahead: 13 });
+    expect(withAhead(DEFAULT, Number.NaN)).toBe(DEFAULT);
+    expect(withAhead(DEFAULT, undefined)).toBe(DEFAULT);
+    const set = withAhead(DEFAULT, 250);
+    expect(withAhead(set, 250)).toBe(set);
+    expect(withAhead(set, undefined)).not.toHaveProperty('book');
+    expect(load(set)).toEqual(set);
+    expect(compile(set, subjectsOf(set.stage)).ahead).toBe(250);
   });
 });
 

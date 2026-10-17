@@ -1,6 +1,7 @@
 import {
   type Composition,
   type Level,
+  MAX_AHEAD,
   MAX_COLS,
   MAX_GROUPS,
   MAX_LENGTH,
@@ -46,6 +47,18 @@ export function withLength(c: Composition, ms: number): Composition {
   if (!Number.isFinite(ms)) return c;
   const length = whole(ms, MAX_LENGTH);
   return length === c.length ? c : { ...c, length };
+}
+
+/**
+ * The composition with the booker reading `ms` ahead, in whole ms held to 0..MAX_AHEAD; undefined
+ * goes back to the default, and a non-number changes nothing.
+ */
+export function withAhead(c: Composition, ms: number | undefined): Composition {
+  if (ms !== undefined && !Number.isFinite(ms)) return c;
+  const ahead = ms === undefined ? undefined : Math.min(Math.max(Math.round(ms), 0), MAX_AHEAD);
+  if (ahead === c.book?.ahead) return c;
+  const { book: _book, ...rest } = c;
+  return ahead === undefined ? rest : { ...c, book: { ahead } };
 }
 
 /** The levels with a fresh `level N` from 0 to 1 added, or unchanged at `MAX_LEVELS`. */

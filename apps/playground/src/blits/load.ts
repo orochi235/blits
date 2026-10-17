@@ -2,6 +2,7 @@ import { placementFault } from './anchor';
 import {
   type Composition,
   type Level,
+  MAX_AHEAD,
   MAX_ANNOUNCED,
   MAX_COLS,
   MAX_GROUPS,
@@ -185,6 +186,9 @@ const mixSettings = (v: unknown) =>
   opt(v.reduce, (x) => typeof x === 'boolean') &&
   opt(v.lanes, (x) => typeof x === 'boolean');
 
+const bookSettings = (v: unknown) =>
+  obj(v) && opt(v.ahead, (x) => num(x) && x >= 0 && x <= MAX_AHEAD);
+
 const bounds = (v: unknown) =>
   Array.isArray(v) && v.length === 2 && v.every(num) && (v[0] as number) < (v[1] as number);
 const numberRule =
@@ -212,7 +216,8 @@ export function load(raw: unknown): Composition | null {
   if (!str(raw.title) || !num(raw.length) || raw.length <= 0 || raw.length > MAX_LENGTH)
     return null;
   if (!stage(raw.stage)) return null;
-  if (!opt(raw.mix, mixSettings) || !opt(raw.rules, rules)) return null;
+  if (!opt(raw.mix, mixSettings) || !opt(raw.book, bookSettings) || !opt(raw.rules, rules))
+    return null;
   if (
     !opt(raw.announced, (a) => Array.isArray(a) && a.length <= MAX_ANNOUNCED && a.every(announced))
   )

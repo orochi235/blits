@@ -2,7 +2,7 @@ import type { BookedHit, Booker, Marked, Sent } from '@msb235/blits';
 import type { Built } from './compile';
 import type { Subject } from './stage';
 
-/** How far ahead of the host clock the playground books, ms. */
+/** How far ahead of the host clock the playground books, ms, unless the composition says. */
 export const AHEAD = 100;
 /** The most entries each list keeps; the oldest go first. */
 export const MAX_EVENTS = 200;
@@ -38,7 +38,7 @@ export class EventLog {
     this.sent = [];
     this.booker = built.mix.book({
       clock,
-      ahead: AHEAD,
+      ahead: built.ahead,
       late: Number.POSITIVE_INFINITY,
       ...(this.tag ? { tag: this.tag } : {}),
       take: (item, when, lateBy) => {
