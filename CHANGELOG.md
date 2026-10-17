@@ -24,6 +24,10 @@ version and everything else the patch. Each release lists its changes as **Break
   its voice had met the subject. The tape moves forward and back while the read is made.
 - `stepMs` on a voice's spec: the interval its `step` runs at, in place of the mix's. 0 steps it
   once a frame by the frame's gap.
+- `seek({ frame })` and `project({ frame })`, on a mix and a transport, reach a frame by its
+  number, which `mix.seq` and `transport.seq` read. Rate 0 can hold mix time still across several
+  frames, and a seek or read by time lands on the last of them; by number it lands on any one
+  history still holds.
 
 ### Fixed
 

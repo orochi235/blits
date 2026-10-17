@@ -54,6 +54,21 @@ export class Frames {
     return found;
   }
 
+  /** The frame numbered `seq`, if it is still held. */
+  numbered(seq: number): Frame | undefined {
+    const list = this.list;
+    let lo = this.head;
+    let hi = list.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const f = list[mid] as Frame;
+      if (f.seq === seq) return f;
+      if (f.seq < seq) lo = mid + 1;
+      else hi = mid - 1;
+    }
+    return undefined;
+  }
+
   /** Every frame held, oldest first. */
   all(): Frame[] {
     return this.list.slice(this.head);

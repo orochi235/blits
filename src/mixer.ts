@@ -360,6 +360,9 @@ export class Mixer<I, O> implements Mix<I, O> {
   get timestamp(): number {
     return this.transport.last;
   }
+  get seq(): number {
+    return this.transport.seq;
+  }
   get last(): number {
     return this.transport.last;
   }
@@ -443,17 +446,17 @@ export class Mixer<I, O> implements Mix<I, O> {
     pull(this, subjects, into);
   }
 
-  seek(time: number): void {
+  seek(to: number | { readonly frame: number }): void {
     if (this.projecting) throw new Error('blits: a projection does not seek');
-    seek(this.own('seek'), time);
+    seek(this.own('seek'), to);
   }
 
   prepare(time: number): Promise<void> {
     return this.own('prepare').prepare(time);
   }
 
-  project(time: number): Projection<I, O> {
-    return projectAll(this.transport, time).of(this);
+  project(at: number | { readonly frame: number }): Projection<I, O> {
+    return projectAll(this.transport, at).of(this);
   }
 
   announce(

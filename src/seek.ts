@@ -15,8 +15,8 @@ import { recount } from './roster.js';
 import { refitAll } from './spans.js';
 import { Store } from './store.js';
 import { hostAt, replay } from './tape.js';
-import type { Transport } from './transport.js';
-import { cover, cut } from './unpage.js';
+import type { Frame, Transport } from './transport.js';
+import { cover, coverFrame, cut } from './unpage.js';
 import type { Controls, Subject, Voice } from './voice.js';
 
 /**
@@ -153,8 +153,11 @@ function stateAt<I, O>(voice: Voice<I, O>, t: number): Voice<I, O>['state'] {
   return 'live';
 }
 
-/** Moves every mix on the transport to mix time `t`, as it stood at the end of that frame. */
-export function seek(transport: Transport, t: number): void {
+/**
+ * Moves every mix on the transport to mix time `to`, as it stood at the end of that frame, or to
+ * the end of the frame numbered `to.frame`.
+ */
+export function seek(transport: Transport, to: number | { readonly frame: number }): void {
   if (transport.projecting) throw new Error('blits: a projection does not seek');
   const history = transport.history;
   if (!history) throw new Error('blits: seeking needs a mix made with history');
@@ -163,11 +166,26 @@ export function seek(transport: Transport, t: number): void {
     throw new Error('blits: seeking needs history.tape, which keeps the calls a seek plays again');
   if (Number.isNaN(transport.now))
     throw new Error('blits: a mix that has never synced has nothing to seek');
-  if (t === Number.POSITIVE_INFINITY) throw new RangeError('blits: a mix seeks to a finite time');
-  if (!(t >= transport.born))
-    throw new Error(`blits: ${t} is older than this mix's history reaches`);
-  cover(transport, t);
-  if (t >= transport.now) {
+  let t: number;
+  let frame: Frame | undefined;
+  if (typeof to === 'number') {
+    t = to;
+    if (t === Number.POSITIVE_INFINITY) throw new RangeError('blits: a mix seeks to a finite time');
+    if (!(t >= transport.born))
+      throw new Error(`blits: ${t} is older than this mix's history reaches`);
+    cover(transport, t);
+    if (t < transport.now) {
+      frame = transport.frames.at(t);
+      if (frame === undefined)
+        throw new Error(`blits: ${t} is older than this mix's history reaches`);
+    }
+  } else {
+    const f = coverFrame(transport, to.frame);
+    t = f.at;
+    // The frame being played is where the mix stands; any other is behind it, whatever its time.
+    if (f.seq !== transport.seq) frame = f;
+  }
+  if (frame === undefined) {
     // Ahead, under the rate the recorded calls up to `t` set, past any frames rate 0 held at `t`.
     const last = replay(
       transport,
@@ -179,9 +197,6 @@ export function seek(transport: Transport, t: number): void {
     // A call played at `t` itself moved the mixes there before it, as a sync does.
     if (Number.isNaN(last) || transport.now !== t) for (const m of transport.members) move(m, t);
   } else {
-    const frame = transport.frames.at(t);
-    if (frame === undefined)
-      throw new Error(`blits: ${t} is older than this mix's history reaches`);
     // On the frame itself, its own host time: rate 0 may have held the clock there for several.
     const u = frame.at === t ? frame.u : hostAt(transport, t);
     const seq = frame.seq;

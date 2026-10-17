@@ -23,6 +23,7 @@ const known: Record<Property, Record<Variant, Known>> = {
   dt: { plain: { seeds: 150 }, full: { seeds: 150 } },
   standing: { plain: { seeds: 150 }, full: { seeds: 150 } },
   now: { plain: { seeds: 150 }, full: { seeds: 150 } },
+  frame: { plain: { seeds: 150 }, full: { seeds: 150 } },
 };
 
 function guards(prop: Property) {
@@ -54,7 +55,9 @@ describe('project-ahead: projecting from the last call matches playing on', () =
 describe('project-ahead after a seek back: projecting past the calls the tape holds matches what they showed', () =>
   guards('taped'));
 describe('frame spacing: 32 and 48 ms frames match 16 ms frames', () => guards('dt'));
-describe('project-now: projecting to the mix’s own time matches what it probes', () =>
+describe('seek by frame: seeking to and reading the first frame at a mix time matches what it showed', () =>
+  guards('frame'));
+describe('project-now:projecting to the mix’s own time matches what it probes', () =>
   guards('now'));
 describe('project-behind with no history: a read back matches what the frame showed, or refuses', () => {
   guards('standing');

@@ -13,9 +13,9 @@ import { record } from './record.js';
 import { recount } from './roster.js';
 import { copyStanding, stands } from './standing.js';
 import { hostAt, replay } from './tape.js';
-import { type Cut, Transport, within } from './transport.js';
+import { type Cut, type Frame, Transport, within } from './transport.js';
 import type { Doubt, Mix, Projection, Tape, TransportProjection } from './types.js';
-import { cover } from './unpage.js';
+import { cover, coverFrame } from './unpage.js';
 import { unreached } from './unreached.js';
 import type { Controls, Subject, Voice } from './voice.js';
 
@@ -23,17 +23,32 @@ import type { Controls, Subject, Voice } from './voice.js';
  * Every mix on a transport read at mix time `t`, through copies of them on a transport of their
  * own, moved together so an anchor across mixes answers as it would live.
  */
-export function projectAll(transport: Transport, t: number): TransportProjection {
-  const ahead = Number.isNaN(transport.now) || t >= transport.now;
+export function projectAll(
+  transport: Transport,
+  at: number | { readonly frame: number },
+): TransportProjection {
+  const kept = transport.history !== undefined;
+  let t: number;
+  let numbered: Frame | undefined;
+  if (typeof at === 'number') t = at;
+  else {
+    if (!kept) throw new Error('blits: reading a frame back needs a mix made with history');
+    numbered = coverFrame(transport, at.frame);
+    t = numbered.at;
+  }
+  // The frame being played reads as the mix's own time does; any other is behind, whatever its time.
+  const ahead =
+    numbered !== undefined
+      ? numbered.seq === transport.seq
+      : Number.isNaN(transport.now) || t >= transport.now;
   const tape = transport.tape;
   const pace = transport.pace;
   // Behind, the last frame at or before `t`, read as it showed when `t` is that frame's own time.
   let cut: Cut = { seq: transport.seq, strict: false };
   let u = hostAt(transport, t);
-  const kept = transport.history !== undefined;
   if (!ahead && kept) {
-    cover(transport, t);
-    const frame = transport.frames.at(t);
+    if (numbered === undefined) cover(transport, t);
+    const frame = numbered ?? transport.frames.at(t);
     if (frame !== undefined) {
       cut = { seq: frame.seq, strict: frame.at === t };
       if (frame.at === t) u = frame.u;

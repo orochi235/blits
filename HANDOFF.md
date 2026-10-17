@@ -699,6 +699,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `patch.wave`, with `waveOptionsOf` removed; `handle.to` and `push` throwing for a patch
         that takes neither, and `read` giving undefined; and `fold` switching a rest-less channel
         on at 0.6, a mix's default band. All of it shipped in 0.8.0, so a rename is now a break.
+      - **Chosen while building, Mike's to overturn: `seek({ frame })` takes the number a new
+        `mix.seq` / `transport.seq` reads** (2026-10-17, unreleased). The getter is `seq` because
+        `frame` is already an internal field on `Mixer` and `HistoryRecord.seq` already names the
+        frame number publicly; the option is `frame`, as the review named it. `project({ frame })`
+        came along so reads and seeks answer the same question one way. A frame number is opaque
+        (not an index among frames at one time), and one history no longer holds throws. To rename,
+        change `seq` in `src/types/mix.ts`, `src/types/transport.ts` and the getter in
+        `src/mixer.ts`; nothing else reads it.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
       - **Backward play is built (2026-10-10); the schema page's "Starting partway, and playing
         backward" is the record, and its last sentence lists what is not built.** Mike's calls:
@@ -748,7 +756,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         stagger, a signal weight, a motion.
       - `catchUp: 'fresh'` per voice; exact catch-up is the default, and a voice keeps at most
         256 past clocks.
-      - `seek({ frame })`, for an earlier frame at the same mix time.
       - A report of a key `at` returns outside `writes`, which a mix still drops without a
         word; `checkPatch` in `@msb235/blits/testing` reports it. A voice's own `stepMs` is
         built (2026-10-11, the changelog's Unreleased section), so magicsmoke's faults could

@@ -211,8 +211,11 @@ export interface Mix<I, O, H = unknown> {
    * alone: no state, motion, `from: 'current'`, anchor or owner, no write to its handle, and no channel without a rest
    * at a weight that moves. The mix's rate has never been set. And `time` is no earlier than the
    * last cue, `drop`, `touch`, `announce` or `rebase`, or the last frame a voice left in.
+   *
+   * Given `{ frame }`, a number `seq` read, it reads that frame as it showed, as `seek` does; it
+   * needs `history`.
    */
-  project(time: number): Projection<I, O>;
+  project(at: number | { readonly frame: number }): Projection<I, O>;
   /**
    * Moves the mix to mix time `time`, as it stood at the end of that frame, and plays on from
    * there; where rate 0 held the clock at `time` for several frames, the last of them. Needs
@@ -238,8 +241,13 @@ export interface Mix<I, O, H = unknown> {
    * host's time since its last sync. Throws for a time older than history reaches, and before
    * the first sync. With a history `store`, a time older than memory needs `prepare` first, or
    * throws `HistoryMiss` before anything moves.
+   *
+   * Given `{ frame }`, a number `seq` read, it moves to the end of that frame instead, which is
+   * how a host reaches an earlier one of several frames rate 0 held at one mix time. The frame has
+   * to be one history still holds: not let go with age, and not after a moment an earlier seek went
+   * back to. With a store, one older than memory needs `prepare` of its mix time first.
    */
-  seek(time: number): void;
+  seek(to: number | { readonly frame: number }): void;
   /** As `Transport.prepare`, for a mix made alone. */
   prepare(time: number): Promise<void>;
   /**
@@ -249,6 +257,11 @@ export interface Mix<I, O, H = unknown> {
   readonly now: number;
   /** The host's timestamp at the last sync; NaN before the first. */
   readonly timestamp: number;
+  /**
+   * The number of the frame being played, which `seek({ frame })` and `project({ frame })` take:
+   * each sync and seek begins a frame with a higher one, so two frames at one mix time differ.
+   */
+  readonly seq: number;
   /** The tape `history.tape` made, undefined without one. */
   readonly tape: Tape | undefined;
   /**

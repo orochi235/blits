@@ -42,20 +42,25 @@ export interface Transport {
    * tape plays every mix's calls again in the order they were made, so an anchor across mixes
    * answers as it did. A mix dropped after the moment sought is back on the transport.
    */
-  seek(time: number): void;
+  seek(to: number | { readonly frame: number }): void;
   /**
    * Loads from the history `store` what `seek(time)` and `project(time)` will need, where that
    * reaches past memory. Without a store, or within memory, it loads nothing.
    */
   prepare(time: number): Promise<void>;
   readonly now: number;
+  /** As `Mix.seq`: the number of the frame being played, the same for every mix on it. */
+  readonly seq: number;
   readonly tape: Tape | undefined;
   /** Puts a named mark on a score every mix on it sees. Throws without a `score`. */
   announce(name: string, opts: { at?: number; score: string; tags?: readonly string[] }): void;
   /** Every mark of every mix on it, and every mark announced on it, earliest first. */
   marks(from: number, to: number): Marked[];
-  /** Every mix on it read at mix time `time`, together, so anchors across them answer. */
-  project(time: number): TransportProjection;
+  /**
+   * Every mix on it read at mix time `at`, or at the frame `{ frame }` names, together, so anchors
+   * across them answer.
+   */
+  project(at: number | { readonly frame: number }): TransportProjection;
   /** Any mix on it live. */
   readonly live: boolean;
   /** Every mix on it inert. */
