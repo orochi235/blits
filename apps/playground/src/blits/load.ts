@@ -107,6 +107,12 @@ const hints = (v: unknown) =>
   opt(v.ballast, bool) &&
   opt(v.priority, strength);
 
+/** A voice's or group's `tags`, `score`, and `hits`. */
+const marked = (v: Rec) =>
+  opt(v.tags, texts(MAX_TAGS)) &&
+  opt(v.score, str) &&
+  opt(v.hits, (x) => Array.isArray(x) && x.length <= MAX_HITS && x.every(hit));
+
 const voice = (v: unknown) =>
   obj(v) &&
   str(v.id) &&
@@ -129,9 +135,7 @@ const voice = (v: unknown) =>
   opt(v.anchor, placement) &&
   opt(v.owner, str) &&
   opt(v.hints, hints) &&
-  opt(v.tags, texts(MAX_TAGS)) &&
-  opt(v.score, str) &&
-  opt(v.hits, (x) => Array.isArray(x) && x.length <= MAX_HITS && x.every(hit));
+  marked(v);
 
 const fitStep = (v: unknown) =>
   obj(v) &&
@@ -156,11 +160,13 @@ const group = (v: unknown) =>
   opt(v.owner, str) &&
   num(v.start) &&
   num(v.rate) &&
+  opt(v.seek, num) &&
   (num(v.weight) || expr(v.weight)) &&
   fade(v.fade) &&
   opt(v.freeze, freeze) &&
   opt(v.anchor, placement) &&
   opt(v.hints, hints) &&
+  marked(v) &&
   (v.kind === 'span' ? opt(v.span, spanSettings) : v.span === undefined);
 
 /** Whether the groups' `owner` links make a tree that blits can cue. */

@@ -6,7 +6,7 @@ import { compileExpr, compileFit, type Faults, type Scope } from './expr';
 import { fitOf } from './fit';
 import { rowsOf } from './groups';
 import type { Mixed } from './kit';
-import { type FieldError, messageOf, type Spec, specOf } from './spec';
+import { type FieldError, markInto, messageOf, type Spec, specOf } from './spec';
 import type { Subject } from './stage';
 
 /** What one mix cued: each voice's handle and patch, and each group's handle, by id. */
@@ -62,9 +62,13 @@ function groupSpecOf(
   });
   const fit = made !== undefined && 'error' in made ? undefined : made;
   if (made !== undefined && 'error' in made) fail(`span.fit.${made.step}`, made.error, made.line);
+  if (s && g.rate < 0)
+    fail('rate', 'a span lays out its members forward, so it takes none below 0', null);
   if (errors.length > 0) return { errors };
   const spec: GroupSpec = { start: g.start, rate: g.rate, weight, fade: g.fade, name: g.name };
+  if (g.seek !== undefined) spec.seek = g.seek;
   if (g.freeze) spec.freeze = g.freeze;
+  markInto(spec, g);
   if (g.anchor) {
     spec.anchor = g.anchor;
     if (g.anchor.start !== undefined || g.anchor.in !== undefined) delete spec.start;

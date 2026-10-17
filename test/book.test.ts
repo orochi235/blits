@@ -316,3 +316,66 @@ describe('book', () => {
     expect(() => m.cue({ patch: still, hits: [{ at: 400, event: 0 }] })).toThrow(RangeError);
   });
 });
+
+describe('an owner’s hits', () => {
+  it('books each once, at owner ms from its start through every clock above it', () => {
+    const { m, run, took } = booked();
+    const outer = m.owns({ start: 100, rate: 2 });
+    const o = m.owns({
+      owner: outer,
+      start: 100,
+      score: 'intro',
+      tags: ['band'],
+      hits: [
+        { at: 100, event: 'downbeat' },
+        { at: 300, event: 'turn' },
+      ],
+    });
+    cue(m, { owner: o, start: 0 });
+    run(0, 1000);
+    const owned = took.filter((t) => 'hit' in t.item && t.item.voice === o.id);
+    // On the mix: 100 + (100 + 100) / 2 = 200, and 100 + (100 + 300) / 2 = 300.
+    expect(owned.map((t) => [(t.item as BookedHit).event, t.when])).toEqual([
+      ['downbeat', 1200],
+      ['turn', 1300],
+    ]);
+    expect(owned[0]?.item).toMatchObject({ pass: 0, score: 'intro', tags: ['band'] });
+  });
+
+  it('books by its own tag and score, not the voices it holds', () => {
+    const { m, run, hits } = booked({ tag: 'band' });
+    const o = m.owns({ tags: ['band'], hits: [{ at: 50, event: 'cymbal' }] });
+    cue(m, { owner: o, start: 0 });
+    run(0, 600);
+    expect(hits().map((h) => h.event)).toEqual(['cymbal']);
+  });
+
+  it('books none past where it leaves', () => {
+    const { m, run, hits } = booked();
+    const o = m.owns({ hits: [{ at: 600, event: 'late' }] });
+    cue(m, { owner: o, start: 0, hits: [] });
+    run(0, 1000);
+    expect(hits()).toEqual([]);
+  });
+
+  it('books none while its clock runs back, nor does a voice cued backward', () => {
+    const { m, run, hits } = booked();
+    const o = m.owns({ rate: -1, seek: 500, hits: [{ at: 100, event: 'owned' }] });
+    cue(m, { owner: o, start: 0, hits: [] });
+    cue(m, { rate: -1 });
+    m.cue({
+      patch: patch<Part, Pose>(0, () => ({ x: 1 }), { writes: ['x'] }),
+      rate: -1,
+      seek: 300,
+      hits: [{ at: 100, event: 'bare' }],
+    });
+    run(0, 1000);
+    expect(hits()).toEqual([]);
+  });
+
+  it('refuses a hit at no time on its clock', () => {
+    const m = mix<Part, Pose>(K);
+    expect(() => m.owns({ hits: [{ at: -1, event: 'x' }] })).toThrow(/hit/);
+    expect(() => m.owns({ hits: [{ at: Number.POSITIVE_INFINITY, event: 'x' }] })).toThrow(/hit/);
+  });
+});

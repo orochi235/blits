@@ -38,6 +38,7 @@ export interface Header {
   over?: number; // ms past the budget
   fell?: boolean;
   folded?: boolean;
+  ticks?: number[]; // ms on the score, a notch on its bar at each
 }
 /** A named time, drawn down every lane. */
 export interface ScoreMark {

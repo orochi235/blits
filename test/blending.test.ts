@@ -506,6 +506,7 @@ describe("a blend member's own labels", () => {
     m.book({
       clock: () => 0,
       ahead: 100,
+      late: 0,
       take: (item) => {
         if ('hit' in item) booked.push(item);
         return { cancel() {} };

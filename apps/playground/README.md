@@ -105,14 +105,15 @@ voice's `anchor` is blits' `Placement` as data, typed as JSON in the voice or gr
 checked by `placementFault` in `src/blits/anchor.ts`, which `load` uses too: `start` or `in`, and
 `out` or `end`, each a time or an anchor by `of` and `mark`, `after`, `with`, `before`, `all`, or
 `any`, selecting by name or by a query of `name`, `tag`, `writes`, `score`, and `resolver`. A
-voice's `hits` are events at voice ms into each pass, each event a string.
+voice's `hits` are events at voice ms into each pass, each event a string; a group's are at ms on
+its own clock, once.
 
 The `Player` keeps an `EventLog` (`src/blits/events.ts`) on the full mix: a booker made with
 `mix.book` against the host clock, reading `book.ahead` ms ahead (100 unset, at most 5000), which records every mark and hit it is handed and
 strikes one out when blits takes the booking back; and what `mix.drain` returns after each frame.
 An fn patch sends with `set.send(event)` in its `at` or `step`. Each list keeps its newest 200,
 and starts over when the mixes are rebuilt. With a tag set, the booker and the drain take only
-voices carrying it, and the rest of what was sent is drained and thrown away.
+voices and groups carrying it, and the rest of what was sent is drained and thrown away.
 
 ## Blends
 
@@ -148,11 +149,14 @@ interface Group {
   id: string; name: string; hue: number;
   kind: 'owner' | 'span';
   owner?: string;                        // the parent group's id; groups nest
-  start: number; rate: number;
+  start: number; rate: number;          // a span's rate is 0 or more
+  seek?: number;                         // where its clock starts; unset: 0
   weight: number | Expr;
   fade: { in?: number; out?: number; ease?: Easing };
   freeze?: 'before' | 'after' | 'both';
   anchor?: Placement;
+  tags?: string[]; score?: string;
+  hits?: Hit<string>[];                  // at ms on its own clock, booked once
   hints?: Hints;                         // read only when the parent is a span
   span?: {                               // only on kind 'span'
     duration?: number; priority?: Strength; order?: Order; share?: number;
@@ -164,7 +168,12 @@ type Hints = { faster?: number; slower?: number; overlap?: boolean; ballast?: bo
 ```
 
 An owner plays what it holds on its own clock, and its `rate`, `weight` and `fade` multiply into
-theirs, so it places, times and fades them as one. A span is an owner that lays its children out
+theirs, so it places, times and fades them as one. Below rate 0 that clock runs back from its
+`seek`, and each member plays backward from its end to its start, where it leaves; the score
+draws a member there and marks the group `backward`. A group's `tags` and `score` are its own,
+not its members': a query, a booker, or a drain by tag selects the group alone. Its hits are
+notches on its header bar, where its clock reaches each from its `seek` until it ends, and none
+while it runs back, since blits books none then. A span is an owner that lays its children out
 in `order` and fits them into its `duration`. A child's `hints` say how it may give way: play up to
 `faster` or `slower` times its rate, run alongside the one before (`overlap`), or be skipped
 (`ballast`).
@@ -197,6 +206,7 @@ blits refuses some trees, and the playground meets each before blits sees it:
 | a span child that never ends                   | joining a span makes `loop: true` one pass; a motion voice keeps a field error on `patch` |
 | an owner, not a span, held by a span           | the `owner` menu does not offer it, and `load` refuses it |
 | a `loop` on an owner                           | groups have no `loop` field                              |
+| a span cued at a rate below 0                  | its rate slider stops at 0, and one loaded below is a field error on `rate` |
 
 `load` also refuses an unknown `owner`, a cycle, and more than `MAX_GROUPS` (16). A group with
 errors is left out with everything under it, each member erroring on its `owner`.
@@ -416,8 +426,8 @@ the typecheck, the tests and the smoke run.
 ## Not in this version
 
 - Reading back (`history` and `project` at a past time), as a panel of its own.
-- A `seek` or a rate below 0 on a group: blits does not tell a held voice its owner ran back.
-- `tags`, `score`, and `hits` on a group; a booker with a clock other than the player's own.
+- A rate below 0 on a span, which blits refuses at its cue.
+- A booker with a clock other than the player's own.
 - A link on the score for an anchor on a group, or to one: header lanes take no links.
 - Recording level moves.
 - Saving to a file.

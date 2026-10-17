@@ -118,7 +118,10 @@ export interface Group {
   /** The parent group's id. */
   owner?: string;
   start: number;
+  /** Below 0 its clock runs back, and its members' with it; a span takes none. */
   rate: number;
+  /** Where its clock starts, ms. Unset: 0, at any rate. */
+  seek?: number;
   weight: number | Expr;
   fade: { in?: number; out?: number; ease?: Easing };
   freeze?: 'before' | 'after' | 'both';
@@ -127,6 +130,10 @@ export interface Group {
   hints?: Hints;
   /** Only on kind 'span'. */
   span?: SpanSettings;
+  tags?: string[];
+  score?: string;
+  /** Events at ms on its own clock, booked once while it plays. */
+  hits?: Hit<string>[];
 }
 
 export const FIT_PRESETS = {

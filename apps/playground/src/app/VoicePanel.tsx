@@ -17,6 +17,7 @@ import {
   FaultLine,
   LooseErrors,
   memberOf,
+  SeekField,
   SHARED,
   schemaOf,
   sharedConfig,
@@ -27,7 +28,7 @@ import { WeightField } from './WeightField';
 const FIELDS: ConfigField[] = [
   SHARED.name,
   SHARED.start,
-  // A voice plays backward below 0; an owner does not turn the voices it holds.
+  // A voice plays backward below 0.
   { ...SHARED.rate, min: -4 } as ConfigField,
   { key: 'repeat', label: 'repeat', type: 'checkbox', default: true },
   { key: 'passes', label: 'passes', type: 'number', default: 1, min: 1, step: 1 },
@@ -118,23 +119,13 @@ export function VoicePanel(p: VoicePanelProps) {
           <span className={s.note}>a span places it</span>
         </label>
       )}
-      <label className={s.row} title={docOf('VoiceSpec.seek')}>
-        seek
-        <input
-          type="number"
-          className={s.number}
-          step={10}
-          placeholder={v.rate < 0 ? 'its end' : '0'}
-          value={v.seek ?? ''}
-          onChange={(e) => {
-            const ms = e.target.valueAsNumber;
-            onChange(withKey(v, 'seek', Number.isFinite(ms) ? ms : undefined));
-          }}
-        />
-        <span className={s.note}>
-          voice ms it starts at{v.rate < 0 ? ', playing back to 0' : ''}
-        </span>
-      </label>
+      <SeekField
+        x={v}
+        doc={docOf('VoiceSpec.seek')}
+        placeholder={v.rate < 0 ? 'its end' : '0'}
+        note={`voice ms it starts at${v.rate < 0 ? ', playing back to 0' : ''}`}
+        onChange={onChange}
+      />
       {v.patch.kind === 'fn' && v.patch.step !== undefined && (
         <label className={s.row} title={docOf('VoiceSpec.stepMs')}>
           stepMs
@@ -209,7 +200,7 @@ export function VoicePanel(p: VoicePanelProps) {
         other={p.comp.voices.find((o) => o.id !== v.id)?.name}
         onChange={onChange}
       />
-      <MarksFields voice={v} onChange={onChange} />
+      <MarksFields x={v} onChange={onChange} />
       <button type="button" onClick={onDelete}>
         delete voice
       </button>

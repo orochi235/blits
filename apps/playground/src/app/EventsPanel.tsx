@@ -46,9 +46,11 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
   const [name, setName] = useState('beat');
   const { built, events } = player;
   const names = new Map<number, string>();
+  const groups = new Set<number>();
   for (const x of [...comp.voices, ...(comp.groups ?? [])]) {
     const h = player.handleOf(x.id);
     if (h) names.set(h.id, x.name);
+    if (h && !('patch' in x)) groups.add(h.id);
   }
   const who = (voice: number | undefined, fallback?: string) =>
     (voice === undefined ? undefined : names.get(voice)) ?? fallback ?? '';
@@ -77,7 +79,7 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
       <div title={docOf('Mix.drain')}>
         <ExprInput
           label="book and drain only the tag"
-          placeholder="every voice"
+          placeholder="every voice and group"
           value={events.tag ?? ''}
           onCommit={(tag) => {
             events.tag = tag.trim() || undefined;
@@ -129,7 +131,7 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
               <td className={e.num}>{ms(b.lateBy)}</td>
               <td>
                 {'hit' in b.item
-                  ? `hit ${text(b.item.event)}, pass ${b.item.pass + 1}`
+                  ? `hit ${text(b.item.event)}${groups.has(b.item.voice) ? '' : `, pass ${b.item.pass + 1}`}`
                   : (b.item.mark ?? 'announced')}
               </td>
               <td>{who(b.item.voice, b.item.name)}</td>

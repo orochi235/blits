@@ -33,6 +33,9 @@ version and everything else the patch. Each release lists its changes as **Break
   holds a key outside the patch's `writes`, naming the voice and the key. The mix still drops the
   key, as it always has; `checkPatch` in `@msb235/blits/testing` still finds one returned only on
   some subjects or phases.
+- `hits` and `seek` on an owner's and a span's spec. A hit is an event at a time on the owner's
+  clock, booked once while the owner plays, with its `score` and `tags`; a seek is where that clock
+  starts, so an owner cued at a rate below 0 with a seek plays its children back from there.
 
 ### Fixed
 
@@ -43,6 +46,10 @@ version and everything else the patch. Each release lists its changes as **Break
   one, runs as a motion on this copy's mix: on lanes, and retargeted, pushed and read through its
   handle, which refused it. It played through `at` off the lanes. Copies of different releases
   still keep apart.
+- `mix.span` refuses a rate below 0. A span cued backward placed none of its children, which
+  waited for good, and never left. Its handle's `rate` still turns one that plays.
+- A voice whose patch has no duration books no hits while its clock runs back, as every other
+  voice does. One cued backward booked each hit ahead of it.
 - A fade set for a time after a voice's passes run out no longer begins in place of the voice
   ending, where one frame crossed both: `fade({ at })` on a voice with no `freeze` that ended
   before `at` played on, held at its last frame, until the fade finished.

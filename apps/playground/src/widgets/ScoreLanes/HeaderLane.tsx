@@ -3,6 +3,7 @@ import { hueColor } from '../hue';
 import { INDENT, type Scale, slopePolygon, WIDTH } from './geometry';
 import type { Header } from './index';
 import { activates, seconds } from './keys';
+import { Notches } from './Marks';
 import s from './ScoreLanes.module.css';
 
 const BAR_H = 8;
@@ -105,6 +106,13 @@ export function HeaderLane(p: HeaderLaneProps) {
           aria-label={`${hd.label}, starts ${seconds(hd.start)}${hd.fell ? ', fell' : ''}`}
           onPointerDown={select}
           onKeyDown={(e) => key(e, () => p.onSelect(hd.id))}
+        />
+      )}
+      {hd.start <= duration && hd.ticks && (
+        <Notches
+          times={hd.ticks.filter((t) => t >= 0 && t <= duration)}
+          scale={scale}
+          top={mid - BAR_H / 2}
         />
       )}
       {budget !== null && (

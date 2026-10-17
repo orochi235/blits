@@ -42,9 +42,14 @@ export function tickTimes(c: Clip, viewEnd: number): number[] {
 
 /** A clip's ticks: a notch on its top edge wherever one falls. */
 export function ClipTicks(p: { clip: Clip; scale: Scale; top: number; duration: number }) {
+  return <Notches times={tickTimes(p.clip, p.duration)} scale={p.scale} top={p.top} />;
+}
+
+/** A notch hanging from `top` at each of `times`, score ms. */
+export function Notches(p: { times: readonly number[]; scale: Scale; top: number }) {
   return (
     <>
-      {tickTimes(p.clip, p.duration).map((t) => {
+      {p.times.map((t) => {
         const x = p.scale.x(t);
         return (
           <path

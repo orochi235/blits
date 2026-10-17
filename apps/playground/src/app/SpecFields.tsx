@@ -102,6 +102,39 @@ export function FadeEase<T extends Timed>({
   );
 }
 
+/** Where in itself `x` starts, as `seek` on its spec; empty leaves it unset. */
+export function SeekField<T extends Timed>({
+  x,
+  doc,
+  placeholder,
+  note,
+  onChange,
+}: {
+  x: T;
+  doc: string | undefined;
+  placeholder: string;
+  note: string;
+  onChange(next: T): void;
+}) {
+  return (
+    <label className={s.row} title={doc}>
+      seek
+      <input
+        type="number"
+        className={s.number}
+        step={10}
+        placeholder={placeholder}
+        value={x.seek ?? ''}
+        onChange={(e) => {
+          const ms = e.target.valueAsNumber;
+          onChange(withKey(x, 'seek', Number.isFinite(ms) ? ms : undefined));
+        }}
+      />
+      <span className={s.note}>{note}</span>
+    </label>
+  );
+}
+
 /** Errors on fields a panel has no input for, in a list of their own. */
 export function LooseErrors({ errors, label }: { errors: FieldError[]; label: string }) {
   if (errors.length === 0) return null;

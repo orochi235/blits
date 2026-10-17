@@ -297,3 +297,38 @@ describe('mix.owns', () => {
     expect(scene({})).toEqual(scene({ lanes: false }));
   });
 });
+
+describe.each([true, false])('an owner cued partway or backward, lanes %s', (lanes) => {
+  it('starts its clock at its seek, and its children with it', () => {
+    const m = mix<Part, Pose>(K, { lanes });
+    m.sync(0);
+    const o = m.owns({ seek: 200 });
+    m.cue({ patch: clock, owner: o, start: 0 });
+    expect(x(m, 0)).toBe(200);
+    expect(x(m, 100)).toBe(300);
+  });
+
+  it('cued backward from a seek, plays its children back to their start and leaves with them', () => {
+    const m = mix<Part, Pose>(K, { lanes });
+    m.sync(0);
+    const o = m.owns({ rate: -1, seek: 300 });
+    const c = m.cue({ patch: ramp, loop: false, owner: o, start: 0 });
+    // The child ends at its owner's 100 ms, so it waits, past its end, until mix 200.
+    expect(m.probe(a).y).toBe(10);
+    m.sync(250);
+    expect(m.probe(a).y).toBeCloseTo(5, 9);
+    expect(m.marks(0, 1000).find((k) => k.voice === c.id && k.mark === 'end')?.timestamp).toBe(300);
+    m.sync(310);
+    expect([c.state, o.state]).toEqual(['done', 'done']);
+  });
+
+  it('cued backward with no seek, runs back from 0, so a child at 0 leaves at once', () => {
+    const m = mix<Part, Pose>(K, { lanes });
+    m.sync(0);
+    const o = m.owns({ rate: -1 });
+    const c = m.cue({ patch: ramp, loop: false, owner: o, start: 0 });
+    m.sync(16);
+    expect([c.state, o.state]).toEqual(['done', 'done']);
+    expect(m.probe(a).y).toBe(0);
+  });
+});

@@ -423,6 +423,10 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   span(spec: SpanSpec<I>): SpanHandle<I> {
+    if ((spec.rate ?? 1) < 0)
+      throw new Error(
+        'blits: a span lays out its children forward from its start, so it is not cued backward',
+      );
     this.fitting = new Fitting(spec as SpanSpec<unknown>);
     try {
       const handle = this.owns(spec);
