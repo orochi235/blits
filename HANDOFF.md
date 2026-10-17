@@ -61,6 +61,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   every seed pass, so the variant is left out of `again`, as `fresh` is. A read ahead already
   treats a subject never probed as probed all along; whether a seek, or a live probe, should meet a
   late subject's signals at the voice's start too is the owner's call.
+- **A record's `copied` flag, which lets `assess` say `stepped` after a seek back, reads level**
+  (teitou, 2026-10-17, 7 rounds, `AB_EACH=1 bench/ab.sh 0c5527f 97b1aa3` over `fn`, `named`,
+  `keys`, `probed`, `tweens^`, `weasel^` and `blend`, geometric mean 0.984).
 - **Unreleased, breaking: `loop` defaults to one pass** (Mike, 2026-10-11; it defaulted to
   looping for good). It waits for the next minor. Every consumer's cues were read at its `origin`
   head (2026-10-11): one relied on the old default, klieg's lighting voice
