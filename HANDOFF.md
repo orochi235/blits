@@ -61,6 +61,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   every seed pass, so the variant is left out of `again`, as `fresh` is. A read ahead already
   treats a subject never probed as probed all along; whether a seek, or a live probe, should meet a
   late subject's signals at the voice's start too is the owner's call.
+- **Open question: should a pending voice that is fading still follow its anchor?** (2026-10-17.)
+  A voice faded before its start is `fading` until it is risen, and `place()` moves only `pending`
+  voices, so in between its start stays where it was when the fade landed, even if what it is
+  anchored to moves. Straight play, seek and read ahead all agree, so nothing nondeterministic
+  rides on it; `rise` now puts such a voice back to `pending` (`beginRise` in `src/fade.ts`), and
+  it follows its anchor again from there. The owner's call whether it should follow throughout.
 - **A record's `copied` flag, which lets `assess` say `stepped` after a seek back, reads level**
   (teitou, 2026-10-17, 7 rounds, `AB_EACH=1 bench/ab.sh 0c5527f 97b1aa3` over `fn`, `named`,
   `keys`, `probed`, `tweens^`, `weasel^` and `blend`, geometric mean 0.984).
