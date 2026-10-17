@@ -5,6 +5,7 @@ import type { Player } from '@pg/blits/player';
 import { refusalOf } from '@pg/blits/spec';
 import type { Subject } from '@pg/blits/stage';
 import { ExprInput } from '@pg/widgets/ExprInput';
+import { Button } from '@weasel-js/ui';
 import { useState } from 'react';
 
 export interface AimFieldProps {
@@ -55,9 +56,9 @@ export function AimField({ comp, player, id, patch: p, act }: AimFieldProps) {
           aim(next);
         }}
       />
-      <button type="button" disabled={code.trim() === ''} onClick={() => aim(code)}>
+      <Button size="sm" disabled={code.trim() === ''} onClick={() => aim(code)}>
         {key === 'to' ? 'retarget' : 'push'} again
-      </button>
+      </Button>
     </>
   );
 }

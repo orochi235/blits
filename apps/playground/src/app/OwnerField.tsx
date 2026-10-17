@@ -1,55 +1,40 @@
-import type { Composition } from '@pg/blits/composition';
 import { ancestorsOf } from '@pg/blits/groups';
-import s from './App.module.css';
+import type { ControlRenderer } from '@weasel-js/labkit';
+import { type PrefRenderContext, PropertyControl } from '@weasel-js/ui';
+import { errorOf, Row, useSpec } from './SpecFields';
+
+/** The panel writes `''` as no owner: the mix. */
+const NONE = '';
 
 /**
- * The group a voice or group `id` plays under, chosen from those it may join: never itself or a
- * group it holds, and never a span for an owner.
+ * The group a voice or group plays under, chosen from those it may join: never itself or a group
+ * it holds, and never a span for an owner. Writes the owner's id, or `''` for the mix.
  */
-export function OwnerField({
-  comp,
-  id,
-  doc,
-  error,
-  onChange,
-}: {
-  comp: Composition;
-  id: string;
-  doc: string | undefined;
-  error: string | null;
-  onChange(owner: string | null): void;
-}) {
-  const self = comp.groups?.find((g) => g.id === id);
-  const voice = comp.voices.find((v) => v.id === id);
+export const ownerRow: ControlRenderer = (row) => <OwnerRow row={row} />;
+
+function OwnerRow({ row }: { row: PrefRenderContext }) {
+  const spec = useSpec();
+  const { comp, x } = spec;
+  const self = comp.groups?.find((g) => g.id === x.id);
   const offered = (comp.groups ?? []).filter(
     (g) =>
       !self ||
-      (g.id !== id &&
-        !ancestorsOf(comp, g.id).some((a) => a.id === id) &&
+      (g.id !== x.id &&
+        !ancestorsOf(comp, g.id).some((a) => a.id === x.id) &&
         !(self.kind === 'owner' && g.kind === 'span')),
   );
   return (
-    <div className={s.field}>
-      <label className={s.row} title={doc}>
-        owner
-        <select
-          value={(self ?? voice)?.owner ?? ''}
-          aria-invalid={error !== null}
-          onChange={(e) => onChange(e.target.value || null)}
-        >
-          <option value="">none (the mix)</option>
-          {offered.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.name} · {g.kind}
-            </option>
-          ))}
-        </select>
-      </label>
-      {error !== null && (
-        <p className={s.fault} role="alert">
-          {error}
-        </p>
-      )}
-    </div>
+    <Row row={row} error={errorOf(spec, 'owner')?.error}>
+      <PropertyControl
+        kind="enum"
+        name={row.pref.name}
+        value={x.owner ?? NONE}
+        options={[
+          { value: NONE, label: 'none (the mix)' },
+          ...offered.map((g) => ({ value: g.id, label: `${g.name} · ${g.kind}` })),
+        ]}
+        onChange={(id) => row.setValue(id)}
+      />
+    </Row>
   );
 }

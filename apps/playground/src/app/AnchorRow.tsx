@@ -1,68 +1,53 @@
 import { PLACEMENTS, parsePlacement } from '@pg/blits/anchor';
-import type { Group, Voice } from '@pg/blits/composition';
-import { withKey } from '@pg/blits/keyed';
-import { ExprInput } from '@pg/widgets/ExprInput';
+import type { ControlRenderer } from '@weasel-js/labkit';
+import { Button, MenuButton, type PrefRenderContext } from '@weasel-js/ui';
 import { useState } from 'react';
-import s from './App.module.css';
+import g from './Group.module.css';
+import { ExprRow, Row, useSpec } from './SpecFields';
+
+const INSERTS = Object.keys(PLACEMENTS).map((k) => ({ value: k, label: k }));
 
 /**
- * `x`'s anchor, blits' `Placement` typed as JSON, with a menu of ones to start from; under a
- * span, which places it, a note says so.
+ * The anchor, blits' `Placement` typed as JSON, with a menu of ones to start from that point at
+ * "it", another voice's name; under a span, which places it, the hint says so.
  */
-export function AnchorRow<T extends Voice | Group>({
-  x,
-  doc,
-  spanned,
-  other,
-  onChange,
-}: {
-  x: T;
-  doc: string | undefined;
-  spanned: boolean;
-  /** Another voice's or group's name, which an inserted anchor points at. */
-  other: string | undefined;
-  onChange(next: T): void;
-}) {
+export const anchorRow: ControlRenderer = (row) => <AnchorRow row={row} />;
+
+function AnchorRow({ row }: { row: PrefRenderContext }) {
+  const { x, comp, spanned } = useSpec();
   const [error, setError] = useState<string | null>(null);
-  const it = other ?? 'intro';
+  const it =
+    ('patch' in x ? comp.voices.find((o) => o.id !== x.id) : comp.voices[0])?.name ?? 'intro';
   const commit = (text: string) => {
     const r = parsePlacement(text);
     setError('error' in r ? r.error : null);
-    if (!('error' in r)) onChange(withKey(x, 'anchor', r.placement));
+    if (!('error' in r)) row.setValue(r.placement);
   };
   return (
-    <div className={s.field} title={doc}>
-      <ExprInput
-        label="anchor"
+    <Row row={row} wide hint={`“it” is ${it}${spanned ? '; its start: a span places it' : ''}`}>
+      <ExprRow
+        row={row}
         placeholder={`{"start": {"after": "${it}"}}`}
         value={x.anchor ? JSON.stringify(x.anchor) : ''}
         error={error}
         onCommit={commit}
       />
-      <div className={s.row}>
-        <select
+      <div className={g.actions}>
+        <MenuButton
+          label="insert…"
           aria-label="insert an anchor"
-          value=""
-          onChange={(e) => {
-            const make = PLACEMENTS[e.target.value];
+          items={INSERTS}
+          onAction={(k) => {
+            const make = PLACEMENTS[k];
             if (make) commit(JSON.stringify(make(it)));
           }}
-        >
-          <option value="">insert…</option>
-          {Object.keys(PLACEMENTS).map((k) => (
-            <option key={k} value={k}>
-              {k}
-            </option>
-          ))}
-        </select>
-        <span className={s.note}>“it” is {it}</span>
+        />
         {x.anchor && (
-          <button type="button" onClick={() => commit('')}>
+          <Button size="sm" variant="ghost" onClick={() => commit('')}>
             clear
-          </button>
+          </Button>
         )}
-        {spanned && <span className={s.note}>its start: a span places it</span>}
       </div>
-    </div>
+    </Row>
   );
 }
