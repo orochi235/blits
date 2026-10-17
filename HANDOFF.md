@@ -674,6 +674,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       100 ms ahead with no setting; a clip with a `seek` or a rate below 0 does not set `loop`
       by its right edge; and an `all`/`any` anchor, or one that selects by tag or `writes`,
       draws no link on the score.
+    - Not offered yet (2026-10-17, built in blits since): a voice's `catchUp: 'fresh'`, and
+      scrubbing to one of several frames rate 0 held at one mix time by `seek({ frame })`.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 
@@ -707,6 +709,19 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         (not an index among frames at one time), and one history no longer holds throws. To rename,
         change `seq` in `src/types/mix.ts`, `src/types/transport.ts` and the getter in
         `src/mixer.ts`; nothing else reads it.
+      - **Chosen while building, Mike's to overturn: what `catchUp: 'fresh'` covers** (2026-10-17,
+        unreleased). The review's row said "fresh keeps today's behavior", meaning before
+        `493fb15`, so it touches only where a stateful record met late starts stepping: from the
+        first probe, with fresh state. The `stepMs` grid still counts from the origin (the
+        record's `ticks` start at the intervals already passed, `meet` in `src/held.ts`), the
+        fade-in still counts from the origin, a handle `seek`'s rebuild still steps from the voice's
+        start, and a signal's kept state is unaffected (signals measure their own gap). A
+        projection that meets such a subject late marks it `unknown`, so `assess` says `held`.
+        The determinism suite's `fresh` variant runs `seek`, `behind`, `now` and `frame` but not
+        `again`, `ahead`, `taped` or `dt`, where a subject is first met other than frame by frame
+        and fresh differs by design. The 256-past-clock cap is unchanged: a fresh voice's fade-in
+        still reads them. To make fresh also cover rebuilds, call `meet` from `rebuild` in
+        `src/fold.ts`.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
       - **Backward play is built (2026-10-10); the schema page's "Starting partway, and playing
         backward" is the record, and its last sentence lists what is not built.** Mike's calls:
@@ -754,8 +769,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - Records shared by a read back or a standing read, and by voices `shares` (in
         `everyone.ts`) turns away that could keep their difference by subject number too: a
         stagger, a signal weight, a motion.
-      - `catchUp: 'fresh'` per voice; exact catch-up is the default, and a voice keeps at most
-        256 past clocks.
       - A report of a key `at` returns outside `writes`, which a mix still drops without a
         word; `checkPatch` in `@msb235/blits/testing` reports it. A voice's own `stepMs` is
         built (2026-10-11, the changelog's Unreleased section), so magicsmoke's faults could

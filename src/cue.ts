@@ -106,6 +106,8 @@ export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
     throw new RangeError(
       `blits: a voice's stepMs is a finite number of ms, 0 or more, not ${spec.stepMs}`,
     );
+  if (spec.catchUp !== undefined && spec.catchUp !== 'exact' && spec.catchUp !== 'fresh')
+    throw new RangeError(`blits: catchUp takes 'exact' or 'fresh', not ${String(spec.catchUp)}`);
   if (typeof spec.weight === 'number') plainWeight(spec.weight);
   fitsKit(patch, mix.kit);
   const motion = motionOf<I>(patch);

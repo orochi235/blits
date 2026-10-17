@@ -2,7 +2,7 @@ import { ownBlends } from './blend.js';
 import { heldAt } from './chain.js';
 import { stepOf } from './clock.js';
 import { open, sighted, weightAt } from './everyone.js';
-import { origin } from './held.js';
+import { meet, origin } from './held.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
@@ -304,7 +304,6 @@ export function recall<I, O>(
   // Its origin by the controls the voice had then: a seek or an anchor has moved a waiting
   // voice's since.
   const since = c === undefined || copy === undefined ? live.since : c.sinceOf(copy, live.delay);
-  const stepped = since < t ? since : t;
   const h = record(
     voice,
     live.reaches,
@@ -315,10 +314,10 @@ export function recall<I, O>(
   h.delay = live.delay;
   h.since = since;
   h.shown = c === undefined || copy === undefined ? live.shown : c.shownOf(copy, since);
-  h.stepped = stepped;
+  const fresh = meet(mix, voice, h, t);
   h.rebuilt = voice.rebuilds;
-  h.from = stepped;
-  h.unknown = voice.spec.from === 'current';
+  h.from = h.stepped;
+  h.unknown = voice.spec.from === 'current' || fresh;
   h.replay = live.inputs;
   return h;
 }

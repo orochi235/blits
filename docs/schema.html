@@ -428,6 +428,9 @@ interface VoiceSpec&lt;I, O, H = unknown&gt; extends SpanHints {
   <span class="cm">/** The interval this voice's `step` runs at, in ms of mix time, in place of the mix's `stepMs`; 0 steps it
      once a frame by the frame's gap. Default: the mix's. */</span>
   stepMs?: number;
+  <span class="cm">/** How a stateful subject first probed after its delay ran out starts stepping: `exact` from that origin, `fresh`
+     from the probe that meets it, with no catch-up. Default: `exact`. */</span>
+  catchUp?: 'exact' | 'fresh';
   <span class="cm">/** true loops for good, false plays one pass, n plays n passes. A finite loop leaves when its passes are done — over <code>fade.out</code> where one is set, at once where none is — unless it freezes after. Default: false. */</span>
   loop?: boolean | number;
   <span class="cm">/** Per-subject delay in voice ms. klieg's stagger grammar stays klieg's and passes in the one
@@ -598,12 +601,14 @@ interface Mix&lt;I, O, H = unknown&gt; {
   readonly now: number;
   <span class="cm">/** The host's timestamp at the last sync; NaN before the first. */</span>
   readonly timestamp: number;
-  <span class="cm">/** The mix read at another mix time without moving it: ahead plays what is cued forward, behind needs `history` unless
-     every voice still plays as it was cued. */</span>
-  project(time: number): Projection&lt;I, O&gt;;
-  <span class="cm">/** Moves the mix to a mix time under `history` with a `tape`, and plays on from there, making the host's
-     recorded calls again as it passes them. See Score. */</span>
-  seek(time: number): void;
+  <span class="cm">/** The number of the frame being played, higher with each sync and seek, which `{ frame }` takes. */</span>
+  readonly seq: number;
+  <span class="cm">/** The mix read at another mix time, or at a frame by its number, without moving it: ahead plays what is cued
+     forward, behind needs `history` unless every voice still plays as it was cued. */</span>
+  project(at: number | { frame: number }): Projection&lt;I, O&gt;;
+  <span class="cm">/** Moves the mix to a mix time, or to a frame by its number, under `history` with a `tape`, and plays on from
+     there, making the host's recorded calls again as it passes them. See Score. */</span>
+  seek(to: number | { frame: number }): void;
   <span class="cm">/** Loads from the history `store` what a seek or read to `time` needs, where that is past memory. */</span>
   prepare(time: number): Promise&lt;void&gt;;
   <span class="cm">/** Where the mix records the host's calls: weasel-history's `History`, made by `history.tape`. */</span>
@@ -644,7 +649,7 @@ interface Mix&lt;I, O, H = unknown&gt; {
 
 <p>A probe walks the voices that may reach its subject, not every voice. With no <code>target</code> in the mix that is all of them, so nothing is kept; once a voice targets, each subject keeps the list of voices whose <code>target</code> took it, rebuilt when a voice is cued, starts or leaves. One voice per subject on a shared mix then costs one voice per probe: 1000 subjects, each with its own voice, took 95&nbsp;ms a frame before the list and 0.45&nbsp;ms after (<code>npm run bench</code>, rows <code>own</code>). Building the list still asks every <code>target</code> of every new subject, so the first frame of that scene took 500&ndash;580&nbsp;ms. A voice that names its subjects with <code>subjects</code> is filed under each of them at <code>cue</code>, and a subject's list is built from the voices filed under it and those that name none: the same scene's first frame took 1.0&nbsp;ms, and 10.6&nbsp;ms at 10,000 subjects (rows <code>named</code>).</p>
 
-<p>Subjects are not registered. State lives in a <code>WeakMap</code> keyed by the subject object, created on first probe and stepped by the gap in the timestamp since that subject was last stepped. That is the rule klieg's dwell arrived at, and it means a part a wrapper leaves unasked for a while catches up rather than resuming where it paused. A subject first asked for late catches up the same way, from when its delay ran out by the voice's clock as it ran then, so its fade-in and its state read the same however often the host probed it before.</p>
+<p>Subjects are not registered. State lives in a <code>WeakMap</code> keyed by the subject object, created on first probe and stepped by the gap in the timestamp since that subject was last stepped. That is the rule klieg's dwell arrived at, and it means a part a wrapper leaves unasked for a while catches up rather than resuming where it paused. A subject first asked for late catches up the same way, from when its delay ran out by the voice's clock as it ran then, so its fade-in and its state read the same however often the host probed it before. A voice cued with <code>catchUp: 'fresh'</code> starts such a subject's state from the probe that first meets it instead, fresh and with no catch-up, on the <code>stepMs</code> grid counted from its origin; the rest of the mix stays exact. That is the cheap start for hosts that meet many subjects long after a voice began and never revisit them, and its state depends on when the host first looked, by design: a read ahead or back that meets such a subject late says <code>held</code> for what it feeds. Its fade-in still counts from the origin, and a handle <code>seek</code> still rebuilds from the voice's start.</p>
 
 <p><b>Telling the mix what it cannot see.</b> Within a frame a patch's <code>at</code> is read once for a subject, and a later probe of that subject answers with what it read then. <code>mix.touch(subject)</code> says that something a patch reads from outside the mix has changed since the last sync, such as a table its <code>at</code> looks the subject up in, so the next probe calls the patch again; with no subject it does so for every subject. The clock stays where it is, no <code>step</code> runs again, no hit is booked again, and a motion patch, which reads nothing from outside the mix, is left where it is. It wakes a frame loop sleeping on <code>inert</code>, as any change does.</p>
 

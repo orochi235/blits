@@ -1,4 +1,5 @@
 import { changed } from './chain.js';
+import { stepOf } from './clock.js';
 import { schedule } from './due.js';
 import { everyoneOf, inherit, sighted } from './everyone.js';
 import type { Mixer } from './mixer.js';
@@ -65,11 +66,11 @@ export function held<I, O>(
   held.delay = delay;
   held.since = since;
   held.shown = shown;
-  held.stepped = since < now ? since : now;
+  const fresh = meet(this, voice, held, now);
   held.rebuilt = voice.rebuilds;
   if (this.projecting) {
     held.from = held.stepped;
-    held.unknown = this.backward && voice.spec.from === 'current';
+    held.unknown = (this.backward && voice.spec.from === 'current') || fresh;
   }
   voice.subjects.set(subject, held);
   if (!(since <= now)) {
@@ -97,6 +98,35 @@ export function held<I, O>(
     schedule(this, voice);
   }
   return held;
+}
+
+/**
+ * Where a new record met at `now` starts stepping: from its `since`, or from `now` for a voice that
+ * catches up `fresh`, on the `stepMs` grid. True where that skipped steps, so the state depends on
+ * when the subject was first probed.
+ */
+export function meet<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  held: Subject<unknown>,
+  now: number,
+): boolean {
+  const since = held.since;
+  if (!(since < now)) {
+    held.stepped = now;
+    return false;
+  }
+  if (voice.spec.catchUp !== 'fresh' || voice.patch.step === undefined) {
+    held.stepped = since;
+    return false;
+  }
+  const tick = stepOf(mix, voice);
+  if (tick === undefined) held.stepped = now;
+  else {
+    held.ticks = Math.floor((now - since) / tick + 1e-9);
+    held.stepped = since + held.ticks * tick;
+  }
+  return held.stepped > since;
 }
 
 /**

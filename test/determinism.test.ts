@@ -4,6 +4,7 @@ import { check, type ProgramOptions, type Property, program, standing } from './
 const variants = {
   plain: {},
   full: { anchors: true, stateful: true, mixRate: true },
+  fresh: { anchors: true, stateful: true, mixRate: true, fresh: true },
 } satisfies Record<string, ProgramOptions>;
 type Variant = keyof typeof variants;
 
@@ -13,22 +14,28 @@ interface Known {
   unknown?: number[];
 }
 
+const all = { seeds: 150 };
 // A seed that starts failing is a regression; `shrink` in ./fuzz/program.ts reduces it to its cause.
-const known: Record<Property, Record<Variant, Known>> = {
-  seek: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  again: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  behind: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  ahead: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  taped: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  dt: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  standing: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  now: { plain: { seeds: 150 }, full: { seeds: 150 } },
-  frame: { plain: { seeds: 150 }, full: { seeds: 150 } },
+// A `fresh` voice depends on when a subject was first probed, by design, so the variant is left out
+// wherever a subject can be first met other than frame by frame: in a read ahead, after frames
+// played with no probe, or at a different frame spacing. Reads with no history refuse state.
+const known: Record<Property, Partial<Record<Variant, Known>>> = {
+  seek: { plain: all, full: all, fresh: all },
+  again: { plain: all, full: all },
+  behind: { plain: all, full: all, fresh: all },
+  ahead: { plain: all, full: all },
+  taped: { plain: all, full: all },
+  dt: { plain: all, full: all },
+  standing: { plain: all, full: all },
+  now: { plain: all, full: all, fresh: all },
+  frame: { plain: all, full: all, fresh: all },
 };
 
 function guards(prop: Property) {
   for (const variant of Object.keys(variants) as Variant[]) {
-    const { seeds, unknown = [] } = known[prop][variant];
+    const entry = known[prop][variant];
+    if (entry === undefined) continue;
+    const { seeds, unknown = [] } = entry;
     const expected = new Set(unknown);
     it(`${variant} programs, seeds 1 to ${seeds}: only the known failures fail`, () => {
       const unexpected: string[] = [];

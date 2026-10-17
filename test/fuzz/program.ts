@@ -41,6 +41,8 @@ export interface ProgramOptions {
   hseek?: boolean;
   /** No handle is written to: every call is a cue, a `drop` or a `touch`. */
   cuesOnly?: boolean;
+  /** Stateful cues at weight 0.5 catch up `fresh`. */
+  fresh?: boolean;
 }
 
 /** One host call, made right after the sync at host time `at`. */
@@ -100,7 +102,9 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
                 by: pick([0, 40, -20]),
               }
             : null;
-        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}`;
+        // Drawn from nothing too.
+        const catchUp = opts.fresh && pk === 'drift' && weight === 0.5 ? 'fresh' : undefined;
+        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}${catchUp ? ' catchUp=fresh' : ''}`;
         ops.push({
           at: t,
           desc,
@@ -115,6 +119,7 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
               name: `v${i}`,
             };
             if (freeze) spec.freeze = freeze;
+            if (catchUp) spec.catchUp = catchUp;
             if (anchor) {
               const of = `v${anchor.prev}`;
               const { how, by } = anchor;
