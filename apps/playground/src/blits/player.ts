@@ -42,7 +42,8 @@ const copied = (p: Mixed): Mixed => ({
 
 /**
  * How the player moves back: `replay` rebuilds and plays from 0, so a scrub shows what playback
- * showed; `seek` calls blits' `mix.seek`, which restores from history and is as sure as it says.
+ * showed; `seek` calls blits' `mix.seek({ frame })` with the frame each mix played there, which
+ * restores from history and is as sure as it says.
  */
 export type SeekBy = 'replay' | 'seek';
 
@@ -56,6 +57,8 @@ export class Player {
   private hostFrame = -1;
   readonly columns: Columns;
   private frame = -1;
+  // Per frame shown, each mix's `seq` there, full mix first: what `seek({ frame })` takes.
+  private seqs: number[][] = [];
   private readonly scratch: Columns;
   // Slider moves outlive a rebuild: a replay plays them at their current value.
   private readonly slid = new Map<string, number>();
@@ -216,21 +219,33 @@ export class Player {
     this.authored = next;
   }
 
-  /** Moves every mix back to `target` with `mix.seek`; false where history cannot reach it. */
+  /** The full mix's clock and frame number, which a seek back by `mix.seek` restores. */
+  get clock(): { now: number; seq: number } {
+    const { mix } = this.built;
+    return { now: mix.now, seq: mix.seq };
+  }
+
+  /**
+   * Moves every mix back to the frame it played at `target` with `mix.seek({ frame })`, which
+   * tells apart frames rate 0 held at one mix time; false where history cannot reach it.
+   */
   private seekBack(target: number): boolean {
-    const { mix, solos } = this.built;
+    const { mix } = this.built;
+    const seqs = this.seqs[target];
+    if (seqs === undefined) return false;
     const time = target * FRAME;
     const host = this.hostFrame * FRAME;
     try {
-      for (const m of [mix, ...solos.values()]) {
-        m.seek(time);
+      this.mixes().forEach((m, i) => {
+        m.seek({ frame: seqs[i] as number });
         m.sync(host);
-      }
+      });
     } catch {
       return false;
     }
+    this.seqs.length = target + 1;
     mix.pull(this.subjects, this.columns);
-    this.events.cut(time);
+    this.events.cut(mix.now);
     this.events.drain(this.built);
     this.frame = target;
     this.t = time;
@@ -246,6 +261,7 @@ export class Player {
     this.hostFrame = -1;
     this.isLive = false;
     this.samples = [];
+    this.seqs = [];
     this.events.attach(built, () => this.hostFrame * FRAME);
     return built;
   }
@@ -262,9 +278,15 @@ export class Player {
       solo.pull(this.subjects, this.scratch);
     }
     this.events.drain(this.built);
+    this.seqs.length = f;
+    this.seqs.push(this.mixes().map((m) => m.seq));
     this.frame = f;
     this.t = t;
     this.record();
+  }
+
+  private mixes(): Mix<Subject, Mixed>[] {
+    return [this.built.mix, ...this.built.solos.values()];
   }
 
   private record(): void {

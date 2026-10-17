@@ -18,6 +18,10 @@ export interface TransportProps {
   /** How a scrub back moves the mixes. */
   seekBy: SeekBy;
   onSeekBy(s: SeekBy): void;
+  /** Moves the playhead by whole frames. */
+  onStep(frames: number): void;
+  /** The full mix's clock and frame number, shown while a scrub back goes by `mix.seek`. */
+  clock: { now: number; seq: number };
   /** The full mix's own rate: its voices slow while the score's clock runs on. */
   mixRate: number;
   onMixRate(r: number): void;
@@ -50,6 +54,19 @@ export function Transport(p: TransportProps) {
           <option value="seek">mix.seek</option>
         </select>
       </label>
+      <span className={s.level}>
+        <button type="button" aria-label="back one frame" onClick={() => p.onStep(-1)}>
+          ‹
+        </button>
+        <button type="button" aria-label="forward one frame" onClick={() => p.onStep(1)}>
+          ›
+        </button>
+      </span>
+      {p.seekBy === 'seek' && (
+        <span className={s.clock} title={docOf('Mix.seq')}>
+          mix {p.clock.now.toFixed(1).padStart(7)} ms · frame {String(p.clock.seq).padStart(5)}
+        </span>
+      )}
       <label className={s.live}>
         <input type="checkbox" checked={p.live} onChange={(e) => p.onLive(e.target.checked)} />
         live

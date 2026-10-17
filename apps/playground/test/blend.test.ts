@@ -95,6 +95,10 @@ describe('a blend', () => {
     const stray = compile(blended([member(0), member(1, { rate: 2 })]), subjects);
     expect(stray.errors.map((e) => [e.voice, e.field])).toEqual([['m1', 'locus']]);
     expect([...stray.handles.keys()]).toEqual(['m0']);
+    for (const odd of [{ stepMs: 4 }, { catchUp: 'fresh' as const }]) {
+      const strays = compile(blended([member(0), member(1, odd)]), subjects);
+      expect(strays.errors.map((e) => [e.voice, e.field])).toEqual([['m1', 'locus']]);
+    }
   });
 });
 

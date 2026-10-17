@@ -9,6 +9,8 @@ const SHARED = [
   'start',
   'rate',
   'seek',
+  'stepMs',
+  'catchUp',
   'loop',
   'stagger',
   'target',

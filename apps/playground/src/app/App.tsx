@@ -1,6 +1,7 @@
 import { syncBlend, withVoice } from '@pg/blits/blend';
 import { compile } from '@pg/blits/compile';
 import { type Composition, type Group, MAX_VOICES, type Voice } from '@pg/blits/composition';
+import { FRAME } from '@pg/blits/frame';
 import { addGroup, deleteGroup, setGroup } from '@pg/blits/groupEdits';
 import { Player, type SeekBy } from '@pg/blits/player';
 import { DEFAULT, PRESETS } from '@pg/blits/presets';
@@ -275,6 +276,8 @@ export function App() {
             livened={player.livened}
             seekBy={seekBy}
             onSeekBy={setSeekBy}
+            onStep={(n) => scrub(player.t + n * FRAME)}
+            clock={player.clock}
             mixRate={player.built.mix.rate}
             onMixRate={(r) => {
               player.liveMix((m) => {

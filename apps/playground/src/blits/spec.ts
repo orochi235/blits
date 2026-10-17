@@ -82,6 +82,7 @@ export function specOf(
   if (v.from) spec.from = v.from;
   if (v.seek !== undefined) spec.seek = v.seek;
   if (v.stepMs !== undefined) spec.stepMs = v.stepMs;
+  if (v.catchUp !== undefined) spec.catchUp = v.catchUp;
   markInto(spec, v);
   if (v.anchor) {
     spec.anchor = v.anchor;

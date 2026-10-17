@@ -75,6 +75,14 @@
   color: var(--wzl-fg);
 }
 
+.clock {
+  font-family: var(--wzl-font-mono);
+  font-size: var(--wzl-font-size-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+  color: var(--wzl-fg-muted);
+}
+
 .badge {
   font-family: var(--wzl-font-ui);
   font-size: var(--wzl-font-size-xs);
