@@ -144,10 +144,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   named on its voices instead. Chosen 2026-10-13 without a decision from the owner, who said to
   build it; reverse it by boxing loci in `timingOf` and drawing owners as nodes with edges.
 
-  Also wanted, unscheduled: a mixer-desk drawing of A, each channel a horizontal bus ending in its
-  rule and each voice a vertical strip tapping the buses it writes. `flowOf` builds the graph from
-  the playground's `Composition`; once the UI settles, a public `describe()` on `Mix` should make
-  the same shape for any host, and `flowOf` becomes a thin adapter.
+  The mixer-desk drawing of A is built, as the Desk tab (README, "The desk"). `flowOf` builds the
+  graph from the playground's `Composition`; once the UI settles, a public `describe()` on `Mix`
+  should make the same shape for any host, and `flowOf` becomes a thin adapter.
+
+  Chosen while building the desk, Mike's to overturn: it is live, each tap and meter lit by the
+  voice's `weightOf` for the picked subject and each bus printing the folded value (reverse by
+  passing `deskOf`'s desk straight to `MixerDesk` in `DeskPanel`, skipping `litDesk`); groups are
+  brackets over their strips rather than strips of their own, with strips in the score's order so
+  a group's are adjacent (`deskOf`'s `groups`); a desk with more voices than fit at 24 px apart
+  scrolls sideways instead of squeezing (`MIN_PITCH` in `MixerDesk/layout.ts`); only channels
+  something writes get a bus, as in the flow.
 
   The playground is on weasel 1.10.1, whose `DiagramView` is editable, which view D needs: `onMove`
   reports dragged nodes, `onConnect` reports a port-to-port edge for the host to add, `canConnect`

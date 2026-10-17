@@ -23,7 +23,7 @@ into `src/generated/docs.json` (gitignored), which the panels show as tooltips o
 
 The stage is top left, with a dots/letters switch above it and, beside the switch, the columns and
 rows or the text; clicking a subject picks it for the inspector, top middle. The right column holds
-the diagrams, on two tabs: **Flow** and **Timing**. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
+the diagrams, on three tabs: **Flow**, **Timing** and **Desk**. The middle column has three tabs: **Plots**, the inspector; **Voice**, which holds the
 levels, voice and patch panels; and **Events**, what the score knows and reports. Selecting a clip, on the score or in either diagram, opens Voice. The
 score fills the bottom, with the transport above it: play and pause, rate, loop, a slider per
 level, a choice of how a scrub back moves the mixes, and the live toggle, with the mix's own `rate` beside it in live mode: the transport's rate
@@ -260,6 +260,24 @@ heavy one, one `done` a faint one, and an edge is dim until what it waits on has
 that sets a mark is met when its own voice has passed that mark. One into a join or a query is met
 when its source's state says the awaited mark is behind it, which ignores the anchor's `by`.
 
+## The desk
+
+The right column's Desk tab draws the flow as a mixing desk. Each channel the composition writes
+is a horizontal bus, running right into a box naming the rule it folds by; each voice is a vertical
+strip, its name along the top, with a tap where it crosses each bus it writes and a meter at the
+bottom. A group is a bracket over the strips it holds, nested groups stacking upward, and strips
+run in the score's order so a group's sit together. Clicking a strip or a bracket selects that
+voice or group, as in the other diagrams.
+
+It is live for the picked subject: each meter and tap is lit by the voice's `weightOf`, each
+bracket shows its group's, and each bus box prints the folded value (an offset as x, y, a color as
+a swatch and its hex). With no subject picked it is drawn unlit. These are the values the inspector
+records each frame, so it reads nothing the inspector does not.
+
+`deskOf` in `src/blits/desk.ts` maps `flowOf`'s graph onto `MixerDesk`, so which channels a voice
+writes is decided in one place, and `litDesk` lights it from the player's last sample. Strips keep
+at least 24 px apart; a desk with more voices than fit grows wider and the tab scrolls.
+
 ## The panels
 
 | Panel     | Shows                                                                                   |
@@ -327,7 +345,7 @@ One `Composition` per file in `src/blits/presets/`.
 
 ## Widgets
 
-`src/widgets/` holds `ScoreLanes`, `ExprInput`, `CodePane`, `ChannelPlot` and `FlowDiagram`, which draws both the flow and the timing. They are written to
+`src/widgets/` holds `ScoreLanes`, `ExprInput`, `CodePane`, `ChannelPlot`, `FlowDiagram`, which draws both the flow and the timing, and `MixerDesk`, which draws the desk. They are written to
 move to weasel later: plain props, CSS modules on weasel's theme tokens, a forge story each, and
 **no imports from blits or from `@pg/blits`**. The adapters in `src/blits/` and `src/app/` map blits
 onto them.
@@ -340,7 +358,7 @@ span the poses of hand-written `owns` or `span`; each fit-step list matches its 
 a stateful voice lands on the pose continuous play showed; the score round-trips voice to clip to
 edit to voice; a bad expression errors on its field while compile still returns; a composition
 edit stays inside what `load` accepts; every preset compiles and plays clean. The smoke run covers
-the rest in a real browser, failing on a console error, a page error, or a blank stage, flow or timing diagram; `--shots <dir>` keeps its screenshots, which otherwise go to a
+the rest in a real browser, failing on a console error, a page error, or a blank stage, flow, timing or desk diagram; `--shots <dir>` keeps its screenshots, which otherwise go to a
 temp directory removed on exit.
 
 The root `npm run check` lints the playground and runs its tests, but leaves out its typecheck and
