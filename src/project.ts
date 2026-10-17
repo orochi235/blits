@@ -335,7 +335,7 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
       return copy;
     });
   ownBlends(c.cued);
-  if (mix.owners !== null) relink(c.cued);
+  if (mix.owners !== null) relink(c.cued, cut.seq);
   stateAt(c, t);
   recount(c);
 }

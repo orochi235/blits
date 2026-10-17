@@ -759,16 +759,38 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         a guard. A span turned back by its handle once it plays already runs its children back.
         The playground makes a span's rate below 0 a field error on `rate`, and only an owner's
         rate slider goes below 0.
-    - **Found while building, undecided** (measured 2026-10-17):
-      - An owner turned back does not bring back a child that has already left: two children
-        back to back, the owner turned at 450, the first never shows again and the owner leaves
-        with the second at 600.
-      - Under `history` an owner's `out` and `end` marks are listed one frame after its last
-        child ends (266.7 against 250 at a 16.7 ms frame); without `history` none are listed
-        once it has left.
-      - A voice running back from past its end shows its last frame until it reaches it,
-        though it has no `freeze`: `rate: -1, seek: 600` on a 300 ms pass shows the end frame
-        for its first 300 ms.
+    - **Found while building, Mike's to decide** (2026-10-17; the owner marks and the backward
+      past-end frame found with these are fixed, in the changelog):
+      - **Should turning an owner back bring back a child that has already left?** It does not:
+        two children back to back, the owner turned at 450, the first never shows again and
+        the owner leaves with the second at 600. A child that left is done, its `done` resolved
+        and its records let go, and only `mix.seek` brings a voice back.
+        - Yes: a child leaves for good only when its owner does. The owner keeps every child
+          it held, records and state, for as long as it plays, so memory grows with each one;
+          a child's `done` and `played` can settle and start over with no seek, which only a
+          seek does today; and a child's `end` mark is no longer final.
+        - No, as built: turning back plays only what the owner still holds. A group meant to
+          run back whole is cued with `freeze: 'after'` on the owner, so each child stays
+          frozen at its end and runs back with it (checked 2026-10-17), and is faded when done.
+          The owner table's `rate below 0` row in the schema page would say so.
+      - **Does a staggered subject that has finished its passes show its last frame while its
+        voice waits for the others?** Playing forward it does, with no `freeze`: staggers of 0
+        and 200 on a 100 ms pass show the first subject's last frame from 100 to 300. Running
+        back, the mirror case shows nothing (`waits for a subject staggered ahead of it` in
+        `test/backward.test.ts`). The schema page says a voice shows nothing outside its passes
+        unless it freezes, which only the backward case keeps.
+        - Hold: running back, a subject that reached its start holds its first frame until the
+          voice leaves, and the schema page would say a subject holds the edge it finished at
+          while its voice plays.
+        - Show nothing: forward, each subject drops its contribution at its own end, a visible
+          change to every staggered finite voice shipped in 0.10.0. A staggered entrance would
+          snap each subject back as it finishes, rather than hold until the voice fades.
+    - **Not yet timed on the fleet** (2026-10-17, `4a6cc4e`): a voice running back past its
+      end showing nothing put one comparison per subject on the general path (`shownAt` in
+      `src/voice.ts`, and an `isNaN` in `contribution` in `src/fold.ts`), on a keys lane
+      (`runKeys` in `src/keyfill.ts`), and on a fn lane (`frozenAt` in `src/lane.ts`), and sends
+      crowd rows of a keys or fn voice an owner holds, or one running back, through `frozenAt`
+      (`copyVoice` in `src/crowd.ts`). Time `keys`, `fn` and a row with owners against `b1f65d4`.
     - **Chosen while building, Mike's to overturn** (2026-10-17, the score's joined links, a
       partway clip's right edge, and the booker's read-ahead):
       - A join or query anchor draws a dotted link from each voice `timingOf` says it could

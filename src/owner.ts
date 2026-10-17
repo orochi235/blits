@@ -17,6 +17,33 @@ export class Holding<V> {
   /** How many it has held, and how many of those finished their passes. */
   kids = 0;
   played = 0;
+  /**
+   * When the children that left coast, as pairs of the frame one left in and the latest coast so
+   * far, mix time: a pair only where the latest grew, so a seek back cuts it to a prefix.
+   */
+  coasts: number[] = [];
+  /** The frame the first child to leave before its passes ended left in; Infinity for none. */
+  cutSeq = Number.POSITIVE_INFINITY;
+
+  /** The latest coast of a child that left; -Infinity for none. */
+  get coast(): number {
+    const n = this.coasts.length;
+    return n === 0 ? Number.NEGATIVE_INFINITY : (this.coasts[n - 1] as number);
+  }
+
+  /** A child left in frame `seq`, coasting at `coast`, or before its passes ended for undefined. */
+  left(coast: number | undefined, seq: number): void {
+    if (coast === undefined) {
+      if (seq < this.cutSeq) this.cutSeq = seq;
+    } else if (coast > this.coast) this.coasts.push(seq, coast);
+  }
+
+  /** Forgets the children that left after frame `seq`, for a seek or read back to it. */
+  back(seq: number): void {
+    const c = this.coasts;
+    while (c.length > 0 && (c[c.length - 2] as number) > seq) c.length -= 2;
+    if (this.cutSeq > seq) this.cutSeq = Number.POSITIVE_INFINITY;
+  }
 }
 
 /**
@@ -124,8 +151,11 @@ export function ownersWeight<I, O>(
   return w;
 }
 
-/** Points a projection's copies at each other's owners, each owner holding only copies. */
-export function relink<I, O>(copies: readonly Voice<I, O>[]): void {
+/**
+ * Points a projection's copies at each other's owners, each owner holding only copies; for a read
+ * back to frame `seq`, as its children that had left by then left it.
+ */
+export function relink<I, O>(copies: readonly Voice<I, O>[], seq?: number): void {
   const byId = new Map<number, Voice<I, O>>();
   for (const v of copies) {
     byId.set(v.id, v);
@@ -133,6 +163,9 @@ export function relink<I, O>(copies: readonly Voice<I, O>[]): void {
       const h = new Holding<Voice<I, O>>();
       h.kids = v.holding.kids;
       h.played = v.holding.played;
+      h.coasts = v.holding.coasts.slice();
+      h.cutSeq = v.holding.cutSeq;
+      if (seq !== undefined) h.back(seq);
       v.holding = h;
     }
   }

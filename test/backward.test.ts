@@ -3,6 +3,7 @@ import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
+import type { VoiceSpec } from '../src/types.js';
 
 interface Pose {
   x: number;
@@ -99,6 +100,29 @@ describe.each([true, false])('a voice playing backward, lanes %s', (lanes) => {
     expect(m.probe(a).x).toBeCloseTo(150, 9);
     m.sync(160);
     expect(h.state).toBe('done');
+  });
+
+  it('cued past its end shows nothing until it runs back to it, unless it freezes after', () => {
+    const shown = (spec: Partial<VoiceSpec<Part, Pose>>) => {
+      const m = mix<Part, Pose>(K, { lanes });
+      m.sync(0);
+      m.cue({ patch: ramp, loop: false, rate: -1, seek: 600, ...spec });
+      // Every subject probed each frame, so a voice over all of them fills its lane.
+      const parts = [a, ...Array.from({ length: 5 }, (_, i) => ({ id: `${i}` }))];
+      return [0, 100, 200, 300, 400].map((t) => {
+        m.sync(t);
+        for (const p of parts) m.probe(p);
+        return m.probe(a).x;
+      });
+    };
+    for (const spec of [{}, { patch: told }, { subjects: [a] }]) {
+      const hidden = shown(spec);
+      expect(hidden.slice(0, 3)).toEqual([0, 0, 0]);
+      expect(hidden[4]).toBeCloseTo(300, 9);
+      const frozen = shown({ ...spec, freeze: 'after' });
+      expect(frozen.slice(0, 3)).toEqual([400, 400, 400]);
+      expect(frozen[4]).toBeCloseTo(300, 9);
+    }
   });
 
   it('of several passes starts at the end of its last', () => {

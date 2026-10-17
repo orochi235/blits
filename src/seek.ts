@@ -248,7 +248,10 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
 
   // Owners hold what is back; a voice that went live again counts its place in its owner anew.
   for (const voice of kept)
-    if (voice.holding !== null) voice.holding.children = kept.filter((v) => v.owner === voice);
+    if (voice.holding !== null) {
+      voice.holding.children = kept.filter((v) => v.owner === voice);
+      voice.holding.back(seq);
+    }
 
   // Rebuilt from the voices that are back: the lanes, the chains and every count the fold reads.
   const oldLanes = mix.lanes;
