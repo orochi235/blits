@@ -1,56 +1,158 @@
-import type { FitResult } from '@msb235/blits';
-import type { Composition, Group } from '@pg/blits/composition';
-import { fitFaultKey } from '@pg/blits/cueGroups';
+import type { FitResult, Placement } from '@msb235/blits';
+import type { Composition, Expr, Group } from '@pg/blits/composition';
 import type { Faults } from '@pg/blits/expr';
 import { withKey } from '@pg/blits/keyed';
 import type { FieldError } from '@pg/blits/spec';
-import { type ConfigField, ControlPanel } from '@weasel-js/labkit';
-import { AnchorRow } from './AnchorRow';
+import { ControlPanel, type ControlRenderer, f } from '@weasel-js/labkit';
+import { type PrefRenderContext, PropertyControl } from '@weasel-js/ui';
+import { anchorRow } from './AnchorRow';
 import s from './App.module.css';
 import { docOf } from './docs';
-import { HintsFields } from './HintsFields';
-import { MarksFields } from './MarksFields';
-import { OwnerField } from './OwnerField';
-import { SpanFields } from './SpanFields';
+import { hintsConfig, hintsGroup, writtenHints } from './HintsFields';
+import { marksConfig, marksNodes, writtenMarks } from './MarksFields';
+import { ownerRow } from './OwnerField';
+import { spanConfig, spanGroup, writtenSpan } from './SpanFields';
 import {
-  FadeEase,
-  FaultLine,
-  LooseErrors,
-  memberOf,
-  SeekField,
-  SHARED,
-  schemaOf,
+  deleteRow,
+  faultsRow,
+  looseErrorsRow,
+  optionalNumber,
+  Row,
+  SpecProvider,
   sharedConfig,
+  sharedNodes,
+  specSchema,
+  useSpec,
+  when,
   writtenShared,
 } from './SpecFields';
-import { WeightField } from './WeightField';
+import { weightRow } from './WeightField';
 
-const SECTIONS = [
-  { label: 'timing', paths: ['start', 'rate'] },
-  { label: 'fade', paths: ['fadeIn', 'fadeOut'] },
-  { label: 'blending', paths: ['freeze'] },
-];
-const FIELDS = Object.values(SHARED);
-// An owner runs back below 0, and its members with it; a span lays them out forward only.
-const OWNER_FIELDS = FIELDS.map((f) => (f.key === 'rate' ? ({ ...f, min: -4 } as ConfigField) : f));
-const specOf = (kind: Group['kind']) => (kind === 'span' ? 'SpanSpec' : 'OwnerSpec');
-const docFor = (kind: Group['kind']) => (key: string) => docOf(`${specOf(kind)}.${memberOf(key)}`);
-const schemas = new Map<string, ReturnType<typeof schemaOf>>();
-/** Under a span, which places it, a group has no start of its own. */
-function schemaFor(kind: Group['kind'], spanned: boolean) {
-  const key = `${kind} ${spanned}`;
-  let schema = schemas.get(key);
-  if (!schema) {
-    const all = kind === 'owner' ? OWNER_FIELDS : FIELDS;
-    const fields = spanned ? all.filter((f) => f.key !== 'start') : all;
-    schema = schemaOf(fields, docFor(kind), SECTIONS);
-    schemas.set(key, schema);
-  }
-  return schema;
+const spanned = when<{ spanned: boolean }>((c) => c.spanned);
+const unspanned = when<{ spanned: boolean }>((c) => !c.spanned);
+/** Errors on fields that have no row of their own, shown in a list at the top. */
+const LOOSE = new Set(['name', 'cue', 'start', 'rate', 'anchor']);
+
+/** Owner or span; a span holds no owner, and a group under a span can only be a span. */
+const kindRow: ControlRenderer = (row) => <KindRow row={row} />;
+
+function KindRow({ row }: { row: PrefRenderContext }) {
+  const { x, comp, spanned } = useSpec();
+  const holdsOwner = comp.groups?.some((o) => o.owner === x.id && o.kind === 'owner') ?? false;
+  return (
+    <Row row={row}>
+      <PropertyControl
+        kind="enum"
+        name={row.pref.name}
+        value={row.value as Group['kind']}
+        options={[
+          {
+            value: 'owner',
+            label: spanned ? 'owner (a span holds only spans and voices)' : 'owner',
+            disabled: spanned,
+          },
+          {
+            value: 'span',
+            label: holdsOwner ? 'span (a span cannot hold an owner)' : 'span',
+            disabled: holdsOwner,
+          },
+        ]}
+        onChange={(kind) => row.setValue(kind)}
+      />
+    </Row>
+  );
 }
 
-/** Errors on fields this panel has no input for, shown in a list of their own. */
-const LOOSE = new Set(['name', 'cue', 'start', 'rate', 'anchor']);
+/** The panel's schema for a group of `kind`, whose doc comments come from its own spec type. */
+function schemaOf(kind: Group['kind']) {
+  const doc = (member: string) => docOf(`${kind === 'span' ? 'SpanSpec' : 'OwnerSpec'}.${member}`);
+  const d = (member: string) => doc(member) ?? '';
+  const shared = sharedNodes(doc);
+  return specSchema({
+    name: shared.name,
+    kind: f.enum(kind, ['owner', 'span']).render(kindRow),
+    errors: f.label('group errors').render(looseErrorsRow(LOOSE)),
+    // Under a span, which places it, a group has no start of its own.
+    start: shared.start.section('timing').showIf(unspanned),
+    // An owner runs back below 0, and its members with it; a span lays them out forward only.
+    rate: f
+      .number(1)
+      .range(kind === 'owner' ? -4 : 0, 4)
+      .step(0.05)
+      .describe(d('rate'))
+      .section('timing'),
+    seek: shared.seek.section('timing').render(
+      optionalNumber({
+        placeholder: '0',
+        hint: ({ x }) => `ms its clock starts at${x.rate < 0 ? ', running back to 0' : ''}`,
+        step: 10,
+      }),
+    ),
+    fadeIn: shared.fadeIn.section('fade'),
+    fadeOut: shared.fadeOut.section('fade'),
+    fadeEase: shared.fadeEase.section('fade'),
+    freeze: shared.freeze.section('blending'),
+    weight: f
+      .custom<number | Expr>('weight', 1)
+      .label('weight')
+      .describe(d('weight'))
+      .section('blending')
+      .render(weightRow),
+    faults: f.label('faults').section('blending').render(faultsRow),
+    owner: f.string('').describe(d('owner')).section('placement').render(ownerRow),
+    anchor: f
+      .custom<Placement | undefined>('anchor', undefined)
+      .label('anchor')
+      .describe(d('anchor'))
+      .section('placement')
+      .showIf(unspanned)
+      .render(anchorRow),
+    hints: hintsGroup(spanned).section('placement'),
+    ...(kind === 'span' ? { span: spanGroup.section('span') } : {}),
+    ...Object.fromEntries(
+      Object.entries(marksNodes(false, doc)).map(([k, n]) => [k, n.section('tags and marks')]),
+    ),
+    delete: f
+      .action(() => {})
+      .label('delete group')
+      .section('tags and marks')
+      .render(deleteRow('delete group')),
+  });
+}
+const SCHEMAS = { owner: schemaOf('owner'), span: schemaOf('span') };
+
+/** The panel's values for `g`. */
+const configOf = (g: Group, spanned: boolean) => ({
+  ...sharedConfig(g),
+  kind: g.kind,
+  weight: g.weight,
+  owner: g.owner ?? '',
+  anchor: g.anchor,
+  hints: hintsConfig(g.hints),
+  span: spanConfig(g.span ?? {}),
+  ...marksConfig(g),
+  spanned,
+});
+
+/** One edited row, written back into the group it came from. */
+function written(g: Group, path: string, value: unknown): Group {
+  const shared = writtenShared(g, path, value) ?? writtenMarks(g, path, value);
+  if (shared) return shared;
+  if (path.startsWith('hints.'))
+    return withKey(g, 'hints', writtenHints(g.hints, path.slice('hints.'.length), value));
+  if (path.startsWith('span.'))
+    return { ...g, span: writtenSpan(g.span ?? {}, path.slice('span.'.length), value) };
+  switch (path) {
+    case 'kind':
+      return { ...g, kind: value as Group['kind'] };
+    case 'weight':
+      return { ...g, weight: value as number | Expr };
+    case 'anchor':
+      return withKey(g, 'anchor', value as Placement | undefined);
+    default:
+      return g;
+  }
+}
 
 export interface GroupPanelProps {
   group: Group;
@@ -68,90 +170,31 @@ export interface GroupPanelProps {
 }
 
 export function GroupPanel(p: GroupPanelProps) {
-  const { group: g, spanned, onChange } = p;
-  const mine = p.errors.filter((e) => e.voice === g.id);
-  const errorOf = (field: string) => mine.find((e) => e.field === field) ?? null;
-  const doc = docFor(g.kind);
-  const holdsOwner = p.comp.groups?.some((x) => x.owner === g.id && x.kind === 'owner') ?? false;
+  const { group: g, spanned } = p;
+  const write = (path: string, value: unknown) => {
+    if (path === 'owner') p.onJoin((value as string) || null);
+    else p.onChange(written(g, path, value));
+  };
   return (
     <section className={s.panel} aria-label={`group ${g.name}`}>
-      <ControlPanel
-        title={`${g.kind} · ${g.name}`}
-        schema={schemaFor(g.kind, spanned)}
-        config={sharedConfig(g)}
-        setConfig={(path, value) => onChange(writtenShared(g, path, value) ?? g)}
-      />
-      <label className={s.row}>
-        kind
-        <select
-          value={g.kind}
-          onChange={(e) => onChange({ ...g, kind: e.target.value as Group['kind'] })}
-        >
-          <option
-            value="owner"
-            disabled={spanned}
-            title={spanned ? 'a span holds only spans and voices' : undefined}
-          >
-            owner
-          </option>
-          <option
-            value="span"
-            disabled={holdsOwner}
-            title={holdsOwner ? 'a span cannot hold an owner' : undefined}
-          >
-            span
-          </option>
-        </select>
-      </label>
-      <SeekField
-        x={g}
-        doc={doc('seek')}
-        placeholder="0"
-        note={`ms its clock starts at${g.rate < 0 ? ', running back to 0' : ''}`}
-        onChange={onChange}
-      />
-      <OwnerField
-        comp={p.comp}
-        id={g.id}
-        doc={doc('owner')}
-        error={errorOf('owner')?.error ?? null}
-        onChange={p.onJoin}
-      />
-      {spanned && (
-        <HintsFields hints={g.hints} onChange={(h) => onChange(withKey(g, 'hints', h))} />
-      )}
-      <FadeEase x={g} doc={doc('fade')} onChange={onChange} />
-      <LooseErrors errors={mine.filter((e) => LOOSE.has(e.field))} label="group errors" />
-      <div title={doc('weight')}>
-        <WeightField
-          value={g.weight}
-          error={errorOf('weight')?.error ?? null}
-          onChange={(weight) => onChange({ ...g, weight })}
+      <SpecProvider
+        value={{
+          x: g,
+          comp: p.comp,
+          spanned,
+          errors: p.errors,
+          faultsOf: p.faultsOf,
+          result: p.result,
+          onDelete: p.onDelete,
+        }}
+      >
+        <ControlPanel
+          title={`${g.kind} · ${g.name}`}
+          schema={SCHEMAS[g.kind]}
+          config={configOf(g, spanned)}
+          setConfig={write}
         />
-      </div>
-      <FaultLine faults={p.faultsOf(g.id)} />
-      {!spanned && (
-        <AnchorRow
-          x={g}
-          doc={doc('anchor')}
-          spanned={false}
-          other={p.comp.voices[0]?.name}
-          onChange={onChange}
-        />
-      )}
-      {g.kind === 'span' && (
-        <SpanFields
-          span={g.span ?? {}}
-          onChange={(span) => onChange({ ...g, span })}
-          errorOf={errorOf}
-          faultsOf={(i) => p.faultsOf(fitFaultKey(g.id, i))}
-          result={p.result}
-        />
-      )}
-      <MarksFields x={g} onChange={onChange} />
-      <button type="button" onClick={p.onDelete}>
-        delete group
-      </button>
+      </SpecProvider>
     </section>
   );
 }

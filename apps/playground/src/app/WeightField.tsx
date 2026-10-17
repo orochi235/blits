@@ -1,72 +1,70 @@
 import type { Expr } from '@pg/blits/composition';
-import { ExprInput } from '@pg/widgets/ExprInput';
-import s from './App.module.css';
+import type { ControlRenderer } from '@weasel-js/labkit';
+import { MenuButton, type PrefRenderContext, PropertyControl } from '@weasel-js/ui';
+import g from './Group.module.css';
+import { ExprRow, errorOf, Row, useSpec } from './SpecFields';
 
 const PRESETS: Record<string, string> = {
   'follow a level': 'slew(level("mouse"), { riseMs: 200, fallMs: 600 })',
   'by column': '(s) => s.x',
   pulse: '(s, set) => 0.5 + 0.5 * Math.sin(set.timestamp / 300 + s.index)',
 };
+const INSERTS = Object.keys(PRESETS).map((k) => ({ value: k, label: k }));
+const FORMS = [
+  { value: 'number', label: 'number' },
+  { value: 'signal', label: 'signal' },
+] as const;
 
-export interface WeightFieldProps {
-  value: number | Expr;
-  error: string | null;
-  onChange(w: number | Expr): void;
-}
+/** A weight: a number from 0 to 1, or a signal typed as code, with a menu of signals to start from. */
+export const weightRow: ControlRenderer = (row) => <WeightRow row={row} />;
 
-export function WeightField({ value, error, onChange }: WeightFieldProps) {
+function WeightRow({ row }: { row: PrefRenderContext }) {
+  const spec = useSpec();
+  const value = row.value as number | Expr;
   const isNum = typeof value === 'number';
   return (
-    <div className={s.field}>
-      <div className={s.row}>
-        <label className={s.row}>
-          weight
-          <select
-            value={isNum ? 'number' : 'signal'}
-            onChange={(e) => onChange(e.target.value === 'number' ? 1 : { code: '(s) => 1' })}
-          >
-            <option value="number">number</option>
-            <option value="signal">signal</option>
-          </select>
-        </label>
+    <Row row={row} wide>
+      <div className={g.actions}>
+        <PropertyControl
+          kind="enum"
+          control="toggle"
+          name={`${row.pref.name} form`}
+          value={isNum ? 'number' : 'signal'}
+          options={FORMS}
+          onChange={(form) => row.setValue(form === 'number' ? 1 : { code: '(s) => 1' })}
+        />
         {isNum ? (
-          <input
-            type="number"
-            aria-label="weight value"
-            step="any"
-            min={0}
-            max={1}
-            value={value}
-            onChange={(e) => {
-              if (Number.isFinite(e.target.valueAsNumber)) onChange(e.target.valueAsNumber);
+          <span className={g.num}>
+            <PropertyControl
+              kind="number"
+              name={`${row.pref.name} value`}
+              min={0}
+              max={1}
+              step={0.01}
+              value={value}
+              onChange={(n) => row.setValue(n)}
+            />
+          </span>
+        ) : (
+          <MenuButton
+            label="insert…"
+            aria-label="insert a weight signal"
+            items={INSERTS}
+            onAction={(k) => {
+              const code = PRESETS[k];
+              if (code) row.setValue({ code });
             }}
           />
-        ) : (
-          <select
-            aria-label="insert a weight signal"
-            value=""
-            onChange={(e) => {
-              const code = PRESETS[e.target.value];
-              if (code) onChange({ code });
-            }}
-          >
-            <option value="">insert…</option>
-            {Object.keys(PRESETS).map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
         )}
       </div>
       {!isNum && (
-        <ExprInput
-          label="signal"
+        <ExprRow
+          row={row}
           value={value.code}
-          error={error}
-          onCommit={(code) => onChange({ code })}
+          error={errorOf(spec, 'weight')?.error ?? null}
+          onCommit={(code) => row.setValue({ code })}
         />
       )}
-    </div>
+    </Row>
   );
 }

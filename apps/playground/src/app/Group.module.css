@@ -1,3 +1,95 @@
+/* The controls of a hand-drawn row, stacked, with any error under them. */
+.cell {
+  display: grid;
+  gap: var(--wzl-space-xs);
+  min-width: 0;
+}
+
+/* A row of controls inside a cell: a menu beside a field, buttons beside a label. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--wzl-space-xs);
+  min-width: 0;
+}
+
+.fill {
+  flex: 1;
+  min-width: 8ch;
+}
+
+/* A number keeps the width the panel's own number rows have, rather than its cell's. */
+.num {
+  justify-self: start;
+  display: flex;
+}
+
+/* A block that is not a row takes the panel's whole width. */
+.wide {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+/* The row carries the label, so the input's own is kept for assistive tech only. */
+.expr label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.error,
+.errors {
+  margin: 0;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-danger);
+}
+
+.errors {
+  padding-inline-start: var(--wzl-space-md);
+}
+
+.note {
+  margin: 0;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg-muted);
+}
+
+.dialog {
+  display: grid;
+  gap: var(--wzl-space-sm);
+}
+
+/* One entry of a list in a dialog: words between its fields, as the spec reads. */
+.entry {
+  display: grid;
+  align-items: center;
+  gap: var(--wzl-space-xs);
+  min-width: 0;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg-muted);
+}
+
+/* at [n] ms sends [event] */
+.hit {
+  grid-template-columns: auto 10ch auto minmax(0, 1fr);
+}
+
+/* [name] at [n] ms */
+.mark {
+  grid-template-columns: minmax(0, 1fr) auto 10ch auto;
+}
+
+.entry > .error {
+  grid-column: 1 / -1;
+}
+
 .steps {
   margin: 0;
   padding: 0;
@@ -9,10 +101,31 @@
 .step {
   display: grid;
   gap: var(--wzl-space-xs);
+  padding-block: var(--wzl-space-xs);
+  border-top: 1px solid var(--wzl-line);
 }
 
 .kind {
   min-width: 9ch;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg);
+}
+
+.cap {
+  display: flex;
+  align-items: center;
+  gap: var(--wzl-space-xs);
+  width: 14ch;
+  font-family: var(--wzl-font-ui);
+  font-size: var(--wzl-font-size-xs);
+  color: var(--wzl-fg-muted);
+}
+
+.end {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
 }
 
 /* Each value sits in a cell as wide as its widest, so a changing number never moves its neighbors. */

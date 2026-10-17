@@ -1,170 +1,255 @@
 import { MARKS } from '@pg/blits/anchor';
 import { type Group, MAX_HITS, MAX_MARKS, MAX_TAGS, type Voice } from '@pg/blits/composition';
 import { withKey } from '@pg/blits/keyed';
-import { ExprInput } from '@pg/widgets/ExprInput';
-import s from './App.module.css';
-import { docOf } from './docs';
+import { f } from '@weasel-js/labkit';
+import { ListEditor, type PrefRenderContext, PropertyControl } from '@weasel-js/ui';
+import { useEffect, useRef, useState } from 'react';
+import { drafted } from './CompositionControls';
+import g from './Group.module.css';
 
-/** Comma-separated words as tags; none is undefined. */
-export function tagsOf(text: string): string[] | undefined {
-  const tags = [...new Set(text.split(',').map((t) => t.trim()))].filter(Boolean);
+type Hit = NonNullable<Voice['hits']>[number];
+type Mark = [name: string, at: number];
+
+/** Tags as written: trimmed, each once, none empty, at most `MAX_TAGS`; none is undefined. */
+function tagsIn(list: readonly string[]): string[] | undefined {
+  const tags = [...new Set(list.map((t) => t.trim()))].filter(Boolean);
   return tags.length > 0 ? tags.slice(0, MAX_TAGS) : undefined;
 }
 
-type Hits = NonNullable<Voice['hits']>;
+/** Comma-separated words as tags; none is undefined. */
+export const tagsOf = (text: string): string[] | undefined => tagsIn(text.split(','));
+
+/** Why a mark cannot take `name`, or null when it can. */
+function markFault(marks: readonly Mark[], i: number, name: string): string | null {
+  const n = name.trim();
+  if (!n) return 'needs a name';
+  if (MARKS.includes(n)) return `“${n}” is one of a voice's own marks`;
+  if (marks.some(([m], k) => k < i && m.trim() === n)) return `“${n}” is taken`;
+  return null;
+}
+
+/**
+ * A dialog's edits held until it closes, then written as one step: a list being typed passes
+ * through states (an empty tag, a half-typed mark name) that the spec should never hold.
+ */
+function useDraft<T>(value: T, commit: (next: T) => void): [T, (next: T) => void] {
+  const [draft, setDraft] = useState(value);
+  const latest = useRef({ draft, value, commit });
+  latest.current = { draft, value, commit };
+  useEffect(
+    () => () => {
+      const l = latest.current;
+      if (JSON.stringify(l.draft) !== JSON.stringify(l.value)) l.commit(l.draft);
+    },
+    [],
+  );
+  return [draft, setDraft];
+}
+
+function TagsDialog({ row }: { row: PrefRenderContext }) {
+  const [draft, setDraft] = useDraft((row.value as string[] | undefined) ?? [], (list) =>
+    row.setValue(tagsIn(list)),
+  );
+  return (
+    <ListEditor
+      aria-label="tags"
+      value={draft}
+      onChange={setDraft}
+      maxItems={MAX_TAGS}
+      placeholder="lead"
+      empty="no tags"
+      addLabel="add tag"
+    />
+  );
+}
+
+function HitsDialog({ row, note }: { row: PrefRenderContext; note: string }) {
+  const [draft, setDraft] = useDraft((row.value as Hit[] | undefined) ?? [], (hits) =>
+    row.setValue(hits.length > 0 ? hits : undefined),
+  );
+  return (
+    <div className={g.dialog}>
+      <ListEditor<Hit>
+        aria-label="hits"
+        value={draft}
+        onChange={setDraft}
+        maxItems={MAX_HITS}
+        empty="no hits"
+        addLabel="add hit"
+        newEntry={() => ({ at: 0, event: `hit ${draft.length + 1}` })}
+        renderEntry={(h, set, name) => (
+          <span className={`${g.entry} ${g.hit}`}>
+            at
+            <span>
+              <PropertyControl
+                kind="number"
+                name={`${name} at`}
+                min={0}
+                step={10}
+                value={h.at}
+                onChange={(at) => set({ ...h, at: Math.max(0, at) })}
+              />
+            </span>
+            ms sends
+            <PropertyControl
+              kind="string"
+              name={`${name} event`}
+              value={h.event}
+              onChange={(event) => set({ ...h, event })}
+            />
+          </span>
+        )}
+      />
+      <p className={g.note}>{note}</p>
+    </div>
+  );
+}
+
+function MarksDialog({ row, note }: { row: PrefRenderContext; note: string }) {
+  const [draft, setDraft] = useDraft(
+    Object.entries((row.value as Record<string, number> | undefined) ?? {}),
+    (marks) => {
+      const kept = marks
+        .filter(([name], i) => markFault(marks, i, name) === null)
+        .map(([name, at]): Mark => [name.trim(), at]);
+      row.setValue(kept.length > 0 ? Object.fromEntries(kept) : undefined);
+    },
+  );
+  const free = () => {
+    for (let n = draft.length + 1; ; n++)
+      if (!draft.some(([m]) => m === `mark${n}`)) return `mark${n}`;
+  };
+  return (
+    <div className={g.dialog}>
+      <ListEditor<Mark>
+        aria-label="marks"
+        value={draft}
+        onChange={setDraft}
+        maxItems={MAX_MARKS}
+        empty="no marks"
+        addLabel="add mark"
+        newEntry={() => [free(), 0]}
+        renderEntry={([markName, at], set, name, i) => {
+          const fault = markFault(draft, i, markName);
+          return (
+            <span className={`${g.entry} ${g.mark}`}>
+              <PropertyControl
+                kind="string"
+                name={`${name} name`}
+                value={markName}
+                onChange={(next) => set([next, at])}
+              />
+              at
+              <span>
+                <PropertyControl
+                  kind="number"
+                  name={`${name} at`}
+                  min={0}
+                  step={10}
+                  value={at}
+                  onChange={(ms) => set([markName, Math.max(0, ms)])}
+                />
+              </span>
+              ms
+              {fault && <span className={g.error}>{fault}: left out</span>}
+            </span>
+          );
+        }}
+      />
+      <p className={g.note}>{note}</p>
+    </div>
+  );
+}
+
+const none = (n: number, text: string) => (n === 0 ? 'none' : text);
 
 /**
  * A voice's or group's `tags`, `score`, `hits`, and `marks`: what marks, queries, bookers, and
- * drains know it by. A group's hits are booked once, since it does not loop.
+ * drains know it by. The lists open in a dialog and are written when it closes. A group's hits are
+ * booked once, since it does not loop.
  */
-export function MarksFields<T extends Voice | Group>({
-  x: v,
-  onChange,
-}: {
-  x: T;
-  onChange(x: T): void;
-}) {
-  const voice = 'patch' in v;
-  const doc = (member: string) => docOf(`${voice ? 'VoiceSpec' : 'OwnerSpec'}.${member}`);
-  const hits = v.hits ?? [];
-  const setHits = (next: Hits) => onChange(withKey(v, 'hits', next.length > 0 ? next : undefined));
-  const setHit = (i: number, change: Partial<Hits[number]>) =>
-    setHits(hits.map((h, k) => (k === i ? { ...h, ...change } : h)));
-  const marks = Object.entries(v.marks ?? {});
-  const setMarks = (next: [string, number][]) =>
-    onChange(withKey(v, 'marks', next.length > 0 ? Object.fromEntries(next) : undefined));
-  const setMark = (i: number, name: string, at: number) =>
-    setMarks(marks.map((m, k) => (k === i ? [name, at] : m)));
-  const free = () => {
-    for (let n = marks.length + 1; ; n++)
-      if (!marks.some(([m]) => m === `mark${n}`)) return `mark${n}`;
+export function marksNodes(voice: boolean, doc: (member: string) => string | undefined) {
+  const d = (member: string) => doc(member) ?? '';
+  return {
+    tags: f
+      .list([])
+      .describe(d('tags'))
+      .dialog((row) => <TagsDialog row={row} />, {
+        summary: (v) => none((v as string[]).length, (v as string[]).join(', ')),
+      }),
+    score: f
+      .string('')
+      .describe(d('score'))
+      .render(drafted({ placeholder: "none: the mix's unnamed score" })),
+    hits: f
+      .list<Hit>([], f.object({ at: f.number(0), event: f.string('') }))
+      .describe(d('hits'))
+      .dialog(
+        (row) => (
+          <HitsDialog
+            row={row}
+            note={
+              voice
+                ? 'Booked once per pass, in voice ms; see the Events tab.'
+                : 'Booked once, in ms on its clock; see the Events tab.'
+            }
+          />
+        ),
+        {
+          summary: (v) => {
+            const hits = v as Hit[];
+            return none(hits.length, hits.map((h) => `${h.event} at ${h.at} ms`).join(', '));
+          },
+        },
+      ),
+    marks: f
+      .map<number>({}, f.number(0))
+      .describe(d('marks'))
+      .dialog(
+        (row) => (
+          <MarksDialog
+            row={row}
+            note={
+              voice
+                ? 'Named for anchors, in voice ms; reached once, on the first pass.'
+                : 'Named for anchors, in ms on its clock.'
+            }
+          />
+        ),
+        {
+          summary: (v) => {
+            const marks = Object.entries(v as Record<string, number>);
+            return none(marks.length, marks.map(([n, at]) => `${n} at ${at} ms`).join(', '));
+          },
+        },
+      ),
   };
-  return (
-    <fieldset className={s.field}>
-      <legend>tags, score, hits, and marks</legend>
-      <div title={doc('tags')}>
-        <ExprInput
-          label="tags"
-          placeholder="lead, sound"
-          value={(v.tags ?? []).join(', ')}
-          onCommit={(text) => onChange(withKey(v, 'tags', tagsOf(text)))}
-        />
-      </div>
-      <div title={doc('score')}>
-        <ExprInput
-          label="score"
-          placeholder="none: the mix's unnamed score"
-          value={v.score ?? ''}
-          onCommit={(text) => onChange(withKey(v, 'score', text.trim() || undefined))}
-        />
-      </div>
-      <div className={s.field} title={doc('hits')}>
-        {hits.map((h, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: hits have no identity but their place
-          <div className={s.row} key={i}>
-            hit at
-            <input
-              type="number"
-              className={s.number}
-              aria-label={`hit ${i + 1} at`}
-              min={0}
-              step={10}
-              value={h.at}
-              onChange={(e) => {
-                const at = e.target.valueAsNumber;
-                if (Number.isFinite(at) && at >= 0) setHit(i, { at });
-              }}
-            />
-            ms sends
-            <input
-              className={s.text}
-              aria-label={`hit ${i + 1} event`}
-              value={h.event}
-              onChange={(e) => setHit(i, { event: e.target.value })}
-            />
-            <button
-              type="button"
-              aria-label={`remove hit ${i + 1}`}
-              onClick={() => setHits(hits.filter((_, k) => k !== i))}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-        <div className={s.row}>
-          <button
-            type="button"
-            disabled={hits.length >= MAX_HITS}
-            onClick={() => setHits([...hits, { at: 0, event: `hit ${hits.length + 1}` }])}
-          >
-            add hit
-          </button>
-          <span className={s.note}>
-            {voice
-              ? 'booked once per pass, in voice ms; see the Events tab'
-              : 'booked once, in ms on its clock; see the Events tab'}
-          </span>
-        </div>
-      </div>
-      <div className={s.field} title={doc('marks')}>
-        {marks.map(([name, at], i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: a mark being renamed keeps its place
-          <div className={s.row} key={i}>
-            mark
-            <input
-              key={name}
-              className={s.text}
-              aria-label={`mark ${i + 1} name`}
-              defaultValue={name}
-              spellCheck={false}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') e.currentTarget.blur();
-              }}
-              onBlur={(e) => {
-                const n = e.target.value.trim();
-                if (n && !MARKS.includes(n) && !marks.some(([m], k) => k !== i && m === n))
-                  setMark(i, n, at);
-                else e.target.value = name;
-              }}
-            />
-            at
-            <input
-              type="number"
-              className={s.number}
-              aria-label={`mark ${i + 1} at`}
-              min={0}
-              step={10}
-              value={at}
-              onChange={(e) => {
-                const ms = e.target.valueAsNumber;
-                if (Number.isFinite(ms) && ms >= 0) setMark(i, name, ms);
-              }}
-            />
-            ms
-            <button
-              type="button"
-              aria-label={`remove mark ${i + 1}`}
-              onClick={() => setMarks(marks.filter((_, k) => k !== i))}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-        <div className={s.row}>
-          <button
-            type="button"
-            disabled={marks.length >= MAX_MARKS}
-            onClick={() => setMarks([...marks, [free(), 0]])}
-          >
-            add mark
-          </button>
-          <span className={s.note}>
-            {voice
-              ? 'named for anchors, in voice ms; reached once, on the first pass'
-              : 'named for anchors, in ms on its clock'}
-          </span>
-        </div>
-      </div>
-    </fieldset>
-  );
+}
+
+/** The rows' values for `x`. */
+export const marksConfig = (x: Voice | Group) => ({
+  tags: x.tags ?? [],
+  score: x.score ?? '',
+  hits: x.hits ?? [],
+  marks: x.marks ?? {},
+});
+
+/** The paths these rows write, and how each lands on the spec. */
+export function writtenMarks<T extends Voice | Group>(
+  x: T,
+  path: string,
+  value: unknown,
+): T | undefined {
+  switch (path) {
+    case 'tags':
+      return withKey(x, 'tags', value as string[] | undefined);
+    case 'score':
+      return withKey(x, 'score', (value as string).trim() || undefined);
+    case 'hits':
+      return withKey(x, 'hits', value as Hit[] | undefined);
+    case 'marks':
+      return withKey(x, 'marks', value as Record<string, number> | undefined);
+    default:
+      return undefined;
+  }
 }
