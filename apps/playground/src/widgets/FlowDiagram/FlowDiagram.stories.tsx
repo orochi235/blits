@@ -1,5 +1,7 @@
+import { bothOf } from '@pg/blits/both';
 import { flowOf, foldOf } from '@pg/blits/flow';
 import { PRESETS } from '@pg/blits/presets';
+import { timingOf } from '@pg/blits/timing';
 import type { Meta, StoryObj } from '@weasel-js/forge';
 import { useState } from 'react';
 import { FlowDiagram } from './index';
@@ -54,4 +56,12 @@ export const FoldOfScale: Story = {
       direction="up"
     />
   ),
+};
+
+/** View C: the flow and the timing as one diagram, timing edges in amber. */
+export const Both: Story = {
+  render: () => {
+    const comp = PRESETS.find((p) => p.name === 'anchors')!.comp;
+    return <FlowDiagram flow={bothOf(flowOf(comp), timingOf(comp))} width={360} height={900} />;
+  },
 };

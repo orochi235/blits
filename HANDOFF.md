@@ -130,14 +130,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   last build known to render it (2026-10-07). The built page is not committed here; `serve` rebuilds on every
   edit and adds undo/redo, snapshots, cross-off and chat, none of which the hand page had.
 
-- **The playground's diagrams, after views A and B.** View A, the signal flow, and view B, the
-  timing graph, are built; the playground's README ("The flow", "The timing") describes them. Next,
-  each with a spec of its own when it starts:
+- **The playground's diagrams, after views A, B and C.** View A, the signal flow, view B, the
+  timing graph, and view C, both as one diagram, are built; the playground's README ("The flow",
+  "The timing", "Both") describes them. Next, view D: editable, dragging port to port authors an
+  anchor or wires a weight to a signal, making the diagram an input.
 
-  | | View | Answers |
-  |---|---|---|
-  | C | A and B together, as two views of one composition or one diagram with both kinds of edge | both |
-  | D | Editable: dragging port to port authors an anchor, or wires a weight to a signal | the diagram as an input |
+  Chosen while building, Mike's to overturn: view C is one diagram with both kinds of edge, not
+  the two views linked side by side (the right column is too narrow for two). Reverse it by
+  replacing `BothPanel` with a `FlowPanel` over a `TimingPanel`, sharing `selected`.
 
   View B boxes owners and spans, not loci: a weasel diagram group holds each node once, a voice has
   both an owner and a locus, and voices of one locus may sit under different owners. A locus is

@@ -27,6 +27,8 @@ export interface FlowEdge {
   to: string;
   label?: string;
   dashed?: boolean;
+  /** Drawn in the timing color, apart from the flow's edges. */
+  timing?: boolean;
   /** Whether what it waits on has happened; unset draws it plain. */
   met?: boolean;
 }

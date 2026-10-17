@@ -9,6 +9,8 @@ const TEXT = '#dbe7f2';
 const FAINT = '#6f8496';
 const EDGE = '#7ba7c7';
 const UNMET = '#45596a';
+const TIMING = '#d9a04a';
+const TIMING_UNMET = '#6b5532';
 const DASH = [4, 3];
 const STROKE: Record<FlowKind, string> = {
   level: '#5b84d6',
@@ -24,7 +26,8 @@ const STROKE: Record<FlowKind, string> = {
   query: '#8a63d2',
 };
 
-export const linesOf = (n: FlowNode) => (n.detail ? [n.label, n.detail] : [n.label]);
+/** The label, then each line of the detail. */
+export const linesOf = (n: FlowNode) => (n.detail ? [n.label, ...n.detail.split('\n')] : [n.label]);
 
 /** What a tone does to a box that is otherwise `plain`. */
 function toned(plain: NodeStyle, tone: FlowTone | undefined): NodeStyle {
@@ -51,9 +54,10 @@ export function boxStyleOf(b: FlowBox): NodeStyle {
   return b.tone === 'playing' ? { ...plain, fill: 'rgba(123, 167, 199, 0.16)' } : plain;
 }
 
-export function edgeStyleOf(e: Pick<FlowEdge, 'dashed' | 'met'>): EdgeStyle {
+export function edgeStyleOf(e: Pick<FlowEdge, 'dashed' | 'met' | 'timing'>): EdgeStyle {
+  const [lit, unmet] = e.timing ? [TIMING, TIMING_UNMET] : [EDGE, UNMET];
   return {
-    stroke: e.met === false ? UNMET : EDGE,
+    stroke: e.met === false ? unmet : lit,
     ...(e.met === true ? { width: 2 } : {}),
     ...(e.dashed ? { dash: DASH } : {}),
   };
