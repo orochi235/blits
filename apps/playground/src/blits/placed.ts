@@ -7,10 +7,13 @@ export type Placed = Partial<Record<Mark, number>>;
 
 /**
  * Where `built`'s mix put each voice and group, by id, read from `mix.marks`. `built` must not have
- * synced since it was compiled: its marks' timestamps are then composition ms, as the player's
- * first frames are, before a seek back by `mix.seek` moves the mix's clock off the host's.
+ * synced past 0 since it was compiled: its marks' timestamps are then composition ms, as the
+ * player's first frames are, before a seek back by `mix.seek` moves the mix's clock off the host's.
+ * A build never synced is synced at 0 first, since blits places an anchor to a voice cued after
+ * it only at a sync.
  */
 export function placedOf(built: Built): Map<string, Placed> {
+  if (Number.isNaN(built.mix.timestamp)) built.mix.sync(0);
   const ids = new Map<number, string>();
   for (const [id, h] of built.handles) ids.set(h.id, id);
   for (const [id, h] of built.groupHandles) ids.set(h.id, id);

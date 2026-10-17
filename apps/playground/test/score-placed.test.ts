@@ -40,6 +40,13 @@ describe('clips placed from a build', () => {
     expect(clip('b')).toMatchObject({ start: 1050 + 200, locked: true });
     expect(clip('y')).toMatchObject({ start: 500, locked: true });
   });
+  it('draws a voice anchored to one cued after it where that one starts', () => {
+    const later = comp([
+      once('a', { anchor: { start: { with: 'b' } } }),
+      once('b', { start: 1000 }),
+    ]);
+    expect(drawn(later).clip('a')).toMatchObject({ start: 1000, locked: true });
+  });
   it('a move lands the clip where the pointer left it, on the owner’s clock', () => {
     const moved = applyEdit(owned, { clip: 'a', kind: 'move', start: 1150 }, built);
     expect(moved.voices[0]?.start).toBe(1700);

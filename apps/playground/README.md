@@ -258,8 +258,9 @@ A voice whose period is 0, an aperiodic `fn` or a motion voice, has no passes, s
 does not drag. A voice at rate 0 never ends, and neither does one cued backward that loops for
 good, which has no end to start from. A voice backward with a `seek` stops growing at its right
 edge once the loop reaches the seek. `playOf` in `src/blits/clip.ts` works out what a `seek` and
-a rate leave to play, and a test holds it to blits' `coast` mark. Placements come from the compiled mix's marks (`mix.marks`) before its first frame,
-so the score draws the fit blits made at cue.
+a rate leave to play, and a test holds it to blits' `coast` mark. Placements come from the compiled mix's marks (`mix.marks`) at its first frame, at 0,
+so the score draws the fit blits made at cue, and a voice anchored to one cued after it where
+blits places it at that first sync.
 
 The dotted links come from `timingOf`, so the score and the Timing tab agree on which voices an
 anchor could wait on. A link is `all` only when every step from the anchor to that voice is an

@@ -713,11 +713,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       transport's real order, the score's keyboard path and clip menu, what the arrow and an
       Alt-drag from the body do, which fields commit on Enter, and that dragged Both positions
       hold off edit. Left open:
-      - **A clip anchored to a voice cued after it draws at its own `start`** (seen on the
-        score, 2026-10-17): in `fold rules`, Alt-dragging `mul a`'s body onto `mul b`'s start
-        writes `{"start":{"with":"mul b"}}`, and the clip still reads "starts 0.00s, anchored"
-        though `mul b` starts at 1 s. `placedOf` reads `mix.marks` before the first frame,
-        when blits has not placed it. What it plays was not checked.
+      - **`player.test.ts` "seeking back with mix.seek lands near what playback showed" fails
+        on main at `6ef4985`** (measured 2026-10-17): `seeker.doubts()` reads `offset: 'exact'`
+        where the test wants `'stepped'` for the spring. Not looked into; the merges of
+        read-ahead stopping at known events and owners' marks are the recent changes near it.
       - **Most panel fields commit on every keystroke**, so typing `1500` into a mark's time is
         four undo steps; only the stage, title, length, level, read-ahead and expression fields
         go through `Draft` or `ExprInput`. The README says so; whether the rest should commit
