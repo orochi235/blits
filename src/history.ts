@@ -250,7 +250,7 @@ export function leave<I, O>(
     subject,
     at: Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now,
     seq: mix.transport.seq,
-    sync: mix.syncing,
+    sync: mix.syncing || !mix.looked,
     held,
   });
 }

@@ -585,6 +585,58 @@ describe('seek back over a rise', () => {
   });
 });
 
+describe('seek, how sure', () => {
+  const rising = () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 100_000, every: 100, tape } });
+    m.cue({ patch: wave, weight: slew(() => 1, { riseMs: 600, from: 0 }) });
+    for (const t of every(0, 480, 16)) {
+      m.sync(t);
+      m.probe(a);
+    }
+    return m;
+  };
+
+  it('says stepped for a slew a seek stepped on from a copy, and exact played straight', () => {
+    const m = rising();
+    expect(m.project(m.now).assess(a).x).toBe('exact');
+    m.seek(240);
+    expect(m.project(m.now).assess(a).x).toBe('stepped');
+    m.probe(a);
+    m.sync(560);
+    m.probe(a);
+    expect(m.project(m.now).assess(a).x).toBe('stepped');
+  });
+
+  it('says exact after a seek to the moment a copy was kept, with nothing stepped', () => {
+    const m = rising();
+    m.seek(224);
+    expect(m.project(m.now).assess(a).x).toBe('exact');
+  });
+});
+
+describe('read back to a frame a drop came in before anything read it', () => {
+  it('shows the subject met afresh, as the frame did', () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 100_000, every: 50, tape } });
+    const seen = new Map<number, number>();
+    const seqs = new Map<number, number>();
+    for (const t of every(0, 480, 16)) {
+      m.sync(t);
+      seqs.set(t, m.seq);
+      if (t === 0)
+        m.cue({ patch: ramp, loop: true, weight: slew(() => 1, { riseMs: 600, from: 0 }) });
+      if (t === 320) m.drop(a);
+      seen.set(t, m.probe(a).gain);
+    }
+    for (const t of [304, 320, 336]) {
+      expect(m.project(t).probe(a).gain, `project(${t})`).toBeCloseTo(seen.get(t) as number, 9);
+      expect(m.project({ frame: seqs.get(t) as number }).probe(a).gain).toBeCloseTo(
+        seen.get(t) as number,
+        9,
+      );
+    }
+  });
+});
+
 const kept100k = (): MixOptions => ({ history: { ms: 100_000, every: 50, tape }, stepMs: 4 });
 
 /** The mix time at each host frame of `scene`. */

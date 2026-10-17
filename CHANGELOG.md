@@ -55,6 +55,12 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A read back to the frame a `drop` was made in, before anything read the mix that frame, shows
+  the subject met afresh, as the frame did. It showed the record the subject had before the drop,
+  a slewed weight's state included, in `project(t)` and `project({ frame })`.
+- `assess` after a seek back says `stepped` for a stateful signal the seek put back from a copy
+  history kept and stepped on, where a read at the mix's own time said `exact`. It goes on saying
+  so for that record as the mix plays on, since the state carries on from the step.
 - A voice running back from past its end shows nothing until it reaches its passes, unless it
   freezes after, as a voice playing forward shows nothing before its start unless it freezes
   before. It showed its last frame: `rate: -1, seek: 600` on a 300 ms pass showed it for its

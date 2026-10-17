@@ -25,6 +25,7 @@ export function record(voice: object | null, reaches: boolean, state: unknown): 
     phase: 0,
     seeks: 0,
     rebuilt: 0,
+    copied: false,
     base: undefined,
     slope: undefined,
     kept: null,

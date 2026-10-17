@@ -504,5 +504,7 @@ function doubtOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unkno
     const kept = held.kept !== null && held.kept.size > 0 && !replayed && mix.backward;
     if ((voice.patch.step && !fixed) || kept) return 'stepped';
   }
+  // A seek stepped it from a copy, and what it keeps now goes on from there.
+  if (held.copied && held.kept !== null && held.kept.size > 0 && !replayed) return 'stepped';
   return 'exact';
 }
