@@ -24,9 +24,14 @@ version and everything else the patch. Each release lists its changes as **Break
   its voice had met the subject. The tape moves forward and back while the read is made.
 - `stepMs` on a voice's spec: the interval its `step` runs at, in place of the mix's. 0 steps it
   once a frame by the frame's gap.
+- `hits` and `seek` on an owner's and a span's spec. A hit is an event at a time on the owner's
+  clock, booked once while the owner plays, with its `score` and `tags`; a seek is where that clock
+  starts, so an owner cued at a rate below 0 with a seek plays its children back from there.
 
 ### Fixed
 
+- `mix.span` refuses a rate below 0. A span cued backward placed none of its children, which
+  waited for good, and never left. Its handle's `rate` still turns one that plays.
 - A fade set for a time after a voice's passes run out no longer begins in place of the voice
   ending, where one frame crossed both: `fade({ at })` on a voice with no `freeze` that ended
   before `at` played on, held at its last frame, until the fade finished.

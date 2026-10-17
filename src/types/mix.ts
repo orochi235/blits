@@ -144,7 +144,9 @@ export interface Mix<I, O, H = unknown> {
    * span's to set, so it takes neither `start` nor an anchored start; its `SpanHints` say how it
    * may give way. A span with a budget stays until the budget has passed, though its children
    * finish sooner, so late ones can still join, and its `end` mark is where its children end or
-   * its budget does, whichever is later. A voice that loops for good cannot join one.
+   * its budget does, whichever is later. A voice that loops for good cannot join one. Throws for
+   * a `rate` below 0: a span lays its children out forward from its start, and its handle's `rate`
+   * turns it once it plays.
    */
   span(spec: SpanSpec<I, H>): SpanHandle<I>;
 

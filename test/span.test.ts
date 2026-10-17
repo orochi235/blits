@@ -195,6 +195,29 @@ describe('spans', () => {
     expect(() => m.owns({ owner: s })).toThrow(/not owners/);
   });
 
+  it('refuses a rate below 0 at its cue, and takes one on its handle once it plays', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    expect(() => m.span({ rate: -1, seek: 500, duration: 500 })).toThrow(/backward/);
+    const s = m.span({ duration: 500 });
+    const c = m.cue({ patch: write(100), owner: s, loop: false });
+    m.sync(50);
+    s.rate = -1;
+    m.sync(120);
+    expect(c.state).toBe('done');
+  });
+
+  it('cued with a seek, starts that far into its budget', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    const s = m.span({ duration: 500, seek: 200 });
+    const c = m.cue({ patch: write(100), owner: s, loop: false });
+    const at = (id: number, mark: string) =>
+      m.marks(0, 2000).find((k) => k.voice === id && k.mark === mark)?.timestamp;
+    expect(at(c.id, 'start')).toBe(0);
+    expect(at(s.id, 'coast')).toBe(300);
+  });
+
   it('seeks back through a late arrival and plays it again the same', () => {
     const opts = { history: { ms: 10_000, tape: tape } };
     const scene = (m: M, upTo: number) => {

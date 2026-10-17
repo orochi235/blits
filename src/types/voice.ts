@@ -159,8 +159,19 @@ export interface OwnerSpec<I, H = unknown> extends SpanHints {
    * voice's `start` is. Default: now.
    */
   start?: number;
-  /** Its clock's rate, multiplied into every child's own. Default 1. */
+  /**
+   * Its clock's rate, multiplied into every child's own. Default 1. Below 0 its clock runs back,
+   * and so does every child's: a child plays backward to its start and leaves there, as a voice cued
+   * backward does, and the owner leaves with its last child. A span is not cued backward, since it
+   * lays out its children forward from its start; its handle's `rate` turns it once it plays.
+   */
   rate?: number;
+  /**
+   * Where its clock starts, ms, as `seek` on its handle sets: its children play as far in as that
+   * puts them. Default 0, cued backward too, since an owner has no end of its own to start from; one
+   * cued at a rate below 0 with no seek runs back from 0, before any child placed on its clock.
+   */
+  seek?: number;
   /**
    * Multiplied into every child's weight per subject, as the child's own fade is, before the child's
    * locus folds it: a number, or a signal read per subject per frame. Default 1.
@@ -178,6 +189,12 @@ export interface OwnerSpec<I, H = unknown> extends SpanHints {
   score?: string;
   /** Where it sits relative to its own owner's clock or to other voices, in place of `start`. */
   anchor?: Placement;
+  /**
+   * Events at times on its own clock, the one its children's `start` counts on, which `book`
+   * hands a host ahead of time with its `score` and `tags`. An owner does not loop, so each is
+   * booked once, while it plays: none past where it leaves, and none while its clock runs back.
+   */
+  hits?: readonly Hit[];
   /** The owner it plays under, so owners nest. */
   owner?: Handle<I>;
 }
