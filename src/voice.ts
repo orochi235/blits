@@ -33,7 +33,8 @@ import { warnOnce } from './warn.js';
 
 /**
  * A subject's record as it left a voice, faded out of it or dropped: the mix time and frame it
- * left at, and `sync` where the frame's sync made it, before the frame was read.
+ * left at, and `sync` where it shows in its own frame: left in the frame's sync, or before anything
+ * read the mix that frame.
  */
 export interface Left<I> {
   subject: I;
@@ -108,6 +109,8 @@ export interface Subject<S> {
   seeks: number;
   /** The voice's `rebuilds` when its state was last made, so a seek's rebuild reaches it once. */
   rebuilt: number;
+  /** Its kept signal state was stepped on in one go from a copy history kept, by a seek. */
+  copied: boolean;
   /** Stop 0 for a `from: 'current'` voice, taken the first frame this subject is seen. */
   base?: Record<string, unknown>;
   /** The pose's velocity per channel at that moment, units per ms, so the first segment leaves at it. */

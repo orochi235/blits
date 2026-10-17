@@ -50,6 +50,7 @@ function restore<I, O>(
   if (snap === undefined) return undefined;
   const h = copyHeld(voice, snap.held);
   h.weight = 0;
+  if (snap.at < t) h.copied = true;
   h.snaps = snaps.slice(0, snaps.indexOf(snap) + 1);
   h.inputs = inputs;
   // A start still ahead when the copy was kept may have moved before `t`, with no copy between.

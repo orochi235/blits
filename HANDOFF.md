@@ -54,13 +54,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   - *A subject the live mix never probed is read at every stop,* as if probed all along.
   - Each stop copies every voice and reads each asked-for subject once, so a read across many
     events of a stateful mix costs that many reads; nobody has benched it.
-- **Gaps the slewed fuzz variant found, not fixed** (2026-10-17; `test/determinism.test.ts`
-  marks them `todo`). Both fail on `main` too, and neither involves a read ahead. A second seek
-  with no probe since the first puts back a `slew` weight's state wrong (`again`, most seeds), and
-  a read back to the frame of a `drop` shows the dropped subject's old slew state, where the frame
-  showed it met fresh (`behind`, e.g. seed 8: a slewed cue at 64, `drop(a)` at 160, read at 160). Counted
-  after merging with `seek({ frame })` (2026-10-17): `behind` fails 51 of 150 seeds, `again` all 150,
-  and the new `frame` property 33, nearly all among `behind`'s, so it is marked `todo` too.
+- **Open question: should a signal catch up like a patch?** (2026-10-17.) A patch met late steps
+  from its voice's start, but a `slew` starts where a probe first meets its subject, so the slewed
+  fuzz variant fails `again` on all 150 seeds: after the first seek the program plays on with no
+  probe, and the second seek's subject is first met at its probe. Probing between the seeks makes
+  every seed pass, so the variant is left out of `again`, as `fresh` is. A read ahead already
+  treats a subject never probed as probed all along; whether a seek, or a live probe, should meet a
+  late subject's signals at the voice's start too is the owner's call.
 - **Unreleased, breaking: `loop` defaults to one pass** (Mike, 2026-10-11; it defaulted to
   looping for good). It waits for the next minor. Every consumer's cues were read at its `origin`
   head (2026-10-11): one relied on the old default, klieg's lighting voice
