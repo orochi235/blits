@@ -183,7 +183,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   release. Until one has it, this machine's `apps/playground/node_modules/@weasel-js/diagram` is a
   symlink to `~/src/weasel/packages/diagram`, whose `dist` is whatever that checkout last built;
   `npm ci` or `npm install` replaces it with 1.10.1 from npm. Once weasel releases the layered
-  layout, pin that version and delete this paragraph.
+  layout, pin that version and delete this paragraph. The Both tab's edit mode also uses three port options only weasel's
+  `main` has (`showsPort`, `shape`, and a `fill` per port), so against 1.10.1 from npm the
+  playground fails its typecheck in `src/widgets/FlowDiagram/FlowDiagram.tsx`, though it still runs
+  and its smoke run passes; `npm run check` leaves the playground's typecheck out, so CI is
+  unaffected.
 
   An edge label is still placed without regard to nodes, so on a short edge it can overlap the box
   it leaves or enters (`anchors`: `start its end +200 ms` over `pair`). That gap is filed in
