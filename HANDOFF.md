@@ -985,6 +985,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
+- **weasel gaps blits met on 2026-10-17, sent to the weasel-64 session to file in weasel's
+  `docs/TODO.md`; check they landed there.** `ThemeProvider` drops an invalid `selection` mode
+  (`'auto'`) without a word, and labkit's panels inherit the page's ink (worked around in
+  `ccda71e`). The diagram's default ports take no label; `DiagramView` never reports where its
+  first layout put nodes (the Both tab reads them back from `diagramScene`); and under `layered` an
+  edge between two pinned nodes in one rank loops round instead of running across.
+
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
   100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k
   `tweens` row and 214 after the 100k one (teitou). A dropped mix is freed
