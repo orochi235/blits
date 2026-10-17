@@ -1106,6 +1106,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `ccda71e`). The diagram's default ports take no label; `DiagramView` never reports where its
   first layout put nodes (the Both tab reads them back from `diagramScene`); and under `layered` an
   edge between two pinned nodes in one rank loops round instead of running across.
+  Also sent (2026-10-17), from moving the playground's panels onto labkit's `ControlPanel`: number
+  and text rows write per keystroke (worked around by `drafted()` in `CompositionControls.tsx`), a
+  number row cannot be cleared, rows have no error slot, an all-hidden section still draws its
+  heading, `.dialog()` has no cancel, and `ControlMatrix` has no plain grid or custom-cell summary.
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
   100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k
