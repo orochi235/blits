@@ -31,16 +31,6 @@
   min-width: 0;
 }
 
-/* The row carries the label, so the input's own is kept for assistive tech only. */
-.expr label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .error,
 .errors {
   margin: 0;

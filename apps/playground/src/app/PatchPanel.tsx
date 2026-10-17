@@ -12,19 +12,23 @@ import { stopsOf, tracksOf } from '@pg/blits/keys';
 import { CHANNELS, type ChannelName, type Mixed } from '@pg/blits/kit';
 import type { FieldError } from '@pg/blits/spec';
 import { CodePane } from '@pg/widgets/CodePane';
-import { ExprInput } from '@pg/widgets/ExprInput';
 import type { SampledTrack } from '@weasel-js/animator';
+import { ControlPanel, type ControlRenderer, f, resolveConfigSchema } from '@weasel-js/labkit';
 import { Timeline } from '@weasel-js/ui';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import s from './App.module.css';
 import { ChannelTiming } from './ChannelTiming';
+import { drafted } from './CompositionControls';
 import { EaseField } from './EaseField';
 import { KeyEditor } from './KeyEditor';
-import { WaveFields } from './WaveFields';
+import m from './PatchLive.module.css';
+import { ExprRow, Row } from './SpecFields';
+import { depthRenderers, waveConfig, waveNodes, writtenWave } from './WaveFields';
 
 type Kind = PatchSource['kind'];
 
 const KINDS: readonly Kind[] = ['keys', 'fn', 'wave', 'spring', 'glide', 'tween'];
+const MOTIONS: readonly Motion['kind'][] = ['spring', 'glide', 'tween'];
 
 /** Every option each motion takes, required ones first; an empty field leaves blits' default. */
 const OPTIONS: Record<Motion['kind'], readonly string[]> = {
@@ -76,6 +80,63 @@ function parsed(text: string): number | number[] | Expr | undefined {
   return { code: t };
 }
 
+const MOTION = { path: 'kind', in: MOTIONS } as const;
+const isKind = (kind: Kind) => ({ path: 'kind', is: kind });
+
+/** Every patch kind's rows; a kind's own show only while it is picked. */
+function schemaOf() {
+  const custom = (kind: string) => f.custom<null>(kind, null).manual();
+  return resolveConfigSchema(
+    f.schema({
+      kind: f
+        .enum<Kind>('keys', KINDS)
+        .label('kind')
+        .describe('Switching starts a blank patch of that kind.'),
+      period: f
+        .number(1000)
+        .label('period')
+        .manual()
+        .range(0, 1e9)
+        .input()
+        .step(10)
+        .suffix('ms')
+        .render(drafted())
+        .showIf({ not: MOTION }),
+      channel: f.enum<ChannelName>('offset', CHANNELS).label('channel').manual().showIf(MOTION),
+      keys: f
+        .group({ timeline: custom('timeline'), ease: custom('ease'), timing: custom('timing') })
+        .as('fragment')
+        .showIf(isKind('keys')),
+      fn: f
+        .group({
+          writes: f
+            .group(
+              Object.fromEntries(CHANNELS.map((ch) => [ch, f.boolean(false).label(ch).manual()])),
+            )
+            .label('writes'),
+          at: custom('code'),
+          state: custom('code'),
+          step: custom('code'),
+        })
+        .as('fragment')
+        .showIf(isKind('fn')),
+      wave: waveNodes().showIf(isKind('wave')),
+      ...Object.fromEntries(
+        MOTIONS.map((kind) => [
+          kind,
+          f
+            .group({
+              ...Object.fromEntries(OPTIONS[kind].map((k) => [k, custom('expr').label(k)])),
+              ...(kind === 'tween' ? { ease: custom('ease') } : {}),
+            })
+            .as('fragment')
+            .showIf(isKind(kind)),
+        ]),
+      ),
+    }),
+  );
+}
+
 export interface PatchPanelProps {
   voice: Voice;
   /** The composition's kit, whose rests the fields show. */
@@ -89,6 +150,7 @@ export interface PatchPanelProps {
 export function PatchPanel({ voice: v, kit, errors, playhead, onChange }: PatchPanelProps) {
   const p = v.patch;
   const [mode, setMode] = useState<'dope' | 'graph'>('dope');
+  const schema = useMemo(schemaOf, []);
   const set = (patch: PatchSource) => onChange({ ...v, patch });
   const mine = errors.filter((e) => e.voice === v.id);
   const err = (field: string) => mine.find((e) => e.field === field);
@@ -101,52 +163,123 @@ export function PatchPanel({ voice: v, kit, errors, playhead, onChange }: PatchP
   const period = periodOf(p) ?? 0;
   const phase = period > 0 ? Math.max(0, (playhead - v.start) * v.rate) % period : 0;
 
+  const config = {
+    kind: p.kind,
+    period: isMotion(p) ? 1000 : p.period,
+    channel: isMotion(p) ? p.channel : 'offset',
+    fn: {
+      writes: Object.fromEntries(
+        CHANNELS.map((ch) => [ch, p.kind === 'fn' && p.writes.includes(ch)]),
+      ),
+    },
+    ...(p.kind === 'wave' ? { wave: waveConfig(p) } : {}),
+  };
+
+  const setConfig = (path: string, value: unknown) => {
+    const [head, ...rest] = path.split('.');
+    if (path === 'kind') return set(blank(value as Kind));
+    if (path === 'period' && !isMotion(p)) {
+      if (Number.isFinite(value) && (value as number) >= 0) set({ ...p, period: value as number });
+      return;
+    }
+    if (path === 'channel' && isMotion(p)) return set({ ...p, channel: value as ChannelName });
+    if (head === 'fn' && p.kind === 'fn') {
+      const ch = rest[1] as ChannelName;
+      return set({
+        ...p,
+        writes: value
+          ? CHANNELS.filter((x) => x === ch || p.writes.includes(x))
+          : p.writes.filter((x) => x !== ch),
+      });
+    }
+    if (head === 'wave' && p.kind === 'wave') set(writtenWave(p, rest.join('.'), value));
+  };
+
+  const code =
+    (field: 'at' | 'state' | 'step', label: string, rows?: number): ControlRenderer =>
+    () => {
+      if (p.kind !== 'fn') return null;
+      const optional = field !== 'at';
+      return (
+        <div className={m.wide}>
+          <CodePane
+            label={label}
+            rows={rows}
+            value={p[field] ?? ''}
+            error={err(field)?.error ?? null}
+            errorLine={err(field)?.line ?? null}
+            onCommit={(x) => set({ ...p, [field]: optional && !x.trim() ? undefined : x })}
+          />
+        </div>
+      );
+    };
+
+  const renderers: Record<string, ControlRenderer> = {};
+  if (p.kind === 'keys') {
+    renderers['keys.timeline'] = () => (
+      <div className={m.timeline}>
+        <Timeline
+          tracks={tracksOf(p.stops, p.period)}
+          duration={p.period}
+          playhead={phase}
+          mode={mode}
+          onModeChange={setMode}
+          transport={false}
+          onScrub={() => {}}
+          renderKeyEditor={KeyEditor}
+          onChange={(tracks) =>
+            set({ ...p, stops: stopsOf(tracks as SampledTrack<unknown>[], p.period, p.stops) })
+          }
+        />
+      </div>
+    );
+    renderers['keys.ease'] = () => (
+      <EaseField
+        label="ease"
+        description="Every segment no stop overrides."
+        value={p.ease}
+        onChange={(ease) => set(withKey(p, 'ease', ease))}
+      />
+    );
+    renderers['keys.timing'] = () => (
+      <div className={m.wide}>
+        <ChannelTiming patch={p} onChange={set} />
+      </div>
+    );
+  }
+  if (p.kind === 'fn') {
+    renderers['fn.at'] = code('at', 'at (phase, s, setting) => delta');
+    renderers['fn.state'] = code('state', 'state (s) => initial', 2);
+    renderers['fn.step'] = code('step', 'step (state, dt, s, setting) => void', 3);
+  }
+  if (p.kind === 'wave') Object.assign(renderers, depthRenderers(p, kit, set));
+  if (isMotion(p)) {
+    for (const k of OPTIONS[p.kind])
+      renderers[`${p.kind}.${k}`] = (row) => (
+        <Row row={row} wide>
+          <ExprRow
+            row={row}
+            placeholder={
+              k === 'to' || k === 'from' || k === 'velocity'
+                ? `${JSON.stringify(kit[p.channel].rest ?? 0)} or (s) => …`
+                : 'default'
+            }
+            value={textOf(p.opts[k])}
+            error={err(`opts.${k}`)?.error ?? null}
+            onCommit={(text) => set({ ...p, opts: withKey(p.opts, k, parsed(text)) })}
+          />
+        </Row>
+      );
+    if (p.kind === 'tween')
+      renderers['tween.ease'] = () => (
+        <EaseField label="ease" value={p.ease} onChange={(ease) => set(withKey(p, 'ease', ease))} />
+      );
+  }
+
   return (
     <section className={s.panel} aria-label="patch">
-      <div className={s.row}>
-        <label className={s.row}>
-          patch
-          <select value={p.kind} onChange={(e) => set(blank(e.target.value as Kind))}>
-            {KINDS.map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
-        </label>
-        {!isMotion(p) && (
-          <label className={s.row}>
-            period
-            <input
-              type="number"
-              min={0}
-              step="any"
-              value={p.period}
-              onChange={(e) => {
-                const n = e.target.valueAsNumber;
-                if (Number.isFinite(n) && n >= 0) set({ ...p, period: n });
-              }}
-            />
-          </label>
-        )}
-        {isMotion(p) && (
-          <label className={s.row}>
-            channel
-            <select
-              value={p.channel}
-              onChange={(e) => set({ ...p, channel: e.target.value as ChannelName })}
-            >
-              {CHANNELS.map((ch) => (
-                <option key={ch} value={ch}>
-                  {ch}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-      </div>
       {whole.length > 0 && (
-        <ul className={s.errors} role="alert" aria-label="patch errors">
+        <ul className={m.errors} role="alert" aria-label="patch errors">
           {whole.map((e) => (
             <li key={e.field}>
               {e.field}: {e.error}
@@ -154,109 +287,14 @@ export function PatchPanel({ voice: v, kit, errors, playhead, onChange }: PatchP
           ))}
         </ul>
       )}
-      {p.kind === 'keys' && (
-        <>
-          <div className={s.timeline}>
-            <Timeline
-              tracks={tracksOf(p.stops, p.period)}
-              duration={p.period}
-              playhead={phase}
-              mode={mode}
-              onModeChange={setMode}
-              transport={false}
-              onScrub={() => {}}
-              renderKeyEditor={KeyEditor}
-              onChange={(tracks) =>
-                set({
-                  ...p,
-                  stops: stopsOf(tracks as SampledTrack<unknown>[], p.period, p.stops),
-                })
-              }
-            />
-          </div>
-          <EaseField
-            label="ease, every segment no stop overrides"
-            value={p.ease}
-            onChange={(ease) => set(withKey(p, 'ease', ease))}
-          />
-          <ChannelTiming patch={p} onChange={set} />
-        </>
-      )}
-      {p.kind === 'fn' && (
-        <>
-          <fieldset className={s.row}>
-            <legend>writes</legend>
-            {CHANNELS.map((ch) => (
-              <label key={ch} className={s.row}>
-                <input
-                  type="checkbox"
-                  checked={p.writes.includes(ch)}
-                  onChange={(e) =>
-                    set({
-                      ...p,
-                      writes: e.target.checked
-                        ? CHANNELS.filter((x) => x === ch || p.writes.includes(x))
-                        : p.writes.filter((x) => x !== ch),
-                    })
-                  }
-                />
-                {ch}
-              </label>
-            ))}
-          </fieldset>
-          <CodePane
-            label="at (phase, s, setting) => delta"
-            value={p.at}
-            error={err('at')?.error ?? null}
-            errorLine={err('at')?.line ?? null}
-            onCommit={(at) => set({ ...p, at })}
-          />
-          <CodePane
-            label="state (s) => initial"
-            rows={2}
-            value={p.state ?? ''}
-            error={err('state')?.error ?? null}
-            errorLine={err('state')?.line ?? null}
-            onCommit={(x) => set({ ...p, state: x.trim() ? x : undefined })}
-          />
-          <CodePane
-            label="step (state, dt, s, setting) => void"
-            rows={3}
-            value={p.step ?? ''}
-            error={err('step')?.error ?? null}
-            errorLine={err('step')?.line ?? null}
-            onCommit={(x) => set({ ...p, step: x.trim() ? x : undefined })}
-          />
-        </>
-      )}
-      {p.kind === 'wave' && <WaveFields patch={p} kit={kit} onChange={set} />}
-      {isMotion(p) && (
-        <>
-          {OPTIONS[p.kind].map((k) => (
-            <ExprInput
-              key={k}
-              label={k}
-              placeholder={
-                k === 'to' || k === 'from' || k === 'velocity'
-                  ? `${JSON.stringify(kit[p.channel].rest ?? 0)} or (s) => …`
-                  : 'default'
-              }
-              value={textOf(p.opts[k])}
-              error={err(`opts.${k}`)?.error ?? null}
-              onCommit={(text) => {
-                set({ ...p, opts: withKey(p.opts, k, parsed(text)) });
-              }}
-            />
-          ))}
-          {p.kind === 'tween' && (
-            <EaseField
-              label="ease"
-              value={p.ease}
-              onChange={(ease) => set(withKey(p, 'ease', ease))}
-            />
-          )}
-        </>
-      )}
+      <ControlPanel
+        title="patch"
+        schema={schema}
+        config={config}
+        setConfig={setConfig}
+        renderers={renderers}
+        pack="auto"
+      />
     </section>
   );
 }

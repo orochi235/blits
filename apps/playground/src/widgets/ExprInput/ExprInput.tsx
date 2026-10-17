@@ -7,9 +7,18 @@ export interface ExprInputProps {
   error?: string | null;
   placeholder?: string;
   label: string;
+  /** Draw no label: the row around the input already names it, and `label` becomes its accessible name. */
+  hideLabel?: boolean;
 }
 
-export function ExprInput({ value, onCommit, error, placeholder, label }: ExprInputProps) {
+export function ExprInput({
+  value,
+  onCommit,
+  error,
+  placeholder,
+  label,
+  hideLabel = false,
+}: ExprInputProps) {
   const [draft, setDraft] = useState(value);
   const id = useId();
   const errorId = `${id}-error`;
@@ -23,14 +32,17 @@ export function ExprInput({ value, onCommit, error, placeholder, label }: ExprIn
   };
   return (
     <div className={s.field}>
-      <label className={s.label} htmlFor={id}>
-        {label}
-      </label>
+      {!hideLabel && (
+        <label className={s.label} htmlFor={id}>
+          {label}
+        </label>
+      )}
       <input
         id={id}
         className={error ? s.bad : s.input}
         value={draft}
         placeholder={placeholder}
+        aria-label={hideLabel ? label : undefined}
         spellCheck={false}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
