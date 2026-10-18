@@ -1052,21 +1052,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - **The stale-start fix (`214909d`) has no clean timing** (2026-10-11): three rounds on a
         busy orochi moved the `kept` and `seek` rows up to 24% both ways. Rerun those rows with
         `AB_EACH=1 bench/ab.sh` on an idle node.
-      - **A mix seek hangs on one scene** (found 2026-10-11, not fixed):
-        `SAME_SEEK=1 SAME_RATE=1 SAME_OWNS=1 node bench/same.mjs <dist> <dist> 1 72600` never
-        returns, with lanes on or off; its last calls are a `mute` and a seek 300 ms back in a
-        scene that ramps the mix's rate to 0. Lanes on and off otherwise read the same through
-        seeks (about 18,500 scenes, and 2,000 in `test/differential.test.ts`), and
-        `SAME_SHRINK=1` reduces a scene that differs.
-      - **A subject faded out of a voice that never met it, then dropped, stays out after a seek
-        or read back to before the fade** (found 2026-10-11, measured on both paths, not fixed).
-        The leaving record would have to carry when the subject parted, which changes the paged
-        `left` format. Reasoned, not run: by the same loss a seek back into a ramp after a drop
-        finds the ramp when it should not.
-      - **`weightOf` for a subject only ever read through `project` differs by path** (found
-        2026-10-11, not fixed, no seeks involved):
-        `SAME_LANES=off node bench/same.mjs <dist> <dist> 1 1054` gives 0.9355 on the general
-        path and 0 on lanes.
     - **Few consumers use step 7 yet.** klieg's `level` is built on `input` with a `touch()` in
       its `set` (klieg `c32d440`, unreleased); whether its level-weighted voices then run on
       lanes is not checked. The other workarounds the doc's "Universal applicability" table

@@ -64,6 +64,16 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A seek ahead, or a read ahead, to the mix time rate 0 is holding stays at the host's own time.
+  It took the earliest host time the mix read that time at, behind calls already on the tape, so
+  a later seek back cued a voice still playing a second time and the next probe never returned.
+- `weightOf` on lanes reports the weight a voice over every subject gave a subject before a
+  subject fade made it keep a record per subject, until the next read. It said 0, where the
+  general path said the weight.
+- A seek or read back to before a `drop` finds a subject's fade out of a voice as it stood: mid
+  ramp, or faded out. It found the subject at full weight, and one faded out of a voice that had
+  not met it stayed out even before the fade. A subject a motion's retarget brought back after a
+  fade out is found faded out between the two.
 - `rise` on a voice faded before its start leaves it `pending`, to start on time and follow its
   anchor again, as a seek back finds it. It went `live` at once and played from where its clock
   would have read 0, ahead of its start, so a seek back played on differently from playing
