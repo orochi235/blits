@@ -1,7 +1,7 @@
 import { changed, unlink } from './chain.js';
 import { envelope } from './clock.js';
 import { schedule } from './due.js';
-import { unshare } from './everyone.js';
+import { unshare, unsight } from './everyone.js';
 import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
@@ -95,7 +95,11 @@ export function leftWith<I, O>(
 /** Drops a voice's record of a subject and relinks the subject's chain without it. */
 function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
   const head = mix.chains.get(subject);
-  if (head !== undefined && head.slot >= 0) unreach(voice, head.slot, false);
+  if (head !== undefined && head.slot >= 0) {
+    unreach(voice, head.slot, false);
+    // What the voice kept for the subject while it shared one record, which `weightOf` reads.
+    unsight(voice, head.slot);
+  }
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined) {
     leave(mix, voice, subject, held);

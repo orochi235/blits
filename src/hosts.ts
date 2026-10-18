@@ -222,8 +222,11 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
         const w = mix.lanes.weightOf(voice.id, slot);
         if (w !== undefined) return w;
       }
-      if (voice.sharing) return weightAt(voice, slot);
-      return (voice.subjects.get(subject) as Subject<unknown> | undefined)?.weight ?? 0;
+      const held = voice.sharing
+        ? undefined
+        : (voice.subjects.get(subject) as Subject<unknown> | undefined);
+      // A voice that stopped sharing makes a subject's record at its next read, from what it kept.
+      return held !== undefined ? held.weight : weightAt(voice, slot);
     },
     record: (h, label, again) =>
       record(mix, label, (stage) => {

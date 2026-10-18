@@ -188,3 +188,30 @@ describe('a voice over every subject', () => {
     expect(m.probe(a).x).toBe(2);
   });
 });
+
+it('reports the weight a voice that stopped sharing gave a subject before its next read', () => {
+  const weights = (lanes: boolean) => {
+    const m = mix<Part, Pose>(K, { lanes });
+    const a = { id: 0 };
+    const b = { id: 1 };
+    m.sync(0);
+    const h = m.cue({ patch: patch(400, () => ({ x: 1 }), { writes: ['x'] }), fade: { in: 200 } });
+    // A stateful voice on the same channel keeps the channel, and so the voice, off lanes.
+    m.cue({
+      patch: patch<Part, Pose, { n: number }>(0, () => ({ x: 0 }), {
+        writes: ['x'],
+        state: () => ({ n: 0 }),
+        step: (s) => {
+          s.n++;
+        },
+      }),
+    });
+    m.sync(100);
+    m.probe(a);
+    m.sync(120);
+    h.fade({ subject: b, over: 0 });
+    return h.weightOf(a);
+  };
+  expect(weights(true)).toBe(weights(false));
+  expect(weights(true)).toBeGreaterThan(0);
+});
