@@ -14,7 +14,7 @@ import { Restored } from './restored.js';
 import { recount } from './roster.js';
 import { refitAll } from './spans.js';
 import { Store } from './store.js';
-import { hostAt, replay } from './tape.js';
+import { hostAhead, hostAt, replay } from './tape.js';
 import type { Frame, Transport } from './transport.js';
 import { cover, coverFrame, cut } from './unpage.js';
 import type { Controls, Subject, Voice } from './voice.js';
@@ -192,7 +192,8 @@ export function seek(transport: Transport, to: number | { readonly frame: number
       transport,
       (at) => (transport.pace === null ? at : transport.pace.reading(at)) <= t,
     );
-    const u = Number.isNaN(last) ? hostAt(transport, t) : Math.max(last, hostAt(transport, t));
+    const at = hostAhead(transport, t);
+    const u = Number.isNaN(last) ? at : Math.max(last, at);
     if (!Number.isFinite(u)) throw new RangeError(`blits: the mix's rate never reaches ${t}`);
     transport.u = u;
     // A call played at `t` itself moved the mixes there before it, as a sync does.

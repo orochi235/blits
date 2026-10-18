@@ -83,6 +83,19 @@ export function hostAt(clock: { readonly pace: Pace | null }, t: number): number
 }
 
 /**
+ * The host time a move ahead to mix time `t` lands at: never behind the clock's own, since rate 0
+ * reads `t` at every host time from the earliest `hostAt` gives, and a call stamped earlier than
+ * one already on the tape would cut it out of order.
+ */
+export function hostAhead(
+  clock: { readonly pace: Pace | null; readonly u: number },
+  t: number,
+): number {
+  const at = hostAt(clock, t);
+  return clock.u > at ? clock.u : at;
+}
+
+/**
  * Makes the recorded calls `due` by the host time each was made at again, each host time's in a
  * frame of its own with every mix on the transport moved to where it stood then, as the host made
  * them. Answers the host time of the last frame it played, NaN for none. Given `onto` and the

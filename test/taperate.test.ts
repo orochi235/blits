@@ -3,6 +3,7 @@ import { expect, it } from 'vitest';
 import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
+import type { TapeMaker } from '../src/types.js';
 
 interface Pose {
   x: number;
@@ -32,3 +33,31 @@ for (const rate of [1, 2, 0.5])
       expect(m.probe(a).x, `host ${t}`).toBe(shown.get(Math.round(t)));
     }
   });
+
+it('stamps calls in host order after a seek to the mix time rate 0 holds', () => {
+  const stamps: number[] = [];
+  const spy: TapeMaker = (adapter, opts) => {
+    const made = tape(adapter, opts);
+    return {
+      ...made,
+      recordEntry(ops, label) {
+        stamps.push(opts.now());
+        made.recordEntry(ops, label);
+      },
+    };
+  };
+  const m = mix<{ id: string }, Pose>(K, { history: { ms: 2000, every: 50, tape: spy } });
+  const held = patch<{ id: string }, Pose>(0, () => ({ x: 7 }), { writes: ['x'] });
+  for (let t = 0; t <= 300; t += 20) {
+    m.sync(t);
+    if (t === 100) m.rate = 0;
+    if (t === 200) m.cue({ patch: held });
+    // The mix reads 100 at every host time from 100 on: the seek stays where the host is.
+    if (t === 220) m.seek(m.now);
+    if (t === 240) m.cue({ patch: held });
+  }
+  expect(stamps).toEqual([...stamps].sort((p, q) => p - q));
+  m.seek(60);
+  m.seek(100);
+  expect(m.probe(a).x).toBe(14);
+});

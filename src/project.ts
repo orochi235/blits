@@ -13,7 +13,7 @@ import { reading } from './reading.js';
 import { record } from './record.js';
 import { recount } from './roster.js';
 import { copyStanding, stands } from './standing.js';
-import { hostAt, replay } from './tape.js';
+import { hostAhead, hostAt, replay } from './tape.js';
 import { type Cut, type Frame, Transport, within } from './transport.js';
 import type { Doubt, Mix, Projection, Tape, TransportProjection } from './types.js';
 import { cover, coverFrame } from './unpage.js';
@@ -46,7 +46,7 @@ export function projectAll(
   const pace = transport.pace;
   // Behind, the last frame at or before `t`, read as it showed when `t` is that frame's own time.
   let cut: Cut = { seq: transport.seq, strict: false };
-  let u = hostAt(transport, t);
+  let u = ahead ? hostAhead(transport, t) : hostAt(transport, t);
   if (!ahead && kept) {
     if (numbered === undefined) cover(transport, t);
     const frame = numbered ?? transport.frames.at(t);
@@ -248,7 +248,7 @@ function playTo(
   const tape = transport.tape;
   const due = (at: number) => (c.pace === null ? at : c.pace.reading(at)) <= to;
   const next = tape?.timestampAt(tape.undoDepth());
-  c.u = hostAt(c, to);
+  c.u = hostAhead(c, to);
   let played = false;
   if (next !== undefined && due(next)) {
     // A call may write what a copy shares with the voice it was copied from.
@@ -262,7 +262,7 @@ function playTo(
       transport: () => c,
       mix: (of) => copies.get(of as unknown as Mixer<unknown, unknown>) as typeof of | undefined,
     });
-    c.u = Math.max(last, hostAt(c, to));
+    c.u = Math.max(last, hostAhead(c, to));
   }
   // A call played at `to` itself moved the copies there before it, as a sync does.
   if (!(c.now >= to)) for (const copy of c.members) move(copy, to);
