@@ -42,6 +42,12 @@ export interface Left<I> {
   seq: number;
   sync: boolean;
   held: Subject<unknown>;
+  /**
+   * The voice's fade of the subject as it stood on leaving, which a seek or read back to before
+   * puts back: its ramp out, while running, or its having faded out.
+   */
+  ramp: Parting | null;
+  parted: Parted | null;
 }
 
 /** A subject's ramp out of one voice: when it began, how long it runs, and the frame it was asked in. */

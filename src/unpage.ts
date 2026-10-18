@@ -8,7 +8,7 @@ import { type PackedVoice, reviveVoice } from './revive.js';
 import { scoredLeft } from './scored.js';
 import type { Announced, Frame, Transport } from './transport.js';
 import type { Paged } from './types.js';
-import type { Controls, Subject, Voice } from './voice.js';
+import type { Controls, Parted, Parting, Subject, Voice } from './voice.js';
 
 type Member = Mixer<unknown, unknown>;
 
@@ -152,8 +152,22 @@ function unpageVoice(voice: Voice<unknown, unknown>, records: readonly Paged[], 
     for (const r of paged) {
       const subject = keys.subject(r.subject);
       if (left.some((e) => e.seq === r.seq && Object.is(e.subject, subject))) continue;
-      const [p, sync] = r.data as [PackedRecord, boolean];
-      left.push({ subject, at: r.at, seq: r.seq, sync, held: unpackHeld(voice, p) });
+      // A store written before a leaving kept its fades holds two.
+      const [p, sync, ramp = null, parted = null] = r.data as [
+        PackedRecord,
+        boolean,
+        (Parting | null)?,
+        (Parted | null)?,
+      ];
+      left.push({
+        subject,
+        at: r.at,
+        seq: r.seq,
+        sync,
+        held: unpackHeld(voice, p),
+        ramp,
+        parted,
+      });
     }
     left.sort((a, b) => a.seq - b.seq);
     voice.left = Leavings.from(left);

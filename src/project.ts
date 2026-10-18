@@ -2,6 +2,7 @@ import { ownBlends } from './blend.js';
 import { heldAt } from './chain.js';
 import { stepOf } from './clock.js';
 import { open, sighted, weightAt } from './everyone.js';
+import { fadesAt } from './fade.js';
 import { meet, origin } from './held.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { markOf, voiceMarks } from './marks.js';
@@ -330,13 +331,16 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
         lastWithin(log, cut) ?? (log[0] as Controls),
       );
       if (then !== undefined) copy.setting.host = then;
+      // Its own, which a fade the copy plays out writes to.
+      if (v.parts !== null) copy.parts = new Map(v.parts);
+      if (v.parted !== null) copy.parted = new Map(v.parted);
+      if (v.left !== null) fadesAt(copy, v.left.after(cut), cut.seq);
       if (copy.parted !== null)
         for (const [subject, p] of copy.parted) {
           // A ramp that has ended since was still running at `t`.
           if (p.ramp === undefined || !(t < p.at)) continue;
-          const parts = copy.parts === v.parts ? new Map(v.parts) : copy.parts;
-          parts?.set(subject, p.ramp);
-          copy.parts = parts;
+          copy.parts ??= new Map();
+          copy.parts.set(subject, p.ramp);
         }
       return copy;
     });

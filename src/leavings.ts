@@ -48,12 +48,29 @@ export class Leavings<I> {
     }
   }
 
-  /** The record `subject` had at `cut` and left with after it, if it left after `cut`. */
+  /**
+   * The record `subject` had at `cut` and left with after it, if it left after `cut`. None where it
+   * left saying only that it had faded out, after `cut`, of a voice that had not met it.
+   */
   at(subject: I, cut: Cut): Subject<unknown> | undefined {
     const own = this.by.get(subject);
     if (own === undefined) return undefined;
-    for (const e of own) if (!within(cut, e.seq, e.sync)) return e.held;
+    for (const e of own)
+      if (!within(cut, e.seq, e.sync))
+        return !e.held.reaches && e.parted !== null && e.parted.seq > cut.seq ? undefined : e.held;
     return undefined;
+  }
+
+  /** Each subject's first leaving after `cut`, which holds what it had at `cut`. */
+  after(cut: Cut): Left<I>[] {
+    const out: Left<I>[] = [];
+    const seen = new Set<I>();
+    for (const e of this.all())
+      if (!within(cut, e.seq, e.sync) && !seen.has(e.subject)) {
+        seen.add(e.subject);
+        out.push(e);
+      }
+    return out;
   }
 
   /** Each time `subject` left, oldest first. */

@@ -116,6 +116,21 @@ function replays(run: ReturnType<typeof play>, frames: number[], t: number) {
 
 describe('history with a store', () => {
   for (const lanes of [true, false])
+    it(`pages a subject's fade out with the drop that forgot it${lanes ? '' : ', without lanes'}`, async () => {
+      const flat = patch<Part, Pose>(1000, () => ({ x: 8 }), { writes: ['x'] });
+      const scene: Scene = (m, t, h) => {
+        if (t === 0) h.flat = m.cue({ patch: flat, loop: true });
+        if (t === 96) h.flat?.fade({ subject: a, over: 160 });
+        if (t === 176) m.drop(a);
+      };
+      const frames = every(0, 600, 16);
+      const store = memoryStore();
+      const run = play(scene, frames, paged(store, { lanes }));
+      await run.m.prepare(144);
+      replays(run, frames, 144);
+    });
+
+  for (const lanes of [true, false])
     it(`seeks back past memory exactly once prepared${lanes ? '' : ', without lanes'}`, async () => {
       const frames = every(0, 1200, 16);
       for (const t of [208, 400, 496, 592, 656]) {

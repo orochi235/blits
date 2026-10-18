@@ -1,5 +1,6 @@
 import { heldAt } from './chain.js';
 import { schedule } from './due.js';
+import { fadesAt } from './fade.js';
 import { origin } from './held.js';
 import { apart, copyHeld, last, lastWithin } from './history.js';
 import { laneHost } from './hosts.js';
@@ -122,6 +123,7 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   voice.unreachedBits = null;
   voice.seeks++;
   const left = voice.left?.all() ?? [];
+  if (voice.left !== null) fadesAt(voice, voice.left.after(cut), seq);
   voice.left = Leavings.from(left.filter((e) => e.seq <= seq));
   const future = Leavings.from(left.filter((e) => e.seq > seq));
   let records = voice.subjects;

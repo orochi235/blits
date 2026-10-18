@@ -11,7 +11,7 @@ import { startOf } from './place.js';
 import { scoreTouched } from './scored.js';
 import { lingers, refit } from './spans.js';
 import { unreach } from './unreached.js';
-import type { Subject, Voice } from './voice.js';
+import type { Left, Parted, Parting, Subject, Voice } from './voice.js';
 
 /** Starts one subject's ramp out of a voice, or takes it out at once for a ramp of 0. */
 export function fadeSubject<I, O>(
@@ -68,28 +68,46 @@ export function part<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I, at:
 export function unpart<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
   if (voice.parted?.has(subject) !== true) return;
   // `forgetIn` keeps the subject's own record for a read back; without one, keep the voice's.
-  if (voice.subjects.get(subject) === undefined)
-    leave(mix, voice, subject, leftWith(mix, voice, subject));
+  if (voice.subjects.get(subject) === undefined) leaveVoice(mix, voice, subject);
+  // Left with its parting still on, which a seek back to before this puts back.
+  forgetIn(mix, voice, subject);
   voice.parted.delete(subject);
   if (voice.parted.size === 0) voice.parted = null;
-  forgetIn(mix, voice, subject);
   const slot = mix.chains.get(subject)?.slot ?? -1;
   if (slot >= 0) mix.lanes?.rejoin(slot);
 }
 
 /**
- * The record a read back finds a subject left a voice with: its own, or the voice's record for
- * subjects it does not reach while faded out of it, since a probe on either path may have left a
- * record of that or none.
+ * Keeps, under history, the record a subject leaves a voice with as it is let go of: for one faded
+ * out before the voice met it, a record saying it is not reached.
  */
-export function leftWith<I, O>(
-  mix: Mixer<I, O>,
-  voice: Voice<I, O>,
-  subject: I,
-): Subject<unknown> | undefined {
+export function leaveVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
-  if (held !== undefined || voice.parted?.has(subject) !== true) return held;
-  return voice.unreached ?? mix.unreachedOf(voice, mix.now);
+  if (held !== undefined || voice.parted?.has(subject) !== true) leave(mix, voice, subject, held);
+  else leave(mix, voice, subject, voice.unreached ?? mix.unreachedOf(voice, mix.now));
+}
+
+/**
+ * Puts back into a voice's fades, or a copy's, those of the subjects that left it after frame `seq`
+ * as they stood then: `leave` keeps them, since a drop or a subject brought back forgets them.
+ */
+export function fadesAt<I>(
+  fades: { parts: Map<I, Parting> | null; parted: Map<I, Parted> | null },
+  left: readonly Left<I>[],
+  seq: number,
+): void {
+  for (const e of left) {
+    const parted = e.parted;
+    if (parted !== null && parted.seq <= seq) {
+      fades.parted ??= new Map();
+      fades.parted.set(e.subject, parted);
+      continue;
+    }
+    const ramp = e.ramp ?? parted?.ramp;
+    if (ramp === undefined || ramp === null || ramp.seq > seq) continue;
+    fades.parts ??= new Map();
+    fades.parts.set(e.subject, ramp);
+  }
 }
 
 /** Drops a voice's record of a subject and relinks the subject's chain without it. */

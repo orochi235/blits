@@ -11,6 +11,8 @@ const left = (subject: unknown, at: number, seq: number, sync = false): Left<unk
   seq,
   sync,
   held: record(null, true, undefined),
+  ramp: null,
+  parted: null,
 });
 
 describe('the records subjects left a voice with', () => {

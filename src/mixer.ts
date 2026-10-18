@@ -6,7 +6,7 @@ import type { Column } from './columns.js';
 import { cue } from './cue.js';
 import { DepartedIndex } from './departed.js';
 import type { Due } from './due.js';
-import { beginFade, leftWith, parting } from './fade.js';
+import { beginFade, leaveVoice, parting } from './fade.js';
 import {
   apply,
   baseFor,
@@ -33,7 +33,7 @@ import {
 import { GoneIndex, goneIndex } from './gone.js';
 import type { HandleHost } from './handle.js';
 import { held, shownOf, sinceOf, unreachedOf } from './held.js';
-import { leave, releasing } from './history.js';
+import { releasing } from './history.js';
 import { book, laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
 import { foldLocus, type LocusScratch } from './locus.js';
@@ -610,7 +610,7 @@ export class Mixer<I, O> implements Mix<I, O> {
       else if (motion.holds(subject)) unplayable('a drop of a subject a motion patch holds');
     };
     const forget = (voice: Voice<I, O>) => {
-      leave(this, voice, subject, leftWith(this, voice, subject));
+      leaveVoice(this, voice, subject);
       voice.subjects.delete(subject);
       if (voice.motion !== undefined) release(voice.motion);
       voice.parts?.delete(subject);

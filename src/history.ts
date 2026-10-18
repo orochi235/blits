@@ -242,7 +242,7 @@ export function leave<I, O>(
             voice.id,
             keys.key(e.subject),
             [e],
-            (x) => [packHeld(voice, x.held), x.sync],
+            (x) => [packHeld(voice, x.held), x.sync, x.ramp, x.parted],
             reach,
           ),
   );
@@ -252,6 +252,8 @@ export function leave<I, O>(
     seq: mix.transport.seq,
     sync: mix.syncing || !mix.looked,
     held,
+    ramp: voice.parts?.get(subject) ?? null,
+    parted: voice.parted?.get(subject) ?? null,
   });
 }
 

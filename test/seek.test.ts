@@ -637,6 +637,58 @@ describe('read back to a frame a drop came in before anything read it', () => {
   });
 });
 
+describe('read back past a drop to a subject faded out of a voice that never met it', () => {
+  const flat = patch<Part, Pose>(1000, () => ({ x: 7 }), { writes: ['x'] });
+  /** Fades `a` out of a voice at 100 with nothing having read it, then drops it at 200. */
+  const faded = (opts: MixOptions) => {
+    const m = mix<Part, Pose>(K, { history: { ms: 5000, every: 50, tape }, ...opts });
+    m.sync(0);
+    const h = m.cue({ patch: flat });
+    for (let t = 20; t <= 400; t += 20) {
+      m.sync(t);
+      if (t === 100) h.fade({ subject: a, over: 0 });
+      if (t === 200) m.drop(a);
+    }
+    return m;
+  };
+  for (const lanes of [true, false]) {
+    it(`finds it reached before the fade and gone after${lanes ? '' : ', lanes off'}`, () => {
+      const m = faded({ lanes });
+      expect(m.project(60).probe(a).x).toBe(7);
+      expect(m.project(150).probe(a).x).toBe(0);
+      m.seek(60);
+      expect(m.probe(a).x).toBe(7);
+    });
+    it(`finds it gone after a seek to between the fade and the drop${lanes ? '' : ', lanes off'}`, () => {
+      const m = faded({ lanes });
+      m.seek(150);
+      expect(m.probe(a).x).toBe(0);
+    });
+  }
+});
+
+describe('read back past a drop into a subject fading out of a voice', () => {
+  const flat = patch<Part, Pose>(1000, () => ({ x: 8 }), { writes: ['x'] });
+  for (const lanes of [true, false])
+    for (const dropAt of [200, 400])
+      it(`shows the ramp as played, dropped ${dropAt < 300 ? 'during' : 'after'} it${lanes ? '' : ', lanes off'}`, () => {
+        const m = mix<Part, Pose>(K, { lanes, history: { ms: 5000, every: 50, tape } });
+        const seen = new Map<number, number>();
+        m.sync(0);
+        const h = m.cue({ patch: flat });
+        for (let t = 20; t <= 500; t += 20) {
+          m.sync(t);
+          if (t === 100) h.fade({ subject: a, over: 200 });
+          if (t === dropAt) m.drop(a);
+          seen.set(t, m.probe(a).x);
+        }
+        for (const t of [60, 140, 180, 260, 340].filter((t) => t < dropAt))
+          expect(m.project(t).probe(a).x, `project(${t})`).toBeCloseTo(seen.get(t) as number, 9);
+        m.seek(180);
+        expect(m.probe(a).x).toBeCloseTo(seen.get(180) as number, 9);
+      });
+});
+
 const kept100k = (): MixOptions => ({ history: { ms: 100_000, every: 50, tape }, stepMs: 4 });
 
 /** The mix time at each host frame of `scene`. */

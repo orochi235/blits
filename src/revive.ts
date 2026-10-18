@@ -8,7 +8,7 @@ import type { Past } from './origin.js';
 import { type PackedRecord, packHeld, unpackHeld } from './pack.js';
 import { type Key, type Keys, pageOut } from './paging.js';
 import type { Described, VoiceSpec } from './types.js';
-import { type Controls, type Parting, type Ramp, type Rise, Voice } from './voice.js';
+import { type Controls, type Parted, type Parting, type Ramp, type Rise, Voice } from './voice.js';
 
 /** A voice that has left, as plain data: the descriptor it was cued with, its controls and its records. */
 interface PackedVoice {
@@ -44,7 +44,8 @@ interface PackedVoice {
   playedSeq: number;
   records: [Key, PackedRecord][];
   runs: [Key, Run][];
-  left: [Key, number, number, PackedRecord, boolean][];
+  /** The fades are absent from a store written before a leaving kept them. */
+  left: [Key, number, number, PackedRecord, boolean, (Parting | null)?, (Parted | null)?][];
   parts: [Key, number, number, number][];
   /** With the ramp that took the subject out; absent from a store written before a voice kept it. */
   parted: [Key, number, number, Parting?][];
@@ -162,6 +163,8 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
       e.seq,
       packHeld(voice, e.held),
       e.sync,
+      e.ramp,
+      e.parted,
     ]),
     parts: [...(voice.parts ?? [])].map(([s, r]) => [keys.key(s), r.at, r.over, r.seq]),
     parted: [...(voice.parted ?? [])].map(([s, p]) =>
@@ -214,12 +217,14 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
   }
   for (const [key, run] of d.runs) voice.motion?.unpack(subjectOf(key), run);
   voice.left = Leavings.from(
-    d.left.map(([key, at, seq, p, sync]) => ({
+    d.left.map(([key, at, seq, p, sync, ramp = null, parted = null]) => ({
       subject: subjectOf(key),
       at,
       seq,
       sync,
       held: unpackHeld(voice, p),
+      ramp,
+      parted,
     })),
   );
   if (d.parts.length > 0)
