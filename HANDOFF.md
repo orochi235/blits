@@ -959,8 +959,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - `catchUp: 'fresh'` per voice; exact catch-up is the default, and a voice keeps at most
         256 past clocks.
       - `seek({ frame })`, for an earlier frame at the same mix time.
-      - magicsmoke's faults could share one mix now that a voice has its own `stepMs`;
-        magicsmoke still makes one per fault.
       - A read back with no history beyond the narrow case in `src/standing.ts`: a voice an
         anchor places, an owner and what it holds, and a voice whose handle was written to are
         refused because the fuzzer (`standing` in `test/fuzz/program.ts`) found frames that
