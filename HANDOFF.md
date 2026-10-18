@@ -54,19 +54,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   - *A subject the live mix never probed is read at every stop,* as if probed all along.
   - Each stop copies every voice and reads each asked-for subject once, so a read across many
     events of a stateful mix costs that many reads; nobody has benched it.
-- **Open question: should a signal catch up like a patch?** (2026-10-17.) A patch met late steps
-  from its voice's start, but a `slew` starts where a probe first meets its subject, so the slewed
-  fuzz variant fails `again` on all 150 seeds: after the first seek the program plays on with no
-  probe, and the second seek's subject is first met at its probe. Probing between the seeks makes
-  every seed pass, so the variant is left out of `again`, as `fresh` is. A read ahead already
-  treats a subject never probed as probed all along; whether a seek, or a live probe, should meet a
-  late subject's signals at the voice's start too is the owner's call.
-- **Open question: should a pending voice that is fading still follow its anchor?** (2026-10-17.)
-  A voice faded before its start is `fading` until it is risen, and `place()` moves only `pending`
-  voices, so in between its start stays where it was when the fade landed, even if what it is
-  anchored to moves. Straight play, seek and read ahead all agree, so nothing nondeterministic
-  rides on it; `rise` now puts such a voice back to `pending` (`beginRise` in `src/fade.ts`), and
-  it follows its anchor again from there. The owner's call whether it should follow throughout.
+- **Shipping as is, no owner view (2026-10-18):** a `slew` starts where a probe first meets its
+  subject, so the slewed fuzz variant stays out of `again` (a patch met late steps from its voice's
+  start instead); and a pending voice faded before its start keeps its start where it was until it
+  is risen, not following its anchor. Straight play, seek and read ahead agree on the second.
+  Reopen either if a consumer trips on it.
 - **A record's `copied` flag, which lets `assess` say `stepped` after a seek back, reads level**
   (teitou, 2026-10-17, 7 rounds, `AB_EACH=1 bench/ab.sh 0c5527f 97b1aa3` over `fn`, `named`,
   `keys`, `probed`, `tweens^`, `weasel^` and `blend`, geometric mean 0.984).
@@ -248,6 +240,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Decided in conversation, and in no doc
 
+- **The two seek-back changes in `3fd3eac` stand** (Mike, 2026-10-18): `weightOf` reads 0 after
+  a seek back until the subject is probed again, and a write to the handle of a voice waiting for
+  its cue after a seek back is ignored. Both stay under Fixed in the changelog.
 - **Approach**: a mixer of tracks, over a signal graph and over keyframes-only. Chosen 2026-09-15.
 - **Engine seam**: the `Engine` interface with a `runs` set and `create`; one engine ships,
   `mixer`; later ones are sketched only to prove the seam. Mike asked for the seam explicitly.
@@ -1042,11 +1037,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       - **The fleet's copy of blits has a stale `node_modules`** (found 2026-10-11): its
         `@weasel-js/history` has no `timestampAt`, so the bench's `kept` and `seek` rows fail
         there until a job installs afresh.
-      - **Two changes in the lanes-under-seeks fix (`3fd3eac`) await a yes or a reversal**
-        (2026-10-11). `weightOf` reads 0 after a seek back until the subject is probed again,
-        and a write to the handle of a voice waiting for its cue after a seek back is ignored
-        where it used to branch the tape. Both sit under Fixed in the changelog; the second may
-        belong under Breaking.
       - **The stale-start fix (`214909d`) has no clean timing** (2026-10-11): three rounds on a
         busy orochi moved the `kept` and `seek` rows up to 24% both ways. Rerun those rows with
         `AB_EACH=1 bench/ab.sh` on an idle node.
