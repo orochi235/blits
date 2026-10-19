@@ -1,6 +1,6 @@
 {
   "name": "@msb235/blits-tone",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Drives Tone.js from a blits mix on the audio clock: each subject's channels as parameter curves read ahead, and its hits and marks scheduled before they come",
   "keywords": [
     "audio",
@@ -38,11 +38,11 @@
     "prepack": "rm -rf dist .tsbuildinfo && npm run build"
   },
   "peerDependencies": {
-    "@msb235/blits": "^0.10.0",
+    "@msb235/blits": "^0.11.0",
     "tone": "^15.1.22"
   },
   "devDependencies": {
-    "@msb235/blits": "0.10.0",
+    "@msb235/blits": "0.11.0",
     "node-web-audio-api": "^2.2.0",
     "tone": "^15.1.22"
   }
