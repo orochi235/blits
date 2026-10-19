@@ -1,7 +1,8 @@
 import type { Kit, Mix } from '@msb235/blits';
-import { type EmissionState, Matrix4, type ParticleSystem } from 'three.quarks';
+import { type EmissionState, Matrix4, ParticleSystem } from 'three.quarks';
 import { Authored } from './authored.js';
 import type { Emission } from './channels.js';
+import { type Host, type Source, wire } from './source.js';
 
 /** A point in world space, as an object or a tuple. */
 export type Position = { x: number; y: number; z: number } | readonly [number, number, number];
@@ -23,7 +24,14 @@ export interface DriveOptions<O> {
   bursts?: string;
 }
 
-export interface Driver<I> {
+export interface Driver<I, O = unknown> {
+  /**
+   * Wires a system to the mix as a `Source`, whose emitters are each a subject of their own. The
+   * system needs `worldSpace: true`, as `attach` does.
+   */
+  wire(system: ParticleSystem): Source<I, O>;
+  /** `wire(new ParticleSystem({ worldSpace: true, ...options }))`. */
+  particles(options: ConstructorParameters<typeof ParticleSystem>[0]): Source<I, O>;
   attach(subject: I, system: ParticleSystem, opts: AttachOptions): void;
   detach(subject: I): void;
   /**
@@ -41,12 +49,14 @@ interface Bound<O> {
   /** Particle-milliseconds owed by `rate`, below one particle's worth. */
   carry: number;
   count: number;
+  /** Particles `burst` owes on the next write. */
+  extra: number;
 }
 
 export function drive<I, O extends Partial<Emission>>(
   mix: Mix<I, O>,
   opts: DriveOptions<O>,
-): Driver<I> {
+): Driver<I, O> {
   const kit = opts.kit as object;
   const applies = {
     speed: 'speed' in kit,
@@ -110,7 +120,20 @@ export function drive<I, O extends Partial<Emission>>(
     b.system.emit(0, state, matrix);
   };
 
-  return {
+  const host: Host<I, O> = {
+    mix,
+    attach: (subject, system, at) => driver.attach(subject, system, { at }),
+    detach: (subject) => driver.detach(subject),
+    burst: (subject, n) => {
+      const b = bound.get(subject);
+      if (b !== undefined) b.extra += n;
+    },
+  };
+
+  const driver: Driver<I, O> = {
+    wire: (system) => wire(host, system),
+    particles: (options) => wire(host, new ParticleSystem({ worldSpace: true, ...options })),
+
     attach(subject, system, { at }) {
       if (bound.has(subject)) throw new Error('blits-quarks: that subject is attached already');
       let held = systems.get(system);
@@ -126,6 +149,7 @@ export function drive<I, O extends Partial<Emission>>(
         pose: {} as O,
         carry: 0,
         count: 0,
+        extra: 0,
       });
     },
 
@@ -152,7 +176,8 @@ export function drive<I, O extends Partial<Emission>>(
         if (Number.isFinite(owed) && owed > 0) b.carry += owed;
         const n = Math.floor((b.carry + SLACK) / 1000);
         b.carry -= n * 1000;
-        b.count = n;
+        b.count = n + b.extra;
+        b.extra = 0;
       }
       if (opts.bursts !== undefined)
         for (const sent of mix.drain<Burst>(opts.bursts)) {
@@ -182,4 +207,5 @@ export function drive<I, O extends Partial<Emission>>(
       if (failed) throw first;
     },
   };
+  return driver;
 }
