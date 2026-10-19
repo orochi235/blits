@@ -42,13 +42,10 @@ m.sync(now); q.write(); t.write();
 | `q.wire(system)` | `Source` | Takes a `ParticleSystem` the host built. |
 | `q.particles(opts)` | `Source` | `q.wire(new ParticleSystem({ worldSpace: true, ...opts }))`. The driver places particles in world coordinates, so `worldSpace` defaults on. |
 | `source.at(position)` | `Emitter` | A new emission point on the same system, so no second shader. `position` is what `attach` takes: a point or a function returning one. |
-| `t.wire(node)` | `Voice` handle | Takes any Tone node the host built. |
-| `t.synth(opts)`, `t.polySynth(opts)`, `t.oscillator(opts)`, `t.noise(opts)` | `Voice` handle | `t.wire(new Tone.X(opts))`. The list starts here; any other class goes through `wire`. |
+| `t.wire(node)` | `Sound` | Takes any Tone node the host built. |
+| `t.synth(opts)`, `t.polySynth(opts)`, `t.oscillator(opts)`, `t.noise(opts)` | `Sound` | `t.wire(new Tone.X(opts))`. The list starts here; any other class goes through `wire`. |
 
-The Tone handle's type name is settled when it is built; `Voice` above is a placeholder, since
-the engine already uses that word.
-
-An `Emitter` and a Tone handle are each one blits subject, and the subject is the handle object
+An `Emitter` and a `Sound` are each one blits subject, and the subject is the handle object
 itself, so `m.probe(spot)` reads it. On both:
 
 - **`cue(spec)`** is `m.cue({ ...spec, subjects: [this] })`, and returns blits' own `Handle`. A
