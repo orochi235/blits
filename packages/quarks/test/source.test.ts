@@ -126,3 +126,20 @@ describe('drop', () => {
     expect(() => q.wire({} as never)).toThrow(/not a ParticleSystem/);
   });
 });
+
+describe('copy', () => {
+  it('is a new system with the same authored values and no emitters', () => {
+    const { m, q, write } = setup();
+    const src = q.wire(system());
+    const c = src.copy();
+    expect(c.system).not.toBe(src.system);
+    src.at([0, 0, 0]).cue({ patch: hold({ rate: 10 }) });
+    run(10, 100, m, write);
+    expect(c.system.particleNum).toBe(0);
+    c.at([1, 0, 0]).cue({ patch: hold({ rate: 10 }) });
+    run(10, 100, m, write, 1000);
+    expect(born(c.system).filter((p) => p.position.x === 1)).toHaveLength(10);
+    expect(born(src.system).filter((p) => p.position.x === 1)).toHaveLength(0);
+    expect((c.system.startSpeed as ConstantValue).value).toBe(5);
+  });
+});
