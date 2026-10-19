@@ -143,3 +143,25 @@ describe('copy', () => {
     expect((c.system.startSpeed as ConstantValue).value).toBe(5);
   });
 });
+
+describe('burst and a throwing write', () => {
+  it("keeps a burst for the next write when a later emitter's probe throws", () => {
+    const { m, q, write } = setup();
+    const src = q.wire(system());
+    const e = src.at([0, 0, 0]);
+    const other = src.at([1, 0, 0]);
+    run(0, 0, m, write);
+    e.burst(3);
+    const probe = m.probe.bind(m);
+    m.probe = ((subject, out) => {
+      if (subject === other) throw new Error('probe failed');
+      return probe(subject, out);
+    }) as typeof m.probe;
+    m.sync(100);
+    expect(() => q.write()).toThrow(/probe failed/);
+    m.probe = probe;
+    m.sync(200);
+    q.write();
+    expect(src.system.particleNum).toBe(3);
+  });
+});

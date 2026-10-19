@@ -49,8 +49,12 @@ batch.update(dt / 1000);
 - **`emitter.drop()`** ends the voices cued on it, unbinds it, and drops its subject from the mix.
   A `cue` after it throws. Dropping a source's last emitter puts its authored values back.
   **`source.drop()`** drops every emitter on it. Neither takes the system out of your scene.
-- **`source.copy()`** clones the system and wires the clone as a source with no emitters. The
-  clone compiles its own shader; for another point that shares one, call `at` again.
+- **`source.copy()`** clones the system (`system.clone()`) and wires the clone as a source with no
+  emitters. The clone shares the material, so a `BatchedRenderer` may draw both in one batch, and
+  its `emitter` starts untransformed: add it to the scene and place it yourself. For another point
+  on the same system, call `at` again.
+- **A host's subject type has to admit the handles**, since an emitter is the mix's subject: use
+  `mix<unknown, …>`, or a union with `Emitter`. Nothing checks this at compile time.
 
 ## Channels
 

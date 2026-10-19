@@ -190,4 +190,41 @@ describe('shortcuts and copy', () => {
     expect(original).toBeCloseTo(150, 6);
     expect(copy).toBeCloseTo(50, 6);
   });
+
+  it('copies a PolySynth with its voice class, polyphony, volume and voice settings', async () => {
+    await offline((_m, d) => {
+      const s = d.polySynth({
+        voice: Tone.FMSynth,
+        maxPolyphony: 4,
+        volume: -9,
+        options: { harmonicity: 5, envelope: { attack: 0.4 } },
+      });
+      const c = s.copy();
+      expect(c.node.maxPolyphony).toBe(4);
+      expect(c.node.volume.value).toBeCloseTo(-9, 6);
+      expect(c.node.get()).toEqual(s.node.get());
+      expect((c.node.get() as unknown as { harmonicity: number }).harmonicity).toBe(5);
+    });
+  });
+
+  it("starts a copy from the original's base, not from what a voice is playing", async () => {
+    const copy = await offline((_m, d, play) => {
+      const s = d.oscillator({ detune: 50 });
+      s.cue({ patch: hold({ detune: 100 }) });
+      play(0, 96);
+      const c = s.copy();
+      play(112, 200);
+      return c.node.detune.getValueAtTime(0.19);
+    });
+    expect(copy).toBeCloseTo(50, 6);
+  });
+});
+
+describe('a cancelled driver', () => {
+  it('refuses to wire', async () => {
+    await offline((_m, d) => {
+      d.cancel();
+      expect(() => d.oscillator()).toThrow(/cancelled/);
+    });
+  });
 });

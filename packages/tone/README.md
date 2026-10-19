@@ -40,12 +40,15 @@ tone.write();
   no `subjects`; one that does throws.
 - **`sound.copy()`** builds a new node of the same class from this one's settings (`node.get()`)
   and wires it as a sound of its own, with no voices and no connections. Copies of the four classes
-  above come out with equal settings.
+  above come out with equal settings, a `PolySynth` keeping its voice class, `maxPolyphony` and
+  `volume`. A copy starts from the original's base values, not from what a voice is playing.
 - **`sound.drop()`** ends the voices cued on it, unwires the node, puts each driven parameter back
   to its value when wired, and drops the subject from the mix. A `cue` after it throws, and the
   node can be wired again. It leaves the node connected.
-- `wire` needs `kit` passed to `drive`, and throws for a node already wired or anything not a Tone
-  node.
+- `wire` needs `kit` passed to `drive`, and throws for a node already wired, for anything not a
+  Tone node, and after `cancel`.
+- **A host's subject type has to admit sounds**, since a sound is the mix's subject: use
+  `mix<unknown, …>`, or a union with `Sound`. Nothing checks this at compile time.
 
 ### Which parameters a sound drives
 

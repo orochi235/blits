@@ -7,7 +7,10 @@ export interface Source<I, O> {
   readonly system: ParticleSystem;
   /** A new emission point on this system, and the mix's subject for it. */
   at(position: AttachOptions['at']): Emitter<I, O>;
-  /** A clone of the system, wired as a source of its own with no emitters; it compiles its own shader. */
+  /**
+   * A clone of the system (`system.clone()`), wired as a source of its own with no emitters. It
+   * shares the material, and its `emitter` starts untransformed: add it to the scene and place it.
+   */
   copy(): Source<I, O>;
   /** Drops every emitter on it. The system stays the host's to take out of its scene. */
   drop(): void;

@@ -121,6 +121,7 @@ export function drive<I, O, E = unknown>(
     kit: opts.kit,
     seconds,
     bind: (subject, targets) => {
+      if (done) throw new Error('blits-tone: that driver is cancelled');
       if (bound.has(subject)) throw new Error('blits-tone: that subject is attached already');
       bound.set(subject, { targets, pose: {} as O });
     },

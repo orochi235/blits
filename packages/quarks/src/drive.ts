@@ -176,8 +176,7 @@ export function drive<I, O extends Partial<Emission>>(
         if (Number.isFinite(owed) && owed > 0) b.carry += owed;
         const n = Math.floor((b.carry + SLACK) / 1000);
         b.carry -= n * 1000;
-        b.count = n + b.extra;
-        b.extra = 0;
+        b.count = n;
       }
       if (opts.bursts !== undefined)
         for (const sent of mix.drain<Burst>(opts.bursts)) {
@@ -191,6 +190,9 @@ export function drive<I, O extends Partial<Emission>>(
       let first: unknown;
       try {
         for (const b of bound.values()) {
+          // A burst waits here, not in the probe loop, so a probe that throws does not lose it.
+          b.count += b.extra;
+          b.extra = 0;
           if (b.count <= 0) continue;
           try {
             emit(b);
