@@ -8,6 +8,11 @@ export interface Sound<N, I, O> {
   /** Cues a voice on this sound alone; the spec names no `subjects`. */
   cue(spec: Omit<VoiceSpec<I, O>, 'subjects'>): Handle<I>;
   /**
+   * A new node of the same class from this one's settings (`get()`), wired as a sound of its own:
+   * no voices, no connections, nothing shared.
+   */
+  copy(): Sound<N, I, O>;
+  /**
    * Unwires the node and drops the subject from the mix: its parameters go back to the values they
    * had when wired. The node stays the host's to disconnect and dispose.
    */
@@ -53,6 +58,10 @@ export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): 
       if ('subjects' in spec)
         throw new Error('blits-tone: a sound names its own subject; cue it without `subjects`');
       return host.mix.cue({ ...spec, subjects: [sound as unknown as I] } as VoiceSpec<I, O>);
+    },
+    copy() {
+      const make = node.constructor as new (options: unknown) => N;
+      return wire(host, new make(node.get()));
     },
     drop() {
       if (dropped) return;

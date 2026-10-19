@@ -1,5 +1,5 @@
 import type { BookedHit, Kit, Marked, Mix } from '@msb235/blits';
-import { immediate, type ToneAudioNode } from 'tone';
+import { immediate, Noise, Oscillator, PolySynth, Synth, type ToneAudioNode } from 'tone';
 import { type Bind, type Sound, wire } from './sound.js';
 
 /** What the driver schedules on: a Tone `Param` or `Signal`, or a native `AudioParam`. */
@@ -49,6 +49,14 @@ export interface Driver<I, O> {
    * channel in the kit is driven, moved from the value it had when wired.
    */
   wire<N extends ToneAudioNode>(node: N): Sound<N, I, O>;
+  /** `wire(new Tone.Synth(options))`. */
+  synth(options?: ConstructorParameters<typeof Synth>[0]): Sound<Synth, I, O>;
+  /** `wire(new Tone.PolySynth(options))`. */
+  polySynth(options?: ConstructorParameters<typeof PolySynth>[0]): Sound<PolySynth, I, O>;
+  /** `wire(new Tone.Oscillator(options))`. */
+  oscillator(options?: ConstructorParameters<typeof Oscillator>[0]): Sound<Oscillator, I, O>;
+  /** `wire(new Tone.Noise(options))`. */
+  noise(options?: ConstructorParameters<typeof Noise>[0]): Sound<Noise, I, O>;
   attach(subject: I, targets: Targets<O>): void;
   /** Unbinds the subject; its targets hold the value they had reached. */
   detach(subject: I): void;
@@ -121,6 +129,10 @@ export function drive<I, O, E = unknown>(
 
   return {
     wire: (node) => wire(host, node),
+    synth: (options) => wire(host, new Synth(options)),
+    polySynth: (options) => wire(host, new PolySynth(options)),
+    oscillator: (options) => wire(host, new Oscillator(options)),
+    noise: (options) => wire(host, new Noise(options)),
 
     attach(subject, targets) {
       if (bound.has(subject)) throw new Error('blits-tone: that subject is attached already');

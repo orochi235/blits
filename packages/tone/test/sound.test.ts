@@ -150,3 +150,43 @@ describe('wire', () => {
     });
   });
 });
+
+describe('shortcuts and copy', () => {
+  it('makes each shortcut class, wired', async () => {
+    await offline((_m, d) => {
+      expect(d.synth({ oscillator: { type: 'sawtooth' } }).node).toBeInstanceOf(Tone.Synth);
+      expect(d.polySynth().node).toBeInstanceOf(Tone.PolySynth);
+      expect(d.oscillator({ frequency: 220 }).node).toBeInstanceOf(Tone.Oscillator);
+      expect(d.noise({ type: 'pink' }).node).toBeInstanceOf(Tone.Noise);
+    });
+  });
+
+  it('copies each shortcut class with equal settings', async () => {
+    await offline((_m, d) => {
+      for (const s of [
+        d.synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.3 } }),
+        d.polySynth(),
+        d.oscillator({ frequency: 220, detune: 30, type: 'square' }),
+        d.noise({ type: 'pink', volume: -12 }),
+      ]) {
+        const c = s.copy();
+        expect(c.node).not.toBe(s.node);
+        expect(c.node.get()).toEqual(s.node.get());
+      }
+    });
+  });
+
+  it('gives a copy no voices and no link to the original', async () => {
+    const [original, copy] = await offline((_m, d, play) => {
+      const s = d.oscillator({ detune: 50 });
+      const c = s.copy();
+      s.cue({ patch: hold({ detune: 100 }) });
+      s.node.set({ type: 'square' });
+      play(0, 160);
+      expect(c.node.type).toBe('sine');
+      return [s.node.detune.getValueAtTime(0.15), c.node.detune.getValueAtTime(0.15)];
+    });
+    expect(original).toBeCloseTo(150, 6);
+    expect(copy).toBeCloseTo(50, 6);
+  });
+});
