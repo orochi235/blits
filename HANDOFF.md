@@ -18,12 +18,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.11.0 (2026-10-18), with blits-quarks 0.7.0 pinned to it.
-  **blits-tone 0.2.0 is tagged (`tone-v0.2.0`) but not on npm:** its first trusted publish got
-  `E404 PUT @msb235/blits-tone` after every check passed (run 39179621085), so npm holds no trust
-  for it that matches this workflow. With npm logged in: `npm trust list @msb235/blits-tone`, then
-  `npm trust github @msb235/blits-tone --file release.yml --repo orochi235/blits --allow-publish`,
-  then `gh run rerun 39179621085`.
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.11.0 (2026-10-18), with blits-quarks 0.7.0 and blits-tone 0.2.0 pinned to it.
+  blits-tone 0.2.0 was its first release through trusted publishing.
 - **In 0.11.0** (2026-10-11): a read ahead after a seek back that plays
   the tape's calls, a voice's own `stepMs`, and three fixes found on the way. The changelog's
   0.11.0 section lists them. Chosen while building, Mike's to overturn: the name `stepMs` on a voice's spec, with 0 meaning the frame's gap; that a read
