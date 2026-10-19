@@ -4,6 +4,18 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
+## Unreleased
+
+### Added
+
+- `quarks.particles(options)` and `quarks.wire(system)` return a `Source`: a quarks system wired to
+  the mix. `source.at(position)` adds an `Emitter`, an emission point that is the mix's subject for
+  it, sharing the source's one system.
+- `emitter.cue(spec)` cues a voice on that emitter alone; `emitter.burst(n)` emits `n` particles at
+  the next `write`; `emitter.drop()` ends its voices, detaches it and drops its subject.
+- `source.copy()` wires a clone of the system as a new source with no emitters, and `source.drop()`
+  drops every emitter on it.
+
 ## 0.7.0
 
 ### Breaking

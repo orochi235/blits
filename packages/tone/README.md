@@ -3,36 +3,67 @@
 Drives [Tone.js](https://tonejs.github.io) from a [blits](https://github.com/orochi235/blits) mix,
 on the audio clock. You build the synths, the signals, and the routing; each frame the driver reads
 the mix a little ahead and schedules what it finds: each subject's channels as curves on the
-parameters you bound, and each hit and mark at the sample it falls on. Nothing else about Tone is
-wrapped.
+parameters you bound, and each hit and mark at the sample it falls on. Its `synth`, `oscillator`
+and the rest, and `wire` for any node, hand back a Tone node already wired to the mix, to cue voices
+on. Nothing else about Tone is wrapped.
 
 ```
 npm install @msb235/blits @msb235/blits-tone tone
 ```
 
 ```ts
-import { keys, kit, mix, mul, sum } from '@msb235/blits';
-import { drive } from '@msb235/blits-tone';
-import * as Tone from 'tone';
+import { keys, kit, mix } from '@msb235/blits';
+import { channels, drive } from '@msb235/blits-tone';
 
-const m = mix(kit({ freq: sum(), gain: mul() }));
-const osc = new Tone.Oscillator().start();
-const amp = new Tone.Gain(0).toDestination();
-osc.connect(amp);
-const drum = new Tone.MembraneSynth().toDestination();
+const K = kit({ ...channels });              // detune, volume and gain, plus any of your own
+const m = mix(K);
+const tone = drive(m, { kit: K });
 
-const tone = drive(m, {
-  take: (item, time) => {
-    if ('hit' in item) drum.triggerAttackRelease('C2', '8n', time);
-    return undefined;
-  },
-});
-tone.attach(voice, { freq: osc.frequency, gain: amp.gain });
+const lead = tone.synth({ oscillator: { type: 'sawtooth' } });   // Tone's own options
+lead.node.toDestination();
+lead.cue({ patch: keys(2000, [{ at: 0, delta: { detune: 0 } }, { at: 1, delta: { detune: 1200 } }]) });
+lead.node.triggerAttackRelease('A3', '1n');
+const harmony = lead.copy();                 // a second synth, nothing shared
 
 // each frame
 m.sync(now);
 tone.write();
 ```
+
+## Sounds
+
+- **`tone.wire(node)`** wires any Tone node to the mix and returns a `Sound`. **`tone.synth`**,
+  **`polySynth`**, **`oscillator`** and **`noise`** each build that class from Tone's own options
+  and wire it. A sound's `node` is the Tone object, yours to connect and dispose. A sound is the
+  mix's subject for that node: `m.probe(lead)` reads it.
+- **`sound.cue(spec)`** cues a voice on that sound alone and returns blits' `Handle`. The spec names
+  no `subjects`; one that does throws.
+- **`sound.copy()`** builds a new node of the same class from this one's settings (`node.get()`)
+  and wires it as a sound of its own, with no voices and no connections. Copies of the four classes
+  above come out with equal settings.
+- **`sound.drop()`** ends the voices cued on it, unwires the node, puts each driven parameter back
+  to its value when wired, and drops the subject from the mix. A `cue` after it throws, and the
+  node can be wired again. It leaves the node connected.
+- `wire` needs `kit` passed to `drive`, and throws for a node already wired or anything not a Tone
+  node.
+
+### Which parameters a sound drives
+
+Each of the node's own properties that is a Tone `Param` or `Signal` and has a channel of the same
+name in the kit. Nested ones, such as a synth's `oscillator.frequency`, are not reached. The value
+a parameter has when wired is its base, and the channel moves it from there:
+
+| Channel's `rest` | The parameter gets |
+|---|---|
+| `0`, as `sum()` | base + value |
+| `1`, as `mul()` | base × value |
+| anything else, or none | the value as it is |
+
+So a wired node with nothing cued keeps its own settings. `channels` holds `detune` (cents) and
+`volume` (dB) as `sum()`, and `gain`, for a `Gain` node, as `mul()`. **`frequency` is left out on
+purpose:** a synth's note sets its frequency, and the driver replaces what is scheduled on a
+parameter it drives, so a `frequency` channel would take pitch away from your notes. Move pitch
+through `detune`; add a `frequency` channel only for a node that plays no notes.
 
 ## Reading ahead
 
@@ -63,9 +94,37 @@ with the clock read up to 1 ms off, within 0.25 ms.
 value until the next `write`. A longer `ahead` costs a projection per point, and a change made to
 the mix is heard only once the next `write` replaces the curve, which a stall also delays.
 
-## API
+## Lower level
+
+`drive`'s own calls bind a subject you keep to parameters you name, writing each value as it is.
+
+```ts
+import { keys, kit, mix, mul, sum } from '@msb235/blits';
+import { drive } from '@msb235/blits-tone';
+import * as Tone from 'tone';
+
+const m = mix(kit({ freq: sum(), gain: mul() }));
+const osc = new Tone.Oscillator().start();
+const amp = new Tone.Gain(0).toDestination();
+osc.connect(amp);
+const drum = new Tone.MembraneSynth().toDestination();
+
+const tone = drive(m, {
+  take: (item, time) => {
+    if ('hit' in item) drum.triggerAttackRelease('C2', '8n', time);
+    return undefined;
+  },
+});
+tone.attach(voice, { freq: osc.frequency, gain: amp.gain });
+
+// each frame
+m.sync(now);
+tone.write();
+```
+
 
 - **`drive(mix, options?)`** returns the driver. Options, all optional:
+  - `kit`: the mix's kit, which `wire` reads.
   - `ahead`, default 150, and `grid`, default 5: how far ahead a curve is written and how far
     apart its points are, in ms on the audio clock.
   - `take(item, time, lateBy)`: called for each mark and hit within `ahead`, with `time` in

@@ -4,6 +4,20 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `tone-v*` tag with no
 section here.
 
+## Unreleased
+
+### Added
+
+- `tone.wire(node)` wires any Tone node to the mix as a `Sound`, the mix's subject for it. Each of
+  the node's parameters with a channel of its name in the kit is driven, moved from the value it had
+  when wired: added to for a channel resting at 0, scaled for one resting at 1.
+- `tone.synth`, `polySynth`, `oscillator` and `noise` build that class from Tone's options and wire
+  it.
+- `sound.cue(spec)` cues a voice on that sound alone; `sound.copy()` wires a new node built from its
+  settings; `sound.drop()` ends its voices, puts its parameters back and drops its subject.
+- `channels`: `detune` and `volume` as `sum()`, `gain` as `mul()`.
+- `kit` on `drive`'s options, which `wire` reads.
+
 ## 0.2.0
 
 ### Breaking

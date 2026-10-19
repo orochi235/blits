@@ -3,28 +3,56 @@
 Drives [three.quarks](https://github.com/Alchemist0823/three.quarks) particle systems from a
 [blits](https://github.com/orochi235/blits) mix. You build the systems and the renderer; each frame
 the driver reads each subject's pose and turns it into particles: how many to emit, where, and with
-what start values. Nothing else about quarks is wrapped.
+what start values. Its `particles` and `wire` hand back a system already wired to the mix, with an
+emitter per position to cue voices on. Nothing else about quarks is wrapped.
 
 ```
 npm install @msb235/blits @msb235/blits-quarks three three.quarks
 ```
 
 ```ts
-import { kit, max, mix } from '@msb235/blits';
+import { kit, max, mix, wave } from '@msb235/blits';
 import { channels, drive } from '@msb235/blits-quarks';
 
 const K = kit({ ...channels, heat: max() });   // the driver's channels, plus your own
 const m = mix(K);
 const quarks = drive(m, { kit: K, bursts: 'sparks' });
-quarks.attach(fault, fizzSystem, { at: () => fault.at });
+
+const sparks = quarks.particles({ startLife, startSpeed, startSize, startColor, shape, material });
+scene.add(sparks.system.emitter);
+batch.addSystem(sparks.system);              // your own BatchedRenderer
+
+const spot = sparks.at([0, 1, 0]);           // an emission point, and the mix's subject for it
+spot.cue({ patch: wave(800, { depth: { rate: 40 } }) });
+spot.burst(30);
 
 // each frame
 m.sync(now);
 quarks.write();
-batch.update(dt / 1000);    // your own BatchedRenderer
+batch.update(dt / 1000);
 ```
 
-## Subjects are emission points
+## Sources and emitters
+
+- **`quarks.particles(options)`** builds a `ParticleSystem` from quarks' own options, with
+  `worldSpace` on unless you say otherwise, and wires it. **`quarks.wire(system)`** wires one you
+  built. Either returns a `Source`; its `system` is the quarks object, yours to add to a scene and
+  a renderer.
+- **`source.at(position)`** adds an emission point on that system and returns its `Emitter`.
+  `position` is what `attach` takes below. Every emitter on a source shares its one system, so one
+  shader serves them all. An emitter is the mix's subject for that point: `m.probe(spot)` reads it.
+- **`emitter.cue(spec)`** cues a voice on that emitter alone and returns blits' `Handle`. The spec
+  names no `subjects`; one that does throws.
+- **`emitter.burst(n)`** emits `n` particles, floored, at the next `write`. A burst at or below 0,
+  or not finite, adds nothing. It is not on the tape, so a seek does not replay it; a burst that
+  has to survive a seek is an event a patch `send`s, as below.
+- **`emitter.drop()`** ends the voices cued on it, unbinds it, and drops its subject from the mix.
+  A `cue` after it throws. Dropping a source's last emitter puts its authored values back.
+  **`source.drop()`** drops every emitter on it. Neither takes the system out of your scene.
+- **`source.copy()`** clones the system and wires the clone as a source with no emitters. The
+  clone compiles its own shader; for another point that shares one, call `at` again.
+
+## Channels
 
 Many subjects may share one system, so no shader compiles mid-effect. Each subject's pose is its
 own: before a subject's particles are born the driver writes that subject's start values into the
@@ -42,7 +70,25 @@ on its own are untouched.
 Only the channels in your kit are written; leave one out and that field stays yours. A burst is an
 event `{ count }` a patch `send`s under the tag you gave `drive`.
 
-## API
+## Lower level
+
+`drive`'s own calls bind a subject you keep to a system, which is all the handles above do.
+
+```ts
+import { kit, max, mix } from '@msb235/blits';
+import { channels, drive } from '@msb235/blits-quarks';
+
+const K = kit({ ...channels, heat: max() });   // the driver's channels, plus your own
+const m = mix(K);
+const quarks = drive(m, { kit: K, bursts: 'sparks' });
+quarks.attach(fault, fizzSystem, { at: () => fault.at });
+
+// each frame
+m.sync(now);
+quarks.write();
+batch.update(dt / 1000);    // your own BatchedRenderer
+```
+
 
 - **`drive(mix, { kit, bursts? })`** returns the driver. `kit` is the mix's kit, which tells the
   driver which of its channels are present; `bursts` is the tag it drains, and without one it

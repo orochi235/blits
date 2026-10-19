@@ -336,18 +336,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
-0. **Handles in blits-quarks and blits-tone: designed, not built** (2026-10-18). The spec is
-   `docs/superpowers/specs/2026-10-18-companion-handles-design.md`, waiting on Mike's review; then
-   a plan, then the build, shipping as quarks 0.8.0 and tone 0.3.0. The Tone handle's type name is
-   open.
-0. **The playground is on `main`** (merged 2026-10-04, `d9ef787`). A Vite + labkit app at
-   `apps/playground`; its README says what it is, how to run it and how it works, and holds what
-   stays true of the design.
-   Decided in conversation and not otherwise written down:
-   - Mike will rework the score and panel designs later; this version is a start.
-   - The composition types are named without a `Doc` suffix (Mike took that from a side
-     discussion).
-
+0. **Handles in blits-quarks and blits-tone are built, unreleased** (2026-10-18): blits-tone's
+   `Sound` (`wire`, `synth`, `polySynth`, `oscillator`, `noise`) and blits-quarks' `Source` and
+   `Emitter` (`wire`, `particles`, `at`). Each README's opening sections say what they do; each
+   changelog's Unreleased lists them. They ship as quarks 0.8.0 and tone 0.3.0 when Mike says to
+   release. Called while building, Mike's to overturn: `drop()` also ends the voices cued through
+   the handle (`fade({ over: 0 })`), since a voice naming a dropped subject would otherwise stay
+   cued, holding it.
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits, all of it measurement
    now: the garbage a churned voice makes was cut from 21.5 to about 13 KB on 2026-10-11, and the
    file says what the rest is. Delete each item as it is dealt with, and the file once it is
