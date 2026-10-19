@@ -21,7 +21,7 @@ const doc = (key: string) => docOf(`WaveOptions.${key}`) ?? '';
 export function waveNodes() {
   return f
     .group({
-      shape: f.enum<WaveShape>('sine', SHAPES).label('shape').describe(doc('shape')).manual(),
+      shape: f.enum<WaveShape>('sine', SHAPES).label('shape').describe(doc('shape')),
       cycles: f
         .number(1)
         .label('cycles')

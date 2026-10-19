@@ -224,16 +224,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   scrolls sideways instead of squeezing (`MIN_PITCH` in `MixerDesk/layout.ts`); only channels
   something writes get a bus, as in the flow.
 
-  The playground runs on weasel 1.10.1 from npm, which lacks two things weasel's `main` has: the
-  reworked `layered` layout, and three port options the Both tab's edit mode uses (`showsPort`,
-  `shape`, and a `fill` per port). So the edit mode draws no dots, and the playground fails its
-  typecheck in `src/widgets/FlowDiagram/FlowDiagram.tsx`, though it runs and its smoke run passes;
-  `npm run check` leaves the playground's typecheck out, so CI is unaffected. Linking
-  `~/src/weasel/packages/diagram` in, as this machine did until 2026-10-17, no longer works: its
-  `dist` now imports `@weasel-js/font/metrics`, which font 1.10.1 lacks, and the playground dedupes
-  font to its own copy, so the dev server fails. Once weasel releases these, pin that version and
-  delete this paragraph.
-
   An edge label is still placed without regard to nodes, so on a short edge it can overlap the box
   it leaves or enters (`anchors`: `start its end +200 ms` over `pair`). That gap is filed in
   weasel's `docs/TODO.md`.
@@ -1073,16 +1063,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
-- **weasel gaps blits met on 2026-10-17, sent to the weasel-64 session to file in weasel's
-  `docs/TODO.md`; check they landed there.** `ThemeProvider` drops an invalid `selection` mode
-  (`'auto'`) without a word, and labkit's panels inherit the page's ink (worked around in
-  `ccda71e`). The diagram's default ports take no label; `DiagramView` never reports where its
-  first layout put nodes (the Both tab reads them back from `diagramScene`); and under `layered` an
-  edge between two pinned nodes in one rank loops round instead of running across.
-  Also sent (2026-10-17), from moving the playground's panels onto labkit's `ControlPanel`: number
-  and text rows write per keystroke (worked around by `drafted()` in `CompositionControls.tsx`), a
-  number row cannot be cleared, rows have no error slot, an all-hidden section still draws its
-  heading, `.dialog()` has no cancel, and `ControlMatrix` has no plain grid or custom-cell summary.
+- **weasel gaps blits met on 2026-10-17.** weasel 1.11.0 (pinned here 2026-10-18) fixed these, by
+  its changelog: `ThemeProvider` takes `selection: { mode: 'auto' }`; labkit's panels set their own
+  ink, so the workaround from `ccda71e` can go; `ControlPanel` writes a typed number or text once
+  the edit settles, Escape writing nothing, so `drafted()` and `DraftRow` in
+  `CompositionControls.tsx` are now redundant and can be dropped for plain leaves (check that a
+  blank number row still puts its value back); and `ControlMatrix` has a plain grid
+  (`inherit={false}`) and a row `summary`. Not yet seen fixed, and to check against weasel's
+  `docs/TODO.md`: the diagram's default ports take no label; `DiagramView` never reports where
+  its first layout put nodes; under `layered` an edge between two pinned nodes in one rank loops
+  round; a number row cannot be cleared; rows have no error slot; an all-hidden section still
+  draws its heading; and `.dialog()` has no cancel. Whether the Both tab's edit mode now draws its
+  port dots on 1.11.0 is not checked.
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
   100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k

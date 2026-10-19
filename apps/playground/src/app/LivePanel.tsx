@@ -66,7 +66,7 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
   };
   // A voice plays backward below 0; a group's rate does not go below it.
   const rate = (def: number) =>
-    (v ? f.number(def).step(0.05) : f.number(def).range(0, 1000).input().step(0.05)).manual();
+    v ? f.number(def).step(0.05) : f.number(def).range(0, 1000).input().step(0.05);
 
   const rated = `rate · now ${handle.rate.toFixed(2)}`;
   const schema = resolveConfigSchema(
@@ -74,7 +74,7 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
       weight: f
         .number(1)
         .label('weight')
-        .manual()
+
         .range(0, 2)
         .step(0.01)
         .describe(docOf('Handle.weight') ?? ''),
@@ -89,11 +89,11 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
           ms: f
             .number(0)
             .label('seek to')
-            .manual()
+
             .step(10)
             .suffix('ms')
             .describe(docOf('Handle.seek') ?? ''),
-          keep: f.boolean(false).label('keep state').manual(),
+          keep: f.boolean(false).label('keep state'),
           go: f
             .action(() =>
               act(id, (h, _, heard) => {
@@ -133,7 +133,7 @@ export function LivePanel({ player, comp, id, subject, onActed }: LivePanelProps
           over: f
             .number(HELD.ramp.over)
             .label('over')
-            .manual()
+
             .range(0, 1e6)
             .input()
             .step(50)

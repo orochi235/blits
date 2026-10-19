@@ -14,7 +14,7 @@ const SCHEMA = resolveConfigSchema(
   f.schema({
     step: f
       .boolean(true)
-      .manual()
+
       .label('fixed step')
       .describe(docOf('MixOptions.stepMs') ?? ''),
     stepMs: f
@@ -26,7 +26,7 @@ const SCHEMA = resolveConfigSchema(
       .enableIf((c) => c.step === true),
     capped: f
       .boolean(false)
-      .manual()
+
       .label('cap dt')
       .describe(docOf('MixOptions.maxDt') ?? ''),
     maxDt: f
@@ -38,12 +38,12 @@ const SCHEMA = resolveConfigSchema(
       .enableIf((c) => c.capped === true),
     reduce: f
       .boolean(false)
-      .manual()
+
       .label('reduced motion')
       .describe(docOf('MixOptions.reduce') ?? ''),
     lanes: f
       .boolean(true)
-      .manual()
+
       .label('lanes')
       .describe(docOf('MixOptions.lanes') ?? ''),
   }),

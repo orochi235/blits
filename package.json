@@ -62,7 +62,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
     "@types/node": "^26.2.0",
-    "@weasel-js/history": "1.10.1",
+    "@weasel-js/history": "1.11.0",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"

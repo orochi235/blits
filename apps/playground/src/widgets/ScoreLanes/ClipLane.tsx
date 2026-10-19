@@ -32,13 +32,7 @@ function menuItems(c: Clip, clips: readonly Clip[]): MenuButtonItem[] {
   const now = hatchOf(c);
   const items: MenuButtonItem[] = HATCHES.map(([h, text]) => ({
     value: `hatch:${h ?? 'none'}`,
-    label: (
-      <>
-        {h === now && <span aria-hidden>✓ </span>}
-        {text}
-      </>
-    ),
-    textValue: text,
+    label: h === now ? `✓ ${text}` : text,
   }));
   for (const o of clips) {
     if (o.id === c.id || o.lane === c.lane || (c.group !== undefined && o.group === c.group))

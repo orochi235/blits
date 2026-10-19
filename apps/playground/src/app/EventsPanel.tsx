@@ -33,7 +33,7 @@ const BOOKER_LIVE = resolveConfigSchema(
     ...BOOKS,
     name: f
       .string('beat')
-      .manual()
+
       .label('announce')
       .describe(docOf('Mix.announce') ?? '')
       .section('live'),

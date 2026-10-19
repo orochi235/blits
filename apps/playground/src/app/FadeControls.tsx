@@ -54,7 +54,7 @@ export function fadeNodes({ whole, picked, onFade, onRise }: FadeNodesProps) {
               .boolean(false)
               .label('only the picked subject')
               .describe(described('subject'))
-              .manual()
+
               .enableIf(() => picked),
           }),
       when: f
@@ -65,12 +65,12 @@ export function fadeNodes({ whole, picked, onFade, onRise }: FadeNodesProps) {
         ])
         .label('when')
         .describe(described('at'))
-        .manual()
+
         .showIf(many),
       at: f
         .number(FADE.at)
         .label('at')
-        .manual()
+
         .range(0, 1e9)
         .input()
         .step(50)

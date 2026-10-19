@@ -4,15 +4,7 @@ import type { Faults } from '@pg/blits/expr';
 import { withKey } from '@pg/blits/keyed';
 import type { FieldError } from '@pg/blits/spec';
 import { ExprInput } from '@pg/widgets/ExprInput';
-import {
-  BaseNode,
-  type ConfigShape,
-  type ControlRenderer,
-  f,
-  GroupNode,
-  isConfigBranch,
-  resolveConfigSchema,
-} from '@weasel-js/labkit';
+import { type ConfigShape, type ControlRenderer, f, resolveConfigSchema } from '@weasel-js/labkit';
 import {
   Button,
   type PrefRenderContext,
@@ -56,23 +48,9 @@ export function useSpec(): Spec {
 export const errorOf = (spec: Spec, field: string): FieldError | null =>
   spec.errors.find((e) => e.voice === spec.x.id && e.field === field) ?? null;
 
-/**
- * A control panel schema of `shape`. Every leaf is `manual`: a spec field has no `auto`, so its label
- * never toggles one.
- */
+/** A control panel schema of `shape`. */
 export function specSchema(shape: ConfigShape) {
-  const manual = (s: ConfigShape): ConfigShape =>
-    Object.fromEntries(
-      Object.entries(s).map(([key, entry]) => [
-        key,
-        isConfigBranch(entry)
-          ? new GroupNode(manual(entry.children), entry.annotations, entry.options)
-          : entry instanceof BaseNode
-            ? entry.manual()
-            : entry,
-      ]),
-    );
-  return resolveConfigSchema(f.schema(manual(shape)));
+  return resolveConfigSchema(f.schema(shape));
 }
 
 /** A `showIf` / `enableIf` over a panel's config, typed as the panel builds it. */

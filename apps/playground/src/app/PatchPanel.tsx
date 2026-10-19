@@ -86,7 +86,7 @@ const isKind = (kind: Kind) => ({ path: 'kind', is: kind });
 
 /** Every patch kind's rows; a kind's own show only while it is picked. */
 function schemaOf() {
-  const custom = (kind: string) => f.custom<null>(kind, null).manual();
+  const custom = (kind: string) => f.custom<null>(kind, null);
   return resolveConfigSchema(
     f.schema({
       kind: f
@@ -96,14 +96,14 @@ function schemaOf() {
       period: f
         .number(1000)
         .label('period')
-        .manual()
+
         .range(0, 1e9)
         .input()
         .step(10)
         .suffix('ms')
         .render(drafted())
         .showIf({ not: MOTION }),
-      channel: f.enum<ChannelName>('offset', CHANNELS).label('channel').manual().showIf(MOTION),
+      channel: f.enum<ChannelName>('offset', CHANNELS).label('channel').showIf(MOTION),
       keys: f
         .group({
           timeline: custom('timeline'),
@@ -115,9 +115,7 @@ function schemaOf() {
       fn: f
         .group({
           writes: f
-            .group(
-              Object.fromEntries(CHANNELS.map((ch) => [ch, f.boolean(false).label(ch).manual()])),
-            )
+            .group(Object.fromEntries(CHANNELS.map((ch) => [ch, f.boolean(false).label(ch)])))
             .label('writes'),
           at: custom('code'),
           state: custom('code'),
