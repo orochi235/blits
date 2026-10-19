@@ -18,13 +18,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.10.0 (2026-10-11).
-- **Unreleased on `main`** (2026-10-11): a read ahead after a seek back that plays
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.11.0 (2026-10-18).
+- **In 0.11.0** (2026-10-11): a read ahead after a seek back that plays
   the tape's calls, a voice's own `stepMs`, and three fixes found on the way. The changelog's
-  Unreleased section lists them. Chosen while building, Mike's to overturn: the name `stepMs` on a voice's spec, with 0 meaning the frame's gap; that a read
+  0.11.0 section lists them. Chosen while building, Mike's to overturn: the name `stepMs` on a voice's spec, with 0 meaning the frame's gap; that a read
   ahead moves the tape forward and back, which the tape's subscribers hear; and which two calls
   it still refuses (the schema page's "Reading ahead past the tape").
-- **Unreleased: `share(by, i, n)` and `BlendMember`** (2026-10-17), from item 13. The playground's
+- **In 0.11.0: `share(by, i, n)` and `BlendMember`** (2026-10-17), from item 13. The playground's
   solo mixes weight a member by `share` and its blends cue each member under its own name, tags and
   hits. Chosen while building, Mike's to overturn:
   - **The public read is a signal, not a read on `Handle` or `Mix`.** A solo plot needs the share
@@ -38,7 +38,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     member in another score would resolve the shared anchor to another voice and start apart.
   - **A member's `tags` replace the spec's** rather than adding to them, as `name` and `hits` do.
     To merge instead, concatenate in `Mixer.blend` (`src/mixer.ts`).
-- **Unreleased: a read ahead stops at known events** (2026-10-17; the schema page's "Reading
+- **In 0.11.0: a read ahead stops at known events** (2026-10-17; the schema page's "Reading
   ahead at known events"). Chosen while building, Mike's to overturn:
   - *Which events count:* each call the tape holds, and each mark `marks` would list (a voice's
     five and the announced ones). Pass boundaries of a loop that goes on are not events. To
@@ -62,7 +62,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 - **A record's `copied` flag, which lets `assess` say `stepped` after a seek back, reads level**
   (teitou, 2026-10-17, 7 rounds, `AB_EACH=1 bench/ab.sh 0c5527f 97b1aa3` over `fn`, `named`,
   `keys`, `probed`, `tweens^`, `weasel^` and `blend`, geometric mean 0.984).
-- **Unreleased: marks placed inside a voice** (2026-10-17; the schema page's Score section).
+- **In 0.11.0: marks placed inside a voice** (2026-10-17; the schema page's Score section).
   `marks: { drop: 340 }` on a voice's, owner's or span's spec, named beside the five; anchors,
   `marks`, `book`, a read ahead's stops and the departed record all see them. Chosen while
   building, Mike's to overturn:
@@ -84,8 +84,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   - *The playground draws a mark inside a clip as a labeled line across it,* only where the
     compiled mix placed it (no field-derived fallback), and a link to one lands on that line
     (`Link.to.mark` in `widgets/ScoreLanes`). The score's Alt-drag still links only to edges.
-- **Unreleased, breaking: `loop` defaults to one pass** (Mike, 2026-10-11; it defaulted to
-  looping for good). It waits for the next minor. Every consumer's cues were read at its `origin`
+- **In 0.11.0, breaking: `loop` defaults to one pass** (Mike, 2026-10-11; it defaulted to
+  looping for good). Shipped in 0.11.0. Every consumer's cues were read at its `origin`
   head (2026-10-11): one relied on the old default, klieg's lighting voice
   (`packages/core/src/render/lighting.ts`), whose sweep would leave after one period. klieg
   `dee96ba` gives it `loop: true`, committed on klieg's `main` and not pushed. No consumer test
