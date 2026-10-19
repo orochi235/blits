@@ -336,6 +336,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
+0. **Handles in blits-quarks and blits-tone: designed, not built** (2026-10-18). The spec is
+   `docs/superpowers/specs/2026-10-18-companion-handles-design.md`, waiting on Mike's review; then
+   a plan, then the build, shipping as quarks 0.8.0 and tone 0.3.0. The Tone handle's type name is
+   open.
 0. **The playground is on `main`** (merged 2026-10-04, `d9ef787`). A Vite + labkit app at
    `apps/playground`; its README says what it is, how to run it and how it works, and holds what
    stays true of the design.
