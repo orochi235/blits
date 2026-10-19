@@ -87,17 +87,18 @@ describe('wire', () => {
   });
 
   it('puts the base back on drop', async () => {
-    const [during, after] = await offline((_m, d, play) => {
+    const [during, after, voices] = await offline((m, d, play) => {
       const s = d.wire(new Tone.Oscillator({ detune: 50 }));
       s.cue({ patch: hold({ detune: 100 }) });
       play(0, 96);
       const during = s.node.detune.getValueAtTime(0.09);
       s.drop();
       play(112, 300);
-      return [during, s.node.detune.getValueAtTime(0.25)];
+      return [during, s.node.detune.getValueAtTime(0.25), m.voices().length];
     });
     expect(during).toBeCloseTo(150, 6);
     expect(after).toBeCloseTo(50, 6);
+    expect(voices).toBe(0);
   });
 
   it('drives nothing the kit has no channel for', async () => {

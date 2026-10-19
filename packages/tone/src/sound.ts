@@ -13,7 +13,7 @@ export interface Sound<N, I, O> {
    */
   copy(): Sound<N, I, O>;
   /**
-   * Unwires the node and drops the subject from the mix: its parameters go back to the values they
+   * Ends the voices cued on it, unwires the node and drops the subject from the mix: its parameters go back to the values they
    * had when wired. The node stays the host's to disconnect and dispose.
    */
   drop(): void;
@@ -51,13 +51,17 @@ export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): 
   }
 
   let dropped = false;
+  const cued = new Set<Handle<I>>();
   const sound: Sound<N, I, O> = {
     node,
     cue(spec) {
       if (dropped) throw new Error('blits-tone: that sound is dropped');
       if ('subjects' in spec)
         throw new Error('blits-tone: a sound names its own subject; cue it without `subjects`');
-      return host.mix.cue({ ...spec, subjects: [sound as unknown as I] } as VoiceSpec<I, O>);
+      const h = host.mix.cue({ ...spec, subjects: [sound as unknown as I] } as VoiceSpec<I, O>);
+      cued.add(h);
+      void h.done.then(() => cued.delete(h));
+      return h;
     },
     copy() {
       const make = node.constructor as new (options: unknown) => N;
@@ -66,6 +70,7 @@ export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): 
     drop() {
       if (dropped) return;
       dropped = true;
+      for (const h of cued) h.fade({ over: 0 });
       host.unbind(sound as unknown as I);
       const time = host.seconds();
       for (const [param, base] of bases) {
