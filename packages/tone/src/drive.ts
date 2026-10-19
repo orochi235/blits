@@ -1,5 +1,6 @@
-import type { BookedHit, Marked, Mix } from '@msb235/blits';
-import { immediate } from 'tone';
+import type { BookedHit, Kit, Marked, Mix } from '@msb235/blits';
+import { immediate, type ToneAudioNode } from 'tone';
+import { type Bind, type Sound, wire } from './sound.js';
 
 /** What the driver schedules on: a Tone `Param` or `Signal`, or a native `AudioParam`. */
 export interface Target {
@@ -12,7 +13,9 @@ export type Targets<O> = {
   [K in keyof O as NonNullable<O[K]> extends number ? K : never]?: Target;
 };
 
-export interface DriveOptions<E = unknown, I = unknown> {
+export interface DriveOptions<E = unknown, I = unknown, O = unknown> {
+  /** The mix's kit, which `wire` reads to know which of a node's parameters to drive and how. */
+  kit?: Kit<O>;
   /**
    * How far ahead curves are written and items booked, ms. It has to outlast the longest gap
    * between two writes. Default 150.
@@ -41,6 +44,11 @@ export interface DriveOptions<E = unknown, I = unknown> {
 }
 
 export interface Driver<I, O> {
+  /**
+   * Wires a Tone node to the mix as a `Sound`, its own subject: each of its parameters named by a
+   * channel in the kit is driven, moved from the value it had when wired.
+   */
+  wire<N extends ToneAudioNode>(node: N): Sound<N, I, O>;
   attach(subject: I, targets: Targets<O>): void;
   /** Unbinds the subject; its targets hold the value they had reached. */
   detach(subject: I): void;
@@ -53,8 +61,11 @@ export interface Driver<I, O> {
   cancel(): void;
 }
 
+/** A channel, its target, and how a value moves the target; `null` writes the value as it is. */
+export type Driven<O> = [keyof O, Target, ((value: number) => number) | null];
+
 interface Bound<O> {
-  targets: [keyof O, Target][];
+  targets: Driven<O>[];
   pose: O;
 }
 
@@ -66,7 +77,7 @@ function ms(name: string, value: number, least: number): number {
 
 export function drive<I, O, E = unknown>(
   mix: Mix<I, O>,
-  opts: DriveOptions<E, I> = {},
+  opts: DriveOptions<E, I, O> = {},
 ): Driver<I, O> {
   const ahead = ms('ahead', opts.ahead ?? 150, 0);
   const grid = ms('grid', opts.grid ?? 5, Number.MIN_VALUE);
@@ -97,11 +108,24 @@ export function drive<I, O, E = unknown>(
     for (const [, target] of b.targets) target.cancelAndHoldAtTime(time);
   };
 
+  const host: Bind<I, O> = {
+    mix,
+    kit: opts.kit,
+    seconds,
+    bind: (subject, targets) => {
+      if (bound.has(subject)) throw new Error('blits-tone: that subject is attached already');
+      bound.set(subject, { targets, pose: {} as O });
+    },
+    unbind: (subject) => bound.delete(subject),
+  };
+
   return {
+    wire: (node) => wire(host, node),
+
     attach(subject, targets) {
       if (bound.has(subject)) throw new Error('blits-tone: that subject is attached already');
       bound.set(subject, {
-        targets: Object.entries(targets) as [keyof O, Target][],
+        targets: (Object.entries(targets) as [keyof O, Target][]).map(([k, t]) => [k, t, null]),
         pose: {} as O,
       });
     },
@@ -133,10 +157,10 @@ export function drive<I, O, E = unknown>(
         const projection = mix.project(now + (at - est) * rate);
         for (const [subject, b] of bound) {
           projection.probe(subject, b.pose);
-          for (const [channel, target] of b.targets) {
+          for (const [channel, target, move] of b.targets) {
             const value = b.pose[channel];
             if (typeof value === 'number' && Number.isFinite(value))
-              target.linearRampToValueAtTime(value, at / 1000);
+              target.linearRampToValueAtTime(move === null ? value : move(value), at / 1000);
           }
         }
       }
