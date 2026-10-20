@@ -165,15 +165,41 @@ export function foldDelta<I, O>(
   delta: Record<string, unknown>,
 ): void {
   const n = chans.length;
+  const arg = this.arg;
+  // A plain number is folded where it is read: passed to a `foldInto` V8 did not inline, it is
+  // boxed, 16 bytes a channel a subject, and whether V8 inlines it turns on the order its compiles
+  // ran (bench/allocs.mjs, 2026-10-20).
   let ch = chans[0] as Laned;
-  if (n > 0) this.foldInto(ch, slot, delta[ch.name]);
+  if (n > 0) {
+    const v = delta[ch.name];
+    if (typeof v === 'number' && ch.scalar && ch.plain && this.into === null) {
+      const values = ch.values;
+      values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+    } else this.foldInto(ch, slot, v);
+  }
   ch = chans[1] as Laned;
-  if (n > 1) this.foldInto(ch, slot, delta[ch.name]);
+  if (n > 1) {
+    const v = delta[ch.name];
+    if (typeof v === 'number' && ch.scalar && ch.plain && this.into === null) {
+      const values = ch.values;
+      values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+    } else this.foldInto(ch, slot, v);
+  }
   ch = chans[2] as Laned;
-  if (n > 2) this.foldInto(ch, slot, delta[ch.name]);
+  if (n > 2) {
+    const v = delta[ch.name];
+    if (typeof v === 'number' && ch.scalar && ch.plain && this.into === null) {
+      const values = ch.values;
+      values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+    } else this.foldInto(ch, slot, v);
+  }
   for (let i = 3; i < n; i++) {
     ch = chans[i] as Laned;
-    this.foldInto(ch, slot, delta[ch.name]);
+    const v = delta[ch.name];
+    if (typeof v === 'number' && ch.scalar && ch.plain && this.into === null) {
+      const values = ch.values;
+      values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+    } else this.foldInto(ch, slot, v);
   }
 }
 

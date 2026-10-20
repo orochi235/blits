@@ -10,8 +10,8 @@
 //   own   a glow voice for each subject in reach, cued as it enters and faded as it leaves.
 //   stale nothing enters or leaves: K subjects in reach have their chains marked stale each
 //         frame, as a voice naming them marks them when it comes or goes (`changed` in
-//         src/chain.ts), so each links again to the records it had. Not public either; it says how
-//         much of a row's cost is a relink happening at all.
+//         src/chain.ts, by its `unlink`), so each links again to the records it had. Not public
+//         either; it says how much of a row's cost is a relink happening at all.
 // `own:0:0` is the voice under the glow alone, which bench/frame.mjs's `glowbase` is too.
 // Rows are named `<way>:<K>[:<W>]`; `<way>/<K>` takes its turns apart, K entering on one frame and
 // K leaving two frames on with a still frame after each, and prints each of the four frames' median.
@@ -22,6 +22,7 @@
 // Every row ends by checking that the glow weighs exactly the subjects in its window.
 import { PerformanceObserver } from 'node:perf_hooks';
 import { getHeapStatistics } from 'node:v8';
+import { unlink } from '../dist/chain.js';
 import { unpart } from '../dist/fade.js';
 import { VoiceHandle } from '../dist/handle.js';
 import { kit, last, max, mix, mixHex, mul, patch, sum, vec } from '../dist/index.js';
@@ -135,9 +136,7 @@ for (const [i, row] of chosen.entries()) {
   const mark = () => {
     for (let j = 0; j < k; j++) {
       const head = m.chains.get(order[(lo + ((turn * k + j) % size)) % N]);
-      if (head === undefined) continue;
-      head.version = Number.NaN;
-      m.relinks++;
+      if (head !== undefined) unlink(m, head);
     }
   };
   let turn = 0;

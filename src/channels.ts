@@ -76,7 +76,9 @@ export function foldNumber(op: Numeric['op'], acc: number, v: number, w: number)
   if (op === 'sum') return add(acc, times(v, w));
   if (op === 'mul') return product(acc, toward(v, w));
   if (op === 'max') return larger(acc, times(v, w));
-  return v;
+  // A double on every branch: where `v` arrives untyped, a branch returning it as it came makes V8
+  // box each other branch's result to merge them, 16 bytes a fold (bench/allocs.mjs, 2026-10-20).
+  return +v;
 }
 
 /**

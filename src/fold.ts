@@ -11,6 +11,7 @@ import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
 import type { Channel, Patch, Setting } from './types.js';
 import { checkWrites, type Subject, type Voice } from './voice.js';
+import { Primed } from './weigh.js';
 
 export type Key<O> = keyof O & string;
 
@@ -101,7 +102,11 @@ export function contribution<I, O>(
     elapsed < 0 ? phaseBefore(elapsed, duration) : phaseAt(elapsed, duration, voice.passes);
   const pass = passAt(elapsed, duration, voice.passes);
 
-  this.prime(voice, held, now, elapsed, pass);
+  const primed = this.primed;
+  primed[Primed.NOW] = now;
+  primed[Primed.ELAPSED] = elapsed;
+  primed[Primed.PASS] = pass;
+  this.prime(voice, held);
   const setting = voice.setting;
 
   // A signal that keeps state makes its voice stateful, as a patch that does: a lane would call
