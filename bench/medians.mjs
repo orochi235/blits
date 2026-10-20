@@ -1,8 +1,12 @@
 // Reduces what bench/ab.sh printed to one line a row: each revision's median ms/frame over its
 // rounds, the second over the first, and each one's median kB/frame where the rows have it; then
-// the geometric mean of the ratios.
+// the geometric mean of the ratios. `U` is the Mann-Whitney rank statistic over the two sides' runs,
+// the smaller of the two; at 7 rounds a side it is under 9 for p < 0.05, at 9 under 18.
 //   node bench/medians.mjs <file holding ab.sh's output>
-import { readFileSync } from 'node:fs';
+// LEDGER="<what the change does>" also appends each row to bench/ledger.tsv, the record of what
+// each change measured; LEDGER_NODE names the node, LEDGER_REV the commit standing for `.`, and
+// LEDGER_FRAMES the FRAMES the run used (300 unset).
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 
 const file = process.argv[2];
 if (file === undefined) throw new Error('usage: node bench/medians.mjs <ab.sh output>');
@@ -31,13 +35,20 @@ const median = (xs) => {
   const s = [...xs].sort((a, b) => a - b);
   return s.length === 0 ? Number.NaN : s[(s.length - 1) >> 1];
 };
+const rank = (xs, ys) => {
+  let u = 0;
+  for (const x of xs) for (const y of ys) u += x < y ? 1 : x === y ? 0.5 : 0;
+  return Math.min(u, xs.length * ys.length - u);
+};
 const [a, b] = revs;
 const wide = Math.max(...[...rows.keys()].map((k) => k.length));
 const kbWide = 3 + Math.max(a.length, b.length, 5);
 console.log(
-  `${'row'.padEnd(wide)}  ${a.padStart(9)}  ${b.padStart(9)}  ${'ratio'.padStart(6)}` +
+  `${'row'.padEnd(wide)}  ${a.padStart(9)}  ${b.padStart(9)}  ${'ratio'.padStart(6)}  ${'U'.padStart(5)}` +
     `  ${`kB ${a}`.padStart(kbWide)}  ${`kB ${b}`.padStart(kbWide)}`,
 );
+const ledger = process.env.LEDGER;
+const lines = [];
 let logs = 0;
 let n = 0;
 for (const [key, at] of rows) {
@@ -47,10 +58,36 @@ for (const [key, at] of rows) {
   const ratio = median(y.ms) / median(x.ms);
   logs += Math.log(ratio);
   n++;
-  const kb = (r) => (r.kb.length === 0 ? '' : median(r.kb).toFixed(1)).padStart(kbWide);
+  const u = rank(x.ms, y.ms);
+  const kbOf = (r) => (r.kb.length === 0 ? '' : median(r.kb).toFixed(1));
   console.log(
     `${key.padEnd(wide)}  ${median(x.ms).toFixed(3).padStart(9)}  ${median(y.ms).toFixed(3).padStart(9)}` +
-      `  ${ratio.toFixed(3).padStart(6)}  ${kb(x)}  ${kb(y)}`,
+      `  ${ratio.toFixed(3).padStart(6)}  ${u.toFixed(1).padStart(5)}  ${kbOf(x).padStart(kbWide)}  ${kbOf(y).padStart(kbWide)}`,
+  );
+  lines.push(
+    [
+      new Date().toISOString().slice(0, 10),
+      process.env.LEDGER_NODE ?? '',
+      a,
+      b === '.' ? (process.env.LEDGER_REV ?? '.') : b,
+      Math.min(x.ms.length, y.ms.length),
+      process.env.LEDGER_FRAMES ?? 300,
+      key,
+      median(x.ms).toFixed(3),
+      median(y.ms).toFixed(3),
+      ratio.toFixed(3),
+      u.toFixed(1),
+      kbOf(x),
+      kbOf(y),
+      ledger,
+    ].join('\t'),
   );
 }
 console.log(`${n} rows, geometric mean ${Math.exp(logs / n).toFixed(3)}`);
+if (ledger !== undefined) {
+  const path = new URL('./ledger.tsv', import.meta.url);
+  const head =
+    'date\tnode\tbase\trev\trounds\tframes\trow\tbase ms\tms\tratio\tU\tbase kB\tkB\tchange\n';
+  appendFileSync(path, (existsSync(path) ? '' : head) + lines.map((l) => `${l}\n`).join(''));
+  console.log(`appended ${lines.length} rows to bench/ledger.tsv`);
+}

@@ -930,6 +930,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     is the synced working tree, and the first revision has to be one `origin` has);
     `AB_BENCH=bench/frame.mjs` makes both sides print `kB/frame`, `bench/medians.mjs <output>`
     reduces a run to medians, and `bench/allocs.mjs <row>` lists the functions that allocate.
+    Every change measured goes in `bench/ledger.tsv`, kept or backed out: `LEDGER="<what it does>"
+    LEDGER_NODE=<node> LEDGER_FRAMES=<frames> node bench/medians.mjs <output>` appends its rows
+    (with `LEDGER_REV` naming the commit a `.` stood for, and a change backed out written
+    `(backed out) ...`), and `node bench/ledger.mjs [row]` lists each row's entries with the product
+    of the kept ones' ratios (Mike, 2026-10-20). Time a history row (`kept`, `seek`, `back`) at
+    `FRAMES=1500`: at the default 300 its 5 s window fills only as the run ends, so nothing it lets
+    go of is measured.
     - **Mike has not seen two things chosen while building.**
       - **A probe into `out` reuses its arrays, which reverses a guarantee a test held.**
         `test/solo.test.ts` said a reused `out` "never has an array the host kept from it written
@@ -1126,6 +1133,21 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `step` reading `setting.weight`, `elapsed` or `pass` shows what a mix never sought shows
         after a seek back and return (`test/sought.test.ts`); after a seek back that stays, its
         steps up from the copy still run under the probe's setting.
+      - **Keeping history costs less a frame** (2026-10-20, branch `perf-history`; the ledger has
+        each change's rows). A copy let go of from the 5 s window is written over as the next one
+        kept (`remember` in `src/history.ts`); `reading.horizon` is worked out only for a motion
+        voice, the only patch that reads it; and a stock `sum`, `mul` or `max` channel of one axis
+        folds through `foldNumber` in `apply` (`src/fold.ts`) instead of the channel's `scale` and
+        `merge`, whose call boxed a double. Each is exact under `bench/same.sh`. Tried and backed
+        out for moving no row: storing a channel's primitive rest without `copy` (`f1523e0`).
+      - **Lanes lose to the general path on three rows** (keiei, 2026-10-20, five runs each in its
+        own process, ms a frame): `tweenfn` 1.531 to 1.580 on lanes against 1.300 to 1.378 off,
+        `glowc` 3.281 to 3.378 against 2.941 to 3.063, `glowkeys` 3.278 to 4.423 against 2.962 to
+        3.135; `tween` gains as it should, 1.051 to 1.096 against 1.372 to 1.694. Not chased: a local
+        profile of `glowc` read the other way, on a machine whose runs were three times teitou's.
+      - **The `kept` row's two plain voices never run on lanes**: they write `dark`, which its
+        stateful voice also writes, and `qualify` closes a channel any voice that does not fit
+        writes (read 2026-10-20). So the history rows measure the general path alone.
       - **A subject sought back before its start with `state: 'keep'` shows state that depends on
         when it was last probed** (found 2026-10-11, not fixed). `contribution` in `src/fold.ts`
         does not step a subject before its start, so one a kept seek moves back there holds the

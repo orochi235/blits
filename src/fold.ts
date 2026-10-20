@@ -1,3 +1,4 @@
+import { foldNumber } from './channels.js';
 import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue, first } from './clone.js';
 import { open as openRecord, shut as shutRecord, weighAt } from './everyone.js';
@@ -126,7 +127,8 @@ export function contribution<I, O>(
   const keptBefore = reading.kept;
   const history = this.opts.history;
   if (history?.inputs && voice.patch.reads !== undefined && !this.projecting) recordHost(this, now);
-  reading.horizon = this.horizonFor(voice, held.delay, now);
+  // Only a motion reads it.
+  if (voice.motion !== undefined) reading.horizon = this.horizonFor(voice, held.delay, now);
 
   if (voice.patch.step && held.probed !== now) {
     // Frozen after, it steps once more to where its last pass ended, and no further; run back
@@ -421,6 +423,12 @@ export function apply<I, O>(
     const key = this.names[slot] as string;
     const value = delta[key];
     if (value === undefined) continue;
+    const op = this.scalars[slot];
+    if (op !== undefined && typeof value === 'number') {
+      // Called through the channel, `scale` boxes the double it hands `merge`.
+      pose[key] = foldNumber(op, pose[key] as number, value, weight);
+      continue;
+    }
     const channel = this.channels[slot] as Channel<unknown>;
     if (channel.rest !== undefined && channel.scale) {
       // pose[key] is the copy of rest this fold made, so it is ours to write into.
