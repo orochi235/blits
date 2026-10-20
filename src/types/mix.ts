@@ -51,6 +51,11 @@ export interface MixOptions<H = unknown> {
    */
   keyOf?(subject: never): string | number;
   /**
+   * What a debugger calls a subject (see `watched`); where it gives nothing, the subject's own
+   * `name` or `id`, a DOM element's tag, id and classes, or its class and a number.
+   */
+  labelOf?(subject: never): string | undefined;
+  /**
    * Whether a channel may run as a lane: computed for every subject at once in flat arrays, when
    * every voice writing it can run that way. On by default; what a host reads is the same either
    * way (`probe`, `pull`, `atRest`, `weightOf`, `inert` and `project`), so turning it off is for

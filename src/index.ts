@@ -45,6 +45,7 @@ export type {
   HistoryOptions,
   HistoryStore,
   Hit,
+  Hold,
   Keyframe,
   Kit,
   Mark,
@@ -60,6 +61,7 @@ export type {
   Placement,
   Projection,
   Query,
+  Registry,
   SeekOptions,
   Sent,
   Setting,
@@ -75,6 +77,9 @@ export type {
   TransportOptions,
   TransportProjection,
   VoiceSpec,
+  Watched,
+  WatchedFrame,
 } from './types.js';
+export { watched } from './watch.js';
 export type { WaveOptions, WaveShape } from './wave.js';
 export { wave, waveAt } from './wave.js';

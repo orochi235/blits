@@ -1,4 +1,4 @@
-import { Mixer } from './mixer.js';
+import { made } from './mixer.js';
 import type { Engine, Kit, Mix, MixOptions } from './types.js';
 
 export * from './index.js';
@@ -13,7 +13,7 @@ export const lean: Engine = {
   name: 'lean',
   runs: new Set<'fn' | 'keys' | 'motion'>(['fn', 'keys', 'motion']),
   create<I, O, H = unknown>(kit: Kit<O>, opts: MixOptions<H>): Mix<I, O, H> {
-    return new Mixer<I, O>(kit, opts, null);
+    return made<I, O, H>(kit, opts, null);
   },
 };
 

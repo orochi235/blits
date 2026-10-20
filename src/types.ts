@@ -5,3 +5,4 @@ export type * from './types/patch.js';
 export type * from './types/place.js';
 export type * from './types/transport.js';
 export type * from './types/voice.js';
+export type * from './types/watch.js';

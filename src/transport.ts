@@ -9,6 +9,7 @@ import { projectAll } from './project.js';
 import { type ScoreHolders, scoredDrop, scoredJoin } from './scored.js';
 import { seek } from './seek.js';
 import { hostAt, record, replay, tapeOf } from './tape.js';
+import { gave, historyFor } from './watch.js';
 
 /** How far the tape's reach moves before it is pruned again, ms of mix time. */
 const TAPE_STEP_MS = 1000;
@@ -398,5 +399,8 @@ export function announce(
  * @category mix
  */
 export function transport(opts: TransportOptions = {}): TransportApi {
-  return new Transport(opts.history, true);
+  const { history, added } = historyFor(opts);
+  const t = new Transport(history, true);
+  if (added) gave(t);
+  return t;
 }

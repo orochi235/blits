@@ -4,6 +4,21 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- `watched()`: every mix on the page, for a debugger, in one registry that all copies of blits
+  share. Each entry can:
+  - `watch` what the host reads each frame
+  - `read` a subject the host never probes, through `project`
+  - `label` a subject
+  - `hold` the mix's clock to pause, step and seek it, without writing to the tape, then `free`
+    it
+  
+  A mix nobody watches runs the same code as before. `watched().history` gives history to mixes
+  made later that name none. `MixOptions.labelOf` names subjects for it.
+
 ## 0.11.0
 
 ### Breaking

@@ -77,6 +77,7 @@ import type {
   VoiceSpec,
 } from './types.js';
 import { none, type Subject, type Voice } from './voice.js';
+import { gave, historyFor, register } from './watch.js';
 import {
   base,
   capped,
@@ -761,6 +762,19 @@ function named(transport: Transport, name: string | undefined): void {
     );
 }
 
+/** Makes a mix the host asked for, with the registry's history where it names none, and lists it there. */
+export function made<I, O, H>(
+  kit: Kit<O>,
+  opts: MixOptions<H>,
+  lanes: typeof Lanes | null,
+): Mix<I, O, H> {
+  const { history, added } = historyFor(opts);
+  const m = new Mixer<I, O>(kit, added ? { ...opts, history } : opts, lanes);
+  if (added) gave(m.transport);
+  register(m as unknown as Mixer<unknown, unknown>);
+  return m as unknown as Mix<I, O, H>;
+}
+
 /**
  * The one that ships: every form on the CPU, probed per subject on demand.
  *
@@ -770,7 +784,7 @@ export const mixer: Engine = {
   name: 'mixer',
   runs: new Set<'fn' | 'keys' | 'motion'>(['fn', 'keys', 'motion']),
   create<I, O, H = unknown>(kit: Kit<O>, opts: MixOptions<H>): Mix<I, O, H> {
-    return new Mixer<I, O>(kit, opts, Lanes);
+    return made<I, O, H>(kit, opts, Lanes);
   },
 };
 
