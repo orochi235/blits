@@ -10,3 +10,4 @@ dist
 
 # Agent worktrees.
 .claude/worktrees/
+.onto-fetch-cache.json
