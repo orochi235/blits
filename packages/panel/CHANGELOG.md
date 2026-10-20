@@ -16,3 +16,7 @@ section here.
 - `agent()` and the `Source` protocol: the page side of the panel, speaking only plain data, so a
   DevTools extension can host the same window across a message channel.
 - `ChannelPlot`, the plot the window draws, which the blits playground draws too.
+- `offer({ pick, outline })`: an app hands its own picking to whatever panel inspects the page,
+  the in-page one or the DevTools extension's.
+- `Panel`, with a `docked` layout and a `bar` slot for a host's own controls, `panelStyles`, and
+  `wireSource` and `serve`, which carry the panel's protocol over any string channel.

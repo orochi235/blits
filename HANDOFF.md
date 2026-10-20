@@ -343,8 +343,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    page's "Watching a mix" says what it does. `@msb235/blits-panel` (`packages/panel`) is built on it
    and is unreleased too; its README says what it does, and `apps/fireworks` mounts it in dev.
    `node packages/panel/scripts/smoke.mjs` drives it in headless Chromium (on the fleet; it
-   launches a browser). Next: a Chrome DevTools extension hosting the same `Panel` UI, with a
-   message channel between it and `agent()` in place of `mount()`'s in-memory one.
+   launches a browser). The Chrome DevTools extension is built too: `apps/devtools`, whose README
+   says how to load and test it. It is not on the Chrome Web Store, and putting it there is
+   Mike's call. Its calls, Mike's to overturn:
+     - top frame only
+     - it runs alongside `mount()` rather than hiding the in-page panel
+     - history is added only when "Reload with history" is pressed, per origin through a
+       `sessionStorage` mark
+     - it runs on all sites, but only `start.js` loads before a DevTools tab connects
+     - the registry key's protocol number (`watch/1`) is the contract across engine releases
    Chosen while building, Mike's to overturn:
    - **Names:** `watched()`, `watch`, `hold` and `free`.
    - **A hold's rate scales the host's frame gaps** on a host timeline of its own, so the mix

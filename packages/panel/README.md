@@ -51,6 +51,9 @@ mount({
 });
 ```
 
+`offer({ pick, outline })` hands over the same two functions without mounting anything, so the
+blits DevTools extension can pick in the scene too.
+
 Subjects are named by the mix's `labelOf` option where it has one, and otherwise by their `name`
 or `id`, a DOM element's tag, or their class and a number.
 
@@ -65,5 +68,7 @@ or `id`, a DOM element's tag, or their class and a number.
 ## The two halves
 
 The window never touches a mix. It talks to a `Source`: events up from the page and commands
-down to it, all plain data. `agent()` is the page side. `mount()` joins the two halves in one
-page, and a DevTools extension can join them across a message channel instead.
+down to it, all plain data. `agent()` is the page side and `Panel` the window. `mount()` joins
+them in one page. Across a channel, `serve(agent(), wire)` runs on the page side and
+`wireSource(wire)` on the panel's, where a `Wire` is anything that sends and receives strings; the
+blits DevTools extension in `apps/devtools` does this.
