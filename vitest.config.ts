@@ -20,6 +20,7 @@ export default defineConfig({
       'test/**/*.test.ts',
       'packages/*/test/**/*.test.ts',
       'apps/playground/test/**/*.test.ts',
+      'apps/devtools/test/**/*.test.ts',
     ],
   },
 });

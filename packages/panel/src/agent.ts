@@ -1,4 +1,5 @@
 import { type Hold, type Watched, type WatchedFrame, watched } from '@msb235/blits';
+import { offered } from './offer.js';
 import type {
   Command,
   Event,
@@ -10,7 +11,7 @@ import type {
   VoiceInfo,
 } from './protocol.js';
 
-/** What the page side of the panel can be told about the app. */
+/** What the page side of the panel can be told about the app; `offer()` tells it the same from afar. */
 export interface AgentOptions {
   /** The subject under a point in client coordinates, for scenes the DOM cannot see into. */
   pick?: (x: number, y: number) => unknown;
@@ -251,7 +252,9 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
   const outline = (s: unknown) => {
     let rect: DOMRect | undefined;
     if (s !== undefined)
-      rect = opts.outline?.(s) ?? (s instanceof Element ? s.getBoundingClientRect() : undefined);
+      rect =
+        (opts.outline ?? offered().outline)?.(s) ??
+        (s instanceof Element ? s.getBoundingClientRect() : undefined);
     if (rect === undefined) {
       overlay?.remove();
       overlay = null;
@@ -283,7 +286,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
 
   /** The subject under a point, and the mix that lists it. */
   const at = (x: number, y: number): [unknown, number] | undefined => {
-    const custom = opts.pick?.(x, y);
+    const custom = (opts.pick ?? offered().pick)?.(x, y);
     if (custom !== undefined) {
       const e = owners.get(custom);
       if (e !== undefined) return [custom, e];

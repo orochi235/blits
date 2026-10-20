@@ -1,11 +1,10 @@
 import { watched } from '@msb235/blits';
 import { createHistory } from '@weasel-js/history';
 import { ThemeProvider } from '@weasel-js/theme/react';
-import ui from '@weasel-js/ui/style.css?inline';
 import { createRoot } from 'react-dom/client';
 import { type AgentOptions, agent } from './agent.js';
+import { panelStyles } from './styles.js';
 import { Panel } from './ui/Panel.js';
-import css from './ui/panel.css?inline';
 
 export interface MountOptions extends Omit<AgentOptions, 'ignore'> {
   /**
@@ -33,14 +32,14 @@ export function mount(opts: MountOptions = {}): () => void {
   host.setAttribute('data-blits-panel', '');
   const shadow = host.attachShadow({ mode: 'open' });
   if ('adoptedStyleSheets' in shadow && typeof CSSStyleSheet.prototype.replaceSync === 'function') {
-    const sheets = [ui, css].map((text) => {
+    const sheets = [panelStyles].map((text) => {
       const sheet = new CSSStyleSheet();
       sheet.replaceSync(text);
       return sheet;
     });
     shadow.adoptedStyleSheets = sheets;
   } else
-    for (const text of [ui, css]) {
+    for (const text of [panelStyles]) {
       const style = document.createElement('style');
       style.textContent = text;
       shadow.appendChild(style);

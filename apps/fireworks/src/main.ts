@@ -22,8 +22,9 @@ const rateOut = el<HTMLOutputElement>('rate-out');
 /** A gap between frames this long is a hidden tab coming back, and is left out of the show. */
 const AWAY_MS = 250;
 
-// The debugger panel, in dev only; mounted before the mix so the mix can scrub back.
-if (import.meta.env.DEV) mount();
+// The debugger panel, in dev only; mounted before the mix so the mix can scrub back. `?nopanel`
+// leaves it off, for the DevTools extension alone.
+if (import.meta.env.DEV && !new URLSearchParams(location.search).has('nopanel')) mount();
 
 const m = mix<Shell, Pose>(KIT, {
   name: 'show',

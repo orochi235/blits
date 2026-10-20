@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import type { Event, HoldInfo, MixInfo, Source, SubjectInfo, VoiceInfo } from '../protocol.js';
 import { Samples } from '../store.js';
 import { ChannelPlot } from './ChannelPlot.js';
@@ -80,8 +80,16 @@ function onScreen(x: number, y: number): { x: number; y: number } {
 
 const fmt = (ms: number) => (Number.isFinite(ms) ? `${(ms / 1000).toFixed(2)}s` : '—');
 
-/** The panel: a pill in a corner that opens into a window over the page. */
-export function Panel({ source }: { source: Source }) {
+export interface PanelProps {
+  source: Source;
+  /** Fills its container, with no pill and no dragging: for a host such as a DevTools tab. */
+  docked?: boolean;
+  /** More controls for the top bar, from the host. */
+  bar?: ReactNode;
+}
+
+/** The panel: a pill in a corner that opens into a window over the page, or docked, the window alone. */
+export function Panel({ source, docked = false, bar }: PanelProps) {
   const [s, dispatch] = useReducer(reduce, initial);
   const samples = useRef(new Samples());
   const [place, setPlace] = useState(() => {
@@ -198,7 +206,7 @@ export function Panel({ source }: { source: Source }) {
     </>
   );
 
-  if (!place.open)
+  if (!docked && !place.open)
     return (
       <div className="bp-pill" style={{ left: place.x, top: place.y }} onPointerDown={drag}>
         <span className="bp-name">{mix?.name ?? 'blits'}</span>
@@ -212,8 +220,11 @@ export function Panel({ source }: { source: Source }) {
 
   const shown = s.subjects.filter((x) => x.label.toLowerCase().includes(query.toLowerCase()));
   return (
-    <div className="bp-window" style={{ left: place.x, top: place.y }}>
-      <div className="bp-bar" onPointerDown={drag}>
+    <div
+      className={docked ? 'bp-window bp-docked' : 'bp-window'}
+      style={docked ? undefined : { left: place.x, top: place.y }}
+    >
+      <div className="bp-bar" onPointerDown={docked ? undefined : drag}>
         <select
           aria-label="mix"
           value={s.mix ?? ''}
@@ -244,9 +255,12 @@ export function Panel({ source }: { source: Source }) {
             </option>
           ))}
         </select>
-        <button type="button" title="collapse" onClick={() => move(false)}>
-          ⤡
-        </button>
+        {bar}
+        {!docked && (
+          <button type="button" title="collapse" onClick={() => move(false)}>
+            ⤡
+          </button>
+        )}
         <span className="bp-time">{fmt(s.hold.now)}</span>
       </div>
       {mix !== undefined && <Notes mix={mix} hold={s.hold} />}
@@ -324,7 +338,7 @@ function Notes({ mix, hold }: { mix: MixInfo; hold: HoldInfo }) {
       : !h.tape
         ? 'no tape: it only pauses and steps forward'
         : h.added
-          ? `history: ${(h.ms / 1000).toFixed(0)} s, added by the panel`
+          ? `history: ${(h.ms / 1000).toFixed(0)} s, added by the debugger`
           : `history: ${(h.ms / 1000).toFixed(0)} s, its own`;
   return (
     <p className="bp-note">
