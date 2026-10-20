@@ -34,7 +34,10 @@ version and everything else the patch. Each release lists its changes as **Break
   after a seek back and return, what a mix never sought shows. A seek no longer boxes its moment
   once per record it puts back: the `seek` row at 10,000 subjects allocates 7.9 MB a frame against
   8.8, and takes 10.44 ms against 9.88, inside its runs' spread (msb-uai, medians of nine
-  alternated runs against `1077ab4`).
+  alternated runs against `1077ab4`). A seek's relink takes each voice's record from the subject's
+  old chain where its store can tell the record is still its own, instead of looking it up by
+  subject: the `seek` row at 10,000 subjects takes 9.42 ms a frame against 9.95, and 1,000 subjects
+  0.864 against 0.884 (msb-uai, medians of nine alternated runs against `c3fe7a8`).
 - A mix sought back often no longer grows without bound: each voice kept a little for every seek
   back to a later moment than the last, and the records subjects left with after each seek, and
   let go of neither. Three voices sought back and returned every frame held 2.26 MB more after
