@@ -68,30 +68,59 @@ function keep(p: { x: number; y: number; open: boolean }) {
   } catch {}
 }
 
+/** Keeps at least the panel's corner on screen, so a place kept from a larger window stays reachable. */
+function onScreen(x: number, y: number): { x: number; y: number } {
+  const w = typeof innerWidth === 'number' ? innerWidth : 1024;
+  const h = typeof innerHeight === 'number' ? innerHeight : 768;
+  return {
+    x: Math.min(Math.max(0, x), Math.max(0, w - 120)),
+    y: Math.min(Math.max(0, y), Math.max(0, h - 40)),
+  };
+}
+
 const fmt = (ms: number) => (Number.isFinite(ms) ? `${(ms / 1000).toFixed(2)}s` : '—');
 
 /** The panel: a pill in a corner that opens into a window over the page. */
 export function Panel({ source }: { source: Source }) {
   const [s, dispatch] = useReducer(reduce, initial);
   const samples = useRef(new Samples());
-  const [place, setPlace] = useState(placed);
+  const [place, setPlace] = useState(() => {
+    const p = placed();
+    return { ...p, ...onScreen(p.x, p.y) };
+  });
   const [query, setQuery] = useState('');
+  const [hovered, setHovered] = useState<number | null>(null);
+  // A row can vanish under the pointer, which then never leaves it: clear its outline here.
+  useEffect(() => {
+    if (hovered !== null && !s.subjects.some((x) => x.id === hovered)) {
+      setHovered(null);
+      source.send({ kind: 'outline', subject: null });
+    }
+  }, [hovered, s.subjects, source]);
   const frontier = useRef(Number.NEGATIVE_INFINITY);
 
   useEffect(() => {
+    // Samples and the clock come every frame of the mix; both are drawn at most once a frame here.
     let queued = 0;
+    let hold: HoldInfo | null = null;
     const draw = () => {
       queued = 0;
+      if (hold !== null) dispatch({ kind: 'hold', hold });
+      hold = null;
       dispatch({ kind: 'drawn' });
+    };
+    const later = () => {
+      if (queued === 0) queued = requestAnimationFrame(draw);
     };
     const off = source.subscribe((e) => {
       if (e.kind === 'samples') {
         if (e.reset) samples.current.reset();
         for (const x of e.samples) samples.current.push(x);
-        if (queued === 0) queued = requestAnimationFrame(draw);
-        return;
-      }
-      dispatch(e);
+        later();
+      } else if (e.kind === 'hold') {
+        hold = e.hold;
+        later();
+      } else dispatch(e);
     });
     return () => {
       off();
@@ -106,7 +135,7 @@ export function Panel({ source }: { source: Source }) {
   if (!held) frontier.current = Number.NEGATIVE_INFINITY;
 
   const move = (open: boolean, x = place.x, y = place.y) => {
-    const next = { x, y, open };
+    const next = { ...onScreen(x, y), open };
     setPlace(next);
     keep(next);
   };
@@ -116,13 +145,18 @@ export function Panel({ source }: { source: Source }) {
     const from = { x: ev.clientX - place.x, y: ev.clientY - place.y };
     const target = ev.currentTarget as HTMLElement;
     target.setPointerCapture(ev.pointerId);
-    const onMove = (e: PointerEvent) => move(place.open, e.clientX - from.x, e.clientY - from.y);
+    const open = place.open;
+    const onMove = (e: PointerEvent) => move(open, e.clientX - from.x, e.clientY - from.y);
     const onUp = () => {
       target.removeEventListener('pointermove', onMove);
       target.removeEventListener('pointerup', onUp);
+      target.removeEventListener('pointercancel', onUp);
+      target.removeEventListener('lostpointercapture', onUp);
     };
     target.addEventListener('pointermove', onMove);
     target.addEventListener('pointerup', onUp);
+    target.addEventListener('pointercancel', onUp);
+    target.addEventListener('lostpointercapture', onUp);
   };
 
   const clock = (
@@ -130,10 +164,10 @@ export function Panel({ source }: { source: Source }) {
       <button
         type="button"
         className={held ? 'bp-on' : ''}
-        disabled={mix === undefined || s.hold.state === 'elsewhere'}
+        disabled={mix === undefined}
         title={
           s.hold.state === 'elsewhere'
-            ? 'held elsewhere'
+            ? 'held elsewhere: try again'
             : held
               ? 'free the clock'
               : 'hold the clock'
@@ -243,8 +277,14 @@ export function Panel({ source }: { source: Source }) {
                   type="button"
                   className={x.id === s.subject ? 'bp-item bp-on' : 'bp-item'}
                   onClick={() => send({ kind: 'subject', id: x.id })}
-                  onPointerEnter={() => send({ kind: 'outline', subject: x.id })}
-                  onPointerLeave={() => send({ kind: 'outline', subject: null })}
+                  onPointerEnter={() => {
+                    setHovered(x.id);
+                    send({ kind: 'outline', subject: x.id });
+                  }}
+                  onPointerLeave={() => {
+                    setHovered(null);
+                    send({ kind: 'outline', subject: null });
+                  }}
                 >
                   {x.label}
                 </button>

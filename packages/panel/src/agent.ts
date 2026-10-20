@@ -50,6 +50,12 @@ class Ids {
     return id;
   }
 
+  /** Forgets the ids of subjects that have been collected. */
+  prune(): void {
+    for (const [id, b] of this.back)
+      if (b instanceof WeakRef && b.deref() === undefined) this.back.delete(id);
+  }
+
   get(id: number): unknown {
     const b = this.back.get(id);
     if (b === undefined) return undefined;
@@ -80,20 +86,24 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
   const fns = new Set<(event: Event) => void>();
   const ids = new Ids();
   const registry = watched();
-  let cur: Watched | null = null;
+  // The picked mix by id, looked up each time: holding its entry would keep it alive.
+  let curId: number | null = null;
   let subject: unknown;
   let unwatch: (() => void) | null = null;
   let hold: Hold | null = null;
   let elsewhere = false;
   let lastList = '';
   let voicesAt = Number.NEGATIVE_INFINITY;
-  let owners = new Map<unknown, Watched>();
+  let owners = new Map<unknown, number>();
+  /** What each voice was cued with, by handle id; a voice's name and tags never change. */
+  const named = new Map<number, { name: string | null; tags: string[] }>();
 
   const emit = (event: Event) => {
     for (const fn of [...fns]) fn(event);
   };
   const entries = () => registry.entries();
   const byId = (id: number) => entries().find((e) => e.id === id);
+  const current = (): Watched | null => (curId === null ? null : (byId(curId) ?? null));
 
   const mixInfo = (e: Watched): MixInfo => ({
     id: e.id,
@@ -106,16 +116,24 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
 
   const holdInfo = (): HoldInfo => {
     if (hold !== null) return { state: 'held', rate: hold.rate, now: hold.now, reach: hold.reach };
-    const now = cur?.mix.now ?? Number.NaN;
+    const now = current()?.mix.now ?? Number.NaN;
     return { state: elsewhere ? 'elsewhere' : 'free', rate: 1, now, reach: now };
   };
   const sendHold = () => emit({ kind: 'hold', hold: holdInfo() });
 
   const voices = (): VoiceInfo[] => {
-    if (cur === null) return [];
-    const e = cur;
-    return e.mix.voices().map((h) => {
-      const v = e.voice(h);
+    const e = current();
+    if (e === null) return [];
+    const handles = e.mix.voices();
+    const live = new Set(handles.map((h) => h.id));
+    for (const id of named.keys()) if (!live.has(id)) named.delete(id);
+    return handles.map((h) => {
+      let v = named.get(h.id);
+      if (v === undefined) {
+        const cued = e.voice(h);
+        v = { name: cued?.name ?? null, tags: [...(cued?.tags ?? [])] };
+        named.set(h.id, v);
+      }
       let weight = Number.NaN;
       if (subject !== undefined)
         try {
@@ -123,8 +141,8 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
         } catch {}
       return {
         id: h.id,
-        name: v?.name ?? null,
-        tags: [...(v?.tags ?? [])],
+        name: v.name,
+        tags: v.tags,
         state: h.state,
         weight,
       };
@@ -137,12 +155,13 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
 
   /** Sends the subject list where it changed, and notes which mix lists each subject. */
   const sendSubjects = () => {
-    const next = new Map<unknown, Watched>();
-    for (const e of entries()) for (const s of e.subjects()) if (!next.has(s)) next.set(s, e);
-    if (cur !== null) for (const s of cur.subjects()) next.set(s, cur);
+    const next = new Map<unknown, number>();
+    const e = current();
+    for (const x of entries()) for (const s of x.subjects()) if (!next.has(s)) next.set(s, x.id);
+    if (e !== null) for (const s of e.subjects()) next.set(s, e.id);
     owners = next;
-    if (cur === null) return;
-    const e = cur;
+    ids.prune();
+    if (e === null) return;
     const list: SubjectInfo[] = e.subjects().map((s) => ({ id: ids.of(s), label: e.label(s) }));
     const text = JSON.stringify(list);
     if (text === lastList) return;
@@ -182,7 +201,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
   };
 
   const onFrame = (frame: WatchedFrame<unknown, unknown>) => {
-    const e = cur;
+    const e = current();
     if (e === null) return;
     if (subject !== undefined) {
       const s = sampleOf(e, frame);
@@ -202,12 +221,13 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     if (hold !== null && (e === undefined || !hold.mixes.includes(e.mix))) freeHold();
     unwatch?.();
     unwatch = null;
-    cur = e ?? null;
+    curId = e?.id ?? null;
     subject = undefined;
     lastList = '';
     elsewhere = false;
-    if (cur !== null) unwatch = cur.watch(onFrame);
-    emit({ kind: 'picked', mix: cur?.id ?? null, subject: null });
+    named.clear();
+    if (e !== undefined) unwatch = e.watch(onFrame);
+    emit({ kind: 'picked', mix: curId, subject: null });
     emit({ kind: 'samples', samples: [], reset: true });
     sendSubjects();
     sendVoices();
@@ -216,7 +236,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
 
   const pickSubject = (id: number | null) => {
     subject = id === null ? undefined : ids.get(id);
-    const e = cur;
+    const e = current();
     emit({ kind: 'picked', mix: e?.id ?? null, subject: subject === undefined ? null : id });
     emit({
       kind: 'samples',
@@ -262,7 +282,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     opts.ignore !== undefined && ev.composedPath().includes(opts.ignore);
 
   /** The subject under a point, and the mix that lists it. */
-  const at = (x: number, y: number): [unknown, Watched] | undefined => {
+  const at = (x: number, y: number): [unknown, number] | undefined => {
     const custom = opts.pick?.(x, y);
     if (custom !== undefined) {
       const e = owners.get(custom);
@@ -294,7 +314,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     arm(false);
     if (hit === undefined) return;
     const [s, e] = hit;
-    if (cur !== e) pickMix(e.id);
+    if (curId !== e) pickMix(e);
     sendSubjects();
     pickSubject(ids.of(s));
   };
@@ -329,9 +349,9 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
         return;
       case 'hold':
         if (!c.on) freeHold();
-        else if (hold === null && cur !== null)
+        else if (hold === null && current() !== null)
           try {
-            hold = cur.hold();
+            hold = (current() as Watched).hold();
             elsewhere = false;
           } catch {
             elsewhere = true;
@@ -365,7 +385,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
 
   const offRegistry = registry.on((change) => {
     sendMixes();
-    if (change.kind === 'gone' && cur !== null && cur.id === change.id) pickMix(null);
+    if (change.kind === 'gone' && curId === change.id) pickMix(null);
   });
   const timer = setInterval(sendSubjects, LIST_MS);
 
@@ -375,7 +395,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
       fn({ kind: 'mixes', mixes: entries().map(mixInfo) });
       fn({
         kind: 'picked',
-        mix: cur?.id ?? null,
+        mix: curId,
         subject: subject === undefined ? null : ids.of(subject),
       });
       fn({ kind: 'hold', hold: holdInfo() });

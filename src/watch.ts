@@ -174,7 +174,9 @@ function guess(subject: unknown): string {
 }
 
 function subjectsOf(mix: Any): unknown[] {
-  const out = new Set<unknown>(taps.get(mix)?.seen);
+  const t = taps.get(mix);
+  const out = new Set<unknown>(t?.was);
+  for (const s of t?.seen ?? []) out.add(s);
   for (const v of mix.cued)
     if (v.state !== 'done') for (const s of v.spec.subjects ?? []) out.add(s);
   return [...out];
@@ -236,7 +238,9 @@ function proto(o: object): Record<string, unknown> {
 interface Tap {
   fns: Set<(frame: WatchedFrame<unknown, unknown>) => void>;
   frame: WatchedFrame<unknown, unknown> | null;
+  /** The subjects the host read this frame and the one before, so a subject read once is not kept. */
   seen: Set<unknown>;
+  was: Set<unknown>;
   untap: () => void;
 }
 
@@ -276,6 +280,7 @@ function tap(mix: Any, fn: (frame: WatchedFrame<unknown, unknown>) => void): () 
       fns: new Set(),
       frame: null,
       seen: new Set(),
+      was: new Set(),
       untap: () => {
         for (const put of puts) put();
       },
@@ -284,14 +289,26 @@ function tap(mix: Any, fn: (frame: WatchedFrame<unknown, unknown>) => void): () 
     ctlOf(mix.transport).tapped++;
     fit(mix.transport);
   }
-  const own = t;
-  own.fns.add(fn);
+  t.fns.add(fn);
+  return stopper(new WeakRef(mix), fn);
+}
+
+/**
+ * What stops one watcher, holding the mix weakly so a debugger that keeps it does not keep the
+ * mix alive. Made out here: a closure made inside `tap` would share the scope that holds the mix.
+ */
+function stopper(
+  ref: WeakRef<Any>,
+  fn: (frame: WatchedFrame<unknown, unknown>) => void,
+): () => void {
   return () => {
-    if (!own.fns.delete(fn) || own.fns.size > 0) return;
+    const m = ref.deref();
+    const own = m === undefined ? undefined : taps.get(m);
+    if (m === undefined || own === undefined || !own.fns.delete(fn) || own.fns.size > 0) return;
     own.untap();
-    taps.delete(mix);
-    ctlOf(mix.transport).tapped--;
-    fit(mix.transport);
+    taps.delete(m);
+    ctlOf(m.transport).tapped--;
+    fit(m.transport);
   };
 }
 
@@ -300,6 +317,8 @@ function frameOf(mix: Any): WatchedFrame<unknown, unknown> {
   const t = taps.get(mix) as Tap;
   if (t.frame !== null && t.frame.seq === mix.transport.seq) return t.frame;
   flush(mix);
+  t.was = t.seen;
+  t.seen = new Set();
   t.frame = {
     seq: mix.transport.seq,
     now: mix.now,

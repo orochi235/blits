@@ -41,12 +41,12 @@
   "dependencies": {
     "@weasel-js/history": "1.11.0",
     "@weasel-js/theme": "1.11.0",
-    "@weasel-js/ui": "1.11.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "@weasel-js/ui": "1.11.0"
   },
   "peerDependencies": {
-    "@msb235/blits": "^0.11.0"
+    "@msb235/blits": "^0.11.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
     "@msb235/blits": "0.11.0",
@@ -54,6 +54,8 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.0.0",
     "happy-dom": "21.0.3",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "vite": "^8.0.0"
   }
 }

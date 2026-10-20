@@ -123,6 +123,9 @@ describe('the agent', () => {
     a.send({ kind: 'mix', id });
     a.send({ kind: 'hold', on: true });
     expect(last('hold')?.hold.state).toBe('elsewhere');
+    b.send({ kind: 'hold', on: false });
+    a.send({ kind: 'hold', on: true });
+    expect(last('hold')?.hold.state).toBe('held');
   });
 
   it('picks a DOM subject on the page, from an element inside it', () => {

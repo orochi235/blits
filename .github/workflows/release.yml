@@ -100,6 +100,16 @@ jobs:
             exit 1
           fi
 
+      # A package's tests run against the engine's source, so engine changes not yet on npm could
+      # pass them and still be missing for whoever installs it. The engine goes out first.
+      - name: The engine has nothing unreleased
+        if: steps.pick.outputs.dir != '.'
+        run: |
+          if awk '/^## Unreleased/{u=1; next} /^## /{u=0} u && /^- /{found=1} END{exit !found}' CHANGELOG.md; then
+            echo "the engine's CHANGELOG has unreleased entries; release the engine first" >&2
+            exit 1
+          fi
+
       # The host installs the engine as a peer; a range that leaves out the engine just tested, or
       # one npm cannot serve, would publish a broken install.
       - name: The driver's peer range takes that engine, from npm

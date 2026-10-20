@@ -180,6 +180,15 @@ describe('watching', () => {
     });
     m.sync(100);
     expect(e.subjects()).not.toContain(c);
+    // A subject the host read once drops out two frames later.
+    m.sync(200);
+    m.sync(300);
+    m.probe({ id: 'z' });
+    m.sync(400);
+    m.probe(b);
+    m.sync(500);
+    m.probe(b);
+    expect(e.subjects().map((x) => x.id)).not.toContain('z');
     off();
   });
 

@@ -10,7 +10,8 @@ import css from './ui/panel.css?inline';
 export interface MountOptions extends Omit<AgentOptions, 'ignore'> {
   /**
    * How far back every mix made from now on can scrub, ms, where it names no history of its own;
-   * `false` adds none. Default 10 s. A mix made before `mount` keeps what it has.
+   * `false` adds none. Default 10 s, unless the app already set `watched().history`, which then
+   * stands. A mix made before `mount` keeps what it has.
    */
   history?: number | false;
 }
@@ -23,8 +24,10 @@ export interface MountOptions extends Omit<AgentOptions, 'ignore'> {
 export function mount(opts: MountOptions = {}): () => void {
   const registry = watched();
   const before = registry.history;
-  const ms = opts.history ?? 10_000;
-  if (ms !== false) registry.history = { ms, tape: createHistory };
+  // A default the app or another panel already set stands, unless this one names its own.
+  const ms = opts.history ?? (before === undefined ? 10_000 : false);
+  const ours = ms === false ? undefined : { ms, tape: createHistory };
+  if (ours !== undefined) registry.history = ours;
 
   const host = document.createElement('div');
   host.setAttribute('data-blits-panel', '');
@@ -61,6 +64,6 @@ export function mount(opts: MountOptions = {}): () => void {
     root.unmount();
     page.dispose();
     host.remove();
-    if (ms !== false && registry.history?.tape === createHistory) registry.history = before;
+    if (ours !== undefined && registry.history === ours) registry.history = before;
   };
 }

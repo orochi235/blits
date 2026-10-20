@@ -44,6 +44,33 @@ describe('mount', () => {
     expect(watched().history).toBeUndefined();
   });
 
+  it("leaves a history the app set, and a second panel's, standing", async () => {
+    const own = { ms: 3000 };
+    watched().history = own;
+    let one = () => {};
+    let two = () => {};
+    await act(async () => {
+      one = mount();
+    });
+    expect(watched().history).toBe(own);
+    watched().history = undefined;
+    await act(async () => {
+      one();
+      one = mount();
+      two = mount();
+    });
+    const first = watched().history;
+    expect(first?.ms).toBe(10_000);
+    await act(async () => {
+      two();
+    });
+    expect(watched().history).toBe(first);
+    await act(async () => {
+      one();
+    });
+    expect(watched().history).toBeUndefined();
+  });
+
   it('adds no history when told not to', async () => {
     let unmount = () => {};
     await act(async () => {

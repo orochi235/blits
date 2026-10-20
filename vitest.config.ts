@@ -13,6 +13,8 @@ export default defineConfig({
     },
   },
   test: {
+    // For the tests that check a mix nobody holds is collected.
+    execArgv: ['--expose-gc'],
     setupFiles: ['test/setup.ts'],
     include: [
       'test/**/*.test.ts',
