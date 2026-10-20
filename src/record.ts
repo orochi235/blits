@@ -48,5 +48,6 @@ export function record(voice: object | null, reaches: boolean, state: unknown): 
     slot: -1,
     run: -1,
     freed: -1,
+    restored: 0,
   } satisfies WholeRecord;
 }

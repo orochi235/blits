@@ -150,6 +150,8 @@ export interface Subject<S> {
   /** A motion voice's number for this subject in its patch, good while `freed` is the patch's own. */
   run: number;
   freed: number;
+  /** In a voice's store once a seek has gone back, the seek it was last put back or written at. */
+  restored: number;
 }
 
 /**

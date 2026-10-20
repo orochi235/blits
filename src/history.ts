@@ -150,6 +150,7 @@ export function copyHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): Subject
     slot: h.slot,
     run: h.run,
     freed: h.freed,
+    restored: h.restored,
   } satisfies WholeRecord);
 }
 
