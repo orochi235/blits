@@ -9,7 +9,13 @@ import type { Subject } from './voice.js';
  * to its own, so the root it reaches holds the earliest moment sought since. Only records and the
  * stamps joined beneath it hold it, so it is collected with the last record that can read it.
  */
-export interface Stamp {
+/** A moment sought, the end of frame `seq`. */
+export interface Moment {
+  readonly t: number;
+  readonly seq: number;
+}
+
+export interface Stamp extends Moment {
   /** On a root: the earliest moment sought since, and the frame that ended. */
   t: number;
   seq: number;
@@ -63,27 +69,31 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
    */
   private roots: WeakRef<Stamp>[] = [];
   private kept = 0;
+  /**
+   * Stamps made a batch ahead of their seeks: one made at its seek is young when every old record
+   * is written with it, and V8 notes each such write for its next scavenge.
+   */
+  private ready: Stamp[] = [];
+  private aging: Stamp[] = [];
   /** The latest seek's moment. */
-  private t = Number.NaN;
+  top = Number.NaN;
 
   /**
    * `own` holds the records as they stood before the first seek, and `now` gives the one a subject
-   * that has not left since has there, as a seek to `t`, the end of frame `seq`, takes it. `make`
-   * puts a record back as it stood at `t`, undefined where it had none then; `top` is the latest
-   * seek's moment, and `mine` says `live` is the record this store held, which nothing else does.
+   * that has not left since and is not reached has there, as a seek to `at` takes it. `make` puts
+   * a record back as it stood at `at`, undefined where it had none then; `mine` says `live` is the
+   * record this store held, which nothing else does.
    */
   constructor(
     private readonly own: Store<I, Subject<unknown>>,
     private readonly now: (
       key: I,
       held: Subject<unknown> | undefined,
-      t: number,
-      seq: number,
+      at: Moment,
     ) => Subject<unknown> | undefined,
     private readonly make: (
       live: Subject<unknown>,
-      t: number,
-      top: number,
+      at: Moment,
       mine: boolean,
     ) => Subject<unknown> | undefined,
   ) {
@@ -122,8 +132,19 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
       this.roots = roots.filter((w) => w.deref() !== undefined);
       this.kept = this.roots.length;
     }
-    this.stamp = stamp();
-    this.t = t;
+    this.stamp = this.fresh();
+    this.top = t;
+  }
+
+  /** The next seek's stamp, from a batch made a batch of seeks ago, twice as many each time to 64. */
+  private fresh(): Stamp {
+    if (this.ready.length === 0) {
+      const n = Math.min(64, Math.max(1, this.aging.length * 2));
+      this.ready = this.aging.reverse();
+      this.aging = [];
+      for (let i = 0; i < n; i++) this.aging.push(stamp());
+    }
+    return this.ready.pop() ?? stamp();
   }
 
   override get(key: I): Subject<unknown> | undefined {
@@ -136,10 +157,10 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
     else this.at.set(key, now);
     // A subject that left after the moment the next seek sought had the record it left with,
     // whatever it has now. Leaving is a write, so no later seek's leavings can hold it.
-    const { t, seq } = rootOf(at);
+    const root = rootOf(at);
     const left = at.left?.at(key, at.cut as Cut);
-    const live = left ?? this.now(key, own, t, seq);
-    const made = live && this.make(live, t, this.t, left === undefined);
+    const live = left ?? this.now(key, own, root);
+    const made = live && this.make(live, root, left === undefined);
     if (made === undefined) {
       this.own.delete(key);
       if (mark) this.at.set(key, now);
