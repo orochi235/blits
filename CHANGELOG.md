@@ -11,8 +11,9 @@ version and everything else the patch. Each release lists its changes as **Break
 - `watched()`: every mix on the page, for a debugger, in one registry that all copies of blits
   share. Each entry can:
   - `watch` what the host reads each frame
-  - `read` a subject the host never probes, through `project`
+  - `read` a subject the host never probes, now or back in history, through `project`
   - `label` a subject
+  - list its kit's `channels`, and the `name` and `tags` a voice was cued with
   - `hold` the mix's clock to pause, step and seek it, without writing to the tape, then `free`
     it
   

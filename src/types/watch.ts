@@ -40,6 +40,12 @@ export interface Watched<I = unknown, O = unknown> {
   readonly history:
     | { readonly ms: number; readonly tape: boolean; readonly added: boolean }
     | undefined;
+  /** The kit's channel names, in kit order. */
+  readonly channels: readonly string[];
+  /** What a voice was cued with that its handle does not carry; undefined for a handle not on this mix. */
+  voice(
+    handle: Handle<I>,
+  ): { readonly name: string | undefined; readonly tags: readonly string[] } | undefined;
   /** What to call a subject: the mix's `labelOf`, else a guess from the subject itself. */
   label(subject: I): string;
   /**
@@ -50,8 +56,11 @@ export interface Watched<I = unknown, O = unknown> {
   watch(fn: (frame: WatchedFrame<I, O>) => void): () => void;
   /** The subjects its voices name, and those the host has read while watched. */
   subjects(): I[];
-  /** One subject's pose now, read through `project`, which moves nothing: never a probe. */
-  read(subject: I): O;
+  /**
+   * One subject's pose at mix time `at`, default now, read through `project`, which moves nothing:
+   * never a probe. A time behind now needs history that reaches it.
+   */
+  read(subject: I, at?: number): O;
   /** Takes the clock from the host: see `Hold`. Throws while another hold has it. */
   hold(): Hold;
 }

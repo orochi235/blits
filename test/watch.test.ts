@@ -192,6 +192,21 @@ describe('watching', () => {
   });
 });
 
+describe('what an entry tells', () => {
+  it("names the channels, a voice's name and tags, and reads back in time", () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 1000 } });
+    const h = m.cue({ patch: clock, start: 0, name: 'tick', tags: ['beat'] });
+    const e = entryOf(m);
+    m.sync(0);
+    m.sync(300);
+    expect(e.channels).toEqual(['x']);
+    expect(e.voice(h)).toEqual({ name: 'tick', tags: ['beat'] });
+    expect(e.voice(mix<Part, Pose>(K).cue({ patch: clock }))).toBeUndefined();
+    expect(e.read(a, 100).x).toBe(100);
+    expect(e.read(a).x).toBe(300);
+  });
+});
+
 describe('holding', () => {
   function setup(opts: Parameters<typeof mix>[1] = taped) {
     const m = mix<Part, Pose>(K, opts);

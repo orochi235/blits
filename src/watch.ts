@@ -117,10 +117,16 @@ export function register(mix: Any): void {
         ? undefined
         : { ms: h.ms, tape: transport.tape !== undefined, added: added.has(transport) };
     },
+    channels: mix.names as string[],
+    voice: (handle) => {
+      const v =
+        mix.cued.find((c) => c.handle === handle) ?? mix.gone.find((c) => c.handle === handle);
+      return v === undefined ? undefined : { name: v.spec.name, tags: v.spec.tags ?? [] };
+    },
     label: (subject) => labelOf(mix, subject),
     watch: (fn) => tap(mix, fn),
     subjects: () => subjectsOf(mix),
-    read: (subject) => mix.project(mix.now).probe(subject),
+    read: (subject, at = mix.now) => mix.project(at).probe(subject),
     hold: () => hold(transport),
   };
   r.entries_.set(mix, entry);
