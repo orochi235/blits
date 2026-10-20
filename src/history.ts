@@ -1,5 +1,5 @@
 import { elapsedWith } from './clock.js';
-import { clone } from './clone.js';
+import { clone, cloneInto } from './clone.js';
 import { schedule } from './due.js';
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
@@ -278,11 +278,22 @@ export function apart(history: { readonly every?: number }): number {
 /** A copy of a record to keep now, written over a spare the latest seek back cut where it has one. */
 function snapOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): Snap<unknown> {
   const spare = voice.spares?.pop();
+  const sole = voice.patch.clone === undefined;
   if (spare === undefined)
-    return { at: mix.now, seq: mix.transport.seq, held: copyHeld(voice, held) };
+    return { at: mix.now, seq: mix.transport.seq, held: copyHeld(voice, held), sole };
   spare.at = mix.now;
   spare.seq = mix.transport.seq;
-  copyHeldInto(voice, held, spare.held);
+  const into = spare.held;
+  const old = spare.sole === true && sole ? into.state : undefined;
+  copyHeldInto(voice, held, into, true);
+  const state = held.state;
+  into.state =
+    state === undefined
+      ? state
+      : old === undefined
+        ? copyState(voice, state)
+        : cloneInto(state, old);
+  spare.sole = sole;
   return spare;
 }
 

@@ -58,6 +58,35 @@ function copied(v: unknown, depth: number): unknown {
   return out;
 }
 
+/**
+ * `clone(v)`, written over `into` where `into` is a plain object of data properties nothing else
+ * holds, with the same keys in the same order as `v`, and every value of `v` is a primitive; else
+ * a new `clone(v)`, and `into` may be partly written.
+ */
+export function cloneInto<T>(v: T, into: unknown): T {
+  if (typeof v !== 'object' || v === null || typeof into !== 'object' || into === null)
+    return clone(v);
+  if (Array.isArray(v) || Object.getPrototypeOf(into) !== Object.prototype) return clone(v);
+  const proto = Object.getPrototypeOf(v);
+  if (proto !== Object.prototype && proto !== null) return clone(v);
+  let n = 0;
+  for (const k in into) intoKeys[n++] = k;
+  const out = into as Record<string, unknown>;
+  let i = 0;
+  for (const k in v) {
+    if (i === n || intoKeys[i] !== k || k === '__proto__') return clone(v);
+    const x = (v as Record<string, unknown>)[k];
+    if ((typeof x === 'object' && x !== null) || typeof x === 'function' || typeof x === 'symbol')
+      return clone(v);
+    out[k] = x;
+    i++;
+  }
+  return i === n ? (into as T) : clone(v);
+}
+
+/** `into`'s keys for one `cloneInto`, kept between calls so reading them allocates nothing. */
+const intoKeys: string[] = [];
+
 /** A copy a fold may write into: arrays, typed arrays and plain objects copied, the rest as is. */
 export function copy(v: unknown): unknown {
   if (typeof v !== 'object' || v === null) return v;

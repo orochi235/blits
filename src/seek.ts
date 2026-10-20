@@ -70,6 +70,8 @@ function restore<I, O>(
     h.slot = slot;
     h.restored = restored;
   } else h = copyHeld(voice, snap.held, true);
+  // Its state is lent to the record, so a spare made of this copy must not write over it.
+  snap.sole = false;
   h.weight = 0;
   if (snap.at < t) h.copied = true;
   const kept = i + 1;
