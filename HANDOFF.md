@@ -1085,12 +1085,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `freeze: 'before'`. Fixing it means choosing what that pose should be. Seen once and not
         chased: under a mix rate of 0.5 the same loop left the next sync's `now` an ulp off.
         `SAME_WAIT=1` in `bench/same.mjs` makes scenes of this shape.
-      - **The fleet's copy of blits has a stale `node_modules`** (found 2026-10-11): its
-        `@weasel-js/history` has no `timestampAt`, so the bench's `kept` and `seek` rows fail
-        there until a job installs afresh.
-      - **The stale-start fix (`214909d`) has no clean timing** (2026-10-11): three rounds on a
-        busy orochi moved the `kept` and `seek` rows up to 24% both ways. Rerun those rows with
-        `AB_EACH=1 bench/ab.sh` on an idle node.
+      - **A fleet node's copy of blits may have a stale `node_modules`** (found 2026-10-11): its
+        `@weasel-js/history` had no `timestampAt`, so the bench's `kept` and `seek` rows failed.
+        A bench job that runs `npm ci` first works (msb-uai and keiei, 2026-10-20).
     - **Few consumers use step 7 yet.** klieg's `level` is built on `input` with a `touch()` in
       its `set` (klieg `c32d440`, unreleased); whether its level-weighted voices then run on
       lanes is not checked. The other workarounds the doc's "Universal applicability" table
