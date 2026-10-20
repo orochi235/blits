@@ -128,13 +128,14 @@ describe('a mix sought back and to where it was, every frame', () => {
     looped(200, opts(50), { make: () => drift(0, true) });
   });
 
-  it('copies state ahead once an interval, not once a frame', () => {
+  it("copies a subject's state twice a frame, and never to step it ahead", () => {
     const frames = 330;
     const { count } = looped(frames, opts(50));
-    // A frame, a subject: the record put back, the state taken up, and the copy the probe keeps.
+    // A frame, a subject: the record put back and the copy the probe keeps. The state taken up is
+    // the one the seek replaced, which nothing else holds, so it is not copied.
     const each = count.copies / subjects.length / (frames - 30);
-    expect(each).toBeGreaterThan(3);
-    expect(each).toBeLessThan(3 + (2 * FRAME) / 50);
+    expect(each).toBeGreaterThan(2);
+    expect(each).toBeLessThan(2 + (2 * FRAME) / 50);
   });
 
   it('comes back to each moment it sought, and those around it, as it showed them', () => {

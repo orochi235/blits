@@ -252,7 +252,9 @@ function ahead<I, O>(
   const due = dueBy(held, tick, to);
   const usable = got.state !== undefined && got.ticks <= due;
   if (got.left !== undefined && got.leftTicks <= due && !(usable && got.ticks > got.leftTicks)) {
-    held.state = copyState(voice, got.left);
+    // Taken, not copied: the next seek back keeps the state this record steps on to in its place.
+    held.state = got.left;
+    got.left = undefined;
     voice.setting.state = held.state;
     held.ticks = got.leftTicks;
     return;
