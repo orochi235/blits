@@ -20,6 +20,17 @@ version and everything else the patch. Each release lists its changes as **Break
   A mix nobody watches runs the same code as before. `watched().history` gives history to mixes
   made later that name none. `MixOptions.labelOf` names subjects for it.
 
+### Fixed
+
+- A `seek` back and a return to where the mix was cost about half what they did: a record put back
+  takes up the state of the record the seek replaced instead of stepping again from its copy, and
+  copies are made with fewer allocations. Three voices over 10,000 subjects with 5 s of history,
+  sought 300 ms back and returned before every sync (`seek`), take 19.6 ms a frame against 31.8,
+  and allocate 20.2 MB a frame against 35.3; 1,000 subjects take 1.22 ms against 1.85 (msb-uai,
+  medians of nine alternated runs against `4374f34`, each in its own process). Rows that never seek
+  read level. A `step` that reads `setting.weight`, `elapsed` or `pass` now shows, after a seek
+  back and return, what a mix never sought shows.
+
 ## 0.11.0
 
 ### Breaking
