@@ -51,7 +51,7 @@ function restore<I, O>(
   }
   const snap = last(snaps, t, true);
   if (snap === undefined) return undefined;
-  const h = copyHeld(voice, snap.held);
+  const h = copyHeld(voice, snap.held, true);
   h.weight = 0;
   if (snap.at < t) h.copied = true;
   const kept = snaps.indexOf(snap) + 1;

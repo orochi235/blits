@@ -109,8 +109,15 @@ export function copyState<I, O>(voice: Voice<I, O>, state: unknown): unknown {
   return patch.clone ? patch.clone(state) : clone(state);
 }
 
-/** A copy of a subject's record that shares nothing a read could change. */
-export function copyHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): Subject<unknown> {
+/**
+ * A copy of a subject's record that shares nothing a read could change; with `shared`, its state is
+ * the record's own, for a copy that takes one of its own before it steps.
+ */
+export function copyHeld<I, O>(
+  voice: Voice<I, O>,
+  h: Subject<unknown>,
+  shared = false,
+): Subject<unknown> {
   let kept: Map<object, unknown> | null = null;
   if (h.kept !== null) {
     kept = new Map();
@@ -125,7 +132,7 @@ export function copyHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): Subject
     weight: h.weight,
     rested: h.rested,
     bands: h.bands === null ? null : h.bands.slice(),
-    state: h.state === undefined ? undefined : copyState(voice, h.state),
+    state: h.state === undefined || shared ? h.state : copyState(voice, h.state),
     stepped: h.stepped,
     ticks: h.ticks,
     probed: h.probed,
