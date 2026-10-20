@@ -1069,49 +1069,59 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         so it was backed out: `glowl` 2.359 to 2.393 ms and `glowl^` 1.680 to 1.691 (msb-uai,
         2026-10-10, 7 rounds at 3,000 frames against `350991c`, every row's runs overlapping,
         on a node whose runs spread 6% to 14%). So the repeat fill is not shown to be the cost.
-      - **A seek back and its return cost about 2.1 ms at 10,000 subjects** (msb-uai,
-        2026-10-20, `AB_EACH=1 bench/ab.sh c3fe7a8 cedd85c 9`, medians, ms a frame). The `kept`
-        rows sync and probe a mix keeping 5 s of history and a tape; the `seek` rows also seek it
-        300 ms back and to where it was before every sync.
+      - **A seek back and its return cost about 1.9 ms at 10,000 subjects** (msb-uai,
+        2026-10-20, `AB_EACH=1 bench/ab.sh a0a5bf4 c101d90 9`, medians of `a0a5bf4`'s 9 runs, ms
+        a frame). The `kept` rows sync and probe a mix keeping 5 s of history and a tape; the
+        `seek` rows also seek it 300 ms back and to where it was before every sync.
 
-        | Subjects | `kept` | `seek` | A seek back and return | `seek` on `c3fe7a8` |
-        |---:|---:|---:|---:|---:|
-        |  1,000 | 0.658 | 0.864 | 0.206 | 0.884 |
-        | 10,000 | 7.317 | 9.416 | 2.099 | 9.952 |
+        | Subjects | `kept` | `seek` | A seek back and return |
+        |---:|---:|---:|---:|
+        |  1,000 | 0.627 | 0.861 | 0.234 |
+        | 10,000 | 7.224 | 9.089 | 1.865 |
 
-        At 10,000 subjects the `seek` runs read 8.50 to 9.85 against 9.30 to 10.47; the runs
-        overlap, but a rank test on the 9 against 9 puts the shift past chance (U = 16, under the
-        17 that p < 0.05 needs), and a local profile shows the lookups it removes gone. Both
-        allocate 8.2 MB a frame. A relink hands each voice the record the subject's old chain held
-        for it (`linkAll` in `src/chain.ts`), and `Restored.find` takes it without a `WeakMap`
-        lookup where its stamp is one that store made: a record the store lets go of is stamped
-        `gone`, a copy carries no stamp, and setting a stamped record again turns the shortcut off
-        for that store (`sure`), as it could then sit under a second key. In `bench/same.mjs`
-        scenes with seeks 87% of finds take the shortcut and none turns it off (counted locally).
-        A record put back steps once a frame, as an unsought one does: it takes up the state of
-        the record the seek replaced (`left` on the copy's `Ahead`, `ahead` in `src/fold.ts`),
-        under `stepMs` with no `maxDt` for a patch that `reads` no host field. A seek keeps every
-        subject's number and chain (`renew` in `src/lanes.ts`; `headOf` reads such a chain as absent
-        until it is linked). A reaching record the store alone holds is written over with its copy
-        (`copyHeldInto`), and a probe's kept copy is written over one the seek cut (`spares` on the
-        voice). `Restored` stamps a record with the seek it was put back at; stamps of seeks to as
-        early a moment are joined by union-find and the roots are held weakly, so what the store
-        keeps is bounded by the records alive (`test/restored.test.ts`). Within one synchronous job
-        nothing a weak reference reaches is collected, so a host seeking in a loop without yielding
-        holds a stamp per seek until the job ends. Tried and backed out: writing a spare copy's state
-        clone into the spare's own state object where no record was lent it (`7768e08`, reverted
-        in `d1ef4fe`). It was exact and cut 0.72 MB a frame, but read 9.52 ms against 9.32, inside
-        the spread, and a local profile put 4.3% in the in-place copy against 3.1% in the clone it
-        replaced: its two walks over the keys cost more than the allocation saved. A local profile
-        now (`cedd85c`, 3,000 frames) puts 9% in the first read of the old copy (`keptOf`, by its
-        line a cache miss: in these rows every record is put back every frame from the copy kept
-        before the seeking began), 7% in `restore`, 5% in the closure around it in `restoreVoice`,
-        3% each in `Restored.from` and `copyHeldInto`. Left: a record stepped on from its copy with
-        nothing since rebuilding or moving its start comes back from a seek and return holding what
-        it held before, so skipping its put back would skip that read; proving which fields a
-        put back and the probe after it leave unchanged is the work. The `kept` rows read 1% above
-        `c3fe7a8` here, inside the spread, and do not relink; on this Mac a 10,000-subject `kept` run
-        lands near 5.5 or near 7.5 ms by how far V8 grows its young generation
+        At 10,000 subjects one build's `seek` runs spread 8.67 to 10.07 ms, so a change worth under
+        about 5% there does not show in 9 rounds. The row allocates 8.2 MB a frame. A relink hands
+        each voice the record the subject's old chain held for it (`linkAll` in `src/chain.ts`), and
+        `Restored.find` takes it without a `WeakMap` lookup where its stamp is one that store made:
+        a record the store lets go of is stamped `gone`, a copy carries no stamp, and setting a
+        stamped record again turns the shortcut off for that store (`sure`), as it could then sit
+        under a second key. In `bench/same.mjs` scenes with seeks 87% of finds take the shortcut and
+        none turns it off (counted locally). A record put back steps once a frame, as an unsought
+        one does: it takes up the state of the record the seek replaced (`left` on the copy's
+        `Ahead`, `ahead` in `src/fold.ts`), under `stepMs` with no `maxDt` for a patch that `reads`
+        no host field. A seek keeps every subject's number and chain (`renew` in `src/lanes.ts`;
+        `headOf` reads such a chain as absent until it is linked). A reaching record the store alone
+        holds is written over with its copy (`copyHeldInto`), and a probe's kept copy is written
+        over one the seek cut (`spares` on the voice). `Restored` stamps a record with the seek it
+        was put back at; stamps of seeks to as early a moment are joined by union-find and the roots
+        are held weakly, so what the store keeps is bounded by the records alive
+        (`test/restored.test.ts`). Within one synchronous job nothing a weak reference reaches is
+        collected, so a host seeking in a loop without yielding holds a stamp per seek until the job
+        ends. Tried and backed out: writing a spare copy's state clone into the spare's own state
+        object where no record was lent it (`7768e08`, reverted in `d1ef4fe`). It was exact and cut
+        0.72 MB a frame, but read 9.52 ms against 9.32, inside the spread, and a local profile put
+        4.3% in the in-place copy against 3.1% in the clone it replaced: its two walks over the keys
+        cost more than the allocation saved. Also tried and backed out: putting records back through
+        one class's methods (`Sought`, implementing a `PutBack` interface `Restored` calls) in place
+        of the 2 closures `restoreVoice` made per voice (`c101d90`, reverted in `b6e8f88`). It was
+        exact and a local profile showed the closures' self time (about 11% between them) gone, but
+        `seek` read 8.852 ms against 9.089 at 10,000 subjects and 0.829 against 0.861 at 1,000, with
+        rank tests short of chance (U = 28 and 22.5, where p < 0.05 needs under 17). Not built:
+        skipping the put back of a record stepped on from the copy it would be put back from, which
+        a profile names as the lever (9% in `keptOf`, the first read of that copy). An inexact build
+        that skipped every read of the copy (`restore`, `ahead` and `own` in `src/fold.ts`) read
+        8.400 ms against 8.766 in 5 rounds with the runs overlapping (measured), so the most an
+        exact skip can save is about 4%: by the profile's line the cost is a cache miss, and
+        skipping that read likely moves the miss to the next read of the record rather than removing
+        it (inferred, not measured). An exact skip needs every field the put back copies
+        (`copyHeldInto`'s list) shown equal on the record, against writers in the probe, lanes,
+        `origin`, `setting.keep` and `from: 'current'`, or the copy's fields cached on its `Ahead`,
+        which grows that object by about as much as the read it saves. A narrower inexact skip (no
+        field put back from the copy where its `Ahead` stepped on from fewer ticks) reads 403 of
+        2,000 scenes differing under `SAME_SEEK=1`, lanes on or off, and fails 7 tests across
+        `test/sought.test.ts`, `seek`, `restored` and `history`, so either catches a skip made where
+        it should not be (measured). The `kept` rows do not relink; on this Mac a 10,000-subject
+        `kept` run lands near 5.5 or near 7.5 ms by how far V8 grows its young generation
         (`--max-semi-space-size` 4 against 32 gives either), so read that row over many rounds. A
         `step` reading `setting.weight`, `elapsed` or `pass` shows what a mix never sought shows
         after a seek back and return (`test/sought.test.ts`); after a seek back that stays, its
