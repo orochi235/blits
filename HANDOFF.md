@@ -340,9 +340,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    the handle (`fade({ over: 0 })`), since a voice naming a dropped subject would otherwise stay
    cued, holding it.
 0. **`watched()`, the engine side of a debugger, is built and unreleased** (2026-10-19). The mix
-   page's "Watching a mix" says what it does. Next: the in-page panel, designed and
-   unbuilt in `docs/superpowers/specs/2026-10-19-panel-design.md`, then a Chrome DevTools
-   extension hosting the same panel.
+   page's "Watching a mix" says what it does. `@msb235/blits-panel` (`packages/panel`) is built on it
+   and is unreleased too; its README says what it does, and `apps/fireworks` mounts it in dev.
+   `node packages/panel/scripts/smoke.mjs` drives it in headless Chromium (on the fleet; it
+   launches a browser). Next: a Chrome DevTools extension hosting the same `Panel` UI, with a
+   message channel between it and `agent()` in place of `mount()`'s in-memory one.
    Chosen while building, Mike's to overturn:
    - **Names:** `watched()`, `watch`, `hold` and `free`.
    - **A hold's rate scales the host's frame gaps** on a host timeline of its own, so the mix
@@ -358,6 +360,29 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      `transport()` for its history default), never from the `Mixer` constructor, which
      projections call. Custom engines don't register.
    - **The exports are filed under `mix`** on the site, not under a page of their own.
+   - **The panel is split into `agent()` (the page side) and the UI,** talking only through the
+     plain-data `Source` protocol in `packages/panel/src/protocol.ts`, so the extension reuses
+     both halves. Subjects cross as numbers the agent hands out.
+   - **The panel's calls:**
+     - It plots mix time.
+     - Paused frames replace one another.
+     - A seek back drops the plot ahead of it.
+     - The window is 10 s, capped at 1,200 frames.
+     - A subject the host didn't read that frame is read through `project` and marked
+       "read, not shown".
+     - A newly picked subject is filled backward from history, back to `reach`.
+     - Switching to a mix the hold doesn't cover frees the hold.
+     - `mount()` adds 10 s of history with a tape unless told `history: false`.
+   - **The panel is built with Vite,** not `tsc` alone, because weasel's stylesheet has to
+     reach the shadow root as a string. `tsc -b` writes only the declarations.
+   - **Releasing the panel:**
+     - It ships after the engine release that has `watched()`, since its peer range and
+       devDependency name that release.
+     - Its first publish goes out by hand (`npm publish -w packages/panel`), and Mike registers
+       trusted publishing for `@msb235/blits-panel` afterward. npm refuses trust for a name
+       that has never been published.
+   - **`ChannelPlot` moved** from the playground into the panel, which exports it. The
+     playground imports it from there, along with `hueColor`.
    - **Not measured:** a mix that was watched and then unwatched keeps its swapped methods'
      shape change in V8, and may stay slower. Nobody has benched that case.
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits, all of it measurement
