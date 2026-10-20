@@ -56,7 +56,7 @@ function restore<I, O>(
   if (snap.at < t) h.copied = true;
   const kept = snaps.indexOf(snap) + 1;
   // The record replaced is let go, so its list is cut where it stands.
-  if (mine) snaps.length = kept;
+  if (mine) while (snaps.length > kept) snaps.pop();
   h.snaps = mine ? snaps : snaps.slice(0, kept);
   h.inputs = inputs;
   // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
