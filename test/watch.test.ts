@@ -172,6 +172,14 @@ describe('watching', () => {
     m.sync(0);
     m.probe(a);
     expect(new Set(e.subjects())).toEqual(new Set([a, b]));
+    const c: Part = { id: 'c' };
+    m.cue({
+      patch: patch<Part, Pose>(10, () => ({ x: 1 }), { writes: ['x'] }),
+      subjects: [c],
+      start: 0,
+    });
+    m.sync(100);
+    expect(e.subjects()).not.toContain(c);
     off();
   });
 

@@ -175,7 +175,8 @@ function guess(subject: unknown): string {
 
 function subjectsOf(mix: Any): unknown[] {
   const out = new Set<unknown>(taps.get(mix)?.seen);
-  for (const v of mix.cued) for (const s of v.spec.subjects ?? []) out.add(s);
+  for (const v of mix.cued)
+    if (v.state !== 'done') for (const s of v.spec.subjects ?? []) out.add(s);
   return [...out];
 }
 

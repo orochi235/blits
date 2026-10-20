@@ -56,7 +56,7 @@ export interface Watched<I = unknown, O = unknown> {
    * a function that stops watching.
    */
   watch(fn: (frame: WatchedFrame<I, O>) => void): () => void;
-  /** The subjects its voices name, and those the host has read while watched. */
+  /** The subjects its voices still playing name, and those the host has read while watched. */
   subjects(): I[];
   /**
    * One subject's pose at mix time `at`, default now, read through `project`, which moves nothing:

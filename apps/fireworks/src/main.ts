@@ -27,7 +27,7 @@ if (import.meta.env.DEV) mount();
 
 const m = mix<Shell, Pose>(KIT, {
   name: 'show',
-  labelOf: (s: Shell) => `shell at ${Math.round(s.x * 100)}%`,
+  labelOf: (s: Shell) => `shell at x ${s.x.toFixed(1)}`,
 });
 const sky = createSky(canvas);
 const sparks = driveSparks(m, { kit: KIT, bursts: BURSTS });
