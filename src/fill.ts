@@ -173,8 +173,6 @@ export function signalled<I, O>(
   rec: Subject<unknown>,
 ): boolean {
   const arg = this.arg;
-  const elapsed = arg[Arg.ELAPSED] as number;
-  const pass = arg[Arg.PASS] as number;
   const fade = arg[Arg.FADE] as number;
   if (Number.isNaN(rec.probed)) {
     this.late.push(slot);
@@ -185,9 +183,9 @@ export function signalled<I, O>(
     arg[Arg.WEIGHT] = 0;
     return true;
   }
-  const base = this.host.signal(voice, subject, rec, elapsed, pass, slot);
+  this.host.signal(voice, subject, rec, slot);
   arg[Arg.WEIGHT] = weighed(
-    base,
+    arg[Arg.WEIGHT] as number,
     fade,
     voice.parts === null ? 1 : this.host.parting(voice, subject),
   );
@@ -441,9 +439,7 @@ export function call<I, O>(
   slot: number,
 ): boolean {
   const arg = this.arg;
-  const elapsed = arg[Arg.ELAPSED] as number;
   const phase = arg[Arg.PHASE] as number;
-  const pass = arg[Arg.PASS] as number;
   const delay = arg[Arg.DELAY] as number;
   const w = arg[Arg.WEIGHT] as number;
   const host = this.host;
@@ -456,7 +452,7 @@ export function call<I, O>(
   }
   if (silent(voice, w)) return false;
   const kept = reading.kept;
-  host.ready(voice, subject, rec, elapsed, pass, w);
+  host.ready(voice, subject, rec);
   if (this.keeps) host.horizon(voice, delay);
   else reading.horizon = Number.POSITIVE_INFINITY;
   const delta = voice.patch.at(phase, subject, voice.setting as never) as Record<string, unknown>;

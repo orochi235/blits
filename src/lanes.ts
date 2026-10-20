@@ -53,28 +53,18 @@ export interface LaneHost<I, O> {
   envelope(voice: Voice<I, O>, since: number): number;
   /** What a subject's own ramp out of the voice leaves of its weight, 0..1. */
   parting(voice: Voice<I, O>, subject: I): number;
-  /** Fills the voice's setting and the send target for a call to its patch. */
-  ready(
-    voice: Voice<I, O>,
-    subject: I,
-    held: Subject<unknown>,
-    elapsed: number,
-    pass: number,
-    weight: number,
-  ): void;
   /**
-   * A voice with a signal weight: the signal's value for a subject the general path has met, before
-   * the fade and ramp `weighed` applies, with the setting filled in for the call; makes the voice
-   * stateful if the signal keeps state. `slot` is the subject's number.
+   * Fills the voice's setting and the send target for a call to its patch, at the voice time, pass
+   * and weight in `Arg.ELAPSED`, `Arg.PASS` and `Arg.WEIGHT`.
    */
-  signal(
-    voice: Voice<I, O>,
-    subject: I,
-    held: Subject<unknown>,
-    elapsed: number,
-    pass: number,
-    slot: number,
-  ): number;
+  ready(voice: Voice<I, O>, subject: I, held: Subject<unknown>): void;
+  /**
+   * A voice with a signal weight: the signal's value for a subject the general path has met, at the
+   * voice time and pass in `Arg.ELAPSED` and `Arg.PASS`, left in `Arg.WEIGHT` before the fade and
+   * ramp `weighed` applies, with the setting filled in for the call; makes the voice stateful if the
+   * signal keeps state. `slot` is the subject's number.
+   */
+  signal(voice: Voice<I, O>, subject: I, held: Subject<unknown>, slot: number): void;
   /** Whether a rest-less channel's contribution passes the band, as the general path decides it. */
   passes(was: boolean | undefined, w: number): boolean;
   /** Sets `reading.horizon` for the voice and a subject delayed `delay` voice ms. */

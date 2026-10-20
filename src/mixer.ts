@@ -85,6 +85,7 @@ import {
   horizonFor,
   ownedBy,
   ownerBase,
+  Primed,
   prime,
   weigh,
   weighOwned,
@@ -198,6 +199,8 @@ export class Mixer<I, O> implements Mix<I, O> {
    */
   chains = new Store<I, Subject<unknown>>();
   version = 0;
+  /** What `prime` reads its clock, voice time and pass from: see `Primed`. */
+  readonly primed = new Float64Array(Primed.SIZE);
   readonly steps = new Steps<Voice<I, O>, I>();
   /** Per subject, the voices whose `subjects` name it, in voice order. */
   named = new Store<I, Voice<I, O>[]>();

@@ -6,15 +6,24 @@ import { reading } from './reading.js';
 import type { Setting } from './types.js';
 import type { Subject, Voice } from './voice.js';
 
-/** Fills a voice's setting for a call to its patch, the weight aside. */
-export function prime<I, O>(
-  this: Mixer<I, O>,
-  voice: Voice<I, O>,
-  held: Subject<unknown>,
-  now: number,
-  elapsed: number,
-  pass: number,
-): void {
+/**
+ * Where `prime` reads its numbers in `Mixer.primed`: as arguments, each would be boxed wherever V8
+ * does not inline the call, which turns on the order its compiles ran (bench/frame.mjs `glow`,
+ * 2026-10-20).
+ */
+// biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package
+export const enum Primed {
+  NOW = 0,
+  ELAPSED = 1,
+  PASS = 2,
+  SIZE = 3,
+}
+
+/** Fills a voice's setting for a call to its patch, the weight aside, from `primed`. */
+export function prime<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): void {
+  const now = this.primed[Primed.NOW] as number;
+  const elapsed = this.primed[Primed.ELAPSED] as number;
+  const pass = this.primed[Primed.PASS] as number;
   const setting = voice.setting;
   setting.timestamp = now;
   // With no step to move it, `stepped` follows the call before this frame's.
@@ -80,7 +89,11 @@ export function ownerBase<I, O>(this: Mixer<I, O>, owner: Voice<I, O>, subject: 
   const kept = reading.kept;
   // An owner's record keeps a frame in `probed`, not a time, so `prime` leaves its `stepped` be.
   held.probed = Number.NaN;
-  this.prime(owner, held, now, owner.elapsedAt(now), 0);
+  const primed = this.primed;
+  primed[Primed.NOW] = now;
+  primed[Primed.ELAPSED] = owner.elapsedAt(now);
+  primed[Primed.PASS] = 0;
+  this.prime(owner, held);
   const base = this.base(owner, subject, now, held);
   reading.kept = kept;
   held.stepped = now;

@@ -9,7 +9,8 @@ import { goneIndex } from './gone.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
 import { reorigin } from './held.js';
 import { noted, remember } from './history.js';
-import type { LaneHost } from './lanes.js';
+import { Arg } from './lane.js';
+import type { LaneHost, Lanes } from './lanes.js';
 import { hostOf, listed, markOf, readingAt } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
@@ -22,6 +23,7 @@ import { record } from './tape.js';
 import type { Booker, BookOptions, Channel, Doubt, Handle } from './types.js';
 import { unreach } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
+import { Primed } from './weigh.js';
 
 export function book<I, O>(mix: Mixer<I, O>, opts: BookOptions<unknown, I>): Booker {
   if (mix.projecting) throw new Error('blits: a projection books nothing');
@@ -78,21 +80,34 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
         ? mix.envelope(voice, mix.now, since)
         : mix.envelope(voice, mix.now, since) * mix.ownedBy(voice, undefined as I),
     parting: (voice, subject) => mix.parting(voice, subject, mix.now),
-    ready: (voice, subject, held, elapsed, pass, weight) => {
-      mix.prime(voice, held, mix.now, elapsed, pass);
-      voice.setting.weight = weight;
+    ready: (voice, subject, held) => {
+      const arg = (mix.lanes as Lanes<I, O>).arg;
+      const primed = mix.primed;
+      primed[Primed.NOW] = mix.now;
+      primed[Primed.ELAPSED] = arg[Arg.ELAPSED] as number;
+      primed[Primed.PASS] = arg[Arg.PASS] as number;
+      mix.prime(voice, held);
+      voice.setting.weight = arg[Arg.WEIGHT] as number;
       mix.sending.voice = voice;
       mix.sending.subject = subject;
     },
-    signal: (voice, subject, held, elapsed, pass, slot) => {
+    signal: (voice, subject, held, slot) => {
+      const arg = (mix.lanes as Lanes<I, O>).arg;
       // A blend member after the first takes the read already made, with no setting to fill.
       const read = voice.blend === null ? Number.NaN : mix.laneRead(voice, slot);
-      if (!Number.isNaN(read)) return read;
-      mix.prime(voice, held, mix.now, elapsed, pass);
+      if (!Number.isNaN(read)) {
+        arg[Arg.WEIGHT] = read;
+        return;
+      }
+      const primed = mix.primed;
+      primed[Primed.NOW] = mix.now;
+      primed[Primed.ELAPSED] = arg[Arg.ELAPSED] as number;
+      primed[Primed.PASS] = arg[Arg.PASS] as number;
+      mix.prime(voice, held);
       const kept = reading.kept;
       const base = mix.base(voice, subject, mix.now, held, slot);
       if (reading.kept !== kept && !voice.keeping) stateful(mix, voice);
-      return base;
+      arg[Arg.WEIGHT] = base;
     },
     horizon: (voice, delay) => {
       reading.horizon = mix.horizonFor(voice, delay, mix.now);
