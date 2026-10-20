@@ -340,8 +340,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    the handle (`fade({ over: 0 })`), since a voice naming a dropped subject would otherwise stay
    cued, holding it.
 0. **`watched()`, the engine side of a debugger, is built and unreleased** (2026-10-19). The mix
-   page's "Watching a mix" says what it does. Next: the in-page panel, built from the
-   playground's `Inspector` plots, then a Chrome DevTools extension hosting the same panel.
+   page's "Watching a mix" says what it does. Next: the in-page panel, designed and
+   unbuilt in `docs/superpowers/specs/2026-10-19-panel-design.md`, then a Chrome DevTools
+   extension hosting the same panel.
    Chosen while building, Mike's to overturn:
    - **Names:** `watched()`, `watch`, `hold` and `free`.
    - **A hold's rate scales the host's frame gaps** on a host timeline of its own, so the mix
