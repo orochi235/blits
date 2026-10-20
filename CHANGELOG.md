@@ -20,6 +20,19 @@ version and everything else the patch. Each release lists its changes as **Break
   A mix nobody watches runs the same code as before. `watched().history` gives history to mixes
   made later that name none. `MixOptions.labelOf` names subjects for it.
 
+### Fixed
+
+- A lane fill no longer boxes numbers it hands between its own calls, which it did for 3 to 5
+  numbers a subject in some processes and none in others, by the order V8 happened to compile in.
+  10k subjects under a `fn` voice and a signal-weighted glow over 200 of them, with 200 subjects
+  leaving the glow and 200 entering each frame (bench/reach.mjs `part:200`), allocate 1.27 MB a
+  frame against 1.89 and take 1.924 ms against 2.037 read by `probe`, and 1.255 against 1.405 by
+  `pull`; with nothing moving by `pull`, 1.108 against 1.221 (keiei). `probed` allocates 1.02 MB a
+  frame against 1.65. No steady row moves past its spread: `fn` 2.942 against 2.903, `fn^` 2.323
+  against 2.390, `keys` 1.355 against 1.342 (msb-uai); `signal` reads 3.820 against 3.578, inside
+  its spread but slower in each of three such comparisons. Medians of six alternated runs, each in
+  its own process, `bench/ab.sh` against `main` at `4374f34`.
+
 ## 0.11.0
 
 ### Breaking

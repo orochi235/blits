@@ -629,28 +629,47 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      each subject saves it: a per-subject test against a radius is the signal call again.
      So the signal bound pays only with a spatial query over the host's positions, kept current
      as they move, and the patch bound is the same query with a radius that changes by phase.
-     A reach that changes each frame also moves subjects on and off a voice's chain and lane.
-     Measured 2026-10-11 (`bench/reach.sh 6` on teitou and studio, medians of six processes,
-     10,000 subjects, 200 in reach; `bench/reachcost.mjs` reads the output). With nothing
-     moving, a reach of 200 saves 76–99% of what the glow adds. The calls that move a subject
-     cost 0.3–0.9 µs for one leaving and one entering, 200 at a time, and 1–5 µs two at a time,
-     not the 100 ns hoped for but small. The frame around them costs far more with lanes on:
+     A reach that changes each frame also moves subjects on and off a voice's chain and lane. What
+     made that look dear on 2026-10-11 (moving rows allocating 1.9–2.3 MB a frame against 1.2 MB
+     still) was mostly not the moving. A lane fill boxed 3–5 numbers a subject in some processes and
+     none in others, on the same row, by which nested call V8 left out of line in `one`, which turns
+     on the order its compiles ran. Measured 2026-10-20 (`bench/allocs.mjs`,
+     `--trace-turbo-inlining`, local, Node 26.10 and 26.11): `stale:0`, with nothing moving, read
+     1.19 MB a frame in some processes and 1.99 in others, and raising V8's inlining budget put
+     every process at 1.19; `part:200` read 1.42–1.93 MB in every process, by node. The numbers now
+     cross those calls through typed arrays (`Lanes.arg`, `Mixer.primed`), and every reach row reads
+     one allocation figure in every process (local, Node 26.8, 26.10, 26.11). Under `--cpu-prof` on
+     msb-uai `stale:0` still read 1.82 MB once, so profiles of these rows can land in the boxing
+     shape.
 
-     | 200 pairs a frame, probe | teitou K=0 | teitou K=200 | studio K=0 | studio K=200 | full glow (teitou, studio) |
-     |---|---:|---:|---:|---:|---:|
-     | `part` (fade a subject out, rise it in) | 1.410 | 1.810 | 2.209 | 2.408 | 1.861, 2.806 |
-     | `drop` (`mix.drop`, `target` asked again) | 1.393 | 2.881 | 2.142 | 2.928 | 1.861, 2.806 |
-     | `own` (a voice cued for each subject) | 1.477 | 2.294 | 2.189 | 2.811 | 1.861, 2.806 |
+     The guess that a lane refills its columns for a stale chain is wrong. Counted with a call
+     counter (local, 2026-10-20): one `fillAll` and the same 10,122 `one` calls a frame at `stale:0`
+     and `stale:200`. Marking 200 chains stale a frame costs 0.1–0.5 µs a chain (`stale:200` less
+     `stale:0`, on msb-uai, keiei and teitou; the `stale:<K>` rows now stamp chains through
+     `unlink`, so a `pull` relinks them too, which it did not before). After the fix, on teitou
+     (`bench/reach.sh 3`, 2026-10-20, medians of three processes, 10,000 subjects, 200 in reach):
 
-     (ms, median frame.) So at 200 pairs a frame `drop` and `own` cost more than a glow over
-     everything, and `part` keeps 11–51% of the saving. With lanes off every way keeps 34–74%.
-     At two pairs a frame the nodes disagree (teitou keeps 10–55% by probe, studio 64–87%), so
-     that row is not settled. A frame also allocates 1.9–2.3 MB at 200 pairs against 1.2 MB
-     still. Not found: what in the frame costs it. The guess, unrun, is a lane filling its
-     columns again whenever a chain is marked stale; the `stale:<K>` rows in `bench/reach.mjs`
-     mark K chains stale with nothing entering or leaving to test that, and have run only as a
-     local smoke. Bounds are not worth building for a reach that moves every frame until that
-     is found.
+     | 200 pairs a frame | voice alone | full glow | `part` | `drop` | `own` | nothing moving |
+     |---|---:|---:|---:|---:|---:|---:|
+     | probe | 1.143 | 1.663 | 1.357 (59%) | 1.614 (9%) | 1.570 (18%) | 1.228–1.295 (71–87%) |
+     | probe, lanes off | 1.361 | 2.004 | 1.544 (72%) | 1.539 (72%) | 1.680 (50%) | 1.415–1.444 (87–92%) |
+     | `pull` | 0.652 | 1.117 | 0.851 (57%) | 1.191 (−16%) | 1.035 (18%) | 0.710–0.742 (81–88%) |
+
+     (ms, median frame; in brackets the share of what the glow adds that the way keeps.) On keiei an
+     earlier build of the same fix gave `part` 73%, `drop` 32% and `own` 35% by probe. A pair now
+     costs `part` 0.3–0.7 µs, `drop` about 2 µs and `own` about 1.6 µs by probe. A profile of
+     `part:200` against `stale:0` (msb-uai) spreads a pair over its two relinks (about 0.3 µs), the
+     entering subject's first fold of the glow on the general path (about 0.5 µs) and the fade calls
+     (about 0.3 µs; rough, since `stale:0` ran in the boxing shape there); no one function holds it. `drop` adds renumbering, a `WeakRef` and a registry
+     entry a subject, and `own` a voice cued and retired a subject. The 2026-10-11 disagreement at
+     two pairs a frame fits the boxing shapes too (inferred, not rerun).
+
+     So bounds are worth building for a moving reach now, on `part`'s mechanics: a subject leaves
+     and enters a voice's reach without the mix forgetting it, which keeps 57–73% of the glow's cost
+     at 200 crossings a frame, and more as fewer cross (inferred). Not on `drop` or a voice a
+     subject, which keep 9–35% with lanes on and lose by `pull`. The fix costs the `signal` row
+     (three signal-weighted voices over 10k) 3–7% in three A/Bs, inside its spread each time but
+     always the same way; not chased.
 
 5. **Work nobody will see** (2026-10-07). Prompted by astv speeding 100 text animations into 2 s,
    most of them offscreen. Three cases; the first is built, the other two wait on a decision.
