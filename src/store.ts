@@ -44,6 +44,11 @@ export class Store<K, V> {
     this.strong.set(key, value);
   }
 
+  /** As `get`, where `guess` may be the value for `key`, which a store that can tell spares a lookup. */
+  find(key: K, _guess: V): V | undefined {
+    return this.get(key);
+  }
+
   has(key: K): boolean {
     return this.get(key) !== undefined;
   }

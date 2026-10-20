@@ -26,9 +26,22 @@ export interface Stamp extends Moment {
   /** The records subjects left with after this seek's moment, and where it cut; null for none. */
   left: Leavings<unknown> | null;
   cut: Cut | null;
+  /** The store that made it; null on `gone`. */
+  readonly of: object | null;
 }
 
-const stamp = (): Stamp => ({ t: Number.NaN, seq: 0, up: null, rank: 0, left: null, cut: null });
+const stamp = (of: object | null): Stamp => ({
+  t: Number.NaN,
+  seq: 0,
+  up: null,
+  rank: 0,
+  left: null,
+  cut: null,
+  of,
+});
+
+/** What a reaching record a store has let go of is stamped with, so setting it again is seen. */
+const gone = stamp(null);
 
 /** The root `s` was joined to, halving the path there for the next read. */
 function rootOf(s: Stamp): Stamp {
@@ -54,7 +67,7 @@ function rootOf(s: Stamp): Stamp {
  */
 export class Restored<I> extends Store<I, Subject<unknown>> {
   /** What a record put back now is stamped with, filled by the next seek. */
-  private stamp = stamp();
+  private stamp = stamp(this);
   /** What a record never stamped reads as: the first seek's. */
   private readonly first = this.stamp;
   /**
@@ -142,13 +155,30 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
       const n = Math.min(64, Math.max(1, this.aging.length * 2));
       this.ready = this.aging.reverse();
       this.aging = [];
-      for (let i = 0; i < n; i++) this.aging.push(stamp());
+      for (let i = 0; i < n; i++) this.aging.push(stamp(this));
     }
-    return this.ready.pop() ?? stamp();
+    return this.ready.pop() ?? stamp(this);
   }
 
+  /**
+   * Whether a reaching record stamped by this store is still its record for the key it was found
+   * under: every record let go is stamped `gone`, copies are stamped with nothing, and this turns
+   * false if a stamped record is set again, which could put it under a second key.
+   */
+  private sure = true;
+
   override get(key: I): Subject<unknown> | undefined {
-    const own = this.own.get(key);
+    return this.from(key, this.own.get(key));
+  }
+
+  /** A chain's record for a subject, found again without a lookup where this store stamped it. */
+  override find(key: I, guess: Subject<unknown>): Subject<unknown> | undefined {
+    const s = guess.restored;
+    return s !== null && s.of === this && this.sure ? this.from(key, guess) : this.get(key);
+  }
+
+  /** `get`, given what `own` holds for `key`. */
+  private from(key: I, own: Subject<unknown> | undefined): Subject<unknown> | undefined {
     const mark = own !== undefined && own.reaches;
     const at = (mark ? own.restored : this.at.get(key)) ?? this.first;
     const now = this.stamp;
@@ -161,8 +191,9 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
     const left = at.left?.at(key, at.cut as Cut);
     const live = left ?? this.now(key, own, root);
     const made = live && this.make(live, root, left === undefined);
+    // Looked up again, not taken from `own`: a call made while it was put back may have set it.
     if (made === undefined) {
-      this.own.delete(key);
+      this.shed(key);
       if (mark) this.at.set(key, now);
     } else if (made !== own) this.set(key, made);
     else if (!made.reaches) this.at.set(key, now);
@@ -170,17 +201,34 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
   }
 
   override set(key: I, value: Subject<unknown>): void {
+    const old = this.own.get(key);
+    if (old === value) {
+      if (value.reaches) value.restored = this.stamp;
+      else this.at.set(key, this.stamp);
+      return;
+    }
+    if (old?.reaches) old.restored = gone;
+    // Stamped already, it may be in a chain under another key.
+    if (value.reaches && value.restored !== null) this.sure = false;
     this.own.set(key, value);
     if (value.reaches) value.restored = this.stamp;
     else this.at.set(key, this.stamp);
   }
 
   override delete(key: I): void {
-    this.own.delete(key);
+    this.shed(key);
     this.at.set(key, this.stamp);
   }
 
+  /** Lets go of the record held for `key`, stamping it `gone`. */
+  private shed(key: I): void {
+    const old = this.own.get(key);
+    if (old?.reaches) old.restored = gone;
+    this.own.delete(key);
+  }
+
   override clear(): void {
+    this.sure = false;
     this.own.clear();
     this.at.clear();
   }

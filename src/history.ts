@@ -162,7 +162,8 @@ export function copyHeld<I, O>(
     slot: h.slot,
     run: h.run,
     freed: h.freed,
-    restored: h.restored,
+    // In no store, so stamped by none: a store trusts its stamp to say a record is still its own.
+    restored: null,
   } satisfies WholeRecord);
 }
 
@@ -207,7 +208,7 @@ export function copyHeldInto<I, O>(
   into.slot = h.slot;
   into.run = h.run;
   into.freed = h.freed;
-  into.restored = h.restored;
+  into.restored = null;
   // `probed`, `delta`, `phase`, `seeks`, `snaps`, `inputs`, `next`, `version` and `loci` as
   // `unread` leaves them.
   return unread(into);

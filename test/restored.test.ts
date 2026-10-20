@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
+import { record } from '../src/record.js';
+import { Restored } from '../src/restored.js';
+import { Store } from '../src/store.js';
 import type { MixOptions } from '../src/types.js';
 
 interface Pose {
@@ -160,4 +163,45 @@ describe('seek, many times over', () => {
       expect(alone.b).toBe(asked.b);
       expect(alone.a).toBe(asked.a);
     });
+});
+
+describe("a chain's record found again", () => {
+  const store = () =>
+    new Restored<object>(
+      new Store(),
+      (_key, held) => held,
+      (live) => live,
+    );
+  const a = {};
+  const b = {};
+
+  it('is the one the store holds, not one it let go of or replaced', () => {
+    const r = store();
+    const x = record(null, true, undefined);
+    const y = record(null, true, undefined);
+    r.set(a, x);
+    expect(r.find(a, x)).toBe(x);
+    r.set(a, y);
+    expect(r.find(a, x)).toBe(y);
+    r.delete(a);
+    expect(r.find(a, y)).toBeUndefined();
+  });
+
+  it('is looked up once a record let go of is set again, under any key', () => {
+    const r = store();
+    const x = record(null, true, undefined);
+    r.set(a, x);
+    r.delete(a);
+    r.set(b, x);
+    expect(r.find(a, x)).toBeUndefined();
+    expect(r.find(b, x)).toBe(x);
+  });
+
+  it('is looked up for a record another store stamped', () => {
+    const r = store();
+    const other = store();
+    const x = record(null, true, undefined);
+    other.set(a, x);
+    expect(r.find(a, x)).toBeUndefined();
+  });
 });
