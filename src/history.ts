@@ -19,19 +19,30 @@ export function last<T extends { at: number }>(
   return list[lastIndex(list, t, inclusive)];
 }
 
+/** Whether `last` takes an entry: one before `t`, or at it where `inclusive` says so. */
+function before<T extends { at: number }>(
+  e: T,
+  t: number,
+  inclusive: boolean | ((e: T) => boolean),
+): boolean {
+  return e.at < t || (e.at === t && (typeof inclusive === 'function' ? inclusive(e) : inclusive));
+}
+
 /** Where `last` finds its entry in the list, -1 where it finds none. */
 export function lastIndex<T extends { at: number }>(
   list: readonly T[],
   t: number,
   inclusive: boolean | ((e: T) => boolean),
 ): number {
-  let lo = 0;
+  // Most reads are near the newest entry: those are looked at first, and the rest searched.
   let hi = list.length - 1;
+  for (const stop = hi - 3; hi >= 0 && hi > stop; hi--)
+    if (before(list[hi] as T, t, inclusive)) return hi;
+  let lo = 0;
   let found = -1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    const e = list[mid] as T;
-    if (e.at < t || (e.at === t && (typeof inclusive === 'function' ? inclusive(e) : inclusive))) {
+    if (before(list[mid] as T, t, inclusive)) {
       found = mid;
       lo = mid + 1;
     } else hi = mid - 1;
