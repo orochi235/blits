@@ -167,7 +167,11 @@ describe('seek, many times over', () => {
 
 describe("a chain's record found again", () => {
   const store = () =>
-    new Restored<object>(new Store(), { now: (_key, held) => held, make: (live) => live });
+    new Restored<object>(
+      new Store(),
+      (_key, held) => held,
+      (live) => live,
+    );
   const a = {};
   const b = {};
 

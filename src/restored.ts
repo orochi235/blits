@@ -30,20 +30,6 @@ export interface Stamp extends Moment {
   readonly of: object | null;
 }
 
-/** How a `Restored` puts a voice's records back; one class in the engine, so its calls inline. */
-export interface PutBack<I> {
-  /**
-   * The record a subject that has not left since and is not reached has at `at`, given what the
-   * store holds for it, as a seek there takes it.
-   */
-  now(key: I, held: Subject<unknown> | undefined, at: Moment): Subject<unknown> | undefined;
-  /**
-   * `live` put back as it stood at `at`, undefined where it had none then; `mine` says `live` is
-   * the record the store held, which nothing else does.
-   */
-  make(live: Subject<unknown>, at: Moment, mine: boolean): Subject<unknown> | undefined;
-}
-
 const stamp = (of: object | null): Stamp => ({
   t: Number.NaN,
   seq: 0,
@@ -105,10 +91,24 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
   /** The latest seek's moment. */
   top = Number.NaN;
 
-  /** `own` holds the records as they stood before the first seek; `by` puts them back. */
+  /**
+   * `own` holds the records as they stood before the first seek, and `now` gives the one a subject
+   * that has not left since and is not reached has there, as a seek to `at` takes it. `make` puts
+   * a record back as it stood at `at`, undefined where it had none then; `mine` says `live` is the
+   * record this store held, which nothing else does.
+   */
   constructor(
     private readonly own: Store<I, Subject<unknown>>,
-    private readonly by: PutBack<I>,
+    private readonly now: (
+      key: I,
+      held: Subject<unknown> | undefined,
+      at: Moment,
+    ) => Subject<unknown> | undefined,
+    private readonly make: (
+      live: Subject<unknown>,
+      at: Moment,
+      mine: boolean,
+    ) => Subject<unknown> | undefined,
   ) {
     super();
   }
@@ -189,8 +189,8 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
     // whatever it has now. Leaving is a write, so no later seek's leavings can hold it.
     const root = rootOf(at);
     const left = at.left?.at(key, at.cut as Cut);
-    const live = left ?? this.by.now(key, own, root);
-    const made = live && this.by.make(live, root, left === undefined);
+    const live = left ?? this.now(key, own, root);
+    const made = live && this.make(live, root, left === undefined);
     // Looked up again, not taken from `own`: a call made while it was put back may have set it.
     if (made === undefined) {
       this.shed(key);
