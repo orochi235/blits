@@ -22,6 +22,14 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A mix keeping history costs about a fifth less a frame and allocates a third less: the copy of a
+  record that falls out of the window is written over as the next one kept, only a motion voice
+  works out how far back a read may still reach, and a stock `sum`, `mul` or `max` channel folds a
+  voice's number without calling the channel. Three voices over 10,000 subjects with 5 s of history
+  (`kept`) take 5.33 ms a frame against 6.56 and allocate 5.7 MB against 8.5; sought back and
+  returned before every sync (`seek`), 5.90 ms against 6.76; at 1,000 subjects, 0.412 against
+  0.500 and 0.540 against 0.598 (teitou, medians of nine alternated runs of 1,500 frames against
+  `00ad148`, each in its own process).
 - A `seek` back and a return to where the mix was cost about a third of what they did: a record put
   back takes up the state of the record the seek replaced instead of stepping again from its copy,
   is written over that record instead of copied anew, and the copy its next probe keeps is written
