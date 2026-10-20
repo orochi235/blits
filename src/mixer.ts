@@ -266,8 +266,6 @@ export class Mixer<I, O> implements Mix<I, O> {
   readonly lerpsInto: (LerpInto | undefined)[];
   /** By slot, a stock scalar channel's arithmetic, which a fold applies without calling the channel. */
   readonly scalars: ('sum' | 'mul' | 'max' | undefined)[];
-  /** By slot, whether a fold starts from the channel's rest as it is: a value no `copy` changes. */
-  readonly primitive: boolean[];
   /** What a fold with a locus in play gathers into, one per depth of folds under way. */
   readonly locusScratch: LocusScratch<I, O>[] = [];
   locusDepth = 0;
@@ -296,12 +294,6 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.bounded = this.channels.flatMap((c, i) => (c.bounds ? [i] : []));
     this.lerpsInto = this.channels.map((c) => lerpInto(c));
     this.scalars = this.channels.map((c) => scalarOp(c));
-    this.primitive = this.channels.map(
-      (c) =>
-        c.copy === undefined &&
-        c.rest !== undefined &&
-        (typeof c.rest !== 'object' || c.rest === null),
-    );
     this.names.forEach((k, i) => {
       this.slotOf.set(k, i);
     });
