@@ -1,9 +1,9 @@
 // Put into the page's own world when a DevTools panel connects: runs the panel's agent there and
 // speaks to the relay through window messages.
 import { agent, serve, type Wire } from '@msb235/blits-panel';
-import { TAG } from './names.js';
+import { PAGE_KEY, TAG } from './names.js';
 
-const KEY = Symbol.for('@msb235/blits-devtools/page');
+const KEY = Symbol.for(PAGE_KEY);
 const slot = globalThis as unknown as Record<symbol, (() => void) | undefined>;
 
 interface Data {

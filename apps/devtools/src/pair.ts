@@ -1,5 +1,5 @@
 import { decode, encode } from '@msb235/blits-panel';
-import { type Control, HISTORY_MS, MARK, TAB_PORT } from './names.js';
+import { type Control, HISTORY_MS, MARK, PAGE_KEY, TAB_PORT } from './names.js';
 
 /** What pairing needs from Chrome, so a test can stand in for it. */
 export interface Chrome {
@@ -27,9 +27,26 @@ export interface Port {
 export function pair(chrome: Chrome, panel: Port, tab: number): void {
   let page: Port | null = null;
   let closed = false;
-  const tell = (c: Control) => panel.postMessage(encode(c));
+  /** Counts attaches, so one a later attach or the panel's closing overtook stands down. */
+  let attaching = 0;
+  const tell = (c: Control) => {
+    if (!closed) panel.postMessage(encode(c));
+  };
+  /** Ends the agent in the page, for when it went in but no port to it will follow. */
+  const end = () =>
+    chrome
+      .run(
+        tab,
+        (key: string) => {
+          const slot = globalThis as unknown as Record<symbol, (() => void) | undefined>;
+          slot[Symbol.for(key)]?.();
+        },
+        PAGE_KEY,
+      )
+      .catch(() => {});
 
   const attach = async () => {
+    const run = ++attaching;
     page?.disconnect();
     page = null;
     let history: number | null;
@@ -48,10 +65,16 @@ export function pair(chrome: Chrome, panel: Port, tab: number): void {
         MARK,
       );
     } catch (e) {
-      tell({ ctl: 'unreachable', why: e instanceof Error ? e.message : String(e) });
+      if (run === attaching)
+        tell({ ctl: 'unreachable', why: e instanceof Error ? e.message : String(e) });
       return;
     }
-    if (closed) return;
+    if (closed) {
+      void end();
+      return;
+    }
+    // A later attach put its own agent in, replacing this one's; it connects for both.
+    if (run !== attaching) return;
     const p = chrome.connect(tab, TAB_PORT);
     p.onMessage.addListener((text) => panel.postMessage(text));
     p.onDisconnect.addListener(() => {
@@ -74,9 +97,13 @@ export function pair(chrome: Chrome, panel: Port, tab: number): void {
           },
           [MARK, ms] as [string, number | null],
         )
-        .then(() => chrome.reload(tab));
+        .then(() => chrome.reload(tab))
+        .catch((e) =>
+          tell({ ctl: 'unreachable', why: e instanceof Error ? e.message : String(e) }),
+        );
       return;
     }
+    if (m.ctl === 'ping') return;
     page?.postMessage(text);
   });
   const stopLoaded = chrome.loaded(tab, () => void attach());

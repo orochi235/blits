@@ -70,6 +70,35 @@ function fake() {
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
 describe('pairing a panel with its tab', () => {
+  it('connects once when the tab loads again before an attach finishes', async () => {
+    const f = fake();
+    const panel = new FakePort();
+    pair(f.chrome, panel, 4);
+    f.load();
+    await settle();
+    await settle();
+    expect(f.log.filter((l) => l.startsWith('connect'))).toHaveLength(1);
+    f.pages[0]?.deliver('once');
+    expect(panel.sent.filter((t) => t === 'once')).toHaveLength(1);
+  });
+
+  it('ends the agent it put in when the panel closes before it could connect', async () => {
+    const f = fake();
+    const ended: string[] = [];
+    const run = f.chrome.run;
+    f.chrome.run = async (tab, fn, arg) => {
+      if (typeof arg === 'string' && arg.includes('devtools/page')) ended.push(arg);
+      return run(tab, fn, arg);
+    };
+    const panel = new FakePort();
+    pair(f.chrome, panel, 5);
+    panel.drop();
+    await settle();
+    await settle();
+    expect(f.pages).toHaveLength(0);
+    expect(ended).toHaveLength(1);
+  });
+
   it('puts the relay and the agent into the tab, then carries messages both ways', async () => {
     const f = fake();
     const panel = new FakePort();

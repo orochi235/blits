@@ -352,6 +352,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        `sessionStorage` mark
      - it runs on all sites, but only `start.js` loads before a DevTools tab connects
      - the registry key's protocol number (`watch/1`) is the contract across engine releases
+   - **Hazards the review left standing:**
+     - With history on, the extension's `start.js` builds the shared registry and the
+       `createHistory` tape from its own bundled copies, before the app loads. The `watch/1`
+       contract covers entry methods but not the registry's own fields or the tape's API, so
+       an engine that changes either needs the extension rebuilt, or a bump to `watch/2`.
+     - A relay's `bye` ends whichever page agent is current, not the one its port served. The
+       order of calls makes a re-attach to the same page lose that race only in theory; not
+       reproduced.
    Chosen while building, Mike's to overturn:
    - **Names:** `watched()`, `watch`, `hold` and `free`.
    - **A hold's rate scales the host's frame gaps** on a host timeline of its own, so the mix
