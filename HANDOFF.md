@@ -1103,8 +1103,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         (found 2026-10-20 reading the code, not measured, not fixed). Each voice's `Restored`
         pops only entries at or after the moment a seek seeks, so a host seeking back a little
         every frame, as the `seek` rows do, adds an entry per voice per frame that nothing frees:
-        180 a second for 3 voices at 60 fps. An entry is needed only while some subject was last
-        put back before it, which the store cannot list.
+        180 a second for 3 voices at 60 fps. `futures`, the records subjects left with after
+        each seek's cut, is never deleted from either. An entry is needed only while some subject
+        was last put back before it, which the store cannot list. Both date from `4d0adce`
+        (2026-10-09).
       - **A subject sought back before its start with `state: 'keep'` shows state that depends on
         when it was last probed** (found 2026-10-11, not fixed). `contribution` in `src/fold.ts`
         does not step a subject before its start, so one a kept seek moves back there holds the
