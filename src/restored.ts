@@ -29,7 +29,7 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
    * `own` holds the records as they stood before the first seek, and `now` gives the one a subject
    * that has not left since has there, as a seek to `t`, the end of frame `seq`, takes it. `make`
    * puts a record back as it stood at `t`, undefined where it had none then; `top` is the latest
-   * seek's moment.
+   * seek's moment, and `mine` says `live` is the record this store held, which nothing else does.
    */
   constructor(
     private readonly own: Store<I, Subject<unknown>>,
@@ -43,6 +43,7 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
       live: Subject<unknown>,
       t: number,
       top: number,
+      mine: boolean,
     ) => Subject<unknown> | undefined,
   ) {
     super();
@@ -82,8 +83,9 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
     // whatever it has now. Leaving is a write, so no later seek's leavings can hold it.
     const future = this.futures?.get(at + 1);
     const { t, seq } = this.since(at + 1);
-    const live = future?.left.at(key, future.cut) ?? this.now(key, this.own.get(key), t, seq);
-    const made = live && this.make(live, t, this.t);
+    const left = future?.left.at(key, future.cut);
+    const live = left ?? this.now(key, this.own.get(key), t, seq);
+    const made = live && this.make(live, t, this.t, left === undefined);
     if (made === undefined) this.own.delete(key);
     else this.own.set(key, made);
     return made;

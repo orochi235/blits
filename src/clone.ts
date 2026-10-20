@@ -10,18 +10,28 @@ const slow: unique symbol = Symbol('slow');
  */
 export function clone<T>(v: T): T {
   const quick = copied(v, 2);
-  met.length = 0;
+  for (let i = 0; i < metCount; i++) met[i] = undefined;
+  metCount = 0;
   return quick === slow ? structuredClone(v) : (quick as T);
 }
 
-/** The objects one `clone` has met: one met twice is shared, which `structuredClone` keeps. */
-const met: object[] = [];
+/**
+ * The objects one `clone` has met: one met twice is shared, which `structuredClone` keeps. Cleared
+ * by hand, as `length = 0` frees the array's storage and the next push allocates it again.
+ */
+const met: (object | undefined)[] = [];
+let metCount = 0;
+
+function hasMet(v: object): boolean {
+  for (let i = 0; i < metCount; i++) if (met[i] === v) return true;
+  return false;
+}
 
 function copied(v: unknown, depth: number): unknown {
   if (typeof v === 'symbol' || typeof v === 'function') return slow;
   if (typeof v !== 'object' || v === null) return v;
-  if (depth === 0 || met.includes(v)) return slow;
-  met.push(v);
+  if (depth === 0 || hasMet(v)) return slow;
+  met[metCount++] = v;
   if (Array.isArray(v)) {
     if (Object.getPrototypeOf(v) !== Array.prototype) return slow;
     const out: unknown[] = [];

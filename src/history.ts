@@ -5,6 +5,7 @@ import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
 import { packHeld } from './pack.js';
 import { pageOut } from './paging.js';
+import type { WholeRecord } from './record.js';
 import { scoreTouched } from './scored.js';
 import { type Cut, within } from './transport.js';
 import { type Controls, none, type Subject, type Voice } from './voice.js';
@@ -115,25 +116,59 @@ export function copyHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): Subject
     kept = new Map();
     for (const [owner, value] of h.kept) kept.set(owner, clone(value));
   }
-  return {
-    ...h,
+  // Every field in `record`'s order, written out: a spread with fields after it costs a third more.
+  return unread({
+    reaches: h.reaches,
+    delay: h.delay,
+    since: h.since,
+    shown: h.shown,
+    weight: h.weight,
+    rested: h.rested,
     bands: h.bands === null ? null : h.bands.slice(),
     state: h.state === undefined ? undefined : copyState(voice, h.state),
-    kept,
-    unkept: h.unkept?.map(clone),
-    probed: Number.NaN,
-    delta: null,
-    phase: 0,
-    seeks: 0,
+    stepped: h.stepped,
+    ticks: h.ticks,
+    probed: h.probed,
+    delta: h.delta,
+    phase: h.phase,
+    seeks: h.seeks,
+    rebuilt: h.rebuilt,
+    copied: h.copied,
     base: h.base === undefined ? undefined : clone(h.base),
     slope: h.slope === undefined ? undefined : clone(h.slope),
-    snaps: undefined,
-    inputs: undefined,
-    next: null,
-    version: Number.NaN,
-    loci: null,
-    slot: -1,
-  };
+    kept,
+    unkept: h.unkept?.map(clone),
+    snaps: h.snaps,
+    from: h.from,
+    unknown: h.unknown,
+    inputs: h.inputs,
+    replay: h.replay,
+    voice: h.voice,
+    next: h.next,
+    version: h.version,
+    loci: h.loci,
+    slot: h.slot,
+    run: h.run,
+    freed: h.freed,
+  } satisfies WholeRecord);
+}
+
+/**
+ * Lets go of what a record holds from its last probe and its place in a chain, as a copy of it
+ * starts: a seek puts back a record nothing else holds this way, in place of a copy.
+ */
+export function unread(h: Subject<unknown>): Subject<unknown> {
+  h.probed = Number.NaN;
+  h.delta = null;
+  h.phase = 0;
+  h.seeks = 0;
+  h.snaps = undefined;
+  h.inputs = undefined;
+  h.next = null;
+  h.version = Number.NaN;
+  h.loci = null;
+  h.slot = -1;
+  return h;
 }
 
 /** Under `history` with `inputs`, copies the host fields any voice reads, once a frame, when they changed. */
