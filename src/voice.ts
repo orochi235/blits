@@ -26,6 +26,7 @@ import {
 } from './owner.js';
 import { type Built, builtOf, intosOf, type Scratch } from './patch.js';
 import { reading } from './reading.js';
+import type { Stamp } from './restored.js';
 import type { Fitting } from './spans.js';
 import { Store } from './store.js';
 import type { Anchor, Channel, FadeSpec, Handle, Patch, Setting, VoiceSpec } from './types.js';
@@ -166,8 +167,8 @@ export interface Subject<S> {
   /** A motion voice's number for this subject in its patch, good while `freed` is the patch's own. */
   run: number;
   freed: number;
-  /** In a voice's store once a seek has gone back, the seek it was last put back or written at. */
-  restored: number;
+  /** In a voice's store once a seek has gone back, the stamp of the seek it was last put back or written at. */
+  restored: Stamp | null;
 }
 
 /**
