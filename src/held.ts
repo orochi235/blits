@@ -25,19 +25,25 @@ export function unreachedOf<I, O>(
   return none;
 }
 
-/** What this voice holds for this subject, made on first sight with `target` and `stagger` asked once. */
+/**
+ * What this voice holds for this subject, made on first sight with `target` and `stagger` asked
+ * once; `guess` is a record it may be, from the subject's chain as last linked.
+ */
 export function held<I, O>(
   this: Mixer<I, O>,
   voice: Voice<I, O>,
   subject: I,
   slot: number,
+  guess: Subject<unknown> | null = null,
 ): Subject<unknown> {
   if (voice.sharing) {
     const all = everyoneOf(this, voice);
     if (all !== null) return all;
   }
   if (unreached(voice, slot)) return voice.unreached as Subject<unknown>;
-  let held = voice.subjects.get(subject) as Subject<unknown> | undefined;
+  let held = (guess === null ? voice.subjects.get(subject) : voice.subjects.find(subject, guess)) as
+    | Subject<unknown>
+    | undefined;
   if (held !== undefined) return held;
   const now = this.now;
   const reaches = this.aims(voice, subject);

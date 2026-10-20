@@ -36,7 +36,7 @@ export function relink<I, O>(
     was === undefined || sought
       ? undefined
       : this.steps.patch(was.voice === null ? null : was, was.version, this, subject, slot);
-  if (first === undefined) first = linkAll(this, subject, slot);
+  if (first === undefined) first = linkAll(this, subject, slot, was ?? null);
   const head = first ?? stub();
   head.version = this.version;
   if (was !== undefined && was !== head) {
@@ -60,9 +60,18 @@ export function headOf<I, O>(mix: Mixer<I, O>, subject: I): Subject<unknown> | u
     : head;
 }
 
-/** A subject's chain linked afresh through every voice that reaches it, in voice order. */
-function linkAll<I, O>(mix: Mixer<I, O>, subject: I, slot: number): Subject<unknown> | null {
+/**
+ * A subject's chain linked afresh through every voice that reaches it, in voice order; `was` is its
+ * chain as last linked, whose records each voice's store is asked whether it still holds.
+ */
+function linkAll<I, O>(
+  mix: Mixer<I, O>,
+  subject: I,
+  slot: number,
+  was: Subject<unknown> | null,
+): Subject<unknown> | null {
   let first: Subject<unknown> | null = null;
+  let old = was;
   let prev: Subject<unknown> | null = null;
   const named = mix.naming === 0 ? undefined : mix.named.get(subject);
   let j = 0;
@@ -75,7 +84,10 @@ function linkAll<I, O>(mix: Mixer<I, O>, subject: I, slot: number): Subject<unkn
       const next = mine !== null && (voice === null || mine.id < voice.id) ? mine : voice;
       if (next === null) break;
       if (next === mine) j++;
-      const held = mix.linkable(next, subject, slot);
+      // Taken before linking, which writes over `next`.
+      const guess = old !== null && old.voice === next ? old : null;
+      if (guess !== null) old = guess.next;
+      const held = mix.linkable(next, subject, slot, guess);
       if (held !== null) {
         held.voice = next;
         held.next = null;
@@ -95,6 +107,7 @@ export function linkable<I, O>(
   voice: Voice<I, O>,
   subject: I,
   slot: number,
+  guess: Subject<unknown> | null = null,
 ): Subject<unknown> | null {
   const state = voice.state;
   if (state === 'done' || (state === 'pending' && !voice.freezesBefore)) return null;
@@ -104,7 +117,7 @@ export function linkable<I, O>(
     if (slot >= 0) sight(voice, slot, (this.lanes as Lanes<I, O>).cap);
     return null;
   }
-  const held = this.held(voice, subject, slot);
+  const held = this.held(voice, subject, slot, guess);
   return held.reaches ? held : null;
 }
 
