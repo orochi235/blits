@@ -66,6 +66,8 @@ try {
   await page.screenshot({ path: join(shots, 'picked.png') });
   await step('hold, step and scrub', async () => {
     await page.click('.bp-bar button[title="hold the clock"]');
+    await page.locator('.bp-bar button[title="free the clock"]').waitFor();
+    await page.waitForTimeout(100);
     const before = await page.locator('.bp-bar .bp-time').textContent();
     await page.waitForTimeout(500);
     const still = await page.locator('.bp-bar .bp-time').textContent();
