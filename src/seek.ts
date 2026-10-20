@@ -54,7 +54,10 @@ function restore<I, O>(
   const h = copyHeld(voice, snap.held);
   h.weight = 0;
   if (snap.at < t) h.copied = true;
-  h.snaps = snaps.slice(0, snaps.indexOf(snap) + 1);
+  const kept = snaps.indexOf(snap) + 1;
+  // The record replaced is let go, so its list is cut where it stands.
+  if (mine) snaps.length = kept;
+  h.snaps = mine ? snaps : snaps.slice(0, kept);
   h.inputs = inputs;
   // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
   if (!(h.since <= snap.at)) origin(mix, voice, h);
