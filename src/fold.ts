@@ -126,7 +126,8 @@ export function contribution<I, O>(
   const keptBefore = reading.kept;
   const history = this.opts.history;
   if (history?.inputs && voice.patch.reads !== undefined && !this.projecting) recordHost(this, now);
-  reading.horizon = this.horizonFor(voice, held.delay, now);
+  // Only a motion reads it.
+  if (voice.motion !== undefined) reading.horizon = this.horizonFor(voice, held.delay, now);
 
   if (voice.patch.step && held.probed !== now) {
     // Frozen after, it steps once more to where its last pass ended, and no further; run back

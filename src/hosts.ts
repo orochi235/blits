@@ -111,7 +111,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
       arg[Arg.WEIGHT] = base;
     },
     horizon: (voice, delay) => {
-      reading.horizon = mix.horizonFor(voice, delay, mix.now);
+      if (voice.motion !== undefined) reading.horizon = mix.horizonFor(voice, delay, mix.now);
     },
     keeps: mix.opts.history !== undefined,
     after: (voice, subject, held) => remember(mix, voice, subject, held),
