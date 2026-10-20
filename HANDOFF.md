@@ -1145,6 +1145,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `glowc` 3.281 to 3.378 against 2.941 to 3.063, `glowkeys` 3.278 to 4.423 against 2.962 to
         3.135; `tween` gains as it should, 1.051 to 1.096 against 1.372 to 1.694. Not chased: a local
         profile of `glowc` read the other way, on a machine whose runs were three times teitou's.
+      - **What the keyed store of a rest into the pose costs**: `pose[key] = copy(rest)` in
+        `foldWith` is 15% of the `tweenfn-` row's samples, a store V8 cannot specialize since `key`
+        varies. Storing the bench kit's two primitive rests by name (`pose.gain = rest`), the most
+        a function made per kit from source text could do, read `tweenfn-` 0.947 (U = 1) and four
+        other rows level (keiei, 2026-10-20, 7 rounds against `f727ff7`; the ledger's
+        "ceiling" entry), so it was not built.
       - **The `kept` row's two plain voices never run on lanes**: they write `dark`, which its
         stateful voice also writes, and `qualify` closes a channel any voice that does not fit
         writes (read 2026-10-20). So the history rows measure the general path alone.
