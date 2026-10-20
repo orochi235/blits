@@ -1,5 +1,5 @@
+import { hueColor } from '@msb235/blits-panel';
 import type { EdgeStyle, NodeStyle } from '@weasel-js/diagram';
-import { hueColor } from '../hue';
 import type { FlowBox, FlowEdge, FlowKind, FlowNode, FlowPortTone, FlowTone } from './types';
 
 export const FAULT = '#e5484d';

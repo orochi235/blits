@@ -1,5 +1,5 @@
+import { hueColor } from '@msb235/blits-panel';
 import type { KeyboardEvent } from 'react';
-import { hueColor } from '../hue';
 import { BUS_LABEL, clipped, layoutOf, METER, RULE_BOX, STRIP_LABEL } from './layout';
 import s from './MixerDesk.module.css';
 import type { Desk } from './types';

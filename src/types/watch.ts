@@ -40,6 +40,8 @@ export interface Watched<I = unknown, O = unknown> {
   readonly history:
     | { readonly ms: number; readonly tape: boolean; readonly added: boolean }
     | undefined;
+  /** The earliest mix time `read` reaches back to: `mix.now` without history. */
+  readonly reach: number;
   /** The kit's channel names, in kit order. */
   readonly channels: readonly string[];
   /** What a voice was cued with that its handle does not carry; undefined for a handle not on this mix. */

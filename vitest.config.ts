@@ -6,6 +6,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@msb235/blits': fileURLToPath(new URL('./src/index.ts', import.meta.url)),
+      '@msb235/blits-panel': fileURLToPath(
+        new URL('./packages/panel/src/index.ts', import.meta.url),
+      ),
       '@pg': fileURLToPath(new URL('./apps/playground/src', import.meta.url)),
     },
   },

@@ -8,6 +8,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@msb235/blits-panel": "*",
     "three": "^0.185.1",
     "three.quarks": "^0.17.1",
     "tone": "^15.1.22"

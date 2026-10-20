@@ -1,5 +1,5 @@
+import { hueColor } from '@msb235/blits-panel';
 import { edgeStyleOf, FAULT, linesOf, styleOf } from '@pg/widgets/FlowDiagram/style';
-import { hueColor } from '@pg/widgets/hue';
 import { describe, expect, it } from 'vitest';
 
 describe('FlowDiagram styling', () => {

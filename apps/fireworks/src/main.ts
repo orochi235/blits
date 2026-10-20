@@ -1,5 +1,6 @@
 import './app.css';
 import { mix } from '@msb235/blits';
+import { mount } from '@msb235/blits-panel';
 import { drive as driveSparks } from '@msb235/blits-quarks';
 import { drive as driveSound } from '@msb235/blits-tone';
 import * as Tone from 'tone';
@@ -21,7 +22,13 @@ const rateOut = el<HTMLOutputElement>('rate-out');
 /** A gap between frames this long is a hidden tab coming back, and is left out of the show. */
 const AWAY_MS = 250;
 
-const m = mix<Shell, Pose>(KIT);
+// The debugger panel, in dev only; mounted before the mix so the mix can scrub back.
+if (import.meta.env.DEV) mount();
+
+const m = mix<Shell, Pose>(KIT, {
+  name: 'show',
+  labelOf: (s: Shell) => `shell at ${Math.round(s.x * 100)}%`,
+});
 const sky = createSky(canvas);
 const sparks = driveSparks(m, { kit: KIT, bursts: BURSTS });
 

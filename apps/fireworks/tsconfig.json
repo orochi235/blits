@@ -3,6 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "jsx": "react-jsx",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
@@ -12,7 +13,8 @@
       "@fw/*": ["./src/*"],
       "@msb235/blits": ["../../src/index.ts"],
       "@msb235/blits-quarks": ["../../packages/quarks/src/index.ts"],
-      "@msb235/blits-tone": ["../../packages/tone/src/index.ts"]
+      "@msb235/blits-tone": ["../../packages/tone/src/index.ts"],
+      "@msb235/blits-panel": ["../../packages/panel/src/index.ts"]
     }
   },
   "include": ["src", "vite.config.ts"]

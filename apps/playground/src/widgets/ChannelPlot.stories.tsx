@@ -1,5 +1,5 @@
+import { ChannelPlot } from '@msb235/blits-panel';
 import type { Meta, StoryObj } from '@weasel-js/forge';
-import { ChannelPlot } from './index';
 
 const meta: Meta<typeof ChannelPlot> = { title: 'playground/ChannelPlot', component: ChannelPlot };
 export default meta;

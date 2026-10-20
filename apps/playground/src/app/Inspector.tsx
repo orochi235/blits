@@ -1,9 +1,9 @@
 import { toHex } from '@msb235/blits';
+import { ChannelPlot, type Series } from '@msb235/blits-panel';
 import type { Composition } from '@pg/blits/composition';
 import { ancestorsOf } from '@pg/blits/groups';
 import { CHANNELS, type ChannelName, type Mixed } from '@pg/blits/kit';
 import type { Player } from '@pg/blits/player';
-import { ChannelPlot, type Series } from '@pg/widgets/ChannelPlot';
 import { useSyncExternalStore } from 'react';
 import s from './App.module.css';
 

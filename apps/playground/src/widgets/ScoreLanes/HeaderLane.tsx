@@ -1,5 +1,5 @@
+import { hueColor } from '@msb235/blits-panel';
 import type { KeyboardEvent, PointerEvent } from 'react';
-import { hueColor } from '../hue';
 import { INDENT, type Scale, slopePolygon, WIDTH } from './geometry';
 import type { Header } from './index';
 import { activates, seconds } from './keys';

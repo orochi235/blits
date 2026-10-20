@@ -13,6 +13,7 @@ export default defineConfig({
     alias: {
       // Develop against the engine's source; the published package ships dist.
       '@msb235/blits': at('../../src/index.ts'),
+      '@msb235/blits-panel': at('../../packages/panel/src/index.ts'),
       '@pg': at('./src'),
     },
     // A weasel package symlinked to a local checkout would otherwise bring that checkout's copies.

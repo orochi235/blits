@@ -1,5 +1,5 @@
+import { hueColor } from '@msb235/blits-panel';
 import { type KeyboardEvent, type PointerEvent, useId, useMemo, useRef, useState } from 'react';
-import { hueColor } from '../hue';
 import { ClipLane } from './ClipLane';
 import { dragEdit, groupDrop, type Handle } from './drag';
 import { blockEnd, groupBrackets, laneCount, scaleOf, shownEnd, WIDTH } from './geometry';

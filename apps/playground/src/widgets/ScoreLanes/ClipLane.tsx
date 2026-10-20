@@ -1,6 +1,6 @@
+import { hueColor } from '@msb235/blits-panel';
 import { MenuButton, type MenuButtonItem } from '@weasel-js/ui';
 import type { KeyboardEvent, PointerEvent } from 'react';
-import { hueColor } from '../hue';
 import { dragEdit, fadeRoom, type Handle, hatchOf } from './drag';
 import {
   clipPolygon,

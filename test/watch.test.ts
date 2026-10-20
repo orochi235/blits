@@ -203,6 +203,8 @@ describe('what an entry tells', () => {
     expect(e.voice(h)).toEqual({ name: 'tick', tags: ['beat'] });
     expect(e.voice(mix<Part, Pose>(K).cue({ patch: clock }))).toBeUndefined();
     expect(e.read(a, 100).x).toBe(100);
+    expect(e.reach).toBe(0);
+    expect(entryOf(mix<Part, Pose>(K)).reach).toBeNaN();
     expect(e.read(a).x).toBe(300);
   });
 });

@@ -3,8 +3,9 @@ name: Release
 # Publishes on a pushed tag, with no npm token anywhere: npm's trusted publishing swaps the
 # workflow's OIDC token for a short-lived credential, which is why `id-token: write` is the one
 # permission that matters here. A `v*` tag publishes the engine, `@msb235/blits`; a `quarks-v*` tag
-# publishes the driver in `packages/quarks`, `@msb235/blits-quarks`, and a `tone-v*` tag the one in
-# `packages/tone`, `@msb235/blits-tone`.
+# publishes the driver in `packages/quarks`, `@msb235/blits-quarks`, a `tone-v*` tag the one in
+# `packages/tone`, `@msb235/blits-tone`, and a `panel-v*` tag the debugger in `packages/panel`,
+# `@msb235/blits-panel`.
 #
 # npmjs.com holds the trust, per package: `npm trust github <name> --file release.yml --repo
 # orochi235/blits --allow-publish` registers it, and `npm trust list <name>` shows it. npm refuses it
@@ -12,7 +13,7 @@ name: Release
 
 on:
   push:
-    tags: ['v*', 'quarks-v*', 'tone-v*']
+    tags: ['v*', 'quarks-v*', 'tone-v*', 'panel-v*']
   workflow_dispatch:
 
 permissions:
@@ -60,6 +61,8 @@ jobs:
                        echo "version=${GITHUB_REF_NAME#quarks-v}" >> "$GITHUB_OUTPUT" ;;
             tone-v*)   echo "dir=packages/tone" >> "$GITHUB_OUTPUT"
                        echo "version=${GITHUB_REF_NAME#tone-v}" >> "$GITHUB_OUTPUT" ;;
+            panel-v*)  echo "dir=packages/panel" >> "$GITHUB_OUTPUT"
+                       echo "version=${GITHUB_REF_NAME#panel-v}" >> "$GITHUB_OUTPUT" ;;
             *)         echo "dir=." >> "$GITHUB_OUTPUT"
                        echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT" ;;
           esac

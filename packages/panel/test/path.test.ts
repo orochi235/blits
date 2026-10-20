@@ -1,5 +1,5 @@
-import { insetRange, pathOf, rangeOf } from '@pg/widgets/ChannelPlot/path';
 import { describe, expect, it } from 'vitest';
+import { insetRange, pathOf, rangeOf } from '../src/ui/path.js';
 
 describe('ChannelPlot paths', () => {
   it('pads the range and never collapses it', () => {

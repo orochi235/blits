@@ -12,7 +12,8 @@
     "types": ["vite/client"],
     "paths": {
       "@pg/*": ["./src/*"],
-      "@msb235/blits": ["../../src/index.ts"]
+      "@msb235/blits": ["../../src/index.ts"],
+      "@msb235/blits-panel": ["../../packages/panel/src/index.ts"]
     }
   },
   "include": ["src", "test", "vite.config.ts"]

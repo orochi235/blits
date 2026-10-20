@@ -117,6 +117,9 @@ export function register(mix: Any): void {
         ? undefined
         : { ms: h.ms, tape: transport.tape !== undefined, added: added.has(transport) };
     },
+    get reach() {
+      return reachOf(transport, false);
+    },
     channels: mix.names as string[],
     voice: (handle) => {
       const v =
@@ -328,6 +331,14 @@ interface Held {
   sync(ts: number): void;
 }
 
+/** The earliest mix time history reaches back to; a seek needs a tape besides. */
+function reachOf(t: Transport, seeking: boolean): number {
+  const h = t.history;
+  if (h === undefined || (seeking && t.tape === undefined)) return t.now;
+  const kept = t.pager !== null ? Number.NEGATIVE_INFINITY : t.now - h.ms;
+  return Math.max(t.born, t.floor, kept);
+}
+
 function hold(t: Transport): Hold {
   const c = ctlOf(t);
   if (c.held !== null) throw new Error('blits: that mix is held already; free it first');
@@ -418,10 +429,7 @@ function hold(t: Transport): Hold {
       return t.now;
     },
     get reach() {
-      const h = t.history;
-      if (h === undefined || t.tape === undefined) return t.now;
-      const kept = t.pager !== null ? Number.NEGATIVE_INFINITY : t.now - h.ms;
-      return Math.max(t.born, t.floor, kept);
+      return reachOf(t, true);
     },
     get rate() {
       return rate;

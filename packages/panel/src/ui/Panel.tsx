@@ -1,0 +1,338 @@
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import type { Event, HoldInfo, MixInfo, Source, SubjectInfo, VoiceInfo } from '../protocol.js';
+import { Samples } from '../store.js';
+import { ChannelPlot } from './ChannelPlot.js';
+import type { Series } from './path.js';
+
+interface State {
+  mixes: MixInfo[];
+  mix: number | null;
+  subject: number | null;
+  subjects: SubjectInfo[];
+  voices: VoiceInfo[];
+  hold: HoldInfo;
+  arming: boolean;
+  /** Bumped as samples arrive, so the plots draw again. */
+  drawn: number;
+}
+
+const initial: State = {
+  mixes: [],
+  mix: null,
+  subject: null,
+  subjects: [],
+  voices: [],
+  hold: { state: 'free', rate: 1, now: Number.NaN, reach: Number.NaN },
+  arming: false,
+  drawn: 0,
+};
+
+type Action = Event | { kind: 'drawn' };
+
+function reduce(s: State, a: Action): State {
+  switch (a.kind) {
+    case 'mixes':
+      return { ...s, mixes: a.mixes };
+    case 'picked':
+      return { ...s, mix: a.mix, subject: a.subject, subjects: a.mix === s.mix ? s.subjects : [] };
+    case 'subjects':
+      return { ...s, subjects: a.subjects };
+    case 'voices':
+      return { ...s, voices: a.voices };
+    case 'hold':
+      return { ...s, hold: a.hold };
+    case 'arming':
+      return { ...s, arming: a.on };
+    case 'drawn':
+      return { ...s, drawn: s.drawn + 1 };
+    case 'samples':
+      return s;
+  }
+}
+
+const RATES = [0, 0.1, 0.25, 0.5, 1, 2];
+const STEP_MS = 1000 / 60;
+const PLACE = 'blits-panel:place';
+
+/** Where the window was left, kept per viewer; the corner when nothing was kept. */
+function placed(): { x: number; y: number; open: boolean } {
+  try {
+    const kept = JSON.parse(localStorage.getItem(PLACE) ?? 'null');
+    if (kept && typeof kept.x === 'number' && typeof kept.y === 'number') return kept;
+  } catch {}
+  return { x: 16, y: 16, open: false };
+}
+function keep(p: { x: number; y: number; open: boolean }) {
+  try {
+    localStorage.setItem(PLACE, JSON.stringify(p));
+  } catch {}
+}
+
+const fmt = (ms: number) => (Number.isFinite(ms) ? `${(ms / 1000).toFixed(2)}s` : '—');
+
+/** The panel: a pill in a corner that opens into a window over the page. */
+export function Panel({ source }: { source: Source }) {
+  const [s, dispatch] = useReducer(reduce, initial);
+  const samples = useRef(new Samples());
+  const [place, setPlace] = useState(placed);
+  const [query, setQuery] = useState('');
+  const frontier = useRef(Number.NEGATIVE_INFINITY);
+
+  useEffect(() => {
+    let queued = 0;
+    const draw = () => {
+      queued = 0;
+      dispatch({ kind: 'drawn' });
+    };
+    const off = source.subscribe((e) => {
+      if (e.kind === 'samples') {
+        if (e.reset) samples.current.reset();
+        for (const x of e.samples) samples.current.push(x);
+        if (queued === 0) queued = requestAnimationFrame(draw);
+        return;
+      }
+      dispatch(e);
+    });
+    return () => {
+      off();
+      if (queued !== 0) cancelAnimationFrame(queued);
+    };
+  }, [source]);
+
+  const send = source.send.bind(source);
+  const mix = s.mixes.find((m) => m.id === s.mix);
+  const held = s.hold.state === 'held';
+  if (held && s.hold.now > frontier.current) frontier.current = s.hold.now;
+  if (!held) frontier.current = Number.NEGATIVE_INFINITY;
+
+  const move = (open: boolean, x = place.x, y = place.y) => {
+    const next = { x, y, open };
+    setPlace(next);
+    keep(next);
+  };
+
+  const drag = (ev: React.PointerEvent) => {
+    if ((ev.target as Element).closest('button, select, input')) return;
+    const from = { x: ev.clientX - place.x, y: ev.clientY - place.y };
+    const target = ev.currentTarget as HTMLElement;
+    target.setPointerCapture(ev.pointerId);
+    const onMove = (e: PointerEvent) => move(place.open, e.clientX - from.x, e.clientY - from.y);
+    const onUp = () => {
+      target.removeEventListener('pointermove', onMove);
+      target.removeEventListener('pointerup', onUp);
+    };
+    target.addEventListener('pointermove', onMove);
+    target.addEventListener('pointerup', onUp);
+  };
+
+  const clock = (
+    <>
+      <button
+        type="button"
+        className={held ? 'bp-on' : ''}
+        disabled={mix === undefined || s.hold.state === 'elsewhere'}
+        title={
+          s.hold.state === 'elsewhere'
+            ? 'held elsewhere'
+            : held
+              ? 'free the clock'
+              : 'hold the clock'
+        }
+        onClick={() => send({ kind: 'hold', on: !held })}
+      >
+        {held ? '▶' : '⏸'}
+      </button>
+      <button
+        type="button"
+        disabled={!held}
+        title="step one frame"
+        onClick={() => send({ kind: 'step', ms: STEP_MS })}
+      >
+        ⏭
+      </button>
+      <input
+        type="range"
+        className="bp-scrub"
+        aria-label="scrub"
+        disabled={!held || !(frontier.current > s.hold.reach)}
+        min={held ? s.hold.reach : 0}
+        max={held ? frontier.current : 1}
+        step="any"
+        value={held ? s.hold.now : 0}
+        onChange={(e) => send({ kind: 'seek', to: Number(e.currentTarget.value) })}
+      />
+    </>
+  );
+
+  if (!place.open)
+    return (
+      <div className="bp-pill" style={{ left: place.x, top: place.y }} onPointerDown={drag}>
+        <span className="bp-name">{mix?.name ?? 'blits'}</span>
+        {clock}
+        <button type="button" title="open" onClick={() => move(true)}>
+          ⤢
+        </button>
+        <span className="bp-time">{fmt(s.hold.now)}</span>
+      </div>
+    );
+
+  const shown = s.subjects.filter((x) => x.label.toLowerCase().includes(query.toLowerCase()));
+  return (
+    <div className="bp-window" style={{ left: place.x, top: place.y }}>
+      <div className="bp-bar" onPointerDown={drag}>
+        <select
+          aria-label="mix"
+          value={s.mix ?? ''}
+          onChange={(e) =>
+            send({
+              kind: 'mix',
+              id: e.currentTarget.value === '' ? null : Number(e.currentTarget.value),
+            })
+          }
+        >
+          <option value="">pick a mix</option>
+          {s.mixes.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+        {clock}
+        <select
+          aria-label="rate"
+          disabled={!held}
+          value={s.hold.rate}
+          onChange={(e) => send({ kind: 'rate', rate: Number(e.currentTarget.value) })}
+        >
+          {RATES.map((r) => (
+            <option key={r} value={r}>
+              ×{r}
+            </option>
+          ))}
+        </select>
+        <button type="button" title="collapse" onClick={() => move(false)}>
+          ⤡
+        </button>
+        <span className="bp-time">{fmt(s.hold.now)}</span>
+      </div>
+      {mix !== undefined && <Notes mix={mix} hold={s.hold} />}
+      <div className="bp-body">
+        <div className="bp-side">
+          <div className="bp-row">
+            <button
+              type="button"
+              className={s.arming ? 'bp-on' : ''}
+              disabled={mix === undefined && s.mixes.length === 0}
+              title="pick a subject on the page"
+              onClick={() => send({ kind: 'arm', on: !s.arming })}
+            >
+              ◎ pick
+            </button>
+            <input
+              className="bp-search"
+              placeholder="subjects"
+              aria-label="filter subjects"
+              value={query}
+              onChange={(e) => setQuery(e.currentTarget.value)}
+            />
+          </div>
+          <ul className="bp-list" aria-label="subjects">
+            {shown.map((x) => (
+              <li key={x.id}>
+                <button
+                  type="button"
+                  className={x.id === s.subject ? 'bp-item bp-on' : 'bp-item'}
+                  onClick={() => send({ kind: 'subject', id: x.id })}
+                  onPointerEnter={() => send({ kind: 'outline', subject: x.id })}
+                  onPointerLeave={() => send({ kind: 'outline', subject: null })}
+                >
+                  {x.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <h3 className="bp-head">voices</h3>
+          <ul className="bp-list" aria-label="voices">
+            {s.voices.map((v) => (
+              <li key={v.id} className="bp-voice">
+                <span>{v.name ?? `#${v.id}`}</span>
+                <span className="bp-muted">{v.state}</span>
+                <span className="bp-num">
+                  {Number.isFinite(v.weight) ? v.weight.toFixed(2) : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <Plots
+          samples={samples.current}
+          drawn={s.drawn}
+          voices={s.voices}
+          playhead={s.hold.now}
+          picked={s.subject !== null}
+        />
+      </div>
+    </div>
+  );
+}
+
+function Notes({ mix, hold }: { mix: MixInfo; hold: HoldInfo }) {
+  const h = mix.history;
+  const note =
+    h === null
+      ? 'no history: made before the panel, or the panel was told not to add it, so it only pauses and steps forward'
+      : !h.tape
+        ? 'no tape: it only pauses and steps forward'
+        : h.added
+          ? `history: ${(h.ms / 1000).toFixed(0)} s, added by the panel`
+          : `history: ${(h.ms / 1000).toFixed(0)} s, its own`;
+  return (
+    <p className="bp-note">
+      {note}
+      {hold.state === 'elsewhere' && ' · its clock is held elsewhere'}
+    </p>
+  );
+}
+
+function Plots({
+  samples,
+  drawn,
+  voices,
+  playhead,
+  picked,
+}: {
+  samples: Samples;
+  drawn: number;
+  voices: VoiceInfo[];
+  playhead: number;
+  picked: boolean;
+}) {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `drawn` says the samples changed
+  const series = useMemo(() => samples.series(), [samples, drawn]);
+  if (!picked) return <p className="bp-plots bp-muted">Pick a subject to plot its channels.</p>;
+  const { times, values, weights, read } = series;
+  const head = Number.isFinite(playhead) ? playhead : (times[times.length - 1] ?? 0);
+  const unread = read[read.length - 1] === true ? ' · read, not shown' : '';
+  const names = new Map(voices.map((v) => [v.id, v.name ?? `#${v.id}`]));
+  const weighed: Series[] = [...weights].map(([id, w], i) => ({
+    id: names.get(id) ?? `#${id}`,
+    hue: (i * 67) % 360,
+    values: w,
+  }));
+  return (
+    <div className="bp-plots">
+      {[...values].map(([key, v]) => (
+        <ChannelPlot
+          key={key}
+          label={`${key}${unread}`}
+          times={times}
+          playhead={head}
+          series={[{ id: key, hue: 0, color: 'var(--wzl-fg)', values: v, thick: true }]}
+        />
+      ))}
+      {weighed.length > 0 && (
+        <ChannelPlot label="weightOf" times={times} playhead={head} series={weighed} />
+      )}
+    </div>
+  );
+}
