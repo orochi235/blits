@@ -31,7 +31,14 @@ version and everything else the patch. Each release lists its changes as **Break
   ms against 1.88 (msb-uai, medians of nine alternated runs against `4374f34`, each in its own
   process). The same mix never sought (`kept`) reads 7.41 ms against 7.33 at 10,000 subjects and
   0.645 against 0.676 at 1,000. A `step` that reads `setting.weight`, `elapsed` or `pass` now shows,
-  after a seek back and return, what a mix never sought shows.
+  after a seek back and return, what a mix never sought shows. A seek no longer boxes its moment
+  once per record it puts back: the `seek` row at 10,000 subjects allocates 7.9 MB a frame against
+  8.8, and takes 10.44 ms against 9.88, inside its runs' spread (msb-uai, medians of nine
+  alternated runs against `1077ab4`).
+- A mix sought back often no longer grows without bound: each voice kept a little for every seek
+  back to a later moment than the last, and the records subjects left with after each seek, and
+  let go of neither. Three voices sought back and returned every frame held 2.26 MB more after
+  12,000 frames; they now hold what their live records need.
 - A lane fill no longer boxes numbers it hands between its own calls, which it did for 3 to 5
   numbers a subject in some processes and none in others, by the order V8 happened to compile in.
   10k subjects under a `fn` voice and a signal-weighted glow over 200 of them, with 200 subjects

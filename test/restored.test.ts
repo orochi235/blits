@@ -79,6 +79,47 @@ describe('seek, many times over', () => {
     expect(made).toBe(before + 1);
   });
 
+  it('holds no more after 12,000 seeks back, each to a later moment than the last', async () => {
+    const m = mix<Part, Pose>(K, kept());
+    for (let v = 0; v < 3; v++) m.cue({ patch: drift(), loop: true });
+    const subjects = [{ id: 'a' }, { id: 'b' }];
+    // Probed once and then left alone, so its record keeps the stamp of the first seek.
+    const alone = { id: 'alone' };
+    let host = 0;
+    const frames = (n: number) => {
+      for (let f = 0; f < n; f++) {
+        host += 16;
+        const now = m.now;
+        if (now > 100) {
+          m.seek(now - 48);
+          m.seek(now);
+        }
+        m.sync(host);
+        for (const s of subjects) m.probe(s);
+        if (host < 100) m.probe(alone);
+      }
+    };
+    // A weak reference keeps what it reaches until the job that made or read it ends, so the
+    // frames run in turns, as a host's do.
+    const heap = async () => {
+      await new Promise((r) => setTimeout(r, 0));
+      globalThis.gc?.();
+      globalThis.gc?.();
+      return process.memoryUsage().heapUsed;
+    };
+    // Past history's 5 s, so what it keeps has stopped growing.
+    for (let i = 0; i < 4; i++) {
+      frames(1000);
+      await heap();
+    }
+    const before = await heap();
+    for (let i = 0; i < 12; i++) {
+      frames(1000);
+      await heap();
+    }
+    expect((await heap()) - before).toBeLessThan(400_000);
+  });
+
   for (const lanes of [true, false])
     it(`reads a subject left alone between seeks as one probed after each${lanes ? '' : ', without lanes'}`, () => {
       // Each seek back, the host time it plays on to, and the mix time that lands on.

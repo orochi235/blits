@@ -11,7 +11,7 @@ import { move, nextFrame } from './move.js';
 import { ownerReading } from './owner.js';
 import { place } from './place.js';
 import { unpull } from './pull.js';
-import { Restored } from './restored.js';
+import { type Moment, Restored } from './restored.js';
 import { recount } from './roster.js';
 import { refitAll } from './spans.js';
 import { Store } from './store.js';
@@ -31,10 +31,12 @@ function restore<I, O>(
   mix: Mixer<I, O>,
   voice: Voice<I, O>,
   live: Subject<unknown>,
-  t: number,
+  at: Moment,
   every: number,
   mine: boolean,
 ): Subject<unknown> | undefined {
+  // Read here, not passed: a double passed to a call is boxed, once per record put back.
+  const t = at.t;
   const inputs = live.inputs?.filter((e) => e.at <= t);
   const snaps = live.snaps;
   if (snaps === undefined) {
@@ -51,14 +53,14 @@ function restore<I, O>(
   }
   // A seek back to just before now finds its copy among the newest, looked at before searching.
   const n = snaps.length;
-  const at =
+  const i =
     n > 0 && (snaps[n - 1] as Snap<unknown>).at <= t
       ? n - 1
       : n > 1 && (snaps[n - 2] as Snap<unknown>).at <= t
         ? n - 2
         : lastIndex(snaps, t, true);
-  if (at < 0) return undefined;
-  const snap = snaps[at] as NonNullable<typeof snaps>[number];
+  if (i < 0) return undefined;
+  const snap = snaps[i] as NonNullable<typeof snaps>[number];
   // What the record replaced held, which a record put back over it would lose.
   const { ticks, since, rebuilt, state, slot, restored } = live;
   let h: Subject<unknown>;
@@ -70,7 +72,7 @@ function restore<I, O>(
   } else h = copyHeld(voice, snap.held, true);
   h.weight = 0;
   if (snap.at < t) h.copied = true;
-  const kept = at + 1;
+  const kept = i + 1;
   // The record replaced is let go, so its list is cut where it stands.
   if (mine) trim(voice, snaps, kept);
   else for (let i = 0; i < kept; i++) (snaps[i] as Snap<unknown>).shared = true;
@@ -174,19 +176,20 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   let records = voice.subjects;
   if (!(records instanceof Restored)) {
     const every = apart(mix.opts.history as { every?: number });
-    const now = (subject: I, held: Subject<unknown> | undefined, least: number, seq: number) =>
-      heldAt(voice, subject, held, least, seq);
-    records = new Restored(records, now, (live, least, top, mine) => {
-      const h = restore(mix, voice, live, least, every, mine);
+    const now = (subject: I, held: Subject<unknown> | undefined, at: Moment) =>
+      heldAt(voice, subject, held, at.t, at.seq);
+    const restored: Restored<I> = new Restored(records, now, (live, at, mine) => {
+      const h = restore(mix, voice, live, at, every, mine);
       if (h === undefined) return h;
       if (h.reaches) voice.seen++;
       if (h.rested) voice.restedCount++;
-      if (!(h.since <= top)) {
+      if (!(h.since <= restored.top)) {
         voice.early ??= [];
         voice.early.push(h);
       }
       return h;
     });
+    records = restored;
     voice.subjects = records;
   }
   (records as Restored<I>).back(t, cut, future);
