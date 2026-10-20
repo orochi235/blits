@@ -81,6 +81,15 @@ export function foldNumber(op: Numeric['op'], acc: number, v: number, w: number)
   return +v;
 }
 
+/** The arithmetic `foldNumber` can apply for a channel in place of its `scale` and `merge`, if any. */
+export function scalarOp(channel: Channel<unknown>): 'sum' | 'mul' | 'max' | undefined {
+  const n = numericOf(channel);
+  if (n === undefined || n.axes !== 1 || n.turn !== undefined || channel.fold !== undefined)
+    return undefined;
+  if (typeof channel.rest !== 'number') return undefined;
+  return n.op === 'sum' || n.op === 'mul' || n.op === 'max' ? n.op : undefined;
+}
+
 /**
  * What a stock numeric channel takes.
  *
