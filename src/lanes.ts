@@ -202,8 +202,29 @@ export class Lanes<I, O> implements Watcher {
   filledVersion = Number.NaN;
   qualifiedVersion = Number.NaN;
 
-  constructor(readonly host: LaneHost<I, O>) {
-    this.numbers = new Numbers<I>(this);
+  /**
+   * With `from`, the lanes a seek replaces: their subject numbers carry over, each met as newly
+   * numbered when its chain is next linked (`renew`), so a seek makes no new weak reference per
+   * subject.
+   */
+  constructor(
+    readonly host: LaneHost<I, O>,
+    from?: Lanes<I, O>,
+  ) {
+    if (from === undefined) {
+      this.numbers = new Numbers<I>(this);
+      return;
+    }
+    this.numbers = from.numbers;
+    this.numbers.adopt(this);
+    this.live = from.live;
+    const size = this.numbers.size;
+    this.grow(size);
+    const per = this.per;
+    for (let slot = 0; slot < size; slot++) {
+      per[slot * Per.SLOT + Per.FILLED] = Number.NaN;
+      per[slot * Per.SLOT + Per.SEEN] = -1;
+    }
   }
 
   /** A change that may move a voice on or off its lane: qualify again, then fill again. */
@@ -243,6 +264,22 @@ export class Lanes<I, O> implements Watcher {
 
   release(slot: number): void {
     this.numbers.release(slot);
+  }
+
+  /** Whether `slot` is a number a seek carried over whose chain has not been linked since. */
+  sought(slot: number): boolean {
+    return Number.isNaN(this.per[slot * Per.SLOT + Per.FILLED] as number);
+  }
+
+  /**
+   * A chain is being linked for the subject at `slot`: one a seek carried over is from now on as
+   * `number` leaves a subject it numbers. Says whether it was one.
+   */
+  renew(slot: number): boolean {
+    if (!this.sought(slot)) return false;
+    this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
+    if (this.filling) this.late.push(slot);
+    return true;
   }
 
   /** A voice faded a subject out of itself alone: its lane lets the subject's position go. */

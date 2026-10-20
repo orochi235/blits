@@ -175,7 +175,6 @@ export function unread(h: Subject<unknown>): Subject<unknown> {
   h.next = null;
   h.version = Number.NaN;
   h.loci = null;
-  h.slot = -1;
   return h;
 }
 
