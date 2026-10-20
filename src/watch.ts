@@ -1,6 +1,7 @@
 import type { Mixer } from './mixer.js';
 import { seek } from './seek.js';
 import { release } from './shared.js';
+import { hostAhead } from './tape.js';
 import type { Transport } from './transport.js';
 import type {
   Handle,
@@ -329,27 +330,32 @@ function hold(t: Transport): Hold {
   const rebase = p.rebase as Transport['rebase'];
   const sync = p.sync as Transport['sync'];
   const seekT = p.seek as Transport['seek'];
-  const appRate = t.rate;
   const queue: (() => void)[] = [];
   let rate = 0;
   let quiet = false;
   let freed = false;
-  /** The clock the hold syncs the transport by, and the host's, which only the gaps are read from. */
+  // The host time the hold syncs the transport at, moved by the host's gaps at `rate`; the
+  // transport's own rate is left alone, so nothing the hold does lands in its history.
   let line = t.last;
   let host = t.last;
 
   const hushed = (fn: () => void) => {
+    const was = quiet;
     quiet = true;
     try {
       fn();
     } finally {
-      quiet = false;
+      quiet = was;
     }
   };
-  const pace = (r: number) => hushed(() => ramp.call(t, r, 0));
   const later = (fn: () => void) => {
     if (t.replaying || quiet) fn();
     else queue.push(fn);
+  };
+  /** Syncs at `line`, where a rebase the host asked for before the hold takes out no time of it. */
+  const at = () => {
+    if (t.rebasing && !Number.isNaN(t.last)) sync.call(t, t.last);
+    sync.call(t, line);
   };
 
   const puts: (() => void)[] = [];
@@ -367,11 +373,9 @@ function hold(t: Transport): Hold {
   }
   puts.push(
     swap(t, 'ramp', (r: number, over: number) => {
-      // A rate call the tape plays again moves the mix, and the hold's rate takes over again.
-      if (t.replaying) {
-        ramp.call(t, r, over);
-        pace(rate);
-      } else later(() => ramp.call(t, r, over));
+      if (!(r >= 0 && r < Number.POSITIVE_INFINITY))
+        throw new RangeError(`blits: a mix's rate is a finite number, 0 or more, not ${r}`);
+      later(() => ramp.call(t, r, over));
     }),
     swap(t, 'rebase', () => later(() => rebase.call(t))),
     swap(t, 'seek', (to: number | { readonly frame: number }) => later(() => seekT.call(t, to))),
@@ -389,13 +393,12 @@ function hold(t: Transport): Hold {
   c.held = {
     sync(ts) {
       if (Number.isNaN(line)) line = ts;
-      else if (!Number.isNaN(host) && ts > host) line += ts - host;
+      else if (!Number.isNaN(host) && ts > host) line += (ts - host) * rate;
       host = ts;
-      sync.call(t, line);
+      at();
     },
   };
   fit(t);
-  pace(0);
   t.woke();
 
   const live = () => {
@@ -419,36 +422,39 @@ function hold(t: Transport): Hold {
     },
     set rate(r: number) {
       live();
-      pace(r);
+      if (!(r >= 0 && r < Number.POSITIVE_INFINITY))
+        throw new RangeError(`blits: a hold's rate is a finite number, 0 or more, not ${r}`);
       rate = r;
     },
     seek(to) {
       live();
       hushed(() => seek(t, to));
-      // A seek back before the hold set its rate finds none set.
-      pace(rate);
     },
     step(ms) {
       live();
       if (!(ms > 0)) return;
       if (Number.isNaN(line))
         throw new Error('blits: a mix that has never synced has nothing to step');
-      pace(1);
-      line += ms;
-      sync.call(t, line);
-      pace(rate);
-      t.woke();
+      const u = hostAhead(t, t.now + ms);
+      if (!Number.isFinite(u))
+        throw new RangeError("blits: the mix's own rate is 0, so it never moves");
+      line = Math.max(line, u + t.offset);
+      at();
+      for (const m of t.members) m.stir();
     },
     free() {
       if (freed) return;
       freed = true;
-      pace(appRate);
-      for (const put of puts.reverse()) put();
-      c.held = null;
-      fit(t);
-      rebase.call(t);
-      for (const fn of queue) fn();
-      t.woke();
+      try {
+        rebase.call(t);
+        // Still behind the guard on the tape, so a call made behind its last one cuts nothing.
+        for (const fn of queue) fn();
+      } finally {
+        for (const put of puts.reverse()) put();
+        c.held = null;
+        fit(t);
+        t.woke();
+      }
     },
   };
 }

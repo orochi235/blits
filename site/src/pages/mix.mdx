@@ -68,7 +68,7 @@ requestAnimationFrame(frame);
 - **`watch(fn)`** hands `fn` each frame the host read: the poses `probe` returned, the columns `pull` wrote, the events `drain` handed over, and the voices. It records only what the host itself read, and stops recording when the last watcher stops. A mix nobody watches runs exactly as it would without the debugger.
 - **`read(subject)`** reads a subject the host never probes, through `project`, so the read changes nothing.
 - **`label(subject)`** names a subject. It uses `MixOptions.labelOf` where the app sets it, and otherwise guesses from the subject itself.
-- **`hold()`** takes the clock away from the host. The host keeps calling `sync`, but the mix moves at the hold's `rate`, which starts at 0. `step` and `seek` move the mix, and the page shows each move on its next frame. The host's own `seek`, `rate` and `rebase` calls wait until the hold is freed. Nothing the hold does is recorded on the tape.
+- **`hold()`** takes the clock away from the host. The host keeps calling `sync`, but only `rate` of each frame's gap counts, and `rate` starts at 0. `step` and `seek` move the mix, and the page shows each move on its next frame. The host's own `seek`, `rate` and `rebase` calls wait until the hold is freed. Nothing the hold does is recorded on the tape.
 - **`free()`** gives the clock back. The mix carries on from where the hold left it.
 
 Going back needs history with a tape. A debugger present before the page makes its mixes can set `watched().history`. Every mix made after that, with no history of its own and no transport, then keeps that history, and its entry says the debugger added it.

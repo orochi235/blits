@@ -78,9 +78,10 @@ export interface WatchedFrame<I, O> {
 
 /**
  * A mix's clock in a debugger's hands, and every mix's on the same transport. The host's `sync`
- * still begins each frame, but the mix moves by the frame's gap at `rate`, not by the host's
- * clock; the host's own clock calls (`seek`, `rate`, `ramp`, `rebase`) wait for `free`. Nothing
- * done through a hold is recorded on the tape, and each change wakes a host sleeping on `inert`.
+ * still begins each frame, but the frame's gap counts at `rate`, so the mix moves at `rate` times
+ * its own rate; the host's own clock calls (`seek`, `rate`, `ramp`, `rebase`) wait for `free`.
+ * Nothing done through a hold is recorded on the tape or in the mix's rate, and each change wakes
+ * a host sleeping on `inert`.
  *
  * @category mix
  */
@@ -90,15 +91,16 @@ export interface Hold {
   readonly now: number;
   /** The earliest mix time `seek` reaches: `now` without history and a tape. */
   readonly reach: number;
-  /** How fast the held mix plays on the host's frames; 0 pauses it. Starts at 0. */
+  /** How much of each of the host's frames the held mix plays; 0 pauses it. Starts at 0. */
   rate: number;
   /** Moves the mixes to mix time `to`, back within `reach` or ahead. */
   seek(to: number): void;
-  /** Plays the mixes `ms` further on, in one frame. */
+  /** Plays the mixes `ms` of mix time further on, in one frame. */
   step(ms: number): void;
   /**
-   * Gives the clock back: the host's rate returns, its next sync carries on from where the hold
-   * left the mix, and its clock calls made meanwhile are made, in order.
+   * Gives the clock back: the host's next sync carries on from where the hold left the mix, and
+   * its clock calls made meanwhile are made, in order. A call made while the tape holds later
+   * calls acts on the mix but is not recorded, so those calls still play.
    */
   free(): void;
 }

@@ -254,7 +254,7 @@ describe('holding', () => {
     const { m, e } = setup();
     const h = e.hold();
     m.rate = 2;
-    expect(m.rate).toBe(0);
+    expect(m.rate).toBe(1);
     h.step(400);
     h.free();
     expect(m.rate).toBe(2);
@@ -306,6 +306,74 @@ describe('holding', () => {
     expect(seen).toEqual([150, 200]);
     h.free();
     off();
+  });
+
+  it("plays the host's later calls at their own mix time after a paused seek back", () => {
+    const m = mix<Part, Pose>(K, taped);
+    const v = m.cue({ patch: clock, start: 0 });
+    m.sync(0);
+    m.sync(200);
+    v.rate = 0;
+    m.sync(300);
+    const h = entryOf(m).hold();
+    h.seek(150);
+    m.sync(400);
+    m.sync(1000);
+    expect(m.probe(a).x).toBe(150);
+    h.rate = 1;
+    m.sync(1150);
+    expect(m.probe(a).x).toBe(200);
+    h.free();
+  });
+
+  it('seeks ahead while paused', () => {
+    const { m, e } = setup();
+    const h = e.hold();
+    h.seek(500);
+    expect(m.probe(a).x).toBe(500);
+    h.free();
+  });
+
+  it("leaves the host's rate and its ramp as they were", () => {
+    const { m, e } = setup();
+    m.rate = 2;
+    m.sync(200);
+    const h = e.hold();
+    h.rate = 0.5;
+    m.sync(300);
+    h.free();
+    m.seek(250);
+    m.sync(400);
+    m.sync(500);
+    expect(m.probe(a).x).toBeCloseTo(450, 6);
+    m.ramp(3, 1000);
+    m.sync(1000);
+    const again = e.hold();
+    again.free();
+    // The gap to the host's next sync is the hold's, taken out; the ramp goes on after it.
+    m.sync(3000);
+    expect(m.rate).toBe(2.5);
+    m.sync(3500);
+    expect(m.rate).toBe(3);
+  });
+
+  it('steps from a rebase the host asked for before the hold', () => {
+    const { m, e } = setup();
+    m.rebase();
+    const h = e.hold();
+    h.step(100);
+    expect(m.now).toBe(200);
+    h.free();
+  });
+
+  it('refuses a bad rate from the host at once, and frees whatever a queued call throws', () => {
+    const { m, e } = setup();
+    const h = e.hold();
+    expect(() => {
+      m.rate = -1;
+    }).toThrow(RangeError);
+    h.free();
+    expect(Object.hasOwn((m as unknown as { transport: object }).transport, 'ramp')).toBe(false);
   });
 
   it('refuses a second hold, and holds every mix on a shared transport', () => {
