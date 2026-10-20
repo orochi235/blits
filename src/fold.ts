@@ -566,6 +566,10 @@ export function foldWith<I, O>(
       if (pose[key] !== undefined) pose[key] = undefined;
       continue;
     }
+    if (this.primitive[i]) {
+      pose[key] = rest;
+      continue;
+    }
     // A stock array channel never keeps the pose's array, so one a last fold left in `out` is ours.
     const held = this.lerpsInto[i] === undefined ? undefined : pose[key];
     if (Array.isArray(held) && held !== rest && held.length === (rest as unknown[]).length) {
