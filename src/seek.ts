@@ -2,7 +2,7 @@ import { heldAt } from './chain.js';
 import { schedule } from './due.js';
 import { fadesAt } from './fade.js';
 import { origin } from './held.js';
-import { apart, copyHeld, last, lastWithin, unread } from './history.js';
+import { apart, copyHeld, copyHeldInto, lastIndex, lastWithin, unread } from './history.js';
 import { laneHost } from './hosts.js';
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
@@ -49,12 +49,15 @@ function restore<I, O>(
     if (!(h.since <= t)) origin(mix, voice, h);
     return h;
   }
-  const snap = last(snaps, t, true);
-  if (snap === undefined) return undefined;
-  const h = copyHeld(voice, snap.held, true);
+  const at = lastIndex(snaps, t, true);
+  if (at < 0) return undefined;
+  const snap = snaps[at] as NonNullable<typeof snaps>[number];
+  // What the record replaced held, which a record put back over it would lose.
+  const { ticks, since, rebuilt, state } = live;
+  const h = mine && live.reaches ? copyHeldInto(snap.held, live) : copyHeld(voice, snap.held, true);
   h.weight = 0;
   if (snap.at < t) h.copied = true;
-  const kept = snaps.indexOf(snap) + 1;
+  const kept = at + 1;
   // The record replaced is let go, so its list is cut where it stands.
   if (mine) while (snaps.length > kept) snaps.pop();
   h.snaps = mine ? snaps : snaps.slice(0, kept);
@@ -63,14 +66,8 @@ function restore<I, O>(
   if (!(h.since <= snap.at)) origin(mix, voice, h);
   // The record a seek replaces, stepped on from this copy with nothing since rebuilding or moving
   // its start, holds the copy's state at its own `ticks`, which a probe there need not step to.
-  const was =
-    mine && live.ticks > h.ticks && live.since === h.since && live.rebuilt === h.rebuilt
-      ? live
-      : undefined;
-  if (
-    voice.patch.step !== undefined &&
-    (snap.ahead !== undefined || t - snap.at >= every || was !== undefined)
-  ) {
+  const was = mine && ticks > h.ticks && since === h.since && rebuilt === h.rebuilt;
+  if (voice.patch.step !== undefined && (snap.ahead !== undefined || t - snap.at >= every || was)) {
     let ahead = snap.ahead;
     // Steps counted from a start that has moved since are not this record's.
     if (ahead === undefined || ahead.since !== h.since) {
@@ -89,10 +86,10 @@ function restore<I, O>(
       ahead.put = h;
       ahead.sought = t;
     }
-    if (was !== undefined) {
+    if (was) {
       // Nothing else holds the record replaced, so its state is taken, not copied.
-      ahead.leftTicks = was.ticks;
-      ahead.left = was.state;
+      ahead.leftTicks = ticks;
+      ahead.left = state;
     }
   }
   return h;

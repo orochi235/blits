@@ -16,14 +16,23 @@ export function last<T extends { at: number }>(
   t: number,
   inclusive: boolean | ((e: T) => boolean),
 ): T | undefined {
+  return list[lastIndex(list, t, inclusive)];
+}
+
+/** Where `last` finds its entry in the list, -1 where it finds none. */
+export function lastIndex<T extends { at: number }>(
+  list: readonly T[],
+  t: number,
+  inclusive: boolean | ((e: T) => boolean),
+): number {
   let lo = 0;
   let hi = list.length - 1;
-  let found: T | undefined;
+  let found = -1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
     const e = list[mid] as T;
     if (e.at < t || (e.at === t && (typeof inclusive === 'function' ? inclusive(e) : inclusive))) {
-      found = e;
+      found = mid;
       lo = mid + 1;
     } else hi = mid - 1;
   }
@@ -118,11 +127,7 @@ export function copyHeld<I, O>(
   h: Subject<unknown>,
   shared = false,
 ): Subject<unknown> {
-  let kept: Map<object, unknown> | null = null;
-  if (h.kept !== null) {
-    kept = new Map();
-    for (const [owner, value] of h.kept) kept.set(owner, clone(value));
-  }
+  const kept = keptOf(h);
   // Every field in `record`'s order, written out: a spread with fields after it costs a third more.
   return unread({
     reaches: h.reaches,
@@ -159,6 +164,48 @@ export function copyHeld<I, O>(
     freed: h.freed,
     restored: h.restored,
   } satisfies WholeRecord);
+}
+
+/** A copy of what a record keeps through `setting.keep`. */
+function keptOf(h: Subject<unknown>): Map<object, unknown> | null {
+  if (h.kept === null) return null;
+  const kept = new Map<object, unknown>();
+  for (const [owner, value] of h.kept) kept.set(owner, clone(value));
+  return kept;
+}
+
+/**
+ * As `copyHeld` with `shared`, written over `into`, a record a seek replaces that nothing else
+ * holds, so a seek puts a record back with nothing new to collect. `into` keeps its own `slot`,
+ * which its chain may still read its number from, and `restored`, which its store has just set.
+ * test/history.test.ts holds this to `copyHeld` field by field.
+ */
+export function copyHeldInto(h: Subject<unknown>, into: Subject<unknown>): Subject<unknown> {
+  into.reaches = h.reaches;
+  into.delay = h.delay;
+  into.since = h.since;
+  into.shown = h.shown;
+  into.weight = h.weight;
+  into.rested = h.rested;
+  into.bands = h.bands === null ? null : h.bands.slice();
+  into.state = h.state;
+  into.stepped = h.stepped;
+  into.ticks = h.ticks;
+  into.rebuilt = h.rebuilt;
+  into.copied = h.copied;
+  into.base = h.base === undefined ? undefined : clone(h.base);
+  into.slope = h.slope === undefined ? undefined : clone(h.slope);
+  into.kept = keptOf(h);
+  into.unkept = h.unkept?.map(clone);
+  into.from = h.from;
+  into.unknown = h.unknown;
+  into.replay = h.replay;
+  into.voice = h.voice;
+  into.run = h.run;
+  into.freed = h.freed;
+  // `probed`, `delta`, `phase`, `seeks`, `snaps`, `inputs`, `next`, `version` and `loci` as
+  // `unread` leaves them.
+  return unread(into);
 }
 
 /**

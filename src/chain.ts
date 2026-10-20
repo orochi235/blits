@@ -30,7 +30,7 @@ export function relink<I, O>(
   const lanes = this.lanes;
   const slot = was !== undefined ? was.slot : lanes !== null ? lanes.number(subject) : -1;
   // A chain a seek kept for its number alone links afresh, as a subject first seen does.
-  const sought = was !== undefined && slot >= 0 && lanes !== null && lanes.renew(slot);
+  const sought = was !== undefined && slot >= 0 && lanes?.renew(slot) === true;
   // Where only voices over every subject changed since, those alone are taken off or put on.
   let first =
     was === undefined || sought
@@ -55,8 +55,7 @@ export function relink<I, O>(
  */
 export function headOf<I, O>(mix: Mixer<I, O>, subject: I): Subject<unknown> | undefined {
   const head = mix.chains.get(subject);
-  const lanes = mix.lanes;
-  return head !== undefined && head.slot >= 0 && lanes !== null && lanes.sought(head.slot)
+  return head !== undefined && head.slot >= 0 && mix.lanes?.sought(head.slot) === true
     ? undefined
     : head;
 }
