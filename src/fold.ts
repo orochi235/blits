@@ -223,10 +223,12 @@ function dueBy(held: Subject<unknown>, tick: number, to: number): number {
 }
 
 /**
- * The first step of a record a seek put back from a copy: takes up the state that copy was last
- * stepped ahead to, where the steps due now run past it, and keeps the copy's stepped ahead to the
- * moment sought, so a mix sought back time after time does not step from the copy each time. Only
- * where the same steps give the same state: a fixed interval, no `maxDt`, no host field read.
+ * The first step of a record a seek put back from a copy: takes up the furthest state stepped on
+ * from that copy that the steps due now run past, the one the record the seek replaced reached or
+ * the one the copy was last stepped ahead to, and otherwise keeps the copy's stepped ahead to the
+ * moment sought, so a mix sought back time after time does not step from the copy each time, nor a
+ * mix sought back and returned step again to where it was. Only where the same steps give the same
+ * state: a fixed interval, no `maxDt`, no host field read.
  */
 function ahead<I, O>(
   mix: Mixer<I, O>,
@@ -247,7 +249,14 @@ function ahead<I, O>(
   const was = from.held;
   if (held.ticks !== was.ticks || held.since !== got.since || held.rebuilt !== was.rebuilt) return;
   const at = got.sought;
-  const usable = got.state !== undefined && got.ticks <= dueBy(held, tick, to);
+  const due = dueBy(held, tick, to);
+  const usable = got.state !== undefined && got.ticks <= due;
+  if (got.left !== undefined && got.leftTicks <= due && !(usable && got.ticks > got.leftTicks)) {
+    held.state = copyState(voice, got.left);
+    voice.setting.state = held.state;
+    held.ticks = got.leftTicks;
+    return;
+  }
   if (usable) {
     held.state = copyState(voice, got.state);
     voice.setting.state = held.state;

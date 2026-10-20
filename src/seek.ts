@@ -58,21 +58,38 @@ function restore<I, O>(
   h.inputs = inputs;
   // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
   if (!(h.since <= snap.at)) origin(mix, voice, h);
-  if (voice.patch.step !== undefined && (snap.ahead !== undefined || t - snap.at >= every)) {
-    const ahead = snap.ahead;
+  // The record a seek replaces, stepped on from this copy with nothing since rebuilding or moving
+  // its start, holds the copy's state at its own `ticks`, which a probe there need not step to.
+  const was =
+    mine && live.ticks > h.ticks && live.since === h.since && live.rebuilt === h.rebuilt
+      ? live
+      : undefined;
+  if (
+    voice.patch.step !== undefined &&
+    (snap.ahead !== undefined || t - snap.at >= every || was !== undefined)
+  ) {
+    let ahead = snap.ahead;
     // Steps counted from a start that has moved since are not this record's.
-    if (ahead === undefined || ahead.since !== h.since)
-      snap.ahead = {
+    if (ahead === undefined || ahead.since !== h.since) {
+      ahead = {
         put: h,
         sought: t,
         since: h.since,
         at: snap.at,
         ticks: h.ticks,
         state: undefined,
+        leftTicks: 0,
+        left: undefined,
       };
-    else {
+      snap.ahead = ahead;
+    } else {
       ahead.put = h;
       ahead.sought = t;
+    }
+    if (was !== undefined) {
+      // Nothing else holds the record replaced, so its state is taken, not copied.
+      ahead.leftTicks = was.ticks;
+      ahead.left = was.state;
     }
   }
   return h;

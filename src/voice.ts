@@ -79,6 +79,12 @@ export interface Ahead<S> {
   ticks: number;
   /** Undefined until a record has stepped on from the copy. */
   state: S | undefined;
+  /**
+   * The state the record a seek replaced had stepped on to from the copy, at `leftTicks`; undefined
+   * until one had.
+   */
+  leftTicks: number;
+  left: S | undefined;
 }
 
 /** Everything one voice holds for one subject, chained through the next voice that reaches it. */

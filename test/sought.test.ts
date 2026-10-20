@@ -19,8 +19,9 @@ const BACK = 300;
 /**
  * Integrates toward 50 by explicit Euler, with a term of each step's own time, so its value depends
  * on how it is stepped and on where its steps fall; counts its steps and the copies of its state.
+ * With `elapsed`, a term of the voice's clock at the probe that stepped it too.
  */
-function drift(duration = 0) {
+function drift(duration = 0, elapsed = false) {
   const count = { steps: 0, copies: 0 };
   const made = patch<string, Pose, { x: number }>(duration, (_p, _s, st) => ({ x: st.state.x }), {
     writes: ['x'],
@@ -28,6 +29,7 @@ function drift(duration = 0) {
     step: (s, dt, _subject, setting) => {
       count.steps++;
       s.x += (50 - s.x) * Math.min(1, dt / 2000) + (setting.timestamp % 7) * 1e-4;
+      if (elapsed) s.x += setting.elapsed * 1e-6;
     },
     pack: (s) => ({ ...s }),
     unpack: (d) => ({ ...(d as { x: number }) }),
@@ -117,12 +119,14 @@ function looped(
 
 describe('a mix sought back and to where it was, every frame', () => {
   for (const every of [50, undefined])
-    it(`steps a subject again over no more than the way back and a copy's interval, every ${every ?? 'left out'}`, () => {
+    it(`steps a subject over no more than the frame, as a mix never sought does, every ${every ?? 'left out'}`, () => {
       const { steps } = looped(330, opts(every));
-      const most = Math.ceil((BACK + (every ?? 200) + 2 * FRAME) / STEP);
-      expect(Math.max(...steps.slice(40))).toBeLessThanOrEqual(most);
-      expect(Math.min(...steps.slice(40))).toBeGreaterThanOrEqual(Math.floor(BACK / STEP));
+      expect(Math.max(...steps.slice(40))).toBeLessThanOrEqual(Math.ceil(FRAME / STEP));
     });
+
+  it('shows what it showed for a step reading its clock, stepped then and not again', () => {
+    looped(200, opts(50), { make: () => drift(0, true) });
+  });
 
   it('copies state ahead once an interval, not once a frame', () => {
     const frames = 330;
