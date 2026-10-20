@@ -1,5 +1,11 @@
 import type { Subject } from './voice.js';
 
+/** A record with every field written out, optional ones too, as every record in a mix is built. */
+export type WholeRecord = { [K in Field]: Subject<unknown>[K] };
+
+// Apart, so the mapped type over it keeps no field optional.
+type Field = keyof Subject<unknown>;
+
 /**
  * A subject's record for `voice` holding every field one can come to hold, in one order, so every
  * record in a mix shares one hidden class: a record built elsewhere, or given `base`, `snaps` or
@@ -42,5 +48,6 @@ export function record(voice: object | null, reaches: boolean, state: unknown): 
     slot: -1,
     run: -1,
     freed: -1,
-  };
+    restored: 0,
+  } satisfies WholeRecord;
 }

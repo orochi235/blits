@@ -132,23 +132,24 @@ export function contribution<I, O>(
         : still === 1
           ? voice.timeAt(held.delay + voice.span)
           : voice.ranBackTo(held.delay, now);
+    // Never probed, it may be a record a seek put back, sharing its copy's state until it steps.
+    const snaps = held.snaps;
+    const sought = Number.isNaN(held.probed) && snaps !== undefined;
     if (!Number.isNaN(to)) {
       if (held.stepped < held.since) {
         held.stepped = held.since;
         setting.dt = this.capped(now - held.since);
       }
       const tick = stepOf(this, voice);
-      if (tick !== undefined) {
-        // Never probed, it may be a record a seek put back.
-        if (Number.isNaN(held.probed) && held.snaps !== undefined)
-          ahead(this, voice, subject, held, held.snaps, tick, to);
-        this.tick(voice, subject, held, tick, to);
-      } else if (still === 0 ? now !== held.stepped : to > held.stepped) {
+      if (tick !== undefined && sought) ahead(this, voice, subject, held, snaps, tick, to);
+      if (sought) own(voice, held);
+      if (tick !== undefined) this.tick(voice, subject, held, tick, to);
+      else if (still === 0 ? now !== held.stepped : to > held.stepped) {
         if (still !== 0) setting.dt = this.capped(to - held.stepped);
         voice.patch.step(held.state as never, setting.dt, subject, setting as Setting<never>);
         held.stepped = to;
       }
-    }
+    } else if (sought) own(voice, held);
   }
 
   let delta: Record<string, unknown> | null = null;
@@ -223,10 +224,12 @@ function dueBy(held: Subject<unknown>, tick: number, to: number): number {
 }
 
 /**
- * The first step of a record a seek put back from a copy: takes up the state that copy was last
- * stepped ahead to, where the steps due now run past it, and keeps the copy's stepped ahead to the
- * moment sought, so a mix sought back time after time does not step from the copy each time. Only
- * where the same steps give the same state: a fixed interval, no `maxDt`, no host field read.
+ * The first step of a record a seek put back from a copy: takes up the furthest state stepped on
+ * from that copy that the steps due now run past, the one the record the seek replaced reached or
+ * the one the copy was last stepped ahead to, and otherwise keeps the copy's stepped ahead to the
+ * moment sought, so a mix sought back time after time does not step from the copy each time, nor a
+ * mix sought back and returned step again to where it was. Only where the same steps give the same
+ * state: a fixed interval, no `maxDt`, no host field read.
  */
 function ahead<I, O>(
   mix: Mixer<I, O>,
@@ -247,7 +250,16 @@ function ahead<I, O>(
   const was = from.held;
   if (held.ticks !== was.ticks || held.since !== got.since || held.rebuilt !== was.rebuilt) return;
   const at = got.sought;
-  const usable = got.state !== undefined && got.ticks <= dueBy(held, tick, to);
+  const due = dueBy(held, tick, to);
+  const usable = got.state !== undefined && got.ticks <= due;
+  if (got.left !== undefined && got.leftTicks <= due && !(usable && got.ticks > got.leftTicks)) {
+    // Taken, not copied: the next seek back keeps the state this record steps on to in its place.
+    held.state = got.left;
+    got.left = undefined;
+    voice.setting.state = held.state;
+    held.ticks = got.leftTicks;
+    return;
+  }
   if (usable) {
     held.state = copyState(voice, got.state);
     voice.setting.state = held.state;
@@ -255,10 +267,24 @@ function ahead<I, O>(
   }
   const last = usable ? got.at : from.at;
   if (!(at < to) || at - last < apart(mix.opts.history as { every?: number })) return;
+  own(voice, held);
   mix.tick(voice, subject, held, tick, at);
   got.state = copyState(voice, held.state);
   got.ticks = held.ticks;
   got.at = at;
+}
+
+/**
+ * A record a seek put back shares the state of the copy it was made from, which no read changes,
+ * until its first probe: before it steps, it takes a copy of its own.
+ */
+function own<I, O>(voice: Voice<I, O>, held: Subject<unknown>): void {
+  const snaps = held.snaps as NonNullable<Subject<unknown>['snaps']>;
+  const from = snaps[snaps.length - 1];
+  if (from !== undefined && held.state !== undefined && held.state === from.held.state) {
+    held.state = copyState(voice, held.state);
+    voice.setting.state = held.state;
+  }
 }
 
 /**

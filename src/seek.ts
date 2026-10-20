@@ -2,7 +2,7 @@ import { heldAt } from './chain.js';
 import { schedule } from './due.js';
 import { fadesAt } from './fade.js';
 import { origin } from './held.js';
-import { apart, copyHeld, last, lastWithin } from './history.js';
+import { apart, copyHeld, last, lastWithin, unread } from './history.js';
 import { laneHost } from './hosts.js';
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
@@ -33,12 +33,14 @@ function restore<I, O>(
   live: Subject<unknown>,
   t: number,
   every: number,
+  mine: boolean,
 ): Subject<unknown> | undefined {
   const inputs = live.inputs?.filter((e) => e.at <= t);
   const snaps = live.snaps;
   if (snaps === undefined) {
-    // Nothing a step or `setting.keep` holds: what it keeps does not move with time.
-    const h = copyHeld(voice, live);
+    // Nothing a step or `setting.keep` holds: what it keeps does not move with time. One record
+    // stands for every subject a voice does not reach, so that one is copied.
+    const h = mine && live.reaches ? unread(live) : copyHeld(voice, live);
     if (h.stepped > t) h.stepped = t;
     // Whether it had rested by `t` is not kept; the next probe finds it again.
     h.rested = false;
@@ -49,28 +51,48 @@ function restore<I, O>(
   }
   const snap = last(snaps, t, true);
   if (snap === undefined) return undefined;
-  const h = copyHeld(voice, snap.held);
+  const h = copyHeld(voice, snap.held, true);
   h.weight = 0;
   if (snap.at < t) h.copied = true;
-  h.snaps = snaps.slice(0, snaps.indexOf(snap) + 1);
+  const kept = snaps.indexOf(snap) + 1;
+  // The record replaced is let go, so its list is cut where it stands.
+  if (mine) snaps.length = kept;
+  h.snaps = mine ? snaps : snaps.slice(0, kept);
   h.inputs = inputs;
   // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
   if (!(h.since <= snap.at)) origin(mix, voice, h);
-  if (voice.patch.step !== undefined && (snap.ahead !== undefined || t - snap.at >= every)) {
-    const ahead = snap.ahead;
+  // The record a seek replaces, stepped on from this copy with nothing since rebuilding or moving
+  // its start, holds the copy's state at its own `ticks`, which a probe there need not step to.
+  const was =
+    mine && live.ticks > h.ticks && live.since === h.since && live.rebuilt === h.rebuilt
+      ? live
+      : undefined;
+  if (
+    voice.patch.step !== undefined &&
+    (snap.ahead !== undefined || t - snap.at >= every || was !== undefined)
+  ) {
+    let ahead = snap.ahead;
     // Steps counted from a start that has moved since are not this record's.
-    if (ahead === undefined || ahead.since !== h.since)
-      snap.ahead = {
+    if (ahead === undefined || ahead.since !== h.since) {
+      ahead = {
         put: h,
         sought: t,
         since: h.since,
         at: snap.at,
         ticks: h.ticks,
         state: undefined,
+        leftTicks: 0,
+        left: undefined,
       };
-    else {
+      snap.ahead = ahead;
+    } else {
       ahead.put = h;
       ahead.sought = t;
+    }
+    if (was !== undefined) {
+      // Nothing else holds the record replaced, so its state is taken, not copied.
+      ahead.leftTicks = was.ticks;
+      ahead.left = was.state;
     }
   }
   return h;
@@ -131,8 +153,8 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
     const every = apart(mix.opts.history as { every?: number });
     const now = (subject: I, held: Subject<unknown> | undefined, least: number, seq: number) =>
       heldAt(voice, subject, held, least, seq);
-    records = new Restored(records, now, (live, least, top) => {
-      const h = restore(mix, voice, live, least, every);
+    records = new Restored(records, now, (live, least, top, mine) => {
+      const h = restore(mix, voice, live, least, every, mine);
       if (h === undefined) return h;
       if (h.reaches) voice.seen++;
       if (h.rested) voice.restedCount++;

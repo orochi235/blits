@@ -1050,30 +1050,30 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         so it was backed out: `glowl` 2.359 to 2.393 ms and `glowl^` 1.680 to 1.691 (msb-uai,
         2026-10-10, 7 rounds at 3,000 frames against `350991c`, every row's runs overlapping,
         on a node whose runs spread 6% to 14%). So the repeat fill is not shown to be the cost.
-      - **A seek back and its return cost about 20 ms at 10,000 subjects, most of it copying
-        records** (msb-uai, 2026-10-11, `AB_EACH=1 bench/ab.sh 657f3f2 . 9`, medians, ms a
-        frame). The `kept` rows sync and probe a mix keeping 5 s of history and a tape; the
-        `seek` rows also seek it 300 ms back and to where it was before every sync.
+      - **A seek back and its return cost about 12 ms at 10,000 subjects** (msb-uai,
+        2026-10-20, `AB_EACH=1 bench/ab.sh 4374f34 . 9`, medians, ms a frame). The `kept` rows
+        sync and probe a mix keeping 5 s of history and a tape; the `seek` rows also seek it
+        300 ms back and to where it was before every sync.
 
-        | Subjects | `kept` | `seek` | A seek back and return | `seek` on `657f3f2` |
+        | Subjects | `kept` | `seek` | A seek back and return | `seek` on `4374f34` |
         |---:|---:|---:|---:|---:|
-        |  1,000 | 0.666 |  1.785 |  1.119 |  2.961 |
-        | 10,000 | 6.810 | 27.385 | 20.575 | 38.793 |
+        |  1,000 | 0.636 |  1.221 |  0.585 |  1.845 |
+        | 10,000 | 7.271 | 19.593 | 12.322 | 31.779 |
 
-        Before `1b72ed9` the row's cost grew with every frame: a seek lets go of the copies
-        made after the moment it sought, so each subject stepped from the copy before the
-        first seek, 70 steps at the first frame and 1,069 at the 300th (`bench/steps.mjs`),
-        and 1,200 frames ran at 80 to 118 ms a frame against 29 now (teitou). The copy a
-        record is put back from now keeps its state stepped ahead to near the moment sought
-        (`ahead` in `src/fold.ts`), under `stepMs` with no `maxDt` for a patch that `reads`
-        no host field, and a subject steps 67 to 74 times a frame. A profile of `seek` at
-        10,000 (600 frames, teitou) now puts 25% in `copyHeld`, 20% in collection, 3% in
-        `tick` and 2% in the row's `step`: a subject's record is copied twice a frame, once
-        put back and once kept at the probe, and the kept one is let go by the next seek.
-        The row allocates 34.9 MB a frame against 9.3 for `kept`. The lever left is those
-        copies and the generic `clone` of the state. Reasoned and untested: a `step` that
-        reads `setting.weight`, `elapsed` or `pass` can give different bits after repeated
-        seeks, since steps taken up from the copy ran under an earlier probe's setting.
+        A record put back steps once a frame, as an unsought one does: it takes up the state
+        of the record the seek replaced, which holds the same steps from the same copy
+        (`left` on the copy's `Ahead`, `ahead` in `src/fold.ts`), under `stepMs` with no
+        `maxDt` for a patch that `reads` no host field. A subject's state is copied once a
+        frame, for the copy the probe keeps; the record put back shares its copy's state until
+        it steps (`own` in `src/fold.ts`), and a stateless record is put back in place. The row
+        allocates 20.2 MB a frame against 9.5 for `kept`. A profile of `seek` at 10,000 (600
+        frames, this Mac) puts 15% in `copyHeld`, 8% in collection, 14% in `Store` reads and
+        writes and 7% in `Numbers.take`. Left: the record copy each probe keeps, which the next
+        seek lets go of; the lanes, chains and pose a seek rebuilds, which number and link every
+        subject again, each number a `WeakRef` and a `FinalizationRegistry` entry. A `step`
+        reading `setting.weight`, `elapsed` or `pass` now shows what a mix never sought shows
+        after a seek back and return (`test/sought.test.ts`); after a seek back that stays, its
+        steps up from the copy still run under the probe's setting.
       - **A subject sought back before its start with `state: 'keep'` shows state that depends on
         when it was last probed** (found 2026-10-11, not fixed). `contribution` in `src/fold.ts`
         does not step a subject before its start, so one a kept seek moves back there holds the

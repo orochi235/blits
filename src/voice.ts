@@ -79,6 +79,12 @@ export interface Ahead<S> {
   ticks: number;
   /** Undefined until a record has stepped on from the copy. */
   state: S | undefined;
+  /**
+   * The state the record a seek replaced had stepped on to from the copy, at `leftTicks`; undefined
+   * until one had.
+   */
+  leftTicks: number;
+  left: S | undefined;
 }
 
 /** Everything one voice holds for one subject, chained through the next voice that reaches it. */
@@ -150,6 +156,8 @@ export interface Subject<S> {
   /** A motion voice's number for this subject in its patch, good while `freed` is the patch's own. */
   run: number;
   freed: number;
+  /** In a voice's store once a seek has gone back, the seek it was last put back or written at. */
+  restored: number;
 }
 
 /**
