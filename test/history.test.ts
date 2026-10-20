@@ -31,21 +31,19 @@ function full(): Subject<unknown> {
 }
 
 describe('copyHeldInto', () => {
-  it('writes every field copyHeld copies, keeping the slot and seek stamp of the record it writes over', () => {
-    const h = full();
-    const voice = { patch: {} } as never;
-    const copy = copyHeld(voice, h, true);
-    const into = record(null, true, undefined);
-    into.slot = 41;
-    into.restored = 42;
-    const out = copyHeldInto(h, into);
-    expect(out).toBe(into);
-    expect(Object.keys(out)).toEqual(Object.keys(copy));
-    expect({ ...out, slot: copy.slot, restored: copy.restored }).toEqual(copy);
-    expect(out.slot).toBe(41);
-    expect(out.restored).toBe(42);
-    expect(out.state).toBe(h.state);
-    expect(out.base).not.toBe(h.base);
-    expect(out.kept).not.toBe(h.kept);
-  });
+  for (const shared of [false, true])
+    it(`writes every field copyHeld copies${shared ? ', sharing the state' : ''}`, () => {
+      const h = full();
+      const voice = { patch: {} } as never;
+      const copy = copyHeld(voice, h, shared);
+      const into = record(null, true, undefined);
+      const out = copyHeldInto(voice, h, into, shared);
+      expect(out).toBe(into);
+      expect(Object.keys(out)).toEqual(Object.keys(copy));
+      expect(out).toEqual(copy);
+      if (shared) expect(out.state).toBe(h.state);
+      else expect(out.state).not.toBe(h.state);
+      expect(out.base).not.toBe(h.base);
+      expect(out.kept).not.toBe(h.kept);
+    });
 });

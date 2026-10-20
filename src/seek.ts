@@ -18,7 +18,7 @@ import { Store } from './store.js';
 import { hostAhead, hostAt, replay } from './tape.js';
 import type { Frame, Transport } from './transport.js';
 import { cover, coverFrame, cut } from './unpage.js';
-import type { Controls, Subject, Voice } from './voice.js';
+import type { Controls, Snap, Subject, Voice } from './voice.js';
 
 /**
  * A voice's record of one subject as it stood at mix time `t`, from the latest copy kept by then;
@@ -53,13 +53,20 @@ function restore<I, O>(
   if (at < 0) return undefined;
   const snap = snaps[at] as NonNullable<typeof snaps>[number];
   // What the record replaced held, which a record put back over it would lose.
-  const { ticks, since, rebuilt, state } = live;
-  const h = mine && live.reaches ? copyHeldInto(snap.held, live) : copyHeld(voice, snap.held, true);
+  const { ticks, since, rebuilt, state, slot, restored } = live;
+  let h: Subject<unknown>;
+  if (mine && live.reaches) {
+    // Its chain may still read its number from it, and its store has just stamped it.
+    h = copyHeldInto(voice, snap.held, live, true);
+    h.slot = slot;
+    h.restored = restored;
+  } else h = copyHeld(voice, snap.held, true);
   h.weight = 0;
   if (snap.at < t) h.copied = true;
   const kept = at + 1;
   // The record replaced is let go, so its list is cut where it stands.
-  if (mine) while (snaps.length > kept) snaps.pop();
+  if (mine) trim(voice, snaps, kept);
+  else for (let i = 0; i < kept; i++) (snaps[i] as Snap<unknown>).shared = true;
   h.snaps = mine ? snaps : snaps.slice(0, kept);
   h.inputs = inputs;
   // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
@@ -93,6 +100,17 @@ function restore<I, O>(
     }
   }
   return h;
+}
+
+/** Cuts a record's list of copies to its first `kept`, keeping those no other list holds as spares. */
+function trim<I, O>(voice: Voice<I, O>, snaps: Snap<unknown>[], kept: number): void {
+  while (snaps.length > kept) {
+    const snap = snaps.pop() as Snap<unknown>;
+    if (snap.shared) continue;
+    snap.ahead = undefined;
+    voice.spares ??= [];
+    voice.spares.push(snap);
+  }
 }
 
 /** Takes a voice cued after the moment sought out of the mix, until the tape cues it again. */
@@ -141,6 +159,7 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   voice.unreached = null;
   voice.unreachedBits = null;
   voice.seeks++;
+  voice.spares = null;
   const left = voice.left?.all() ?? [];
   if (voice.left !== null) fadesAt(voice, voice.left.after(cut), seq);
   voice.left = Leavings.from(left.filter((e) => e.seq <= seq));

@@ -175,12 +175,15 @@ function keptOf(h: Subject<unknown>): Map<object, unknown> | null {
 }
 
 /**
- * As `copyHeld` with `shared`, written over `into`, a record a seek replaces that nothing else
- * holds, so a seek puts a record back with nothing new to collect. `into` keeps its own `slot`,
- * which its chain may still read its number from, and `restored`, which its store has just set.
- * test/history.test.ts holds this to `copyHeld` field by field.
+ * As `copyHeld`, written over `into`, a record nothing else holds, so a copy made in its place
+ * leaves nothing new to collect. test/history.test.ts holds this to `copyHeld` field by field.
  */
-export function copyHeldInto(h: Subject<unknown>, into: Subject<unknown>): Subject<unknown> {
+export function copyHeldInto<I, O>(
+  voice: Voice<I, O>,
+  h: Subject<unknown>,
+  into: Subject<unknown>,
+  shared = false,
+): Subject<unknown> {
   into.reaches = h.reaches;
   into.delay = h.delay;
   into.since = h.since;
@@ -188,7 +191,7 @@ export function copyHeldInto(h: Subject<unknown>, into: Subject<unknown>): Subje
   into.weight = h.weight;
   into.rested = h.rested;
   into.bands = h.bands === null ? null : h.bands.slice();
-  into.state = h.state;
+  into.state = h.state === undefined || shared ? h.state : copyState(voice, h.state);
   into.stepped = h.stepped;
   into.ticks = h.ticks;
   into.rebuilt = h.rebuilt;
@@ -201,8 +204,10 @@ export function copyHeldInto(h: Subject<unknown>, into: Subject<unknown>): Subje
   into.unknown = h.unknown;
   into.replay = h.replay;
   into.voice = h.voice;
+  into.slot = h.slot;
   into.run = h.run;
   into.freed = h.freed;
+  into.restored = h.restored;
   // `probed`, `delta`, `phase`, `seeks`, `snaps`, `inputs`, `next`, `version` and `loci` as
   // `unread` leaves them.
   return unread(into);
@@ -289,7 +294,15 @@ export function remember<I, O>(
   held.snaps = snaps;
   const prev = snaps[snaps.length - 1];
   if (prev !== undefined && mix.now - prev.at < apart(history)) return;
-  snaps.push({ at: mix.now, seq: mix.transport.seq, held: copyHeld(voice, held) });
+  const spare = voice.spares?.pop();
+  if (spare === undefined)
+    snaps.push({ at: mix.now, seq: mix.transport.seq, held: copyHeld(voice, held) });
+  else {
+    spare.at = mix.now;
+    spare.seq = mix.transport.seq;
+    copyHeldInto(voice, held, spare.held);
+    snaps.push(spare);
+  }
   const reach = mix.now - history.ms;
   const out = older(snaps, reach);
   if (out.length > 0)
