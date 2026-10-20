@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clone, cloneInto } from '../src/clone.js';
+import { clone } from '../src/clone.js';
 
 describe('clone copies what structuredClone copies', () => {
   const shared = [1, 2];
@@ -58,41 +58,5 @@ describe('clone copies what structuredClone copies', () => {
   it('refuses what structuredClone refuses', () => {
     expect(() => clone({ f: () => 1 })).toThrow();
     expect(() => clone(Symbol('s'))).toThrow();
-  });
-
-  it('writes over an object with the same keys, and gives what clone gives for every value', () => {
-    const into = { x: 1, y: 2 };
-    const got = cloneInto({ x: 0.5, y: -0 }, into);
-    expect(got).toBe(into);
-    expect(got).toStrictEqual({ x: 0.5, y: -0 });
-    expect(cloneInto(bare, { x: 1 })).toStrictEqual(clone(bare));
-    for (const v of values) {
-      const target = { x: 1, y: 2, z: 3 };
-      const a = cloneInto(v, target);
-      expect(a).toStrictEqual(structuredClone(v));
-      if (typeof v === 'object' && v !== null) expect(a).not.toBe(v);
-    }
-  });
-
-  it('makes a new copy where the keys or their order differ, or a value is an object', () => {
-    for (const [v, into] of [
-      [
-        { y: 1, x: 2 },
-        { x: 0, y: 0 },
-      ],
-      [{ x: 1 }, { x: 0, y: 0 }],
-      [{ x: 1, y: 2 }, { x: 0 }],
-      [{ x: [1] }, { x: [0] }],
-      [
-        [1, 2],
-        [0, 0],
-      ],
-      [{ x: 1 }, Object.assign(Object.create(null), { x: 0 })],
-    ] as const) {
-      const got = cloneInto(v, into);
-      expect(got).not.toBe(into);
-      expect(got).toStrictEqual(clone(v));
-      expect(Object.keys(got)).toStrictEqual(Object.keys(v));
-    }
   });
 });

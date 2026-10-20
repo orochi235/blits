@@ -96,8 +96,6 @@ export interface Snap<S> {
   ahead?: Ahead<S>;
   /** Set where another record's list holds it too, so a seek cutting it from one lets go of it. */
   shared?: true;
-  /** Set where `held.state` is a `clone` nothing else has been handed, which a spare writes over. */
-  sole?: boolean;
 }
 
 /** Everything one voice holds for one subject, chained through the next voice that reaches it. */
