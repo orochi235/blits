@@ -1,4 +1,4 @@
-import { changed, unlink } from './chain.js';
+import { changed, headOf, unlink } from './chain.js';
 import { envelope } from './clock.js';
 import { schedule } from './due.js';
 import { unshare, unsight } from './everyone.js';
@@ -73,7 +73,7 @@ export function unpart<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): 
   forgetIn(mix, voice, subject);
   voice.parted.delete(subject);
   if (voice.parted.size === 0) voice.parted = null;
-  const slot = mix.chains.get(subject)?.slot ?? -1;
+  const slot = headOf(mix, subject)?.slot ?? -1;
   if (slot >= 0) mix.lanes?.rejoin(slot);
 }
 
@@ -112,7 +112,7 @@ export function fadesAt<I>(
 
 /** Drops a voice's record of a subject and relinks the subject's chain without it. */
 function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void {
-  const head = mix.chains.get(subject);
+  const head = headOf(mix, subject);
   if (head !== undefined && head.slot >= 0) {
     unreach(voice, head.slot, false);
     // What the voice kept for the subject while it shared one record, which `weightOf` reads.

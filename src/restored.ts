@@ -69,6 +69,10 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
   /** The earliest moment sought by seek `from` or any after it, and the frame it ended. */
   private since(from: number): { t: number; seq: number } {
     const least = this.least;
+    // Most records were last put back by the seek before the latest, which only the latest follows.
+    const n = least.length;
+    if (n === 1 || (least[n - 2] as { n: number }).n < from)
+      return least[n - 1] as { t: number; seq: number };
     let lo = 0;
     let hi = least.length - 1;
     while (lo < hi) {

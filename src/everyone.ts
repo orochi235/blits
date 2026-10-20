@@ -1,3 +1,4 @@
+import { headOf } from './chain.js';
 import { numericOf } from './channels.js';
 import type { Mixer } from './mixer.js';
 import { record } from './record.js';
@@ -213,7 +214,7 @@ export function unshare<I, O>(
   voice.everyone = null;
   const at = mix.sharers.indexOf(voice);
   if (at >= 0) mix.sharers.splice(at, 1);
-  const slot = kept ? (mix.chains.get(keeper as I)?.slot ?? -1) : -1;
+  const slot = kept ? (headOf(mix, keeper as I)?.slot ?? -1) : -1;
   // A projection numbers no subject, so its copy's record is the keeper's without being asked.
   if (all !== null && kept && (mix.projecting || sighted(voice, slot))) {
     if (slot >= 0) unsight(voice, slot);

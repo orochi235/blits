@@ -27,23 +27,37 @@ export function relink<I, O>(
   subject: I,
   was: Subject<unknown> | undefined,
 ): Subject<unknown> {
-  const slot = was !== undefined ? was.slot : this.lanes !== null ? this.lanes.number(subject) : -1;
+  const lanes = this.lanes;
+  const slot = was !== undefined ? was.slot : lanes !== null ? lanes.number(subject) : -1;
+  // A chain a seek kept for its number alone links afresh, as a subject first seen does.
+  const sought = was !== undefined && slot >= 0 && lanes?.renew(slot) === true;
   // Where only voices over every subject changed since, those alone are taken off or put on.
   let first =
-    was === undefined
+    was === undefined || sought
       ? undefined
       : this.steps.patch(was.voice === null ? null : was, was.version, this, subject, slot);
   if (first === undefined) first = linkAll(this, subject, slot);
   const head = first ?? stub();
   head.version = this.version;
   if (was !== undefined && was !== head) {
-    head.loci = was.loci;
+    if (!sought) head.loci = was.loci;
     was.loci = null;
-    head.slot = was.slot;
     was.slot = -1;
-  } else if (was === undefined) head.slot = slot;
+  }
+  head.slot = slot;
   if (was !== head) this.chains.set(subject, head);
   return head;
+}
+
+/**
+ * The subject's chain as last linked; undefined where it has none, as for a chain a seek kept only
+ * for its number and not linked since, whose records are those from before the seek.
+ */
+export function headOf<I, O>(mix: Mixer<I, O>, subject: I): Subject<unknown> | undefined {
+  const head = mix.chains.get(subject);
+  return head !== undefined && head.slot >= 0 && mix.lanes?.sought(head.slot) === true
+    ? undefined
+    : head;
 }
 
 /** A subject's chain linked afresh through every voice that reaches it, in voice order. */
@@ -145,7 +159,7 @@ export function changed<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
     return;
   }
   for (const subject of voice.named) {
-    const head = mix.chains.get(subject);
+    const head = headOf(mix, subject);
     if (head !== undefined) unlink(mix, head);
   }
   mix.relinks++;

@@ -1069,30 +1069,42 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         so it was backed out: `glowl` 2.359 to 2.393 ms and `glowl^` 1.680 to 1.691 (msb-uai,
         2026-10-10, 7 rounds at 3,000 frames against `350991c`, every row's runs overlapping,
         on a node whose runs spread 6% to 14%). So the repeat fill is not shown to be the cost.
-      - **A seek back and its return cost about 12 ms at 10,000 subjects** (msb-uai,
-        2026-10-20, `AB_EACH=1 bench/ab.sh 4374f34 . 9`, medians, ms a frame). The `kept` rows
-        sync and probe a mix keeping 5 s of history and a tape; the `seek` rows also seek it
+      - **A seek back and its return cost about 2.4 ms at 10,000 subjects** (msb-uai,
+        2026-10-20, `AB_EACH=1 bench/ab.sh 561d266 73a4a8c 9`, medians, ms a frame). The `kept`
+        rows sync and probe a mix keeping 5 s of history and a tape; the `seek` rows also seek it
         300 ms back and to where it was before every sync.
 
-        | Subjects | `kept` | `seek` | A seek back and return | `seek` on `4374f34` |
+        | Subjects | `kept` | `seek` | A seek back and return | `seek` on `561d266` |
         |---:|---:|---:|---:|---:|
-        |  1,000 | 0.636 |  1.221 |  0.585 |  1.845 |
-        | 10,000 | 7.271 | 19.593 | 12.322 | 31.779 |
+        |  1,000 | 0.629 |  0.852 |  0.223 |  1.181 |
+        | 10,000 | 7.280 |  9.712 |  2.432 | 13.529 |
 
-        A record put back steps once a frame, as an unsought one does: it takes up the state
-        of the record the seek replaced, which holds the same steps from the same copy
-        (`left` on the copy's `Ahead`, `ahead` in `src/fold.ts`), under `stepMs` with no
-        `maxDt` for a patch that `reads` no host field. A subject's state is copied once a
-        frame, for the copy the probe keeps; the record put back shares its copy's state until
-        it steps (`own` in `src/fold.ts`), and a stateless record is put back in place. The row
-        allocates 20.2 MB a frame against 9.5 for `kept`. A profile of `seek` at 10,000 (600
-        frames, this Mac) puts 15% in `copyHeld`, 8% in collection, 14% in `Store` reads and
-        writes and 7% in `Numbers.take`. Left: the record copy each probe keeps, which the next
-        seek lets go of; the lanes, chains and pose a seek rebuilds, which number and link every
-        subject again, each number a `WeakRef` and a `FinalizationRegistry` entry. A `step`
-        reading `setting.weight`, `elapsed` or `pass` now shows what a mix never sought shows
-        after a seek back and return (`test/sought.test.ts`); after a seek back that stays, its
-        steps up from the copy still run under the probe's setting.
+        A record put back steps once a frame, as an unsought one does: it takes up the state of the
+        record the seek replaced, which holds the same steps from the same copy (`left` on the
+        copy's `Ahead`, `ahead` in `src/fold.ts`), under `stepMs` with no `maxDt` for a patch that
+        `reads` no host field. A seek keeps every subject's number and chain: the new lanes take
+        over the old ones' `Numbers`, and a number carried over is marked in `Lanes.per` until its
+        chain is next linked (`renew`; `headOf` in `src/chain.ts` reads such a chain as absent). A
+        reaching record the store alone holds is written over with its copy (`copyHeldInto`), and a
+        probe's kept copy is written over one the seek cut (`spares` on the voice), so the row
+        allocates 8.7 MB a frame against 8.9 for `kept`. A profile of `seek` at 10,000 (600 frames,
+        this Mac, `5af18b8`) puts 8% in `apply`, as `kept` does, 7% in `Restored.get`, 7% in the
+        first read of the copy being put back (`keptOf`, by its line most likely a cache miss), 6%
+        in `restore` and 6% in `linkAll`. Left: every record is still put back, through a `WeakMap`
+        lookup, and every chain linked afresh once a seek. The `kept` rows read 2 to 4% slower than
+        on `561d266`, inside the runs' spread (7.280 against 6.971 at 10,000, runs 6.75 to 7.76
+        against 6.49 to 7.49); on this Mac a 10,000-subject `kept` run lands near 5.5 or near 7.5 ms
+        by how far V8 grows its young generation (`--max-semi-space-size` 4 against 32 gives
+        either), so read that row over many rounds. A `step` reading `setting.weight`, `elapsed` or
+        `pass` now shows what a mix never sought shows after a seek back and return
+        (`test/sought.test.ts`); after a seek back that stays, its steps up from the copy still run
+        under the probe's setting.
+      - **`Restored.least` grows by one entry per seek back to a later moment than the last**
+        (found 2026-10-20 reading the code, not measured, not fixed). Each voice's `Restored`
+        pops only entries at or after the moment a seek seeks, so a host seeking back a little
+        every frame, as the `seek` rows do, adds an entry per voice per frame that nothing frees:
+        180 a second for 3 voices at 60 fps. An entry is needed only while some subject was last
+        put back before it, which the store cannot list.
       - **A subject sought back before its start with `state: 'keep'` shows state that depends on
         when it was last probed** (found 2026-10-11, not fixed). `contribution` in `src/fold.ts`
         does not step a subject before its start, so one a kept seek moves back there holds the

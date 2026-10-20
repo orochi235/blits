@@ -1,3 +1,4 @@
+import { headOf } from './chain.js';
 import { restamp } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
@@ -18,9 +19,9 @@ export function touch<I, O>(mix: Mixer<I, O>, subject?: I): void {
       }
   } else {
     // No voice's `seeks` is below 0, so no record stamped with it reads as current.
-    let held: Subject<unknown> | null = mix.chains.get(subject) ?? null;
+    let held: Subject<unknown> | null = headOf(mix, subject) ?? null;
     for (; held !== null; held = held.next) held.seeks = -1;
-    const slot = mix.chains.get(subject)?.slot ?? -1;
+    const slot = headOf(mix, subject)?.slot ?? -1;
     for (const voice of mix.sharers) restamp(voice, slot);
   }
   mix.lanes?.refill();

@@ -1,5 +1,5 @@
 import { ownBlends } from './blend.js';
-import { heldAt } from './chain.js';
+import { headOf, heldAt } from './chain.js';
 import { stepOf } from './clock.js';
 import { open, sighted, weightAt } from './everyone.js';
 import { fadesAt } from './fade.js';
@@ -378,7 +378,7 @@ function recordOf<I, O>(
   // A voice sharing one record has that for every subject a chain has asked it about, pointed at
   // the subject for the caller to copy from.
   if (voice.sharing) {
-    const slot = mix.chains.get(subject)?.slot ?? -1;
+    const slot = headOf(mix, subject)?.slot ?? -1;
     if (!sighted(voice, slot)) return undefined;
     const all = voice.everyone as Subject<unknown>;
     open(voice, all, slot);
@@ -387,7 +387,7 @@ function recordOf<I, O>(
   }
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined || voice.unreachedBits === null) return held;
-  return unreached(voice, mix.chains.get(subject)?.slot ?? -1)
+  return unreached(voice, headOf(mix, subject)?.slot ?? -1)
     ? (voice.unreached as Subject<unknown>)
     : undefined;
 }

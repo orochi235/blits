@@ -87,6 +87,16 @@ export interface Ahead<S> {
   left: S | undefined;
 }
 
+/** A copy of a record kept under `history`, by the mix time and frame it was taken at. */
+export interface Snap<S> {
+  at: number;
+  seq: number;
+  held: Subject<S>;
+  ahead?: Ahead<S>;
+  /** Set where another record's list holds it too, so a seek cutting it from one lets go of it. */
+  shared?: true;
+}
+
 /** Everything one voice holds for one subject, chained through the next voice that reaches it. */
 export interface Subject<S> {
   /** The voice's `target` answer, fixed on first sight. */
@@ -132,7 +142,7 @@ export interface Subject<S> {
   /** Kept state a history store gave back, which each owner takes in turn on its first keep. */
   unkept?: unknown[];
   /** Under `history`, copies of this record by the mix time they were taken, oldest first. */
-  snaps?: { at: number; seq: number; held: Subject<S>; ahead?: Ahead<S> }[];
+  snaps?: Snap<S>[];
   /** In a projection: where this record started from, and whether nothing known could be. */
   from?: number;
   unknown?: boolean;
@@ -422,6 +432,11 @@ export class Voice<I, O> {
   ownKept: Map<object, unknown> | null = null;
   /** The blend it is a member of, and which. */
   blend: { of: Blend<I, O>; i: number } | null = null;
+  /**
+   * Copies the latest seek back cut from its records' lists that no other list holds, for the
+   * copies its probes keep next to be written over; null until a seek cuts one.
+   */
+  spares: Snap<unknown>[] | null = null;
   /** The one record of every subject it does not reach. */
   unreached: Subject<unknown> | null = null;
   /** By subject number, a bit set where `unreached` stands for the subject; null until one is. */

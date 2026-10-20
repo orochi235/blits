@@ -28,7 +28,12 @@ export class Numbers<I> {
   private loneSlot = -1;
 
   /** Takes the owner rather than a callback, which would cost a closure and its context per patch. */
-  constructor(private readonly owner: { forget(slot: number): void }) {}
+  constructor(private owner: { forget(slot: number): void }) {}
+
+  /** Hands the numbers to a new owner, which hears of every release from now on. */
+  adopt(owner: { forget(slot: number): void }): void {
+    this.owner = owner;
+  }
 
   /** One past the highest number handed out, so a loop over 0..size meets every live one. */
   get size(): number {

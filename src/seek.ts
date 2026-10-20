@@ -2,7 +2,7 @@ import { heldAt } from './chain.js';
 import { schedule } from './due.js';
 import { fadesAt } from './fade.js';
 import { origin } from './held.js';
-import { apart, copyHeld, last, lastWithin, unread } from './history.js';
+import { apart, copyHeld, copyHeldInto, lastIndex, lastWithin, unread } from './history.js';
 import { laneHost } from './hosts.js';
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
@@ -18,7 +18,7 @@ import { Store } from './store.js';
 import { hostAhead, hostAt, replay } from './tape.js';
 import type { Frame, Transport } from './transport.js';
 import { cover, coverFrame, cut } from './unpage.js';
-import type { Controls, Subject, Voice } from './voice.js';
+import type { Controls, Snap, Subject, Voice } from './voice.js';
 
 /**
  * A voice's record of one subject as it stood at mix time `t`, from the latest copy kept by then;
@@ -49,28 +49,39 @@ function restore<I, O>(
     if (!(h.since <= t)) origin(mix, voice, h);
     return h;
   }
-  const snap = last(snaps, t, true);
-  if (snap === undefined) return undefined;
-  const h = copyHeld(voice, snap.held, true);
+  // A seek back to just before now finds its copy among the newest, looked at before searching.
+  const n = snaps.length;
+  const at =
+    n > 0 && (snaps[n - 1] as Snap<unknown>).at <= t
+      ? n - 1
+      : n > 1 && (snaps[n - 2] as Snap<unknown>).at <= t
+        ? n - 2
+        : lastIndex(snaps, t, true);
+  if (at < 0) return undefined;
+  const snap = snaps[at] as NonNullable<typeof snaps>[number];
+  // What the record replaced held, which a record put back over it would lose.
+  const { ticks, since, rebuilt, state, slot, restored } = live;
+  let h: Subject<unknown>;
+  if (mine && live.reaches) {
+    // Its chain may still read its number from it, and its store has just stamped it.
+    h = copyHeldInto(voice, snap.held, live, true);
+    h.slot = slot;
+    h.restored = restored;
+  } else h = copyHeld(voice, snap.held, true);
   h.weight = 0;
   if (snap.at < t) h.copied = true;
-  const kept = snaps.indexOf(snap) + 1;
+  const kept = at + 1;
   // The record replaced is let go, so its list is cut where it stands.
-  if (mine) snaps.length = kept;
+  if (mine) trim(voice, snaps, kept);
+  else for (let i = 0; i < kept; i++) (snaps[i] as Snap<unknown>).shared = true;
   h.snaps = mine ? snaps : snaps.slice(0, kept);
   h.inputs = inputs;
   // A start still ahead when the copy was kept may have moved before `t`, with no copy between.
   if (!(h.since <= snap.at)) origin(mix, voice, h);
   // The record a seek replaces, stepped on from this copy with nothing since rebuilding or moving
   // its start, holds the copy's state at its own `ticks`, which a probe there need not step to.
-  const was =
-    mine && live.ticks > h.ticks && live.since === h.since && live.rebuilt === h.rebuilt
-      ? live
-      : undefined;
-  if (
-    voice.patch.step !== undefined &&
-    (snap.ahead !== undefined || t - snap.at >= every || was !== undefined)
-  ) {
+  const was = mine && ticks > h.ticks && since === h.since && rebuilt === h.rebuilt;
+  if (voice.patch.step !== undefined && (snap.ahead !== undefined || t - snap.at >= every || was)) {
     let ahead = snap.ahead;
     // Steps counted from a start that has moved since are not this record's.
     if (ahead === undefined || ahead.since !== h.since) {
@@ -89,13 +100,24 @@ function restore<I, O>(
       ahead.put = h;
       ahead.sought = t;
     }
-    if (was !== undefined) {
+    if (was) {
       // Nothing else holds the record replaced, so its state is taken, not copied.
-      ahead.leftTicks = was.ticks;
-      ahead.left = was.state;
+      ahead.leftTicks = ticks;
+      ahead.left = state;
     }
   }
   return h;
+}
+
+/** Cuts a record's list of copies to its first `kept`, keeping those no other list holds as spares. */
+function trim<I, O>(voice: Voice<I, O>, snaps: Snap<unknown>[], kept: number): void {
+  while (snaps.length > kept) {
+    const snap = snaps.pop() as Snap<unknown>;
+    if (snap.shared) continue;
+    snap.ahead = undefined;
+    voice.spares ??= [];
+    voice.spares.push(snap);
+  }
 }
 
 /** Takes a voice cued after the moment sought out of the mix, until the tape cues it again. */
@@ -144,6 +166,7 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   voice.unreached = null;
   voice.unreachedBits = null;
   voice.seeks++;
+  voice.spares = null;
   const left = voice.left?.all() ?? [];
   if (voice.left !== null) fadesAt(voice, voice.left.after(cut), seq);
   voice.left = Leavings.from(left.filter((e) => e.seq <= seq));
@@ -280,9 +303,11 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
     }
 
   // Rebuilt from the voices that are back: the lanes, the chains and every count the fold reads.
+  // Subject numbers carry over, and with them the chains that hold them, each linked afresh.
   const oldLanes = mix.lanes;
-  if (oldLanes !== null && mix.lanesOf !== null) mix.lanes = new mix.lanesOf<I, O>(laneHost(mix));
-  mix.chains = new Store();
+  if (oldLanes !== null && mix.lanesOf !== null)
+    mix.lanes = new mix.lanesOf<I, O>(laneHost(mix), oldLanes);
+  else mix.chains = new Store();
   mix.owners = kept.some((v) => v.holding !== null) ? kept.filter((v) => v.holding !== null) : null;
   recount(mix);
   mix.parters.clear();
