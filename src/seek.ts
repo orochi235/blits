@@ -49,7 +49,14 @@ function restore<I, O>(
     if (!(h.since <= t)) origin(mix, voice, h);
     return h;
   }
-  const at = lastIndex(snaps, t, true);
+  // A seek back to just before now finds its copy among the newest, looked at before searching.
+  const n = snaps.length;
+  const at =
+    n > 0 && (snaps[n - 1] as Snap<unknown>).at <= t
+      ? n - 1
+      : n > 1 && (snaps[n - 2] as Snap<unknown>).at <= t
+        ? n - 2
+        : lastIndex(snaps, t, true);
   if (at < 0) return undefined;
   const snap = snaps[at] as NonNullable<typeof snaps>[number];
   // What the record replaced held, which a record put back over it would lose.

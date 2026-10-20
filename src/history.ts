@@ -8,7 +8,7 @@ import { pageOut } from './paging.js';
 import type { WholeRecord } from './record.js';
 import { scoreTouched } from './scored.js';
 import { type Cut, within } from './transport.js';
-import { type Controls, none, type Subject, type Voice } from './voice.js';
+import { type Controls, none, type Snap, type Subject, type Voice } from './voice.js';
 
 /** The last entry taken before `t`, or at it where `inclusive` says so. */
 export function last<T extends { at: number }>(
@@ -19,30 +19,19 @@ export function last<T extends { at: number }>(
   return list[lastIndex(list, t, inclusive)];
 }
 
-/** Whether `last` takes an entry: one before `t`, or at it where `inclusive` says so. */
-function before<T extends { at: number }>(
-  e: T,
-  t: number,
-  inclusive: boolean | ((e: T) => boolean),
-): boolean {
-  return e.at < t || (e.at === t && (typeof inclusive === 'function' ? inclusive(e) : inclusive));
-}
-
 /** Where `last` finds its entry in the list, -1 where it finds none. */
 export function lastIndex<T extends { at: number }>(
   list: readonly T[],
   t: number,
   inclusive: boolean | ((e: T) => boolean),
 ): number {
-  // Most reads are near the newest entry: those are looked at first, and the rest searched.
-  let hi = list.length - 1;
-  for (const stop = hi - 3; hi >= 0 && hi > stop; hi--)
-    if (before(list[hi] as T, t, inclusive)) return hi;
   let lo = 0;
+  let hi = list.length - 1;
   let found = -1;
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
-    if (before(list[mid] as T, t, inclusive)) {
+    const e = list[mid] as T;
+    if (e.at < t || (e.at === t && (typeof inclusive === 'function' ? inclusive(e) : inclusive))) {
       found = mid;
       lo = mid + 1;
     } else hi = mid - 1;
@@ -286,6 +275,17 @@ export function apart(history: { readonly every?: number }): number {
   return history.every ?? 200;
 }
 
+/** A copy of a record to keep now, written over a spare the latest seek back cut where it has one. */
+function snapOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): Snap<unknown> {
+  const spare = voice.spares?.pop();
+  if (spare === undefined)
+    return { at: mix.now, seq: mix.transport.seq, held: copyHeld(voice, held) };
+  spare.at = mix.now;
+  spare.seq = mix.transport.seq;
+  copyHeldInto(voice, held, spare.held);
+  return spare;
+}
+
 /** Under `history`, keeps a copy of a stateful voice's record for this subject every so often. */
 export function remember<I, O>(
   mix: Mixer<I, O>,
@@ -305,15 +305,7 @@ export function remember<I, O>(
   held.snaps = snaps;
   const prev = snaps[snaps.length - 1];
   if (prev !== undefined && mix.now - prev.at < apart(history)) return;
-  const spare = voice.spares?.pop();
-  if (spare === undefined)
-    snaps.push({ at: mix.now, seq: mix.transport.seq, held: copyHeld(voice, held) });
-  else {
-    spare.at = mix.now;
-    spare.seq = mix.transport.seq;
-    copyHeldInto(voice, held, spare.held);
-    snaps.push(spare);
-  }
+  snaps.push(snapOf(mix, voice, held));
   const reach = mix.now - history.ms;
   const out = older(snaps, reach);
   if (out.length > 0)
