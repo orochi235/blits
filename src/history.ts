@@ -105,11 +105,19 @@ export function noted<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
 
 const copied = <T extends object>(e: T): T => ({ ...e });
 
+const nothing: readonly never[] = Object.freeze([]);
+
 /** Takes off the front of a list kept by time what a read back to `reach` no longer needs. */
-function older<T extends { at: number }>(list: T[], reach: number): T[] {
+function older<T extends { at: number }>(list: T[], reach: number): readonly T[] {
+  const n = past(list, reach);
+  return n === 0 ? nothing : list.splice(0, n);
+}
+
+/** How many entries at the front of a list kept by time a read back to `reach` no longer needs. */
+function past<T extends { at: number }>(list: readonly T[], reach: number): number {
   let n = 0;
   while (n + 1 < list.length && (list[n + 1] as T).at <= reach) n++;
-  return n === 0 ? [] : list.splice(0, n);
+  return n;
 }
 
 /** A copy of the state a voice's patch keeps for a subject. */
@@ -276,9 +284,17 @@ export function apart(history: { readonly every?: number }): number {
   return history.every ?? 200;
 }
 
-/** A copy of a record to keep now, written over a spare the latest seek back cut where it has one. */
-function snapOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): Snap<unknown> {
-  const spare = voice.spares?.pop();
+/**
+ * A copy of a record to keep now, written over a spare the latest seek back cut, or one just let go
+ * of, where it has one.
+ */
+function snapOf<I, O>(
+  mix: Mixer<I, O>,
+  voice: Voice<I, O>,
+  held: Subject<unknown>,
+  gone: Snap<unknown> | undefined,
+): Snap<unknown> {
+  const spare = voice.spares?.pop() ?? gone;
   if (spare === undefined)
     return { at: mix.now, seq: mix.transport.seq, held: copyHeld(voice, held) };
   spare.at = mix.now;
@@ -306,19 +322,38 @@ export function remember<I, O>(
   held.snaps = snaps;
   const prev = snaps[snaps.length - 1];
   if (prev !== undefined && mix.now - prev.at < apart(history)) return;
-  snaps.push(snapOf(mix, voice, held));
+  // What falls out is the same before the push as after it, since the copy pushed is newer.
   const reach = mix.now - history.ms;
-  const out = older(snaps, reach);
-  if (out.length > 0)
-    pageOut(
-      mix,
-      'snap',
-      voice.id,
-      mix.keys?.key(subject),
-      out,
-      (e) => packHeld(voice, e.held),
-      reach,
-    );
+  const n = past(snaps, reach);
+  let gone: Snap<unknown> | undefined;
+  if (n > 0) {
+    if (mix.transport.pager !== null)
+      pageOut(
+        mix,
+        'snap',
+        voice.id,
+        mix.keys?.key(subject),
+        snaps.slice(0, n),
+        (e) => packHeld(voice, e.held),
+        reach,
+      );
+    gone = reusable(snaps, n);
+    // `shift` moves the list's start where `splice` copies what it keeps and allocates what it cuts.
+    if (n === 1) snaps.shift();
+    else snaps.splice(0, n);
+  }
+  snaps.push(snapOf(mix, voice, held, gone));
+}
+
+/** The first of a list's first `n` copies no other record's list holds, made ready to be written over. */
+function reusable(snaps: readonly Snap<unknown>[], n: number): Snap<unknown> | undefined {
+  for (let i = 0; i < n; i++) {
+    const snap = snaps[i] as Snap<unknown>;
+    if (snap.shared) continue;
+    snap.ahead = undefined;
+    return snap;
+  }
+  return undefined;
 }
 
 /**
