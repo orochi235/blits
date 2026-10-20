@@ -22,14 +22,16 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
-- A `seek` back and a return to where the mix was cost about half what they did: a record put back
-  takes up the state of the record the seek replaced instead of stepping again from its copy, and
-  copies are made with fewer allocations. Three voices over 10,000 subjects with 5 s of history,
-  sought 300 ms back and returned before every sync (`seek`), take 19.6 ms a frame against 31.8,
-  and allocate 20.2 MB a frame against 35.3; 1,000 subjects take 1.22 ms against 1.85 (msb-uai,
-  medians of nine alternated runs against `4374f34`, each in its own process). Rows that never seek
-  read level. A `step` that reads `setting.weight`, `elapsed` or `pass` now shows, after a seek
-  back and return, what a mix never sought shows.
+- A `seek` back and a return to where the mix was cost about a third of what they did: a record put
+  back takes up the state of the record the seek replaced instead of stepping again from its copy,
+  is written over that record instead of copied anew, and the copy its next probe keeps is written
+  over one the seek cut; subjects keep their numbers across the seek. Three voices over 10,000
+  subjects with 5 s of history, sought 300 ms back and returned before every sync (`seek`), take
+  9.83 ms a frame against 28.60, and allocate 8.6 MB a frame against 35.2; 1,000 subjects take 0.86
+  ms against 1.88 (msb-uai, medians of nine alternated runs against `4374f34`, each in its own
+  process). The same mix never sought (`kept`) reads 7.41 ms against 7.33 at 10,000 subjects and
+  0.645 against 0.676 at 1,000. A `step` that reads `setting.weight`, `elapsed` or `pass` now shows,
+  after a seek back and return, what a mix never sought shows.
 - A lane fill no longer boxes numbers it hands between its own calls, which it did for 3 to 5
   numbers a subject in some processes and none in others, by the order V8 happened to compile in.
   10k subjects under a `fn` voice and a signal-weighted glow over 200 of them, with 200 subjects
