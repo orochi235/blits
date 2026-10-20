@@ -339,6 +339,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    release. Called while building, Mike's to overturn: `drop()` also ends the voices cued through
    the handle (`fade({ over: 0 })`), since a voice naming a dropped subject would otherwise stay
    cued, holding it.
+0. **The watch hook is designed, unbuilt** (2026-10-19):
+   `docs/superpowers/specs/2026-10-19-watch-hook-design.md`. It is the engine side of a debugger:
+   a registry of mixes shared by every blits copy, a tap on what the host reads, and holding a
+   mix's clock to scrub the page. The in-page panel and the Chrome DevTools extension come after
+   it. Next step: the plan, then the build.
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits, all of it measurement
    now: the garbage a churned voice makes was cut from 21.5 to about 13 KB on 2026-10-11, and the
    file says what the rest is. Delete each item as it is dealt with, and the file once it is
