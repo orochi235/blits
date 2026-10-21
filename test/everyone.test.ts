@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kit, last, sum } from '../src/channels.js';
 import { VoiceHandle } from '../src/handle.js';
+import { shareFrames } from '../src/everyone.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
 import type { Handle, MixOptions, VoiceSpec } from '../src/types.js';
@@ -43,6 +44,19 @@ describe('a voice over every subject', () => {
     m.sync(200);
     for (const p of parts) expect(m.probe(p).x).toBeCloseTo(2);
     expect(voice.seen).toBe(parts.length);
+  });
+
+  it('takes a record a subject once it has played shareFrames frames, reading the same', () => {
+    const { m, parts, voice } = played({ loop: true });
+    const fresh = played({ loop: true }, { lanes: false });
+    // `played` synced twice.
+    for (let f = 3; f < shareFrames; f++) m.sync(f * 50);
+    expect(voice.sharing).toBe(true);
+    m.sync(shareFrames * 50);
+    expect(voice.sharing).toBe(false);
+    fresh.m.sync(shareFrames * 50);
+    for (const p of parts) expect(m.probe(p).x).toBe(fresh.m.probe(p).x);
+    expect(voice.subjects.get(parts[3] as Part)).toBeDefined();
   });
 
   it('keeps a record a subject where a subject can differ', () => {

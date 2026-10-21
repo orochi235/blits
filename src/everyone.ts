@@ -15,7 +15,7 @@ import type { Subject, Voice } from './voice.js';
  * and `shut` takes back after. About 32 B a subject where a record and its place in the voice's
  * store took about 370 (bench/allocs.mjs on the `swap` row, 2026-10-09). It needs lanes for the
  * numbers. What only shows later (a subject faded out of it alone, a fade at rest, state kept
- * through `setting.keep`) turns it back with `unshare`.
+ * through `setting.keep`) turns it back with `unshare`, and so does playing `shareFrames` frames.
  */
 export function shares<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   const spec = voice.spec;
@@ -44,6 +44,31 @@ export function shares<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
       return channel.rest !== undefined && numericOf(channel)?.op !== 'last';
     })
   );
+}
+
+/**
+ * How many frames a voice plays sharing one record before it takes one a subject. Sharing saves a
+ * voice cued and gone within a few frames a record per subject, but costs a read more than a record
+ * of the subject's own: 0.13 ms a frame for one voice over 10,000 subjects (`glowbase`, teitou,
+ * 2026-10-21), against about 2 MB allocated once to stop. Settable for bench/same.mjs.
+ */
+export let shareFrames = 60;
+
+export function setShareFrames(n: number): void {
+  shareFrames = n;
+}
+
+/**
+ * Turns back each voice that has played `shareFrames` frames sharing one record. Not a keys voice,
+ * whose record `open` never points at a subject, so it costs no read more.
+ */
+export function outgrow<I, O>(mix: Mixer<I, O>): void {
+  const sharers = mix.sharers;
+  for (let i = sharers.length - 1; i >= 0; i--) {
+    const voice = sharers[i] as Voice<I, O>;
+    if (voice.built !== null || voice.state === 'pending' || voice.state === 'done') continue;
+    if (++voice.shared >= shareFrames) unshare(mix, voice);
+  }
 }
 
 /**

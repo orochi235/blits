@@ -1,7 +1,7 @@
 import { changed } from './chain.js';
 import { elapsedWith } from './clock.js';
 import { byId, popDue, schedule } from './due.js';
-import { detour } from './everyone.js';
+import { detour, outgrow } from './everyone.js';
 import { beginFade, part, retire } from './fade.js';
 import { expireGone, keepGone } from './gone.js';
 import { begin } from './held.js';
@@ -136,6 +136,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
     if (!mix.projecting) schedule(mix, voice);
   }
   if (mix.owners !== null) lapse(mix, now);
+  if (mix.sharers.length > 0 && !mix.projecting) outgrow(mix);
   mix.stirred = false;
   if (mix.retired.length > 0) prune(mix);
   forget(mix);
