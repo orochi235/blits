@@ -1201,8 +1201,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         1.441 with the channel taken off lanes and 1.380 with the mix's lanes off (msb-uai,
         2026-10-21, 9 rounds of 1,500 frames, `bench/runs/2026-10-21-mixed-crowds.txt`, where
         `CALLS_OFF=2` was an experiment switch, not kept). The 1.441 against 1.380 is what a mix with
-        lanes on pays with nothing laned, about 4%, and `own` shows the like; the `Lanes.prepare`
-        shortcut did not touch it, so it sits elsewhere, not placed. **So does a lone `fn` voice over many subjects writing vecs**
+        lanes on pays with nothing laned, about 4%. **Most of it is now gone** (2026-10-21): a
+        profile put about 0.10 ms of `fns`' 0.18 ms gap in `prepare`, `begin`, `filled`, `general`
+        and `linked`'s call to them (`bench/runs/2026-10-21-lanes-idle-profile.txt`), and `linked`
+        in `src/fold.ts` now answers such a probe itself, still stamping the subject's
+        `GENERAL_PROBE`. One build with a switch (msb-uai, 13 rounds): `tweenfn` 0.936, `weaselfn`
+        0.954, `fns` 0.964, `named` level and `mixed`, which has lanes running, 1.029 inside its
+        spread (`bench/runs/2026-10-21-lanes-idle-confirm.txt`). Leaving the stamp out read about
+        9% on teitou, but a voice coming back onto a lane could then report a stale `weightOf`, so
+        it was not built (`bench/runs/2026-10-21-lanes-idle-sweep.txt`). **So does a lone `fn` voice over many subjects writing vecs**
         (2026-10-21), where it is the only such voice on its channels; two or more fold faster on
         lanes. Same sweep (`bench/runs/2026-10-21-calls-off-lone-voice.txt`): `tweenfn` 1.163
         against 1.410 at 10,000 and 0.124 against 0.134 at 1,000, `weaselfn` 1.734 against 1.823,

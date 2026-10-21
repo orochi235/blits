@@ -1,0 +1,277 @@
+# teitou --solo: FRAMES=1500 bench/rows.sh 9, IDLE=0, 1 and 2 on fns tweenfn tweens fn:10000, and fns-:10000:1; one build of bbe5b61 plus a switchable answer in linked: 0 through prepare, 1 written out keeping the GENERAL_PROBE stamp, 2 without it
+  waiting for room
+teitou  chosen: 15.7 cores free, 44.9G available (rows.sh: 5 past runs, worst 1.6 cores / 1.1G)
+  msb-uai  scored 5.80 against teitou's 8.52
+  keiei    scored 0.62 against teitou's 8.52
+  orochi   refuses rotation
+  studio   it wants the node to itself, and job a5fd281f is running there
+  base   4ce6e5b1
+  delta  5 file(s), 0 deleted
+  sent   2 new file(s), 3 already there
+  updated blits on teitou at bbe5b611 + 3 uncommitted file(s)
+  job    8a39c4c5 on teitou
+
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+onto: plan 117
+round 1 IDLE=0  1/1  fns       N= 10000 V=1     1.208 ms/frame    121 ns/subject·voice  p50    1.191  p99    1.849  worst    2.745  first    26.8 ms  gc   34   14.6 ms    1491.8 kB/frame
+onto: progress 1/117
+round 1 IDLE=1  1/1  fns       N= 10000 V=1     1.107 ms/frame    111 ns/subject·voice  p50    1.002  p99    2.342  worst    2.697  first    24.2 ms  gc   33   13.6 ms    1333.6 kB/frame
+onto: progress 2/117
+round 1 IDLE=2  1/1  fns       N= 10000 V=1     1.018 ms/frame    102 ns/subject·voice  p50    0.971  p99    1.625  worst    3.108  first    23.3 ms  gc   30   13.6 ms    1333.3 kB/frame
+onto: progress 3/117
+round 1 IDLE=0  1/1  tweenfn   N= 10000 V=1     0.809 ms/frame     81 ns/subject·voice  p50    0.790  p99    1.190  worst    4.321  first     9.1 ms  gc   70   10.9 ms    1342.4 kB/frame
+onto: progress 4/117
+round 1 IDLE=1  1/1  tweenfn   N= 10000 V=1     0.828 ms/frame     83 ns/subject·voice  p50    0.814  p99    1.083  worst    4.141  first     8.8 ms  gc   70   11.4 ms    1337.1 kB/frame
+onto: progress 5/117
+round 1 IDLE=2  1/1  tweenfn   N= 10000 V=1     0.793 ms/frame     79 ns/subject·voice  p50    0.771  p99    1.233  worst    5.184  first     9.3 ms  gc   70   11.0 ms    1338.3 kB/frame
+onto: progress 6/117
+round 1 IDLE=0  1/2  tweens    N= 10000 V=1     0.664 ms/frame     66 ns/subject·voice  p50    0.656  p99    0.832  worst    1.071  first    39.9 ms  gc    0    0.0 ms       8.3 kB/frame
+ 2/2  tweens    N=100000 V=1     8.053 ms/frame     81 ns/subject·voice  p50    7.933  p99    9.995  worst   14.623  first   306.5 ms  gc    0    0.0 ms       4.5 kB/frame
+onto: progress 7/117
+round 1 IDLE=1  1/2  tweens    N= 10000 V=1     0.640 ms/frame     64 ns/subject·voice  p50    0.637  p99    0.727  worst    0.895  first    37.0 ms  gc    0    0.0 ms       5.7 kB/frame
+ 2/2  tweens    N=100000 V=1     8.104 ms/frame     81 ns/subject·voice  p50    7.987  p99    9.828  worst   10.719  first   305.5 ms  gc    0    0.0 ms       4.1 kB/frame
+onto: progress 8/117
+round 1 IDLE=2  1/2  tweens    N= 10000 V=1     0.647 ms/frame     65 ns/subject·voice  p50    0.643  p99    0.760  worst    0.872  first    37.0 ms  gc    0    0.0 ms       8.8 kB/frame
+ 2/2  tweens    N=100000 V=1     7.866 ms/frame     79 ns/subject·voice  p50    7.746  p99    9.968  worst   14.151  first   309.4 ms  gc    0    0.0 ms       4.1 kB/frame
+onto: progress 9/117
+round 1 IDLE=0  1/1  fn        N= 10000 V=3     2.070 ms/frame     69 ns/subject·voice  p50    2.005  p99    3.711  worst    9.263  first    17.9 ms  gc   70   28.7 ms    2442.9 kB/frame
+onto: progress 10/117
+round 1 IDLE=1  1/1  fn        N= 10000 V=3     2.113 ms/frame     70 ns/subject·voice  p50    2.043  p99    3.341  worst    9.208  first    18.2 ms  gc   70   28.7 ms    2440.4 kB/frame
+onto: progress 11/117
+round 1 IDLE=2  1/1  fn        N= 10000 V=3     2.145 ms/frame     71 ns/subject·voice  p50    2.068  p99    3.357  worst    8.452  first    17.7 ms  gc   70   28.8 ms    2440.5 kB/frame
+onto: progress 12/117
+round 1   1/1  fns-      N= 10000 V=1     0.929 ms/frame     93 ns/subject·voice  p50    0.897  p99    1.592  worst    2.549  first    13.3 ms  gc   34   13.1 ms    1332.9 kB/frame
+onto: progress 13/117
+round 2   1/1  fns-      N= 10000 V=1     0.969 ms/frame     97 ns/subject·voice  p50    0.935  p99    1.824  worst    2.314  first    13.4 ms  gc   35   13.3 ms    1490.6 kB/frame
+onto: progress 14/117
+round 2 IDLE=2  1/1  fn        N= 10000 V=3     2.318 ms/frame     77 ns/subject·voice  p50    2.221  p99    3.004  worst   11.387  first    18.5 ms  gc  121   47.1 ms    2444.9 kB/frame
+onto: progress 15/117
+round 2 IDLE=1  1/1  fn        N= 10000 V=3     2.128 ms/frame     71 ns/subject·voice  p50    2.054  p99    3.348  worst    8.959  first    17.8 ms  gc   70   29.0 ms    2441.5 kB/frame
+onto: progress 16/117
+round 2 IDLE=0  1/1  fn        N= 10000 V=3     2.111 ms/frame     70 ns/subject·voice  p50    2.044  p99    3.268  worst    8.786  first    17.6 ms  gc   70   28.1 ms    2441.9 kB/frame
+onto: progress 17/117
+round 2 IDLE=2  1/2  tweens    N= 10000 V=1     0.637 ms/frame     64 ns/subject·voice  p50    0.630  p99    0.720  worst    0.814  first    41.1 ms  gc    0    0.0 ms       6.4 kB/frame
+ 2/2  tweens    N=100000 V=1     7.935 ms/frame     79 ns/subject·voice  p50    7.824  p99    9.882  worst   13.006  first   307.9 ms  gc    2    3.3 ms       2.6 kB/frame
+onto: progress 18/117
+round 2 IDLE=1  1/2  tweens    N= 10000 V=1     0.637 ms/frame     64 ns/subject·voice  p50    0.630  p99    0.721  worst    0.790  first    38.1 ms  gc    0    0.0 ms      10.4 kB/frame
+ 2/2  tweens    N=100000 V=1     7.643 ms/frame     76 ns/subject·voice  p50    7.565  p99    9.213  worst   13.699  first   306.6 ms  gc    0    0.0 ms       2.9 kB/frame
+onto: progress 19/117
+round 2 IDLE=0  1/2  tweens    N= 10000 V=1     0.639 ms/frame     64 ns/subject·voice  p50    0.635  p99    0.728  worst    0.811  first    37.3 ms  gc    0    0.0 ms      10.4 kB/frame
+ 2/2  tweens    N=100000 V=1     7.928 ms/frame     79 ns/subject·voice  p50    7.779  p99   10.180  worst   13.749  first   312.8 ms  gc    0    0.0 ms       3.3 kB/frame
+onto: progress 20/117
+round 2 IDLE=2  1/1  tweenfn   N= 10000 V=1     0.777 ms/frame     78 ns/subject·voice  p50    0.759  p99    1.052  worst    4.157  first     8.1 ms  gc   70   10.3 ms    1340.0 kB/frame
+onto: progress 21/117
+round 2 IDLE=1  1/1  tweenfn   N= 10000 V=1     0.803 ms/frame     80 ns/subject·voice  p50    0.780  p99    1.121  worst    4.079  first     8.7 ms  gc   70   10.6 ms    1341.6 kB/frame
+onto: progress 22/117
+round 2 IDLE=0  1/1  tweenfn   N= 10000 V=1     0.864 ms/frame     86 ns/subject·voice  p50    0.847  p99    1.122  worst    4.285  first     8.5 ms  gc   70   11.1 ms    1341.2 kB/frame
+onto: progress 23/117
+round 2 IDLE=2  1/1  fns       N= 10000 V=1     0.984 ms/frame     98 ns/subject·voice  p50    0.953  p99    1.500  worst    2.555  first    22.4 ms  gc   30   13.4 ms    1332.9 kB/frame
+onto: progress 24/117
+round 2 IDLE=1  1/1  fns       N= 10000 V=1     1.046 ms/frame    105 ns/subject·voice  p50    1.017  p99    1.596  worst    2.805  first    21.9 ms  gc   31   13.1 ms    1334.1 kB/frame
+onto: progress 25/117
+round 2 IDLE=0  1/1  fns       N= 10000 V=1     1.022 ms/frame    102 ns/subject·voice  p50    0.976  p99    1.565  worst    2.786  first    22.7 ms  gc   31   12.9 ms    1333.6 kB/frame
+onto: progress 26/117
+round 3 IDLE=0  1/1  fns       N= 10000 V=1     1.073 ms/frame    107 ns/subject·voice  p50    1.038  p99    1.734  worst    2.818  first    23.4 ms  gc   32   13.0 ms    1490.8 kB/frame
+onto: progress 27/117
+round 3 IDLE=1  1/1  fns       N= 10000 V=1     0.998 ms/frame    100 ns/subject·voice  p50    0.961  p99    1.543  worst    2.628  first    21.7 ms  gc   31   13.0 ms    1333.3 kB/frame
+onto: progress 28/117
+round 3 IDLE=2  1/1  fns       N= 10000 V=1     0.964 ms/frame     96 ns/subject·voice  p50    0.935  p99    1.610  worst    2.807  first    22.2 ms  gc   33   13.1 ms    1333.7 kB/frame
+onto: progress 29/117
+round 3 IDLE=0  1/1  tweenfn   N= 10000 V=1     0.850 ms/frame     85 ns/subject·voice  p50    0.830  p99    1.141  worst    4.187  first     8.8 ms  gc   70   10.9 ms    1342.1 kB/frame
+onto: progress 30/117
+round 3 IDLE=1  1/1  tweenfn   N= 10000 V=1     0.791 ms/frame     79 ns/subject·voice  p50    0.772  p99    1.050  worst    4.083  first     8.4 ms  gc   70   10.1 ms    1341.1 kB/frame
+onto: progress 31/117
+round 3 IDLE=2  1/1  tweenfn   N= 10000 V=1     0.773 ms/frame     77 ns/subject·voice  p50    0.754  p99    1.103  worst    4.431  first     8.9 ms  gc   70   10.2 ms    1339.8 kB/frame
+onto: progress 32/117
+round 3 IDLE=0  1/2  tweens    N= 10000 V=1     0.618 ms/frame     62 ns/subject·voice  p50    0.612  p99    0.688  worst    0.742  first    36.6 ms  gc    0    0.0 ms       8.5 kB/frame
+ 2/2  tweens    N=100000 V=1     7.866 ms/frame     79 ns/subject·voice  p50    7.776  p99    9.918  worst   13.089  first   311.1 ms  gc    0    0.0 ms       3.5 kB/frame
+onto: progress 33/117
+round 3 IDLE=1  1/2  tweens    N= 10000 V=1     0.631 ms/frame     63 ns/subject·voice  p50    0.619  p99    0.752  worst    0.930  first    38.0 ms  gc    0    0.0 ms       7.8 kB/frame
+ 2/2  tweens    N=100000 V=1     8.435 ms/frame     84 ns/subject·voice  p50    8.218  p99   12.531  worst   18.971  first   308.9 ms  gc    0    0.0 ms       3.0 kB/frame
+onto: progress 34/117
+round 3 IDLE=2  1/2  tweens    N= 10000 V=1     0.704 ms/frame     70 ns/subject·voice  p50    0.672  p99    1.171  worst    1.615  first    38.5 ms  gc    0    0.0 ms       9.2 kB/frame
+ 2/2  tweens    N=100000 V=1     9.078 ms/frame     91 ns/subject·voice  p50    8.799  p99   14.379  worst   18.018  first   311.5 ms  gc    0    0.0 ms       4.1 kB/frame
+onto: progress 35/117
+round 3 IDLE=0  1/1  fn        N= 10000 V=3     2.223 ms/frame     74 ns/subject·voice  p50    2.124  p99    3.669  worst    9.563  first    19.4 ms  gc   70   30.8 ms    2440.1 kB/frame
+onto: progress 36/117
+round 3 IDLE=1  1/1  fn        N= 10000 V=3     2.186 ms/frame     73 ns/subject·voice  p50    2.104  p99    3.725  worst    9.215  first    19.3 ms  gc   70   30.4 ms    2440.5 kB/frame
+onto: progress 37/117
+round 3 IDLE=2  1/1  fn        N= 10000 V=3     2.234 ms/frame     74 ns/subject·voice  p50    2.159  p99    3.557  worst    8.621  first    18.0 ms  gc   70   30.0 ms    2443.4 kB/frame
+onto: progress 38/117
+round 3   1/1  fns-      N= 10000 V=1     1.175 ms/frame    117 ns/subject·voice  p50    1.144  p99    2.204  worst    3.524  first    14.6 ms  gc   35   14.6 ms    1489.9 kB/frame
+onto: progress 39/117
+round 4   1/1  fns-      N= 10000 V=1     1.012 ms/frame    101 ns/subject·voice  p50    0.985  p99    1.736  worst    2.551  first    13.6 ms  gc   35   13.8 ms    1334.1 kB/frame
+onto: progress 40/117
+round 4 IDLE=2  1/1  fn        N= 10000 V=3     2.174 ms/frame     72 ns/subject·voice  p50    2.104  p99    3.470  worst    9.770  first    18.3 ms  gc   70   29.7 ms    2440.4 kB/frame
+onto: progress 41/117
+round 4 IDLE=1  1/1  fn        N= 10000 V=3     2.146 ms/frame     72 ns/subject·voice  p50    2.066  p99    3.667  worst    8.592  first    19.3 ms  gc   70   29.5 ms    2439.6 kB/frame
+onto: progress 42/117
+round 4 IDLE=0  1/1  fn        N= 10000 V=3     2.103 ms/frame     70 ns/subject·voice  p50    2.031  p99    3.403  worst    9.010  first    18.8 ms  gc   70   29.7 ms    2441.8 kB/frame
+onto: progress 43/117
+round 4 IDLE=2  1/2  tweens    N= 10000 V=1     0.644 ms/frame     64 ns/subject·voice  p50    0.646  p99    0.749  worst    0.836  first    39.2 ms  gc    0    0.0 ms       6.7 kB/frame
+ 2/2  tweens    N=100000 V=1     7.387 ms/frame     74 ns/subject·voice  p50    7.160  p99    8.928  worst   10.044  first   305.2 ms  gc    2    3.2 ms       3.0 kB/frame
+onto: progress 44/117
+round 4 IDLE=1  1/2  tweens    N= 10000 V=1     0.623 ms/frame     62 ns/subject·voice  p50    0.615  p99    0.703  worst    0.867  first    35.6 ms  gc    0    0.0 ms       6.3 kB/frame
+ 2/2  tweens    N=100000 V=1     7.613 ms/frame     76 ns/subject·voice  p50    7.369  p99    9.624  worst   12.857  first   312.9 ms  gc    0    0.0 ms       4.7 kB/frame
+onto: progress 45/117
+round 4 IDLE=0  1/2  tweens    N= 10000 V=1     0.628 ms/frame     63 ns/subject·voice  p50    0.617  p99    0.734  worst    1.213  first    38.6 ms  gc    0    0.0 ms       8.0 kB/frame
+ 2/2  tweens    N=100000 V=1     7.292 ms/frame     73 ns/subject·voice  p50    7.089  p99    8.834  worst   10.227  first   301.7 ms  gc    0    0.0 ms       2.9 kB/frame
+onto: progress 46/117
+round 4 IDLE=2  1/1  tweenfn   N= 10000 V=1     0.770 ms/frame     77 ns/subject·voice  p50    0.749  p99    1.064  worst    3.942  first     8.0 ms  gc   79   12.7 ms    1343.4 kB/frame
+onto: progress 47/117
+round 4 IDLE=1  1/1  tweenfn   N= 10000 V=1     0.802 ms/frame     80 ns/subject·voice  p50    0.778  p99    1.132  worst    4.529  first     8.5 ms  gc   78   13.5 ms    1340.1 kB/frame
+onto: progress 48/117
+round 4 IDLE=0  1/1  tweenfn   N= 10000 V=1     0.857 ms/frame     86 ns/subject·voice  p50    0.837  p99    1.229  worst    4.368  first     8.6 ms  gc   70   11.5 ms    1340.1 kB/frame
+onto: progress 49/117
+round 4 IDLE=2  1/1  fns       N= 10000 V=1     1.184 ms/frame    118 ns/subject·voice  p50    1.143  p99    2.037  worst    3.153  first    28.8 ms  gc   33   13.9 ms    1490.5 kB/frame
+onto: progress 50/117
+round 4 IDLE=1  1/1  fns       N= 10000 V=1     1.119 ms/frame    112 ns/subject·voice  p50    1.084  p99    1.916  worst    3.102  first    25.7 ms  gc   31   13.9 ms    1333.2 kB/frame
+onto: progress 51/117
+round 4 IDLE=0  1/1  fns       N= 10000 V=1     1.115 ms/frame    111 ns/subject·voice  p50    1.056  p99    1.846  worst    3.521  first    25.7 ms  gc   33   14.0 ms    1333.7 kB/frame
+onto: progress 52/117
+round 5 IDLE=0  1/1  fns       N= 10000 V=1     1.085 ms/frame    108 ns/subject·voice  p50    1.056  p99    1.575  worst    2.696  first    22.9 ms  gc   32   12.7 ms    1490.3 kB/frame
+onto: progress 53/117
+round 5 IDLE=1  1/1  fns       N= 10000 V=1     1.076 ms/frame    108 ns/subject·voice  p50    1.037  p99    1.625  worst    3.362  first    24.8 ms  gc   32   13.4 ms    1489.9 kB/frame
+onto: progress 54/117
+round 5 IDLE=2  1/1  fns       N= 10000 V=1     0.997 ms/frame    100 ns/subject·voice  p50    0.945  p99    1.756  worst    3.048  first    22.1 ms  gc   30   13.4 ms    1333.5 kB/frame
+onto: progress 55/117
+round 5 IDLE=0  1/1  tweenfn   N= 10000 V=1     0.850 ms/frame     85 ns/subject·voice  p50    0.829  p99    1.316  worst    4.826  first     8.5 ms  gc   70   10.4 ms    1343.8 kB/frame
+onto: progress 56/117
+round 5 IDLE=1  1/1  tweenfn   N= 10000 V=1     0.805 ms/frame     80 ns/subject·voice  p50    0.789  p99    1.061  worst    4.230  first     8.1 ms  gc   70   10.6 ms    1340.1 kB/frame
+onto: progress 57/117
+round 5 IDLE=2  1/1  tweenfn   N= 10000 V=1     0.780 ms/frame     78 ns/subject·voice  p50    0.758  p99    1.205  worst    5.180  first     9.0 ms  gc   70   10.0 ms    1338.6 kB/frame
+onto: progress 58/117
+round 5 IDLE=0  1/2  tweens    N= 10000 V=1     0.653 ms/frame     65 ns/subject·voice  p50    0.646  p99    0.861  worst    1.022  first    37.1 ms  gc    0    0.0 ms       9.1 kB/frame
+ 2/2  tweens    N=100000 V=1     7.811 ms/frame     78 ns/subject·voice  p50    7.721  p99    9.409  worst   14.140  first   302.2 ms  gc    0    0.0 ms       3.1 kB/frame
+onto: progress 59/117
+round 5 IDLE=1  1/2  tweens    N= 10000 V=1     0.626 ms/frame     63 ns/subject·voice  p50    0.621  p99    0.706  worst    0.790  first    38.8 ms  gc    0    0.0 ms       7.1 kB/frame
+ 2/2  tweens    N=100000 V=1     7.890 ms/frame     79 ns/subject·voice  p50    7.787  p99    9.663  worst   10.637  first   310.1 ms  gc    0    0.0 ms       3.5 kB/frame
+onto: progress 60/117
+round 5 IDLE=2  1/2  tweens    N= 10000 V=1     0.633 ms/frame     63 ns/subject·voice  p50    0.623  p99    0.898  worst    1.762  first    37.7 ms  gc    0    0.0 ms       7.4 kB/frame
+ 2/2  tweens    N=100000 V=1     7.752 ms/frame     78 ns/subject·voice  p50    7.595  p99    9.979  worst   11.649  first   309.6 ms  gc    2    3.2 ms       3.0 kB/frame
+onto: progress 61/117
+round 5 IDLE=0  1/1  fn        N= 10000 V=3     2.127 ms/frame     71 ns/subject·voice  p50    2.066  p99    3.506  worst    8.597  first    17.3 ms  gc   70   28.4 ms    2439.5 kB/frame
+onto: progress 62/117
+round 5 IDLE=1  1/1  fn        N= 10000 V=3     2.014 ms/frame     67 ns/subject·voice  p50    1.977  p99    2.437  worst    9.074  first    17.4 ms  gc  121   33.3 ms    2440.0 kB/frame
+onto: progress 63/117
+round 5 IDLE=2  1/1  fn        N= 10000 V=3     2.087 ms/frame     70 ns/subject·voice  p50    2.021  p99    3.483  worst    8.456  first    18.0 ms  gc   70   28.3 ms    2443.9 kB/frame
+onto: progress 64/117
+round 5   1/1  fns-      N= 10000 V=1     0.993 ms/frame     99 ns/subject·voice  p50    0.956  p99    1.702  worst    3.044  first    14.0 ms  gc   35   13.8 ms    1490.5 kB/frame
+onto: progress 65/117
+round 6   1/1  fns-      N= 10000 V=1     0.956 ms/frame     96 ns/subject·voice  p50    0.916  p99    1.687  worst    2.253  first    13.6 ms  gc   35   13.5 ms    1332.6 kB/frame
+onto: progress 66/117
+round 6 IDLE=2  1/1  fn        N= 10000 V=3     2.019 ms/frame     67 ns/subject·voice  p50    1.982  p99    2.517  worst    9.547  first    18.0 ms  gc  121   33.2 ms    2443.0 kB/frame
+onto: progress 67/117
+round 6 IDLE=1  1/1  fn        N= 10000 V=3     2.040 ms/frame     68 ns/subject·voice  p50    1.976  p99    3.212  worst    8.647  first    17.8 ms  gc   70   28.3 ms    2439.5 kB/frame
+onto: progress 68/117
+round 6 IDLE=0  1/1  fn        N= 10000 V=3     2.057 ms/frame     69 ns/subject·voice  p50    2.001  p99    3.282  worst    8.605  first    17.8 ms  gc   79   33.4 ms    2441.4 kB/frame
+onto: progress 69/117
+round 6 IDLE=2  1/2  tweens    N= 10000 V=1     0.632 ms/frame     63 ns/subject·voice  p50    0.628  p99    0.711  worst    0.757  first    37.5 ms  gc    1    1.8 ms       6.8 kB/frame
+ 2/2  tweens    N=100000 V=1     8.199 ms/frame     82 ns/subject·voice  p50    8.045  p99   10.176  worst   13.957  first   317.4 ms  gc    0    0.0 ms       3.5 kB/frame
+onto: progress 70/117
+round 6 IDLE=1  1/2  tweens    N= 10000 V=1     0.623 ms/frame     62 ns/subject·voice  p50    0.617  p99    0.691  worst    0.745  first    37.7 ms  gc    0    0.0 ms       7.1 kB/frame
+ 2/2  tweens    N=100000 V=1     7.877 ms/frame     79 ns/subject·voice  p50    7.785  p99    9.412  worst   10.807  first   317.7 ms  gc    0    0.0 ms       3.1 kB/frame
+onto: progress 71/117
+round 6 IDLE=0  1/2  tweens    N= 10000 V=1     0.638 ms/frame     64 ns/subject·voice  p50    0.623  p99    0.941  worst    2.561  first    40.3 ms  gc    0    0.0 ms       8.2 kB/frame
+ 2/2  tweens    N=100000 V=1     7.559 ms/frame     76 ns/subject·voice  p50    7.473  p99    9.034  worst    9.878  first   312.7 ms  gc    0    0.0 ms       3.2 kB/frame
+onto: progress 72/117
+round 6 IDLE=2  1/1  tweenfn   N= 10000 V=1     0.777 ms/frame     78 ns/subject·voice  p50    0.751  p99    1.120  worst    4.432  first     8.2 ms  gc   70   10.0 ms    1338.7 kB/frame
+onto: progress 73/117
+round 6 IDLE=1  1/1  tweenfn   N= 10000 V=1     0.798 ms/frame     80 ns/subject·voice  p50    0.779  p99    1.067  worst    3.894  first     8.5 ms  gc   70   10.1 ms    1340.4 kB/frame
+onto: progress 74/117
+round 6 IDLE=0  1/1  tweenfn   N= 10000 V=1     0.814 ms/frame     81 ns/subject·voice  p50    0.792  p99    1.203  worst    4.278  first     8.7 ms  gc   70   10.3 ms    1345.4 kB/frame
+onto: progress 75/117
+round 6 IDLE=2  1/1  fns       N= 10000 V=1     1.010 ms/frame    101 ns/subject·voice  p50    0.975  p99    1.575  worst    2.965  first    22.5 ms  gc   31   13.3 ms    1333.3 kB/frame
+onto: progress 76/117
+round 6 IDLE=1  1/1  fns       N= 10000 V=1     1.034 ms/frame    103 ns/subject·voice  p50    1.004  p99    1.610  worst    2.830  first    22.2 ms  gc   32   13.7 ms    1490.1 kB/frame
+onto: progress 77/117
+round 6 IDLE=0  1/1  fns       N= 10000 V=1     1.128 ms/frame    113 ns/subject·voice  p50    1.096  p99    1.706  worst    3.041  first    22.7 ms  gc   33   12.9 ms    1490.5 kB/frame
+onto: progress 78/117
+round 7 IDLE=0  1/1  fns       N= 10000 V=1     1.062 ms/frame    106 ns/subject·voice  p50    1.031  p99    1.576  worst    3.045  first    25.1 ms  gc   32   12.9 ms    1490.6 kB/frame
+onto: progress 79/117
+round 7 IDLE=1  1/1  fns       N= 10000 V=1     1.073 ms/frame    107 ns/subject·voice  p50    1.027  p99    1.856  worst    2.683  first    22.0 ms  gc   33   13.0 ms    1489.6 kB/frame
+onto: progress 80/117
+round 7 IDLE=2  1/1  fns       N= 10000 V=1     0.966 ms/frame     97 ns/subject·voice  p50    0.933  p99    1.570  worst    2.431  first    22.4 ms  gc   33   13.4 ms    1333.5 kB/frame
+onto: progress 81/117
+round 7 IDLE=0  1/1  tweenfn   N= 10000 V=1     0.864 ms/frame     86 ns/subject·voice  p50    0.849  p99    1.149  worst    4.206  first     8.9 ms  gc   70   10.5 ms    1341.2 kB/frame
+onto: progress 82/117
+round 7 IDLE=1  1/1  tweenfn   N= 10000 V=1     0.799 ms/frame     80 ns/subject·voice  p50    0.781  p99    1.075  worst    4.160  first     8.5 ms  gc   70   10.3 ms    1341.4 kB/frame
+onto: progress 83/117
+round 7 IDLE=2  1/1  tweenfn   N= 10000 V=1     0.776 ms/frame     78 ns/subject·voice  p50    0.757  p99    1.061  worst    4.249  first     8.3 ms  gc   70   10.2 ms    1340.7 kB/frame
+onto: progress 84/117
+round 7 IDLE=0  1/2  tweens    N= 10000 V=1     0.632 ms/frame     63 ns/subject·voice  p50    0.629  p99    0.735  worst    0.854  first    38.9 ms  gc    0    0.0 ms       7.0 kB/frame
+ 2/2  tweens    N=100000 V=1     7.687 ms/frame     77 ns/subject·voice  p50    7.599  p99    9.266  worst   11.959  first   306.8 ms  gc    0    0.0 ms       3.8 kB/frame
+onto: progress 85/117
+round 7 IDLE=1  1/2  tweens    N= 10000 V=1     0.639 ms/frame     64 ns/subject·voice  p50    0.629  p99    0.781  worst    0.889  first    38.7 ms  gc    0    0.0 ms       8.1 kB/frame
+ 2/2  tweens    N=100000 V=1     7.806 ms/frame     78 ns/subject·voice  p50    7.700  p99    9.460  worst   10.681  first   314.0 ms  gc    0    0.0 ms       4.2 kB/frame
+onto: progress 86/117
+round 7 IDLE=2  1/2  tweens    N= 10000 V=1     0.634 ms/frame     63 ns/subject·voice  p50    0.624  p99    0.763  worst    0.990  first    37.7 ms  gc    0    0.0 ms       9.2 kB/frame
+ 2/2  tweens    N=100000 V=1     7.972 ms/frame     80 ns/subject·voice  p50    7.854  p99    9.772  worst   13.497  first   305.7 ms  gc    0    0.0 ms       4.4 kB/frame
+onto: progress 87/117
+round 7 IDLE=0  1/1  fn        N= 10000 V=3     2.122 ms/frame     71 ns/subject·voice  p50    2.056  p99    3.535  worst    8.635  first    18.4 ms  gc   70   28.3 ms    2440.2 kB/frame
+onto: progress 88/117
+round 7 IDLE=1  1/1  fn        N= 10000 V=3     2.009 ms/frame     67 ns/subject·voice  p50    1.973  p99    2.431  worst    9.546  first    17.5 ms  gc  121   34.1 ms    2442.1 kB/frame
+onto: progress 89/117
+round 7 IDLE=2  1/1  fn        N= 10000 V=3     2.034 ms/frame     68 ns/subject·voice  p50    1.963  p99    3.482  worst    8.710  first    17.5 ms  gc   79   32.8 ms    2441.7 kB/frame
+onto: progress 90/117
+round 7   1/1  fns-      N= 10000 V=1     1.055 ms/frame    105 ns/subject·voice  p50    1.007  p99    1.846  worst    2.422  first    14.0 ms  gc   35   13.4 ms    1489.7 kB/frame
+onto: progress 91/117
+round 8   1/1  fns-      N= 10000 V=1     0.917 ms/frame     92 ns/subject·voice  p50    0.885  p99    1.649  worst    2.390  first    13.7 ms  gc   35   13.2 ms    1333.3 kB/frame
+onto: progress 92/117
+round 8 IDLE=2  1/1  fn        N= 10000 V=3     2.041 ms/frame     68 ns/subject·voice  p50    1.980  p99    3.163  worst    8.464  first    17.6 ms  gc   70   28.4 ms    2439.2 kB/frame
+onto: progress 93/117
+round 8 IDLE=1  1/1  fn        N= 10000 V=3     2.058 ms/frame     69 ns/subject·voice  p50    1.987  p99    3.377  worst    8.381  first    17.7 ms  gc   70   28.6 ms    2443.1 kB/frame
+onto: progress 94/117
+round 8 IDLE=0  1/1  fn        N= 10000 V=3     2.091 ms/frame     70 ns/subject·voice  p50    2.030  p99    3.674  worst    8.698  first    17.6 ms  gc   70   28.2 ms    2442.6 kB/frame
+onto: progress 95/117
+round 8 IDLE=2  1/2  tweens    N= 10000 V=1     0.616 ms/frame     62 ns/subject·voice  p50    0.611  p99    0.683  worst    0.739  first    37.6 ms  gc    0    0.0 ms       5.5 kB/frame
+ 2/2  tweens    N=100000 V=1     7.825 ms/frame     78 ns/subject·voice  p50    7.720  p99    9.460  worst   10.397  first   319.2 ms  gc    0    0.0 ms       4.0 kB/frame
+onto: progress 96/117
+round 8 IDLE=1  1/2  tweens    N= 10000 V=1     0.642 ms/frame     64 ns/subject·voice  p50    0.634  p99    0.742  worst    0.824  first    38.0 ms  gc    0    0.0 ms       6.6 kB/frame
+ 2/2  tweens    N=100000 V=1     7.896 ms/frame     79 ns/subject·voice  p50    7.783  p99    9.914  worst   16.236  first   301.0 ms  gc    2    2.9 ms       2.8 kB/frame
+onto: progress 97/117
+round 8 IDLE=0  1/2  tweens    N= 10000 V=1     0.662 ms/frame     66 ns/subject·voice  p50    0.659  p99    0.792  worst    0.929  first    40.2 ms  gc    0    0.0 ms       7.3 kB/frame
+ 2/2  tweens    N=100000 V=1     8.561 ms/frame     86 ns/subject·voice  p50    8.495  p99    9.884  worst   10.840  first   326.3 ms  gc    0    0.0 ms       3.8 kB/frame
+onto: progress 98/117
+round 8 IDLE=2  1/1  tweenfn   N= 10000 V=1     0.848 ms/frame     85 ns/subject·voice  p50    0.819  p99    1.248  worst    4.500  first     9.5 ms  gc   70   11.5 ms    1338.0 kB/frame
+onto: progress 99/117
+round 8 IDLE=1  1/1  tweenfn   N= 10000 V=1     0.853 ms/frame     85 ns/subject·voice  p50    0.828  p99    1.191  worst    4.618  first     9.1 ms  gc   70   11.4 ms    1340.2 kB/frame
+onto: progress 100/117
+round 8 IDLE=0  1/1  tweenfn   N= 10000 V=1     0.856 ms/frame     86 ns/subject·voice  p50    0.834  p99    1.177  worst    4.460  first     8.8 ms  gc   70   12.3 ms    1344.4 kB/frame
+onto: progress 101/117
+round 8 IDLE=2  1/1  fns       N= 10000 V=1     1.141 ms/frame    114 ns/subject·voice  p50    1.113  p99    1.691  worst    3.078  first    24.7 ms  gc   32   13.4 ms    1490.0 kB/frame
+onto: progress 102/117
+round 8 IDLE=1  1/1  fns       N= 10000 V=1     1.197 ms/frame    120 ns/subject·voice  p50    1.164  p99    1.771  worst    2.720  first    24.1 ms  gc   31   13.7 ms    1334.1 kB/frame
+onto: progress 103/117
+round 8 IDLE=0  1/1  fns       N= 10000 V=1     1.114 ms/frame    111 ns/subject·voice  p50    1.078  p99    1.837  worst    3.251  first    24.1 ms  gc   31   13.5 ms    1334.1 kB/frame
+onto: progress 104/117
+round 9 IDLE=0  1/1  fns       N= 10000 V=1     1.132 ms/frame    113 ns/subject·voice  p50    1.091  p99    1.676  worst    3.050  first    23.2 ms  gc   31   14.2 ms    1333.5 kB/frame
+onto: progress 105/117
+round 9 IDLE=1  1/1  fns       N= 10000 V=1     1.159 ms/frame    116 ns/subject·voice  p50    1.132  p99    1.812  worst    2.973  first    23.4 ms  gc   33   14.4 ms    1333.1 kB/frame
+onto: progress 106/117
+round 9 IDLE=2  1/1  fns       N= 10000 V=1     1.124 ms/frame    112 ns/subject·voice  p50    1.091  p99    1.651  worst    2.665  first    23.4 ms  gc   31   13.5 ms    1333.6 kB/frame
+onto: progress 107/117
+round 9 IDLE=0  1/1  tweenfn   N= 10000 V=1     0.911 ms/frame     91 ns/subject·voice  p50    0.886  p99    1.242  worst    4.467  first     9.2 ms  gc   77   12.5 ms    1495.4 kB/frame
+onto: progress 108/117
+round 9 IDLE=1  1/1  tweenfn   N= 10000 V=1     0.813 ms/frame     81 ns/subject·voice  p50    0.796  p99    1.181  worst    4.991  first     9.4 ms  gc   70   10.5 ms    1340.5 kB/frame
+onto: progress 109/117
+round 9 IDLE=2  1/1  tweenfn   N= 10000 V=1     0.762 ms/frame     76 ns/subject·voice  p50    0.743  p99    1.089  worst    4.153  first     8.8 ms  gc   70    9.6 ms    1339.9 kB/frame
+onto: progress 110/117
+round 9 IDLE=0  1/2  tweens    N= 10000 V=1     0.639 ms/frame     64 ns/subject·voice  p50    0.634  p99    0.742  worst    0.826  first    38.9 ms  gc    0    0.0 ms       8.1 kB/frame
+ 2/2  tweens    N=100000 V=1     7.946 ms/frame     79 ns/subject·voice  p50    7.835  p99    9.654  worst   14.107  first   304.1 ms  gc    0    0.0 ms       4.1 kB/frame
+onto: progress 111/117
+round 9 IDLE=1  1/2  tweens    N= 10000 V=1     0.651 ms/frame     65 ns/subject·voice  p50    0.642  p99    0.990  worst    2.820  first    39.2 ms  gc    0    0.0 ms       6.8 kB/frame
+ 2/2  tweens    N=100000 V=1     7.650 ms/frame     76 ns/subject·voice  p50    7.530  p99    9.351  worst   13.394  first   303.0 ms  gc    0    0.0 ms       4.4 kB/frame
+onto: progress 112/117
+round 9 IDLE=2  1/2  tweens    N= 10000 V=1     0.644 ms/frame     64 ns/subject·voice  p50    0.637  p99    0.743  worst    0.847  first    36.9 ms  gc    0    0.0 ms       8.2 kB/frame
+ 2/2  tweens    N=100000 V=1     7.672 ms/frame     77 ns/subject·voice  p50    7.585  p99    9.247  worst   11.343  first   308.5 ms  gc    0    0.0 ms       3.9 kB/frame
+onto: progress 113/117
+round 9 IDLE=0  1/1  fn        N= 10000 V=3     2.049 ms/frame     68 ns/subject·voice  p50    2.010  p99    2.503  worst    9.334  first    17.2 ms  gc  132   38.5 ms    2443.5 kB/frame
+onto: progress 114/117
+round 9 IDLE=1  1/1  fn        N= 10000 V=3     2.063 ms/frame     69 ns/subject·voice  p50    2.004  p99    3.639  worst    8.895  first    17.7 ms  gc   70   28.2 ms    2440.9 kB/frame
+onto: progress 115/117
+round 9 IDLE=2  1/1  fn        N= 10000 V=3     2.061 ms/frame     69 ns/subject·voice  p50    1.998  p99    3.557  worst    8.594  first    16.9 ms  gc   70   27.5 ms    2440.0 kB/frame
+onto: progress 116/117
+round 9   1/1  fns-      N= 10000 V=1     0.965 ms/frame     96 ns/subject·voice  p50    0.927  p99    1.862  worst    2.407  first    14.4 ms  gc   34   14.0 ms    1333.9 kB/frame
+onto: progress 117/117

@@ -4,6 +4,7 @@ import { copy as copyValue, first } from './clone.js';
 import { open as openRecord, shut as shutRecord, weighAt } from './everyone.js';
 import { apart, copyState, recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
+import { Per } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { locusScratch } from './locus.js';
 import type { Mixer } from './mixer.js';
@@ -538,8 +539,23 @@ export function folded<I, O>(
  */
 export function linked<I, O>(this: Mixer<I, O>, subject: I): Subject<unknown> | null {
   const head = Number.isNaN(this.now) ? null : this.chain(subject);
+  const lanes = this.lanes;
+  // What `prepare` answers once this frame's qualify left nothing laned, without calling it.
+  if (
+    head !== null &&
+    lanes !== null &&
+    lanes.laned.length === 0 &&
+    lanes.frameAt === this.now &&
+    lanes.qualifiedVersion === this.version &&
+    lanes.touched.length === 0 &&
+    !lanes.filling
+  ) {
+    if (head.slot >= 0) lanes.per[head.slot * Per.SLOT + Per.GENERAL_PROBE] = ++lanes.probes;
+    this.linkedLaned = false;
+    return head;
+  }
   this.linkedLaned =
-    head !== null && this.lanes?.prepare(head.slot, subject, this.version, head) === true;
+    head !== null && lanes?.prepare(head.slot, subject, this.version, head) === true;
   return head;
 }
 
