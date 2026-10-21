@@ -1200,7 +1200,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         the subjects a tween, half a `fn`, both on `position`) it read 1.306 ms a frame, against
         1.441 with the channel taken off lanes and 1.380 with the mix's lanes off (msb-uai,
         2026-10-21, 9 rounds of 1,500 frames, `bench/runs/2026-10-21-mixed-crowds.txt`, where
-        `CALLS_OFF=2` was an experiment switch, not kept). **So does a lone `fn` voice over many subjects writing vecs**
+        `CALLS_OFF=2` was an experiment switch, not kept). The 1.441 against 1.380 is what a mix with
+        lanes on pays with nothing laned, about 4%, and `own` shows the like; the `Lanes.prepare`
+        shortcut did not touch it, so it sits elsewhere, not placed. **So does a lone `fn` voice over many subjects writing vecs**
         (2026-10-21), where it is the only such voice on its channels; two or more fold faster on
         lanes. Same sweep (`bench/runs/2026-10-21-calls-off-lone-voice.txt`): `tweenfn` 1.163
         against 1.410 at 10,000 and 0.124 against 0.134 at 1,000, `weaselfn` 1.734 against 1.823,
