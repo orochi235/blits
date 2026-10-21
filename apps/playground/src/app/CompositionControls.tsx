@@ -17,98 +17,45 @@ import {
   resolveConfigSchema,
 } from '@weasel-js/labkit';
 import { PrefActionButton, PropertyField, PropertyRow } from '@weasel-js/ui';
-import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 import s from './App.module.css';
 import r from './Rows.module.css';
 
-const ignore = () => {};
-
-export interface DraftRowProps {
-  label: ReactNode;
-  /** The accessible name, where `label` is not plain text. */
+export interface FieldExtras {
+  /** The accessible name, where the label alone does not say which field this is. */
   name?: string;
-  description?: string;
-  kind: 'number' | 'string';
-  value: string | number;
-  onCommit(next: string | number): void;
-  placeholder?: string;
-  maxLength?: number;
-  unit?: string;
-  step?: number;
-  disabled?: boolean;
-  span?: boolean;
   layout?: 'block' | 'inline';
+  span?: boolean;
 }
 
-/**
- * A property row that commits on Enter or blur, so typing makes one undo step, not one per key, and
- * Escape puts back what it held. A blank number field puts its value back too.
- */
-export function DraftRow(p: DraftRowProps) {
-  // Remounting the field is the only way to drop the text field's draft, which it keeps to itself.
-  const [nonce, setNonce] = useState(0);
-  const tag = `pg-draft-${useId().replace(/[^a-z0-9]/gi, '')}`;
-  useEffect(() => {
-    const row = document.querySelector(`.${tag}`);
-    if (!row) return;
-    if (nonce > 0) row.querySelector('input')?.focus();
-    const key = (e: Event) => {
-      if ((e as KeyboardEvent).key === 'Escape') setNonce((n) => n + 1);
-    };
-    row.addEventListener('keydown', key, true);
-    return () => row.removeEventListener('keydown', key, true);
-  }, [tag, nonce]);
-  const row = {
-    label: p.label,
-    name: p.name,
-    description: p.description,
-    disabled: p.disabled,
-    span: p.span,
-    controlClassName: p.span && p.kind === 'string' ? r.fill : undefined,
-    layout: p.layout,
-    rowClassName: tag,
-    placeholder: p.placeholder,
-    onInput: ignore,
-  };
-  return p.kind === 'number' ? (
-    <PropertyField
-      key={nonce}
-      {...row}
-      kind="number"
-      value={typeof p.value === 'number' ? p.value : Number.NaN}
-      unit={p.unit}
-      step={p.step}
-      onChange={(n: number) => p.onCommit(n)}
-    />
-  ) : (
-    <PropertyField
-      key={nonce}
-      {...row}
-      kind="string"
-      value={String(p.value)}
-      maxLength={p.maxLength}
-      onChange={(t: string) => p.onCommit(t)}
-    />
-  );
-}
-
-/** A schema leaf drawn as a {@link DraftRow}, from the leaf's own label, description and extras. */
-export function drafted(extra: Partial<DraftRowProps> = {}): ControlRenderer {
+/** A typed schema leaf drawn as a property field, with the row props a leaf has no word for. */
+export function fieldRow(extra: FieldExtras): ControlRenderer {
   return (ctx) => {
     const leaf = ctx.pref as unknown as Record<string, unknown>;
-    return (
-      <DraftRow
-        label={ctx.pref.name}
-        description={ctx.pref.description || undefined}
-        kind={ctx.pref.kind === 'number' ? 'number' : 'string'}
-        value={ctx.value as string | number}
-        onCommit={ctx.setValue}
-        placeholder={leaf.placeholder as string | undefined}
-        maxLength={leaf.maxLength as number | undefined}
+    const row = {
+      label: ctx.pref.name,
+      description: ctx.pref.description || undefined,
+      disabled: ctx.disabled,
+      placeholder: leaf.placeholder as string | undefined,
+      ...extra,
+    };
+    return ctx.pref.kind === 'number' ? (
+      <PropertyField
+        {...row}
+        kind="number"
+        value={ctx.value as number}
         unit={leaf.suffix as string | undefined}
         step={leaf.step as number | undefined}
-        disabled={ctx.disabled}
-        {...extra}
+        onChange={ctx.setValue}
+      />
+    ) : (
+      <PropertyField
+        {...row}
+        kind="string"
+        controlClassName={extra.span ? r.fill : undefined}
+        value={String(ctx.value)}
+        maxLength={leaf.maxLength as number | undefined}
+        onChange={ctx.setValue}
       />
     );
   };
@@ -160,31 +107,31 @@ export function StageControls({ comp, onChange }: CompProps) {
       />
       {stage.kind === 'dots' ? (
         <>
-          <DraftRow
+          <PropertyField
             layout="inline"
             label="cols"
             name="columns"
             kind="number"
             value={stage.cols}
-            onCommit={(n) => set(sizeDots(stage, n as number, stage.rows))}
+            onChange={(n: number) => set(sizeDots(stage, n, stage.rows))}
           />
-          <DraftRow
+          <PropertyField
             layout="inline"
             label="rows"
             kind="number"
             value={stage.rows}
-            onCommit={(n) => set(sizeDots(stage, stage.cols, n as number))}
+            onChange={(n: number) => set(sizeDots(stage, stage.cols, n))}
           />
         </>
       ) : (
-        <DraftRow
+        <PropertyField
           layout="inline"
           label="text"
           name="stage text"
           kind="string"
           value={stage.text}
           maxLength={MAX_TEXT}
-          onCommit={(t) => set(lettersOf(String(t)))}
+          onChange={(t: string) => set(lettersOf(t))}
         />
       )}
     </div>
@@ -195,14 +142,14 @@ export function StageControls({ comp, onChange }: CompProps) {
 export function CompFields({ comp, onChange }: CompProps) {
   return (
     <div className={r.bar}>
-      <DraftRow
+      <PropertyField
         layout="inline"
         label="title"
         kind="string"
         value={comp.title}
-        onCommit={(title) => onChange({ ...comp, title: String(title) })}
+        onChange={(title: string) => onChange({ ...comp, title })}
       />
-      <DraftRow
+      <PropertyField
         layout="inline"
         label="length"
         name="length in ms"
@@ -210,7 +157,7 @@ export function CompFields({ comp, onChange }: CompProps) {
         unit="ms"
         step={100}
         value={comp.length}
-        onCommit={(n) => onChange(withLength(comp, n as number))}
+        onChange={(n: number) => onChange(withLength(comp, n))}
       />
     </div>
   );
@@ -226,19 +173,19 @@ function levelsSchema(names: readonly string[], act: { current: (i: number | nul
         name: f
           .string('')
           .label('name')
-          .render(drafted({ span: true, name: `level ${name} name` })),
+          .render(fieldRow({ span: true, name: `level ${name} name` })),
         min: f
           .number(0)
           .label('min')
-          .render(drafted({ name: `level ${name} min` })),
+          .render(fieldRow({ name: `level ${name} min` })),
         max: f
           .number(1)
           .label('max')
-          .render(drafted({ name: `level ${name} max` })),
+          .render(fieldRow({ name: `level ${name} max` })),
         value: f
           .number(0)
           .label('value')
-          .render(drafted({ name: `level ${name} value` })),
+          .render(fieldRow({ name: `level ${name} value` })),
         remove: f
           .action(() => act.current(i))
           .label(`remove level ${name}`)

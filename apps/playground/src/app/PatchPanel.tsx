@@ -18,7 +18,6 @@ import { Timeline } from '@weasel-js/ui';
 import { type CSSProperties, useMemo, useState } from 'react';
 import s from './App.module.css';
 import { ChannelTiming } from './ChannelTiming';
-import { drafted } from './CompositionControls';
 import { docOf } from './docs';
 import { EaseField } from './EaseField';
 import { KeyEditor } from './KeyEditor';
@@ -101,7 +100,6 @@ function schemaOf() {
         .input()
         .step(10)
         .suffix('ms')
-        .render(drafted())
         .showIf({ not: MOTION }),
       channel: f.enum<ChannelName>('offset', CHANNELS).label('channel').showIf(MOTION),
       keys: f

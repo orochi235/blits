@@ -3,7 +3,6 @@ import { FRAME } from '@pg/blits/frame';
 import { withKey } from '@pg/blits/keyed';
 import { ControlPanel, f, resolveConfigSchema } from '@weasel-js/labkit';
 import s from './App.module.css';
-import { drafted } from './CompositionControls';
 import { docOf } from './docs';
 
 /** What maxDt turns on at, having no value of its own until one is typed. */
@@ -22,7 +21,6 @@ const SCHEMA = resolveConfigSchema(
       .label('step every')
       .suffix('ms')
       .describe(docOf('MixOptions.stepMs') ?? '')
-      .render(drafted())
       .enableIf((c) => c.step === true),
     capped: f
       .boolean(false)
@@ -34,7 +32,6 @@ const SCHEMA = resolveConfigSchema(
       .label('maxDt')
       .suffix('ms')
       .describe(docOf('MixOptions.maxDt') ?? '')
-      .render(drafted())
       .enableIf((c) => c.capped === true),
     reduce: f
       .boolean(false)

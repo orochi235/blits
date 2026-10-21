@@ -1255,17 +1255,22 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 ## Loose ends
 
 - **weasel gaps blits met on 2026-10-17.** weasel 1.11.0 (pinned here 2026-10-18) fixed these, by
-  its changelog: `ThemeProvider` takes `selection: { mode: 'auto' }`; labkit's panels set their own
-  ink, so the workaround from `ccda71e` can go; `ControlPanel` writes a typed number or text once
-  the edit settles, Escape writing nothing, so `drafted()` and `DraftRow` in
-  `CompositionControls.tsx` are now redundant and can be dropped for plain leaves (check that a
-  blank number row still puts its value back); and `ControlMatrix` has a plain grid
-  (`inherit={false}`) and a row `summary`. Not yet seen fixed, and to check against weasel's
-  `docs/TODO.md`: the diagram's default ports take no label; `DiagramView` never reports where
-  its first layout put nodes; under `layered` an edge between two pinned nodes in one rank loops
-  round; a number row cannot be cleared; rows have no error slot; an all-hidden section still
-  draws its heading; and `.dialog()` has no cancel. Whether the Both tab's edit mode now draws its
-  port dots on 1.11.0 is not checked.
+  its changelog, and blits uses the fixes as of 2026-10-21: the explainers' `ThemeProvider` takes
+  `selection: { mode: 'auto' }` and their panels draw in the theme's own ink, so `ccda71e`'s
+  workaround is gone; the playground's typed rows are plain leaves, which commit once on Enter or
+  blur, and `DraftRow`/`drafted()` are gone; and the booker is one schema whose live section hides
+  by `showIf`. Still a gap: a leaf cannot set its own row layout or an accessible name apart from
+  its label, so the booker's two rows and the level rows keep `fieldRow` in
+  `CompositionControls.tsx`. Fixed by 1.11.0's changelog but not used here yet: a number can be
+  cleared (`.clearable()`); rows take an `error`, and `ControlPanel` takes `errors`; `.dialog()`
+  has Cancel, and Escape or a press outside drops its draft; `ControlMatrix` has a plain grid
+  (`inherit={false}`) and a row `summary`; a port can carry a label (`PortSpec.label`, or
+  `portLabels` by port id on a `DataNode`; whether that reaches the default ports is not checked);
+  and under `layered` an edge between two nodes pinned level in a rank runs straight instead of
+  looping round. Still open by the changelog: `DiagramView` never reports where its first layout
+  put nodes, though `diagramLayoutOf(specs)` now reads a `diagramScene` build's layout back, which
+  the Both tab does by hand. Whether the Both tab's edit mode now draws its port dots on 1.11.0 is
+  not checked.
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
   100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k
