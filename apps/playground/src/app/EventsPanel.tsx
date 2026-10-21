@@ -11,33 +11,31 @@ import { fieldRow } from './CompositionControls';
 import { docOf } from './docs';
 import e from './Events.module.css';
 
-const BOOKS = {
-  tag: f
-    .string('')
-    .label('book and drain only the tag')
-    .placeholder('every voice and group')
-    .describe(docOf('Mix.drain') ?? '')
-    .render(fieldRow({ layout: 'block', span: true })),
-  ahead: f
-    .number(AHEAD)
-    .label('book ahead')
-    .suffix('ms')
-    .step(10)
-    .describe(docOf('BookOptions.ahead') ?? '')
-    .render(fieldRow({ layout: 'inline', name: 'book ahead in ms' })),
-};
-// Two schemas rather than a `showIf`: a section whose rows are all hidden still draws its heading.
-const BOOKER = resolveConfigSchema(f.schema(BOOKS));
-const BOOKER_LIVE = resolveConfigSchema(
+const BOOKER = resolveConfigSchema(
   f.schema({
-    ...BOOKS,
+    tag: f
+      .string('')
+      .label('book and drain only the tag')
+      .placeholder('every voice and group')
+      .describe(docOf('Mix.drain') ?? '')
+      .render(fieldRow({ layout: 'block', span: true })),
+    ahead: f
+      .number(AHEAD)
+      .label('book ahead')
+      .suffix('ms')
+      .step(10)
+      .describe(docOf('BookOptions.ahead') ?? '')
+      .render(fieldRow({ layout: 'inline', name: 'book ahead in ms' })),
     name: f
       .string('beat')
-
       .label('announce')
       .describe(docOf('Mix.announce') ?? '')
-      .section('live'),
-    now: f.custom('now', null).section('live'),
+      .section('live')
+      .showIf((c) => c.live === true),
+    now: f
+      .custom('now', null)
+      .section('live')
+      .showIf((c) => c.live === true),
   }),
 );
 
@@ -104,8 +102,8 @@ export function EventsPanel({ player, comp, onComp, live, onActed }: EventsPanel
           title="booker"
           pack="one-up"
           layout="inline"
-          schema={live ? BOOKER_LIVE : BOOKER}
-          config={{ tag: events.tag ?? '', ahead: comp.book?.ahead ?? AHEAD, name }}
+          schema={BOOKER}
+          config={{ tag: events.tag ?? '', ahead: comp.book?.ahead ?? AHEAD, name, live }}
           setConfig={write}
           renderers={{
             now: () => (
