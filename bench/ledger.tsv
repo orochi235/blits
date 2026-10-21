@@ -102,3 +102,7 @@ date	node	base	rev	rounds	frames	row	base ms	ms	ratio	U	base kB	kB	change	raw
 2026-10-21	teitou	a77c5c9	c24635b	9	1500	named N=1000 V=1	0.131	0.140	1.069	4.5	120.6	182.0	tonight's lanes changes together (fn crowds off lanes, sharing for 60 frames), on named and fns	bench/runs/2026-10-21-named-after-fn-crowds.txt
 2026-10-21	teitou	a77c5c9	c24635b	9	1500	named N=10000 V=1	1.624	1.409	0.868	2.5	1174.6	1798.5	tonight's lanes changes together (fn crowds off lanes, sharing for 60 frames), on named and fns	bench/runs/2026-10-21-named-after-fn-crowds.txt
 2026-10-21	teitou	a77c5c9	c24635b	9	1500	fns N=10000 V=1	1.355	1.111	0.820	0.0	1179.2	1333.6	tonight's lanes changes together (fn crowds off lanes, sharing for 60 frames), on named and fns	bench/runs/2026-10-21-named-after-fn-crowds.txt
+2026-10-21	teitou	head	dirty	9	1500	named N=100 V=1	0.013	0.013	1.000	40.5	22.2	22.0	(backed out) keep only fn crowds writing arrays off lanes	bench/runs/2026-10-21-fn-crowds-arrays-only.txt
+2026-10-21	teitou	head	dirty	9	1500	named N=1000 V=1	0.131	0.132	1.008	20.5	120.7	120.5	(backed out) keep only fn crowds writing arrays off lanes	bench/runs/2026-10-21-fn-crowds-arrays-only.txt
+2026-10-21	teitou	head	dirty	9	1500	named N=10000 V=1	1.592	1.583	0.994	32.0	1174.6	1174.6	(backed out) keep only fn crowds writing arrays off lanes	bench/runs/2026-10-21-fn-crowds-arrays-only.txt
+2026-10-21	teitou	head	dirty	9	1500	fns N=10000 V=1	1.338	1.104	0.825	0.0	1178.1	1333.1	(backed out) keep only fn crowds writing arrays off lanes	bench/runs/2026-10-21-fn-crowds-arrays-only.txt

@@ -1,0 +1,129 @@
+# teitou --solo: FRAMES=1500 bench/abdirty.sh 9 named fns (head = af1528f, dirty = keepCallsOff limited to crowds writing only arrays; backed out)
+  waiting for room
+  waiting: keiei unknown (behind ./probe-assets.sh in line, which has no estimate), msb-uai unknown (it wants the node to itself, and the node is promised to weasel-worktree-agent-aa2_e4a-tests-755d), orochi unknown (refuses rotation), studio unknown (it wants the node to itself, and the node is promised to weasel-worktree-agent-a7f_f44-tests-1046), teitou unknown (it wants the node to itself, and the node is promised to weasel-worktree-agent-ac7_8f8-tests-3305)
+  waiting: keiei unknown (behind ./probe-assets.sh in line, which has no estimate), msb-uai unknown (has 0.0 of its 14 cores free, too few to start on), orochi unknown (refuses rotation), studio unknown (it wants the node to itself, and the node is promised to weasel-worktree-agent-a7f_f44-tests-1046), teitou unknown (it wants the node to itself, and the node is promised to weasel-worktree-agent-ac7_8f8-tests-3305)
+  waiting: msb-uai ~5m (behind bash stress-timeline.sh 12 10 stress-af… in line), keiei unknown (behind ./probe-assets.sh in line, which has no estimate), orochi unknown (refuses rotation), studio unknown (it wants the node to itself, and the node is promised to weasel-worktree-agent-a7f_f44-tests-1046), teitou unknown (it wants the node to itself, and the node is promised to weasel-worktree-agent-ac7_8f8-tests-3305)
+  waiting: keiei unknown (behind ./probe-assets.sh in line, which has no estimate), msb-uai unknown (it wants the node to itself, and the node is promised to bash stress-timeline.sh 12 10 stress-af…), orochi unknown (refuses rotation), studio unknown (it wants the node to itself, and the node is promised to weasel-worktree-agent-a7f_f44-tests-1046), teitou unknown (it wants the node to itself, and the node is promised to weasel-worktree-agent-ac7_8f8-tests-3305)
+  waiting: keiei unknown (behind ./probe-assets.sh in line, which has no estimate), msb-uai unknown (it wants the node to itself, and the node is promised to bash stress-timeline.sh 12 10 stress-af…), orochi unknown (refuses rotation), studio unknown (it wants the node to itself, and the node is promised to weasel-worktree-agent-a7f_f44-tests-1046), teitou unknown (has 0.0 of its 18 cores free, too few to start on)
+teitou  chosen: 2.5 cores free, 41.0G available (abdirty.sh: no past runs)
+  keiei    has 0.0 of its 8 cores free, too few to start on
+  msb-uai  has 0.0 of its 14 cores free, too few to start on
+  orochi   refuses rotation
+  studio   has 0.0 of its 10 cores free, too few to start on
+  base   a77c5c95
+  delta  39 file(s), 0 deleted
+  updated blits on teitou at af1528ff + 3 uncommitted file(s)
+  job    464f0a31 on teitou
+
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+built head
+built dirty
+== round 1/9 head
+ 1/3  named     N=   100 V=1     0.013 ms/frame    133 ns/subject·voice  p50    0.011  p99    0.033  worst    0.215  first     2.7 ms  gc    6    0.4 ms      22.7 kB/frame
+ 2/3  named     N=  1000 V=1     0.132 ms/frame    132 ns/subject·voice  p50    0.116  p99    0.210  worst    2.442  first     3.9 ms  gc   10    3.0 ms     120.6 kB/frame
+ 3/3  named     N= 10000 V=1     1.577 ms/frame    158 ns/subject·voice  p50    1.573  p99    2.251  worst    4.298  first    26.1 ms  gc   55   12.5 ms    1174.6 kB/frame
+== round 1/9 head
+ 1/1  fns       N= 10000 V=1     1.351 ms/frame    135 ns/subject·voice  p50    1.315  p99    1.806  worst    2.387  first    28.0 ms  gc   55   11.0 ms    1178.2 kB/frame
+== round 1/9 dirty
+ 1/3  named     N=   100 V=1     0.013 ms/frame    131 ns/subject·voice  p50    0.011  p99    0.032  worst    0.200  first     2.7 ms  gc    6    0.4 ms      20.8 kB/frame
+ 2/3  named     N=  1000 V=1     0.138 ms/frame    138 ns/subject·voice  p50    0.120  p99    0.234  worst    2.212  first     3.8 ms  gc   10    2.8 ms     120.9 kB/frame
+ 3/3  named     N= 10000 V=1     1.560 ms/frame    156 ns/subject·voice  p50    1.553  p99    2.052  worst    4.391  first    28.6 ms  gc   56   12.7 ms    1174.6 kB/frame
+== round 1/9 dirty
+ 1/1  fns       N= 10000 V=1     1.135 ms/frame    113 ns/subject·voice  p50    1.108  p99    1.661  worst    2.795  first    22.4 ms  gc   31   13.4 ms    1333.0 kB/frame
+== round 2/9 dirty
+ 1/3  named     N=   100 V=1     0.013 ms/frame    131 ns/subject·voice  p50    0.011  p99    0.030  worst    0.190  first     2.7 ms  gc    6    0.4 ms      22.0 kB/frame
+ 2/3  named     N=  1000 V=1     0.132 ms/frame    132 ns/subject·voice  p50    0.118  p99    0.203  worst    2.378  first     3.8 ms  gc   10    2.8 ms     120.4 kB/frame
+ 3/3  named     N= 10000 V=1     1.663 ms/frame    166 ns/subject·voice  p50    1.646  p99    2.557  worst    4.484  first    26.1 ms  gc   55   12.4 ms    1174.7 kB/frame
+== round 2/9 dirty
+ 1/1  fns       N= 10000 V=1     1.104 ms/frame    110 ns/subject·voice  p50    1.073  p99    1.787  worst    3.876  first    23.0 ms  gc   31   13.3 ms    1333.1 kB/frame
+== round 2/9 head
+ 1/3  named     N=   100 V=1     0.013 ms/frame    133 ns/subject·voice  p50    0.011  p99    0.037  worst    0.177  first     2.6 ms  gc    6    0.4 ms      20.2 kB/frame
+ 2/3  named     N=  1000 V=1     0.130 ms/frame    130 ns/subject·voice  p50    0.116  p99    0.208  worst    2.281  first     3.7 ms  gc   10    2.9 ms     121.0 kB/frame
+ 3/3  named     N= 10000 V=1     1.592 ms/frame    159 ns/subject·voice  p50    1.574  p99    2.487  worst    3.857  first    22.7 ms  gc   56   12.7 ms    1174.6 kB/frame
+== round 2/9 head
+ 1/1  fns       N= 10000 V=1     1.392 ms/frame    139 ns/subject·voice  p50    1.370  p99    1.857  worst    2.486  first    28.2 ms  gc   55   11.3 ms    1177.4 kB/frame
+== round 3/9 head
+ 1/3  named     N=   100 V=1     0.013 ms/frame    132 ns/subject·voice  p50    0.011  p99    0.032  worst    0.223  first     2.7 ms  gc    6    0.5 ms      20.0 kB/frame
+ 2/3  named     N=  1000 V=1     0.132 ms/frame    132 ns/subject·voice  p50    0.117  p99    0.210  worst    2.433  first     3.6 ms  gc   10    3.0 ms     120.6 kB/frame
+ 3/3  named     N= 10000 V=1     1.644 ms/frame    164 ns/subject·voice  p50    1.621  p99    2.506  worst    3.835  first    21.6 ms  gc   56   13.9 ms    1174.6 kB/frame
+== round 3/9 head
+ 1/1  fns       N= 10000 V=1     1.349 ms/frame    135 ns/subject·voice  p50    1.326  p99    1.777  worst    2.183  first    31.8 ms  gc   55   10.9 ms    1176.7 kB/frame
+== round 3/9 dirty
+ 1/3  named     N=   100 V=1     0.013 ms/frame    134 ns/subject·voice  p50    0.011  p99    0.036  worst    0.194  first     2.7 ms  gc    6    0.5 ms      23.0 kB/frame
+ 2/3  named     N=  1000 V=1     0.133 ms/frame    133 ns/subject·voice  p50    0.117  p99    0.214  worst    2.579  first     4.0 ms  gc   10    3.1 ms     120.4 kB/frame
+ 3/3  named     N= 10000 V=1     1.583 ms/frame    158 ns/subject·voice  p50    1.583  p99    2.368  worst    3.441  first    24.8 ms  gc   56   11.0 ms    1174.5 kB/frame
+== round 3/9 dirty
+ 1/1  fns       N= 10000 V=1     1.087 ms/frame    109 ns/subject·voice  p50    1.058  p99    1.625  worst    3.509  first    22.2 ms  gc   31   13.5 ms    1333.1 kB/frame
+== round 4/9 dirty
+ 1/3  named     N=   100 V=1     0.013 ms/frame    133 ns/subject·voice  p50    0.011  p99    0.034  worst    0.184  first     2.6 ms  gc    6    0.4 ms      22.3 kB/frame
+ 2/3  named     N=  1000 V=1     0.133 ms/frame    133 ns/subject·voice  p50    0.118  p99    0.209  worst    2.358  first     3.9 ms  gc   10    2.8 ms     120.2 kB/frame
+ 3/3  named     N= 10000 V=1     1.562 ms/frame    156 ns/subject·voice  p50    1.550  p99    2.305  worst    4.526  first    24.8 ms  gc   55   12.3 ms    1174.6 kB/frame
+== round 4/9 dirty
+ 1/1  fns       N= 10000 V=1     1.109 ms/frame    111 ns/subject·voice  p50    1.070  p99    2.094  worst    3.996  first    23.5 ms  gc   33   14.5 ms    1333.0 kB/frame
+== round 4/9 head
+ 1/3  named     N=   100 V=1     0.013 ms/frame    130 ns/subject·voice  p50    0.011  p99    0.029  worst    0.192  first     2.7 ms  gc    6    0.4 ms      22.7 kB/frame
+ 2/3  named     N=  1000 V=1     0.132 ms/frame    132 ns/subject·voice  p50    0.117  p99    0.220  worst    2.484  first     3.9 ms  gc   10    2.9 ms     120.8 kB/frame
+ 3/3  named     N= 10000 V=1     1.570 ms/frame    157 ns/subject·voice  p50    1.562  p99    2.169  worst    3.911  first    23.0 ms  gc   55   13.4 ms    1174.6 kB/frame
+== round 4/9 head
+ 1/1  fns       N= 10000 V=1     1.338 ms/frame    134 ns/subject·voice  p50    1.299  p99    2.021  worst    2.805  first    27.2 ms  gc   55   11.0 ms    1180.6 kB/frame
+== round 5/9 head
+ 1/3  named     N=   100 V=1     0.013 ms/frame    131 ns/subject·voice  p50    0.011  p99    0.031  worst    0.250  first     2.9 ms  gc    6    0.5 ms      23.0 kB/frame
+ 2/3  named     N=  1000 V=1     0.132 ms/frame    132 ns/subject·voice  p50    0.118  p99    0.216  worst    2.256  first     3.9 ms  gc   10    2.8 ms     120.5 kB/frame
+ 3/3  named     N= 10000 V=1     1.669 ms/frame    167 ns/subject·voice  p50    1.652  p99    2.414  worst    4.525  first    24.6 ms  gc   55   14.9 ms    1174.4 kB/frame
+== round 5/9 head
+ 1/1  fns       N= 10000 V=1     1.298 ms/frame    130 ns/subject·voice  p50    1.266  p99    1.844  worst    3.716  first    28.5 ms  gc   55   10.7 ms    1180.1 kB/frame
+== round 5/9 dirty
+ 1/3  named     N=   100 V=1     0.013 ms/frame    133 ns/subject·voice  p50    0.011  p99    0.032  worst    0.169  first     2.8 ms  gc    6    0.4 ms      23.9 kB/frame
+ 2/3  named     N=  1000 V=1     0.132 ms/frame    132 ns/subject·voice  p50    0.116  p99    0.212  worst    2.357  first     4.2 ms  gc   10    2.9 ms     120.6 kB/frame
+ 3/3  named     N= 10000 V=1     1.558 ms/frame    156 ns/subject·voice  p50    1.554  p99    2.217  worst    4.192  first    26.9 ms  gc   55   12.3 ms    1174.5 kB/frame
+== round 5/9 dirty
+ 1/1  fns       N= 10000 V=1     1.180 ms/frame    118 ns/subject·voice  p50    1.158  p99    1.762  worst    2.768  first    23.2 ms  gc   33   13.8 ms    1333.6 kB/frame
+== round 6/9 dirty
+ 1/3  named     N=   100 V=1     0.013 ms/frame    133 ns/subject·voice  p50    0.011  p99    0.032  worst    0.179  first     2.6 ms  gc    6    0.4 ms      19.8 kB/frame
+ 2/3  named     N=  1000 V=1     0.134 ms/frame    134 ns/subject·voice  p50    0.120  p99    0.214  worst    2.291  first     4.0 ms  gc   10    2.8 ms     120.5 kB/frame
+ 3/3  named     N= 10000 V=1     1.632 ms/frame    163 ns/subject·voice  p50    1.615  p99    2.468  worst    4.124  first    25.2 ms  gc   55   12.6 ms    1174.6 kB/frame
+== round 6/9 dirty
+ 1/1  fns       N= 10000 V=1     1.092 ms/frame    109 ns/subject·voice  p50    1.070  p99    1.732  worst    2.782  first    23.0 ms  gc   33   13.1 ms    1333.0 kB/frame
+== round 6/9 head
+ 1/3  named     N=   100 V=1     0.013 ms/frame    130 ns/subject·voice  p50    0.011  p99    0.035  worst    0.164  first     2.7 ms  gc    6    0.4 ms      21.2 kB/frame
+ 2/3  named     N=  1000 V=1     0.130 ms/frame    130 ns/subject·voice  p50    0.117  p99    0.211  worst    2.204  first     3.7 ms  gc   10    2.7 ms     121.1 kB/frame
+ 3/3  named     N= 10000 V=1     1.617 ms/frame    162 ns/subject·voice  p50    1.605  p99    2.409  worst    4.020  first    22.4 ms  gc   56   12.9 ms    1174.6 kB/frame
+== round 6/9 head
+ 1/1  fns       N= 10000 V=1     1.335 ms/frame    134 ns/subject·voice  p50    1.304  p99    1.693  worst    1.913  first    31.4 ms  gc   55   10.9 ms    1178.1 kB/frame
+== round 7/9 head
+ 1/3  named     N=   100 V=1     0.013 ms/frame    132 ns/subject·voice  p50    0.011  p99    0.032  worst    0.229  first     2.6 ms  gc    6    0.5 ms      22.2 kB/frame
+ 2/3  named     N=  1000 V=1     0.131 ms/frame    131 ns/subject·voice  p50    0.116  p99    0.216  worst    2.323  first     3.6 ms  gc   10    2.9 ms     120.6 kB/frame
+ 3/3  named     N= 10000 V=1     1.586 ms/frame    159 ns/subject·voice  p50    1.568  p99    2.264  worst    3.375  first    21.4 ms  gc   56   12.6 ms    1174.6 kB/frame
+== round 7/9 head
+ 1/1  fns       N= 10000 V=1     1.310 ms/frame    131 ns/subject·voice  p50    1.281  p99    1.746  worst    1.887  first    28.4 ms  gc   55   10.9 ms    1181.0 kB/frame
+== round 7/9 dirty
+ 1/3  named     N=   100 V=1     0.013 ms/frame    129 ns/subject·voice  p50    0.011  p99    0.032  worst    0.223  first     2.6 ms  gc    6    0.4 ms      21.5 kB/frame
+ 2/3  named     N=  1000 V=1     0.132 ms/frame    132 ns/subject·voice  p50    0.119  p99    0.208  worst    2.285  first     4.0 ms  gc   10    2.9 ms     120.4 kB/frame
+ 3/3  named     N= 10000 V=1     1.603 ms/frame    160 ns/subject·voice  p50    1.603  p99    2.184  worst    4.455  first    24.8 ms  gc   55   14.0 ms    1174.5 kB/frame
+== round 7/9 dirty
+ 1/1  fns       N= 10000 V=1     1.057 ms/frame    106 ns/subject·voice  p50    1.019  p99    1.915  worst    3.919  first    21.5 ms  gc   31   13.5 ms    1333.4 kB/frame
+== round 8/9 dirty
+ 1/3  named     N=   100 V=1     0.013 ms/frame    132 ns/subject·voice  p50    0.011  p99    0.033  worst    0.238  first     3.1 ms  gc    6    0.5 ms      23.3 kB/frame
+ 2/3  named     N=  1000 V=1     0.131 ms/frame    131 ns/subject·voice  p50    0.116  p99    0.211  worst    2.333  first     4.3 ms  gc   10    2.7 ms     120.6 kB/frame
+ 3/3  named     N= 10000 V=1     1.623 ms/frame    162 ns/subject·voice  p50    1.621  p99    2.296  worst    4.179  first    25.7 ms  gc   55   12.7 ms    1174.5 kB/frame
+== round 8/9 dirty
+ 1/1  fns       N= 10000 V=1     1.101 ms/frame    110 ns/subject·voice  p50    1.071  p99    1.795  worst    2.834  first    24.0 ms  gc   33   13.0 ms    1333.3 kB/frame
+== round 8/9 head
+ 1/3  named     N=   100 V=1     0.013 ms/frame    130 ns/subject·voice  p50    0.011  p99    0.030  worst    0.172  first     2.6 ms  gc    6    0.4 ms      20.9 kB/frame
+ 2/3  named     N=  1000 V=1     0.131 ms/frame    131 ns/subject·voice  p50    0.116  p99    0.214  worst    2.215  first     3.9 ms  gc   10    2.8 ms     121.0 kB/frame
+ 3/3  named     N= 10000 V=1     1.565 ms/frame    156 ns/subject·voice  p50    1.546  p99    2.146  worst    4.114  first    22.3 ms  gc   55   13.7 ms    1174.5 kB/frame
+== round 8/9 head
+ 1/1  fns       N= 10000 V=1     1.369 ms/frame    137 ns/subject·voice  p50    1.346  p99    1.982  worst    2.681  first    28.7 ms  gc   55   11.0 ms    1177.5 kB/frame
+== round 9/9 head
+ 1/3  named     N=   100 V=1     0.013 ms/frame    134 ns/subject·voice  p50    0.011  p99    0.032  worst    0.177  first     2.8 ms  gc    6    0.5 ms      22.6 kB/frame
+ 2/3  named     N=  1000 V=1     0.131 ms/frame    131 ns/subject·voice  p50    0.118  p99    0.212  worst    2.345  first     3.9 ms  gc   10    2.8 ms     120.7 kB/frame
+ 3/3  named     N= 10000 V=1     1.607 ms/frame    161 ns/subject·voice  p50    1.585  p99    2.366  worst    4.810  first    25.2 ms  gc   55   14.2 ms    1174.5 kB/frame
+== round 9/9 head
+ 1/1  fns       N= 10000 V=1     1.334 ms/frame    133 ns/subject·voice  p50    1.301  p99    2.028  worst    2.805  first    28.7 ms  gc   65   18.3 ms    1177.7 kB/frame
+== round 9/9 dirty
+ 1/3  named     N=   100 V=1     0.013 ms/frame    131 ns/subject·voice  p50    0.011  p99    0.034  worst    0.175  first     2.7 ms  gc    6    0.4 ms      21.5 kB/frame
+ 2/3  named     N=  1000 V=1     0.129 ms/frame    129 ns/subject·voice  p50    0.116  p99    0.209  worst    2.179  first     4.0 ms  gc   10    2.7 ms     120.6 kB/frame
+ 3/3  named     N= 10000 V=1     1.573 ms/frame    157 ns/subject·voice  p50    1.571  p99    2.087  worst    4.467  first    25.6 ms  gc   55   13.4 ms    1174.6 kB/frame
+== round 9/9 dirty
+ 1/1  fns       N= 10000 V=1     1.181 ms/frame    118 ns/subject·voice  p50    1.147  p99    2.083  worst    3.131  first    22.9 ms  gc   33   13.9 ms    1333.1 kB/frame

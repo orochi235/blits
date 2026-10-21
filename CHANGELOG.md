@@ -29,11 +29,9 @@ version and everything else the patch. Each release lists its changes as **Break
   0.226, eight 0.468 against 0.526 (teitou, medians of nine alternated runs of 1,500 frames against
   `a77c5c9`). A voice cued and gone within a few frames still shares one record, which is what it
   was for.
-- A crowd of `fn` voices, one per subject, costs about a fifth less a frame where nothing else
-  writes its channels: it now runs off lanes, where its patch is called once a subject as on them
-  but the subjects are walked once instead of twice. A `fn` voice for each of 10,000 subjects
-  (`fns`) takes 1.228 ms a frame against 1.571 (teitou, medians of seven alternated runs against
-  `a77c5c9`).
+- A crowd of `fn` voices, one per subject, runs off lanes where nothing else writes its channels:
+  its patch is called once a subject either way, and off lanes the subjects are walked once
+  instead of twice.
 - A voice on a lane costs a call less a subject each frame: since 0.11.0 the check for a voice
   hiding past its end left its clock read out of line. A glow weighted by a signal over 10,000
   subjects (`glow`) takes 1.636 ms a frame against 1.696 (teitou, medians of fifteen alternated runs

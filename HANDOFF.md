@@ -1185,13 +1185,19 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         subject as the general path does and its fill walks the subjects a second time. **Built
         (2026-10-21):** a crowd voice calling its patch fits only where another fitting voice writes
         one of its channels (`keepCallsOff` in `src/qualify.ts`); `fns` read 1.571 to 1.228 ms
-        (teitou, 7 rounds, U = 2), every other row level. **It costs a small crowd of
-        scalar `fn` voices:** `named` (a flicker per subject) on `main` against `a77c5c9` reads
+        (teitou, 7 rounds, U = 2), every other row level. **How much of this is the change is not settled
+        (2026-10-21):** `fns` reads in modes by build, about 1.10 ms with 1,333 kB a frame or 1.34 ms
+        with 1,178 kB, and an A/B whose two builds run `fns` down the same path read 0.825 at U = 0
+        (`bench/runs/2026-10-21-fn-crowds-arrays-only.txt`). Every `fns` ratio tonight flipped the
+        same way, so it is the mode at least in part. The profile before the change, where the lane
+        fill's calls and folds held about 60% of the frame (studio, 2.58 ms on lanes against 1.07
+        off), is the firmer evidence. **It may cost a small crowd of scalar `fn` voices:** `named` (a flicker per subject) on `main` against `a77c5c9` reads
         1.077 at 100 subjects, 1.069 at 1,000 and 0.868 at 10,000, allocating more at each (teitou,
         9 rounds of 1,500 frames, U 2.5 to 5; `bench/runs/2026-10-21-named-after-fn-crowds.txt`).
         About 9 µs a frame at 1,000, where klieg and magicsmoke are expected to sit; limiting the
-        rule to crowds writing only array channels would keep `fns`' gain and give that back,
-        untried. Tried and backed out: answering a probe with nothing laned at the top of
+        rule to crowds writing only array channels was built and backed out the same night: it read
+        `named` level against `main` at every size in the
+        run whose `fns` was the mode, so the `named` cost above may be a mode too. Tried and backed out: answering a probe with nothing laned at the top of
         `Lanes.prepare`, which read `fns` 0.826 and `named` 1.07 to 1.10, with allocation moving on
         both, the inlining-shape signature. `bench/abdirty.sh` A/Bs an uncommitted diff with no
         commit on origin, and `bench/rows.sh` times rows against each other in one build. Mixed with
