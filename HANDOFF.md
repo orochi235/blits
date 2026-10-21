@@ -1296,12 +1296,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `CompositionControls.tsx`. An emptied number field now unsets through the control's own
   `onClear` (2026-10-21); the leaves stay custom, since labkit's `.clearable()` takes only a fixed
   placeholder and a voice's `start` names its default by the voice's rate. Fixed by 1.11.0's
-  changelog but not used here yet: rows take an `error`, and `ControlPanel` takes `errors`; `.dialog()`
-  has Cancel, and Escape or a press outside drops its draft; `ControlMatrix` has a plain grid
-  (`inherit={false}`) and a row `summary`; a port can carry a label (`PortSpec.label`, or
-  `portLabels` by port id on a `DataNode`; whether that reaches the default ports is not checked);
-  and under `layered` an edge between two nodes pinned level in a rank runs straight instead of
-  looping round. Still open by the changelog: `DiagramView` never reports where its first layout
+  changelog and used since 2026-10-21: rows' errors through `ControlPanel errors`, and `.dialog()`'s
+  own draft, which the tags, hits and marks dialogs had been defeating, so Done dropped their edits
+  from the 1.11.0 move (`eadda12`) to `fb9d846`. Not used: a plain `ControlMatrix` grid, since
+  `ChannelTiming` inherits on purpose; and port labels (`PortSpec.label`, `portLabels`), which would
+  draw "start" and "end" beside the Both tab's dots in place of its caption, Mike's call.
+  Still open by the changelog: `DiagramView` never reports where its first layout
   put nodes, though `diagramLayoutOf(specs)` now reads a `diagramScene` build's layout back, which
   the Both tab does by hand. On 1.11.0 from npm the playground typechecks and the Both tab's edit
   mode draws its port dots (checked 2026-10-21, fresh `npm ci`).
