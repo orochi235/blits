@@ -1,0 +1,124 @@
+# teitou --solo: FRAMES=1500 bench/rows.sh 9, TARGETED=1 and 0 on own:100 own:1000 own-:1000:1; experiment treating per-subject fn voices chosen by target as a crowd for keepCallsOff, any channel; backed out
+  waiting for room
+teitou  chosen: 16.0 cores free, 45.7G available (rows.sh: 5 past runs, worst 1.2 cores / 1.1G)
+  msb-uai  scored 8.66 against teitou's 11.65
+  keiei    has 0.2 of its 8 cores free, too few to start on
+  orochi   refuses rotation
+  studio   it wants the node to itself, and job a5fd281f is running there
+  base   a77c5c95
+  delta  44 file(s), 0 deleted
+  sent   7 new file(s), 37 already there
+  updated blits on teitou at d2037443 + 2 uncommitted file(s)
+  job    0df41547 on teitou
+
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+onto: plan 54
+round 1 TARGETED=1  1/1  own       N=   100 V=1     0.016 ms/frame    157 ns/subject·voice  p50    0.014  p99    0.042  worst    0.283  first     2.8 ms  gc    8    0.8 ms      26.4 kB/frame
+onto: progress 1/54
+round 1 TARGETED=0  1/1  own       N=   100 V=1     0.015 ms/frame    153 ns/subject·voice  p50    0.014  p99    0.033  worst    0.212  first     3.7 ms  gc    9    0.6 ms      27.5 kB/frame
+onto: progress 2/54
+round 1 TARGETED=1  1/1  own       N=  1000 V=1     0.157 ms/frame    157 ns/subject·voice  p50    0.141  p99    0.268  worst    3.188  first    29.2 ms  gc   16    4.2 ms     183.1 kB/frame
+onto: progress 3/54
+round 1 TARGETED=0  1/1  own       N=  1000 V=1     0.146 ms/frame    146 ns/subject·voice  p50    0.140  p99    0.213  worst    0.647  first    45.1 ms  gc   24    2.4 ms     189.8 kB/frame
+onto: progress 4/54
+round 1 TARGETED=1  1/1  own-      N=  1000 V=1     0.132 ms/frame    132 ns/subject·voice  p50    0.127  p99    0.186  worst    2.488  first    62.6 ms  gc   12    3.6 ms     183.3 kB/frame
+onto: progress 5/54
+round 1 TARGETED=0  1/1  own-      N=  1000 V=1     0.132 ms/frame    132 ns/subject·voice  p50    0.126  p99    0.185  worst    2.734  first    67.5 ms  gc   11    3.6 ms     183.9 kB/frame
+onto: progress 6/54
+round 2 TARGETED=0  1/1  own-      N=  1000 V=1     0.129 ms/frame    129 ns/subject·voice  p50    0.125  p99    0.187  worst    2.570  first    60.6 ms  gc   12    3.4 ms     183.8 kB/frame
+onto: progress 7/54
+round 2 TARGETED=1  1/1  own-      N=  1000 V=1     0.130 ms/frame    130 ns/subject·voice  p50    0.125  p99    0.177  worst    2.441  first    70.2 ms  gc    7    3.1 ms     182.8 kB/frame
+onto: progress 8/54
+round 2 TARGETED=0  1/1  own       N=  1000 V=1     0.150 ms/frame    150 ns/subject·voice  p50    0.143  p99    0.213  worst    1.206  first    41.2 ms  gc   16    2.1 ms     189.8 kB/frame
+onto: progress 9/54
+round 2 TARGETED=1  1/1  own       N=  1000 V=1     0.139 ms/frame    139 ns/subject·voice  p50    0.129  p99    0.217  worst    2.808  first    26.8 ms  gc   16    3.6 ms     182.6 kB/frame
+onto: progress 10/54
+round 2 TARGETED=0  1/1  own       N=   100 V=1     0.016 ms/frame    156 ns/subject·voice  p50    0.014  p99    0.045  worst    0.245  first     3.9 ms  gc    8    0.5 ms      27.2 kB/frame
+onto: progress 11/54
+round 2 TARGETED=1  1/1  own       N=   100 V=1     0.015 ms/frame    148 ns/subject·voice  p50    0.013  p99    0.032  worst    0.206  first     2.7 ms  gc    8    0.6 ms      24.6 kB/frame
+onto: progress 12/54
+round 3 TARGETED=1  1/1  own       N=   100 V=1     0.015 ms/frame    149 ns/subject·voice  p50    0.014  p99    0.030  worst    0.202  first     2.8 ms  gc    8    0.6 ms      24.2 kB/frame
+onto: progress 13/54
+round 3 TARGETED=0  1/1  own       N=   100 V=1     0.015 ms/frame    151 ns/subject·voice  p50    0.013  p99    0.031  worst    0.163  first     3.6 ms  gc    9    0.5 ms      27.1 kB/frame
+onto: progress 14/54
+round 3 TARGETED=1  1/1  own       N=  1000 V=1     0.142 ms/frame    142 ns/subject·voice  p50    0.132  p99    0.220  worst    2.796  first    27.8 ms  gc   16    3.5 ms     182.9 kB/frame
+onto: progress 15/54
+round 3 TARGETED=0  1/1  own       N=  1000 V=1     0.147 ms/frame    147 ns/subject·voice  p50    0.141  p99    0.206  worst    1.200  first    41.4 ms  gc   16    2.0 ms     190.4 kB/frame
+onto: progress 16/54
+round 3 TARGETED=1  1/1  own-      N=  1000 V=1     0.139 ms/frame    139 ns/subject·voice  p50    0.130  p99    0.237  worst    2.398  first    63.8 ms  gc   12    3.5 ms     183.9 kB/frame
+onto: progress 17/54
+round 3 TARGETED=0  1/1  own-      N=  1000 V=1     0.127 ms/frame    127 ns/subject·voice  p50    0.123  p99    0.178  worst    2.279  first    61.0 ms  gc   12    3.0 ms     183.8 kB/frame
+onto: progress 18/54
+round 4 TARGETED=0  1/1  own-      N=  1000 V=1     0.129 ms/frame    129 ns/subject·voice  p50    0.124  p99    0.187  worst    2.569  first    61.0 ms  gc   12    3.5 ms     184.3 kB/frame
+onto: progress 19/54
+round 4 TARGETED=1  1/1  own-      N=  1000 V=1     0.131 ms/frame    131 ns/subject·voice  p50    0.126  p99    0.185  worst    2.706  first    67.7 ms  gc   12    3.6 ms     183.9 kB/frame
+onto: progress 20/54
+round 4 TARGETED=0  1/1  own       N=  1000 V=1     0.160 ms/frame    160 ns/subject·voice  p50    0.152  p99    0.226  worst    1.280  first    41.6 ms  gc   16    2.2 ms     190.0 kB/frame
+onto: progress 21/54
+round 4 TARGETED=1  1/1  own       N=  1000 V=1     0.142 ms/frame    142 ns/subject·voice  p50    0.131  p99    0.219  worst    3.090  first    28.4 ms  gc   16    3.8 ms     183.4 kB/frame
+onto: progress 22/54
+round 4 TARGETED=0  1/1  own       N=   100 V=1     0.015 ms/frame    148 ns/subject·voice  p50    0.013  p99    0.032  worst    0.247  first     3.4 ms  gc    9    0.5 ms      27.2 kB/frame
+onto: progress 23/54
+round 4 TARGETED=1  1/1  own       N=   100 V=1     0.014 ms/frame    143 ns/subject·voice  p50    0.013  p99    0.029  worst    0.202  first     2.7 ms  gc    8    0.6 ms      22.2 kB/frame
+onto: progress 24/54
+round 5 TARGETED=1  1/1  own       N=   100 V=1     0.014 ms/frame    143 ns/subject·voice  p50    0.013  p99    0.031  worst    0.206  first     2.7 ms  gc    8    0.6 ms      22.3 kB/frame
+onto: progress 25/54
+round 5 TARGETED=0  1/1  own       N=   100 V=1     0.015 ms/frame    151 ns/subject·voice  p50    0.013  p99    0.036  worst    0.175  first     3.5 ms  gc    9    0.5 ms      27.5 kB/frame
+onto: progress 26/54
+round 5 TARGETED=1  1/1  own       N=  1000 V=1     0.142 ms/frame    142 ns/subject·voice  p50    0.132  p99    0.230  worst    2.857  first    27.3 ms  gc   16    3.6 ms     183.1 kB/frame
+onto: progress 27/54
+round 5 TARGETED=0  1/1  own       N=  1000 V=1     0.148 ms/frame    148 ns/subject·voice  p50    0.141  p99    0.210  worst    1.260  first    41.3 ms  gc   16    2.1 ms     189.2 kB/frame
+onto: progress 28/54
+round 5 TARGETED=1  1/1  own-      N=  1000 V=1     0.131 ms/frame    131 ns/subject·voice  p50    0.127  p99    0.190  worst    2.528  first    60.7 ms  gc   12    3.5 ms     183.7 kB/frame
+onto: progress 29/54
+round 5 TARGETED=0  1/1  own-      N=  1000 V=1     0.131 ms/frame    131 ns/subject·voice  p50    0.127  p99    0.178  worst    2.542  first    62.7 ms  gc    7    3.2 ms     183.3 kB/frame
+onto: progress 30/54
+round 6 TARGETED=0  1/1  own-      N=  1000 V=1     0.134 ms/frame    134 ns/subject·voice  p50    0.130  p99    0.185  worst    2.655  first    66.4 ms  gc    7    3.4 ms     184.3 kB/frame
+onto: progress 31/54
+round 6 TARGETED=1  1/1  own-      N=  1000 V=1     0.129 ms/frame    129 ns/subject·voice  p50    0.125  p99    0.185  worst    2.704  first    60.6 ms  gc   12    3.6 ms     183.8 kB/frame
+onto: progress 32/54
+round 6 TARGETED=0  1/1  own       N=  1000 V=1     0.151 ms/frame    151 ns/subject·voice  p50    0.145  p99    0.219  worst    1.192  first    43.8 ms  gc   16    2.1 ms     189.4 kB/frame
+onto: progress 33/54
+round 6 TARGETED=1  1/1  own       N=  1000 V=1     0.140 ms/frame    140 ns/subject·voice  p50    0.130  p99    0.221  worst    2.919  first    27.2 ms  gc   16    3.6 ms     183.7 kB/frame
+onto: progress 34/54
+round 6 TARGETED=0  1/1  own       N=   100 V=1     0.015 ms/frame    147 ns/subject·voice  p50    0.013  p99    0.031  worst    0.227  first     3.4 ms  gc    9    0.5 ms      26.9 kB/frame
+onto: progress 35/54
+round 6 TARGETED=1  1/1  own       N=   100 V=1     0.014 ms/frame    139 ns/subject·voice  p50    0.012  p99    0.030  worst    0.236  first     2.8 ms  gc    8    0.6 ms      21.5 kB/frame
+onto: progress 36/54
+round 7 TARGETED=1  1/1  own       N=   100 V=1     0.014 ms/frame    141 ns/subject·voice  p50    0.012  p99    0.032  worst    0.208  first     2.7 ms  gc    8    0.6 ms      22.9 kB/frame
+onto: progress 37/54
+round 7 TARGETED=0  1/1  own       N=   100 V=1     0.014 ms/frame    145 ns/subject·voice  p50    0.013  p99    0.029  worst    0.195  first     3.3 ms  gc    9    0.5 ms      28.8 kB/frame
+onto: progress 38/54
+round 7 TARGETED=1  1/1  own       N=  1000 V=1     0.142 ms/frame    142 ns/subject·voice  p50    0.133  p99    0.213  worst    2.887  first    27.2 ms  gc   16    3.8 ms     183.0 kB/frame
+onto: progress 39/54
+round 7 TARGETED=0  1/1  own       N=  1000 V=1     0.151 ms/frame    151 ns/subject·voice  p50    0.143  p99    0.213  worst    1.045  first    42.3 ms  gc   16    1.9 ms     190.1 kB/frame
+onto: progress 40/54
+round 7 TARGETED=1  1/1  own-      N=  1000 V=1     0.130 ms/frame    130 ns/subject·voice  p50    0.126  p99    0.179  worst    2.502  first    68.5 ms  gc    7    3.1 ms     183.2 kB/frame
+onto: progress 41/54
+round 7 TARGETED=0  1/1  own-      N=  1000 V=1     0.133 ms/frame    133 ns/subject·voice  p50    0.127  p99    0.186  worst    2.722  first    68.6 ms  gc    7    3.4 ms     185.2 kB/frame
+onto: progress 42/54
+round 8 TARGETED=0  1/1  own-      N=  1000 V=1     0.128 ms/frame    128 ns/subject·voice  p50    0.124  p99    0.187  worst    2.447  first    64.4 ms  gc   11    3.2 ms     184.1 kB/frame
+onto: progress 43/54
+round 8 TARGETED=1  1/1  own-      N=  1000 V=1     0.127 ms/frame    127 ns/subject·voice  p50    0.123  p99    0.183  worst    2.387  first    62.4 ms  gc   11    3.2 ms     184.4 kB/frame
+onto: progress 44/54
+round 8 TARGETED=0  1/1  own       N=  1000 V=1     0.150 ms/frame    150 ns/subject·voice  p50    0.143  p99    0.210  worst    1.220  first    41.3 ms  gc   16    2.1 ms     188.8 kB/frame
+onto: progress 45/54
+round 8 TARGETED=1  1/1  own       N=  1000 V=1     0.145 ms/frame    145 ns/subject·voice  p50    0.135  p99    0.223  worst    2.900  first    27.6 ms  gc   16    3.9 ms     183.6 kB/frame
+onto: progress 46/54
+round 8 TARGETED=0  1/1  own       N=   100 V=1     0.015 ms/frame    149 ns/subject·voice  p50    0.013  p99    0.034  worst    0.212  first     3.5 ms  gc    9    0.5 ms      27.5 kB/frame
+onto: progress 47/54
+round 8 TARGETED=1  1/1  own       N=   100 V=1     0.015 ms/frame    149 ns/subject·voice  p50    0.013  p99    0.033  worst    0.250  first     2.7 ms  gc    8    0.8 ms      23.7 kB/frame
+onto: progress 48/54
+round 9 TARGETED=1  1/1  own       N=   100 V=1     0.015 ms/frame    146 ns/subject·voice  p50    0.013  p99    0.028  worst    0.263  first     2.6 ms  gc    8    0.6 ms      25.5 kB/frame
+onto: progress 49/54
+round 9 TARGETED=0  1/1  own       N=   100 V=1     0.015 ms/frame    146 ns/subject·voice  p50    0.013  p99    0.030  worst    0.179  first     3.5 ms  gc    9    0.5 ms      26.9 kB/frame
+onto: progress 50/54
+round 9 TARGETED=1  1/1  own       N=  1000 V=1     0.139 ms/frame    139 ns/subject·voice  p50    0.129  p99    0.219  worst    2.949  first    27.0 ms  gc   16    3.7 ms     184.1 kB/frame
+onto: progress 51/54
+round 9 TARGETED=0  1/1  own       N=  1000 V=1     0.155 ms/frame    155 ns/subject·voice  p50    0.144  p99    0.245  worst    1.978  first    43.4 ms  gc   11    2.7 ms     188.6 kB/frame
+onto: progress 52/54
+round 9 TARGETED=1  1/1  own-      N=  1000 V=1     0.127 ms/frame    127 ns/subject·voice  p50    0.122  p99    0.176  worst    2.498  first    62.4 ms  gc   12    3.3 ms     184.2 kB/frame
+onto: progress 53/54
+round 9 TARGETED=0  1/1  own-      N=  1000 V=1     0.133 ms/frame    133 ns/subject·voice  p50    0.124  p99    0.230  worst    2.415  first    63.6 ms  gc   12    3.4 ms     183.8 kB/frame
+onto: progress 54/54

@@ -1204,7 +1204,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         three `tweenfn` voices left on lanes and level, `named`, `glowbase` and `fn` level. The rule
         covers channels with an array rest that are not `last` (`vector`): a lone voice on
         `color(last())` stays on lanes, and one on `color()` was not timed. `own`, a voice per
-        subject chosen by `target`, writes numbers and is unchanged. `glowc` and `glowkeys` read on lanes
+        subject chosen by `target`, writes numbers and is unchanged: taking such voices off lanes as
+        a crowd read 0.150 to 0.142 ms at 1,000 subjects with the runs overlapping, against 0.131
+        with lanes off (teitou, `bench/runs/2026-10-21-targeted-off-experiment.txt`), so it was not
+        kept. `glowc` and `glowkeys` read on lanes
         slower too (3.3 against 3.0) because nothing in them runs on lanes (their glow voice writes
         `color`, a `last` channel with its own lerp, which closes `gain` for the flicker) while the
         flicker still shares one record, which every read points at its subject and back.
