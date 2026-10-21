@@ -20,6 +20,7 @@ import {
   noted,
   optional,
   optionalNumber,
+  rowErrors,
   SpecProvider,
   sharedConfig,
   sharedNodes,
@@ -46,7 +47,9 @@ const doc = (member: string) => docOf(`VoiceSpec.${member}`);
 const d = (member: string) => doc(member) ?? '';
 const shared = sharedNodes(doc);
 /** Errors on fields that have no row of their own, shown in a list at the top. */
-const LOOSE = new Set(['name', 'cue', 'start', 'anchor', 'loop', 'locus']);
+/** Errors on fields with a plain row, by the row's path; the rest are listed loose. */
+const ROWED = { name: 'name', start: 'start', loop: 'repeat', locus: 'locus' };
+const LOOSE = new Set(['cue', 'anchor']);
 
 const SCHEMA = specSchema({
   name: shared.name,
@@ -238,6 +241,7 @@ export function VoicePanel(p: VoicePanelProps) {
           schema={SCHEMA}
           config={configOf(v, p.comp, spanned)}
           setConfig={write}
+          errors={rowErrors(p.errors, v.id, ROWED)}
         />
       </SpecProvider>
     </section>

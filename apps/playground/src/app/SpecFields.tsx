@@ -47,6 +47,20 @@ export function useSpec(): Spec {
 export const errorOf = (spec: Spec, field: string): FieldError | null =>
   spec.errors.find((e) => e.voice === spec.x.id && e.field === field) ?? null;
 
+/** `id`'s errors on the fields `rows` names, keyed by the panel path of the row each shows under. */
+export function rowErrors(
+  errors: readonly FieldError[],
+  id: string,
+  rows: Readonly<Record<string, string>>,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const e of errors) {
+    const path = rows[e.field];
+    if (e.voice === id && path !== undefined) out[path] = e.error;
+  }
+  return out;
+}
+
 /** A control panel schema of `shape`. */
 export function specSchema(shape: ConfigShape) {
   return resolveConfigSchema(f.schema(shape));
@@ -114,6 +128,7 @@ export const noted =
         description={row.pref.description || undefined}
         hint={row.disabled ? (off ?? hint) : hint}
         disabled={row.disabled}
+        error={row.error}
       >
         <PropertyControl
           {...field}

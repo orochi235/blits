@@ -375,7 +375,8 @@ at least 24 px apart; a desk with more voices than fit grows wider and the tab s
 | Fold rules | a row per channel; see [A composition](#a-composition)                                  |
 | Inspector | for the picked subject, a plot per channel over the last 3 s: each voice alone thin, the mix thick; then each voice's `weightOf`, and each enclosing group's |
 
-Every voice's errors show on their own field. Two voices or groups with one name are an error on
+Each error shows under its field's row; one on a `cue` or an `anchor`, or on a group's `start`
+under a span, which hides that row, is listed at the top of the panel. Two voices or groups with one name are an error on
 the second one's `name`, since anchors find them by name. "add group" beside "add voice" adds an
 owner or a span; deleting a group moves what it held up to its parent.
 

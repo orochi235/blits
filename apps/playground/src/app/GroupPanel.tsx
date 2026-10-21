@@ -18,6 +18,7 @@ import {
   looseErrorsRow,
   optionalNumber,
   Row,
+  rowErrors,
   SpecProvider,
   sharedConfig,
   sharedNodes,
@@ -31,7 +32,10 @@ import { weightRow } from './WeightField';
 const spanned = when<{ spanned: boolean }>((c) => c.spanned);
 const unspanned = when<{ spanned: boolean }>((c) => !c.spanned);
 /** Errors on fields that have no row of their own, shown in a list at the top. */
-const LOOSE = new Set(['name', 'cue', 'start', 'rate', 'anchor']);
+/** Errors on fields with a plain row, by the row's path; the rest are listed loose. A span's start
+ *  and anchor rows hide under the span that refuses them. */
+const ROWED = { name: 'name', rate: 'rate' };
+const LOOSE = new Set(['cue', 'start', 'anchor']);
 
 /** Owner or span; a span holds no owner, and a group under a span can only be a span. */
 const kindRow: ControlRenderer = (row) => <KindRow row={row} />;
@@ -193,6 +197,7 @@ export function GroupPanel(p: GroupPanelProps) {
           schema={SCHEMAS[g.kind]}
           config={configOf(g, spanned)}
           setConfig={write}
+          errors={rowErrors(p.errors, g.id, ROWED)}
         />
       </SpecProvider>
     </section>
