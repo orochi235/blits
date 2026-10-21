@@ -753,10 +753,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
     **`@msb235/blits/lean` leaves lanes out of a bundle** (2026-10-11, unreleased): 44.5 kB
     gzipped against 59.9 for the stock entry (esbuild, minified), the same values, and
-    `lanes: true` throws. `test/lean.test.ts` holds both. Not done: the stock path was not timed
-    after `Mixer` took its lanes class as a constructor argument; part of `src/crowd.ts` still
-    lands in the lean bundle, cause not found; history (9.3 kB gzipped) is reached from 24 places
-    in 12 modules and was left in.
+    `lanes: true` throws. `test/lean.test.ts` holds both. The stock path read level across the
+    change that made `Mixer` take its lanes class as a constructor argument: v0.10.0 to v0.11.0 in
+    `bench/runs/2026-10-20-releases-no-seek.txt`, every row within 2% but `glow`, whose slowing
+    item 14 places in `6ef4985`. What lanes code still lands in a lean bundle, and why (esbuild
+    metafile, 2026-10-21, 51.1 kB gzipped in all): `everyone.ts` (2.8 kB), since a dozen
+    general-path modules call its sharing hooks though no voice shares without lanes;
+    `columns.ts` (2.1 kB), from `pull`; and `crowd.ts`'s `crowdable` (146 B), from `fits` in
+    `hosts.ts`. History (9.3 kB gzipped) is reached from 24 places in 12 modules and was left in.
 11. **`@msb235/blits-tone` 0.1.0 is on npm** (2026-10-11), published by hand from
     `packages/tone` and pinned to engine 0.10.0 with Tone as a peer. Its README says what it is,
     how it works, and what it does not do. Trusted publishing is registered for it, so the next
