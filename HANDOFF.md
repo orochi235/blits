@@ -398,8 +398,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        that has never been published.
    - **`ChannelPlot` moved** from the playground into the panel, which exports it. The
      playground imports it from there, along with `hueColor`.
-   - **Not measured:** a mix that was watched and then unwatched keeps its swapped methods'
-     shape change in V8, and may stay slower. Nobody has benched that case.
+   - **A mix watched and then let go of runs as fast as one never watched** (2026-10-21). Until
+     then it ran 2.1 to 2.6 times slower for good: putting the methods back deleted own properties,
+     which left the mix and its transport in dictionary mode. `swap` in `src/watch.ts` now assigns
+     them back, so a mix once watched keeps own `probe`, `pull` and `drain` (and its transport
+     `sync`) holding the prototype's functions. `UNWATCHED=1 bench/frame.mjs` measures it; the
+     ledger's `UNWATCHED=1` rows have the numbers.
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits, all of it measurement
    now: the garbage a churned voice makes was cut from 21.5 to about 13 KB on 2026-10-11, and the
    file says what the rest is. Delete each item as it is dealt with, and the file once it is
