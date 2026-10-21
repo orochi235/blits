@@ -1299,8 +1299,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   changelog and used since 2026-10-21: rows' errors through `ControlPanel errors`, and `.dialog()`'s
   own draft, which the tags, hits and marks dialogs had been defeating, so Done dropped their edits
   from the 1.11.0 move (`eadda12`) to `fb9d846`. Not used: a plain `ControlMatrix` grid, since
-  `ChannelTiming` inherits on purpose; and port labels (`PortSpec.label`, `portLabels`), which would
-  draw "start" and "end" beside the Both tab's dots in place of its caption, Mike's call.
+  `ChannelTiming` inherits on purpose. Port labels are wired to a "port labels" box in the Both
+  tab's edit mode, off by default (Mike, 2026-10-21: start and end read better from where the dot
+  sits), but 1.11.0's `DiagramView` draws none: `diagramScene` builds each as a leaf outside its
+  node's box, and nothing shows. Asked of weasel (session weasel-b1, 2026-10-21), with the dialog's
+  late-write warning and a `commit` hook at Done.
   Still open by the changelog: `DiagramView` never reports where its first layout
   put nodes, though `diagramLayoutOf(specs)` now reads a `diagramScene` build's layout back, which
   the Both tab does by hand. On 1.11.0 from npm the playground typechecks and the Both tab's edit

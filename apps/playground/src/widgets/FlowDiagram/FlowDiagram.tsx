@@ -16,6 +16,17 @@ registerCanvasFont('sans-serif');
 const endsOf = (e: { from: string; to: string; label?: string }) =>
   `${e.from}\n${e.to}\n${e.label ?? ''}`;
 
+const COMPASS = ['n', 'e', 's', 'w'] as const;
+
+function labelsOf(node: string, label: (node: string, port: string) => string | null) {
+  const out: Record<string, string> = {};
+  for (const port of COMPASS) {
+    const text = label(node, port);
+    if (text !== null) out[port] = text;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 export interface FlowDiagramProps {
   flow: Flow;
   width: number;
@@ -35,6 +46,8 @@ export interface FlowDiagramProps {
   /** The tone each port of a node is drawn in, by its compass name; null hides it. Default: all
    *  four, in the flow's tone. */
   portTone?: (node: string, port: string) => FlowPortTone | null;
+  /** The name drawn beside each port of a node, by its compass name; null draws none. Default: none. */
+  portLabel?: (node: string, port: string) => string | null;
   /** Keep every node where it last stood when `flow` changes, laying out only new ones. */
   hold?: boolean;
 }
@@ -52,6 +65,7 @@ export function FlowDiagram({
   onConnect,
   canConnect,
   portTone,
+  portLabel,
   hold = false,
 }: FlowDiagramProps) {
   const stood = useRef(new Map<string, { x: number; y: number }>());
@@ -63,7 +77,13 @@ export function FlowDiagram({
       {
         nodes: flow.nodes.map((n) => {
           const at = positions?.get(n.id) ?? (hold ? stood.current.get(n.id) : undefined);
-          return { id: n.id, lines: linesOf(n), ...(at ? { at, pinned: true } : {}) };
+          const labels = portLabel && labelsOf(n.id, portLabel);
+          return {
+            id: n.id,
+            lines: linesOf(n),
+            ...(labels ? { portLabels: labels } : {}),
+            ...(at ? { at, pinned: true } : {}),
+          };
         }),
         edges: flow.edges.map((e) => ({
           from: e.from,
@@ -83,7 +103,7 @@ export function FlowDiagram({
       built.flatMap((x) => (x.id && byId.has(x.id) ? [[x.id, { x: x.pose.x, y: x.pose.y }]] : [])),
     );
     return built;
-  }, [flow, direction, positions, hold]);
+  }, [flow, direction, positions, hold, portLabel]);
   // DiagramView rebuilds its port layer when these change, so they read the latest props instead.
   const latest = useRef({ canConnect, portTone });
   latest.current = { canConnect, portTone };

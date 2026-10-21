@@ -14,6 +14,10 @@
   color: var(--wzl-fg);
 }
 
+.crumbs label {
+  white-space: nowrap;
+}
+
 .canvas {
   min-height: 0;
   overflow: hidden;

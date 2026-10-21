@@ -3,9 +3,9 @@ import type { Composition } from '@pg/blits/composition';
 import { flowOf } from '@pg/blits/flow';
 import type { Player } from '@pg/blits/player';
 import { lit, liveOf, timingOf } from '@pg/blits/timing';
-import { type End, toneOf, wired } from '@pg/blits/wire';
+import { type End, roleOf, toneOf, wired } from '@pg/blits/wire';
 import { FlowDiagram } from '@pg/widgets/FlowDiagram';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import s from './FlowPanel.module.css';
 import { flowKey } from './flowKey';
 import { useSize } from './useSize';
@@ -23,6 +23,15 @@ export interface BothPanelProps {
 }
 
 type At = { x: number; y: number };
+const LABELS = 'blits-playground:port-labels';
+
+function readLabels(): boolean {
+  try {
+    return localStorage.getItem(LABELS) === 'on';
+  } catch {
+    return false;
+  }
+}
 // Where nodes were dragged, kept while the page is open so a tab switch does not lose them.
 let dragged: ReadonlyMap<string, At> = new Map();
 
@@ -36,6 +45,17 @@ export function BothPanel({ comp, faulted, player, selected, onVoice, onComp }: 
   const shown = kept.current.flow;
   const [size, ref] = useSize();
   const [editing, setEditing] = useState(false);
+  const [labeled, setLabeled] = useState(readLabels);
+  const label = (on: boolean) => {
+    setLabeled(on);
+    try {
+      localStorage.setItem(LABELS, on ? 'on' : 'off');
+    } catch {}
+  };
+  const portLabel = useCallback(
+    (node: string, port: string) => roleOf(flow.code, node, port),
+    [flow.code],
+  );
   const [positions, setPositions] = useState(dragged);
   const place = (next: ReadonlyMap<string, At>) => {
     dragged = next;
@@ -55,6 +75,12 @@ export function BothPanel({ comp, faulted, player, selected, onVoice, onComp }: 
           <input type="checkbox" checked={editing} onChange={(e) => setEditing(e.target.checked)} />
           edit
         </label>
+        {editing && (
+          <label>
+            <input type="checkbox" checked={labeled} onChange={(e) => label(e.target.checked)} />
+            port labels
+          </label>
+        )}
         {positions.size > 0 && (
           <button type="button" onClick={() => place(new Map())}>
             lay out
@@ -89,6 +115,7 @@ export function BothPanel({ comp, faulted, player, selected, onVoice, onComp }: 
                   },
                   canConnect: (a, b) => join(a, b) !== null,
                   portTone: (node, port) => toneOf(flow.code, node, port),
+                  ...(labeled ? { portLabel } : {}),
                 }
               : {})}
           />
