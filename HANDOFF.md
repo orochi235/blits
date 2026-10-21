@@ -1194,8 +1194,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         running `fns` down the same path read 0.825 at U = 0. Time a lanes change on such a row
         with a switch in one build, not with `ab.sh`. `bench/abdirty.sh` A/Bs an uncommitted diff
         with no commit on origin. Tried and backed out: answering a probe with nothing laned at the
-        top of `Lanes.prepare` (`bench/runs/2026-10-21-prepare-no-lanes.txt`, read across builds
-        and so unsettled). Mixed with a tween or keys crowd on the same channel, an `fn` crowd
+        top of `Lanes.prepare`, which read every row within 1% in one build
+        (`bench/runs/2026-10-21-prepare-shortcut-one-build.txt`). Mixed with a tween or keys crowd on the same channel, an `fn` crowd
         still runs on lanes and still pays the second walk; nobody has measured which way such a
         mix should go. **So does a lone `fn` voice over many subjects writing vecs**
         (2026-10-21), where it is the only such voice on its channels; two or more fold faster on
