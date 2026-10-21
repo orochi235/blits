@@ -1894,10 +1894,11 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
     );
   });
 
-  it('calls a fn voice per subject from the fill, once per frame each', () => {
+  const crowdOfFns = (beside: boolean) => {
     const m = mix<Part, Pose>(K, { lanes: true });
     const seen: number[] = [];
     const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
+    if (beside) m.cue({ patch: keys<Part, Pose>(100, [{ at: 0, delta: { crawl: 1 } }]), loop: true });
     for (const p of parts)
       m.cue({
         patch: patch<Part, Pose>(
@@ -1916,8 +1917,16 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
     m.sync(16);
     m.probe(parts[3] as Part);
     m.probe(parts[1] as Part);
+    return seen.sort();
+  };
+
+  it('calls a fn voice per subject from the fill, once per frame each', () => {
     // The general path would have called the patch for subjects 3 and 1 alone.
-    expect(seen.sort()).toEqual([0, 1, 2, 3]);
+    expect(crowdOfFns(true)).toEqual([0, 1, 2, 3]);
+  });
+
+  it('leaves a crowd of fn voices off lanes where nothing else would lane its channel', () => {
+    expect(crowdOfFns(false)).toEqual([1, 3]);
   });
 
   it('for voices writing several channels, crowds sharing one folding in voice order', () => {
