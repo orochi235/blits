@@ -1,0 +1,139 @@
+# teitou: FRAMES=6000 bench/prof.sh fns, then fns-:10000:1, one build of bbe5b61 (TOP=60)
+  waiting for room
+teitou  chosen: 15.5 cores free, 46.1G available (job-prof.sh: 5 past runs, worst 1.9 cores / 1.1G)
+  msb-uai  scored 5.77 against teitou's 6.86
+  keiei    scored 0.53 against teitou's 6.86
+  orochi   refuses rotation
+  studio   has 0.0 of its 10 cores free, too few to start on
+  base   4ce6e5b1
+  delta  4 file(s), 0 deleted
+  sent   4 new file(s), 0 already there
+  updated blits on teitou at bbe5b611 + 1 uncommitted file(s)
+  job    d145e473 on teitou
+
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+== fns
+ 1/1  fns       N= 10000 V=1     1.155 ms/frame    115 ns/subject·voice  p50    1.117  p99    2.022  worst    4.392  first    25.0 ms  gc  135   51.6 ms    1489.6 kB/frame
+ 21.5%  foldWith  fold.js:471
+ 11.4%  get  store.js:20
+  9.1%  contribution  fold.js:66
+  5.7%  apply  fold.js:369
+  5.0%  patch.writes  frame.mjs:114
+  3.5%  elapsedAt  voice.js:469
+  3.1%  phaseAt  clock.js:13
+  2.7%  base  weigh.js:86
+  2.6%  prepare  lanes.js:260
+  2.5%  linked  fold.js:464
+  2.5%  folded  fold.js:456
+  2.0%  prime  weigh.js:6
+  2.0%  read  frame.mjs:504
+  1.9%  channel.fold  channels.js:183
+  1.8%  elapsedWith  clock.js:92
+  1.8%  fadeOf  weigh.js:35
+  1.6%  chain  chain.js:13
+  1.6%  begin  lanes.js:309
+  1.5%  envelope  clock.js:28
+  1.5%  probe  mixer.js:387
+  1.5%  weigh  weigh.js:67
+  1.4%  read  fold.js:741
+  1.3%  (garbage collector)  :0
+  1.1%  filled  lanes.js:286
+  0.8%  smooth  frame.mjs:79
+  0.8%  (program)  :0
+  0.8%  get now  mixer.js:272
+  0.8%  general  lanes.js:346
+  0.6%  unstarted  voice.js:524
+  0.5%  weighed  clock.js:77
+  0.5%  keep  pull.js:20
+  0.5%  shownAt  voice.js:563
+  0.5%  fold  fold.js:452
+  0.4%  copy  clone.js:68
+  0.4%  rawAt  voice.js:537
+  0.4%  current  lanes.js:299
+  0.3%  capped  weigh.js:23
+  0.2%  frozenTime  clock.js:57
+  0.2%  get holdsFirst  voice.js:552
+  0.2%  clampWeight  clock.js:70
+  0.2%  over  clock.js:7
+  0.2%  passAt  clock.js:19
+  0.1%  compileSourceTextModule  utils:338
+  0.1%  read  :0
+  0.1%  silent  clock.js:84
+  0.1%  (idle)  :0
+  0.1%  now  :0
+  0.0%  open  :0
+  0.0%  internalModuleStat  :0
+  0.0%  moveTo  move.js:37
+  0.0%  held  held.js:24
+  0.0%  qualify  qualify.js:15
+  0.0%  times  channels.js:15
+  0.0%  compileForInternalLoader  realm:407
+  0.0%  update  :0
+  0.0%  fileURLToPath  url:1644
+  0.0%  normalizeString  node:path:92
+  0.0%  setURLContextFromBinding  url:177
+  0.0%  parse  url:916
+  0.0%  URL  url:883
+== fns-:10000:1
+ 1/1  fns-      N= 10000 V=1     0.979 ms/frame     98 ns/subject·voice  p50    0.933  p99    1.854  worst    3.116  first    14.6 ms  gc  134   54.7 ms    1333.2 kB/frame
+ 25.2%  foldWith  fold.js:471
+ 13.3%  get  store.js:20
+ 11.9%  contribution  fold.js:66
+  7.4%  apply  fold.js:369
+  5.0%  patch.writes  frame.mjs:114
+  3.8%  phaseAt  clock.js:13
+  3.1%  read  frame.mjs:504
+  2.8%  elapsedAt  voice.js:469
+  2.5%  folded  fold.js:456
+  2.2%  channel.fold  channels.js:183
+  2.2%  (garbage collector)  :0
+  1.9%  probe  mixer.js:387
+  1.7%  weigh  weigh.js:67
+  1.7%  prime  weigh.js:6
+  1.3%  chain  chain.js:13
+  1.3%  base  weigh.js:86
+  1.2%  fadeOf  weigh.js:35
+  1.1%  read  fold.js:741
+  0.9%  envelope  clock.js:28
+  0.9%  elapsedWith  clock.js:92
+  0.8%  (program)  :0
+  0.8%  smooth  frame.mjs:79
+  0.6%  capped  weigh.js:23
+  0.6%  keep  pull.js:20
+  0.6%  shownAt  voice.js:563
+  0.6%  linked  fold.js:464
+  0.6%  get now  mixer.js:272
+  0.5%  fold  fold.js:452
+  0.5%  copy  clone.js:68
+  0.4%  unstarted  voice.js:524
+  0.4%  passAt  clock.js:19
+  0.3%  weighed  clock.js:77
+  0.3%  over  clock.js:7
+  0.2%  frozenTime  clock.js:57
+  0.1%  checkWrites  voice.js:641
+  0.1%  silent  clock.js:84
+  0.1%  compileSourceTextModule  utils:338
+  0.1%  get holdsFirst  voice.js:552
+  0.1%  (anon)  frame.mjs:1
+  0.1%  clampWeight  clock.js:70
+  0.0%  Voice  voice.js:89
+  0.0%  moveTo  move.js:37
+  0.0%  set  store.js:25
+  0.0%  before  voice.js:544
+  0.0%  (idle)  :0
+  0.0%  compileForInternalLoader  realm:407
+  0.0%  readPackageJSON  :0
+  0.0%  defaultResolve  resolve:928
+  0.0%  getPackageScopeConfig  package_json_reader:225
+  0.0%  extname  get_format:124
+  0.0%  #getOrCreateModuleJobAfterResolve  loader:529
+  0.0%  realpathSync  node:fs:3350
+  0.0%  parse  :0
+  0.0%  internalModuleStat  :0
+  0.0%  (anon)  color.js:1
+  0.0%  enter  cue.js:162
+  0.0%  cue  mixer.js:330
+  0.0%  schedule  due.js:54
+  0.0%  VoiceSetting  voice.js:42
+  0.0%  popDue  due.js:74
