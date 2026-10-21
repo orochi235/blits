@@ -947,10 +947,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     1,234 to 5.37 ms. The rerun without it (`bench/runs/2026-10-20-releases-no-seek.txt`, 5 rounds)
     reads `fn` level across every release (2.29 to 2.27), `keys` 1.28 to 1.06, `kept` 5.45 to
     5.19, and allocation down at every row but `keys-`.
-  - **`glow` has grown about 6% slower since 0.10.0** (same run, ms a frame at 10,000 subjects):
-    v0.10.0 1.564 to 1.573 with one run at 1.773, v0.11.0 1.601 to 1.683, `b57d53f` 1.630 to
-    1.687. Not bisected; `AB_EACH=1 bench/ab.sh v0.10.0 v0.11.0 9 glow:10000`, then within each
-    range, would find the commits.
+  - **`glow` read 5.5% slower than at 0.10.0, and most of it is back** (2026-10-20). With the
+    bench reading subjects by index (its `for...of` allocated a result a subject in some processes,
+    which made every probed row two-moded), v0.10.0 against `11a1471` read `glow` 1.603 to 1.691 ms
+    (U = 0) and `glowbase` 1.180 to 1.120 (U = 0), so the cost was the signal-weighted glow voice's.
+    It arrived in `6ef4985`, whose `frozenAt` check for a voice hiding past its end left the
+    function out of line in a lane fill's `one`; writing it out there read 1.696 to 1.636 at 15
+    rounds (U = 47). The rest, about 2%, is not placed. `crowd.ts` still calls `frozenAt` for a
+    crowd's freezing voices, unmeasured. Runs: `bench/runs/2026-10-20-glow-*.txt` and
+    `-frozenat-*.txt`.
     - **Mike has not seen two things chosen while building.**
       - **A probe into `out` reuses its arrays, which reverses a guarantee a test held.**
         `test/solo.test.ts` said a reused `out` "never has an array the host kept from it written

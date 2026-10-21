@@ -1,0 +1,221 @@
+# teitou --solo: FRAMES=10000 TOP=30 INTO=4 bench/profab.sh v0.10.0 11a1471 glow:10000
+  waiting for room
+  base   11a14716
+  updated blits on teitou at 11a14716
+  job    72c66519 on teitou
+
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+onto: plan 2
+ 1/1  glow      N= 10000 V=2     1.575 ms/frame     79 ns/subject·voice  p99    1.813  worst    2.885  first    15.2 ms  gc  536   81.6 ms    1678.7 kB/frame
+== v0.10.0 (69c9575) glow:10000, self time
+ 16.4%  one  fill.js:289
+  8.8%  foldWith  fold.js:382
+  7.6%  patch.writes  frame.mjs:48
+  6.8%  call  fill.js:419
+  6.8%  copy  copyout.js:5
+  5.8%  get  store.js:20
+  4.0%  prepare  lanes.js:218
+  3.5%  prime  weigh.js:6
+  3.2%  near  frame.mjs:382
+  2.9%  signalled  fill.js:185
+  2.8%  base  weigh.js:79
+  2.8%  (program)  :0
+  2.3%  runEveryone  fill.js:269
+  2.2%  subjectAt  fill.js:210
+  2.1%  shut  everyone.js:134
+  1.9%  foldInto  gather.js:184
+  1.8%  open  everyone.js:112
+  1.8%  foldDelta  gather.js:155
+  1.7%  elapsedAt  voice.js:446
+  1.3%  linked  fold.js:375
+  1.2%  run  fill.js:234
+  0.9%  copy  clone.js:56
+  0.8%  folded  fold.js:367
+  0.8%  read  frame.mjs:450
+  0.7%  probe  mixer.js:349
+  0.6%  (garbage collector)  :0
+  0.6%  weighed  clock.js:77
+  0.5%  frozenAt  lane.js:190
+  0.5%  capped  weigh.js:20
+  0.5%  filled  lanes.js:244
+onto: progress 1/2
+ 1/1  glow      N= 10000 V=2     1.632 ms/frame     82 ns/subject·voice  p50    1.604  p99    1.899  worst    3.191  first    15.6 ms  gc  536   83.2 ms    1678.8 kB/frame
+== 11a1471 (11a1471) glow:10000, self time
+ 14.5%  one  fill.js:287
+  9.1%  foldWith  fold.js:471
+  7.6%  patch.writes  frame.mjs:52
+  7.5%  call  fill.js:417
+  7.4%  copy  copyout.js:5
+  6.2%  get  store.js:20
+  3.5%  foldDelta  gather.js:155
+  3.0%  prepare  lanes.js:260
+  3.0%  signalled  fill.js:185
+  2.9%  prime  weigh.js:6
+  2.6%  base  weigh.js:86
+  2.6%  near  frame.mjs:395
+  2.5%  runEveryone  fill.js:267
+  2.3%  signal  hosts.js:91
+  2.2%  (program)  :0
+  1.9%  shut  everyone.js:135
+  1.8%  elapsedAt  voice.js:467
+  1.8%  open  everyone.js:113
+  1.8%  ready  hosts.js:80
+  1.7%  subjectAt  fill.js:208
+  1.4%  linked  fold.js:464
+  1.2%  run  fill.js:232
+  0.9%  chain  chain.js:13
+  0.9%  frozenAt  lane.js:190
+  0.8%  capped  weigh.js:23
+  0.7%  folded  fold.js:456
+  0.7%  weighed  clock.js:77
+  0.7%  read  frame.mjs:471
+  0.6%  get now  mixer.js:272
+  0.6%  current  lanes.js:299
+onto: progress 2/2
+== v0.10.0 glow:10000, lines
+one  fill.js
+  1.8%    302  const elapsed = frozenAt(voice, elapsedNow - delay);
+  1.7%    325  if (!this.signalled(voice, slot, lane.records[p])) {
+  1.3%    297  if (this.per[slot * 6 /* Per.SLOT */ + 5 /* Per.LANE_FILL */] === this.fills - 1)
+  1.2%    338  this.rec = lane.records[p] ?? null;
+  0.6%    312  lane.pass = passAt(elapsed, voice.duration, voice.passes);
+  0.6%    364  return true;
+  0.6%    315  if (!lane.flat && (!lane.weighed || !same(since, lane.weighedSince))) {
+  0.5%    289  export function one(lane, p, slot) {
+  0.5%    314  const since = data[o + 1 /* Row.SINCE */];
+  0.5%    321  if (typeof voice.spec.weight === 'function') {
+  0.4%    298  data[o + 3 /* Row.PROBED */] = data[o + 2 /* Row.WEIGHT */];
+  0.4%    366  arg[2 /* Arg.PHASE */] = lane.phase;
+  0.4%    359  arg[1 /* Arg.ELAPSED */] = elapsed;
+  0.4%    336  unband(lane.records[p]);
+  0.4%    290  const host = this.host;
+  0.4%    334  data[o + 2 /* Row.WEIGHT */] = w;
+  0.4%    301  const delay = data[o + 0 /* Row.DELAY */];
+  0.4%    291  const voice = lane.voice;
+  0.4%    330  w = arg[0 /* Arg.WEIGHT */];
+  0.3%    337  this.folding = lane;
+  0.3%    324  arg[5 /* Arg.FADE */] = lane.fade;
+  0.3%    308  if (!lane.placed || !same(elapsed, lane.placedAt)) {
+  0.3%    333  w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
+  0.3%    294  const data = lane.data;
+  0.3%    360  arg[4 /* Arg.DELAY */] = delay;
+  0.3%    354  if (Number.isNaN(rec.probed)) {
+  0.2%    323  arg[3 /* Arg.PASS */] = lane.pass;
+  0.2%    322  arg[1 /* Arg.ELAPSED */] = elapsed;
+  0.2%    339  if (voice.built !== null) {
+  0.2%    299  if (this.lately >= 0 && this.unread(slot))
+foldWith  fold.js
+  2.5%    386  for (let i = 0; i < this.names.length; i++) {
+  1.2%    387  if (skip?.[i])
+  0.6%    413  l.copy(head.slot, pose);
+  0.4%    400  if (Array.isArray(held) && held !== rest && held.length === rest.length) {
+  0.4%    399  const held = this.lerpsInto[i] === undefined ? undefined : pose[key];
+  0.4%    407  if (head === null)
+  0.4%    382  export function foldWith(subject, out, head, laned, dry, except) {
+  0.4%    389  const channel = this.channels[i];
+  0.3%    401  for (let a = 0; a < held.length; a++)
+  0.3%    390  const rest = channel.rest;
+  0.3%    385  const skip = laned ? lanes.copies : null;
+  0.2%    391  const key = this.names[i];
+  0.2%    384  const lanes = this.lanes;
+  0.2%    417  return pose;
+  0.2%    411  if (laned) {
+  0.2%    394  if (pose[key] !== undefined)
+  0.1%    416  else if (l.whole)
+  0.1%    402  held[a] = rest[a];
+  0.1%    405  pose[key] = channel.copy ? channel.copy(rest) : copy(rest);
+  0.1%    414  if (l.owes(head.slot))
+  0.0%    393  if (rest === undefined) {
+patch.writes  frame.mjs
+  7.6%     48  (ph, s) => ({ gain: 0.2 + 0.8 * Math.abs(Math.sin(ph * Math.PI + s.seed)), dark: ph * 0.1 }),
+call  fill.js
+  1.5%    439  host.ready(voice, subject, rec, elapsed, pass, w);
+  1.1%    428  if (subject === absent)
+  0.8%    431  if (rec.probed === this.now && rec.delta !== null && rec.seeks === voice.seeks) {
+  0.7%    444  const delta = voice.patch.at(phase, subject, voice.setting);
+  0.5%    436  if (silent(voice, w))
+  0.4%    454  this.foldDelta(chans, slot, delta);
+  0.3%    443  reading.horizon = Number.POSITIVE_INFINITY;
+  0.3%    438  const kept = reading.kept;
+  0.2%    451  if (reading.kept !== kept && !voice.keeping)
+  0.2%    425  const w = arg[0 /* Arg.WEIGHT */];
+  0.2%    449  if (this.keeps)
+  0.2%    448  rec.seeks = voice.seeks;
+  0.2%    447  rec.probed = this.now;
+  0.1%    446  rec.delta = delta;
+  0.1%    440  if (this.keeps)
+  0.1%    424  const delay = arg[4 /* Arg.DELAY */];
+  0.0%    423  const pass = arg[3 /* Arg.PASS */];
+== 11a1471 glow:10000, lines
+one  fill.js
+  1.8%    323  if (!this.signalled(voice, slot, lane.records[p])) {
+  1.4%    300  const elapsed = frozenAt(voice, elapsedNow - delay);
+  1.1%    336  this.rec = lane.records[p] ?? null;
+  1.0%    295  if (this.per[slot * 6 /* Per.SLOT */ + 5 /* Per.LANE_FILL */] === this.fills - 1)
+  0.6%    319  if (typeof voice.spec.weight === 'function') {
+  0.5%    362  return true;
+  0.5%    306  if (!lane.placed || !same(elapsed, lane.placedAt)) {
+  0.5%    287  export function one(lane, p, slot) {
+  0.5%    352  if (Number.isNaN(rec.probed)) {
+  0.4%    312  const since = data[o + 1 /* Row.SINCE */];
+  0.4%    288  const host = this.host;
+  0.4%    296  data[o + 3 /* Row.PROBED */] = data[o + 2 /* Row.WEIGHT */];
+  0.4%    357  arg[1 /* Arg.ELAPSED */] = elapsed;
+  0.4%    332  data[o + 2 /* Row.WEIGHT */] = w;
+  0.4%    334  unband(lane.records[p]);
+  0.4%    335  this.folding = lane;
+  0.4%    310  lane.pass = passAt(elapsed, voice.duration, voice.passes);
+  0.4%    313  if (!lane.flat && (!lane.weighed || !same(since, lane.weighedSince))) {
+  0.3%    328  w = arg[0 /* Arg.WEIGHT */];
+  0.3%    322  arg[5 /* Arg.FADE */] = lane.fade;
+  0.3%    364  arg[2 /* Arg.PHASE */] = lane.phase;
+  0.3%    337  if (voice.built !== null) {
+  0.3%    289  const voice = lane.voice;
+  0.2%    299  const delay = data[o + 0 /* Row.DELAY */];
+  0.2%    292  const data = lane.data;
+  0.2%    359  arg[0 /* Arg.WEIGHT */] = w;
+  0.2%    320  arg[1 /* Arg.ELAPSED */] = elapsed;
+  0.2%    331  w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
+  0.1%    321  arg[3 /* Arg.PASS */] = lane.pass;
+  0.1%    297  if (this.lately >= 0 && this.unread(slot))
+foldWith  fold.js
+  2.3%    475  for (let i = 0; i < this.names.length; i++) {
+  1.3%    476  if (skip?.[i])
+  1.2%    500  if (laned) {
+  0.5%    478  const channel = this.channels[i];
+  0.4%    490  for (let a = 0; a < held.length; a++)
+  0.4%    471  export function foldWith(subject, out, head, laned, dry, except) {
+  0.4%    488  const held = this.lerpsInto[i] === undefined ? undefined : pose[key];
+  0.3%    502  l.copy(head.slot, pose);
+  0.3%    480  const key = this.names[i];
+  0.3%    474  const skip = laned ? lanes.copies : null;
+  0.3%    483  if (pose[key] !== undefined)
+  0.3%    496  if (head === null)
+  0.3%    489  if (Array.isArray(held) && held !== rest && held.length === rest.length) {
+  0.2%    479  const rest = channel.rest;
+  0.2%    506  return pose;
+  0.1%    503  if (l.owes(head.slot))
+  0.1%    505  else if (l.whole)
+  0.0%    491  held[a] = rest[a];
+  0.0%    472  const pose = out;
+  0.0%    473  const lanes = this.lanes;
+patch.writes  frame.mjs
+  7.6%     52  (ph, s) => ({ gain: 0.2 + 0.8 * Math.abs(Math.sin(ph * Math.PI + s.seed)), dark: ph * 0.1 }),
+call  fill.js
+  2.4%    435  host.ready(voice, subject, rec);
+  1.1%    440  const delta = voice.patch.at(phase, subject, voice.setting);
+  0.8%    424  if (subject === absent)
+  0.6%    427  if (rec.probed === this.now && rec.delta !== null && rec.seeks === voice.seeks) {
+  0.5%    432  if (silent(voice, w))
+  0.4%    450  this.foldDelta(chans, slot, delta);
+  0.3%    439  reading.horizon = Number.POSITIVE_INFINITY;
+  0.3%    436  if (this.keeps)
+  0.2%    434  const kept = reading.kept;
+  0.2%    447  if (reading.kept !== kept && !voice.keeping)
+  0.2%    444  rec.seeks = voice.seeks;
+  0.2%    445  if (this.keeps)
+  0.2%    442  rec.delta = delta;
+  0.1%    443  rec.probed = this.now;
+  0.1%    420  const delay = arg[4 /* Arg.DELAY */];
+  0.0%    418  const arg = this.arg;

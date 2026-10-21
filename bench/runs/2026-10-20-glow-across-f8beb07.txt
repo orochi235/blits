@@ -1,0 +1,119 @@
+# teitou --solo: FRAMES=1500 AB_EACH=1 AB_BENCH=bench/frame.mjs bench/ab.sh f8beb07^ f8beb07 9 glow:10000 glowbase:10000 signal:10000
+  waiting for room
+  base   11a14716
+  delta  1 file(s), 0 deleted
+  updated blits on teitou at 11a14716 + 1 uncommitted file(s)
+  job    d86c1208 on teitou
+
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+built f8beb07^ (4374f34)
+built f8beb07 (f8beb07)
+== round 1/9 f8beb07^
+ 1/1  glow      N= 10000 V=2     1.624 ms/frame     81 ns/subject·voice  p50    1.599  p99    1.854  worst    2.158  first    16.1 ms  gc  102   13.3 ms    1987.7 kB/frame
+== round 1/9 f8beb07^
+ 1/1  glowbase  N= 10000 V=1     1.264 ms/frame    126 ns/subject·voice  p50    1.238  p99    1.804  worst    3.627  first     9.9 ms  gc   89   14.1 ms    1648.5 kB/frame
+== round 1/9 f8beb07^
+ 1/1  signal    N= 10000 V=3     4.290 ms/frame    143 ns/subject·voice  p50    4.046  p99    7.980  worst   12.290  first    21.4 ms  gc  119   53.8 ms    2431.0 kB/frame
+== round 1/9 f8beb07
+ 1/1  glow      N= 10000 V=2     2.214 ms/frame    111 ns/subject·voice  p50    1.991  p99    4.436  worst    5.897  first    16.6 ms  gc   88   15.7 ms    1670.8 kB/frame
+== round 1/9 f8beb07
+ 1/1  glowbase  N= 10000 V=1     1.231 ms/frame    123 ns/subject·voice  p50    1.187  p99    1.939  worst    2.876  first    12.6 ms  gc   61   10.1 ms    1021.6 kB/frame
+== round 1/9 f8beb07
+ 1/1  signal    N= 10000 V=3     3.731 ms/frame    124 ns/subject·voice  p50    3.492  p99    6.657  worst    7.784  first    20.8 ms  gc  119   46.6 ms    2429.3 kB/frame
+== round 2/9 f8beb07
+ 1/1  glow      N= 10000 V=2     1.783 ms/frame     89 ns/subject·voice  p50    1.733  p99    2.328  worst    2.851  first    17.6 ms  gc   96   18.0 ms    1668.5 kB/frame
+== round 2/9 f8beb07
+ 1/1  glowbase  N= 10000 V=1     1.171 ms/frame    117 ns/subject·voice  p50    1.137  p99    1.484  worst    1.771  first    10.4 ms  gc   61    8.9 ms    1023.0 kB/frame
+== round 2/9 f8beb07
+ 1/1  signal    N= 10000 V=3     3.113 ms/frame    104 ns/subject·voice  p50    3.062  p99    4.253  worst    5.099  first    18.7 ms  gc  119   38.4 ms    2429.3 kB/frame
+== round 2/9 f8beb07^
+ 1/1  glow      N= 10000 V=2     1.708 ms/frame     85 ns/subject·voice  p50    1.658  p99    2.231  worst    2.668  first    16.5 ms  gc  102   14.5 ms    1989.0 kB/frame
+== round 2/9 f8beb07^
+ 1/1  glowbase  N= 10000 V=1     1.218 ms/frame    122 ns/subject·voice  p50    1.184  p99    1.586  worst    2.475  first    10.4 ms  gc   89   12.5 ms    1648.2 kB/frame
+== round 2/9 f8beb07^
+ 1/1  signal    N= 10000 V=3     2.874 ms/frame     96 ns/subject·voice  p50    2.772  p99    3.785  worst    6.197  first    18.4 ms  gc  119   35.2 ms    2429.1 kB/frame
+== round 3/9 f8beb07^
+ 1/1  glow      N= 10000 V=2     1.659 ms/frame     83 ns/subject·voice  p50    1.630  p99    2.035  worst    2.376  first    14.9 ms  gc  103   15.3 ms    1982.2 kB/frame
+== round 3/9 f8beb07^
+ 1/1  glowbase  N= 10000 V=1     1.230 ms/frame    123 ns/subject·voice  p50    1.179  p99    1.886  worst    2.372  first    10.5 ms  gc   89   13.3 ms    1649.5 kB/frame
+== round 3/9 f8beb07^
+ 1/1  signal    N= 10000 V=3     3.393 ms/frame    113 ns/subject·voice  p50    3.102  p99    6.680  worst    8.864  first    20.5 ms  gc   72   30.5 ms    2431.7 kB/frame
+== round 3/9 f8beb07
+ 1/1  glow      N= 10000 V=2     1.686 ms/frame     84 ns/subject·voice  p50    1.656  p99    1.972  worst    2.250  first    15.2 ms  gc   88   11.9 ms    1668.6 kB/frame
+== round 3/9 f8beb07
+ 1/1  glowbase  N= 10000 V=1     1.186 ms/frame    119 ns/subject·voice  p50    1.167  p99    1.493  worst    1.734  first    10.1 ms  gc   61   10.0 ms    1023.3 kB/frame
+== round 3/9 f8beb07
+ 1/1  signal    N= 10000 V=3     3.911 ms/frame    130 ns/subject·voice  p50    3.709  p99    6.703  worst    8.591  first    20.8 ms  gc  119   50.7 ms    2428.4 kB/frame
+== round 4/9 f8beb07
+ 1/1  glow      N= 10000 V=2     1.998 ms/frame    100 ns/subject·voice  p50    1.939  p99    2.716  worst    5.501  first    16.5 ms  gc   88   15.0 ms    1668.5 kB/frame
+== round 4/9 f8beb07
+ 1/1  glowbase  N= 10000 V=1     1.426 ms/frame    143 ns/subject·voice  p50    1.295  p99    2.864  worst    3.655  first    10.9 ms  gc   61   10.8 ms    1021.4 kB/frame
+== round 4/9 f8beb07
+ 1/1  signal    N= 10000 V=3     4.162 ms/frame    139 ns/subject·voice  p50    4.041  p99    6.631  worst   10.332  first    29.0 ms  gc  119   53.3 ms    2429.4 kB/frame
+== round 4/9 f8beb07^
+ 1/1  glow      N= 10000 V=2     1.874 ms/frame     94 ns/subject·voice  p50    1.807  p99    2.708  worst    5.137  first    16.4 ms  gc  103   18.8 ms    1982.7 kB/frame
+== round 4/9 f8beb07^
+ 1/1  glowbase  N= 10000 V=1     1.265 ms/frame    127 ns/subject·voice  p50    1.228  p99    1.606  worst    1.967  first    13.3 ms  gc   89   13.8 ms    1649.0 kB/frame
+== round 4/9 f8beb07^
+ 1/1  signal    N= 10000 V=3     3.374 ms/frame    112 ns/subject·voice  p50    3.249  p99    5.117  worst    6.245  first    19.5 ms  gc  119   42.3 ms    2430.4 kB/frame
+== round 5/9 f8beb07^
+ 1/1  glow      N= 10000 V=2     1.799 ms/frame     90 ns/subject·voice  p50    1.771  p99    2.300  worst    4.161  first    18.2 ms  gc  102   15.6 ms    1988.1 kB/frame
+== round 5/9 f8beb07^
+ 1/1  glowbase  N= 10000 V=1     1.200 ms/frame    120 ns/subject·voice  p50    1.182  p99    1.418  worst    1.684  first    10.1 ms  gc   89   11.8 ms    1646.8 kB/frame
+== round 5/9 f8beb07^
+ 1/1  signal    N= 10000 V=3     2.803 ms/frame     93 ns/subject·voice  p50    2.726  p99    3.511  worst    4.280  first    18.4 ms  gc  119   33.9 ms    2432.0 kB/frame
+== round 5/9 f8beb07
+ 1/1  glow      N= 10000 V=2     1.663 ms/frame     83 ns/subject·voice  p50    1.643  p99    1.909  worst    2.020  first    13.9 ms  gc   89   12.4 ms    1664.4 kB/frame
+== round 5/9 f8beb07
+ 1/1  glowbase  N= 10000 V=1     1.119 ms/frame    112 ns/subject·voice  p50    1.096  p99    1.763  worst    2.331  first     9.8 ms  gc   61    8.0 ms    1023.3 kB/frame
+== round 5/9 f8beb07
+ 1/1  signal    N= 10000 V=3     2.865 ms/frame     95 ns/subject·voice  p50    2.784  p99    3.518  worst    3.910  first    18.0 ms  gc  130   38.6 ms    2427.1 kB/frame
+== round 6/9 f8beb07
+ 1/1  glow      N= 10000 V=2     1.696 ms/frame     85 ns/subject·voice  p50    1.666  p99    1.991  worst    2.739  first    14.9 ms  gc   88   12.0 ms    1669.5 kB/frame
+== round 6/9 f8beb07
+ 1/1  glowbase  N= 10000 V=1     1.109 ms/frame    111 ns/subject·voice  p50    1.095  p99    1.282  worst    1.398  first     9.9 ms  gc   61    7.6 ms    1021.6 kB/frame
+== round 6/9 f8beb07
+ 1/1  signal    N= 10000 V=3     2.954 ms/frame     98 ns/subject·voice  p50    2.839  p99    4.437  worst    5.577  first    17.8 ms  gc   72   28.8 ms    2430.5 kB/frame
+== round 6/9 f8beb07^
+ 1/1  glow      N= 10000 V=2     1.720 ms/frame     86 ns/subject·voice  p50    1.680  p99    2.271  worst    4.097  first    15.1 ms  gc  102   14.2 ms    1988.6 kB/frame
+== round 6/9 f8beb07^
+ 1/1  glowbase  N= 10000 V=1     1.164 ms/frame    116 ns/subject·voice  p50    1.146  p99    1.413  worst    1.555  first     9.8 ms  gc   89   11.3 ms    1646.9 kB/frame
+== round 6/9 f8beb07^
+ 1/1  signal    N= 10000 V=3     2.859 ms/frame     95 ns/subject·voice  p50    2.781  p99    3.615  worst    4.245  first    18.3 ms  gc  119   34.0 ms    2429.3 kB/frame
+== round 7/9 f8beb07^
+ 1/1  glow      N= 10000 V=2     1.643 ms/frame     82 ns/subject·voice  p50    1.612  p99    1.940  worst    3.137  first    15.7 ms  gc  102   13.2 ms    1987.8 kB/frame
+== round 7/9 f8beb07^
+ 1/1  glowbase  N= 10000 V=1     1.174 ms/frame    117 ns/subject·voice  p50    1.154  p99    1.400  worst    1.591  first     9.9 ms  gc   89   11.6 ms    1648.2 kB/frame
+== round 7/9 f8beb07^
+ 1/1  signal    N= 10000 V=3     3.250 ms/frame    108 ns/subject·voice  p50    3.187  p99    4.556  worst    5.576  first    18.1 ms  gc  130   45.8 ms    2429.2 kB/frame
+== round 7/9 f8beb07
+ 1/1  glow      N= 10000 V=2     1.663 ms/frame     83 ns/subject·voice  p50    1.634  p99    1.936  worst    2.103  first    14.8 ms  gc   88   11.4 ms    1668.9 kB/frame
+== round 7/9 f8beb07
+ 1/1  glowbase  N= 10000 V=1     1.103 ms/frame    110 ns/subject·voice  p50    1.088  p99    1.286  worst    1.421  first    10.2 ms  gc   69   11.5 ms    1023.8 kB/frame
+== round 7/9 f8beb07
+ 1/1  signal    N= 10000 V=3     2.990 ms/frame    100 ns/subject·voice  p50    2.914  p99    3.747  worst    5.272  first    17.9 ms  gc  119   36.2 ms    2428.9 kB/frame
+== round 8/9 f8beb07
+ 1/1  glow      N= 10000 V=2     1.703 ms/frame     85 ns/subject·voice  p50    1.673  p99    2.010  worst    2.180  first    15.7 ms  gc   88   11.8 ms    1670.3 kB/frame
+== round 8/9 f8beb07
+ 1/1  glowbase  N= 10000 V=1     1.133 ms/frame    113 ns/subject·voice  p50    1.114  p99    1.329  worst    1.516  first    10.2 ms  gc   61    8.0 ms    1021.6 kB/frame
+== round 8/9 f8beb07
+ 1/1  signal    N= 10000 V=3     2.910 ms/frame     97 ns/subject·voice  p50    2.831  p99    3.623  worst    4.565  first    18.2 ms  gc  119   35.3 ms    2430.6 kB/frame
+== round 8/9 f8beb07^
+ 1/1  glow      N= 10000 V=2     1.647 ms/frame     82 ns/subject·voice  p50    1.616  p99    1.950  worst    2.150  first    15.3 ms  gc  102   13.4 ms    1988.0 kB/frame
+== round 8/9 f8beb07^
+ 1/1  glowbase  N= 10000 V=1     1.166 ms/frame    117 ns/subject·voice  p50    1.150  p99    1.371  worst    1.488  first    10.2 ms  gc   89   11.3 ms    1646.2 kB/frame
+== round 8/9 f8beb07^
+ 1/1  signal    N= 10000 V=3     2.877 ms/frame     96 ns/subject·voice  p50    2.787  p99    3.713  worst    5.294  first    17.6 ms  gc  119   34.7 ms    2431.8 kB/frame
+== round 9/9 f8beb07^
+ 1/1  glow      N= 10000 V=2     1.652 ms/frame     83 ns/subject·voice  p50    1.616  p99    1.972  worst    3.972  first    14.9 ms  gc  102   13.7 ms    1988.4 kB/frame
+== round 9/9 f8beb07^
+ 1/1  glowbase  N= 10000 V=1     1.161 ms/frame    116 ns/subject·voice  p50    1.144  p99    1.379  worst    1.450  first    10.1 ms  gc   89   11.5 ms    1647.4 kB/frame
+== round 9/9 f8beb07^
+ 1/1  signal    N= 10000 V=3     2.752 ms/frame     92 ns/subject·voice  p50    2.682  p99    3.433  worst    3.928  first    17.7 ms  gc  119   35.6 ms    2429.3 kB/frame
+== round 9/9 f8beb07
+ 1/1  glow      N= 10000 V=2     1.643 ms/frame     82 ns/subject·voice  p50    1.619  p99    1.904  worst    2.081  first    14.9 ms  gc   88   11.6 ms    1669.5 kB/frame
+== round 9/9 f8beb07
+ 1/1  glowbase  N= 10000 V=1     1.114 ms/frame    111 ns/subject·voice  p50    1.097  p99    1.341  worst    1.533  first    10.0 ms  gc   61    7.9 ms    1021.7 kB/frame
+== round 9/9 f8beb07
+ 1/1  signal    N= 10000 V=3     2.865 ms/frame     96 ns/subject·voice  p50    2.796  p99    3.559  worst    5.400  first    18.0 ms  gc  119   33.7 ms    2429.3 kB/frame
