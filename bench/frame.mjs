@@ -276,6 +276,11 @@ if (process.env.SHARE_FRAMES !== undefined) {
   const everyone = await import('../dist/everyone.js');
   everyone.setShareFrames?.(Number(process.env.SHARE_FRAMES));
 }
+// CALLS_OFF=0 runs a crowd of fn voices on lanes where nothing else would lane its channels.
+if (process.env.CALLS_OFF !== undefined) {
+  const qualify = await import('../dist/qualify.js');
+  qualify.setCallsOff?.(process.env.CALLS_OFF !== '0');
+}
 // UNWATCHED=1 has a debugger watch and hold each row's mix, then let it go, before the row cues.
 const unwatched = process.env.UNWATCHED === '1';
 // Row names after the script, `node bench/frame.mjs keys keys^`, run only those rows; `tweens:10000`
@@ -305,7 +310,10 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     lanes: !off,
   });
   if (unwatched) {
-    const entry = blits.watched().entries().find((e) => e.mix === m);
+    const entry = blits
+      .watched()
+      .entries()
+      .find((e) => e.mix === m);
     entry.watch(() => {})();
     entry.hold().free();
   }

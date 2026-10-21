@@ -1,0 +1,232 @@
+# msb-uai --solo: FRAMES=1500 bench/rows.sh 9, CALLS_OFF=1 and 0 each on named:100 named:1000 named:10000 fns weaselfn tweenfn, one build of bdd2fdf plus the CALLS_OFF switch (rule not yet limited to arrays)
+  waiting for room
+msb-uai  chosen: 11.9 cores free, 22.2G available (rows.sh: no past runs)
+  keiei    scored 0.05 against msb-uai's 0.25
+  orochi   refuses rotation
+  studio   it wants the node to itself, and 2 jobs are running there
+  teitou   has 0.9 of its 18 cores free, too few to start on
+  base   a77c5c95
+  delta  39 file(s), 0 deleted
+  sent   39 new file(s), 0 already there
+  updated blits on msb-uai at bdd2fdfe + 3 uncommitted file(s)
+  job    7c654784 on msb-uai
+
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+onto: plan 108
+round 1 CALLS_OFF=1  1/1  named     N=   100 V=1     0.022 ms/frame    215 ns/subject·voice  p50    0.020  p99    0.039  worst    0.322  first     2.6 ms  gc    8    0.7 ms      23.8 kB/frame
+onto: progress 1/108
+round 1 CALLS_OFF=0  1/1  named     N=   100 V=1     0.018 ms/frame    183 ns/subject·voice  p50    0.016  p99    0.040  worst    0.239  first     3.6 ms  gc    6    0.5 ms      21.5 kB/frame
+onto: progress 2/108
+round 1 CALLS_OFF=1  1/1  named     N=  1000 V=1     0.211 ms/frame    211 ns/subject·voice  p50    0.199  p99    0.311  worst    3.914  first     7.2 ms  gc   16    5.0 ms     183.6 kB/frame
+onto: progress 3/108
+round 1 CALLS_OFF=0  1/1  named     N=  1000 V=1     0.169 ms/frame    169 ns/subject·voice  p50    0.153  p99    0.269  worst    2.151  first     9.0 ms  gc   10    2.5 ms     121.3 kB/frame
+onto: progress 4/108
+round 1 CALLS_OFF=1  1/1  named     N= 10000 V=1     2.059 ms/frame    206 ns/subject·voice  p50    2.019  p99    2.925  worst    4.732  first    29.7 ms  gc   63   16.0 ms    1804.8 kB/frame
+onto: progress 5/108
+round 1 CALLS_OFF=0  1/1  named     N= 10000 V=1     1.709 ms/frame    171 ns/subject·voice  p50    1.615  p99    2.369  worst    3.484  first    36.5 ms  gc   55   10.5 ms    1179.1 kB/frame
+onto: progress 6/108
+round 1 CALLS_OFF=1  1/1  fns       N= 10000 V=1     1.386 ms/frame    139 ns/subject·voice  p50    1.306  p99    2.237  worst    4.329  first    30.7 ms  gc   32   17.9 ms    1333.5 kB/frame
+onto: progress 7/108
+round 1 CALLS_OFF=0  1/1  fns       N= 10000 V=1     1.605 ms/frame    161 ns/subject·voice  p50    1.518  p99    2.247  worst    3.042  first    35.0 ms  gc   55   12.1 ms    1182.7 kB/frame
+onto: progress 8/108
+round 1 CALLS_OFF=1  1/1  weaselfn  N= 10000 V=1     1.873 ms/frame    187 ns/subject·voice  p50    1.849  p99    2.165  worst    6.433  first    11.9 ms  gc   54   10.6 ms    1030.4 kB/frame
+onto: progress 9/108
+round 1 CALLS_OFF=0  1/1  weaselfn  N= 10000 V=1     1.905 ms/frame    190 ns/subject·voice  p50    1.872  p99    2.257  worst    6.540  first    12.2 ms  gc   54   11.3 ms    1031.1 kB/frame
+onto: progress 10/108
+round 1 CALLS_OFF=1  1/1  tweenfn   N= 10000 V=1     1.445 ms/frame    145 ns/subject·voice  p50    1.396  p99    2.368  worst    6.334  first    12.4 ms  gc   54   13.4 ms    1029.1 kB/frame
+onto: progress 11/108
+round 1 CALLS_OFF=0  1/1  tweenfn   N= 10000 V=1     1.436 ms/frame    144 ns/subject·voice  p50    1.400  p99    1.955  worst    6.397  first    12.1 ms  gc   54   13.3 ms    1027.1 kB/frame
+onto: progress 12/108
+round 2 CALLS_OFF=0  1/1  tweenfn   N= 10000 V=1     1.378 ms/frame    138 ns/subject·voice  p50    1.340  p99    1.818  worst    5.745  first    12.3 ms  gc   54   12.4 ms    1028.3 kB/frame
+onto: progress 13/108
+round 2 CALLS_OFF=1  1/1  tweenfn   N= 10000 V=1     1.457 ms/frame    146 ns/subject·voice  p50    1.395  p99    2.321  worst    5.603  first    13.4 ms  gc   53   14.0 ms    1030.3 kB/frame
+onto: progress 14/108
+round 2 CALLS_OFF=0  1/1  weaselfn  N= 10000 V=1     1.848 ms/frame    185 ns/subject·voice  p50    1.818  p99    2.157  worst    6.694  first    11.6 ms  gc   54   11.1 ms    1030.1 kB/frame
+onto: progress 15/108
+round 2 CALLS_OFF=1  1/1  weaselfn  N= 10000 V=1     1.940 ms/frame    194 ns/subject·voice  p50    1.905  p99    2.386  worst    6.860  first    11.5 ms  gc   54   10.8 ms    1030.5 kB/frame
+onto: progress 16/108
+round 2 CALLS_OFF=0  1/1  fns       N= 10000 V=1     1.587 ms/frame    159 ns/subject·voice  p50    1.511  p99    2.081  worst    2.315  first    36.6 ms  gc   55   13.0 ms    1178.8 kB/frame
+onto: progress 17/108
+round 2 CALLS_OFF=1  1/1  fns       N= 10000 V=1     1.427 ms/frame    143 ns/subject·voice  p50    1.357  p99    2.527  worst    4.072  first    29.6 ms  gc   32   17.2 ms    1333.7 kB/frame
+onto: progress 18/108
+round 2 CALLS_OFF=0  1/1  named     N= 10000 V=1     1.650 ms/frame    165 ns/subject·voice  p50    1.572  p99    2.379  worst    3.179  first    36.8 ms  gc   55    9.6 ms    1181.6 kB/frame
+onto: progress 19/108
+round 2 CALLS_OFF=1  1/1  named     N= 10000 V=1     2.053 ms/frame    205 ns/subject·voice  p50    2.001  p99    3.091  worst    4.638  first    29.2 ms  gc   63   16.7 ms    1805.5 kB/frame
+onto: progress 20/108
+round 2 CALLS_OFF=0  1/1  named     N=  1000 V=1     0.167 ms/frame    167 ns/subject·voice  p50    0.151  p99    0.271  worst    2.249  first     9.0 ms  gc   10    2.6 ms     123.2 kB/frame
+onto: progress 21/108
+round 2 CALLS_OFF=1  1/1  named     N=  1000 V=1     0.204 ms/frame    204 ns/subject·voice  p50    0.190  p99    0.292  worst    4.182  first     6.8 ms  gc   14    4.8 ms     167.0 kB/frame
+onto: progress 22/108
+round 2 CALLS_OFF=0  1/1  named     N=   100 V=1     0.019 ms/frame    185 ns/subject·voice  p50    0.016  p99    0.039  worst    0.170  first     3.6 ms  gc    6    0.5 ms      23.5 kB/frame
+onto: progress 23/108
+round 2 CALLS_OFF=1  1/1  named     N=   100 V=1     0.021 ms/frame    215 ns/subject·voice  p50    0.019  p99    0.042  worst    0.353  first     2.7 ms  gc    8    0.8 ms      23.6 kB/frame
+onto: progress 24/108
+round 3 CALLS_OFF=1  1/1  named     N=   100 V=1     0.022 ms/frame    220 ns/subject·voice  p50    0.020  p99    0.045  worst    0.283  first     3.1 ms  gc    8    0.7 ms      24.4 kB/frame
+onto: progress 25/108
+round 3 CALLS_OFF=0  1/1  named     N=   100 V=1     0.018 ms/frame    179 ns/subject·voice  p50    0.015  p99    0.041  worst    0.206  first     4.0 ms  gc    6    0.4 ms      21.1 kB/frame
+onto: progress 26/108
+round 3 CALLS_OFF=1  1/1  named     N=  1000 V=1     0.201 ms/frame    201 ns/subject·voice  p50    0.187  p99    0.302  worst    4.048  first     7.2 ms  gc   16    4.7 ms     183.6 kB/frame
+onto: progress 27/108
+round 3 CALLS_OFF=0  1/1  named     N=  1000 V=1     0.167 ms/frame    167 ns/subject·voice  p50    0.152  p99    0.269  worst    2.237  first     9.2 ms  gc   10    2.7 ms     123.7 kB/frame
+onto: progress 28/108
+round 3 CALLS_OFF=1  1/1  named     N= 10000 V=1     1.962 ms/frame    196 ns/subject·voice  p50    1.933  p99    2.856  worst    4.229  first    29.1 ms  gc   63   14.2 ms    1805.0 kB/frame
+onto: progress 29/108
+round 3 CALLS_OFF=0  1/1  named     N= 10000 V=1     1.630 ms/frame    163 ns/subject·voice  p50    1.577  p99    2.085  worst    3.142  first    38.6 ms  gc   55    8.6 ms    1181.6 kB/frame
+onto: progress 30/108
+round 3 CALLS_OFF=1  1/1  fns       N= 10000 V=1     1.462 ms/frame    146 ns/subject·voice  p50    1.422  p99    2.058  worst    3.256  first    27.4 ms  gc   33   15.4 ms    1490.1 kB/frame
+onto: progress 31/108
+round 3 CALLS_OFF=0  1/1  fns       N= 10000 V=1     1.486 ms/frame    149 ns/subject·voice  p50    1.437  p99    1.872  worst    2.747  first    32.9 ms  gc   55    9.8 ms    1178.3 kB/frame
+onto: progress 32/108
+round 3 CALLS_OFF=1  1/1  weaselfn  N= 10000 V=1     1.861 ms/frame    186 ns/subject·voice  p50    1.830  p99    2.105  worst    5.382  first    11.4 ms  gc   54    9.0 ms    1029.7 kB/frame
+onto: progress 33/108
+round 3 CALLS_OFF=0  1/1  weaselfn  N= 10000 V=1     1.759 ms/frame    176 ns/subject·voice  p50    1.732  p99    2.008  worst    5.771  first    11.4 ms  gc   54    8.9 ms    1029.2 kB/frame
+onto: progress 34/108
+round 3 CALLS_OFF=1  1/1  tweenfn   N= 10000 V=1     1.413 ms/frame    141 ns/subject·voice  p50    1.386  p99    1.695  worst    5.366  first    12.0 ms  gc   54    9.2 ms    1027.3 kB/frame
+onto: progress 35/108
+round 3 CALLS_OFF=0  1/1  tweenfn   N= 10000 V=1     1.430 ms/frame    143 ns/subject·voice  p50    1.395  p99    1.893  worst    5.320  first    12.2 ms  gc   54   10.1 ms    1029.9 kB/frame
+onto: progress 36/108
+round 4 CALLS_OFF=0  1/1  tweenfn   N= 10000 V=1     1.449 ms/frame    145 ns/subject·voice  p50    1.414  p99    2.029  worst    4.670  first    12.1 ms  gc   53    9.9 ms    1031.1 kB/frame
+onto: progress 37/108
+round 4 CALLS_OFF=1  1/1  tweenfn   N= 10000 V=1     1.373 ms/frame    137 ns/subject·voice  p50    1.341  p99    1.689  worst    6.236  first    12.2 ms  gc   53    9.6 ms    1024.2 kB/frame
+onto: progress 38/108
+round 4 CALLS_OFF=0  1/1  weaselfn  N= 10000 V=1     1.827 ms/frame    183 ns/subject·voice  p50    1.804  p99    2.040  worst    5.972  first    11.4 ms  gc   54    8.9 ms    1029.1 kB/frame
+onto: progress 39/108
+round 4 CALLS_OFF=1  1/1  weaselfn  N= 10000 V=1     1.854 ms/frame    185 ns/subject·voice  p50    1.829  p99    2.103  worst    5.465  first    11.4 ms  gc   54    9.1 ms    1030.4 kB/frame
+onto: progress 40/108
+round 4 CALLS_OFF=0  1/1  fns       N= 10000 V=1     1.549 ms/frame    155 ns/subject·voice  p50    1.491  p99    2.051  worst    3.112  first    34.8 ms  gc   55   11.0 ms    1179.3 kB/frame
+onto: progress 41/108
+round 4 CALLS_OFF=1  1/1  fns       N= 10000 V=1     1.531 ms/frame    153 ns/subject·voice  p50    1.451  p99    2.688  worst    4.342  first    29.5 ms  gc   33   16.5 ms    1333.2 kB/frame
+onto: progress 42/108
+round 4 CALLS_OFF=0  1/1  named     N= 10000 V=1     1.693 ms/frame    169 ns/subject·voice  p50    1.616  p99    2.187  worst    2.916  first    35.9 ms  gc   55   10.2 ms    1179.5 kB/frame
+onto: progress 43/108
+round 4 CALLS_OFF=1  1/1  named     N= 10000 V=1     2.106 ms/frame    211 ns/subject·voice  p50    2.063  p99    3.066  worst    4.562  first    29.0 ms  gc   63   17.4 ms    1805.4 kB/frame
+onto: progress 44/108
+round 4 CALLS_OFF=0  1/1  named     N=  1000 V=1     0.168 ms/frame    168 ns/subject·voice  p50    0.151  p99    0.278  worst    3.151  first     8.9 ms  gc   10    3.5 ms     121.9 kB/frame
+onto: progress 45/108
+round 4 CALLS_OFF=1  1/1  named     N=  1000 V=1     0.202 ms/frame    202 ns/subject·voice  p50    0.187  p99    0.307  worst    4.365  first     6.9 ms  gc   15    4.8 ms     183.8 kB/frame
+onto: progress 46/108
+round 4 CALLS_OFF=0  1/1  named     N=   100 V=1     0.018 ms/frame    183 ns/subject·voice  p50    0.016  p99    0.037  worst    0.146  first     3.6 ms  gc    6    0.4 ms      20.2 kB/frame
+onto: progress 47/108
+round 4 CALLS_OFF=1  1/1  named     N=   100 V=1     0.021 ms/frame    214 ns/subject·voice  p50    0.019  p99    0.041  worst    0.373  first     2.7 ms  gc    8    0.8 ms      24.4 kB/frame
+onto: progress 48/108
+round 5 CALLS_OFF=1  1/1  named     N=   100 V=1     0.021 ms/frame    214 ns/subject·voice  p50    0.020  p99    0.038  worst    0.277  first     2.7 ms  gc    8    0.7 ms      23.7 kB/frame
+onto: progress 49/108
+round 5 CALLS_OFF=0  1/1  named     N=   100 V=1     0.019 ms/frame    190 ns/subject·voice  p50    0.016  p99    0.040  worst    0.269  first     3.7 ms  gc    6    0.6 ms      21.1 kB/frame
+onto: progress 50/108
+round 5 CALLS_OFF=1  1/1  named     N=  1000 V=1     0.213 ms/frame    213 ns/subject·voice  p50    0.198  p99    0.342  worst    4.120  first     7.3 ms  gc   16    5.0 ms     183.6 kB/frame
+onto: progress 51/108
+round 5 CALLS_OFF=0  1/1  named     N=  1000 V=1     0.171 ms/frame    171 ns/subject·voice  p50    0.155  p99    0.278  worst    2.151  first     8.9 ms  gc   10    2.8 ms     121.4 kB/frame
+onto: progress 52/108
+round 5 CALLS_OFF=1  1/1  named     N= 10000 V=1     2.106 ms/frame    211 ns/subject·voice  p50    2.048  p99    3.530  worst    4.673  first    29.2 ms  gc   63   16.6 ms    1804.7 kB/frame
+onto: progress 53/108
+round 5 CALLS_OFF=0  1/1  named     N= 10000 V=1     1.691 ms/frame    169 ns/subject·voice  p50    1.628  p99    2.078  worst    2.388  first    40.4 ms  gc   62   12.1 ms    1337.0 kB/frame
+onto: progress 54/108
+round 5 CALLS_OFF=1  1/1  fns       N= 10000 V=1     1.433 ms/frame    143 ns/subject·voice  p50    1.376  p99    2.422  worst    3.795  first    28.3 ms  gc   33   17.0 ms    1333.2 kB/frame
+onto: progress 55/108
+round 5 CALLS_OFF=0  1/1  fns       N= 10000 V=1     1.585 ms/frame    159 ns/subject·voice  p50    1.506  p99    2.212  worst    2.904  first    35.8 ms  gc   55   11.9 ms    1180.7 kB/frame
+onto: progress 56/108
+round 5 CALLS_OFF=1  1/1  weaselfn  N= 10000 V=1     1.961 ms/frame    196 ns/subject·voice  p50    1.924  p99    2.383  worst    5.942  first    12.7 ms  gc   53   11.5 ms    1033.2 kB/frame
+onto: progress 57/108
+round 5 CALLS_OFF=0  1/1  weaselfn  N= 10000 V=1     1.847 ms/frame    185 ns/subject·voice  p50    1.816  p99    2.214  worst    5.684  first    12.3 ms  gc   54   10.4 ms    1030.7 kB/frame
+onto: progress 58/108
+round 5 CALLS_OFF=1  1/1  tweenfn   N= 10000 V=1     1.400 ms/frame    140 ns/subject·voice  p50    1.371  p99    1.683  worst    6.303  first    12.1 ms  gc   54   11.9 ms    1028.0 kB/frame
+onto: progress 59/108
+round 5 CALLS_OFF=0  1/1  tweenfn   N= 10000 V=1     1.463 ms/frame    146 ns/subject·voice  p50    1.416  p99    2.184  worst    6.521  first    13.3 ms  gc   53   14.6 ms    1030.3 kB/frame
+onto: progress 60/108
+round 6 CALLS_OFF=0  1/1  tweenfn   N= 10000 V=1     1.422 ms/frame    142 ns/subject·voice  p50    1.367  p99    2.356  worst    6.756  first    12.6 ms  gc   54   14.8 ms    1026.8 kB/frame
+onto: progress 61/108
+round 6 CALLS_OFF=1  1/1  tweenfn   N= 10000 V=1     1.500 ms/frame    150 ns/subject·voice  p50    1.466  p99    1.930  worst    5.686  first    12.5 ms  gc   54   13.6 ms    1031.7 kB/frame
+onto: progress 62/108
+round 6 CALLS_OFF=0  1/1  weaselfn  N= 10000 V=1     1.888 ms/frame    189 ns/subject·voice  p50    1.856  p99    2.218  worst    5.669  first    11.9 ms  gc   62   15.9 ms    1026.2 kB/frame
+onto: progress 63/108
+round 6 CALLS_OFF=1  1/1  weaselfn  N= 10000 V=1     1.843 ms/frame    184 ns/subject·voice  p50    1.811  p99    2.235  worst    5.830  first    12.4 ms  gc   53   12.6 ms    1031.1 kB/frame
+onto: progress 64/108
+round 6 CALLS_OFF=0  1/1  fns       N= 10000 V=1     1.672 ms/frame    167 ns/subject·voice  p50    1.538  p99    2.974  worst    4.601  first    34.2 ms  gc   55   12.0 ms    1178.3 kB/frame
+onto: progress 65/108
+round 6 CALLS_OFF=1  1/1  fns       N= 10000 V=1     1.384 ms/frame    138 ns/subject·voice  p50    1.320  p99    2.340  worst    3.521  first    25.6 ms  gc   33   15.2 ms    1334.1 kB/frame
+onto: progress 66/108
+round 6 CALLS_OFF=0  1/1  named     N= 10000 V=1     1.629 ms/frame    163 ns/subject·voice  p50    1.580  p99    2.057  worst    2.787  first    36.9 ms  gc   55    8.7 ms    1179.1 kB/frame
+onto: progress 67/108
+round 6 CALLS_OFF=1  1/1  named     N= 10000 V=1     2.060 ms/frame    206 ns/subject·voice  p50    1.984  p99    3.401  worst    9.017  first    26.3 ms  gc   62   16.1 ms    1805.2 kB/frame
+onto: progress 68/108
+round 6 CALLS_OFF=0  1/1  named     N=  1000 V=1     0.169 ms/frame    169 ns/subject·voice  p50    0.153  p99    0.270  worst    2.164  first     8.8 ms  gc   10    2.9 ms     123.0 kB/frame
+onto: progress 69/108
+round 6 CALLS_OFF=1  1/1  named     N=  1000 V=1     0.207 ms/frame    207 ns/subject·voice  p50    0.192  p99    0.299  worst    4.711  first     7.0 ms  gc   15    5.3 ms     182.7 kB/frame
+onto: progress 70/108
+round 6 CALLS_OFF=0  1/1  named     N=   100 V=1     0.019 ms/frame    188 ns/subject·voice  p50    0.016  p99    0.041  worst    0.205  first     3.6 ms  gc    6    0.5 ms      22.6 kB/frame
+onto: progress 71/108
+round 6 CALLS_OFF=1  1/1  named     N=   100 V=1     0.021 ms/frame    214 ns/subject·voice  p50    0.019  p99    0.041  worst    0.329  first     2.6 ms  gc    8    0.8 ms      24.8 kB/frame
+onto: progress 72/108
+round 7 CALLS_OFF=1  1/1  named     N=   100 V=1     0.021 ms/frame    211 ns/subject·voice  p50    0.019  p99    0.038  worst    0.228  first     2.6 ms  gc    8    0.6 ms      24.2 kB/frame
+onto: progress 73/108
+round 7 CALLS_OFF=0  1/1  named     N=   100 V=1     0.018 ms/frame    179 ns/subject·voice  p50    0.015  p99    0.039  worst    0.183  first     3.4 ms  gc    6    0.4 ms      21.8 kB/frame
+onto: progress 74/108
+round 7 CALLS_OFF=1  1/1  named     N=  1000 V=1     0.208 ms/frame    208 ns/subject·voice  p50    0.194  p99    0.304  worst    4.227  first     6.8 ms  gc   15    4.7 ms     183.3 kB/frame
+onto: progress 75/108
+round 7 CALLS_OFF=0  1/1  named     N=  1000 V=1     0.166 ms/frame    166 ns/subject·voice  p50    0.151  p99    0.260  worst    2.223  first     8.9 ms  gc   10    2.5 ms     122.8 kB/frame
+onto: progress 76/108
+round 7 CALLS_OFF=1  1/1  named     N= 10000 V=1     2.026 ms/frame    203 ns/subject·voice  p50    1.982  p99    2.804  worst    4.329  first    26.4 ms  gc   62   15.5 ms    1804.7 kB/frame
+onto: progress 77/108
+round 7 CALLS_OFF=0  1/1  named     N= 10000 V=1     1.653 ms/frame    165 ns/subject·voice  p50    1.614  p99    2.051  worst    2.859  first    33.8 ms  gc   55    9.3 ms    1181.2 kB/frame
+onto: progress 78/108
+round 7 CALLS_OFF=1  1/1  fns       N= 10000 V=1     1.322 ms/frame    132 ns/subject·voice  p50    1.270  p99    2.018  worst    3.733  first    28.3 ms  gc   32   16.6 ms    1333.2 kB/frame
+onto: progress 79/108
+round 7 CALLS_OFF=0  1/1  fns       N= 10000 V=1     1.553 ms/frame    155 ns/subject·voice  p50    1.466  p99    2.125  worst    2.780  first    35.2 ms  gc   55   11.5 ms    1179.4 kB/frame
+onto: progress 80/108
+round 7 CALLS_OFF=1  1/1  weaselfn  N= 10000 V=1     1.854 ms/frame    185 ns/subject·voice  p50    1.826  p99    2.189  worst    5.596  first    11.9 ms  gc   54   11.1 ms    1031.2 kB/frame
+onto: progress 81/108
+round 7 CALLS_OFF=0  1/1  weaselfn  N= 10000 V=1     1.822 ms/frame    182 ns/subject·voice  p50    1.796  p99    2.274  worst    5.460  first    11.7 ms  gc   54   11.6 ms    1027.2 kB/frame
+onto: progress 82/108
+round 7 CALLS_OFF=1  1/1  tweenfn   N= 10000 V=1     1.403 ms/frame    140 ns/subject·voice  p50    1.355  p99    2.133  worst    5.610  first    13.6 ms  gc   54   13.1 ms    1028.7 kB/frame
+onto: progress 83/108
+round 7 CALLS_OFF=0  1/1  tweenfn   N= 10000 V=1     1.460 ms/frame    146 ns/subject·voice  p50    1.433  p99    1.779  worst    6.050  first    13.8 ms  gc   53   12.0 ms    1027.3 kB/frame
+onto: progress 84/108
+round 8 CALLS_OFF=0  1/1  tweenfn   N= 10000 V=1     1.379 ms/frame    138 ns/subject·voice  p50    1.338  p99    1.932  worst    6.197  first    12.2 ms  gc   54   12.6 ms    1027.8 kB/frame
+onto: progress 85/108
+round 8 CALLS_OFF=1  1/1  tweenfn   N= 10000 V=1     1.485 ms/frame    148 ns/subject·voice  p50    1.451  p99    1.919  worst    5.427  first    13.0 ms  gc   53    9.9 ms    1026.1 kB/frame
+onto: progress 86/108
+round 8 CALLS_OFF=0  1/1  weaselfn  N= 10000 V=1     1.897 ms/frame    190 ns/subject·voice  p50    1.847  p99    2.473  worst    5.885  first    11.6 ms  gc   53   10.5 ms    1028.8 kB/frame
+onto: progress 87/108
+round 8 CALLS_OFF=1  1/1  weaselfn  N= 10000 V=1     1.861 ms/frame    186 ns/subject·voice  p50    1.830  p99    2.109  worst    6.856  first    11.7 ms  gc   54    9.4 ms    1031.7 kB/frame
+onto: progress 88/108
+round 8 CALLS_OFF=0  1/1  fns       N= 10000 V=1     1.535 ms/frame    153 ns/subject·voice  p50    1.482  p99    2.021  worst    2.887  first    33.5 ms  gc   55   10.3 ms    1179.0 kB/frame
+onto: progress 89/108
+round 8 CALLS_OFF=1  1/1  fns       N= 10000 V=1     1.294 ms/frame    129 ns/subject·voice  p50    1.244  p99    2.003  worst    3.326  first    25.5 ms  gc   32   16.0 ms    1333.5 kB/frame
+onto: progress 90/108
+round 8 CALLS_OFF=0  1/1  named     N= 10000 V=1     1.605 ms/frame    161 ns/subject·voice  p50    1.567  p99    2.031  worst    2.951  first    33.7 ms  gc   55    8.4 ms    1181.6 kB/frame
+onto: progress 91/108
+round 8 CALLS_OFF=1  1/1  named     N= 10000 V=1     2.056 ms/frame    206 ns/subject·voice  p50    2.014  p99    2.806  worst    4.148  first    28.2 ms  gc   63   14.7 ms    1805.3 kB/frame
+onto: progress 92/108
+round 8 CALLS_OFF=0  1/1  named     N=  1000 V=1     0.166 ms/frame    166 ns/subject·voice  p50    0.150  p99    0.263  worst    2.176  first     9.1 ms  gc   10    2.5 ms     123.3 kB/frame
+onto: progress 93/108
+round 8 CALLS_OFF=1  1/1  named     N=  1000 V=1     0.203 ms/frame    203 ns/subject·voice  p50    0.189  p99    0.278  worst    4.164  first     6.8 ms  gc   14    4.6 ms     168.2 kB/frame
+onto: progress 94/108
+round 8 CALLS_OFF=0  1/1  named     N=   100 V=1     0.018 ms/frame    182 ns/subject·voice  p50    0.015  p99    0.040  worst    0.156  first     3.4 ms  gc    6    0.4 ms      21.7 kB/frame
+onto: progress 95/108
+round 8 CALLS_OFF=1  1/1  named     N=   100 V=1     0.022 ms/frame    221 ns/subject·voice  p50    0.020  p99    0.039  worst    0.327  first     2.7 ms  gc    8    0.8 ms      24.2 kB/frame
+onto: progress 96/108
+round 9 CALLS_OFF=1  1/1  named     N=   100 V=1     0.021 ms/frame    206 ns/subject·voice  p50    0.019  p99    0.037  worst    0.256  first     2.5 ms  gc    8    0.7 ms      25.8 kB/frame
+onto: progress 97/108
+round 9 CALLS_OFF=0  1/1  named     N=   100 V=1     0.018 ms/frame    177 ns/subject·voice  p50    0.015  p99    0.038  worst    0.154  first     3.5 ms  gc    6    0.4 ms      21.9 kB/frame
+onto: progress 98/108
+round 9 CALLS_OFF=1  1/1  named     N=  1000 V=1     0.202 ms/frame    202 ns/subject·voice  p50    0.188  p99    0.290  worst    4.194  first     6.8 ms  gc   15    4.7 ms     184.1 kB/frame
+onto: progress 99/108
+round 9 CALLS_OFF=0  1/1  named     N=  1000 V=1     0.163 ms/frame    163 ns/subject·voice  p50    0.147  p99    0.255  worst    2.063  first     8.8 ms  gc   10    2.3 ms     122.3 kB/frame
+onto: progress 100/108
+round 9 CALLS_OFF=1  1/1  named     N= 10000 V=1     2.004 ms/frame    200 ns/subject·voice  p50    1.969  p99    2.713  worst    4.076  first    26.1 ms  gc   63   15.2 ms    1804.9 kB/frame
+onto: progress 101/108
+round 9 CALLS_OFF=0  1/1  named     N= 10000 V=1     1.632 ms/frame    163 ns/subject·voice  p50    1.587  p99    2.095  worst    3.030  first    33.8 ms  gc   55    8.9 ms    1179.1 kB/frame
+onto: progress 102/108
+round 9 CALLS_OFF=1  1/1  fns       N= 10000 V=1     1.436 ms/frame    144 ns/subject·voice  p50    1.368  p99    2.477  worst    3.670  first    25.8 ms  gc   34   15.7 ms    1489.9 kB/frame
+onto: progress 103/108
+round 9 CALLS_OFF=0  1/1  fns       N= 10000 V=1     1.503 ms/frame    150 ns/subject·voice  p50    1.440  p99    1.954  worst    2.644  first    33.1 ms  gc   55   10.7 ms    1179.4 kB/frame
+onto: progress 104/108
+round 9 CALLS_OFF=1  1/1  weaselfn  N= 10000 V=1     1.812 ms/frame    181 ns/subject·voice  p50    1.783  p99    2.096  worst    5.633  first    11.3 ms  gc   53    9.3 ms    1028.3 kB/frame
+onto: progress 105/108
+round 9 CALLS_OFF=0  1/1  weaselfn  N= 10000 V=1     1.797 ms/frame    180 ns/subject·voice  p50    1.775  p99    2.056  worst    5.361  first    11.8 ms  gc   54    9.0 ms    1027.6 kB/frame
+onto: progress 106/108
+round 9 CALLS_OFF=1  1/1  tweenfn   N= 10000 V=1     1.370 ms/frame    137 ns/subject·voice  p50    1.348  p99    1.569  worst    4.763  first    12.1 ms  gc   54    9.2 ms    1029.8 kB/frame
+onto: progress 107/108
+round 9 CALLS_OFF=0  1/1  tweenfn   N= 10000 V=1     1.375 ms/frame    138 ns/subject·voice  p50    1.349  p99    1.654  worst    4.825  first    12.2 ms  gc   54    9.7 ms    1029.8 kB/frame
+onto: progress 108/108

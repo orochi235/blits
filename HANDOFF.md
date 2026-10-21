@@ -1181,29 +1181,24 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         | `tweens`, a tween per subject | 0.95–0.98 | 1.72–1.89 |
 
         A crowd of per-subject voices a lane evaluates itself (`tweens`, `springs`, `keyses`,
-        `weasel`) wins on lanes; a crowd of `fn` voices loses, since the lane calls each patch once a
-        subject as the general path does and its fill walks the subjects a second time. **Built
-        (2026-10-21):** a crowd voice calling its patch fits only where another fitting voice writes
-        one of its channels (`keepCallsOff` in `src/qualify.ts`); `fns` read 1.571 to 1.228 ms
-        (teitou, 7 rounds, U = 2), every other row level. **How much of this is the change is not settled
-        (2026-10-21):** `fns` reads in modes by build, about 1.10 ms with 1,333 kB a frame or 1.34 ms
-        with 1,178 kB, and an A/B whose two builds run `fns` down the same path read 0.825 at U = 0
-        (`bench/runs/2026-10-21-fn-crowds-arrays-only.txt`). Every `fns` ratio tonight flipped the
-        same way, so it is the mode at least in part. The profile before the change, where the lane
-        fill's calls and folds held about 60% of the frame (studio, 2.58 ms on lanes against 1.07
-        off), is the firmer evidence. **It may cost a small crowd of scalar `fn` voices:** `named` (a flicker per subject) on `main` against `a77c5c9` reads
-        1.077 at 100 subjects, 1.069 at 1,000 and 0.868 at 10,000, allocating more at each (teitou,
-        9 rounds of 1,500 frames, U 2.5 to 5; `bench/runs/2026-10-21-named-after-fn-crowds.txt`).
-        About 9 µs a frame at 1,000, where klieg and magicsmoke are expected to sit; limiting the
-        rule to crowds writing only array channels was built and backed out the same night: it read
-        `named` level against `main` at every size in the
-        run whose `fns` was the mode, so the `named` cost above may be a mode too. Tried and backed out: answering a probe with nothing laned at the top of
-        `Lanes.prepare`, which read `fns` 0.826 and `named` 1.07 to 1.10, with allocation moving on
-        both, the inlining-shape signature. `bench/abdirty.sh` A/Bs an uncommitted diff with no
-        commit on origin, and `bench/rows.sh` times rows against each other in one build. Mixed with
-        a tween or keys crowd on the same channel, an `fn` crowd still runs on lanes and still pays the second walk; nobody has
-        measured which way such a mix should go. `tweenfn`, `weaselfn` and `own`, where the losing
-        voice is over every subject or targeted, are unchanged. `glowc` and `glowkeys` read on lanes
+        `weasel`) wins on lanes. **A crowd of `fn` voices writing only arrays now runs off lanes
+        where no other fitting voice writes its channels** (2026-10-21, `keepCallsOff` and `calls`
+        in `src/qualify.ts`): its patch is called once a subject either way, and the lane's fill
+        walks the subjects a second time. One build timed with the rule on and off (`CALLS_OFF=0`
+        in `bench/frame.mjs`, through `bench/rows.sh`; msb-uai, 9 rounds of 1,500 frames, ms a
+        frame): `fns` 1.348 against 1.519, `named` level at 1,000 and 10,000. Before the rule was
+        limited to arrays, the same sweep read `named`, a crowd writing numbers, 17% to 25% slower
+        off lanes with no overlap between runs (`bench/runs/2026-10-21-calls-off-sweep.txt`), so a
+        crowd writing a number stays on lanes. Comparing two builds misled here: `fns` reads in
+        modes by build (about 1.10 ms with 1,333 kB a frame, or 1.34 with 1,178), and two builds
+        running `fns` down the same path read 0.825 at U = 0. Time a lanes change on such a row
+        with a switch in one build, not with `ab.sh`. `bench/abdirty.sh` A/Bs an uncommitted diff
+        with no commit on origin. Tried and backed out: answering a probe with nothing laned at the
+        top of `Lanes.prepare` (`bench/runs/2026-10-21-prepare-no-lanes.txt`, read across builds
+        and so unsettled). Mixed with a tween or keys crowd on the same channel, an `fn` crowd
+        still runs on lanes and still pays the second walk; nobody has measured which way such a
+        mix should go. `tweenfn`, `weaselfn` and `own`, where the losing voice is over every
+        subject or targeted, are unchanged. `glowc` and `glowkeys` read on lanes
         slower too (3.3 against 3.0) because nothing in them runs on lanes (their glow voice writes
         `color`, a `last` channel with its own lerp, which closes `gain` for the flicker) while the
         flicker still shares one record, which every read points at its subject and back.
