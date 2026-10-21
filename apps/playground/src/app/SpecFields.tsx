@@ -12,7 +12,7 @@ import {
   PropertyRow,
   prefFieldProps,
 } from '@weasel-js/ui';
-import { createContext, type ReactNode, useContext, useRef } from 'react';
+import { createContext, type ReactNode, useContext } from 'react';
 import { EaseField } from './EaseField';
 import g from './Group.module.css';
 
@@ -136,36 +136,13 @@ export interface OptionalNumber {
 const read = <T,>(v: T | ((spec: Spec) => T), spec: Spec): T =>
   typeof v === 'function' ? (v as (spec: Spec) => T)(spec) : v;
 
-/**
- * Wraps a number field so that emptying it and leaving writes `onEmpty`: the field itself drops an
- * empty commit, so it is caught on the way out. Escape still reverts.
- */
-export function Emptiable({ onEmpty, children }: { onEmpty(): void; children: ReactNode }) {
-  const escaped = useRef(false);
-  return (
-    <span
-      className={g.num}
-      onKeyDownCapture={(e) => {
-        escaped.current = e.key === 'Escape';
-      }}
-      onBlurCapture={(e) => {
-        const text = (e.target as HTMLInputElement).value;
-        if (!escaped.current && text.trim() === '') onEmpty();
-        escaped.current = false;
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
 /** A number that may be unset, which blits then defaults: emptied, the field writes undefined. */
 function OptionalNumberRow({ row, o }: { row: PrefRenderContext; o: OptionalNumber }) {
   const spec = useSpec();
   const value = typeof row.value === 'number' ? row.value : undefined;
   return (
     <Row row={row} hint={o.hint === undefined ? undefined : read(o.hint, spec)}>
-      <Emptiable onEmpty={() => value !== undefined && row.setValue(undefined)}>
+      <span className={g.num}>
         <PropertyControl
           kind="number"
           name={row.pref.name}
@@ -176,8 +153,9 @@ function OptionalNumberRow({ row, o }: { row: PrefRenderContext; o: OptionalNumb
           unit={o.unit}
           disabled={row.disabled}
           onChange={(n) => row.setValue(o.min !== undefined && n < o.min ? o.min : n)}
+          onClear={() => row.setValue(undefined)}
         />
-      </Emptiable>
+      </span>
     </Row>
   );
 }

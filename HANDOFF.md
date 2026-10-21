@@ -820,11 +820,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         four undo steps; only the stage, title, length, level, read-ahead and expression fields
         go through `Draft` or `ExprInput`. The README says so; whether the rest should commit
         on Enter too is Mike's call.
-      - **With weasel 1.10.1 from npm, the typecheck fails and the Both tab's edit mode shows no
-        dots** (measured 2026-10-17 after `npm ci` in a worktree): `FlowDiagram` passes
-        `portOptions` fields (`shape`, `showsPort`, a `fill` function) that only the symlinked
-        `~/src/weasel/packages/diagram` has. Every fresh clone meets it until weasel releases
-        them.
 
 13. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). Built
     2026-10-09: `wave`; every ease (`keys` `ease`, `easeBy`, `delayBy`, `fade.ease`, a tween's bezier
@@ -1298,16 +1293,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   blur, and `DraftRow`/`drafted()` are gone; and the booker is one schema whose live section hides
   by `showIf`. Still a gap: a leaf cannot set its own row layout or an accessible name apart from
   its label, so the booker's two rows and the level rows keep `fieldRow` in
-  `CompositionControls.tsx`. Fixed by 1.11.0's changelog but not used here yet: a number can be
-  cleared (`.clearable()`); rows take an `error`, and `ControlPanel` takes `errors`; `.dialog()`
+  `CompositionControls.tsx`. An emptied number field now unsets through the control's own
+  `onClear` (2026-10-21); the leaves stay custom, since labkit's `.clearable()` takes only a fixed
+  placeholder and a voice's `start` names its default by the voice's rate. Fixed by 1.11.0's
+  changelog but not used here yet: rows take an `error`, and `ControlPanel` takes `errors`; `.dialog()`
   has Cancel, and Escape or a press outside drops its draft; `ControlMatrix` has a plain grid
   (`inherit={false}`) and a row `summary`; a port can carry a label (`PortSpec.label`, or
   `portLabels` by port id on a `DataNode`; whether that reaches the default ports is not checked);
   and under `layered` an edge between two nodes pinned level in a rank runs straight instead of
   looping round. Still open by the changelog: `DiagramView` never reports where its first layout
   put nodes, though `diagramLayoutOf(specs)` now reads a `diagramScene` build's layout back, which
-  the Both tab does by hand. Whether the Both tab's edit mode now draws its port dots on 1.11.0 is
-  not checked.
+  the Both tab does by hand. On 1.11.0 from npm the playground typechecks and the Both tab's edit
+  mode draws its port dots (checked 2026-10-21, fresh `npm ci`).
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
   100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k

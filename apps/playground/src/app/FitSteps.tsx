@@ -10,7 +10,7 @@ import {
   PropertyControl,
 } from '@weasel-js/ui';
 import g from './Group.module.css';
-import { Emptiable, errorOf, FaultLine, Row, useSpec } from './SpecFields';
+import { errorOf, FaultLine, Row, useSpec } from './SpecFields';
 
 type Kind = FitStep['kind'];
 const KINDS: readonly Kind[] = ['condense', 'shed', 'overrun', 'conclude', 'code'];
@@ -88,19 +88,18 @@ function FitRow({ row }: { row: PrefRenderContext }) {
                       title="up to this many times its budget; empty for no limit"
                     >
                       cap
-                      <Emptiable onEmpty={() => put(i, { kind: 'overrun' })}>
-                        <PropertyControl
-                          kind="number"
-                          name="cap"
-                          min={1}
-                          step={0.1}
-                          placeholder="none"
-                          value={step.cap}
-                          onChange={(n) =>
-                            put(i, n > 0 ? { kind: 'overrun', cap: n } : { kind: 'overrun' })
-                          }
-                        />
-                      </Emptiable>
+                      <PropertyControl
+                        kind="number"
+                        name="cap"
+                        min={1}
+                        step={0.1}
+                        placeholder="none"
+                        value={step.cap}
+                        onChange={(n) =>
+                          put(i, n > 0 ? { kind: 'overrun', cap: n } : { kind: 'overrun' })
+                        }
+                        onClear={() => put(i, { kind: 'overrun' })}
+                      />
                     </span>
                   )}
                   <span className={g.end}>
