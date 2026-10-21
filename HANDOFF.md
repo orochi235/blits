@@ -1197,8 +1197,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         top of `Lanes.prepare` (`bench/runs/2026-10-21-prepare-no-lanes.txt`, read across builds
         and so unsettled). Mixed with a tween or keys crowd on the same channel, an `fn` crowd
         still runs on lanes and still pays the second walk; nobody has measured which way such a
-        mix should go. `tweenfn`, `weaselfn` and `own`, where the losing voice is over every
-        subject or targeted, are unchanged. `glowc` and `glowkeys` read on lanes
+        mix should go. **So does a lone `fn` voice over many subjects writing vecs**
+        (2026-10-21), where it is the only such voice on its channels; two or more fold faster on
+        lanes. Same sweep (`bench/runs/2026-10-21-calls-off-lone-voice.txt`): `tweenfn` 1.163
+        against 1.410 at 10,000 and 0.124 against 0.134 at 1,000, `weaselfn` 1.734 against 1.823,
+        three `tweenfn` voices left on lanes and level, `named`, `glowbase` and `fn` level. The rule
+        covers channels with an array rest that are not `last` (`vector`): a lone voice on
+        `color(last())` stays on lanes, and one on `color()` was not timed. `own`, a voice per
+        subject chosen by `target`, writes numbers and is unchanged. `glowc` and `glowkeys` read on lanes
         slower too (3.3 against 3.0) because nothing in them runs on lanes (their glow voice writes
         `color`, a `last` channel with its own lerp, which closes `gain` for the flicker) while the
         flicker still shares one record, which every read points at its subject and back.

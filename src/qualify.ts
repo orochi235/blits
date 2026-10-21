@@ -196,24 +196,29 @@ export function setCallsOff(on: boolean): void {
 }
 
 /**
- * A crowd voice whose row calls its patch, as a fn voice's does (no tween, keys or motion row), and
- * that writes only arrays: a crowd writing a number reads 17% to 25% faster on lanes
- * (bench/frame.mjs `named` under CALLS_OFF, msb-uai, 2026-10-21).
+ * A voice whose patch a lane would call, as a fn voice's (no tween, keys or motion), writing only
+ * arrays: a crowd writing a number reads 17% to 25% faster on lanes (bench/frame.mjs `named` under
+ * CALLS_OFF, msb-uai, 2026-10-21).
  */
 export function calls<I, O>(v: Voice<I, O>, channels: readonly Channel<unknown>[]): boolean {
   return (
-    crowdable(v) &&
     v.built === null &&
     v.motion === undefined &&
-    v.slots.every((s) => typeof (channels[s] as Channel<unknown>).rest !== 'number')
+    v.slots.every((s) => vector(channels[s] as Channel<unknown>))
   );
 }
 
+/** A channel folding arrays with a rest, not `last`: what the rule was timed on. */
+function vector(channel: Channel<unknown>): boolean {
+  return Array.isArray(channel.rest) && numericOf(channel)?.op !== 'last';
+}
+
 /**
- * Leaves off lanes each crowd voice calling its patch where no other fitting voice writes any of
- * its channels: a lane calls such a patch once a subject as the general path does, and its fill
- * walks the subjects a second time (bench/frame.mjs `fns`, 2.58 ms a frame on lanes against 1.07
- * off, studio, 2026-10-21).
+ * Leaves off lanes each voice calling its patch where no other fitting voice writes any of its
+ * channels, but a crowd's other voices: a lane calls such a patch once a subject as the general
+ * path does, and its fill walks the subjects a second time (bench/frame.mjs `fns`, 2.58 ms a frame
+ * on lanes against 1.07 off, studio, 2026-10-21). Two voices over many subjects on one channel
+ * fold faster on lanes (`tweenfn` with three voices).
  */
 function keepCallsOff<I, O>(
   present: readonly Voice<I, O>[],
@@ -221,8 +226,16 @@ function keepCallsOff<I, O>(
   channels: readonly Channel<unknown>[],
 ): void {
   const others = new Array<boolean>(channels.length).fill(false);
+  const wide = new Array<boolean>(channels.length).fill(false);
   present.forEach((v, i) => {
-    if (fits[i] && !calls(v, channels)) for (const s of v.slots) others[s] = true;
+    if (!fits[i]) return;
+    const crowd = crowdable(v);
+    if (!calls(v, channels)) for (const s of v.slots) others[s] = true;
+    else if (!crowd)
+      for (const s of v.slots) {
+        if (wide[s]) others[s] = true;
+        wide[s] = true;
+      }
   });
   present.forEach((v, i) => {
     if (fits[i] && calls(v, channels) && !v.slots.some((s) => others[s])) fits[i] = false;
@@ -302,7 +315,7 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
     const laned = v.slots.some((slot) => lanes.bySlot[slot] !== undefined);
     const fits = v.slots.length > 0 && lanes.host.fits(v);
     // As `keepCallsOff`: with none of its channels laned, no fitting voice but its like writes them.
-    if (!laned && (!fits || (callsOff && calls(v, lanes.host.channels)))) {
+    if (!laned && (!fits || (callsOff && crowdable(v) && calls(v, lanes.host.channels)))) {
       lanes.whole = false;
       continue;
     }
