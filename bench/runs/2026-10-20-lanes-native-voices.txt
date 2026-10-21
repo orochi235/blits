@@ -1,0 +1,59 @@
+# keiei --solo at 879723d's tree: 5 rounds of node bench/frame.mjs for tweens springs keyses weasel glowbase, each with lanes and without
+  waiting for room
+  base   f6231e6c
+  delta  3 file(s), 0 deleted
+  updated blits on keiei at f6231e6c + 3 uncommitted file(s)
+  job    6b4ac745 on keiei
+
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+ 1/1  tweens    N= 10000 V=1     0.960 ms/frame     96 ns/subject·voice  p50    0.952  p99    1.258  worst    1.325  first    52.3 ms  gc    0    0.0 ms      20.6 kB/frame
+ 1/1  tweens-   N= 10000 V=1     1.788 ms/frame    179 ns/subject·voice  p50    1.730  p99    2.501  worst    3.439  first    31.1 ms  gc    3    1.4 ms     319.4 kB/frame
+ 1/1  springs   N= 10000 V=1     1.379 ms/frame    138 ns/subject·voice  p50    1.373  p99    1.609  worst    1.982  first    56.4 ms  gc    1    0.3 ms     172.3 kB/frame
+ 1/1  springs-  N= 10000 V=1     1.813 ms/frame    181 ns/subject·voice  p50    1.771  p99    2.290  worst    3.624  first    31.2 ms  gc    3    1.9 ms     324.4 kB/frame
+ 1/1  keyses    N= 10000 V=1     1.215 ms/frame    121 ns/subject·voice  p50    1.202  p99    1.296  worst    3.482  first    49.5 ms  gc    3    2.4 ms     328.6 kB/frame
+ 1/1  keyses-   N= 10000 V=1     2.268 ms/frame    227 ns/subject·voice  p50    2.222  p99    2.771  worst    2.866  first    22.2 ms  gc    7    1.0 ms     787.4 kB/frame
+ 1/1  weasel    N= 10000 V=1     1.115 ms/frame    111 ns/subject·voice  p50    1.112  p99    1.157  worst    1.173  first    21.0 ms  gc    0    0.0 ms      15.6 kB/frame
+ 1/1  weasel-   N= 10000 V=1     1.394 ms/frame    139 ns/subject·voice  p50    1.387  p99    1.461  worst    1.522  first    19.9 ms  gc    6    0.5 ms     321.7 kB/frame
+ 1/1  glowbase  N= 10000 V=1     1.757 ms/frame    176 ns/subject·voice  p50    1.727  p99    2.055  worst    2.199  first    14.1 ms  gc   20    3.8 ms    1024.0 kB/frame
+ 1/1  glowbase- N= 10000 V=1     2.027 ms/frame    203 ns/subject·voice  p50    1.992  p99    2.342  worst    3.920  first    10.7 ms  gc   27    5.9 ms    1645.2 kB/frame
+ 1/1  tweens    N= 10000 V=1     0.963 ms/frame     96 ns/subject·voice  p50    0.958  p99    1.056  worst    1.158  first    54.3 ms  gc    0    0.0 ms       7.9 kB/frame
+ 1/1  tweens-   N= 10000 V=1     1.814 ms/frame    181 ns/subject·voice  p50    1.729  p99    2.680  worst    4.528  first    31.6 ms  gc   13   12.7 ms     318.2 kB/frame
+ 1/1  springs   N= 10000 V=1     1.375 ms/frame    137 ns/subject·voice  p50    1.368  p99    1.630  worst    1.987  first    57.5 ms  gc    1    0.2 ms     177.3 kB/frame
+ 1/1  springs-  N= 10000 V=1     1.930 ms/frame    193 ns/subject·voice  p50    1.884  p99    2.729  worst    3.553  first    32.1 ms  gc    3    1.6 ms     325.7 kB/frame
+ 1/1  keyses    N= 10000 V=1     1.252 ms/frame    125 ns/subject·voice  p50    1.228  p99    1.433  worst    3.643  first    48.1 ms  gc    3    2.5 ms     323.4 kB/frame
+ 1/1  keyses-   N= 10000 V=1     2.043 ms/frame    204 ns/subject·voice  p50    2.029  p99    2.421  worst    2.718  first    21.0 ms  gc    6    0.8 ms     631.7 kB/frame
+ 1/1  weasel    N= 10000 V=1     1.119 ms/frame    112 ns/subject·voice  p50    1.116  p99    1.171  worst    1.181  first    21.3 ms  gc    0    0.0 ms       9.7 kB/frame
+ 1/1  weasel-   N= 10000 V=1     1.420 ms/frame    142 ns/subject·voice  p50    1.404  p99    1.640  worst    1.768  first    19.2 ms  gc    6    0.7 ms     323.2 kB/frame
+ 1/1  glowbase  N= 10000 V=1     1.696 ms/frame    170 ns/subject·voice  p50    1.675  p99    1.894  worst    1.971  first    13.8 ms  gc   20    3.5 ms    1025.0 kB/frame
+ 1/1  glowbase- N= 10000 V=1     2.027 ms/frame    203 ns/subject·voice  p50    1.952  p99    2.929  worst    7.276  first    10.4 ms  gc   16    7.9 ms    1647.8 kB/frame
+ 1/1  tweens    N= 10000 V=1     0.977 ms/frame     98 ns/subject·voice  p50    0.961  p99    1.099  worst    1.142  first    52.2 ms  gc    1    2.6 ms      11.3 kB/frame
+ 1/1  tweens-   N= 10000 V=1     1.724 ms/frame    172 ns/subject·voice  p50    1.692  p99    2.234  worst    3.104  first    32.7 ms  gc    3    1.4 ms     319.5 kB/frame
+ 1/1  springs   N= 10000 V=1     1.384 ms/frame    138 ns/subject·voice  p50    1.377  p99    1.657  worst    1.998  first    58.5 ms  gc    1    0.2 ms     174.5 kB/frame
+ 1/1  springs-  N= 10000 V=1     1.845 ms/frame    184 ns/subject·voice  p50    1.808  p99    2.189  worst    3.151  first    30.1 ms  gc    3    1.5 ms     325.3 kB/frame
+ 1/1  keyses    N= 10000 V=1     1.223 ms/frame    122 ns/subject·voice  p50    1.206  p99    1.336  worst    3.720  first    50.7 ms  gc    3    2.6 ms     325.1 kB/frame
+ 1/1  keyses-   N= 10000 V=1     2.145 ms/frame    215 ns/subject·voice  p50    2.089  p99    2.973  worst    3.914  first    20.8 ms  gc   17   15.1 ms     631.1 kB/frame
+ 1/1  weasel    N= 10000 V=1     1.125 ms/frame    112 ns/subject·voice  p50    1.111  p99    1.252  worst    1.362  first    20.7 ms  gc    0    0.0 ms      10.2 kB/frame
+ 1/1  weasel-   N= 10000 V=1     1.411 ms/frame    141 ns/subject·voice  p50    1.395  p99    1.594  worst    1.645  first    17.8 ms  gc    6    0.5 ms     317.5 kB/frame
+ 1/1  glowbase  N= 10000 V=1     1.698 ms/frame    170 ns/subject·voice  p50    1.680  p99    1.892  worst    1.929  first    14.0 ms  gc   20    3.4 ms    1028.3 kB/frame
+ 1/1  glowbase- N= 10000 V=1     2.040 ms/frame    204 ns/subject·voice  p50    1.959  p99    2.864  worst    8.135  first    10.2 ms  gc   15    8.2 ms    1645.4 kB/frame
+ 1/1  tweens    N= 10000 V=1     0.974 ms/frame     97 ns/subject·voice  p50    0.966  p99    1.135  worst    1.369  first    56.0 ms  gc    0    0.0 ms      12.2 kB/frame
+ 1/1  tweens-   N= 10000 V=1     1.888 ms/frame    189 ns/subject·voice  p50    1.865  p99    2.234  worst    3.370  first    32.5 ms  gc    3    1.3 ms     320.2 kB/frame
+ 1/1  springs   N= 10000 V=1     1.383 ms/frame    138 ns/subject·voice  p50    1.376  p99    1.592  worst    2.010  first    60.1 ms  gc    1    0.2 ms     179.9 kB/frame
+ 1/1  springs-  N= 10000 V=1     1.869 ms/frame    187 ns/subject·voice  p50    1.818  p99    2.449  worst    3.694  first    33.4 ms  gc    3    1.7 ms     325.2 kB/frame
+ 1/1  keyses    N= 10000 V=1     1.206 ms/frame    121 ns/subject·voice  p50    1.193  p99    1.262  worst    3.455  first    49.7 ms  gc    3    2.4 ms     326.9 kB/frame
+ 1/1  keyses-   N= 10000 V=1     2.040 ms/frame    204 ns/subject·voice  p50    2.037  p99    2.207  worst    2.255  first    20.7 ms  gc    6    0.8 ms     634.0 kB/frame
+ 1/1  weasel    N= 10000 V=1     1.138 ms/frame    114 ns/subject·voice  p50    1.131  p99    1.245  worst    1.314  first    23.7 ms  gc    0    0.0 ms       9.1 kB/frame
+ 1/1  weasel-   N= 10000 V=1     1.428 ms/frame    143 ns/subject·voice  p50    1.421  p99    1.502  worst    1.545  first    20.2 ms  gc    6    0.5 ms     316.4 kB/frame
+ 1/1  glowbase  N= 10000 V=1     1.691 ms/frame    169 ns/subject·voice  p50    1.670  p99    1.910  worst    1.995  first    13.7 ms  gc   20    3.5 ms    1023.4 kB/frame
+ 1/1  glowbase- N= 10000 V=1     2.020 ms/frame    202 ns/subject·voice  p50    1.980  p99    2.468  worst    3.478  first    10.6 ms  gc   27    6.2 ms    1645.4 kB/frame
+ 1/1  tweens    N= 10000 V=1     0.951 ms/frame     95 ns/subject·voice  p50    0.949  p99    1.011  worst    1.100  first    52.4 ms  gc    0    0.0 ms      11.6 kB/frame
+ 1/1  tweens-   N= 10000 V=1     1.835 ms/frame    183 ns/subject·voice  p50    1.776  p99    2.835  worst    3.919  first    30.7 ms  gc    3    1.5 ms     320.2 kB/frame
+ 1/1  springs   N= 10000 V=1     1.442 ms/frame    144 ns/subject·voice  p50    1.425  p99    1.690  worst    2.032  first    57.1 ms  gc    1    0.2 ms     178.9 kB/frame
+ 1/1  springs-  N= 10000 V=1     1.970 ms/frame    197 ns/subject·voice  p50    1.939  p99    2.861  worst    3.158  first    32.0 ms  gc    3    1.4 ms     326.6 kB/frame
+ 1/1  keyses    N= 10000 V=1     1.214 ms/frame    121 ns/subject·voice  p50    1.199  p99    1.337  worst    3.454  first    48.9 ms  gc    3    2.4 ms     328.6 kB/frame
+ 1/1  keyses-   N= 10000 V=1     2.193 ms/frame    219 ns/subject·voice  p50    2.114  p99    2.697  worst    2.730  first    25.8 ms  gc    6    1.1 ms     635.2 kB/frame
+ 1/1  weasel    N= 10000 V=1     1.120 ms/frame    112 ns/subject·voice  p50    1.116  p99    1.183  worst    1.230  first    21.5 ms  gc    0    0.0 ms       9.4 kB/frame
+ 1/1  weasel-   N= 10000 V=1     1.465 ms/frame    147 ns/subject·voice  p50    1.451  p99    1.658  worst    1.780  first    17.0 ms  gc    6    0.6 ms     316.0 kB/frame
+ 1/1  glowbase  N= 10000 V=1     1.712 ms/frame    171 ns/subject·voice  p50    1.693  p99    1.907  worst    1.956  first    14.1 ms  gc   20    3.5 ms    1027.7 kB/frame
+ 1/1  glowbase- N= 10000 V=1     2.070 ms/frame    207 ns/subject·voice  p50    1.988  p99    2.885  worst    7.161  first    10.4 ms  gc   16    8.4 ms    1646.9 kB/frame

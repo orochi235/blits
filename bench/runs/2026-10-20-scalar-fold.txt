@@ -1,0 +1,208 @@
+# teitou --solo: FRAMES=1500 AB_EACH=1 bench/ab.sh 933864b ea0aaa3 7 kept:10000 seek:10000 keys-:10000 glow-:10000 probed-:10000 view-:10000 fn:10000
+  waiting for room
+  base   f1523e0e
+  delta  2 file(s), 0 deleted
+  sent   1 new file(s), 1 already there
+  updated blits on teitou at f1523e0e + 2 uncommitted file(s)
+  job    92710584 on teitou
+
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+built 933864b (933864b)
+built ea0aaa3 (ea0aaa3)
+== round 1/7 933864b
+ 1/1  kept      N= 10000 V=3     5.346 ms/frame    178 ns/subject·voice  p50    4.666  p99    9.677  worst   16.217  first    20.7 ms  gc  307  371.8 ms    6300.1 kB/frame
+== round 1/7 933864b
+ 1/1  seek      N= 10000 V=3     6.351 ms/frame    212 ns/subject·voice  p50    6.157  p99    9.114  worst   14.453  first    21.0 ms  gc  267  117.4 ms    6647.0 kB/frame
+== round 1/7 933864b
+ 1/1  keys-     N= 10000 V=3     4.164 ms/frame    139 ns/subject·voice  p50    4.151  p99    4.962  worst    5.490  first    21.1 ms  gc  188   34.1 ms    3754.3 kB/frame
+== round 1/7 933864b
+ 1/1  glow-     N= 10000 V=2     2.480 ms/frame    124 ns/subject·voice  p50    2.493  p99    3.469  worst    4.130  first    13.4 ms  gc  226   26.5 ms    2936.1 kB/frame
+== round 1/7 933864b
+ 1/1  probed-   N= 10000 V=2     2.915 ms/frame    146 ns/subject·voice  p50    2.866  p99    3.891  worst    6.035  first    20.2 ms  gc  193   27.3 ms    2568.5 kB/frame
+== round 1/7 933864b
+ 1/1  view-     N= 10000 V=3     1.574 ms/frame     52 ns/subject·voice  p50    1.551  p99    1.856  worst    2.204  first    18.1 ms  gc  109   10.6 ms    1510.9 kB/frame
+== round 1/7 933864b
+ 1/1  fn        N= 10000 V=3     2.265 ms/frame     75 ns/subject·voice  p50    2.175  p99    3.646  worst    4.523  first    19.0 ms  gc   96   36.3 ms    2435.3 kB/frame
+== round 1/7 ea0aaa3
+ 1/1  kept      N= 10000 V=3     5.208 ms/frame    174 ns/subject·voice  p50    4.515  p99    9.871  worst   15.924  first    19.5 ms  gc  275  366.3 ms    5674.4 kB/frame
+== round 1/7 ea0aaa3
+ 1/1  seek      N= 10000 V=3     6.100 ms/frame    203 ns/subject·voice  p50    5.914  p99    7.913  worst   32.809  first    22.3 ms  gc  298  234.8 ms    6029.2 kB/frame
+== round 1/7 ea0aaa3
+ 1/1  keys-     N= 10000 V=3     4.005 ms/frame    133 ns/subject·voice  p50    3.905  p99    5.865  worst    8.328  first    19.1 ms  gc  188   40.3 ms    3755.0 kB/frame
+== round 1/7 ea0aaa3
+ 1/1  glow-     N= 10000 V=2     2.118 ms/frame    106 ns/subject·voice  p50    2.079  p99    2.865  worst    4.155  first    13.3 ms  gc  208   25.0 ms    2776.0 kB/frame
+== round 1/7 ea0aaa3
+ 1/1  probed-   N= 10000 V=2     2.729 ms/frame    136 ns/subject·voice  p50    2.692  p99    3.229  worst    3.651  first    18.3 ms  gc  118   26.3 ms    2396.0 kB/frame
+== round 1/7 ea0aaa3
+ 1/1  view-     N= 10000 V=3     1.541 ms/frame     51 ns/subject·voice  p50    1.513  p99    1.828  worst    2.060  first    19.0 ms  gc  110   12.7 ms    1509.7 kB/frame
+== round 1/7 ea0aaa3
+ 1/1  fn        N= 10000 V=3     2.352 ms/frame     78 ns/subject·voice  p50    2.258  p99    3.957  worst    5.836  first    19.6 ms  gc   96   39.3 ms    2434.7 kB/frame
+== round 2/7 ea0aaa3
+ 1/1  kept      N= 10000 V=3     4.916 ms/frame    164 ns/subject·voice  p50    4.068  p99    9.218  worst   13.654  first    20.6 ms  gc  276  348.2 ms    5676.7 kB/frame
+== round 2/7 ea0aaa3
+ 1/1  seek      N= 10000 V=3     5.707 ms/frame    190 ns/subject·voice  p50    5.576  p99    7.447  worst   28.664  first    21.7 ms  gc  288  180.5 ms    6005.4 kB/frame
+== round 2/7 ea0aaa3
+ 1/1  keys-     N= 10000 V=3     3.572 ms/frame    119 ns/subject·voice  p50    3.513  p99    4.200  worst    4.618  first    18.0 ms  gc  188   30.3 ms    3755.0 kB/frame
+== round 2/7 ea0aaa3
+ 1/1  glow-     N= 10000 V=2     1.930 ms/frame     96 ns/subject·voice  p50    1.870  p99    2.885  worst    3.522  first    11.5 ms  gc  209   22.2 ms    2778.7 kB/frame
+== round 2/7 ea0aaa3
+ 1/1  probed-   N= 10000 V=2     2.646 ms/frame    132 ns/subject·voice  p50    2.594  p99    4.443  worst    6.954  first    17.7 ms  gc  179   27.8 ms    2411.5 kB/frame
+== round 2/7 ea0aaa3
+ 1/1  view-     N= 10000 V=3     1.471 ms/frame     49 ns/subject·voice  p50    1.447  p99    1.741  worst    1.941  first    19.3 ms  gc  110    9.3 ms    1509.6 kB/frame
+== round 2/7 ea0aaa3
+ 1/1  fn        N= 10000 V=3     2.220 ms/frame     74 ns/subject·voice  p50    2.127  p99    3.623  worst    4.057  first    19.0 ms  gc   96   34.1 ms    2434.4 kB/frame
+== round 2/7 933864b
+ 1/1  kept      N= 10000 V=3     6.286 ms/frame    210 ns/subject·voice  p50    5.514  p99   11.760  worst   14.639  first    20.4 ms  gc  307  427.9 ms    6301.7 kB/frame
+== round 2/7 933864b
+ 1/1  seek      N= 10000 V=3     7.764 ms/frame    259 ns/subject·voice  p50    7.392  p99   11.506  worst   24.458  first    24.1 ms  gc  330  250.7 ms    6652.6 kB/frame
+== round 2/7 933864b
+ 1/1  keys-     N= 10000 V=3     4.097 ms/frame    137 ns/subject·voice  p50    4.093  p99    4.813  worst    5.322  first    17.3 ms  gc  201   41.8 ms    3755.3 kB/frame
+== round 2/7 933864b
+ 1/1  glow-     N= 10000 V=2     2.165 ms/frame    108 ns/subject·voice  p50    2.127  p99    2.914  worst    4.257  first    13.0 ms  gc  226   27.0 ms    2936.4 kB/frame
+== round 2/7 933864b
+ 1/1  probed-   N= 10000 V=2     2.907 ms/frame    145 ns/subject·voice  p50    2.885  p99    3.652  worst    4.563  first    20.2 ms  gc  122   25.8 ms    2552.3 kB/frame
+== round 2/7 933864b
+ 1/1  view-     N= 10000 V=3     1.694 ms/frame     56 ns/subject·voice  p50    1.675  p99    2.008  worst    2.252  first    20.1 ms  gc  110   11.8 ms    1511.1 kB/frame
+== round 2/7 933864b
+ 1/1  fn        N= 10000 V=3     2.478 ms/frame     83 ns/subject·voice  p50    2.391  p99    3.971  worst    5.240  first    21.4 ms  gc   96   39.4 ms    2433.9 kB/frame
+== round 3/7 933864b
+ 1/1  kept      N= 10000 V=3     5.895 ms/frame    196 ns/subject·voice  p50    5.159  p99   10.630  worst   13.617  first    22.1 ms  gc  305  413.8 ms    6302.0 kB/frame
+== round 3/7 933864b
+ 1/1  seek      N= 10000 V=3     6.076 ms/frame    203 ns/subject·voice  p50    5.977  p99    8.406  worst   28.940  first    22.2 ms  gc  329  217.6 ms    6656.4 kB/frame
+== round 3/7 933864b
+ 1/1  keys-     N= 10000 V=3     3.803 ms/frame    127 ns/subject·voice  p50    3.757  p99    4.384  worst    4.997  first    17.7 ms  gc  188   29.8 ms    3754.8 kB/frame
+== round 3/7 933864b
+ 1/1  glow-     N= 10000 V=2     1.994 ms/frame    100 ns/subject·voice  p50    1.916  p99    2.980  worst    3.977  first    12.1 ms  gc  225   23.4 ms    2936.3 kB/frame
+== round 3/7 933864b
+ 1/1  probed-   N= 10000 V=2     2.507 ms/frame    125 ns/subject·voice  p50    2.452  p99    3.248  worst    4.669  first    17.4 ms  gc  194   23.5 ms    2570.7 kB/frame
+== round 3/7 933864b
+ 1/1  view-     N= 10000 V=3     1.561 ms/frame     52 ns/subject·voice  p50    1.535  p99    1.829  worst    2.007  first    17.1 ms  gc  110    9.7 ms    1511.7 kB/frame
+== round 3/7 933864b
+ 1/1  fn        N= 10000 V=3     2.166 ms/frame     72 ns/subject·voice  p50    2.085  p99    3.522  worst    4.141  first    19.2 ms  gc   96   32.7 ms    2434.7 kB/frame
+== round 3/7 ea0aaa3
+ 1/1  kept      N= 10000 V=3     5.210 ms/frame    174 ns/subject·voice  p50    4.323  p99   10.184  worst   52.292  first    19.3 ms  gc  200  334.9 ms    5671.1 kB/frame
+== round 3/7 ea0aaa3
+ 1/1  seek      N= 10000 V=3     6.253 ms/frame    208 ns/subject·voice  p50    6.094  p99    8.986  worst   27.424  first    19.6 ms  gc  298  205.4 ms    6027.0 kB/frame
+== round 3/7 ea0aaa3
+ 1/1  keys-     N= 10000 V=3     3.587 ms/frame    120 ns/subject·voice  p50    3.524  p99    4.217  worst    6.877  first    17.3 ms  gc  188   30.9 ms    3755.8 kB/frame
+== round 3/7 ea0aaa3
+ 1/1  glow-     N= 10000 V=2     1.898 ms/frame     95 ns/subject·voice  p50    1.831  p99    2.668  worst    3.659  first    12.3 ms  gc  208   21.8 ms    2777.2 kB/frame
+== round 3/7 ea0aaa3
+ 1/1  probed-   N= 10000 V=2     2.517 ms/frame    126 ns/subject·voice  p50    2.458  p99    3.341  worst    4.714  first    17.8 ms  gc  178   23.7 ms    2413.0 kB/frame
+== round 3/7 ea0aaa3
+ 1/1  view-     N= 10000 V=3     1.435 ms/frame     48 ns/subject·voice  p50    1.408  p99    1.707  worst    2.187  first    17.4 ms  gc  110    9.5 ms    1510.7 kB/frame
+== round 3/7 ea0aaa3
+ 1/1  fn        N= 10000 V=3     2.250 ms/frame     75 ns/subject·voice  p50    2.165  p99    3.625  worst    4.085  first    18.0 ms  gc  104   36.2 ms    2436.0 kB/frame
+== round 4/7 ea0aaa3
+ 1/1  kept      N= 10000 V=3     5.678 ms/frame    189 ns/subject·voice  p50    4.775  p99   11.319  worst   46.429  first    21.0 ms  gc  201  340.7 ms    5674.4 kB/frame
+== round 4/7 ea0aaa3
+ 1/1  seek      N= 10000 V=3     5.467 ms/frame    182 ns/subject·voice  p50    5.361  p99    6.885  worst   25.332  first    19.8 ms  gc  298  169.2 ms    6025.0 kB/frame
+== round 4/7 ea0aaa3
+ 1/1  keys-     N= 10000 V=3     3.655 ms/frame    122 ns/subject·voice  p50    3.589  p99    4.434  worst    4.910  first    18.0 ms  gc  188   30.8 ms    3755.1 kB/frame
+== round 4/7 ea0aaa3
+ 1/1  glow-     N= 10000 V=2     1.837 ms/frame     92 ns/subject·voice  p50    1.773  p99    2.521  worst    3.503  first    12.1 ms  gc  209   21.6 ms    2778.1 kB/frame
+== round 4/7 ea0aaa3
+ 1/1  probed-   N= 10000 V=2     2.351 ms/frame    118 ns/subject·voice  p50    2.299  p99    3.013  worst    4.452  first    17.4 ms  gc  179   22.0 ms    2411.8 kB/frame
+== round 4/7 ea0aaa3
+ 1/1  view-     N= 10000 V=3     1.449 ms/frame     48 ns/subject·voice  p50    1.423  p99    1.739  worst    1.870  first    18.0 ms  gc  109    9.3 ms    1509.6 kB/frame
+== round 4/7 ea0aaa3
+ 1/1  fn        N= 10000 V=3     2.290 ms/frame     76 ns/subject·voice  p50    2.245  p99    2.753  worst    3.003  first    18.7 ms  gc  120   25.9 ms    2428.2 kB/frame
+== round 4/7 933864b
+ 1/1  kept      N= 10000 V=3     5.156 ms/frame    172 ns/subject·voice  p50    4.396  p99    9.485  worst   15.322  first    20.2 ms  gc  305  360.3 ms    6301.3 kB/frame
+== round 4/7 933864b
+ 1/1  seek      N= 10000 V=3     5.772 ms/frame    192 ns/subject·voice  p50    5.672  p99    7.353  worst   23.363  first    19.6 ms  gc  330  216.2 ms    6656.8 kB/frame
+== round 4/7 933864b
+ 1/1  keys-     N= 10000 V=3     3.826 ms/frame    128 ns/subject·voice  p50    3.770  p99    4.322  worst    5.410  first    17.7 ms  gc  188   29.7 ms    3755.5 kB/frame
+== round 4/7 933864b
+ 1/1  glow-     N= 10000 V=2     2.018 ms/frame    101 ns/subject·voice  p50    1.961  p99    2.696  worst    3.582  first    11.9 ms  gc  226   22.9 ms    2936.5 kB/frame
+== round 4/7 933864b
+ 1/1  probed-   N= 10000 V=2     2.492 ms/frame    125 ns/subject·voice  p50    2.436  p99    3.231  worst    4.468  first    17.1 ms  gc  193   23.0 ms    2569.4 kB/frame
+== round 4/7 933864b
+ 1/1  view-     N= 10000 V=3     1.534 ms/frame     51 ns/subject·voice  p50    1.509  p99    1.810  worst    1.979  first    17.3 ms  gc  109    9.6 ms    1510.1 kB/frame
+== round 4/7 933864b
+ 1/1  fn        N= 10000 V=3     2.236 ms/frame     75 ns/subject·voice  p50    2.150  p99    3.554  worst    4.345  first    19.9 ms  gc   96   34.8 ms    2434.3 kB/frame
+== round 5/7 933864b
+ 1/1  kept      N= 10000 V=3     5.246 ms/frame    175 ns/subject·voice  p50    4.548  p99    9.668  worst   15.670  first    20.0 ms  gc  305  369.8 ms    6300.2 kB/frame
+== round 5/7 933864b
+ 1/1  seek      N= 10000 V=3     5.708 ms/frame    190 ns/subject·voice  p50    5.595  p99    7.262  worst   26.422  first    19.6 ms  gc  329  201.5 ms    6659.8 kB/frame
+== round 5/7 933864b
+ 1/1  keys-     N= 10000 V=3     3.777 ms/frame    126 ns/subject·voice  p50    3.724  p99    4.383  worst    5.716  first    17.9 ms  gc  188   29.5 ms    3753.5 kB/frame
+== round 5/7 933864b
+ 1/1  glow-     N= 10000 V=2     1.834 ms/frame     92 ns/subject·voice  p50    1.771  p99    2.690  worst    3.441  first    11.7 ms  gc  204   20.9 ms    2626.7 kB/frame
+== round 5/7 933864b
+ 1/1  probed-   N= 10000 V=2     2.597 ms/frame    130 ns/subject·voice  p50    2.513  p99    4.041  worst    5.068  first    18.0 ms  gc  193   25.0 ms    2568.2 kB/frame
+== round 5/7 933864b
+ 1/1  view-     N= 10000 V=3     1.539 ms/frame     51 ns/subject·voice  p50    1.508  p99    1.843  worst    1.969  first    18.2 ms  gc  110    9.8 ms    1510.5 kB/frame
+== round 5/7 933864b
+ 1/1  fn        N= 10000 V=3     2.284 ms/frame     76 ns/subject·voice  p50    2.189  p99    3.645  worst    4.240  first    18.6 ms  gc   96   34.1 ms    2435.5 kB/frame
+== round 5/7 ea0aaa3
+ 1/1  kept      N= 10000 V=3     4.789 ms/frame    160 ns/subject·voice  p50    4.036  p99    8.920  worst   16.887  first    20.5 ms  gc  276  342.0 ms    5676.1 kB/frame
+== round 5/7 ea0aaa3
+ 1/1  seek      N= 10000 V=3     5.671 ms/frame    189 ns/subject·voice  p50    5.560  p99    7.479  worst   24.714  first    22.3 ms  gc  298  181.7 ms    6024.9 kB/frame
+== round 5/7 ea0aaa3
+ 1/1  keys-     N= 10000 V=3     3.876 ms/frame    129 ns/subject·voice  p50    3.832  p99    4.453  worst    6.175  first    17.7 ms  gc  188   36.6 ms    3756.1 kB/frame
+== round 5/7 ea0aaa3
+ 1/1  glow-     N= 10000 V=2     2.152 ms/frame    108 ns/subject·voice  p50    2.091  p99    3.330  worst    4.182  first    13.4 ms  gc  209   25.8 ms    2778.7 kB/frame
+== round 5/7 ea0aaa3
+ 1/1  probed-   N= 10000 V=2     2.689 ms/frame    134 ns/subject·voice  p50    2.620  p99    4.028  worst    6.982  first    19.2 ms  gc  178   31.4 ms    2408.7 kB/frame
+== round 5/7 ea0aaa3
+ 1/1  view-     N= 10000 V=3     1.679 ms/frame     56 ns/subject·voice  p50    1.652  p99    2.263  worst    3.144  first    21.8 ms  gc  109   15.8 ms    1508.6 kB/frame
+== round 5/7 ea0aaa3
+ 1/1  fn        N= 10000 V=3     2.523 ms/frame     84 ns/subject·voice  p50    2.442  p99    3.213  worst    3.697  first    20.6 ms  gc  119   36.0 ms    2428.5 kB/frame
+== round 6/7 ea0aaa3
+ 1/1  kept      N= 10000 V=3     5.816 ms/frame    194 ns/subject·voice  p50    5.107  p99   10.681  worst   15.819  first    21.3 ms  gc  275  401.7 ms    5675.5 kB/frame
+== round 6/7 ea0aaa3
+ 1/1  seek      N= 10000 V=3     6.212 ms/frame    207 ns/subject·voice  p50    5.638  p99   21.397  worst   34.656  first    22.9 ms  gc  299  226.1 ms    6031.6 kB/frame
+== round 6/7 ea0aaa3
+ 1/1  keys-     N= 10000 V=3    13.353 ms/frame    445 ns/subject·voice  p50   12.064  p99   45.534  worst   57.069  first    62.4 ms  gc  188  133.1 ms    3754.7 kB/frame
+== round 6/7 ea0aaa3
+ 1/1  glow-     N= 10000 V=2     2.293 ms/frame    115 ns/subject·voice  p50    1.879  p99    8.987  worst   10.723  first    28.6 ms  gc  208   24.8 ms    2777.1 kB/frame
+== round 6/7 ea0aaa3
+ 1/1  probed-   N= 10000 V=2     2.392 ms/frame    120 ns/subject·voice  p50    2.353  p99    2.817  worst    3.040  first    18.6 ms  gc  120   19.8 ms    2396.2 kB/frame
+== round 6/7 ea0aaa3
+ 1/1  view-     N= 10000 V=3     1.458 ms/frame     49 ns/subject·voice  p50    1.435  p99    1.724  worst    1.835  first    17.5 ms  gc  110    9.6 ms    1509.6 kB/frame
+== round 6/7 ea0aaa3
+ 1/1  fn        N= 10000 V=3     2.350 ms/frame     78 ns/subject·voice  p50    2.262  p99    3.621  worst    4.255  first    18.5 ms  gc   96   33.8 ms    2435.5 kB/frame
+== round 6/7 933864b
+ 1/1  kept      N= 10000 V=3     6.031 ms/frame    201 ns/subject·voice  p50    5.216  p99   11.496  worst   44.449  first    20.0 ms  gc  230  365.4 ms    6307.1 kB/frame
+== round 6/7 933864b
+ 1/1  seek      N= 10000 V=3     5.977 ms/frame    199 ns/subject·voice  p50    5.859  p99    8.028  worst   14.041  first    19.6 ms  gc  266  116.1 ms    6643.9 kB/frame
+== round 6/7 933864b
+ 1/1  keys-     N= 10000 V=3     3.838 ms/frame    128 ns/subject·voice  p50    3.776  p99    4.377  worst    5.052  first    18.1 ms  gc  188   29.4 ms    3753.7 kB/frame
+== round 6/7 933864b
+ 1/1  glow-     N= 10000 V=2     2.012 ms/frame    101 ns/subject·voice  p50    1.904  p99    3.334  worst    4.914  first    12.3 ms  gc  226   23.2 ms    2937.4 kB/frame
+== round 6/7 933864b
+ 1/1  probed-   N= 10000 V=2     2.665 ms/frame    133 ns/subject·voice  p50    2.575  p99    3.918  worst    5.912  first    17.9 ms  gc  194   27.2 ms    2567.1 kB/frame
+== round 6/7 933864b
+ 1/1  view-     N= 10000 V=3     1.555 ms/frame     52 ns/subject·voice  p50    1.529  p99    1.857  worst    2.013  first    18.3 ms  gc  109    9.4 ms    1510.3 kB/frame
+== round 6/7 933864b
+ 1/1  fn        N= 10000 V=3     2.303 ms/frame     77 ns/subject·voice  p50    2.206  p99    3.535  worst    4.101  first    19.3 ms  gc   96   33.8 ms    2434.4 kB/frame
+== round 7/7 933864b
+ 1/1  kept      N= 10000 V=3     5.594 ms/frame    186 ns/subject·voice  p50    4.770  p99   10.518  worst   34.498  first    20.8 ms  gc  229  361.1 ms    6308.9 kB/frame
+== round 7/7 933864b
+ 1/1  seek      N= 10000 V=3     6.704 ms/frame    223 ns/subject·voice  p50    6.565  p99    8.776  worst   33.443  first    23.1 ms  gc  330  277.3 ms    6659.3 kB/frame
+== round 7/7 933864b
+ 1/1  keys-     N= 10000 V=3     4.274 ms/frame    142 ns/subject·voice  p50    4.188  p99    5.249  worst    5.924  first    21.3 ms  gc  188   44.3 ms    3757.2 kB/frame
+== round 7/7 933864b
+ 1/1  glow-     N= 10000 V=2     2.343 ms/frame    117 ns/subject·voice  p50    2.283  p99    3.380  worst    5.027  first    14.5 ms  gc  226   28.4 ms    2938.9 kB/frame
+== round 7/7 933864b
+ 1/1  probed-   N= 10000 V=2     3.075 ms/frame    154 ns/subject·voice  p50    2.986  p99    4.871  worst    5.800  first    18.7 ms  gc  193   28.8 ms    2568.7 kB/frame
+== round 7/7 933864b
+ 1/1  view-     N= 10000 V=3     1.737 ms/frame     58 ns/subject·voice  p50    1.716  p99    2.059  worst    2.309  first    18.6 ms  gc  110   14.9 ms    1511.7 kB/frame
+== round 7/7 933864b
+ 1/1  fn        N= 10000 V=3     2.468 ms/frame     82 ns/subject·voice  p50    2.395  p99    4.047  worst    4.400  first    20.8 ms  gc   96   39.0 ms    2436.3 kB/frame
+== round 7/7 ea0aaa3
+ 1/1  kept      N= 10000 V=3     5.681 ms/frame    189 ns/subject·voice  p50    4.936  p99   10.235  worst   14.225  first    23.1 ms  gc  275  398.1 ms    5675.4 kB/frame
+== round 7/7 ea0aaa3
+ 1/1  seek      N= 10000 V=3     6.080 ms/frame    203 ns/subject·voice  p50    5.920  p99    7.718  worst   31.780  first    23.3 ms  gc  298  207.0 ms    6030.2 kB/frame
+== round 7/7 ea0aaa3
+ 1/1  keys-     N= 10000 V=3     3.931 ms/frame    131 ns/subject·voice  p50    3.874  p99    4.741  worst    6.222  first    17.8 ms  gc  188   38.9 ms    3755.4 kB/frame
+== round 7/7 ea0aaa3
+ 1/1  glow-     N= 10000 V=2     2.266 ms/frame    113 ns/subject·voice  p50    2.208  p99    3.603  worst    4.627  first    13.2 ms  gc  209   27.1 ms    2778.6 kB/frame
+== round 7/7 ea0aaa3
+ 1/1  probed-   N= 10000 V=2     2.689 ms/frame    134 ns/subject·voice  p50    2.619  p99    4.149  worst    6.508  first    20.2 ms  gc  179   27.7 ms    2409.2 kB/frame
+== round 7/7 ea0aaa3
+ 1/1  view-     N= 10000 V=3     1.616 ms/frame     54 ns/subject·voice  p50    1.595  p99    1.912  worst    2.288  first    19.1 ms  gc  109   13.1 ms    1509.8 kB/frame
+== round 7/7 ea0aaa3
+ 1/1  fn        N= 10000 V=3     2.535 ms/frame     84 ns/subject·voice  p50    2.461  p99    4.020  worst    4.962  first    21.0 ms  gc   96   37.9 ms    2435.4 kB/frame

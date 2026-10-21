@@ -938,7 +938,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `FRAMES=1500`: at the default 300 its 5 s window fills only as the run ends, so nothing it lets
     go of is measured. `bench/lineage.sh <rounds> <rev>... -- <rows>` runs this tree's bench over
     any number of builds, releases included, and `bench/lineage.mjs` tables it; `frame.mjs` takes
-    `form:n:v` for a row its list does not hold, such as `fns-:10000:1`.
+    `form:n:v` for a row its list does not hold, such as `fns-:10000:1`. Every run's raw output goes
+    in `bench/runs/<date>-<what>.txt`, headed by a `#` line naming the node and the command, before
+    it is reduced; the ledger's `raw` column names it (Mike's rule, 2026-10-20). Leave `seek` out of
+    a run over releases before 0.11.0, or give it its own: v0.7.1 takes 1.2 s a frame on it, so the
+    first run over releases (`bench/runs/2026-10-20-releases.txt`) hit its 90-minute limit in
+    round 2. What it got, one or two runs a cell at 10,000 subjects, v0.7.1 to `main`: `seek`
+    1,234 to 5.37 ms, `kept` 5.37 to 4.83, `keys` 1.26 to 1.04, `fn` 2.11 to 2.29.
     - **Mike has not seen two things chosen while building.**
       - **A probe into `out` reuses its arrays, which reverses a guarantee a test held.**
         `test/solo.test.ts` said a reused `out` "never has an array the host kept from it written

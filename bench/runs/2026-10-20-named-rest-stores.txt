@@ -1,0 +1,152 @@
+# keiei --solo: AB_EACH=1 bench/ab.sh f727ff7 . 7 tweenfn-:10000 probed-:10000 fn:10000 named:10000 keys-:10000 (. = f727ff7 with gain and dark stored by name in foldWith)
+  waiting for room
+  base   f727ff7c
+  delta  1 file(s), 0 deleted
+  sent   1 new file(s), 0 already there
+  updated blits on keiei at f727ff7c + 1 uncommitted file(s)
+  job    3f8eaf30 on keiei
+
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+built f727ff7 (f727ff7)
+built the working tree
+== round 1/7 f727ff7
+ 1/1  tweenfn-  N= 10000 V=1     1.292 ms/frame    129 ns/subject·voice  p50    1.216  p99    1.855  worst    4.554  first    10.7 ms  gc   12    5.4 ms    1332.7 kB/frame
+== round 1/7 f727ff7
+ 1/1  probed-   N= 10000 V=2     3.580 ms/frame    179 ns/subject·voice  p50    3.485  p99    5.523  worst    6.482  first    28.9 ms  gc   36    7.2 ms    2363.4 kB/frame
+== round 1/7 f727ff7
+ 1/1  fn        N= 10000 V=3     3.495 ms/frame    116 ns/subject·voice  p50    3.449  p99    4.013  worst    4.209  first    29.4 ms  gc   24    8.2 ms    2434.6 kB/frame
+== round 1/7 f727ff7
+ 1/1  named     N= 10000 V=1     2.287 ms/frame    229 ns/subject·voice  p50    2.221  p99    3.791  worst    4.730  first    45.3 ms  gc    7    5.1 ms    1178.7 kB/frame
+== round 1/7 f727ff7
+ 1/1  keys-     N= 10000 V=3     5.830 ms/frame    194 ns/subject·voice  p50    5.769  p99    6.528  worst    6.995  first    28.9 ms  gc   48   18.8 ms    3760.0 kB/frame
+== round 1/7 .
+ 1/1  tweenfn-  N= 10000 V=1     1.240 ms/frame    124 ns/subject·voice  p50    1.157  p99    1.916  worst    4.578  first    10.8 ms  gc   12    7.1 ms    1332.6 kB/frame
+== round 1/7 .
+ 1/1  probed-   N= 10000 V=2     3.875 ms/frame    194 ns/subject·voice  p50    3.805  p99    5.197  worst    5.559  first    29.6 ms  gc   29   10.3 ms    2668.1 kB/frame
+== round 1/7 .
+ 1/1  fn        N= 10000 V=3     3.788 ms/frame    126 ns/subject·voice  p50    3.666  p99    4.919  worst    7.631  first    30.9 ms  gc   25   12.6 ms    2434.5 kB/frame
+== round 1/7 .
+ 1/1  named     N= 10000 V=1     2.226 ms/frame    223 ns/subject·voice  p50    2.198  p99    2.765  worst    3.312  first    46.0 ms  gc   12    3.5 ms    1342.6 kB/frame
+== round 1/7 .
+ 1/1  keys-     N= 10000 V=3     5.917 ms/frame    197 ns/subject·voice  p50    5.871  p99    6.736  worst    6.923  first    26.7 ms  gc   48   16.2 ms    3763.1 kB/frame
+== round 2/7 .
+ 1/1  tweenfn-  N= 10000 V=1     1.287 ms/frame    129 ns/subject·voice  p50    1.205  p99    2.032  worst    6.763  first    11.1 ms  gc   14    8.6 ms    1492.8 kB/frame
+== round 2/7 .
+ 1/1  probed-   N= 10000 V=2     3.568 ms/frame    178 ns/subject·voice  p50    3.508  p99    4.773  worst    5.990  first    26.3 ms  gc   41    7.4 ms    2676.8 kB/frame
+== round 2/7 .
+ 1/1  fn        N= 10000 V=3     3.456 ms/frame    115 ns/subject·voice  p50    3.380  p99    3.929  worst    4.270  first    26.4 ms  gc   25   10.8 ms    2432.7 kB/frame
+== round 2/7 .
+ 1/1  named     N= 10000 V=1     1.929 ms/frame    193 ns/subject·voice  p50    1.905  p99    2.247  worst    3.423  first    44.2 ms  gc   11    2.8 ms    1183.1 kB/frame
+== round 2/7 .
+ 1/1  keys-     N= 10000 V=3     5.389 ms/frame    180 ns/subject·voice  p50    5.321  p99    6.081  worst    6.308  first    25.9 ms  gc   48   12.8 ms    3759.1 kB/frame
+== round 2/7 f727ff7
+ 1/1  tweenfn-  N= 10000 V=1     1.373 ms/frame    137 ns/subject·voice  p50    1.286  p99    2.056  worst    6.670  first    11.1 ms  gc   14    8.2 ms    1489.8 kB/frame
+== round 2/7 f727ff7
+ 1/1  probed-   N= 10000 V=2     3.865 ms/frame    193 ns/subject·voice  p50    3.764  p99    5.827  worst    8.798  first    28.8 ms  gc   40    9.6 ms    2673.4 kB/frame
+== round 2/7 f727ff7
+ 1/1  fn        N= 10000 V=3     3.474 ms/frame    116 ns/subject·voice  p50    3.404  p99    4.017  worst    4.254  first    26.0 ms  gc   25   10.9 ms    2432.3 kB/frame
+== round 2/7 f727ff7
+ 1/1  named     N= 10000 V=1     1.995 ms/frame    199 ns/subject·voice  p50    1.963  p99    2.445  worst    3.058  first    42.0 ms  gc   12    3.0 ms    1341.7 kB/frame
+== round 2/7 f727ff7
+ 1/1  keys-     N= 10000 V=3     5.565 ms/frame    185 ns/subject·voice  p50    5.490  p99    6.417  worst    6.682  first    25.6 ms  gc   48   12.7 ms    3759.2 kB/frame
+== round 3/7 f727ff7
+ 1/1  tweenfn-  N= 10000 V=1     1.254 ms/frame    125 ns/subject·voice  p50    1.185  p99    1.894  worst    4.028  first    10.5 ms  gc   13    5.3 ms    1332.4 kB/frame
+== round 3/7 f727ff7
+ 1/1  probed-   N= 10000 V=2     3.659 ms/frame    183 ns/subject·voice  p50    3.599  p99    4.838  worst    6.011  first    26.9 ms  gc   41    7.5 ms    2682.4 kB/frame
+== round 3/7 f727ff7
+ 1/1  fn        N= 10000 V=3     3.589 ms/frame    120 ns/subject·voice  p50    3.518  p99    4.158  worst    4.373  first    26.3 ms  gc   25   10.7 ms    2437.7 kB/frame
+== round 3/7 f727ff7
+ 1/1  named     N= 10000 V=1     2.109 ms/frame    211 ns/subject·voice  p50    2.011  p99    3.185  worst    4.059  first    43.7 ms  gc   11    3.2 ms    1179.5 kB/frame
+== round 3/7 f727ff7
+ 1/1  keys-     N= 10000 V=3     5.553 ms/frame    185 ns/subject·voice  p50    5.482  p99    6.383  worst    6.595  first    26.3 ms  gc   48   13.0 ms    3758.1 kB/frame
+== round 3/7 .
+ 1/1  tweenfn-  N= 10000 V=1     1.248 ms/frame    125 ns/subject·voice  p50    1.173  p99    1.860  worst    6.778  first    10.3 ms  gc   14    8.0 ms    1490.7 kB/frame
+== round 3/7 .
+ 1/1  probed-   N= 10000 V=2     3.624 ms/frame    181 ns/subject·voice  p50    3.554  p99    4.730  worst    5.646  first    30.1 ms  gc   41    7.6 ms    2683.0 kB/frame
+== round 3/7 .
+ 1/1  fn        N= 10000 V=3     3.486 ms/frame    116 ns/subject·voice  p50    3.422  p99    3.963  worst    4.558  first    28.4 ms  gc   25   10.6 ms    2441.4 kB/frame
+== round 3/7 .
+ 1/1  named     N= 10000 V=1     2.111 ms/frame    211 ns/subject·voice  p50    2.016  p99    3.060  worst    3.902  first    45.9 ms  gc   11    2.9 ms    1180.8 kB/frame
+== round 3/7 .
+ 1/1  keys-     N= 10000 V=3     5.446 ms/frame    182 ns/subject·voice  p50    5.373  p99    6.324  worst    6.698  first    26.4 ms  gc   48   12.8 ms    3756.7 kB/frame
+== round 4/7 .
+ 1/1  tweenfn-  N= 10000 V=1     1.244 ms/frame    124 ns/subject·voice  p50    1.174  p99    1.868  worst    6.395  first    10.3 ms  gc   14    7.7 ms    1492.2 kB/frame
+== round 4/7 .
+ 1/1  probed-   N= 10000 V=2     3.718 ms/frame    186 ns/subject·voice  p50    3.576  p99    5.438  worst    6.438  first    26.1 ms  gc   41    8.3 ms    2680.9 kB/frame
+== round 4/7 .
+ 1/1  fn        N= 10000 V=3     3.360 ms/frame    112 ns/subject·voice  p50    3.248  p99    5.531  worst    5.873  first    26.9 ms  gc   18    8.9 ms    2435.8 kB/frame
+== round 4/7 .
+ 1/1  named     N= 10000 V=1     1.963 ms/frame    196 ns/subject·voice  p50    1.937  p99    2.381  worst    2.658  first    41.5 ms  gc   11    2.7 ms    1185.7 kB/frame
+== round 4/7 .
+ 1/1  keys-     N= 10000 V=3     5.492 ms/frame    183 ns/subject·voice  p50    5.401  p99    6.584  worst    6.731  first    27.6 ms  gc   47   11.7 ms    3759.8 kB/frame
+== round 4/7 f727ff7
+ 1/1  tweenfn-  N= 10000 V=1     1.292 ms/frame    129 ns/subject·voice  p50    1.218  p99    1.857  worst    4.723  first    10.4 ms  gc   12    5.7 ms    1332.1 kB/frame
+== round 4/7 f727ff7
+ 1/1  probed-   N= 10000 V=2     3.721 ms/frame    186 ns/subject·voice  p50    3.628  p99    5.413  worst    6.168  first    28.3 ms  gc   40    7.5 ms    2672.9 kB/frame
+== round 4/7 f727ff7
+ 1/1  fn        N= 10000 V=3     3.347 ms/frame    112 ns/subject·voice  p50    3.245  p99    5.095  worst    6.525  first    29.8 ms  gc   19   10.0 ms    2434.3 kB/frame
+== round 4/7 f727ff7
+ 1/1  named     N= 10000 V=1     2.069 ms/frame    207 ns/subject·voice  p50    1.993  p99    2.588  worst    3.075  first    45.8 ms  gc   11    3.0 ms    1182.9 kB/frame
+== round 4/7 f727ff7
+ 1/1  keys-     N= 10000 V=3     5.561 ms/frame    185 ns/subject·voice  p50    5.457  p99    6.929  worst    7.748  first    26.1 ms  gc   48   11.9 ms    3761.5 kB/frame
+== round 5/7 f727ff7
+ 1/1  tweenfn-  N= 10000 V=1     1.322 ms/frame    132 ns/subject·voice  p50    1.262  p99    1.967  worst    5.474  first    10.3 ms  gc   16    7.1 ms    1489.3 kB/frame
+== round 5/7 f727ff7
+ 1/1  probed-   N= 10000 V=2     3.581 ms/frame    179 ns/subject·voice  p50    3.485  p99    5.143  worst    6.143  first    24.8 ms  gc   35    7.0 ms    2363.8 kB/frame
+== round 5/7 f727ff7
+ 1/1  fn        N= 10000 V=3     3.371 ms/frame    112 ns/subject·voice  p50    3.281  p99    5.252  worst    5.880  first    27.7 ms  gc   19    9.3 ms    2435.6 kB/frame
+== round 5/7 f727ff7
+ 1/1  named     N= 10000 V=1     1.999 ms/frame    200 ns/subject·voice  p50    1.942  p99    2.545  worst    2.748  first    43.3 ms  gc   11    3.0 ms    1180.0 kB/frame
+== round 5/7 f727ff7
+ 1/1  keys-     N= 10000 V=3     5.527 ms/frame    184 ns/subject·voice  p50    5.461  p99    6.405  worst    6.562  first    25.7 ms  gc   48   11.9 ms    3763.8 kB/frame
+== round 5/7 .
+ 1/1  tweenfn-  N= 10000 V=1     1.246 ms/frame    125 ns/subject·voice  p50    1.165  p99    1.869  worst    6.909  first    10.3 ms  gc   14    8.5 ms    1491.2 kB/frame
+== round 5/7 .
+ 1/1  probed-   N= 10000 V=2     3.584 ms/frame    179 ns/subject·voice  p50    3.500  p99    4.792  worst    5.768  first    25.1 ms  gc   41    7.7 ms    2682.6 kB/frame
+== round 5/7 .
+ 1/1  fn        N= 10000 V=3     3.453 ms/frame    115 ns/subject·voice  p50    3.358  p99    5.309  worst    5.824  first    26.7 ms  gc   19   10.0 ms    2436.6 kB/frame
+== round 5/7 .
+ 1/1  named     N= 10000 V=1     1.991 ms/frame    199 ns/subject·voice  p50    1.916  p99    2.434  worst    2.704  first    43.2 ms  gc   11    3.0 ms    1182.3 kB/frame
+== round 5/7 .
+ 1/1  keys-     N= 10000 V=3     5.530 ms/frame    184 ns/subject·voice  p50    5.430  p99    6.593  worst    7.408  first    24.9 ms  gc   48   13.2 ms    3761.4 kB/frame
+== round 6/7 .
+ 1/1  tweenfn-  N= 10000 V=1     1.169 ms/frame    117 ns/subject·voice  p50    1.087  p99    1.775  worst    4.207  first    10.6 ms  gc   12    5.4 ms    1332.0 kB/frame
+== round 6/7 .
+ 1/1  probed-   N= 10000 V=2     3.607 ms/frame    180 ns/subject·voice  p50    3.522  p99    4.795  worst    6.826  first    25.7 ms  gc   41    7.4 ms    2682.3 kB/frame
+== round 6/7 .
+ 1/1  fn        N= 10000 V=3     3.383 ms/frame    113 ns/subject·voice  p50    3.279  p99    5.249  worst    5.568  first    31.0 ms  gc   18    8.9 ms    2437.2 kB/frame
+== round 6/7 .
+ 1/1  named     N= 10000 V=1     2.132 ms/frame    213 ns/subject·voice  p50    2.077  p99    3.546  worst    7.058  first    47.6 ms  gc    7    5.1 ms    1181.4 kB/frame
+== round 6/7 .
+ 1/1  keys-     N= 10000 V=3     5.553 ms/frame    185 ns/subject·voice  p50    5.479  p99    6.421  worst    6.656  first    26.0 ms  gc   48   13.2 ms    3762.9 kB/frame
+== round 6/7 f727ff7
+ 1/1  tweenfn-  N= 10000 V=1     1.365 ms/frame    136 ns/subject·voice  p50    1.282  p99    2.146  worst    6.927  first    10.3 ms  gc   14    8.5 ms    1488.0 kB/frame
+== round 6/7 f727ff7
+ 1/1  probed-   N= 10000 V=2     3.710 ms/frame    186 ns/subject·voice  p50    3.642  p99    4.847  worst    6.789  first    25.5 ms  gc   40    7.1 ms    2682.5 kB/frame
+== round 6/7 f727ff7
+ 1/1  fn        N= 10000 V=3     3.475 ms/frame    116 ns/subject·voice  p50    3.426  p99    3.916  worst    4.082  first    28.1 ms  gc   35   16.9 ms    2434.1 kB/frame
+== round 6/7 f727ff7
+ 1/1  named     N= 10000 V=1     1.994 ms/frame    199 ns/subject·voice  p50    1.925  p99    2.528  worst    3.174  first    42.5 ms  gc   11    2.9 ms    1183.1 kB/frame
+== round 6/7 f727ff7
+ 1/1  keys-     N= 10000 V=3     5.504 ms/frame    183 ns/subject·voice  p50    5.456  p99    6.479  worst    7.196  first    27.5 ms  gc   48   11.5 ms    3763.6 kB/frame
+== round 7/7 f727ff7
+ 1/1  tweenfn-  N= 10000 V=1     1.314 ms/frame    131 ns/subject·voice  p50    1.223  p99    1.950  worst    4.671  first    11.1 ms  gc   12    5.8 ms    1332.8 kB/frame
+== round 7/7 f727ff7
+ 1/1  probed-   N= 10000 V=2     3.779 ms/frame    189 ns/subject·voice  p50    3.693  p99    4.903  worst    6.132  first    25.6 ms  gc   40    7.5 ms    2678.6 kB/frame
+== round 7/7 f727ff7
+ 1/1  fn        N= 10000 V=3     3.552 ms/frame    118 ns/subject·voice  p50    3.480  p99    4.157  worst    4.319  first    27.6 ms  gc   25    9.0 ms    2443.6 kB/frame
+== round 7/7 f727ff7
+ 1/1  named     N= 10000 V=1     1.950 ms/frame    195 ns/subject·voice  p50    1.921  p99    2.432  worst    3.040  first    42.1 ms  gc   11    2.8 ms    1181.9 kB/frame
+== round 7/7 f727ff7
+ 1/1  keys-     N= 10000 V=3     5.424 ms/frame    181 ns/subject·voice  p50    5.389  p99    5.923  worst    6.064  first    26.3 ms  gc   48   11.7 ms    3765.3 kB/frame
+== round 7/7 .
+ 1/1  tweenfn-  N= 10000 V=1     1.235 ms/frame    123 ns/subject·voice  p50    1.146  p99    1.915  worst    5.132  first    10.1 ms  gc   12    6.5 ms    1332.9 kB/frame
+== round 7/7 .
+ 1/1  probed-   N= 10000 V=2     3.546 ms/frame    177 ns/subject·voice  p50    3.485  p99    5.177  worst    6.553  first    25.7 ms  gc   40    7.7 ms    2674.4 kB/frame
+== round 7/7 .
+ 1/1  fn        N= 10000 V=3     3.426 ms/frame    114 ns/subject·voice  p50    3.297  p99    5.328  worst    6.278  first    25.8 ms  gc   19    9.6 ms    2434.1 kB/frame
+== round 7/7 .
+ 1/1  named     N= 10000 V=1     1.934 ms/frame    193 ns/subject·voice  p50    1.916  p99    2.239  worst    2.678  first    42.2 ms  gc   11    2.7 ms    1186.1 kB/frame
+== round 7/7 .
+ 1/1  keys-     N= 10000 V=3     5.455 ms/frame    182 ns/subject·voice  p50    5.369  p99    6.189  worst    6.459  first    25.7 ms  gc   48   13.2 ms    3757.6 kB/frame

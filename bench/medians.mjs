@@ -5,8 +5,10 @@
 //   node bench/medians.mjs <file holding ab.sh's output>
 // LEDGER="<what the change does>" also appends each row to bench/ledger.tsv, the record of what
 // each change measured; LEDGER_NODE names the node, LEDGER_REV the commit standing for `.`, and
-// LEDGER_FRAMES the FRAMES the run used (300 unset).
+// LEDGER_FRAMES the FRAMES the run used (300 unset). Keep the output itself in bench/runs/ first,
+// headed by a `#` line naming the node and the command: the ledger names it as the line's `raw`.
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
 
 const file = process.argv[2];
 if (file === undefined) throw new Error('usage: node bench/medians.mjs <ab.sh output>');
@@ -48,6 +50,10 @@ console.log(
     `  ${`kB ${a}`.padStart(kbWide)}  ${`kB ${b}`.padStart(kbWide)}`,
 );
 const ledger = process.env.LEDGER;
+const repo = resolve(new URL('..', import.meta.url).pathname);
+const raw = relative(repo, resolve(file)).startsWith('..') ? '' : relative(repo, resolve(file));
+if (ledger !== undefined && raw === '')
+  console.log('note: the output is outside the repo, so the ledger line names no raw file');
 const lines = [];
 let logs = 0;
 let n = 0;
@@ -80,6 +86,7 @@ for (const [key, at] of rows) {
       kbOf(x),
       kbOf(y),
       ledger,
+      raw,
     ].join('\t'),
   );
 }
@@ -87,7 +94,7 @@ console.log(`${n} rows, geometric mean ${Math.exp(logs / n).toFixed(3)}`);
 if (ledger !== undefined) {
   const path = new URL('./ledger.tsv', import.meta.url);
   const head =
-    'date\tnode\tbase\trev\trounds\tframes\trow\tbase ms\tms\tratio\tU\tbase kB\tkB\tchange\n';
+    'date\tnode\tbase\trev\trounds\tframes\trow\tbase ms\tms\tratio\tU\tbase kB\tkB\tchange\traw\n';
   appendFileSync(path, (existsSync(path) ? '' : head) + lines.map((l) => `${l}\n`).join(''));
   console.log(`appended ${lines.length} rows to bench/ledger.tsv`);
 }
