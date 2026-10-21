@@ -1173,12 +1173,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         | `tweens`, a tween per subject | 0.95–0.98 | 1.72–1.89 |
 
         A crowd of per-subject voices a lane evaluates itself (`tweens`, `springs`, `keyses`,
-        `weasel`) wins on lanes; a crowd of `fn` voices loses. A profile of `fns` on lanes puts 6.5%
-        on `setting.state = held.state` in `prime`, the fill's first touch of each record, which the
-        probe then walks again: two passes over cold records where the general path makes one
-        (inferred from the line, not measured further). Not built: keeping a crowd of `fn` voices
-        off lanes, which `qualify` would have to do without closing a channel a fitting voice needs.
-        `glowc` and `glowkeys` read on lanes slower too (3.3 against 3.0) and are not explained.
+        `weasel`) wins on lanes; a crowd of `fn` voices loses, since the lane calls each patch once a
+        subject as the general path does and its fill walks the subjects a second time. **Built
+        (2026-10-21):** a crowd voice calling its patch fits only where another fitting voice writes
+        one of its channels (`keepCallsOff` in `src/qualify.ts`); `fns` read 1.571 to 1.228 ms
+        (teitou, 7 rounds, U = 2), every other row level. Mixed with a tween or keys crowd on the
+        same channel, an `fn` crowd still runs on lanes and still pays the second walk; nobody has
+        measured which way such a mix should go. `tweenfn`, `weaselfn` and `own`, where the losing
+        voice is over every subject or targeted, are unchanged. `glowc` and `glowkeys` read on lanes
+        slower too (3.3 against 3.0) and are not explained.
       - **What the keyed store of a rest into the pose costs**: `pose[key] = copy(rest)` in
         `foldWith` is 15% of the `tweenfn-` row's samples, a store V8 cannot specialize since `key`
         varies. Storing the bench kit's two primitive rests by name (`pose.gain = rest`), the most
