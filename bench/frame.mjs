@@ -468,15 +468,17 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     position: new Float64Array(n * 3),
     color: new Float64Array(kind === 'glowk' || kind === 'glowl' ? n * 4 : n),
   };
+  // Indexed, not `for...of`: an iterator V8 leaves unoptimized in some processes and not others
+  // allocates a result a subject, about 390 kB a frame at 10,000 (`glow`, 2026-10-20).
   const read = (list) => {
-    if (kind === 'rest') for (const s of list) m.atRest(s);
+    if (kind === 'rest') for (let j = 0; j < list.length; j++) m.atRest(list[j]);
     else if (kind === 'probed')
-      for (const s of list) {
-        m.probe(s, scratch);
-        m.atRest(s);
+      for (let j = 0; j < list.length; j++) {
+        m.probe(list[j], scratch);
+        m.atRest(list[j]);
       }
     else if (pulls) m.pull(list, columns);
-    else for (const s of list) m.probe(s, scratch);
+    else for (let j = 0; j < list.length; j++) m.probe(list[j], scratch);
   };
   let t = 0;
   let first = 0;
@@ -497,7 +499,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     const f0 = performance.now();
     if (scrub) {
       const p = m.project(kind === 'ahead' ? t + 500 : t - 300 + (f % 20) * 5);
-      for (const s of probed) p.probe(s, scratch);
+      for (let j = 0; j < probed.length; j++) p.probe(probed[j], scratch);
     } else {
       t += 16.7;
       churn();
