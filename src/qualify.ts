@@ -63,7 +63,7 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
   const numeric = host.channels.map((c) => numericOf(c) !== undefined);
   // A voice writing nothing has no lane to fill, so it stays where its calls are made.
   const fits = present.map((v) => v.slots.length > 0 && host.fits(v));
-  keepCallsOff(present, fits, host.channels.length);
+  if (callsOff) keepCallsOff(present, fits, host.channels);
   const candidates = () =>
     present.map((v, i) => ({ id: v.id, fits: fits[i] as boolean, slots: v.slots }));
   let { channels, voices } = qualify(numeric, candidates());
@@ -188,9 +188,25 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
   regroup(lanes, members);
 }
 
-/** A crowd voice whose row calls its patch, as a fn voice's does: no tween, keys or motion row. */
-export function calls<I, O>(v: Voice<I, O>): boolean {
-  return crowdable(v) && v.built === null && v.motion === undefined;
+/** Whether `keepCallsOff` applies; settable for bench/frame.mjs. */
+export let callsOff = true;
+
+export function setCallsOff(on: boolean): void {
+  callsOff = on;
+}
+
+/**
+ * A crowd voice whose row calls its patch, as a fn voice's does (no tween, keys or motion row), and
+ * that writes only arrays: a crowd writing a number reads 17% to 25% faster on lanes
+ * (bench/frame.mjs `named` under CALLS_OFF, msb-uai, 2026-10-21).
+ */
+export function calls<I, O>(v: Voice<I, O>, channels: readonly Channel<unknown>[]): boolean {
+  return (
+    crowdable(v) &&
+    v.built === null &&
+    v.motion === undefined &&
+    v.slots.every((s) => typeof (channels[s] as Channel<unknown>).rest !== 'number')
+  );
 }
 
 /**
@@ -199,13 +215,17 @@ export function calls<I, O>(v: Voice<I, O>): boolean {
  * walks the subjects a second time (bench/frame.mjs `fns`, 2.58 ms a frame on lanes against 1.07
  * off, studio, 2026-10-21).
  */
-function keepCallsOff<I, O>(present: readonly Voice<I, O>[], fits: boolean[], channels: number): void {
-  const others = new Array<boolean>(channels).fill(false);
+function keepCallsOff<I, O>(
+  present: readonly Voice<I, O>[],
+  fits: boolean[],
+  channels: readonly Channel<unknown>[],
+): void {
+  const others = new Array<boolean>(channels.length).fill(false);
   present.forEach((v, i) => {
-    if (fits[i] && !calls(v)) for (const s of v.slots) others[s] = true;
+    if (fits[i] && !calls(v, channels)) for (const s of v.slots) others[s] = true;
   });
   present.forEach((v, i) => {
-    if (fits[i] && calls(v) && !v.slots.some((s) => others[s])) fits[i] = false;
+    if (fits[i] && calls(v, channels) && !v.slots.some((s) => others[s])) fits[i] = false;
   });
 }
 
@@ -282,7 +302,7 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
     const laned = v.slots.some((slot) => lanes.bySlot[slot] !== undefined);
     const fits = v.slots.length > 0 && lanes.host.fits(v);
     // As `keepCallsOff`: with none of its channels laned, no fitting voice but its like writes them.
-    if (!laned && (!fits || calls(v))) {
+    if (!laned && (!fits || (callsOff && calls(v, lanes.host.channels)))) {
       lanes.whole = false;
       continue;
     }

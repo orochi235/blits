@@ -1894,20 +1894,21 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
     );
   });
 
-  const crowdOfFns = (beside: boolean) => {
+  const crowdOfFns = (beside: boolean, key: 'crawl' | 'bend' = 'crawl') => {
     const m = mix<Part, Pose>(K, { lanes: true });
     const seen: number[] = [];
     const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
-    if (beside) m.cue({ patch: keys<Part, Pose>(100, [{ at: 0, delta: { crawl: 1 } }]), loop: true });
+    const at = (id: number) => (key === 'crawl' ? { crawl: id } : { bend: [id] });
+    if (beside) m.cue({ patch: keys<Part, Pose>(100, [{ at: 0, delta: at(1) }]), loop: true });
     for (const p of parts)
       m.cue({
         patch: patch<Part, Pose>(
           0,
           (_ph, part) => {
             seen.push(part.id);
-            return { crawl: part.id };
+            return at(part.id);
           },
-          { writes: ['crawl'] },
+          { writes: [key] },
         ),
         subjects: [p],
       });
@@ -1925,8 +1926,11 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
     expect(crowdOfFns(true)).toEqual([0, 1, 2, 3]);
   });
 
-  it('leaves a crowd of fn voices off lanes where nothing else would lane its channel', () => {
-    expect(crowdOfFns(false)).toEqual([1, 3]);
+  it('leaves a crowd of fn voices writing arrays off lanes where nothing else would lane them', () => {
+    expect(crowdOfFns(false, 'bend')).toEqual([1, 3]);
+    expect(crowdOfFns(true, 'bend')).toEqual([0, 1, 2, 3]);
+    // One writing a number stays on lanes, which read it faster below 10,000 subjects.
+    expect(crowdOfFns(false)).toEqual([0, 1, 2, 3]);
   });
 
   it('for voices writing several channels, crowds sharing one folding in voice order', () => {
