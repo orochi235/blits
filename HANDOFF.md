@@ -944,7 +944,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     a run over releases before 0.11.0, or give it its own: v0.7.1 takes 1.2 s a frame on it, so the
     first run over releases (`bench/runs/2026-10-20-releases.txt`) hit its 90-minute limit in
     round 2. What it got, one or two runs a cell at 10,000 subjects, v0.7.1 to `main`: `seek`
-    1,234 to 5.37 ms, `kept` 5.37 to 4.83, `keys` 1.26 to 1.04, `fn` 2.11 to 2.29.
+    1,234 to 5.37 ms. The rerun without it (`bench/runs/2026-10-20-releases-no-seek.txt`, 5 rounds)
+    reads `fn` level across every release (2.29 to 2.27), `keys` 1.28 to 1.06, `kept` 5.45 to
+    5.19, and allocation down at every row but `keys-`.
+  - **`glow` has grown about 6% slower since 0.10.0** (same run, ms a frame at 10,000 subjects):
+    v0.10.0 1.564 to 1.573 with one run at 1.773, v0.11.0 1.601 to 1.683, `b57d53f` 1.630 to
+    1.687. Not bisected; `AB_EACH=1 bench/ab.sh v0.10.0 v0.11.0 9 glow:10000`, then within each
+    range, would find the commits.
     - **Mike has not seen two things chosen while building.**
       - **A probe into `out` reuses its arrays, which reverses a guarantee a test held.**
         `test/solo.test.ts` said a reused `out` "never has an array the host kept from it written
