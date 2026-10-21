@@ -23,6 +23,12 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A voice over every subject that plays more than 60 frames costs less a frame: it now keeps a
+  record for each subject, where it kept one for them all that every read had to point at its
+  subject and back. Three `fn` voices over 1,000 subjects (`fn`) take 0.212 ms a frame against
+  0.226, eight 0.468 against 0.526 (teitou, medians of nine alternated runs of 1,500 frames against
+  `a77c5c9`). A voice cued and gone within a few frames still shares one record, which is what it
+  was for.
 - A crowd of `fn` voices, one per subject, costs about a fifth less a frame where nothing else
   writes its channels: it now runs off lanes, where its patch is called once a subject as on them
   but the subjects are walked once instead of twice. A `fn` voice for each of 10,000 subjects

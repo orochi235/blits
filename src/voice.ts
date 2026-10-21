@@ -444,6 +444,8 @@ export class Voice<I, O> {
   unreachedBits: Uint32Array | null = null;
   /** Whether one record stands for every subject: see `shares` in `everyone.ts`. */
   sharing = false;
+  /** The frames it has played sharing it. */
+  shared = 0;
   /** That record, null until a chain first asks and once the voice shares no more. */
   everyone: Subject<unknown> | null = null;
   /** While sharing, by subject number: a bit where a chain has asked about the subject. */

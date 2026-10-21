@@ -29,6 +29,11 @@ const waiting = process.env.SAME_WAIT === '1';
 const first = Number(process.argv[5] ?? 1);
 const load = (dir) => import(pathToFileURL(resolve(dir, 'index.js')).href);
 const [A, B] = await Promise.all([load(distA), load(distB)]);
+// SAME_SHARE=<frames> has dist-b's voices share one record only that many frames, where it can.
+if (process.env.SAME_SHARE !== undefined)
+  (await import(pathToFileURL(resolve(distB, 'everyone.js')).href)).setShareFrames(
+    Number(process.env.SAME_SHARE),
+  );
 
 function rng(seed) {
   let a = seed >>> 0;
