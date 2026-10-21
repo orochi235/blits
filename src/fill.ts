@@ -6,7 +6,7 @@ import { open as openRecord, shut as shutRecord } from './everyone.js';
 import { unband } from './fold.js';
 import { foldLocus, gatherLocus } from './gather.js';
 import { runKeys } from './keyfill.js';
-import { Arg, frozenAt, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
+import { Arg, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { reach } from './meet.js';
 import { absent } from './numbers.js';
@@ -291,7 +291,19 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
     data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
   if (this.lately >= 0 && this.unread(slot)) return false;
   const delay = data[o + Row.DELAY] as number;
-  const elapsed = frozenAt(voice, elapsedNow - delay);
+  const raw = elapsedNow - delay;
+  // `frozenAt` written out: V8 leaves it out of line here, a call a subject.
+  const elapsed = !(raw >= 0)
+    ? voice.freezesBefore
+      ? 0
+      : Number.NaN
+    : raw > voice.span
+      ? voice.hidesPast
+        ? Number.NaN
+        : voice.freezesAfter
+          ? voice.span
+          : raw
+      : raw;
   if (!(elapsed >= 0)) {
     data[o + Row.WEIGHT] = 0;
     unband(lane.records[p]);
