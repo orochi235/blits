@@ -10,7 +10,6 @@ import {
   isAuto,
   resolveConfigSchema,
 } from '@weasel-js/labkit';
-import { drafted } from './CompositionControls';
 import { docOf } from './docs';
 import { EaseField, easeName } from './EaseField';
 
@@ -52,8 +51,7 @@ export function ChannelTiming({ patch: p, onChange }: { patch: Keys; onChange(p:
       delay: (patch ? f.number(0).enableIf(() => false) : f.number(0).range(0, 60000).input())
         .step(10)
         .suffix('ms')
-        .describe(docOf('KeysOptions.delayBy') ?? '')
-        .render(drafted()),
+        .describe(docOf('KeysOptions.delayBy') ?? ''),
       ease: f
         .custom<string>('ease', 'linear')
         .describe(docOf('KeysOptions.easeBy') ?? '')

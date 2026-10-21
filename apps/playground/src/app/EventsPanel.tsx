@@ -7,7 +7,7 @@ import { Button, PropertyRow } from '@weasel-js/ui';
 import { type ReactNode, useState } from 'react';
 import { AnnouncedFields } from './AnnouncedFields';
 import s from './App.module.css';
-import { drafted } from './CompositionControls';
+import { fieldRow } from './CompositionControls';
 import { docOf } from './docs';
 import e from './Events.module.css';
 
@@ -17,14 +17,14 @@ const BOOKS = {
     .label('book and drain only the tag')
     .placeholder('every voice and group')
     .describe(docOf('Mix.drain') ?? '')
-    .render(drafted({ layout: 'block', span: true })),
+    .render(fieldRow({ layout: 'block', span: true })),
   ahead: f
     .number(AHEAD)
     .label('book ahead')
     .suffix('ms')
     .step(10)
     .describe(docOf('BookOptions.ahead') ?? '')
-    .render(drafted({ layout: 'inline', name: 'book ahead in ms' })),
+    .render(fieldRow({ layout: 'inline', name: 'book ahead in ms' })),
 };
 // Two schemas rather than a `showIf`: a section whose rows are all hidden still draws its heading.
 const BOOKER = resolveConfigSchema(f.schema(BOOKS));

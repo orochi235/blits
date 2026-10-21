@@ -13,7 +13,6 @@ import {
   prefFieldProps,
 } from '@weasel-js/ui';
 import { createContext, type ReactNode, useContext, useRef } from 'react';
-import { drafted } from './CompositionControls';
 import { EaseField } from './EaseField';
 import g from './Group.module.css';
 
@@ -308,11 +307,11 @@ export function FaultLine({ faults }: { faults: Faults | undefined }) {
 export function sharedNodes(doc: (member: string) => string | undefined) {
   const d = (member: string) => doc(member) ?? '';
   return {
-    name: f.string('').describe(d('name')).render(drafted()),
-    start: f.number(0).step(10).describe(d('start')).render(drafted()),
+    name: f.string('').describe(d('name')),
+    start: f.number(0).step(10).describe(d('start')),
     seek: optional().label('seek').describe(d('seek')),
-    fadeIn: f.number(0).step(10).label('fade in').describe(d('fade')).render(drafted()),
-    fadeOut: f.number(0).step(10).label('fade out').describe(d('fade')).render(drafted()),
+    fadeIn: f.number(0).step(10).label('fade in').describe(d('fade')),
+    fadeOut: f.number(0).step(10).label('fade out').describe(d('fade')),
     fadeEase: f
       .custom<Timed['fade']['ease']>('ease', undefined)
       .label('fade ease')

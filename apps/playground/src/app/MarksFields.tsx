@@ -4,7 +4,6 @@ import { withKey } from '@pg/blits/keyed';
 import { f } from '@weasel-js/labkit';
 import { ListEditor, type PrefRenderContext, PropertyControl } from '@weasel-js/ui';
 import { useEffect, useRef, useState } from 'react';
-import { drafted } from './CompositionControls';
 import g from './Group.module.css';
 
 type Hit = NonNullable<Voice['hits']>[number];
@@ -177,10 +176,7 @@ export function marksNodes(voice: boolean, doc: (member: string) => string | und
       .dialog((row) => <TagsDialog row={row} />, {
         summary: (v) => none((v as string[]).length, (v as string[]).join(', ')),
       }),
-    score: f
-      .string('')
-      .describe(d('score'))
-      .render(drafted({ placeholder: "none: the mix's unnamed score" })),
+    score: f.string('').describe(d('score')).placeholder("none: the mix's unnamed score"),
     hits: f
       .list<Hit>([], f.object({ at: f.number(0), event: f.string('') }))
       .describe(d('hits'))

@@ -8,7 +8,6 @@ import { ControlPanel, f } from '@weasel-js/labkit';
 import { anchorRow } from './AnchorRow';
 import s from './App.module.css';
 import { blendRow } from './BlendField';
-import { drafted } from './CompositionControls';
 import { docOf } from './docs';
 import { hintsConfig, hintsGroup, writtenHints } from './HintsFields';
 import { marksConfig, marksNodes, writtenMarks } from './MarksFields';
@@ -59,7 +58,7 @@ const SCHEMA = specSchema({
   // A voice plays backward below 0.
   rate: f.number(1).range(-4, 4).step(0.05).describe(d('rate')).section('timing'),
   repeat: f.boolean(true).describe(d('loop')).section('timing'),
-  passes: f.number(1).step(1).describe(d('loop')).section('timing').render(drafted()),
+  passes: f.number(1).step(1).describe(d('loop')).section('timing'),
   seek: shared.seek.section('timing').render(
     optionalNumber({
       placeholder: ({ x }) => (x.rate < 0 ? 'its end' : '0'),
@@ -94,7 +93,7 @@ const SCHEMA = specSchema({
   fadeOut: shared.fadeOut.section('fade'),
   fadeEase: shared.fadeEase.section('fade'),
   freeze: shared.freeze.section('blending'),
-  locus: f.string('').describe(d('locus')).section('blending').render(drafted()),
+  locus: f.string('').describe(d('locus')).section('blending'),
   fromCurrent: f.boolean(false).label("from: 'current'").describe(d('from')).section('blending'),
   blend: f
     .custom<Expr | undefined>('blend', undefined)

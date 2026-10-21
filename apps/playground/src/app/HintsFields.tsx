@@ -1,12 +1,10 @@
 import type { Hints } from '@pg/blits/composition';
 import { withKey } from '@pg/blits/keyed';
 import { f } from '@weasel-js/labkit';
-import { drafted } from './CompositionControls';
 import { docOf } from './docs';
 
 const d = (key: keyof Hints) => docOf(`SpanHints.${key}`) ?? '';
-const factor = (key: 'faster' | 'slower') =>
-  f.number(1).step(0.05).describe(d(key)).render(drafted());
+const factor = (key: 'faster' | 'slower') => f.number(1).step(0.05).describe(d(key));
 
 /** How a voice or group under a span may give way, blits' `SpanHints`, at `hints.<key>`. */
 export const hintsGroup = (spanned: (c: Record<string, unknown>) => boolean) =>
