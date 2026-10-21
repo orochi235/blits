@@ -936,7 +936,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `(backed out) ...`), and `node bench/ledger.mjs [row]` lists each row's entries with the product
     of the kept ones' ratios (Mike, 2026-10-20). Time a history row (`kept`, `seek`, `back`) at
     `FRAMES=1500`: at the default 300 its 5 s window fills only as the run ends, so nothing it lets
-    go of is measured.
+    go of is measured. `bench/lineage.sh <rounds> <rev>... -- <rows>` runs this tree's bench over
+    any number of builds, releases included, and `bench/lineage.mjs` tables it; `frame.mjs` takes
+    `form:n:v` for a row its list does not hold, such as `fns-:10000:1`.
     - **Mike has not seen two things chosen while building.**
       - **A probe into `out` reuses its arrays, which reverses a guarantee a test held.**
         `test/solo.test.ts` said a reused `out` "never has an array the host kept from it written
@@ -1140,11 +1142,26 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         folds through `foldNumber` in `apply` (`src/fold.ts`) instead of the channel's `scale` and
         `merge`, whose call boxed a double. Each is exact under `bench/same.sh`. Tried and backed
         out for moving no row: storing a channel's primitive rest without `copy` (`f1523e0`).
-      - **Lanes lose to the general path on three rows** (keiei, 2026-10-20, five runs each in its
-        own process, ms a frame): `tweenfn` 1.531 to 1.580 on lanes against 1.300 to 1.378 off,
-        `glowc` 3.281 to 3.378 against 2.941 to 3.063, `glowkeys` 3.278 to 4.423 against 2.962 to
-        3.135; `tween` gains as it should, 1.051 to 1.096 against 1.372 to 1.694. Not chased: a local
-        profile of `glowc` read the other way, on a machine whose runs were three times teitou's.
+      - **Lanes lose to the general path where each subject has one `fn` voice** (keiei,
+        2026-10-20, five runs each in its own process, ms a frame, lanes on against off):
+
+        | Row | On | Off |
+        |---|---:|---:|
+        | `fns`, a `fn` voice per subject | 1.93–2.15 | 1.42–1.56 |
+        | `weaselfn`, weasel's animator as `fn` voices | 2.00–2.10 | 1.68–1.74 |
+        | `own` at 1,000, a voice per subject | 0.225–0.233 | 0.206–0.214 |
+        | `tweenfn`, one `fn` voice writing a vec | 1.51–1.59 | 1.26–1.30 |
+        | `fn`, three `fn` voices over every subject | 3.38–3.56 | 4.78–4.97 |
+        | `glowbase`, one `fn` voice writing a scalar | 1.69–1.76 | 2.02–2.07 |
+        | `tweens`, a tween per subject | 0.95–0.98 | 1.72–1.89 |
+
+        A crowd of per-subject voices a lane evaluates itself (`tweens`, `springs`, `keyses`,
+        `weasel`) wins on lanes; a crowd of `fn` voices loses. A profile of `fns` on lanes puts 6.5%
+        on `setting.state = held.state` in `prime`, the fill's first touch of each record, which the
+        probe then walks again: two passes over cold records where the general path makes one
+        (inferred from the line, not measured further). Not built: keeping a crowd of `fn` voices
+        off lanes, which `qualify` would have to do without closing a channel a fitting voice needs.
+        `glowc` and `glowkeys` read on lanes slower too (3.3 against 3.0) and are not explained.
       - **What the keyed store of a rest into the pose costs**: `pose[key] = copy(rest)` in
         `foldWith` is 15% of the `tweenfn-` row's samples, a store V8 cannot specialize since `key`
         varies. Storing the bench kit's two primitive rests by name (`pose.gain = rest`), the most

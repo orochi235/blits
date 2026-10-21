@@ -8,7 +8,10 @@
 import { PerformanceObserver } from 'node:perf_hooks';
 import { getHeapStatistics } from 'node:v8';
 import { createHistory } from '@weasel-js/history';
-import {
+// A namespace, so a release missing an export still runs the rows that do not use it.
+import * as blits from '../dist/index.js';
+
+const {
   angle,
   color,
   keys,
@@ -25,7 +28,7 @@ import {
   sum,
   tween,
   vec,
-} from '../dist/index.js';
+} = blits;
 
 const K = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: last({ lerp: mixHex }) });
 // The same with color averaging as `color()`, which runs on lanes where a packed color does not.
@@ -88,7 +91,7 @@ const tweenFn = () =>
 
 // Rotations: an angle, which sums the short way round, and a quat, which composes. Keys writing
 // both across 0, a `fn` writing the angle past a whole turn, and a tween on it.
-const KR = kit({ heading: angle(), spin: quat() });
+const KR = angle && quat ? kit({ heading: angle(), spin: quat() }) : null;
 const sway = () =>
   keys(1000, [
     { at: 0, delta: { heading: 350, spin: [0, 0, 0, 1] } },
@@ -269,11 +272,17 @@ const rows = [
 const frames = Number(process.env.FRAMES ?? 300);
 const windowed = Number(process.env.WINDOW ?? 0);
 // Row names after the script, `node bench/frame.mjs keys keys^`, run only those rows; `tweens:10000`
-// only the one at that size.
+// only the one at that size; `fn-:10000:3`, a form at a size and voice count the list need not hold.
 const only = process.argv.slice(2);
 const chosen =
   only.length > 0
-    ? rows.filter(([form, n]) => only.includes(form) || only.includes(`${form}:${n}`))
+    ? [
+        ...rows.filter(([form, n]) => only.includes(form) || only.includes(`${form}:${n}`)),
+        ...only
+          .map((a) => a.split(':'))
+          .filter((p) => p.length === 3)
+          .map(([form, n, v]) => [form, Number(n), Number(v)]),
+      ]
     : rows;
 // Padded to the longest of every row, so rows run in separate processes still line up.
 const wide = Math.max(...rows.map(([form]) => form.length));
