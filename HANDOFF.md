@@ -1302,8 +1302,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `ChannelTiming` inherits on purpose. Port labels are wired to a "port labels" box in the Both
   tab's edit mode, off by default (Mike, 2026-10-21: start and end read better from where the dot
   sits), but 1.11.0's `DiagramView` draws none: `diagramScene` builds each as a leaf outside its
-  node's box, and nothing shows. Asked of weasel (session weasel-b1, 2026-10-21); the fix is in
-  progress. Built on weasel `main` (`c9a3b7de9`, unreleased): `.dialog(body, { commit })`, run once
+  node's box, and core clips a container's children to its outline. Fixed on weasel `main`
+  (`f4615721a`, unreleased: diagram's node boxes clip nothing); the bump alone makes the labels
+  show, which the README's Both section then stops disclaiming. Also built on weasel `main` (`c9a3b7de9`, unreleased): `.dialog(body, { commit })`, run once
   at Done on an edited draft, and a dev warning for a body writing after its dialog closed. Once a
   labkit release carries it, `MarksFields.tsx` drops `useDraft`'s local state: each dialog edits
   the raw draft and cleans it in `commit` (`tagsIn`, the hits' empty check, the marks' faults).
