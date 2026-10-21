@@ -1193,11 +1193,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         Sharing was built for voices cued and gone within frames (`swap`, 8,064 to 3,875 kB a frame,
         2026-10-09) and nobody had timed it on a voice that stays: with `shares` returning false,
         `glowc` read 0.898, `glowbase` 0.915 and `tweenfn` 0.923 (teitou, 7 rounds, U = 0 each;
-        `bench/runs/2026-10-21-never-share.txt`). Unsharing at 60 frames keeps most of that for `fn`
-        and `glowc` (0.89 to 0.95) but reads `glowbase` and `tweenfn` level, against the never-shared
-        build's 8%; why a voice unshared late reads slower than one never shared is not known. 60 is
-        a guess at the break-even of about 2 MB allocated once at 10,000 subjects against 0.13 ms a
-        frame, not measured.
+        `bench/runs/2026-10-21-never-share.txt`). Against `a77c5c9`, unsharing at 60 frames read `fn` and
+        `glowc` 0.89 to 0.95 and `glowbase` and `tweenfn` level, but one build timed at each count
+        (`SHARE_FRAMES` in `bench/frame.mjs`; keiei, 7 rounds of 1,500 frames,
+        `bench/runs/2026-10-21-share-frames-sweep.txt`) reads every count ahead of never: against
+        never, 60 is `fn` 1,000×8 0.92, `glowbase` 0.95, `tweenfn` 0.96, and 1 is 0.86, 0.92 and 0.94.
+        60 is a guess at where about 2 MB allocated once at 10,000 subjects pays for 0.13 ms a frame,
+        not measured.
       - **What the keyed store of a rest into the pose costs**: `pose[key] = copy(rest)` in
         `foldWith` is 15% of the `tweenfn-` row's samples, a store V8 cannot specialize since `key`
         varies. Storing the bench kit's two primitive rests by name (`pose.gain = rest`), the most

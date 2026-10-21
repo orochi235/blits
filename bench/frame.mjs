@@ -271,6 +271,11 @@ const rows = [
 // FRAMES=20000 for a profile long enough to sample a fast row.
 const frames = Number(process.env.FRAMES ?? 300);
 const windowed = Number(process.env.WINDOW ?? 0);
+// SHARE_FRAMES=<n> has a voice over every subject share one record for n frames, where the build can.
+if (process.env.SHARE_FRAMES !== undefined) {
+  const everyone = await import('../dist/everyone.js');
+  everyone.setShareFrames?.(Number(process.env.SHARE_FRAMES));
+}
 // UNWATCHED=1 has a debugger watch and hold each row's mix, then let it go, before the row cues.
 const unwatched = process.env.UNWATCHED === '1';
 // Row names after the script, `node bench/frame.mjs keys keys^`, run only those rows; `tweens:10000`
