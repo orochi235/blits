@@ -1185,8 +1185,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         subject as the general path does and its fill walks the subjects a second time. **Built
         (2026-10-21):** a crowd voice calling its patch fits only where another fitting voice writes
         one of its channels (`keepCallsOff` in `src/qualify.ts`); `fns` read 1.571 to 1.228 ms
-        (teitou, 7 rounds, U = 2), every other row level. Mixed with a tween or keys crowd on the
-        same channel, an `fn` crowd still runs on lanes and still pays the second walk; nobody has
+        (teitou, 7 rounds, U = 2), every other row level. **It costs a small crowd of
+        scalar `fn` voices:** `named` (a flicker per subject) on `main` against `a77c5c9` reads
+        1.077 at 100 subjects, 1.069 at 1,000 and 0.868 at 10,000, allocating more at each (teitou,
+        9 rounds of 1,500 frames, U 2.5 to 5; `bench/runs/2026-10-21-named-after-fn-crowds.txt`).
+        About 9 µs a frame at 1,000, where klieg and magicsmoke are expected to sit; limiting the
+        rule to crowds writing only array channels would keep `fns`' gain and give that back,
+        untried. Tried and backed out: answering a probe with nothing laned at the top of
+        `Lanes.prepare`, which read `fns` 0.826 and `named` 1.07 to 1.10, with allocation moving on
+        both, the inlining-shape signature. `bench/abdirty.sh` A/Bs an uncommitted diff with no
+        commit on origin, and `bench/rows.sh` times rows against each other in one build. Mixed with
+        a tween or keys crowd on the same channel, an `fn` crowd still runs on lanes and still pays the second walk; nobody has
         measured which way such a mix should go. `tweenfn`, `weaselfn` and `own`, where the losing
         voice is over every subject or targeted, are unchanged. `glowc` and `glowkeys` read on lanes
         slower too (3.3 against 3.0) because nothing in them runs on lanes (their glow voice writes
