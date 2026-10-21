@@ -22,6 +22,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A voice on a lane costs a call less a subject each frame: since 0.11.0 the check for a voice
+  hiding past its end left its clock read out of line. A glow weighted by a signal over 10,000
+  subjects (`glow`) takes 1.636 ms a frame against 1.696 (teitou, medians of fifteen alternated runs
+  against `11a1471`).
 - A mix keeping history costs about a fifth less a frame and allocates a third less: the copy of a
   record that falls out of the window is written over as the next one kept, only a motion voice
   works out how far back a read may still reach, and a stock `sum`, `mul` or `max` channel folds a
