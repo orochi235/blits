@@ -47,8 +47,13 @@ describe('a voice over every subject', () => {
   });
 
   it('takes a record a subject once it has played shareFrames frames, reading the same', () => {
-    const { m, parts, voice } = played({ loop: true });
-    const fresh = played({ loop: true }, { lanes: false });
+    // Not keys: a keys voice keeps sharing.
+    const spec = {
+      patch: patch<Part, Pose>(1000, (ph) => ({ x: 10 * ph }), { writes: ['x'] }),
+      loop: true,
+    };
+    const { m, parts, voice } = played(spec);
+    const fresh = played(spec, { lanes: false });
     // `played` synced twice.
     for (let f = 3; f < shareFrames; f++) m.sync(f * 50);
     expect(voice.sharing).toBe(true);
