@@ -219,15 +219,17 @@ function fit(t: Transport): void {
   }
 }
 
-/** Sets `key` on `on` itself, and returns what puts it back as it was. */
+/**
+ * Sets `key` on `on` itself, and returns what puts back the function it had. That stays an own
+ * property: deleting one added before another drops the mix or transport into dictionary mode
+ * for good, which slows every later call on it.
+ */
 function swap(on: object, key: string, fn: unknown): () => void {
   const o = on as Record<string, unknown>;
-  const own = Object.hasOwn(o, key);
   const was = o[key];
   o[key] = fn;
   return () => {
-    if (own) o[key] = was;
-    else delete o[key];
+    o[key] = was;
   };
 }
 

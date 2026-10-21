@@ -108,7 +108,7 @@ describe('the agent', () => {
     expect(m.now).toBe(20);
     a.send({ kind: 'mix', id: ids.find((x) => x.name === 'agent-d')?.id as number });
     expect(last('hold')?.hold.state).toBe('free');
-    expect(Object.hasOwn(m, 'seek')).toBe(false);
+    expect(m.seek).toBe(Object.getPrototypeOf(m).seek);
     expect(other).toBeDefined();
   });
 

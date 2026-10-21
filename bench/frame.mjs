@@ -271,6 +271,8 @@ const rows = [
 // FRAMES=20000 for a profile long enough to sample a fast row.
 const frames = Number(process.env.FRAMES ?? 300);
 const windowed = Number(process.env.WINDOW ?? 0);
+// UNWATCHED=1 has a debugger watch and hold each row's mix, then let it go, before the row cues.
+const unwatched = process.env.UNWATCHED === '1';
 // Row names after the script, `node bench/frame.mjs keys keys^`, run only those rows; `tweens:10000`
 // only the one at that size; `fn-:10000:3`, a form at a size and voice count the list need not hold.
 const only = process.argv.slice(2);
@@ -297,6 +299,11 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     ...(taped ? { history: { ms: 5000, every: 50, tape: createHistory }, stepMs: 5 } : {}),
     lanes: !off,
   });
+  if (unwatched) {
+    const entry = blits.watched().entries().find((e) => e.mix === m);
+    entry.watch(() => {})();
+    entry.hold().free();
+  }
   const weasel = kind.startsWith('weasel');
   const turnover = kind === 'turnover';
   const glow = kind.startsWith('glow');

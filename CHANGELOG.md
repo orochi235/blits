@@ -17,7 +17,8 @@ version and everything else the patch. Each release lists its changes as **Break
   - `hold` the mix's clock to pause, step and seek it, without writing to the tape, then `free`
     it
   
-  A mix nobody watches runs the same code as before. `watched().history` gives history to mixes
+  A mix nobody watches runs the same code as before, and one a debugger has let go of runs as fast
+  as one it never watched. `watched().history` gives history to mixes
   made later that name none. `MixOptions.labelOf` names subjects for it.
 
 ### Fixed

@@ -159,8 +159,9 @@ describe('watching', () => {
     one();
     expect(Object.hasOwn(m, 'probe')).toBe(true);
     two();
-    for (const k of ['probe', 'pull', 'drain', 'sync']) expect(Object.hasOwn(m, k)).toBe(false);
-    expect(Object.hasOwn((m as unknown as { transport: object }).transport, 'sync')).toBe(false);
+    for (const k of ['probe', 'pull', 'drain']) expect(m[k as 'probe']).toBe(Object.getPrototypeOf(m)[k]);
+    const t = (m as unknown as { transport: { sync: unknown } }).transport;
+    expect(t.sync).toBe(Object.getPrototypeOf(t).sync);
   });
 
   it('lists subjects the voices name and those the host read', () => {
@@ -407,7 +408,8 @@ describe('holding', () => {
       m.rate = -1;
     }).toThrow(RangeError);
     h.free();
-    expect(Object.hasOwn((m as unknown as { transport: object }).transport, 'ramp')).toBe(false);
+    const t = (m as unknown as { transport: { ramp: unknown } }).transport;
+    expect(t.ramp).toBe(Object.getPrototypeOf(t).ramp);
   });
 
   it('refuses a second hold, and holds every mix on a shared transport', () => {
