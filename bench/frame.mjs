@@ -201,6 +201,8 @@ const rows = [
   // A tween voice per subject, with a voice over every subject replaced each frame.
   ['swap', 10000, 1],
   ['fns', 10000, 1],
+  // Half the subjects a tween voice of their own, half a `fn`, both writing `position`.
+  ['mixed', 10000, 1],
   ['weasel', 10000, 1],
   ['weaselfn', 10000, 1],
   // `atRest` asked of every subject each frame, under a tween and a `fn` voice over all of them.
@@ -344,7 +346,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     kind === 'churn' ||
     kind === 'turnover' ||
     kind === 'swap' ||
-    kind === 'fns';
+    kind === 'fns' ||
+    kind === 'mixed';
   if (kind === 'own')
     for (const mine of subjects)
       m.cue({ patch: flicker(0), target: (s) => s === mine, loop: true });
@@ -407,6 +410,14 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       });
   if (kind === 'fns')
     for (const mine of subjects) m.cue({ patch: fnTo(mine), subjects: [mine], loop: true });
+  if (kind === 'mixed')
+    subjects.forEach((mine, j) =>
+      m.cue(
+        j % 2 === 0
+          ? { patch: glideTo(), subjects: [mine] }
+          : { patch: fnTo(mine), subjects: [mine], loop: true },
+      ),
+    );
   // Weighted per subject by a signal holding no state: three voices, or a blend between three.
   const by = (s) => 0.5 + 0.5 * Math.sin(s.seed);
   if (kind === 'blend') m.blend([flicker(0), flicker(1), flicker(2)], by, { fade: { in: 100 } });

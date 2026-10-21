@@ -1196,8 +1196,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         with no commit on origin. Tried and backed out: answering a probe with nothing laned at the
         top of `Lanes.prepare`, which read every row within 1% in one build
         (`bench/runs/2026-10-21-prepare-shortcut-one-build.txt`). Mixed with a tween or keys crowd on the same channel, an `fn` crowd
-        still runs on lanes and still pays the second walk; nobody has measured which way such a
-        mix should go. **So does a lone `fn` voice over many subjects writing vecs**
+        still runs on lanes and pays the second walk, and that is the faster way: on `mixed` (half
+        the subjects a tween, half a `fn`, both on `position`) it read 1.306 ms a frame, against
+        1.441 with the channel taken off lanes and 1.380 with the mix's lanes off (msb-uai,
+        2026-10-21, 9 rounds of 1,500 frames, `bench/runs/2026-10-21-mixed-crowds.txt`, where
+        `CALLS_OFF=2` was an experiment switch, not kept). **So does a lone `fn` voice over many subjects writing vecs**
         (2026-10-21), where it is the only such voice on its channels; two or more fold faster on
         lanes. Same sweep (`bench/runs/2026-10-21-calls-off-lone-voice.txt`): `tweenfn` 1.163
         against 1.410 at 10,000 and 0.124 against 0.134 at 1,000, `weaselfn` 1.734 against 1.823,
