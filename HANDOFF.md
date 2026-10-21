@@ -1185,7 +1185,19 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         same channel, an `fn` crowd still runs on lanes and still pays the second walk; nobody has
         measured which way such a mix should go. `tweenfn`, `weaselfn` and `own`, where the losing
         voice is over every subject or targeted, are unchanged. `glowc` and `glowkeys` read on lanes
-        slower too (3.3 against 3.0) and are not explained.
+        slower too (3.3 against 3.0) because nothing in them runs on lanes (their glow voice writes
+        `color`, a `last` channel with its own lerp, which closes `gain` for the flicker) while the
+        flicker still shares one record, which every read points at its subject and back.
+      - **A voice over every subject shares one record for its first 60 frames only** (2026-10-21,
+        `outgrow` in `src/everyone.ts`; not a keys voice, whose shared read costs nothing more).
+        Sharing was built for voices cued and gone within frames (`swap`, 8,064 to 3,875 kB a frame,
+        2026-10-09) and nobody had timed it on a voice that stays: with `shares` returning false,
+        `glowc` read 0.898, `glowbase` 0.915 and `tweenfn` 0.923 (teitou, 7 rounds, U = 0 each;
+        `bench/runs/2026-10-21-never-share.txt`). Unsharing at 60 frames keeps most of that for `fn`
+        and `glowc` (0.89 to 0.95) but reads `glowbase` and `tweenfn` level, against the never-shared
+        build's 8%; why a voice unshared late reads slower than one never shared is not known. 60 is
+        a guess at the break-even of about 2 MB allocated once at 10,000 subjects against 0.13 ms a
+        frame, not measured.
       - **What the keyed store of a rest into the pose costs**: `pose[key] = copy(rest)` in
         `foldWith` is 15% of the `tweenfn-` row's samples, a store V8 cannot specialize since `key`
         varies. Storing the bench kit's two primitive rests by name (`pose.gain = rest`), the most
