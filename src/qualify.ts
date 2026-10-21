@@ -63,6 +63,7 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
   const numeric = host.channels.map((c) => numericOf(c) !== undefined);
   // A voice writing nothing has no lane to fill, so it stays where its calls are made.
   const fits = present.map((v) => v.slots.length > 0 && host.fits(v));
+  keepCallsOff(present, fits, host.channels.length);
   const candidates = () =>
     present.map((v, i) => ({ id: v.id, fits: fits[i] as boolean, slots: v.slots }));
   let { channels, voices } = qualify(numeric, candidates());
@@ -187,6 +188,27 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
   regroup(lanes, members);
 }
 
+/** A crowd voice whose row calls its patch, as a fn voice's does: no tween, keys or motion row. */
+export function calls<I, O>(v: Voice<I, O>): boolean {
+  return crowdable(v) && v.built === null && v.motion === undefined;
+}
+
+/**
+ * Leaves off lanes each crowd voice calling its patch where no other fitting voice writes any of
+ * its channels: a lane calls such a patch once a subject as the general path does, and its fill
+ * walks the subjects a second time (bench/frame.mjs `fns`, 2.58 ms a frame on lanes against 1.07
+ * off, studio, 2026-10-21).
+ */
+function keepCallsOff<I, O>(present: readonly Voice<I, O>[], fits: boolean[], channels: number): void {
+  const others = new Array<boolean>(channels).fill(false);
+  present.forEach((v, i) => {
+    if (fits[i] && !calls(v)) for (const s of v.slots) others[s] = true;
+  });
+  present.forEach((v, i) => {
+    if (fits[i] && calls(v) && !v.slots.some((s) => others[s])) fits[i] = false;
+  });
+}
+
 /** Whether qualifying laned exactly the channels laned now. */
 function sameChannels<I, O>(lanes: Lanes<I, O>, channels: readonly boolean[]): boolean {
   const by = lanes.bySlot;
@@ -259,7 +281,8 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
     if (v.spec.locus !== undefined) return qualify();
     const laned = v.slots.some((slot) => lanes.bySlot[slot] !== undefined);
     const fits = v.slots.length > 0 && lanes.host.fits(v);
-    if (!laned && !fits) {
+    // As `keepCallsOff`: with none of its channels laned, no fitting voice but its like writes them.
+    if (!laned && (!fits || calls(v))) {
       lanes.whole = false;
       continue;
     }
