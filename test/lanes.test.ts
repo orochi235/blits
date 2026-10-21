@@ -1933,6 +1933,34 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
     expect(crowdOfFns(false)).toEqual([0, 1, 2, 3]);
   });
 
+  it('leaves one fn voice over every subject writing arrays off lanes, and lanes two', () => {
+    const over = (voices: number) => {
+      const m = mix<Part, Pose>(K, { lanes: true });
+      const seen: number[] = [];
+      const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
+      for (let v = 0; v < voices; v++)
+        m.cue({
+          patch: patch<Part, Pose>(
+            0,
+            (_ph, part) => {
+              if (v === 0) seen.push(part.id);
+              return { bend: [part.id] };
+            },
+            { writes: ['bend'] },
+          ),
+        });
+      m.sync(0);
+      for (const part of parts) m.probe(part);
+      seen.length = 0;
+      m.sync(16);
+      m.probe(parts[3] as Part);
+      m.probe(parts[1] as Part);
+      return seen.sort();
+    };
+    expect(over(1)).toEqual([1, 3]);
+    expect(over(2)).toEqual([0, 1, 2, 3]);
+  });
+
   it('for voices writing several channels, crowds sharing one folding in voice order', () => {
     // 1e16 + 1 rounds the 1 away, so the crawl folds to 0 in voice order and to 1 out of it.
     const both = (crawl: number) =>

@@ -33,7 +33,9 @@ version and everything else the patch. Each release lists its changes as **Break
   where nothing else writes its channels: it runs off lanes, where its subjects are walked once
   instead of twice. A `fn` voice writing a vec for each of 10,000 subjects (`fns`) takes 1.348 ms
   a frame against 1.519 (msb-uai, medians of nine alternated runs of one build with lanes kept
-  for it and not).
+  for it and not). So does a single `fn` voice over many subjects writing a vec, where no other
+  voice writes it: weasel's animator written as one (`weaselfn`) takes 1.734 ms against 1.823,
+  and one writing a position from each subject's own numbers (`tweenfn`) 1.163 against 1.410.
 - A voice on a lane costs a call less a subject each frame: since 0.11.0 the check for a voice
   hiding past its end left its clock read out of line. A glow weighted by a signal over 10,000
   subjects (`glow`) takes 1.636 ms a frame against 1.696 (teitou, medians of fifteen alternated runs
