@@ -3,7 +3,7 @@ import { type Group, MAX_HITS, MAX_MARKS, MAX_TAGS, type Voice } from '@pg/blits
 import { withKey } from '@pg/blits/keyed';
 import { f } from '@weasel-js/labkit';
 import { ListEditor, type PrefRenderContext, PropertyControl } from '@weasel-js/ui';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import g from './Group.module.css';
 
 type Hit = NonNullable<Voice['hits']>[number];
@@ -28,21 +28,19 @@ function markFault(marks: readonly Mark[], i: number, name: string): string | nu
 }
 
 /**
- * A dialog's edits held until it closes, then written as one step: a list being typed passes
- * through states (an empty tag, a half-typed mark name) that the spec should never hold.
+ * A dialog's list as typed, which can pass through states the spec should never hold (an empty
+ * tag, a half-typed mark name); each edit hands `commit` the cleaned value for the dialog's draft,
+ * which Done writes and Cancel drops.
  */
 function useDraft<T>(value: T, commit: (next: T) => void): [T, (next: T) => void] {
   const [draft, setDraft] = useState(value);
-  const latest = useRef({ draft, value, commit });
-  latest.current = { draft, value, commit };
-  useEffect(
-    () => () => {
-      const l = latest.current;
-      if (JSON.stringify(l.draft) !== JSON.stringify(l.value)) l.commit(l.draft);
+  return [
+    draft,
+    (next) => {
+      setDraft(next);
+      commit(next);
     },
-    [],
-  );
-  return [draft, setDraft];
+  ];
 }
 
 function TagsDialog({ row }: { row: PrefRenderContext }) {
@@ -164,8 +162,8 @@ const none = (n: number, text: string) => (n === 0 ? 'none' : text);
 
 /**
  * A voice's or group's `tags`, `score`, `hits`, and `marks`: what marks, queries, bookers, and
- * drains know it by. The lists open in a dialog and are written when it closes. A group's hits are
- * booked once, since it does not loop.
+ * drains know it by. The lists open in a dialog, which Done writes and Cancel or Escape drops. A
+ * group's hits are booked once, since it does not loop.
  */
 export function marksNodes(voice: boolean, doc: (member: string) => string | undefined) {
   const d = (member: string) => doc(member) ?? '';
