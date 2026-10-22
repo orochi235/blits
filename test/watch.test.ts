@@ -159,7 +159,8 @@ describe('watching', () => {
     one();
     expect(Object.hasOwn(m, 'probe')).toBe(true);
     two();
-    for (const k of ['probe', 'pull', 'drain']) expect(m[k as 'probe']).toBe(Object.getPrototypeOf(m)[k]);
+    for (const k of ['probe', 'pull', 'drain'])
+      expect(m[k as 'probe']).toBe(Object.getPrototypeOf(m)[k]);
     const t = (m as unknown as { transport: { sync: unknown } }).transport;
     expect(t.sync).toBe(Object.getPrototypeOf(t).sync);
   });

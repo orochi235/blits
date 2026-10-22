@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kit, last, sum } from '../src/channels.js';
-import { VoiceHandle } from '../src/handle.js';
 import { shareFrames } from '../src/everyone.js';
+import { VoiceHandle } from '../src/handle.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
 import type { Handle, MixOptions, VoiceSpec } from '../src/types.js';

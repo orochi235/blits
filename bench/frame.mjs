@@ -411,13 +411,13 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   if (kind === 'fns')
     for (const mine of subjects) m.cue({ patch: fnTo(mine), subjects: [mine], loop: true });
   if (kind === 'mixed')
-    subjects.forEach((mine, j) =>
+    subjects.forEach((mine, j) => {
       m.cue(
         j % 2 === 0
           ? { patch: glideTo(), subjects: [mine] }
           : { patch: fnTo(mine), subjects: [mine], loop: true },
-      ),
-    );
+      );
+    });
   // Weighted per subject by a signal holding no state: three voices, or a blend between three.
   const by = (s) => 0.5 + 0.5 * Math.sin(s.seed);
   if (kind === 'blend') m.blend([flicker(0), flicker(1), flicker(2)], by, { fade: { in: 100 } });
