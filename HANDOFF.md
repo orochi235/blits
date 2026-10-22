@@ -732,9 +732,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    the design. astv marked its text-run weight `input` (astv `522624e0`); it now names its mixes,
    describes its voices with `as` and gives a store once it moves to a release with this.
 
-8. **astv's phase on a span.** astv's `scheduleMarks` (`packages/engine/draw/text/changeOrder.ts`)
-   is what a `queue` or `stagger` span with a budget replaces. astv is on 0.8.1, which has spans,
-   so nothing in blits holds this up.
+8. **astv's phase on a span, blocked on two things blits lacks** (2026-10-22, astv on 0.11.0).
+   astv's `scheduleMarks` (`packages/engine/draw/text/changeOrder.ts`) is what a `queue` or
+   `stagger` span with a budget would replace, and it stays until both land:
+   - **A child with an earliest start.** A changed line's animation never starts before its own
+     orb lands, and a span child takes no start (`src/spans.ts` throws). Wanted: a floor on a
+     child, as a time or an anchor such as `{ of: 'orb-17', mark: 'end' }`, that the fit
+     never places it before; in a `queue`, the children after it follow it.
+   - **An order other than cue order.** Children arrive as their orbs land and play in line
+     order. `Order` is `queue`, `stagger` or `together`, all by cue. A sort key on the child or a
+     comparator on the span would do.
+   The API is blits' to choose.
 
 10. **Two copies of blits loaded together share what each knows of its patches and channels**
     (`773d088`, 2026-10-08): `keys` options and the stock channels' lane facts sit in WeakMaps
