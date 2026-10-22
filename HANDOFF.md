@@ -332,6 +332,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
+0. **Subject aliases: unbuilt, top of the list** (asked for 2026-10-22, while building the LED
+   marquee demo). Several host objects standing for one mix subject, so the fold runs once for all
+   of them: a chase border where every third bulb shows the same thing, or LEDs that share an
+   effect's value. Today subjects match by identity, and `keyOf` only names a subject for a history
+   store; it never merges two. The cost it would save, from `bench/ledger.tsv` on teitou
+   (2026-10-21): `named N=1000 V=1` is 0.131 ms a frame and `named N=10000 V=1` 1.592 ms, so it
+   matters at boards of thousands of subjects, not at the marquee's 840. Open: whether an alias
+   is declared by the host (a `subjectOf(obj)` mix option) or per voice, and what `drop`, `probe`
+   and history do with an alias of a subject still live.
 0. **Handles in blits-quarks and blits-tone are built, unreleased** (2026-10-18): blits-tone's
    `Sound` (`wire`, `synth`, `polySynth`, `oscillator`, `noise`) and blits-quarks' `Source` and
    `Emitter` (`wire`, `particles`, `at`). Each README's opening sections say what they do; each
