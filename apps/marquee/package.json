@@ -1,0 +1,19 @@
+{
+  "name": "@blits/marquee",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "smoke": "npm run build && node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "@msb235/blits-panel": "*"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.0",
+    "vite": "^8.0.0",
+    "playwright": "1.63.0"
+  }
+}
