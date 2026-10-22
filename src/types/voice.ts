@@ -3,7 +3,7 @@ import type { Motion, Value } from '../motion.js';
 import type { Described } from './history.js';
 import type { Doubt } from './mix.js';
 import type { Easing, Patch, Signal } from './patch.js';
-import type { Hit, Placement } from './place.js';
+import type { Anchor, Hit, Placement } from './place.js';
 
 /**
  * A voice's own ramps in and out, in ms, and the curve both take.
@@ -33,6 +33,14 @@ export interface SpanHints {
   ballast?: boolean;
   /** How hard its own length holds against the span's budget. Default `weak`. */
   priority?: Strength;
+  /**
+   * The soonest it may start: a time on the span's clock, or an anchor. The fit never places it
+   * sooner, and the children after it are laid out from where it starts. One whose anchor has no
+   * answer yet waits, and under `queue` or `stagger` so does every child after it.
+   */
+  earliest?: number | Anchor;
+  /** Where it plays among the span's children still to start: lower first, ties as cued. Default 0. */
+  rank?: number;
 }
 
 /**

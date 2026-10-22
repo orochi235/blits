@@ -8,6 +8,12 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- A span child's `earliest` and `rank`. `earliest` is the soonest it may start, a time on the
+  span's clock or an anchor; the fit never places it sooner, and the children after it are laid
+  out from where it starts. One whose anchor has no answer yet waits, with every child after it
+  under `queue` or `stagger`, and the span fits again once the anchor answers. `rank` orders the
+  children still to start, lower first, ties as cued. Together they replace astv's own change
+  order, which sorts its changes by line and starts each no sooner than its orb lands.
 - `watched()`: every mix on the page, for a debugger, in one registry that all copies of blits
   share. Each entry can:
   - `watch` what the host reads each frame

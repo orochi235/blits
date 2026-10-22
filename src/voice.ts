@@ -339,6 +339,8 @@ export class Voice<I, O> {
   rebuilds = 0;
   /** Whether its span's last fit jumped it to its end, which leaves it no time in that fit. */
   skipped = false;
+  /** What its `earliest` answered at its span's last fit, span ms; NaN while unknown or absent. */
+  floorSeen = Number.NaN;
   /** Whether its patch has kept state on a record through `setting.keep`, which makes it stateful. */
   keeping = false;
   /** Subjects fading out of this voice alone, by the ramp each started; null while none are. */

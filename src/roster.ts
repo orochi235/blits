@@ -6,7 +6,9 @@ import type { Voice } from './voice.js';
 
 function tally<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, by: 1 | -1): void {
   if (voice.spec.locus !== undefined) mix.loci += by;
-  if (voice.spec.anchor !== undefined) mix.anchored += by;
+  const e = voice.spec.earliest;
+  if (voice.spec.anchor !== undefined || (e !== undefined && typeof e !== 'number'))
+    mix.anchored += by;
 }
 
 /** Counts a voice just put in the list into everything a sync and a fold skip work by. */
