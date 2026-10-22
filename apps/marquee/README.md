@@ -21,7 +21,9 @@ the canvas work.
 
 ## How it works
 
-Every dot and every bulb is a subject, and a pose is `lit`, folded by `max` so a dot shows its
+Every dot is a subject, and so is each of the border's three cells, every third bulb: the chase lights a
+cell's bulbs alike, so the mix folds the cell once and `main.ts` paints its bulbs with it (the schema
+page's "Subject aliases" is why). A pose is `lit`, folded by `max` so a dot shows its
 brightest voice, and `tint`, a `color` averaged by weight.
 
 | Voice | What it does |
@@ -29,7 +31,7 @@ brightest voice, and `tint`, a `color` averaged by weight.
 | hold | A message standing centered and flashing midway. Cued with a `stagger` by column, which is the wipe on and off: each column plays the same pass, later. |
 | scroll | A message entering at the right and leaving at the left, a whole column at a time. |
 | sparkle | Stray dots lighting for a moment, from a hash of where and when. Weighted by a `level`, which the checkbox sets. |
-| chase | Every third bulb lit, stepping one bulb a beat. Weighted by a `level` too. |
+| chase | One cell of three lit, stepping a cell a beat. Weighted by a `level` too. |
 
 `play` in `src/show.ts` cues one pass of the program on an owner, each message placed on the
 owner's clock where the one before it ends, and `main.ts` cues the next pass when the owner is

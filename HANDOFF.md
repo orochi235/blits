@@ -161,7 +161,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   labkit's `endless`, which stores `Infinity` at that stop.
   Every explainer has its full source listed under it, with the site files it imports
   (2026-10-22), and imports blits as `@msb235/blits`, the alias reaching only the public entry.
-- **`apps/marquee`**, built 2026-10-22: an LED sign demo, one subject per dot and bulb, sized by
+- **`apps/marquee`**, built 2026-10-22: an LED sign demo, one subject per dot and per third of the border's bulbs, sized by
   `?cols=&rows=` for benchmarking; its README says how it works. Its smoke run on msb-uai
   (headless, 2026-10-22) read mix 0.19 ms a frame at 652 lights and 4.33 ms at 20,548; the schema
   page's "Subject aliases" (decided against) and "Layered subjects" (open) are about that load. Called while building, Mike's to overturn: a taller sign

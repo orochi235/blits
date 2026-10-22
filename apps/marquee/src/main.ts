@@ -1,7 +1,7 @@
 import './app.css';
 import { level, mix } from '@msb235/blits';
 import { mount } from '@msb235/blits-panel';
-import { board, chase, KIT, type Led, type Pose, SIZE, sparkle } from './board';
+import { board, chase, KIT, type Led, type Pose, SIZE, type Subject, sparkle } from './board';
 import { createSign } from './draw';
 import { play, type Step } from './show';
 
@@ -46,14 +46,25 @@ sizeForm.addEventListener('submit', (event) => {
   location.search = params.toString();
 });
 
-const m = mix<Led, Pose>(KIT, {
+const m = mix<Subject, Pose>(KIT, {
   name: 'marquee',
-  labelOf: (led: Led) => (led.kind === 'bulb' ? `bulb ${led.i}` : `dot ${led.x},${led.y}`),
+  labelOf: (s: Subject) => (s.kind === 'cell' ? `cell ${s.i}` : `dot ${s.x},${s.y}`),
 });
 
 const leds: readonly Led[] = [...b.dots, ...b.bulbs];
 const lit = new Float64Array(leds.length);
 const tint = new Float64Array(leds.length * 4);
+const cellLit = new Float64Array(b.cells.length);
+const cellTint = new Float64Array(b.cells.length * 4);
+const bulbsAt = b.dots.length;
+/** Paints each bulb with its cell's pose, after the dots in the columns the sign reads. */
+const paintBulbs = () => {
+  for (let j = 0; j < b.bulbs.length; j++) {
+    const c = b.cellOf[j] as number;
+    lit[bulbsAt + j] = cellLit[c] as number;
+    tint.set(cellTint.subarray(c * 4, c * 4 + 4), (bulbsAt + j) * 4);
+  }
+};
 const sign = createSign(canvas, b, leds);
 
 const userHex = () => Number.parseInt(hue.value, 16);
@@ -75,10 +86,10 @@ const again = () => {
 };
 again();
 
-const sparkleLevel = level<Led>(sparkles.checked ? 1 : 0);
-const chaseLevel = level<Led>(chasing.checked ? 1 : 0);
+const sparkleLevel = level<Subject>(sparkles.checked ? 1 : 0);
+const chaseLevel = level<Subject>(chasing.checked ? 1 : 0);
 m.cue({ name: 'sparkle', patch: sparkle, subjects: b.dots, loop: true, weight: sparkleLevel });
-m.cue({ name: 'chase', patch: chase, subjects: b.bulbs, loop: true, weight: chaseLevel });
+m.cue({ name: 'chase', patch: chase, subjects: b.cells, loop: true, weight: chaseLevel });
 
 sparkles.addEventListener('change', () => sparkleLevel.set(sparkles.checked ? 1 : 0));
 chasing.addEventListener('change', () => chaseLevel.set(chasing.checked ? 1 : 0));
@@ -101,7 +112,9 @@ const frame = (now: number) => {
   }
   const t0 = performance.now();
   m.sync(now);
-  m.pull(leds, { lit, tint });
+  m.pull(b.dots, { lit, tint });
+  m.pull(b.cells, { lit: cellLit, tint: cellTint });
+  paintBulbs();
   const t1 = performance.now();
   if (drawing) sign.render(lit, tint, userHex(), gap);
   const t2 = performance.now();
@@ -109,7 +122,7 @@ const frame = (now: number) => {
   drawMs += (t2 - t1 - drawMs) * 0.05;
   if (now - shownAt > 250) {
     shownAt = now;
-    cost.value = `${leds.length} lights · mix ${mixMs.toFixed(2).padStart(6)} ms · draw ${drawMs.toFixed(2).padStart(6)} ms`;
+    cost.value = `${leds.length} lights, ${b.dots.length + b.cells.length} subjects · mix ${mixMs.toFixed(2).padStart(6)} ms · draw ${drawMs.toFixed(2).padStart(6)} ms`;
   }
 };
 requestAnimationFrame(frame);

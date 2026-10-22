@@ -20,12 +20,24 @@ export type Led =
     }
   | { readonly kind: 'bulb'; readonly i: number; readonly x: number; readonly y: number };
 
+/** Every third bulb of the border, one subject: the mix folds three cells and each bulb shows its own. */
+export interface Cell {
+  readonly kind: 'cell';
+  readonly i: number;
+}
+
+/** What the mix folds: a dot, or a cell of the border. */
+export type Subject = Led | Cell;
+
 /** A sign of `cols` × `rows` dots and the border round it. */
 export interface Board {
   readonly cols: number;
   readonly rows: number;
   readonly dots: readonly Led[];
   readonly bulbs: readonly Led[];
+  readonly cells: readonly Cell[];
+  /** Per bulb, the index of its cell in `cells`. */
+  readonly cellOf: Uint8Array;
 }
 
 /** The 80 × 7 of a shopfront sign. */
@@ -58,7 +70,9 @@ export function board(cols: number, rows: number): Board {
   for (let x = right; x > left; x -= 2) at.push([x, below]);
   for (let y = below; y > above; y -= 2) at.push([left, y]);
   const bulbs: Led[] = at.map(([x, y], i) => ({ kind: 'bulb', i, x, y }));
-  return { cols, rows, dots, bulbs };
+  const cells: Cell[] = [0, 1, 2].map((i) => ({ kind: 'cell', i }));
+  const cellOf = Uint8Array.from(bulbs, (_, i) => i % 3);
+  return { cols, rows, dots, bulbs, cells, cellOf };
 }
 
 /** How long the sign takes to move one column, at rate 1. */
@@ -125,13 +139,12 @@ export const sparkle = patch<Led, Pose>(
 export const CHASE_MS = 180;
 const BULB = oklab(0xffe2b0);
 
-/** The theater chase: every third bulb lit, the pattern stepping one bulb on each beat. Loops. */
-export const chase = patch<Led, Pose>(
+/** The theater chase: one cell of three lit, stepping a cell on each beat. Loops. */
+export const chase = patch<Cell, Pose>(
   CHASE_MS * 3,
-  (phase, led) => {
+  (phase, cell) => {
     const beat = Math.floor(phase * 3);
-    const i = led.kind === 'bulb' ? led.i : 0;
-    return { lit: (i + 3 - beat) % 3 === 0 ? 1 : 0.1, tint: BULB };
+    return { lit: (cell.i + 3 - beat) % 3 === 0 ? 1 : 0.1, tint: BULB };
   },
   { writes: ['lit', 'tint'] },
 );

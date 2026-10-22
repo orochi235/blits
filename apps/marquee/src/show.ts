@@ -1,5 +1,14 @@
 import type { Handle, Mix } from '@msb235/blits';
-import { type Board, HOLD_MS, hold, type Led, type Pose, STEP_MS, scroll, WIPE_MS } from './board';
+import {
+  type Board,
+  HOLD_MS,
+  hold,
+  type Pose,
+  STEP_MS,
+  type Subject,
+  scroll,
+  WIPE_MS,
+} from './board';
 import { rasterize } from './font';
 
 /** One message in the program: standing still and flashing, or scrolling through. */
@@ -20,7 +29,7 @@ export function length(b: Board, step: Step): number {
  * Cues one pass of the program on an owner of its own, each step placed on the owner's clock where
  * the one before it ends, and returns the owner, done when the last step is.
  */
-export function play(m: Mix<Led, Pose>, b: Board, steps: readonly Step[]): Handle<Led> {
+export function play(m: Mix<Subject, Pose>, b: Board, steps: readonly Step[]): Handle<Subject> {
   const owner = m.owns({ name: 'program' });
   let at = 0;
   for (const step of steps) {
@@ -33,7 +42,7 @@ export function play(m: Mix<Led, Pose>, b: Board, steps: readonly Step[]): Handl
             name: `hold ${step.text}`,
             patch: hold(b, text, step.hex),
             subjects: b.dots,
-            stagger: (led) => led.x * WIPE_MS,
+            stagger: (led) => (led.kind === 'dot' ? led.x * WIPE_MS : 0),
           }
         : {
             owner,
