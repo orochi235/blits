@@ -4,12 +4,14 @@ title: Time
 description: The mix runs on the host's clock. The host reports the time once a frame, and everything else is worked out from that one number.
 ---
 import HideTab, { CatchUp } from '../explainers/Time';
+import Source from '../components/Source.astro';
 
 # Time
 
 <p class="lede">A mix has no clock of its own. The host tells it the time once a frame, and every voice, fade and patch state works from that one number.</p>
 
 <CatchUp client:only="react" />
+<Source of="Time.tsx" />
 
 A mix is **pull-based**: nothing happens until the host asks. The host owns the frame loop, and each frame it does two things in order. It calls `sync(timestamp)` to say what time it is, then `probe(subject)` for each subject it is about to draw.
 
@@ -32,6 +34,7 @@ A voice's clock is `(timestamp − start) · rate`, which a patch reads as `sett
 ## Time away
 
 <HideTab client:only="react" />
+<Source of="Time.tsx" />
 
 A hidden browser tab gets no frames, so the first sync after it comes back can be an hour past the last one. By default the mix treats that hour like any other gap: fades and finite loops finish, and every subject catches up by all of it. With rebase off, the first frame back finds the fade complete and the sweep gone.
 

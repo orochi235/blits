@@ -4,6 +4,7 @@ title: Channel and kit
 description: A channel is one field with its own arithmetic. A kit is the set of channels one kind of pose is made of.
 ---
 import Channel from '../explainers/Channel';
+import Source from '../components/Source.astro';
 import ApiEntries from '../components/ApiEntries.astro';
 
 # Channel and kit
@@ -11,6 +12,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 <p class="lede">A channel is one field of a pose, and it owns the arithmetic: how two voices writing it combine, and what it reads when nobody is writing.</p>
 
 <Channel client:only="react" />
+<Source of="Channel.tsx" />
 
 Two voices write the same field. Whether the result is their sum, their product, the larger of the two or simply the later one isn't up to either voice. It belongs to the channel, so a flicker and a fade can share `gain` without knowing about each other.
 

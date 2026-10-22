@@ -4,6 +4,7 @@ title: Patch state
 description: A patch can keep state per subject. The mix makes it, steps it once a frame by the gap, and hands it back.
 ---
 import State from '../explainers/State';
+import Source from '../components/Source.astro';
 import ApiEntries from '../components/ApiEntries.astro';
 
 # Patch state
@@ -11,6 +12,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 <p class="lede">A patch can keep state for each subject, such as a spring's position and speed. The patch says what the state is and how it advances; the mix decides when.</p>
 
 <State client:only="react" />
+<Source of="State.tsx" />
 
 A stateful patch declares two functions besides its usual one. `state(subject)` makes a subject's state, and the mix calls it the first time the patch sees that subject. `step(state, dt, subject, setting)` advances it, and the mix calls it once per subject per sampled frame. The patch's own function then reads the result as `setting.state`.
 

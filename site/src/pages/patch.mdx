@@ -4,6 +4,7 @@ title: Patch
 description: "A patch is what an author writes, a pure function of phase and a subject that returns a delta. It comes in three forms: a function, a list of stops, and motion with momentum."
 ---
 import Patch from '../explainers/Patch';
+import Source from '../components/Source.astro';
 import ApiEntries from '../components/ApiEntries.astro';
 
 # Patch
@@ -11,6 +12,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 <p class="lede">A patch is the effect itself: given how far through its pass it is and which subject it's looking at, it returns the change it wants to make.</p>
 
 <Patch client:only="react" />
+<Source of="Patch.tsx" />
 
 A patch is a pure function of **phase** and a subject. It returns a **delta**, a partial pose holding only the channels it has something to say about. It doesn't know when it started, how loud it is or what else is playing; a voice gives it those. The same patch can play on ten voices at once.
 

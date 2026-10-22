@@ -1,0 +1,100 @@
+---
+import { Code } from 'astro:components';
+
+/** An explainer's full source: its own file open, and every file it reaches by a relative import. */
+interface Props {
+  /** The explainer's file, relative to `src/explainers/`, as `Voice.tsx` or `blending/Fade.tsx`. */
+  of: string;
+}
+
+const files = import.meta.glob<string>('../explainers/**/*.{ts,tsx}', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+const text = (path: string) => files[`../explainers/${path}`];
+
+function resolve(from: string, spec: string): string {
+  const parts = [...from.split('/').slice(0, -1), ...spec.split('/')];
+  const out: string[] = [];
+  for (const p of parts) {
+    if (p === '..') out.pop();
+    else if (p !== '.') out.push(p);
+  }
+  const bare = out.join('/');
+  const hit = [bare, `${bare}.ts`, `${bare}.tsx`, `${bare}/index.ts`].find((p) => text(p) !== undefined);
+  if (!hit) throw new Error(`Source: ${from} imports ${spec}, which is not under src/explainers`);
+  return hit;
+}
+
+const { of } = Astro.props;
+if (text(of) === undefined) throw new Error(`Source: no explainer at src/explainers/${of}`);
+const seen = [of];
+for (let i = 0; i < seen.length; i++) {
+  for (const m of text(seen[i]).matchAll(/(?:from|import)\s+'(\.{1,2}\/[^']+)'/g)) {
+    const dep = resolve(seen[i], m[1]);
+    if (!seen.includes(dep)) seen.push(dep);
+  }
+}
+const [own, ...rest] = seen;
+const kitFirst = (p: string) => (p.startsWith('kit/') ? 1 : 0);
+const deps = rest.sort((a, b) => kitFirst(a) - kitFirst(b));
+const repo = 'https://github.com/orochi235/blits/blob/main/site/src/explainers';
+const lang = (path: string) => (path.endsWith('.tsx') ? 'tsx' : 'ts');
+const themes = { light: 'github-light', dark: 'github-dark' } as const;
+---
+<details class="source">
+  <summary>Source</summary>
+  <div class="source-file">
+    <p class="source-path"><a href={`${repo}/${own}`}>{own}</a></p>
+    <Code code={text(own)} lang={lang(own)} themes={themes} defaultColor="light" />
+  </div>
+  {deps.length > 0 && (
+    <p class="source-note">It also uses these files from the site, each below in full.</p>
+  )}
+  {deps.map((d) => (
+    <details class="source-file">
+      <summary class="source-path">{d}</summary>
+      <Code code={text(d)} lang={lang(d)} themes={themes} defaultColor="light" />
+      <p class="source-path"><a href={`${repo}/${d}`}>on GitHub</a></p>
+    </details>
+  ))}
+</details>
+
+<style>
+  .source {
+    max-width: 62rem;
+    margin: -1.5rem 0 2.5rem;
+    font: 500 0.9rem var(--label);
+  }
+
+  .source summary {
+    cursor: pointer;
+    color: var(--ink-soft);
+  }
+
+  .source > summary {
+    width: fit-content;
+  }
+
+  .source-file {
+    margin-top: 0.75rem;
+  }
+
+  .source-path {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    margin: 0 0 0.4rem;
+  }
+
+  .source-note {
+    color: var(--ink-soft);
+    margin: 1.25rem 0 0;
+  }
+
+  .source :global(pre) {
+    max-height: 36rem;
+    margin: 0 0 0.4rem;
+    font-size: 0.8rem;
+  }
+</style>

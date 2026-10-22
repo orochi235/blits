@@ -17,7 +17,9 @@ which the smoke test reads too. `site/dist` and `site/.generated` are rewritten 
 ## How a page is made
 
 A page is MDX in `src/pages/` with `layout: ../layouts/Page.astro`. Its explainer is a React island,
-`<X client:only="react" />`, from `src/explainers/`, and it ends with `<ApiEntries word="…" />`.
+`<X client:only="react" />`, from `src/explainers/`, followed by `<Source of="X.tsx" />`, which
+lists that file and every file it reaches by a relative import. The page ends with
+`<ApiEntries word="…" />`.
 
 An explainer declares a `Scene` (`src/explainers/kit/scene.ts`): a kit, subjects, voices, and
 optionally events at a time, a `syncing` predicate (false is a hidden tab), a `probing` predicate

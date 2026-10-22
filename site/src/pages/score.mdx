@@ -4,6 +4,7 @@ title: Score
 description: The score is the plan of when each voice plays. Voices can be placed relative to one another, and the mix can list what comes next and read itself at another time.
 ---
 import Score from '../explainers/Score';
+import Source from '../components/Source.astro';
 import ApiEntries from '../components/ApiEntries.astro';
 
 # Score
@@ -11,6 +12,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 <p class="lede">The score is the plan: when each voice plays, for how long, and relative to which other voice. It never says what a voice contributes; that stays in the patch and the channels.</p>
 
 <Score client:only="react" />
+<Source of="Score.tsx" />
 
 Every voice has five **marks** on the mix clock: `start`, when its fade in begins; `in`, when it is at full weight; `coast`, when its last pass ends; `out`, when its fade out begins; and `end`, when it is gone. Above, an orb flies in, its row's text arrives once it lands, and a tint comes in as the text finishes, holds, then fades.
 

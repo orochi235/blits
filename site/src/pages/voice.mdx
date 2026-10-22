@@ -4,6 +4,7 @@ title: Voice
 description: A voice is a patch playing on a mix, with its own clock and its own weight. Cueing one returns a handle to steer it by.
 ---
 import Voice from '../explainers/Voice';
+import Source from '../components/Source.astro';
 import ApiEntries from '../components/ApiEntries.astro';
 
 # Voice
@@ -11,6 +12,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 <p class="lede">A voice is a patch given a clock and a volume knob. Two voices of the same patch are two clocks and two weights, and neither knows about the other.</p>
 
 <Voice client:only="react" />
+<Source of="Voice.tsx" />
 
 A patch says what an effect does at each phase. A **voice** says when it plays, how fast, for how long, for which subjects and how strongly. You make one by passing a spec to a mix's `cue`, and you get back a **handle** for steering it while it plays.
 

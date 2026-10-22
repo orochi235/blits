@@ -4,12 +4,14 @@ title: Locus
 description: Voices sharing a locus are alternatives. The mix folds them into one contribution before it applies them, so a handover reads the value both agree on.
 ---
 import Locus from '../explainers/Locus';
+import Source from '../components/Source.astro';
 
 # Locus
 
 <p class="lede">A locus names voices that are alternatives to one another: one fades out as the other fades in, and halfway through, the subject should look like either of them, not like both at once.</p>
 
 <Locus client:only="react" />
+<Source of="Locus.tsx" />
 
 Two voices both write a gain of 0.06, and A hands over to B. Halfway through, each is at weight 0.5.
 

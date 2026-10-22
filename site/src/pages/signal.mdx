@@ -4,6 +4,7 @@ title: Signal
 description: A signal is a number from 0 to 1 that comes from outside the clock. It can set a voice's weight, or choose between alternatives.
 ---
 import Signal from '../explainers/Signal';
+import Source from '../components/Source.astro';
 import ApiEntries from '../components/ApiEntries.astro';
 
 # Signal
@@ -11,6 +12,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 <p class="lede">A signal is a number from 0 to 1, read per subject every frame, that comes from somewhere other than the clock: a pointer, a hover, a meter.</p>
 
 <Signal client:only="react" />
+<Source of="Signal.tsx" />
 
 A voice's weight can be a fixed number, or it can be a **signal**: a function the mix calls for each subject every frame, which returns 0 to 1. A signal plugs in at two places only. It can be a voice's `weight`, and it can be the selector `blend` uses to choose between alternatives.
 

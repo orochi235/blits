@@ -4,6 +4,7 @@ title: Blending
 description: Fades, retargets, blends between alternatives and handovers at rest, each a weight per voice or a channel's lerp.
 ---
 import { Blend, Fade, Handover, Retarget } from '../explainers/blending';
+import Source from '../components/Source.astro';
 import ApiEntries from '../components/ApiEntries.astro';
 
 # Blending
@@ -15,6 +16,7 @@ A weight scales what a voice contributes toward its channel's rest, so at 0 the 
 ## Fade in and out
 
 <Fade client:only="react" />
+<Source of="blending/Fade.tsx" />
 
 A voice's `fade` gives it ramps: `in` runs from the moment it starts, `out` from the moment it's told to leave, and `ease` shapes both. The ramp is only a weight, so it takes every channel the voice writes toward rest at once, each by its own arithmetic.
 
@@ -30,6 +32,7 @@ A voice cued with a finite `loop` fades out by itself when its passes run out.
 ## Retarget on interruption
 
 <Retarget client:only="react" />
+<Source of="blending/Retarget.tsx" />
 
 A `keys` voice cued with `from: 'current'` doesn't start at its own first stop. It reads where the subject is, in the frame before it first contributes, with every other voice folded in, and lerps from there to its later stops. Cut one move short and start another, and the subject carries on from wherever the first one left it.
 
@@ -48,6 +51,7 @@ It carries position, not speed. The second voice starts from standing, so a dot 
 ## Blend between alternatives
 
 <Blend client:only="react" />
+<Source of="blending/Blend.tsx" />
 
 `mix.blend(patches, by)` cues one voice per patch and splits a signal between them. With three patches, `by` at 0 is all the first, at ½ all the second, at 1 all the third, and anywhere between shares out between the two nearest. Moving the signal moves the result smoothly, with nothing re-cued.
 
@@ -63,6 +67,7 @@ The voices a blend cues share a [locus](../locus/): the mix treats them as alter
 ## Handover at rest
 
 <Handover client:only="react" />
+<Source of="blending/Handover.tsx" />
 
 `fade({ at: 'rest' })` doesn't ramp anything down. The voice stays at full weight and leaves each subject separately, at the first frame what it writes for that subject is at rest. A hop finishes its hop, and each subject lands on its own schedule. Whatever the next voice is, it was cued already, and it simply becomes the only thing moving that subject.
 

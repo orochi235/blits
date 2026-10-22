@@ -4,6 +4,7 @@ title: Mix
 description: A mix is the set of live voices over one kit. The host tells it the time once a frame, then asks it for each subject's pose.
 ---
 import Mix from '../explainers/Mix';
+import Source from '../components/Source.astro';
 import ApiEntries from '../components/ApiEntries.astro';
 
 # Mix
@@ -11,6 +12,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 <p class="lede">A mix holds every voice playing over one kit. Once a frame you tell it the time, then ask it what each subject looks like.</p>
 
 <Mix client:only="react" />
+<Source of="Mix.tsx" />
 
 A **mix** is made over a kit, and every voice cued on it writes that kit's channels. The things it drives are its **subjects**: letters, parts, bars, whatever the host has. You don't register them. The first time you ask about a subject, the mix starts keeping its state.
 
