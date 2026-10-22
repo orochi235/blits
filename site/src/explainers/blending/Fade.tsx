@@ -1,6 +1,5 @@
-import { kit, sum } from '@blits/channels';
-import { patch } from '@blits/patch';
-import type { Easing } from '@blits/types';
+import type { Easing } from '@msb235/blits';
+import { kit, patch, sum } from '@msb235/blits';
 import { f } from '@weasel-js/labkit';
 import { dots } from '../kit/draw';
 import { Explainer, type Size } from '../kit/Explainer';

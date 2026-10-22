@@ -1,5 +1,5 @@
-import { mix } from '@blits/index';
-import type { Handle, Kit, Mix, MixOptions, VoiceSpec } from '@blits/types';
+import type { Handle, Kit, Mix, MixOptions, VoiceSpec } from '@msb235/blits';
+import { mix } from '@msb235/blits';
 
 /** One frame of every explainer's clock. Explainers never read a wall clock, so a run replays. */
 export const FRAME = 1000 / 60;

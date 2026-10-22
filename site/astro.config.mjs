@@ -14,7 +14,7 @@ export default defineConfig({
   server: { host: '::', port: 4880 },
   vite: {
     resolve: {
-      alias: { '@blits': fileURLToPath(new URL('../src', import.meta.url)) },
+      alias: { '@msb235/blits': fileURLToPath(new URL('../src/index.ts', import.meta.url)) },
     },
   },
 });

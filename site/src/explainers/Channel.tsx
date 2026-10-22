@@ -1,6 +1,5 @@
-import { kit, last, max, mul, sum } from '@blits/channels';
-import { patch } from '@blits/patch';
-import type { Channel as Ch } from '@blits/types';
+import type { Channel as Ch } from '@msb235/blits';
+import { kit, last, max, mul, patch, sum } from '@msb235/blits';
 import { f } from '@weasel-js/labkit';
 import { label, lamp, numberLine } from './kit/draw';
 import { Explainer } from './kit/Explainer';

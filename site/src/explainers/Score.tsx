@@ -1,7 +1,5 @@
-import { kit, sum } from '@blits/channels';
-import { mix } from '@blits/index';
-import { keys, patch } from '@blits/patch';
-import type { Mark, Marked } from '@blits/types';
+import type { Mark, Marked } from '@msb235/blits';
+import { keys, kit, mix, patch, sum } from '@msb235/blits';
 import { f } from '@weasel-js/labkit';
 import { label, lamp } from './kit/draw';
 import { Explainer } from './kit/Explainer';

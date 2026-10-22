@@ -1,7 +1,5 @@
-import { kit, sum } from '@blits/channels';
-import { curve } from '@blits/easing';
-import { keys, patch } from '@blits/patch';
-import type { Easing, Patch as P, Setting } from '@blits/types';
+import type { Easing, Patch as P, Setting } from '@msb235/blits';
+import { keys, kit, patch, sum } from '@msb235/blits';
 import { f } from '@weasel-js/labkit';
 import { label, lamp } from './kit/draw';
 import { Explainer } from './kit/Explainer';
@@ -80,6 +78,12 @@ const STOPS = [
   { at: 0, delta: { keys: 0 } },
   { at: 0.5, delta: { keys: 1 } },
   { at: 1, delta: { keys: 0 } },
+];
+
+/** One eased segment from 0 to 1, so sampling it draws the easing itself. */
+const RAMP = [
+  { at: 0, delta: { keys: 0 } },
+  { at: 1, delta: { keys: 1 } },
 ];
 
 const fnPatch = patch<object, Pose>(DURATION, (phase) => ({ fn: Math.sin(Math.PI * phase) ** 2 }), {
@@ -305,7 +309,8 @@ export default function Patch() {
           stops: STOPS.map((s) => ({ at: s.at, value: s.delta.keys })),
         });
 
-        const ease = curve(easingOf(c));
+        const ramp = keys<object, Pose>(1, RAMP, { ease: easingOf(c) });
+        const ease = (u: number) => ramp.at(u, subject, stub).keys ?? 0;
         const seg = phase < 0.5 ? phase / 0.5 : (phase - 0.5) / 0.5;
         const box = { x: size.w - side - pad, y: top, w: side, h: side };
         plot(ctx, box, ink, {

@@ -1,6 +1,4 @@
-import { kit, mul, sum } from '@blits/channels';
-import { color, css, oklab, toHex } from '@blits/color';
-import { keys, patch } from '@blits/patch';
+import { color, css, keys, kit, mul, oklab, patch, sum, toHex } from '@msb235/blits';
 import { f } from '@weasel-js/labkit';
 import { label } from './kit/draw';
 import { Explainer } from './kit/Explainer';
