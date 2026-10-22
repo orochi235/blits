@@ -7,6 +7,7 @@ import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
 import { leave } from './origin.js';
 import { ownerReading } from './owner.js';
+import { resolve } from './place.js';
 import type { FitResult, SpanSpec, VoiceSpec } from './types.js';
 import type { Voice } from './voice.js';
 
@@ -77,13 +78,11 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
   const fitting = span.fitting as Fitting;
   if (mix.projecting || span.state === 'done') return;
   const local = clockOf(span, from);
-  const kids = (span.holding?.children ?? []).filter(
-    (c) =>
-      c.state !== 'done' && c.state !== 'frozen' && c.state !== 'fading' && leftOf(c, local) > 0,
-  );
-  const claims: Claim[] = kids.map((c) => {
+  const { kids, floors, waiting } = lineUp(mix, span, local);
+  const claims: Claim[] = kids.map((c, i) => {
     const s = c.spec;
     return {
+      floor: floors[i],
       natural: leftOf(c, local) / (s.rate ?? 1),
       state: c.state === 'pending' ? 'pending' : 'playing',
       faster: Math.max(1, s.faster ?? 1),
@@ -133,6 +132,16 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
       noted(mix, c);
     }
   });
+  for (const c of waiting) {
+    if (c.start === Number.POSITIVE_INFINITY) continue;
+    c.start = Number.POSITIVE_INFINITY;
+    c.anchorNow = Number.POSITIVE_INFINITY;
+    c.anchorElapsed = 0;
+    c.clocks = null;
+    mix.frame = nextFrame();
+    reorigin(mix, c, mix.now);
+    noted(mix, c);
+  }
   if (kids.length > 0) mix.lanes?.refill();
   const reach = local + length;
   const over = Number.isFinite(fitting.budget) ? Math.max(0, reach - fitting.budget) : 0;
@@ -149,6 +158,60 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
     fitting.end = end;
     noted(mix, span);
     if (span.owner?.fitting) refit(mix, span.owner, from);
+  }
+}
+
+/**
+ * A span's children still to fit, in the order it lays them out: those playing first, as cued, then
+ * those still to start by rank. Each pending one's floor is where its `earliest` answers, span ms
+ * from `local`. One whose anchor has no answer yet waits unplaced, and under `queue` or `stagger`
+ * so does every child after it, since each is laid out from the one before.
+ */
+function lineUp<I, O>(
+  mix: Mixer<I, O>,
+  span: Voice<I, O>,
+  local: number,
+): { kids: Voice<I, O>[]; floors: (number | undefined)[]; waiting: Voice<I, O>[] } {
+  const live = (span.holding?.children ?? []).filter(
+    (c) =>
+      c.state !== 'done' && c.state !== 'frozen' && c.state !== 'fading' && leftOf(c, local) > 0,
+  );
+  const kids = live.filter((c) => c.state !== 'pending');
+  const floors: (number | undefined)[] = kids.map(() => undefined);
+  const waiting: Voice<I, O>[] = [];
+  const pending = live
+    .filter((c) => c.state === 'pending')
+    .sort((a, b) => (a.spec.rank ?? 0) - (b.spec.rank ?? 0));
+  const chained = (span.fitting as Fitting).claim.order !== 'together';
+  for (const c of pending) {
+    const e = c.spec.earliest;
+    const t = e === undefined ? undefined : resolve(mix, e, c, Number.NEGATIVE_INFINITY);
+    c.floorSeen = t ?? Number.NaN;
+    if ((e !== undefined && t === undefined) || (chained && waiting.length > 0)) {
+      waiting.push(c);
+      continue;
+    }
+    kids.push(c);
+    floors.push(t === undefined ? undefined : t - local);
+  }
+  return { kids, floors, waiting };
+}
+
+/**
+ * Fits again each span with a child still to start whose anchored `earliest` answers differently
+ * than at its last fit: an anchor that has come to have an answer, or moved.
+ */
+export function refloor<I, O>(mix: Mixer<I, O>): void {
+  if (mix.projecting) return;
+  for (const span of mix.owners ?? []) {
+    if (span.fitting === null || span.state === 'done') continue;
+    const moved = (span.holding?.children ?? []).some((c) => {
+      const e = c.spec.earliest;
+      if (c.state !== 'pending' || e === undefined || typeof e === 'number') return false;
+      const t = resolve(mix, e, c, Number.NEGATIVE_INFINITY) ?? Number.NaN;
+      return !Object.is(t, c.floorSeen);
+    });
+    if (moved) refit(mix, span);
   }
 }
 

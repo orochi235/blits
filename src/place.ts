@@ -6,6 +6,7 @@ import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { mixTime, ownerReading } from './owner.js';
 import { holders, scored, scoredGone, scoreVersion, unhold } from './scored.js';
+import { refloor } from './spans.js';
 import type { Anchor, MarkName, Placement, Query, VoiceSpec } from './types.js';
 import { none, type Voice } from './voice.js';
 import { warnOnce } from './warn.js';
@@ -168,22 +169,28 @@ export function place<I, O>(mix: Mixer<I, O>): void {
         }
       }
     }
-    if (!moved) return;
+    if (!moved) break;
   }
+  refloor(mix);
 }
 
-/** The time an anchor answers on its voice's owner's clock, or undefined while its target has none. */
-function resolve<I, O>(
+/**
+ * The time an anchor answers on its voice's owner's clock, or undefined while its target has none.
+ * A time before the owner starts answers `before`: undefined, so a start waits, or -Infinity for a
+ * floor, which is no bound at all.
+ */
+export function resolve<I, O>(
   mix: Mixer<I, O>,
   a: number | NonNullable<Placement['start']>,
   self: Voice<I, O>,
+  before?: number,
 ): number | undefined {
   const o = self.owner;
   if (typeof a === 'number') return o === null ? mixAt(mix, a - mix.offset) : a;
   if ('all' in a) {
     let latest = Number.NEGATIVE_INFINITY;
     for (const m of a.all) {
-      const t = member(mix, m, self);
+      const t = member(mix, m, self, before);
       if (t === undefined) return undefined;
       latest = Math.max(latest, t);
     }
@@ -195,7 +202,7 @@ function resolve<I, O>(
     let earliest = Number.POSITIVE_INFINITY;
     let unknown = false;
     for (const m of a.any) {
-      const t = member(mix, m, self);
+      const t = member(mix, m, self, before);
       if (t === undefined) unknown = true;
       else earliest = Math.min(earliest, t);
     }
@@ -223,6 +230,7 @@ function resolve<I, O>(
   if (t === undefined) return undefined;
   if (o === null) return t + by;
   const local = ownerReading(o, t);
+  if (local === Number.NEGATIVE_INFINITY) return before;
   return Number.isFinite(local) ? local + by : undefined;
 }
 
@@ -230,8 +238,13 @@ function resolve<I, O>(
  * What one member of a join answers, or the time it last gave once its target has left, as a lone
  * anchor keeps its voice where its target last put it.
  */
-function member<I, O>(mix: Mixer<I, O>, a: Anchor, self: Voice<I, O>): number | undefined {
-  const t = resolve(mix, a, self);
+function member<I, O>(
+  mix: Mixer<I, O>,
+  a: Anchor,
+  self: Voice<I, O>,
+  before?: number,
+): number | undefined {
+  const t = resolve(mix, a, self, before);
   if (t === undefined) return self.answers?.get(a);
   if (!mix.projecting) {
     self.answers ??= new Map();

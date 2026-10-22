@@ -32,6 +32,8 @@ export interface Claim {
   /** Whether it may jump to its end instead of playing. */
   ballast: boolean;
   priority: Strength;
+  /** Span ms from now before which it may not start, from its `earliest`; absent for none. */
+  floor?: number;
 }
 
 /**
@@ -92,7 +94,8 @@ export function plain(span: SpanClaim, kids: readonly Claim[]): FitPlan {
 
 /**
  * Where a plan puts each child, span ms from now, and how long they take together. A playing child
- * is where it is, at 0; each pending one starts its share through the one before it.
+ * is where it is, at 0; each pending one starts its share through the one before it, or at its
+ * floor where that is later.
  *
  * @category score
  */
@@ -109,9 +112,12 @@ export function layout(
   kids.forEach((k, i) => {
     const len = plan.skip[i] ? 0 : k.natural / (plan.rate[i] as number);
     const t =
-      k.state === 'playing' || i === 0
+      k.state === 'playing'
         ? 0
-        : prevAt + (k.overlap ? Math.min(plan.share, base) : base) * prevLen;
+        : Math.max(
+            i === 0 ? 0 : prevAt + (k.overlap ? Math.min(plan.share, base) : base) * prevLen,
+            k.floor ?? 0,
+          );
     at.push(t);
     length = Math.max(length, t + len);
     prevAt = t;
