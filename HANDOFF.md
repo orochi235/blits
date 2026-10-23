@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.11.0 (2026-10-18), with blits-quarks 0.7.0 and blits-tone 0.2.0 pinned to it.
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.12.0 (2026-10-22); blits-quarks 0.7.0 and blits-tone 0.2.0 are pinned to 0.11.0 until their next releases.
   blits-tone 0.2.0 was its first release through trusted publishing.
 - **In 0.11.0** (2026-10-11): a read ahead after a seek back that plays
   the tape's calls, a voice's own `stepMs`, and three fixes found on the way. The changelog's
@@ -339,11 +339,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
-0. **`mix.arc` is built, unreleased** (2026-10-22, on src-da's brief with Mike's go): klieg's
+0. **`mix.arc` shipped in 0.12.0** (2026-10-22, on src-da's brief with Mike's go): klieg's
    `fire(text, { enter, active, exit, hold, blendMs })` as a blits primitive. The schema page's
    "Arcs" is the record. bree (`~/src/bree`, the marquee's new home) builds against this checkout
-   through a file link; klieg moves onto it later. It ships in the next minor once Mike says to
-   publish; src-da is to be told the API and version then. Chosen while building, Mike's to overturn:
+   through a file link; klieg moves onto it later. Chosen while building, Mike's to overturn:
    - **Names:** `arc`, `release()`, `hold: 'open'` (klieg says `'click'` / `'forever'`, which are
      both "until released" here), `blend` (klieg's `blendMs`), a part's `duration`.
    - **No `abort()`:** the handle's own `fade` already leaves with no exit, and can ramp.
@@ -367,7 +366,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    release. Called while building, Mike's to overturn: `drop()` also ends the voices cued through
    the handle (`fade({ over: 0 })`), since a voice naming a dropped subject would otherwise stay
    cued, holding it.
-0. **`watched()`, the engine side of a debugger, is built and unreleased** (2026-10-19). The mix
+0. **`watched()`, the engine side of a debugger, shipped in 0.12.0** (2026-10-19). The mix
    page's "Watching a mix" says what it does. `@msb235/blits-panel` (`packages/panel`) is built on it
    and is unreleased too; its README says what it does, and `apps/fireworks` mounts it in dev.
    `node packages/panel/scripts/smoke.mjs` drives it in headless Chromium (on the fleet; it
@@ -761,10 +760,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    the design. astv marked its text-run weight `input` (astv `522624e0`); it now names its mixes,
    describes its voices with `as` and gives a store once it moves to a release with this.
 
-8. **astv's phase on a span: unblocked, unreleased** (2026-10-22). A span child now takes
+8. **astv's phase on a span: shipped in 0.12.0** (2026-10-22). A span child now takes
    `earliest` (a time or an anchor it never starts before) and `rank` (its place among the
    children still to start); the schema page's Spans section says how. astv can replace
-   `scheduleMarks` once a release carries them; `test/span-floors.test.ts` checks the two agree.
+   `scheduleMarks` by moving its pin to 0.12.0; `test/span-floors.test.ts` checks the two agree.
    Called while building, Mike's to overturn: a key on the child rather than a comparator on the
    span, since it is data a tape replays; an anchor still unanswered holds every later child
    under `queue` or `stagger`; and an anchor on a voice that has left never answers, as for any
@@ -778,7 +777,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     apart; `test/copies.test.ts` loads a second copy of `patch.js`. blits-quarks and blits-tone
     take blits as a peer dependency, `^0.10.0`, on `main` since 2026-10-11 (Mike's call), unreleased
     in both; the range has to be widened with each engine minor.
-    A motion patch another copy made runs on lanes too (2026-10-17, unreleased), known by a
+    A motion patch another copy made runs on lanes too (2026-10-17), known by a
     `Symbol.for` getter on the patch's prototype. Chosen while building, Mike's to overturn: the
     mark is named for the release (`release` in `src/shared.ts`, held to `package.json` by
     `test/copies.test.ts`), not a hand-bumped `@1`, because the mix calls a wide, often-changed
@@ -787,7 +786,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the driver scaffold
     the survey proposed is the magicsmoke question in item 1d.
 
-    **`@msb235/blits/lean` leaves lanes out of a bundle** (2026-10-11, unreleased): 44.5 kB
+    **`@msb235/blits/lean` leaves lanes out of a bundle** (2026-10-11): 44.5 kB
     gzipped against 59.9 for the stock entry (esbuild, minified), the same values, and
     `lanes: true` throws. `test/lean.test.ts` holds both. The stock path read level across the
     change that made `Mixer` take its lanes class as a constructor argument: v0.10.0 to v0.11.0 in
@@ -867,7 +866,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     `mix.blend` (a locus cued as one blend by a signal); marks, hits, and events (an Events tab
     with `marks`, `announce`, `book`, and `drain`, a voice's `tags`, `score`, and hits, and any
     anchor typed as JSON); and a cue's `seek` with a rate below 0. What that left:
-    - **Groups take `tags`, `score`, hits, `seek`, and a rate below 0** (2026-10-17, unreleased).
+    - **Groups take `tags`, `score`, hits, `seek`, and a rate below 0** (2026-10-17).
       blits already ran an owner's children back with it and read an owner's `tags` and
       `score`; what was missing was `hits` and `seek` on `OwnerSpec`, now added. Chosen while
       building, Mike's to overturn:
@@ -1009,7 +1008,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `patch.wave`, with `waveOptionsOf` removed; `handle.to` and `push` throwing for a patch
         that takes neither, and `read` giving undefined; and `fold` switching a rest-less channel
         on at 0.6, a mix's default band. All of it shipped in 0.8.0, so a rename is now a break.
-    - **A key `at` returns outside `writes` is warned of** (2026-10-17, unreleased). Chosen while
+    - **A key `at` returns outside `writes` is warned of** (2026-10-17). Chosen while
       building, Mike's to overturn: a `warnOnce` per patch outside production, as a placement
       ending before its start already does, over a fault count the host reads, which blits has no
       pattern for; and only the first delta each voice's `at` returns is checked, in
@@ -1019,15 +1018,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       `fn` and `named`, geometric mean 0.992, every row within 0.96–1.02). To
       reverse, drop `checkWrites` and `unchecked` from `src/voice.ts` and the line calling it.
       - **Chosen while building, Mike's to overturn: `seek({ frame })` takes the number a new
-        `mix.seq` / `transport.seq` reads** (2026-10-17, unreleased). The getter is `seq` because
+        `mix.seq` / `transport.seq` reads** (2026-10-17). The getter is `seq` because
         `frame` is already an internal field on `Mixer` and `HistoryRecord.seq` already names the
         frame number publicly; the option is `frame`, as the review named it. `project({ frame })`
         came along so reads and seeks answer the same question one way. A frame number is opaque
         (not an index among frames at one time), and one history no longer holds throws. To rename,
         change `seq` in `src/types/mix.ts`, `src/types/transport.ts` and the getter in
         `src/mixer.ts`; nothing else reads it.
-      - **Chosen while building, Mike's to overturn: what `catchUp: 'fresh'` covers** (2026-10-17,
-        unreleased). The review's row said "fresh keeps today's behavior", meaning before
+      - **Chosen while building, Mike's to overturn: what `catchUp: 'fresh'` covers** (2026-10-17).
+        The review's row said "fresh keeps today's behavior", meaning before
         `493fb15`, so it touches only where a stateful record met late starts stepping: from the
         first probe, with fresh state. The `stepMs` grid still counts from the origin (the
         record's `ticks` start at the intervals already passed, `meet` in `src/held.ts`), the
