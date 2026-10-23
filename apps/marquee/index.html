@@ -23,6 +23,7 @@
         <output id="rate-out" class="readout">1.00×</output>
         <label><input id="sparkle" type="checkbox" checked /> sparkle</label>
         <label><input id="chase" type="checkbox" checked /> chase</label>
+        <label><input id="rainbow" type="checkbox" /> rainbow</label>
         <form id="size" class="size">
           <label>size <input id="cols" type="number" min="1" max="4000" /></label>
           <label>× <input id="rows" type="number" min="1" max="2000" /></label>
@@ -32,9 +33,10 @@
       </div>
       <p class="caption">
         One blits mix lights every dot. The program is an owner holding one voice per message, each
-        placed where the last ends; a held message wipes on and off by a stagger per column. Sparkle
-        and the border's chase are voices of their own, and a dot shows the brightest of them.
-        The message and color apply from the next pass.
+        placed where the last ends; a held message wipes on and off by a stagger per column, and a
+        flipped one tumbles by a stagger per letter. Sparkle and the border's chase are voices of
+        their own, and a dot shows the brightest of them. Rainbow writes only color, so it recolors
+        whatever is lit. The message and color apply from the next pass.
       </p>
     </main>
     <script type="module" src="/src/main.ts"></script>

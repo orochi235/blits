@@ -1,9 +1,10 @@
 import './app.css';
 import { level, mix } from '@msb235/blits';
 import { mount } from '@msb235/blits-panel';
-import { board, chase, KIT, type Led, type Pose, SIZE, type Subject, sparkle } from './board';
+import { board, KIT, type Led, type Pose, SIZE, type Subject } from './board';
 import { createSign } from './draw';
-import { play, type Step } from './show';
+import { LAYERS, TEXT, type TextName } from './effects';
+import { cueLayer, play, type Step } from './show';
 
 function el<T extends HTMLElement>(id: string): T {
   return document.getElementById(id) as T;
@@ -14,8 +15,6 @@ const message = el<HTMLInputElement>('message');
 const hue = el<HTMLSelectElement>('hue');
 const rate = el<HTMLInputElement>('rate');
 const rateOut = el<HTMLOutputElement>('rate-out');
-const sparkles = el<HTMLInputElement>('sparkle');
-const chasing = el<HTMLInputElement>('chase');
 const cost = el<HTMLOutputElement>('cost');
 const colsIn = el<HTMLInputElement>('cols');
 const rowsIn = el<HTMLInputElement>('rows');
@@ -68,17 +67,24 @@ const paintBulbs = () => {
 const sign = createSign(canvas, b, leds);
 
 const userHex = () => Number.parseInt(hue.value, 16);
-const program = (): Step[] => [
-  { how: 'hold', text: 'BLITS', hex: AMBER },
-  { how: 'scroll', text: message.value || ' ', hex: userHex() },
-  { how: 'hold', text: 'NOW SHOWING', hex: RED },
-  {
-    how: 'scroll',
-    text: 'CONCURRENT EFFECTS, FOLDED INTO ONE VALUE PER DOT PER FRAME',
-    hex: GREEN,
-  },
-  { how: 'hold', text: 'TONIGHT!', hex: AMBER },
-];
+/** `?show=flip` loops that one effect on the message, for looking at it alone. */
+const only = params.get('show');
+const program = (): Step[] =>
+  only !== null && only in TEXT
+    ? [{ how: only as TextName, text: message.value || ' ', hex: userHex() }]
+    : [
+        { how: 'hold', text: 'BLITS', hex: AMBER },
+        { how: 'scroll', text: message.value || ' ', hex: userHex() },
+        { how: 'flip', text: 'NOW SHOWING', hex: RED },
+        { how: 'tile', text: message.value || ' ', hex: userHex() },
+        { how: 'roll', text: 'JACKPOT', hex: GREEN },
+        {
+          how: 'scroll',
+          text: 'CONCURRENT EFFECTS, FOLDED INTO ONE VALUE PER DOT PER FRAME',
+          hex: GREEN,
+        },
+        { how: 'fall', text: 'TONIGHT!', hex: AMBER },
+      ];
 
 // Each pass reads the message and color as they stand when it starts.
 const again = () => {
@@ -86,13 +92,14 @@ const again = () => {
 };
 again();
 
-const sparkleLevel = level<Subject>(sparkles.checked ? 1 : 0);
-const chaseLevel = level<Subject>(chasing.checked ? 1 : 0);
-m.cue({ name: 'sparkle', patch: sparkle, subjects: b.dots, loop: true, weight: sparkleLevel });
-m.cue({ name: 'chase', patch: chase, subjects: b.cells, loop: true, weight: chaseLevel });
-
-sparkles.addEventListener('change', () => sparkleLevel.set(sparkles.checked ? 1 : 0));
-chasing.addEventListener('change', () => chaseLevel.set(chasing.checked ? 1 : 0));
+// Each layer's checkbox shares its name, and sets its weight between 0 and the layer's own.
+for (const l of Object.values(LAYERS)) {
+  const box = el<HTMLInputElement>(l.name);
+  const on = () => (box.checked ? (l.weight ?? 1) : 0);
+  const weight = level<Subject>(on());
+  cueLayer(m, b, l, weight);
+  box.addEventListener('change', () => weight.set(on()));
+}
 rate.addEventListener('input', () => {
   m.ramp(Number(rate.value), 200);
   rateOut.value = `${Number(rate.value).toFixed(2)}×`;
@@ -102,6 +109,7 @@ let last = performance.now();
 let mixMs = 0;
 let drawMs = 0;
 let shownAt = 0;
+let frames = 0;
 const frame = (now: number) => {
   requestAnimationFrame(frame);
   let gap = now - last;
@@ -120,9 +128,12 @@ const frame = (now: number) => {
   const t2 = performance.now();
   mixMs += (t1 - t0 - mixMs) * 0.05;
   drawMs += (t2 - t1 - drawMs) * 0.05;
+  frames++;
   if (now - shownAt > 250) {
+    const fps = (frames * 1000) / (now - shownAt);
+    frames = 0;
     shownAt = now;
-    cost.value = `${leds.length} lights, ${b.dots.length + b.cells.length} subjects · mix ${mixMs.toFixed(2).padStart(6)} ms · draw ${drawMs.toFixed(2).padStart(6)} ms`;
+    cost.value = `${leds.length} lights, ${b.dots.length + b.cells.length} subjects · ${fps.toFixed(0).padStart(3)} fps · mix ${mixMs.toFixed(2).padStart(6)} ms · draw ${drawMs.toFixed(2).padStart(6)} ms`;
   }
 };
 requestAnimationFrame(frame);

@@ -2,27 +2,13 @@
 // 320 × 63, printing what a frame costs in each. Fails on any console or page error, a sign that
 // lit nothing, or a page wider than its viewport.
 // `--shots <dir>` keeps a screenshot per width, which otherwise go to a temp directory removed on exit.
-import { createReadStream, existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
-import { createServer } from 'node:http';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { extname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { chromium } from 'playwright';
+import { serve } from './serve.mjs';
 
-const root = fileURLToPath(new URL('../dist/', import.meta.url));
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' };
-const server = createServer((req, res) => {
-  let path = join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname));
-  if (existsSync(path) && statSync(path).isDirectory()) path = join(path, 'index.html');
-  if (!existsSync(path)) {
-    res.writeHead(404).end();
-    return;
-  }
-  res.writeHead(200, { 'content-type': types[extname(path)] ?? 'application/octet-stream' });
-  createReadStream(path).pipe(res);
-});
-await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const origin = `http://127.0.0.1:${server.address().port}/`;
+const { origin, close } = await serve();
 
 const shotsAt = process.argv.indexOf('--shots');
 const kept = shotsAt > 0 ? process.argv[shotsAt + 1] : null;
@@ -67,7 +53,7 @@ try {
   }
 } finally {
   await browser.close();
-  server.close();
+  close();
   if (!kept) rmSync(shots, { recursive: true, force: true });
 }
 process.exit(failed ? 1 : 0);

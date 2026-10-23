@@ -339,6 +339,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
+0. **A compose lab for the marquee: next, unbuilt** (asked 2026-10-22). A page for putting the
+   marquee's effects together. Each effect in `apps/marquee/src/effects/` declares its `params`
+   as data so the lab can build controls from them; the marquee README says how the modules fit.
 0. **Handles in blits-quarks and blits-tone are built, unreleased** (2026-10-18): blits-tone's
    `Sound` (`wire`, `synth`, `polySynth`, `oscillator`, `noise`) and blits-quarks' `Source` and
    `Emitter` (`wire`, `particles`, `at`). Each README's opening sections say what they do; each

@@ -1,21 +1,13 @@
 import { mix } from '@msb235/blits';
 import { describe, expect, it } from 'vitest';
-import {
-  board,
-  CHASE_MS,
-  chase,
-  HOLD_MS,
-  hold,
-  KIT,
-  type Led,
-  type Pose,
-  SIZE,
-  STEP_MS,
-  type Subject,
-  scroll,
-} from '../src/board';
+import { board, KIT, type Led, type Pose, SIZE, type Subject } from '../src/board';
+import { chase, hold, scroll, values } from '../src/effects';
 import { rasterize } from '../src/font';
-import { length, play } from '../src/show';
+import { play, stage } from '../src/show';
+
+const STEP_MS = scroll.params.step.value;
+const HOLD_MS = hold.params.ms.value;
+const CHASE_MS = chase.params.beat.value;
 
 const b = board(SIZE.cols, SIZE.rows);
 const COLS = b.cols;
@@ -36,7 +28,7 @@ describe('rasterize', () => {
 
 describe('scroll', () => {
   const text = rasterize('I');
-  const p = scroll(b, text, 0xff9a2e);
+  const p = scroll.stage(b, text, 0xff9a2e, values(scroll)).patch;
   const steps = text.cols + COLS;
 
   it('starts and ends with the sign dark', () => {
@@ -55,7 +47,7 @@ describe('scroll', () => {
 });
 
 describe('hold', () => {
-  const p = hold(b, rasterize('I'), 0xff9a2e);
+  const p = hold.stage(b, rasterize('I'), 0xff9a2e, values(hold)).patch;
   const at = (ms: number, x: number, y: number) => p.at(ms / HOLD_MS, dot(x, y), setting).lit;
 
   it('centers the text and flashes it in the middle of its time', () => {
@@ -78,7 +70,7 @@ describe('play', () => {
     m.sync(1000);
     expect(m.probe(dot(39, 0)).lit).toBe(1);
     expect(m.probe(dot(2, 0)).lit).toBe(0);
-    m.sync(length(b, steps[0]) + (COLS + 0.5) * STEP_MS);
+    m.sync(stage(b, steps[0]).ms + (COLS + 0.5) * STEP_MS);
     expect(m.probe(dot(2, 0)).lit).toBe(1);
     expect(m.probe(dot(39, 0)).lit).toBe(0);
   });
@@ -108,7 +100,7 @@ describe('board', () => {
 describe('chase', () => {
   it('lights every third bulb through its cell, stepping one bulb a beat', () => {
     const m = mix<Subject, Pose>(KIT);
-    m.cue({ patch: chase, subjects: b.cells, loop: true });
+    m.cue({ patch: chase.patch(b, values(chase)), subjects: b.cells, loop: true });
     for (let beat = 0; beat < 3; beat++) {
       m.sync(beat * CHASE_MS + CHASE_MS / 2);
       b.bulbs.forEach((bulb, j) => {

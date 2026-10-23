@@ -106,7 +106,7 @@ body {
 
 .cost {
   margin-inline-start: auto;
-  min-width: 46ch;
+  min-width: min(76ch, 100%);
   text-align: end;
   color: #b3a5a1;
   font:

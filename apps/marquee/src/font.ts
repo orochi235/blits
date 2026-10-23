@@ -52,6 +52,10 @@ const GLYPHS: Record<string, readonly string[]> = {
 
 export const ROWS = 7;
 const WIDTH = 5;
+/** How many columns a glyph takes with the blank after it. */
+export const ADVANCE = WIDTH + 1;
+/** Every character the face draws something for. */
+export const FACE: readonly string[] = Object.keys(GLYPHS).filter((ch) => ch !== ' ');
 
 /** Text laid out as lit columns, one blank column after each glyph; a glyph the face lacks is a blank. */
 export interface Bitmap {
@@ -62,13 +66,13 @@ export interface Bitmap {
 
 export function rasterize(text: string): Bitmap {
   const chars = [...text.toUpperCase()];
-  const cols = chars.length * (WIDTH + 1);
+  const cols = chars.length * ADVANCE;
   const bits = new Uint8Array(cols * ROWS);
   chars.forEach((ch, k) => {
     const rows = GLYPHS[ch] ?? GLYPHS[' '];
     for (let y = 0; y < ROWS; y++)
       for (let x = 0; x < WIDTH; x++)
-        if (rows?.[y]?.[x] === '#') bits[y * cols + k * (WIDTH + 1) + x] = 1;
+        if (rows?.[y]?.[x] === '#') bits[y * cols + k * ADVANCE + x] = 1;
   });
   return {
     cols,
