@@ -1,3 +1,4 @@
+import { arcEnd } from './arcs.js';
 import { elapsedWith, retime } from './clock.js';
 import { retire } from './fade.js';
 import { type Claim, defaultFit, type Fit, layout, type SpanClaim, settle } from './fit.js';
@@ -44,8 +45,12 @@ export class Fitting {
 export function checkChild<I, O>(spec: VoiceSpec<I, O>, child: Voice<I, O>): void {
   if (spec.start !== undefined || spec.anchor?.start !== undefined || spec.anchor?.in !== undefined)
     throw new Error('blits: a span places the voices it holds, so one takes no start of its own');
-  if (child.holding !== null) {
-    if (child.fitting === null) throw new Error('blits: a span holds voices and spans, not owners');
+  if (child.arc !== null) {
+    if (!Number.isFinite(arcEnd(child)))
+      throw new Error('blits: a span cannot fit an arc held open, which never ends');
+  } else if (child.holding !== null) {
+    if (child.fitting === null)
+      throw new Error('blits: a span holds voices, spans and arcs, not owners');
   } else if (!Number.isFinite(child.span))
     throw new Error('blits: a span cannot fit a voice that never ends');
 }
@@ -64,7 +69,8 @@ function elapsedIn<I, O>(child: Voice<I, O>, local: number): number {
 
 /** How much of a child is left, voice ms at its own clock: what its span still has to fit. */
 function leftOf<I, O>(child: Voice<I, O>, local: number): number {
-  const length = child.fitting !== null ? child.fitting.end : child.span;
+  const length =
+    child.fitting !== null ? child.fitting.end : child.arc !== null ? arcEnd(child) : child.span;
   return Math.max(0, length - elapsedIn(child, local));
 }
 

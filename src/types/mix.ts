@@ -1,3 +1,4 @@
+import type { ArcHandle, ArcSpec } from './arc.js';
 import type { Kit } from './channel.js';
 import type { HistoryOptions, Tape } from './history.js';
 import type { Patch, Sent, Signal } from './patch.js';
@@ -156,6 +157,18 @@ export interface Mix<I, O, H = unknown> {
    * turns it once it plays.
    */
   span(spec: SpanSpec<I, H>): SpanHandle<I>;
+  /**
+   * Cues an arc: an owner holding three parts that hand over in order on its clock, `enter`, then
+   * `active` for the `hold`, then `exit`, each a voice or several layered. Its marks are its own:
+   * `start` as the enter begins, `in` as it ends, `coast` as the hold ends and `out` as the exit
+   * begins, which are one time, and `end` as the exit ends, where it leaves and `done` resolves.
+   * While the hold is open, `coast`, `out` and `end` are unknown until `release` fixes them. Each
+   * part shows its first and last frames through the blends either side of it, and a part left
+   * out leaves its time to the one before it. Its `fade` takes it out with no exit. An arc with a
+   * finite hold may sit in a span. Throws for a `rate` below 0, a hold below 0, and an `enter` or
+   * `exit` that never ends.
+   */
+  arc(spec: ArcSpec<I, O, H>): ArcHandle<I>;
 
   /**
    * The host reports the clock, once a frame. Nothing advances at the call. Throws for a timestamp

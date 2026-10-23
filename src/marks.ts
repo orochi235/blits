@@ -1,3 +1,4 @@
+import { arcMark } from './arcs.js';
 import { inPass, type Listed } from './book.js';
 import type { Mixer } from './mixer.js';
 import { startOf } from './place.js';
@@ -129,6 +130,8 @@ export function markOf<I, O>(
   const start = startOf(voice);
   if (!Number.isFinite(start)) return undefined;
   if (mark === 'start') return start;
+  if (voice.arc !== null && (mark === 'in' || mark === 'coast' || mark === 'out' || mark === 'end'))
+    return arcMark(voice, start, mark as 'in' | 'coast' | 'out' | 'end');
   if (mark === 'in') return start + (voice.fade.in ?? 0);
   if (mark === 'coast') return coastOf(mix, voice, start);
   if (mark !== 'out' && mark !== 'end') return insideOf(mix, voice, start, mark);

@@ -60,6 +60,10 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
     owner,
   );
   if (patch === ownerPatch && mix.fitting !== null) voice.fitting = mix.fitting;
+  if (patch === ownerPatch && mix.arcing !== null) {
+    voice.arc = mix.arcing;
+    voice.hold = mix.arcing.hold;
+  }
   if (owner?.fitting) checkChild(spec, voice);
   if (mix.pace !== null && owner === null && spec.start !== undefined && voice.state === 'pending')
     voice.pinned = spec.start - mix.offset;

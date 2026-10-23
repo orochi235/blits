@@ -1,3 +1,4 @@
+import type { Arc } from './arcs.js';
 import type { Blend } from './blend.js';
 import {
   backWith,
@@ -234,6 +235,8 @@ export interface Controls extends Clock {
   outOver: number;
   outSet: boolean;
   rebuilds: number;
+  /** An arc's hold. */
+  hold: number;
   /** How many of the voice's past clocks it had then. */
   past: number;
   /** Shows in its own frame: made by a sync, or before anything read the mix that frame. */
@@ -468,6 +471,12 @@ export class Voice<I, O> {
   holding: Holding<Voice<I, O>> | null;
   /** For a span, its budget and how its children were last fitted; null for any other voice. */
   fitting: Fitting | null = null;
+  /** For an arc, how its parts are laid out; null for any other voice. */
+  arc: Arc | null = null;
+  /** For an arc, how long its hold lasts, ms on its clock: Infinity while open. */
+  hold = 0;
+  /** For a voice an arc holds, which part it plays: 0 enter, 1 active, 2 exit; -1 for any other. */
+  part = -1;
   /**
    * `done` and `played`, made when first asked for, already settled if the voice is: most hosts
    * never await either, and a mix may hold tens of thousands of voices.
@@ -577,6 +586,7 @@ export class Voice<I, O> {
     this.outOver = c.outOver;
     this.outSet = c.outSet;
     this.rebuilds = c.rebuilds;
+    this.hold = c.hold;
     const clocks = this.clocks;
     if (clocks !== null && clocks.length !== c.past)
       this.clocks = c.past === 0 ? null : clocks.slice(0, c.past);
@@ -802,6 +812,7 @@ export class Voice<I, O> {
       outOver: this.outOver,
       outSet: this.outSet,
       rebuilds: this.rebuilds,
+      hold: this.hold,
       past: this.clocks?.length ?? 0,
     });
   }

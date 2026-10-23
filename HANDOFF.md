@@ -339,9 +339,27 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
-0. **A compose lab for the marquee: next, unbuilt** (asked 2026-10-22). A page for putting the
-   marquee's effects together. Each effect in `apps/marquee/src/effects/` declares its `params`
-   as data so the lab can build controls from them; the marquee README says how the modules fit.
+0. **`mix.arc` is built, unreleased** (2026-10-22, on src-da's brief with Mike's go): klieg's
+   `fire(text, { enter, active, exit, hold, blendMs })` as a blits primitive. The schema page's
+   "Arcs" is the record. bree (`~/src/bree`, the marquee's new home) builds against this checkout
+   through a file link; klieg moves onto it later. It ships in the next minor once Mike says to
+   publish; src-da is to be told the API and version then. Chosen while building, Mike's to overturn:
+   - **Names:** `arc`, `release()`, `hold: 'open'` (klieg says `'click'` / `'forever'`, which are
+     both "until released" here), `blend` (klieg's `blendMs`), a part's `duration`.
+   - **No `abort()`:** the handle's own `fade` already leaves with no exit, and can ramp.
+   - **`release()` works on a finite hold too,** cutting it short; klieg's ignores one. Once the
+     exit has begun it does nothing.
+   - **Default hold is `active`'s own length,** open where it loops for good, 0 with no `active`.
+   - **A part left out gives its time to the one before,** which holds its last frame.
+   - **`in` is the later of the enter's end and the arc's own `fade.in`.**
+   - **An open arc cannot sit in a span,** which has to know its length; klieg's `stages` are
+     left for later and not designed out.
+   - The crossfade is a factor in `ownersWeight` (`src/owner.ts`), read from `arcShare` in
+     `src/arcs.ts`; the hold a release fixes is a voice control (`Voice.hold`), so a seek back
+     restores it.
+0. **The marquee moved to bree** (Mike, 2026-10-22): its effects, board, font, show, draw and the
+   compose lab live in `~/src/bree` now. `apps/marquee` stays in blits, frozen, until Mike deletes
+   it: no features go into it.
 0. **Handles in blits-quarks and blits-tone are built, unreleased** (2026-10-18): blits-tone's
    `Sound` (`wire`, `synth`, `polySynth`, `oscillator`, `noise`) and blits-quarks' `Source` and
    `Emitter` (`wire`, `particles`, `at`). Each README's opening sections say what they do; each

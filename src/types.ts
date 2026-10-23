@@ -1,3 +1,4 @@
+export type * from './types/arc.js';
 export type * from './types/channel.js';
 export type * from './types/history.js';
 export type * from './types/mix.js';

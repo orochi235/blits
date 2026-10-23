@@ -28,6 +28,10 @@ export { ticker } from './ticker.js';
 export { transport } from './transport.js';
 export type {
   Anchor,
+  ArcHandle,
+  ArcPart,
+  ArcSpec,
+  ArcVoice,
   BlendMember,
   BookedHit,
   Booker,

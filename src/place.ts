@@ -42,7 +42,7 @@ export function repin<I, O>(mix: Mixer<I, O>): void {
 }
 
 /** Moves a pending voice's start, its clock with it; false where it is already there. */
-function startAt<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, start: number): boolean {
+export function startAt<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, start: number): boolean {
   if (start === voice.start) return false;
   voice.start = start;
   voice.anchorNow = start;

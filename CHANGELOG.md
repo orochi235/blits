@@ -8,6 +8,13 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- `mix.arc(spec)`: an owner holding three parts that hand over in order on its clock, `enter`,
+  `active` for the `hold` and `exit`, each a voice's spec or several layered, with a `blend`
+  crossfading across each boundary. Its marks are its own: `in` as the enter ends, `coast` and
+  `out` as the hold ends and the exit begins, `end` as the exit ends, where it leaves and `done`
+  resolves. `hold: 'open'` holds until `release()` on its handle, which a seek replays; `fade`
+  takes it out with no exit. An arc with a finite hold sits in a span. It is klieg's `fire` as a
+  blits primitive, under the same part names. The schema page's "Arcs" says what each part does.
 - A span child's `earliest` and `rank`. `earliest` is the soonest it may start, a time on the
   span's clock or an anchor; the fit never places it sooner, and the children after it are laid
   out from where it starts. One already past when it is cued places it there, partway through, so a

@@ -1,3 +1,4 @@
+import { settleArcs } from './arcs.js';
 import { changed } from './chain.js';
 import { elapsedWith } from './clock.js';
 import { byId, popDue, schedule } from './due.js';
@@ -135,7 +136,10 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
     }
     if (!mix.projecting) schedule(mix, voice);
   }
-  if (mix.owners !== null) lapse(mix, now);
+  if (mix.owners !== null) {
+    lapse(mix, now);
+    settleArcs(mix, now);
+  }
   if (mix.sharers.length > 0 && !mix.projecting) outgrow(mix);
   mix.stirred = false;
   if (mix.retired.length > 0) prune(mix);

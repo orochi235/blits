@@ -1,3 +1,4 @@
+import { type Arc, cueArc } from './arcs.js';
 import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
 import { aims, chain, headOf, linkable, relink, unlink } from './chain.js';
@@ -55,6 +56,8 @@ import { record, unplayable } from './tape.js';
 import { touch } from './touch.js';
 import { type Announced, announce, Transport } from './transport.js';
 import type {
+  ArcHandle,
+  ArcSpec,
   BlendMember,
   Booker,
   BookOptions,
@@ -276,6 +279,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   bookers: Book<I, O>[] | null = null;
   /** The fit a span being cued takes, which `cue` hands its voice. */
   fitting: Fitting | null = null;
+  /** What an arc being cued keeps, which `cue` hands its voice. */
+  arcing: Arc | null = null;
   /** Every owner still in the mix, null until one is cued. */
   owners: Voice<I, O>[] | null = null;
   /** With a history store, the key each subject is paged under; null without one. */
@@ -445,6 +450,10 @@ export class Mixer<I, O> implements Mix<I, O> {
     } finally {
       this.fitting = null;
     }
+  }
+
+  arc(spec: ArcSpec<I, O>): ArcHandle<I> {
+    return cueArc(this, spec);
   }
 
   sync(timestamp: number): void {

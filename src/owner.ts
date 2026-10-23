@@ -1,3 +1,4 @@
+import { arcShare } from './arcs.js';
 import { backWith, clampWeight, elapsedWith, envelope, timeWith } from './clock.js';
 import type { Patch } from './types.js';
 import type { Voice } from './voice.js';
@@ -147,7 +148,11 @@ export function ownersWeight<I, O>(
   base: (owner: Voice<I, O>) => number,
 ): number {
   let w = 1;
-  for (let o = voice.owner; o !== null; o = o.owner) w *= ownWeight(o, now, reduced, base);
+  let child = voice;
+  for (let o = voice.owner; o !== null; child = o, o = o.owner) {
+    w *= ownWeight(o, now, reduced, base);
+    if (o.arc !== null) w *= arcShare(o, child, now, reduced);
+  }
   return w;
 }
 

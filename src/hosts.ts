@@ -1,3 +1,4 @@
+import { release } from './arcs.js';
 import { Book, type BookHost } from './book.js';
 import { headOf } from './chain.js';
 import { numericOf } from './channels.js';
@@ -229,6 +230,7 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       else beginFade(mix, voice, (opts ?? {}) as { over?: number; at?: 'rest'; deadline?: number });
     },
     rise: (voice, opts) => beginRise(mix, voice, opts ?? {}),
+    release: (voice) => release(mix, voice),
     weightOf: (voice, subject) => {
       if (voice.state === 'done') return 0;
       if (voice.holding !== null)

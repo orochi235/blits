@@ -17,6 +17,7 @@ export interface HandleHost<I, O> {
   sought(voice: Voice<I, O>, rebuild: boolean): Doubt;
   fade(voice: Voice<I, O>, opts: FadeOptions<I> | undefined): void;
   rise(voice: Voice<I, O>, opts: { over?: number } | undefined): void;
+  release(voice: Voice<I, O>): void;
   weightOf(voice: Voice<I, O>, subject: I): number;
   /**
    * Records a write the host made through `h`, which `again` makes once more where a seek replays
@@ -183,6 +184,14 @@ export class VoiceHandle<I, O> implements Handle<I> {
     voice.written = true;
     this.#host.rise(voice, opts);
     this.#host.record(this, 'rise', (h) => h.rise(opts));
+  }
+
+  release(): void {
+    const voice = this.#cued;
+    if (voice === null) return;
+    voice.written = true;
+    this.#host.release(voice);
+    this.#host.record(this, 'release', (h) => h.release());
   }
 
   weightOf(subject: I): number {

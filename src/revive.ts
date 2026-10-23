@@ -25,6 +25,7 @@ interface PackedVoice {
   outOver: number;
   outSet: boolean;
   rebuilds: number;
+  hold: number;
   past: number;
   clocks: Past[] | null;
   cuedAt: number;
@@ -139,6 +140,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     outOver: voice.outOver,
     outSet: voice.outSet,
     rebuilds: voice.rebuilds,
+    hold: voice.hold,
     past: voice.clocks?.length ?? 0,
     clocks: voice.clocks,
     cuedAt: voice.cuedAt,
