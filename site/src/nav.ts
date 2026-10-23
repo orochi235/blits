@@ -18,7 +18,8 @@ export type Word = (typeof words)[number]['slug'];
 export const extra = [
   { slug: 'glossary', title: 'Glossary' },
   { slug: 'reference', title: 'Reference' },
-  { slug: 'klieg', title: 'klieg' },
+  { slug: 'changelog', title: 'Changelog' },
+  { slug: 'built-on', title: 'Built on blits' },
 ] as const;
 
 /** Apps the dev server links to; they run only on this machine, so the built site leaves them out. */

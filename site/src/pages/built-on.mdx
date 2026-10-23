@@ -1,0 +1,29 @@
+---
+layout: ../layouts/Page.astro
+title: Built on blits
+description: The packages that extend blits, and the libraries that run their effects on it.
+---
+
+# Built on blits
+
+<p class="lede">Packages that plug blits into other engines and tools, and libraries that run their effects on a blits mix.</p>
+
+## Plugins
+
+These live in the blits repo and follow its releases.
+
+| Package | What it does |
+|---|---|
+| [`@msb235/blits-quarks`](https://www.npmjs.com/package/@msb235/blits-quarks) | Drives [three.quarks](https://github.com/Alchemist0823/three.quarks) particle systems from a mix: how many particles each subject emits, where, and with what start values. |
+| [`@msb235/blits-tone`](https://www.npmjs.com/package/@msb235/blits-tone) | Drives [Tone.js](https://tonejs.github.io) from a mix on the audio clock: each subject's channels as parameter curves, and its hits and marks scheduled before they come. |
+| [`@msb235/blits-panel`](https://github.com/orochi235/blits/tree/main/packages/panel) | A debugger window: every mix on the page, its voices and subjects, channels plotted over time, and a clock to pause, step and scrub. Not on npm yet. |
+| [blits DevTools extension](https://github.com/orochi235/blits/tree/main/apps/devtools) | The same debugger as a tab in Chrome DevTools, for any page running blits, with nothing imported into the app. Loaded unpacked; not in the Chrome Web Store. |
+
+## Libraries
+
+| Library | What it runs on blits |
+|---|---|
+| [klieg](https://github.com/orochi235/klieg) | Shiny extruded 3D type over a web page. Its motion, its effects and its lighting are three mixes; blits was extracted from it. |
+| [magicsmoke](https://github.com/orochi235/magicsmoke) | Sparks, arcs, pops and hum: hardware failing on a web page. Each fault is a voice whose weight is its intensity. |
+| [weasel](https://github.com/orochi235/weasel) | A 2D scene-graph kit for React. Its animator, `@weasel-js/animator`, cues a voice for each target it animates. |
+| [agnew](https://github.com/orochi235/agnew) | 3D spirograph line art. Any number in a design can move over its loop, and a design can morph toward another, all on one mix. |

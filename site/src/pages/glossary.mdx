@@ -383,7 +383,7 @@ Reference: [`Channel`](../channel/#api-Channel).
 
 ## mix
 
-A mix holds every [voice](#voice) playing over one [kit](#kit), and [folds](#fold) them into one [pose](#pose) per subject each frame. Once a frame the [host](#host) tells it the time with [`sync`](#sync), then asks for each subject's pose with [`probe`](#probe). An app can keep several mixes, one for each kind of thing it animates: [klieg](../klieg/) runs its motion, its effects, and its lighting on three.
+A mix holds every [voice](#voice) playing over one [kit](#kit), and [folds](#fold) them into one [pose](#pose) per subject each frame. Once a frame the [host](#host) tells it the time with [`sync`](#sync), then asks for each subject's pose with [`probe`](#probe). An app can keep several mixes, one for each kind of thing it animates: [klieg](https://github.com/orochi235/klieg) runs its motion, its effects, and its lighting on three.
 
 ```ts
 const dots = mix<Dot, DotPose>(DOT);

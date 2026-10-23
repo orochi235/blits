@@ -234,6 +234,11 @@ pre code {
   vertical-align: top;
 }
 
+/* A name in a table's first column is read as one word, so it never breaks at a hyphen. */
+.page td:first-child code {
+  white-space: nowrap;
+}
+
 /* Explainers */
 
 .explainer {

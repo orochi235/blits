@@ -1,0 +1,14 @@
+---
+import { Content } from '../../../CHANGELOG.md';
+import Page from '../layouts/Page.astro';
+
+const repo = 'https://github.com/orochi235/blits/blob/main/packages';
+---
+<Page title="Changelog">
+  <Content />
+  <p>
+    The sibling packages keep their own:
+    <a href={`${repo}/quarks/CHANGELOG.md`}><code>@msb235/blits-quarks</code></a> and
+    <a href={`${repo}/tone/CHANGELOG.md`}><code>@msb235/blits-tone</code></a>.
+  </p>
+</Page>
