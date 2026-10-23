@@ -419,7 +419,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - **Releasing the panel:** 0.1.0 went out by hand (staged, then approved, 2026-10-23) and 0.1.1,
      the same code, from the `panel-v0.1.1` tag through trusted publishing; both pin engine 0.12.0.
      Later versions publish from `panel-v*` tags. An agent registers trust with `npm trust github`;
-     only an npm login needs Mike. Staging left a `0.0.0-stage` version on npm.
+     only an npm login needs Mike. Staging left a `0.0.0-stage` version on npm, deprecated.
    - **`ChannelPlot` moved** from the playground into the panel, which exports it. The
      playground imports it from there, along with `hueColor`.
    - **A mix watched and then let go of runs as fast as one never watched** (2026-10-21). Until
