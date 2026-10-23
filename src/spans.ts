@@ -164,7 +164,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
 /**
  * A span's children still to fit, in the order it lays them out: those playing first, as cued, then
  * those still to start by rank. Each pending one's floor is where its `earliest` answers, span ms
- * from `local`. One whose anchor has no answer yet waits unplaced, and under `queue` or `stagger`
+ * from `local`, and before `local` only in the frame it was cued. One whose anchor has no answer yet waits unplaced, and under `queue` or `stagger`
  * so does every child after it, since each is laid out from the one before.
  */
 function lineUp<I, O>(
@@ -192,7 +192,12 @@ function lineUp<I, O>(
       continue;
     }
     kids.push(c);
-    floors.push(t === undefined ? undefined : t - local);
+    // An anchor that answered before the span began has no time on its clock: no bound.
+    const floor = t === undefined || t === Number.NEGATIVE_INFINITY ? undefined : t - local;
+    // A past floor places a child only as it is cued: one waiting since waits on those before it.
+    floors.push(
+      floor === undefined || c.cuedSeq === mix.transport.seq ? floor : Math.max(0, floor),
+    );
   }
   return { kids, floors, waiting };
 }

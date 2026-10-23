@@ -35,8 +35,9 @@ export interface SpanHints {
   priority?: Strength;
   /**
    * The soonest it may start: a time on the span's clock, or an anchor. The fit never places it
-   * sooner, and the children after it are laid out from where it starts. One whose anchor has no
-   * answer yet waits, and under `queue` or `stagger` so does every child after it.
+   * sooner, and the children after it are laid out from where it starts. One already past when it is
+   * cued places it there, partway through. One whose anchor has no answer yet waits, and under `queue` or
+   * `stagger` so does every child after it.
    */
   earliest?: number | Anchor;
   /** Where it plays among the span's children still to start: lower first, ties as cued. Default 0. */

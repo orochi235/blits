@@ -74,7 +74,51 @@ describe('a span child with an earliest start', () => {
     expect(at(m, 'b', 'start')).toEqual([0]);
   });
 
-  it('starts at once where its anchor has already passed', () => {
+  it('starts partway through where its floor has passed, and the queue follows it', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    const s = m.span({ name: 'phase' });
+    for (let t = 16; t <= 1008; t += 16) m.sync(t);
+    m.cue({ patch: write(1000), owner: s, name: 'a', earliest: 608 });
+    m.cue({ patch: write(100), owner: s, name: 'b', earliest: 0 });
+    expect(at(m, 'a', 'start')).toEqual([608]);
+    expect(at(m, 'b', 'start')).toEqual([1608]);
+    m.sync(1024);
+    expect(m.probe({ id: 'r' }).x).toBeCloseTo(0.416, 9);
+  });
+
+  it('waits on the one before it once cued, though its floor has passed since', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    const s = m.span({ name: 'phase' });
+    m.cue({ patch: write(100), owner: s, name: 'a', earliest: 100 });
+    m.cue({ patch: write(100), owner: s, name: 'b', earliest: 100 });
+    for (let t = 50; t <= 250; t += 50) m.sync(t);
+    expect(at(m, 'b', 'start')).toEqual([200]);
+    expect(m.probe({ id: 'r' }).x).toBeCloseTo(0.5, 9);
+  });
+
+  it('starts before its span began where its floor says', () => {
+    const m = mix<Row, Pose>(K);
+    for (let t = 0; t <= 1008; t += 16) m.sync(t);
+    const s = m.span({ name: 'phase' });
+    m.cue({ patch: write(1000), owner: s, name: 'a', earliest: -400 });
+    expect(at(m, 'a', 'start')).toEqual([608]);
+    m.sync(1024);
+    expect(m.probe({ id: 'r' }).x).toBeCloseTo(0.416, 9);
+  });
+
+  it('starts no sooner than now without a floor, after one placed in the past', () => {
+    const m = mix<Row, Pose>(K);
+    m.sync(0);
+    const s = m.span({ name: 'phase', order: 'together' });
+    for (let t = 16; t <= 1008; t += 16) m.sync(t);
+    m.cue({ patch: write(1000), owner: s, name: 'a', earliest: 608 });
+    m.cue({ patch: write(100), owner: s, name: 'b' });
+    expect(at(m, 'b', 'start')).toEqual([1008]);
+  });
+
+  it('starts at once where its anchor passed before the span began', () => {
     const m = mix<Row, Pose>(K);
     m.sync(0);
     m.cue({ patch: write(1000), score: 'orbs', name: 'orb' });
@@ -141,35 +185,38 @@ function scheduleMarks(
 
 describe("astv's change order on a span", () => {
   for (const order of ['queue', 'stagger'] as const)
-    it(`starts each change where scheduleMarks would, under ${order}`, () => {
-      let seed = 7;
-      const rand = () => {
-        seed = (seed * 16807) % 2147483647;
-        return seed / 2147483647;
-      };
-      const marks = Array.from({ length: 12 }, (_, i) => ({
-        line: i * 3,
-        at: Math.round(rand() * 2000),
-        run: 100 + Math.round(rand() * 400),
-      }));
-      // Arriving in an order other than by line.
-      const arrival = [...marks].sort((a, b) => a.at - b.at);
-      const m = mix<Row, Pose>(K);
-      m.sync(0);
-      const s = m.span({ name: 'phase', order, share: 0.5 });
-      for (const k of arrival) {
-        const spec: VoiceSpec<Row, Pose> = {
-          patch: write(k.run),
-          owner: s,
-          name: `line ${k.line}`,
-          rank: k.line,
-          earliest: k.at,
+    for (const late of [false, true])
+      it(`starts each change where scheduleMarks would, under ${order}${late ? ', cued late' : ''}`, () => {
+        let seed = 7;
+        const rand = () => {
+          seed = (seed * 16807) % 2147483647;
+          return seed / 2147483647;
         };
-        m.cue(spec);
-      }
-      const want = scheduleMarks(marks, order, 0.5);
-      for (const k of marks) expect(at(m, `line ${k.line}`, 'start')).toEqual([want.get(k.line)]);
-    });
+        const marks = Array.from({ length: 12 }, (_, i) => ({
+          line: i * 3,
+          at: Math.round(rand() * 2000),
+          run: 100 + Math.round(rand() * 400),
+        }));
+        // Arriving in an order other than by line.
+        const arrival = [...marks].sort((a, b) => a.at - b.at);
+        const m = mix<Row, Pose>(K);
+        m.sync(0);
+        const s = m.span({ name: 'phase', order, share: 0.5 });
+        // Cued late, as a host that made its mix afresh after a seek does: some have landed.
+        if (late) for (let t = 16; t <= 1200; t += 16) m.sync(t);
+        for (const k of arrival) {
+          const spec: VoiceSpec<Row, Pose> = {
+            patch: write(k.run),
+            owner: s,
+            name: `line ${k.line}`,
+            rank: k.line,
+            earliest: k.at,
+          };
+          m.cue(spec);
+        }
+        const want = scheduleMarks(marks, order, 0.5);
+        for (const k of marks) expect(at(m, `line ${k.line}`, 'start')).toEqual([want.get(k.line)]);
+      });
 });
 
 describe('an anchored earliest across a seek', () => {

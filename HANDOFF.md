@@ -749,7 +749,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    Called while building, Mike's to overturn: a key on the child rather than a comparator on the
    span, since it is data a tape replays; an anchor still unanswered holds every later child
    under `queue` or `stagger`; and an anchor on a voice that has left never answers, as for any
-   anchor, so astv passes the landing time as a number when the orb is gone.
+   anchor, so astv passes the landing time as a number when the orb is gone. A floor already
+   past places the child there, partway through (2026-10-22, at Mike's pick over astv keeping
+   `scheduleMarks` for a mix made afresh after a seek), so a late span lays out as a live one did.
 
 10. **Two copies of blits loaded together share what each knows of its patches and channels**
     (`773d088`, 2026-10-08): `keys` options and the stock channels' lane facts sit in WeakMaps
