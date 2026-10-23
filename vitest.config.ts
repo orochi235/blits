@@ -21,7 +21,6 @@ export default defineConfig({
       'packages/*/test/**/*.test.ts',
       'apps/playground/test/**/*.test.ts',
       'apps/devtools/test/**/*.test.ts',
-      'apps/marquee/test/**/*.test.ts',
     ],
   },
 });

@@ -161,11 +161,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   labkit's `endless`, which stores `Infinity` at that stop.
   Every explainer has its full source listed under it, with the site files it imports
   (2026-10-22), and imports blits as `@msb235/blits`, the alias reaching only the public entry.
-- **`apps/marquee`**, built 2026-10-22: an LED sign demo, one subject per dot and per third of the border's bulbs, sized by
-  `?cols=&rows=` for benchmarking; its README says how it works. Its smoke run on msb-uai
-  (headless, 2026-10-22) read mix 0.19 ms a frame at 652 lights and 4.33 ms at 20,548; the schema
-  page's "Subject aliases" (decided against) and "Layered subjects" (open) are about that load. Called while building, Mike's to overturn: a taller sign
-  stacks the same message on every line, and filament warm-up and cool-down live in the renderer.
+- **The marquee** (an LED sign demo, one subject per dot) lives in bree; `apps/marquee` was deleted
+  (2026-10-23). Its smoke run (headless, msb-uai, 2026-10-22) read mix 0.19 ms a frame at 652 lights
+  and 4.33 ms at 20,548; the schema page's "Subject aliases" (decided against) and "Layered
+  subjects" (open) are about that load.
 - `docs/schema.html` — the design: vocabulary, channel table, patches, voices, mix,
   signals, time model, blending, patch state, the engine seam, per-consumer rigs, the klieg port,
   decided-against, tests, open items. Status line says design under review. It reads in the called
@@ -356,9 +355,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - The crossfade is a factor in `ownersWeight` (`src/owner.ts`), read from `arcShare` in
      `src/arcs.ts`; the hold a release fixes is a voice control (`Voice.hold`), so a seek back
      restores it.
-0. **The marquee moved to bree** (Mike, 2026-10-22): its effects, board, font, show, draw and the
-   compose lab live in `~/src/bree` now. `apps/marquee` stays in blits, frozen, until Mike deletes
-   it: no features go into it.
 0. **Handles in blits-quarks and blits-tone shipped in quarks 0.8.0 and tone 0.3.0** (2026-10-18): blits-tone's
    `Sound` (`wire`, `synth`, `polySynth`, `oscillator`, `noise`) and blits-quarks' `Source` and
    `Emitter` (`wire`, `particles`, `at`). Each README's opening sections say what they do; each

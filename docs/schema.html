@@ -857,7 +857,7 @@ phase.result;   <span class="cm">// { budget, length, over, skipped, fell }</spa
 <pre><code>const phase = mix.span({ name: 'phase', order: 'queue', duration: 2000 });
 mix.cue({ patch: writeChange(change), owner: phase, rank: change.line,
           earliest: { of: { name: `orb ${change.id}`, score: 'orbs' }, mark: 'end' } });</code></pre></li>
-  <li id="arcs"><b>Arcs.</b> <code>mix.arc(spec)</code> cues an owner holding an ordered chain of three parts that hand over on its clock: <code>enter</code>, then <code>active</code> for the <code>hold</code>, then <code>exit</code>. It is klieg's <code>fire(text, { enter, active, exit, hold, blendMs })</code> as a blits primitive, with the same part names so the two line up, and it replaces a host adding up starts by hand: the marquee's program is a span queueing arcs. Built 2026-10-22.
+  <li id="arcs"><b>Arcs.</b> <code>mix.arc(spec)</code> cues an owner holding an ordered chain of three parts that hand over on its clock: <code>enter</code>, then <code>active</code> for the <code>hold</code>, then <code>exit</code>. It is klieg's <code>fire(text, { enter, active, exit, hold, blendMs })</code> as a blits primitive, with the same part names so the two line up, and it replaces a host adding up starts by hand: bree's marquee runs its program as a span queueing arcs. Built 2026-10-22.
 <pre><code>const word = mix.arc({
   name: 'JACKPOT',
   enter: { patch: rise, stagger: byLetter, duration: 600 },   <span class="cm">// a voice's spec, or several layered</span>
