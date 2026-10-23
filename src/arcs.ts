@@ -71,8 +71,9 @@ export function arcShare<I, O>(
   reduced: boolean,
 ): number {
   const arc = arcVoice.arc as Arc;
-  const read = ownerReading(arcVoice, now);
-  const t = read > 0 ? read : 0;
+  const t = ownerReading(arcVoice, now);
+  // Its parts freeze on their first frames, so an arc yet to start has to silence them itself.
+  if (!(t >= 0)) return 0;
   const segs = segments(arc, arcVoice.hold);
   const end = arc.enter + arcVoice.hold + arc.exit;
   const blend = reduced ? 0 : arc.blend;

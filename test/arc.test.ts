@@ -291,6 +291,17 @@ describe('arcs', () => {
     expect(() => m.arc({ active: { patch: part('b', 100) }, rate: -1 })).toThrow(/backward/);
   });
 
+  it('shows nothing before it starts, cued late or under an owner that starts late', () => {
+    for (const lanes of [true, false]) {
+      const m = make({ lanes });
+      m.arc({ enter: { patch: part('a', 200) }, active: { patch: part('b', 100) }, start: 300 });
+      const late = m.owns({ start: 300 });
+      m.arc({ enter: { patch: part('c', 200) }, owner: late });
+      expect(at(m, 100)).toEqual([0, 0, 0]);
+      expect(at(m, 400)).toEqual([1, 0, 1]);
+    }
+  });
+
   it('reads the same on lanes and off', () => {
     const run = (lanes: boolean) => {
       const m = make({ lanes });
