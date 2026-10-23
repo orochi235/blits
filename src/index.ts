@@ -2,6 +2,8 @@ export type { NumberOptions, Vec } from './channels.js';
 export { kit, last, max, mul, sum, vec } from './channels.js';
 export type { ColorOptions } from './color.js';
 export { color, css, mixHex, oklab, toHex } from './color.js';
+export type { Curve } from './easing.js';
+export { curve } from './easing.js';
 export type { Claim, Fit, FitPlan, Order, SpanClaim, Strength } from './fit.js';
 export {
   conclude,

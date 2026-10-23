@@ -69,4 +69,6 @@ An easing is one of CSS's names (`'linear'`, `'ease'`, `'ease-in'`, `'ease-out'`
 
 The data forms are there for engines. A WAAPI or GPU engine can hand a stop list with `'ease-in-out'` to the browser or a shader, but it can't do anything with a JavaScript function except call it. So a keys patch with data easings is something such an engine can read, while a function patch, or a function easing, runs only on the CPU engine. `ease` sets the curve for every segment, `easeBy` sets one per channel, and a stop's own `ease` sets the curve into that stop.
 
+`curve(easing)` hands back the function an easing stands for, a `Curve` from 0..1 to 0..1, for a host shaping a ramp of its own with blits's curves.
+
 <ApiEntries word="patch" />

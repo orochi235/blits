@@ -1,5 +1,10 @@
 import type { Easing } from './types.js';
 
+/**
+ * A curve on 0..1: the function an easing stands for.
+ *
+ * @category patch
+ */
 export type Curve = (u: number) => number;
 
 const linear: Curve = (u) => u;
@@ -72,7 +77,13 @@ export function startSlope(c: Curve): number {
   return v > 1e-3 ? Number.POSITIVE_INFINITY : v / h;
 }
 
-/** The function an easing names. Resolved once where a patch or voice is built, not per frame. */
+/**
+ * The function an easing names: a CSS name, a `bezier` or `steps`, or a function, which comes back
+ * as it is. Call it once where a curve is built, not per frame; the same name or easing object
+ * gives the same function each time.
+ *
+ * @category patch
+ */
 export function curve(easing: Easing): Curve {
   if (typeof easing === 'function') return easing;
   if (typeof easing === 'string') {

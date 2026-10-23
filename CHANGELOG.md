@@ -8,6 +8,8 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- `curve(easing)` and `Curve`: the function an easing stands for, from a CSS name, a `bezier`, a
+  `steps` or a function, for a host shaping its own ramps with the curves patches use.
 - `mix.arc(spec)`: an owner holding three parts that hand over in order on its clock, `enter`,
   `active` for the `hold` and `exit`, each a voice's spec or several layered, with a `blend`
   crossfading across each boundary. Its marks are its own: `in` as the enter ends, `coast` and

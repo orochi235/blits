@@ -135,6 +135,24 @@ describe('keys', () => {
     expect(p.at(0.6, {}, undefined as never).a).toBe(5);
   });
 
+  it('hands a host the curve a keys patch eases by, from the package index', async () => {
+    const { curve: published } = await import('../src/index.js');
+    const p = keys<unknown, Pose>(
+      100,
+      [
+        { at: 0, delta: { a: 0 } },
+        { at: 1, delta: { a: 10 }, ease: 'ease-in' },
+      ],
+      {},
+    );
+    expect(published('ease-in')(0.3) * 10).toBeCloseTo(
+      p.at(0.3, {}, undefined as never).a as number,
+      9,
+    );
+    const steps = { steps: 3 } as const;
+    expect(published(steps)).toBe(published(steps));
+  });
+
   it('a fold writes into nothing it was handed: stops, deltas and returned poses stay as they were', () => {
     const stops: Keyframe<Pose>[] = [
       { at: 0, delta: { p: [1, 2, 3] } },
