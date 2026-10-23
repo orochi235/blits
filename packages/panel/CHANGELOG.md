@@ -4,7 +4,9 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
-## 0.1.0
+## 0.1.1
+
+The first version on npm: 0.1.0 can never be published there.
 
 ### Added
 

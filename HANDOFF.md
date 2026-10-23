@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.12.0 (2026-10-22), with blits-quarks 0.8.0 and blits-tone 0.3.0 pinned to it; blits-panel 0.1.0 is ready and awaits its first publish by hand.
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.12.0 (2026-10-22), with blits-quarks 0.8.0 and blits-tone 0.3.0 pinned to it; blits-panel 0.1.1.
   blits-tone 0.2.0 was its first release through trusted publishing.
 - **In 0.11.0** (2026-10-11): a read ahead after a seek back that plays
   the tape's calls, a voice's own `stepMs`, and three fixes found on the way. The changelog's
@@ -416,11 +416,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      - `mount()` adds 10 s of history with a tape unless told `history: false`.
    - **The panel is built with Vite,** not `tsc` alone, because weasel's stylesheet has to
      reach the shadow root as a string. `tsc -b` writes only the declarations.
-   - **Releasing the panel:** 0.1.0 is pinned to engine 0.12.0. Trusted publishing for
-     `@msb235/blits-panel` is registered (src-da, 2026-10-23, `npm trust github`); an agent runs
-     that, and only an npm login needs Mike. 0.1.0 is staged on npm and waits for approval there
-     (src-da's `npm publish` got a 409, "previously staged version", and `npm view` a 404). Later
-     versions publish from `panel-v*` tags.
+   - **Releasing the panel:** its first version on npm is 0.1.1 (2026-10-23, Mike's call), pinned
+     to engine 0.12.0, published from a `panel-v*` tag through trusted publishing, which an agent
+     registers with `npm trust github`; only an npm login needs Mike. 0.1.0 can never be used: a
+     staged copy left npm refusing it as "previously published" while the registry served nothing.
    - **`ChannelPlot` moved** from the playground into the panel, which exports it. The
      playground imports it from there, along with `hueColor`.
    - **A mix watched and then let go of runs as fast as one never watched** (2026-10-21). Until

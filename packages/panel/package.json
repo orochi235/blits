@@ -1,6 +1,6 @@
 {
   "name": "@msb235/blits-panel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A debugger window for blits: every mix on the page, its voices and subjects, channels plotted over time, and a clock to pause, step and scrub",
   "keywords": [
     "blits",
