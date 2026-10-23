@@ -260,7 +260,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 - **The vocabulary is called**, every role enshrined on 2026-09-29, and
   `docs/vocabulary.picks.json` is where it lives: delta, channel, kit, subject, patch, voice, mix,
   signal, handle, engine, pose, contribution, setting, timestamp, duration, phase, rest, weight, locus,
-  series, host, source, score, subsystem; for the score, anchor, event, mark, name, tag, query,
+  arc (renamed from series 2026-10-22), host, source, score, subsystem; for the score, anchor, event, mark, name, tag, query,
   resolver, projection (synonym image), doubt, snapshot, interval; cue, fade, sync, probe, project,
   assess, seek, blend, mute, drop; merge, scale, lerp, fold. The code and the schema page read in
   them. `name`, `query` and `resolver` are marked informal. `contribution` replaced `influence` on

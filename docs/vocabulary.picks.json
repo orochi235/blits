@@ -31,7 +31,7 @@
     "view": "projection",
     "stretch": "interval",
     "system": "subsystem",
-    "sequence": "series",
+    "sequence": "arc",
     "group": "locus",
     "v-sample": "probe",
     "v-look": "project",
@@ -137,7 +137,7 @@
     "piece": "patch",
     "label": "name",
     "reducer": "resolver",
-    "sequence": "series",
+    "sequence": "arc",
     "hintskip": "ballast"
   },
   "locked": {
