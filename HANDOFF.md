@@ -612,8 +612,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    per-subject emitted count from `write`, rate or counts settable by the host, and rounding
    without the `1e-6` slack. Mike's call whether to make them.
 
-2. **The remaining opens** are in the schema page: what the score still lacks (tags absorbing
-   loci), color's lerp space and the stock band's width. Splitting a read ahead at known events,
+2. **The remaining opens** are in the schema page: where a tag that absorbs loci is declared
+   (that tags absorb loci was decided 2026-09-29), and the stock band's width. Color's lerp space
+   is settled (item 6). Splitting a read ahead at known events,
    and marks placed inside a voice, were built 2026-10-17 (see State).
 
 4. **Reach is fixed at cue, so a voice whose contribution moves pays for every subject it might
