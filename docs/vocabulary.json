@@ -5635,6 +5635,108 @@
         }
       ],
       "description": "how hard a length holds"
+    },
+    {
+      "key": "channelgroup",
+      "title": "Channel group",
+      "was": "channelgroup",
+      "kind": "noun",
+      "description": "channels that belong together",
+      "gloss": {
+        "lead": "A named set of a kit's channels that belong together, such as motion (position, rotation, scale) or color (hue, glow, opacity).",
+        "items": [
+          "What an effect says it acts on, so two pieces on different groups can be put together without colliding.",
+          "blits folds by channel and never reads it; an effects library above blits declares and checks it.",
+          "Coarser than a channel, finer than a kit: a kit can hold several."
+        ]
+      },
+      "groups": [
+        {
+          "field": "geometry",
+          "words": [
+            {
+              "word": "plane",
+              "star": true
+            },
+            {
+              "word": "axis",
+              "star": false
+            },
+            {
+              "word": "dimension",
+              "star": false
+            },
+            {
+              "word": "facet",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "signal",
+          "words": [
+            {
+              "word": "band",
+              "star": false
+            },
+            {
+              "word": "bus",
+              "star": false
+            },
+            {
+              "word": "track",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "DAW",
+          "words": [
+            {
+              "word": "stem",
+              "star": false
+            },
+            {
+              "word": "group",
+              "star": false
+            }
+          ]
+        },
+        {
+          "field": "stage lighting",
+          "words": [
+            {
+              "word": "attribute",
+              "star": false
+            },
+            {
+              "word": "family",
+              "star": true
+            }
+          ]
+        },
+        {
+          "field": "software",
+          "words": [
+            {
+              "word": "aspect",
+              "star": false
+            },
+            {
+              "word": "concern",
+              "star": false
+            },
+            {
+              "word": "domain",
+              "star": false
+            },
+            {
+              "word": "facet",
+              "star": false
+            }
+          ]
+        }
+      ]
     }
   ],
   "verbs": [

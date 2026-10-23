@@ -64,7 +64,8 @@
     "hintskip": "ballast",
     "hintfirm": "priority",
     "hintslower": "slower",
-    "fitreport": "result"
+    "fitreport": "result",
+    "channelgroup": "plane"
   },
   "chosen": {
     "offset": true,
@@ -131,7 +132,8 @@
     "hintskip": true,
     "hintfirm": true,
     "hintslower": true,
-    "fitreport": true
+    "fitreport": true,
+    "channelgroup": true
   },
   "written": {
     "piece": "patch",
@@ -282,7 +284,8 @@
     "hintoverlap": "noun",
     "hintskip": "noun",
     "hintfirm": "noun",
-    "trigger": "noun"
+    "trigger": "noun",
+    "channelgroup": "noun"
   },
   "notes": {},
   "starred": {
