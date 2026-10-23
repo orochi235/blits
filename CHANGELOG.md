@@ -37,6 +37,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- Replacing a voice makes less garbage again: a one-subject tween voice retargeted as it is cued,
+  while another leaves and its subject is dropped, allocates 11.4–11.7 KB, from 13.0–13.4
+  (`bench/churnwho.mjs`, 5,000 voices, teitou, three passes a side). Frame time is unchanged.
 - A voice over every subject that plays more than 60 frames costs less a frame: it now keeps a
   record for each subject, where it kept one for them all that every read had to point at its
   subject and back. Three `fn` voices over 1,000 subjects (`fn`) take 0.212 ms a frame against
