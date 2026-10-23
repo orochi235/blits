@@ -52,7 +52,8 @@ function guards(prop: Property) {
       }
       // A seed in `fixed` now passes: take it off the known list.
       expect({ unexpected, fixed: [...fixed] }).toEqual({ unexpected: [], fixed: [] });
-    }, 30_000);
+      // GitHub's runners take about three times a Mac's 10 s for the slowest of these.
+    }, 60_000);
   }
 }
 
