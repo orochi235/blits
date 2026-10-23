@@ -416,12 +416,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      - `mount()` adds 10 s of history with a tape unless told `history: false`.
    - **The panel is built with Vite,** not `tsc` alone, because weasel's stylesheet has to
      reach the shadow root as a string. `tsc -b` writes only the declarations.
-   - **Releasing the panel:**
-     - It ships after the engine release that has `watched()`, since its peer range and
-       devDependency name that release.
-     - Its first publish goes out by hand (`npm publish -w packages/panel`), and Mike registers
-       trusted publishing for `@msb235/blits-panel` afterward. npm refuses trust for a name
-       that has never been published.
+   - **Releasing the panel:** 0.1.0 is pinned to engine 0.12.0. Trusted publishing for
+     `@msb235/blits-panel` is registered (src-da, 2026-10-23, `npm trust github`); an agent runs
+     that, and only an npm login needs Mike. 0.1.0 is staged on npm and waits for approval there
+     (src-da's `npm publish` got a 409, "previously staged version", and `npm view` a 404). Later
+     versions publish from `panel-v*` tags.
    - **`ChannelPlot` moved** from the playground into the panel, which exports it. The
      playground imports it from there, along with `hueColor`.
    - **A mix watched and then let go of runs as fast as one never watched** (2026-10-21). Until
