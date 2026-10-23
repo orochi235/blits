@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.12.0 (2026-10-22); blits-quarks 0.7.0 and blits-tone 0.2.0 are pinned to 0.11.0 until their next releases.
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.12.0 (2026-10-22), with blits-quarks 0.8.0 and blits-tone 0.3.0 pinned to it; blits-panel 0.1.0 is ready and awaits its first publish by hand.
   blits-tone 0.2.0 was its first release through trusted publishing.
 - **In 0.11.0** (2026-10-11): a read ahead after a seek back that plays
   the tape's calls, a voice's own `stepMs`, and three fixes found on the way. The changelog's
@@ -359,11 +359,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 0. **The marquee moved to bree** (Mike, 2026-10-22): its effects, board, font, show, draw and the
    compose lab live in `~/src/bree` now. `apps/marquee` stays in blits, frozen, until Mike deletes
    it: no features go into it.
-0. **Handles in blits-quarks and blits-tone are built, unreleased** (2026-10-18): blits-tone's
+0. **Handles in blits-quarks and blits-tone shipped in quarks 0.8.0 and tone 0.3.0** (2026-10-18): blits-tone's
    `Sound` (`wire`, `synth`, `polySynth`, `oscillator`, `noise`) and blits-quarks' `Source` and
    `Emitter` (`wire`, `particles`, `at`). Each README's opening sections say what they do; each
-   changelog's Unreleased lists them. They ship as quarks 0.8.0 and tone 0.3.0 when Mike says to
-   release. Called while building, Mike's to overturn: `drop()` also ends the voices cued through
+   changelog lists them. Called while building, Mike's to overturn: `drop()` also ends the voices cued through
    the handle (`fade({ over: 0 })`), since a voice naming a dropped subject would otherwise stay
    cued, holding it.
 0. **`watched()`, the engine side of a debugger, shipped in 0.12.0** (2026-10-19). The mix
