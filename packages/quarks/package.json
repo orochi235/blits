@@ -30,12 +30,13 @@
   },
   "files": [
     "dist",
+    "!dist/.tsbuildinfo",
     "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
     "build": "tsc -b",
-    "prepack": "rm -rf dist .tsbuildinfo && npm run build"
+    "prepack": "rm -rf dist && npm run build"
   },
   "peerDependencies": {
     "@msb235/blits": "^0.11.0",

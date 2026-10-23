@@ -30,12 +30,13 @@
   },
   "files": [
     "dist",
+    "!dist/.tsbuildinfo",
     "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
     "build": "vite build && tsc -b",
-    "prepack": "rm -rf dist .tsbuildinfo && npm run build",
+    "prepack": "rm -rf dist && npm run build",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {

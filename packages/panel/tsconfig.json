@@ -13,7 +13,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "outDir": "dist",
     "rootDir": "src",
-    "tsBuildInfoFile": ".tsbuildinfo",
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
     "paths": { "@msb235/blits": ["../../src/index.ts"] }
   },
   "references": [{ "path": "../.." }],
