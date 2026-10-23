@@ -4,6 +4,18 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## 0.12.1
+
+### Added
+
+- `mix.close()`: takes a mix off the list debuggers read, for a host tearing it down, where it would
+  otherwise stay listed until collected.
+
+### Fixed
+
+- An arc not yet started, cued late or under an owner yet to start, no longer shows its enter's
+  first frame from the moment it is cued.
+
 ## 0.12.0
 
 ### Added

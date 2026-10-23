@@ -134,8 +134,18 @@ export function register(mix: Any): void {
   };
   r.entries_.set(mix, entry);
   r.refs.set(id, new WeakRef(mix));
-  r.gone.register(mix, id);
+  r.gone.register(mix, id, mix);
   for (const fn of [...r.fns]) fn({ kind: 'add', entry });
+}
+
+/** Unlists a mix, telling every listener it is gone; one not listed is left alone. */
+export function unregister(mix: Any): void {
+  const r = registry();
+  const entry = r.entries_.get(mix);
+  if (entry === undefined || !r.refs.has(entry.id)) return;
+  r.refs.delete(entry.id);
+  r.gone.unregister(mix);
+  for (const fn of [...r.fns]) fn({ kind: 'gone', id: entry.id });
 }
 
 function labelOf(mix: Any, subject: unknown): string {

@@ -432,3 +432,19 @@ describe('holding', () => {
     h.free();
   });
 });
+
+describe('closing a mix', () => {
+  it('takes it off the list and tells listeners, once', () => {
+    const m = mix<Part, Pose>(K, { name: 'closing' });
+    const r = watched();
+    const entry = r.entries().find((e) => e.mix === m);
+    expect(entry).toBeDefined();
+    const seen: unknown[] = [];
+    const off = r.on((change) => seen.push(change));
+    m.close();
+    m.close();
+    off();
+    expect(r.entries().some((e) => e.mix === m)).toBe(false);
+    expect(seen).toEqual([{ kind: 'gone', id: entry?.id }]);
+  });
+});

@@ -316,6 +316,11 @@ export interface Mix<I, O, H = unknown> {
    * A frame loop sleeping on `inert` subscribes here to wake.
    */
   onWake(fn: () => void): () => void;
+  /**
+   * Takes the mix off the list debuggers read (see `watched`), for a host done with it, where it
+   * would otherwise stay until collected. It still plays if synced.
+   */
+  close(): void;
   /** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */
   mute(opts?: { over?: number }): void;
   /**

@@ -80,7 +80,7 @@ import type {
   VoiceSpec,
 } from './types.js';
 import { none, type Subject, type Voice } from './voice.js';
-import { gave, historyFor, register } from './watch.js';
+import { gave, historyFor, register, unregister } from './watch.js';
 import {
   base,
   capped,
@@ -595,6 +595,10 @@ export class Mixer<I, O> implements Mix<I, O> {
     if (voice.state === 'frozen' || voice.holding !== null) return true;
     const motion = voice.motion;
     return motion !== undefined && voice.elapsedAt(now) >= voice.latest && motion.landed();
+  }
+
+  close(): void {
+    unregister(this as unknown as Mixer<unknown, unknown>);
   }
 
   mute(opts?: { over?: number }): void {
