@@ -757,16 +757,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    the design. astv marked its text-run weight `input` (astv `522624e0`); it now names its mixes,
    describes its voices with `as` and gives a store once it moves to a release with this.
 
-8. **astv's phase on a span: shipped in 0.12.0** (2026-10-22). A span child now takes
-   `earliest` (a time or an anchor it never starts before) and `rank` (its place among the
-   children still to start); the schema page's Spans section says how. astv can replace
-   `scheduleMarks` by moving its pin to 0.12.0; `test/span-floors.test.ts` checks the two agree.
-   Called while building, Mike's to overturn: a key on the child rather than a comparator on the
-   span, since it is data a tape replays; an anchor still unanswered holds every later child
-   under `queue` or `stagger`; and an anchor on a voice that has left never answers, as for any
-   anchor, so astv passes the landing time as a number when the orb is gone. A floor already
-   past places the child there, partway through (2026-10-22, at Mike's pick over astv keeping
-   `scheduleMarks` for a mix made afresh after a seek), so a late span lays out as a live one did.
+8. **astv's change order runs on a span** (astv `dfc8df5a`, on 0.12.0, 2026-10-23), with each
+   change a child ranked by line and floored at its landing. Called while building, Mike's to
+   overturn: a key on the child rather than a comparator on the span, since it is data a tape
+   replays; an anchor still unanswered holds every later child under `queue` or `stagger`; an
+   anchor on a voice that has left never answers, so astv passes the landing time as a number;
+   and a floor already past when the child is cued places it there, partway through (2026-10-22,
+   Mike's pick over astv keeping `scheduleMarks`), so a span made afresh after a seek lays out as
+   a live one did. weasel's packages still pin 0.11.0, which astv overrides to keep one copy.
 
 10. **Two copies of blits loaded together share what each knows of its patches and channels**
     (`773d088`, 2026-10-08): `keys` options and the stock channels' lane facts sit in WeakMaps
