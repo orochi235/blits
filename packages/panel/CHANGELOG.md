@@ -6,7 +6,9 @@ section here.
 
 ## 0.1.1
 
-The first version on npm: 0.1.0 can never be published there.
+0.1.0 again, published from the release workflow with provenance; 0.1.0 went out by hand.
+
+## 0.1.0
 
 ### Added
 
