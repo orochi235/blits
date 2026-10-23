@@ -3,6 +3,7 @@ import {
   DiagramView,
   type DiagramViewProps,
   diagramScene,
+  isBodyEnd,
   type LayoutDirection,
   type NodeMove,
 } from '@weasel-js/diagram';
@@ -112,10 +113,13 @@ export function FlowDiagram({
       latest.current.portTone ? latest.current.portTone(p.nodeId, p.id) : 'flow';
     return {
       canConnect: (a, b) =>
-        latest.current.canConnect?.(
+        !isBodyEnd(a) &&
+        !isBodyEnd(b) &&
+        (latest.current.canConnect?.(
           { node: a.nodeId, port: a.id },
           { node: b.nodeId, port: b.id },
-        ) ?? a !== b,
+        ) ??
+          a !== b),
       portOptions: {
         shape: 'circle',
         sizePx: 9,

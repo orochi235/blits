@@ -329,8 +329,7 @@ the same history as every other, so undo, storage and share cover it:
 | a mark's bottom dot (amber) onto a left or right dot      | that `start` or `end` anchored `{ with }` the mark   |
 
 A **port labels** box beside it, off by default and remembered in this browser, names each dot by
-its role (`weight`, `start`, `end`, `signal`, `mark`). weasel 1.11.0's `DiagramView` does not draw
-them yet, though `diagramScene` builds them.
+its role (`weight`, `start`, `end`, `signal`, `mark`).
 
 A drag made the other way, from a top or a start onto a signal or a mark, is read in reverse. A dot
 lands only where the edit changes something and `load` accepts the result; a start under a span is

@@ -39,9 +39,9 @@
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
-    "@weasel-js/history": "1.11.0",
-    "@weasel-js/theme": "1.11.0",
-    "@weasel-js/ui": "1.11.0"
+    "@weasel-js/history": "1.12.0",
+    "@weasel-js/theme": "1.12.0",
+    "@weasel-js/ui": "1.12.0"
   },
   "peerDependencies": {
     "@msb235/blits": "^0.11.0",

@@ -1321,32 +1321,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
-- **weasel gaps blits met on 2026-10-17.** weasel 1.11.0 (pinned here 2026-10-18) fixed these, by
-  its changelog, and blits uses the fixes as of 2026-10-21: the explainers' `ThemeProvider` takes
-  `selection: { mode: 'auto' }` and their panels draw in the theme's own ink, so `ccda71e`'s
-  workaround is gone; the playground's typed rows are plain leaves, which commit once on Enter or
-  blur, and `DraftRow`/`drafted()` are gone; and the booker is one schema whose live section hides
-  by `showIf`. Still a gap: a leaf cannot set its own row layout or an accessible name apart from
-  its label, so the booker's two rows and the level rows keep `fieldRow` in
-  `CompositionControls.tsx`. An emptied number field now unsets through the control's own
-  `onClear` (2026-10-21); the leaves stay custom, since labkit's `.clearable()` takes only a fixed
-  placeholder and a voice's `start` names its default by the voice's rate. Fixed by 1.11.0's
-  changelog and used since 2026-10-21: rows' errors through `ControlPanel errors`, and `.dialog()`'s
-  own draft, which the tags, hits and marks dialogs had been defeating, so Done dropped their edits
-  from the 1.11.0 move (`eadda12`) to `fb9d846`. Not used: a plain `ControlMatrix` grid, since
-  `ChannelTiming` inherits on purpose. Port labels are wired to a "port labels" box in the Both
-  tab's edit mode, off by default (Mike, 2026-10-21: start and end read better from where the dot
-  sits), but 1.11.0's `DiagramView` draws none: `diagramScene` builds each as a leaf outside its
-  node's box, and core clips a container's children to its outline. Fixed on weasel `main`
-  (`f4615721a`, unreleased: diagram's node boxes clip nothing); the bump alone makes the labels
-  show, which the README's Both section then stops disclaiming. Also built on weasel `main` (`c9a3b7de9`, unreleased): `.dialog(body, { commit })`, run once
-  at Done on an edited draft, and a dev warning for a body writing after its dialog closed. Once a
-  labkit release carries it, `MarksFields.tsx` drops `useDraft`'s local state: each dialog edits
-  the raw draft and cleans it in `commit` (`tagsIn`, the hits' empty check, the marks' faults).
-  Still open by the changelog: `DiagramView` never reports where its first layout
-  put nodes, though `diagramLayoutOf(specs)` now reads a `diagramScene` build's layout back, which
-  the Both tab does by hand. On 1.11.0 from npm the playground typechecks and the Both tab's edit
-  mode draws its port dots (checked 2026-10-21, fresh `npm ci`).
+- **weasel gaps blits still works around** (on weasel 1.12.0 since 2026-10-22). A leaf cannot set
+  its own row layout or an accessible name apart from its label, so the booker's two rows and the
+  level rows keep `fieldRow` in `CompositionControls.tsx`. The number leaves stay custom, since
+  labkit's `.clearable()` takes only a fixed placeholder and a voice's `start` names its default
+  by the voice's rate. `DiagramView` never reports where its first layout put nodes, so the Both
+  tab reads it back by hand through `diagramLayoutOf(specs)`. Not used on purpose: a plain
+  `ControlMatrix` grid, since `ChannelTiming` inherits.
 
 - **Rows run earlier in one process change a later row's numbers.** Traced 2026-10-04 to the
   100k-subject `tweens` row: `fns^` reads about 117 ns a subject alone, 79 after the 10k

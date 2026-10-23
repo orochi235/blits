@@ -3,7 +3,6 @@ import { type Group, MAX_HITS, MAX_MARKS, MAX_TAGS, type Voice } from '@pg/blits
 import { withKey } from '@pg/blits/keyed';
 import { f } from '@weasel-js/labkit';
 import { ListEditor, type PrefRenderContext, PropertyControl } from '@weasel-js/ui';
-import { useState } from 'react';
 import g from './Group.module.css';
 
 type Hit = NonNullable<Voice['hits']>[number];
@@ -27,31 +26,12 @@ function markFault(marks: readonly Mark[], i: number, name: string): string | nu
   return null;
 }
 
-/**
- * A dialog's list as typed, which can pass through states the spec should never hold (an empty
- * tag, a half-typed mark name); each edit hands `commit` the cleaned value for the dialog's draft,
- * which Done writes and Cancel drops.
- */
-function useDraft<T>(value: T, commit: (next: T) => void): [T, (next: T) => void] {
-  const [draft, setDraft] = useState(value);
-  return [
-    draft,
-    (next) => {
-      setDraft(next);
-      commit(next);
-    },
-  ];
-}
-
 function TagsDialog({ row }: { row: PrefRenderContext }) {
-  const [draft, setDraft] = useDraft((row.value as string[] | undefined) ?? [], (list) =>
-    row.setValue(tagsIn(list)),
-  );
   return (
     <ListEditor
       aria-label="tags"
-      value={draft}
-      onChange={setDraft}
+      value={(row.value as string[] | undefined) ?? []}
+      onChange={row.setValue}
       maxItems={MAX_TAGS}
       placeholder="lead"
       empty="no tags"
@@ -61,15 +41,13 @@ function TagsDialog({ row }: { row: PrefRenderContext }) {
 }
 
 function HitsDialog({ row, note }: { row: PrefRenderContext; note: string }) {
-  const [draft, setDraft] = useDraft((row.value as Hit[] | undefined) ?? [], (hits) =>
-    row.setValue(hits.length > 0 ? hits : undefined),
-  );
+  const draft = (row.value as Hit[] | undefined) ?? [];
   return (
     <div className={g.dialog}>
       <ListEditor<Hit>
         aria-label="hits"
         value={draft}
-        onChange={setDraft}
+        onChange={row.setValue}
         maxItems={MAX_HITS}
         empty="no hits"
         addLabel="add hit"
@@ -102,16 +80,23 @@ function HitsDialog({ row, note }: { row: PrefRenderContext; note: string }) {
   );
 }
 
+/** The marks dialog's draft: the saved record until the first edit, then the list as typed. */
+const marksIn = (value: unknown): Mark[] =>
+  Array.isArray(value)
+    ? value
+    : Object.entries((value as Record<string, number> | undefined) ?? {});
+
+/** The typed list as the spec's `marks`, leaving out each mark with a fault. */
+function marksOf(draft: unknown): Record<string, number> | undefined {
+  const marks = marksIn(draft);
+  const kept = marks
+    .filter(([name], i) => markFault(marks, i, name) === null)
+    .map(([name, at]): Mark => [name.trim(), at]);
+  return kept.length > 0 ? Object.fromEntries(kept) : undefined;
+}
+
 function MarksDialog({ row, note }: { row: PrefRenderContext; note: string }) {
-  const [draft, setDraft] = useDraft(
-    Object.entries((row.value as Record<string, number> | undefined) ?? {}),
-    (marks) => {
-      const kept = marks
-        .filter(([name], i) => markFault(marks, i, name) === null)
-        .map(([name, at]): Mark => [name.trim(), at]);
-      row.setValue(kept.length > 0 ? Object.fromEntries(kept) : undefined);
-    },
-  );
+  const draft = marksIn(row.value);
   const free = () => {
     for (let n = draft.length + 1; ; n++)
       if (!draft.some(([m]) => m === `mark${n}`)) return `mark${n}`;
@@ -121,7 +106,7 @@ function MarksDialog({ row, note }: { row: PrefRenderContext; note: string }) {
       <ListEditor<Mark>
         aria-label="marks"
         value={draft}
-        onChange={setDraft}
+        onChange={row.setValue}
         maxItems={MAX_MARKS}
         empty="no marks"
         addLabel="add mark"
@@ -173,6 +158,7 @@ export function marksNodes(voice: boolean, doc: (member: string) => string | und
       .describe(d('tags'))
       .dialog((row) => <TagsDialog row={row} />, {
         summary: (v) => none((v as string[]).length, (v as string[]).join(', ')),
+        commit: (draft) => tagsIn(draft as string[]),
       }),
     score: f.string('').describe(d('score')).placeholder("none: the mix's unnamed score"),
     hits: f
@@ -194,6 +180,7 @@ export function marksNodes(voice: boolean, doc: (member: string) => string | und
             const hits = v as Hit[];
             return none(hits.length, hits.map((h) => `${h.event} at ${h.at} ms`).join(', '));
           },
+          commit: (draft) => ((draft as Hit[]).length > 0 ? draft : undefined),
         },
       ),
     marks: f
@@ -215,6 +202,7 @@ export function marksNodes(voice: boolean, doc: (member: string) => string | und
             const marks = Object.entries(v as Record<string, number>);
             return none(marks.length, marks.map(([n, at]) => `${n} at ${at} ms`).join(', '));
           },
+          commit: marksOf,
         },
       ),
   };
