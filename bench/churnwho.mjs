@@ -5,8 +5,11 @@
 // after it, by class and the edge that holds them.
 //   node --expose-gc bench/churnwho.mjs [N]
 // SHARED=1 cues every voice on one shared tween patch, retargeted per subject with `patch.to`, so
-// the host makes no patch per voice.
+// the host makes no patch per voice. ALLOC=1 instead reports where the churn's garbage is made: a
+// sampling heap profile that keeps collected objects, churn frames less as many steady ones, by
+// allocating function.
 import { readFileSync, rmSync } from 'node:fs';
+import { Session } from 'node:inspector/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { getHeapStatistics, writeHeapSnapshot } from 'node:v8';
@@ -54,6 +57,43 @@ const frame = (churn) => {
 // Warm, and churn once through so the pools (if any) and the lanes' tables are at size.
 for (let f = 0; f < 60; f++) frame(false);
 for (let f = 0; f < N; f++) frame(true);
+
+if (process.env.ALLOC === '1') {
+  const session = new Session();
+  session.connect();
+  const sampled = async (churn) => {
+    await session.post('HeapProfiler.startSampling', {
+      samplingInterval: 256,
+      includeObjectsCollectedByMajorGC: true,
+      includeObjectsCollectedByMinorGC: true,
+    });
+    for (let f = 0; f < N; f++) frame(churn);
+    const { profile } = await session.post('HeapProfiler.stopSampling');
+    const by = new Map();
+    const walk = (node, path) => {
+      const { functionName, url, lineNumber } = node.callFrame;
+      const here = `${functionName || '(anon)'} ${url.split('/').pop()}:${lineNumber + 1}`;
+      const self = node.selfSize;
+      if (self > 0) {
+        const key = `${here}  ← ${path}`;
+        by.set(key, (by.get(key) ?? 0) + self);
+      }
+      for (const c of node.children) walk(c, here);
+    };
+    walk(profile.head, '');
+    return by;
+  };
+  const steadyBy = await sampled(false);
+  const churnBy = await sampled(true);
+  const rows = [...churnBy].map(([k, b]) => [k, (b - (steadyBy.get(k) ?? 0)) / N]);
+  const total = rows.reduce((a, [, b]) => a + b, 0);
+  console.log(
+    `${SHARED ? 'shared patch' : 'patch per voice'} N=${N}: ${total.toFixed(0)} B sampled per churned voice beyond steady frames`,
+  );
+  for (const [k, b] of rows.sort((a, z) => z[1] - a[1]).slice(0, TOP))
+    console.log(`${b.toFixed(0).padStart(6)} B  ${k.slice(0, 150)}`);
+  process.exit(0);
+}
 
 const allocated = () => getHeapStatistics().total_allocated_bytes;
 let a0 = allocated();

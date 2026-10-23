@@ -17,7 +17,7 @@ import { scoredAdd } from './scored.js';
 import { checkChild, refit } from './spans.js';
 import { cuedById, motionOwner } from './strays.js';
 import { record, unplayable } from './tape.js';
-import type { Channel, Handle, Kit, Patch, VoiceSpec } from './types.js';
+import type { Channel, FadeSpec, Handle, Kit, Patch, VoiceSpec } from './types.js';
 import { type Controls, Voice } from './voice.js';
 
 export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
@@ -50,7 +50,7 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
     mix.nextId++,
     spec,
     patch,
-    spec.fade ?? {},
+    spec.fade ?? noFade,
     local,
     start,
     mix.slotOf,
@@ -70,6 +70,14 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
   enter(mix, voice);
   const h = handle(mix, voice) as VoiceHandle<I, O>;
   voice.handle = h;
+  recordCue(mix, h);
+  return h;
+}
+
+const noFade: FadeSpec = Object.freeze({});
+
+// Apart from `cue`, whose body would otherwise make this closure's context on every call.
+function recordCue<I, O>(mix: Mixer<I, O>, h: VoiceHandle<I, O>): void {
   // By its handle, so a voice a history store paged out and a seek revived is the one cued again.
   record(mix, 'cue', (stage) => {
     const parked = VoiceHandle.voiceOf(h) ?? lost(h);
@@ -77,7 +85,6 @@ export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
     if (to === mix) recue(mix, parked);
     else if (to !== undefined) recue(to, aheadOf(to, parked));
   });
-  return h;
 }
 
 /** Refuses a patch writing a channel `kit` lacks, or holds as another kind than it was written for. */

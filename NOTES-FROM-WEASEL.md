@@ -85,13 +85,16 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   crowd row was copied through when compaction moved it (1.1); `retouch`'s Set, spread and sort
   (1.0); the view `pull` copied a run of 65 to 256 values through (1.4). `pull` also kept nothing
   of a channel between calls: 0.35 KB a call for one vec channel, and 1.1 to 1.7 kB a frame off
-  the bench's four-channel rows (`tweens^` 6.6 to 4.9). What a churned voice still allocates, by
-  a sampling heap profile on a Mac: the new voice, its handle and its patch (about 3 KB, which is
-  what pooling covered), its entry and keys in the departed index (about 1.3), `drop`'s closures
-  (0.8), the copies of a stretch a retarget keeps (about 1), and the 3 KB a frame that steady
-  frames allocate too, in code that runs once a frame. Nothing was tried against those. Left
-  untested: the host's own patch per voice (about 0.9 KB, which blits cannot recycle), which
-  weasel's codec on one shared tween patch per ease and duration would decide.
+  the bench's four-channel rows (`tweens^` 6.6 to 4.9). On 2026-10-22 it went
+  from 13.0–13.4 to 11.4–11.7 KB (teitou, three passes a side), by `ALLOC=1 bench/churnwho.mjs`,
+  which prints the churn's sampled garbage by allocating function: the departed index keys its
+  ends by score, owner and then name, tag or channel in nested maps rather than one string per key
+  (1.56 KB to 0.15), `drop`'s closures became methods (0.82 to 0.35), and `cue` stopped making a
+  `{}` fade and its tape closure's context per voice (0.2). `turnover^`, `churn^` and `tweens^`
+  read level over six alternated rounds, each row in its own process. What is left is under 0.4 KB
+  a site: the voice, its handle and named record, the host's own patch and its `Motions` (which
+  blits cannot recycle), `retire`, the fold's `moved`, and the stretch copies a retarget keeps
+  (`latest` and `applied` in `src/motions.ts`, 0.58), which are history, not garbage.
 
 - **A `keys` read costs several times weasel's own keyframe sampler.** weasel's `sampleTrack`
   reads one `keys` patch per track (`patch.at(phase)`, one numeric channel, four stops) since
