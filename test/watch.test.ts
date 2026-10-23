@@ -447,4 +447,40 @@ describe('closing a mix', () => {
     expect(r.entries().some((e) => e.mix === m)).toBe(false);
     expect(seen).toEqual([{ kind: 'gone', id: entry?.id }]);
   });
+
+  it('stops its watchers and frees its hold', () => {
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: clock, start: 0 });
+    m.sync(0);
+    const e = entryOf(m);
+    const frames: unknown[] = [];
+    const off = e.watch((f) => frames.push(f));
+    const h = e.hold();
+    m.close();
+    for (const k of ['probe', 'pull', 'drain'])
+      expect(m[k as 'probe']).toBe(Object.getPrototypeOf(m)[k]);
+    const t = (m as unknown as { transport: { sync: unknown } }).transport;
+    expect(t.sync).toBe(Object.getPrototypeOf(t).sync);
+    m.sync(100);
+    m.sync(200);
+    expect(m.probe(a).x).toBe(100);
+    expect(frames).toEqual([]);
+    expect(() => h.seek(0)).toThrow(/freed/);
+    off();
+  });
+
+  it('leaves a hold that another listed mix on its transport shares', () => {
+    const t = transport();
+    const one = mix<Part, Pose>(K, { transport: t });
+    const two = mix<Part, Pose>(K, { transport: t });
+    two.cue({ patch: clock, start: 0 });
+    t.sync(0);
+    const h = entryOf(one).hold();
+    one.close();
+    t.sync(100);
+    t.sync(200);
+    expect(two.probe(a).x).toBe(0);
+    two.close();
+    expect(() => h.seek(0)).toThrow(/freed/);
+  });
 });

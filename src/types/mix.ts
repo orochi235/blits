@@ -318,7 +318,8 @@ export interface Mix<I, O, H = unknown> {
   onWake(fn: () => void): () => void;
   /**
    * Takes the mix off the list debuggers read (see `watched`), for a host done with it, where it
-   * would otherwise stay until collected. It still plays if synced.
+   * would otherwise stay until collected. Stops every watcher, and frees a hold no other listed mix
+   * on its transport shares. It still plays if synced.
    */
   close(): void;
   /** Fades every voice out: over `over` when given, over each voice's own `fade.out` otherwise. */

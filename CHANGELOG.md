@@ -9,7 +9,8 @@ version and everything else the patch. Each release lists its changes as **Break
 ### Added
 
 - `mix.close()`: takes a mix off the list debuggers read, for a host tearing it down, where it would
-  otherwise stay listed until collected.
+  otherwise stay listed until collected. It stops every debugger watching it, and frees a debugger's
+  hold unless another listed mix shares its transport.
 
 ### Fixed
 

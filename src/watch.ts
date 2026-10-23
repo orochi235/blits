@@ -145,6 +145,11 @@ export function unregister(mix: Any): void {
   if (entry === undefined || !r.refs.has(entry.id)) return;
   r.refs.delete(entry.id);
   r.gone.unregister(mix);
+  untap(mix);
+  const t = mix.transport;
+  const held = ctlOf(t).held;
+  const listed = (m: object) => r.refs.has(r.entries_.get(m)?.id ?? -1);
+  if (held !== null && !t.members.some(listed)) held.free();
   for (const fn of [...r.fns]) fn({ kind: 'gone', id: entry.id });
 }
 
@@ -317,11 +322,18 @@ function stopper(
     const m = ref.deref();
     const own = m === undefined ? undefined : taps.get(m);
     if (m === undefined || own === undefined || !own.fns.delete(fn) || own.fns.size > 0) return;
-    own.untap();
-    taps.delete(m);
-    ctlOf(m.transport).tapped--;
-    fit(m.transport);
+    untap(m);
   };
+}
+
+/** Puts back what watching `mix` swapped, whoever is still watching. */
+function untap(mix: Any): void {
+  const own = taps.get(mix);
+  if (own === undefined) return;
+  own.untap();
+  taps.delete(mix);
+  ctlOf(mix.transport).tapped--;
+  fit(mix.transport);
 }
 
 /** The frame a read lands in, handing the last one over where the mix has moved on since. */
@@ -361,6 +373,7 @@ function copy<T>(pose: T): T {
 
 interface Held {
   sync(ts: number): void;
+  free(): void;
 }
 
 /** The earliest mix time history reaches back to; a seek needs a tape besides. */
@@ -446,6 +459,7 @@ function hold(t: Transport): Hold {
       host = ts;
       at();
     },
+    free: () => handle.free(),
   };
   fit(t);
   t.woke();
@@ -453,7 +467,7 @@ function hold(t: Transport): Hold {
   const live = () => {
     if (freed) throw new Error('blits: that hold was freed');
   };
-  return {
+  const handle: Hold = {
     get mixes() {
       return [...t.members] as Hold['mixes'];
     },
@@ -503,4 +517,5 @@ function hold(t: Transport): Hold {
       }
     },
   };
+  return handle;
 }
