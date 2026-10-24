@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## Unreleased
+
+### Changed
+
+- With one mix on the page and none picked, the panel picks it, so the clock controls work
+  without opening the window first.
+
 ## 0.1.1
 
 0.1.0 again, published from the release workflow with provenance; 0.1.0 went out by hand.

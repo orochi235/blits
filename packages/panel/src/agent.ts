@@ -386,10 +386,18 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     }
   };
 
+  /** With nothing picked and one mix on the page, there is nothing to choose: pick it. */
+  const pickOnly = () => {
+    const [only, ...rest] = entries();
+    if (curId === null && only !== undefined && rest.length === 0) pickMix(only.id);
+  };
+
   const offRegistry = registry.on((change) => {
     sendMixes();
     if (change.kind === 'gone' && curId === change.id) pickMix(null);
+    pickOnly();
   });
+  pickOnly();
   const timer = setInterval(sendSubjects, LIST_MS);
 
   return {
