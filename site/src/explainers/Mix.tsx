@@ -47,6 +47,8 @@ type Config = ReturnType<typeof config.defaults>;
 
 const TAU = 2 * Math.PI;
 const RIPPLE_AT = 1500;
+/** The stage's margin each side of the columns. */
+const EDGE = 16;
 const flickering = new Set([2, 7, 8]);
 const MUTE_OVER = 1500;
 /** The folded height at which a lamp reads fully lit; past it, the lamp glows. */
@@ -183,10 +185,14 @@ export default function Mix() {
       schema={config}
       duration={DURATION}
       aspect={0.56}
-      caption="Each lamp is one subject, lit to its folded height and tinted by the voices lighting it; the pips under it are the voices that reach it. Below, each column stacks what each voice adds, and the line on top is the folded pose. Pulse only reaches the even ones and flicker only lamps 2, 7, and 8; ripple sweeps the row once and leaves. At the “Mute at” time every voice leaves together; at the right end, never."
+      caption="Each lamp is one subject, lit to its folded height and tinted by the voices lighting it; the pips under it are the voices that reach it. Below, each column stacks what each voice adds, and the line on top is the folded pose. Pulse only reaches the even ones and flicker only lamps 2, 7, and 8; ripple sweeps the row once and leaves. At the “Mute at” time every voice leaves together; at the right end, never. Click a column to itemize it in the table."
+      pick={(x, _y, size) => {
+        const i = Math.floor((x - EDGE) / ((size.w - 2 * EDGE) / COUNT));
+        return i >= 0 && i < COUNT ? { focus: i } : undefined;
+      }}
       draw={(ctx, frame, size, ink, c) => {
-        const left = 16;
-        const right = size.w - 16;
+        const left = EDGE;
+        const right = size.w - EDGE;
         const col = (right - left) / COUNT;
         const r = Math.min(col * 0.32, 20);
         const lampY = 30 + r * 1.5;

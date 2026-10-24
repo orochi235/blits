@@ -94,6 +94,14 @@ export class Player<I, O, C> {
   reset(scene: Scene<I, O, C>, config: C): void {
     this.scene = scene;
     this.config = config;
+    this.close();
+  }
+
+  /** Takes this run's mixes off the list a debugger reads; the next `at` starts a new run. */
+  close(): void {
+    if (this.run === null) return;
+    this.run.mix.close();
+    for (const solo of this.run.solos) solo.mix.close();
     this.run = null;
   }
 
@@ -166,7 +174,10 @@ export class Player<I, O, C> {
 
   /** The frame at `t`, stepping from wherever the run is, or from 0 when `t` is behind it. */
   at(t: number): Frame<I, O> {
-    if (this.run === null || t < this.run.t) this.run = this.start();
+    if (this.run === null || t < this.run.t) {
+      this.close();
+      this.run = this.start();
+    }
     const run = this.run;
     const target = Math.max(0, Math.floor(t / FRAME) * FRAME);
     while (run.t + FRAME <= target + 1e-6) this.step(run, run.t + FRAME);
@@ -181,6 +192,30 @@ export class Player<I, O, C> {
       hidden: run.hidden,
     };
   }
+}
+
+/**
+ * Each voice's weight across a run, at `n` evenly spaced times from 0 to `duration`: the largest it
+ * has for any subject, so a stagger or a voice reaching a few subjects still shows.
+ */
+export function weightsOver<I, O, C>(
+  scene: Scene<I, O, C>,
+  config: C,
+  duration: number,
+  n = 240,
+): number[][] {
+  const player = new Player(scene, config);
+  const out = scene.voices(config).map(() => [] as number[]);
+  for (let k = 0; k < n; k++) {
+    const f = player.at((k / (n - 1)) * duration);
+    f.handles.forEach((h, i) => {
+      let w = 0;
+      for (const s of f.subjects) w = Math.max(w, h.weightOf(s));
+      out[i]?.push(w);
+    });
+  }
+  player.close();
+  return out;
 }
 
 /** Stands in for another voice's handle inside a solo mix, so an event aimed at it does nothing. */

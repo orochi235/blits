@@ -14,6 +14,10 @@
   height: auto;
 }
 
+.explainer-stage canvas.pickable {
+  cursor: pointer;
+}
+
 .explainer-transport {
   display: flex;
   align-items: center;
@@ -33,12 +37,8 @@
   cursor: pointer;
 }
 
-.explainer-transport input[type='range'] {
-  flex: 1;
-  accent-color: var(--voice-1);
-}
-
 .explainer-time {
+  margin-inline-start: auto;
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
   min-width: 7ch;

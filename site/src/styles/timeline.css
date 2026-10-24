@@ -1,0 +1,88 @@
+/* An explainer's time: one track per voice, drawn by its weight, colored up to the playhead. */
+
+.timeline {
+  position: relative;
+  display: grid;
+  margin-top: 0.6rem;
+  gap: 2px;
+  padding: 3px 0;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--panel);
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+}
+
+.timeline:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.timeline-track {
+  --track: var(--ink-soft);
+  position: relative;
+  height: 18px;
+}
+
+.timeline-track[data-color='v1'] {
+  --track: var(--voice-1);
+}
+
+.timeline-track[data-color='v2'] {
+  --track: var(--voice-2);
+}
+
+.timeline-track[data-color='v3'] {
+  --track: var(--voice-3);
+}
+
+.timeline-track[data-color='v4'] {
+  --track: var(--voice-4);
+}
+
+.timeline-track[data-color='v5'] {
+  --track: var(--voice-5);
+}
+
+.timeline-track svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.timeline-ahead {
+  fill: var(--track);
+  opacity: 0.25;
+}
+
+.timeline-played {
+  clip-path: inset(0 calc((1 - var(--at, 0)) * 100%) 0 0);
+  fill: var(--track);
+}
+
+.timeline-name {
+  position: absolute;
+  left: 6px;
+  top: 0;
+  font: 700 0.72rem / 18px var(--label);
+  color: var(--ink);
+  text-shadow:
+    0 0 2px var(--panel),
+    0 0 4px var(--panel),
+    0 0 6px var(--panel);
+  pointer-events: none;
+}
+
+.timeline-head {
+  position: absolute;
+  inset-block: -3px;
+  left: calc(var(--at, 0) * 100%);
+  width: 2px;
+  margin-inline-start: -1px;
+  border-radius: 1px;
+  background: var(--ink);
+  box-shadow: 0 0 6px var(--focus);
+  pointer-events: none;
+}
