@@ -10,6 +10,7 @@ export interface PackedRecord {
   shown: number;
   weight: number;
   rested: boolean;
+  restedAt: number;
   bands: number[] | null;
   state: unknown;
   stepped: number;
@@ -39,6 +40,7 @@ export function packHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): PackedR
     shown: h.shown,
     weight: h.weight,
     rested: h.rested,
+    restedAt: h.restedAt,
     bands: h.bands === null ? null : Array.from(h.bands),
     state: h.state === undefined ? undefined : patch.pack ? patch.pack(h.state) : clone(h.state),
     stepped: h.stepped,
@@ -68,6 +70,7 @@ export function unpackHeld<I, O>(voice: Voice<I, O>, p: PackedRecord): Subject<u
   h.shown = p.shown;
   h.weight = p.weight;
   h.rested = p.rested;
+  h.restedAt = p.restedAt;
   h.bands = bands;
   h.stepped = p.stepped;
   h.ticks = p.ticks;

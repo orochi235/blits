@@ -144,6 +144,7 @@ export function copyHeld<I, O>(
     shown: h.shown,
     weight: h.weight,
     rested: h.rested,
+    restedAt: h.restedAt,
     bands: h.bands === null ? null : h.bands.slice(),
     state: h.state === undefined || shared ? h.state : copyState(voice, h.state),
     stepped: h.stepped,
@@ -199,6 +200,7 @@ export function copyHeldInto<I, O>(
   into.shown = h.shown;
   into.weight = h.weight;
   into.rested = h.rested;
+  into.restedAt = h.restedAt;
   into.bands = h.bands === null ? null : h.bands.slice();
   into.state = h.state === undefined || shared ? h.state : copyState(voice, h.state);
   into.stepped = h.stepped;

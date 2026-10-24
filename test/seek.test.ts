@@ -533,6 +533,34 @@ describe('seek, by mix time where voice time runs back', () => {
       expect(live.h.state).toBe(ref.states.get(f));
     }
   });
+
+  it('keeps a subject that rested before the moment out, though it plays on from rest there', () => {
+    // Up for the first 60% of each pass and at rest for the rest, so a subject that rested just
+    // after the fade is moving again a frame or two after that.
+    const hop = patch<Part, Pose>(
+      1000,
+      (p) => ({ x: p < 0.6 ? Math.sin((Math.PI * p) / 0.6) : 0 }),
+      {
+        writes: ['x'],
+      },
+    );
+    const F = 1000 / 60;
+    const parts = [0, 1, 2, 3, 4].map((i) => ({ id: `p${i}`, i }));
+    const m = mix<Part & { i: number }, Pose>(K, { history: { ms: 8000, every: F, tape } });
+    const h = m.cue({ patch: hop, loop: true, stagger: (p) => p.i * 170 });
+    const seqs: number[] = [];
+    const seen: number[][] = [];
+    for (let k = 0; k <= 360; k++) {
+      if (k * F >= 1900 && (k - 1) * F < 1900) h.fade({ at: 'rest', deadline: 2500 });
+      m.sync(k * F);
+      seqs[k] = m.seq;
+      seen[k] = parts.map((p) => m.probe(p).x);
+    }
+    for (const k of [300, 200, 150, 144, 130, 120, 60]) {
+      m.seek({ frame: seqs[k] as number });
+      expect(parts.map((p) => m.probe(p).x)).toEqual(seen[k]);
+    }
+  });
 });
 
 describe('sync', () => {

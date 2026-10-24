@@ -113,6 +113,8 @@ export interface Subject<S> {
   weight: number;
   /** Left at rest during a handover, so it stops contributing. */
   rested: boolean;
+  /** The mix time it rested at, which a seek reads to know whether it had by then; NaN until it does. */
+  restedAt: number;
   /**
    * Per written channel, whether a rest-less contribution is on: 0 unknown, 1 on, 2 off; null until
    * a rest-less channel asks.

@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A seek back keeps out a subject that had already left a voice at rest by then. After a fade with
+  `at: 'rest'`, a seek to a moment where that subject was moving again put it back in the voice,
+  playing.
+
 ## 0.13.0
 
 ### Breaking

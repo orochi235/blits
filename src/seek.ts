@@ -44,8 +44,7 @@ function restore<I, O>(
     // stands for every subject a voice does not reach, so that one is copied.
     const h = mine && live.reaches ? unread(live) : copyHeld(voice, live);
     if (h.stepped > t) h.stepped = t;
-    // Whether it had rested by `t` is not kept; the next probe finds it again.
-    h.rested = false;
+    restedBy(h, live, t);
     h.weight = 0;
     h.inputs = inputs;
     if (!(h.since <= t)) origin(mix, voice, h);
@@ -71,6 +70,7 @@ function restore<I, O>(
     h.restored = restored;
   } else h = copyHeld(voice, snap.held, true);
   h.weight = 0;
+  restedBy(h, live, t);
   if (snap.at < t) h.copied = true;
   const kept = i + 1;
   // The record replaced is let go, so its list is cut where it stands.
@@ -109,6 +109,15 @@ function restore<I, O>(
     }
   }
   return h;
+}
+
+/**
+ * Whether a record put back for mix time `t` had rested by then, from when the live one did: a
+ * subject may have rested and moved on since, so a probe at `t` would not find it at rest again.
+ */
+function restedBy(h: Subject<unknown>, live: Subject<unknown>, t: number): void {
+  h.rested = live.restedAt <= t;
+  h.restedAt = h.rested ? live.restedAt : Number.NaN;
 }
 
 /** Cuts a record's list of copies to its first `kept`, keeping those no other list holds as spares. */

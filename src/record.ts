@@ -21,6 +21,7 @@ export function record(voice: object | null, reaches: boolean, state: unknown): 
     shown: 0,
     weight: 0,
     rested: false,
+    restedAt: Number.NaN,
     bands: null,
     state,
     // -0, not 0: a field first given a small integer is boxed on every later write of a double.
