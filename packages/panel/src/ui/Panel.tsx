@@ -78,8 +78,6 @@ function onScreen(x: number, y: number): { x: number; y: number } {
   };
 }
 
-const fmt = (ms: number) => (Number.isFinite(ms) ? `${(ms / 1000).toFixed(2)}s` : '—');
-
 export interface PanelProps {
   source: Source;
   /** Fills its container, with no pill and no dragging: for a host such as a DevTools tab. */
@@ -214,7 +212,7 @@ export function Panel({ source, docked = false, bar }: PanelProps) {
         <button type="button" title="open" onClick={() => move(true)}>
           ⤢
         </button>
-        <span className="bp-time">{fmt(s.hold.now)}</span>
+        <span className="bp-time">{clockText(s.hold.now)}</span>
       </div>
     );
 
@@ -261,7 +259,7 @@ export function Panel({ source, docked = false, bar }: PanelProps) {
             ⤡
           </button>
         )}
-        <span className="bp-time">{fmt(s.hold.now)}</span>
+        <span className="bp-time">{clockText(s.hold.now)}</span>
       </div>
       {mix !== undefined && <Notes mix={mix} hold={s.hold} />}
       <div className="bp-body">
