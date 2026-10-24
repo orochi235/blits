@@ -6,6 +6,11 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Added
+
+- A mix's `loci`: tags that act as loci, so a voice carrying one folds with the others carrying it,
+  as if its `locus` named the tag.
+
 ### Fixed
 
 - A seek with `state: 'keep'` that sends a subject back before its start now starts it afresh there.

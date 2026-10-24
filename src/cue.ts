@@ -20,7 +20,8 @@ import { record, unplayable } from './tape.js';
 import type { Channel, FadeSpec, Handle, Kit, Patch, VoiceSpec } from './types.js';
 import { type Controls, Voice } from './voice.js';
 
-export function cue<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): Handle<I> {
+export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
+  const spec = locusOf(mix, given);
   const patch = spec.patch;
   playable(mix, spec);
   if (spec.from === 'current' && patch.form !== 'keys')
@@ -104,6 +105,21 @@ export function fitsKit<I, O, S, H>(patch: Patch<I, O, S, H>, kit: Kit<O>): void
         `blits: channel ${String(channel)} is ${here.kind ?? 'a custom channel'} in this kit, but the patch was written for ${wanted.kind ?? 'a custom channel'}`,
       );
   }
+}
+
+/** The spec with its `locus` set from a tag the mix declares one, where it carries one. */
+function locusOf<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): VoiceSpec<I, O> {
+  const loci = mix.opts.loci;
+  const tags = spec.tags;
+  if (loci === undefined || tags === undefined) return spec;
+  let locus = spec.locus;
+  for (const tag of tags) {
+    if (!loci.includes(tag) || tag === locus) continue;
+    if (locus !== undefined)
+      throw new Error(`blits: a voice folds in one locus, not both ${locus} and ${tag}`);
+    locus = tag;
+  }
+  return locus === spec.locus ? spec : { ...spec, locus };
 }
 
 /** Refuses a spec whose patch the mix cannot play, or whose state its history cannot keep. */

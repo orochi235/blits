@@ -23,6 +23,11 @@ export interface MixOptions<H = unknown> {
    */
   band?: { on: number; off: number };
   /**
+   * Tags that act as loci: a voice carrying one folds with the others carrying it, as if its `locus`
+   * named that tag.
+   */
+  loci?: readonly string[];
+  /**
    * The most `dt` a `step` or signal is handed, however long the gap. Off by default, since a
    * patch with a closed form wants the whole gap; an integrator wants this set.
    */

@@ -57,6 +57,21 @@ describe('locus fold', () => {
     }
   });
 
+  it('folds the voices carrying a tag the mix declares a locus, as one locus', () => {
+    const m = mix<Part, Pose>(PART, { loci: ['phase'] });
+    m.cue({ patch: holds('gain', 0.06), tags: ['phase'] });
+    m.cue({ patch: holds('gain', 0.06), tags: ['other', 'phase'] });
+    m.sync(0);
+    expect(m.probe(part).gain).toBeCloseTo(0.06, 9);
+  });
+
+  it('refuses a voice whose tags and locus name two loci', () => {
+    const m = mix<Part, Pose>(PART, { loci: ['phase', 'beat'] });
+    expect(() => m.cue({ patch: holds('gain', 1), tags: ['phase', 'beat'] })).toThrow(/one locus/);
+    expect(() => m.cue({ patch: holds('gain', 1), tags: ['beat'], locus: 'x' })).toThrow(/one locus/);
+    expect(() => m.cue({ patch: holds('gain', 1), tags: ['beat'], locus: 'beat' })).not.toThrow();
+  });
+
   it('the same two voices outside a locus pile up, which is what a locus is for', () => {
     const m = mix<Part, Pose>(PART);
     m.cue({ patch: holds('gain', 0.06) });
