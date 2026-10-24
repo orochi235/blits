@@ -3,6 +3,7 @@ import type { Event, HoldInfo, MixInfo, Source, SubjectInfo, VoiceInfo } from '.
 import { Samples } from '../store.js';
 import { ChannelPlot } from './ChannelPlot.js';
 import type { Series } from './path.js';
+import { clockText } from './time.js';
 
 interface State {
   mixes: MixInfo[];
