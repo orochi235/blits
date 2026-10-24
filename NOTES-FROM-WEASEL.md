@@ -22,21 +22,18 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   puts the tween gap down to its own per-animation reads (about 0.5 ms, being removed) and a
   drop it still defers a frame.
 - **Churn, what is left** (`turnover^`, weasel's shape: each frame one subject leaves for good and
-  a new one comes, read by `pull` over a list kept dense by swap-remove; teitou, 2026-10-11,
-  `f0283d6`, 8 own-process runs at `FRAMES=5000` beside other jobs). 0.36–0.74 ms a frame, median
-  0.40, against 0.18–0.25, median 0.18, for the same voices steady (`tweens^`). Two things to know
-  when reading the row. At `FRAMES=5000` its 10 s tweens land by frame 600 and the voices stay,
-  held, so most of the run times landed tweens (run on a Mac: 1,000 such voices were all still
-  cued at frame 1,300). And its `kB/frame`, about 136, is mostly the row's own copy of its list
-  each frame: it read 136.6 before and 135.9 after a change that took 8.5 KB off a churned voice
-  by `bench/churnwho.mjs`, the same shape with the list swapped in place. Read blits' share
-  there. In a profile of 2026-10-04: `flush` writing row by row once the swaps have left slots
-  out of list order, about 3,500 runs a frame at 10k, most of one to three subjects (counted on
-  a Mac, 2026-10-11). `popDue` shows at up to 14%, but that is a Maglev deopt loop on its fresh
-  `out` array, and removing the deopts saved no time. A user ease runs once per subject once
-  start times differ, where voices started together share one call a frame: a cubic
-  `1 - (1 - u) ** 3` costs about 0.1 ms at 10k against a line. Retargeting each tween as it is
-  cued, as weasel's codec does, costs nothing further (`RETARGET=1 bench/scatter.mjs`).
+  a new one comes, read by `pull` over a list kept dense by swap-remove; teitou, 2026-10-23,
+  `fd5572b`, `FRAMES=5000`, each row in its own process). 0.286 ms a frame against 0.188 for the
+  same voices steady (`tweens^`), medians of nine; `churn^`, the same voices replaced in place,
+  0.224. Its `kB/frame`, about 136, is mostly the row's own copy of its list each frame. A CPU
+  profile against `tweens^` (2026-10-23, before the two changes below) put churn's extra 140 µs a
+  frame in `flush` writing short runs (`copies` and `rests`, 40), `prune` closing up the voice
+  list (23), `freshen` scanning every crowd row (19) and `pullRun` (12). `freshen` now walks only
+  the rows marked stale and `prune` splices out up to four retired voices, which took `turnover^`
+  from 0.315 to 0.286 and `churn^` from 0.252 to 0.224 (`bench/runs/2026-10-23-*.txt`). What is
+  left is the run order: swap-remove leaves lane slots out of list order, so `flush` and `pull`
+  work in runs of one to three subjects. Closing it means renumbering slots to follow the list,
+  which every lane array, chain and crowd row is keyed by; unbuilt.
 - **Stopping a subject's voice and reading its replacement, what is left** (`bench/restart.mjs`,
   the shape weasel's codec drives: a tween voice per subject read by `pull`, 100 of them stopped,
   dropped, and cued again a frame; orochi under a load average of about 11, Node 26.11,
