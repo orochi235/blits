@@ -166,7 +166,7 @@ describe.each([
       form === 'fn'
         ? patch<Part, T>(0, () => ({ tag: 'on' }), { writes: ['tag'] })
         : keys<Part, T>(100, [{ at: 0, delta: { tag: 'on' } }]);
-    const m = mix<Part, T>(TAG, { lanes });
+    const m = mix<Part, T>(TAG, { lanes, band: { on: 0.6, off: 0.4 } });
     const h = m.cue({ patch: p });
     const all = Array.from({ length: 40 }, (_, i) => ({ id: `p${i}` }));
     const a = all[0] as Part;
@@ -182,5 +182,24 @@ describe.each([
       seen.push(m.probe(a).tag);
     }
     expect(seen).toEqual(['on', undefined, undefined]);
+  });
+});
+
+describe('a channel with no rest, under the stock band', () => {
+  it('passes whole at any weight above 0 and goes at 0', () => {
+    type T = { tag: string };
+    const m = mix<Part, T>(kit<T>({ tag: last() }));
+    const h = m.cue({ patch: patch<Part, T>(0, () => ({ tag: 'on' }), { writes: ['tag'] }) });
+    const seen: (string | undefined)[] = [];
+    for (const [t, w] of [
+      [0, 0.01],
+      [16, 0],
+      [32, 0.99],
+    ] as const) {
+      h.weight = w;
+      m.sync(t);
+      seen.push(m.probe({ id: 'a' }).tag);
+    }
+    expect(seen).toEqual(['on', undefined, 'on']);
   });
 });

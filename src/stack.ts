@@ -1,16 +1,14 @@
+import { STOCK_BAND } from './channels.js';
 import { copy, first } from './clone.js';
 import { bound, merged } from './fold.js';
 import type { Channel, Kit } from './types.js';
-
-/** The weight a mix's default band first switches a rest-less channel on at. */
-const ON = 0.6;
 
 /**
  * Folds deltas into one pose by a kit's arithmetic, in order, with no mix and no clock: what a mix
  * gives for voices contributing these deltas at these weights. Each channel starts at its rest, a
  * weight (default 1, held to 0..1) fades a delta toward rest, and the pose is clamped to each
- * channel's bounds. A channel with no rest takes the last delta whose weight is 0.6 or more, where
- * a mix's default band first switches one on, and stays undefined where none is.
+ * channel's bounds. A channel with no rest takes the last delta a mix's default band switches on, any
+ * weight above 0, and stays undefined where none is.
  *
  * @category channel
  */
@@ -39,7 +37,7 @@ export function fold<O>(
         pose[key] = channel.fold
           ? channel.fold(pose[key], value, w)
           : merged(channel, pose[key], channel.scale(value, w));
-      else if (w >= ON)
+      else if (w >= STOCK_BAND.on)
         pose[key] = pose[key] === undefined ? first(value) : merged(channel, pose[key], value);
     }
   }

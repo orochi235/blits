@@ -6,6 +6,12 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Breaking
+
+- A mix's stock `band` is on at any weight above 0 and off at 0, where it was on above 0.6 and off
+  below 0.4. A channel with no rest, such as `last()`, now shows its value through a whole fade in or
+  out. Pass `band: { on: 0.6, off: 0.4 }` for the old behavior. `fold` follows the same default.
+
 ### Added
 
 - A mix's `loci`: tags that act as loci, so a voice carrying one folds with the others carrying it,

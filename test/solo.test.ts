@@ -166,7 +166,7 @@ describe('a reused out object', () => {
     m.probe({ id: 'a' }, out);
     expect(out.color).toBe(0x336699);
     const was = out.position;
-    h.weight = 0.2;
+    h.weight = 0;
     m.sync(16);
     m.probe({ id: 'a' }, out);
     expect(out.color).toBeUndefined();
@@ -241,7 +241,7 @@ describe('a subject reached by one voice, then two, then one', () => {
 
   for (const locus of [undefined, 'g']) {
     it(`keeps a rest-less channel's band ${locus ? 'in a locus ' : ''}when an earlier voice goes live`, () => {
-      const m = mix<Part, Pose>(PART);
+      const m = mix<Part, Pose>(PART, { band: { on: 0.6, off: 0.4 } });
       const part = { id: 'a' };
       // Cued first but starting later, so once live it comes first among the subject's voices.
       m.cue({ patch: patch(0, () => ({ crawl: 1 }), { writes: ['crawl'] }), start: 100 });

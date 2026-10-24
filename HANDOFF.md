@@ -604,10 +604,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    per-subject emitted count from `write`, rate or counts settable by the host, and rounding
    without the `1e-6` slack. Mike's call whether to make them.
 
-2. **The remaining opens** are in the schema page: where a tag that absorbs loci is declared
-   (that tags absorb loci was decided 2026-09-29), and the stock band's width. Color's lerp space
-   is settled (item 6). Splitting a read ahead at known events,
-   and marks placed inside a voice, were built 2026-10-17 (see State).
+2. **The schema page's opens were closed 2026-10-23:** tags absorb loci through a mix's `loci`
+   (`locus` stays for klieg, wod, magicsmoke and astv), and the stock band is klieg's, on above 0.
+   What is left open there is listed under its "Open" heading.
 
 4. **Reach is fixed at cue, so a voice whose contribution moves pays for every subject it might
    touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every

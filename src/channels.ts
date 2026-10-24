@@ -1,6 +1,9 @@
 import { shared } from './shared.js';
 import type { Channel, Kit } from './types.js';
 
+/** The band a mix switches a rest-less channel's contribution across where its options name none. */
+export const STOCK_BAND = { on: Number.MIN_VALUE, off: 0 } as const;
+
 /** The stock numeric channels' `lerp`, which `vec` applies per axis and lanes call directly. */
 export const lerpNumber = (a: number, b: number, u: number) => a + (b - a) * u;
 const mix = lerpNumber;

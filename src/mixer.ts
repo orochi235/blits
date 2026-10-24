@@ -2,7 +2,7 @@ import { type Arc, cueArc } from './arcs.js';
 import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
 import { aims, chain, headOf, linkable, relink, unlink } from './chain.js';
-import { type LerpInto, lerpInto, scalarOp } from './channels.js';
+import { type LerpInto, lerpInto, STOCK_BAND, scalarOp } from './channels.js';
 import type { Column } from './columns.js';
 import { cue } from './cue.js';
 import { DepartedIndex } from './departed.js';
@@ -392,7 +392,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   get band(): { on: number; off: number } {
-    return this.opts.band ?? { on: 0.6, off: 0.4 };
+    return this.opts.band ?? STOCK_BAND;
   }
 
   cue(spec: VoiceSpec<I, O>): Handle<I> {

@@ -18,8 +18,8 @@ export interface MixOptions<H = unknown> {
   /** Merged into every `setting.host`. Its type is the mix's `H`, which every patch and signal it cues reads. */
   host?: H;
   /**
-   * The band a rest-less channel's contribution switches on and off across. It has to clear the frame
-   * noise in a real signal; these are placeholders until the klieg port measures one.
+   * The band a rest-less channel's contribution switches on and off across. Default: on at any weight
+   * above 0, off at 0, so the contribution passes whole while its voice has any weight.
    */
   band?: { on: number; off: number };
   /**
