@@ -1,0 +1,27 @@
+---
+import { Code } from 'astro:components';
+
+/**
+ * A file from `src/live/` or `src/snippets/` shown whole, so the code on a page is code the site
+ * typechecks. Lines before one reading `// ---` are left out: a snippet's declarations for the
+ * checker, which a reader does not need.
+ */
+interface Props {
+  /** Relative to `src/`, as `live/dom.ts` or `snippets/react/hook.tsx`. */
+  of: string;
+}
+
+const files = import.meta.glob<string>('../{live,snippets}/**/*.{ts,tsx}', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+const { of } = Astro.props;
+const raw = files[`../${of}`];
+if (raw === undefined) throw new Error(`Listing: no file at src/${of}`);
+const lines = raw.split('\n');
+const cut = lines.indexOf('// ---');
+const code = (cut < 0 ? lines : lines.slice(cut + 1)).join('\n').trim();
+const lang = of.endsWith('.tsx') ? 'tsx' : 'ts';
+---
+<Code code={code} lang={lang} themes={{ light: 'github-light', dark: 'github-dark' }} defaultColor="light" />

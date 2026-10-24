@@ -1,0 +1,61 @@
+/* A live file from src/live/ and its controls; the file sizes what it draws. */
+
+.page > .live {
+  max-width: 48rem;
+}
+
+.live {
+  margin: 1.5rem 0;
+}
+
+.live-stage {
+  min-height: 8rem;
+  background: var(--panel);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.live-stage canvas {
+  display: block;
+  width: 100%;
+}
+
+.live-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.4rem;
+}
+
+.live-controls button {
+  font: 500 0.82rem var(--label);
+  padding: 0.25rem 0.7rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* The Get started row: what the page's CSS gives the dots start-dom.ts makes. */
+
+.live .dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.25rem;
+  height: 10rem;
+}
+
+.live .dot {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--voice-1);
+  cursor: pointer;
+}
+
+.live-stage:has(canvas) {
+  color: var(--voice-1);
+}

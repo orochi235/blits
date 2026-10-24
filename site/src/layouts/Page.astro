@@ -1,25 +1,41 @@
 ---
 import '../styles/site.css';
-import { extra, local, words } from '../nav';
+import '../styles/explainer.css';
+import '../styles/api.css';
+import '../styles/live.css';
+import '../styles/examples.css';
+import CopyCode from '../components/CopyCode.astro';
+import Pager from '../components/Pager.astro';
+import Rail from '../components/Rail.astro';
 
 interface Props {
   frontmatter?: { title?: string; description?: string };
   title?: string;
+  description?: string;
 }
 const fm = Astro.props.frontmatter ?? {};
 const title = Astro.props.title ?? fm.title ?? 'blits';
+const description = Astro.props.description ?? fm.description;
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
-const here = Astro.url.pathname;
-const link = (slug: string) => `${base}${slug ? `${slug}/` : ''}`;
+const full = title === 'blits' ? 'blits' : `blits: ${title}`;
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
 ---
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title === 'blits' ? 'blits' : `blits: ${title}`}</title>
-    {fm.description && <meta name="description" content={fm.description} />}
+    <title>{full}</title>
+    {description && <meta name="description" content={description} />}
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="blits" />
+    <meta property="og:title" content={full} />
+    {description && <meta property="og:description" content={description} />}
+    {canonical && <meta property="og:url" content={canonical} />}
+    <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+    <link rel="sitemap" href={`${base}sitemap-index.xml`} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -30,23 +46,12 @@ const link = (slug: string) => `${base}${slug ? `${slug}/` : ''}`;
   <body>
     <a class="skip" href="#main">Skip to the page</a>
     <div class="frame">
-      <nav class="rail" aria-label="Pages">
-        <a class="mark" href={link('')}>blits</a>
-        <ol class="words">
-          {words.map((w) => (
-            <li><a href={link(w.slug)} aria-current={here === link(w.slug) ? 'page' : undefined}>{w.title}</a></li>
-          ))}
-        </ol>
-        <ul class="extra">
-          {extra.map((w) => (
-            <li><a href={link(w.slug)} aria-current={here === link(w.slug) ? 'page' : undefined}>{w.title}</a></li>
-          ))}
-          {import.meta.env.DEV && local.map((w) => <li><a href={w.href}>{w.title}</a></li>)}
-        </ul>
-      </nav>
-      <main id="main" class="page">
+      <Rail />
+      <main id="main" class="page" data-pagefind-body>
         <slot />
+        <Pager />
       </main>
     </div>
+    <CopyCode />
   </body>
 </html>

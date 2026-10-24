@@ -1,0 +1,137 @@
+---
+/** A search box over the Pagefind index the build writes; the dev server has no index. */
+---
+<div class="search">
+  <input type="search" placeholder="Search" aria-label="Search the site" aria-controls="search-results" />
+  <div id="search-results" class="results" role="region" aria-label="Search results" hidden></div>
+</div>
+
+<script>
+  interface Hit {
+    url: string;
+    excerpt: string;
+    meta: { title?: string };
+  }
+  interface Pagefind {
+    options(o: { baseUrl: string }): Promise<void>;
+    debouncedSearch(q: string): Promise<{ results: { data(): Promise<Hit>; }[] } | null>;
+  }
+
+  const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+  const input = document.querySelector<HTMLInputElement>('.search input');
+  const out = document.querySelector<HTMLElement>('.search .results');
+  let loading: Promise<Pagefind | null> | undefined;
+
+  const load = () =>
+    (loading ??= import(/* @vite-ignore */ `${base}pagefind/pagefind.js`)
+      .then(async (p: Pagefind) => {
+        await p.options({ baseUrl: base });
+        return p;
+      })
+      .catch(() => null));
+
+  const show = (html: string) => {
+    if (!out) return;
+    out.innerHTML = html;
+    out.hidden = html === '';
+  };
+
+  input?.addEventListener('focus', load, { once: true });
+  input?.addEventListener('input', async () => {
+    const q = input.value.trim();
+    if (q === '') return show('');
+    const pagefind = await load();
+    if (pagefind === null) return show('<p class="note">Search runs on the built site: <code>npm run site:build</code>.</p>');
+    const found = await pagefind.debouncedSearch(q);
+    if (found === null || input.value.trim() !== q) return;
+    const hits = await Promise.all(found.results.slice(0, 8).map((r) => r.data()));
+    show(
+      hits.length === 0
+        ? '<p class="note">Nothing found.</p>'
+        : `<ol>${hits
+            .map((h) => `<li><a href="${h.url}">${h.meta.title ?? h.url}</a><p>${h.excerpt}</p></li>`)
+            .join('')}</ol>`,
+    );
+  });
+  input?.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    input.value = '';
+    show('');
+  });
+  document.addEventListener('click', (e) => {
+    if (!(e.target instanceof Node) || !input?.parentElement?.contains(e.target)) show('');
+  });
+</script>
+
+<style>
+  .search {
+    margin: 0 0 1.25rem;
+  }
+
+  input {
+    width: 100%;
+    font: inherit;
+    font-size: 0.9rem;
+    padding: 0.35rem 0.5rem;
+    color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+  }
+
+  .results {
+    position: fixed;
+    z-index: 10;
+    top: 1rem;
+    left: 14rem;
+    width: min(34rem, calc(100vw - 15rem));
+    max-height: 75vh;
+    overflow-y: auto;
+    padding: 0.5rem 1rem;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    box-shadow: 0 8px 28px rgb(0 0 0 / 0.18);
+    font-stretch: 100%;
+  }
+
+  .results :global(ol) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .results :global(li) {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .results :global(li:last-child) {
+    border-bottom: none;
+  }
+
+  .results :global(li a) {
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .results :global(li p),
+  .results :global(.note) {
+    margin: 0.2rem 0 0;
+    font: 400 0.88rem / 1.45 var(--serif);
+    color: var(--ink-soft);
+  }
+
+  .results :global(mark) {
+    background: none;
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  @media (max-width: 760px) {
+    .results {
+      left: 1rem;
+      width: calc(100vw - 2rem);
+    }
+  }
+</style>

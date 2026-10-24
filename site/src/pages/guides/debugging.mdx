@@ -1,0 +1,74 @@
+---
+layout: ../../layouts/Page.astro
+title: Debugging a mix
+description: Name your mixes and subjects, then watch them in the in-page panel or the DevTools extension, and ask a mix what is playing, how sure a read is, and what is at rest.
+---
+import Listing from '../../components/Listing.astro';
+
+# Debugging a mix
+
+<p class="lede">Every mix on a page is listed where a debugger can find it. Give it a name and its subjects labels, then watch it in a panel on the page or a DevTools tab: its voices, a subject's channels plotted over time, and a clock you can pause, step, and scrub.</p>
+
+## Names and labels
+
+`name` in `MixOptions` is what debuggers and error messages call a mix. `labelOf` is what they call a subject. Without it, a subject is named by its own `name` or `id`, a DOM element by its tag, id, and classes, and anything else by its class and a number.
+
+<Listing of="snippets/guides/debugging/inspect.ts" />
+
+`watched()` returns that list: every mix made on the page, in the order made, shared by every copy of blits loaded, so a mix one copy made is listed by another. Its `on` hears each mix made and each one collected. A mix stays listed until it is garbage collected or the host calls `close`.
+
+## The panel
+
+`@msb235/blits-panel` puts a debugger on the page. It starts as a pill in a corner with the clock controls, and opens into a window with the mix's subjects and voices and the picked subject's channels over the last 10 s.
+
+```sh
+npm install -D @msb235/blits-panel
+```
+
+```ts
+import { mount } from '@msb235/blits-panel';
+
+if (import.meta.env.DEV) mount();
+// …then make your mixes.
+```
+
+Call `mount()` before the app makes its mixes. Mixes made after it keep 10 s of history, which scrubbing back needs; a mix made earlier can only be paused and stepped forward, and the panel says which applies. With one mix on the page it picks that mix by itself, so the pill's controls work straight away.
+
+Holding a mix's clock holds every mix on the same transport, and nothing the panel does while holding goes on the mix's tape. Freeing the hold lets the mix carry on from where the panel left it.
+
+To pick a subject, choose it from the list, or press **◎ pick** and click it on the page. A DOM subject, or one containing the element clicked, is found on its own. For subjects the DOM can't see, such as three.js objects, pass your own lookup:
+
+```ts
+mount({
+  pick: (x, y) => objectUnderPointer(x, y), // client coordinates in, a subject out
+  outline: (subject) => screenBoxOf(subject), // optional: a DOMRect to outline it by
+});
+```
+
+The [panel's README](https://github.com/orochi235/blits/tree/main/packages/panel#readme) lists its options.
+
+## The DevTools extension
+
+The same window as a **blits** tab in Chrome DevTools, for any page running blits, with nothing imported into the app. It isn't in the Chrome Web Store, so build it from the repo and load it unpacked:
+
+```sh
+npm run build -w @blits/devtools
+```
+
+Then open `chrome://extensions`, turn on **Developer mode**, choose **Load unpacked**, and pick `apps/devtools/dist`.
+
+Most apps keep no history, so the tab can't scrub back at first. Press **Reload with history** and every mix the page makes from then on keeps 10 s of it, until the tab closes or you press **Stop history**. For picking in a three.js scene, the app hands over its lookup with `offer({ pick, outline })` from `@msb235/blits-panel`, which mounts nothing. The [extension's README](https://github.com/orochi235/blits/tree/main/apps/devtools#readme) has the rest.
+
+## Asking the mix
+
+Some questions are quicker asked in code:
+
+| Question | Ask |
+|---|---|
+| Which voices are still in the mix? | `m.voices()`, or `m.voices(tag)` for those carrying a tag. Each handle's `state` is `pending`, `live`, `frozen`, `fading`, or `done`. |
+| How much is one voice giving this subject? | `handle.weightOf(subject)`: its weight the last frame the subject was probed, after fades and signals. 0 for a subject it doesn't reach. |
+| Is anything moving this subject? | `m.atRest(subject)`: true when every channel is at rest for it this frame, so the host can skip the write. |
+| Can the loop sleep? | `m.inert`: true once another frame would change no pose. `m.onWake(fn)` says when that stops being so. |
+| How sure is a read at another time? | `m.project(time).assess(subject)`: per channel, `exact` where only the clock drove it, `stepped` where state was advanced across a gap in one go, and `held` where it depends on input from outside the clock whose value then isn't known. |
+
+[Scrubbing and reading ahead](../scrubbing/) covers `project` and `seek`.

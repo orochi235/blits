@@ -153,7 +153,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   through its last phase, editor scrub (merge `06ef87d`, 2026-10-04).
 - **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
   the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
-  is green on all 15 pages. Deployed to `michaelbaker.tech/blits/` by `.github/workflows/site.yml` on every push to `main`;
+  is green on every page. Deployed to `michaelbaker.tech/blits/` by `.github/workflows/site.yml` on every push to `main`;
   that workflow also runs the site's typecheck, which `npm run check` does not.
   Every explainer draws a stage of what its mix drives above its chart (2026-10-04). `site:smoke` also
   fails a page laid out wider than a 390 px viewport. The sliders whose
@@ -161,6 +161,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   labkit's `endless`, which stores `Infinity` at that stop.
   Every explainer has its full source listed under it, with the site files it imports
   (2026-10-22), and imports blits as `@msb235/blits`, the alias reaching only the public entry.
+  Get started, guides, examples, and a Why blits page were added (2026-10-24), with search
+  (Pagefind), prev and next links, copy buttons, a 404 page, and a sitemap. Their code lives in
+  `site/src/live/` and `site/src/snippets/` under the site typecheck; `site/README.md` says how.
 - **The marquee** (an LED sign demo, one subject per dot) lives in bree; `apps/marquee` was deleted
   (2026-10-23). Its smoke run (headless, msb-uai, 2026-10-22) read mix 0.19 ms a frame at 652 lights
   and 4.33 ms at 20,548; the schema page's "Subject aliases" (decided against) and "Layered
@@ -1303,6 +1306,23 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       against 2,974 at `da6e613` (medians of 7 rounds).
 
 ## Loose ends
+
+- **A patch that names no host type won't type-check in a mix that declares one** (2026-10-24,
+  found by the site typecheck). `patch<Lamp, Pose>(…)` cued on `mix<Lamp, Pose, Host>` fails:
+  `VoiceSpec.patch` is `Patch<I, O, unknown, H>`, and the patch's `Setting<void, unknown>` differs
+  from it in `S` one way and in `H` the other, so method bivariance can't rescue it. Widening it to
+  `Patch<I, O, unknown, H> | Patch<I, O, unknown, unknown>` fixed that case and broke inference of
+  `H` for a patch written inline in `cue` (`test/differential.test.ts:165`, `st.host` became
+  `unknown`), so it was reverted. Other routes change public types (`S` as `any` there, or `H`
+  defaulting to `any` in `patch`): Mike's call. Until then a library types its patches with the
+  host type they will play under, as the site's patch-library guide does.
+
+- **A voice cued while a `ticker` sleeps starts back at the last sync** (2026-10-24, measured on
+  `dist` 0.13.0 by the agent writing the frame-loop guide). `VoiceSpec.start` defaults to the time
+  the mix last synced to, and a sleeping ticker has not synced since it went inert, so a 1000 ms
+  voice cued at 10 s after `sync(0)` is already gone at the next `sync(10_000)`. The frame-loop
+  guide tells hosts to pass `start: performance.now()`. Whether `cue` or `onWake` should handle it
+  instead is Mike's call.
 
 - **A staggered voice's end depends on which subjects the host has read** (2026-10-23). A finite
   loop leaves once the latest-staggered subject it has met is done, so a read ahead or a second seek,

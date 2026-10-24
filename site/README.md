@@ -1,18 +1,22 @@
 # The blits site
 
-The docs site: one page per word of the vocabulary, each built around a live explainer, and the API
-reference generated from the doc comments in `../src`. It is for making the words visible first,
+The docs site: Get started, guides, and examples for someone putting blits to work; one page per word
+of the vocabulary, each built around a live explainer; and the API reference generated from the doc
+comments in `../src`. It is for making the words visible first,
 then for consumers looking for a signature, then for someone arriving from npm. `docs/schema.html`
 stays the design record; the site takes its section order loosely and writes its own prose.
 
 ```
 npm run site         # from the repo root: the API JSON, then Astro's dev server on :: port 4880
 npm run site:build   # the API JSON, then a static build to site/dist
-npm run site:smoke   # build, then load every page in headless Chromium; fails on any console error
+npm run site:smoke   # build, then load every page headless; fails on a console error, a dead link, or no search index
 ```
 
-`BLITS_SITE_BASE` sets the base path (`/blits/` on Pages) and `BLITS_SITE_OUT` the output directory,
-which the smoke test reads too. `site/dist` and `site/.generated` are rewritten whole on each build.
+`BLITS_SITE_URL` sets the origin canonical links and the sitemap use (`https://michaelbaker.tech` by
+default). `BLITS_SITE_BASE` sets the base path (`/blits/` on Pages) and `BLITS_SITE_OUT` the output directory,
+which the smoke test reads too. `site/dist` and `site/.generated` are rewritten whole on each build. The build ends by running
+Pagefind over `dist`, which writes the search index to `dist/pagefind/`; the dev server has none, so
+search answers only on a build.
 
 ## How a page is made
 
@@ -31,6 +35,21 @@ ledger subject after fades and signals, from `handle.weightOf`.
 
 Colors come from the CSS tokens through `readInk`, and each voice keeps its slot color (`v1`..`v3`)
 on the stage, in the ledger and in any trace.
+
+## Live code and snippets
+
+Code on the Get started, guide, and example pages is never pasted into the MDX. It lives in files the
+site typecheck covers, so a page can't show code that no longer compiles:
+
+- `src/live/**/*.ts` exports `run(root)`, which draws into `root` and returns a function that stops
+  it. `<Live client:only="react" of="…" />` runs one while it is on screen, and `<Listing
+  of="live/…" />` shows it.
+- `src/snippets/**` holds code that is shown and not run, through `<Listing of="snippets/…" />`.
+  Lines above one reading `// ---` are declarations for the checker, left off the page.
+
+The rail's order lives in `src/nav.ts`: `start`, `guides`, `words`, and `extra`. The prev and next
+links at the foot of each page walk `reading`, which is that order with each guide after the guides
+index. A guide is `src/pages/guides/<slug>.mdx`; the index lists each one's `description`.
 
 ## The reference
 

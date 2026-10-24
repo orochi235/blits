@@ -3,7 +3,11 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "paths": { "@msb235/blits": ["../src/index.ts"] },
+    "paths": {
+      "@msb235/blits": ["../src/index.ts"],
+      "@msb235/blits/lean": ["../src/lean.ts"],
+      "@msb235/blits/testing": ["../src/testing.ts"]
+    },
     "resolveJsonModule": true
   },
   "include": [".astro/types.d.ts", "src", "../src"]

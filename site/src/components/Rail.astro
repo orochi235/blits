@@ -1,0 +1,140 @@
+---
+import pkg from '../../../package.json';
+import { extra, guides, local, start, words } from '../nav';
+import Search from './Search.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const here = Astro.url.pathname;
+const link = (slug: string) => `${base}${slug ? `${slug}/` : ''}`;
+const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
+const inGuides = here.startsWith(link('guides'));
+---
+<nav class="rail" aria-label="Pages">
+  <a class="mark" href={link('')}>blits</a>
+  <p class="meta">
+    <a href={link('changelog')}>v{pkg.version}</a>
+    <a href="https://github.com/orochi235/blits">GitHub</a>
+    <a href={`https://www.npmjs.com/package/${pkg.name}`}>npm</a>
+  </p>
+  <Search />
+  <ul class="group">
+    {start.map((p) => (
+      <li>
+        <a href={link(p.slug)} aria-current={current(p.slug)}>{p.title}</a>
+        {p.slug === 'guides' && inGuides && (
+          <ul class="sub">
+            {guides.map((g) => (
+              <li><a href={link(`guides/${g.slug}`)} aria-current={current(`guides/${g.slug}`)}>{g.title}</a></li>
+            ))}
+          </ul>
+        )}
+      </li>
+    ))}
+  </ul>
+  <ol class="group">
+    {words.map((w) => (
+      <li><a href={link(w.slug)} aria-current={current(w.slug)}>{w.title}</a></li>
+    ))}
+  </ol>
+  <ul class="group">
+    {extra.map((w) => (
+      <li><a href={link(w.slug)} aria-current={current(w.slug)}>{w.title}</a></li>
+    ))}
+    {import.meta.env.DEV && local.map((w) => <li><a href={w.href}>{w.title}</a></li>)}
+  </ul>
+</nav>
+
+<style>
+  .rail {
+    padding: 2rem 1.25rem;
+    font: 500 0.95rem / 1.4 var(--label);
+    font-stretch: 87.5%;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  ol,
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  li a {
+    display: block;
+    padding: 0.3rem 0;
+    text-decoration: none;
+    color: var(--ink-soft);
+  }
+
+  li a:hover,
+  li a[aria-current='page'] {
+    color: var(--ink);
+  }
+
+  li a[aria-current='page'] {
+    box-shadow: inset 3px 0 0 var(--voice-1);
+    padding-left: 0.6rem;
+  }
+
+  .sub {
+    margin: 0 0 0.3rem 0.75rem;
+    font-size: 0.88rem;
+  }
+
+  .group + .group {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  .mark {
+    display: block;
+    font: 700 1.6rem / 1 var(--label);
+    font-stretch: 87.5%;
+    text-decoration: none;
+    margin-bottom: 0.6rem;
+    letter-spacing: -0.01em;
+  }
+
+  .meta {
+    display: flex;
+    gap: 0.75rem;
+    margin: 0 0 1rem;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .meta a {
+    color: var(--ink-soft);
+    text-decoration: none;
+  }
+
+  .meta a:hover {
+    color: var(--ink);
+  }
+
+  @media (max-width: 760px) {
+    .rail {
+      position: static;
+      height: auto;
+      border-bottom: 1px solid var(--rule);
+      padding: 1rem;
+    }
+    .group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 1rem;
+    }
+    .group + .group {
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+    }
+    .sub {
+      display: none;
+    }
+  }
+</style>

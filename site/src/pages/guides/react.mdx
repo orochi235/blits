@@ -1,0 +1,49 @@
+---
+layout: ../../layouts/Page.astro
+title: From React
+description: Run one mix and one frame loop under a React tree, with elements as subjects and transforms written straight to the DOM.
+---
+import Listing from '../../components/Listing.astro';
+
+# From React
+
+<p class="lede">blits has no React binding, and needs none. A provider owns one mix and one frame loop, components hand it their elements, and the loop writes each element's transform directly, without a render.</p>
+
+The shape is the one from [Get started](../../start/), moved into a component:
+
+- **One mix for the tree.** A mix folds every voice that reaches a subject, so effects from different components on the same element combine by the channel's arithmetic. Two mixes on one element would each write the whole transform, and the last one wins.
+- **One frame loop.** The provider calls `sync` once a frame and `probe` for each element. React never sees a frame: a pose in React state would render the component 60 times a second for a value the loop can write itself.
+- **Elements as subjects.** The mix keeps its state per subject by identity, so the element itself is the subject. A debugger names a DOM subject by its tag, id, and classes with no `labelOf` (see [Debugging a mix](../debugging/)).
+
+<Listing of="snippets/guides/react/stage.tsx" />
+
+The mix is made inside the effect, not during render. In development under `StrictMode`, React runs an effect, cleans it up, and runs it again, so the first mix is closed and the second one is the one the tree uses. `close` takes a mix off the list debuggers read; it does not stop it playing if something still syncs it, which is why the cleanup also cancels the loop.
+
+`track` is a ref callback that returns its own cleanup, as React 19 allows. When the element unmounts, the loop stops drawing it and `drop` makes the mix forget its per-subject state, so nothing keeps the element alive.
+
+A component cues from its event handlers, on its own element:
+
+<Listing of="snippets/guides/react/card.tsx" />
+
+`subjects: [e.currentTarget]` limits the voice to that card. Without it a voice reaches every subject the loop probes, which is what a page-wide effect wants:
+
+```tsx
+const { mix } = useStage();
+useEffect(() => {
+  const h = mix?.cue({ patch: breathe, loop: true, fade: { in: 400, out: 400 } });
+  return () => h?.fade();
+}, [mix]);
+```
+
+`fade` ramps the voice out over its `fade.out` and then removes it, so a component that cued a voice for as long as it is mounted takes it out on the way.
+
+## Reading a pose into React
+
+Some things do belong in React: a label that says which state a card is in, say. Read it at the moment it changes rather than every frame. `handle.done` resolves once a voice has left the mix, however it left, and `handle.played` resolves true once a finite loop's last pass ends, so an effect's end can set state once:
+
+```tsx
+const h = mix.cue({ patch: lift, subjects: [el] });
+void h.done.then(() => setLifted(false));
+```
+
+For a value that changes every frame, write it to the DOM in the loop the way the transform is.

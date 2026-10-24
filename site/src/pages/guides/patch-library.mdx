@@ -1,0 +1,53 @@
+---
+layout: ../../layouts/Page.astro
+title: Shipping your own patches
+description: Publish patches from your own package with the channels they write, check them with blits' testing helpers, and make stateful ones safe for history.
+---
+import Listing from '../../components/Listing.astro';
+
+# Shipping your own patches
+
+<p class="lede">A library of effects exports patches and the channels they write. The host spreads those channels into its own kit, and its mix refuses a patch whose channels it holds by other arithmetic.</p>
+
+## Export the channels with the patches
+
+A patch is plain data and functions, so a package can ship them like anything else. Ship the channels too, as a `Kit` of your own, and name it as each patch's `kit`:
+
+<Listing of="snippets/guides/patch-library/glow.ts" />
+
+Naming a kit does two things. A patch given `kit` and no `writes` writes every channel in that kit, as `pulse` does. And `cue` checks it: where the host's mix holds a channel of the same name as another kind, say `glow` as a `mul` where the patch was written for a `sum`, `cue` throws rather than fold the patch by arithmetic it wasn't written for.
+
+`reads` lists the fields of `setting.host` a patch uses, and `cue` throws for a mix whose `host` lacks one. The host passes its own object as the `host` option and keeps it up to date:
+
+<Listing of="snippets/guides/patch-library/app.ts" />
+
+`touch` tells the mix that something a patch reads from outside it has changed, so the next probe calls the patch again rather than reuse what it read this frame. A voice whose patch reads host fields never runs as a lane, since a change between two probes would not reach a lane.
+
+Make blits a peer dependency of your package, as `@msb235/blits-quarks` does, so an app and its effects share one copy. Two copies loaded together still read each other's patches and channels.
+
+## Test them
+
+`@msb235/blits/testing` has two helpers for a library's own tests:
+
+<Listing of="snippets/guides/patch-library/check.ts" />
+
+`checkPatch` reads the patch across its phase, twice, from fresh state, and returns one sentence per problem it finds, or an empty list:
+
+- `at` writes a channel that isn't in `writes`, or gives a different delta for the same phase, subject, and state.
+- `at` or `step` changes the subject.
+- `state()` hands every subject the same object, so they would share state.
+- `step` lands somewhere else from the same start.
+- `clone`, or `pack` then `unpack` through JSON, gives back a state unequal to the one it was given.
+- The patch `reads` a field the `host` you passed lacks.
+- Given a `kit`, `cue` would refuse the patch.
+
+`setting(fields)` makes the `Setting` a patch is handed inside a mix, for calling `at` or `step` directly. Any field may be given. The rest read a voice at full weight at the start of its first pass, 1/60 s after the last frame. What the patch sends lands in its `sent` list.
+
+## Stateful patches
+
+A patch that keeps state per subject, such as a spring's position and speed, declares `state` and `step`; [Patch state](../../state/) shows how. Two more fields matter once other people's mixes run it:
+
+- `clone(state)` copies a state for a read at another time, such as `project` reading ahead. The default is `structuredClone`, which is enough for plain data. A state holding a class instance or a function needs its own.
+- `pack(state)` and `unpack(data)` turn a state into data that survives `structuredClone` and back, for a mix whose `history` has a store. With a store, `cue` refuses a patch with `state` or `step` that lacks them. They come as a pair, and `checkPatch` reports one without the other.
+
+Keep state plain where you can: numbers and arrays clone and pack for free.

@@ -1,0 +1,42 @@
+---
+layout: ../../layouts/Page.astro
+title: Scrubbing and reading ahead
+description: Give a mix history so it can move back to any moment and play on, read it at another time without moving it, and keep several mixes on one clock.
+---
+import Listing from '../../components/Listing.astro';
+
+# Scrubbing and reading ahead
+
+<p class="lede">A mix plays forward from the host's clock. With history it can also go back: move to any moment in the last few seconds and play on from there, as a scrubber does. Reading ahead needs no history at all.</p>
+
+## A scrubber
+
+`seek` moves the live mix to a mix time and plays on from there. It needs `history` with a `tape`, which records every call you make on the mix and its handles, so going forward again plays those calls back. The tape here is `createHistory` from `@weasel-js/history`; anything of the `Tape` shape works.
+
+<Listing of="snippets/guides/scrubbing/seek.ts" />
+
+- `history.ms` is how far back the mix remembers, in ms of mix time. `seek` throws for a time older than that, and before the first sync.
+- `stepMs` makes a patch with state land exactly on the pose it showed, however you scrub. Without it, a read back steps state across the gap in one go.
+- Keep passing your own clock to `sync`. The next frame carries on from the moment you sought.
+
+Going back puts the mix as it stood then: each voice's clock, weight, and fade, voices that had left back on the handles you hold, and voices cued since waiting until the mix reaches their cue again. A call you make while recorded calls lie ahead starts a new branch, and the tape keeps the old one beside it. [Score](../../score/#seeking) says more.
+
+## Reading another time
+
+`project` reads the mix at another time without moving it. Ahead of now it plays forward what is cued; behind, it needs `history`. Use it to draw a ghost of where something is going, or to schedule audio before it plays.
+
+<Listing of="snippets/guides/scrubbing/project.ts" />
+
+`assess` says per channel how far to trust a projected pose: `exact` where only the clock and known changes drove it, `stepped` where state was advanced across the gap in one go, and `held` where it depends on input from outside the clock, such as a signal the host feeds, whose value at that time is not known. `history: { ms, inputs: true }` records what input signals read, so a read back over them is known rather than held.
+
+## Several mixes on one clock
+
+Mixes over different kits can share a `transport`: one sync, one rate, one seek, and one tape for all of them. Each mix is made with the transport in its options and takes its history from it. The transport's `sync`, `rebase`, `rate`, and `seek` move every mix on it, and calling those on one of the mixes throws.
+
+<Listing of="snippets/guides/scrubbing/transport.ts" />
+
+A query that names no score stays in its own mix, so an anchor across mixes names the score both voices share.
+
+## History beyond memory
+
+A history `store` pages out what is older than `ms` rather than dropping it. A seek that reaches past memory then needs `await m.prepare(time)` first, or throws `HistoryMiss` before anything moves.

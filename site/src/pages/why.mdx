@@ -1,0 +1,41 @@
+---
+layout: ../layouts/Page.astro
+title: Why blits
+description: What blits is built for, what GSAP and Motion are built for, and where they overlap.
+---
+
+# Why blits
+
+<p class="lede">blits is for many effects at once on the same numbers, where how they combine is the point. GSAP and Motion are for moving things on a page from one state to another, in sequence, and they write to the page for you. Some work fits either.</p>
+
+## What blits does
+
+blits answers one question each frame: given every effect playing right now, what is each subject's value? A flicker, a hover glow, and a fade can all write a part's brightness together. Each one plays on its own clock at its own weight. The [kit](../channel/) decides how they combine on each channel: make brightness a `mul` and the effects multiply, an offset a `sum` and they add, a darkness a `max` and the larger wins. No effect has to know about the others.
+
+It does not touch the page. You keep the frame loop and the drawing, and blits hands you numbers: for a DOM element, a canvas dot, a three.js mesh, or an audio parameter. It has no runtime dependencies.
+
+Around that core it plays effects in order on a [score](../score/), reads the mix ahead of time without moving it, and, given [history](../guides/scrubbing/), seeks back and forth like a scrubber.
+
+## What GSAP and Motion do
+
+**GSAP** tweens a target's properties toward values over time, and its timelines sequence tweens and can be scrubbed with `seek`, `progress`, or `time`. When two tweens animate the same property at once, GSAP's docs say they "remain fighting each other" until one ends, and its `overwrite` setting kills the conflicting tween, or the conflicting parts of it. The docs describe no way to add or blend two tweens on one property.
+
+**Motion** runs easing and spring animations through `animate`. Its React `motion` component adds gestures, variants, and layout animations, `scroll` links animations to scroll position, and a sequence places animations with `at`. Its controls set an animation's `time` and `speed`. Its animation docs don't say what happens when two animations target the same value at once.
+
+Both write to the page for you, handle CSS units, transforms, and colors on elements, and are widely used.
+
+## When to use which
+
+| You want | Reach for |
+|---|---|
+| An element to move, fade, or resize from one state to another | GSAP or Motion |
+| Layout animations, shared-element transitions, or React gestures | Motion |
+| Transitions in sequence on page elements, scrubbed or scroll-linked | GSAP or Motion; blits can do it, but you write the DOM updates |
+| Several effects on the same values at once, combined by a rule per value | blits |
+| Effects weighted by live input, such as pointer distance or audio level, that rise and fall without restarting | blits |
+| Hundreds or thousands of subjects drawn on a canvas, in WebGL, or in three.js | blits |
+| One clock driving visuals and sound together | blits, with [`@msb235/blits-tone`](../built-on/) |
+
+Nothing stops one page from using both: Motion for its layout, for instance, and blits for the effects drawn over it.
+
+*What this page says about GSAP and Motion comes from gsap.com/docs and motion.dev/docs, read on 2026-10-24.*

@@ -1,0 +1,59 @@
+---
+layout: ../../layouts/Page.astro
+title: The frame loop and hidden tabs
+description: Run a mix from one frame loop that sleeps when nothing moves, wakes when something is cued, and does not count the time a tab spent hidden.
+---
+import Listing from '../../components/Listing.astro';
+
+# The frame loop and hidden tabs
+
+<p class="lede">The loop in Get started asks for a frame forever. This page makes it sleep while nothing moves, wake when something is cued, ignore the time a tab was hidden, and honor reduced motion.</p>
+
+## Use a ticker
+
+`ticker()` is a frame loop you can add mixes to. Each frame it syncs every mix it holds, then calls the functions you gave `after` with the frame's timestamp, which is where you probe and draw. Once every mix is inert it stops asking for frames, and a cue, a fade, or any other change that needs frames again wakes it.
+
+<Listing of="snippets/guides/frame-loop/ticker.ts" />
+
+A mix is **inert** when another frame would change no pose: every voice is done, frozen at a plain weight, or a motion that has landed. A voice that loops for good is never inert, so a page with one never sleeps.
+
+`ticker` takes `fps` to cap the frame rate, and `grain: 'timer'` to run on `setTimeout` where there are no animation frames, as in a worker. `hold()` keeps frames coming whatever the mixes say, until you call the release it returns.
+
+## Or write the loop yourself
+
+The ticker is built on two members of the mix that any loop can use. `m.inert` says whether to ask for another frame, and `m.onWake(fn)` calls `fn` when a change makes the mix need frames again. It fires once until the next sync, and never during one.
+
+<Listing of="snippets/guides/frame-loop/by-hand.ts" />
+
+## Cueing into a sleeping loop
+
+A voice cued with no `start` starts at the time the mix last synced to. While the loop sleeps, that time stays put, so a voice cued ten seconds into a nap starts ten seconds in the past, and a 500 ms effect has finished before its first frame. Give such a cue the host's clock:
+
+```ts
+m.cue({ patch: pop, subjects: [card], start: performance.now() });
+```
+
+`performance.now()` and an animation frame's timestamp share an origin, so the next frame plays the voice from its start.
+
+## Hidden tabs
+
+A hidden tab gets no animation frames, so the first sync after it comes back sees the whole time away. Fades and finite loops finish, and every subject catches up by all of it at once. To pick up where the tab left off instead, call `rebase` when it shows again:
+
+```ts
+document.addEventListener('visibilitychange', () => document.hidden || m.rebase());
+```
+
+The next sync takes the gap out of the mix's clock. [Time](../../time/) shows both behaviors side by side.
+
+## Reduced motion
+
+`reduce` in the mix's options turns on reduced motion: fades and warm-ups snap, and every `step` is handed a `dt` of Infinity. It takes a boolean, or a function the mix asks, so it can follow the reader's setting as it changes. The ticker example above passes `prefers-reduced-motion`.
+
+## Patches that integrate
+
+A patch with a `step` advances its state by the time since a subject was last probed, and after a hidden tab or a subject off screen that can be seconds in one step. Two options bound it:
+
+- `maxDt` caps the `dt` any step is handed, however long the gap.
+- `stepMs` runs every step at a fixed interval instead of once per frame, so a stateful patch plays the same at any frame rate. `maxDt` then caps how many intervals one probe may run.
+
+[Patch state](../../state/) covers when each one is the right choice.

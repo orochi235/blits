@@ -1,0 +1,59 @@
+---
+/** A copy button on every code block, added once the page has loaded. */
+---
+<script>
+  for (const pre of document.querySelectorAll<HTMLPreElement>('pre.astro-code')) {
+    const wrap = document.createElement('div');
+    wrap.className = 'code';
+    pre.replaceWith(wrap);
+    wrap.append(pre);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'copy';
+    button.textContent = 'Copy';
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(pre.innerText);
+        button.textContent = 'Copied';
+      } catch {
+        button.textContent = 'Select and copy';
+      }
+      setTimeout(() => {
+        button.textContent = 'Copy';
+      }, 1500);
+    });
+    wrap.append(button);
+  }
+</script>
+
+<style is:global>
+  .code {
+    position: relative;
+  }
+
+  .code .copy {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    font: 500 0.75rem var(--label);
+    padding: 0.2rem 0.5rem;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 120ms;
+  }
+
+  .code:hover .copy,
+  .code .copy:focus-visible {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    .code .copy {
+      opacity: 1;
+    }
+  }
+</style>

@@ -1,0 +1,89 @@
+/* The examples gallery: whatever a file in src/live/examples/ needs beyond its own canvas. */
+
+.live .reveal {
+  margin: 0;
+  padding: 4.5rem 1rem;
+  text-align: center;
+  font: 700 clamp(1.4rem, 5vw, 2.4rem) / 1.2 var(--label);
+  font-stretch: 87.5%;
+  color: var(--ink);
+}
+
+.live .reveal span {
+  display: inline-block;
+  white-space: pre;
+}
+
+.live .cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3.5rem 1rem;
+}
+
+.live .card {
+  --glow: 0;
+  width: 7rem;
+  padding: 1.25rem 0.5rem;
+  text-align: center;
+  font: 600 0.95rem var(--label);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  box-shadow: 0 0 calc(var(--glow) * 24px) calc(var(--glow) * 2px) var(--voice-1);
+  cursor: default;
+}
+
+.live .burst {
+  height: 260px;
+  cursor: crosshair;
+}
+
+.live-stage:has(.burst) {
+  color: var(--voice-2);
+}
+
+.live .switch {
+  display: block;
+  margin: 0 auto 1.25rem;
+  font: 500 0.85rem var(--label);
+  padding: 0.3rem 0.8rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.live .lanes {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1.5rem 1rem 1rem;
+}
+
+.live .lane {
+  position: relative;
+  height: 2rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.live .bar {
+  position: absolute;
+  left: 0;
+  width: 6rem;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font: 600 0.82rem var(--label);
+  color: var(--paper);
+  background: var(--voice-1);
+  border-radius: 4px;
+}
+
+.live .lanes + input[type='range'] {
+  display: block;
+  width: calc(100% - 2rem);
+  margin: 0 1rem 1rem;
+}

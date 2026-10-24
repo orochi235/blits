@@ -1,0 +1,51 @@
+---
+layout: ../layouts/Page.astro
+title: Examples
+description: Small effects made with blits, each running on the page above its full source.
+---
+import Live from '../components/Live';
+import Listing from '../components/Listing.astro';
+
+# Examples
+
+<p class="lede">Small effects, each running above its full source. Every one is a single file you could copy into a page of your own, wrapped in a <code>run</code> function so this page can start and stop it.</p>
+
+## Staggered text reveal
+
+Each letter is a subject. One voice reaches all of them, and its `stagger` delays each letter by its place in the line. `freeze` holds a letter's first frame before its turn and its last frame after, until the voice fades out. See [Voice](../voice/).
+
+<Live client:only="react" of="examples/reveal.ts" />
+
+<Listing of="live/examples/reveal.ts" />
+
+## Hover glow
+
+Point at a card. One voice holds every card raised and glowing, and its weight is a [signal](../signal/): an `input` that reads which card the pointer is over, smoothed by `lag` so each card rises quickly and settles slowly.
+
+<Live client:only="react" of="examples/glow.ts" />
+
+<Listing of="live/examples/glow.ts" />
+
+## Particle burst
+
+Click the canvas. Each burst is one voice over 40 new sparks, played for one pass. When the pass ends the voice leaves the mix, its `done` promise resolves, and the sparks are let go. See [Mix](../mix/).
+
+<Live client:only="react" of="examples/burst.ts" />
+
+<Listing of="live/examples/burst.ts" />
+
+## Crossfade between loops
+
+Press the button. The playing loop fades out as the other fades in, and both share a [locus](../locus/), so halfway through, each dot is a blend of the two: its color passes from one to the other rather than stacking both.
+
+<Live client:only="react" of="examples/crossfade.ts" />
+
+<Listing of="live/examples/crossfade.ts" />
+
+## A scrubbable sequence
+
+Drag the slider. Three voices are placed on the mix's [score](../score/): the second starts 300 ms after the first reaches its `coast` mark, where it begins holding its last frame, and the third starts 250 ms after the second. The mix itself never moves past 0. Each frame, `project` reads it at the slider's time without moving it, so scrubbing backward needs no history.
+
+<Live client:only="react" of="examples/sequence.ts" />
+
+<Listing of="live/examples/sequence.ts" />

@@ -1,0 +1,70 @@
+---
+layout: ../layouts/Page.astro
+title: Get started
+description: Install blits, make a kit, write two patches, play them on a mix, and draw what it folds, first on DOM elements and then on a canvas.
+---
+import Live from '../components/Live';
+import Listing from '../components/Listing.astro';
+
+# Get started
+
+<p class="lede">Make a row of dots move under two effects at once, then a field of dots on a canvas. Each step is the code running on this page.</p>
+
+```sh
+npm install @msb235/blits
+```
+
+blits has no runtime dependencies, ships as ESM, and includes its types. It draws nothing itself: you keep your own frame loop and your own renderer, and once a frame you ask blits what each thing should look like.
+
+## On DOM elements
+
+Nine dots. Each one breathes, and a hop ripples along the row. Click a dot and it pops: a third effect, played once, on that dot alone.
+
+<Live client:only="react" of="start-dom.ts" />
+
+<Listing of="live/start-dom.ts" />
+
+The page gives the dots their size and color:
+
+```css
+.dots { display: flex; gap: 1.25rem; align-items: center; justify-content: center; height: 10rem; }
+.dot { width: 1.5rem; height: 1.5rem; border: none; border-radius: 50%; background: royalblue; }
+```
+
+The file wraps everything in `run` so this page can start and stop it. In an app you would run the body once.
+
+Each part of it:
+
+- **The kit** lists the numbers an effect may move, and gives each one its arithmetic. `y` is a `sum`, so two offsets add; `scale` is a `mul`, so two scales multiply, and the pop at 1.8 on a dot breathing at 1.1 gives 1.98. The rule belongs to the channel, so neither effect has to know the other is playing. [Channel and kit](../channel/) lists the rest.
+- **A patch** is the effect: a function from phase, 0 to 1 over its duration, and the subject to the channels it writes. `keys` builds one from keyframes instead. See [Patch](../patch/).
+- **A voice** is a patch playing. `cue` starts one and gives it a clock, a loop count, a stagger per subject, and a fade. It returns a handle for changing those while it plays. See [Voice](../voice/).
+- **The mix** holds the voices and folds them. Your loop calls `sync` with the frame's time, then `probe` for each subject, and gets back the folded pose. Passing the same `pose` object every time saves making one per dot per frame. See [Mix](../mix/).
+
+## On a canvas
+
+480 dots. One voice reaches all of them: a ripple delayed for each dot by its distance from the middle. A second voice swells the dots near the pointer, and its weight is a [signal](../signal/) that reads how close the pointer is to each dot.
+
+<Live client:only="react" of="start-canvas.ts" />
+
+<Listing of="live/start-canvas.ts" />
+
+Nothing here is different for a canvas. The subjects are plain objects, not elements, and drawing is your code. Two things change as the count grows:
+
+- `stagger` and `target` run once per subject, the first time the mix sees it, and the answer is kept.
+- `pull` writes every subject's pose into one typed array per channel, without a pose object per subject. Where a channel runs as a lane, worked out for every subject at once (see [Engine](../engine/)), `pull` reads it fastest.
+
+## Two more things every host needs
+
+**A hidden tab gets no frames.** When it comes back, the next `sync` sees the whole gap, and every fade finishes at once. Call `rebase` when the tab shows again, and the time away does not count:
+
+```ts
+document.addEventListener('visibilitychange', () => document.hidden || m.rebase());
+```
+
+**A loop can sleep.** `m.inert` turns true once another frame would change nothing, and `m.onWake` calls you when a cue or a handle makes it need frames again. [The frame loop and hidden tabs](../guides/frame-loop/) puts both together.
+
+## Next
+
+- [Guides](../guides/) cover one task each: playing effects in order, scrubbing, React, three.js, and testing patches of your own.
+- [Examples](../examples/) are small effects, each with its full source.
+- The pages under **Words**, starting with [Channel and kit](../channel/), explain each idea with a live diagram you can scrub.

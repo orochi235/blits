@@ -1,6 +1,6 @@
 // Loads every page of the built site in headless Chromium, runs its explainers, scrubs back once,
-// and fails on any console error or page error, or on a page laid out wider than a phone's
-// viewport. `--shots <dir>` also saves a screenshot per page at each width.
+// and fails on any console error or page error, on a page laid out wider than a phone's viewport,
+// on a link into the site that leads nowhere, or on a build without its search index. `--shots <dir>` also saves a screenshot per page at each width.
 import { createReadStream, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, relative, resolve } from 'node:path';
@@ -25,15 +25,17 @@ const types = {
 // The site is built under its base path, so the server strips it before reading dist.
 const base = (process.env.BLITS_SITE_BASE ?? '/').replace(/\/?$/, '/');
 
-const server = createServer((req, res) => {
-  const url = decodeURIComponent(new URL(req.url, 'http://x').pathname);
-  if (!url.startsWith(base)) {
-    res.writeHead(404).end();
-    return;
-  }
+/** The file a site path serves, or null where there is none. */
+function fileAt(url) {
+  if (!url.startsWith(base)) return null;
   let path = join(root, url.slice(base.length - 1));
   if (existsSync(path) && statSync(path).isDirectory()) path = join(path, 'index.html');
-  if (!existsSync(path)) {
+  return existsSync(path) ? path : null;
+}
+
+const server = createServer((req, res) => {
+  const path = fileAt(decodeURIComponent(new URL(req.url, 'http://x').pathname));
+  if (path === null) {
     res.writeHead(404).end();
     return;
   }
@@ -77,6 +79,10 @@ function overflowing() {
 
 const browser = await chromium.launch({ headless: true });
 let failed = 0;
+if (fileAt(`${base}pagefind/pagefind.js`) === null) {
+  console.log('FAIL  no search index: the build did not run pagefind');
+  failed++;
+}
 for (const [i, path] of pages.entries()) {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
@@ -91,9 +97,34 @@ for (const [i, path] of pages.entries()) {
     await range.fill('0');
   }
   if (explainers) await page.waitForTimeout(300);
+  // A live file runs only while on screen, so each is brought into view to run.
+  const lives = await page.locator('.live').count();
+  for (let k = 0; k < lives; k++) {
+    await page.locator('.live').nth(k).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+  }
   if (shots) {
     const name = path === '/' ? 'home' : path.replaceAll('/', '');
     await page.screenshot({ path: join(shots, `${name}.png`), fullPage: true });
+  }
+  if (path === '/') {
+    await page.fill('.search input', 'stagger');
+    const hit = await page
+      .locator('.search .results li a')
+      .first()
+      .waitFor({ timeout: 5000 })
+      .then(
+        () => true,
+        () => false,
+      );
+    if (!hit) errors.push('a search for "stagger" found nothing');
+  }
+  const links = await page.$$eval('a[href]', (as) => as.map((a) => a.href));
+  for (const href of new Set(links)) {
+    const url = new URL(href);
+    if (url.origin !== origin) continue;
+    if (fileAt(decodeURIComponent(url.pathname)) === null)
+      errors.push(`links to ${url.pathname}, which is not there`);
   }
   await page.setViewportSize(PHONE);
   await page.waitForTimeout(200);
@@ -108,7 +139,7 @@ for (const [i, path] of pages.entries()) {
   const ok = errors.length === 0;
   if (!ok) failed++;
   console.log(
-    `${String(i + 1).padStart(2)}/${pages.length}  ${ok ? 'ok  ' : 'FAIL'}  ${path}  ${explainers} explainer${explainers === 1 ? '' : 's'}`,
+    `${String(i + 1).padStart(2)}/${pages.length}  ${ok ? 'ok  ' : 'FAIL'}  ${path}  ${explainers} explainer${explainers === 1 ? '' : 's'}, ${lives} live`,
   );
   for (const e of errors) console.log(`       ${e}`);
   await page.close();

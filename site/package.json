@@ -5,14 +5,16 @@
   "scripts": {
     "api": "typedoc --json .generated/api.json --tsconfig ../tsconfig.json ../src/index.ts --excludePrivate --excludeInternal --sort source-order --logLevel Warn",
     "dev": "npm run api && astro dev --host :: --port 4880",
-    "build": "npm run api && astro build",
+    "build": "npm run api && astro build && pagefind --site ${BLITS_SITE_OUT:-dist}",
     "smoke": "npm run build && node scripts/smoke.mjs",
     "typecheck": "npm run api && astro sync && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@astrojs/mdx": "^8.0.2",
     "@astrojs/react": "^7.0.0",
+    "@astrojs/sitemap": "^3.7.4",
     "@weasel-js/core": "1.12.0",
+    "@weasel-js/history": "1.12.0",
     "@weasel-js/labkit": "1.12.0",
     "@weasel-js/theme": "1.12.0",
     "astro": "^7.3.5",
@@ -22,6 +24,7 @@
   "devDependencies": {
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "pagefind": "^1.5.2",
     "playwright": "1.63.0",
     "typedoc": "^0.28.20",
     "typescript": "~6.0.0"

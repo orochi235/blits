@@ -1,0 +1,60 @@
+---
+layout: ../../layouts/Page.astro
+title: Driving three.js
+description: Meshes or instance indices as subjects, vector, rotation, and color channels, and pull into typed arrays for an instanced mesh.
+---
+import Listing from '../../components/Listing.astro';
+
+# Driving three.js
+
+<p class="lede">blits doesn't know about three.js. Your render loop syncs the mix, reads each subject's pose, and copies the numbers onto the objects three draws.</p>
+
+## Channels for a scene
+
+A 3D pose is mostly arrays, and blits has a channel for each kind:
+
+| Channel | Value | How two voices combine |
+|---|---|---|
+| `vec(3, sum())` | `[x, y, z]` | Each axis by the channel inside it: here, added. `vec(3, mul())` multiplies axis by axis, as a scale does. |
+| `quat()` | `[x, y, z, w]`, a unit quaternion | Composed by the Hamilton product in the order the voices were cued. Rotations don't commute, so cue order matters. |
+| `angle()` | degrees, or radians with `{ turn: 2 * Math.PI }` | Added, and interpolated the short way round: from 350 to 10 through 0. |
+| `color()` | OKLab with coverage, `[L, a, b, w]` | Averaged by weight. `toHex(pose, under)` gives 0xrrggbb, laid over `under` where the coverage is short of 1. `color(last())` replaces instead. |
+
+[Channel and kit](../../channel/) has the rest.
+
+## Meshes as subjects
+
+Each subject here is a part: a mesh, where it rests, and its place in the row. Two voices play on every part, a bob staggered along the row and a spin, and a third makes one part glow while the pointer is over it.
+
+<Listing of="snippets/guides/three/meshes.ts" />
+
+The bob writes an offset rather than a position, and the loop adds it to where the part rests. A voice that wrote the position outright would pin every part to the patch's numbers.
+
+`probe(part, pose)` reuses one pose object for every part. Where `pose` already holds an array of the right length for a `vec`, `quat`, or `color` channel, the mix writes into that array rather than making a new one. That saves an allocation per part per frame, and it means the array changes on the next probe: copy the numbers out before reading the next part, as the loop does.
+
+## Instances
+
+An `InstancedMesh` draws many copies from one buffer of matrices, and the subjects can be the instance indices themselves. A number subject is its own key.
+
+`pull` is the read for this. It writes every subject's pose into typed arrays, one per channel, in the order given: a channel of `n` numbers takes `n` places per subject, side by side. Nothing is made per subject.
+
+<Listing of="snippets/guides/three/instanced.ts" />
+
+Pass `pull` the same array of subjects, in the same order, every frame. The mix remembers the last array's subjects by position and skips looking up any still in place. Where a channel runs as a lane, worked out for every subject at once, `pull` reads it fastest (see [Engine](../../engine/)).
+
+A channel with no value for a subject writes NaN in its places. The channels above all have a rest, the value with no voice playing, so a subject no voice reaches reads its rest: 0 for a `sum`, 1 for a `mul`.
+
+## Particles
+
+[`@msb235/blits-quarks`](https://www.npmjs.com/package/@msb235/blits-quarks) drives [three.quarks](https://github.com/Alchemist0823/three.quarks) particle systems from a mix: how many particles each subject emits, where, and with what start values. You build the systems and the renderer; once a frame, after `sync`, `write()` turns each emitter's pose into particles.
+
+```ts
+import { kit, max, mix, wave } from '@msb235/blits';
+import { channels, drive } from '@msb235/blits-quarks';
+
+const K = kit({ ...channels, heat: max() });
+const m = mix(K);
+const quarks = drive(m, { kit: K, bursts: 'sparks' });
+```
+
+Its [README](https://github.com/orochi235/blits/tree/main/packages/quarks#readme) covers sources, emitters, and the channels it reads.

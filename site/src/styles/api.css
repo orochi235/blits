@@ -1,0 +1,43 @@
+.api {
+  margin-top: 3rem;
+  border-top: 1px solid var(--rule);
+}
+
+.api-entry {
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--rule);
+  max-width: 44rem;
+}
+
+.api-entry h3 {
+  margin: 0 0 0.4rem;
+  font-family: var(--mono);
+  font-stretch: 100%;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.api-kind {
+  color: var(--ink-soft);
+  font: 400 0.8rem var(--label);
+  margin-left: 0.5rem;
+}
+
+.api-entry p {
+  margin: 0.3rem 0;
+}
+
+.api-members {
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.api-members li {
+  padding: 0.35rem 0 0.35rem 1rem;
+  border-left: 2px solid var(--rule);
+}
+
+.api-members code {
+  font-weight: 600;
+}

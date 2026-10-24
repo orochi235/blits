@@ -1,0 +1,40 @@
+---
+layout: ../../layouts/Page.astro
+title: Effects in order
+description: Play effects one after another on one mix, by time, against another voice's marks, inside a span with a budget, or on a moment the host announces.
+---
+import Listing from '../../components/Listing.astro';
+
+# Effects in order
+
+<p class="lede">A mix plays everything it holds at once. To play effects in order, place each voice on the score: at a time, against another voice, or inside a span that fits them into a budget.</p>
+
+Here a heading types in, then underlines. Its lines type in alongside it, all within two seconds, and a badge shines once some data has loaded.
+
+<Listing of="snippets/guides/in-order/sequence.ts" />
+
+## At a time
+
+`start` is a timestamp on the host's clock, the one you pass to `sync`. A voice given a `start` ahead of now waits as `pending` until the clock gets there. Without one, it starts at the last sync.
+
+## Against another voice
+
+A voice with a `name` can be the target of another voice's `anchor`. Every voice has five marks: `start`, `in` (at full weight), `coast` (its last pass ends), `out` (its fade out begins), and `end`. `after` is another voice's `end`, `with` its `start`, and `before` its start less `by`; `{ of, mark, by }` reaches any mark.
+
+A voice waits until its anchor has an answer, and follows it: cut the title short with `title.fade()` and everything placed after it moves up. [Score](../../score/) has the full grammar, including queries that pick a voice by tag or by a channel it writes.
+
+## Inside a span
+
+`m.span` returns an owner. Voices cued with it as their `owner` are laid out on its clock: by default each after the one before ends (`order: 'queue'`), or partway through it (`'stagger'`, with `share`), or all at once (`'together'`). Given a `duration`, the span fits its children into that budget as their hints allow: `faster: 3` lets a line play up to three times its own speed, `slower` the reverse, and `ballast` lets it be skipped. Where they can't fit, the default is to jump the weakest to their end; `spill: 'overrun'` lets them run long instead.
+
+`intro.result` says how the last fit came out: the budget, where the children end, how far over it ran, and how many were skipped.
+
+## On the host's moments
+
+Some moments only the host knows: a click, a reply from a server. `m.announce(name)` puts a named mark on the score, and any anchor can wait on it with `{ with: name }`. `at` places one ahead of time, so a read ahead sees it.
+
+## When it has finished
+
+A handle's `done` resolves when the voice has left the mix, however it left. `played` resolves `true` when its last pass ends, and `false` if it leaves before that, faded or cut short. Neither rejects.
+
+To see what is coming instead of waiting on it, `m.marks(from, to)` lists every mark the plan has fixed between two times on the host's clock, earliest first.

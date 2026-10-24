@@ -1,0 +1,47 @@
+---
+layout: ../../layouts/Page.astro
+title: A smaller bundle
+description: Import from @msb235/blits/lean to leave out lanes, the code that works a channel out for every subject at once, when a host has too few subjects to need it.
+---
+
+# A smaller bundle
+
+<p class="lede">`@msb235/blits/lean` is the same library without lanes. Every export is there and every pose comes out the same; only the code that works a channel out for every subject at once is left out.</p>
+
+```ts
+import { kit, mix, patch, sum } from '@msb235/blits/lean';
+```
+
+## What lanes are
+
+A mix can fold a channel two ways. The general path works out a subject's pose when you probe that subject. A **lane** works out the channel for every subject at once, in flat arrays, at the frame's first probe. A channel runs as a lane when every voice writing it can, and the answer is the same either way. Lanes pay off when a frame reads hundreds or thousands of subjects, and most of all through `pull`.
+
+Some voices never run as a lane, so a mix full of them gets nothing from the lane code:
+
+- A voice weighted by a signal marked as an input (one that reads something the clock doesn't drive) that `input` did not make. `input` makes one that reports its changes, which keeps its voice on a lane.
+- A voice whose patch `reads` fields of the host.
+
+## When to use it
+
+A host that probes tens of subjects a frame, such as a page of DOM elements or a few meshes, doesn't need lanes. Import from `@msb235/blits/lean` everywhere in the app; a single import from `@msb235/blits` brings the full build back into the bundle.
+
+What changes:
+
+- `mix` makes a mix on the `lean` engine, which folds every voice subject by subject.
+- `lanes: true` in `MixOptions` throws. Leaving `lanes` out, or passing `false`, is fine.
+- `mixer`, the full engine, is still exported, and passing it as `engine` brings the lanes back.
+
+To compare the two in your own app, keep the full import and pass `lanes: false`: it runs the same general path the lean engine does.
+
+## How much smaller
+
+Measured on the 0.13.0 source, bundling an entry that imports `kit`, `mix`, `patch`, and `sum` with esbuild 0.28.2 (`--bundle --minify --format=esm`), then `gzip -9`:
+
+| Import from | Minified | Gzipped |
+|---|---:|---:|
+| `@msb235/blits` | 202.2 kB | 70.2 kB |
+| `@msb235/blits/lean` | 157.5 kB | 54.2 kB |
+
+About a fifth to a quarter less. Your bundler and what else you import will move both numbers.
+
+[Engine](../../engine/) has the engine seam both builds plug into.
