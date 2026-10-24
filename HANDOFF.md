@@ -1324,7 +1324,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   the mix last synced to, and a sleeping ticker has not synced since it went inert, so a 1000 ms
   voice cued at 10 s after `sync(0)` is already gone at the next `sync(10_000)`. The frame-loop
   guide tells hosts to pass `start: performance.now()`. Whether `cue` or `onWake` should handle it
-  instead is Mike's call.
+  instead is Mike's call. The site's Voice page says a voice "starts at the next `sync`", which is
+  what a sleeping host needs and not what the engine does; it gets corrected with that decision.
 
 - **A staggered voice's end depends on which subjects the host has read** (2026-10-23). A finite
   loop leaves once the latest-staggered subject it has met is done, so a read ahead or a second seek,
