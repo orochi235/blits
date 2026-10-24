@@ -33,7 +33,7 @@ mix and replays from 0; the kit keeps no history to read back through. The ledge
 by playing each voice in a solo mix beside the real one, and shows each voice's weight for the
 ledger subject after fades and signals, from `handle.weightOf`.
 
-Colors come from the CSS tokens through `readInk`, and each voice keeps its slot color (`v1`..`v3`)
+Colors come from the CSS tokens through `readInk`, and each voice keeps its slot color (`v1`..`v5`)
 on the stage, in the ledger and in any trace.
 
 ## Live code and snippets

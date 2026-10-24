@@ -7,6 +7,8 @@
   --voice-1: #2f66d8;
   --voice-2: #b97f06;
   --voice-3: #c23d7a;
+  --voice-4: #2c8a57;
+  --voice-5: #7a52c7;
   /* A lit lamp that is no one voice's: a folded value. */
   --light: #f2a516;
   --code-bg: #e3e6ea;
@@ -27,6 +29,8 @@
     --voice-1: #6f9bf2;
     --voice-2: #e6b545;
     --voice-3: #e0739f;
+    --voice-4: #5cc98a;
+    --voice-5: #a98bf0;
     --light: #ffc94d;
     --code-bg: #1f242d;
     --focus: #6f9bf2;

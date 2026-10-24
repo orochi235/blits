@@ -6,7 +6,7 @@ export const FRAME = 1000 / 60;
 
 export interface VoiceDef<I, O> {
   name: string;
-  /** A CSS color, or one of the three voice slots. */
+  /** A CSS color, or one of the voice slots, `v1`..`v5`. */
   color: string;
   spec: VoiceSpec<I, O>;
 }

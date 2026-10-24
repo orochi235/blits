@@ -9,13 +9,15 @@ interface Subject {
   i: number;
 }
 
-// `wave`, `pulse` and `swell` each carry one voice's contribution alone, so the stage can stack them
-// per subject; `height` is the pose a host would write.
+// Every channel but `height` carries one voice's contribution alone, so the stage can stack them per
+// subject; `height` is the pose a host would write.
 interface Pose {
   height: number;
   wave: number;
   pulse: number;
   swell: number;
+  ripple: number;
+  flicker: number;
 }
 
 const COUNT = 12;
@@ -31,6 +33,8 @@ const config = f.schema({
   wave: f.number(1).range(0, 1).step(0.05).label('Weight of wave'),
   pulse: f.number(1).range(0, 1).step(0.05).label('Weight of pulse'),
   swell: f.number(0.7).range(0, 1).step(0.05).label('Weight of swell'),
+  ripple: f.number(1).range(0, 1).step(0.05).label('Weight of ripple'),
+  flicker: f.number(1).range(0, 1).step(0.05).label('Weight of flicker'),
   muteAt: f
     .number(5000)
     .range(0, DURATION)
@@ -42,6 +46,8 @@ const config = f.schema({
 type Config = ReturnType<typeof config.defaults>;
 
 const TAU = 2 * Math.PI;
+const RIPPLE_AT = 1500;
+const flickering = new Set([2, 7, 8]);
 const MUTE_OVER = 1500;
 /** The folded height at which a lamp reads fully lit; past it, the lamp glows. */
 const FULL = 0.8;
@@ -70,7 +76,14 @@ function blend(ink: Ink, parts: { color: string; v: number }[]): string {
 
 function scene(c: Config): Scene<Subject, Pose, Config> {
   return {
-    kit: kit<Pose>({ height: sum(), wave: sum(), pulse: sum(), swell: sum() }),
+    kit: kit<Pose>({
+      height: sum(),
+      wave: sum(),
+      pulse: sum(),
+      swell: sum(),
+      ripple: sum(),
+      flicker: sum(),
+    }),
     subjects: () => subjects,
     voices: () => [
       {
@@ -122,6 +135,40 @@ function scene(c: Config): Scene<Subject, Pose, Config> {
           weight: c.swell,
         },
       },
+      {
+        name: 'Ripple',
+        color: 'v4',
+        spec: {
+          patch: patch<Subject, Pose>(
+            1400,
+            (phase) => {
+              const v = 0.45 * Math.sin(Math.PI * phase) ** 2;
+              return { height: v, ripple: v };
+            },
+            { writes: ['height', 'ripple'] },
+          ),
+          start: RIPPLE_AT,
+          stagger: (s) => s.i * 120,
+          weight: c.ripple,
+        },
+      },
+      {
+        name: 'Flicker',
+        color: 'v5',
+        spec: {
+          patch: patch<Subject, Pose>(
+            900,
+            (phase, s) => {
+              const v = 0.06 + 0.2 * (0.5 + 0.5 * Math.sin(TAU * 7 * phase + s.i * 2)) ** 2;
+              return { height: v, flicker: v };
+            },
+            { writes: ['height', 'flicker'] },
+          ),
+          loop: true,
+          subjects: subjects.filter((s) => flickering.has(s.i)),
+          weight: c.flicker,
+        },
+      },
     ],
     events: () =>
       c.muteAt < DURATION ? [{ at: c.muteAt, run: (m) => m.mute({ over: MUTE_OVER }) }] : [],
@@ -136,7 +183,7 @@ export default function Mix() {
       schema={config}
       duration={DURATION}
       aspect={0.56}
-      caption="Each lamp is one subject, lit to its folded height and tinted by the voices lighting it; the pips under it are the voices that reach it. Below, each column stacks what each voice adds, and the line on top is the folded pose. Pulse only reaches the even ones. At the “Mute at” time every voice leaves together; at the right end, never."
+      caption="Each lamp is one subject, lit to its folded height and tinted by the voices lighting it; the pips under it are the voices that reach it. Below, each column stacks what each voice adds, and the line on top is the folded pose. Pulse only reaches the even ones and flicker only lamps 2, 7, and 8; ripple sweeps the row once and leaves. At the “Mute at” time every voice leaves together; at the right end, never."
       draw={(ctx, frame, size, ink, c) => {
         const left = 16;
         const right = size.w - 16;
@@ -147,7 +194,7 @@ export default function Mix() {
         const top = pipY + 22;
         const bottom = size.h - 28;
         const bar = col * 0.56;
-        const y = (v: number) => bottom - (v / 1.1) * (bottom - top);
+        const y = (v: number) => bottom - (v / 1.6) * (bottom - top);
 
         ctx.strokeStyle = ink.rule;
         ctx.lineWidth = 1;
@@ -160,7 +207,11 @@ export default function Mix() {
           { key: 'wave', color: ink.voice('v1') },
           { key: 'pulse', color: ink.voice('v2') },
           { key: 'swell', color: ink.voice('v3') },
+          { key: 'ripple', color: ink.voice('v4') },
+          { key: 'flicker', color: ink.voice('v5') },
         ] as const;
+        const reaches = (key: (typeof layers)[number]['key'], i: number) =>
+          key === 'pulse' ? i % 2 === 0 : key === 'flicker' ? flickering.has(i) : true;
 
         frame.subjects.forEach((s, i) => {
           const pose = frame.poses[i];
@@ -175,11 +226,11 @@ export default function Mix() {
           const parts = layers.map((l) => ({ color: l.color, v: pose?.[l.key] ?? 0 }));
           lamp(ctx, ink, cx, lampY, r, (pose?.height ?? 0) / FULL, blend(ink, parts));
           layers.forEach((l, k) => {
-            if (l.key === 'pulse' && s.i % 2 !== 0) return;
+            if (!reaches(l.key, s.i)) return;
             const v = parts[k]?.v ?? 0;
             ctx.fillStyle = l.color;
             ctx.beginPath();
-            ctx.arc(cx + (k - 1) * 10, pipY, 1.5 + 2.5 * Math.min(1, v / 0.35), 0, TAU);
+            ctx.arc(cx + (k - 2) * 7, pipY, 1.2 + 2 * Math.min(1, v / 0.35), 0, TAU);
             ctx.fill();
           });
           let base = 0;

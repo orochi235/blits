@@ -6,7 +6,7 @@ export interface Ink {
   rule: string;
   /** The color a lamp lights for a folded value rather than one voice's. */
   light: string;
-  /** A voice's color: `v1`..`v3` name the three voice slots, anything else is used as given. */
+  /** A voice's color: `v1`..`v5` name the voice slots, anything else is used as given. */
   voice(color: string): string;
 }
 
@@ -17,6 +17,8 @@ export function readInk(el: Element): Ink {
     v1: get('--voice-1'),
     v2: get('--voice-2'),
     v3: get('--voice-3'),
+    v4: get('--voice-4'),
+    v5: get('--voice-5'),
   };
   return {
     paper: get('--paper'),
