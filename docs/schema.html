@@ -512,12 +512,13 @@ interface Handle&lt;I = unknown&gt; {
   <span class="cm">/** The weight this voice gave `subject` the last frame it was probed: after fades and its signal, before a
      locus folds it. 0 where it gave none. One number on a record the mix keeps anyway, so free unasked. */</span>
   weightOf(subject: I): number;
-  <span class="cm">/** A motion patch's own `to`, `push`, and `read`, reached without holding the patch; `at` is a voice time. `to`
-     throws for a voice not playing a `spring` or a `tween`, and `push` for one not playing a `spring` or a `glide`;
-     `read` gives undefined for a voice playing no motion patch. `Value` is a number or an array of them, and
+  <span class="cm">/** A motion patch's own `to`, `push`, `set`, and `read`, reached without holding the patch; `at` is a voice time. `to`
+     throws for a voice not playing a `spring` or a `tween`, `push` for one not playing a `spring` or a `glide`, and
+     `set` for one playing no motion patch; `read` gives undefined for a voice playing no motion patch. `Value` is a number or an array of them, and
      `Motion` is `{ value, velocity }`. See Springs, glides and tweens. */</span>
   to(subject: I, target: Value, at?: number): void;
   push(subject: I, velocity: Value, at?: number): void;
+  set(subject: I, value: Value, at?: number): void;
   read(subject: I, at?: number): Motion&lt;Value&gt; | undefined;
   <span class="cm">/** Resolves when the voice has been removed from the mix, however that happened. */</span>
   readonly done: Promise&lt;void&gt;;
@@ -755,9 +756,12 @@ mix.book({
 mix.cue({ patch: s });
 s.to(node, 40);              <span class="cm">// heads elsewhere from wherever it is, keeping its velocity</span>
 s.push(node, 600);           <span class="cm">// a kick: same target, new velocity</span>
+s.set(node, 20);             <span class="cm">// moved there: same target, same velocity</span>
 s.read(node);                <span class="cm">// { value, velocity }, for handing the motion to another patch</span>
 
 const g = glide&lt;Node, Pose&gt;('x', { from: 0, velocity: 1200, ms: 325 });  <span class="cm">// a fling: rests 390 past the start</span>
+g.set(node, 80);             <span class="cm">// under a dragging pointer</span>
+g.push(node, -900);          <span class="cm">// let go: coasts on from there</span>
 
 const t = tween&lt;Node, Pose&gt;('x', { from: (n) =&gt; n.x, to: (n) =&gt; n.goal, ms: 400, ease: 'ease-out' });
 t.to(node, 40);              <span class="cm">// from wherever it is, over a full 400 ms again</span></code></pre>
@@ -765,6 +769,7 @@ t.to(node, 40);              <span class="cm">// from wherever it is, over a ful
 <ul>
   <li><b>Time is the voice's</b>, so <code>rate</code> and <code>seek</code> apply. A change takes effect at the voice time it names, or, named none, at the subject's own voice time at the mix's latest frame, whether or not the host probed it then; naming one is what makes a retarget land the same at any frame rate. A subject no frame of its voice has met yet, or still inside its stagger, takes an unnamed change at its first read, after any named change due by then. <code>read</code> with no time answers at that same latest frame, counting every change due by then, and answers nothing once the voice is gone.</li>
   <li><b>History is kept to the mix's horizon.</b> Each subject keeps every stretch a read may still reach, so a read earlier than a change finds the stretch that was playing then. A mix without <code>history</code> keeps only the stretch playing now.</li>
+  <li id="fling"><b>Dragging and flinging.</b> <code>@msb235/blits/fling</code> wires pointer events to a motion patch: <code>fling(element, glide, subject, { axis, scale })</code> stops the subject where it is on a press, <code>set</code>s it under the pointer on each move, and <code>push</code>es it on release at the pointer&rsquo;s velocity, which <code>track</code> reads as the least-squares slope of the last 100 ms of samples, or zero if the pointer sat still for 40 ms before letting go. <code>track</code> has no listeners, so anything with a time and a position can feed it. It is a subpath because it is the package&rsquo;s only code that knows a page exists, and it asks only for <code>addEventListener</code>, <code>removeEventListener</code> and <code>setPointerCapture</code>, so the package builds without the DOM&rsquo;s types. Since the coast is a voice like any other, other voices read it: a signal over <code>glide.read(subject)</code> drives parallax off its value or a blur off its velocity. Added 2026-10-24. A glide knows no bounds yet, so a fling past an edge does not stop or bounce there.</li>
   <li><b>A spring or a glide settles.</b> Within <code>settle</code> (1e-4) of where it heads, and that slow, it lands there exactly, so <code>atRest</code> sees it. <code>settle: 0</code> keeps the curve exact. A tween needs none: it lands on its target exactly at <code>ms</code>.</li>
   <li><b>The state is the patch's own</b>, per subject, rather than the mix's, because the host retargets through the patch, or through <code>handle.to</code>, <code>push</code>, and <code>read</code>, which reach it. Cue each one on one voice. A patch moves every subject on the same number of axes, and throws on a subject, a <code>to</code> or a <code>push</code> with another, leaving the subject as it was. Its values are the kind its channel holds, a number for a number and an array for an array: one every subject shares is refused at <code>cue</code>, one given per subject on that subject's first sample.</li>
   <li><b>The constants are data.</b> <code>patch.motion</code>, a <code>MotionSpec</code>, is <code>{ kind: 'spring', stiffness, damping, mass, settle }</code> or <code>{ kind: 'glide', ms, settle }</code> or <code>{ kind: 'tween', ms, ease }</code>, with <code>ms</code> undefined where it varies by subject, so an engine can run one without calling <code>at</code>. Where each subject starts and heads stays on the patch, since either may be a function of the subject.</li>

@@ -422,6 +422,7 @@ describe('the motion form', () => {
     expect(run((s, a) => s.to(a, [1, 2, 3]))).toEqual(clean);
     expect(run((s, a) => s.to(a, [5]))).toEqual(clean);
     expect(run((s, a) => s.push(a, [1, 2, 3]))).toEqual(clean);
+    expect(run((s, a) => s.set(a, [1, 2, 3]))).toEqual(clean);
   });
 
   it('refuses a subject whose own start, target and velocity disagree on how many axes', () => {

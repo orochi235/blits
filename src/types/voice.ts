@@ -402,6 +402,11 @@ export interface Handle<I = unknown> {
    */
   push(subject: I, velocity: Value, at?: number): void;
   /**
+   * Puts `subject` at `value`, keeping its velocity, for a voice playing any motion patch: the
+   * patch's own `set`. Throws for any other voice.
+   */
+  set(subject: I, value: Value, at?: number): void;
+  /**
    * Where `subject` is and how fast it moves, for a voice playing a motion patch: the patch's own
    * `read`. Undefined for any other voice, and wherever the patch's `read` is.
    */

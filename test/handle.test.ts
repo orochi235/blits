@@ -65,6 +65,20 @@ describe('a handle reaches its voice’s motion patch', () => {
     expect(seen).toEqual({ value: 1, velocity: 40 });
   });
 
+  it('set puts a glide where the patch’s own set does', () => {
+    const make = () => glide<Part, Pose>('x', { from: 1, velocity: 30 });
+    const byPatch = play((m) => {
+      const p = make();
+      m.cue({ patch: p });
+      return () => p.set(a, -8);
+    });
+    const byHandle = play((m) => {
+      const h = m.cue({ patch: make() });
+      return () => h.set(a, -8);
+    });
+    expect(byHandle).toEqual(byPatch);
+  });
+
   it('a spring takes both, on every axis, at a time given', () => {
     const m = mix<Part, Pose>(K);
     const h = m.cue({ patch: spring<Part, Pose, number[]>('p', { from: [0, 0], to: [0, 0] }) });
@@ -88,6 +102,7 @@ describe('a handle reaches its voice’s motion patch', () => {
     m.sync(0);
     expect(() => plain.to(a, 1)).toThrow(/to needs a voice playing a spring or a tween/);
     expect(() => plain.push(a, 1)).toThrow(/push needs a voice playing a spring or a glide/);
+    expect(() => plain.set(a, 1)).toThrow(/set needs a voice playing a motion patch/);
     expect(() => gliding.to(a, 1)).toThrow(/a spring or a tween/);
     expect(() => tweening.push(a, 1)).toThrow(/a spring or a glide/);
     expect(() => owner.to(a, 1)).toThrow();

@@ -102,6 +102,23 @@ import { kit, mix, patch, sum } from '@msb235/blits/lean';
 
 Everything else is the same and so are the poses. `lanes: true` is refused there.
 
+## Dragging and flinging
+
+`@msb235/blits/fling` drags a motion patch's subject by pointer and flings it on release:
+
+```ts
+import { fling } from '@msb235/blits/fling';
+
+const scroll = glide<Page, Pose>('y', { from: 0 });
+mix.cue({ patch: scroll });
+const off = fling(element, scroll, page, { scale: -1 }); // content moves against the drag
+```
+
+A press stops the glide where it is, each move puts it under the pointer, and letting go pushes it at
+the pointer's velocity. `track` reads that velocity from any `(t, x)` samples, with no listeners of
+its own. Anything else in the mix can read the glide's position and velocity, so parallax, a header
+that shrinks or a blur that grows with speed are voices driven by a signal over `scroll.read(page)`.
+
 ## Writing patches for blits in another library
 
 A library that ships patches exports them with the channels they write, as a `Kit` of its own

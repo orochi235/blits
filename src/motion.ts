@@ -57,6 +57,11 @@ export type Moving<I, O, V extends Value> = Patch<I, O, void> & {
    * back at the latest frame too, however long it is before it is next read.
    */
   push(subject: I, velocity: V, at?: number): void;
+  /**
+   * Puts `subject` at `value` from voice time `at`, keeping its velocity, with `at` defaulting as
+   * `push`'s does: a spring or tween heads for its target from there, a glide coasts on from there.
+   */
+  set(subject: I, value: V, at?: number): void;
 };
 
 /**
@@ -98,6 +103,9 @@ class MotionPatch<I, O, V extends Value> {
     const s = state.slot(subject);
     state.sample(s, setting.elapsed, state.xs, state.vs);
     return { [this.writes[0] as keyof O]: state.value(s, state.xs) } as Partial<O>;
+  }
+  set(subject: I, value: V, at?: number): void {
+    this.motions.change(subject, { at, x: axes(value) });
   }
   read(subject: I, at?: number): Motion<V> | undefined {
     const state = this.motions;

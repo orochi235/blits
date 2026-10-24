@@ -27,6 +27,8 @@ export interface Change {
    */
   at?: number;
   to?: number[];
+  /** Where it moves from, in place of where its stretch has it then. */
+  x?: number[];
   v?: number[];
   /** The mix clock when it was made, NaN where no mix was playing the patch. */
   made?: number;
@@ -579,13 +581,14 @@ export class Motions<I> {
   }
 
   /**
-   * Queues a retarget or push, untimed at the latest frame, for `subject`'s next read past its time.
+   * Queues a retarget, set or push, untimed at the latest frame, for `subject`'s next read past its time.
    * The queue keeps the changes with a time in time order, ahead of any still waiting for one.
    */
   change(subject: I, c: Change): void {
     const back = this.owner === null ? Number.NaN : this.owner.revive(this.ownerId, subject);
     const s = this.slot(subject);
     this.check(c.to, this.n);
+    this.check(c.x, this.n);
     this.check(c.v, this.n);
     c.made = this.owner === null ? Number.NaN : this.owner.now();
     c.seq = this.owner === null ? Number.NaN : this.owner.seq();
@@ -602,7 +605,7 @@ export class Motions<I> {
     } else if (c.at === undefined) list.push(c);
     else this.queue(list, c, c.at);
     reading.moved++;
-    const made: Change = { at: c.at, to: c.to, v: c.v };
+    const made: Change = { at: c.at, to: c.to, x: c.x, v: c.v };
     this.owner?.changed(this.ownerId, this, subject, made);
   }
 
@@ -774,7 +777,7 @@ export class Motions<I> {
     if (landing.x.length < n) landing = { x: new Float64Array(n), v: new Float64Array(n) };
     const { x, v } = landing;
     this.evaluateSegment(seg, at, x, v);
-    const xs = numbers(x, 0, n);
+    const xs = change.x ?? numbers(x, 0, n);
     const vs = change.v ?? numbers(v, 0, n);
     const subject = this.numbers.subject(s);
     const known = subject === absent ? (undefined as I) : subject;

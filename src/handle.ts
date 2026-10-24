@@ -211,6 +211,11 @@ export class VoiceHandle<I, O> implements Handle<I> {
       moves(voice.patch, 'push', 'a spring or a glide').push(subject, velocity, at);
   }
 
+  set(subject: I, value: Value, at?: number): void {
+    const voice = this.#voice;
+    if (voice !== null) moves(voice.patch, 'set', 'a motion patch').set(subject, value, at);
+  }
+
   read(subject: I, at?: number): Motion<Value> | undefined {
     const voice = this.#voice;
     if (voice === null || motionOf(voice.patch) === undefined) return undefined;
@@ -218,15 +223,16 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 }
 
-/** What a motion patch may be asked through its voice's handle; each kind has `read` and one or both of the rest. */
+/** What a motion patch may be asked through its voice's handle; each kind has `read`, `set`, and one or both of the rest. */
 interface Moves<I> {
   to(subject: I, target: Value, at?: number): void;
   push(subject: I, velocity: Value, at?: number): void;
+  set(subject: I, value: Value, at?: number): void;
   read(subject: I, at?: number): Motion<Value> | undefined;
 }
 
 /** A voice's patch as a motion that takes `verb`, or a throw naming the kinds that do. */
-function moves<I>(patch: object, verb: 'to' | 'push', kinds: string): Moves<I> {
+function moves<I>(patch: object, verb: 'to' | 'push' | 'set', kinds: string): Moves<I> {
   if (motionOf(patch) === undefined || typeof (patch as Partial<Moves<I>>)[verb] !== 'function')
     throw new Error(`blits: ${verb} needs a voice playing ${kinds}`);
   return patch as Moves<I>;

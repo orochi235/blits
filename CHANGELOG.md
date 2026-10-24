@@ -6,6 +6,15 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Added
+
+- `set(subject, value, at?)` on `spring`, `glide`, `tween`, and a voice's handle puts a subject at a
+  value and keeps its velocity: a spring or tween heads for its target from there, a glide coasts
+  on. A seek plays it again, as it does a push.
+- `@msb235/blits/fling`: `fling(element, motion, subject, opts)` drags a subject by pointer and
+  flings it on release, and `track` reads a pointer's velocity from its samples with no listeners
+  of its own. The package still builds without the DOM's types.
+
 ### Fixed
 
 - A voice cued with no `start` into a mix whose frame loop sleeps on `inert`, as `ticker` does,

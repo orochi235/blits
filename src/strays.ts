@@ -113,7 +113,7 @@ function changeAhead<I, O>(
     made.set(motion, bySubject);
   }
   const list = bySubject.get(subject) as Change[] | undefined;
-  const c: Change = { at, to: change.to, v: change.v };
+  const c: Change = { at, to: change.to, x: change.x, v: change.v };
   if (list === undefined) bySubject.set(subject, [c]);
   else {
     let i = list.length;

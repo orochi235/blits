@@ -34,6 +34,10 @@
     "./lean": {
       "types": "./dist/lean.d.ts",
       "default": "./dist/lean.js"
+    },
+    "./fling": {
+      "types": "./dist/fling.d.ts",
+      "default": "./dist/fling.js"
     }
   },
   "files": [
