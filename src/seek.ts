@@ -242,7 +242,15 @@ export function seek(transport: Transport, to: number | { readonly frame: number
       transport,
       (at) => (transport.pace === null ? at : transport.pace.reading(at)) <= t,
     );
-    const at = hostAhead(transport, t);
+    const left = transport.left;
+    // Inverting the rate can land an ulp from where the host stood, which every later sync would carry.
+    const at =
+      left !== null &&
+      left.t === t &&
+      left.u >= transport.u &&
+      (transport.pace === null ? left.u : transport.pace.reading(left.u)) === t
+        ? left.u
+        : hostAhead(transport, t);
     const u = Number.isNaN(last) ? at : Math.max(last, at);
     if (!Number.isFinite(u)) throw new RangeError(`blits: the mix's rate never reaches ${t}`);
     transport.u = u;
@@ -252,6 +260,7 @@ export function seek(transport: Transport, to: number | { readonly frame: number
     // On the frame itself, its own host time: rate 0 may have held the clock there for several.
     const u = frame.at === t ? frame.u : hostAt(transport, t);
     const seq = frame.seq;
+    transport.left = { t: transport.now, u: transport.u };
     tape.goto(tape.depthAt(u));
     transport.undrop(seq);
     // What history kept after the frame is let go; the tape holds the calls that made it.

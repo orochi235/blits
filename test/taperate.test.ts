@@ -61,3 +61,24 @@ it('stamps calls in host order after a seek to the mix time rate 0 holds', () =>
   m.seek(100);
   expect(m.probe(a).x).toBe(14);
 });
+
+for (const rate of [0.75, 1.5, 1 / 3])
+  it(`reads the same mix time as a mix never sought, after seeking back and returning, at mix rate ${rate}`, () => {
+    const run = (seeking: boolean) => {
+      const m = mix<{ id: string }, Pose>(K, { history: { ms: 2000, every: 50, tape } });
+      m.sync(0);
+      m.rate = rate;
+      const nows: number[] = [];
+      for (let t = 20; t <= 1000; t += 20) {
+        if (seeking && t > 100) {
+          const at = m.now;
+          m.seek(at - 30);
+          m.seek(at);
+        }
+        m.sync(t);
+        nows.push(m.now);
+      }
+      return nows;
+    };
+    expect(run(true)).toEqual(run(false));
+  });

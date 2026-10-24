@@ -11,6 +11,8 @@ version and everything else the patch. Each release lists its changes as **Break
 - A seek with `state: 'keep'` that sends a subject back before its start now starts it afresh there.
   It kept the state it had stepped to, so what it showed, and how it played on from its start,
   depended on how often the host had read it, and a mix seek could put back the state from before.
+- A mix sought back and then ahead to where it stood reads the same `now` on its next sync as one
+  never sought. At some mix rates it read one rounding step off, and every later sync kept the error.
 
 ## 0.12.1
 

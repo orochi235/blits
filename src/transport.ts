@@ -94,6 +94,8 @@ export class Transport implements TransportApi {
   /** Host time at the last sync: the host's timestamp less every gap `rebase` took out. */
   u = Number.NaN;
   offset = 0;
+  /** Where the last seek back left from, so a seek ahead to the same mix time lands on the same host time. */
+  left: { t: number; u: number } | null = null;
   /** The mix time of the first sync. */
   born = Number.NaN;
   /** The earliest mix time what history keeps in memory restores exactly. */
