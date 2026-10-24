@@ -1301,6 +1301,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
+- **The determinism programs (`test/fuzz/program.ts`) never make a kept seek or cue a stagger**
+  (2026-10-23), so neither the kept seek back before a start nor the seek-return rounding drift
+  could fail them; both were fixed with direct tests in `test/rebuild.test.ts` and
+  `test/taperate.test.ts`. Adding `state: 'keep'` seeks and staggered cues to the generator would
+  cover the shapes those tests pin.
+
 - **weasel gaps blits still works around** (on weasel 1.12.0 since 2026-10-22). A leaf cannot set
   its own row layout or an accessible name apart from its label, so the booker's two rows and the
   level rows keep `fieldRow` in `CompositionControls.tsx`. The number leaves stay custom, since
