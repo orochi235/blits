@@ -46,7 +46,10 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
           ? mixAt(mix, spec.start - mix.offset)
           : Number.isNaN(mix.now)
             ? 0
-            : mix.now;
+            : // A loop asleep on an inert mix syncs next when it wakes, which is the cue's "now".
+              mix.asleep
+              ? Number.POSITIVE_INFINITY
+              : mix.now;
   const voice = new Voice<I, O>(
     mix.nextId++,
     spec,
@@ -68,6 +71,10 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
   if (owner?.fitting) checkChild(spec, voice);
   if (mix.pace !== null && owner === null && spec.start !== undefined && voice.state === 'pending')
     voice.pinned = spec.start - mix.offset;
+  if (start === Number.POSITIVE_INFINITY && !anchored && !owner?.fitting) {
+    voice.waking = true;
+    mix.waking = true;
+  }
   enter(mix, voice);
   const h = handle(mix, voice) as VoiceHandle<I, O>;
   voice.handle = h;

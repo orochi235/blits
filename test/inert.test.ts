@@ -1,3 +1,4 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
@@ -149,4 +150,76 @@ describe('inert', () => {
       });
     });
   }
+});
+
+describe('a cue into a sleeping mix', () => {
+  it('starts at the next sync, not back at the last one', () => {
+    const m = mix<Part, Pose>(PART);
+    m.sync(0);
+    expect(m.inert).toBe(true);
+    m.cue({ patch: ramp() });
+    m.sync(5000);
+    expect(m.probe(part).crawl).toBe(10);
+    m.sync(5050);
+    expect(m.probe(part).crawl).toBeCloseTo(15, 9);
+  });
+
+  it('starts every voice cued before that sync there, together', () => {
+    const m = mix<Part, Pose>(PART);
+    m.sync(0);
+    expect(m.inert).toBe(true);
+    const a = m.cue({ patch: ramp(), subjects: [part] });
+    const b = m.cue({ patch: ramp(), subjects: [{ id: 'b' }] });
+    m.sync(5000);
+    expect([a.state, b.state]).toEqual(['live', 'live']);
+    expect(m.probe(part).crawl).toBe(10);
+  });
+
+  it('starts at the last sync, as before, where the host never asked whether it was inert', () => {
+    const m = mix<Part, Pose>(PART);
+    m.sync(0);
+    m.cue({ patch: ramp() });
+    m.sync(5000);
+    expect(m.probe(part).crawl).toBe(0);
+  });
+
+  it('starts at the last sync, as before, where the mix was not asleep', () => {
+    const m = mix<Part, Pose>(PART);
+    m.cue({ patch: ramp(), loop: true, subjects: [{ id: 'busy' }] });
+    m.sync(0);
+    m.sync(16);
+    expect(m.inert).toBe(false);
+    m.cue({ patch: ramp(), subjects: [part] });
+    m.sync(32);
+    expect(m.probe(part).crawl).toBeCloseTo(11.6, 9);
+  });
+
+  it('reads ahead as if the next sync came at the time read', () => {
+    const m = mix<Part, Pose>(PART);
+    m.sync(0);
+    expect(m.inert).toBe(true);
+    m.cue({ patch: ramp() });
+    expect(m.project(5000).probe(part).crawl).toBe(10);
+    m.sync(5000);
+    expect(m.probe(part).crawl).toBe(10);
+  });
+
+  it('plays the same start again after a seek back over the cue', () => {
+    const m = mix<Part, Pose>(PART, { history: { ms: 20_000, tape } });
+    m.sync(0);
+    m.sync(16);
+    expect(m.inert).toBe(true);
+    m.cue({ patch: ramp() });
+    m.sync(5000);
+    const first = m.probe(part).crawl;
+    m.sync(5050);
+    const later = m.probe(part).crawl;
+    m.seek(16);
+    // The next sync reads the moment sought plus the host's time since its last sync.
+    m.sync(5050 + (5000 - 16));
+    expect(m.now).toBe(5000);
+    expect(m.probe(part).crawl).toBe(first);
+    m.sync(5050 + (5050 - 16));
+    expect(m.probe(part).crawl).toBe(later);
+  });
 });

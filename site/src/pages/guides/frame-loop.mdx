@@ -27,13 +27,7 @@ The ticker is built on two members of the mix that any loop can use. `m.inert` s
 
 ## Cueing into a sleeping loop
 
-A voice cued with no `start` starts at the time the mix last synced to. While the loop sleeps, that time stays put, so a voice cued ten seconds into a nap starts ten seconds in the past, and a 500 ms effect has finished before its first frame. Give such a cue the host's clock:
-
-```ts
-m.cue({ patch: pop, subjects: [card], start: performance.now() });
-```
-
-`performance.now()` and an animation frame's timestamp share an origin, so the next frame plays the voice from its start.
+A voice cued with no `start` while the loop sleeps starts at the next frame, so it plays from its beginning however long the loop slept. The mix knows the loop may be asleep because the loop read `m.inert` as true before it stopped asking for frames, as `ticker` does; a hand-written loop that sleeps on `inert` gets the same.
 
 ## Hidden tabs
 

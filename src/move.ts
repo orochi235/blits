@@ -10,7 +10,7 @@ import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { leave as leaveClock } from './origin.js';
 import { ownerReading } from './owner.js';
-import { mixAt, place, repin, startOf } from './place.js';
+import { mixAt, place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
 import { delist } from './roster.js';
 import { scoredLeft, scoredRemove } from './scored.js';
@@ -51,6 +51,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   mix.frame = nextFrame();
   mix.reducedNow = mix.reduced;
   for (const a of mix.announced) if (Number.isNaN(a.at)) a.at = mix.u;
+  if (mix.waking) wake(mix, now);
   if (mix.pins !== null && mix.pins.size > 0) repin(mix);
   if (mix.anchored > 0) place(mix);
   if (mix.announced.length > 0) {
@@ -142,8 +143,27 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   }
   if (mix.sharers.length > 0 && !mix.projecting) outgrow(mix);
   mix.stirred = false;
+  mix.asleep = false;
   if (mix.retired.length > 0) prune(mix);
   forget(mix);
+}
+
+/** Starts each voice cued while the mix slept at `now`, the first sync after its cue. */
+function wake<I, O>(mix: Mixer<I, O>, now: number): void {
+  mix.waking = false;
+  for (const voice of mix.cued) {
+    if (!voice.waking) continue;
+    voice.waking = false;
+    if (voice.state !== 'pending') continue;
+    startAt(mix, voice, now);
+    // Where a seek back before the cue puts it, so the tape's cue again starts it here.
+    const first = voice.first;
+    if (first !== null) {
+      first.start = now;
+      first.anchorNow = now;
+    }
+    if (!mix.projecting) schedule(mix, voice);
+  }
 }
 
 /**

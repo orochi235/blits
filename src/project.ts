@@ -302,6 +302,7 @@ function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
       if (at !== undefined) pin(c, copy, at);
       return copy;
     });
+  c.waking = mix.waking;
   ownBlends(c.cued);
   // A copy keeps no list of owners, so the one before says only by its voices.
   if (mix.owners !== null || (mix.projecting && c.cued.some((v) => v.holding !== null)))

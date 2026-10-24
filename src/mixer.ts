@@ -167,6 +167,13 @@ export class Mixer<I, O> implements Mix<I, O> {
   reducedNow = false;
   /** Something was changed since the last sync, so the next frame may differ from this one. */
   stirred = false;
+  /**
+   * The host read `inert` as true since the last sync, so its frame loop may be asleep until a
+   * change wakes it; a host that never asks keeps no loop asleep on it.
+   */
+  asleep = false;
+  /** Some voice cued while the mix slept waits for the next sync to set its start. */
+  waking = false;
   /** Counts the changes `stir` records, which a frame's record of a probe is current only before. */
   stirs = 0;
 
@@ -560,6 +567,12 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   get inert(): boolean {
     if (this.stirred) return false;
+    const inert = this.restful();
+    if (inert && !Number.isNaN(this.now)) this.asleep = true;
+    return inert;
+  }
+
+  private restful(): boolean {
     // Standing still, a voice changes no pose but by its weight signal, or by an anchor or start
     // that host time may yet reach.
     if (this.pace?.stopped(this.u))

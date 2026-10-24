@@ -311,7 +311,9 @@ export interface Mix<I, O, H = unknown> {
    * Another frame would change no pose, so a host's frame loop may sleep: every voice is done, frozen
    * at a plain weight, or a motion whose every subject has landed on its target. At rate 0 it is
    * enough that every voice not done has started, at a plain weight, with no anchor. A change made
-   * since the last sync, a retarget or a rate included, makes it false until the next.
+   * since the last sync, a retarget or a rate included, makes it false until the next. Read as true,
+   * it tells the mix the host may sleep: a voice cued with no `start` before the next sync starts
+   * at that sync.
    */
   readonly inert: boolean;
   /**

@@ -147,6 +147,19 @@ describe('ticker', () => {
     expect(waiting()).toBe(0);
   });
 
+  it('plays a cue made after a long sleep from its first frame', () => {
+    const { t, step, waiting } = harness();
+    const m = mix<typeof part, Pose>(PART);
+    t.add(m);
+    step(0);
+    expect(waiting()).toBe(0);
+    m.cue({ patch: ramp() });
+    step(5000);
+    expect(m.probe(part).crawl).toBe(0);
+    step(5050);
+    expect(m.probe(part).crawl).toBeCloseTo(5, 9);
+  });
+
   it('holds the loop awake while held', () => {
     const { t, step, waiting } = harness();
     t.add(fake());

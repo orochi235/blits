@@ -1319,14 +1319,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   defaulting to `any` in `patch`): Mike's call. Until then a library types its patches with the
   host type they will play under, as the site's patch-library guide does.
 
-- **A voice cued while a `ticker` sleeps starts back at the last sync** (2026-10-24, measured on
-  `dist` 0.13.0 by the agent writing the frame-loop guide). `VoiceSpec.start` defaults to the time
-  the mix last synced to, and a sleeping ticker has not synced since it went inert, so a 1000 ms
-  voice cued at 10 s after `sync(0)` is already gone at the next `sync(10_000)`. The frame-loop
-  guide tells hosts to pass `start: performance.now()`. Whether `cue` or `onWake` should handle it
-  instead is Mike's call. The site's Voice page says a voice "starts at the next `sync`", which is
-  what a sleeping host needs and not what the engine does; it gets corrected with that decision.
-
 - **A staggered voice's end depends on which subjects the host has read** (2026-10-23). A finite
   loop leaves once the latest-staggered subject it has met is done, so a read ahead or a second seek,
   which meet no subject, can end it earlier than the live mix did. The determinism tests' `waiting`
