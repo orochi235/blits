@@ -11,6 +11,9 @@ version and everything else the patch. Each release lists its changes as **Break
 - A voice cued with no `start` into a mix whose frame loop sleeps on `inert`, as `ticker` does,
   starts at the next sync. It started at the last one, so an effect cued after a pause had already
   played that far, and a short one was over before its first frame.
+- A patch that names no host type can be cued and blended in a mix that declares one, so a patch
+  library's patches type-check in a host-typed mix. `VoiceSpec.patch`, `BlendMember.patch`, and
+  `blend`'s members take a patch keeping any state.
 - A seek back keeps out a subject that had already left a voice at rest by then. After a fade with
   `at: 'rest'`, a seek to a moment where that subject was moving again put it back in the voice,
   playing.

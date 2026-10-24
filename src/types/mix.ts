@@ -135,7 +135,8 @@ export interface Mix<I, O, H = unknown> {
    * `BlendMember` carries its own `name`, `tags` and `hits` in place of the spec's.
    */
   blend(
-    members: readonly (Patch<I, O, unknown, H> | BlendMember<I, O, H>)[],
+    // biome-ignore lint/suspicious/noExplicitAny: a patch naming no host fits a mix naming one
+    members: readonly (Patch<I, O, any, H> | BlendMember<I, O, H>)[],
     by: Signal<I, H>,
     spec?: Omit<VoiceSpec<I, O, H>, 'patch' | 'weight' | 'locus'>,
   ): Handle<I>[];

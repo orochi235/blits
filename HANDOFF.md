@@ -1309,16 +1309,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
-- **A patch that names no host type won't type-check in a mix that declares one** (2026-10-24,
-  found by the site typecheck). `patch<Lamp, Pose>(…)` cued on `mix<Lamp, Pose, Host>` fails:
-  `VoiceSpec.patch` is `Patch<I, O, unknown, H>`, and the patch's `Setting<void, unknown>` differs
-  from it in `S` one way and in `H` the other, so method bivariance can't rescue it. Widening it to
-  `Patch<I, O, unknown, H> | Patch<I, O, unknown, unknown>` fixed that case and broke inference of
-  `H` for a patch written inline in `cue` (`test/differential.test.ts:165`, `st.host` became
-  `unknown`), so it was reverted. Other routes change public types (`S` as `any` there, or `H`
-  defaulting to `any` in `patch`): Mike's call. Until then a library types its patches with the
-  host type they will play under, as the site's patch-library guide does.
-
 - **A staggered voice's end depends on which subjects the host has read** (2026-10-23). A finite
   loop leaves once the latest-staggered subject it has met is done, so a read ahead or a second seek,
   which meet no subject, can end it earlier than the live mix did. The determinism tests' `waiting`

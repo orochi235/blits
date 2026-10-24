@@ -116,6 +116,49 @@ describe('a typed host', () => {
     expect(m.probe(part).crawl).toBeCloseTo(7 * 0.7 + 7, 9);
   });
 
+  // A library's patches write a few channels and name no host; the app's pose is wider.
+  interface Lit extends Pose {
+    glow: number;
+  }
+  const LIT = kit<Lit>({ crawl: sum(), glow: sum() });
+
+  it('leaves a patch that names no host free to play in a mix that declares one', () => {
+    const plain = patch<Part, Pose>(0, () => ({ crawl: 2 }), { writes: ['crawl'] });
+    const counts = patch<Part, Pose, { n: number }>(
+      0,
+      (_p, _s, setting) => ({ crawl: setting.state.n }),
+      { writes: ['crawl'], state: () => ({ n: 1 }) },
+    );
+    const m = mix<Part, Lit, Host>(LIT, { host: { pointer: 7 } });
+    m.cue({ patch: plain });
+    m.cue({ patch: counts });
+    m.blend([plain], level<Part>(1));
+    m.sync(0);
+    expect(m.probe(part).crawl).toBeCloseTo(5, 9);
+  });
+
+  it('types a patch written in the cue by the host of the mix it is cued in', () => {
+    const m = mix<Part, Lit, Host>(LIT, { host: { pointer: 7 } });
+    m.cue({
+      patch: patch(0, (_p, _s, setting) => ({ crawl: setting.host.pointer }), {
+        writes: ['crawl'],
+      }),
+    });
+    m.sync(0);
+    expect(m.probe(part).crawl).toBe(7);
+  });
+
+  it('refuses a patch written for another host', () => {
+    const loud = patch<Part, Pose, void, { volume: number }>(
+      0,
+      (_p, _s, setting) => ({ crawl: setting.host.volume }),
+      { writes: ['crawl'] },
+    );
+    const m = mix<Part, Lit, Host>(LIT, { host: { pointer: 7 } });
+    // @ts-expect-error: the patch reads a volume this mix's host does not have.
+    m.cue({ patch: loud });
+  });
+
   it('is refused by the type of a mix that does not declare it', () => {
     const near: Signal<Part, Host> = (_s, setting) => setting.host.pointer;
     const m = mix<Part, Pose>(PART, { host: { pointer: 7 } });
