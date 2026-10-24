@@ -1309,16 +1309,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
-- **A patch that names no host type won't type-check in a mix that declares one** (2026-10-24,
-  found by the site typecheck). `patch<Lamp, Pose>(…)` cued on `mix<Lamp, Pose, Host>` fails:
-  `VoiceSpec.patch` is `Patch<I, O, unknown, H>`, and the patch's `Setting<void, unknown>` differs
-  from it in `S` one way and in `H` the other, so method bivariance can't rescue it. Widening it to
-  `Patch<I, O, unknown, H> | Patch<I, O, unknown, unknown>` fixed that case and broke inference of
-  `H` for a patch written inline in `cue` (`test/differential.test.ts:165`, `st.host` became
-  `unknown`), so it was reverted. Other routes change public types (`S` as `any` there, or `H`
-  defaulting to `any` in `patch`): Mike's call. Until then a library types its patches with the
-  host type they will play under, as the site's patch-library guide does.
-
 - **A voice cued while a `ticker` sleeps starts back at the last sync** (2026-10-24, measured on
   `dist` 0.13.0 by the agent writing the frame-loop guide). `VoiceSpec.start` defaults to the time
   the mix last synced to, and a sleeping ticker has not synced since it went inert, so a 1000 ms

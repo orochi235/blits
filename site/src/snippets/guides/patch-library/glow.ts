@@ -19,8 +19,8 @@ export interface Lamp {
   y: number;
 }
 
-/** A slow pulse. Its writes come from the kit it names. It reads no host, but plays in a mix with one. */
-export const pulse = patch<Lamp, GlowPose, void, GlowHost>(
+/** A slow pulse. Its writes come from the kit it names. */
+export const pulse = patch<Lamp, GlowPose>(
   1600,
   (phase) => ({ glow: 0.5 - 0.5 * Math.cos(2 * Math.PI * phase), tint: oklab(0xffb347) }),
   { kit: glowChannels },

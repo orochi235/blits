@@ -50,7 +50,8 @@ export interface SpanHints {
  * @category voice
  */
 export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
-  patch: Patch<I, O, unknown, H>;
+  // biome-ignore lint/suspicious/noExplicitAny: a patch naming no host fits a mix naming one
+  patch: Patch<I, O, any, H>;
   /**
    * What `history.revive` rebuilds this spec from, so a history `store` can page the voice out once
    * it has left. A voice cued without it stays in memory for as long as history reaches it.
@@ -182,7 +183,8 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
  * @category blending
  */
 export interface BlendMember<I, O, H = unknown> {
-  patch: Patch<I, O, unknown, H>;
+  // biome-ignore lint/suspicious/noExplicitAny: a patch naming no host fits a mix naming one
+  patch: Patch<I, O, any, H>;
   /** What other voices call this member by. Default: the spec's `name`. */
   name?: string;
   /** Default: the spec's `tags`. */
