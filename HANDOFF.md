@@ -164,6 +164,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   Get started, guides, examples, and a Why blits page were added (2026-10-24), with search
   (Pagefind), prev and next links, copy buttons, a 404 page, and a sitemap. Their code lives in
   `site/src/live/` and `site/src/snippets/` under the site typecheck; `site/README.md` says how.
+  Each explainer plays one named mix with history for its life and seeks it to loop or scrub, so the
+  panel and the DevTools extension can pick it and drive its clock (2026-10-24).
 - **The marquee** (an LED sign demo, one subject per dot) lives in bree; `apps/marquee` was deleted
   (2026-10-23). Its smoke run (headless, msb-uai, 2026-10-22) read mix 0.19 ms a frame at 652 lights
   and 4.33 ms at 20,548; the schema page's "Subject aliases" (decided against) and "Layered

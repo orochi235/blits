@@ -5,7 +5,8 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocused, useReducedMotion, useVisible, useWidth } from './hooks';
 import { type Ink, readInk } from './ink';
 import { Ledger } from './Ledger';
-import { type Frame, Player, type Scene, weightsOver } from './scene';
+import { Player, weightsOver } from './player';
+import { FRAME, type Frame, type Scene } from './scene';
 import { Timeline } from './Timeline';
 
 type Schema<C> = { defaults(): C } & Parameters<typeof resolveConfigSchema>[0];
@@ -56,7 +57,12 @@ function ExplainerBody<I, O, C>({
   const resolved = useMemo(() => (schema ? resolveConfigSchema(schema) : null), [schema]);
   const [config, setConfig] = useState<C>(() => s.defaults());
   const built = useMemo(() => scene(config), [scene, config]);
-  const player = useMemo(() => new Player(built, config), [built, config]);
+  const player = useMemo(() => {
+    const page = document.title.replace(/^blits: /, '');
+    const voices = built.voices(config).map((v) => v.name);
+    const name = voices.length > 0 ? `${page}: ${voices.join(', ')}` : page;
+    return new Player(built, config, { name, duration });
+  }, [built, config, duration]);
   useEffect(() => () => player.close(), [player]);
   const tracks = useMemo(() => {
     const weights = weightsOver(built, config, duration);
@@ -87,8 +93,23 @@ function ExplainerBody<I, O, C>({
     return () => cancelAnimationFrame(id);
   }, [playing, visible, focused, duration]);
 
+  useEffect(() => player.onWoken(() => setPlaying(true)), [player]);
+
+  // Paused, nothing plays a frame, so a debugger moving the mix is looked for once a frame instead.
+  useEffect(() => {
+    if (playing || !visible) return;
+    let id = requestAnimationFrame(function look() {
+      const f = player.moved();
+      if (f) setT(f.t);
+      id = requestAnimationFrame(look);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [player, playing, visible]);
+
   useEffect(() => {
     const f = player.at(t);
+    // The mix was elsewhere, held or moved by a debugger, and the player followed it.
+    if (Math.abs(f.t - Math.floor(t / FRAME + 1e-6) * FRAME) > 1e-6) setT(f.t);
     setFrame(f);
     const el = canvas.current;
     if (!el || size.w === 0) return;

@@ -28,10 +28,16 @@ lists that file and every file it reaches by a relative import. The page ends wi
 An explainer declares a `Scene` (`src/explainers/kit/scene.ts`): a kit, subjects, voices, and
 optionally events at a time, a `syncing` predicate (false is a hidden tab), a `probing` predicate
 (false leaves a subject unasked), `record` for a trace, and the ledger's subject and channels. The
-kit owns the clock and the mix. No explainer reads a wall clock, so scrubbing backwards rebuilds the
-mix and replays from 0; the kit keeps no history to read back through. The ledger itemizes the fold
-by playing each voice in a solo mix beside the real one, and shows each voice's weight for the
-ledger subject after fades and signals, from `handle.weightOf`.
+kit owns the clock and the mix (`src/explainers/kit/player.ts`). No explainer reads a wall clock.
+Each explainer plays one mix for as long as its settings stand, with history and a tape, so looping
+or scrubbing back seeks it instead of building another, and a debugger (the blits panel or the
+DevTools extension) keeps the mix it picked. The explainer's time follows the mix: when a debugger
+holds, steps, or seeks it, the stage, timeline, and ledger go where the mix went. The ledger itemizes
+the fold by playing each voice in a solo mix beside the real one, kept off the debugger's list, and
+shows each voice's weight for the ledger subject after fades and signals, from `handle.weightOf`.
+
+Under each stage, the timeline draws one track per voice from that voice's weight across the run,
+the largest it has for any subject, sampled by a second run nobody watches.
 
 Colors come from the CSS tokens through `readInk`, and each voice keeps its slot color (`v1`..`v5`)
 on the stage, in the ledger and in any trace.
