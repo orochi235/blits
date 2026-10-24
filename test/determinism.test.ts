@@ -7,6 +7,8 @@ const variants = {
   fresh: { anchors: true, stateful: true, mixRate: true, fresh: true },
   inside: { anchors: true, stateful: true, mixRate: true, inside: true },
   slewed: { cuesOnly: true, stateful: true, slewed: true },
+  waiting: { anchors: true, stateful: true, mixRate: true, waits: true, keeps: true },
+  keeping: { anchors: true, stateful: true, mixRate: true, keeps: true },
 } satisfies Record<string, ProgramOptions>;
 type Variant = keyof typeof variants;
 
@@ -23,16 +25,18 @@ const all = { seeds: 150 };
 // played with no probe, or at a different frame spacing. Reads with no history refuse state.
 // A slew starts where a probe first meets its subject, as `fresh` state does, so `again`, which
 // plays on with no probe between its seeks, leaves the slewed variant out too.
+// A finite loop under a stagger leaves once the latest-staggered subject it has met is done, so a
+// read ahead or a second seek, which meet none, leave `waiting` out where they do `fresh`.
 const known: Record<Property, Partial<Record<Variant, Known>>> = {
-  seek: { plain: all, full: all, inside: all, fresh: all, slewed: all },
-  again: { plain: all, full: all, inside: all },
-  behind: { plain: all, full: all, inside: all, fresh: all, slewed: all },
-  ahead: { plain: all, full: all, inside: all, slewed: all },
-  taped: { plain: all, full: all, inside: all, slewed: all },
-  dt: { plain: all, full: all, inside: all, slewed: all },
-  standing: { plain: all, full: all, inside: all, slewed: all },
-  now: { plain: all, full: all, inside: all, fresh: all, slewed: all },
-  frame: { plain: all, full: all, inside: all, fresh: all, slewed: all },
+  seek: { plain: all, full: all, inside: all, fresh: all, slewed: all, waiting: all, keeping: all },
+  again: { plain: all, full: all, inside: all, keeping: all },
+  behind: { plain: all, full: all, inside: all, fresh: all, slewed: all, waiting: all, keeping: all },
+  ahead: { plain: all, full: all, inside: all, slewed: all, keeping: all },
+  taped: { plain: all, full: all, inside: all, slewed: all, keeping: all },
+  dt: { plain: all, full: all, inside: all, slewed: all, waiting: all, keeping: all },
+  standing: { plain: all, full: all, inside: all, slewed: all, waiting: all, keeping: all },
+  now: { plain: all, full: all, inside: all, fresh: all, slewed: all, waiting: all, keeping: all },
+  frame: { plain: all, full: all, inside: all, fresh: all, slewed: all, waiting: all, keeping: all },
 };
 
 function guards(prop: Property) {

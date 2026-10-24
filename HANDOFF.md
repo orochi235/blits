@@ -1300,11 +1300,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
-- **The determinism programs (`test/fuzz/program.ts`) never make a kept seek or cue a stagger**
-  (2026-10-23), so neither the kept seek back before a start nor the seek-return rounding drift
-  could fail them; both were fixed with direct tests in `test/rebuild.test.ts` and
-  `test/taperate.test.ts`. Adding `state: 'keep'` seeks and staggered cues to the generator would
-  cover the shapes those tests pin.
+- **A staggered voice's end depends on which subjects the host has read** (2026-10-23). A finite
+  loop leaves once the latest-staggered subject it has met is done, so a read ahead or a second seek,
+  which meet no subject, can end it earlier than the live mix did. The determinism tests' `waiting`
+  variant leaves those properties out, as `fresh` does. Whether a voice should end by the subjects
+  the mix knows instead is Mike's call.
 
 - **weasel gaps blits still works around** (on weasel 1.12.0 since 2026-10-22). A leaf cannot set
   its own row layout or an accessible name apart from its label, so the booker's two rows and the

@@ -51,6 +51,10 @@ export interface ProgramOptions {
   slewed?: boolean;
   /** Every cue places a mark `hit` inside itself, and an anchor to another's `in` names it instead. */
   inside?: boolean;
+  /** Some cues stagger subject `b` behind `a`. */
+  waits?: boolean;
+  /** Some handle seeks keep state. */
+  keeps?: boolean;
 }
 
 /** One host call, made right after the sync at host time `at`. */
@@ -76,6 +80,9 @@ function rng(seed: number) {
 export function program(seed: number, opts: ProgramOptions = {}): Op[] {
   const r = rng(seed);
   const pick = <T>(xs: readonly T[]) => xs[Math.floor(r() * xs.length)] as T;
+  // A generator of its own, so the draws `r` makes for a seed are the same with `waits` and `keeps`
+  // or without.
+  const w = rng(seed * 7919 + 13);
   const ops: Op[] = [];
   let n = 0;
   for (let t = 0; t <= 640; t += 32) {
@@ -113,7 +120,8 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
         // Drawn from nothing too.
         const catchUp = opts.fresh && pk === 'drift' && weight === 0.5 ? 'fresh' : undefined;
         const slewed = opts.slewed && anchor === null && startOff !== 48 && startOff !== 100;
-        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight}${slewed ? ' slewed' : ''} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}${catchUp ? ' catchUp=fresh' : ''}${opts.inside ? ' marks={hit:70}' : ''}`;
+        const late = opts.waits && w() < 0.5 ? [60, 150, 400][Math.floor(w() * 3)] : undefined;
+        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight}${slewed ? ' slewed' : ''} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}${catchUp ? ' catchUp=fresh' : ''}${opts.inside ? ' marks={hit:70}' : ''}${late ? ` stagger=b+${late}` : ''}`;
         ops.push({
           at: t,
           desc,
@@ -128,6 +136,7 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
               name: `v${i}`,
             };
             if (opts.inside) spec.marks = { hit: 70 };
+            if (late) spec.stagger = (s) => (s.id === 'b' ? late : 0);
             if (freeze) spec.freeze = freeze;
             if (catchUp) spec.catchUp = catchUp;
             if (anchor) {
@@ -180,7 +189,12 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
         });
       } else if (what < 0.9 && opts.hseek !== false) {
         const e = pick([0, 100, 350, 800]);
-        ops.push({ at: t, desc: `h${tgt}.seek(${e})`, run: (_m, h) => h[tgt]?.seek(e) });
+        const state = opts.keeps && w() < 0.5 ? 'keep' : undefined;
+        ops.push({
+          at: t,
+          desc: `h${tgt}.seek(${e}${state ? ', keep' : ''})`,
+          run: (_m, h) => h[tgt]?.seek(e, state && { state }),
+        });
       } else if (opts.mixRate) {
         const v = pick([0.5, 1, 2, 0]);
         ops.push({
