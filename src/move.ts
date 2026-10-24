@@ -178,6 +178,8 @@ function turn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
  */
 const SEARCHED = 8;
 const SPARSE = 32;
+/** The most retired voices `prune` splices out one at a time, rather than closing up in one pass. */
+const SPLICED = 4;
 
 /**
  * Takes the voices retired since the last prune out of the list, in list order. A few, or a small
@@ -206,14 +208,18 @@ function prune<I, O>(mix: Mixer<I, O>): void {
   let pruned = false;
   if (at !== null) {
     for (const voice of retired) pruned = leave(mix, voice) || pruned;
-    // Closed up in one pass from the first to go: a splice for each moves the tail once a voice.
-    let kept = at[0] as number;
-    let k = 0;
-    for (let i = kept; i < voices.length; i++) {
-      if (at[k] === i) k++;
-      else voices[kept++] = voices[i] as Voice<I, O>;
+    // A splice moves the tail natively, several times faster than a loop, but once a voice.
+    if (at.length <= SPLICED)
+      for (let k = at.length - 1; k >= 0; k--) voices.splice(at[k] as number, 1);
+    else {
+      let kept = at[0] as number;
+      let k = 0;
+      for (let i = kept; i < voices.length; i++) {
+        if (at[k] === i) k++;
+        else voices[kept++] = voices[i] as Voice<I, O>;
+      }
+      voices.length = kept;
     }
-    voices.length = kept;
   } else {
     let kept = 0;
     for (let i = 0; i < voices.length; i++) {
