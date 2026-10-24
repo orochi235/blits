@@ -6,6 +6,8 @@ export interface Past extends Clock {
   until: number;
   /** The voice's `rebuilds` while it ran on this clock. */
   rebuilds: number;
+  /** Whether the voice left it by a seek. */
+  sought: boolean;
 }
 
 /** The most past clocks a voice keeps. */
@@ -15,7 +17,7 @@ const MOST = 256;
  * Keeps the clock a voice is leaving at its local time `u`, ahead of a rate change, ramp or seek,
  * where a subject's origin could still be found on it.
  */
-export function leave<I, O>(voice: Voice<I, O>, u: number): void {
+export function leave<I, O>(voice: Voice<I, O>, u: number, sought = false): void {
   const past = voice.clocks;
   if (past !== null && past.length >= MOST) return;
   // A voice with neither stagger nor children is only ever asked when its clock read 0.
@@ -23,7 +25,7 @@ export function leave<I, O>(voice: Voice<I, O>, u: number): void {
     voice.holding !== null || voice.spec.stagger !== undefined ? Number.POSITIVE_INFINITY : 0;
   if (past !== null && reached(past, 0) >= reach && reached(past, fresh(voice)) >= reach) return;
   const { anchorNow, anchorElapsed, rate, ramp, rebuilds } = voice;
-  const left: Past = { anchorNow, anchorElapsed, rate, ramp, until: u, rebuilds };
+  const left: Past = { anchorNow, anchorElapsed, rate, ramp, until: u, rebuilds, sought };
   if (past === null) voice.clocks = [left];
   else past.push(left);
 }
@@ -49,6 +51,18 @@ function fresh<I, O>(voice: Voice<I, O>): number {
 }
 
 /**
+ * Where a walk for a stateful record at `elapsed` starts after a seek back before it: the clock that
+ * seek entered, since a subject sent back before its start starts afresh.
+ */
+function backFrom<I, O>(voice: Voice<I, O>, past: readonly Past[], elapsed: number): number {
+  for (let i = past.length - 1; i >= 0; i--) {
+    const p = past[i] as Past;
+    if (p.sought && (past[i + 1]?.anchorElapsed ?? voice.anchorElapsed) < elapsed) return i + 1;
+  }
+  return 0;
+}
+
+/**
  * The mix time a voice's clock first read `elapsed`, or will by its controls now, through its owners'
  * clocks. A clock entered already past it, by a seek, answers where that clock would have read it.
  * `rebuilt` starts from the last seek that rebuilt state, as a stateful record does.
@@ -58,7 +72,8 @@ export function originOf<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boo
   // A voice with no first pass shows every subject from its start, whatever its stagger.
   let t = voice.beginless ? voice.start : Number.NaN;
   if (past !== null && Number.isNaN(t)) {
-    for (let i = rebuilt ? fresh(voice) : 0; i < past.length; i++) {
+    const from = rebuilt ? Math.max(fresh(voice), backFrom(voice, past, elapsed)) : 0;
+    for (let i = from; i < past.length; i++) {
       const p = past[i] as Past;
       const at = timeWith(p, elapsed);
       if (at <= p.until) {

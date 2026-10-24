@@ -159,7 +159,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     // A pending voice's clock is anchored at its start, so it starts there on time.
     if (voice.state !== 'pending') {
       const u = this.#host.nowFor(voice);
-      leave(voice, u);
+      leave(voice, u, true);
       voice.rebase(u);
     }
     voice.anchorElapsed = elapsed;

@@ -413,7 +413,8 @@ export interface Handle<I = unknown> {
 
 /**
  * What `Handle.seek` does with each subject's state: `rebuild` (the default) makes it fresh and
- * steps it to the new position; `keep` leaves it as it was.
+ * steps it to the new position; `keep` leaves it as it was, except for a subject the seek sends back
+ * before its start, which starts afresh there.
  *
  * @category voice
  */

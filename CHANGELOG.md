@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A seek with `state: 'keep'` that sends a subject back before its start now starts it afresh there.
+  It kept the state it had stepped to, so what it showed, and how it played on from its start,
+  depended on how often the host had read it, and a mix seek could put back the state from before.
+
 ## 0.12.1
 
 ### Added

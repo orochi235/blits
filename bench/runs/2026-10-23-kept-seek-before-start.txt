@@ -1,0 +1,123 @@
+# teitou: AB_EACH=1 FRAMES=1500 bench/ab.sh 8f55b79 . 5 fn kept spring
+built 8f55b79 (8f55b79)
+built the working tree
+== round 1/5 8f55b79
+ 1/5  fn        N=   100 V=1     0.013 ms/frame    129 ns/subject·voice  p50    0.010  p99    0.040  worst    0.629  first     2.2 ms  gc    6    0.7 ms      20.7 kB/frame
+ 2/5  fn        N=  1000 V=1     0.108 ms/frame    108 ns/subject·voice  p50    0.103  p99    0.223  worst    0.783  first     1.6 ms  gc   23    2.0 ms     107.6 kB/frame
+ 3/5  fn        N=  1000 V=3     0.243 ms/frame     81 ns/subject·voice  p50    0.214  p99    0.540  worst    1.013  first     2.0 ms  gc   31    4.0 ms     246.3 kB/frame
+ 4/5  fn        N=  1000 V=8     0.568 ms/frame     71 ns/subject·voice  p50    0.510  p99    1.149  worst    2.345  first     2.8 ms  gc   28    7.3 ms     600.4 kB/frame
+ 5/5  fn        N= 10000 V=3     2.784 ms/frame     93 ns/subject·voice  p50    2.667  p99    4.705  worst   11.006  first     8.0 ms  gc  120   61.2 ms    2434.0 kB/frame
+== round 1/5 8f55b79
+ 1/2  kept      N=  1000 V=3     0.425 ms/frame    142 ns/subject·voice  p50    0.330  p99    1.412  worst    3.375  first     6.1 ms  gc   30   27.5 ms     572.9 kB/frame
+ 2/2  kept      N= 10000 V=3     9.525 ms/frame    318 ns/subject·voice  p50    8.936  p99   15.467  worst   17.586  first    20.1 ms  gc  281  524.7 ms    5659.7 kB/frame
+== round 1/5 8f55b79
+ 1/2  spring    N=  1000 V=1     0.091 ms/frame     91 ns/subject·voice  p50    0.087  p99    0.173  worst    0.279  first     6.4 ms  gc    8    0.8 ms      23.7 kB/frame
+ 2/2  spring    N= 10000 V=1     1.172 ms/frame    117 ns/subject·voice  p50    1.066  p99    2.121  worst    3.111  first    13.2 ms  gc   15    1.5 ms     163.6 kB/frame
+== round 1/5 .
+ 1/5  fn        N=   100 V=1     0.014 ms/frame    137 ns/subject·voice  p50    0.010  p99    0.055  worst    0.644  first     2.4 ms  gc    6    0.7 ms      20.3 kB/frame
+ 2/5  fn        N=  1000 V=1     0.107 ms/frame    107 ns/subject·voice  p50    0.101  p99    0.187  worst    0.808  first     2.3 ms  gc   24    2.1 ms     107.5 kB/frame
+ 3/5  fn        N=  1000 V=3     0.222 ms/frame     74 ns/subject·voice  p50    0.210  p99    0.401  worst    0.950  first     1.1 ms  gc   32    4.1 ms     246.2 kB/frame
+ 4/5  fn        N=  1000 V=8     0.498 ms/frame     62 ns/subject·voice  p50    0.474  p99    0.781  worst    1.849  first     1.8 ms  gc   33    5.9 ms     599.8 kB/frame
+ 5/5  fn        N= 10000 V=3     3.288 ms/frame    110 ns/subject·voice  p50    3.153  p99    5.029  worst    8.241  first    12.9 ms  gc  120   68.1 ms    2434.1 kB/frame
+== round 1/5 .
+ 1/2  kept      N=  1000 V=3     0.450 ms/frame    150 ns/subject·voice  p50    0.357  p99    1.469  worst    3.886  first     5.6 ms  gc   30   30.7 ms     573.8 kB/frame
+ 2/2  kept      N= 10000 V=3    10.394 ms/frame    346 ns/subject·voice  p50    9.637  p99   17.050  worst   20.898  first    16.7 ms  gc  281  564.3 ms    5659.8 kB/frame
+== round 1/5 .
+ 1/2  spring    N=  1000 V=1     0.095 ms/frame     95 ns/subject·voice  p50    0.089  p99    0.193  worst    0.277  first     6.0 ms  gc    7    0.6 ms      25.4 kB/frame
+ 2/2  spring    N= 10000 V=1     1.256 ms/frame    126 ns/subject·voice  p50    1.185  p99    2.246  worst    3.074  first    16.0 ms  gc   15    2.0 ms     159.5 kB/frame
+== round 2/5 .
+ 1/5  fn        N=   100 V=1     0.014 ms/frame    141 ns/subject·voice  p50    0.010  p99    0.066  worst    0.478  first     2.5 ms  gc    6    0.5 ms      20.4 kB/frame
+ 2/5  fn        N=  1000 V=1     0.120 ms/frame    120 ns/subject·voice  p50    0.104  p99    0.320  worst    0.918  first     1.5 ms  gc   24    2.9 ms     107.1 kB/frame
+ 3/5  fn        N=  1000 V=3     0.230 ms/frame     77 ns/subject·voice  p50    0.210  p99    0.501  worst    1.148  first     1.7 ms  gc   23    3.5 ms     246.3 kB/frame
+ 4/5  fn        N=  1000 V=8     0.551 ms/frame     69 ns/subject·voice  p50    0.506  p99    0.984  worst    1.796  first     1.8 ms  gc   30    6.6 ms     600.1 kB/frame
+ 5/5  fn        N= 10000 V=3     3.111 ms/frame    104 ns/subject·voice  p50    2.987  p99    4.485  worst   10.766  first    18.2 ms  gc  121   67.3 ms    2434.4 kB/frame
+== round 2/5 .
+ 1/2  kept      N=  1000 V=3     0.483 ms/frame    161 ns/subject·voice  p50    0.362  p99    1.348  worst    3.672  first     9.0 ms  gc   31   26.6 ms     572.1 kB/frame
+ 2/2  kept      N= 10000 V=3     9.897 ms/frame    330 ns/subject·voice  p50    9.453  p99   18.132  worst   19.792  first    10.6 ms  gc  277  493.5 ms    5659.7 kB/frame
+== round 2/5 .
+ 1/2  spring    N=  1000 V=1     0.090 ms/frame     90 ns/subject·voice  p50    0.087  p99    0.116  worst    0.281  first     5.5 ms  gc    7    0.5 ms      25.5 kB/frame
+ 2/2  spring    N= 10000 V=1     1.032 ms/frame    103 ns/subject·voice  p50    1.008  p99    1.387  worst    2.647  first    14.1 ms  gc   15    1.9 ms     163.0 kB/frame
+== round 2/5 8f55b79
+ 1/5  fn        N=   100 V=1     0.012 ms/frame    123 ns/subject·voice  p50    0.010  p99    0.030  worst    0.386  first     2.1 ms  gc    6    0.5 ms      20.5 kB/frame
+ 2/5  fn        N=  1000 V=1     0.113 ms/frame    113 ns/subject·voice  p50    0.102  p99    0.273  worst    1.099  first     1.4 ms  gc   24    2.2 ms     107.0 kB/frame
+ 3/5  fn        N=  1000 V=3     0.212 ms/frame     71 ns/subject·voice  p50    0.206  p99    0.350  worst    1.151  first     1.8 ms  gc   23    2.7 ms     246.7 kB/frame
+ 4/5  fn        N=  1000 V=8     0.481 ms/frame     60 ns/subject·voice  p50    0.475  p99    0.638  worst    1.656  first     1.8 ms  gc   30    5.3 ms     599.8 kB/frame
+ 5/5  fn        N= 10000 V=3     2.501 ms/frame     83 ns/subject·voice  p50    2.413  p99    3.649  worst    8.193  first    13.8 ms  gc  121   52.4 ms    2434.2 kB/frame
+== round 2/5 8f55b79
+ 1/2  kept      N=  1000 V=3     0.391 ms/frame    130 ns/subject·voice  p50    0.307  p99    1.213  worst    3.504  first     5.5 ms  gc   30   24.7 ms     573.4 kB/frame
+ 2/2  kept      N= 10000 V=3     6.728 ms/frame    224 ns/subject·voice  p50    6.075  p99   11.705  worst   13.771  first    14.6 ms  gc  281  442.5 ms    5659.6 kB/frame
+== round 2/5 8f55b79
+ 1/2  spring    N=  1000 V=1     0.090 ms/frame     90 ns/subject·voice  p50    0.087  p99    0.118  worst    0.266  first     5.0 ms  gc    8    0.6 ms      24.4 kB/frame
+ 2/2  spring    N= 10000 V=1     1.025 ms/frame    103 ns/subject·voice  p50    0.994  p99    1.518  worst    2.681  first    11.8 ms  gc   15    2.0 ms     163.0 kB/frame
+== round 3/5 8f55b79
+ 1/5  fn        N=   100 V=1     0.012 ms/frame    125 ns/subject·voice  p50    0.010  p99    0.029  worst    0.525  first     2.1 ms  gc    6    0.5 ms      19.4 kB/frame
+ 2/5  fn        N=  1000 V=1     0.106 ms/frame    106 ns/subject·voice  p50    0.104  p99    0.175  worst    0.792  first     1.5 ms  gc   24    1.6 ms     108.0 kB/frame
+ 3/5  fn        N=  1000 V=3     0.213 ms/frame     71 ns/subject·voice  p50    0.207  p99    0.322  worst    0.975  first     1.6 ms  gc   23    2.6 ms     247.2 kB/frame
+ 4/5  fn        N=  1000 V=8     0.487 ms/frame     61 ns/subject·voice  p50    0.481  p99    0.642  worst    1.594  first     1.9 ms  gc   30    4.9 ms     599.8 kB/frame
+ 5/5  fn        N= 10000 V=3     2.510 ms/frame     84 ns/subject·voice  p50    2.427  p99    3.735  worst    8.460  first    13.9 ms  gc  121   52.1 ms    2434.1 kB/frame
+== round 3/5 8f55b79
+ 1/2  kept      N=  1000 V=3     0.403 ms/frame    134 ns/subject·voice  p50    0.320  p99    1.235  worst    3.251  first     5.1 ms  gc   30   25.0 ms     573.5 kB/frame
+ 2/2  kept      N= 10000 V=3     6.781 ms/frame    226 ns/subject·voice  p50    6.123  p99   11.900  worst   15.307  first    14.8 ms  gc  281  443.1 ms    5660.7 kB/frame
+== round 3/5 8f55b79
+ 1/2  spring    N=  1000 V=1     0.090 ms/frame     90 ns/subject·voice  p50    0.087  p99    0.145  worst    0.263  first     5.0 ms  gc    7    0.6 ms      24.3 kB/frame
+ 2/2  spring    N= 10000 V=1     1.007 ms/frame    101 ns/subject·voice  p50    0.978  p99    1.536  worst    2.423  first    13.1 ms  gc   15    1.9 ms     162.8 kB/frame
+== round 3/5 .
+ 1/5  fn        N=   100 V=1     0.013 ms/frame    125 ns/subject·voice  p50    0.010  p99    0.031  worst    0.329  first     2.0 ms  gc    6    0.4 ms      20.4 kB/frame
+ 2/5  fn        N=  1000 V=1     0.105 ms/frame    105 ns/subject·voice  p50    0.103  p99    0.165  worst    0.673  first     1.5 ms  gc   24    1.8 ms     107.5 kB/frame
+ 3/5  fn        N=  1000 V=3     0.209 ms/frame     70 ns/subject·voice  p50    0.205  p99    0.305  worst    0.942  first     1.6 ms  gc   23    2.5 ms     246.7 kB/frame
+ 4/5  fn        N=  1000 V=8     0.476 ms/frame     59 ns/subject·voice  p50    0.469  p99    0.647  worst    2.030  first     2.0 ms  gc   30    5.0 ms     600.2 kB/frame
+ 5/5  fn        N= 10000 V=3     2.491 ms/frame     83 ns/subject·voice  p50    2.409  p99    3.654  worst    9.401  first    13.8 ms  gc  121   50.3 ms    2434.2 kB/frame
+== round 3/5 .
+ 1/2  kept      N=  1000 V=3     0.418 ms/frame    139 ns/subject·voice  p50    0.306  p99    1.169  worst    3.094  first     5.2 ms  gc   31   23.0 ms     572.4 kB/frame
+ 2/2  kept      N= 10000 V=3     8.162 ms/frame    272 ns/subject·voice  p50    7.376  p99   14.176  worst   19.270  first     8.7 ms  gc  277  442.6 ms    5659.8 kB/frame
+== round 3/5 .
+ 1/2  spring    N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.087  p99    0.129  worst    0.258  first     5.1 ms  gc    8    0.6 ms      25.4 kB/frame
+ 2/2  spring    N= 10000 V=1     0.991 ms/frame     99 ns/subject·voice  p50    0.962  p99    1.483  worst    3.402  first    12.6 ms  gc   14    1.7 ms     159.3 kB/frame
+== round 4/5 .
+ 1/5  fn        N=   100 V=1     0.014 ms/frame    142 ns/subject·voice  p50    0.011  p99    0.062  worst    0.465  first     2.6 ms  gc    6    0.4 ms      23.4 kB/frame
+ 2/5  fn        N=  1000 V=1     0.113 ms/frame    113 ns/subject·voice  p50    0.107  p99    0.213  worst    0.693  first     2.2 ms  gc   24    2.3 ms     106.5 kB/frame
+ 3/5  fn        N=  1000 V=3     0.239 ms/frame     80 ns/subject·voice  p50    0.221  p99    0.458  worst    1.021  first     2.7 ms  gc   23    3.7 ms     246.4 kB/frame
+ 4/5  fn        N=  1000 V=8     0.489 ms/frame     61 ns/subject·voice  p50    0.473  p99    0.695  worst    1.725  first     2.0 ms  gc   30    5.9 ms     600.1 kB/frame
+ 5/5  fn        N= 10000 V=3     2.738 ms/frame     91 ns/subject·voice  p50    2.619  p99    4.269  worst    8.038  first    14.4 ms  gc  121   57.8 ms    2434.5 kB/frame
+== round 4/5 .
+ 1/2  kept      N=  1000 V=3     0.453 ms/frame    151 ns/subject·voice  p50    0.359  p99    1.494  worst    4.130  first     6.1 ms  gc   30   30.4 ms     574.6 kB/frame
+ 2/2  kept      N= 10000 V=3     6.978 ms/frame    233 ns/subject·voice  p50    6.352  p99   12.061  worst   15.627  first    17.4 ms  gc  281  452.2 ms    5659.3 kB/frame
+== round 4/5 .
+ 1/2  spring    N=  1000 V=1     0.090 ms/frame     90 ns/subject·voice  p50    0.089  p99    0.121  worst    0.273  first     5.1 ms  gc    8    0.6 ms      26.7 kB/frame
+ 2/2  spring    N= 10000 V=1     1.036 ms/frame    104 ns/subject·voice  p50    1.020  p99    1.355  worst    1.812  first    14.6 ms  gc   15    1.8 ms     164.3 kB/frame
+== round 4/5 8f55b79
+ 1/5  fn        N=   100 V=1     0.012 ms/frame    124 ns/subject·voice  p50    0.010  p99    0.031  worst    0.501  first     2.1 ms  gc    6    0.5 ms      19.4 kB/frame
+ 2/5  fn        N=  1000 V=1     0.102 ms/frame    102 ns/subject·voice  p50    0.100  p99    0.167  worst    0.661  first     1.8 ms  gc   23    1.6 ms     107.2 kB/frame
+ 3/5  fn        N=  1000 V=3     0.208 ms/frame     69 ns/subject·voice  p50    0.203  p99    0.320  worst    0.917  first     1.8 ms  gc   31    3.1 ms     245.9 kB/frame
+ 4/5  fn        N=  1000 V=8     0.486 ms/frame     61 ns/subject·voice  p50    0.470  p99    0.816  worst    2.294  first     2.8 ms  gc   28    5.4 ms     600.4 kB/frame
+ 5/5  fn        N= 10000 V=3     2.669 ms/frame     89 ns/subject·voice  p50    2.550  p99    4.391  worst    7.590  first     7.2 ms  gc  119   57.0 ms    2433.9 kB/frame
+== round 4/5 8f55b79
+ 1/2  kept      N=  1000 V=3     0.390 ms/frame    130 ns/subject·voice  p50    0.306  p99    1.191  worst    3.268  first     6.2 ms  gc   30   24.7 ms     575.7 kB/frame
+ 2/2  kept      N= 10000 V=3     7.710 ms/frame    257 ns/subject·voice  p50    7.059  p99   13.762  worst   19.902  first    14.1 ms  gc  281  469.2 ms    5659.0 kB/frame
+== round 4/5 8f55b79
+ 1/2  spring    N=  1000 V=1     0.090 ms/frame     90 ns/subject·voice  p50    0.088  p99    0.121  worst    0.272  first     5.9 ms  gc    8    0.5 ms      25.4 kB/frame
+ 2/2  spring    N= 10000 V=1     1.082 ms/frame    108 ns/subject·voice  p50    1.027  p99    1.744  worst    2.530  first    12.4 ms  gc   15    1.9 ms     163.7 kB/frame
+== round 5/5 8f55b79
+ 1/5  fn        N=   100 V=1     0.013 ms/frame    128 ns/subject·voice  p50    0.010  p99    0.040  worst    0.433  first     2.5 ms  gc    6    0.6 ms      18.8 kB/frame
+ 2/5  fn        N=  1000 V=1     0.103 ms/frame    103 ns/subject·voice  p50    0.100  p99    0.190  worst    0.668  first     2.0 ms  gc   24    1.9 ms     108.2 kB/frame
+ 3/5  fn        N=  1000 V=3     0.208 ms/frame     69 ns/subject·voice  p50    0.205  p99    0.317  worst    0.957  first     1.6 ms  gc   23    2.5 ms     247.3 kB/frame
+ 4/5  fn        N=  1000 V=8     0.471 ms/frame     59 ns/subject·voice  p50    0.464  p99    0.644  worst    1.598  first     1.8 ms  gc   30    5.3 ms     600.1 kB/frame
+ 5/5  fn        N= 10000 V=3     2.510 ms/frame     84 ns/subject·voice  p50    2.405  p99    3.869  worst    8.692  first    13.3 ms  gc  121   53.3 ms    2433.8 kB/frame
+== round 5/5 8f55b79
+ 1/2  kept      N=  1000 V=3     0.391 ms/frame    130 ns/subject·voice  p50    0.306  p99    1.215  worst    3.494  first     5.3 ms  gc   30   25.4 ms     575.1 kB/frame
+ 2/2  kept      N= 10000 V=3     7.143 ms/frame    238 ns/subject·voice  p50    6.610  p99   12.864  worst   15.183  first    15.4 ms  gc  281  461.0 ms    5659.0 kB/frame
+== round 5/5 8f55b79
+ 1/2  spring    N=  1000 V=1     0.091 ms/frame     91 ns/subject·voice  p50    0.088  p99    0.177  worst    0.381  first     6.2 ms  gc    8    0.7 ms      25.2 kB/frame
+ 2/2  spring    N= 10000 V=1     1.044 ms/frame    104 ns/subject·voice  p50    0.998  p99    1.635  worst    3.934  first    12.9 ms  gc   15    2.0 ms     162.9 kB/frame
+== round 5/5 .
+ 1/5  fn        N=   100 V=1     0.013 ms/frame    127 ns/subject·voice  p50    0.010  p99    0.038  worst    0.391  first     2.0 ms  gc    6    0.6 ms      21.8 kB/frame
+ 2/5  fn        N=  1000 V=1     0.107 ms/frame    107 ns/subject·voice  p50    0.103  p99    0.202  worst    0.692  first     1.5 ms  gc   23    1.9 ms     105.8 kB/frame
+ 3/5  fn        N=  1000 V=3     0.212 ms/frame     71 ns/subject·voice  p50    0.207  p99    0.332  worst    1.030  first     1.5 ms  gc   23    2.8 ms     246.7 kB/frame
+ 4/5  fn        N=  1000 V=8     0.475 ms/frame     59 ns/subject·voice  p50    0.469  p99    0.634  worst    1.586  first     1.8 ms  gc   30    4.9 ms     600.3 kB/frame
+ 5/5  fn        N= 10000 V=3     2.509 ms/frame     84 ns/subject·voice  p50    2.434  p99    3.530  worst    9.354  first    14.1 ms  gc  121   53.2 ms    2434.8 kB/frame
+== round 5/5 .
+ 1/2  kept      N=  1000 V=3     0.403 ms/frame    134 ns/subject·voice  p50    0.321  p99    1.269  worst    3.235  first     5.2 ms  gc   30   25.6 ms     573.6 kB/frame
+ 2/2  kept      N= 10000 V=3     6.926 ms/frame    231 ns/subject·voice  p50    6.315  p99   12.323  worst   14.308  first    16.5 ms  gc  281  451.5 ms    5660.8 kB/frame
+== round 5/5 .
+ 1/2  spring    N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.087  p99    0.136  worst    0.271  first     5.2 ms  gc    8    0.6 ms      23.7 kB/frame
+ 2/2  spring    N= 10000 V=1     1.043 ms/frame    104 ns/subject·voice  p50    0.997  p99    1.668  worst    3.233  first    12.6 ms  gc   15    1.5 ms     163.7 kB/frame

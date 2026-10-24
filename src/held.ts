@@ -79,17 +79,7 @@ export function held<I, O>(
     held.unknown = (this.backward && voice.spec.from === 'current') || fresh;
   }
   voice.subjects.set(subject, held);
-  if (!(since <= now)) {
-    voice.early ??= [];
-    const early = voice.early;
-    // Prunes at each doubling, so records whose origin has passed are not kept to the voice's end.
-    if (early.length >= 64 && (early.length & (early.length - 1)) === 0) {
-      let kept = 0;
-      for (const h of early) if (!(h.since <= now)) early[kept++] = h;
-      early.length = kept;
-    }
-    early.push(held);
-  }
+  waits(voice, held, now);
   // A subject a voice saw while it shared one record was counted then.
   if (sighted(voice, slot)) inherit(voice, held, slot);
   else voice.seen++;
@@ -155,6 +145,20 @@ export function shownOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, since: numb
   return voice.freezesBefore && voice.opened < from ? voice.opened : from;
 }
 
+/** Lists a record whose origin is still ahead of `now`, for a later change to the clock to move. */
+export function waits<I, O>(voice: Voice<I, O>, held: Subject<unknown>, now: number): void {
+  if (held.since <= now) return;
+  voice.early ??= [];
+  const early = voice.early;
+  // Prunes at each doubling, so records whose origin has passed are not kept to the voice's end.
+  if (early.length >= 64 && (early.length & (early.length - 1)) === 0) {
+    let kept = 0;
+    for (const h of early) if (!(h.since <= now)) early[kept++] = h;
+    early.length = kept;
+  }
+  early.push(held);
+}
+
 /**
  * A pending voice starts at `now`. Starting anywhere but 0 it was sought there, so a record made
  * while it waited is made again for where its clock is.
@@ -173,7 +177,10 @@ export function begin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): 
 
 /** Counts a record whose `since` was still ahead from where its voice's clock now puts it. */
 export function origin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): void {
+  const was = held.since;
   held.since = mix.sinceOf(voice, held.delay);
+  // Sent back before a start it had passed: its next read starts it afresh.
+  if (held.since !== was && (held.ticks > 0 || held.stepped > was)) held.rebuilt = -1;
   held.shown = mix.shownOf(voice, held.since);
   if (held.ticks === 0 && held.stepped > held.since) held.stepped = held.since;
 }

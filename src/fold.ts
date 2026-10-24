@@ -2,6 +2,7 @@ import { foldNumber } from './channels.js';
 import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue, first } from './clone.js';
 import { open as openRecord, shut as shutRecord, weighAt } from './everyone.js';
+import { waits } from './held.js';
 import { apart, copyState, recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
 import { Per } from './lane.js';
@@ -75,6 +76,13 @@ function rebuild<I, O>(
   held.probed = Number.NaN;
 }
 
+/** Whether a seek since its last read moved a stateful record's origin, as one back before it does. */
+function sentBack<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unknown>): boolean {
+  const p = voice.patch;
+  if (p.state === undefined && p.step === undefined && !voice.keeping) return false;
+  return mix.sinceOf(voice, held.delay) !== held.since;
+}
+
 /**
  * One live voice's delta for one subject this frame, through its record for the subject, or null
  * when it does not reach. Its weight is left in `w`.
@@ -90,6 +98,11 @@ export function contribution<I, O>(
   if (!held.reaches) return null;
   if (voice.out?.rest && held.rested) return null;
   if (held.rebuilt !== voice.rebuilds) rebuild(this, voice, subject, now, held);
+  else if (held.seeks !== voice.seeks && sentBack(this, voice, held)) {
+    // A seek sent it back before its start, so it starts afresh there, whatever state it kept.
+    rebuild(this, voice, subject, now, held);
+    waits(voice, held, now);
+  }
 
   const raw = voice.rawAt(now, held.delay);
   const early = voice.before(raw, now);

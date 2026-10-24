@@ -121,3 +121,56 @@ describe('a handle seek rebuilds state', () => {
     expect(m.probe(part).x).toBe(seen.get(after));
   });
 });
+
+describe("a seek with state: 'keep' back before a subject's start", () => {
+  const b = { id: 'b' };
+  const late = (s: Part) => (s.id === 'b' ? 100 : 0);
+
+  /** Plays `b`, 100 ms behind `a`, past its start, keeps state seeking back 50 ms before it, and plays on. */
+  function sentBack(opts: {
+    every?: number;
+    state?: 'keep' | 'rebuild';
+    mixSeeks?: boolean;
+    stepMs?: number;
+  }) {
+    const { every = 1, state = 'keep', mixSeeks = false, stepMs } = opts;
+    const m = mix<Part, Pose>(K, { stepMs, history: { ms: 5000, every: 50, tape } });
+    const h = m.cue({
+      patch: spring(),
+      subjects: [{ id: 'a' }, b],
+      stagger: late,
+      freeze: 'before',
+    });
+    let t = 0;
+    for (let i = 0; t <= 400; t += FRAME, i++) {
+      m.sync(t);
+      if (i % every === 0) m.probe(b);
+    }
+    h.seek(50, { state });
+    const xs: number[] = [];
+    for (let k = 0; k < 14; k++) {
+      if (mixSeeks && k > 0) {
+        const at = m.now;
+        m.seek(at - 30);
+        m.seek(at);
+      }
+      t += FRAME;
+      m.sync(t);
+      xs.push(m.probe(b).x);
+    }
+    return xs;
+  }
+
+  it('starts it afresh, however often it was read', () => {
+    const xs = sentBack({});
+    expect(xs[0]).toBe(0);
+    expect(sentBack({ every: 4 })).toEqual(xs);
+    expect(sentBack({ state: 'rebuild' })).toEqual(xs);
+  });
+
+  it('reads the same under mix seeks back as without them', () => {
+    const xs = sentBack({ stepMs: 5 });
+    expect(xs[0]).toBe(0);
+    expect(sentBack({ stepMs: 5, mixSeeks: true })).toEqual(xs);
+  });
+});
