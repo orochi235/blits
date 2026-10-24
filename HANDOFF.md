@@ -338,6 +338,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
+0. **0.13.0 is the engine's release of 2026-10-23** (the stock band, a mix's `loci`, the kept-seek
+   and seek-return fixes, cheaper churn). blits-quarks 0.8.0, blits-tone 0.3.0 and the panel 0.1.1
+   declare `@msb235/blits` `^0.12.0` as a peer, which below 1.0 does not take 0.13.0, so each wants
+   a release with its range widened and its tests run against 0.13.0.
 0. **`mix.arc` shipped in 0.12.0** (2026-10-22, on src-da's brief with Mike's go): klieg's
    `fire(text, { enter, active, exit, hold, blendMs })` as a blits primitive. The schema page's
    "Arcs" is the record. bree (`~/src/bree`, the marquee's new home) builds against this checkout

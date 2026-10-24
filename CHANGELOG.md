@@ -4,7 +4,7 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
-## Unreleased
+## 0.13.0
 
 ### Breaking
 
@@ -24,6 +24,11 @@ version and everything else the patch. Each release lists its changes as **Break
   depended on how often the host had read it, and a mix seek could put back the state from before.
 - A mix sought back and then ahead to where it stood reads the same `now` on its next sync as one
   never sought. At some mix rates it read one rounding step off, and every later sync kept the error.
+- Replacing voices costs less a frame: a crowd catches up only the rows marked stale, where it
+  scanned every row, and a few retired voices are spliced out of the list. One subject leaving for
+  good each frame and a new one coming (`turnover^`, 10,000 subjects) takes 0.286 ms a frame
+  against 0.315, and one voice replaced in place each frame (`churn^`) 0.224 against 0.252 (teitou,
+  medians of nine runs of 5,000 frames, each in its own process); steady voices are unchanged.
 
 ## 0.12.1
 

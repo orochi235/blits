@@ -68,7 +68,9 @@ describe('locus fold', () => {
   it('refuses a voice whose tags and locus name two loci', () => {
     const m = mix<Part, Pose>(PART, { loci: ['phase', 'beat'] });
     expect(() => m.cue({ patch: holds('gain', 1), tags: ['phase', 'beat'] })).toThrow(/one locus/);
-    expect(() => m.cue({ patch: holds('gain', 1), tags: ['beat'], locus: 'x' })).toThrow(/one locus/);
+    expect(() => m.cue({ patch: holds('gain', 1), tags: ['beat'], locus: 'x' })).toThrow(
+      /one locus/,
+    );
     expect(() => m.cue({ patch: holds('gain', 1), tags: ['beat'], locus: 'beat' })).not.toThrow();
   });
 

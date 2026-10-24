@@ -30,13 +30,29 @@ const all = { seeds: 150 };
 const known: Record<Property, Partial<Record<Variant, Known>>> = {
   seek: { plain: all, full: all, inside: all, fresh: all, slewed: all, waiting: all, keeping: all },
   again: { plain: all, full: all, inside: all, keeping: all },
-  behind: { plain: all, full: all, inside: all, fresh: all, slewed: all, waiting: all, keeping: all },
+  behind: {
+    plain: all,
+    full: all,
+    inside: all,
+    fresh: all,
+    slewed: all,
+    waiting: all,
+    keeping: all,
+  },
   ahead: { plain: all, full: all, inside: all, slewed: all, keeping: all },
   taped: { plain: all, full: all, inside: all, slewed: all, keeping: all },
   dt: { plain: all, full: all, inside: all, slewed: all, waiting: all, keeping: all },
   standing: { plain: all, full: all, inside: all, slewed: all, waiting: all, keeping: all },
   now: { plain: all, full: all, inside: all, fresh: all, slewed: all, waiting: all, keeping: all },
-  frame: { plain: all, full: all, inside: all, fresh: all, slewed: all, waiting: all, keeping: all },
+  frame: {
+    plain: all,
+    full: all,
+    inside: all,
+    fresh: all,
+    slewed: all,
+    waiting: all,
+    keeping: all,
+  },
 };
 
 function guards(prop: Property) {
