@@ -196,7 +196,10 @@ function copyRow<I, O>(
   carry(from.data, p * Row.STRIDE, to.data, q * Row.STRIDE, Row.STRIDE);
   carry(from.hot, p * from.stride, to.hot, q * to.stride, from.stride);
   copyKeys(keys, to, q);
-  if (((from.hot[p * from.stride + Hot.FLAGS] as number) & Flag.STALE) !== 0) to.stale = true;
+  if (((from.hot[p * from.stride + Hot.FLAGS] as number) & Flag.STALE) !== 0) {
+    to.stale = true;
+    to.staleRows.push(q);
+  }
   carry(from.samples, p * from.axes, to.samples, q * to.axes, from.axes);
   to.deltas[q] = from.deltas[p] ?? null;
   to.records[q] = from.records[p];

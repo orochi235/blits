@@ -126,6 +126,8 @@ export class Crowd<I, O> implements Positions<I, O> {
   dead = 0;
   /** Whether some row is `Flag.STALE`, for `freshen` to copy before the fill's loop. */
   stale = false;
+  /** The rows marked stale since the last `freshen`, which checks each is still stale. */
+  staleRows: number[] = [];
   readonly xs: Float64Array;
   readonly vs: Float64Array;
   /** What a keys row reads into, folded before the next row reads. */
@@ -160,6 +162,7 @@ export class Crowd<I, O> implements Positions<I, O> {
   restale(p: number, flags: number): void {
     this.hot[p * this.stride + Hot.FLAGS] = flags | Flag.STALE;
     this.stale = true;
+    this.staleRows.push(p);
   }
 
   /** Samples of another width than the channel's, which `samples` cannot hold, by row. */
@@ -447,7 +450,11 @@ export function freshen<I, O>(c: Crowd<I, O>): void {
   c.stale = false;
   const hot = c.hot;
   const H = c.stride;
-  for (let p = 0; p < c.list.length; p++) {
+  const rows = c.staleRows;
+  c.staleRows = [];
+  for (let i = 0; i < rows.length; i++) {
+    const p = rows[i] as number;
+    if (p >= c.list.length) continue;
     const f = hot[p * H + Hot.FLAGS] as number;
     if ((f & Flag.STALE) === 0 || (f & Flag.MOTION) === 0) continue;
     // A row with no stretch yet is marked again once its first sample numbers it.
