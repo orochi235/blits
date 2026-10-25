@@ -53,7 +53,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 - **The package, `@msb235/blits` 0.14.0 on npm.** `src/` is the whole of it, with `types.ts` a
   barrel over `types/` holding the whole public surface, doc-commented. What a probe or a fill runs
   per subject is methods, written in their modules as functions taking `this` and installed on the
-  prototype at the foot of `mixer.ts` and `lanes.ts`: as plain functions they cost up to 9%. Zero
+  prototype at the foot of `mixer.ts`, `lanes.ts` and `motions.ts`: as plain functions they cost
+  up to 9%. Zero
   runtime deps, ESM, vitest, biome as klieg. `npm run check` is lint, typecheck of both `src` and
   `test`, then the suite. `npm run bench` (`bench/frame.mjs`) measures a frame at scene sizes, GC
   counts included. Enlisted for the fleet — `.onto/tests` is `plugin: node`, `run: npm test`,

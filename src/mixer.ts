@@ -1,14 +1,15 @@
 import { type Arc, cueArc } from './arcs.js';
 import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
-import { aims, chain, headOf, linkable, relink, unlink } from './chain.js';
+import { aims, chain, linkable, relink } from './chain.js';
 import { type LerpInto, lerpInto, STOCK_BAND, scalarOp } from './channels.js';
 import type { Column } from './columns.js';
 import { baseFor, contribution, isRest, keyed, read, slopeFor, tick } from './contribution.js';
 import { cue } from './cue.js';
 import { DepartedIndex } from './departed.js';
+import { drop, forgetIn, recordDrop, releaseIn } from './drop.js';
 import { DueQueue } from './due.js';
-import { beginFade, leaveVoice, parting } from './fade.js';
+import { beginFade, parting } from './fade.js';
 import {
   apply,
   clamp,
@@ -19,15 +20,14 @@ import {
   foldWith,
   type Key,
   linked,
-  near,
   owedBy,
   passes,
   shared,
 } from './fold.js';
-import { GoneIndex, goneIndex } from './gone.js';
+import { GoneIndex } from './gone.js';
 import type { HandleHost } from './handle.js';
 import { held, shownOf, sinceOf, unreachedOf } from './held.js';
-import { releasing } from './history.js';
+
 import { book, laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
 import { foldLoci } from './loci.js';
@@ -41,14 +41,15 @@ import { Keys } from './paging.js';
 import { projectAll } from './project.js';
 import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
+import { atRest, restful, rests, restsKey, restsLaned, still } from './rests.js';
 import { Outs } from './revive.js';
 import { ScoreIndex } from './scored.js';
 import { seek } from './seek.js';
 import { Fitting, refit } from './spans.js';
-import { Masked, Store } from './store.js';
+import { Store } from './store.js';
 import type { MotionOwner } from './stretch.js';
 import type { Subject } from './subject.js';
-import { record, taping, unplayable } from './tape.js';
+import { record } from './tape.js';
 import { touch } from './touch.js';
 import { type Announced, announce, Transport } from './transport.js';
 import type {
@@ -493,7 +494,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   }
 
   project(at: number | { readonly frame: number }): Projection<I, O> {
-    return projectAll(this.transport, at).of(this);
+    return projectAll(this.transport, at).of<I, O, unknown>(this);
   }
 
   announce(
@@ -512,38 +513,6 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   marks(from: number, to: number): Marked[] {
     return listed(this, from, to).map(({ order: _, ...m }) => m);
-  }
-
-  atRest(subject: I): boolean {
-    this.restStamps ??= new Store<I, number>();
-    const head = this.linked(subject);
-    const laned = this.linkedLaned;
-    const lanes = this.lanes as Lanes<I, O>;
-    // Every voice on lanes and nothing to clamp: the pose a fold would make is the lanes' values.
-    if (laned && this.restsLaned()) {
-      const slot = (head as Subject<unknown>).slot;
-      if (!lanes.owes(slot)) return lanes.rests(slot);
-    }
-    // A probe this frame answers for the pose it gave the host.
-    const since = (this.restStamps.get(subject) ?? Number.NaN) - 2 * this.restsKey();
-    if (since >= 0) return since === 1;
-    this.restScratch ??= {} as O;
-    const pose = this.foldWith(subject, this.restScratch, head, laned, true) as Record<
-      string,
-      unknown
-    >;
-    return this.rests((this.bounded.length === 0 ? pose : this.clamp(pose)) as O);
-  }
-
-  rests(pose: O): boolean {
-    for (let i = 0; i < this.names.length; i++) {
-      const channel = this.channels[i] as Channel<unknown>;
-      const value = (pose as Record<string, unknown>)[this.names[i] as string];
-      if (channel.rest === undefined) {
-        if (value !== undefined) return false;
-      } else if (!near(value, channel.rest)) return false;
-    }
-    return true;
   }
 
   rebase(): void {
@@ -569,20 +538,6 @@ export class Mixer<I, O> implements Mix<I, O> {
     return inert;
   }
 
-  private restful(): boolean {
-    // Standing still, a voice changes no pose but by its weight signal, or by an anchor or start
-    // that host time may yet reach.
-    if (this.pace?.stopped(this.u))
-      return this.cued.every(
-        (v) =>
-          v.state === 'done' ||
-          (v.state !== 'pending' &&
-            typeof v.spec.weight !== 'function' &&
-            v.spec.anchor === undefined),
-      );
-    return this.cued.every((v) => this.still(v, this.now));
-  }
-
   get rate(): number {
     return this.transport.rate;
   }
@@ -595,18 +550,6 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.own('ramp').ramp(rate, over);
   }
 
-  /** Whether a voice will change no pose from `now` on, short of a change made to it. */
-  still(voice: Voice<I, O>, now: number): boolean {
-    if (voice.state === 'done') return true;
-    if (voice.state !== 'frozen' && voice.state !== 'live') return false;
-    if (typeof voice.spec.weight === 'function' || voice.parts !== null) return false;
-    const fadeIn = this.reducedNow ? 0 : (voice.fade.in ?? 0);
-    if (fadeIn > 0 && now - this.sinceOf(voice, voice.latest) < fadeIn) return false;
-    if (voice.state === 'frozen' || voice.holding !== null) return true;
-    const motion = voice.motion;
-    return motion !== undefined && voice.elapsedAt(now) >= voice.latest && motion.landed();
-  }
-
   close(): void {
     unregister(this as unknown as Mixer<unknown, unknown>);
   }
@@ -617,65 +560,6 @@ export class Mixer<I, O> implements Mix<I, O> {
       beginFade(this, voice, { over: opts?.over });
     }
     record(this, 'mute', (stage) => stage.mix(this)?.mute(opts));
-  }
-
-  drop(subject: I): void {
-    this.frame = nextFrame();
-    const head = headOf(this, subject);
-    // Nothing that kept this head, such as `pull`'s remembered list, may take it as current again.
-    if (head !== undefined) unlink(this, head);
-    // A number a seek carried over is released even where its chain is not linked since.
-    const slot = this.chains.get(subject)?.slot ?? -1;
-    if (slot >= 0 && this.lanes !== null) this.lanes.release(slot);
-    // A read ahead's copy reads the live mix's poses, and so hides one where the mix deletes it.
-    if (this.projecting && !(this.pose instanceof Masked)) this.pose = new Masked(this.pose);
-    this.pose.delete(subject);
-    this.restStamps?.delete(subject);
-    this.chains.delete(subject);
-    this.stir();
-    // A record of it is only in a voice over every subject, one naming it, or one gone; a ramp out
-    // of a voice that does not name it is in `parters`, and a patch's own state in `motions`.
-    const kept = releasing(this);
-    for (const voice of this.general) this.forgetIn(voice, subject, kept);
-    const named = this.named.get(subject);
-    if (named !== undefined) for (const voice of [...named]) this.forgetIn(voice, subject, kept);
-    const gone = goneIndex(this);
-    for (const voice of gone.general) this.forgetIn(voice, subject, kept);
-    const goneNaming = gone.named.get(subject);
-    if (goneNaming !== undefined)
-      for (const voice of goneNaming) this.forgetIn(voice, subject, kept);
-    if (this.owners !== null) for (const voice of this.owners) this.forgetIn(voice, subject, kept);
-    for (const voice of this.parters) {
-      this.forgetIn(voice, subject, kept);
-      if (voice.parts?.size === 0) voice.parts = null;
-      if (voice.parted?.size === 0) voice.parted = null;
-      if (voice.parts === null && voice.parted === null) this.parters.delete(voice);
-    }
-    const strays = this.strays.get(subject);
-    if (strays !== undefined) for (const motion of strays) this.releaseIn(motion, subject, kept);
-    this.strays.delete(subject);
-    for (const motion of this.strayAll) this.releaseIn(motion, subject, kept);
-    if (taping(this)) this.recordDrop(subject);
-  }
-
-  /** Lets `voice` go of a dropped subject. Methods rather than closures, so a drop makes neither. */
-  private forgetIn(voice: Voice<I, O>, subject: I, kept: ReturnType<typeof releasing>): void {
-    leaveVoice(this, voice, subject);
-    voice.subjects.delete(subject);
-    if (voice.motion !== undefined) this.releaseIn(voice.motion, subject, kept);
-    voice.parts?.delete(subject);
-    voice.parted?.delete(subject);
-    voice.blend?.of.reads.delete(subject);
-  }
-
-  // A motion patch's state is the live mix's alone: a read ahead cannot start a subject afresh in it.
-  private releaseIn(motion: Motions<I>, subject: I, kept: ReturnType<typeof releasing>): void {
-    if (!this.projecting) motion.release(subject, kept[0], kept[1], kept[2], kept[3]);
-    else if (motion.holds(subject)) unplayable('a drop of a subject a motion patch holds');
-  }
-
-  private recordDrop(subject: I): void {
-    record(this, 'drop', (stage) => stage.mix(this)?.drop(subject));
   }
 
   touch(subject?: I): void {
@@ -707,33 +591,13 @@ export class Mixer<I, O> implements Mix<I, O> {
    */
   restStamps: Store<I, number> | null = null;
   /** What a probe's record of rest is good for: moved by a new frame, version, relink, or stir. */
-  private restsEpoch = 0;
-  private restsFrame = Number.NaN;
-  private restsVersion = Number.NaN;
-  private restsRelinks = -1;
-  private restsStirs = -1;
+  restsEpoch = 0;
+  restsFrame = Number.NaN;
+  restsVersion = Number.NaN;
+  restsRelinks = -1;
+  restsStirs = -1;
   /** The pose `atRest` folds into where no probe this frame answers. */
-  private restScratch: O | undefined;
-
-  private restsLaned(): boolean {
-    return (this.lanes as Lanes<I, O>).whole && this.bounded.length === 0;
-  }
-
-  private restsKey(): number {
-    if (
-      this.frame !== this.restsFrame ||
-      this.version !== this.restsVersion ||
-      this.relinks !== this.restsRelinks ||
-      this.stirs !== this.restsStirs
-    ) {
-      this.restsEpoch++;
-      this.restsFrame = this.frame;
-      this.restsVersion = this.version;
-      this.restsRelinks = this.relinks;
-      this.restsStirs = this.stirs;
-    }
-    return this.restsEpoch;
-  }
+  restScratch: O | undefined;
 }
 
 // The probe's hot path is methods, installed here from the modules that own them: as functions
@@ -782,6 +646,16 @@ const methods = {
   shownOf,
   keep,
   foldLocus,
+  atRest,
+  rests,
+  restful,
+  still,
+  restsLaned,
+  restsKey,
+  drop,
+  forgetIn,
+  releaseIn,
+  recordDrop,
 };
 type Methods = typeof methods;
 // biome-ignore lint/correctness/noUnusedVariables: merging needs the class's type parameters
