@@ -1,16 +1,6 @@
-  waiting for room
+# teitou (solo), AB_EACH=1 bench/ab.sh d6eeed2 . 5 tweens^ weasel^ glow^ locus fns^ (. is a49a3ec; FRAMES unset, 300)
 teitou  chosen: 13.5 cores free, 47.0G available (env: 5 past runs, worst 2.0 cores / 7.0G)
-  keiei    scored 0.20 against teitou's 5.68
-  msb-uai  job c3a8da16 has the node to itself
-  orochi   refuses rotation
-  studio   it wants the node to itself, and job a5fd281f is running there
-  base   a49a3eca
-  commits sent directly, 2.9 KiB (not on origin)
-  updated blits on teitou at a49a3eca
-  job    9d57604c on teitou
 
-onto: agent-aa63214a585cbe9b4 is already set up
-onto: playwright-browsers-104e1ee57575 is already set up
 built d6eeed2 (d6eeed2)
 built the working tree
 == round 1/5 d6eeed2
