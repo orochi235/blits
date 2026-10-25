@@ -2,7 +2,7 @@ import { unpart } from './fade.js';
 import type { Mixer } from './mixer.js';
 import type { Change, MotionOwner, Motions } from './motions.js';
 import { pageOut } from './paging.js';
-import { record, unplayable } from './tape.js';
+import { record, taping, unplayable } from './tape.js';
 import type { Voice } from './voice.js';
 
 /** Notes a motion patch that may hold state for a subject no voice playing it reaches. */
@@ -45,16 +45,13 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
     seq() {
       return mix.deref()?.transport.seq ?? Number.NaN;
     },
+    early() {
+      const m = mix.deref();
+      return m !== undefined && (m.syncing || !m.looked);
+    },
     changed(id, motion, subject, change) {
       const m = mix.deref();
-      if (m === undefined) return;
-      record(m, 'motion', (stage) => {
-        const to = stage.mix(m);
-        if (to === undefined) return;
-        if (to !== m) return changeAhead(to, id, motion, subject, change);
-        const v = cuedById(m, id) ?? m.gone.find((g) => g.id === id);
-        ((v?.motion as typeof motion | undefined) ?? motion).change(subject, { ...change });
-      });
+      if (m !== undefined && taping(m)) recordChange(m, id, motion, subject, change);
     },
     page(id, stream, subject, out) {
       const m = mix.deref();
@@ -76,6 +73,23 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
       return timeIn(m, v, v.spec.stagger ? v.spec.stagger(subject as I) : 0);
     },
   };
+}
+
+// Apart from `changed`, whose body would otherwise make this closure's context on every change.
+function recordChange<I, O, S>(
+  m: Mixer<I, O>,
+  id: number,
+  motion: Motions<S>,
+  subject: S,
+  change: Change,
+): void {
+  record(m, 'motion', (stage) => {
+    const to = stage.mix(m);
+    if (to === undefined) return;
+    if (to !== m) return changeAhead(to, id, motion, subject, change);
+    const v = cuedById(m, id) ?? m.gone.find((g) => g.id === id);
+    ((v?.motion as typeof motion | undefined) ?? motion).change(subject, { ...change });
+  });
 }
 
 /**

@@ -1,7 +1,9 @@
 import { BOUND, COAST, CRITICAL, EASED, OVER, UNDER } from './closed.js';
 import { type Curve, curve } from './easing.js';
 import { Motions, type Shape } from './motions.js';
+import { reading } from './reading.js';
 import { release } from './shared.js';
+import { sampleThen } from './then.js';
 import type { Easing, MotionSpec, Patch, Setting } from './types.js';
 
 /**
@@ -100,6 +102,11 @@ class MotionPatch<I, O, V extends Value> {
   }
   at(_phase: number, subject: I, setting: Setting<void>): Partial<O> {
     const state = this.motions;
+    const back = reading.back;
+    if (back !== null) {
+      const flags = sampleThen(state, subject, setting.elapsed, back);
+      return { [this.writes[0] as keyof O]: state.valueOf(flags, state.xs) } as Partial<O>;
+    }
     const s = state.slot(subject);
     state.sample(s, setting.elapsed, state.xs, state.vs);
     return { [this.writes[0] as keyof O]: state.value(s, state.xs) } as Partial<O>;

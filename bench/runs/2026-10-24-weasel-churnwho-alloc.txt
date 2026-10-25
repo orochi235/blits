@@ -1,0 +1,32 @@
+# keiei (onto, --solo) v26.8.2 844d96a 2026-10-24 ALLOC=1 node --expose-gc bench/churnwho.mjs 5000
+patch per voice N=5000: 11467 B sampled per churned voice beyond steady frames
+   786 B  cue cue.js:20  ← cue mixer.js:340
+   432 B  slice :0  ← latest motions.js:675
+   393 B  record record.js:8  ← held held.js:24
+   389 B  Voice voice.js:436  ← cue cue.js:20
+   370 B  cueOn churnwho.mjs:28  ← frame churnwho.mjs:42
+   317 B  tween motion.js:295  ← cueOn churnwho.mjs:28
+   317 B  drop mixer.js:534  ← frame churnwho.mjs:42
+   308 B  retire fade.js:223  ← beginFade fade.js:126
+   304 B  prune move.js:205  ← moveTo move.js:38
+   298 B  moved moved.js:11  ← contribution fold.js:74
+   288 B  Voice voice.js:89  ← Voice voice.js:436
+   287 B  change motions.js:506  ← to motion.js:66
+   284 B  fresh motions.js:137  ← change motions.js:506
+   271 B  Named named.js:10  ← Voice voice.js:436
+   221 B  Motions motions.js:63  ← tween motion.js:295
+   208 B  retouch qualify.js:284  ← begin lanes.js:309
+   203 B  Float64Array :0  ← grow motions.js:648
+   188 B  prune motions.js:775  ← sample motions.js:390
+   182 B  write motions.js:657  ← insert motions.js:745
+   180 B  rows crowd.js:180  ← runCrowd crowd.js:163
+   170 B  changed strays.js:52  ← change motions.js:506
+   160 B  join rows.js:85  ← retouch qualify.js:284
+   151 B  push :0  ← insert motions.js:745
+   150 B  add departed.js:19  ← leave move.js:279
+   145 B  recordDrop mixer.js:605  ← drop mixer.js:534
+   145 B  index chain.js:164  ← enlist roster.js:12
+   144 B  recordCue cue.js:74  ← cue cue.js:20
+   143 B  record hosts.js:260  ← fade handle.js:128
+   143 B  slice :0  ← applied motions.js:706
+   126 B  forgot hosts.js:64  ← forget lanes.js:414

@@ -45,21 +45,24 @@ export function tapeOf(transport: Transport): Tape | undefined {
   });
 }
 
+interface Recorder {
+  readonly tape: Tape | undefined;
+  readonly replaying: boolean;
+  readonly projecting: boolean;
+}
+
+/** Whether `record` keeps a call made on `on` now, so a caller can skip making one it would drop. */
+export function taping(on: Recorder): boolean {
+  return on.tape !== undefined && !on.replaying && !on.projecting;
+}
+
 /**
  * Records a host call, which `again` makes once more when the mix plays past it after a seek, or
  * when a read ahead does, on the stage it is given.
  */
-export function record(
-  on: {
-    readonly tape: Tape | undefined;
-    readonly replaying: boolean;
-    readonly projecting: boolean;
-  },
-  label: string,
-  again: (stage: Stage) => void,
-): void {
+export function record(on: Recorder, label: string, again: (stage: Stage) => void): void {
   const tape = on.tape;
-  if (tape === undefined || on.replaying || on.projecting) return;
+  if (tape === undefined || !taping(on)) return;
   const op: TapeOp = {
     label,
     apply() {

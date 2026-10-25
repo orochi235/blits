@@ -1,0 +1,10 @@
+# keiei (onto, --solo) v26.8.2 844d96a 2026-10-24 node bench/keys.mjs, nine processes
+ 1/1  at       N= 10000     0.573 ms/frame  sink 3.72283935546875
+ 1/1  at       N= 10000     0.617 ms/frame  sink 3.72283935546875
+ 1/1  at       N= 10000     0.568 ms/frame  sink 3.72283935546875
+ 1/1  at       N= 10000     0.623 ms/frame  sink 3.72283935546875
+ 1/1  at       N= 10000     0.609 ms/frame  sink 3.72283935546875
+ 1/1  at       N= 10000     0.574 ms/frame  sink 3.72283935546875
+ 1/1  at       N= 10000     0.551 ms/frame  sink 3.72283935546875
+ 1/1  at       N= 10000     0.568 ms/frame  sink 3.72283935546875
+ 1/1  at       N= 10000     0.565 ms/frame  sink 3.72283935546875

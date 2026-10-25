@@ -1,0 +1,13 @@
+# keiei (onto, --solo) v26.8.2 2026-10-24 node --expose-gc bench/churnwho.mjs 5000, 844d96a against the working tree, alternated
+== round 1 844d96a
+patch per voice N=5000: allocated 12730 B per churned voice beyond steady frames (3028 B a frame steady); 3818 B per churned voice still alive
+== round 1 .
+patch per voice N=5000: allocated 12037 B per churned voice beyond steady frames (2998 B a frame steady); 3939 B per churned voice still alive
+== round 2 844d96a
+patch per voice N=5000: allocated 11947 B per churned voice beyond steady frames (2950 B a frame steady); 3939 B per churned voice still alive
+== round 2 .
+patch per voice N=5000: allocated 11686 B per churned voice beyond steady frames (3080 B a frame steady); 3937 B per churned voice still alive
+== round 3 844d96a
+patch per voice N=5000: allocated 12407 B per churned voice beyond steady frames (2964 B a frame steady); 3939 B per churned voice still alive
+== round 3 .
+patch per voice N=5000: allocated 11712 B per churned voice beyond steady frames (3018 B a frame steady); 3939 B per churned voice still alive

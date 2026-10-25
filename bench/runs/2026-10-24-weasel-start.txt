@@ -1,0 +1,7 @@
+# keiei (onto, --solo) v26.8.2 844d96a 2026-10-24 node bench/start.mjs 10000 7 tweens fns, three processes
+1/2  tweens   N=10000  cue    10.5 ms  first frame    33.7 ms  second     5.1 ms  (medians of 7)
+2/2  fns      N=10000  cue     7.2 ms  first frame    18.0 ms  second     1.8 ms  (medians of 7)
+1/2  tweens   N=10000  cue    10.3 ms  first frame    33.9 ms  second     5.1 ms  (medians of 7)
+2/2  fns      N=10000  cue    10.1 ms  first frame    22.7 ms  second     2.6 ms  (medians of 7)
+1/2  tweens   N=10000  cue    13.9 ms  first frame    56.6 ms  second     9.3 ms  (medians of 7)
+2/2  fns      N=10000  cue    13.1 ms  first frame    24.1 ms  second     2.7 ms  (medians of 7)

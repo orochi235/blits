@@ -24,6 +24,8 @@ export interface HandleHost<I, O> {
    * it, on the handle it is given: `h`, or a read ahead's handle on its copy of the voice.
    */
   record(h: VoiceHandle<I, O>, label: string, again: (h: VoiceHandle<I, O>) => void): void;
+  /** Whether `record` keeps a write made now, so a handle can skip making one it would drop. */
+  taping(): boolean;
 }
 
 /** Refuses a voice rate no clock can run at. */
@@ -119,9 +121,10 @@ export class VoiceHandle<I, O> implements Handle<I> {
     voice.written = true;
     voice.weight = w;
     this.#host.changed(voice);
-    this.#host.record(this, 'weight', (h) => {
-      h.weight = w;
-    });
+    if (this.#host.taping())
+      this.#host.record(this, 'weight', (h) => {
+        h.weight = w;
+      });
   }
 
   get rate(): number {
@@ -149,7 +152,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
       retime(voice, now, r, over);
     }
     this.#host.changed(voice);
-    this.#host.record(this, 'rate', (h) => h.ramp(r, over));
+    if (this.#host.taping()) this.#host.record(this, 'rate', (h) => h.ramp(r, over));
   }
 
   seek(elapsed: number, opts?: SeekOptions): Doubt {
@@ -166,7 +169,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     voice.seeks++;
     const doubt = this.#host.sought(voice, opts?.state !== 'keep');
     this.#host.changed(voice);
-    this.#host.record(this, 'seek', (h) => h.seek(elapsed, opts));
+    if (this.#host.taping()) this.#host.record(this, 'seek', (h) => h.seek(elapsed, opts));
     return doubt;
   }
 
@@ -175,7 +178,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     if (voice === null) return;
     voice.written = true;
     this.#host.fade(voice, opts);
-    this.#host.record(this, 'fade', (h) => h.fade(opts));
+    if (this.#host.taping()) this.#host.record(this, 'fade', (h) => h.fade(opts));
   }
 
   rise(opts?: { over?: number }): void {
@@ -183,7 +186,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     if (voice === null) return;
     voice.written = true;
     this.#host.rise(voice, opts);
-    this.#host.record(this, 'rise', (h) => h.rise(opts));
+    if (this.#host.taping()) this.#host.record(this, 'rise', (h) => h.rise(opts));
   }
 
   release(): void {
@@ -191,7 +194,7 @@ export class VoiceHandle<I, O> implements Handle<I> {
     if (voice === null) return;
     voice.written = true;
     this.#host.release(voice);
-    this.#host.record(this, 'release', (h) => h.release());
+    if (this.#host.taping()) this.#host.record(this, 'release', (h) => h.release());
   }
 
   weightOf(subject: I): number {

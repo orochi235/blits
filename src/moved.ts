@@ -1,5 +1,7 @@
 import { doubles } from './channels.js';
-import type { Motions } from './motions.js';
+import { type Motions, RunFlag } from './motions.js';
+import { reading } from './reading.js';
+import { sampleThen } from './then.js';
 import type { Subject } from './voice.js';
 
 /**
@@ -15,16 +17,23 @@ export function moved<I>(
   setting: { readonly elapsed: number },
   rec: Subject<unknown>,
 ): Record<string, unknown> {
-  let s = rec.run;
-  if (rec.freed !== run.freed) {
-    s = run.slot(subject);
-    rec.run = s;
-    rec.freed = run.freed;
+  let scalar: boolean;
+  const back = reading.back;
+  if (back !== null)
+    scalar = (sampleThen(run, subject, setting.elapsed, back) & RunFlag.SCALAR) !== 0;
+  else {
+    let s = rec.run;
+    if (rec.freed !== run.freed) {
+      s = run.slot(subject);
+      rec.run = s;
+      rec.freed = run.freed;
+    }
+    run.sample(s, setting.elapsed, run.xs, run.vs);
+    scalar = run.scalar(s);
   }
   const xs = run.xs;
-  run.sample(s, setting.elapsed, xs, run.vs);
   const delta = rec.delta ?? {};
-  if (run.scalar(s)) {
+  if (scalar) {
     delta[key] = xs[0] as number;
     return delta;
   }

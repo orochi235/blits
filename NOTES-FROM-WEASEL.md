@@ -57,14 +57,18 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   cueing the voices, 0.2 in `sync`, and 0.9 in the pull, against 0.46 for a frame with nothing
   changing once churn has left slots out of list order (the item above). The profile there is
   flat: `departed.add`, `retouch`, `copyRow` as a crowd closes up, a patch's first `grow`, each
-  under 4%. A stop still grows with N, less than in step with it; untraced, and a map read over
-  more subjects would do it. weasel has not timed this through its own harness, which reads
+  under 4%. A stop still grows with N, less than in step with it: 0.91, 2.36 and 3.83 µs each at
+  1,000, 10,000 and 40,000 (keiei, 2026-10-24, `ROUNDS=150`, `bench/runs/2026-10-24-weasel-restart.txt`);
+  untraced, and a map read over more subjects would do it. weasel has not timed this through its own harness, which reads
   0.10.0 from npm.
 - **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a
   `fn` voice in plain Node: about 35 ms warm against 16, and 80–90 cold against 28–42 (weasel,
   orochi under load, 2026-10-02). A cold run in blits' own shape read the other way, 34 against 49.
   weasel's vitest row read 8×, which weasel puts down to collection landing in its few measured
-  iterations, untraced. Not worth chasing until it shows outside a microbench.
+  iterations, untraced. Not worth chasing until it shows outside a microbench. Still about 2× in
+  blits' own shape (keiei, 2026-10-24, `bench/start.mjs 10000 7 tweens fns`, three processes): the
+  first frame 33.7–56.6 ms for tweens against 18.0–24.1 for fns, the second 5.1–9.3 against
+  1.8–2.7 (`bench/runs/2026-10-24-weasel-start.txt`).
 
 - **Neither what a churned voice leaves alive nor the garbage it makes is weasel's gap.**
   Reusing a retired voice's records was prototyped (2026-10-05, teitou; the prototype was
@@ -88,10 +92,15 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   ends by score, owner and then name, tag or channel in nested maps rather than one string per key
   (1.56 KB to 0.15), `drop`'s closures became methods (0.82 to 0.35), and `cue` stopped making a
   `{}` fade and its tape closure's context per voice (0.2). `turnover^`, `churn^` and `tweens^`
-  read level over six alternated rounds, each row in its own process. What is left is under 0.4 KB
-  a site: the voice, its handle and named record, the host's own patch and its `Motions` (which
-  blits cannot recycle), `retire`, the fold's `moved`, and the stretch copies a retarget keeps
-  (`latest` and `applied` in `src/motions.ts`, 0.58), which are history, not garbage.
+  read level over six alternated rounds, each row in its own process. On 2026-10-24 it went from
+  12.4 to 11.7 KB (keiei, medians of three alternated passes a side,
+  `bench/runs/2026-10-24-taping-gate-churnwho.txt`): a mix with no tape makes no closure for a
+  call it would not record, where cue, drop, a motion change and each handle write made one, with
+  frame cost level (`bench/ledger.tsv`). What is left is under 0.8 KB a site, by
+  `bench/runs/2026-10-24-weasel-churnwho-alloc.txt`: `cue` itself, the voice, its handle and
+  named record, the host's own patch and its `Motions` (which blits cannot recycle), `retire`,
+  `prune` in `move.ts`, the fold's `moved`, and the stretch copies a retarget keeps (`latest` and
+  `applied` in `src/motions.ts`), which are history, not garbage.
 
 - **A `keys` read costs several times weasel's own keyframe sampler.** weasel's `sampleTrack`
   reads one `keys` patch per track (`patch.at(phase)`, one numeric channel, four stops) since
@@ -116,7 +125,9 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   from 0.0527 / 0.0466 / 0.0550; 10,000 tracks 0.4090 / 1.0230 / 0.4198 from 0.4722 / 0.4863 /
   1.0391, against 0.16–0.19 for weasel's old sampler. One pass in three reads about 1.0 at
   10,000 on both versions, and both passes on studio read 1.17, so the row has a slow mode
-  nobody has explained. Around each `patch.at`, weasel's `sampleTrack` makes two `Map` reads
+  nobody has explained. blits' own `bench/keys.mjs` does not show it: nine processes on keiei
+  read 0.551–0.623 ms (2026-10-24, `bench/runs/2026-10-24-weasel-keys.txt`), so it lives in
+  weasel's harness or its `sampleTrack`. Around each `patch.at`, weasel's `sampleTrack` makes two `Map` reads
   and a call through a stored function, a share this bench does not separate.
 
 ## What weasel has that blits doesn't
@@ -130,14 +141,3 @@ Open design questions rather than asks. blits may rightly say some of these belo
   that covers some components of the value and not others, such as an IK arm beside clips
   holding the rest of a rig, and holds on an angle that meet at their average direction, not
   each the short way from rest. weasel uses neither `locus` nor a voice `weight` any more.
-- **Observability that costs nothing unwatched.** Covered without weasel's `watch(listener)`:
-  `mix.voices(tag?)` lists what is playing and `handle.weightOf` says at what weight, each free
-  until asked.
-
-## What weasel would need before depending on blits
-
-For context. weasel has no stacking model: two animations writing the same property resolve as
-last-writer-wins, which its vertex-color and animation specs both flag as unsolved. blits' channel
-model is the answer to that. For weasel to use it, blits has to be on npm (`@weasel-js/core`
-can't take a `file:` dependency), the out-object bug has to be fixed, and the hot path has to run
-at scene sizes: thousands of nodes, probed from the paint walk every frame.

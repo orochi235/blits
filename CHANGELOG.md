@@ -16,6 +16,11 @@ version and everything else the patch. Each release lists its changes as **Break
   voices (`tweens^`) take 0.285 ms a frame against 0.300, and one tween voice over 10,000 subjects
   (`weasel^`) 0.369 against 0.391 (keiei, medians of seven runs of 5,000 frames, each in its own
   process); other rows are unchanged.
+- `project` back under `history` reads a motion voice's subject as it showed. A subject retargeted
+  and then faded out of the voice or dropped read back to before it left as though met afresh from
+  `from`, and a retarget, push or `set` given a time earlier than the frame it was made in read back
+  as in force before that frame. A seek already read both right. A read back no longer numbers a
+  subject in the live patch either.
 
 ## 0.14.0
 
