@@ -239,13 +239,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    through two builds), `SAME_LANES=off bench/same.sh <rev>` compares this tree's lanes with a
    revision's general path, and `AB_EACH=1 bench/ab.sh` times one row per process. Open, largest
    first:
-     - **A voice over every subject cued among a crowd** (`swap`: 10k tween voices of one subject
-       each, a voice over all of them replaced every frame) costs about 3.6 ms a frame on teitou,
-       from 12.4 at `560f79c` and 6.2 at `a7d5317`, against 0.83 for the tween voices alone. What
-       is left is spread thin: a record per subject for the new voice and the WeakMap entry that
-       holds it (about a fifth of the profile together), the patch call and its fold on the general
-       path, and collection. Keying a voice's records by subject number would drop the WeakMap
-       for subjects lanes number, at the cost of a second way to find a record.
+     - **A voice over every subject cued among a crowd** (`swap`: 10k one-subject tween voices, a
+       voice over all of them replaced every frame) costs 2.70–2.73 ms a frame on teitou against
+       0.63 for the tween voices alone (2026-10-25, `FRAMES=3000`, 4 rounds). Since 2026-10-09 such
+       a voice shares one record, so no record or WeakMap entry is made per subject. What is left
+       is each subject meeting the new voice: relinking its chain, a lane position, and a
+       general-path fold, because a fn voice's first call for a subject is made there. Meeting
+       every subject on the new lane before the fill was built and backed out (2.72 → 3.59 ms,
+       2026-10-25): the first call left each subject, and all its voices, to the general path. A
+       keys voice makes no call and could take that route; unbuilt.
      - **A blend still costs half again a plain voice**: three voices blended by a signal over
        10k subjects take about 3.2–3.3 ms a frame, three plain ones 2.0 and a plain locus of three
        2.7–2.8 (teitou, `FRAMES=5000`, 10 rounds, 2026-10-04). `mix.blend` now reads its signal
@@ -254,16 +256,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        almost nothing. A profile against the plain locus puts the difference in the lanes' per-member weight path (`one`,
        `signalled`, and `gatherLocus`). A locus with a motion member, or a signal that keeps state,
        stays on the general path.
-     - **Starting 10k one-subject tween voices** takes about 2.5–5 ms to cue and 16–18 for the
-       first frame, against about 3–4 and 11–14 for `fn` voices (teitou, 2026-10-05, `bench/start.mjs`
-       medians over three alternated rounds against `66ea692`, which took 6–6.5 and 18–20). Cueing caught up once a patch stopped making a buffer before its first subject.
-       What the first frame still allocates per voice, by the code: the patch's first stretch
-       (its endpoint arrays, a weak reference, a buffer off the heap) and the voice's own WeakMap
-       and record, with collection the largest line of a profile (15%);
-       weasel's ask below is the way past it. Measured no different and reverted: carving motion
-       buffers from a shared slab, and keeping a named subject's record out of the WeakMap. Asking
-       the mix by voice id rather than through two closures, and finding a lone subject without a
-       WeakMap, measured no different in time and were kept for the bytes they save.
+     - **Starting 10k one-subject tween voices** takes a first frame of 28.0–31.0 ms against
+       10.0–13.6 for fn voices (teitou, 2026-10-25, `bench/start.mjs`). The tween-only part: crowd
+       `join` 1.8 ms, the motion patch's off-heap first buffer 1.5, a second numbering of the
+       subject 0.7, and 1.1 more of collection. Measured no different and reverted: carving motion
+       buffers from a shared slab, and keeping a named subject's record out of the WeakMap. v0.13.0
+       read 23.0–25.8 in mixed-revision runs under heavy load (teitou at load 14), so a slowdown
+       since then is unconfirmed until a quiet node reruns it.
      - **A crowd's `keys` rows** cost about 27 ns a subject by `pull` (teitou, 2026-10-25,
        `keyses^` 0.270 ms), against 25 for keys voices over every subject (2026-10-05). Rows whose
        stops share phases and easings search and ease once per phase (`KeyRows.search`, keyed by a
