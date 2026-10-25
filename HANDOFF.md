@@ -264,12 +264,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        buffers from a shared slab, and keeping a named subject's record out of the WeakMap. Asking
        the mix by voice id rather than through two closures, and finding a lone subject without a
        WeakMap, measured no different in time and were kept for the bytes they save.
-     - **A crowd's `keys` rows** cost about 35 ns a subject by `pull` against 25 for keys voices
-       over every subject (teitou, 2026-10-05), from 66–102 once their stops were copied into
-       the crowd's own array. What is left is each row's own segment search, ease and lerp, where
-       a shared voice does those once per phase; sharing them across rows whose stops have the
-       same phases and easings would need a way to tell that cheaply, such as interning a
-       track's timing when it is built.
+     - **A crowd's `keys` rows** cost about 27 ns a subject by `pull` (teitou, 2026-10-25,
+       `keyses^` 0.270 ms), against 25 for keys voices over every subject (2026-10-05). Rows whose
+       stops share phases and easings search and ease once per phase (`KeyRows.search`, keyed by a
+       timing number given when a row is added); what is left per row is its lerp and fold. The
+       search has to stay out of `fold`: inside it, `fold` stopped inlining and boxed each row's
+       phase (+155 kB a frame, backed out).
      - **A voice that allocates almost nothing per cue would not speed weasel's frame.** At
        `0c80b6d` (3.7 KB a voice) weasel's animator takes 0.50–0.73 ms a frame for 10k tweens on
        teitou, against 0.165 with no voice cued. Pooling weasel's own per-animation objects, which
@@ -303,16 +303,20 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    runs since 2026-10-05: on teitou `tweens^` took 0.17 ms a frame and `weasel^` 0.22 before the
    2026-10-24 changes below, against 0.031–0.047 for a hand-written loop doing the same
    arithmetic. What is left:
-   - **Where the frame goes** (teitou, `--cpu-prof` at 20,000 frames, 2026-10-24, before the two
-     changes below): `tweens^` is 46% `bareRows`, 28% `pullRun`, then `rested`, `copies` and
-     `rests` at 1–3% each; `weasel^` is 50% `runMotion`, 23% `pullRun`. `--trace-turbo-inlining`
-     shows `bareRows` inlines everything it calls (`clock`, `left`, `progress`, `between`,
-     `foldNumber`), so the time the profile charges those names is spent inside `bareRows`, not
-     on calls. Its cost is the memory each row touches: about 290 B a row across `hot` (19
-     numbers, the 3 for `v0` unread by a tween), `data`, `per` and the channel's values, against
-     about 50 for the hand loop. The way past it is a layout that touches less, such as a bare
-     tween crowd's times and endpoints in arrays of their own, which is a larger change than
-     anything tried so far.
+   - **Where the frame goes** (teitou, `--cpu-prof`, 2026-10-24): `tweens^` is 46% `bareRows`, 28%
+     `pullRun`; `weasel^` 50% `runMotion`, 23% `pullRun`. `bareRows` inlines everything it calls.
+     It does not pay for the bytes each row touches: in a model of its loop (`bench/layoutsim.mjs`,
+     `bench/runs/2026-10-25-layoutsim.txt`), the same fields in arrays of their own saved 7%, and
+     `hot` at stride 16 instead of 19 saved 2.5%. Removing one check at a time saved: the `per`
+     read 11%, the id 4%, `MSLOT`/`MET` 5%, `SAMPLED` 4%, the easing memo 2%; all together 97 → 76
+     µs, against 40 for the hand loop. The rest is filling values with rest, folding into them, and
+     copying out. A new layout is not worth building (2026-10-25).
+   - **Kept 2026-10-25**: `keepProbed` reads `per` only where the probed weight could change, and a
+     fill running to the end skips row ids. teitou, 9 runs a side at `FRAMES=5000`: `weasel^`
+     0.204 → 0.198 (U = 0.5), `tweens^` 0.169 → 0.166 (within noise). `fill.ts`'s `one` and `rest`
+     still do the old copy.
+   - **Not tried**: dropping the `MSLOT`/`MET`/`SAMPLED` checks for bare rows. It needs a row-ready
+     state cached under invariants on the flags, for about 5% of the loop.
    - **Two changes kept** (2026-10-24): a probe holds its subject for the next fill only while
      the last fill looked one up (`Lanes.holds`), which a fill of bare tweens never does; and
      `runMotion` reads a run's flags once in place of `bareAt`, `scalar` and `base`, and weighs a
