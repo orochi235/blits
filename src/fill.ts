@@ -6,7 +6,7 @@ import { open as openRecord, shut as shutRecord } from './everyone.js';
 import { unband } from './fold.js';
 import { foldLocus, gatherLocus } from './gather.js';
 import { runKeys } from './keyfill.js';
-import { Arg, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
+import { Arg, keepProbed, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { reach } from './meet.js';
 import { absent } from './numbers.js';
@@ -158,10 +158,7 @@ export function rest<I, O>(lanes: Lanes<I, O>, lane: Paced): void {
     if (slot < 0) continue;
     reach(lanes, slot, 1);
     // A probe read this subject from the last fill, which this lane's weight stays from.
-    if (lanes.per[slot * Per.SLOT + Per.LANE_FILL] === lanes.fills - 1) {
-      const o = p * Row.STRIDE;
-      data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
-    }
+    keepProbed(data, p * Row.STRIDE, lanes.per, slot * Per.SLOT, lanes.fills);
   }
 }
 
@@ -299,9 +296,7 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
   const arg = this.arg;
   const data = lane.data;
   const o = p * Row.STRIDE;
-  // A probe read this subject from the last fill: keep the weight it read for `weightOf`.
-  if (this.per[slot * Per.SLOT + Per.LANE_FILL] === this.fills - 1)
-    data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
+  keepProbed(data, o, this.per, slot * Per.SLOT, this.fills);
   if (this.lately >= 0 && this.unread(slot)) return false;
   const delay = data[o + Row.DELAY] as number;
   const raw = elapsedNow - delay;
