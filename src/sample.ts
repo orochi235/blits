@@ -3,7 +3,7 @@ import { foldNumber } from './channels.js';
 import { clampWeight, passAt, same, weighed } from './clock.js';
 import { Arg, type Lane, type Laned, Per, type Positions, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
-import type { Motions } from './motions.js';
+import { Law, type Motions, RunFlag } from './motions.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
 import { between, left, progress } from './tweened.js';
@@ -55,6 +55,11 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
   }
   const own = ease !== undefined && !signal && run.watcher === lanes && run.watchId === voice.id;
   const folds = n === ch.axes && ch.plain;
+  // The weight a voice with a fade and no subject ramps gives every subject at one fade: worked
+  // out again for a zero, whose sign a hit by `===` would not keep.
+  let fadeOf = Number.NaN;
+  let baseOf = Number.NaN;
+  let faded = 0;
   for (let p = 0; p < list.length; p++) {
     // Its signal just made kept state: no further call this fill, the general path makes them.
     if (signal && voice.keeping) return;
@@ -91,8 +96,18 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
         continue;
       }
       w = arg[Arg.WEIGHT] as number;
-    } else
-      w = flat && !parts ? whole : weighed(voice.weight, lane.fade, lanes.parting(voice, slot));
+    } else if (parts) w = weighed(voice.weight, lane.fade, lanes.parting(voice, slot));
+    else if (flat) w = whole;
+    else {
+      const fade = lane.fade;
+      const base = voice.weight;
+      if (fade !== fadeOf || base !== baseOf || fade === 0 || base === 0) {
+        fadeOf = fade;
+        baseOf = base;
+        faded = weighed(base, fade, 1);
+      }
+      w = faded;
+    }
     data[o + Row.WEIGHT] = w;
     if (data[o + Row.MET] === 0) {
       if (Number.isNaN((records[p] as Subject<unknown>).probed)) {
@@ -103,7 +118,15 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
       data[o + Row.MET] = 1;
     }
     const ms = data[o + Row.MSLOT] as number;
-    const b = ms < 0 ? -1 : run.bareAt(ms);
+    // `bareAt` and `scalar` written out: V8 leaves them and `base` out of line here.
+    let b = -1;
+    let scalar = false;
+    if (ms >= 0) {
+      b = Law.HEAD + ms * run.stride;
+      const f = run.runs[b + 1] as number;
+      if ((f & (RunFlag.PENDING | RunFlag.OLDER)) !== 0) b = -1;
+      scalar = (f & RunFlag.SCALAR) !== 0;
+    }
     if (
       b < 0 ||
       (probed &&
@@ -117,7 +140,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
       continue;
     }
     const runs = run.runs;
-    if (own && folds && run.scalar(ms) === ch.scalar) {
+    if (own && folds && scalar === ch.scalar) {
       if (data[o + Row.SAMPLED] !== Sampled.BARE) {
         data[o + Row.SAMPLED] = Sampled.BARE;
         lane.deltas[p] = null;
@@ -150,7 +173,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     data[o + Row.SAMPLED] = fills;
     data[o + Row.SEEKS] = seeks;
     if (w <= 0) continue;
-    if (folds && run.scalar(ms) === ch.scalar) {
+    if (folds && scalar === ch.scalar) {
       const values = ch.values;
       const base = slot * n;
       for (let a = 0; a < n; a++)

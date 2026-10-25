@@ -10,6 +10,12 @@ version and everything else the patch. Each release lists its changes as **Break
 
 - A weight signal on lanes is handed, after a stretch of frames at weight 0, the `dt` since its
   last read, as it is off lanes. It was handed the gap since the subject last had a delta.
+- Tweens read by `pull` cost about a twentieth less a frame: a probe holds its subject for the
+  next fill only while fills look subjects up, which bare tweens never do, and a motion voice's
+  fill reads each subject's flags once and weighs a shared fade once. 10,000 one-subject tween
+  voices (`tweens^`) take 0.285 ms a frame against 0.300, and one tween voice over 10,000 subjects
+  (`weasel^`) 0.369 against 0.391 (keiei, medians of seven runs of 5,000 frames, each in its own
+  process); other rows are unchanged.
 
 ## 0.14.0
 
