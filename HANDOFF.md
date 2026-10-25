@@ -387,10 +387,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    instead saves 0.10 ms). `base` around the call costs 4 ns, `prime` 5 ns, and `call` at weight
    0 another 7 ns. The rest, about 15 ns, is `one`'s own bookkeeping for the subject. No one piece
    is worth a change on its own: skipping `call`'s setup at weight 0 measured level to 4% slower
-   by `pull` and was backed out (2026-10-24, ledger). Unbuilt, Mike's call: making `Setting`'s
-   fields read-only to a signal would let a lane fill the per-lane fields once and refill only
-   `dt`, `state` and `keepOn` per subject, saving at most `prime`'s 5 ns, at the cost of a
-   type-level break.
+   by `pull` and was backed out (2026-10-24, ledger). `Setting`'s fields are read-only since
+   2026-10-25 (Mike's go, unreleased), so a lane may now fill the per-lane fields once and refill
+   only `dt`, `state` and `keepOn` per subject; that saves at most `prime`'s 5 ns and is unbuilt.
    - The skip, done (2026-10-07).
    - Declared bounds, the design to evaluate (unbuilt). The mix takes subject positions from the
      host, and reach may be declared at three levels, each optional, each meaning "everywhere"
