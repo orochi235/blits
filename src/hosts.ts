@@ -21,7 +21,7 @@ import { localNow } from './place.js';
 import { reading } from './reading.js';
 import { heard } from './signals.js';
 import { cuedById } from './strays.js';
-import { record } from './tape.js';
+import { record, taping } from './tape.js';
 import type { Booker, BookOptions, Channel, Doubt, Handle } from './types.js';
 import { unreach } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
@@ -246,6 +246,7 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       // A voice that stopped sharing makes a subject's record at its next read, from what it kept.
       return held !== undefined ? held.weight : weightAt(voice, slot);
     },
+    taping: () => taping(mix),
     record: (h, label, again) =>
       record(mix, label, (stage) => {
         const to = stage.mix(mix);

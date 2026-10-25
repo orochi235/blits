@@ -16,7 +16,7 @@ import { enlist } from './roster.js';
 import { scoredAdd } from './scored.js';
 import { checkChild, refit } from './spans.js';
 import { cuedById, motionOwner } from './strays.js';
-import { record, unplayable } from './tape.js';
+import { record, taping, unplayable } from './tape.js';
 import type { Channel, FadeSpec, Handle, Kit, Patch, VoiceSpec } from './types.js';
 import { type Controls, Voice } from './voice.js';
 
@@ -78,7 +78,7 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
   enter(mix, voice);
   const h = handle(mix, voice) as VoiceHandle<I, O>;
   voice.handle = h;
-  recordCue(mix, h);
+  if (taping(mix)) recordCue(mix, h);
   return h;
 }
 

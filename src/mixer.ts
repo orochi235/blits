@@ -52,7 +52,7 @@ import { ScoreIndex } from './scored.js';
 import { seek } from './seek.js';
 import { Fitting, refit } from './spans.js';
 import { Masked, Store } from './store.js';
-import { record, unplayable } from './tape.js';
+import { record, taping, unplayable } from './tape.js';
 import { touch } from './touch.js';
 import { type Announced, announce, Transport } from './transport.js';
 import type {
@@ -658,7 +658,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     if (strays !== undefined) for (const motion of strays) this.releaseIn(motion, subject, kept);
     this.strays.delete(subject);
     for (const motion of this.strayAll) this.releaseIn(motion, subject, kept);
-    this.recordDrop(subject);
+    if (taping(this)) this.recordDrop(subject);
   }
 
   /** Lets `voice` go of a dropped subject. Methods rather than closures, so a drop makes neither. */
