@@ -34,6 +34,11 @@ export interface Numeric {
   axes: number;
   /** An angle's full turn: each value is taken the short way round before it folds. */
   turn?: number;
+  /**
+   * An `'own'` channel whose fold is this plain arithmetic, its lerp alone its own: a lane folds
+   * it as the op and lerps it through the channel. A copy that predates it folds it as `'own'`.
+   */
+  folds?: 'sum';
 }
 
 /** The stock channels' arithmetic, once: their `merge` and `scale` are these, and so is `foldNumber`. */

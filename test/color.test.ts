@@ -84,6 +84,7 @@ describe('color()', () => {
     const flat = color();
     const round = color({ lerp: 'oklch' });
     expect(round.kind).toBe('color(sum, oklch)');
+    expect(numericOf(round)).toEqual({ op: 'own', axes: 4, folds: 'sum' });
     expect(toHex(flat.lerp(oklab(RED), oklab(CYAN), 0.5))).toBe(0xd2a993);
     expect(toHex(round.lerp(oklab(RED), oklab(CYAN), 0.5))).toBe(mixHex(RED, CYAN, 0.5));
     expect(toHex(round.lerp(oklab(RED), oklab(BLUE), 0.25))).toBe(mixHex(RED, BLUE, 0.25));

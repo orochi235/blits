@@ -186,7 +186,7 @@ export function color(
     channel.kind = `color(sum${space})`;
     if (!round) return channel;
     const turning: Channel<number[]> = { ...channel, lerp: lerpLch };
-    vouch(turning, { op: 'own', axes: 4 });
+    vouch(turning, { op: 'own', axes: 4, folds: 'sum' });
     return turning;
   }
   if (of.kind === 'last') {
