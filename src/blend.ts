@@ -66,10 +66,7 @@ export function blended<I, O>(
     if (of.frame === frame && of.subject === subject) return shareOf(of.value, i, of.stops);
     cell = of.reads.get(subject);
     if (cell?.frame === frame) return shareOf(cell.value, i, of.stops);
-  } else if (slot < of.frames.length) {
-    const read = this.laneRead(voice, slot);
-    if (!Number.isNaN(read)) return read;
-  } else {
+  } else if (slot >= of.frames.length) {
     const size = Math.max(slot + 1, of.frames.length * 2, 64);
     const frames = new Float64Array(size);
     const values = new Float64Array(size);
