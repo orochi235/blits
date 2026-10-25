@@ -192,3 +192,23 @@ describe('a read ahead after a seek back', () => {
     expect(probes(m)).toEqual(shown.get(400));
   });
 });
+
+describe('a read ahead past many known events', () => {
+  it('meets voices starting many stops on as playing on does, a drop on the way', () =>
+    readsAhead((m, t) => {
+      if (t === 0) {
+        m.cue({ patch: drift() });
+        for (let k = 0; k < 12; k++)
+          m.cue({
+            patch: k % 2 === 0 ? saw : wave,
+            start: 40 + 50 * k,
+            fade: { in: 30 },
+            loop: 2,
+            freeze: k % 3 === 0 ? 'before' : undefined,
+            stagger: k % 4 === 1 ? (s) => (s === a ? 0 : 25) : undefined,
+          });
+      }
+      if (t === 304) m.drop(b);
+      if (t === 400) m.cue({ patch: ramp, start: 480, weight: slew(() => 1, { riseMs: 100 }) });
+    }, 16));
+});

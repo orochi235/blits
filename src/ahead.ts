@@ -167,11 +167,18 @@ export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
   c.cued = mix.cued
     .filter((v) => v.state !== 'done')
     .map((v) => {
-      const copy: Voice<I, O> = v.copy(
-        (subject) => carry(mix, v, subject, c, copy),
-        undefined,
-        true,
-      );
+      const link = {
+        mix,
+        voice: v,
+        up: links.get(v),
+        seen: 0,
+        shared: false,
+        filled: false,
+      } as unknown as Link;
+      const copy: Voice<I, O> = v.copy((subject) => carry(link, subject, c, copy), undefined, true);
+      link.seen = copy.seen;
+      link.shared = copy.sharing;
+      links.set(copy, link);
       const at = mix.pins?.get(v);
       if (at !== undefined) pin(c, copy, at);
       return copy;
@@ -214,6 +221,36 @@ export function recordOf<I, O>(
     : undefined;
 }
 
+/** Where a read ahead's copy of a voice came from, and how it stood when it was made. */
+interface Link {
+  mix: Mixer<unknown, unknown>;
+  voice: Voice<unknown, unknown>;
+  /** The link of `voice`, where it is itself a copy at the stop before. */
+  up: Link | undefined;
+  /** The copy's `seen` and `sharing` as it was made. */
+  seen: number;
+  shared: boolean;
+  /** Whether the copy has taken a record from `voice`. */
+  filled: boolean;
+}
+
+/** Each read ahead copy's link, by the copy. */
+const links = new WeakMap<object, Link>();
+
+/**
+ * Whether a read ahead's copy of a voice holds a record only where the copy it was made from does:
+ * it has met no subject, taken no record, shares none, and reaches none it was asked about.
+ */
+function empty(voice: Voice<unknown, unknown>, link: Link): boolean {
+  return (
+    voice.seen === link.seen &&
+    !link.filled &&
+    !link.shared &&
+    voice.unreached === null &&
+    voice.unreachedBits === null
+  );
+}
+
 /**
  * Whether a subject's record on a read ahead's copy at a stop can go on to the copy at the next
  * stop as it is: each stop reads a subject once, before the next carries it on, and nothing reads
@@ -234,12 +271,19 @@ function handOn(h: Subject<unknown>): Subject<unknown> {
  * again where it was still ahead, since the copy's clock may have moved it.
  */
 function carry<I, O>(
-  mix: Mixer<I, O>,
-  voice: Voice<I, O>,
+  link: Link,
   subject: I,
   c: Mixer<I, O>,
   copy: Voice<I, O>,
 ): Subject<unknown> | undefined {
+  const mix = link.mix as unknown as Mixer<I, O>;
+  const voice = link.voice as unknown as Voice<I, O>;
+  // A voice starting many stops on would otherwise ask every copy before it, one by one. Where
+  // the first copy that may hold one has none, each copy after it has none, dropped or not.
+  let from = link;
+  while (from.up !== undefined && empty(from.voice, from.up)) from = from.up;
+  if (from !== link && recordOf(from.mix, from.voice, subject as unknown) === undefined)
+    return undefined;
   const live = recordOf(mix, voice, subject);
   if (live === undefined) return undefined;
   const h = handable(mix, voice, live) ? handOn(live) : copyHeld(voice, live);
@@ -248,5 +292,6 @@ function carry<I, O>(
     h.shown = c.shownOf(copy, h.since);
   }
   h.from = h.stepped;
+  link.filled = true;
   return h;
 }
