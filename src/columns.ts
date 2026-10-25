@@ -51,6 +51,9 @@ export function pullRun<I, O>(
   const frame = lanes.frameProbes;
   const subjects = lanes.subjects;
   const unlinked = lanes.unlinked;
+  const holds = lanes.holds;
+  // Nothing in `pullRun` makes a subject owe a voice, so one with nobody owing need not ask.
+  const owing = lanes.owed.any();
   const current = since === Number.POSITIVE_INFINITY;
   if (columns !== lanes.queuedFor) {
     flush(lanes);
@@ -76,7 +79,7 @@ export function pullRun<I, O>(
       (per[o + Per.FILLED] as number) >= busy ||
       per[o + Per.IDLE] !== 0 ||
       (per[o + Per.SEEN] as number) < wide ||
-      lanes.owes(slot)
+      (owing && lanes.owes(slot))
     )
       break;
     if (
@@ -88,7 +91,7 @@ export function pullRun<I, O>(
       lanes.distinct++;
     per[o + Per.LANE_PROBE] = ++lanes.probes;
     per[o + Per.LANE_FILL] = fills;
-    subjects[slot] = subject;
+    if (holds) subjects[slot] = subject;
     if (slot !== first + (n - start)) {
       if (first >= 0) {
         qSlots[k] = first;
@@ -107,7 +110,7 @@ export function pullRun<I, O>(
     k++;
   }
   lanes.queued = k;
-  if (n > from) lanes.holding = true;
+  if (n > from && holds) lanes.holding = true;
   return n;
 }
 

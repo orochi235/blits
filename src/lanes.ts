@@ -159,6 +159,13 @@ export class Lanes<I, O> implements Watcher {
   subjects: (I | typeof absent | undefined)[] = [];
   /** Whether a probe has held a subject since the last fill let them go. */
   holding = false;
+  /**
+   * Whether probes hold their subjects for the next fill: while the last fill looked one up. A
+   * fill of bare tweens never does, and holding cost a store a subject and a clear a frame.
+   */
+  holds = true;
+  /** How many times a fill or a probe has looked a subject up by number, for `holds`. */
+  lookups = 0;
   /** While a fill runs, so a probe a patch makes from inside it takes the general path. */
   filling = false;
   /**
@@ -346,8 +353,10 @@ export class Lanes<I, O> implements Watcher {
     if (lane) {
       per[o + Per.LANE_PROBE] = probe;
       per[o + Per.LANE_FILL] = this.fills;
-      this.subjects[slot] = subject;
-      this.holding = true;
+      if (this.holds) {
+        this.subjects[slot] = subject;
+        this.holding = true;
+      }
     } else per[o + Per.GENERAL_PROBE] = probe;
     return lane;
   }

@@ -38,6 +38,7 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
   flush(lanes);
   const host = lanes.host;
   lanes.filling = true;
+  const lookups = lanes.lookups;
   try {
     lanes.fills++;
     lanes.owed.begin(lanes.fills);
@@ -100,6 +101,7 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
     }
     lanes.moved = reading.moved;
     lanes.inputs = reading.inputs;
+    lanes.holds = lanes.lookups !== lookups;
   } finally {
     lanes.filling = false;
     lanes.late.length = 0;
@@ -200,6 +202,7 @@ export function parting<I, O>(this: Lanes<I, O>, voice: Voice<I, O>, slot: numbe
 }
 
 export function subjectAt<I, O>(this: Lanes<I, O>, slot: number): I | typeof absent {
+  this.lookups++;
   let subject = this.subjects[slot];
   if (subject === undefined) {
     subject = this.numbers.subject(slot);

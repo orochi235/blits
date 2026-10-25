@@ -26,6 +26,11 @@ export class Owed {
     this.at = at;
   }
 
+  /** Whether any subject owes a laned voice this fill. */
+  any(): boolean {
+    return this.lists.length > 0;
+  }
+
   /** Whether the subject at `slot` owes some laned voice this fill. */
   owes(slot: number): boolean {
     return this.lists.length > 0 && this.fill[slot] === this.now;
