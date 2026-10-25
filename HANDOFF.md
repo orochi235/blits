@@ -464,8 +464,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    decided (the schema page's Decided against). A reach that changes over time (item 4) is another
    way to say offscreen.
 
-6. **`color({ lerp: 'oklch' })` runs off lanes**, since a lane lerps a stock channel straight
-   across. `color()` and `color(last())` (OKLab) run on them.
+6. **`color({ lerp: 'oklch' })` runs on lanes** (2026-10-25), vouched `{ op: 'own', axes: 4,
+   folds: 'sum' }`: a lane folds it as a plain sum and, where a lane interpolates (`foldKeys`,
+   `KeyRows.add`, `gatherInto`), calls the channel's `lerp` (`Laned.straight` false), so `lerpLch`
+   is the one OKLCH lerp both paths use. A copy of blits that predates `folds` folds it as `'own'`,
+   correctly, so `numeric@1` kept its version. On keiei, alone on the node, 7 rounds, 10k subjects
+   (`bench/runs/2026-10-25-oklch-lanes.txt`): `hues` 2.90 to 1.38 ms by probe and 3.29 to 0.67 by
+   `pull`, against 5.10 with lanes off; `glowo` 3.26 to 2.63. Open, Mike's call: a `tween`,
+   `spring` or `glide` on an oklch color still moves straight across each OKLab axis on both paths,
+   since motions never call a channel's `lerp`.
 
 7. **blits-quarks and magicsmoke.** magicsmoke is on engine 0.8.1 but its fizz and tuning stay on
    its own code: the driver doesn't fit without changing what magicsmoke does. Its
