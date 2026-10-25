@@ -471,3 +471,52 @@ the typecheck, the tests and the smoke run.
 - A link on the score for an anchor on a group, or to one: header lanes take no links.
 - Recording level moves.
 - Saving to a file.
+
+## Chosen while building
+
+Calls made while building, each the owner's to overturn, with how to reverse it.
+
+- **The Both tab is one diagram with both kinds of edge**, not the two views linked side by side
+  (2026-10-17). Reverse it by replacing `BothPanel` with a `FlowPanel` over a `TimingPanel`,
+  sharing `selected`.
+- **Editing is the Both tab behind an edit box**, not a tab of its own, and Flow and Timing stay
+  read-only (2026-10-17). Reverse it by giving those panels the same `FlowDiagram` editing props.
+- **A port's meaning is its compass side**: a voice's or group's top takes a weight, its left is
+  its start, its right its end; a signal or mark gives from its bottom. weasel's default ports are
+  kept so layout is unchanged; the unused ones are hidden (2026-10-17). Reverse it by giving nodes
+  their own `ports` in `FlowDiagram`, and rewriting `roleOf` in `src/blits/wire.ts`.
+- **Dragged node positions last the page's life**, outside the composition and its undo
+  (2026-10-17). Reverse it by storing them in the composition (a new optional field, which `load`
+  would have to accept).
+- **The Timing tab boxes owners and spans, not loci**: a weasel diagram group holds each node
+  once, a voice has both an owner and a locus, and voices of one locus may sit under different
+  owners (2026-10-13). Reverse it by boxing loci in `timingOf` and drawing owners as nodes with
+  edges.
+- **The desk is live** for the picked subject (2026-10-17). Reverse it by passing `deskOf`'s desk
+  straight to `MixerDesk` in `DeskPanel`, skipping `litDesk`. Groups are brackets over their strips
+  rather than strips of their own, with strips in the score's order (`deskOf`'s `groups`); a desk
+  with more voices than fit at 24 px apart scrolls sideways (`MIN_PITCH` in `MixerDesk/layout.ts`);
+  and only channels something writes get a bus, as in the flow.
+- **A join or query anchor draws a dotted link** from each voice `timingOf` says it could wait on:
+  close dots for `all`, wide for `any` or a query, and a query inside an `all` counts as `any`
+  (2026-10-17). Change the look in `.linkAll`/`.linkAny` in `ScoreLanes.module.css`; drop them by
+  removing `joinedLinks` in `score.ts`.
+- **A query that also names** (`{ name, tag }`) draws as a query, not a dashed link to that name,
+  so the score agrees with the Timing tab; `targetOf` in `score.ts` holds it (2026-10-17).
+- **A partway clip's right edge snaps to what each whole `loop` leaves** (`stopsOf` in `clip.ts`),
+  and the edit sets the fewest loops that leave that much; backward with a `seek`, the edge stops
+  at the seek (2026-10-17). Reverse by restoring the `startsPartway` early return in `score.ts`'s
+  `passes` case.
+- **The read-ahead is saved in the composition** as `book.ahead`, 0 to `MAX_AHEAD` (5000 ms), while
+  the book-and-drain tag stays per session on the `EventLog` (2026-10-17). Moving the tag to
+  `book.tag` would save and share it too.
+- **A scrub back by `mix.seek` always seeks by frame**: the Player keeps each mix's `seq` for every
+  score frame it showed and passes that, with ‹ › on the transport to step one frame. There is no
+  separate stepper over the held frames alone (2026-10-17). Reverse by passing `target * FRAME` to
+  `m.seek` in `seekBack` (`src/blits/player.ts`), which lands on the last held frame.
+- **The Events list's seek cut goes by the full mix's `now`**, the clock `Sent.timestamp` reads,
+  not score time; they differ only under a live mix rate (2026-10-17).
+- **`catchUp` shows in the voice panel only for an fn patch with a `step`**, as `stepMs` does,
+  since blits reads it only there, and both are held alike across a blend's members, as
+  `mix.blend` takes them once (2026-10-17). Reverse the second by removing them from `SHARED` in
+  `src/blits/blend.ts`.

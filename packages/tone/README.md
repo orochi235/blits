@@ -164,8 +164,6 @@ timestamp as usual. The driver maps one onto the other by the offset `mix.book` 
   stands at each `write`, which is exact for a rate that holds, a pause included, and drifts
   while the rate ramps: within 5 Hz on the sweep above for a ramp from 1 to 0.5 over 600 ms.
   Hits and marks are unaffected, since `mix.book` converts them itself.
-- **Scrubbing.** After a `mix.seek` back under `history`, `mix.project` throws for a time past a
-  recorded call, and `write` throws with it, leaving every target holding its value.
 - **Only linear ramps, and only channels of one number.** A `vec` or `color` channel takes no
   target; read it with `mix.project` yourself.
 - **Tone's `Transport` is not involved.** Times are on the audio context's clock, and the mix's

@@ -150,6 +150,7 @@
     <li><a href="#klieg">The klieg port</a></li>
     <li class="grp">Record</li>
     <li><a href="#against">Decided against</a></li>
+    <li><a href="#chosen">Chosen while building</a></li>
     <li><a href="#tests">Tests</a></li>
     <li><a href="#open">Open</a></li>
   </ol>
@@ -161,7 +162,7 @@
   <h1>An effects schema, and the API around it</h1>
   <p class="lede">A small runtime package for concurrent effects. Each effect runs on its own clock with its own state and weight, and a mix folds them into one value per subject per frame by rules that belong to the channel, not the effect.</p>
   <p class="meta"><b>For:</b> whoever builds <code>blits</code>, and whoever ports klieg, wod, sherpa or magicsmoke onto it. <b>Answers:</b> what the vocabulary is, what an author writes, what a host calls, and where a second engine would plug in. The package implements this page; where the two differ, the code in <code>src/</code> is the one that runs.</p>
-  <span class="status">Built · v0.10.0 · design 2026-09-15, package 2026-09-28</span>
+  <span class="status">Built · v0.14.0 · design 2026-09-15, package 2026-09-28</span>
 </header>
 
 <h2 id="picture">In one picture</h2>
@@ -1042,6 +1043,140 @@ export const mixer: Engine;   <span class="cm">// the one that ships</span></cod
   <li><b>Normalizing a locus's weights per channel.</b> The other way to make a crossfade hold its value on <code>mul</code>: keep the scale-and-merge fold and pick a per-channel divisor. It costs the property the mixer's fold order rests on &mdash; that weights are scalars resolved for the subject before any channel is touched &mdash; and it has no answer for <code>last</code>, which has no arithmetic to normalize. The <code>lerp</code> fold gets the same result from the rule the package already has.</li>
   <li><b>Removing a frozen voice once another covers it.</b> WAAPI drops a finished, filling animation when a later one replaces every property it sets. In a mix, &ldquo;covers&rdquo; depends on weights, loci and each channel&rsquo;s fold, and a voice leaving on its own would change the pose with no call to point at. The host fades it.</li>
   <li><b>A mix option for the lurch guard.</b> A global "normalize when over 1" would apply to effects that legitimately stack. The cap belongs to the voices that crossfade, so it is a <code>locus</code>.</li>
+  <li><b>Showing a voice too brief to see.</b> A voice whose whole span falls between two syncs is never sampled mid-way, and shows only by freezing after: no jump, and no stretch to a minimum number of frames. The owner's call (2026-10-07).</li>
+  <li><b>Flicker protection in the mix, for now.</b> Flicker, or protection from it, is something a host adds to its own pipeline; blits marks no brightness channels and counts nothing on its own. An opt-in limiter would be a signal or channel wrapper, and could warn rather than clamp. The owner's call (2026-10-07).</li>
+  <li><b>Writing the lanes' arithmetic out again</b> where the general path had it inline, to win back what lanes cost on rows they don't serve. The exactness guarantee rests on there being one copy (2026-10-02).</li>
+  <li><b><code>pass</code> for the span hint now called <code>ballast</code></b>: it is already public as a number, <code>setting.pass</code>, the loop pass a voice is in (2026-10-07).</li>
+</ul>
+
+<h2 id="chosen">Chosen while building</h2>
+<p>Calls made while building where the design left a choice open. Each is the owner's to overturn, and says what reversing it touches where that is not obvious. A call the owner made himself is marked as his. Each carries the date it was made.</p>
+
+<h3>Dragging, flinging and bounds</h3>
+<p>The split is the owner's: the motion law in the engine and the pointer wiring in a subpath, with a spring back from an edge and resistance while dragging past one (2026-10-24). See <a href="#fling">Dragging and flinging</a> and <a href="#bounds">Bounds</a>.</p>
+<ul>
+  <li><b>Names</b>: <code>set</code> (a motion's jump to a value, keeping velocity); the subpath and function <code>fling</code>; the sampler <code>track</code> with <code>ms</code> (its window, default 100) and <code>stop</code> (how long still before release reads as zero, default 40); <code>axis</code> (<code>'x' | 'y' | 'xy'</code>, default <code>'y'</code>), <code>scale</code>, and <code>give</code> (how far past an edge a drag carries, default 120); on <code>glide</code>, <code>bounds</code> and <code>stiffness</code> (2026-10-24).</li>
+  <li><b><code>set</code> is on every motion patch and on the handle</b>, not on <code>glide</code> alone, so no motion lacks it (2026-10-24).</li>
+  <li><b><code>fling</code> types its target structurally</b> (<code>PointerTarget</code>), so the core keeps <code>lib: ES2022</code> with no DOM; an <code>HTMLElement</code> type-checks as one (2026-10-24).</li>
+  <li><b>A <code>set</code> past an edge stays there until the next <code>push</code></b>, or a drag held past an edge would spring back between pointer moves. <code>aim</code> in <code>GlideShape</code> (<code>src/motion.ts</code>) holds the rule; a press does <code>push(0)</code> then <code>set</code>, so a subject caught mid-bounce stays put (2026-10-24).</li>
+  <li><b>The spring back is critically damped</b>, with one stiffness, so the law keeps its five numbers (<code>[BOUND, settle, &tau;, &omega;&#8320;, 0]</code>); any damping would need a longer law head (2026-10-24).</li>
+  <li><b>Released past an edge with enough inward speed, it coasts back inside with no spring</b> (2026-10-24).</li>
+  <li><b>Resistance is iOS's curve</b>: 0.55 of the drag at the edge, approaching <code>give</code> (2026-10-24).</li>
+</ul>
+
+<h3>Arcs</h3>
+<p>Built on a brief with the owner's go (2026-10-22). See <a href="#arcs">Arcs</a>.</p>
+<ul>
+  <li><b>Names</b>: <code>arc</code>, <code>release()</code>, <code>hold: 'open'</code> (klieg's <code>'click'</code> and <code>'forever'</code> both mean &ldquo;until released&rdquo; here), <code>blend</code> (klieg's <code>blendMs</code>), and a part's <code>duration</code> (2026-10-22).</li>
+  <li><b>No <code>abort()</code></b>: the handle's own <code>fade</code> already leaves with no exit, and can ramp (2026-10-22).</li>
+  <li><b><code>release()</code> works on a finite hold too</b>, cutting it short, where klieg's ignores one; once the exit has begun it does nothing (2026-10-22).</li>
+  <li><b>The default hold is <code>active</code>'s own length</b>: open where it loops for good, 0 with no <code>active</code> (2026-10-22).</li>
+  <li><b>A part left out gives its time to the one before</b>, which holds its last frame (2026-10-22).</li>
+  <li><b><code>in</code> is the later of the enter's end and the arc's own <code>fade.in</code></b> (2026-10-22).</li>
+  <li><b>An open arc cannot sit in a span</b>, which has to know its length. klieg's <code>stages</code> are left for later, not designed out (2026-10-22).</li>
+  <li><b>Where it lives</b>: the crossfade is a factor in <code>ownersWeight</code> (<code>src/owner.ts</code>), read from <code>arcShare</code> in <code>src/arcs.ts</code>; the hold a release fixes is a voice control (<code>Voice.hold</code>), so a seek back restores it (2026-10-22).</li>
+</ul>
+
+<h3>Watching a mix, and blits-panel</h3>
+<p><code>watched()</code> is the engine side of a debugger; the site's mix page, &ldquo;Watching a mix&rdquo;, says what it does. The DevTools extension's own calls are in <code>apps/devtools/README.md</code>.</p>
+<ul>
+  <li><b>Names</b>: <code>watched()</code>, <code>watch</code>, <code>hold</code> and <code>free</code> (2026-10-19).</li>
+  <li><b>A hold's rate scales the host's frame gaps</b> on a host timeline of its own, so the mix plays at the hold's rate times its own. It never writes the transport's rate: an earlier cut that did broke seeking back while paused, and left the hold's rate behind after <code>free</code>. <code>step(ms)</code> is in mix time (2026-10-19).</li>
+  <li><b><code>free</code> takes the held time out of the clock</b>, as <code>rebase</code> does, so the mix resumes where the hold left it, not where the host's clock says (2026-10-19).</li>
+  <li><b>No branches</b>: while held behind the tape's last call, the host's own calls act on the mix but go unrecorded, so the calls ahead still play. The spec had <code>free</code> switch branches back, which comes to the same thing with more machinery (2026-10-19).</li>
+  <li><b>Mixes register from the public factories</b> (<code>mixer.create</code>, <code>lean.create</code>, and <code>transport()</code> for its history default), never from the <code>Mixer</code> constructor, which projections call. Custom engines don't register (2026-10-19).</li>
+  <li><b>The exports are filed under <code>mix</code></b> on the site, not on a page of their own (2026-10-19).</li>
+  <li><b>The panel is split into <code>agent()</code> (the page side) and the UI</b>, talking only through the plain-data <code>Source</code> protocol in <code>packages/panel/src/protocol.ts</code>, so the extension reuses both halves. Subjects cross as numbers the agent hands out (2026-10-19).</li>
+  <li><b>The panel's behavior</b>: it plots mix time; paused frames replace one another; a seek back drops the plot ahead of it; the window is 10 s, capped at 1,200 frames; a subject the host didn't read that frame is read through <code>project</code> and marked &ldquo;read, not shown&rdquo;; a newly picked subject is filled backward from history, back to <code>reach</code>; switching to a mix the hold doesn't cover frees the hold; and <code>mount()</code> adds 10 s of history with a tape unless told <code>history: false</code> (2026-10-19).</li>
+  <li><b>The panel is built with Vite</b>, not <code>tsc</code> alone, because weasel's stylesheet has to reach the shadow root as a string; <code>tsc -b</code> writes only the declarations (2026-10-19).</li>
+  <li><b><code>ChannelPlot</code> moved from the playground into the panel</b>, which exports it; the playground imports it from there, with <code>hueColor</code> (2026-10-19).</li>
+</ul>
+
+<h3>blits-quarks and blits-tone</h3>
+<ul>
+  <li><b><code>drop()</code> on a handle also ends the voices cued through it</b> (<code>fade({ over: 0 })</code>), since a voice naming a dropped subject would otherwise stay cued, holding it (2026-10-18).</li>
+  <li><b>Both packages export <code>drive</code></b>, so a file using both aliases them. Kept (2026-10-11).</li>
+  <li><b>The owner's calls on blits-tone</b>: its names (<code>drive</code>, <code>attach</code>, <code>detach</code>, <code>write</code>, <code>cancel</code>, and the options <code>ahead</code>, <code>grid</code>, <code>late</code>, <code>clock</code>, <code>take</code>, <code>tag</code>, <code>score</code>); its tests taking <code>node-web-audio-api</code>, a prebuilt native binary of about 40 MB, as a dev dependency so Tone's offline render runs in Node with no audio device; and a subject binding one <code>Target</code> per channel, so a host that wants every subject heard builds a synth per subject and attaches it (all 2026-10-11).</li>
+</ul>
+
+<h3>Shipped as is</h3>
+<p>Two behaviors shipped without a view from the owner, to reopen if a consumer trips on one (2026-10-18):</p>
+<ul>
+  <li><b>A <code>slew</code> starts where a probe first meets its subject</b>, so the slewed fuzz variant stays out of <code>again</code>: a patch met late steps from its voice's start instead.</li>
+  <li><b>A pending voice faded before its start keeps its start where it was until it is risen</b>, not following its anchor. Straight play, seek and read ahead agree on it.</li>
+</ul>
+
+<h3>Shares and blend members</h3>
+<ul>
+  <li><b>The public read of a member's share is a signal</b>, <code>share(by, i, n)</code>, not a read on <code>Handle</code> or <code>Mix</code>: a solo plot needs the share as the weight of a voice in another mix, and <code>Handle.weightOf</code> already reports a member's weight in its own. To reverse, drop <code>share</code> from <code>signals.ts</code> and <code>index.ts</code>; <code>cueBlend.ts</code> in the playground is its one caller (2026-10-17).</li>
+  <li><b><code>n</code> counts the members</b>, as <code>mix.blend</code>'s array does, not the stops, and an <code>i</code> outside <code>0..n-1</code> throws (2026-10-17).</li>
+  <li><b>A member is an entry in <code>mix.blend</code>'s array</b>, <code>{ patch, name?, tags?, hits? }</code>, beside bare patches, rather than a second array of specs. It carries only labels: not <code>score</code>, since a member in another score would resolve the shared anchor to another voice and start apart (2026-10-17).</li>
+  <li><b>A member's <code>tags</code> replace the spec's</b> rather than adding to them, as <code>name</code> and <code>hits</code> do. To merge instead, concatenate in <code>Mixer.blend</code> (<code>src/mixer.ts</code>) (2026-10-17).</li>
+</ul>
+
+<h3>Marks inside a voice</h3>
+<ul>
+  <li><b>A spec field of its own, not a name on a hit.</b> A hit is an event handed over every pass; a mark is a name an anchor takes, reached once, so the two differ in both payload and count. They share the range rule (<code>inPass</code> in <code>src/book.ts</code>) and the clock mapping (<code>timeAt</code>). To name hits instead, give <code>Hit</code> a <code>name</code>, read it in <code>insideOf</code> (<code>src/marks.ts</code>) and drop <code>marks</code> from the specs and <code>checkMarks</code> (2026-10-17).</li>
+  <li><b>Reached once</b>, on the first pass that reaches it from where the voice starts, so a voice looping for good has one <code>drop</code> and <code>marks(-Infinity, Infinity)</code> stays finite. Per pass would need a pass index on <code>Marked</code> and an anchor rule for which pass; <code>insideOf</code> holds the rule (2026-10-17).</li>
+  <li><b>Not reached while the clock runs back, nor at or past the voice's <code>end</code></b>, as a hit is not. Drop the <code>voice.backs</code> and <code>end</code> tests in <code>insideOf</code> to change either (2026-10-17).</li>
+  <li><b><code>MarkName</code> (<code>Mark | (string &amp; {})</code>) is exported</b>, and <code>Marked.mark</code> and an anchor's <code>mark</code> widen to it, a break the changelog lists. An anchor naming a mark its target does not place waits pending, as one naming a voice nobody cued does; nothing warns (2026-10-17).</li>
+  <li><b>A blend's members share the spec's marks</b>; <code>BlendMember</code> takes no <code>marks</code> of its own, since marks are timing and the spec times every member alike (2026-10-17).</li>
+  <li><b>The playground draws a mark inside a clip as a labeled line across it</b>, only where the compiled mix placed it, and a link to one lands on that line (<code>Link.to.mark</code> in <code>widgets/ScoreLanes</code>). The score's Alt-drag still links only to edges (2026-10-17).</li>
+</ul>
+
+<h3>Reading ahead</h3>
+<p>See &ldquo;Reading ahead past the tape&rdquo; and &ldquo;Reading ahead at known events&rdquo; in the <a href="#score">Score</a> section.</p>
+<ul>
+  <li><b>The name <code>stepMs</code> on a voice's spec</b>, with 0 meaning the frame's gap; <b>a read ahead moves the tape forward and back</b>, which the tape's subscribers hear; and <b>which two calls it still refuses</b> (2026-10-11).</li>
+  <li><b>Which events a read ahead stops at</b>: each call the tape holds, and each mark <code>marks</code> would list (a voice's five and the announced ones). Pass boundaries of a loop that goes on are not events. To narrow or widen, edit <code>nextEvent</code> in <code>src/project.ts</code> (2026-10-17).</li>
+  <li><b>It stops only while a voice could carry state</b>: a patch with <code>step</code>, or a weight that is a function. Otherwise the read crosses in one go, so stateless mixes pay one pass over the voices. To stop always, drop the <code>carries</code> checks in <code>playAhead</code> and <code>nextEvent</code> (2026-10-17).</li>
+  <li><b><code>assess</code> says <code>exact</code> for a stateful signal on a read ahead</b>, by the 2026-09-29 rule that one step across a stretch with no event in it is as good as any number; a signal following a clock-driven input is then exact only to the stretch. A patch <code>step</code> without <code>stepMs</code> stays <code>stepped</code>, and a read back still says <code>stepped</code> for signal state stepped from a copy. To go back, drop <code>mix.backward</code> from the <code>kept</code> test in <code>doubtOf</code> (2026-10-17).</li>
+  <li><b>A subject the live mix never probed is read at every stop</b>, as if probed all along (2026-10-17).</li>
+  <li><b>The record's <code>copied</code> flag</b>, which lets <code>assess</code> say <code>stepped</code> after a seek back, timed level: teitou, 7 rounds, <code>AB_EACH=1 bench/ab.sh 0c5527f 97b1aa3</code> over <code>fn</code>, <code>named</code>, <code>keys</code>, <code>probed</code>, <code>tweens^</code>, <code>weasel^</code> and <code>blend</code>, geometric mean 0.984 (2026-10-17).</li>
+</ul>
+
+<h3>Groups</h3>
+<p>Owners take <code>tags</code>, <code>score</code>, hits, <code>seek</code> and a rate below 0 (2026-10-17).</p>
+<ul>
+  <li><b>A group's <code>tags</code> and <code>score</code> select the group alone.</b> A booker or <code>drain</code> by tag takes its marks and hits, not its members'; a member carries only its own. To reverse, have <code>fits</code> in <code>src/book.ts</code>, <code>drain</code> in <code>src/mixer.ts</code> and the anchor query in <code>src/place.ts</code> read tags up the owner chain (2026-10-17).</li>
+  <li><b>An owner's hits are at ms on its own clock, booked once</b>, since an owner does not loop; one behind its <code>seek</code> is taken late, as a voice's is. Per pass would need passes, which owners refuse (2026-10-17).</li>
+  <li><b>An owner cued backward with no <code>seek</code> starts at 0</b>, so a child placed after 0 leaves at once: an owner has no end of its own at its cue to start from. To reverse, pick a default (the last child's end once it is cued) and set it in <code>Voice</code>'s constructor (2026-10-17).</li>
+  <li><b><code>mix.span</code> refuses a rate below 0.</b> Cued backward, a span placed none of its children, which waited for good. Building it means <code>refit</code> in <code>src/spans.ts</code> laying children out from the span's seek down to 0, placing each by its end, with <code>clockOf</code>, <code>lingers</code> and <code>lapse</code> reading a clock that runs back: a rework of the fit, not a guard (2026-10-17).</li>
+  <li><b>An owner run back to its start stays while it holds a child and leaves with its last</b>, where it used to leave at its own start and take them all (2026-10-11).</li>
+</ul>
+
+<h3>Spans in astv's change order</h3>
+<ul>
+  <li><b>A key on the child, not a comparator on the span</b>, since it is data a tape replays (2026-10-22).</li>
+  <li><b>An anchor still unanswered holds every later child</b> under <code>queue</code> or <code>stagger</code> (2026-10-22).</li>
+  <li><b>An anchor on a voice that has left never answers</b>, so astv passes the landing time as a number (2026-10-22).</li>
+  <li><b>A floor already past when the child is cued places it there</b>, partway through, so a span made afresh after a seek lays out as a live one did. The owner's pick, over astv keeping <code>scheduleMarks</code> (2026-10-22).</li>
+</ul>
+
+<h3>From the code review, and playing backward</h3>
+<ul>
+  <li><b>A probe into <code>out</code> reuses its arrays</b>, which reverses a guarantee a test held: <code>test/solo.test.ts</code> said a reused <code>out</code> &ldquo;never has an array the host kept from it written into&rdquo;, and now says the array is the same one, and that a probe with no <code>out</code> is never written into. To undo it, drop the two reuse branches (<code>foldWith</code> in <code>fold.ts</code>, <code>copy</code> in <code>copyout.ts</code>): the <code>tween</code> row then allocates about 0.7 MB a frame again. No consumer is caught by it: klieg's two <code>poseAt</code> callers read the numbers out at once, and weasel's <code>poseOverrides.ts</code> and astv's six sites have no vec or color channel (2026-10-10). The owner has not seen this one.</li>
+  <li><b>Step 7's names and shapes</b>: the type <code>Vec&lt;N&gt;</code>; <code>angle({ turn })</code> with <code>turn</code> defaulting to 360; <code>input(read, of?)</code>, whose <code>touch()</code> reports a change; a keys patch's options as the flat fields <code>ease</code>, <code>easeBy</code>, <code>delayBy</code> and <code>lerpBy</code>, and a wave's as <code>patch.wave</code>, with <code>waveOptionsOf</code> removed; <code>handle.to</code> and <code>push</code> throwing for a patch that takes neither, and <code>read</code> giving undefined; and <code>fold</code> switching a rest-less channel on at 0.6, a mix's default band. All of it shipped in 0.8.0, so a rename is now a break (2026-10-10). The owner has not seen this one either.</li>
+  <li><b>A key <code>at</code> returns outside <code>writes</code> is warned of</b> with a <code>warnOnce</code> per patch outside production, as a placement ending before its start already is, over a fault count the host reads, which blits has no pattern for. Only the first delta each voice's <code>at</code> returns is checked, in <code>contribution</code> (<code>src/fold.ts</code>), so the lanes' fills check nothing. It timed level (msb-uai, 10 rounds, <code>AB_EACH=1 bench/ab.sh da301d9 650b3e9</code> over <code>fn</code> and <code>named</code>, geometric mean 0.992). To reverse, drop <code>checkWrites</code> and <code>unchecked</code> from <code>src/voice.ts</code> and the line calling it (2026-10-17).</li>
+  <li><b><code>seek({ frame })</code> takes the number <code>mix.seq</code> and <code>transport.seq</code> read.</b> The getter is <code>seq</code> because <code>frame</code> is already an internal field on <code>Mixer</code> and <code>HistoryRecord.seq</code> already names the frame number publicly; the option is <code>frame</code>, as the review named it. <code>project({ frame })</code> came along so reads and seeks answer the same question one way. A frame number is opaque, not an index among frames at one time, and one history no longer holds throws. To rename, change <code>seq</code> in <code>src/types/mix.ts</code>, <code>src/types/transport.ts</code> and the getter in <code>src/mixer.ts</code> (2026-10-17).</li>
+  <li><b>What <code>catchUp: 'fresh'</code> covers</b>: only where a stateful record met late starts stepping, from the first probe, with fresh state. The <code>stepMs</code> grid still counts from the origin (<code>meet</code> in <code>src/held.ts</code>), the fade-in still counts from the origin, a handle <code>seek</code>'s rebuild still steps from the voice's start, and a signal's kept state is unaffected. A projection that meets such a subject late marks it <code>unknown</code>, so <code>assess</code> says <code>held</code>. The determinism suite's <code>fresh</code> variant runs <code>seek</code>, <code>behind</code>, <code>now</code> and <code>frame</code> but not <code>again</code>, <code>ahead</code>, <code>taped</code> or <code>dt</code>, where fresh differs by design. To make fresh also cover rebuilds, call <code>meet</code> from <code>rebuild</code> in <code>src/fold.ts</code> (2026-10-17).</li>
+  <li><b>Playing backward</b> (see &ldquo;Starting partway, and playing backward&rdquo; in the <a href="#score">Score</a> section). The owner's calls: a valid use is not refused because no consumer has it yet; a cue takes <code>seek</code>; and, left blank, a voice cued backward starts at its end. Chosen while building: a fade in counts from no earlier than the voice's start, so <code>seek</code> does not use it up; and a voice with no end cued backward has no first pass, a property of the cue and not of the rate it has later (2026-10-10).</li>
+</ul>
+
+<h3>Two copies loaded together</h3>
+<ul>
+  <li><b>The mark another copy's motion patch is known by is named for the release</b> (<code>release</code> in <code>src/shared.ts</code>, held to <code>package.json</code> by <code>test/copies.test.ts</code>), not a hand-bumped <code>@1</code>, because the mix calls a wide, often-changed surface of the other copy's <code>Motions</code>. So an unreleased checkout and the release it grew from wrongly agree. To reverse, name the mark <code>motions@1</code> in <code>src/motion.ts</code> and drop <code>release</code> (2026-10-17).</li>
+</ul>
+
+<h3>The owner's own calls, from before this list</h3>
+<ul>
+  <li><b><code>setting.dt</code> for a patch with no <code>step</code></b> is the gap since the subject was last sampled, not the gap since the last sync. A read ahead or back still rates such a patch <code>exact</code>, though the <code>dt</code> it hands is one sample's gap and not what frame-by-frame play hands; rating it <code>stepped</code> needs the mix to know the patch read <code>dt</code>, a getter on the setting, untimed. Reopen it if a host scrubs a patch that reads <code>dt</code> and sees it jump (2026-10-10).</li>
+  <li><b>A <code>color()</code> channel picks its lerp space</b> (<code>{ lerp: 'oklab' | 'oklch' }</code>, OKLab by default), after a red-to-cyan render showed OKLab washing to pale gray and OKLCH sweeping through the hues between (2026-10-07).</li>
+  <li><b>Freezing</b>: the values <code>before</code>, <code>after</code> and <code>both</code>; a frozen voice ends when it is faded, not when its passes run out; and the name <code>freeze</code>, once the ticker's <code>hold()</code> had taken the word (built for 0.4.0, named 2026-10-05).</li>
+  <li><b>Removing one subject from a voice extends <code>fade</code></b> (<code>handle.fade({ subject, over })</code>) rather than adding a removal verb, so the handle stays the only pathway for control; <code>mix.drop</code> already meant &ldquo;forget this subject everywhere&rdquo; (2026-10-02).</li>
+  <li><b><code>tween</code> runs on its own clock</b>, like a spring's, not over the voice's period (2026-10-02).</li>
+  <li><b><code>mix.pull</code> skips each subject's lookup for an array read again in the same order</b>, over a view object or numbers the host holds (2026-10-02).</li>
+  <li><b>What lanes cost on rows they don't serve is accepted</b>: a voice per subject read 1.07&times; at 10,000 subjects and 1.2&times; at 100 to 1,000 (+0.04 ms at most), a mix probing 5% of its subjects 1.29&times; (+0.03 ms), and a projection every frame 1.10&times; (2026-10-02). See <a href="#against">Decided against</a> for writing the arithmetic out again.</li>
 </ul>
 
 <h2 id="tests">Tests</h2>

@@ -20,86 +20,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 - `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.14.0 (2026-10-24), with blits-panel 0.2.0, blits-quarks 0.9.0 and blits-tone 0.4.0 taking it as a `^0.14.0` peer.
   blits-tone 0.2.0 was its first release through trusted publishing.
-- **In 0.11.0** (2026-10-11): a read ahead after a seek back that plays
-  the tape's calls, a voice's own `stepMs`, and three fixes found on the way. The changelog's
-  0.11.0 section lists them. Chosen while building, Mike's to overturn: the name `stepMs` on a voice's spec, with 0 meaning the frame's gap; that a read
-  ahead moves the tape forward and back, which the tape's subscribers hear; and which two calls
-  it still refuses (the schema page's "Reading ahead past the tape").
-- **In 0.11.0: `share(by, i, n)` and `BlendMember`** (2026-10-17), from item 13. The playground's
-  solo mixes weight a member by `share` and its blends cue each member under its own name, tags and
-  hits. Chosen while building, Mike's to overturn:
-  - **The public read is a signal, not a read on `Handle` or `Mix`.** A solo plot needs the share
-    as the weight of a voice in another mix, and `Handle.weightOf` already reports a member's weight
-    in its own. To reverse, drop `share` from `signals.ts` and `index.ts`; `cueBlend.ts` in the
-    playground is its one caller.
-  - **`n` counts the members** (as `mix.blend`'s array does), not the stops, and an `i` outside
-    `0..n-1` throws.
-  - **A member is an entry in `mix.blend`'s array**, `{ patch, name?, tags?, hits? }`, beside bare
-    patches, rather than a second array of specs. It carries only labels: not `score`, since a
-    member in another score would resolve the shared anchor to another voice and start apart.
-  - **A member's `tags` replace the spec's** rather than adding to them, as `name` and `hits` do.
-    To merge instead, concatenate in `Mixer.blend` (`src/mixer.ts`).
-- **In 0.11.0: a read ahead stops at known events** (2026-10-17; the schema page's "Reading
-  ahead at known events"). Chosen while building, Mike's to overturn:
-  - *Which events count:* each call the tape holds, and each mark `marks` would list (a voice's
-    five and the announced ones). Pass boundaries of a loop that goes on are not events. To
-    narrow or widen, edit `nextEvent` in `src/project.ts`.
-  - *Stops only while a voice could carry state:* a patch with `step`, or a weight that is a
-    function. Otherwise the read crosses in one go as before, so stateless mixes pay one pass over
-    the voices. To stop always, drop the `carries` checks in `playAhead` and `nextEvent`.
-  - *`assess` says `exact` for a stateful signal on a read ahead,* by the 2026-09-29 rule that one
-    step across a stretch with no event in it is as good as any number; a signal following a
-    clock-driven input is then exact only to the stretch. A patch `step` without `stepMs` stays
-    `stepped`, and a read back still says `stepped` for signal state stepped from a copy. To go
-    back, drop `mix.backward` from the `kept` test in `doubtOf`.
-  - *A subject the live mix never probed is read at every stop,* as if probed all along.
-  - Each stop copies every voice and reads each asked-for subject once, so a read across many
-    events of a stateful mix costs that many reads; nobody has benched it.
-- **Shipping as is, no owner view (2026-10-18):** a `slew` starts where a probe first meets its
-  subject, so the slewed fuzz variant stays out of `again` (a patch met late steps from its voice's
-  start instead); and a pending voice faded before its start keeps its start where it was until it
-  is risen, not following its anchor. Straight play, seek and read ahead agree on the second.
-  Reopen either if a consumer trips on it.
-- **A record's `copied` flag, which lets `assess` say `stepped` after a seek back, reads level**
-  (teitou, 2026-10-17, 7 rounds, `AB_EACH=1 bench/ab.sh 0c5527f 97b1aa3` over `fn`, `named`,
-  `keys`, `probed`, `tweens^`, `weasel^` and `blend`, geometric mean 0.984).
-- **In 0.11.0: marks placed inside a voice** (2026-10-17; the schema page's Score section).
-  `marks: { drop: 340 }` on a voice's, owner's or span's spec, named beside the five; anchors,
-  `marks`, `book`, a read ahead's stops and the departed record all see them. Chosen while
-  building, Mike's to overturn:
-  - *A spec field of its own, not a name on a hit.* A hit is an event handed over every pass; a
-    mark is a name an anchor takes, reached once, so the two differ in both payload and count.
-    They share the range rule (`inPass` in `src/book.ts`) and the clock mapping (`timeAt`). To
-    name hits instead, give `Hit` a `name`, read it in `insideOf` (`src/marks.ts`) and drop
-    `marks` from the specs and `checkMarks`.
-  - *Reached once,* on the first pass that reaches it from where the voice starts, so a voice
-    looping for good has one `drop` and `marks(-Infinity, Infinity)` stays finite. Per pass would
-    need a pass index on `Marked` and an anchor rule for which pass. `insideOf` holds the rule.
-  - *Not reached while the clock runs back, nor at or past the voice's `end`,* as a hit is not.
-    Drop the `voice.backs` and `end` tests in `insideOf` to change either.
-  - *`MarkName` (`Mark | (string & {})`) is exported,* and `Marked.mark` and an anchor's `mark`
-    widen to it, listed as breaking in the changelog. An anchor naming a mark its target does not
-    place waits pending, as one naming a voice nobody cued does; nothing warns.
-  - *A blend's members share the spec's marks;* `BlendMember` takes no `marks` of its own, since
-    marks are timing and the spec times every member alike.
-  - *The playground draws a mark inside a clip as a labeled line across it,* only where the
-    compiled mix placed it (no field-derived fallback), and a link to one lands on that line
-    (`Link.to.mark` in `widgets/ScoreLanes`). The score's Alt-drag still links only to edges.
-- **In 0.11.0, breaking: `loop` defaults to one pass** (Mike, 2026-10-11; it defaulted to
-  looping for good). Shipped in 0.11.0. Every consumer's cues were read at its `origin`
-  head (2026-10-11): one relied on the old default, klieg's lighting voice
-  (`packages/core/src/render/lighting.ts`), whose sweep would leave after one period. klieg
-  `dee96ba` gives it `loop: true`, committed on klieg's `main` and not pushed. No consumer test
-  leaned on looping. The site's explainers and samples did, and now ask for it.
-- **The score and reading back shipped in 0.3.0**, merged from `project` with lanes, `pull` and
-  blits-quarks (2026-10-02). `mix.project(t)` with `probe`/`assess`, `MixOptions.history` (control
-  log, departed voices, state copies, recorded inputs and host fields), placements by anchor with
-  names, scores and queries, `mix.marks`, motion history in `spring`/`glide`, and the site's Score
-  page. The schema page's Score section describes it; `CHANGELOG.md` has it under 0.3.0. One
-  behavior change rides along: a finite loop's fade starts when its last pass ended, not at the
-  next frame.
+- **What shipped is in `CHANGELOG.md`; the calls made while building it are in the schema page's
+  "Chosen while building"**, each the owner's to overturn, and the playground's and the DevTools
+  extension's own calls are under the same heading in their READMEs (moved there 2026-10-24).
+- **klieg's lighting voice needs `loop: true`** since 0.11.0 made `loop` default to one pass
+  (`packages/core/src/render/lighting.ts`). klieg `dee96ba` gives it that, committed on klieg's
+  `main` and not pushed (2026-10-11).
 - **klieg's port is merged into klieg's `main`** (2026-10-02), and its step two shipped in klieg
-  0.15.0 (merge `77d537d`, 2026-10-05). klieg reads `setting.host` through `mix<I, O, H>`.
+  0.15.0 (merge `77d537d`, 2026-10-05). klieg reads `setting.host` through `mix<I, O, H>`. klieg
+  moves onto `mix.arc` later; bree (`~/src/bree`, the marquee's home) builds against this checkout
+  through a file link.
 - **Which blits each consumer pins**, read from each `origin` head on 2026-10-11:
 
   | Consumer | Pins |
@@ -120,37 +50,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   (recorded in klieg's changelog). 0.3.0 needed no change in klieg: its `color` channel is a `hex`,
   but every effect voice plays at full weight with no locus, so the OKLCH blend is never taken. The
   schema page's klieg section says what the port found.
-- **The package, `@msb235/blits` 0.10.0 on npm.** `src/` is the whole of it: `channels.ts` (the stock
-  channels, `kit`, `hex`/`mixHex`, `bounds`), `easing.ts` (easing as data resolved to a curve), `patch.ts` (`patch`, `keys`,
-  and the stops built once per channel that `from: 'current'` reuses),
-  `motion.ts` (`spring`, `glide`), `tweened.ts` (a tween's closed form, in pieces a fill calls), `clock.ts` (the phase, envelope and weight clamp both fold
-  paths share), `numbers.ts` (numbers subjects), `signals.ts` (`peak`, `slew`, `lag`, `level`, `gate`), `store.ts` (per-subject storage, WeakMap for
-  objects and a Map for anything else), `types.ts` (the whole public surface, doc-commented: a barrel over `types/`, a file a domain). The
-  mix is `mixer.ts` (the `Mixer`'s state, its public methods, the engine and `mix`) and a module
-  per part it owns: `voice.ts` (a voice and its record of a subject), `cue.ts`, `place.ts`
-  (anchors), `marks.ts`, `move.ts` and `due.ts` (the clock moving, the voices due), `held.ts`,
-  `chain.ts`, `weigh.ts`, `blend.ts`, `fold.ts` and `locus.ts` (the general path), `pull.ts`,
-  `fade.ts`, `strays.ts`, `hosts.ts`, `history.ts`, `project.ts`, `owner.ts`, `book.ts`, `pace.ts`
-  and `handle.ts`. Lanes are `lanes.ts` (the `Lanes` class and the probe protocol) with
-  `qualify.ts`, `lane.ts`, `crowd.ts`, `rows.ts`, `meet.ts`, `fill.ts`, `gather.ts`, `sample.ts`,
-  `bare.ts` (tween rows sampled without keeping the sample) and `columns.ts`. What a probe or a fill runs per subject is methods, written in those modules
-  as functions taking `this` and installed on the prototype at the foot of `mixer.ts` and
-  `lanes.ts`: as plain functions they cost up to 9%. Zero runtime deps, ESM, vitest, biome as klieg. `npm run check`
-  is lint, typecheck of both `src` and `test`, then the suite, green. `npm run bench`
-  (`bench/frame.mjs`) measures a frame at scene sizes, GC counts included. Enlisted for the fleet — `.onto/tests` is
-  `plugin: node`, `run: npm test`, `runner: vitest` — and green there too.
-- **A voice's `freeze`** (shipped in 0.4.0 as `hold`, renamed in 0.6.0): WAAPI's
-  `fill` under blits' own name, for wod's move onto blits — `useSpin` holds its landing angle with
-  `fill: 'forwards'` and awaits `animation.finished`, which map to `freeze: 'after'` and
-  `handle.played`. The schema page's Freezing paragraph has the design. Mike chose the values
-  `before`/`after`/`both`, that a frozen voice's end is when it is faded, not when its passes run
-  out, and the name `freeze` once the ticker's `hold()` took the word; the state is
-  `'frozen'`, and the alias `hold` is removed in 0.8.0.
-- **`mix.inert` shipped in 0.4.0** (built 2026-10-03, merge `3228fa7`), for wod's frame loop to
-  sleep under a landed wheel while `live` stays true. Mike asked for it and named it through the wod
-  session; the CHANGELOG entry and the schema page's `Mix` block say what counts as inert. wod's
-  migration (`~/src/wod/docs/superpowers/specs/2026-10-03-blits-migration-design.md`) is built
-  through its last phase, editor scrub (merge `06ef87d`, 2026-10-04).
+- **The package, `@msb235/blits` 0.14.0 on npm.** `src/` is the whole of it, with `types.ts` a
+  barrel over `types/` holding the whole public surface, doc-commented. What a probe or a fill runs
+  per subject is methods, written in their modules as functions taking `this` and installed on the
+  prototype at the foot of `mixer.ts` and `lanes.ts`: as plain functions they cost up to 9%. Zero
+  runtime deps, ESM, vitest, biome as klieg. `npm run check` is lint, typecheck of both `src` and
+  `test`, then the suite. `npm run bench` (`bench/frame.mjs`) measures a frame at scene sizes, GC
+  counts included. Enlisted for the fleet — `.onto/tests` is `plugin: node`, `run: npm test`,
+  `runner: vitest`.
 - **The site, `site/`**, built 2026-09-30: an Astro workspace with a live explainer per word and
   the API reference from the doc comments. `site/README.md` says how it works; `npm run site:smoke`
   is green on every page. Deployed to `michaelbaker.tech/blits/` by `.github/workflows/site.yml` on every push to `main`;
@@ -166,26 +73,29 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `site/src/live/` and `site/src/snippets/` under the site typecheck; `site/README.md` says how.
   Each explainer plays one named mix with history for its life and seeks it to loop or scrub, so the
   panel and the DevTools extension can pick it and drive its clock (2026-10-24).
+- **blits-panel and the DevTools extension.** `@msb235/blits-panel` (`packages/panel`) is on npm at
+  0.2.0 and publishes from `panel-v*` tags through trusted publishing; an agent registers trust with
+  `npm trust github`, and only an npm login needs Mike. Staging its first release left a
+  `0.0.0-stage` version on npm; deprecating it needs Mike's 2FA sign-in. `node
+  packages/panel/scripts/smoke.mjs` drives it in headless Chromium (on the fleet; it launches a
+  browser). The extension is `apps/devtools`, whose README says how to load and test it; it is not
+  on the Chrome Web Store, and putting it there is Mike's call. Hazards the review left standing:
+  - With history on, the extension's `start.js` builds the shared registry and the
+    `createHistory` tape from its own bundled copies, before the app loads. The `watch/1`
+    contract covers entry methods but not the registry's own fields or the tape's API, so
+    an engine that changes either needs the extension rebuilt, or a bump to `watch/2`.
+  - A relay's `bye` ends whichever page agent is current, not the one its port served. The
+    order of calls makes a re-attach to the same page lose that race only in theory; not
+    reproduced.
 - **The marquee** (an LED sign demo, one subject per dot) lives in bree; `apps/marquee` was deleted
   (2026-10-23). Its smoke run (headless, msb-uai, 2026-10-22) read mix 0.19 ms a frame at 652 lights
   and 4.33 ms at 20,548; the schema page's "Subject aliases" (decided against) and "Layered
   subjects" (open) are about that load.
 - `docs/schema.html` — the design: vocabulary, channel table, patches, voices, mix,
   signals, time model, blending, patch state, the engine seam, per-consumer rigs, the klieg port,
-  decided-against, tests, open items. Status line says design under review. It reads in the called
+  decided-against, chosen while building, tests, open items. Status line says design under review. It reads in the called
   words; klieg's own `offset` channel, the arithmetic `add`, a `keys` patch's `stops` and the patch
   callback `step` are deliberately unrenamed.
-- **The spec self-review has been done and its findings fixed** (2026-09-27). What the review
-  changed, so nobody re-derives it: `sync`, `step` and `Setting.dt` now say that nothing advances
-  at the call and each subject catches up by its own whole gap; `mix.mute` takes `over` like
-  `handle.fade`; `duration` became `period` (reversed on 2026-10-04, below) and `t` became `phase`; `pose`,
-  `contribution`, `setting`, `period`, `phase`, `system`, `source` and `score` are defined in the
-  Vocabulary section; `Easing`, `Keyframe<O>`, `StaggerSpec` and `mixHex` are given; and the
-  answers a builder would otherwise have guessed are stated where they belong — `target` runs per
-  subject on first sight, `seek` moves the clock and never runs state forward, `setting.weight` is
-  post-cap, `from: 'current'` reads the frame before the voice contributes, a stateful signal's
-  state is kept by the mix per voice and subject (changed 2026-09-29), `live` goes true on `cue` and the mix never calls back, and a
-  consumer may declare its own channel, which is what sherpa's `transform` is.
 - `docs/vocabulary.json` — **the naming sheet, and the source of it.** 19 nouns (one
   fixed), 8 verbs, 4 operations, 20 candidates each, six consistent-set columns, relations,
   algebra. Edit this file; semanticore builds the page from it, so nothing is hand-edited in HTML
@@ -202,43 +112,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   last build known to render it (2026-10-07). The built page is not committed here; `serve` rebuilds on every
   edit and adds undo/redo, snapshots, cross-off and chat, none of which the hand page had.
 
-- **The playground's diagrams.** Views A to D are built: the signal flow, the timing graph, both
-  as one diagram, and that diagram editable; the playground's README ("The flow", "The timing",
-  "Both", "Editing the diagram") describes them.
-
-  Chosen while building, Mike's to overturn:
-  - View C is one diagram with both kinds of edge, not the two views linked side by side (the
-    right column is too narrow for two). Reverse it by replacing `BothPanel` with a `FlowPanel`
-    over a `TimingPanel`, sharing `selected`.
-  - View D is the Both tab behind an **edit** box, not a tab of its own, and Flow and Timing stay
-    read-only. Reverse it by giving those panels the same `FlowDiagram` editing props.
-  - A port's meaning is its compass side: a voice's or group's top takes a weight, its left is its
-    start, its right its end; a signal or mark gives from its bottom. weasel's default ports are
-    kept so layout is unchanged; the unused ones are hidden. Reverse it by giving nodes their own
-    `ports` in `FlowDiagram`, and rewriting `roleOf` in `src/blits/wire.ts`.
-  - Dragged node positions last the page's life, outside the composition and its undo; reverse it
-    by storing them in the composition (a new optional field, which `load` would have to accept).
-
-  View B boxes owners and spans, not loci: a weasel diagram group holds each node once, a voice has
-  both an owner and a locus, and voices of one locus may sit under different owners. A locus is
-  named on its voices instead. Chosen 2026-10-13 without a decision from the owner, who said to
-  build it; reverse it by boxing loci in `timingOf` and drawing owners as nodes with edges.
-
-  The mixer-desk drawing of A is built, as the Desk tab (README, "The desk"). `flowOf` builds the
-  graph from the playground's `Composition`; once the UI settles, a public `describe()` on `Mix`
-  should make the same shape for any host, and `flowOf` becomes a thin adapter.
-
-  Chosen while building the desk, Mike's to overturn: it is live, each tap and meter lit by the
-  voice's `weightOf` for the picked subject and each bus printing the folded value (reverse by
-  passing `deskOf`'s desk straight to `MixerDesk` in `DeskPanel`, skipping `litDesk`); groups are
-  brackets over their strips rather than strips of their own, with strips in the score's order so
-  a group's are adjacent (`deskOf`'s `groups`); a desk with more voices than fit at 24 px apart
-  scrolls sideways instead of squeezing (`MIN_PITCH` in `MixerDesk/layout.ts`); only channels
-  something writes get a bus, as in the flow.
-
-  An edge label is still placed without regard to nodes, so on a short edge it can overlap the box
-  it leaves or enters (`anchors`: `start its end +200 ms` over `pair`). That gap is filed in
-  weasel's `docs/TODO.md`.
+- **The playground's diagrams** (Flow, Timing, Both, editing, and the Desk) are built, and its
+  README describes each. `flowOf` builds the graph from the playground's `Composition`; once the
+  UI settles, a public `describe()` on `Mix` should make the same shape for any host, and `flowOf`
+  becomes a thin adapter (unbuilt). An edge label is still placed without regard to nodes, so on a
+  short edge it can overlap the box it leaves or enters (`anchors`: `start its end +200 ms` over
+  `pair`); that gap is filed in weasel's `docs/TODO.md`.
 
 ## Decided in conversation, and in no doc
 
@@ -343,110 +222,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
-0. **Scroll inertia: `set`, `@msb235/blits/fling` and glide `bounds` shipped in 0.14.0** (2026-10-24, Mike's
-   go on splitting the motion law into the engine and the pointer wiring into a subpath; spring
-   back and resistance while dragging were his picks, 2026-10-24). The schema page's "Dragging and
-   flinging" and "Bounds" are the record. Chosen while building, Mike's to overturn:
-   - **Names:** `set` (a motion's jump to a value, keeping velocity), the subpath and function
-     `fling`, the sampler `track` with `ms` (window, default 100) and `stop` (still-before-release
-     cutoff, default 40), `axis` (`'x' | 'y' | 'xy'`, default `'y'`), `scale`, `give` (how far
-     past an edge a drag carries, default 120), and on `glide` `bounds` and `stiffness`.
-   - **`set` is on every motion patch and on the handle,** not glide alone, so no motion lacks it.
-   - **`fling` types its target structurally** (`PointerTarget`) so the core keeps `lib: ES2022`
-     with no DOM. An `HTMLElement` type-checks as one (checked on the fleet, 2026-10-24).
-   - **A `set` past an edge stays there until the next push.** Without it a drag held past an edge
-     would spring back between pointer moves. `aim` in `GlideShape` (`src/motion.ts`) holds the
-     rule; a press does `push(0)` then `set` so a subject caught mid-bounce stays put.
-   - **The spring back is critically damped,** one stiffness, so the law keeps its five numbers
-     (`[BOUND, settle, τ, ω₀, 0]`). Any damping would need a longer law head.
-   - **Released past an edge with enough inward speed, it coasts back inside with no spring.**
-   - **Resistance is iOS's curve,** 0.55 of the drag at the edge, approaching `give`.
-0. **`mix.arc` shipped in 0.12.0** (2026-10-22, on src-da's brief with Mike's go): klieg's
-   `fire(text, { enter, active, exit, hold, blendMs })` as a blits primitive. The schema page's
-   "Arcs" is the record. bree (`~/src/bree`, the marquee's new home) builds against this checkout
-   through a file link; klieg moves onto it later. Chosen while building, Mike's to overturn:
-   - **Names:** `arc`, `release()`, `hold: 'open'` (klieg says `'click'` / `'forever'`, which are
-     both "until released" here), `blend` (klieg's `blendMs`), a part's `duration`.
-   - **No `abort()`:** the handle's own `fade` already leaves with no exit, and can ramp.
-   - **`release()` works on a finite hold too,** cutting it short; klieg's ignores one. Once the
-     exit has begun it does nothing.
-   - **Default hold is `active`'s own length,** open where it loops for good, 0 with no `active`.
-   - **A part left out gives its time to the one before,** which holds its last frame.
-   - **`in` is the later of the enter's end and the arc's own `fade.in`.**
-   - **An open arc cannot sit in a span,** which has to know its length; klieg's `stages` are
-     left for later and not designed out.
-   - The crossfade is a factor in `ownersWeight` (`src/owner.ts`), read from `arcShare` in
-     `src/arcs.ts`; the hold a release fixes is a voice control (`Voice.hold`), so a seek back
-     restores it.
-0. **Handles in blits-quarks and blits-tone shipped in quarks 0.8.0 and tone 0.3.0** (2026-10-18): blits-tone's
-   `Sound` (`wire`, `synth`, `polySynth`, `oscillator`, `noise`) and blits-quarks' `Source` and
-   `Emitter` (`wire`, `particles`, `at`). Each README's opening sections say what they do; each
-   changelog lists them. Called while building, Mike's to overturn: `drop()` also ends the voices cued through
-   the handle (`fade({ over: 0 })`), since a voice naming a dropped subject would otherwise stay
-   cued, holding it.
-0. **`watched()`, the engine side of a debugger, shipped in 0.12.0** (2026-10-19). The mix
-   page's "Watching a mix" says what it does. `@msb235/blits-panel` (`packages/panel`) is built on it
-   and is unreleased too; its README says what it does, and `apps/fireworks` mounts it in dev.
-   `node packages/panel/scripts/smoke.mjs` drives it in headless Chromium (on the fleet; it
-   launches a browser). The Chrome DevTools extension is built too: `apps/devtools`, whose README
-   says how to load and test it. It is not on the Chrome Web Store, and putting it there is
-   Mike's call. Its calls, Mike's to overturn:
-     - top frame only
-     - it runs alongside `mount()` rather than hiding the in-page panel
-     - history is added only when "Reload with history" is pressed, per origin through a
-       `sessionStorage` mark
-     - it runs on all sites, but only `start.js` loads before a DevTools tab connects
-     - the registry key's protocol number (`watch/1`) is the contract across engine releases
-   - **Hazards the review left standing:**
-     - With history on, the extension's `start.js` builds the shared registry and the
-       `createHistory` tape from its own bundled copies, before the app loads. The `watch/1`
-       contract covers entry methods but not the registry's own fields or the tape's API, so
-       an engine that changes either needs the extension rebuilt, or a bump to `watch/2`.
-     - A relay's `bye` ends whichever page agent is current, not the one its port served. The
-       order of calls makes a re-attach to the same page lose that race only in theory; not
-       reproduced.
-   Chosen while building, Mike's to overturn:
-   - **Names:** `watched()`, `watch`, `hold` and `free`.
-   - **A hold's rate scales the host's frame gaps** on a host timeline of its own, so the mix
-     plays at the hold's rate times its own. It never writes the transport's rate: an earlier
-     cut that did broke seeking back while paused, and left the hold's rate behind after `free`.
-     `step(ms)` is in mix time.
-   - **`free` takes the held time out** of the clock, as `rebase` does, so the mix resumes where
-     the hold left it, not where the host's clock says.
-   - **No branches:** while held behind the tape's last call, the host's own calls act on the mix
-     but go unrecorded, so the calls ahead still play. The spec had `free` switch branches back,
-     which comes to the same thing with more machinery.
-   - **Mixes register from the public factories** (`mixer.create`, `lean.create`, and
-     `transport()` for its history default), never from the `Mixer` constructor, which
-     projections call. Custom engines don't register.
-   - **The exports are filed under `mix`** on the site, not under a page of their own.
-   - **The panel is split into `agent()` (the page side) and the UI,** talking only through the
-     plain-data `Source` protocol in `packages/panel/src/protocol.ts`, so the extension reuses
-     both halves. Subjects cross as numbers the agent hands out.
-   - **The panel's calls:**
-     - It plots mix time.
-     - Paused frames replace one another.
-     - A seek back drops the plot ahead of it.
-     - The window is 10 s, capped at 1,200 frames.
-     - A subject the host didn't read that frame is read through `project` and marked
-       "read, not shown".
-     - A newly picked subject is filled backward from history, back to `reach`.
-     - Switching to a mix the hold doesn't cover frees the hold.
-     - `mount()` adds 10 s of history with a tape unless told `history: false`.
-   - **The panel is built with Vite,** not `tsc` alone, because weasel's stylesheet has to
-     reach the shadow root as a string. `tsc -b` writes only the declarations.
-   - **Releasing the panel:** 0.1.0 went out by hand (staged, then approved, 2026-10-23) and 0.1.1,
-     the same code, from the `panel-v0.1.1` tag through trusted publishing; both pin engine 0.12.0.
-     Later versions publish from `panel-v*` tags. An agent registers trust with `npm trust github`;
-     only an npm login needs Mike. Staging left a `0.0.0-stage` version on npm; deprecating it needs Mike's 2FA sign-in.
-   - **`ChannelPlot` moved** from the playground into the panel, which exports it. The
-     playground imports it from there, along with `hueColor`.
-   - **A mix watched and then let go of runs as fast as one never watched** (2026-10-21). Until
-     then it ran 2.1 to 2.6 times slower for good: putting the methods back deleted own properties,
-     which left the mix and its transport in dictionary mode. `swap` in `src/watch.ts` now assigns
-     them back, so a mix once watched keeps own `probe`, `pull` and `drain` (and its transport
-     `sync`) holding the prototype's functions. `UNWATCHED=1 bench/frame.mjs` measures it; the
-     ledger's `UNWATCHED=1` rows have the numbers.
 1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits, all of it measurement
    now: the garbage a churned voice makes was cut from 21.5 to about 13 KB on 2026-10-11, and the
    file says what the rest is. Delete each item as it is dealt with, and the file once it is
@@ -457,81 +232,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    `FRAMES=5000` the tween rows mostly time tweens that have landed, since each lasts 10 s, and
    `turnover^`'s `kB/frame` is mostly the row's own list copy.
 
-1a. **Lanes are built and merged into `project`** (2026-10-02). The schema page's Lanes section
-   says what they are, what qualifies and the two places the pose path differs; the `'motion'` form
-   is in its Springs and glides section. Measured on the fleet (studio, three runs alternated
-   against `project`), lanes ÷ `project` per frame: `keys` 0.38–0.57, springs 0.53–0.72, a
-   stateless `fn` 0.70–0.88. A lane rests when few of its subjects were probed last frame. The table
-   is in `spikes/gpu-engine/README.md` under "Lanes, as built". A weasel session reruns
-   `animator-on-blits` and `pose-overrides` against the build before deciding its animator step 3
-   (weasel `c7a183bde`, branch `pose-overrides-mix`).
-
-1b. **What lanes cost on rows they don't serve, accepted by Mike 2026-10-02.** A voice per subject
-   (`named`) reads 1.07× at 10,000 subjects (+0.2 ms) and 1.2× at 100–1,000 (+0.04 ms at most); a
-   mix probing 5% of its subjects 1.29× (+0.03 ms); a projection every frame (`ahead`) 1.10×
-   (+0.2 ms); a spring voice per subject with `lanes: false` about 1.05×. Profiles put it in three
-   places: the phase and channel arithmetic is now one shared copy that V8 does not always inline
-   where `project` had it written out; numbering and first-sight checks on every probe while lanes
-   are on; two more fields per record (lane number, seek count) that a projection copies. Writing
-   the arithmetic out again was turned down, since the exactness guarantee rests on there being one
-   copy.
-
-1c. **Next for speed, decided with Mike 2026-10-02, in this order, each measured on the fleet
-   before the next starts.**
-   - **Bulk output: `mix.pull`, built 2026-10-02.** The host hands arrays in its own order; nothing
-     internal is exposed. An array read again in the same order skips each subject's lookup (Mike
-     chose that over a view object or host-held numbers, 2026-10-02); the schema page's Reading in
-     bulk paragraph has the numbers. In weasel's shape a shared tween voice read by `pull` was still
-     about 4× weasel's own animator before that. Then (branch `motion-batch`, 2026-10-02): lane
-     values copied a column at a time, as one block when in order; a motion lane filled in one loop
-     (`runMotion`) through the one copy of the closed forms (`Motions.sampleBare` calls
-     `evaluate`), keeping Mike's one-copy rule. Mike set the goal as fast and capacious as
-     possible, not a target (2026-10-02). weasel-shaped `pull` at 10k is now about 0.44 ms on
-     teitou, from 0.71; remembered lane slots are read without loading each chain while nothing
-     has relinked (`relinks` counts chains made stale one subject at a time). Storing stretches as Float64Arrays gave nothing (reverted, `b4a4260`).
-     `prepare`'s per-subject bookkeeping now runs once per `pull` over a remembered list
-     (`pullRun`, branch `pull-run`, 2026-10-03): weasel-shaped `pull` about 0.38–0.45 ms on
-     teitou. What is left, by a profile of 20,000 frames on teitou (0.35 ms a frame): the fill is
-     about 68% (`runMotion` 30%, the fold 12%, weasel's own easing 9%), the read about 29%
-     (`pullRun` 14%, the column copy 11%).
-   - **`tween`, built 2026-10-02** as a fourth motion kind (Mike chose its own clock, like a
-     spring's, over the voice's period). In weasel's shape on studio it takes a frame to 0.83
-     of a `fn` tween's and its collection pauses to a quarter; against a `fn` with no per-call
-     lookup it is about even, both sitting on the probe floor. The schema page's motion section
-     and `spikes/gpu-engine/README.md` under "Tween" have it. A spring with lanes off, which read 1.14× on a loaded studio, reads 0.99× on an idle node.
-   - **One voice carrying many independent animations: built 2026-10-02 on branch `subject-fade`.**
-     A host that starts many short animations (weasel's reflow and pose helpers, one per node) can
-     keep one shared voice per motion kind on its lane rather than a voice per call:
-     `handle.fade({ subject, over })` takes one subject out of a voice, and `tween`'s `ms` may be
-     per subject. The schema page's Voice and motion sections say how. Mike chose to extend `fade`
-     rather than add a removal verb, so the handle stays the only pathway for control; `mix.drop`
-     already meant "forget this subject everywhere". weasel (weasel-64) confirmed it needs per-node
-     removal: a node changes motion kind mid-flight, or is cancelled with nothing replacing it. The
-     schema page's Open section has the one gap, reading back across a subject fade under `history`.
-   - **A voice per node, built 2026-10-03** (branch `voice-lane`): single-subject motion voices
-     share a crowd of flat rows per channel, and `sync` visits only voices with something due. The
-     schema page's Lanes section has how and the numbers; 10k tween voices of one subject each now
-     cost what one shared voice does. Mike approved the direction and the design, which was then
-     deleted as built.
-   - **Crowds take `keys` and stateless `fn` rows, and voices come and go without a requalify**
-     (branch `crowd-rows`, 2026-10-03). A voice naming its subjects relinks only those, joins its
-     crowd at the end and leaves an empty row; `drop` walks only the voices that can hold the
-     subject. weasel's ask: on teitou a frame replacing one of 10k tween voices went from about
-     9 ms to 0.6 by `pull`. The schema page's crowd paragraph has the rest. Left: a voice that
-     leaves the general path or a lane, rather than a crowd, still requalifies every voice.
-     Reading keys stops as flat numbers measured no different and was reverted.
-   - **The slow cases after 0.4.0, worked overnight 2026-10-04** (branch `slow-cases`, Mike
-     asleep). `CHANGELOG.md`'s 0.8.0 section lists what landed, with numbers: crowds of
-     several channels, in-place crowd compaction, an allocation-free locus fold, read backs
-     without `structuredClone`, a spring's shared time terms, and per-voice memory cut by a sixth.
-     Every change was checked bit for bit with `bench/same.sh <rev>` (random scenes through two
-     builds), and timed one row per process with `AB_EACH=1 bench/ab.sh`. `bench/start.mjs`,
-     `bench/memory.mjs` and `bench/heapby.mjs` measure starting voices and what each one holds.
-     The same night put signal weights and loci on lanes (the schema page's Lanes section has
-     how), which found and fixed two exactness bugs the random scenes now cover: a lane clamped
-     a weight before multiplying in a subject fade, and `atRest`'s dry read handed a weight
-     signal the unheld time. `SAME_LANES=off bench/same.sh <rev>` compares this tree's lanes with
-     a revision's general path. What is still slow, largest first:
+2. **What is still slow.** Lanes, `pull`, `tween`, subject fades, a voice per node and crowds are
+   built (the schema page's Lanes and motion sections, the changelog's 0.8.0 section); Mike set the
+   goal as fast and capacious as possible, not a target (2026-10-02). Measure each change on the
+   fleet before the next starts. `bench/same.sh <rev>` checks a change bit for bit (random scenes
+   through two builds), `SAME_LANES=off bench/same.sh <rev>` compares this tree's lanes with a
+   revision's general path, and `AB_EACH=1 bench/ab.sh` times one row per process. Open, largest
+   first:
      - **A voice over every subject cued among a crowd** (`swap`: 10k tween voices of one subject
        each, a voice over all of them replaced every frame) costs about 3.6 ms a frame on teitou,
        from 12.4 at `560f79c` and 6.2 at `a7d5317`, against 0.83 for the tween voices alone. What
@@ -578,8 +285,20 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        way through is a lane copying its stretches into its own Float64Array, as a crowd does.
      - **Nothing reads clearly slower than 0.4.0 at steady state.** Confirm any short-run
        regression at `FRAMES=5000` before chasing it: 330 frames can end before the JIT settles.
+   - **Where weasel-shaped `pull` spends its frame**, by a profile of 20,000 frames on teitou
+     (0.35 ms a frame, 2026-10-03): the fill about 68% (`runMotion` 30%, the fold 12%, weasel's own
+     easing 9%), the read about 29% (`pullRun` 14%, the column copy 11%).
+   - **Measured no different and reverted, so not worth re-proposing**: storing stretches as
+     Float64Arrays (`b4a4260`, 2026-10-02), and reading a crowd's keys stops as flat numbers
+     (2026-10-03).
+   - **A voice that leaves the general path or a lane**, rather than a crowd, still requalifies
+     every voice.
+   - **A read ahead across many events of a stateful mix costs a read per event**: each stop copies
+     every voice and reads each asked-for subject once. Nobody has benched it (2026-10-17).
+   - **A weasel session reruns `animator-on-blits` and `pose-overrides`** against the lanes build
+     before deciding its animator step 3 (weasel `c7a183bde`, branch `pose-overrides-mix`).
 
-1e. **Next for speed: the steady frame of 10k one-voice-per-subject tweens read by `pull`** (`tweens^`,
+3. **Next for speed: the steady frame of 10k one-voice-per-subject tweens read by `pull`** (`tweens^`,
    `weasel^`), Mike's go 2026-10-05. Bare tween rows fill in one loop (`bare.ts`) and `pull` queues
    runs since 2026-10-05: on teitou `tweens^` takes 0.17 ms a frame and `weasel^` 0.22, against
    0.031–0.047 for a hand-written loop doing the same arithmetic. What is left:
@@ -619,17 +338,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      at 10,000 tracks from 0.48, with a slow mode near 1.0 on both versions.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
-
-1d. **`@msb235/blits-quarks` 0.6.0 is on npm**, pinned to engine 0.10.0 and published from its
-   `quarks-v0.4.0` tag (0.1.0 went out by hand, because npm refuses trust for a name never
-   published). Its README says how it works. magicsmoke is on engine 0.8.1 but its fizz and tuning stay on its own code: the driver doesn't fit without changing
-   what magicsmoke does. Its `docs/HANDOFF.md` has the gaps; the likely driver changes are a
-   per-subject emitted count from `write`, rate or counts settable by the host, and rounding
-   without the `1e-6` slack. Mike's call whether to make them.
-
-2. **The schema page's opens were closed 2026-10-23:** tags absorb loci through a mix's `loci`
-   (`locus` stays for klieg, wod, magicsmoke and astv), and the stock band is klieg's, on above 0.
-   What is left open there is listed under its "Open" heading.
 
 4. **Reach is fixed at cue, so a voice whose contribution moves pays for every subject it might
    touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every
@@ -718,139 +426,56 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      (three signal-weighted voices over 10k) 3–7% in three A/Bs, inside its spread each time but
      always the same way; not chased.
 
-5. **Work nobody will see** (2026-10-07). Prompted by astv speeding 100 text animations into 2 s,
-   most of them offscreen. Three cases; the first is built, the other two wait on a decision.
-   - **Offscreen, built**: a lane fills only subjects probed this frame or the last (CHANGELOG
-     0.8.0, the schema page's Lanes section). It pays where lanes stay busy over a part
-     view: `view`, three `keys` voices with 40% of 10k subjects probed, 0.561 ms a frame from
-     0.878 (teitou). It does nothing for astv's shape, the `typing` row: 100 voices of 40 rows
-     over 10k rows with 200 probed costs about 0.02 ms a frame either way, because at 2% probed
-     every lane already rests. A profile of it (teitou, 20,000 frames) puts about 55% in the
-     general path's fold, 11% in lane bookkeeping and 11% in voice clocks. astv's real text runs
-     write `last` over row objects, which no lane runs, so this change does not reach them.
-   - **Too fast to see — decided: no change** (Mike, 2026-10-07). A voice too brief to affect the
-     scene is not shown: one whose whole span falls between two syncs is never sampled mid-way,
-     and shows only by freezing after. No jump, no stretch to a minimum number of frames.
-   - **Flicker — decided: opt-in only, for now** (Mike, 2026-10-07). Flicker, or protection from it,
-     is something a host adds to its own pipeline; blits marks no brightness channels and counts
-     nothing on its own. Nothing is built; an opt-in limiter would be a signal or channel wrapper,
-     and could warn rather than clamp.
-   A reach that changes over time (item 4) is another way to say offscreen.
+5. **Work nobody will see** (2026-10-07). A lane fills only subjects probed this frame or the last
+   (CHANGELOG 0.8.0), which does nothing for astv's shape, the `typing` row: at 2% probed every lane
+   already rests, and astv's real text runs write `last` over row objects, which no lane runs. A
+   profile of `typing` (teitou, 20,000 frames) puts about 55% in the general path's fold, 11% in lane
+   bookkeeping and 11% in voice clocks. The other two cases, too fast to see and flicker, are
+   decided (the schema page's Decided against). A reach that changes over time (item 4) is another
+   way to say offscreen.
 
-6. **Color as a value: `color()` is built** (branch `color`, 2026-10-07); the schema page's
-   channel section and the CHANGELOG say what it is. Mike chose that the channel picks its lerp
-   space (`{ lerp: 'oklab' | 'oklch' }`, OKLab default) after a red-to-cyan render showed OKLab
-   washing to pale gray and OKLCH sweeping through the hues between. What is left:
-   - `color({ lerp: 'oklch' })` runs off lanes, since a lane lerps a stock channel straight across.
-   - **A glow writing `color()` stays on the lanes**: the bench's `glowk` rows are `glowc` with the
-     color on `color()`. Medians of six fresh processes on this Mac under a load average of ~10,
-     so trust the differences and not the absolute numbers: what the glow adds over `glowbase` fell
-     from 3.10 to 1.19 ms through `pull`, and from 1.69 to 1.35 ms through `probe`.
-   - **`color(last())` runs on lanes** (OKLab lerp only), as a lane op `'last'`: the band state
-     stays on each voice's record for the subject, which the lane already holds, so it moves
-     between the lane and the general path for free (`gate` in `src/gather.ts`). A voice writing a
-     `last` channel that is a motion, sits in a locus or names one subject keeps the channel off
-     lanes, since crowds, motions and loci fold elsewhere (`fits` in `src/hosts.ts`). `hex` and a
-     plain `last()` stay off: hex's lerp is not straight across, and `last()` holds anything.
-   - **What the `last` lane saves**, measured on teitou (2026-10-07, idle, `bench/again.sh 6`,
-     medians of six fresh processes, ms a frame): through `pull`, `glowl^` 1.09 against
-     `glowk^` 1.03 and `glowc^` 2.14, over `glowbase^` 0.48; through `probe`, `glowl` 1.60,
-     `glowk` 1.70, `glowc` 1.88, over `glowbase` 1.08. So a glow on `color(last())` costs what
-     one on `color()` does, and half what a hex glow does through `pull`. What the `last` op
-     costs every other lane does not show: `AB_EACH=1 bench/ab.sh f0f9494 HEAD 6` read
-     `fn^`, `tweens^`, `weasel^`, `keyses^`, `blend` and `glowc^` within 0.96–1.04×, every row's
-     runs overlapping the other side's.
+6. **`color({ lerp: 'oklch' })` runs off lanes**, since a lane lerps a stock channel straight
+   across. `color()` and `color(last())` (OKLab) run on them.
 
-7. **The span vocabulary is picked and settled** (2026-10-07). `span` and `fit` kept their names;
-   `fallback` became `spill`, the fits `condense`, `shed`, `conclude`, `overrun`, `pipe` and `lax`,
-   the retiming `rescale` (internal), `handle.fitted` became `handle.result` (type `FitResult`) and
-   the hint `firm` became `priority` and `skip` became `ballast`; `faster`, `slower` and `overlap`
-   kept theirs. `pass` was picked for `skip` first and dropped: it is already public as a number,
-   `setting.pass`, the loop pass a voice is in. Shipped in 0.7.0.
+7. **blits-quarks and magicsmoke.** magicsmoke is on engine 0.8.1 but its fizz and tuning stay on
+   its own code: the driver doesn't fit without changing what magicsmoke does. Its
+   `docs/HANDOFF.md` has the gaps; the likely driver changes are a per-subject emitted count from
+   `write`, rate or counts settable by the host, and rounding without the `1e-6` slack. Mike's call
+   whether to make them. `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the
+   driver scaffold the survey proposed is this same question.
 
-9. **The history adapter is built** (2026-10-07, merged to `main`):
-   `history.store`, `prepare`, `HistoryMiss`, `keyOf`, `as`/`revive`, `pack`/`unpack`.
-   The schema page's "History behind a store" describes it, and the spec section lists the calls
-   made in building (state kept by order, `store.cut`, the `stretch` stream). Mike has not reviewed
-   the design. astv marked its text-run weight `input` (astv `522624e0`); it now names its mixes,
-   describes its voices with `as` and gives a store once it moves to a release with this.
+8. **blits-tone.** Its README says what it does and does not do yet. Open:
+   - A read of the mix over a window, returning a run of values or a `keys` voice's own
+     breakpoints as exact ramps, in place of a `project` per grid point (31 a write, and only
+     as exact as the grid). Useful beyond audio.
+   - Mix time converted to the outside clock while `mix.rate` ramps; the driver reads
+     `mix.rate` as it stands at each write, which drifts during a ramp (3.59 Hz in its test).
+   - **`apps/fireworks`**, which plays one mix through this driver and the quarks one, has never
+     been listened to. It still packs pan and size into each event and could read them off the
+     shell, since a booked hit carries its voice's `subjects` (2026-10-11).
+   - **`node-web-audio-api` 2.2.0 frees a channel's samples under a live array** (2026-10-11):
+     the `Float32Array` from `getChannelData` reads freed memory once its `AudioBuffer` is
+     collected, so `render` in `packages/tone/test/render.ts` copies them. Upstream knows:
+     ircam-ismm/node-web-audio-api issue 80. The copy can go once that is fixed.
 
-8. **astv's change order runs on a span** (astv `dfc8df5a`, on 0.12.0, 2026-10-23), with each
-   change a child ranked by line and floored at its landing. Called while building, Mike's to
-   overturn: a key on the child rather than a comparator on the span, since it is data a tape
-   replays; an anchor still unanswered holds every later child under `queue` or `stagger`; an
-   anchor on a voice that has left never answers, so astv passes the landing time as a number;
-   and a floor already past when the child is cued places it there, partway through (2026-10-22,
-   Mike's pick over astv keeping `scheduleMarks`), so a span made afresh after a seek lays out as
-   a live one did. weasel's packages still pin 0.11.0, which astv overrides to keep one copy.
+9. **Two copies of blits loaded together** share what each knows of its patches and channels
+   (`src/shared.ts`, `test/copies.test.ts`; the schema page's motion section). blits-quarks,
+   blits-tone and blits-panel take blits as a peer dependency, so **the range has to be widened with
+   each engine minor**. `@msb235/blits/lean` leaves lanes out of a bundle (the site's lean guide has
+   the sizes). What lanes code still lands in a lean bundle, and why (esbuild metafile, 2026-10-21,
+   51.1 kB gzipped in all): `everyone.ts` (2.8 kB), since a dozen general-path modules call its
+   sharing hooks though no voice shares without lanes; `columns.ts` (2.1 kB), from `pull`; and
+   `crowd.ts`'s `crowdable` (146 B), from `fits` in `hosts.ts`. History (9.3 kB gzipped) is reached
+   from 24 places in 12 modules and was left in.
 
-10. **Two copies of blits loaded together share what each knows of its patches and channels**
-    (`773d088`, 2026-10-08): `keys` options and the stock channels' lane facts sit in WeakMaps
-    under `Symbol.for` names (`src/shared.ts`), versioned so copies that disagree on a shape keep
-    apart; `test/copies.test.ts` loads a second copy of `patch.js`. blits-quarks and blits-tone
-    take blits as a peer dependency, `^0.10.0`, on `main` since 2026-10-11 (Mike's call), unreleased
-    in both; the range has to be widened with each engine minor.
-    A motion patch another copy made runs on lanes too (2026-10-17), known by a
-    `Symbol.for` getter on the patch's prototype. Chosen while building, Mike's to overturn: the
-    mark is named for the release (`release` in `src/shared.ts`, held to `package.json` by
-    `test/copies.test.ts`), not a hand-bumped `@1`, because the mix calls a wide, often-changed
-    surface of the other copy's `Motions`; so an unreleased checkout and the release it grew from
-    wrongly agree. To reverse, name the mark `motions@1` in `src/motion.ts` and drop `release`.
-    `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the driver scaffold
-    the survey proposed is the magicsmoke question in item 1d.
+10. **The history adapter** (the schema page's "History behind a store") **has not been reviewed
+    by Mike.** astv marked its text-run weight `input` (astv `522624e0`); it now names its mixes,
+    describes its voices with `as` and gives a store once it moves to a release with this.
 
-    **`@msb235/blits/lean` leaves lanes out of a bundle** (2026-10-11): 44.5 kB
-    gzipped against 59.9 for the stock entry (esbuild, minified), the same values, and
-    `lanes: true` throws. `test/lean.test.ts` holds both. The stock path read level across the
-    change that made `Mixer` take its lanes class as a constructor argument: v0.10.0 to v0.11.0 in
-    `bench/runs/2026-10-20-releases-no-seek.txt`, every row within 2% but `glow`, whose slowing
-    item 14 places in `6ef4985`. What lanes code still lands in a lean bundle, and why (esbuild
-    metafile, 2026-10-21, 51.1 kB gzipped in all): `everyone.ts` (2.8 kB), since a dozen
-    general-path modules call its sharing hooks though no voice shares without lanes;
-    `columns.ts` (2.1 kB), from `pull`; and `crowd.ts`'s `crowdable` (146 B), from `fits` in
-    `hosts.ts`. History (9.3 kB gzipped) is reached from 24 places in 12 modules and was left in.
-11. **`@msb235/blits-tone` 0.1.0 is on npm** (2026-10-11), published by hand from
-    `packages/tone` and pinned to engine 0.10.0 with Tone as a peer. Its README says what it is,
-    how it works, and what it does not do. Trusted publishing is registered for it, so the next
-    version goes out from a `tone-v*` tag, as `quarks-v*` does quarks; that path has not run. Mike
-    settled its names on 2026-10-11 (`drive`, `attach`, `detach`, `write`, `cancel`, and the
-    options `ahead`, `grid`, `late`, `clock`, `take`, `tag`, `score`). Calls made in building:
-    - **Its tests take `node-web-audio-api` as a dev dependency**, a prebuilt native binary of
-      about 40 MB, so Tone's offline render runs in Node with no audio device. Mike accepted it
-      on 2026-10-11.
-    - **`node-web-audio-api` 2.2.0 frees a channel's samples under a live array**
-      (2026-10-11): the `Float32Array` from `getChannelData` reads freed memory once its
-      `AudioBuffer` is collected. `render` in `test/render.ts` returned such arrays and dropped
-      the buffer, so a second render in one test killed the worker with SIGSEGV on the release
-      workflow's Linux runner (`clock.test.ts`, 8 runs of 8) and read junk on macOS. `render` now
-      copies them. Upstream knows: ircam-ismm/node-web-audio-api issue 80, open since before
-      2.2.0, describes the same read. To see it: render an `OfflineAudioContext`, keep only
-      the array, call `gc()`, and read it.
-    - **`apps/fireworks` plays one mix through this driver and the quarks one** (2026-10-10; its
-      README says how). It ran in headless Chromium's `AudioContext` with Tone `Param` targets:
-      shells rose and bloomed, a meter on Tone's output showed each bang, and ramping `mix.rate`
-      between 0.3 and 2 threw nothing. Nobody has listened to it. What writing it against
-      both drivers turned up:
-      - Both packages export `drive`, so a file using both aliases them. Kept, 2026-10-11.
-      - A booked hit carries its voice's `subjects` now (2026-10-11); fireworks still packs pan
-        and size into each event and could read them off the shell.
-      - **A subject binds one `Target` per channel, and that stays** (Mike, 2026-10-11). Each
-        rising shell borrows an oscillator from the app's own pool, and one launched with the
-        pool empty has no whistle. A host that wants every subject heard builds a synth per
-        subject and attaches it; the driver's README says so.
-    Undecided, and what would close the README's gaps:
-    - A read of the mix over a window, returning a run of values or a `keys` voice's own
-      breakpoints as exact ramps, in place of a `project` per grid point (31 a write, and only
-      as exact as the grid). Useful beyond audio.
-    - Mix time converted to the outside clock while `mix.rate` ramps; the driver reads
-      `mix.rate` as it stands at each write, which drifts during a ramp (3.59 Hz in its test).
-    - Scrubbing works against the engine's source: after a seek back under `history`, `write`
-      reads through a recorded call (`packages/tone/test/driver.test.ts`, 2026-10-11), where
-      `project` threw and `write` with it. blits-tone on npm is pinned to 0.10.0, which still
-      throws; its README's "Scrubbing" line goes when it is pinned to the next engine.
+11. **astv's change order runs on a span** (astv `dfc8df5a`, on 0.12.0, 2026-10-23). weasel's
+    packages still pin 0.11.0, which astv overrides to keep one copy.
 
-12. **What the docs audit left** (2026-10-10). The schema page's interface listings now carry
-    every public member, and the page and README cover what the audit found missing.
+12. **What the docs audit left** (2026-10-10).
     - **A voice cued before the mix's first sync starts at 0 on the host's clock, not at that
       sync** (measured 2026-10-11): a one-pass 1 s voice cued before `sync(5000)` has ended
       when it is first probed. `VoiceSpec.start` said "Default: the next sync" and now says
@@ -858,48 +483,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       that cues before its first `requestAnimationFrame` meets it.
     - **Not checked**: the page's timings and its table of consumers' kits, which are other
       repos' facts.
-    - **The playground README's gestures were checked against the widget code** on 2026-10-17,
-      each one driven in headless Chromium where the code left doubt. Space now plays from a
-      focused tab, slider or button, as the README said it would; the README now gives the
-      transport's real order, the score's keyboard path and clip menu, what the arrow and an
-      Alt-drag from the body do, which fields commit on Enter, and that dragged Both positions
-      hold off edit. Left open:
-      - **Most panel fields commit on every keystroke**, so typing `1500` into a mark's time is
-        four undo steps; only the stage, title, length, level, read-ahead and expression fields
-        go through `Draft` or `ExprInput`. The README says so; whether the rest should commit
-        on Enter too is Mike's call.
+    - **Most panel fields commit on every keystroke**, so typing `1500` into a mark's time is
+      four undo steps; only the stage, title, length, level, read-ahead and expression fields
+      go through `Draft` or `ExprInput`. The README says so; whether the rest should commit
+      on Enter too is Mike's call.
 
-13. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). Built
-    2026-10-09: `wave`; every ease (`keys` `ease`, `easeBy`, `delayBy`, `fade.ease`, a tween's bezier
-    and steps); the live panel's `fade` options, `rise`, `rate` setter and `seek`'s `Doubt`; the
-    mix options `stepMs`, `maxDt`, `reduce` and `lanes`; the mix's own `rate`; scrubbing by
-    `mix.seek` with `assess` per channel; each channel's fold rule; and owners and spans (`owns`,
-    `owner`, `span` with its hints, every fit step and a code fit over `plain` and `layout`,
-    `FitResult`), drawn as header lanes on the score. Built 2026-10-10, each with a preset:
-    `mix.blend` (a locus cued as one blend by a signal); marks, hits, and events (an Events tab
-    with `marks`, `announce`, `book`, and `drain`, a voice's `tags`, `score`, and hits, and any
-    anchor typed as JSON); and a cue's `seek` with a rate below 0. What that left:
-    - **Groups take `tags`, `score`, hits, `seek`, and a rate below 0** (2026-10-17).
-      blits already ran an owner's children back with it and read an owner's `tags` and
-      `score`; what was missing was `hits` and `seek` on `OwnerSpec`, now added. Chosen while
-      building, Mike's to overturn:
-      - **A group's `tags` and `score` select the group alone.** A booker or `drain` by tag
-        takes its marks and hits, not its members'; a member carries only its own. To reverse,
-        have `fits` in `src/book.ts`, `drain` in `src/mixer.ts` and the anchor query in
-        `src/place.ts` read tags up the owner chain.
-      - **An owner's hits are at ms on its own clock, booked once**, since an owner does not
-        loop; one behind its `seek` is taken late, as a voice's is. Per-pass would need passes,
-        which owners refuse.
-      - **An owner cued backward with no `seek` starts at 0**, so a child placed after 0 leaves
-        at once: an owner has no end of its own at its cue to start from. To reverse, pick a
-        default (the last child's end once it is cued) and set it in `Voice`'s constructor.
-      - **`mix.span` refuses a rate below 0.** Cued backward, a span placed none of its
-        children, which waited for good. Building it means `refit` in `src/spans.ts` laying
-        children out from the span's seek down to 0, placing each by its end, with `clockOf`,
-        `lingers` and `lapse` reading a clock that runs back; that is a rework of the fit, not
-        a guard. A span turned back by its handle once it plays already runs its children back.
-        The playground makes a span's rate below 0 a field error on `rate`, and only an owner's
-        rate slider goes below 0.
+13. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). What
+    is built is in its README; the calls made building it are under its "Chosen while building".
+    What is left:
     - **Found while building, Mike's to decide** (2026-10-17; the owner marks and the backward
       past-end frame found with these are fixed, in the changelog):
       - **Should turning an owner back bring back a child that has already left?** It does not:
@@ -926,45 +517,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         - Show nothing: forward, each subject drops its contribution at its own end, a visible
           change to every staggered finite voice shipped in 0.10.0. A staggered entrance would
           snap each subject back as it finishes, rather than hold until the voice fades.
-    - **Timed, small and accepted under the tuning bound** (2026-10-17, `4a6cc4e`, with the
-      read-ahead stops): a voice running back past its end showing nothing put one comparison per
-      subject on the general path (`shownAt` in `src/voice.ts`, an `isNaN` in `contribution` in
-      `src/fold.ts`), on a keys lane (`runKeys` in `src/keyfill.ts`) and a fn lane (`frozenAt` in
-      `src/lane.ts`), and sends crowd rows of a keys or fn voice an owner holds, or one running
-      back, through `frozenAt` (`copyVoice` in `src/crowd.ts`). On studio (7 rounds,
-      `AB_EACH=1 bench/ab.sh 0b51634 6ef4985`, 19 rows) the geometric mean is 1.008: `own`
-      1.02–1.03, `typing` 1.03, `keys` and `fn` 1.00–1.02, `ahead` 1.006 with 5% more kB a frame,
-      the rest within 1.00 ± 0.02. If it is worth winning back, `own` and `keys` are where to look.
-    - **Chosen while building, Mike's to overturn** (2026-10-17, the score's joined links, a
-      partway clip's right edge, and the booker's read-ahead):
-      - A join or query anchor draws a dotted link from each voice `timingOf` says it could
-        wait on: close dots for `all`, wide for `any` or a query, and a query inside an `all`
-        counts as `any`. To change the look, edit `.linkAll`/`.linkAny` in
-        `ScoreLanes.module.css`; to drop them, remove `joinedLinks` in `score.ts`.
-      - A query that also names (`{ name, tag }`) now draws as a query, not a dashed link to
-        that name, so the score agrees with the Timing tab. `targetOf` in `score.ts` holds it.
-      - A partway clip's right edge snaps to what each whole `loop` leaves (`stopsOf` in
-        `clip.ts`), and the edit sets the fewest loops that leave that much; backward with a
-        `seek`, the edge stops at the seek. Reverse by restoring the `startsPartway` early return
-        in `score.ts`'s `passes` case.
-      - The read-ahead is saved in the composition as `book.ahead`, 0 to `MAX_AHEAD` (5000 ms),
-        while the book-and-drain tag stays per-session on the `EventLog`. Moving the tag to
-        `book.tag` would save and share it too.
-    - **Chosen while building, Mike's to overturn** (2026-10-17, a voice's `catchUp` and
-      scrubbing by `seek({ frame })`):
-      - A scrub back by `mix.seek` now always seeks by frame: the Player keeps each mix's `seq`
-        for every score frame it showed and passes that, so each frame rate 0 held at one mix
-        time is reached by scrubbing to its place on the score, with ‹ › on the transport to step
-        one frame and a readout of the full mix's `now` and `seq`. There is no separate stepper
-        over the held frames alone. Reverse by passing `target * FRAME` to `m.seek` in
-        `seekBack` (`src/blits/player.ts`), which lands on the last held frame.
-      - The Events list's seek cut now goes by the full mix's `now`, the clock `Sent.timestamp`
-        reads, not score time; they differ only under a live mix rate.
-      - `catchUp` shows in the voice panel only for an fn patch with a `step`, as `stepMs` does,
-        since blits reads it only there. `stepMs` and `catchUp` are now held alike across a
-        blend's members, as `mix.blend` takes them once; before, a member's own `stepMs` was
-        silently dropped for the first member's. Reverse by removing them from `SHARED` in
-        `src/blits/blend.ts`.
+    - **Timed, small and accepted under the tuning bound** (2026-10-17, `4a6cc4e`): a voice
+      running back past its end showing nothing put one comparison per subject on the general path,
+      a keys lane and a fn lane. On studio (7 rounds, `AB_EACH=1 bench/ab.sh 0b51634 6ef4985`, 19
+      rows) the geometric mean is 1.008: `own` 1.02–1.03, `typing` 1.03, `keys` and `fn`
+      1.00–1.02, the rest within 1.00 ± 0.02. If it is worth winning back, `own` and `keys` are
+      where to look.
     - **Found while building** (measured 2026-10-17): a seek lands at the end of a frame, so a
       live change made at score frame f shows on seeking back to f, though play first showed it
       at f + 1; `player.test.ts` holds this. And in the Player, which meets every subject every
@@ -1007,62 +565,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     rounds (U = 47). The rest, about 2%, is not placed. `crowd.ts` still calls `frozenAt` for a
     crowd's freezing voices, unmeasured. Runs: `bench/runs/2026-10-20-glow-*.txt` and
     `-frozenat-*.txt`.
-    - **Mike has not seen two things chosen while building.**
-      - **A probe into `out` reuses its arrays, which reverses a guarantee a test held.**
-        `test/solo.test.ts` said a reused `out` "never has an array the host kept from it written
-        into"; it now says the array is the same one, and that a probe with no `out` is never
-        written into. To undo it, drop the two reuse branches (`foldWith` in `fold.ts`, `copy` in
-        `copyout.ts`): the `tween` row then allocates about 0.7 MB a frame again. No consumer is
-        caught by it (read 2026-10-10): klieg's two `poseAt` callers read the numbers out at
-        once, and weasel's `poseOverrides.ts` and astv's six sites have no vec or color channel.
-      - **Step 7's names and shapes**: the type `Vec<N>`; `angle({ turn })` with `turn`
-        defaulting to 360; `input(read, of?)`, whose `touch()` reports a change; a keys patch's
-        options as the flat fields `ease`, `easeBy`, `delayBy` and `lerpBy`, and a wave's as
-        `patch.wave`, with `waveOptionsOf` removed; `handle.to` and `push` throwing for a patch
-        that takes neither, and `read` giving undefined; and `fold` switching a rest-less channel
-        on at 0.6, a mix's default band. All of it shipped in 0.8.0, so a rename is now a break.
-    - **A key `at` returns outside `writes` is warned of** (2026-10-17). Chosen while
-      building, Mike's to overturn: a `warnOnce` per patch outside production, as a placement
-      ending before its start already does, over a fault count the host reads, which blits has no
-      pattern for; and only the first delta each voice's `at` returns is checked, in
-      `contribution` (`src/fold.ts`), which makes every voice's first call, so the lanes' fills
-      check nothing. Per frame that is one boolean read per `fn` call on the general path, which
-      reads level (msb-uai, 2026-10-17, 10 rounds, `AB_EACH=1 bench/ab.sh da301d9 650b3e9` over
-      `fn` and `named`, geometric mean 0.992, every row within 0.96–1.02). To
-      reverse, drop `checkWrites` and `unchecked` from `src/voice.ts` and the line calling it.
-      - **Chosen while building, Mike's to overturn: `seek({ frame })` takes the number a new
-        `mix.seq` / `transport.seq` reads** (2026-10-17). The getter is `seq` because
-        `frame` is already an internal field on `Mixer` and `HistoryRecord.seq` already names the
-        frame number publicly; the option is `frame`, as the review named it. `project({ frame })`
-        came along so reads and seeks answer the same question one way. A frame number is opaque
-        (not an index among frames at one time), and one history no longer holds throws. To rename,
-        change `seq` in `src/types/mix.ts`, `src/types/transport.ts` and the getter in
-        `src/mixer.ts`; nothing else reads it.
-      - **Chosen while building, Mike's to overturn: what `catchUp: 'fresh'` covers** (2026-10-17).
-        The review's row said "fresh keeps today's behavior", meaning before
-        `493fb15`, so it touches only where a stateful record met late starts stepping: from the
-        first probe, with fresh state. The `stepMs` grid still counts from the origin (the
-        record's `ticks` start at the intervals already passed, `meet` in `src/held.ts`), the
-        fade-in still counts from the origin, a handle `seek`'s rebuild still steps from the voice's
-        start, and a signal's kept state is unaffected (signals measure their own gap). A
-        projection that meets such a subject late marks it `unknown`, so `assess` says `held`.
-        The determinism suite's `fresh` variant runs `seek`, `behind`, `now` and `frame` but not
-        `again`, `ahead`, `taped` or `dt`, where a subject is first met other than frame by frame
-        and fresh differs by design. The 256-past-clock cap is unchanged: a fresh voice's fade-in
-        still reads them. To make fresh also cover rebuilds, call `meet` from `rebuild` in
-        `src/fold.ts`.
+    - **The calls this work made** (`out` arrays reused, step 7's names, the `writes` warning,
+      `seek({ frame })`, `catchUp: 'fresh'`, playing backward) are in the schema page's "Chosen
+      while building". Mike has not seen the first two.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
-      - **Backward play is built (2026-10-10); the schema page's "Starting partway, and playing
-        backward" is the record, and its last sentence lists what is not built.** Mike's calls:
-        a valid use is not refused because no consumer has it yet; a cue takes `seek`; blank,
-        a voice cued backward starts at its end. Chosen while building, his to overturn: a
-        fade in counts from no earlier than the voice's start (so `seek` does not use it up),
-        and a voice with no end cued backward has no first pass, a property of the cue and
-        not of the rate it has later. A voice fading from its start, one with no first pass,
-        and one faded before it started run off lanes. Timed with everything else since
-        `da6e613` (teitou, 2026-10-10, 7 rounds, `e51cd85` against `da6e613`, 14 rows over
-        `fn`, `named`, `probed`, `blend`, `keys`, and `typing`, geometric mean 1.011): every
-        row's runs overlap the other side's but `blend`.
       - **`blend` reads about 5% slower at `e51cd85` than at `da6e613`, and no one commit
         shows it** (teitou, 2026-10-10, `AB_EACH=1 bench/ab.sh` over `blend` alone, 7 rounds at
         5,000 frames, medians in ms a frame). The whole range: 2.937 to 3.105, 1.057, the runs
@@ -1086,14 +592,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         whether or not the span has left. A copy given the list read the same. A child retimed
         by `faster` did read apart from the synced mix, which was the mix's fault and is fixed
         (the changelog's 0.9.0 section; `test/span.test.ts`).
-      - **A voice whose owner runs backward now leaves over its fade out** (2026-10-11; the
-        changelog's 0.9.0 section, `test/backward.test.ts`). Chosen while fixing it, Mike's
-        to overturn: an owner run back to its start stays while it holds a child and leaves
-        with its last, where it left at its own start and took them all. Left as found: such
-        a child's `start` and `in` marks read where the owner's clock will next read the
-        child's start (400 for an owner turned back at 200), as any retime of an owner moves
-        them; and a child that itself runs backward under a backward owner, forward overall,
-        has no test.
+      - **A child whose owner runs backward**, left as found (2026-10-11): its `start` and `in`
+        marks read where the owner's clock will next read the child's start (400 for an owner
+        turned back at 200), as any retime of an owner moves them; and a child that itself runs
+        backward under a backward owner, forward overall, has no test.
     - **Not built**, and nothing recorded against any of it:
       - Records shared by a read back or a standing read, and by voices `shares` (in
         `everyone.ts`) turns away that could keep their difference by subject number too: a
@@ -1295,31 +797,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       lanes is not checked. The other workarounds the doc's "Universal applicability" table
       lists are still in klieg, sherpa, weasel and wod, and in `apps/playground` (`LivePanel`'s
       cast, `expr.ts`'s flag).
-15. **0.8.0 costs more a frame than 0.7.1 under `history`; fixed in 0.8.1**
-    (2026-10-10). astv's `packages/engine/playback/motion.bench.ts` showed it: text runs +36% to
-    +47%, its busy stage +13%. A bisect with that bench found two commits, `c40e2bc` (a sync
-    spliced the oldest frame off the list of every frame in reach) and `0d1fb48` (a contribution's
-    object was deep-copied each frame on a channel nothing folds into). `src/frames.ts` and
-    `first` in `src/clone.ts` are the fixes, and astv measured every regressed row back within 3%
-    of 0.7.1 on msb-uai; the changelog's 0.8.1 section has the numbers. Left unexplained, at
-    1 to 2 µs a frame with runs that disagree: astv's glides (+8%) and progress clocks (+39%).
-    To measure a blits build against astv's bench: `MOTION_ONLY=1 probes/blits-version-bench.sh
-    <out dir> 0.7.1` in `~/src/astv` on a fleet node.
-16. **`setting.dt` for a patch with no `step` is fixed** (2026-10-10; the changelog's 0.9.0
-    section, `test/dt.test.ts`). Mike chose the gap since the subject was last sampled over the
-    gap since the last sync. What it left:
-    - **A read ahead or back still rates such a patch `exact`, left so by Mike (2026-10-10)**,
-      though the `dt` it hands is one sample's gap and not what frame-by-frame play hands.
-      Rating it `stepped` needs the mix to know the patch read `dt`, which means a getter on the
-      setting, untimed. Reopen it if a host scrubs a patch that reads `dt` and sees it jump.
+
+15. **astv's glides (+8%) and progress clocks (+39%) are unexplained** since 0.8.0, at 1 to 2 µs a
+    frame with runs that disagree; the rest of what 0.8.0 cost under `history` was fixed in 0.8.1
+    (the changelog's 0.8.1 section). To measure a blits build against astv's bench: `MOTION_ONLY=1
+    probes/blits-version-bench.sh <out dir> 0.7.1` in `~/src/astv` on a fleet node.
+
+16. **What the `setting.dt` fix left** (2026-10-10; the decision is in the schema page's "Chosen
+    while building"):
     - **The first `dt` after a voice stops sharing its record counts from the subject's origin**,
       since each subject's own record starts fresh (`unshare` in `everyone.ts`).
-    - klieg's `it.fails` test for this (klieg `TODO.md`) should pass on the next blits release.
-    - **Timed level** (msb-uai, 2026-10-10, 7 rounds at 3,000 frames against `da6e613`, 17 rows
-      over `fn`, `named`, `probed`, `blend`, `glowl`, `keys`, and `typing`, geometric mean 0.998),
-      but `blend` allocated 3,441 kB a frame from 2,974: the write to `stepped` was boxed. Making
-      the field a double from the start (`record.ts`) took it back: 2,982 on teitou at `e51cd85`
-      against 2,974 at `da6e613` (medians of 7 rounds).
+    - klieg's `it.fails` test for this (klieg `TODO.md`) should pass on any blits release since
+      0.9.0; nobody has checked.
 
 ## Loose ends
 

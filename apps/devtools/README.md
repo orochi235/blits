@@ -49,3 +49,15 @@ Nothing but `start.js` runs on a page until its DevTools tab connects.
 ```sh
 onto do -kind test -gui -- sh -c "npm run build -w @blits/devtools && node apps/devtools/scripts/smoke.mjs"
 ```
+
+## Chosen while building
+
+Calls made while building, each the owner's to overturn (2026-10-19):
+
+- Top frame only.
+- It runs alongside `mount()` rather than hiding the in-page panel.
+- History is added only when **Reload with history** is pressed, per origin, through a
+  `sessionStorage` mark.
+- It runs on all sites, but only `start.js` loads before a DevTools tab connects.
+- The registry key's protocol number (`watch/1`) is the contract across engine releases.
+- It is not on the Chrome Web Store; putting it there is the owner's call.
