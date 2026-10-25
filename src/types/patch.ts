@@ -31,7 +31,8 @@ export interface Keyframe<O> {
 
 /**
  * What a patch may read and did not compute, for one subject this frame. The mix reuses the object,
- * so it is valid only during the call it is handed to.
+ * so it is valid only during the call it is handed to, and read-only: a write would reach whatever
+ * the mix calls next.
  *
  * @category state
  */
@@ -40,7 +41,7 @@ export interface Setting<S = void, H = unknown> {
    * The mix clock at this frame: the host's timestamp less any time `rebase` took out, run at the
    * mix's `rate`. Identical for every probe in the frame.
    */
-  timestamp: number;
+  readonly timestamp: number;
   /**
    * The gap this subject is catching up by: milliseconds since it last advanced, which is the gap
    * since the previous sync only for a subject sampled every frame. Infinity under reduced motion;
@@ -48,20 +49,20 @@ export interface Setting<S = void, H = unknown> {
    * `timestamp` is the end of that interval. A lane samples a subject for one frame after its last
    * probe. A read by `project` is one sample, so its gap is not the gap a frame of play has.
    */
-  dt: number;
+  readonly dt: number;
   /**
    * Milliseconds this voice has been playing, rate applied. Below 0 only for a voice with no end
    * cued backward, which plays into the passes before its first.
    */
-  elapsed: number;
+  readonly elapsed: number;
   /** Which pass this is, 0 first; below 0 where `elapsed` is. */
-  pass: number;
+  readonly pass: number;
   /** This voice's weight for this subject this frame, after fades, signals and any locus. */
-  weight: number;
+  readonly weight: number;
   /** This subject's state, when the patch declares one. */
-  state: S;
+  readonly state: S;
   /** Anything the host adds for its own patches: the mix's `host`, typed as its `H`. */
-  host: H;
+  readonly host: H;
   /**
    * The state `owner` keeps for this voice and this subject, made by `init` on first ask. The mix
    * holds it, so a read at another time can copy it instead of moving it. A stateful signal keeps

@@ -201,7 +201,7 @@ function keeping<I, O>(voice: Voice<I, O>): Setting['keep'] {
  * A voice's setting. `keep` is made on first read: most patches keep no state, and a closure and
  * its context per voice cost a one-subject tween voice about 100 bytes.
  */
-class VoiceSetting<I, O> implements Setting<unknown> {
+export class VoiceSetting<I, O> implements Setting<unknown> {
   timestamp = 0;
   dt = 0;
   elapsed = 0;
@@ -391,7 +391,7 @@ export class Voice<I, O> {
   /** The clocks it ran on before its current one, where a subject's origin may lie; null for none. */
   clocks: Past[] | null = null;
   /** Reused for every call this voice makes, so it is valid only during the call. */
-  readonly setting: Setting<unknown>;
+  readonly setting: VoiceSetting<I, O>;
   /** Every subject this voice has been asked about, so a handover knows when it is finished. */
   seen = 0;
   /** The longest stagger of any subject seen, so a finite loop waits for the last of them. */

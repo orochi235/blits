@@ -35,6 +35,21 @@ describe('setting', () => {
     expect(s.elapsed).toBe(120);
     expect(s.weight).toBe(1);
   });
+
+  it('is read-only to a patch', () => {
+    const p = patch<Part, Pose>(
+      1000,
+      (_phase, _subject, s) => {
+        // @ts-expect-error: a patch reads its setting and never writes it.
+        s.weight = 0;
+        // @ts-expect-error: nor its state, which it may change in place.
+        s.state = undefined;
+        return { x: s.elapsed };
+      },
+      { writes: ['x'] },
+    );
+    expect(p.at(0, subject, setting({ elapsed: 5 }))).toEqual({ x: 5 });
+  });
 });
 
 describe('checkPatch', () => {

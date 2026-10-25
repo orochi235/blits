@@ -6,6 +6,13 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Breaking
+
+- `Setting`'s fields are `readonly`, so a patch or signal that assigns to
+  `setting.weight`, `dt` or any other field no longer type-checks. The mix reuses one setting per
+  voice across subjects, so such a write already reached whatever it called next. A patch's
+  `state` is still its own to change in place.
+
 ### Fixed
 
 - A weight signal on lanes is handed, after a stretch of frames at weight 0, the `dt` since its

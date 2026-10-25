@@ -12,7 +12,7 @@ import type { Mixer } from './mixer.js';
 import { moved } from './moved.js';
 import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
-import type { Channel, Patch, Setting } from './types.js';
+import type { Channel, Patch } from './types.js';
 import { checkWrites, type Subject, type Voice } from './voice.js';
 import { Primed } from './weigh.js';
 
@@ -170,7 +170,7 @@ export function contribution<I, O>(
       if (tick !== undefined) this.tick(voice, subject, held, tick, to);
       else if (still === 0 ? now !== held.stepped : to > held.stepped) {
         if (still !== 0) setting.dt = this.capped(to - held.stepped);
-        voice.patch.step(held.state as never, setting.dt, subject, setting as Setting<never>);
+        voice.patch.step(held.state as never, setting.dt, subject, setting as never);
         held.stepped = to;
       }
     } else if (sought) own(voice, held);
@@ -192,7 +192,7 @@ export function contribution<I, O>(
     delta = moved(voice.motion, voice.patch.writes[0] as string, subject, setting, held);
   } else {
     const phase = phaseOf(elapsed, duration, voice.passes);
-    delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
+    delta = voice.patch.at(phase, subject, setting as never) as Record<string, unknown>;
     if (voice.unchecked) checkWrites(voice, delta);
   }
   held.delta = delta;
@@ -340,7 +340,7 @@ export function tick<I, O>(
   setting.dt = tick;
   for (n++; n <= due; n++) {
     setting.timestamp = held.since + n * tick;
-    step(held.state as never, tick, subject, setting as Setting<never>);
+    step(held.state as never, tick, subject, setting as never);
   }
   held.ticks = due > held.ticks ? due : held.ticks;
   held.stepped = held.since + held.ticks * tick;

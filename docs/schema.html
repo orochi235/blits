@@ -360,24 +360,25 @@ type Kit&lt;O&gt; = { readonly [K in keyof O]-?: Channel&lt;NonNullable&lt;O[K]&
 }
 
 interface Setting&lt;S = void, H = unknown&gt; {
+  <span class="cm">/** Read-only to a patch or signal: the mix fills it and reuses it, so a write would reach whatever it calls next. */</span>
   <span class="cm">/** The mix clock at this frame. Identical for every sample in the frame. */</span>
-  timestamp: number;
+  readonly timestamp: number;
   <span class="cm">/** The gap this subject is catching up by: milliseconds since it last advanced, which is the gap since
      the previous sync only for a subject probed every frame. Infinity under reduced motion: snap, never
      integrate. */</span>
-  dt: number;
+  readonly dt: number;
   <span class="cm">/** Milliseconds this voice has been playing, rate applied. What lets a patch see across passes. Below 0 only
      for a voice with no end cued backward, which plays into the passes before its first. */</span>
-  elapsed: number;
+  readonly elapsed: number;
   <span class="cm">/** Which pass this is, 0 first; below 0 where `elapsed` is. */</span>
-  pass: number;
+  readonly pass: number;
   <span class="cm">/** This voice's weight for this subject this frame, after its fade envelope, its signal and its share of any locus:
      the same number the mix is about to scale by. */</span>
-  weight: number;
+  readonly weight: number;
   <span class="cm">/** This subject's state, when the patch declares one. */</span>
-  state: S;
+  readonly state: S;
   <span class="cm">/** Anything the host adds for its own patches: klieg's pointer and pointerInWord go here. Typed as the mix's `H`. */</span>
-  host: H;
+  readonly host: H;
   <span class="cm">/** The state `owner` keeps for this voice and subject, made by `init` on first ask. Held by the mix, so a read at
      another time can copy it; a stateful signal keeps its state here and nowhere else. */</span>
   keep&lt;K&gt;(owner: object, init: () =&gt; K): K;
