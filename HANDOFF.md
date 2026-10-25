@@ -248,14 +248,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        every subject on the new lane before the fill was built and backed out (2.72 → 3.59 ms,
        2026-10-25): the first call left each subject, and all its voices, to the general path. A
        keys voice makes no call and could take that route; unbuilt.
-     - **A blend still costs half again a plain voice**: three voices blended by a signal over
-       10k subjects take about 3.2–3.3 ms a frame, three plain ones 2.0 and a plain locus of three
-       2.7–2.8 (teitou, `FRAMES=5000`, 10 rounds, 2026-10-04). `mix.blend` now reads its signal
-       once per subject per frame rather than once per member (Mike's call, 2026-10-04), which
-       measured no different (3.20–3.67 against 3.20–3.53 at `a7d5317`): the bench's signal costs
-       almost nothing. A profile against the plain locus puts the difference in the lanes' per-member weight path (`one`,
-       `signalled`, and `gatherLocus`). A locus with a motion member, or a signal that keeps state,
-       stays on the general path.
+     - **A locus, and so a blend, costs about 40% more than its voices played apart**: on keiei
+       (2026-10-25, `FRAMES=5000`, seven own-process runs) three voices in a locus over 10k subjects
+       take 4.35 ms a frame, a `mix.blend` of three 4.63, and three plain voices 3.11. A member's
+       numbers reach the locus unboxed (`gatherScalar`, `Arg.VALUE`), which took `locus` from 4.81
+       and `blend` from 5.13, and a locus allocates no more than its members apart. What is left is
+       the gather itself (`meetLocus`, two arrays per channel, `foldLocus`), about 41 ns a member a
+       subject, and for a blend each member's `signalled` path, about 0.3 ms. Between `3c23212`
+       (2026-10-11) and 2026-10-25 the `blend` row's members ended by frame 11, so ledger rows for
+       `blend` and `blend-` in that span measured an empty mix. A locus with a motion member, or a
+       signal that keeps state, stays on the general path.
      - **Starting 10k one-subject tween voices** takes a first frame of 28.0–31.0 ms against
        10.0–13.6 for fn voices (teitou, 2026-10-25, `bench/start.mjs`). The tween-only part: crowd
        `join` 1.8 ms, the motion patch's off-heap first buffer 1.5, a second numbering of the
@@ -399,9 +401,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    instead saves 0.10 ms). `base` around the call costs 4 ns, `prime` 5 ns, and `call` at weight
    0 another 7 ns. The rest, about 15 ns, is `one`'s own bookkeeping for the subject. No one piece
    is worth a change on its own: skipping `call`'s setup at weight 0 measured level to 4% slower
-   by `pull` and was backed out (2026-10-24, ledger). `Setting`'s fields are read-only since
-   2026-10-25 (Mike's go, unreleased), so a lane may now fill the per-lane fields once and refill
-   only `dt`, `state` and `keepOn` per subject; that saves at most `prime`'s 5 ns and is unbuilt.
+   by `pull` and was backed out (2026-10-24, ledger). A lane fills a voice's `timestamp`,
+   `elapsed` and `pass` once per placing (`Arg.MARK`, 2026-10-25, built on `Setting` going
+   read-only), refilling only `dt`, `weight`, `state` and `keepOn` a subject; on keiei `glow^` went
+   from 1.708 to 1.657 ms and `signal` from 4.641 to 4.511, so about 3 ns of `prime`'s 5.
    - The skip, done (2026-10-07).
    - Declared bounds, the design to evaluate (unbuilt). The mix takes subject positions from the
      host, and reach may be declared at three levels, each optional, each meaning "everywhere"
