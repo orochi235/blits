@@ -372,31 +372,9 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
     move(this, lane, lane.motion, p, slot, rec);
     return true;
   }
-  // Most of a signal's subjects are out of its range: those skip the call's setup.
-  if (!(w > 0)) return hushed(this, voice, rec, slot);
   arg[Arg.PHASE] = lane.phase;
   arg[Arg.PASS] = lane.pass;
   return this.call(voice, lane.chans, rec, slot);
-}
-
-/**
- * A stateless fn voice's read at weight 0, which calls nothing: true where a call this frame left
- * the record a delta, as a probe reuses it, and otherwise stamped as `contribution` leaves a silent
- * read, so the next one is handed the same `dt`.
- */
-function hushed<I, O>(
-  lanes: Lanes<I, O>,
-  voice: Voice<I, O>,
-  rec: Subject<unknown>,
-  slot: number,
-): boolean {
-  if (lanes.subjectAt(slot) === absent) return false;
-  const now = lanes.now;
-  if (rec.probed === now && rec.delta !== null && rec.seeks === voice.seeks) return true;
-  rec.delta = null;
-  rec.probed = now;
-  rec.seeks = voice.seeks;
-  return false;
 }
 
 /**
@@ -484,7 +462,6 @@ export function call<I, O>(
   const phase = arg[Arg.PHASE] as number;
   const delay = arg[Arg.DELAY] as number;
   const w = arg[Arg.WEIGHT] as number;
-  if (silent(voice, w)) return hushed(this, voice, rec, slot);
   const host = this.host;
   const subject = this.subjectAt(slot);
   if (subject === absent) return false;
@@ -492,6 +469,13 @@ export function call<I, O>(
   if (rec.probed === this.now && rec.delta !== null && rec.seeks === voice.seeks) {
     if (w > 0) this.foldDelta(chans, slot, rec.delta);
     return true;
+  }
+  if (silent(voice, w)) {
+    // As `contribution` leaves a silent read, so the next one is handed the same `dt`.
+    rec.delta = null;
+    rec.probed = this.now;
+    rec.seeks = voice.seeks;
+    return false;
   }
   const kept = reading.kept;
   host.ready(voice, subject, rec);
