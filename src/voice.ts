@@ -208,6 +208,8 @@ export class VoiceSetting<I, O> implements Setting<unknown> {
   pass = 0;
   weight = 0;
   state: unknown = undefined;
+  /** The `Arg.MARK` a lane last filled `timestamp`, `elapsed` and `pass` under; 0 once anything else writes them. */
+  mark = 0;
   private kept: Setting['keep'] | null = null;
 
   constructor(

@@ -20,6 +20,9 @@ import type { Subject, Voice } from './voice.js';
 const open = openRecord;
 const shut = shutRecord;
 
+/** The last `Arg.MARK` handed out, by every mix's lanes, so no two placings share one. */
+let marks = 0;
+
 /** The least prime at least `n`, and 1 below 2. */
 function primeFrom(n: number): number {
   if (n < 2) return 1;
@@ -82,10 +85,16 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
       for (const g of lanes.loci) gatherLocus(lanes, g);
       for (const lane of lanes.lanes) {
         if (lane.idle) continue;
-        if (lanes.crowds.length > 0) crowdsUpTo(lanes, lane.voice.id);
+        if (lanes.crowds.length > 0) {
+          lanes.arg[Arg.MARK] = Number.NaN;
+          crowdsUpTo(lanes, lane.voice.id);
+        }
         lanes.run(lane);
       }
-      if (lanes.crowds.length > 0) crowdsUpTo(lanes, Number.POSITIVE_INFINITY);
+      if (lanes.crowds.length > 0) {
+        lanes.arg[Arg.MARK] = Number.NaN;
+        crowdsUpTo(lanes, Number.POSITIVE_INFINITY);
+      }
       for (const c of lanes.crowds)
         if (!c.idle) {
           c.bareFill = lanes.fills;
@@ -216,6 +225,7 @@ export function subjectAt<I, O>(this: Lanes<I, O>, slot: number): I | typeof abs
 export function reset<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
   const voice = lane.voice;
   lane.placed = false;
+  this.arg[Arg.MARK] = Number.NaN;
   lane.read = false;
   lane.weighed = false;
   // With no fade in or out the envelope is 1 for every subject, which is what it would return.
@@ -317,6 +327,7 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
     lane.placedAt = elapsed;
     lane.phase = phaseAt(elapsed, voice.duration, voice.passes);
     lane.pass = passAt(elapsed, voice.duration, voice.passes);
+    arg[Arg.MARK] = ++marks;
   }
   const since = data[o + Row.SINCE] as number;
   if (!lane.flat && (!lane.weighed || !same(since, lane.weighedSince))) {
