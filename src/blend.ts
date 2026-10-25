@@ -3,8 +3,9 @@ import type { Mixer } from './mixer.js';
 import { reading } from './reading.js';
 import { shareOf } from './signals.js';
 import { Store } from './store.js';
+import type { Subject } from './subject.js';
 import type { Setting, Signal } from './types.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 /** A `mix.blend`'s one signal, read once for all its members. */
 export interface Blend<I, O> {

@@ -2,8 +2,8 @@ import { doubles } from './channels.js';
 import type { Motions } from './motions.js';
 import { reading } from './reading.js';
 import { RunFlag } from './stretch.js';
+import type { Subject } from './subject.js';
 import { sampleThen } from './then.js';
-import type { Subject } from './voice.js';
 
 /**
  * A motion voice's delta for a subject on the general path: what its patch's `at` gives, written

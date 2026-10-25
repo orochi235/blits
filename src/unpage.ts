@@ -6,9 +6,10 @@ import { HistoryMiss, type Keys } from './paging.js';
 import { type PackedVoice, reviveVoice } from './revive.js';
 import { scoredLeft } from './scored.js';
 import type { Run } from './stretch.js';
+import type { Parted, Parting, Subject } from './subject.js';
 import type { Announced, Frame, Transport } from './transport.js';
 import type { Paged } from './types.js';
-import type { Controls, Parted, Parting, Subject, Voice } from './voice.js';
+import type { Controls, Voice } from './voice.js';
 
 type Member = Mixer<unknown, unknown>;
 

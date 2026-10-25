@@ -8,7 +8,8 @@ import type { Lanes } from './lanes.js';
 import type { Motions } from './motions.js';
 import type { Scratch } from './patch.js';
 import { move } from './sample.js';
-import type { Subject, Voice } from './voice.js';
+import type { Subject } from './subject.js';
+import type { Voice } from './voice.js';
 
 /**
  * Whether a laned voice belongs in a crowd: one naming a single subject, which shares nothing

@@ -3,7 +3,8 @@ import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import type { Named } from './named.js';
 import { record } from './record.js';
-import type { Subject, Voice } from './voice.js';
+import type { Subject } from './subject.js';
+import type { Voice } from './voice.js';
 
 /** The first record of a subject no live voice reaches, so a probe of it still makes one lookup. */
 function stub(): Subject<unknown> {

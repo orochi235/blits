@@ -1,4 +1,4 @@
-import type { Subject } from './voice.js';
+import type { Subject } from './subject.js';
 
 /** What `patch` needs of a voice: its place in voice order. */
 interface Ordered {

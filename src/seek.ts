@@ -16,10 +16,11 @@ import { type Moment, Restored } from './restored.js';
 import { recount } from './roster.js';
 import { refitAll } from './spans.js';
 import { Store } from './store.js';
+import type { Snap, Subject } from './subject.js';
 import { hostAhead, hostAt, replay } from './tape.js';
 import type { Frame, Transport } from './transport.js';
 import { cover, coverFrame, cut } from './unpage.js';
-import type { Controls, Snap, Subject, Voice } from './voice.js';
+import type { Controls, Voice } from './voice.js';
 
 /**
  * A voice's record of one subject as it stood at mix time `t`, from the latest copy kept by then;

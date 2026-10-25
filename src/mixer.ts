@@ -47,6 +47,7 @@ import { seek } from './seek.js';
 import { Fitting, refit } from './spans.js';
 import { Masked, Store } from './store.js';
 import type { MotionOwner } from './stretch.js';
+import type { Subject } from './subject.js';
 import { record, taping, unplayable } from './tape.js';
 import { touch } from './touch.js';
 import { type Announced, announce, Transport } from './transport.js';
@@ -74,7 +75,7 @@ import type {
   Tape,
   VoiceSpec,
 } from './types.js';
-import { none, type Subject, type Voice } from './voice.js';
+import { none, type Voice } from './voice.js';
 import { gave, historyFor, register, unregister } from './watch.js';
 import {
   base,

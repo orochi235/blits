@@ -12,11 +12,12 @@ import { reading } from './reading.js';
 import { record } from './record.js';
 import { recount } from './roster.js';
 import { copyStanding, stands } from './standing.js';
+import type { Subject } from './subject.js';
 import { hostAhead, hostAt } from './tape.js';
 import { type Frame, Transport } from './transport.js';
 import type { Doubt, Mix, Projection, TransportProjection } from './types.js';
 import { cover, coverFrame } from './unpage.js';
-import type { Controls, Subject, Voice } from './voice.js';
+import type { Controls, Voice } from './voice.js';
 
 /**
  * Every mix on a transport read at mix time `t`, through copies of them on a transport of their

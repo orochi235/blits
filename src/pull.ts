@@ -4,8 +4,8 @@ import { type Column, clampRun, flush, pullRun, writeLater } from './columns.js'
 import type { Values } from './fold.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
+import type { Subject } from './subject.js';
 import type { Channel, Columns } from './types.js';
-import type { Subject } from './voice.js';
 
 /** What `pull` remembers at a position it has read no subject at. */
 const UNREAD: unknown = Symbol('unread');

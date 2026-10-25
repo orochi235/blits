@@ -1,7 +1,8 @@
 import { first } from './clone.js';
 import type { Mixer } from './mixer.js';
+import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 /**
  * What a fold with a locus in play gathers, kept from one fold to the next: the contributions in

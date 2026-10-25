@@ -1,4 +1,4 @@
-import type { Subject } from './voice.js';
+import type { Subject } from './subject.js';
 
 /** Whether a record was left at rest during a handover. */
 export const isRested = (h: { restedAt: number }): boolean => !Number.isNaN(h.restedAt);

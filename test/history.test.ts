@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { copyHeld, copyHeldInto } from '../src/history.js';
 import { record } from '../src/record.js';
-import type { Subject } from '../src/voice.js';
+import type { Subject } from '../src/subject.js';
 
 /** A record with every field holding a value of its own, none the one `record` starts it at. */
 function full(): Subject<unknown> {

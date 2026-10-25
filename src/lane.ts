@@ -4,8 +4,9 @@ import { frozenTime } from './clock.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
 import type { Scratch } from './patch.js';
+import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 /** One laned channel: its arithmetic, and every numbered subject's folded value, `axes` per subject. */
 export interface Laned {

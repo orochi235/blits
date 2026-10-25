@@ -13,8 +13,9 @@ import { absent } from './numbers.js';
 import { AT, NOTHING, readKeys, type Scratch, seg, segment, shifted, type Track } from './patch.js';
 import { reading } from './reading.js';
 import { move, runMotion } from './sample.js';
+import type { Subject } from './subject.js';
 import { rested } from './turns.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 // V8 reads a local const as a constant, where it reads an import from its module on every call.
 const open = openRecord;

@@ -1,6 +1,6 @@
 import { type Cut, within } from './cut.js';
 import { Store } from './store.js';
-import type { Left, Subject } from './voice.js';
+import type { Left, Subject } from './subject.js';
 
 /**
  * Under history, the records subjects left a voice with, while a seek or a read back may reach

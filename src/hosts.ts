@@ -21,10 +21,11 @@ import { localNow } from './place.js';
 import { reading } from './reading.js';
 import { heard } from './signals.js';
 import { cuedById } from './strays.js';
+import type { Subject } from './subject.js';
 import { record, taping } from './tape.js';
 import type { Booker, BookOptions, Channel, Doubt, Handle } from './types.js';
 import { unreach } from './unreached.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 export function book<I, O>(mix: Mixer<I, O>, opts: BookOptions<unknown, I>): Booker {
   if (mix.projecting) throw new Error('blits: a projection books nothing');

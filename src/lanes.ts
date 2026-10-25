@@ -24,8 +24,9 @@ import { requalify, retouch } from './qualify.js';
 import { reading } from './reading.js';
 import { reportedRow, unplace } from './rows.js';
 import type { Watcher } from './stretch.js';
+import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 /** What a lane fill asks of the mix it belongs to. */
 export interface LaneHost<I, O> {

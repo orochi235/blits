@@ -9,8 +9,9 @@ import { moved } from './moved.js';
 import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
 import { isRested } from './record.js';
+import type { Subject } from './subject.js';
 import type { Channel, Patch } from './types.js';
-import { checkWrites, type Subject, type Voice } from './voice.js';
+import { checkWrites, type Voice } from './voice.js';
 import { Primed } from './weigh.js';
 
 // V8 reads a local const as a constant, where it reads an import from its module on every call.

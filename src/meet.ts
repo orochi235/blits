@@ -1,7 +1,8 @@
 import { Flag, Hot } from './crowd.js';
 import { type Lane, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
-import type { Subject, Voice } from './voice.js';
+import type { Subject } from './subject.js';
+import type { Voice } from './voice.js';
 
 /**
  * Whether the lanes a probe of the subject at `slot` just met (`met`) can be folded on the general

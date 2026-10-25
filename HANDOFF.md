@@ -303,7 +303,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      frame with 7 voices and from 182 to about 109 with 31 (teitou, `bench/ledger.tsv`). Left per
      stop and subject: a lookup and write in each voice copy's store (one WeakMap per copy per
      stop), a fold of every voice including stateless ones, and a copy of every voice. One store
-     shared along a voice's copies would cut the first, and needs `Filled` in `src/voice.ts`. No
+     shared along a voice's copies would cut the first, and needs `Filled` in `src/store.ts`. No
      test reaches `carry`'s fallback for a copy that holds a record under copies that hold none.
    - **A weasel session reruns `animator-on-blits` and `pose-overrides`** against the lanes build
      before deciding its animator step 3 (weasel `c7a183bde`, branch `pose-overrides-mix`).

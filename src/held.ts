@@ -6,8 +6,9 @@ import type { Mixer } from './mixer.js';
 import { originOf } from './origin.js';
 import { startOf } from './place.js';
 import { record } from './record.js';
+import type { Subject } from './subject.js';
 import { unreach, unreached } from './unreached.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 /** The record a voice gives every subject it does not reach. */
 export function unreachedOf<I, O>(

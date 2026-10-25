@@ -1,7 +1,7 @@
 import type { Cut } from './cut.js';
 import type { Leavings } from './leavings.js';
 import { Store } from './store.js';
-import type { Subject } from './voice.js';
+import type { Subject } from './subject.js';
 
 /**
  * The seeks back after the one a record was last put back, written or deleted at, which every

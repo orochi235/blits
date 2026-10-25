@@ -8,7 +8,8 @@ import { packHeld } from './pack.js';
 import { pageOut } from './paging.js';
 import type { WholeRecord } from './record.js';
 import { scoreTouched } from './scored.js';
-import { type Controls, none, type Snap, type Subject, type Voice } from './voice.js';
+import type { Snap, Subject } from './subject.js';
+import { type Controls, none, type Voice } from './voice.js';
 
 /** The last entry taken before `t`, or at it where `inclusive` says so. */
 export function last<T extends { at: number }>(

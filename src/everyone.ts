@@ -2,8 +2,9 @@ import { headOf } from './chain.js';
 import { numericOf } from './channels.js';
 import type { Mixer } from './mixer.js';
 import { record } from './record.js';
+import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 /**
  * Whether a voice can keep one record for every subject, decided when it is cued. A record holds

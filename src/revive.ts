@@ -7,8 +7,9 @@ import type { Past } from './origin.js';
 import { type PackedRecord, packHeld, unpackHeld } from './pack.js';
 import { type Key, type Keys, pageOut } from './paging.js';
 import type { Run } from './stretch.js';
+import type { Parted, Parting } from './subject.js';
 import type { Described, VoiceSpec } from './types.js';
-import { type Controls, type Parted, type Parting, type Ramp, type Rise, Voice } from './voice.js';
+import { type Controls, type Ramp, type Rise, Voice } from './voice.js';
 
 /** A voice that has left, as plain data: the descriptor it was cued with, its controls and its records. */
 interface PackedVoice {

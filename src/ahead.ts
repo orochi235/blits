@@ -8,11 +8,12 @@ import { move } from './move.js';
 import { relink } from './owner.js';
 import { pin, place } from './place.js';
 import { recount } from './roster.js';
+import type { Subject } from './subject.js';
 import { hostAhead, replay } from './tape.js';
 import { Transport } from './transport.js';
 import type { Tape } from './types.js';
 import { unreached } from './unreached.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 /** A live mix's copies at each known event a read ahead stopped at, and the subjects read there. */
 export interface Stages {

@@ -4,8 +4,9 @@ import { merged, unband } from './fold.js';
 import type { Lanes } from './lanes.js';
 import { locusScratch } from './locus.js';
 import type { Mixer } from './mixer.js';
+import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 // V8 reads a local const as a constant, where it reads an import from its module on every call.
 const open = openRecord;

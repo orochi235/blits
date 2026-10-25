@@ -1,8 +1,8 @@
 import { foldNumber, lerpNumber } from './channels.js';
 import { Arg, type Lane, type Laned, type Locus, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
+import type { Subject } from './subject.js';
 import { shortWay, turnFrom, turnInto, turnToward } from './turns.js';
-import type { Subject } from './voice.js';
 
 /** `xs`, or a copy at least `n` long where it is shorter. */
 function sized(xs: Float64Array, n: number): Float64Array {

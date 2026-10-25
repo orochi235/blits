@@ -2,7 +2,7 @@ import { headOf } from './chain.js';
 import { restamp } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
-import type { Subject } from './voice.js';
+import type { Subject } from './subject.js';
 
 /**
  * What `Mix.touch` does: makes stale every delta read this frame, for one subject or for all, so

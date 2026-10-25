@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Leavings } from '../src/leavings.js';
 import { record } from '../src/record.js';
-import type { Left } from '../src/voice.js';
+import type { Left } from '../src/subject.js';
 
 const a = { id: 'a' };
 const b = { id: 'b' };

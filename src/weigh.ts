@@ -4,8 +4,9 @@ import { Arg } from './lane.js';
 import type { Mixer } from './mixer.js';
 import { ownersWeight } from './owner.js';
 import { reading } from './reading.js';
+import type { Subject } from './subject.js';
 import type { Setting } from './types.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 /**
  * Where `prime` reads its numbers in `Mixer.primed`: as arguments, each would be boxed wherever V8

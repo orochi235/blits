@@ -11,8 +11,9 @@ import { startOf } from './place.js';
 import { isRested } from './record.js';
 import { scoreTouched } from './scored.js';
 import { lingers, refit } from './spans.js';
+import type { Left, Parted, Parting, Subject } from './subject.js';
 import { unreach } from './unreached.js';
-import type { Left, Parted, Parting, Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 /** Starts one subject's ramp out of a voice, or takes it out at once for a ramp of 0. */
 export function fadeSubject<I, O>(

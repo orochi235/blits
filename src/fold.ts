@@ -4,8 +4,9 @@ import { open as openRecord, shut as shutRecord, weighAt } from './everyone.js';
 import { Per } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
+import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
-import type { Subject, Voice } from './voice.js';
+import type { Voice } from './voice.js';
 
 export type Key<O> = keyof O & string;
 

@@ -1,6 +1,7 @@
 import { clone } from './clone.js';
 import { isRested, record } from './record.js';
-import type { Subject, Voice } from './voice.js';
+import type { Subject } from './subject.js';
+import type { Voice } from './voice.js';
 
 /** A subject's record as plain data, for a history store. */
 export interface PackedRecord {

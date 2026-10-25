@@ -7,8 +7,8 @@ import { Law, type Motions } from './motions.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
 import { RunFlag } from './stretch.js';
+import type { Subject } from './subject.js';
 import { between, left, progress } from './tweened.js';
-import type { Subject } from './voice.js';
 
 /**
  * A motion voice's fill: what `one` and `move` do for each subject, in one loop for the common
