@@ -57,14 +57,33 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   cueing the voices, 0.2 in `sync`, and 0.9 in the pull, against 0.46 for a frame with nothing
   changing once churn has left slots out of list order (the item above). The profile there is
   flat: `departed.add`, `retouch`, `copyRow` as a crowd closes up, a patch's first `grow`, each
-  under 4%. A stop still grows with N, less than in step with it; untraced, and a map read over
-  more subjects would do it. weasel has not timed this through its own harness, which reads
-  0.10.0 from npm.
-- **Starting one tween voice over 10k nodes** (cue, one sync, a probe per node) costs about 2× a
-  `fn` voice in plain Node: about 35 ms warm against 16, and 80–90 cold against 28–42 (weasel,
-  orochi under load, 2026-10-02). A cold run in blits' own shape read the other way, 34 against 49.
-  weasel's vitest row read 8×, which weasel puts down to collection landing in its few measured
-  iterations, untraced. Not worth chasing until it shows outside a microbench.
+  under 4%. weasel has not timed this through its own harness, which reads 0.10.0 from npm.
+- **A stop still grows with N, and nothing in it walks more with N** (teitou, 2026-10-25, three
+  runs, `restart.mjs`'s stop timed as the handle's `fade({ over: 0 })` and the `drop` after it):
+
+  | N | stop, each | fade | drop |
+  |---:|---:|---:|---:|
+  | 1,000 | 0.76–0.83 µs | 0.26–0.28 µs | 0.45–0.52 µs |
+  | 10,000 | 1.90–2.01 µs | 0.69–0.74 µs | 1.16–1.22 µs |
+  | 40,000 | 3.28–3.51 µs | 1.20–1.29 µs | 2.04–2.19 µs |
+
+  The one step that did, the due queue's sift to the top through an entry object per level, now
+  reads a flat array, and measured no different. A profile of each half at 1,000 and 40,000 puts
+  the growth in the first reads of what the stop touches, not in any loop: the voice's own fields
+  (`beginFade`, `retire`, `noted`), and the subject's entries in each map and array keyed by it
+  (`Numbers.release`, `Store.delete` on the mix's `chains`, `pose` and `restStamps`,
+  `Lanes.forget`, the motion patch's `release`). That reads as cache misses once 40,000 voices of
+  about 3.7 KB outgrow the cache, an inference from where sampled self time lands, not counted.
+  Touching fewer places per stop is the lever, such as one entry per subject in place of the
+  mix's separate stores keyed by it; unbuilt.
+- **Starting 10k one-subject tween voices** (cue, one sync, a probe per subject) costs about 2.5× as
+  many `fn` voices in blits' own shape: a first frame of 28.0–31.0 ms against 10.0–13.6
+  (`bench/start.mjs`, teitou, 2026-10-25, medians of 7 in each of four rounds a build over three
+  builds). weasel read about 2× in its own shape (35 ms warm against 16, orochi under load,
+  2026-10-02). A profile of that first frame alone puts most of the extra 17 ms in what a tween
+  voice has and a `fn` voice does not, per frame: joining its crowd (`join`, 1.8 ms), its motion
+  patch's first buffer, off the heap (`Motions.grow`, 1.5), numbering its subject a second time in
+  the patch (0.7 more in `Numbers.take`), and collection (1.1 more).
 
 - **Neither what a churned voice leaves alive nor the garbage it makes is weasel's gap.**
   Reusing a retired voice's records was prototyped (2026-10-05, teitou; the prototype was
