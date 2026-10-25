@@ -6,11 +6,14 @@
 # removed on exit. A row an old build cannot run prints its error and the rest go on; an option an
 # old build does not know is ignored by it, so read a row only from builds that have what it uses.
 # Reduce the output with `node bench/lineage.mjs <output>`.
+# LINEAGE_BENCH names another script in bench/ to run in place of frame.mjs; each row is then split
+# on spaces into its arguments, as in `LINEAGE_BENCH=start.mjs bench/lineage.sh 5 v0.13.0 . -- '10000 7 tweens fns'`.
 set -euo pipefail
 rounds="$1"; shift
 revs=()
 while [[ "$1" != -- ]]; do revs+=("$1"); shift; done
 shift
+bench="${LINEAGE_BENCH:-frame.mjs}"
 root="$(git rev-parse --show-toplevel)"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
@@ -24,7 +27,7 @@ for rev in "${revs[@]}"; do
     git -C "$root" archive "$rev" | tar -x -C "$dir"
   fi
   ln -s "$root/node_modules" "$dir/node_modules"
-  cp "$root/bench/frame.mjs" "$dir/bench/frame.mjs"
+  cp "$root/bench/$bench" "$dir/bench/$bench"
   (cd "$dir" && npx tsc -b)
   echo "built $rev"
 done
@@ -35,7 +38,8 @@ for ((r = 0; r < rounds; r++)); do
     rev="${revs[$(((i + r) % n))]}"
     for row in "$@"; do
       echo "== round $((r + 1))/$rounds $rev"
-      (cd "$tmp/${rev//\//_}" && node bench/frame.mjs "$row") || echo "!! $rev $row failed"
+      read -ra args <<<"$row"
+      (cd "$tmp/${rev//\//_}" && node "bench/$bench" "${args[@]}") || echo "!! $rev $row failed"
     done
   done
 done
