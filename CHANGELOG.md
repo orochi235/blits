@@ -23,6 +23,11 @@ version and everything else the patch. Each release lists its changes as **Break
   voices (`tweens^`) take 0.285 ms a frame against 0.300, and one tween voice over 10,000 subjects
   (`weasel^`) 0.369 against 0.391 (keiei, medians of seven runs of 5,000 frames, each in its own
   process); other rows are unchanged.
+- A voice weighted by a signal costs a little less a frame on lanes: its setting's `timestamp`,
+  `elapsed` and `pass` are filled once for the subjects that share them, not once a subject. A
+  pointer glow over 10,000 subjects read by `pull` (`glow^`) takes 1.657 ms a frame against 1.708,
+  and three signal-weighted voices over 10,000 (`signal`) 4.511 against 4.641 (keiei, medians of
+  seven runs of 5,000 frames, each in its own process); other rows are within their spread.
 - `project` back under `history` reads a motion voice's subject as it showed. A subject retargeted
   and then faded out of the voice or dropped read back to before it left as though met afresh from
   `from`, and a retarget, push or `set` given a time earlier than the frame it was made in read back
