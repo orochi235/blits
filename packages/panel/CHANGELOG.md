@@ -4,12 +4,19 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
-## Unreleased
+## 0.2.0
+
+### Breaking
+
+- `@msb235/blits` is a peer at `^0.14.0`, where it was `^0.12.0`. Engine 0.13.0 has breaking
+  changes of its own, listed in its changelog.
 
 ### Changed
 
 - With one mix on the page and none picked, the panel picks it, so the clock controls work
   without opening the window first.
+- The clock reads `1:05.20` past a minute and `2:03:07.50` past an hour, where it counted seconds
+  only.
 
 ## 0.1.1
 
