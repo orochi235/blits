@@ -83,6 +83,11 @@ function sentBack<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject<unkn
   return mix.sinceOf(voice, held.delay) !== held.since;
 }
 
+/** The phase `elapsed` voice ms puts a voice at, before its start included. */
+function phaseOf(elapsed: number, duration: number, passes: number): number {
+  return elapsed < 0 ? phaseBefore(elapsed, duration) : phaseAt(elapsed, duration, passes);
+}
+
 /**
  * One live voice's delta for one subject this frame, through its record for the subject, or null
  * when it does not reach. Its weight is left in `w`.
@@ -113,8 +118,6 @@ export function contribution<I, O>(
   const still = early ? -1 : voice.freezesAfter && raw > voice.span ? 1 : 0;
 
   const duration = voice.duration;
-  const phase =
-    elapsed < 0 ? phaseBefore(elapsed, duration) : phaseAt(elapsed, duration, voice.passes);
   const pass = passAt(elapsed, duration, voice.passes);
 
   const primed = this.primed;
@@ -183,11 +186,12 @@ export function contribution<I, O>(
       held.slope = this.slopeFor(voice, subject);
     }
   } else if (voice.built) {
-    held.phase = phase;
+    held.phase = phaseOf(elapsed, duration, voice.passes);
     delta = this.keyed(voice, subject, held);
   } else if (voice.motion !== undefined) {
     delta = moved(voice.motion, voice.patch.writes[0] as string, subject, setting, held);
   } else {
+    const phase = phaseOf(elapsed, duration, voice.passes);
     delta = voice.patch.at(phase, subject, setting as Setting<never>) as Record<string, unknown>;
     if (voice.unchecked) checkWrites(voice, delta);
   }
