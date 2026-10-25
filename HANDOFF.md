@@ -719,7 +719,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         under a second key. In `bench/same.mjs` scenes with seeks 87% of finds take the shortcut and
         none turns it off (counted locally). A record put back steps once a frame, as an unsought
         one does: it takes up the state of the record the seek replaced (`left` on the copy's
-        `Ahead`, `ahead` in `src/fold.ts`), under `stepMs` with no `maxDt` for a patch that `reads`
+        `Ahead`, `ahead` in `src/contribution.ts`), under `stepMs` with no `maxDt` for a patch that `reads`
         no host field. A seek keeps every subject's number and chain (`renew` in `src/lanes.ts`;
         `headOf` reads such a chain as absent until it is linked). A reaching record the store alone
         holds is written over with its copy (`copyHeldInto`), and a probe's kept copy is written
@@ -740,7 +740,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         rank tests short of chance (U = 28 and 22.5, where p < 0.05 needs under 17). Not built:
         skipping the put back of a record stepped on from the copy it would be put back from, which
         a profile names as the lever (9% in `keptOf`, the first read of that copy). An inexact build
-        that skipped every read of the copy (`restore`, `ahead` and `own` in `src/fold.ts`) read
+        that skipped every read of the copy (`restore`, `ahead` and `own` in `src/contribution.ts`) read
         8.400 ms against 8.766 in 5 rounds with the runs overlapping (measured), so the most an
         exact skip can save is about 4%: by the profile's line the cost is a cache miss, and
         skipping that read likely moves the miss to the next read of the record rather than removing

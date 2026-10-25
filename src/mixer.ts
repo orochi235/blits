@@ -4,32 +4,25 @@ import type { Book } from './book.js';
 import { aims, chain, headOf, linkable, relink, unlink } from './chain.js';
 import { type LerpInto, lerpInto, STOCK_BAND, scalarOp } from './channels.js';
 import type { Column } from './columns.js';
+import { baseFor, contribution, isRest, keyed, read, slopeFor, tick } from './contribution.js';
 import { cue } from './cue.js';
 import { DepartedIndex } from './departed.js';
 import { DueQueue } from './due.js';
 import { beginFade, leaveVoice, parting } from './fade.js';
 import {
   apply,
-  baseFor,
   clamp,
-  contribution,
   fold,
   foldDetour,
   folded,
-  foldLoci,
   foldSharers,
   foldWith,
-  isRest,
   type Key,
-  keyed,
   linked,
   near,
   owedBy,
   passes,
-  read,
   shared,
-  slopeFor,
-  tick,
 } from './fold.js';
 import { GoneIndex, goneIndex } from './gone.js';
 import type { HandleHost } from './handle.js';
@@ -37,6 +30,7 @@ import { held, shownOf, sinceOf, unreachedOf } from './held.js';
 import { releasing } from './history.js';
 import { book, laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
+import { foldLoci } from './loci.js';
 import { foldLocus, type LocusScratch } from './locus.js';
 import { listed } from './marks.js';
 import type { Motions } from './motions.js';
