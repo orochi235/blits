@@ -1,0 +1,115 @@
+  waiting for room
+teitou  chosen: 13.5 cores free, 47.0G available (env: 5 past runs, worst 2.0 cores / 7.0G)
+  keiei    scored 0.20 against teitou's 5.68
+  msb-uai  job c3a8da16 has the node to itself
+  orochi   refuses rotation
+  studio   it wants the node to itself, and job a5fd281f is running there
+  base   a49a3eca
+  commits sent directly, 2.9 KiB (not on origin)
+  updated blits on teitou at a49a3eca
+  job    9d57604c on teitou
+
+onto: agent-aa63214a585cbe9b4 is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+built d6eeed2 (d6eeed2)
+built the working tree
+== round 1/5 d6eeed2
+ 1/1  tweens^    N= 10000 V=1     0.177 ms/frame     18 ns/subject·voice  p50    0.167  p99    0.368  worst    0.386  first    42.8 ms  gc    0    0.0 ms      34.8 kB/frame
+== round 1/5 d6eeed2
+ 1/1  weasel^    N= 10000 V=1     0.194 ms/frame     19 ns/subject·voice  p50    0.191  p99    0.216  worst    0.224  first    15.8 ms  gc    0    0.0 ms      10.4 kB/frame
+== round 1/5 d6eeed2
+ 1/1  glow^      N= 10000 V=2     1.107 ms/frame     55 ns/subject·voice  p50    1.068  p99    1.443  worst    5.497  first    17.5 ms  gc   22    3.0 ms    1393.3 kB/frame
+== round 1/5 d6eeed2
+ 1/1  locus      N= 10000 V=3     2.708 ms/frame     90 ns/subject·voice  p50    2.553  p99    4.763  worst    5.225  first    20.9 ms  gc   12    5.9 ms    2436.9 kB/frame
+== round 1/5 d6eeed2
+ 1/1  fns^       N= 10000 V=1     1.371 ms/frame    137 ns/subject·voice  p50    1.333  p99    2.113  worst    2.800  first    26.3 ms  gc    9    3.4 ms    1652.0 kB/frame
+== round 1/5 .
+ 1/1  tweens^    N= 10000 V=1     0.171 ms/frame     17 ns/subject·voice  p50    0.162  p99    0.380  worst    0.395  first    42.5 ms  gc    0    0.0 ms      30.7 kB/frame
+== round 1/5 .
+ 1/1  weasel^    N= 10000 V=1     0.198 ms/frame     20 ns/subject·voice  p50    0.196  p99    0.226  worst    0.233  first    17.0 ms  gc    0    0.0 ms       7.8 kB/frame
+== round 1/5 .
+ 1/1  glow^      N= 10000 V=2     1.052 ms/frame     53 ns/subject·voice  p50    1.002  p99    1.290  worst    5.572  first    18.3 ms  gc   22    2.8 ms    1389.8 kB/frame
+== round 1/5 .
+ 1/1  locus      N= 10000 V=3     2.655 ms/frame     88 ns/subject·voice  p50    2.561  p99    4.124  worst    5.385  first    21.0 ms  gc   12    5.8 ms    2436.7 kB/frame
+== round 1/5 .
+ 1/1  fns^       N= 10000 V=1     1.377 ms/frame    138 ns/subject·voice  p50    1.343  p99    2.248  worst    2.861  first    25.8 ms  gc    9    3.9 ms    1652.6 kB/frame
+== round 2/5 .
+ 1/1  tweens^    N= 10000 V=1     0.180 ms/frame     18 ns/subject·voice  p50    0.171  p99    0.379  worst    0.417  first    43.6 ms  gc    0    0.0 ms      32.8 kB/frame
+== round 2/5 .
+ 1/1  weasel^    N= 10000 V=1     0.195 ms/frame     20 ns/subject·voice  p50    0.193  p99    0.227  worst    0.263  first    16.5 ms  gc    0    0.0 ms      12.6 kB/frame
+== round 2/5 .
+ 1/1  glow^      N= 10000 V=2     1.067 ms/frame     53 ns/subject·voice  p50    1.029  p99    1.237  worst    4.800  first    16.4 ms  gc   19    3.7 ms    1394.7 kB/frame
+== round 2/5 .
+ 1/1  locus      N= 10000 V=3     2.574 ms/frame     86 ns/subject·voice  p50    2.475  p99    3.918  worst    4.687  first    21.4 ms  gc   12    5.6 ms    2435.4 kB/frame
+== round 2/5 .
+ 1/1  fns^       N= 10000 V=1     1.498 ms/frame    150 ns/subject·voice  p50    1.444  p99    2.191  worst    3.215  first    25.6 ms  gc    8    3.5 ms    1648.9 kB/frame
+== round 2/5 d6eeed2
+ 1/1  tweens^    N= 10000 V=1     0.185 ms/frame     18 ns/subject·voice  p50    0.181  p99    0.361  worst    0.392  first    42.3 ms  gc    0    0.0 ms      30.1 kB/frame
+== round 2/5 d6eeed2
+ 1/1  weasel^    N= 10000 V=1     0.192 ms/frame     19 ns/subject·voice  p50    0.190  p99    0.217  worst    0.225  first    16.1 ms  gc    0    0.0 ms      12.6 kB/frame
+== round 2/5 d6eeed2
+ 1/1  glow^      N= 10000 V=2     1.046 ms/frame     52 ns/subject·voice  p50    1.010  p99    1.241  worst    5.060  first    17.7 ms  gc   30    6.0 ms    1397.5 kB/frame
+== round 2/5 d6eeed2
+ 1/1  locus      N= 10000 V=3     2.647 ms/frame     88 ns/subject·voice  p50    2.608  p99    3.209  worst    3.299  first    21.1 ms  gc   24    7.2 ms    2437.3 kB/frame
+== round 2/5 d6eeed2
+ 1/1  fns^       N= 10000 V=1     1.481 ms/frame    148 ns/subject·voice  p50    1.437  p99    2.433  worst    2.818  first    27.9 ms  gc    9    3.6 ms    1648.8 kB/frame
+== round 3/5 d6eeed2
+ 1/1  tweens^    N= 10000 V=1     0.160 ms/frame     16 ns/subject·voice  p50    0.159  p99    0.183  worst    0.190  first    42.4 ms  gc    0    0.0 ms      17.5 kB/frame
+== round 3/5 d6eeed2
+ 1/1  weasel^    N= 10000 V=1     0.194 ms/frame     19 ns/subject·voice  p50    0.192  p99    0.219  worst    0.233  first    15.8 ms  gc    0    0.0 ms      11.4 kB/frame
+== round 3/5 d6eeed2
+ 1/1  glow^      N= 10000 V=2     1.077 ms/frame     54 ns/subject·voice  p50    1.032  p99    1.641  worst    5.025  first    16.5 ms  gc   19    4.0 ms    1389.1 kB/frame
+== round 3/5 d6eeed2
+ 1/1  locus      N= 10000 V=3     2.681 ms/frame     89 ns/subject·voice  p50    2.584  p99    3.859  worst    4.523  first    21.1 ms  gc   24    7.0 ms    2437.7 kB/frame
+== round 3/5 d6eeed2
+ 1/1  fns^       N= 10000 V=1     1.398 ms/frame    140 ns/subject·voice  p50    1.356  p99    1.863  worst    2.852  first    25.5 ms  gc    8    3.6 ms    1648.4 kB/frame
+== round 3/5 .
+ 1/1  tweens^    N= 10000 V=1     0.162 ms/frame     16 ns/subject·voice  p50    0.159  p99    0.188  worst    0.201  first    42.7 ms  gc    0    0.0 ms      11.7 kB/frame
+== round 3/5 .
+ 1/1  weasel^    N= 10000 V=1     0.196 ms/frame     20 ns/subject·voice  p50    0.193  p99    0.229  worst    0.258  first    15.5 ms  gc    0    0.0 ms      11.0 kB/frame
+== round 3/5 .
+ 1/1  glow^      N= 10000 V=2     1.080 ms/frame     54 ns/subject·voice  p50    1.043  p99    1.282  worst    4.703  first    16.3 ms  gc   19    3.8 ms    1396.1 kB/frame
+== round 3/5 .
+ 1/1  locus      N= 10000 V=3     2.772 ms/frame     92 ns/subject·voice  p50    2.604  p99    4.687  worst    5.072  first    21.2 ms  gc   12    5.9 ms    2435.9 kB/frame
+== round 3/5 .
+ 1/1  fns^       N= 10000 V=1     1.417 ms/frame    142 ns/subject·voice  p50    1.374  p99    2.083  worst    2.757  first    24.5 ms  gc    8    3.6 ms    1647.8 kB/frame
+== round 4/5 .
+ 1/1  tweens^    N= 10000 V=1     0.183 ms/frame     18 ns/subject·voice  p50    0.180  p99    0.366  worst    0.378  first    42.9 ms  gc    0    0.0 ms      39.4 kB/frame
+== round 4/5 .
+ 1/1  weasel^    N= 10000 V=1     0.193 ms/frame     19 ns/subject·voice  p50    0.191  p99    0.214  worst    0.220  first    15.9 ms  gc    0    0.0 ms      13.5 kB/frame
+== round 4/5 .
+ 1/1  glow^      N= 10000 V=2     1.047 ms/frame     52 ns/subject·voice  p50    1.009  p99    1.231  worst    5.736  first    17.9 ms  gc   22    2.7 ms    1392.9 kB/frame
+== round 4/5 .
+ 1/1  locus      N= 10000 V=3     2.885 ms/frame     96 ns/subject·voice  p50    2.781  p99    4.474  worst    5.170  first    21.4 ms  gc   24    8.1 ms    2439.7 kB/frame
+== round 4/5 .
+ 1/1  fns^       N= 10000 V=1     1.452 ms/frame    145 ns/subject·voice  p50    1.416  p99    1.893  worst    2.776  first    25.2 ms  gc    9    3.7 ms    1805.2 kB/frame
+== round 4/5 d6eeed2
+ 1/1  tweens^    N= 10000 V=1     0.174 ms/frame     17 ns/subject·voice  p50    0.166  p99    0.371  worst    0.388  first    42.6 ms  gc    0    0.0 ms      37.6 kB/frame
+== round 4/5 d6eeed2
+ 1/1  weasel^    N= 10000 V=1     0.194 ms/frame     19 ns/subject·voice  p50    0.192  p99    0.224  worst    0.237  first    16.0 ms  gc    0    0.0 ms       9.8 kB/frame
+== round 4/5 d6eeed2
+ 1/1  glow^      N= 10000 V=2     1.091 ms/frame     55 ns/subject·voice  p50    1.062  p99    1.388  worst    5.363  first    18.5 ms  gc   22    3.0 ms    1397.2 kB/frame
+== round 4/5 d6eeed2
+ 1/1  locus      N= 10000 V=3     2.621 ms/frame     87 ns/subject·voice  p50    2.536  p99    4.173  worst    5.056  first    21.9 ms  gc   12    5.8 ms    2435.7 kB/frame
+== round 4/5 d6eeed2
+ 1/1  fns^       N= 10000 V=1     1.396 ms/frame    140 ns/subject·voice  p50    1.361  p99    2.299  worst    2.621  first    25.1 ms  gc    8    3.3 ms    1647.4 kB/frame
+== round 5/5 d6eeed2
+ 1/1  tweens^    N= 10000 V=1     0.190 ms/frame     19 ns/subject·voice  p50    0.184  p99    0.381  worst    0.418  first    42.9 ms  gc    0    0.0 ms      37.9 kB/frame
+== round 5/5 d6eeed2
+ 1/1  weasel^    N= 10000 V=1     0.200 ms/frame     20 ns/subject·voice  p50    0.198  p99    0.231  worst    0.239  first    17.0 ms  gc    0    0.0 ms      12.5 kB/frame
+== round 5/5 d6eeed2
+ 1/1  glow^      N= 10000 V=2     1.178 ms/frame     59 ns/subject·voice  p50    1.132  p99    1.613  worst    5.015  first    16.9 ms  gc   19    4.4 ms    1393.2 kB/frame
+== round 5/5 d6eeed2
+ 1/1  locus      N= 10000 V=3     2.961 ms/frame     99 ns/subject·voice  p50    2.882  p99    4.563  worst    5.303  first    21.9 ms  gc   10    5.4 ms    2443.5 kB/frame
+== round 5/5 d6eeed2
+ 1/1  fns^       N= 10000 V=1     1.489 ms/frame    149 ns/subject·voice  p50    1.432  p99    1.978  worst    3.046  first    26.0 ms  gc    9    3.6 ms    1804.2 kB/frame
+== round 5/5 .
+ 1/1  tweens^    N= 10000 V=1     0.185 ms/frame     19 ns/subject·voice  p50    0.182  p99    0.355  worst    0.369  first    46.3 ms  gc    0    0.0 ms      33.6 kB/frame
+== round 5/5 .
+ 1/1  weasel^    N= 10000 V=1     0.195 ms/frame     19 ns/subject·voice  p50    0.193  p99    0.219  worst    0.227  first    16.0 ms  gc    0    0.0 ms       9.4 kB/frame
+== round 5/5 .
+ 1/1  glow^      N= 10000 V=2     1.040 ms/frame     52 ns/subject·voice  p50    1.002  p99    1.215  worst    5.016  first    17.5 ms  gc   22    2.6 ms    1394.2 kB/frame
+== round 5/5 .
+ 1/1  locus      N= 10000 V=3     2.585 ms/frame     86 ns/subject·voice  p50    2.488  p99    4.068  worst    4.687  first    21.4 ms  gc   12    5.4 ms    2435.2 kB/frame
+== round 5/5 .
+ 1/1  fns^       N= 10000 V=1     1.525 ms/frame    153 ns/subject·voice  p50    1.453  p99    2.380  worst    3.177  first    28.0 ms  gc    8    3.7 ms    1804.7 kB/frame
