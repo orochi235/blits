@@ -39,6 +39,11 @@ version and everything else the patch. Each release lists its changes as **Break
   pointer glow over 10,000 subjects read by `pull` (`glow^`) takes 1.657 ms a frame against 1.708,
   and three signal-weighted voices over 10,000 (`signal`) 4.511 against 4.641 (keiei, medians of
   seven runs of 5,000 frames, each in its own process); other rows are within their spread.
+- A locus, and so a `mix.blend`, costs about a tenth less a frame on lanes, and allocates no more
+  than its members would apart: a member's numbers reach the locus without being boxed, 16 bytes
+  each a channel a subject. Three voices in a locus over 10,000 subjects (`locus`) take 4.349 ms a
+  frame against 4.810 and allocate 2.4 MB against 4.0, and a blend of three (`blend`) 4.633 against
+  5.128 (keiei, medians of seven runs of 5,000 frames, each in its own process).
 - `project` back under `history` reads a motion voice's subject as it showed. A subject retargeted
   and then faded out of the voice or dropped read back to before it left as though met afresh from
   `from`, and a retarget, push or `set` given a time earlier than the frame it was made in read back
