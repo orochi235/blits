@@ -13,6 +13,11 @@ version and everything else the patch. Each release lists its changes as **Break
   voice across subjects, so such a write already reached whatever it called next. A patch's
   `state` is still its own to change in place.
 
+### Added
+
+- `color({ lerp: 'oklch' })` and `color(last(), { lerp: 'oklch' })` run on lanes, where they took
+  the general path. The pose is the same to the bit.
+
 ### Fixed
 
 - A weight signal on lanes is handed, after a stretch of frames at weight 0, the `dt` since its

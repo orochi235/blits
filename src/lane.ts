@@ -15,6 +15,8 @@ export interface Laned {
   op: Numeric['op'];
   /** Its values fold as its `op` alone: not through a band as `'last'` does, and not a rotation. */
   plain: boolean;
+  /** A plain channel's values lerp straight across each axis, not through the channel's `lerp`. */
+  straight: boolean;
   /** An angle's full turn, and 0 for any other channel. */
   turn: number;
   /** The channel, whose own `fold` and `lerp` an `'own'` lane calls. */

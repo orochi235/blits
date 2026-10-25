@@ -106,12 +106,18 @@ export function mixHex(a: number, b: number, u: number): number {
   const ah = slotH[sa] as number;
   const sb = oklch(b);
   const bc = slotC[sb] as number;
-  const from = ac < GRAY ? (slotH[sb] as number) : ah;
-  const to = bc < GRAY ? ah : (slotH[sb] as number);
+  const h = hueAt(ah, ac, slotH[sb] as number, bc, u);
+  return fromOklch(mix(al, slotL[sb] as number, u), mix(ac, bc, u), h);
+}
+
+/** The hue `u` of the way from `ah` to `bh` the short way round, a gray end taking the other's. */
+function hueAt(ah: number, ac: number, bh: number, bc: number, u: number): number {
+  const from = ac < GRAY ? bh : ah;
+  const to = bc < GRAY ? ah : bh;
   let turn = to - from;
   if (turn > Math.PI) turn -= 2 * Math.PI;
   else if (turn < -Math.PI) turn += 2 * Math.PI;
-  return fromOklch(mix(al, slotL[sb] as number, u), mix(ac, bc, u), from + turn * u);
+  return from + turn * u;
 }
 
 /**
@@ -143,15 +149,8 @@ function lerpLch(x: number[], y: number[], u: number): number[] {
   const toB = yw > 0 ? yB : xB;
   const xc = Math.sqrt(xA * xA + xB * xB);
   const yc = Math.sqrt(toA * toA + toB * toB);
-  const xh = Math.atan2(xB, xA);
-  const yh = Math.atan2(toB, toA);
-  const from = xc < GRAY ? yh : xh;
-  const to = yc < GRAY ? xh : yh;
-  let turn = to - from;
-  if (turn > Math.PI) turn -= 2 * Math.PI;
-  else if (turn < -Math.PI) turn += 2 * Math.PI;
   const C = mix(xc, yc, u);
-  const h = from + turn * u;
+  const h = hueAt(Math.atan2(xB, xA), xc, Math.atan2(toB, toA), yc, u);
   return [mix(xL, toL, u) * w, C * Math.cos(h) * w, C * Math.sin(h) * w, w];
 }
 
@@ -161,7 +160,7 @@ function lerpLch(x: number[], y: number[], u: number): number[] {
  * `toHex` divides it out and lays it over what is under it. `color(last())` replaces, the last
  * voice to pass winning, at the coverage it was authored with. `lerp` picks how two colors
  * interpolate: OKLab, the default, crosses through gray between opposite hues, and `'oklch'`
- * goes round the hue instead, off lanes.
+ * goes round the hue instead.
  *
  * @category channel
  */
@@ -185,8 +184,10 @@ export function color(
   ) {
     const channel = vec(4, sum());
     channel.kind = `color(sum${space})`;
-    // A lane interpolates a stock channel straight across, so a lerp of its own takes it off them.
-    return round ? { ...channel, lerp: lerpLch } : channel;
+    if (!round) return channel;
+    const turning: Channel<number[]> = { ...channel, lerp: lerpLch };
+    vouch(turning, { op: 'own', axes: 4, folds: 'sum' });
+    return turning;
   }
   if (of.kind === 'last') {
     const channel: Channel<number[]> = {
@@ -195,7 +196,7 @@ export function color(
       lerp: round ? lerpLch : vec(4, sum()).lerp,
     };
     widen(channel, 4);
-    if (!round) vouch(channel, { op: 'last', axes: 4 });
+    vouch(channel, { op: 'last', axes: 4 });
     return channel;
   }
   throw new Error(

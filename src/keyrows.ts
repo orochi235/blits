@@ -7,6 +7,7 @@ export interface KeyChannel {
   scalar: boolean;
   op: Numeric['op'];
   plain: boolean;
+  straight: boolean;
   rest: number;
   axes: number;
   values: Float64Array;
@@ -37,7 +38,7 @@ export class KeyRows {
     for (let i = 0; i < built.tracks.length; i++) {
       const track = built.tracks[i];
       const ch = chans[i];
-      if (track === undefined || ch === undefined || !ch.plain) return -1;
+      if (track === undefined || ch === undefined || !ch.plain || !ch.straight) return -1;
       for (const pt of track.all) if (!flat(pt.value, ch)) return -1;
       len += 2 + track.all.length * (1 + ch.axes);
       stops += track.all.length;
