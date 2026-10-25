@@ -1,3 +1,5 @@
+import type { Cut } from './cut.js';
+
 /**
  * Internal: what kind of read the mix is making right now, for patches that keep state of their own
  * outside the mix. Not exported from the package.
@@ -32,4 +34,9 @@ export const reading = {
    * commits none. Null for every other read.
    */
   ahead: null as Map<object, Map<unknown, unknown[]>> | null,
+  /**
+   * While a read back under history reads: the frame it reads, so a motion patch reads the run a
+   * subject had then and only the changes made by then. Null for every other read.
+   */
+  back: null as Cut | null,
 };

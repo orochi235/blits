@@ -1,6 +1,7 @@
 import { ownBlends } from './blend.js';
 import { headOf, heldAt } from './chain.js';
 import { stepOf } from './clock.js';
+import { type Cut, within } from './cut.js';
 import { open, sighted, weightAt } from './everyone.js';
 import { fadesAt } from './fade.js';
 import { meet, origin } from './held.js';
@@ -15,7 +16,7 @@ import { record } from './record.js';
 import { recount } from './roster.js';
 import { copyStanding, stands } from './standing.js';
 import { hostAhead, hostAt, replay } from './tape.js';
-import { type Cut, type Frame, Transport, within } from './transport.js';
+import { type Frame, Transport } from './transport.js';
 import type { Doubt, Mix, Projection, Tape, TransportProjection } from './types.js';
 import { cover, coverFrame } from './unpage.js';
 import { unreached } from './unreached.js';
@@ -95,14 +96,17 @@ export function projectAll(
     earlier = new Map();
     stood = playAhead(transport, c, copies, t, earlier);
   }
+  const back = !ahead && kept ? cut : null;
   const read = <T>(f: () => T): T => {
     reading.live = false;
     reading.ahead = stood.ahead.size > 0 ? stood.ahead : null;
+    reading.back = back;
     try {
       return f();
     } finally {
       reading.live = true;
       reading.ahead = null;
+      reading.back = null;
     }
   };
   return {

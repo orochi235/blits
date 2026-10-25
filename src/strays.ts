@@ -45,6 +45,10 @@ export function motionOwner<I, O>(mix: WeakRef<Mixer<I, O>>): MotionOwner {
     seq() {
       return mix.deref()?.transport.seq ?? Number.NaN;
     },
+    early() {
+      const m = mix.deref();
+      return m !== undefined && (m.syncing || !m.looked);
+    },
     changed(id, motion, subject, change) {
       const m = mix.deref();
       if (m === undefined) return;

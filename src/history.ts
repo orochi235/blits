@@ -1,5 +1,6 @@
 import { elapsedWith } from './clock.js';
 import { clone } from './clone.js';
+import { type Cut, within } from './cut.js';
 import { schedule } from './due.js';
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
@@ -7,7 +8,6 @@ import { packHeld } from './pack.js';
 import { pageOut } from './paging.js';
 import type { WholeRecord } from './record.js';
 import { scoreTouched } from './scored.js';
-import { type Cut, within } from './transport.js';
 import { type Controls, none, type Snap, type Subject, type Voice } from './voice.js';
 
 /** The last entry taken before `t`, or at it where `inclusive` says so. */
@@ -401,11 +401,13 @@ export function leave<I, O>(
 }
 
 /**
- * The mix time a motion patch keeps a released subject from, how far back, and the frame, under
- * history.
+ * The mix time a motion patch keeps a released subject from, how far back, the frame, and whether
+ * the release came before anything read it, under history.
  */
-export function releasing<I, O>(mix: Mixer<I, O>): [at?: number, reach?: number, seq?: number] {
+export function releasing<I, O>(
+  mix: Mixer<I, O>,
+): [at?: number, reach?: number, seq?: number, early?: boolean] {
   const history = mix.opts.history;
   if (history === undefined || Number.isNaN(mix.now)) return [];
-  return [mix.now, mix.now - history.ms, mix.transport.seq];
+  return [mix.now, mix.now - history.ms, mix.transport.seq, mix.syncing || !mix.looked];
 }

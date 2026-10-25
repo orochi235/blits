@@ -1,4 +1,5 @@
 import { closed } from './closed.js';
+import { type Cut, within } from './cut.js';
 import type { Curve } from './easing.js';
 import { absent, Numbers } from './numbers.js';
 import { reading } from './reading.js';
@@ -34,6 +35,8 @@ export interface Change {
   made?: number;
   /** The frame it was made in, which a rewind partitions by; NaN where no mix was playing the patch. */
   seq?: number;
+  /** Whether it was made before its frame was read, so a read of what that frame showed has it. */
+  early?: boolean;
 }
 
 /**
@@ -59,6 +62,8 @@ export interface MotionOwner {
   now(): number;
   /** The number of the frame the mix is playing. */
   seq(): number;
+  /** Whether a change made now comes before anything read the frame. */
+  early(): boolean;
   /**
    * The host made a change, already given its time, which a seek makes again on the patch its
    * voice plays then: a voice a history store paged out comes back with a patch of its own.
@@ -81,6 +86,9 @@ export interface Run {
   stretches: Segment[];
   pending: Change[] | undefined;
 }
+
+/** A run a release kept, with when: `early` where the release came before anything read its frame. */
+type Released<I> = { subject: I; at: number; seq: number; early: boolean } & Run;
 
 /**
  * What a mix keeping copies of a patch's stretches is told, with its id and the subject's number,
@@ -126,7 +134,7 @@ function numbers(from: Float64Array, at: number, n: number): number[] {
  * A subject's flags: its value is a number; it has changes pending; it has older stretches; the
  * stretch it is playing was found landed, which holds until another replaces it.
  */
-const SCALAR = 1;
+export const SCALAR = 1;
 const PENDING = 2;
 const OLDER = 4;
 const LANDED = 8;
@@ -236,6 +244,18 @@ export class Motions<I> {
   slot(subject: I): number {
     const known = this.known(subject);
     if (known !== undefined) return known;
+    const seg = this.fresh(subject);
+    const s = this.take(subject);
+    this.runs[this.base(s) + 1] = this.freshFlags;
+    this.write(s, seg);
+    return s;
+  }
+
+  /** The flags of the run `fresh` last started. */
+  private freshFlags = 0;
+
+  /** The stretch a subject met afresh starts with, its axes and the law set up for it, numbering no one. */
+  fresh(subject: I): Segment {
     const x = this.shape.from(subject);
     const v = this.shape.velocity(subject, x);
     const to = this.shape.aim(x, v, null, subject, false);
@@ -247,10 +267,15 @@ export class Motions<I> {
     if (this.holdsNumber !== undefined && scalar !== this.holdsNumber)
       throw wrongKind(this.channel, this.holdsNumber);
     if (this.n < 0) this.size(n);
-    const s = this.take(subject);
-    this.runs[this.base(s) + 1] = scalar ? SCALAR : 0;
-    this.write(s, { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to });
-    return s;
+    this.grow(1);
+    this.freshFlags = scalar ? SCALAR : 0;
+    return { at: 0, ms: this.shape.ms?.(subject) ?? 0, x0: x, v0: v, to };
+  }
+
+  /** The run `fresh` starts, as plain data. */
+  freshRun(subject: I): Run {
+    const seg = this.fresh(subject);
+    return { flags: this.freshFlags, stretches: [seg], pending: undefined };
   }
 
   /** Sets the axes every subject moves on, at the first. */
@@ -285,13 +310,19 @@ export class Motions<I> {
    * Subjects released at a mix time a rewind may still reach, with their run as it stood, so a
    * rewind before the release plays them on from there. Empty without history.
    */
-  private released: ({ subject: I; at: number; seq: number } & Run)[] = [];
+  private released: Released<I>[] = [];
 
   /**
    * Forgets a subject, so a later ask starts it afresh from `from`. Given the mix time `at` and frame
    * `seq`, under history, its run is kept for a rewind before then, until `reach` passes it.
    */
-  release(subject: I, at?: number, reach = Number.NEGATIVE_INFINITY, seq = Number.NaN): void {
+  release(
+    subject: I,
+    at?: number,
+    reach = Number.NEGATIVE_INFINITY,
+    seq = Number.NaN,
+    early = false,
+  ): void {
     const s = this.known(subject);
     if (s === undefined) return;
     if (at !== undefined) {
@@ -300,10 +331,10 @@ export class Motions<I> {
         if (e.at >= reach) kept.push(e);
         else
           this.owner?.page(this.ownerId, 'released', e.subject, [
-            { at: e.at, seq: e.seq, data: runOf(e) },
+            { at: e.at, seq: e.seq, data: { ...runOf(e), early: e.early } },
           ]);
       this.released = kept;
-      this.released.push({ subject, at, seq, ...this.runAt(s) });
+      this.released.push({ subject, at, seq, early, ...this.runAt(s) });
     }
     this.slots.delete(subject);
     this.numbers.release(s);
@@ -369,9 +400,27 @@ export class Motions<I> {
   }
 
   /** A released run a history store gave back, for a rewind to before its release. */
-  reclaim(subject: I, at: number, seq: number, run: Run): void {
+  reclaim(subject: I, at: number, seq: number, run: Run & { early?: boolean }): void {
     if (this.released.some((e) => e.seq === seq && Object.is(e.subject, subject))) return;
-    this.released.push({ subject, at, seq, ...run });
+    this.released.push({ subject, at, seq, ...run, early: run.early === true });
+  }
+
+  /**
+   * The run `subject` had in frame `cut`: the one a release after the cut kept, else the one it has
+   * now; undefined where it has neither. Its changes after the cut are still on it.
+   */
+  runThen(subject: I, cut: Cut): Run | undefined {
+    let life: Released<I> | undefined;
+    for (const e of this.released)
+      if (
+        Object.is(e.subject, subject) &&
+        !within(cut, e.seq, e.early) &&
+        (life === undefined || e.seq < life.seq)
+      )
+        life = e;
+    if (life !== undefined) return life;
+    const s = this.known(subject);
+    return s === undefined ? undefined : this.runAt(s);
   }
 
   /**
@@ -452,7 +501,12 @@ export class Motions<I> {
 
   /** The value `at` hands the mix: the first axis for a number, a fresh array otherwise. */
   value(s: number, xs: Float64Array): number | number[] {
-    if (((this.runs[this.base(s) + 1] as number) & SCALAR) !== 0) return xs[0] as number;
+    return this.valueOf(this.runs[this.base(s) + 1] as number, xs);
+  }
+
+  /** The value `at` hands the mix for a run with `flags`. */
+  valueOf(flags: number, xs: Float64Array): number | number[] {
+    if ((flags & SCALAR) !== 0) return xs[0] as number;
     const n = this.n;
     const out = new Array<number>(n);
     for (let i = 0; i < n; i++) out[i] = xs[i] as number;
@@ -595,6 +649,7 @@ export class Motions<I> {
     this.check(c.v, this.n);
     c.made = this.owner === null ? Number.NaN : this.owner.now();
     c.seq = this.owner === null ? Number.NaN : this.owner.seq();
+    c.early = this.owner?.early() === true;
     if (c.at === undefined) {
       const at = this.frame(subject);
       if (!Number.isNaN(at)) c.at = at;
@@ -631,7 +686,7 @@ export class Motions<I> {
       for (const change of list) {
         const a = change.at;
         if (a === undefined || !(a <= t)) break;
-        if (a >= seg.at) seg = this.applied(s, seg, change, a);
+        if (a >= seg.at) seg = this.applied(this.numbers.subject(s), seg, change, a);
       }
     this.evaluateSegment(seg, t, xo, vo);
   }
@@ -775,14 +830,14 @@ export class Motions<I> {
     return list[lo] as Segment;
   }
 
-  private applied(s: number, seg: Segment, change: Change, at: number): Segment {
+  /** The stretch `change` releases from `seg` at `at`, for `subject` or one no longer numbered. */
+  applied(subject: I | typeof absent, seg: Segment, change: Change, at: number): Segment {
     const n = this.n;
     if (landing.x.length < n) landing = { x: new Float64Array(n), v: new Float64Array(n) };
     const { x, v } = landing;
     this.evaluateSegment(seg, at, x, v);
     const xs = change.x ?? numbers(x, 0, n);
     const vs = change.v ?? numbers(v, 0, n);
-    const subject = this.numbers.subject(s);
     const known = subject === absent ? (undefined as I) : subject;
     const put = change.x !== undefined && change.v === undefined;
     const to = this.shape.aim(xs, vs, change.to ?? seg.to, known, put);
@@ -806,7 +861,7 @@ export class Motions<I> {
       const a = change.at as number;
       if (a > t) break;
       list.shift();
-      this.insert(s, this.applied(s, this.playing(s, a), change, a));
+      this.insert(s, this.applied(this.numbers.subject(s), this.playing(s, a), change, a));
     }
     if (list.length === 0) {
       (this.pending as (Change[] | undefined)[])[s] = undefined;
@@ -873,7 +928,7 @@ export class Motions<I> {
     }
   }
 
-  private evaluateSegment(seg: Segment, t: number, xo: Float64Array, vo: Float64Array): void {
+  evaluateSegment(seg: Segment, t: number, xo: Float64Array, vo: Float64Array): void {
     this.evaluate(seg.at, seg.ms, seg.x0, 0, seg.v0, 0, seg.to, 0, t, xo, vo);
   }
 

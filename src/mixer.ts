@@ -673,7 +673,7 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   // A motion patch's state is the live mix's alone: a read ahead cannot start a subject afresh in it.
   private releaseIn(motion: Motions<I>, subject: I, kept: ReturnType<typeof releasing>): void {
-    if (!this.projecting) motion.release(subject, kept[0], kept[1], kept[2]);
+    if (!this.projecting) motion.release(subject, kept[0], kept[1], kept[2], kept[3]);
     else if (motion.holds(subject)) unplayable('a drop of a subject a motion patch holds');
   }
 
