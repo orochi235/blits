@@ -1,9 +1,10 @@
+import { mirror } from './ahead.js';
 import { ownBlends } from './blend.js';
 import type { Cut } from './cut.js';
 import type { Mixer } from './mixer.js';
 import { relink } from './owner.js';
 import { pin } from './place.js';
-import { mirror, recall, stateAt } from './project.js';
+import { recall, stateAt } from './project.js';
 import { recount } from './roster.js';
 import type { Transport } from './transport.js';
 import type { Voice } from './voice.js';
