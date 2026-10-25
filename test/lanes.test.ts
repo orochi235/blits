@@ -1785,6 +1785,31 @@ describe('a crowd of single-subject keys and fn voices gives the pose the genera
     );
   });
 
+  it('for keys voices whose stops share a timing, at the same phase and at others', () => {
+    const smooth = (u: number) => u * u * (3 - 2 * u);
+    agree(
+      (m, parts) => ({
+        handles: parts.map((p, i) =>
+          m.cue({
+            patch: keys<Part, Pose>(400, [
+              { at: 0, delta: { position: [0, 0, 0], gain: 0.1 } },
+              {
+                at: 0.5,
+                delta: { position: [p.id, -1, 2], gain: 0.5 + p.id / 10 },
+                ease: i % 4 === 3 ? smooth : 'ease-in',
+              },
+              { at: 1, delta: { position: [-p.id, 3, 0], gain: 0.2 } },
+            ]),
+            subjects: [p],
+            start: i % 3 === 1 ? 70 : 0,
+            loop: true,
+          }),
+        ),
+      }),
+      { times: ramp, parts: 12 },
+    );
+  });
+
   it('with holds, loops, staggers, fades, weights, rates, seeks and subject fades', () => {
     const play: Play = (m, parts) => {
       const hs = parts.map((p, i) =>

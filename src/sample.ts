@@ -1,7 +1,7 @@
 import { Sampled, unbareLane } from './bare.js';
 import { foldNumber } from './channels.js';
 import { clampWeight, passAt, same, weighed } from './clock.js';
-import { Arg, type Lane, type Laned, Per, type Positions, Row } from './lane.js';
+import { Arg, keepProbed, type Lane, type Laned, Per, type Positions, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { Law, type Motions, RunFlag } from './motions.js';
 import { absent } from './numbers.js';
@@ -66,7 +66,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     const slot = list[p] as number;
     const o = p * Row.STRIDE;
     const q = slot * Per.SLOT;
-    if (per[q + Per.LANE_FILL] === fills - 1) data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
+    keepProbed(data, o, per, q, fills);
     if (lately >= 0 && lanes.unread(slot)) {
       unbareLane(lane, p);
       continue;
