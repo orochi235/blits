@@ -14,6 +14,12 @@ version and everything else the patch. Each release lists its changes as **Break
 - `@msb235/blits/fling`: `fling(element, motion, subject, opts)` drags a subject by pointer and
   flings it on release, and `track` reads a pointer's velocity from its samples with no listeners
   of its own. The package still builds without the DOM's types.
+- `glide` takes `bounds: [min, max]`, per axis and optionally per subject: a coast that would stop
+  past an edge springs back to it from where it crosses, on a critically damped spring of
+  `stiffness` (default 170). A `set` past an edge stays there until the next push. `g.bounds(subject)`
+  reads them, and `Patch.motion` reports the `stiffness` of a glide that has them.
+- `fling` resists a drag past a glide's bounds, carrying the subject at most `give` (default 120)
+  past an edge, and a press holds a subject springing back past one where it is.
 
 ### Fixed
 

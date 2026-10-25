@@ -120,6 +120,8 @@ export type MotionSpec =
       /** The friction's time constant, ms. */
       readonly ms: number;
       readonly settle: number;
+      /** The spring back's, per second squared; only on a glide with bounds. */
+      readonly stiffness?: number;
     }
   | {
       readonly kind: 'tween';

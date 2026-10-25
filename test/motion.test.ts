@@ -5,6 +5,7 @@ import { kit, sum, vec } from '../src/channels.js';
 import { curve } from '../src/easing.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
+import type { Patch } from '../src/types.js';
 
 interface Pose {
   x: number;
@@ -172,6 +173,197 @@ describe('glide', () => {
     expect(m.probe(a).x).toBeCloseTo(there, 2);
     m.sync(5000);
     expect(m.probe(a).x).toBeCloseTo(there - 200 * 0.25, 3);
+  });
+});
+
+describe('a glide with bounds', () => {
+  // Fine-stepped reference: friction until x passes `edge`, then a critically damped spring to it.
+  function bounced(x0: number, v0: number, tau: number, k: number, edge: number, ms: number) {
+    let x = x0;
+    let v = v0;
+    let springing = false;
+    const h = 1e-6;
+    for (let t = 0; t < ms / 1000 - 1e-12; t += h) {
+      if (!springing && (x - edge) * Math.sign(v0) >= 0) springing = true;
+      const a = springing ? -k * (x - edge) - 2 * Math.sqrt(k) * v : -v / tau;
+      v += a * h;
+      x += v * h;
+    }
+    return x;
+  }
+
+  const play = (g: Patch<Part, Pose, void>, times: number[], lanes = true) => {
+    const m = mix<Part, Pose>(K, { lanes });
+    m.cue({ patch: g });
+    const a = { id: 'a' };
+    return times.map((t) => {
+      m.sync(t);
+      return m.probe(a).x;
+    });
+  };
+  const times = [0, 50, 120, 300, 700, 1500, 5000];
+
+  it('coasts as a glide without them where it comes to rest inside', () => {
+    const opts = { from: 10, velocity: 400, ms: 250, settle: 0 };
+    const free = play(glide<Part, Pose>('x', opts), times);
+    const held = play(glide<Part, Pose>('x', { ...opts, bounds: [0, 200] }), times);
+    for (let i = 0; i < times.length; i++) expect(Object.is(held[i], free[i])).toBe(true);
+  });
+
+  it('springs back to the edge a coast crosses, from where and as fast as it crosses', () => {
+    const g = glide<Part, Pose>('x', {
+      from: 0,
+      velocity: 1000,
+      ms: 325,
+      bounds: [0, 200],
+      stiffness: 170,
+      settle: 0,
+    });
+    const xs = play(g, [100, 400, 800, 10_000]);
+    expect(xs[0]).toBeCloseTo(bounced(0, 1000, 0.325, 170, 200, 100), 2);
+    expect(xs[1]).toBeCloseTo(bounced(0, 1000, 0.325, 170, 200, 400), 2);
+    expect(xs[1] as number).toBeGreaterThan(200);
+    expect(xs[2]).toBeCloseTo(bounced(0, 1000, 0.325, 170, 200, 800), 2);
+    expect(xs[3]).toBeCloseTo(200, 6);
+  });
+
+  it('crosses the edge with no jump in where it is or how fast it moves', () => {
+    const g = glide<Part, Pose>('x', { from: 0, velocity: 1000, ms: 325, bounds: [0, 200] });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: g });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    const cross = -325 * Math.log(1 - 200 / 325);
+    const before = g.read(a, cross - 1e-6) as { value: number; velocity: number };
+    const after = g.read(a, cross + 1e-6) as { value: number; velocity: number };
+    expect(before.value).toBeCloseTo(200, 3);
+    expect(after.value).toBeCloseTo(200, 3);
+    expect(after.velocity).toBeCloseTo(before.velocity, 2);
+  });
+
+  it('springs back at once when let go past an edge, as a critically damped spring', () => {
+    const k = 300;
+    const g = glide<Part, Pose>('x', { from: -60, bounds: [0, 500], stiffness: k, settle: 0 });
+    const s = spring<Part, Pose>('x', {
+      from: -60,
+      to: 0,
+      stiffness: k,
+      damping: 2 * Math.sqrt(k),
+      settle: 0,
+    });
+    const held = play(g, times);
+    const sprung = play(s, times);
+    for (let i = 0; i < times.length; i++) expect(held[i]).toBeCloseTo(sprung[i] as number, 9);
+  });
+
+  it('coasts back inside, with no spring, when let go past an edge fast enough inward', () => {
+    const opts = { from: -50, velocity: 1000, ms: 325, settle: 0 };
+    const free = play(glide<Part, Pose>('x', opts), times);
+    const held = play(glide<Part, Pose>('x', { ...opts, bounds: [0, 1000] }), times);
+    for (let i = 0; i < times.length; i++) expect(Object.is(held[i], free[i])).toBe(true);
+  });
+
+  it('leaves a subject set past an edge there until the next push', () => {
+    const g = glide<Part, Pose>('x', { from: 0, bounds: [0, 100], settle: 0 });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: g });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    g.set(a, 140);
+    m.sync(2000);
+    expect(m.probe(a).x).toBe(140);
+    g.push(a, 0);
+    m.sync(6000);
+    expect(m.probe(a).x).toBeCloseTo(100, 6);
+  });
+
+  it('springs back from a set inside the bounds whose coast runs past an edge', () => {
+    const g = glide<Part, Pose>('x', { from: 0, velocity: 2000, bounds: [0, 100], settle: 0 });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: g });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    g.set(a, 10);
+    m.sync(6000);
+    expect(m.probe(a).x).toBeCloseTo(100, 6);
+  });
+
+  it('gives the same pose to the bit on lanes and off', () => {
+    const make = () =>
+      glide<Part, Pose>('x', { from: 0, velocity: 1500, bounds: [-20, 250], settle: 0 });
+    const on = play(make(), times, true);
+    const off = play(make(), times, false);
+    for (let i = 0; i < times.length; i++) expect(Object.is(on[i], off[i])).toBe(true);
+  });
+
+  it('plays the same after a seek back past a push', () => {
+    const g = glide<Part, Pose>('x', { from: 0, bounds: [0, 300], settle: 0 });
+    const m = mix<Part, Pose>(K, { history: { ms: 5000 } });
+    const h = m.cue({ patch: g });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(100);
+    m.probe(a);
+    g.push(a, 3000);
+    m.sync(600);
+    const live = m.probe(a).x;
+    m.sync(900);
+    m.probe(a);
+    h.seek(50);
+    m.sync(1450);
+    expect(m.probe(a).x).toBe(live);
+  });
+
+  it('bounds each axis, and each subject, on its own', () => {
+    const g = glide<Part, Pose, number[]>('p', {
+      from: [0, 0],
+      velocity: (s) => (s.id === 'a' ? [1000, -1000] : [100, 100]),
+      bounds: (s) =>
+        s.id === 'a'
+          ? [
+              [-50, -80],
+              [120, 400],
+            ]
+          : [
+              [0, 0],
+              [10, 10],
+            ],
+      settle: 0,
+    });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: g });
+    const a = { id: 'a' };
+    const b = { id: 'b' };
+    m.sync(0);
+    m.probe(a);
+    m.probe(b);
+    m.sync(8000);
+    const [ax, ay] = m.probe(a).p as number[];
+    const [bx, by] = m.probe(b).p as number[];
+    expect(ax).toBeCloseTo(120, 6);
+    expect(ay).toBeCloseTo(-80, 6);
+    expect(bx).toBeCloseTo(10, 6);
+    expect(by).toBeCloseTo(10, 6);
+    expect(g.bounds(b)).toEqual([
+      [0, 0],
+      [10, 10],
+    ]);
+  });
+
+  it('reports its stiffness, and refuses bounds on the wrong number of axes', () => {
+    const g = glide<Part, Pose>('x', { from: 0, ms: 200, settle: 0, bounds: [0, 1] });
+    expect(g.motion).toEqual({ kind: 'glide', ms: 200, settle: 0, stiffness: 170 });
+    expect(glide<Part, Pose>('x', { from: 0 }).bounds({ id: 'a' })).toBeUndefined();
+    const wrong = glide<Part, Pose, number[]>('p', { from: [0, 0], bounds: [[0], [1]] });
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: wrong });
+    m.sync(0);
+    expect(() => m.probe({ id: 'a' })).toThrow(/as many axes/);
+    expect(() => glide<Part, Pose>('x', { from: 0, stiffness: 0 })).toThrow(RangeError);
   });
 });
 

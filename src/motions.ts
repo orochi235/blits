@@ -140,8 +140,11 @@ export interface Shape<I> {
   from: (subject: I) => number[];
   /** How fast each axis starts moving, given where it starts: still unless the options say. */
   velocity: (subject: I, x: number[]) => number[];
-  /** Where it heads when released from `x` at `v`, given where it was heading. */
-  aim: (x: number[], v: number[], was: number[] | null, subject: I) => number[];
+  /**
+   * Where it heads when released from `x` at `v`, given where it was heading; `put` for a stretch a
+   * `set` released.
+   */
+  aim: (x: number[], v: number[], was: number[] | null, subject: I, put: boolean) => number[];
   /** `[form, settle, k1, k2, k3]`. */
   law: readonly number[];
   /** Whether a subject's value is a number rather than an array. */
@@ -235,7 +238,7 @@ export class Motions<I> {
     if (known !== undefined) return known;
     const x = this.shape.from(subject);
     const v = this.shape.velocity(subject, x);
-    const to = this.shape.aim(x, v, null, subject);
+    const to = this.shape.aim(x, v, null, subject, false);
     const n = this.n < 0 ? x.length : this.n;
     this.check(x, n);
     this.check(v, n);
@@ -781,7 +784,8 @@ export class Motions<I> {
     const vs = change.v ?? numbers(v, 0, n);
     const subject = this.numbers.subject(s);
     const known = subject === absent ? (undefined as I) : subject;
-    const to = this.shape.aim(xs, vs, change.to ?? seg.to, known);
+    const put = change.x !== undefined && change.v === undefined;
+    const to = this.shape.aim(xs, vs, change.to ?? seg.to, known, put);
     const ms = subject === absent ? seg.ms : (this.shape.ms?.(known) ?? 0);
     return { at, ms, x0: xs, v0: vs, to, change };
   }

@@ -96,29 +96,72 @@ export interface PointerTarget {
   setPointerCapture?(pointerId: number): void;
 }
 
+/** How much of a drag past an edge the subject follows, right at the edge. */
+const PULL = 0.55;
+
+/** How far a drag `d` past an edge carries the subject, never as far as `give`. */
+const resist = (d: number, give: number): number =>
+  give > 0 ? give * (1 - 1 / ((PULL * d) / give + 1)) : 0;
+
+/** The drag past an edge that carries the subject `r` past it, as `resist` maps it. */
+const unresist = (r: number, give: number): number => {
+  const held = Math.min(r, give * 0.99);
+  return give > 0 ? (give * held) / (PULL * (give - held)) : 0;
+};
+
 /**
  * Drags `subject` of a motion patch, usually a `glide`, by pointer on `target`, and flings it on
  * release at the pointer's velocity: a press stops it where it is, each move `set`s it under the
- * pointer, and letting go `push`es it. One pointer at a time; a canceled one lets go at rest.
+ * pointer, and letting go `push`es it. Past the edge of a glide's `bounds` it follows less and less
+ * of the drag, never more than `give` past. One pointer at a time; a canceled one lets go at rest.
  * Returns the function that removes its listeners.
  *
  * @category fling
  */
 export function fling<I, O, V extends Value = number>(
   target: PointerTarget,
-  motion: Pick<Moving<I, O, V>, 'read' | 'set' | 'push'>,
+  motion: Pick<Moving<I, O, V>, 'read' | 'set' | 'push'> & {
+    bounds?(subject: I): readonly [min: V, max: V] | undefined;
+  },
   subject: I,
   opts: {
     /** Which pointer axes it follows: `'xy'` moves a subject on two axes. Default `'y'`. */
     axis?: 'x' | 'y' | 'xy';
     /** Units per pixel of pointer travel; -1 scrolls content against the drag. Default 1. */
     scale?: number;
+    /**
+     * How far past an edge of the glide's bounds a drag can carry the subject, in its units; 0
+     * holds it at the edge. Default 120.
+     */
+    give?: number;
     ms?: number;
     stop?: number;
   } = {},
 ): () => void {
   const axis = opts.axis ?? 'y';
   const scale = opts.scale ?? 1;
+  const give = opts.give ?? 120;
+  if (!(give >= 0)) throw new RangeError('blits: a fling takes a give of 0 or more');
+  let lo: number[] | undefined;
+  let hi: number[] | undefined;
+  /** Where the drag `x` puts the subject, past an edge carried by `resist`. */
+  const held = (x: number[]): number[] =>
+    lo === undefined || hi === undefined
+      ? x
+      : x.map((xi, k) => {
+          const a = (lo as number[])[k] as number;
+          const b = (hi as number[])[k] as number;
+          return xi < a ? a - resist(a - xi, give) : xi > b ? b + resist(xi - b, give) : xi;
+        });
+  /** The drag that puts the subject at `x`, as `held` maps it. */
+  const dragged = (x: number[]): number[] =>
+    lo === undefined || hi === undefined
+      ? x
+      : x.map((xi, k) => {
+          const a = (lo as number[])[k] as number;
+          const b = (hi as number[])[k] as number;
+          return xi < a ? a - unresist(a - xi, give) : xi > b ? b + unresist(xi - b, give) : xi;
+        });
   const path = track<number[]>(opts);
   let id: number | undefined;
   let from: number[] = [];
@@ -126,6 +169,7 @@ export function fling<I, O, V extends Value = number>(
   const at = (e: PointerLike): number[] =>
     axis === 'x' ? [e.clientX] : axis === 'y' ? [e.clientY] : [e.clientX, e.clientY];
   const value = (x: number[]): V => (axis === 'xy' ? x : x[0]) as V;
+  const flat = (v: V): number[] => (typeof v === 'number' ? [v] : [...(v as readonly number[])]);
   const zero = (): V => value(from.map(() => 0));
   const down = (e: PointerLike) => {
     if (id !== undefined) return;
@@ -133,15 +177,21 @@ export function fling<I, O, V extends Value = number>(
     if (now === undefined) return;
     id = e.pointerId;
     target.setPointerCapture?.(id);
-    from = typeof now.value === 'number' ? [now.value] : [...(now.value as readonly number[])];
+    const edges = motion.bounds?.(subject);
+    lo = edges === undefined ? undefined : flat(edges[0]);
+    hi = edges === undefined ? undefined : flat(edges[1]);
+    const here = flat(now.value);
+    from = dragged(here);
     p0 = at(e);
     motion.push(subject, zero());
+    // The push alone would spring a subject caught past an edge back; a set there holds it.
+    motion.set(subject, value(here));
     path.clear();
-    path.add(e.timeStamp, from);
+    path.add(e.timeStamp, here);
   };
   const move = (e: PointerLike) => {
     if (e.pointerId !== id) return;
-    const x = at(e).map((p, k) => (from[k] as number) + (p - (p0[k] as number)) * scale);
+    const x = held(at(e).map((p, k) => (from[k] as number) + (p - (p0[k] as number)) * scale));
     motion.set(subject, value(x));
     path.add(e.timeStamp, x);
   };

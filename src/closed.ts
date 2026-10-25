@@ -8,6 +8,7 @@ export const CRITICAL = 1;
 export const OVER = 2;
 export const COAST = 3;
 export const EASED = 4;
+export const BOUND = 5;
 
 const solved = { y: 0, dy: 0 };
 
@@ -122,6 +123,47 @@ function solveGlide(law: Float64Array, y0: number): void {
 }
 
 /**
+ * A glide with bounds, heading for `goal`: the rest point itself where the coast stops inside them,
+ * else the edge it springs back to. Which one is read off the stretch, so no stretch carries more
+ * than an unbounded one: the coast's own rest, worked out as the glide's `aim` does, is `goal`
+ * exactly when it stops inside; past it on the side `x0` is on too, the subject was let go past the
+ * edge and springs back at once; else it coasts until it crosses the edge and springs from there,
+ * at the speed it crossed at. The spring is critically damped, its ω₀ the law's `k2`.
+ */
+function solveBound(law: Float64Array, x0: number, goal: number, v0: number, t: number): void {
+  const tau = law[2] as number;
+  const y0 = x0 - goal;
+  const over = x0 + v0 * tau - goal;
+  if (over === 0) {
+    solveGlide(law, y0);
+    return;
+  }
+  const w0 = law[3] as number;
+  if (y0 * over > 0) {
+    const e = Math.exp(-w0 * t);
+    const b = v0 + w0 * y0;
+    const y = e * (y0 + b * t);
+    solved.y = y;
+    solved.dy = e * b - w0 * y;
+    return;
+  }
+  // e^(−t/τ) where the coast meets the edge: the fraction of its speed it still has there.
+  const left = 1 + y0 / (v0 * tau);
+  const cross = left > 0 ? -tau * Math.log(left) : Number.POSITIVE_INFINITY;
+  if (t < cross) {
+    const e = timed.e;
+    solved.y = y0 + v0 * tau * (1 - e);
+    solved.dy = v0 * e;
+    return;
+  }
+  const s = t - cross;
+  const vc = v0 * left;
+  const e = Math.exp(-w0 * s);
+  solved.y = e * vc * s;
+  solved.dy = e * vc * (1 - w0 * s);
+}
+
+/**
  * A stretch at voice time `t`, released at `at` from `x0` moving at `v0` toward `to` (each read
  * from its offset), into `xo` and `vo`: the one copy of the closed forms, which `law` (a patch's
  * `[form, settle, k1, k2, k3]`, the head of a patch's buffer or a copy of it) picks between. A tween reads `ease` and
@@ -152,7 +194,8 @@ export function closed(
   prepare(law, dt);
   for (let i = 0; i < n; i++) {
     const goal = to[g + i] as number;
-    solve(law, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
+    if (law[0] === BOUND) solveBound(law, x0[x + i] as number, goal, v0[v + i] as number, dt);
+    else solve(law, (x0[x + i] as number) - goal, v0[v + i] as number, dt);
     xo[i] = goal + solved.y;
     vo[i] = solved.dy;
     if (Math.abs(solved.y) > settle || Math.abs(solved.dy) > settle) still = false;

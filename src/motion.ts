@@ -1,4 +1,4 @@
-import { COAST, CRITICAL, EASED, OVER, UNDER } from './closed.js';
+import { BOUND, COAST, CRITICAL, EASED, OVER, UNDER } from './closed.js';
 import { type Curve, curve } from './easing.js';
 import { Motions, type Shape } from './motions.js';
 import { release } from './shared.js';
@@ -128,8 +128,19 @@ class SpringPatch<I, O, V extends Value> extends TweenPatch<I, O, V> {
 }
 
 class GlidePatch<I, O, V extends Value> extends MotionPatch<I, O, V> {
+  constructor(
+    writes: keyof O,
+    motions: Motions<I>,
+    private readonly edges: PerSubject<I, readonly [min: V, max: V]> | undefined,
+  ) {
+    super(writes, motions);
+  }
   push(subject: I, velocity: V, at?: number): void {
     this.motions.change(subject, { at, v: axes(velocity) });
+  }
+  bounds(subject: I): readonly [min: V, max: V] | undefined {
+    const b = this.edges;
+    return b === undefined ? undefined : per(b, subject);
   }
 }
 
@@ -189,14 +200,20 @@ class GlideShape<I, V extends Value> implements Shape<I> {
   readonly ms = undefined;
   private readonly start: PerSubject<I, V>;
   private readonly speed: PerSubject<I, V> | undefined;
+  private readonly edges: PerSubject<I, readonly [min: V, max: V]> | undefined;
   constructor(
     readonly law: readonly number[],
     private readonly motion: MotionSpec,
-    opts: { from: PerSubject<I, V>; velocity?: PerSubject<I, V> },
+    opts: {
+      from: PerSubject<I, V>;
+      velocity?: PerSubject<I, V>;
+      bounds?: PerSubject<I, readonly [min: V, max: V]>;
+    },
     private readonly tau: number,
   ) {
     this.start = opts.from;
     this.speed = opts.velocity;
+    this.edges = opts.bounds;
   }
   spec(): MotionSpec {
     return this.motion;
@@ -208,8 +225,22 @@ class GlideShape<I, V extends Value> implements Shape<I> {
     const v = this.speed;
     return v === undefined ? still(x) : axes(per(v, s));
   }
-  aim(x: number[], v: number[]): number[] {
-    return x.map((xi, i) => xi + (v[i] as number) * this.tau);
+  aim(x: number[], v: number[], _was: number[] | null, s: I, put: boolean): number[] {
+    const rest = x.map((xi, i) => xi + (v[i] as number) * this.tau);
+    if (this.edges === undefined) return rest;
+    const [lo, hi] = per(this.edges, s);
+    const min = axes(lo);
+    const max = axes(hi);
+    if (min.length !== rest.length || max.length !== rest.length)
+      throw new Error('blits: bounds on a glide have as many axes as its subjects');
+    return rest.map((r, i) => {
+      const a = min[i] as number;
+      const b = max[i] as number;
+      const xi = x[i] as number;
+      // A set past an edge stays there: a drag holds it out, and only a push lets it spring back.
+      if (put && (xi < a || xi > b)) return r;
+      return r < a ? a : r > b ? b : r;
+    });
   }
   scalar(s: I): boolean {
     return typeof per(this.start, s) === 'number';
@@ -334,6 +365,11 @@ export function spring<I, O, V extends Value = number>(
  * `ms`, and comes to rest `velocity · ms / 1000` past where it was released. `push` sets it moving
  * again from wherever it is. Closed form, so frame rate does not change where it stops.
  *
+ * With `bounds`, a coast that would stop past an edge springs back to it from where it crosses, at
+ * the speed it crosses at, on a critically damped spring of `stiffness`; one let go past an edge
+ * springs back from there, unless it coasts back inside. A `set` past an edge leaves the subject
+ * there, coasting on, until the next `push`, so a drag can hold it out.
+ *
  * @category patch
  */
 export function glide<I, O, V extends Value = number>(
@@ -343,19 +379,31 @@ export function glide<I, O, V extends Value = number>(
     from: PerSubject<I, V>;
     /** The friction's time constant, ms. Default 325, a touch scroll's. */
     ms?: number;
+    /** The least and greatest value a coast comes to rest at, per axis. Default none. */
+    bounds?: PerSubject<I, readonly [min: V, max: V]>;
+    /** The spring back's, per second squared, with `bounds`. Default 170, as a spring's. */
+    stiffness?: number;
   },
-): Moving<I, O, V> {
+): Moving<I, O, V> & {
+  /** `subject`'s bounds, undefined for a glide without them. */
+  bounds(subject: I): readonly [min: V, max: V] | undefined;
+} {
   const ms = opts.ms ?? 325;
   if (!(ms > 0)) throw new RangeError('blits: a glide takes a positive ms');
+  const k = opts.stiffness ?? 170;
+  if (!(k > 0)) throw new RangeError('blits: a glide takes a positive stiffness');
   const tau = ms / 1000;
   const settle = opts.settle ?? 1e-4;
+  const bounded = opts.bounds !== undefined;
   const shape = new GlideShape(
-    [COAST, settle, tau, 0, 0],
-    { kind: 'glide', ms, settle },
+    bounded ? [BOUND, settle, tau, Math.sqrt(k), 0] : [COAST, settle, tau, 0, 0],
+    bounded ? { kind: 'glide', ms, settle, stiffness: k } : { kind: 'glide', ms, settle },
     opts,
     tau,
   );
-  return new GlidePatch<I, O, V>(writes, new Motions(shape)) as unknown as Moving<I, O, V>;
+  return new GlidePatch<I, O, V>(writes, new Motions(shape), opts.bounds) as unknown as ReturnType<
+    typeof glide<I, O, V>
+  >;
 }
 
 /**

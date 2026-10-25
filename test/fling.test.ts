@@ -149,6 +149,69 @@ describe('fling', () => {
     expect(y).toBeCloseTo(-2 - 200 * 0.2, 6);
   });
 
+  it('follows less of a drag past an edge, never more than give past, and springs back on release', () => {
+    const g = glide<typeof page, Pose>('y', { from: 0, bounds: [0, 1000], settle: 0 });
+    const m = mix<typeof page, Pose>(K);
+    m.cue({ patch: g });
+    m.sync(0);
+    m.probe(page);
+    const { target, fire } = stage();
+    fling(target, g, page, { give: 80 });
+    fire('pointerdown', 0, 0);
+    let last = 0;
+    for (let t = 16; t <= 160; t += 16) {
+      m.sync(t);
+      fire('pointermove', t, -t * 4);
+      const y = m.probe(page).y;
+      expect(y).toBeLessThan(0);
+      expect(y).toBeGreaterThan(-80);
+      expect(y).toBeLessThan(last);
+      expect(-y).toBeLessThan(t * 4 * 0.55 + 1e-9);
+      last = y;
+    }
+    m.sync(1000);
+    expect(m.probe(page).y).toBe(last);
+    fire('pointerup', 1000, -640);
+    m.sync(10_000);
+    expect(m.probe(page).y).toBeCloseTo(0, 6);
+  });
+
+  it('holds the subject at the edge with a give of 0', () => {
+    const g = glide<typeof page, Pose>('y', { from: 50, bounds: [0, 100], settle: 0 });
+    const m = mix<typeof page, Pose>(K);
+    m.cue({ patch: g });
+    m.sync(0);
+    m.probe(page);
+    const { target, fire } = stage();
+    fling(target, g, page, { give: 0 });
+    fire('pointerdown', 0, 0);
+    m.sync(16);
+    fire('pointermove', 16, 300);
+    expect(m.probe(page).y).toBe(100);
+  });
+
+  it('holds a subject caught springing back past an edge where it is, and drags it on from there', () => {
+    const g = glide<typeof page, Pose>('y', { from: 0, velocity: 3000, bounds: [0, 200] });
+    const m = mix<typeof page, Pose>(K);
+    m.cue({ patch: g });
+    m.sync(0);
+    m.probe(page);
+    m.sync(400);
+    const there = m.probe(page).y;
+    expect(there).toBeGreaterThan(200);
+    const { target, fire } = stage();
+    fling(target, g, page);
+    fire('pointerdown', 400, 0);
+    m.sync(2000);
+    expect(m.probe(page).y).toBeCloseTo(there, 9);
+    m.sync(2010);
+    fire('pointermove', 2010, 0);
+    expect(m.probe(page).y).toBeCloseTo(there, 9);
+    m.sync(2020);
+    fire('pointermove', 2020, 5);
+    expect(m.probe(page).y).toBeGreaterThan(there);
+  });
+
   it('removes its listeners when told to', () => {
     const g = glide<typeof page, Pose>('y', { from: 0 });
     const { target, fns } = stage();

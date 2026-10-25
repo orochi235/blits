@@ -343,23 +343,31 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
-0. **Scroll inertia: `set` and `@msb235/blits/fling` landed, bounds not built** (2026-10-24, Mike's
-   go on splitting the motion law into the engine and the pointer wiring into a subpath). The
-   schema page's "Dragging and flinging" is the record. Chosen while building, Mike's to overturn:
+0. **Scroll inertia: `set`, `@msb235/blits/fling` and glide `bounds` landed** (2026-10-24, Mike's
+   go on splitting the motion law into the engine and the pointer wiring into a subpath; spring
+   back and resistance while dragging were his picks, 2026-10-24). The schema page's "Dragging and
+   flinging" and "Bounds" are the record. Chosen while building, Mike's to overturn:
    - **Names:** `set` (a motion's jump to a value, keeping velocity), the subpath and function
      `fling`, the sampler `track` with `ms` (window, default 100) and `stop` (still-before-release
-     cutoff, default 40), `axis` (`'x' | 'y' | 'xy'`, default `'y'`), and `scale`.
+     cutoff, default 40), `axis` (`'x' | 'y' | 'xy'`, default `'y'`), `scale`, `give` (how far
+     past an edge a drag carries, default 120), and on `glide` `bounds` and `stiffness`.
    - **`set` is on every motion patch and on the handle,** not glide alone, so no motion lacks it.
    - **`fling` types its target structurally** (`PointerTarget`) so the core keeps `lib: ES2022`
      with no DOM. An `HTMLElement` type-checks as one (checked on the fleet, 2026-10-24).
-   - **Unbuilt: bounds on `glide`.** A coast should stop at an edge or hand off to a spring there.
-     The crossing time is solvable from the closed form, but a stretch today follows one law per
-     patch, so a coast-then-spring stretch needs a second form in `closed.ts` and the lanes. Needs
-     a design pass before building.
+   - **A `set` past an edge stays there until the next push.** Without it a drag held past an edge
+     would spring back between pointer moves. `aim` in `GlideShape` (`src/motion.ts`) holds the
+     rule; a press does `push(0)` then `set` so a subject caught mid-bounce stays put.
+   - **The spring back is critically damped,** one stiffness, so the law keeps its five numbers
+     (`[BOUND, settle, τ, ω₀, 0]`). Any damping would need a longer law head.
+   - **Released past an edge with enough inward speed, it coasts back inside with no spring.**
+   - **Resistance is iOS's curve,** 0.55 of the drag at the edge, approaching `give`.
 0. **0.13.0 is the engine's release of 2026-10-23** (the stock band, a mix's `loci`, the kept-seek
    and seek-return fixes, cheaper churn). blits-quarks 0.8.0, blits-tone 0.3.0 and the panel 0.1.1
-   declare `@msb235/blits` `^0.12.0` as a peer, which below 1.0 does not take 0.13.0, so each wants
-   a release with its range widened and its tests run against 0.13.0.
+   declare `@msb235/blits` `^0.12.0` as a peer, which below 1.0 does not take 0.13.0. **Next
+   release (Mike, 2026-10-24):** engine 0.14.0 with `set`, `fling` and bounds, then the panel (he
+   asked for one), quarks and tone, each with its peer range and dev pin moved to 0.14.0. The
+   release workflow refuses a companion tag while the engine's changelog has Unreleased entries,
+   so the engine goes first.
 0. **`mix.arc` shipped in 0.12.0** (2026-10-22, on src-da's brief with Mike's go): klieg's
    `fire(text, { enter, active, exit, hold, blendMs })` as a blits primitive. The schema page's
    "Arcs" is the record. bree (`~/src/bree`, the marquee's new home) builds against this checkout
