@@ -115,7 +115,7 @@ function gatherInto<I, O>(
   const taken = takenAt[slot] as number;
   const total = taken + w;
   const u = w / total;
-  if (!ch.plain) turnToward(ch, values, slot * ch.axes, value, taken, u);
+  if (!ch.plain || !ch.straight) turnToward(ch, values, slot * ch.axes, value, taken, u);
   else if (ch.scalar) {
     values[slot] =
       taken === 0 ? (value as number) : lerpNumber(values[slot] as number, value as number, u);

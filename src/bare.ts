@@ -1,7 +1,7 @@
 import { foldNumber } from './channels.js';
 import { bare, type Crowd, Hot } from './crowd.js';
 import type { Curve } from './easing.js';
-import { type Lane, type Laned, Per, Row } from './lane.js';
+import { keepProbed, type Lane, type Laned, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Motions } from './motions.js';
 import { between, left, progress } from './tweened.js';
@@ -43,9 +43,12 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
   const lately = lanes.lately;
   const now = lanes.now;
   const op = ch.op;
+  // Ids are finite, so a fill running to the end need not read each row's.
+  const bounded = id !== Number.POSITIVE_INFINITY;
   for (; p < list.length; p++) {
     const h = p * H;
-    if ((hot[h + Hot.ID] as number) >= id || !bare(hot[h + Hot.FLAGS] as number)) break;
+    if ((bounded && (hot[h + Hot.ID] as number) >= id) || !bare(hot[h + Hot.FLAGS] as number))
+      break;
     const o = p * Row.STRIDE;
     if ((data[o + Row.MSLOT] as number) < 0 || data[o + Row.MET] === 0) break;
     const slot = list[p] as number;
@@ -66,7 +69,7 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
       break;
     const elapsed = clock(hot, h, now) - (data[o + Row.DELAY] as number);
     if (!(elapsed >= 0)) break;
-    if (per[q + Per.LANE_FILL] === fills - 1) data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
+    keepProbed(data, o, per, q, fills);
     const w = hot[h + Hot.WEIGHT] as number;
     data[o + Row.WEIGHT] = w;
     if (data[o + Row.SAMPLED] !== Sampled.BARE) {

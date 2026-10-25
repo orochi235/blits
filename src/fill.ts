@@ -418,7 +418,7 @@ export function foldKeys<I, O>(
     const a = seg.a;
     const b = seg.b;
     const u = seg.eased;
-    if (ch.scalar || !ch.plain) {
+    if (ch.scalar || !ch.plain || !ch.straight) {
       this.foldInto(
         ch,
         slot,

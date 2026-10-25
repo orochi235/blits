@@ -15,6 +15,8 @@ export interface Laned {
   op: Numeric['op'];
   /** Its values fold as its `op` alone: not through a band as `'last'` does, and not a rotation. */
   plain: boolean;
+  /** A plain channel's values lerp straight across each axis, not through the channel's `lerp`. */
+  straight: boolean;
   /** An angle's full turn, and 0 for any other channel. */
   turn: number;
   /** The channel, whose own `fold` and `lerp` an `'own'` lane calls. */
@@ -64,6 +66,22 @@ export const enum Row {
   SEEKS = 6,
   /** 1 once the general path has made the voice's first call for the subject, which never undoes. */
   MET = 7,
+}
+
+/**
+ * Keeps the weight a probe read from the last fill as `Row.PROBED`, for `weightOf`, before a fill
+ * writes the position's new weight; reads `per` only where the copy could change a bit.
+ */
+export function keepProbed(
+  data: Float64Array,
+  o: number,
+  per: Float64Array,
+  q: number,
+  fills: number,
+): void {
+  const w = data[o + Row.WEIGHT] as number;
+  if ((w !== data[o + Row.PROBED] || w === 0) && per[q + Per.LANE_FILL] === fills - 1)
+    data[o + Row.PROBED] = w;
 }
 
 /** What `begin` found: the general path, or lanes filled. */

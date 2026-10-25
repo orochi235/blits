@@ -1,7 +1,7 @@
 import { foldNumber } from './channels.js';
 import { clampWeight, frozenTime, phaseAt, same, weighed } from './clock.js';
 import { unband } from './fold.js';
-import { Arg, type Lane, type Laned, Per, Row } from './lane.js';
+import { Arg, keepProbed, type Lane, type Laned, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { shortWay } from './turns.js';
 
@@ -39,8 +39,7 @@ export function runKeys<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
   for (let p = 0; p < list.length; p++) {
     const slot = list[p] as number;
     const o = p * Row.STRIDE;
-    if (per[slot * Per.SLOT + Per.LANE_FILL] === fills - 1)
-      data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
+    keepProbed(data, o, per, slot * Per.SLOT, fills);
     if (lately >= 0 && lanes.unread(slot)) continue;
     const raw = elapsedNow - (data[o + Row.DELAY] as number);
     const elapsed = raw > span && hides ? Number.NaN : frozenTime(raw, before, after, span);

@@ -59,8 +59,9 @@ export function turnFrom(
 }
 
 /**
- * A locus member's rotation lerped by `u` into what the members before it left at `base`, through
- * the channel's own `lerp`; the first member's value as it is, where `taken` is 0.
+ * A locus member's value for a channel not lerped straight across, lerped by `u` into what the
+ * members before it left at `base` through the channel's own `lerp`, or an angle's short way round;
+ * the first member's value as it is, where `taken` is 0.
  */
 export function turnToward(
   ch: Laned,

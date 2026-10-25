@@ -35,7 +35,22 @@ const K = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: last({
 const KC = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: color() });
 // And with it replacing as `color(last())`, which runs on lanes too.
 const KL = kit({ gain: mul(), dark: max(), position: vec(3, sum()), color: color(last()) });
+// And averaging with its lerp round the hue.
+const KO = kit({
+  gain: mul(),
+  dark: max(),
+  position: vec(3, sum()),
+  color: color({ lerp: 'oklch' }),
+});
 const AMBER = oklab(0xffe08a);
+const SKY = oklab(0x8ab4ff);
+// Round the hue and back, half a turn a second, for the `oklch` rows.
+const hues = (v) =>
+  keys(1000 + 170 * v, [
+    { at: 0, delta: { gain: 1, color: v % 2 ? SKY : AMBER } },
+    { at: 0.5, delta: { gain: 0.6, color: oklab(0xff4060) } },
+    { at: 1, delta: { gain: 1, color: v % 2 ? SKY : AMBER } },
+  ]);
 
 let gcs = 0;
 let paused = 0;
@@ -170,13 +185,18 @@ const rows = [
   // as the playground's glow does; a packed color runs on no lane, so the glow and the voice under it leave
   // the lanes together. `glowk` writes it to a `color()` channel instead,
   // and `glowl` to a `color(last())`. `glowkeys` is `glowc` as keys, which a subject at weight 0
-  // does not read.
+  // does not read. `glowo` is `glowk` on a `color({ lerp: 'oklch' })`, and `glowokeys` its keys,
+  // lerped round the hue.
   ['glowbase', 10000, 1],
   ['glow', 10000, 2],
   ['glowc', 10000, 2],
   ['glowk', 10000, 2],
   ['glowl', 10000, 2],
   ['glowkeys', 10000, 2],
+  ['glowo', 10000, 2],
+  ['glowokeys', 10000, 2],
+  // Keys voices over every subject lerping a `color({ lerp: 'oklch' })` round the hue.
+  ['hues', 10000, 2],
   // One voice per subject, each targeted at its own: magicsmoke's faults on one shared mix.
   ['own', 100, 1],
   ['own', 1000, 1],
@@ -229,6 +249,9 @@ const rows = [
   ['glow-', 10000, 2],
   ['glowc-', 10000, 2],
   ['glowkeys-', 10000, 2],
+  ['glowo-', 10000, 2],
+  ['glowokeys-', 10000, 2],
+  ['hues-', 10000, 2],
   ['probed-', 10000, 2],
   ['sparse-', 10000, 1],
   ['typing-', 10000, 100],
@@ -247,6 +270,9 @@ const rows = [
   ['glowk^', 10000, 2],
   ['glowl^', 10000, 2],
   ['glowkeys^', 10000, 2],
+  ['glowo^', 10000, 2],
+  ['glowokeys^', 10000, 2],
+  ['hues^', 10000, 2],
   ['keyses^', 10000, 1],
   ['churn^', 10000, 1],
   // weasel's churn: the stopped voice's subject leaves for good and a new one arrives, read by
@@ -306,11 +332,16 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   const kind = off || pulls ? form.slice(0, -1) : form;
   const scrub = kind === 'ahead' || kind === 'back';
   const taped = kind === 'kept' || kind === 'seek';
-  const m = mix(kind === 'turn' ? KR : kind === 'glowk' ? KC : kind === 'glowl' ? KL : K, {
-    ...(kind === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {}),
-    ...(taped ? { history: { ms: 5000, every: 50, tape: createHistory }, stepMs: 5 } : {}),
-    lanes: !off,
-  });
+  const oklch = kind === 'glowo' || kind === 'glowokeys' || kind === 'hues';
+  const four = kind === 'glowk' || kind === 'glowl' || oklch;
+  const m = mix(
+    kind === 'turn' ? KR : kind === 'glowk' ? KC : kind === 'glowl' ? KL : oklch ? KO : K,
+    {
+      ...(kind === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {}),
+      ...(taped ? { history: { ms: 5000, every: 50, tape: createHistory }, stepMs: 5 } : {}),
+      lanes: !off,
+    },
+  );
   if (unwatched) {
     const entry = blits
       .watched()
@@ -437,7 +468,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       weight: near,
       loop: true,
     });
-  if (kind === 'glowk' || kind === 'glowl')
+  if (kind === 'glowk' || kind === 'glowl' || kind === 'glowo')
     m.cue({
       patch: patch(1000, () => ({ gain: 1.5, color: AMBER }), { writes: ['gain', 'color'] }),
       weight: near,
@@ -454,6 +485,15 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       patch: keys(1000, [
         { at: 0, delta: { gain: 1.5, color: 0xffe08a } },
         { at: 1, delta: { gain: 1.2, color: 0xffffff } },
+      ]),
+      weight: near,
+      loop: true,
+    });
+  if (kind === 'glowokeys')
+    m.cue({
+      patch: keys(1000, [
+        { at: 0, delta: { gain: 1.5, color: AMBER } },
+        { at: 1, delta: { gain: 1.2, color: SKY } },
       ]),
       weight: near,
       loop: true,
@@ -476,7 +516,9 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
                     ? weaselFn()
                     : (scrub || taped) && v === 0
                       ? drift()
-                      : flicker(v);
+                      : kind === 'hues'
+                        ? hues(v)
+                        : flicker(v);
     m.cue({
       patch: p,
       fade: { in: 100 },
@@ -498,7 +540,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     gain: new Float64Array(n),
     dark: new Float64Array(n),
     position: new Float64Array(n * 3),
-    color: new Float64Array(kind === 'glowk' || kind === 'glowl' ? n * 4 : n),
+    color: new Float64Array(four ? n * 4 : n),
   };
   // Indexed, not `for...of`: an iterator V8 leaves unoptimized in some processes and not others
   // allocates a result a subject, about 390 kB a frame at 10,000 (`glow`, 2026-10-20).

@@ -1,0 +1,75 @@
+# keiei, msb-uai and teitou (each section says which) FRAMES=5000 node bench/layoutsim.mjs <variant>; median us a frame over 10,000 rows of 3 axes
+## keiei (2026-10-25, Node 26.8.2): the frame with `rested`'s fill and a pull-like read and copy; `bare` is the row loop alone
+## current = as bareRows reads; split = the same fields in arrays of their own (times, endpoints, a state byte); splitNoLeft = split, easing computed directly with no memo and no per read; hand = a hand-written loop
+none                  27.4 us p50
+none bare              0.1 us p50
+current              128.3 us p50
+current bare         100.8 us p50
+split                124.8 us p50
+split bare            93.8 us p50
+splitNoLeft           95.2 us p50
+splitNoLeft bare      73.2 us p50
+hand                  44.7 us p50
+hand bare             42.9 us p50
+none                  23.2 us p50
+none bare              0.1 us p50
+current              136.9 us p50
+current bare         106.9 us p50
+split                136.0 us p50
+split bare            97.4 us p50
+splitNoLeft           97.3 us p50
+splitNoLeft bare      73.4 us p50
+hand                  42.7 us p50
+hand bare             41.7 us p50
+## msb-uai: the easing memo held in locals (curLocal, splitLocal)
+current bare          83.3 us p50
+curLocal bare         80.9 us p50
+split bare            76.6 us p50
+splitLocal bare       70.7 us p50
+splitNoLeft bare      53.0 us p50
+current bare          81.4 us p50
+curLocal bare         79.4 us p50
+split bare            74.8 us p50
+splitLocal bare       70.8 us p50
+splitNoLeft bare      53.0 us p50
+## keiei: one check at a time removed from the row loop. c1 as bareRows reads; c2 no id; c3 no per read
+## for PROBED; c4 no SAMPLED check; c5 easing memo in locals; c6b no MSLOT/MET check; c6 all of them
+c1 bare               96.8 us p50
+c2 bare               93.5 us p50
+c3 bare               86.4 us p50
+c4 bare               94.7 us p50
+c5 bare               96.1 us p50
+c6b bare              92.3 us p50
+c6 bare               76.8 us p50
+splitNoLeft bare      66.2 us p50
+hand bare             39.0 us p50
+c1 bare               96.6 us p50
+c2 bare               93.4 us p50
+c3 bare               86.2 us p50
+c4 bare               93.8 us p50
+c5 bare               96.0 us p50
+c6b bare              94.1 us p50
+c6 bare               75.2 us p50
+splitNoLeft bare      68.7 us p50
+hand bare             41.6 us p50
+c1 bare              102.9 us p50
+c2 bare               96.0 us p50
+c3 bare               86.1 us p50
+c4 bare               93.7 us p50
+c5 bare               97.9 us p50
+c6b bare              92.0 us p50
+c6 bare               75.0 us p50
+splitNoLeft bare      66.8 us p50
+hand bare             41.5 us p50
+## msb-uai: hot at stride 19 (as now) against 16 (velocities moved out), ids and the per read already gone.
+## (A first run on teitou had both variants reading the stride-19 array, so it is left out.)
+d19 bare             134.2 us p50
+d16 bare             131.6 us p50
+d19 bare             134.1 us p50
+d16 bare             131.6 us p50
+d19 bare             135.6 us p50
+d16 bare             133.5 us p50
+d19 bare             138.4 us p50
+d16 bare             131.7 us p50
+d19 bare             136.6 us p50
+d16 bare             131.6 us p50

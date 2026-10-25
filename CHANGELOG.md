@@ -13,6 +13,11 @@ version and everything else the patch. Each release lists its changes as **Break
   voice across subjects, so such a write already reached whatever it called next. A patch's
   `state` is still its own to change in place.
 
+### Added
+
+- `color({ lerp: 'oklch' })` and `color(last(), { lerp: 'oklch' })` run on lanes, where they took
+  the general path. The pose is the same to the bit.
+
 ### Fixed
 
 - A weight signal on lanes is handed, after a stretch of frames at weight 0, the `dt` since its
@@ -23,6 +28,12 @@ version and everything else the patch. Each release lists its changes as **Break
   voices (`tweens^`) take 0.285 ms a frame against 0.300, and one tween voice over 10,000 subjects
   (`weasel^`) 0.369 against 0.391 (keiei, medians of seven runs of 5,000 frames, each in its own
   process); other rows are unchanged.
+- A `keys` voice per subject read by `pull` costs about a sixth less a frame: rows whose stops
+  share their phases and easings, at the same phase, find their segment and ease it once rather
+  than once a row. 10,000 of them (`keyses^`) take 0.270 ms a frame against 0.327, and allocate
+  half as much (teitou, medians of nine runs of 5,000 frames, each in its own process). A lane fill
+  also reads a subject's last-read stamp only where the weight it keeps for `weightOf` could
+  change, which takes `weasel^` from 0.204 to 0.198 ms; other rows are unchanged.
 - A voice weighted by a signal costs a little less a frame on lanes: its setting's `timestamp`,
   `elapsed` and `pass` are filled once for the subjects that share them, not once a subject. A
   pointer glow over 10,000 subjects read by `pull` (`glow^`) takes 1.657 ms a frame against 1.708,
