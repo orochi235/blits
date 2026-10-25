@@ -12,6 +12,7 @@ import type { Mixer } from './mixer.js';
 import { moved } from './moved.js';
 import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
+import { isRested } from './record.js';
 import type { Channel, Patch, Setting } from './types.js';
 import { checkWrites, type Subject, type Voice } from './voice.js';
 import { Primed } from './weigh.js';
@@ -96,7 +97,7 @@ export function contribution<I, O>(
 ): Record<string, unknown> | null {
   held.weight = 0;
   if (!held.reaches) return null;
-  if (voice.out?.rest && held.rested) return null;
+  if (voice.out?.rest && isRested(held)) return null;
   if (held.rebuilt !== voice.rebuilds) rebuild(this, voice, subject, now, held);
   else if (held.seeks !== voice.seeks && sentBack(this, voice, held)) {
     // A seek sent it back before its start, so it starts afresh there, whatever state it kept.
@@ -200,7 +201,6 @@ export function contribution<I, O>(
 
   if (voice.out?.rest && this.isRest(delta)) {
     held.weight = 0;
-    held.rested = true;
     held.restedAt = now;
     voice.restedCount++;
     return null;

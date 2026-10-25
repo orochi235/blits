@@ -12,7 +12,6 @@ function full(): Subject<unknown> {
     if (typeof v === 'number') (h as unknown as Record<string, unknown>)[key] = n++ + 0.5;
   }
   h.reaches = false;
-  h.rested = true;
   h.copied = true;
   h.bands = new Uint8Array([1, 2]);
   h.delta = { gain: 1 };

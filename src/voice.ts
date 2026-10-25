@@ -111,9 +111,10 @@ export interface Subject<S> {
   shown: number;
   /** The weight this voice gave this subject the last frame it was probed, 0 where it gave none. */
   weight: number;
-  /** Left at rest during a handover, so it stops contributing. */
-  rested: boolean;
-  /** The mix time it rested at, which a seek reads to know whether it had by then; NaN until it does. */
+  /**
+   * The mix time it was left at rest during a handover, so it stops contributing, and which a seek
+   * reads to know whether it had by then; NaN while it has not (`isRested`).
+   */
   restedAt: number;
   /**
    * Per written channel, whether a rest-less contribution is on: 0 unknown, 1 on, 2 off; null until

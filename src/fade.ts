@@ -8,6 +8,7 @@ import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
 import { type Holding, orphan, ownerReading } from './owner.js';
 import { startOf } from './place.js';
+import { isRested } from './record.js';
 import { scoreTouched } from './scored.js';
 import { lingers, refit } from './spans.js';
 import { unreach } from './unreached.js';
@@ -123,7 +124,7 @@ function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void 
     leave(mix, voice, subject, held);
     voice.subjects.delete(subject);
     if (held.reaches) voice.seen--;
-    if (held.rested) voice.restedCount--;
+    if (isRested(held)) voice.restedCount--;
     if (voice.holder === held) voice.holder = null;
   }
   if (head === undefined) return;
