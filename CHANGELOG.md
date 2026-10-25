@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A voice stopped before its end is let go of when it stops. The mix's schedule kept an entry for
+  the time each voice would next change, and one stopped early stayed in it, holding the voice and
+  everything it held, until that time came: replacing long tweens kept every one replaced alive.
+
 ## 0.14.0
 
 ### Added

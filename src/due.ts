@@ -1,11 +1,115 @@
 import type { Mixer } from './mixer.js';
 import type { Voice } from './voice.js';
 
-/** One entry in a mix's due queue; stale once its voice has been scheduled again. */
-export interface Due<I, O> {
-  at: number;
-  voice: Voice<I, O>;
-  token: number;
+/**
+ * Live voices by the earliest mix time `moveTo` would change each, a binary heap. The times sit in
+ * one flat array, so a sift reads no voice: at 40,000 voices a stop's sift to the top missed the
+ * cache at each of its levels. An entry is stale once its voice has been scheduled again.
+ */
+export class DueQueue<I, O> {
+  size = 0;
+  private at = new Float64Array(64);
+  private tokens = new Float64Array(64);
+  private voices: (Voice<I, O> | undefined)[] = [];
+  /** The size past which stale entries are pruned, so a voice rescheduled often cannot grow it. */
+  private limit = 64;
+
+  push(at: number, voice: Voice<I, O>, token: number): void {
+    if (this.size >= this.limit) this.prune();
+    if (this.size === this.at.length) this.grow();
+    const ats = this.at;
+    let i = this.size++;
+    while (i > 0) {
+      const up = (i - 1) >> 1;
+      if ((ats[up] as number) <= at) break;
+      this.move(up, i);
+      i = up;
+    }
+    ats[i] = at;
+    this.tokens[i] = token;
+    this.voices[i] = voice;
+  }
+
+  /** The earliest entry's time, Infinity while empty. */
+  first(): number {
+    return this.size > 0 ? (this.at[0] as number) : Number.POSITIVE_INFINITY;
+  }
+
+  /** Takes off the earliest entry, giving its voice where it is current and undefined where stale. */
+  pop(): Voice<I, O> | undefined {
+    const voice = this.voices[0] as Voice<I, O>;
+    const token = this.tokens[0] as number;
+    const last = --this.size;
+    if (last > 0)
+      this.sink(
+        0,
+        this.at[last] as number,
+        this.tokens[last] as number,
+        this.voices[last] as Voice<I, O>,
+      );
+    this.voices[last] = undefined;
+    return token === voice.dueToken && voice.state !== 'done' ? voice : undefined;
+  }
+
+  clear(): void {
+    this.size = 0;
+    this.voices = [];
+    this.limit = 64;
+  }
+
+  private move(from: number, to: number): void {
+    this.at[to] = this.at[from] as number;
+    this.tokens[to] = this.tokens[from] as number;
+    this.voices[to] = this.voices[from];
+  }
+
+  /** Puts an entry in the hole at `i` and sifts it down to where it belongs. */
+  private sink(i: number, at: number, token: number, voice: Voice<I, O>): void {
+    const ats = this.at;
+    const n = this.size;
+    for (;;) {
+      const l = 2 * i + 1;
+      const r = l + 1;
+      let m = i;
+      let least = at;
+      if (l < n && (ats[l] as number) < least) {
+        m = l;
+        least = ats[l] as number;
+      }
+      if (r < n && (ats[r] as number) < least) m = r;
+      if (m === i) break;
+      this.move(m, i);
+      i = m;
+    }
+    ats[i] = at;
+    this.tokens[i] = token;
+    this.voices[i] = voice;
+  }
+
+  private grow(): void {
+    const at = new Float64Array(this.at.length * 2);
+    at.set(this.at);
+    this.at = at;
+    const tokens = new Float64Array(this.tokens.length * 2);
+    tokens.set(this.tokens);
+    this.tokens = tokens;
+  }
+
+  /** Drops the entries made stale by a later one and heapifies what is left. */
+  private prune(): void {
+    let n = 0;
+    for (let k = 0; k < this.size; k++) {
+      const voice = this.voices[k] as Voice<I, O>;
+      if (this.tokens[k] !== voice.dueToken) continue;
+      if (n !== k) this.move(k, n);
+      n++;
+    }
+    for (let k = n; k < this.size; k++) this.voices[k] = undefined;
+    this.size = n;
+    for (let k = (n >> 1) - 1; k >= 0; k--)
+      this.sink(k, this.at[k] as number, this.tokens[k] as number, this.voices[k] as Voice<I, O>);
+    this.limit = Math.max(64, 2 * n);
+  }
 }
 
 /**
@@ -59,43 +163,18 @@ export function schedule<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   const token = ++voice.dueToken;
   const due = dueOf(mix, voice);
   if (due === Number.POSITIVE_INFINITY) return;
-  const heap = mix.due;
-  heap.push({ at: Number.isNaN(due) ? Number.NEGATIVE_INFINITY : due, voice, token });
-  let i = heap.length - 1;
-  while (i > 0) {
-    const up = (i - 1) >> 1;
-    if ((heap[up] as Due<I, O>).at <= (heap[i] as Due<I, O>).at) break;
-    [heap[up], heap[i]] = [heap[i] as Due<I, O>, heap[up] as Due<I, O>];
-    i = up;
-  }
+  mix.due.push(Number.isNaN(due) ? Number.NEGATIVE_INFINITY : due, voice, token);
 }
 
 /** Takes every current entry due by `now` off the queue, in cue order. */
 export function popDue<I, O>(mix: Mixer<I, O>, now: number): Voice<I, O>[] {
-  const heap = mix.due;
-  const at = (k: number): number =>
-    k < heap.length ? (heap[k] as Due<I, O>).at : Number.POSITIVE_INFINITY;
+  const queue = mix.due;
   const out: Voice<I, O>[] = [];
-  while (heap.length > 0 && (heap[0] as Due<I, O>).at <= now) {
-    const top = heap[0] as Due<I, O>;
-    const last = heap.pop() as Due<I, O>;
-    if (heap.length > 0) {
-      heap[0] = last;
-      let i = 0;
-      for (;;) {
-        const l = 2 * i + 1;
-        const r = l + 1;
-        const m0 = at(l) < at(i) ? l : i;
-        const m = at(r) < at(m0) ? r : m0;
-        if (m === i) break;
-        [heap[m], heap[i]] = [heap[i] as Due<I, O>, heap[m] as Due<I, O>];
-        i = m;
-      }
-    }
-    if (top.token === top.voice.dueToken && top.voice.state !== 'done') {
-      top.voice.dueToken++;
-      out.push(top.voice);
-    }
+  while (queue.first() <= now) {
+    const voice = queue.pop();
+    if (voice === undefined) continue;
+    voice.dueToken++;
+    out.push(voice);
   }
   return byId(out);
 }

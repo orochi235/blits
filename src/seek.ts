@@ -377,7 +377,7 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
       mix.pins.set(voice, voice.pinned);
     }
   refitAll(mix);
-  mix.due = [];
+  mix.due.clear();
   for (const voice of kept) schedule(mix, voice);
   mix.stir();
   // On the frame's own time its move is behind it: a second would land what the next frame does.

@@ -118,3 +118,26 @@ describe('sync by what is due', () => {
   for (let seed = 1; seed <= 40; seed++)
     it(`plays as visiting every voice does, seed ${seed}`, () => agree(seed, 300));
 });
+
+describe('the due queue', () => {
+  it('lets go of the entries of voices stopped long before they were due', () => {
+    const m = mix(K);
+    const rows = Array.from({ length: 200 }, (_, id) => ({ id }));
+    const long = () => tween<Row, Pose>('x', { from: 0, to: 1, ms: 1e9 });
+    const handles = rows.map((r) => m.cue({ patch: long(), subjects: [r] }));
+    let t = 0;
+    m.sync(t);
+    for (let round = 0; round < 50; round++) {
+      for (let k = 0; k < 20; k++) {
+        const i = (round * 20 + k) % rows.length;
+        handles[i]?.fade({ over: 0 });
+        handles[i] = m.cue({ patch: long(), subjects: [rows[i] as Row] });
+      }
+      t += 16;
+      m.sync(t);
+    }
+    // 1,000 voices stopped, each leaving an entry due at 1e9 ms that held on to it.
+    const due = (m as unknown as { due: { size: number } }).due;
+    expect(due.size).toBeLessThan(2 * rows.length + 64);
+  });
+});
