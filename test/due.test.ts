@@ -123,7 +123,8 @@ describe('the due queue', () => {
   it('lets go of the entries of voices stopped long before they were due', () => {
     const m = mix(K);
     const rows = Array.from({ length: 200 }, (_, id) => ({ id }));
-    const long = () => tween<Row, Pose>('x', { from: 0, to: 1, ms: 1e9 });
+    // A motion patch schedules no end, so a patch of fixed length.
+    const long = () => patch<Row, Pose>(1e9, () => ({ x: 1 }), { writes: ['x'] });
     const handles = rows.map((r) => m.cue({ patch: long(), subjects: [r] }));
     let t = 0;
     m.sync(t);
@@ -136,7 +137,7 @@ describe('the due queue', () => {
       t += 16;
       m.sync(t);
     }
-    // 1,000 voices stopped, each leaving an entry due at 1e9 ms that held on to it.
+    // 1,000 voices stopped, each of which left an entry due at 1e9 ms holding it.
     const due = (m as unknown as { due: { size: number } }).due;
     expect(due.size).toBeLessThan(2 * rows.length + 64);
   });

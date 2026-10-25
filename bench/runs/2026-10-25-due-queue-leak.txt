@@ -1,0 +1,10 @@
+# keiei: node --expose-gc bench/leak.mjs <dist> 1e9 tween|fn, be0aaa4 against 52d07f3 plus this commit's test and bench
+## leak.txt
+ 3:20  up 25 days,  1:24, 1 user, load averages: 6.25 5.76 8.01
+v26.8.2
+base be0aaa4: tween 1000000000 ms: due entries 0, heap grew 2.0 MB over 20,000 replaced voices
+tree: tween 1000000000 ms: due entries 0, heap grew 2.0 MB over 20,000 replaced voices
+base be0aaa4: fn 1000000000 ms: due entries 21000, heap grew 47.1 MB over 20,000 replaced voices
+tree: fn 1000000000 ms: due entries 1742, heap grew 2.4 MB over 20,000 replaced voices
+lint ok
+due tests ok
