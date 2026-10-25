@@ -263,9 +263,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        10.0–13.6 for fn voices (teitou, 2026-10-25, `bench/start.mjs`). The tween-only part: crowd
        `join` 1.8 ms, the motion patch's off-heap first buffer 1.5, a second numbering of the
        subject 0.7, and 1.1 more of collection. Measured no different and reverted: carving motion
-       buffers from a shared slab, and keeping a named subject's record out of the WeakMap. v0.13.0
-       read 23.0–25.8 in mixed-revision runs under heavy load (teitou at load 14), so a slowdown
-       since then is unconfirmed until a quiet node reruns it.
+       buffers from a shared slab, and keeping a named subject's record out of the WeakMap. Starting tweens
+       slowed in 0.14.0 and is back on `main` (teitou solo, 2026-10-25, 7 rounds,
+       `LINEAGE_BENCH=start.mjs bench/lineage.sh`): first frame 25.8 ms at v0.13.0, 29.2 at v0.14.0
+       (U = 7), 24.9 at `594c0af` (U = 17, level); fns 11.9–12.1 throughout.
      - **A crowd's `keys` rows** cost about 27 ns a subject by `pull` (teitou, 2026-10-25,
        `keyses^` 0.270 ms), against 25 for keys voices over every subject (2026-10-05). Rows whose
        stops share phases and easings search and ease once per phase (`KeyRows.search`, keyed by a

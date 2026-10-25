@@ -1,0 +1,124 @@
+# teitou, onto --solo: LINEAGE_BENCH=start.mjs bench/lineage.sh 7 v0.13.0 9434a17~1 9434a17 v0.14.0 594c0af -- '10000 7 tweens fns' (bench scripts from 81417b7)
+teitou  chosen: 16.7 cores free, 41.6G available (env: 5 past runs, worst 2.0 cores / 6.9G)
+  msb-uai  scored 0.92 against teitou's 5.09
+  keiei    scored 0.14 against teitou's 5.09
+  orochi   refuses rotation
+  studio   it wants the node to itself, and job a5fd281f is running there
+  base   594c0af1
+  delta  1 file(s), 0 deleted
+  sent   1 new file(s), 0 already there
+  updated blits on teitou at 81417b7b
+  job    46dc1fcc on teitou
+
+built v0.13.0
+built 9434a17~1
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+built 9434a17
+built v0.14.0
+built 594c0af
+== round 1/7 v0.13.0
+1/2  tweens   N=10000  cue     6.6 ms  first frame    30.2 ms  second     3.5 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.9 ms  first frame    12.0 ms  second     1.6 ms  (medians of 7)
+== round 1/7 9434a17~1
+1/2  tweens   N=10000  cue     7.1 ms  first frame    25.3 ms  second     3.5 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.7 ms  first frame    11.6 ms  second     1.3 ms  (medians of 7)
+== round 1/7 9434a17
+1/2  tweens   N=10000  cue     6.7 ms  first frame    25.9 ms  second     3.8 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.3 ms  first frame    11.5 ms  second     1.3 ms  (medians of 7)
+== round 1/7 v0.14.0
+1/2  tweens   N=10000  cue     6.4 ms  first frame    28.6 ms  second     3.7 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.3 ms  first frame     9.8 ms  second     2.1 ms  (medians of 7)
+== round 1/7 594c0af
+1/2  tweens   N=10000  cue     6.4 ms  first frame    29.3 ms  second     3.8 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.5 ms  first frame    12.1 ms  second     1.7 ms  (medians of 7)
+== round 2/7 9434a17~1
+1/2  tweens   N=10000  cue     6.7 ms  first frame    26.0 ms  second     3.5 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.9 ms  first frame    11.9 ms  second     1.3 ms  (medians of 7)
+== round 2/7 9434a17
+1/2  tweens   N=10000  cue     6.3 ms  first frame    28.3 ms  second     3.7 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.7 ms  first frame     9.4 ms  second     1.6 ms  (medians of 7)
+== round 2/7 v0.14.0
+1/2  tweens   N=10000  cue     6.4 ms  first frame    30.0 ms  second     3.7 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.6 ms  first frame    12.4 ms  second     1.4 ms  (medians of 7)
+== round 2/7 594c0af
+1/2  tweens   N=10000  cue     6.7 ms  first frame    29.9 ms  second     3.7 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.5 ms  first frame    12.6 ms  second     1.5 ms  (medians of 7)
+== round 2/7 v0.13.0
+1/2  tweens   N=10000  cue     7.0 ms  first frame    24.3 ms  second     3.5 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.7 ms  first frame    11.7 ms  second     1.2 ms  (medians of 7)
+== round 3/7 9434a17
+1/2  tweens   N=10000  cue     6.3 ms  first frame    30.0 ms  second     3.7 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.6 ms  first frame    12.0 ms  second     1.6 ms  (medians of 7)
+== round 3/7 v0.14.0
+1/2  tweens   N=10000  cue     6.3 ms  first frame    29.3 ms  second     3.7 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.5 ms  first frame    12.7 ms  second     1.4 ms  (medians of 7)
+== round 3/7 594c0af
+1/2  tweens   N=10000  cue     7.9 ms  first frame    25.5 ms  second     4.0 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.0 ms  first frame    11.9 ms  second     1.5 ms  (medians of 7)
+== round 3/7 v0.13.0
+1/2  tweens   N=10000  cue     7.2 ms  first frame    26.0 ms  second     3.3 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.4 ms  first frame    12.2 ms  second     1.3 ms  (medians of 7)
+== round 3/7 9434a17~1
+1/2  tweens   N=10000  cue     7.1 ms  first frame    26.0 ms  second     3.7 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.9 ms  first frame    11.6 ms  second     1.3 ms  (medians of 7)
+== round 4/7 v0.14.0
+1/2  tweens   N=10000  cue     6.4 ms  first frame    28.1 ms  second     3.5 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.5 ms  first frame    11.2 ms  second     3.8 ms  (medians of 7)
+== round 4/7 594c0af
+1/2  tweens   N=10000  cue     8.2 ms  first frame    24.2 ms  second     3.8 ms  (medians of 7)
+2/2  fns      N=10000  cue     3.8 ms  first frame    14.2 ms  second     1.9 ms  (medians of 7)
+== round 4/7 v0.13.0
+1/2  tweens   N=10000  cue     7.1 ms  first frame    25.8 ms  second     3.5 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.6 ms  first frame    12.4 ms  second     1.6 ms  (medians of 7)
+== round 4/7 9434a17~1
+1/2  tweens   N=10000  cue     9.9 ms  first frame    30.5 ms  second     4.1 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.5 ms  first frame    10.4 ms  second     1.4 ms  (medians of 7)
+== round 4/7 9434a17
+1/2  tweens   N=10000  cue     6.9 ms  first frame    28.6 ms  second     3.7 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.0 ms  first frame    13.4 ms  second     1.6 ms  (medians of 7)
+== round 5/7 594c0af
+1/2  tweens   N=10000  cue     8.1 ms  first frame    24.9 ms  second     3.8 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.6 ms  first frame    11.8 ms  second     1.5 ms  (medians of 7)
+== round 5/7 v0.13.0
+1/2  tweens   N=10000  cue     6.7 ms  first frame    26.1 ms  second     3.6 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.7 ms  first frame    11.3 ms  second     1.8 ms  (medians of 7)
+== round 5/7 9434a17~1
+1/2  tweens   N=10000  cue     6.8 ms  first frame    25.9 ms  second     3.5 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.3 ms  first frame    12.3 ms  second     1.5 ms  (medians of 7)
+== round 5/7 9434a17
+1/2  tweens   N=10000  cue     6.9 ms  first frame    24.9 ms  second     3.9 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.3 ms  first frame    12.8 ms  second     1.5 ms  (medians of 7)
+== round 5/7 v0.14.0
+1/2  tweens   N=10000  cue     7.0 ms  first frame    27.8 ms  second     4.0 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.8 ms  first frame    12.1 ms  second     1.4 ms  (medians of 7)
+== round 6/7 v0.13.0
+1/2  tweens   N=10000  cue     7.0 ms  first frame    25.4 ms  second     3.6 ms  (medians of 7)
+2/2  fns      N=10000  cue     3.5 ms  first frame    13.3 ms  second     1.9 ms  (medians of 7)
+== round 6/7 9434a17~1
+1/2  tweens   N=10000  cue     6.4 ms  first frame    25.9 ms  second     3.6 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.9 ms  first frame    12.4 ms  second     1.5 ms  (medians of 7)
+== round 6/7 9434a17
+1/2  tweens   N=10000  cue     7.5 ms  first frame    26.9 ms  second     4.0 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.0 ms  first frame    11.6 ms  second     1.5 ms  (medians of 7)
+== round 6/7 v0.14.0
+1/2  tweens   N=10000  cue     6.2 ms  first frame    29.2 ms  second     3.7 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.7 ms  first frame     9.9 ms  second     2.1 ms  (medians of 7)
+== round 6/7 594c0af
+1/2  tweens   N=10000  cue     8.1 ms  first frame    24.4 ms  second     3.7 ms  (medians of 7)
+2/2  fns      N=10000  cue     3.1 ms  first frame    11.6 ms  second     1.7 ms  (medians of 7)
+== round 7/7 9434a17~1
+1/2  tweens   N=10000  cue     6.8 ms  first frame    26.0 ms  second     3.4 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.1 ms  first frame    12.3 ms  second     1.8 ms  (medians of 7)
+== round 7/7 9434a17
+1/2  tweens   N=10000  cue     7.3 ms  first frame    28.1 ms  second     3.9 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.0 ms  first frame    12.8 ms  second     1.7 ms  (medians of 7)
+== round 7/7 v0.14.0
+1/2  tweens   N=10000  cue     6.5 ms  first frame    30.1 ms  second     3.6 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.9 ms  first frame    12.4 ms  second     1.5 ms  (medians of 7)
+== round 7/7 594c0af
+1/2  tweens   N=10000  cue     8.1 ms  first frame    23.6 ms  second     4.1 ms  (medians of 7)
+2/2  fns      N=10000  cue     3.8 ms  first frame    11.4 ms  second     1.8 ms  (medians of 7)
+== round 7/7 v0.13.0
+1/2  tweens   N=10000  cue     6.9 ms  first frame    25.3 ms  second     3.5 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.1 ms  first frame    12.1 ms  second     1.7 ms  (medians of 7)

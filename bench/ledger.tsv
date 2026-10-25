@@ -308,3 +308,5 @@ date	node	base	rev	rounds	frames	row	base ms	ms	ratio	U	base kB	kB	change	raw
 2026-10-25	teitou	14882c1	4faefa4	9	5000	fns^ N=10000 V=1	1.363	1.399	1.026	30.0	1647.6	1804.7	move fold's per-voice contribution and locus fold into their own modules	bench/runs/2026-10-25-file-splits-fns-bisect.txt
 2026-10-25	teitou	4faefa4	d2ed59e	9	5000	fns^ N=10000 V=1	1.399	1.359	0.971	25.0	1804.7	1648.1	move voice's record types, setting, and Filled into their own modules	bench/runs/2026-10-25-file-splits-fns-bisect.txt
 2026-10-25	teitou	d2ed59e	a49a3ec	9	5000	fns^ N=10000 V=1	1.359	1.391	1.024	31.5	1648.1	1647.5	move mixer's rest checks and subject drop into their own modules	bench/runs/2026-10-25-file-splits-fns-bisect.txt
+2026-10-25	teitou	v0.13.0	v0.14.0	7	-	start.mjs tweens first frame N=10000	25.8	29.2	1.132	7.0	-	-	lineage check of starting tweens since 0.13.0	bench/runs/2026-10-25-tween-start-lineage.txt
+2026-10-25	teitou	v0.13.0	594c0af	7	-	start.mjs tweens first frame N=10000	25.8	24.9	0.965	17.0	-	-	lineage check of starting tweens since 0.13.0	bench/runs/2026-10-25-tween-start-lineage.txt
