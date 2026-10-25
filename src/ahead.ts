@@ -1,7 +1,7 @@
 import { ownBlends } from './blend.js';
 import { headOf } from './chain.js';
 import { open, sighted, weightAt } from './everyone.js';
-import { copyHeld } from './history.js';
+import { copyHeld, unread } from './history.js';
 import { markOf, voiceMarks } from './marks.js';
 import { Mixer } from './mixer.js';
 import { move } from './move.js';
@@ -215,6 +215,21 @@ export function recordOf<I, O>(
 }
 
 /**
+ * Whether a subject's record on a read ahead's copy at a stop can go on to the copy at the next
+ * stop as it is: each stop reads a subject once, before the next carries it on, and nothing reads
+ * the record there again. Not one a voice shares among subjects, or one the live mix holds.
+ */
+function handable<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, h: Subject<unknown>): boolean {
+  return mix.projecting && h.reaches && !voice.sharing && h !== voice.unreached;
+}
+
+/** A record handed on as `copyHeld` would copy it, its place in the stop's chain let go. */
+function handOn(h: Subject<unknown>): Subject<unknown> {
+  h.restored = null;
+  return unread(h);
+}
+
+/**
  * A projection ahead starts each subject from where the live mix holds it, its `since` worked out
  * again where it was still ahead, since the copy's clock may have moved it.
  */
@@ -227,7 +242,7 @@ function carry<I, O>(
 ): Subject<unknown> | undefined {
   const live = recordOf(mix, voice, subject);
   if (live === undefined) return undefined;
-  const h = copyHeld(voice, live);
+  const h = handable(mix, voice, live) ? handOn(live) : copyHeld(voice, live);
   if (h.reaches && !(h.since <= mix.now)) {
     h.since = c.sinceOf(copy, h.delay);
     h.shown = c.shownOf(copy, h.since);
