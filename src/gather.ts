@@ -62,7 +62,32 @@ function meetLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, slot: number): void
   g.met[slot] = lanes.fills;
   g.first[slot] = lanes.intoId;
   g.sum[slot] = 0;
-  for (const taken of g.taken) if (taken !== undefined) taken[slot] = 0;
+  const takens = g.taken;
+  for (let k = 0; k < takens.length; k++) {
+    const taken = takens[k];
+    if (taken !== undefined) taken[slot] = 0;
+  }
+}
+
+/**
+ * `gatherInto` for a plain scalar channel and the number at `Arg.VALUE`, which as an argument
+ * would be boxed, 16 bytes a channel a member a subject (`locus`, bench/allocs.mjs, 2026-10-25).
+ */
+function gatherScalar<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, ch: Laned, slot: number): void {
+  const arg = lanes.arg;
+  const value = arg[Arg.VALUE] as number;
+  const values = g.values[ch.index];
+  const takenAt = g.taken[ch.index];
+  if (values === undefined || takenAt === undefined) {
+    gatherInto(lanes, g, ch, slot, value);
+    return;
+  }
+  const w = arg[Arg.WEIGHT] as number;
+  meetLocus(lanes, g, slot);
+  const taken = takenAt[slot] as number;
+  const total = taken + w;
+  values[slot] = taken === 0 ? value : lerpNumber(values[slot] as number, value, w / total);
+  takenAt[slot] = total;
 }
 
 /**
@@ -172,33 +197,57 @@ export function foldDelta<I, O>(
   let ch = chans[0] as Laned;
   if (n > 0) {
     const v = delta[ch.name];
-    if (typeof v === 'number' && ch.scalar && ch.plain && this.into === null) {
-      const values = ch.values;
-      values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+    if (typeof v === 'number' && ch.scalar && ch.plain) {
+      const into = this.into;
+      if (into === null) {
+        const values = ch.values;
+        values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+      } else {
+        arg[Arg.VALUE] = v;
+        gatherScalar(this, into, ch, slot);
+      }
     } else this.foldInto(ch, slot, v);
   }
   ch = chans[1] as Laned;
   if (n > 1) {
     const v = delta[ch.name];
-    if (typeof v === 'number' && ch.scalar && ch.plain && this.into === null) {
-      const values = ch.values;
-      values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+    if (typeof v === 'number' && ch.scalar && ch.plain) {
+      const into = this.into;
+      if (into === null) {
+        const values = ch.values;
+        values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+      } else {
+        arg[Arg.VALUE] = v;
+        gatherScalar(this, into, ch, slot);
+      }
     } else this.foldInto(ch, slot, v);
   }
   ch = chans[2] as Laned;
   if (n > 2) {
     const v = delta[ch.name];
-    if (typeof v === 'number' && ch.scalar && ch.plain && this.into === null) {
-      const values = ch.values;
-      values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+    if (typeof v === 'number' && ch.scalar && ch.plain) {
+      const into = this.into;
+      if (into === null) {
+        const values = ch.values;
+        values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+      } else {
+        arg[Arg.VALUE] = v;
+        gatherScalar(this, into, ch, slot);
+      }
     } else this.foldInto(ch, slot, v);
   }
   for (let i = 3; i < n; i++) {
     ch = chans[i] as Laned;
     const v = delta[ch.name];
-    if (typeof v === 'number' && ch.scalar && ch.plain && this.into === null) {
-      const values = ch.values;
-      values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+    if (typeof v === 'number' && ch.scalar && ch.plain) {
+      const into = this.into;
+      if (into === null) {
+        const values = ch.values;
+        values[slot] = foldNumber(ch.op, values[slot] as number, v, arg[Arg.WEIGHT] as number);
+      } else {
+        arg[Arg.VALUE] = v;
+        gatherScalar(this, into, ch, slot);
+      }
     } else this.foldInto(ch, slot, v);
   }
 }

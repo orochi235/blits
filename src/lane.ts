@@ -95,7 +95,9 @@ export const enum Arg {
    * placing; NaN where the caller shares none. A setting already filled under it skips its per-lane fields.
    */
   MARK = 6,
-  SIZE = 7,
+  /** A number a delta gave, for `gatherScalar`. */
+  VALUE = 7,
+  SIZE = 8,
 }
 
 /** Where each of a subject's `SLOT` numbers in `Lanes.per` sits. */
