@@ -300,8 +300,31 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 3. **Next for speed: the steady frame of 10k one-voice-per-subject tweens read by `pull`** (`tweens^`,
    `weasel^`), Mike's go 2026-10-05. Bare tween rows fill in one loop (`bare.ts`) and `pull` queues
-   runs since 2026-10-05: on teitou `tweens^` takes 0.17 ms a frame and `weasel^` 0.22, against
-   0.031–0.047 for a hand-written loop doing the same arithmetic. What is left:
+   runs since 2026-10-05: on teitou `tweens^` took 0.17 ms a frame and `weasel^` 0.22 before the
+   2026-10-24 changes below, against 0.031–0.047 for a hand-written loop doing the same
+   arithmetic. What is left:
+   - **Where the frame goes** (teitou, `--cpu-prof` at 20,000 frames, 2026-10-24, before the two
+     changes below): `tweens^` is 46% `bareRows`, 28% `pullRun`, then `rested`, `copies` and
+     `rests` at 1–3% each; `weasel^` is 50% `runMotion`, 23% `pullRun`. `--trace-turbo-inlining`
+     shows `bareRows` inlines everything it calls (`clock`, `left`, `progress`, `between`,
+     `foldNumber`), so the time the profile charges those names is spent inside `bareRows`, not
+     on calls. Its cost is the memory each row touches: about 290 B a row across `hot` (19
+     numbers, the 3 for `v0` unread by a tween), `data`, `per` and the channel's values, against
+     about 50 for the hand loop. The way past it is a layout that touches less, such as a bare
+     tween crowd's times and endpoints in arrays of their own, which is a larger change than
+     anything tried so far.
+   - **Two changes kept** (2026-10-24): a probe holds its subject for the next fill only while
+     the last fill looked one up (`Lanes.holds`), which a fill of bare tweens never does; and
+     `runMotion` reads a run's flags once in place of `bareAt`, `scalar` and `base`, and weighs a
+     shared fade once rather than once a subject. keiei, 7 own-process runs a side at
+     `FRAMES=5000` against `be0aaa4` (`bench/runs/2026-10-24-steady-pull.txt`): `tweens^`
+     0.300 → 0.285 (U = 7), `weasel^` 0.391 → 0.369 (U = 7); `fns^`, `probed`, `named` and `fn`
+     within noise. `bench/same.sh` read 0 differ, lanes on and off. One edge: a subject the host
+     has let go entirely may now be collected before the next fill rather than held until it;
+     only a later signal or `parting` lookup on that subject could notice.
+   - **Counting `pullRun`'s probes and distinct subjects in locals measured no different**, so
+     not worth re-proposing (msb-uai, 7 runs a side: `tweens^` 0.258 → 0.258, `weasel^` 0.291 →
+     0.290; backed out 2026-10-24).
    - **Inlining `linked` back into `probe` and `atRest` buys no frame time**, so not worth
      re-proposing. A callee with TurboFan code of its own costs the caller its bytecode plus what
      that code inlined, times 1.2, against 920 for the whole compile (`--trace-turbo-inlining`):
