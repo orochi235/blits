@@ -41,7 +41,11 @@ export interface Change {
  * and up to three constants that form reads. It heads the patch's `runs`, so `solve` finds them in
  * the buffer a sample already reads rather than in an object of their own.
  */
-const HEAD = 5;
+// biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package; see `Row`
+export const enum Law {
+  HEAD = 5,
+}
+const HEAD = Law.HEAD;
 
 /**
  * The mix playing a patch, asked with its voice's id: an owner and an id, where a pair of closures
@@ -126,10 +130,17 @@ function numbers(from: Float64Array, at: number, n: number): number[] {
  * A subject's flags: its value is a number; it has changes pending; it has older stretches; the
  * stretch it is playing was found landed, which holds until another replaces it.
  */
-const SCALAR = 1;
-const PENDING = 2;
-const OLDER = 4;
-const LANDED = 8;
+// biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package; see `Row`
+export const enum RunFlag {
+  SCALAR = 1,
+  PENDING = 2,
+  OLDER = 4,
+  LANDED = 8,
+}
+const SCALAR = RunFlag.SCALAR;
+const PENDING = RunFlag.PENDING;
+const OLDER = RunFlag.OLDER;
+const LANDED = RunFlag.LANDED;
 
 const wrongKind = (channel: string, holdsNumber: boolean): Error =>
   new Error(
@@ -178,7 +189,8 @@ export class Motions<I> {
   /** Axes per subject; -1 until the first subject sets it. */
   n = -1;
   private cap = 0;
-  private stride = 0;
+  /** Numbers in each subject's run; a run starts at `base`. Written only here. */
+  stride = 0;
   /**
    * The law, then each subject's run; empty until the first subject, the law read from `shape`.
    * Read outside, at `bareAt`, and written only here.
