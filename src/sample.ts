@@ -3,9 +3,10 @@ import { foldNumber } from './channels.js';
 import { clampWeight, passAt, same, weighed } from './clock.js';
 import { Arg, keepProbed, type Lane, type Laned, Per, type Positions, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
-import { Law, type Motions, RunFlag } from './motions.js';
+import { Law, type Motions } from './motions.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
+import { RunFlag } from './stretch.js';
 import { between, left, progress } from './tweened.js';
 import type { Subject } from './voice.js';
 

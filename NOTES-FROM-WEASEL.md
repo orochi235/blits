@@ -114,8 +114,8 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   frame cost level (`bench/ledger.tsv`). What is left is under 0.8 KB a site, by
   `bench/runs/2026-10-24-weasel-churnwho-alloc.txt`: `cue` itself, the voice, its handle and
   named record, the host's own patch and its `Motions` (which blits cannot recycle), `retire`,
-  `prune` in `move.ts`, the fold's `moved`, and the stretch copies a retarget keeps (`latest` and
-  `applied` in `src/motions.ts`), which are history, not garbage.
+  `prune` in `move.ts`, the fold's `moved`, and the stretch copies a retarget keeps (`latest` in
+  `src/motions.ts` and `applied` in `src/changes.ts`), which are history, not garbage.
 
 - **A `keys` read costs several times weasel's own keyframe sampler.** weasel's `sampleTrack`
   reads one `keys` patch per track (`patch.at(phase)`, one numeric channel, four stops) since

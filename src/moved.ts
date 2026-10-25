@@ -1,6 +1,7 @@
 import { doubles } from './channels.js';
-import { type Motions, RunFlag } from './motions.js';
+import type { Motions } from './motions.js';
 import { reading } from './reading.js';
+import { RunFlag } from './stretch.js';
 import { sampleThen } from './then.js';
 import type { Subject } from './voice.js';
 

@@ -3,10 +3,10 @@ import { VoiceHandle } from './handle.js';
 import { handle } from './hosts.js';
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
-import type { Run } from './motions.js';
 import type { Past } from './origin.js';
 import { type PackedRecord, packHeld, unpackHeld } from './pack.js';
 import { type Key, type Keys, pageOut } from './paging.js';
+import type { Run } from './stretch.js';
 import type { Described, VoiceSpec } from './types.js';
 import { type Controls, type Parted, type Parting, type Ramp, type Rise, Voice } from './voice.js';
 

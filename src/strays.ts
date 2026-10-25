@@ -1,7 +1,8 @@
 import { unpart } from './fade.js';
 import type { Mixer } from './mixer.js';
-import type { Change, MotionOwner, Motions } from './motions.js';
+import type { Motions } from './motions.js';
 import { pageOut } from './paging.js';
+import type { Change, MotionOwner } from './stretch.js';
 import { record, taping, unplayable } from './tape.js';
 import type { Voice } from './voice.js';
 

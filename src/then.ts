@@ -1,5 +1,6 @@
 import { type Cut, within } from './cut.js';
-import type { Change, Motions, Segment } from './motions.js';
+import type { Motions } from './motions.js';
+import type { Change, Segment } from './stretch.js';
 
 /** Whether `c` was made by frame `cut`; one made with no mix playing its patch was. */
 const madeBy = (c: Change, cut: Cut): boolean =>

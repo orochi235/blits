@@ -17,13 +17,13 @@ import {
 import { fold, foldDelta, foldInto, foldRun, gate, gather, unplain } from './gather.js';
 import { Arg, Begin, type Lane, type Laned, type Locus, Per, Row } from './lane.js';
 import { meet, reach } from './meet.js';
-import type { Watcher } from './motions.js';
 import { absent, Numbers } from './numbers.js';
 import { Owed } from './owed.js';
 import { Placed } from './placed.js';
 import { requalify, retouch } from './qualify.js';
 import { reading } from './reading.js';
 import { reportedRow, unplace } from './rows.js';
+import type { Watcher } from './stretch.js';
 import type { Channel } from './types.js';
 import type { Subject, Voice } from './voice.js';
 

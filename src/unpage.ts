@@ -1,11 +1,11 @@
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
-import type { Run } from './motions.js';
 import type { Paced } from './pace.js';
 import { type PackedRecord, unpackHeld } from './pack.js';
 import { HistoryMiss, type Keys } from './paging.js';
 import { type PackedVoice, reviveVoice } from './revive.js';
 import { scoredLeft } from './scored.js';
+import type { Run } from './stretch.js';
 import type { Announced, Frame, Transport } from './transport.js';
 import type { Paged } from './types.js';
 import type { Controls, Parted, Parting, Subject, Voice } from './voice.js';

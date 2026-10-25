@@ -1,8 +1,9 @@
 import { BOUND, COAST, CRITICAL, EASED, OVER, UNDER } from './closed.js';
 import { type Curve, curve } from './easing.js';
-import { Motions, type Shape } from './motions.js';
+import { Motions } from './motions.js';
 import { reading } from './reading.js';
 import { release } from './shared.js';
+import type { Shape } from './stretch.js';
 import { sampleThen } from './then.js';
 import type { Easing, MotionSpec, Patch, Setting } from './types.js';
 
