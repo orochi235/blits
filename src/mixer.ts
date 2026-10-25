@@ -90,6 +90,7 @@ import {
   ownerBase,
   Primed,
   prime,
+  primeLaned,
   weigh,
   weighOwned,
 } from './weigh.js';
@@ -762,6 +763,7 @@ const methods = {
   baseFor,
   slopeFor,
   prime,
+  primeLaned,
   capped,
   horizonFor,
   weigh,

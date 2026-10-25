@@ -25,7 +25,6 @@ import { record, taping } from './tape.js';
 import type { Booker, BookOptions, Channel, Doubt, Handle } from './types.js';
 import { unreach } from './unreached.js';
 import type { Subject, Voice } from './voice.js';
-import { Primed } from './weigh.js';
 
 export function book<I, O>(mix: Mixer<I, O>, opts: BookOptions<unknown, I>): Booker {
   if (mix.projecting) throw new Error('blits: a projection books nothing');
@@ -84,11 +83,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
     parting: (voice, subject) => mix.parting(voice, subject, mix.now),
     ready: (voice, subject, held) => {
       const arg = (mix.lanes as Lanes<I, O>).arg;
-      const primed = mix.primed;
-      primed[Primed.NOW] = mix.now;
-      primed[Primed.ELAPSED] = arg[Arg.ELAPSED] as number;
-      primed[Primed.PASS] = arg[Arg.PASS] as number;
-      mix.prime(voice, held);
+      mix.primeLaned(voice, held, arg);
       voice.setting.weight = arg[Arg.WEIGHT] as number;
       mix.sending.voice = voice;
       mix.sending.subject = subject;
@@ -101,11 +96,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
         arg[Arg.WEIGHT] = read;
         return;
       }
-      const primed = mix.primed;
-      primed[Primed.NOW] = mix.now;
-      primed[Primed.ELAPSED] = arg[Arg.ELAPSED] as number;
-      primed[Primed.PASS] = arg[Arg.PASS] as number;
-      mix.prime(voice, held);
+      mix.primeLaned(voice, held, arg);
       const kept = reading.kept;
       const base = mix.base(voice, subject, mix.now, held, slot);
       if (reading.kept !== kept && !voice.keeping) stateful(mix, voice);

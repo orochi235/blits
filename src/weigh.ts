@@ -1,5 +1,6 @@
 import { envelope, weighed } from './clock.js';
 import { elapsedThen, last, record } from './history.js';
+import { Arg } from './lane.js';
 import type { Mixer } from './mixer.js';
 import { ownersWeight } from './owner.js';
 import { reading } from './reading.js';
@@ -31,6 +32,33 @@ export function prime<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, held: Subject
   setting.dt = this.capped(now - held.stepped);
   setting.elapsed = elapsed;
   setting.pass = pass;
+  setting.weight = 0;
+  setting.state = held.state;
+  setting.mark = 0;
+  voice.keepOn = held;
+}
+
+/**
+ * `prime` for a lane's call, from `arg`: the per-lane fields only where the setting was not
+ * already filled under `Arg.MARK`, since nothing but the engine writes a setting.
+ */
+export function primeLaned<I, O>(
+  this: Mixer<I, O>,
+  voice: Voice<I, O>,
+  held: Subject<unknown>,
+  arg: Float64Array,
+): void {
+  const now = this.now;
+  const setting = voice.setting;
+  const mark = arg[Arg.MARK] as number;
+  if (setting.mark !== mark) {
+    setting.timestamp = now;
+    setting.elapsed = arg[Arg.ELAPSED] as number;
+    setting.pass = arg[Arg.PASS] as number;
+    setting.mark = mark;
+  }
+  if (voice.patch.step === undefined && held.probed < now) held.stepped = held.probed;
+  setting.dt = this.capped(now - held.stepped);
   setting.weight = 0;
   setting.state = held.state;
   voice.keepOn = held;

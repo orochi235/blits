@@ -6,7 +6,7 @@ import { open as openRecord, shut as shutRecord } from './everyone.js';
 import { unband } from './fold.js';
 import { foldLocus, gatherLocus } from './gather.js';
 import { runKeys } from './keyfill.js';
-import { Arg, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
+import { Arg, keepProbed, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { reach } from './meet.js';
 import { absent } from './numbers.js';
@@ -19,6 +19,9 @@ import type { Subject, Voice } from './voice.js';
 // V8 reads a local const as a constant, where it reads an import from its module on every call.
 const open = openRecord;
 const shut = shutRecord;
+
+/** The last `Arg.MARK` handed out, by every mix's lanes, so no two placings share one. */
+let marks = 0;
 
 /** The least prime at least `n`, and 1 below 2. */
 function primeFrom(n: number): number {
@@ -82,10 +85,16 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
       for (const g of lanes.loci) gatherLocus(lanes, g);
       for (const lane of lanes.lanes) {
         if (lane.idle) continue;
-        if (lanes.crowds.length > 0) crowdsUpTo(lanes, lane.voice.id);
+        if (lanes.crowds.length > 0) {
+          lanes.arg[Arg.MARK] = Number.NaN;
+          crowdsUpTo(lanes, lane.voice.id);
+        }
         lanes.run(lane);
       }
-      if (lanes.crowds.length > 0) crowdsUpTo(lanes, Number.POSITIVE_INFINITY);
+      if (lanes.crowds.length > 0) {
+        lanes.arg[Arg.MARK] = Number.NaN;
+        crowdsUpTo(lanes, Number.POSITIVE_INFINITY);
+      }
       for (const c of lanes.crowds)
         if (!c.idle) {
           c.bareFill = lanes.fills;
@@ -149,10 +158,7 @@ export function rest<I, O>(lanes: Lanes<I, O>, lane: Paced): void {
     if (slot < 0) continue;
     reach(lanes, slot, 1);
     // A probe read this subject from the last fill, which this lane's weight stays from.
-    if (lanes.per[slot * Per.SLOT + Per.LANE_FILL] === lanes.fills - 1) {
-      const o = p * Row.STRIDE;
-      data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
-    }
+    keepProbed(data, p * Row.STRIDE, lanes.per, slot * Per.SLOT, lanes.fills);
   }
 }
 
@@ -216,6 +222,7 @@ export function subjectAt<I, O>(this: Lanes<I, O>, slot: number): I | typeof abs
 export function reset<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
   const voice = lane.voice;
   lane.placed = false;
+  this.arg[Arg.MARK] = Number.NaN;
   lane.read = false;
   lane.weighed = false;
   // With no fade in or out the envelope is 1 for every subject, which is what it would return.
@@ -289,9 +296,7 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
   const arg = this.arg;
   const data = lane.data;
   const o = p * Row.STRIDE;
-  // A probe read this subject from the last fill: keep the weight it read for `weightOf`.
-  if (this.per[slot * Per.SLOT + Per.LANE_FILL] === this.fills - 1)
-    data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
+  keepProbed(data, o, this.per, slot * Per.SLOT, this.fills);
   if (this.lately >= 0 && this.unread(slot)) return false;
   const delay = data[o + Row.DELAY] as number;
   const raw = elapsedNow - delay;
@@ -317,6 +322,7 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
     lane.placedAt = elapsed;
     lane.phase = phaseAt(elapsed, voice.duration, voice.passes);
     lane.pass = passAt(elapsed, voice.duration, voice.passes);
+    arg[Arg.MARK] = ++marks;
   }
   const since = data[o + Row.SINCE] as number;
   if (!lane.flat && (!lane.weighed || !same(since, lane.weighedSince))) {

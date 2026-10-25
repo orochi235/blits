@@ -108,7 +108,14 @@ export const enum Arg {
   DELAY = 4,
   /** The voice's own fade, for `signalled`. */
   FADE = 5,
-  SIZE = 6,
+  /**
+   * The fill and voice time a lane's subjects share since it last placed one, numbered once per
+   * placing; NaN where the caller shares none. A setting already filled under it skips its per-lane fields.
+   */
+  MARK = 6,
+  /** A number a delta gave, for `gatherScalar`. */
+  VALUE = 7,
+  SIZE = 8,
 }
 
 /** Where each of a subject's `SLOT` numbers in `Lanes.per` sits. */

@@ -881,6 +881,7 @@ export function read<I, O>(
       setting.pass = passAt(elapsed, voice.duration, voice.passes);
       setting.weight = 0;
       setting.state = held.state;
+      setting.mark = 0;
       voice.keepOn = held;
       this.w = this.weigh(voice, subject, now, held);
       held.weight = this.w;

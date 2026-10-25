@@ -460,7 +460,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     });
   // Weighted per subject by a signal holding no state: three voices, or a blend between three.
   const by = (s) => 0.5 + 0.5 * Math.sin(s.seed);
-  if (kind === 'blend') m.blend([flicker(0), flicker(1), flicker(2)], by, { fade: { in: 100 } });
+  if (kind === 'blend')
+    m.blend([flicker(0), flicker(1), flicker(2)], by, { fade: { in: 100 }, loop: true });
   const pointer = { x: 0, y: 0 };
   const RADIUS = 8;
   const near = (s) => Math.max(0, 1 - Math.hypot(s.x - pointer.x, s.y - pointer.y) / RADIUS);
