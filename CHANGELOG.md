@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A weight signal on lanes is handed, after a stretch of frames at weight 0, the `dt` since its
+  last read, as it is off lanes. It was handed the gap since the subject last had a delta.
+
 ## 0.14.0
 
 ### Added
