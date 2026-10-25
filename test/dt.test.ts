@@ -108,6 +108,6 @@ describe.each([
       return seen;
     });
     expect(on).toEqual(off);
-    expect(off.at(-1)).toBeCloseTo(0.16);
+    expect(off?.at(-1)).toBeCloseTo(0.16);
   });
 });
