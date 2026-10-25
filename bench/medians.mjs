@@ -3,6 +3,7 @@
 // the geometric mean of the ratios. `U` is the Mann-Whitney rank statistic over the two sides' runs,
 // the smaller of the two; at 7 rounds a side it is under 9 for p < 0.05, at 9 under 18.
 //   node bench/medians.mjs <file holding ab.sh's output>
+// It reads bench/lineage.sh's output too, the first two revisions unless REVS says which.
 // LEDGER="<what the change does>" also appends each row to bench/ledger.tsv, the record of what
 // each change measured; LEDGER_NODE names the node, LEDGER_REV the commit standing for `.`, and
 // LEDGER_FRAMES the FRAMES the run used (300 unset). Keep the output itself in bench/runs/ first,
@@ -42,7 +43,8 @@ const rank = (xs, ys) => {
   for (const x of xs) for (const y of ys) u += x < y ? 1 : x === y ? 0.5 : 0;
   return Math.min(u, xs.length * ys.length - u);
 };
-const [a, b] = revs;
+// REVS=<a>,<b> picks two revisions of a run over more, such as bench/lineage.sh's.
+const [a, b] = process.env.REVS?.split(',') ?? revs;
 const wide = Math.max(...[...rows.keys()].map((k) => k.length));
 const kbWide = 3 + Math.max(a.length, b.length, 5);
 console.log(
