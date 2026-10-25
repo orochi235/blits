@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.12.0 (2026-10-22), with blits-quarks 0.8.0 and blits-tone 0.3.0 pinned to it; blits-panel 0.1.1.
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.14.0 (2026-10-24), with blits-panel 0.2.0, blits-quarks 0.9.0 and blits-tone 0.4.0 taking it as a `^0.14.0` peer.
   blits-tone 0.2.0 was its first release through trusted publishing.
 - **In 0.11.0** (2026-10-11): a read ahead after a seek back that plays
   the tape's calls, a voice's own `stepMs`, and three fixes found on the way. The changelog's
@@ -343,7 +343,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
-0. **Scroll inertia: `set`, `@msb235/blits/fling` and glide `bounds` landed** (2026-10-24, Mike's
+0. **Scroll inertia: `set`, `@msb235/blits/fling` and glide `bounds` shipped in 0.14.0** (2026-10-24, Mike's
    go on splitting the motion law into the engine and the pointer wiring into a subpath; spring
    back and resistance while dragging were his picks, 2026-10-24). The schema page's "Dragging and
    flinging" and "Bounds" are the record. Chosen while building, Mike's to overturn:
@@ -361,13 +361,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      (`[BOUND, settle, τ, ω₀, 0]`). Any damping would need a longer law head.
    - **Released past an edge with enough inward speed, it coasts back inside with no spring.**
    - **Resistance is iOS's curve,** 0.55 of the drag at the edge, approaching `give`.
-0. **0.13.0 is the engine's release of 2026-10-23** (the stock band, a mix's `loci`, the kept-seek
-   and seek-return fixes, cheaper churn). blits-quarks 0.8.0, blits-tone 0.3.0 and the panel 0.1.1
-   declare `@msb235/blits` `^0.12.0` as a peer, which below 1.0 does not take 0.13.0. **Next
-   release (Mike, 2026-10-24):** engine 0.14.0 with `set`, `fling` and bounds, then the panel (he
-   asked for one), quarks and tone, each with its peer range and dev pin moved to 0.14.0. The
-   release workflow refuses a companion tag while the engine's changelog has Unreleased entries,
-   so the engine goes first.
 0. **`mix.arc` shipped in 0.12.0** (2026-10-22, on src-da's brief with Mike's go): klieg's
    `fire(text, { enter, active, exit, hold, blendMs })` as a blits primitive. The schema page's
    "Arcs" is the record. bree (`~/src/bree`, the marquee's new home) builds against this checkout
