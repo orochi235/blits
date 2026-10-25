@@ -1,5 +1,8 @@
 import type { Subject } from './voice.js';
 
+/** Whether a record was left at rest during a handover. */
+export const isRested = (h: { restedAt: number }): boolean => !Number.isNaN(h.restedAt);
+
 /** A record with every field written out, optional ones too, as every record in a mix is built. */
 export type WholeRecord = { [K in Field]: Subject<unknown>[K] };
 
@@ -20,7 +23,6 @@ export function record(voice: object | null, reaches: boolean, state: unknown): 
     since: 0,
     shown: 0,
     weight: 0,
-    rested: false,
     restedAt: Number.NaN,
     bands: null,
     state,

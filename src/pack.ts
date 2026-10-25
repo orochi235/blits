@@ -1,5 +1,5 @@
 import { clone } from './clone.js';
-import { record } from './record.js';
+import { isRested, record } from './record.js';
 import type { Subject, Voice } from './voice.js';
 
 /** A subject's record as plain data, for a history store. */
@@ -39,7 +39,7 @@ export function packHeld<I, O>(voice: Voice<I, O>, h: Subject<unknown>): PackedR
     since: h.since,
     shown: h.shown,
     weight: h.weight,
-    rested: h.rested,
+    rested: isRested(h),
     restedAt: h.restedAt,
     bands: h.bands === null ? null : Array.from(h.bands),
     state: h.state === undefined ? undefined : patch.pack ? patch.pack(h.state) : clone(h.state),
@@ -69,7 +69,6 @@ export function unpackHeld<I, O>(voice: Voice<I, O>, p: PackedRecord): Subject<u
   h.since = p.since;
   h.shown = p.shown;
   h.weight = p.weight;
-  h.rested = p.rested;
   h.restedAt = p.restedAt;
   h.bands = bands;
   h.stepped = p.stepped;

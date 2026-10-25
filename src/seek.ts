@@ -11,6 +11,7 @@ import { move, nextFrame } from './move.js';
 import { ownerReading } from './owner.js';
 import { place } from './place.js';
 import { unpull } from './pull.js';
+import { isRested } from './record.js';
 import { type Moment, Restored } from './restored.js';
 import { recount } from './roster.js';
 import { refitAll } from './spans.js';
@@ -116,8 +117,7 @@ function restore<I, O>(
  * subject may have rested and moved on since, so a probe at `t` would not find it at rest again.
  */
 function restedBy(h: Subject<unknown>, live: Subject<unknown>, t: number): void {
-  h.rested = live.restedAt <= t;
-  h.restedAt = h.rested ? live.restedAt : Number.NaN;
+  h.restedAt = live.restedAt <= t ? live.restedAt : Number.NaN;
 }
 
 /** Cuts a record's list of copies to its first `kept`, keeping those no other list holds as spares. */
@@ -191,7 +191,7 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
       const h = restore(mix, voice, live, at, every, mine);
       if (h === undefined) return h;
       if (h.reaches) voice.seen++;
-      if (h.rested) voice.restedCount++;
+      if (isRested(h)) voice.restedCount++;
       if (!(h.since <= restored.top)) {
         voice.early ??= [];
         voice.early.push(h);
@@ -377,7 +377,7 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
       mix.pins.set(voice, voice.pinned);
     }
   refitAll(mix);
-  mix.due = [];
+  mix.due.clear();
   for (const voice of kept) schedule(mix, voice);
   mix.stir();
   // On the frame's own time its move is behind it: a second would land what the next frame does.

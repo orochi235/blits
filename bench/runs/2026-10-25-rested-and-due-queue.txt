@@ -1,0 +1,140 @@
+# teitou: FRAMES=3000 tmp-agent/ab3.sh 4 be0aaa4 e92f0c9 . -- tweens:10000:1 swap:10000:1; each round per build start.mjs 10000 7 tweens fns, ROUNDS=150 restart.mjs 1000 10000 40000, then each frame row in its own process (e92f0c9 is 1b7b038, rested read from restedAt; . is 1b7b038 plus the flat-array due queue)
+## env.txt
+ 2:04  up  1:26, 2 users, load averages: 3.52 4.11 7.66
+v26.10.0
+ 2:06  up  1:29, 2 users, load averages: 3.73 4.04 7.04
+## start.txt
+== be0aaa4
+1/2  tweens   N=10000  cue     6.4 ms  first frame    28.4 ms  second     3.9 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.6 ms  first frame    10.3 ms  second     3.5 ms  (medians of 7)
+== e92f0c9
+1/2  tweens   N=10000  cue     6.2 ms  first frame    31.0 ms  second     3.9 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.6 ms  first frame    10.3 ms  second     1.4 ms  (medians of 7)
+== .
+1/2  tweens   N=10000  cue     6.6 ms  first frame    28.0 ms  second     3.6 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.2 ms  first frame    12.9 ms  second     1.5 ms  (medians of 7)
+== e92f0c9
+1/2  tweens   N=10000  cue     6.4 ms  first frame    28.4 ms  second     3.7 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.4 ms  first frame    13.6 ms  second     2.0 ms  (medians of 7)
+== .
+1/2  tweens   N=10000  cue     6.2 ms  first frame    28.1 ms  second     3.5 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.7 ms  first frame    11.9 ms  second     1.8 ms  (medians of 7)
+== be0aaa4
+1/2  tweens   N=10000  cue     6.9 ms  first frame    30.9 ms  second     3.9 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.9 ms  first frame    10.0 ms  second     2.5 ms  (medians of 7)
+== .
+1/2  tweens   N=10000  cue     6.8 ms  first frame    29.7 ms  second     3.6 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.9 ms  first frame    13.4 ms  second     1.4 ms  (medians of 7)
+== be0aaa4
+1/2  tweens   N=10000  cue     6.7 ms  first frame    29.7 ms  second     3.9 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.8 ms  first frame    10.0 ms  second     1.9 ms  (medians of 7)
+== e92f0c9
+1/2  tweens   N=10000  cue     6.5 ms  first frame    30.1 ms  second     3.5 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.2 ms  first frame    12.3 ms  second     1.3 ms  (medians of 7)
+== be0aaa4
+1/2  tweens   N=10000  cue     6.4 ms  first frame    30.1 ms  second     4.0 ms  (medians of 7)
+2/2  fns      N=10000  cue     5.9 ms  first frame    12.2 ms  second     1.4 ms  (medians of 7)
+== e92f0c9
+1/2  tweens   N=10000  cue     6.5 ms  first frame    29.3 ms  second     3.4 ms  (medians of 7)
+2/2  fns      N=10000  cue     6.4 ms  first frame    10.2 ms  second     1.8 ms  (medians of 7)
+== .
+1/2  tweens   N=10000  cue     6.1 ms  first frame    27.5 ms  second     3.4 ms  (medians of 7)
+2/2  fns      N=10000  cue     4.8 ms  first frame    11.9 ms  second     1.7 ms  (medians of 7)
+## restart.txt
+== be0aaa4
+ 1/3  N=  1000  stop   0.68 us each  start   0.00 us each  frame after   0.328 ms  the one after   0.034 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.84 us each  start   0.01 us each  frame after   0.713 ms  the one after   0.258 ms  steady   0.166 ms
+ 3/3  N= 40000  stop   2.86 us each  start   0.00 us each  frame after   1.634 ms  the one after   0.948 ms  steady   0.652 ms
+== e92f0c9
+ 1/3  N=  1000  stop   0.62 us each  start   0.00 us each  frame after   0.321 ms  the one after   0.033 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.67 us each  start   0.01 us each  frame after   0.683 ms  the one after   0.248 ms  steady   0.166 ms
+ 3/3  N= 40000  stop   2.86 us each  start   0.00 us each  frame after   1.634 ms  the one after   0.951 ms  steady   0.644 ms
+== .
+ 1/3  N=  1000  stop   0.65 us each  start   0.00 us each  frame after   0.326 ms  the one after   0.033 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.60 us each  start   0.01 us each  frame after   0.670 ms  the one after   0.248 ms  steady   0.168 ms
+ 3/3  N= 40000  stop   2.90 us each  start   0.00 us each  frame after   1.615 ms  the one after   0.966 ms  steady   0.652 ms
+== e92f0c9
+ 1/3  N=  1000  stop   0.62 us each  start   0.00 us each  frame after   0.334 ms  the one after   0.034 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.63 us each  start   0.01 us each  frame after   0.675 ms  the one after   0.247 ms  steady   0.165 ms
+ 3/3  N= 40000  stop   3.32 us each  start   0.00 us each  frame after   1.686 ms  the one after   0.997 ms  steady   0.643 ms
+== .
+ 1/3  N=  1000  stop   0.76 us each  start   0.00 us each  frame after   0.317 ms  the one after   0.033 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.61 us each  start   0.01 us each  frame after   0.671 ms  the one after   0.248 ms  steady   0.166 ms
+ 3/3  N= 40000  stop   2.91 us each  start   0.00 us each  frame after   1.663 ms  the one after   0.973 ms  steady   0.644 ms
+== be0aaa4
+ 1/3  N=  1000  stop   0.75 us each  start   0.00 us each  frame after   0.327 ms  the one after   0.035 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.87 us each  start   0.01 us each  frame after   0.721 ms  the one after   0.264 ms  steady   0.172 ms
+ 3/3  N= 40000  stop   3.30 us each  start   0.00 us each  frame after   1.753 ms  the one after   1.010 ms  steady   0.688 ms
+== .
+ 1/3  N=  1000  stop   0.68 us each  start   0.00 us each  frame after   0.336 ms  the one after   0.035 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.92 us each  start   0.01 us each  frame after   0.727 ms  the one after   0.262 ms  steady   0.171 ms
+ 3/3  N= 40000  stop   3.28 us each  start   0.00 us each  frame after   1.772 ms  the one after   1.015 ms  steady   0.687 ms
+== be0aaa4
+ 1/3  N=  1000  stop   0.69 us each  start   0.00 us each  frame after   0.340 ms  the one after   0.035 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.94 us each  start   0.01 us each  frame after   0.733 ms  the one after   0.266 ms  steady   0.172 ms
+ 3/3  N= 40000  stop   3.33 us each  start   0.00 us each  frame after   1.763 ms  the one after   1.011 ms  steady   0.691 ms
+== e92f0c9
+ 1/3  N=  1000  stop   0.74 us each  start   0.00 us each  frame after   0.316 ms  the one after   0.034 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.55 us each  start   0.01 us each  frame after   0.657 ms  the one after   0.248 ms  steady   0.170 ms
+ 3/3  N= 40000  stop   2.88 us each  start   0.00 us each  frame after   1.642 ms  the one after   0.960 ms  steady   0.649 ms
+== be0aaa4
+ 1/3  N=  1000  stop   0.63 us each  start   0.00 us each  frame after   0.321 ms  the one after   0.034 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.60 us each  start   0.01 us each  frame after   0.659 ms  the one after   0.249 ms  steady   0.166 ms
+ 3/3  N= 40000  stop   3.10 us each  start   0.00 us each  frame after   1.661 ms  the one after   0.967 ms  steady   0.656 ms
+== e92f0c9
+ 1/3  N=  1000  stop   0.64 us each  start   0.00 us each  frame after   0.323 ms  the one after   0.034 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.59 us each  start   0.01 us each  frame after   0.664 ms  the one after   0.248 ms  steady   0.166 ms
+ 3/3  N= 40000  stop   3.08 us each  start   0.00 us each  frame after   1.693 ms  the one after   0.981 ms  steady   0.651 ms
+== .
+ 1/3  N=  1000  stop   0.64 us each  start   0.00 us each  frame after   0.326 ms  the one after   0.034 ms  steady   0.019 ms
+ 2/3  N= 10000  stop   1.56 us each  start   0.01 us each  frame after   0.652 ms  the one after   0.249 ms  steady   0.168 ms
+ 3/3  N= 40000  stop   2.83 us each  start   0.00 us each  frame after   1.634 ms  the one after   0.957 ms  steady   0.662 ms
+## frame.txt
+== round 1/4 be0aaa4
+ 1/1  tweens    N= 10000 V=1     0.641 ms/frame     64 ns/subject·voice  p50    0.634  p99    0.728  worst    0.810  first    41.8 ms  gc    1    2.0 ms       4.5 kB/frame
+== round 1/4 be0aaa4
+ 1/1  swap      N= 10000 V=1     2.698 ms/frame    270 ns/subject·voice  p50    2.588  p99    4.619  worst    6.079  first    50.9 ms  gc  244   74.9 ms    3022.1 kB/frame
+== round 1/4 e92f0c9
+ 1/1  tweens    N= 10000 V=1     0.669 ms/frame     67 ns/subject·voice  p50    0.660  p99    0.763  worst    1.037  first    41.4 ms  gc    1    2.2 ms       5.0 kB/frame
+== round 1/4 e92f0c9
+ 1/1  swap      N= 10000 V=1     2.659 ms/frame    266 ns/subject·voice  p50    2.548  p99    4.466  worst    6.429  first    50.5 ms  gc  244   74.5 ms    3021.7 kB/frame
+== round 1/4 .
+ 1/1  tweens    N= 10000 V=1     0.627 ms/frame     63 ns/subject·voice  p50    0.622  p99    0.706  worst    0.819  first    39.1 ms  gc    1    2.0 ms       4.1 kB/frame
+== round 1/4 .
+ 1/1  swap      N= 10000 V=1     2.714 ms/frame    271 ns/subject·voice  p50    2.584  p99    4.772  worst    5.647  first    49.3 ms  gc  244   73.0 ms    3021.2 kB/frame
+== round 2/4 e92f0c9
+ 1/1  tweens    N= 10000 V=1     0.631 ms/frame     63 ns/subject·voice  p50    0.624  p99    0.706  worst    0.887  first    44.8 ms  gc    1    2.9 ms       4.6 kB/frame
+== round 2/4 e92f0c9
+ 1/1  swap      N= 10000 V=1     2.753 ms/frame    275 ns/subject·voice  p50    2.635  p99    4.757  worst    6.748  first    52.0 ms  gc  244   77.1 ms    3023.0 kB/frame
+== round 2/4 .
+ 1/1  tweens    N= 10000 V=1     0.637 ms/frame     64 ns/subject·voice  p50    0.631  p99    0.714  worst    0.818  first    40.6 ms  gc    1    1.7 ms       4.3 kB/frame
+== round 2/4 .
+ 1/1  swap      N= 10000 V=1     2.984 ms/frame    298 ns/subject·voice  p50    2.932  p99    4.930  worst    6.295  first    50.0 ms  gc  245   76.4 ms    3021.4 kB/frame
+== round 2/4 be0aaa4
+ 1/1  tweens    N= 10000 V=1     0.655 ms/frame     65 ns/subject·voice  p50    0.647  p99    0.739  worst    0.845  first    44.2 ms  gc    1    1.8 ms       5.5 kB/frame
+== round 2/4 be0aaa4
+ 1/1  swap      N= 10000 V=1     3.099 ms/frame    310 ns/subject·voice  p50    2.965  p99    5.261  worst   10.628  first    50.2 ms  gc  230  104.4 ms    2776.8 kB/frame
+== round 3/4 .
+ 1/1  tweens    N= 10000 V=1     0.678 ms/frame     68 ns/subject·voice  p50    0.670  p99    0.757  worst    1.002  first    41.3 ms  gc    1    1.9 ms       3.8 kB/frame
+== round 3/4 .
+ 1/1  swap      N= 10000 V=1     3.146 ms/frame    315 ns/subject·voice  p50    3.030  p99    5.174  worst    6.175  first    51.1 ms  gc  245   77.7 ms    3022.0 kB/frame
+== round 3/4 be0aaa4
+ 1/1  tweens    N= 10000 V=1     0.636 ms/frame     64 ns/subject·voice  p50    0.630  p99    0.699  worst    0.838  first    44.5 ms  gc    1    2.0 ms       6.0 kB/frame
+== round 3/4 be0aaa4
+ 1/1  swap      N= 10000 V=1     2.734 ms/frame    273 ns/subject·voice  p50    2.617  p99    4.718  worst    6.143  first    55.2 ms  gc  244   74.9 ms    3021.6 kB/frame
+== round 3/4 e92f0c9
+ 1/1  tweens    N= 10000 V=1     0.630 ms/frame     63 ns/subject·voice  p50    0.620  p99    0.728  worst    0.822  first    41.1 ms  gc    1    1.8 ms       4.3 kB/frame
+== round 3/4 e92f0c9
+ 1/1  swap      N= 10000 V=1     2.698 ms/frame    270 ns/subject·voice  p50    2.590  p99    4.631  worst    6.793  first    51.8 ms  gc  244   77.7 ms    3022.9 kB/frame
+== round 4/4 be0aaa4
+ 1/1  tweens    N= 10000 V=1     0.629 ms/frame     63 ns/subject·voice  p50    0.624  p99    0.707  worst    0.870  first    42.6 ms  gc    1    1.9 ms       4.4 kB/frame
+== round 4/4 be0aaa4
+ 1/1  swap      N= 10000 V=1     2.725 ms/frame    272 ns/subject·voice  p50    2.609  p99    4.649  worst    7.538  first    52.9 ms  gc  244   80.6 ms    3020.8 kB/frame
+== round 4/4 e92f0c9
+ 1/1  tweens    N= 10000 V=1     0.613 ms/frame     61 ns/subject·voice  p50    0.608  p99    0.681  worst    0.753  first    41.2 ms  gc    1    1.8 ms       5.3 kB/frame
+== round 4/4 e92f0c9
+ 1/1  swap      N= 10000 V=1     2.719 ms/frame    272 ns/subject·voice  p50    2.596  p99    4.558  worst    8.477  first    50.1 ms  gc  244   81.1 ms    3020.8 kB/frame
+== round 4/4 .
+ 1/1  tweens    N= 10000 V=1     0.632 ms/frame     63 ns/subject·voice  p50    0.627  p99    0.711  worst    0.840  first    41.4 ms  gc    1    2.1 ms       5.3 kB/frame
+== round 4/4 .
+ 1/1  swap      N= 10000 V=1     2.724 ms/frame    272 ns/subject·voice  p50    2.619  p99    4.661  worst    5.898  first    50.9 ms  gc  245   74.3 ms    3021.0 kB/frame

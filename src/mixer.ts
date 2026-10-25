@@ -6,7 +6,7 @@ import { type LerpInto, lerpInto, STOCK_BAND, scalarOp } from './channels.js';
 import type { Column } from './columns.js';
 import { cue } from './cue.js';
 import { DepartedIndex } from './departed.js';
-import type { Due } from './due.js';
+import { DueQueue } from './due.js';
 import { beginFade, leaveVoice, parting } from './fade.js';
 import {
   apply,
@@ -144,7 +144,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** The pose `pull` folds a subject into where it cannot read straight from the lanes. */
   scratch: O | undefined;
   /** Live voices by the earliest mix time `moveTo` would change each, a binary heap. */
-  due: Due<I, O>[] = [];
+  due = new DueQueue<I, O>();
   /** Voices retired since `moveTo` last pruned them, in the order they retired. */
   retired: Voice<I, O>[] = [];
   /** Visit every voice each sync, as before the due queue; for tests that compare the two. */

@@ -48,6 +48,11 @@ version and everything else the patch. Each release lists its changes as **Break
   was (`redo`), 15.5 ms against 21.0 (teitou, medians of five alternated runs of 100 frames against
   `be0aaa4`). With 31 voices starting 150 ms apart, the record handed on reads 154 ms against 182,
   and looking past the copies 109 against 151 (against `03af146`).
+- A voice stopped before its end is let go of when it stops. The mix's schedule kept an entry for
+  the time each voice would next change, and one stopped early stayed in it, holding the voice,
+  until that time came: 20,000 `patch` voices of 10⁹ ms replaced over 1,000 subjects held 47 MB of
+  heap, and now 2.4 (keiei, one run each, `bench/leak.mjs`). A motion patch was never held, as it
+  schedules no end.
 
 ## 0.14.0
 
