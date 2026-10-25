@@ -84,7 +84,16 @@ function run(lib, seed, general = false, left = none, kept = null) {
     pos: lib.vec(3, lib.sum()),
     color: lib.last({ lerp: lib.mixHex }),
     tag: lib.last(),
+    // A build from before `color` lacks it, and its scenes then write no hue.
+    ...(lib.color ? { hue: lib.color({ lerp: 'oklch' }) } : {}),
   });
+  // Drawn apart from `r`, so a scene with a hue is otherwise the scene it was without one.
+  const hr = rng(seed ^ 0x0c1c);
+  const hues = lib.color !== undefined && hr() < 0.5;
+  const hueOf = () =>
+    hr() < 0.15
+      ? [0, 0, 0, 0]
+      : lib.oklab(Math.floor(hr() * 0x1000000)).map((v) => v * (0.25 + hr()));
   const opts = { lanes: chance(0.7) && !general };
   if (chance(0.15)) opts.history = { ms: 2000, inputs: chance(0.5) };
   if (chance(0.15)) opts.stepMs = pick([4, 8, 16]);
@@ -173,6 +182,7 @@ function run(lib, seed, general = false, left = none, kept = null) {
       for (let j = 0; j < n; j++) {
         const delta = {};
         for (const w of writes) delta[w] = w === 'pos' ? [r() * 5, r() * 5, r() * 5] : r() * 2;
+        if (hues && hr() < 0.4) delta.hue = hueOf();
         const stop = { at: n === 1 ? 0 : j / (n - 1), delta };
         const e = ease();
         if (e !== undefined && chance(0.5)) stop.ease = e;
