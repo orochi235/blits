@@ -344,6 +344,14 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
       lane.readAt = elapsed;
       this.gather(lane, lane.delta);
     }
+    // A signal is handed the gap since the subject's last read, which this read is, as it is on
+    // the general path; the record's delta is not this read's, so a probe reads it again.
+    if (typeof voice.spec.weight === 'function') {
+      const rec = lane.records[p] as Subject<unknown>;
+      rec.probed = this.now;
+      rec.seeks = voice.seeks;
+      rec.delta = null;
+    }
     if (w > 0) {
       arg[Arg.WEIGHT] = w;
       this.fold(lane, slot);
@@ -462,7 +470,13 @@ export function call<I, O>(
     if (w > 0) this.foldDelta(chans, slot, rec.delta);
     return true;
   }
-  if (silent(voice, w)) return false;
+  if (silent(voice, w)) {
+    // As `contribution` leaves a silent read, so the next one is handed the same `dt`.
+    rec.delta = null;
+    rec.probed = this.now;
+    rec.seeks = voice.seeks;
+    return false;
+  }
   const kept = reading.kept;
   host.ready(voice, subject, rec);
   if (this.keeps) host.horizon(voice, delay);

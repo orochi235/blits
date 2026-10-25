@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
-import { patch } from '../src/patch.js';
+import { keys, patch } from '../src/patch.js';
 
 interface Pose {
   x: number;
@@ -78,4 +78,36 @@ it('is the whole gap for a subject not sampled for a while, off lanes', () => {
     if (t === 16) expect(m.probe(b).x).toBe(16);
   }
   expect(m.probe(b).x).toBe(144);
+});
+
+// A weight signal at 0 for a while: its next read is handed the gap since the last silent one, as
+// off lanes, not since the subject last gave a delta.
+describe.each([
+  ['fn', () => patch<Part, Pose>(10_000, () => ({ x: 1 }), { writes: ['x'] })],
+  [
+    'keys',
+    () =>
+      keys<Part, Pose>(10_000, [
+        { at: 0, delta: { x: 1 } },
+        { at: 1, delta: { x: 1 } },
+      ]),
+  ],
+] as const)('a %s voice weighted silent for a while', (_, made) => {
+  it('hands its signal the same dt on lanes as off them', () => {
+    const [off, on] = [false, true].map((lanes) => {
+      const m = mix<Part, Pose>(K, { lanes });
+      const parts = Array.from({ length: 100 }, (__, id) => ({ id }));
+      let t = 0;
+      m.sync(0);
+      m.cue({ patch: made(), weight: (___, s) => (t >= 48 && t < 96 ? 0 : s.dt / 100) });
+      const seen: number[] = [];
+      for (t = 16; t <= 160; t += 16) {
+        m.sync(t);
+        for (const p of parts) seen.push(m.probe(p).x);
+      }
+      return seen;
+    });
+    expect(on).toEqual(off);
+    expect(off.at(-1)).toBeCloseTo(0.16);
+  });
 });
