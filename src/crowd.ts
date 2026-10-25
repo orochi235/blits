@@ -3,7 +3,7 @@ import { clampWeight, passAt, phaseAt, weighed } from './clock.js';
 import { closed } from './closed.js';
 import type { Curve } from './easing.js';
 import { KeyRows } from './keyrows.js';
-import { Arg, frozenAt, type Laned, Per, type Positions, Row, SPARSE } from './lane.js';
+import { Arg, frozenAt, keepProbed, type Laned, Per, type Positions, Row, SPARSE } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Motions } from './motions.js';
 import type { Scratch } from './patch.js';
@@ -282,7 +282,7 @@ function rows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, first: number, id: numbe
     const slot = list[p] as number;
     const o = p * Row.STRIDE;
     const q = slot * Per.SLOT;
-    if (per[q + Per.LANE_FILL] === fills - 1) data[o + Row.PROBED] = data[o + Row.WEIGHT] as number;
+    keepProbed(data, o, per, q, fills);
     if (lanes.lately >= 0 && lanes.unread(slot)) continue;
     const delay = data[o + Row.DELAY] as number;
     const fast = (f & Flag.FAST) !== 0;

@@ -66,6 +66,22 @@ export const enum Row {
   MET = 7,
 }
 
+/**
+ * Keeps the weight a probe read from the last fill as `Row.PROBED`, for `weightOf`, before a fill
+ * writes the position's new weight; reads `per` only where the copy could change a bit.
+ */
+export function keepProbed(
+  data: Float64Array,
+  o: number,
+  per: Float64Array,
+  q: number,
+  fills: number,
+): void {
+  const w = data[o + Row.WEIGHT] as number;
+  if ((w !== data[o + Row.PROBED] || w === 0) && per[q + Per.LANE_FILL] === fills - 1)
+    data[o + Row.PROBED] = w;
+}
+
 /** What `begin` found: the general path, or lanes filled. */
 // biome-ignore lint/suspicious/noConstEnum: inlined by tsc, which builds the package
 export const enum Begin {
