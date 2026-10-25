@@ -294,7 +294,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - **A voice that leaves the general path or a lane**, rather than a crowd, still requalifies
      every voice.
    - **A read ahead across many events of a stateful mix costs a read per event**: each stop copies
-     every voice and reads each asked-for subject once. Nobody has benched it (2026-10-17).
+     every voice and reads each asked-for subject once. `far` (read 5 s ahead past V-1 voices cued
+     150 ms apart) and `redo` (the same voices cued by taped calls, sought back and read ahead) bench
+     it at `FRAMES=100`, since a read holds the mix still. A stop hands each subject's record on to
+     the next rather than copying it, and a voice starting many stops on asks only the copies that
+     may hold one (`src/ahead.ts`, 2026-10-25): `far` at 1,000 subjects went from 20.5 to 14.3 ms a
+     frame with 7 voices and from 182 to about 109 with 31 (teitou, `bench/ledger.tsv`). Left per
+     stop and subject: a lookup and write in each voice copy's store (one WeakMap per copy per
+     stop), a fold of every voice including stateless ones, and a copy of every voice. One store
+     shared along a voice's copies would cut the first, and needs `Filled` in `src/voice.ts`. No
+     test reaches `carry`'s fallback for a copy that holds a record under copies that hold none.
    - **A weasel session reruns `animator-on-blits` and `pose-overrides`** against the lanes build
      before deciding its animator step 3 (weasel `c7a183bde`, branch `pose-overrides-mix`).
 
