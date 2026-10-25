@@ -344,22 +344,30 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    frame. Its patch is not the cost: `at` has been skipped at weight 0 since 2026-10-04, and a
    `keys` patch's stops are now too (outside a locus, where a delta makes a voice a member; `step`
    still runs, since a skipped step cannot leave state as a run one would). What is left for each
-   of the 98% of subjects out of range is visiting its record: `contribution`'s bookkeeping, the
-   signal call, the envelope. Measured on studio (2026-10-07, M1 Max, load average 2.2–3.3 from
-   other jobs; `bench/again.sh 6` and `AB_EACH=1 bench/ab.sh` against `main` over the `glow*`
-   rows, medians of six fresh processes), a glow over 10k subjects adds to the voice under it
+   of the 98% of subjects out of range is reading the signal and keeping the record. Measured on
+   msb-uai (2026-10-24, node to itself, load 2.6–3.0, `AB_EACH=1 bench/ab.sh` 7 rounds,
+   `bench/runs/2026-10-24-glow-branch.txt`), a glow over 10k subjects adds to the voice under it
 
    | Read | glow, `gain` | glow, `gain` + `hex` | glow, `gain` + `color()` | `keys` glow, `gain` + `hex` |
    |---|---:|---:|---:|---:|
-   | probe | 0.91 ms | 1.52 ms | 1.25 ms | 1.47 ms |
-   | probe, lanes off | 1.01 ms | 1.10 ms | – | 1.22 ms |
-   | `pull` | 1.01 ms | 2.96 ms | 1.21 ms | 3.02 ms |
+   | probe | 0.80 ms | 1.17 ms | 0.93 ms | 1.28 ms |
+   | probe, lanes off | 0.92 ms | 0.90 ms | – | 1.00 ms |
+   | `pull` | 0.54–0.64 ms | – | – | 2.34 ms |
 
-   on a 2.10 ms frame (0.84 by `pull`). The `keys` glow (`glowkeys`) was 5.05–5.37 ms a frame
-   before the skip and is 3.58–3.73 after, 0.70–0.73 of it; every `fn` glow row is within ±5%
-   of `main`. A `hex` column still takes the glow's voice and the one under it off the lanes;
-   `color()` runs on them and costs `pull` 0.2 ms over `gain` alone, so that half is solved by
-   moving to `color()`, not by reach.
+   on a voice alone of 1.55 ms by probe and 0.82–0.93 ms by `pull` (which spreads across runs).
+   A `hex` column still takes the glow's voice and the one under it off the lanes; `color()` runs
+   on them, so that half is solved by moving to `color()`, not by reach.
+
+   Where the glow's lane read goes, by `pull` (`bench/glowparts.py 7 glowbase^ glow^`, msb-uai,
+   2026-10-24, `bench/runs/2026-10-24-glow-parts.txt`): 0.56 ms per 10k subjects, 56 ns a
+   subject. Of that, the bench's own signal is about 16 ns, two-thirds of it `Math.hypot` (sqrt
+   instead saves 0.10 ms). `base` around the call costs 4 ns, `prime` 5 ns, and `call` at weight
+   0 another 7 ns. The rest, about 15 ns, is `one`'s own bookkeeping for the subject. No one piece
+   is worth a change on its own: skipping `call`'s setup at weight 0 measured level to 4% slower
+   by `pull` and was backed out (2026-10-24, ledger). Unbuilt, Mike's call: making `Setting`'s
+   fields read-only to a signal would let a lane fill the per-lane fields once and refill only
+   `dt`, `state` and `keepOn` per subject, saving at most `prime`'s 5 ns, at the cost of a
+   type-level break.
    - The skip, done (2026-10-07).
    - Declared bounds, the design to evaluate (unbuilt). The mix takes subject positions from the
      host, and reach may be declared at three levels, each optional, each meaning "everywhere"
@@ -378,9 +386,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      unlikely — klieg's lighting, a fade over a whole sign and wod's transitions are unbounded by
      design; `target` is the likelier candidate once bounds absorb its spatial uses.
 
-     What bounds would still save, after the skip: the record walk, about 0.9–1.0 ms per 10k
-     subjects on studio (100 ns a subject; a local profile of `glow-` puts the glow's own
-     functions at about 30% of the frame). Only a bound the mix can answer without visiting
+     What bounds would still save, after the skip: the glow's lane read, about 0.56 ms per
+     10k subjects by `pull` on msb-uai (56 ns a subject, 16 ns of it the signal itself;
+     2026-10-24). Only a bound the mix can answer without visiting
      each subject saves it: a per-subject test against a radius is the signal call again.
      So the signal bound pays only with a spatial query over the host's positions, kept current
      as they move, and the patch bound is the same query with a radius that changes by phase.
