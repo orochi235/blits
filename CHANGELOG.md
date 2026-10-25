@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- `color({ lerp: 'oklch' })` and `color(last(), { lerp: 'oklch' })` run on lanes, where they took
+  the general path. The pose is the same to the bit.
+
 ## 0.14.0
 
 ### Added
