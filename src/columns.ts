@@ -65,9 +65,6 @@ export function pullRun<I, O>(
   const qCounts = lanes.queueCounts;
   let k = lanes.queued;
   let n = from;
-  // Counted here and stored once: nothing this loop calls reads either.
-  let probes = lanes.probes;
-  let distinct = lanes.distinct;
   // The run being gathered: its first slot and row, and how far it has reached.
   let first = -1;
   let start = from;
@@ -91,8 +88,8 @@ export function pullRun<I, O>(
         (per[o + Per.GENERAL_PROBE] as number) > frame
       )
     )
-      distinct++;
-    per[o + Per.LANE_PROBE] = ++probes;
+      lanes.distinct++;
+    per[o + Per.LANE_PROBE] = ++lanes.probes;
     per[o + Per.LANE_FILL] = fills;
     if (holds) subjects[slot] = subject;
     if (slot !== first + (n - start)) {
@@ -113,8 +110,6 @@ export function pullRun<I, O>(
     k++;
   }
   lanes.queued = k;
-  lanes.probes = probes;
-  lanes.distinct = distinct;
   if (n > from && holds) lanes.holding = true;
   return n;
 }
