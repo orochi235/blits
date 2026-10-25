@@ -261,6 +261,15 @@ const rows = [
   // 300 ms back on a mix keeping 5 s of history.
   ['ahead', 1000, 3],
   ['back', 1000, 3],
+  // A read 5 s ahead of a stateful mix, past known events: a drift voice over every subject and
+  // V-1 flicker voices starting 150 ms apart for three passes each, so it stops about 3(V-1) times.
+  ['far', 1000, 8],
+  ['far', 1000, 32],
+  ['far', 10000, 8],
+  // The same voices cued 150 ms apart on a mix keeping 5 s of history and its calls, sought back to
+  // before the first and read ahead to where it was, so the tape's calls are events as well.
+  ['redo', 1000, 8],
+  ['redo', 1000, 32],
   // A mix keeping 5 s of history and its calls, synced and probed each frame; and the same sought
   // 300 ms back and to where it was before each sync, so every subject's record is put back at
   // its next probe. The difference is what a seek back and its return cost.
@@ -304,8 +313,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   const off = form.endsWith('-');
   const pulls = form.endsWith('^');
   const kind = off || pulls ? form.slice(0, -1) : form;
-  const scrub = kind === 'ahead' || kind === 'back';
-  const taped = kind === 'kept' || kind === 'seek';
+  const scrub = kind === 'ahead' || kind === 'back' || kind === 'far' || kind === 'redo';
+  const taped = kind === 'kept' || kind === 'seek' || kind === 'redo';
   const m = mix(kind === 'turn' ? KR : kind === 'glowk' ? KC : kind === 'glowl' ? KL : K, {
     ...(kind === 'back' ? { history: { ms: 5000 }, stepMs: 5 } : {}),
     ...(taped ? { history: { ms: 5000, every: 50, tape: createHistory }, stepMs: 5 } : {}),
@@ -457,7 +466,21 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       weight: near,
       loop: true,
     });
-  for (let v = 0; !own && !glow && kind !== 'blend' && kind !== 'typing' && v < voices; v++) {
+  const later = kind === 'far' || kind === 'redo';
+  // The flicker voices of `far` and `redo`, the `k`th starting 150 ms after the one before.
+  const cueLater = (k, start) =>
+    m.cue({
+      patch: flicker(k % 3),
+      fade: { in: 100 },
+      loop: 3,
+      ...(start === undefined ? {} : { start }),
+    });
+  if (kind === 'far') for (let k = 1; k < voices; k++) cueLater(k, 450 + 150 * k);
+  for (
+    let v = 0;
+    !own && !glow && kind !== 'blend' && kind !== 'typing' && v < (later ? 1 : voices);
+    v++
+  ) {
     const p =
       kind === 'keys' || kind === 'view'
         ? bounce()
@@ -513,14 +536,20 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   };
   let t = 0;
   let first = 0;
-  for (let f = 0; f < 30; f++) {
+  // `redo` plays on until its last voice is cued, then goes back to before the first.
+  const warm = kind === 'redo' ? 30 + Math.ceil((150 * voices) / 16.7) : 30;
+  let cued = 1;
+  for (let f = 0; f < warm; f++) {
     const f0 = performance.now();
     t += 16.7;
     churn();
     m.sync(t);
+    if (kind === 'redo' && cued < voices && m.now >= 450 + 150 * cued) cueLater(cued++);
     read(f === 0 ? subjects : probed);
     if (f === 0) first = performance.now() - f0;
   }
+  const until = m.now;
+  if (kind === 'redo') m.seek(450);
   await new Promise((r) => setTimeout(r, 0));
   const before = gcs;
   const pausedBefore = paused;
@@ -529,7 +558,15 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   for (let f = 0; f < frames; f++) {
     const f0 = performance.now();
     if (scrub) {
-      const p = m.project(kind === 'ahead' ? t + 500 : t - 300 + (f % 20) * 5);
+      const p = m.project(
+        kind === 'ahead'
+          ? t + 500
+          : kind === 'far'
+            ? t + 5000
+            : kind === 'redo'
+              ? until
+              : t - 300 + (f % 20) * 5,
+      );
       for (let j = 0; j < probed.length; j++) p.probe(probed[j], scratch);
     } else {
       t += 16.7;
