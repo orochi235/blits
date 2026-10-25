@@ -4,6 +4,20 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A read ahead across many known events of a stateful mix costs a quarter to a third less a frame
+  and allocates half as much: each stop hands a subject's record on to the next instead of copying
+  it, and a voice starting many stops on asks only the copies that may hold a record for it.
+  Reading 5 s ahead past the starts, fade-ins and ends of seven voices over 1,000 subjects (`far`)
+  takes 15.1 ms a frame against 20.5 and allocates 25 MB against 53, and over 10,000 subjects 201
+  ms against 305; seeking back over the calls that cued them and reading ahead to where the mix
+  was (`redo`), 15.5 ms against 21.0 (teitou, medians of five alternated runs of 100 frames against
+  `be0aaa4`). With 31 voices starting 150 ms apart, the record handed on reads 154 ms against 182,
+  and looking past the copies 109 against 151 (against `03af146`).
+
 ## 0.14.0
 
 ### Added
