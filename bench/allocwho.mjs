@@ -4,7 +4,7 @@
 //   node bench/allocwho.mjs [N] [form] [rounds]   form: tweens (default) fns
 // CALLERS=<name> also prints the call stacks under which functions of that name allocate.
 import { Session } from 'node:inspector/promises';
-import { kit, mix, mul, max, patch, sum, tween, vec } from '../dist/index.js';
+import { kit, max, mix, mul, patch, sum, tween, vec } from '../dist/index.js';
 
 const N = Number(process.argv[2] ?? 10000);
 const form = process.argv[3] ?? 'tweens';

@@ -10,6 +10,12 @@ export class Named<I> {
   private readonly set: Set<I> | null;
 
   constructor(subjects: Iterable<I>) {
+    // An array of distinct subjects, as nearly every voice names, is copied without iterating it.
+    if (Array.isArray(subjects) && distinct(subjects)) {
+      this.list = subjects.slice();
+      this.set = null;
+      return;
+    }
     const list: I[] = [];
     let set: Set<I> | null = null;
     for (const s of subjects) {
@@ -35,8 +41,18 @@ export class Named<I> {
   has(subject: I): boolean {
     return this.set === null ? this.list.includes(subject) : this.set.has(subject);
   }
+}
 
-  [Symbol.iterator](): Iterator<I> {
-    return this.list[Symbol.iterator]();
+/** Whether a short array names no subject twice, as `includes` compares; a long one says no. */
+function distinct<I>(subjects: readonly I[]): boolean {
+  const n = subjects.length;
+  if (n > FEW) return false;
+  for (let i = 1; i < n; i++) {
+    const a = subjects[i];
+    for (let j = 0; j < i; j++) {
+      const b = subjects[j];
+      if (a === b || (Number.isNaN(a as number) && Number.isNaN(b as number))) return false;
+    }
   }
+  return true;
 }

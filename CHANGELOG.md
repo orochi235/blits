@@ -31,6 +31,10 @@ version and everything else the patch. Each release lists its changes as **Break
 - 10,000 one-subject tween voices read by `pull` (`tweens^`) cost about 7% less a frame, 0.163 ms
   against 0.175: a crowd row's fill checks once, not every frame, that its stretch is numbered and
   its subject met (teitou, medians of nine runs of 5,000 frames, each in its own process).
+- Starting voices allocates about 400 B less each: a voice's `subjects`, given as an array of
+  distinct subjects, is copied without being iterated, and voices of a patch writing one channel
+  share their channel slots. 10,000 one-subject voices' first frame takes 20.7 ms against 23.5 for
+  tweens and 8.9 against 10.8 for fns (teitou, medians of nine rounds; `bench/start.mjs`).
 - A `keys` voice per subject read by `pull` costs about a sixth less a frame: rows whose stops
   share their phases and easings, at the same phase, find their segment and ease it once rather
   than once a row. 10,000 of them (`keyses^`) take 0.270 ms a frame against 0.327, and allocate

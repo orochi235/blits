@@ -262,7 +262,7 @@ export function open<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): number {
     lanes.wide = epoch;
     return epoch;
   }
-  for (const subject of v.named) {
+  for (const subject of v.named.list) {
     const slot = lanes.host.slotOf(subject);
     if (slot < 0 || slot >= lanes.cap) continue;
     const i = slot * Per.SLOT + Per.SEEN;

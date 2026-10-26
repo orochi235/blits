@@ -274,6 +274,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        `lanes.crowdOf` entries 184 B, `mix.playing` 92 B, `fresh`/`grow`/`Motions` about 450 B.
        Most `rowOf`/`crowdOf` reads are by voice id with no voice at hand (`placed`, `watchId`,
        `forget`), so moving a row onto its voice still needs an id map.
+       Kept 2026-10-25: `Named` copies an array of distinct subjects without iterating it, and a
+       one-channel patch's voices share `slots`/`lerps` (6.7 → 6.3 KB a tween voice, 4.5 → 4.1 a fn
+       voice; first frame tweens 23.5 → 20.7 ms, fns 10.8 → 8.9, teitou, 9 rounds,
+       `bench/runs/2026-10-25-named-writing.txt`). What is left in `Voice`: about 100 fields, 12
+       of them boxed doubles (192 B a voice, the ones defaulting to NaN or ±Infinity); its cold
+       fields are read from 2–26 files each, so a side object for them is a wide diff.
      - **A crowd's `keys` rows** cost about 27 ns a subject by `pull` (teitou, 2026-10-25,
        `keyses^` 0.270 ms), against 25 for keys voices over every subject (2026-10-05). Rows whose
        stops share phases and easings search and ease once per phase (`KeyRows.search`, keyed by a
@@ -386,6 +392,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      at 10,000 tracks from 0.48, with a slow mode near 1.0 on both versions.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
+   - `named` at 10k reads two ways on identical code too (1.23–1.26 or 1.41–1.51 ms by process,
+     teitou, 2026-10-25, `bench/runs/2026-10-25-named-split.txt`): one A/B can land all one side
+     in the fast mode by luck.
 
 4. **Reach is fixed at cue, so a voice whose contribution moves pays for every subject it might
    touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every

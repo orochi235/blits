@@ -172,7 +172,7 @@ export function changed<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
     mix.steps.push(voice, ++mix.version);
     return;
   }
-  for (const subject of voice.named) {
+  for (const subject of voice.named.list) {
     const head = headOf(mix, subject);
     if (head !== undefined) unlink(mix, head);
   }
@@ -203,7 +203,7 @@ export function index<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
     return;
   }
   mix.naming++;
-  for (const subject of voice.named) {
+  for (const subject of voice.named.list) {
     const list = mix.named.get(subject);
     if (list === undefined) mix.named.set(subject, [voice]);
     else list.push(voice);
@@ -212,7 +212,7 @@ export function index<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
 
 export function unindex<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   mix.naming--;
-  for (const subject of voice.named as Named<I>) {
+  for (const subject of (voice.named as Named<I>).list) {
     const list = mix.named.get(subject);
     if (list === undefined) continue;
     const i = list.indexOf(voice);

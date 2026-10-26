@@ -28,7 +28,7 @@ function add<I, O>(ix: GoneIndex<I, O>, voice: Voice<I, O>): void {
     ix.general.push(voice);
     return;
   }
-  for (const subject of voice.named) {
+  for (const subject of voice.named.list) {
     const list = ix.named.get(subject);
     if (list === undefined) ix.named.set(subject, [voice]);
     else list.push(voice);
@@ -42,7 +42,7 @@ function remove<I, O>(ix: GoneIndex<I, O>, out: readonly Voice<I, O>[]): void {
       general = true;
       continue;
     }
-    for (const subject of v.named) {
+    for (const subject of v.named.list) {
       const named = ix.named.get(subject);
       if (named === undefined) continue;
       const at = named.indexOf(v);

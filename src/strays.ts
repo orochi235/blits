@@ -25,7 +25,7 @@ export function unplay<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   }
   mix.playing.set(motion, left);
   if (voice.named === null) mix.strayAll.add(motion);
-  else for (const subject of voice.named) stray(mix, motion, subject);
+  else for (const subject of voice.named.list) stray(mix, motion, subject);
 }
 
 /**

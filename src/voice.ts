@@ -60,6 +60,43 @@ export interface Controls extends Clock {
 
 const noSend = (): void => {};
 
+interface Writing {
+  readonly slots: number[];
+  readonly lerps: Channel<unknown>['lerp'][];
+}
+
+/** By a mix's `slotOf`, the slots and lerps of a patch writing one channel, shared by its voices. */
+const writings = new WeakMap<Map<string, number>, Map<string, Writing>>();
+
+function writing(
+  writes: readonly string[],
+  slotOf: Map<string, number>,
+  channels: readonly Channel<unknown>[],
+): Writing {
+  if (writes.length !== 1) return written(writes, slotOf, channels);
+  let known = writings.get(slotOf);
+  if (known === undefined) {
+    known = new Map();
+    writings.set(slotOf, known);
+  }
+  const key = writes[0] as string;
+  let found = known.get(key);
+  if (found === undefined) {
+    found = written(writes, slotOf, channels);
+    known.set(key, found);
+  }
+  return found;
+}
+
+function written(
+  writes: readonly string[],
+  slotOf: Map<string, number>,
+  channels: readonly Channel<unknown>[],
+): Writing {
+  const slots = writes.map((k) => slotOf.get(k) as number);
+  return { slots, lerps: slots.map((slot) => (channels[slot] as Channel<unknown>).lerp) };
+}
+
 export interface Ramp {
   from: number;
   at: number;
@@ -445,10 +482,11 @@ export class Voice<I, O> {
     public owner: Voice<I, O> | null,
   ) {
     this.holding = patch === ownerPatch ? new Holding() : null;
-    this.slots = patch.writes.map((k) => slotOf.get(k as string) as number);
+    const wrote = writing(patch.writes as readonly string[], slotOf, channels);
+    this.slots = wrote.slots;
     this.named = spec.subjects ? new Named(spec.subjects) : null;
     this.built = patch.form === 'keys' && patch.keys ? builtOf(patch) : null;
-    this.lerps = this.slots.map((slot) => (channels[slot] as Channel<unknown>).lerp);
+    this.lerps = wrote.lerps;
     this.intos = this.built
       ? intosOf(
           this.built,
