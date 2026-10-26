@@ -428,100 +428,76 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      teitou, 2026-10-25, `bench/runs/2026-10-25-named-split.txt`): one A/B can land all one side
      in the fast mode by luck.
 
-4. **Reach is fixed at cue, so a voice whose contribution moves pays for every subject it might
-   touch** (2026-10-07). A pointer glow is a weight signal run for every reached subject every
-   frame. Its patch is not the cost: `at` has been skipped at weight 0 since 2026-10-04, and a
-   `keys` patch's stops are now too (outside a locus, where a delta makes a voice a member; `step`
-   still runs, since a skipped step cannot leave state as a run one would). What is left for each
-   of the 98% of subjects out of range is reading the signal and keeping the record. Measured on
-   msb-uai (2026-10-24, node to itself, load 2.6–3.0, `AB_EACH=1 bench/ab.sh` 7 rounds,
-   `bench/runs/2026-10-24-glow-branch.txt`), a glow over 10k subjects adds to the voice under it
+4. **Bounds: built internally and measured a clear win; the public surface is unbuilt and waits on
+   naming** (2026-10-26). A pointer glow is a weight signal read for every subject every frame,
+   about 56 ns a subject by `pull`, almost all of it for the ~98% at weight 0. A bound declares
+   where the signal is 0, so the mix skips it there without visiting each subject.
 
-   | Read | glow, `gain` | glow, `gain` + `hex` | glow, `gain` + `color()` | `keys` glow, `gain` + `hex` |
+   What is built (`2dfdd3a`, internal: nothing exported from the package, no docs page).
+   `src/places.ts` holds the host's subjects and positions (`x`, `y` side by side in one
+   `Float64Array`, read in place) in a uniform grid, rebuilt at the first query after the host
+   says they moved. `src/bound.ts` has `place(mix, subjects, xy, cell)`, `moved(mix)` and
+   `bound(mix, handle, area)`, where `area` is a `{ x, y, r }` the host moves and the mix reads once
+   a frame. Outside the circle the voice is not read at all: the general path returns before
+   priming (`contribution`), and a lane fill runs `one` only for the subjects the grid finds within,
+   then zeroes the lane weight of those that left, keeping each on its lane and chain. Nothing
+   moves on or off a chain, so the relink cost the 2026-10-20 `part`/`drop`/`own` measurements were
+   about never arises. With no bound, output is bit-identical (`bench/same.sh e1d1d97`, 0 differ
+   with lanes on and off), and the guard rows sit within noise (teitou, 7 rounds,
+   `bench/runs/2026-10-26-bound-guards.txt`, ledger). `test/bound.test.ts` checks that a bounded
+   glow reads exactly as the same glow unbounded, lanes on and off, by probe and `pull`, with
+   subjects moving, with a view of 10–40% probed (`weightOf` of every subject included), and with
+   the bound put on a glow already playing; and that the signal is called only within.
+   Refused: no positions, no signal, `subjects`, a locus, history, an owner, a blend,
+   `from: 'current'`, a motion or stateful patch.
+
+   What it saves (teitou solo, `bench/rows.sh 7` on one build, medians, ms a frame;
+   `bench/runs/2026-10-26-bound-rows.txt`; U is 0 in every row unless given):
+
+   | Row (10k subjects) | covers | unbounded | bounded | saves |
    |---|---:|---:|---:|---:|
-   | probe | 0.80 ms | 1.17 ms | 0.93 ms | 1.28 ms |
-   | probe, lanes off | 0.92 ms | 0.90 ms | – | 1.00 ms |
-   | `pull` | 0.54–0.64 ms | – | – | 2.34 ms |
+   | `glow^` (base alone 0.589) | 2% | 1.115 | 0.666 | 0.449 (85% of what the glow adds) |
+   | `glow` probe (base 1.019) | 2% | 1.496 | 1.119 | 0.377 (79%) |
+   | `glow-` lanes off (base 1.351) | 2% | 1.904 | 1.732 | 0.172 (31%) |
+   | `glowm^`, every subject moving | 2% | 1.259 | 0.883 | 0.376 |
+   | `glowm` probe, moving | 2% | 1.798 | 1.289 | 0.509 |
+   | `glowkeys^` (packed color, off lanes) | 2% | 2.240 | 1.967 | 0.273 |
+   | `glowkeys` probe | 2% | 1.951 | 1.732 | 0.219 (U 5) |
+   | `GLOWR=27 glow^` | 20% | 1.143 | 0.936 | 0.207 |
+   | `GLOWR=27 glow` probe | 20% | 1.526 | 1.293 | 0.233 |
+   | `GLOWR=27 glowm^`, moving | 20% | 1.293 | 1.120 | 0.173 |
+   | `GLOWR=55 glow^` | 60% | 1.285 | 1.348 | −0.063 (U 5) |
+   | `GLOWR=55 glow` probe | 60% | 1.732 | 1.795 | −0.063 (U 8) |
+   | `GLOWR=55 glowm^`, moving | 60% | 1.415 | 1.612 | −0.197 |
 
-   on a voice alone of 1.55 ms by probe and 0.82–0.93 ms by `pull` (which spreads across runs).
-   A `hex` column still takes the glow's voice and the one under it off the lanes; `color()` runs
-   on them, so that half is solved by moving to `color()`, not by reach.
+   So it pays to somewhere between 20% and 60% coverage, and rebuilding the grid each frame for
+   10k moving subjects costs about 0.07 ms by `pull` (`glowbm^ − glowb^` less `glowm^ − glow^`,
+   inferred). Past the crossover what costs is each found subject's number, looked up through its
+   chain head (a `WeakMap` get), and the query itself; not profiled. A cache of each place's
+   subject number, checked against `Lanes.subjects`, would cut the first (untried).
 
-   Where the glow's lane read goes, by `pull` (`bench/glowparts.py 7 glowbase^ glow^`, msb-uai,
-   2026-10-24, `bench/runs/2026-10-24-glow-parts.txt`): 0.56 ms per 10k subjects, 56 ns a
-   subject. Of that, the bench's own signal is about 16 ns, two-thirds of it `Math.hypot` (sqrt
-   instead saves 0.10 ms). `base` around the call costs 4 ns, `prime` 5 ns, and `call` at weight
-   0 another 7 ns. The rest, about 15 ns, is `one`'s own bookkeeping for the subject. No one piece
-   is worth a change on its own: skipping `call`'s setup at weight 0 measured level to 4% slower
-   by `pull` and was backed out (2026-10-24, ledger). A lane fills a voice's `timestamp`,
-   `elapsed` and `pass` once per placing (`Arg.MARK`, 2026-10-25, built on `Setting` going
-   read-only), refilling only `dt`, `weight`, `state` and `keepOn` a subject; on keiei `glow^` went
-   from 1.708 to 1.657 ms and `signal` from 4.641 to 4.511, so about 3 ns of `prime`'s 5.
-   - The skip, done (2026-10-07).
-   - Declared bounds, the design to evaluate (unbuilt). The mix takes subject positions from the
-     host, and reach may be declared at three levels, each optional, each meaning "everywhere"
-     when absent; a voice's reach is where all three overlap:
+   The public surface, for Mike to decide and name (unbuilt; options with their costs):
 
-     | Declared on | Knows | Example | Changes |
-     |---|---|---|---|
-     | voice (`subjects`/`target`, today) | which subjects this cue is for | only the left sign | fixed at cue |
-     | patch | the effect's footprint by phase | a ripple growing 0 → 200 px | with phase |
-     | signal | where it is nonzero | within 80 px of the pointer | with host input |
+   | Question | Option | Cost |
+   |---|---|---|
+   | How the host gives positions | a list and an `x, y` array read in place, plus a call when they moved (what is built) | nothing a still frame; one O(n) grid rebuild a moved frame, 0.07 ms at 10k |
+   | | one call per subject, `(subject, x, y)` | a map lookup a call, about 20–40 ns a moved subject; incremental cell moves; better for few movers |
+   | | a host function asked per subject | the per-subject visit a bound exists to avoid; rejected |
+   | Where the bound is declared | on the cue, beside `weight`: a `{ x, y, r }` the host moves | the clip hazard: a radius smaller than the signal's falloff cuts it silently |
+   | | carried by a stock signal that knows its own falloff (a radial signal over a point and a radius) | no clip hazard, since the mix defines where it is nonzero; covers only shapes the engine ships |
+   | | on the patch, a radius by phase around a center given at cue (a ripple growing 0 → 200 px) | falls out of the same query with `r` read from the voice's phase each fill; refused under `stagger`, where subjects' phases differ |
+   | Positions' lifetime | the list as given, held until replaced (what is built) | holds the host's subjects strongly, unlike the rest of the mix |
+   | | per-subject entries released on `drop` and by the numbers' registry | weak, as records are; costs a registry entry a subject |
 
-     A bound on a mix without positions is refused at cue. Channels take no reach. The hazard is
-     a bound declared too small, which clips the effect silently; a dev check could sample a few
-     subjects outside it and warn on a nonzero contribution. Opt-in (decided 2026-10-07): with no
-     bound, behavior is today's. Whether unbounded voices are ever deprecated is left open, and
-     unlikely — klieg's lighting, a fade over a whole sign and wod's transitions are unbounded by
-     design; `target` is the likelier candidate once bounds absorb its spatial uses.
+   The dev check for a too-small bound (unbuilt): outside production, every few frames read the
+   signal for a few subjects just outside the circle, picked from the grid's ring of cells, and warn
+   once on a nonzero weight. It costs nothing in production and a handful of signal calls a frame
+   in development. A stock radial signal would not need it.
 
-     What bounds would still save, after the skip: the glow's lane read, about 0.56 ms per
-     10k subjects by `pull` on msb-uai (56 ns a subject, 16 ns of it the signal itself;
-     2026-10-24). Only a bound the mix can answer without visiting
-     each subject saves it: a per-subject test against a radius is the signal call again.
-     So the signal bound pays only with a spatial query over the host's positions, kept current
-     as they move, and the patch bound is the same query with a radius that changes by phase.
-     A reach that changes each frame also moves subjects on and off a voice's chain and lane. What
-     made that look dear on 2026-10-11 (moving rows allocating 1.9–2.3 MB a frame against 1.2 MB
-     still) was mostly not the moving. A lane fill boxed 3–5 numbers a subject in some processes and
-     none in others, on the same row, by which nested call V8 left out of line in `one`, which turns
-     on the order its compiles ran. Measured 2026-10-20 (`bench/allocs.mjs`,
-     `--trace-turbo-inlining`, local, Node 26.10 and 26.11): `stale:0`, with nothing moving, read
-     1.19 MB a frame in some processes and 1.99 in others, and raising V8's inlining budget put
-     every process at 1.19; `part:200` read 1.42–1.93 MB in every process, by node. The numbers now
-     cross those calls through typed arrays (`Lanes.arg`, `Mixer.primed`), and every reach row reads
-     one allocation figure in every process (local, Node 26.8, 26.10, 26.11). Under `--cpu-prof` on
-     msb-uai `stale:0` still read 1.82 MB once, so profiles of these rows can land in the boxing
-     shape.
-
-     The guess that a lane refills its columns for a stale chain is wrong. Counted with a call
-     counter (local, 2026-10-20): one `fillAll` and the same 10,122 `one` calls a frame at `stale:0`
-     and `stale:200`. Marking 200 chains stale a frame costs 0.1–0.5 µs a chain (`stale:200` less
-     `stale:0`, on msb-uai, keiei and teitou; the `stale:<K>` rows now stamp chains through
-     `unlink`, so a `pull` relinks them too, which it did not before). After the fix, on teitou
-     (`bench/reach.sh 3`, 2026-10-20, medians of three processes, 10,000 subjects, 200 in reach):
-
-     | 200 pairs a frame | voice alone | full glow | `part` | `drop` | `own` | nothing moving |
-     |---|---:|---:|---:|---:|---:|---:|
-     | probe | 1.143 | 1.663 | 1.357 (59%) | 1.614 (9%) | 1.570 (18%) | 1.228–1.295 (71–87%) |
-     | probe, lanes off | 1.361 | 2.004 | 1.544 (72%) | 1.539 (72%) | 1.680 (50%) | 1.415–1.444 (87–92%) |
-     | `pull` | 0.652 | 1.117 | 0.851 (57%) | 1.191 (−16%) | 1.035 (18%) | 0.710–0.742 (81–88%) |
-
-     (ms, median frame; in brackets the share of what the glow adds that the way keeps.) On keiei an
-     earlier build of the same fix gave `part` 73%, `drop` 32% and `own` 35% by probe. A pair now
-     costs `part` 0.3–0.7 µs, `drop` about 2 µs and `own` about 1.6 µs by probe. A profile of
-     `part:200` against `stale:0` (msb-uai) spreads a pair over its two relinks (about 0.3 µs), the
-     entering subject's first fold of the glow on the general path (about 0.5 µs) and the fade calls
-     (about 0.3 µs; rough, since `stale:0` ran in the boxing shape there); no one function holds it. `drop` adds renumbering, a `WeakRef` and a registry
-     entry a subject, and `own` a voice cued and retired a subject. The 2026-10-11 disagreement at
-     two pairs a frame fits the boxing shapes too (inferred, not rerun).
-
-     So bounds are worth building for a moving reach now, on `part`'s mechanics: a subject leaves
-     and enters a voice's reach without the mix forgetting it, which keeps 57–73% of the glow's cost
-     at 200 crossings a frame, and more as fewer cross (inferred). Not on `drop` or a voice a
-     subject, which keep 9–35% with lanes on and lose by `pull`. The fix costs the `signal` row
-     (three signal-weighted voices over 10k) 3–7% in three A/Bs, inside its spread each time but
-     always the same way; not chased.
+   Left: the naming and the public surface above; the slot cache past 20% coverage; a bound on a
+   voice naming its subjects, on a locus member and on a stateful patch, all refused now. Whether
+   unbounded voices are ever deprecated stays open and unlikely: klieg's lighting, a fade over a
+   whole sign and wod's transitions are unbounded by design (2026-10-07).
 
 5. **Work nobody will see** (2026-10-07). A lane fills only subjects probed this frame or the last
    (CHANGELOG 0.8.0), which does nothing for astv's shape, the `typing` row: at 2% probed every lane

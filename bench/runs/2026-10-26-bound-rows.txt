@@ -1,0 +1,436 @@
+# teitou (solo), build 2dfdd3a, bench/rows.sh 7 glowbase glow glowb glowkeys glowbkeys glowm glowbm glowbase^ glow^ glowb^ glowkeys^ glowbkeys^ glowm^ glowbm^ glowbase- glow- glowb- glowm- glowbm- and GLOWR=27@ and GLOWR=55@ each of glow glowb glow^ glowb^ glowm^ glowbm^
+onto: plan 217
+round 1   1/1  glowbase   N= 10000 V=1     1.019 ms/frame    102 ns/subject·voice  p50    0.971  p99    1.452  worst    8.005  first     9.9 ms  gc   16    4.0 ms    1092.8 kB/frame
+onto: progress 1/217
+round 1   1/1  glow       N= 10000 V=2     1.591 ms/frame     80 ns/subject·voice  p50    1.552  p99    2.089  worst    4.165  first    15.1 ms  gc   20    4.1 ms    1704.6 kB/frame
+onto: progress 2/217
+round 1   1/1  glowb      N= 10000 V=2     1.157 ms/frame     58 ns/subject·voice  p50    1.120  p99    1.439  worst    5.589  first    14.9 ms  gc   17    4.1 ms    1269.5 kB/frame
+onto: progress 3/217
+round 1   1/1  glowkeys   N= 10000 V=2     2.021 ms/frame    101 ns/subject·voice  p50    1.972  p99    2.457  worst    4.761  first    13.8 ms  gc   33    5.0 ms    2678.8 kB/frame
+onto: progress 4/217
+round 1   1/1  glowbkeys  N= 10000 V=2     1.710 ms/frame     86 ns/subject·voice  p50    1.670  p99    1.965  worst    4.700  first    13.2 ms  gc   28    3.7 ms    2065.9 kB/frame
+onto: progress 5/217
+round 1   1/1  glowm      N= 10000 V=2     1.871 ms/frame     94 ns/subject·voice  p50    1.821  p99    2.485  worst    4.421  first    16.9 ms  gc   20    4.2 ms    1708.2 kB/frame
+onto: progress 6/217
+round 1   1/1  glowbm     N= 10000 V=2     1.269 ms/frame     63 ns/subject·voice  p50    1.230  p99    1.706  worst    4.335  first    16.7 ms  gc   14    2.9 ms    1257.2 kB/frame
+onto: progress 7/217
+round 1   1/1  glowbase^  N= 10000 V=1     0.575 ms/frame     58 ns/subject·voice  p50    0.523  p99    0.746  worst   11.155  first    12.4 ms  gc   14    1.8 ms     771.9 kB/frame
+onto: progress 8/217
+round 1   1/1  glow^      N= 10000 V=2     1.134 ms/frame     57 ns/subject·voice  p50    1.100  p99    1.425  worst    4.734  first    16.4 ms  gc   19    3.7 ms    1405.1 kB/frame
+onto: progress 9/217
+round 1   1/1  glowb^     N= 10000 V=2     0.653 ms/frame     33 ns/subject·voice  p50    0.609  p99    0.825  worst    7.205  first    17.0 ms  gc   14    3.3 ms     965.5 kB/frame
+onto: progress 10/217
+round 1   1/1  glowkeys^  N= 10000 V=2     2.260 ms/frame    113 ns/subject·voice  p50    2.216  p99    2.789  worst    5.772  first    14.7 ms  gc   40    7.7 ms    3505.8 kB/frame
+onto: progress 11/217
+round 1   1/1  glowbkeys^ N= 10000 V=2     1.963 ms/frame     98 ns/subject·voice  p50    1.936  p99    2.375  worst    5.341  first    14.8 ms  gc   35    5.3 ms    2884.9 kB/frame
+onto: progress 12/217
+round 1   1/1  glowm^     N= 10000 V=2     1.274 ms/frame     64 ns/subject·voice  p50    1.208  p99    2.102  worst    5.221  first    20.1 ms  gc   22    2.7 ms    1397.9 kB/frame
+onto: progress 13/217
+round 1   1/1  glowbm^    N= 10000 V=2     0.886 ms/frame     44 ns/subject·voice  p50    0.836  p99    1.069  worst    9.091  first    20.4 ms  gc   14    3.6 ms     961.6 kB/frame
+onto: progress 14/217
+round 1   1/1  glowbase-  N= 10000 V=1     1.355 ms/frame    135 ns/subject·voice  p50    1.286  p99    2.133  worst    4.988  first     6.9 ms  gc   15    5.5 ms    1646.3 kB/frame
+onto: progress 15/217
+round 1   1/1  glow-      N= 10000 V=2     1.952 ms/frame     98 ns/subject·voice  p50    1.917  p99    2.378  worst    2.526  first    10.3 ms  gc   34    4.6 ms    2617.2 kB/frame
+onto: progress 16/217
+round 1   1/1  glowb-     N= 10000 V=2     1.706 ms/frame     85 ns/subject·voice  p50    1.660  p99    1.992  worst    2.175  first    10.4 ms  gc   28    3.8 ms    2009.7 kB/frame
+onto: progress 17/217
+round 1   1/1  glowm-     N= 10000 V=2     2.016 ms/frame    101 ns/subject·voice  p50    1.971  p99    2.374  worst    2.555  first    14.2 ms  gc   33    4.8 ms    2621.3 kB/frame
+onto: progress 18/217
+round 1   1/1  glowbm-    N= 10000 V=2     1.884 ms/frame     94 ns/subject·voice  p50    1.822  p99    2.455  worst    3.366  first    12.2 ms  gc   28    3.9 ms    2014.0 kB/frame
+onto: progress 19/217
+round 1 GLOWR=27  1/1  glow       N= 10000 V=2     1.520 ms/frame     76 ns/subject·voice  p50    1.494  p99    1.744  worst    4.503  first    16.4 ms  gc   26    2.8 ms    1849.1 kB/frame
+onto: progress 20/217
+round 1 GLOWR=27  1/1  glowb      N= 10000 V=2     1.292 ms/frame     65 ns/subject·voice  p50    1.269  p99    1.574  worst    4.835  first    16.1 ms  gc   23    2.9 ms    1567.9 kB/frame
+onto: progress 21/217
+round 1 GLOWR=27  1/1  glow^      N= 10000 V=2     1.111 ms/frame     56 ns/subject·voice  p50    1.083  p99    1.286  worst    5.429  first    17.2 ms  gc   24    2.6 ms    1542.4 kB/frame
+onto: progress 22/217
+round 1 GLOWR=27  1/1  glowb^     N= 10000 V=2     0.917 ms/frame     46 ns/subject·voice  p50    0.877  p99    1.197  worst    7.084  first    17.4 ms  gc   16    3.3 ms    1277.3 kB/frame
+onto: progress 23/217
+round 1 GLOWR=27  1/1  glowm^     N= 10000 V=2     1.252 ms/frame     63 ns/subject·voice  p50    1.224  p99    1.401  worst    5.586  first    19.3 ms  gc   24    2.7 ms    1550.5 kB/frame
+onto: progress 24/217
+round 1 GLOWR=27  1/1  glowbm^    N= 10000 V=2     1.219 ms/frame     61 ns/subject·voice  p50    1.170  p99    1.758  worst    6.939  first    21.0 ms  gc   13    3.8 ms    1259.2 kB/frame
+onto: progress 25/217
+round 1 GLOWR=55  1/1  glow       N= 10000 V=2     1.690 ms/frame     84 ns/subject·voice  p50    1.655  p99    2.032  worst    4.954  first    17.5 ms  gc   23    4.9 ms    2142.7 kB/frame
+onto: progress 26/217
+round 1 GLOWR=55  1/1  glowb      N= 10000 V=2     1.791 ms/frame     90 ns/subject·voice  p50    1.737  p99    2.385  worst    4.516  first    15.4 ms  gc   23    5.4 ms    2230.0 kB/frame
+onto: progress 27/217
+round 1 GLOWR=55  1/1  glow^      N= 10000 V=2     1.279 ms/frame     64 ns/subject·voice  p50    1.248  p99    1.585  worst    4.976  first    16.4 ms  gc   20    4.5 ms    1850.6 kB/frame
+onto: progress 28/217
+round 1 GLOWR=55  1/1  glowb^     N= 10000 V=2     1.359 ms/frame     68 ns/subject·voice  p50    1.310  p99    1.835  worst    5.406  first    18.1 ms  gc   22    5.0 ms    1930.7 kB/frame
+onto: progress 29/217
+round 1 GLOWR=55  1/1  glowm^     N= 10000 V=2     1.399 ms/frame     70 ns/subject·voice  p50    1.361  p99    1.763  worst    5.138  first    18.0 ms  gc   20    4.5 ms    1843.1 kB/frame
+onto: progress 30/217
+round 1 GLOWR=55  1/1  glowbm^    N= 10000 V=2     1.580 ms/frame     79 ns/subject·voice  p50    1.535  p99    1.933  worst    5.708  first    19.4 ms  gc   21    5.0 ms    1931.7 kB/frame
+onto: progress 31/217
+round 2 GLOWR=55  1/1  glowbm^    N= 10000 V=2     1.626 ms/frame     81 ns/subject·voice  p50    1.598  p99    1.985  worst    6.414  first    19.8 ms  gc   21    4.9 ms    1925.0 kB/frame
+onto: progress 32/217
+round 2 GLOWR=55  1/1  glowm^     N= 10000 V=2     1.383 ms/frame     69 ns/subject·voice  p50    1.351  p99    1.719  worst    5.064  first    18.4 ms  gc   20    4.5 ms    1837.5 kB/frame
+onto: progress 33/217
+round 2 GLOWR=55  1/1  glowb^     N= 10000 V=2     1.332 ms/frame     67 ns/subject·voice  p50    1.290  p99    1.784  worst    5.489  first    17.4 ms  gc   22    4.9 ms    1929.6 kB/frame
+onto: progress 34/217
+round 2 GLOWR=55  1/1  glow^      N= 10000 V=2     1.285 ms/frame     64 ns/subject·voice  p50    1.244  p99    1.707  worst    5.036  first    16.0 ms  gc   20    4.7 ms    1837.9 kB/frame
+onto: progress 35/217
+round 2 GLOWR=55  1/1  glowb      N= 10000 V=2     1.795 ms/frame     90 ns/subject·voice  p50    1.741  p99    2.245  worst    5.453  first    14.5 ms  gc   25    5.7 ms    2240.5 kB/frame
+onto: progress 36/217
+round 2 GLOWR=55  1/1  glow       N= 10000 V=2     1.715 ms/frame     86 ns/subject·voice  p50    1.669  p99    1.999  worst    4.972  first    16.3 ms  gc   23    5.0 ms    2142.8 kB/frame
+onto: progress 37/217
+round 2 GLOWR=27  1/1  glowbm^    N= 10000 V=2     1.084 ms/frame     54 ns/subject·voice  p50    1.041  p99    1.560  worst    6.482  first    19.8 ms  gc   13    3.1 ms    1268.4 kB/frame
+onto: progress 38/217
+round 2 GLOWR=27  1/1  glowm^     N= 10000 V=2     1.241 ms/frame     62 ns/subject·voice  p50    1.217  p99    1.429  worst    5.682  first    19.7 ms  gc   24    2.9 ms    1540.5 kB/frame
+onto: progress 39/217
+round 2 GLOWR=27  1/1  glowb^     N= 10000 V=2     0.976 ms/frame     49 ns/subject·voice  p50    0.918  p99    1.564  worst    6.671  first    17.6 ms  gc   15    3.7 ms    1262.0 kB/frame
+onto: progress 40/217
+round 2 GLOWR=27  1/1  glow^      N= 10000 V=2     1.099 ms/frame     55 ns/subject·voice  p50    1.067  p99    1.255  worst    5.376  first    17.5 ms  gc   24    2.7 ms    1537.9 kB/frame
+onto: progress 41/217
+round 2 GLOWR=27  1/1  glowb      N= 10000 V=2     1.293 ms/frame     65 ns/subject·voice  p50    1.269  p99    1.487  worst    4.633  first    15.4 ms  gc   31    5.2 ms    1566.0 kB/frame
+onto: progress 42/217
+round 2 GLOWR=27  1/1  glow       N= 10000 V=2     1.602 ms/frame     80 ns/subject·voice  p50    1.577  p99    1.926  worst    4.716  first    16.7 ms  gc   26    3.1 ms    1849.3 kB/frame
+onto: progress 43/217
+round 2   1/1  glowbm-    N= 10000 V=2     1.791 ms/frame     90 ns/subject·voice  p50    1.749  p99    2.557  worst    2.776  first    12.6 ms  gc   28    3.3 ms    2009.7 kB/frame
+onto: progress 44/217
+round 2   1/1  glowm-     N= 10000 V=2     2.026 ms/frame    101 ns/subject·voice  p50    1.987  p99    2.373  worst    2.539  first    14.2 ms  gc   33    5.0 ms    2618.0 kB/frame
+onto: progress 45/217
+round 2   1/1  glowb-     N= 10000 V=2     1.732 ms/frame     87 ns/subject·voice  p50    1.683  p99    2.473  worst    3.018  first    10.5 ms  gc   28    3.6 ms    2014.5 kB/frame
+onto: progress 46/217
+round 2   1/1  glow-      N= 10000 V=2     1.919 ms/frame     96 ns/subject·voice  p50    1.879  p99    2.300  worst    2.526  first    10.6 ms  gc   34    4.8 ms    2615.1 kB/frame
+onto: progress 47/217
+round 2   1/1  glowbase-  N= 10000 V=1     1.339 ms/frame    134 ns/subject·voice  p50    1.276  p99    2.036  worst    4.886  first     6.8 ms  gc   15    5.2 ms    1650.2 kB/frame
+onto: progress 48/217
+round 2   1/1  glowbm^    N= 10000 V=2     0.857 ms/frame     43 ns/subject·voice  p50    0.819  p99    1.055  worst    7.733  first    19.9 ms  gc   14    2.7 ms     969.2 kB/frame
+onto: progress 49/217
+round 2   1/1  glowm^     N= 10000 V=2     1.284 ms/frame     64 ns/subject·voice  p50    1.252  p99    1.531  worst    5.104  first    18.6 ms  gc   19    3.8 ms    1386.4 kB/frame
+onto: progress 50/217
+round 2   1/1  glowbkeys^ N= 10000 V=2     1.980 ms/frame     99 ns/subject·voice  p50    1.942  p99    2.449  worst    5.524  first    14.4 ms  gc   35    5.8 ms    2879.9 kB/frame
+onto: progress 51/217
+round 2   1/1  glowkeys^  N= 10000 V=2     2.240 ms/frame    112 ns/subject·voice  p50    2.196  p99    2.714  worst    6.255  first    15.4 ms  gc   41    6.7 ms    3490.9 kB/frame
+onto: progress 52/217
+round 2   1/1  glowb^     N= 10000 V=2     0.697 ms/frame     35 ns/subject·voice  p50    0.659  p99    0.893  worst    7.338  first    17.0 ms  gc   14    3.2 ms     967.9 kB/frame
+onto: progress 53/217
+round 2   1/1  glow^      N= 10000 V=2     1.115 ms/frame     56 ns/subject·voice  p50    1.078  p99    1.482  worst    4.838  first    16.8 ms  gc   19    3.7 ms    1390.4 kB/frame
+onto: progress 54/217
+round 2   1/1  glowbase^  N= 10000 V=1     0.609 ms/frame     61 ns/subject·voice  p50    0.558  p99    0.791  worst   11.464  first    12.1 ms  gc   14    1.8 ms     774.7 kB/frame
+onto: progress 55/217
+round 2   1/1  glowbm     N= 10000 V=2     1.271 ms/frame     64 ns/subject·voice  p50    1.243  p99    1.704  worst    4.044  first    17.6 ms  gc   14    3.0 ms    1269.0 kB/frame
+onto: progress 56/217
+round 2   1/1  glowm      N= 10000 V=2     1.777 ms/frame     89 ns/subject·voice  p50    1.717  p99    2.256  worst    4.505  first    16.7 ms  gc   20    3.7 ms    1693.4 kB/frame
+onto: progress 57/217
+round 2   1/1  glowbkeys  N= 10000 V=2     1.724 ms/frame     86 ns/subject·voice  p50    1.665  p99    2.105  worst    4.929  first    13.7 ms  gc   28    3.8 ms    2062.9 kB/frame
+onto: progress 58/217
+round 2   1/1  glowkeys   N= 10000 V=2     1.931 ms/frame     97 ns/subject·voice  p50    1.881  p99    2.888  worst    4.533  first    14.0 ms  gc   40    4.2 ms    2679.6 kB/frame
+onto: progress 59/217
+round 2   1/1  glowb      N= 10000 V=2     1.107 ms/frame     55 ns/subject·voice  p50    1.076  p99    1.477  worst    3.975  first    14.5 ms  gc   15    3.0 ms    1248.9 kB/frame
+onto: progress 60/217
+round 2   1/1  glow       N= 10000 V=2     1.496 ms/frame     75 ns/subject·voice  p50    1.470  p99    1.790  worst    4.798  first    15.9 ms  gc   26    3.3 ms    1703.4 kB/frame
+onto: progress 61/217
+round 2   1/1  glowbase   N= 10000 V=1     1.039 ms/frame    104 ns/subject·voice  p50    0.984  p99    1.530  worst    7.968  first    10.1 ms  gc   16    4.2 ms    1080.4 kB/frame
+onto: progress 62/217
+round 3   1/1  glowbase   N= 10000 V=1     1.019 ms/frame    102 ns/subject·voice  p50    0.962  p99    1.353  worst    8.673  first     9.8 ms  gc   16    4.0 ms    1078.9 kB/frame
+onto: progress 63/217
+round 3   1/1  glow       N= 10000 V=2     1.453 ms/frame     73 ns/subject·voice  p50    1.429  p99    1.656  worst    4.395  first    17.2 ms  gc   25    2.6 ms    1705.2 kB/frame
+onto: progress 64/217
+round 3   1/1  glowb      N= 10000 V=2     1.141 ms/frame     57 ns/subject·voice  p50    1.115  p99    1.525  worst    4.727  first    14.2 ms  gc   17    3.5 ms    1267.7 kB/frame
+onto: progress 65/217
+round 3   1/1  glowkeys   N= 10000 V=2     1.937 ms/frame     97 ns/subject·voice  p50    1.886  p99    2.455  worst    4.779  first    13.6 ms  gc   33    5.0 ms    2673.8 kB/frame
+onto: progress 66/217
+round 3   1/1  glowbkeys  N= 10000 V=2     1.972 ms/frame     99 ns/subject·voice  p50    1.842  p99    3.549  worst    5.863  first    13.2 ms  gc   28    5.3 ms    2062.5 kB/frame
+onto: progress 67/217
+round 3   1/1  glowm      N= 10000 V=2     1.820 ms/frame     91 ns/subject·voice  p50    1.758  p99    2.269  worst    4.537  first    17.1 ms  gc   30    7.3 ms    1694.7 kB/frame
+onto: progress 68/217
+round 3   1/1  glowbm     N= 10000 V=2     1.289 ms/frame     64 ns/subject·voice  p50    1.246  p99    1.737  worst    4.252  first    16.8 ms  gc   15    3.1 ms    1248.9 kB/frame
+onto: progress 69/217
+round 3   1/1  glowbase^  N= 10000 V=1     0.599 ms/frame     60 ns/subject·voice  p50    0.535  p99    0.835  worst   14.324  first    12.3 ms  gc   14    2.0 ms     769.9 kB/frame
+onto: progress 70/217
+round 3   1/1  glow^      N= 10000 V=2     1.116 ms/frame     56 ns/subject·voice  p50    1.081  p99    1.389  worst    5.337  first    16.7 ms  gc   19    3.6 ms    1396.0 kB/frame
+onto: progress 71/217
+round 3   1/1  glowb^     N= 10000 V=2     0.652 ms/frame     33 ns/subject·voice  p50    0.607  p99    0.836  worst    7.055  first    17.2 ms  gc   15    3.2 ms     967.9 kB/frame
+onto: progress 72/217
+round 3   1/1  glowkeys^  N= 10000 V=2     2.272 ms/frame    114 ns/subject·voice  p50    2.236  p99    2.774  worst    5.664  first    14.7 ms  gc   40    7.0 ms    3498.6 kB/frame
+onto: progress 73/217
+round 3   1/1  glowbkeys^ N= 10000 V=2     1.966 ms/frame     98 ns/subject·voice  p50    1.938  p99    2.380  worst    5.295  first    14.7 ms  gc   35    5.4 ms    2886.9 kB/frame
+onto: progress 74/217
+round 3   1/1  glowm^     N= 10000 V=2     1.283 ms/frame     64 ns/subject·voice  p50    1.252  p99    1.656  worst    4.983  first    18.2 ms  gc   19    3.6 ms    1387.5 kB/frame
+onto: progress 75/217
+round 3   1/1  glowbm^    N= 10000 V=2     0.887 ms/frame     44 ns/subject·voice  p50    0.836  p99    1.097  worst    8.680  first    19.9 ms  gc   14    3.5 ms     948.4 kB/frame
+onto: progress 76/217
+round 3   1/1  glowbase-  N= 10000 V=1     1.345 ms/frame    134 ns/subject·voice  p50    1.280  p99    2.063  worst    4.884  first     7.0 ms  gc   15    5.3 ms    1644.8 kB/frame
+onto: progress 77/217
+round 3   1/1  glow-      N= 10000 V=2     1.894 ms/frame     95 ns/subject·voice  p50    1.866  p99    2.134  worst    2.529  first    10.2 ms  gc   34    4.7 ms    2617.0 kB/frame
+onto: progress 78/217
+round 3   1/1  glowb-     N= 10000 V=2     1.702 ms/frame     85 ns/subject·voice  p50    1.655  p99    2.029  worst    2.193  first    10.5 ms  gc   29    4.1 ms    2008.8 kB/frame
+onto: progress 79/217
+round 3   1/1  glowm-     N= 10000 V=2     2.075 ms/frame    104 ns/subject·voice  p50    1.989  p99    2.845  worst    4.501  first    14.5 ms  gc   38    4.7 ms    2623.9 kB/frame
+onto: progress 80/217
+round 3   1/1  glowbm-    N= 10000 V=2     1.832 ms/frame     92 ns/subject·voice  p50    1.798  p99    2.330  worst    3.207  first    11.9 ms  gc   28    3.6 ms    2011.2 kB/frame
+onto: progress 81/217
+round 3 GLOWR=27  1/1  glow       N= 10000 V=2     1.574 ms/frame     79 ns/subject·voice  p50    1.552  p99    1.856  worst    4.488  first    16.7 ms  gc   26    3.5 ms    1850.1 kB/frame
+onto: progress 82/217
+round 3 GLOWR=27  1/1  glowb      N= 10000 V=2     1.288 ms/frame     64 ns/subject·voice  p50    1.256  p99    1.573  worst    4.787  first    16.3 ms  gc   23    2.8 ms    1564.7 kB/frame
+onto: progress 83/217
+round 3 GLOWR=27  1/1  glow^      N= 10000 V=2     1.121 ms/frame     56 ns/subject·voice  p50    1.092  p99    1.270  worst    5.412  first    17.4 ms  gc   24    2.7 ms    1538.5 kB/frame
+onto: progress 84/217
+round 3 GLOWR=27  1/1  glowb^     N= 10000 V=2     0.924 ms/frame     46 ns/subject·voice  p50    0.866  p99    1.501  worst    6.528  first    18.4 ms  gc   10    2.3 ms    1254.5 kB/frame
+onto: progress 85/217
+round 3 GLOWR=27  1/1  glowm^     N= 10000 V=2     1.293 ms/frame     65 ns/subject·voice  p50    1.263  p99    1.451  worst    5.620  first    20.0 ms  gc   24    2.7 ms    1539.7 kB/frame
+onto: progress 86/217
+round 3 GLOWR=27  1/1  glowbm^    N= 10000 V=2     1.123 ms/frame     56 ns/subject·voice  p50    1.088  p99    1.383  worst    7.058  first    21.0 ms  gc   17    3.7 ms    1266.1 kB/frame
+onto: progress 87/217
+round 3 GLOWR=55  1/1  glow       N= 10000 V=2     1.666 ms/frame     83 ns/subject·voice  p50    1.629  p99    2.076  worst    4.883  first    17.0 ms  gc   23    4.9 ms    2148.2 kB/frame
+onto: progress 88/217
+round 3 GLOWR=55  1/1  glowb      N= 10000 V=2     1.816 ms/frame     91 ns/subject·voice  p50    1.752  p99    2.391  worst    4.627  first    16.3 ms  gc   23    5.5 ms    2229.2 kB/frame
+onto: progress 89/217
+round 3 GLOWR=55  1/1  glow^      N= 10000 V=2     1.305 ms/frame     65 ns/subject·voice  p50    1.270  p99    1.567  worst    5.122  first    17.3 ms  gc   20    5.0 ms    1837.6 kB/frame
+onto: progress 90/217
+round 3 GLOWR=55  1/1  glowb^     N= 10000 V=2     1.324 ms/frame     66 ns/subject·voice  p50    1.273  p99    1.876  worst    5.446  first    17.5 ms  gc   22    5.2 ms    1921.1 kB/frame
+onto: progress 91/217
+round 3 GLOWR=55  1/1  glowm^     N= 10000 V=2     1.415 ms/frame     71 ns/subject·voice  p50    1.374  p99    1.750  worst    5.151  first    18.5 ms  gc   20    4.6 ms    1843.6 kB/frame
+onto: progress 92/217
+round 3 GLOWR=55  1/1  glowbm^    N= 10000 V=2     1.529 ms/frame     76 ns/subject·voice  p50    1.484  p99    1.867  worst    5.988  first    19.8 ms  gc   21    4.7 ms    1849.7 kB/frame
+onto: progress 93/217
+round 4 GLOWR=55  1/1  glowbm^    N= 10000 V=2     1.612 ms/frame     81 ns/subject·voice  p50    1.583  p99    2.015  worst    6.159  first    19.7 ms  gc   21    4.9 ms    1852.8 kB/frame
+onto: progress 94/217
+round 4 GLOWR=55  1/1  glowm^     N= 10000 V=2     1.417 ms/frame     71 ns/subject·voice  p50    1.383  p99    1.722  worst    5.322  first    18.0 ms  gc   21    4.4 ms    1837.7 kB/frame
+onto: progress 95/217
+round 4 GLOWR=55  1/1  glowb^     N= 10000 V=2     1.331 ms/frame     67 ns/subject·voice  p50    1.285  p99    1.683  worst    5.460  first    17.1 ms  gc   22    4.9 ms    1941.0 kB/frame
+onto: progress 96/217
+round 4 GLOWR=55  1/1  glow^      N= 10000 V=2     1.271 ms/frame     64 ns/subject·voice  p50    1.228  p99    1.625  worst    4.960  first    16.7 ms  gc   20    4.5 ms    1838.0 kB/frame
+onto: progress 97/217
+round 4 GLOWR=55  1/1  glowb      N= 10000 V=2     1.816 ms/frame     91 ns/subject·voice  p50    1.758  p99    2.354  worst    5.045  first    15.8 ms  gc   23    5.7 ms    2210.7 kB/frame
+onto: progress 98/217
+round 4 GLOWR=55  1/1  glow       N= 10000 V=2     1.732 ms/frame     87 ns/subject·voice  p50    1.676  p99    2.155  worst    5.195  first    16.3 ms  gc   23    5.2 ms    2140.0 kB/frame
+onto: progress 99/217
+round 4 GLOWR=27  1/1  glowbm^    N= 10000 V=2     1.089 ms/frame     54 ns/subject·voice  p50    1.046  p99    1.308  worst    6.628  first    20.0 ms  gc   14    3.1 ms    1277.3 kB/frame
+onto: progress 100/217
+round 4 GLOWR=27  1/1  glowm^     N= 10000 V=2     1.305 ms/frame     65 ns/subject·voice  p50    1.278  p99    1.518  worst    5.485  first    19.6 ms  gc   24    3.0 ms    1543.4 kB/frame
+onto: progress 101/217
+round 4 GLOWR=27  1/1  glowb^     N= 10000 V=2     0.932 ms/frame     47 ns/subject·voice  p50    0.857  p99    1.513  worst    7.451  first    18.4 ms  gc   11    2.6 ms    1258.3 kB/frame
+onto: progress 102/217
+round 4 GLOWR=27  1/1  glow^      N= 10000 V=2     1.175 ms/frame     59 ns/subject·voice  p50    1.162  p99    1.325  worst    5.249  first    17.1 ms  gc   24    2.8 ms    1538.7 kB/frame
+onto: progress 103/217
+round 4 GLOWR=27  1/1  glowb      N= 10000 V=2     1.305 ms/frame     65 ns/subject·voice  p50    1.259  p99    1.603  worst    5.140  first    16.2 ms  gc   23    2.8 ms    1576.8 kB/frame
+onto: progress 104/217
+round 4 GLOWR=27  1/1  glow       N= 10000 V=2     1.518 ms/frame     76 ns/subject·voice  p50    1.501  p99    1.741  worst    4.615  first    16.9 ms  gc   26    3.2 ms    1853.1 kB/frame
+onto: progress 105/217
+round 4   1/1  glowbm-    N= 10000 V=2     1.804 ms/frame     90 ns/subject·voice  p50    1.768  p99    2.310  worst    3.056  first    12.5 ms  gc   28    3.3 ms    2013.8 kB/frame
+onto: progress 106/217
+round 4   1/1  glowm-     N= 10000 V=2     2.041 ms/frame    102 ns/subject·voice  p50    2.005  p99    2.667  worst    3.955  first    14.1 ms  gc   47    8.8 ms    2624.0 kB/frame
+onto: progress 107/217
+round 4   1/1  glowb-     N= 10000 V=2     1.763 ms/frame     88 ns/subject·voice  p50    1.723  p99    2.158  worst    2.284  first    10.5 ms  gc   29    4.3 ms    2009.7 kB/frame
+onto: progress 108/217
+round 4   1/1  glow-      N= 10000 V=2     1.987 ms/frame     99 ns/subject·voice  p50    1.952  p99    2.349  worst    2.510  first    10.3 ms  gc   34    4.9 ms    2617.2 kB/frame
+onto: progress 109/217
+round 4   1/1  glowbase-  N= 10000 V=1     1.360 ms/frame    136 ns/subject·voice  p50    1.302  p99    2.028  worst    4.933  first     6.8 ms  gc   15    5.2 ms    1647.3 kB/frame
+onto: progress 110/217
+round 4   1/1  glowbm^    N= 10000 V=2     0.863 ms/frame     43 ns/subject·voice  p50    0.826  p99    1.067  worst    8.279  first    20.0 ms  gc   14    3.3 ms     973.5 kB/frame
+onto: progress 111/217
+round 4   1/1  glowm^     N= 10000 V=2     1.257 ms/frame     63 ns/subject·voice  p50    1.237  p99    1.435  worst    5.461  first    19.4 ms  gc   22    2.5 ms    1394.2 kB/frame
+onto: progress 112/217
+round 4   1/1  glowbkeys^ N= 10000 V=2     1.949 ms/frame     97 ns/subject·voice  p50    1.912  p99    2.383  worst    5.351  first    14.8 ms  gc   35    5.5 ms    2884.8 kB/frame
+onto: progress 113/217
+round 4   1/1  glowkeys^  N= 10000 V=2     2.203 ms/frame    110 ns/subject·voice  p50    2.160  p99    2.637  worst    5.838  first    14.7 ms  gc   41    6.6 ms    3496.1 kB/frame
+onto: progress 114/217
+round 4   1/1  glowb^     N= 10000 V=2     0.682 ms/frame     34 ns/subject·voice  p50    0.641  p99    0.883  worst    7.732  first    17.9 ms  gc   12    2.8 ms     975.4 kB/frame
+onto: progress 115/217
+round 4   1/1  glow^      N= 10000 V=2     1.108 ms/frame     55 ns/subject·voice  p50    1.069  p99    1.372  worst    4.757  first    17.3 ms  gc   19    3.5 ms    1395.8 kB/frame
+onto: progress 116/217
+round 4   1/1  glowbase^  N= 10000 V=1     0.576 ms/frame     58 ns/subject·voice  p50    0.523  p99    0.750  worst   11.513  first    12.3 ms  gc   14    1.7 ms     776.0 kB/frame
+onto: progress 117/217
+round 4   1/1  glowbm     N= 10000 V=2     1.295 ms/frame     65 ns/subject·voice  p50    1.259  p99    1.599  worst    4.588  first    16.4 ms  gc   18    3.4 ms    1251.7 kB/frame
+onto: progress 118/217
+round 4   1/1  glowm      N= 10000 V=2     1.726 ms/frame     86 ns/subject·voice  p50    1.673  p99    2.241  worst    4.389  first    17.0 ms  gc   20    3.8 ms    1696.4 kB/frame
+onto: progress 119/217
+round 4   1/1  glowbkeys  N= 10000 V=2     1.736 ms/frame     87 ns/subject·voice  p50    1.671  p99    2.205  worst    5.079  first    13.5 ms  gc   28    4.2 ms    2067.4 kB/frame
+onto: progress 120/217
+round 4   1/1  glowkeys   N= 10000 V=2     1.966 ms/frame     98 ns/subject·voice  p50    1.926  p99    2.297  worst    5.013  first    13.5 ms  gc   43    8.2 ms    2671.3 kB/frame
+onto: progress 121/217
+round 4   1/1  glowb      N= 10000 V=2     1.112 ms/frame     56 ns/subject·voice  p50    1.081  p99    1.436  worst    4.018  first    14.7 ms  gc   14    3.0 ms    1250.8 kB/frame
+onto: progress 122/217
+round 4   1/1  glow       N= 10000 V=2     1.540 ms/frame     77 ns/subject·voice  p50    1.513  p99    1.778  worst    4.585  first    16.2 ms  gc   26    3.1 ms    1703.2 kB/frame
+onto: progress 123/217
+round 4   1/1  glowbase   N= 10000 V=1     1.007 ms/frame    101 ns/subject·voice  p50    0.957  p99    1.336  worst    7.705  first     9.9 ms  gc   16    3.5 ms    1078.9 kB/frame
+onto: progress 124/217
+round 5   1/1  glowbase   N= 10000 V=1     1.013 ms/frame    101 ns/subject·voice  p50    0.960  p99    1.328  worst    7.781  first    10.5 ms  gc   16    4.1 ms    1088.7 kB/frame
+onto: progress 125/217
+round 5   1/1  glow       N= 10000 V=2     1.416 ms/frame     71 ns/subject·voice  p50    1.389  p99    1.623  worst    4.841  first    16.7 ms  gc   26    2.8 ms    1701.9 kB/frame
+onto: progress 126/217
+round 5   1/1  glowb      N= 10000 V=2     1.119 ms/frame     56 ns/subject·voice  p50    1.090  p99    1.359  worst    4.409  first    14.5 ms  gc   17    3.4 ms    1253.6 kB/frame
+onto: progress 127/217
+round 5   1/1  glowkeys   N= 10000 V=2     1.951 ms/frame     98 ns/subject·voice  p50    1.893  p99    2.428  worst    4.638  first    13.6 ms  gc   33    5.3 ms    2673.1 kB/frame
+onto: progress 128/217
+round 5   1/1  glowbkeys  N= 10000 V=2     1.732 ms/frame     87 ns/subject·voice  p50    1.685  p99    2.120  worst    4.661  first    13.2 ms  gc   28    3.6 ms    2062.6 kB/frame
+onto: progress 129/217
+round 5   1/1  glowm      N= 10000 V=2     1.789 ms/frame     89 ns/subject·voice  p50    1.731  p99    2.187  worst    4.439  first    17.1 ms  gc   21    3.9 ms    1702.0 kB/frame
+onto: progress 130/217
+round 5   1/1  glowbm     N= 10000 V=2     1.297 ms/frame     65 ns/subject·voice  p50    1.259  p99    1.770  worst    4.289  first    17.1 ms  gc   15    3.2 ms    1265.6 kB/frame
+onto: progress 131/217
+round 5   1/1  glowbase^  N= 10000 V=1     0.581 ms/frame     58 ns/subject·voice  p50    0.528  p99    0.784  worst   11.084  first    12.2 ms  gc   14    1.9 ms     774.6 kB/frame
+onto: progress 132/217
+round 5   1/1  glow^      N= 10000 V=2     1.135 ms/frame     57 ns/subject·voice  p50    1.102  p99    1.390  worst    4.837  first    16.0 ms  gc   19    3.5 ms    1404.2 kB/frame
+onto: progress 133/217
+round 5   1/1  glowb^     N= 10000 V=2     0.643 ms/frame     32 ns/subject·voice  p50    0.603  p99    0.801  worst    7.489  first    17.3 ms  gc   12    2.4 ms     971.2 kB/frame
+onto: progress 134/217
+round 5   1/1  glowkeys^  N= 10000 V=2     2.324 ms/frame    116 ns/subject·voice  p50    2.297  p99    2.849  worst    6.101  first    15.3 ms  gc   41    8.6 ms    3505.4 kB/frame
+onto: progress 135/217
+round 5   1/1  glowbkeys^ N= 10000 V=2     2.028 ms/frame    101 ns/subject·voice  p50    1.996  p99    2.390  worst    5.236  first    14.5 ms  gc   35    5.4 ms    2884.7 kB/frame
+onto: progress 136/217
+round 5   1/1  glowm^     N= 10000 V=2     1.259 ms/frame     63 ns/subject·voice  p50    1.226  p99    1.532  worst    4.988  first    18.3 ms  gc   19    3.6 ms    1398.4 kB/frame
+onto: progress 137/217
+round 5   1/1  glowbm^    N= 10000 V=2     0.883 ms/frame     44 ns/subject·voice  p50    0.832  p99    1.070  worst    8.475  first    20.5 ms  gc   14    3.2 ms     963.0 kB/frame
+onto: progress 138/217
+round 5   1/1  glowbase-  N= 10000 V=1     1.363 ms/frame    136 ns/subject·voice  p50    1.293  p99    2.164  worst    5.145  first     6.7 ms  gc   15    5.5 ms    1646.6 kB/frame
+onto: progress 139/217
+round 5   1/1  glow-      N= 10000 V=2     1.893 ms/frame     95 ns/subject·voice  p50    1.865  p99    2.147  worst    2.328  first    10.2 ms  gc   34    4.6 ms    2616.0 kB/frame
+onto: progress 140/217
+round 5   1/1  glowb-     N= 10000 V=2     1.715 ms/frame     86 ns/subject·voice  p50    1.661  p99    2.128  worst    2.295  first    10.6 ms  gc   29    3.9 ms    2008.1 kB/frame
+onto: progress 141/217
+round 5   1/1  glowm-     N= 10000 V=2     2.044 ms/frame    102 ns/subject·voice  p50    1.999  p99    2.419  worst    2.602  first    14.2 ms  gc   33    5.0 ms    2616.0 kB/frame
+onto: progress 142/217
+round 5   1/1  glowbm-    N= 10000 V=2     1.818 ms/frame     91 ns/subject·voice  p50    1.791  p99    2.478  worst    3.326  first    12.6 ms  gc   28    3.7 ms    2013.9 kB/frame
+onto: progress 143/217
+round 5 GLOWR=27  1/1  glow       N= 10000 V=2     1.589 ms/frame     79 ns/subject·voice  p50    1.558  p99    1.838  worst    4.794  first    16.6 ms  gc   26    3.0 ms    1847.1 kB/frame
+onto: progress 144/217
+round 5 GLOWR=27  1/1  glowb      N= 10000 V=2     1.293 ms/frame     65 ns/subject·voice  p50    1.255  p99    1.547  worst    4.911  first    16.1 ms  gc   23    2.7 ms    1559.9 kB/frame
+onto: progress 145/217
+round 5 GLOWR=27  1/1  glow^      N= 10000 V=2     1.166 ms/frame     58 ns/subject·voice  p50    1.129  p99    1.354  worst    5.651  first    17.4 ms  gc   24    2.8 ms    1538.4 kB/frame
+onto: progress 146/217
+round 5 GLOWR=27  1/1  glowb^     N= 10000 V=2     0.936 ms/frame     47 ns/subject·voice  p50    0.892  p99    1.311  worst    6.475  first    17.6 ms  gc   15    3.4 ms    1267.3 kB/frame
+onto: progress 147/217
+round 5 GLOWR=27  1/1  glowm^     N= 10000 V=2     1.258 ms/frame     63 ns/subject·voice  p50    1.237  p99    1.390  worst    5.536  first    19.7 ms  gc   24    2.6 ms    1543.8 kB/frame
+onto: progress 148/217
+round 5 GLOWR=27  1/1  glowbm^    N= 10000 V=2     1.120 ms/frame     56 ns/subject·voice  p50    1.081  p99    1.355  worst    6.600  first    20.8 ms  gc   13    3.1 ms    1264.2 kB/frame
+onto: progress 149/217
+round 5 GLOWR=55  1/1  glow       N= 10000 V=2     1.771 ms/frame     89 ns/subject·voice  p50    1.717  p99    2.179  worst    5.141  first    17.1 ms  gc   23    5.4 ms    2144.7 kB/frame
+onto: progress 150/217
+round 5 GLOWR=55  1/1  glowb      N= 10000 V=2     1.786 ms/frame     89 ns/subject·voice  p50    1.736  p99    2.406  worst    4.643  first    15.4 ms  gc   23    5.4 ms    2222.2 kB/frame
+onto: progress 151/217
+round 5 GLOWR=55  1/1  glow^      N= 10000 V=2     1.285 ms/frame     64 ns/subject·voice  p50    1.256  p99    1.548  worst    4.964  first    16.7 ms  gc   20    4.8 ms    1834.0 kB/frame
+onto: progress 152/217
+round 5 GLOWR=55  1/1  glowb^     N= 10000 V=2     1.385 ms/frame     69 ns/subject·voice  p50    1.335  p99    1.826  worst    5.989  first    18.9 ms  gc   20    4.7 ms    1916.1 kB/frame
+onto: progress 153/217
+round 5 GLOWR=55  1/1  glowm^     N= 10000 V=2     1.463 ms/frame     73 ns/subject·voice  p50    1.410  p99    1.813  worst    5.977  first    19.1 ms  gc   20    4.9 ms    1836.8 kB/frame
+onto: progress 154/217
+round 5 GLOWR=55  1/1  glowbm^    N= 10000 V=2     1.535 ms/frame     77 ns/subject·voice  p50    1.492  p99    1.825  worst    6.941  first    19.8 ms  gc   20    5.1 ms    1845.0 kB/frame
+onto: progress 155/217
+round 6 GLOWR=55  1/1  glowbm^    N= 10000 V=2     1.612 ms/frame     81 ns/subject·voice  p50    1.578  p99    2.017  worst    5.826  first    20.0 ms  gc   22    5.1 ms    1927.1 kB/frame
+onto: progress 156/217
+round 6 GLOWR=55  1/1  glowm^     N= 10000 V=2     1.364 ms/frame     68 ns/subject·voice  p50    1.329  p99    1.699  worst    5.747  first    18.3 ms  gc   20    4.6 ms    1839.6 kB/frame
+onto: progress 157/217
+round 6 GLOWR=55  1/1  glowb^     N= 10000 V=2     1.348 ms/frame     67 ns/subject·voice  p50    1.303  p99    1.722  worst    5.503  first    17.3 ms  gc   22    4.9 ms    1927.2 kB/frame
+onto: progress 158/217
+round 6 GLOWR=55  1/1  glow^      N= 10000 V=2     1.261 ms/frame     63 ns/subject·voice  p50    1.217  p99    1.579  worst    4.910  first    16.3 ms  gc   20    4.6 ms    1835.0 kB/frame
+onto: progress 159/217
+round 6 GLOWR=55  1/1  glowb      N= 10000 V=2     1.762 ms/frame     88 ns/subject·voice  p50    1.702  p99    2.358  worst    4.613  first    15.3 ms  gc   23    5.5 ms    2237.0 kB/frame
+onto: progress 160/217
+round 6 GLOWR=55  1/1  glow       N= 10000 V=2     1.767 ms/frame     88 ns/subject·voice  p50    1.709  p99    2.237  worst    4.988  first    16.5 ms  gc   23    5.3 ms    2150.8 kB/frame
+onto: progress 161/217
+round 6 GLOWR=27  1/1  glowbm^    N= 10000 V=2     1.098 ms/frame     55 ns/subject·voice  p50    1.057  p99    1.362  worst    7.087  first    20.1 ms  gc   14    3.1 ms    1258.2 kB/frame
+onto: progress 162/217
+round 6 GLOWR=27  1/1  glowm^     N= 10000 V=2     1.331 ms/frame     67 ns/subject·voice  p50    1.302  p99    1.562  worst    5.550  first    19.7 ms  gc   24    3.0 ms    1543.4 kB/frame
+onto: progress 163/217
+round 6 GLOWR=27  1/1  glowb^     N= 10000 V=2     0.940 ms/frame     47 ns/subject·voice  p50    0.868  p99    1.598  worst    6.509  first    18.9 ms  gc   11    2.4 ms    1258.3 kB/frame
+onto: progress 164/217
+round 6 GLOWR=27  1/1  glow^      N= 10000 V=2     1.143 ms/frame     57 ns/subject·voice  p50    1.115  p99    1.296  worst    5.469  first    17.2 ms  gc   24    2.7 ms    1541.8 kB/frame
+onto: progress 165/217
+round 6 GLOWR=27  1/1  glowb      N= 10000 V=2     1.258 ms/frame     63 ns/subject·voice  p50    1.230  p99    1.469  worst    4.799  first    15.8 ms  gc   23    2.5 ms    1555.7 kB/frame
+onto: progress 166/217
+round 6 GLOWR=27  1/1  glow       N= 10000 V=2     1.526 ms/frame     76 ns/subject·voice  p50    1.509  p99    1.726  worst    4.510  first    16.5 ms  gc   26    3.0 ms    1847.5 kB/frame
+onto: progress 167/217
+round 6   1/1  glowbm-    N= 10000 V=2     1.812 ms/frame     91 ns/subject·voice  p50    1.776  p99    2.419  worst    2.845  first    12.0 ms  gc   28    3.5 ms    2014.8 kB/frame
+onto: progress 168/217
+round 6   1/1  glowm-     N= 10000 V=2     1.994 ms/frame    100 ns/subject·voice  p50    1.960  p99    2.422  worst    2.493  first    14.1 ms  gc   33    4.7 ms    2621.9 kB/frame
+onto: progress 169/217
+round 6   1/1  glowb-     N= 10000 V=2     1.763 ms/frame     88 ns/subject·voice  p50    1.741  p99    2.118  worst    2.220  first     9.9 ms  gc   29    4.3 ms    2007.7 kB/frame
+onto: progress 170/217
+round 6   1/1  glow-      N= 10000 V=2     1.904 ms/frame     95 ns/subject·voice  p50    1.864  p99    2.227  worst    2.642  first    10.9 ms  gc   34    4.9 ms    2612.8 kB/frame
+onto: progress 171/217
+round 6   1/1  glowbase-  N= 10000 V=1     1.351 ms/frame    135 ns/subject·voice  p50    1.287  p99    1.991  worst    4.861  first     6.7 ms  gc   15    5.3 ms    1646.7 kB/frame
+onto: progress 172/217
+round 6   1/1  glowbm^    N= 10000 V=2     0.854 ms/frame     43 ns/subject·voice  p50    0.811  p99    1.002  worst    7.980  first    20.1 ms  gc   14    2.8 ms     964.1 kB/frame
+onto: progress 173/217
+round 6   1/1  glowm^     N= 10000 V=2     1.235 ms/frame     62 ns/subject·voice  p50    1.205  p99    1.433  worst    5.793  first    19.7 ms  gc   22    2.6 ms    1389.7 kB/frame
+onto: progress 174/217
+round 6   1/1  glowbkeys^ N= 10000 V=2     1.967 ms/frame     98 ns/subject·voice  p50    1.917  p99    2.457  worst    5.659  first    14.8 ms  gc   35    5.6 ms    2886.1 kB/frame
+onto: progress 175/217
+round 6   1/1  glowkeys^  N= 10000 V=2     2.171 ms/frame    109 ns/subject·voice  p50    2.123  p99    2.513  worst    5.487  first    14.8 ms  gc   40    6.2 ms    3508.4 kB/frame
+onto: progress 176/217
+round 6   1/1  glowb^     N= 10000 V=2     0.724 ms/frame     36 ns/subject·voice  p50    0.687  p99    0.954  worst    7.434  first    26.8 ms  gc   15    3.3 ms     963.6 kB/frame
+onto: progress 177/217
+round 6   1/1  glow^      N= 10000 V=2     1.110 ms/frame     55 ns/subject·voice  p50    1.076  p99    1.496  worst    4.755  first    17.0 ms  gc   19    3.7 ms    1398.1 kB/frame
+onto: progress 178/217
+round 6   1/1  glowbase^  N= 10000 V=1     0.597 ms/frame     60 ns/subject·voice  p50    0.541  p99    0.950  worst   11.032  first    12.7 ms  gc   14    2.0 ms     767.5 kB/frame
+onto: progress 179/217
+round 6   1/1  glowbm     N= 10000 V=2     1.511 ms/frame     76 ns/subject·voice  p50    1.436  p99    2.919  worst    5.731  first    22.4 ms  gc   17    4.7 ms    1260.7 kB/frame
+onto: progress 180/217
+round 6   1/1  glowm      N= 10000 V=2     1.798 ms/frame     90 ns/subject·voice  p50    1.740  p99    2.247  worst    4.963  first    17.8 ms  gc   20    4.3 ms    1702.7 kB/frame
+onto: progress 181/217
+round 6   1/1  glowbkeys  N= 10000 V=2     1.779 ms/frame     89 ns/subject·voice  p50    1.749  p99    2.667  worst    4.582  first    13.8 ms  gc   28    4.2 ms    2068.6 kB/frame
+onto: progress 182/217
+round 6   1/1  glowkeys   N= 10000 V=2     1.947 ms/frame     97 ns/subject·voice  p50    1.900  p99    2.379  worst    4.854  first    13.7 ms  gc   33    4.9 ms    2668.7 kB/frame
+onto: progress 183/217
+round 6   1/1  glowb      N= 10000 V=2     1.078 ms/frame     54 ns/subject·voice  p50    1.050  p99    1.289  worst    4.763  first    14.8 ms  gc   17    3.4 ms    1255.5 kB/frame
+onto: progress 184/217
+round 6   1/1  glow       N= 10000 V=2     1.610 ms/frame     81 ns/subject·voice  p50    1.559  p99    2.066  worst    4.443  first    15.6 ms  gc   21    4.3 ms    1705.5 kB/frame
+onto: progress 185/217
+round 6   1/1  glowbase   N= 10000 V=1     1.077 ms/frame    108 ns/subject·voice  p50    1.017  p99    1.431  worst    8.259  first    10.7 ms  gc   24    8.9 ms    1078.0 kB/frame
+onto: progress 186/217
+round 7   1/1  glowbase   N= 10000 V=1     1.029 ms/frame    103 ns/subject·voice  p50    0.972  p99    1.426  worst    7.948  first    10.2 ms  gc   16    3.7 ms    1088.0 kB/frame
+onto: progress 187/217
+round 7   1/1  glow       N= 10000 V=2     1.426 ms/frame     71 ns/subject·voice  p50    1.397  p99    1.668  worst    4.498  first    15.6 ms  gc   26    2.6 ms    1707.3 kB/frame
+onto: progress 188/217
+round 7   1/1  glowb      N= 10000 V=2     1.218 ms/frame     61 ns/subject·voice  p50    1.173  p99    1.688  worst    4.317  first    15.4 ms  gc   15    3.7 ms    1257.1 kB/frame
+onto: progress 189/217
+round 7   1/1  glowkeys   N= 10000 V=2     1.974 ms/frame     99 ns/subject·voice  p50    1.932  p99    2.404  worst    4.587  first    14.6 ms  gc   33    4.9 ms    2679.9 kB/frame
+onto: progress 190/217
+round 7   1/1  glowbkeys  N= 10000 V=2     1.724 ms/frame     86 ns/subject·voice  p50    1.679  p99    2.011  worst    4.748  first    13.2 ms  gc   28    3.6 ms    2068.0 kB/frame
+onto: progress 191/217
+round 7   1/1  glowm      N= 10000 V=2     1.829 ms/frame     91 ns/subject·voice  p50    1.770  p99    2.296  worst    4.589  first    17.4 ms  gc   20    4.0 ms    1702.3 kB/frame
+onto: progress 192/217
+round 7   1/1  glowbm     N= 10000 V=2     1.289 ms/frame     64 ns/subject·voice  p50    1.262  p99    1.530  worst    4.644  first    16.4 ms  gc   17    3.2 ms    1255.3 kB/frame
+onto: progress 193/217
+round 7   1/1  glowbase^  N= 10000 V=1     0.589 ms/frame     59 ns/subject·voice  p50    0.540  p99    0.761  worst   11.000  first    13.1 ms  gc   14    1.7 ms     770.4 kB/frame
+onto: progress 194/217
+round 7   1/1  glow^      N= 10000 V=2     1.074 ms/frame     54 ns/subject·voice  p50    1.043  p99    1.248  worst    4.723  first    16.1 ms  gc   19    3.5 ms    1398.9 kB/frame
+onto: progress 195/217
+round 7   1/1  glowb^     N= 10000 V=2     0.666 ms/frame     33 ns/subject·voice  p50    0.620  p99    0.877  worst    7.240  first    17.0 ms  gc   14    3.1 ms     950.3 kB/frame
+onto: progress 196/217
+round 7   1/1  glowkeys^  N= 10000 V=2     2.240 ms/frame    112 ns/subject·voice  p50    2.204  p99    2.646  worst    5.576  first    15.5 ms  gc   41    6.9 ms    3496.4 kB/frame
+onto: progress 197/217
+round 7   1/1  glowbkeys^ N= 10000 V=2     2.013 ms/frame    101 ns/subject·voice  p50    1.968  p99    2.437  worst    5.441  first    14.7 ms  gc   35    5.5 ms    2883.2 kB/frame
+onto: progress 198/217
+round 7   1/1  glowm^     N= 10000 V=2     1.208 ms/frame     60 ns/subject·voice  p50    1.176  p99    1.517  worst    4.841  first    18.5 ms  gc   19    3.6 ms    1398.7 kB/frame
+onto: progress 199/217
+round 7   1/1  glowbm^    N= 10000 V=2     0.885 ms/frame     44 ns/subject·voice  p50    0.853  p99    1.061  worst    8.019  first    20.5 ms  gc   14    2.8 ms     953.0 kB/frame
+onto: progress 200/217
+round 7   1/1  glowbase-  N= 10000 V=1     1.326 ms/frame    133 ns/subject·voice  p50    1.262  p99    1.995  worst    4.845  first     7.3 ms  gc   15    5.1 ms    1648.6 kB/frame
+onto: progress 201/217
+round 7   1/1  glow-      N= 10000 V=2     1.861 ms/frame     93 ns/subject·voice  p50    1.825  p99    2.793  worst    3.850  first    10.6 ms  gc   38    4.2 ms    2624.9 kB/frame
+onto: progress 202/217
+round 7   1/1  glowb-     N= 10000 V=2     1.740 ms/frame     87 ns/subject·voice  p50    1.692  p99    2.379  worst    2.817  first    10.4 ms  gc   28    3.3 ms    2007.5 kB/frame
+onto: progress 203/217
+round 7   1/1  glowm-     N= 10000 V=2     2.082 ms/frame    104 ns/subject·voice  p50    2.020  p99    2.508  worst    2.687  first    14.6 ms  gc   33    5.1 ms    2622.8 kB/frame
+onto: progress 204/217
+round 7   1/1  glowbm-    N= 10000 V=2     1.811 ms/frame     91 ns/subject·voice  p50    1.784  p99    2.378  worst    3.024  first    11.8 ms  gc   28    3.4 ms    2011.1 kB/frame
+onto: progress 205/217
+round 7 GLOWR=27  1/1  glow       N= 10000 V=2     1.493 ms/frame     75 ns/subject·voice  p50    1.474  p99    1.767  worst    4.420  first    16.7 ms  gc   26    3.0 ms    1850.8 kB/frame
+onto: progress 206/217
+round 7 GLOWR=27  1/1  glowb      N= 10000 V=2     1.302 ms/frame     65 ns/subject·voice  p50    1.276  p99    1.562  worst    4.685  first    16.7 ms  gc   23    2.8 ms    1573.3 kB/frame
+onto: progress 207/217
+round 7 GLOWR=27  1/1  glow^      N= 10000 V=2     1.168 ms/frame     58 ns/subject·voice  p50    1.137  p99    1.329  worst    5.440  first    16.9 ms  gc   24    2.8 ms    1541.8 kB/frame
+onto: progress 208/217
+round 7 GLOWR=27  1/1  glowb^     N= 10000 V=2     0.957 ms/frame     48 ns/subject·voice  p50    0.927  p99    1.246  worst    6.419  first    17.5 ms  gc   14    3.2 ms    1284.9 kB/frame
+onto: progress 209/217
+round 7 GLOWR=27  1/1  glowm^     N= 10000 V=2     1.394 ms/frame     70 ns/subject·voice  p50    1.361  p99    1.601  worst    6.100  first    20.0 ms  gc   24    3.1 ms    1542.1 kB/frame
+onto: progress 210/217
+round 7 GLOWR=27  1/1  glowbm^    N= 10000 V=2     1.203 ms/frame     60 ns/subject·voice  p50    1.156  p99    1.524  worst    7.249  first    22.3 ms  gc   13    3.6 ms    1273.9 kB/frame
+onto: progress 211/217
+round 7 GLOWR=55  1/1  glow       N= 10000 V=2     1.821 ms/frame     91 ns/subject·voice  p50    1.775  p99    2.294  worst    5.102  first    17.3 ms  gc   23    5.6 ms    2144.4 kB/frame
+onto: progress 212/217
+round 7 GLOWR=55  1/1  glowb      N= 10000 V=2     1.990 ms/frame    100 ns/subject·voice  p50    1.939  p99    2.593  worst    4.853  first    15.5 ms  gc   23    5.9 ms    2228.2 kB/frame
+onto: progress 213/217
+round 7 GLOWR=55  1/1  glow^      N= 10000 V=2     1.379 ms/frame     69 ns/subject·voice  p50    1.334  p99    1.943  worst    5.308  first    17.1 ms  gc   20    6.1 ms    1841.7 kB/frame
+onto: progress 214/217
+round 7 GLOWR=55  1/1  glowb^     N= 10000 V=2     1.488 ms/frame     74 ns/subject·voice  p50    1.426  p99    1.999  worst    5.680  first    19.6 ms  gc   19    5.6 ms    1861.8 kB/frame
+onto: progress 215/217
+round 7 GLOWR=55  1/1  glowm^     N= 10000 V=2     1.467 ms/frame     73 ns/subject·voice  p50    1.422  p99    1.844  worst    5.739  first    19.7 ms  gc   20    5.3 ms    1842.8 kB/frame
+onto: progress 216/217
+round 7 GLOWR=55  1/1  glowbm^    N= 10000 V=2     1.724 ms/frame     86 ns/subject·voice  p50    1.666  p99    2.316  worst    5.761  first    20.5 ms  gc   21    6.5 ms    1838.4 kB/frame
+onto: progress 217/217
