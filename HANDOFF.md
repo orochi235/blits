@@ -23,25 +23,21 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 - **What shipped is in `CHANGELOG.md`; the calls made while building it are in the schema page's
   "Chosen while building"**, each the owner's to overturn, and the playground's and the DevTools
   extension's own calls are under the same heading in their READMEs (moved there 2026-10-24).
-- **klieg's lighting voice needs `loop: true`** since 0.11.0 made `loop` default to one pass
-  (`packages/core/src/render/lighting.ts`). klieg `dee96ba` gives it that, committed on klieg's
-  `main` and not pushed (2026-10-11).
 - **klieg's port is merged into klieg's `main`** (2026-10-02), and its step two shipped in klieg
   0.15.0 (merge `77d537d`, 2026-10-05). klieg reads `setting.host` through `mix<I, O, H>`. klieg
-  moves onto `mix.arc` later; bree (`~/src/bree`, the marquee's home) builds against this checkout
-  through a file link.
-- **Which blits each consumer pins**, read from each `origin` head on 2026-10-11:
+  moves onto `mix.arc` later.
+- **Which blits each consumer pins**, read from each working tree under `~/src` on 2026-10-26:
 
   | Consumer | Pins |
   |---|---|
-  | astv, weasel core and labkit, agnew | `0.8.1` |
-  | klieg | `0.7.0` |
-  | wod, sherpa, magicsmoke | `0.6.0` |
-  | portfolio | `0.4.0` |
+  | bree | `0.12.1` |
+  | astv; weasel core, animator and labkit | `0.12.0` |
+  | klieg | `0.11.0` |
+  | wod | `^0.10.0` |
+  | magicsmoke, portfolio, agnew | `0.8.1` |
+  | sherpa | `0.6.0` |
 
-  This file said until then that wod, magicsmoke, portfolio and klieg's `main` were on 0.8.1 in
-  commits not pushed. No ref in the clones under `~/src` holds such a commit, so those moves are
-  either on another machine or were never made. sherpa follows klieg, to keep one blits copy.
+  sherpa follows klieg, to keep one blits copy.
 - **sherpa runs on klieg**, with one deduped blits copy. Its seams run on a blits mix, and its klieg pages hold on clicks and stages through
   `dismiss: 'host'` and `advance()`, paced on klieg's `active` and `stage` marks. All three systems fold through a mix: `Timeline.poseAt`
   cues a voice per layer of each phase, `EffectFrame` one per effect, and the sign's environment is
@@ -76,8 +72,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   panel and the DevTools extension can pick it and drive its clock (2026-10-24).
 - **blits-panel and the DevTools extension.** `@msb235/blits-panel` (`packages/panel`) is on npm at
   0.2.0 and publishes from `panel-v*` tags through trusted publishing; an agent registers trust with
-  `npm trust github`, and only an npm login needs Mike. Staging its first release left a
-  `0.0.0-stage` version on npm; deprecating it needs Mike's 2FA sign-in. `node
+  `npm trust github`, and only an npm login needs Mike. `node
   packages/panel/scripts/smoke.mjs` drives it in headless Chromium (on the fleet; it launches a
   browser). The extension is `apps/devtools`, whose README says how to load and test it; it is not
   on the Chrome Web Store, and putting it there is Mike's call. Hazards the review left standing:
@@ -204,7 +199,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   workflow, and every release after it goes out from a `v*` tag.
 - **The site**: the vocabulary first, consumers' docs second, the npm pitch third. Astro, not a
   Vite app, because it is mostly documents. `docs/schema.html` stays the design record, untouched;
-  the site takes its outline loosely. Local until GitHub Pages, and the workflow exists already.
+  the site takes its outline loosely.
+- **`numeric@1` kept its version when lanes took `color({ lerp: 'oklch' })`** (2026-10-25): a copy
+  of blits that predates `folds` folds that channel as `'own'`, which is correct.
 
 - **Built 2026-09-30 for magicsmoke**, which now runs every fault on blits (its old engine is
   deleted; on magicsmoke's `main` since 0.5.0): `lag`,
@@ -223,15 +220,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Next, in order
 
-1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits, all of it measurement
-   now: the garbage a churned voice makes was cut from 21.5 to about 13 KB on 2026-10-11, and the
-   file says what the rest is. Delete each item as it is dealt with, and the file once it is
-   empty. Its speed items matter only if weasel adopts blits: klieg and
-   magicsmoke are expected to run about two dozen voices over tens of subjects, under 1,000 subject
-   × voice pairs, where a frame costs about 0.2 ms (2026-10-01 guess, not a measured
-   workload). Two things that file records about the bench change how its numbers read: at
-   `FRAMES=5000` the tween rows mostly time tweens that have landed, since each lasts 10 s, and
-   `turnover^`'s `kB/frame` is mostly the row's own list copy.
+1. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: churn, stopping and
+   replacing voices, and two design questions. Delete each item as it is dealt with, and the file
+   once it is empty. At `FRAMES=5000` the bench's tween rows mostly time tweens that have landed,
+   since each lasts 10 s, and `turnover^`'s `kB/frame` is mostly the row's own list copy.
 
 2. **What is still slow.** Lanes, `pull`, `tween`, subject fades, a voice per node and crowds are
    built (the schema page's Lanes and motion sections, the changelog's 0.8.0 section); Mike set the
@@ -257,13 +249,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        record's voice, `linkable`, `sight`, and the `chains` WeakMap lookup), the fill's
        `open`/`one`/`call`/`shut`, the patch call itself, and the copy out, whose
        `pose[ch.name] =` store is two thirds of `copy`. A motion voice cannot take `foldNow` or
-       `placeAll`, since `move` numbers the subject. Measured no different on `swap` and reverted (2026-10-26, against `d066f9a`, seven
-       own-process runs): linking a voice stepped twice since a chain's version once (teitou,
-       2.10 → 2.09 ms, U = 23); handing `foldNow` its met lanes rather than looking each up by id
-       (teitou, 2.11 → 2.05, U = 12); skipping the chain walk for a voice no chain ever linked
-       (msb-uai, 2.64 → 2.59, U = 13); sizing a lane's `records`/`deltas` and a sharing voice's
-       `deltas` up front, which cut 2.0 MB a frame to 1.6 but not the time (teitou, 2.09 → 2.17,
-       U = 15). Raw output: `bench/runs/2026-10-26-{dedupe-steps,met-lanes,unchained-walk,presize-records}.txt`.
+       `placeAll`, since `move` numbers the subject. Measured no different on `swap` and reverted
+       (2026-10-26, `bench/runs/2026-10-26-{dedupe-steps,met-lanes,unchained-walk,presize-records}.txt`):
+       linking a voice stepped twice since a chain's version once; handing `foldNow` its met lanes;
+       skipping the chain walk for a voice no chain ever linked; sizing a lane's
+       `records`/`deltas` up front (2.0 MB a frame to 1.6, no time).
      - **A locus costs about 20% more than its voices played apart, and a blend about 33%**: on
        teitou (2026-10-26, `FRAMES=5000`, nine own-process runs) three voices in a locus over 10k
        subjects take 2.555 ms a frame, a `mix.blend` of three 2.841, and three plain voices 2.132.
@@ -282,27 +272,21 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        to no subject (`locus` 3.747 → 3.678, U = 13; `blend` 4.013 → 3.988, U = 14). Raw output:
        `bench/runs/2026-10-26-locus-{meet-once,inline,inline-teitou}.txt`. A locus with a motion
        member, or a signal that keeps state, stays on the general path.
-     - **Starting 10k one-subject tween voices** takes a first frame of 28.0–31.0 ms against
-       10.0–13.6 for fn voices (teitou, 2026-10-25, `bench/start.mjs`). The tween-only part: crowd
-       `join` 1.8 ms, the motion patch's off-heap first buffer 1.5, a second numbering of the
+     - **Starting 10k one-subject tween voices** takes a first frame of 20.7 ms against 8.9 for fn
+       voices (teitou, 2026-10-25, 9 rounds, `bench/start.mjs`,
+       `bench/runs/2026-10-25-named-writing.txt`). The tween-only part, profiled a build earlier:
+       crowd `join` 1.8 ms, the motion patch's off-heap first buffer 1.5, a second numbering of the
        subject 0.7, and 1.1 more of collection. Measured no different and reverted: carving motion
-       buffers from a shared slab, and keeping a named subject's record out of the WeakMap. Starting tweens
-       slowed in 0.14.0 and is back on `main` (teitou solo, 2026-10-25, 7 rounds,
-       `LINEAGE_BENCH=start.mjs bench/lineage.sh`): first frame 25.8 ms at v0.13.0, 29.2 at v0.14.0
-       (U = 7), 24.9 at `594c0af` (U = 17, level); fns 11.9–12.1 throughout.
-       Where starting allocates, garbage included (`bench/allocwho.mjs`, studio, 2026-10-25): a
-       tween voice 6.7 KB over its cue and first frame, a fn voice 4.5 KB. Common to both, the
-       `Voice` object itself is about 790 B (charged to `cue`, which allocates it; about 100
-       fields) and its field objects another 820 B. Tween-only: the crowd's `rowOf` and
-       `lanes.crowdOf` entries 184 B, `mix.playing` 92 B, `fresh`/`grow`/`Motions` about 450 B.
-       Most `rowOf`/`crowdOf` reads are by voice id with no voice at hand (`placed`, `watchId`,
-       `forget`), so moving a row onto its voice still needs an id map.
-       Kept 2026-10-25: `Named` copies an array of distinct subjects without iterating it, and a
-       one-channel patch's voices share `slots`/`lerps` (6.7 → 6.3 KB a tween voice, 4.5 → 4.1 a fn
-       voice; first frame tweens 23.5 → 20.7 ms, fns 10.8 → 8.9, teitou, 9 rounds,
-       `bench/runs/2026-10-25-named-writing.txt`). What is left in `Voice`: about 100 fields, 12
-       of them boxed doubles (192 B a voice, the ones defaulting to NaN or ±Infinity); its cold
-       fields are read from 2–26 files each, so a side object for them is a wide diff.
+       buffers from a shared slab, and keeping a named subject's record out of the WeakMap.
+       Where starting allocates, garbage included (`bench/allocwho.mjs`, 2026-10-25): a tween voice
+       6.3 KB over its cue and first frame, a fn voice 4.1 KB. Common to both, the `Voice` object
+       itself is about 790 B (charged to `cue`, which allocates it) and its field objects another
+       820 B. Tween-only: the crowd's `rowOf` and `lanes.crowdOf` entries 184 B, `mix.playing` 92
+       B, `fresh`/`grow`/`Motions` about 450 B. Most `rowOf`/`crowdOf` reads are by voice id with
+       no voice at hand (`placed`, `watchId`, `forget`), so moving a row onto its voice still needs
+       an id map. `Voice` has about 100 fields, 12 of them boxed doubles (192 B a voice, the ones
+       defaulting to NaN or ±Infinity); its cold fields are read from 2–26 files each, so a side
+       object for them is a wide diff.
      - **A crowd's `keys` rows** cost about 27 ns a subject by `pull` (teitou, 2026-10-25,
        `keyses^` 0.270 ms), against 25 for keys voices over every subject (2026-10-05). Rows whose
        stops share phases and easings search and ease once per phase (`KeyRows.search`, keyed by a
@@ -322,11 +306,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        `FRAMES=5000` on teitou `tweens^` ran 6% slower; copying each stretch into a Float64Array
        first made `weasel^`, whose voices sample through their patch every frame, 15% slower. The
        way through is a lane copying its stretches into its own Float64Array, as a crowd does.
-     - **Nothing reads clearly slower than 0.4.0 at steady state.** Confirm any short-run
-       regression at `FRAMES=5000` before chasing it: 330 frames can end before the JIT settles.
-   - **Where weasel-shaped `pull` spends its frame**, by a profile of 20,000 frames on teitou
-     (0.35 ms a frame, 2026-10-03): the fill about 68% (`runMotion` 30%, the fold 12%, weasel's own
-     easing 9%), the read about 29% (`pullRun` 14%, the column copy 11%).
+     - **Confirm any short-run regression at `FRAMES=5000` before chasing it**: 330 frames can end
+       before the JIT settles.
    - **Measured no different and reverted, so not worth re-proposing**: storing stretches as
      Float64Arrays (`b4a4260`, 2026-10-02), and reading a crowd's keys stops as flat numbers
      (2026-10-03).
@@ -343,14 +324,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      stop), a fold of every voice including stateless ones, and a copy of every voice. One store
      shared along a voice's copies would cut the first, and needs `Filled` in `src/store.ts`. No
      test reaches `carry`'s fallback for a copy that holds a record under copies that hold none.
-   - **A weasel session reruns `animator-on-blits` and `pose-overrides`** against the lanes build
-     before deciding its animator step 3 (weasel `c7a183bde`, branch `pose-overrides-mix`).
 
 3. **Next for speed: the steady frame of 10k one-voice-per-subject tweens read by `pull`** (`tweens^`,
-   `weasel^`), Mike's go 2026-10-05. Bare tween rows fill in one loop (`bare.ts`) and `pull` queues
-   runs since 2026-10-05: on teitou `tweens^` took 0.17 ms a frame and `weasel^` 0.22 before the
-   2026-10-24 changes below, against 0.031–0.047 for a hand-written loop doing the same
-   arithmetic. What is left:
+   `weasel^`), Mike's go 2026-10-05. On teitou `tweens^` takes about 0.165 ms a frame and `weasel^`
+   0.198 (2026-10-25), against 0.031–0.047 for a hand-written loop doing the same arithmetic. What
+   is left:
    - **Where the frame goes** (teitou, `--cpu-prof`, 2026-10-24): `tweens^` is 46% `bareRows`, 28%
      `pullRun`; `weasel^` 50% `runMotion`, 23% `pullRun`. `bareRows` inlines everything it calls.
      It does not pay for the bytes each row touches: in a model of its loop (`bench/layoutsim.mjs`,
@@ -359,60 +337,26 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      read 11%, the id 4%, `MSLOT`/`MET` 5%, `SAMPLED` 4%, the easing memo 2%; all together 97 → 76
      µs, against 40 for the hand loop. The rest is filling values with rest, folding into them, and
      copying out. A new layout is not worth building (2026-10-25).
-   - **Kept 2026-10-25**: `keepProbed` reads `per` only where the probed weight could change, and a
-     fill running to the end skips row ids. teitou, 9 runs a side at `FRAMES=5000`: `weasel^`
-     0.204 → 0.198 (U = 0.5), `tweens^` 0.169 → 0.166 (within noise). `fill.ts`'s `one` and `rest`
-     still do the old copy.
-   - **Kept 2026-10-25**: a bare row's `MSLOT`/`MET`/`SAMPLED` checks are made once and cached
-     as `Flag.READY`, which `unbare`, `restale` and `unplace` clear. teitou, 9 runs a side at
-     `FRAMES=5000`: `tweens^` 0.175 → 0.163 (U = 11), `weasel^` unchanged (it fills through
-     `runMotion`, which keeps the checks).
-   - **Two changes kept** (2026-10-24): a probe holds its subject for the next fill only while
-     the last fill looked one up (`Lanes.holds`), which a fill of bare tweens never does; and
-     `runMotion` reads a run's flags once in place of `bareAt`, `scalar` and `base`, and weighs a
-     shared fade once rather than once a subject. keiei, 7 own-process runs a side at
-     `FRAMES=5000` against `be0aaa4` (`bench/runs/2026-10-24-steady-pull.txt`): `tweens^`
-     0.300 → 0.285 (U = 7), `weasel^` 0.391 → 0.369 (U = 7); `fns^`, `probed`, `named` and `fn`
-     within noise. `bench/same.sh` read 0 differ, lanes on and off. One edge: a subject the host
-     has let go entirely may now be collected before the next fill rather than held until it;
+   - **A subject the host has let go entirely may be collected before the next fill** rather than
+     held until it, since a probe holds its subject only while fills look subjects up (2026-10-24);
      only a later signal or `parting` lookup on that subject could notice.
-   - **Counting `pullRun`'s probes and distinct subjects in locals measured no different**, so
-     not worth re-proposing (msb-uai, 7 runs a side: `tweens^` 0.258 → 0.258, `weasel^` 0.291 →
-     0.290; backed out 2026-10-24).
-   - **Inlining `linked` back into `probe` and `atRest` buys no frame time**, so not worth
-     re-proposing. A callee with TurboFan code of its own costs the caller its bytecode plus what
-     that code inlined, times 1.2, against 920 for the whole compile (`--trace-turbo-inlining`):
-     `linked` at 91 + 521 did not fit. Caching `filled` as one stamp that `begin` sets on its way
-     out, and moving `begin` and the per-subject stamping out of `prepare`, took that to 244 and
-     put `linked`, `chain`, `prepare` and `filled` back inline in the bench's read loop; reducing
-     `keep` to its check as well inlined the stamping into `probe` for `named` and `fn`. On
-     msb-uai, 12 own-process runs a side at `FRAMES=5000` against `1981422`: probed 2.224 → 2.188,
-     fn 2.792 → 2.747, named 2.292 → 2.272, probed- 3.924 → 3.906, rest 1.216 → 1.216, every row's
-     runs overlapping the other side's, collections unchanged; without the `keep` change, within
-     ±1.2%. `bench/same.sh` read 0 differ in all four settings. What `probed` still allocates is
-     pose data: `foldWith` copying each channel's rest value, and the `fn` voices' returned objects
-     in `fill.ts`'s `call`.
+   - **What `probed` still allocates is pose data**: `foldWith` copying each channel's rest value,
+     and the `fn` voices' returned objects in `fill.ts`'s `call`.
    - Measured no different, so not worth re-proposing:
-     - Moving `popDue`'s loop into a function of its own (`due.ts`). It ends `popDue` deoptimizing
-       at its tail on every frame a voice comes due (`node --trace-deopt`, 252 in 600 frames of
-       `churn^`), which a `turnover^` profile charges 42–49% of the frame, yet no row moved (eight
-       runs a side, teitou).
-     - Skipping `atRest`'s second `chains.get` after a probe of the same subject, though a local
-       `--cpu-prof` charged `chains.get` 8% of `probed`'s samples. `chain` kept the last subject
-       and head it answered and returned them while the head's version was current. On teitou, six own-process runs a side at `FRAMES=5000` against `13f7df1`:
-       probed 1.559 → 1.516 ms, fn (10k) 2.084 → 2.121, named (10k) 1.347 → 1.342, probed-
-       2.663 → 2.667, rest 0.943 → 0.964, tweens^ 0.165 → 0.166, weasel^ 0.220 → 0.217, every
-       row's runs overlapping; `bench/same.sh` read 0 differ with lanes on and off. The probe's
-       own lookup has no way around it short of a per-subject handle the host holds.
+     - Counting `pullRun`'s probes and distinct subjects in locals (msb-uai, 2026-10-24).
+     - Inlining `linked` back into `probe` and `atRest` (msb-uai, 2026-10-24, against `1981422`).
+     - Moving `popDue`'s loop into a function of its own (`due.ts`), though `popDue` deoptimizes
+       at its tail on every frame a voice comes due (teitou).
+     - Skipping `atRest`'s second `chains.get` after a probe of the same subject (teitou, against
+       `13f7df1`). The probe's own lookup has no way around it short of a per-subject handle the
+       host holds.
+     - A public `keys` read into a reused out object: slower than `at` (0.87 against 0.78 ms),
+       since V8 removes `at`'s fresh object when the caller reads one field (2026-10-08).
    - Not tried, and not to try: writing `pullRun`'s `LANE_PROBE` and `LANE_FILL` once per run
      instead of per subject. `weightOf` (`Lanes.reported`) and every pace loop (`bare.ts`,
      `sample.ts`, `crowd.ts`) read them by slot, so each would also have to find the run holding
      its slot, a second place for the same answer; and `pullRun` reads both stamps per subject
      anyway to count `distinct`, so the saving is a store per subject.
-   - **A cheaper `keys` patch read, asked by weasel 2026-10-08: built for plain-number tracks**
-     (`bce8fa3`). `NOTES-FROM-WEASEL.md` under "Speed" has the numbers, and why there is no
-     public read into an out object, and what weasel's own bench reads on 0.8.1: about 0.41 ms
-     at 10,000 tracks from 0.48, with a slow mode near 1.0 on both versions.
    - `turnover^` reads two ways on identical code (0.43–0.46 or 0.48–0.54 ms by process): six
      runs a side at least.
    - `named` at 10k reads two ways on identical code too (1.23–1.26 or 1.41–1.51 ms by process,
@@ -522,15 +466,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    decided (the schema page's Decided against). A reach that changes over time (item 4) is another
    way to say offscreen.
 
-6. **`color({ lerp: 'oklch' })` runs on lanes** (2026-10-25), vouched `{ op: 'own', axes: 4,
-   folds: 'sum' }`: a lane folds it as a plain sum and, where a lane interpolates (`foldKeys`,
-   `KeyRows.add`, `gatherInto`), calls the channel's `lerp` (`Laned.straight` false), so `lerpLch`
-   is the one OKLCH lerp both paths use. A copy of blits that predates `folds` folds it as `'own'`,
-   correctly, so `numeric@1` kept its version. On keiei, alone on the node, 7 rounds, 10k subjects
-   (`bench/runs/2026-10-25-oklch-lanes.txt`): `hues` 2.90 to 1.38 ms by probe and 3.29 to 0.67 by
-   `pull`, against 5.10 with lanes off; `glowo` 3.26 to 2.63. Open, Mike's call: a `tween`,
-   `spring` or `glide` on an oklch color still moves straight across each OKLab axis on both paths,
-   since motions never call a channel's `lerp`.
+6. **A `tween`, `spring` or `glide` on a `color({ lerp: 'oklch' })` channel moves straight across
+   each OKLab axis**, on lanes and off, since motions never call a channel's `lerp`. Whether it
+   should go through `lerpLch` is Mike's call.
 
 7. **blits-quarks and magicsmoke.** magicsmoke is on engine 0.8.1 but its fizz and tuning stay on
    its own code: the driver doesn't fit without changing what magicsmoke does. Its
@@ -564,18 +502,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    from 24 places in 12 modules and was left in.
 
 10. **The history adapter** (the schema page's "History behind a store") **has not been reviewed
-    by Mike.** astv marked its text-run weight `input` (astv `522624e0`); it now names its mixes,
-    describes its voices with `as` and gives a store once it moves to a release with this.
+    by Mike.**
 
-11. **astv's change order runs on a span** (astv `dfc8df5a`, on 0.12.0, 2026-10-23). weasel's
-    packages still pin 0.11.0, which astv overrides to keep one copy.
-
-12. **What the docs audit left** (2026-10-10).
+11. **What the docs audit left** (2026-10-10).
     - **A voice cued before the mix's first sync starts at 0 on the host's clock, not at that
       sync** (measured 2026-10-11): a one-pass 1 s voice cued before `sync(5000)` has ended
-      when it is first probed. `VoiceSpec.start` said "Default: the next sync" and now says
-      what happens. Whether it should start at the first sync instead is Mike's call; a page
-      that cues before its first `requestAnimationFrame` meets it.
+      when it is first probed. Whether it should start at the first sync instead is Mike's call;
+      a page that cues before its first `requestAnimationFrame` meets it.
     - **Not checked**: the page's timings and its table of consumers' kits, which are other
       repos' facts.
     - **Most panel fields commit on every keystroke**, so typing `1500` into a mark's time is
@@ -583,7 +516,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       go through `Draft` or `ExprInput`. The README says so; whether the rest should commit
       on Enter too is Mike's call.
 
-13. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). What
+12. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). What
     is built is in its README; the calls made building it are under its "Chosen while building".
     What is left:
     - **Found while building, Mike's to decide** (2026-10-17; the owner marks and the backward
@@ -626,7 +559,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 
-14. **What the 2026-10-09 code review left.** The review is the doc "blits code review,
+13. **What the 2026-10-09 code review left.** The review is the doc "blits code review,
     2026-10-09" (https://claude.ai/code/artifact/e73a612c-4d44-462b-b471-d3d6e1829db5), with its
     findings numbered there. Its whole plan is built and shipped as 0.8.0; the changelog's 0.8.0
     section says what changed, and this item holds only what is still open. Measure any hot-path
@@ -651,42 +584,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     1,234 to 5.37 ms. The rerun without it (`bench/runs/2026-10-20-releases-no-seek.txt`, 5 rounds)
     reads `fn` level across every release (2.29 to 2.27), `keys` 1.28 to 1.06, `kept` 5.45 to
     5.19, and allocation down at every row but `keys-`.
-  - **`glow` read 5.5% slower than at 0.10.0, and most of it is back** (2026-10-20). With the
-    bench reading subjects by index (its `for...of` allocated a result a subject in some processes,
-    which made every probed row two-moded), v0.10.0 against `11a1471` read `glow` 1.603 to 1.691 ms
-    (U = 0) and `glowbase` 1.180 to 1.120 (U = 0), so the cost was the signal-weighted glow voice's.
-    It arrived in `6ef4985`, whose `frozenAt` check for a voice hiding past its end left the
-    function out of line in a lane fill's `one`; writing it out there read 1.696 to 1.636 at 15
-    rounds (U = 47). The rest, about 2%, is not placed. `crowd.ts` still calls `frozenAt` for a
-    crowd's freezing voices, unmeasured. Runs: `bench/runs/2026-10-20-glow-*.txt` and
-    `-frozenat-*.txt`.
+  - **`crowd.ts` still calls `frozenAt` for a crowd's freezing voices**, unmeasured; writing it
+    out of line in a lane fill's `one` won back most of `glow`'s 5.5% against 0.10.0 (2026-10-20,
+    `bench/runs/2026-10-20-glow-*.txt` and `-frozenat-*.txt`).
     - **The calls this work made** (`out` arrays reused, step 7's names, the `writes` warning,
       `seek({ frame })`, `catchUp: 'fresh'`, playing backward) are in the schema page's "Chosen
       while building". Mike has not seen the first two.
     - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
-      - **`blend` reads about 5% slower at `e51cd85` than at `da6e613`, and no one commit
-        shows it** (teitou, 2026-10-10, `AB_EACH=1 bench/ab.sh` over `blend` alone, 7 rounds at
-        5,000 frames, medians in ms a frame). The whole range: 2.937 to 3.105, 1.057, the runs
-        apart but for one. Against `da6e613` each time: `ed0eab9` 2.945 to 2.949, `717a5be`
-        2.940 to 2.943, `0937ca1` 2.946 to 2.955, `2f2fb10` 2.945 to 3.161 with another job
-        disturbing that last pair. Step by step: `0937ca1` to `64a5860` 0.990, `64a5860` to
-        `2f2fb10` 0.978, `2f2fb10` to `e51cd85` 1.021, every pair's runs overlapping. So it
-        is level through `0937ca1`, which clears the `setting.dt` fix, and arrives after it in
-        steps smaller than the 3% a pair of runs resolves. A CPU profile at each end
-        (`bench/profab.sh da6e613 e51cd85 blend`, teitou, 2026-10-11, one run a side at 5,000
-        frames, 2.974 and 3.110 ms) names no function: every share is within a point of the
-        other side's, so the 0.136 ms is spread over `call`, `foldWith`, `foldLocus`, and
-        `gatherLocus` at 0.02 to 0.03 ms each, none of which changed in the range. What `one`
-        gained there, its `unband` at weight 0 for the member a blend leaves out, is 0.7% of
-        the later profile, about 0.02 ms. That reads as V8 laying out or inlining the same code
-        differently, which `--trace-turbo-inlining` on both builds would confirm or rule out.
-      - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one. Run
-        2026-10-10 and no pose was found to depend on it: a read ahead of nested spans, fitted
-        by `pipe` and by `lax`, with an anchor after the outer one, matched the same scene
-        synced frame by frame, since a child and an anchor are placed from a span's budget
-        whether or not the span has left. A copy given the list read the same. A child retimed
-        by `faster` did read apart from the synced mix, which was the mix's fault and is fixed
-        (the changelog's 0.9.0 section; `test/span.test.ts`).
+      - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one; no pose was
+        found to depend on it, and a copy given the list read the same (2026-10-10).
       - **A child whose owner runs backward**, left as found (2026-10-11): its `start` and `in`
         marks read where the owner's clock will next read the child's start (400 for an owner
         turned back at 200), as any retime of an owner moves them; and a child that itself runs
@@ -711,9 +617,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         row on an angle or quat reads its voice's stops and not `KeyRows`, and a vec of angles
         and a `color` over one stay off lanes.
     - **Measured, and where it stands:**
-      - **The laned steady rows read level as merged** (teitou, 2026-10-10, 7 rounds at 3,000
-        frames against `27acb2d`): `keys` 10k×3 0.953, `tween` 1.023, `fn` 1.027, geometric
-        mean 1.001, every row's runs overlapping the other side's.
       - **The `keys` row's 16 B a probe is the lane's scalar copied into the pose**
         (found 2026-10-11): `pose[ch.name] = ch.values[slot]` in `src/copyout.ts`, which a heap
         profile charges to `foldWith` because V8 inlines it there. The value comes out of a
@@ -800,87 +703,31 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         `step` reading `setting.weight`, `elapsed` or `pass` shows what a mix never sought shows
         after a seek back and return (`test/sought.test.ts`); after a seek back that stays, its
         steps up from the copy still run under the probe's setting.
-      - **Keeping history costs less a frame** (2026-10-20, branch `perf-history`; the ledger has
-        each change's rows). A copy let go of from the 5 s window is written over as the next one
-        kept (`remember` in `src/history.ts`); `reading.horizon` is worked out only for a motion
-        voice, the only patch that reads it; and a stock `sum`, `mul` or `max` channel of one axis
-        folds through `foldNumber` in `apply` (`src/fold.ts`) instead of the channel's `scale` and
-        `merge`, whose call boxed a double. Each is exact under `bench/same.sh`. Tried and backed
-        out for moving no row: storing a channel's primitive rest without `copy` (`f1523e0`).
-      - **Lanes lose to the general path where each subject has one `fn` voice** (keiei,
-        2026-10-20, five runs each in its own process, ms a frame, lanes on against off):
-
-        | Row | On | Off |
-        |---|---:|---:|
-        | `fns`, a `fn` voice per subject | 1.93–2.15 | 1.42–1.56 |
-        | `weaselfn`, weasel's animator as `fn` voices | 2.00–2.10 | 1.68–1.74 |
-        | `own` at 1,000, a voice per subject | 0.225–0.233 | 0.206–0.214 |
-        | `tweenfn`, one `fn` voice writing a vec | 1.51–1.59 | 1.26–1.30 |
-        | `fn`, three `fn` voices over every subject | 3.38–3.56 | 4.78–4.97 |
-        | `glowbase`, one `fn` voice writing a scalar | 1.69–1.76 | 2.02–2.07 |
-        | `tweens`, a tween per subject | 0.95–0.98 | 1.72–1.89 |
-
-        A crowd of per-subject voices a lane evaluates itself (`tweens`, `springs`, `keyses`,
-        `weasel`) wins on lanes. **A crowd of `fn` voices writing only arrays now runs off lanes
-        where no other fitting voice writes its channels** (2026-10-21, `keepCallsOff` and `calls`
-        in `src/qualify.ts`): its patch is called once a subject either way, and the lane's fill
-        walks the subjects a second time. One build timed with the rule on and off (`CALLS_OFF=0`
-        in `bench/frame.mjs`, through `bench/rows.sh`; msb-uai, 9 rounds of 1,500 frames, ms a
-        frame): `fns` 1.348 against 1.519, `named` level at 1,000 and 10,000. Before the rule was
-        limited to arrays, the same sweep read `named`, a crowd writing numbers, 17% to 25% slower
-        off lanes with no overlap between runs (`bench/runs/2026-10-21-calls-off-sweep.txt`), so a
-        crowd writing a number stays on lanes. Comparing two builds misled here: `fns` reads in
-        modes by build (about 1.10 ms with 1,333 kB a frame, or 1.34 with 1,178), and two builds
-        running `fns` down the same path read 0.825 at U = 0. Time a lanes change on such a row
-        with a switch in one build, not with `ab.sh`. `bench/abdirty.sh` A/Bs an uncommitted diff
-        with no commit on origin. Tried and backed out: answering a probe with nothing laned at the
-        top of `Lanes.prepare`, which read every row within 1% in one build
-        (`bench/runs/2026-10-21-prepare-shortcut-one-build.txt`). Mixed with a tween or keys crowd on the same channel, an `fn` crowd
-        still runs on lanes and pays the second walk, and that is the faster way: on `mixed` (half
-        the subjects a tween, half a `fn`, both on `position`) it read 1.306 ms a frame, against
-        1.441 with the channel taken off lanes and 1.380 with the mix's lanes off (msb-uai,
-        2026-10-21, 9 rounds of 1,500 frames, `bench/runs/2026-10-21-mixed-crowds.txt`, where
-        `CALLS_OFF=2` was an experiment switch, not kept). The 1.441 against 1.380 is what a mix with
-        lanes on pays with nothing laned, about 4%. **Most of it is now gone** (2026-10-21): a
-        profile put about 0.10 ms of `fns`' 0.18 ms gap in `prepare`, `begin`, `filled`, `general`
-        and `linked`'s call to them (`bench/runs/2026-10-21-lanes-idle-profile.txt`), and `linked`
-        in `src/fold.ts` now answers such a probe itself, still stamping the subject's
-        `GENERAL_PROBE`. One build with a switch (msb-uai, 13 rounds): `tweenfn` 0.936, `weaselfn`
-        0.954, `fns` 0.964, `named` level and `mixed`, which has lanes running, 1.029 inside its
-        spread (`bench/runs/2026-10-21-lanes-idle-confirm.txt`). Leaving the stamp out read about
-        9% on teitou, but a voice coming back onto a lane could then report a stale `weightOf`, so
-        it was not built (`bench/runs/2026-10-21-lanes-idle-sweep.txt`). **So does a lone `fn` voice over many subjects writing vecs**
-        (2026-10-21), where it is the only such voice on its channels; two or more fold faster on
-        lanes. Same sweep (`bench/runs/2026-10-21-calls-off-lone-voice.txt`): `tweenfn` 1.163
-        against 1.410 at 10,000 and 0.124 against 0.134 at 1,000, `weaselfn` 1.734 against 1.823,
-        three `tweenfn` voices left on lanes and level, `named`, `glowbase` and `fn` level. The rule
-        covers channels with an array rest that are not `last` (`vector`): a lone voice on
-        `color(last())` stays on lanes, and one on `color()` was not timed. `own`, a voice per
-        subject chosen by `target`, writes numbers and is unchanged: taking such voices off lanes as
-        a crowd read 0.150 to 0.142 ms at 1,000 subjects with the runs overlapping, against 0.131
-        with lanes off (teitou, `bench/runs/2026-10-21-targeted-off-experiment.txt`), so it was not
-        kept. `glowc` and `glowkeys` read on lanes
-        slower too (3.3 against 3.0) because nothing in them runs on lanes (their glow voice writes
-        `color`, a `last` channel with its own lerp, which closes `gain` for the flicker) while the
-        flicker still shares one record, which every read points at its subject and back.
+      - **Tried and backed out for moving no row**: storing a channel's primitive rest without
+        `copy` (`f1523e0`, 2026-10-20).
+      - **Which `fn` voices run off lanes** (2026-10-21, `keepCallsOff` and `calls` in
+        `src/qualify.ts`): a crowd of `fn` voices writing only arrays, and a lone `fn` voice
+        writing vecs, where no other fitting voice writes its channels, since a lane's fill walks
+        the subjects a second time. A crowd writing numbers stays on lanes (17% to 25% slower off,
+        `bench/runs/2026-10-21-calls-off-sweep.txt`), and so does an `fn` crowd mixed with a tween
+        or keys crowd on its channel (`bench/runs/2026-10-21-mixed-crowds.txt`). A lone voice on
+        `color()` was not timed. `fns` reads in modes by build, so time a lanes change on such a
+        row with a switch in one build, not with `ab.sh`; `bench/abdirty.sh` A/Bs an uncommitted
+        diff with no commit on origin.
+      - **Measured no different, or not built** (2026-10-21): answering a probe with nothing laned
+        at the top of `Lanes.prepare`; taking `own`'s targeted voices off lanes as a crowd;
+        leaving `GENERAL_PROBE` unstamped in `linked`, which read about 9% faster but could leave
+        a voice coming back onto a lane reporting a stale `weightOf`.
+      - **`glowc` and `glowkeys` read slower on lanes** (3.3 against 3.0 ms, 2026-10-21): nothing
+        in them runs on lanes (their glow voice writes `color`, a `last` channel with its own lerp,
+        which closes `gain` for the flicker) while the flicker still shares one record, which every
+        read points at its subject and back.
       - **A voice over every subject shares one record for its first 60 frames only** (2026-10-21,
-        `outgrow` in `src/everyone.ts`; not a keys voice, whose shared read costs nothing more).
-        Sharing was built for voices cued and gone within frames (`swap`, 8,064 to 3,875 kB a frame,
-        2026-10-09) and nobody had timed it on a voice that stays: with `shares` returning false,
-        `glowc` read 0.898, `glowbase` 0.915 and `tweenfn` 0.923 (teitou, 7 rounds, U = 0 each;
-        `bench/runs/2026-10-21-never-share.txt`). Against `a77c5c9`, unsharing at 60 frames read `fn` and
-        `glowc` 0.89 to 0.95 and `glowbase` and `tweenfn` level, but one build timed at each count
-        (`SHARE_FRAMES` in `bench/frame.mjs`; keiei, 7 rounds of 1,500 frames,
-        `bench/runs/2026-10-21-share-frames-sweep.txt`) reads every count ahead of never: against
-        never, 60 is `fn` 1,000×8 0.92, `glowbase` 0.95, `tweenfn` 0.96, and 1 is 0.86, 0.92 and 0.94.
-        60 is a guess at where about 2 MB allocated once at 10,000 subjects pays for 0.13 ms a frame,
-        not measured.
-      - **What the keyed store of a rest into the pose costs**: `pose[key] = copy(rest)` in
-        `foldWith` is 15% of the `tweenfn-` row's samples, a store V8 cannot specialize since `key`
-        varies. Storing the bench kit's two primitive rests by name (`pose.gain = rest`), the most
-        a function made per kit from source text could do, read `tweenfn-` 0.947 (U = 1) and four
-        other rows level (keiei, 2026-10-20, 7 rounds against `f727ff7`; the ledger's
-        "ceiling" entry), so it was not built.
+        `outgrow` in `src/everyone.ts`; not a keys voice). Every count timed beats never unsharing
+        (`bench/runs/2026-10-21-share-frames-sweep.txt`); 60 itself is a guess, not measured.
+      - **Storing a rest into the pose by name** (`pose.gain = rest`), the most a function made
+        per kit from source text could do, was measured and not built (keiei, 2026-10-20; the
+        ledger's "ceiling" entry).
       - **The `kept` row's two plain voices never run on lanes**: they write `dark`, which its
         stateful voice also writes, and `qualify` closes a channel any voice that does not fit
         writes (read 2026-10-20). So the history rows measure the general path alone.
@@ -893,17 +740,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       lists are still in klieg, sherpa, weasel and wod, and in `apps/playground` (`LivePanel`'s
       cast, `expr.ts`'s flag).
 
-15. **astv's glides (+8%) and progress clocks (+39%) are unexplained** since 0.8.0, at 1 to 2 µs a
+14. **astv's glides (+8%) and progress clocks (+39%) are unexplained** since 0.8.0, at 1 to 2 µs a
     frame with runs that disagree; the rest of what 0.8.0 cost under `history` was fixed in 0.8.1
     (the changelog's 0.8.1 section). To measure a blits build against astv's bench: `MOTION_ONLY=1
     probes/blits-version-bench.sh <out dir> 0.7.1` in `~/src/astv` on a fleet node.
 
-16. **What the `setting.dt` fix left** (2026-10-10; the decision is in the schema page's "Chosen
-    while building"):
-    - **The first `dt` after a voice stops sharing its record counts from the subject's origin**,
-      since each subject's own record starts fresh (`unshare` in `everyone.ts`).
-    - klieg's `it.fails` test for this (klieg `TODO.md`) should pass on any blits release since
-      0.9.0; nobody has checked.
+15. **The first `dt` after a voice stops sharing its record counts from the subject's origin**,
+    since each subject's own record starts fresh (`unshare` in `everyone.ts`; 2026-10-10, the
+    `setting.dt` decision is in the schema page's "Chosen while building").
 
 ## Loose ends
 
