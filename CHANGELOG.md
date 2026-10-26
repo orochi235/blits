@@ -20,6 +20,15 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- Probes of subjects on lanes cost 4 to 10% less a frame: the copy of laned values into the pose
+  stores each channel under its own name, written out once per set of laned channels, where one
+  store by a varying name went through V8's generic path. A voice over 10,000 subjects replaced
+  every frame (`swap`) takes 1.632 ms a frame against 1.739, its keys form 1.165 against 1.259, and
+  a probe then `atRest` of each subject (`probed`) 1.333 against 1.487 (teitou, medians of nine
+  runs, each in its own process). A pose the mix makes itself, for a probe without `out`, `atRest`
+  or `pull`, is now a plain object of the mix's own shape holding each channel with a rest in kit
+  order, so its numbers are stored unboxed. Under a content security policy that refuses
+  `Function`, the copy is the loop it was.
 - A weight signal on lanes is handed, after a stretch of frames at weight 0, the `dt` since its
   last read, as it is off lanes. It was handed the gap since the subject last had a delta.
 - Tweens read by `pull` cost about a twentieth less a frame: a probe holds its subject for the

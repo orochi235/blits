@@ -255,8 +255,17 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        U = 6 in the second A/B, on a row neither change runs, and 2.009 → 1.967 in the first).
        What is left per subject: relinking its chain (`relink.ts` `patch`, whose walk reads each
        record's voice, `linkable`, `sight`, and the `chains` WeakMap lookup), the fill's
-       `open`/`one`/`call`/`shut`, the patch call itself, and the copy out, whose
-       `pose[ch.name] =` store is two thirds of `copy`. A motion voice cannot take `foldNow` or
+       `open`/`one`/`call`/`shut`, the patch call itself, and the copy out. That copy stores each
+       channel by its own name since `3c2560d` (2026-10-26, `copyout.ts` `copier`: swap 1.739 →
+       1.632 ms on teitou, U = 0, `bench/runs/2026-10-26-copier-teitou.txt`), but into a host's
+       `{}` out it still boxes every number: `{}` shares V8's chain of shapes with the host's own
+       small literals, and `kit({ gain: mul(), ... })` puts a channel in `gain` first, so the
+       field is tagged for good (`node --trace-generalization`; `FIELDS=1` in `bench/frame.mjs`
+       prints the out). Probing into a pose of the mix's own shape (`OUT=blank`, `mix.blank`)
+       cuts about 310 kB a frame on swap, glow, glowbase, swapkeys, and probed, but only glowbase
+       read faster (1.079 → 1.012, U = 1; the rest inside noise, teitou,
+       `bench/runs/2026-10-26-out-shape.txt`). Handing hosts that shape needs a public pose
+       maker or a documented way to build an `out`: the owner's call, not made. A motion voice cannot take `foldNow` or
        `placeAll`, since `move` numbers the subject. Measured no different on `swap` and reverted (2026-10-26, against `d066f9a`, seven
        own-process runs): linking a voice stepped twice since a chain's version once (teitou,
        2.10 → 2.09 ms, U = 23); handing `foldNow` its met lanes rather than looking each up by id
