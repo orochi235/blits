@@ -45,6 +45,17 @@ export interface SpanHints {
 }
 
 /**
+ * A circle by its center, `x` and `y`, and radius `r`, in the units of the positions `plot` gave.
+ *
+ * @category voice
+ */
+export interface Circle {
+  x: number;
+  y: number;
+  r: number;
+}
+
+/**
  * What `cue` takes: a patch, and the clock, weight and reach it plays with.
  *
  * @category voice
@@ -135,6 +146,16 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
 
   /** Steady weight, or a signal read per subject per frame. Default 1. */
   weight?: number | Signal<I, H>;
+  /**
+   * Where the `weight` signal can be above 0: a circle the host moves by writing to it, read once
+   * a frame, over the positions `plot` gave. Outside it the voice gives a subject nothing and the
+   * signal is not read, so a frame visits only the subjects within rather than all of them. The
+   * signal has to be 0 beyond `r` already, or the circle cuts it off: outside production, every
+   * few frames, the mix reads it for a few subjects just outside and warns once if one is above 0.
+   * Needs `plot` first and a signal `weight`. Refused on a mix with history, and with `subjects`,
+   * a locus, an owner, `from: 'current'`, or a patch keeping state.
+   */
+  within?: Circle;
   /** Ramp in and out, ms. Out applies on `fade()` and when a finite loop ends. */
   fade?: FadeSpec;
   /** Voices sharing a locus are alternatives: the mix folds them through each channel's `lerp`. */

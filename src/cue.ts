@@ -1,5 +1,6 @@
 import { type Blend, blendOf } from './blend.js';
 import { checkHits } from './book.js';
+import { bind, checkWithin } from './bound.js';
 import { changed } from './chain.js';
 import { copyable } from './clone.js';
 import { schedule } from './due.js';
@@ -33,6 +34,7 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
   if (anchor) checkPlacement(mix, spec, anchor, owner);
   if (spec.hits !== undefined) checkHits(spec.hits, patch.duration);
   if (spec.marks !== undefined) checkMarks(spec.marks, patch.duration);
+  checkWithin(mix, spec);
 
   const anchored = anchor !== undefined && (anchor.start !== undefined || anchor.in !== undefined);
   // A voice an owner holds is placed on the owner's clock: ms from when it starts.
@@ -75,6 +77,7 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
     voice.waking = true;
     mix.waking = true;
   }
+  bind(mix, voice);
   enter(mix, voice);
   const h = handle(mix, voice) as VoiceHandle<I, O>;
   voice.handle = h;

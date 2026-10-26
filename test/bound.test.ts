@@ -1,8 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { bound, moved, place } from '../src/bound.js';
-import type { VoiceHandle } from '../src/handle.js';
+import { setFlagsFromString } from 'node:v8';
+import { runInNewContext } from 'node:vm';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { keys, kit, last, max, mix, mixHex, mul, patch, sum, vec } from '../src/index.js';
-import type { Mixer } from '../src/mixer.js';
 import type { Handle, Mix } from '../src/types.js';
 
 type Dot = { seed: number; x: number; y: number };
@@ -27,8 +26,6 @@ interface Way {
   /** Probe a window of this share of the subjects, moving each frame, instead of every one. */
   view?: number;
   pull?: boolean;
-  /** The frame the bound is put on, the glow playing unbounded before it. */
-  from?: number;
 }
 
 /** Each frame's poses of every subject read and the glow's weight for every subject. */
@@ -47,7 +44,7 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
     });
   };
   write();
-  if (bounded) place(m as unknown as Mixer<Dot, Pose>, dots, xy, R);
+  if (bounded) m.plot(dots, xy, R);
   const area = { x: 0, y: 0, r: R };
   const near = (s: Dot) => Math.max(0, 1 - Math.hypot(s.x - area.x, s.y - area.y) / R);
   m.cue({ patch: flicker(), loop: true });
@@ -62,8 +59,12 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
             writes: ['gain', 'color'],
           })
         : patch<Dot, Pose>(1000, () => ({ gain: 1.5 }), { writes: ['gain'] });
-  const glow: Handle<Dot> = m.cue({ patch: shape, weight: near, loop: true });
-  const from = way.from ?? 0;
+  const glow: Handle<Dot> = m.cue({
+    patch: shape,
+    weight: near,
+    loop: true,
+    ...(bounded ? { within: area } : {}),
+  });
   const out = {} as Pose;
   const cols = {
     gain: new Float64Array(dots.length),
@@ -82,10 +83,8 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
         d.y = Math.floor(j / SIDE) + 1.5 * Math.cos(f / 7 + j);
       });
       write();
-      if (bounded) moved(m as unknown as Mixer<Dot, Pose>);
+      if (bounded) m.moved();
     }
-    if (bounded && f === from)
-      bound(m as unknown as Mixer<Dot, Pose>, glow as unknown as VoiceHandle<Dot, Pose>, area);
     m.sync(f * 16.7);
     const read =
       way.view === undefined
@@ -123,32 +122,38 @@ describe('a bounded signal reads as the same signal unbounded, where it is 0 bey
     it(`a view of 10%, keys, ${on}`, () => agree({ lanes, view: 0.1, glow: 'keys' }));
     it(`read by pull, ${on}`, () => agree({ lanes, pull: true }));
     it(`read by pull, moving, ${on}`, () => agree({ lanes, pull: true, moving: true }));
-    it(`bounded from frame 20, after playing unbounded, ${on}`, () => agree({ lanes, from: 20 }));
-    it(`bounded from frame 20, a view, ${on}`, () => agree({ lanes, from: 20, view: 0.4 }));
   }
 });
 
-describe('a bound is refused', () => {
-  const cue = (m: Mix<Dot, Pose>, spec: Record<string, unknown>) =>
-    m.cue({ patch: flicker(), loop: true, ...spec }) as unknown as VoiceHandle<Dot, Pose>;
+const grid = () =>
+  Array.from({ length: SIDE * SIDE }, (_, j) => ({
+    seed: j * 0.37,
+    x: j % SIDE,
+    y: Math.floor(j / SIDE),
+  }));
+const xyOf = (dots: readonly Dot[]) => new Float64Array(dots.flatMap((d) => [d.x, d.y]));
+const glowPatch = () => patch<Dot, Pose>(1000, () => ({ gain: 1.5 }), { writes: ['gain'] });
+
+describe('within is refused', () => {
   const area = { x: 0, y: 0, r: 1 };
+  const cue = (m: Mix<Dot, Pose>, spec: Record<string, unknown>) => () =>
+    m.cue({ patch: flicker(), loop: true, within: area, ...spec });
   it('on a mix with no positions', () => {
     const m = mix<Dot, Pose>(K);
-    const h = cue(m, { weight: () => 1 });
-    expect(() => bound(m as unknown as Mixer<Dot, Pose>, h, area)).toThrow(/no positions/);
+    expect(cue(m, { weight: () => 1 })).toThrow(/call mix.plot first/);
   });
   it('on a voice with no signal, or one naming its subjects', () => {
     const m = mix<Dot, Pose>(K);
     const dot = { seed: 0, x: 0, y: 0 };
-    place(m as unknown as Mixer<Dot, Pose>, [dot], new Float64Array(2), 1);
-    expect(() => bound(m as unknown as Mixer<Dot, Pose>, cue(m, {}), area)).toThrow(/no signal/);
-    expect(() =>
-      bound(m as unknown as Mixer<Dot, Pose>, cue(m, { weight: () => 1, subjects: [dot] }), area),
-    ).toThrow(/not on this voice/);
+    m.plot([dot], new Float64Array(2), 1);
+    expect(cue(m, {})).toThrow(/needs a weight signal/);
+    expect(cue(m, { weight: 0.5 })).toThrow(/needs a weight signal/);
+    expect(cue(m, { weight: () => 1, subjects: [dot] })).toThrow(/naming its subjects/);
+    expect(cue(m, { weight: () => 1, locus: 'a' })).toThrow(/in a locus/);
   });
   it('on a voice whose patch keeps state', () => {
     const m = mix<Dot, Pose>(K);
-    place(m as unknown as Mixer<Dot, Pose>, [], new Float64Array(0), 1);
+    m.plot([], new Float64Array(0));
     const stepped = patch<Dot, Pose, { n: number }>(100, (_ph, _s, st) => ({ gain: st.state.n }), {
       writes: ['gain'],
       state: () => ({ n: 0 }),
@@ -156,24 +161,30 @@ describe('a bound is refused', () => {
         s.n++;
       },
     });
-    const h = m.cue({ patch: stepped, weight: () => 1, loop: true });
-    expect(() =>
-      bound(m as unknown as Mixer<Dot, Pose>, h as unknown as VoiceHandle<Dot, Pose>, area),
-    ).toThrow(/not on this voice/);
+    expect(() => m.cue({ patch: stepped, weight: () => 1, loop: true, within: area })).toThrow(
+      /keeping state/,
+    );
+  });
+  it('plot with too few positions, or a cell of 0', () => {
+    const m = mix<Dot, Pose>(K);
+    const dots = grid();
+    expect(() => m.plot(dots, new Float64Array(3))).toThrow(/two numbers a subject/);
+    expect(() => m.plot(dots, xyOf(dots), 0)).toThrow(/cell/);
   });
 });
 
-describe('a bound keeps its signal from being read outside it', () => {
+describe('within keeps its signal from being read outside it', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
   for (const lanes of [true, false])
     it(`calls the signal only within, and clips what it would give beyond, lanes ${lanes ? 'on' : 'off'}`, () => {
+      // The check for a clipped signal reads it outside; production makes none.
+      vi.stubEnv('NODE_ENV', 'production');
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const m = mix<Dot, Pose>(K, { lanes });
-      const dots: Dot[] = Array.from({ length: SIDE * SIDE }, (_, j) => ({
-        seed: j * 0.37,
-        x: j % SIDE,
-        y: Math.floor(j / SIDE),
-      }));
-      const xy = new Float64Array(dots.flatMap((d) => [d.x, d.y]));
-      place(m as unknown as Mixer<Dot, Pose>, dots, xy, 2);
+      const dots = grid();
+      m.plot(dots, xyOf(dots), 2);
       const area = { x: 7, y: 9, r: 2 };
       let calls = 0;
       const wide = (s: Dot) => {
@@ -181,15 +192,10 @@ describe('a bound keeps its signal from being read outside it', () => {
         return Math.max(0, 1 - Math.hypot(s.x - area.x, s.y - area.y) / 6);
       };
       m.cue({ patch: flicker(), loop: true });
-      const glow = m.cue({
-        patch: patch<Dot, Pose>(1000, () => ({ gain: 1.5 }), { writes: ['gain'] }),
-        weight: wide,
-        loop: true,
-      });
-      bound(m as unknown as Mixer<Dot, Pose>, glow as unknown as VoiceHandle<Dot, Pose>, area);
+      const glow = m.cue({ patch: glowPatch(), weight: wide, loop: true, within: area });
       const out = {} as Pose;
       const inside = dots.filter((d) => (d.x - 7) ** 2 + (d.y - 9) ** 2 <= 4);
-      for (let f = 0; f < 10; f++) {
+      for (let f = 0; f < 20; f++) {
         calls = 0;
         m.sync(f * 16.7);
         for (const d of dots) m.probe(d, out);
@@ -197,5 +203,106 @@ describe('a bound keeps its signal from being read outside it', () => {
         if (f > 2) expect(calls).toBe(inside.length);
       }
       for (const d of dots) expect(glow.weightOf(d) > 0, `${d.x},${d.y}`).toBe(inside.includes(d));
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+});
+
+describe('outside production, a circle that cuts off its signal warns once', () => {
+  const run = (lanes: boolean, falloff: number, frames = 40) => {
+    const m = mix<Dot, Pose>(K, { lanes });
+    const dots = grid();
+    m.plot(dots, xyOf(dots), 2);
+    const area = { x: 10, y: 10, r: 3 };
+    m.cue({
+      patch: glowPatch(),
+      weight: (s: Dot) => Math.max(0, 1 - Math.hypot(s.x - area.x, s.y - area.y) / falloff),
+      loop: true,
+      within: area,
+      name: 'glow',
+    });
+    for (let f = 0; f < frames; f++) {
+      m.sync(f * 16.7);
+      m.pull(dots, { gain: new Float64Array(dots.length) });
+      area.x = 10 + 3 * Math.cos(f / 5);
+    }
+  };
+  for (const lanes of [true, false]) {
+    const on = lanes ? 'lanes on' : 'lanes off';
+    it(`warns once, naming the voice, where the signal reaches past r, ${on}`, () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      run(lanes, 6);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]?.[0]).toMatch(/glow's weight signal reads .* within circle/);
+      warn.mockRestore();
+    });
+    it(`is silent where the signal falls to 0 by r, ${on}`, () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      run(lanes, 3);
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+    it(`is silent in production, ${on}`, () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.stubEnv('NODE_ENV', 'production');
+      run(lanes, 6);
+      vi.unstubAllEnvs();
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+  }
+});
+
+describe('positions hold their subjects as the mix does', () => {
+  for (const lanes of [true, false])
+    it(`lets go of plotted subjects the host no longer holds, lanes ${lanes ? 'on' : 'off'}`, async () => {
+      setFlagsFromString('--expose_gc');
+      const gc = runInNewContext('gc') as () => void;
+      const m = mix<Dot, Pose>(K, { lanes });
+      const area = { x: 0, y: 0, r: 2 };
+      const other = { seed: 0, x: 50, y: 50 };
+      const ref = (() => {
+        const dots = grid();
+        m.plot(dots, xyOf(dots), 2);
+        m.cue({
+          patch: glowPatch(),
+          weight: (s: Dot) => Math.max(0, 1 - Math.hypot(s.x, s.y) / 2),
+          loop: true,
+          within: area,
+        });
+        m.sync(0);
+        for (const d of dots) m.probe(d);
+        return new WeakRef(dots[0] as Dot);
+      })();
+      for (let i = 0; i < 20 && ref.deref() !== undefined; i++) {
+        await new Promise((r) => setTimeout(r, 0));
+        m.sync(16.7 * (i + 1));
+        m.probe(other);
+        gc();
+      }
+      expect(ref.deref()).toBeUndefined();
+    });
+  for (const lanes of [true, false])
+    it(`a dropped subject is outside every circle until plotted again, lanes ${lanes ? 'on' : 'off'}`, () => {
+      const m = mix<string, Pose>(K, { lanes });
+      const ids = ['a', 'b', 'c'];
+      const xy = new Float64Array([0, 0, 1, 0, 9, 9]);
+      m.plot(ids, xy, 1);
+      const glow = m.cue({
+        patch: glowPatch() as never,
+        weight: () => 1,
+        loop: true,
+        within: { x: 0, y: 0, r: 2 },
+      });
+      const read = (t: number) => {
+        m.sync(t);
+        return ids.map((id) => m.probe(id).gain);
+      };
+      expect(read(0)).toEqual([1.5, 1.5, 1]);
+      m.drop('a');
+      expect(read(16)).toEqual([1, 1.5, 1]);
+      expect(glow.weightOf('a')).toBe(0);
+      m.plot(ids, xy, 1);
+      expect(read(32)).toEqual([1.5, 1.5, 1]);
     });
 });

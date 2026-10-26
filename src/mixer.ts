@@ -2,6 +2,7 @@ import { type Arc, cueArc } from './arcs.js';
 import { blanks } from './blank.js';
 import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
+import { moved, plot } from './bound.js';
 import { aims, chain, linkable, relink } from './chain.js';
 import { type LerpInto, lerpInto, STOCK_BAND, scalarOp } from './channels.js';
 import type { Column } from './columns.js';
@@ -208,7 +209,7 @@ export class Mixer<I, O> implements Mix<I, O> {
    */
   chains = new Store<I, Subject<unknown>>();
   version = 0;
-  /** The positions the host gave, which a bound reads: see `bound.ts`. */
+  /** The positions `plot` gave, which a voice's `within` reads: see `bound.ts`. */
   places: Places<I> | null = null;
   /** What `prime` reads its clock, voice time and pass from: see `Primed`. */
   readonly primed = new Float64Array(Primed.SIZE);
@@ -418,7 +419,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   blend(
     members: readonly (Patch<I, O, unknown> | BlendMember<I, O>)[],
     by: Signal<I>,
-    spec: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'locus'> = {},
+    spec: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'locus' | 'within'> = {},
   ): Handle<I>[] {
     const locus = `blend:${this.nextId}`;
     const of = blendOf<I, O>(by, members.length - 1);
@@ -659,6 +660,8 @@ const methods = {
   still,
   restsLaned,
   restsKey,
+  plot,
+  moved,
   drop,
   forgetIn,
   releaseIn,

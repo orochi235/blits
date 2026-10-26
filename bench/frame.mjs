@@ -204,7 +204,7 @@ const rows = [
   ['glowo', 10000, 2],
   ['glowokeys', 10000, 2],
   // `glow` and `glowkeys` with the glow's signal bounded to its radius over the subjects' positions
-  // (src/bound.ts, internal), so a fill reads only the subjects within. `glowm` is `glow` with every
+  // (`within` on the cue), so a fill reads only the subjects within. `glowm` is `glow` with every
   // subject moving each frame, and `glowbm` it bounded, the index built again each frame.
   // GLOWR=<cells> widens the glow from 8: 27 covers about 20% of subjects, 55 about 60%.
   ['glowb', 10000, 2],
@@ -330,8 +330,6 @@ const rows = [
   ['seek', 10000, 3],
 ];
 
-// The bound rows' internals, which a build before them lacks.
-const bounds = await import('../dist/bound.js').catch(() => null);
 // FRAMES=20000 for a profile long enough to sample a fast row.
 const frames = Number(process.env.FRAMES ?? 300);
 const windowed = Number(process.env.WINDOW ?? 0);
@@ -506,10 +504,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       xy[2 * j] = subjects[j].x;
       xy[2 * j + 1] = subjects[j].y;
     }
-  if (bounded) {
-    if (bounds === null) throw new Error(`bench/frame.mjs: ${form} needs dist/bound.js`);
-    bounds.place(m, subjects, xy, RADIUS);
-  }
+  if (bounded) m.plot(subjects, xy, RADIUS);
   const aim = () => {
     const a = t / 2000;
     pointer.x = side / 2 + (side / 3) * Math.cos(a);
@@ -524,15 +519,16 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       xy[2 * j] = s.x;
       xy[2 * j + 1] = s.y;
     }
-    if (bounded) bounds.moved(m);
+    if (bounded) m.moved();
   };
   if (glow) m.cue({ patch: flicker(0), loop: true });
-  let glowing = null;
+  const within = bounded ? { within: pointer } : {};
   if (kind === 'glow' || kind === 'glowb' || kind === 'glowm' || kind === 'glowbm')
-    glowing = m.cue({
+    m.cue({
       patch: patch(1000, () => ({ gain: 1.5 }), { writes: ['gain'] }),
       weight: near,
       loop: true,
+      ...within,
     });
   if (kind === 'glowk' || kind === 'glowl' || kind === 'glowo')
     m.cue({
@@ -547,13 +543,14 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       loop: true,
     });
   if (kind === 'glowkeys' || kind === 'glowbkeys')
-    glowing = m.cue({
+    m.cue({
       patch: keys(1000, [
         { at: 0, delta: { gain: 1.5, color: 0xffe08a } },
         { at: 1, delta: { gain: 1.2, color: 0xffffff } },
       ]),
       weight: near,
       loop: true,
+      ...within,
     });
   if (kind === 'glowokeys')
     m.cue({
@@ -564,7 +561,6 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       weight: near,
       loop: true,
     });
-  if (bounded) bounds.bound(m, glowing, pointer);
   const later = kind === 'far' || kind === 'redo';
   // The flicker voices of `far` and `redo`, the `k`th starting 150 ms after the one before.
   const cueLater = (k, start) =>

@@ -15,6 +15,13 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
+- `within` on a cue: a circle `{ x, y, r }` the host moves, outside which the voice's weight signal
+  is 0, so the mix gives those subjects nothing without calling the signal for them. The host gives
+  the subjects' positions with `mix.plot(subjects, xy)`, two numbers a subject read in place, and
+  calls `mix.moved()` after writing new ones. Positions hold an object subject weakly, and `drop`
+  takes a subject's away. Outside production the mix warns once if the signal is above 0 just
+  outside the circle, which would cut it off there. Refused with history, `subjects`, a locus, an
+  owner, `from: 'current'`, or a patch keeping state.
 - `color({ lerp: 'oklch' })` and `color(last(), { lerp: 'oklch' })` run on lanes, where they took
   the general path. The pose is the same to the bit.
 

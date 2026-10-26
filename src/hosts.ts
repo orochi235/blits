@@ -67,6 +67,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
       return mix.held(voice, subject, slot);
     },
     forgot: (slot) => {
+      mix.places?.forgot(slot);
       // Only a voice over every subject keeps bits, and one gone may still be read back.
       for (const voice of mix.general) {
         unreach(voice, slot, false);

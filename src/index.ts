@@ -39,6 +39,7 @@ export type {
   Booker,
   BookOptions,
   Channel,
+  Circle,
   Columns,
   Described,
   Doubt,

@@ -47,6 +47,24 @@ bars.cue({ patch: badge, weight: gate(near, { on: 0.6, off: 0.4 }) });
 
 `peak(...signals)` is the loudest of several.
 
+## Only near the pointer: within
+
+A glow around the pointer is a signal read for every subject every frame, though most of them sit at 0. Cue it `within` a circle and the mix reads it only for the subjects inside: it gives every subject outside nothing, without calling the signal for them. The mix needs to know where the subjects are, so the host first calls `plot` with them and their positions, two numbers a subject in one `Float64Array`, `x` then `y`. The mix reads that array in place: to move the subjects, write new positions into it and call `moved`. To move the circle, write to it.
+
+```ts
+const xy = new Float64Array(all.length * 2); // x, y for each bar in `all`
+all.forEach((b, i) => { xy[2 * i] = b.x; xy[2 * i + 1] = b.y; });
+bars.plot(all, xy);
+
+const pointer = { x: 0, y: 0, r: 120 };
+const near: Signal<Bar> = (b) => Math.max(0, 1 - Math.hypot(b.x - pointer.x, b.y - pointer.y) / pointer.r);
+bars.cue({ patch: glow, weight: near, within: pointer, loop: true });
+
+window.addEventListener('pointermove', (e) => { pointer.x = e.clientX; pointer.y = e.clientY; });
+```
+
+The circle declares where the signal is 0; it does not shape it. A signal still above 0 at `r` is cut off there, so outside production the mix checks a few subjects just outside the circle every few frames and warns once if the signal reads above 0 for any of them. It pays while the circle covers a small share of the subjects: on 10,000 subjects a glow over 2% of them costs about a sixth of what it does unbounded, and past about half it costs more. `within` needs a signal `weight`, and is refused with history, `subjects`, a locus, an owner, `from: 'current'`, or a patch that keeps state.
+
 ## Where the state lives
 
 A slew or a lag remembers where it was, and a gate remembers which way it last switched. They don't keep that in themselves: they keep it in the mix, through `setting.keep(owner, init)`, once per voice and per subject. So one slew handed to two voices follows twice, independently, and one slew over twelve bars follows twelve times. A stateful signal of your own should keep its state the same way.

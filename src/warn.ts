@@ -2,7 +2,7 @@ declare const process: { env: Record<string, string | undefined> };
 declare const console: { warn(message: string): void };
 
 /** Whether this is a production build: a bundler's `NODE_ENV`, or Node's; false where neither is. */
-function production(): boolean {
+export function production(): boolean {
   try {
     return process.env.NODE_ENV === 'production';
   } catch {

@@ -1,22 +1,22 @@
 import { unband } from './fold.js';
-import { VoiceHandle } from './handle.js';
 import { keepProbed, type Lane, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import { Places } from './places.js';
+import type { Circle, Setting, VoiceSpec } from './types.js';
+import type { Voice } from './voice.js';
+import { production, warnOnce } from './warn.js';
 
 /**
- * Internal, unreleased: a voice's signal declared 0 beyond a circle around a point the host moves,
- * over positions the host gives the mix. Outside it the voice is not read at all, which is what
- * lets a lane fill visit only the subjects within it. Its public shape is undecided (HANDOFF item 4).
+ * A voice's signal declared 0 outside a circle around a point the host moves (`within` on the
+ * cue), over positions the host gives the mix (`plot`). Outside it the voice is not read at all,
+ * which is what lets a lane fill visit only the subjects within it.
  */
 
-/** The circle a bound reads once a frame, which the host moves by writing to it. */
-export interface Area {
-  x: number;
-  y: number;
-  r: number;
-}
+/** How many frames apart, outside production, a bound reads its signal just beyond the circle. */
+const CHECK_EVERY = 8;
+/** How many subjects beyond the circle each such check reads. */
+const CHECK_SUBJECTS = 4;
 
 export class Bound<I, O> {
   /** The frame `x`, `y` and `r` were read from `area` in. */
@@ -39,59 +39,85 @@ export class Bound<I, O> {
   litAt = new Float64Array(0);
   /** Whether `lit` has been seeded with every position the lane held before the bound. */
   seeded = false;
+  /** Outside production until it has warned: whether it checks the circle clips no signal. */
+  checks: boolean;
+  frames = 0;
 
   constructor(
     readonly mix: Mixer<I, O>,
-    readonly area: Area,
-  ) {}
+    readonly voice: Voice<I, O>,
+    readonly area: Circle,
+  ) {
+    this.checks = !production();
+  }
 }
 
-/** Gives the mix its subjects' positions, `x` then `y` side by side in `xy`, read in place. */
-export function place<I, O>(
-  mix: Mixer<I, O>,
+/** `Mix.plot`: the mix's subjects and their positions, `x` then `y` side by side in `xy`, read in place. */
+export function plot<I, O>(
+  this: Mixer<I, O>,
   subjects: readonly I[],
   xy: Float64Array,
-  cell: number,
+  cell?: number,
 ): void {
-  mix.places ??= new Places<I>();
-  mix.places.set(subjects, xy, cell);
-  moved(mix);
+  if (xy.length < 2 * subjects.length)
+    throw new RangeError(
+      `blits: plot takes two numbers a subject, x then y: ${subjects.length} subjects need ${2 * subjects.length}, not ${xy.length}`,
+    );
+  if (cell !== undefined && !(cell > 0 && cell < Number.POSITIVE_INFINITY))
+    throw new RangeError(`blits: plot's cell is a size above 0, not ${cell}`);
+  this.places ??= new Places<I>();
+  this.places.set(
+    subjects,
+    xy,
+    cell ?? Number.NaN,
+    (s) => this.chains.get(s)?.slot ?? -1,
+    !production(),
+  );
+  this.moved();
 }
 
-/** The host wrote new positions into the `xy` it gave `place`. */
-export function moved<I, O>(mix: Mixer<I, O>): void {
-  if (mix.places !== null) mix.places.dirty = true;
-  mix.lanes?.refill();
+/** `Mix.moved`: the host wrote new positions into the `xy` it gave `plot`. */
+export function moved<I, O>(this: Mixer<I, O>): void {
+  if (this.places !== null) this.places.dirty = true;
+  this.lanes?.refill();
+  this.stir();
 }
 
 /**
- * Bounds a voice's signal to `area`. Refused on a mix without positions, and on any voice whose
- * reads a skipped subject could not leave as they were: one with state, a locus, history, an
- * owner, a blend, `from: 'current'`, or subjects of its own.
+ * Refuses a cue's `within` where the mix has no positions, and on any voice whose reads a skipped
+ * subject could not leave as they were: one with state, a locus, history, an owner, a blend,
+ * `from: 'current'`, or subjects of its own.
  */
-export function bound<I, O>(mix: Mixer<I, O>, handle: VoiceHandle<I, O>, area: Area): void {
-  const voice = VoiceHandle.voiceOf(handle);
-  if (voice === null) throw new Error('blits: bound: no voice behind the handle');
-  if (mix.places === null) throw new Error('blits: bound: the mix has no positions');
-  const spec = voice.spec;
-  const patch = voice.patch;
-  if (typeof spec.weight !== 'function') throw new Error('blits: bound: the voice has no signal');
-  if (
-    mix.opts.history !== undefined ||
-    voice.named !== null ||
-    spec.locus !== undefined ||
-    spec.from === 'current' ||
-    voice.blend !== null ||
-    voice.owner !== null ||
-    voice.holding !== null ||
-    voice.motion !== undefined ||
-    patch.state !== undefined ||
-    patch.step !== undefined
-  )
-    throw new Error('blits: bound: not on this voice');
-  voice.bound = new Bound(mix, area);
-  mix.lanes?.refill();
-  mix.stir();
+export function checkWithin<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
+  const area = spec.within;
+  if (area === undefined) return;
+  if (typeof area !== 'object' || area === null)
+    throw new TypeError('blits: within takes a circle, { x, y, r }');
+  if (mix.places === null) throw new Error('blits: within needs positions: call mix.plot first');
+  if (typeof spec.weight !== 'function') throw new Error('blits: within needs a weight signal');
+  const patch = spec.patch;
+  const refused =
+    mix.opts.history !== undefined
+      ? 'a mix with history'
+      : spec.subjects !== undefined
+        ? 'a voice naming its subjects'
+        : spec.locus !== undefined
+          ? 'a voice in a locus'
+          : spec.from === 'current'
+            ? "a voice cued from: 'current'"
+            : spec.owner !== undefined
+              ? 'a voice an owner holds'
+              : patch.form === 'motion' || patch.state !== undefined || patch.step !== undefined
+                ? 'a patch keeping state'
+                : null;
+  if (refused !== null) throw new Error(`blits: within is not taken on ${refused}`);
+}
+
+/** Bounds a voice just made to its cue's `within`. */
+export function bind<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
+  const area = voice.spec.within;
+  if (area === undefined) return;
+  voice.bound = new Bound(mix, voice, area);
 }
 
 function snap<I, O>(b: Bound<I, O>, mix: Mixer<I, O>): void {
@@ -102,10 +128,51 @@ function snap<I, O>(b: Bound<I, O>, mix: Mixer<I, O>): void {
   b.y = a.y;
   b.r = a.r;
   b.r2 = a.r * a.r;
+  if (b.checks && ++b.frames % CHECK_EVERY === 0) check(b);
+}
+
+/**
+ * Reads the signal, as at a first sight, for a few subjects just beyond the circle, and warns once
+ * if any is above 0: the circle is cutting off part of the signal.
+ */
+function check<I, O>(b: Bound<I, O>): void {
+  const places = b.mix.places as Places<I>;
+  const n = places.ring(b.x, b.y, b.r);
+  if (n === 0) return;
+  const voice = b.voice;
+  const signal = voice.spec.weight as (subject: I, setting: Setting<void, unknown>) => number;
+  const now = b.mix.now;
+  const setting: Setting<void, unknown> = {
+    timestamp: now,
+    dt: 0,
+    elapsed: voice.elapsedAt(now),
+    pass: voice.setting.pass,
+    weight: 0,
+    state: undefined,
+    host: voice.setting.host,
+    keep: (_owner, init) => init(),
+    send: () => {},
+  };
+  const step = Math.max(1, Math.floor(n / CHECK_SUBJECTS));
+  const from = (b.frames / CHECK_EVERY) % step;
+  const found = places.found.slice(0, n);
+  for (let k = from; k < n; k += step) {
+    const subject = places.subjectAt(found[k] as number);
+    if (subject === undefined) continue;
+    const w = signal(subject, setting);
+    if (w > 0) {
+      b.checks = false;
+      warnOnce(
+        voice,
+        `${voice.spec.name ?? `voice ${voice.id}`}'s weight signal reads ${w} just outside its within circle (r ${b.r}), which cuts it off there: widen r to where the signal falls to 0`,
+      );
+      return;
+    }
+  }
 }
 
 /** Whether `subject` is within the voice's bound, on the general path. */
-export function within<I, O>(mix: Mixer<I, O>, b: Bound<I, O>, subject: I): boolean {
+export function inBound<I, O>(mix: Mixer<I, O>, b: Bound<I, O>, subject: I): boolean {
   const places = mix.places;
   if (places === null) return false;
   if (mix.projecting) {
@@ -154,13 +221,12 @@ export function runBounded<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, b: Bound<
     for (const slot of lane.list) old.push(slot);
   }
   const voice = lane.voice;
-  const host = lanes.host;
   const inAt = b.inAt;
   const n = places.query(b.x, b.y, b.r, b.r2);
   const found = places.found;
-  const list = places.list;
+  const slots = places.slots;
   for (let k = 0; k < n; k++) {
-    const slot = host.slotOf(list[found[k] as number] as I);
+    const slot = slots[found[k] as number] as number;
     if (slot < 0 || inAt[slot] === fills) continue;
     inAt[slot] = fills;
     const p = lane.positionOf(slot);

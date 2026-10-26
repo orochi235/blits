@@ -138,7 +138,7 @@ export interface Mix<I, O, H = unknown> {
     // biome-ignore lint/suspicious/noExplicitAny: a patch naming no host fits a mix naming one
     members: readonly (Patch<I, O, any, H> | BlendMember<I, O, H>)[],
     by: Signal<I, H>,
-    spec?: Omit<VoiceSpec<I, O, H>, 'patch' | 'weight' | 'locus'>,
+    spec?: Omit<VoiceSpec<I, O, H>, 'patch' | 'weight' | 'locus' | 'within'>,
   ): Handle<I>[];
 
   /**
@@ -345,6 +345,18 @@ export interface Mix<I, O, H = unknown> {
    * loop sleeping on `inert`, as any change does.
    */
   touch(subject?: I): void;
+  /**
+   * Gives the mix each subject's position, for voices cued `within` a circle: `xy` holds two numbers
+   * a subject, `x` then `y`, in the order of `subjects`. It is read in place, so a host moving its
+   * subjects writes into it and calls `moved`. `cell` sizes the grid the mix finds subjects in,
+   * best near the radius the circles use; by default, about two subjects a cell. Another call
+   * replaces the list. Subjects are held as the mix holds every subject: an object weakly, anything
+   * else until `drop`, which also takes its position away until the next `plot`. Throws for an `xy`
+   * shorter than two numbers a subject.
+   */
+  plot(subjects: readonly I[], xy: Float64Array, cell?: number): void;
+  /** The host wrote new positions into the array it gave `plot`, which the next frame reads. */
+  moved(): void;
   /**
    * Puts a named mark on a score, for anchors to target as they target a voice's marks: a voice
    * placed `{ with: 'reply' }` waits until the host announces `reply`. `at` is a timestamp on the
