@@ -10,12 +10,20 @@ export interface Track {
   weights: number[];
 }
 
-/** An area under a weight curve, in a box `n - 1` wide and 1 tall. */
+/** A weight curve, in a box `n - 1` wide and 1 tall. */
+function curve(weights: number[]): string {
+  const top = weights.map(
+    (w, k) =>
+      `${k === 0 ? 'M' : 'L'}${k},${(1 - Math.min(1, Math.max(0, w)) * 0.8 - 0.1).toFixed(3)}`,
+  );
+  return top.join(' ');
+}
+
+/** The area under a weight curve. */
 function area(weights: number[]): string {
   const n = weights.length;
   if (n === 0) return '';
-  const top = weights.map((w, k) => `L${k},${(1 - Math.min(1, Math.max(0, w)) * 0.9).toFixed(3)}`);
-  return `M0,1 ${top.join(' ')} L${n - 1},1 Z`;
+  return `${curve(weights)} L${n - 1},1 L0,1 Z`;
 }
 
 /**
@@ -36,7 +44,10 @@ export function Timeline({
 }) {
   const box = useRef<HTMLDivElement>(null);
   const held = useRef(false);
-  const paths = useMemo(() => tracks.map((tr) => area(tr.weights)), [tracks]);
+  const paths = useMemo(
+    () => tracks.map((tr) => ({ area: area(tr.weights), line: curve(tr.weights) })),
+    [tracks],
+  );
   const width = Math.max(1, (tracks[0]?.weights.length ?? 2) - 1);
 
   useEffect(() => {
@@ -90,8 +101,14 @@ export function Timeline({
     >
       {tracks.map((tr, i) => (
         <div key={tr.name} className="timeline-track" data-color={tr.color}>
-          <svg viewBox={`0 0 ${width} 1`} preserveAspectRatio="none" aria-hidden="true">
-            <path className="timeline-ahead" d={paths[i]} />
+          <svg
+            className="timeline-ahead"
+            viewBox={`0 0 ${width} 1`}
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <path className="timeline-area" d={paths[i]?.area} />
+            <path className="timeline-curve" d={paths[i]?.line} />
           </svg>
           <svg
             className="timeline-played"
@@ -99,7 +116,8 @@ export function Timeline({
             preserveAspectRatio="none"
             aria-hidden="true"
           >
-            <path d={paths[i]} />
+            <path className="timeline-area" d={paths[i]?.area} />
+            <path className="timeline-curve" d={paths[i]?.line} />
           </svg>
           <span className="timeline-name">{tr.name}</span>
         </div>

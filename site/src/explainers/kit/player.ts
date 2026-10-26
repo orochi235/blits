@@ -316,6 +316,7 @@ const inert: Handle = {
   rise() {},
   to() {},
   push() {},
+  set() {},
   read: () => undefined,
   weightOf: () => 0,
   done: Promise.resolve(),

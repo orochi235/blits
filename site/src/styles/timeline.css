@@ -23,6 +23,7 @@
   --track: var(--ink-soft);
   position: relative;
   height: 18px;
+  background: color-mix(in srgb, var(--track) 12%, transparent);
 }
 
 .timeline-track[data-color='v1'] {
@@ -52,14 +53,28 @@
   height: 100%;
 }
 
-.timeline-ahead {
+.timeline-area {
   fill: var(--track);
-  opacity: 0.25;
+  opacity: 0.18;
+}
+
+.timeline-curve {
+  fill: none;
+  stroke: var(--track);
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.timeline-ahead .timeline-curve {
+  opacity: 0.45;
 }
 
 .timeline-played {
   clip-path: inset(0 calc((1 - var(--at, 0)) * 100%) 0 0);
-  fill: var(--track);
+}
+
+.timeline-played .timeline-area {
+  opacity: 0.4;
 }
 
 .timeline-name {
