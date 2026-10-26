@@ -132,3 +132,14 @@
 .swatch[data-color='v5'] {
   background: var(--voice-5);
 }
+
+.ledger-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.ledger-toggle .swatch {
+  margin-right: 0;
+}

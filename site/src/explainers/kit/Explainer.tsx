@@ -26,6 +26,14 @@ export interface ExplainerProps<I, O, C> {
   caption?: ReactNode;
   /** What a click on the stage changes in the config, given where it landed; nothing for undefined. */
   pick?(x: number, y: number, size: Size, config: C): Partial<C> | undefined;
+  /** Voices the ledger lists playing or not, each switched by a checkbox on its row for a boolean config key. */
+  toggles?: readonly Toggle<C>[];
+}
+
+export interface Toggle<C> {
+  name: string;
+  color: string;
+  key: keyof C & string;
 }
 
 export interface Size {
@@ -52,6 +60,7 @@ function ExplainerBody<I, O, C>({
   format,
   caption,
   pick,
+  toggles,
 }: ExplainerProps<I, O, C>) {
   const s = (schema ?? noConfig) as Schema<C>;
   const resolved = useMemo(() => (schema ? resolveConfigSchema(schema) : null), [schema]);
@@ -124,6 +133,8 @@ function ExplainerBody<I, O, C>({
   }, [player, t, size, draw, config]);
 
   const ledger = built.ledger;
+  const toggled = new Set<string>(toggles?.map((g) => g.key));
+  const panel = resolved && Object.keys(s.defaults() as object).some((k) => !toggled.has(k));
   return (
     <figure className="explainer">
       <div className="explainer-stage">
@@ -163,9 +174,15 @@ function ExplainerBody<I, O, C>({
             channels={ledger.channels}
             focus={frame.subjects.indexOf(ledger.subject(frame.subjects))}
             format={format}
+            toggles={toggles?.map((g) => ({
+              name: g.name,
+              color: g.color,
+              on: Boolean(config[g.key]),
+              set: (on: boolean) => setConfig((c) => ({ ...c, [g.key]: on })),
+            }))}
           />
         )}
-        {resolved && (
+        {panel && (
           <div className="explainer-controls">
             <ControlPanel
               schema={resolved}

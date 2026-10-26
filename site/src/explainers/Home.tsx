@@ -82,9 +82,14 @@ export default function Home() {
     <Explainer
       scene={scene}
       schema={config}
+      toggles={[
+        { name: 'Pulse', color: 'v1', key: 'pulse' },
+        { name: 'Wave', color: 'v2', key: 'wave' },
+        { name: 'Tint', color: 'v3', key: 'tint' },
+      ]}
       duration={12000}
       aspect={0.36}
-      caption="Five subjects under three voices. Each voice runs on its own clock, and the mix folds whatever is playing into one pose per swatch: its gain, its lift and its color. Switch a voice off and the others carry on."
+      caption="Five subjects under three voices. Each voice runs on its own clock, and the mix folds whatever is playing into one pose per swatch: its gain, its lift and its color. Switch a voice off in the table and the others carry on."
       format={{
         color: (v) =>
           tinted(v as number[] | undefined)
