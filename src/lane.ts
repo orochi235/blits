@@ -45,6 +45,10 @@ export interface Locus<I, O> {
   /** By laned channel, then subject number (times axes for `values`). */
   values: (Float64Array | undefined)[];
   taken: (Float64Array | undefined)[];
+  /** No other laned or crowded voice falls between its members in voice order, as qualify found. */
+  contiguous: boolean;
+  /** This fill runs it a subject at a time at its first member's turn, folding each as it goes. */
+  inline: boolean;
 }
 
 /**
@@ -248,6 +252,8 @@ export class Lane<I, O> implements Positions<I, O> {
   bareSeeks = Number.NaN;
   /** The locus its voice shares, gathered before the voices are folded in order. */
   group: Locus<I, O> | null = null;
+  /** The `Arg.MARK` it was last placed under, for a locus run a subject at a time to put back. */
+  mark = Number.NaN;
   /** Whether it took every subject when it opened, so a fill makes each one's first call. */
   every = false;
 

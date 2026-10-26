@@ -2348,6 +2348,35 @@ describe('a locus of keys and fn voices runs on lanes and folds as the general p
     );
   });
 
+  it('runs a locus a subject at a time only where no other voice falls between its members', () => {
+    const inline: boolean[][] = [];
+    const ofLoci = (m: unknown) =>
+      (m as { lanes: { loci: { inline: boolean }[] } }).lanes.loci.map((g) => g.inline);
+    agree(
+      (m) => {
+        const before = m.cue({ patch: wave(), weight: 0.8 });
+        const handles = [
+          before,
+          m.cue({ patch: flicker(1), locus: 'whole', weight: 0.7 }),
+          m.cue({ patch: sweep, locus: 'whole', weight: 1.2, fade: { in: 90 } }),
+          m.cue({ patch: flicker(2), locus: 'whole' }),
+          ...m.blend([flicker(3), sweep], by),
+          m.cue({ patch: flicker(4), locus: 'split' }),
+          m.cue({ patch: pulse(), weight: 0.6 }),
+          m.cue({ patch: sweep, locus: 'split', weight: 0.4 }),
+        ];
+        const at = (t: number) => {
+          if (t === 100) handles[2]?.fade({ over: 60 });
+          if ((m as unknown as { lanes: unknown }).lanes) inline.push(ofLoci(m));
+        };
+        return { handles, at };
+      },
+      { times: ramp, parts: 40 },
+    );
+    // The whole locus and the blend run inline; the split locus, a voice between its members, does not.
+    expect(inline.some((r) => r.length === 3 && r[0] && r[1] && !r[2])).toBe(true);
+  });
+
   it('fills a blend from the lanes', () => {
     const m = mix<Part, Pose>(K, { lanes: true });
     const parts = Array.from({ length: 6 }, (_, id) => ({ id }));

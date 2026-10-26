@@ -118,6 +118,8 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
         sum: new Float64Array(lanes.cap),
         values: [],
         taken: [],
+        contiguous: false,
+        inline: false,
       };
       loci.set(name, g);
       lanes.loci.push(g);
@@ -125,6 +127,7 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     g.members.push(lane);
     lane.group = g;
   }
+  for (const [name, g] of loci) g.contiguous = contiguous(present, voices, name, g.members);
   lanes.dense = kept
     .filter((l) => l.voice.named === null && l.epoch > 0)
     .sort((a, b) => a.epoch - b.epoch);
@@ -436,4 +439,24 @@ function leave<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
     run.watcher = null;
   }
   lane.voice.laned = false;
+}
+
+/**
+ * Whether a locus's members, in the order lanes run, have no laned or crowded voice of another
+ * locus or none between them, so its every subject folds at its first member's turn.
+ */
+function contiguous<I, O>(
+  present: readonly Voice<I, O>[],
+  voices: ReadonlySet<number>,
+  name: string,
+  members: readonly Lane<I, O>[],
+): boolean {
+  for (let i = 1; i < members.length; i++)
+    if ((members[i] as Lane<I, O>).voice.id <= (members[i - 1] as Lane<I, O>).voice.id)
+      return false;
+  const lo = (members[0] as Lane<I, O>).voice.id;
+  const hi = (members[members.length - 1] as Lane<I, O>).voice.id;
+  for (const v of present)
+    if (v.id > lo && v.id < hi && voices.has(v.id) && v.spec.locus !== name) return false;
+  return true;
 }

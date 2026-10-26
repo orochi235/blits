@@ -4,7 +4,7 @@ import { flush } from './columns.js';
 import { crowdsUpTo, freshen } from './crowd.js';
 import { open as openRecord, shut as shutRecord } from './everyone.js';
 import { unband } from './fold.js';
-import { foldLocus, gatherLocus } from './gather.js';
+import { foldLocus, gatherLocus, runLocus } from './gather.js';
 import { runKeys } from './keyfill.js';
 import { Arg, keepProbed, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
@@ -239,8 +239,10 @@ export function reset<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
 export function run<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
   const voice = lane.voice;
   if (voice.state === 'pending' || voice.state === 'done') return;
-  if (lane.group !== null) {
-    foldLocus(this, lane, lane.group);
+  const g = lane.group;
+  if (g !== null) {
+    if (!g.inline) foldLocus(this, lane, g);
+    else if (lane === g.members[0]) runLocus(this, g);
     return;
   }
   this.reset(lane);
@@ -325,6 +327,7 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
     lane.phase = phaseAt(elapsed, voice.duration, voice.passes);
     lane.pass = passAt(elapsed, voice.duration, voice.passes);
     arg[Arg.MARK] = ++marks;
+    lane.mark = arg[Arg.MARK] as number;
   }
   const since = data[o + Row.SINCE] as number;
   if (!lane.flat && (!lane.weighed || !same(since, lane.weighedSince))) {

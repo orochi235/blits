@@ -32,6 +32,8 @@ export function gatherLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>): void {
     if (values !== undefined) g.values[k] = sized(values, cap * axes);
     if (taken !== undefined) g.taken[k] = sized(taken, cap);
   }
+  g.inline = inlined(g);
+  if (g.inline) return;
   lanes.into = g;
   try {
     for (const lane of g.members) {
@@ -140,25 +142,83 @@ export function foldLocus<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, g: Locus<I
   for (let p = 0; p < list.length; p++) {
     const slot = list[p] as number;
     if (g.met[slot] !== fills || g.first[slot] !== id) continue;
-    const sum = g.sum[slot] as number;
-    if (sum <= 0) continue;
-    for (let k = 0; k < g.values.length; k++) {
-      const takenAt = g.taken[k];
-      const taken = takenAt === undefined ? 0 : (takenAt[slot] as number);
-      if (!(taken > 0)) continue;
-      // A channel folds at the weight of the members that wrote it, not the whole locus.
-      const w = taken > 1 ? 1 : taken;
-      const ch = lanes.laned[k] as Laned;
-      const values = g.values[k] as Float64Array;
-      const into = ch.values;
-      const base = slot * ch.axes;
-      if (!ch.plain) {
-        turnFrom(ch, into, base, values, base, w);
-        continue;
-      }
-      for (let a = 0; a < ch.axes; a++)
-        into[base + a] = foldNumber(ch.op, into[base + a] as number, values[base + a] as number, w);
+    if ((g.sum[slot] as number) > 0) foldAt(lanes, g, slot);
+  }
+}
+
+/** Folds what a locus gathered for the subject at `slot` into its laned values. */
+function foldAt<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, slot: number): void {
+  for (let k = 0; k < g.values.length; k++) {
+    const takenAt = g.taken[k];
+    const taken = takenAt === undefined ? 0 : (takenAt[slot] as number);
+    if (!(taken > 0)) continue;
+    // A channel folds at the weight of the members that wrote it, not the whole locus.
+    const w = taken > 1 ? 1 : taken;
+    const ch = lanes.laned[k] as Laned;
+    const values = g.values[k] as Float64Array;
+    const into = ch.values;
+    const base = slot * ch.axes;
+    if (!ch.plain) {
+      turnFrom(ch, into, base, values, base, w);
+      continue;
     }
+    for (let a = 0; a < ch.axes; a++)
+      into[base + a] = foldNumber(ch.op, into[base + a] as number, values[base + a] as number, w);
+  }
+}
+
+/**
+ * Whether a fill can run a locus a subject at a time: every member playing, on its lane, keeping
+ * no state, and over the same subjects in the same places, with no other voice between them.
+ */
+function inlined<I, O>(g: Locus<I, O>): boolean {
+  if (!g.contiguous) return false;
+  const members = g.members;
+  const list = (members[0] as Lane<I, O>).list;
+  for (const lane of members) {
+    const voice = lane.voice;
+    if (lane.idle || voice.keeping || voice.state === 'pending' || voice.state === 'done')
+      return false;
+    const own = lane.list;
+    if (own === list) continue;
+    if (own.length !== list.length) return false;
+    for (let p = 0; p < list.length; p++) if (own[p] !== list[p]) return false;
+  }
+  return true;
+}
+
+/**
+ * An inlined locus at its first member's turn: each subject's members gathered in voice order, as
+ * `gatherLocus` gathers them, then folded at once, with no pass of its own and no array of sums.
+ */
+export function runLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>): void {
+  const members = g.members;
+  const arg = lanes.arg;
+  for (const lane of members) {
+    lanes.reset(lane);
+    lane.elapsedNow = lane.voice.elapsedAt(lanes.now);
+  }
+  const list = (members[0] as Lane<I, O>).list;
+  lanes.into = g;
+  try {
+    for (let p = 0; p < list.length; p++) {
+      const slot = list[p] as number;
+      let sum = 0;
+      for (let i = 0; i < members.length; i++) {
+        const lane = members[i] as Lane<I, O>;
+        // Its patch kept state on an earlier subject: as `gatherLocus` leaves it after that call.
+        if (lane.voice.keeping) continue;
+        // Each lane's placing is numbered on its own; the last member placed left its number.
+        arg[Arg.MARK] = lane.mark;
+        if (lanes.one(lane, p, slot)) {
+          meetLocus(lanes, g, slot);
+          sum += lane.data[p * Row.STRIDE + Row.WEIGHT] as number;
+        }
+      }
+      if (sum > 0) foldAt(lanes, g, slot);
+    }
+  } finally {
+    lanes.into = null;
   }
 }
 
