@@ -63,7 +63,7 @@ bars.cue({ patch: glow, weight: near, within: pointer, loop: true });
 window.addEventListener('pointermove', (e) => { pointer.x = e.clientX; pointer.y = e.clientY; });
 ```
 
-The circle declares where the signal is 0; it does not shape it. A signal still above 0 at `r` is cut off there, so outside production the mix checks a few subjects just outside the circle every few frames and warns once if the signal reads above 0 for any of them. It pays while the circle covers a small share of the subjects: on 10,000 subjects a glow over 2% of them costs about a sixth of what it does unbounded, and past about half it costs more. `within` needs a signal `weight`, and is refused with history, `subjects`, a locus, an owner, `from: 'current'`, or a patch that keeps state.
+The circle declares where the signal is 0; it does not shape it. A signal still above 0 at `r` is cut off there, so outside production the mix checks a few subjects just outside the circle every few frames and warns once if the signal reads above 0 for any of them. It pays most while the circle covers a small share of the subjects: on 10,000 subjects read by `pull`, a glow over 2% of them adds about a sixth of what it adds unbounded, and one over 60% of them still costs a little less than unbounded. `within` needs a signal `weight`, and is refused with history, `subjects`, a locus, an owner, `from: 'current'`, or a patch that keeps state.
 
 ## Where the state lives
 

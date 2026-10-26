@@ -428,30 +428,35 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      teitou, 2026-10-25, `bench/runs/2026-10-25-named-split.txt`): one A/B can land all one side
      in the fast mode by luck.
 
-4. **Bounds: built internally and measured a clear win; the public surface is unbuilt and waits on
-   naming** (2026-10-26). A pointer glow is a weight signal read for every subject every frame,
-   about 56 ns a subject by `pull`, almost all of it for the ~98% at weight 0. A bound declares
-   where the signal is 0, so the mix skips it there without visiting each subject.
+4. **Bounding a signal: public as `within`, `plot` and `moved`** (2026-10-26, `d51d9f4`; unreleased,
+   in the changelog's Unreleased). A pointer glow is a weight signal read for every subject every
+   frame, about 56 ns a subject by `pull`, almost all of it for the ~98% at weight 0. A cue's
+   `within: { x, y, r }` declares the signal 0 outside a circle the host moves, so the mix skips it
+   there without visiting each subject. Documented on the site's signal page and in
+   `docs/schema.html` (Signals).
 
-   What is built (`2dfdd3a`, internal: nothing exported from the package, no docs page).
-   `src/places.ts` holds the host's subjects and positions (`x`, `y` side by side in one
-   `Float64Array`, read in place) in a uniform grid, rebuilt at the first query after the host
-   says they moved. `src/bound.ts` has `place(mix, subjects, xy, cell)`, `moved(mix)` and
-   `bound(mix, handle, area)`, where `area` is a `{ x, y, r }` the host moves and the mix reads once
-   a frame. Outside the circle the voice is not read at all: the general path returns before
-   priming (`contribution`), and a lane fill runs `one` only for the subjects the grid finds within,
-   then zeroes the lane weight of those that left, keeping each on its lane and chain. Nothing
-   moves on or off a chain, so the relink cost the 2026-10-20 `part`/`drop`/`own` measurements were
-   about never arises. With no bound, output is bit-identical (`bench/same.sh e1d1d97`, 0 differ
-   with lanes on and off), and the guard rows sit within noise (teitou, 7 rounds,
-   `bench/runs/2026-10-26-bound-guards.txt`, ledger). `test/bound.test.ts` checks that a bounded
-   glow reads exactly as the same glow unbounded, lanes on and off, by probe and `pull`, with
-   subjects moving, with a view of 10–40% probed (`weightOf` of every subject included), and with
-   the bound put on a glow already playing; and that the signal is called only within.
-   Refused: no positions, no signal, `subjects`, a locus, history, an owner, a blend,
-   `from: 'current'`, a motion or stateful patch.
+   Chosen by Mike (2026-10-26): positions as a list plus an `x, y` `Float64Array` read in place, with
+   one call when they move; the circle on the cue; a dev-only check; positions held weakly. Names
+   (`within`, `Circle`, `plot`, `moved`) were picked by the implementing session, not yet by Mike.
 
-   What it saves (teitou solo, `bench/rows.sh 7` on one build, medians, ms a frame;
+   How it works. `mix.plot(subjects, xy, cell?)` (`src/bound.ts`) hands `src/places.ts` the
+   positions; a uniform grid over them is rebuilt at the first query after `mix.moved()`. Outside
+   the circle the voice is not read at all: the general path returns before priming
+   (`contribution`), and a lane fill runs `one` only for the places the grid finds within, then
+   zeroes the lane weight of those that left. Each place keeps its subject's lane number, set when
+   the lanes number the subject (`relink`) and cleared when they let it go (`forgot`), so a found
+   place costs an array read, not a chain lookup. Subjects are held as the rest of the mix holds
+   them: a `Store` (objects weakly), and `drop` takes a subject's place away until the next `plot`.
+   Outside production, every 8 frames a bounded voice reads its signal, as at first sight, for up
+   to 4 subjects in the grid ring just beyond `r`, and warns once per voice if one is above 0; only
+   then does `plot` keep a `WeakRef` per place, to find those subjects. `test/bound.test.ts` covers
+   bounded reading the same as unbounded (lanes on and off, probe and `pull`, moving subjects,
+   views), refusals, the warning (once, silent where the signal falls to 0, silent in production),
+   collection of plotted subjects, and `drop`. With no bound, output is bit-identical to `18856cc`
+   (`bench/same.sh`, 0 differ, lanes on and `SAME_LANES=off`).
+
+   What it saved before the lane-number cache, which changed the 60% rows (below) (teitou solo,
+   `bench/rows.sh 7` on one build, medians, ms a frame;
    `bench/runs/2026-10-26-bound-rows.txt`; U is 0 in every row unless given):
 
    | Row (10k subjects) | covers | unbounded | bounded | saves |
@@ -470,34 +475,28 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    | `GLOWR=55 glow` probe | 60% | 1.732 | 1.795 | −0.063 (U 8) |
    | `GLOWR=55 glowm^`, moving | 60% | 1.415 | 1.612 | −0.197 |
 
-   So it pays to somewhere between 20% and 60% coverage, and rebuilding the grid each frame for
-   10k moving subjects costs about 0.07 ms by `pull` (`glowbm^ − glowb^` less `glowm^ − glow^`,
-   inferred). Past the crossover what costs is each found subject's number, looked up through its
-   chain head (a `WeakMap` get), and the query itself; not profiled. A cache of each place's
-   subject number, checked against `Lanes.subjects`, would cut the first (untried).
+   Holding positions weakly, with the lane-number cache, measured within noise of the strong
+   holding it replaced on every row (teitou solo, 7 rounds a process a row, U 14 to 23;
+   `bench/runs/2026-10-26-within-weak.txt`, ledger): `glowb^` 0.674 ms against 0.682, `glowbm^`
+   0.876 against 0.894, against unbounded `glow^` 1.127 and `glowm^` 1.278.
+   Past 20% coverage the cache pays: at 60% (`GLOWR=55`) `glowb^` takes 1.171 against 1.370 (U 0)
+   and `glowbm^` 1.402 against 1.554 (U 0), so a bounded glow there now costs less than unbounded
+   `glow^` (1.269), where it cost more; at 20% (`GLOWR=27`) `glowbm^` 1.084 against 1.120 (U 5.5)
+   and `glowb^` 0.887 against 0.920 (U 12, noise). `bench/runs/2026-10-26-within-weak-r27.txt`,
+   `-r55.txt`, ledger.
 
-   The public surface, for Mike to decide and name (unbuilt; options with their costs):
+   With the cache it pays at every coverage measured, to 60% for still subjects; with every
+   subject moving each frame it is about even at 60% (`glowbm^` 1.402 against `glowm^` 1.415 in
+   the table, different runs, inferred). Rebuilding the grid each frame for 10k moving subjects
+   costs about 0.07 ms by `pull` (inferred from the table).
 
-   | Question | Option | Cost |
-   |---|---|---|
-   | How the host gives positions | a list and an `x, y` array read in place, plus a call when they moved (what is built) | nothing a still frame; one O(n) grid rebuild a moved frame, 0.07 ms at 10k |
-   | | one call per subject, `(subject, x, y)` | a map lookup a call, about 20–40 ns a moved subject; incremental cell moves; better for few movers |
-   | | a host function asked per subject | the per-subject visit a bound exists to avoid; rejected |
-   | Where the bound is declared | on the cue, beside `weight`: a `{ x, y, r }` the host moves | the clip hazard: a radius smaller than the signal's falloff cuts it silently |
-   | | carried by a stock signal that knows its own falloff (a radial signal over a point and a radius) | no clip hazard, since the mix defines where it is nonzero; covers only shapes the engine ships |
-   | | on the patch, a radius by phase around a center given at cue (a ripple growing 0 → 200 px) | falls out of the same query with `r` read from the voice's phase each fill; refused under `stagger`, where subjects' phases differ |
-   | Positions' lifetime | the list as given, held until replaced (what is built) | holds the host's subjects strongly, unlike the rest of the mix |
-   | | per-subject entries released on `drop` and by the numbers' registry | weak, as records are; costs a registry entry a subject |
-
-   The dev check for a too-small bound (unbuilt): outside production, every few frames read the
-   signal for a few subjects just outside the circle, picked from the grid's ring of cells, and warn
-   once on a nonzero weight. It costs nothing in production and a handful of signal calls a frame
-   in development. A stock radial signal would not need it.
-
-   Left: the naming and the public surface above; the slot cache past 20% coverage; a bound on a
-   voice naming its subjects, on a locus member and on a stateful patch, all refused now. Whether
-   unbounded voices are ever deprecated stays open and unlikely: klieg's lighting, a fade over a
-   whole sign and wod's transitions are unbounded by design (2026-10-07).
+   Left: a bound on a voice naming its subjects, on a locus member, on an owner's child and on a
+   stateful patch, all refused; `within` on a constant weight, refused, though a hard-edged circle
+   is a real use (the dev check would then always warn, so it needs its own answer); a stock radial
+   signal that carries its own circle, which would need no check; per-subject `place(subject, x, y)`
+   for hosts with few movers; the playground (item 13); blits-panel could draw a voice's circle.
+   Whether unbounded voices are ever deprecated stays open and unlikely: klieg's lighting, a fade
+   over a whole sign and wod's transitions are unbounded by design (2026-10-07).
 
 5. **Work nobody will see** (2026-10-07). A lane fills only subjects probed this frame or the last
    (CHANGELOG 0.8.0), which does nothing for astv's shape, the `typing` row: at 2% probed every lane
@@ -608,6 +607,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       at f + 1; `player.test.ts` holds this. And in the Player, which meets every subject every
       frame, `catchUp: 'fresh'` differs from `exact` only for a voice starting partway through a
       frame with a `stepMs` under one frame; a `stagger` changes nothing.
+    - **`within` and `plot` are not offered yet** (2026-10-26): a bounded glow needs each dot's
+      position given to the mix, a circle the composition moves (the pointer), and a `within`
+      field in the composition's voice schema and its editor. Not small; the schema change is
+      the part to decide.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 
