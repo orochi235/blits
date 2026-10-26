@@ -68,6 +68,14 @@ const flicker = (v) =>
     { writes: ['gain', 'dark'] },
   );
 
+// `flicker` as keys.
+const pulse = (v) =>
+  keys(180 + v, [
+    { at: 0, delta: { gain: 0.2, dark: 0 } },
+    { at: 0.5, delta: { gain: 1, dark: 0.05 }, ease: (u) => u * u * (3 - 2 * u) },
+    { at: 1, delta: { gain: 0.2, dark: 0.1 } },
+  ]);
+
 const bounce = () =>
   keys(1000, [
     { at: 0, delta: { gain: 1, position: [0, 0, 0] } },
@@ -220,6 +228,8 @@ const rows = [
   ['churn', 10000, 1],
   // A tween voice per subject, with a voice over every subject replaced each frame.
   ['swap', 10000, 1],
+  // The same with the voice over every subject a keys voice.
+  ['swapkeys', 10000, 1],
   ['fns', 10000, 1],
   // Half the subjects a tween voice of their own, half a `fn`, both writing `position`.
   ['mixed', 10000, 1],
@@ -386,6 +396,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     kind === 'churn' ||
     kind === 'turnover' ||
     kind === 'swap' ||
+    kind === 'swapkeys' ||
     kind === 'fns' ||
     kind === 'mixed';
   if (kind === 'own')
@@ -399,17 +410,22 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       ? tween('position', { from: [mine, 0, 0], to: [mine, 1, 0], ms: LONG, ease: smooth })
       : glideTo();
   const handles =
-    kind === 'tweens' || kind === 'churn' || kind === 'turnover' || kind === 'swap'
+    kind === 'tweens' ||
+    kind === 'churn' ||
+    kind === 'turnover' ||
+    kind === 'swap' ||
+    kind === 'swapkeys'
       ? subjects.map((mine) => m.cue({ patch: glideOf(mine), subjects: [mine] }))
       : [];
   // Replaces the voice of one subject a frame, walking through them all.
   let turn = 0;
-  let shared = kind === 'swap' ? m.cue({ patch: flicker(0), loop: true }) : null;
+  const swapped = kind === 'swap' ? flicker : kind === 'swapkeys' ? pulse : null;
+  let shared = swapped === null ? null : m.cue({ patch: swapped(0), loop: true });
   const churn = () => {
     if (glow) aim();
     if (shared !== null) {
       shared.fade({ over: 0 });
-      shared = m.cue({ patch: flicker(turn++ % 3), loop: true });
+      shared = m.cue({ patch: swapped(turn++ % 3), loop: true });
       return;
     }
     if (turnover) {

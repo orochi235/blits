@@ -21,6 +21,8 @@ export function runKeys<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
   const fills = lanes.fills;
   const lately = lanes.lately;
   const elapsedNow = voice.elapsedAt(lanes.now);
+  // For `one`, where a probe meeting the voice later this fill reads it (`foldNow` in `meet.ts`).
+  lane.elapsedNow = elapsedNow;
   const duration = voice.duration;
   const passes = voice.passes;
   const before = voice.freezesBefore;

@@ -2476,6 +2476,88 @@ describe('a voice a probe meets late, after every laned voice, folds onto the la
   });
 });
 
+describe('a keys voice a probe meets late folds onto the lanes’ values as the general path does', () => {
+  const pulse = (k: number) =>
+    keys<Part, Pose>(180 + k, [
+      { at: 0, delta: { gain: 0.2 + 0.1 * k, dark: 0, position: [k, 0, 0] } },
+      { at: 0.5, delta: { gain: 1, dark: 0.05 }, ease: (u) => u * u * (3 - 2 * u) },
+      { at: 1, delta: { gain: 0.2, dark: 0.1, position: [0, k, 1] } },
+    ]);
+  const glideTo = (s: Part) =>
+    tween<Part, Pose, number[]>('position', { from: [0, 0, 0], to: [s.id, 1, 0], ms: 400 });
+
+  /** A voice per part, and a keys voice over every part replaced at each time, or one per part. */
+  const swap =
+    (own: boolean): Play =>
+    (m, parts) => {
+      for (const p of parts) m.cue({ patch: glideTo(p), subjects: [p] });
+      let shared = m.cue({ patch: pulse(0), fade: { in: 40 }, weight: 1.3 });
+      const handles = [shared];
+      let k = 0;
+      return {
+        handles,
+        at: (t) => {
+          if (t === 0) return;
+          k++;
+          if (own) {
+            const p = parts[k % parts.length] as Part;
+            handles.push(m.cue({ patch: pulse(k), subjects: [p], weight: 0.6 }));
+            return;
+          }
+          shared.fade({ over: k % 2 === 0 ? 0 : 30 });
+          shared = m.cue({ patch: pulse(k), fade: { in: 40 }, weight: 0.4 + (k % 3) * 0.5 });
+          handles.push(shared);
+        },
+      };
+    };
+  const times = [0, 16, 33, 50, 66, 83, 100, 133, 166, 200, 250, 300, 450];
+
+  it('reads what the general path reads, probed every frame', () => {
+    agree(swap(false), { times });
+  });
+
+  it('reads what the general path reads, probed sparsely', () => {
+    agree(swap(false), { times, probe: (t, part) => (part.id + Math.round(t)) % 3 !== 0 });
+  });
+
+  it('reads what the general path reads, a voice naming one part cued each frame', () => {
+    agree(swap(true), { times });
+  });
+
+  it('folds the voice on its lane at the probe, rather than owing it to the general path', () => {
+    const m = mix<Part, Pose>(K, { lanes: true });
+    const parts = Array.from({ length: 10 }, (_, id) => ({ id }));
+    for (const p of parts) m.cue({ patch: glideTo(p), subjects: [p] });
+    m.sync(0);
+    for (const p of parts) m.probe(p);
+    // All but one probed, so the voice cued next does not take every subject when it opens, and
+    // too many for its lane or the crowd's to go idle.
+    m.sync(16);
+    for (const p of parts.slice(0, 9)) m.probe(p);
+    m.cue({ patch: pulse(1), weight: 0.8 });
+    m.sync(33);
+    for (const p of parts) m.probe(p);
+    const lanes = (
+      m as unknown as {
+        lanes: {
+          owes(slot: number): boolean;
+          weightOf(id: number, slot: number): number | undefined;
+          lanes: { voice: { id: number; built: unknown } }[];
+        };
+      }
+    ).lanes;
+    const met = lanes.lanes.at(-1) as { voice: { id: number; built: unknown } };
+    expect(met.voice.built).not.toBeNull();
+    expect(parts.filter((_, slot) => lanes.owes(slot))).toEqual([]);
+    // The part not probed last frame takes the general path, as it would with any voice laned.
+    expect(parts.map((_, slot) => lanes.weightOf(met.voice.id, slot))).toEqual([
+      ...parts.slice(0, 9).map(() => 0.8),
+      undefined,
+    ]);
+  });
+
+});
+
 describe('a color(last()) channel runs on lanes, the last voice past the band winning', () => {
   const RED = oklab(0xff0000);
   const BLUE = oklab(0x0000ff);

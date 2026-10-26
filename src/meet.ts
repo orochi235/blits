@@ -100,12 +100,6 @@ export function meet<I, O>(
 }
 
 /**
- * Folds the lanes a probe of the subject at `slot` just met onto the lanes' values, making each
- * one's first call for the subject as the general path would for this probe, where every one is a
- * stateless fn voice that ran this fill; false, leaving them owed, where any is not. The fold is
- * last in voice order, as `owable` found, so it folds as the general path would after the fill.
- */
-/**
  * Whether the subject at `slot` met the lanes the last subject `foldNow` folded met, in the same
  * fill: `owable` and `foldNow`'s own checks then answer as they did for that one.
  */
@@ -118,6 +112,13 @@ function foldsAgain<I, O>(lanes: Lanes<I, O>, slot: number): boolean {
   return true;
 }
 
+/**
+ * Folds the lanes a probe of the subject at `slot` just met onto the lanes' values, making each
+ * one's first call or read for the subject as the general path would for this probe, where every
+ * one is a stateless fn or keys voice that ran this fill; false, leaving them owed, where any is
+ * not. The fold is last in voice order, as `owable` found, so it folds as the general path would
+ * after the fill.
+ */
 function foldNow<I, O>(lanes: Lanes<I, O>, slot: number, subject: I, again: boolean): boolean {
   if (lanes.filling) return false;
   // What `unread` answers, which `one` asks before this probe's own stamp is written.
@@ -139,7 +140,6 @@ function foldNow<I, O>(lanes: Lanes<I, O>, slot: number, subject: I, again: bool
     if (
       lane.ran !== lanes.fills ||
       lane.motion !== undefined ||
-      v.built !== null ||
       v.keeping ||
       typeof v.spec.weight === 'function' ||
       (v.sharing && v.everyone === null)
