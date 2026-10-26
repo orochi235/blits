@@ -206,6 +206,7 @@ export function CatchUp() {
             color: ink.voice(c === left ? 'v2' : 'v1'),
             points: series(frame.history, i),
             width: c === left ? 2.5 : 1.5,
+            ...(c === left && { unread: [span] }),
           })),
           { t: CATCH, span: CATCH, min: 0, max: 6, label: 'Seconds counted' },
         );
@@ -342,8 +343,8 @@ export default function HideTab() {
           box,
           ink,
           [
-            { color: ink.voice('v1'), points: sweep },
-            { color: ink.voice('v2'), points: series(frame.history, 1) },
+            { color: ink.voice('v1'), points: sweep, unread: [span] },
+            { color: ink.voice('v2'), points: series(frame.history, 1), unread: [span] },
           ],
           { t: HIDE, span: HIDE, min: 0, max: 1.05 },
         );

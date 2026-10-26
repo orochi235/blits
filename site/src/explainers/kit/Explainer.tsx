@@ -142,6 +142,9 @@ function ExplainerBody<I, O, C>({
   return (
     <figure className="explainer">
       <div className="explainer-stage">
+        <button type="button" className="stage-control" onClick={() => setPlaying((p) => !p)}>
+          {playing ? 'Pause' : 'Play'}
+        </button>
         <canvas
           ref={canvas}
           className={pick ? 'pickable' : undefined}
@@ -165,9 +168,6 @@ function ExplainerBody<I, O, C>({
         }}
       />
       <div className="explainer-transport">
-        <button type="button" onClick={() => setPlaying((p) => !p)}>
-          {playing ? 'Pause' : 'Play'}
-        </button>
         <output className="explainer-time">{(t / 1000).toFixed(2).padStart(5, ' ')} s</output>
       </div>
       {caption && <figcaption>{caption}</figcaption>}

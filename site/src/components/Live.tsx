@@ -46,17 +46,15 @@ export default function Live({ of }: { of: string }) {
   return (
     <figure className="live">
       <div ref={root} className="live-stage" />
-      <div className="live-controls">
-        {allowed ? (
-          <button type="button" onClick={() => setRound((n) => n + 1)}>
-            Run again
-          </button>
-        ) : (
-          <button type="button" onClick={() => setAllowed(true)}>
-            Play
-          </button>
-        )}
-      </div>
+      {allowed ? (
+        <button type="button" className="stage-control" onClick={() => setRound((n) => n + 1)}>
+          Run again
+        </button>
+      ) : (
+        <button type="button" className="stage-control" onClick={() => setAllowed(true)}>
+          Play
+        </button>
+      )}
     </figure>
   );
 }

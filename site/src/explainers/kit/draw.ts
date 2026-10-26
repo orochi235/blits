@@ -112,7 +112,14 @@ export function trace(
   ctx: CanvasRenderingContext2D,
   box: { x: number; y: number; w: number; h: number },
   ink: Ink,
-  series: { color: string; points: [number, number][]; width?: number; dash?: number[] }[],
+  series: {
+    color: string;
+    points: [number, number][];
+    width?: number;
+    dash?: number[];
+    /** Times nothing read the series, drawn dotted: a segment starting inside one is dotted. */
+    unread?: { from: number; to: number }[];
+  }[],
   opts: { t: number; span: number; min?: number; max?: number; label?: string },
 ): void {
   const min = opts.min ?? 0;
@@ -135,13 +142,23 @@ export function trace(
   for (const s of series) {
     ctx.strokeStyle = s.color;
     ctx.lineWidth = s.width ?? 2;
-    ctx.setLineDash(s.dash ?? []);
-    ctx.beginPath();
+    const unread = (t: number) => s.unread?.some((w) => t >= w.from && t < w.to) ?? false;
+    // One stroke per run of segments that are all read, or all unread.
+    let run: boolean | undefined;
     s.points.forEach(([t, v], i) => {
-      if (i === 0) ctx.moveTo(px(t), py(v));
-      else ctx.lineTo(px(t), py(v));
+      const prev = s.points[i - 1];
+      if (prev === undefined) return;
+      const dotted = unread(prev[0]);
+      if (dotted !== run) {
+        if (run !== undefined) ctx.stroke();
+        ctx.setLineDash(dotted ? [1.5, 3.5] : (s.dash ?? []));
+        ctx.beginPath();
+        ctx.moveTo(px(prev[0]), py(prev[1]));
+        run = dotted;
+      }
+      ctx.lineTo(px(t), py(v));
     });
-    ctx.stroke();
+    if (run !== undefined) ctx.stroke();
   }
   ctx.setLineDash([]);
   ctx.restore();

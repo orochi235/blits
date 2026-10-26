@@ -5,6 +5,7 @@
 }
 
 .live {
+  position: relative;
   margin: 1.5rem 0;
 }
 
@@ -19,24 +20,6 @@
   display: block;
   width: 100%;
 }
-
-.live-controls {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.4rem;
-}
-
-.live-controls button {
-  font: 500 0.82rem var(--label);
-  padding: 0.25rem 0.7rem;
-  color: var(--ink);
-  background: var(--paper);
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-/* The Get started row: what the page's CSS gives the dots start-dom.ts makes. */
 
 .live .dots {
   display: flex;
