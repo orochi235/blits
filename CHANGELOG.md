@@ -26,6 +26,10 @@ version and everything else the patch. Each release lists its changes as **Break
   center, falling to 0 at `r` along an easing, linear by default. A voice it weighs is bounded to
   the circle as if cued `within` it, with no check for a clipped signal, and plays unbounded where
   it could not take `within`.
+- `mix.put(subject, x, y)` moves one plotted subject, for a host where few move at once. It writes
+  into the array `plot` was given, so it mixes freely with writing that array and calling `moved`,
+  and keeps the grid as built until a sixteenth of the subjects have left their cells. It throws for
+  a subject `plot` was not given.
 - `color({ lerp: 'oklch' })` and `color(last(), { lerp: 'oklch' })` run on lanes, where they took
   the general path. The pose is the same to the bit.
 

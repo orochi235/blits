@@ -366,6 +366,13 @@ export interface Mix<I, O, H = unknown> {
   /** The host wrote new positions into the array it gave `plot`, which the next frame reads. */
   moved(): void;
   /**
+   * Moves one plotted subject to (`x`, `y`), for a host where few move at once: it writes into the
+   * array `plot` was given, so the host's array holds the move too, and the grid is built again
+   * only once many subjects have left their cells. The same as writing the array and calling
+   * `moved`; the two mix freely. Throws for a subject `plot` was not given, or one dropped since.
+   */
+  put(subject: I, x: number, y: number): void;
+  /**
    * A weight signal over the positions `plot` gave: 1 at the circle's center, falling with distance
    * to 0 at `r` and beyond, along `ease` read from the edge (0) to the center (1), linear by
    * default. The host moves or resizes the circle by writing to it. A voice it weighs is bounded to

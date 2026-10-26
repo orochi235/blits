@@ -3,7 +3,7 @@ import { keepProbed, type Lane, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import { carried } from './near.js';
-import { Places } from './places.js';
+import type { Places } from './places.js';
 import type { Circle, Setting, VoiceSpec } from './types.js';
 import type { Voice } from './voice.js';
 import { production, warnOnce } from './warn.js';
@@ -49,37 +49,6 @@ export class Bound<I, O> {
   ) {
     this.checks = !production();
   }
-}
-
-/** `Mix.plot`: the mix's subjects and their positions, `x` then `y` side by side in `xy`, read in place. */
-export function plot<I, O>(
-  this: Mixer<I, O>,
-  subjects: readonly I[],
-  xy: Float64Array,
-  cell?: number,
-): void {
-  if (xy.length < 2 * subjects.length)
-    throw new RangeError(
-      `blits: plot takes two numbers a subject, x then y: ${subjects.length} subjects need ${2 * subjects.length}, not ${xy.length}`,
-    );
-  if (cell !== undefined && !(cell > 0 && cell < Number.POSITIVE_INFINITY))
-    throw new RangeError(`blits: plot's cell is a size above 0, not ${cell}`);
-  this.places ??= new Places<I>();
-  this.places.set(
-    subjects,
-    xy,
-    cell ?? Number.NaN,
-    (s) => this.chains.get(s)?.slot ?? -1,
-    !production(),
-  );
-  this.moved();
-}
-
-/** `Mix.moved`: the host wrote new positions into the `xy` it gave `plot`. */
-export function moved<I, O>(this: Mixer<I, O>): void {
-  if (this.places !== null) this.places.dirty = true;
-  this.lanes?.refill();
-  this.stir();
 }
 
 /**

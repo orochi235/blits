@@ -207,9 +207,13 @@ const rows = [
   // (`within` on the cue), so a fill reads only the subjects within. `glowm` is `glow` with every
   // subject moving each frame, and `glowbm` it bounded, the index built again each frame.
   // GLOWR=<cells> widens the glow from 8: 27 covers about 20% of subjects, 55 about 60%.
-  // `glowbn` is `glowb` weighted by `mix.near(pointer)`, which carries its own circle.
+  // `glowbn` is `glowb` weighted by `mix.near(pointer)`, which carries its own circle. `glowbf` is
+  // `glowb` with 1% of subjects moving each frame, written into the array and `moved` called;
+  // `glowbp` moves the same ones with `put`.
   ['glowb', 10000, 2],
   ['glowbn', 10000, 2],
+  ['glowbf', 10000, 2],
+  ['glowbp', 10000, 2],
   ['glowbkeys', 10000, 2],
   ['glowm', 10000, 2],
   ['glowbm', 10000, 2],
@@ -297,6 +301,8 @@ const rows = [
   ['glowokeys^', 10000, 2],
   ['glowb^', 10000, 2],
   ['glowbn^', 10000, 2],
+  ['glowbf^', 10000, 2],
+  ['glowbp^', 10000, 2],
   ['glowbkeys^', 10000, 2],
   ['glowm^', 10000, 2],
   ['glowbm^', 10000, 2],
@@ -499,8 +505,10 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   const RADIUS = Number(process.env.GLOWR ?? 8);
   const pointer = { x: 0, y: 0, r: RADIUS };
   const near = (s) => Math.max(0, 1 - Math.hypot(s.x - pointer.x, s.y - pointer.y) / RADIUS);
+  const few = kind === 'glowbf' || kind === 'glowbp';
   const bounded =
-    kind === 'glowb' || kind === 'glowbkeys' || kind === 'glowbm' || kind === 'glowbn';
+    kind === 'glowb' || kind === 'glowbkeys' || kind === 'glowbm' || kind === 'glowbn' || few;
+  let wave = 0;
   const moving = kind === 'glowm' || kind === 'glowbm';
   const xy = glow ? new Float64Array(n * 2) : null;
   if (xy !== null)
@@ -513,6 +521,23 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     const a = t / 2000;
     pointer.x = side / 2 + (side / 3) * Math.cos(a);
     pointer.y = side / 2 + (side / 3) * Math.sin(a);
+    if (few) {
+      // 1% of subjects, a different hundred each frame, each half a cell from its own.
+      wave++;
+      for (let k = 0; k < n / 100; k++) {
+        const j = (wave * 7919 + k * 101) % n;
+        const x = (j % side) + 0.5 * Math.sin(wave + j);
+        const y = Math.floor(j / side) + 0.5 * Math.cos(wave + j);
+        subjects[j].x = x;
+        subjects[j].y = y;
+        if (kind === 'glowbp') m.put(subjects[j], x, y);
+        else {
+          xy[2 * j] = x;
+          xy[2 * j + 1] = y;
+        }
+      }
+      if (kind === 'glowbf') m.moved();
+    }
     if (!moving) return;
     // Each subject wobbles about its cell, half a cell each way.
     const u = t / 300;
@@ -527,7 +552,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   };
   if (glow) m.cue({ patch: flicker(0), loop: true });
   const within = bounded ? { within: pointer } : {};
-  if (kind === 'glow' || kind === 'glowb' || kind === 'glowm' || kind === 'glowbm')
+  if (kind === 'glow' || kind === 'glowb' || kind === 'glowm' || kind === 'glowbm' || few)
     m.cue({
       patch: patch(1000, () => ({ gain: 1.5 }), { writes: ['gain'] }),
       weight: near,

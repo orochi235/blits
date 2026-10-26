@@ -63,6 +63,8 @@ bars.cue({ patch: glow, weight: close, within: pointer, loop: true });
 window.addEventListener('pointermove', (e) => { pointer.x = e.clientX; pointer.y = e.clientY; });
 ```
 
+Where only a few subjects move at a time, `put` moves one: `bars.put(bar, x, y)`. It writes into the array `plot` was given, so it mixes freely with writing the array yourself and calling `moved`, and it takes only a subject that array holds. The mix's grid stays as built until many subjects have left their cells.
+
 The circle declares where the signal is 0; it does not shape it. A signal of your own still above 0 at `r` is cut off there, so outside production the mix checks a few subjects just outside the circle every few frames and warns once if the signal reads above 0 for any of them. It pays most while the circle covers a small share of the subjects: on 10,000 subjects read by `pull`, a glow over 2% of them adds about a sixth of what it adds unbounded, and one over 60% of them still costs a little less than unbounded. `within` needs a signal `weight`, and is refused with history, `subjects`, a locus, an owner, `from: 'current'`, or a patch that keeps state.
 
 `near` is that glow built in: 1 at the circle's center, falling to 0 at `r` over the plotted positions, so the host writes neither the signal nor `within`. It carries its circle, and a voice it weighs is bounded to it with no check; a voice that could not take `within` plays it unbounded, to the same values. `ease` shapes the fall, read from the edge to the center: `'ease-out'` gives a broad top, and `{ steps: 1, jump: 'start' }` a hard-edged disk.

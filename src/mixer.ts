@@ -2,7 +2,6 @@ import { type Arc, cueArc } from './arcs.js';
 import { blanks } from './blank.js';
 import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
-import { moved, plot } from './bound.js';
 import { aims, chain, linkable, relink } from './chain.js';
 import { type LerpInto, lerpInto, STOCK_BAND, scalarOp } from './channels.js';
 import type { Column } from './columns.js';
@@ -41,6 +40,7 @@ import { ownerPatch } from './owner.js';
 import type { Pace } from './pace.js';
 import { Keys } from './paging.js';
 import type { Places } from './places.js';
+import { moved, plot, put } from './plot.js';
 import { projectAll } from './project.js';
 import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
@@ -663,6 +663,7 @@ const methods = {
   restsKey,
   plot,
   moved,
+  put,
   near,
   drop,
   forgetIn,
