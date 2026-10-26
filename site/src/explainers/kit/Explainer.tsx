@@ -106,6 +106,10 @@ function ExplainerBody<I, O, C>({
   const reduced = useReducedMotion();
   const [playing, setPlaying] = useState(!reduced);
   const [t, setT] = useState(0);
+  const way = useRef<1 | -1>(1);
+  // The time as of the last render, which the frame loop steps from.
+  const at = useRef(t);
+  at.current = t;
   const [frame, setFrame] = useState<Frame<I, O> | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const size = useWidth(canvas, aspect);
@@ -118,7 +122,17 @@ function ExplainerBody<I, O, C>({
     let id = requestAnimationFrame(function tick(now) {
       const dt = Math.min(now - last, 100);
       last = now;
-      setT((prev) => (prev + dt >= duration ? 0 : prev + dt));
+      // Play to the end, then back to the start, and on again.
+      let next = at.current + dt * way.current;
+      if (next >= duration) {
+        way.current = -1;
+        next = Math.max(0, 2 * duration - next);
+      } else if (next <= 0) {
+        way.current = 1;
+        next = Math.min(duration, -next);
+      }
+      at.current = next;
+      setT(next);
       id = requestAnimationFrame(tick);
     });
     return () => cancelAnimationFrame(id);
