@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useFocused } from '../explainers/kit/hooks';
 
 /** A file in `src/live/`: draws into `root` and returns a function that stops it and clears up. */
 type Run = (root: HTMLElement) => () => void;
@@ -17,6 +18,7 @@ export default function Live({ of }: { of: string }) {
   );
   const [visible, setVisible] = useState(false);
   const [round, setRound] = useState(0);
+  const focused = useFocused();
 
   useEffect(() => {
     const load = runs[`../live/${of}`];
@@ -46,7 +48,12 @@ export default function Live({ of }: { of: string }) {
   return (
     <figure className="live">
       <div ref={root} className="live-stage" />
-      {allowed ? (
+      {allowed && !focused ? (
+        // Its loop waits out of focus; the click that focuses the window resumes it.
+        <button type="button" className="stage-control">
+          Paused — focus to resume
+        </button>
+      ) : allowed ? (
         <button type="button" className="stage-control" onClick={() => setRound((n) => n + 1)}>
           Run again
         </button>

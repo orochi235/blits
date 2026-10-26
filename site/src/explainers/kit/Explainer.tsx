@@ -177,7 +177,7 @@ function ExplainerBody<I, O, C>({
     <figure className="explainer">
       <div className="explainer-stage">
         <button type="button" className="stage-control" onClick={() => setPlaying(!running)}>
-          {running ? 'Pause' : 'Play'}
+          {running ? 'Pause' : playing ? 'Paused — focus to resume' : 'Play'}
         </button>
         <canvas
           ref={canvas}

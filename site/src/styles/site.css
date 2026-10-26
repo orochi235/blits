@@ -240,15 +240,20 @@ pre code {
   color: var(--ink-soft);
 }
 
-/* Play, Pause or Run again, over the top left corner of a demo's stage. */
+/* Play, Pause or Run again, over the top left corner of a demo's stage, in a strip the stage keeps
+   clear for it so it covers nothing the demo draws. */
+:root {
+  --stage-control-room: 2.6rem;
+}
+
 .stage-control {
   position: absolute;
-  top: 0.6rem;
+  top: 0.45rem;
   left: 0.6rem;
   z-index: 1;
   min-width: 5.5rem;
-  padding: 0.4rem 0.9rem;
-  font: 600 0.9rem var(--label);
+  padding: 0.3rem 0.9rem;
+  font: 600 0.85rem var(--label);
   color: var(--paper);
   background: var(--ink);
   border: none;

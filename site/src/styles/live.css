@@ -11,6 +11,7 @@
 
 .live-stage {
   min-height: 8rem;
+  padding-top: var(--stage-control-room);
   background: var(--panel);
   border-radius: 6px;
   overflow: hidden;

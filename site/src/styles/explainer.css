@@ -4,6 +4,7 @@
 
 .explainer-stage {
   position: relative;
+  padding-top: var(--stage-control-room);
   background: var(--panel);
   border-radius: 6px;
   overflow: hidden;
