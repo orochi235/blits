@@ -45,7 +45,7 @@ export class Pointer {
  * Whether the composition's code calls `around`. Its mixes then keep no history, which blits refuses
  * a bounded voice, so a scrub back replays rather than seeks.
  */
-export const usesAround = (c: Composition): boolean => /\bnear\s*\(/.test(JSON.stringify(c));
+export const usesAround = (c: Composition): boolean => /\baround\s*\(/.test(JSON.stringify(c));
 
 /** Each subject's position for `plot`, in dots: column, then row. */
 export const xyOf = (subjects: readonly Subject[]): Float64Array =>
