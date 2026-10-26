@@ -371,8 +371,8 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
   }
   const rec = lane.records[p] as Subject<unknown>;
   // The general path makes a voice's first call for a subject, where it first sees it play, or a
-  // probe meeting the voice makes it here.
-  if (Number.isNaN(rec.probed) && !this.meeting) {
+  // probe meeting the voice makes it here, or the fill of a lane that took every subject.
+  if (Number.isNaN(rec.probed) && !this.meeting && !lane.every) {
     this.late.push(slot);
     return false;
   }

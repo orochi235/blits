@@ -6,8 +6,10 @@ import { weighAt } from './everyone.js';
 import { wake } from './fill.js';
 import { Lane, type Laned, type Locus, Per } from './lane.js';
 import type { Lanes } from './lanes.js';
+import { reach } from './meet.js';
 import { bury, compactSparse, join, regroup, retouchRow, sameCrowds } from './rows.js';
 import { settle } from './sample.js';
+import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
 import type { Voice } from './voice.js';
 
@@ -336,7 +338,43 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
 function opened<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
   const v = lane.voice;
   lane.epoch = open(lanes, v);
-  if (v.named === null && v.spec.target === undefined) lane.reserve(lanes.live, lanes.cap);
+  if (v.named === null && v.spec.target === undefined) {
+    lane.reserve(lanes.live, lanes.cap);
+    if (placesAll(lanes, lane)) placeAll(lanes, lane);
+  }
+}
+
+/**
+ * Whether a lane just opened can take every numbered subject now, its first call for each made by
+ * the fill: a stateless fn voice sharing one record, which every subject would meet at its next
+ * probe, in a host that probed every subject last frame. One by one, each probe would meet it and
+ * make its first call there (`foldNow` in `meet.ts`).
+ */
+function placesAll<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): boolean {
+  const v = lane.voice;
+  return (
+    v.sharing &&
+    v.everyone !== null &&
+    lane.motion === undefined &&
+    v.built === null &&
+    !v.keeping &&
+    typeof v.spec.weight !== 'function' &&
+    lane.list.length === 0 &&
+    lanes.lastDistinct >= lanes.live
+  );
+}
+
+/** Gives every numbered subject a position on a lane `placesAll` passed. */
+function placeAll<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
+  const rec = lane.voice.everyone as Subject<unknown>;
+  const numbers = lanes.numbers;
+  const size = Math.min(numbers.size, lanes.cap);
+  for (let slot = 0; slot < size; slot++) {
+    if (!numbers.has(slot)) continue;
+    lane.add(slot, rec);
+    if (lane.idle) reach(lanes, slot, 1);
+  }
+  lane.every = true;
 }
 
 /**

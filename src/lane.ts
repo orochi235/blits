@@ -248,6 +248,8 @@ export class Lane<I, O> implements Positions<I, O> {
   bareSeeks = Number.NaN;
   /** The locus its voice shares, gathered before the voices are folded in order. */
   group: Locus<I, O> | null = null;
+  /** Whether it took every subject when it opened, so a fill makes each one's first call. */
+  every = false;
 
   voiceAt(): Voice<I, O> {
     return this.voice;

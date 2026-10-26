@@ -65,6 +65,11 @@ export class Numbers<I> {
     return slot;
   }
 
+  /** Whether `slot` is a number in use, its subject perhaps collected and not yet released. */
+  has(slot: number): boolean {
+    return this.refs[slot] !== undefined;
+  }
+
   subject(slot: number): I | typeof absent {
     const ref = this.refs[slot];
     if (ref === undefined) return absent;
