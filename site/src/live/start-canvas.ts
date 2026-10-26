@@ -33,7 +33,7 @@ export default function run(root: HTMLElement): () => void {
   m.cue({ patch: swell, weight: near });
 
   const pose = { lift: 0, size: 0 };
-  const stop = loop((now) => {
+  const stop = loop(m, (now) => {
     m.sync(now);
     stage.clear();
     for (const dot of stage.dots) {
