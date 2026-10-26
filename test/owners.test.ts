@@ -6,7 +6,7 @@ import { expect, test } from 'vitest';
 const owners: Record<string, string[]> = {
   named: ['roster.ts'],
   naming: ['roster.ts', 'chain.ts'],
-  roles: ['roster.ts'],
+  roleVoices: ['roster.ts'],
   anchored: ['roster.ts'],
   general: ['roster.ts', 'move.ts'],
   sharers: ['roster.ts', 'move.ts'],
