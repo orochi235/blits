@@ -234,6 +234,8 @@ export class Lane<I, O> implements Positions<I, O> {
   fade = 1;
   /** Whether the voice has no fade in or out this fill, so its envelope is 1 for every subject. */
   flat = false;
+  /** The fill that last ran it, so what it remembers within one fill is that fill's. */
+  ran = -1;
   /** The voice's clock at this fill, set before `one` runs its subjects. */
   elapsedNow = 0;
   /** A motion patch's state, which the lane samples in place of calling the patch. */
@@ -297,6 +299,23 @@ export class Lane<I, O> implements Positions<I, O> {
 
   positionOf(slot: number): number {
     return slot < this.at.length ? (this.at[slot] as number) - 1 : -1;
+  }
+
+  /**
+   * Room for `n` positions and subject numbers below `cap`, for a voice that reaches every subject:
+   * grown as it met them, a voice replaced every frame regrew both from nothing each frame.
+   */
+  reserve(n: number, cap: number): void {
+    if (n * Row.STRIDE > this.data.length) {
+      const data = new Float64Array(n * Row.STRIDE);
+      data.set(this.data);
+      this.data = data;
+    }
+    if (cap > this.at.length) {
+      const at = new Int32Array(cap);
+      at.set(this.at);
+      this.at = at;
+    }
   }
 
   /** Gives a subject the voice reaches a position, from what its record fixed on first sight. */

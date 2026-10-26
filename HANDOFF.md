@@ -241,14 +241,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    revision's general path, and `AB_EACH=1 bench/ab.sh` times one row per process. Open, largest
    first:
      - **A voice over every subject cued among a crowd** (`swap`: 10k one-subject tween voices, a
-       voice over all of them replaced every frame) costs 2.70–2.73 ms a frame on teitou against
-       0.63 for the tween voices alone (2026-10-25, `FRAMES=3000`, 4 rounds). Since 2026-10-09 such
-       a voice shares one record, so no record or WeakMap entry is made per subject. What is left
-       is each subject meeting the new voice: relinking its chain, a lane position, and a
-       general-path fold, because a fn voice's first call for a subject is made there. Meeting
-       every subject on the new lane before the fill was built and backed out (2.72 → 3.59 ms,
-       2026-10-25): the first call left each subject, and all its voices, to the general path. A
-       keys voice makes no call and could take that route; unbuilt.
+       voice over all of them replaced every frame) costs 2.67 ms a frame on msb-uai against 3.67
+       before 2026-10-25 (`bench/runs/2026-10-25-foldnow2.txt`). A probe meeting a stateless fn
+       lane now makes its first call there and folds it into the lanes' values (`foldNow` in
+       `meet.ts`), where the general path folded it after the copy; the last met list folded is
+       kept so the next subject meeting the same lanes skips `owable`'s scan. A lane over every
+       subject is sized for every live subject when it opens (`Lane.reserve`). What is left per
+       subject: meeting the lane (`meet`, `Lane.add`, the shared record's `open`/`shut`), relinking
+       its chain (`relink.js` `patch`, `chain.ts`), the patch call itself, and the copy out. A keys
+       voice could take `foldNow` too through `one`'s keys branch; a motion voice cannot, since
+       `move` numbers the subject.
      - **A locus, and so a blend, costs about 40% more than its voices played apart**: on keiei
        (2026-10-25, `FRAMES=5000`, seven own-process runs) three voices in a locus over 10k subjects
        take 4.35 ms a frame, a `mix.blend` of three 4.63, and three plain voices 3.11. A member's

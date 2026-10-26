@@ -1,0 +1,100 @@
+built HEAD (acf5191)
+built the working tree
+== round 1/7 HEAD
+ 1/1  swap       N= 10000 V=1     3.582 ms/frame    358 ns/subject·voice  p50    3.453  p99    5.526  worst   10.174  first    62.7 ms  gc  230   94.5 ms    2776.4 kB/frame
+== round 1/7 HEAD
+ 1/1  tween      N= 10000 V=1     0.905 ms/frame     91 ns/subject·voice  p50    0.899  p99    0.980  worst    1.038  first    19.6 ms  gc    0    0.0 ms       4.6 kB/frame
+== round 1/7 HEAD
+ 1/2  own        N=   100 V=1     0.021 ms/frame    208 ns/subject·voice  p50    0.020  p99    0.036  worst    0.314  first     4.7 ms  gc   16    0.9 ms      23.4 kB/frame
+ 2/2  own        N=  1000 V=1     0.198 ms/frame    198 ns/subject·voice  p50    0.195  p99    0.241  worst    0.313  first    47.6 ms  gc   31    1.7 ms     168.5 kB/frame
+== round 1/7 .
+ 1/1  swap       N= 10000 V=1     3.578 ms/frame    358 ns/subject·voice  p50    3.436  p99    5.644  worst   13.864  first    46.6 ms  gc  221   94.2 ms    2776.6 kB/frame
+== round 1/7 .
+ 1/1  tween      N= 10000 V=1     0.910 ms/frame     91 ns/subject·voice  p50    0.904  p99    0.966  worst    1.422  first    20.8 ms  gc    1    0.9 ms       4.5 kB/frame
+== round 1/7 .
+ 1/2  own        N=   100 V=1     0.022 ms/frame    218 ns/subject·voice  p50    0.020  p99    0.042  worst    0.351  first     4.9 ms  gc   16    1.1 ms      23.1 kB/frame
+ 2/2  own        N=  1000 V=1     0.200 ms/frame    200 ns/subject·voice  p50    0.198  p99    0.247  worst    0.357  first    51.5 ms  gc   31    1.7 ms     168.5 kB/frame
+== round 2/7 .
+ 1/1  swap       N= 10000 V=1     3.441 ms/frame    344 ns/subject·voice  p50    3.322  p99    4.716  worst   12.818  first    51.9 ms  gc  221   82.9 ms    2776.5 kB/frame
+== round 2/7 .
+ 1/1  tween      N= 10000 V=1     0.888 ms/frame     89 ns/subject·voice  p50    0.879  p99    0.983  worst    1.451  first    19.7 ms  gc    0    0.0 ms       4.7 kB/frame
+== round 2/7 .
+ 1/2  own        N=   100 V=1     0.021 ms/frame    213 ns/subject·voice  p50    0.020  p99    0.039  worst    0.310  first     4.7 ms  gc   16    1.0 ms      23.6 kB/frame
+ 2/2  own        N=  1000 V=1     0.194 ms/frame    194 ns/subject·voice  p50    0.192  p99    0.242  worst    0.283  first    48.3 ms  gc   31    1.5 ms     168.5 kB/frame
+== round 2/7 HEAD
+ 1/1  swap       N= 10000 V=1     3.550 ms/frame    355 ns/subject·voice  p50    3.414  p99    5.428  worst   12.594  first    56.7 ms  gc  230   96.2 ms    2775.7 kB/frame
+== round 2/7 HEAD
+ 1/1  tween      N= 10000 V=1     0.913 ms/frame     91 ns/subject·voice  p50    0.906  p99    1.066  worst    2.799  first    20.6 ms  gc    0    0.0 ms       4.0 kB/frame
+== round 2/7 HEAD
+ 1/2  own        N=   100 V=1     0.021 ms/frame    213 ns/subject·voice  p50    0.020  p99    0.038  worst    0.272  first     4.8 ms  gc   16    1.0 ms      24.0 kB/frame
+ 2/2  own        N=  1000 V=1     0.200 ms/frame    200 ns/subject·voice  p50    0.198  p99    0.250  worst    0.321  first    49.4 ms  gc   35    1.9 ms     168.5 kB/frame
+== round 3/7 HEAD
+ 1/1  swap       N= 10000 V=1     3.664 ms/frame    366 ns/subject·voice  p50    3.512  p99    5.836  worst    6.976  first    60.2 ms  gc  241  118.0 ms    2776.3 kB/frame
+== round 3/7 HEAD
+ 1/1  tween      N= 10000 V=1     0.895 ms/frame     89 ns/subject·voice  p50    0.889  p99    0.957  worst    1.171  first    21.0 ms  gc    0    0.0 ms       4.4 kB/frame
+== round 3/7 HEAD
+ 1/2  own        N=   100 V=1     0.022 ms/frame    218 ns/subject·voice  p50    0.021  p99    0.038  worst    0.350  first     4.7 ms  gc   16    1.1 ms      24.2 kB/frame
+ 2/2  own        N=  1000 V=1     0.201 ms/frame    201 ns/subject·voice  p50    0.198  p99    0.254  worst    0.353  first    52.7 ms  gc   31    2.1 ms     168.6 kB/frame
+== round 3/7 .
+ 1/1  swap       N= 10000 V=1     3.625 ms/frame    363 ns/subject·voice  p50    3.496  p99    5.506  worst   10.662  first    51.9 ms  gc  221   92.7 ms    2777.1 kB/frame
+== round 3/7 .
+ 1/1  tween      N= 10000 V=1     0.908 ms/frame     91 ns/subject·voice  p50    0.899  p99    0.994  worst    1.479  first    21.0 ms  gc    0    0.0 ms       3.9 kB/frame
+== round 3/7 .
+ 1/2  own        N=   100 V=1     0.021 ms/frame    214 ns/subject·voice  p50    0.020  p99    0.037  worst    0.286  first     4.7 ms  gc   16    0.9 ms      23.6 kB/frame
+ 2/2  own        N=  1000 V=1     0.204 ms/frame    204 ns/subject·voice  p50    0.201  p99    0.256  worst    0.360  first    49.2 ms  gc   35    2.2 ms     168.5 kB/frame
+== round 4/7 .
+ 1/1  swap       N= 10000 V=1     3.577 ms/frame    358 ns/subject·voice  p50    3.445  p99    5.477  worst   13.612  first    49.2 ms  gc  221  102.0 ms    2775.7 kB/frame
+== round 4/7 .
+ 1/1  tween      N= 10000 V=1     0.901 ms/frame     90 ns/subject·voice  p50    0.897  p99    0.972  worst    1.339  first    20.6 ms  gc    0    0.0 ms       3.5 kB/frame
+== round 4/7 .
+ 1/2  own        N=   100 V=1     0.021 ms/frame    214 ns/subject·voice  p50    0.020  p99    0.038  worst    0.305  first     4.9 ms  gc   16    1.0 ms      24.4 kB/frame
+ 2/2  own        N=  1000 V=1     0.205 ms/frame    205 ns/subject·voice  p50    0.203  p99    0.272  worst    0.373  first    49.3 ms  gc   32    2.4 ms     168.5 kB/frame
+== round 4/7 HEAD
+ 1/1  swap       N= 10000 V=1     3.760 ms/frame    376 ns/subject·voice  p50    3.612  p99    5.980  worst   13.242  first    57.5 ms  gc  228  104.3 ms    2776.8 kB/frame
+== round 4/7 HEAD
+ 1/1  tween      N= 10000 V=1     0.935 ms/frame     94 ns/subject·voice  p50    0.923  p99    1.120  worst    3.038  first    20.6 ms  gc    2    0.6 ms       4.7 kB/frame
+== round 4/7 HEAD
+ 1/2  own        N=   100 V=1     0.022 ms/frame    219 ns/subject·voice  p50    0.021  p99    0.039  worst    0.260  first     4.7 ms  gc   16    0.9 ms      23.7 kB/frame
+ 2/2  own        N=  1000 V=1     0.197 ms/frame    197 ns/subject·voice  p50    0.195  p99    0.244  worst    0.284  first    49.3 ms  gc   34    1.7 ms     168.6 kB/frame
+== round 5/7 HEAD
+ 1/1  swap       N= 10000 V=1     3.715 ms/frame    372 ns/subject·voice  p50    3.556  p99    5.879  worst   10.346  first    57.7 ms  gc  228  105.3 ms    2775.7 kB/frame
+== round 5/7 HEAD
+ 1/1  tween      N= 10000 V=1     0.901 ms/frame     90 ns/subject·voice  p50    0.895  p99    0.967  worst    1.557  first    21.0 ms  gc    0    0.0 ms       3.4 kB/frame
+== round 5/7 HEAD
+ 1/2  own        N=   100 V=1     0.022 ms/frame    221 ns/subject·voice  p50    0.021  p99    0.039  worst    0.294  first     4.7 ms  gc   17    1.0 ms      25.0 kB/frame
+ 2/2  own        N=  1000 V=1     0.214 ms/frame    214 ns/subject·voice  p50    0.211  p99    0.274  worst    0.510  first    50.5 ms  gc   35    2.4 ms     184.1 kB/frame
+== round 5/7 .
+ 1/1  swap       N= 10000 V=1     3.578 ms/frame    358 ns/subject·voice  p50    3.457  p99    5.293  worst   13.703  first    49.0 ms  gc  221   96.5 ms    2776.6 kB/frame
+== round 5/7 .
+ 1/1  tween      N= 10000 V=1     0.915 ms/frame     92 ns/subject·voice  p50    0.905  p99    1.059  worst    1.732  first    21.5 ms  gc    1    0.7 ms       3.8 kB/frame
+== round 5/7 .
+ 1/2  own        N=   100 V=1     0.021 ms/frame    212 ns/subject·voice  p50    0.020  p99    0.038  worst    0.294  first     4.8 ms  gc   16    0.9 ms      23.4 kB/frame
+ 2/2  own        N=  1000 V=1     0.197 ms/frame    197 ns/subject·voice  p50    0.196  p99    0.243  worst    0.290  first    49.9 ms  gc   31    1.6 ms     168.5 kB/frame
+== round 6/7 .
+ 1/1  swap       N= 10000 V=1     3.624 ms/frame    362 ns/subject·voice  p50    3.487  p99    5.670  worst   13.335  first    50.5 ms  gc  221  104.6 ms    2775.9 kB/frame
+== round 6/7 .
+ 1/1  tween      N= 10000 V=1     0.907 ms/frame     91 ns/subject·voice  p50    0.901  p99    0.972  worst    1.013  first    21.7 ms  gc    0    0.0 ms       4.0 kB/frame
+== round 6/7 .
+ 1/2  own        N=   100 V=1     0.022 ms/frame    216 ns/subject·voice  p50    0.020  p99    0.037  worst    0.331  first     4.8 ms  gc   16    1.0 ms      22.9 kB/frame
+ 2/2  own        N=  1000 V=1     0.195 ms/frame    195 ns/subject·voice  p50    0.192  p99    0.239  worst    0.391  first    49.5 ms  gc   31    1.9 ms     168.5 kB/frame
+== round 6/7 HEAD
+ 1/1  swap       N= 10000 V=1     3.696 ms/frame    370 ns/subject·voice  p50    3.538  p99    6.322  worst   13.406  first    64.8 ms  gc  228  115.0 ms    2776.8 kB/frame
+== round 6/7 HEAD
+ 1/1  tween      N= 10000 V=1     0.925 ms/frame     92 ns/subject·voice  p50    0.912  p99    1.133  worst    2.825  first    20.7 ms  gc    0    0.0 ms       4.0 kB/frame
+== round 6/7 HEAD
+ 1/2  own        N=   100 V=1     0.024 ms/frame    243 ns/subject·voice  p50    0.022  p99    0.057  worst    1.474  first     4.8 ms  gc   16    1.2 ms      23.4 kB/frame
+ 2/2  own        N=  1000 V=1     0.198 ms/frame    198 ns/subject·voice  p50    0.195  p99    0.266  worst    0.439  first    52.0 ms  gc   32    2.0 ms     168.5 kB/frame
+== round 7/7 HEAD
+ 1/1  swap       N= 10000 V=1     3.618 ms/frame    362 ns/subject·voice  p50    3.472  p99    5.779  worst   14.757  first    55.0 ms  gc  229  118.1 ms    2776.3 kB/frame
+== round 7/7 HEAD
+ 1/1  tween      N= 10000 V=1     0.881 ms/frame     88 ns/subject·voice  p50    0.876  p99    0.968  worst    1.094  first    20.0 ms  gc    0    0.0 ms       3.6 kB/frame
+== round 7/7 HEAD
+ 1/2  own        N=   100 V=1     0.022 ms/frame    222 ns/subject·voice  p50    0.021  p99    0.036  worst    0.246  first     4.6 ms  gc   17    0.9 ms      25.0 kB/frame
+ 2/2  own        N=  1000 V=1     0.203 ms/frame    203 ns/subject·voice  p50    0.201  p99    0.248  worst    0.275  first    48.2 ms  gc   35    1.6 ms     184.1 kB/frame
+== round 7/7 .
+ 1/1  swap       N= 10000 V=1     3.525 ms/frame    353 ns/subject·voice  p50    3.404  p99    5.381  worst   15.657  first    48.4 ms  gc  221  117.1 ms    2775.6 kB/frame
+== round 7/7 .
+ 1/1  tween      N= 10000 V=1     0.908 ms/frame     91 ns/subject·voice  p50    0.900  p99    1.003  worst    1.660  first    21.3 ms  gc    0    0.0 ms       3.5 kB/frame
+== round 7/7 .
+ 1/2  own        N=   100 V=1     0.022 ms/frame    217 ns/subject·voice  p50    0.021  p99    0.038  worst    0.348  first     4.8 ms  gc   16    1.0 ms      24.2 kB/frame
+ 2/2  own        N=  1000 V=1     0.198 ms/frame    198 ns/subject·voice  p50    0.196  p99    0.267  worst    0.363  first    48.7 ms  gc   35    2.4 ms     168.6 kB/frame

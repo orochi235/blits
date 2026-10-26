@@ -1,4 +1,5 @@
 import { Flag, Hot } from './crowd.js';
+import { open, shut } from './everyone.js';
 import { type Lane, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Subject } from './subject.js';
@@ -87,12 +88,96 @@ export function meet<I, O>(
   // after every other laned voice, the general path folds just those onto the lanes' values;
   // otherwise it reads the general path all frame.
   const o = slot * Per.SLOT;
-  if (lane && lanes.per[o + Per.IDLE] === 0 && owable(lanes, slot)) {
-    lanes.owed.owe(slot, lanes.met, lanes.metN);
-    return true;
+  if (lane && lanes.per[o + Per.IDLE] === 0) {
+    const again = foldsAgain(lanes, slot);
+    if (again || owable(lanes, slot)) {
+      if (!foldNow(lanes, slot, subject, again)) lanes.owed.owe(slot, lanes.met, lanes.metN);
+      return true;
+    }
   }
   lanes.per[o + Per.FILLED] = lanes.fills;
   return false;
+}
+
+/**
+ * Folds the lanes a probe of the subject at `slot` just met onto the lanes' values, making each
+ * one's first call for the subject as the general path would for this probe, where every one is a
+ * stateless fn voice that ran this fill; false, leaving them owed, where any is not. The fold is
+ * last in voice order, as `owable` found, so it folds as the general path would after the fill.
+ */
+/**
+ * Whether the subject at `slot` met the lanes the last subject `foldNow` folded met, in the same
+ * fill: `owable` and `foldNow`'s own checks then answer as they did for that one.
+ */
+function foldsAgain<I, O>(lanes: Lanes<I, O>, slot: number): boolean {
+  if (lanes.foldsFill !== lanes.fills || lanes.metCrowd || lanes.owes(slot)) return false;
+  const folds = lanes.folds;
+  const n = lanes.metN;
+  if (folds.length !== n) return false;
+  for (let i = 0; i < n; i++) if (folds[i] !== lanes.met[i]) return false;
+  return true;
+}
+
+function foldNow<I, O>(lanes: Lanes<I, O>, slot: number, subject: I, again: boolean): boolean {
+  if (lanes.filling) return false;
+  // What `unread` answers, which `one` asks before this probe's own stamp is written.
+  const lately = lanes.lately;
+  const o = slot * Per.SLOT;
+  if (
+    lately >= 0 &&
+    !(
+      (lanes.per[o + Per.LANE_PROBE] as number) > lately ||
+      (lanes.per[o + Per.GENERAL_PROBE] as number) > lately
+    )
+  )
+    return false;
+  const met = lanes.met;
+  const n = lanes.metN;
+  for (let i = 0; i < n && !again; i++) {
+    const lane = lanes.byId.get(met[i] as number) as Lane<I, O>;
+    const v = lane.voice;
+    if (
+      lane.ran !== lanes.fills ||
+      lane.motion !== undefined ||
+      v.built !== null ||
+      v.keeping ||
+      typeof v.spec.weight === 'function' ||
+      (v.sharing && v.everyone === null)
+    )
+      return false;
+  }
+  if (!again) {
+    lanes.folds = met.slice(0, n);
+    lanes.foldsFill = lanes.fills;
+  }
+  // The subject is at hand: `call` would look it up again by its number.
+  if (lanes.subjects[slot] === undefined) {
+    lanes.subjects[slot] = subject;
+    lanes.holding = true;
+  }
+  lanes.meeting = true;
+  try {
+    for (let i = 0; i < n; i++) {
+      const lane = lanes.byId.get(met[i] as number) as Lane<I, O>;
+      const v = lane.voice;
+      const p = lane.positionOf(slot);
+      if (!v.sharing) {
+        lanes.one(lane, p, slot);
+        continue;
+      }
+      const rec = v.everyone as Subject<unknown>;
+      open(v, rec, slot);
+      lanes.one(lane, p, slot);
+      // Its patch just made kept state, and the record is now that subject's own.
+      if (!v.keeping) shut(v, rec, slot, lanes.cap);
+    }
+  } finally {
+    lanes.meeting = false;
+  }
+  // A patch that just made kept state takes its voice off its lane: check the next subject again.
+  for (let i = 0; i < n; i++)
+    if ((lanes.byId.get(met[i] as number) as Lane<I, O>).voice.keeping) lanes.foldsFill = -1;
+  return true;
 }
 
 /** Places a crowd voice's row on the subject a probe met, as `Lane.add` adds a position. */

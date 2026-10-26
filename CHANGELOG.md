@@ -35,6 +35,12 @@ version and everything else the patch. Each release lists its changes as **Break
   distinct subjects, is copied without being iterated, and voices of a patch writing one channel
   share their channel slots. 10,000 one-subject voices' first frame takes 20.7 ms against 23.5 for
   tweens and 8.9 against 10.8 for fns (teitou, medians of nine rounds; `bench/start.mjs`).
+- A stateless fn voice over every subject cued between frames costs about a quarter less on the
+  frame its subjects first meet it: their probe makes its first call on its lane and folds it into
+  the lanes' values, where it was folded on the general path. A voice over 10,000 subjects
+  replaced every frame among a tween voice per subject (`swap`) takes 2.67 ms a frame against
+  3.67, and allocates 2.0 MB a frame against 2.8 (msb-uai, medians of seven runs of 3,000 frames,
+  each in its own process).
 - A `keys` voice per subject read by `pull` costs about a sixth less a frame: rows whose stops
   share their phases and easings, at the same phase, find their segment and ease it once rather
   than once a row. 10,000 of them (`keyses^`) take 0.270 ms a frame against 0.327, and allocate

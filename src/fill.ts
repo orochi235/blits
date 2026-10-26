@@ -244,6 +244,7 @@ export function run<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
     return;
   }
   this.reset(lane);
+  lane.ran = this.fills;
   if (lane.motion !== undefined && !voice.keeping) {
     runMotion(this, lane, lane.motion);
     return;
@@ -369,8 +370,9 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
     return true;
   }
   const rec = lane.records[p] as Subject<unknown>;
-  // The general path makes a voice's first call for a subject, where it first sees it play.
-  if (Number.isNaN(rec.probed)) {
+  // The general path makes a voice's first call for a subject, where it first sees it play, or a
+  // probe meeting the voice makes it here.
+  if (Number.isNaN(rec.probed) && !this.meeting) {
     this.late.push(slot);
     return false;
   }

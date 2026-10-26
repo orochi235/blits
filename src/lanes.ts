@@ -105,6 +105,11 @@ export class Lanes<I, O> implements Watcher {
   loci: Locus<I, O>[] = [];
   /** The lane and record `one` is folding, whose band state a rest-less channel reads. */
   folding: Lane<I, O> | null = null;
+  /** Whether a probe meeting lanes has `one` make their first call for its subject: see `meet`. */
+  meeting = false;
+  /** The lanes the last subject met and `foldNow` folded at its probe, and the fill it did so in. */
+  folds: number[] = [];
+  foldsFill = -1;
   rec: Subject<unknown> | null = null;
   /** The numbers a fill's methods hand each other: see `Arg`. */
   readonly arg = new Float64Array(Arg.SIZE);

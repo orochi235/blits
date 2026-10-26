@@ -2450,7 +2450,7 @@ describe('a voice a probe meets late, after every laned voice, folds onto the la
     expect(run(true)).toEqual(run(false));
   });
 
-  it('owes the voice rather than sending the subject to the general path', () => {
+  it('folds the voice on its lane at the probe, rather than owing it to the general path', () => {
     const m = mix<Part, Pose>(K, { lanes: true });
     const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
     const played = swap(false)(m, parts);
@@ -2460,8 +2460,19 @@ describe('a voice a probe meets late, after every laned voice, folds onto the la
     m.sync(16);
     for (const p of parts) m.probe(p);
     // Subjects are numbered 0 up in the order they were first probed.
-    const lanes = (m as unknown as { lanes: { owes(slot: number): boolean } }).lanes;
-    expect(parts.filter((_, slot) => lanes.owes(slot))).toHaveLength(parts.length);
+    const lanes = (
+      m as unknown as {
+        lanes: {
+          owes(slot: number): boolean;
+          weightOf(id: number, slot: number): number | undefined;
+          lanes: { voice: { id: number } }[];
+        };
+      }
+    ).lanes;
+    const met = (lanes.lanes.at(-1) as { voice: { id: number } }).voice.id;
+    expect(parts.filter((_, slot) => lanes.owes(slot))).toEqual([]);
+    // A weight is reported from the lane only for a subject whose probe read the lanes.
+    expect(parts.map((_, slot) => lanes.weightOf(met, slot))).not.toContain(undefined);
   });
 });
 

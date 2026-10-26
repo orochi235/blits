@@ -97,7 +97,7 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     }
     const lane = lanes.byId.get(v.id) ?? new Lane<I, O>(v);
     v.laned = true;
-    if (lane.epoch === 0 && v.state !== 'pending') lane.epoch = open(lanes, v);
+    if (lane.epoch === 0 && v.state !== 'pending') opened(lanes, lane);
     kept.push(lane);
   }
   lanes.lanes = kept;
@@ -332,6 +332,13 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
   return true;
 }
 
+/** A lane's voice started playing: its epoch, and room up front where it reaches every subject. */
+function opened<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
+  const v = lane.voice;
+  lane.epoch = open(lanes, v);
+  if (v.named === null && v.spec.target === undefined) lane.reserve(lanes.live, lanes.cap);
+}
+
 /**
  * A new voice that fits and writes only laned channels, and that no crowd takes, gets a lane at
  * the end of the order, its id being past every other: what a qualify would give it, since such a
@@ -340,7 +347,7 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
 function enlane<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): void {
   const lane = new Lane<I, O>(v);
   v.laned = true;
-  if (v.state !== 'pending') lane.epoch = open(lanes, v);
+  if (v.state !== 'pending') opened(lanes, lane);
   lane.chans = v.slots.map((s) => lanes.bySlot[s] as Laned);
   lane.values = lane.chans.map(() => undefined);
   lanes.lanes.push(lane);
@@ -356,7 +363,7 @@ function relane<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): boolean {
   const v = lane.voice;
   if (v.state !== 'done') {
     if (lane.epoch === 0 && v.state !== 'pending') {
-      lane.epoch = open(lanes, v);
+      opened(lanes, lane);
       if (v.named === null) lanes.dense.push(lane);
     }
     return true;
