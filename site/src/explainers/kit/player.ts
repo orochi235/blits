@@ -281,45 +281,60 @@ export class Player<I, O, C> {
   }
 }
 
+/** One voice across a run: its weight, and the channel of its own that moves most, if one does. */
+export interface Course {
+  weights: number[];
+  channel?: string;
+  /** That channel's value with the voice alone, for the ledger's subject, at the same times. */
+  values?: number[];
+}
+
 /**
- * Each voice's weight across a run, at `n` evenly spaced times from 0 to `duration`: the largest it
- * has for any subject, so a stagger or a voice reaching a few subjects still shows.
+ * Each voice across a run, at `n` evenly spaced times from 0 to `duration`. Its weight is the
+ * largest it has for any subject, so a stagger or a voice reaching a few subjects still shows.
  */
-export function weightsOver<I, O, C>(
+export function coursesOver<I, O, C>(
   scene: Scene<I, O, C>,
   config: C,
   duration: number,
   n = 240,
-): number[][] {
+): Course[] {
   const player = new Player(scene, config, { duration, listed: false });
-  const out = scene.voices(config).map(() => [] as number[]);
+  const voices = scene.voices(config);
+  const weights = voices.map(() => [] as number[]);
+  const channels = scene.ledger?.channels ?? [];
+  // Per voice, per ledger channel: its numeric values, or null once one was not a number.
+  const values = voices.map(() => channels.map((): number[] | null => []));
   for (let k = 0; k < n; k++) {
     const f = player.at((k / (n - 1)) * duration);
     f.handles.forEach((h, i) => {
       let w = 0;
       for (const s of f.subjects) w = Math.max(w, h.weightOf(s));
-      out[i]?.push(w);
+      weights[i]?.push(w);
+      const alone = (f.alone[i] ?? {}) as Record<string, unknown>;
+      channels.forEach((c, j) => {
+        const row = values[i]?.[j];
+        if (row === null || row === undefined) return;
+        const v = alone[c];
+        if (typeof v === 'number') row.push(v);
+        else if (v !== undefined) (values[i] as (number[] | null)[])[j] = null;
+      });
     });
   }
-  return out;
+  return voices.map((_, i) => {
+    let best: { channel: string; values: number[]; range: number } | undefined;
+    channels.forEach((c, j) => {
+      const row = values[i]?.[j];
+      if (!row || row.length < n) return;
+      const range = Math.max(...row) - Math.min(...row);
+      if (range > 1e-9 && (best === undefined || range > best.range))
+        best = { channel: c, values: row, range };
+    });
+    const out: Course = { weights: weights[i] ?? [] };
+    if (best) {
+      out.channel = best.channel;
+      out.values = best.values;
+    }
+    return out;
+  });
 }
-
-/** Stands in for another voice's handle inside a solo mix, so an event aimed at it does nothing. */
-const inert: Handle = {
-  id: -1,
-  state: 'done',
-  weight: 0,
-  rate: 1,
-  seek: () => 'exact',
-  fade() {},
-  ramp() {},
-  rise() {},
-  to() {},
-  push() {},
-  set() {},
-  read: () => undefined,
-  weightOf: () => 0,
-  done: Promise.resolve(),
-  played: Promise.resolve(false),
-  owner: undefined,
-};

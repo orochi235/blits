@@ -8,6 +8,16 @@ export interface Track {
   color: string;
   /** The voice's weight at evenly spaced times across the run, 0..1. */
   weights: number[];
+  /** The channel drawn as a line over the weight, and its values at the same times. */
+  channel?: string;
+  values?: number[];
+}
+
+/** `values` stretched to fill 0..1 from their lowest to their highest. */
+function spread(values: number[]): number[] {
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  return values.map((v) => (hi > lo ? (v - lo) / (hi - lo) : 0.5));
 }
 
 /** A weight curve, in a box `n - 1` wide and 1 tall. */
@@ -45,7 +55,11 @@ export function Timeline({
   const box = useRef<HTMLDivElement>(null);
   const held = useRef(false);
   const paths = useMemo(
-    () => tracks.map((tr) => ({ area: area(tr.weights), line: curve(tr.weights) })),
+    () =>
+      tracks.map((tr) => ({
+        area: area(tr.weights),
+        line: tr.values ? curve(spread(tr.values)) : '',
+      })),
     [tracks],
   );
   const width = Math.max(1, (tracks[0]?.weights.length ?? 2) - 1);
@@ -119,7 +133,10 @@ export function Timeline({
             <path className="timeline-area" d={paths[i]?.area} />
             <path className="timeline-curve" d={paths[i]?.line} />
           </svg>
-          <span className="timeline-name">{tr.name}</span>
+          <span className="timeline-name">
+            {tr.name}
+            {tr.channel && <span className="timeline-channel"> {tr.channel}</span>}
+          </span>
         </div>
       ))}
       <span className="timeline-head" aria-hidden="true" />

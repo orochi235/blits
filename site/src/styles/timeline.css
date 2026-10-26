@@ -101,3 +101,8 @@
   box-shadow: 0 0 6px var(--focus);
   pointer-events: none;
 }
+
+.timeline-channel {
+  font-weight: 400;
+  color: var(--ink-soft);
+}

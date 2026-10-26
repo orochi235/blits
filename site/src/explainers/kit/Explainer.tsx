@@ -5,7 +5,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocused, useReducedMotion, useVisible, useWidth } from './hooks';
 import { type Ink, readInk } from './ink';
 import { Ledger } from './Ledger';
-import { Player, weightsOver } from './player';
+import { coursesOver, Player } from './player';
 import { FRAME, type Frame, type Scene } from './scene';
 import { Timeline } from './Timeline';
 
@@ -74,11 +74,11 @@ function ExplainerBody<I, O, C>({
   }, [built, config, duration]);
   useEffect(() => () => player.close(), [player]);
   const tracks = useMemo(() => {
-    const weights = weightsOver(built, config, duration);
+    const courses = coursesOver(built, config, duration);
     const voices = built.voices(config);
     // A scene that cues its voices from events still needs something to scrub along.
     if (voices.length === 0) return [{ name: '', color: '', weights: [1, 1] }];
-    return voices.map((v, i) => ({ name: v.name, color: v.color, weights: weights[i] ?? [] }));
+    return voices.map((v, i) => ({ name: v.name, color: v.color, weights: [], ...courses[i] }));
   }, [built, config, duration]);
 
   const reduced = useReducedMotion();
