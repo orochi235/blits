@@ -1,63 +1,31 @@
 # Notes from weasel
 
-**For:** whoever is working on blits next. **Answers:** what a read of blits from the weasel side
-turned up: bugs, where the per-frame time goes, and what weasel has that blits doesn't.
-Written 2026-09-29 against `6cd7a49`; its three bugs were fixed in `5f4b2e5`. weasel (`~/src/weasel`, published as `@weasel-js/core`) is a 2D
-scene-graph canvas engine whose animator lives in `packages/core/src/animation/`.
-
-Everything under "Speed" was measured, not just read: `src/` compiled with `tsc` and driven
-from plain Node 24. Anything that is a suggestion says so. When an item is dealt with, delete it,
-and delete this file once it is empty.
+**For:** whoever is working on blits next. **Answers:** what is left of a read of blits from the
+weasel side: where the per-frame time goes, and what weasel has that blits doesn't. weasel
+(`~/src/weasel`, published as `@weasel-js/core`) is a 2D scene-graph canvas engine whose animator
+runs on blits. When an item is dealt with, delete it, and delete this file once it is empty.
 
 ## Speed
 
 What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 
-- **weasel's `animator-on-blits` on teitou against `5a514a3`** (weasel, Node 26.10, three passes
-  alternated, 2026-10-04, vitest means in ms per frame at 10k). blits alone: a tween voice per
-  animation read by `pull` 0.38–0.42, one shared voice 0.34–0.41, a spring voice per animation
-  0.56–0.61. Through weasel's whole animator, old against on blits: tweens steady 0.25–0.36
-  against 1.02–1.08; one tween stopped and one started each frame 0.18–0.19 against 1.33–1.38
-  (28–50 ms on `2da21c1`); springs 0.73–1.08 against 0.62–0.67, where blits now wins. weasel
-  puts the tween gap down to its own per-animation reads (about 0.5 ms, being removed) and a
-  drop it still defers a frame.
 - **Churn, what is left** (`turnover^`, weasel's shape: each frame one subject leaves for good and
   a new one comes, read by `pull` over a list kept dense by swap-remove; teitou, 2026-10-23,
   `fd5572b`, `FRAMES=5000`, each row in its own process). 0.286 ms a frame against 0.188 for the
   same voices steady (`tweens^`), medians of nine; `churn^`, the same voices replaced in place,
-  0.224. Its `kB/frame`, about 136, is mostly the row's own copy of its list each frame. A CPU
-  profile against `tweens^` (2026-10-23, before the two changes below) put churn's extra 140 µs a
-  frame in `flush` writing short runs (`copies` and `rests`, 40), `prune` closing up the voice
-  list (23), `freshen` scanning every crowd row (19) and `pullRun` (12). `freshen` now walks only
-  the rows marked stale and `prune` splices out up to four retired voices, which took `turnover^`
-  from 0.315 to 0.286 and `churn^` from 0.252 to 0.224 (`bench/runs/2026-10-23-*.txt`). What is
+  0.224. Its `kB/frame`, about 136, is mostly the row's own copy of its list each frame. What is
   left is the run order: swap-remove leaves lane slots out of list order, so `flush` and `pull`
   work in runs of one to three subjects. Closing it means renumbering slots to follow the list,
   which every lane array, chain and crowd row is keyed by; unbuilt.
 - **Stopping a subject's voice and reading its replacement, what is left** (`bench/restart.mjs`,
   the shape weasel's codec drives: a tween voice per subject read by `pull`, 100 of them stopped,
   dropped, and cued again a frame; orochi under a load average of about 11, Node 26.11,
-  2026-10-13, three alternated runs each, before being `14c49b2`):
-
-  | N | stop, each | the frame after | the frame after that | steady frame |
-  |---:|---:|---:|---:|---:|
-  | 1,000, before | 2.17–2.26 µs | 0.74–0.77 ms | 0.06 ms | 0.03 ms |
-  | 1,000 | 0.86–0.92 µs | 0.48–0.51 ms | 0.06 ms | 0.03 ms |
-  | 10,000, before | 15.4–15.7 µs | 1.99–2.15 ms | 0.48–0.52 ms | 0.28 ms |
-  | 10,000 | 2.4–2.9 µs | 1.26–1.43 ms | 0.47–0.54 ms | 0.28 ms |
-
-  At 40,000, over two runs of 150 rounds, a stop went from 55 µs to 4.2–4.5 and the frame after
-  from 7.5–8.1 ms to 3.3–3.4. Four things changed. `Lanes.forget` finds a subject's crowd rows in
-  `Lanes.placed`, where it walked every crowd's rows. `pull` tells a remembered chain head is
-  stale by a stamp per subject number (`Lanes.unlinked`), where it loaded every head it
-  remembered once any chain had been relinked: that load was about half the frame after at
-  40,000. A patch copies a stretch out of its buffer with a loop, where `Array.from` on a view
-  made `latest` 10% of the profile. `prune` searches for each retired voice up to one in 32 of
-  the list. What is left of the frame after at 10,000, timed apart in one run: about 0.3 ms
-  cueing the voices, 0.2 in `sync`, and 0.9 in the pull, against 0.46 for a frame with nothing
-  changing once churn has left slots out of list order (the item above). The profile there is
-  flat: `departed.add`, `retouch`, `copyRow` as a crowd closes up, a patch's first `grow`, each
-  under 4%. weasel has not timed this through its own harness, which reads 0.10.0 from npm.
+  2026-10-13): at 10,000 subjects the frame after the stops takes 1.26–1.43 ms, the one after
+  that 0.47–0.54, and a steady frame 0.28. Of the frame after, timed apart in one run: about
+  0.3 ms cueing the voices, 0.2 in `sync`, and 0.9 in the pull, against 0.46 for a frame with
+  nothing changing once churn has left slots out of list order (the item above). The profile
+  there is flat: `departed.add`, `retouch`, `copyRow` as a crowd closes up, a patch's first
+  `grow`, each under 4%.
 - **A stop still grows with N, and nothing in it walks more with N** (teitou, 2026-10-25, three
   runs, `restart.mjs`'s stop timed as the handle's `fade({ over: 0 })` and the `drop` after it):
 
@@ -76,74 +44,15 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   about 3.7 KB outgrow the cache, an inference from where sampled self time lands, not counted.
   Touching fewer places per stop is the lever, such as one entry per subject in place of the
   mix's separate stores keyed by it; unbuilt.
-- **Starting 10k one-subject tween voices** (cue, one sync, a probe per subject) costs about 2.5× as
-  many `fn` voices in blits' own shape: a first frame of 28.0–31.0 ms against 10.0–13.6
-  (`bench/start.mjs`, teitou, 2026-10-25, medians of 7 in each of four rounds a build over three
-  builds). weasel read about 2× in its own shape (35 ms warm against 16, orochi under load,
-  2026-10-02). A profile of that first frame alone puts most of the extra 17 ms in what a tween
-  voice has and a `fn` voice does not, per frame: joining its crowd (`join`, 1.8 ms), its motion
-  patch's first buffer, off the heap (`Motions.grow`, 1.5), numbering its subject a second time in
-  the patch (0.7 more in `Numbers.take`), and collection (1.1 more).
-
-- **Neither what a churned voice leaves alive nor the garbage it makes is weasel's gap.**
-  Reusing a retired voice's records was prototyped (2026-10-05, teitou; the prototype was
-  deleted): pooling everything blits allocates per voice halved what a churned voice leaves alive
-  (2,819 to 1,424 B with a patch per voice), but weasel's loop after churn moved 0.487 to 0.466
-  ms, inside teitou's ±0.08 noise, against 0.21 with no voice. On blits `6c4b3bf` that loop
-  already reads 0.47–0.49, not 0.4.0's 0.66–0.75. The garbage went from 21.5 to 13 KB per churned
-  voice (2026-10-11, teitou, `bench/churnwho.mjs` at 5,000 voices, three passes a side; 20.6 to
-  12 with `SHARED=1` for one shared patch), and no time came with it: `turnover^` read 0.433 and
-  0.399 ms and `churn^` 0.324 and 0.308 (medians of 8 own-process runs a side at `FRAMES=5000`
-  against `657f3f2`, every row's runs overlapping the other side's, ten rows, geometric mean
-  0.971, on a node running other jobs). What went, in KB per churned voice as each was measured
-  alone: `Array.from` over a `subarray` in motion's `latest` and `applied`, about 500 B a call
-  for three axes, with a `latest` that `prune` made to read one field (5.0); the three views a
-  crowd row was copied through when compaction moved it (1.1); `retouch`'s Set, spread and sort
-  (1.0); the view `pull` copied a run of 65 to 256 values through (1.4). `pull` also kept nothing
-  of a channel between calls: 0.35 KB a call for one vec channel, and 1.1 to 1.7 kB a frame off
-  the bench's four-channel rows (`tweens^` 6.6 to 4.9). On 2026-10-22 it went
-  from 13.0–13.4 to 11.4–11.7 KB (teitou, three passes a side), by `ALLOC=1 bench/churnwho.mjs`,
-  which prints the churn's sampled garbage by allocating function: the departed index keys its
-  ends by score, owner and then name, tag or channel in nested maps rather than one string per key
-  (1.56 KB to 0.15), `drop`'s closures became methods (0.82 to 0.35), and `cue` stopped making a
-  `{}` fade and its tape closure's context per voice (0.2). `turnover^`, `churn^` and `tweens^`
-  read level over six alternated rounds, each row in its own process. On 2026-10-24 it went from
-  12.4 to 11.7 KB (keiei, medians of three alternated passes a side,
-  `bench/runs/2026-10-24-taping-gate-churnwho.txt`): a mix with no tape makes no closure for a
-  call it would not record, where cue, drop, a motion change and each handle write made one, with
-  frame cost level (`bench/ledger.tsv`). What is left is under 0.8 KB a site, by
+- **Neither what a churned voice leaves alive nor the garbage it makes is weasel's gap**, so
+  neither is worth re-proposing for speed. Pooling everything blits allocates per voice
+  (prototyped 2026-10-05, deleted) halved what a churned voice leaves alive and moved weasel's
+  loop inside noise; cutting the garbage from 21.5 to 11.7 KB a churned voice (2026-10-11 to
+  2026-10-24, `bench/churnwho.mjs`) moved no row. What is left is under 0.8 KB a site, by
   `bench/runs/2026-10-24-weasel-churnwho-alloc.txt`: `cue` itself, the voice, its handle and
   named record, the host's own patch and its `Motions` (which blits cannot recycle), `retire`,
   `prune` in `move.ts`, the fold's `moved`, and the stretch copies a retarget keeps (`latest` in
   `src/motions.ts` and `applied` in `src/changes.ts`), which are history, not garbage.
-
-- **A `keys` read costs several times weasel's own keyframe sampler.** weasel's `sampleTrack`
-  reads one `keys` patch per track (`patch.at(phase)`, one numeric channel, four stops) since
-  2026-10-08. Measured on teitou, Node 26.10, blits 0.7.0, plain node, 10k tracks each read once a
-  frame, ms per frame over three rounds: weasel's old binary search and lerp 0.058–0.076;
-  `patch.at` 0.33–0.40; `readKeys` into one reused out object 0.31–0.32; `segment` plus a plain
-  lerp, skipping `read` 0.22. So the fresh `{}` per read is about a sixth of it, `read`'s generic
-  path (slope check, `lastRead`, `interpolate`'s type tests) about a third, and the search itself
-  is still three times a plain binary search. Suggestion, untested: a public read that takes an
-  out object, and a single-channel numeric fast path. weasel's script was
-  `tests/perf/scratch/sample-cost.mjs` (not committed); the committed bench is weasel's
-  `tests/perf/bench/timeline-sampling.bench.ts`.
-  Since `bce8fa3` (2026-10-08), a track whose stops are all plain numbers, lerped straight across,
-  is read by its own binary search and lerp over flat arrays, bit for bit what the general read
-  gives. In `bench/keys.mjs` (weasel's shape, this Mac under a load average of about 11, six
-  alternated rounds) `patch.at` reads 0.796 ms a frame against 1.134 before. A public read into
-  a reused out object was built and measured slower than `at` (0.87 against 0.78 ms), so it was
-  dropped: when the caller reads one field V8 removes `at`'s fresh object. Through weasel's
-  own bench on blits 0.8.1 (teitou, 2026-10-10, mean ms a frame over three passes, beside the
-  0.7.0 passes in weasel's `docs/proposals/2026-09-30-animator-on-blits.md`): 100 tracks
-  0.0033 / 0.0033 / 0.0036 from 0.0042 / 0.0041 / 0.0040; 1,000 tracks 0.0434 / 0.0534 / 0.0476
-  from 0.0527 / 0.0466 / 0.0550; 10,000 tracks 0.4090 / 1.0230 / 0.4198 from 0.4722 / 0.4863 /
-  1.0391, against 0.16–0.19 for weasel's old sampler. One pass in three reads about 1.0 at
-  10,000 on both versions, and both passes on studio read 1.17, so the row has a slow mode
-  nobody has explained. blits' own `bench/keys.mjs` does not show it: nine processes on keiei
-  read 0.551–0.623 ms (2026-10-24, `bench/runs/2026-10-24-weasel-keys.txt`), so it lives in
-  weasel's harness or its `sampleTrack`. Around each `patch.at`, weasel's `sampleTrack` makes two `Map` reads
-  and a call through a stored function, a share this bench does not separate.
 
 ## What weasel has that blits doesn't
 
