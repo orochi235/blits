@@ -257,7 +257,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        (teitou, 2.11 → 2.05, U = 12); skipping the chain walk for a voice no chain ever linked
        (msb-uai, 2.64 → 2.59, U = 13); sizing a lane's `records`/`deltas` and a sharing voice's
        `deltas` up front, which cut 2.0 MB a frame to 1.6 but not the time (teitou, 2.09 → 2.17,
-       U = 15).
+       U = 15). Raw output: `bench/runs/2026-10-26-{dedupe-steps,met-lanes,unchained-walk,presize-records}.txt`.
      - **A locus, and so a blend, costs about 40% more than its voices played apart**: on keiei
        (2026-10-25, `FRAMES=5000`, seven own-process runs) three voices in a locus over 10k subjects
        take 4.35 ms a frame, a `mix.blend` of three 4.63, and three plain voices 3.11. A member's
