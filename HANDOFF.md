@@ -267,6 +267,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        slowed in 0.14.0 and is back on `main` (teitou solo, 2026-10-25, 7 rounds,
        `LINEAGE_BENCH=start.mjs bench/lineage.sh`): first frame 25.8 ms at v0.13.0, 29.2 at v0.14.0
        (U = 7), 24.9 at `594c0af` (U = 17, level); fns 11.9–12.1 throughout.
+       Where starting allocates, garbage included (`bench/allocwho.mjs`, studio, 2026-10-25): a
+       tween voice 6.7 KB over its cue and first frame, a fn voice 4.5 KB. Common to both, the
+       `Voice` object itself is about 790 B (charged to `cue`, which allocates it; about 100
+       fields) and its field objects another 820 B. Tween-only: the crowd's `rowOf` and
+       `lanes.crowdOf` entries 184 B, `mix.playing` 92 B, `fresh`/`grow`/`Motions` about 450 B.
+       Most `rowOf`/`crowdOf` reads are by voice id with no voice at hand (`placed`, `watchId`,
+       `forget`), so moving a row onto its voice still needs an id map.
      - **A crowd's `keys` rows** cost about 27 ns a subject by `pull` (teitou, 2026-10-25,
        `keyses^` 0.270 ms), against 25 for keys voices over every subject (2026-10-05). Rows whose
        stops share phases and easings search and ease once per phase (`KeyRows.search`, keyed by a
