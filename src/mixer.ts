@@ -1,4 +1,5 @@
 import { type Arc, cueArc } from './arcs.js';
+import { blanks } from './blank.js';
 import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
 import { aims, chain, linkable, relink } from './chain.js';
@@ -293,6 +294,9 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** With a history store, the voices it paged out whose handles are still held; null without one. */
   outs: Outs | null = null;
 
+  /** A new empty pose of the mix's own shape, for a pose the mix makes itself. */
+  readonly blank: () => O;
+
   constructor(
     readonly kit: Kit<O>,
     readonly opts: MixOptions,
@@ -303,6 +307,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.channels = this.names.map((k) => kit[k] as Channel<unknown>);
     this.bounded = this.channels.flatMap((c, i) => (c.bounds ? [i] : []));
     this.lerpsInto = this.channels.map((c) => lerpInto(c));
+    this.blank = blanks(this.names as string[], this.channels);
     this.scalars = this.channels.map((c) => scalarOp(c));
     this.names.forEach((k, i) => {
       this.slotOf.set(k, i);

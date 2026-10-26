@@ -574,7 +574,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
         : kind === 'view'
           ? subjects.slice(0, n * 0.4)
           : subjects;
-  const scratch = {};
+  // OUT=blank probes into a pose of the mix's own shape instead of a host's `{}`.
+  const scratch = process.env.OUT === 'blank' ? m.blank() : {};
   const columns = {
     gain: new Float64Array(n),
     dark: new Float64Array(n),
@@ -654,6 +655,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   const p99 = each[Math.ceil(frames * 0.99) - 1];
   const worst = each[frames - 1];
   await new Promise((r) => setTimeout(r, 0));
+  // FIELDS=1, under node --allow-natives-syntax, prints the probe's out object as V8 holds it.
+  if (process.env.FIELDS === '1') new Function('o', '%DebugPrint(o)')(scratch);
   const ns = (ms * 1e6) / (n * voices);
   console.log(
     `${String(i + 1).padStart(2)}/${chosen.length}  ${form.padEnd(wide)} N=${String(n).padStart(6)} V=${voices}` +

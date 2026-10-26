@@ -160,6 +160,7 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     return;
   }
   lanes.laned = [];
+  lanes.copier = null;
   lanes.bySlot = host.channels.map(() => undefined);
   channels.forEach((on, slot) => {
     if (!on) return;

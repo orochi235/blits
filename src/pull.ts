@@ -54,7 +54,7 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
   const columns = columnsOf(mix, into);
   const lanes = mix.lanes;
   const now = mix.now;
-  if (mix.scratch === undefined) mix.scratch = {} as O;
+  if (mix.scratch === undefined) mix.scratch = mix.blank();
   let room = Number.POSITIVE_INFINITY;
   let tightest = '';
   for (const c of columns) {

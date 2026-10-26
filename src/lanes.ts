@@ -1,5 +1,5 @@
 import type { Column } from './columns.js';
-import { copy } from './copyout.js';
+import { type Copier, copy } from './copyout.js';
 import { type Crowd, Flag, Hot, row } from './crowd.js';
 import {
   call,
@@ -129,6 +129,8 @@ export class Lanes<I, O> implements Watcher {
   /** By subject number, the laned voices its probes fold on the general path this fill. */
   readonly owed = new Owed();
   laned: Laned[] = [];
+  /** Writes `laned`'s values for a subject into a pose; made at the first copy after they change. */
+  copier: Copier | null = null;
   /** By kit slot, the laned channel there. */
   bySlot: (Laned | undefined)[] = [];
   /** By kit slot, whether a fill leaves the channel's values for probes to copy. */
