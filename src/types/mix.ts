@@ -1,10 +1,18 @@
 import type { ArcHandle, ArcSpec } from './arc.js';
 import type { Kit } from './channel.js';
 import type { HistoryOptions, Tape } from './history.js';
-import type { Patch, Sent, Signal } from './patch.js';
+import type { Easing, Patch, Sent, Signal } from './patch.js';
 import type { Booker, BookOptions, Marked } from './place.js';
 import type { Transport } from './transport.js';
-import type { BlendMember, Handle, OwnerSpec, SpanHandle, SpanSpec, VoiceSpec } from './voice.js';
+import type {
+  BlendMember,
+  Circle,
+  Handle,
+  OwnerSpec,
+  SpanHandle,
+  SpanSpec,
+  VoiceSpec,
+} from './voice.js';
 
 /**
  * How a mix is built: its engine, reduced motion, the host, and its limits.
@@ -357,6 +365,15 @@ export interface Mix<I, O, H = unknown> {
   plot(subjects: readonly I[], xy: Float64Array, cell?: number): void;
   /** The host wrote new positions into the array it gave `plot`, which the next frame reads. */
   moved(): void;
+  /**
+   * A weight signal over the positions `plot` gave: 1 at the circle's center, falling with distance
+   * to 0 at `r` and beyond, along `ease` read from the edge (0) to the center (1), linear by
+   * default. The host moves or resizes the circle by writing to it. A voice it weighs is bounded to
+   * the circle as if cued `within` it, with no check, since the circle is the signal's own edge,
+   * where the voice could take a `within`; elsewhere it plays unbounded, to the same values. A
+   * subject with no position reads 0.
+   */
+  near(circle: Circle, opts?: { ease?: Easing }): Signal<I, H>;
   /**
    * Puts a named mark on a score, for anchors to target as they target a voice's marks: a voice
    * placed `{ with: 'reply' }` waits until the host announces `reply`. `at` is a timestamp on the

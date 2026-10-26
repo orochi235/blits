@@ -36,6 +36,7 @@ import { foldLocus, type LocusScratch } from './locus.js';
 import { listed } from './marks.js';
 import type { Motions } from './motions.js';
 import { nextFrame } from './move.js';
+import { near } from './near.js';
 import { ownerPatch } from './owner.js';
 import type { Pace } from './pace.js';
 import { Keys } from './paging.js';
@@ -662,6 +663,7 @@ const methods = {
   restsKey,
   plot,
   moved,
+  near,
   drop,
   forgetIn,
   releaseIn,

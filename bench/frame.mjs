@@ -207,7 +207,9 @@ const rows = [
   // (`within` on the cue), so a fill reads only the subjects within. `glowm` is `glow` with every
   // subject moving each frame, and `glowbm` it bounded, the index built again each frame.
   // GLOWR=<cells> widens the glow from 8: 27 covers about 20% of subjects, 55 about 60%.
+  // `glowbn` is `glowb` weighted by `mix.near(pointer)`, which carries its own circle.
   ['glowb', 10000, 2],
+  ['glowbn', 10000, 2],
   ['glowbkeys', 10000, 2],
   ['glowm', 10000, 2],
   ['glowbm', 10000, 2],
@@ -294,6 +296,7 @@ const rows = [
   ['glowo^', 10000, 2],
   ['glowokeys^', 10000, 2],
   ['glowb^', 10000, 2],
+  ['glowbn^', 10000, 2],
   ['glowbkeys^', 10000, 2],
   ['glowm^', 10000, 2],
   ['glowbm^', 10000, 2],
@@ -496,7 +499,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   const RADIUS = Number(process.env.GLOWR ?? 8);
   const pointer = { x: 0, y: 0, r: RADIUS };
   const near = (s) => Math.max(0, 1 - Math.hypot(s.x - pointer.x, s.y - pointer.y) / RADIUS);
-  const bounded = kind === 'glowb' || kind === 'glowbkeys' || kind === 'glowbm';
+  const bounded =
+    kind === 'glowb' || kind === 'glowbkeys' || kind === 'glowbm' || kind === 'glowbn';
   const moving = kind === 'glowm' || kind === 'glowbm';
   const xy = glow ? new Float64Array(n * 2) : null;
   if (xy !== null)
@@ -529,6 +533,12 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       weight: near,
       loop: true,
       ...within,
+    });
+  if (kind === 'glowbn')
+    m.cue({
+      patch: patch(1000, () => ({ gain: 1.5 }), { writes: ['gain'] }),
+      weight: m.near(pointer),
+      loop: true,
     });
   if (kind === 'glowk' || kind === 'glowl' || kind === 'glowo')
     m.cue({

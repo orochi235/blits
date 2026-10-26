@@ -2,6 +2,7 @@ import { unband } from './fold.js';
 import { keepProbed, type Lane, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
+import { carried } from './near.js';
 import { Places } from './places.js';
 import type { Circle, Setting, VoiceSpec } from './types.js';
 import type { Voice } from './voice.js';
@@ -82,10 +83,27 @@ export function moved<I, O>(this: Mixer<I, O>): void {
 }
 
 /**
- * Refuses a cue's `within` where the mix has no positions, and on any voice whose reads a skipped
- * subject could not leave as they were: one with state, a locus, history, an owner, a blend,
- * `from: 'current'`, or subjects of its own.
+ * Why a voice could not be bounded, or null: reads a skipped subject could not leave as they were,
+ * on one with state, a locus, history, an owner, `from: 'current'`, or subjects of its own.
  */
+function refusal<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): string | null {
+  const patch = spec.patch;
+  return mix.opts.history !== undefined
+    ? 'a mix with history'
+    : spec.subjects !== undefined
+      ? 'a voice naming its subjects'
+      : spec.locus !== undefined
+        ? 'a voice in a locus'
+        : spec.from === 'current'
+          ? "a voice cued from: 'current'"
+          : spec.owner !== undefined
+            ? 'a voice an owner holds'
+            : patch.form === 'motion' || patch.state !== undefined || patch.step !== undefined
+              ? 'a patch keeping state'
+              : null;
+}
+
+/** Refuses a cue's `within` where the mix has no positions, and on a voice `refusal` names. */
 export function checkWithin<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
   const area = spec.within;
   if (area === undefined) return;
@@ -93,29 +111,23 @@ export function checkWithin<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void
     throw new TypeError('blits: within takes a circle, { x, y, r }');
   if (mix.places === null) throw new Error('blits: within needs positions: call mix.plot first');
   if (typeof spec.weight !== 'function') throw new Error('blits: within needs a weight signal');
-  const patch = spec.patch;
-  const refused =
-    mix.opts.history !== undefined
-      ? 'a mix with history'
-      : spec.subjects !== undefined
-        ? 'a voice naming its subjects'
-        : spec.locus !== undefined
-          ? 'a voice in a locus'
-          : spec.from === 'current'
-            ? "a voice cued from: 'current'"
-            : spec.owner !== undefined
-              ? 'a voice an owner holds'
-              : patch.form === 'motion' || patch.state !== undefined || patch.step !== undefined
-                ? 'a patch keeping state'
-                : null;
+  const refused = refusal(mix, spec);
   if (refused !== null) throw new Error(`blits: within is not taken on ${refused}`);
 }
 
-/** Bounds a voice just made to its cue's `within`. */
+/**
+ * Bounds a voice just made to its cue's `within`, or to the circle its `near` weight carries where
+ * it could take one. A carried circle is the signal's own edge, so it is not checked.
+ */
 export function bind<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
-  const area = voice.spec.within;
+  const spec = voice.spec;
+  const own = carried(spec.weight);
+  const area =
+    spec.within ??
+    (own !== undefined && mix.places !== null && refusal(mix, spec) === null ? own : undefined);
   if (area === undefined) return;
   voice.bound = new Bound(mix, voice, area);
+  if (area === own) voice.bound.checks = false;
 }
 
 function snap<I, O>(b: Bound<I, O>, mix: Mixer<I, O>): void {
@@ -226,7 +238,12 @@ export function runBounded<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, b: Bound<
     const p = lane.positionOf(slot);
     if (p < 0) continue;
     lit(b, slot, fills);
-    lanes.one(lane, p, slot);
+    places.cur = found[k] as number;
+    try {
+      lanes.one(lane, p, slot);
+    } finally {
+      places.cur = -1;
+    }
     if (voice.keeping) return;
   }
   const data = lane.data;

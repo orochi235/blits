@@ -693,7 +693,10 @@ function share&lt;I&gt;(by: Signal&lt;I&gt;, i: number, n: number): Signal&lt;I&
 <pre><code>interface Circle { x: number; y: number; r: number }      <span class="cm">// read once a frame; the host moves it by writing to it</span>
 mix.plot(subjects: readonly I[], xy: Float64Array, cell?: number): void;  <span class="cm">// xy: x, y per subject, in subjects' order; cell: the grid's, best near r</span>
 mix.moved(): void;                                        <span class="cm">// the host wrote new positions into xy</span>
-mix.cue({ patch, weight: near, within: pointer });        <span class="cm">// refused with no plot, no signal weight, history, subjects, a locus, an owner, from: 'current', or patch state</span></code></pre>
+mix.cue({ patch, weight: near, within: pointer });        <span class="cm">// refused with no plot, no signal weight, history, subjects, a locus, an owner, from: 'current', or patch state</span>
+mix.near(circle: Circle, opts?: { ease?: Easing }): Signal&lt;I&gt;;  <span class="cm">// 1 at the center to 0 at r over the plotted positions; carries its circle</span></code></pre>
+
+<p><code>mix.near</code> is the stock signal of that shape: 1 at the circle&rsquo;s center, 0 at <code>r</code> and beyond, by distance over the plotted positions, along an <code>Easing</code> read from the edge (0) to the center (1), linear by default. A voice it weighs is bounded to its circle as if cued <code>within</code> it, with no check, because the circle is the signal&rsquo;s own edge; where the voice could not take a <code>within</code>, it plays unbounded, to the same values. It is a mix method, not a free function like <code>level</code>, because it reads the positions that mix was given. It reads to the bit as the signal written by hand over the same positions and cued <code>within</code> the same circle (<code>test/near.test.ts</code>).</p>
 
 <h2 id="time">Time</h2>
 <ul>

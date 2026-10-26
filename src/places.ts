@@ -21,6 +21,8 @@ export class Places<I> {
   /** Outside production, by place, its subject, for the check that a circle does not clip a signal. */
   refs: (WeakRef<object> | I | undefined)[] | null = null;
   dirty = true;
+  /** While a bounded fill reads the subject at a place, that place, so `near` need not look it up; else -1. */
+  cur = -1;
   /** The grid as last built: its origin, cell size and shape. */
   x0 = 0;
   y0 = 0;
