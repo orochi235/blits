@@ -22,7 +22,7 @@
 .timeline-track {
   --track: var(--ink-soft);
   position: relative;
-  height: 18px;
+  height: 36px;
   background: color-mix(in srgb, var(--track) 12%, transparent);
 }
 
@@ -81,7 +81,7 @@
   position: absolute;
   left: 6px;
   top: 0;
-  font: 700 0.72rem / 18px var(--label);
+  font: 700 0.72rem / 36px var(--label);
   color: var(--ink);
   text-shadow:
     0 0 2px var(--panel),
@@ -113,4 +113,22 @@
 
 .timeline-played .timeline-band {
   opacity: 1;
+}
+
+.timeline.closed .timeline-track {
+  height: 5px;
+}
+
+.timeline.closed .timeline-name {
+  display: none;
+}
+
+.tracks-toggle {
+  font: 500 0.82rem var(--label);
+  padding: 0.2rem 0.6rem;
+  color: var(--ink-soft);
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  cursor: pointer;
 }

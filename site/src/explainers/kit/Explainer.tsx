@@ -41,6 +41,9 @@ export interface Size {
   h: number;
 }
 
+/** Where a viewer's choice to show or hide every explainer's tracks is kept. */
+const TRACKS_KEY = 'blits-explainer-tracks';
+
 const noConfig = { defaults: () => ({}) } as unknown as Schema<never>;
 
 export function Explainer<I, O, C>(props: ExplainerProps<I, O, C>) {
@@ -84,6 +87,21 @@ function ExplainerBody<I, O, C>({
       ...(courses[i] ?? { weights: [] }),
     }));
   }, [built, config, duration]);
+
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem(TRACKS_KEY) !== 'closed';
+    } catch {
+      return true;
+    }
+  });
+  const toggle = () =>
+    setOpen((was) => {
+      try {
+        localStorage.setItem(TRACKS_KEY, was ? 'closed' : 'open');
+      } catch {}
+      return !was;
+    });
 
   const reduced = useReducedMotion();
   const [playing, setPlaying] = useState(!reduced);
@@ -159,6 +177,7 @@ function ExplainerBody<I, O, C>({
         />
       </div>
       <Timeline
+        open={open}
         duration={duration}
         t={t}
         tracks={tracks}
@@ -168,6 +187,9 @@ function ExplainerBody<I, O, C>({
         }}
       />
       <div className="explainer-transport">
+        <button type="button" className="tracks-toggle" aria-expanded={open} onClick={toggle}>
+          {open ? 'Hide tracks' : 'Show tracks'}
+        </button>
         <output className="explainer-time">{(t / 1000).toFixed(2).padStart(5, ' ')} s</output>
       </div>
       {caption && <figcaption>{caption}</figcaption>}

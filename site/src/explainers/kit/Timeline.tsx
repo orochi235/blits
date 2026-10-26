@@ -52,11 +52,14 @@ function area(weights: number[]): string {
  * A press seeks there and follows a drag; the arrow keys, Home and End move it from the keyboard.
  */
 export function Timeline({
+  open = true,
   duration,
   t,
   tracks,
   seek,
 }: {
+  /** Closed, the tracks shrink to a thin strip that still scrubs. */
+  open?: boolean;
   duration: number;
   t: number;
   tracks: Track[];
@@ -88,7 +91,7 @@ export function Timeline({
   return (
     <div
       ref={box}
-      className="timeline"
+      className={open ? 'timeline' : 'timeline closed'}
       role="slider"
       tabIndex={0}
       aria-label="Time"

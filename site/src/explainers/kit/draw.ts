@@ -143,22 +143,31 @@ export function trace(
     ctx.strokeStyle = s.color;
     ctx.lineWidth = s.width ?? 2;
     const unread = (t: number) => s.unread?.some((w) => t >= w.from && t < w.to) ?? false;
-    // One stroke per run of segments that are all read, or all unread.
-    let run: boolean | undefined;
+    // A dashed segment is stroked alone, its pattern offset by where it starts in time, so the
+    // dashes stay put as the window scrolls and old points drop off the front.
+    const solid = new Path2D();
+    let joined = false;
     s.points.forEach(([t, v], i) => {
       const prev = s.points[i - 1];
       if (prev === undefined) return;
-      const dotted = unread(prev[0]);
-      if (dotted !== run) {
-        if (run !== undefined) ctx.stroke();
-        ctx.setLineDash(dotted ? [1.5, 3.5] : (s.dash ?? []));
-        ctx.beginPath();
-        ctx.moveTo(px(prev[0]), py(prev[1]));
-        run = dotted;
+      const dash = unread(prev[0]) ? [1.5, 3.5] : (s.dash ?? []);
+      if (dash.length === 0) {
+        if (!joined) solid.moveTo(px(prev[0]), py(prev[1]));
+        solid.lineTo(px(t), py(v));
+        joined = true;
+        return;
       }
-      ctx.lineTo(px(t), py(v));
+      joined = false;
+      const piece = new Path2D();
+      piece.moveTo(px(prev[0]), py(prev[1]));
+      piece.lineTo(px(t), py(v));
+      ctx.setLineDash(dash);
+      ctx.lineDashOffset = (prev[0] / opts.span) * box.w;
+      ctx.stroke(piece);
     });
-    if (run !== undefined) ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
+    ctx.stroke(solid);
   }
   ctx.setLineDash([]);
   ctx.restore();
