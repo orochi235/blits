@@ -1,0 +1,20 @@
+---
+/** blits' debug panel, on when the URL says `?panel` (remembered) and off for `?panel=off`. */
+---
+<script>
+  const KEY = 'blits-site:panel';
+  const param = new URLSearchParams(location.search).get('panel');
+  let on = false;
+  if (param === null) {
+    try {
+      on = localStorage.getItem(KEY) === 'on';
+    } catch {}
+  } else {
+    on = param !== 'off';
+    try {
+      if (on) localStorage.setItem(KEY, 'on');
+      else localStorage.removeItem(KEY);
+    } catch {}
+  }
+  if (on) void import('@msb235/blits-panel').then(({ mount }) => mount());
+</script>

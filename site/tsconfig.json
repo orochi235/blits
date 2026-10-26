@@ -6,7 +6,8 @@
     "paths": {
       "@msb235/blits": ["../src/index.ts"],
       "@msb235/blits/lean": ["../src/lean.ts"],
-      "@msb235/blits/testing": ["../src/testing.ts"]
+      "@msb235/blits/testing": ["../src/testing.ts"],
+      "@msb235/blits-panel": ["../packages/panel/src/index.ts"]
     },
     "resolveJsonModule": true
   },
