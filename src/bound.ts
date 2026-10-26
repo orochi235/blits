@@ -37,8 +37,6 @@ export class Bound<I, O> {
    */
   inAt = new Float64Array(0);
   litAt = new Float64Array(0);
-  /** Whether `lit` has been seeded with every position the lane held before the bound. */
-  seeded = false;
   /** Outside production until it has warned: whether it checks the circle clips no signal. */
   checks: boolean;
   frames = 0;
@@ -216,10 +214,6 @@ export function runBounded<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, b: Bound<
   b.lit = b.spare;
   b.lit.length = 0;
   b.spare = old;
-  if (!b.seeded) {
-    b.seeded = true;
-    for (const slot of lane.list) old.push(slot);
-  }
   const voice = lane.voice;
   const inAt = b.inAt;
   const n = places.query(b.x, b.y, b.r, b.r2);
