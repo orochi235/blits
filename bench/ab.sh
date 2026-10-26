@@ -5,10 +5,15 @@
 # its own bench/frame.mjs, so a row must exist in both, unless AB_BENCH names one file both run.
 # A revision of `.` is the working tree as it stands, for a tree synced to a node with its changes
 # uncommitted. AB_EACH=1 runs each named row in a process of its own, so no row's numbers depend on
-# the rows before it. Prints each run's rows as they finish.
+# the rows before it. Prints each run's rows as they finish, and the full sha each side was built from.
+# On a fleet node only commits the node fetched exist, and `HEAD` is the node's base, not the commit
+# synced, so a revision naming HEAD is refused while the tree has uncommitted changes (bench/rev.sh):
+# name a sha the node has, or compare `.` with one, or A/B an uncommitted diff with abdirty.sh.
 set -euo pipefail
 a="$1"; b="$2"; rounds="$3"; shift 3
 root="$(git rev-parse --show-toplevel)"
+source "$root/bench/rev.sh"
+for rev in "$a" "$b"; do [[ "$rev" == . ]] || commit_of "$rev" >/dev/null; done
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 dirOf() { if [[ "$1" == . ]]; then echo "$tmp/worktree"; else echo "$tmp/$1"; fi; }
@@ -20,8 +25,9 @@ for rev in "$a" "$b"; do
     (cd "$root" && git ls-files -co --exclude-standard -z | xargs -0 tar -cf -) | tar -x -C "$dir"
     label="the working tree"
   else
-    git -C "$root" archive "$rev" | tar -x -C "$dir"
-    label="$rev ($(git -C "$root" rev-parse --short "$rev"))"
+    sha="$(commit_of "$rev")"
+    git -C "$root" archive "$sha" | tar -x -C "$dir"
+    label="$rev ($sha)"
   fi
   ln -s "$root/node_modules" "$dir/node_modules"
   if [[ -n "${AB_BENCH:-}" ]]; then cp "$root/$AB_BENCH" "$dir/bench/frame.mjs"; fi

@@ -238,8 +238,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    goal as fast and capacious as possible, not a target (2026-10-02). Measure each change on the
    fleet before the next starts. `bench/same.sh <rev>` checks a change bit for bit (random scenes
    through two builds), `SAME_LANES=off bench/same.sh <rev>` compares this tree's lanes with a
-   revision's general path, and `AB_EACH=1 bench/ab.sh` times one row per process. Open, largest
-   first:
+   revision's general path, and `AB_EACH=1 bench/ab.sh` times one row per process. On a node,
+   `HEAD` is the node's base commit, not the one synced, so both scripts refuse it in a tree with
+   uncommitted changes (2026-10-26); A/Bs of 2026-10-25 that compared `HEAD` with `.` on a node
+   (ready-flag, Named/writing, foldNow) may have measured against that base, not the parent meant.
+   Open, largest first:
      - **A voice over every subject cued among a crowd** (`swap`: 10k one-subject tween voices, a
        voice over all of them replaced every frame) costs 2.19 ms a frame on msb-uai against 3.67
        before 2026-10-25 (`bench/runs/2026-10-26-place-all.txt`). A stateless fn voice sharing one
