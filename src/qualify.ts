@@ -345,10 +345,10 @@ function opened<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
 }
 
 /**
- * Whether a lane just opened can take every numbered subject now, its first call for each made by
- * the fill: a stateless fn voice sharing one record, which every subject would meet at its next
- * probe, in a host that probed every subject last frame. One by one, each probe would meet it and
- * make its first call there (`foldNow` in `meet.ts`).
+ * Whether a lane just opened can take every numbered subject now, its first call or read for each
+ * made by the fill: a stateless fn or keys voice sharing one record, which every subject would meet
+ * at its next probe, in a host that probed every subject last frame. One by one, each probe would
+ * meet it and make its first call or read there (`foldNow` in `meet.ts`).
  */
 function placesAll<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): boolean {
   const v = lane.voice;
@@ -356,7 +356,6 @@ function placesAll<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): boolean {
     v.sharing &&
     v.everyone !== null &&
     lane.motion === undefined &&
-    v.built === null &&
     !v.keeping &&
     typeof v.spec.weight !== 'function' &&
     lane.list.length === 0 &&

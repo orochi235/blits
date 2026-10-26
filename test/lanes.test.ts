@@ -2556,6 +2556,19 @@ describe('a keys voice a probe meets late folds onto the lanes’ values as the 
     ]);
   });
 
+  it('takes every subject on its lane when it opens, where the host probed them all', () => {
+    const m = mix<Part, Pose>(K, { lanes: true });
+    const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
+    for (const p of parts) m.cue({ patch: glideTo(p), subjects: [p] });
+    m.sync(0);
+    for (const p of parts) m.probe(p);
+    m.cue({ patch: pulse(1), weight: 0.8 });
+    m.sync(16);
+    // One probe: met one by one, the lane would hold just this subject.
+    m.probe(parts[0] as Part);
+    const lanes = (m as unknown as { lanes: { lanes: { list: ArrayLike<number> }[] } }).lanes;
+    expect((lanes.lanes.at(-1) as { list: ArrayLike<number> }).list.length).toBe(parts.length);
+  });
 });
 
 describe('a color(last()) channel runs on lanes, the last voice past the band winning', () => {
