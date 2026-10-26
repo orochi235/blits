@@ -24,6 +24,13 @@ Nine dots. Each one breathes, and a hop ripples along the row. Click a dot and i
 
 <Listing of="live/start-dom.ts" />
 
+<details class="listing-more">
+<summary><code>start/row.ts</code>: the row of buttons, and the frame loop</summary>
+
+<Listing of="live/start/row.ts" />
+
+</details>
+
 The page gives the dots their size and color:
 
 ```css
@@ -31,7 +38,7 @@ The page gives the dots their size and color:
 .dot { width: 1.5rem; height: 1.5rem; border: none; border-radius: 50%; background: royalblue; }
 ```
 
-The file wraps everything in `run` so this page can start and stop it. In an app you would run the body once.
+The file wraps everything in `run` so this page can start and stop it. In an app you would run the body once. Making the buttons and the `requestAnimationFrame` loop is ordinary page code, so it sits in a file of its own.
 
 Each part of it:
 
@@ -47,6 +54,13 @@ Each part of it:
 <Live client:only="react" of="start-canvas.ts" />
 
 <Listing of="live/start-canvas.ts" />
+
+<details class="listing-more">
+<summary><code>start/field.ts</code>: the canvas, the grid of dots, the pointer, and drawing</summary>
+
+<Listing of="live/start/field.ts" />
+
+</details>
 
 Nothing here is different for a canvas. The subjects are plain objects, not elements, and drawing is your code. Two things change as the count grows:
 

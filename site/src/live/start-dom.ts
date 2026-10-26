@@ -1,10 +1,7 @@
 import { keys, kit, mix, mul, patch, sum } from '@msb235/blits';
+import { type Dot, loop, row } from './start/row';
 
-// What one dot is, and the two numbers an effect can move on it.
-interface Dot {
-  el: HTMLElement;
-  index: number;
-}
+// The two numbers an effect can move on a dot.
 interface DotPose {
   y: number;
   scale: number;
@@ -36,16 +33,7 @@ const pop = keys<Dot, DotPose>(
 );
 
 export default function run(root: HTMLElement): () => void {
-  const row = document.createElement('div');
-  row.className = 'dots';
-  root.append(row);
-  const dots: Dot[] = Array.from({ length: 9 }, (_, index) => {
-    const el = document.createElement('button');
-    el.className = 'dot';
-    el.ariaLabel = `Dot ${index + 1}`;
-    row.append(el);
-    return { el, index };
-  });
+  const dots = row(root, 9);
 
   // A mix plays voices: each one a patch on its own clock. These two run for good.
   const m = mix<Dot, DotPose>(DOT, { name: 'get started' });
@@ -53,24 +41,23 @@ export default function run(root: HTMLElement): () => void {
   m.cue({ patch: hop, loop: true, stagger: (dot) => dot.index * 80, fade: { in: 600 } });
 
   // A click cues one more voice, on one dot, for one pass. It multiplies with breathe.
-  row.addEventListener('click', (e) => {
+  root.addEventListener('click', (e) => {
     const dot = dots.find((d) => d.el === e.target);
     if (dot) m.cue({ patch: pop, subjects: [dot] });
   });
 
   // Once a frame: tell the mix the time, then read each dot's pose and draw it.
   const pose = { y: 0, scale: 1 };
-  let id = requestAnimationFrame(function frame(now) {
+  const stop = loop((now) => {
     m.sync(now);
     for (const dot of dots) {
       m.probe(dot, pose);
       dot.el.style.transform = `translateY(${pose.y}px) scale(${pose.scale})`;
     }
-    id = requestAnimationFrame(frame);
   });
 
   return () => {
-    cancelAnimationFrame(id);
+    stop();
     m.close();
   };
 }
