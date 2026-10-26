@@ -19,7 +19,7 @@ const flicker = () =>
 const glowPatch = () =>
   patch<Dot, Pose>(1000, () => ({ gain: 1.5, color: 0xffe08a }), { writes: ['gain', 'color'] });
 
-/** What `near` stands for, written by hand over the subjects' own fields. */
+/** What `around` stands for, written by hand over the subjects' own fields. */
 const byHand =
   (area: Circle, ease: Easing = 'linear'): Signal<Dot> =>
   (s) => {
@@ -35,11 +35,11 @@ interface Way {
   ease?: Easing;
   moving?: boolean;
   pull?: boolean;
-  /** Names its subjects, which a bound refuses: `near` then plays unbounded. */
+  /** Names its subjects, which a bound refuses: `around` then plays unbounded. */
   named?: boolean;
 }
 
-/** Each frame's reads, and the glow's weight for every subject, weighted by `near` or by hand. */
+/** Each frame's reads, and the glow's weight for every subject, weighted by `around` or by hand. */
 function play(way: Way, mine: boolean, frames = 50): unknown[] {
   const m = plain<Dot, Pose>(K, { lanes: way.lanes });
   const dots: Dot[] = Array.from({ length: SIDE * SIDE }, (_, j) => ({
@@ -61,7 +61,7 @@ function play(way: Way, mine: boolean, frames = 50): unknown[] {
     patch: glowPatch(),
     loop: true,
     ...(mine
-      ? { weight: m.near(area, way.ease === undefined ? {} : { ease: way.ease }) }
+      ? { weight: m.around(area, way.ease === undefined ? {} : { ease: way.ease }) }
       : { weight: byHand(area, way.ease), ...(way.named ? {} : { within: area }) }),
     ...(way.named ? { subjects: dots } : {}),
   });
@@ -95,7 +95,7 @@ const agree = (way: Way) => {
   for (let i = 0; i < hand.length; i++) expect(mine[i], `read ${i}`).toStrictEqual(hand[i]);
 };
 
-describe('near reads as the same signal written by hand and cued within its circle', () => {
+describe('around reads as the same signal written by hand and cued within its circle', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -117,11 +117,11 @@ describe('near reads as the same signal written by hand and cued within its circ
   }
 });
 
-describe('near', () => {
+describe('around', () => {
   it('reads 0 for a subject with no position, and before any plot', () => {
     const m = plain<Dot, Pose>(K);
     const area = { x: 0, y: 0, r: 2 };
-    const glow = m.near(area);
+    const glow = m.around(area);
     const a = { seed: 0, x: 0, y: 0 };
     const setting = {} as never;
     expect(glow(a, setting)).toBe(0);
@@ -135,6 +135,6 @@ describe('near', () => {
   });
   it('refuses a circle that is not one', () => {
     const m = plain<Dot, Pose>(K);
-    expect(() => m.near(null as never)).toThrow(/near takes a circle/);
+    expect(() => m.around(null as never)).toThrow(/around takes a circle/);
   });
 });

@@ -4,7 +4,7 @@ import { bare } from './expr';
 import type { Mixed } from './kit';
 import type { Subject } from './stage';
 
-/** Where the stage's pointer is, in dots: `x` by column, `y` by row. Every `near` circle follows it. */
+/** Where the stage's pointer is, in dots: `x` by column, `y` by row. Every `around` circle follows it. */
 export class Pointer {
   readonly circles: Circle[] = [];
 
@@ -28,13 +28,13 @@ export class Pointer {
     }
   }
 
-  /** The scope's `near` for mix `m`: its signal over a circle of `r` dots on the pointer. */
-  nearIn(m: Mix<Subject, Mixed>): (r: number, opts?: { ease?: Easing }) => Signal<Subject> {
+  /** The scope's `around` for mix `m`: its signal over a circle of `r` dots on the pointer. */
+  aroundIn(m: Mix<Subject, Mixed>): (r: number, opts?: { ease?: Easing }) => Signal<Subject> {
     return (r, opts = {}) => {
-      if (!(r > 0)) throw new RangeError(`near takes a radius above 0, not ${r}`);
+      if (!(r > 0)) throw new RangeError(`around takes a radius above 0, not ${r}`);
       const circle = { x: this.x, y: this.y, r };
       this.circles.push(circle);
-      const signal = m.near(circle, opts);
+      const signal = m.around(circle, opts);
       bare.add(signal);
       return signal;
     };
@@ -42,10 +42,10 @@ export class Pointer {
 }
 
 /**
- * Whether the composition's code calls `near`. Its mixes then keep no history, which blits refuses
+ * Whether the composition's code calls `around`. Its mixes then keep no history, which blits refuses
  * a bounded voice, so a scrub back replays rather than seeks.
  */
-export const usesNear = (c: Composition): boolean => /\bnear\s*\(/.test(JSON.stringify(c));
+export const usesAround = (c: Composition): boolean => /\bnear\s*\(/.test(JSON.stringify(c));
 
 /** Each subject's position for `plot`, in dots: column, then row. */
 export const xyOf = (subjects: readonly Subject[]): Float64Array =>

@@ -6,7 +6,7 @@ import { AHEAD } from './events';
 import { type Faults, scopeOf } from './expr';
 import { FRAME } from './frame';
 import { kitOf, type Mixed } from './kit';
-import { Pointer, usesNear, xyOf } from './pointer';
+import { Pointer, usesAround, xyOf } from './pointer';
 import type { FieldError } from './spec';
 import type { Subject } from './stage';
 
@@ -25,7 +25,7 @@ export interface Built {
   errors: FieldError[];
   /** How far ahead the player's booker reads, ms: the composition's `book.ahead`, or `AHEAD`. */
   ahead: number;
-  /** The stage's pointer, which every `near` circle in every mix follows. */
+  /** The stage's pointer, which every `around` circle in every mix follows. */
   pointer: Pointer;
 }
 
@@ -53,7 +53,7 @@ export function compile(
   const faults = new Map<string, Faults>();
 
   const pointer = Pointer.centerOf(c.stage);
-  const bounded = usesNear(c);
+  const bounded = usesAround(c);
   const xy = bounded ? xyOf(subjects) : null;
 
   // Specs are built afresh per mix: a motion patch keeps its state on itself and plays on one voice.
@@ -65,7 +65,7 @@ export function compile(
     });
     if (xy !== null) m.plot(subjects, xy);
     for (const { name, at, ...opts } of c.announced ?? []) m.announce(name, { at, ...opts });
-    const mixScope = { ...scope, near: pointer.nearIn(m) };
+    const mixScope = { ...scope, around: pointer.aroundIn(m) };
     return { m, ...cueAll(c, m, { scope: mixScope, kit, only, errors, faults }) };
   };
   const full = make(null);

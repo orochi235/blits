@@ -1,4 +1,5 @@
 import { type Arc, cueArc } from './arcs.js';
+import { around } from './around.js';
 import { blanks } from './blank.js';
 import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
@@ -35,7 +36,6 @@ import { foldLocus, type LocusScratch } from './locus.js';
 import { listed } from './marks.js';
 import type { Motions } from './motions.js';
 import { nextFrame } from './move.js';
-import { near } from './near.js';
 import { ownerPatch } from './owner.js';
 import type { Pace } from './pace.js';
 import { Keys } from './paging.js';
@@ -664,7 +664,7 @@ const methods = {
   plot,
   moved,
   put,
-  near,
+  around,
   drop,
   forgetIn,
   releaseIn,

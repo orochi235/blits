@@ -14,7 +14,7 @@ import {
 import { CHANNELS, type ChannelName, KIT, kitOf, type Mixed, type SwingName } from './kit';
 import { subjectsOf } from './stage';
 
-const OPS = new Set(['gate', 'lag', 'near', 'peak', 'slew']);
+const OPS = new Set(['gate', 'lag', 'around', 'peak', 'slew']);
 const FIELDS = ['weight', 'stagger', 'target'] as const;
 const MAX_LABEL = 28;
 

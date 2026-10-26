@@ -373,34 +373,34 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      teitou, 2026-10-25, `bench/runs/2026-10-25-named-split.txt`): one A/B can land all one side
      in the fast mode by luck.
 
-4. **Bounding a signal: `within`, `near`, `plot`, `moved` and `put`** (2026-10-26; unreleased, in
+4. **Bounding a signal: `within`, `around`, `plot`, `moved` and `put`** (2026-10-26; unreleased, in
    the changelog's Unreleased). A pointer glow is a weight signal read for every subject every
    frame, almost all of them at weight 0. A cue's `within: { x, y, r }` declares the signal 0
    outside a circle the host moves, so the mix skips it there without visiting each subject.
-   `mix.near(circle, { ease })` is the stock signal of that shape (1 at the center to 0 at `r`,
+   `mix.around(circle, { ease })` is the stock signal of that shape (1 at the center to 0 at `r`,
    along an `Easing`), which carries its circle: a voice it weighs is bounded with no clip check,
    and plays unbounded where `within` would be refused. `mix.put(subject, x, y)` moves one plotted
    subject. Documented on the site's signal page and in `docs/schema.html` (Signals).
 
    Chosen by Mike (2026-10-26): positions as a list plus an `x, y` `Float64Array` read in place, with
    one call when they move; the circle on the cue; a dev-only check; positions held weakly. Names
-   (`within`, `Circle`, `plot`, `moved`, `near`, `put`) were picked by implementing sessions, not
-   yet by Mike. `near` is a mix method, not a free signal like `level`, because it reads that mix's
+   (`within`, `Circle`, `plot`, `moved`, `around`, `put`) were picked by implementing sessions, not
+   yet by Mike. `around` is a mix method, not a free signal like `level`, because it reads that mix's
    positions (2026-10-26). `put` writes into the array `plot` was given and throws for a subject not
    in it, rather than keeping positions of its own (2026-10-26).
 
    How it works. `src/plot.ts` holds `plot`, `moved` and `put`; `src/grid.ts` the uniform grid,
    rebuilt at the first query after `moved`; `src/places.ts` the subjects over it (a `Store`, so
    objects weakly, and `drop` takes a place away), with each place's lane number cached;
-   `src/bound.ts` the bounding, shared by `within` and `near`; `src/near.ts` the signal. Outside the
+   `src/bound.ts` the bounding, shared by `within` and `around`; `src/around.ts` the signal. Outside the
    circle the voice is not read: the general path returns before priming, and a lane fill runs
    `one` only for the places the grid finds, then zeroes the lane weight of those that left. While
-   a fill reads a place, `places.cur` holds it, so `near` skips the position lookup. A `put` that
+   a fill reads a place, `places.cur` holds it, so `around` skips the position lookup. A `put` that
    keeps its subject's cell changes only its numbers; one that leaves makes the place a stray,
    tested on its own by every query, until a sixteenth of the places are strays and the grid is
    rebuilt. Outside production, every 8 frames a voice bounded by `within` reads its signal for up
    to 4 subjects just beyond `r` and warns once if one is above 0. Tests: `test/bound.test.ts`,
-   `test/near.test.ts` (to the bit against the hand-written signal plus `within`), and
+   `test/around.test.ts` (to the bit against the hand-written signal plus `within`), and
    `test/put.test.ts` (to the bit against `plot` plus `moved`), lanes on and off. With no bound,
    output is bit-identical to `eb22788` (`bench/same.sh`, 300 scenes, 0 differ, lanes on and
    `SAME_LANES=off`).
@@ -411,18 +411,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    | Row | covers | ms | against | U | raw |
    |---|---:|---:|---|---:|---|
    | `glowb^` (`within`) | 2% | 0.669 | unbounded `glow^` 1.113 | | `-near-put-guard.txt` |
-   | `glowbn^` (`near`) | 2% | 0.654 | `glowb^` 0.660, same build | 18.5 | `-near-put-rows.txt` |
+   | `glowbn^` (`around`) | 2% | 0.654 | `glowb^` 0.660, same build | 18.5 | `-near-put-rows.txt` |
    | `glowbp^` (`put`, 1% moving) | 2% | 0.679 | `glowbf^` (`moved`) 0.705 | 4 | `-near-put-rows.txt` |
    | `GLOWR=55 glowb^` | 60% | 1.171 | unbounded 1.269 | 0 | `-within-weak-r55.txt` |
    | `GLOWR=55 glowbm^` (all moving) | 60% | 1.402 | unbounded 1.415, other runs | | `-within-weak-r55.txt` |
 
-   Adding `near` and `put` left `glowb^`, `glowbm^`, `glow^`, `swap`, `tweens^` and `view` within
+   Adding `around` and `put` left `glowb^`, `glowbm^`, `glow^`, `swap`, `tweens^` and `view` within
    noise of `eb22788` (geometric mean 1.001, every U at least 13; `bench/runs/2026-10-26-near-put-guard.txt`).
 
    Left: a bound on a voice naming its subjects, on a locus member, on an owner's child, on a
    stateful patch, and on a mix with history, all refused (history because the circle the host
    moves is not recorded; the playground drops history for a composition that bounds a voice,
-   item 13); `within` on a constant weight, refused, though `near` with `{ steps: 1, jump: 'start' }`
+   item 13); `within` on a constant weight, refused, though `around` with `{ steps: 1, jump: 'start' }`
    now gives a hard-edged disk; blits-panel could draw a voice's circle. Whether unbounded voices
    are ever deprecated stays open and unlikely: klieg's lighting, a fade over a whole sign and wod's
    transitions are unbounded by design (2026-10-07).
@@ -525,11 +525,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       at f + 1; `player.test.ts` holds this. And in the Player, which meets every subject every
       frame, `catchUp: 'fresh'` differs from `exact` only for a voice starting partway through a
       frame with a `stepMs` under one frame; a `stagger` changes nothing.
-    - **A bounded glow is offered through `near`** (2026-10-26): a weight's code can call
-      `near(r, { ease })`, blits' `mix.near` over a circle of `r` dots on the stage's pointer, and
+    - **A bounded glow is offered through `around`** (2026-10-26): a weight's code can call
+      `around(r, { ease })`, blits' `mix.around` over a circle of `r` dots on the stage's pointer, and
       the "bounded glow" preset uses it over 960 dots. Chosen while building (2026-10-26): no new
       composition field, since the circle is the pointer and the positions are the dots' column and
-      row; and a composition whose code calls `near` keeps no history, since blits refuses a bound
+      row; and a composition whose code calls `around` keeps no history, since blits refuses a bound
       with history, so a scrub back there replays rather than seeks. Not offered: `within` with a
       signal of the author's own, `put`, and moving dots, all of which want a way to say where a dot
       is beyond its grid place. Checked headless 2026-10-26: the glow follows the pointer playing

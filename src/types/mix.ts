@@ -380,7 +380,7 @@ export interface Mix<I, O, H = unknown> {
    * where the voice could take a `within`; elsewhere it plays unbounded, to the same values. A
    * subject with no position reads 0.
    */
-  near(circle: Circle, opts?: { ease?: Easing }): Signal<I, H>;
+  around(circle: Circle, opts?: { ease?: Easing }): Signal<I, H>;
   /**
    * Puts a named mark on a score, for anchors to target as they target a voice's marks: a voice
    * placed `{ with: 'reply' }` waits until the host announces `reply`. `at` is a timestamp on the

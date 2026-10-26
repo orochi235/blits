@@ -64,7 +64,7 @@ export class Player {
   private readonly slid = new Map<string, number>();
   private authored: Map<string, number> | null = null;
   private isLive = false;
-  // Where the stage's pointer last was, in dots, which a rebuild's `near` circles start at.
+  // Where the stage's pointer last was, in dots, which a rebuild's `around` circles start at.
   private at: { x: number; y: number } | null = null;
   private picked: number | null = null;
   private samples: Sample[] = [];
@@ -208,7 +208,7 @@ export class Player {
   }
 
   /**
-   * Moves the stage's pointer, in dots, and every `near` circle with it, then reads the frame shown
+   * Moves the stage's pointer, in dots, and every `around` circle with it, then reads the frame shown
    * again, so a paused stage follows it too.
    */
   point(x: number, y: number): void {

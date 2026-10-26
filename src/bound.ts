@@ -1,8 +1,8 @@
+import { carried } from './around.js';
 import { unband } from './fold.js';
 import { keepProbed, type Lane, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
-import { carried } from './near.js';
 import type { Places } from './places.js';
 import type { Circle, Setting, VoiceSpec } from './types.js';
 import type { Voice } from './voice.js';
@@ -85,7 +85,7 @@ export function checkWithin<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void
 }
 
 /**
- * Bounds a voice just made to its cue's `within`, or to the circle its `near` weight carries where
+ * Bounds a voice just made to its cue's `within`, or to the circle its `around` weight carries where
  * it could take one. A carried circle is the signal's own edge, so it is not checked.
  */
 export function bind<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {

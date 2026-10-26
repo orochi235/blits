@@ -45,7 +45,7 @@ export function dotsLayout(
   };
 }
 
-/** The point at (`px`, `py`) on the stage in dots, the units `near` reads: column, then row. */
+/** The point at (`px`, `py`) on the stage in dots, the units `around` reads: column, then row. */
 export function dotsAt(
   stage: StageSpec,
   n: number,

@@ -22,7 +22,7 @@ version and everything else the patch. Each release lists its changes as **Break
   takes a subject's away. Outside production the mix warns once if the signal is above 0 just
   outside the circle, which would cut it off there. Refused with history, `subjects`, a locus, an
   owner, `from: 'current'`, or a patch keeping state.
-- `mix.near(circle, { ease })`, a weight signal over the plotted positions: 1 at the circle's
+- `mix.around(circle, { ease })`, a weight signal over the plotted positions: 1 at the circle's
   center, falling to 0 at `r` along an easing, linear by default. A voice it weighs is bounded to
   the circle as if cued `within` it, with no check for a clipped signal, and plays unbounded where
   it could not take `within`.

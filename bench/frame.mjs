@@ -207,7 +207,7 @@ const rows = [
   // (`within` on the cue), so a fill reads only the subjects within. `glowm` is `glow` with every
   // subject moving each frame, and `glowbm` it bounded, the index built again each frame.
   // GLOWR=<cells> widens the glow from 8: 27 covers about 20% of subjects, 55 about 60%.
-  // `glowbn` is `glowb` weighted by `mix.near(pointer)`, which carries its own circle. `glowbf` is
+  // `glowbn` is `glowb` weighted by `mix.around(pointer)`, which carries its own circle. `glowbf` is
   // `glowb` with 1% of subjects moving each frame, written into the array and `moved` called;
   // `glowbp` moves the same ones with `put`.
   ['glowb', 10000, 2],
@@ -562,7 +562,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   if (kind === 'glowbn')
     m.cue({
       patch: patch(1000, () => ({ gain: 1.5 }), { writes: ['gain'] }),
-      weight: m.near(pointer),
+      weight: m.around(pointer),
       loop: true,
     });
   if (kind === 'glowk' || kind === 'glowl' || kind === 'glowo')

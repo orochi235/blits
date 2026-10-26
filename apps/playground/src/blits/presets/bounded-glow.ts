@@ -35,7 +35,7 @@ const c: Composition = {
       rate: 1,
       loop: true,
       fade: {},
-      weight: { code: 'near(6, { ease: "ease-out" })' },
+      weight: { code: 'around(6, { ease: "ease-out" })' },
       patch: {
         kind: 'keys',
         period: 1000,

@@ -22,11 +22,11 @@ export interface Faults {
 
 export interface Scope {
   level(name: string): Signal<Subject>;
-  /** The mix's `near` over a circle `r` dots wide that follows the stage's pointer; see `pointer.ts`. */
-  near?(r: number, opts?: { ease?: Easing }): Signal<Subject>;
+  /** The mix's `around` over a circle `r` dots wide that follows the stage's pointer; see `pointer.ts`. */
+  around?(r: number, opts?: { ease?: Easing }): Signal<Subject>;
 }
 
-/** Functions compiled code may return as they are, so the mix still knows them: `near`'s signals. */
+/** Functions compiled code may return as they are, so the mix still knows them: `around`'s signals. */
 export const bare = new WeakSet<object>();
 
 type LevelSignal = Signal<Subject> & { set(v: number): void };
@@ -108,9 +108,9 @@ export const compileExpr = <F extends (...args: never[]) => unknown>(
       peak,
       gate,
       level: (name: string) => scope.level(name),
-      near: (r: number, opts?: { ease?: Easing }) => {
-        if (scope.near === undefined) throw new Error('near needs a mix');
-        return scope.near(r, opts);
+      around: (r: number, opts?: { ease?: Easing }) => {
+        if (scope.around === undefined) throw new Error('around needs a mix');
+        return scope.around(r, opts);
       },
     },
     () => fallback,

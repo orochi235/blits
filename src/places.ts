@@ -15,7 +15,7 @@ export class Places<I> extends Grid {
   placeOf = new Int32Array(0);
   /** Outside production, by place, its subject, for the check that a circle does not clip a signal. */
   refs: (WeakRef<object> | I | undefined)[] | null = null;
-  /** While a bounded fill reads the subject at a place, that place, so `near` need not look it up; else -1. */
+  /** While a bounded fill reads the subject at a place, that place, so `around` need not look it up; else -1. */
   cur = -1;
 
   /**

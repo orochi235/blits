@@ -2,24 +2,24 @@ import { curve } from './easing.js';
 import type { Mixer } from './mixer.js';
 import type { Circle, Easing, Signal } from './types.js';
 
-/** Each `near` signal's circle, which a voice it weighs is bounded to as if cued `within` it. */
+/** Each `around` signal's circle, which a voice it weighs is bounded to as if cued `within` it. */
 const circles = new WeakMap<object, Circle>();
 
-/** The circle a weight carries: a `near` signal's own, or none. */
+/** The circle a weight carries: an `around` signal's own, or none. */
 export const carried = (weight: unknown): Circle | undefined =>
   typeof weight === 'function' ? circles.get(weight) : undefined;
 
 /**
- * `Mix.near`: 1 at the circle's center, falling with distance over the positions `plot` gave to 0
+ * `Mix.around`: 1 at the circle's center, falling with distance over the positions `plot` gave to 0
  * at `r` and beyond, along `ease` read from the edge (0) to the center (1).
  */
-export function near<I, O>(
+export function around<I, O>(
   this: Mixer<I, O>,
   circle: Circle,
   opts: { ease?: Easing } = {},
 ): Signal<I> {
   if (typeof circle !== 'object' || circle === null)
-    throw new TypeError('blits: near takes a circle, { x, y, r }');
+    throw new TypeError('blits: around takes a circle, { x, y, r }');
   const shape = curve(opts.ease ?? 'linear');
   const read = (subject: I): number => {
     const places = this.places;

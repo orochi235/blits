@@ -37,7 +37,7 @@ function moves(f: number, n: number): [number, number, number][] {
 
 interface Way {
   lanes: boolean;
-  near?: boolean;
+  around?: boolean;
   pull?: boolean;
 }
 
@@ -57,7 +57,7 @@ function play(way: Way, byPut: boolean, frames = 60): unknown[] {
   const glow: Handle<Dot> = m.cue({
     patch: glowPatch(),
     loop: true,
-    ...(way.near ? { weight: m.near(area) } : { weight: close, within: area }),
+    ...(way.around ? { weight: m.around(area) } : { weight: close, within: area }),
   });
   const cols = { gain: new Float64Array(dots.length) };
   const seen: unknown[] = [];
@@ -97,8 +97,8 @@ describe('put reads as writing the plotted array and calling moved', () => {
     const on = lanes ? 'lanes on' : 'lanes off';
     it(`within, probed, ${on}`, () => agree({ lanes }));
     it(`within, read by pull, ${on}`, () => agree({ lanes, pull: true }));
-    it(`near, probed, ${on}`, () => agree({ lanes, near: true }));
-    it(`near, read by pull, ${on}`, () => agree({ lanes, near: true, pull: true }));
+    it(`around, probed, ${on}`, () => agree({ lanes, around: true }));
+    it(`around, read by pull, ${on}`, () => agree({ lanes, around: true, pull: true }));
   }
 });
 
@@ -109,7 +109,7 @@ describe('put', () => {
     m.plot(['a', 'b'], xy, 1);
     const glow = m.cue({
       patch: glowPatch() as never,
-      weight: m.near({ x: 0, y: 0, r: 2 }),
+      weight: m.around({ x: 0, y: 0, r: 2 }),
       loop: true,
     });
     m.sync(0);
