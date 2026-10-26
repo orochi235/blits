@@ -591,10 +591,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       at f + 1; `player.test.ts` holds this. And in the Player, which meets every subject every
       frame, `catchUp: 'fresh'` differs from `exact` only for a voice starting partway through a
       frame with a `stepMs` under one frame; a `stagger` changes nothing.
-    - **`within` and `plot` are not offered yet** (2026-10-26): a bounded glow needs each dot's
-      position given to the mix, a circle the composition moves (the pointer), and a `within`
-      field in the composition's voice schema and its editor. Not small; the schema change is
-      the part to decide.
+    - **A bounded glow is offered through `near`** (2026-10-26): a weight's code can call
+      `near(r, { ease })`, blits' `mix.near` over a circle of `r` dots on the stage's pointer, and
+      the "bounded glow" preset uses it over 960 dots. Chosen while building (2026-10-26): no new
+      composition field, since the circle is the pointer and the positions are the dots' column and
+      row; and a composition whose code calls `near` keeps no history, since blits refuses a bound
+      with history, so a scrub back there replays rather than seeks. Not offered: `within` with a
+      signal of the author's own, `put`, and moving dots, all of which want a way to say where a dot
+      is beyond its grid place. Checked headless 2026-10-26: the glow follows the pointer playing
+      and paused, and the stage canvas is capped at 400 px.
     Not worth offering: `mixer`/`Engine` (one engine), `as`, the color helpers, history paging
     without a store, and `ticker`, which would change only how the playground drives its frames.
 

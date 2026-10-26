@@ -85,6 +85,7 @@ it('has the presets the spec lists, the first the default', () => {
     'spring retarget',
     'freeze handover',
     'pointer glow',
+    'bounded glow',
     'fold rules',
     'owner fade',
     'span fit',
@@ -93,4 +94,26 @@ it('has the presets the spec lists, the first the default', () => {
     'backward',
   ]);
   expect(DEFAULT).toBe(PRESETS[0]?.comp);
+});
+
+it('bounded glow: the glow follows the pointer, and a replay starts it where the pointer was', () => {
+  const comp = PRESETS.find((x) => x.name === 'bounded glow')?.comp;
+  if (!comp) throw new Error('no bounded glow');
+  const subjects = subjectsOf(comp.stage);
+  const p = new Player(() => compile(comp, subjects, { solos: true }), subjects, {
+    levels: comp.levels,
+  });
+  const glow = p.built.handles.get('glow');
+  const at = (col: number, row: number) =>
+    subjects.findIndex((s) => s.col === col && s.row === row);
+  const corner = at(0, 0);
+  p.seek(100);
+  expect(glow?.weightOf(subjects[corner] as Subject)).toBe(0);
+  p.point(0, 0);
+  expect(p.built.handles.get('glow')?.weightOf(subjects[corner] as Subject)).toBe(1);
+  expect(p.columns.glow[corner]).toBe(2);
+  expect(p.columns.glow[at(10, 10)]).toBe(0);
+  p.seek(0);
+  expect(p.built.handles.get('glow')?.weightOf(subjects[corner] as Subject)).toBe(1);
+  expect(p.columns.glow[at(1, 0)]).toBeGreaterThan(0);
 });

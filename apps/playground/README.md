@@ -100,8 +100,9 @@ reads. A `PatchSource` is one of:
 
 An `Expr` is `{ code }`, the source of a function: `(s) => …` over a subject for `stagger` and
 `target`, or a signal for `weight`, such as `slew(level('mouse'), { riseMs: 150, fallMs: 900 })`.
-It is compiled with `new Function` in a scope holding `slew`, `lag`, `peak`, `gate` and
-`level(name)`, which reads the composition's level of that name (0 for a name it lacks). A throw
+It is compiled with `new Function` in a scope holding `slew`, `lag`, `peak`, `gate`,
+`level(name)`, which reads the composition's level of that name (0 for a name it lacks), and
+`near(r, { ease })`, blits' `mix.near` over a circle of `r` dots centered on the stage's pointer. A throw
 inside the returned function rests that call and is counted, and the field shows the count and the
 first message, so one bad subject cannot take down a frame. A syntax error is marked on its line,
 found by parsing with acorn because V8's stack does not carry it.
@@ -404,6 +405,13 @@ owner or a span; deleting a group moves what it held up to its parent.
 - **The inspector reads only public API.** Each solo mix plays one voice and is read with `probe`;
   blits exposes no per-voice contribution, and the playground does not reach inside for one. The
   Player records the picked subject's history as it steps, so a plot never replays anything.
+- **The pointer.** A composition whose code calls `near` plots every subject at its column and
+  row, so `near`'s radius is in dots, and its circles follow the pointer over the stage; a move
+  while paused reads the frame shown again (`touch`, then `pull`). A weight that is `near(...)`
+  itself is handed to blits unwrapped, so its voice is bounded; wrapped in another signal it plays
+  unbounded, to the same values. blits refuses a bound on a mix with history, so such a
+  composition's mixes keep none, and a scrub back replays, with the circle where the pointer is
+  now (`src/blits/pointer.ts`).
 - **Levels.** A slider move is not recorded into the composition. It survives rebuilds, so a scrub
   back replays it at the slider's current value, and it is dropped when the composition's own value
   for that level changes or the level goes away.
@@ -433,6 +441,7 @@ One `Composition` per file in `src/blits/presets/`.
 | spring retarget | `spring` on `offset`, retargeted from live mode               |
 | freeze handover | `freeze: 'after'`, the next voice's start fading the last out |
 | pointer glow    | weight as `slew(level('mouse'))`                              |
+| bounded glow    | weight as `near(6, { ease: 'ease-out' })` over 960 dots, following the pointer; the shimmer beneath plays on every dot |
 | fold rules      | one delta through `sum`, `mul` and `max`                      |
 | owner fade      | an owner fading three voices in and out as one, its weight a level |
 | span fit        | 2.9 s of voices in a 2 s span: one sped up (`faster`), one alongside (`overlap`), one shed (`ballast`), and 100 ms over, inside `overrun`'s 1.2 cap |

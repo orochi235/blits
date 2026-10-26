@@ -1,4 +1,5 @@
 import {
+  type Easing,
   type Fit,
   gate,
   input,
@@ -21,7 +22,12 @@ export interface Faults {
 
 export interface Scope {
   level(name: string): Signal<Subject>;
+  /** The mix's `near` over a circle `r` dots wide that follows the stage's pointer; see `pointer.ts`. */
+  near?(r: number, opts?: { ease?: Easing }): Signal<Subject>;
 }
+
+/** Functions compiled code may return as they are, so the mix still knows them: `near`'s signals. */
+export const bare = new WeakSet<object>();
 
 type LevelSignal = Signal<Subject> & { set(v: number): void };
 
@@ -70,8 +76,9 @@ function compileIn<F extends (...args: never[]) => unknown>(
     return { error: message(err), line };
   }
   if (typeof made !== 'function') return { error: 'must be a function', line: null };
-  const inner = made as (...args: unknown[]) => unknown;
   const faults: Faults = { count: 0, first: null };
+  if (bare.has(made)) return { fn: made as F, faults };
+  const inner = made as (...args: unknown[]) => unknown;
   const fn = ((...args: Parameters<F>) => {
     try {
       return inner(...args);
@@ -95,7 +102,17 @@ export const compileExpr = <F extends (...args: never[]) => unknown>(
 ): Compiled<F> =>
   compileIn<F>(
     expr.code,
-    { slew, lag, peak, gate, level: (name: string) => scope.level(name) },
+    {
+      slew,
+      lag,
+      peak,
+      gate,
+      level: (name: string) => scope.level(name),
+      near: (r: number, opts?: { ease?: Easing }) => {
+        if (scope.near === undefined) throw new Error('near needs a mix');
+        return scope.near(r, opts);
+      },
+    },
     () => fallback,
   );
 

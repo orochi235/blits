@@ -64,6 +64,8 @@ export class Player {
   private readonly slid = new Map<string, number>();
   private authored: Map<string, number> | null = null;
   private isLive = false;
+  // Where the stage's pointer last was, in dots, which a rebuild's `near` circles start at.
+  private at: { x: number; y: number } | null = null;
   private picked: number | null = null;
   private samples: Sample[] = [];
   private history: History = { picked: null, samples: [] };
@@ -90,6 +92,7 @@ export class Player {
     this.scratch = Player.columnsFor(subjects.length);
     const from = init?.from;
     if (from) {
+      this.at = from.at;
       for (const [name, v] of from.slid) this.slid.set(name, v);
       this.authored = from.authored && new Map(from.authored);
     }
@@ -204,6 +207,21 @@ export class Player {
     return this.isLive;
   }
 
+  /**
+   * Moves the stage's pointer, in dots, and every `near` circle with it, then reads the frame shown
+   * again, so a paused stage follows it too.
+   */
+  point(x: number, y: number): void {
+    this.at = { x, y };
+    this.built.pointer.move(x, y);
+    if (this.built.pointer.circles.length === 0 || this.frame < 0) return;
+    for (const m of this.mixes()) m.touch();
+    this.built.mix.pull(this.subjects, this.columns);
+    for (const solo of this.built.solos.values()) solo.pull(this.subjects, this.scratch);
+    this.record();
+    this.emit();
+  }
+
   setLevel(name: string, value: number): void {
     this.slid.set(name, value);
     this.built.levels.get(name)?.set(value);
@@ -257,6 +275,7 @@ export class Player {
   private fresh(): Built {
     const built = this.build();
     for (const [name, value] of this.slid) built.levels.get(name)?.set(value);
+    if (this.at !== null) built.pointer.move(this.at.x, this.at.y);
     this.frame = -1;
     this.hostFrame = -1;
     this.isLive = false;

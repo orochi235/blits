@@ -6,6 +6,7 @@ import { AHEAD } from './events';
 import { type Faults, scopeOf } from './expr';
 import { FRAME } from './frame';
 import { kitOf, type Mixed } from './kit';
+import { Pointer, usesNear, xyOf } from './pointer';
 import type { FieldError } from './spec';
 import type { Subject } from './stage';
 
@@ -24,6 +25,8 @@ export interface Built {
   errors: FieldError[];
   /** How far ahead the player's booker reads, ms: the composition's `book.ahead`, or `AHEAD`. */
   ahead: number;
+  /** The stage's pointer, which every `near` circle in every mix follows. */
+  pointer: Pointer;
 }
 
 /** History kept past the composition's length, ms, so a seek to its end never falls short. */
@@ -49,15 +52,21 @@ export function compile(
   const errors: FieldError[] = [];
   const faults = new Map<string, Faults>();
 
+  const pointer = Pointer.centerOf(c.stage);
+  const bounded = usesNear(c);
+  const xy = bounded ? xyOf(subjects) : null;
+
   // Specs are built afresh per mix: a motion patch keeps its state on itself and plays on one voice.
   const make = (only: string | null) => {
     // History lets the player seek back with blits' own `seek` rather than replaying from 0.
     const m = mix<Subject, Mixed>(kit, {
       ...mixOptionsOf(c.mix),
-      history: { ms: c.length + HISTORY_SLACK, inputs: true, tape },
+      ...(bounded ? {} : { history: { ms: c.length + HISTORY_SLACK, inputs: true, tape } }),
     });
+    if (xy !== null) m.plot(subjects, xy);
     for (const { name, at, ...opts } of c.announced ?? []) m.announce(name, { at, ...opts });
-    return { m, ...cueAll(c, m, { scope, kit, only, errors, faults }) };
+    const mixScope = { ...scope, near: pointer.nearIn(m) };
+    return { m, ...cueAll(c, m, { scope: mixScope, kit, only, errors, faults }) };
   };
   const full = make(null);
   const solos = new Map<string, Mix<Subject, Mixed>>();
@@ -68,7 +77,6 @@ export function compile(
       solos.set(id, made.m);
       soloVoices.set(id, made);
     }
-  void subjects;
   return {
     mix: full.m,
     solos,
@@ -80,5 +88,6 @@ export function compile(
     faults,
     errors,
     ahead: c.book?.ahead ?? AHEAD,
+    pointer,
   };
 }

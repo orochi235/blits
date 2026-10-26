@@ -45,6 +45,25 @@ export function dotsLayout(
   };
 }
 
+/** The point at (`px`, `py`) on the stage in dots, the units `near` reads: column, then row. */
+export function dotsAt(
+  stage: StageSpec,
+  n: number,
+  w: number,
+  h: number,
+  px: number,
+  py: number,
+): { x: number; y: number } {
+  if (stage.kind === 'letters') {
+    const step = Math.max(0, Math.min(96, (w - 60) / Math.max(1, n)));
+    return { x: step > 0 ? (px - w / 2) / step + (n - 1) / 2 : 0, y: 0 };
+  }
+  const pad = 40;
+  const dx = stage.cols > 1 ? (w - pad * 2) / (stage.cols - 1) : 0;
+  const dy = stage.rows > 1 ? (h - pad * 2) / (stage.rows - 1) : 0;
+  return { x: dx > 0 ? (px - pad) / dx : 0, y: dy > 0 ? (py - pad) / dy : 0 };
+}
+
 export function lettersLayout(n: number, w: number, h: number, i: number): Placed {
   const step = Math.max(0, Math.min(96, (w - 60) / Math.max(1, n)));
   return { x: w / 2 + (i - (n - 1) / 2) * step, y: h / 2, size: step / 2 };

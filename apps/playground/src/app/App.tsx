@@ -177,6 +177,10 @@ export function App() {
             frame={frame}
             picked={shown}
             onPick={setPicked}
+            onPoint={(x, y) => {
+              player.point(x, y);
+              tick();
+            }}
           />
         </section>
         <section className={s.inspector} aria-label="inspector">

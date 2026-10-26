@@ -6,6 +6,7 @@ import { ExprRow, errorOf, Row, useSpec } from './SpecFields';
 
 const PRESETS: Record<string, string> = {
   'follow a level': 'slew(level("mouse"), { riseMs: 200, fallMs: 600 })',
+  'near the pointer': 'near(5, { ease: "ease-out" })',
   'by column': '(s) => s.x',
   pulse: '(s, set) => 0.5 + 0.5 * Math.sin(set.timestamp / 300 + s.index)',
 };

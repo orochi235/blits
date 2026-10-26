@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { StageSpec } from '../composition';
 import type { Columns } from '../player';
 import type { Subject } from '../stage';
-import { DEFAULT_PALETTE, drawDots, drawLetters, type Palette, pickAt } from './draw';
+import { DEFAULT_PALETTE, dotsAt, drawDots, drawLetters, type Palette, pickAt } from './draw';
 import s from './Stage.module.css';
 
 export interface StageProps {
@@ -13,6 +13,8 @@ export interface StageProps {
   frame: number;
   picked: number | null;
   onPick(i: number | null): void;
+  /** The pointer moved over the stage, to (`x`, `y`) in dots. */
+  onPoint?(x: number, y: number): void;
 }
 
 interface Box {
@@ -35,7 +37,7 @@ function measure(el: HTMLCanvasElement): Box {
   };
 }
 
-export function Stage({ stage, subjects, columns, frame, picked, onPick }: StageProps) {
+export function Stage({ stage, subjects, columns, frame, picked, onPick, onPoint }: StageProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [box, setBox] = useState<Box | null>(null);
 
@@ -74,6 +76,19 @@ export function Stage({ stage, subjects, columns, frame, picked, onPick }: Stage
       ref={canvas}
       className={s.stage}
       aria-label="stage"
+      onPointerMove={(e) => {
+        if (!onPoint) return;
+        const r = e.currentTarget.getBoundingClientRect();
+        const at = dotsAt(
+          stage,
+          subjects.length,
+          r.width,
+          r.height,
+          e.clientX - r.left,
+          e.clientY - r.top,
+        );
+        onPoint(at.x, at.y);
+      }}
       onPointerDown={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         onPick(pickAt(stage, subjects, e.clientX - r.left, e.clientY - r.top, r.width, r.height));
