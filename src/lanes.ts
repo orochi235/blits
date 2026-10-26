@@ -1,3 +1,4 @@
+import { lit } from './bound.js';
 import type { Column } from './columns.js';
 import { type Copier, copy } from './copyout.js';
 import { type Crowd, Flag, Hot, row } from './crowd.js';
@@ -477,7 +478,10 @@ export class Lanes<I, O> implements Watcher {
   paid(id: number, slot: number, w: number): void {
     const lane = this.byId.get(id);
     const p = lane === undefined ? -1 : lane.positionOf(slot);
-    if (p >= 0) (lane as Lane<I, O>).data[p * Row.STRIDE + Row.WEIGHT] = w;
+    if (p < 0) return;
+    (lane as Lane<I, O>).data[p * Row.STRIDE + Row.WEIGHT] = w;
+    const b = (lane as Lane<I, O>).voice.bound;
+    if (b !== null && w !== 0) lit(b, slot, this.fills);
   }
 
   /**

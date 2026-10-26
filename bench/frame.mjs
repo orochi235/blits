@@ -203,6 +203,14 @@ const rows = [
   ['glowkeys', 10000, 2],
   ['glowo', 10000, 2],
   ['glowokeys', 10000, 2],
+  // `glow` and `glowkeys` with the glow's signal bounded to its radius over the subjects' positions
+  // (src/bound.ts, internal), so a fill reads only the subjects within. `glowm` is `glow` with every
+  // subject moving each frame, and `glowbm` it bounded, the index built again each frame.
+  // GLOWR=<cells> widens the glow from 8: 27 covers about 20% of subjects, 55 about 60%.
+  ['glowb', 10000, 2],
+  ['glowbkeys', 10000, 2],
+  ['glowm', 10000, 2],
+  ['glowbm', 10000, 2],
   // Keys voices over every subject lerping a `color({ lerp: 'oklch' })` round the hue.
   ['hues', 10000, 2],
   // One voice per subject, each targeted at its own: magicsmoke's faults on one shared mix.
@@ -261,6 +269,9 @@ const rows = [
   ['glowkeys-', 10000, 2],
   ['glowo-', 10000, 2],
   ['glowokeys-', 10000, 2],
+  ['glowb-', 10000, 2],
+  ['glowm-', 10000, 2],
+  ['glowbm-', 10000, 2],
   ['hues-', 10000, 2],
   ['probed-', 10000, 2],
   ['sparse-', 10000, 1],
@@ -282,6 +293,10 @@ const rows = [
   ['glowkeys^', 10000, 2],
   ['glowo^', 10000, 2],
   ['glowokeys^', 10000, 2],
+  ['glowb^', 10000, 2],
+  ['glowbkeys^', 10000, 2],
+  ['glowm^', 10000, 2],
+  ['glowbm^', 10000, 2],
   ['hues^', 10000, 2],
   ['keyses^', 10000, 1],
   ['churn^', 10000, 1],
@@ -315,6 +330,8 @@ const rows = [
   ['seek', 10000, 3],
 ];
 
+// The bound rows' internals, which a build before them lacks.
+const bounds = await import('../dist/bound.js').catch(() => null);
 // FRAMES=20000 for a profile long enough to sample a fast row.
 const frames = Number(process.env.FRAMES ?? 300);
 const windowed = Number(process.env.WINDOW ?? 0);
@@ -478,17 +495,41 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   const by = (s) => 0.5 + 0.5 * Math.sin(s.seed);
   if (kind === 'blend')
     m.blend([flicker(0), flicker(1), flicker(2)], by, { fade: { in: 100 }, loop: true });
-  const pointer = { x: 0, y: 0 };
-  const RADIUS = 8;
+  const RADIUS = Number(process.env.GLOWR ?? 8);
+  const pointer = { x: 0, y: 0, r: RADIUS };
   const near = (s) => Math.max(0, 1 - Math.hypot(s.x - pointer.x, s.y - pointer.y) / RADIUS);
+  const bounded = kind === 'glowb' || kind === 'glowbkeys' || kind === 'glowbm';
+  const moving = kind === 'glowm' || kind === 'glowbm';
+  const xy = glow ? new Float64Array(n * 2) : null;
+  if (xy !== null)
+    for (let j = 0; j < n; j++) {
+      xy[2 * j] = subjects[j].x;
+      xy[2 * j + 1] = subjects[j].y;
+    }
+  if (bounded) {
+    if (bounds === null) throw new Error(`bench/frame.mjs: ${form} needs dist/bound.js`);
+    bounds.place(m, subjects, xy, RADIUS);
+  }
   const aim = () => {
     const a = t / 2000;
     pointer.x = side / 2 + (side / 3) * Math.cos(a);
     pointer.y = side / 2 + (side / 3) * Math.sin(a);
+    if (!moving) return;
+    // Each subject wobbles about its cell, half a cell each way.
+    const u = t / 300;
+    for (let j = 0; j < n; j++) {
+      const s = subjects[j];
+      s.x = (j % side) + 0.5 * Math.sin(u + j);
+      s.y = Math.floor(j / side) + 0.5 * Math.cos(u + j);
+      xy[2 * j] = s.x;
+      xy[2 * j + 1] = s.y;
+    }
+    if (bounded) bounds.moved(m);
   };
   if (glow) m.cue({ patch: flicker(0), loop: true });
-  if (kind === 'glow')
-    m.cue({
+  let glowing = null;
+  if (kind === 'glow' || kind === 'glowb' || kind === 'glowm' || kind === 'glowbm')
+    glowing = m.cue({
       patch: patch(1000, () => ({ gain: 1.5 }), { writes: ['gain'] }),
       weight: near,
       loop: true,
@@ -505,8 +546,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       weight: near,
       loop: true,
     });
-  if (kind === 'glowkeys')
-    m.cue({
+  if (kind === 'glowkeys' || kind === 'glowbkeys')
+    glowing = m.cue({
       patch: keys(1000, [
         { at: 0, delta: { gain: 1.5, color: 0xffe08a } },
         { at: 1, delta: { gain: 1.2, color: 0xffffff } },
@@ -523,6 +564,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
       weight: near,
       loop: true,
     });
+  if (bounded) bounds.bound(m, glowing, pointer);
   const later = kind === 'far' || kind === 'redo';
   // The flicker voices of `far` and `redo`, the `k`th starting 150 ms after the one before.
   const cueLater = (k, start) =>

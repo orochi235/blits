@@ -1,3 +1,4 @@
+import { runBounded } from './bound.js';
 import { foldNumber, lerpNumber } from './channels.js';
 import { passAt, phaseAt, same, silent, weighed } from './clock.js';
 import { flush } from './columns.js';
@@ -259,6 +260,10 @@ export function run<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
   const list = lane.list;
   if (voice.sharing) {
     this.runEveryone(lane);
+    return;
+  }
+  if (voice.bound !== null) {
+    runBounded(this, lane, voice.bound);
     return;
   }
   for (let p = 0; p < list.length; p++) {

@@ -1,3 +1,4 @@
+import { within } from './bound.js';
 import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue } from './clone.js';
 import { type Key, near } from './fold.js';
@@ -66,6 +67,7 @@ export function contribution<I, O>(
 ): Record<string, unknown> | null {
   held.weight = 0;
   if (!held.reaches) return null;
+  if (voice.bound !== null && !within(this, voice.bound, subject)) return null;
   if (voice.out?.rest && isRested(held)) return null;
   if (held.rebuilt !== voice.rebuilds) rebuild(this, voice, subject, now, held);
   else if (held.seeks !== voice.seeks && sentBack(this, voice, held)) {

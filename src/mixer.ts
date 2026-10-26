@@ -28,7 +28,6 @@ import {
 import { GoneIndex } from './gone.js';
 import type { HandleHost } from './handle.js';
 import { held, shownOf, sinceOf, unreachedOf } from './held.js';
-
 import { book, laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
 import { foldLoci } from './loci.js';
@@ -39,6 +38,7 @@ import { nextFrame } from './move.js';
 import { ownerPatch } from './owner.js';
 import type { Pace } from './pace.js';
 import { Keys } from './paging.js';
+import type { Places } from './places.js';
 import { projectAll } from './project.js';
 import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
@@ -208,6 +208,8 @@ export class Mixer<I, O> implements Mix<I, O> {
    */
   chains = new Store<I, Subject<unknown>>();
   version = 0;
+  /** The positions the host gave, which a bound reads: see `bound.ts`. */
+  places: Places<I> | null = null;
   /** What `prime` reads its clock, voice time and pass from: see `Primed`. */
   readonly primed = new Float64Array(Primed.SIZE);
   readonly steps = new Steps<Voice<I, O>, I>();

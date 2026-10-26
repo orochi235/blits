@@ -1,5 +1,6 @@
 import type { Arc } from './arcs.js';
 import type { Blend } from './blend.js';
+import type { Bound } from './bound.js';
 import {
   backWith,
   type Clock,
@@ -278,6 +279,8 @@ export class Voice<I, O> {
   unreachedBits: Uint32Array | null = null;
   /** Whether one record stands for every subject: see `shares` in `everyone.ts`. */
   sharing = false;
+  /** Where its signal is declared 0, so it is not read: see `bound.ts`. */
+  bound: Bound<I, O> | null = null;
   /** The frames it has played sharing it. */
   shared = 0;
   /** That record, null until a chain first asks and once the voice shares no more. */
