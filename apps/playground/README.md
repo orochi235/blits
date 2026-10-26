@@ -529,3 +529,11 @@ Calls made while building, each the owner's to overturn, with how to reverse it.
   since blits reads it only there, and both are held alike across a blend's members, as
   `mix.blend` takes them once (2026-10-17). Reverse the second by removing them from `SHARED` in
   `src/blits/blend.ts`.
+- **Score lanes draw as the site's timeline tracks** (2026-10-26): a band in the lane's hue, the
+  weight blits played as an area, and the voice's most-moving channel as a line, or a color-only
+  voice's colors as a gradient. The clip itself is an outline over that, as written; drop the
+  played layers by not passing `tracks` to `ScoreLanes`. The weight is the most any subject takes;
+  the channel is read off the picked subject alone (`coursesOf` in `src/blits/course.ts`), from the
+  composition as written, so slider moves and live changes do not show. The path helpers in
+  `ScoreLanes/track.ts` are copied from the site's `Timeline.tsx`, which keeps them private to the
+  site. "Hide tracks" closes the lanes to scrubbing strips, remembered per viewer in localStorage.

@@ -2,6 +2,8 @@ import type { Clip, Header } from './index';
 
 /** The score's width in its own units; the svg scales to fit. */
 export const WIDTH = 1000;
+/** The ruler's height above the lanes. */
+export const RULER = 24;
 /** How far a label indents per depth. */
 export const INDENT = 12;
 

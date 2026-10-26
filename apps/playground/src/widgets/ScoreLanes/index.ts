@@ -56,6 +56,13 @@ export interface Link {
   join?: 'all' | 'any';
 }
 export type Hatch = 'before' | 'after' | 'both' | null;
+/** A lane's run sampled evenly from 0 to the score's duration, drawn over the lane. */
+export interface Track {
+  weights: number[]; // 0..1
+  channel?: string; // drawn as a line over the weight, from `values`
+  values?: number[];
+  colors?: string[]; // CSS, for a voice that moves only a color: the band is that color over time
+}
 export type ClipEdit =
   | { clip: string; kind: 'move'; start: number }
   | { clip: string; kind: 'fadeIn' | 'fadeOut'; ms: number }
@@ -75,6 +82,10 @@ export interface ScoreLanesProps {
   headers?: readonly Header[];
   marks?: readonly ScoreMark[];
   onFold?(id: string, folded: boolean): void;
+  /** By clip or header id. */
+  tracks?: ReadonlyMap<string, Track>;
+  /** Closed, the lanes shrink to thin strips that scrub; default open. */
+  open?: boolean;
   laneHeight?: number; // default 36
   labelWidth?: number; // default 140
 }

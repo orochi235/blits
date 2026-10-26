@@ -13,10 +13,11 @@ import {
   shownEnd,
   WIDTH,
 } from './geometry';
-import type { Clip, ClipEdit, Hatch } from './index';
+import type { Clip, ClipEdit, Hatch, Track } from './index';
 import { activates, seconds } from './keys';
 import { ClipTicks, InnerMarks } from './Marks';
 import s from './ScoreLanes.module.css';
+import { TrackLayers } from './TrackLayers';
 
 const MENU_W = 28;
 const fadeMax = (room: number, length: number) => Math.round(Math.min(room, length));
@@ -68,6 +69,9 @@ export interface ClipLaneProps {
   duration: number;
   selected: boolean;
   hatchMask: string;
+  track?: Track;
+  /** The clip path that shows only what the playhead has passed. */
+  played: string;
   onBegin(e: PointerEvent, clip: Clip, handle: Handle): void;
   onBeginGroup(e: PointerEvent, clip: Clip): void;
   onKeyEdit(e: KeyboardEvent, clip: Clip, handle: Handle): void;
@@ -86,6 +90,7 @@ export function ClipLane(p: ClipLaneProps) {
   const length = open ? duration : end - c.start;
   const fill = hueColor(c.hue);
   const factor = factorText(c.factor);
+  const points = clipPolygon(c, scale, top, h, duration);
   const classes = [s.clip, p.selected && s.selected, c.locked && s.locked];
   return (
     <g className={classes.filter(Boolean).join(' ')}>
@@ -99,7 +104,18 @@ export function ClipLane(p: ClipLaneProps) {
       >
         {c.label}
         {factor && <tspan className={s.factor}> {factor}</tspan>}
+        {p.track?.channel && <tspan className={s.channel}> {p.track.channel}</tspan>}
       </text>
+      <TrackLayers
+        track={p.track}
+        color={fill}
+        x={labelW}
+        w={WIDTH - labelW}
+        band={{ y: p.laneTop + 1, h: p.laneH - 2 }}
+        box={{ y: top, h }}
+        fallback={c.skipped ? undefined : points}
+        played={p.played}
+      />
       {c.freezeBefore && c.start > 0 && (
         <rect
           className={s.hatch}
@@ -114,9 +130,9 @@ export function ClipLane(p: ClipLaneProps) {
       {/* biome-ignore lint/a11y/useSemanticElements: an SVG shape cannot be a <button> */}
       <polygon
         className={c.skipped ? `${s.body} ${s.skipped}` : s.body}
-        points={clipPolygon(c, scale, top, h, duration)}
+        points={points}
         fill={c.skipped ? undefined : fill}
-        stroke={c.skipped ? fill : undefined}
+        stroke={fill}
         role="button"
         tabIndex={0}
         aria-current={p.selected ? 'true' : undefined}
