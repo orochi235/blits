@@ -26,7 +26,7 @@ const subjects: Subject[] = Array.from({ length: COUNT }, (_, i) => ({ i }));
 
 const config = f.schema({
   focus: f
-    .number(4)
+    .number(2)
     .range(0, COUNT - 1)
     .step(1)
     .label('Ledger subject'),
