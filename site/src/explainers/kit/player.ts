@@ -338,3 +338,23 @@ export function coursesOver<I, O, C>(
     return out;
   });
 }
+
+/** Stands in for another voice's handle inside a solo mix, so an event aimed at it does nothing. */
+const inert: Handle = {
+  id: -1,
+  state: 'done',
+  weight: 0,
+  rate: 1,
+  seek: () => 'exact',
+  fade() {},
+  ramp() {},
+  rise() {},
+  to() {},
+  push() {},
+  set() {},
+  read: () => undefined,
+  weightOf: () => 0,
+  done: Promise.resolve(),
+  played: Promise.resolve(false),
+  owner: undefined,
+};

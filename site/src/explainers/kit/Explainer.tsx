@@ -78,7 +78,11 @@ function ExplainerBody<I, O, C>({
     const voices = built.voices(config);
     // A scene that cues its voices from events still needs something to scrub along.
     if (voices.length === 0) return [{ name: '', color: '', weights: [1, 1] }];
-    return voices.map((v, i) => ({ name: v.name, color: v.color, weights: [], ...courses[i] }));
+    return voices.map((v, i) => ({
+      name: v.name,
+      color: v.color,
+      ...(courses[i] ?? { weights: [] }),
+    }));
   }, [built, config, duration]);
 
   const reduced = useReducedMotion();
