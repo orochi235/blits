@@ -160,8 +160,8 @@ here is the arithmetic a working renderer already had: klieg's suite of 1974 cas
 screenshot baselines came through it unchanged.
 
 One thing the port sent back. klieg's three motion phases layer, so they cue as separate voices; a
-`locus` folds its members through each channel's `lerp` instead, which is what a crossfade between
-alternatives wants and is not the same number on a multiplicative channel. Reach for a locus when
+`role` folds its members through each channel's `lerp` instead, which is what a crossfade between
+alternatives wants and is not the same number on a multiplicative channel. Reach for a role when
 one voice should replace another, not when both should be heard.
 
 Zero runtime dependencies, ESM only, types included.

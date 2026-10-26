@@ -24,17 +24,17 @@ const SHARED = [
 ] as const satisfies readonly (keyof Voice)[];
 
 export interface Blend {
-  locus: string;
+  role: string;
   by: Expr;
   /** In cue order; the first one's fields are the spec `mix.blend` is given. */
   members: Voice[];
 }
 
-/** The blend voice `v` is a member of, if its locus is one. */
-export function blendOf(c: Composition, v: Pick<Voice, 'locus'>): Blend | undefined {
-  const by = v.locus === undefined ? undefined : c.blends?.[v.locus];
-  if (v.locus === undefined || by === undefined) return undefined;
-  return { locus: v.locus, by, members: c.voices.filter((x) => x.locus === v.locus) };
+/** The blend voice `v` is a member of, if its role is one. */
+export function blendOf(c: Composition, v: Pick<Voice, 'role'>): Blend | undefined {
+  const by = v.role === undefined ? undefined : c.blends?.[v.role];
+  if (v.role === undefined || by === undefined) return undefined;
+  return { role: v.role, by, members: c.voices.filter((x) => x.role === v.role) };
 }
 
 /** Where member `i` of `n` is the whole blend: its signal's value there. */
@@ -61,11 +61,11 @@ export function syncBlend(c: Composition, from: string): Composition {
   const blend = lead && blendOf(c, lead);
   let voices = c.voices;
   if (lead && blend) {
-    const next = voices.map((v) => (v.locus === lead.locus ? follow(v, lead) : v));
+    const next = voices.map((v) => (v.role === lead.role ? follow(v, lead) : v));
     if (next.some((v, i) => v !== voices[i])) voices = next;
   }
-  const loci = new Set(voices.map((v) => v.locus));
-  const kept = Object.entries(c.blends ?? {}).filter(([locus]) => loci.has(locus));
+  const roles = new Set(voices.map((v) => v.role));
+  const kept = Object.entries(c.blends ?? {}).filter(([role]) => roles.has(role));
   const had = c.blends === undefined ? 0 : Object.keys(c.blends).length;
   const emptied = c.blends !== undefined && kept.length === 0;
   if (voices === c.voices && had === kept.length && !emptied) return c;
@@ -73,12 +73,12 @@ export function syncBlend(c: Composition, from: string): Composition {
   return { ...rest, voices, ...(kept.length > 0 ? { blends: Object.fromEntries(kept) } : {}) };
 }
 
-/** Locus `locus` blended by `by`, its voices taking the first one's shared fields; undefined unblends it. */
-export function setBlend(c: Composition, locus: string, by: Expr | undefined): Composition {
+/** Role `role` blended by `by`, its voices taking the first one's shared fields; undefined unblends it. */
+export function setBlend(c: Composition, role: string, by: Expr | undefined): Composition {
   const blends = { ...c.blends };
-  if (by === undefined) delete blends[locus];
-  else blends[locus] = by;
-  const lead = c.voices.find((v) => v.locus === locus);
+  if (by === undefined) delete blends[role];
+  else blends[role] = by;
+  const lead = c.voices.find((v) => v.role === role);
   return syncBlend({ ...c, blends }, lead?.id ?? '');
 }
 
@@ -89,9 +89,7 @@ export function setBlend(c: Composition, locus: string, by: Expr | undefined): C
 export function withVoice(c: Composition, next: Voice): Composition {
   const was = c.voices.find((v) => v.id === next.id);
   const placed = { ...c, voices: c.voices.map((v) => (v.id === next.id ? next : v)) };
-  const joined = was?.locus !== next.locus;
-  const lead = joined
-    ? placed.voices.find((v) => v.locus === next.locus && v.id !== next.id)
-    : next;
+  const joined = was?.role !== next.role;
+  const lead = joined ? placed.voices.find((v) => v.role === next.role && v.id !== next.id) : next;
   return syncBlend(placed, (lead ?? next).id);
 }

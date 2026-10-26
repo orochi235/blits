@@ -32,7 +32,7 @@
     "stretch": "interval",
     "system": "subsystem",
     "sequence": "arc",
-    "group": "locus",
+    "group": "role",
     "v-sample": "probe",
     "v-look": "project",
     "v-blend": "blend",
@@ -310,6 +310,9 @@
     ],
     "fitreport": [
       "adjusted"
+    ],
+    "group": [
+      "role"
     ]
   }
 }

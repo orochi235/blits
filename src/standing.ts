@@ -27,7 +27,7 @@ function unfit<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): string | undefined {
   // A rest-less channel switches on across a band, by the weights its voice has passed through.
   const steady =
     typeof spec.weight !== 'function' &&
-    spec.locus === undefined &&
+    spec.role === undefined &&
     !((voice.fade.in ?? 0) > 0) &&
     !((voice.fade.out ?? 0) > 0);
   if (!steady && voice.slots.some((s) => mix.channels[s]?.rest === undefined))

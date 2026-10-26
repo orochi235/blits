@@ -11,6 +11,12 @@ const [head, ...lines] = readFileSync(new URL('./ledger.tsv', import.meta.url), 
   .split('\n');
 const cols = head.split('\t');
 const entries = lines.map((l) => Object.fromEntries(l.split('\t').map((v, i) => [cols[i], v])));
+// Rows measured under a name since renamed, filed under the new one.
+const renamed = { locus: 'role' };
+for (const e of entries) {
+  const [kind, ...rest] = e.row.split(' ');
+  if (renamed[kind] !== undefined) e.row = [renamed[kind], ...rest].join(' ');
+}
 const rows = new Map();
 for (const e of entries) {
   if (filter !== undefined && !e.row.includes(filter)) continue;

@@ -8,7 +8,7 @@ import { ExprRow, Row, useSpec } from './SpecFields';
 const FRESH = '(s) => s.x';
 
 /**
- * A locus cued by `mix.blend`: the one signal its voices split, in place of a weight each. Writes the
+ * A role cued by `mix.blend`: the one signal its voices split, in place of a weight each. Writes the
  * blend's `by`, or undefined to go back to each voice's own weight.
  */
 export const blendRow: ControlRenderer = (row) => <BlendRow row={row} />;
@@ -21,7 +21,7 @@ function BlendRow({ row }: { row: PrefRenderContext }) {
     return (
       <Row row={row} hint="one signal in place of a weight each">
         <Button size="sm" onClick={() => row.setValue({ code: FRESH })}>
-          blend locus “{v.locus}”
+          blend role “{v.role}”
         </Button>
       </Row>
     );

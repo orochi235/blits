@@ -22,7 +22,7 @@ export interface Channel<V> {
   merge(a: V, b: V): V;
   /** Fade toward `rest` by weight 0..1. Required when `rest` is set; absent otherwise. */
   scale?(v: V, w: number): V;
-  /** Interpolate, for retargeting, for blending alternatives, and for folding a locus. */
+  /** Interpolate, for retargeting, for blending alternatives, and for folding a role. */
   lerp(a: V, b: V, u: number): V;
   /**
    * Optional: `merge(into, scale(v, w))`, written into `into` and returned, so a channel whose

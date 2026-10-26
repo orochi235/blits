@@ -5,7 +5,7 @@ import { Store } from './store.js';
 import type { Voice } from './voice.js';
 
 function tally<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, by: 1 | -1): void {
-  if (voice.spec.locus !== undefined) mix.loci += by;
+  if (voice.spec.role !== undefined) mix.roleVoices += by;
   const e = voice.spec.earliest;
   if (voice.spec.anchor !== undefined || (e !== undefined && typeof e !== 'number'))
     mix.anchored += by;
@@ -40,7 +40,7 @@ export function recount<I, O>(mix: Mixer<I, O>): void {
   mix.naming = 0;
   mix.general = [];
   mix.sharers = [];
-  mix.loci = 0;
+  mix.roleVoices = 0;
   mix.anchored = 0;
   for (const voice of mix.cued) {
     index(mix, voice);

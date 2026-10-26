@@ -167,7 +167,7 @@ export function copyHeld<I, O>(
     voice: h.voice,
     next: h.next,
     version: h.version,
-    loci: h.loci,
+    roles: h.roles,
     slot: h.slot,
     run: h.run,
     freed: h.freed,
@@ -218,7 +218,7 @@ export function copyHeldInto<I, O>(
   into.run = h.run;
   into.freed = h.freed;
   into.restored = null;
-  // `probed`, `delta`, `phase`, `seeks`, `snaps`, `inputs`, `next`, `version` and `loci` as
+  // `probed`, `delta`, `phase`, `seeks`, `snaps`, `inputs`, `next`, `version` and `roles` as
   // `unread` leaves them.
   return unread(into);
 }
@@ -236,7 +236,7 @@ export function unread(h: Subject<unknown>): Subject<unknown> {
   h.inputs = undefined;
   h.next = null;
   h.version = Number.NaN;
-  h.loci = null;
+  h.roles = null;
   return h;
 }
 

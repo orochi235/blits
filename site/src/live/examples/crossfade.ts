@@ -47,11 +47,11 @@ export default function run(root: HTMLElement): () => void {
   button.className = 'switch';
   root.append(button);
 
-  // Both loops share a locus, so mid-crossfade a dot is a blend of the two, not both stacked.
+  // Both loops share a role, so mid-crossfade a dot is a blend of the two, not both stacked.
   const m = mix<Dot, DotPose>(DOT, { name: 'crossfade' });
   const fade = { in: 1200, out: 1200 };
   let playing = 'wave';
-  let current = m.cue({ patch: wave, loop: true, locus: 'motion', fade: { out: fade.out } });
+  let current = m.cue({ patch: wave, loop: true, role: 'motion', fade: { out: fade.out } });
   button.textContent = 'Switch to pulse';
 
   const onClick = () => {
@@ -60,7 +60,7 @@ export default function run(root: HTMLElement): () => void {
     current = m.cue({
       patch: playing === 'wave' ? wave : pulse,
       loop: true,
-      locus: 'motion',
+      role: 'motion',
       fade,
     });
     button.textContent = `Switch to ${playing === 'wave' ? 'pulse' : 'wave'}`;

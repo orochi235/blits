@@ -106,7 +106,7 @@ export function clipOf(
   };
   if (spread.at !== 0) clip.spreadAt = spread.at / k;
   if (startsPartway(v) && clip.pass > 0) clip.stops = stopsOf(v).map((s) => s.passes);
-  if (v.locus !== undefined) clip.group = v.locus;
+  if (v.role !== undefined) clip.group = v.role;
   // blits books no hit of a voice running backward.
   if (v.hits?.length && clock > 0) clip.ticks = v.hits.map((h) => h.at / k);
   return clip;

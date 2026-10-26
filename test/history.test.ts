@@ -25,7 +25,7 @@ function full(): Subject<unknown> {
   h.inputs = [];
   h.replay = [];
   h.next = record(null, true, undefined);
-  h.loci = new Map();
+  h.roles = new Map();
   return h;
 }
 

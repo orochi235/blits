@@ -1244,7 +1244,7 @@ describe('lanes hand a channel to the general path and take it back', () => {
     );
   });
 
-  it('when a channel gains a voice in a locus and loses it again', () => {
+  it('when a channel gains a voice in a role and loses it again', () => {
     agree(
       (m) => {
         m.cue({ patch: pulse(), loop: true });
@@ -1253,8 +1253,8 @@ describe('lanes hand a channel to the general path and take it back', () => {
         return {
           at: (t) => {
             if (t === 120) {
-              hs.push(m.cue({ patch: wave(), loop: true, locus: 'a', weight: 0.6 }));
-              hs.push(m.cue({ patch: pulse(), loop: true, locus: 'a', weight: 0.4 }));
+              hs.push(m.cue({ patch: wave(), loop: true, role: 'a', weight: 0.6 }));
+              hs.push(m.cue({ patch: pulse(), loop: true, role: 'a', weight: 0.4 }));
             }
             if (t === 1000) for (const h of hs) h.fade({ over: 0 });
           },
@@ -2094,12 +2094,12 @@ describe('crowds take voices on and off as they come and go', () => {
     );
   });
 
-  it('with a crowd voice starting in the frame a locus voice off the lanes starts', () => {
+  it('with a crowd voice starting in the frame a role voice off the lanes starts', () => {
     agree(
       (m, parts) => {
         m.cue({
           patch: glide<Part, Pose, number>('crawl', { from: 1, velocity: 4, ms: 300 }),
-          locus: 'b',
+          role: 'b',
           start: 50,
         });
         const h = m.cue({
@@ -2284,7 +2284,7 @@ describe('a voice weighted by a signal runs on lanes while the signal keeps no s
   });
 });
 
-describe('a locus of keys and fn voices runs on lanes and folds as the general path folds it', () => {
+describe('a role of keys and fn voices runs on lanes and folds as the general path folds it', () => {
   const ramp = [0, 16, 33, 50, 100, 150, 200, 250, 333, 500, 700, 900];
   const flicker = (k: number) =>
     patch<Part, Pose>(
@@ -2306,9 +2306,9 @@ describe('a locus of keys and fn voices runs on lanes and folds as the general p
         const handles = [
           ...blend,
           between,
-          m.cue({ patch: flicker(3), locus: 'pair', weight: 1.4, target: (p) => p.id % 3 === 0 }),
-          m.cue({ patch: sweep, locus: 'pair', weight: 0.6, fade: { in: 120, out: 80 } }),
-          m.cue({ patch: flicker(4), locus: 'pair', subjects: parts.slice(5, 20) }),
+          m.cue({ patch: flicker(3), role: 'pair', weight: 1.4, target: (p) => p.id % 3 === 0 }),
+          m.cue({ patch: sweep, role: 'pair', weight: 0.6, fade: { in: 120, out: 80 } }),
+          m.cue({ patch: flicker(4), role: 'pair', subjects: parts.slice(5, 20) }),
         ];
         const at = (t: number) => {
           if (t === 150) handles[5]?.fade({ subject: parts[4] as Part, over: 100 });
@@ -2320,12 +2320,12 @@ describe('a locus of keys and fn voices runs on lanes and folds as the general p
     );
   });
 
-  it('hands the whole locus to the general path when a member cannot run on a lane', () => {
+  it('hands the whole role to the general path when a member cannot run on a lane', () => {
     agree(
       (m, parts) => {
         const handles = [
-          m.cue({ patch: flicker(1), locus: 'a' }),
-          m.cue({ patch: sweep, locus: 'a', weight: 0.5 }),
+          m.cue({ patch: flicker(1), role: 'a' }),
+          m.cue({ patch: sweep, role: 'a', weight: 0.5 }),
         ];
         const at = (t: number) => {
           // A spring member writing a channel no other member writes still counts in the sum.
@@ -2336,7 +2336,7 @@ describe('a locus of keys and fn voices runs on lanes and folds as the general p
                   from: [0, 0, 0],
                   to: (p) => [p.id, 0, 0],
                 }),
-                locus: 'a',
+                role: 'a',
                 subjects: [parts[7] as Part],
               }),
             );
@@ -2348,32 +2348,32 @@ describe('a locus of keys and fn voices runs on lanes and folds as the general p
     );
   });
 
-  it('runs a locus a subject at a time only where no other voice falls between its members', () => {
+  it('runs a role a subject at a time only where no other voice falls between its members', () => {
     const inline: boolean[][] = [];
-    const ofLoci = (m: unknown) =>
-      (m as { lanes: { loci: { inline: boolean }[] } }).lanes.loci.map((g) => g.inline);
+    const ofRoles = (m: unknown) =>
+      (m as { lanes: { roles: { inline: boolean }[] } }).lanes.roles.map((g) => g.inline);
     agree(
       (m) => {
         const before = m.cue({ patch: wave(), weight: 0.8 });
         const handles = [
           before,
-          m.cue({ patch: flicker(1), locus: 'whole', weight: 0.7 }),
-          m.cue({ patch: sweep, locus: 'whole', weight: 1.2, fade: { in: 90 } }),
-          m.cue({ patch: flicker(2), locus: 'whole' }),
+          m.cue({ patch: flicker(1), role: 'whole', weight: 0.7 }),
+          m.cue({ patch: sweep, role: 'whole', weight: 1.2, fade: { in: 90 } }),
+          m.cue({ patch: flicker(2), role: 'whole' }),
           ...m.blend([flicker(3), sweep], by),
-          m.cue({ patch: flicker(4), locus: 'split' }),
+          m.cue({ patch: flicker(4), role: 'split' }),
           m.cue({ patch: pulse(), weight: 0.6 }),
-          m.cue({ patch: sweep, locus: 'split', weight: 0.4 }),
+          m.cue({ patch: sweep, role: 'split', weight: 0.4 }),
         ];
         const at = (t: number) => {
           if (t === 100) handles[2]?.fade({ over: 60 });
-          if ((m as unknown as { lanes: unknown }).lanes) inline.push(ofLoci(m));
+          if ((m as unknown as { lanes: unknown }).lanes) inline.push(ofRoles(m));
         };
         return { handles, at };
       },
       { times: ramp, parts: 40 },
     );
-    // The whole locus and the blend run inline; the split locus, a voice between its members, does not.
+    // The whole role and the blend run inline; the split role, a voice between its members, does not.
     expect(inline.some((r) => r.length === 3 && r[0] && r[1] && !r[2])).toBe(true);
   });
 
@@ -2670,11 +2670,11 @@ describe('a color(last()) channel runs on lanes, the last voice past the band wi
     );
   });
 
-  it('kept on the general path by a locus or a voice naming one subject, which fold it elsewhere', () => {
+  it('kept on the general path by a role or a voice naming one subject, which fold it elsewhere', () => {
     agree(
       (m, parts) => {
-        m.cue({ patch: paint(RED), locus: 'pair', weight: swing });
-        m.cue({ patch: paint(BLUE), locus: 'pair' });
+        m.cue({ patch: paint(RED), role: 'pair', weight: swing });
+        m.cue({ patch: paint(BLUE), role: 'pair' });
         const one = m.cue({
           patch: paint(oklab(0x00ff00)),
           subjects: [parts[2] as Part],

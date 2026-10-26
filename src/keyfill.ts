@@ -6,7 +6,7 @@ import type { Lanes } from './lanes.js';
 import { shortWay } from './turns.js';
 
 /**
- * A keys voice's fill outside a locus, its weight a number: what `one` does for each subject, in
+ * A keys voice's fill outside a role, its weight a number: what `one` does for each subject, in
  * one loop, so no weight or time crosses a call as a boxed double per subject.
  */
 export function runKeys<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {

@@ -93,12 +93,12 @@ const SCENES: Record<string, { cue: (m: M) => void; laned: string[] }> = {
     },
     laned: ['heading', 'spin'],
   },
-  'a locus around a voice outside it': {
+  'a role around a voice outside it': {
     cue: (m) => {
-      m.cue({ patch: veer(300), loop: true, locus: 'a', weight: 0 });
+      m.cue({ patch: veer(300), loop: true, role: 'a', weight: 0 });
       m.cue({ patch: veer(650), loop: true, weight: 0.8 });
-      m.cue({ patch: sway(500), loop: true, locus: 'a', weight: 0.5 });
-      m.cue({ patch: veer(900), loop: true, locus: 'a', weight: (s: Part) => 0.2 * s.id });
+      m.cue({ patch: sway(500), loop: true, role: 'a', weight: 0.5 });
+      m.cue({ patch: veer(900), loop: true, role: 'a', weight: (s: Part) => 0.2 * s.id });
     },
     laned: ['heading', 'spin'],
   },

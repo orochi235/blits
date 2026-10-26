@@ -1,6 +1,6 @@
 import { flowOf } from '@pg/blits/flow';
 import blend from '@pg/blits/presets/blend';
-import { roleOf, wired } from '@pg/blits/wire';
+import { jobOf, wired } from '@pg/blits/wire';
 import { describe, expect, it } from 'vitest';
 import { comp, group, voice } from './helpers';
 
@@ -20,20 +20,20 @@ const code = flowOf(base).code;
 const end = (node: string, port: string) => ({ node, port });
 const sig = [...code.keys()].find((k) => k.startsWith('sig:')) as string;
 
-describe('roleOf', () => {
+describe('jobOf', () => {
   it('reads a voice or group by its top, start and end, and a signal or mark by its bottom', () => {
-    expect(['n', 'w', 'e', 's'].map((p) => roleOf(code, 'voice:a', p))).toEqual([
+    expect(['n', 'w', 'e', 's'].map((p) => jobOf(code, 'voice:a', p))).toEqual([
       'weight',
       'start',
       'end',
       null,
     ]);
-    expect(roleOf(code, 'group:g', 'e')).toBe('end');
-    expect(roleOf(code, 'level:x', 's')).toBe('signal');
-    expect(roleOf(code, sig, 's')).toBe('signal');
-    expect(roleOf(code, 'level:x', 'n')).toBe(null);
-    expect(roleOf(code, 'mark:beat', 's')).toBe('mark');
-    expect(roleOf(code, 'ch:glow', 's')).toBe(null);
+    expect(jobOf(code, 'group:g', 'e')).toBe('end');
+    expect(jobOf(code, 'level:x', 's')).toBe('signal');
+    expect(jobOf(code, sig, 's')).toBe('signal');
+    expect(jobOf(code, 'level:x', 'n')).toBe(null);
+    expect(jobOf(code, 'mark:beat', 's')).toBe('mark');
+    expect(jobOf(code, 'ch:glow', 's')).toBe(null);
   });
 });
 
@@ -64,8 +64,8 @@ describe('wired', () => {
     const v = blend.voices[0];
     const level = [...c.keys()].find((k) => k.startsWith('level:')) as string;
     const next = wired(blend, c, end(level, 's'), end(`voice:${v?.id}`, 'n'));
-    const locus = v?.locus as string;
-    expect(next?.blends?.[locus]).toEqual({ code: c.get(level) });
+    const role = v?.role as string;
+    expect(next?.blends?.[role]).toEqual({ code: c.get(level) });
   });
 
   it('anchors by start and end: with a start, after an end, dropping the paired slot', () => {

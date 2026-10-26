@@ -11,7 +11,7 @@ import { load } from './load';
  * at its top (`n`) and is placed by its start (`w`) and end (`e`); a level, a signal or a whole
  * `weight` gives a signal from its bottom (`s`), and so does a mark.
  */
-export type Role = 'weight' | 'start' | 'end' | 'signal' | 'mark';
+export type Job = 'weight' | 'start' | 'end' | 'signal' | 'mark';
 
 /** A port of a node, by the node's id in the flow or timing and the port's compass name. */
 export interface End {
@@ -22,8 +22,8 @@ export interface End {
 const isItem = (node: string) => node.startsWith('voice:') || node.startsWith('group:');
 const idOf = (node: string) => node.slice(node.indexOf(':') + 1);
 
-/** The role of `port` on `node`, or null for a port that does nothing; `code` is `flowOf`'s. */
-export function roleOf(code: ReadonlyMap<string, string>, node: string, port: string): Role | null {
+/** The job of `port` on `node`, or null for a port that does nothing; `code` is `flowOf`'s. */
+export function jobOf(code: ReadonlyMap<string, string>, node: string, port: string): Job | null {
   if (isItem(node))
     return port === 'n' ? 'weight' : port === 'w' ? 'start' : port === 'e' ? 'end' : null;
   if (port !== 's') return null;
@@ -31,7 +31,7 @@ export function roleOf(code: ReadonlyMap<string, string>, node: string, port: st
   return code.has(node) ? 'signal' : null;
 }
 
-const TONE: Record<Role, FlowPortTone> = {
+const TONE: Record<Job, FlowPortTone> = {
   weight: 'flow',
   signal: 'flow',
   start: 'timing',
@@ -41,18 +41,18 @@ const TONE: Record<Role, FlowPortTone> = {
 
 /** The kind of edge `port` on `node` makes, which it is drawn in the color of; null for none. */
 export function toneOf(code: ReadonlyMap<string, string>, node: string, port: string) {
-  const role = roleOf(code, node, port);
-  return role === null ? null : TONE[role];
+  const job = jobOf(code, node, port);
+  return job === null ? null : TONE[job];
 }
 
-const SOURCES: readonly Role[] = ['signal', 'mark'];
+const SOURCES: readonly Job[] = ['signal', 'mark'];
 
 function weighted(c: Composition, node: string, code: string): Composition {
   const id = idOf(node);
   const v = c.voices.find((x) => x.id === id);
   if (v) {
     const blend = blendOf(c, v);
-    if (blend) return blend.by.code === code ? c : setBlend(c, blend.locus, { code });
+    if (blend) return blend.by.code === code ? c : setBlend(c, blend.role, { code });
     if (isExpr(v.weight) && v.weight.code === code) return c;
     return withVoice(c, { ...v, weight: { code } });
   }
@@ -92,7 +92,7 @@ export function wired(
   b: End,
 ): Composition | null {
   let [from, to] = [a, b];
-  let [rf, rt] = [roleOf(code, a.node, a.port), roleOf(code, b.node, b.port)];
+  let [rf, rt] = [jobOf(code, a.node, a.port), jobOf(code, b.node, b.port)];
   if (rf === null || rt === null || a.node === b.node) return null;
   if (SOURCES.includes(rt) && !SOURCES.includes(rf)) [from, to, rf, rt] = [to, from, rt, rf];
   let next = c;

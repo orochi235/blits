@@ -90,13 +90,13 @@ describe("color({ lerp: 'oklch' }) runs on lanes, reading as the general path do
     );
   });
 
-  it('in a locus, whose members lerp through the channel', () => {
+  it('in a role, whose members lerp through the channel', () => {
     agree(
       round(),
       (m) => {
-        m.cue({ patch: sweep(RED, BLUE), locus: 'one', weight: 0.7 });
-        m.cue({ patch: sweep(CYAN, oklab(0xff00ff)), locus: 'one', weight: 0.4 });
-        m.cue({ patch: holds(oklab(0xffe08a)), locus: 'one', weight: 0.5 });
+        m.cue({ patch: sweep(RED, BLUE), role: 'one', weight: 0.7 });
+        m.cue({ patch: sweep(CYAN, oklab(0xff00ff)), role: 'one', weight: 0.4 });
+        m.cue({ patch: holds(oklab(0xffe08a)), role: 'one', weight: 0.5 });
       },
       TIMES,
     );

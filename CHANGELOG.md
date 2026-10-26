@@ -13,6 +13,14 @@ version and everything else the patch. Each release lists its changes as **Break
   voice across subjects, so such a write already reached whatever it called next. A patch's
   `state` is still its own to change in place.
 
+### Changed
+
+- A locus is now a **role**, `VoiceSpec.role`: voices in one role are alternatives, so whichever
+  plays it, the subject shows one performance, not two stacked. `locus` is still taken as `role`
+  for one release, deprecated, and the mix warns once outside production; a voice given both with
+  different values is refused. The mix option for tags that act as roles is `roles`, and `loci` is
+  taken the same way. Errors and warnings say role.
+
 ### Added
 
 - `within` on a cue: a circle `{ x, y, r }` (the type `Circle`) the host moves, outside which the
@@ -21,7 +29,7 @@ version and everything else the patch. Each release lists its changes as **Break
   read in place, and calls `mix.moved()` after writing new ones. Positions hold an object subject
   weakly, and `drop` takes a subject's away. Outside production the mix warns once if the signal is
   above 0 just outside the circle, which would cut it off there. Refused with history, `subjects`, a
-  locus, an owner, `from: 'current'`, or a patch keeping state.
+  role, an owner, `from: 'current'`, or a patch keeping state.
 - `mix.around(circle, { ease })`, a weight signal over the plotted positions: 1 at the circle's
   center, falling to 0 at `r` along an easing, linear by default. A voice it weighs is bounded to
   the circle as if cued `within` it, with no check for a clipped signal, and plays unbounded where
@@ -89,16 +97,16 @@ version and everything else the patch. Each release lists its changes as **Break
   pointer glow over 10,000 subjects read by `pull` (`glow^`) takes 1.657 ms a frame against 1.708,
   and three signal-weighted voices over 10,000 (`signal`) 4.511 against 4.641 (keiei, medians of
   seven runs of 5,000 frames, each in its own process); other rows are within their spread.
-- A locus, and so a `mix.blend`, costs a further tenth less a frame on lanes where no other voice
+- A role, and so a `mix.blend`, costs a further tenth less a frame on lanes where no other voice
   falls between its members in voice order: each subject's members are gathered and folded
   together, at the first member's turn, rather than gathered for every subject and folded in a
-  second pass. Three voices in a locus over 10,000 subjects (`locus`) take 2.555 ms a frame against
+  second pass. Three voices in a role over 10,000 subjects (`role`) take 2.555 ms a frame against
   2.839, and a blend of three (`blend`) 2.841 against 3.055 (teitou, medians of nine runs of 5,000
   frames, each in its own process); three plain voices (`fn`) and three signal-weighted ones
   (`signal`) are unchanged.
-- A locus, and so a `mix.blend`, costs about a tenth less a frame on lanes, and allocates no more
-  than its members would apart: a member's numbers reach the locus without being boxed, 16 bytes
-  each a channel a subject. Three voices in a locus over 10,000 subjects (`locus`) take 4.349 ms a
+- A role, and so a `mix.blend`, costs about a tenth less a frame on lanes, and allocates no more
+  than its members would apart: a member's numbers reach the role without being boxed, 16 bytes
+  each a channel a subject. Three voices in a role over 10,000 subjects (`role`) take 4.349 ms a
   frame against 4.810 and allocate 2.4 MB against 4.0, and a blend of three (`blend`) 4.633 against
   5.128 (keiei, medians of seven runs of 5,000 frames, each in its own process).
 - `project` back under `history` reads a motion voice's subject as it showed. A subject retargeted

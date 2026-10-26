@@ -32,11 +32,11 @@ export interface Laned {
 }
 
 /**
- * The laned voices sharing one locus, in voice order, and what a fill gathers from them for each
+ * The laned voices sharing one role, in voice order, and what a fill gathers from them for each
  * subject before folding it in at the subject's first member: their summed weight, and per laned
  * channel the members' values lerped by share of weight and the weight taken into each.
  */
-export interface Locus<I, O> {
+export interface Role<I, O> {
   readonly members: Lane<I, O>[];
   /** By subject number: the fill that last met it, the member it met first then, the summed weight. */
   met: Float64Array;
@@ -250,9 +250,9 @@ export class Lane<I, O> implements Positions<I, O> {
   bareFill = -1;
   bareElapsed = Number.NaN;
   bareSeeks = Number.NaN;
-  /** The locus its voice shares, gathered before the voices are folded in order. */
-  group: Locus<I, O> | null = null;
-  /** The `Arg.MARK` it was last placed under, for a locus run a subject at a time to put back. */
+  /** The role its voice shares, gathered before the voices are folded in order. */
+  group: Role<I, O> | null = null;
+  /** The `Arg.MARK` it was last placed under, for a role run a subject at a time to put back. */
   mark = Number.NaN;
   /** Whether it took every subject when it opened, so a fill makes each one's first call. */
   every = false;

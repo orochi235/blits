@@ -139,6 +139,7 @@ const voice = (v: unknown) =>
   opt(v.target, expr) &&
   opt(v.freeze, freeze) &&
   opt(v.hold, freeze) &&
+  opt(v.role, str) &&
   opt(v.locus, str) &&
   opt(v.from, oneOf('current')) &&
   opt(v.anchor, placement) &&
@@ -246,12 +247,17 @@ export function load(raw: unknown): Composition | null {
   if (!opt(groups, (g) => Array.isArray(g) && g.length <= MAX_GROUPS && g.every(group)))
     return null;
   if (!groupsOk(raw as unknown as Composition)) return null;
-  // Saved and shared before blits named it `freeze`.
-  for (const v of voices as Rec[])
+  // Saved and shared before blits named them `freeze` and `role`.
+  for (const v of voices as Rec[]) {
     if ('hold' in v) {
       v.freeze ??= v.hold;
       delete v.hold;
     }
+    if ('locus' in v) {
+      v.role ??= v.locus;
+      delete v.locus;
+    }
+  }
   return raw as unknown as Composition;
 }
 

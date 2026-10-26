@@ -153,12 +153,17 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    * signal has to be 0 beyond `r` already, or the circle cuts it off: outside production, every
    * few frames, the mix reads it for a few subjects just outside and warns once if one is above 0.
    * Needs `plot` first and a signal `weight`. Refused on a mix with history, and with `subjects`,
-   * a locus, an owner, `from: 'current'`, or a patch keeping state.
+   * a role, an owner, `from: 'current'`, or a patch keeping state.
    */
   within?: Circle;
   /** Ramp in and out, ms. Out applies on `fade()` and when a finite loop ends. */
   fade?: FadeSpec;
-  /** Voices sharing a locus are alternatives: the mix folds them through each channel's `lerp`. */
+  /**
+   * Voices in one role are alternatives: whichever plays it, the subject shows one performance,
+   * not two stacked. The mix folds them through each channel's `lerp`.
+   */
+  role?: string;
+  /** @deprecated Renamed `role`. Taken as `role`, with a warning outside production. */
   locus?: string;
 
   /** A `keys` voice whose first stop reads wherever this subject is now. */
@@ -242,7 +247,7 @@ export interface OwnerSpec<I, H = unknown> extends SpanHints {
   seek?: number;
   /**
    * Multiplied into every child's weight per subject, as the child's own fade is, before the child's
-   * locus folds it: a number, or a signal read per subject per frame. Default 1.
+   * role folds it: a number, or a signal read per subject per frame. Default 1.
    */
   weight?: number | Signal<I, H>;
   /** One ramp in and out over every child, multiplied into their weights as `weight` is. */
@@ -406,7 +411,7 @@ export interface Handle<I = unknown> {
   rise(opts?: { over?: number }): void;
   /**
    * The weight this voice gave `subject` the last frame that subject was probed: after its fades
-   * and its weight signal, before a locus folds it with its alternatives. 0 for a subject it does
+   * and its weight signal, before a role folds it with its alternatives. 0 for a subject it does
    * not reach, has not started on and does not freeze before, has left at rest, or has never been
    * probed for; 0 once done, and 0 after `mix.seek` goes back until the subject is probed again.
    * Costs nothing until it is asked.

@@ -28,7 +28,7 @@ export function shares<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
     voice.named === null &&
     spec.target === undefined &&
     spec.stagger === undefined &&
-    spec.locus === undefined &&
+    spec.role === undefined &&
     spec.anchor === undefined &&
     spec.from !== 'current' &&
     typeof spec.weight !== 'function' &&
@@ -255,12 +255,12 @@ export function unshare<I, O>(
 }
 
 /**
- * Counts what makes a mix's fold more than a walk of each chain: a locus, a voice sharing one
+ * Counts what makes a mix's fold more than a walk of each chain: a role, a voice sharing one
  * record, a voice that stopped sharing this frame. Called wherever one of the three changes, so
  * `foldWith` asks one number.
  */
 export function detour<I, O>(mix: Mixer<I, O>): void {
-  mix.detours = mix.loci + mix.sharers.length + (mix.unshared ? 1 : 0);
+  mix.detours = mix.roleVoices + mix.sharers.length + (mix.unshared ? 1 : 0);
 }
 
 /** Gives a record just made for a subject a sharing voice had seen what the voice kept for it. */

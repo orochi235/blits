@@ -5,7 +5,7 @@ import { flush } from './columns.js';
 import { crowdsUpTo, freshen } from './crowd.js';
 import { open as openRecord, shut as shutRecord } from './everyone.js';
 import { unband } from './fold.js';
-import { foldLocus, gatherLocus, runLocus } from './gather.js';
+import { foldRole, gatherRole, runRole } from './gather.js';
 import { runKeys } from './keyfill.js';
 import { Arg, keepProbed, type Lane, type Laned, type Paced, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
@@ -84,7 +84,7 @@ export function fillAll<I, O>(lanes: Lanes<I, O>, now: number, version: number):
     }
     if (busy) {
       for (const ch of lanes.laned) rested(ch, size);
-      for (const g of lanes.loci) gatherLocus(lanes, g);
+      for (const g of lanes.roles) gatherRole(lanes, g);
       for (const lane of lanes.lanes) {
         if (lane.idle) continue;
         if (lanes.crowds.length > 0) {
@@ -242,8 +242,8 @@ export function run<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
   if (voice.state === 'pending' || voice.state === 'done') return;
   const g = lane.group;
   if (g !== null) {
-    if (!g.inline) foldLocus(this, lane, g);
-    else if (lane === g.members[0]) runLocus(this, g);
+    if (!g.inline) foldRole(this, lane, g);
+    else if (lane === g.members[0]) runRole(this, g);
     return;
   }
   this.reset(lane);
@@ -296,7 +296,7 @@ export function runEveryone<I, O>(this: Lanes<I, O>, lane: Lane<I, O>): void {
 /**
  * One subject's contribution from a lane's voice. True where the voice gave the subject a delta,
  * as the general path's `contribution` does where it returns one, which is what makes a voice in a
- * locus one of its members for the subject.
+ * role one of its members for the subject.
  */
 export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: number): boolean {
   const host = this.host;

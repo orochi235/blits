@@ -202,7 +202,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
   const written = new Set<ChannelName>();
   const writes: [string, ChannelName][] = [];
   for (const v of comp.voices) {
-    const by = v.locus === undefined ? undefined : comp.blends?.[v.locus];
+    const by = v.role === undefined ? undefined : comp.blends?.[v.role];
     const id = b.node({
       id: `voice:${v.id}`,
       kind: 'voice',
@@ -211,7 +211,7 @@ export function flowOf(comp: Composition, faulted: ReadonlySet<string> = new Set
       hue: v.hue,
       ...(faulted.has(v.id) ? { faulted: true } : {}),
     });
-    if (by) b.edge(b.field({ id: `blend:${v.locus}` }, 'weight', by), id, 'blend');
+    if (by) b.edge(b.field({ id: `blend:${v.role}` }, 'weight', by), id, 'blend');
     for (const field of FIELDS) {
       const e = v[field];
       if (isExpr(e) && !(by && field === 'weight')) b.edge(b.field(v, field, e), id, field);

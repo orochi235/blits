@@ -12,7 +12,7 @@ interface Pose {
 const subject = { id: 'light' };
 
 const config = f.schema({
-  locus: f.boolean(true).label('Same locus'),
+  role: f.boolean(true).label('Same role'),
   gain: f.number(0.06).range(0, 1).step(0.01).label('Gain each voice writes'),
   channel: f.enum('mul', ['mul', 'max', 'sum']).radio().label('Channel'),
 });
@@ -42,14 +42,14 @@ function weigh(handles: Handle[], k: number): void {
 }
 
 /** The folded gain across the whole handover, from a throwaway mix per point, for the curves. */
-function curve(c: Config, locus: boolean): [number, number][] {
+function curve(c: Config, role: boolean): [number, number][] {
   const points: [number, number][] = [];
   for (let n = 0; n <= 50; n++) {
     const k = n / 50;
     const m = mix<typeof subject, Pose>(build(c));
-    const spot = locus ? 'handover' : undefined;
-    m.cue({ patch: hold(c.gain), weight: 1 - k, locus: spot });
-    m.cue({ patch: hold(c.gain), weight: k, locus: spot });
+    const spot = role ? 'handover' : undefined;
+    m.cue({ patch: hold(c.gain), weight: 1 - k, role: spot });
+    m.cue({ patch: hold(c.gain), weight: k, role: spot });
     m.sync(0);
     points.push([k, m.probe(subject).gain]);
   }
@@ -57,7 +57,7 @@ function curve(c: Config, locus: boolean): [number, number][] {
 }
 
 function scene(c: Config): Scene<typeof subject, Pose, Config> {
-  const spot = c.locus ? 'handover' : undefined;
+  const spot = c.role ? 'handover' : undefined;
   const events: SceneEvent<typeof subject, Pose>[] = [];
   for (let t = HOLD; t <= HOLD + OVER; t += 50) {
     const k = share(t);
@@ -67,8 +67,8 @@ function scene(c: Config): Scene<typeof subject, Pose, Config> {
     kit: build(c),
     subjects: () => [subject],
     voices: () => [
-      { name: 'A', color: 'v1', spec: { patch: hold(c.gain), weight: 1, locus: spot } },
-      { name: 'B', color: 'v2', spec: { patch: hold(c.gain), weight: 0, locus: spot } },
+      { name: 'A', color: 'v1', spec: { patch: hold(c.gain), weight: 1, role: spot } },
+      { name: 'B', color: 'v2', spec: { patch: hold(c.gain), weight: 0, role: spot } },
     ],
     events: () => events,
     ledger: { subject: () => subject, channels: ['gain'] },
@@ -98,22 +98,22 @@ function ticks(values: number[], py: (v: number) => number): number[] {
   return kept;
 }
 
-export default function Locus() {
+export default function Role() {
   return (
     <Explainer
       scene={scene}
       schema={config}
       duration={DURATION}
       aspect={0.66}
-      caption="Voice A hands over to voice B, and both write the same gain the whole way. In one locus the light holds steady; piled up, it flares or dips halfway through."
+      caption="Voice A hands over to voice B, and both write the same gain the whole way. In one role the light holds steady; piled up, it flares or dips halfway through."
       draw={(ctx, frame, size, ink, c) => {
         const { folded, piled } = curvesFor(c);
         const rest = (channels[c.channel] ?? mul)().rest ?? 0;
         const k = frame.handles[1]?.weight ?? share(frame.t);
         const live = frame.poses[0]?.gain;
         const at = (points: [number, number][]) => points[Math.round(k * 50)]?.[1];
-        const inLocus = c.locus ? live : at(folded);
-        const pile = c.locus ? at(piled) : live;
+        const inRole = c.role ? live : at(folded);
+        const pile = c.role ? at(piled) : live;
 
         const all = [...folded, ...piled].map((p) => p[1]);
         const peak = Math.max(c.gain, ...all);
@@ -142,8 +142,8 @@ export default function Locus() {
         // Lit on the plot's scale: the highest point either curve reaches is a fully lit lamp.
         const lit = (v: number | undefined) => ((v ?? lo) - lo) / Math.max(peak - lo, 1e-6);
         const lamps = [
-          { x: size.w * 0.52, name: 'In one locus', value: inLocus, strong: c.locus },
-          { x: size.w * 0.82, name: 'Without the locus', value: pile, strong: !c.locus },
+          { x: size.w * 0.52, name: 'In one role', value: inRole, strong: c.role },
+          { x: size.w * 0.82, name: 'Without the role', value: pile, strong: !c.role },
         ];
         for (const b of lamps) {
           lamp(ctx, ink, b.x, cy, R, lit(b.value), ink.light);
@@ -200,8 +200,8 @@ export default function Locus() {
           ctx.stroke();
           ctx.setLineDash([]);
         };
-        line(c.locus ? piled : folded, ink.soft, false);
-        line(c.locus ? folded : piled, ink.ink, true);
+        line(c.role ? piled : folded, ink.soft, false);
+        line(c.role ? folded : piled, ink.ink, true);
 
         const midF = folded[25]?.[1] ?? 0;
         const midP = piled[25]?.[1] ?? 0;
@@ -209,13 +209,13 @@ export default function Locus() {
           label(ctx, 'the same either way', px(0.5), py(midF) - 10, ink.soft, 'center');
         } else {
           const up = midP > midF;
-          const p = c.locus ? ink.soft : ink.ink;
-          const f = c.locus ? ink.ink : ink.soft;
-          label(ctx, 'without the locus', px(0.5), py(midP) + (up ? -10 : 20), p, 'center');
-          label(ctx, 'in one locus', px(0.5), py(midF) + (up ? 20 : -10), f, 'center');
+          const p = c.role ? ink.soft : ink.ink;
+          const f = c.role ? ink.ink : ink.soft;
+          label(ctx, 'without the role', px(0.5), py(midP) + (up ? -10 : 20), p, 'center');
+          label(ctx, 'in one role', px(0.5), py(midF) + (up ? 20 : -10), f, 'center');
         }
 
-        const other = c.locus ? pile : inLocus;
+        const other = c.role ? pile : inRole;
         if (other !== undefined) {
           ctx.strokeStyle = ink.soft;
           ctx.lineWidth = 1.5;

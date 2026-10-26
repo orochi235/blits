@@ -3978,7 +3978,8 @@
           "Tracks meant to stack stay out of groups.",
           "Tracks that must run in order belong to a sequence, not a group.",
           "Proposed to fold into tag: a tag declared to blend its voices as alternatives, rather than a second kind of label. A voice blends in at most one.",
-          "Read as a locus: the members are the answers to one question about what the subject is doing (how it moves, what mood it is in), and every blend of them lies in the space they span, the way alleles share one locus. That space grows and shrinks as answers are cued and leave. The question is an axis of behavior, not a channel; a group spans every channel its members write."
+          "Read as a locus: the members are the answers to one question about what the subject is doing (how it moves, what mood it is in), and every blend of them lies in the space they span, the way alleles share one locus. That space grows and shrinks as answers are cued and leave. The question is an axis of behavior, not a channel; a group spans every channel its members write.",
+          "Renamed role (2026-10-26): voices in one role are alternatives, whichever plays it, so the subject shows one performance, not two stacked. A hands the role to B."
         ]
       },
       "groups": [

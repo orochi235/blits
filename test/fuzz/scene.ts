@@ -185,7 +185,7 @@ interface Cue {
   weight?: number;
   /** Weighted by a level starting here; slewed when `slewed`. */
   level?: { initial: number; slewed: boolean };
-  locus?: string;
+  role?: string;
   loop?: false | number;
   start?: number;
   freeze?: 'before' | 'after' | 'both';
@@ -372,7 +372,7 @@ export function scene(seed: number, options: SceneOptions = {}): Scene {
         if (wk < 0.15) cue.weight = 0;
         else if (wk < 0.4) cue.weight = Math.round(r.f() * 8) / 8;
         else if (wk < 0.55 && o.levels) cue.level = { initial: 0, slewed: r.p(0.5) };
-        if (r.p(0.25)) cue.locus = r.pick(['a', 'b']);
+        if (r.p(0.25)) cue.role = r.pick(['a', 'b']);
         if (r.p(0.3)) cue.loop = r.pick([false, 2] as const);
         if (r.p(0.2)) cue.start = t + r.pick([0, 50, 200, -100]);
         if (r.p(0.2)) cue.freeze = r.pick(['before', 'after', 'both'] as const);
@@ -443,7 +443,7 @@ function cue(e: Env, c: Cue): void {
   const s: VoiceSpec<Part, Pose> = { patch: built.patch };
   if (c.fade) s.fade = c.fade;
   if (c.weight !== undefined) s.weight = c.weight;
-  if (c.locus !== undefined) s.locus = c.locus;
+  if (c.role !== undefined) s.role = c.role;
   if (c.loop !== undefined) s.loop = c.loop;
   if (c.start !== undefined) s.start = c.start;
   if (c.freeze) s.freeze = c.freeze;

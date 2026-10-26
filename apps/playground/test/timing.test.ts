@@ -32,11 +32,11 @@ describe('timingOf', () => {
 
   it('says where an unanchored voice starts, and each fixed time a placement gives', () => {
     const c = comp([
-      voice({ id: 'a', patch: keys, start: 300, locus: 'x' }),
+      voice({ id: 'a', patch: keys, start: 300, role: 'x' }),
       voice({ id: 'b', patch: keys, anchor: { start: 1000, end: 3000 } }),
     ]);
     const detail = (id: string) => timingOf(c).nodes.find((n) => n.id === id)?.detail;
-    expect(detail('voice:a')).toBe('at 300 ms · locus x');
+    expect(detail('voice:a')).toBe('at 300 ms · role x');
     expect(detail('voice:b')).toBe('at 1000 ms · gone by 3000 ms');
   });
 

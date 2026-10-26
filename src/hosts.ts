@@ -135,12 +135,12 @@ export function fits<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): boolean {
   const w = spec.weight;
   if (typeof w === 'function' && w.input && (mix.opts.history?.inputs || !heard(w))) return false;
   if (patch.reads !== undefined && patch.reads.length > 0) return false;
-  // A locus on lanes gathers keys and fn members; a motion member keeps it on the general path.
-  if (spec.locus !== undefined && voice.motion !== undefined) return false;
+  // A role on lanes gathers keys and fn members; a motion member keeps it on the general path.
+  if (spec.role !== undefined && voice.motion !== undefined) return false;
   if (spec.from === 'current') return false;
-  // A rest-less channel's band is read on the record `one` folds; crowds, motions and loci fold elsewhere.
+  // A rest-less channel's band is read on the record `one` folds; crowds, motions and roles fold elsewhere.
   if (
-    (voice.motion !== undefined || spec.locus !== undefined || crowdable(voice)) &&
+    (voice.motion !== undefined || spec.role !== undefined || crowdable(voice)) &&
     voice.slots.some((s) => numericOf(mix.channels[s] as Channel<unknown>)?.op === 'last')
   )
     return false;

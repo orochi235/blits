@@ -1,4 +1,4 @@
-import { playable } from './cue.js';
+import { playable, roleOf } from './cue.js';
 import { VoiceHandle } from './handle.js';
 import { handle } from './hosts.js';
 import { Leavings } from './leavings.js';
@@ -180,7 +180,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
 export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice): Voice<I, O> {
   const revive = mix.opts.history?.revive;
   if (revive === undefined) throw new Error('blits: a paged voice needs history.revive');
-  const spec = { ...(revive(d.as) as VoiceSpec<I, O>), as: d.as };
+  const spec = roleOf(mix, { ...(revive(d.as) as VoiceSpec<I, O>), as: d.as });
   playable(mix, spec);
   const voice = new Voice<I, O>(
     id,

@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { kit, last, max, mul, sum, vec } from '../src/channels.js';
 import { mixHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 import { level, share } from '../src/signals.js';
-import type { Setting } from '../src/types.js';
+import type { MixOptions, Setting } from '../src/types.js';
 
 interface Pose {
   gain: number;
@@ -30,51 +30,101 @@ const part = { id: 'a' };
 const holds = <K extends keyof Pose>(channel: K, value: Pose[K]) =>
   patch<Part, Pose>(0, () => ({ [channel]: value }) as Partial<Pose>, { writes: [channel] });
 
-describe('locus fold', () => {
-  it('folds only the channels a patch writes, as a fold outside a locus does', () => {
+describe('role fold', () => {
+  it('folds only the channels a patch writes, as a fold outside a role does', () => {
     // The patch declares crawl and returns dark besides, which no fold may take.
     const loose = patch<Part, Pose>(0, () => ({ crawl: 3, dark: 0.7 }), { writes: ['crawl'] });
-    for (const locus of [undefined, 'phase']) {
+    for (const role of [undefined, 'phase']) {
       const m = mix<Part, Pose>(PART, { lanes: false });
-      m.cue({ patch: loose, locus });
-      m.cue({ patch: holds('crawl', 5), locus });
+      m.cue({ patch: loose, role });
+      m.cue({ patch: holds('crawl', 5), role });
       m.sync(0);
-      expect(m.probe(part).dark, `locus ${locus}`).toBe(0);
+      expect(m.probe(part).dark, `role ${role}`).toBe(0);
     }
   });
 
-  it('two voices in a locus driving the same value produce that value, on every channel', () => {
+  it('two voices in a role driving the same value produce that value, on every channel', () => {
     for (const [channel, value] of [
       ['gain', 0.06],
       ['crawl', 4],
       ['dark', 0.8],
     ] as const) {
       const m = mix<Part, Pose>(PART);
-      m.cue({ patch: holds(channel, value), locus: 'phase' });
-      m.cue({ patch: holds(channel, value), locus: 'phase' });
+      m.cue({ patch: holds(channel, value), role: 'phase' });
+      m.cue({ patch: holds(channel, value), role: 'phase' });
       m.sync(0);
       expect(m.probe(part)[channel]).toBeCloseTo(value, 9);
     }
   });
 
-  it('folds the voices carrying a tag the mix declares a locus, as one locus', () => {
-    const m = mix<Part, Pose>(PART, { loci: ['phase'] });
+  it('folds the voices carrying a tag the mix declares a role, as one role', () => {
+    const m = mix<Part, Pose>(PART, { roles: ['phase'] });
     m.cue({ patch: holds('gain', 0.06), tags: ['phase'] });
     m.cue({ patch: holds('gain', 0.06), tags: ['other', 'phase'] });
     m.sync(0);
     expect(m.probe(part).gain).toBeCloseTo(0.06, 9);
   });
 
-  it('refuses a voice whose tags and locus name two loci', () => {
-    const m = mix<Part, Pose>(PART, { loci: ['phase', 'beat'] });
-    expect(() => m.cue({ patch: holds('gain', 1), tags: ['phase', 'beat'] })).toThrow(/one locus/);
-    expect(() => m.cue({ patch: holds('gain', 1), tags: ['beat'], locus: 'x' })).toThrow(
-      /one locus/,
-    );
-    expect(() => m.cue({ patch: holds('gain', 1), tags: ['beat'], locus: 'beat' })).not.toThrow();
+  it('refuses a voice whose tags and role name two roles', () => {
+    const m = mix<Part, Pose>(PART, { roles: ['phase', 'beat'] });
+    expect(() => m.cue({ patch: holds('gain', 1), tags: ['phase', 'beat'] })).toThrow(/one role/);
+    expect(() => m.cue({ patch: holds('gain', 1), tags: ['beat'], role: 'x' })).toThrow(/one role/);
+    expect(() => m.cue({ patch: holds('gain', 1), tags: ['beat'], role: 'beat' })).not.toThrow();
   });
 
-  it('the same two voices outside a locus pile up, which is what a locus is for', () => {
+  it('takes locus, the old name for role, as role: the same pose, and one warning a mix', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const poses = (named: (role: string) => object) => {
+      const m = mix<Part, Pose>(PART);
+      m.cue({ patch: holds('gain', 0.06), fade: { out: 400 }, ...named('a') }).fade();
+      m.cue({ patch: holds('gain', 0.5), fade: { in: 400 }, ...named('a') });
+      m.cue({ patch: holds('crawl', 3), ...named('b') });
+      const out = [];
+      for (const t of [0, 100, 250, 400]) {
+        m.sync(t);
+        out.push(m.probe(part));
+      }
+      return out;
+    };
+    const byRole = poses((role) => ({ role }));
+    expect(warn).not.toHaveBeenCalled();
+    expect(poses((locus) => ({ locus }))).toEqual(byRole);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toMatch(/locus is renamed role/);
+    expect(poses((locus) => ({ locus, role: locus }))).toEqual(byRole);
+    expect(warn).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
+  });
+
+  it('refuses a voice whose role and locus differ', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const m = mix<Part, Pose>(PART);
+    expect(() => m.cue({ patch: holds('gain', 1), role: 'a', locus: 'b' })).toThrow(
+      /one role, not both role a and locus b/,
+    );
+    warn.mockRestore();
+  });
+
+  it('takes loci, the old name for the roles option, as roles, and refuses both differing', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const gain = (opts: MixOptions) => {
+      const m = mix<Part, Pose>(PART, opts);
+      m.cue({ patch: holds('gain', 0.06), tags: ['phase'] });
+      m.cue({ patch: holds('gain', 0.06), tags: ['phase'] });
+      m.sync(0);
+      return m.probe(part).gain;
+    };
+    expect(gain({ loci: ['phase'] })).toBeCloseTo(0.06, 9);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toMatch(/loci is renamed roles/);
+    expect(gain({ loci: ['phase'], roles: ['phase'] })).toBeCloseTo(0.06, 9);
+    expect(() => mix<Part, Pose>(PART, { roles: ['phase'], loci: ['beat'] })).toThrow(
+      /roles or loci, not both/,
+    );
+    warn.mockRestore();
+  });
+
+  it('the same two voices outside a role pile up, which is what a role is for', () => {
     const m = mix<Part, Pose>(PART);
     m.cue({ patch: holds('gain', 0.06) });
     m.cue({ patch: holds('gain', 0.06) });
@@ -84,18 +134,18 @@ describe('locus fold', () => {
 
   it('on a sum channel the fold is the number scaling and joining already gives', () => {
     const m = mix<Part, Pose>(PART);
-    const a = m.cue({ patch: holds('crawl', 10), locus: 'phase' });
-    const b = m.cue({ patch: holds('crawl', 20), locus: 'phase' });
+    const a = m.cue({ patch: holds('crawl', 10), role: 'phase' });
+    const b = m.cue({ patch: holds('crawl', 20), role: 'phase' });
     a.weight = 0.25;
     b.weight = 0.75;
     m.sync(0);
     expect(m.probe(part).crawl).toBeCloseTo(0.25 * 10 + 0.75 * 20, 9);
   });
 
-  it('a locus whose weights sum below 1 scales the folded value toward rest', () => {
+  it('a role whose weights sum below 1 scales the folded value toward rest', () => {
     const m = mix<Part, Pose>(PART);
-    const a = m.cue({ patch: holds('gain', 0.5), locus: 'phase' });
-    const b = m.cue({ patch: holds('gain', 0.5), locus: 'phase' });
+    const a = m.cue({ patch: holds('gain', 0.5), role: 'phase' });
+    const b = m.cue({ patch: holds('gain', 0.5), role: 'phase' });
     a.weight = 0.2;
     b.weight = 0.2;
     m.sync(0);
@@ -103,17 +153,17 @@ describe('locus fold', () => {
     expect(m.probe(part).gain).toBeCloseTo(1 + (0.5 - 1) * 0.4, 9);
   });
 
-  it('a locus caps at 1, so three voices at full weight are still one alternative', () => {
+  it('a role caps at 1, so three voices at full weight are still one alternative', () => {
     const m = mix<Part, Pose>(PART);
-    for (let i = 0; i < 3; i++) m.cue({ patch: holds('gain', 0.2), locus: 'phase' });
+    for (let i = 0; i < 3; i++) m.cue({ patch: holds('gain', 0.2), role: 'phase' });
     m.sync(0);
     expect(m.probe(part).gain).toBeCloseTo(0.2, 9);
   });
 
   it('a rest-less channel crossfades through its own lerp instead of switching', () => {
     const m = mix<Part, Pose>(PART);
-    const a = m.cue({ patch: holds('color', 0x000000), locus: 'phase' });
-    const b = m.cue({ patch: holds('color', 0xffffff), locus: 'phase' });
+    const a = m.cue({ patch: holds('color', 0x000000), role: 'phase' });
+    const b = m.cue({ patch: holds('color', 0xffffff), role: 'phase' });
     a.weight = 0.5;
     b.weight = 0.5;
     m.sync(0);
@@ -287,7 +337,7 @@ describe('retarget on interruption', () => {
 });
 
 describe('blend between alternatives', () => {
-  it('cues the patches into one locus and crossfades them by the signal', () => {
+  it('cues the patches into one role and crossfades them by the signal', () => {
     const k = level<Part>(0);
     const m = mix<Part, Pose>(PART);
     m.blend([holds('crawl', 0), holds('crawl', 10), holds('crawl', 20)], k);
@@ -674,13 +724,13 @@ describe('fading one subject out of a voice', () => {
   });
 });
 
-describe.each([true, false])('a channel only some locus members write, lanes %s', (lanes) => {
-  it('folds at the weight of the members that write it, not the whole locus', () => {
+describe.each([true, false])('a channel only some role members write, lanes %s', (lanes) => {
+  it('folds at the weight of the members that write it, not the whole role', () => {
     const both = keys<Part, Pose>(0, [{ at: 0, delta: { crawl: 10, dark: 0.8 } }]);
     const one = keys<Part, Pose>(0, [{ at: 0, delta: { crawl: 20 } }]);
     const m = mix<Part, Pose>(PART, { lanes });
-    const a = m.cue({ patch: both, locus: 'swap', weight: 0.5 });
-    const b = m.cue({ patch: one, locus: 'swap', weight: 0.5 });
+    const a = m.cue({ patch: both, role: 'swap', weight: 0.5 });
+    const b = m.cue({ patch: one, role: 'swap', weight: 0.5 });
     m.sync(0);
     expect(m.probe(part).crawl).toBeCloseTo(15);
     expect(m.probe(part).dark).toBeCloseTo(0.4);
@@ -692,7 +742,7 @@ describe.each([true, false])('a channel only some locus members write, lanes %s'
   });
 });
 
-describe.each([true, false])('a last() channel in a locus, lanes %s', (lanes) => {
+describe.each([true, false])('a last() channel in a role, lanes %s', (lanes) => {
   interface Named {
     word: string;
     gain: number;
@@ -702,7 +752,7 @@ describe.each([true, false])('a last() channel in a locus, lanes %s', (lanes) =>
   const read = (weights: number[]) => {
     const m = mix<Part, Named>(K, { lanes });
     weights.forEach((weight, i) => {
-      m.cue({ patch: says('abc'[i] as string), locus: 'pick', weight });
+      m.cue({ patch: says('abc'[i] as string), role: 'pick', weight });
     });
     m.sync(0);
     return m.probe(part).word;

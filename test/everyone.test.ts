@@ -75,7 +75,7 @@ describe('a voice over every subject', () => {
     own({ target: (p) => p.id % 2 === 0 || p.id === 3 });
     own({ freeze: 'both' });
     own({ from: 'current' });
-    own({ locus: 'a' });
+    own({ role: 'a' });
     own({ weight: (p) => (p.id === 3 ? 1 : 0.5) });
     own({}, { lanes: false });
     own({}, { history: { ms: 1000 } });

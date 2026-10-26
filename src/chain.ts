@@ -42,8 +42,8 @@ export function relink<I, O>(
   const head = first ?? stub();
   head.version = this.version;
   if (was !== undefined && was !== head) {
-    if (!sought) head.loci = was.loci;
-    was.loci = null;
+    if (!sought) head.roles = was.roles;
+    was.roles = null;
     was.slot = -1;
   }
   head.slot = slot;

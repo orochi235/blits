@@ -249,9 +249,9 @@ export function foldWith<I, O>(
 }
 
 /**
- * `foldWith`'s voices in a mix with a locus or a voice sharing one record in it. The chain is taken
+ * `foldWith`'s voices in a mix with a role or a voice sharing one record in it. The chain is taken
  * again where a voice stopped sharing since it was linked, as a patch call in this probe's fill can
- * make one do. With no locus, the chain's records fold in voice order, and each voice sharing one
+ * make one do. With no role, the chain's records fold in voice order, and each voice sharing one
  * record, which is in no chain, before the first chain record that comes after it.
  */
 export function foldDetour<I, O>(
@@ -265,7 +265,7 @@ export function foldDetour<I, O>(
   owed: number,
 ): O {
   const head = linkedHead.version === this.version ? linkedHead : this.chain(subject);
-  if (this.loci !== 0) return this.foldLoci(subject, pose, head, laned, dry, except, owed);
+  if (this.roleVoices !== 0) return this.foldRoles(subject, pose, head, laned, dry, except, owed);
   const now = this.now;
   const lanes = this.lanes;
   const sharers = this.sharers;

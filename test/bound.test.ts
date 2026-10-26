@@ -149,7 +149,7 @@ describe('within is refused', () => {
     expect(cue(m, {})).toThrow(/needs a weight signal/);
     expect(cue(m, { weight: 0.5 })).toThrow(/needs a weight signal/);
     expect(cue(m, { weight: () => 1, subjects: [dot] })).toThrow(/naming its subjects/);
-    expect(cue(m, { weight: () => 1, locus: 'a' })).toThrow(/in a locus/);
+    expect(cue(m, { weight: () => 1, role: 'a' })).toThrow(/in a role/);
   });
   it('on a voice whose patch keeps state', () => {
     const m = mix<Dot, Pose>(K);

@@ -67,7 +67,7 @@ interface Composition {
   levels: { name: string; value: number; min: number; max: number }[];
   voices: Voice[];                       // cue order, which is fold order
   groups?: Group[];                      // owners and spans; see Groups
-  blends?: Record<string, Expr>;         // by locus: the signal `mix.blend` splits; see Blends
+  blends?: Record<string, Expr>;         // by role: the signal `mix.blend` splits; see Blends
   announced?: { name: string; at: number; score?: string; tags?: string[] }[];  // `mix.announce`
   mix?: { stepMs?: number | 'off'; maxDt?: number; reduce?: boolean; lanes?: boolean };
   book?: { ahead?: number };             // how far ahead the Events tab's booker reads, ms
@@ -87,7 +87,7 @@ on, the kind where it says more than the rule (offset's `vec(2, sum)`), and, for
 differs from blits' default, its name in the accent color and a button back to the default.
 
 A `Voice` carries blits' own `VoiceSpec` field names (`start`, `rate`, `seek`, `stepMs`, `catchUp`, `loop`, `stagger`, `target`,
-`freeze`, `weight`, `fade`, `locus`, `from`, `anchor`, `tags`, `score`, `hits`, `marks`), so the voice panel teaches the real spec, plus
+`freeze`, `weight`, `fade`, `role`, `from`, `anchor`, `tags`, `score`, `hits`, `marks`), so the voice panel teaches the real spec, plus
 an `id`, a `name`, a `hue`, a `patch`, the `owner` group it plays under, and the `hints` a span
 reads. A `PatchSource` is one of:
 
@@ -135,14 +135,14 @@ voices and groups carrying it, and the rest of what was sent is drained and thro
 
 ## Blends
 
-A locus named in `blends` is cued with `mix.blend(members, by, spec)` instead of a `cue` per voice:
+A role named in `blends` is cued with `mix.blend(members, by, spec)` instead of a `cue` per voice:
 its voices' weights are shares of the one signal, each voice a stop spaced evenly from 0 to 1 in
 cue order, and each voice's own `weight` goes unread. Each member is a `BlendMember` carrying its
 own `patch`, `name`, `tags`, and `hits`, so it answers to its own name in an anchor; `mix.blend`
 takes one spec for everything else, so that is held the same on every member: `src/blits/blend.ts`
 makes an edit to one member on all, and gives a voice that joins what the others share. A member
-loaded with a shared field that differs errors on its `locus`. The members are cued together where
-the first sits. In a solo mix they are plain voices of one locus, the soloed one weighted by blits'
+loaded with a shared field that differs errors on its `role`. The members are cued together where
+the first sits. In a solo mix they are plain voices of one role, the soloed one weighted by blits'
 `share` of the signal.
 
 ## The kit
@@ -246,7 +246,7 @@ header, and its members sit under it, indented one step per depth.
 | arrow at the end       | `loop: true`                  | drag it either way, or press Enter on it, for `loop: 1`      |
 | thin bar under it      | stagger spread, first to last | none; `stagger` is an expression                         |
 | hatched extension      | `freeze`                      | the clip's menu                                          |
-| shared color bracket   | `locus`; "· blend" after the label where `mix.blend` cues it | drag a lane label onto another's, or the clip's menu |
+| shared color bracket   | `role`; "· blend" after the label where `mix.blend` cues it | drag a lane label onto another's, or the clip's menu |
 | dashed link            | `anchor`, where it names one voice | Alt-drag from the body (the start) or the right edge (the end) onto another clip, which takes the nearer of its edges: its end for `after`, its start for `with`; the voice panel for the rest |
 | dotted link, close dots | an `all`: one link from each voice it waits on | the voice panel; an Alt-drag from the edge replaces the join |
 | dotted link, wide dots | an `any`, or a query by `tag`, `writes` or a `resolver`: one link from each voice it could wait on | the voice panel; an Alt-drag from the edge replaces it |
@@ -260,7 +260,7 @@ header, and its members sit under it, indented one step per depth.
 | dashed outline         | a child the fit skipped, at its natural length | none                                    |
 
 A clip's menu, the ⋯ beside its label once it is selected, sets the hatch and groups it with
-another lane's voice or out of its locus. Every handle takes keys too: the arrow keys move a body
+another lane's voice or out of its role. Every handle takes keys too: the arrow keys move a body
 or a fade 100 ms, 1 s with Shift, and a right edge one pass; Enter or Space selects a clip or a
 header, and folds from ▾; the ruler scrubs with the arrow keys, Home and End.
 
@@ -297,7 +297,7 @@ edge from every voice it could pick. A name no voice or group has is a mark, wit
 composition announces it, or `when the host announces it`. An owner or span is a box around what it
 holds, boxes nesting as the groups do; a span's children are chained by a dashed edge, `then` under
 `queue` and the share under `stagger`. A voice no anchor starts says where it starts, and a
-`locus` is named on its voices: a box holds one thing, and a voice has both an owner and a locus.
+`role` is named on its voices: a box holds one thing, and a voice has both an owner and a role.
 
 `timingOf` in `src/blits/timing.ts` builds it from the composition alone. `lit` then reads the
 player's full mix each frame: a voice or group still `pending` has a dashed outline, one playing a
@@ -330,7 +330,7 @@ the same history as every other, so undo, storage and share cover it:
 | a mark's bottom dot (amber) onto a left or right dot      | that `start` or `end` anchored `{ with }` the mark   |
 
 A **port labels** box beside it, off by default and remembered in this browser, names each dot by
-its role (`weight`, `start`, `end`, `signal`, `mark`).
+its job (`weight`, `start`, `end`, `signal`, `mark`).
 
 A drag made the other way, from a top or a start onto a signal or a mark, is read in reverse. A dot
 lands only where the edit changes something and `load` accepts the result; a start under a span is
@@ -368,7 +368,7 @@ at least 24 px apart; a desk with more voices than fit grows wider and the tab s
 
 | Panel     | Shows                                                                                   |
 |-----------|-----------------------------------------------------------------------------------------|
-| Voice     | one control panel in sections (timing, fade, blending, subjects, placement, tags and marks), each row with blits' doc comment on its ⓘ; typed fields commit on Enter or blur as one undo step; `rate` from -4 to 4 and a `seek`, blank for blits' default; for a patch with a `step`, its own `stepMs`, blank for the mix's, and `catchUp`; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `locus`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `hits` and `marks` in dialogs that Done writes and Cancel or Escape drops, and `score` |
+| Voice     | one control panel in sections (timing, fade, blending, subjects, placement, tags and marks), each row with blits' doc comment on its ⓘ; typed fields commit on Enter or blur as one undo step; `rate` from -4 to 4 and a `seek`, blank for blits' default; for a patch with a `step`, its own `stepMs`, blank for the mix's, and `catchUp`; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `role`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `hits` and `marks` in dialogs that Done writes and Cancel or Escape drops, and `score` |
 | Group     | in place of Voice and Patch when a header is selected, one control panel in the same sections: name, kind, `owner`, start and anchor (not under a span), rate, `seek`, weight, fade, freeze, hints under a span; for a span a span section with its `duration`, `priority`, `order`, `share` (for `stagger`), `spill`, the fit steps (add, remove, reorder, presets; a code step in a code pane), and the live `FitResult`; `tags`, `score`, `hits` and `marks` as for a voice |
 | Weight    | a number, or a signal expression; a menu inserts common signals                         |
 | Patch     | a labkit `ControlPanel`: the kind (switching starts a blank patch of that kind) and its period or channel, then by kind: for `keys` a weasel `Timeline` track per channel, with an `EasingPicker` per key, the patch's ease, and a `ControlMatrix` of each channel's own wait and ease (`delayBy`, `easeBy`), which inherit the patch's until set; for `fn` the channels it writes and its code panes; for `wave` shape, cycles, phase and a depth per channel; for a motion a number or an expression per option, written on Enter, with its error under it. An ease is one row: steps or a curve, converting to bezier, and its plot |
@@ -436,7 +436,7 @@ One `Composition` per file in `src/blits/presets/`.
 | Preset          | Shows                                                         |
 |-----------------|---------------------------------------------------------------|
 | stagger wave    | `stagger` as an expression of column, with `fade.in`; the default |
-| crossfade       | two voices in one `locus`, weight handed between them by a level |
+| crossfade       | two voices in one `role`, weight handed between them by a level |
 | blend           | three voices in one `mix.blend`, split across the stage by column and slid by a level |
 | spring retarget | `spring` on `offset`, retargeted from live mode               |
 | freeze handover | `freeze: 'after'`, the next voice's start fading the last out |
@@ -497,9 +497,9 @@ Calls made while building, each the owner's to overturn, with how to reverse it.
 - **Dragged node positions last the page's life**, outside the composition and its undo
   (2026-10-17). Reverse it by storing them in the composition (a new optional field, which `load`
   would have to accept).
-- **The Timing tab boxes owners and spans, not loci**: a weasel diagram group holds each node
-  once, a voice has both an owner and a locus, and voices of one locus may sit under different
-  owners (2026-10-13). Reverse it by boxing loci in `timingOf` and drawing owners as nodes with
+- **The Timing tab boxes owners and spans, not roles**: a weasel diagram group holds each node
+  once, a voice has both an owner and a role, and voices of one role may sit under different
+  owners (2026-10-13). Reverse it by boxing roles in `timingOf` and drawing owners as nodes with
   edges.
 - **The desk is live** for the picked subject (2026-10-17). Reverse it by passing `deskOf`'s desk
   straight to `MixerDesk` in `DeskPanel`, skipping `litDesk`. Groups are brackets over their strips

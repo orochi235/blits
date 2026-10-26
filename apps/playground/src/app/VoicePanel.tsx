@@ -36,9 +36,9 @@ interface Is {
   spanned: boolean;
   /** Its patch has a `step`, so its own interval and catch-up apply. */
   stepped: boolean;
-  /** It has a locus, which may be blended. */
-  locus: boolean;
-  /** Its locus is a blend, whose signal stands in for its weight. */
+  /** It has a role, which may be blended. */
+  role: boolean;
+  /** Its role is a blend, whose signal stands in for its weight. */
   blended: boolean;
 }
 const is = (test: (i: Is) => boolean) => when<{ is: Is }>((c) => test(c.is));
@@ -48,7 +48,7 @@ const d = (member: string) => doc(member) ?? '';
 const shared = sharedNodes(doc);
 /** Errors on fields that have no row of their own, shown in a list at the top. */
 /** Errors on fields with a plain row, by the row's path; the rest are listed loose. */
-const ROWED = { name: 'name', start: 'start', loop: 'repeat', locus: 'locus' };
+const ROWED = { name: 'name', start: 'start', loop: 'repeat', role: 'role' };
 const LOOSE = new Set(['cue', 'anchor']);
 
 const SCHEMA = specSchema({
@@ -96,14 +96,14 @@ const SCHEMA = specSchema({
   fadeOut: shared.fadeOut.section('fade'),
   fadeEase: shared.fadeEase.section('fade'),
   freeze: shared.freeze.section('blending'),
-  locus: f.string('').describe(d('locus')).section('blending'),
+  role: f.string('').describe(d('role')).section('blending'),
   fromCurrent: f.boolean(false).label("from: 'current'").describe(d('from')).section('blending'),
   blend: f
     .custom<Expr | undefined>('blend', undefined)
     .label('blend')
     .describe(docOf('Mix.blend') ?? '')
     .section('blending')
-    .showIf(is((i) => i.locus))
+    .showIf(is((i) => i.role))
     .render(blendRow),
   weight: f
     .custom<number | Expr>('weight', 1)
@@ -149,7 +149,7 @@ function configOf(v: Voice, comp: Composition, spanned: boolean) {
     passes: typeof v.loop === 'number' ? v.loop : 1,
     stepMs: v.stepMs,
     catchUp: v.catchUp ?? 'exact',
-    locus: v.locus ?? '',
+    role: v.role ?? '',
     fromCurrent: v.from === 'current',
     weight: v.weight,
     stagger: v.stagger?.code ?? '',
@@ -161,7 +161,7 @@ function configOf(v: Voice, comp: Composition, spanned: boolean) {
     is: {
       spanned,
       stepped: v.patch.kind === 'fn' && v.patch.step !== undefined,
-      locus: v.locus !== undefined,
+      role: v.role !== undefined,
       blended: blendOf(comp, v) !== undefined,
     } satisfies Is,
   };
@@ -186,8 +186,8 @@ function written(v: Voice, path: string, value: unknown): Voice {
     }
     case 'catchUp':
       return withKey(v, 'catchUp', value === 'fresh' ? ('fresh' as const) : undefined);
-    case 'locus':
-      return withKey(v, 'locus', (value as string) || undefined);
+    case 'role':
+      return withKey(v, 'role', (value as string) || undefined);
     case 'fromCurrent':
       return withKey(v, 'from', value ? ('current' as const) : undefined);
     case 'weight':
@@ -209,7 +209,7 @@ export interface VoicePanelProps {
   /** Under a span, which places it: no start of its own, and hints for the span's fit. */
   spanned: boolean;
   onJoin(owner: string | null): void;
-  /** Blends the voice's locus by a signal, or unblends it. */
+  /** Blends the voice's role by a signal, or unblends it. */
   onBlend(by: Expr | undefined): void;
   errors: FieldError[];
   faults: Faults | undefined;

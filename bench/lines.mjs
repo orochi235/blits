@@ -1,5 +1,5 @@
 // Prints the lines with the most self time inside the named functions of a V8 CPU profile.
-//   d=$(mktemp -d); node --cpu-prof --cpu-prof-dir=$d bench/frame.mjs blend; node bench/lines.mjs $d gatherLocus one; rm -rf $d
+//   d=$(mktemp -d); node --cpu-prof --cpu-prof-dir=$d bench/frame.mjs blend; node bench/lines.mjs $d gatherRole one; rm -rf $d
 // Lines are of the compiled `dist/` file. TOP (default 12) is how many lines to print a function.
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';

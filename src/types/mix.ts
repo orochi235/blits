@@ -31,9 +31,11 @@ export interface MixOptions<H = unknown> {
    */
   band?: { on: number; off: number };
   /**
-   * Tags that act as loci: a voice carrying one folds with the others carrying it, as if its `locus`
+   * Tags that act as roles: a voice carrying one folds with the others carrying it, as if its `role`
    * named that tag.
    */
+  roles?: readonly string[];
+  /** @deprecated Renamed `roles`. Taken as `roles`, with a warning outside production. */
   loci?: readonly string[];
   /**
    * The most `dt` a `step` or signal is handed, however long the gap. Off by default, since a
@@ -136,17 +138,17 @@ export interface Mix<I, O, H = unknown> {
   /** Cues a voice. Throws when the engine cannot run the patch's form, or the kit lacks a channel. */
   cue(spec: VoiceSpec<I, O, H>): Handle<I>;
   /**
-   * N voices whose weights split one signal, cued into one locus so they fold as alternatives. The
-   * signal is read once per subject per frame, with the first member's setting, and every member
-   * takes its share of that one reading, which `share` reads outside the blend; a signal keeping
-   * state keeps it once, not per member. One `spec` cues them all, and a member given as a
+   * Cues N voices into one role, their weights split from one signal, so they fold as
+   * alternatives. The signal is read once per subject per frame, with the first member's setting,
+   * and every member takes its share of that one reading, which `share` reads outside the blend; a
+   * signal keeping state keeps it once, not per member. One `spec` cues them all, and a member given as a
    * `BlendMember` carries its own `name`, `tags` and `hits` in place of the spec's.
    */
   blend(
     // biome-ignore lint/suspicious/noExplicitAny: a patch naming no host fits a mix naming one
     members: readonly (Patch<I, O, any, H> | BlendMember<I, O, H>)[],
     by: Signal<I, H>,
-    spec?: Omit<VoiceSpec<I, O, H>, 'patch' | 'weight' | 'locus' | 'within'>,
+    spec?: Omit<VoiceSpec<I, O, H>, 'patch' | 'weight' | 'role' | 'locus' | 'within'>,
   ): Handle<I>[];
 
   /**

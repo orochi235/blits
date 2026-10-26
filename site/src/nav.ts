@@ -7,7 +7,7 @@ export const words = [
   { slug: 'signal', title: 'Signal' },
   { slug: 'time', title: 'Time' },
   { slug: 'blending', title: 'Blending' },
-  { slug: 'locus', title: 'Locus' },
+  { slug: 'role', title: 'Role' },
   { slug: 'score', title: 'Score' },
   { slug: 'state', title: 'Patch state' },
   { slug: 'engine', title: 'Engine' },

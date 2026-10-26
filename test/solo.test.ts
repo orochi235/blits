@@ -142,10 +142,10 @@ describe('a subject one voice reaches folds as it would beside others', () => {
     );
   });
 
-  it('in a locus of one', () => {
+  it('in a role of one', () => {
     agrees(
       (m) => {
-        const h = m.cue({ patch: all, locus: 'g' });
+        const h = m.cue({ patch: all, role: 'g' });
         const w = [1, 0.5, 0.2, 0.5];
         let n = 0;
         return () => {
@@ -239,13 +239,13 @@ describe('a subject reached by one voice, then two, then one', () => {
     expect(Object.is(after.crawl, before.crawl)).toBe(true);
   });
 
-  for (const locus of [undefined, 'g']) {
-    it(`keeps a rest-less channel's band ${locus ? 'in a locus ' : ''}when an earlier voice goes live`, () => {
+  for (const role of [undefined, 'g']) {
+    it(`keeps a rest-less channel's band ${role ? 'in a role ' : ''}when an earlier voice goes live`, () => {
       const m = mix<Part, Pose>(PART, { band: { on: 0.6, off: 0.4 } });
       const part = { id: 'a' };
       // Cued first but starting later, so once live it comes first among the subject's voices.
       m.cue({ patch: patch(0, () => ({ crawl: 1 }), { writes: ['crawl'] }), start: 100 });
-      const h = m.cue({ patch: all, locus });
+      const h = m.cue({ patch: all, role });
       m.sync(0);
       h.weight = 0.7;
       m.sync(16);

@@ -16,7 +16,7 @@ import {
   subjectAt,
 } from './fill.js';
 import { fold, foldDelta, foldInto, foldRun, gate, gather, unplain } from './gather.js';
-import { Arg, Begin, type Lane, type Laned, type Locus, Per, Row } from './lane.js';
+import { Arg, Begin, type Lane, type Laned, Per, type Role, Row } from './lane.js';
 import { meet, reach } from './meet.js';
 import { absent, Numbers } from './numbers.js';
 import { Owed } from './owed.js';
@@ -102,8 +102,8 @@ export class Lanes<I, O> implements Watcher {
   unlinked = new Float64Array(0);
   /** Whether two crowds share a channel, so their rows must interleave in voice order. */
   overlap = false;
-  /** The loci whose voices are on lanes, every member of each on one. */
-  loci: Locus<I, O>[] = [];
+  /** The roles whose voices are on lanes, every member of each on one. */
+  roles: Role<I, O>[] = [];
   /** The lane and record `one` is folding, whose band state a rest-less channel reads. */
   folding: Lane<I, O> | null = null;
   /** Whether a probe meeting lanes has `one` make their first call for its subject: see `meet`. */
@@ -114,8 +114,8 @@ export class Lanes<I, O> implements Watcher {
   rec: Subject<unknown> | null = null;
   /** The numbers a fill's methods hand each other: see `Arg`. */
   readonly arg = new Float64Array(Arg.SIZE);
-  /** While a fill gathers a locus: that locus and the member gathering, where folds go instead. */
-  into: Locus<I, O> | null = null;
+  /** While a fill gathers a role: that role and the member gathering, where folds go instead. */
+  into: Role<I, O> | null = null;
   intoId = 0;
   readonly lawsByKey = new Map<string, Float64Array>();
   lastLaw: Float64Array | null = null;

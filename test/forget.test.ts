@@ -143,7 +143,7 @@ describe('dropping a subject takes it off every crowd row placed on it', () => {
           if (t === 48)
             off = m.cue({
               patch: glide<Part, Pose, number>('x', { from: 1, velocity: 4, ms: 300 }),
-              locus: 'b',
+              role: 'b',
             });
           if (t === 80) m.drop(parts[2] as Part);
           if (t === 128) off?.fade({ over: 0 });

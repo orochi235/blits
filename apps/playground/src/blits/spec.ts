@@ -78,7 +78,7 @@ export function specOf(
   if (stagger) spec.stagger = stagger;
   if (target) spec.target = target;
   if (v.freeze) spec.freeze = v.freeze;
-  if (v.locus) spec.locus = v.locus;
+  if (v.role) spec.role = v.role;
   if (v.from) spec.from = v.from;
   if (v.seek !== undefined) spec.seek = v.seek;
   if (v.stepMs !== undefined) spec.stepMs = v.stepMs;

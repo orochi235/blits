@@ -70,7 +70,7 @@ describe('a pose never holds a patch’s own array', () => {
     expect(m.project(20).probe(subject).p).toEqual([4, 5, 6]);
   });
 
-  it('a locus folding two arrays by a lerp that hands back its second', () => {
+  it('a role folding two arrays by a lerp that hands back its second', () => {
     const stops = [
       [1, 2, 3],
       [4, 5, 6],
@@ -78,7 +78,7 @@ describe('a pose never holds a patch’s own array', () => {
     const m = mix<object, Pose>(kit({ p: last<number[]>() }));
     m.cue({ patch: keys<object, Pose>(100, [{ at: 0, delta: { p: [7, 8, 9] } }]), loop: true });
     for (const p of stops)
-      m.cue({ patch: keys<object, Pose>(100, [{ at: 0, delta: { p } }]), locus: 'x', loop: true });
+      m.cue({ patch: keys<object, Pose>(100, [{ at: 0, delta: { p } }]), role: 'x', loop: true });
     m.sync(0);
     const pose = m.probe(subject);
     (pose.p as number[])[0] = 99;

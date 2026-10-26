@@ -2,8 +2,8 @@ import { first } from './clone.js';
 import { open as openRecord } from './everyone.js';
 import { merged, unband } from './fold.js';
 import type { Lanes } from './lanes.js';
-import { locusScratch } from './locus.js';
 import type { Mixer } from './mixer.js';
+import { roleScratch } from './role.js';
 import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
 import type { Voice } from './voice.js';
@@ -26,8 +26,8 @@ export function chainFirst<I, O>(
   return next.id > (held.voice as Voice<I, O>).id;
 }
 
-/** `foldWith`'s voices with a locus in play: each locus folds at its first member's place. */
-export function foldLoci<I, O>(
+/** `foldWith`'s voices with a role in play: each role folds at its first member's place. */
+export function foldRoles<I, O>(
   this: Mixer<I, O>,
   subject: I,
   pose: Record<string, unknown>,
@@ -39,12 +39,12 @@ export function foldLoci<I, O>(
 ): O {
   const now = this.now;
   // A patch reading the pose can fold again from inside this one, so each depth has its own.
-  let k = this.locusScratch[this.locusDepth];
+  let k = this.roleScratch[this.roleDepth];
   if (k === undefined) {
-    k = locusScratch<I, O>(this.channels.length);
-    this.locusScratch[this.locusDepth] = k;
+    k = roleScratch<I, O>(this.channels.length);
+    this.roleScratch[this.roleDepth] = k;
   }
-  this.locusDepth++;
+  this.roleDepth++;
   try {
     k.n = 0;
     k.m = 0;
@@ -73,10 +73,10 @@ export function foldLoci<I, O>(
       if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
       if (!mine) q = this.shared(voice, head.slot, held, q);
       if (delta === null) continue;
-      const locus = voice.spec.locus;
+      const role = voice.spec.role;
       let group = -1;
-      if (locus !== undefined) {
-        group = k.names.indexOf(locus);
+      if (role !== undefined) {
+        group = k.names.indexOf(role);
         const m = k.m++;
         k.mVoices[m] = voice;
         k.mDeltas[m] = delta;
@@ -86,21 +86,21 @@ export function foldLoci<I, O>(
           continue;
         }
         group = k.names.length;
-        k.names.push(locus);
+        k.names.push(role);
         k.mGroups[m] = group;
       }
       const n = k.n++;
       k.voices[n] = voice;
       k.helds[n] = held;
       k.deltas[n] = delta;
-      k.weights[n] = locus === undefined ? this.w : 0;
+      k.weights[n] = role === undefined ? this.w : 0;
       k.groups[n] = group;
     }
 
-    let bands = head.loci;
+    let bands = head.roles;
     if (bands === null) {
       bands = new Map();
-      head.loci = bands;
+      head.roles = bands;
     }
 
     for (let n = 0; n < k.n; n++) {
@@ -118,7 +118,7 @@ export function foldLoci<I, O>(
         else unband(k.helds[n]);
         continue;
       }
-      const weight = this.foldLocus(k, group);
+      const weight = this.foldRole(k, group);
       const name = k.names[group] as string;
       if (!(weight > 0)) {
         bands.get(name)?.fill(2);
@@ -135,7 +135,7 @@ export function foldLoci<I, O>(
         k.values[slot] = undefined;
         const key = this.names[slot] as string;
         const channel = this.channels[slot] as Channel<unknown>;
-        // A channel folds at the weight of the members that wrote it, not the whole locus.
+        // A channel folds at the weight of the members that wrote it, not the whole role.
         const taken = k.taken[slot] as number;
         const w = taken > 1 ? 1 : taken;
         if (channel.rest !== undefined && channel.scale) {
@@ -170,6 +170,6 @@ export function foldLoci<I, O>(
       k.values[slot] = undefined;
     }
     k.touched.length = 0;
-    this.locusDepth--;
+    this.roleDepth--;
   }
 }

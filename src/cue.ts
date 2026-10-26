@@ -18,11 +18,12 @@ import { scoredAdd } from './scored.js';
 import { checkChild, refit } from './spans.js';
 import { cuedById, motionOwner } from './strays.js';
 import { record, taping, unplayable } from './tape.js';
-import type { Channel, FadeSpec, Handle, Kit, Patch, VoiceSpec } from './types.js';
+import type { Channel, FadeSpec, Handle, Kit, MixOptions, Patch, VoiceSpec } from './types.js';
 import { type Controls, Voice } from './voice.js';
+import { warnOnce } from './warn.js';
 
 export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
-  const spec = locusOf(mix, given);
+  const spec = roleOf(mix, given);
   const patch = spec.patch;
   playable(mix, spec);
   if (spec.from === 'current' && patch.form !== 'keys')
@@ -117,19 +118,42 @@ export function fitsKit<I, O, S, H>(patch: Patch<I, O, S, H>, kit: Kit<O>): void
   }
 }
 
-/** The spec with its `locus` set from a tag the mix declares one, where it carries one. */
-function locusOf<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): VoiceSpec<I, O> {
-  const loci = mix.opts.loci;
-  const tags = spec.tags;
-  if (loci === undefined || tags === undefined) return spec;
-  let locus = spec.locus;
-  for (const tag of tags) {
-    if (!loci.includes(tag) || tag === locus) continue;
-    if (locus !== undefined)
-      throw new Error(`blits: a voice folds in one locus, not both ${locus} and ${tag}`);
-    locus = tag;
+/**
+ * The spec with its `role` set from `locus`, the name `role` had before, or from a tag the mix
+ * declares a role, where it carries one.
+ */
+export function roleOf<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): VoiceSpec<I, O> {
+  let spec = given;
+  if (spec.locus !== undefined) {
+    if (spec.role !== undefined && spec.role !== spec.locus)
+      throw new Error(
+        `blits: a voice plays one role, not both role ${spec.role} and locus ${spec.locus}; locus is role's old name`,
+      );
+    warnOnce(mix, 'locus is renamed role; cue the voice with role');
+    const { locus, ...rest } = spec;
+    spec = { ...rest, role: locus };
   }
-  return locus === spec.locus ? spec : { ...spec, locus };
+  const roles = mix.roleTags;
+  const tags = spec.tags;
+  if (roles === undefined || tags === undefined) return spec;
+  let role = spec.role;
+  for (const tag of tags) {
+    if (!roles.includes(tag) || tag === role) continue;
+    if (role !== undefined)
+      throw new Error(`blits: a voice plays one role, not both ${role} and ${tag}`);
+    role = tag;
+  }
+  return role === spec.role ? spec : { ...spec, role };
+}
+
+/** The tags `opts` declares roles, from `roles` or `loci`, the name `roles` had before. */
+export function roleTags(opts: MixOptions): readonly string[] | undefined {
+  const { roles, loci } = opts;
+  if (loci === undefined) return roles;
+  if (roles !== undefined && (roles.length !== loci.length || roles.some((r, i) => r !== loci[i])))
+    throw new Error("blits: a mix takes roles or loci, not both; loci is roles' old name");
+  warnOnce(opts, 'the mix option loci is renamed roles; make the mix with roles');
+  return loci;
 }
 
 /** Refuses a spec whose patch the mix cannot play, or whose state its history cannot keep. */

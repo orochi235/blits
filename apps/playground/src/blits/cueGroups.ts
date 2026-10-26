@@ -173,11 +173,7 @@ export function cueAll(c: Composition, m: Mix<Subject, Mixed>, cx: CueContext): 
     const members = blend.members.flatMap((v) => {
       const stray = strayOf(lead, v);
       if (stray !== null)
-        fail(
-          v,
-          'locus',
-          `a blend plays its voices by one spec: its ${stray} is not ${lead.name}'s`,
-        );
+        fail(v, 'role', `a blend plays its voices by one spec: its ${stray} is not ${lead.name}'s`);
       const r = stray === null ? ready(v) : undefined;
       return r && 'patch' in r.spec ? [{ ...r, id: v.id, spec: r.spec }] : [];
     });
@@ -188,7 +184,7 @@ export function cueAll(c: Composition, m: Mix<Subject, Mixed>, cx: CueContext): 
       return report({ voice: first.id, field: 'blend', error: by.error, line: by.line });
     first.list.push(by.faults);
     try {
-      const handles = cueBlend(m, members, by.fn, blend.locus, cx.only);
+      const handles = cueBlend(m, members, by.fn, blend.role, cx.only);
       members.forEach((r, i) => {
         out.handles.set(r.id, handles[i] as Handle<Subject>);
         out.patches.set(r.id, r.spec.patch);
@@ -204,8 +200,8 @@ export function cueAll(c: Composition, m: Mix<Subject, Mixed>, cx: CueContext): 
     if (!x) continue;
     const blend = 'patch' in x ? blendOf(c, x) : undefined;
     if (blend) {
-      if (!blended.has(blend.locus)) cueMembers(blend);
-      blended.add(blend.locus);
+      if (!blended.has(blend.role)) cueMembers(blend);
+      blended.add(blend.role);
       continue;
     }
     const r = ready(x);

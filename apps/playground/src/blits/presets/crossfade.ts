@@ -14,7 +14,7 @@ const c: Composition = {
       start: 0,
       rate: 1,
       loop: true,
-      locus: 'tone',
+      role: 'tone',
       fade: {},
       weight: { code: '(s, set) => 1 - level("mix")(s, set)' },
       patch: {
@@ -30,7 +30,7 @@ const c: Composition = {
       start: 0,
       rate: 1,
       loop: true,
-      locus: 'tone',
+      role: 'tone',
       fade: {},
       weight: { code: 'level("mix")' },
       patch: {

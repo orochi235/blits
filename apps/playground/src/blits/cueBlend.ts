@@ -5,14 +5,14 @@ import type { Subject } from './stage';
 
 /**
  * Cues a blend's members, whose specs match but for `patch`, `name`, `tags` and `hits`: with
- * `mix.blend` in the full mix, and in a solo mix as plain voices of one locus, member `only` at its
+ * `mix.blend` in the full mix, and in a solo mix as plain voices of one role, member `only` at its
  * share and the rest silent.
  */
 export function cueBlend(
   m: Mix<Subject, Mixed>,
   members: readonly { id: string; spec: Spec }[],
   by: Signal<Subject>,
-  locus: string,
+  role: string,
   only: string | null,
 ): Handle<Subject>[] {
   const [first] = members;
@@ -20,7 +20,7 @@ export function cueBlend(
   const {
     patch: _,
     weight: __,
-    locus: ___,
+    role: ___,
     name: _name,
     tags: _tags,
     hits: _hits,
@@ -36,6 +36,6 @@ export function cueBlend(
   const n = members.length;
   return members.map((r, i) => {
     const weight = r.id === only ? share(by, i, n) : 0;
-    return m.cue({ ...shared, ...own(r), weight, locus: `blend ${locus}` });
+    return m.cue({ ...shared, ...own(r), weight, role: `blend ${role}` });
   });
 }

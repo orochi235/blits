@@ -70,11 +70,11 @@ describe('handle.weightOf', () => {
     expect(late.weightOf(b)).toBe(1);
   });
 
-  it('is the voice weight before a locus folds it with its alternatives', () => {
+  it('is the voice weight before a role folds it with its alternatives', () => {
     const a = { id: 'a' };
     const m = mix<Part, Pose>(PART);
-    const one = m.cue({ patch: crawl, weight: 0.8, locus: 'l' });
-    const two = m.cue({ patch: crawl, weight: 0.6, locus: 'l' });
+    const one = m.cue({ patch: crawl, weight: 0.8, role: 'l' });
+    const two = m.cue({ patch: crawl, weight: 0.6, role: 'l' });
     m.sync(0);
     m.probe(a);
     expect(one.weightOf(a)).toBeCloseTo(0.8, 12);
@@ -113,18 +113,18 @@ describe('a voice at weight 0', () => {
       }
     });
 
-  it('keeps a keys voice in a locus a member, so the locus folds at its place', () => {
+  it('keeps a keys voice in a role a member, so the role folds at its place', () => {
     const TAG = kit<{ tag: string }>({ tag: last() });
     const tag = (v: string) =>
       patch<Part, { tag: string }>(0, () => ({ tag: v }), { writes: ['tag'] });
     const m = mix<Part, { tag: string }>(TAG, { lanes: false });
     m.cue({
       patch: keys<Part, { tag: string }>(100, [{ at: 0, delta: { tag: 'a' } }]),
-      locus: 'l',
+      role: 'l',
       weight: 0,
     });
     m.cue({ patch: tag('c') });
-    m.cue({ patch: tag('b'), locus: 'l' });
+    m.cue({ patch: tag('b'), role: 'l' });
     m.sync(0);
     expect(m.probe({ id: 'x' }).tag).toBe('c');
   });

@@ -3,7 +3,7 @@ import type { Composition } from '@pg/blits/composition';
 import { flowOf } from '@pg/blits/flow';
 import type { Player } from '@pg/blits/player';
 import { lit, liveOf, timingOf } from '@pg/blits/timing';
-import { type End, roleOf, toneOf, wired } from '@pg/blits/wire';
+import { type End, jobOf, toneOf, wired } from '@pg/blits/wire';
 import { FlowDiagram } from '@pg/widgets/FlowDiagram';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import s from './FlowPanel.module.css';
@@ -53,7 +53,7 @@ export function BothPanel({ comp, faulted, player, selected, onVoice, onComp }: 
     } catch {}
   };
   const portLabel = useCallback(
-    (node: string, port: string) => roleOf(flow.code, node, port),
+    (node: string, port: string) => jobOf(flow.code, node, port),
     [flow.code],
   );
   const [positions, setPositions] = useState(dragged);

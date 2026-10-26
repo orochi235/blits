@@ -41,7 +41,7 @@ export function turnInto(
   for (let a = 0; a < axes; a++) values[base + a] = out[a] as number;
 }
 
-/** `turnInto` for a value held as numbers at `from` in `source`, as a locus holds what it gathered. */
+/** `turnInto` for a value held as numbers at `from` in `source`, as a role holds what it gathered. */
 export function turnFrom(
   ch: Laned,
   values: Float64Array,
@@ -59,7 +59,7 @@ export function turnFrom(
 }
 
 /**
- * A locus member's value for a channel not lerped straight across, lerped by `u` into what the
+ * A role member's value for a channel not lerped straight across, lerped by `u` into what the
  * members before it left at `base` through the channel's own `lerp`, or an angle's short way round;
  * the first member's value as it is, where `taken` is 0.
  */

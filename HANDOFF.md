@@ -38,13 +38,22 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   | sherpa | `0.6.0` |
 
   sherpa follows klieg, to keep one blits copy.
+- **Locus is renamed role (2026-10-26)**: `VoiceSpec.role` and the mix option `roles`; `locus`
+  and `loci` are deprecated aliases that warn once a mix, kept for one release and removed in the
+  one after. Consumers still cueing with `locus`: astv `packages/engine/draw/windows/turns.ts:125`
+  and `:145`; wod `src/clock/morphVoices.ts:50` and `:58`, `src/transition/voices.ts:98` and its
+  test at `src/transition/voices.test.ts:131`; magicsmoke names it in an `Omit` at
+  `src/smoke.ts:99`; klieg only in comments (`packages/core/src/effects/hinge.ts:54`,
+  `packages/core/src/motion/compositor.ts:121`). None of them pins a blits that has `role` yet.
+  The bench row `role` was `locus` before; `bench/ledger.mjs` files the old rows under `role`, and
+  `bench/frame.mjs` or `bench/same.mjs` run against a build from before the rename sets no role.
 - **sherpa runs on klieg**, with one deduped blits copy. Its seams run on a blits mix, and its klieg pages hold on clicks and stages through
   `dismiss: 'host'` and `advance()`, paced on klieg's `active` and `stage` marks. All three systems fold through a mix: `Timeline.poseAt`
   cues a voice per layer of each phase, `EffectFrame` one per effect, and the sign's environment is
   a mix with one subject. The arithmetic did not move: klieg's 1974 vitest cases pass on the fleet,
   and its Playwright specs fail exactly the five they already failed before the port, to the pixel
   (recorded in klieg's changelog). 0.3.0 needed no change in klieg: its `color` channel is a `hex`,
-  but every effect voice plays at full weight with no locus, so the OKLCH blend is never taken. The
+  but every effect voice plays at full weight with no role, so the OKLCH blend is never taken. The
   schema page's klieg section says what the port found.
 - **The package, `@msb235/blits` 0.14.0 on npm.** `src/` is the whole of it, with `types.ts` a
   barrel over `types/` holding the whole public surface, doc-commented. What a probe or a fill runs
@@ -138,7 +147,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   renaming klieg's `onPhase` and `PhaseEvent`, which sherpa consumes through `ctx.phase`.
 - **The vocabulary is called**, every role enshrined on 2026-09-29, and
   `docs/vocabulary.picks.json` is where it lives: delta, channel, kit, subject, patch, voice, mix,
-  signal, handle, engine, pose, contribution, setting, timestamp, duration, phase, rest, weight, locus,
+  signal, handle, engine, pose, contribution, setting, timestamp, duration, phase, rest, weight, role,
   arc (renamed from series 2026-10-22), plane (a group of a kit's channels, 2026-10-22; bree's word, which blits's code does not read), host, source, score, subsystem; for the score, anchor, event, mark, name, tag, query,
   resolver, projection (synonym image), doubt, snapshot, interval; cue, fade, sync, probe, project,
   assess, seek, blend, mute, drop; merge, scale, lerp, fold. The code and the schema page read in
@@ -177,10 +186,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   moved on, so an argument from allocation is not an argument about the concept. The same cut
   settled the mix's clock verb: `step` named the consequence, `sync` names the act. Stated
   2026-09-27.
-- **A locus folds by `lerp`, not by scaling and merging.** The review found the old cap's
-  invariant — two voices in a locus at weight 1 look like one at weight 1 — false on every channel
+- **A role folds by `lerp`, not by scaling and merging.** The review found the old cap's
+  invariant — two voices in a role at weight 1 look like one at weight 1 — false on every channel
   but `sum`: two at 0.5 on `mul` give `(1 + (v − 1) / 2)²`, so a shared gain of 0.06 read 0.28.
-  A locus is alternatives, so the mix folds its members through the channel's own `lerp` by their
+  A role is alternatives, so the mix folds its members through the channel's own `lerp` by their
   share of the summed weight, and that one contribution counts at `min(1, Σw)`. On `sum` it is
   identically `w₁a + w₂b`, so klieg's baselines hold and the port stays an extraction. Mike had no
   view and asked me to take it; decided 2026-09-27, and the alternative (per-channel
@@ -264,23 +273,23 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        linking a voice stepped twice since a chain's version once; handing `foldNow` its met lanes;
        skipping the chain walk for a voice no chain ever linked; sizing a lane's
        `records`/`deltas` up front (2.0 MB a frame to 1.6, no time).
-     - **A locus costs about 20% more than its voices played apart, and a blend about 33%**: on
-       teitou (2026-10-26, `FRAMES=5000`, nine own-process runs) three voices in a locus over 10k
+     - **A role costs about 20% more than its voices played apart, and a blend about 33%**: on
+       teitou (2026-10-26, `FRAMES=5000`, nine own-process runs) three voices in a role over 10k
        subjects take 2.555 ms a frame, a `mix.blend` of three 2.841, and three plain voices 2.132.
-       A locus whose members have no other laned or crowded voice between them in voice order, all
+       A role whose members have no other laned or crowded voice between them in voice order, all
        playing, none keeping state, and over the same subjects in the same places runs a subject at
-       a time at its first member's turn (`runLocus`, `Locus.inline`), which took `locus` from 2.839
-       and `blend` from 3.055; any other locus gathers every subject first and folds in a second
-       pass (`gatherLocus`, `foldLocus`). What is left (CPU profile, teitou, 3000 frames): in
-       `locus`, `gatherScalar` 6.2% of samples, `runLocus` 4.7, `meetLocus` 3.9 and `foldAt` 3.7;
+       a time at its first member's turn (`runRole`, `Role.inline`), which took `role` from 2.839
+       and `blend` from 3.055; any other role gathers every subject first and folds in a second
+       pass (`gatherRole`, `foldRole`). What is left (CPU profile, teitou, 3000 frames): in
+       `role`, `gatherScalar` 6.2% of samples, `runRole` 4.7, `meetRole` 3.9 and `foldAt` 3.7;
        a blend adds each member's `signalled` path (`signalled` 5.2, `signal`, `laneRead` and
        `blended` 5.1, the signal itself 5.2). Untried: on the inline route, clearing a subject's
-       `taken` once before its members and dropping `meetLocus` from `gatherScalar` there; and for
+       `taken` once before its members and dropping `meetRole` from `gatherScalar` there; and for
        a blend, priming the first member's setting once rather than in both `signal` and `ready`.
        Measured no different and reverted (msb-uai, 2026-10-26, against `ead195f`): clearing a
        subject once before a member-at-a-time gather and skipping the fold pass of a member first
-       to no subject (`locus` 3.747 → 3.678, U = 13; `blend` 4.013 → 3.988, U = 14). Raw output:
-       `bench/runs/2026-10-26-locus-{meet-once,inline,inline-teitou}.txt`. A locus with a motion
+       to no subject (`role` 3.747 → 3.678, U = 13; `blend` 4.013 → 3.988, U = 14). Raw output:
+       `bench/runs/2026-10-26-locus-{meet-once,inline,inline-teitou}.txt`. A role with a motion
        member, or a signal that keeps state, stays on the general path.
      - **Starting 10k one-subject tween voices** takes a first frame of 20.7 ms against 8.9 for fn
        voices (teitou, 2026-10-25, 9 rounds, `bench/start.mjs`,
@@ -419,7 +428,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    Adding `around` and `put` left `glowb^`, `glowbm^`, `glow^`, `swap`, `tweens^` and `view` within
    noise of `eb22788` (geometric mean 1.001, every U at least 13; `bench/runs/2026-10-26-near-put-guard.txt`).
 
-   Left: a bound on a voice naming its subjects, on a locus member, on an owner's child, on a
+   Left: a bound on a voice naming its subjects, on a role member, on an owner's child, on a
    stateful patch, and on a mix with history, all refused (history because the circle the host
    moves is not recorded; the playground drops history for a composition that bounds a voice,
    item 13); `within` on a constant weight, refused, though `around` with `{ steps: 1, jump: 'start' }`
@@ -615,7 +624,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
         position. What is left is a store V8 can see the field of, which means a function
         made per kit from source text, or reading through `pull`, which never boxes.
         Still boxed:
-        a locus's `gatherInto`, a crowd's `KeyRows.fold`, and what `host.signal` returns. Under
+        a role's `gatherInto`, a crowd's `KeyRows.fold`, and what `host.signal` returns. Under
         `from: 'current'`, `keep` still copies a pose a probe into `out`.
       - **Tried and backed out for moving no number**: growing a lane's arrays to the number of
         subjects probed last frame at its first position, and handing `LaneHost.ready` its

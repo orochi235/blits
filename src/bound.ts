@@ -53,7 +53,7 @@ export class Bound<I, O> {
 
 /**
  * Why a voice could not be bounded, or null: reads a skipped subject could not leave as they were,
- * on one with state, a locus, history, an owner, `from: 'current'`, or subjects of its own.
+ * on one with state, a role, history, an owner, `from: 'current'`, or subjects of its own.
  */
 function refusal<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): string | null {
   const patch = spec.patch;
@@ -61,8 +61,8 @@ function refusal<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): string | null {
     ? 'a mix with history'
     : spec.subjects !== undefined
       ? 'a voice naming its subjects'
-      : spec.locus !== undefined
-        ? 'a voice in a locus'
+      : spec.role !== undefined
+        ? 'a voice in a role'
         : spec.from === 'current'
           ? "a voice cued from: 'current'"
           : spec.owner !== undefined

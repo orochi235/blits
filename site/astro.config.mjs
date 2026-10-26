@@ -10,7 +10,7 @@ export default defineConfig({
   site: process.env.BLITS_SITE_URL ?? 'https://michaelbaker.tech',
   base: process.env.BLITS_SITE_BASE ?? '/',
   trailingSlash: 'always',
-  integrations: [react(), mdx(), sitemap()],
+  integrations: [react(), mdx(), sitemap({ filter: (page) => !page.endsWith('/locus/') })],
   outDir: process.env.BLITS_SITE_OUT ?? './dist',
   markdown: {
     shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' }, defaultColor: 'light' },

@@ -129,7 +129,7 @@ describe('a seek back restores what left after it', () => {
     m.cue({
       patch: keys<string, Pose>(400, [{ at: 1, delta: { x: 100 } }]),
       from: 'current',
-      locus: 'l',
+      role: 'l',
       loop: false,
       freeze: 'after',
     });
@@ -153,7 +153,7 @@ describe('a seek back restores what left after it', () => {
     m.cue({
       patch: keys<string, Pose>(400, [{ at: 1, delta: { x: 100 } }]),
       from: 'current',
-      locus: 'l',
+      role: 'l',
       loop: false,
       freeze: 'after',
     });

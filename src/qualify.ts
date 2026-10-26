@@ -4,7 +4,7 @@ import { crowdable } from './crowd.js';
 import { byId } from './due.js';
 import { weighAt } from './everyone.js';
 import { wake } from './fill.js';
-import { Lane, type Laned, type Locus, Per } from './lane.js';
+import { Lane, type Laned, Per, type Role } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { reach } from './meet.js';
 import { bury, compactSparse, join, regroup, retouchRow, sameCrowds } from './rows.js';
@@ -69,18 +69,18 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
   const candidates = () =>
     present.map((v, i) => ({ id: v.id, fits: fits[i] as boolean, slots: v.slots }));
   let { channels, voices } = qualify(numeric, candidates());
-  // A locus folds its members together, so they run on lanes all together or not at all.
+  // A role folds its members together, so they run on lanes all together or not at all.
   for (let split = true; split; ) {
     split = false;
-    const loci = new Map<string, number[]>();
+    const roles = new Map<string, number[]>();
     present.forEach((v, i) => {
-      const name = v.spec.locus;
+      const name = v.spec.role;
       if (name === undefined) return;
-      const at = loci.get(name);
-      if (at === undefined) loci.set(name, [i]);
+      const at = roles.get(name);
+      if (at === undefined) roles.set(name, [i]);
       else at.push(i);
     });
-    for (const at of loci.values()) {
+    for (const at of roles.values()) {
       const on = at.filter((i) => voices.has((present[i] as Voice<I, O>).id)).length;
       if (on === 0 || on === at.length) continue;
       for (const i of at) fits[i] = false;
@@ -103,13 +103,13 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     kept.push(lane);
   }
   lanes.lanes = kept;
-  lanes.loci = [];
-  const loci = new Map<string, Locus<I, O>>();
+  lanes.roles = [];
+  const roles = new Map<string, Role<I, O>>();
   for (const lane of kept) {
     lane.group = null;
-    const name = lane.voice.spec.locus;
+    const name = lane.voice.spec.role;
     if (name === undefined) continue;
-    let g = loci.get(name);
+    let g = roles.get(name);
     if (g === undefined) {
       g = {
         members: [],
@@ -121,13 +121,13 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
         contiguous: false,
         inline: false,
       };
-      loci.set(name, g);
-      lanes.loci.push(g);
+      roles.set(name, g);
+      lanes.roles.push(g);
     }
     g.members.push(lane);
     lane.group = g;
   }
-  for (const [name, g] of loci) g.contiguous = contiguous(present, voices, name, g.members);
+  for (const [name, g] of roles) g.contiguous = contiguous(present, voices, name, g.members);
   lanes.dense = kept
     .filter((l) => l.voice.named === null && l.epoch > 0)
     .sort((a, b) => a.epoch - b.epoch);
@@ -318,8 +318,8 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
       continue;
     }
     if (v.state === 'done') return qualify();
-    // A locus's members are on lanes together or not at all, so one joining may move the others.
-    if (v.spec.locus !== undefined) return qualify();
+    // A role's members are on lanes together or not at all, so one joining may move the others.
+    if (v.spec.role !== undefined) return qualify();
     const laned = v.slots.some((slot) => lanes.bySlot[slot] !== undefined);
     const fits = v.slots.length > 0 && lanes.host.fits(v);
     // As `keepCallsOff`: with none of its channels laned, no fitting voice but its like writes them.
@@ -398,7 +398,7 @@ function enlane<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): void {
 
 /**
  * A laned voice that started playing or finished, as a qualify would take it: a lane leaving
- * cannot lane or unlane another channel. False for a locus member, which a qualify must take.
+ * cannot lane or unlane another channel. False for a role member, which a qualify must take.
  */
 function relane<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): boolean {
   const v = lane.voice;
@@ -443,8 +443,8 @@ function leave<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
 }
 
 /**
- * Whether a locus's members, in the order lanes run, have no laned or crowded voice of another
- * locus or none between them, so its every subject folds at its first member's turn.
+ * Whether a role's members, in the order lanes run, have no laned or crowded voice of another
+ * role or none between them, so its every subject folds at its first member's turn.
  */
 function contiguous<I, O>(
   present: readonly Voice<I, O>[],
@@ -458,6 +458,6 @@ function contiguous<I, O>(
   const lo = (members[0] as Lane<I, O>).voice.id;
   const hi = (members[members.length - 1] as Lane<I, O>).voice.id;
   for (const v of present)
-    if (v.id > lo && v.id < hi && voices.has(v.id) && v.spec.locus !== name) return false;
+    if (v.id > lo && v.id < hi && voices.has(v.id) && v.spec.role !== name) return false;
   return true;
 }

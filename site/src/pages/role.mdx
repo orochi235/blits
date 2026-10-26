@@ -1,0 +1,55 @@
+---
+layout: ../layouts/Page.astro
+title: Role
+description: Voices in one role are alternatives. The mix folds them into one contribution before it applies them, so a handover reads the value both agree on.
+---
+import Role from '../explainers/Role';
+import Source from '../components/Source.astro';
+
+# Role
+
+<p class="lede">Voices in one role are alternatives: whichever plays it, the subject shows one performance, not two stacked. One fades out as the other fades in, and halfway through, the subject should look like either of them, not like both at once.</p>
+
+<Role client:only="react" />
+<Source of="Role.tsx" />
+
+Two voices both write a gain of 0.06, and A hands the role to B. Halfway through, each is at weight 0.5.
+
+Without a role, the mix treats them as two effects stacked on each other. Each is faded halfway toward rest (on `mul`, rest is 1), so each contributes 0.53, and the channel multiplies them: 0.53 × 0.53 reads 0.28. The light brightens in the middle of a handover between two voices that both say "dim". That's the "Without the role" lamp flaring, and the hump in its curve.
+
+With both voices in one **role**, the mix treats them as alternatives. It first folds the role into one contribution, blending the members through the channel's own `lerp`, each by its share of the role's summed weight. That one contribution then contributes at weight `min(1, Σw)`, faded toward rest like any other. Both members say 0.06, so the blend says 0.06, and at a summed weight of 1 the subject reads 0.06 the whole way across.
+
+```ts
+import { kit, mix, mul, patch } from '@msb235/blits';
+
+const lights = mix<Light, { gain: number }>(kit({ gain: mul() }));
+const dim = patch<Light, { gain: number }>(0, () => ({ gain: 0.06 }), { writes: ['gain'] });
+
+const leaving = lights.cue({ patch: dim, role: 'scene', fade: { out: 2000 } });
+lights.cue({ patch: dim, role: 'scene', fade: { in: 2000 } });
+leaving.fade();
+```
+
+## Which channels it changes
+
+Switch the channel to `sum` and the two curves lie on top of each other. On `sum`, blending and then scaling is the same arithmetic as scaling and then adding, so a role changes nothing there. On `mul`, `max` and `last` it's the difference between an alternative and a pile-up: `max` without a role reads half the gain at the midpoint, and in a role a `color(last())` color blends from one alternative to the other instead of switching.
+
+A role whose weights sum below 1 is faded toward rest by that sum, and one whose weights sum above 1 counts as 1. Every stock channel has a `lerp`, so any of them can be folded this way.
+
+## Blend
+
+`mix.blend(patches, by)` cues several voices into one role for you, their weights split from one signal: at 0 the first patch has it all, at 1 the last. Two patches crossfade; more make stops along the way.
+
+```ts
+import { level, patch } from '@msb235/blits';
+
+const at = (gain: number) => patch<Light, { gain: number }>(0, () => ({ gain }), { writes: ['gain'] });
+
+const k = level<Light>();
+lights.blend([at(1), at(0.3), at(0.06)], k);
+k.set(0.5); // halfway between the middle stop and the last
+```
+
+## Formerly locus
+
+Until 2026-10-26 a role was called a locus, and the option was `locus`. A voice cued with `locus` still plays that role, and the mix warns once outside production. The mix option `loci`, for tags that act as roles, is now `roles`, and the old name is taken the same way.

@@ -181,7 +181,7 @@ export function timingOf(c: Composition, faulted: ReadonlySet<string> = new Set(
       const at = a[slot];
       if (typeof at === 'number') parts.push(FIXED[slot](at));
     }
-    if (v.locus !== undefined) parts.push(`locus ${v.locus}`);
+    if (v.role !== undefined) parts.push(`role ${v.role}`);
     b.node({
       id: nodeOf(v),
       kind: 'voice',

@@ -6,7 +6,7 @@ description: The words blits uses, from anchor to weight, each with a short expl
 
 # Glossary
 
-[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [contribution](#contribution) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [`freeze`](#freeze) · [handle](#handle) · [`history`](#history) · [host](#host) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [locus](#locus) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight) · [`within`](#within)
+[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [contribution](#contribution) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [`freeze`](#freeze) · [handle](#handle) · [`history`](#history) · [host](#host) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [role](#role) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight) · [`within`](#within)
 
 The examples share one setup: a row of dots that can move up and down, glow, and change color.
 
@@ -56,7 +56,7 @@ In depth: [Score](../score/#placing-a-voice). Reference: [`Anchor`](../score/#ap
 
 ## `blend`
 
-`mix.blend(patches, by)` cues one [voice](#voice) per [patch](#patch) and shares their [weight](#weight) out by a [signal](#signal). With two patches, the signal at 0 plays only the first, at 1 only the second, and in between a share of each. More patches make stops along the way. The voices share a [locus](#locus), so they combine as alternatives rather than stacking.
+`mix.blend(patches, by)` cues one [voice](#voice) per [patch](#patch) and shares their [weight](#weight) out by a [signal](#signal). With two patches, the signal at 0 plays only the first, at 1 only the second, and in between a share of each. More patches make stops along the way. The voices share a [role](#role), so they combine as alternatives rather than stacking.
 
 ```ts
 import { level } from '@msb235/blits';
@@ -67,7 +67,7 @@ dots.blend([still, bob], energy);
 energy.set(0.5); // the dots bob at half height
 ```
 
-In depth: [Blending](../blending/#blend-between-alternatives), [Locus](../locus/#blend). Reference: [`Mix`](../mix/#api-Mix).
+In depth: [Blending](../blending/#blend-between-alternatives), [Role](../role/#blend). Reference: [`Mix`](../mix/#api-Mix).
 
 ## channel
 
@@ -94,7 +94,7 @@ A contribution is what one [voice](#voice) actually does to one [subject](#subje
 
 `dim` at weight 0.5 has a contribution of `glow: 0.75`, halfway from rest at 1 toward its 0.5.
 
-In depth: [Blending](../blending/), [Locus](../locus/).
+In depth: [Blending](../blending/), [Role](../role/).
 
 ## `cue`
 
@@ -324,7 +324,7 @@ In depth: [Engine](../engine/). Reference: [`MixOptions`](../mix/#api-MixOptions
 
 ## `lerp`
 
-A [channel](#channel)'s `lerp(a, b, u)` finds the value a fraction `u` of the way from `a` to `b`. The mix uses it wherever it moves between two values instead of stacking them: a [retarget](#retarget), the voices in a [locus](#locus), and [`blend`](#blend). It is also the only way a channel with no [rest](#rest), such as a color, changes smoothly.
+A [channel](#channel)'s `lerp(a, b, u)` finds the value a fraction `u` of the way from `a` to `b`. The mix uses it wherever it moves between two values instead of stacking them: a [retarget](#retarget), the voices in a [role](#role), and [`blend`](#blend). It is also the only way a channel with no [rest](#rest), such as a color, changes smoothly.
 
 ```ts
 sum().lerp(0, 10, 0.25); // 2.5
@@ -332,20 +332,6 @@ color().lerp(oklab(0xff0000), oklab(0x0000ff), 0.5); // halfway from red to blue
 ```
 
 Reference: [`Channel`](../channel/#api-Channel), [`color`](../channel/#api-color).
-
-## locus
-
-Voices given the same `locus` name are alternatives, not layers: as one fades out and another fades in, a subject should look like one or the other, never both stacked. The mix first blends a locus's members into one [contribution](#contribution) with each channel's [`lerp`](#lerp), by their shares of the locus's total [weight](#weight), then [folds](#fold) that in with everything else.
-
-```ts
-const old = dots.cue({ patch: dim, locus: 'light', fade: { out: 1000 } });
-dots.cue({ patch: dim, locus: 'light', fade: { in: 1000 } });
-old.fade(); // the glow holds at 0.5 the whole way across
-```
-
-Without the locus, the two half-faded voices would multiply to 0.56, and the dots would brighten halfway through.
-
-In depth: [Locus](../locus/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 
 ## `loop`
 
@@ -528,6 +514,20 @@ sway.to(dot, 1); // this dot swings toward 1 without losing speed
 ```
 
 In depth: [Blending](../blending/#retarget-on-interruption), [Patch](../patch/). Reference: [`spring`](../patch/#api-spring), [`tween`](../patch/#api-tween), [`VoiceSpec`](../voice/#api-VoiceSpec).
+
+## role
+
+Voices in one role are alternatives: whichever plays it, the subject shows one performance, not two stacked. As A hands the role to B, the subject looks like one or the other, never both piled up. The mix first blends a role's members into one [contribution](#contribution) with each channel's [`lerp`](#lerp), by their shares of the role's total [weight](#weight), then [folds](#fold) that in with everything else.
+
+```ts
+const old = dots.cue({ patch: dim, role: 'light', fade: { out: 1000 } });
+dots.cue({ patch: dim, role: 'light', fade: { in: 1000 } });
+old.fade(); // the glow holds at 0.5 the whole way across
+```
+
+Without the role, the two half-faded voices would multiply to 0.56, and the dots would brighten halfway through.
+
+Formerly `locus`, which still works for now and warns outside production. In depth: [Role](../role/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 
 ## `scale`
 

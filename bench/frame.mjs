@@ -183,7 +183,8 @@ const rows = [
   ['keys', 1000, 1],
   ['keys', 1000, 3],
   ['keys', 10000, 3],
-  ['locus', 10000, 3],
+  // Named `locus` in ledger rows before 2026-10-26; a build from before then ignores `role` here.
+  ['role', 10000, 3],
   // The same three voices weighted by a signal, and `mix.blend` between them, which is both.
   ['signal', 10000, 3],
   ['blend', 10000, 3],
@@ -634,7 +635,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     m.cue({
       patch: p,
       fade: { in: 100 },
-      locus: kind === 'locus' ? 'one' : undefined,
+      role: kind === 'role' ? 'one' : undefined,
       weight: kind === 'signal' ? by : undefined,
       loop: true,
     });

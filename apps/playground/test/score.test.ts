@@ -25,7 +25,7 @@ const c: Composition = {
   length: 4000,
   levels: [],
   voices: [
-    v({ id: 'a', stagger: { code: '(s) => s.col * 100' }, freeze: 'after', locus: 'g' }),
+    v({ id: 'a', stagger: { code: '(s) => s.col * 100' }, freeze: 'after', role: 'g' }),
     v({ id: 'b', loop: true, anchor: { start: { after: 'a' } } }),
     v({ id: 'c', patch: { kind: 'spring', channel: 'scale', opts: { to: 2 } }, loop: true }),
     v({ id: 'd', loop: false, fade: {}, anchor: { end: { of: 'c', mark: 'in', by: 20 } } }),
@@ -283,33 +283,33 @@ describe('applyEdit', () => {
       'freeze',
     );
   });
-  it('joining a grouped clip takes its locus', () => {
+  it('joining a grouped clip takes its role', () => {
     const d = applyEdit(c, { clip: 'c', kind: 'group', with: 'a' });
-    expect(at(d, 'c')?.locus).toBe('g');
-    expect(at(d, 'a')?.locus).toBe('g');
+    expect(at(d, 'c')?.role).toBe('g');
+    expect(at(d, 'a')?.role).toBe('g');
   });
-  it('joining an ungrouped clip gives both a fresh locus', () => {
+  it('joining an ungrouped clip gives both a fresh role', () => {
     const d = applyEdit(
-      { ...c, voices: [...c.voices, v({ id: 'e', locus: 'group 1' })] },
+      { ...c, voices: [...c.voices, v({ id: 'e', role: 'group 1' })] },
       { clip: 'b', kind: 'group', with: 'c' },
     );
-    expect(at(d, 'b')?.locus).toBe('group 2');
-    expect(at(d, 'c')?.locus).toBe('group 2');
+    expect(at(d, 'b')?.role).toBe('group 2');
+    expect(at(d, 'c')?.role).toBe('group 2');
   });
-  it('leaving a group removes the locus', () => {
+  it('leaving a group removes the role', () => {
     expect(at(applyEdit(c, { clip: 'a', kind: 'group', with: null }), 'a')).not.toHaveProperty(
-      'locus',
+      'role',
     );
   });
   it('a group left with one voice is dissolved', () => {
-    const pair = { ...c, voices: [...c.voices, v({ id: 'e', locus: 'g' })] };
+    const pair = { ...c, voices: [...c.voices, v({ id: 'e', role: 'g' })] };
     const left = applyEdit(pair, { clip: 'e', kind: 'group', with: null });
-    expect(left.voices.filter((x) => x.locus !== undefined)).toEqual([]);
+    expect(left.voices.filter((x) => x.role !== undefined)).toEqual([]);
     const moved = applyEdit(pair, { clip: 'e', kind: 'group', with: 'b' });
-    expect(at(moved, 'a')).not.toHaveProperty('locus');
-    expect([at(moved, 'e')?.locus, at(moved, 'b')?.locus]).toEqual(['group 1', 'group 1']);
-    const trio = { ...pair, voices: [...pair.voices, v({ id: 'f', locus: 'g' })] };
-    expect(at(applyEdit(trio, { clip: 'e', kind: 'group', with: null }), 'a')?.locus).toBe('g');
+    expect(at(moved, 'a')).not.toHaveProperty('role');
+    expect([at(moved, 'e')?.role, at(moved, 'b')?.role]).toEqual(['group 1', 'group 1']);
+    const trio = { ...pair, voices: [...pair.voices, v({ id: 'f', role: 'g' })] };
+    expect(at(applyEdit(trio, { clip: 'e', kind: 'group', with: null }), 'a')?.role).toBe('g');
   });
   it('an edit naming no voice changes nothing', () => {
     expect(applyEdit(c, { clip: 'nobody', kind: 'move', start: 5 })).toBe(c);
@@ -341,7 +341,7 @@ describe('voice → clip → edit → voice', () => {
     ...c,
     voices: [
       ...c.voices,
-      v({ id: 'e', locus: 'g' }),
+      v({ id: 'e', role: 'g' }),
       v({ id: 'f', seek: 300 }),
       v({ id: 'g', rate: -1, loop: true }),
       v({ id: 'h', rate: -2, seek: 500, anchor: { start: { any: [{ after: 'a' }] } } }),

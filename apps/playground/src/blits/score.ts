@@ -152,8 +152,8 @@ function joinedLinks(c: Composition): Link[] {
   return [...out.values()];
 }
 
-function freshLocus(c: Composition): string {
-  const used = new Set(c.voices.map((v) => v.locus));
+function freshRole(c: Composition): string {
+  const used = new Set(c.voices.map((v) => v.role));
   let n = 1;
   while (used.has(`group ${n}`)) n++;
   return `group ${n}`;
@@ -229,7 +229,7 @@ export function applyEdit(c: Composition, edit: ClipEdit, built?: Built): Compos
 }
 
 /**
- * Voice `id` leaves its group, then joins `other`'s: it takes `other`'s locus, or both take a fresh
+ * Voice `id` leaves its group, then joins `other`'s: it takes `other`'s role, or both take a fresh
  * one when `other` has none. A group left with one voice is dissolved.
  */
 function regrouped(c: Composition, id: string, other: string | null): Composition {
@@ -238,19 +238,19 @@ function regrouped(c: Composition, id: string, other: string | null): Compositio
   if (!self || (other !== null && (!target || other === id))) return c;
   if (
     target === undefined
-      ? self.locus === undefined
-      : target.locus !== undefined && self.locus === target.locus
+      ? self.role === undefined
+      : target.role !== undefined && self.role === target.role
   )
     return c;
-  const locus = target ? (target.locus ?? freshLocus(c)) : undefined;
+  const role = target ? (target.role ?? freshRole(c)) : undefined;
   let voices = c.voices.map((v): Voice => {
     if (v.id !== id && v.id !== target?.id) return v;
-    return locus === undefined ? without(v, 'locus') : { ...v, locus };
+    return role === undefined ? without(v, 'role') : { ...v, role };
   });
-  const left = self.locus;
-  if (left !== undefined && left !== locus) {
-    const rest = voices.filter((v) => v.locus === left);
-    if (rest.length === 1) voices = voices.map((v) => (v.locus === left ? without(v, 'locus') : v));
+  const left = self.role;
+  if (left !== undefined && left !== role) {
+    const rest = voices.filter((v) => v.role === left);
+    if (rest.length === 1) voices = voices.map((v) => (v.role === left ? without(v, 'role') : v));
   }
   return { ...c, voices };
 }

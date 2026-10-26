@@ -44,7 +44,7 @@ describe('load', () => {
     const extras = {
       target: { code: '(s) => true' },
       freeze: 'after',
-      locus: 'a',
+      role: 'a',
       from: 'current',
       catchUp: 'fresh',
       weight: 0.5,
@@ -70,6 +70,13 @@ describe('load', () => {
     expect(v?.freeze).toBe('after');
     expect(v).not.toHaveProperty('hold');
     expect(load(withVoice({ hold: 'after', freeze: 'before' }))?.voices[0]?.freeze).toBe('before');
+  });
+
+  it('reads a voice saved with locus as role', () => {
+    const v = load(withVoice({ locus: 'tone' }))?.voices[0];
+    expect(v?.role).toBe('tone');
+    expect(v).not.toHaveProperty('locus');
+    expect(load(withVoice({ locus: 3 }))).toBeNull();
   });
   it('refuses a wrong version, a missing field, or junk', () => {
     expect(load({ ...DEFAULT, version: 2 })).toBeNull();
@@ -112,7 +119,7 @@ describe('load', () => {
       withVoice({ freeze: 'always' }),
       withVoice({ from: 'start' }),
       withVoice({ catchUp: 'late' }),
-      withVoice({ locus: 3 }),
+      withVoice({ role: 3 }),
       withVoice({ anchor: 'wave' }),
       withVoice({ patch: { kind: 'keys', period: 1200 } }),
       withVoice({ patch: { kind: 'keys', period: 1200, stops: [{ at: 0 }] } }),

@@ -64,7 +64,7 @@ export interface Voice {
   freeze?: 'before' | 'after' | 'both';
   weight: number | Expr;
   fade: { in?: number; out?: number; ease?: Easing };
-  locus?: string;
+  role?: string;
   from?: 'current';
   anchor?: Placement;
   /** The group's id it plays under. */
@@ -170,7 +170,7 @@ export interface Composition {
   levels: Level[];
   voices: Voice[];
   groups?: Group[];
-  /** Each locus `mix.blend` cues, with the signal its voices' weights split. */
+  /** Each role `mix.blend` cues, with the signal its voices' weights split. */
   blends?: Record<string, Expr>;
   announced?: Announced[];
   mix?: MixSettings;

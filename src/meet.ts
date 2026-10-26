@@ -7,7 +7,7 @@ import type { Voice } from './voice.js';
 
 /**
  * Whether the lanes a probe of the subject at `slot` just met (`met`) can be folded on the general
- * path after the lanes' values: none is in a locus or a crowd, the subject owes none already this
+ * path after the lanes' values: none is in a role or a crowd, the subject owes none already this
  * fill, and each comes after every other laned voice in voice order, so folding it last folds in
  * the general path's order.
  */

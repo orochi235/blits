@@ -1,4 +1,4 @@
-// Whether two builds give the same bits: random scenes (voices of every form, loci, blends, fades,
+// Whether two builds give the same bits: random scenes (voices of every form, roles, blends, fades,
 // holds, subject fades, drops, retargets, seeks, projections) run through both, every read compared.
 //   node bench/same.mjs <dist-a> <dist-b> [scenes] [first-seed]   SAME_LANES=off runs dist-a without lanes
 // SAME_RATE=1 also changes the mix's own rate, which needs both builds to have one; without it the
@@ -273,7 +273,7 @@ function run(lib, seed, general = false, left = none, kept = null) {
       const mod = int(2, 4);
       spec.target = (s) => s.i % mod === 0;
     }
-    if (chance(0.25)) spec.locus = pick(['a', 'b']);
+    if (chance(0.25)) spec.role = pick(['a', 'b']);
     if (chance(0.3)) spec.weight = chance(0.2) ? r() * 1.8 : signal();
     if (chance(0.4)) spec.fade = { in: pick([0, 50, 200]), out: pick([0, 100, 300]) };
     spec.loop = chance(0.3) && !chance(0.5) ? int(1, 3) : true;

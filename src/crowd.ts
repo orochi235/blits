@@ -20,7 +20,7 @@ export function crowdable<I, O>(v: Voice<I, O>): boolean {
   return (
     v.named !== null &&
     v.named.size === 1 &&
-    v.spec.locus === undefined &&
+    v.spec.role === undefined &&
     (v.slots.length === 1 || v.motion === undefined)
   );
 }

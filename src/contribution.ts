@@ -144,9 +144,9 @@ export function contribution<I, O>(
   }
 
   let delta: Record<string, unknown> | null = null;
-  // A keys voice in a locus reads at weight 0 too: having a delta makes it a member, and the
-  // locus folds at its first member's place.
-  if (silent(voice, weight) && (voice.built === null || voice.spec.locus === undefined)) {
+  // A keys voice in a role reads at weight 0 too: having a delta makes it a member, and the
+  // role folds at its first member's place.
+  if (silent(voice, weight) && (voice.built === null || voice.spec.role === undefined)) {
     // A `from: 'current'` voice takes its base on its first read, silent or not.
     if (voice.built && voice.spec.from === 'current' && held.base === undefined) {
       held.base = this.baseFor(voice, subject);

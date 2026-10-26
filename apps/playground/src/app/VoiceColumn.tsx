@@ -96,7 +96,7 @@ export function VoiceColumn(p: VoiceColumnProps) {
           comp={p.comp}
           spanned={underSpan(p.comp, voice.id)}
           onJoin={(to) => p.onComp(syncBlend(joinGroup(p.comp, voice.id, to), voice.id))}
-          onBlend={(by) => voice.locus !== undefined && p.onComp(setBlend(p.comp, voice.locus, by))}
+          onBlend={(by) => voice.role !== undefined && p.onComp(setBlend(p.comp, voice.role, by))}
           errors={p.player.built.errors}
           faults={p.player.built.faults.get(voice.id)}
           onChange={p.onVoice}

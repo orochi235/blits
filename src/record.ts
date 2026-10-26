@@ -47,7 +47,7 @@ export function record(voice: object | null, reaches: boolean, state: unknown): 
     voice,
     next: null,
     version: Number.NaN,
-    loci: null,
+    roles: null,
     slot: -1,
     run: -1,
     freed: -1,

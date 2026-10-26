@@ -1,5 +1,5 @@
 import { foldNumber, lerpNumber } from './channels.js';
-import { Arg, type Lane, type Laned, type Locus, Row } from './lane.js';
+import { Arg, type Lane, type Laned, type Role, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Subject } from './subject.js';
 import { shortWay, turnFrom, turnInto, turnToward } from './turns.js';
@@ -13,12 +13,12 @@ function sized(xs: Float64Array, n: number): Float64Array {
 }
 
 /**
- * Every member of a locus, in voice order, gathered rather than folded: a member's delta for a
+ * Every member of a role, in voice order, gathered rather than folded: a member's delta for a
  * subject is lerped into what the members before it left there by its share of the weight
- * taken, as the general path's `foldLocus` does, so each subject's locus can fold in at its
+ * taken, as the general path's `foldRole` does, so each subject's role can fold in at its
  * first member's place in the order.
  */
-export function gatherLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>): void {
+export function gatherRole<I, O>(lanes: Lanes<I, O>, g: Role<I, O>): void {
   const cap = lanes.cap;
   if (g.met.length < cap) {
     g.met = sized(g.met, cap);
@@ -46,7 +46,7 @@ export function gatherLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>): void {
       for (let p = 0; p < list.length; p++) {
         const slot = list[p] as number;
         if (lanes.one(lane, p, slot)) {
-          meetLocus(lanes, g, slot);
+          meetRole(lanes, g, slot);
           g.sum[slot] =
             (g.sum[slot] as number) + (lane.data[p * Row.STRIDE + Row.WEIGHT] as number);
         }
@@ -58,8 +58,8 @@ export function gatherLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>): void {
   }
 }
 
-/** The first a fill hears of a subject in a locus: from the member now gathering. */
-function meetLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, slot: number): void {
+/** The first a fill hears of a subject in a role: from the member now gathering. */
+function meetRole<I, O>(lanes: Lanes<I, O>, g: Role<I, O>, slot: number): void {
   if (g.met[slot] === lanes.fills) return;
   g.met[slot] = lanes.fills;
   g.first[slot] = lanes.intoId;
@@ -73,9 +73,9 @@ function meetLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, slot: number): void
 
 /**
  * `gatherInto` for a plain scalar channel and the number at `Arg.VALUE`, which as an argument
- * would be boxed, 16 bytes a channel a member a subject (`locus`, bench/allocs.mjs, 2026-10-25).
+ * would be boxed, 16 bytes a channel a member a subject (`role`, bench/allocs.mjs, 2026-10-25).
  */
-function gatherScalar<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, ch: Laned, slot: number): void {
+function gatherScalar<I, O>(lanes: Lanes<I, O>, g: Role<I, O>, ch: Laned, slot: number): void {
   const arg = lanes.arg;
   const value = arg[Arg.VALUE] as number;
   const values = g.values[ch.index];
@@ -85,7 +85,7 @@ function gatherScalar<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, ch: Laned, slot:
     return;
   }
   const w = arg[Arg.WEIGHT] as number;
-  meetLocus(lanes, g, slot);
+  meetRole(lanes, g, slot);
   const taken = takenAt[slot] as number;
   const total = taken + w;
   values[slot] = taken === 0 ? value : lerpNumber(values[slot] as number, value, w / total);
@@ -93,18 +93,18 @@ function gatherScalar<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, ch: Laned, slot:
 }
 
 /**
- * A member's value for one channel of a subject, lerped into its locus: the step of the general
- * path's `foldLocus`.
+ * A member's value for one channel of a subject, lerped into its role: the step of the general
+ * path's `foldRole`.
  */
 function gatherInto<I, O>(
   lanes: Lanes<I, O>,
-  g: Locus<I, O>,
+  g: Role<I, O>,
   ch: Laned,
   slot: number,
   value: unknown,
 ): void {
   const w = lanes.arg[Arg.WEIGHT] as number;
-  meetLocus(lanes, g, slot);
+  meetRole(lanes, g, slot);
   const k = ch.index;
   let values = g.values[k];
   let takenAt = g.taken[k];
@@ -134,8 +134,8 @@ function gatherInto<I, O>(
   takenAt[slot] = total;
 }
 
-/** A locus member's turn in the order: each subject it was the first member of takes the locus. */
-export function foldLocus<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, g: Locus<I, O>): void {
+/** A role member's turn in the order: each subject it was the first member of takes the role. */
+export function foldRole<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, g: Role<I, O>): void {
   const id = lane.voice.id;
   const fills = lanes.fills;
   const list = lane.list;
@@ -146,13 +146,13 @@ export function foldLocus<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, g: Locus<I
   }
 }
 
-/** Folds what a locus gathered for the subject at `slot` into its laned values. */
-function foldAt<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, slot: number): void {
+/** Folds what a role gathered for the subject at `slot` into its laned values. */
+function foldAt<I, O>(lanes: Lanes<I, O>, g: Role<I, O>, slot: number): void {
   for (let k = 0; k < g.values.length; k++) {
     const takenAt = g.taken[k];
     const taken = takenAt === undefined ? 0 : (takenAt[slot] as number);
     if (!(taken > 0)) continue;
-    // A channel folds at the weight of the members that wrote it, not the whole locus.
+    // A channel folds at the weight of the members that wrote it, not the whole role.
     const w = taken > 1 ? 1 : taken;
     const ch = lanes.laned[k] as Laned;
     const values = g.values[k] as Float64Array;
@@ -168,10 +168,10 @@ function foldAt<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, slot: number): void {
 }
 
 /**
- * Whether a fill can run a locus a subject at a time: every member playing, on its lane, keeping
+ * Whether a fill can run a role a subject at a time: every member playing, on its lane, keeping
  * no state, and over the same subjects in the same places, with no other voice between them.
  */
-function inlined<I, O>(g: Locus<I, O>): boolean {
+function inlined<I, O>(g: Role<I, O>): boolean {
   if (!g.contiguous) return false;
   const members = g.members;
   const list = (members[0] as Lane<I, O>).list;
@@ -188,10 +188,10 @@ function inlined<I, O>(g: Locus<I, O>): boolean {
 }
 
 /**
- * An inlined locus at its first member's turn: each subject's members gathered in voice order, as
- * `gatherLocus` gathers them, then folded at once, with no pass of its own and no array of sums.
+ * An inlined role at its first member's turn: each subject's members gathered in voice order, as
+ * `gatherRole` gathers them, then folded at once, with no pass of its own and no array of sums.
  */
-export function runLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>): void {
+export function runRole<I, O>(lanes: Lanes<I, O>, g: Role<I, O>): void {
   const members = g.members;
   const arg = lanes.arg;
   for (const lane of members) {
@@ -206,12 +206,12 @@ export function runLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>): void {
       let sum = 0;
       for (let i = 0; i < members.length; i++) {
         const lane = members[i] as Lane<I, O>;
-        // Its patch kept state on an earlier subject: as `gatherLocus` leaves it after that call.
+        // Its patch kept state on an earlier subject: as `gatherRole` leaves it after that call.
         if (lane.voice.keeping) continue;
         // Each lane's placing is numbered on its own; the last member placed left its number.
         arg[Arg.MARK] = lane.mark;
         if (lanes.one(lane, p, slot)) {
-          meetLocus(lanes, g, slot);
+          meetRole(lanes, g, slot);
           sum += lane.data[p * Row.STRIDE + Row.WEIGHT] as number;
         }
       }
@@ -325,7 +325,7 @@ export function foldRun<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, xs: Fl
     values[base + a] = foldNumber(ch.op, values[base + a] as number, xs[a] as number, w);
 }
 
-/** Folds one channel's value into a subject's laned values, or its locus, at `Arg.WEIGHT`. */
+/** Folds one channel's value into a subject's laned values, or its role, at `Arg.WEIGHT`. */
 export function foldInto<I, O>(this: Lanes<I, O>, ch: Laned, slot: number, value: unknown): void {
   if (value === undefined) return;
   if (this.into !== null) {

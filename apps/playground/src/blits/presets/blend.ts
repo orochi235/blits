@@ -7,7 +7,7 @@ const stop = (id: string, hue: number, color: number, scale: number, turn: numbe
   start: 0,
   rate: 1,
   loop: true,
-  locus: 'tone',
+  role: 'tone',
   fade: { in: 300 },
   weight: 1,
   patch: {

@@ -7,7 +7,7 @@ import { aims, chain, linkable, relink } from './chain.js';
 import { type LerpInto, lerpInto, STOCK_BAND, scalarOp } from './channels.js';
 import type { Column } from './columns.js';
 import { baseFor, contribution, isRest, keyed, read, slopeFor, tick } from './contribution.js';
-import { cue } from './cue.js';
+import { cue, roleTags } from './cue.js';
 import { DepartedIndex } from './departed.js';
 import { drop, forgetIn, recordDrop, releaseIn } from './drop.js';
 import { DueQueue } from './due.js';
@@ -31,8 +31,6 @@ import type { HandleHost } from './handle.js';
 import { held, shownOf, sinceOf, unreachedOf } from './held.js';
 import { book, laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
-import { foldLoci } from './loci.js';
-import { foldLocus, type LocusScratch } from './locus.js';
 import { listed } from './marks.js';
 import type { Motions } from './motions.js';
 import { nextFrame } from './move.js';
@@ -46,6 +44,8 @@ import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
 import { atRest, restful, rests, restsKey, restsLaned, still } from './rests.js';
 import { Outs } from './revive.js';
+import { foldRole, type RoleScratch } from './role.js';
+import { foldRoles } from './roles.js';
 import { ScoreIndex } from './scored.js';
 import { seek } from './seek.js';
 import { Fitting, refit } from './spans.js';
@@ -243,8 +243,10 @@ export class Mixer<I, O> implements Mix<I, O> {
   unshared = false;
   /** 0 where a fold is a walk of the chain: see `detour` in `everyone.ts`. */
   detours = 0;
-  /** How many voices in the list carry a locus; with none, a fold allocates nothing. */
-  loci = 0;
+  /** How many voices in the list carry a role; with none, a fold allocates nothing. */
+  roleVoices = 0;
+  /** The tags the mix's options declare roles. */
+  readonly roleTags: readonly string[] | undefined;
   /** What every motion patch it plays asks for its voice's time, holding this mix weakly. */
   owner: MotionOwner | null = null;
   /** How many voices in the list are anchored, so a sync with none skips placing them. */
@@ -279,9 +281,9 @@ export class Mixer<I, O> implements Mix<I, O> {
   readonly lerpsInto: (LerpInto | undefined)[];
   /** By slot, a stock scalar channel's arithmetic, which a fold applies without calling the channel. */
   readonly scalars: ('sum' | 'mul' | 'max' | undefined)[];
-  /** What a fold with a locus in play gathers into, one per depth of folds under way. */
-  readonly locusScratch: LocusScratch<I, O>[] = [];
-  locusDepth = 0;
+  /** What a fold with a role in play gathers into, one per depth of folds under way. */
+  readonly roleScratch: RoleScratch<I, O>[] = [];
+  roleDepth = 0;
   readonly slotOf = new Map<string, number>();
   lanes: Lanes<I, O> | null;
   handles: HandleHost<I, O> | null = null;
@@ -321,6 +323,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.lanes =
       lanesOf !== null && (opts.lanes ?? defaults.lanes) ? new lanesOf<I, O>(laneHost(this)) : null;
     this.name = opts.name;
+    this.roleTags = roleTags(opts);
     const shared = opts.transport as Transport | undefined;
     if (shared !== undefined) {
       if (opts.history !== undefined)
@@ -420,16 +423,16 @@ export class Mixer<I, O> implements Mix<I, O> {
   blend(
     members: readonly (Patch<I, O, unknown> | BlendMember<I, O>)[],
     by: Signal<I>,
-    spec: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'locus' | 'within'> = {},
+    spec: Omit<VoiceSpec<I, O>, 'patch' | 'weight' | 'role' | 'locus' | 'within'> = {},
   ): Handle<I>[] {
-    const locus = `blend:${this.nextId}`;
+    const role = `blend:${this.nextId}`;
     const of = blendOf<I, O>(by, members.length - 1);
     return members.map((member, i) => {
       const own: VoiceSpec<I, O> = {
         ...spec,
         patch: member as Patch<I, O, unknown>,
         weight: by,
-        locus,
+        role,
       };
       if ('patch' in member) {
         own.patch = member.patch;
@@ -617,7 +620,7 @@ const methods = {
   linked,
   foldWith,
   owedBy,
-  foldLoci,
+  foldRoles,
   foldDetour,
   foldSharers,
   shared,
@@ -654,7 +657,7 @@ const methods = {
   sinceOf,
   shownOf,
   keep,
-  foldLocus,
+  foldRole,
   atRest,
   rests,
   restful,

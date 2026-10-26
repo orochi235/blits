@@ -126,11 +126,11 @@ export interface Subject<S> {
   next: Subject<unknown> | null;
   /**
    * On the first record, which the mix keeps per subject so a probe makes one lookup: the `version`
-   * the chain was linked at, and per locus, by channel slot, whether a rest-less contribution is on:
+   * the chain was linked at, and per role, by channel slot, whether a rest-less contribution is on:
    * 0 never decided, 1 on, 2 off.
    */
   version: number;
-  loci: Map<string, Uint8Array> | null;
+  roles: Map<string, Uint8Array> | null;
   /** On the first record: the number lanes index this subject by, -1 without one. */
   slot: number;
   /** A motion voice's number for this subject in its patch, good while `freed` is the patch's own. */

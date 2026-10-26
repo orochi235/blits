@@ -22,7 +22,7 @@ const patchOf = (scale: number): PatchSource => ({
 });
 const SCALES = [2, 3, 5];
 const member = (i: number, over: Partial<Voice> = {}) =>
-  voice({ id: `m${i}`, patch: patchOf(SCALES[i] as number), locus: 'tone', ...over });
+  voice({ id: `m${i}`, patch: patchOf(SCALES[i] as number), role: 'tone', ...over });
 const BY = '(s) => s.x';
 const blended = (voices: Voice[], by = BY): Composition => ({
   ...comp(voices),
@@ -93,11 +93,11 @@ describe('a blend', () => {
     expect(bad.errors.map((e) => [e.voice, e.field])).toEqual([['m0', 'blend']]);
     expect(bad.handles.size).toBe(0);
     const stray = compile(blended([member(0), member(1, { rate: 2 })]), subjects);
-    expect(stray.errors.map((e) => [e.voice, e.field])).toEqual([['m1', 'locus']]);
+    expect(stray.errors.map((e) => [e.voice, e.field])).toEqual([['m1', 'role']]);
     expect([...stray.handles.keys()]).toEqual(['m0']);
     for (const odd of [{ stepMs: 4 }, { catchUp: 'fresh' as const }]) {
       const strays = compile(blended([member(0), member(1, odd)]), subjects);
-      expect(strays.errors.map((e) => [e.voice, e.field])).toEqual([['m1', 'locus']]);
+      expect(strays.errors.map((e) => [e.voice, e.field])).toEqual([['m1', 'role']]);
     }
   });
 });
@@ -122,10 +122,10 @@ describe('editing a blend', () => {
 
   it('gives a voice that joins the fields the blend shares', () => {
     const c = blended([member(0, { rate: 3 }), voice({ id: 'x', patch: patchOf(7) })]);
-    const next = withVoice(c, { ...(c.voices[1] as Voice), locus: 'tone' });
+    const next = withVoice(c, { ...(c.voices[1] as Voice), role: 'tone' });
     expect(next.voices.map((v) => v.rate)).toEqual([3, 3]);
     const dragged = applyEdit(c, { clip: 'x', kind: 'group', with: 'm0' });
-    expect(dragged.voices.map((v) => [v.locus, v.rate])).toEqual([
+    expect(dragged.voices.map((v) => [v.role, v.rate])).toEqual([
       ['tone', 3],
       ['tone', 3],
     ]);
@@ -135,11 +135,11 @@ describe('editing a blend', () => {
     const moved = applyEdit(three(), { clip: 'm2', kind: 'move', start: 250 });
     expect(moved.voices.map((v) => v.start)).toEqual([250, 250, 250]);
     const c = blended([member(0)]);
-    expect(withVoice(c, { ...member(0), locus: undefined }).blends).toBeUndefined();
+    expect(withVoice(c, { ...member(0), role: undefined }).blends).toBeUndefined();
     expect(syncBlend({ ...c, voices: [] }, 'm0').blends).toBeUndefined();
   });
 
-  it('blends a locus from its first voice, and unblends it', () => {
+  it('blends a role from its first voice, and unblends it', () => {
     const plain = comp([member(0, { rate: 2 }), member(1)]);
     const on = setBlend(plain, 'tone', { code: BY });
     expect(on.blends).toEqual({ tone: { code: BY } });
