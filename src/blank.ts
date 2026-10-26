@@ -27,4 +27,3 @@ export function blanks<O>(
   const P = Pose as unknown as new () => O;
   return () => new P();
 }
-
