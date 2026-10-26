@@ -1,6 +1,6 @@
 import { input, kit, mix, patch, sum } from '@msb235/blits';
+import { loop } from './loop';
 import { COLS, type Dot, field, ROWS } from './start/field';
-import { loop } from './start/row';
 
 interface DotPose {
   lift: number;

@@ -1,4 +1,5 @@
 import { type Handle, kit, mix, mul, patch, sum } from '@msb235/blits';
+import { loop } from '../loop';
 
 interface Spark {
   x: number;
@@ -56,11 +57,12 @@ export default function run(root: HTMLElement): () => void {
   };
   canvas.addEventListener('click', onClick);
   const auto = window.setInterval(() => {
+    if (!document.hasFocus()) return;
     burst(canvas.clientWidth * (0.2 + 0.6 * Math.random()), HEIGHT * (0.3 + 0.3 * Math.random()));
   }, 1400);
 
   const pose = { dx: 0, dy: 0, alpha: 1 };
-  let id = requestAnimationFrame(function frame(now) {
+  const stop = loop(m, (now) => {
     m.sync(now);
     canvas.width = canvas.clientWidth * devicePixelRatio;
     canvas.height = HEIGHT * devicePixelRatio;
@@ -72,12 +74,11 @@ export default function run(root: HTMLElement): () => void {
         ctx.globalAlpha = pose.alpha;
         ctx.fillRect(s.x + pose.dx - 2, s.y + pose.dy - 2, 4, 4);
       }
-    id = requestAnimationFrame(frame);
   });
 
   return () => {
     clearInterval(auto);
-    cancelAnimationFrame(id);
+    stop();
     canvas.removeEventListener('click', onClick);
     m.close();
   };

@@ -1,4 +1,5 @@
 import { keys, kit, max, mix, sum } from '@msb235/blits';
+import { loop } from '../loop';
 
 interface Letter {
   el: HTMLElement;
@@ -54,20 +55,19 @@ export default function run(root: HTMLElement): () => void {
   play();
 
   const pose = { rise: 0, show: 0 };
-  let id = requestAnimationFrame(function frame(now) {
+  const stop = loop(m, (now) => {
     m.sync(now);
     for (const letter of letters) {
       m.probe(letter, pose);
       letter.el.style.opacity = String(pose.show);
       letter.el.style.transform = `translateY(${pose.rise}px)`;
     }
-    id = requestAnimationFrame(frame);
   });
 
   return () => {
     stopped = true;
     clearTimeout(timer);
-    cancelAnimationFrame(id);
+    stop();
     m.close();
   };
 }

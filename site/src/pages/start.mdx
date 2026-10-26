@@ -25,9 +25,16 @@ Nine dots. Each one breathes, and a hop ripples along the row. Click a dot and i
 <Listing of="live/start-dom.ts" />
 
 <details class="listing-more">
-<summary><code>start/row.ts</code>: the row of buttons, and the frame loop</summary>
+<summary><code>start/row.ts</code>: the row of buttons</summary>
 
 <Listing of="live/start/row.ts" />
+
+</details>
+
+<details class="listing-more">
+<summary><code>loop.ts</code>: the frame loop every demo on this site runs on</summary>
+
+<Listing of="live/loop.ts" />
 
 </details>
 
@@ -38,7 +45,7 @@ The page gives the dots their size and color:
 .dot { width: 1.5rem; height: 1.5rem; border: none; border-radius: 50%; background: royalblue; }
 ```
 
-The file wraps everything in `run` so this page can start and stop it. In an app you would run the body once. Making the buttons and the `requestAnimationFrame` loop is ordinary page code, so it sits in a file of its own. The loop waits while the window is out of focus, and calls `rebase` when it comes back, so the time away doesn't count.
+The file wraps everything in `run` so this page can start and stop it. In an app you would run the body once. Making the buttons and the `requestAnimationFrame` loop is ordinary page code, so each sits in a file of its own. The loop waits while the window is out of focus, and calls `rebase` when it comes back, so the time away doesn't count.
 
 Each part of it:
 

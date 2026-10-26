@@ -1,5 +1,6 @@
 import { keys, kit, mix, mul, patch, sum } from '@msb235/blits';
-import { type Dot, loop, row } from './start/row';
+import { loop } from './loop';
+import { type Dot, row } from './start/row';
 
 // The two numbers an effect can move on a dot.
 interface DotPose {

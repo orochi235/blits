@@ -1,4 +1,5 @@
 import { keys, kit, mix, sum } from '@msb235/blits';
+import { loop } from '../loop';
 
 interface Bar {
   el: HTMLElement;
@@ -76,8 +77,9 @@ export default function run(root: HTMLElement): () => void {
 
   const pose = { x: 0 };
   let last = performance.now();
-  let id = requestAnimationFrame(function frame(now) {
-    if (!held) t = (t + Math.max(0, now - last)) % LENGTH;
+  // A step is capped, so the time the window was away doesn't count.
+  const stop = loop(m, (now) => {
+    if (!held) t = (t + Math.min(100, Math.max(0, now - last))) % LENGTH;
     last = now;
     scrub.value = String(t);
     const at = m.project(t);
@@ -85,11 +87,10 @@ export default function run(root: HTMLElement): () => void {
       at.probe(bar, pose);
       bar.el.style.left = `calc(${pose.x} * (100% - 6rem))`;
     }
-    id = requestAnimationFrame(frame);
   });
 
   return () => {
-    cancelAnimationFrame(id);
+    stop();
     scrub.removeEventListener('input', onInput);
     scrub.removeEventListener('change', onRelease);
     m.close();

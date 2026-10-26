@@ -1,4 +1,5 @@
 import { color, css, kit, mix, mul, oklab, patch, sum } from '@msb235/blits';
+import { loop } from '../loop';
 
 interface Dot {
   el: HTMLElement;
@@ -68,18 +69,17 @@ export default function run(root: HTMLElement): () => void {
   button.addEventListener('click', onClick);
 
   const pose: DotPose = { y: 0, scale: 1, color: [0, 0, 0, 0] };
-  let id = requestAnimationFrame(function frame(now) {
+  const stop = loop(m, (now) => {
     m.sync(now);
     for (const dot of dots) {
       m.probe(dot, pose);
       dot.el.style.transform = `translateY(${pose.y}px) scale(${pose.scale})`;
       dot.el.style.background = css(pose.color);
     }
-    id = requestAnimationFrame(frame);
   });
 
   return () => {
-    cancelAnimationFrame(id);
+    stop();
     button.removeEventListener('click', onClick);
     m.close();
   };

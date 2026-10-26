@@ -1,4 +1,5 @@
 import { input, kit, lag, mix, patch, sum } from '@msb235/blits';
+import { loop } from '../loop';
 
 interface Card {
   el: HTMLElement;
@@ -43,18 +44,17 @@ export default function run(root: HTMLElement): () => void {
   m.cue({ patch: raised, weight: lag(over, { riseMs: 80, fallMs: 350 }) });
 
   const pose = { lift: 0, glow: 0 };
-  let id = requestAnimationFrame(function frame(now) {
+  const stop = loop(m, (now) => {
     m.sync(now);
     for (const card of cards) {
       m.probe(card, pose);
       card.el.style.transform = `translateY(${-8 * pose.lift}px)`;
       card.el.style.setProperty('--glow', String(pose.glow));
     }
-    id = requestAnimationFrame(frame);
   });
 
   return () => {
-    cancelAnimationFrame(id);
+    stop();
     row.removeEventListener('pointerover', onOver);
     row.removeEventListener('pointerleave', onLeave);
     m.close();
