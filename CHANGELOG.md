@@ -15,17 +15,17 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Added
 
-- `within` on a cue: a circle `{ x, y, r }` the host moves, outside which the voice's weight signal
-  is 0, so the mix gives those subjects nothing without calling the signal for them. The host gives
-  the subjects' positions with `mix.plot(subjects, xy)`, two numbers a subject read in place, and
-  calls `mix.moved()` after writing new ones. Positions hold an object subject weakly, and `drop`
-  takes a subject's away. Outside production the mix warns once if the signal is above 0 just
-  outside the circle, which would cut it off there. Refused with history, `subjects`, a locus, an
-  owner, `from: 'current'`, or a patch keeping state.
+- `within` on a cue: a circle `{ x, y, r }` (the type `Circle`) the host moves, outside which the
+  voice's weight signal is 0, so the mix gives those subjects nothing without calling the signal for
+  them. The host gives the subjects' positions with `mix.plot(subjects, xy)`, two numbers a subject
+  read in place, and calls `mix.moved()` after writing new ones. Positions hold an object subject
+  weakly, and `drop` takes a subject's away. Outside production the mix warns once if the signal is
+  above 0 just outside the circle, which would cut it off there. Refused with history, `subjects`, a
+  locus, an owner, `from: 'current'`, or a patch keeping state.
 - `mix.around(circle, { ease })`, a weight signal over the plotted positions: 1 at the circle's
   center, falling to 0 at `r` along an easing, linear by default. A voice it weighs is bounded to
   the circle as if cued `within` it, with no check for a clipped signal, and plays unbounded where
-  it could not take `within`.
+  it could not take `within`, as when cued before `plot`.
 - `mix.put(subject, x, y)` moves one plotted subject, for a host where few move at once. It writes
   into the array `plot` was given, so it mixes freely with writing that array and calling `moved`,
   and keeps the grid as built until a sixteenth of the subjects have left their cells. It throws for
@@ -59,6 +59,10 @@ version and everything else the patch. Each release lists its changes as **Break
   distinct subjects, is copied without being iterated, and voices of a patch writing one channel
   share their channel slots. 10,000 one-subject voices' first frame takes 20.7 ms against 23.5 for
   tweens and 8.9 against 10.8 for fns (teitou, medians of nine rounds; `bench/start.mjs`).
+- A mix with no tape no longer makes the closures that record the host's calls only to drop them:
+  a cue, a `drop`, a motion change and every handle write each made one. A voice cued and replaced
+  leaves 11.7 KB of garbage against 12.4 (keiei, medians of three alternated passes of
+  `bench/churnwho.mjs 5000`); frame cost is level.
 - A stateless fn voice over every subject cued between frames costs about a quarter less on the
   frame its subjects first meet it: their probe makes its first call on its lane and folds it into
   the lanes' values, where it was folded on the general path. A voice over 10,000 subjects

@@ -53,7 +53,7 @@ requestAnimationFrame(frame);
 
 `target` picks which subjects a voice reaches. It runs once per subject, the first time the mix sees it, and the answer is kept. Pulse above has `target: (bar) => bar.i % 2 === 0`, so the odd lamps never get a pulse pip or block, and the ledger's pulse row reads 0 when you pick an odd one.
 
-`subjects` names the subjects a voice reaches instead: `subjects: [bar]` reaches that bar and no other. Every `target` meets every subject the mix sees, so a scene with one voice per subject should name them, which lets a probe skip the voices that name someone else. A voice takes one or the other, never both.
+`subjects` names the subjects a voice reaches instead: `subjects: [bar]` reaches that bar and no other. Every `target` meets every subject the mix sees, so a scene with one voice per subject should name them, which lets a probe skip the voices that name someone else. A voice takes one or the other, never both. A voice weighted by a signal can also be limited to a circle around the pointer, with `within`: see [Signal](../signal/#only-near-the-pointer-within).
 
 `atRest(subject)` is true when every channel of that subject's pose is at its rest, so a host can skip writing it. `live` is true while any voice is still playing, fading or waiting to start. When it goes false, the host can stop its loop. Cueing a voice makes it true again at once, and `onWake` tells the host so; `ticker()` listens for it and restarts its loop.
 
@@ -61,7 +61,7 @@ requestAnimationFrame(frame);
 
 `mute()` fades every voice out, over `over` ms when you pass it and over each voice's own `fade.out` otherwise. At the "Mute at" time, the explainer calls `mute({ over: 1500 })` and every voice leaves together; once the last is done, the mix is no longer live. At the slider's right end it never mutes.
 
-`drop(subject)` forgets what the mix was keeping for one subject. Call it when a subject goes away for good.
+`drop(subject)` forgets what the mix was keeping for one subject, its plotted position included. Call it when a subject goes away for good.
 
 ## Watching a mix
 

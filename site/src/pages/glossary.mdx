@@ -6,7 +6,7 @@ description: The words blits uses, from anchor to weight, each with a short expl
 
 # Glossary
 
-[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [contribution](#contribution) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [`freeze`](#freeze) · [handle](#handle) · [`history`](#history) · [host](#host) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [locus](#locus) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight)
+[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [contribution](#contribution) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [`freeze`](#freeze) · [handle](#handle) · [`history`](#history) · [host](#host) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [locus](#locus) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight) · [`within`](#within)
 
 The examples share one setup: a row of dots that can move up and down, glow, and change color.
 
@@ -678,3 +678,16 @@ h.weight = 1;
 ```
 
 In depth: [Blending](../blending/), [Signal](../signal/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec), [`Handle`](../voice/#api-Handle).
+
+## `within`
+
+`within` limits a voice weighted by a [signal](#signal) to a circle `{ x, y, r }` the host moves. Outside it the voice gives a subject nothing and the signal isn't read, so a glow around the pointer costs only the subjects inside. The mix needs to know where the subjects are: `mix.plot(subjects, xy)` gives it their positions, two numbers a subject. Write new ones into `xy` and call `mix.moved()`, or move one with `mix.put(subject, x, y)`. `mix.around(circle)` is a signal that is 1 at the circle's center and 0 at its edge, and keeps its voice within the circle by itself.
+
+```ts
+const xy = Float64Array.from(all.flatMap((dot) => [dot.i * 20, 0]));
+dots.plot(all, xy);
+const pointer = { x: 0, y: 0, r: 60 };
+dots.cue({ patch: dim, weight: dots.around(pointer) }); // dims the dots near the pointer, most at its center
+```
+
+In depth: [Signal](../signal/#only-near-the-pointer-within). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec), [`Circle`](../voice/#api-Circle), [`Mix`](../mix/#api-Mix).
