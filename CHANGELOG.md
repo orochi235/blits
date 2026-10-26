@@ -32,8 +32,9 @@ version and everything else the patch. Each release lists its changes as **Break
   role, an owner, `from: 'current'`, or a patch keeping state.
 - `mix.around(circle, { ease })`, a weight signal over the plotted positions: 1 at the circle's
   center, falling to 0 at `r` along an easing, linear by default. A voice it weighs is bounded to
-  the circle as if cued `within` it, with no check for a clipped signal, and plays unbounded where
-  it could not take `within`, as when cued before `plot`.
+  the circle as if cued `within` it, with no check for a clipped signal, from the first `plot` if it
+  was cued before one, and plays unbounded where it could not take `within`, as when it names its
+  `subjects`.
 - `mix.put(subject, x, y)` moves one plotted subject, for a host where few move at once. It writes
   into the array `plot` was given, so it mixes freely with writing that array and calling `moved`,
   and keeps the grid as built until a sixteenth of the subjects have left their cells. It throws for

@@ -37,6 +37,8 @@ interface Way {
   pull?: boolean;
   /** Names its subjects, which a bound refuses: `around` then plays unbounded. */
   named?: boolean;
+  /** Cues the glow before `plot`, which binds it to its circle once called. */
+  late?: boolean;
 }
 
 /** Each frame's reads, and the glow's weight for every subject, weighted by `around` or by hand. */
@@ -54,17 +56,27 @@ function play(way: Way, mine: boolean, frames = 50): unknown[] {
       xy[2 * j + 1] = d.y;
     });
   write();
-  m.plot(dots, xy, 3);
   const area = { x: 0, y: 0, r: 4 };
+  const cueGlow = (): Handle<Dot> =>
+    m.cue({
+      patch: glowPatch(),
+      loop: true,
+      ...(mine
+        ? { weight: m.around(area, way.ease === undefined ? {} : { ease: way.ease }) }
+        : { weight: byHand(area, way.ease), ...(way.named ? {} : { within: area }) }),
+      ...(way.named ? { subjects: dots } : {}),
+    });
   m.cue({ patch: flicker(), loop: true });
-  const glow: Handle<Dot> = m.cue({
-    patch: glowPatch(),
-    loop: true,
-    ...(mine
-      ? { weight: m.around(area, way.ease === undefined ? {} : { ease: way.ease }) }
-      : { weight: byHand(area, way.ease), ...(way.named ? {} : { within: area }) }),
-    ...(way.named ? { subjects: dots } : {}),
-  });
+  const early = way.late && mine ? cueGlow() : undefined;
+  if (early) {
+    // A frame read before the positions come, where `around` gives every subject 0.
+    m.sync(0);
+    for (const d of dots) m.probe(d);
+    expect(bounds(m)).toBe(0);
+  }
+  m.plot(dots, xy, 3);
+  const glow = early ?? cueGlow();
+  if (early) expect(bounds(m)).toBe(1);
   const cols = { gain: new Float64Array(dots.length), color: new Float64Array(dots.length) };
   const seen: unknown[] = [];
   for (let f = 0; f < frames; f++) {
@@ -89,6 +101,10 @@ function play(way: Way, mine: boolean, frames = 50): unknown[] {
   return seen;
 }
 
+/** How many of the mix's voices are bounded to a circle. */
+const bounds = (m: unknown): number =>
+  (m as { cued: { bound: unknown }[] }).cued.filter((v) => v.bound !== null).length;
+
 const agree = (way: Way) => {
   const hand = play(way, false);
   const mine = play(way, true);
@@ -109,6 +125,9 @@ describe('around reads as the same signal written by hand and cued within its ci
     it(`steps, which leave a hard edge, ${on}`, () =>
       agree({ lanes, ease: { steps: 1, jump: 'start' } }));
     it(`unbounded on a voice naming its subjects, ${on}`, () => agree({ lanes, named: true }));
+    it(`cued before plot, bound once plot is called, ${on}`, () =>
+      agree({ lanes, late: true, moving: true }));
+    it(`cued before plot and read by pull, ${on}`, () => agree({ lanes, late: true, pull: true }));
     it(`never warns that its circle clips it, ${on}`, () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       play({ lanes, ease: { steps: 1, jump: 'start' }, pull: true }, true);

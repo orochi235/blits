@@ -1,3 +1,4 @@
+import { bind } from './bound.js';
 import type { Mixer } from './mixer.js';
 import { Places } from './places.js';
 import { production } from './warn.js';
@@ -15,6 +16,7 @@ export function plot<I, O>(
     );
   if (cell !== undefined && !(cell > 0 && cell < Number.POSITIVE_INFINITY))
     throw new RangeError(`blits: plot's cell is a size above 0, not ${cell}`);
+  const first = this.places === null;
   this.places ??= new Places<I>();
   this.places.set(
     subjects,
@@ -23,6 +25,8 @@ export function plot<I, O>(
     (s) => this.chains.get(s)?.slot ?? -1,
     !production(),
   );
+  // An `around` voice cued before now read 0 everywhere, so it takes its circle with nothing to undo.
+  if (first) for (const voice of this.cued) if (voice.bound === null) bind(this, voice);
   this.moved();
 }
 

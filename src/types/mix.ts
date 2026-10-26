@@ -387,8 +387,8 @@ export interface Mix<I, O, H = unknown> {
    * to 0 at `r` and beyond, along `ease` read from the edge (0) to the center (1), linear by
    * default. The host moves or resizes the circle by writing to it. A voice it weighs is bounded to
    * the circle as if cued `within` it, with no check, since the circle is the signal's own edge,
-   * where the voice could take a `within`; elsewhere it plays unbounded, to the same values. A
-   * subject with no position reads 0.
+   * where the voice could take a `within`, from the first `plot` for one cued before it; elsewhere
+   * it plays unbounded, to the same values. A subject with no position reads 0.
    */
   around(circle: Circle, opts?: { ease?: Easing }): Signal<I, H>;
   /**

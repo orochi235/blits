@@ -435,9 +435,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    now gives a hard-edged disk; blits-panel could draw a voice's circle. Whether unbounded voices
    are ever deprecated stays open and unlikely: klieg's lighting, a fade over a whole sign and wod's
    transitions are unbounded by design (2026-10-07).
-   - **A voice weighted by `mix.around` and cued before `plot` stays unbounded for its life**,
-     since `bind` in `src/bound.ts` attaches the circle only at cue. Values are right; the speedup is
-     lost. Documented, not changed (2026-10-26).
+   - **A voice weighted by `mix.around` and cued before `plot` is bound once `plot` is called**
+     (2026-10-26): the first `plot` runs `bind` over the live voices, safe because `around` read 0
+     for every subject until then. `test/around.test.ts` holds it to the bit against the
+     hand-written signal cued `within` after `plot`, lanes on and off.
    - **Under a CSP that refuses eval, `copyout.ts`'s `new Function` falls back to the loop**, but a
      browser probably also logs (and reports to any `report-uri`) a violation once per set of laned
      channels. Inferred from how CSP works, not observed; worth a check in a CSP page before a host
