@@ -310,3 +310,5 @@ date	node	base	rev	rounds	frames	row	base ms	ms	ratio	U	base kB	kB	change	raw
 2026-10-25	teitou	d2ed59e	a49a3ec	9	5000	fns^ N=10000 V=1	1.359	1.391	1.024	31.5	1648.1	1647.5	move mixer's rest checks and subject drop into their own modules	bench/runs/2026-10-25-file-splits-fns-bisect.txt
 2026-10-25	teitou	v0.13.0	v0.14.0	7	-	start.mjs tweens first frame N=10000	25.8	29.2	1.132	7.0	-	-	lineage check of starting tweens since 0.13.0	bench/runs/2026-10-25-tween-start-lineage.txt
 2026-10-25	teitou	v0.13.0	594c0af	7	-	start.mjs tweens first frame N=10000	25.8	24.9	0.965	17.0	-	-	lineage check of starting tweens since 0.13.0	bench/runs/2026-10-25-tween-start-lineage.txt
+2026-10-25	teitou	acf5191	7117ee5	9	5000	tweens^ N=10000 V=1	0.175	0.163	0.931	11.0	5.7	5.8	cache a bare crowd row's ready checks as a flag	bench/runs/2026-10-25-ready-flag.txt
+2026-10-25	teitou	acf5191	7117ee5	9	5000	weasel^ N=10000 V=1	0.203	0.204	1.005	33.0	4.5	4.3	cache a bare crowd row's ready checks as a flag	bench/runs/2026-10-25-ready-flag.txt
