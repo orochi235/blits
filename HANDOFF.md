@@ -264,16 +264,24 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        (msb-uai, 2.64 → 2.59, U = 13); sizing a lane's `records`/`deltas` and a sharing voice's
        `deltas` up front, which cut 2.0 MB a frame to 1.6 but not the time (teitou, 2.09 → 2.17,
        U = 15). Raw output: `bench/runs/2026-10-26-{dedupe-steps,met-lanes,unchained-walk,presize-records}.txt`.
-     - **A locus, and so a blend, costs about 40% more than its voices played apart**: on keiei
-       (2026-10-25, `FRAMES=5000`, seven own-process runs) three voices in a locus over 10k subjects
-       take 4.35 ms a frame, a `mix.blend` of three 4.63, and three plain voices 3.11. A member's
-       numbers reach the locus unboxed (`gatherScalar`, `Arg.VALUE`), which took `locus` from 4.81
-       and `blend` from 5.13, and a locus allocates no more than its members apart. What is left is
-       the gather itself (`meetLocus`, two arrays per channel, `foldLocus`), about 41 ns a member a
-       subject, and for a blend each member's `signalled` path, about 0.3 ms. Between `3c23212`
-       (2026-10-11) and 2026-10-25 the `blend` row's members ended by frame 11, so ledger rows for
-       `blend` and `blend-` in that span measured an empty mix. A locus with a motion member, or a
-       signal that keeps state, stays on the general path.
+     - **A locus costs about 20% more than its voices played apart, and a blend about 33%**: on
+       teitou (2026-10-26, `FRAMES=5000`, nine own-process runs) three voices in a locus over 10k
+       subjects take 2.555 ms a frame, a `mix.blend` of three 2.841, and three plain voices 2.132.
+       A locus whose members have no other laned or crowded voice between them in voice order, all
+       playing, none keeping state, and over the same subjects in the same places runs a subject at
+       a time at its first member's turn (`runLocus`, `Locus.inline`), which took `locus` from 2.839
+       and `blend` from 3.055; any other locus gathers every subject first and folds in a second
+       pass (`gatherLocus`, `foldLocus`). What is left (CPU profile, teitou, 3000 frames): in
+       `locus`, `gatherScalar` 6.2% of samples, `runLocus` 4.7, `meetLocus` 3.9 and `foldAt` 3.7;
+       a blend adds each member's `signalled` path (`signalled` 5.2, `signal`, `laneRead` and
+       `blended` 5.1, the signal itself 5.2). Untried: on the inline route, clearing a subject's
+       `taken` once before its members and dropping `meetLocus` from `gatherScalar` there; and for
+       a blend, priming the first member's setting once rather than in both `signal` and `ready`.
+       Measured no different and reverted (msb-uai, 2026-10-26, against `ead195f`): clearing a
+       subject once before a member-at-a-time gather and skipping the fold pass of a member first
+       to no subject (`locus` 3.747 → 3.678, U = 13; `blend` 4.013 → 3.988, U = 14). Raw output:
+       `bench/runs/2026-10-26-locus-{meet-once,inline,inline-teitou}.txt`. A locus with a motion
+       member, or a signal that keeps state, stays on the general path.
      - **Starting 10k one-subject tween voices** takes a first frame of 28.0–31.0 ms against
        10.0–13.6 for fn voices (teitou, 2026-10-25, `bench/start.mjs`). The tween-only part: crowd
        `join` 1.8 ms, the motion patch's off-heap first buffer 1.5, a second numbering of the

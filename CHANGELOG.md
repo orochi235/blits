@@ -61,6 +61,13 @@ version and everything else the patch. Each release lists its changes as **Break
   pointer glow over 10,000 subjects read by `pull` (`glow^`) takes 1.657 ms a frame against 1.708,
   and three signal-weighted voices over 10,000 (`signal`) 4.511 against 4.641 (keiei, medians of
   seven runs of 5,000 frames, each in its own process); other rows are within their spread.
+- A locus, and so a `mix.blend`, costs a further tenth less a frame on lanes where no other voice
+  falls between its members in voice order: each subject's members are gathered and folded
+  together, at the first member's turn, rather than gathered for every subject and folded in a
+  second pass. Three voices in a locus over 10,000 subjects (`locus`) take 2.555 ms a frame against
+  2.839, and a blend of three (`blend`) 2.841 against 3.055 (teitou, medians of nine runs of 5,000
+  frames, each in its own process); three plain voices (`fn`) and three signal-weighted ones
+  (`signal`) are unchanged.
 - A locus, and so a `mix.blend`, costs about a tenth less a frame on lanes, and allocates no more
   than its members would apart: a member's numbers reach the locus without being boxed, 16 bytes
   each a channel a subject. Three voices in a locus over 10,000 subjects (`locus`) take 4.349 ms a
