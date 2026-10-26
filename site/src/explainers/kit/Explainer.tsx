@@ -168,14 +168,16 @@ function ExplainerBody<I, O, C>({
     draw(ctx, f, size, readInk(el), config);
   }, [player, t, size, draw, config]);
 
+  // Paused by the window losing focus reads as paused, though it plays again on its own when focus returns.
+  const running = playing && focused;
   const ledger = built.ledger;
   const toggled = new Set<string>(toggles?.map((g) => g.key));
   const panel = resolved && Object.keys(s.defaults() as object).some((k) => !toggled.has(k));
   return (
     <figure className="explainer">
       <div className="explainer-stage">
-        <button type="button" className="stage-control" onClick={() => setPlaying((p) => !p)}>
-          {playing ? 'Pause' : 'Play'}
+        <button type="button" className="stage-control" onClick={() => setPlaying(!running)}>
+          {running ? 'Pause' : 'Play'}
         </button>
         <canvas
           ref={canvas}
