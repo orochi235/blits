@@ -1,10 +1,11 @@
 import { hueColor } from '@msb235/blits-panel';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { INDENT, type Scale, slopePolygon, WIDTH } from './geometry';
-import type { Header } from './index';
+import type { Header, Track } from './index';
 import { activates, seconds } from './keys';
 import { InnerMarks, Notches } from './Marks';
 import s from './ScoreLanes.module.css';
+import { TrackLayers } from './TrackLayers';
 
 const BAR_H = 8;
 const BAR_MIN_W = 4;
@@ -21,6 +22,9 @@ export interface HeaderLaneProps {
   duration: number;
   selected: boolean;
   hatchMask: string;
+  track?: Track;
+  /** The clip path that shows only what the playhead has passed. */
+  played: string;
   onSelect(id: string): void;
   onFold?(id: string, folded: boolean): void;
 }
@@ -55,6 +59,17 @@ export function HeaderLane(p: HeaderLaneProps) {
   return (
     <g className={p.selected ? `${s.header} ${s.selected}` : s.header}>
       <rect className={s.headerBand} x={0} y={laneTop} width={WIDTH} height={laneH} />
+      {p.track && (
+        <TrackLayers
+          track={p.track}
+          color={hueColor(hd.hue)}
+          x={p.labelW}
+          w={WIDTH - p.labelW}
+          band={{ y: laneTop + 1, h: laneH - 2 }}
+          box={{ y: laneTop + 4, h: laneH - 12 }}
+          played={p.played}
+        />
+      )}
       {/* biome-ignore lint/a11y/useSemanticElements: SVG text cannot be a <button> */}
       <text
         className={s.fold}

@@ -31,6 +31,9 @@ export interface TransportProps {
   /** Slider values in force; a level absent here shows the composition's value. */
   moved: ReadonlyMap<string, number>;
   onLevel(name: string, v: number): void;
+  /** Whether the score's lanes are open, or closed to thin strips. */
+  tracksOpen: boolean;
+  onTracks(): void;
 }
 
 export function Transport(p: TransportProps) {
@@ -62,6 +65,9 @@ export function Transport(p: TransportProps) {
           ›
         </button>
       </span>
+      <button type="button" aria-expanded={p.tracksOpen} onClick={p.onTracks}>
+        {p.tracksOpen ? 'Hide tracks' : 'Show tracks'}
+      </button>
       {p.seekBy === 'seek' && (
         <span className={s.clock} title={docOf('Mix.seq')}>
           mix {p.clock.now.toFixed(1).padStart(7)} ms · frame {String(p.clock.seq).padStart(5)}

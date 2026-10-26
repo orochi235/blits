@@ -1,6 +1,7 @@
 import { syncBlend, withVoice } from '@pg/blits/blend';
 import { compile } from '@pg/blits/compile';
 import { type Composition, type Group, MAX_VOICES, type Voice } from '@pg/blits/composition';
+import { coursesOf } from '@pg/blits/course';
 import { FRAME } from '@pg/blits/frame';
 import { addGroup, deleteGroup, setGroup } from '@pg/blits/groupEdits';
 import { Player, type SeekBy } from '@pg/blits/player';
@@ -25,6 +26,7 @@ import { Transport } from './Transport';
 import { useComposition } from './useComposition';
 import { usePlayback } from './usePlayback';
 import { useScore } from './useScore';
+import { useTracksOpen } from './useTracksOpen';
 import { VoiceColumn } from './VoiceColumn';
 
 type MiddleTab = 'plots' | 'voice' | 'events';
@@ -100,6 +102,8 @@ export function App() {
   }, [undo, redo]);
 
   const { clips, links, headers, marks, built, fold } = useScore(comp, subjects);
+  const tracks = useMemo(() => coursesOf(comp, subjects, shown ?? 0), [comp, subjects, shown]);
+  const [tracksOpen, toggleTracks] = useTracksOpen();
   const scrub = (t: number) => {
     player.seek(Math.min(Math.max(t, 0), comp.length));
     tick();
@@ -295,6 +299,8 @@ export function App() {
               player.setLevel(name, v);
               tick();
             }}
+            tracksOpen={tracksOpen}
+            onTracks={toggleTracks}
           />
           <ScoreLanes
             clips={clips}
@@ -302,6 +308,8 @@ export function App() {
             headers={headers}
             marks={marks}
             onFold={fold}
+            tracks={tracks}
+            open={tracksOpen}
             duration={comp.length}
             playhead={player.t}
             selected={selected}

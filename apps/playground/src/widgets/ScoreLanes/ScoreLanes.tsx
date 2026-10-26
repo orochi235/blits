@@ -2,15 +2,15 @@ import { hueColor } from '@msb235/blits-panel';
 import { type KeyboardEvent, type PointerEvent, useId, useMemo, useRef, useState } from 'react';
 import { ClipLane } from './ClipLane';
 import { dragEdit, groupDrop, type Handle } from './drag';
-import { blockEnd, groupBrackets, laneCount, scaleOf, shownEnd, WIDTH } from './geometry';
+import { blockEnd, groupBrackets, laneCount, RULER, scaleOf, shownEnd, WIDTH } from './geometry';
 import { HeaderLane } from './HeaderLane';
 import type { Clip, ClipEdit, Edge, ScoreLanesProps } from './index';
 import { activates, nudge } from './keys';
 import { MarkLines } from './Marks';
 import { Ruler } from './Ruler';
 import s from './ScoreLanes.module.css';
+import { Strips } from './Strips';
 
-const RULER = 24;
 const BRACKET_STEP = 5;
 
 type Drag =
@@ -19,7 +19,12 @@ type Drag =
   | { scrub: true }
   | { group: string; label: string; x: number; y: number };
 
+/** The score, a lane per clip and header; closed, a thin strip per lane that scrubs. */
 export function ScoreLanes(props: ScoreLanesProps) {
+  return props.open === false ? <Strips {...props} /> : <Lanes {...props} />;
+}
+
+function Lanes(props: ScoreLanesProps) {
   const { clips, links, duration, playhead, selected, onSelect, onEdit, onScrub } = props;
   const laneH = props.laneHeight ?? 36;
   const labelW = props.labelWidth ?? 140;
@@ -149,6 +154,7 @@ export function ScoreLanes(props: ScoreLanesProps) {
   const depths = Math.max(0, ...brackets.map((b) => b.depth + 1));
   const menuRight = labelW - 4 - depths * BRACKET_STEP;
   const hatchMask = `url(#${uid}-hatch)`;
+  const played = `url(#${uid}-played)`;
   const dropLane =
     groupDrag && groupDrag.x < labelW && groupDrop(clips, groupDrag.group, laneAt(groupDrag.y))
       ? laneAt(groupDrag.y)
@@ -187,6 +193,9 @@ export function ScoreLanes(props: ScoreLanesProps) {
         >
           <rect width={WIDTH} height={height} fill={`url(#${uid}-stripes)`} />
         </mask>
+        <clipPath id={`${uid}-played`}>
+          <rect width={Math.max(0, scale.x(Math.min(playhead, duration)))} height={height} />
+        </clipPath>
       </defs>
       <Ruler
         duration={duration}
@@ -238,6 +247,8 @@ export function ScoreLanes(props: ScoreLanesProps) {
           duration={duration}
           selected={raw.id === selected}
           hatchMask={hatchMask}
+          track={props.tracks?.get(raw.id)}
+          played={played}
           onBegin={begin}
           onBeginGroup={beginGroup}
           onKeyEdit={keyEdit}
@@ -257,6 +268,8 @@ export function ScoreLanes(props: ScoreLanesProps) {
           duration={duration}
           selected={h.id === selected}
           hatchMask={hatchMask}
+          track={props.tracks?.get(h.id)}
+          played={played}
           onSelect={onSelect}
           onFold={props.onFold}
         />

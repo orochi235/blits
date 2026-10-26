@@ -55,15 +55,61 @@
   height: 100%;
 }
 
+/* The clip's outline over its track: what it was written as, where the track is what blits played. */
 .body {
-  opacity: 0.8;
+  fill-opacity: 0;
+  stroke-opacity: 0.7;
+  stroke-width: 1;
   cursor: grab;
 }
 
 .selected .body {
-  opacity: 1;
   stroke: var(--wzl-fg);
+  stroke-opacity: 1;
   stroke-width: 1.5;
+}
+
+.track {
+  pointer-events: none;
+}
+
+.trackBand {
+  opacity: 0.12;
+}
+
+.trackArea {
+  opacity: 0.18;
+}
+
+.played .trackArea {
+  opacity: 0.4;
+}
+
+.trackCurve {
+  fill: none;
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.ahead .trackCurve {
+  opacity: 0.45;
+}
+
+.trackColors {
+  opacity: 0.45;
+}
+
+.played .trackColors {
+  opacity: 1;
+}
+
+.channel {
+  fill: var(--wzl-fg-muted);
+  font-weight: 400;
+}
+
+.strips {
+  cursor: ew-resize;
 }
 
 .locked .body {
