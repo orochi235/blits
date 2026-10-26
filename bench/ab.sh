@@ -8,7 +8,8 @@
 # the rows before it. Prints each run's rows as they finish, and the full sha each side was built from.
 # On a fleet node only commits the node fetched exist, and `HEAD` is the node's base, not the commit
 # synced, so a revision naming HEAD is refused while the tree has uncommitted changes (bench/rev.sh):
-# name a sha the node has, or compare `.` with one, or A/B an uncommitted diff with abdirty.sh.
+# name a sha the node has, or compare `.` with one. `onto do --ref $(git rev-parse HEAD)` sends
+# commits origin lacks, so the node has every local commit and HEAD is the tree's own.
 set -euo pipefail
 a="$1"; b="$2"; rounds="$3"; shift 3
 root="$(git rev-parse --show-toplevel)"

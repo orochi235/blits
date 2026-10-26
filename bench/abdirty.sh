@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # A/B of the uncommitted diff in src/, needing no commit on origin, which ab.sh does for its first revision.
 #   bench/abdirty.sh <rounds> <rows...>   side `head` is the tree without the diff, `dirty` with it
+# On a node HEAD is the node's base commit, so the diff there holds every local commit as well,
+# unless the sync passed `onto do --ref $(git rev-parse HEAD)`.
 set -euo pipefail
 npm ci --silent >/dev/null 2>&1 || true
 root="$(pwd)"; tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT

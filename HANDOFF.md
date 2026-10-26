@@ -249,12 +249,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        record takes every numbered subject on its lane when it opens, where the host probed every
        subject the frame before (`placeAll` in `qualify.ts`), and the fill makes each one's first
        call (`Lane.every`); otherwise a probe meeting the lane makes it (`foldNow` in `meet.ts`).
+       A keys voice takes both too, its read made through `one`'s keys branch (`swapkeys`, the same
+       row with the replaced voice a keys voice: 2.26 → 1.21 ms on teitou, 2026-10-26,
+       `bench/runs/2026-10-26-keys-{foldnow,place-all}.txt`; `glowkeys` read 1.963 → 2.016 at
+       U = 6 in the second A/B, on a row neither change runs, and 2.009 → 1.967 in the first).
        What is left per subject: relinking its chain (`relink.ts` `patch`, whose walk reads each
        record's voice, `linkable`, `sight`, and the `chains` WeakMap lookup), the fill's
        `open`/`one`/`call`/`shut`, the patch call itself, and the copy out, whose
-       `pose[ch.name] =` store is two thirds of `copy`. A keys voice could take `foldNow` and
-       `placeAll` too through `one`'s keys branch; a motion voice cannot, since `move` numbers the
-       subject. Measured no different on `swap` and reverted (2026-10-26, against `d066f9a`, seven
+       `pose[ch.name] =` store is two thirds of `copy`. A motion voice cannot take `foldNow` or
+       `placeAll`, since `move` numbers the subject. Measured no different on `swap` and reverted (2026-10-26, against `d066f9a`, seven
        own-process runs): linking a voice stepped twice since a chain's version once (teitou,
        2.10 → 2.09 ms, U = 23); handing `foldNow` its met lanes rather than looking each up by id
        (teitou, 2.11 → 2.05, U = 12); skipping the chain walk for a voice no chain ever linked
