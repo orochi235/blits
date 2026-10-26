@@ -33,46 +33,39 @@ export function gatherLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>): void {
     if (taken !== undefined) g.taken[k] = sized(taken, cap);
   }
   lanes.into = g;
-  const fills = lanes.fills;
-  const met = g.met;
-  const first = g.first;
-  const sum = g.sum;
   try {
     for (const lane of g.members) {
-      lane.firsts = 0;
       const voice = lane.voice;
       if (lane.idle || voice.state === 'pending' || voice.state === 'done') continue;
-      const id = voice.id;
+      lanes.intoId = voice.id;
       lanes.reset(lane);
       lane.elapsedNow = voice.elapsedAt(lanes.now);
       const list = lane.list;
-      let firsts = 0;
       for (let p = 0; p < list.length; p++) {
         const slot = list[p] as number;
-        // Cleared before any member gathers into it this fill, so a gather needs no check of its own.
-        if (met[slot] !== fills) {
-          met[slot] = fills;
-          first[slot] = -1;
-          sum[slot] = 0;
-          const takens = g.taken;
-          for (let k = 0; k < takens.length; k++) {
-            const taken = takens[k];
-            if (taken !== undefined) taken[slot] = 0;
-          }
-        }
         if (lanes.one(lane, p, slot)) {
-          if ((first[slot] as number) < 0) {
-            first[slot] = id;
-            firsts++;
-          }
-          sum[slot] = (sum[slot] as number) + (lane.data[p * Row.STRIDE + Row.WEIGHT] as number);
+          meetLocus(lanes, g, slot);
+          g.sum[slot] =
+            (g.sum[slot] as number) + (lane.data[p * Row.STRIDE + Row.WEIGHT] as number);
         }
         if (voice.keeping) break;
       }
-      lane.firsts = firsts;
     }
   } finally {
     lanes.into = null;
+  }
+}
+
+/** The first a fill hears of a subject in a locus: from the member now gathering. */
+function meetLocus<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, slot: number): void {
+  if (g.met[slot] === lanes.fills) return;
+  g.met[slot] = lanes.fills;
+  g.first[slot] = lanes.intoId;
+  g.sum[slot] = 0;
+  const takens = g.taken;
+  for (let k = 0; k < takens.length; k++) {
+    const taken = takens[k];
+    if (taken !== undefined) taken[slot] = 0;
   }
 }
 
@@ -90,6 +83,7 @@ function gatherScalar<I, O>(lanes: Lanes<I, O>, g: Locus<I, O>, ch: Laned, slot:
     return;
   }
   const w = arg[Arg.WEIGHT] as number;
+  meetLocus(lanes, g, slot);
   const taken = takenAt[slot] as number;
   const total = taken + w;
   values[slot] = taken === 0 ? value : lerpNumber(values[slot] as number, value, w / total);
@@ -108,6 +102,7 @@ function gatherInto<I, O>(
   value: unknown,
 ): void {
   const w = lanes.arg[Arg.WEIGHT] as number;
+  meetLocus(lanes, g, slot);
   const k = ch.index;
   let values = g.values[k];
   let takenAt = g.taken[k];
@@ -139,15 +134,12 @@ function gatherInto<I, O>(
 
 /** A locus member's turn in the order: each subject it was the first member of takes the locus. */
 export function foldLocus<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, g: Locus<I, O>): void {
-  let left = lane.firsts;
-  if (left === 0) return;
   const id = lane.voice.id;
   const fills = lanes.fills;
   const list = lane.list;
-  for (let p = 0; p < list.length && left > 0; p++) {
+  for (let p = 0; p < list.length; p++) {
     const slot = list[p] as number;
     if (g.met[slot] !== fills || g.first[slot] !== id) continue;
-    left--;
     const sum = g.sum[slot] as number;
     if (sum <= 0) continue;
     for (let k = 0; k < g.values.length; k++) {
