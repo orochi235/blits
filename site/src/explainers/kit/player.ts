@@ -1,5 +1,5 @@
 import type { Handle, Mix } from '@msb235/blits';
-import { mix } from '@msb235/blits';
+import { css, mix } from '@msb235/blits';
 import { createHistory } from '@weasel-js/history';
 import { FRAME, type Frame, HISTORY, type Scene, type SceneEvent, type VoiceDef } from './scene';
 
@@ -287,6 +287,8 @@ export interface Course {
   channel?: string;
   /** That channel's value with the voice alone, for the ledger's subject, at the same times. */
   values?: number[];
+  /** For a voice that moves only a color, that color as CSS at the same times. */
+  colors?: string[];
 }
 
 /**
@@ -305,6 +307,8 @@ export function coursesOver<I, O, C>(
   const channels = scene.ledger?.channels ?? [];
   // Per voice, per ledger channel: its numeric values, or null once one was not a number.
   const values = voices.map(() => channels.map((): number[] | null => []));
+  const tinted = channels.filter((c) => scene.kit[c].kind?.startsWith('color(') === true);
+  const colors = voices.map(() => tinted.map(() => [] as string[]));
   for (let k = 0; k < n; k++) {
     const f = player.at((k / (n - 1)) * duration);
     f.handles.forEach((h, i) => {
@@ -318,6 +322,10 @@ export function coursesOver<I, O, C>(
         const v = alone[c];
         if (typeof v === 'number') row.push(v);
         else if (v !== undefined) (values[i] as (number[] | null)[])[j] = null;
+      });
+      tinted.forEach((c, j) => {
+        const v = alone[c];
+        colors[i]?.[j]?.push(Array.isArray(v) ? css(v) : 'transparent');
       });
     });
   }
@@ -334,6 +342,13 @@ export function coursesOver<I, O, C>(
     if (best) {
       out.channel = best.channel;
       out.values = best.values;
+    } else {
+      const j = tinted.findIndex((_, j) => new Set(colors[i]?.[j]).size > 1);
+      const tint = colors[i]?.[j];
+      if (tint) {
+        out.channel = tinted[j];
+        out.colors = tint;
+      }
     }
     return out;
   });

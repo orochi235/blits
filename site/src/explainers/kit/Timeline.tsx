@@ -1,4 +1,4 @@
-import { type PointerEvent, useEffect, useMemo, useRef } from 'react';
+import { type PointerEvent, useEffect, useId, useMemo, useRef } from 'react';
 
 /** How far an arrow key moves the time; Shift moves four times as far. */
 const STEP_MS = 250;
@@ -11,6 +11,17 @@ export interface Track {
   /** The channel drawn as a line over the weight, and its values at the same times. */
   channel?: string;
   values?: number[];
+  /** For a voice that moves only a color: the band is that color over time, as CSS. */
+  colors?: string[];
+}
+
+/** Gradient stops for `colors` spread across the run, every few samples. */
+function stops(colors: string[]): { at: number; color: string }[] {
+  const n = colors.length;
+  const every = Math.max(1, Math.floor(n / 60));
+  const out = [];
+  for (let k = 0; k < n; k += every) out.push({ at: k / (n - 1), color: colors[k] as string });
+  return out;
 }
 
 /** `values` stretched to fill 0..1 from their lowest to their highest. */
@@ -63,6 +74,7 @@ export function Timeline({
     [tracks],
   );
   const width = Math.max(1, (tracks[0]?.weights.length ?? 2) - 1);
+  const id = useId();
 
   useEffect(() => {
     box.current?.style.setProperty('--at', (duration > 0 ? t / duration : 0).toFixed(5));
@@ -113,32 +125,51 @@ export function Timeline({
         held.current = false;
       }}
     >
-      {tracks.map((tr, i) => (
-        <div key={tr.name} className="timeline-track" data-color={tr.color}>
-          <svg
-            className="timeline-ahead"
-            viewBox={`0 0 ${width} 1`}
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
+      {tracks.map((tr, i) => {
+        const band = tr.colors && `${id}-band-${i}`;
+        const layers = (
+          <>
+            {band && (
+              <rect className="timeline-band" width={width} height={1} fill={`url(#${band})`} />
+            )}
             <path className="timeline-area" d={paths[i]?.area} />
             <path className="timeline-curve" d={paths[i]?.line} />
-          </svg>
-          <svg
-            className="timeline-played"
-            viewBox={`0 0 ${width} 1`}
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <path className="timeline-area" d={paths[i]?.area} />
-            <path className="timeline-curve" d={paths[i]?.line} />
-          </svg>
-          <span className="timeline-name">
-            {tr.name}
-            {tr.channel && <span className="timeline-channel"> {tr.channel}</span>}
-          </span>
-        </div>
-      ))}
+          </>
+        );
+        return (
+          <div key={tr.name} className="timeline-track" data-color={tr.color}>
+            <svg
+              className="timeline-ahead"
+              viewBox={`0 0 ${width} 1`}
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              {band && tr.colors && (
+                <defs>
+                  <linearGradient id={band}>
+                    {stops(tr.colors).map((s) => (
+                      <stop key={s.at} offset={s.at} stopColor={s.color} />
+                    ))}
+                  </linearGradient>
+                </defs>
+              )}
+              {layers}
+            </svg>
+            <svg
+              className="timeline-played"
+              viewBox={`0 0 ${width} 1`}
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              {layers}
+            </svg>
+            <span className="timeline-name">
+              {tr.name}
+              {tr.channel && <span className="timeline-channel"> {tr.channel}</span>}
+            </span>
+          </div>
+        );
+      })}
       <span className="timeline-head" aria-hidden="true" />
     </div>
   );

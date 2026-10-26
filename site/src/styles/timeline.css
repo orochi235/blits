@@ -106,3 +106,11 @@
   font-weight: 400;
   color: var(--ink-soft);
 }
+
+.timeline-band {
+  opacity: 0.45;
+}
+
+.timeline-played .timeline-band {
+  opacity: 1;
+}
