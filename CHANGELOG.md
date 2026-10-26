@@ -41,6 +41,10 @@ version and everything else the patch. Each release lists its changes as **Break
   replaced every frame among a tween voice per subject (`swap`) takes 2.67 ms a frame against
   3.67, and allocates 2.0 MB a frame against 2.8 (msb-uai, medians of seven runs of 3,000 frames,
   each in its own process).
+- That frame costs about a sixth less again where every subject was probed the frame before: the
+  voice's lane takes every subject when it opens, and the fill makes each one's first call, where
+  each probe met the lane and made it. `swap` takes 2.19 ms a frame against 2.64 (msb-uai, medians
+  of seven runs of 3,000 frames, each in its own process); other rows are unchanged.
 - A `keys` voice per subject read by `pull` costs about a sixth less a frame: rows whose stops
   share their phases and easings, at the same phase, find their segment and ease it once rather
   than once a row. 10,000 of them (`keyses^`) take 0.270 ms a frame against 0.327, and allocate

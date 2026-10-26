@@ -241,16 +241,23 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    revision's general path, and `AB_EACH=1 bench/ab.sh` times one row per process. Open, largest
    first:
      - **A voice over every subject cued among a crowd** (`swap`: 10k one-subject tween voices, a
-       voice over all of them replaced every frame) costs 2.67 ms a frame on msb-uai against 3.67
-       before 2026-10-25 (`bench/runs/2026-10-25-foldnow2.txt`). A probe meeting a stateless fn
-       lane now makes its first call there and folds it into the lanes' values (`foldNow` in
-       `meet.ts`), where the general path folded it after the copy; the last met list folded is
-       kept so the next subject meeting the same lanes skips `owable`'s scan. A lane over every
-       subject is sized for every live subject when it opens (`Lane.reserve`). What is left per
-       subject: meeting the lane (`meet`, `Lane.add`, the shared record's `open`/`shut`), relinking
-       its chain (`relink.js` `patch`, `chain.ts`), the patch call itself, and the copy out. A keys
-       voice could take `foldNow` too through `one`'s keys branch; a motion voice cannot, since
-       `move` numbers the subject.
+       voice over all of them replaced every frame) costs 2.19 ms a frame on msb-uai against 3.67
+       before 2026-10-25 (`bench/runs/2026-10-26-place-all.txt`). A stateless fn voice sharing one
+       record takes every numbered subject on its lane when it opens, where the host probed every
+       subject the frame before (`placeAll` in `qualify.ts`), and the fill makes each one's first
+       call (`Lane.every`); otherwise a probe meeting the lane makes it (`foldNow` in `meet.ts`).
+       What is left per subject: relinking its chain (`relink.ts` `patch`, whose walk reads each
+       record's voice, `linkable`, `sight`, and the `chains` WeakMap lookup), the fill's
+       `open`/`one`/`call`/`shut`, the patch call itself, and the copy out, whose
+       `pose[ch.name] =` store is two thirds of `copy`. A keys voice could take `foldNow` and
+       `placeAll` too through `one`'s keys branch; a motion voice cannot, since `move` numbers the
+       subject. Measured no different on `swap` and reverted (2026-10-26, against `d066f9a`, seven
+       own-process runs): linking a voice stepped twice since a chain's version once (teitou,
+       2.10 → 2.09 ms, U = 23); handing `foldNow` its met lanes rather than looking each up by id
+       (teitou, 2.11 → 2.05, U = 12); skipping the chain walk for a voice no chain ever linked
+       (msb-uai, 2.64 → 2.59, U = 13); sizing a lane's `records`/`deltas` and a sharing voice's
+       `deltas` up front, which cut 2.0 MB a frame to 1.6 but not the time (teitou, 2.09 → 2.17,
+       U = 15).
      - **A locus, and so a blend, costs about 40% more than its voices played apart**: on keiei
        (2026-10-25, `FRAMES=5000`, seven own-process runs) three voices in a locus over 10k subjects
        take 4.35 ms a frame, a `mix.blend` of three 4.63, and three plain voices 3.11. A member's
