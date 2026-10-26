@@ -316,3 +316,5 @@ date	node	base	rev	rounds	frames	row	base ms	ms	ratio	U	base kB	kB	change	raw
 2026-10-25	teitou	c8fb58f	a0ae13e	7	5000	fns^ N=10000 V=1	1.351	1.293	0.957	10.0	1648.0	1646.8	copy subjects without iterating them; share one-channel voices' slots	bench/runs/2026-10-25-named-writing.txt
 2026-10-25	teitou	c8fb58f	a0ae13e	9	-	start.mjs tweens first frame N=10000	23.5	20.7	0.881	-	-	-	copy subjects without iterating them; share one-channel voices' slots	bench/runs/2026-10-25-named-writing.txt
 2026-10-25	teitou	c8fb58f	a0ae13e	9	-	start.mjs fns first frame N=10000	10.8	8.9	0.824	-	-	-	copy subjects without iterating them; share one-channel voices' slots	bench/runs/2026-10-25-named-writing.txt
+2026-10-25	msb-uai	38be3e6	1c2a648	7	3000	swap N=10000 V=1	3.668	2.666	0.727	0.0	2777.1	1999.9	fold a stateless fn lane's first call at the probe that meets it	bench/runs/2026-10-25-foldnow2.txt
+2026-10-25	msb-uai	38be3e6	1c2a648	7	3000	glowbase N=10000 V=1	1.465	1.473	1.005	18.0	1025.4	1025.8	fold a stateless fn lane's first call at the probe that meets it	bench/runs/2026-10-25-foldnow2.txt
