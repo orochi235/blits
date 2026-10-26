@@ -428,75 +428,59 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      teitou, 2026-10-25, `bench/runs/2026-10-25-named-split.txt`): one A/B can land all one side
      in the fast mode by luck.
 
-4. **Bounding a signal: public as `within`, `plot` and `moved`** (2026-10-26, `d51d9f4`; unreleased,
-   in the changelog's Unreleased). A pointer glow is a weight signal read for every subject every
-   frame, about 56 ns a subject by `pull`, almost all of it for the ~98% at weight 0. A cue's
-   `within: { x, y, r }` declares the signal 0 outside a circle the host moves, so the mix skips it
-   there without visiting each subject. Documented on the site's signal page and in
-   `docs/schema.html` (Signals).
+4. **Bounding a signal: `within`, `near`, `plot`, `moved` and `put`** (2026-10-26; unreleased, in
+   the changelog's Unreleased). A pointer glow is a weight signal read for every subject every
+   frame, almost all of them at weight 0. A cue's `within: { x, y, r }` declares the signal 0
+   outside a circle the host moves, so the mix skips it there without visiting each subject.
+   `mix.near(circle, { ease })` is the stock signal of that shape (1 at the center to 0 at `r`,
+   along an `Easing`), which carries its circle: a voice it weighs is bounded with no clip check,
+   and plays unbounded where `within` would be refused. `mix.put(subject, x, y)` moves one plotted
+   subject. Documented on the site's signal page and in `docs/schema.html` (Signals).
 
    Chosen by Mike (2026-10-26): positions as a list plus an `x, y` `Float64Array` read in place, with
    one call when they move; the circle on the cue; a dev-only check; positions held weakly. Names
-   (`within`, `Circle`, `plot`, `moved`) were picked by the implementing session, not yet by Mike.
+   (`within`, `Circle`, `plot`, `moved`, `near`, `put`) were picked by implementing sessions, not
+   yet by Mike. `near` is a mix method, not a free signal like `level`, because it reads that mix's
+   positions (2026-10-26). `put` writes into the array `plot` was given and throws for a subject not
+   in it, rather than keeping positions of its own (2026-10-26).
 
-   How it works. `mix.plot(subjects, xy, cell?)` (`src/bound.ts`) hands `src/places.ts` the
-   positions; a uniform grid over them is rebuilt at the first query after `mix.moved()`. Outside
-   the circle the voice is not read at all: the general path returns before priming
-   (`contribution`), and a lane fill runs `one` only for the places the grid finds within, then
-   zeroes the lane weight of those that left. Each place keeps its subject's lane number, set when
-   the lanes number the subject (`relink`) and cleared when they let it go (`forgot`), so a found
-   place costs an array read, not a chain lookup. Subjects are held as the rest of the mix holds
-   them: a `Store` (objects weakly), and `drop` takes a subject's place away until the next `plot`.
-   Outside production, every 8 frames a bounded voice reads its signal, as at first sight, for up
-   to 4 subjects in the grid ring just beyond `r`, and warns once per voice if one is above 0; only
-   then does `plot` keep a `WeakRef` per place, to find those subjects. `test/bound.test.ts` covers
-   bounded reading the same as unbounded (lanes on and off, probe and `pull`, moving subjects,
-   views), refusals, the warning (once, silent where the signal falls to 0, silent in production),
-   collection of plotted subjects, and `drop`. With no bound, output is bit-identical to `18856cc`
-   (`bench/same.sh`, 0 differ, lanes on and `SAME_LANES=off`).
+   How it works. `src/plot.ts` holds `plot`, `moved` and `put`; `src/grid.ts` the uniform grid,
+   rebuilt at the first query after `moved`; `src/places.ts` the subjects over it (a `Store`, so
+   objects weakly, and `drop` takes a place away), with each place's lane number cached;
+   `src/bound.ts` the bounding, shared by `within` and `near`; `src/near.ts` the signal. Outside the
+   circle the voice is not read: the general path returns before priming, and a lane fill runs
+   `one` only for the places the grid finds, then zeroes the lane weight of those that left. While
+   a fill reads a place, `places.cur` holds it, so `near` skips the position lookup. A `put` that
+   keeps its subject's cell changes only its numbers; one that leaves makes the place a stray,
+   tested on its own by every query, until a sixteenth of the places are strays and the grid is
+   rebuilt. Outside production, every 8 frames a voice bounded by `within` reads its signal for up
+   to 4 subjects just beyond `r` and warns once if one is above 0. Tests: `test/bound.test.ts`,
+   `test/near.test.ts` (to the bit against the hand-written signal plus `within`), and
+   `test/put.test.ts` (to the bit against `plot` plus `moved`), lanes on and off. With no bound,
+   output is bit-identical to `eb22788` (`bench/same.sh`, 300 scenes, 0 differ, lanes on and
+   `SAME_LANES=off`).
 
-   What it saved before the lane-number cache, which changed the 60% rows (below) (teitou solo,
-   `bench/rows.sh 7` on one build, medians, ms a frame;
-   `bench/runs/2026-10-26-bound-rows.txt`; U is 0 in every row unless given):
+   Measured (teitou solo, 7 rounds, each row in its own process, medians, ms a frame, 10k subjects
+   read by `pull`; ledger):
 
-   | Row (10k subjects) | covers | unbounded | bounded | saves |
-   |---|---:|---:|---:|---:|
-   | `glow^` (base alone 0.589) | 2% | 1.115 | 0.666 | 0.449 (85% of what the glow adds) |
-   | `glow` probe (base 1.019) | 2% | 1.496 | 1.119 | 0.377 (79%) |
-   | `glow-` lanes off (base 1.351) | 2% | 1.904 | 1.732 | 0.172 (31%) |
-   | `glowm^`, every subject moving | 2% | 1.259 | 0.883 | 0.376 |
-   | `glowm` probe, moving | 2% | 1.798 | 1.289 | 0.509 |
-   | `glowkeys^` (packed color, off lanes) | 2% | 2.240 | 1.967 | 0.273 |
-   | `glowkeys` probe | 2% | 1.951 | 1.732 | 0.219 (U 5) |
-   | `GLOWR=27 glow^` | 20% | 1.143 | 0.936 | 0.207 |
-   | `GLOWR=27 glow` probe | 20% | 1.526 | 1.293 | 0.233 |
-   | `GLOWR=27 glowm^`, moving | 20% | 1.293 | 1.120 | 0.173 |
-   | `GLOWR=55 glow^` | 60% | 1.285 | 1.348 | −0.063 (U 5) |
-   | `GLOWR=55 glow` probe | 60% | 1.732 | 1.795 | −0.063 (U 8) |
-   | `GLOWR=55 glowm^`, moving | 60% | 1.415 | 1.612 | −0.197 |
+   | Row | covers | ms | against | U | raw |
+   |---|---:|---:|---|---:|---|
+   | `glowb^` (`within`) | 2% | 0.669 | unbounded `glow^` 1.113 | | `-near-put-guard.txt` |
+   | `glowbn^` (`near`) | 2% | 0.654 | `glowb^` 0.660, same build | 18.5 | `-near-put-rows.txt` |
+   | `glowbp^` (`put`, 1% moving) | 2% | 0.679 | `glowbf^` (`moved`) 0.705 | 4 | `-near-put-rows.txt` |
+   | `GLOWR=55 glowb^` | 60% | 1.171 | unbounded 1.269 | 0 | `-within-weak-r55.txt` |
+   | `GLOWR=55 glowbm^` (all moving) | 60% | 1.402 | unbounded 1.415, other runs | | `-within-weak-r55.txt` |
 
-   Holding positions weakly, with the lane-number cache, measured within noise of the strong
-   holding it replaced on every row (teitou solo, 7 rounds a process a row, U 14 to 23;
-   `bench/runs/2026-10-26-within-weak.txt`, ledger): `glowb^` 0.674 ms against 0.682, `glowbm^`
-   0.876 against 0.894, against unbounded `glow^` 1.127 and `glowm^` 1.278.
-   Past 20% coverage the cache pays: at 60% (`GLOWR=55`) `glowb^` takes 1.171 against 1.370 (U 0)
-   and `glowbm^` 1.402 against 1.554 (U 0), so a bounded glow there now costs less than unbounded
-   `glow^` (1.269), where it cost more; at 20% (`GLOWR=27`) `glowbm^` 1.084 against 1.120 (U 5.5)
-   and `glowb^` 0.887 against 0.920 (U 12, noise). `bench/runs/2026-10-26-within-weak-r27.txt`,
-   `-r55.txt`, ledger.
+   Adding `near` and `put` left `glowb^`, `glowbm^`, `glow^`, `swap`, `tweens^` and `view` within
+   noise of `eb22788` (geometric mean 1.001, every U at least 13; `bench/runs/2026-10-26-near-put-guard.txt`).
 
-   With the cache it pays at every coverage measured, to 60% for still subjects; with every
-   subject moving each frame it is about even at 60% (`glowbm^` 1.402 against `glowm^` 1.415 in
-   the table, different runs, inferred). Rebuilding the grid each frame for 10k moving subjects
-   costs about 0.07 ms by `pull` (inferred from the table).
-
-   Left: a bound on a voice naming its subjects, on a locus member, on an owner's child and on a
-   stateful patch, all refused; `within` on a constant weight, refused, though a hard-edged circle
-   is a real use (the dev check would then always warn, so it needs its own answer); a stock radial
-   signal that carries its own circle, which would need no check; per-subject `place(subject, x, y)`
-   for hosts with few movers; the playground (item 13); blits-panel could draw a voice's circle.
-   Whether unbounded voices are ever deprecated stays open and unlikely: klieg's lighting, a fade
-   over a whole sign and wod's transitions are unbounded by design (2026-10-07).
+   Left: a bound on a voice naming its subjects, on a locus member, on an owner's child, on a
+   stateful patch, and on a mix with history, all refused (history because the circle the host
+   moves is not recorded; the playground drops history for a composition that bounds a voice,
+   item 13); `within` on a constant weight, refused, though `near` with `{ steps: 1, jump: 'start' }`
+   now gives a hard-edged disk; blits-panel could draw a voice's circle. Whether unbounded voices
+   are ever deprecated stays open and unlikely: klieg's lighting, a fade over a whole sign and wod's
+   transitions are unbounded by design (2026-10-07).
 
 5. **Work nobody will see** (2026-10-07). A lane fills only subjects probed this frame or the last
    (CHANGELOG 0.8.0), which does nothing for astv's shape, the `typing` row: at 2% probed every lane
