@@ -37,9 +37,14 @@ export function keep<I, O>(this: Mixer<I, O>, subject: I, pose: O, out: O | unde
     }
   }
   if (kept !== undefined) {
-    const rec = this.pose.get(subject);
+    const rec = this.lastPoses.get(subject);
     if (rec === undefined)
-      this.pose.set(subject, { pose: kept, at: this.now, prev: undefined, prevAt: Number.NaN });
+      this.lastPoses.set(subject, {
+        pose: kept,
+        at: this.now,
+        prev: undefined,
+        prevAt: Number.NaN,
+      });
     else if (rec.at === this.now) rec.pose = kept;
     else {
       rec.prev = rec.pose;
@@ -54,7 +59,7 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
   const columns = columnsOf(mix, into);
   const lanes = mix.lanes;
   const now = mix.now;
-  if (mix.scratch === undefined) mix.scratch = mix.blank();
+  if (mix.scratch === undefined) mix.scratch = mix.pose();
   let room = Number.POSITIVE_INFINITY;
   let tightest = '';
   for (const c of columns) {

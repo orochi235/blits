@@ -18,9 +18,10 @@ export function drop<I, O>(this: Mixer<I, O>, subject: I): void {
   const slot = this.chains.get(subject)?.slot ?? -1;
   if (slot >= 0 && this.lanes !== null) this.lanes.release(slot);
   // A read ahead's copy reads the live mix's poses, and so hides one where the mix deletes it.
-  if (this.projecting && !(this.pose instanceof Masked)) this.pose = new Masked(this.pose);
+  if (this.projecting && !(this.lastPoses instanceof Masked))
+    this.lastPoses = new Masked(this.lastPoses);
   if (!this.projecting) this.places?.drop(subject);
-  this.pose.delete(subject);
+  this.lastPoses.delete(subject);
   this.restStamps?.delete(subject);
   this.chains.delete(subject);
   this.stir();

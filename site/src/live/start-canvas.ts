@@ -32,7 +32,7 @@ export default function run(root: HTMLElement): () => void {
   // A voice's weight can be a signal, read per subject: the swell is as strong as the pointer is near.
   m.cue({ patch: swell, weight: near });
 
-  const pose = { lift: 0, size: 0 };
+  const pose = m.pose();
   const stop = loop(m, (now) => {
     m.sync(now);
     stage.clear();

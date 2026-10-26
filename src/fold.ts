@@ -164,7 +164,7 @@ export function folded<I, O>(
   except?: number,
 ): O {
   const head = this.linked(subject);
-  return this.foldWith(subject, out ?? this.blank(), head, this.linkedLaned, dry, except);
+  return this.foldWith(subject, out ?? this.pose(), head, this.linkedLaned, dry, except);
 }
 
 /**

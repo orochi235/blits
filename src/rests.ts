@@ -19,7 +19,7 @@ export function atRest<I, O>(this: Mixer<I, O>, subject: I): boolean {
   // A probe this frame answers for the pose it gave the host.
   const since = (this.restStamps.get(subject) ?? Number.NaN) - 2 * this.restsKey();
   if (since >= 0) return since === 1;
-  this.restScratch ??= this.blank();
+  this.restScratch ??= this.pose();
   const pose = this.foldWith(subject, this.restScratch, head, laned, true) as Record<
     string,
     unknown

@@ -45,7 +45,7 @@ Each part of it:
 - **The kit** lists the numbers an effect may move, and gives each one its arithmetic. `y` is a `sum`, so two offsets add; `scale` is a `mul`, so two scales multiply, and the pop at 1.8 on a dot breathing at 1.1 gives 1.98. The rule belongs to the channel, so neither effect has to know the other is playing. [Channel and kit](../channel/) lists the rest.
 - **A patch** is the effect: a function from phase, 0 to 1 over its duration, and the subject to the channels it writes. `keys` builds one from keyframes instead. See [Patch](../patch/).
 - **A voice** is a patch playing. `cue` starts one and gives it a clock, a loop count, a stagger per subject, and a fade. It returns a handle for changing those while it plays. See [Voice](../voice/).
-- **The mix** holds the voices and folds them. Your loop calls `sync` with the frame's time, then `probe` for each subject, and gets back the folded pose. Passing the same `pose` object every time saves making one per dot per frame. See [Mix](../mix/).
+- **The mix** holds the voices and folds them. Your loop calls `sync` with the frame's time, then `probe` for each subject, and gets back the folded pose. Passing the same `pose` every time, made once by `m.pose()`, saves making one per dot per frame. See [Mix](../mix/).
 
 ## On a canvas
 

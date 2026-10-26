@@ -226,6 +226,14 @@ export interface Mix<I, O, H = unknown> {
    */
   probe(subject: I, out?: O): O;
   /**
+   * A new empty pose, each call its own object, holding every channel with a rest in kit order: a
+   * number rest at its value, any other `undefined` until a probe writes it. Make one and pass it
+   * as `probe`'s `out` every frame. An `out` made as `{}` or a literal shares V8's shapes with the
+   * host's other small objects, which can leave each number written into it boxed; this one has a
+   * shape of its own, so the mix writes numbers into it without allocating.
+   */
+  pose(): O;
+  /**
    * Writes each subject's pose into arrays, one per channel, subject by subject in the order given:
    * what `probe(subject, out)` gives, without a pose object per subject. A channel of `n` numbers
    * takes `n` places per subject, side by side; one with no value for a subject writes NaN there.

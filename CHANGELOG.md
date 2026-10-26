@@ -40,6 +40,9 @@ version and everything else the patch. Each release lists its changes as **Break
   a subject `plot` was not given.
 - `color({ lerp: 'oklch' })` and `color(last(), { lerp: 'oklch' })` run on lanes, where they took
   the general path. The pose is the same to the bit.
+- `mix.pose()` makes a new empty pose for `probe`'s `out`, holding each channel with a rest in kit
+  order. Made once and probed into every frame, its numbers are written without allocating, where
+  an `out` made as `{}` can box each one: about 310 kB a frame less on a 10,000-subject scene.
 
 ### Fixed
 

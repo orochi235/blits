@@ -336,7 +336,7 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
   for (const voice of [...kept, ...gone])
     if (voice.parts !== null || voice.parted !== null) mix.parters.add(voice);
   mix.relinks++;
-  mix.pose = new Store();
+  mix.lastPoses = new Store();
   if (mix.restStamps !== null) mix.restStamps = new Store();
   unpull(mix);
   for (const voice of [...kept, ...gone]) {

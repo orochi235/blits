@@ -611,6 +611,10 @@ interface Mix&lt;I, O, H = unknown&gt; {
      that kept one from an earlier probe into the same `out` sees it change, so it copies what has to outlast the
      next probe. */</span>
   probe(subject: I, out?: O): O;
+  <span class="cm">/** A new empty pose, each call its own object, holding every channel with a rest in kit order. Made once and
+     passed as probe's `out` every frame, it takes numbers without boxing them, where an `out` made as `{}` can box
+     each one. */</span>
+  pose(): O;
   <span class="cm">/** Each subject's pose written into one Float64Array per channel, in the order given: what probe(subject, out)
      gives, without a pose object per subject. A channel of n numbers takes n places a subject. */</span>
   pull(subjects: Iterable&lt;I&gt;, into: { [K in numeric channels of O]?: Float64Array }): void;

@@ -262,11 +262,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        `{}` out it still boxes every number: `{}` shares V8's chain of shapes with the host's own
        small literals, and `kit({ gain: mul(), ... })` puts a channel in `gain` first, so the
        field is tagged for good (`node --trace-generalization`; `FIELDS=1` in `bench/frame.mjs`
-       prints the out). Probing into a pose of the mix's own shape (`OUT=blank`, `mix.blank`)
+       prints the out). Probing into a pose of the mix's own shape (`OUT=blank`, `mix.pose()`)
        cuts about 310 kB a frame on swap, glow, glowbase, swapkeys, and probed, but only glowbase
        read faster (1.079 → 1.012, U = 1; the rest inside noise, teitou,
-       `bench/runs/2026-10-26-out-shape.txt`). Handing hosts that shape needs a public pose
-       maker or a documented way to build an `out`: the owner's call, not made.
+       `bench/runs/2026-10-26-out-shape.txt`). Hosts get that shape from `mix.pose()` (added
+       2026-10-26), which the Mix page and Get started now probe into.
        A motion voice cannot take `foldNow` or `placeAll`, since `move` numbers the subject.
        Measured no different on `swap` and reverted (2026-10-26,
        `bench/runs/2026-10-26-{dedupe-steps,met-lanes,unchained-walk,presize-records}.txt`):

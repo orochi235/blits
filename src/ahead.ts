@@ -194,7 +194,7 @@ export function copyAhead<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
 
 /** Gives a projection's copy what it reads of the live mix as it is, before its voices are copied. */
 export function mirror<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>): void {
-  c.pose = mix.pose;
+  c.lastPoses = mix.lastPoses;
   c.wantsPose = mix.wantsPose;
   c.reducedNow = mix.reducedNow;
 }

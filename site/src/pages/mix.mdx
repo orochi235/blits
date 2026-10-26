@@ -35,7 +35,7 @@ bars.cue({
   target: (bar) => bar.i % 2 === 0,
 });
 
-const pose = { height: 0 };
+const pose = bars.pose();
 function frame(timestamp: number) {
   bars.sync(timestamp);
   for (const bar of all) {
@@ -47,7 +47,7 @@ function frame(timestamp: number) {
 requestAnimationFrame(frame);
 ```
 
-`sync(timestamp)` tells the mix what time it is. Nothing is computed at the call. `probe(subject, out?)` then folds every voice for that subject at that time and returns the pose, written into `out` when you pass one, so a loop over many subjects needn't allocate. Probing the same subject twice in a frame gives the same answer, and a stateful patch steps once: one frame, one answer.
+`sync(timestamp)` tells the mix what time it is. Nothing is computed at the call. `probe(subject, out?)` then folds every voice for that subject at that time and returns the pose, written into `out` when you pass one, so a loop over many subjects needn't allocate. Make that `out` with `pose()`: a new empty pose holding each channel with a rest, in kit order, which the mix writes numbers into without allocating. An `out` made as `{}` or a literal shares the engine's object shapes with the rest of the page's small objects, and can end up boxing every number written into it. Probing the same subject twice in a frame gives the same answer, and a stateful patch steps once: one frame, one answer.
 
 ## Reach and rest
 

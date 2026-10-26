@@ -126,7 +126,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   hostLog: { at: number; seq: number; fields: Record<string, unknown> }[] = [];
   hostThen: { fields: Record<string, unknown> } | undefined;
   /** Each subject's last two poses and when they were probed, for `from: 'current'`. */
-  pose = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();
+  lastPoses = new Store<I, { pose: O; at: number; prev: O | undefined; prevAt: number }>();
   /** The clock this mix plays on, which also holds its tape and the marks announced on it. */
   readonly transport: Transport;
   /** Its place among the mixes on its transport, in the order they joined. */
@@ -300,8 +300,7 @@ export class Mixer<I, O> implements Mix<I, O> {
   /** With a history store, the voices it paged out whose handles are still held; null without one. */
   outs: Outs | null = null;
 
-  /** A new empty pose of the mix's own shape, for a pose the mix makes itself. */
-  readonly blank: () => O;
+  readonly pose: () => O;
 
   constructor(
     readonly kit: Kit<O>,
@@ -313,7 +312,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.channels = this.names.map((k) => kit[k] as Channel<unknown>);
     this.bounded = this.channels.flatMap((c, i) => (c.bounds ? [i] : []));
     this.lerpsInto = this.channels.map((c) => lerpInto(c));
-    this.blank = blanks(this.names as string[], this.channels);
+    this.pose = blanks(this.names as string[], this.channels);
     this.scalars = this.channels.map((c) => scalarOp(c));
     this.names.forEach((k, i) => {
       this.slotOf.set(k, i);

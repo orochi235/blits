@@ -649,7 +649,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
           ? subjects.slice(0, n * 0.4)
           : subjects;
   // OUT=blank probes into a pose of the mix's own shape instead of a host's `{}`.
-  const scratch = process.env.OUT === 'blank' ? m.blank() : {};
+  const scratch = process.env.OUT === 'blank' ? m.pose() : {};
   const columns = {
     gain: new Float64Array(n),
     dark: new Float64Array(n),

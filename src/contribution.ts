@@ -324,7 +324,7 @@ export function baseFor<I, O>(
   voice: Voice<I, O>,
   subject: I,
 ): Record<string, unknown> {
-  let prior = this.pose.get(subject)?.pose as Record<string, unknown> | undefined;
+  let prior = this.lastPoses.get(subject)?.pose as Record<string, unknown> | undefined;
   if (prior === undefined && !this.folding.has(voice.id)) {
     this.folding.add(voice.id);
     try {
@@ -353,7 +353,7 @@ export function slopeFor<I, O>(
   voice: Voice<I, O>,
   subject: I,
 ): Record<string, unknown> | undefined {
-  const rec = this.pose.get(subject);
+  const rec = this.lastPoses.get(subject);
   if (rec?.prev === undefined || !(rec.at > rec.prevAt)) return undefined;
   const dt = rec.at - rec.prevAt;
   const now = rec.pose as Record<string, unknown>;

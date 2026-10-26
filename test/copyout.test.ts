@@ -77,3 +77,46 @@ describe('copying laned values into a pose', () => {
     expect(Object.keys(pose)).toEqual(['x', 'we"ird\\name', 'p']);
   });
 });
+
+describe('mix.pose', () => {
+  it('makes a new plain object each call, holding each channel with a rest in kit order', () => {
+    for (const k of [K, K2]) {
+      const m = mix<Part, Pose>(k, { lanes: true });
+      const a = m.pose();
+      expect(a).not.toBe(m.pose());
+      expect(Object.getPrototypeOf(a)).toBe(Object.prototype);
+      const order = Object.keys(k).filter((n) => n !== 'l' && n !== 'q');
+      expect(Object.keys(a)).toEqual(order);
+      expect(a.x).toBe(0);
+      expect(a['we"ird\\name']).toBe(1);
+      expect(a.p).toBeUndefined();
+    }
+  });
+
+  it('takes the values probing into {} gives, with lanes on and off', () => {
+    for (const lanes of [true, false]) {
+      const m = mix<Part, Pose>(K, { lanes });
+      m.cue({
+        patch: keys<Part, Pose>(1000, [
+          { at: 0, delta: { x: 0, p: [0, 0, 0] } },
+          { at: 0.5, delta: { x: 4, p: [1, 2, 3], l: 7, q: [1, 2] } },
+          { at: 1, delta: { x: 0, p: [0, 0, 0] } },
+        ]),
+        loop: true,
+      });
+      const parts = [{ id: 1 }, { id: 2 }];
+      const own = m.pose();
+      const host = {} as Pose;
+      for (let t = 0; t <= 2000; t += 250) {
+        m.sync(t);
+        for (const s of parts) {
+          const a = structuredClone(m.probe(s, own));
+          const b = structuredClone(m.probe(s, host));
+          expect({ ...a }).toMatchObject(b);
+          for (const key of Object.keys(a) as (keyof Pose)[])
+            if (!(key in b)) expect(a[key]).toBeUndefined();
+        }
+      }
+    }
+  });
+});
