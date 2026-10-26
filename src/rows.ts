@@ -27,7 +27,7 @@ export function unplace<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number): vo
   c.records[p] = undefined;
   c.deltas[p] = null;
   const f = p * c.stride + Hot.FLAGS;
-  c.hot[f] = (c.hot[f] as number) & ~Flag.PLACED;
+  c.hot[f] = (c.hot[f] as number) & ~(Flag.PLACED | Flag.READY);
   const o = p * Row.STRIDE;
   c.data[o + Row.MSLOT] = -1;
   c.data[o + Row.SAMPLED] = -1;

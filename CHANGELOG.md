@@ -28,6 +28,9 @@ version and everything else the patch. Each release lists its changes as **Break
   voices (`tweens^`) take 0.285 ms a frame against 0.300, and one tween voice over 10,000 subjects
   (`weasel^`) 0.369 against 0.391 (keiei, medians of seven runs of 5,000 frames, each in its own
   process); other rows are unchanged.
+- 10,000 one-subject tween voices read by `pull` (`tweens^`) cost about 7% less a frame, 0.163 ms
+  against 0.175: a crowd row's fill checks once, not every frame, that its stretch is numbered and
+  its subject met (teitou, medians of nine runs of 5,000 frames, each in its own process).
 - A `keys` voice per subject read by `pull` costs about a sixth less a frame: rows whose stops
   share their phases and easings, at the same phase, find their segment and ease it once rather
   than once a row. 10,000 of them (`keyses^`) take 0.270 ms a frame against 0.327, and allocate

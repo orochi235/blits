@@ -327,8 +327,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      fill running to the end skips row ids. teitou, 9 runs a side at `FRAMES=5000`: `weasel^`
      0.204 → 0.198 (U = 0.5), `tweens^` 0.169 → 0.166 (within noise). `fill.ts`'s `one` and `rest`
      still do the old copy.
-   - **Not tried**: dropping the `MSLOT`/`MET`/`SAMPLED` checks for bare rows. It needs a row-ready
-     state cached under invariants on the flags, for about 5% of the loop.
+   - **Kept 2026-10-25**: a bare row's `MSLOT`/`MET`/`SAMPLED` checks are made once and cached
+     as `Flag.READY`, which `unbare`, `restale` and `unplace` clear. teitou, 9 runs a side at
+     `FRAMES=5000`: `tweens^` 0.175 → 0.163 (U = 11), `weasel^` unchanged (it fills through
+     `runMotion`, which keeps the checks).
    - **Two changes kept** (2026-10-24): a probe holds its subject for the next fill only while
      the last fill looked one up (`Lanes.holds`), which a fill of bare tweens never does; and
      `runMotion` reads a run's flags once in place of `bareAt`, `scalar` and `base`, and weighs a

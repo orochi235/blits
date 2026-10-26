@@ -71,6 +71,11 @@ export const enum Flag {
   FLAT = 512,
   /** The row's patch is a tween. */
   TWEEN = 1024,
+  /**
+   * `bareRows` found its stretch numbered, its subject met and its sample `Sampled.BARE`; cleared
+   * by `unbare` and `restale`, through which everything that undoes one of those goes.
+   */
+  READY = 2048,
 }
 
 /** The flags of a row `bareRows` takes, under `MASK`. */
@@ -161,7 +166,7 @@ export class Crowd<I, O> implements Positions<I, O> {
 
   /** Marks row `p` to copy its stretch from its patch again before the next fill reads it. */
   restale(p: number, flags: number): void {
-    this.hot[p * this.stride + Hot.FLAGS] = flags | Flag.STALE;
+    this.hot[p * this.stride + Hot.FLAGS] = (flags | Flag.STALE) & ~Flag.READY;
     this.stale = true;
     this.staleRows.push(p);
   }

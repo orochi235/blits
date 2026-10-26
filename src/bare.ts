@@ -1,5 +1,5 @@
 import { foldNumber } from './channels.js';
-import { bare, type Crowd, Hot } from './crowd.js';
+import { bare, type Crowd, Flag, Hot } from './crowd.js';
 import type { Curve } from './easing.js';
 import { keepProbed, type Lane, type Laned, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
@@ -47,10 +47,11 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
   const bounded = id !== Number.POSITIVE_INFINITY;
   for (; p < list.length; p++) {
     const h = p * H;
-    if ((bounded && (hot[h + Hot.ID] as number) >= id) || !bare(hot[h + Hot.FLAGS] as number))
-      break;
+    const f = hot[h + Hot.FLAGS] as number;
+    if ((bounded && (hot[h + Hot.ID] as number) >= id) || !bare(f)) break;
     const o = p * Row.STRIDE;
-    if ((data[o + Row.MSLOT] as number) < 0 || data[o + Row.MET] === 0) break;
+    const ready = (f & Flag.READY) !== 0;
+    if (!ready && ((data[o + Row.MSLOT] as number) < 0 || data[o + Row.MET] === 0)) break;
     const slot = list[p] as number;
     const q = slot * Per.SLOT;
     if (
@@ -72,9 +73,12 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
     keepProbed(data, o, per, q, fills);
     const w = hot[h + Hot.WEIGHT] as number;
     data[o + Row.WEIGHT] = w;
-    if (data[o + Row.SAMPLED] !== Sampled.BARE) {
-      data[o + Row.SAMPLED] = Sampled.BARE;
-      c.deltas[p] = null;
+    if (!ready) {
+      if (data[o + Row.SAMPLED] !== Sampled.BARE) {
+        data[o + Row.SAMPLED] = Sampled.BARE;
+        c.deltas[p] = null;
+      }
+      hot[h + Hot.FLAGS] = f | Flag.READY;
     }
     if (w <= 0) continue;
     const share = left(
@@ -106,6 +110,7 @@ export function unbare<I, O>(c: Crowd<I, O>, p: number): void {
   if (data[o + Row.SAMPLED] !== Sampled.BARE) return;
   const hot = c.hot;
   const h = p * c.stride;
+  hot[h + Hot.FLAGS] = (hot[h + Hot.FLAGS] as number) & ~Flag.READY;
   const n = c.axes;
   const elapsed = clock(hot, h, c.bareNow) - (data[o + Row.DELAY] as number);
   const share = left(

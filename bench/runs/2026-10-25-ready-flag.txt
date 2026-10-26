@@ -1,0 +1,74 @@
+built HEAD (acf5191)
+built the working tree
+== round 1/9 HEAD
+ 1/1  tweens^    N= 10000 V=1     0.170 ms/frame     17 ns/subject·voice  p50    0.168  p99    0.196  worst    1.930  first    42.6 ms  gc    1    1.7 ms       6.8 kB/frame
+== round 1/9 HEAD
+ 1/1  weasel^    N= 10000 V=1     0.204 ms/frame     20 ns/subject·voice  p50    0.203  p99    0.220  worst    0.624  first    16.7 ms  gc    1    0.4 ms       4.7 kB/frame
+== round 1/9 .
+ 1/1  tweens^    N= 10000 V=1     0.165 ms/frame     16 ns/subject·voice  p50    0.163  p99    0.194  worst    1.805  first    41.8 ms  gc    1    1.6 ms       6.2 kB/frame
+== round 1/9 .
+ 1/1  weasel^    N= 10000 V=1     0.205 ms/frame     21 ns/subject·voice  p50    0.204  p99    0.220  worst    0.609  first    15.9 ms  gc    1    0.4 ms       4.6 kB/frame
+== round 2/9 .
+ 1/1  tweens^    N= 10000 V=1     0.164 ms/frame     16 ns/subject·voice  p50    0.163  p99    0.189  worst    1.833  first    41.3 ms  gc    1    1.7 ms       7.3 kB/frame
+== round 2/9 .
+ 1/1  weasel^    N= 10000 V=1     0.204 ms/frame     20 ns/subject·voice  p50    0.203  p99    0.231  worst    0.478  first    15.9 ms  gc    1    0.3 ms       4.3 kB/frame
+== round 2/9 HEAD
+ 1/1  tweens^    N= 10000 V=1     0.171 ms/frame     17 ns/subject·voice  p50    0.168  p99    0.241  worst    1.981  first    42.3 ms  gc    1    1.8 ms       6.4 kB/frame
+== round 2/9 HEAD
+ 1/1  weasel^    N= 10000 V=1     0.205 ms/frame     20 ns/subject·voice  p50    0.203  p99    0.228  worst    0.628  first    17.7 ms  gc    2    0.5 ms       4.5 kB/frame
+== round 3/9 HEAD
+ 1/1  tweens^    N= 10000 V=1     0.184 ms/frame     18 ns/subject·voice  p50    0.183  p99    0.203  worst    1.874  first    41.9 ms  gc    2    1.8 ms       5.9 kB/frame
+== round 3/9 HEAD
+ 1/1  weasel^    N= 10000 V=1     0.204 ms/frame     20 ns/subject·voice  p50    0.203  p99    0.220  worst    0.480  first    16.4 ms  gc    1    0.3 ms       4.8 kB/frame
+== round 3/9 .
+ 1/1  tweens^    N= 10000 V=1     0.165 ms/frame     16 ns/subject·voice  p50    0.163  p99    0.192  worst    1.695  first    44.1 ms  gc    1    1.5 ms       7.1 kB/frame
+== round 3/9 .
+ 1/1  weasel^    N= 10000 V=1     0.204 ms/frame     20 ns/subject·voice  p50    0.204  p99    0.220  worst    0.467  first    17.0 ms  gc    2    0.3 ms       4.3 kB/frame
+== round 4/9 .
+ 1/1  tweens^    N= 10000 V=1     0.163 ms/frame     16 ns/subject·voice  p50    0.162  p99    0.192  worst    0.413  first    41.5 ms  gc    1    1.8 ms       5.8 kB/frame
+== round 4/9 .
+ 1/1  weasel^    N= 10000 V=1     0.205 ms/frame     20 ns/subject·voice  p50    0.204  p99    0.219  worst    0.631  first    16.3 ms  gc    1    0.4 ms       4.2 kB/frame
+== round 4/9 HEAD
+ 1/1  tweens^    N= 10000 V=1     0.184 ms/frame     18 ns/subject·voice  p50    0.182  p99    0.203  worst    1.974  first    43.1 ms  gc    1    1.8 ms       5.8 kB/frame
+== round 4/9 HEAD
+ 1/1  weasel^    N= 10000 V=1     0.203 ms/frame     20 ns/subject·voice  p50    0.203  p99    0.217  worst    0.498  first    16.1 ms  gc    1    0.3 ms       4.5 kB/frame
+== round 5/9 HEAD
+ 1/1  tweens^    N= 10000 V=1     0.169 ms/frame     17 ns/subject·voice  p50    0.168  p99    0.191  worst    1.998  first    42.4 ms  gc    1    1.8 ms       5.6 kB/frame
+== round 5/9 HEAD
+ 1/1  weasel^    N= 10000 V=1     0.205 ms/frame     20 ns/subject·voice  p50    0.204  p99    0.220  worst    0.482  first    16.2 ms  gc    2    0.3 ms       4.5 kB/frame
+== round 5/9 .
+ 1/1  tweens^    N= 10000 V=1     0.179 ms/frame     18 ns/subject·voice  p50    0.177  p99    0.200  worst    1.937  first    43.1 ms  gc    1    1.7 ms       5.7 kB/frame
+== round 5/9 .
+ 1/1  weasel^    N= 10000 V=1     0.205 ms/frame     20 ns/subject·voice  p50    0.204  p99    0.221  worst    0.583  first    16.0 ms  gc    7    3.0 ms       4.1 kB/frame
+== round 6/9 .
+ 1/1  tweens^    N= 10000 V=1     0.163 ms/frame     16 ns/subject·voice  p50    0.162  p99    0.189  worst    1.777  first    41.4 ms  gc    1    1.6 ms       6.7 kB/frame
+== round 6/9 .
+ 1/1  weasel^    N= 10000 V=1     0.206 ms/frame     21 ns/subject·voice  p50    0.206  p99    0.221  worst    0.499  first    16.0 ms  gc    1    0.3 ms       3.8 kB/frame
+== round 6/9 HEAD
+ 1/1  tweens^    N= 10000 V=1     0.184 ms/frame     18 ns/subject·voice  p50    0.182  p99    0.201  worst    1.832  first    42.7 ms  gc    2    1.7 ms       5.7 kB/frame
+== round 6/9 HEAD
+ 1/1  weasel^    N= 10000 V=1     0.192 ms/frame     19 ns/subject·voice  p50    0.190  p99    0.216  worst    0.435  first    16.0 ms  gc    1    0.2 ms       4.1 kB/frame
+== round 7/9 HEAD
+ 1/1  tweens^    N= 10000 V=1     0.162 ms/frame     16 ns/subject·voice  p50    0.158  p99    0.195  worst    1.799  first    38.9 ms  gc    1    1.6 ms       5.7 kB/frame
+== round 7/9 HEAD
+ 1/1  weasel^    N= 10000 V=1     0.191 ms/frame     19 ns/subject·voice  p50    0.188  p99    0.214  worst    0.430  first    15.2 ms  gc    2    0.3 ms       4.0 kB/frame
+== round 7/9 .
+ 1/1  tweens^    N= 10000 V=1     0.160 ms/frame     16 ns/subject·voice  p50    0.155  p99    0.198  worst    1.829  first    39.1 ms  gc    1    1.7 ms       5.3 kB/frame
+== round 7/9 .
+ 1/1  weasel^    N= 10000 V=1     0.191 ms/frame     19 ns/subject·voice  p50    0.190  p99    0.214  worst    0.440  first    15.1 ms  gc    1    0.2 ms       4.6 kB/frame
+== round 8/9 .
+ 1/1  tweens^    N= 10000 V=1     0.158 ms/frame     16 ns/subject·voice  p50    0.155  p99    0.184  worst    1.680  first    39.1 ms  gc    1    1.5 ms       5.6 kB/frame
+== round 8/9 .
+ 1/1  weasel^    N= 10000 V=1     0.192 ms/frame     19 ns/subject·voice  p50    0.190  p99    0.214  worst    0.450  first    15.2 ms  gc    1    0.2 ms       4.5 kB/frame
+== round 8/9 HEAD
+ 1/1  tweens^    N= 10000 V=1     0.178 ms/frame     18 ns/subject·voice  p50    0.173  p99    0.261  worst    1.803  first    39.0 ms  gc    2    1.7 ms       5.7 kB/frame
+== round 8/9 HEAD
+ 1/1  weasel^    N= 10000 V=1     0.193 ms/frame     19 ns/subject·voice  p50    0.191  p99    0.216  worst    0.439  first    15.3 ms  gc    1    0.2 ms       4.5 kB/frame
+== round 9/9 HEAD
+ 1/1  tweens^    N= 10000 V=1     0.175 ms/frame     18 ns/subject·voice  p50    0.172  p99    0.200  worst    1.720  first    39.0 ms  gc    1    1.5 ms       5.7 kB/frame
+== round 9/9 HEAD
+ 1/1  weasel^    N= 10000 V=1     0.192 ms/frame     19 ns/subject·voice  p50    0.190  p99    0.215  worst    0.423  first    15.2 ms  gc    1    0.2 ms       4.6 kB/frame
+== round 9/9 .
+ 1/1  tweens^    N= 10000 V=1     0.157 ms/frame     16 ns/subject·voice  p50    0.154  p99    0.184  worst    1.796  first    40.1 ms  gc    1    1.6 ms       5.6 kB/frame
+== round 9/9 .
+ 1/1  weasel^    N= 10000 V=1     0.191 ms/frame     19 ns/subject·voice  p50    0.190  p99    0.215  worst    0.449  first    15.3 ms  gc    1    0.2 ms       4.4 kB/frame
