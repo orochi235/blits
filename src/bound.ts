@@ -53,23 +53,19 @@ export class Bound<I, O> {
 
 /**
  * Why a voice could not be bounded, or null: reads a skipped subject could not leave as they were,
- * on one with state, a role, history, an owner, `from: 'current'`, or subjects of its own.
+ * on one with state, history, an owner, or `from: 'current'`.
  */
 function refusal<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): string | null {
   const patch = spec.patch;
   return mix.opts.history !== undefined
     ? 'a mix with history'
-    : spec.subjects !== undefined
-      ? 'a voice naming its subjects'
-      : spec.role !== undefined
-        ? 'a voice in a role'
-        : spec.from === 'current'
-          ? "a voice cued from: 'current'"
-          : spec.owner !== undefined
-            ? 'a voice an owner holds'
-            : patch.form === 'motion' || patch.state !== undefined || patch.step !== undefined
-              ? 'a patch keeping state'
-              : null;
+    : spec.from === 'current'
+      ? "a voice cued from: 'current'"
+      : spec.owner !== undefined
+        ? 'a voice an owner holds'
+        : patch.form === 'motion' || patch.state !== undefined || patch.step !== undefined
+          ? 'a patch keeping state'
+          : null;
 }
 
 /** Refuses a cue's `within` where the mix has no positions, and on a voice `refusal` names. */
@@ -138,9 +134,10 @@ function check<I, O>(b: Bound<I, O>): void {
   const step = Math.max(1, Math.floor(n / CHECK_SUBJECTS));
   const from = (b.frames / CHECK_EVERY) % step;
   const found = places.found.slice(0, n);
+  const named = voice.named;
   for (let k = from; k < n; k += step) {
     const subject = places.subjectAt(found[k] as number);
-    if (subject === undefined) continue;
+    if (subject === undefined || (named !== null && !named.has(subject))) continue;
     const w = signal(subject, setting);
     if (w > 0) {
       b.checks = false;
@@ -234,5 +231,39 @@ export function runBounded<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, b: Bound<
       unband(lane.records[p]);
     }
     if (data[o + Row.PROBED] !== 0) lit(b, slot, fills);
+  }
+}
+
+/**
+ * For a role member's bound, before its role's loop: marks the subjects within it this fill, which
+ * `inside` then reads.
+ */
+export function meetBound<I, O>(lanes: Lanes<I, O>, b: Bound<I, O>): void {
+  const places = b.mix.places as Places<I>;
+  snap(b, b.mix);
+  const fills = lanes.fills;
+  grow(b, lanes.cap);
+  const inAt = b.inAt;
+  const n = places.query(b.x, b.y, b.r, b.r2);
+  const found = places.found;
+  const slots = places.slots;
+  for (let k = 0; k < n; k++) {
+    const slot = slots[found[k] as number] as number;
+    if (slot >= 0) inAt[slot] = fills;
+  }
+}
+
+/** Whether `meetBound` found the subject at `slot` within the bound this fill. */
+export const inside = <I, O>(b: Bound<I, O>, slot: number, fills: number): boolean =>
+  b.inAt[slot] === fills;
+
+/** A role member's subject outside its bound: its lane weight set to 0, as a read at weight 0 leaves it. */
+export function leave<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: number): void {
+  const data = lane.data;
+  const o = p * Row.STRIDE;
+  keepProbed(data, o, lanes.per, slot * Per.SLOT, lanes.fills);
+  if (data[o + Row.WEIGHT] !== 0) {
+    data[o + Row.WEIGHT] = 0;
+    unband(lane.records[p]);
   }
 }

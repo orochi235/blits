@@ -35,8 +35,13 @@ interface Way {
   ease?: Easing;
   moving?: boolean;
   pull?: boolean;
-  /** Names its subjects, which a bound refuses: `around` then plays unbounded. */
+  /** Names its subjects. */
   named?: boolean;
+  /** Plays in a role beside a voice of constant weight, which a laned role may run inline. */
+  role?: boolean;
+  apart?: boolean;
+  /** The signal written by hand plays unbounded, with no `within`: what a bound must not change. */
+  free?: boolean;
   /** Cues the glow before `plot`, which binds it to its circle once called. */
   late?: boolean;
 }
@@ -63,10 +68,23 @@ function play(way: Way, mine: boolean, frames = 50): unknown[] {
       loop: true,
       ...(mine
         ? { weight: m.around(area, way.ease === undefined ? {} : { ease: way.ease }) }
-        : { weight: byHand(area, way.ease), ...(way.named ? {} : { within: area }) }),
+        : { weight: byHand(area, way.ease), ...(way.free ? {} : { within: area }) }),
       ...(way.named ? { subjects: dots } : {}),
+      ...(way.role ? { role: 'lit' } : {}),
     });
+  const other = () =>
+    m.cue({
+      patch: patch<Dot, Pose>(1000, () => ({ gain: 0.5, color: 0x3060ff }), {
+        writes: ['gain', 'color'],
+      }),
+      loop: true,
+      weight: 0.4,
+      role: 'lit',
+    });
+  // Apart, another voice sits between the role's members, so a fill gathers it in a pass of its own.
+  if (way.role && way.apart) other();
   m.cue({ patch: flicker(), loop: true });
+  if (way.role && !way.apart) other();
   const early = way.late && mine ? cueGlow() : undefined;
   if (early) {
     // A frame read before the positions come, where `around` gives every subject 0.
@@ -76,7 +94,7 @@ function play(way: Way, mine: boolean, frames = 50): unknown[] {
   }
   m.plot(dots, xy, 3);
   const glow = early ?? cueGlow();
-  if (early) expect(bounds(m)).toBe(1);
+  if (early || mine) expect(bounds(m)).toBe(1);
   const cols = { gain: new Float64Array(dots.length), color: new Float64Array(dots.length) };
   const seen: unknown[] = [];
   for (let f = 0; f < frames; f++) {
@@ -124,7 +142,18 @@ describe('around reads as the same signal written by hand and cued within its ci
       agree({ lanes, ease: { bezier: [0.3, 0, 0.2, 1] }, pull: true, moving: true }));
     it(`steps, which leave a hard edge, ${on}`, () =>
       agree({ lanes, ease: { steps: 1, jump: 'start' } }));
-    it(`unbounded on a voice naming its subjects, ${on}`, () => agree({ lanes, named: true }));
+    it(`as the signal unbounded, ${on}`, () => agree({ lanes, free: true, moving: true }));
+    it(`on a voice naming its subjects, ${on}`, () =>
+      agree({ lanes, named: true, free: true, moving: true }));
+    it(`on a voice naming its subjects, read by pull, ${on}`, () =>
+      agree({ lanes, named: true, free: true, pull: true }));
+    it(`in a role, ${on}`, () => agree({ lanes, role: true, free: true, moving: true }));
+    it(`in a role, read by pull, ${on}`, () =>
+      agree({ lanes, role: true, free: true, pull: true }));
+    it(`in a role whose members are apart, ${on}`, () =>
+      agree({ lanes, role: true, apart: true, free: true, moving: true }));
+    it(`in a role on a voice naming its subjects, ${on}`, () =>
+      agree({ lanes, role: true, named: true, free: true }));
     it(`cued before plot, bound once plot is called, ${on}`, () =>
       agree({ lanes, late: true, moving: true }));
     it(`cued before plot and read by pull, ${on}`, () => agree({ lanes, late: true, pull: true }));

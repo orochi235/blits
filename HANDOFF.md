@@ -434,7 +434,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    Adding `around` and `put` left `glowb^`, `glowbm^`, `glow^`, `swap`, `tweens^` and `view` within
    noise of `eb22788` (geometric mean 1.001, every U at least 13; `bench/runs/2026-10-26-near-put-guard.txt`).
 
-   Left: a bound on a voice naming its subjects, on a role member, on an owner's child, on a
+   A voice naming its subjects and a role member take a bound, lifted by Mike (2026-10-27); a role
+   member outside its circle is skipped on both laned role routes. Left: a bound on an owner's child, on a
    stateful patch, and on a mix with history, all refused (history because the circle the host
    moves is not recorded; the playground drops history for a composition that bounds a voice,
    item 13); `within` on a constant weight stays refused, its error naming the recipe,

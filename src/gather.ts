@@ -1,3 +1,4 @@
+import { inside, leave, meetBound } from './bound.js';
 import { foldNumber, lerpNumber } from './channels.js';
 import { Arg, type Lane, type Laned, type Role, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
@@ -43,8 +44,15 @@ export function gatherRole<I, O>(lanes: Lanes<I, O>, g: Role<I, O>): void {
       lanes.reset(lane);
       lane.elapsedNow = voice.elapsedAt(lanes.now);
       const list = lane.list;
+      const b = voice.bound;
+      if (b !== null) meetBound(lanes, b);
+      const fills = lanes.fills;
       for (let p = 0; p < list.length; p++) {
         const slot = list[p] as number;
+        if (b !== null && !inside(b, slot, fills)) {
+          leave(lanes, lane, p, slot);
+          continue;
+        }
         if (lanes.one(lane, p, slot)) {
           meetRole(lanes, g, slot);
           g.sum[slot] =
@@ -197,7 +205,10 @@ export function runRole<I, O>(lanes: Lanes<I, O>, g: Role<I, O>): void {
   for (const lane of members) {
     lanes.reset(lane);
     lane.elapsedNow = lane.voice.elapsedAt(lanes.now);
+    const b = lane.voice.bound;
+    if (b !== null) meetBound(lanes, b);
   }
+  const fills = lanes.fills;
   const list = (members[0] as Lane<I, O>).list;
   lanes.into = g;
   try {
@@ -208,6 +219,11 @@ export function runRole<I, O>(lanes: Lanes<I, O>, g: Role<I, O>): void {
         const lane = members[i] as Lane<I, O>;
         // Its patch kept state on an earlier subject: as `gatherRole` leaves it after that call.
         if (lane.voice.keeping) continue;
+        const b = lane.voice.bound;
+        if (b !== null && !inside(b, slot, fills)) {
+          leave(lanes, lane, p, slot);
+          continue;
+        }
         // Each lane's placing is numbered on its own; the last member placed left its number.
         arg[Arg.MARK] = lane.mark;
         if (lanes.one(lane, p, slot)) {

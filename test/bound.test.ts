@@ -142,7 +142,7 @@ describe('within is refused', () => {
     const m = mix<Dot, Pose>(K);
     expect(cue(m, { weight: () => 1 })).toThrow(/call mix.plot first/);
   });
-  it('on a voice with no signal, or one naming its subjects', () => {
+  it('on a voice with no signal, and not on one naming its subjects or in a role', () => {
     const m = mix<Dot, Pose>(K);
     const dot = { seed: 0, x: 0, y: 0 };
     m.plot([dot], new Float64Array(2), 1);
@@ -150,8 +150,8 @@ describe('within is refused', () => {
       /needs a signal weight; for a hard-edged disk use weight: mix\.around\(circle, \{ steps: 1, jump: 'start' \}\)/;
     expect(cue(m, {})).toThrow(recipe);
     expect(cue(m, { weight: 0.5 })).toThrow(recipe);
-    expect(cue(m, { weight: () => 1, subjects: [dot] })).toThrow(/naming its subjects/);
-    expect(cue(m, { weight: () => 1, role: 'a' })).toThrow(/in a role/);
+    expect(cue(m, { weight: () => 1, subjects: [dot] })).not.toThrow();
+    expect(cue(m, { weight: () => 1, role: 'a' })).not.toThrow();
   });
   it('on a voice whose patch keeps state', () => {
     const m = mix<Dot, Pose>(K);
@@ -179,35 +179,49 @@ describe('within keeps its signal from being read outside it', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
+  const ways = ['alone', 'naming its subjects', 'in a role', 'in a role, apart'] as const;
   for (const lanes of [true, false])
-    it(`calls the signal only within, and clips what it would give beyond, lanes ${lanes ? 'on' : 'off'}`, () => {
-      // The check for a clipped signal reads it outside; production makes none.
-      vi.stubEnv('NODE_ENV', 'production');
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const m = mix<Dot, Pose>(K, { lanes });
-      const dots = grid();
-      m.plot(dots, xyOf(dots), 2);
-      const area = { x: 7, y: 9, r: 2 };
-      let calls = 0;
-      const wide = (s: Dot) => {
-        calls++;
-        return Math.max(0, 1 - Math.hypot(s.x - area.x, s.y - area.y) / 6);
-      };
-      m.cue({ patch: flicker(), loop: true });
-      const glow = m.cue({ patch: glowPatch(), weight: wide, loop: true, within: area });
-      const out = {} as Pose;
-      const inside = dots.filter((d) => (d.x - 7) ** 2 + (d.y - 9) ** 2 <= 4);
-      for (let f = 0; f < 20; f++) {
-        calls = 0;
-        m.sync(f * 16.7);
-        for (const d of dots) m.probe(d, out);
-        // A first read of a subject may call it twice, once on each path.
-        if (f > 2) expect(calls).toBe(inside.length);
-      }
-      for (const d of dots) expect(glow.weightOf(d) > 0, `${d.x},${d.y}`).toBe(inside.includes(d));
-      expect(warn).not.toHaveBeenCalled();
-      warn.mockRestore();
-    });
+    for (const way of ways)
+      it(`calls the signal only within, and clips what it would give beyond, ${way}, lanes ${lanes ? 'on' : 'off'}`, () => {
+        // The check for a clipped signal reads it outside; production makes none.
+        vi.stubEnv('NODE_ENV', 'production');
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const m = mix<Dot, Pose>(K, { lanes });
+        const dots = grid();
+        m.plot(dots, xyOf(dots), 2);
+        const area = { x: 7, y: 9, r: 2 };
+        let calls = 0;
+        const wide = (s: Dot) => {
+          calls++;
+          return Math.max(0, 1 - Math.hypot(s.x - area.x, s.y - area.y) / 6);
+        };
+        const role = way.startsWith('in a role') ? { role: 'lit' } : {};
+        const other = () => m.cue({ patch: glowPatch(), weight: 0.3, loop: true, role: 'lit' });
+        if (way === 'in a role, apart') other();
+        m.cue({ patch: flicker(), loop: true });
+        if (way === 'in a role') other();
+        const glow = m.cue({
+          patch: glowPatch(),
+          weight: wide,
+          loop: true,
+          within: area,
+          ...role,
+          ...(way === 'naming its subjects' ? { subjects: dots } : {}),
+        });
+        const out = {} as Pose;
+        const inside = dots.filter((d) => (d.x - 7) ** 2 + (d.y - 9) ** 2 <= 4);
+        for (let f = 0; f < 20; f++) {
+          calls = 0;
+          m.sync(f * 16.7);
+          for (const d of dots) m.probe(d, out);
+          // A first read of a subject may call it twice, once on each path.
+          if (f > 2) expect(calls).toBe(inside.length);
+        }
+        for (const d of dots)
+          expect(glow.weightOf(d) > 0, `${d.x},${d.y}`).toBe(inside.includes(d));
+        expect(warn).not.toHaveBeenCalled();
+        warn.mockRestore();
+      });
 });
 
 describe('outside production, a circle that cuts off its signal warns once', () => {

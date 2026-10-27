@@ -152,8 +152,8 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    * signal is not read, so a frame visits only the subjects within rather than all of them. The
    * signal has to be 0 beyond `r` already, or the circle cuts it off: outside production, every
    * few frames, the mix reads it for a few subjects just outside and warns once if one is above 0.
-   * Needs `plot` first and a signal `weight`. Refused on a mix with history, and with `subjects`,
-   * a role, an owner, `from: 'current'`, or a patch keeping state.
+   * Needs `plot` first and a signal `weight`. Refused on a mix with history, and with an owner,
+   * `from: 'current'`, or a patch keeping state.
    */
   within?: Circle;
   /** Ramp in and out, ms. Out applies on `fade()` and when a finite loop ends. */
