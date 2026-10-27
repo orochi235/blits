@@ -226,6 +226,18 @@ describe('what an entry tells', () => {
     expect(entryOf(mix<Part, Pose>(K)).reach).toBeNaN();
     expect(e.read(a).x).toBe(300);
   });
+
+  it("gives a bounded voice's circle, live, and none for an unbounded one", () => {
+    const m = mix<Part, Pose>(K);
+    m.plot([a], new Float64Array([0, 0]));
+    const area = { x: 0, y: 0, r: 5 };
+    const bounded = m.cue({ patch: clock, weight: () => 1, within: area });
+    const around = m.cue({ patch: clock, weight: m.around({ x: 1, y: 1, r: 2 }) });
+    const e = entryOf(m);
+    expect(e.voice(bounded)?.within).toBe(area);
+    expect(e.voice(around)?.within).toEqual({ x: 1, y: 1, r: 2 });
+    expect(e.voice(m.cue({ patch: clock }))?.within).toBeUndefined();
+  });
 });
 
 describe('holding', () => {

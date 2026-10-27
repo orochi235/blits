@@ -148,6 +148,16 @@
   color: var(--wzl-fg-muted);
 }
 
+.bp-row:has(> .bp-head) {
+  align-items: baseline;
+  margin-top: 6px;
+}
+
+.bp-row > .bp-head {
+  flex: 1;
+  margin: 0;
+}
+
 .bp-voice {
   display: grid;
   grid-template-columns: 1fr auto 5ch;

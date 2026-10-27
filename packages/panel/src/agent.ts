@@ -1,7 +1,9 @@
 import { type Hold, type Watched, type WatchedFrame, watched } from '@msb235/blits';
+import { Circles, type Ring, type Screen } from './circles.js';
 import { Ids } from './ids.js';
 import { marksOf } from './marks.js';
 import { offered } from './offer.js';
+import { picking } from './picking.js';
 import type {
   Command,
   Event,
@@ -19,6 +21,11 @@ export interface AgentOptions {
   pick?: (x: number, y: number) => unknown;
   /** Where a subject is on screen, in client coordinates; a DOM element's own box otherwise. */
   outline?: (subject: unknown) => DOMRect | undefined;
+  /**
+   * Where a point in the positions the mix was given (`mix.plot`) is on screen, in client
+   * coordinates, for drawing a bounded voice's circle; the same numbers otherwise.
+   */
+  screen?: Screen;
   /** The panel's own element: picking on the page passes over it. */
   ignore?: Element;
 }
@@ -65,7 +72,12 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
   let lastMarks = '';
   let owners = new Map<unknown, number>();
   /** What each voice was cued with, by handle id; a voice's name and tags never change. */
-  const named = new Map<number, { name: string | null; tags: string[] }>();
+  const named = new Map<
+    number,
+    { name: string | null; tags: string[]; within: Readonly<Omit<Ring, 'voice'>> | undefined }
+  >();
+  const circles = new Circles();
+  let circling = false;
 
   const emit = (event: Event) => {
     for (const fn of [...fns]) fn(event);
@@ -100,7 +112,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
       let v = named.get(h.id);
       if (v === undefined) {
         const cued = e.voice(h);
-        v = { name: cued?.name ?? null, tags: [...(cued?.tags ?? [])] };
+        v = { name: cued?.name ?? null, tags: [...(cued?.tags ?? [])], within: cued?.within };
         named.set(h.id, v);
       }
       let weight = Number.NaN;
@@ -114,6 +126,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
         tags: v.tags,
         state: h.state,
         weight,
+        bounded: v.within !== undefined,
       };
     });
   };
@@ -121,6 +134,25 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     voicesAt = Date.now();
     emit({ kind: 'voices', voices: voices() });
     sendMarks();
+  };
+
+  const drawCircles = () => {
+    const e = current();
+    if (!circling || e === null) return circles.clear();
+    const rings: Ring[] = [];
+    for (const h of e.mix.voices()) {
+      const c = named.get(h.id)?.within;
+      if (c !== undefined) rings.push({ voice: h.id, x: c.x, y: c.y, r: c.r });
+    }
+    circles.draw(rings, opts.screen ?? offered().screen);
+  };
+  const circle = (on: boolean) => {
+    circling = on;
+    // An `around` voice cued before `plot` was bounded after it was first listed.
+    if (on) named.clear();
+    sendVoices();
+    drawCircles();
+    emit({ kind: 'circles', on });
   };
 
   const sendMarks = () => {
@@ -187,6 +219,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
       if (s !== null) emit({ kind: 'samples', samples: [s], reset: false });
     }
     if (Date.now() - voicesAt >= VOICES_MS) sendVoices();
+    drawCircles();
     sendHold();
   };
 
@@ -211,6 +244,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     emit({ kind: 'samples', samples: [], reset: true });
     sendSubjects();
     sendVoices();
+    drawCircles();
     sendHold();
   };
 
@@ -226,100 +260,19 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     sendVoices();
   };
 
-  // On-page picking and the outline over the page.
-  let overlay: HTMLDivElement | null = null;
-  const outline = (s: unknown) => {
-    let rect: DOMRect | undefined;
-    if (s !== undefined)
-      rect =
-        (opts.outline ?? offered().outline)?.(s) ??
-        (s instanceof Element ? s.getBoundingClientRect() : undefined);
-    if (rect === undefined) {
-      overlay?.remove();
-      overlay = null;
-      return;
-    }
-    if (overlay === null) {
-      overlay = document.createElement('div');
-      overlay.setAttribute('data-blits-panel', 'outline');
-      Object.assign(overlay.style, {
-        position: 'fixed',
-        pointerEvents: 'none',
-        zIndex: '2147483647',
-        border: '2px solid #e0457b',
-        borderRadius: '2px',
-        boxSizing: 'border-box',
-      });
-      document.body.appendChild(overlay);
-    }
-    Object.assign(overlay.style, {
-      left: `${rect.left}px`,
-      top: `${rect.top}px`,
-      width: `${rect.width}px`,
-      height: `${rect.height}px`,
-    });
-  };
-
-  const inPanel = (ev: globalThis.Event) =>
-    opts.ignore !== undefined && ev.composedPath().includes(opts.ignore);
-
-  /** The subject under a point, and the mix that lists it. */
-  const at = (x: number, y: number): [unknown, number] | undefined => {
-    const custom = (opts.pick ?? offered().pick)?.(x, y);
-    if (custom !== undefined) {
-      const e = owners.get(custom);
-      if (e !== undefined) return [custom, e];
-    }
-    const els =
-      typeof document.elementsFromPoint === 'function'
-        ? document.elementsFromPoint(x, y)
-        : [document.elementFromPoint(x, y)].filter((el): el is Element => el !== null);
-    for (const el of els) {
-      if (el === overlay || opts.ignore?.contains(el)) continue;
-      for (let n: Element | null = el; n !== null; n = n.parentElement) {
-        const e = owners.get(n);
-        if (e !== undefined) return [n, e];
-      }
-    }
-    return undefined;
-  };
-
-  const onMove = (ev: PointerEvent) => {
-    if (inPanel(ev)) return;
-    outline(at(ev.clientX, ev.clientY)?.[0]);
-  };
-  const onClick = (ev: MouseEvent) => {
-    if (inPanel(ev)) return;
-    ev.preventDefault();
-    ev.stopPropagation();
-    const hit = at(ev.clientX, ev.clientY);
-    arm(false);
-    if (hit === undefined) return;
-    const [s, e] = hit;
-    if (curId !== e) pickMix(e);
-    sendSubjects();
-    pickSubject(ids.of(s));
-  };
-  const onKey = (ev: KeyboardEvent) => {
-    if (ev.key === 'Escape') arm(false);
-  };
-  let armed = false;
-  const arm = (on: boolean) => {
-    if (on === armed) return;
-    armed = on;
-    if (on) {
+  const page = picking(opts, {
+    owner: (subject) => owners.get(subject),
+    arming: (on) => {
+      if (on) sendSubjects();
+      emit({ kind: 'arming', on });
+    },
+    picked: (s, e) => {
+      if (curId !== e) pickMix(e);
       sendSubjects();
-      document.addEventListener('pointermove', onMove, true);
-      document.addEventListener('click', onClick, true);
-      document.addEventListener('keydown', onKey, true);
-    } else {
-      document.removeEventListener('pointermove', onMove, true);
-      document.removeEventListener('click', onClick, true);
-      document.removeEventListener('keydown', onKey, true);
-      outline(undefined);
-    }
-    emit({ kind: 'arming', on });
-  };
+      pickSubject(ids.of(s));
+    },
+  });
+  const { arm, outline } = page;
 
   const send = (c: Command) => {
     switch (c.kind) {
@@ -359,6 +312,9 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
       case 'arm':
         arm(c.on);
         return;
+      case 'circles':
+        circle(c.on);
+        return;
       case 'outline':
         outline(c.subject === null ? undefined : ids.get(c.subject));
         return;
@@ -389,6 +345,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
         subject: subject === undefined ? null : ids.of(subject),
       });
       fn({ kind: 'hold', hold: holdInfo() });
+      fn({ kind: 'circles', on: circling });
       const e = current();
       fn({ kind: 'marks', marks: e === null ? [] : marksOf(e, BACKFILL_MS) });
       return () => {
@@ -404,6 +361,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
       clearInterval(timer);
       offRegistry();
       outline(undefined);
+      circles.clear();
       fns.clear();
     },
   };

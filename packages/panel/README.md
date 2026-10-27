@@ -34,6 +34,8 @@ gives back any clock it holds.
   - **Right side:** one plot per number in the picked subject's pose, then each voice's weight.
     A plot is marked "read, not shown" when the app did not read the subject that frame, so the
     panel read it.
+  - **◯ circles**, beside the voices: draws each bounded voice's circle (its `within`, or its
+    `around` weight's) on the page, in the voice's hue. A bounded voice is marked ◯ in the list.
 
 Holding a mix holds every mix on the same transport. Nothing the panel does while holding goes on
 the mix's tape, and freeing the hold lets the mix carry on from where the panel left it.
@@ -51,7 +53,7 @@ mount({
 });
 ```
 
-`offer({ pick, outline })` hands over the same two functions without mounting anything, so the
+`offer({ pick, outline, screen })` hands over the same functions without mounting anything, so the
 blits DevTools extension can pick in the scene too.
 
 Subjects are named by the mix's `labelOf` option where it has one, and otherwise by their `name`
@@ -64,6 +66,7 @@ or `id`, a DOM element's tag, or their class and a number.
 | `history` | `10000` | How far back mixes made after `mount()` can scrub, in ms. `false` adds no history. |
 | `pick` | none | Finds the subject under a point, for subjects the DOM cannot see. |
 | `outline` | none | Where a subject is on screen, so hovering it can outline it. |
+| `screen` | the same numbers | Where a point in the positions given to `mix.plot` is on screen, in client coordinates, so a bounded voice's circle lands in the right place. |
 
 ## The two halves
 

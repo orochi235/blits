@@ -1,7 +1,7 @@
 import type { HistoryOptions } from './history.js';
 import type { Mix } from './mix.js';
 import type { Sent } from './patch.js';
-import type { Handle } from './voice.js';
+import type { Circle, Handle } from './voice.js';
 
 /**
  * Every mix made on the page, for a debugger: shared by every copy of blits loaded, so a mix one
@@ -45,9 +45,14 @@ export interface Watched<I = unknown, O = unknown> {
   /** The kit's channel names, in kit order. */
   readonly channels: readonly string[];
   /** What a voice was cued with that its handle does not carry; undefined for a handle not on this mix. */
-  voice(
-    handle: Handle<I>,
-  ): { readonly name: string | undefined; readonly tags: readonly string[] } | undefined;
+  voice(handle: Handle<I>):
+    | {
+        readonly name: string | undefined;
+        readonly tags: readonly string[];
+        /** The circle it is bounded to, by `within` or an `around` weight, read live; undefined for none. */
+        readonly within: Readonly<Circle> | undefined;
+      }
+    | undefined;
   /** What to call a subject: the mix's `labelOf`, else a guess from the subject itself. */
   label(subject: I): string;
   /**

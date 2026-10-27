@@ -21,6 +21,7 @@ interface State {
   marks: MarkInfo[];
   hold: HoldInfo;
   arming: boolean;
+  circles: boolean;
   /** Bumped as samples arrive, so the plots draw again. */
   drawn: number;
 }
@@ -34,6 +35,7 @@ const initial: State = {
   marks: [],
   hold: { state: 'free', rate: 1, now: Number.NaN, reach: Number.NaN },
   arming: false,
+  circles: false,
   drawn: 0,
 };
 
@@ -55,6 +57,8 @@ function reduce(s: State, a: Action): State {
       return { ...s, hold: a.hold };
     case 'arming':
       return { ...s, arming: a.on };
+    case 'circles':
+      return { ...s, circles: a.on };
     case 'drawn':
       return { ...s, drawn: s.drawn + 1 };
     default:
@@ -316,11 +320,29 @@ export function Panel({ source, docked = false, bar }: PanelProps) {
               </li>
             ))}
           </ul>
-          <h3 className="bp-head">voices</h3>
+          <div className="bp-row">
+            <h3 className="bp-head">voices</h3>
+            <button
+              type="button"
+              className={s.circles ? 'bp-on' : ''}
+              disabled={!s.circles && !s.voices.some((v) => v.bounded)}
+              title="draw each bounded voice's circle on the page"
+              onClick={() => send({ kind: 'circles', on: !s.circles })}
+            >
+              ◯ circles
+            </button>
+          </div>
           <ul className="bp-list" aria-label="voices">
             {s.voices.map((v) => (
               <li key={v.id} className="bp-voice">
-                <span>{v.name ?? `#${v.id}`}</span>
+                <span>
+                  {v.name ?? `#${v.id}`}
+                  {v.bounded && (
+                    <span className="bp-muted" title="bounded to a circle">
+                      {' ◯'}
+                    </span>
+                  )}
+                </span>
                 <span className="bp-muted">{v.state}</span>
                 <span className="bp-num">
                   {Number.isFinite(v.weight) ? v.weight.toFixed(2) : ''}

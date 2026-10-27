@@ -25,6 +25,8 @@ export interface VoiceInfo {
   state: string;
   /** Its weight on the picked subject, NaN with none picked. */
   weight: number;
+  /** Whether it is bounded to a circle, by `within` or an `around` weight. */
+  bounded: boolean;
 }
 
 /**
@@ -73,7 +75,9 @@ export type Event =
   | { kind: 'hold'; hold: HoldInfo }
   /** Every mark from as far back as the plots reach to `AHEAD_CAP_MS` ahead, earliest first. */
   | { kind: 'marks'; marks: MarkInfo[] }
-  | { kind: 'arming'; on: boolean };
+  | { kind: 'arming'; on: boolean }
+  /** Whether the page draws each bounded voice's circle. */
+  | { kind: 'circles'; on: boolean };
 
 export type Command =
   | { kind: 'mix'; id: number | null }
@@ -83,6 +87,7 @@ export type Command =
   | { kind: 'step'; ms: number }
   | { kind: 'seek'; to: number }
   | { kind: 'arm'; on: boolean }
+  | { kind: 'circles'; on: boolean }
   | { kind: 'outline'; subject: number | null };
 
 /** One side of the seam: events come up from the page, commands go down to it. */

@@ -16,6 +16,7 @@ const voice = (id: number, state: string, name: string | null = null): VoiceInfo
   tags: [],
   state,
   weight: Number.NaN,
+  bounded: false,
 });
 
 describe('the plan', () => {

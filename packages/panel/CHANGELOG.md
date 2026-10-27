@@ -8,6 +8,11 @@ section here.
 
 ### Added
 
+- **◯ circles**, beside the voices, draws each bounded voice's circle on the page, in the voice's
+  hue, and the voice list marks a bounded voice with ◯. The `screen` option, which `offer` takes
+  too, says where a point in the mix's positions is on screen, for positions that are not client
+  coordinates. The agent sends `bounded` on each voice and a `circles` event, and takes a
+  `circles` command. Needs the engine's `within` on a watched voice, unreleased.
 - The panel shows the plan ahead of now: a lane per voice on the plots' time axis, from its start
   to its end with a tick at each mark it reaches on the way, an arrow where no end is known, and
   the marks the host announced. The axis runs 2 s past now, and on to the furthest mark known

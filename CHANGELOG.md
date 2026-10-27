@@ -39,6 +39,8 @@ version and everything else the patch. Each release lists its changes as **Break
   into the array `plot` was given, so it mixes freely with writing that array and calling `moved`,
   and keeps the grid as built until a sixteenth of the subjects have left their cells. It throws for
   a subject `plot` was not given.
+- A watched mix's `voice(handle)` gives `within`, the circle a voice is bounded to by `within` or
+  an `around` weight, the host's own object read live, or undefined for none.
 - `color({ lerp: 'oklch' })` and `color(last(), { lerp: 'oklch' })` run on lanes, where they took
   the general path. The pose is the same to the bit.
 - `mix.pose()` makes a new empty pose for `probe`'s `out`, holding each channel with a rest in kit

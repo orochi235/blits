@@ -188,4 +188,36 @@ describe('the agent', () => {
       'mesh',
     );
   });
+
+  it("draws each bounded voice's circle on the page, through the app's screen, while asked", () => {
+    const m = mix<unknown, Pose>(K, { name: 'agent-h' });
+    const dot = { name: 'dot' };
+    m.plot([dot], new Float64Array([0, 0]));
+    const area = { x: 10, y: 20, r: 5 };
+    m.cue({ patch: clock, weight: () => 1, within: area });
+    m.cue({ patch: clock, subjects: [dot] });
+    const { a, last } = setup({ screen: (x, y) => ({ x: x * 2, y: y * 2 }) });
+    a.send({
+      kind: 'mix',
+      id: last('mixes')?.mixes.find((x) => x.name === 'agent-h')?.id as number,
+    });
+    expect(last('voices')?.voices.map((v) => v.bounded)).toEqual([true, false]);
+    const svg = () => document.querySelector('[data-blits-panel="circles"]');
+    expect(svg()).toBeNull();
+    a.send({ kind: 'circles', on: true });
+    expect(last('circles')?.on).toBe(true);
+    const c = () => svg()?.querySelector('circle');
+    expect([c()?.getAttribute('cx'), c()?.getAttribute('cy'), c()?.getAttribute('r')]).toEqual([
+      '20',
+      '40',
+      '10',
+    ]);
+    area.x = 15;
+    m.sync(0);
+    m.probe(dot);
+    m.sync(16);
+    expect(c()?.getAttribute('cx')).toBe('30');
+    a.send({ kind: 'circles', on: false });
+    expect(svg()).toBeNull();
+  });
 });
