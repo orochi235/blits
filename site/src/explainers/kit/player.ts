@@ -83,7 +83,7 @@ export class Player<I, O, C> {
     this.subjects = scene.subjects(config);
     const play = (voices: VoiceDef<I, O>[], name?: string): Played<I, O> => {
       const m = mix<I, O>(scene.kit, { ...options, name });
-      return { mix: m, handles: voices.map((v) => m.cue(v.spec)), seqs: [] };
+      return { mix: m, handles: voices.map((v) => m.cue({ name: v.name, ...v.spec })), seqs: [] };
     };
     this.main = play(this.voices, opts.name);
     this.solos = scene.ledger ? this.voices.map((v) => play([v])) : [];
