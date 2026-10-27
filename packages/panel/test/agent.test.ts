@@ -112,6 +112,36 @@ describe('the agent', () => {
     expect(other).toBeDefined();
   });
 
+  it('sends the plan ahead on the mix clock: voice marks, announced marks, and no end for a loop', () => {
+    const m = mix<unknown, Pose>(K, { name: 'agent-plan' });
+    m.sync(0);
+    m.sync(100);
+    // Host time from here on runs 5000 ahead of mix time.
+    m.rebase();
+    m.sync(5100);
+    const once = patch<unknown, Pose>(1000, () => ({ x: 1 }), { writes: ['x'] });
+    const v = m.cue({ patch: once, start: 5600, subjects: ['s'], name: 'once' });
+    const loop = m.cue({ patch: once, start: 5600, subjects: ['s'], name: 'loop', loop: true });
+    m.announce('beat', { at: 6100 });
+    const { a, last } = setup();
+    a.send({
+      kind: 'mix',
+      id: last('mixes')?.mixes.find((x) => x.name === 'agent-plan')?.id as number,
+    });
+    const marks = last('marks')?.marks ?? [];
+    const of = (id: number) => marks.filter((k) => k.voice === id);
+    expect(of(v.id).find((k) => k.mark === 'start')?.at).toBe(600);
+    expect(of(v.id).find((k) => k.mark === 'end')?.at).toBe(1600);
+    expect(of(v.id)[0]?.name).toBe('once');
+    expect(of(loop.id).map((k) => k.mark)).not.toContain('end');
+    expect(marks.find((k) => k.voice === null)).toMatchObject({
+      at: 1100,
+      name: 'beat',
+      mark: null,
+    });
+    expect(marks.map((k) => k.at)).toEqual([...marks.map((k) => k.at)].sort((x, y) => x - y));
+  });
+
   it('says a clock is held elsewhere', () => {
     const m = mix<unknown, Pose>(K, { name: 'agent-e' });
     m.sync(0);

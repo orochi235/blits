@@ -39,6 +39,21 @@ export interface Sample {
   read: boolean;
 }
 
+/**
+ * A mark the plan knows, as `mix.marks` lists it: a voice's start, in, coast, out or end, one it
+ * placed inside itself, or one the host announced.
+ */
+export interface MarkInfo {
+  /** On the mix clock, the plots' axis. */
+  at: number;
+  /** Which of a voice's marks; null for an announced one. */
+  mark: string | null;
+  /** The voice's id; null for an announced mark. */
+  voice: number | null;
+  name: string | null;
+  tags: string[];
+}
+
 export interface HoldInfo {
   /** `elsewhere`: something other than this panel holds the clock. */
   state: 'free' | 'held' | 'elsewhere';
@@ -56,6 +71,8 @@ export type Event =
   /** `reset`: forget what was kept, as a new pick or a new mix does, before these. */
   | { kind: 'samples'; samples: Sample[]; reset: boolean }
   | { kind: 'hold'; hold: HoldInfo }
+  /** Every mark from as far back as the plots reach to `AHEAD_CAP_MS` ahead, earliest first. */
+  | { kind: 'marks'; marks: MarkInfo[] }
   | { kind: 'arming'; on: boolean };
 
 export type Command =

@@ -5,13 +5,14 @@ export type {
   Command,
   Event,
   HoldInfo,
+  MarkInfo,
   MixInfo,
   Sample,
   Source,
   SubjectInfo,
   VoiceInfo,
 } from './protocol.js';
-export { CAP, Samples, WINDOW_MS } from './store.js';
+export { AHEAD_CAP_MS, AHEAD_MS, CAP, Samples, WINDOW_MS } from './store.js';
 export { panelStyles } from './styles.js';
 export { ChannelPlot, type ChannelPlotProps } from './ui/ChannelPlot.js';
 export { hueColor } from './ui/hue.js';

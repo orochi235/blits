@@ -1,4 +1,6 @@
 import { type Hold, type Watched, type WatchedFrame, watched } from '@msb235/blits';
+import { Ids } from './ids.js';
+import { marksOf } from './marks.js';
 import { offered } from './offer.js';
 import type {
   Command,
@@ -28,41 +30,6 @@ const BACKFILL_STEP_MS = 100;
 const LIST_MS = 500;
 const VOICES_MS = 250;
 const DEPTH = 3;
-
-/** Numbers subjects as they cross the seam, holding the objects weakly. */
-class Ids {
-  private weak = new WeakMap<object, number>();
-  private strong = new Map<unknown, number>();
-  private back = new Map<number, WeakRef<object> | { value: unknown }>();
-  private next = 1;
-
-  of(subject: unknown): number {
-    const object = typeof subject === 'object' && subject !== null;
-    let id = object ? this.weak.get(subject) : this.strong.get(subject);
-    if (id !== undefined) return id;
-    id = this.next++;
-    if (object) {
-      this.weak.set(subject, id);
-      this.back.set(id, new WeakRef(subject));
-    } else {
-      this.strong.set(subject, id);
-      this.back.set(id, { value: subject });
-    }
-    return id;
-  }
-
-  /** Forgets the ids of subjects that have been collected. */
-  prune(): void {
-    for (const [id, b] of this.back)
-      if (b instanceof WeakRef && b.deref() === undefined) this.back.delete(id);
-  }
-
-  get(id: number): unknown {
-    const b = this.back.get(id);
-    if (b === undefined) return undefined;
-    return b instanceof WeakRef ? b.deref() : b.value;
-  }
-}
 
 /** Each numeric part of a pose under a flat key: `x`, `position[1]`, `color.l`. */
 export function flatten(pose: unknown, out: Record<string, number> = {}, key = '', depth = 0) {
@@ -95,6 +62,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
   let elsewhere = false;
   let lastList = '';
   let voicesAt = Number.NEGATIVE_INFINITY;
+  let lastMarks = '';
   let owners = new Map<unknown, number>();
   /** What each voice was cued with, by handle id; a voice's name and tags never change. */
   const named = new Map<number, { name: string | null; tags: string[] }>();
@@ -152,6 +120,16 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
   const sendVoices = () => {
     voicesAt = Date.now();
     emit({ kind: 'voices', voices: voices() });
+    sendMarks();
+  };
+
+  const sendMarks = () => {
+    const e = current();
+    const list = e === null ? [] : marksOf(e, BACKFILL_MS);
+    const text = JSON.stringify(list);
+    if (text === lastMarks) return;
+    lastMarks = text;
+    emit({ kind: 'marks', marks: list });
   };
 
   /** Sends the subject list where it changed, and notes which mix lists each subject. */
@@ -225,6 +203,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     curId = e?.id ?? null;
     subject = undefined;
     lastList = '';
+    lastMarks = '';
     elsewhere = false;
     named.clear();
     if (e !== undefined) unwatch = e.watch(onFrame);
@@ -410,6 +389,8 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
         subject: subject === undefined ? null : ids.of(subject),
       });
       fn({ kind: 'hold', hold: holdInfo() });
+      const e = current();
+      fn({ kind: 'marks', marks: e === null ? [] : marksOf(e, BACKFILL_MS) });
       return () => {
         fns.delete(fn);
       };

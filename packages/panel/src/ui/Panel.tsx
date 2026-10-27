@@ -1,8 +1,15 @@
-import { type ReactNode, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import type { Event, HoldInfo, MixInfo, Source, SubjectInfo, VoiceInfo } from '../protocol.js';
+import { type ReactNode, useEffect, useReducer, useRef, useState } from 'react';
+import type {
+  Event,
+  HoldInfo,
+  MarkInfo,
+  MixInfo,
+  Source,
+  SubjectInfo,
+  VoiceInfo,
+} from '../protocol.js';
 import { Samples } from '../store.js';
-import { ChannelPlot } from './ChannelPlot.js';
-import type { Series } from './path.js';
+import { Plots } from './Plots.js';
 import { clockText } from './time.js';
 
 interface State {
@@ -11,6 +18,7 @@ interface State {
   subject: number | null;
   subjects: SubjectInfo[];
   voices: VoiceInfo[];
+  marks: MarkInfo[];
   hold: HoldInfo;
   arming: boolean;
   /** Bumped as samples arrive, so the plots draw again. */
@@ -23,6 +31,7 @@ const initial: State = {
   subject: null,
   subjects: [],
   voices: [],
+  marks: [],
   hold: { state: 'free', rate: 1, now: Number.NaN, reach: Number.NaN },
   arming: false,
   drawn: 0,
@@ -40,13 +49,16 @@ function reduce(s: State, a: Action): State {
       return { ...s, subjects: a.subjects };
     case 'voices':
       return { ...s, voices: a.voices };
+    case 'marks':
+      return { ...s, marks: a.marks };
     case 'hold':
       return { ...s, hold: a.hold };
     case 'arming':
       return { ...s, arming: a.on };
     case 'drawn':
       return { ...s, drawn: s.drawn + 1 };
-    case 'samples':
+    default:
+      // An agent newer than this panel may send kinds it does not know.
       return s;
   }
 }
@@ -321,8 +333,10 @@ export function Panel({ source, docked = false, bar }: PanelProps) {
           samples={samples.current}
           drawn={s.drawn}
           voices={s.voices}
+          marks={s.marks}
           playhead={s.hold.now}
           picked={s.subject !== null}
+          mix={mix !== undefined}
         />
       </div>
     </div>
@@ -344,48 +358,5 @@ function Notes({ mix, hold }: { mix: MixInfo; hold: HoldInfo }) {
       {note}
       {hold.state === 'elsewhere' && ' · its clock is held elsewhere'}
     </p>
-  );
-}
-
-function Plots({
-  samples,
-  drawn,
-  voices,
-  playhead,
-  picked,
-}: {
-  samples: Samples;
-  drawn: number;
-  voices: VoiceInfo[];
-  playhead: number;
-  picked: boolean;
-}) {
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `drawn` says the samples changed
-  const series = useMemo(() => samples.series(), [samples, drawn]);
-  if (!picked) return <p className="bp-plots bp-muted">Pick a subject to plot its channels.</p>;
-  const { times, values, weights, read } = series;
-  const head = Number.isFinite(playhead) ? playhead : (times[times.length - 1] ?? 0);
-  const unread = read[read.length - 1] === true ? ' · read, not shown' : '';
-  const names = new Map(voices.map((v) => [v.id, v.name ?? `#${v.id}`]));
-  const weighed: Series[] = [...weights].map(([id, w], i) => ({
-    id: names.get(id) ?? `#${id}`,
-    hue: (i * 67) % 360,
-    values: w,
-  }));
-  return (
-    <div className="bp-plots">
-      {[...values].map(([key, v]) => (
-        <ChannelPlot
-          key={key}
-          label={`${key}${unread}`}
-          times={times}
-          playhead={head}
-          series={[{ id: key, hue: 0, color: 'var(--wzl-fg)', values: v, thick: true }]}
-        />
-      ))}
-      {weighed.length > 0 && (
-        <ChannelPlot label="weightOf" times={times} playhead={head} series={weighed} />
-      )}
-    </div>
   );
 }

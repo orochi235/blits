@@ -7,6 +7,8 @@ export interface ChannelPlotProps {
   times: readonly number[];
   series: readonly Series[];
   playhead: number;
+  /** The span of time drawn; the samples' own span otherwise. */
+  range?: readonly [number, number];
   width?: number;
   height?: number;
 }
@@ -33,12 +35,13 @@ export function ChannelPlot({
   times,
   series,
   playhead,
+  range: span,
   width = 320,
   height = 90,
 }: ChannelPlotProps) {
   const [yMin, yMax] = insetRange(rangeOf(series), LABEL_ROOM, height);
-  const xMin = times[0] ?? 0;
-  const xMax = Math.max(xMin + 1e-9, times[times.length - 1] ?? 1);
+  const xMin = span?.[0] ?? times[0] ?? 0;
+  const xMax = Math.max(xMin + 1e-9, span?.[1] ?? times[times.length - 1] ?? 1);
   const range = { xMin, xMax, yMin, yMax };
   const size = { width, height };
   const x = (t: number) => modelToPlot({ x: t, y: yMin }, range, size).x;

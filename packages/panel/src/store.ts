@@ -3,6 +3,9 @@ import type { Sample } from './protocol.js';
 /** How much the plots keep: this much mix time, and never more frames than `cap`. */
 export const WINDOW_MS = 10_000;
 export const CAP = 1200;
+/** How far past now the axis always runs, ms of mix time, and how far a mark ahead can stretch it. */
+export const AHEAD_MS = 2_000;
+export const AHEAD_CAP_MS = 30_000;
 
 /**
  * The picked subject's samples, by mix time. A sample at the time of the last replaces it, as the

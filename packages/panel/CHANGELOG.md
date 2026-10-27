@@ -4,6 +4,17 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## Unreleased
+
+### Added
+
+- The panel shows the plan ahead of now: a lane per voice on the plots' time axis, from its start
+  to its end with a tick at each mark it reaches on the way, an arrow where no end is known, and
+  the marks the host announced. The axis runs 2 s past now, and on to the furthest mark known
+  within 30 s. The agent sends them as a `marks` event, and the panel now passes over an event
+  kind it does not know. `MarkInfo`, `AHEAD_MS`, and `AHEAD_CAP_MS` are exported, and
+  `ChannelPlot` takes a `range` to draw.
+
 ## 0.2.0
 
 ### Breaking
