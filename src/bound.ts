@@ -79,7 +79,10 @@ export function checkWithin<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void
   if (typeof area !== 'object' || area === null)
     throw new TypeError('blits: within takes a circle, { x, y, r }');
   if (mix.places === null) throw new Error('blits: within needs positions: call mix.plot first');
-  if (typeof spec.weight !== 'function') throw new Error('blits: within needs a weight signal');
+  if (typeof spec.weight !== 'function')
+    throw new Error(
+      "blits: within needs a signal weight; for a hard-edged disk use weight: mix.around(circle, { steps: 1, jump: 'start' })",
+    );
   const refused = refusal(mix, spec);
   if (refused !== null) throw new Error(`blits: within is not taken on ${refused}`);
 }

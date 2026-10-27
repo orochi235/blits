@@ -431,8 +431,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    Left: a bound on a voice naming its subjects, on a role member, on an owner's child, on a
    stateful patch, and on a mix with history, all refused (history because the circle the host
    moves is not recorded; the playground drops history for a composition that bounds a voice,
-   item 13); `within` on a constant weight, refused, though `around` with `{ steps: 1, jump: 'start' }`
-   now gives a hard-edged disk; blits-panel could draw a voice's circle. Whether unbounded voices
+   item 13); `within` on a constant weight stays refused, its error naming the recipe,
+   `weight: mix.around(circle, { steps: 1, jump: 'start' })` for a hard-edged disk (decided by Mike,
+   2026-10-26); blits-panel could draw a voice's circle. Whether unbounded voices
    are ever deprecated stays open and unlikely: klieg's lighting, a fade over a whole sign and wod's
    transitions are unbounded by design (2026-10-07).
    - **A voice weighted by `mix.around` and cued before `plot` is bound once `plot` is called**

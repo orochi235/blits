@@ -146,8 +146,10 @@ describe('within is refused', () => {
     const m = mix<Dot, Pose>(K);
     const dot = { seed: 0, x: 0, y: 0 };
     m.plot([dot], new Float64Array(2), 1);
-    expect(cue(m, {})).toThrow(/needs a weight signal/);
-    expect(cue(m, { weight: 0.5 })).toThrow(/needs a weight signal/);
+    const recipe =
+      /needs a signal weight; for a hard-edged disk use weight: mix\.around\(circle, \{ steps: 1, jump: 'start' \}\)/;
+    expect(cue(m, {})).toThrow(recipe);
+    expect(cue(m, { weight: 0.5 })).toThrow(recipe);
     expect(cue(m, { weight: () => 1, subjects: [dot] })).toThrow(/naming its subjects/);
     expect(cue(m, { weight: () => 1, role: 'a' })).toThrow(/in a role/);
   });
