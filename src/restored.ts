@@ -179,7 +179,7 @@ export class Restored<I> extends Store<I, Subject<unknown>> {
 
   /** `get`, given what `own` holds for `key`. */
   private from(key: I, own: Subject<unknown> | undefined): Subject<unknown> | undefined {
-    const mark = own !== undefined && own.reaches;
+    const mark = own?.reaches;
     const at = (mark ? own.restored : this.at.get(key)) ?? this.first;
     const now = this.stamp;
     if (at === now) return own;

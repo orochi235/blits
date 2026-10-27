@@ -12,8 +12,15 @@ export default meta;
 
 type Story = StoryObj<typeof FlowDiagram>;
 
+/** The composition of the preset named `name`, or of the first preset. */
+function preset(name?: string) {
+  const found = name === undefined ? PRESETS[0] : PRESETS.find((p) => p.name === name);
+  if (found === undefined) throw new Error(`no preset ${name}`);
+  return found.comp;
+}
+
 function Picking({ name }: { name: string }) {
-  const comp = PRESETS.find((p) => p.name === name)!.comp;
+  const comp = preset(name);
   const [picked, setPicked] = useState<string | null>(null);
   return (
     <div>
@@ -43,7 +50,7 @@ export const Crowded: Story = {
     const levels = [
       ...new Map(PRESETS.flatMap((p) => p.comp.levels).map((l) => [l.name, l])).values(),
     ];
-    const comp = { ...PRESETS[0]!.comp, voices, levels };
+    const comp = { ...preset(), voices, levels };
     return <FlowDiagram flow={flowOf(comp)} width={360} height={800} />;
   },
 };
@@ -51,7 +58,7 @@ export const Crowded: Story = {
 export const FoldOfScale: Story = {
   render: () => (
     <FlowDiagram
-      flow={foldOf(flowOf(PRESETS.find((p) => p.name === 'crossfade')!.comp), 'scale')}
+      flow={foldOf(flowOf(preset('crossfade')), 'scale')}
       width={360}
       height={400}
       direction="up"
@@ -62,13 +69,13 @@ export const FoldOfScale: Story = {
 /** View C: the flow and the timing as one diagram, timing edges in amber. */
 export const Both: Story = {
   render: () => {
-    const comp = PRESETS.find((p) => p.name === 'anchors')!.comp;
+    const comp = preset('anchors');
     return <FlowDiagram flow={bothOf(flowOf(comp), timingOf(comp))} width={360} height={900} />;
   },
 };
 
 function Editing() {
-  const [comp, setComp] = useState(PRESETS.find((p) => p.name === 'owner fade')!.comp);
+  const [comp, setComp] = useState(preset('owner fade'));
   const [positions, setPositions] = useState(new Map<string, { x: number; y: number }>());
   const flow = flowOf(comp);
   return (

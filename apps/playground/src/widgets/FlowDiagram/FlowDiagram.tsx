@@ -9,7 +9,7 @@ import {
 } from '@weasel-js/diagram';
 import { useMemo, useRef } from 'react';
 import { boxStyleOf, edgeStyleOf, linesOf, portColorOf, styleOf } from './style';
-import type { Flow, FlowEnd, FlowPortTone } from './types';
+import type { Flow, FlowBox, FlowEnd, FlowNode, FlowPortTone } from './types';
 
 // diagramScene sets text in sans-serif; labels paint blank unless the family is registered.
 registerCanvasFont('sans-serif');
@@ -95,8 +95,8 @@ export function FlowDiagram({
       },
       {
         layoutOptions: { direction, order: 'barycenter', nodeGap: 40, rankGap: 56 },
-        nodeStyle: (d) => styleOf(byId.get(d.id)!),
-        groupStyle: (g) => boxStyleOf(boxes.get(g.id)!),
+        nodeStyle: (d) => styleOf(byId.get(d.id) as FlowNode),
+        groupStyle: (g) => boxStyleOf(boxes.get(g.id) as FlowBox),
         edgeStyle: (e) => edgeStyleOf(edges.get(endsOf(e)) ?? {}),
       },
     );

@@ -10,7 +10,8 @@ export function useSize(): [
   useEffect(() => {
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry!.contentRect;
+      if (entry === undefined) return;
+      const { width, height } = entry.contentRect;
       setSize((s) => (s && s.width === width && s.height === height ? s : { width, height }));
     });
     ro.observe(el);
