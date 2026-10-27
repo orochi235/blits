@@ -16,7 +16,7 @@ type Nows = number[];
 export interface PlayerOptions {
   /** What a debugger lists the main mix as. */
   name?: string;
-  /** Explainer ms one run lasts: how far back history has to reach. */
+  /** Explainer ms one run lasts: how far back history has to reach, and where `end` is announced. */
   duration: number;
   /**
    * False for a run nobody watches or scrubs: no history, and every mix off a debugger's list from
@@ -53,6 +53,11 @@ export class Player<I, O, C> {
   private closed = false;
   /** True while this player is the one calling the mix, so a wake it causes is not a debugger's. */
   private own = false;
+  /**
+   * Explainer ms from the first frame to where the run ends, which the main mix announces then as
+   * `end`; null once announced, and for an unlisted run.
+   */
+  private end: number | null;
 
   constructor(
     private readonly scene: Scene<I, O, C>,
@@ -60,6 +65,7 @@ export class Player<I, O, C> {
     opts: PlayerOptions,
   ) {
     const listed = opts.listed ?? true;
+    this.end = listed ? opts.duration : null;
     const options = {
       ...scene.options?.(config),
       ...(listed
@@ -180,6 +186,11 @@ export class Player<I, O, C> {
     for (const p of [this.main, ...this.solos]) {
       p.mix.sync(this.wall);
       p.seqs[k] = p.mix.seq;
+    }
+    // Announced once, in the first frame, so every seek back keeps it and nothing plays it twice.
+    if (this.end !== null) {
+      this.main.mix.announce('end', { at: this.wall + this.end - t });
+      this.end = null;
     }
     const now = this.main.mix.now;
     const planned =
