@@ -287,7 +287,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        `FRAMES=5000`, 7 own-process rounds, on `c276e7d`, before the locus-to-role rename): on the
        inline route, clearing a subject's `taken` once before its members and dropping `meetRole`
        there (teitou: `role` 2.608 → 2.524, U = 9.5; `blend` 2.787 → 2.628, U = 12.5; faster but
-       short of U < 9; `bench/runs/2026-10-26-role-inline-taken.txt`); and priming a signalled voice's setting
+       short of U < 9; `bench/runs/2026-10-26-role-inline-taken.txt`; rerun on `3eb11ae` over 9 rounds on
+       msb-uai: `role` 3.461 → 3.379, U = 23.5, `blend` 3.778 → 3.698, U = 24, both short of U < 18,
+       `bench/runs/2026-10-26-role-inline-taken-r9.txt`); and priming a signalled voice's setting
        once a lane call, in `signal`, not again in `ready` (msb-uai: `blend` 3.505 → 3.574, U = 22,
        `bench/runs/2026-10-26-role-prime-once.txt`).
        Measured no different and reverted (msb-uai, 2026-10-26, against `ead195f`): clearing a
