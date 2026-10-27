@@ -439,10 +439,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      (2026-10-26): the first `plot` runs `bind` over the live voices, safe because `around` read 0
      for every subject until then. `test/around.test.ts` holds it to the bit against the
      hand-written signal cued `within` after `plot`, lanes on and off.
-   - **Under a CSP that refuses eval, `copyout.ts`'s `new Function` falls back to the loop**, but a
-     browser probably also logs (and reports to any `report-uri`) a violation once per set of laned
-     channels. Inferred from how CSP works, not observed; worth a check in a CSP page before a host
-     with a strict policy hits it (2026-10-26).
+   - **Under a CSP that refuses eval, `copyout.ts` asks `Function` once per process** (2026-10-26).
+     Observed in headless Chromium on a page served with `script-src` lacking `'unsafe-eval'`: every
+     `new Function`, caught or not, fired a `securitypolicyviolation` event and a DevTools issue (5
+     calls, 5 events; no console message), and the page sent one `report-uri` report. blits fired
+     one per set of laned channels (3 kits, 3 events) until a refusal stopped further asks; now 1
+     event per page, same poses. No silent probe exists, so one is the floor short of
+     `lanes: false` or `blits/lean`. Documented on the Engine page and in `docs/schema.html`.
 
 5. **Work nobody will see** (2026-10-07). A lane fills only subjects probed this frame or the last
    (CHANGELOG 0.8.0), which does nothing for astv's shape, the `typing` row: at 2% probed every lane

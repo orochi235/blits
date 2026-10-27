@@ -55,7 +55,8 @@ version and everything else the patch. Each release lists its changes as **Break
   runs, each in its own process). A pose the mix makes itself, for a probe without `out`, `atRest`
   or `pull`, is now a plain object of the mix's own shape holding each channel with a rest in kit
   order, so its numbers are stored unboxed. Under a content security policy that refuses
-  `Function`, the copy is the loop it was.
+  `Function`, the copy is the loop it was, and the mix asks only once, so a page sees one
+  violation at most: each refused `Function` fires one, caught or not.
 - A weight signal on lanes is handed, after a stretch of frames at weight 0, the `dt` since its
   last read, as it is off lanes. It was handed the gap since the subject last had a delta.
 - Tweens read by `pull` cost about a twentieth less a frame: a probe holds its subject for the

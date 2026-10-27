@@ -61,7 +61,7 @@ describe('copying laned values into a pose', () => {
   });
 
   it('writes the same where Function is refused, as under a content security policy', () => {
-    vi.stubGlobal('Function', () => {
+    vi.stubGlobal('Function', function refuse() {
       throw new EvalError('refused');
     });
     const refused = poses(true, true, K2);

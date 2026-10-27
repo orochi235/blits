@@ -34,7 +34,9 @@ export function filled(ch: Laned, slot: number, held: unknown): number[] {
 }
 
 /** Each set of laned channels' copier, made once from its source and bound to the channels. */
-const made = new Map<string, ((chans: readonly Laned[], fill: typeof filled) => Copier) | null>();
+const made = new Map<string, (chans: readonly Laned[], fill: typeof filled) => Copier>();
+/** `Function` refused once: under a CSP each refusal fires a violation, so it is not asked again. */
+let refused = false;
 
 /**
  * A copier for these channels, written out with each channel's name in place: a store under a name
@@ -56,7 +58,7 @@ export function copier(laned: readonly Laned[]): Copier {
   }
   const body = lines.join('\n');
   let make = made.get(body);
-  if (make === undefined) {
+  if (make === undefined && !refused) {
     const bind = laned.map((_, c) => `const c${c} = chans[${c}];`).join(' ');
     try {
       make = new Function(
@@ -64,12 +66,12 @@ export function copier(laned: readonly Laned[]): Copier {
         'f',
         `${bind}\nreturn function copyLaned(o, s) {\n${body}\n};`,
       ) as (chans: readonly Laned[], fill: typeof filled) => Copier;
+      made.set(body, make);
     } catch {
-      make = null;
+      refused = true;
     }
-    made.set(body, make);
   }
-  return make === null ? (pose, slot) => loop(laned, pose, slot) : make(laned, filled);
+  return make === undefined ? (pose, slot) => loop(laned, pose, slot) : make(laned, filled);
 }
 
 function loop(laned: readonly Laned[], pose: Record<string, unknown>, slot: number): void {
