@@ -283,9 +283,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        pass (`gatherRole`, `foldRole`). What is left (CPU profile, teitou, 3000 frames): in
        `role`, `gatherScalar` 6.2% of samples, `runRole` 4.7, `meetRole` 3.9 and `foldAt` 3.7;
        a blend adds each member's `signalled` path (`signalled` 5.2, `signal`, `laneRead` and
-       `blended` 5.1, the signal itself 5.2). Untried: on the inline route, clearing a subject's
-       `taken` once before its members and dropping `meetRole` from `gatherScalar` there; and for
-       a blend, priming the first member's setting once rather than in both `signal` and `ready`.
+       `blended` 5.1, the signal itself 5.2). Measured no different and reverted (2026-10-26,
+       `FRAMES=5000`, 7 own-process rounds, on `c276e7d`, before the locus-to-role rename): on the
+       inline route, clearing a subject's `taken` once before its members and dropping `meetRole`
+       there (teitou: `role` 2.608 → 2.524, U = 9.5; `blend` 2.787 → 2.628, U = 12.5; faster but
+       short of U < 9; `bench/runs/2026-10-26-role-inline-taken.txt`); and priming a signalled voice's setting
+       once a lane call, in `signal`, not again in `ready` (msb-uai: `blend` 3.505 → 3.574, U = 22,
+       `bench/runs/2026-10-26-role-prime-once.txt`).
        Measured no different and reverted (msb-uai, 2026-10-26, against `ead195f`): clearing a
        subject once before a member-at-a-time gather and skipping the fold pass of a member first
        to no subject (`role` 3.747 → 3.678, U = 13; `blend` 4.013 → 3.988, U = 14). Raw output:
