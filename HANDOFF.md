@@ -453,12 +453,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    an alias for the 2D case; `plot`'s array keeps the name `xy`; `put(subject, x, y?, z?)`. How
    `plot` is told the axis count is not decided; the proposal was an options object,
    `plot(subjects, xy, { axes, cell })`.
-   **`4350a86` (the finder) made the glow rows 8–15% slower by tipping V8 into pretenuring the
-   host patch's results, not by any code it runs per frame** (2026-10-28). Measured at `FRAMES=5000`,
-   solo msb-uai, 7 rounds: `glowb^` 0.776 → 0.875 (U = 0), `glowbn^` 0.812 → 0.881 (U = 6),
-   `glowbp^` 0.789 → 0.907 (U = 1); HEAD the same (`bench/runs/2026-10-28-finder-ab-5000.txt`).
-   At the default 300 frames it reads differently by machine and mostly as warm-up, so time these
-   rows at 5000. What was measured:
+   **`4350a86` (the finder) made the glow rows 8–15% slower, cause not found** (2026-10-28,
+   revised 2026-10-29). It tips V8 into pretenuring the host patch's results, but the GC pauses that
+   brings can't explain the slowdown. Measured at `FRAMES=5000`, solo msb-uai, 7 rounds: `glowb^`
+   0.776 → 0.875 (U = 0), `glowbn^` 0.812 → 0.881 (U = 6), `glowbp^` 0.789 → 0.907 (U = 1); HEAD
+   the same (`bench/runs/2026-10-28-finder-ab-5000.txt`). At the default 300 frames it reads
+   differently by machine and mostly as warm-up, so time these rows at 5000. What was measured:
      - Removing one piece of `4350a86` at a time (the FinalizationRegistry, `findAll` on circles,
        the `contribution` change, `?? -1`), or all four, leaves it slow; reverting `places.ts`,
        `plot.ts` and `grid.ts` alone recovers it (`-finder-bisect-5000.txt`, `-finder-bisect2-5000.txt`).
@@ -469,24 +469,26 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        a full GC old space is flat across 3000 frames (`-plot-leak.txt`, `bench/plotleak.mjs`).
      - `--trace-pretenuring-statistics` (`-finder-ptstats*.txt`): at `4350a86` V8 tenures the site
        in the bench's `patch.writes` (the `{ gain, dark }` each subject's call returns; 5566 of 6250
-       found alive in one scavenge), deoptimizing it, so every frame's 10k results go straight to
-       old space. Also `record()`'s literal and `Places.hold`'s. At `c93ca73` none of those.
+       found alive in one scavenge), so every frame's 10k results go straight to old space. Also
+       `record()`'s literal and `Places.hold`'s. At `c93ca73` none of those.
+     - Results survive because a fn patch's result is kept on its record (`rec.delta` in `fill.ts`
+       `call`, `held.delta` in `contribution.ts`) until the next frame's call replaces it, so a
+       second read the same frame (a refill, or a general-path probe after a fill) reuses it. That
+       reuse is for cost and for a patch whose `at` is not pure; `step` has its own once-a-frame
+       guard. Not keeping it in `call` (`rec.delta = null`) made `c93ca73` faster, `glowb^` 0.866 →
+       0.776 (U = 6) (`-finder-nodelta.txt`).
+     - **Keeping a copy instead ends the pretenuring and doesn't buy the time back (2026-10-29), so
+       it was not kept.** Each result was copied into a delta the record owns, through a copier
+       generated per voice as `copyout.ts` generates one. GC fell from 129 taking 41 ms to 274 taking
+       15 ms on `glowb^`, and from 120 ms to 26 on `fn^`, but `glowb^` got 14% slower (U = 0),
+       `probed-` 3% (U = 6), and the rest moved within noise (`-owned-delta-copier.txt`). A plain
+       keyed loop over `writes` was 10–47% slower everywhere, from boxing each double it stored
+       (`-owned-delta-keyed.txt`). And 41 ms of GC over 5000 frames is 8 µs a frame, against the
+       100 µs lost: the pauses aren't where the time goes. Where it does go is open; write barriers
+       for old records pointing at young results are a guess, not a measurement.
      - With `--no-allocation-site-pretenuring` the GC counts match, but `glowb^` stays 13% slower
-       (U = 10, short of U < 9) and `glowbn^` 6% (U = 1) (`-finder-pretenure.txt`): a remainder not
-       found.
-   **Why results survive**: a fn patch's result is kept on its record (`rec.delta` in `fill.ts`
-   `call`, `held.delta` in `contribution.ts`) so a second read the same frame reuses it, and holds it
-   until the next frame's call replaces it. While the nursery is about a frame's allocation, that
-   keeps most of them alive at each scavenge, and setup allocation decides whether one lands on
-   a max-size scavenge and tenures the site. Any change to setup allocation can flip it, in a host
-   as well as the bench. Not keeping it in `call` (`rec.delta = null`) made `c93ca73` faster:
-   `glowb^` 0.866 → 0.776 (U = 6), `glowbn^` 0.823 → 0.769 (U = 0), `glowbp^` 0.817 → 0.788
-   (U = 7), with 275 GCs taking 16 ms. But `4350a86` with the same change stayed slow and tenured
-   (`-finder-nodelta.txt`), since the general path's `held.delta` still holds warm-up's results.
-   ❓ **For Mike: should a fn patch's result stop being kept on its record?** It is how a second
-   read in one frame (a refill, or a general-path probe after a fill) avoids calling the patch twice,
-   which would also step a stateful one twice. Dropping it needs another way to share one call's
-   result within a frame. Unbuilt. `within` on a constant weight stays refused, its error naming the recipe,
+       (U = 10, short of U < 9) and `glowbn^` 6% (U = 1) (`-finder-pretenure.txt`).
+   `within` on a constant weight stays refused, its error naming the recipe,
    `weight: mix.around(circle, { steps: 1, jump: 'start' })` for a hard-edged disk (decided by Mike,
    2026-10-26); blits-panel draws a bounded voice's circle on the page (◯ circles, 2026-10-26). Whether unbounded voices
    are ever deprecated stays open and unlikely: klieg's lighting, a fade over a whole sign and wod's
