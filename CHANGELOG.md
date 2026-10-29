@@ -4,6 +4,18 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- `mix.trace(from, to, { grid })` reads the mix over a window of mix time without moving it, and
+  `trace.of(subject, channel)` gives a channel of one number as a `Run`: points joined by straight
+  lines, two points at one time for a jump, and `exact` where the lines are the mix's own values
+  throughout. Where every voice feeding the channel is a `keys` voice of known shape (plain number
+  stops eased `linear`, a number weight, a steady rate, no fade under way), the points are its own
+  breakpoints; elsewhere the run is read every `grid` ms, default 5. One trace shares its reads
+  across subjects. `Run`, `Trace`, `TraceOptions` and `NumberChannel` are exported.
+
 ## 0.15.0
 
 ### Breaking
