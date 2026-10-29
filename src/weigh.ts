@@ -4,6 +4,7 @@ import { Arg } from './lane.js';
 import type { Mixer } from './mixer.js';
 import { ownersWeight } from './owner.js';
 import { reading } from './reading.js';
+import type { VoiceSetting } from './setting.js';
 import type { Subject } from './subject.js';
 import type { Setting } from './types.js';
 import type { Voice } from './voice.js';
@@ -51,18 +52,24 @@ export function primeLaned<I, O>(
 ): void {
   const now = this.now;
   const setting = voice.setting;
-  const mark = arg[Arg.MARK] as number;
-  if (setting.mark !== mark) {
-    setting.timestamp = now;
-    setting.elapsed = arg[Arg.ELAPSED] as number;
-    setting.pass = arg[Arg.PASS] as number;
-    setting.mark = mark;
-  }
+  if (setting.mark !== arg[Arg.MARK]) markSetting(setting, now, arg);
   if (voice.patch.step === undefined && held.probed < now) held.stepped = held.probed;
   setting.dt = this.capped(now - held.stepped);
   setting.weight = 0;
   setting.state = held.state;
   voice.keepOn = held;
+}
+
+/**
+ * `primeLaned`'s once-a-lane fields, kept out of it so it stays small enough to inline beside
+ * `signalled` in `one`: when both did not fit, V8 inlined `signalled` and every subject of an
+ * unbounded voice paid a call (`glowb^` +11%, 2026-10-28).
+ */
+function markSetting<I, O>(setting: VoiceSetting<I, O>, now: number, arg: Float64Array): void {
+  setting.timestamp = now;
+  setting.elapsed = arg[Arg.ELAPSED] as number;
+  setting.pass = arg[Arg.PASS] as number;
+  setting.mark = arg[Arg.MARK] as number;
 }
 
 /** A gap as a `dt`: Infinity under reduced motion, and no more than `maxDt`. */
