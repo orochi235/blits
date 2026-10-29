@@ -4,6 +4,16 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- `pull` over a list whose order has drifted from the order the mix first saw it in, as a list
+  kept dense by swap-remove does, writes rests in a few runs, not one per short stretch of
+  subjects. With one subject leaving and one arriving every frame (`turnover^`), a frame takes
+  0.253 ms against 0.262. Teitou, medians of seven runs of 5,000 frames, each in its own process.
+  Other rows are unchanged.
+
 ## 0.15.0
 
 ### Breaking
