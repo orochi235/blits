@@ -830,6 +830,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
+- **teitou's onto tree of blits will not sync** (2026-10-29): its local `v0.15.0` tag differs
+  from GitHub's, so every fetch is rejected ("would clobber existing tag") and a job placed there
+  fails before it runs. Deleting that tag in teitou's `~/.config/onto/work/blits` fixes it; pass
+  `--node` elsewhere until then. The churn work's trees `blits-churn` on teitou and keiei can go.
+
 - **A staggered voice's end depends on which subjects the host has read, for a `target` voice**
   (2026-10-23; narrowed 2026-10-29). A voice cued with `subjects` asks `stagger` for each at cue
   and ends by all of them, through seeks too, so the determinism tests' `named` variant passes every
