@@ -36,7 +36,7 @@ export class Grid {
     this.xy[2 * i] = x;
     this.xy[2 * i + 1] = y;
     if (this.dirty) return;
-    if (this.cols === 0) {
+    if (this.cols === 0 || i >= this.home.length) {
       this.dirty = true;
       return;
     }

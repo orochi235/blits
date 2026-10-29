@@ -25,7 +25,7 @@ export interface VoiceInfo {
   state: string;
   /** Its weight on the picked subject, NaN with none picked. */
   weight: number;
-  /** Whether it is bounded to a circle, by `within` or an `around` weight. */
+  /** Whether it is bounded, by `within` or an `around` weight. */
   bounded: boolean;
 }
 

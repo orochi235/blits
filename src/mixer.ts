@@ -38,7 +38,7 @@ import { ownerPatch } from './owner.js';
 import type { Pace } from './pace.js';
 import { Keys } from './paging.js';
 import type { Places } from './places.js';
-import { moved, plot, put } from './plot.js';
+import { moved, place, plot, put } from './plot.js';
 import { projectAll } from './project.js';
 import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
@@ -664,6 +664,7 @@ const methods = {
   restsLaned,
   restsKey,
   plot,
+  place,
   moved,
   put,
   around,

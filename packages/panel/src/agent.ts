@@ -1,4 +1,4 @@
-import { type Hold, type Watched, type WatchedFrame, watched } from '@msb235/blits';
+import { type Finder, type Hold, type Watched, type WatchedFrame, watched } from '@msb235/blits';
 import { Circles, type Ring, type Screen } from './circles.js';
 import { Ids } from './ids.js';
 import { marksOf } from './marks.js';
@@ -74,7 +74,11 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
   /** What each voice was cued with, by handle id; a voice's name and tags never change. */
   const named = new Map<
     number,
-    { name: string | null; tags: string[]; within: Readonly<Omit<Ring, 'voice'>> | undefined }
+    {
+      name: string | null;
+      tags: string[];
+      within: Readonly<Omit<Ring, 'voice'>> | Finder | undefined;
+    }
   >();
   const circles = new Circles();
   let circling = false;
@@ -142,7 +146,8 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     const rings: Ring[] = [];
     for (const h of e.mix.voices()) {
       const c = named.get(h.id)?.within;
-      if (c !== undefined) rings.push({ voice: h.id, x: c.x, y: c.y, r: c.r });
+      // A finder's bound has no shape to draw.
+      if (c !== undefined && !('find' in c)) rings.push({ voice: h.id, x: c.x, y: c.y, r: c.r });
     }
     circles.draw(rings, opts.screen ?? offered().screen);
   };

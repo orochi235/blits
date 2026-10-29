@@ -409,9 +409,8 @@ owner or a span; deleting a group moves what it held up to its parent.
   row, so `around`'s radius is in dots, and its circles follow the pointer over the stage; a move
   while paused reads the frame shown again (`touch`, then `pull`). A weight that is `around(...)`
   itself is handed to blits unwrapped, so its voice is bounded; wrapped in another signal it plays
-  unbounded, to the same values. blits refuses a bound on a mix with history, so such a
-  composition's mixes keep none, and a scrub back replays, with the circle where the pointer is
-  now (`src/blits/pointer.ts`).
+  unbounded, to the same values. `around` is not an input signal, so a scrub back reads it with the
+  circle where the pointer is now (`src/blits/pointer.ts`).
 - **Levels.** A slider move is not recorded into the composition. It survives rebuilds, so a scrub
   back replays it at the slider's current value, and it is dropped when the composition's own value
   for that level changes or the level goes away.

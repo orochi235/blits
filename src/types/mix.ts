@@ -364,31 +364,37 @@ export interface Mix<I, O, H = unknown> {
    */
   touch(subject?: I): void;
   /**
-   * Gives the mix each subject's position, for voices cued `within` a circle: `xy` holds two numbers
-   * a subject, `x` then `y`, in the order of `subjects`. It is read in place, so a host moving its
-   * subjects writes into it and calls `moved`. `cell` sizes the grid the mix finds subjects in,
-   * best near the radius the circles use; by default, about two subjects a cell. Another call
-   * replaces the list. Subjects are held as the mix holds every subject: an object weakly, anything
-   * else until `drop`, which also takes its position away until the next `plot`. Throws for an `xy`
-   * shorter than two numbers a subject.
+   * The subject's index, which a `within` finder names it by: the one it has, or a new one. It keeps
+   * it until `drop`, or, for an object, until the host lets it go; then the index is handed to the
+   * next subject placed. A subject placed with no `plot` has no position until `put` gives it one.
+   */
+  place(subject: I): number;
+  /**
+   * Gives the mix each subject's index and position at once, for voices cued `within` a circle: the
+   * index is the subject's place in `subjects`, and `xy` holds two numbers a subject, `x` then `y`,
+   * in that order. It is read in place, so a host moving its subjects writes into it and calls
+   * `moved`. `cell` sizes the grid the mix finds subjects in, best near the radius the circles use;
+   * by default, about two subjects a cell. Another call replaces the list and every index. A subject
+   * `place`d after it takes an index freed by `drop`, which reads whatever `xy` holds there, or one
+   * past the list, which has no position. Throws for an `xy` shorter than two numbers a subject.
    */
   plot(subjects: readonly I[], xy: Float64Array, cell?: number): void;
   /** The host wrote new positions into the array it gave `plot`, which the next frame reads. */
   moved(): void;
   /**
-   * Moves one plotted subject to (`x`, `y`), for a host where few move at once: it writes into the
-   * array `plot` was given, so the host's array holds the move too, and the grid is built again
-   * only once many subjects have left their cells. The same as writing the array and calling
-   * `moved`; the two mix freely. Throws for a subject `plot` was not given, or one dropped since.
+   * Moves one subject to (`x`, `y`), for a host where few move at once: it writes into the array
+   * `plot` was given, so the host's array holds the move too, or with no `plot`, into the mix's own,
+   * and the grid is built again only once many subjects have left their cells. The same as writing
+   * the array and calling `moved`; the two mix freely. Throws for a subject with no index, and for
+   * one whose index is past the array `plot` was given.
    */
   put(subject: I, x: number, y: number): void;
   /**
-   * A weight signal over the positions `plot` gave: 1 at the circle's center, falling with distance
+   * A weight signal over the positions `plot` or `put` gave: 1 at the circle's center, falling with distance
    * to 0 at `r` and beyond, along `ease` read from the edge (0) to the center (1), linear by
    * default. The host moves or resizes the circle by writing to it. A voice it weighs is bounded to
    * the circle as if cued `within` it, with no check, since the circle is the signal's own edge,
-   * where the voice could take a `within`, from the first `plot` for one cued before it; elsewhere
-   * it plays unbounded, to the same values. A subject with no position reads 0.
+   * from the first `place` or `plot` for one cued before it. A subject with no position reads 0.
    */
   around(circle: Circle, opts?: { ease?: Easing }): Signal<I, H>;
   /**

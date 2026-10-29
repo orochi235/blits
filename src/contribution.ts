@@ -3,7 +3,7 @@ import { passAt, phaseAt, phaseBefore, silent, stepOf } from './clock.js';
 import { copy as copyValue } from './clone.js';
 import { type Key, near } from './fold.js';
 import { waits } from './held.js';
-import { apart, copyState, recordHost, remember } from './history.js';
+import { apart, copyState, record, recordHost, remember } from './history.js';
 import { stateful } from './hosts.js';
 import type { Mixer } from './mixer.js';
 import { moved } from './moved.js';
@@ -11,7 +11,7 @@ import { type Built, readKeys } from './patch.js';
 import { reading } from './reading.js';
 import { isRested } from './record.js';
 import type { Subject } from './subject.js';
-import type { Channel, Patch } from './types.js';
+import type { Channel, Patch, Signal } from './types.js';
 import { checkWrites, type Voice } from './voice.js';
 import { Primed } from './weigh.js';
 
@@ -68,9 +68,14 @@ export function contribution<I, O>(
   held.weight = 0;
   if (!held.reaches) return null;
   // Outside its bound the signal reads 0 unread. What a read at weight 0 still does is done there:
-  // a patch that steps steps, and a `from: 'current'` voice takes its base.
-  const outside = voice.bound !== null && !inBound(this, voice.bound, subject);
-  if (outside && voice.patch.step === undefined && voice.spec.from !== 'current') return null;
+  // a patch that steps steps, a `from: 'current'` voice takes its base, and an input is recorded.
+  // A read back of recorded inputs reads them, not the bound as it stands now.
+  const outside =
+    voice.bound !== null && held.replay === undefined && !inBound(this, voice.bound, subject);
+  const recorded =
+    outside && (voice.spec.weight as Signal<I>).input === true && !!this.opts.history?.inputs;
+  if (outside && !recorded && voice.patch.step === undefined && voice.spec.from !== 'current')
+    return null;
   if (voice.out?.rest && isRested(held)) return null;
   if (held.rebuilt !== voice.rebuilds) rebuild(this, voice, subject, now, held);
   else if (held.seeks !== voice.seeks && sentBack(this, voice, held)) {
@@ -101,6 +106,7 @@ export function contribution<I, O>(
   // it for subjects no probe asked about.
   const keptAtWeigh = reading.kept;
   const weight = outside ? 0 : this.weigh(voice, subject, now, held);
+  if (recorded) record(this, voice, subject, held, 0);
   if (reading.kept !== keptAtWeigh && !voice.keeping) stateful(this, voice);
   setting.weight = weight;
   held.weight = weight;

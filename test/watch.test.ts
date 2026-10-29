@@ -227,7 +227,7 @@ describe('what an entry tells', () => {
     expect(e.read(a).x).toBe(300);
   });
 
-  it("gives a bounded voice's circle, live, and none for an unbounded one", () => {
+  it("gives a bounded voice's circle, live, or its finder, and none for an unbounded one", () => {
     const m = mix<Part, Pose>(K);
     m.plot([a], new Float64Array([0, 0]));
     const area = { x: 0, y: 0, r: 5 };
@@ -237,6 +237,8 @@ describe('what an entry tells', () => {
     expect(e.voice(bounded)?.within).toBe(area);
     expect(e.voice(around)?.within).toEqual({ x: 1, y: 1, r: 2 });
     expect(e.voice(m.cue({ patch: clock }))?.within).toBeUndefined();
+    const finder = { find: () => 0 };
+    expect(e.voice(m.cue({ patch: clock, weight: () => 1, within: finder }))?.within).toBe(finder);
   });
 });
 

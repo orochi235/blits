@@ -61,7 +61,7 @@ export function compile(
     // History lets the player seek back with blits' own `seek` rather than replaying from 0.
     const m = mix<Subject, Mixed>(kit, {
       ...mixOptionsOf(c.mix),
-      ...(bounded ? {} : { history: { ms: c.length + HISTORY_SLACK, inputs: true, tape } }),
+      history: { ms: c.length + HISTORY_SLACK, inputs: true, tape },
     });
     if (xy !== null) m.plot(subjects, xy);
     for (const { name, at, ...opts } of c.announced ?? []) m.announce(name, { at, ...opts });

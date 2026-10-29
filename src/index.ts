@@ -47,6 +47,7 @@ export type {
   Engine,
   FadeOptions,
   FadeSpec,
+  Finder,
   FitResult,
   Handle,
   HistoryOptions,

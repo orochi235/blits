@@ -1,7 +1,7 @@
 import type { HistoryOptions } from './history.js';
 import type { Mix } from './mix.js';
 import type { Sent } from './patch.js';
-import type { Circle, Handle } from './voice.js';
+import type { Circle, Finder, Handle } from './voice.js';
 
 /**
  * Every mix made on the page, for a debugger: shared by every copy of blits loaded, so a mix one
@@ -49,8 +49,11 @@ export interface Watched<I = unknown, O = unknown> {
     | {
         readonly name: string | undefined;
         readonly tags: readonly string[];
-        /** The circle it is bounded to, by `within` or an `around` weight, read live; undefined for none. */
-        readonly within: Readonly<Circle> | undefined;
+        /**
+         * What it is bounded to, by `within` or an `around` weight: a circle, read live, or the
+         * host's finder; undefined for none.
+         */
+        readonly within: Readonly<Circle> | Finder | undefined;
       }
     | undefined;
   /** What to call a subject: the mix's `labelOf`, else a guess from the subject itself. */

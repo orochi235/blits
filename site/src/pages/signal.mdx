@@ -65,14 +65,39 @@ window.addEventListener('pointermove', (e) => { pointer.x = e.clientX; pointer.y
 
 Where only a few subjects move at a time, `put` moves one: `bars.put(bar, x, y)`. It writes into the array `plot` was given, so it mixes freely with writing the array yourself and calling `moved`, and it takes only a subject that array holds. The mix's grid stays as built until many subjects have left their cells: with 100 of 10,000 subjects moving each frame, `put` takes 0.679 ms a frame against 0.705 for `moved`.
 
-The circle declares where the signal is 0; it does not shape it. A signal of your own still above 0 at `r` is cut off there, so outside production the mix checks a few subjects just outside the circle every few frames and warns once if the signal reads above 0 for any of them. It pays most while the circle covers a small share of the subjects: on 10,000 subjects read by `pull`, a glow over 2% of them adds about a sixth of what it adds unbounded, and one over 60% of them still costs a little less than unbounded. `within` needs a signal `weight`, and is refused on a mix with history. A patch that keeps state still steps outside the circle, as it does at weight 0, so bounding it saves the signal's calls but not its steps.
+The circle declares where the signal is 0; it does not shape it. A signal of your own still above 0 at `r` is cut off there, so outside production the mix checks a few subjects just outside the circle every few frames and warns once if the signal reads above 0 for any of them. It pays most while the circle covers a small share of the subjects: on 10,000 subjects read by `pull`, a glow over 2% of them adds about a sixth of what it adds unbounded, and one over 60% of them still costs a little less than unbounded. `within` needs a signal `weight`. A patch that keeps state still steps outside the circle, as it does at weight 0, so bounding it saves the signal's calls but not its steps.
 
-`around` is that glow built in: 1 at the circle's center, falling to 0 at `r` over the plotted positions, so the host writes neither the signal nor `within`. It carries its circle, and a voice it weighs is bounded to it with no check; one cued before `plot` reads 0 everywhere until then and is bounded once `plot` is called, and on a mix with history, where a voice could not take `within`, it plays unbounded, to the same values. `ease` shapes the fall, read from the edge to the center: `'ease-out'` gives a broad top, and `{ steps: 1, jump: 'start' }` a hard-edged disk.
+`around` is that glow built in: 1 at the circle's center, falling to 0 at `r` over the plotted positions, so the host writes neither the signal nor `within`. It carries its circle, and a voice it weighs is bounded to it with no check; one cued before `plot` reads 0 everywhere until then and is bounded once `plot` is called. `ease` shapes the fall, read from the edge to the center: `'ease-out'` gives a broad top, and `{ steps: 1, jump: 'start' }` a hard-edged disk.
 
 ```ts
 const pointer = { x: 0, y: 0, r: 120 };
 bars.cue({ patch: glow, weight: bars.around(pointer, { ease: 'ease-out' }), loop: true });
 ```
+
+## Bounds of your own: a finder
+
+A circle over positions is one way to say where a signal can be above 0. A host that already knows, from a scene graph's spatial index, a timeline, or what it culled as offscreen, can answer for itself, over any axes or none. Each subject gets an index from `place`, kept until `drop` or until the subject is collected, after which the next subject placed takes it. Cue the voice `within` a finder, and once a frame its `find` writes the indices it found into an array the mix lends it and returns how many:
+
+```ts
+for (const node of scene.nodes) node.index = bars.place(node);
+
+bars.cue({
+  patch: glow,
+  weight: close,
+  within: {
+    find(out) {
+      let n = 0;
+      for (const node of scene.near(pointer, 120)) out[n++] = node.index;
+      return n;
+    },
+  },
+  loop: true,
+});
+```
+
+The array has room for every index handed out, so filling it allocates nothing. A repeat is read once, and an index no subject holds is skipped. As with a circle, outside production the mix reads the signal every few frames for a few subjects the finder did not find, and warns once if one is above 0. `plot` hands out indices too, in its list's order, so a finder can answer by the same numbers `xy` is laid out in.
+
+Under history, a bound reads as its signal does: live on a read back, or, with `inputs`, as the signal's recorded reads, including the 0 it gave each subject outside.
 
 ## Where the state lives
 

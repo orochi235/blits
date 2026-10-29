@@ -2,6 +2,7 @@ import { setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  input,
   keys,
   kit,
   last,
@@ -42,6 +43,13 @@ interface Way {
   fading?: boolean;
   /** The glow is cued from: 'current', a third of the way through. */
   current?: boolean;
+  /**
+   * How the bound knows its subjects: a circle over `plot` (the default), a circle over positions
+   * given one at a time by `place` and `put`, or the host's own finder over `plot`'s indices.
+   */
+  by?: 'plot' | 'place' | 'finder';
+  /** The mix keeps history, with inputs recorded or not, and reads back earlier frames at the end. */
+  history?: 'plain' | 'inputs';
   /** Steps a stateful patch in fixed ticks of this many ms. */
   stepMs?: number;
   /** A third through, a motion glow's every third subject heads somewhere else. */
@@ -56,6 +64,9 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
   const m = mix<Dot, Pose>(K, {
     lanes: way.lanes,
     ...(way.stepMs === undefined ? {} : { stepMs: way.stepMs }),
+    ...(way.history === undefined
+      ? {}
+      : { history: { ms: 100_000, inputs: way.history === 'inputs' } }),
   });
   const dots: Dot[] = Array.from({ length: SIDE * SIDE }, (_, j) => ({
     seed: j * 0.37,
@@ -69,10 +80,27 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
       xy[2 * j + 1] = d.y;
     });
   };
+  const by = way.by ?? 'plot';
   write();
-  if (bounded) m.plot(dots, xy, R);
+  const putAll = () => {
+    for (const d of dots) m.put(d, d.x, d.y);
+  };
+  if (bounded && by === 'place') {
+    for (const d of dots) m.place(d);
+    putAll();
+  } else if (bounded) m.plot(dots, xy, R);
   const area = { x: 0, y: 0, r: R };
-  const near = (s: Dot) => Math.max(0, 1 - Math.hypot(s.x - area.x, s.y - area.y) / R);
+  const distance = (s: Dot) => Math.max(0, 1 - Math.hypot(s.x - area.x, s.y - area.y) / R);
+  const near = way.history === 'inputs' ? input(distance) : distance;
+  const finder = {
+    find(out: Int32Array) {
+      let n = 0;
+      dots.forEach((d, j) => {
+        if (Math.hypot(d.x - area.x, d.y - area.y) <= R) out[n++] = j;
+      });
+      return n;
+    },
+  };
   m.cue({ patch: flicker(), loop: true });
   const shape =
     way.glow === 'keys'
@@ -99,7 +127,7 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
       ...(way.glow === 'tween' || way.glow === 'spring' ? {} : { loop: true }),
       ...(owner ? { owner } : {}),
       ...(way.current ? { from: 'current' as const } : {}),
-      ...(bounded ? { within: area } : {}),
+      ...(bounded ? { within: by === 'finder' ? finder : area } : {}),
     });
   let glow = way.current ? m.cue({ patch: flicker(), loop: true }) : cueGlow();
   const out = {} as Pose;
@@ -120,7 +148,8 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
         d.y = Math.floor(j / SIDE) + 1.5 * Math.cos(f / 7 + j);
       });
       write();
-      if (bounded) m.moved();
+      if (bounded && by === 'place') putAll();
+      else if (bounded) m.moved();
     }
     if (way.retarget && f === Math.floor(frames / 3))
       dots.forEach((d, j) => {
@@ -145,6 +174,9 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
     } else seen.push(read.map((d) => structuredClone(m.probe(d, out))));
     seen.push(dots.map((d) => glow.weightOf(d)));
   }
+  if (way.history !== undefined)
+    for (const f of [3, Math.floor(frames / 3), frames - 2])
+      seen.push(dots.map((d) => structuredClone(m.project(f * 16.7).probe(d))));
   return seen;
 }
 
@@ -181,6 +213,24 @@ describe('a bounded signal reads as the same signal unbounded, where it is 0 bey
     it(`a glow keeping state in fixed steps, a view of 40%, ${on}`, () =>
       agree({ lanes, glow: 'stepped', stepMs: 5, view: 0.4 }));
     it(`a tween glow, ${on}`, () => agree({ lanes, glow: 'tween' }));
+    it(`positions given by place and put, moving, ${on}`, () =>
+      agree({ lanes, by: 'place', moving: true }));
+    it(`positions given by place and put, read by pull, ${on}`, () =>
+      agree({ lanes, by: 'place', pull: true }));
+    it(`a host's finder, ${on}`, () => agree({ lanes, by: 'finder' }));
+    it(`a host's finder, moving, read by pull, ${on}`, () =>
+      agree({ lanes, by: 'finder', moving: true, pull: true }));
+    it(`a host's finder, a view of 40%, keys, ${on}`, () =>
+      agree({ lanes, by: 'finder', view: 0.4, glow: 'keys' }));
+    it(`a host's finder, a glow keeping state, ${on}`, () =>
+      agree({ lanes, by: 'finder', glow: 'stepped' }));
+    it(`a host's finder, an owner's tween, ${on}`, () =>
+      agree({ lanes, by: 'finder', glow: 'tween', owned: true }));
+    it(`under history, read back, ${on}`, () => agree({ lanes, history: 'plain', moving: true }));
+    it(`under history with inputs, read back, ${on}`, () =>
+      agree({ lanes, history: 'inputs', moving: true }));
+    it(`under history with inputs, a host's finder, a view of 40%, read back, ${on}`, () =>
+      agree({ lanes, history: 'inputs', by: 'finder', view: 0.4 }));
     it(`a keys glow cued from: 'current', ${on}`, () =>
       agree({ lanes, glow: 'keys', current: true }));
     it(`a keys glow cued from: 'current', read by pull, a view of 40%, ${on}`, () =>
@@ -211,7 +261,7 @@ describe('within is refused', () => {
     m.cue({ patch: flicker(), loop: true, within: area, ...spec });
   it('on a mix with no positions', () => {
     const m = mix<Dot, Pose>(K);
-    expect(cue(m, { weight: () => 1 })).toThrow(/call mix.plot first/);
+    expect(cue(m, { weight: () => 1 })).toThrow(/call mix.place or mix.plot first/);
   });
   it('on a voice with no signal, and on no voice that has one', () => {
     const m = mix<Dot, Pose>(K);

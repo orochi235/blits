@@ -56,6 +56,18 @@ export interface Circle {
 }
 
 /**
+ * The host's own answer to where a `within` signal can be above 0, over any axes or none. Once a
+ * frame, `find` writes into `out`, from 0, the indices `place` or `plot` gave the subjects the
+ * signal can be above 0 for, and returns how many it wrote. `out` has room for every index handed
+ * out; a repeat is read once, and an index no subject holds is skipped.
+ *
+ * @category voice
+ */
+export interface Finder {
+  find(out: Int32Array): number;
+}
+
+/**
  * What `cue` takes: a patch, and the clock, weight and reach it plays with.
  *
  * @category voice
@@ -148,14 +160,15 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
   weight?: number | Signal<I, H>;
   /**
    * Where the `weight` signal can be above 0: a circle the host moves by writing to it, read once
-   * a frame, over the positions `plot` gave. Outside it the voice gives a subject nothing and the
-   * signal is not read, so a frame visits only the subjects within rather than all of them. The
-   * signal has to be 0 beyond `r` already, or the circle cuts it off: outside production, every
-   * few frames, the mix reads it for a few subjects just outside and warns once if one is above 0.
+   * a frame, over the positions `plot` or `put` gave, or a `Finder` the host answers by index. Outside
+   * it the voice gives a subject nothing and the signal is not read, so a frame visits only the
+   * subjects within rather than all of them. The signal has to be 0 outside already, or the bound
+   * cuts it off: outside production, every few frames, the mix reads it for a few subjects just
+   * outside and warns once if one is above 0.
    * A patch that steps still steps outside, and a `from: 'current'` voice still takes its base,
-   * as each does at weight 0. Needs `plot` first and a signal `weight`. Refused on a mix with history.
+   * as each does at weight 0. Needs `place` or `plot` first, and a signal `weight`.
    */
-  within?: Circle;
+  within?: Circle | Finder;
   /** Ramp in and out, ms. Out applies on `fade()` and when a finite loop ends. */
   fade?: FadeSpec;
   /**

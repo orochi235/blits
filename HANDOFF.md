@@ -398,18 +398,21 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    subject. Documented on the site's signal page and in `docs/schema.html` (Signals).
 
    Chosen by Mike (2026-10-26): positions as a list plus an `x, y` `Float64Array` read in place, with
-   one call when they move; the circle on the cue; a dev-only check; positions held weakly. Names
-   (`within`, `Circle`, `plot`, `moved`, `around`, `put`) were picked by implementing sessions, not
-   yet by Mike. `around` is a mix method, not a free signal like `level`, because it reads that mix's
-   positions (2026-10-26). `put` writes into the array `plot` was given and throws for a subject not
-   in it, rather than keeping positions of its own (2026-10-26).
+   one call when they move; the circle on the cue; a dev-only check; positions held weakly. Mike
+   picked `place`, index, `find`, and kept `within` (2026-10-28); `Circle`, `Finder`, `plot`, `moved`,
+   `around` and `put` were picked by implementing sessions. `around` is a mix method, not a free
+   signal like `level`, because it reads that mix's positions (2026-10-26). `put` writes into the
+   array `plot` was given, or with no `plot` the mix's own, and throws for a subject past the host's
+   array rather than copying it (2026-10-28).
 
-   How it works. `src/plot.ts` holds `plot`, `moved` and `put`; `src/grid.ts` the uniform grid,
-   rebuilt at the first query after `moved`; `src/places.ts` the subjects over it (a `Store`, so
-   objects weakly, and `drop` takes a place away), with each place's lane number cached;
-   `src/bound.ts` the bounding, shared by `within` and `around`; `src/around.ts` the signal. Outside the
-   circle the voice is not read: the general path returns before priming, and a lane fill runs
-   `one` only for the places the grid finds, then zeroes the lane weight of those that left. While
+   How it works. `src/plot.ts` holds `place`, `plot`, `moved` and `put`; `src/grid.ts` the uniform
+   grid, rebuilt at the first query after `moved`; `src/places.ts` the indices over it (a `Store`, so
+   objects weakly, a free list that `drop` and collection feed), with each index's lane number
+   cached; `src/bound.ts` the bounding, shared by `within` and `around`, where `findAll` asks the grid
+   or the host's finder and both fill from the same list; `src/around.ts` the signal. Outside the
+   bound the voice is not read: the general path returns before priming (a finder is asked once a
+   frame and its indices marked), and a lane fill runs `one` only for the indices found, then zeroes
+   the lane weight of those that left. While
    a fill reads a place, `places.cur` holds it, so `around` skips the position lookup. A `put` that
    keeps its subject's cell changes only its numbers; one that leaves makes the place a stray,
    tested on its own by every query, until a sixteenth of the places are strays and the grid is
@@ -438,12 +441,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    member outside its circle is skipped on both laned role routes. An owner's child, a motion, a
    stepping patch and a `from: 'current'` voice take one too (2026-10-28): outside the circle a
    stepping patch still steps and a `from: 'current'` voice still takes its base, as at weight 0, so
-   bounding them saves the signal's calls but not their steps. Left: a mix with history, refused
-   because neither the circle nor the positions are recorded (the playground drops history for a
-   composition that bounds a voice, item 13). **Waiting on Mike (2026-10-28):** whether `within`
-   generalizes past 2D to a query the host answers (which subjects might be above 0 this frame),
-   with the circle over `plot` as the stock one; that changes what history would record (the
-   query's answer, not a circle and positions), so history waits on it. `within` on a constant weight stays refused, its error naming the recipe,
+   bounding them saves the signal's calls but not their steps. A mix with history takes one too
+   (2026-10-28): a bound reads as its signal does, live without `inputs`, recorded with them, so the
+   playground keeps history for an `around` composition now. `within` also takes the host's own
+   finder, `{ find(out) }` over indices `mix.place` hands out (names Mike's, 2026-10-28; the schema
+   page's Signals and "Signal bounds"). **Next here, Mike's ask (2026-10-28): positions on k axes**,
+   1D or 3D, a ball for a circle; unbuilt. `within` on a constant weight stays refused, its error naming the recipe,
    `weight: mix.around(circle, { steps: 1, jump: 'start' })` for a hard-edged disk (decided by Mike,
    2026-10-26); blits-panel draws a bounded voice's circle on the page (◯ circles, 2026-10-26). Whether unbounded voices
    are ever deprecated stays open and unlikely: klieg's lighting, a fade over a whole sign and wod's

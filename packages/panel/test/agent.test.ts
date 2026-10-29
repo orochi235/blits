@@ -189,19 +189,20 @@ describe('the agent', () => {
     );
   });
 
-  it("draws each bounded voice's circle on the page, through the app's screen, while asked", () => {
+  it("draws each bounded voice's circle on the page, through the app's screen, while asked, and no finder's", () => {
     const m = mix<unknown, Pose>(K, { name: 'agent-h' });
     const dot = { name: 'dot' };
     m.plot([dot], new Float64Array([0, 0]));
     const area = { x: 10, y: 20, r: 5 };
     m.cue({ patch: clock, weight: () => 1, within: area });
     m.cue({ patch: clock, subjects: [dot] });
+    m.cue({ patch: clock, weight: () => 1, within: { find: () => 0 } });
     const { a, last } = setup({ screen: (x, y) => ({ x: x * 2, y: y * 2 }) });
     a.send({
       kind: 'mix',
       id: last('mixes')?.mixes.find((x) => x.name === 'agent-h')?.id as number,
     });
-    expect(last('voices')?.voices.map((v) => v.bounded)).toEqual([true, false]);
+    expect(last('voices')?.voices.map((v) => v.bounded)).toEqual([true, false, true]);
     const svg = () => document.querySelector('[data-blits-panel="circles"]');
     expect(svg()).toBeNull();
     a.send({ kind: 'circles', on: true });
@@ -212,6 +213,7 @@ describe('the agent', () => {
       '40',
       '10',
     ]);
+    expect(svg()?.querySelectorAll('circle').length).toBe(1);
     area.x = 15;
     m.sync(0);
     m.probe(dot);

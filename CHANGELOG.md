@@ -31,17 +31,28 @@ version and everything else the patch. Each release lists its changes as **Break
   above 0 just outside the circle, which would cut it off there. A voice naming its `subjects` and
   a role member, an owner's child, a motion, a patch keeping state and a `from: 'current'` voice
   take it; a patch that steps still steps outside the circle, and a `from: 'current'` voice still
-  takes its base there, as each does at weight 0. Refused on a mix with history.
+  takes its base there, as each does at weight 0. Under history a bound reads as its signal does:
+  live on a read back, or with `inputs`, as the signal's recorded reads, a 0 recorded for each
+  subject read outside.
+- `within` also takes a finder of the host's own, `{ find(out) }` (the type `Finder`), over any axes
+  or none: once a frame `find` writes into `out`, an `Int32Array` the mix lends it, the indices of
+  the subjects the signal can be above 0 for, and returns how many. A circle and a finder share one
+  path through the mix.
+- `mix.place(subject)` gives a subject its index, which a finder names it by: the one it has, or a
+  new one. It keeps it until `drop`, or for an object until it is collected, and the index then goes
+  to the next subject placed. `plot` hands out indices too, in its list's order. With no `plot`,
+  `put` writes into positions the mix keeps itself, and a placed subject has none until then.
 - `mix.around(circle, { ease })`, a weight signal over the plotted positions: 1 at the circle's
   center, falling to 0 at `r` along an easing, linear by default. A voice it weighs is bounded to
   the circle as if cued `within` it, with no check for a clipped signal, from the first `plot` if it
-  was cued before one, and plays unbounded on a mix with history, where it could not take `within`.
-- `mix.put(subject, x, y)` moves one plotted subject, for a host where few move at once. It writes
-  into the array `plot` was given, so it mixes freely with writing that array and calling `moved`,
-  and keeps the grid as built until a sixteenth of the subjects have left their cells. It throws for
-  a subject `plot` was not given.
+  was cued before one.
+- `mix.put(subject, x, y)` moves one subject, for a host where few move at once. It writes into the
+  array `plot` was given, so it mixes freely with writing that array and calling `moved`, or with no
+  `plot`, into the mix's own, and keeps the grid as built until a sixteenth of the subjects have left
+  their cells. It throws for a subject with no index, or one past the array `plot` was given.
 - A watched mix's `voice(handle)` gives `within`, the circle a voice is bounded to by `within` or
-  an `around` weight, the host's own object read live, or undefined for none.
+  an `around` weight, or its finder, the host's own object, or undefined for none. blits-panel draws
+  circles only.
 - `color({ lerp: 'oklch' })` and `color(last(), { lerp: 'oklch' })` run on lanes, where they took
   the general path. The pose is the same to the bit.
 - `mix.pose()` makes a new empty pose for `probe`'s `out`, holding each channel with a rest in kit
