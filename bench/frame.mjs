@@ -131,6 +131,12 @@ const keysTo = (s) =>
     { at: 0, delta: { position: [0, 0, 0] } },
     { at: 1, delta: { position: [s.seed, 1, 0] }, ease: smooth },
   ]);
+// The same as keys a second long that freezes at both ends, so a crowd row's clock reads its freezes.
+const keysHeld = (s) =>
+  keys(1000, [
+    { at: 0, delta: { position: [0, 0, 0] } },
+    { at: 1, delta: { position: [s.seed, 1, 0] }, ease: smooth },
+  ]);
 const fnTo = (s) =>
   patch(
     LONG,
@@ -238,6 +244,7 @@ const rows = [
   ['tweens', 100000, 1],
   ['tweenfn', 10000, 1],
   ['keyses', 10000, 1],
+  ['frozen', 10000, 1],
   // A tween voice per subject, with one stopped, its subject dropped, and a new one cued on it
   // every frame.
   ['churn', 10000, 1],
@@ -309,6 +316,7 @@ const rows = [
   ['glowbm^', 10000, 2],
   ['hues^', 10000, 2],
   ['keyses^', 10000, 1],
+  ['frozen^', 10000, 1],
   ['churn^', 10000, 1],
   // weasel's churn: the stopped voice's subject leaves for good and a new one arrives, read by
   // `pull` over a fresh copy of the list kept dense by swapping the last subject into the gap.
@@ -418,6 +426,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     kind === 'springs' ||
     kind === 'tweens' ||
     kind === 'keyses' ||
+    kind === 'frozen' ||
     kind === 'churn' ||
     kind === 'turnover' ||
     kind === 'swap' ||
@@ -479,6 +488,8 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     m.drop(subjects[k]);
     handles[k] = m.cue({ patch: glideTo(), subjects: [subjects[k]] });
   };
+  if (kind === 'frozen')
+    for (const mine of subjects) m.cue({ patch: keysHeld(mine), subjects: [mine], freeze: 'both' });
   if (kind === 'keyses')
     for (const mine of subjects) m.cue({ patch: keysTo(mine), subjects: [mine], loop: true });
   if (kind === 'typing')
