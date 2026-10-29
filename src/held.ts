@@ -1,5 +1,6 @@
 import { changed } from './chain.js';
 import { stepOf } from './clock.js';
+import { delayOf } from './delay.js';
 import { schedule } from './due.js';
 import { everyoneOf, inherit, sighted } from './everyone.js';
 import type { Mixer } from './mixer.js';
@@ -62,7 +63,7 @@ export function held<I, O>(
     voice.keyed ??= new Set();
     voice.keyed.add(this.keys.key(subject));
   }
-  const delay = voice.spec.stagger ? voice.spec.stagger(subject) : 0;
+  const delay = delayOf(voice, subject);
   const since = this.sinceOf(voice, delay);
   const shown = this.shownOf(voice, since);
   held = record(

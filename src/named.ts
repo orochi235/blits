@@ -8,12 +8,15 @@ const FEW = 8;
 export class Named<I> {
   readonly list: readonly I[];
   private readonly set: Set<I> | null;
+  /** Each subject's `stagger` answer, asked at cue; null for a voice with no stagger. */
+  readonly delays: Map<I, number> | null = null;
 
-  constructor(subjects: Iterable<I>) {
+  constructor(subjects: Iterable<I>, stagger?: (subject: I) => number) {
     // An array of distinct subjects, as nearly every voice names, is copied without iterating it.
     if (Array.isArray(subjects) && distinct(subjects)) {
       this.list = subjects.slice();
       this.set = null;
+      if (stagger) this.delays = delaysOf(this.list, stagger);
       return;
     }
     const list: I[] = [];
@@ -32,6 +35,7 @@ export class Named<I> {
     // Exactly as long as it is: a list grown by push keeps room for 17.
     this.list = list.slice();
     this.set = set;
+    if (stagger) this.delays = delaysOf(this.list, stagger);
   }
 
   get size(): number {
@@ -41,6 +45,12 @@ export class Named<I> {
   has(subject: I): boolean {
     return this.set === null ? this.list.includes(subject) : this.set.has(subject);
   }
+}
+
+function delaysOf<I>(list: readonly I[], stagger: (subject: I) => number): Map<I, number> {
+  const delays = new Map<I, number>();
+  for (const s of list) delays.set(s, stagger(s));
+  return delays;
 }
 
 /** Whether a short array names no subject twice, as `includes` compares; a long one says no. */

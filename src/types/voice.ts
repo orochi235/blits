@@ -142,13 +142,16 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
   /**
    * How many passes the voice plays. true loops for good, false plays one pass, n plays n passes.
    * A finite loop leaves when its
-   * passes are done for the latest-staggered subject it has seen — over `fade.out` where one is
-   * set, at once where none is — unless it freezes after. Default: false.
+   * passes are done for its latest-staggered subject — over `fade.out` where one is set, at once
+   * where none is — unless it freezes after. Default: false.
    */
   loop?: boolean | number;
   /**
    * Per-subject delay in voice ms. It is klieg's stagger grammar reduced to the one thing the mix
-   * needs. Like `target`, it runs once per subject on first sight, and the answer is kept.
+   * needs. It runs once per subject and the answer is kept: at `cue` for every subject a voice
+   * names in `subjects`, else, like `target`, on first sight. So a voice naming its subjects ends by
+   * all of them, and one reaching them by `target` ends by those the mix has been asked about: a
+   * subject first read later than that sees a finite loop already over.
    */
   stagger?: (subject: I) => number;
   /**
@@ -391,7 +394,8 @@ export interface SubjectFade<I = unknown> {
   /**
    * The one subject to fade out of this voice, which plays on for the rest. Once the ramp ends
    * the voice forgets the subject and reaches it no more, until a motion patch's `to` or `push`
-   * or the mix's `drop` brings it back, met afresh: `from`, `target` and `stagger` asked again.
+   * or the mix's `drop` brings it back, met afresh: `from` and `target` asked again, and
+   * `stagger` too unless the voice names its `subjects`.
    */
   subject: I;
   /** The ramp, ms. Defaults to the voice's own `fade.out`; 0 takes the subject out at once. */
@@ -483,7 +487,8 @@ export interface Handle<I = unknown> {
   readonly done: Promise<void>;
   /**
    * Resolves true when a finite loop's last pass ends, false if the voice leaves before that. The
-   * last pass is the one for the latest-staggered subject it has seen. Never rejects.
+   * last pass is the one for its latest-staggered subject; `stagger` says which subjects count.
+   * Never rejects.
    */
   readonly played: Promise<boolean>;
 }

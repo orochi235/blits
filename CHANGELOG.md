@@ -4,6 +4,15 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Changed
+
+- A voice cued with `subjects` asks `stagger` for each of them at `cue`, not on first sight, and a
+  finite loop ends once its latest-staggered subject is done whether or not the host has read that
+  subject yet. A read ahead now sees the same end as the live mix. A voice reaching its subjects by
+  `target` still ends by the subjects it has met.
+
 ## 0.15.0
 
 ### Breaking

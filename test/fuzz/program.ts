@@ -53,6 +53,8 @@ export interface ProgramOptions {
   inside?: boolean;
   /** Some cues stagger subject `b` behind `a`. */
   waits?: boolean;
+  /** A staggered cue names both subjects in `subjects`, so its stagger is asked at cue. */
+  named?: boolean;
   /** Some handle seeks keep state. */
   keeps?: boolean;
 }
@@ -121,7 +123,7 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
         const catchUp = opts.fresh && pk === 'drift' && weight === 0.5 ? 'fresh' : undefined;
         const slewed = opts.slewed && anchor === null && startOff !== 48 && startOff !== 100;
         const late = opts.waits && w() < 0.5 ? [60, 150, 400][Math.floor(w() * 3)] : undefined;
-        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight}${slewed ? ' slewed' : ''} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}${catchUp ? ' catchUp=fresh' : ''}${opts.inside ? ' marks={hit:70}' : ''}${late ? ` stagger=b+${late}` : ''}`;
+        const desc = `cue#${i} ${pk} loop=${loop} fade=${JSON.stringify(fade)} freeze=${freeze} w=${weight}${slewed ? ' slewed' : ''} rate=${rate} seek=${seek} start=${startOff} anchor=${JSON.stringify(anchor)}${catchUp ? ' catchUp=fresh' : ''}${opts.inside ? ' marks={hit:70}' : ''}${late ? ` stagger=b+${late}${opts.named ? ' named' : ''}` : ''}`;
         ops.push({
           at: t,
           desc,
@@ -137,6 +139,7 @@ export function program(seed: number, opts: ProgramOptions = {}): Op[] {
             };
             if (opts.inside) spec.marks = { hit: 70 };
             if (late) spec.stagger = (s) => (s.id === 'b' ? late : 0);
+            if (late && opts.named) spec.subjects = subjects;
             if (freeze) spec.freeze = freeze;
             if (catchUp) spec.catchUp = catchUp;
             if (anchor) {

@@ -8,6 +8,7 @@ const variants = {
   inside: { anchors: true, stateful: true, mixRate: true, inside: true },
   slewed: { cuesOnly: true, stateful: true, slewed: true },
   waiting: { anchors: true, stateful: true, mixRate: true, waits: true, keeps: true },
+  named: { anchors: true, stateful: true, mixRate: true, waits: true, keeps: true, named: true },
   keeping: { anchors: true, stateful: true, mixRate: true, keeps: true },
 } satisfies Record<string, ProgramOptions>;
 type Variant = keyof typeof variants;
@@ -26,9 +27,20 @@ const all = { seeds: 150 };
 // A slew starts where a probe first meets its subject, as `fresh` state does, so `again`, which
 // plays on with no probe between its seeks, leaves the slewed variant out too.
 // A finite loop under a stagger leaves once the latest-staggered subject it has met is done, so a
-// read ahead or a second seek, which meet none, leave `waiting` out where they do `fresh`.
+// read ahead, which meets none, leaves `waiting` out; a voice naming its subjects knows every
+// stagger at cue, so `named` reads ahead too. A second seek, or a read ahead past a seek back, still
+// differs under any stagger, named or not (HANDOFF.md), so both leave `waiting` and `named` out.
 const known: Record<Property, Partial<Record<Variant, Known>>> = {
-  seek: { plain: all, full: all, inside: all, fresh: all, slewed: all, waiting: all, keeping: all },
+  seek: {
+    plain: all,
+    full: all,
+    inside: all,
+    fresh: all,
+    slewed: all,
+    waiting: all,
+    named: all,
+    keeping: all,
+  },
   again: { plain: all, full: all, inside: all, keeping: all },
   behind: {
     plain: all,
@@ -37,13 +49,31 @@ const known: Record<Property, Partial<Record<Variant, Known>>> = {
     fresh: all,
     slewed: all,
     waiting: all,
+    named: all,
     keeping: all,
   },
-  ahead: { plain: all, full: all, inside: all, slewed: all, keeping: all },
+  ahead: { plain: all, full: all, inside: all, slewed: all, named: all, keeping: all },
   taped: { plain: all, full: all, inside: all, slewed: all, keeping: all },
-  dt: { plain: all, full: all, inside: all, slewed: all, waiting: all, keeping: all },
-  standing: { plain: all, full: all, inside: all, slewed: all, waiting: all, keeping: all },
-  now: { plain: all, full: all, inside: all, fresh: all, slewed: all, waiting: all, keeping: all },
+  dt: { plain: all, full: all, inside: all, slewed: all, waiting: all, named: all, keeping: all },
+  standing: {
+    plain: all,
+    full: all,
+    inside: all,
+    slewed: all,
+    waiting: all,
+    named: all,
+    keeping: all,
+  },
+  now: {
+    plain: all,
+    full: all,
+    inside: all,
+    fresh: all,
+    slewed: all,
+    waiting: all,
+    named: all,
+    keeping: all,
+  },
   frame: {
     plain: all,
     full: all,
@@ -51,6 +81,7 @@ const known: Record<Property, Partial<Record<Variant, Known>>> = {
     fresh: all,
     slewed: all,
     waiting: all,
+    named: all,
     keeping: all,
   },
 };

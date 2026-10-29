@@ -75,6 +75,31 @@ describe('coast', () => {
     expect(marksOf(m, 'v')).toContain('coast@500');
   });
 
+  it('waits for every staggered subject a voice names, read or not', () => {
+    const m = mix<string, Pose>(K);
+    m.sync(0);
+    const delay: Record<string, number> = { a: 0, b: 100, c: 200 };
+    const asked: string[] = [];
+    m.cue({
+      patch: hold(300),
+      name: 'v',
+      loop: false,
+      fade: { out: 0 },
+      subjects: ['a', 'b', 'c'],
+      stagger: (s) => {
+        asked.push(s);
+        return delay[s] ?? 0;
+      },
+    });
+    expect(asked).toEqual(['a', 'b', 'c']);
+    m.sync(10);
+    m.probe('a');
+    expect(marksOf(m, 'v')).toEqual(['start@0', 'in@0', 'coast@500', 'out@500', 'end@500']);
+    m.sync(600);
+    m.probe('c');
+    expect(asked).toEqual(['a', 'b', 'c']);
+  });
+
   it('moves with the voice rate', () => {
     const m = mix<string, Pose>(K);
     m.sync(0);
