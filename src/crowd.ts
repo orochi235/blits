@@ -40,10 +40,15 @@ export const enum Hot {
   SEEKS = 5,
   EPOCH = 6,
   ID = 7,
-  AT = 8,
-  MS = 9,
+  /**
+   * A `Flag.READY` row's mix time from which its tween has landed, so a fill folds its `to` as it
+   * stands; Infinity until `bareRows` sees it land at a positive rate. Unread on any other row.
+   */
+  LANDED = 8,
+  AT = 9,
+  MS = 10,
   /** `x0`, `v0` and `to`, `axes` numbers each. */
-  X0 = 10,
+  X0 = 11,
 }
 
 /** A crowd row's flags, at `Hot.FLAGS`. */

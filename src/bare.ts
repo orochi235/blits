@@ -68,8 +68,14 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
       )
     )
       break;
-    const elapsed = clock(hot, h, now) - (data[o + Row.DELAY] as number);
-    if (!(elapsed >= 0)) break;
+    // Every step from `now` to a sample's progress rounds monotonically, so a row seen landed at a
+    // positive rate is landed at any later `now` while it stays ready, and folds its `to` as it is.
+    const landed = ready && now >= (hot[h + Hot.LANDED] as number);
+    let elapsed = 0;
+    if (!landed) {
+      elapsed = clock(hot, h, now) - (data[o + Row.DELAY] as number);
+      if (!(elapsed >= 0)) break;
+    }
     keepProbed(data, o, per, q, fills);
     const w = hot[h + Hot.WEIGHT] as number;
     data[o + Row.WEIGHT] = w;
@@ -79,16 +85,21 @@ export function bareRows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number, id
         c.deltas[p] = null;
       }
       hot[h + Hot.FLAGS] = f | Flag.READY;
+      hot[h + Hot.LANDED] = Number.POSITIVE_INFINITY;
     }
     if (w <= 0) continue;
-    const share = left(
-      c.eases[p] as Curve,
-      progress(elapsed, hot[h + Hot.AT] as number, hot[h + Hot.MS] as number),
-    );
     const values = ch.values;
     const base = slot * n;
     const x = h + Hot.X0;
     const g = x + 2 * n;
+    if (landed) {
+      for (let a = 0; a < n; a++)
+        values[base + a] = foldNumber(op, values[base + a] as number, hot[g + a] as number, w);
+      continue;
+    }
+    const u = progress(elapsed, hot[h + Hot.AT] as number, hot[h + Hot.MS] as number);
+    const share = left(c.eases[p] as Curve, u);
+    if (u >= 1 && (hot[h + Hot.RATE] as number) > 0) hot[h + Hot.LANDED] = now;
     for (let a = 0; a < n; a++)
       values[base + a] = foldNumber(
         op,
