@@ -4,6 +4,12 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## 0.3.1
+
+### Fixed
+
+- Built and tested against engine 0.15.1. The peer range, `^0.15.0`, is unchanged.
+
 ## 0.3.0
 
 ### Breaking
