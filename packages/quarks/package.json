@@ -1,6 +1,6 @@
 {
   "name": "@msb235/blits-quarks",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Drives three.quarks particle systems from a blits mix: how many particles each subject emits, where, and with what start values",
   "keywords": [
     "particles",
@@ -39,12 +39,12 @@
     "prepack": "rm -rf dist && npm run build"
   },
   "peerDependencies": {
-    "@msb235/blits": "^0.14.0",
+    "@msb235/blits": "^0.15.0",
     "three": ">=0.185.0 <1.0.0",
     "three.quarks": "^0.17.1"
   },
   "devDependencies": {
-    "@msb235/blits": "0.14.0",
+    "@msb235/blits": "0.15.0",
     "@types/three": "^0.185.4",
     "three": "^0.185.1",
     "three.quarks": "^0.17.1"

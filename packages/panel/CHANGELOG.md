@@ -4,7 +4,12 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
-## Unreleased
+## 0.3.0
+
+### Breaking
+
+- `@msb235/blits` is a peer at `^0.15.0`, where it was `^0.14.0`. Engine 0.15.0 has breaking
+  changes of its own, listed in its changelog.
 
 ### Added
 
@@ -12,7 +17,7 @@ section here.
   hue, and the voice list marks a bounded voice with ◯. The `screen` option, which `offer` takes
   too, says where a point in the mix's positions is on screen, for positions that are not client
   coordinates. The agent sends `bounded` on each voice and a `circles` event, and takes a
-  `circles` command. Needs the engine's `within` on a watched voice, unreleased.
+  `circles` command. Needs the engine's `within` on a watched voice, from 0.15.0.
 - The panel shows the plan ahead of now: a lane per voice on the plots' time axis, from its start
   to its end with a tick at each mark it reaches on the way, an arrow where no end is known, and
   the marks the host announced. The axis runs 2 s past now, and on to the furthest mark known
