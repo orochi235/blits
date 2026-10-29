@@ -3,7 +3,7 @@ import { clampWeight, passAt, phaseAt, weighed } from './clock.js';
 import { closed } from './closed.js';
 import type { Curve } from './easing.js';
 import { KeyRows } from './keyrows.js';
-import { Arg, frozenAt, keepProbed, type Laned, Per, type Positions, Row, SPARSE } from './lane.js';
+import { Arg, keepProbed, type Laned, Per, type Positions, Row, SPARSE } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Motions } from './motions.js';
 import type { Scratch } from './patch.js';
@@ -295,7 +295,19 @@ function rows<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, first: number, id: numbe
     const voice = c.voices[p] as Voice<I, O>;
     const elapsedNow = fast ? clock(hot, h, now) : voice.elapsedAt(now);
     let elapsed = elapsedNow - delay;
-    if ((f & Flag.FREEZES) !== 0) elapsed = frozenAt(voice, elapsed);
+    // Its freezes applied as `one` applies them, written out: a function for it stays out of line.
+    if ((f & Flag.FREEZES) !== 0)
+      elapsed = !(elapsed >= 0)
+        ? voice.freezesBefore
+          ? 0
+          : Number.NaN
+        : elapsed > voice.span
+          ? voice.hidesPast
+            ? Number.NaN
+            : voice.freezesAfter
+              ? voice.span
+              : elapsed
+          : elapsed;
     if (!(elapsed >= 0)) {
       data[o + Row.WEIGHT] = 0;
       continue;

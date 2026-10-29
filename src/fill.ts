@@ -309,7 +309,7 @@ export function one<I, O>(this: Lanes<I, O>, lane: Lane<I, O>, p: number, slot: 
   if (this.lately >= 0 && this.unread(slot)) return false;
   const delay = data[o + Row.DELAY] as number;
   const raw = elapsedNow - delay;
-  // `frozenAt` written out: V8 leaves it out of line here, a call a subject.
+  // Its freezes applied, written out: V8 left a function for it out of line here, a call a subject.
   const elapsed = !(raw >= 0)
     ? voice.freezesBefore
       ? 0

@@ -1,6 +1,5 @@
 import { unbareLane } from './bare.js';
 import type { Numeric } from './channels.js';
-import { frozenTime } from './clock.js';
 import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
 import type { Scratch } from './patch.js';
@@ -379,13 +378,4 @@ export class Lane<I, O> implements Positions<I, O> {
     this.records[last] = undefined;
     this.deltas[last] = null;
   }
-}
-
-/**
- * A subject's voice time once its voice's freezes apply: frozen at 0 before it starts and at the end
- * of its passes after, and NaN where it shows nothing, as past its end running back.
- */
-export function frozenAt<I, O>(voice: Voice<I, O>, elapsed: number): number {
-  if (elapsed > voice.span && voice.hidesPast) return Number.NaN;
-  return frozenTime(elapsed, voice.freezesBefore, voice.freezesAfter, voice.span);
 }
