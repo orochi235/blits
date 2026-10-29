@@ -4,6 +4,22 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- One-subject tween voices cost about a fifth less a frame once they have landed: a fill folds a
+  landed tween's end as it stands, without reading its clock or easing it, until its voice, its
+  stretch or its subject's delay changes or the clock reads earlier than when it landed. 10,000 of
+  them read by `pull` (`tweens^`) take 0.235 ms a frame against 0.296, `churn^` 0.301 against
+  0.356 and `turnover^` 0.419 against 0.458 (studio, medians of seven runs of 5,000 frames, each in
+  its own process); one tween voice over 10,000 subjects (`weasel^`) is unchanged.
+- A crowd of one-subject `keys` or `fn` voices applies its voices' freezes in the fill's own loop
+  rather than through a call a row. 10,000 `keys` voices read by `pull` (`keyses^`) take 0.449 ms
+  a frame against 0.479, and allocate 6 kB a frame against 162 (studio, medians of seven runs of
+  1,500 frames, each in its own process); the same voices freezing at both ends (`frozen`,
+  `frozen^`) are unchanged.
+
 ## 0.15.0
 
 ### Breaking
