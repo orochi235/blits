@@ -1646,6 +1646,30 @@ describe('a crowd of single-subject motion voices gives the pose the general pat
     agree(play, { times: ramp, parts: 90, probe: (t, p) => p.id % 9 === 0 || t > 1400 });
   });
 
+  it('after each tween lands, with seeks back, rates, a retarget and the mix paused', () => {
+    const play: Play = (m, parts) => {
+      const tweens = parts.map((p) =>
+        tween<Part, Pose, number[]>('position', { from: [0, 0, 0], to: [p.id, 1, 2], ms: 200 }),
+      );
+      const hs = parts.map((p, i) =>
+        m.cue({ patch: tweens[i] as (typeof tweens)[0], subjects: [p], rate: i === 4 ? 0.5 : 1 }),
+      );
+      const h = (i: number) => hs[i] as Handle<Part>;
+      return {
+        handles: hs,
+        at: (t) => {
+          if (t === 520) h(0).seek(100);
+          if (t === 700) h(1).rate = -1;
+          if (t === 999) (tweens[2] as (typeof tweens)[0]).to(parts[2] as Part, [5, 5, 5]);
+          if (t === 1300) h(3).rate = 0;
+          if (t === 1516) m.rate = 0;
+          if (t === 1700) m.rate = 2;
+        },
+      };
+    };
+    agree(play, { times: ramp });
+  });
+
   for (const change of ['to', 'past', 'weight', 'rate', 'seek', 'fade', 'cue', 'drop'])
     it(`reads a tween per subject again after a ${change} between two reads of one frame`, () => {
       script((m, parts, look) => {
