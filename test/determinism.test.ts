@@ -27,9 +27,8 @@ const all = { seeds: 150 };
 // A slew starts where a probe first meets its subject, as `fresh` state does, so `again`, which
 // plays on with no probe between its seeks, leaves the slewed variant out too.
 // A finite loop under a stagger leaves once the latest-staggered subject it has met is done, so a
-// read ahead, which meets none, leaves `waiting` out; a voice naming its subjects knows every
-// stagger at cue, so `named` reads ahead too. A second seek, or a read ahead past a seek back, still
-// differs under any stagger, named or not (HANDOFF.md), so both leave `waiting` and `named` out.
+// read ahead or a second seek, which meet none, leave `waiting` out where they do `fresh`. A voice
+// naming its subjects knows every stagger at cue, so `named` runs everywhere.
 const known: Record<Property, Partial<Record<Variant, Known>>> = {
   seek: {
     plain: all,
@@ -41,7 +40,7 @@ const known: Record<Property, Partial<Record<Variant, Known>>> = {
     named: all,
     keeping: all,
   },
-  again: { plain: all, full: all, inside: all, keeping: all },
+  again: { plain: all, full: all, inside: all, named: all, keeping: all },
   behind: {
     plain: all,
     full: all,
@@ -53,7 +52,7 @@ const known: Record<Property, Partial<Record<Variant, Known>>> = {
     keeping: all,
   },
   ahead: { plain: all, full: all, inside: all, slewed: all, named: all, keeping: all },
-  taped: { plain: all, full: all, inside: all, slewed: all, keeping: all },
+  taped: { plain: all, full: all, inside: all, slewed: all, named: all, keeping: all },
   dt: { plain: all, full: all, inside: all, slewed: all, waiting: all, named: all, keeping: all },
   standing: {
     plain: all,

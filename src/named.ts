@@ -10,6 +10,9 @@ export class Named<I> {
   private readonly set: Set<I> | null;
   /** Each subject's `stagger` answer, asked at cue; null for a voice with no stagger. */
   readonly delays: Map<I, number> | null = null;
+  /** The longest of `delays`, 0 at least, and the least, 0 at most: a voice's bounds at cue. */
+  readonly latest: number = 0;
+  readonly soonest: number = 0;
 
   constructor(subjects: Iterable<I>, stagger?: (subject: I) => number) {
     // An array of distinct subjects, as nearly every voice names, is copied without iterating it.
@@ -17,6 +20,7 @@ export class Named<I> {
       this.list = subjects.slice();
       this.set = null;
       if (stagger) this.delays = delaysOf(this.list, stagger);
+      [this.latest, this.soonest] = boundsOf(this.delays);
       return;
     }
     const list: I[] = [];
@@ -36,6 +40,7 @@ export class Named<I> {
     this.list = list.slice();
     this.set = set;
     if (stagger) this.delays = delaysOf(this.list, stagger);
+    [this.latest, this.soonest] = boundsOf(this.delays);
   }
 
   get size(): number {
@@ -51,6 +56,16 @@ function delaysOf<I>(list: readonly I[], stagger: (subject: I) => number): Map<I
   const delays = new Map<I, number>();
   for (const s of list) delays.set(s, stagger(s));
   return delays;
+}
+
+function boundsOf(delays: Map<unknown, number> | null): [number, number] {
+  let latest = 0;
+  let soonest = 0;
+  for (const delay of delays?.values() ?? []) {
+    if (delay > latest) latest = delay;
+    if (delay < soonest) soonest = delay;
+  }
+  return [latest, soonest];
 }
 
 /** Whether a short array names no subject twice, as `includes` compares; a long one says no. */

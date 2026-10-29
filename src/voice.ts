@@ -447,8 +447,8 @@ export class Voice<I, O> {
     this.dueToken++;
     this.early = null;
     this.seen = 0;
-    this.latest = 0;
-    this.soonest = 0;
+    this.latest = this.named?.latest ?? 0;
+    this.soonest = this.named?.soonest ?? 0;
     this.restedCount = 0;
     this.cuedAt = Number.NEGATIVE_INFINITY;
     this.cuedSeq = Number.NEGATIVE_INFINITY;
@@ -489,10 +489,8 @@ export class Voice<I, O> {
     this.slots = wrote.slots;
     this.named = spec.subjects ? new Named(spec.subjects, spec.stagger) : null;
     // Every subject's stagger is known at cue, so a finite loop ends by them all, read or not.
-    for (const delay of this.named?.delays?.values() ?? []) {
-      if (delay > this.latest) this.latest = delay;
-      if (delay < this.soonest) this.soonest = delay;
-    }
+    this.latest = this.named?.latest ?? 0;
+    this.soonest = this.named?.soonest ?? 0;
     this.built = patch.form === 'keys' && patch.keys ? builtOf(patch) : null;
     this.lerps = wrote.lerps;
     this.intos = this.built

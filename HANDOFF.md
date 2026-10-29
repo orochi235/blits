@@ -821,18 +821,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 - **A staggered voice's end depends on which subjects the host has read, for a `target` voice**
   (2026-10-23; narrowed 2026-10-29). A voice cued with `subjects` asks `stagger` for each at cue
-  and ends by all of them, so it reads ahead exactly (the determinism tests' `named` variant). A
-  voice reaching its subjects by `target` still ends by the latest-staggered subject it has met, as
-  `VoiceSpec.stagger` documents (decided 2026-10-29).
-
-- **Under any stagger, a second seek or a read ahead past a seek back differs from straight play**
-  (found 2026-10-29). Named or not, `seek-again` fails 5 of 150 seeds and `project-ahead after a
-  seek back` 42, and neither fails with no stagger, so the `waiting` and `named` variants leave both
-  out. Each shrinks to one staggered cue. Seed 38 of `again`, with `named: true`:
-  `@128 cue ramp loop=false fade={"in":0,"out":150} w=0.5 rate=2 seek=130 start=-30 stagger=b+400`
-  then `seek(96), seek(320)` reads gain 0.965 for both subjects where straight play read 0.6 and
-  0.768. Seed 3 of `taped`: `@288 cue ramp loop=2 fade={"in":50,"out":0} w=1 rate=0.5 freeze=before
-  stagger=b+60`, then `seek(96), project(1536)` reads gain 1 where straight play read 0.2. Unfixed.
+  and ends by all of them, through seeks too, so the determinism tests' `named` variant passes every
+  property. A voice reaching its subjects by `target` still ends by the latest-staggered subject it
+  has met, as `VoiceSpec.stagger` documents (decided 2026-10-29), so a read ahead or a replay with
+  no reads can end it earlier than the live mix did, and `waiting` leaves those properties out.
 
 - **weasel gaps blits still works around** (on weasel 1.12.0 since 2026-10-22). A leaf cannot set
   its own row layout or an accessible name apart from its label, so the booker's two rows and the

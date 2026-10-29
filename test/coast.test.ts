@@ -1,3 +1,4 @@
+import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
@@ -98,6 +99,30 @@ describe('coast', () => {
     m.sync(600);
     m.probe('c');
     expect(asked).toEqual(['a', 'b', 'c']);
+  });
+
+  it('keeps the staggers a voice names through a seek back before its cue', () => {
+    const m = mix<string, Pose>(K, { history: { ms: 5000, every: 50, tape } });
+    const delay: Record<string, number> = { a: 0, b: 100, c: 200 };
+    m.sync(0);
+    m.sync(100);
+    m.cue({
+      patch: hold(300),
+      name: 'v',
+      loop: false,
+      fade: { out: 0 },
+      subjects: ['a', 'b', 'c'],
+      stagger: (s) => delay[s] ?? 0,
+    });
+    for (let host = 110; host <= 1000; host += 10) {
+      m.sync(host);
+      m.probe('a');
+    }
+    m.seek(50);
+    // Played on with nothing read: the cue replays from the tape, and c, staggered last, still plays.
+    for (let t = 60; t <= 550; t += 10) m.sync(1000 + t - 50);
+    expect(m.now).toBe(550);
+    expect(m.probe('c').x).toBe(1);
   });
 
   it('moves with the voice rate', () => {
