@@ -1,0 +1,295 @@
+# raw V8 traces summarized in HANDOFF; profile + production A/B, studio
+  waiting for room
+studio  chosen: 9.4 cores free, 18.3G available (bash -c FRAMES=3000 bench/profab.sh c93…: no past runs)
+  msb-uai  scored 0.22 against studio's 0.32
+  keiei    scored 0.05 against studio's 0.32
+  orochi   refuses rotation
+  teitou   it wants the node to itself, and the node is promised to weasel-tests-500d
+  base   d89c502f
+  delta  2 file(s), 0 deleted
+  sent   2 new file(s), 0 already there
+  commits sent directly, 24.5 KiB (not on origin)
+  updated blits on studio at d89c502f + 2 uncommitted file(s)
+  job    2d094f8a on studio
+
+onto: plan 2
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+ 1/1  glowb^     N= 10000 V=2     1.039 ms/frame     52 ns/subject·voice  p50    0.999  p99    1.476  worst   15.043  first    31.3 ms  gc   90   31.7 ms     900.7 kB/frame
+== c93ca73 (c93ca73) glowb^, self time
+ 26.3%  patch.writes  frame.mjs:67
+ 15.0%  one  fill.js:304
+ 11.4%  call  fill.js:455
+  8.3%  foldDelta  gather.js:262
+  7.2%  pullRun  columns.js:14
+  5.4%  run  fill.js:240
+  3.4%  rests  columns.js:148
+  2.9%  primeLaned  weigh.js:27
+  2.3%  ready  hosts.js:82
+  2.2%  foldNumber  channels.js:47
+  1.3%  (garbage collector)  :0
+  1.2%  subjectAt  fill.js:214
+  1.1%  (program)  :0
+  1.0%  capped  weigh.js:45
+  1.0%  fillAll  fill.js:37
+  0.9%  readAll  pull.js:128
+  0.9%  rested  turns.js:62
+  0.8%  weighed  clock.js:77
+  0.5%  keepProbed  lane.js:8
+  0.5%  same  clock.js:66
+  0.4%  clampWeight  clock.js:70
+  0.3%  query  grid.js:145
+  0.3%  copies  columns.js:177
+  0.3%  runEveryone  fill.js:284
+  0.2%  compileSourceTextModule  utils:338
+  0.2%  base  weigh.js:108
+  0.2%  near  frame.mjs:508
+  0.2%  open  everyone.js:137
+  0.2%  push  grid.js:132
+  0.1%  (idle)  :0
+  0.1%  internalModuleStat  :0
+  0.1%  get now  mixer.js:296
+  0.1%  shut  everyone.js:159
+  0.1%  runBounded  bound.js:170
+  0.1%  parting  fill.js:208
+  0.1%  lstat  :0
+  0.1%  realpathSync  node:fs:3327
+  0.1%  resolve  node:path:1245
+  0.1%  set  places.js:23
+  0.1%  set  store.js:25
+onto: progress 1/2
+ 1/1  glowb^     N= 10000 V=2     1.153 ms/frame     58 ns/subject·voice  p50    1.100  p99    1.757  worst   16.221  first    30.4 ms  gc   75   35.3 ms     901.6 kB/frame
+== 4350a86 (4350a86) glowb^, self time
+ 22.6%  patch.writes  frame.mjs:67
+ 13.1%  one  fill.js:304
+ 12.2%  primeLaned  weigh.js:27
+  9.2%  call  fill.js:455
+  7.8%  pullRun  columns.js:14
+  7.5%  foldDelta  gather.js:262
+  4.5%  run  fill.js:240
+  2.8%  ready  hosts.js:82
+  2.6%  rests  columns.js:148
+  2.1%  (garbage collector)  :0
+  1.2%  foldNumber  channels.js:47
+  1.2%  capped  weigh.js:45
+  1.1%  subjectAt  fill.js:214
+  1.1%  readAll  pull.js:128
+  0.9%  fillAll  fill.js:37
+  0.8%  clampWeight  clock.js:70
+  0.8%  keepProbed  lane.js:8
+  0.6%  rested  turns.js:62
+  0.6%  weighed  clock.js:77
+  0.5%  same  clock.js:66
+  0.4%  parting  fill.js:208
+  0.4%  pace  fill.js:136
+  0.4%  (program)  :0
+  0.3%  compileSourceTextModule  utils:338
+  0.3%  base  weigh.js:108
+  0.3%  runBounded  bound.js:269
+  0.2%  query  grid.js:145
+  0.2%  get now  mixer.js:296
+  0.2%  near  frame.mjs:508
+  0.2%  runEveryone  fill.js:284
+  0.2%  ring  grid.js:187
+  0.2%  copies  columns.js:177
+  0.2%  signalled  fill.js:191
+  0.2%  signal  hosts.js:89
+  0.1%  set  store.js:25
+  0.1%  set  places.js:39
+  0.1%  record  record.js:10
+  0.1%  open  everyone.js:137
+  0.1%  (idle)  :0
+  0.1%  compileForInternalLoader  realm:392
+onto: progress 2/2
+== c93ca73 glowb^, lines
+patch.writes  frame.mjs
+ 26.3%     67  (ph, s) => ({ gain: 0.2 + 0.8 * Math.abs(Math.sin(ph * Math.PI + s.seed)), dark: ph * 0.1 }),
+one  fill.js
+  4.1%    311  keepProbed(data, o, this.per, slot * 6 /* Per.SLOT */, this.fills);
+  1.0%    360  w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
+  1.0%    333  if (!lane.placed || !same(elapsed, lane.placedAt)) {
+  1.0%    341  const since = data[o + 1 /* Row.SINCE */];
+  0.8%    365  this.rec = lane.records[p] ?? null;
+  0.8%    321  : raw > voice.span
+  0.7%    339  lane.mark = arg[6 /* Arg.MARK */];
+  0.6%    304  export function one(lane, p, slot) {
+  0.5%    348  if (typeof voice.spec.weight === 'function') {
+  0.4%    390  if (Number.isNaN(rec.probed) && !this.meeting && !lane.every) {
+  0.4%    364  this.folding = lane;
+  0.4%    305  const host = this.host;
+primeLaned  weigh.js
+  1.2%     37  if (voice.patch.step === undefined && held.probed < now)
+  0.6%     41  setting.state = held.state;
+  0.5%     31  if (setting.mark !== mark) {
+  0.3%     30  const mark = arg[6 /* Arg.MARK */];
+  0.2%     29  const setting = voice.setting;
+  0.1%     42  voice.keepOn = held;
+  0.0%     38  held.stepped = held.probed;
+call  fill.js
+  3.7%    478  host.ready(voice, subject, rec);
+  1.3%    483  const delta = voice.patch.at(phase, subject, voice.setting);
+  1.1%    493  this.foldDelta(chans, slot, delta);
+  0.8%    462  if (subject === absent)
+  0.7%    490  if (reading.kept !== kept && !voice.keeping)
+  0.7%    470  if (silent(voice, w)) {
+  0.5%    482  reading.horizon = Number.POSITIVE_INFINITY;
+  0.5%    485  rec.delta = delta;
+  0.5%    487  rec.seeks = voice.seeks;
+  0.4%    477  const kept = reading.kept;
+  0.3%    488  if (this.keeps)
+  0.3%    465  if (rec.probed === this.now && rec.delta !== null && rec.seeks === voice.seeks) {
+pullRun  columns.js
+  1.0%     42  for (; n < list.length; n++) {
+  0.9%     44  if (was[n] !== subject)
+  0.7%     61  subjects[slot] = subject;
+  0.5%     58  per[o + 3 /* Per.LANE_PROBE */] = ++lanes.probes;
+  0.5%     59  per[o + 5 /* Per.LANE_FILL */] = fills;
+  0.5%     52  per[o + 1 /* Per.SEEN */] < wide ||
+  0.5%     50  per[o + 0 /* Per.FILLED */] >= busy ||
+  0.4%     46  const slot = slots[n];
+  0.4%     43  const subject = list[n];
+  0.4%     47  const o = slot * 6 /* Per.SLOT */;
+  0.3%     51  per[o + 2 /* Per.IDLE */] !== 0 ||
+  0.2%     53  (owing && lanes.owes(slot)))
+foldDelta  gather.js
+  1.5%    275  values[slot] = foldNumber(ch.op, values[slot], v, arg[0 /* Arg.WEIGHT */]);
+  1.4%    270  const v = delta[ch.name];
+  1.0%    262  export function foldDelta(chans, slot, delta) {
+  0.9%    336  }
+  0.7%    287  const v = delta[ch.name];
+  0.6%    288  if (typeof v === 'number' && ch.scalar && ch.plain) {
+  0.5%    271  if (typeof v === 'number' && ch.scalar && ch.plain) {
+  0.5%    292  values[slot] = foldNumber(ch.op, values[slot], v, arg[0 /* Arg.WEIGHT */]);
+  0.4%    263  const n = chans.length;
+  0.3%    268  let ch = chans[0];
+  0.2%    285  ch = chans[1];
+  0.1%    291  const values = ch.values;
+run  fill.js
+  4.2%    273  this.one(lane, p, list[p]);
+  0.8%    272  for (let p = 0; p < list.length; p++) {
+  0.4%    275  if (voice.keeping)
+ready  hosts.js
+  1.0%     85  voice.setting.weight = arg[0 /* Arg.WEIGHT */];
+  0.9%     86  mix.sending.voice = voice;
+  0.3%     83  const arg = mix.lanes.arg;
+  0.0%     84  mix.primeLaned(voice, held, arg);
+== 4350a86 glowb^, lines
+patch.writes  frame.mjs
+ 22.6%     67  (ph, s) => ({ gain: 0.2 + 0.8 * Math.abs(Math.sin(ph * Math.PI + s.seed)), dark: ph * 0.1 }),
+one  fill.js
+  2.2%    311  keepProbed(data, o, this.per, slot * 6 /* Per.SLOT */, this.fills);
+  1.3%    333  if (!lane.placed || !same(elapsed, lane.placedAt)) {
+  1.0%    341  const since = data[o + 1 /* Row.SINCE */];
+  0.9%    348  if (typeof voice.spec.weight === 'function') {
+  0.9%    365  this.rec = lane.records[p] ?? null;
+  0.7%    304  export function one(lane, p, slot) {
+  0.7%    339  lane.mark = arg[6 /* Arg.MARK */];
+  0.5%    321  : raw > voice.span
+  0.5%    360  w = weighed(voice.weight, lane.fade, this.parting(voice, slot));
+  0.5%    364  this.folding = lane;
+  0.5%    342  if (!lane.flat && (!lane.weighed || !same(since, lane.weighedSince))) {
+  0.4%    309  const data = lane.data;
+primeLaned  weigh.js
+  7.8%     43  }
+  1.0%     31  if (setting.mark !== mark) {
+  0.8%     37  if (voice.patch.step === undefined && held.probed < now)
+  0.5%     41  setting.state = held.state;
+  0.5%     28  const now = this.now;
+  0.4%     27  export function primeLaned(voice, held, arg) {
+  0.4%     42  voice.keepOn = held;
+  0.3%     30  const mark = arg[6 /* Arg.MARK */];
+  0.3%     29  const setting = voice.setting;
+  0.2%     38  held.stepped = held.probed;
+  0.0%     39  setting.dt = this.capped(now - held.stepped);
+call  fill.js
+  2.3%    478  host.ready(voice, subject, rec);
+  2.3%    483  const delta = voice.patch.at(phase, subject, voice.setting);
+  0.7%    493  this.foldDelta(chans, slot, delta);
+  0.7%    477  const kept = reading.kept;
+  0.5%    462  if (subject === absent)
+  0.5%    470  if (silent(voice, w)) {
+  0.5%    490  if (reading.kept !== kept && !voice.keeping)
+  0.4%    488  if (this.keeps)
+  0.3%    465  if (rec.probed === this.now && rec.delta !== null && rec.seeks === voice.seeks) {
+  0.3%    479  if (this.keeps)
+  0.2%    485  rec.delta = delta;
+  0.2%    486  rec.probed = this.now;
+pullRun  columns.js
+  0.8%     50  per[o + 0 /* Per.FILLED */] >= busy ||
+  0.7%     51  per[o + 2 /* Per.IDLE */] !== 0 ||
+  0.7%     61  subjects[slot] = subject;
+  0.7%     42  for (; n < list.length; n++) {
+  0.7%     44  if (was[n] !== subject)
+  0.6%     59  per[o + 5 /* Per.LANE_FILL */] = fills;
+  0.6%     62  if (slot !== first + (n - start)) {
+  0.5%     46  const slot = slots[n];
+  0.4%     43  const subject = list[n];
+  0.4%     47  const o = slot * 6 /* Per.SLOT */;
+  0.3%     55  if (!(per[o + 3 /* Per.LANE_PROBE */] > frame ||
+  0.3%     56  per[o + 4 /* Per.GENERAL_PROBE */] > frame))
+foldDelta  gather.js
+  1.6%    270  const v = delta[ch.name];
+  1.3%    275  values[slot] = foldNumber(ch.op, values[slot], v, arg[0 /* Arg.WEIGHT */]);
+  0.9%    271  if (typeof v === 'number' && ch.scalar && ch.plain) {
+  0.8%    287  const v = delta[ch.name];
+  0.5%    288  if (typeof v === 'number' && ch.scalar && ch.plain) {
+  0.5%    262  export function foldDelta(chans, slot, delta) {
+  0.4%    336  }
+  0.4%    292  values[slot] = foldNumber(ch.op, values[slot], v, arg[0 /* Arg.WEIGHT */]);
+  0.4%    268  let ch = chans[0];
+  0.2%    264  const arg = this.arg;
+  0.2%    263  const n = chans.length;
+  0.2%    285  ch = chans[1];
+run  fill.js
+  3.6%    273  this.one(lane, p, list[p]);
+  0.6%    272  for (let p = 0; p < list.length; p++) {
+  0.3%    275  if (voice.keeping)
+ready  hosts.js
+  1.2%     85  voice.setting.weight = arg[0 /* Arg.WEIGHT */];
+  0.7%     84  mix.primeLaned(voice, held, arg);
+  0.3%     87  mix.sending.subject = subject;
+  0.3%     83  const arg = mix.lanes.arg;
+  0.2%     86  mix.sending.voice = voice;
+#### production A/B
+built c93ca73 (c93ca73777072222925f95a03f628b21d2d5301e)
+built 4350a86 (4350a868afb9c7653d0dc03a30d6a3de90d4f2a6)
+== round 1/5 c93ca73
+ 1/1  glowb^     N= 10000 V=2     1.057 ms/frame     53 ns/subject·voice  p50    0.972  p99    1.424  worst   13.823  first    28.4 ms  gc   14    4.4 ms     977.7 kB/frame
+== round 1/5 c93ca73
+ 1/1  glowbp^    N= 10000 V=2     1.246 ms/frame     62 ns/subject·voice  p50    1.185  p99    1.705  worst   14.655  first    34.4 ms  gc   15    6.2 ms    1000.3 kB/frame
+== round 1/5 4350a86
+ 1/1  glowb^     N= 10000 V=2     1.079 ms/frame     54 ns/subject·voice  p50    0.988  p99    1.566  worst   13.091  first    27.6 ms  gc   18   10.4 ms     959.2 kB/frame
+== round 1/5 4350a86
+ 1/1  glowbp^    N= 10000 V=2     1.184 ms/frame     59 ns/subject·voice  p50    1.106  p99    2.038  worst   11.993  first    32.3 ms  gc   11    4.0 ms     986.2 kB/frame
+== round 2/5 4350a86
+ 1/1  glowb^     N= 10000 V=2     1.034 ms/frame     52 ns/subject·voice  p50    0.956  p99    1.370  worst   12.813  first    27.7 ms  gc   14    4.6 ms     978.5 kB/frame
+== round 2/5 4350a86
+ 1/1  glowbp^    N= 10000 V=2     1.251 ms/frame     63 ns/subject·voice  p50    1.168  p99    2.143  worst   12.043  first    33.5 ms  gc   11    4.9 ms     974.1 kB/frame
+== round 2/5 c93ca73
+ 1/1  glowb^     N= 10000 V=2     1.073 ms/frame     54 ns/subject·voice  p50    0.994  p99    1.503  worst   11.580  first    26.8 ms  gc   15    5.2 ms     987.0 kB/frame
+== round 2/5 c93ca73
+ 1/1  glowbp^    N= 10000 V=2     1.075 ms/frame     54 ns/subject·voice  p50    1.014  p99    1.491  worst   14.385  first    32.2 ms  gc   14    5.6 ms     981.4 kB/frame
+== round 3/5 c93ca73
+ 1/1  glowb^     N= 10000 V=2     1.033 ms/frame     52 ns/subject·voice  p50    0.950  p99    1.419  worst   11.424  first    26.3 ms  gc   15    4.9 ms     965.4 kB/frame
+== round 3/5 c93ca73
+ 1/1  glowbp^    N= 10000 V=2     1.138 ms/frame     57 ns/subject·voice  p50    1.082  p99    1.620  worst   13.534  first    34.6 ms  gc   14    5.2 ms     982.7 kB/frame
+== round 3/5 4350a86
+ 1/1  glowb^     N= 10000 V=2     1.172 ms/frame     59 ns/subject·voice  p50    1.090  p99    1.606  worst   12.255  first    27.8 ms  gc   11    4.2 ms     945.7 kB/frame
+== round 3/5 4350a86
+ 1/1  glowbp^    N= 10000 V=2     1.208 ms/frame     60 ns/subject·voice  p50    1.138  p99    2.047  worst   11.399  first    31.4 ms  gc   12    4.2 ms     975.5 kB/frame
+== round 4/5 4350a86
+ 1/1  glowb^     N= 10000 V=2     1.187 ms/frame     59 ns/subject·voice  p50    1.101  p99    1.580  worst   12.483  first    28.7 ms  gc   15    5.5 ms     965.9 kB/frame
+== round 4/5 4350a86
+ 1/1  glowbp^    N= 10000 V=2     1.226 ms/frame     61 ns/subject·voice  p50    1.144  p99    1.939  worst   12.520  first    34.1 ms  gc   11    4.7 ms     985.0 kB/frame
+== round 4/5 c93ca73
+ 1/1  glowb^     N= 10000 V=2     1.113 ms/frame     56 ns/subject·voice  p50    1.027  p99    1.509  worst   12.322  first    26.5 ms  gc   15    5.4 ms     974.5 kB/frame
+== round 4/5 c93ca73
+ 1/1  glowbp^    N= 10000 V=2     1.076 ms/frame     54 ns/subject·voice  p50    1.000  p99    1.427  worst   13.549  first    33.0 ms  gc   14    5.3 ms     983.9 kB/frame
+== round 5/5 c93ca73
+ 1/1  glowb^     N= 10000 V=2     1.050 ms/frame     52 ns/subject·voice  p50    0.964  p99    1.456  worst   11.516  first    27.1 ms  gc   15    4.9 ms     972.2 kB/frame
+== round 5/5 c93ca73
+ 1/1  glowbp^    N= 10000 V=2     1.085 ms/frame     54 ns/subject·voice  p50    1.016  p99    1.590  worst   14.160  first    34.8 ms  gc   14    5.9 ms     979.5 kB/frame
+== round 5/5 4350a86
+ 1/1  glowb^     N= 10000 V=2     1.099 ms/frame     55 ns/subject·voice  p50    1.016  p99    1.460  worst   11.676  first    27.6 ms  gc   11    4.2 ms     956.0 kB/frame
+== round 5/5 4350a86
+ 1/1  glowbp^    N= 10000 V=2     1.116 ms/frame     56 ns/subject·voice  p50    1.041  p99    1.444  worst   12.654  first    31.9 ms  gc   14    4.7 ms     976.9 kB/frame

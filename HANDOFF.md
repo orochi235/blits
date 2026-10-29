@@ -79,6 +79,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   `site/src/live/` and `site/src/snippets/` under the site typecheck; `site/README.md` says how.
   Each explainer plays one named mix with history for its life and seeks it to loop or scrub, so the
   panel and the DevTools extension can pick it and drive its clock (2026-10-24).
+  Each explainer's transport has a loop/boomerang switch, kept per viewer in `localStorage`;
+  boomerang is the default (Mike's ask, 2026-10-28).
 - **blits-panel and the DevTools extension.** `@msb235/blits-panel` (`packages/panel`) is on npm at
   0.2.0 and publishes from `panel-v*` tags through trusted publishing; an agent registers trust with
   `npm trust github`, and only an npm login needs Mike. `node
@@ -445,11 +447,22 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    (2026-10-28): a bound reads as its signal does, live without `inputs`, recorded with them, so the
    playground keeps history for an `around` composition now. `within` also takes the host's own
    finder, `{ find(out) }` over indices `mix.place` hands out (names Mike's, 2026-10-28; the schema
-   page's Signals and "Signal bounds"). **Next here, Mike's ask (2026-10-28): positions on k axes**,
-   1D or 3D, a ball for a circle; unbuilt. **Owed: a quiet-box A/B of `4350a86` against `c93ca73`**
-   on `glowb^`, `glowbn^` and `glowbp^`; the one run (`bench/runs/2026-10-28-finder-ab.txt`) was on
-   a loaded teitou, every U 18 to 30 of 49, with `tweens^`, untouched, 17% apart, so it shows only
-   that nothing moved by more than the noise. `within` on a constant weight stays refused, its error naming the recipe,
+   page's Signals and "Signal bounds"). **Next here, Mike's ask: positions on k axes**, unbuilt.
+   Decided by Mike (2026-10-28): 1, 2 or 3 axes, not any k (a `Finder` covers the rest); the shape
+   is `Ball`, `{ x, y?, z?, r }`, read by field so a host moves it by writing, with `Circle` kept as
+   an alias for the 2D case; `plot`'s array keeps the name `xy`; `put(subject, x, y?, z?)`. How
+   `plot` is told the axis count is not decided; the proposal was an options object,
+   `plot(subjects, xy, { axes, cell })`.
+   **`4350a86` (the finder) made `glowb^` and `glowbp^` slower, cause not found.** Solo msb-uai, 7
+   rounds: `glowb^` 0.881 → 0.980 (U = 1), `glowbp^` 0.883 → 1.010 (U = 0), `glowbn^`, `glow^`,
+   `tweens^` inside noise (`bench/runs/2026-10-28-finder-ab-solo.txt`); also slower under
+   `NODE_ENV=production`, so not the dev check (`-finder-prof.txt`). The profile moved self time into
+   `primeLaned` (2.9% → 12.2%), and `--trace-turbo-inlining` showed `one`'s budget going to
+   `signalled` instead of `primeLaned` at `4350a86`. Shrinking `primeLaned` (`fdd32cb`) made `glow^`
+   4.5% faster (U = 4) but left `glowb^` 7.8% behind `c93ca73` on solo teitou (U = 3), no different
+   from `4350a86` (`-prime-split-vs-*.txt`), so the inlining choice was not the whole cause. Next:
+   profile `glowb^` again at `fdd32cb`, then bisect `4350a86`'s pieces (runBounded through `findAll`,
+   `Places.hold`'s FinalizationRegistry, the `contribution` change). `within` on a constant weight stays refused, its error naming the recipe,
    `weight: mix.around(circle, { steps: 1, jump: 'start' })` for a hard-edged disk (decided by Mike,
    2026-10-26); blits-panel draws a bounded voice's circle on the page (◯ circles, 2026-10-26). Whether unbounded voices
    are ever deprecated stays open and unlikely: klieg's lighting, a fade over a whole sign and wod's

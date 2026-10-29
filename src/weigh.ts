@@ -61,9 +61,8 @@ export function primeLaned<I, O>(
 }
 
 /**
- * `primeLaned`'s once-a-lane fields, kept out of it so it stays small enough to inline beside
- * `signalled` in `one`: when both did not fit, V8 inlined `signalled` and every subject of an
- * unbounded voice paid a call (`glowb^` +11%, 2026-10-28).
+ * `primeLaned`'s once-a-lane fields, kept out of it so it fits `one`'s inlining budget beside
+ * `signalled`, which otherwise took its place (`glow^` 4.5% faster, 2026-10-28).
  */
 function markSetting<I, O>(setting: VoiceSetting<I, O>, now: number, arg: Float64Array): void {
   setting.timestamp = now;
