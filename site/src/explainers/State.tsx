@@ -74,10 +74,24 @@ function scene(c: Config): Scene<Subject, Pose, Config> {
 
 const MIN = -1;
 const MAX = 2;
+/** How far past each end of the scale the squashed band reaches, and the value it reaches at. */
+const PAD = 0.9;
+const REACH = 100;
+const LO = MIN - PAD;
+const HI = MAX + PAD;
+
+/**
+ * Linear on the scale, and past either end on a log scale squeezed into a band PAD wide, so a
+ * weight thrown to 97 still visibly swings rather than pinning to the edge.
+ */
+const squash = (v: number) => {
+  const bend = (over: number) => PAD * Math.min(1, Math.log1p(over) / Math.log1p(REACH));
+  return v < MIN ? MIN - bend(MIN - v) : v > MAX ? MAX + bend(v - MAX) : v;
+};
 
 /**
  * Each subject as a weight on a rail, joined by a coil to a post at its target. Past the scale the
- * weight pins to the edge and says where it really is.
+ * rail is dashed, the weight moves through the squashed band, and says where it really is.
  */
 function rails(
   ctx: CanvasRenderingContext2D,
@@ -89,7 +103,7 @@ function rails(
 ): void {
   const left = 72;
   const right = w - 64;
-  const px = (v: number) => left + ((v - MIN) / (MAX - MIN)) * (right - left);
+  const px = (v: number) => left + ((squash(v) - LO) / (HI - LO)) * (right - left);
   const rowH = (h - 12) / rows.length;
   rows.forEach((row, i) => {
     const y = 12 + rowH * (i + 0.55);
@@ -97,9 +111,20 @@ function rails(
     ctx.strokeStyle = ink.rule;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(left, y + 14);
-    ctx.lineTo(right, y + 14);
+    ctx.moveTo(px(MIN), y + 14);
+    ctx.lineTo(px(MAX), y + 14);
     ctx.stroke();
+    ctx.setLineDash([2, 4]);
+    for (const [a, b] of [
+      [left, px(MIN)],
+      [px(MAX), right],
+    ]) {
+      ctx.beginPath();
+      ctx.moveTo(a, y + 14);
+      ctx.lineTo(b, y + 14);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
 
     const post = px(goal);
     ctx.strokeStyle = ink.soft;
@@ -113,23 +138,15 @@ function rails(
 
     if (row.x === undefined) return;
     const off = row.x < MIN ? -1 : row.x > MAX ? 1 : 0;
-    const mass = px(Math.max(MIN, Math.min(MAX, row.x)));
+    const mass = px(row.x);
     coil(ctx, post, mass, y, row.color);
     ctx.fillStyle = row.color;
     ctx.globalAlpha = row.note ? 0.45 : 1;
     ctx.fillRect(mass - 11, y - 11, 22, 22);
     ctx.globalAlpha = 1;
     if (off !== 0) {
-      const edge = off < 0 ? left : right;
-      const ay = y - 22;
-      ctx.beginPath();
-      ctx.moveTo(edge, ay);
-      ctx.lineTo(edge - off * 9, ay - 6);
-      ctx.lineTo(edge - off * 9, ay + 6);
-      ctx.closePath();
-      ctx.fill();
       const text = `off the scale: ${row.x.toFixed(1)}`;
-      label(ctx, text, edge - off * 14, ay + 4, ink.ink, off < 0 ? 'left' : 'right', true);
+      label(ctx, text, mass - off * 18, y - 18, ink.ink, off < 0 ? 'left' : 'right', true);
     }
     if (row.note) label(ctx, row.note, right, y - 18, ink.soft, 'right');
   });
@@ -180,8 +197,9 @@ export default function State() {
         ctx.save();
         ctx.translate(0, stage);
         numberLine(ctx, { w: size.w, h: top - stage }, ink, {
-          from: MIN,
-          to: MAX,
+          from: LO,
+          to: HI,
+          place: squash,
           rows: [
             { label: 'Steady', color: ink.voice('v1'), value: frame.poses[0]?.x },
             { label: 'Unprobed', color: ink.voice('v2'), value: frame.poses[1]?.x, strong: true },
@@ -195,9 +213,8 @@ export default function State() {
           t: frame.t,
           windows: [{ ...span, text: c.cap < MOST ? `Not probed, maxDt ${c.cap}` : 'Not probed' }],
         });
-        const clamp = (v: number) => Math.max(MIN - 0.2, Math.min(MAX + 0.2, v));
         const points = (i: number): [number, number][] =>
-          frame.history.map((h) => [h.t, clamp(h.values[i] ?? 0)]);
+          frame.history.map((h) => [h.t, squash(h.values[i] ?? 0)]);
         trace(
           ctx,
           box,
@@ -207,7 +224,7 @@ export default function State() {
             { color: ink.voice('v1'), points: points(0), width: 1.5 },
             { color: ink.voice('v2'), points: points(1), width: 2.5 },
           ],
-          { t: DURATION, span: DURATION, min: MIN, max: MAX, label: 'Position, target dashed' },
+          { t: DURATION, span: DURATION, min: LO, max: HI, label: 'Position, target dashed' },
         );
       }}
     />

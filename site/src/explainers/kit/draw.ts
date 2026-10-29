@@ -16,7 +16,14 @@ export function numberLine(
   ctx: CanvasRenderingContext2D,
   size: Size,
   ink: Ink,
-  opts: { from: number; to: number; rest?: number; rows: Row[] },
+  opts: {
+    from: number;
+    to: number;
+    rest?: number;
+    rows: Row[];
+    /** Where a value sits on the scale, for one that isn't linear; its result is clamped. */
+    place?: (v: number) => number;
+  },
 ): void {
   const left = 72;
   const right = size.w - 64;
@@ -61,7 +68,8 @@ export function numberLine(
       return;
     }
     const from = x(opts.rest ?? opts.from);
-    const to = x(Math.max(opts.from, Math.min(opts.to, row.value)));
+    const at = opts.place ? opts.place(row.value) : row.value;
+    const to = x(Math.max(opts.from, Math.min(opts.to, at)));
     const h = row.strong ? 12 : 8;
     ctx.fillStyle = row.color;
     ctx.globalAlpha = row.strong ? 1 : 0.85;
