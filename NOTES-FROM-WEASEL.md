@@ -19,31 +19,26 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
   which every lane array, chain and crowd row is keyed by; unbuilt.
 - **Stopping a subject's voice and reading its replacement, what is left** (`bench/restart.mjs`,
   the shape weasel's codec drives: a tween voice per subject read by `pull`, 100 of them stopped,
-  dropped, and cued again a frame; orochi under a load average of about 11, Node 26.11,
-  2026-10-13): at 10,000 subjects the frame after the stops takes 1.26–1.43 ms, the one after
-  that 0.47–0.54, and a steady frame 0.28. Of the frame after, timed apart in one run: about
-  0.3 ms cueing the voices, 0.2 in `sync`, and 0.9 in the pull, against 0.46 for a frame with
-  nothing changing once churn has left slots out of list order (the item above). The profile
-  there is flat: `departed.add`, `retouch`, `copyRow` as a crowd closes up, a patch's first
-  `grow`, each under 4%.
-- **A stop still grows with N, and nothing in it walks more with N** (teitou, 2026-10-25, three
-  runs, `restart.mjs`'s stop timed as the handle's `fade({ over: 0 })` and the `drop` after it):
-
-  | N | stop, each | fade | drop |
-  |---:|---:|---:|---:|
-  | 1,000 | 0.76–0.83 µs | 0.26–0.28 µs | 0.45–0.52 µs |
-  | 10,000 | 1.90–2.01 µs | 0.69–0.74 µs | 1.16–1.22 µs |
-  | 40,000 | 3.28–3.51 µs | 1.20–1.29 µs | 2.04–2.19 µs |
-
-  The one step that did, the due queue's sift to the top through an entry object per level, now
-  reads a flat array, and measured no different. A profile of each half at 1,000 and 40,000 puts
-  the growth in the first reads of what the stop touches, not in any loop: the voice's own fields
-  (`beginFade`, `retire`, `noted`), and the subject's entries in each map and array keyed by it
-  (`Numbers.release`, `Store.delete` on the mix's `chains`, `pose` and `restStamps`,
-  `Lanes.forget`, the motion patch's `release`). That reads as cache misses once 40,000 voices of
-  about 3.7 KB outgrow the cache, an inference from where sampled self time lands, not counted.
-  Touching fewer places per stop is the lever, such as one entry per subject in place of the
-  mix's separate stores keyed by it; unbuilt.
+  dropped, and cued again a frame; keiei alone, nine rounds, 2026-10-29,
+  `bench/runs/2026-10-29-stop-seat.txt`): at 10,000 subjects the frame after the stops takes
+  0.955 ms, the one after that 0.386, and a steady frame 0.239. Of the frame after, timed apart on
+  orochi under load (2026-10-13): about 0.3 ms cueing the voices, 0.2 in `sync`, and 0.9 in the
+  pull, against 0.46 for a frame with nothing changing once churn has left slots out of list order
+  (the item above). The profile there is flat: `departed.add`, `retouch`, `copyRow` as a crowd
+  closes up, a patch's first `grow`, each under 4%.
+- **A stop still grows with N, and nothing in it walks more with N** (keiei alone, 2026-10-29,
+  nine rounds, `bench/runs/2026-10-29-stop-seat.txt`; a stop is the handle's `fade({ over: 0 })`
+  and the `drop` after it): 0.61 µs at 1,000 subjects, 1.60 at 10,000, and 2.92 at 40,000. Lookups
+  in the mix's maps are a small part of it: holding a crowd voice's crowd and row in one `Seat` on
+  the voice (`eed156c`) cut a stop's lookups by voice id from four to one and saved
+  0.06 µs at 40,000 (2.98 before, inside noise). One entry per subject in place of `chains` and
+  `named` would save one lookup, so about as much; decided against for now (2026-10-29). Skipping the due-queue push of a voice
+  that retires at once measured no different (`bench/runs/2026-10-29-stop-due-push.txt`).
+  `bench/stopparts.mjs` times each part of a stop at two sizes, and every part grows. Inferred,
+  not counted: what a stop pays for is the first touch of each line it reads or writes, which is
+  one or more per object of the voice (the voice, its store, its motion patch's `Numbers`) and one
+  per parallel array of its crowd row and its subject number. Making a stop cheaper means fewer
+  objects per voice and fewer arrays per row, not fewer stores per subject.
 - **Neither what a churned voice leaves alive nor the garbage it makes is weasel's gap**, so
   neither is worth re-proposing for speed. Pooling everything blits allocates per voice
   (prototyped 2026-10-05, deleted) halved what a churned voice leaves alive and moved weasel's
