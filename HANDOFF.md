@@ -484,8 +484,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
        `probed-` 3% (U = 6), and the rest moved within noise (`-owned-delta-copier.txt`). A plain
        keyed loop over `writes` was 10–47% slower everywhere, from boxing each double it stored
        (`-owned-delta-keyed.txt`). And 41 ms of GC over 5000 frames is 8 µs a frame, against the
-       100 µs lost: the pauses aren't where the time goes. Where it does go is open; write barriers
-       for old records pointing at young results are a guess, not a measurement.
+       100 µs lost: the pauses aren't where the time goes.
+     - **Where the time goes, by CPU profile (2026-10-29):** spread over the code that reads and
+       writes records, `primeLaned` +91 ms over the run, `call` +60, the bench's patch +46, `capped`
+       +42, `ready` +26, GC +21, with the same inlining at both (`-finder-cpuprof.txt`,
+       `bench/cpuprof.sh`, `bench/profsum.mjs`). Not marking's write barrier: with
+       `--no-incremental-marking` on both, the gap stays 12–15% (U ≤ 1) (`-finder-noincmark.txt`).
+     - **Records are laid out differently.** Of 2000 consecutive records in the flicker voice's lane,
+       1910 sit 288 bytes (one record) apart at `c93ca73`, 1454 at `4350a86`, where every fourth or so
+       jumps to another page (`-finder-recaddr.txt`, `bench/recaddr.sh`). That fits records going
+       to old space a few at a time once `record()`'s literal is tenured. Building records with a class
+       instead (`new`) left the layout (1643 of 2000) and the time unchanged (U ≥ 14), so whether
+       layout is the cost is still untested (`-finder-held-class.txt`).
      - With `--no-allocation-site-pretenuring` the GC counts match, but `glowb^` stays 13% slower
        (U = 10, short of U < 9) and `glowbn^` 6% (U = 1) (`-finder-pretenure.txt`).
    `within` on a constant weight stays refused, its error naming the recipe,

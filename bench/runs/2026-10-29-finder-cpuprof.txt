@@ -1,0 +1,268 @@
+# msb-uai solo: bench/cpuprof.sh glowb^ 3 c93ca73 4350a86 (FRAMES=5000, --cpu-prof-interval 100): self time by function, top 40 of each profile
+  waiting for room
+  base   ca791e55
+  delta  2 file(s), 0 deleted
+  sent   2 new file(s), 0 already there
+  commits sent directly, 8.7 KiB (not on origin)
+  updated blits on msb-uai at ca791e55 + 2 uncommitted file(s)
+  job    90836162 on msb-uai
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+== run 1/3 c93ca73 glowb^
+ 1/1  glowb^     N= 10000 V=2     0.869 ms/frame     43 ns/subject·voice  p50    0.846  p99    1.398  worst   14.833  first    29.2 ms  gc  145   25.7 ms     901.0 kB/frame
+total 4479.2 ms
+    948.7 ms  21.2%  one fill.js:304
+    896.3 ms  20.0%  patch.writes frame.mjs:67
+    505.7 ms  11.3%  call fill.js:455
+    432.3 ms   9.7%  foldDelta gather.js:262
+    370.1 ms   8.3%  pullRun columns.js:14
+    245.7 ms   5.5%  run fill.js:240
+    137.7 ms   3.1%  primeLaned weigh.js:27
+    130.5 ms   2.9%  rests columns.js:148
+     78.2 ms   1.7%  clampWeight clock.js:70
+     59.5 ms   1.3%  foldNumber channels.js:47
+     59.4 ms   1.3%  ready hosts.js:82
+     48.8 ms   1.1%  weighed clock.js:77
+     48.1 ms   1.1%  subjectAt fill.js:214
+     46.7 ms   1.0%  fillAll fill.js:37
+     44.1 ms   1.0%  parting fill.js:208
+     43.2 ms   1.0%  (garbage collector)
+     38.2 ms   0.9%  readAll pull.js:128
+     36.6 ms   0.8%  keepProbed lane.js:8
+     33.3 ms   0.7%  (program)
+     25.9 ms   0.6%  rested turns.js:62
+     25.1 ms   0.6%  capped weigh.js:45
+     14.4 ms   0.3%  copies columns.js:177
+     14.2 ms   0.3%  runBounded bound.js:170
+     12.5 ms   0.3%  base weigh.js:108
+     11.5 ms   0.3%  (idle)
+      9.5 ms   0.2%  compileSourceTextModule utils:338
+      8.7 ms   0.2%  pace fill.js:136
+      8.3 ms   0.2%  same clock.js:66
+      7.9 ms   0.2%  m.cue.patch.patch.writes frame.mjs:558
+      7.7 ms   0.2%  query grid.js:145
+      7.2 ms   0.2%  runEveryone fill.js:284
+      6.9 ms   0.2%  near frame.mjs:508
+      6.8 ms   0.2%  get now mixer.js:296
+      6.0 ms   0.1%  signalled fill.js:191
+      4.8 ms   0.1%  open everyone.js:137
+      4.5 ms   0.1%  signal hosts.js:89
+      4.0 ms   0.1%  subject numbers.js:73
+      3.0 ms   0.1%  open
+      2.9 ms   0.1%  ring grid.js:187
+      2.6 ms   0.1%  get store.js:20
+== run 1/3 4350a86 glowb^
+ 1/1  glowb^     N= 10000 V=2     0.949 ms/frame     47 ns/subject·voice  p50    0.927  p99    1.382  worst   13.120  first    25.7 ms  gc  127   43.5 ms     899.1 kB/frame
+total 4860.8 ms
+    974.8 ms  20.1%  patch.writes frame.mjs:67
+    848.9 ms  17.5%  one fill.js:304
+    486.6 ms  10.0%  call fill.js:455
+    427.7 ms   8.8%  foldDelta gather.js:262
+    373.0 ms   7.7%  primeLaned weigh.js:27
+    373.0 ms   7.7%  pullRun columns.js:14
+    284.2 ms   5.8%  run fill.js:240
+    154.5 ms   3.2%  ready hosts.js:82
+    126.7 ms   2.6%  capped weigh.js:45
+    121.7 ms   2.5%  rests columns.js:148
+     75.0 ms   1.5%  foldNumber channels.js:47
+     74.9 ms   1.5%  (garbage collector)
+     60.4 ms   1.2%  subjectAt fill.js:214
+     48.5 ms   1.0%  clampWeight clock.js:70
+     41.3 ms   0.9%  keepProbed lane.js:8
+     40.8 ms   0.8%  fillAll fill.js:37
+     35.7 ms   0.7%  readAll pull.js:128
+     33.6 ms   0.7%  weighed clock.js:77
+     26.1 ms   0.5%  rested turns.js:62
+     22.6 ms   0.5%  parting fill.js:208
+     18.7 ms   0.4%  runBounded bound.js:269
+     18.0 ms   0.4%  get now mixer.js:296
+     15.6 ms   0.3%  (program)
+     13.2 ms   0.3%  copies columns.js:177
+     11.5 ms   0.2%  base weigh.js:108
+     11.3 ms   0.2%  signal hosts.js:89
+     10.0 ms   0.2%  query grid.js:145
+      9.1 ms   0.2%  compileSourceTextModule utils:338
+      8.9 ms   0.2%  same clock.js:66
+      7.8 ms   0.2%  near frame.mjs:508
+      7.7 ms   0.2%  (idle)
+      7.2 ms   0.1%  pace fill.js:136
+      6.0 ms   0.1%  signalled fill.js:191
+      5.0 ms   0.1%  runEveryone fill.js:284
+      4.0 ms   0.1%  ring grid.js:187
+      3.2 ms   0.1%  open everyone.js:137
+      2.5 ms   0.1%  m.cue.patch.patch.writes frame.mjs:558
+      2.3 ms   0.0%  get store.js:20
+      2.1 ms   0.0%  (anonymous) frame.mjs:1
+      2.1 ms   0.0%  hold places.js:75
+== run 2/3 4350a86 glowb^
+ 1/1  glowb^     N= 10000 V=2     0.946 ms/frame     47 ns/subject·voice  p50    0.921  p99    1.468  worst   12.326  first    25.5 ms  gc  126   45.2 ms     899.0 kB/frame
+total 4842.4 ms
+    999.7 ms  20.6%  patch.writes frame.mjs:67
+    917.0 ms  18.9%  one fill.js:304
+    559.2 ms  11.5%  call fill.js:455
+    414.8 ms   8.6%  foldDelta gather.js:262
+    371.7 ms   7.7%  pullRun columns.js:14
+    294.9 ms   6.1%  primeLaned weigh.js:27
+    267.6 ms   5.5%  run fill.js:240
+    134.5 ms   2.8%  rests columns.js:148
+    133.7 ms   2.8%  ready hosts.js:82
+     79.5 ms   1.6%  (garbage collector)
+     66.2 ms   1.4%  foldNumber channels.js:47
+     60.3 ms   1.2%  subjectAt fill.js:214
+     52.7 ms   1.1%  capped weigh.js:45
+     51.2 ms   1.1%  clampWeight clock.js:70
+     45.9 ms   0.9%  fillAll fill.js:37
+     42.2 ms   0.9%  keepProbed lane.js:8
+     38.5 ms   0.8%  readAll pull.js:128
+     36.4 ms   0.8%  weighed clock.js:77
+     23.9 ms   0.5%  rested turns.js:62
+     23.4 ms   0.5%  parting fill.js:208
+     19.6 ms   0.4%  get now mixer.js:296
+     16.8 ms   0.3%  runBounded bound.js:269
+     16.4 ms   0.3%  (program)
+     12.8 ms   0.3%  copies columns.js:177
+     12.7 ms   0.3%  near frame.mjs:508
+      8.9 ms   0.2%  query grid.js:145
+      8.9 ms   0.2%  base weigh.js:108
+      8.5 ms   0.2%  pace fill.js:136
+      8.1 ms   0.2%  same clock.js:66
+      7.8 ms   0.2%  signal hosts.js:89
+      7.3 ms   0.2%  compileSourceTextModule utils:338
+      6.7 ms   0.1%  (idle)
+      4.9 ms   0.1%  signalled fill.js:191
+      4.6 ms   0.1%  ring grid.js:187
+      4.4 ms   0.1%  runEveryone fill.js:284
+      3.8 ms   0.1%  open everyone.js:137
+      2.8 ms   0.1%  open
+      2.8 ms   0.1%  push grid.js:132
+      2.5 ms   0.1%  get store.js:20
+      2.3 ms   0.0%  pull pull.js:53
+== run 2/3 c93ca73 glowb^
+ 1/1  glowb^     N= 10000 V=2     0.922 ms/frame     46 ns/subject·voice  p50    0.913  p99    1.110  worst   11.416  first    26.0 ms  gc  147   25.5 ms     908.5 kB/frame
+total 4727.7 ms
+    950.4 ms  20.1%  patch.writes frame.mjs:67
+    892.6 ms  18.9%  one fill.js:304
+    519.5 ms  11.0%  call fill.js:455
+    443.4 ms   9.4%  foldDelta gather.js:262
+    364.3 ms   7.7%  pullRun columns.js:14
+    267.9 ms   5.7%  primeLaned weigh.js:27
+    259.4 ms   5.5%  run fill.js:240
+    137.5 ms   2.9%  ready hosts.js:82
+    123.3 ms   2.6%  rests columns.js:148
+     70.7 ms   1.5%  weighed clock.js:77
+     63.2 ms   1.3%  foldNumber channels.js:47
+     59.5 ms   1.3%  clampWeight clock.js:70
+     49.3 ms   1.0%  fillAll fill.js:37
+     48.9 ms   1.0%  subjectAt fill.js:214
+     46.3 ms   1.0%  capped weigh.js:45
+     42.5 ms   0.9%  (garbage collector)
+     39.7 ms   0.8%  readAll pull.js:128
+     38.5 ms   0.8%  keepProbed lane.js:8
+     37.7 ms   0.8%  (program)
+     34.6 ms   0.7%  parting fill.js:208
+     23.4 ms   0.5%  rested turns.js:62
+     17.8 ms   0.4%  get now mixer.js:296
+     17.6 ms   0.4%  runBounded bound.js:170
+     13.8 ms   0.3%  copies columns.js:177
+     10.7 ms   0.2%  same clock.js:66
+      9.5 ms   0.2%  near frame.mjs:508
+      9.2 ms   0.2%  compileSourceTextModule utils:338
+      8.5 ms   0.2%  query grid.js:145
+      8.3 ms   0.2%  pace fill.js:136
+      8.1 ms   0.2%  signalled fill.js:191
+      7.2 ms   0.2%  runEveryone fill.js:284
+      7.1 ms   0.1%  base weigh.js:108
+      6.9 ms   0.1%  (idle)
+      5.9 ms   0.1%  m.cue.patch.patch.writes frame.mjs:558
+      5.6 ms   0.1%  open everyone.js:137
+      4.9 ms   0.1%  signal hosts.js:89
+      3.7 ms   0.1%  ring grid.js:187
+      3.1 ms   0.1%  open
+      2.3 ms   0.0%  pull pull.js:53
+      2.3 ms   0.0%  shut everyone.js:159
+== run 3/3 c93ca73 glowb^
+ 1/1  glowb^     N= 10000 V=2     0.926 ms/frame     46 ns/subject·voice  p50    0.910  p99    1.138  worst   11.215  first    26.0 ms  gc  146   25.8 ms     901.0 kB/frame
+total 4747.9 ms
+    961.4 ms  20.2%  patch.writes frame.mjs:67
+    797.9 ms  16.8%  one fill.js:304
+    568.1 ms  12.0%  call fill.js:455
+    437.4 ms   9.2%  foldDelta gather.js:262
+    358.9 ms   7.6%  pullRun columns.js:14
+    293.1 ms   6.2%  primeLaned weigh.js:27
+    257.5 ms   5.4%  run fill.js:240
+    135.9 ms   2.9%  ready hosts.js:82
+    132.8 ms   2.8%  rests columns.js:148
+     79.6 ms   1.7%  capped weigh.js:45
+     65.4 ms   1.4%  clampWeight clock.js:70
+     65.4 ms   1.4%  weighed clock.js:77
+     61.3 ms   1.3%  foldNumber channels.js:47
+     48.3 ms   1.0%  subjectAt fill.js:214
+     46.2 ms   1.0%  fillAll fill.js:37
+     43.0 ms   0.9%  keepProbed lane.js:8
+     42.2 ms   0.9%  (garbage collector)
+     38.4 ms   0.8%  (program)
+     37.5 ms   0.8%  parting fill.js:208
+     36.4 ms   0.8%  readAll pull.js:128
+     28.0 ms   0.6%  rested turns.js:62
+     20.6 ms   0.4%  get now mixer.js:296
+     14.4 ms   0.3%  runBounded bound.js:170
+     11.4 ms   0.2%  copies columns.js:177
+      9.2 ms   0.2%  near frame.mjs:508
+      8.8 ms   0.2%  pace fill.js:136
+      8.7 ms   0.2%  base weigh.js:108
+      8.3 ms   0.2%  m.cue.patch.patch.writes frame.mjs:558
+      8.2 ms   0.2%  same clock.js:66
+      8.1 ms   0.2%  query grid.js:145
+      7.2 ms   0.2%  compileSourceTextModule utils:338
+      7.1 ms   0.1%  signal hosts.js:89
+      6.9 ms   0.1%  (idle)
+      5.7 ms   0.1%  runEveryone fill.js:284
+      5.5 ms   0.1%  signalled fill.js:191
+      3.7 ms   0.1%  shut everyone.js:159
+      3.5 ms   0.1%  open everyone.js:137
+      3.4 ms   0.1%  ring grid.js:187
+      3.2 ms   0.1%  open
+      2.8 ms   0.1%  lit bound.js:147
+== run 3/3 4350a86 glowb^
+ 1/1  glowb^     N= 10000 V=2     0.979 ms/frame     49 ns/subject·voice  p50    0.961  p99    1.252  worst   12.302  first    29.0 ms  gc  142   27.0 ms     897.5 kB/frame
+total 5024.6 ms
+    971.2 ms  19.3%  patch.writes frame.mjs:67
+    819.3 ms  16.3%  one fill.js:304
+    725.9 ms  14.4%  call fill.js:455
+    488.3 ms   9.7%  foldDelta gather.js:262
+    369.0 ms   7.3%  pullRun columns.js:14
+    303.5 ms   6.0%  primeLaned weigh.js:27
+    262.2 ms   5.2%  run fill.js:240
+    127.0 ms   2.5%  rests columns.js:148
+    124.0 ms   2.5%  ready hosts.js:82
+     97.6 ms   1.9%  capped weigh.js:45
+     68.2 ms   1.4%  foldNumber channels.js:47
+     67.0 ms   1.3%  clampWeight clock.js:70
+     58.3 ms   1.2%  weighed clock.js:77
+     53.1 ms   1.1%  subjectAt fill.js:214
+     50.0 ms   1.0%  fillAll fill.js:37
+     45.4 ms   0.9%  keepProbed lane.js:8
+     38.5 ms   0.8%  (garbage collector)
+     37.9 ms   0.8%  readAll pull.js:128
+     36.6 ms   0.7%  (program)
+     32.2 ms   0.6%  parting fill.js:208
+     24.2 ms   0.5%  get now mixer.js:296
+     23.8 ms   0.5%  rested turns.js:62
+     18.0 ms   0.4%  runBounded bound.js:269
+     14.4 ms   0.3%  copies columns.js:177
+     10.9 ms   0.2%  runEveryone fill.js:284
+      9.6 ms   0.2%  compileSourceTextModule utils:338
+      8.2 ms   0.2%  pace fill.js:136
+      8.1 ms   0.2%  (idle)
+      8.0 ms   0.2%  signal hosts.js:89
+      7.4 ms   0.1%  same clock.js:66
+      7.2 ms   0.1%  base weigh.js:108
+      7.1 ms   0.1%  near frame.mjs:508
+      6.7 ms   0.1%  query grid.js:145
+      5.2 ms   0.1%  signalled fill.js:191
+      4.9 ms   0.1%  open everyone.js:137
+      4.8 ms   0.1%  ring grid.js:187
+      2.9 ms   0.1%  open
+      2.9 ms   0.1%  take numbers.js:40
+      2.6 ms   0.1%  shut everyone.js:159
+      2.3 ms   0.0%  set store.js:25
