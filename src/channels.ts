@@ -167,13 +167,23 @@ export function max(opts?: NumberOptions): Channel<number> {
 }
 
 /**
+ * What `last` takes.
+ *
+ * @category channel
+ */
+export interface LastOptions<V> {
+  /** How to interpolate between two values. Default: step at the midpoint. */
+  lerp?: (a: V, b: V, u: number) => V;
+}
+
+/**
  * A channel with no rest: the last contribution to pass wins, and a weight can only gate it. The
  * default `lerp` steps at the midpoint, which is all a value with no arithmetic can promise; a
  * consumer with a real interpolation passes its own, as `hex` does.
  *
  * @category channel
  */
-export function last<V>(opts?: { lerp?: (a: V, b: V, u: number) => V }): Channel<V> {
+export function last<V>(opts?: LastOptions<V>): Channel<V> {
   return {
     // A lerp of its own is arithmetic the name cannot vouch for.
     kind: opts?.lerp ? undefined : 'last',
@@ -195,9 +205,15 @@ export function doubles(n: number, v: number): number[] {
   return a;
 }
 
-type Tuple<N extends number, T extends number[] = []> = T['length'] extends N
+/**
+ * A tuple of `N` numbers, as `NumberTuple<3>` is `[number, number, number]`. `T` is the tuple built
+ * so far; leave it out.
+ *
+ * @category channel
+ */
+export type NumberTuple<N extends number, T extends number[] = []> = T['length'] extends N
   ? T
-  : Tuple<N, [...T, number]>;
+  : NumberTuple<N, [...T, number]>;
 
 /**
  * `N` numbers: a tuple where `N` is a literal, as `Vec<3>` is `[number, number, number]`, and
@@ -205,7 +221,7 @@ type Tuple<N extends number, T extends number[] = []> = T['length'] extends N
  *
  * @category channel
  */
-export type Vec<N extends number> = number extends N ? number[] : Tuple<N>;
+export type Vec<N extends number> = number extends N ? number[] : NumberTuple<N>;
 
 /**
  * Vec3 position, premultiplied light: one channel's arithmetic applied down an axis list.

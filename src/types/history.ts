@@ -153,7 +153,18 @@ export interface Tape {
  *
  * @category mix
  */
-export type TapeMaker = (
-  adapter: unknown,
-  opts: { now: () => number; branching: boolean; coalesceWindowMs: number },
-) => Tape;
+export type TapeMaker = (adapter: unknown, opts: TapeOptions) => Tape;
+
+/**
+ * What a mix passes its `TapeMaker` besides the adapter.
+ *
+ * @category mix
+ */
+export interface TapeOptions {
+  /** The clock the tape stamps calls with. */
+  now: () => number;
+  /** `true`: a call made after going back keeps the old future as a branch. */
+  branching: boolean;
+  /** `0`: coalescing off. */
+  coalesceWindowMs: number;
+}

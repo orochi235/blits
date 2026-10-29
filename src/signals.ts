@@ -1,5 +1,5 @@
 import { reading } from './reading.js';
-import type { Setting, Signal } from './types.js';
+import type { Band, Setting, Signal } from './types.js';
 
 /** Input signals whose every change bumps `reading.inputs`: `input`'s, and those built only on them. */
 const told = new WeakSet<object>();
@@ -59,6 +59,16 @@ const touch = (): void => {
 };
 
 /**
+ * The signal `input` returns, with `touch` to report a change.
+ *
+ * @category signal
+ */
+export interface Input<I, H = unknown> extends Signal<I, H> {
+  /** Reports a change to what the signal reads. */
+  touch(): void;
+}
+
+/**
  * Marks `read` as a signal driven from outside the clock, which a host's own signal has to be for
  * `assess` and a history's `inputs` to treat it as one. Two uses:
  *
@@ -76,10 +86,20 @@ const touch = (): void => {
 export function input<I, H = unknown>(
   read: (subject: I, setting: Setting<void, H>) => number,
   of?: readonly Signal<I, H>[],
-): Signal<I, H> & { touch(): void } {
+): Input<I, H> {
   if (of !== undefined) return Object.assign(marked(read, of), { touch });
   told.add(read);
   return Object.assign(read, { input: true, touch });
+}
+
+/**
+ * The signal `level` returns, with `set` to write it.
+ *
+ * @category signal
+ */
+export interface Level<I, H = unknown> extends Signal<I, H> {
+  /** Writes the level, reporting the change; writing the value it holds already does nothing. */
+  set(v: number): void;
 }
 
 /**
@@ -88,7 +108,7 @@ export function input<I, H = unknown>(
  *
  * @category signal
  */
-export function level<I, H = unknown>(initial = 0): Signal<I, H> & { set(v: number): void } {
+export function level<I, H = unknown>(initial = 0): Level<I, H> {
   let value = initial;
   return Object.assign(
     input<I, H>(() => value),
@@ -122,6 +142,20 @@ const firstSight = (
     : { value: from, seen: setting.timestamp };
 
 /**
+ * What `slew` takes.
+ *
+ * @category signal
+ */
+export interface SlewOptions {
+  /** Ms per unit climbing; 0 follows at once. Default 0. */
+  riseMs?: number;
+  /** Ms per unit draining; 0 follows at once. Default 0. */
+  fallMs?: number;
+  /** Where a subject starts, unless `dt` is infinite. Default: on its input. */
+  from?: number;
+}
+
+/**
  * The package's linear decay primitive: follows its input at a rate limit, no faster than `riseMs` per
  * unit climbing or `fallMs` draining. The mix keeps its state per voice and subject, so two voices
  * handed the same slew each follow on their own. A subject starts on its input, or at `from`
@@ -131,7 +165,7 @@ const firstSight = (
  */
 export function slew<I, H = unknown>(
   of: Signal<I, H>,
-  { riseMs = 0, fallMs = 0, from }: { riseMs?: number; fallMs?: number; from?: number },
+  { riseMs = 0, fallMs = 0, from }: SlewOptions,
 ): Signal<I, H> {
   const read = (subject: I, setting: Setting<void, H>): number => {
     const target = of(subject, setting);
@@ -155,6 +189,22 @@ export function slew<I, H = unknown>(
 }
 
 /**
+ * What `lag` takes.
+ *
+ * @category signal
+ */
+export interface LagOptions {
+  /** The time constant climbing, ms; 0 follows at once. Default 0. */
+  riseMs?: number;
+  /** The time constant draining, ms; 0 follows at once. Default 0. */
+  fallMs?: number;
+  /** Within this of its input it lands on it; 0 keeps the curve exact. Default 1e-6. */
+  floor?: number;
+  /** Where a subject starts, unless `dt` is infinite. Default: on its input. */
+  from?: number;
+}
+
+/**
  * The exponential counterpart to `slew`: closes the same fraction of the distance to its input in
  * every equal stretch of time, `1 − exp(−gap / ms)`, so it reads the same however the frames that
  * sample it are spaced while the input holds still. `riseMs` and `fallMs` are time constants: after
@@ -166,12 +216,7 @@ export function slew<I, H = unknown>(
  */
 export function lag<I, H = unknown>(
   of: Signal<I, H>,
-  {
-    riseMs = 0,
-    fallMs = 0,
-    floor = 1e-6,
-    from,
-  }: { riseMs?: number; fallMs?: number; floor?: number; from?: number },
+  { riseMs = 0, fallMs = 0, floor = 1e-6, from }: LagOptions,
 ): Signal<I, H> {
   const read = (subject: I, setting: Setting<void, H>): number => {
     const target = of(subject, setting);
@@ -204,10 +249,7 @@ interface Gated {
  *
  * @category signal
  */
-export function gate<I, H = unknown>(
-  of: Signal<I, H>,
-  band: { on: number; off: number } | number,
-): Signal<I, H> {
+export function gate<I, H = unknown>(of: Signal<I, H>, band: Band | number): Signal<I, H> {
   const on = typeof band === 'number' ? band : band.on;
   const off = typeof band === 'number' ? band : band.off;
   const read = (subject: I, setting: Setting<void, H>): number => {

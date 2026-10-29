@@ -96,6 +96,18 @@ export function plain(span: SpanClaim, kids: readonly Claim[]): FitPlan {
 }
 
 /**
+ * Where `layout` puts a span's children.
+ *
+ * @category score
+ */
+export interface Layout {
+  /** Where each child starts, span ms from now, in the order given. */
+  at: number[];
+  /** How long they take together, span ms from now. */
+  length: number;
+}
+
+/**
  * Where a plan puts each child, span ms from now, and how long they take together. A playing child
  * is where it is, at 0; each pending one starts its share through the one before it, or at its
  * floor where that is later. A floor already past places a child before now, so it starts partway
@@ -103,11 +115,7 @@ export function plain(span: SpanClaim, kids: readonly Claim[]): FitPlan {
  *
  * @category score
  */
-export function layout(
-  span: SpanClaim,
-  kids: readonly Claim[],
-  plan: FitPlan,
-): { at: number[]; length: number } {
+export function layout(span: SpanClaim, kids: readonly Claim[], plan: FitPlan): Layout {
   const base = shareOf(span.order, span.share);
   const at: number[] = [];
   let length = 0;
@@ -218,11 +226,21 @@ export function conclude(): Fit {
 }
 
 /**
+ * What `overrun` and `lax` take.
+ *
+ * @category score
+ */
+export interface OverrunOptions {
+  /** The most the span may run, as a multiple of its budget. Default: no limit. */
+  cap?: number;
+}
+
+/**
  * Lets the span run past its budget: up to `cap` times it, or without limit.
  *
  * @category score
  */
-export function overrun(opts: { cap?: number } = {}): Fit {
+export function overrun(opts: OverrunOptions = {}): Fit {
   return (span, _kids, plan) => {
     const cap = opts.cap;
     const allow =
@@ -252,7 +270,7 @@ export function pipe(...fits_: readonly Fit[]): Fit {
  *
  * @category score
  */
-export function lax(opts: { cap?: number } = {}): Fit {
+export function lax(opts: OverrunOptions = {}): Fit {
   return pipe(condense(), shed(), overrun(opts));
 }
 

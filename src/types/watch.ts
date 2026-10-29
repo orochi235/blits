@@ -13,15 +13,20 @@ export interface Registry {
   /** The mixes still alive, in the order they were made. */
   entries(): Watched[];
   /** Hears each mix made, and each one collected, by its entry's `id`. Returns an unsubscribe. */
-  on(
-    fn: (change: { kind: 'add'; entry: Watched } | { kind: 'gone'; id: number }) => void,
-  ): () => void;
+  on(fn: (change: RegistryChange) => void): () => void;
   /**
    * The history a mix made from now on keeps when its options name none and it is on no
    * transport, so a debugger present before the page's mixes can scrub them. Undefined by default.
    */
   history: HistoryOptions | undefined;
 }
+
+/**
+ * What `Registry.on` hears: a mix made, with its entry, or a mix collected, by its entry's `id`.
+ *
+ * @category mix
+ */
+export type RegistryChange = { kind: 'add'; entry: Watched } | { kind: 'gone'; id: number };
 
 /**
  * One mix as a debugger sees it. Built by the copy of blits that made the mix, so a debugger
@@ -37,25 +42,13 @@ export interface Watched<I = unknown, O = unknown> {
   readonly name: string | undefined;
   readonly mix: Mix<I, O>;
   /** What history it keeps, and whether the registry's `history` gave it; undefined for none. */
-  readonly history:
-    | { readonly ms: number; readonly tape: boolean; readonly added: boolean }
-    | undefined;
+  readonly history: WatchedHistory | undefined;
   /** The earliest mix time `read` reaches back to: `mix.now` without history. */
   readonly reach: number;
   /** The kit's channel names, in kit order. */
   readonly channels: readonly string[];
   /** What a voice was cued with that its handle does not carry; undefined for a handle not on this mix. */
-  voice(handle: Handle<I>):
-    | {
-        readonly name: string | undefined;
-        readonly tags: readonly string[];
-        /**
-         * What it is bounded to, by `within` or an `around` weight: a circle, read live, or the
-         * host's finder; undefined for none.
-         */
-        readonly within: Readonly<Circle> | Finder | undefined;
-      }
-    | undefined;
+  voice(handle: Handle<I>): WatchedVoice | undefined;
   /** What to call a subject: the mix's `labelOf`, else a guess from the subject itself. */
   label(subject: I): string;
   /**
@@ -76,6 +69,35 @@ export interface Watched<I = unknown, O = unknown> {
 }
 
 /**
+ * What history a watched mix keeps, as `Watched.history` reports it.
+ *
+ * @category mix
+ */
+export interface WatchedHistory {
+  /** How much stays in memory, ms of mix time. */
+  readonly ms: number;
+  /** Whether it records a tape. */
+  readonly tape: boolean;
+  /** Whether the registry's `history` gave it. */
+  readonly added: boolean;
+}
+
+/**
+ * What a voice was cued with that its handle does not carry, as `Watched.voice` reports it.
+ *
+ * @category mix
+ */
+export interface WatchedVoice {
+  readonly name: string | undefined;
+  readonly tags: readonly string[];
+  /**
+   * What it is bounded to, by `within` or an `around` weight: a circle, read live, or the
+   * host's finder; undefined for none.
+   */
+  readonly within: Readonly<Circle> | Finder | undefined;
+}
+
+/**
  * What the host read in one frame.
  *
  * @category mix
@@ -87,12 +109,34 @@ export interface WatchedFrame<I, O> {
   /** The host's timestamp at the frame's sync. */
   timestamp: number;
   /** Each probe, in order, with a copy of the pose it returned. */
-  probed: { subject: I; pose: O }[];
+  probed: Probed<I, O>[];
   /** Each pull, with copies of the columns it wrote. */
-  pulled: { subjects: I[]; columns: Record<string, Float64Array> }[];
+  pulled: Pulled<I>[];
   /** What `drain` handed the host. */
   sent: Sent<I, unknown>[];
   voices: Handle<I>[];
+}
+
+/**
+ * One probe a watched frame recorded.
+ *
+ * @category mix
+ */
+export interface Probed<I, O> {
+  subject: I;
+  /** A copy of the pose the probe returned. */
+  pose: O;
+}
+
+/**
+ * One pull a watched frame recorded.
+ *
+ * @category mix
+ */
+export interface Pulled<I> {
+  subjects: I[];
+  /** Copies of the columns it wrote, by channel. */
+  columns: Record<string, Float64Array>;
 }
 
 /**

@@ -147,15 +147,21 @@ export interface BookOptions<E = unknown, I = unknown> {
    * `rebase`, an anchor's target moving, the voice leaving); the item is then booked again, at its
    * new time, at the same sync.
    */
-  take(
-    item: Marked | BookedHit<E, I>,
-    when: number,
-    lateBy: number,
-  ): { cancel(): void } | undefined;
+  take(item: Marked | BookedHit<E, I>, when: number, lateBy: number): Taken | undefined;
   /** Book only the voices, and announced marks, carrying this tag. */
   tag?: string;
   /** Book only this score's voices and marks. */
   score?: string;
+}
+
+/**
+ * What `BookOptions.take` may return for a booking it took.
+ *
+ * @category score
+ */
+export interface Taken {
+  /** Called when the booking's time moved by more than 1 ms, or it went away. */
+  cancel(): void;
 }
 
 /**

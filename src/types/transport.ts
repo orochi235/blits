@@ -1,5 +1,5 @@
 import type { Tape } from './history.js';
-import type { Mix, MixOptions, Projection } from './mix.js';
+import type { AnnounceOptions, Mix, MixOptions, Projection } from './mix.js';
 import type { Marked } from './place.js';
 
 /**
@@ -53,7 +53,7 @@ export interface Transport {
   readonly seq: number;
   readonly tape: Tape | undefined;
   /** Puts a named mark on a score every mix on it sees. Throws without a `score`. */
-  announce(name: string, opts: { at?: number; score: string; tags?: readonly string[] }): void;
+  announce(name: string, opts: AnnounceOptions & { score: string }): void;
   /** Every mark of every mix on it, and every mark announced on it, earliest first. */
   marks(from: number, to: number): Marked[];
   /**

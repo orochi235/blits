@@ -58,6 +58,13 @@ version and everything else the patch. Each release lists its changes as **Break
 - `mix.pose()` makes a new empty pose for `probe`'s `out`, holding each channel with a rest in kit
   order. Made once and probed into every frame, its numbers are written without allocating, where
   an `out` made as `{}` can box each one: about 310 kB a frame less on a 10,000-subject scene.
+- Named, exported types for option bags and return values that were written inline, so each can
+  be read on its own: `LastOptions`, `NumberTuple`, `Layout`, `OverrunOptions`, `MotionOptions`,
+  `SpringOptions`, `GlideOptions`, `TweenOptions`, `Spring`, `Glide`, `Tween`, `SpringSpec`,
+  `GlideSpec`, `TweenSpec`, `Input`, `Level`, `SlewOptions`, `LagOptions`, `Band`,
+  `AnnounceOptions`, `TapeOptions`, `Taken`, `VoiceFade`, `SubjectFade`, `RegistryChange`,
+  `WatchedHistory`, `WatchedVoice`, `Probed`, and `Pulled`. `Moving` and `Signal` are interfaces now,
+  of the same shape.
 
 ### Fixed
 

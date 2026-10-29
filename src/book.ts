@@ -1,4 +1,4 @@
-import type { BookedHit, Booker, BookOptions, Hit, Marked } from './types.js';
+import type { BookedHit, Booker, BookOptions, Hit, Marked, Taken } from './types.js';
 import type { Voice } from './voice.js';
 
 /** A clock read further than this from the offset's prediction is a jump, not jitter. */
@@ -53,7 +53,7 @@ interface Booking {
   time: number;
   /** Outside-clock time it was booked for, before holding it to the clock's now. */
   at: number;
-  taken: { cancel(): void } | undefined;
+  taken: Taken | undefined;
 }
 
 /** A voice with hits, as one booker follows it. */

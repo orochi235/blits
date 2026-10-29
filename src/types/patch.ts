@@ -106,30 +106,48 @@ export interface Sent<I, E = unknown> {
  *
  * @category patch
  */
-export type MotionSpec =
-  | {
-      readonly kind: 'spring';
-      /** Per second squared. */
-      readonly stiffness: number;
-      /** Per second. */
-      readonly damping: number;
-      readonly mass: number;
-      readonly settle: number;
-    }
-  | {
-      readonly kind: 'glide';
-      /** The friction's time constant, ms. */
-      readonly ms: number;
-      readonly settle: number;
-      /** The spring back's, per second squared; only on a glide with bounds. */
-      readonly stiffness?: number;
-    }
-  | {
-      readonly kind: 'tween';
-      /** How long a stretch takes; undefined where it varies by subject, kept on the patch then. */
-      readonly ms: number | undefined;
-      readonly ease: Easing;
-    };
+export type MotionSpec = SpringSpec | GlideSpec | TweenSpec;
+
+/**
+ * A spring's constants, as `MotionSpec` gives them.
+ *
+ * @category patch
+ */
+export interface SpringSpec {
+  readonly kind: 'spring';
+  /** Per second squared. */
+  readonly stiffness: number;
+  /** Per second. */
+  readonly damping: number;
+  readonly mass: number;
+  readonly settle: number;
+}
+
+/**
+ * A glide's constants, as `MotionSpec` gives them.
+ *
+ * @category patch
+ */
+export interface GlideSpec {
+  readonly kind: 'glide';
+  /** The friction's time constant, ms. */
+  readonly ms: number;
+  readonly settle: number;
+  /** The spring back's, per second squared; only on a glide with bounds. */
+  readonly stiffness?: number;
+}
+
+/**
+ * A tween's constants, as `MotionSpec` gives them.
+ *
+ * @category patch
+ */
+export interface TweenSpec {
+  readonly kind: 'tween';
+  /** How long a stretch takes; undefined where it varies by subject, kept on the patch then. */
+  readonly ms: number | undefined;
+  readonly ease: Easing;
+}
 
 /**
  * A pure function of phase and a subject that returns a delta. Optionally stateful.
@@ -206,6 +224,17 @@ export interface Patch<I, O, S = void, H = unknown> {
  *
  * @category signal
  */
-export type Signal<I, H = unknown> = ((subject: I, setting: Setting<void, H>) => number) & {
+export interface Signal<I, H = unknown> {
+  (subject: I, setting: Setting<void, H>): number;
   readonly input?: boolean;
-};
+}
+
+/**
+ * Two thresholds that switch something on at `on` and off at `off`, holding it as it was between.
+ *
+ * @category signal
+ */
+export interface Band {
+  on: number;
+  off: number;
+}

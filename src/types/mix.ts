@@ -1,7 +1,7 @@
 import type { ArcHandle, ArcSpec } from './arc.js';
 import type { Kit } from './channel.js';
 import type { HistoryOptions, Tape } from './history.js';
-import type { Easing, Patch, Sent, Signal } from './patch.js';
+import type { Band, Easing, Patch, Sent, Signal } from './patch.js';
 import type { Booker, BookOptions, Marked } from './place.js';
 import type { Transport } from './transport.js';
 import type {
@@ -29,7 +29,7 @@ export interface MixOptions<H = unknown> {
    * The band a rest-less channel's contribution switches on and off across. Default: on at any weight
    * above 0, off at 0, so the contribution passes whole while its voice has any weight.
    */
-  band?: { on: number; off: number };
+  band?: Band;
   /**
    * Tags that act as roles: a voice carrying one folds with the others carrying it, as if its `role`
    * named that tag.
@@ -403,7 +403,7 @@ export interface Mix<I, O, H = unknown> {
    * host's clock, default now, and may lie ahead, so a read ahead sees it. A mark stays while it is
    * ahead or while the mix's history reaches it.
    */
-  announce(name: string, opts?: { at?: number; score?: string; tags?: readonly string[] }): void;
+  announce(name: string, opts?: AnnounceOptions): void;
   /**
    * Every mark the plan knows between two timestamps on the host's clock, earliest first: when
    * voices start, are fully in, end their last pass, begin to fade and are gone, and what the host
@@ -431,6 +431,19 @@ export interface Mix<I, O, H = unknown> {
    * nothing about booking is replayed under `history`. A mix with no booker pays nothing for it.
    */
   book<E = unknown>(opts: BookOptions<E, I>): Booker;
+}
+
+/**
+ * What `announce` takes besides the mark's name.
+ *
+ * @category mix
+ */
+export interface AnnounceOptions {
+  /** A timestamp on the host's clock, which may lie ahead. Default now. */
+  at?: number;
+  /** The score the mark goes on. Default: the mix's one unnamed score. */
+  score?: string;
+  tags?: readonly string[];
 }
 
 /**

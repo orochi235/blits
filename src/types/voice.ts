@@ -1,7 +1,7 @@
 import type { Fit, Order, Strength } from '../fit.js';
-import type { Motion, Value } from '../motion.js';
 import type { Described } from './history.js';
 import type { Doubt } from './mix.js';
+import type { Motion, Value } from './motion.js';
 import type { Easing, Patch, Signal } from './patch.js';
 import type { Anchor, Hit, Placement } from './place.js';
 
@@ -347,31 +347,43 @@ export interface SpanHandle<I = unknown> extends Handle<I> {
  *
  * @category blending
  */
-export type FadeOptions<I = unknown> =
-  | {
-      /** The ramp, ms. Defaults to the voice's own `fade.out`. */
-      over?: number;
-      /**
-       * When the fade begins. A mix time: ahead, the voice plays untouched until then and begins
-       * its fade exactly there, its `out` mark fixed from now, and `rise` before then takes it
-       * back with nothing changed; at or behind now, the fade began then and is partway. `'rest'`:
-       * leave per subject at the first frame that subject's contribution is at rest. Default now.
-       */
-      at?: number | 'rest';
-      /** Ms after which the voice leaves whether or not it rested. */
-      deadline?: number;
-      subject?: never;
-    }
-  | {
-      /**
-       * The one subject to fade out of this voice, which plays on for the rest. Once the ramp ends
-       * the voice forgets the subject and reaches it no more, until a motion patch's `to` or `push`
-       * or the mix's `drop` brings it back, met afresh: `from`, `target` and `stagger` asked again.
-       */
-      subject: I;
-      /** The ramp, ms. Defaults to the voice's own `fade.out`; 0 takes the subject out at once. */
-      over?: number;
-    };
+export type FadeOptions<I = unknown> = VoiceFade | SubjectFade<I>;
+
+/**
+ * A fade of the whole voice, as `FadeOptions` takes it.
+ *
+ * @category blending
+ */
+export interface VoiceFade {
+  /** The ramp, ms. Defaults to the voice's own `fade.out`. */
+  over?: number;
+  /**
+   * When the fade begins. A mix time: ahead, the voice plays untouched until then and begins
+   * its fade exactly there, its `out` mark fixed from now, and `rise` before then takes it
+   * back with nothing changed; at or behind now, the fade began then and is partway. `'rest'`:
+   * leave per subject at the first frame that subject's contribution is at rest. Default now.
+   */
+  at?: number | 'rest';
+  /** Ms after which the voice leaves whether or not it rested. */
+  deadline?: number;
+  subject?: never;
+}
+
+/**
+ * A fade of one subject out of a voice, as `FadeOptions` takes it.
+ *
+ * @category blending
+ */
+export interface SubjectFade<I = unknown> {
+  /**
+   * The one subject to fade out of this voice, which plays on for the rest. Once the ramp ends
+   * the voice forgets the subject and reaches it no more, until a motion patch's `to` or `push`
+   * or the mix's `drop` brings it back, met afresh: `from`, `target` and `stagger` asked again.
+   */
+  subject: I;
+  /** The ramp, ms. Defaults to the voice's own `fade.out`; 0 takes the subject out at once. */
+  over?: number;
+}
 
 /**
  * The live controls on one voice, returned by `cue`.
