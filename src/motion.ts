@@ -314,9 +314,9 @@ export function spring<I, O, V extends Value = number>(
 }
 
 /**
- * Coasting under friction, a fling: a subject keeps its velocity, which falls by a factor of e every
- * `ms`, and comes to rest `velocity · ms / 1000` past where it was released. `push` sets it moving
- * again from wherever it is. Closed form, so frame rate does not change where it stops.
+ * Coasting under friction, a fling. A subject keeps its velocity, which falls by a factor of e
+ * every `ms`, and comes to rest `velocity · ms / 1000` past where it was released. `push` sets it
+ * moving again from wherever it is. Closed form, so frame rate does not change where it stops.
  *
  * With `bounds`, a coast that would stop past an edge springs back to it from where it crosses, at
  * the speed it crosses at, on a critically damped spring of `stiffness`; one let go past an edge
@@ -350,11 +350,11 @@ export function glide<I, O, V extends Value = number>(
 }
 
 /**
- * From one value to another over `ms` along an easing, solved in closed form, so frame rate does not
- * change where a subject is. `to(subject, target)` retargets one subject mid-flight: the new stretch
- * starts from where it is and takes the full `ms` again, so its velocity jumps where a spring's
- * would not. Time is the voice's, so `rate` and `seek` apply, and a voice's `loop` does not repeat
- * it. Cue each tween on one voice. Every subject moves on the same number of axes.
+ * From one value to another over `ms` along an easing. Solved in closed form, so frame rate does
+ * not change where a subject is. `to(subject, target)` retargets one subject mid-flight: the new
+ * stretch starts from where it is and takes the full `ms` again, so its velocity jumps where a
+ * spring's would not. Time is the voice's, so `rate` and `seek` apply, and a voice's `loop` does
+ * not repeat it. Cue each tween on one voice. Every subject moves on the same number of axes.
  *
  * @category patch
  */

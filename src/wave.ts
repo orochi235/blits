@@ -29,7 +29,8 @@ export interface WaveOptions<O> {
 }
 
 /**
- * The unit wave: -1..1 at `x` cycles, starting at 0 and rising (square: +1 for the first half).
+ * The unit wave's value at `x` cycles, from -1 to 1. It starts at 0 and rises (square: +1 for the
+ * first half).
  *
  * @category patch
  */
@@ -81,7 +82,7 @@ function planOf<O>(opts: WaveOptions<O>): Plan {
 }
 
 /**
- * A periodic swing on each channel `depth` names, around its rest: an LFO for a bob, a sway or a
+ * A periodic swing on each channel `depth` names, around its rest. An LFO for a bob, a sway or a
  * pulse. An `fn` patch that keeps its options on `patch.wave`, for an engine reading the wave
  * rather than calling it.
  *

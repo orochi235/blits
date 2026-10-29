@@ -5,9 +5,9 @@
  */
 export interface Channel<V> {
   /**
-   * Names this channel's arithmetic, so a patch written against one channel can be checked against
-   * another of the same name. Two channels of one kind must fold identically; the stock ones set it,
-   * as `'sum'` or `'vec(3, sum)'`. Absent, a channel matches only itself.
+   * Names this channel's arithmetic. A patch written against one channel can then be checked
+   * against another of the same name. Two channels of one kind must fold identically; the stock
+   * ones set it, as `'sum'` or `'vec(3, sum)'`. Absent, a channel matches only itself.
    */
   kind?: string;
   /**
@@ -25,12 +25,13 @@ export interface Channel<V> {
   /** Interpolate, for retargeting, for blending alternatives, and for folding a role. */
   lerp(a: V, b: V, u: number): V;
   /**
-   * Optional: `merge(into, scale(v, w))`, written into `into` and returned, so a channel whose
-   * values are objects need not allocate per contribution. The mix only hands it a value it made.
+   * Folds a weighted contribution into `into` in place. Optional. It computes
+   * `merge(into, scale(v, w))`, written into `into` and returned, so a channel whose values are
+   * objects need not allocate per contribution. The mix only hands it a value it made.
    */
   fold?(into: V, v: V, w: number): V;
   /**
-   * Optional: a fresh copy of `v`, which the mix makes of `rest` for `fold` to write into. The mix
+   * A fresh copy of `v`. Optional. The mix makes one of `rest` for `fold` to write into. The mix
    * copies arrays, typed arrays and plain objects itself; a channel whose `rest` is anything else,
    * such as a class instance, and that has `fold`, needs this or `cue` refuses it.
    */

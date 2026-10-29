@@ -42,9 +42,9 @@ export function shareOf(k: number, i: number, stops: number): number {
 }
 
 /**
- * Member `i` of `n`'s share of `by`, as `mix.blend` weighs it: the hat of `by`'s read at the
- * member's stop, the stops spaced evenly from 0 to 1. Weights a voice outside a blend as one of
- * its members, such as one member played alone.
+ * Member `i` of `n`'s share of `by`, as `mix.blend` weighs it. It is the hat of `by`'s read at the
+ * member's stop, the stops spaced evenly from 0 to 1. Weights a voice outside a blend as one of its
+ * members, such as one member played alone.
  *
  * @category signal
  */
@@ -69,7 +69,7 @@ export interface Input<I, H = unknown> extends Signal<I, H> {
 }
 
 /**
- * Marks `read` as a signal driven from outside the clock, which a host's own signal has to be for
+ * Marks `read` as a signal driven from outside the clock. A host's own signal has to be one for
  * `assess` and a history's `inputs` to treat it as one. Two uses:
  *
  * `input(read)` is an input of the host's own: a pointer, a volume, a value in a store. The host
@@ -103,8 +103,8 @@ export interface Level<I, H = unknown> extends Signal<I, H> {
 }
 
 /**
- * A signal the host writes: `input` over one number, with `set` reporting each change. klieg's
- * `level`.
+ * A signal the host writes. It is `input` over one number, with `set` reporting each change.
+ * klieg's `level`.
  *
  * @category signal
  */
@@ -156,9 +156,9 @@ export interface SlewOptions {
 }
 
 /**
- * The package's linear decay primitive: follows its input at a rate limit, no faster than `riseMs` per
- * unit climbing or `fallMs` draining. The mix keeps its state per voice and subject, so two voices
- * handed the same slew each follow on their own. A subject starts on its input, or at `from`
+ * Follows its input at a rate limit, the package's linear decay primitive. No faster than `riseMs`
+ * per unit climbing or `fallMs` draining. The mix keeps its state per voice and subject, so two
+ * voices handed the same slew each follow on their own. A subject starts on its input, or at `from`
  * unless `dt` is infinite.
  *
  * @category signal
@@ -205,12 +205,13 @@ export interface LagOptions {
 }
 
 /**
- * The exponential counterpart to `slew`: closes the same fraction of the distance to its input in
- * every equal stretch of time, `1 − exp(−gap / ms)`, so it reads the same however the frames that
- * sample it are spaced while the input holds still. `riseMs` and `fallMs` are time constants: after
- * one, 63% of the way is covered. 0 follows at once. Within `floor` of its input it lands on it, so a
- * subject can reach rest; pass 0 to keep the curve exact. The mix keeps its state per voice and subject.
- * A subject starts on its input, or at `from` unless `dt` is infinite.
+ * Closes the same fraction of the distance to its input in every equal stretch of time. The
+ * exponential counterpart to `slew`: the fraction is `1 − exp(−gap / ms)`, so it reads the same
+ * however the frames that sample it are spaced while the input holds still. `riseMs` and `fallMs`
+ * are time constants: after one, 63% of the way is covered. 0 follows at once. Within `floor` of
+ * its input it lands on it, so a subject can reach rest; pass 0 to keep the curve exact. The mix
+ * keeps its state per voice and subject. A subject starts on its input, or at `from` unless `dt` is
+ * infinite.
  *
  * @category signal
  */
@@ -244,8 +245,9 @@ interface Gated {
 }
 
 /**
- * The other half of the pair: a band, not an edge. It drops at `off`, passes at `on`, and between
- * the two it holds whatever it last did, so an input resting on a threshold cannot chatter.
+ * Passes or drops its input across a band, not an edge. The other half of the pair. It drops at
+ * `off`, passes at `on`, and between the two it holds whatever it last did, so an input resting on
+ * a threshold cannot chatter.
  *
  * @category signal
  */

@@ -177,7 +177,7 @@ export interface LastOptions<V> {
 }
 
 /**
- * A channel with no rest: the last contribution to pass wins, and a weight can only gate it. The
+ * A channel with no rest, where the last contribution to pass wins. A weight can only gate it. The
  * default `lerp` steps at the midpoint, which is all a value with no arithmetic can promise; a
  * consumer with a real interpolation passes its own, as `hex` does.
  *
@@ -216,15 +216,15 @@ export type NumberTuple<N extends number, T extends number[] = []> = T['length']
   : NumberTuple<N, [...T, number]>;
 
 /**
- * `N` numbers: a tuple where `N` is a literal, as `Vec<3>` is `[number, number, number]`, and
- * `number[]` where it is only known to be a number.
+ * `N` numbers, as a tuple where `N` is a literal. `Vec<3>` is `[number, number, number]`, and a
+ * `Vec` is `number[]` where `N` is only known to be a number.
  *
  * @category channel
  */
 export type Vec<N extends number> = number extends N ? number[] : NumberTuple<N>;
 
 /**
- * Vec3 position, premultiplied light: one channel's arithmetic applied down an axis list.
+ * One channel's arithmetic applied down an axis list. For a Vec3 position, or premultiplied light.
  *
  * @category channel
  */

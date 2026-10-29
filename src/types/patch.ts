@@ -2,7 +2,7 @@ import type { WaveOptions } from '../wave.js';
 import type { Kit } from './channel.js';
 
 /**
- * A curve on 0..1, as data where it can be: CSS's names, a `cubic-bezier`, or `steps`, which a
+ * A curve on 0..1, as data where it can be. CSS's names, a `cubic-bezier`, or `steps`, which a
  * WAAPI or GPU engine can read. The function form runs on the CPU engine only.
  *
  * @category patch
@@ -38,16 +38,16 @@ export interface Keyframe<O> {
  */
 export interface Setting<S = void, H = unknown> {
   /**
-   * The mix clock at this frame: the host's timestamp less any time `rebase` took out, run at the
+   * The mix clock at this frame. The host's timestamp less any time `rebase` took out, run at the
    * mix's `rate`. Identical for every probe in the frame.
    */
   readonly timestamp: number;
   /**
-   * The gap this subject is catching up by: milliseconds since it last advanced, which is the gap
+   * The gap this subject is catching up by, in milliseconds since it last advanced. That is the gap
    * since the previous sync only for a subject sampled every frame. Infinity under reduced motion;
-   * no more than `maxDt` where the mix sets one. Inside a `step` under `stepMs`, it is `stepMs`, and
-   * `timestamp` is the end of that interval. A lane samples a subject for one frame after its last
-   * probe. A read by `project` is one sample, so its gap is not the gap a frame of play has.
+   * no more than `maxDt` where the mix sets one. Inside a `step` under `stepMs`, it is `stepMs`,
+   * and `timestamp` is the end of that interval. A lane samples a subject for one frame after its
+   * last probe. A read by `project` is one sample, so its gap is not the gap a frame of play has.
    */
   readonly dt: number;
   /**
@@ -61,7 +61,7 @@ export interface Setting<S = void, H = unknown> {
   readonly weight: number;
   /** This subject's state, when the patch declares one. */
   readonly state: S;
-  /** Anything the host adds for its own patches: the mix's `host`, typed as its `H`. */
+  /** Anything the host adds for its own patches. The mix's `host`, typed as its `H`. */
   readonly host: H;
   /**
    * The state `owner` keeps for this voice and this subject, made by `init` on first ask. The mix
@@ -100,7 +100,7 @@ export interface Sent<I, E = unknown> {
 }
 
 /**
- * What a `'motion'` patch is made of, as data an engine can read: the kind of motion and its
+ * What a `'motion'` patch is made of, as data an engine can read. The kind of motion and its
  * constants. Each subject's start, target and starting velocity stay on the patch, since they may
  * be functions of the subject.
  *
@@ -144,7 +144,7 @@ export interface GlideSpec {
  */
 export interface TweenSpec {
   readonly kind: 'tween';
-  /** How long a stretch takes; undefined where it varies by subject, kept on the patch then. */
+  /** How long a stretch takes. Undefined where it varies by subject, kept on the patch then. */
   readonly ms: number | undefined;
   readonly ease: Easing;
 }
@@ -156,7 +156,7 @@ export interface TweenSpec {
  */
 export interface Patch<I, O, S = void, H = unknown> {
   /**
-   * Which authoring form built it: `'fn'` from `patch`, `'keys'` from `keys`, `'motion'` from
+   * Which authoring form built it. `'fn'` from `patch`, `'keys'` from `keys`, `'motion'` from
    * `spring`, `glide` or `tween`. An engine declares which forms it runs.
    */
   readonly form: 'fn' | 'keys' | 'motion';
@@ -183,14 +183,14 @@ export interface Patch<I, O, S = void, H = unknown> {
   /** Per-subject state, created on the first frame this patch sees a subject. */
   state?(subject: I): S;
   /**
-   * Advances state once per subject per sampled frame, by the whole gap since it last advanced; or,
-   * where the mix sets `stepMs`, once per whole interval of that length.
+   * Advances state once per subject per sampled frame. It advances by the whole gap since it last
+   * advanced; or, where the mix sets `stepMs`, once per whole interval of that length.
    */
   step?(state: S, dt: number, subject: I, setting: Setting<S, H>): void;
   /** Present when the patch was authored as keyframes, so an engine that reads data can. */
   readonly keys?: readonly Keyframe<O>[];
   /**
-   * Present on a `keys` patch that was given them: what `keys` took besides its stops, each as
+   * What `keys` took besides its stops, on a `keys` patch that was given them. Each is as
    * `KeysOptions` describes it. They are read off the patch, so a copy that changes one, as
    * `{ ...p, ease: 'linear' }` does, plays by its own.
    */
@@ -198,9 +198,12 @@ export interface Patch<I, O, S = void, H = unknown> {
   easeBy?(channel: keyof O): Easing | undefined;
   delayBy?(channel: keyof O): number;
   lerpBy?(channel: keyof O): ((a: never, b: never, u: number) => unknown) | undefined;
-  /** Present on a `wave` patch: what `wave` took, which a copy may change as it may a `keys` field. */
+  /** What `wave` took, present on a `wave` patch. A copy may change it as it may a `keys` field. */
   readonly wave?: WaveOptions<O>;
-  /** Present on a `'motion'` patch: its kind and constants, for an engine that reads data. */
+  /**
+   * A `'motion'` patch's kind and constants, for an engine that reads data. Absent on any other
+   * patch.
+   */
   readonly motion?: MotionSpec;
   /**
    * A copy of `state` that shares nothing with it, for a read at another time. Default
@@ -209,7 +212,7 @@ export interface Patch<I, O, S = void, H = unknown> {
    */
   clone?(state: S): S;
   /**
-   * `state` as data that survives `structuredClone`, for a history `store` to keep; `unpack` makes
+   * `state` as data that survives `structuredClone`, for a history `store` to keep. `unpack` makes
    * a state from it again. With a store, a patch with `state` or `step` needs both, or `cue`
    * refuses it.
    */
@@ -230,7 +233,8 @@ export interface Signal<I, H = unknown> {
 }
 
 /**
- * Two thresholds that switch something on at `on` and off at `off`, holding it as it was between.
+ * Two thresholds that switch something on and off. On at `on` and off at `off`, holding it as it
+ * was between.
  *
  * @category signal
  */

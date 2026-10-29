@@ -1,7 +1,7 @@
 import type { VoiceSpec } from './voice.js';
 
 /**
- * What a mix or transport remembers, for `seek` and `project` to read back: see
+ * What a mix or transport remembers, for `seek` and `project` to read back. See
  * `MixOptions.history`.
  *
  * @category mix
@@ -18,13 +18,13 @@ export interface HistoryOptions {
    * the tape: the host bounds it.
    */
   store?: HistoryStore;
-  /** Rebuilds a cued voice's spec from the descriptor it was cued with, so the voice can be paged out. */
+  /** Rebuilds a cued voice's spec from its descriptor. That lets the voice be paged out. */
   // biome-ignore lint/suspicious/noExplicitAny: a spec of any mix's subjects and pose
   revive?(d: Described): VoiceSpec<any, any>;
 }
 
 /**
- * A voice as plain data: `kind` names what built it, and `data` survives `structuredClone`.
+ * A voice as plain data. `kind` names what built it, and `data` survives `structuredClone`.
  *
  * @category mix
  */
@@ -43,22 +43,24 @@ export interface HistoryStore {
   /** Records leaving memory. One brought back by a seek may be paged again: keep one per key and `seq`. */
   page(out: readonly Paged[]): void;
   /**
-   * What a restore to mix time `t` needs, for every mix: from each stream, per voice and subject,
-   * the latest record at or before `t` and every record after it. Returning everything is fine.
+   * Loads what a restore to mix time `t` needs, for every mix. That is, from each stream, per voice
+   * and subject, the latest record at or before `t` and every record after it. Returning
+   * everything is fine.
    */
   load(t: number): Promise<readonly Paged[]>;
   /**
-   * A seek went back to frame `seq`: every record whose `seq` is greater is from a future the tape
-   * makes again. Forget them.
+   * Forgets every record after frame `seq`, which a seek went back to. Every record whose `seq` is
+   * greater is from a future the tape makes again.
    */
   cut(seq: number): void;
 }
 
 /**
- * What a history record holds: a voice's `controls`, a stateful record's `snap`, an `input`
- * signal's reading, a subject's record when it `left` a voice, a motion subject's `released` run
- * or older `stretch`, the `host` fields patches read, a whole `voice` that has left, or the
- * transport's own: a `mark` announced on it, a change of its `pace`, and a `frame` it played.
+ * Which kind of thing a history record holds. It is a voice's `controls`, a stateful record's
+ * `snap`, an `input` signal's reading, a subject's record when it `left` a voice, a motion
+ * subject's `released` run or older `stretch`, the `host` fields patches read, a whole `voice`
+ * that has left, or the transport's own: a `mark` announced on it, a change of its `pace`, and a
+ * `frame` it played.
  *
  * @category mix
  */
@@ -81,12 +83,17 @@ export type PagedStream =
  * @category mix
  */
 export interface Paged {
-  /** The mix's `name`; '' for a mix made alone without one, and for the transport's own records. */
+  /**
+   * The mix's `name`. It is '' for a mix made alone without one, and for the transport's own
+   * records.
+   */
   mix: string;
   stream: PagedStream;
   /** The voice's id, for every stream but `host` and the transport's own. */
   voice?: number;
-  /** The subject's key, for a record of one subject; for a `mark`, the number it was announced as. */
+  /**
+   * The subject's key, for a record of one subject. For a `mark`, the number it was announced as.
+   */
   subject?: string | number;
   /** Mix time. */
   at: number;
@@ -99,7 +106,7 @@ export interface Paged {
 }
 
 /**
- * One host call a mix recorded on its tape: `apply` makes it again, and `invert` does nothing,
+ * One host call a mix recorded on its tape. `apply` makes it again, and `invert` does nothing,
  * since a mix goes back by restoring what it kept rather than by undoing calls.
  *
  * @category mix
@@ -111,8 +118,8 @@ export interface TapeOp {
 }
 
 /**
- * One future a tape keeps at its current entry: the calls the host made after the mix last went
- * back here, before it made new ones.
+ * One future a tape keeps at its current entry. It holds the calls the host made after the mix
+ * last went back here, before it made new ones.
  *
  * @category mix
  */
@@ -147,7 +154,7 @@ export interface Tape {
 }
 
 /**
- * Makes a mix's tape: weasel-history's `createHistory` is one. The mix passes the clock it stamps
+ * Makes a mix's tape. weasel-history's `createHistory` is one. The mix passes the clock it stamps
  * calls with, branching on, so a call made after going back keeps the old future as a branch, and
  * coalescing off.
  *
@@ -163,8 +170,8 @@ export type TapeMaker = (adapter: unknown, opts: TapeOptions) => Tape;
 export interface TapeOptions {
   /** The clock the tape stamps calls with. */
   now: () => number;
-  /** `true`: a call made after going back keeps the old future as a branch. */
+  /** Always `true`, so a call made after going back keeps the old future as a branch. */
   branching: boolean;
-  /** `0`: coalescing off. */
+  /** Always `0`, which turns coalescing off. */
   coalesceWindowMs: number;
 }

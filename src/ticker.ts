@@ -1,5 +1,5 @@
 /**
- * What a ticker runs: a mix, or anything that syncs, sleeps on `inert` and wakes by `onWake`.
+ * What a ticker runs. A mix, or anything that syncs, sleeps on `inert` and wakes by `onWake`.
  *
  * @category mix
  */
@@ -22,9 +22,9 @@ export interface TickerOptions {
    */
   fps?: number;
   /**
-   * Where frames come from: `'frame'`, `requestAnimationFrame`, or `'timer'`, `setTimeout`. By
-   * default animation frames where they exist, and a timer where they don't, as in a worker
-   * without them or in Node.
+   * Where frames come from. `'frame'` is `requestAnimationFrame`, and `'timer'` is `setTimeout`. By
+   * default animation frames where they exist, and a timer where they don't, as in a worker without
+   * them or in Node.
    */
   grain?: 'frame' | 'timer';
   /**

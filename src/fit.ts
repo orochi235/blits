@@ -1,20 +1,20 @@
 /**
- * How hard a claim on time holds when it meets another: the weaker gives way.
+ * How hard a claim on time holds when it meets another. The weaker gives way.
  *
  * @category score
  */
 export type Strength = 'weak' | 'strong' | 'required';
 
 /**
- * How a span lays its children out: each after the one before has ended, partway through it, or
- * all at once.
+ * How a span lays its children out. Each after the one before has ended, partway through it, or all
+ * at once.
  *
  * @category score
  */
 export type Order = 'queue' | 'stagger' | 'together';
 
 /**
- * One child of a span as a fit sees it: what is left of it, and the ways it may give way.
+ * One child of a span as a fit sees it. What is left of it, and the ways it may give way.
  *
  * @category score
  */
@@ -27,13 +27,16 @@ export interface Claim {
   faster: number;
   /** How many times slower it may play; 1 for no slower. */
   slower: number;
-  /** Whether it may run alongside the one before it where the span's order would not have it. */
+  /**
+   * Whether it may run alongside the one before it. It may where the span's order would not have
+   * it.
+   */
   overlap: boolean;
   /** Whether it may jump to its end instead of playing. */
   ballast: boolean;
   priority: Strength;
   /**
-   * Span ms from now before which it may not start, from its `earliest`; absent for none. Below 0
+   * Span ms from now before which it may not start. From its `earliest`; absent for none. Below 0
    * where it has passed, which places the child there.
    */
   floor?: number;
@@ -56,9 +59,9 @@ export interface SpanClaim {
 }
 
 /**
- * What a fit decides, per child in the order given: a rate over its own, and whether it is
- * skipped. `share` is how far through the one before a child that may overlap starts, and `allow`
- * the span ms the span may run past its budget.
+ * What a fit decides for each child. A rate over its own, and whether it is skipped, per child in
+ * the order given. `share` is how far through the one before a child that may overlap starts, and
+ * `allow` the span ms the span may run past its budget.
  *
  * @category score
  */
@@ -70,7 +73,8 @@ export interface FitPlan {
 }
 
 /**
- * A strategy for fitting a span's children into its budget: from the plan so far to a new one.
+ * A strategy for fitting a span's children into its budget. It goes from the plan so far to a new
+ * one.
  *
  * @category score
  */
@@ -82,7 +86,7 @@ export function shareOf(order: Order, stagger: number): number {
 }
 
 /**
- * The plan before any fit: every child at its own rate, played, in the span's order.
+ * The plan before any fit. Every child at its own rate, played, in the span's order.
  *
  * @category score
  */
@@ -108,10 +112,10 @@ export interface Layout {
 }
 
 /**
- * Where a plan puts each child, span ms from now, and how long they take together. A playing child
- * is where it is, at 0; each pending one starts its share through the one before it, or at its
- * floor where that is later. A floor already past places a child before now, so it starts partway
- * through; one without a floor starts no sooner than now.
+ * Where a plan puts each child, and how long they take together. Times are span ms from now. A
+ * playing child is where it is, at 0; each pending one starts its share through the one before it,
+ * or at its floor where that is later. A floor already past places a child before now, so it starts
+ * partway through; one without a floor starts no sooner than now.
  *
  * @category score
  */
@@ -182,8 +186,8 @@ export function rescale(span: SpanClaim, kids: readonly Claim[], plan: FitPlan):
 }
 
 /**
- * Starts children that may overlap sooner after the one before, toward all at once, until they
- * fit.
+ * Starts children that may overlap sooner, until they fit. Each moves closer after the one before,
+ * toward all at once.
  *
  * @category score
  */
@@ -236,7 +240,7 @@ export interface OverrunOptions {
 }
 
 /**
- * Lets the span run past its budget: up to `cap` times it, or without limit.
+ * Lets the span run past its budget. Up to `cap` times it, or without limit.
  *
  * @category score
  */
@@ -266,7 +270,8 @@ export function pipe(...fits_: readonly Fit[]): Fit {
 }
 
 /**
- * Every way of giving way after the span's retiming, overrunning only once the rest are spent.
+ * Every way of giving way, overrunning only once the rest are spent. It applies after the span's
+ * retiming.
  *
  * @category score
  */

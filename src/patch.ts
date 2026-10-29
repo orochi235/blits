@@ -16,7 +16,7 @@ export interface PatchOptions<I, O, S, H = unknown> {
   reads?: readonly string[];
   state?(subject: I): S;
   step?(state: S, dt: number, subject: I, setting: Setting<S, H>): void;
-  /** `state` as plain data and back, for a history store: see `Patch.pack`. */
+  /** `state` as plain data and back, for a history store. See `Patch.pack`. */
   pack?(state: S): unknown;
   unpack?(data: unknown): S;
 }

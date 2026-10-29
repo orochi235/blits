@@ -706,7 +706,7 @@ export function made<I, O, H>(
 }
 
 /**
- * The one that ships: every form on the CPU, probed per subject on demand.
+ * The engine that ships, running every form on the CPU. It probes per subject on demand.
  *
  * @category engine
  */
@@ -719,7 +719,7 @@ export const mixer: Engine = {
 };
 
 /**
- * Makes a mix over a kit, on the engine the options name or the stock one.
+ * Makes a mix over a kit. It runs on the engine the options name, or the stock one.
  *
  * @category mix
  */

@@ -92,8 +92,9 @@ function fromOklch(L: number, C: number, h: number): number {
 }
 
 /**
- * OKLCH, hue the short way round, so a crossfade between hues keeps its lightness and saturation
- * instead of dipping through a muddy middle. A mix that leaves sRGB's gamut is clipped per channel.
+ * Crossfades two hex colors in OKLCH, hue the short way round. A crossfade between hues then keeps
+ * its lightness and saturation instead of dipping through a muddy middle. A mix that leaves sRGB's
+ * gamut is clipped per channel.
  *
  * @category channel
  */
@@ -121,7 +122,7 @@ function hueAt(ah: number, ac: number, bh: number, bc: number, u: number): numbe
 }
 
 /**
- * How a `color` channel interpolates two colors: straight across OKLab, or in OKLCH with hue the
+ * How a `color` channel interpolates two colors. Straight across OKLab, or in OKLCH with hue the
  * short way round, as `mixHex` does.
  *
  * @category channel
@@ -205,8 +206,8 @@ export function color(
 }
 
 /**
- * 0xrrggbb as a `color` value: OKLab `[L, a, b]` at full coverage. Convert keyframe stops once
- * when authoring them, and call it outside the hot path in an `fn` patch.
+ * Converts 0xrrggbb to a `color` value. The value is OKLab `[L, a, b]` at full coverage. Convert
+ * keyframe stops once when authoring them, and call it outside the hot path in an `fn` patch.
  *
  * @category channel
  */
@@ -216,8 +217,9 @@ export function oklab(rgb: number): number[] {
 }
 
 /**
- * A `color` pose as 0xrrggbb: its color divided out of its coverage, the coverage capped at 1
- * and laid over `under` in OKLab, then clipped to sRGB per channel. No coverage gives `under`.
+ * A `color` pose as 0xrrggbb, laid over `under`. Its color is divided out of its coverage, the
+ * coverage capped at 1 and laid over `under` in OKLab, then clipped to sRGB per channel. No
+ * coverage gives `under`.
  *
  * @category channel
  */
@@ -238,8 +240,8 @@ export function toHex(pose: ArrayLike<number>, under = 0x000000): number {
 }
 
 /**
- * A `color` pose as a CSS `oklab()` color with its coverage, capped at 1, as the alpha, for a
- * host that lets the browser lay it over what is under it.
+ * A `color` pose as a CSS `oklab()` color, its coverage as the alpha. The coverage is capped at 1.
+ * For a host that lets the browser lay it over what is under it.
  *
  * @category channel
  */

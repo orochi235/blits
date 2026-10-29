@@ -32,8 +32,8 @@ const KEY = Symbol.for('@msb235/blits/watch/1');
 const slot = globalThis as unknown as Record<symbol, Shared | undefined>;
 
 /**
- * Every mix made on the page, shared by every copy of blits loaded: what a debugger reads to find
- * them. See `Registry`.
+ * The registry a debugger reads to find every mix made on the page. It is shared by every copy of
+ * blits loaded. See `Registry`.
  *
  * @category mix
  */

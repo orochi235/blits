@@ -13,7 +13,7 @@ export interface AngleOptions {
 }
 
 /**
- * A rotation about one axis, which adds as `sum` does and interpolates the short way round: from
+ * A rotation about one axis that interpolates the short way round. It adds as `sum` does, and from
  * 350 to 10 it passes 0, not 180. A weight below 1 fades it the short way to rest too. Its values
  * are angles, so two a whole number of turns apart are the same value, and a fold may answer with
  * either.

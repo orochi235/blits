@@ -1,7 +1,7 @@
 import type { Easing } from './types.js';
 
 /**
- * A curve on 0..1: the function an easing stands for.
+ * The function an easing stands for, a curve on 0..1.
  *
  * @category patch
  */
@@ -78,9 +78,9 @@ export function startSlope(c: Curve): number {
 }
 
 /**
- * The function an easing names: a CSS name, a `bezier` or `steps`, or a function, which comes back
- * as it is. Call it once where a curve is built, not per frame; the same name or easing object
- * gives the same function each time.
+ * The function an easing names. The easing is a CSS name, a `bezier` or `steps`, or a function,
+ * which comes back as it is. Call it once where a curve is built, not per frame; the same name or
+ * easing object gives the same function each time.
  *
  * @category patch
  */
