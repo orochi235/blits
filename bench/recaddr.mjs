@@ -49,8 +49,9 @@ for (let f = 0; f < FRAMES; f++) {
 }
 
 // %DebugPrint writes each address to stdout from C++; bench/recgaps.mjs reads the lines after.
+const debugPrint = new Function('o', '%DebugPrint(o)');
 for (const lane of m.lanes.lanes) {
   const recs = lane.records.filter(Boolean).slice(0, SHOW);
   console.log(`LANE ${lane.voice.id} records ${lane.records.filter(Boolean).length}`);
-  for (const r of recs) eval('%DebugPrint(r)');
+  for (const r of recs) debugPrint(r);
 }
