@@ -165,7 +165,7 @@ function readAll<I, O>(
     }
     const laned = live && lanes?.prepare(slot, subject, mix.version, heads[n] ?? null) === true;
     if (laned && whole && (lanes as Lanes<I, O>).whole && !(lanes as Lanes<I, O>).owes(slot)) {
-      writeLater(lanes as Lanes<I, O>, slot, columns, n);
+      writeLater(lanes as Lanes<I, O>, slot, columns, n, slots);
       continue;
     }
     const head = live ? (heads[n] as Subject<unknown>) : null;

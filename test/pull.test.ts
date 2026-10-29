@@ -117,6 +117,12 @@ describe('pull reading subjects from the lanes in runs', () => {
       [...parts.slice(20), ...parts.slice(0, 20)],
       [...parts.slice(0, 30), parts[3] as Part, ...parts.slice(30)],
       parts.filter((p) => p.id % 3 !== 1),
+      // Scattered, then in order, then scattered again: short runs read row by row around a block.
+      [
+        ...parts.slice(0, 40).map((_, i) => parts[(i * 7) % 40] as Part),
+        ...parts.slice(40, 120),
+        ...parts.slice(120).map((_, i) => parts[120 + ((i * 11) % 30)] as Part),
+      ],
     ];
     for (let t = 16; t <= 160; t += 16) {
       m.sync(t);
