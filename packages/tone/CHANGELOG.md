@@ -4,6 +4,16 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `tone-v*` tag with no
 section here.
 
+## Unreleased
+
+### Breaking
+
+- `write` reads the mix through the engine's `mix.trace`, so the peer moves to the engine release
+  that adds it. Where a `keys` voice's shape is known, its breakpoints are scheduled as they are,
+  exact at any `grid`, and a jump as `setValueAtTime`; anywhere else the mix is still read every
+  `grid` ms. On the tests' sweep the worst error at the default grid fell from 0.68 Hz to 0.12.
+- `Target` needs `setValueAtTime`. Tone's `Param` and `Signal` and a native `AudioParam` have it.
+
 ## 0.5.0
 
 ### Breaking

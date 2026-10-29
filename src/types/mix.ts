@@ -3,6 +3,7 @@ import type { Kit } from './channel.js';
 import type { HistoryOptions, Tape } from './history.js';
 import type { Band, Easing, Patch, Sent, Signal } from './patch.js';
 import type { Booker, BookOptions, Marked } from './place.js';
+import type { Trace, TraceOptions } from './trace.js';
 import type { Transport } from './transport.js';
 import type {
   BlendMember,
@@ -266,6 +267,20 @@ export interface Mix<I, O, H = unknown> {
    * needs `history`.
    */
   project(at: number | { readonly frame: number }): Projection<I, O>;
+  /**
+   * Reads the mix over a window of mix time, `from` to `to`, without moving it, as `project` reads
+   * one moment: `trace.of(subject, channel)` gives that channel as points joined by straight lines.
+   * Where every voice feeding the channel is a `keys` voice whose shape is known through the
+   * window, the points are its own breakpoints and the lines are exact; elsewhere the run is read
+   * every `grid` ms, as many `project` calls would read it.
+   *
+   * Exact needs, of each voice reaching the subject and writing the channel: a `keys` patch whose
+   * stops are plain numbers, eased `linear`; a number weight; no owner, anchor, role, blend,
+   * `within`, `stepMs`, `from: 'current'`, or rate ramp; a fade in finished by `from` and no fade
+   * out under way or due. The channel folds by `sum`, or by `mul` from one such voice, and has no
+   * `bounds`. The window lies at or after the mix's own time, and the tape holds no calls ahead.
+   */
+  trace(from: number, to: number, opts?: TraceOptions): Trace<I, O>;
   /**
    * Moves the mix to mix time `time` and plays on from there. It lands as the mix stood at the end
    * of that frame; where rate 0 held the clock at `time` for several frames, the last of them.

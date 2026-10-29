@@ -22,7 +22,7 @@ describe('a host clock that is not the audio clock', () => {
 
   it('smooths a clock read up to 1 ms off each frame', async () => {
     const r = await render({ skew: 5000, jitter: 1 });
-    expect(worst(r.freq, reference([], [], 5000), 'freq', STALL)).toBeLessThan(1);
+    expect(worst(r.freq, reference([], [], 5000), 'freq', STALL)).toBeLessThan(0.2);
     expect(Math.max(...offBy(r.notes, notes))).toBeLessThan(0.25);
   });
 });

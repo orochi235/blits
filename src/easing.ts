@@ -9,6 +9,11 @@ export type Curve = (u: number) => number;
 
 const linear: Curve = (u) => u;
 
+/** Whether a segment eased by `c` runs in a straight line: no easing, or `linear`. */
+export function straight(c: Curve | undefined): boolean {
+  return c === undefined || c === linear;
+}
+
 /** A CSS `cubic-bezier`: solves x(t) = u for t, then reads y(t). */
 function bezier(x1: number, y1: number, x2: number, y2: number): Curve {
   const cx = 3 * x1;

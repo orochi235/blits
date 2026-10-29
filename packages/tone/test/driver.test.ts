@@ -1,4 +1,4 @@
-import { kit, mix, patch, sum } from '@msb235/blits';
+import { keys, kit, mix, patch, sum } from '@msb235/blits';
 import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it, vi } from 'vitest';
 import type { Target } from '../src/index.js';
@@ -25,11 +25,17 @@ function climbing() {
 function recorder() {
   const ramps: { value: number; time: number }[] = [];
   const holds: number[] = [];
+  const calls: string[] = [];
   const target: Target = {
     cancelAndHoldAtTime: (time) => holds.push(time),
-    linearRampToValueAtTime: (value, time) => ramps.push({ value, time }),
+    linearRampToValueAtTime: (value, time) => {
+      ramps.push({ value, time });
+      calls.push(`ramp ${+value.toFixed(9)} @${+(time * 1000).toFixed(6)}`);
+    },
+    setValueAtTime: (value, time) =>
+      calls.push(`set ${+value.toFixed(9)} @${+(time * 1000).toFixed(6)}`),
   };
-  return { target, ramps, holds };
+  return { target, ramps, holds, calls };
 }
 
 describe('attach and write', () => {
@@ -130,6 +136,57 @@ describe('attach and write', () => {
       48000,
     );
     expect(a.ramps.map((r) => r.time)).toEqual([0, 0.01]);
+  });
+});
+
+describe('exact curves', () => {
+  it("writes a keys voice's own breakpoints, and a jump as a set", () => {
+    const m = mix<string, Level>(kit({ x: sum() }));
+    const saw = keys<string, Level>(100, [
+      { at: 0, delta: { x: 0 } },
+      { at: 0.5, delta: { x: 10 } },
+      { at: 1, delta: { x: 20 } },
+    ]);
+    m.cue({ patch: saw, start: 0, loop: true });
+    const d = drive(m, { clock: () => 2, ahead: 150, grid: 5 });
+    const a = recorder();
+    d.attach('a', { x: a.target });
+    m.sync(0);
+    d.write();
+    expect(a.calls).toEqual([
+      'ramp 0 @2000',
+      'ramp 10 @2050',
+      'ramp 20 @2100',
+      'set 0 @2100',
+      'ramp 10 @2150',
+    ]);
+  });
+
+  it('maps the breakpoints through the mix rate', () => {
+    const m = mix<string, Level>(kit({ x: sum() }));
+    const rise = keys<string, Level>(100, [
+      { at: 0, delta: { x: 0 } },
+      { at: 1, delta: { x: 10 } },
+    ]);
+    m.cue({ patch: rise, start: 0, freeze: 'after' });
+    m.rate = 2;
+    const d = drive(m, { clock: () => 0, ahead: 100, grid: 5 });
+    const a = recorder();
+    d.attach('a', { x: a.target });
+    m.sync(0);
+    d.write();
+    // The voice's 100 ms run in 50 on the audio clock, then holds.
+    expect(a.calls).toEqual(['ramp 0 @0', 'ramp 10 @50', 'ramp 10 @100']);
+  });
+
+  it('samples on the grid where the shape is not known', () => {
+    const m = climbing();
+    const d = drive(m, { clock: () => 0, ahead: 10, grid: 5 });
+    const a = recorder();
+    d.attach('a', { x: a.target });
+    m.sync(0);
+    d.write();
+    expect(a.calls).toEqual(['ramp 0 @0', 'ramp 5 @5', 'ramp 10 @10']);
   });
 });
 

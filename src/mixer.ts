@@ -54,6 +54,7 @@ import type { MotionOwner } from './stretch.js';
 import type { Subject } from './subject.js';
 import { record } from './tape.js';
 import { touch } from './touch.js';
+import { traceMix } from './trace.js';
 import { type Announced, announce, Transport } from './transport.js';
 import type {
   ArcHandle,
@@ -77,6 +78,8 @@ import type {
   SpanHandle,
   SpanSpec,
   Tape,
+  Trace,
+  TraceOptions,
   VoiceSpec,
 } from './types.js';
 import { none, type Voice } from './voice.js';
@@ -506,6 +509,10 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   project(at: number | { readonly frame: number }): Projection<I, O> {
     return projectAll(this.transport, at).of<I, O, unknown>(this);
+  }
+
+  trace(from: number, to: number, opts?: TraceOptions): Trace<I, O> {
+    return traceMix(this, from, to, opts);
   }
 
   announce(
