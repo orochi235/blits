@@ -3,7 +3,8 @@
 // the geometric mean of the ratios. `U` is the Mann-Whitney rank statistic over the two sides' runs,
 // the smaller of the two; at 7 rounds a side it is under 9 for p < 0.05, at 9 under 18.
 //   node bench/medians.mjs <file holding ab.sh's output>
-// It reads bench/lineage.sh's output too, the first two revisions unless REVS says which.
+// It reads bench/restart.mjs's output too, run by ab.sh with AB_BENCH, and bench/lineage.sh's, the
+// first two revisions unless REVS says which.
 // LEDGER="<what the change does>" also appends each row to bench/ledger.tsv, the record of what
 // each change measured; LEDGER_NODE names the node, LEDGER_REV the commit standing for `.`, and
 // LEDGER_FRAMES the FRAMES the run used (300 unset). Keep the output itself in bench/runs/ first,
@@ -13,6 +14,14 @@ import { relative, resolve } from 'node:path';
 
 const file = process.argv[2];
 if (file === undefined) throw new Error('usage: node bench/medians.mjs <ab.sh output>');
+// bench/restart.mjs's lines (`AB_BENCH=bench/restart.mjs bench/ab.sh ...`) as four rows: a stop in µs,
+// the two frames after the stops, and a steady frame, in ms.
+const restartRows = [
+  ['stop-us', 2],
+  ['after', 3],
+  ['after2', 4],
+  ['steady', 5],
+];
 const revs = [];
 const rows = new Map();
 let rev = '';
@@ -21,6 +30,21 @@ for (const line of readFileSync(file, 'utf8').split('\n')) {
   if (round !== null) {
     rev = round[1];
     if (!revs.includes(rev)) revs.push(rev);
+    continue;
+  }
+  const restart =
+    /^\s*\d+\/\d+\s+N=\s*(\d+)\s+stop\s+([\d.]+) us each.*frame after\s+([\d.]+) ms\s+the one after\s+([\d.]+) ms\s+steady\s+([\d.]+) ms/.exec(
+      line,
+    );
+  if (restart !== null) {
+    for (const [name, i] of restartRows) {
+      const key = `${name} N=${restart[1]} V=1`;
+      const at = rows.get(key) ?? new Map();
+      rows.set(key, at);
+      const got = at.get(rev) ?? { ms: [], kb: [] };
+      at.set(rev, got);
+      got.ms.push(Number(restart[i]));
+    }
     continue;
   }
   const row = /^\s*\d+\/\d+\s+(\S+)\s+N=\s*(\d+) V=(\d+)\s+([\d.]+) ms\/frame/.exec(line);
