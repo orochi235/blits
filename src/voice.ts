@@ -27,6 +27,7 @@ import {
   turnedBack,
 } from './owner.js';
 import { type Built, builtOf, intosOf, type Scratch } from './patch.js';
+import type { Seat } from './seat.js';
 import { keeping, VoiceSetting } from './setting.js';
 import type { Fitting } from './spans.js';
 import { Filled, Store } from './store.js';
@@ -153,6 +154,8 @@ export class Voice<I, O> {
   holder: Subject<unknown> | null = null;
   /** Whether its channels run as lanes this frame, so the general fold passes it by. */
   laned = false;
+  /** Its crowd row, while its channels run in a crowd. */
+  seat: Seat<I, O> | null = null;
   /**
    * How many times it has been sought or touched, so a delta read before either is not handed out
    * after it.
@@ -675,6 +678,7 @@ export class Voice<I, O> {
     v.scratch = [];
     v.holder = null;
     v.laned = false;
+    v.seat = null;
     v.log = null;
     v.early = null;
     if (controls) v.take(controls);

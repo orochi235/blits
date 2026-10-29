@@ -4,6 +4,7 @@
 // frames after and a steady frame beside them.
 //   node bench/restart.mjs [N...]          default 1000 10000
 //   DIST=/path/to/dist node bench/restart.mjs 10000   another build, to read one against another
+//   ROUNDS (default 300) rounds are timed per size, after 50 to warm.
 import { pathToFileURL } from 'node:url';
 
 const dist = process.env.DIST
@@ -90,8 +91,9 @@ const run = (n) => {
   };
 };
 
-// Warm on a small mix, so the first size is not also the compile.
-run(200);
+// Warm on a small mix, so the first size is not also the compile; NOWARM=1 skips it, for a profile
+// of one size's stops alone (bench/stopprof.mjs).
+if (process.env.NOWARM !== '1') run(200);
 for (const [i, n] of sizes.entries()) {
   const r = run(n);
   console.log(

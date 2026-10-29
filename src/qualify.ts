@@ -9,6 +9,7 @@ import type { Lanes } from './lanes.js';
 import { reach } from './meet.js';
 import { bury, compactSparse, join, regroup, retouchRow, sameCrowds } from './rows.js';
 import { settle } from './sample.js';
+import { seated, seatOf } from './seat.js';
 import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
 import type { Voice } from './voice.js';
@@ -147,14 +148,13 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
     for (const c of lanes.crowds)
       for (let p = 0; p < c.size; p++) {
         const v = c.voices[p] as Voice<I, O>;
-        if (c.rowOf.get(v.id) === p && v.state === 'done') bury(lanes, c, p);
+        if (seated(lanes, v, c, p) && v.state === 'done') bury(lanes, c, p);
       }
     // A crowd voice that started or began fading takes it up on its row, as `retouch` does.
     for (const v of touched) {
       if (v.state === 'done') continue;
-      const c = lanes.crowdOf.get(v.id);
-      const p = c?.rowOf.get(v.id);
-      if (c !== undefined && p !== undefined) retouchRow(lanes, c, p, v);
+      const s = seatOf(lanes, v);
+      if (s !== null) retouchRow(lanes, s.crowd, s.row, v);
     }
     compactSparse(lanes);
     return;
@@ -301,14 +301,13 @@ export function retouch<I, O>(lanes: Lanes<I, O>): boolean {
   for (const v of touched) {
     const known = v.id <= lanes.known;
     if (v.id > lanes.known) lanes.known = v.id;
-    const c = lanes.crowdOf.get(v.id);
-    const p = c?.rowOf.get(v.id);
-    if (c !== undefined && p !== undefined) {
+    const s = seatOf(lanes, v);
+    if (s !== null) {
       if (v.state === 'done') {
-        bury(lanes, c, p);
+        bury(lanes, s.crowd, s.row);
         continue;
       }
-      retouchRow(lanes, c, p, v);
+      retouchRow(lanes, s.crowd, s.row, v);
       continue;
     }
     if (v.state === 'done' && !known) continue;

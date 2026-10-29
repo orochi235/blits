@@ -1,0 +1,111 @@
+# keiei, AB_BENCH=bench/restart.mjs AB_EACH=1 bench/ab.sh origin/main . 9 1000 10000 40000
+built origin/main (07537b41a69f32c5379f6bce76b4fe2732bb5f00)
+built the working tree
+== round 1/9 origin/main
+ 1/1  N=  1000  stop   0.61 us each  start   0.01 us each  frame after   0.379 ms  the one after   0.051 ms  steady   0.035 ms
+== round 1/9 origin/main
+ 1/1  N= 10000  stop   1.74 us each  start   0.01 us each  frame after   1.007 ms  the one after   0.396 ms  steady   0.239 ms
+== round 1/9 origin/main
+ 1/1  N= 40000  stop   3.09 us each  start   0.01 us each  frame after   2.477 ms  the one after   1.552 ms  steady   0.934 ms
+== round 1/9 .
+ 1/1  N=  1000  stop   0.66 us each  start   0.01 us each  frame after   0.388 ms  the one after   0.051 ms  steady   0.027 ms
+== round 1/9 .
+ 1/1  N= 10000  stop   1.56 us each  start   0.01 us each  frame after   0.973 ms  the one after   0.389 ms  steady   0.237 ms
+== round 1/9 .
+ 1/1  N= 40000  stop   2.94 us each  start   0.01 us each  frame after   2.494 ms  the one after   1.566 ms  steady   0.938 ms
+== round 2/9 .
+ 1/1  N=  1000  stop   0.66 us each  start   0.01 us each  frame after   0.370 ms  the one after   0.053 ms  steady   0.036 ms
+== round 2/9 .
+ 1/1  N= 10000  stop   1.69 us each  start   0.01 us each  frame after   0.969 ms  the one after   0.392 ms  steady   0.239 ms
+== round 2/9 .
+ 1/1  N= 40000  stop   3.06 us each  start   0.01 us each  frame after   2.434 ms  the one after   1.561 ms  steady   0.950 ms
+== round 2/9 origin/main
+ 1/1  N=  1000  stop   0.64 us each  start   0.05 us each  frame after   0.379 ms  the one after   0.050 ms  steady   0.028 ms
+== round 2/9 origin/main
+ 1/1  N= 10000  stop   1.59 us each  start   0.01 us each  frame after   0.952 ms  the one after   0.383 ms  steady   0.239 ms
+== round 2/9 origin/main
+ 1/1  N= 40000  stop   2.95 us each  start   0.01 us each  frame after   2.498 ms  the one after   1.563 ms  steady   0.945 ms
+== round 3/9 origin/main
+ 1/1  N=  1000  stop   0.62 us each  start   0.01 us each  frame after   0.374 ms  the one after   0.053 ms  steady   0.027 ms
+== round 3/9 origin/main
+ 1/1  N= 10000  stop   1.64 us each  start   0.01 us each  frame after   0.978 ms  the one after   0.389 ms  steady   0.249 ms
+== round 3/9 origin/main
+ 1/1  N= 40000  stop   2.87 us each  start   0.01 us each  frame after   2.468 ms  the one after   1.538 ms  steady   0.956 ms
+== round 3/9 .
+ 1/1  N=  1000  stop   0.75 us each  start   0.01 us each  frame after   0.422 ms  the one after   0.054 ms  steady   0.039 ms
+== round 3/9 .
+ 1/1  N= 10000  stop   1.64 us each  start   0.01 us each  frame after   1.023 ms  the one after   0.408 ms  steady   0.255 ms
+== round 3/9 .
+ 1/1  N= 40000  stop   3.08 us each  start   0.01 us each  frame after   2.614 ms  the one after   1.646 ms  steady   1.029 ms
+== round 4/9 .
+ 1/1  N=  1000  stop   0.78 us each  start   0.01 us each  frame after   0.429 ms  the one after   0.055 ms  steady   0.029 ms
+== round 4/9 .
+ 1/1  N= 10000  stop   1.66 us each  start   0.01 us each  frame after   1.019 ms  the one after   0.406 ms  steady   0.256 ms
+== round 4/9 .
+ 1/1  N= 40000  stop   2.86 us each  start   0.01 us each  frame after   2.472 ms  the one after   1.531 ms  steady   0.965 ms
+== round 4/9 origin/main
+ 1/1  N=  1000  stop   0.76 us each  start   0.01 us each  frame after   0.394 ms  the one after   0.051 ms  steady   0.030 ms
+== round 4/9 origin/main
+ 1/1  N= 10000  stop   1.63 us each  start   0.01 us each  frame after   0.961 ms  the one after   0.385 ms  steady   0.238 ms
+== round 4/9 origin/main
+ 1/1  N= 40000  stop   3.22 us each  start   0.01 us each  frame after   2.507 ms  the one after   1.544 ms  steady   0.934 ms
+== round 5/9 origin/main
+ 1/1  N=  1000  stop   0.68 us each  start   0.01 us each  frame after   0.386 ms  the one after   0.060 ms  steady   0.029 ms
+== round 5/9 origin/main
+ 1/1  N= 10000  stop   1.66 us each  start   0.01 us each  frame after   0.968 ms  the one after   0.383 ms  steady   0.237 ms
+== round 5/9 origin/main
+ 1/1  N= 40000  stop   2.99 us each  start   0.01 us each  frame after   2.500 ms  the one after   1.555 ms  steady   0.936 ms
+== round 5/9 .
+ 1/1  N=  1000  stop   0.61 us each  start   0.01 us each  frame after   0.379 ms  the one after   0.050 ms  steady   0.027 ms
+== round 5/9 .
+ 1/1  N= 10000  stop   1.55 us each  start   0.01 us each  frame after   0.961 ms  the one after   0.385 ms  steady   0.241 ms
+== round 5/9 .
+ 1/1  N= 40000  stop   2.74 us each  start   0.01 us each  frame after   2.503 ms  the one after   1.564 ms  steady   0.936 ms
+== round 6/9 .
+ 1/1  N=  1000  stop   0.60 us each  start   0.01 us each  frame after   0.373 ms  the one after   0.051 ms  steady   0.035 ms
+== round 6/9 .
+ 1/1  N= 10000  stop   1.59 us each  start   0.01 us each  frame after   0.982 ms  the one after   0.389 ms  steady   0.241 ms
+== round 6/9 .
+ 1/1  N= 40000  stop   2.82 us each  start   0.01 us each  frame after   2.519 ms  the one after   1.569 ms  steady   0.938 ms
+== round 6/9 origin/main
+ 1/1  N=  1000  stop   0.61 us each  start   0.01 us each  frame after   0.383 ms  the one after   0.050 ms  steady   0.028 ms
+== round 6/9 origin/main
+ 1/1  N= 10000  stop   1.74 us each  start   0.01 us each  frame after   1.005 ms  the one after   0.396 ms  steady   0.239 ms
+== round 6/9 origin/main
+ 1/1  N= 40000  stop   2.92 us each  start   0.16 us each  frame after   2.491 ms  the one after   1.576 ms  steady   0.941 ms
+== round 7/9 origin/main
+ 1/1  N=  1000  stop   0.62 us each  start   0.01 us each  frame after   0.378 ms  the one after   0.050 ms  steady   0.027 ms
+== round 7/9 origin/main
+ 1/1  N= 10000  stop   1.68 us each  start   0.01 us each  frame after   0.985 ms  the one after   0.391 ms  steady   0.240 ms
+== round 7/9 origin/main
+ 1/1  N= 40000  stop   2.89 us each  start   0.01 us each  frame after   2.478 ms  the one after   1.568 ms  steady   0.934 ms
+== round 7/9 .
+ 1/1  N=  1000  stop   0.59 us each  start   0.01 us each  frame after   0.376 ms  the one after   0.050 ms  steady   0.027 ms
+== round 7/9 .
+ 1/1  N= 10000  stop   1.53 us each  start   0.01 us each  frame after   0.962 ms  the one after   0.386 ms  steady   0.238 ms
+== round 7/9 .
+ 1/1  N= 40000  stop   3.81 us each  start   0.01 us each  frame after   3.379 ms  the one after   2.073 ms  steady   0.939 ms
+== round 8/9 .
+ 1/1  N=  1000  stop   0.64 us each  start   0.01 us each  frame after   0.393 ms  the one after   0.052 ms  steady   0.034 ms
+== round 8/9 .
+ 1/1  N= 10000  stop   1.97 us each  start   0.01 us each  frame after   1.111 ms  the one after   0.454 ms  steady   0.238 ms
+== round 8/9 .
+ 1/1  N= 40000  stop   2.83 us each  start   0.01 us each  frame after   2.490 ms  the one after   1.556 ms  steady   0.936 ms
+== round 8/9 origin/main
+ 1/1  N=  1000  stop   0.61 us each  start   0.01 us each  frame after   0.373 ms  the one after   0.050 ms  steady   0.028 ms
+== round 8/9 origin/main
+ 1/1  N= 10000  stop   1.76 us each  start   0.01 us each  frame after   1.009 ms  the one after   0.395 ms  steady   0.240 ms
+== round 8/9 origin/main
+ 1/1  N= 40000  stop   2.92 us each  start   0.01 us each  frame after   2.477 ms  the one after   1.551 ms  steady   0.936 ms
+== round 9/9 origin/main
+ 1/1  N=  1000  stop   0.63 us each  start   0.01 us each  frame after   0.385 ms  the one after   0.050 ms  steady   0.035 ms
+== round 9/9 origin/main
+ 1/1  N= 10000  stop   1.69 us each  start   0.01 us each  frame after   0.983 ms  the one after   0.391 ms  steady   0.239 ms
+== round 9/9 origin/main
+ 1/1  N= 40000  stop   2.92 us each  start   0.01 us each  frame after   2.482 ms  the one after   1.587 ms  steady   0.950 ms
+== round 9/9 .
+ 1/1  N=  1000  stop   0.63 us each  start   0.01 us each  frame after   0.381 ms  the one after   0.050 ms  steady   0.031 ms
+== round 9/9 .
+ 1/1  N= 10000  stop   1.52 us each  start   0.00 us each  frame after   0.949 ms  the one after   0.383 ms  steady   0.240 ms
+== round 9/9 .
+ 1/1  N= 40000  stop   2.91 us each  start   0.01 us each  frame after   2.464 ms  the one after   1.545 ms  steady   0.933 ms

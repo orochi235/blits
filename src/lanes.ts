@@ -24,6 +24,7 @@ import { Placed } from './placed.js';
 import { requalify, retouch } from './qualify.js';
 import { reading } from './reading.js';
 import { reportedRow, unplace } from './rows.js';
+import { type Seat, seatOf } from './seat.js';
 import type { Watcher } from './stretch.js';
 import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
@@ -92,7 +93,7 @@ export class Lanes<I, O> implements Watcher {
   readonly byId = new Map<number, Lane<I, O>>();
   /** The crowds of single-subject voices, one per list of channels, and which holds each voice. */
   crowds: Crowd<I, O>[] = [];
-  readonly crowdOf = new Map<number, Crowd<I, O>>();
+  readonly seats = new Map<number, Seat<I, O>>();
   /** Which crowd voices' rows are placed on each subject. */
   readonly placed = new Placed();
   /**
@@ -307,9 +308,8 @@ export class Lanes<I, O> implements Watcher {
       lane.remove(slot);
       return;
     }
-    const c = this.crowdOf.get(id);
-    const p = c?.rowOf.get(id);
-    if (c !== undefined && p !== undefined && c.list[p] === slot) unplace(this, c, p);
+    const s = this.seats.get(id);
+    if (s !== undefined && s.crowd.list[s.row] === slot) unplace(this, s.crowd, s.row);
   }
 
   /** A voice brought a subject back: its next probe meets every lane again, as it met them first. */
@@ -326,9 +326,8 @@ export class Lanes<I, O> implements Watcher {
     if (slot < 0) return undefined;
     const lane = this.byId.get(id);
     if (lane !== undefined) return this.reported(lane, slot);
-    const c = this.crowdOf.get(id);
-    const p = c?.rowOf.get(id);
-    return c === undefined || p === undefined ? undefined : reportedRow(this, c, p, slot);
+    const s = this.seats.get(id);
+    return s === undefined ? undefined : reportedRow(this, s.crowd, s.row, slot);
   }
 
   reported(lane: Lane<I, O>, slot: number): number | undefined {
@@ -515,9 +514,8 @@ export class Lanes<I, O> implements Watcher {
     for (const lane of this.lanes) lane.remove(slot);
     const placed = this.placed;
     for (let id = placed.any(slot); id !== 0; id = placed.any(slot)) {
-      const c = this.crowdOf.get(id);
-      const p = c?.rowOf.get(id);
-      if (c !== undefined && p !== undefined && c.list[p] === slot) unplace(this, c, p);
+      const s = this.seats.get(id);
+      if (s !== undefined && s.crowd.list[s.row] === slot) unplace(this, s.crowd, s.row);
       else placed.remove(slot, id);
     }
     if (slot < this.cap) this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
@@ -548,10 +546,10 @@ export class Lanes<I, O> implements Watcher {
    * next fill, and a lane keeps the sample the old one gave.
    */
   stretchChanged(id: number, s: number): void {
-    const c = this.crowdOf.get(id);
-    const p = c?.rowOf.get(id);
-    if (c !== undefined && p !== undefined) {
-      c.restale(p, c.hot[p * c.stride + Hot.FLAGS] as number);
+    const seat = this.seats.get(id);
+    if (seat !== undefined) {
+      const c = seat.crowd;
+      c.restale(seat.row, c.hot[seat.row * c.stride + Hot.FLAGS] as number);
       return;
     }
     const lane = this.byId.get(id);
@@ -575,11 +573,10 @@ export class Lanes<I, O> implements Watcher {
 
   /** A voice's clock moved the `shown` of records it had already placed: copies them again. */
   reshown(id: number): void {
-    const c = this.crowdOf.get(id);
-    const p = c?.rowOf.get(id);
-    if (c !== undefined && p !== undefined) {
-      const held = c.records[p];
-      if (held !== undefined) c.data[p * Row.STRIDE + Row.SINCE] = held.shown;
+    const s = this.seats.get(id);
+    if (s !== undefined) {
+      const held = s.crowd.records[s.row];
+      if (held !== undefined) s.crowd.data[s.row * Row.STRIDE + Row.SINCE] = held.shown;
     }
     const lane = this.byId.get(id);
     if (lane === undefined) return;
@@ -590,11 +587,11 @@ export class Lanes<I, O> implements Watcher {
   }
 
   /** Something on a voice changed: a crowd copies it again at the next fill. */
-  voiceChanged(id: number): void {
-    const c = this.crowdOf.get(id);
-    const p = c?.rowOf.get(id);
-    if (c === undefined || p === undefined) return;
-    const f = p * c.stride + Hot.FLAGS;
+  voiceChanged(voice: Voice<I, O>): void {
+    const s = seatOf(this, voice);
+    if (s === null) return;
+    const c = s.crowd;
+    const f = s.row * c.stride + Hot.FLAGS;
     c.hot[f] = (c.hot[f] as number) | Flag.VOICE;
   }
 }
