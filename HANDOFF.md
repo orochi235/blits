@@ -18,7 +18,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.14.0 (2026-10-24), with blits-panel 0.2.0, blits-quarks 0.9.0 and blits-tone 0.4.0 taking it as a `^0.14.0` peer.
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.15.0 (2026-10-29), with blits-panel 0.3.0, blits-quarks 0.10.0 and blits-tone 0.5.0 taking it as a `^0.15.0` peer.
+  Pushing all three driver tags at once leaves the middle run canceled (the `release` concurrency
+  group keeps one pending run), so rerun it once the last one starts.
   blits-tone 0.2.0 was its first release through trusted publishing.
 - **What shipped is in `CHANGELOG.md`; the calls made while building it are in the schema page's
   "Chosen while building"**, each the owner's to overturn, and the playground's and the DevTools
@@ -55,7 +57,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   (recorded in klieg's changelog). 0.3.0 needed no change in klieg: its `color` channel is a `hex`,
   but every effect voice plays at full weight with no role, so the OKLCH blend is never taken. The
   schema page's klieg section says what the port found.
-- **The package, `@msb235/blits` 0.14.0 on npm.** `src/` is the whole of it, with `types.ts` a
+- **The package, `@msb235/blits` 0.15.0 on npm.** `src/` is the whole of it, with `types.ts` a
   barrel over `types/` holding the whole public surface, doc-commented. What a probe or a fill runs
   per subject is methods, written in their modules as functions taking `this` and installed on the
   prototype at the foot of `mixer.ts`, `lanes.ts` and `motions.ts`: as plain functions they cost
@@ -390,8 +392,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      teitou, 2026-10-25, `bench/runs/2026-10-25-named-split.txt`): one A/B can land all one side
      in the fast mode by luck.
 
-4. **Bounding a signal: `within`, `around`, `plot`, `moved` and `put`** (2026-10-26; unreleased, in
-   the changelog's Unreleased). A pointer glow is a weight signal read for every subject every
+4. **Bounding a signal: `within`, `around`, `plot`, `moved` and `put`** (2026-10-26; released in
+   0.15.0). A pointer glow is a weight signal read for every subject every
    frame, almost all of them at weight 0. A cue's `within: { x, y, r }` declares the signal 0
    outside a circle the host moves, so the mix skips it there without visiting each subject.
    `mix.around(circle, { ease })` is the stock signal of that shape (1 at the center to 0 at `r`,
