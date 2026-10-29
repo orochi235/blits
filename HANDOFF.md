@@ -446,7 +446,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    playground keeps history for an `around` composition now. `within` also takes the host's own
    finder, `{ find(out) }` over indices `mix.place` hands out (names Mike's, 2026-10-28; the schema
    page's Signals and "Signal bounds"). **Next here, Mike's ask (2026-10-28): positions on k axes**,
-   1D or 3D, a ball for a circle; unbuilt. `within` on a constant weight stays refused, its error naming the recipe,
+   1D or 3D, a ball for a circle; unbuilt. **Owed: a quiet-box A/B of `4350a86` against `c93ca73`**
+   on `glowb^`, `glowbn^` and `glowbp^`; the one run (`bench/runs/2026-10-28-finder-ab.txt`) was on
+   a loaded teitou, every U 18 to 30 of 49, with `tweens^`, untouched, 17% apart, so it shows only
+   that nothing moved by more than the noise. `within` on a constant weight stays refused, its error naming the recipe,
    `weight: mix.around(circle, { steps: 1, jump: 'start' })` for a hard-edged disk (decided by Mike,
    2026-10-26); blits-panel draws a bounded voice's circle on the page (◯ circles, 2026-10-26). Whether unbounded voices
    are ever deprecated stays open and unlikely: klieg's lighting, a fade over a whole sign and wod's
