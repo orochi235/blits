@@ -123,7 +123,8 @@
   display: none;
 }
 
-.tracks-toggle {
+.tracks-toggle,
+.repeat-toggle {
   font: 500 0.82rem var(--label);
   padding: 0.2rem 0.6rem;
   color: var(--ink-soft);

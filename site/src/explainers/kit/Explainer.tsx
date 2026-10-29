@@ -15,7 +15,7 @@ export interface ExplainerProps<I, O, C> {
   /** Builds the scene from the current config. Called again whenever a control moves. */
   scene: (config: C) => Scene<I, O, C>;
   schema?: Schema<C>;
-  /** Explainer ms one play-through lasts before it loops. */
+  /** Explainer ms one play-through lasts before it repeats. */
   duration: number;
   /** Stage height as a fraction of its width, up to `MAX_STAGE_H`. */
   aspect?: number;
@@ -43,6 +43,11 @@ export interface Size {
 
 /** Where a viewer's choice to show or hide every explainer's tracks is kept. */
 const TRACKS_KEY = 'blits-explainer-tracks';
+/** Where a viewer's choice of how every explainer repeats is kept. */
+const REPEAT_KEY = 'blits-explainer-repeat';
+
+/** At the end, play back to the start, or start over from it. */
+type Repeat = 'boomerang' | 'loop';
 
 const noConfig = { defaults: () => ({}) } as unknown as Schema<never>;
 
@@ -103,6 +108,22 @@ function ExplainerBody<I, O, C>({
       return !was;
     });
 
+  const [repeat, setRepeat] = useState<Repeat>(() => {
+    try {
+      return localStorage.getItem(REPEAT_KEY) === 'loop' ? 'loop' : 'boomerang';
+    } catch {
+      return 'boomerang';
+    }
+  });
+  const flip = () =>
+    setRepeat((was) => {
+      const next = was === 'loop' ? 'boomerang' : 'loop';
+      try {
+        localStorage.setItem(REPEAT_KEY, next);
+      } catch {}
+      return next;
+    });
+
   const reduced = useReducedMotion();
   const [playing, setPlaying] = useState(!reduced);
   const [t, setT] = useState(0);
@@ -122,9 +143,10 @@ function ExplainerBody<I, O, C>({
     let id = requestAnimationFrame(function tick(now) {
       const dt = Math.min(now - last, 100);
       last = now;
-      // Play to the end, then back to the start, and on again.
+      if (repeat === 'loop') way.current = 1;
       let next = at.current + dt * way.current;
-      if (next >= duration) {
+      if (next >= duration && repeat === 'loop') next %= duration;
+      else if (next >= duration) {
         way.current = -1;
         next = Math.max(0, 2 * duration - next);
       } else if (next <= 0) {
@@ -136,7 +158,7 @@ function ExplainerBody<I, O, C>({
       id = requestAnimationFrame(tick);
     });
     return () => cancelAnimationFrame(id);
-  }, [playing, visible, focused, duration]);
+  }, [playing, visible, focused, duration, repeat]);
 
   useEffect(() => player.onWoken(() => setPlaying(true)), [player]);
 
@@ -205,6 +227,16 @@ function ExplainerBody<I, O, C>({
       <div className="explainer-transport">
         <button type="button" className="tracks-toggle" aria-expanded={open} onClick={toggle}>
           {open ? 'Hide tracks' : 'Show tracks'}
+        </button>
+        <button
+          type="button"
+          className="repeat-toggle"
+          title={
+            repeat === 'loop' ? 'Plays to the end, then starts over' : 'Plays to the end, then back'
+          }
+          onClick={flip}
+        >
+          {repeat === 'loop' ? '↻ Loop' : '⇄ Boomerang'}
         </button>
         <output className="explainer-time">{(t / 1000).toFixed(2).padStart(5, ' ')} s</output>
       </div>
