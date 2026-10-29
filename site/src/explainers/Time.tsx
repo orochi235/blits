@@ -3,7 +3,7 @@ import { f } from '@weasel-js/labkit';
 import { label, lamp, numberLine, trace } from './kit/draw';
 import { Explainer } from './kit/Explainer';
 import type { Ink } from './kit/ink';
-import type { Scene } from './kit/scene';
+import type { Frame, Scene } from './kit/scene';
 
 /**
  * A time axis across the whole run, with windows shaded and the playhead drawn. The kit's `trace`
@@ -226,7 +226,6 @@ const tab = { id: 'tab' };
 const HIDE = 8000;
 
 const hiding = f.schema({
-  rebase: f.boolean(false).label('Rebase on return'),
   hideAt: f.number(2000).range(0, 6000).step(100).suffix('ms').label('Hide the tab at'),
   hideFor: f.number(2500).range(100, 4000).step(100).suffix('ms').label('Hidden for'),
 });
@@ -234,8 +233,9 @@ type HideConfig = ReturnType<typeof hiding.defaults>;
 
 const hiddenOf = (c: HideConfig) => ({ from: c.hideAt, to: Math.min(HIDE, c.hideAt + c.hideFor) });
 
-function hideScene(c: HideConfig): Scene<typeof tab, Pose, HideConfig> {
-  return {
+const hideScene =
+  (rebase: boolean) =>
+  (c: HideConfig): Scene<typeof tab, Pose, HideConfig> => ({
     kit: makeKit<Pose>({ sweep: last(), level: sum() }),
     subjects: () => [tab],
     voices: () => [
@@ -260,7 +260,7 @@ function hideScene(c: HideConfig): Scene<typeof tab, Pose, HideConfig> {
     ],
     syncing: (t) => t < hiddenOf(c).from || t >= hiddenOf(c).to,
     events: () =>
-      c.rebase
+      rebase
         ? [
             {
               at: hiddenOf(c).to,
@@ -269,8 +269,9 @@ function hideScene(c: HideConfig): Scene<typeof tab, Pose, HideConfig> {
           ]
         : [],
     record: ({ poses }) => [poses[0]?.sweep ?? Number.NaN, poses[0]?.level ?? 0],
-  };
-}
+  });
+const plain = hideScene(false);
+const rebased = hideScene(true);
 
 /** A lamp riding a track: the sweep places it, the fade lights it. */
 function sweeper(
@@ -280,10 +281,12 @@ function sweeper(
   ink: Ink,
   pose: Pose | undefined,
   hidden: boolean,
+  name: string,
 ): void {
   const from = 72;
   const to = w - 64;
-  const y = h * 0.5;
+  const y = h * 0.6;
+  label(ctx, name, from, y - 22, ink.ink, 'left');
   ctx.strokeStyle = ink.rule;
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -296,58 +299,67 @@ function sweeper(
   } else {
     lamp(ctx, ink, from + sweep * (to - from), y, 12, pose?.level ?? 0, ink.voice('v1'));
   }
-  if (hidden) label(ctx, 'Hidden: no frames', to, y + 32, ink.soft, 'right');
+  if (hidden) label(ctx, 'Hidden: no frames', to, y - 22, ink.soft, 'right');
+}
+
+/** One run's trace of sweep and fade over the timeline, with the hidden stretch shaded. */
+function run(
+  ctx: CanvasRenderingContext2D,
+  box: { x: number; y: number; w: number; h: number },
+  ink: Ink,
+  frame: Frame<typeof tab, Pose>,
+  span: { from: number; to: number },
+  name: string,
+): void {
+  timeline(ctx, box, ink, {
+    duration: HIDE,
+    t: frame.t,
+    windows: [{ ...span, text: frame.hidden ? 'Tab hidden: no frames' : 'Tab hidden' }],
+  });
+  const sweep = series(frame.history, 0).filter(([, v]) => !Number.isNaN(v));
+  trace(
+    ctx,
+    box,
+    ink,
+    [
+      { color: ink.voice('v1'), points: sweep, unread: [span] },
+      { color: ink.voice('v2'), points: series(frame.history, 1), unread: [span] },
+    ],
+    { t: HIDE, span: HIDE, min: 0, max: 1.05, label: name },
+  );
 }
 
 export default function HideTab() {
   return (
     <Explainer
-      scene={hideScene}
+      scene={plain}
+      twin={rebased}
       schema={hiding}
       duration={HIDE}
-      aspect={0.66}
+      aspect={0.8}
       caption={
         <>
-          The lamp rides the sweep and glows with the fade. In the shaded stretch the tab is hidden
-          and the host gets no frames. Without <code>rebase()</code>, the first frame back is as
-          much later on every clock as the tab was hidden: hide it long enough and the fade has
-          finished and the sweep's one pass is over. With it, both resume where they were.
+          The same two voices, played twice on one clock. The lamp rides the sweep, a single 4 s
+          pass, and glows with the fade. In the shaded stretch the tab is hidden and the host gets
+          no frames. Without <code>rebase()</code>, the first frame back counts the hidden time:
+          hide it long enough and the fade has finished and the sweep's pass is over. With it, both
+          resume where they were and finish that much later.
         </>
       }
-      draw={(ctx, frame, size, ink, c) => {
+      draw={(ctx, frame, size, ink, c, twin) => {
         const span = hiddenOf(c);
-        const pose = frame.poses[0];
-        const stage = Math.round(size.h * 0.22);
-        sweeper(ctx, size.w, stage, ink, pose, frame.hidden);
-        const top = stage + Math.round((size.h - stage) * 0.4);
+        const lane = Math.round(size.h * 0.13);
+        sweeper(ctx, size.w, lane, ink, frame.poses[0], frame.hidden, 'Without rebase()');
         ctx.save();
-        ctx.translate(0, stage);
-        numberLine(ctx, { w: size.w, h: top - stage }, ink, {
-          from: 0,
-          to: 1,
-          rows: [
-            { label: 'Sweep', color: ink.voice('v1'), value: pose?.sweep },
-            { label: 'Fade', color: ink.voice('v2'), value: pose?.level },
-          ],
-        });
+        ctx.translate(0, lane);
+        sweeper(ctx, size.w, lane, ink, twin?.poses[0], frame.hidden, 'With rebase()');
         ctx.restore();
-        const box = { x: 72, y: top + 12, w: size.w - 136, h: size.h - top - 44 };
-        timeline(ctx, box, ink, {
-          duration: HIDE,
-          t: frame.t,
-          windows: [{ ...span, text: frame.hidden ? 'Tab hidden: no frames' : 'Tab hidden' }],
-        });
-        const sweep = series(frame.history, 0).filter(([, v]) => !Number.isNaN(v));
-        trace(
-          ctx,
-          box,
-          ink,
-          [
-            { color: ink.voice('v1'), points: sweep, unread: [span] },
-            { color: ink.voice('v2'), points: series(frame.history, 1), unread: [span] },
-          ],
-          { t: HIDE, span: HIDE, min: 0, max: 1.05 },
-        );
+        const top = lane * 2 + 16;
+        const gap = 36;
+        const h = (size.h - top - gap - 28) / 2;
+        const box = (i: number) => ({ x: 72, y: top + i * (h + gap), w: size.w - 136, h });
+        run(ctx, box(0), ink, frame, span, 'Without rebase(): sweep, fade');
+        if (twin) run(ctx, box(1), ink, twin, span, 'With rebase(): sweep, fade');
       }}
     />
   );

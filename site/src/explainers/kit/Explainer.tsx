@@ -19,7 +19,16 @@ export interface ExplainerProps<I, O, C> {
   duration: number;
   /** Stage height as a fraction of its width, up to `MAX_STAGE_H`. */
   aspect?: number;
-  draw(ctx: CanvasRenderingContext2D, frame: Frame<I, O>, size: Size, ink: Ink, config: C): void;
+  draw(
+    ctx: CanvasRenderingContext2D,
+    frame: Frame<I, O>,
+    size: Size,
+    ink: Ink,
+    config: C,
+    twin?: Frame<I, O>,
+  ): void;
+  /** A second scene played on the same clock, for a side-by-side; its frame reaches `draw` as `twin`. */
+  twin?: (config: C) => Scene<I, O, C>;
   /** How the ledger prints one channel's value. Numbers default to three decimals. */
   format?: Partial<Record<string, (v: unknown) => ReactNode>>;
   /** A line under the stage saying what to look at. */
@@ -69,6 +78,7 @@ function ExplainerBody<I, O, C>({
   caption,
   pick,
   toggles,
+  twin,
 }: ExplainerProps<I, O, C>) {
   const s = (schema ?? noConfig) as Schema<C>;
   const resolved = useMemo(() => (schema ? resolveConfigSchema(schema) : null), [schema]);
@@ -81,6 +91,12 @@ function ExplainerBody<I, O, C>({
     return new Player(built, config, { name, duration });
   }, [built, config, duration]);
   useEffect(() => () => player.close(), [player]);
+  const second = useMemo(() => {
+    if (!twin) return null;
+    const page = document.title.replace(/^blits: /, '');
+    return new Player(twin(config), config, { name: `${page}: twin`, duration });
+  }, [twin, config, duration]);
+  useEffect(() => () => second?.close(), [second]);
   const tracks = useMemo(() => {
     const courses = coursesOver(built, config, duration);
     const voices = built.voices(config);
@@ -187,8 +203,8 @@ function ExplainerBody<I, O, C>({
     if (!ctx) return;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.clearRect(0, 0, size.w, size.h);
-    draw(ctx, f, size, readInk(el), config);
-  }, [player, t, size, draw, config]);
+    draw(ctx, f, size, readInk(el), config, second?.at(f.t));
+  }, [player, second, t, size, draw, config]);
 
   // Paused by the window losing focus reads as paused, though it plays again on its own when focus returns.
   const running = playing && focused;
