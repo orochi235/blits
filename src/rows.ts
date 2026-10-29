@@ -7,6 +7,7 @@ import { motionOf } from './motion.js';
 import type { Motions } from './motions.js';
 import { open } from './qualify.js';
 import { settle } from './sample.js';
+import { Seat, seatOf } from './seat.js';
 import type { Voice } from './voice.js';
 
 /** Whether two crowds' channels are the same list. */
@@ -41,13 +42,12 @@ export function unplace<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number): vo
 export function sameCrowds<I, O>(lanes: Lanes<I, O>, members: readonly Voice<I, O>[]): boolean {
   let live = 0;
   for (const v of members) {
-    if (!lanes.crowdOf.has(v.id)) return false;
+    if (!lanes.seats.has(v.id)) return false;
     live++;
   }
   let rows = 0;
-  for (const [id, c] of lanes.crowdOf) {
-    const p = c.rowOf.get(id) as number;
-    if ((c.voices[p] as Voice<I, O>).state !== 'done') rows++;
+  for (const s of lanes.seats.values()) {
+    if ((s.crowd.voices[s.row] as Voice<I, O>).state !== 'done') rows++;
   }
   return rows === live;
 }
@@ -65,13 +65,14 @@ export function regroup<I, O>(lanes: Lanes<I, O>, members: Voice<I, O>[]): void 
       if (!keep.has(v.id) || v.state === 'done') leaveCrowd(lanes, c, p);
     }
   const old = lanes.crowds;
-  const was = new Map(lanes.crowdOf);
+  const was = new Map(lanes.seats);
+  for (const s of was.values()) s.lanes = null;
   lanes.crowds = [];
-  lanes.crowdOf.clear();
+  lanes.seats.clear();
   lanes.overlap = false;
   for (const v of members) {
     const from = was.get(v.id);
-    join(lanes, v, from, from?.rowOf.get(v.id), old);
+    join(lanes, v, from?.crowd, from?.row, old);
   }
   if (lanes.crowds.length === 0) {
     lanes.lawsByKey.clear();
@@ -108,8 +109,9 @@ export function join<I, O>(
   else newRow(lanes, c, p, v);
   if (c.hot[p * c.stride + Hot.EPOCH] === 0 && v.state !== 'pending')
     c.hot[p * c.stride + Hot.EPOCH] = open(lanes, v);
-  c.rowOf.set(v.id, p);
-  lanes.crowdOf.set(v.id, c);
+  const seat = new Seat<I, O>(lanes, c, p);
+  lanes.seats.set(v.id, seat);
+  v.seat = seat;
   v.laned = true;
 }
 
@@ -130,28 +132,29 @@ export function retouchRow<I, O>(
  * and at half a crowd replacing a voice a frame carried as many empty rows as live ones.
  */
 export function compactSparse<I, O>(lanes: Lanes<I, O>): void {
-  for (const c of lanes.crowds) if (c.dead > 64 && c.dead * 4 >= c.size) compact(c);
+  for (const c of lanes.crowds) if (c.dead > 64 && c.dead * 4 >= c.size) compact(lanes, c);
 }
 
 /**
  * Slides a crowd's rows down over the empty ones its departed voices left, in order, so its rows
  * stay in voice order; a qualify did this by rebuilding every crowd, a dropped frame at 10k rows.
  */
-function compact<I, O>(c: Crowd<I, O>): void {
+function compact<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>): void {
   // The rows' stops are copied into a fresh pool, leaving the departed rows' behind.
   const keys = c.keys;
   c.keys = new KeyRows();
   let q = 0;
   for (let p = 0; p < c.size; p++) {
     const v = c.voices[p] as Voice<I, O>;
-    if (c.rowOf.get(v.id) !== p) {
+    const s = seatOf(lanes, v);
+    if (s === null || s.crowd !== c || s.row !== p) {
       c.odd?.delete(p);
       continue;
     }
     if (q !== p) {
       copyRow(c, p, c, q, keys);
       c.odd?.delete(p);
-      c.rowOf.set(v.id, q);
+      s.row = q;
     } else copyKeys(keys, c, q);
     q++;
   }
@@ -174,8 +177,12 @@ export function bury<I, O>(lanes: Lanes<I, O>, c: Crowd<I, O>, p: number): void 
   c.deltas[p] = null;
   c.motions[p] = undefined;
   c.hot[p * c.stride + Hot.FLAGS] = 0;
-  c.rowOf.delete(v.id);
-  lanes.crowdOf.delete(v.id);
+  lanes.seats.delete(v.id);
+  const s = v.seat;
+  if (s !== null && s.lanes === lanes) {
+    s.lanes = null;
+    v.seat = null;
+  }
   c.dead++;
 }
 

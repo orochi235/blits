@@ -159,7 +159,7 @@ function dueOf<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): number {
 /** Files a voice in the due queue at its current due, replacing any entry it had. */
 export function schedule<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if (mix.projecting) return;
-  mix.lanes?.voiceChanged(voice.id);
+  mix.lanes?.voiceChanged(voice);
   const token = ++voice.dueToken;
   const due = dueOf(mix, voice);
   if (due === Number.POSITIVE_INFINITY) return;

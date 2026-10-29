@@ -123,7 +123,6 @@ export class Crowd<I, O> implements Positions<I, O> {
   eases: (Curve | undefined)[] = [];
   /** Each row's patch law, one array shared by every row whose law is the same. */
   laws: Float64Array[] = [];
-  readonly rowOf = new Map<number, number>();
   idle = false;
   readonly line = SPARSE.other;
   /** Where the fill now under way has reached. */

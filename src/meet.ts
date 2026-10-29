@@ -2,6 +2,7 @@ import { Flag, Hot } from './crowd.js';
 import { open, shut } from './everyone.js';
 import { type Lane, Per, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
+import { seatOf } from './seat.js';
 import type { Subject } from './subject.js';
 import type { Voice } from './voice.js';
 
@@ -189,9 +190,10 @@ function place<I, O>(
   from: number,
   head: Subject<unknown> | null,
 ): boolean {
-  const c = lanes.crowdOf.get(voice.id);
-  const p = c?.rowOf.get(voice.id);
-  if (c === undefined || p === undefined) return false;
+  const s = seatOf(lanes, voice);
+  if (s === null) return false;
+  const c = s.crowd;
+  const p = s.row;
   const h = p * c.stride;
   const flags = c.hot[h + Hot.FLAGS] as number;
   if ((c.hot[h + Hot.EPOCH] as number) <= from || (flags & Flag.PLACED) !== 0) return false;
