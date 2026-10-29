@@ -1,0 +1,396 @@
+# studio shared: bench/inltrace.sh glowb^ 'primeLaned|signalled|ready|one|markSetting|capped|runBounded|findAll' c93ca73 4350a86 1aefb18
+onto: plan 3
+== c93ca73 (c93ca73777072222925f95a03f628b21d2d5301e) glowb^
+[marking 0x <JSFunction capped (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction capped (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+  - target: 0x {0x <SharedFunctionInfo prepare>}, bytecode size: 263[completed compiling 0x <JSFunction capped (sfi = 0x)> (target MAGLEV) - took 0.000, 0.058, 0.003 ms]
+[marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo capped>) (opt id 111) for deoptimization, reason: dependent prototype chain changed]
+[marking 0x <JSFunction capped (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction capped (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction capped (sfi = 0x)> (target MAGLEV) - took 0.000, 0.030, 0.002 ms]
+[marking 0x <JSFunction primeLaned (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[marking 0x <JSFunction ready (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[marking 0x <JSFunction one (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction one (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[compiling method 0x <JSFunction ready (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[compiling method 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction one (sfi = 0x)> (target MAGLEV) - took 0.000, 0.411, 0.007 ms]
+[completed compiling 0x <JSFunction ready (sfi = 0x)> (target MAGLEV) - took 0.000, 0.049, 0.002 ms]
+[completed compiling 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV) - took 0.000, 0.102, 0.004 ms]
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+[bailout (kind: deopt-eager, reason: Insufficient type feedback for generic named access): begin. deoptimizing 0x <JSFunction one (sfi = 0x)>, 0x <Code MAGLEV>, opt id 185, bytecode offset 245, deopt exit 41, FP to SP delta 128, caller SP 0x, pc 0x]
+[bailout (kind: deopt-eager, reason: wrong map): begin. deoptimizing 0x <JSFunction primeLaned (sfi = 0x)>, 0x <Code MAGLEV>, opt id 189, bytecode offset 5, deopt exit 4, FP to SP delta 32, caller SP 0x, pc 0x]
+[marking 0x <JSFunction primeLaned (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV) - took 0.000, 0.141, 0.004 ms]
+[marking 0x <JSFunction one (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction one (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction one (sfi = 0x)> (target MAGLEV) - took 0.000, 0.466, 0.007 ms]
+[marking 0x <JSFunction primeLaned (sfi = 0x)> for optimization to TURBOFAN_JS, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction primeLaned (sfi = 0x)> (target TURBOFAN_JS), mode: ConcurrencyMode::kConcurrent]
+Inlining 0x {0x <SharedFunctionInfo get now>} into 0x {0x <SharedFunctionInfo primeLaned>}
+Considering 0x {0x <SharedFunctionInfo capped>} for inlining with 0x {0x <FeedbackVector[10]>}
+  - target: 0x {0x <SharedFunctionInfo capped>}, bytecode size: 45
+Inlining 0x {0x <SharedFunctionInfo capped>} into [marking 0x <JSFunction foldDelta (sfi = 0x)> for optimization to TURBOFAN_JS, ConcurrencyMode::kConcurrent, reason: hot and stable]
+0x {0x <SharedFunctionInfo primeLaned>}
+Considering 0x {0x <SharedFunctionInfo ready>} for inlining with 0x {0x <FeedbackVector[20]>}
+[marking 0x <JSFunction one (sfi = 0x)> for optimization to TURBOFAN_JS, ConcurrencyMode::kConcurrent, reason: hot and stable]
+  - target: 0x {0x <SharedFunctionInfo ready>}, bytecode size: 78
+Inlining 0x {0x <SharedFunctionInfo ready>} into 0x {0x <SharedFunctionInfo call>}
+[compiling method 0x <JSFunction one (sfi = 0x)> (target TURBOFAN_JS), mode: ConcurrencyMode::kConcurrent]
+Considering 0x {0x <SharedFunctionInfo primeLaned>} for inlining with 0x {0x <FeedbackVector[45]>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 45
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 45
+0x <JSFunction primeLaned (sfi = 0x)> (target TURBOFAN_JS) - took 0.001, 0.963, 0.012 ms]
+<JSFunction primeLaned (sfi = 0x)> (target TURBOFAN_JS)]
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134
+Inlining 0x {0x <SharedFunctionInfo primeLaned>} into 0x {0x <SharedFunctionInfo call>}
+Considering 0x {0x <SharedFunctionInfo capped>} for inlining with 0x {0x <FeedbackVector[10]>}
+Considering 0x {0x <SharedFunctionInfo signalled>} for inlining with 0x {0x <FeedbackVector[44]>}
+  - target: 0x {0x <SharedFunctionInfo capped>}, bytecode size: 45
+Inlining 0x {0x <SharedFunctionInfo capped>} into 0x {0x <SharedFunctionInfo call>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo weighed>} into 0x {0x <SharedFunctionInfo one>}
+Inlining 0x {0x <SharedFunctionInfo clampWeight>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo parting>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo keepProbed>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo same>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo call>} into 0x {0x <SharedFunctionInfo one>}
+Inlining 0x {0x <SharedFunctionInfo silent>} into 0x {0x <SharedFunctionInfo one>}
+Considering 0x {0x <SharedFunctionInfo ready>} for inlining with 0x {0x <FeedbackVector[20]>}
+  - target: 0x {0x <SharedFunctionInfo ready>}, bytecode size: 78
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo ready>} into 0x {0x <SharedFunctionInfo one>}
+Considering 0x {0x <SharedFunctionInfo primeLaned>} for inlining with 0x {0x <FeedbackVector[45]>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 55
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo subjectAt>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 55
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo subject>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 55
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo signalled>} into 0x {0x <SharedFunctionInfo one>}
+[marking 0x <JSFunction signalled (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction signalled (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction signalled (sfi = 0x)> (target MAGLEV) - took 0.001, 0.198, 0.006 ms]
+[marking 0x <JSFunction runBounded (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+Cannot consider 0x {0x <FeedbackCell[one closure]>} for inlining (no feedback vector)
+[compiling method 0x <JSFunction runBounded (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction runBounded (sfi = 0x)> (target MAGLEV) - took 0.001, 0.978, 0.013 ms]
+[completed compiling 0x <JSFunction one (sfi = 0x)> (target TURBOFAN_JS) - took 0.001, 8.326, 0.038 ms]
+[completed optimizing 0x <JSFunction one (sfi = 0x)> (target TURBOFAN_JS)]
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo runBounded>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo runBounded>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Considering 0x {0x <SharedFunctionInfo primeLaned>} for inlining with 0x {0x <FeedbackVector[45]>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 55
+Inlining 0x {0x <SharedFunctionInfo primeLaned>} into 0x {0x <SharedFunctionInfo signal>}
+Considering 0x {0x <SharedFunctionInfo capped>} for inlining with 0x {0x <FeedbackVector[10]>}
+  - target: 0x {0x <SharedFunctionInfo capped>}, bytecode size: 45
+Inlining 0x {0x <SharedFunctionInfo capped>} into 0x {0x <SharedFunctionInfo signal>}
+[marking 0x <JSFunction runBounded (sfi = 0x)> for optimization to TURBOFAN_JS, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction runBounded (sfi = 0x)> (target TURBOFAN_JS), mode: ConcurrencyMode::kConcurrent]
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Inlining 0x {0x <SharedFunctionInfo positionOf>} into 0x {0x <SharedFunctionInfo runBounded>}
+Inlining 0x {0x <SharedFunctionInfo positionOf>} into 0x {0x <SharedFunctionInfo runBounded>}
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Inlining 0x {0x <SharedFunctionInfo lit>} into 0x {0x <SharedFunctionInfo runBounded>}
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Inlining 0x {0x <SharedFunctionInfo keepProbed>} into 0x {0x <SharedFunctionInfo runBounded>}
+Inlining 0x {0x <SharedFunctionInfo unband>} into 0x {0x <SharedFunctionInfo runBounded>}
+Inlining 0x {0x <SharedFunctionInfo lit>} into 0x {0x <SharedFunctionInfo runBounded>}
+Inlining 0x {0x <SharedFunctionInfo snap>} into 0x {0x <SharedFunctionInfo runBounded>}
+Inlining 0x {0x <SharedFunctionInfo grow>} into 0x {0x <SharedFunctionInfo runBounded>}
+[completed compiling 0x <JSFunction runBounded (sfi = 0x)> (target TURBOFAN_JS) - took 0.002, 4.485, 0.052 ms]
+[completed optimizing 0x <JSFunction runBounded (sfi = 0x)> (target TURBOFAN_JS)]
+ 1/1  glowb^     N= 10000 V=2     1.209 ms/frame     60 ns/subject·voice  p50    1.182  p99    1.656  worst   14.233  first    31.8 ms  gc   62   20.3 ms     914.2 kB/frame
+onto: progress 1/3
+== 4350a86 (4350a868afb9c7653d0dc03a30d6a3de90d4f2a6) glowb^
+[marking 0x <JSFunction capped (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction capped (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction capped (sfi = 0x)> (target MAGLEV) - took 0.000, 0.034, 0.001 ms]
+[marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo capped>) (opt id 111) for deoptimization, reason: dependent prototype chain changed]
+[marking 0x <JSFunction capped (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction capped (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction capped (sfi = 0x)> (target MAGLEV) - took 0.000, 0.028, 0.001 ms]
+[marking 0x <JSFunction primeLaned (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[marking 0x <JSFunction ready (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[marking 0x <JSFunction one (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction one (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[compiling method 0x <JSFunction ready (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[compiling method 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction one (sfi = 0x)> (target MAGLEV) - took 0.001, 0.416, 0.009 ms]
+[completed compiling 0x <JSFunction ready (sfi = 0x)> (target MAGLEV) - took 0.000, 0.058, 0.003 ms]
+[completed compiling 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV) - took 0.000, 0.115, 0.003 ms]
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+[bailout (kind: deopt-eager, reason: Insufficient type feedback for generic named access): begin. deoptimizing 0x <JSFunction one (sfi = 0x)>, 0x <Code MAGLEV>, opt id 184, bytecode offset 245, deopt exit 41, FP to SP delta 128, caller SP 0x, pc 0x]
+[bailout (kind: deopt-eager, reason: wrong map): begin. deoptimizing 0x <JSFunction primeLaned (sfi = 0x)>, 0x <Code MAGLEV>, opt id 188, bytecode offset 5, deopt exit 4, FP to SP delta 32, caller SP 0x, pc 0x]
+[marking 0x <JSFunction primeLaned (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV) - took 0.000, 0.168, 0.008 ms]
+[marking 0x <JSFunction one (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction one (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction one (sfi = 0x)> (target MAGLEV) - took 0.001, 0.465, 0.011 ms]
+[marking 0x <JSFunction primeLaned (sfi = 0x)> for optimization to TURBOFAN_JS, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction primeLaned (sfi = 0x)> (target TURBOFAN_JS), mode: ConcurrencyMode::kConcurrent]
+Inlining 0x {0x <SharedFunctionInfo get now>} into 0x {0x <SharedFunctionInfo primeLaned>}
+Considering 0x {0x <SharedFunctionInfo capped>} for inlining with 0x {0x <FeedbackVector[10]>}
+<SharedFunctionInfo capped>}, bytecode size: 45
+Inlining 0x {0x <SharedFunctionInfo capped>} into 0x {0x <SharedFunctionInfo primeLaned>}
+Considering 0x {0x <SharedFunctionInfo ready>} for inlining with 0x {0x <FeedbackVector[20]>}
+[marking 0x <JSFunction one (sfi = 0x)> for optimization to TURBOFAN_JS, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction one (sfi = 0x)> (target TURBOFAN_JS), mode: ConcurrencyMode::kConcurrent]
+  - target: 0x {0x <SharedFunctionInfo ready>}, bytecode size: 78
+Inlining 0x {0x <SharedFunctionInfo ready>} into 0x {0x <SharedFunctionInfo call>}
+Considering 0x {0x <SharedFunctionInfo primeLaned>} for inlining with 0x {0x <FeedbackVector[45]>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 45
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 45
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 45
+Inlining 0x {0x <SharedFunctionInfo primeLaned>} into 0x {0x <SharedFunctionInfo call>}
+Inlining 0x {0x [completed compiling 0x <JSFunction primeLaned (sfi = 0x)> (target TURBOFAN_JS) - took 0.002, 0.934, 0.016 ms]
+[completed optimizing 0x <JSFunction primeLaned (sfi = 0x)> (target TURBOFAN_JS)]
+[marking 0x Considering 0x {0x <SharedFunctionInfo capped>} for inlining with 0x {0x <FeedbackVector[10]>}
+  - target: 0x {0x [compiling method 0x <SharedFunctionInfo capped>}, bytecode size: 45
+Inlining 0x {0x <SharedFunctionInfo capped>} into 0x {0x <SharedFunctionInfo call>}
+Considering 0x {0x <SharedFunctionInfo signalled>} for inlining with 0x {0x <FeedbackVector[44]>}
+Inlining 0x {0x <SharedFunctionInfo weighed>} into 0x {0x <SharedFunctionInfo one>}
+Inlining 0x {0x <SharedFunctionInfo clampWeight>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo parting>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo keepProbed>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo same>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo call>} into 0x {0x <SharedFunctionInfo one>}
+Inlining 0x {0x <SharedFunctionInfo silent>} into 0x {0x <SharedFunctionInfo one>}
+Considering 0x {0x <SharedFunctionInfo ready>} for inlining with 0x {0x <FeedbackVector[20]>}
+  - target: 0x {0x <SharedFunctionInfo ready>}, bytecode size: 78
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo ready>} into 0x {0x <SharedFunctionInfo one>}
+Considering 0x {0x <SharedFunctionInfo primeLaned>} for inlining with 0x {0x <FeedbackVector[45]>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 55
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo subjectAt>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 55
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo subject>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 55
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo signalled>} into 0x {0x <SharedFunctionInfo one>}
+Inlining 0x {0x <SharedFunctionInfo weighed>} into 0x {0x <SharedFunctionInfo one>}
+Inlining 0x {0x <SharedFunctionInfo clampWeight>} into 0x {0x <SharedFunctionInfo one>}
+[marking 0x <JSFunction signalled (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction signalled (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction signalled (sfi = 0x)> (target MAGLEV) - took 0.000, 0.204, 0.005 ms]
+[marking 0x <JSFunction runBounded (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+Cannot consider 0x {0x <FeedbackCell[one closure]>} for inlining (no feedback vector)
+[compiling method 0x <JSFunction runBounded (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction runBounded (sfi = 0x)> (target MAGLEV) - took 0.000, 0.941, 0.008 ms]
+[completed compiling 0x <JSFunction one (sfi = 0x)> (target TURBOFAN_JS) - took 0.000, 7.229, 0.043 ms]
+[completed optimizing 0x <JSFunction one (sfi = 0x)> (target TURBOFAN_JS)]
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo runBounded>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo runBounded>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Considering 0x {0x <SharedFunctionInfo primeLaned>} for inlining with 0x {0x <FeedbackVector[45]>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 134, existing opt code's inlined bytecode size: 55
+Inlining 0x {0x <SharedFunctionInfo primeLaned>} into 0x {0x <SharedFunctionInfo signal>}
+Considering 0x {0x <SharedFunctionInfo capped>} for inlining with 0x {0x <FeedbackVector[10]>}
+  - target: 0x {0x <SharedFunctionInfo capped>}, bytecode size: 45
+Inlining 0x {0x <SharedFunctionInfo capped>} into 0x {0x <SharedFunctionInfo signal>}
+[marking 0x <JSFunction runBounded (sfi = 0x)> for optimization to TURBOFAN_JS, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction runBounded (sfi = 0x)> (target TURBOFAN_JS), mode: ConcurrencyMode::kConcurrent]
+Considering 0x {0x <SharedFunctionInfo findAll>} for inlining with 0x {0x <FeedbackVector[79]>}
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Inlining 0x {0x <SharedFunctionInfo positionOf>} into 0x {0x <SharedFunctionInfo runBounded>}
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo positionOf>} into 0x {0x <SharedFunctionInfo runBounded>}
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo lit>} into 0x {0x <SharedFunctionInfo runBounded>}
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo keepProbed>} into 0x {0x <SharedFunctionInfo runBounded>}
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo unband>} into 0x {0x <SharedFunctionInfo runBounded>}
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo lit>} into 0x {0x <SharedFunctionInfo runBounded>}
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo grow>} into 0x {0x <SharedFunctionInfo runBounded>}
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo findAll>} into 0x {0x <SharedFunctionInfo runBounded>}
+[completed compiling 0x <JSFunction runBounded (sfi = 0x)> (target TURBOFAN_JS) - took 0.002, 4.325, 0.040 ms]
+[completed optimizing 0x <JSFunction runBounded (sfi = 0x)> (target TURBOFAN_JS)]
+ 1/1  glowb^     N= 10000 V=2     1.171 ms/frame     59 ns/subject·voice  p50    1.127  p99    1.768  worst   16.767  first    32.6 ms  gc   51   25.5 ms     907.3 kB/frame
+onto: progress 2/3
+== 1aefb18 (1aefb189e1f7818eaa8fe578c953d575bbe71782) glowb^
+[marking 0x <JSFunction capped (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction capped (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction capped (sfi = 0x)> (target MAGLEV) - took 0.000, 0.032, 0.000 ms]
+[marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo capped>) (opt id 111) for deoptimization, reason: dependent prototype chain changed]
+[marking 0x <JSFunction capped (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction capped (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction capped (sfi = 0x)> (target MAGLEV) - took 0.000, 0.043, 0.002 ms]
+[marking 0x <JSFunction primeLaned (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[marking 0x <JSFunction ready (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[marking 0x <JSFunction one (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction one (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[compiling method 0x <JSFunction ready (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[compiling method 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction one (sfi = 0x)> (target MAGLEV) - took 0.001, 0.423, 0.007 ms]
+[completed compiling 0x <JSFunction ready (sfi = 0x)> (target MAGLEV) - took 0.000, 0.051, 0.003 ms]
+[completed compiling 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV) - took 0.000, 0.118, 0.003 ms]
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+[bailout (kind: deopt-eager, reason: Insufficient type feedback for generic named access): begin. deoptimizing 0x <JSFunction one (sfi = 0x)>, 0x <Code MAGLEV>, opt id 184, bytecode offset 245, deopt exit 41, FP to SP delta 128, caller SP 0x, pc 0x]
+[bailout (kind: deopt-eager, reason: wrong map): begin. deoptimizing 0x <JSFunction primeLaned (sfi = 0x)>, 0x <Code MAGLEV>, opt id 188, bytecode offset 5, deopt exit 2, FP to SP delta 32, caller SP 0x, pc 0x]
+[marking 0x <JSFunction primeLaned (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction primeLaned (sfi = 0x)> (target MAGLEV) - took 0.000, 0.126, 0.004 ms]
+[marking 0x <JSFunction one (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction one (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction one (sfi = 0x)> (target MAGLEV) - took 0.000, 0.958, 0.007 ms]
+[marking 0x <JSFunction primeLaned (sfi = 0x)> for optimization to TURBOFAN_JS, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction primeLaned (sfi = 0x)> (target TURBOFAN_JS), mode: ConcurrencyMode::kConcurrent]
+Inlining 0x {0x <SharedFunctionInfo get now>} into 0x {0x <SharedFunctionInfo primeLaned>}
+[compiling method 0x Cannot consider 0x {0x <FeedbackCell[one closure]>} for inlining (no feedback vector)
+Cannot consider 0x {0x <FeedbackCell[one closure]>} for inlining (no feedback vector)
+Considering 0x {0x <SharedFunctionInfo capped>} for inlining with 0x {0x <FeedbackVector[10]>}
+0x <SharedFunctionInfo capped>}, bytecode size: 45
+Inlining 0x {0x <SharedFunctionInfo capped>} into 0x {0x <SharedFunctionInfo primeLaned>}
+[marking 0x <JSFunction one (sfi = 0x)> for optimization to TURBOFAN_JS, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction one (sfi = 0x)> (target TURBOFAN_JS), mode: ConcurrencyMode::kConcurrent]
+Considering 0x {0x <SharedFunctionInfo ready>} for inlining with 0x {0x <FeedbackVector[20]>}
+  - target: 0x {0x <SharedFunctionInfo ready>}, bytecode size: 78
+Inlining 0x {0x <SharedFunctionInfo ready>} into 0x {0x <SharedFunctionInfo call>}
+Considering 0x {0x <SharedFunctionInfo primeLaned>} for inlining with 0x {0x <FeedbackVector[35]>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 118, existing opt code's inlined bytecode size: 45
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 118, existing opt code's inlined bytecode size: 45
+[completed compiling 0x <JSFunction primeLaned (sfi = 0x)> (target TURBOFAN_JS) - took 0.002, 1.048, 0.019 ms]
+[completed optimizing 0x <JSFunction primeLaned (sfi = 0x)> (target TURBOFAN_JS)]
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 118
+Inlining 0x {0x <SharedFunctionInfo primeLaned>} into 0x {0x <SharedFunctionInfo call>}
+Cannot consider 0x {0x <FeedbackCell[one closure]>} for inlining (no feedback vector)
+Cannot consider 0x {0x <FeedbackCell[one closure]>} for inlining (no feedback vector)
+<SharedFunctionInfo signalled>} for inlining with 0x {0x <FeedbackVector[44]>}
+Considering 0x {0x <SharedFunctionInfo capped>} for inlining with 0x {0x <FeedbackVector[10]>}
+  - target: 0x {0x <SharedFunctionInfo capped>}, bytecode size: 45
+Inlining 0x {0x <SharedFunctionInfo capped>} into 0x {0x <SharedFunctionInfo call>}
+Inlining 0x {0x <SharedFunctionInfo weighed>} into 0x {0x <SharedFunctionInfo one>}
+Inlining 0x {0x <SharedFunctionInfo clampWeight>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo parting>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo keepProbed>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo same>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo call>} into 0x {0x <SharedFunctionInfo one>}
+Inlining 0x {0x <SharedFunctionInfo silent>} into 0x {0x <SharedFunctionInfo one>}
+Considering 0x {0x <SharedFunctionInfo ready>} for inlining with 0x {0x <FeedbackVector[20]>}
+  - target: 0x {0x <SharedFunctionInfo ready>}, bytecode size: 78
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo subjectAt>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo ready>}, bytecode size: 78
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo subject>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo ready>}, bytecode size: 78
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo ready>} into 0x {0x <SharedFunctionInfo one>}
+Considering 0x {0x <SharedFunctionInfo primeLaned>} for inlining with 0x {0x <FeedbackVector[35]>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 118
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo primeLaned>} into 0x {0x <SharedFunctionInfo one>}
+Inlining 0x {0x <SharedFunctionInfo get now>} into 0x {0x <SharedFunctionInfo one>}
+Cannot consider 0x {0x <FeedbackCell[one closure]>} for inlining (no feedback vector)
+Cannot consider 0x {0x <FeedbackCell[one closure]>} for inlining (no feedback vector)
+Considering 0x {0x <SharedFunctionInfo capped>} for inlining with 0x {0x <FeedbackVector[10]>}
+  - target: 0x {0x <SharedFunctionInfo capped>}, bytecode size: 45
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+Inlining 0x {0x <SharedFunctionInfo capped>} into 0x {0x <SharedFunctionInfo one>}
+  - target: 0x {0x <SharedFunctionInfo signalled>}, bytecode size: 164
+[marking 0x <JSFunction signalled (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction signalled (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction signalled (sfi = 0x)> (target MAGLEV) - took 0.000, 0.227, 0.007 ms]
+[marking 0x <JSFunction runBounded (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+Cannot consider 0x {0x <FeedbackCell[one closure]>} for inlining (no feedback vector)
+[compiling method 0x <JSFunction runBounded (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction runBounded (sfi = 0x)> (target MAGLEV) - took 0.000, 0.889, 0.010 ms]
+[completed compiling 0x <JSFunction one (sfi = 0x)> (target TURBOFAN_JS) - took 0.001, 8.167, 0.046 ms]
+[completed optimizing 0x <JSFunction one (sfi = 0x)> (target TURBOFAN_JS)]
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo runBounded>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo runBounded>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Considering 0x {0x <SharedFunctionInfo primeLaned>} for inlining with 0x {0x <FeedbackVector[35]>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 118, existing opt code's inlined bytecode size: 55
+Inlining 0x {0x <SharedFunctionInfo primeLaned>} into 0x {0x <SharedFunctionInfo signal>}
+Considering 0x {0x <SharedFunctionInfo markSetting>} for inlining with 0x {0x <FeedbackVector[14]>}
+Considering 0x {0x <SharedFunctionInfo markSetting>} for inlining with 0x {0x <FeedbackVector[14]>}
+Considering 0x {0x <SharedFunctionInfo capped>} for inlining with 0x {0x <FeedbackVector[10]>}
+  - target: 0x {0x <SharedFunctionInfo capped>}, bytecode size: 45
+Inlining 0x {0x <SharedFunctionInfo capped>} into 0x {0x <SharedFunctionInfo signal>}
+[marking 0x <JSFunction signalled (sfi = 0x)> for optimization to TURBOFAN_JS, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction signalled (sfi = 0x)> (target TURBOFAN_JS), mode: ConcurrencyMode::kConcurrent]
+Inlining 0x {0x <SharedFunctionInfo weighed>} into 0x {0x <SharedFunctionInfo signalled>}
+Inlining 0x {0x <SharedFunctionInfo clampWeight>} into 0x {0x <SharedFunctionInfo signalled>}
+Inlining 0x {0x <SharedFunctionInfo subjectAt>} into 0x {0x <SharedFunctionInfo signalled>}
+Inlining 0x {0x <SharedFunctionInfo subject>} into 0x {0x <SharedFunctionInfo signalled>}
+Inlining 0x {0x <SharedFunctionInfo signal>} into 0x {0x <SharedFunctionInfo signalled>}
+Considering 0x {0x <SharedFunctionInfo primeLaned>} for inlining with 0x {0x <FeedbackVector[35]>}
+Inlining 0x {0x <SharedFunctionInfo get now>} into 0x {0x <SharedFunctionInfo signalled>}
+  - target: 0x {0x <SharedFunctionInfo primeLaned>}, bytecode size: 118, existing opt code's inlined bytecode size: 55
+Inlining 0x {0x <SharedFunctionInfo primeLaned>} into 0x {0x <SharedFunctionInfo signalled>}
+Inlining 0x {0x <SharedFunctionInfo get now>} into 0x {0x <SharedFunctionInfo signalled>}
+Considering 0x {0x <SharedFunctionInfo markSetting>} for inlining with 0x {0x <FeedbackVector[14]>}
+Considering 0x {0x <SharedFunctionInfo markSetting>} for inlining with 0x {0x <FeedbackVector[14]>}
+Considering 0x {0x <SharedFunctionInfo capped>} for inlining with 0x {0x <FeedbackVector[10]>}
+  - target: 0x {0x <SharedFunctionInfo capped>}, bytecode size: 45
+Inlining 0x {0x <SharedFunctionInfo capped>} into 0x {0x <SharedFunctionInfo signalled>}
+Inlining 0x {0x <SharedFunctionInfo base>} into 0x {0x <SharedFunctionInfo signalled>}
+Inlining 0x {0x <SharedFunctionInfo near>} into 0x {0x <SharedFunctionInfo signalled>}
+[completed compiling 0x <JSFunction signalled (sfi = 0x)> (target TURBOFAN_JS) - took 0.001, 4.453, 0.049 ms]
+[completed optimizing 0x <JSFunction signalled (sfi = 0x)> (target TURBOFAN_JS)]
+[marking 0x <JSFunction runBounded (sfi = 0x)> for optimization to TURBOFAN_JS, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction runBounded (sfi = 0x)> (target TURBOFAN_JS), mode: ConcurrencyMode::kConcurrent]
+Considering 0x {0x <SharedFunctionInfo findAll>} for inlining with 0x {0x <FeedbackVector[79]>}
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+Inlining 0x {0x <SharedFunctionInfo positionOf>} into 0x {0x <SharedFunctionInfo runBounded>}
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo positionOf>} into 0x {0x <SharedFunctionInfo runBounded>}
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo lit>} into 0x {0x <SharedFunctionInfo runBounded>}
+Cannot consider 0x {0x <SharedFunctionInfo one>} for inlining (reason: exceeds bytecode limit)
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo keepProbed>} into 0x {0x <SharedFunctionInfo runBounded>}
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo unband>} into 0x {0x <SharedFunctionInfo runBounded>}
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo lit>} into 0x {0x <SharedFunctionInfo runBounded>}
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo grow>} into 0x {0x <SharedFunctionInfo runBounded>}
+  - target: 0x {0x <SharedFunctionInfo findAll>}, bytecode size: 339
+Inlining 0x {0x <SharedFunctionInfo findAll>} into 0x {0x <SharedFunctionInfo runBounded>}
+[completed compiling 0x <JSFunction runBounded (sfi = 0x)> (target TURBOFAN_JS) - took 0.002, 4.166, 0.036 ms]
+[completed optimizing 0x <JSFunction runBounded (sfi = 0x)> (target TURBOFAN_JS)]
+[marking 0x <JSFunction markSetting (sfi = 0x)> for optimization to MAGLEV, ConcurrencyMode::kConcurrent, reason: hot and stable]
+[compiling method 0x <JSFunction markSetting (sfi = 0x)> (target MAGLEV), mode: ConcurrencyMode::kConcurrent]
+[completed compiling 0x <JSFunction markSetting (sfi = 0x)> (target MAGLEV) - took 0.000, 0.053, 0.004 ms]
+ 1/1  glowb^     N= 10000 V=2     1.166 ms/frame     58 ns/subject·voice  p50    1.128  p99    1.922  worst   13.520  first    32.1 ms  gc   51   26.3 ms     906.2 kB/frame
+onto: progress 3/3

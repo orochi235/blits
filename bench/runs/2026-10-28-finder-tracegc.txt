@@ -1,0 +1,39 @@
+# teitou shared, FRAMES=5000: node --trace-gc bench/frame.mjs glowb^ per build, summarized
+onto: plan 2
+######## c93ca73
+   2 Mark-Compact
+ 156 Scavenge
+[44322:0x79cc80c000]       52 ms: Incremental Mark-Compact 17.6 (23.4) -> 12.3 (24.7) MB, pooled: 0.0 MB, 1.28 / 0.00 ms (+ 0.1 ms in 17 steps since start of marking, biggest step 0.0 ms, walltime since start of marking 3 ms) (average mu = 0.972, current mu = 0.972) finalize incremental marking via stack guard; GC in old space requested
+[44322:0x79cc80c000]     3526 ms: Incremental Mark-Compact 28.5 (87.9) -> 19.9 (87.0) MB, pooled: 0.0 MB, 0.67 / 0.00 ms (+ 1.9 ms in 91 steps since start of marking, biggest step 0.3 ms, walltime since start of marking 3 ms) (average mu = 0.999, current mu = 0.999) finalize incremental marking via task; GC in old space requested
+[44322:0x79cc80c000]       18 ms: Scavenge 5.2 (6.4) -> 4.7 (7.1) MB, pooled: 0.0 MB, 0.17 / 0.00 ms (average mu = 1.000, current mu = 1.000) allocation failure; 
+[44322:0x79cc80c000]       19 ms: Scavenge 5.3 (7.4) -> 5.0 (7.6) MB, pooled: 0.0 MB, 0.15 / 0.00 ms (average mu = 1.000, current mu = 1.000) allocation failure; 
+[44322:0x79cc80c000]       24 ms: Scavenge 7.1 (9.4) -> 5.8 (9.9) MB, pooled: 0.0 MB, 0.12 / 0.00 ms (average mu = 1.000, current mu = 1.000) allocation failure; 
+[44322:0x79cc80c000]       28 ms: Scavenge 7.4 (10.9) -> 6.3 (11.1) MB, pooled: 0.0 MB, 0.15 / 0.00 ms (average mu = 1.000, current mu = 1.000) allocation failure; 
+[44322:0x79cc80c000]      686 ms: Scavenge 53.8 (86.5) -> 22.6 (86.5) MB, pooled: 0.0 MB, 0.17 / 0.00 ms (average mu = 0.972, current mu = 0.972) allocation failure; 
+[44322:0x79cc80c000]      709 ms: Scavenge 53.8 (86.5) -> 22.6 (86.5) MB, pooled: 0.0 MB, 0.20 / 0.00 ms (average mu = 0.972, current mu = 0.972) allocation failure; 
+[44322:0x79cc80c000]      732 ms: Scavenge 53.8 (86.5) -> 22.6 (86.5) MB, pooled: 0.0 MB, 0.18 / 0.00 ms (average mu = 0.972, current mu = 0.972) allocation failure; 
+[44322:0x79cc80c000]     2657 ms: Scavenge 54.4 (87.5) -> 23.2 (87.5) MB, pooled: 0.0 MB, 0.28 / 0.00 ms (average mu = 0.972, current mu = 0.972) allocation failure; 
+[44322:0x79cc80c000]     2681 ms: Scavenge 54.4 (87.5) -> 23.2 (87.5) MB, pooled: 0.0 MB, 0.20 / 0.00 ms (average mu = 0.972, current mu = 0.972) allocation failure; 
+[44322:0x79cc80c000]     2705 ms: Scavenge 54.4 (87.5) -> 23.2 (87.5) MB, pooled: 0.0 MB, 0.21 / 0.00 ms (average mu = 0.972, current mu = 0.972) allocation failure; 
+ 1/1  glowb^     N= 10000 V=2     0.686 ms/frame     34 ns/subject·voice  p50    0.663  p99    1.050  worst    8.989  first    19.4 ms  gc  146   39.8 ms     897.4 kB/frame
+onto: progress 1/2
+######## 4350a86
+  42 Mark-Compact
+  52 Scavenge
+[44576:0x789480c000]       49 ms: Incremental Mark-Compact 15.7 (25.6) -> 13.5 (25.4) MB, pooled: 0.0 MB, 0.94 / 0.00 ms (+ 0.1 ms in 18 steps since start of marking, biggest step 0.0 ms, walltime since start of marking 3 ms) (average mu = 0.979, current mu = 0.979) finalize incremental marking via stack guard; GC in old space requested
+[44576:0x789480c000]      142 ms: Incremental Mark-Compact 88.1 (105.1) -> 38.8 (101.1) MB, pooled: 3.2 MB, 0.88 / 0.00 ms (+ 0.3 ms in 202 steps since start of marking, biggest step 0.1 ms, walltime since start of marking 34 ms) (average mu = 0.985, current mu = 0.988) finalize incremental marking via stack guard; GC in old space requested
+[44576:0x789480c000]      281 ms: Incremental Mark-Compact 178.7 (205.9) -> 22.1 (142.2) MB, pooled: 63.5 MB, 0.73 / 0.00 ms (+ 0.0 ms in 14 steps since start of marking, biggest step 0.0 ms, walltime since start of marking 4 ms) (average mu = 0.991, current mu = 0.995) finalize incremental marking via stack guard; GC in old space requested
+[44576:0x789480c000]      363 ms: Incremental Mark-Compact 113.2 (143.7) -> 22.1 (137.7) MB, pooled: 68.0 MB, 0.66 / 0.00 ms (+ 0.1 ms in 13 steps since start of marking, biggest step 0.1 ms, walltime since start of marking 3 ms) (average mu = 0.991, current mu = 0.991) finalize incremental marking via stack guard; GC in old space requested
+[44576:0x789480c000]      444 ms: Incremental Mark-Compact 113.5 (140.0) -> 22.3 (138.2) MB, pooled: 67.5 MB, 0.65 / 0.00 ms (+ 0.0 ms in 15 steps since start of marking, biggest step 0.0 ms, walltime since start of marking 3 ms) (average mu = 0.992, current mu = 0.992) finalize incremental marking via stack guard; GC in old space requested
+[44576:0x789480c000]      527 ms: Incremental Mark-Compact 113.8 (140.2) -> 21.3 (138.5) MB, pooled: 67.2 MB, 0.58 / 0.00 ms (+ 0.0 ms in 12 steps since start of marking, biggest step 0.0 ms, walltime since start of marking 3 ms) (average mu = 0.992, current mu = 0.993) finalize incremental marking via stack guard; GC in old space requested
+[44576:0x789480c000]      607 ms: Incremental Mark-Compact 108.8 (139.5) -> 21.1 (134.7) MB, pooled: 71.0 MB, 0.61 / 0.00 ms (+ 0.0 ms in 11 steps since start of marking, biggest step 0.0 ms, walltime since start of marking 3 ms) (average mu = 0.992, current mu = 0.992) finalize incremental marking via stack guard; GC in old space requested
+[44576:0x789480c000]      684 ms: Incremental Mark-Compact 107.8 (136.2) -> 21.2 (97.0) MB, pooled: 108.8 MB, 0.59 / 0.00 ms (+ 0.0 ms in 12 steps since start of marking, biggest step 0.0 ms, walltime since start of marking 3 ms) (average mu = 0.992, current mu = 0.992) finalize incremental marking via stack guard; GC in old space requested
+[44576:0x789480c000]       14 ms: Scavenge 5.2 (6.4) -> 4.7 (7.1) MB, pooled: 0.0 MB, 0.22 / 0.00 ms (average mu = 1.000, current mu = 1.000) allocation failure; 
+[44576:0x789480c000]       16 ms: Scavenge 5.3 (7.4) -> 5.0 (7.9) MB, pooled: 0.0 MB, 0.17 / 0.00 ms (average mu = 1.000, current mu = 1.000) allocation failure; 
+[44576:0x789480c000]       21 ms: Scavenge 7.1 (9.1) -> 5.8 (9.9) MB, pooled: 0.0 MB, 0.14 / 0.00 ms (average mu = 1.000, current mu = 1.000) allocation failure; 
+[44576:0x789480c000]       24 ms: Scavenge 7.4 (10.9) -> 6.2 (11.1) MB, pooled: 0.0 MB, 0.17 / 0.00 ms (average mu = 1.000, current mu = 1.000) allocation failure; 
+[44576:0x789480c000]     2479 ms: Scavenge 96.6 (115.0) -> 80.7 (115.0) MB, pooled: 90.8 MB, 0.12 / 0.00 ms (average mu = 0.992, current mu = 0.992) allocation failure; 
+[44576:0x789480c000]     2556 ms: Scavenge 96.7 (115.0) -> 80.8 (115.0) MB, pooled: 90.8 MB, 0.13 / 0.00 ms (average mu = 0.992, current mu = 0.992) allocation failure; 
+[44576:0x789480c000]     2634 ms: Scavenge 97.1 (115.5) -> 81.3 (115.5) MB, pooled: 90.2 MB, 0.13 / 0.00 ms (average mu = 0.992, current mu = 0.992) allocation failure; 
+ 1/1  glowb^     N= 10000 V=2     0.673 ms/frame     34 ns/subject·voice  p50    0.644  p99    1.287  worst    9.803  first    19.4 ms  gc  125   41.8 ms     899.7 kB/frame
+onto: progress 2/2

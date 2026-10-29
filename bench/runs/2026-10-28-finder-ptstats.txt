@@ -1,0 +1,49 @@
+# teitou shared, FRAMES=1500: node --trace-pretenuring-statistics --trace-deopt bench/frame.mjs glowb^, tenuring lines counted
+onto: plan 2
+######## c93ca73
+   2 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (124, 124, 1.000000) maybe tenure => maybe tenure
+   2 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (116, 116, 1.000000) maybe tenure => maybe tenure
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo>) (opt id 49) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [56040:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=1 visited_sites=34 active_sites=2 mementos=1250 tenured=0 not_tenured=2
+   1 [56040:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=3 active_sites=3 mementos=2772 tenured=0 not_tenured=3
+   1 [56040:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=310 tenured=0 not_tenured=2
+   1 [56040:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=292 tenured=1 not_tenured=1
+   1 [56040:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=248 tenured=0 not_tenured=2
+   1 [56040:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=232 tenured=0 not_tenured=2
+   1 [56040:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=1 active_sites=1 mementos=202 tenured=1 not_tenured=0
+   1 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (626, 626, 1.000000) undecided => maybe tenure
+   1 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (624, 624, 1.000000) undecided => maybe tenure
+   1 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (2566, 2566, 1.000000) undecided => maybe tenure
+   1 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (237, 100, 0.421941) maybe tenure => don't tenure
+   1 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (202, 202, 1.000000) tenure => tenure
+   1 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (192, 192, 1.000000) undecided => tenure
+   1 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (156, 156, 1.000000) undecided => maybe tenure
+   1 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (154, 154, 1.000000) undecided => maybe tenure
+   1 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (104, 104, 1.000000) undecided => maybe tenure
+   1 [56040:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (102, 102, 1.000000) undecided => maybe tenure
+onto: progress 1/2
+######## 4350a86
+   2 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (120, 120, 1.000000) maybe tenure => maybe tenure
+   2 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (113, 113, 1.000000) maybe tenure => maybe tenure
+   1 [marking dependent code 0x <Code TURBOFAN_JS> (0x <SharedFunctionInfo set>) (opt id 57) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo>) (opt id 49) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo record>) (opt id 94) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo patch.writes>) (opt id 116) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo hold>) (opt id 54) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [56098:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=4 active_sites=4 mementos=3300 tenured=0 not_tenured=4
+   1 [56098:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=5758 tenured=2 not_tenured=0
+   1 [56098:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=314 tenured=0 not_tenured=2
+   1 [56098:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=240 tenured=0 not_tenured=2
+   1 [56098:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=226 tenured=0 not_tenured=2
+   1 [56098:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=1968 tenured=2 not_tenured=0
+   1 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (814, 814, 1.000000) undecided => tenure
+   1 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (6360, 5566, 0.875157) tenure => tenure
+   1 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (192, 192, 1.000000) undecided => tenure
+   1 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (1794, 1794, 1.000000) undecided => maybe tenure
+   1 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (158, 158, 1.000000) undecided => maybe tenure
+   1 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (156, 156, 1.000000) undecided => maybe tenure
+   1 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (1300, 1300, 1.000000) undecided => maybe tenure
+   1 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (1154, 1154, 1.000000) undecided => tenure
+   1 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (104, 104, 1.000000) undecided => maybe tenure
+   1 [56098:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (102, 102, 1.000000) undecided => maybe tenure
+onto: progress 2/2

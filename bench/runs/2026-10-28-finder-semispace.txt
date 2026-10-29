@@ -1,0 +1,16 @@
+# msb-uai solo, FRAMES=5000: NODE_OPTIONS=--import=bench/newspace.mjs node bench/frame.mjs glowb^ twice per build (the pinned-semi-space A/Bs failed: node refuses the flag in NODE_OPTIONS). variants of 4350a86: 870671f no FinalizationRegistry, 37598b7 runBounded/meetBound skip findAll for circles, 0345f1a contribution.ts as at c93ca73, a165a44 '?? -1' back to 'as number', 6dd03b8 all four, 56612ec places/plot/grid as at c93ca73; controls on c93ca73: d1fdf28 unused export in bound.ts, 813a833 unused const in fill.ts; 2cff1ec/9415c3e are c93ca73/4350a86 with fill.ts call() leaving rec.delta null (variant commits were scratch, not kept)
+onto: plan 3
+######## sizes
+c93ca73  1/1  glowb^     N= 10000 V=2     0.918 ms/frame     46 ns/subject·voice  p50    0.905  p99    1.129  worst   11.145  first    23.7 ms  gc  146   23.6 ms     898.4 kB/frame new_space size 64768 kB used 98 kB; old_space size 19200 kB used 16782 kB 
+c93ca73  1/1  glowb^     N= 10000 V=2     0.807 ms/frame     40 ns/subject·voice  p50    0.796  p99    1.000  worst   10.622  first    23.5 ms  gc  146   22.2 ms     902.1 kB/frame new_space size 64768 kB used 107 kB; old_space size 33536 kB used 16797 kB 
+4350a86  1/1  glowb^     N= 10000 V=2     0.881 ms/frame     44 ns/subject·voice  p50    0.858  p99    1.337  worst   10.099  first    23.4 ms  gc  128   41.9 ms     898.7 kB/frame new_space size 26368 kB used 9161 kB; old_space size 51712 kB used 51021 kB 
+4350a86  1/1  glowb^     N= 10000 V=2     0.927 ms/frame     46 ns/subject·voice  p50    0.905  p99    1.420  worst   11.817  first    24.8 ms  gc  129   40.5 ms     899.0 kB/frame new_space size 24576 kB used 11000 kB; old_space size 58368 kB used 57764 kB 
+56612ec  1/1  glowb^     N= 10000 V=2     0.831 ms/frame     42 ns/subject·voice  p50    0.821  p99    0.995  worst   10.544  first    23.6 ms  gc  146   22.4 ms     897.9 kB/frame new_space size 65024 kB used 99 kB; old_space size 18944 kB used 16805 kB 
+56612ec  1/1  glowb^     N= 10000 V=2     0.799 ms/frame     40 ns/subject·voice  p50    0.789  p99    0.973  worst   10.951  first    23.6 ms  gc  146   22.2 ms     899.7 kB/frame new_space size 65024 kB used 100 kB; old_space size 18688 kB used 16791 kB 
+onto: progress 1/3
+######## pinned semi 16MB c93ca73 4350a86
+node: --min-semi-space-size= is not allowed in NODE_OPTIONS
+onto: progress 2/3
+######## pinned semi 1MB c93ca73 4350a86
+node: --min-semi-space-size= is not allowed in NODE_OPTIONS
+onto: progress 3/3

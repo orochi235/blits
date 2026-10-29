@@ -1,0 +1,4 @@
+# teitou shared: node --allow-natives-syntax bench/protofast.mjs per build
+c93ca73 prototype: 99 own, fast true; mix: 90 own, fast true
+4350a86 prototype: 100 own, fast true; mix: 90 own, fast true
+1aefb18 prototype: 100 own, fast true; mix: 90 own, fast true

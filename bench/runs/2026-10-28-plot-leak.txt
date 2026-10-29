@@ -1,0 +1,41 @@
+# teitou shared: node --expose-gc bench/plotleak.mjs 3000 3 per build. variants of 4350a86: 870671f no FinalizationRegistry, 37598b7 runBounded/meetBound skip findAll for circles, 0345f1a contribution.ts as at c93ca73, a165a44 '?? -1' back to 'as number', 6dd03b8 all four, 56612ec places/plot/grid as at c93ca73; controls on c93ca73: d1fdf28 unused export in bound.ts, 813a833 unused const in fill.ts; 2cff1ec/9415c3e are c93ca73/4350a86 with fill.ts call() leaving rec.delta null (variant commits were scratch, not kept)
+onto: plan 3
+######## c93ca73
+frame 100: old space 18434 kB
+frame 1100: old space 18582 kB
+frame 2100: old space 18581 kB
+frame 3100: old space 18581 kB
+gained between frame 100 and 3100, by constructor (10 kB or more):
+    1042 kB     27222×  Object
+     896 kB         2×  (array) 
+      54 kB        27×  (code) 
+      43 kB      2724×  (number) heap number
+      38 kB       124×  (code) system / TrustedByteArray
+      17 kB        27×  (code) system / ProtectedFixedArray
+onto: progress 1/3
+######## 4350a86
+frame 100: old space 19546 kB
+frame 1100: old space 19694 kB
+frame 2100: old space 19693 kB
+frame 3100: old space 19693 kB
+gained between frame 100 and 3100, by constructor (10 kB or more):
+    1043 kB     27249×  Object
+     896 kB         2×  (array) 
+      55 kB        28×  (code) 
+      43 kB      2724×  (number) heap number
+      39 kB       127×  (code) system / TrustedByteArray
+      17 kB        28×  (code) system / ProtectedFixedArray
+onto: progress 2/3
+######## 870671f
+frame 100: old space 19544 kB
+frame 1100: old space 19691 kB
+frame 2100: old space 19691 kB
+frame 3100: old space 19691 kB
+gained between frame 100 and 3100, by constructor (10 kB or more):
+    1043 kB     27249×  Object
+     896 kB         2×  (array) 
+      56 kB        28×  (code) 
+      43 kB      2724×  (number) heap number
+      39 kB       127×  (code) system / TrustedByteArray
+      17 kB        28×  (code) system / ProtectedFixedArray
+onto: progress 3/3

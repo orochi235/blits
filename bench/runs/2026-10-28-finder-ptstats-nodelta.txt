@@ -1,0 +1,58 @@
+# teitou shared, FRAMES=1500: as finder-ptstats, tenuring decisions only. variants of 4350a86: 870671f no FinalizationRegistry, 37598b7 runBounded/meetBound skip findAll for circles, 0345f1a contribution.ts as at c93ca73, a165a44 '?? -1' back to 'as number', 6dd03b8 all four, 56612ec places/plot/grid as at c93ca73; controls on c93ca73: d1fdf28 unused export in bound.ts, 813a833 unused const in fill.ts; 2cff1ec/9415c3e are c93ca73/4350a86 with fill.ts call() leaving rec.delta null (variant commits were scratch, not kept)
+onto: plan 2
+######## c93ca73
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo>) (opt id 49) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [70299:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=1 visited_sites=34 active_sites=2 mementos=1324 tenured=0 not_tenured=2
+   1 [70299:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=3 active_sites=3 mementos=2139 tenured=0 not_tenured=3
+   1 [70299:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=364 tenured=1 not_tenured=1
+   1 [70299:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=314 tenured=0 not_tenured=2
+   1 [70299:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=240 tenured=0 not_tenured=2
+   1 [70299:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=228 tenured=0 not_tenured=2
+   1 [70299:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=1 active_sites=1 mementos=202 tenured=1 not_tenured=0
+   1 [70299:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (202, 202, 1.000000) tenure => tenure
+   1 [70299:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (192, 192, 1.000000) undecided => tenure
+onto: progress 1/2
+######## 2cff1ec
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo>) (opt id 49) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [70353:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=1 visited_sites=34 active_sites=2 mementos=1301 tenured=0 not_tenured=2
+   1 [70353:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=3 active_sites=3 mementos=2028 tenured=0 not_tenured=3
+   1 [70353:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=329 tenured=1 not_tenured=1
+   1 [70353:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=310 tenured=0 not_tenured=2
+   1 [70353:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=244 tenured=0 not_tenured=2
+   1 [70353:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=232 tenured=0 not_tenured=2
+   1 [70353:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (192, 192, 1.000000) undecided => tenure
+onto: progress 2/2
+######## 4350a86
+   1 [marking dependent code 0x <Code TURBOFAN_JS> (0x <SharedFunctionInfo set>) (opt id 57) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo>) (opt id 49) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo record>) (opt id 94) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo patch.writes>) (opt id 116) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [70394:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=4 active_sites=4 mementos=3160 tenured=0 not_tenured=4
+   1 [70394:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=5758 tenured=2 not_tenured=0
+   1 [70394:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=306 tenured=0 not_tenured=2
+   1 [70394:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=244 tenured=0 not_tenured=2
+   1 [70394:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=236 tenured=0 not_tenured=2
+   1 [70394:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=2075 tenured=2 not_tenured=0
+   1 [70394:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (846, 846, 1.000000) undecided => tenure
+   1 [70394:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (6250, 5566, 0.890560) tenure => tenure
+   1 [70394:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (192, 192, 1.000000) undecided => tenure
+   1 [70394:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (1229, 1229, 1.000000) undecided => tenure
+onto: progress 3/2
+######## 9415c3e
+   1 [marking dependent code 0x <Code TURBOFAN_JS> (0x <SharedFunctionInfo set>) (opt id 57) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo>) (opt id 49) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo record>) (opt id 94) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [marking dependent code 0x <Code MAGLEV> (0x <SharedFunctionInfo patch.writes>) (opt id 117) for deoptimization, reason: dependent allocation site tenuring changed]
+   1 [70451:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=4 active_sites=4 mementos=3582 tenured=0 not_tenured=4
+   1 [70451:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=5758 tenured=2 not_tenured=0
+   1 [70451:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=313 tenured=0 not_tenured=2
+   1 [70451:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=246 tenured=0 not_tenured=2
+   1 [70451:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=229 tenured=0 not_tenured=2
+   1 [70451:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=2 active_sites=2 mementos=1889 tenured=2 not_tenured=0
+   1 [70451:0x] pretenuring: threshold=0.85 deopt_maybe_tenured=0 visited_sites=1 active_sites=1 mementos=10000 tenured=1 not_tenured=0
+   1 [70451:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (766, 766, 1.000000) undecided => tenure
+   1 [70451:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (6134, 5566, 0.907401) tenure => tenure
+   1 [70451:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (192, 192, 1.000000) undecided => tenure
+   1 [70451:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (1123, 1123, 1.000000) undecided => tenure
+   1 [70451:0x] pretenuring: AllocationSite(0x): (created, found, ratio) (10000, 10000, 1.000000) tenure => tenure
+onto: progress 4/2
