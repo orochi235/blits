@@ -25,11 +25,10 @@ function writeValue(c: Column, v: unknown, n: number): void {
 
 /** After a probe, keeps the pose a retarget from `'current'` reads as the subject's last. */
 export function keep<I, O>(this: Mixer<I, O>, subject: I, pose: O, out: O | undefined): void {
-  // Keeping last frame's pose is free when the mix allocated it; a host sampling into its own
-  // object only pays for the copy once something in the mix has asked to retarget from it.
+  // A pose handed back without `out` is the host's to edit, so it is copied too. A host sampling
+  // into its own object only pays for the copy once something has asked to retarget from it.
   let kept: O | undefined;
-  if (out === undefined) kept = pose;
-  else if (this.wantsPose) {
+  if (out === undefined || this.wantsPose) {
     kept = {} as O;
     for (const key of this.names) {
       const v = (pose as Record<string, unknown>)[key];

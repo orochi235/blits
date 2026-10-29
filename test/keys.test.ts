@@ -437,3 +437,25 @@ describe.each([true, false])('a copy of a keys patch, lanes %s', (lanes) => {
     expect(at(made, 500).y).toBeLessThan(40);
   });
 });
+
+describe.each([true, false])('a host editing a pose probe handed it, lanes %s', (lanes) => {
+  type P = { x: number };
+  const s = { id: 1 };
+  it('leaves what a retarget from the current pose starts at', () => {
+    const m = mix<typeof s, P>(kit<P>({ x: sum() }), { lanes });
+    const mover = m.cue({
+      patch: patch<typeof s, P>(10_000, (ph) => ({ x: ph * 10_000 }), { writes: ['x'] }),
+    });
+    for (let t = 0; t <= 32; t += 16) {
+      m.sync(t);
+      m.probe(s).x = 500;
+    }
+    mover.fade({ over: 0 });
+    m.cue({
+      patch: keys<typeof s, P>(1000, [{ at: 1, delta: { x: 100 } }]),
+      from: 'current',
+      loop: false,
+    });
+    expect(m.probe(s).x).toBeCloseTo(32, 9);
+  });
+});

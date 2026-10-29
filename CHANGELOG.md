@@ -68,6 +68,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A host writing into a pose `probe` handed back without `out` no longer changes where a later
+  `from: 'current'` voice starts, or the speed it starts at: the mix keeps a copy of that pose, not
+  the object itself.
 - Probes of subjects on lanes cost 4 to 10% less a frame: the copy of laned values into the pose
   stores each channel under its own name, written out once per set of laned channels, where one
   store by a varying name went through V8's generic path. A voice over 10,000 subjects replaced

@@ -825,12 +825,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   (`bench/memory.mjs`), so it is the heap that row grew, not a leak. `AB_EACH=1 bench/ab.sh`
   runs each row in a process of its own.
 
-- **A host editing a pose the mix allocated changes what `from: 'current'` reads.** `probe`
-  without `out` keeps the pose it returns as the subject's last, by reference, so a held voice at
-  `[10]` whose pose the host set to `[500]` was retargeted from 500 (checked 2026-10-04). Whether
-  that is wrong is undecided: it is what the host showed, and copying would cost every probe
-  without `out` an allocation.
-
 - **A stale served-page tab overwrote `vocabulary.picks.json` four times**, most recently three
   times on 2026-10-07: the page kept its own picks in the browser and posted them whole on every
   click. semanticore `0c1df0c` posts only the roles a change touched. Until every browser that had
