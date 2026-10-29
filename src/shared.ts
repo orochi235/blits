@@ -2,7 +2,7 @@
  * The package version, for a fact whose shape follows the code too closely to version by hand:
  * copies of different releases keep apart. `test/copies.test.ts` holds it to `package.json`.
  */
-export const release = '0.14.0';
+export const release = '0.15.0';
 
 /**
  * A WeakMap every copy of blits loaded in one realm shares, so a fact one copy records about a
