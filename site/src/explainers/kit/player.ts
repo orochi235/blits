@@ -306,11 +306,7 @@ export interface Course {
  * Each voice across a run, at every frame from 0 to `duration`. Its weight is the largest it has
  * for any subject, so a stagger or a voice reaching a few subjects still shows.
  */
-export function coursesOver<I, O, C>(
-  scene: Scene<I, O, C>,
-  config: C,
-  duration: number,
-): Course[] {
+export function coursesOver<I, O, C>(scene: Scene<I, O, C>, config: C, duration: number): Course[] {
   // Sampling off the frame grid lands one, then two frames apart, and a ramp comes out stepped.
   const n = Math.floor(duration / FRAME + 1e-6) + 1;
   const player = new Player(scene, config, { duration, listed: false });
