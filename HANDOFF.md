@@ -537,9 +537,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    driver scaffold the survey proposed is this same question.
 
 8. **blits-tone.** Its README says what it does and does not do yet. Open:
-   - A read of the mix over a window, returning a run of values or a `keys` voice's own
-     breakpoints as exact ramps, in place of a `project` per grid point (31 a write, and only
-     as exact as the grid). Useful beyond audio.
+   - `mix.trace` (2026-10-29) is exact only for `keys` voices eased `linear`. A stretch eased
+     otherwise, any other patch, a signal weight and a fade under way are still read every
+     `grid` ms; a tween's or an eased stop's shape could be sent as a curve
+     (`setValueCurveAtTime`) rather than sampled. The schema page's Mix section lists what it
+     needs to be exact.
    - Mix time converted to the outside clock while `mix.rate` ramps; the driver reads
      `mix.rate` as it stands at each write, which drifts during a ramp (3.59 Hz in its test).
    - **`apps/fireworks`**, which plays one mix through this driver and the quarks one, has never

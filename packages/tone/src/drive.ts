@@ -1,4 +1,4 @@
-import type { BookedHit, Kit, Marked, Mix } from '@msb235/blits';
+import type { BookedHit, Kit, Marked, Mix, NumberChannel } from '@msb235/blits';
 import { immediate, Noise, Oscillator, PolySynth, Synth, type ToneAudioNode } from 'tone';
 import { type Bind, type Sound, wire } from './sound.js';
 
@@ -6,6 +6,7 @@ import { type Bind, type Sound, wire } from './sound.js';
 export interface Target {
   cancelAndHoldAtTime(time: number): unknown;
   linearRampToValueAtTime(value: number, time: number): unknown;
+  setValueAtTime(value: number, time: number): unknown;
 }
 
 /** A target per channel the subject drives; only channels holding one number take one. */
@@ -21,7 +22,10 @@ export interface DriveOptions<E = unknown, I = unknown, O = unknown> {
    * between two writes. Default 150.
    */
   ahead?: number;
-  /** The spacing of a curve's points on the audio clock, ms. Default 5. */
+  /**
+   * The spacing of a curve's points on the audio clock, ms, where the mix's shape is not known
+   * exactly. Default 5.
+   */
   grid?: number;
   /** As `BookOptions.late`: how late an item first seen may be and still play, ms. Default 50. */
   late?: number;
@@ -74,7 +78,6 @@ export type Driven<O> = [keyof O, Target, ((value: number) => number) | null];
 
 interface Bound<O> {
   targets: Driven<O>[];
-  pose: O;
 }
 
 function ms(name: string, value: number, least: number): number {
@@ -123,7 +126,7 @@ export function drive<I, O, E = unknown>(
     bind: (subject, targets) => {
       if (done) throw new Error('blits-tone: that driver is cancelled');
       if (bound.has(subject)) throw new Error('blits-tone: that subject is attached already');
-      bound.set(subject, { targets, pose: {} as O });
+      bound.set(subject, { targets });
     },
     unbind: (subject) => bound.delete(subject),
   };
@@ -139,7 +142,6 @@ export function drive<I, O, E = unknown>(
       if (bound.has(subject)) throw new Error('blits-tone: that subject is attached already');
       bound.set(subject, {
         targets: (Object.entries(targets) as [keyof O, Target][]).map(([k, t]) => [k, t, null]),
-        pose: {} as O,
       });
     },
 
@@ -164,19 +166,26 @@ export function drive<I, O, E = unknown>(
 
       // Mix time runs `rate` ms to the audio clock's one, so a paused mix has one point to write.
       const rate = mix.rate;
-      const points = rate > 0 ? Math.ceil((to - from) / grid - 1e-9) : 0;
-      for (let i = 0; i <= points; i++) {
-        const at = Math.min(from + i * grid, to);
-        const projection = mix.project(now + (at - est) * rate);
-        for (const [subject, b] of bound) {
-          projection.probe(subject, b.pose);
-          for (const [channel, target, move] of b.targets) {
-            const value = b.pose[channel];
-            if (typeof value === 'number' && Number.isFinite(value))
-              target.linearRampToValueAtTime(move === null ? value : move(value), at / 1000);
+      const start = now + (from - est) * rate;
+      const trace =
+        rate > 0
+          ? mix.trace(start, now + (to - est) * rate, { grid: grid * rate })
+          : mix.trace(start, start);
+      const audio = (t: number): number =>
+        rate > 0 ? Math.min(to, Math.max(from, est + (t - now) / rate)) : from;
+      for (const [subject, b] of bound)
+        for (const [channel, target, move] of b.targets) {
+          const run = trace.of(subject, channel as NumberChannel<O>);
+          for (let i = 0; i < run.at.length; i++) {
+            const value = run.value[i] as number;
+            if (!Number.isFinite(value)) continue;
+            const v = move === null ? value : move(value);
+            const at = audio(run.at[i] as number) / 1000;
+            // Two points at one time are a jump: the line arrives at the first, then it steps.
+            if (i > 0 && run.at[i] === run.at[i - 1]) target.setValueAtTime(v, at);
+            else target.linearRampToValueAtTime(v, at);
           }
         }
-      }
     },
 
     cancel() {

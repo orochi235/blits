@@ -38,11 +38,7 @@ export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): 
   if (kit === undefined) throw new Error('blits-tone: wire needs a kit, passed to drive as `kit`');
   if (wired.has(node)) throw new Error('blits-tone: that node is already wired');
 
-  const bases: [
-    string,
-    Target & { setValueAtTime(value: number, time: number): unknown },
-    number,
-  ][] = [];
+  const bases: [string, Target, number][] = [];
   const targets: Driven<O>[] = [];
   for (const name of Object.keys(kit) as (keyof O & string)[]) {
     const param = (node as unknown as Record<string, unknown>)[name];

@@ -72,30 +72,34 @@ through `detune`; add a `frequency` channel only for a node that plays no notes.
 
 A value written to a parameter once a frame is late by up to a frame, steps where the mix curves,
 and stops for as long as the frame loop stalls. So the driver never writes the present. Each
-`write` it reads the mix at points `grid` ms apart from now to `ahead` ms out, with
-`mix.project`, and schedules a linear ramp to each on the audio clock, replacing what the last
-`write` scheduled. Hits and marks go through `mix.book`, which hands each one over before it comes
-and again if a seek or a rate change moves it.
+`write` it reads the mix from now to `ahead` ms out with `mix.trace`, and schedules what that gives
+on the audio clock, replacing what the last `write` scheduled: a linear ramp to each point, and a
+jump as `setValueAtTime`. Where a `keys` voice's shape is known, its own breakpoints come back and
+the ramps are exact, however coarse `grid`; anywhere else the mix is read every `grid` ms. The
+engine's docs list what counts as known. Hits and marks go through `mix.book`, which hands each one
+over before it comes and again if a seek or a rate change moves it.
 
 The package's tests play a mix through the driver into `Tone.Offline` and compare the rendered
-parameter, each ms, with the mix's own value. The mix sweeps 200 to 800 Hz and back over 2 s; its
-voices are retimed and sought mid-flight; the frames come at 60 fps with jitter, a 120 ms stall,
-and a 200 ms one. The tests hold these bounds:
+parameter, each ms, with the mix's own value. The mix sweeps 200 to 800 Hz, eased, and back in a
+straight line over 2 s; its voices are retimed and sought mid-flight; the frames come at 60 fps
+with jitter, a 120 ms stall, and a 200 ms one. The tests hold these bounds:
 
 | Case | `freq` error, max (Hz) |
 |---|---:|
-| 5 ms `grid` (the default) | 0.68 |
-| 25 ms `grid` | 3.90 |
+| 5 ms `grid` (the default) | 0.15 |
+| 25 ms `grid` | 1.80 |
+| the straight fall, any `grid` | 0.001 |
 | inside the 200 ms stall, 150 ms `ahead` | above 20 |
-| inside the 200 ms stall, 250 ms `ahead` | 0.68 |
-| audio clock read up to 1 ms off each frame | 1.00 |
+| inside the 200 ms stall, 250 ms `ahead` | 0.15 |
+| audio clock read up to 1 ms off each frame | 0.20 |
 
 Every booked note sounds within a sample of its time at 48 kHz, through a rate change and a seek;
 with the clock read up to 1 ms off, within 0.25 ms.
 
 `ahead` has to outlast the longest gap between two writes: past it the parameter holds its last
-value until the next `write`. A longer `ahead` costs a projection per point, and a change made to
-the mix is heard only once the next `write` replaces the curve, which a stall also delays.
+value until the next `write`. A longer `ahead` costs more reads where the mix is sampled, and a
+change made to the mix is heard only once the next `write` replaces the curve, which a stall also
+delays.
 
 ## Lower level
 
@@ -129,7 +133,7 @@ tone.write();
 - **`drive(mix, options?)`** returns the driver. Options, all optional:
   - `kit`: the mix's kit, which `wire` reads.
   - `ahead`, default 150, and `grid`, default 5: how far ahead a curve is written and how far
-    apart its points are, in ms on the audio clock.
+    apart its points are where the mix's shape is not known, in ms on the audio clock.
   - `take(item, time, lateBy)`: called for each mark and hit within `ahead`, with `time` in
     seconds on the audio clock, to hand to Tone as it is. `item` is what `mix.book` gives its
     `take`: a hit carries `hit` and its `event`, and a mark has neither. Return a `cancel` to be
@@ -138,7 +142,8 @@ tone.write();
   - `late`, default 50, `tag`, and `score`: passed to `mix.book` as they are.
   - `clock`: the audio clock in seconds, default `Tone.immediate`.
 - **`attach(subject, targets)`** binds a subject's channels to parameters: `targets` maps a
-  channel name to a Tone `Param` or `Signal`, or a native `AudioParam`. Values are scheduled in
+  channel name to a Tone `Param` or `Signal`, or a native `AudioParam`; anything else needs
+  `cancelAndHoldAtTime`, `linearRampToValueAtTime`, and `setValueAtTime`. Values are scheduled in
   the target's own units. Only a channel holding one number takes a target. Attaching a subject
   twice throws. The driver builds no synths: a subject that should sound on its own needs a
   synth of its own, which the host builds and attaches.
@@ -155,16 +160,15 @@ timestamp as usual. The driver maps one onto the other by the offset `mix.book` 
 
 ## What it does not do yet
 
-- **A curve is only as exact as its grid.** The error grows with the square of `grid`, and a jump
-  in the mix that falls between two points is played as a ramp from one point to the next. A read of the mix
-  over a window, giving a `keys` voice's breakpoints as exact ramps, is undecided in the engine;
-  until then each point is one `mix.project`, 31 a `write` at the defaults.
-- **A `mix.ramp` is approximated.** `project` takes mix time, and the engine does not say what
+- **Only a straight `keys` stretch is exact.** An eased stop, any other patch, a signal weight and a
+  fade under way are read every `grid` ms, where the error grows with the square of `grid` and a
+  jump between two points plays as a ramp. Each such point is one `mix.project`.
+- **A `mix.ramp` is approximated.** `trace` takes mix time, and the engine does not say what
   mix time a moment on the host's clock will read. The driver converts with `mix.rate` as it
   stands at each `write`, which is exact for a rate that holds, a pause included, and drifts
   while the rate ramps: within 5 Hz on the sweep above for a ramp from 1 to 0.5 over 600 ms.
   Hits and marks are unaffected, since `mix.book` converts them itself.
-- **Only linear ramps, and only channels of one number.** A `vec` or `color` channel takes no
-  target; read it with `mix.project` yourself.
+- **Only channels of one number.** A `vec` or `color` channel takes no target; read it with
+  `mix.project` yourself.
 - **Tone's `Transport` is not involved.** Times are on the audio context's clock, and the mix's
   rate, not Tone's tempo, sets the pace.
