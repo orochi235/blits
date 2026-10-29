@@ -1,0 +1,23 @@
+---
+import type { Entry } from '../api';
+import Badge from './Badge.astro';
+import Doc from './Doc.astro';
+import Rows from './Rows.astro';
+import Sig from './Sig.astro';
+
+interface Props {
+  entry: Entry;
+  here: string;
+}
+const { entry: e, here } = Astro.props;
+---
+<article class="api-entry" id={`api-${e.name}`} data-name={e.name.toLowerCase()}>
+  <h3>
+    <a class="api-anchor" href={`#api-${e.name}`}><Badge kind={e.kind} />{e.name}</a>
+    {e.deprecated && <span class="api-flag">deprecated</span>}
+  </h3>
+  <pre class="api-sig"><code><Sig toks={e.signature} here={here} /></code></pre>
+  <Doc doc={e.doc} />
+  {e.params.length > 0 && <Rows rows={e.params} here={here} label={`${e.name} parameters`} />}
+  {e.members.length > 0 && <Rows rows={e.members} here={here} label={`${e.name} members`} />}
+</article>

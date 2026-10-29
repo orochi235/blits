@@ -59,10 +59,18 @@ index. A guide is `src/pages/guides/<slug>.mdx`; the index lists each one's `des
 
 ## The reference
 
-`npm run api` runs TypeDoc over `../src/index.ts` into `.generated/api.json`, and `src/api.ts`
-prints it by word. Every export needs a `@category <word>` tag naming a page in `src/nav.ts`; the
-build fails on one without. TypeDoc needs TypeScript's JS compiler API, which TypeScript 7 does not
-have, so the site pins `typescript` 6 for itself while the package builds with 7.
+`npm run api` runs TypeDoc over `../src/index.ts` into `.generated/api.json`. `src/api/` reads it:
+`typedoc.ts` types the JSON, `print.ts` prints types back as TypeScript in kinded tokens so a
+signature can be colored and its exported names linked, and `entries.ts` builds one entry per export.
+Every export needs a `@category <word>` tag naming a page in `src/nav.ts`; the build fails on one
+without. TypeDoc needs TypeScript's JS compiler API, which TypeScript 7 does not have, so the site
+pins `typescript` 6 for itself while the package builds with 7.
+
+`/reference/` and each word's page print entries through the same `ApiEntries` component. An entry
+shows a doc comment's first sentence and puts the rest behind "more", so each first sentence in
+`../src` has to stand alone as a summary. An interface's fields, and a function's documented or
+inline-object parameters, print as a table. The reference page adds `ApiIndex`: every export by
+word in a pinned column, with a filter box (`/` focuses it) that narrows the index and the entries.
 
 ## Deploying
 

@@ -1,0 +1,73 @@
+---
+/** Every export by word, beside the reference: a filter box over it and a link to each entry. */
+import { entriesFor } from '../api';
+import { words } from '../nav';
+import Badge from './Badge.astro';
+---
+<nav class="api-index" aria-label="Exports">
+  <input type="search" class="api-filter" placeholder="Filter  /" aria-label="Filter the exports" />
+  {words.map((w) => (
+    <div class="api-index-group" data-word={w.slug}>
+      <h2>{w.title}</h2>
+      <ul>
+        {entriesFor(w.slug).map((e) => (
+          <li data-name={e.name.toLowerCase()}>
+            <a href={`#api-${e.name}`}><Badge kind={e.kind} />{e.name}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
+  <p class="api-none" hidden>No export matches.</p>
+</nav>
+
+<script>
+  const index = document.querySelector<HTMLElement>('.api-index');
+  const filter = index?.querySelector<HTMLInputElement>('.api-filter');
+
+  function apply(q: string) {
+    const needle = q.trim().toLowerCase();
+    const shown = (el: Element) => !needle || (el as HTMLElement).dataset.name?.includes(needle);
+    for (const el of document.querySelectorAll<HTMLElement>('.api-index li, .api-entry')) el.hidden = !shown(el);
+    for (const group of document.querySelectorAll<HTMLElement>('.api-index-group, .page .api')) {
+      group.hidden = !group.querySelector('li:not([hidden]), .api-entry:not([hidden])');
+    }
+    const none = index?.querySelector<HTMLElement>('.api-none');
+    if (none) none.hidden = !!index?.querySelector('li:not([hidden])');
+  }
+
+  filter?.addEventListener('input', () => apply(filter.value));
+  document.addEventListener('keydown', (ev) => {
+    const typing = ev.target instanceof HTMLInputElement || ev.target instanceof HTMLTextAreaElement;
+    if (ev.key === '/' && !typing) {
+      ev.preventDefault();
+      filter?.focus();
+    } else if (ev.key === 'Escape' && ev.target === filter && filter) {
+      filter.value = '';
+      apply('');
+    }
+  });
+
+  const links = new Map<string, HTMLAnchorElement>();
+  for (const a of index?.querySelectorAll<HTMLAnchorElement>('a') ?? []) links.set(a.hash.slice(1), a);
+  const all = [...document.querySelectorAll<HTMLElement>('.api-entry')];
+  let current: HTMLAnchorElement | undefined;
+  let queued = false;
+  function mark() {
+    queued = false;
+    const top = all.findLast((el) => !el.hidden && el.getBoundingClientRect().top <= 80) ?? all[0];
+    const link = top && links.get(top.id);
+    if (!link || link === current) return;
+    current?.removeAttribute('aria-current');
+    link.setAttribute('aria-current', 'location');
+    current = link;
+    const box = index?.getBoundingClientRect();
+    const at = link.getBoundingClientRect();
+    if (index && box && (at.top < box.top || at.bottom > box.bottom)) index.scrollTop += at.top - box.top - box.height / 2;
+  }
+  addEventListener('scroll', () => {
+    if (!queued) requestAnimationFrame(mark);
+    queued = true;
+  }, { passive: true });
+  mark();
+</script>

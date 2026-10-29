@@ -1,0 +1,9 @@
+---
+/** A colored letter for an export's kind: function, interface, type, const or class. */
+interface Props {
+  kind: string;
+}
+const LETTER: Record<string, string> = { function: 'f', interface: 'i', type: 't', const: 'v', class: 'c' };
+const { kind } = Astro.props;
+---
+<abbr class={`api-badge api-badge-${kind}`} title={kind}>{LETTER[kind] ?? '?'}</abbr>

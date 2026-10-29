@@ -1,18 +1,17 @@
 ---
 import { entriesFor } from '../api';
 import ApiEntries from '../components/ApiEntries.astro';
+import ApiIndex from '../components/ApiIndex.astro';
 import Page from '../layouts/Page.astro';
 import { words } from '../nav';
-
-const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 ---
-<Page title="Reference">
-  <h1>Reference</h1>
-  <p class="lede">Every export, filed under the word it belongs to. Each word's page has its entries under a live explainer.</p>
-  {words.map((w) => (
-    <ApiEntries list={entriesFor(w.slug)} heading={w.title} />
-  ))}
-  <p>Read a word's own page for what each of these does in motion: {words.map((w, i) => (
-    <>{i > 0 && ', '}<a href={`${base}${w.slug}/`}>{w.title.toLowerCase()}</a></>
-  ))}.</p>
+<Page title="Reference" description="Every blits export, filed under the word it belongs to.">
+  <div class="ref">
+    <ApiIndex />
+    <div class="ref-body">
+      <h1>Reference</h1>
+      <p class="lede">Every export, filed under the word it belongs to. Each word's page shows the same entries under a live explainer.</p>
+      {words.map((w) => <ApiEntries list={entriesFor(w.slug)} heading={w.title} here="reference" />)}
+    </div>
+  </div>
 </Page>

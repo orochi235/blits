@@ -1,0 +1,24 @@
+---
+/** A table of fields or parameters: name, type, and the first sentence of each one's doc. */
+import type { Row } from '../api';
+import Doc from './Doc.astro';
+import Sig from './Sig.astro';
+
+interface Props {
+  rows: Row[];
+  here: string;
+  label: string;
+}
+const { rows, here, label } = Astro.props;
+---
+<table class="api-rows" aria-label={label}>
+  <tbody>
+    {rows.map((r) => (
+      <tr class={r.deprecated ? 'api-deprecated' : undefined}>
+        <td class="api-row-name"><code>{r.name}</code></td>
+        <td class="api-row-type"><code><Sig toks={r.type} here={here} /></code></td>
+        <td class="api-row-doc"><Doc doc={r.doc} /></td>
+      </tr>
+    ))}
+  </tbody>
+</table>

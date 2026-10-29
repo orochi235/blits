@@ -1,34 +1,21 @@
 ---
 import { type Entry, entriesFor } from '../api';
-import Parts from './Parts.astro';
+import ApiEntry from './ApiEntry.astro';
 
 interface Props {
   word?: string;
   list?: Entry[];
   heading?: string;
+  /** The page these entries sit on: `reference`, or the word whose page it is. */
+  here?: string;
 }
 const list = Astro.props.list ?? entriesFor(Astro.props.word ?? '');
 const heading = Astro.props.heading ?? 'Reference';
+const here = Astro.props.here ?? Astro.props.word ?? 'reference';
 ---
 {list.length > 0 && (
-  <section class="api">
+  <section class="api" data-word={list[0]?.word}>
     <h2>{heading}</h2>
-    {list.map((e) => (
-      <article class="api-entry" id={`api-${e.name}`}>
-        <h3>{e.name}<span class="api-kind">{e.kind}</span></h3>
-        <pre><code>{e.signature}</code></pre>
-        {e.summary.length > 0 && <p><Parts parts={e.summary} /></p>}
-        {e.members.length > 0 && (
-          <ul class="api-members">
-            {e.members.map((m) => (
-              <li>
-                <code>{m.signature}</code>
-                {m.summary.length > 0 && <p><Parts parts={m.summary} /></p>}
-              </li>
-            ))}
-          </ul>
-        )}
-      </article>
-    ))}
+    {list.map((e) => <ApiEntry entry={e} here={here} />)}
   </section>
 )}

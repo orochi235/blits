@@ -1,0 +1,22 @@
+---
+/** A doc comment's first sentence, with the rest behind "more". */
+import type { Doc, Part } from '../api';
+import Parts from './Parts.astro';
+
+interface Props {
+  doc: Doc;
+}
+const { doc } = Astro.props;
+const fence = (para: Part[]) => para.length === 1 && para[0]?.kind === 'code' && para[0].text.startsWith('```');
+const code = (text: string) => text.replace(/^```\w*\n?|\n?```$/g, '');
+---
+{doc.rest.length === 0 ? (
+  doc.lead.length > 0 && <p class="api-doc"><Parts parts={doc.lead} /></p>
+) : (
+  <details class="api-doc">
+    <summary><Parts parts={doc.lead} /> <span class="api-more">more</span></summary>
+    {doc.rest.map((para) =>
+      fence(para) ? <pre><code>{code(para[0]?.text ?? '')}</code></pre> : <p><Parts parts={para} /></p>,
+    )}
+  </details>
+)}
