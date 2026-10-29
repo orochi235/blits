@@ -81,9 +81,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     }
     if (!flat) {
       const since = data[o + Row.SINCE] as number;
-      const was = lane.weighedSince;
-      // `same` is left out of line here: the common hit is answered before calling it.
-      if (!lane.weighed || ((since !== was || since === 0) && !same(since, was))) {
+      if (!lane.weighed || !same(since, lane.weighedSince)) {
         lane.fade = lanes.host.envelope(voice, since);
         lane.weighed = true;
         lane.weighedSince = since;
