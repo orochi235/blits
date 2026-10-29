@@ -4,6 +4,7 @@ import { type Column, clampRun, flush, pullRun, writeLater } from './columns.js'
 import type { Values } from './fold.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
+import { renumber } from './renumber.js';
 import type { Subject } from './subject.js';
 import type { Channel, Columns } from './types.js';
 
@@ -160,6 +161,15 @@ function readAll<I, O>(
         was[n] = subject;
         heads[n] = head;
         slot = head.slot;
+        // Numbered out of the list's order, as swap-remove leaves a subject: renumbered into it.
+        const to = n === 0 ? 0 : (slots[n - 1] as number) + 1;
+        if (runs && slot >= 0 && slot !== to && to >= 0) {
+          if (renumber(mix, subject, head, to)) {
+            for (let j = was.indexOf(subject); j >= 0; j = was.indexOf(subject, j + 1))
+              slots[j] = to;
+            slot = to;
+          }
+        }
         slots[n] = slot;
       }
     }

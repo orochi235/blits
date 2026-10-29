@@ -355,6 +355,20 @@ export class Lane<I, O> implements Positions<I, O> {
     this.deltas[p] = null;
   }
 
+  /** The subject numbered `from` is numbered `to` now, a number no position holds: same position. */
+  renumber(from: number, to: number): void {
+    const p = this.positionOf(from);
+    if (p < 0) return;
+    if (to >= this.at.length) {
+      const at = new Int32Array(Math.max(to + 1, this.at.length * 2, 64));
+      at.set(this.at);
+      this.at = at;
+    }
+    this.list[p] = to;
+    this.at[to] = p + 1;
+    this.at[from] = 0;
+  }
+
   /** A subject lost its number: the last position moves into its place. */
   remove(slot: number): void {
     const p = this.positionOf(slot);

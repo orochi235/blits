@@ -81,6 +81,33 @@ export class Numbers<I> {
     return ref as I;
   }
 
+  /**
+   * Hands the subject numbered `from` the free number `to`, and frees `from` without telling the
+   * owner, whose stores the caller moves; false, changing nothing, where either does not hold.
+   */
+  move(from: number, to: number): boolean {
+    const ref = this.refs[from];
+    const free = this.free;
+    if (ref === undefined || to >= this.next || this.refs[to] !== undefined || free === null)
+      return false;
+    const at = free.lastIndexOf(to);
+    if (at < 0) return false;
+    if (ref instanceof WeakRef) {
+      const subject = ref.deref();
+      if (subject === undefined) return false;
+      if (ref === this.lone) this.loneSlot = to;
+      else if (this.registry !== null) {
+        this.registry.unregister(ref);
+        this.registry.register(subject, to, ref);
+      }
+    }
+    free.splice(at, 1);
+    free.push(from);
+    this.refs[to] = ref;
+    this.refs[from] = undefined;
+    return true;
+  }
+
   release(slot: number): void {
     const ref = this.refs[slot];
     if (ref === undefined) return;
