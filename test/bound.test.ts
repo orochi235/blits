@@ -1,7 +1,20 @@
 import { setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { keys, kit, last, max, mix, mixHex, mul, patch, sum, vec } from '../src/index.js';
+import {
+  keys,
+  kit,
+  last,
+  max,
+  mix,
+  mixHex,
+  mul,
+  patch,
+  spring,
+  sum,
+  tween,
+  vec,
+} from '../src/index.js';
 import type { Handle, Mix } from '../src/types.js';
 
 type Dot = { seed: number; x: number; y: number };
@@ -21,8 +34,18 @@ const flicker = () =>
 
 interface Way {
   lanes: boolean;
-  glow?: 'fn' | 'keys' | 'color';
+  glow?: 'fn' | 'keys' | 'color' | 'stepped' | 'tween' | 'spring';
   moving?: boolean;
+  /** The glow plays under an owner of weight 0.7, which weighs every child it holds. */
+  owned?: boolean;
+  /** Two thirds through, the owner fades out over 200 ms. */
+  fading?: boolean;
+  /** The glow is cued from: 'current', a third of the way through. */
+  current?: boolean;
+  /** Steps a stateful patch in fixed ticks of this many ms. */
+  stepMs?: number;
+  /** A third through, a motion glow's every third subject heads somewhere else. */
+  retarget?: boolean;
   /** Probe a window of this share of the subjects, moving each frame, instead of every one. */
   view?: number;
   pull?: boolean;
@@ -30,7 +53,10 @@ interface Way {
 
 /** Each frame's poses of every subject read and the glow's weight for every subject. */
 function play(way: Way, bounded: boolean, frames = 60): unknown[] {
-  const m = mix<Dot, Pose>(K, { lanes: way.lanes });
+  const m = mix<Dot, Pose>(K, {
+    lanes: way.lanes,
+    ...(way.stepMs === undefined ? {} : { stepMs: way.stepMs }),
+  });
   const dots: Dot[] = Array.from({ length: SIDE * SIDE }, (_, j) => ({
     seed: j * 0.37,
     x: j % SIDE,
@@ -58,13 +84,24 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
         ? patch<Dot, Pose>(1000, () => ({ gain: 1.5, color: 0xffe08a }), {
             writes: ['gain', 'color'],
           })
-        : patch<Dot, Pose>(1000, () => ({ gain: 1.5 }), { writes: ['gain'] });
-  const glow: Handle<Dot> = m.cue({
-    patch: shape,
-    weight: near,
-    loop: true,
-    ...(bounded ? { within: area } : {}),
-  });
+        : way.glow === 'stepped'
+          ? stepped()
+          : way.glow === 'tween'
+            ? tween<Dot, Pose>('gain', { from: 1, to: 2, ms: 700 })
+            : way.glow === 'spring'
+              ? spring<Dot, Pose>('gain', { from: 1, to: 2 })
+              : patch<Dot, Pose>(1000, () => ({ gain: 1.5 }), { writes: ['gain'] });
+  const owner = way.owned ? m.owns({ weight: 0.7 }) : undefined;
+  const cueGlow = (): Handle<Dot> =>
+    m.cue({
+      patch: shape,
+      weight: near,
+      ...(way.glow === 'tween' || way.glow === 'spring' ? {} : { loop: true }),
+      ...(owner ? { owner } : {}),
+      ...(way.current ? { from: 'current' as const } : {}),
+      ...(bounded ? { within: area } : {}),
+    });
+  let glow = way.current ? m.cue({ patch: flicker(), loop: true }) : cueGlow();
   const out = {} as Pose;
   const cols = {
     gain: new Float64Array(dots.length),
@@ -85,6 +122,12 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
       write();
       if (bounded) m.moved();
     }
+    if (way.retarget && f === Math.floor(frames / 3))
+      dots.forEach((d, j) => {
+        if (j % 3 === 0) (shape as ReturnType<typeof spring<Dot, Pose>>).to(d, 0.5);
+      });
+    if (way.current && f === Math.floor(frames / 3)) glow = cueGlow();
+    if (owner && way.fading && f === Math.floor((2 * frames) / 3)) owner.fade({ over: 200 });
     m.sync(f * 16.7);
     const read =
       way.view === undefined
@@ -105,6 +148,16 @@ function play(way: Way, bounded: boolean, frames = 60): unknown[] {
   return seen;
 }
 
+/** A glow whose gain integrates toward 2 a step at a time, so it reads every step it was handed. */
+const stepped = () =>
+  patch<Dot, Pose, { g: number }>(1000, (_ph, _s, st) => ({ gain: st.state.g }), {
+    writes: ['gain'],
+    state: () => ({ g: 1 }),
+    step: (st, dt) => {
+      st.g += (2 - st.g) * Math.min(1, dt / 300);
+    },
+  });
+
 const agree = (way: Way, frames?: number) => {
   const plain = play(way, false, frames);
   const held = play(way, true, frames);
@@ -122,6 +175,24 @@ describe('a bounded signal reads as the same signal unbounded, where it is 0 bey
     it(`a view of 10%, keys, ${on}`, () => agree({ lanes, view: 0.1, glow: 'keys' }));
     it(`read by pull, ${on}`, () => agree({ lanes, pull: true }));
     it(`read by pull, moving, ${on}`, () => agree({ lanes, pull: true, moving: true }));
+    it(`a glow keeping state, ${on}`, () => agree({ lanes, glow: 'stepped' }));
+    it(`a glow keeping state, a view of 40%, ${on}`, () =>
+      agree({ lanes, glow: 'stepped', view: 0.4 }));
+    it(`a glow keeping state in fixed steps, a view of 40%, ${on}`, () =>
+      agree({ lanes, glow: 'stepped', stepMs: 5, view: 0.4 }));
+    it(`a tween glow, ${on}`, () => agree({ lanes, glow: 'tween' }));
+    it(`a keys glow cued from: 'current', ${on}`, () =>
+      agree({ lanes, glow: 'keys', current: true }));
+    it(`a keys glow cued from: 'current', read by pull, a view of 40%, ${on}`, () =>
+      agree({ lanes, glow: 'keys', current: true, pull: true, view: 0.4 }));
+    it(`a spring glow, read by pull, ${on}`, () => agree({ lanes, glow: 'spring', pull: true }));
+    it(`a glow an owner holds, ${on}`, () => agree({ lanes, owned: true }));
+    it(`a tween glow an owner holds, ${on}`, () => agree({ lanes, glow: 'tween', owned: true }));
+    it(`a glow whose owner fades out, ${on}`, () => agree({ lanes, owned: true, fading: true }));
+    it(`a spring glow retargeted mid-flight, ${on}`, () =>
+      agree({ lanes, glow: 'spring', retarget: true }));
+    it(`a tween glow retargeted mid-flight, read by pull, ${on}`, () =>
+      agree({ lanes, glow: 'tween', retarget: true, pull: true }));
   }
 });
 
@@ -142,7 +213,7 @@ describe('within is refused', () => {
     const m = mix<Dot, Pose>(K);
     expect(cue(m, { weight: () => 1 })).toThrow(/call mix.plot first/);
   });
-  it('on a voice with no signal, and not on one naming its subjects or in a role', () => {
+  it('on a voice with no signal, and on no voice that has one', () => {
     const m = mix<Dot, Pose>(K);
     const dot = { seed: 0, x: 0, y: 0 };
     m.plot([dot], new Float64Array(2), 1);
@@ -152,20 +223,15 @@ describe('within is refused', () => {
     expect(cue(m, { weight: 0.5 })).toThrow(recipe);
     expect(cue(m, { weight: () => 1, subjects: [dot] })).not.toThrow();
     expect(cue(m, { weight: () => 1, role: 'a' })).not.toThrow();
-  });
-  it('on a voice whose patch keeps state', () => {
-    const m = mix<Dot, Pose>(K);
-    m.plot([], new Float64Array(0));
-    const stepped = patch<Dot, Pose, { n: number }>(100, (_ph, _s, st) => ({ gain: st.state.n }), {
-      writes: ['gain'],
-      state: () => ({ n: 0 }),
-      step: (s) => {
-        s.n++;
-      },
-    });
-    expect(() => m.cue({ patch: stepped, weight: () => 1, loop: true, within: area })).toThrow(
-      /keeping state/,
-    );
+    expect(cue(m, { weight: () => 1, patch: stepped() })).not.toThrow();
+    expect(
+      cue(m, {
+        weight: () => 1,
+        patch: tween<Dot, Pose>('gain', { from: 1, to: 2, ms: 500 }),
+        loop: false,
+      }),
+    ).not.toThrow();
+    expect(cue(m, { weight: () => 1, owner: m.owns({}) })).not.toThrow();
   });
   it('plot with too few positions, or a cell of 0', () => {
     const m = mix<Dot, Pose>(K);
@@ -179,7 +245,15 @@ describe('within keeps its signal from being read outside it', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
-  const ways = ['alone', 'naming its subjects', 'in a role', 'in a role, apart'] as const;
+  const ways = [
+    'alone',
+    'naming its subjects',
+    'in a role',
+    'in a role, apart',
+    'keeping state',
+    'a tween',
+    'under an owner',
+  ] as const;
   for (const lanes of [true, false])
     for (const way of ways)
       it(`calls the signal only within, and clips what it would give beyond, ${way}, lanes ${lanes ? 'on' : 'off'}`, () => {
@@ -201,10 +275,16 @@ describe('within keeps its signal from being read outside it', () => {
         m.cue({ patch: flicker(), loop: true });
         if (way === 'in a role') other();
         const glow = m.cue({
-          patch: glowPatch(),
+          patch:
+            way === 'keeping state'
+              ? stepped()
+              : way === 'a tween'
+                ? tween<Dot, Pose>('gain', { from: 1, to: 2, ms: 2000 })
+                : glowPatch(),
           weight: wide,
-          loop: true,
+          loop: way !== 'a tween',
           within: area,
+          ...(way === 'under an owner' ? { owner: m.owns({ weight: 0.7 }) } : {}),
           ...role,
           ...(way === 'naming its subjects' ? { subjects: dots } : {}),
         });

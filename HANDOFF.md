@@ -435,10 +435,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    noise of `eb22788` (geometric mean 1.001, every U at least 13; `bench/runs/2026-10-26-near-put-guard.txt`).
 
    A voice naming its subjects and a role member take a bound, lifted by Mike (2026-10-27); a role
-   member outside its circle is skipped on both laned role routes. Left: a bound on an owner's child, on a
-   stateful patch, and on a mix with history, all refused (history because the circle the host
-   moves is not recorded; the playground drops history for a composition that bounds a voice,
-   item 13); `within` on a constant weight stays refused, its error naming the recipe,
+   member outside its circle is skipped on both laned role routes. An owner's child, a motion, a
+   stepping patch and a `from: 'current'` voice take one too (2026-10-28): outside the circle a
+   stepping patch still steps and a `from: 'current'` voice still takes its base, as at weight 0, so
+   bounding them saves the signal's calls but not their steps. Left: a mix with history, refused
+   because neither the circle nor the positions are recorded (the playground drops history for a
+   composition that bounds a voice, item 13). **Waiting on Mike (2026-10-28):** whether `within`
+   generalizes past 2D to a query the host answers (which subjects might be above 0 this frame),
+   with the circle over `plot` as the stock one; that changes what history would record (the
+   query's answer, not a circle and positions), so history waits on it. `within` on a constant weight stays refused, its error naming the recipe,
    `weight: mix.around(circle, { steps: 1, jump: 'start' })` for a hard-edged disk (decided by Mike,
    2026-10-26); blits-panel draws a bounded voice's circle on the page (◯ circles, 2026-10-26). Whether unbounded voices
    are ever deprecated stays open and unlikely: klieg's lighting, a fade over a whole sign and wod's

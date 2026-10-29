@@ -52,20 +52,11 @@ export class Bound<I, O> {
 }
 
 /**
- * Why a voice could not be bounded, or null: reads a skipped subject could not leave as they were,
- * on one with state, history, an owner, or `from: 'current'`.
+ * Why a voice could not be bounded, or null: on a mix with history, which records neither the
+ * circle nor the positions, so a read back would meet today's.
  */
-function refusal<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): string | null {
-  const patch = spec.patch;
-  return mix.opts.history !== undefined
-    ? 'a mix with history'
-    : spec.from === 'current'
-      ? "a voice cued from: 'current'"
-      : spec.owner !== undefined
-        ? 'a voice an owner holds'
-        : patch.form === 'motion' || patch.state !== undefined || patch.step !== undefined
-          ? 'a patch keeping state'
-          : null;
+function refusal<I, O>(mix: Mixer<I, O>, _spec: VoiceSpec<I, O>): string | null {
+  return mix.opts.history !== undefined ? 'a mix with history' : null;
 }
 
 /** Refuses a cue's `within` where the mix has no positions, and on a voice `refusal` names. */

@@ -67,7 +67,10 @@ export function contribution<I, O>(
 ): Record<string, unknown> | null {
   held.weight = 0;
   if (!held.reaches) return null;
-  if (voice.bound !== null && !inBound(this, voice.bound, subject)) return null;
+  // Outside its bound the signal reads 0 unread. What a read at weight 0 still does is done there:
+  // a patch that steps steps, and a `from: 'current'` voice takes its base.
+  const outside = voice.bound !== null && !inBound(this, voice.bound, subject);
+  if (outside && voice.patch.step === undefined && voice.spec.from !== 'current') return null;
   if (voice.out?.rest && isRested(held)) return null;
   if (held.rebuilt !== voice.rebuilds) rebuild(this, voice, subject, now, held);
   else if (held.seeks !== voice.seeks && sentBack(this, voice, held)) {
@@ -97,7 +100,7 @@ export function contribution<I, O>(
   // A signal that keeps state makes its voice stateful, as a patch that does: a lane would call
   // it for subjects no probe asked about.
   const keptAtWeigh = reading.kept;
-  const weight = this.weigh(voice, subject, now, held);
+  const weight = outside ? 0 : this.weigh(voice, subject, now, held);
   if (reading.kept !== keptAtWeigh && !voice.keeping) stateful(this, voice);
   setting.weight = weight;
   held.weight = weight;
