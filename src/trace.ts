@@ -4,8 +4,8 @@ import type { NumberChannel, Projection, Run, Trace, TraceOptions } from './type
 import type { Voice } from './voice.js';
 
 /**
- * How far inside a sampled stretch its ends are read, ms: a stretch ends where a voice may jump,
- * and its end is read on its own side of the jump.
+ * How far inside a sampled stretch its ends are read, ms, but for the window's own: a stretch ends
+ * where a voice may jump, and its end is read on its own side of the jump.
  */
 const NUDGE = 1e-6;
 
@@ -115,13 +115,13 @@ export function traceMix<I, O>(
         }
         exact = false;
         const e = Math.min(NUDGE, (b - a) / 4);
-        add(a, value(a + e));
+        add(a, value(a === from ? a : a + e));
         for (let k = Math.max(0, Math.ceil((a - from) / grid)); ; k++) {
           const g = from + k * grid;
           if (g >= b - e) break;
           if (g > a + e) add(g, value(g));
         }
-        add(b, value(b - e));
+        add(b, value(b === to ? b : b - e));
       }
       return { at, value: values, exact };
     },
@@ -130,11 +130,11 @@ export function traceMix<I, O>(
 
 /**
  * Whether the mix's own state lets a trace know any shape: a window at or after the mix's time,
- * with no recorded call ahead and no pace that would move its voices.
+ * with no recorded call ahead.
  */
 function knowable<I, O>(mix: Mixer<I, O>, from: number): boolean {
   const transport = mix.transport;
-  if (!(from >= mix.now) || transport.pace !== null) return false;
+  if (!(from >= mix.now)) return false;
   const tape = transport.tape;
   return tape === undefined || tape.timestampAt(tape.undoDepth()) === undefined;
 }
@@ -184,6 +184,8 @@ function shapeOf<I, O>(
     return false;
   if (voice.parts !== null || voice.parted !== null || voice.left !== null) return false;
   if (Number.isFinite(voice.outAt) || voice.state === 'fading') return false;
+  // Under a mix rate, a waiting voice's start is pinned to the host's clock, where a ramp moves it.
+  if (voice.state === 'pending' && mix.transport.pace !== null) return false;
 
   const knots: number[] = [];
   const bent: [number, number][] = [];

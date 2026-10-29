@@ -202,6 +202,18 @@ describe('trace', () => {
     expect(run.at).toEqual([100, 150, 200, 250, 300]);
   });
 
+  it('keeps a playing voice exact under a mix rate, and samples one waiting', () => {
+    const a = { id: 'a' };
+    const m = mix<Part, Pose>(K);
+    m.cue({ patch: ramp, loop: true });
+    m.rate = 2;
+    m.sync(0);
+    m.cue({ patch: keys<Part, Pose>(0, [{ at: 0, delta: { gain: 2 } }]), start: 300 });
+    const t = m.trace(0, 400);
+    expect(t.of(a, 'x').exact).toBe(true);
+    expect(t.of(a, 'gain').exact).toBe(false);
+  });
+
   it('shares its reads across subjects and moves nothing', () => {
     const a = { id: 'a' };
     const b = { id: 'b' };
