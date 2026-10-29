@@ -36,6 +36,17 @@ version and everything else the patch. Each release lists its changes as **Break
   a frame against 0.479, and allocate 6 kB a frame against 162 (studio, medians of seven runs of
   1,500 frames, each in its own process); the same voices freezing at both ends (`frozen`,
   `frozen^`) are unchanged.
+- `pull` over a list whose order has drifted from the order the mix first saw it in, as a list
+  kept dense by swap-remove does, writes rests in a few runs, not one per short stretch of
+  subjects. With one subject leaving and one arriving every frame (`turnover^`), a frame takes
+  0.253 ms against 0.262. Teitou, medians of seven runs of 5,000 frames, each in its own process.
+  Other rows are unchanged.
+- A list kept dense by swap-remove stays in the mix's own order for `pull`: a subject moved into
+  the place a dropped one left takes the number the drop freed, so `pull` reads the list in long
+  runs. `turnover^` takes 0.223 ms a frame against 0.263, close to the 0.210 of `churn^`, which
+  replaces voices without reordering anything (teitou with the node to itself, medians of seven
+  runs). The other rows are unchanged. A mix that keeps history, or has roles or a bound on its
+  lanes, keeps the old order.
 
 ## 0.15.0
 

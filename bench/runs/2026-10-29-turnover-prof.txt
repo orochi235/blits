@@ -1,0 +1,90 @@
+# teitou: bench/cpuprof.sh 'turnover^' 2 . (FRAMES=5000), at 07537b4, before pull read short runs row by row
+onto: plan 2
+== run 1/2 . turnover^
+ 1/1  turnover^  N= 10000 V=1     0.281 ms/frame     28 ns/subject·voice  p50    0.279  p99    0.345  worst    3.353  first    40.2 ms  gc   21    6.5 ms     135.2 kB/frame
+total 1523.5 ms
+    457.7 ms  30.0%  bareRows bare.js:16
+    346.7 ms  22.8%  pullRun columns.js:14
+    126.5 ms   8.3%  copies columns.js:177
+    116.9 ms   7.7%  rests columns.js:148
+     52.0 ms   3.4%  rows crowd.js:180
+     26.4 ms   1.7%  foldNumber channels.js:47
+     25.2 ms   1.7%  prune move.js:205
+     24.2 ms   1.6%  fillAll fill.js:37
+     22.8 ms   1.5%  clock bare.js:6
+     22.3 ms   1.5%  readAll pull.js:126
+     21.8 ms   1.4%  (garbage collector)
+     21.5 ms   1.4%  keepProbed lane.js:8
+     21.5 ms   1.4%  between tweened.js:29
+     20.6 ms   1.4%  left tweened.js:19
+     20.3 ms   1.3%  runCrowd crowd.js:163
+     10.5 ms   0.7%  (idle)
+      9.3 ms   0.6%  progress tweened.js:15
+      7.8 ms   0.5%  churn frame.mjs:449
+      7.5 ms   0.5%  compileSourceTextModule utils:338
+      6.4 ms   0.4%  bare crowd.js:21
+      5.0 ms   0.3%  rested turns.js:62
+      4.7 ms   0.3%  (program)
+      4.6 ms   0.3%  taping tape.js:28
+      3.6 ms   0.2%  grow motions.js:368
+      3.3 ms   0.2%  copyVoice crowd.js:316
+      3.3 ms   0.2%  get store.js:20
+      3.2 ms   0.2%  pace fill.js:136
+      2.8 ms   0.2%  enter cue.js:221
+      2.7 ms   0.2%  prime weigh.js:6
+      2.6 ms   0.2%  voiceChanged lanes.js:522
+      2.5 ms   0.2%  join rows.js:85
+      2.3 ms   0.2%  (anonymous) frame.mjs:1
+      2.3 ms   0.2%  indexOf move.js:263
+      2.1 ms   0.1%  drop drop.js:8
+      1.9 ms   0.1%  retouch qualify.js:292
+      1.9 ms   0.1%  headOf chain.js:48
+      1.9 ms   0.1%  cue cue.js:22
+      1.8 ms   0.1%  pull pull.js:51
+      1.6 ms   0.1%  requalify qualify.js:42
+      1.4 ms   0.1%  unlink chain.js:159
+onto: progress 1/2
+== run 2/2 . turnover^
+ 1/1  turnover^  N= 10000 V=1     0.278 ms/frame     28 ns/subject·voice  p50    0.277  p99    0.331  worst    3.038  first    40.8 ms  gc   21    6.3 ms     136.0 kB/frame
+total 1509.8 ms
+    465.3 ms  30.8%  bareRows bare.js:16
+    349.5 ms  23.1%  pullRun columns.js:14
+    124.1 ms   8.2%  copies columns.js:177
+    118.7 ms   7.9%  rests columns.js:148
+     53.3 ms   3.5%  rows crowd.js:180
+     34.5 ms   2.3%  foldNumber channels.js:47
+     23.4 ms   1.5%  fillAll fill.js:37
+     23.1 ms   1.5%  prune move.js:205
+     22.4 ms   1.5%  (garbage collector)
+     22.1 ms   1.5%  keepProbed lane.js:8
+     21.3 ms   1.4%  readAll pull.js:126
+     20.3 ms   1.3%  runCrowd crowd.js:163
+     18.7 ms   1.2%  left tweened.js:19
+     17.5 ms   1.2%  clock bare.js:6
+     10.9 ms   0.7%  between tweened.js:29
+      8.9 ms   0.6%  churn frame.mjs:449
+      7.6 ms   0.5%  compileSourceTextModule utils:338
+      7.1 ms   0.5%  progress tweened.js:15
+      6.6 ms   0.4%  (idle)
+      4.9 ms   0.3%  rested turns.js:62
+      4.7 ms   0.3%  bare crowd.js:21
+      4.4 ms   0.3%  grow motions.js:368
+      4.0 ms   0.3%  (program)
+      3.6 ms   0.2%  taping tape.js:28
+      3.3 ms   0.2%  pace fill.js:136
+      3.0 ms   0.2%  get store.js:20
+      2.8 ms   0.2%  prime weigh.js:6
+      2.7 ms   0.2%  indexOf move.js:263
+      2.6 ms   0.2%  drop drop.js:8
+      2.5 ms   0.2%  cue cue.js:22
+      2.3 ms   0.2%  open
+      2.3 ms   0.2%  add departed.js:19
+      2.2 ms   0.1%  requalify qualify.js:42
+      2.2 ms   0.1%  copyVoice crowd.js:316
+      2.1 ms   0.1%  join rows.js:85
+      2.1 ms   0.1%  enter cue.js:221
+      1.9 ms   0.1%  retouch qualify.js:292
+      1.8 ms   0.1%  Voice voice.js:35
+      1.8 ms   0.1%  voiceChanged lanes.js:522
+      1.8 ms   0.1%  newRow rows.js:207
+onto: progress 2/2

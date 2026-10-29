@@ -206,6 +206,36 @@ export function restamp<I, O>(voice: Voice<I, O>, slot: number): void {
   if (voice.built !== null && voice.everyone !== null) voice.everyone.seeks = -1;
 }
 
+/**
+ * The subject numbered `from` is numbered `to` now, a number let go of: what the voice keeps for it
+ * moves along, and `from` is left as `unsight` leaves it.
+ */
+export function resight<I, O>(voice: Voice<I, O>, from: number, to: number, cap: number): void {
+  if (sighted(voice, from)) {
+    const seen = voice.seen;
+    sight(voice, to, cap);
+    voice.seen = seen;
+  }
+  const w = weightAt(voice, from);
+  if (w !== 0 || (voice.weights !== null && to < voice.weights.length)) weighAt(voice, to, w, cap);
+  let stamps = voice.stamps;
+  const o = from * Stamp.SIZE;
+  if (stamps !== null && o < stamps.length) {
+    const t = to * Stamp.SIZE;
+    if (t >= stamps.length) {
+      const grown = new Float64Array(Math.max(to + 1, cap) * Stamp.SIZE).fill(Number.NaN);
+      grown.set(stamps);
+      voice.stamps = grown;
+      stamps = grown;
+    }
+    stamps[t + Stamp.PROBED] = stamps[o + Stamp.PROBED] as number;
+    stamps[t + Stamp.SEEKS] = stamps[o + Stamp.SEEKS] as number;
+    const deltas = voice.deltas as Subject<unknown>['delta'][];
+    deltas[to] = deltas[from] ?? null;
+  }
+  unsight(voice, from);
+}
+
 /** A subject's number was let go of: the next subject to take it is one the voice has not seen. */
 export function unsight<I, O>(voice: Voice<I, O>, slot: number): void {
   const bits = voice.sighted;

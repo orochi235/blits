@@ -1,0 +1,115 @@
+# teitou: FRAMES=5000 AB_EACH=1 bench/ab.sh origin/main 5be9a6b 7 'turnover^' 'tweens^' 'churn^' 'weasel^'
+built origin/main (07537b41a69f32c5379f6bce76b4fe2732bb5f00)
+built 5be9a6b (5be9a6b875dbcb29276f0305e63036defef169bd)
+== round 1/7 origin/main
+ 1/1  turnover^  N= 10000 V=1     0.273 ms/frame     27 ns/subject·voice  p50    0.268  p99    0.384  worst    2.863  first    39.2 ms  gc   21    7.8 ms     135.4 kB/frame
+== round 1/7 origin/main
+ 1/1  tweens^    N= 10000 V=1     0.181 ms/frame     18 ns/subject·voice  p50    0.179  p99    0.200  worst    1.632  first    40.3 ms  gc    2    1.5 ms       6.9 kB/frame
+== round 1/7 origin/main
+ 1/1  churn^     N= 10000 V=1     0.207 ms/frame     21 ns/subject·voice  p50    0.203  p99    0.250  worst    3.255  first    42.0 ms  gc    2    3.4 ms      16.8 kB/frame
+== round 1/7 origin/main
+ 1/1  weasel^    N= 10000 V=1     0.208 ms/frame     21 ns/subject·voice  p50    0.207  p99    0.228  worst    0.544  first    15.7 ms  gc    1    0.3 ms       4.4 kB/frame
+== round 1/7 5be9a6b
+ 1/1  turnover^  N= 10000 V=1     0.266 ms/frame     27 ns/subject·voice  p50    0.263  p99    0.410  worst    2.822  first    36.5 ms  gc   21    7.9 ms     137.8 kB/frame
+== round 1/7 5be9a6b
+ 1/1  tweens^    N= 10000 V=1     0.167 ms/frame     17 ns/subject·voice  p50    0.164  p99    0.195  worst    1.626  first    39.7 ms  gc    2    1.5 ms       6.3 kB/frame
+== round 1/7 5be9a6b
+ 1/1  churn^     N= 10000 V=1     0.222 ms/frame     22 ns/subject·voice  p50    0.217  p99    0.270  worst    3.487  first    40.7 ms  gc    6    5.0 ms      36.9 kB/frame
+== round 1/7 5be9a6b
+ 1/1  weasel^    N= 10000 V=1     0.207 ms/frame     21 ns/subject·voice  p50    0.206  p99    0.227  worst    0.482  first    17.2 ms  gc    1    0.3 ms       4.8 kB/frame
+== round 2/7 5be9a6b
+ 1/1  turnover^  N= 10000 V=1     0.253 ms/frame     25 ns/subject·voice  p50    0.250  p99    0.297  worst    2.666  first    36.5 ms  gc   21    6.2 ms     137.3 kB/frame
+== round 2/7 5be9a6b
+ 1/1  tweens^    N= 10000 V=1     0.180 ms/frame     18 ns/subject·voice  p50    0.178  p99    0.222  worst    1.778  first    48.1 ms  gc    2    1.7 ms       6.6 kB/frame
+== round 2/7 5be9a6b
+ 1/1  churn^     N= 10000 V=1     0.196 ms/frame     20 ns/subject·voice  p50    0.193  p99    0.224  worst    3.381  first    38.7 ms  gc    2    3.0 ms      17.7 kB/frame
+== round 2/7 5be9a6b
+ 1/1  weasel^    N= 10000 V=1     0.201 ms/frame     20 ns/subject·voice  p50    0.201  p99    0.226  worst    0.453  first    15.2 ms  gc    2    0.3 ms       4.2 kB/frame
+== round 2/7 origin/main
+ 1/1  turnover^  N= 10000 V=1     0.257 ms/frame     26 ns/subject·voice  p50    0.256  p99    0.303  worst    2.518  first    34.2 ms  gc   21    6.0 ms     135.8 kB/frame
+== round 2/7 origin/main
+ 1/1  tweens^    N= 10000 V=1     0.162 ms/frame     16 ns/subject·voice  p50    0.162  p99    0.190  worst    1.516  first    39.3 ms  gc    2    1.4 ms       6.3 kB/frame
+== round 2/7 origin/main
+ 1/1  churn^     N= 10000 V=1     0.208 ms/frame     21 ns/subject·voice  p50    0.205  p99    0.240  worst    2.984  first    38.3 ms  gc    6    4.5 ms      36.0 kB/frame
+== round 2/7 origin/main
+ 1/1  weasel^    N= 10000 V=1     0.201 ms/frame     20 ns/subject·voice  p50    0.200  p99    0.233  worst    0.451  first    17.2 ms  gc    1    0.2 ms       3.8 kB/frame
+== round 3/7 origin/main
+ 1/1  turnover^  N= 10000 V=1     0.259 ms/frame     26 ns/subject·voice  p50    0.259  p99    0.311  worst    3.039  first    34.2 ms  gc   21    5.8 ms     136.1 kB/frame
+== round 3/7 origin/main
+ 1/1  tweens^    N= 10000 V=1     0.173 ms/frame     17 ns/subject·voice  p50    0.171  p99    0.201  worst    1.569  first    36.5 ms  gc    2    1.5 ms       6.8 kB/frame
+== round 3/7 origin/main
+ 1/1  churn^     N= 10000 V=1     0.196 ms/frame     20 ns/subject·voice  p50    0.193  p99    0.224  worst    3.334  first    36.8 ms  gc    2    3.1 ms      20.1 kB/frame
+== round 3/7 origin/main
+ 1/1  weasel^    N= 10000 V=1     0.198 ms/frame     20 ns/subject·voice  p50    0.197  p99    0.223  worst    0.501  first    16.3 ms  gc    1    0.3 ms       4.3 kB/frame
+== round 3/7 5be9a6b
+ 1/1  turnover^  N= 10000 V=1     0.253 ms/frame     25 ns/subject·voice  p50    0.248  p99    0.302  worst    2.576  first    34.0 ms  gc   21    5.8 ms     138.0 kB/frame
+== round 3/7 5be9a6b
+ 1/1  tweens^    N= 10000 V=1     0.172 ms/frame     17 ns/subject·voice  p50    0.171  p99    0.198  worst    1.742  first    38.9 ms  gc    2    1.7 ms       6.6 kB/frame
+== round 3/7 5be9a6b
+ 1/1  churn^     N= 10000 V=1     0.212 ms/frame     21 ns/subject·voice  p50    0.210  p99    0.247  worst    3.047  first    40.8 ms  gc    6    4.5 ms      38.4 kB/frame
+== round 3/7 5be9a6b
+ 1/1  weasel^    N= 10000 V=1     0.206 ms/frame     21 ns/subject·voice  p50    0.207  p99    0.225  worst    0.472  first    15.9 ms  gc    1    0.3 ms       4.4 kB/frame
+== round 4/7 5be9a6b
+ 1/1  turnover^  N= 10000 V=1     0.252 ms/frame     25 ns/subject·voice  p50    0.248  p99    0.298  worst    2.603  first    34.3 ms  gc   21    5.8 ms     137.5 kB/frame
+== round 4/7 5be9a6b
+ 1/1  tweens^    N= 10000 V=1     0.174 ms/frame     17 ns/subject·voice  p50    0.173  p99    0.200  worst    1.544  first    36.5 ms  gc    2    1.5 ms       6.6 kB/frame
+== round 4/7 5be9a6b
+ 1/1  churn^     N= 10000 V=1     0.212 ms/frame     21 ns/subject·voice  p50    0.209  p99    0.248  worst    3.379  first    37.3 ms  gc    6    4.6 ms      35.1 kB/frame
+== round 4/7 5be9a6b
+ 1/1  weasel^    N= 10000 V=1     0.200 ms/frame     20 ns/subject·voice  p50    0.198  p99    0.225  worst    0.575  first    16.7 ms  gc    2    0.4 ms       4.7 kB/frame
+== round 4/7 origin/main
+ 1/1  turnover^  N= 10000 V=1     0.258 ms/frame     26 ns/subject·voice  p50    0.257  p99    0.304  worst    2.754  first    35.6 ms  gc   21    6.2 ms     137.6 kB/frame
+== round 4/7 origin/main
+ 1/1  tweens^    N= 10000 V=1     0.157 ms/frame     16 ns/subject·voice  p50    0.155  p99    0.186  worst    1.632  first    37.6 ms  gc    2    1.5 ms       6.0 kB/frame
+== round 4/7 origin/main
+ 1/1  churn^     N= 10000 V=1     0.195 ms/frame     20 ns/subject·voice  p50    0.192  p99    0.225  worst    3.189  first    37.2 ms  gc    2    3.0 ms      16.9 kB/frame
+== round 4/7 origin/main
+ 1/1  weasel^    N= 10000 V=1     0.199 ms/frame     20 ns/subject·voice  p50    0.198  p99    0.225  worst    0.443  first    15.1 ms  gc    1    0.2 ms       4.5 kB/frame
+== round 5/7 origin/main
+ 1/1  turnover^  N= 10000 V=1     0.262 ms/frame     26 ns/subject·voice  p50    0.257  p99    0.310  worst    2.630  first    34.4 ms  gc   21    6.7 ms     136.5 kB/frame
+== round 5/7 origin/main
+ 1/1  tweens^    N= 10000 V=1     0.156 ms/frame     16 ns/subject·voice  p50    0.154  p99    0.189  worst    1.608  first    37.6 ms  gc    2    1.5 ms       6.9 kB/frame
+== round 5/7 origin/main
+ 1/1  churn^     N= 10000 V=1     0.196 ms/frame     20 ns/subject·voice  p50    0.194  p99    0.224  worst    3.039  first    38.2 ms  gc    2    3.1 ms      17.9 kB/frame
+== round 5/7 origin/main
+ 1/1  weasel^    N= 10000 V=1     0.198 ms/frame     20 ns/subject·voice  p50    0.197  p99    0.225  worst    0.449  first    16.3 ms  gc    1    0.3 ms       4.3 kB/frame
+== round 5/7 5be9a6b
+ 1/1  turnover^  N= 10000 V=1     0.253 ms/frame     25 ns/subject·voice  p50    0.248  p99    0.296  worst    3.208  first    35.0 ms  gc   21    6.3 ms     136.9 kB/frame
+== round 5/7 5be9a6b
+ 1/1  tweens^    N= 10000 V=1     0.172 ms/frame     17 ns/subject·voice  p50    0.170  p99    0.196  worst    1.830  first    36.2 ms  gc    2    1.7 ms       6.2 kB/frame
+== round 5/7 5be9a6b
+ 1/1  churn^     N= 10000 V=1     0.209 ms/frame     21 ns/subject·voice  p50    0.205  p99    0.241  worst    3.127  first    38.0 ms  gc    6    4.3 ms      35.5 kB/frame
+== round 5/7 5be9a6b
+ 1/1  weasel^    N= 10000 V=1     0.201 ms/frame     20 ns/subject·voice  p50    0.200  p99    0.226  worst    0.467  first    15.0 ms  gc    2    0.3 ms       4.6 kB/frame
+== round 6/7 5be9a6b
+ 1/1  turnover^  N= 10000 V=1     0.250 ms/frame     25 ns/subject·voice  p50    0.249  p99    0.289  worst    2.514  first    35.3 ms  gc   21    5.8 ms     136.2 kB/frame
+== round 6/7 5be9a6b
+ 1/1  tweens^    N= 10000 V=1     0.167 ms/frame     17 ns/subject·voice  p50    0.163  p99    0.306  worst    4.404  first    36.1 ms  gc    2    1.5 ms       6.2 kB/frame
+== round 6/7 5be9a6b
+ 1/1  churn^     N= 10000 V=1     0.196 ms/frame     20 ns/subject·voice  p50    0.195  p99    0.223  worst    3.102  first    41.2 ms  gc    2    3.2 ms      18.9 kB/frame
+== round 6/7 5be9a6b
+ 1/1  weasel^    N= 10000 V=1     0.209 ms/frame     21 ns/subject·voice  p50    0.206  p99    0.266  worst    0.573  first    16.2 ms  gc    1    0.4 ms       4.4 kB/frame
+== round 6/7 origin/main
+ 1/1  turnover^  N= 10000 V=1     0.291 ms/frame     29 ns/subject·voice  p50    0.281  p99    0.473  worst    3.373  first    45.3 ms  gc   21    9.1 ms     136.3 kB/frame
+== round 6/7 origin/main
+ 1/1  tweens^    N= 10000 V=1     0.197 ms/frame     20 ns/subject·voice  p50    0.178  p99    0.330  worst    0.619  first    46.5 ms  gc    1    2.2 ms       5.8 kB/frame
+== round 6/7 origin/main
+ 1/1  churn^     N= 10000 V=1     0.255 ms/frame     26 ns/subject·voice  p50    0.241  p99    0.407  worst    4.634  first    54.5 ms  gc    2    4.1 ms      18.2 kB/frame
+== round 6/7 origin/main
+ 1/1  weasel^    N= 10000 V=1     0.223 ms/frame     22 ns/subject·voice  p50    0.213  p99    0.327  worst    0.902  first    20.5 ms  gc    2    0.8 ms       3.8 kB/frame
+== round 7/7 origin/main
+ 1/1  turnover^  N= 10000 V=1     0.469 ms/frame     47 ns/subject·voice  p50    0.408  p99    1.976  worst   32.685  first    53.7 ms  gc   21   17.8 ms     137.5 kB/frame
+== round 7/7 origin/main
+ 1/1  tweens^    N= 10000 V=1     0.194 ms/frame     19 ns/subject·voice  p50    0.173  p99    0.342  worst    2.469  first    56.7 ms  gc    2    2.3 ms       5.5 kB/frame
+== round 7/7 origin/main
+ 1/1  churn^     N= 10000 V=1     0.358 ms/frame     36 ns/subject·voice  p50    0.351  p99    0.704  worst    9.146  first    62.4 ms  gc    4   10.4 ms      17.2 kB/frame
+== round 7/7 origin/main
+ 1/1  weasel^    N= 10000 V=1     0.355 ms/frame     35 ns/subject·voice  p50    0.334  p99    0.750  worst    3.847  first    37.7 ms  gc    1    0.7 ms       4.2 kB/frame
+== round 7/7 5be9a6b
+ 1/1  turnover^  N= 10000 V=1     0.606 ms/frame     61 ns/subject·voice  p50    0.572  p99    1.416  worst    7.070  first    98.2 ms  gc   21   16.3 ms     136.2 kB/frame
+== round 7/7 5be9a6b
+ 1/1  tweens^    N= 10000 V=1     0.304 ms/frame     30 ns/subject·voice  p50    0.265  p99    0.741  worst    3.307  first   127.2 ms  gc    2    3.1 ms       6.0 kB/frame
+== round 7/7 5be9a6b
+ 1/1  churn^     N= 10000 V=1     0.527 ms/frame     53 ns/subject·voice  p50    0.406  p99    2.069  worst   58.427  first   104.8 ms  gc    2    8.9 ms      16.9 kB/frame
+== round 7/7 5be9a6b
+ 1/1  weasel^    N= 10000 V=1     0.418 ms/frame     42 ns/subject·voice  p50    0.382  p99    0.946  worst    4.332  first    46.0 ms  gc    7    8.5 ms       4.3 kB/frame

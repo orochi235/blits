@@ -10,13 +10,18 @@ runs on blits. When an item is dealt with, delete it, and delete this file once 
 What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 
 - **Churn, what is left** (`turnover^`, weasel's shape: each frame one subject leaves for good and
-  a new one comes, read by `pull` over a list kept dense by swap-remove; teitou, 2026-10-23,
-  `fd5572b`, `FRAMES=5000`, each row in its own process). 0.286 ms a frame against 0.188 for the
-  same voices steady (`tweens^`), medians of nine; `churn^`, the same voices replaced in place,
-  0.224. Its `kB/frame`, about 136, is mostly the row's own copy of its list each frame. What is
-  left is the run order: swap-remove leaves lane slots out of list order, so `flush` and `pull`
-  work in runs of one to three subjects. Closing it means renumbering slots to follow the list,
-  which every lane array, chain and crowd row is keyed by; unbuilt.
+  a new one comes, read by `pull` over a list kept dense by swap-remove; `FRAMES=5000`, each row in
+  its own process). Since `7e64030` (2026-10-29), `pull` gives the subject swapped into a dropped
+  one's place the number the drop freed, so the list's numbers stay in its order: 0.263 → 0.223 ms
+  a frame, U = 0, seven runs a side, teitou with the node to itself
+  (`bench/runs/2026-10-29-pull-renumber.txt`). `tweens^` reads 0.165 and `churn^`, the same voices
+  replaced without reordering, 0.210. A profile of both on keiei
+  (`bench/runs/2026-10-29-turnover-prof-renumber.txt`) has `pullRun`, `copies`, `rests` and
+  `bareRows` within 4% of each other, so list order no longer costs anything here. What is left
+  over `tweens^` is the per-frame stop, drop and cue that `churn^` pays too (the next item), plus
+  the row's own copy of its list, most of its 136 `kB/frame`. Not built: renumbering for lists
+  reordered other ways (sorted, reversed, filtered), which needs two live subjects to swap numbers,
+  and renumbering under history, roles or a bound, which `src/renumber.ts` declines.
 - **Stopping a subject's voice and reading its replacement, what is left** (`bench/restart.mjs`,
   the shape weasel's codec drives: a tween voice per subject read by `pull`, 100 of them stopped,
   dropped, and cued again a frame; keiei alone, nine rounds, 2026-10-29,

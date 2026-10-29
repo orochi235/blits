@@ -1,0 +1,91 @@
+# teitou: bench/cpuprof.sh 'tweens^' 1 . then 'churn^' 1 . (FRAMES=5000), at 07537b4
+onto: plan 1
+== run 1/1 . tweens^
+ 1/1  tweens^    N= 10000 V=1     0.184 ms/frame     18 ns/subject·voice  p50    0.182  p99    0.209  worst    1.790  first    42.8 ms  gc    2    1.7 ms       6.8 kB/frame
+total 1034.3 ms
+    465.5 ms  45.0%  bareRows bare.js:16
+    251.2 ms  24.3%  pullRun columns.js:14
+     34.0 ms   3.3%  foldNumber channels.js:47
+     28.7 ms   2.8%  clock bare.js:6
+     25.7 ms   2.5%  rested turns.js:62
+     24.0 ms   2.3%  keepProbed lane.js:8
+     17.8 ms   1.7%  (garbage collector)
+     17.0 ms   1.6%  left tweened.js:19
+     17.0 ms   1.6%  copies columns.js:177
+     16.2 ms   1.6%  readAll pull.js:126
+     12.7 ms   1.2%  between tweened.js:29
+      9.1 ms   0.9%  progress tweened.js:15
+      8.2 ms   0.8%  rests columns.js:148
+      7.8 ms   0.8%  compileSourceTextModule utils:338
+      6.4 ms   0.6%  (idle)
+      3.7 ms   0.4%  prime weigh.js:6
+      3.6 ms   0.3%  bare crowd.js:21
+      3.2 ms   0.3%  fillAll fill.js:37
+      2.9 ms   0.3%  (program)
+      2.7 ms   0.3%  pace fill.js:136
+      2.3 ms   0.2%  join rows.js:85
+      2.3 ms   0.2%  requalify qualify.js:42
+      1.9 ms   0.2%  take numbers.js:40
+      1.9 ms   0.2%  grow motions.js:368
+      1.6 ms   0.2%  set store.js:25
+      1.5 ms   0.1%  (anonymous) frame.mjs:1
+      1.5 ms   0.1%  enter cue.js:221
+      1.4 ms   0.1%  rows crowd.js:180
+      1.3 ms   0.1%  Voice voice.js:384
+      1.2 ms   0.1%  runCrowd crowd.js:163
+      1.1 ms   0.1%  moveTo move.js:38
+      1.1 ms   0.1%  open
+      1.0 ms   0.1%  fits hosts.js:57
+      1.0 ms   0.1%  Voice voice.js:35
+      1.0 ms   0.1%  compileForInternalLoader realm:425
+      1.0 ms   0.1%  syncAt transport.js:187
+      0.9 ms   0.1%  pull pull.js:51
+      0.9 ms   0.1%  cue cue.js:22
+      0.9 ms   0.1%  crowdsUpTo crowd.js:133
+      0.9 ms   0.1%  record record.js:10
+onto: progress 1/1
+onto: plan 1
+== run 1/1 . churn^
+ 1/1  churn^     N= 10000 V=1     0.228 ms/frame     23 ns/subject·voice  p50    0.224  p99    0.278  worst    3.711  first    42.2 ms  gc    6    4.9 ms      35.7 kB/frame
+total 1258.5 ms
+    473.6 ms  37.6%  bareRows bare.js:16
+    319.8 ms  25.4%  pullRun columns.js:14
+     36.1 ms   2.9%  clock bare.js:6
+     33.8 ms   2.7%  prune move.js:205
+     29.0 ms   2.3%  foldNumber channels.js:47
+     27.7 ms   2.2%  keepProbed lane.js:8
+     25.7 ms   2.0%  left tweened.js:19
+     23.5 ms   1.9%  readAll pull.js:126
+     22.3 ms   1.8%  fillAll fill.js:37
+     22.2 ms   1.8%  (garbage collector)
+     18.4 ms   1.5%  rows crowd.js:180
+     18.1 ms   1.4%  copies columns.js:177
+     12.7 ms   1.0%  progress tweened.js:15
+     11.8 ms   0.9%  rests columns.js:148
+      9.8 ms   0.8%  between tweened.js:29
+      9.8 ms   0.8%  rested turns.js:62
+      6.9 ms   0.5%  (idle)
+      6.4 ms   0.5%  compileSourceTextModule utils:338
+      6.2 ms   0.5%  get store.js:20
+      6.1 ms   0.5%  smooth frame.mjs:102
+      6.0 ms   0.5%  (program)
+      5.3 ms   0.4%  bare crowd.js:21
+      4.0 ms   0.3%  take numbers.js:40
+      3.7 ms   0.3%  prime weigh.js:6
+      3.6 ms   0.3%  grow motions.js:368
+      3.1 ms   0.2%  pace fill.js:136
+      2.7 ms   0.2%  join rows.js:85
+      2.6 ms   0.2%  subject numbers.js:73
+      2.5 ms   0.2%  open
+      2.4 ms   0.2%  set store.js:25
+      2.2 ms   0.2%  enter cue.js:221
+      2.1 ms   0.2%  voiceChanged lanes.js:522
+      1.9 ms   0.2%  requalify qualify.js:42
+      1.7 ms   0.1%  contribution contribution.js:48
+      1.7 ms   0.1%  (anonymous) frame.mjs:1
+      1.6 ms   0.1%  cue cue.js:22
+      1.5 ms   0.1%  flush columns.js:128
+      1.5 ms   0.1%  retouch qualify.js:292
+      1.4 ms   0.1%  begin lanes.js:326
+      1.3 ms   0.1%  Voice voice.js:35
+onto: progress 1/1

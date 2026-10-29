@@ -55,15 +55,8 @@ export function pullRun<I, O>(
   // Nothing in `pullRun` makes a subject owe a voice, so one with nobody owing need not ask.
   const owing = lanes.owed.any();
   const current = since === Number.POSITIVE_INFINITY;
-  if (columns !== lanes.queuedFor) {
-    flush(lanes);
-    lanes.queuedFor = columns;
-  }
+  queueFor(lanes, columns, slots);
   room(lanes, lanes.queued + list.length - from);
-  const qSlots = lanes.queueSlots;
-  const qRows = lanes.queueRows;
-  const qCounts = lanes.queueCounts;
-  let k = lanes.queued;
   let n = from;
   // The run being gathered: its first slot and row, and how far it has reached.
   let first = -1;
@@ -93,23 +86,12 @@ export function pullRun<I, O>(
     per[o + Per.LANE_FILL] = fills;
     if (holds) subjects[slot] = subject;
     if (slot !== first + (n - start)) {
-      if (first >= 0) {
-        qSlots[k] = first;
-        qRows[k] = start;
-        qCounts[k] = n - start;
-        k++;
-      }
+      if (first >= 0) add(lanes, first, start, n - start);
       first = slot;
       start = n;
     }
   }
-  if (first >= 0) {
-    qSlots[k] = first;
-    qRows[k] = start;
-    qCounts[k] = n - start;
-    k++;
-  }
-  lanes.queued = k;
+  if (first >= 0) add(lanes, first, start, n - start);
   if (n > from && holds) lanes.holding = true;
   return n;
 }
@@ -118,38 +100,51 @@ export function pullRun<I, O>(
  * Queues a subject's values for each column at subject `n`'s places, for a `pull` that reads
  * from the lanes while every voice is on one; `flush` writes what is queued, column by column. A
  * channel no lane holds is at rest. Anything queued is written before the lanes fill again.
+ * `slots` holds each row's lane slot, `slot` among them.
  */
 export function writeLater<I, O>(
   lanes: Lanes<I, O>,
   slot: number,
   columns: readonly Column[],
   n: number,
+  slots: Int32Array,
 ): void {
-  queue(lanes, columns, slot, n, 1);
+  queueFor(lanes, columns, slots);
+  add(lanes, slot, n, 1);
 }
 
-/** Queues `count` subjects from lane slot `slot` for rows from `row`, one apart in both. */
-function queue<I, O>(
-  lanes: Lanes<I, O>,
-  columns: readonly Column[],
-  slot: number,
-  row: number,
-  count: number,
-): void {
-  if (columns !== lanes.queuedFor) {
-    flush(lanes);
-    lanes.queuedFor = columns;
-  }
+/** Writes what is queued for other columns or another array of slots before queuing for these. */
+function queueFor<I, O>(lanes: Lanes<I, O>, columns: readonly Column[], slots: Int32Array): void {
+  if (columns === lanes.queuedFor && slots === lanes.queueFrom) return;
+  flush(lanes);
+  lanes.queuedFor = columns;
+  lanes.queueFrom = slots;
+}
+
+/**
+ * The shortest run `flush` copies as a block from consecutive slots. A shorter one, as a list kept
+ * dense by swap-remove leaves its slots, joins the rows before it in one run whose slots `flush`
+ * reads row by row, so a run's cost is paid once a stretch of rows rather than once a few.
+ */
+const BLOCK = 16;
+
+/** Queues `count` rows from `row`, whose slots follow one apart from `slot`. */
+function add<I, O>(lanes: Lanes<I, O>, slot: number, row: number, count: number): void {
   const k = lanes.queued;
   if (k > 0) {
     const last = k - 1;
     const had = lanes.queueCounts[last] as number;
-    if (
-      slot === (lanes.queueSlots[last] as number) + had &&
-      row === (lanes.queueRows[last] as number) + had
-    ) {
-      lanes.queueCounts[last] = had + count;
-      return;
+    if (row === (lanes.queueRows[last] as number) + had) {
+      const first = lanes.queueSlots[last] as number;
+      if (first >= 0 && slot === first + had) {
+        lanes.queueCounts[last] = had + count;
+        return;
+      }
+      if (count < BLOCK && (first < 0 || had < BLOCK)) {
+        lanes.queueSlots[last] = -1;
+        lanes.queueCounts[last] = had + count;
+        return;
+      }
     }
   }
   room(lanes, k + 1);
@@ -224,16 +219,30 @@ function rests<I, O>(lanes: Lanes<I, O>, c: Column, runs: number): void {
 /** The longest run of values `copies` copies itself: `set` takes a view, an object a run. */
 const VIEWED = 256;
 
-/** Copies a laned channel's values for every queued run into its rows. */
+/** Copies a laned channel's values for every queued run into its rows, a block or row by row. */
 function copies<I, O>(lanes: Lanes<I, O>, c: Column, values: Float64Array, runs: number): void {
   const slots = lanes.queueSlots;
   const rows = lanes.queueRows;
   const counts = lanes.queueCounts;
   const out = c.out;
   const axes = c.axes;
+  const from = lanes.queueFrom as Int32Array;
   for (let r = 0; r < runs; r++) {
+    const first = slots[r] as number;
+    if (first < 0) {
+      const row = rows[r] as number;
+      const end = row + (counts[r] as number);
+      if (axes === 1) for (let i = row; i < end; i++) out[i] = values[from[i] as number] as number;
+      else
+        for (let i = row; i < end; i++) {
+          const at = i * axes;
+          const base = (from[i] as number) * axes;
+          for (let a = 0; a < axes; a++) out[at + a] = values[base + a] as number;
+        }
+      continue;
+    }
     const at = (rows[r] as number) * axes;
-    const base = (slots[r] as number) * axes;
+    const base = first * axes;
     const span = (counts[r] as number) * axes;
     if (span > VIEWED) out.set(values.subarray(base, base + span), at);
     else for (let i = 0; i < span; i++) out[at + i] = values[base + i] as number;

@@ -22,3 +22,10 @@ export function unreach<I, O>(voice: Voice<I, O>, slot: number, on: boolean): vo
   const bit = 1 << (slot & 31);
   bits[word] = on ? (bits[word] as number) | bit : (bits[word] as number) & ~bit;
 }
+
+/** The subject numbered `from` is numbered `to` now, a number let go of: its mark moves along. */
+export function reunreach<I, O>(voice: Voice<I, O>, from: number, to: number): void {
+  if (!unreached(voice, from)) return;
+  unreach(voice, to, true);
+  unreach(voice, from, false);
+}
