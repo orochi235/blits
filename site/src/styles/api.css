@@ -277,3 +277,16 @@ details.api-doc > pre {
     display: inline;
   }
 }
+
+a.api-link {
+  text-decoration-color: color-mix(in srgb, var(--focus) 45%, transparent);
+}
+
+.api-rows tr {
+  scroll-margin-top: 1rem;
+}
+
+.api-rows tr:target,
+.api-entry:target > h3 {
+  background: color-mix(in srgb, var(--focus) 12%, transparent);
+}

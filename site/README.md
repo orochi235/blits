@@ -72,6 +72,12 @@ shows a doc comment's first sentence and puts the rest behind "more", so each fi
 inline-object parameters, print as a table. The reference page adds `ApiIndex`: every export by
 word in a pinned column, with a filter box (`/` focuses it) that narrows the index and the entries.
 
+A code span that names an export links to its entry, in doc comments and in page prose alike:
+`Mix`, `cue()`, `Mix.cue`, or `mix.cue` for an instance, which reaches the member's row.
+`src/api/links.ts` resolves the name for both; `src/api/prose.ts` is the Sätteri plugin that applies
+it to MDX, since Astro's default Markdown processor runs no remark or rehype plugins. The smoke test
+fails on a link whose `#fragment` names no element on its page.
+
 ## Deploying
 
 `.github/workflows/site.yml` checks, smokes and deploys to GitHub Pages on every push to `main`,

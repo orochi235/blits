@@ -1,8 +1,19 @@
 ---
-/** A TypeDoc comment summary: text, with code spans kept as code. */
+/** A TypeDoc comment summary: text, with code spans kept as code and linked when they name an export. */
+import { hrefFor } from '../api';
+
 interface Props {
   parts: { kind: string; text: string }[];
+  here: string;
+  /** The anchor these parts describe, which they don't link to. */
+  self?: string;
 }
-const { parts } = Astro.props;
+const { parts, here, self } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 ---
-{parts.map((p) => (p.kind === 'code' ? <code>{p.text.replace(/^`+|`+$/g, '')}</code> : p.text))}
+{parts.map((p) => {
+  if (p.kind !== 'code') return p.text;
+  const code = p.text.replace(/^`+|`+$/g, '');
+  const href = hrefFor(code, here, base, self);
+  return href ? <a class="api-link" href={href}><code>{code}</code></a> : <code>{code}</code>;
+})}

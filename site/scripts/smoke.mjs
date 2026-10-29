@@ -79,6 +79,9 @@ function overflowing() {
 
 const browser = await chromium.launch({ headless: true });
 let failed = 0;
+/** Each page's element ids, and every link into the site that names one, checked once all have loaded. */
+const idsAt = new Map();
+const fragments = [];
 if (fileAt(`${base}pagefind/pagefind.js`) === null) {
   console.log('FAIL  no search index: the build did not run pagefind');
   failed++;
@@ -126,7 +129,11 @@ for (const [i, path] of pages.entries()) {
     if (url.origin !== origin) continue;
     if (fileAt(decodeURIComponent(url.pathname)) === null)
       errors.push(`links to ${url.pathname}, which is not there`);
+    else if (url.hash)
+      fragments.push({ from: path, to: url.pathname, id: decodeURIComponent(url.hash.slice(1)) });
   }
+  const ids = await page.$$eval('[id]', (els) => els.map((el) => el.id));
+  idsAt.set(new URL(page.url()).pathname, new Set(ids));
   await page.setViewportSize(PHONE);
   await page.waitForTimeout(200);
   const wide = await page.evaluate(overflowing);
@@ -145,6 +152,11 @@ for (const [i, path] of pages.entries()) {
   for (const e of errors) console.log(`       ${e}`);
   await page.close();
 }
+const dead = fragments.filter((f) => idsAt.has(f.to) && !idsAt.get(f.to).has(f.id));
+for (const f of new Map(dead.map((f) => [`${f.from} ${f.to}#${f.id}`, f])).values()) {
+  console.log(`FAIL  ${f.from} links to ${f.to}#${f.id}, which is not on that page`);
+}
+if (dead.length) failed++;
 await browser.close();
 server.close();
 process.exit(failed ? 1 : 0);

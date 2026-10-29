@@ -19,6 +19,8 @@ export interface Doc {
 /** One row of a field or parameter table. */
 export interface Row {
   name: string;
+  /** A member's bare name, which its anchor `api-<Entry>.<key>` is built from. */
+  key?: string;
   type: Tok[];
   doc: Doc;
   deprecated: boolean;
@@ -82,6 +84,7 @@ function member(c: Node): Row {
   const comment = sig?.comment ?? c.comment;
   return {
     name: `${c.flags?.isReadonly ? 'readonly ' : ''}${c.name}${c.flags?.isOptional ? '?' : ''}`,
+    key: c.name,
     type: sig ? arrow(sig) : typeOf(c.type),
     doc: split(comment?.summary ?? []),
     deprecated: deprecated(comment),
@@ -160,12 +163,3 @@ function entry(n: Node): Entry {
 export const entries: Entry[] = exports.map(entry).sort((a, b) => a.name.localeCompare(b.name));
 
 export const entriesFor = (word: string): Entry[] => entries.filter((e) => e.word === word);
-
-const byName = new Map(entries.map((e) => [e.name, e]));
-
-/** Where a linked type name points: its entry on this page, or on the page that files it. */
-export function hrefFor(name: string, here: string, base: string): string | undefined {
-  const e = byName.get(name);
-  if (!e) return undefined;
-  return here === 'reference' || here === e.word ? `#api-${name}` : `${base}${e.word}/#api-${name}`;
-}

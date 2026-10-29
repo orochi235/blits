@@ -8,16 +8,19 @@ interface Props {
   rows: Row[];
   here: string;
   label: string;
+  /** The entry the rows belong to, whose name prefixes each member's anchor. */
+  owner: string;
 }
-const { rows, here, label } = Astro.props;
+const { rows, here, label, owner } = Astro.props;
+const anchor = (r: Row) => (r.key ? `api-${owner}.${r.key}` : undefined);
 ---
 <table class="api-rows" aria-label={label}>
   <tbody>
     {rows.map((r) => (
-      <tr class={r.deprecated ? 'api-deprecated' : undefined}>
+      <tr id={anchor(r)} class={r.deprecated ? 'api-deprecated' : undefined}>
         <td class="api-row-name"><code>{r.name}</code></td>
         <td class="api-row-type"><code><Sig toks={r.type} here={here} /></code></td>
-        <td class="api-row-doc"><Doc doc={r.doc} /></td>
+        <td class="api-row-doc"><Doc doc={r.doc} here={here} self={anchor(r) ?? `api-${owner}`} /></td>
       </tr>
     ))}
   </tbody>

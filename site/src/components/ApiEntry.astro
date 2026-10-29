@@ -17,7 +17,7 @@ const { entry: e, here } = Astro.props;
     {e.deprecated && <span class="api-flag">deprecated</span>}
   </h3>
   <pre class="api-sig"><code><Sig toks={e.signature} here={here} /></code></pre>
-  <Doc doc={e.doc} />
-  {e.params.length > 0 && <Rows rows={e.params} here={here} label={`${e.name} parameters`} />}
-  {e.members.length > 0 && <Rows rows={e.members} here={here} label={`${e.name} members`} />}
+  <Doc doc={e.doc} here={here} self={`api-${e.name}`} />
+  {e.params.length > 0 && <Rows rows={e.params} here={here} label={`${e.name} parameters`} owner={e.name} />}
+  {e.members.length > 0 && <Rows rows={e.members} here={here} label={`${e.name} members`} owner={e.name} />}
 </article>
