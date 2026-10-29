@@ -10,29 +10,18 @@ runs on blits. When an item is dealt with, delete it, and delete this file once 
 What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 
 - **Churn, what is left** (`turnover^`, weasel's shape: each frame one subject leaves for good and
-  a new one comes, read by `pull` over a list kept dense by swap-remove; teitou, 2026-10-23,
-  `fd5572b`, `FRAMES=5000`, each row in its own process). 0.286 ms a frame against 0.188 for the
-  same voices steady (`tweens^`), medians of nine; `churn^`, the same voices replaced in place,
-  0.224. Its `kB/frame`, about 136, is mostly the row's own copy of its list each frame.
-  Swap-remove leaves lane slots out of list order. A CPU profile (teitou, 2026-10-29, `07537b4`,
-  `bench/runs/2026-10-29-{turnover,tweens-churn}-prof.txt`) put the extra over `tweens^` in
-  `pull` alone: `flush`'s `copies` and `rests` about 0.021 ms a frame each and `pullRun` 0.020.
-  The crowd fill (`bareRows`) costs the same in both, so crowd rows out of slot order cost nothing
-  measurable. Since `5be9a6b` (2026-10-29), slot runs under 16 join into one run that `flush`
-  reads row by row: 0.262 → 0.253 ms, U = 11, seven runs a side; `tweens^` 0.173 → 0.172 (teitou
-  shared with another bench job, `bench/runs/2026-10-29-pull-gather.txt`). A profile after it
-  (`bench/runs/2026-10-29-turnover-prof-gather.txt`) has `rests`' extra gone, but `copies` keeps
-  most of its own: the cost is reading values at scattered slots, not the runs. The same goes for
-  `pullRun`'s reads of `per` by slot. Renumbering slots to follow the list is the only fix for
-  those. It touches everything keyed by lane slot: `per`, `unlinked`, `owed`, `placed`, the
-  laned values, `subjects`, `Numbers`' refs and registry tokens, lane lists and positions, crowd
-  lists, a sharing voice's sight, weights and stamps, a bound's `litAt`/`inAt`, `places`,
-  history's slot, and each chain's `head.slot`; unbuilt. A narrower form, unverified: in
-  weasel's shape the drop frees the slot that the subject swapped into the gap should take, so
-  `pull` could move that subject into it when the subject breaks a run, and the new subject at
-  the end would take the moved one's old slot. A move into a free slot still touches every store
-  above. `add` in `src/columns.ts`, called once a run, is about 0.009 ms of the frame by profile
-  and is not inlined into `pullRun`.
+  a new one comes, read by `pull` over a list kept dense by swap-remove; `FRAMES=5000`, each row in
+  its own process). Since `7e64030` (2026-10-29), `pull` gives the subject swapped into a dropped
+  one's place the number the drop freed, so the list's numbers stay in its order: 0.263 → 0.223 ms
+  a frame, U = 0, seven runs a side, teitou with the node to itself
+  (`bench/runs/2026-10-29-pull-renumber.txt`). `tweens^` reads 0.165 and `churn^`, the same voices
+  replaced without reordering, 0.210. A profile of both on keiei
+  (`bench/runs/2026-10-29-turnover-prof-renumber.txt`) has `pullRun`, `copies`, `rests` and
+  `bareRows` within 4% of each other, so list order no longer costs anything here. What is left
+  over `tweens^` is the per-frame stop, drop and cue that `churn^` pays too (the next item), plus
+  the row's own copy of its list, most of its 136 `kB/frame`. Not built: renumbering for lists
+  reordered other ways (sorted, reversed, filtered), which needs two live subjects to swap numbers,
+  and renumbering under history, roles or a bound, which `src/renumber.ts` declines.
 - **Stopping a subject's voice and reading its replacement, what is left** (`bench/restart.mjs`,
   the shape weasel's codec drives: a tween voice per subject read by `pull`, 100 of them stopped,
   dropped, and cued again a frame; orochi under a load average of about 11, Node 26.11,
