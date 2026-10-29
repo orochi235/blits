@@ -254,3 +254,26 @@ details.api-doc > pre {
     padding: 0;
   }
 }
+
+@media (max-width: 760px) {
+  .api-rows,
+  .api-rows tbody,
+  .api-rows tr {
+    display: block;
+  }
+  .api-rows tr {
+    border-top: 1px solid var(--rule);
+    padding: 0.35rem 0;
+  }
+  .page .api-rows td {
+    display: inline;
+    padding: 0 0.6rem 0 0;
+    border: none;
+  }
+  .page .api-rows td.api-row-doc {
+    display: block;
+  }
+  .api-row-type code {
+    display: inline;
+  }
+}
