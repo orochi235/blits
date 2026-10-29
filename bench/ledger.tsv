@@ -449,3 +449,6 @@ date	node	base	rev	rounds	frames	row	base ms	ms	ratio	U	base kB	kB	change	raw
 2026-10-29	teitou	4350a86	fdd32cb	7	300	glowb^ N=10000 V=2	0.726	0.722	0.994	23.0	952.5	961.9	move primeLaned's once-a-lane fields out of it	bench/runs/2026-10-28-prime-split-vs-4350a86.txt
 2026-10-29	teitou	4350a86	fdd32cb	7	300	glowbp^ N=10000 V=2	0.716	0.717	1.001	20.0	966.0	975.6	move primeLaned's once-a-lane fields out of it	bench/runs/2026-10-28-prime-split-vs-4350a86.txt
 2026-10-29	teitou	4350a86	fdd32cb	7	300	glow^ N=10000 V=2	1.146	1.095	0.955	4.0	1392.8	1394.5	move primeLaned's once-a-lane fields out of it	bench/runs/2026-10-28-prime-split-vs-4350a86.txt
+2026-10-29	studio	07537b4	2117ff3	7	1500	frozen N=10000 V=1	1.576	1.588	1.008	17.0	16.7	8.6	apply a crowd row's freezes written out, not through frozenAt	bench/runs/2026-10-29-crowd-frozen-inline.txt
+2026-10-29	studio	07537b4	2117ff3	7	1500	frozen^ N=10000 V=1	0.562	0.564	1.004	20.0	19.7	15.4	apply a crowd row's freezes written out, not through frozenAt	bench/runs/2026-10-29-crowd-frozen-inline.txt
+2026-10-29	studio	07537b4	2117ff3	7	1500	keyses^ N=10000 V=1	0.479	0.449	0.937	0.0	161.8	5.7	apply a crowd row's freezes written out, not through frozenAt	bench/runs/2026-10-29-crowd-frozen-inline.txt
