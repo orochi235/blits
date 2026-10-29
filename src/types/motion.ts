@@ -20,7 +20,7 @@ export type PerSubject<I, V> = V | ((subject: I) => V);
  */
 export interface Motion<V extends Value = number> {
   value: V;
-  /** Units per second. */
+  /** How fast `value` is changing, in its units per second. */
   velocity: V;
 }
 
@@ -78,9 +78,12 @@ export interface SpringOptions<I, V extends Value> extends MotionOptions<I, V> {
   to: PerSubject<I, V>;
   /** Where each subject starts. Default: `to`, at rest. */
   from?: PerSubject<I, V>;
-  /** Per second squared. Default 170. */
+  /** How hard the spring pulls toward its target, per second squared. Default 170. */
   stiffness?: number;
-  /** Per second. Default 26, just short of critical at the default stiffness. */
+  /**
+   * How fast the spring's motion dies away, per second. Default 26, just short of critical at the
+   * default stiffness.
+   */
   damping?: number;
   mass?: number;
 }

@@ -113,7 +113,10 @@ const kindOf = (name: string, bounds?: readonly [number, number]) =>
   bounds === undefined ? name : `${name}[${bounds[0]}, ${bounds[1]}]`;
 
 /**
- * Position axes, rotation, crawl, yaw, pitch, offset.
+ * A number whose contributions add, resting at 0.
+ *
+ * A weight scales a contribution toward 0, so two voices each moving `x` by 10 at half weight move it
+ * 10 in all. For position axes, rotation, crawl, yaw, pitch, offset.
  *
  * @category channel
  */
@@ -131,7 +134,10 @@ export function sum(opts?: NumberOptions): Channel<number> {
 }
 
 /**
- * Gain, scale, opacity, hold.
+ * A number whose contributions multiply, resting at 1.
+ *
+ * A weight fades a contribution toward 1 rather than 0, so 0.5 at half weight multiplies by 0.75, and
+ * at weight 0 it leaves the value alone. For gain, scale, opacity, hold.
  *
  * @category channel
  */
@@ -149,7 +155,10 @@ export function mul(opts?: NumberOptions): Channel<number> {
 }
 
 /**
- * Dark, aperture.
+ * A number where the largest contribution wins, resting at 0.
+ *
+ * A weight scales a contribution toward 0 before the comparison, so a fading voice gives way once
+ * another's value passes its scaled one. For dark, aperture.
  *
  * @category channel
  */

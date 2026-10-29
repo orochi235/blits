@@ -22,7 +22,9 @@ export interface PatchOptions<I, O, S, H = unknown> {
 }
 
 /**
- * The procedural form. Flicker, roving, a hash walk, a starter strike.
+ * A patch whose function computes its output from phase, subject and setting each frame.
+ *
+ * The procedural form, for flicker, roving, a hash walk, a starter strike.
  *
  * @category patch
  */
@@ -462,7 +464,9 @@ export function evalKeys<O>(
 }
 
 /**
- * The declarative form. klieg's transition sugar and wod's keyframes.
+ * A patch that interpolates between keyframes over its duration.
+ *
+ * The declarative form, as klieg's transition sugar and wod's keyframes use.
  *
  * @category patch
  */

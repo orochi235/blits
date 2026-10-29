@@ -412,7 +412,9 @@ export interface Handle<I = unknown> {
   readonly state: 'pending' | 'live' | 'frozen' | 'fading' | 'done';
   /** The handle of the owner this voice plays under. Undefined for one on the mix clock. */
   readonly owner: Handle<I> | undefined;
-  /** Live. A write shows at the next probe. */
+  /**
+   * The voice's weight now, which can be written while it plays. A write shows at the next probe.
+   */
   weight: number;
   /**
    * Playback rate now. Setting it changes speed at once; `ramp` eases into a new one. On a voice

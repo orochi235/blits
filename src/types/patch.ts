@@ -115,9 +115,9 @@ export type MotionSpec = SpringSpec | GlideSpec | TweenSpec;
  */
 export interface SpringSpec {
   readonly kind: 'spring';
-  /** Per second squared. */
+  /** How hard the spring pulls toward its target, per second squared. */
   readonly stiffness: number;
-  /** Per second. */
+  /** How fast the spring's motion dies away, per second. */
   readonly damping: number;
   readonly mass: number;
   readonly settle: number;

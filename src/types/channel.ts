@@ -16,7 +16,10 @@ export interface Channel<V> {
    * carries speed can push it out; overshoot stops flat at the bound.
    */
   bounds?: readonly [min: number, max: number];
-  /** Identity. Absent means the channel has none: it replaces rather than contributes. */
+  /**
+   * The value that changes nothing when folded in, such as 0 for `sum` or 1 for `mul`. Absent means
+   * the channel has none: it replaces rather than contributes.
+   */
   rest?: V;
   /** Fold two contributions into one. */
   merge(a: V, b: V): V;

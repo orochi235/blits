@@ -14,7 +14,7 @@ export type WaveShape = 'sine' | 'triangle' | 'saw' | 'square';
  * @category patch
  */
 export interface WaveOptions<O> {
-  /** Default 'sine'. */
+  /** The wave's form: 'sine', 'triangle', 'saw' or 'square'. Default 'sine'. */
   shape?: WaveShape;
   /** Whole or fractional cycles per pass of the patch's duration. Default 1. */
   cycles?: number;
