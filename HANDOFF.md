@@ -453,8 +453,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    an alias for the 2D case; `plot`'s array keeps the name `xy`; `put(subject, x, y?, z?)`. How
    `plot` is told the axis count is not decided; the proposal was an options object,
    `plot(subjects, xy, { axes, cell })`.
-   **`4350a86` (the finder) made the glow rows 8–15% slower, cause not found** (2026-10-28,
-   revised 2026-10-29). It tips V8 into pretenuring the host patch's results, but the GC pauses that
+   **`4350a86` (the finder) made the glow rows 8–15% slower, cause not found, and left there by
+   Mike's call (2026-10-29)** (measured 2026-10-28, revised 2026-10-29). It tips V8 into pretenuring the host patch's results, but the GC pauses that
    brings can't explain the slowdown. Measured at `FRAMES=5000`, solo msb-uai, 7 rounds: `glowb^`
    0.776 → 0.875 (U = 0), `glowbn^` 0.812 → 0.881 (U = 6), `glowbp^` 0.789 → 0.907 (U = 1); HEAD
    the same (`bench/runs/2026-10-28-finder-ab-5000.txt`). At the default 300 frames it reads
