@@ -355,17 +355,27 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      test reaches `carry`'s fallback for a copy that holds a record under copies that hold none.
 
 3. **Next for speed: the steady frame of 10k one-voice-per-subject tweens read by `pull`** (`tweens^`,
-   `weasel^`), Mike's go 2026-10-05. On teitou `tweens^` takes about 0.165 ms a frame and `weasel^`
-   0.198 (2026-10-25), against 0.031–0.047 for a hand-written loop doing the same arithmetic. What
-   is left:
-   - **Where the frame goes** (teitou, `--cpu-prof`, 2026-10-24): `tweens^` is 46% `bareRows`, 28%
-     `pullRun`; `weasel^` 50% `runMotion`, 23% `pullRun`. `bareRows` inlines everything it calls.
-     It does not pay for the bytes each row touches: in a model of its loop (`bench/layoutsim.mjs`,
-     `bench/runs/2026-10-25-layoutsim.txt`), the same fields in arrays of their own saved 7%, and
-     `hot` at stride 16 instead of 19 saved 2.5%. Removing one check at a time saved: the `per`
-     read 11%, the id 4%, `MSLOT`/`MET` 5%, `SAMPLED` 4%, the easing memo 2%; all together 97 → 76
-     µs, against 40 for the hand loop. The rest is filling values with rest, folding into them, and
-     copying out. A new layout is not worth building (2026-10-25).
+   `weasel^`), Mike's go 2026-10-05. At 5,000 frames each row's tweens have landed for most of the
+   run. On studio (2026-10-29, 7 rounds of 5,000 frames, `bench/runs/2026-10-29-landed-rows.txt`)
+   `tweens^` takes 0.235 ms a frame and `weasel^` 0.362; on teitou they read 0.165 and 0.198 before
+   the landed shortcut (2026-10-25), against 0.031–0.047 for a hand-written loop doing the same
+   arithmetic. What is left:
+   - **Where the frame goes** (studio, `bench/cpuprof.sh`, 2026-10-29, after the landed shortcut,
+     one run on a loaded node, `tweens^` only): `tweens^` 39% `bareRows`, 29% `pullRun`, 5%
+     `foldNumber`, 4% `keepProbed`, 3% `rests`. `weasel^` before it (unchanged by it): 58%
+     `runMotion`, 20% `pullRun`. In a model of `bareRows` (`bench/layoutsim.mjs`,
+     `bench/runs/2026-10-25-layoutsim.txt`) a new layout was not worth building (2026-10-25).
+   - **`pullRun` pays about 1 ns a subject for each thing it checks**, no one of them the cost (a
+     model of its loop on this Mac, 2026-10-29, not kept): stamping alone 13 µs over 10k subjects,
+     everything 58; leaving out any one of the `was` compare, the `FILLED`/`IDLE`/`SEEN` checks, the
+     `distinct` count, the `subjects` store or the run tracking saved 6–10 µs. Unbuilt: skipping
+     the `distinct` reads when no probe has run this frame and the list's slots never repeat
+     (counted from the stamps afterward when they do), about 3% of `tweens^` by the model; and
+     skipping `FILLED`/`IDLE`/`SEEN` while nothing that sets them has changed since the last pull,
+     which needs a second record of when they last changed.
+   - **A landed shortcut for a lane** (`runMotion`, so `weasel^`) is unbuilt: a lane's subjects share
+     one clock, so it would save only the easing and two reads of each stretch (about 3% of
+     `weasel^` by the profile), and it needs a number per position that a swap removal carries.
    - **A subject the host has let go entirely may be collected before the next fill** rather than
      held until it, since a probe holds its subject only while fills look subjects up (2026-10-24);
      only a later signal or `parting` lookup on that subject could notice.
@@ -373,6 +383,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      and the `fn` voices' returned objects in `fill.ts`'s `call`.
    - Measured no different, so not worth re-proposing:
      - Counting `pullRun`'s probes and distinct subjects in locals (msb-uai, 2026-10-24).
+     - Answering `runMotion`'s same-`since` check before calling `same`, which the profile shows
+       out of line there (studio, 2026-10-29: `weasel^` 0.362 ms either way).
      - Inlining `linked` back into `probe` and `atRest` (msb-uai, 2026-10-24, against `1981422`).
      - Moving `popDue`'s loop into a function of its own (`due.ts`), though `popDue` deoptimizes
        at its tail on every frame a voice comes due (teitou).
@@ -654,161 +666,158 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     1,234 to 5.37 ms. The rerun without it (`bench/runs/2026-10-20-releases-no-seek.txt`, 5 rounds)
     reads `fn` level across every release (2.29 to 2.27), `keys` 1.28 to 1.06, `kept` 5.45 to
     5.19, and allocation down at every row but `keys-`.
-  - **`crowd.ts` still calls `frozenAt` for a crowd's freezing voices**, unmeasured; writing it
-    out of line in a lane fill's `one` won back most of `glow`'s 5.5% against 0.10.0 (2026-10-20,
-    `bench/runs/2026-10-20-glow-*.txt` and `-frozenat-*.txt`).
-    - **The calls this work made** (`out` arrays reused, step 7's names, the `writes` warning,
-      `seek({ frame })`, `catchUp: 'fresh'`, playing backward) are in the schema page's "Chosen
-      while building". Mike has not seen the first two.
-    - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
-      - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one; no pose was
-        found to depend on it, and a copy given the list read the same (2026-10-10).
-      - **A child whose owner runs backward**, left as found (2026-10-11): its `start` and `in`
-        marks read where the owner's clock will next read the child's start (400 for an owner
-        turned back at 200), as any retime of an owner moves them; and a child that itself runs
-        backward under a backward owner, forward overall, has no test.
-    - **Not built**, and nothing recorded against any of it:
-      - Records shared by a read back or a standing read, and by voices `shares` (in
-        `everyone.ts`) turns away that could keep their difference by subject number too: a
-        stagger, a signal weight, a motion.
-      - `catchUp: 'fresh'` per voice; exact catch-up is the default, and a voice keeps at most
-        256 past clocks.
-      - `seek({ frame })`, for an earlier frame at the same mix time.
-      - A read back with no history beyond the narrow case in `src/standing.ts`: a voice an
-        anchor places, an owner and what it holds, and a voice whose handle was written to are
-        refused because the fuzzer (`standing` in `test/fuzz/program.ts`) found frames that
-        depended on when a sync noticed a change. Each could be let in with the fuzzer's say-so.
-      - A view type per module (a `Pick` of `Mixer` for each of the 13 modules taking under ten
-        members) was weighed and left, since it would name what each reads without stopping
-        anything. Still assigned from several modules: `frame`, `reducedNow`, `relinks`, `pins`,
-        `gone`, `pose` and `retired`. `test/owners.test.ts` reads assignments by name, so a
-        `push` or `splice` gets past it.
-      - A quat in a keys voice or a motion goes through `foldInto` per subject, a crowd's keys
-        row on an angle or quat reads its voice's stops and not `KeyRows`, and a vec of angles
-        and a `color` over one stay off lanes.
-    - **Measured, and where it stands:**
-      - **The `keys` row's 16 B a probe is the lane's scalar copied into the pose**
-        (found 2026-10-11): `pose[ch.name] = ch.values[slot]` in `src/copyout.ts`, which a heap
-        profile charges to `foldWith` because V8 inlines it there. The value comes out of a
-        Float64Array as a raw double and the store is keyed by a name that varies, so V8
-        boxes it in a new HeapNumber each time. Measured on the row's scene at 10,000 subjects
-        (this Mac, `total_allocated_bytes` over 300 frames): 16.6 B a probe as it stands, 0.9
-        with the store skipped once the field holds a number, 0.4 storing an integer, and 16.6
-        to 17.0 whatever shape the host's `out` starts with. Built and backed out for changing
-        nothing, on top of the two guesses before (a site of its own per scalar channel in
-        `copy`, and folding a delta's number where `foldDelta` reads it): a store site per lane
-        position. What is left is a store V8 can see the field of, which means a function
-        made per kit from source text, or reading through `pull`, which never boxes.
-        Still boxed:
-        a role's `gatherInto`, a crowd's `KeyRows.fold`, and what `host.signal` returns. Under
-        `from: 'current'`, `keep` still copies a pose a probe into `out`.
-      - **Tried and backed out for moving no number**: growing a lane's arrays to the number of
-        subjects probed last frame at its first position, and handing `LaneHost.ready` its
-        numbers through `Lanes.arg`.
-      - **`kB/frame` on a row whose patch returns an object a call reads one of two values from
-        run to run on one build**: `fn` 10k×3 read 2,442 or 4,318 on this machine. Take a row's
-        allocation from a median over rounds on a fleet node, never from one local run.
-      - **A lane switching a band off at weight 0 costs the `glowl` rows about 3%** and nothing
-        else (teitou, 2026-10-10, 7 rounds at 3,000 frames against `da6e613`, 19 rows, geometric
-        mean 1.003): `glowl` 1.680 to 1.736 ms, `glowl^` 1.201 to 1.236. `unband` fills the
-        record's bands for every subject at weight 0 every frame. Filling only on the frame the
-        weight reaches 0 (a flag on the record) read bit for bit the same and moved no number,
-        so it was backed out: `glowl` 2.359 to 2.393 ms and `glowl^` 1.680 to 1.691 (msb-uai,
-        2026-10-10, 7 rounds at 3,000 frames against `350991c`, every row's runs overlapping,
-        on a node whose runs spread 6% to 14%). So the repeat fill is not shown to be the cost.
-      - **A seek back and its return cost about 1.9 ms at 10,000 subjects** (msb-uai,
-        2026-10-20, `AB_EACH=1 bench/ab.sh a0a5bf4 c101d90 9`, medians of `a0a5bf4`'s 9 runs, ms
-        a frame). The `kept` rows sync and probe a mix keeping 5 s of history and a tape; the
-        `seek` rows also seek it 300 ms back and to where it was before every sync.
+  - **The calls this work made** (`out` arrays reused, step 7's names, the `writes` warning,
+    `seek({ frame })`, `catchUp: 'fresh'`, playing backward) are in the schema page's "Chosen
+    while building". Mike has not seen the first two.
+  - **Undecided behavior, as found** (the fuzzers' or the build's account of each):
+    - **A projection's copy keeps no `owners` list**, so `lapse` never runs on one; no pose was
+      found to depend on it, and a copy given the list read the same (2026-10-10).
+    - **A child whose owner runs backward**, left as found (2026-10-11): its `start` and `in`
+      marks read where the owner's clock will next read the child's start (400 for an owner
+      turned back at 200), as any retime of an owner moves them; and a child that itself runs
+      backward under a backward owner, forward overall, has no test.
+  - **Not built**, and nothing recorded against any of it:
+    - Records shared by a read back or a standing read, and by voices `shares` (in
+      `everyone.ts`) turns away that could keep their difference by subject number too: a
+      stagger, a signal weight, a motion.
+    - `catchUp: 'fresh'` per voice; exact catch-up is the default, and a voice keeps at most
+      256 past clocks.
+    - `seek({ frame })`, for an earlier frame at the same mix time.
+    - A read back with no history beyond the narrow case in `src/standing.ts`: a voice an
+      anchor places, an owner and what it holds, and a voice whose handle was written to are
+      refused because the fuzzer (`standing` in `test/fuzz/program.ts`) found frames that
+      depended on when a sync noticed a change. Each could be let in with the fuzzer's say-so.
+    - A view type per module (a `Pick` of `Mixer` for each of the 13 modules taking under ten
+      members) was weighed and left, since it would name what each reads without stopping
+      anything. Still assigned from several modules: `frame`, `reducedNow`, `relinks`, `pins`,
+      `gone`, `pose` and `retired`. `test/owners.test.ts` reads assignments by name, so a
+      `push` or `splice` gets past it.
+    - A quat in a keys voice or a motion goes through `foldInto` per subject, a crowd's keys
+      row on an angle or quat reads its voice's stops and not `KeyRows`, and a vec of angles
+      and a `color` over one stay off lanes.
+  - **Measured, and where it stands:**
+    - **The `keys` row's 16 B a probe is the lane's scalar copied into the pose**
+      (found 2026-10-11): `pose[ch.name] = ch.values[slot]` in `src/copyout.ts`, which a heap
+      profile charges to `foldWith` because V8 inlines it there. The value comes out of a
+      Float64Array as a raw double and the store is keyed by a name that varies, so V8
+      boxes it in a new HeapNumber each time. Measured on the row's scene at 10,000 subjects
+      (this Mac, `total_allocated_bytes` over 300 frames): 16.6 B a probe as it stands, 0.9
+      with the store skipped once the field holds a number, 0.4 storing an integer, and 16.6
+      to 17.0 whatever shape the host's `out` starts with. Built and backed out for changing
+      nothing, on top of the two guesses before (a site of its own per scalar channel in
+      `copy`, and folding a delta's number where `foldDelta` reads it): a store site per lane
+      position. What is left is a store V8 can see the field of, which means a function
+      made per kit from source text, or reading through `pull`, which never boxes.
+      Still boxed:
+      a role's `gatherInto`, a crowd's `KeyRows.fold`, and what `host.signal` returns. Under
+      `from: 'current'`, `keep` still copies a pose a probe into `out`.
+    - **Tried and backed out for moving no number**: growing a lane's arrays to the number of
+      subjects probed last frame at its first position, and handing `LaneHost.ready` its
+      numbers through `Lanes.arg`.
+    - **`kB/frame` on a row whose patch returns an object a call reads one of two values from
+      run to run on one build**: `fn` 10k×3 read 2,442 or 4,318 on this machine. Take a row's
+      allocation from a median over rounds on a fleet node, never from one local run.
+    - **A lane switching a band off at weight 0 costs the `glowl` rows about 3%** and nothing
+      else (teitou, 2026-10-10, 7 rounds at 3,000 frames against `da6e613`, 19 rows, geometric
+      mean 1.003): `glowl` 1.680 to 1.736 ms, `glowl^` 1.201 to 1.236. `unband` fills the
+      record's bands for every subject at weight 0 every frame. Filling only on the frame the
+      weight reaches 0 (a flag on the record) read bit for bit the same and moved no number,
+      so it was backed out: `glowl` 2.359 to 2.393 ms and `glowl^` 1.680 to 1.691 (msb-uai,
+      2026-10-10, 7 rounds at 3,000 frames against `350991c`, every row's runs overlapping,
+      on a node whose runs spread 6% to 14%). So the repeat fill is not shown to be the cost.
+    - **A seek back and its return cost about 1.9 ms at 10,000 subjects** (msb-uai,
+      2026-10-20, `AB_EACH=1 bench/ab.sh a0a5bf4 c101d90 9`, medians of `a0a5bf4`'s 9 runs, ms
+      a frame). The `kept` rows sync and probe a mix keeping 5 s of history and a tape; the
+      `seek` rows also seek it 300 ms back and to where it was before every sync.
 
-        | Subjects | `kept` | `seek` | A seek back and return |
-        |---:|---:|---:|---:|
-        |  1,000 | 0.627 | 0.861 | 0.234 |
-        | 10,000 | 7.224 | 9.089 | 1.865 |
+      | Subjects | `kept` | `seek` | A seek back and return |
+      |---:|---:|---:|---:|
+      |  1,000 | 0.627 | 0.861 | 0.234 |
+      | 10,000 | 7.224 | 9.089 | 1.865 |
 
-        At 10,000 subjects one build's `seek` runs spread 8.67 to 10.07 ms, so a change worth under
-        about 5% there does not show in 9 rounds. The row allocates 8.2 MB a frame. A relink hands
-        each voice the record the subject's old chain held for it (`linkAll` in `src/chain.ts`), and
-        `Restored.find` takes it without a `WeakMap` lookup where its stamp is one that store made:
-        a record the store lets go of is stamped `gone`, a copy carries no stamp, and setting a
-        stamped record again turns the shortcut off for that store (`sure`), as it could then sit
-        under a second key. In `bench/same.mjs` scenes with seeks 87% of finds take the shortcut and
-        none turns it off (counted locally). A record put back steps once a frame, as an unsought
-        one does: it takes up the state of the record the seek replaced (`left` on the copy's
-        `Ahead`, `ahead` in `src/contribution.ts`), under `stepMs` with no `maxDt` for a patch that `reads`
-        no host field. A seek keeps every subject's number and chain (`renew` in `src/lanes.ts`;
-        `headOf` reads such a chain as absent until it is linked). A reaching record the store alone
-        holds is written over with its copy (`copyHeldInto`), and a probe's kept copy is written
-        over one the seek cut (`spares` on the voice). `Restored` stamps a record with the seek it
-        was put back at; stamps of seeks to as early a moment are joined by union-find and the roots
-        are held weakly, so what the store keeps is bounded by the records alive
-        (`test/restored.test.ts`). Within one synchronous job nothing a weak reference reaches is
-        collected, so a host seeking in a loop without yielding holds a stamp per seek until the job
-        ends. Tried and backed out: writing a spare copy's state clone into the spare's own state
-        object where no record was lent it (`7768e08`, reverted in `d1ef4fe`). It was exact and cut
-        0.72 MB a frame, but read 9.52 ms against 9.32, inside the spread, and a local profile put
-        4.3% in the in-place copy against 3.1% in the clone it replaced: its two walks over the keys
-        cost more than the allocation saved. Also tried and backed out: putting records back through
-        one class's methods (`Sought`, implementing a `PutBack` interface `Restored` calls) in place
-        of the 2 closures `restoreVoice` made per voice (`c101d90`, reverted in `b6e8f88`). It was
-        exact and a local profile showed the closures' self time (about 11% between them) gone, but
-        `seek` read 8.852 ms against 9.089 at 10,000 subjects and 0.829 against 0.861 at 1,000, with
-        rank tests short of chance (U = 28 and 22.5, where p < 0.05 needs under 17). Not built:
-        skipping the put back of a record stepped on from the copy it would be put back from, which
-        a profile names as the lever (9% in `keptOf`, the first read of that copy). An inexact build
-        that skipped every read of the copy (`restore`, `ahead` and `own` in `src/contribution.ts`) read
-        8.400 ms against 8.766 in 5 rounds with the runs overlapping (measured), so the most an
-        exact skip can save is about 4%: by the profile's line the cost is a cache miss, and
-        skipping that read likely moves the miss to the next read of the record rather than removing
-        it (inferred, not measured). An exact skip needs every field the put back copies
-        (`copyHeldInto`'s list) shown equal on the record, against writers in the probe, lanes,
-        `origin`, `setting.keep` and `from: 'current'`, or the copy's fields cached on its `Ahead`,
-        which grows that object by about as much as the read it saves. A narrower inexact skip (no
-        field put back from the copy where its `Ahead` stepped on from fewer ticks) reads 403 of
-        2,000 scenes differing under `SAME_SEEK=1`, lanes on or off, and fails 7 tests across
-        `test/sought.test.ts`, `seek`, `restored` and `history`, so either catches a skip made where
-        it should not be (measured). The `kept` rows do not relink; on this Mac a 10,000-subject
-        `kept` run lands near 5.5 or near 7.5 ms by how far V8 grows its young generation
-        (`--max-semi-space-size` 4 against 32 gives either), so read that row over many rounds. A
-        `step` reading `setting.weight`, `elapsed` or `pass` shows what a mix never sought shows
-        after a seek back and return (`test/sought.test.ts`); after a seek back that stays, its
-        steps up from the copy still run under the probe's setting.
-      - **Tried and backed out for moving no row**: storing a channel's primitive rest without
-        `copy` (`f1523e0`, 2026-10-20).
-      - **Which `fn` voices run off lanes** (2026-10-21, `keepCallsOff` and `calls` in
-        `src/qualify.ts`): a crowd of `fn` voices writing only arrays, and a lone `fn` voice
-        writing vecs, where no other fitting voice writes its channels, since a lane's fill walks
-        the subjects a second time. A crowd writing numbers stays on lanes (17% to 25% slower off,
-        `bench/runs/2026-10-21-calls-off-sweep.txt`), and so does an `fn` crowd mixed with a tween
-        or keys crowd on its channel (`bench/runs/2026-10-21-mixed-crowds.txt`). A lone voice on
-        `color()` was not timed. `fns` reads in modes by build, so time a lanes change on such a
-        row with a switch in one build, not with `ab.sh`; `bench/abdirty.sh` A/Bs an uncommitted
-        diff with no commit on origin.
-      - **Measured no different, or not built** (2026-10-21): answering a probe with nothing laned
-        at the top of `Lanes.prepare`; taking `own`'s targeted voices off lanes as a crowd;
-        leaving `GENERAL_PROBE` unstamped in `linked`, which read about 9% faster but could leave
-        a voice coming back onto a lane reporting a stale `weightOf`.
-      - **`glowc` and `glowkeys` read slower on lanes** (3.3 against 3.0 ms, 2026-10-21): nothing
-        in them runs on lanes (their glow voice writes `color`, a `last` channel with its own lerp,
-        which closes `gain` for the flicker) while the flicker still shares one record, which every
-        read points at its subject and back.
-      - **A voice over every subject shares one record for its first 60 frames only** (2026-10-21,
-        `outgrow` in `src/everyone.ts`; not a keys voice). Every count timed beats never unsharing
-        (`bench/runs/2026-10-21-share-frames-sweep.txt`); 60 itself is a guess, not measured.
-      - **Storing a rest into the pose by name** (`pose.gain = rest`), the most a function made
-        per kit from source text could do, was measured and not built (keiei, 2026-10-20; the
-        ledger's "ceiling" entry).
-      - **The `kept` row's two plain voices never run on lanes**: they write `dark`, which its
-        stateful voice also writes, and `qualify` closes a channel any voice that does not fit
-        writes (read 2026-10-20). So the history rows measure the general path alone.
-      - **A fleet node's copy of blits may have a stale `node_modules`** (found 2026-10-11): its
-        `@weasel-js/history` had no `timestampAt`, so the bench's `kept` and `seek` rows failed.
-        A bench job that runs `npm ci` first works (msb-uai and keiei, 2026-10-20).
-    - **Few consumers use step 7 yet.** klieg's `level` is built on `input` with a `touch()` in
-      its `set` (klieg `c32d440`, unreleased); whether its level-weighted voices then run on
-      lanes is not checked. The other workarounds the doc's "Universal applicability" table
-      lists are still in klieg, sherpa, weasel and wod, and in `apps/playground` (`LivePanel`'s
-      cast, `expr.ts`'s flag).
+      At 10,000 subjects one build's `seek` runs spread 8.67 to 10.07 ms, so a change worth under
+      about 5% there does not show in 9 rounds. The row allocates 8.2 MB a frame. A relink hands
+      each voice the record the subject's old chain held for it (`linkAll` in `src/chain.ts`), and
+      `Restored.find` takes it without a `WeakMap` lookup where its stamp is one that store made:
+      a record the store lets go of is stamped `gone`, a copy carries no stamp, and setting a
+      stamped record again turns the shortcut off for that store (`sure`), as it could then sit
+      under a second key. In `bench/same.mjs` scenes with seeks 87% of finds take the shortcut and
+      none turns it off (counted locally). A record put back steps once a frame, as an unsought
+      one does: it takes up the state of the record the seek replaced (`left` on the copy's
+      `Ahead`, `ahead` in `src/contribution.ts`), under `stepMs` with no `maxDt` for a patch that `reads`
+      no host field. A seek keeps every subject's number and chain (`renew` in `src/lanes.ts`;
+      `headOf` reads such a chain as absent until it is linked). A reaching record the store alone
+      holds is written over with its copy (`copyHeldInto`), and a probe's kept copy is written
+      over one the seek cut (`spares` on the voice). `Restored` stamps a record with the seek it
+      was put back at; stamps of seeks to as early a moment are joined by union-find and the roots
+      are held weakly, so what the store keeps is bounded by the records alive
+      (`test/restored.test.ts`). Within one synchronous job nothing a weak reference reaches is
+      collected, so a host seeking in a loop without yielding holds a stamp per seek until the job
+      ends. Tried and backed out: writing a spare copy's state clone into the spare's own state
+      object where no record was lent it (`7768e08`, reverted in `d1ef4fe`). It was exact and cut
+      0.72 MB a frame, but read 9.52 ms against 9.32, inside the spread, and a local profile put
+      4.3% in the in-place copy against 3.1% in the clone it replaced: its two walks over the keys
+      cost more than the allocation saved. Also tried and backed out: putting records back through
+      one class's methods (`Sought`, implementing a `PutBack` interface `Restored` calls) in place
+      of the 2 closures `restoreVoice` made per voice (`c101d90`, reverted in `b6e8f88`). It was
+      exact and a local profile showed the closures' self time (about 11% between them) gone, but
+      `seek` read 8.852 ms against 9.089 at 10,000 subjects and 0.829 against 0.861 at 1,000, with
+      rank tests short of chance (U = 28 and 22.5, where p < 0.05 needs under 17). Not built:
+      skipping the put back of a record stepped on from the copy it would be put back from, which
+      a profile names as the lever (9% in `keptOf`, the first read of that copy). An inexact build
+      that skipped every read of the copy (`restore`, `ahead` and `own` in `src/contribution.ts`) read
+      8.400 ms against 8.766 in 5 rounds with the runs overlapping (measured), so the most an
+      exact skip can save is about 4%: by the profile's line the cost is a cache miss, and
+      skipping that read likely moves the miss to the next read of the record rather than removing
+      it (inferred, not measured). An exact skip needs every field the put back copies
+      (`copyHeldInto`'s list) shown equal on the record, against writers in the probe, lanes,
+      `origin`, `setting.keep` and `from: 'current'`, or the copy's fields cached on its `Ahead`,
+      which grows that object by about as much as the read it saves. A narrower inexact skip (no
+      field put back from the copy where its `Ahead` stepped on from fewer ticks) reads 403 of
+      2,000 scenes differing under `SAME_SEEK=1`, lanes on or off, and fails 7 tests across
+      `test/sought.test.ts`, `seek`, `restored` and `history`, so either catches a skip made where
+      it should not be (measured). The `kept` rows do not relink; on this Mac a 10,000-subject
+      `kept` run lands near 5.5 or near 7.5 ms by how far V8 grows its young generation
+      (`--max-semi-space-size` 4 against 32 gives either), so read that row over many rounds. A
+      `step` reading `setting.weight`, `elapsed` or `pass` shows what a mix never sought shows
+      after a seek back and return (`test/sought.test.ts`); after a seek back that stays, its
+      steps up from the copy still run under the probe's setting.
+    - **Tried and backed out for moving no row**: storing a channel's primitive rest without
+      `copy` (`f1523e0`, 2026-10-20).
+    - **Which `fn` voices run off lanes** (2026-10-21, `keepCallsOff` and `calls` in
+      `src/qualify.ts`): a crowd of `fn` voices writing only arrays, and a lone `fn` voice
+      writing vecs, where no other fitting voice writes its channels, since a lane's fill walks
+      the subjects a second time. A crowd writing numbers stays on lanes (17% to 25% slower off,
+      `bench/runs/2026-10-21-calls-off-sweep.txt`), and so does an `fn` crowd mixed with a tween
+      or keys crowd on its channel (`bench/runs/2026-10-21-mixed-crowds.txt`). A lone voice on
+      `color()` was not timed. `fns` reads in modes by build, so time a lanes change on such a
+      row with a switch in one build, not with `ab.sh`; `bench/abdirty.sh` A/Bs an uncommitted
+      diff with no commit on origin.
+    - **Measured no different, or not built** (2026-10-21): answering a probe with nothing laned
+      at the top of `Lanes.prepare`; taking `own`'s targeted voices off lanes as a crowd;
+      leaving `GENERAL_PROBE` unstamped in `linked`, which read about 9% faster but could leave
+      a voice coming back onto a lane reporting a stale `weightOf`.
+    - **`glowc` and `glowkeys` read slower on lanes** (3.3 against 3.0 ms, 2026-10-21): nothing
+      in them runs on lanes (their glow voice writes `color`, a `last` channel with its own lerp,
+      which closes `gain` for the flicker) while the flicker still shares one record, which every
+      read points at its subject and back.
+    - **A voice over every subject shares one record for its first 60 frames only** (2026-10-21,
+      `outgrow` in `src/everyone.ts`; not a keys voice). Every count timed beats never unsharing
+      (`bench/runs/2026-10-21-share-frames-sweep.txt`); 60 itself is a guess, not measured.
+    - **Storing a rest into the pose by name** (`pose.gain = rest`), the most a function made
+      per kit from source text could do, was measured and not built (keiei, 2026-10-20; the
+      ledger's "ceiling" entry).
+    - **The `kept` row's two plain voices never run on lanes**: they write `dark`, which its
+      stateful voice also writes, and `qualify` closes a channel any voice that does not fit
+      writes (read 2026-10-20). So the history rows measure the general path alone.
+    - **A fleet node's copy of blits may have a stale `node_modules`** (found 2026-10-11): its
+      `@weasel-js/history` had no `timestampAt`, so the bench's `kept` and `seek` rows failed.
+      A bench job that runs `npm ci` first works (msb-uai and keiei, 2026-10-20).
+  - **Few consumers use step 7 yet.** klieg's `level` is built on `input` with a `touch()` in
+    its `set` (klieg `c32d440`, unreleased); whether its level-weighted voices then run on
+    lanes is not checked. The other workarounds the doc's "Universal applicability" table
+    lists are still in klieg, sherpa, weasel and wod, and in `apps/playground` (`LivePanel`'s
+    cast, `expr.ts`'s flag).
 
 14. **astv's glides (+8%) and progress clocks (+39%) are unexplained** since 0.8.0, at 1 to 2 µs a
     frame with runs that disagree; the rest of what 0.8.0 cost under `history` was fixed in 0.8.1
