@@ -303,15 +303,16 @@ export interface Course {
 }
 
 /**
- * Each voice across a run, at `n` evenly spaced times from 0 to `duration`. Its weight is the
- * largest it has for any subject, so a stagger or a voice reaching a few subjects still shows.
+ * Each voice across a run, at every frame from 0 to `duration`. Its weight is the largest it has
+ * for any subject, so a stagger or a voice reaching a few subjects still shows.
  */
 export function coursesOver<I, O, C>(
   scene: Scene<I, O, C>,
   config: C,
   duration: number,
-  n = 240,
 ): Course[] {
+  // Sampling off the frame grid lands one, then two frames apart, and a ramp comes out stepped.
+  const n = Math.floor(duration / FRAME + 1e-6) + 1;
   const player = new Player(scene, config, { duration, listed: false });
   const voices = scene.voices(config);
   const weights = voices.map(() => [] as number[]);
@@ -321,7 +322,7 @@ export function coursesOver<I, O, C>(
   const tinted = channels.filter((c) => scene.kit[c].kind?.startsWith('color(') === true);
   const colors = voices.map(() => tinted.map(() => [] as string[]));
   for (let k = 0; k < n; k++) {
-    const f = player.at((k / (n - 1)) * duration);
+    const f = player.at(k * FRAME);
     f.handles.forEach((h, i) => {
       let w = 0;
       for (const s of f.subjects) w = Math.max(w, h.weightOf(s));
