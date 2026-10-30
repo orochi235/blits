@@ -1,4 +1,5 @@
 import { lerpNumber, numericOf, sum, vec, vouch, widen } from './channels.js';
+import { HUES, lchPair, shortWay } from './lch.js';
 import type { Channel } from './types.js';
 
 const mix = lerpNumber;
@@ -28,9 +29,6 @@ const toByte = (v: number): number => {
   const c = FIRST[(v * BINS) | 0] as number;
   return c < 255 && v >= (ROUNDS_UP[c + 1] as number) ? c + 1 : c;
 };
-
-/** Below this chroma a color is gray and its hue is noise, so the lerp takes the other end's. */
-const GRAY = 1e-4;
 
 /**
  * Colors already turned into OKLCH, direct-mapped on a byte of their hash: a mix reads the same
@@ -113,12 +111,8 @@ export function mixHex(a: number, b: number, u: number): number {
 
 /** The hue `u` of the way from `ah` to `bh` the short way round, a gray end taking the other's. */
 function hueAt(ah: number, ac: number, bh: number, bc: number, u: number): number {
-  const from = ac < GRAY ? bh : ah;
-  const to = bc < GRAY ? ah : bh;
-  let turn = to - from;
-  if (turn > Math.PI) turn -= 2 * Math.PI;
-  else if (turn < -Math.PI) turn += 2 * Math.PI;
-  return from + turn * u;
+  shortWay(ah, ac, bh, bc);
+  return (HUES[0] as number) + (HUES[1] as number) * u;
 }
 
 /**
@@ -131,28 +125,24 @@ export interface ColorOptions {
   lerp?: 'oklab' | 'oklch';
 }
 
+const PAIR = new Float64Array(8);
+
 /** Two OKLab colors with coverage, interpolated in OKLCH: color by `u`, coverage by `u` alongside. */
 function lerpLch(x: number[], y: number[], u: number): number[] {
-  const xw = x[3] ?? 0;
-  const yw = y[3] ?? 0;
-  const w = mix(xw, yw, u);
-  // A color with no coverage has none of its own to keep, so the lerp takes the other end's.
-  const ys = yw > 0 ? 1 / yw : 0;
-  const yL = (y[0] ?? 0) * ys;
-  const yA = (y[1] ?? 0) * ys;
-  const yB = (y[2] ?? 0) * ys;
-  const xs = xw > 0 ? 1 / xw : 0;
-  const xL = xw > 0 ? (x[0] ?? 0) * xs : yL;
-  const xA = xw > 0 ? (x[1] ?? 0) * xs : yA;
-  const xB = xw > 0 ? (x[2] ?? 0) * xs : yB;
-  const toL = yw > 0 ? yL : xL;
-  const toA = yw > 0 ? yA : xA;
-  const toB = yw > 0 ? yB : xB;
-  const xc = Math.sqrt(xA * xA + xB * xB);
-  const yc = Math.sqrt(toA * toA + toB * toB);
-  const C = mix(xc, yc, u);
-  const h = hueAt(Math.atan2(xB, xA), xc, Math.atan2(toB, toA), yc, u);
-  return [mix(xL, toL, u) * w, C * Math.cos(h) * w, C * Math.sin(h) * w, w];
+  const p = PAIR;
+  lchPair(x, 0, y, 0, p);
+  const w = mix(p[3] as number, p[7] as number, u);
+  const C = mix(p[1] as number, p[5] as number, u);
+  const h = (p[2] as number) + (HUES[1] as number) * u;
+  return [mix(p[0] as number, p[4] as number, u) * w, C * Math.cos(h) * w, C * Math.sin(h) * w, w];
+}
+
+/**
+ * Whether `channel` interpolates in OKLCH, as `color({ lerp: 'oklch' })` makes it, so a motion
+ * patch cued on it moves round the hue too.
+ */
+export function roundsHue(channel: Channel<unknown>): boolean {
+  return channel.lerp === (lerpLch as Channel<unknown>['lerp']);
 }
 
 /**

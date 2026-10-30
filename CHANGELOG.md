@@ -15,6 +15,15 @@ version and everything else the patch. Each release lists its changes as **Break
   passes. Its `done` now resolves when its owner leaves rather than at its own end. The owner
   leaves when it did before, and without `history` nothing changes.
 
+- A `tween`, `spring` or `glide` on a `color({ lerp: 'oklch' })` channel goes round the hue, as
+  blending between voices already did, rather than straight across each OKLab axis through gray.
+  A tween reads as the channel's lerp along its easing; a spring and a glide are solved in
+  lightness, chroma and hue with coverage alongside, so velocity carries through a retarget and the
+  path bends rather than starting over. What the patch takes and reports stays premultiplied OKLab.
+  A glide with `bounds` on such a channel is refused at `cue`. Lanes read it as the general path
+  does, to the bit; such a voice on one subject no longer joins a crowd. The default OKLab channel
+  is unchanged.
+
 ## 0.15.1
 
 ### Added

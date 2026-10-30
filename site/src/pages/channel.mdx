@@ -33,6 +33,6 @@ const PART = kit<PartPose>({
 });
 ```
 
-`vec(n, of)` runs one channel's arithmetic down an axis list, and `color()` holds a color as OKLab with a coverage: voices stacked on it average, `color(last())` replaces instead, and `{ lerp: 'oklch' }` crossfades round the hue. `oklab(0xrrggbb)` makes a value, and `toHex(pose, under)` or `css(pose)` turns a pose back into something to draw. A consumer can declare a channel of its own: it's four functions, and only `merge` and `lerp` are required.
+`vec(n, of)` runs one channel's arithmetic down an axis list, and `color()` holds a color as OKLab with a coverage: voices stacked on it average, `color(last())` replaces instead, and `{ lerp: 'oklch' }` crossfades round the hue, as a tween, spring or glide on it moves. `oklab(0xrrggbb)` makes a value, and `toHex(pose, under)` or `css(pose)` turns a pose back into something to draw. A consumer can declare a channel of its own: it's four functions, and only `merge` and `lerp` are required.
 
 <ApiEntries word="channel" />

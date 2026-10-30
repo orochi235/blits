@@ -1,6 +1,7 @@
 import { applied, change, commit, cut, dueTo, insert, peek, queue, rewind } from './changes.js';
-import { closed } from './closed.js';
+import { BOUND, closed } from './closed.js';
 import type { Curve } from './easing.js';
+import { closedLch } from './lch.js';
 import {
   made,
   pack,
@@ -107,12 +108,19 @@ export class Motions<I> {
   /** Whether the channel it was cued on holds a number; undefined until it is cued. */
   private holdsNumber: boolean | undefined = undefined;
   private channel = '';
+  /** Whether the channel it was cued on is an `'oklch'` color, which its stretches go round the hue of. */
+  round = false;
 
   /**
    * Records what the channel the patch is cued on holds, refusing a value of the other kind: at once
    * where every subject's value is one kind, else on the first sample of a subject whose value is not.
+   * `round` for an `'oklch'` color.
    */
-  cuedOn(channel: string, holdsNumber: boolean): void {
+  cuedOn(channel: string, holdsNumber: boolean, round = false): void {
+    if (round && this.shape.law[0] === BOUND)
+      throw new Error(
+        `blits: channel ${channel} goes round the hue, and a glide's bounds are a box on its OKLab axes; glide it without bounds`,
+      );
     const every = this.shape.scalarEvery();
     if (every !== undefined && every !== holdsNumber) throw wrongKind(channel, holdsNumber);
     for (let s = 0; s < this.numbers.size; s++)
@@ -123,6 +131,7 @@ export class Motions<I> {
         throw wrongKind(channel, holdsNumber);
     this.holdsNumber = holdsNumber;
     this.channel = channel;
+    this.round = round;
   }
 
   frame(subject: I): number {
@@ -494,6 +503,8 @@ export class Motions<I> {
     xo: Float64Array,
     vo: Float64Array,
   ): boolean {
+    if (this.round)
+      return closedLch(this.runs, this.shape.ease, at, ms, x0, x, v0, v, to, g, t, xo, vo);
     return closed(this.runs, this.shape.ease, this.n, at, ms, x0, x, v0, v, to, g, t, xo, vo);
   }
 }
