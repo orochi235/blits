@@ -584,10 +584,21 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       a page that cues before its first `requestAnimationFrame` meets it.
     - **Not checked**: the page's timings and its table of consumers' kits, which are other
       repos' facts.
-    - **Most panel fields commit on every keystroke**, so typing `1500` into a mark's time is
-      four undo steps; only the stage, title, length, level, read-ahead and expression fields
-      go through `Draft` or `ExprInput`. The README says so; whether the rest should commit
-      on Enter too is Mike's call.
+    - **Panel fields should also commit once typing rests; waits on a weasel release**
+      (2026-10-30). Enter, blur and Escape already work: weasel's typed `PropertyControl`s
+      hold a draft, `ControlPanel` rows do too since 1.11.0, and `c79df53` deleted the
+      playground's `Draft` for it, (read from the 1.12.0 code, not run). weasel `875b5aacf` adds
+      the idle commit behind a kit setting, off by default. Once a release carries it:
+      - Move every `@weasel-js/*` pin off 1.12.0 to that release, which also brings in
+        1.13 and 1.14.
+      - Add `@weasel-js/react`, pinned exactly, and wrap the app in
+        `<KitSettingsProvider value={{ typing: { settleWhenIdle: true } }}>`. The delay is
+        `typing.idleMs`, 800 ms by default.
+      - `ExprInput` still commits only on Enter or blur. Either have it call weasel's
+        `useIdleSettle`, or delete it in favor of a string `PropertyField` with `error`,
+        once that is checked to keep `aria-invalid`, the error under the field, and
+        spellcheck off. `CodePane` stays, since weasel's textarea has no Tab indent or
+        Cmd-Enter.
 
 12. **The playground should offer everything in blits it feasibly can** (Mike, 2026-10-09). What
     is built is in its README; the calls made building it are under its "Chosen while building".

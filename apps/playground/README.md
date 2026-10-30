@@ -50,8 +50,8 @@ blank, and its bounds may not cross; its value is held inside them. Each of thes
 Enter or leaving it, so typing is one undo step, and Escape puts back what it held; so do the
 booker's tag and read-ahead, every field of the mix, fold rules and announced marks panels, and
 every expression field. A number field left blank puts back what it held. A code pane commits on Cmd/Ctrl-Enter or leaving
-it, and Tab indents. The panels' other text and number fields commit on every keystroke, each an
-undo step. Removing or renaming a level an expression names is allowed: the expression then reads
+it, and Tab indents. The panels' other text and number fields are weasel's, which also commit on
+Enter or leaving them. Removing or renaming a level an expression names is allowed: the expression then reads
 0, with no error.
 
 ## A composition
