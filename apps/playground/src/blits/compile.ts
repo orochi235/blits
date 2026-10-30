@@ -25,6 +25,8 @@ export interface Built {
   errors: FieldError[];
   /** How far ahead the player's booker reads, ms: the composition's `book.ahead`, or `AHEAD`. */
   ahead: number;
+  /** Numbers per subject in a `pull` color column: five for an averaging `ink`, else four. */
+  colorAxes: number;
   /** The stage's pointer, which every `around` circle in every mix follows. */
   pointer: Pointer;
 }
@@ -88,6 +90,7 @@ export function compile(
     faults,
     errors,
     ahead: c.book?.ahead ?? AHEAD,
+    colorAxes: Array.isArray(kit.color.rest) ? kit.color.rest.length : 4,
     pointer,
   };
 }

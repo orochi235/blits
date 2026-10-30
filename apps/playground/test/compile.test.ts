@@ -27,13 +27,13 @@ describe('kitOf', () => {
       offset: 'vec(2, sum)',
       turn: 'sum',
       scale: 'mul',
-      color: 'color(last, oklch)',
+      color: 'ink(last)',
       opacity: 'mul[0, 1]',
       glow: 'max',
     });
     const k = kitOf({
       scale: { rule: 'sum', bounds: [0, 3] },
-      color: { rule: 'average', path: 'linear' },
+      color: { rule: 'average', type: 'color' },
     });
     expect(kinds(k)).toMatchObject({ scale: 'sum[0, 3]', color: 'color(sum)' });
   });

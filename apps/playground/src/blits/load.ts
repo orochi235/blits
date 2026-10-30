@@ -224,7 +224,11 @@ const RULE_CHECKS: Record<string, (v: unknown) => boolean> = {
   color: (v) =>
     obj(v) &&
     oneOf('replace', 'average')(v.rule) &&
-    (v.path === undefined ? oneOf('oklch', 'oklab')(v.lerp) : oneOf('hue', 'linear')(v.path)),
+    (v.type !== undefined
+      ? oneOf('color', 'ink')(v.type)
+      : v.path !== undefined
+        ? oneOf('hue', 'linear')(v.path)
+        : oneOf('oklch', 'oklab')(v.lerp)),
 };
 const rules = (v: unknown) =>
   obj(v) && Object.entries(v).every(([ch, r]) => RULE_CHECKS[ch]?.(r) === true);
@@ -250,10 +254,12 @@ export function load(raw: unknown): Composition | null {
   if (!opt(groups, (g) => Array.isArray(g) && g.length <= MAX_GROUPS && g.every(group)))
     return null;
   if (!groupsOk(raw as unknown as Composition)) return null;
-  // Saved and shared before blits named it `path`.
+  // Saved and shared before blits split color into `color` and `ink`, as a `path` or a `lerp`.
   const color = (raw.rules as Rec | undefined)?.color as Rec | undefined;
-  if (color !== undefined && 'lerp' in color) {
-    color.path ??= color.lerp === 'oklch' ? 'hue' : 'linear';
+  if (color !== undefined) {
+    const path = color.path ?? (color.lerp === 'oklch' ? 'hue' : 'linear');
+    color.type ??= path === 'hue' ? 'ink' : 'color';
+    delete color.path;
     delete color.lerp;
   }
   // Saved and shared before blits named them `freeze` and `role`.

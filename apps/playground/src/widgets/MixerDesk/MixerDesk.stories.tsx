@@ -10,7 +10,7 @@ type Story = StoryObj<typeof MixerDesk>;
 const buses = [
   { id: 'offset', label: 'offset', rule: 'vec(2, sum)' },
   { id: 'scale', label: 'scale', rule: 'mul' },
-  { id: 'color', label: 'color', rule: 'color(last, oklch)' },
+  { id: 'color', label: 'color', rule: 'ink(last)' },
   { id: 'glow', label: 'glow', rule: 'max' },
 ];
 

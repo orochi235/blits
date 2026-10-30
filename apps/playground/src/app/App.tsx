@@ -178,6 +178,7 @@ export function App() {
             stage={comp.stage}
             subjects={subjects}
             columns={player.columns}
+            colorAxes={player.built.colorAxes}
             frame={frame}
             picked={shown}
             onPick={setPicked}

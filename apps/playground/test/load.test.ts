@@ -60,9 +60,23 @@ describe('load', () => {
     const rules = {
       scale: { rule: 'sum', bounds: [0, 3] },
       turn: { rule: 'last' },
-      color: { rule: 'average', path: 'linear' },
+      color: { rule: 'average', type: 'ink' },
     };
     expect(load({ ...copy(), rules })?.rules).toEqual(rules);
+  });
+
+  it('reads a color rule saved with a path or a lerp as its type', () => {
+    for (const [old, type] of [
+      [{ path: 'hue' }, 'ink'],
+      [{ path: 'linear' }, 'color'],
+      [{ lerp: 'oklch' }, 'ink'],
+      [{ lerp: 'oklab' }, 'color'],
+      [{ lerp: 'oklch', path: 'linear' }, 'color'],
+    ] as const) {
+      const color = load({ ...copy(), rules: { color: { rule: 'replace', ...old } } })?.rules
+        ?.color;
+      expect(color, JSON.stringify(old)).toEqual({ rule: 'replace', type });
+    }
   });
 
   it('reads a voice saved with hold as freeze', () => {

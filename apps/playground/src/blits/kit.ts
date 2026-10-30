@@ -1,4 +1,4 @@
-import { color, type Kit, kit, last, max, mul, sum, vec } from '@msb235/blits';
+import { color, ink, type Kit, kit, last, max, mul, sum, vec } from '@msb235/blits';
 
 /** What an author writes: color as 0xrrggbb, as the color picker and the presets hold it. */
 export interface Pose {
@@ -37,10 +37,13 @@ export interface NumberRuleSpec {
   bounds?: [number, number];
 }
 
-/** `replace`: the last voice's color wins, eased by weight; `average`: weights blend every color. */
+/**
+ * `replace`: the last voice's color wins, eased by weight; `average`: weights blend every color.
+ * `color` blends and travels straight across OKLab, as light mixes; `ink` goes round the hue.
+ */
 export interface ColorRuleSpec {
   rule: 'replace' | 'average';
-  path: 'hue' | 'linear';
+  type: 'color' | 'ink';
 }
 
 /** Each channel's fold rule; `offset` is two numbers folded alike, which `last` cannot vouch for. */
@@ -57,7 +60,7 @@ export const DEFAULT_RULES: Rules = {
   offset: { rule: 'sum' },
   turn: { rule: 'sum' },
   scale: { rule: 'mul' },
-  color: { rule: 'replace', path: 'hue' },
+  color: { rule: 'replace', type: 'ink' },
   opacity: { rule: 'mul', bounds: [0, 1] },
   glow: { rule: 'max' },
 };
@@ -69,6 +72,11 @@ function numberChannel({ rule, bounds }: NumberRuleSpec) {
   return RULES[rule](bounds ? { bounds } : undefined);
 }
 
+function colorChannel({ rule, type }: ColorRuleSpec) {
+  const of = rule === 'replace' ? last() : sum();
+  return type === 'ink' ? ink(of) : color(of);
+}
+
 /** The kit a composition's rules make: each channel the default unless the rules name another. */
 export function kitOf(rules: Partial<Rules> = {}): Kit<Mixed> {
   const r = { ...DEFAULT_RULES, ...rules };
@@ -76,7 +84,7 @@ export function kitOf(rules: Partial<Rules> = {}): Kit<Mixed> {
     offset: vec(2, numberChannel(r.offset)),
     turn: numberChannel(r.turn),
     scale: numberChannel(r.scale),
-    color: color(r.color.rule === 'replace' ? last() : sum(), { path: r.color.path }),
+    color: colorChannel(r.color),
     opacity: numberChannel(r.opacity),
     glow: numberChannel(r.glow),
   });

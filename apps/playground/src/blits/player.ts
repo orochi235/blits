@@ -76,7 +76,7 @@ export class Player {
       offset: new Float64Array(n * 2),
       turn: new Float64Array(n),
       scale: new Float64Array(n),
-      color: new Float64Array(n * 4),
+      color: new Float64Array(n * 5),
       opacity: new Float64Array(n),
       glow: new Float64Array(n),
     };

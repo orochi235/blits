@@ -32,8 +32,8 @@ const ignore = () => {};
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const bandOf = (ch: string) => `${ch}Bounds`;
 const label = (spec: Rules[keyof Rules]) =>
-  'path' in spec
-    ? `${spec.rule}, ${spec.path}`
+  'type' in spec
+    ? `${spec.rule}, ${spec.type}`
     : spec.bounds
       ? `${spec.rule} [${spec.bounds.join(', ')}]`
       : spec.rule;
@@ -77,7 +77,7 @@ export function RulesPanel({
   const config: Record<string, unknown> = { changed: comp.rules !== undefined };
   for (const ch of CHANNELS) {
     const spec = rules[ch];
-    if (!('path' in spec)) config[bandOf(ch)] = spec.rule !== 'last' && spec.bounds !== undefined;
+    if (!('type' in spec)) config[bandOf(ch)] = spec.rule !== 'last' && spec.bounds !== undefined;
   }
 
   const select = (
@@ -194,9 +194,9 @@ export function RulesPanel({
           {select('color rule', spec.rule, ['replace', 'average'], (v) =>
             set('color', { ...spec, rule: v as ColorRuleSpec['rule'] }),
           )}
-          <span className={r.to}>in</span>
-          {select('color path', spec.path, ['hue', 'linear'], (v) =>
-            set('color', { ...spec, path: v as ColorRuleSpec['path'] }),
+          <span className={r.to}>as</span>
+          {select('color type', spec.type, ['color', 'ink'], (v) =>
+            set('color', { ...spec, type: v as ColorRuleSpec['type'] }),
           )}
           {back('color')}
         </span>

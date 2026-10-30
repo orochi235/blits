@@ -9,6 +9,8 @@ export interface StageProps {
   stage: StageSpec;
   subjects: readonly Subject[];
   columns: Columns;
+  /** How many numbers each subject's color takes in `columns`. */
+  colorAxes?: number;
   /** The player mutates `columns` in place; a new frame number is what triggers a redraw. */
   frame: number;
   picked: number | null;
@@ -37,7 +39,16 @@ function measure(el: HTMLCanvasElement): Box {
   };
 }
 
-export function Stage({ stage, subjects, columns, frame, picked, onPick, onPoint }: StageProps) {
+export function Stage({
+  stage,
+  subjects,
+  columns,
+  colorAxes = 4,
+  frame,
+  picked,
+  onPick,
+  onPoint,
+}: StageProps) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [box, setBox] = useState<Box | null>(null);
 
@@ -67,9 +78,9 @@ export function Stage({ stage, subjects, columns, frame, picked, onPick, onPoint
     if (el.width !== pw) el.width = pw;
     if (el.height !== ph) el.height = ph;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (stage.kind === 'dots') drawDots(ctx, stage, columns, w, h, picked, palette);
-    else drawLetters(ctx, subjects, columns, w, h, picked, palette);
-  }, [stage, subjects, columns, frame, picked, box]);
+    if (stage.kind === 'dots') drawDots(ctx, stage, columns, w, h, picked, palette, colorAxes);
+    else drawLetters(ctx, subjects, columns, w, h, picked, palette, colorAxes);
+  }, [stage, subjects, columns, colorAxes, frame, picked, box]);
 
   return (
     <canvas

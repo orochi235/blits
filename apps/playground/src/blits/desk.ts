@@ -68,7 +68,9 @@ const fixed = (v: number | undefined, places: number) =>
 export function readoutOf(ch: ChannelName, pose: Mixed): Pick<DeskBus, 'value' | 'swatch'> {
   if (ch === 'offset') return { value: `${fixed(pose.offset[0], 1)}, ${fixed(pose.offset[1], 1)}` };
   if (ch === 'color') {
-    if (!pose.color || !((pose.color[3] ?? 0) > 0)) return { value: 'none' };
+    const c = pose.color;
+    // An ink pose holds its coverage fifth, after its chroma.
+    if (!c || !((c[c.length > 4 ? 4 : 3] ?? 0) > 0)) return { value: 'none' };
     const hex = hexOf(toHex(pose.color));
     return { value: hex, swatch: hex };
   }

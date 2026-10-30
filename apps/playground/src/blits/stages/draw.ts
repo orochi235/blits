@@ -15,9 +15,14 @@ export const DEFAULT_PALETTE: Palette = { base: '#7aa2ff', pick: '#ff6b8b' };
 export const cssColor = (c: number, base = DEFAULT_PALETTE.base) =>
   c === 0 || !Number.isFinite(c) ? base : hexOf(c);
 
-/** Subject `i`'s color in a `pull` column of OKLab with coverage, as 0xrrggbb; NaN where unwritten. */
-export const hexAt = (col: Float64Array, i: number) =>
-  Number.isNaN(col[i * 4] as number) ? Number.NaN : toHex(col.subarray(i * 4, i * 4 + 4));
+/**
+ * Subject `i`'s color in a `pull` column of `axes` numbers each, OKLab with coverage, as 0xrrggbb;
+ * NaN where unwritten.
+ */
+export const hexAt = (col: Float64Array, i: number, axes = 4) =>
+  Number.isNaN(col[i * axes] as number)
+    ? Number.NaN
+    : toHex(col.subarray(i * axes, i * axes + axes));
 
 type Shape = (ctx: CanvasRenderingContext2D, r: number, i: number) => void;
 
@@ -77,12 +82,13 @@ function paint(
   picked: boolean,
   palette: Palette,
   shape: Shape,
+  axes: number,
 ) {
   const x = p.x + (cols.offset[i * 2] ?? 0);
   const y = p.y + (cols.offset[i * 2 + 1] ?? 0);
   const r = Math.max(0, p.size * (cols.scale[i] ?? 1));
   const glow = cols.glow[i] ?? 0;
-  const color = cssColor(hexAt(cols.color, i), palette.base);
+  const color = cssColor(hexAt(cols.color, i, axes), palette.base);
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(((cols.turn[i] ?? 0) * Math.PI) / 180);
@@ -124,11 +130,12 @@ export function drawDots(
   h: number,
   picked: number | null,
   palette: Palette = DEFAULT_PALETTE,
+  axes = 4,
 ): void {
   ctx.clearRect(0, 0, w, h);
   const n = stage.cols * stage.rows;
   for (let i = 0; i < n; i++)
-    paint(ctx, dotsLayout(stage, w, h, i), cols, i, i === picked, palette, dot);
+    paint(ctx, dotsLayout(stage, w, h, i), cols, i, i === picked, palette, dot, axes);
 }
 
 const fontFor = (r: number) => `700 ${r * 1.8}px Georgia, serif`;
@@ -141,6 +148,7 @@ export function drawLetters(
   h: number,
   picked: number | null,
   palette: Palette = DEFAULT_PALETTE,
+  axes = 4,
 ): void {
   ctx.clearRect(0, 0, w, h);
   const n = subjects.length;
@@ -155,7 +163,7 @@ export function drawLetters(
     c.fillText(subjects[i]?.char ?? '', 0, 0);
   };
   for (let i = 0; i < n; i++)
-    paint(ctx, lettersLayout(n, w, h, i), cols, i, i === picked, palette, letter);
+    paint(ctx, lettersLayout(n, w, h, i), cols, i, i === picked, palette, letter, axes);
 }
 
 /** Picks by base position, so a subject that has moved far is picked where it started. */
