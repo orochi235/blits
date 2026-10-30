@@ -206,6 +206,41 @@ describe('a voice over every subject', () => {
     m.touch(a);
     expect(m.probe(a).x).toBe(2);
   });
+
+  it('hands the frame gap as dt on the frame after it takes a record a subject', () => {
+    const turns = {
+      fade: (h: Handle<Part>, parts: Part[]) => h.fade({ subject: parts[3] as Part, over: 1000 }),
+      rest: (h: Handle<Part>) => h.fade({ at: 'rest', over: 10000 }),
+      keep: () => {},
+    };
+    for (const [how, turn] of Object.entries(turns)) {
+      const m = mix<Part, Pose>(K, { lanes: true });
+      const parts = Array.from({ length: 4 }, (_, id) => ({ id }));
+      const dts: number[] = [];
+      let f = 0;
+      m.sync(1000);
+      const h = m.cue({
+        patch: patch<Part, Pose>(
+          1000,
+          (_ph, p, s) => {
+            if (how === 'keep' && f === 4 && p.id === 2) s.keep(p, () => 0);
+            if (p.id === 1) dts.push(s.dt);
+            return { x: 1 };
+          },
+          { writes: ['x'] },
+        ),
+        loop: true,
+      });
+      for (f = 1; f < 8; f++) {
+        m.sync(1000 + f * 50);
+        if (f === 4) expect(voiceOf(h).sharing).toBe(true);
+        for (const p of parts) m.probe(p);
+        if (f === 4) turn(h, parts);
+      }
+      expect(voiceOf(h).sharing, how).toBe(false);
+      expect(dts, how).toEqual([50, 50, 50, 50, 50, 50, 50]);
+    }
+  });
 });
 
 it('reports the weight a voice that stopped sharing gave a subject before its next read', () => {
