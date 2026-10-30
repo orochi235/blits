@@ -6,12 +6,12 @@ description: The words blits uses, from anchor to weight, each with a short expl
 
 # Glossary
 
-[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [contribution](#contribution) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [`freeze`](#freeze) · [handle](#handle) · [`history`](#history) · [host](#host) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [role](#role) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight) · [`within`](#within)
+[anchor](#anchor) · [`blend`](#blend) · [channel](#channel) · [color](#color) · [contribution](#contribution) · [`cue`](#cue) · [delta](#delta) · [doubt](#doubt) · [`drop`](#drop) · [`dt`](#dt) · [duration](#duration) · [easing](#easing) · [`elapsed`](#elapsed) · [engine](#engine) · [event](#event) · [`fade`](#fade) · [`fold`](#fold) · [`freeze`](#freeze) · [handle](#handle) · [`history`](#history) · [host](#host) · [ink](#ink) · [kit](#kit) · [lane](#lane) · [`lerp`](#lerp) · [`loop`](#loop) · [mark](#mark) · [`merge`](#merge) · [mix](#mix) · [`mute`](#mute) · [`name`](#name) · [pass](#pass) · [patch](#patch) · [period](#period) · [phase](#phase) · [pose](#pose) · [`probe`](#probe) · [projection](#projection) · [query](#query) · [`rate`](#rate) · [rest](#rest) · [retarget](#retarget) · [role](#role) · [`scale`](#scale) · [score](#score) · [`seek`](#seek) · [setting](#setting) · [signal](#signal) · [`stagger`](#stagger) · [subject](#subject) · [`sync`](#sync) · [tag](#tag) · [`target`](#target) · [timestamp](#timestamp) · [voice](#voice) · [weight](#weight) · [`within`](#within)
 
 The examples share one setup: a row of dots that can move up and down, glow, and change color.
 
 ```ts
-import { color, keys, kit, mix, mul, oklab, patch, sum } from '@msb235/blits';
+import { color, ink, keys, kit, mix, mul, oklab, patch, sum } from '@msb235/blits';
 
 interface Dot {
   i: number;
@@ -87,6 +87,16 @@ const brightest: Channel<number> = {
 This one keeps the brightest value written to it, as `max` does.
 
 In depth: [Channel and kit](../channel/). Reference: [`Channel`](../channel/#api-Channel), [`sum`](../channel/#api-sum), [`mul`](../channel/#api-mul), [`color`](../channel/#api-color).
+
+## color
+
+A `color` channel holds a color the way the real world shows one: light, sky, smoke or paint. Voices writing it at once average straight across OKLab, a color space where equal steps look equal, and it moves between two colors in a straight line there too, so red and cyan meet in a pale gray, as two lights would. `oklab(0xrrggbb)` makes a value, and `toHex` or `css` turns a pose back into something to draw. For a color that stands for a meaning, use an [ink](#ink).
+
+```ts
+const DOT = kit<DotPose>({ y: sum(), glow: mul(), color: color() });
+```
+
+In depth: [Channel and kit](../channel/). Reference: [`color`](../channel/#api-color), [`oklab`](../channel/#api-oklab).
 
 ## contribution
 
@@ -302,6 +312,16 @@ requestAnimationFrame(frame);
 
 In depth: [Mix](../mix/#the-frame-loop), [Time](../time/). Reference: [`MixOptions`](../mix/#api-MixOptions).
 
+## ink
+
+An `ink` channel holds a color that stands for a meaning: a status, a level, a team. It takes the same `oklab()` values as a [color](#color) but turns the hue to get between them, so red and blue meet in purple, the midpoint people picture. Voices writing it at once blend round the hue too, at their average vividness, so two vivid inks stay vivid; two inks with nearly opposite hues swing round the wheel as their weights cross. Choose `ink` when the color is a symbol and `color` when it is a physical thing.
+
+```ts
+const BADGE = kit<{ status: number[] }>({ status: ink() });
+```
+
+In depth: [Channel and kit](../channel/). Reference: [`ink`](../channel/#api-ink).
+
 ## kit
 
 A kit lists the [channels](#channel) one kind of [pose](#pose) is made of, one per field. Every [mix](#mix) is built over a kit, and a [patch](#patch) that writes a field the kit doesn't have is refused when it is [cued](#cue).
@@ -329,6 +349,7 @@ A [channel](#channel)'s `lerp(a, b, u)` finds the value a fraction `u` of the wa
 ```ts
 sum().lerp(0, 10, 0.25); // 2.5
 color().lerp(oklab(0xff0000), oklab(0x0000ff), 0.5); // halfway from red to blue, in OKLab
+ink().lerp(oklab(0xff0000), oklab(0x0000ff), 0.5); // halfway round the hue, a purple
 ```
 
 Reference: [`Channel`](../channel/#api-Channel), [`color`](../channel/#api-color).

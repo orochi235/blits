@@ -353,6 +353,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      stop), a fold of every voice including stateless ones, and a copy of every voice. One store
      shared along a voice's copies would cut the first, and needs `Filled` in `src/store.ts`. No
      test reaches `carry`'s fallback for a copy that holds a record under copies that hold none.
+   - **`ink()` folds on lanes as `'own'`, through the channel's `fold`, as a `quat` does**
+     (2026-10-30, unmeasured): each contribution is a call that widens `oklab()`'s four numbers to
+     five. Folding it as a plain five-axis sum (`folds: 'sum'`, as the deprecated
+     `color({ lerp: 'oklch' })` does) needs the widening wherever a lane reads a contribution as
+     numbers: `flatten` in `keyfill.ts`, a keys row's stops in `keyrows.ts`, a motion sample in
+     `foldRun`/`sample.ts`, a role in `gatherInto`, and a crowd row. The 2026-10-25 oklch A/B
+     measured the same trade on four axes: `hues` 1.38 by probe folded as a sum against 1.59
+     through the channel (`bench/runs/2026-10-25-oklch-lanes.txt`). The benches still cue the
+     deprecated `lerp: 'oklch'`, which warns once; an `ink` row would time this.
 
 3. **Next for speed: the steady frame of 10k one-voice-per-subject tweens read by `pull`** (`tweens^`,
    `weasel^`), Mike's go 2026-10-05. At 5,000 frames each row's tweens have landed for most of the

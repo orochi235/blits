@@ -87,3 +87,25 @@
   width: calc(100% - 2rem);
   margin: 0 1rem 1rem;
 }
+
+.live .inks {
+  display: grid;
+  grid-template-columns: auto 6rem 6rem;
+  justify-content: center;
+  justify-items: center;
+  align-items: center;
+  gap: 1rem 1.5rem;
+  padding: 2rem 1rem;
+  font: 500 0.85rem var(--label);
+  color: var(--ink);
+}
+
+.live .inks code {
+  justify-self: end;
+}
+
+.live .inks .dot {
+  width: 2.5rem;
+  height: 2.5rem;
+  cursor: default;
+}

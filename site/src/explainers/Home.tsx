@@ -1,4 +1,4 @@
-import { color, css, keys, kit, mul, oklab, patch, sum, toHex } from '@msb235/blits';
+import { css, ink, keys, kit, mul, oklab, patch, sum, toHex } from '@msb235/blits';
 import { f } from '@weasel-js/labkit';
 import { label } from './kit/draw';
 import { Explainer } from './kit/Explainer';
@@ -22,7 +22,7 @@ type Config = ReturnType<typeof config.defaults>;
 
 const swatches: Swatch[] = [0, 1, 2, 3, 4].map((i) => ({ i }));
 
-const PART = kit<Pose>({ gain: mul(), lift: sum(), color: color({ path: 'hue' }) });
+const PART = kit<Pose>({ gain: mul(), lift: sum(), color: ink() });
 
 const pulse = patch<Swatch, Pose>(
   2400,
@@ -74,8 +74,8 @@ function scene(c: Config): Scene<Swatch, Pose, Config> {
   };
 }
 
-/** A tint with no coverage leaves the swatch its own color. */
-const tinted = (v: number[] | undefined): v is number[] => v !== undefined && (v[3] ?? 0) > 0;
+/** A tint with no coverage leaves the swatch its own color; an ink pose holds its coverage fifth. */
+const tinted = (v: number[] | undefined): v is number[] => v !== undefined && (v[4] ?? 0) > 0;
 
 export default function Home() {
   return (

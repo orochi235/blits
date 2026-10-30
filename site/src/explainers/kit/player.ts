@@ -315,7 +315,7 @@ export function coursesOver<I, O, C>(scene: Scene<I, O, C>, config: C, duration:
   const channels = scene.ledger?.channels ?? [];
   // Per voice, per ledger channel: its numeric values, or null once one was not a number.
   const values = voices.map(() => channels.map((): number[] | null => []));
-  const tinted = channels.filter((c) => scene.kit[c].kind?.startsWith('color(') === true);
+  const tinted = channels.filter((c) => /^(color|ink)\(/.test(scene.kit[c].kind ?? ''));
   const colors = voices.map(() => tinted.map(() => [] as string[]));
   for (let k = 0; k < n; k++) {
     const f = player.at(k * FRAME);

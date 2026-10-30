@@ -32,7 +32,7 @@ leaving.fade();
 
 ## Which channels it changes
 
-Switch the channel to `sum` and the two curves lie on top of each other. On `sum`, blending and then scaling is the same arithmetic as scaling and then adding, so a role changes nothing there. On `mul`, `max` and `last` it's the difference between an alternative and a pile-up: `max` without a role reads half the gain at the midpoint, and in a role a `color(last())` color blends from one alternative to the other instead of switching.
+Switch the channel to `sum` and the two curves lie on top of each other. On `sum`, blending and then scaling is the same arithmetic as scaling and then adding, so a role changes nothing there. On `mul`, `max` and `last` it's the difference between an alternative and a pile-up: `max` without a role reads half the gain at the midpoint, and in a role a `color(last())` color blends from one alternative to the other instead of switching. It blends by the channel's own `lerp`: a `color` goes straight across OKLab, so red handing over to cyan passes through a pale gray, and an `ink` turns the hue, so it passes through the hues between.
 
 A role whose weights sum below 1 is faded toward rest by that sum, and one whose weights sum above 1 counts as 1. Every stock channel has a `lerp`, so any of them can be folded this way.
 

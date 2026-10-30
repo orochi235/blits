@@ -19,6 +19,7 @@ A 3D pose is mostly arrays, and blits has a channel for each kind:
 | `quat()` | `[x, y, z, w]`, a unit quaternion | Composed by the Hamilton product in the order the voices were cued. Rotations don't commute, so cue order matters. |
 | `angle()` | degrees, or radians with `{ turn: 2 * Math.PI }` | Added, and interpolated the short way round: from 350 to 10 through 0. |
 | `color()` | OKLab with coverage, `[L, a, b, w]` | Averaged by weight. `toHex(pose, under)` gives 0xrrggbb, laid over `under` where the coverage is short of 1. `color(last())` replaces instead. |
+| `ink()` | `oklab()` values in, `[L, a, b, C, w]` out | Blended round the hue at the voices' average chroma, for a color that stands for something, such as a selected or warning state. `toHex` and `css` read it as they read a `color`. `ink(last())` replaces instead. |
 
 [Channel and kit](../../channel/) has the rest.
 

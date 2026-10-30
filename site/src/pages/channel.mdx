@@ -6,6 +6,8 @@ description: A channel is one field with its own arithmetic. A kit is the set of
 import Channel from '../explainers/Channel';
 import Source from '../components/Source.astro';
 import ApiEntries from '../components/ApiEntries.astro';
+import Live from '../components/Live';
+import Listing from '../components/Listing.astro';
 
 # Channel and kit
 
@@ -23,16 +25,31 @@ Every stock channel but `last` has a **rest**: the value that changes nothing. I
 A **kit** names the channels one kind of pose is made of:
 
 ```ts
-import { color, kit, max, mul, sum, vec } from '@msb235/blits';
+import { color, ink, kit, max, mul, sum, vec } from '@msb235/blits';
 
 const PART = kit<PartPose>({
   gain: mul(),
   dark: max(),
   position: vec(3, sum()),
   color: color(),
+  status: ink(),
 });
 ```
 
-`vec(n, of)` runs one channel's arithmetic down an axis list, and `color()` holds a color as OKLab with a coverage: voices stacked on it average, `color(last())` replaces instead, and `{ lerp: 'oklch' }` crossfades round the hue, as a tween, spring or glide on it moves. `oklab(0xrrggbb)` makes a value, and `toHex(pose, under)` or `css(pose)` turns a pose back into something to draw. A consumer can declare a channel of its own: it's four functions, and only `merge` and `lerp` are required.
+`vec(n, of)` runs one channel's arithmetic down an axis list. A consumer can declare a channel of its own: it's four functions, and only `merge` and `lerp` are required.
+
+## Two kinds of color
+
+blits has two color channels that take the same values and blend them differently. `oklab(0xrrggbb)` makes a value for either, and `toHex(pose, under)` or `css(pose)` turns a pose of either back into something to draw.
+
+`color()` is color as the real world shows it: light, sky, smoke, paint. Voices stacked on it average straight across OKLab, and it moves between two colors in a straight line there too, so red heading for blue passes a grayed purple, as two lights mixing would.
+
+`ink()` is color standing for a meaning: a status, a level, a team. People picture the midpoint between red and blue as purple, reached by turning the hue, and `ink` gives them that: it moves round the hue, and stacked voices blend round the hue at their average vividness, so red and blue at equal weight make a vivid purple. Two inks with nearly opposite hues swing round the wheel as their weights cross.
+
+<Live client:only="react" of="examples/inks.ts" />
+
+The same voices write both rows. On the left one voice sweeps from red to blue and back; on the right a red voice holds while a blue one fades in and out over it. `color(last())` and `ink(last())` replace instead of stacking, and travel the same way their averaging forms do. A tween, spring or glide on an `ink` moves round the hue as well.
+
+<Listing of="live/examples/inks.ts" />
 
 <ApiEntries word="channel" />
