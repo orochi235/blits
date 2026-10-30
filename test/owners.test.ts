@@ -11,7 +11,7 @@ const owners: Record<string, string[]> = {
   general: ['roster.ts', 'move.ts'],
   sharers: ['roster.ts', 'move.ts'],
   owners: ['roster.ts', 'seek.ts'],
-  detours: ['everyone.ts'],
+  detours: ['roster.ts'],
   pulled: ['pull.ts'],
   pulledHeads: ['pull.ts'],
   pulledSlots: ['pull.ts'],
