@@ -1,5 +1,5 @@
 import { first } from './clone.js';
-import { open as openRecord } from './everyone.js';
+import type { Share } from './everyone.js';
 import { merged, unband } from './fold.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
@@ -9,7 +9,6 @@ import type { Channel } from './types.js';
 import type { Voice } from './voice.js';
 
 // V8 reads a local const as a constant, where it reads an import from its module on every call.
-const open = openRecord;
 
 /**
  * Whether a fold's next voice is its chain's next record, `held`, and not the next voice sharing
@@ -68,7 +67,7 @@ export function foldRoles<I, O>(
       if (laned && voice.laned && !this.owedBy(owed, voice)) continue;
       if (voice.id === except || voice.state === 'done') continue;
       const held: Subject<unknown> = rec;
-      if (!mine) open(voice, held, head.slot);
+      if (!mine) (this.share as Share).open(voice, held, head.slot);
       const delta = this.read(voice, subject, now, dry, held);
       if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
       if (!mine) q = this.shared(voice, head.slot, held, q);

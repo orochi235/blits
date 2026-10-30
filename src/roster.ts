@@ -1,8 +1,16 @@
 import { index, unindex } from './chain.js';
-import { detour } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { Store } from './store.js';
 import type { Voice } from './voice.js';
+
+/**
+ * Counts what makes a mix's fold more than a walk of each chain: a role, a voice sharing one
+ * record, a voice that stopped sharing this frame. Called wherever one of the three changes, so
+ * `foldWith` asks one number.
+ */
+export function detour<I, O>(mix: Mixer<I, O>): void {
+  mix.detours = mix.roleVoices + mix.sharers.length + (mix.unshared ? 1 : 0);
+}
 
 function tally<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, by: 1 | -1): void {
   if (voice.spec.role !== undefined) mix.roleVoices += by;

@@ -1,5 +1,4 @@
 import { headOf } from './chain.js';
-import { restamp } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
 import type { Subject } from './subject.js';
@@ -22,7 +21,7 @@ export function touch<I, O>(mix: Mixer<I, O>, subject?: I): void {
     let held: Subject<unknown> | null = headOf(mix, subject) ?? null;
     for (; held !== null; held = held.next) held.seeks = -1;
     const slot = headOf(mix, subject)?.slot ?? -1;
-    for (const voice of mix.sharers) restamp(voice, slot);
+    for (const voice of mix.sharers) mix.share?.restamp(voice, slot);
   }
   mix.lanes?.refill();
   mix.stir();

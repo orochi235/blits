@@ -1,7 +1,8 @@
 import { lit } from './bound.js';
-import type { Column } from './columns.js';
+import { flush, pullRun, writeLater } from './columns.js';
 import { type Copier, copy } from './copyout.js';
 import { type Crowd, Flag, Hot, row } from './crowd.js';
+import { share } from './everyone.js';
 import {
   call,
   fillAll,
@@ -21,8 +22,10 @@ import { meet, reach } from './meet.js';
 import { absent, Numbers } from './numbers.js';
 import { Owed } from './owed.js';
 import { Placed } from './placed.js';
+import type { Column } from './pull.js';
 import { requalify, retouch } from './qualify.js';
 import { reading } from './reading.js';
+import { renumber } from './renumber.js';
 import { reportedRow, unplace } from './rows.js';
 import { type Seat, seatOf } from './seat.js';
 import type { Watcher } from './stretch.js';
@@ -86,6 +89,10 @@ export interface LaneHost<I, O> {
  */
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: every member of `Methods` is installed below
 export class Lanes<I, O> implements Watcher {
+  /** What the general path calls on a sharing voice, given to a mix by its engine so a lean bundle leaves it out. */
+  static readonly share = share;
+  /** What `pull` calls on lanes alone. */
+  readonly pulls = { pullRun, writeLater, flush, renumber };
   readonly numbers: Numbers<I>;
   lanes: Lane<I, O>[] = [];
   /** The lanes over every subject that have started playing, by epoch. */

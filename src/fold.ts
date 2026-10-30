@@ -1,6 +1,6 @@
 import { foldNumber } from './channels.js';
 import { copy as copyValue, first } from './clone.js';
-import { open as openRecord, shut as shutRecord, weighAt } from './everyone.js';
+import type { Share } from './everyone.js';
 import { Per } from './lane.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
@@ -12,8 +12,6 @@ export type Key<O> = keyof O & string;
 
 // V8 reads a local const as a constant, where it reads an import from its module on every call.
 const copy = copyValue;
-const open = openRecord;
-const shut = shutRecord;
 
 /** A record's band state, made when a rest-less channel first asks. */
 function bandsFor(held: Subject<unknown>, n: number): Uint8Array {
@@ -134,9 +132,9 @@ export function shared<I, O>(
   if (voice.sharing) {
     // A projection numbers no subject, and keeps nothing by subject.
     if (slot < 0) return q;
-    const cap = (this.lanes as Lanes<I, O>).cap;
-    weighAt(voice, slot, rec.weight, cap);
-    shut(voice, rec, slot, cap);
+    const lanes = this.lanes as Lanes<I, O>;
+    (this.share as Share).weighAt(voice, slot, rec.weight, lanes.cap);
+    (this.share as Share).shut(voice, rec, slot, lanes.cap);
     return q;
   }
   const sharers = this.sharers;
@@ -314,7 +312,7 @@ export function foldSharers<I, O>(
     if (rec === null) continue;
     if (laned && voice.laned && !this.owedBy(owed, voice)) continue;
     if (voice.id === except || voice.state === 'done') continue;
-    open(voice, rec, head.slot);
+    (this.share as Share).open(voice, rec, head.slot);
     const delta = this.read(voice, subject, now, dry, rec);
     if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, rec.weight);
     q = this.shared(voice, head.slot, rec, q);

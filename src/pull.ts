@@ -1,15 +1,36 @@
 import { axesOf } from './channels.js';
 import { copy } from './clone.js';
-import { type Column, clampRun, flush, pullRun, writeLater } from './columns.js';
 import type { Values } from './fold.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
-import { renumber } from './renumber.js';
 import type { Subject } from './subject.js';
 import type { Channel, Columns } from './types.js';
 
 /** What `pull` remembers at a position it has read no subject at. */
 const UNREAD: unknown = Symbol('unread');
+
+/** One channel `pull` writes: where in the kit, how many numbers a subject, and its rest. */
+export interface Column {
+  key: string;
+  slot: number;
+  axes: number;
+  out: Float64Array;
+  /** The rest, clamped, or NaN for a channel with none. */
+  rest: Float64Array;
+  bounds: readonly [number, number] | undefined;
+}
+
+export function clampRun(
+  out: Float64Array,
+  at: number,
+  n: number,
+  [lo, hi]: readonly [number, number],
+): void {
+  for (let i = at; i < at + n; i++) {
+    const x = out[i] as number;
+    out[i] = x < lo ? lo : x > hi ? hi : x;
+  }
+}
 
 /** Writes a folded pose's value into subject `n`'s places in a column. */
 function writeValue(c: Column, v: unknown, n: number): void {
@@ -112,7 +133,7 @@ export function pull<I, O>(mix: Mixer<I, O>, subjects: Iterable<I>, into: Column
   try {
     readAll(mix, list, columns, live, current, since, whole);
   } finally {
-    if (lanes !== null) flush(lanes);
+    if (lanes !== null) lanes.pulls.flush(lanes);
   }
   // Every head is current only if nothing relinked or changed version while they were read.
   const unchanged = live && mix.version === version && mix.relinks === relinks;
@@ -145,7 +166,17 @@ function readAll<I, O>(
   const runs = live && whole;
   for (let n = 0; n < list.length; n++) {
     if (runs) {
-      n = pullRun(lanes as Lanes<I, O>, slots, list, was, since, n, columns, now, mix.version);
+      n = (lanes as Lanes<I, O>).pulls.pullRun(
+        lanes as Lanes<I, O>,
+        slots,
+        list,
+        was,
+        since,
+        n,
+        columns,
+        now,
+        mix.version,
+      );
       if (n === list.length) break;
     }
     const subject = list[n] as I;
@@ -164,7 +195,7 @@ function readAll<I, O>(
         // Numbered out of the list's order, as swap-remove leaves a subject: renumbered into it.
         const to = n === 0 ? 0 : (slots[n - 1] as number) + 1;
         if (runs && slot >= 0 && slot !== to && to >= 0) {
-          if (renumber(mix, subject, head, to)) {
+          if ((lanes as Lanes<I, O>).pulls.renumber(mix, subject, head, to)) {
             for (let j = was.indexOf(subject); j >= 0; j = was.indexOf(subject, j + 1))
               slots[j] = to;
             slot = to;
@@ -175,7 +206,7 @@ function readAll<I, O>(
     }
     const laned = live && lanes?.prepare(slot, subject, mix.version, heads[n] ?? null) === true;
     if (laned && whole && (lanes as Lanes<I, O>).whole && !(lanes as Lanes<I, O>).owes(slot)) {
-      writeLater(lanes as Lanes<I, O>, slot, columns, n, slots);
+      (lanes as Lanes<I, O>).pulls.writeLater(lanes as Lanes<I, O>, slot, columns, n, slots);
       continue;
     }
     const head = live ? (heads[n] as Subject<unknown>) : null;

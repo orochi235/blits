@@ -1,28 +1,6 @@
 import { Begin, Per } from './lane.js';
 import type { Lanes } from './lanes.js';
-
-/** One channel `pull` writes: where in the kit, how many numbers a subject, and its rest. */
-export interface Column {
-  key: string;
-  slot: number;
-  axes: number;
-  out: Float64Array;
-  /** The rest, clamped, or NaN for a channel with none. */
-  rest: Float64Array;
-  bounds: readonly [number, number] | undefined;
-}
-
-export function clampRun(
-  out: Float64Array,
-  at: number,
-  n: number,
-  [lo, hi]: readonly [number, number],
-): void {
-  for (let i = at; i < at + n; i++) {
-    const x = out[i] as number;
-    out[i] = x < lo ? lo : x > hi ? hi : x;
-  }
-}
+import { type Column, clampRun } from './pull.js';
 
 /**
  * For a `pull` of a list it read last time in the same order, with every voice on a lane, where

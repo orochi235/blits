@@ -2,7 +2,7 @@ import { changed } from './chain.js';
 import { stepOf } from './clock.js';
 import { delayOf } from './delay.js';
 import { schedule } from './due.js';
-import { everyoneOf, inherit, sighted } from './everyone.js';
+import type { Share } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { originOf } from './origin.js';
 import { startOf } from './place.js';
@@ -39,7 +39,7 @@ export function held<I, O>(
   guess: Subject<unknown> | null = null,
 ): Subject<unknown> {
   if (voice.sharing) {
-    const all = everyoneOf(this, voice);
+    const all = (this.share as Share).everyoneOf(this, voice);
     if (all !== null) return all;
   }
   if (unreached(voice, slot)) return voice.unreached as Subject<unknown>;
@@ -83,7 +83,8 @@ export function held<I, O>(
   voice.subjects.set(subject, held);
   waits(voice, held, now);
   // A subject a voice saw while it shared one record was counted then.
-  if (sighted(voice, slot)) inherit(voice, held, slot);
+  if (voice.sighted !== null && this.share?.sighted(voice, slot))
+    this.share.inherit(voice, held, slot);
   else voice.seen++;
   if (delay > voice.latest) {
     voice.latest = delay;

@@ -1,9 +1,9 @@
 import { type Numeric, numericOf } from './channels.js';
 import { flush } from './columns.js';
-import { crowdable } from './crowd.js';
 import { byId } from './due.js';
 import { weighAt } from './everyone.js';
 import { wake } from './fill.js';
+import { crowdable } from './hosts.js';
 import { Lane, type Laned, Per, type Role } from './lane.js';
 import type { Lanes } from './lanes.js';
 import { reach } from './meet.js';

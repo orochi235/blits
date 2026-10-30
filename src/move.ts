@@ -2,7 +2,6 @@ import { settleArcs } from './arcs.js';
 import { changed } from './chain.js';
 import { elapsedWith } from './clock.js';
 import { byId, popDue, schedule } from './due.js';
-import { detour, outgrow } from './everyone.js';
 import { beginFade, part, retire } from './fade.js';
 import { expireGone, keepGone } from './gone.js';
 import { begin } from './held.js';
@@ -12,7 +11,7 @@ import { leave as leaveClock } from './origin.js';
 import { ownerReading } from './owner.js';
 import { mixAt, place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
-import { delist } from './roster.js';
+import { delist, detour } from './roster.js';
 import { scoredLeft, scoredRemove } from './scored.js';
 import { lapse } from './spans.js';
 import { unplay } from './strays.js';
@@ -141,7 +140,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
     lapse(mix, now);
     settleArcs(mix, now);
   }
-  if (mix.sharers.length > 0 && !mix.projecting) outgrow(mix);
+  if (mix.sharers.length > 0 && !mix.projecting) mix.share?.outgrow(mix);
   mix.stirred = false;
   mix.asleep = false;
   if (mix.retired.length > 0) prune(mix);

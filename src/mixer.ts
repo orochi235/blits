@@ -5,12 +5,12 @@ import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
 import { aims, chain, linkable, relink } from './chain.js';
 import { type LerpInto, lerpInto, STOCK_BAND, scalarOp } from './channels.js';
-import type { Column } from './columns.js';
 import { baseFor, contribution, isRest, keyed, read, slopeFor, tick } from './contribution.js';
 import { cue, roleTags } from './cue.js';
 import { DepartedIndex } from './departed.js';
 import { drop, forgetIn, recordDrop, releaseIn } from './drop.js';
 import { DueQueue } from './due.js';
+import type { Share } from './everyone.js';
 import { beginFade, parting } from './fade.js';
 import {
   apply,
@@ -40,6 +40,7 @@ import { Keys } from './paging.js';
 import type { Places } from './places.js';
 import { moved, place, plot, put } from './plot.js';
 import { projectAll } from './project.js';
+import type { Column } from './pull.js';
 import { keep, pull } from './pull.js';
 import { Steps } from './relink.js';
 import { atRest, restful, rests, restsKey, restsLaned, still } from './rests.js';
@@ -289,6 +290,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   roleDepth = 0;
   readonly slotOf = new Map<string, number>();
   lanes: Lanes<I, O> | null;
+  /** The sharing hooks of the lanes this entry was built with, which a projection's copy keeps. */
+  share: Share | null;
   handles: HandleHost<I, O> | null = null;
   /** What `book` made, still booking; null while there is none. */
   bookers: Book<I, O>[] | null = null;
@@ -322,6 +325,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     });
     if (lanesOf === null && opts.lanes === true)
       throw new Error("blits: '@msb235/blits/lean' has no lanes; take mix from '@msb235/blits'");
+    this.share = lanesOf?.share ?? null;
     this.lanes =
       lanesOf !== null && (opts.lanes ?? defaults.lanes) ? new lanesOf<I, O>(laneHost(this)) : null;
     this.name = opts.name;

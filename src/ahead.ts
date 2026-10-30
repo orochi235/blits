@@ -1,6 +1,6 @@
 import { ownBlends } from './blend.js';
 import { headOf } from './chain.js';
-import { open, sighted, weightAt } from './everyone.js';
+import type { Share } from './everyone.js';
 import { copyHeld, unread } from './history.js';
 import { markOf, voiceMarks } from './marks.js';
 import { Mixer } from './mixer.js';
@@ -51,6 +51,7 @@ export function playAhead(
         const on = new Mixer<unknown, unknown>(copy.kit, { ...copy.opts, transport: next }, null);
         on.slot = copy.slot;
         on.projecting = true;
+        on.share = copy.share;
         copyAhead(copy, on);
         const stages = earlier.get(mix);
         if (stages === undefined) earlier.set(mix, { at: [copy], met: new Set() });
@@ -209,10 +210,11 @@ export function recordOf<I, O>(
   // the subject for the caller to copy from.
   if (voice.sharing) {
     const slot = headOf(mix, subject)?.slot ?? -1;
-    if (!sighted(voice, slot)) return undefined;
+    const share = mix.share as Share;
+    if (!share.sighted(voice, slot)) return undefined;
     const all = voice.everyone as Subject<unknown>;
-    open(voice, all, slot);
-    all.weight = weightAt(voice, slot);
+    share.open(voice, all, slot);
+    all.weight = share.weightAt(voice, slot);
     return all;
   }
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;

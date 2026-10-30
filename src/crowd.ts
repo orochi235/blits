@@ -11,20 +11,6 @@ import { move } from './sample.js';
 import type { Subject } from './subject.js';
 import type { Voice } from './voice.js';
 
-/**
- * Whether a laned voice belongs in a crowd: one naming a single subject, which shares nothing
- * across subjects for a lane to save. A motion voice writes one channel; a keys or fn voice may
- * write several, and joins the crowd of voices writing those same channels.
- */
-export function crowdable<I, O>(v: Voice<I, O>): boolean {
-  return (
-    v.named !== null &&
-    v.named.size === 1 &&
-    v.spec.role === undefined &&
-    (v.slots.length === 1 || v.motion === undefined)
-  );
-}
-
 /** The law of a row that has none, a keys or fn voice's. */
 export const none = new Float64Array(0);
 

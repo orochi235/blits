@@ -1,4 +1,4 @@
-import { everyoneOf, sight } from './everyone.js';
+import type { Share } from './everyone.js';
 import type { Lanes } from './lanes.js';
 import type { Mixer } from './mixer.js';
 import type { Named } from './named.js';
@@ -114,9 +114,9 @@ export function linkable<I, O>(
   const state = voice.state;
   if (state === 'done' || (state === 'pending' && !voice.freezesBefore)) return null;
   // A voice sharing one record is in no chain: a fold takes it from `sharers` at its place.
-  if (voice.sharing && everyoneOf(this, voice) !== null) {
+  if (voice.sharing && (this.share as Share).everyoneOf(this, voice) !== null) {
     // A projection numbers no subject, and keeps nothing by subject.
-    if (slot >= 0) sight(voice, slot, (this.lanes as Lanes<I, O>).cap);
+    if (slot >= 0) (this.share as Share).sight(voice, slot, (this.lanes as Lanes<I, O>).cap);
     return null;
   }
   const held = this.held(voice, subject, slot, guess);

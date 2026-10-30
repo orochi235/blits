@@ -1,7 +1,6 @@
 import { changed, headOf, unlink } from './chain.js';
 import { envelope } from './clock.js';
 import { schedule } from './due.js';
-import { unshare, unsight } from './everyone.js';
 import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
@@ -23,7 +22,7 @@ export function fadeSubject<I, O>(
   over?: number,
 ): void {
   if (voice.state === 'done' || voice.parted?.has(subject) || voice.parts?.has(subject)) return;
-  unshare(mix, voice);
+  mix.share?.unshare(mix, voice);
   mix.stir();
   const ms = mix.reduced ? 0 : (over ?? voice.fade.out ?? 0);
   const at = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
@@ -118,7 +117,7 @@ function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void 
   if (head !== undefined && head.slot >= 0) {
     unreach(voice, head.slot, false);
     // What the voice kept for the subject while it shared one record, which `weightOf` reads.
-    unsight(voice, head.slot);
+    mix.share?.unsight(voice, head.slot);
   }
   const held = voice.subjects.get(subject) as Subject<unknown> | undefined;
   if (held !== undefined) {
@@ -148,7 +147,7 @@ export function beginFade<I, O>(
   // A fade at rest marks each subject's record as it comes to rest, at its next read: one already
   // read this frame is read again, as after `touch`.
   if (opts.at === 'rest') {
-    unshare(mix, voice);
+    mix.share?.unshare(mix, voice);
     voice.seeks++;
   }
   voice.state = 'fading';

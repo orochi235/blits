@@ -3,9 +3,7 @@ import { Book, type BookHost } from './book.js';
 import { headOf } from './chain.js';
 import { numericOf } from './channels.js';
 import { stepOf } from './clock.js';
-import { crowdable } from './crowd.js';
 import { schedule } from './due.js';
-import { unshare, unsight, weightAt } from './everyone.js';
 import { beginFade, beginRise, fadeAt, fadeSubject } from './fade.js';
 import { goneIndex } from './gone.js';
 import { type HandleHost, VoiceHandle } from './handle.js';
@@ -71,7 +69,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
       // Only a voice over every subject keeps bits, and one gone may still be read back.
       for (const voice of mix.general) {
         unreach(voice, slot, false);
-        if (voice.sighted !== null) unsight(voice, slot);
+        if (voice.sighted !== null) mix.share?.unsight(voice, slot);
       }
       for (const voice of goneIndex(mix).general) unreach(voice, slot, false);
     },
@@ -111,6 +109,20 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
     after: (voice, subject, held) => remember(mix, voice, subject, held),
     kept: (voice) => stateful(mix, voice),
   };
+}
+
+/**
+ * Whether a laned voice belongs in a crowd: one naming a single subject, which shares nothing
+ * across subjects for a lane to save. A motion voice writes one channel; a keys or fn voice may
+ * write several, and joins the crowd of voices writing those same channels.
+ */
+export function crowdable<I, O>(v: Voice<I, O>): boolean {
+  return (
+    v.named !== null &&
+    v.named.size === 1 &&
+    v.spec.role === undefined &&
+    (v.slots.length === 1 || v.motion === undefined)
+  );
 }
 
 /**
@@ -177,7 +189,7 @@ export function stateful<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   if (voice.keeping) return;
   voice.keeping = true;
   // The call that kept state was for the subject last sent to, whose record the state is on.
-  if (voice.sharing) unshare(mix, voice, true, mix.sending.subject as I);
+  if (voice.sharing) mix.share?.unshare(mix, voice, true, mix.sending.subject as I);
   mix.lanes?.invalidate();
 }
 
@@ -237,7 +249,8 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
         ? undefined
         : (voice.subjects.get(subject) as Subject<unknown> | undefined);
       // A voice that stopped sharing makes a subject's record at its next read, from what it kept.
-      return held !== undefined ? held.weight : weightAt(voice, slot);
+      if (held !== undefined) return held.weight;
+      return mix.share === null ? 0 : mix.share.weightAt(voice, slot);
     },
     taping: () => taping(mix),
     record: (h, label, again) =>

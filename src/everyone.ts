@@ -2,6 +2,7 @@ import { headOf } from './chain.js';
 import { numericOf } from './channels.js';
 import type { Mixer } from './mixer.js';
 import { record } from './record.js';
+import { detour } from './roster.js';
 import type { Subject } from './subject.js';
 import type { Channel } from './types.js';
 import type { Voice } from './voice.js';
@@ -284,18 +285,28 @@ export function unshare<I, O>(
   mix.lanes?.refill();
 }
 
-/**
- * Counts what makes a mix's fold more than a walk of each chain: a role, a voice sharing one
- * record, a voice that stopped sharing this frame. Called wherever one of the three changes, so
- * `foldWith` asks one number.
- */
-export function detour<I, O>(mix: Mixer<I, O>): void {
-  mix.detours = mix.roleVoices + mix.sharers.length + (mix.unshared ? 1 : 0);
-}
-
 /** Gives a record just made for a subject a sharing voice had seen what the voice kept for it. */
 export function inherit<I, O>(voice: Voice<I, O>, held: Subject<unknown>, slot: number): void {
   held.weight = weightAt(voice, slot);
   open(voice, held, slot);
   unsight(voice, slot);
 }
+
+/** What the general path calls on a sharing voice, reached through `Lanes`, so a lean bundle leaves it out. */
+export const share = {
+  shares,
+  outgrow,
+  everyoneOf,
+  sighted,
+  sight,
+  weightAt,
+  weighAt,
+  open,
+  shut,
+  restamp,
+  unsight,
+  unshare,
+  inherit,
+};
+
+export type Share = typeof share;

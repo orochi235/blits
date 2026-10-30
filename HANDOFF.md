@@ -568,10 +568,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    (`src/shared.ts`, `test/copies.test.ts`; the schema page's motion section). blits-quarks,
    blits-tone and blits-panel take blits as a peer dependency, so **the range has to be widened with
    each engine minor**. `@msb235/blits/lean` leaves lanes out of a bundle (the site's lean guide has
-   the sizes). What lanes code still lands in a lean bundle, and why (esbuild metafile, 2026-10-21,
-   51.1 kB gzipped in all): `everyone.ts` (2.8 kB), since a dozen general-path modules call its
-   sharing hooks though no voice shares without lanes; `columns.ts` (2.1 kB), from `pull`; and
-   `crowd.ts`'s `crowdable` (146 B), from `fits` in `hosts.ts`. History (9.3 kB gzipped) is reached
+   the sizes). Since 2026-10-30 no lanes module lands in a lean bundle (58.7 kB gzipped for `mix`
+   alone, by an esbuild metafile): the sharing hooks reach the general path through `mix.share`,
+   which an engine with lanes sets and a projection's copy keeps, and `pull`'s lane runs through
+   `Lanes.pulls`. History (9.3 kB gzipped) is reached
    from 24 places in 12 modules and was left in.
 
 10. **The history adapter** (the schema page's "History behind a store") **has not been reviewed
