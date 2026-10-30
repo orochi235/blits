@@ -34,10 +34,10 @@ const turning = (c: readonly number[], dh: number): number[] => {
 const made = (tint: Channel<number[]>, lanes: boolean) =>
   mix<Part, Pose>(kit<Pose>({ tint }), { lanes });
 
-describe("a tween on color({ lerp: 'oklch' })", () => {
+describe("a tween on color({ path: 'hue' })", () => {
   it('keeps chroma at its midpoint, as the channel lerp does, on lanes and off', () => {
     for (const lanes of [false, true]) {
-      const round = color({ lerp: 'oklch' });
+      const round = color({ path: 'hue' });
       const m = made(round, lanes);
       m.cue({
         patch: tween<Part, Pose, number[]>('tint', {
@@ -61,7 +61,7 @@ describe("a tween on color({ lerp: 'oklch' })", () => {
   });
 
   it('fades coverage alongside, a color with none taking the other end’s', () => {
-    const round = color({ lerp: 'oklch' });
+    const round = color({ path: 'hue' });
     const m = made(round, false);
     m.cue({
       patch: tween<Part, Pose, number[]>('tint', {
@@ -95,10 +95,10 @@ describe("a tween on color({ lerp: 'oklch' })", () => {
   });
 });
 
-describe("a spring on color({ lerp: 'oklch' })", () => {
+describe("a spring on color({ path: 'hue' })", () => {
   it('goes round the hue rather than through gray', () => {
     for (const lanes of [false, true]) {
-      const m = made(color({ lerp: 'oklch' }), lanes);
+      const m = made(color({ path: 'hue' }), lanes);
       m.cue({ patch: spring<Part, Pose, number[]>('tint', { from: RED, to: CYAN, damping: 40 }) });
       const a = { id: 'a' };
       let least = Number.POSITIVE_INFINITY;
@@ -113,7 +113,7 @@ describe("a spring on color({ lerp: 'oklch' })", () => {
 
   it('carries position and velocity through a retarget mid-flight', () => {
     const s = spring<Part, Pose, number[]>('tint', { from: RED, to: CYAN, settle: 0 });
-    const m = made(color({ lerp: 'oklch' }), false);
+    const m = made(color({ path: 'hue' }), false);
     m.cue({ patch: s });
     const a = { id: 'a' };
     for (let t = 0; t <= 100; t += 16) {
@@ -137,7 +137,7 @@ describe("a spring on color({ lerp: 'oklch' })", () => {
   });
 });
 
-describe("a glide on color({ lerp: 'oklch' })", () => {
+describe("a glide on color({ path: 'hue' })", () => {
   it('coasts round the hue at the chroma it started at, and a push carries on from there', () => {
     for (const lanes of [false, true]) {
       const g = glide<Part, Pose, number[]>('tint', {
@@ -146,7 +146,7 @@ describe("a glide on color({ lerp: 'oklch' })", () => {
         ms: 250,
         settle: 0,
       });
-      const m = made(color({ lerp: 'oklch' }), lanes);
+      const m = made(color({ path: 'hue' }), lanes);
       m.cue({ patch: g });
       const a = { id: 'a' };
       for (let t = 0; t <= 100; t += 10) {
@@ -173,7 +173,7 @@ describe("a glide on color({ lerp: 'oklch' })", () => {
         [1, 1, 1, 1],
       ],
     });
-    const m = made(color({ lerp: 'oklch' }), false);
+    const m = made(color({ path: 'hue' }), false);
     expect(() => m.cue({ patch: g })).toThrow(/bounds/);
   });
 });

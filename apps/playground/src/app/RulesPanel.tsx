@@ -32,8 +32,8 @@ const ignore = () => {};
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const bandOf = (ch: string) => `${ch}Bounds`;
 const label = (spec: Rules[keyof Rules]) =>
-  'lerp' in spec
-    ? `${spec.rule}, ${spec.lerp}`
+  'path' in spec
+    ? `${spec.rule}, ${spec.path}`
     : spec.bounds
       ? `${spec.rule} [${spec.bounds.join(', ')}]`
       : spec.rule;
@@ -77,7 +77,7 @@ export function RulesPanel({
   const config: Record<string, unknown> = { changed: comp.rules !== undefined };
   for (const ch of CHANNELS) {
     const spec = rules[ch];
-    if (!('lerp' in spec)) config[bandOf(ch)] = spec.rule !== 'last' && spec.bounds !== undefined;
+    if (!('path' in spec)) config[bandOf(ch)] = spec.rule !== 'last' && spec.bounds !== undefined;
   }
 
   const select = (
@@ -195,8 +195,8 @@ export function RulesPanel({
             set('color', { ...spec, rule: v as ColorRuleSpec['rule'] }),
           )}
           <span className={r.to}>in</span>
-          {select('color lerp', spec.lerp, ['oklch', 'oklab'], (v) =>
-            set('color', { ...spec, lerp: v as ColorRuleSpec['lerp'] }),
+          {select('color path', spec.path, ['hue', 'linear'], (v) =>
+            set('color', { ...spec, path: v as ColorRuleSpec['path'] }),
           )}
           {back('color')}
         </span>

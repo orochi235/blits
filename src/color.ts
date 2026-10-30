@@ -1,6 +1,7 @@
 import { lerpNumber, numericOf, sum, vec, vouch, widen } from './channels.js';
 import { HUES, lchPair, shortWay } from './lch.js';
 import type { Channel } from './types.js';
+import { warnOnce } from './warn.js';
 
 const mix = lerpNumber;
 
@@ -116,14 +117,19 @@ function hueAt(ah: number, ac: number, bh: number, bc: number, u: number): numbe
 }
 
 /**
- * How a `color` channel interpolates two colors. Straight across OKLab, or in OKLCH with hue the
- * short way round, as `mixHex` does.
+ * How a `color` channel travels between two colors, in a motion or a role's handoff: `'linear'`,
+ * the default, straight across OKLab, or `'hue'` round the hue the short way, as `mixHex` does.
+ * Voices that overlap still average in OKLab.
  *
  * @category channel
  */
 export interface ColorOptions {
+  path?: 'hue' | 'linear';
+  /** @deprecated Use `path`: `'oklch'` is `'hue'` and `'oklab'` is `'linear'`. */
   lerp?: 'oklab' | 'oklch';
 }
+
+const LERP = {};
 
 const PAIR = new Float64Array(8);
 
@@ -138,7 +144,7 @@ function lerpLch(x: number[], y: number[], u: number): number[] {
 }
 
 /**
- * Whether `channel` interpolates in OKLCH, as `color({ lerp: 'oklch' })` makes it, so a motion
+ * Whether `channel` interpolates in OKLCH, as `color({ path: 'hue' })` makes it, so a motion
  * patch cued on it moves round the hue too.
  */
 export function roundsHue(channel: Channel<unknown>): boolean {
@@ -149,9 +155,9 @@ export function roundsHue(channel: Channel<unknown>): boolean {
  * Color as OKLab `[L, a, b, coverage]`, its merge rule given as `of`. `color()` averages: voices
  * stack as a premultiplied sum, so a pose holds `[Σw·L, Σw·a, Σw·b, Σw]` and runs on lanes;
  * `toHex` divides it out and lays it over what is under it. `color(last())` replaces, the last
- * voice to pass winning, at the coverage it was authored with. `lerp` picks how two colors
- * interpolate: OKLab, the default, crosses through gray between opposite hues, and `'oklch'`
- * goes round the hue instead.
+ * voice to pass winning, at the coverage it was authored with. `path` picks how it travels
+ * between two colors: `'linear'`, the default, crosses through gray between opposite hues, and
+ * `'hue'` goes round the hue instead.
  *
  * @category channel
  */
@@ -166,7 +172,9 @@ export function color(
 ): Channel<number[]> {
   const of = ofOrOpts !== undefined && 'merge' in ofOrOpts ? ofOrOpts : undefined;
   const opts = of === undefined ? (ofOrOpts as ColorOptions | undefined) : maybe;
-  const round = opts?.lerp === 'oklch';
+  if (opts?.lerp !== undefined && opts.path === undefined)
+    warnOnce(LERP, "color({ lerp }) is renamed path: 'oklch' is 'hue' and 'oklab' is 'linear'");
+  const round = opts?.path !== undefined ? opts.path === 'hue' : opts?.lerp === 'oklch';
   const space = round ? ', oklch' : '';
   const stock = of === undefined ? undefined : numericOf(of);
   if (

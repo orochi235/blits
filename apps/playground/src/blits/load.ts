@@ -221,7 +221,10 @@ const RULE_CHECKS: Record<string, (v: unknown) => boolean> = {
   scale: numberRule(...NUMBER_RULES),
   opacity: numberRule(...NUMBER_RULES),
   glow: numberRule(...NUMBER_RULES),
-  color: (v) => obj(v) && oneOf('replace', 'average')(v.rule) && oneOf('oklch', 'oklab')(v.lerp),
+  color: (v) =>
+    obj(v) &&
+    oneOf('replace', 'average')(v.rule) &&
+    (v.path === undefined ? oneOf('oklch', 'oklab')(v.lerp) : oneOf('hue', 'linear')(v.path)),
 };
 const rules = (v: unknown) =>
   obj(v) && Object.entries(v).every(([ch, r]) => RULE_CHECKS[ch]?.(r) === true);
@@ -247,6 +250,12 @@ export function load(raw: unknown): Composition | null {
   if (!opt(groups, (g) => Array.isArray(g) && g.length <= MAX_GROUPS && g.every(group)))
     return null;
   if (!groupsOk(raw as unknown as Composition)) return null;
+  // Saved and shared before blits named it `path`.
+  const color = (raw.rules as Rec | undefined)?.color as Rec | undefined;
+  if (color !== undefined && 'lerp' in color) {
+    color.path ??= color.lerp === 'oklch' ? 'hue' : 'linear';
+    delete color.lerp;
+  }
   // Saved and shared before blits named them `freeze` and `role`.
   for (const v of voices as Rec[]) {
     if ('hold' in v) {

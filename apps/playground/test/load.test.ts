@@ -60,7 +60,7 @@ describe('load', () => {
     const rules = {
       scale: { rule: 'sum', bounds: [0, 3] },
       turn: { rule: 'last' },
-      color: { rule: 'average', lerp: 'oklab' },
+      color: { rule: 'average', path: 'linear' },
     };
     expect(load({ ...copy(), rules })?.rules).toEqual(rules);
   });

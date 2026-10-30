@@ -33,7 +33,7 @@ describe('kitOf', () => {
     });
     const k = kitOf({
       scale: { rule: 'sum', bounds: [0, 3] },
-      color: { rule: 'average', lerp: 'oklab' },
+      color: { rule: 'average', path: 'linear' },
     });
     expect(kinds(k)).toMatchObject({ scale: 'sum[0, 3]', color: 'color(sum)' });
   });

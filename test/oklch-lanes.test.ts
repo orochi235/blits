@@ -64,8 +64,8 @@ const sweep = (from: number[], to: number[], ms = 1000) =>
 const holds = (c: number[]) => patch<Part, Pose>(0, () => ({ tint: c }), { writes: ['tint'] });
 const TIMES = [0, 16, 250, 500, 640, 999, 1000, 1400];
 
-describe("color({ lerp: 'oklch' }) runs on lanes, reading as the general path does", () => {
-  const round = () => color({ lerp: 'oklch' });
+describe("color({ path: 'hue' }) runs on lanes, reading as the general path does", () => {
+  const round = () => color({ path: 'hue' });
 
   it('round the hue the short way, under a held color and over a fade', () => {
     agree(
@@ -129,7 +129,7 @@ describe("color({ lerp: 'oklch' }) runs on lanes, reading as the general path do
 
   it('replacing, as color(last()) does', () => {
     agree(
-      color(last(), { lerp: 'oklch' }),
+      color(last(), { path: 'hue' }),
       (m) => {
         m.cue({ patch: sweep(RED, CYAN) });
         m.cue({ patch: sweep(BLUE, oklab(0xffff00)), fade: { in: 400 } });

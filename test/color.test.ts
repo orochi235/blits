@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { kit, last, max, mul, numericOf, sum } from '../src/channels.js';
 import { color, css, mixHex, oklab, toHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
@@ -80,9 +80,9 @@ describe('color()', () => {
     expect(() => color(sum({ bounds: [0, 1] }))).toThrow(/color/);
   });
 
-  it("lerps per OKLab axis by default, and around the hue with lerp: 'oklch'", () => {
+  it("lerps per OKLab axis by default, and around the hue with path: 'hue'", () => {
     const flat = color();
-    const round = color({ lerp: 'oklch' });
+    const round = color({ path: 'hue' });
     expect(round.kind).toBe('color(sum, oklch)');
     expect(numericOf(round)).toEqual({ op: 'own', axes: 4, folds: 'sum' });
     expect(toHex(flat.lerp(oklab(RED), oklab(CYAN), 0.5))).toBe(0xd2a993);
@@ -90,8 +90,17 @@ describe('color()', () => {
     expect(toHex(round.lerp(oklab(RED), oklab(BLUE), 0.25))).toBe(mixHex(RED, BLUE, 0.25));
   });
 
+  it('takes the deprecated lerp as path, warning once, and path over it', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(color({ lerp: 'oklch' }).kind).toBe('color(sum, oklch)');
+    expect(color({ lerp: 'oklab' }).kind).toBe('color(sum)');
+    expect(color({ lerp: 'oklch', path: 'linear' }).kind).toBe('color(sum)');
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+
   it("an 'oklch' lerp from no coverage takes the other end's color, fading only coverage", () => {
-    const round = color({ lerp: 'oklch' });
+    const round = color({ path: 'hue' });
     const out = round.lerp([0, 0, 0, 0], oklab(BLUE), 0.5);
     expect(out[3]).toBeCloseTo(0.5, 12);
     expect(toHex(out.map((v) => v * 2))).toBe(BLUE);
@@ -111,9 +120,9 @@ describe('color()', () => {
     }
   });
 
-  it("crossfades keyframes round the hue with lerp: 'oklch', lanes on or not", () => {
+  it("crossfades keyframes round the hue with path: 'hue', lanes on or not", () => {
     for (const lanes of [false, true]) {
-      const m = mix<Part, Pose>(kit<Pose>({ tint: color({ lerp: 'oklch' }) }), { lanes });
+      const m = mix<Part, Pose>(kit<Pose>({ tint: color({ path: 'hue' }) }), { lanes });
       m.cue({
         patch: keys<Part, Pose>(1, [
           { at: 0, delta: { tint: oklab(RED) } },
@@ -137,8 +146,8 @@ describe('color(last())', () => {
 
   it('names its rule and space in its kind, and lerps as color() does', () => {
     expect(color(last()).kind).toBe('color(last)');
-    expect(color(last(), { lerp: 'oklch' }).kind).toBe('color(last, oklch)');
-    expect(toHex(color(last(), { lerp: 'oklch' }).lerp(oklab(RED), oklab(CYAN), 0.5))).toBe(
+    expect(color(last(), { path: 'hue' }).kind).toBe('color(last, oklch)');
+    expect(toHex(color(last(), { path: 'hue' }).lerp(oklab(RED), oklab(CYAN), 0.5))).toBe(
       mixHex(RED, CYAN, 0.5),
     );
   });

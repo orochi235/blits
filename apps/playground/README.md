@@ -154,7 +154,7 @@ One kit, `src/blits/kit.ts`, drives both stages, so any composition plays on eit
 | `offset`  | `vec(2, sum())`           | moves        | slides, lifts   |
 | `turn`    | `sum()`                   | turns a tick | tilts           |
 | `scale`   | `mul()`                   | size         | size            |
-| `color`   | `color(last(), { lerp: 'oklch' })` | fill | tint            |
+| `color`   | `color(last(), { path: 'hue' })` | fill | tint            |
 | `opacity` | `mul({ bounds: [0, 1] })` | alpha        | alpha           |
 | `glow`    | `max()`                   | halo         | halo            |
 

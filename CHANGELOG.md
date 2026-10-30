@@ -8,6 +8,11 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Changed
 
+- `color({ lerp })` is renamed `path`, with `'oklch'` now `'hue'` and `'oklab'` now `'linear'`: the
+  option says how a color travels between two colors, and overlapping voices still average in
+  OKLab. `lerp` stays as a deprecated alias that warns once, and the playground loads compositions
+  saved with it.
+
 - Under `history`, turning an owner back (a rate below 0) brings back the children that already
   left, so playback reverses completely. A child an owner holds no longer leaves when its passes
   run out: it fades as before, then stays with its owner, `live` and showing nothing, until the
@@ -15,7 +20,7 @@ version and everything else the patch. Each release lists its changes as **Break
   passes. Its `done` now resolves when its owner leaves rather than at its own end. The owner
   leaves when it did before, and without `history` nothing changes.
 
-- A `tween`, `spring` or `glide` on a `color({ lerp: 'oklch' })` channel goes round the hue, as
+- A `tween`, `spring` or `glide` on a `color({ path: 'hue' })` channel goes round the hue, as
   blending between voices already did, rather than straight across each OKLab axis through gray.
   A tween reads as the channel's lerp along its easing; a spring and a glide are solved in
   lightness, chroma and hue with coverage alongside, so velocity carries through a retarget and the

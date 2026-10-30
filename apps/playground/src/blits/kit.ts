@@ -40,7 +40,7 @@ export interface NumberRuleSpec {
 /** `replace`: the last voice's color wins, eased by weight; `average`: weights blend every color. */
 export interface ColorRuleSpec {
   rule: 'replace' | 'average';
-  lerp: 'oklch' | 'oklab';
+  path: 'hue' | 'linear';
 }
 
 /** Each channel's fold rule; `offset` is two numbers folded alike, which `last` cannot vouch for. */
@@ -57,7 +57,7 @@ export const DEFAULT_RULES: Rules = {
   offset: { rule: 'sum' },
   turn: { rule: 'sum' },
   scale: { rule: 'mul' },
-  color: { rule: 'replace', lerp: 'oklch' },
+  color: { rule: 'replace', path: 'hue' },
   opacity: { rule: 'mul', bounds: [0, 1] },
   glow: { rule: 'max' },
 };
@@ -76,7 +76,7 @@ export function kitOf(rules: Partial<Rules> = {}): Kit<Mixed> {
     offset: vec(2, numberChannel(r.offset)),
     turn: numberChannel(r.turn),
     scale: numberChannel(r.scale),
-    color: color(r.color.rule === 'replace' ? last() : sum(), { lerp: r.color.lerp }),
+    color: color(r.color.rule === 'replace' ? last() : sum(), { path: r.color.path }),
     opacity: numberChannel(r.opacity),
     glow: numberChannel(r.glow),
   });

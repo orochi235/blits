@@ -22,7 +22,7 @@ type Config = ReturnType<typeof config.defaults>;
 
 const swatches: Swatch[] = [0, 1, 2, 3, 4].map((i) => ({ i }));
 
-const PART = kit<Pose>({ gain: mul(), lift: sum(), color: color({ lerp: 'oklch' }) });
+const PART = kit<Pose>({ gain: mul(), lift: sum(), color: color({ path: 'hue' }) });
 
 const pulse = patch<Swatch, Pose>(
   2400,
