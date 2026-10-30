@@ -80,30 +80,33 @@ describe('color()', () => {
     expect(() => color(sum({ bounds: [0, 1] }))).toThrow(/color/);
   });
 
-  it("lerps per OKLab axis by default, and around the hue with path: 'hue'", () => {
-    const flat = color();
-    const round = color({ path: 'hue' });
+  it('lerps per OKLab axis', () => {
+    expect(toHex(color().lerp(oklab(RED), oklab(CYAN), 0.5))).toBe(0xd2a993);
+  });
+
+  it("keeps the deprecated lerp: 'oklch' overlapping straight and traveling round the hue, warning once", () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const round = color({ lerp: 'oklch' });
     expect(round.kind).toBe('color(sum, oklch)');
     expect(numericOf(round)).toEqual({ op: 'own', axes: 4, folds: 'sum' });
-    expect(toHex(flat.lerp(oklab(RED), oklab(CYAN), 0.5))).toBe(0xd2a993);
     expect(toHex(round.lerp(oklab(RED), oklab(CYAN), 0.5))).toBe(mixHex(RED, CYAN, 0.5));
-    expect(toHex(round.lerp(oklab(RED), oklab(BLUE), 0.25))).toBe(mixHex(RED, BLUE, 0.25));
-  });
-
-  it('takes the deprecated lerp as path, warning once, and path over it', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    expect(color({ lerp: 'oklch' }).kind).toBe('color(sum, oklch)');
     expect(color({ lerp: 'oklab' }).kind).toBe('color(sum)');
-    expect(color({ lerp: 'oklch', path: 'linear' }).kind).toBe('color(sum)');
+    expect(color(last(), { lerp: 'oklch' }).kind).toBe('color(last, oklch)');
     expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toMatch(/deprecated.*ink\(\)/);
     warn.mockRestore();
-  });
-
-  it("an 'oklch' lerp from no coverage takes the other end's color, fading only coverage", () => {
-    const round = color({ path: 'hue' });
-    const out = round.lerp([0, 0, 0, 0], oklab(BLUE), 0.5);
-    expect(out[3]).toBeCloseTo(0.5, 12);
-    expect(toHex(out.map((v) => v * 2))).toBe(BLUE);
+    for (const lanes of [false, true]) {
+      const m = mix<Part, Pose>(kit<Pose>({ tint: round }), { lanes });
+      m.cue({ patch: holds(oklab(RED)) });
+      m.cue({ patch: holds(oklab(BLUE)), weight: 0.5 });
+      m.sync(0);
+      const pose = m.probe(part).tint;
+      const r = oklab(RED);
+      const b = oklab(BLUE);
+      expect(pose.length).toBe(4);
+      for (let i = 0; i < 4; i++)
+        expect(pose[i], `lanes ${lanes}`).toBeCloseTo((r[i] as number) + 0.5 * (b[i] as number), 9);
+    }
   });
 
   it('crossfades two keyframes through the channel lerp, on lanes and off', () => {
@@ -119,20 +122,6 @@ describe('color()', () => {
       expect(toHex(m.probe(part).tint), `lanes ${lanes}`).toBe(0xd2a993);
     }
   });
-
-  it("crossfades keyframes round the hue with path: 'hue', lanes on or not", () => {
-    for (const lanes of [false, true]) {
-      const m = mix<Part, Pose>(kit<Pose>({ tint: color({ path: 'hue' }) }), { lanes });
-      m.cue({
-        patch: keys<Part, Pose>(1, [
-          { at: 0, delta: { tint: oklab(RED) } },
-          { at: 1, delta: { tint: oklab(CYAN) } },
-        ]),
-      });
-      m.sync(0.5);
-      expect(toHex(m.probe(part).tint), `lanes ${lanes}`).toBe(mixHex(RED, CYAN, 0.5));
-    }
-  });
 });
 
 describe('color(last())', () => {
@@ -144,11 +133,8 @@ describe('color(last())', () => {
     expect(toHex(m.probe(part).tint, 0xffffff)).toBe(BLUE);
   });
 
-  it('names its rule and space in its kind, and lerps as color() does', () => {
+  it('names its rule in its kind, and lerps as color() does', () => {
     expect(color(last()).kind).toBe('color(last)');
-    expect(color(last(), { path: 'hue' }).kind).toBe('color(last, oklch)');
-    expect(toHex(color(last(), { path: 'hue' }).lerp(oklab(RED), oklab(CYAN), 0.5))).toBe(
-      mixHex(RED, CYAN, 0.5),
-    );
+    expect(toHex(color(last()).lerp(oklab(RED), oklab(CYAN), 0.5))).toBe(0xd2a993);
   });
 });

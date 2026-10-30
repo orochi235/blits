@@ -63,8 +63,9 @@ const XS = new Float64Array(4);
 const VS = new Float64Array(4);
 
 /**
- * `closed` for a stretch of an `'oklch'` color: its ends and velocity, premultiplied OKLab as the
- * patch keeps them, moved into `[L, C, h, w]`, solved there axis by axis, and the position and
+ * `closed` for a stretch of a color traveling round the hue, as `ink` does: its ends and velocity,
+ * premultiplied OKLab as the patch keeps them, moved into `[L, C, h, w]`, solved there axis by
+ * axis, and the position and
  * velocity moved back into `xo` and `vo`. A spring heads round the hue the short way from where
  * the stretch starts, so a retarget bends the path rather than restarting it, and one that
  * overshoots its target overshoots in hue too. A glide comes to rest `v·τ` along each of the four,

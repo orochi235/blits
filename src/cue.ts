@@ -181,6 +181,7 @@ export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
     if (typeof rest === 'number') motion.cuedOn(String(channel), true);
     else if (Array.isArray(rest) || ArrayBuffer.isView(rest))
       motion.cuedOn(String(channel), false, roundsHue(ch));
+    else if (roundsHue(ch)) motion.cuedOn(String(channel), false, true);
   }
   if (patch.reads) {
     const host = mix.opts.host;

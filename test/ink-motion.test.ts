@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { kit } from '../src/channels.js';
-import { color, oklab } from '../src/color.js';
+import { kit, last } from '../src/channels.js';
+import { color, ink, oklab } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import type { Channel } from '../src/types.js';
@@ -14,10 +14,18 @@ interface Part {
 const RED = oklab(0xff0000);
 const CYAN = oklab(0x00ffff);
 const BLUE = oklab(0x0000ff);
+/** An `oklab()` value as the five numbers an ink pose holds at full weight. */
+const wide = (c: readonly number[]) => [
+  c[0] as number,
+  c[1] as number,
+  c[2] as number,
+  Math.sqrt((c[1] as number) ** 2 + (c[2] as number) ** 2),
+  c[3] as number,
+];
 
 /** A pose's chroma and hue, its color divided out of its coverage. */
 const lch = (c: readonly number[]) => {
-  const w = c[3] as number;
+  const w = c[c.length > 4 ? 4 : 3] as number;
   const a = (c[1] as number) / w;
   const b = (c[2] as number) / w;
   return { L: (c[0] as number) / w, C: Math.hypot(a, b), h: Math.atan2(b, a) };
@@ -34,10 +42,10 @@ const turning = (c: readonly number[], dh: number): number[] => {
 const made = (tint: Channel<number[]>, lanes: boolean) =>
   mix<Part, Pose>(kit<Pose>({ tint }), { lanes });
 
-describe("a tween on color({ path: 'hue' })", () => {
+describe('a tween on ink()', () => {
   it('keeps chroma at its midpoint, as the channel lerp does, on lanes and off', () => {
     for (const lanes of [false, true]) {
-      const round = color({ path: 'hue' });
+      const round = ink();
       const m = made(round, lanes);
       m.cue({
         patch: tween<Part, Pose, number[]>('tint', {
@@ -56,12 +64,12 @@ describe("a tween on color({ path: 'hue' })", () => {
       const want = round.lerp(RED, CYAN, 0.5);
       for (let i = 0; i < 4; i++) expect(mid[i]).toBeCloseTo(want[i] as number, 12);
       m.sync(1000);
-      expect(m.probe(a).tint).toEqual(CYAN);
+      expect(m.probe(a).tint).toEqual(wide(CYAN));
     }
   });
 
   it('fades coverage alongside, a color with none taking the other end’s', () => {
-    const round = color({ path: 'hue' });
+    const round = ink();
     const m = made(round, false);
     m.cue({
       patch: tween<Part, Pose, number[]>('tint', {
@@ -76,7 +84,7 @@ describe("a tween on color({ path: 'hue' })", () => {
     m.probe(a);
     m.sync(50);
     const half = m.probe(a).tint;
-    expect(half[3]).toBeCloseTo(0.5, 12);
+    expect(half[4]).toBeCloseTo(0.5, 12);
     expect(lch(half).C).toBeCloseTo(lch(BLUE).C, 9);
   });
 
@@ -95,10 +103,10 @@ describe("a tween on color({ path: 'hue' })", () => {
   });
 });
 
-describe("a spring on color({ path: 'hue' })", () => {
+describe('a spring on ink()', () => {
   it('goes round the hue rather than through gray', () => {
     for (const lanes of [false, true]) {
-      const m = made(color({ path: 'hue' }), lanes);
+      const m = made(ink(), lanes);
       m.cue({ patch: spring<Part, Pose, number[]>('tint', { from: RED, to: CYAN, damping: 40 }) });
       const a = { id: 'a' };
       let least = Number.POSITIVE_INFINITY;
@@ -107,13 +115,14 @@ describe("a spring on color({ path: 'hue' })", () => {
         least = Math.min(least, lch(m.probe(a).tint).C);
       }
       expect(least, `lanes ${lanes}`).toBeGreaterThan(Math.min(C_RED, C_CYAN) - 1e-6);
-      for (let i = 0; i < 4; i++) expect(m.probe(a).tint[i]).toBeCloseTo(CYAN[i] as number, 4);
+      for (let i = 0; i < 5; i++)
+        expect(m.probe(a).tint[i]).toBeCloseTo(wide(CYAN)[i] as number, 4);
     }
   });
 
   it('carries position and velocity through a retarget mid-flight', () => {
     const s = spring<Part, Pose, number[]>('tint', { from: RED, to: CYAN, settle: 0 });
-    const m = made(color({ path: 'hue' }), false);
+    const m = made(ink(), false);
     m.cue({ patch: s });
     const a = { id: 'a' };
     for (let t = 0; t <= 100; t += 16) {
@@ -133,11 +142,11 @@ describe("a spring on color({ path: 'hue' })", () => {
       expect(after.velocity[i]).toBeCloseTo(before.velocity[i] as number, 2);
     }
     m.sync(4000);
-    for (let i = 0; i < 4; i++) expect(m.probe(a).tint[i]).toBeCloseTo(BLUE[i] as number, 4);
+    for (let i = 0; i < 5; i++) expect(m.probe(a).tint[i]).toBeCloseTo(wide(BLUE)[i] as number, 4);
   });
 });
 
-describe("a glide on color({ path: 'hue' })", () => {
+describe('a glide on ink()', () => {
   it('coasts round the hue at the chroma it started at, and a push carries on from there', () => {
     for (const lanes of [false, true]) {
       const g = glide<Part, Pose, number[]>('tint', {
@@ -146,7 +155,7 @@ describe("a glide on color({ path: 'hue' })", () => {
         ms: 250,
         settle: 0,
       });
-      const m = made(color({ path: 'hue' }), lanes);
+      const m = made(ink(), lanes);
       m.cue({ patch: g });
       const a = { id: 'a' };
       for (let t = 0; t <= 100; t += 10) {
@@ -173,7 +182,32 @@ describe("a glide on color({ path: 'hue' })", () => {
         [1, 1, 1, 1],
       ],
     });
-    const m = made(color({ path: 'hue' }), false);
+    const m = made(ink(), false);
     expect(() => m.cue({ patch: g })).toThrow(/bounds/);
+  });
+});
+
+describe('a motion on ink(last())', () => {
+  it('goes round the hue too, though the channel has no rest', () => {
+    const m = made(ink(last()), false);
+    m.cue({
+      patch: tween<Part, Pose, number[]>('tint', { from: RED, to: CYAN, ms: 1000, ease: 'linear' }),
+    });
+    const a = { id: 'a' };
+    m.sync(0);
+    m.probe(a);
+    m.sync(500);
+    expect(lch(m.probe(a).tint).C).toBeCloseTo((C_RED + C_CYAN) / 2, 9);
+  });
+});
+
+describe('a motion on an ink channel', () => {
+  it('refuses values of other than four numbers', () => {
+    const m = made(ink(), false);
+    m.cue({
+      patch: tween<Part, Pose, number[]>('tint', { from: wide(RED), to: wide(CYAN), ms: 100 }),
+    });
+    m.sync(0);
+    expect(() => m.probe({ id: 'a' })).toThrow(/four numbers/);
   });
 });

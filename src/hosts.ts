@@ -115,7 +115,7 @@ export function laneHost<I, O>(mix: Mixer<I, O>): LaneHost<I, O> {
  * Whether a laned voice belongs in a crowd: one naming a single subject, which shares nothing
  * across subjects for a lane to save. A motion voice writes one channel; a keys or fn voice may
  * write several, and joins the crowd of voices writing those same channels. A motion going round
- * an `'oklch'` color's hue stays out, since a crowd solves its stretches straight across each axis.
+ * an `ink` color's hue stays out, since a crowd solves its stretches straight across each axis.
  */
 export function crowdable<I, O>(v: Voice<I, O>): boolean {
   return (

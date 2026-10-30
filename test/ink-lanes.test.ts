@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { kit, last } from '../src/channels.js';
-import { color, oklab } from '../src/color.js';
+import { axesOf, kit, last } from '../src/channels.js';
+import { ink, oklab } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
@@ -39,7 +39,7 @@ function agree(
     at?.(t);
     const [off, on] = runs.map(({ m, parts }) => {
       m.sync(t);
-      const cols = { tint: new Float64Array(parts.length * 4) };
+      const cols = { tint: new Float64Array(parts.length * axesOf(tint)) };
       m.pull(parts, cols);
       return [...parts.flatMap((p) => [...(m.probe(p).tint ?? [Number.NaN])]), ...cols.tint];
     }) as [number[], number[]];
@@ -64,8 +64,8 @@ const sweep = (from: number[], to: number[], ms = 1000) =>
 const holds = (c: number[]) => patch<Part, Pose>(0, () => ({ tint: c }), { writes: ['tint'] });
 const TIMES = [0, 16, 250, 500, 640, 999, 1000, 1400];
 
-describe("color({ path: 'hue' }) runs on lanes, reading as the general path does", () => {
-  const round = () => color({ path: 'hue' });
+describe('ink() runs on lanes, reading as the general path does', () => {
+  const round = () => ink();
 
   it('round the hue the short way, under a held color and over a fade', () => {
     agree(
@@ -110,6 +110,18 @@ describe("color({ path: 'hue' }) runs on lanes, reading as the general path does
     );
   });
 
+  it('in a role whose first member writes four numbers, which the lane widens to five', () => {
+    agree(
+      round(),
+      (m) => {
+        m.cue({ patch: holds(RED), role: 'one', weight: 0.7 });
+        m.cue({ patch: sweep(CYAN, oklab(0xff00ff)), role: 'one', weight: 0.4 });
+        m.cue({ patch: holds(BLUE), weight: 0.3 });
+      },
+      TIMES,
+    );
+  });
+
   it('as a crowd of voices each on a subject of its own', () => {
     agree(
       round(),
@@ -127,9 +139,9 @@ describe("color({ path: 'hue' }) runs on lanes, reading as the general path does
     );
   });
 
-  it('replacing, as color(last()) does', () => {
+  it('replacing, as ink(last()) does', () => {
     agree(
-      color(last(), { path: 'hue' }),
+      ink(last()),
       (m) => {
         m.cue({ patch: sweep(RED, CYAN) });
         m.cue({ patch: sweep(BLUE, oklab(0xffff00)), fade: { in: 400 } });

@@ -57,6 +57,11 @@ const wrongKind = (channel: string, holdsNumber: boolean): Error =>
     `blits: channel ${channel} holds ${holdsNumber ? 'a number' : 'an array'}, and this motion patch gives a subject ${holdsNumber ? 'an array' : 'a number'}`,
   );
 
+const notOklab = (channel: string): Error =>
+  new Error(
+    `blits: channel ${channel} goes round the hue, and a motion on it moves oklab() values, four numbers each`,
+  );
+
 /**
  * A motion patch's subjects: the stretch each is playing, in one flat array by a number the patch
  * gives it, with earlier stretches a read back may reach and changes not yet applied beside them.
@@ -108,19 +113,20 @@ export class Motions<I> {
   /** Whether the channel it was cued on holds a number; undefined until it is cued. */
   private holdsNumber: boolean | undefined = undefined;
   private channel = '';
-  /** Whether the channel it was cued on is an `'oklch'` color, which its stretches go round the hue of. */
+  /** Whether the channel it was cued on travels round the hue, as `ink` does, and its stretches too. */
   round = false;
 
   /**
    * Records what the channel the patch is cued on holds, refusing a value of the other kind: at once
    * where every subject's value is one kind, else on the first sample of a subject whose value is not.
-   * `round` for an `'oklch'` color.
+   * `round` for a channel that travels round the hue, as `ink` does.
    */
   cuedOn(channel: string, holdsNumber: boolean, round = false): void {
     if (round && this.shape.law[0] === BOUND)
       throw new Error(
         `blits: channel ${channel} goes round the hue, and a glide's bounds are a box on its OKLab axes; glide it without bounds`,
       );
+    if (round && this.n >= 0 && this.n !== 4) throw notOklab(channel);
     const every = this.shape.scalarEvery();
     if (every !== undefined && every !== holdsNumber) throw wrongKind(channel, holdsNumber);
     for (let s = 0; s < this.numbers.size; s++)
@@ -180,6 +186,7 @@ export class Motions<I> {
 
   /** Sets the axes every subject moves on, at the first. */
   size(n: number): void {
+    if (this.round && n !== 4) throw notOklab(this.channel);
     this.n = n;
     this.stride = 3 + 3 * n;
     if (shared.xs.length < n) shared = { xs: new Float64Array(n), vs: new Float64Array(n) };

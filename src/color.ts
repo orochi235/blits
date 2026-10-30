@@ -1,4 +1,4 @@
-import { lerpNumber, numericOf, sum, vec, vouch, widen } from './channels.js';
+import { doubles, lerpNumber, numericOf, sum, vec, vouch, widen } from './channels.js';
 import { HUES, lchPair, shortWay } from './lch.js';
 import type { Channel } from './types.js';
 import { warnOnce } from './warn.js';
@@ -117,15 +117,13 @@ function hueAt(ah: number, ac: number, bh: number, bc: number, u: number): numbe
 }
 
 /**
- * How a `color` channel travels between two colors, in a motion or a role's handoff: `'linear'`,
- * the default, straight across OKLab, or `'hue'` round the hue the short way, as `mixHex` does.
- * Voices that overlap still average in OKLab.
+ * What `color` took before `ink` existed: `lerp: 'oklch'` overlaps straight across OKLab and
+ * travels round the hue.
  *
  * @category channel
  */
 export interface ColorOptions {
-  path?: 'hue' | 'linear';
-  /** @deprecated Use `path`: `'oklch'` is `'hue'` and `'oklab'` is `'linear'`. */
+  /** @deprecated `'oklch'` is `ink()`, which also blends overlapping voices round the hue; `'oklab'` is `color()`. */
   lerp?: 'oklab' | 'oklch';
 }
 
@@ -143,21 +141,100 @@ function lerpLch(x: number[], y: number[], u: number): number[] {
   return [mix(p[0] as number, p[4] as number, u) * w, C * Math.cos(h) * w, C * Math.sin(h) * w, w];
 }
 
+/** Below this, an ink pose's summed `(a, b)` has canceled out and shows no hue. */
+const CANCEL = 1e-9;
+
 /**
- * Whether `channel` interpolates in OKLCH, as `color({ path: 'hue' })` makes it, so a motion
- * patch cued on it moves round the hue too.
+ * A color value, `oklab()`'s four numbers or ink's five, into `out` at `o` as `[L, C, h, w]`, its
+ * coverage divided out. Five numbers show their own chroma, the fourth, at the hue of their `(a, b)`.
  */
-export function roundsHue(channel: Channel<unknown>): boolean {
-  return channel.lerp === (lerpLch as Channel<unknown>['lerp']);
+function lchOf(v: ArrayLike<number>, out: Float64Array, o: number): void {
+  const five = v.length > 4;
+  const w = (five ? v[4] : v[3]) ?? 0;
+  const s = w > 0 ? 1 / w : 0;
+  const a = (v[1] ?? 0) * s;
+  const b = (v[2] ?? 0) * s;
+  const r = Math.sqrt(a * a + b * b);
+  out[o] = (v[0] ?? 0) * s;
+  out[o + 1] = !five ? r : r < CANCEL ? 0 : (v[3] ?? 0) * s;
+  out[o + 2] = Math.atan2(b, a);
+  out[o + 3] = w;
+}
+
+/** A color value as ink's five numbers, `[w·L, w·a, w·b, w·C, w]` times `k`, into `out`. */
+function inked(v: ArrayLike<number>, k: number, out: number[]): number[] {
+  const a = v[1] ?? 0;
+  const b = v[2] ?? 0;
+  const five = v.length > 4;
+  out[0] = (v[0] ?? 0) * k;
+  out[1] = a * k;
+  out[2] = b * k;
+  out[3] = (five ? (v[3] ?? 0) : Math.sqrt(a * a + b * b)) * k;
+  out[4] = ((five ? v[4] : v[3]) ?? 0) * k;
+  return out;
+}
+
+/** Two colors, four numbers or five, interpolated round the hue into ink's five. */
+function lerpInk(x: number[], y: number[], u: number): number[] {
+  if (u === 0) return inked(x, 1, doubles(5, 0));
+  if (u === 1) return inked(y, 1, doubles(5, 0));
+  const p = PAIR;
+  lchOf(x, p, 0);
+  lchOf(y, p, 4);
+  // A color with no coverage has none of its own to keep, so it takes the other end's.
+  const from = (p[3] as number) > 0 ? 0 : 4;
+  const to = (p[7] as number) > 0 ? 4 : 0;
+  const xc = p[from + 1] as number;
+  const yc = p[to + 1] as number;
+  shortWay(p[from + 2] as number, xc, p[to + 2] as number, yc);
+  const w = mix(p[3] as number, p[7] as number, u);
+  const Cw = mix(xc, yc, u) * w;
+  const h = (HUES[0] as number) + (HUES[1] as number) * u;
+  return [
+    mix(p[from] as number, p[to] as number, u) * w,
+    Math.cos(h) * Cw,
+    Math.sin(h) * Cw,
+    Cw,
+    w,
+  ];
 }
 
 /**
- * Color as OKLab `[L, a, b, coverage]`, its merge rule given as `of`. `color()` averages: voices
- * stack as a premultiplied sum, so a pose holds `[Σw·L, Σw·a, Σw·b, Σw]` and runs on lanes;
- * `toHex` divides it out and lays it over what is under it. `color(last())` replaces, the last
- * voice to pass winning, at the coverage it was authored with. `path` picks how it travels
- * between two colors: `'linear'`, the default, crosses through gray between opposite hues, and
- * `'hue'` goes round the hue instead.
+ * Whether `channel` travels round the hue, as `ink` does, so a motion patch cued on it moves round
+ * the hue too.
+ */
+export function roundsHue(channel: Channel<unknown>): boolean {
+  const lerp = channel.lerp as unknown;
+  return lerp === lerpLch || lerp === lerpInk;
+}
+
+/** Whether `of` asks a color channel to average: absent, or a stock `sum` with no turn or bounds. */
+function averages(of: Channel<unknown> | undefined): boolean {
+  if (of === undefined) return true;
+  const stock = numericOf(of);
+  return stock?.op === 'sum' && stock.turn === undefined && of.bounds === undefined;
+}
+
+const refuse = (name: string, of: Channel<unknown>) =>
+  new Error(
+    `${name} takes sum() to average or last() to replace, not ${of.kind ?? 'a channel of its own'}`,
+  );
+
+/** A `last` color channel, which replaces and travels by `lerp`. */
+function replacing(kind: string, lerp: Channel<number[]>['lerp']): Channel<number[]> {
+  const channel: Channel<number[]> = { kind, merge: (_a, b) => b, lerp };
+  widen(channel, 4);
+  vouch(channel, { op: 'last', axes: 4 });
+  return channel;
+}
+
+/**
+ * Color as the real world shows it, light, sky, smoke or paint: OKLab `[L, a, b, coverage]`, its
+ * merge rule given as `of`. `color()` averages: voices stack as a premultiplied sum, so a pose
+ * holds `[Σw·L, Σw·a, Σw·b, Σw]` and runs on lanes; `toHex` divides it out and lays it over what
+ * is under it. `color(last())` replaces, the last voice to pass winning, at the coverage it was
+ * authored with. It travels between two colors, in a motion or a role's handoff, straight across
+ * OKLab, so opposite hues cross through gray. For colors that stand for a meaning, use `ink`.
  *
  * @category channel
  */
@@ -172,15 +249,14 @@ export function color(
 ): Channel<number[]> {
   const of = ofOrOpts !== undefined && 'merge' in ofOrOpts ? ofOrOpts : undefined;
   const opts = of === undefined ? (ofOrOpts as ColorOptions | undefined) : maybe;
-  if (opts?.lerp !== undefined && opts.path === undefined)
-    warnOnce(LERP, "color({ lerp }) is renamed path: 'oklch' is 'hue' and 'oklab' is 'linear'");
-  const round = opts?.path !== undefined ? opts.path === 'hue' : opts?.lerp === 'oklch';
+  if (opts?.lerp !== undefined)
+    warnOnce(
+      LERP,
+      "color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()",
+    );
+  const round = opts?.lerp === 'oklch';
   const space = round ? ', oklch' : '';
-  const stock = of === undefined ? undefined : numericOf(of);
-  if (
-    of === undefined ||
-    (stock?.op === 'sum' && stock.turn === undefined && of.bounds === undefined)
-  ) {
+  if (averages(of as Channel<unknown> | undefined)) {
     const channel = vec(4, sum());
     channel.kind = `color(sum${space})`;
     if (!round) return channel;
@@ -188,23 +264,59 @@ export function color(
     vouch(turning, { op: 'own', axes: 4, folds: 'sum' });
     return turning;
   }
-  if (of.kind === 'last') {
-    const channel: Channel<number[]> = {
-      kind: `color(last${space})`,
-      merge: (_a, b) => b,
-      lerp: round ? lerpLch : vec(4, sum()).lerp,
-    };
-    widen(channel, 4);
-    vouch(channel, { op: 'last', axes: 4 });
-    return channel;
+  const own = of as Channel<unknown>;
+  if (own.kind === 'last')
+    return replacing(`color(last${space})`, round ? lerpLch : vec(4, sum()).lerp);
+  throw refuse('color', own);
+}
+
+/** Where `ink`'s merge and fold widen a contribution, which neither keeps. */
+const WIDE = doubles(5, 0);
+
+/**
+ * Color standing for a meaning, a status, a level or a team, rather than for a physical
+ * phenomenon: choose it over `color` when the colors are symbols. People picture the midpoint
+ * between red and blue as purple, reached by turning the hue, not as the grayed mix light makes,
+ * and `ink` gives them that. It travels round the hue the short way, in a motion, between keys
+ * and in a role's handoff, and `ink()` blends overlapping voices round the hue too: each voice
+ * sums as `[w·L, w·a, w·b, w·C, w]`, C its chroma, so a pose shows lightness `ΣwL/Σw`, the hue of
+ * `Σw·(a, b)`, which a gray voice pulls on not at all, and chroma `ΣwC/Σw`, so two vivid colors
+ * stay vivid. Near-opposite hues overlapping swing round the wheel as their weights cross, with
+ * no tiebreak, and exactly opposite ones cancel to gray. A patch writes it the `oklab()` values a
+ * `color` takes, and `toHex` and `css` read either. `ink(last())` replaces, traveling round the
+ * hue, and holds the four numbers it was written, since it never sums.
+ *
+ * @category channel
+ */
+export function ink(of?: Channel<number> | Channel<unknown>): Channel<number[]> {
+  if (!averages(of as Channel<unknown> | undefined)) {
+    const own = of as Channel<unknown>;
+    if (own.kind === 'last') return replacing('ink(last)', lerpLch);
+    throw refuse('ink', own);
   }
-  throw new Error(
-    `color takes sum() to average or last() to replace, not ${of.kind ?? 'a channel of its own'}`,
-  );
+  const channel: Channel<number[]> = {
+    kind: 'ink(sum)',
+    rest: doubles(5, 0),
+    merge: (x, y) => {
+      const out = inked(x, 1, doubles(5, 0));
+      const add = inked(y, 1, WIDE);
+      for (let i = 0; i < 5; i++) out[i] = (out[i] as number) + (add[i] as number);
+      return out;
+    },
+    scale: (v, w) => inked(v, w, doubles(5, 0)),
+    fold: (into, v, w) => {
+      const add = inked(v, w, WIDE);
+      for (let i = 0; i < 5; i++) into[i] = (into[i] ?? 0) + (add[i] as number);
+      return into;
+    },
+    lerp: lerpInk,
+  };
+  vouch(channel, { op: 'own', axes: 5 });
+  return channel;
 }
 
 /**
- * Converts 0xrrggbb to a `color` value. The value is OKLab `[L, a, b]` at full coverage. Convert
+ * Converts 0xrrggbb to a `color` or `ink` value. The value is OKLab `[L, a, b]` at full coverage. Convert
  * keyframe stops once when authoring them, and call it outside the hot path in an `fn` patch.
  *
  * @category channel
@@ -214,20 +326,49 @@ export function oklab(rgb: number): number[] {
   return [LAB[0] as number, LAB[1] as number, LAB[2] as number, 1];
 }
 
+/** The color the last `shows` call read, `[L, a, b]` with its coverage divided out. */
+const SHOWN = [0, 0, 0];
+
 /**
- * A `color` pose as 0xrrggbb, laid over `under`. Its color is divided out of its coverage, the
- * coverage capped at 1 and laid over `under` in OKLab, then clipped to sRGB per channel. No
- * coverage gives `under`.
+ * A `color` pose's or an `ink` pose's color into `SHOWN`, returning its coverage. Ink's shows the
+ * hue of its `(a, b)` at the chroma its fourth number holds, and gray where `(a, b)` cancels.
+ */
+function shows(pose: ArrayLike<number>): number {
+  if (pose.length <= 4) {
+    const w = pose[3] ?? 0;
+    if (!(w > 0)) return w;
+    const s = 1 / w;
+    SHOWN[0] = (pose[0] ?? 0) * s;
+    SHOWN[1] = (pose[1] ?? 0) * s;
+    SHOWN[2] = (pose[2] ?? 0) * s;
+    return w;
+  }
+  const w = pose[4] ?? 0;
+  if (!(w > 0)) return w;
+  const s = 1 / w;
+  const a = (pose[1] ?? 0) * s;
+  const b = (pose[2] ?? 0) * s;
+  const r = Math.sqrt(a * a + b * b);
+  const k = r < CANCEL ? 0 : ((pose[3] ?? 0) * s) / r;
+  SHOWN[0] = (pose[0] ?? 0) * s;
+  SHOWN[1] = a * k;
+  SHOWN[2] = b * k;
+  return w;
+}
+
+/**
+ * A `color` or `ink` pose as 0xrrggbb, laid over `under`. Its color is divided out of its
+ * coverage, the coverage capped at 1 and laid over `under` in OKLab, then clipped to sRGB per
+ * channel. No coverage gives `under`.
  *
  * @category channel
  */
 export function toHex(pose: ArrayLike<number>, under = 0x000000): number {
-  const w = pose[3] ?? 0;
+  const w = shows(pose);
   if (!(w > 0)) return under;
-  const s = 1 / w;
-  const L = (pose[0] ?? 0) * s;
-  const A = (pose[1] ?? 0) * s;
-  const B = (pose[2] ?? 0) * s;
+  const L = SHOWN[0] as number;
+  const A = SHOWN[1] as number;
+  const B = SHOWN[2] as number;
   if (w >= 1) return fromLab(L, A, B);
   lab(under);
   return fromLab(
@@ -238,14 +379,13 @@ export function toHex(pose: ArrayLike<number>, under = 0x000000): number {
 }
 
 /**
- * A `color` pose as a CSS `oklab()` color, its coverage as the alpha. The coverage is capped at 1.
- * For a host that lets the browser lay it over what is under it.
+ * A `color` or `ink` pose as a CSS `oklab()` color, its coverage as the alpha. The coverage is
+ * capped at 1. For a host that lets the browser lay it over what is under it.
  *
  * @category channel
  */
 export function css(pose: ArrayLike<number>): string {
-  const w = pose[3] ?? 0;
+  const w = shows(pose);
   if (!(w > 0)) return 'oklab(0 0 0 / 0)';
-  const s = 1 / w;
-  return `oklab(${(pose[0] ?? 0) * s} ${(pose[1] ?? 0) * s} ${(pose[2] ?? 0) * s} / ${w < 1 ? w : 1})`;
+  return `oklab(${SHOWN[0]} ${SHOWN[1]} ${SHOWN[2]} / ${w < 1 ? w : 1})`;
 }

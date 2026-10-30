@@ -79,7 +79,8 @@ export function turnToward(
   }
   const axes = ch.axes;
   let out = value as ArrayLike<number>;
-  if (taken !== 0) {
+  // A first value of other axes than the lane's, as an ink contribution is, widens through the lerp.
+  if (taken !== 0 || out.length !== axes) {
     held = lift(values, base, axes, held);
     out = (ch.channel.lerp as unknown as Lerp)(held, value, u);
   }
