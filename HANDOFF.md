@@ -604,19 +604,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     is built is in its README; the calls made building it are under its "Chosen while building".
     What is left:
     - **Found while building, Mike's to decide** (2026-10-17; the owner marks and the backward
-      past-end frame found with these are fixed, in the changelog):
-      - **Should turning an owner back bring back a child that has already left?** It does not:
-        two children back to back, the owner turned at 450, the first never shows again and
-        the owner leaves with the second at 600. A child that left is done, its `done` resolved
-        and its records let go, and only `mix.seek` brings a voice back.
-        - Yes: a child leaves for good only when its owner does. The owner keeps every child
-          it held, records and state, for as long as it plays, so memory grows with each one;
-          a child's `done` and `played` can settle and start over with no seek, which only a
-          seek does today; and a child's `end` mark is no longer final.
-        - No, as built: turning back plays only what the owner still holds. A group meant to
-          run back whole is cued with `freeze: 'after'` on the owner, so each child stays
-          frozen at its end and runs back with it (checked 2026-10-17), and is faded when done.
-          The owner table's `rate below 0` row in the schema page would say so.
+      past-end frame found with these are fixed, in the changelog; whether turning an owner back
+      brings back a child that left was decided yes under `history` and built, 2026-10-30):
       - **Does a staggered subject that has finished its passes show its last frame while its
         voice waits for the others?** Playing forward it does, with no `freeze`: staggers of 0
         and 200 on a 100 ms pass show the first subject's last frame from 100 to 300. Running

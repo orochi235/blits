@@ -8,7 +8,6 @@ import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
 import { move, nextFrame } from './move.js';
-import { ownerReading } from './owner.js';
 import { place } from './place.js';
 import { unpull } from './pull.js';
 import { isRested } from './record.js';
@@ -205,15 +204,6 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   (records as Restored<I>).back(t, cut, future);
 }
 
-/** Each voice's state at mix time `t`, once every clock above it is back where it was. */
-function stateAt<I, O>(voice: Voice<I, O>, t: number): Voice<I, O>['state'] {
-  // A fade begins at once, even one whose ramp starts later, at the voice's start.
-  if (voice.out !== null) return 'fading';
-  if ((voice.owner === null ? t : ownerReading(voice.owner, t)) < voice.start) return 'pending';
-  if (voice.freezesAfter && voice.elapsedAt(t) >= voice.span + voice.latest) return 'frozen';
-  return 'live';
-}
-
 /**
  * Moves every mix on the transport to mix time `to`, as it stood at the end of that frame, or to
  * the end of the frame numbered `to.frame`.
@@ -312,7 +302,7 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
     else if (voice.doneSeq <= seq) gone.push(voice);
     else kept.push(voice);
   for (const voice of kept) restoreVoice(mix, voice, t, seq);
-  for (const voice of kept) voice.state = stateAt(voice, t);
+  for (const voice of kept) voice.state = voice.stateAt(t);
   mix.cued = kept;
   mix.gone = gone;
   mix.retired = [];

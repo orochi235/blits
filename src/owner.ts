@@ -82,13 +82,23 @@ export function adopt<I, O>(owner: Voice<I, O>, child: Voice<I, O>): void {
   h.kids++;
 }
 
-/** A child left: its owner, where that was its last child and it should leave too. */
-export function orphan<I, O>(child: Voice<I, O>): Voice<I, O> | null {
+/**
+ * A child left at mix time `now`: its owner, where that was its last child still playing and it
+ * should leave too.
+ */
+export function orphan<I, O>(child: Voice<I, O>, now: number): Voice<I, O> | null {
   const owner = child.owner as Voice<I, O>;
   const h = owner.holding as Holding<Voice<I, O>>;
   const i = h.children.indexOf(child);
   if (i >= 0) h.children.splice(i, 1);
-  return h.children.length === 0 && owner.state !== 'done' ? owner : null;
+  return !plays(owner, now) && owner.state !== 'done' ? owner : null;
+}
+
+/** Whether an owner holds a child at mix time `now` that is not kept quiet past its passes. */
+export function plays<I, O>(owner: Voice<I, O>, now: number): boolean {
+  for (const child of (owner.holding as Holding<Voice<I, O>>).children)
+    if (!child.quietAt(now)) return true;
+  return false;
 }
 
 /** A child finished its passes: its owner has played once every child it held has. */

@@ -2,13 +2,13 @@ import { settleArcs } from './arcs.js';
 import { changed } from './chain.js';
 import { elapsedWith } from './clock.js';
 import { byId, popDue, schedule } from './due.js';
-import { beginFade, part, retire } from './fade.js';
+import { beginFade, part, retire, rouse, stay } from './fade.js';
 import { expireGone, keepGone } from './gone.js';
 import { begin } from './held.js';
 import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { leave as leaveClock } from './origin.js';
-import { ownerReading } from './owner.js';
+import { ownerReading, plays } from './owner.js';
 import { mixAt, place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
 import { delist, detour } from './roster.js';
@@ -88,6 +88,8 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
       );
     if (voice.state !== 'pending') {
       if (voice.turns) turn(mix, voice, now);
+      if (voice.state === 'live' && voice.out !== null && !voice.quietAt(now))
+        rouse(mix, voice, now);
       // Its passes run out at its end running forward, and at its start running back. A clock
       // standing still at or before its start is where it was: waiting, or frozen there.
       const way = heading(voice, now);
@@ -95,7 +97,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
       const back = way < 0;
       const atStart = !voice.beginless && at <= voice.soonest;
       // An owner run back to its start stays for what it holds, and leaves with its last child.
-      const holds = voice.holding !== null && voice.holding.children.length > 0;
+      const holds = voice.holding !== null && plays(voice, now);
       const over = back
         ? atStart && !holds
         : Number.isFinite(voice.span) && at >= voice.span + voice.latest;
@@ -103,13 +105,13 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
         voice.play(true, now, mix.transport.seq);
         // The fade starts when its passes ran out, not at the frame that noticed, so it plays
         // the same at any frame rate and a read at another time can find it.
-        if (voice.state === 'live') {
+        if (voice.state === 'live' && voice.out === null) {
           if (back ? voice.freezesBefore : voice.freezesAfter) voice.state = 'frozen';
           else
             beginFade(
               mix,
               voice,
-              { back },
+              { back, stays: voice.owner !== null && mix.opts.history !== undefined },
               Math.max(startOf(voice), Math.min(now, voice.endsAt())),
             );
         }
@@ -132,7 +134,10 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
         const settled = voice.seen > 0 && voice.restedCount >= voice.seen;
         if (out) retire(mix, voice, at + (deadline as number));
         else if (settled) retire(mix, voice);
-      } else if (spent >= over) retire(mix, voice, at + over);
+      } else if (spent >= over) {
+        if (voice.out.stays) stay(mix, voice, at + over);
+        else retire(mix, voice, at + over);
+      }
     }
     if (!mix.projecting) schedule(mix, voice);
   }

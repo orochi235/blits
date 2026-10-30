@@ -356,6 +356,93 @@ describe.each([true, false])('a voice whose owner runs backward, lanes %s', (lan
   });
 });
 
+describe.each([true, false])(
+  'a child its owner turns back after the child has left, lanes %s',
+  (lanes) => {
+    const b = { id: 'b' };
+    // Two children back to back, each on its own subject, the owner turned at 450.
+    const turnedAt450 = (history: boolean, fade: { out?: number } = {}) => {
+      const m = mix<Part, Pose>(K, { lanes, ...(history ? { history: { ms: 10_000 } } : {}) });
+      m.sync(0);
+      const owner = m.owns({});
+      const first = m.cue({ owner, patch: ramp, loop: false, start: 0, subjects: [a], fade });
+      const second = m.cue({ owner, patch: ramp, loop: false, start: 300, subjects: [b] });
+      const shown = (t: number) => {
+        m.sync(t);
+        m.probe(b);
+        return m.probe(a).x;
+      };
+      for (let t = 50; t <= 450; t += 50) shown(t);
+      owner.rate = -1;
+      return { m, owner, first, second, shown };
+    };
+
+    it('without history, shows the first nothing again, and the owner leaves with the second', () => {
+      const { owner, first, second, shown } = turnedAt450(false);
+      expect(first.state).toBe('done');
+      expect([shown(600), shown(650)]).toEqual([0, 0]);
+      expect([second.state, owner.state]).toEqual(['done', 'done']);
+    });
+
+    it('under history, runs the first back from its end, and the owner leaves with it', async () => {
+      const { m, owner, first, second, shown } = turnedAt450(true);
+      // Quiet past its end, it stays with its owner rather than leaving.
+      expect(first.state).toBe('live');
+      let done = false;
+      void first.done.then(() => {
+        done = true;
+      });
+      expect(shown(600)).toBeCloseTo(400, 9);
+      expect(shown(650)).toBeCloseTo(350, 9);
+      // Run back to its start, the second stays quiet too, for its owner to bring forward again.
+      expect([m.probe(b).x, second.state]).toEqual([0, 'live']);
+      expect(shown(850)).toBeCloseTo(150, 9);
+      expect([first.state, owner.state]).toEqual(['live', 'live']);
+      await Promise.resolve();
+      expect(done).toBe(false);
+      expect(shown(910)).toBe(0);
+      expect([first.state, second.state, owner.state]).toEqual(['done', 'done', 'done']);
+      expect(await first.played).toBe(true);
+    });
+
+    it('under history, comes back at its end over the fade it left over', () => {
+      const { m, first, shown } = turnedAt450(true, { out: 100 });
+      // Back at its end at 600, it climbs to full by 700 as it runs back from 400 to 300.
+      expect(shown(600)).toBe(0);
+      expect(shown(650)).toBeCloseTo(350 * 0.5, 9);
+      expect(shown(700)).toBeCloseTo(300, 9);
+      const at = (mark: string) =>
+        m.marks(0, 2000).find((k) => k.voice === first.id && k.mark === mark)?.timestamp;
+      expect([at('out'), at('end')]).toEqual([900, 1000]);
+    });
+
+    it('under history, brings the second back at its start when the owner turns forward again', () => {
+      const { m, owner, second, shown } = turnedAt450(true);
+      shown(700);
+      owner.rate = 1;
+      // The owner's clock is back at 200 at 700, so it reaches the second's start, 300, at 800.
+      shown(800);
+      expect(m.probe(b).x).toBeCloseTo(100, 9);
+      expect(shown(850)).toBe(0);
+      expect(m.probe(b).x).toBeCloseTo(150, 9);
+      expect(second.state).toBe('live');
+    });
+
+    it('under history and never turned, leaves with its owner', () => {
+      const m = mix<Part, Pose>(K, { lanes, history: { ms: 10_000 } });
+      m.sync(0);
+      const owner = m.owns({});
+      const first = m.cue({ owner, patch: ramp, loop: false, start: 0, subjects: [a] });
+      const second = m.cue({ owner, patch: ramp, loop: false, start: 300, subjects: [b] });
+      m.sync(350);
+      expect(m.probe(a).x).toBe(0);
+      expect(first.state).toBe('live');
+      m.sync(610);
+      expect([first.state, second.state, owner.state]).toEqual(['done', 'done', 'done']);
+    });
+  },
+);
+
 describe('what a seek leaves alone', () => {
   it('a fade in counts from the voice’s start, not from where the seek put its clock', () => {
     for (const lanes of [true, false]) {

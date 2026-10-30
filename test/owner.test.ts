@@ -180,11 +180,13 @@ describe('mix.owns', () => {
     });
     m.sync(150);
     await Promise.resolve();
-    expect(first.state).toBe('done');
+    // Under history it stays with its owner, quiet, until the owner leaves.
+    expect(first.state).toBe('live');
+    expect(await first.played).toBe(true);
     expect(played).toBeUndefined();
     m.sync(250);
     await o.done;
-    expect(second.state).toBe('done');
+    expect([first.state, second.state]).toEqual(['done', 'done']);
     expect(o.state).toBe('done');
     expect(played).toBe(true);
     expect(m.marks(0, 1000).find((k) => k.voice === o.id && k.mark === 'end')?.timestamp).toBe(200);

@@ -7,7 +7,7 @@ import { fadesAt } from './fade.js';
 import { meet, origin } from './held.js';
 import { copyHeld, last, lastWithin } from './history.js';
 import { Mixer } from './mixer.js';
-import { heldByInput, ownerReading, relink } from './owner.js';
+import { heldByInput, relink } from './owner.js';
 import { reading } from './reading.js';
 import { record } from './record.js';
 import { recount } from './roster.js';
@@ -186,14 +186,7 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
 
 /** Sets each copied voice's state to what its clock and fade make it at `t`. */
 export function stateAt<I, O>(c: Mixer<I, O>, t: number): void {
-  for (const copy of c.cued)
-    copy.state = copy.out
-      ? 'fading'
-      : (copy.owner === null ? t : ownerReading(copy.owner, t)) < copy.start
-        ? 'pending'
-        : copy.freezesAfter && copy.elapsedAt(t) >= copy.span + copy.latest
-          ? 'frozen'
-          : 'live';
+  for (const copy of c.cued) copy.state = copy.stateAt(t);
 }
 
 /**
