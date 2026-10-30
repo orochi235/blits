@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.15.1 (2026-10-29), with blits-panel 0.3.1 and blits-quarks 0.10.1 taking it as a `^0.15.0` peer and blits-tone 0.6.0 as `^0.15.1`, since it reads `mix.trace`.
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.16.0 (2026-10-30), with blits-panel 0.4.0, blits-quarks 0.11.0, and blits-tone 0.7.0 taking it as a `^0.16.0` peer.
   Pushing all three driver tags at once leaves the middle run canceled (the `release` concurrency
   group keeps one pending run), so rerun it once the last one starts.
   blits-tone 0.2.0 was its first release through trusted publishing.
