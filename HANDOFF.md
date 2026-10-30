@@ -584,12 +584,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       (2026-10-30). Enter, blur and Escape already work: weasel's typed `PropertyControl`s
       hold a draft, `ControlPanel` rows do too since 1.11.0, and `c79df53` deleted the
       playground's `Draft` for it, (read from the 1.12.0 code, not run). weasel `875b5aacf` adds
-      the idle commit behind a kit setting, off by default. Once a release carries it:
+      the idle commit, and `07671ccb6` turns it on by default (800 ms, the kit setting
+      `typing.idleMs`). Once a release carries it:
       - Move every `@weasel-js/*` pin off 1.12.0 to that release, which also brings in
         1.13 and 1.14.
-      - Add `@weasel-js/react`, pinned exactly, and wrap the app in
-        `<KitSettingsProvider value={{ typing: { settleWhenIdle: true } }}>`. The delay is
-        `typing.idleMs`, 800 ms by default.
       - `ExprInput` still commits only on Enter or blur. Either have it call weasel's
         `useIdleSettle`, or delete it in favor of a string `PropertyField` with `error`,
         once that is checked to keep `aria-invalid`, the error under the field, and
