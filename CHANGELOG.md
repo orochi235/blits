@@ -4,6 +4,17 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Changed
+
+- Under `history`, turning an owner back (a rate below 0) brings back the children that already
+  left, so playback reverses completely. A child an owner holds no longer leaves when its passes
+  run out: it fades as before, then stays with its owner, `live` and showing nothing, until the
+  owner leaves, and comes back, climbing over its `fade.out`, once its clock is back in its
+  passes. Its `done` now resolves when its owner leaves rather than at its own end. The owner
+  leaves when it did before, and without `history` nothing changes.
+
 ## 0.15.1
 
 ### Added

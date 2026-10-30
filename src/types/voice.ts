@@ -261,8 +261,9 @@ export interface OwnerSpec<I, H = unknown> extends SpanHints {
   /**
    * Its clock's rate, multiplied into every child's own. Default 1. Below 0 its clock runs back,
    * and so does every child's: a child plays backward to its start and leaves there, as a voice cued
-   * backward does, and the owner leaves with its last child. A span is not cued backward, since it
-   * lays out its children forward from its start; its handle's `rate` turns it once it plays.
+   * backward does, and the owner leaves with its last child. Under `history` a child that already
+   * left runs back too: a child leaves only when its owner does. A span is not cued backward, since
+   * it lays out its children forward from its start; its handle's `rate` turns it once it plays.
    */
   rate?: number;
   /**

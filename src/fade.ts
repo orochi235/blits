@@ -6,14 +6,14 @@ import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
-import { type Holding, orphan, ownerReading } from './owner.js';
+import { type Holding, orphan, ownerReading, plays } from './owner.js';
 import { startOf } from './place.js';
 import { isRested } from './record.js';
 import { scoreTouched } from './scored.js';
 import { lingers, refit } from './spans.js';
 import type { Left, Parted, Parting, Subject } from './subject.js';
 import { unreach } from './unreached.js';
-import type { Voice } from './voice.js';
+import type { Ramp, Voice } from './voice.js';
 
 /** Starts one subject's ramp out of a voice, or takes it out at once for a ramp of 0. */
 export function fadeSubject<I, O>(
@@ -137,7 +137,7 @@ function forgetIn<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, subject: I): void 
 export function beginFade<I, O>(
   mix: Mixer<I, O>,
   voice: Voice<I, O>,
-  opts: { over?: number; at?: 'rest'; deadline?: number; back?: boolean },
+  opts: { over?: number; at?: 'rest'; deadline?: number; back?: boolean; stays?: boolean },
   at?: number,
 ): void {
   if (voice.state === 'done' || voice.state === 'fading') return;
@@ -160,11 +160,29 @@ export function beginFade<I, O>(
     deadline: opts.deadline,
   };
   if (opts.back) voice.out.back = true;
+  if (opts.stays) voice.out.stays = true;
   noted(mix, voice);
   // A fade at rest, from a voice's start, or of a voice yet to start takes it off its lane.
   if (opts.at === 'rest' || opts.back || waiting) mix.lanes?.invalidate();
   else mix.lanes?.refill();
-  if (over === 0 && opts.at !== 'rest') retire(mix, voice, voice.out.at);
+  if (over === 0 && opts.at !== 'rest') {
+    if (opts.stays) stay(mix, voice, voice.out.at);
+    else retire(mix, voice, voice.out.at);
+  }
+}
+
+/**
+ * Keeps a voice faded at the end of its passes with its owner, live and quiet, rather than letting
+ * it leave; the owner leaves at `at` if it holds no child still playing.
+ */
+export function stay<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at: number): void {
+  voice.state = 'live';
+  mix.lanes?.refill();
+  const owner = voice.owner as Voice<I, O>;
+  if (owner.state === 'done') return;
+  const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
+  if (!plays(owner, now) && !lingers(owner, at)) retire(mix, owner, at);
+  else if (owner.fitting !== null && !voice.skipped) refit(mix, owner, at);
 }
 
 /**
@@ -228,6 +246,22 @@ export function fadeAt<I, O>(
   noted(mix, voice);
 }
 
+/**
+ * Brings back a voice kept quiet past its passes, its clock back in them by mix time `now`: it
+ * climbs from nothing over the fade it left over, from when its clock reached them.
+ */
+export function rouse<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
+  const out = voice.out as Ramp;
+  const edge = out.back === true ? voice.soonest : voice.span + voice.latest;
+  const reached = voice.reaches(edge);
+  const at = Math.max(out.at + out.over, reached <= now ? reached : now);
+  const over = mix.reduced ? 0 : out.over;
+  voice.out = null;
+  voice.back = over > 0 ? { from: 0, at, over } : null;
+  noted(mix, voice);
+  mix.lanes?.refill();
+}
+
 /** Whether a motion patch still asks this voice of this mix for its time. */
 function asks<I, O>(mix: Mixer<I, O>, motion: Motions<I>, voice: Voice<I, O>): boolean {
   return motion.owner === mix.owner && motion.ownerId === voice.id;
@@ -264,7 +298,7 @@ export function retire<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at?: number):
   if (voice.owner !== null) {
     const span = voice.owner;
     leaving(mix, voice);
-    const owner = orphan(voice);
+    const owner = orphan(voice, now);
     if (owner !== null && !lingers(owner, voice.doneAt)) retire(mix, owner, voice.doneAt);
     // A child the fit skipped had no time in it, so the rest of the fit stands: fitting again
     // between siblings skipped together would play the ones still to leave.

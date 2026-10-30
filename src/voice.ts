@@ -107,6 +107,11 @@ export interface Ramp {
   deadline?: number;
   /** Begun where the voice ran back to its start, whose first frame it holds through the fade. */
   back?: boolean;
+  /**
+   * Begun where the passes of a voice an owner holds under history ran out: faded, it stays live
+   * and quiet with its owner, which brings it back by taking its clock back into its passes.
+   */
+  stays?: boolean;
 }
 
 /**
@@ -570,8 +575,40 @@ export class Voice<I, O> {
       if (!Number.isFinite(this.span)) return Number.POSITIVE_INFINITY;
       to = this.span + this.latest;
     }
-    const t = backs ? backWith(this, to) : timeWith(this, to);
+    return this.reaches(to);
+  }
+
+  /** The mix time its clock reads `elapsed`, by its controls now, through every owner above it. */
+  reaches(elapsed: number): number {
+    const t = this.backs ? backWith(this, elapsed) : timeWith(this, elapsed);
     return this.owner === null ? t : mixTime(this.owner, t);
+  }
+
+  /**
+   * Its state at mix time `t`, from its clock and fade, once every clock above it is back where it
+   * was: a fade begins at once, even one whose ramp starts later, at the voice's start, and one
+   * from where an owner under history keeps it ends with it quiet and live.
+   */
+  stateAt(t: number): Voice<I, O>['state'] {
+    const out = this.out;
+    if (out !== null) return out.stays && t >= out.at + out.over ? 'live' : 'fading';
+    if ((this.owner === null ? t : ownerReading(this.owner, t)) < this.start) return 'pending';
+    if (this.freezesAfter && this.elapsedAt(t) >= this.span + this.latest) return 'frozen';
+    return 'live';
+  }
+
+  /**
+   * Whether it is kept quiet past its passes at mix time `now`: its passes ran out while an owner
+   * held it under history, and its clock has not come back into them. At their very edge it is
+   * quiet unless its clock runs into them.
+   */
+  quietAt(now: number): boolean {
+    if (this.state !== 'live' || this.out?.stays !== true) return false;
+    const at = this.elapsedAt(now);
+    const end = this.span + this.latest;
+    const back = this.backs !== (this.owner !== null && turnedBack(this));
+    if (at > end || (at === end && !back)) return true;
+    return !this.beginless && (at < this.soonest || (at === this.soonest && back));
   }
 
   /**

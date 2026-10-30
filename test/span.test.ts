@@ -164,6 +164,17 @@ describe('spans', () => {
     expect(phase.state).toBe('done');
   });
 
+  it('under history, leaves at its budget with the children it keeps quiet', () => {
+    const m = mix<Row, Pose>(K, { history: { ms: 10_000 } });
+    m.sync(0);
+    const phase = m.span({ name: 'phase', duration: 1000 });
+    const child = m.cue({ patch: write(100), loop: false, owner: phase });
+    m.sync(500);
+    expect([child.state, phase.state]).toEqual(['live', 'live']);
+    m.sync(1000);
+    expect([child.state, phase.state]).toEqual(['done', 'done']);
+  });
+
   it('fits a span held by a span through its own rate', () => {
     const m = mix<Row, Pose>(K);
     m.sync(0);

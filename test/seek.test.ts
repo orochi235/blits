@@ -414,7 +414,8 @@ describe('seek, again and through owners', () => {
     expect([o.state, one.state, two.state]).toEqual(['done', 'done', 'done']);
     expect(await o.played).toBe(true);
     m.seek(350);
-    expect([o.state, one.state, two.state]).toEqual(['live', 'live', 'done']);
+    // Under history, the child whose passes ran out stays with its owner, quiet, until it leaves.
+    expect([o.state, one.state, two.state]).toEqual(['live', 'live', 'live']);
     let played: boolean | undefined;
     void o.played.then((p) => {
       played = p;
@@ -422,7 +423,28 @@ describe('seek, again and through owners', () => {
     for (const t of every(620, 700, 20)) m.sync(t);
     await Promise.resolve();
     expect(played).toBe(true);
+    expect([o.state, one.state, two.state]).toEqual(['done', 'done', 'done']);
+  });
+
+  it('brings back a child its owner kept quiet, which the owner turned back then runs back', () => {
+    const m = mix<Part, Pose>(K, kept());
+    m.sync(0);
+    const o = m.owns({});
+    const one = m.cue({ patch: ramp, loop: false, owner: o, start: 0, subjects: [a] });
+    m.cue({ patch: ramp, loop: false, owner: o, start: 300, subjects: [b] });
+    let at250 = Number.NaN;
+    for (const t of every(20, 700, 10)) {
+      m.sync(t);
+      if (t === 250) at250 = m.probe(a).gain;
+      m.probe(b);
+    }
     expect([o.state, one.state]).toEqual(['done', 'done']);
+    m.seek(450);
+    expect([o.state, one.state, m.probe(a).gain]).toEqual(['live', 'live', 1]);
+    o.rate = -1;
+    // The host's clock reads on from 700, so mix 650 is host 900.
+    for (const t of every(710, 900, 10)) m.sync(t);
+    expect(m.probe(a).gain).toBeCloseTo(at250, 9);
   });
 
   it('cues an owner and its children again after going back before them', () => {

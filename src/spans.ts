@@ -7,7 +7,7 @@ import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
 import { leave } from './origin.js';
-import { ownerReading } from './owner.js';
+import { ownerReading, plays } from './owner.js';
 import { resolve } from './place.js';
 import type { FitResult, SpanSpec, VoiceSpec } from './types.js';
 import type { Voice } from './voice.js';
@@ -232,12 +232,15 @@ export function lingers<I, O>(span: Voice<I, O>, at: number): boolean {
   return f !== null && Number.isFinite(f.budget) && ownerReading(span, at) < f.budget;
 }
 
-/** Lets the spans that are empty and out of budget leave, at the moment their budget ran out. */
+/**
+ * Lets the spans out of budget that hold no child still playing leave, at the moment their budget
+ * ran out.
+ */
 export function lapse<I, O>(mix: Mixer<I, O>, now: number): void {
   for (const span of mix.owners ?? []) {
     const f = span.fitting;
     if (f === null || span.state === 'done' || !Number.isFinite(f.budget)) continue;
-    if ((span.holding?.children.length ?? 0) > 0) continue;
+    if (plays(span, now)) continue;
     if (ownerReading(span, now) >= f.budget) retire(mix, span, span.timeAt(f.budget));
   }
 }
