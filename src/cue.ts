@@ -3,6 +3,7 @@ import { checkHits } from './book.js';
 import { bind, checkWithin } from './bound.js';
 import { changed } from './chain.js';
 import { copyable } from './clone.js';
+import { roundsHue } from './color.js';
 import { schedule } from './due.js';
 import { shares } from './everyone.js';
 import { finiteRate, plainWeight, VoiceHandle } from './handle.js';
@@ -176,9 +177,11 @@ export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
   const motion = motionOf<I>(patch);
   if (motion !== undefined) {
     const channel = patch.writes[0] as keyof O;
-    const rest = (mix.kit[channel] as Channel<unknown>).rest;
+    const ch = mix.kit[channel] as Channel<unknown>;
+    const rest = ch.rest;
     if (typeof rest === 'number') motion.cuedOn(String(channel), true);
-    else if (Array.isArray(rest) || ArrayBuffer.isView(rest)) motion.cuedOn(String(channel), false);
+    else if (Array.isArray(rest) || ArrayBuffer.isView(rest))
+      motion.cuedOn(String(channel), false, roundsHue(ch));
   }
   if (patch.reads) {
     const host = mix.opts.host;

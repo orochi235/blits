@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { kit, last } from '../src/channels.js';
 import { color, oklab } from '../src/color.js';
 import { mix } from '../src/mixer.js';
+import { glide, spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
 import type { Channel, Mix } from '../src/types.js';
 
@@ -17,7 +18,13 @@ type Scene = (m: Mix<Part, Pose>, parts: Part[]) => void;
  * Plays `scene` on a mix with lanes off and on, reading every part through `probe` and through
  * `pull` at each time; every number must be the same bits as the general path's.
  */
-function agree(tint: Channel<number[]>, scene: Scene, times: readonly number[], n = 6): void {
+function agree(
+  tint: Channel<number[]>,
+  scene: Scene,
+  times: readonly number[],
+  n = 6,
+  at?: (t: number) => void,
+): void {
   const runs = [false, true].map((lanes) => {
     const m = mix<Part, Pose>(kit<Pose>({ tint }), { lanes });
     const parts = Array.from({ length: n }, (_, id) => ({ id }));
@@ -29,6 +36,7 @@ function agree(tint: Channel<number[]>, scene: Scene, times: readonly number[], 
   ).lanes;
   let laned = false;
   for (const t of times) {
+    at?.(t);
     const [off, on] = runs.map(({ m, parts }) => {
       m.sync(t);
       const cols = { tint: new Float64Array(parts.length * 4) };
@@ -127,6 +135,65 @@ describe("color({ lerp: 'oklch' }) runs on lanes, reading as the general path do
         m.cue({ patch: sweep(BLUE, oklab(0xffff00)), fade: { in: 400 } });
       },
       [0, 16, 100, 200, 250, 300, 500, 1000],
+    );
+  });
+
+  it('under a tween, a spring retargeted mid-flight and a glide pushed', () => {
+    // Each mix gets patches of its own; `at` retargets and pushes both alike.
+    const made: {
+      s: ReturnType<typeof spring<Part, Pose, number[]>>;
+      g: ReturnType<typeof glide<Part, Pose, number[]>>;
+      parts: Part[];
+    }[] = [];
+    agree(
+      round(),
+      (m, parts) => {
+        const s = spring<Part, Pose, number[]>('tint', { from: RED, to: CYAN });
+        const g = glide<Part, Pose, number[]>('tint', {
+          from: (p) => (p.id % 2 ? BLUE : GRAY),
+          velocity: [0, 0.3, -0.2, 0],
+          ms: 300,
+        });
+        m.cue({
+          patch: tween<Part, Pose, number[]>('tint', {
+            from: RED,
+            to: (p) => (p.id % 2 ? CYAN : BLUE),
+            ms: 700,
+          }),
+          weight: 0.5,
+        });
+        m.cue({ patch: s, weight: 0.7 });
+        m.cue({ patch: g, weight: 0.3 });
+        made.push({ s, g, parts });
+      },
+      TIMES,
+      6,
+      (t) => {
+        if (t !== 500) return;
+        for (const { s, g, parts } of made) {
+          s.to(parts[1] as Part, BLUE);
+          g.push(parts[2] as Part, [0, -0.2, 0.4, 0]);
+        }
+      },
+    );
+  });
+
+  it('under tweens each on a subject of its own, which stay out of a crowd', () => {
+    agree(
+      round(),
+      (m, parts) => {
+        for (const p of parts)
+          m.cue({
+            patch: tween<Part, Pose, number[]>('tint', {
+              from: RED,
+              to: p.id % 2 ? CYAN : BLUE,
+              ms: 600 + 50 * p.id,
+            }),
+            subjects: [p],
+          });
+      },
+      TIMES,
+      40,
     );
   });
 });

@@ -537,10 +537,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    decided (the schema page's Decided against). A reach that changes over time (item 4) is another
    way to say offscreen.
 
-6. **A `tween`, `spring` or `glide` on a `color({ lerp: 'oklch' })` channel moves straight across
-   each OKLab axis**, on lanes and off, since motions never call a channel's `lerp`. Whether it
-   should go through `lerpLch` is Mike's call.
-
 7. **blits-quarks and magicsmoke.** magicsmoke is on engine 0.8.1 but its fizz and tuning stay on
    its own code: the driver doesn't fit without changing what magicsmoke does. Its
    `docs/HANDOFF.md` has the gaps; the likely driver changes are a per-subject emitted count from
