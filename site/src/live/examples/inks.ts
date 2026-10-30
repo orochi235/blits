@@ -40,7 +40,7 @@ export default function run(root: HTMLElement): () => void {
     grid.append(head);
   }
   const swatches: Swatch[] = [{ name: 'travel' }, { name: 'overlap' }];
-  const cells = (['color', 'ink'] as const).map((channel) => {
+  const row = (channel: string) => {
     const label = document.createElement('code');
     label.textContent = `${channel}()`;
     grid.append(label);
@@ -50,9 +50,9 @@ export default function run(root: HTMLElement): () => void {
       grid.append(el);
       return el;
     });
-  });
-
-  const [colored, inked] = cells as [HTMLElement[], HTMLElement[]];
+  };
+  const colored = row('color');
+  const inked = row('ink');
 
   const m = mix<Swatch, SwatchPose>(KIT, { name: 'inks' });
   const [moving, mixed] = swatches as [Swatch, Swatch];
