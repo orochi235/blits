@@ -1,6 +1,6 @@
 import { arcEnd } from './arcs.js';
 import { elapsedWith, retime } from './clock.js';
-import { retire } from './fade.js';
+import { release } from './fade.js';
 import { type Claim, defaultFit, type Fit, layout, type SpanClaim, settle } from './fit.js';
 import { reorigin } from './held.js';
 import { noted } from './history.js';
@@ -247,14 +247,15 @@ export function lingers<I, O>(span: Voice<I, O>, at: number): boolean {
 
 /**
  * Lets the spans out of budget that hold no child still playing leave, at the moment their budget
- * ran out.
+ * ran out, or, under history, stay quiet with an owner holding them.
  */
 export function lapse<I, O>(mix: Mixer<I, O>, now: number): void {
   for (const span of mix.owners ?? []) {
     const f = span.fitting;
-    if (f === null || span.state === 'done' || !Number.isFinite(f.budget)) continue;
+    if (f === null || span.state === 'done' || span.out?.stays || !Number.isFinite(f.budget))
+      continue;
     if (plays(span, now)) continue;
-    if (ownerReading(span, now) >= f.budget) retire(mix, span, span.timeAt(f.budget));
+    if (ownerReading(span, now) >= f.budget) release(mix, span, span.timeAt(f.budget));
   }
 }
 

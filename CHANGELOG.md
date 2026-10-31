@@ -37,6 +37,9 @@ version and everything else the patch. Each release lists its changes as **Break
   moves, so after `seek(1000)` from 2100 an owner anchored to start at 2000 had started at 900, and
   one anchored to end at 4000 left at 0. The timestamp is now read against the offset in force when
   the voice was cued, as a plain `start` is.
+- Under `history`, a span an owner holds no longer leaves once its budget is out and none of its
+  children plays: it stays with its owner, quiet, so turning the owner back brings back a clip
+  under a span, or under a span in a span, as it does one under an owner.
 
 ## 0.16.0
 
