@@ -1,6 +1,5 @@
 import { rng } from '@stress/rng';
 import type { Finding, Make, Scenario } from '@stress/scenario';
-import { backTracker } from './back';
 import { build, FRAME_MS, type Pose, playhead, readInto, where } from './build';
 import { editor } from './script';
 import { draw } from './view';
@@ -15,8 +14,6 @@ interface Checkpoint {
   now: number;
   /** The reel's clock: the timeline time on screen. */
   at: number;
-  /** Clips the reel ran back over since they last started: HANDOFF's unsettled reversal. */
-  tainted: Uint8Array;
   values: Float64Array;
   recent: string[];
 }
@@ -33,7 +30,6 @@ export const timeline: Make = ({ seed, size, lanes }) => {
   const kept: Checkpoint[] = [];
   let seen = 0;
   let at = 0;
-  const back = backTracker(t);
   let checked = 0;
   let framedAt = 0;
 
@@ -48,7 +44,6 @@ export const timeline: Make = ({ seed, size, lanes }) => {
       frame: f,
       now: t.m.now,
       at,
-      tainted: back.tainted(),
       values,
       recent: ed.recent(),
     };
@@ -58,7 +53,6 @@ export const timeline: Make = ({ seed, size, lanes }) => {
     ed.act(f, at);
     t.m.sync(f * FRAME_MS);
     at = playhead(t, pose);
-    back.note(f, at, ed.jumped(f));
     sample(f);
   }
 
@@ -108,27 +102,22 @@ export const timeline: Make = ({ seed, size, lanes }) => {
         }
       }
       if (unstable.size > 0) framedAt++;
-      const report = (kind: 'fail' | 'undecided', ks: number[]) => {
-        const k = ks[0];
-        if (k === undefined) return;
+      const failing: number[] = [];
+      for (let k = 0; k < width; k++)
+        if (!unstable.has(k) && !same(cp.values[k] as number, base.got[k] as number))
+          failing.push(k);
+      const k = failing[0];
+      if (k !== undefined) {
         const { clip, field } = where(n0, k);
         found.push({
-          kind,
+          kind: 'fail',
           at: cp.frame,
           what:
             `frame ${cp.frame}, reel at ${cp.at.toFixed(3)} (mix time ${cp.now.toFixed(3)}): ` +
-            `clip ${clip} ${field} live ${cp.values[k]} fresh ${base.got[k]}, ${ks.length} of ${width} numbers differ` +
-            `${kind === 'undecided' ? ', each in a clip the reel ran back over since it started' : ''}; recent: ${cp.recent.join('; ')}`,
+            `clip ${clip} ${field} live ${cp.values[k]} fresh ${base.got[k]}, ${failing.length} of ${width} numbers differ; ` +
+            `recent: ${cp.recent.join('; ')}`,
         });
-      };
-      const failing: number[] = [];
-      const excused: number[] = [];
-      for (let k = 0; k < width; k++) {
-        if (unstable.has(k) || same(cp.values[k] as number, base.got[k] as number)) continue;
-        (cp.tainted[where(n0, k).clip] ? excused : failing).push(k);
       }
-      report('fail', failing);
-      report('undecided', excused);
     }
     if (framed) found.push(framed);
     for (const run of runs) run.fresh.m.close();
@@ -147,7 +136,6 @@ export const timeline: Make = ({ seed, size, lanes }) => {
       reel: at,
       checked,
       framedAt,
-      tainted: back.tainted().reduce((a, b) => a + b, 0),
       ...ed.stats(),
     }),
     check,

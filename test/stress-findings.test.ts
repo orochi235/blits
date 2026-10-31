@@ -607,3 +607,46 @@ test('a mix sought back into a span plays on as one played straight, its fit res
   expect(s.result).toEqual(fresh.s.result);
   for (const p of parts) expect(m.probe(p).x, p.id).toBeCloseTo(fresh.m.probe(p).x, 9);
 });
+
+// The timeline demo, seeds 2, 3, 5 and 7: a reel sought forward past a span while turned back
+// passes its children without their fits, so the span is not laid out as played straight through.
+// The seek's frame starts and ends them as the clock runs, which runs back; not fixed.
+test.fails('a reel sought past a span while turned back, then back into it, reads as played straight', () => {
+  const lens = [958, 300, 600, 700, 450, 800, 1100, 500, 900, 1300];
+  const parts = lens.map((_, i) => ({ id: `p${i}` }));
+  const make = () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+    m.sync(0);
+    const reel = m.owns({ start: 0 });
+    m.cue({
+      owner: reel,
+      patch: ramp(10_000, 0, 1),
+      start: 0,
+      loop: false,
+      subjects: [{ id: 'k' }],
+    });
+    const s = m.span({ owner: reel, start: 1000, duration: 2000, order: 'stagger', share: 0.5 });
+    for (const [i, p] of parts.entries())
+      m.cue({
+        owner: s,
+        patch: ramp(lens[i] as number, 100, 400),
+        subjects: [p],
+        loop: false,
+        faster: 3,
+        slower: 3,
+      });
+    return { m, reel };
+  };
+  const fresh = make().m;
+  for (let t = 10; t <= 1900; t += 10) fresh.sync(t);
+  const { m, reel } = make();
+  m.sync(500);
+  reel.rate = -1;
+  reel.seek(5000);
+  m.sync(510);
+  reel.rate = 1;
+  m.sync(520);
+  reel.seek(1890);
+  m.sync(530);
+  for (const p of parts) expect(m.probe(p).x, p.id).toBeCloseTo(fresh.probe(p).x, 9);
+});

@@ -30,7 +30,6 @@ export function editor(seed: number, t: Timeline) {
   let tried = false;
   let seeks = 0;
   let reversals = 0;
-  let jumpedAt = -1;
 
   const log = (f: number, what: string) => {
     recent.push(`f${f} ${what}`);
@@ -117,7 +116,6 @@ export function editor(seed: number, t: Timeline) {
       case 'jump':
         log(f, `reel to ${op.to.toFixed(1)}`);
         reel.seek(op.to);
-        jumpedAt = f;
         return;
     }
   }
@@ -145,8 +143,6 @@ export function editor(seed: number, t: Timeline) {
     act,
     recent: () => recent.slice(),
     findings: () => found,
-    /** Whether frame `f` sought the reel. */
-    jumped: (f: number) => jumpedAt === f,
     stats: () => ({ seeks, reversals }),
   };
 }

@@ -257,9 +257,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - **A handle's own rate write on a child is retraced at its latest rate** when an owner above
      runs back over it (not tested): only a fit's rate change is kept for the run back
      (`Voice.earlier`, `unfit` in `src/spans.ts`), since a host's write is not made again going forward.
-   - **The timeline demo still fails at other seeds** (2026-10-31, after the fixes above):
-     `npm run stress -- timeline --seed 3` at frame 1720, and `--seed 4` at frames 65 (right
-     after `reel to`: a clip's opacity reads 0 where fresh reads 1), 200 and 1796. Not traced.
+   - **The timeline demo fails at seeds 2, 3, 5 and 7, all after a reel sought forward while
+     turned back** (2026-10-31; seeds 1, 4, 6 and 8 report nothing). The seek's frame starts and
+     ends the span children it passes as the reel's clock runs, which runs back, so their fits never
+     happen in order; turning forward later ends them all at once from times the reel's clock maps
+     out of order. `test.fails` "a reel sought past a span while turned back…". The fix likely
+     takes an owner's forward seek as a forward pass for the span children it crosses, whatever
+     its rate: the meets check, the event order in `inTurn` (`src/move.ts`) and the fade time
+     there. Making a fit count a live child that started after its moment as still to start
+     (`begun` in `src/spans.ts`) was tried and made seeds 6 and 7 worse.
    - **Measured fine:** the feed (100 items/s, re-sorted and filtered) at 0.08 ms a read with no
      leaks; the cue stack against its model, except `from: 'current'` above; the deck's seeks and
      `done`s; the kiosk's loop phase, voice count and return to rest at short sizes.
