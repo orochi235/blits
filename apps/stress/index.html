@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>blits stress</title>
+    <link rel="icon" href="data:," />
+  </head>
+  <body>
+    <main id="root">
+      <div class="controls">
+        <select id="pick" aria-label="Scenario"></select>
+        <label>seed <input id="seed" type="number" min="0" step="1" value="1" /></label>
+        <label>size <input id="size" type="number" min="0.1" step="any" /></label>
+        <button id="restart" type="button">Restart</button>
+        <output id="readout" class="readout"></output>
+      </div>
+      <canvas id="stage"></canvas>
+      <p id="blurb" class="blurb"></p>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

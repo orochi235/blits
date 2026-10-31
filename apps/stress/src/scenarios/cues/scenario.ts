@@ -14,6 +14,7 @@ import type { Finding, Make, Scenario } from '@stress/scenario';
 import { handover } from './handover';
 import { model } from './model';
 import { BACK_MS, type Cue, FRAME_MS, GROUPS, groupOf, recent, show } from './script';
+import { draw } from './view';
 
 interface Fixture {
   i: number;
@@ -239,6 +240,7 @@ export const cues: Make = ({ seed, size, lanes }) => {
     read: readInto,
     stats: () => ({ voices: m.voices().length, cue: live(), gos, backs, mid, follows }),
     check,
+    draw: (ctx, w, h) => draw(ctx, w, h, columns.level, columns.hue),
     close: () => m.close(),
   };
   return scenario;

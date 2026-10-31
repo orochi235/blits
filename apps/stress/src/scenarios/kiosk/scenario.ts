@@ -1,6 +1,7 @@
 import { type Handle, mix } from '@msb235/blits';
 import type { Finding, Make, Scenario } from '@stress/scenario';
 import { burst, PERIODS, type Pose, patterns, TILE, type Tile } from './pattern';
+import { draw } from './view';
 
 const FRAME_MS = 1000 / 60;
 const TILES = 2000;
@@ -156,6 +157,10 @@ export const kiosk: Make = ({ size, lanes }) => {
       rest();
       if (checks === 0) found.push({ kind: 'undecided', what: `size ${size}: no drift check ran` });
       return found;
+    },
+    draw: (ctx, w, h) => {
+      m.pull(tiles, { gain, color: tint });
+      draw(ctx, w, h, gain, tint);
     },
     close: () => m.close(),
   };

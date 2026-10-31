@@ -16,6 +16,7 @@ import {
   unitAxis,
 } from './clips';
 import { apart, type Member, meanBlend, roleBlend, sample } from './expect';
+import { draw } from './view';
 
 const FRAME_MS = 1000 / 60;
 const PER_SIZE = 10;
@@ -181,22 +182,27 @@ export const rig: Make = ({ seed, size, lanes }) => {
 
   const rot = new Float64Array(n * 4);
   const pos = new Float64Array(n * 3);
+  /** Pulls every bone's pose, with the IK arm's height applied as the rig does after reading. */
+  function pulled(): void {
+    m.pull(bones, { rot, pos });
+    for (let c = 0; c < chars; c++) {
+      const h = H[c] as number;
+      if (!(h > 0)) continue;
+      for (let k = 0; k < ARM.length; k++) {
+        const y = (c * BONES + (ARM[k] as number)) * 3 + 1;
+        pos[y] =
+          (pos[y] as number) + ((ikY[c * ARM.length + k] as number) - (pos[y] as number)) * h;
+      }
+    }
+  }
+
   const scenario: Scenario = {
     name: 'rig',
     frameMs: FRAME_MS,
     width: n * 7,
     step,
     read: (out) => {
-      m.pull(bones, { rot, pos });
-      for (let c = 0; c < chars; c++) {
-        const h = H[c] as number;
-        if (!(h > 0)) continue;
-        for (let k = 0; k < ARM.length; k++) {
-          const y = (c * BONES + (ARM[k] as number)) * 3 + 1;
-          pos[y] =
-            (pos[y] as number) + ((ikY[c * ARM.length + k] as number) - (pos[y] as number)) * h;
-        }
-      }
+      pulled();
       out.set(rot, 0);
       out.set(pos, n * 4);
     },
@@ -221,6 +227,10 @@ export const rig: Make = ({ seed, size, lanes }) => {
         });
       if (held > 0) found.push({ kind: 'gap', what: HOLD_GAP });
       return found;
+    },
+    draw: (ctx, w, h) => {
+      pulled();
+      draw(ctx, w, h, chars, pos);
     },
     close: () => m.close(),
   };

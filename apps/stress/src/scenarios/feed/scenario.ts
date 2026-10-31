@@ -2,6 +2,7 @@ import { type Handle, keys, kit, mix, mul, spring, sum } from '@msb235/blits';
 import { type Rng, rng } from '@stress/rng';
 import type { Finding, Make, Scenario } from '@stress/scenario';
 import { poisson } from './poisson';
+import { draw } from './view';
 
 interface Pose {
   y: number;
@@ -57,6 +58,7 @@ export const feed: Make = ({ seed, size, lanes }) => {
   const dropped: Item[] = [];
   const y = new Float64Array(ROWS);
   const alpha = new Float64Array(ROWS);
+  const share = new Float64Array(ROWS);
   let nextId = 0;
   let events = 0;
   let frame = -1;
@@ -227,6 +229,12 @@ export const feed: Make = ({ seed, size, lanes }) => {
       retargets,
     }),
     check,
+    draw: (ctx, w, h) => {
+      const rows = [...list, ...leaving].slice(0, ROWS);
+      m.pull(rows, { y, alpha });
+      for (let i = 0; i < rows.length; i++) share[i] = (((rows[i] as Item).id * 37) % 97) / 97;
+      draw(ctx, w, h, rows.length, { y, alpha, share }, ROW_PX, list.length);
+    },
     close: () => m.close(),
   };
   return scenario;

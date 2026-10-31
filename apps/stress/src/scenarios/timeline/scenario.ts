@@ -2,6 +2,7 @@ import { rng } from '@stress/rng';
 import type { Finding, Make, Scenario } from '@stress/scenario';
 import { build, FRAME_MS, type Pose, playhead, readInto, where } from './build';
 import { editor } from './script';
+import { draw } from './view';
 
 const CHECKPOINTS = 20;
 /** A mismatch this soon after the reel ran backward is behavior blits has not settled. */
@@ -146,6 +147,7 @@ export const timeline: Make = ({ seed, size, lanes }) => {
       ...ed.stats(),
     }),
     check,
+    draw: (ctx, w, h) => draw(t, ctx, w, h, at),
     close: () => t.m.close(),
   };
   return scenario;

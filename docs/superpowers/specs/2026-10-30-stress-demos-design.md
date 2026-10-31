@@ -14,7 +14,7 @@ A private workspace app, `apps/stress`, one folder per demo:
 | File | Role |
 |---|---|
 | `src/scenarios/<name>/scenario.ts` | Builds the mix and subjects from a seed and a size; `step(frame)` feeds that frame's workload; `read()` probes every subject into one flat `Float64Array`; `check()` runs the demo's correctness check. No DOM; every random choice comes from the seed. |
-| `src/scenarios/<name>/view.ts` | Draws the same scenario on a canvas. |
+| `draw` on `src/scenarios/<name>/scenario.ts` | Draws the scenario on a canvas; a `view.ts` beside it holds the drawing only when it runs long. |
 | `src/run.ts` | Node runner: `npm run stress -- <name> --size N --frames F --seed S`. Bundled by esbuild against the engine's `src/`. Prints progress as it goes (`frame 1200/6000`), writes one raw record per frame (per window for the soak), with a header naming the machine, load, revision and arguments. Digests are computed from the records afterward (`src/digest.ts`). |
 | `index.html`, `src/main.ts` | One page: a scenario picker, the canvas (capped at 400 px tall), a fixed-width frame-time readout. Serves on `::`. |
 

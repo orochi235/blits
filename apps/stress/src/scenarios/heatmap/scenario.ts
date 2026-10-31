@@ -1,6 +1,7 @@
 import { ink, input, kit, mix, oklab, patch, spring, sum } from '@msb235/blits';
 import { type Rng, rng } from '@stress/rng';
 import type { Finding, Make, MakeOptions, Scenario } from '@stress/scenario';
+import { draw } from './view';
 
 interface Pose {
   value: number;
@@ -79,6 +80,7 @@ export const heatmap: Make = (opts) => {
   const snaps = new Map<number, Float64Array>();
   let stride = 30;
   let frame = -1;
+  let view: Float64Array | undefined;
 
   const snap = (f: number, out: Float64Array) => {
     if (f % stride !== 0) return;
@@ -152,6 +154,11 @@ export const heatmap: Make = (opts) => {
       for (let f = frame + 1; f <= frame + QUIET_FRAMES; f++) live.advance(f, false);
       live.read(out);
       return [...settled(out), ...twinFindings(out)];
+    },
+    draw: (ctx, w, h) => {
+      view ??= new Float64Array(n * (1 + HEAT));
+      live.read(view);
+      draw(ctx, w, h, n, view.subarray(n), HEAT);
     },
     close: () => live.close(),
   };

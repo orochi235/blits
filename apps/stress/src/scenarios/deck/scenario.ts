@@ -3,6 +3,7 @@ import type { Finding, Make, Scenario } from '@stress/scenario';
 import { build, FRAME_MS, readInto, where } from './build';
 import { doneWatch } from './done';
 import { presenter } from './script';
+import { draw } from './view';
 
 const CHECKPOINTS = 40;
 const TOLERANCE = 1e-6;
@@ -139,6 +140,7 @@ export const deck: Make = ({ seed, size, lanes }) => {
       ...watch.stats(),
     }),
     check,
+    draw: (ctx, w, h) => draw(d, ctx, w, h),
     close: () => d.m.close(),
   };
   return scenario;
