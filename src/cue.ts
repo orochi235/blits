@@ -207,10 +207,13 @@ export function playable<I, O>(mix: Mixer<I, O>, spec: VoiceSpec<I, O>): void {
     throw new Error('blits: a voice cued with as needs history.revive to rebuild it from');
 }
 
-/** A voice parked by a seek, cued again as the mix plays past its cue, on the handle it had. */
+/**
+ * A voice parked by a seek, cued again as the mix plays past its cue, on the handle it had. A span's
+ * child waits for the fit its cue makes again, as it did when first cued: its start is the last fit's.
+ */
 function recue<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
   const owner = voice.owner;
-  if ((owner === null ? mix.now : ownerReading(owner, mix.now)) >= voice.start)
+  if (!owner?.fitting && (owner === null ? mix.now : ownerReading(owner, mix.now)) >= voice.start)
     voice.state = 'live';
   enter(mix, voice);
 }

@@ -180,3 +180,61 @@ test('a child anchored to a sibling keeps its start through a mix seek back afte
   expect([live[8], live[9]]).toEqual([0, expect.closeTo(2, 9)]);
   expect(run(true)).toEqual(live);
 });
+
+// docs/schema.html, Score, Seeking: a seek back plays the recorded calls again "in the frames they\nwere made in", and the mix plays on as it did.
+test('a span child skipped by the fit at its cue lays out the same when a seek back plays the cue again', () => {
+  const [b, c] = [{ id: 'b' }, { id: 'c' }];
+  const m = mix<Part, Pose>(K, { history: { ms: 100_000, tape } });
+  m.sync(467);
+  const s = m.span({ duration: 300, order: 'stagger' });
+  const fit = { loop: false, freeze: 'after', faster: 2, slower: 2 } as const;
+  m.cue({ owner: s, patch: ramp(300, 0, 100), subjects: [c], ...fit });
+  m.sync(483);
+  // 284 ms left, 700 at twice speed is 350: the fit falls and jumps both to their ends.
+  m.cue({ owner: s, patch: ramp(700, 0, 100), subjects: [b], ...fit });
+  m.sync(499);
+  const live = [m.probe(c).x, m.probe(b).x, s.result.skipped];
+  expect(live).toEqual([100, 100, 2]);
+  m.seek(467);
+  m.sync(515); // mix 483: the cue of b plays again
+  m.sync(531); // mix 499
+  expect([m.probe(c).x, m.probe(b).x, s.result.skipped]).toEqual(live);
+});
+
+// The same: a child cued into a span running back waits there, played again too.
+test('a child cued into a span running back plays when the span is sought into it, after a mix seek back too', () => {
+  const e = { id: 'e' };
+  const run = (sought: boolean) => {
+    const m = mix<Part, Pose>(K, { history: { ms: 100_000, tape } });
+    m.sync(100);
+    const s = m.span({ duration: 2000, spill: 'overrun' });
+    m.sync(250);
+    s.rate = -1;
+    // At span 150, slowed to fill the budget: rate 0.5.
+    const h = m.cue({
+      owner: s,
+      patch: ramp(700, 0, 100),
+      subjects: [e],
+      loop: false,
+      freeze: 'after',
+      faster: 2,
+      slower: 2,
+    });
+    m.sync(300);
+    if (sought) {
+      m.seek(200);
+      m.sync(350); // mix 250: the cue plays again
+      m.sync(400); // 300
+    }
+    const base = sought ? 100 : 0;
+    // The span runs back past its start.
+    m.sync(base + 450);
+    const state = h.state;
+    s.seek(500);
+    m.sync(base + 460);
+    // The span reads 490: e is 340 ms in at half speed.
+    return [state, m.probe(e).x];
+  };
+  expect(run(false)).toEqual(['pending', expect.closeTo(170 / 7, 9)]);
+  expect(run(true)).toEqual(run(false));
+});

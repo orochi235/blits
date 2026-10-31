@@ -8,6 +8,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A span's child whose cue a seek back plays again waits for the span's fit, as it did when first
+  cued, so the span lays it out as before. It started at once wherever its span's clock had passed
+  the start the fit first gave it: the fit then took it for ended, so it skipped nothing else, or,
+  in a span running back, the child ran back to its start and left.
 - A child its owner's seek put back before its start stays where it was through a mix sought back to
   after that seek: a later fit keeps it in its place, and an anchor does not place it again. The
   seek took it for one still to start, so a span laid it out afresh, and a child anchored to a
