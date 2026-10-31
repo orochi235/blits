@@ -8,6 +8,17 @@ import type { Voice } from './voice.js';
  */
 export class DueQueue<I, O> {
   size = 0;
+  /**
+   * The entries due every frame, -Infinity, kept out of the heap in the order they came: an owned
+   * voice is filed so each frame, and sifting each to the top and off again cost more than its visit.
+   */
+  private every: Voice<I, O>[] = [];
+  private everyTokens: number[] = [];
+  /** The list `takeEvery` last handed out, and its tokens: the next one fills it again. */
+  private spare: Voice<I, O>[] = [];
+  private spareTokens: number[] = [];
+  /** Whether the list `takeEvery` last handed out was in id order. */
+  everySorted = true;
   private at = new Float64Array(64);
   private tokens = new Float64Array(64);
   private voices: (Voice<I, O> | undefined)[] = [];
@@ -15,6 +26,12 @@ export class DueQueue<I, O> {
   private limit = 64;
 
   push(at: number, voice: Voice<I, O>, token: number): void {
+    if (at === Number.NEGATIVE_INFINITY) {
+      if (this.every.length >= this.limit) this.pruneEvery();
+      this.every.push(voice);
+      this.everyTokens.push(token);
+      return;
+    }
     if (this.size >= this.limit) this.prune();
     if (this.size === this.at.length) this.grow();
     const ats = this.at;
@@ -32,7 +49,38 @@ export class DueQueue<I, O> {
 
   /** The earliest entry's time, Infinity while empty. */
   first(): number {
+    if (this.every.length > 0) return Number.NEGATIVE_INFINITY;
     return this.size > 0 ? (this.at[0] as number) : Number.POSITIVE_INFINITY;
+  }
+
+  /**
+   * The current entries due every frame, in the order they came, leaving none; `everySorted` says
+   * whether that was id order. The list is the queue's own, good until the next call.
+   */
+  takeEvery(): Voice<I, O>[] {
+    const every = this.every;
+    const tokens = this.everyTokens;
+    let n = 0;
+    let sorted = true;
+    let last = Number.NEGATIVE_INFINITY;
+    for (let i = 0; i < every.length; i++) {
+      const voice = every[i] as Voice<I, O>;
+      if (tokens[i] !== voice.dueToken || voice.state === 'done') continue;
+      // A voice filed twice keeps its last entry, so it is taken once.
+      voice.dueToken++;
+      if (voice.id < last) sorted = false;
+      last = voice.id;
+      every[n++] = voice;
+    }
+    every.length = n;
+    tokens.length = 0;
+    this.spare.length = 0;
+    this.every = this.spare;
+    this.everyTokens = this.spareTokens;
+    this.spare = every;
+    this.spareTokens = tokens;
+    this.everySorted = sorted;
+    return every;
   }
 
   /** Takes off the earliest entry, giving its voice where it is current and undefined where stale. */
@@ -53,6 +101,10 @@ export class DueQueue<I, O> {
 
   clear(): void {
     this.size = 0;
+    this.every.length = 0;
+    this.everyTokens.length = 0;
+    this.spare.length = 0;
+    this.spareTokens.length = 0;
     this.voices = [];
     this.limit = 64;
   }
@@ -93,6 +145,22 @@ export class DueQueue<I, O> {
     const tokens = new Float64Array(this.tokens.length * 2);
     tokens.set(this.tokens);
     this.tokens = tokens;
+  }
+
+  /** Drops the entries due every frame made stale by a later one. */
+  private pruneEvery(): void {
+    const every = this.every;
+    const tokens = this.everyTokens;
+    let n = 0;
+    for (let i = 0; i < every.length; i++) {
+      const voice = every[i] as Voice<I, O>;
+      if (tokens[i] !== voice.dueToken) continue;
+      every[n] = voice;
+      tokens[n++] = tokens[i] as number;
+    }
+    every.length = n;
+    tokens.length = n;
+    this.limit = Math.max(this.limit, 2 * n);
   }
 
   /** Drops the entries made stale by a later one and heapifies what is left. */
@@ -169,14 +237,39 @@ export function schedule<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
 /** Takes every current entry due by `now` off the queue, in cue order. */
 export function popDue<I, O>(mix: Mixer<I, O>, now: number): Voice<I, O>[] {
   const queue = mix.due;
-  const out: Voice<I, O>[] = [];
+  const out = queue.takeEvery();
+  const sorted = queue.everySorted;
+  const every = out.length;
   while (queue.first() <= now) {
     const voice = queue.pop();
     if (voice === undefined) continue;
     voice.dueToken++;
     out.push(voice);
   }
-  return byId(out);
+  if (every === 0 || !sorted) return byId(out);
+  return every === out.length ? out : merged(out, every);
+}
+
+/** `list` in id order, its first `n` already so and the rest few: those sorted, then merged in. */
+function merged<V extends { readonly id: number }>(list: V[], n: number): V[] {
+  const rest = byId(list.slice(n));
+  const out: V[] = [];
+  let i = 0;
+  let k = 0;
+  while (i < n && k < rest.length) {
+    const a = list[i] as V;
+    const b = rest[k] as V;
+    if (b.id < a.id) {
+      out.push(b);
+      k++;
+    } else {
+      out.push(a);
+      i++;
+    }
+  }
+  while (i < n) out.push(list[i++] as V);
+  while (k < rest.length) out.push(rest[k++] as V);
+  return out;
 }
 
 /** Past this many voices the built-in sort, which makes working arrays however few it is given. */

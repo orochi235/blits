@@ -8,6 +8,12 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A frame with span children in it costs less than before this release's span-order fixes, which
+  had made it about 4% dearer: a child's visit reads its owners' clocks once, and the voices
+  visited every frame, which include every voice an owner holds, are kept in a list of their own
+  rather than sifted through the due queue's heap and sorted each frame. The new `spans` bench row,
+  ten staggered clips cued under one owner every four frames, reads 3.4% faster than before the
+  fixes (0.179 to 0.173 ms a frame, 7 rounds, U 7).
 - A voice an owner holds, first read while the owner runs back, shows at once instead of waiting
   on its fade in. The fade in counted from where the owner's clock, running back, would next reach
   the voice's start, a time still to come, so the voice read nothing until then.
