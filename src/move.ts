@@ -179,38 +179,46 @@ function meets<I, O>(voice: Voice<I, O>, now: number): boolean {
 }
 
 /**
- * Visits span children that end or start within the frame in the order those happen: the ends one
- * at a time by when each comes, since each fit can move the ends and starts after it, then the
- * starts. A child a fit moves to end or start by `now` joins them.
+ * Visits span children that start or end within the frame in the order those happen, one at a
+ * time, since a fit from each end can move the starts and ends after it. A start only starts the
+ * child here; a child a fit moves to start or end by `now`, or whose span starts, joins them.
  */
 function inTurn<I, O>(mix: Mixer<I, O>, held: Voice<I, O>[], now: number): void {
   const waiting = new Set(held);
-  const visited = new Set<Voice<I, O>>();
+  const ended = new Set<Voice<I, O>>();
+  const join = (o: Voice<I, O>) => {
+    for (const c of (o.holding as Holding<Voice<I, O>>).children)
+      if (!ended.has(c) && c.state !== 'done' && meets(c, now)) waiting.add(c);
+  };
   for (;;) {
     let next: Voice<I, O> | undefined;
     let when = Number.POSITIVE_INFINITY;
     for (const v of waiting) {
-      if (v.state === 'pending') continue;
-      if (v.state === 'done' || !meets(v, now)) {
-        waiting.delete(v);
-        continue;
-      }
-      const t = v.endsAt();
-      if (next === undefined || t < when || (t === when && v.id < next.id)) {
+      if (v.state === 'done' || ended.has(v) || !meets(v, now)) continue;
+      const t = v.state === 'pending' ? startOf(v) : v.endsAt();
+      // At one time an end comes first, as a fit from it counts a start there as still to come.
+      if (next === undefined || t < when || (t === when && rank(v) < rank(next))) {
         next = v;
         when = t;
       }
     }
     if (next === undefined) break;
-    waiting.delete(next);
-    visited.add(next);
-    visitOne(mix, next, now);
-    for (let o = next.owner; o?.fitting; o = o.owner)
-      for (const c of (o.holding as Holding<Voice<I, O>>).children)
-        if (!visited.has(c) && c.state !== 'done' && meets(c, now)) waiting.add(c);
+    if (next.state === 'pending') {
+      begin(mix, next, now);
+      if (next.holding !== null) join(next);
+    } else {
+      ended.add(next);
+      visitOne(mix, next, now);
+      for (let o = next.owner; o?.fitting; o = o.owner) join(o);
+    }
   }
   for (const v of byId([...waiting]))
-    if (v.state === 'pending' && meets(v, now)) visitOne(mix, v, now);
+    if (!ended.has(v) && v.state !== 'done') visitOne(mix, v, now);
+}
+
+/** Which of two events at one time comes first: an end before a start, then by cue order. */
+function rank<I, O>(v: Voice<I, O>): number {
+  return (v.state === 'pending' ? 2 ** 40 : 0) + v.id;
 }
 
 /** Starts each voice cued while the mix slept at `now`, the first sync after its cue. */

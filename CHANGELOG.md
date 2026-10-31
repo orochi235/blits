@@ -63,6 +63,10 @@ version and everything else the patch. Each release lists its changes as **Break
   the owner's clock comes forward to it, as the layout made going forward stands. The span was
   fitted again there instead, with the children it had skipped counted as still playing or left
   out, so the ones it had skipped together with them played on, slowed, beside them.
+- An owner sought past a span lays the span out in that frame as played straight through. Its
+  children that started and ended in the frame were taken in cue order once their span had started,
+  each started and ended in one step, so a fit from one end missed the children it should have
+  moved.
 
 ## 0.16.0
 

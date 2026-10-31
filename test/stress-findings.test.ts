@@ -488,3 +488,43 @@ for (const how of ['sought back', 'run back', 'sought past it and back'])
         expect(v, `${parts[i]?.id} at ${t}`).toBeCloseTo(read(fresh)[i] as number, 9);
     }
   });
+
+// docs/schema.html, owner `seek`: "Moves the owner's clock, and every child's phase with it". A
+// reel sought past a span lays it out in that one frame as played straight through: its children
+// start and end in the order they would have, each fit from where the one before left it.
+test('a reel sought past a stagger span, then back into it, reads as played straight', () => {
+  const lens = [958, 300, 600, 700, 450, 800, 1100, 500, 900, 1300];
+  const parts = lens.map((_, i) => ({ id: `p${i}` }));
+  const make = () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+    m.sync(0);
+    const reel = m.owns({ start: 0 });
+    m.cue({
+      owner: reel,
+      patch: ramp(10_000, 0, 1),
+      start: 0,
+      loop: false,
+      subjects: [{ id: 'k' }],
+    });
+    const s = m.span({ owner: reel, start: 0, duration: 2000, order: 'stagger', share: 0.5 });
+    for (const [i, p] of parts.entries())
+      m.cue({
+        owner: s,
+        patch: ramp(lens[i] as number, 100, 400),
+        subjects: [p],
+        loop: false,
+        faster: 3,
+        slower: 3,
+      });
+    return { m, reel };
+  };
+  const fresh = make().m;
+  for (let t = 10; t <= 900; t += 10) fresh.sync(t);
+  const { m, reel } = make();
+  m.sync(10);
+  reel.seek(5000);
+  m.sync(20);
+  reel.seek(890);
+  m.sync(30);
+  for (const p of parts) expect(m.probe(p).x, p.id).toBeCloseTo(fresh.probe(p).x, 9);
+});
