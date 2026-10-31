@@ -1,5 +1,6 @@
 import type { Entry } from '@stress/scenario';
 import { cues } from '@stress/scenarios/cues/scenario';
+import { deck } from '@stress/scenarios/deck/scenario';
 import { feed } from '@stress/scenarios/feed/scenario';
 import { heatmap } from '@stress/scenarios/heatmap/scenario';
 import { idle } from '@stress/scenarios/idle';
@@ -56,5 +57,12 @@ export const scenarios: Record<string, Entry> = {
     frames: 3600,
     blurb:
       'A crowd of 50 characters, 1,000 bones, crossfading idle, walk and run clips on quaternions while an IK hold takes one arm, checked against the blend role.mdx documents.',
+  },
+  deck: {
+    make: deck,
+    size: 1,
+    frames: 3600,
+    blurb:
+      'A slide deck: 40 slides of builds, stepped with next, back, jump, and next pressed mid-build, each stop checked against a fresh deck sought straight there.',
   },
 };
