@@ -266,6 +266,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      its rate: the meets check, the event order in `inTurn` (`src/move.ts`) and the fade time
      there. Making a fit count a live child that started after its moment as still to start
      (`begun` in `src/spans.ts`) was tried and made seeds 6 and 7 worse.
+   - **This session's fixes cost `own N=1000` 3.4%** (0.148 to 0.153 ms, U 6 of 49; teitou, 7
+     rounds, `bench/runs/2026-10-31-span-order.txt`, 008d580 against e3bfd3e); `tweens N=100000`
+     +2.4% at U 13 is weaker, and churn and swap read 3% faster. Likely the per-voice checks
+     `moveTo` now makes (a span's child that starts or ends this frame waits its turn, and
+     `earlier`/`later` for `unfit`) and the loop body moved into `visitOne`; not profiled.
    - **Measured fine:** the feed (100 items/s, re-sorted and filtered) at 0.08 ms a read with no
      leaks; the cue stack against its model, except `from: 'current'` above; the deck's seeks and
      `done`s; the kiosk's loop phase, voice count and return to rest at short sizes.
