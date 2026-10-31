@@ -495,7 +495,8 @@ export function call<I, O>(
     rec.delta = null;
     rec.probed = this.now;
     rec.seeks = voice.seeks;
-    return false;
+    // A role member is one at weight 0 too, unasked, and holds its role's place as on the general path.
+    return voice.spec.role !== undefined;
   }
   const kept = reading.kept;
   host.ready(voice, subject, rec);
