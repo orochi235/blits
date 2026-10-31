@@ -8,6 +8,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A voice an owner holds, first read while the owner runs back, shows at once instead of waiting
+  on its fade in. The fade in counted from where the owner's clock, running back, would next reach
+  the voice's start, a time still to come, so the voice read nothing until then.
 - An owner sought forward passes the span children it crosses as played straight through,
   whatever its rate: they start and end in order, and their span fits from each end. Sought ahead
   while turned back, it started them in the order its clock running back put their starts, last

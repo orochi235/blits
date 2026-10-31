@@ -5,7 +5,6 @@ import { schedule } from './due.js';
 import type { Share } from './everyone.js';
 import type { Mixer } from './mixer.js';
 import { originOf } from './origin.js';
-import { startOf } from './place.js';
 import { record } from './record.js';
 import type { Subject } from './subject.js';
 import { unreach, unreached } from './unreached.js';
@@ -140,10 +139,11 @@ export function sinceOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, delay: numb
 /**
  * The mix time a subject's fade in counts from: `since`, but no earlier than its voice starts,
  * where a voice sought ahead of its start has a subject's delay run out before it; and from when
- * the voice first showed, for one freezing before.
+ * the voice first showed, for one freezing before. Its start is where its owners' clocks first
+ * read it, as `since` is, not where they would by their controls now.
  */
 export function shownOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, since: number): number {
-  const start = startOf(voice);
+  const start = voice.owner === null ? voice.start : originOf(voice.owner, voice.start, false);
   const from = since < start ? start : since;
   return voice.freezesBefore && voice.opened < from ? voice.opened : from;
 }

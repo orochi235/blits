@@ -354,6 +354,17 @@ describe.each([true, false])('a voice whose owner runs backward, lanes %s', (lan
     expect(h.state).toBe('done');
     expect(owner.state).toBe('done');
   });
+
+  it('shows a subject first read as it runs back, its fade in long done', () => {
+    const m = mix<Part, Pose>(K, { lanes });
+    m.sync(0);
+    const owner = m.owns({});
+    m.cue({ owner, patch: ramp, loop: false, fade: { in: 50 } });
+    m.sync(200);
+    owner.rate = -1;
+    m.sync(250);
+    expect(m.probe(a).x).toBeCloseTo(250, 9);
+  });
 });
 
 describe.each([true, false])(
