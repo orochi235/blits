@@ -122,6 +122,8 @@ export async function run(o: RunOptions): Promise<string> {
     const b = performance.now();
     s.read(buf);
     const c = performance.now();
+    // A browser runs promise handlers between frames; so does a run.
+    await null;
     const step = b - a;
     const read = c - b;
     if (o.window) {
