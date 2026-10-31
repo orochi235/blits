@@ -2,6 +2,7 @@ import type { Entry } from '@stress/scenario';
 import { feed } from '@stress/scenarios/feed/scenario';
 import { heatmap } from '@stress/scenarios/heatmap/scenario';
 import { idle } from '@stress/scenarios/idle';
+import { timeline } from '@stress/scenarios/timeline/scenario';
 
 export const scenarios: Record<string, Entry> = {
   idle: {
@@ -22,5 +23,12 @@ export const scenarios: Record<string, Entry> = {
     frames: 3600,
     blurb:
       'A live feed: 100 items a second arrive and leave while the list is re-sorted and filtered.',
+  },
+  timeline: {
+    make: timeline,
+    size: 1,
+    frames: 2400,
+    blurb:
+      'A video timeline: 300 clips in nested spans, scrubbed, jumped and shuttled from −2× to 4× under history.',
   },
 };
