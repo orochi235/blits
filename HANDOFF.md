@@ -275,9 +275,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      (`bench/runs/2026-10-31-spans-profile-one-walk.txt`).
    - **`inert` after a seek back, for a motion subject met inside its stagger** (2026-10-31):
      `still` (`src/rests.ts`) asks after a motion voice's records listed in `voice.early` that are
-     unread since their stagger ran out. A seek back rebuilds that list from restored copies, whose
-     `probed` is reset, so it keeps only those still inside their stagger: one already past it,
-     never read, is missed until the voice's clock next changes. Not tested.
+     unread since their stagger ran out. A seek back puts records back lazily, as something reads
+     them, and a copy's `probed` is reset, so the list it rebuilds misses one already past its
+     stagger and never read. Carrying a "read since its origin" flag through copies was tried and
+     reverted: the seek sweep of `test/differential.test.ts` then read lanes on and off apart. A fix
+     wants the motion patch to hold the subjects it has met but not started, kept with its history.
    - **A child anchored to a sibling under an owner at rate 0 is placed wrong when the owner is
      sought forward** (2026-10-31, `test.fails` in `test/place-edges.test.ts`). `place` runs at the
      top of `moveTo` with the owner still at rate 0, where `timeWith` answers any time its clock has
