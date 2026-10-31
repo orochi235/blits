@@ -71,8 +71,11 @@ export function foldRoles<I, O>(
       const delta = this.read(voice, subject, now, dry, held);
       if (owed >= 0 && voice.laned) (this.lanes as Lanes<I, O>).paid(voice.id, owed, held.weight);
       if (!mine) q = this.shared(voice, head.slot, held, q);
-      if (delta === null) continue;
       const role = voice.spec.role;
+      if (delta === null) {
+        if (role === undefined && !(held.weight > 0)) unband(held);
+        continue;
+      }
       let group = -1;
       if (role !== undefined) {
         group = k.names.indexOf(role);

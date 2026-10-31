@@ -54,6 +54,8 @@ function phaseOf(elapsed: number, duration: number, passes: number): number {
   return elapsed < 0 ? phaseBefore(elapsed, duration) : phaseAt(elapsed, duration, passes);
 }
 
+const NOTHING: Record<string, unknown> = Object.freeze({});
+
 /**
  * One live voice's delta for one subject this frame, through its record for the subject, or null
  * when it does not reach. Its weight is left in `w`.
@@ -153,9 +155,11 @@ export function contribution<I, O>(
   }
 
   let delta: Record<string, unknown> | null = null;
-  // A keys voice in a role reads at weight 0 too: having a delta makes it a member, and the
-  // role folds at its first member's place.
+  // A voice in a role is a member at weight 0 too, and the role folds at its first member's
+  // place. A keys member reads; any other is not asked, and contributes nothing.
+  let member = false;
   if (silent(voice, weight) && (voice.built === null || voice.spec.role === undefined)) {
+    member = voice.spec.role !== undefined;
     // A `from: 'current'` voice takes its base on its first read, silent or not.
     if (voice.built && voice.spec.from === 'current' && held.base === undefined) {
       held.base = this.baseFor(voice, subject);
@@ -176,7 +180,11 @@ export function contribution<I, O>(
   held.seeks = voice.seeks;
   if (history !== undefined) remember(this, voice, subject, held);
   if (reading.kept !== keptBefore && !voice.keeping) stateful(this, voice);
-  if (delta === null) return null;
+  if (delta === null) {
+    if (!member) return null;
+    this.w = weight;
+    return NOTHING;
+  }
 
   if (voice.out?.rest && this.isRest(delta)) {
     held.weight = 0;

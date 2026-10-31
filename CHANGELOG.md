@@ -8,6 +8,11 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A role member at weight 0 holds its role's place whatever its patch's form, and a band switched
+  off by a frame at weight 0 stays off when the weight comes back between `off` and `on`. A `keys`
+  member at weight 0 was read and so held the role's place; any other was not, so its role folded
+  at the next member's place, which on a `last` channel changed which value won, and the role's
+  band, along with every band in a mix with a role in it, survived the frame at 0.
 - A frame with span children in it costs less than before this release's span-order fixes, which
   had made it about 5% dearer: a child's visit reads its owners' clocks once, and the voices
   visited every frame, which include every voice an owner holds, are kept in a list of their own
