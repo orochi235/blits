@@ -23,6 +23,11 @@ version and everything else the patch. Each release lists its changes as **Break
   run out while the owner still runs forward. The time was taken as never, so it ended at the
   frame that noticed, and a span holding it fitted again from there, its layout following the
   frame rate.
+- A placement whose names make a loop is taken where no mark in it waits on itself: a cue whose
+  `out` is its follow's `start`, the follow starting off the cue's `coast`, was refused as waiting
+  on itself, since the check followed every name whatever mark it asked for. A voice's `start`,
+  `in`, `coast` and the marks placed inside it wait only on what places its start; its `out` and
+  `end` on that and what places its out.
 
 ## 0.16.0
 

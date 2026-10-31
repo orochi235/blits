@@ -11,7 +11,6 @@ import {
   type VoiceSpec,
 } from '@msb235/blits';
 import type { Finding, Make, Scenario } from '@stress/scenario';
-import { handover } from './handover';
 import { model } from './model';
 import { BACK_MS, type Cue, FRAME_MS, GROUPS, groupOf, recent, show } from './script';
 import { draw } from './view';
@@ -127,12 +126,8 @@ export const cues: Make = ({ seed, size, lanes }) => {
           ...(a > 0
             ? { start: { of: names[a - 1] as string, mark: 'coast', by: cue.follow as number } }
             : {}),
-          // By tag: the same out by name is refused (see `handover`).
-          ...(a < ks.length - 1
-            ? { out: { of: { tag: names[a + 1] as string }, mark: 'start' } }
-            : {}),
+          ...(a < ks.length - 1 ? { out: { of: names[a + 1] as string, mark: 'start' } } : {}),
         },
-        tags: [names[a] as string],
       }));
       return { index: j, handles };
     });
@@ -191,7 +186,7 @@ export const cues: Make = ({ seed, size, lanes }) => {
   function check(): Finding[] {
     const docs = model(sheet, 'docs');
     const carry = model(sheet, 'carry');
-    const found: Finding[] = handover();
+    const found: Finding[] = [];
     const failed = new Set<number>();
     let departed = false;
     const near = (v: number, want: number) =>

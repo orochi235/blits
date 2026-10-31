@@ -259,12 +259,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      `cue`, as `spec.start - mix.offset` (`src/cue.ts`). The fix: keep the offset each anchored
      voice was cued under and subtract that; tried, with both tests passing, and left out because
      another session held `place.ts`.
-   - **A loop of names is refused even when it is not a loop in time.** q1's `out` naming q2's
-     start, q2 starting off q1's `coast`, is refused as "waits on itself", since `checkPlacement`
-     in `src/place.ts` follows names whatever mark they point at; picking by tag is taken. Written
-     as `.fails`; if refusing every loop of names is the rule, pin it instead. And the reverse
-     hole: a real loop by tag (a after tag b, b after tag a) is accepted, since the check ignores
-     tags. No test yet.
+   - **A real loop by tag is accepted** (a after tag b, b after tag a), since `checkPlacement` in
+     `src/place.ts` follows names only.
    - **`from: 'current'` keeps the speed, and the docs say it does not.** `blending.mdx` says such a
      fade carries position, not speed; CHANGELOG 0.2.0 and `src/patch.ts` bend its start to the
      subject's speed, so a still fixture's linear fade eases in, and the first such fade a mix

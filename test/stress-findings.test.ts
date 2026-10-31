@@ -214,7 +214,7 @@ test.fails('a voice anchored to end at 4000 stays back after a seek to 1000', ()
 
 // docs/schema.html, Score: "A placement that waits on itself is refused at cue." Here q2 starts off
 // q1's coast, which q1's out does not move, so nothing waits on itself; by tag it is taken.
-test.fails('a cue whose out names its follow’s start, the follow starting off its coast, is taken', () => {
+test('a cue whose out names its follow’s start, the follow starting off its coast, is taken', () => {
   const L = kit<{ level: number }>({ level: max() });
   const step = () => keys<Part, { level: number }>(100, [{ at: 1, delta: { level: 1 } }]);
   const m = mix<Part, { level: number }>(L);

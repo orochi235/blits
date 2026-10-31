@@ -67,50 +67,93 @@ export function checkPlacement<I, O>(
     throw new Error('blits: a placement anchors out or end, not both');
   if (spec.start !== undefined && (anchor.start !== undefined || anchor.in !== undefined))
     throw new Error('blits: a voice takes start or an anchored start, not both');
-  const name = spec.name;
-  if (name === undefined) return;
-  // A voice is known by its owner, its score and its name, and by its mix where it names no score;
-  // a bare name in an anchor is in the asker's score under the asker's owner.
-  const key = (o: Voice<I, O> | null, score: string | undefined, n: string, slot: number) =>
-    `${score === undefined ? slot : ''}\u0000${o?.id ?? 0}\u0000${score ?? ''}\u0000${n}`;
-  const named = (
-    a: Anchor,
-    score: string | undefined,
-    o: Voice<I, O> | null,
-    slot: number,
-  ): string[] => {
-    if ('all' in a) return a.all.flatMap((m) => named(m, score, o, slot));
-    if ('any' in a) return a.any.flatMap((m) => named(m, score, o, slot));
-    const q = 'of' in a ? a.of : 'after' in a ? a.after : 'with' in a ? a.with : a.before;
-    if (typeof q === 'string') return [key(o, score, q, slot)];
-    return q.name === undefined ? [] : [key(o, q.score ?? score, q.name, slot)];
+  const self: Placed<I, O> = {
+    id: mix.nextId,
+    spec,
+    owner,
+    slot: mix.slot,
+    writes: spec.patch?.writes ?? none,
   };
-  const names = (
-    p: Placement,
-    score: string | undefined,
-    o: Voice<I, O> | null,
-    slot: number,
-  ): string[] =>
-    [p.start, p.in, p.out, p.end].flatMap((a) =>
-      a === undefined || typeof a === 'number' ? [] : named(a, score, o, slot),
+  const voices: Placed<I, O>[] = [self];
+  for (const m of mix.transport.members)
+    for (const list of [m.gone, m.cued] as Voice<I, O>[][])
+      for (const v of list)
+        voices.push({
+          id: v.id,
+          spec: v.spec,
+          owner: v.owner,
+          slot: m.slot,
+          writes: v.patch.writes,
+        });
+  const refuse = (): never => {
+    throw new Error(`blits: ${spec.name ?? 'a voice'}'s placement waits on itself`);
+  };
+  // Where the marks a query asks for are fixed: a voice's start, in, coast and inner marks by its
+  // start's anchors, its out and end by its out's anchors and its start.
+  const targets = (asker: Placed<I, O>, a: Anchor): Wait<I, O>[] => {
+    if ('all' in a) return a.all.flatMap((m) => targets(asker, m));
+    if ('any' in a) return a.any.flatMap((m) => targets(asker, m));
+    const given = 'of' in a ? a.of : 'after' in a ? a.after : 'with' in a ? a.with : a.before;
+    const mark = 'of' in a ? a.mark : 'after' in a ? 'end' : 'start';
+    const q = typeof given === 'string' ? { name: given } : given;
+    if (q.name === undefined) return [];
+    const score = q.score ?? asker.spec.score;
+    const anywhere = q.score !== undefined;
+    if (asker === self && q.name !== undefined && q.name === spec.name && score === spec.score)
+      refuse();
+    const met = voices.filter(
+      (v) =>
+        v !== asker &&
+        v.spec.score === score &&
+        (anywhere || (v.owner === asker.owner && v.slot === asker.slot)) &&
+        (q.name === undefined || v.spec.name === q.name) &&
+        (q.tag === undefined || (v.spec.tags ?? none).includes(q.tag)) &&
+        (q.writes === undefined || (v.writes as readonly unknown[]).includes(q.writes)),
     );
-  const self = key(owner, spec.score, name, mix.slot);
-  const seen = new Set<string>();
-  const waits = names(anchor, spec.score, owner, mix.slot);
-  while (waits.length > 0) {
-    const n = waits.pop() as string;
-    if (n === self) throw new Error(`blits: ${name}'s placement waits on itself`);
-    if (seen.has(n)) continue;
-    seen.add(n);
-    for (const m of mix.transport.members)
-      for (const v of m.cued as Voice<I, O>[])
-        if (
-          v.spec.name !== undefined &&
-          key(v.owner, v.spec.score, v.spec.name, m.slot) === n &&
-          v.spec.anchor
-        )
-          waits.push(...names(v.spec.anchor, v.spec.score, v.owner, m.slot));
+    const resolver = q.resolver ?? 'last';
+    const picked =
+      met.length > 1 && (resolver === 'first' || resolver === 'last')
+        ? [met.reduce((p, v) => ((resolver === 'last' ? v.id > p.id : v.id < p.id) ? v : p))]
+        : met;
+    const side: Side = mark === 'out' || mark === 'end' ? 'out' : 'start';
+    return picked.map((v) => ({ voice: v, side }));
+  };
+  const waitsOf = (p: Placed<I, O>, side: Side): Wait<I, O>[] => {
+    const a = p.spec.anchor;
+    const by = side === 'start' ? [a?.start, a?.in] : [a?.out, a?.end];
+    const out: Wait<I, O>[] = side === 'out' ? [{ voice: p, side: 'start' }] : [];
+    for (const b of by) if (b !== undefined && typeof b !== 'number') out.push(...targets(p, b));
+    return out;
+  };
+  for (const from of ['start', 'out'] as const) {
+    const seen = { start: new Set<Placed<I, O>>(), out: new Set<Placed<I, O>>() };
+    const stack = waitsOf(self, from);
+    while (stack.length > 0) {
+      const { voice, side } = stack.pop() as Wait<I, O>;
+      if (voice === self && side === from) refuse();
+      if (seen[side].has(voice)) continue;
+      seen[side].add(voice);
+      stack.push(...waitsOf(voice, side));
+    }
   }
+}
+
+/** A side of a placement: its start (`start` or `in`) or its out (`out` or `end`). */
+type Side = 'start' | 'out';
+
+/** What a placement check knows of a voice, cued or about to be. */
+interface Placed<I, O> {
+  id: number;
+  spec: VoiceSpec<I, O>;
+  owner: Voice<I, O> | null;
+  slot: number;
+  writes: readonly unknown[];
+}
+
+/** A side of a voice's placement that another waits on. */
+interface Wait<I, O> {
+  voice: Placed<I, O>;
+  side: Side;
 }
 
 /**
