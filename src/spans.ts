@@ -239,18 +239,26 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
   const over = Number.isFinite(fitting.budget) ? Math.max(0, reach - fitting.budget) : 0;
   const within = over < 1e-6;
   const end = !Number.isFinite(fitting.budget) ? reach : within ? fitting.budget : reach;
-  fitting.report = {
+  const was = fitting.report;
+  const report = {
     budget: fitting.budget,
     length: reach,
     over: within ? 0 : over,
     skipped: plan.skip.filter((s, i) => s && kids[i]?.holding === null).length,
     fell,
   };
+  fitting.report = report;
   if (end !== fitting.end) {
     fitting.end = end;
     noted(mix, span);
     if (span.owner?.fitting) refit(mix, span.owner, from);
-  }
+  } else if (
+    report.length !== was.length ||
+    report.over !== was.over ||
+    report.skipped !== was.skipped ||
+    report.fell !== was.fell
+  )
+    noted(mix, span);
 }
 
 /**
@@ -331,11 +339,4 @@ export function lapse<I, O>(mix: Mixer<I, O>, now: number): void {
     if (plays(span, now)) continue;
     if (ownerReading(span, now) >= f.budget) release(mix, span, span.timeAt(f.budget));
   }
-}
-
-/** Fits every span again, as after a seek put its children back. */
-export function refitAll<I, O>(mix: Mixer<I, O>): void {
-  const spans = (mix.owners ?? []).filter((v) => v.fitting !== null);
-  // Later cued first, so a span held by a span is fitted before the one holding it.
-  for (let i = spans.length - 1; i >= 0; i--) refit(mix, spans[i] as Voice<I, O>);
 }

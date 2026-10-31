@@ -13,7 +13,6 @@ import { unpull } from './pull.js';
 import { isRested } from './record.js';
 import { type Moment, Restored } from './restored.js';
 import { recount } from './roster.js';
-import { refitAll } from './spans.js';
 import { Store } from './store.js';
 import type { Snap, Subject } from './subject.js';
 import { hostAhead, hostAt, replay } from './tape.js';
@@ -367,7 +366,6 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
       mix.pins ??= new Map();
       mix.pins.set(voice, voice.pinned);
     }
-  refitAll(mix);
   mix.due.clear();
   for (const voice of kept) schedule(mix, voice);
   mix.stir();

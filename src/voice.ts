@@ -33,7 +33,7 @@ import { keeping, VoiceSetting } from './setting.js';
 import { type Fitting, lingers } from './spans.js';
 import { Filled, Store } from './store.js';
 import type { Parted, Parting, Snap, Subject } from './subject.js';
-import type { Anchor, Channel, FadeSpec, Handle, Patch, VoiceSpec } from './types.js';
+import type { Anchor, Channel, FadeSpec, FitResult, Handle, Patch, VoiceSpec } from './types.js';
 import { warnOnce } from './warn.js';
 
 export const none: readonly string[] = Object.freeze([]);
@@ -61,6 +61,8 @@ export interface Controls extends Clock {
   earlier?: Earlier | null;
   /** The clocks its owner ran back before; absent from a store written before a voice kept them. */
   later?: Earlier | null;
+  /** A span's end and how its fit came out; absent for any other voice. */
+  fitted?: { end: number; report: FitResult } | null;
   /** Shows in its own frame: made by a sync, or before anything read the mix that frame. */
   sync: boolean;
 }
@@ -450,6 +452,11 @@ export class Voice<I, O> {
     this.hold = c.hold;
     this.earlier = c.earlier ?? null;
     this.later = c.later ?? null;
+    const fitted = c.fitted;
+    if (fitted && this.fitting !== null) {
+      this.fitting.end = fitted.end;
+      this.fitting.report = fitted.report;
+    }
     const clocks = this.clocks;
     if (clocks !== null && clocks.length !== c.past)
       this.clocks = c.past === 0 ? null : clocks.slice(0, c.past);
@@ -720,6 +727,7 @@ export class Voice<I, O> {
       past: this.clocks?.length ?? 0,
       earlier: this.earlier,
       later: this.later,
+      fitted: this.fitting === null ? null : { end: this.fitting.end, report: this.fitting.report },
     });
   }
 

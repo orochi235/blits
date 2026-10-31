@@ -569,3 +569,34 @@ test('a reel sought past a stagger span, then back before it, plays it on as pla
     for (const p of parts) expect(m.probe(p).x, `${p.id} at ${t}`).toBeCloseTo(fresh.probe(p).x, 9);
   }
 });
+
+// docs/schema.html, Score, Seeking: "mix.seek(t) moves the live mix to mix time t, as it stood at
+// the end of that frame". A span is not fitted again at the moment sought, which a span played
+// straight through never is, and its result is what it was then.
+test('a mix sought back into a span plays on as one played straight, its fit result as it was', () => {
+  const lens = [958, 300, 600, 700, 450, 800, 1100, 500, 900, 1300];
+  const parts = lens.map((_, i) => ({ id: `p${i}` }));
+  const make = () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+    m.sync(0);
+    const s = m.span({ start: 0, duration: 2000, order: 'stagger', share: 0.5 });
+    for (const [i, p] of parts.entries())
+      m.cue({
+        owner: s,
+        patch: ramp(lens[i] as number, 100, 400),
+        subjects: [p],
+        loop: false,
+        faster: 3,
+        slower: 3,
+      });
+    return { m, s };
+  };
+  const fresh = make();
+  for (let t = 10; t <= 1060; t += 10) fresh.m.sync(t);
+  const { m, s } = make();
+  for (let t = 10; t <= 1400; t += 10) m.sync(t);
+  m.seek(1030);
+  m.sync(1430);
+  expect(s.result).toEqual(fresh.s.result);
+  for (const p of parts) expect(m.probe(p).x, p.id).toBeCloseTo(fresh.m.probe(p).x, 9);
+});

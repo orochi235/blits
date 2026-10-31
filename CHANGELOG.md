@@ -70,6 +70,10 @@ version and everything else the patch. Each release lists its changes as **Break
 - A span its owner was sought back before keeps the layout it made going forward, as one run
   back over does. A child's end there fitted it again with the children ahead, left quiet by the
   seek, counted as gone, so the playing ones slowed to fill the span.
+- A mix sought back into a span plays on as it stood at that moment. A seek fitted every span
+  again from the moment sought, which a span played straight through is not, so its children's
+  rates followed where the seek landed. A span's end and `result` are now kept with its history and
+  put back by the seek.
 
 ## 0.16.0
 
