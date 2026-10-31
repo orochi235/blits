@@ -8,6 +8,12 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A span child with `faster` or `slower` at `Infinity` is retimed to fill its span. It got a rate
+  of Infinity, jumping to its end, or 0, and was skipped as never fitting.
+- A `from: 'current'` voice whose stop lists fewer axes than its `vec` channel reads the missing
+  axes as the lerp does. They read NaN.
+- `spring` and `glide` throw for an infinite parameter. A glide with an infinite `ms` or
+  `stiffness` read NaN, and a spring with infinite `damping` or `mass` jumped to its target.
 - A role member at weight 0 holds its role's place whatever its patch's form, and a band switched
   off by a frame at weight 0 stays off when the weight comes back between `off` and `on`. A `keys`
   member at weight 0 was read and so held the role's place; any other was not, so its role folded

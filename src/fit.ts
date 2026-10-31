@@ -151,6 +151,14 @@ const fits = (span: SpanClaim, kids: readonly Claim[], plan: FitPlan): boolean =
 function least(lo: number, hi: number, ok: (x: number) => boolean): number {
   if (ok(lo)) return lo;
   if (!ok(hi)) return hi;
+  // An unbounded `hi`, as an `Infinity` hint gives, is brought to a finite one before halving.
+  if (hi === Number.POSITIVE_INFINITY) {
+    hi = Math.max(lo, 1) * 2;
+    while (!ok(hi)) {
+      lo = hi;
+      hi *= 2;
+    }
+  }
   for (let i = 0; i < 60; i++) {
     const mid = (lo + hi) / 2;
     if (ok(mid)) hi = mid;

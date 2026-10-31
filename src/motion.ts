@@ -292,9 +292,9 @@ export function spring<I, O, V extends Value = number>(
   const k = opts.stiffness ?? 170;
   const c = opts.damping ?? 26;
   const m = opts.mass ?? 1;
-  if (!(k > 0) || !(m > 0) || !(c >= 0))
+  if (!(k > 0 && k < Infinity) || !(m > 0 && m < Infinity) || !(c >= 0 && c < Infinity))
     throw new RangeError(
-      'blits: a spring takes a positive stiffness and mass, and damping of 0 or more',
+      'blits: a spring takes a finite positive stiffness and mass, and finite damping of 0 or more',
     );
   const settle = opts.settle ?? 1e-4;
   const w0 = Math.sqrt(k / m);
@@ -331,9 +331,10 @@ export function glide<I, O, V extends Value = number>(
   opts: GlideOptions<I, V>,
 ): Glide<I, O, V> {
   const ms = opts.ms ?? 325;
-  if (!(ms > 0)) throw new RangeError('blits: a glide takes a positive ms');
+  if (!(ms > 0 && ms < Infinity)) throw new RangeError('blits: a glide takes a finite positive ms');
   const k = opts.stiffness ?? 170;
-  if (!(k > 0)) throw new RangeError('blits: a glide takes a positive stiffness');
+  if (!(k > 0 && k < Infinity))
+    throw new RangeError('blits: a glide takes a finite positive stiffness');
   const tau = ms / 1000;
   const settle = opts.settle ?? 1e-4;
   const bounded = opts.bounds !== undefined;

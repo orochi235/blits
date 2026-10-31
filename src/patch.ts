@@ -360,13 +360,34 @@ function read(
     return value + bend(slope, aValue as number, bValue as number);
   if (Array.isArray(value) && Array.isArray(slope)) {
     const out = value === lastRead.wrote ? value : new Array<unknown>(value.length);
+    // A stop shorter than the channel reads its missing axes as the lerp does, at each end.
+    let ends: [unknown, unknown] | undefined;
+    const endsOf = (): [unknown, unknown] => {
+      const by = track.lerp ?? lerp;
+      const at = (t: number): unknown =>
+        into !== undefined
+          ? into(undefined, aValue, bValue, t)
+          : by
+            ? by(aValue as never, bValue as never, t)
+            : interpolate(aValue, bValue, t);
+      ends = [at(0), at(1)];
+      return ends;
+    };
     for (let i = 0; i < value.length; i++) {
       const v = value[i];
       const s = slope[i];
-      out[i] =
-        typeof v === 'number' && typeof s === 'number'
-          ? v + bend(s, (aValue as number[])[i] as number, (bValue as number[])[i] as number)
-          : v;
+      if (typeof v !== 'number' || typeof s !== 'number') {
+        out[i] = v;
+        continue;
+      }
+      let a = (aValue as unknown[])[i];
+      let z = (bValue as unknown[])[i];
+      if (typeof a !== 'number' || typeof z !== 'number') {
+        const [a0, z1] = ends ?? endsOf();
+        a = (a0 as unknown[] | undefined)?.[i];
+        z = (z1 as unknown[] | undefined)?.[i];
+      }
+      out[i] = typeof a === 'number' && typeof z === 'number' ? v + bend(s, a, z) : v;
     }
     return out;
   }
