@@ -169,6 +169,9 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     emit({ kind: 'marks', marks: list });
   };
 
+  const subjectList = (e: Watched): SubjectInfo[] =>
+    e.subjects().map((s) => ({ id: ids.of(s), label: e.label(s) }));
+
   /** Sends the subject list where it changed, and notes which mix lists each subject. */
   const sendSubjects = () => {
     const next = new Map<unknown, number>();
@@ -178,7 +181,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     owners = next;
     ids.prune();
     if (e === null) return;
-    const list: SubjectInfo[] = e.subjects().map((s) => ({ id: ids.of(s), label: e.label(s) }));
+    const list = subjectList(e);
     const text = JSON.stringify(list);
     if (text === lastList) return;
     lastList = text;
@@ -352,6 +355,8 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
       fn({ kind: 'hold', hold: holdInfo() });
       fn({ kind: 'circles', on: circling });
       const e = current();
+      if (e !== null) fn({ kind: 'subjects', subjects: subjectList(e) });
+      fn({ kind: 'voices', voices: voices() });
       fn({ kind: 'marks', marks: e === null ? [] : marksOf(e, BACKFILL_MS) });
       return () => {
         fns.delete(fn);

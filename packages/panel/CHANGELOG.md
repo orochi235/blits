@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## Unreleased
+
+### Fixed
+
+- A panel that subscribes late, such as one reloaded, gets the picked mix's subject list and
+  voices at once. It used to wait for the list to change and for frames to run.
+
 ## 0.4.0
 
 ### Breaking
