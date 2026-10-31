@@ -608,38 +608,49 @@ test('a mix sought back into a span plays on as one played straight, its fit res
   for (const p of parts) expect(m.probe(p).x, p.id).toBeCloseTo(fresh.m.probe(p).x, 9);
 });
 
-// The timeline demo, seeds 2, 3, 5 and 7: a reel sought forward past a span while turned back
-// passes its children without their fits, so the span is not laid out as played straight through.
-// The seek's frame starts and ends them as the clock runs, which runs back; not fixed.
-test.fails('a reel sought past a span while turned back, then back into it, reads as played straight', () => {
-  const lens = [958, 300, 600, 700, 450, 800, 1100, 500, 900, 1300];
-  const parts = lens.map((_, i) => ({ id: `p${i}` }));
-  const make = () => {
-    const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
-    m.sync(0);
-    const reel = m.owns({ start: 0 });
+// The timeline demo, seeds 2, 3, 5 and 7: a reel sought forward while turned back passes the span
+// children it crosses going forward, in order, as playing straight through does.
+const lens = [958, 300, 600, 700, 450, 800, 1100, 500, 900, 1300];
+const parts = lens.map((_, i) => ({ id: `p${i}` }));
+const staggered = (outer = false) => {
+  const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+  m.sync(0);
+  const reel = m.owns({ start: 0 });
+  m.cue({
+    owner: reel,
+    patch: ramp(10_000, 0, 1),
+    start: 0,
+    loop: false,
+    subjects: [{ id: 'k' }],
+  });
+  const host = outer ? m.span({ owner: reel, start: 1000, duration: 2000 }) : undefined;
+  const s = m.span({
+    owner: host ?? reel,
+    ...(host ? {} : { start: 1000 }),
+    duration: 2000,
+    order: 'stagger',
+    share: 0.5,
+  });
+  for (const [i, p] of parts.entries())
     m.cue({
-      owner: reel,
-      patch: ramp(10_000, 0, 1),
-      start: 0,
+      owner: s,
+      patch: ramp(lens[i] as number, 100, 400),
+      subjects: [p],
       loop: false,
-      subjects: [{ id: 'k' }],
+      faster: 3,
+      slower: 3,
     });
-    const s = m.span({ owner: reel, start: 1000, duration: 2000, order: 'stagger', share: 0.5 });
-    for (const [i, p] of parts.entries())
-      m.cue({
-        owner: s,
-        patch: ramp(lens[i] as number, 100, 400),
-        subjects: [p],
-        loop: false,
-        faster: 3,
-        slower: 3,
-      });
-    return { m, reel };
-  };
-  const fresh = make().m;
-  for (let t = 10; t <= 1900; t += 10) fresh.sync(t);
-  const { m, reel } = make();
+  return { m, reel };
+};
+const played = (to: number, outer = false) => {
+  const { m } = staggered(outer);
+  for (let t = 10; t <= to; t += 10) m.sync(t);
+  return m;
+};
+
+test('a reel sought past a span while turned back, then back into it, reads as played straight', () => {
+  const fresh = played(1900);
+  const { m, reel } = staggered();
   m.sync(500);
   reel.rate = -1;
   reel.seek(5000);
@@ -648,5 +659,36 @@ test.fails('a reel sought past a span while turned back, then back into it, read
   m.sync(520);
   reel.seek(1890);
   m.sync(530);
+  for (const p of parts) expect(m.probe(p).x, p.id).toBeCloseTo(fresh.probe(p).x, 9);
+});
+
+// Seed 2: children the reel ran back to their starts are kept quiet there; a seek forward past their
+// ends brings each back and ends it in turn, so the span fits from those ends.
+test('a reel run back before a span and sought past its children fits from each of their ends', () => {
+  const fresh = played(1900);
+  const { m, reel } = staggered();
+  for (let t = 10; t <= 1600; t += 10) m.sync(t);
+  reel.rate = -1;
+  m.sync(2300);
+  reel.rate = 1;
+  reel.seek(1890);
+  m.sync(2310);
+  for (const p of parts) expect(m.probe(p).x, p.id).toBeCloseTo(fresh.probe(p).x, 9);
+});
+
+// Seed 7: the span holding the span lapses in the seek's frame too, not in a later one on the reel's
+// clock running back, which put its leaving in the future, and a mix seek back then left it fading.
+test('a span holding a span, passed by a seek while turned back, has left as of a mix seek back', () => {
+  const fresh = played(1900, true);
+  const { m, reel } = staggered(true);
+  m.sync(500);
+  reel.rate = -1;
+  reel.seek(5000);
+  for (let t = 510; t <= 600; t += 10) m.sync(t);
+  m.seek(550);
+  reel.rate = 1;
+  m.sync(610);
+  reel.seek(1890);
+  m.sync(620);
   for (const p of parts) expect(m.probe(p).x, p.id).toBeCloseTo(fresh.probe(p).x, 9);
 });

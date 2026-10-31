@@ -215,7 +215,11 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
       mix.lanes?.refill();
     },
     // A delta read before an owner's seek, or a hit booked, is not taken as standing after it.
-    sought: (voice, rebuild) => {
+    sought: (voice, rebuild, ahead) => {
+      if (ahead && voice.holding !== null && !mix.projecting) {
+        mix.leapt ??= new Set();
+        mix.leapt.add(voice);
+      }
       if (rebuild) voice.rebuilds++;
       let doubt = seekDoubt(mix, voice, rebuild);
       if (voice.holding !== null)

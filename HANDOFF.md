@@ -257,15 +257,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - **A handle's own rate write on a child is retraced at its latest rate** when an owner above
      runs back over it (not tested): only a fit's rate change is kept for the run back
      (`Voice.earlier`, `unfit` in `src/spans.ts`), since a host's write is not made again going forward.
-   - **The timeline demo fails at seeds 2, 3, 5 and 7, all after a reel sought forward while
-     turned back** (2026-10-31; seeds 1, 4, 6 and 8 report nothing). The seek's frame starts and
-     ends the span children it passes as the reel's clock runs, which runs back, so their fits never
-     happen in order; turning forward later ends them all at once from times the reel's clock maps
-     out of order. `test.fails` "a reel sought past a span while turned back…". The fix likely
-     takes an owner's forward seek as a forward pass for the span children it crosses, whatever
-     its rate: the meets check, the event order in `inTurn` (`src/move.ts`) and the fade time
-     there. Making a fit count a live child that started after its moment as still to start
-     (`begun` in `src/spans.ts`) was tried and made seeds 6 and 7 worse.
    - **This session's fixes cost `own N=1000` 3.4%** (0.148 to 0.153 ms, U 6 of 49; teitou, 7
      rounds, `bench/runs/2026-10-31-span-order.txt`, 008d580 against e3bfd3e); `tweens N=100000`
      +2.4% at U 13 is weaker, and churn and swap read 3% faster. Likely the per-voice checks

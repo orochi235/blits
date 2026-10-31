@@ -14,7 +14,7 @@ export interface HandleHost<I, O> {
    * The voice's clock jumped: for an owner, so did every clock it holds. With `rebuild`, their
    * state is made again for where they now are. How sure that leaves it.
    */
-  sought(voice: Voice<I, O>, rebuild: boolean): Doubt;
+  sought(voice: Voice<I, O>, rebuild: boolean, ahead: boolean): Doubt;
   fade(voice: Voice<I, O>, opts: FadeOptions<I> | undefined): void;
   rise(voice: Voice<I, O>, opts: { over?: number } | undefined): void;
   release(voice: Voice<I, O>): void;
@@ -160,14 +160,16 @@ export class VoiceHandle<I, O> implements Handle<I> {
     if (voice === null) return 'exact';
     voice.written = true;
     // A pending voice's clock is anchored at its start, so it starts there on time.
+    let ahead = false;
     if (voice.state !== 'pending') {
       const u = this.#host.nowFor(voice);
       leave(voice, u, true);
       voice.rebase(u);
+      ahead = elapsed > voice.anchorElapsed;
     }
     voice.anchorElapsed = elapsed;
     voice.seeks++;
-    const doubt = this.#host.sought(voice, opts?.state !== 'keep');
+    const doubt = this.#host.sought(voice, opts?.state !== 'keep', ahead);
     this.#host.changed(voice);
     if (this.#host.taping()) this.#host.record(this, 'seek', (h) => h.seek(elapsed, opts));
     return doubt;

@@ -154,6 +154,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   retired: Voice<I, O>[] = [];
   /** Visit every voice each sync, as before the due queue; for tests that compare the two. */
   walkAll = false;
+  /** Owners sought forward since the last frame, which passes what each seek went past in order. */
+  leapt: Set<Voice<I, O>> | null = null;
   /** The last array `pull` read, by position, with each subject's chain head, to skip the lookup. */
   pulled: I[] = [];
   pulledHeads: (Subject<unknown> | undefined)[] = [];

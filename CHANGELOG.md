@@ -8,6 +8,16 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- An owner sought forward passes the span children it crosses as played straight through,
+  whatever its rate: they start and end in order, and their span fits from each end. Sought ahead
+  while turned back, it started them in the order its clock running back put their starts, last
+  first, and ended none; turning forward later ended them all at once, out of order, and a span
+  holding spans left in a later frame at a time still to come, so a mix sought back left it
+  fading and its clips silent. A timeline's reel jumped ahead in reverse played its scenes slowed
+  and overlapping.
+- A span child kept quiet at its start, its owner having run back to it, comes back and ends in
+  turn when a seek of the owner takes it past its end, and its span fits from that end. It stayed
+  quiet, so the children playing past it kept the rate they had before its end.
 - Under `history`, an owner another owner holds no longer leaves once none of its children plays:
   it stays with its own owner, quiet, so turning the outer owner back brings back a clip under an
   owner inside it, as it does a direct child.
