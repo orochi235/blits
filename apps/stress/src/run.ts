@@ -3,6 +3,7 @@ import {
   createWriteStream,
   mkdirSync,
   readdirSync,
+  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -11,6 +12,8 @@ import { cpus, hostname, loadavg } from 'node:os';
 import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
+import { parse, USAGE } from '@stress/flags';
+import { isKnown } from '@stress/known';
 import { scenarios } from '@stress/registry';
 import type { Finding } from '@stress/scenario';
 
@@ -28,6 +31,8 @@ export interface RunOptions {
 }
 
 const KEEP = 5;
+/** A directory touched this recently may belong to a run still going, so prune leaves it. */
+const IN_FLIGHT_MS = 10 * 60_000;
 const CAP_BYTES = 50 * 1024 * 1024;
 const DEFAULT_ROOT = fileURLToPath(new URL('../runs', import.meta.url));
 
@@ -48,12 +53,21 @@ function git(...args: string[]): string | null {
 }
 
 function prune(root: string, name: string): void {
-  const mine = new RegExp(`-${name}-\\d+$`);
+  const mine = new RegExp(`^\\d{4}-\\d\\d-\\d\\d-\\d{6}-${name}(-s[\\d.e+-]+(-off)?)?-\\d+$`);
+  const now = Date.now();
   const dirs = readdirSync(root)
     .filter((d) => mine.test(d))
     .map((d) => ({ d, t: statSync(join(root, d)).mtimeMs }))
     .sort((a, b) => b.t - a.t);
-  for (const { d } of dirs.slice(KEEP - 1)) rmSync(join(root, d), { recursive: true, force: true });
+  for (const { d, t } of dirs.slice(KEEP - 1)) {
+    if (now - t < IN_FLIGHT_MS) continue;
+    rmSync(join(root, d), { recursive: true, force: true });
+  }
+}
+
+/** `<stamp>-<name>-s<size>[-off]-<seed>`: concurrent variants of one scenario land apart. */
+export function dirName(o: RunOptions, started: Date): string {
+  return `${stamp(started)}-${o.name}-s${o.size}${o.lanes === false ? '-off' : ''}-${o.seed}`;
 }
 
 function stamp(now: Date): string {
@@ -69,17 +83,18 @@ export async function run(o: RunOptions): Promise<string> {
   mkdirSync(root, { recursive: true });
   prune(root, o.name);
   const started = new Date();
-  const dir = join(root, `${stamp(started)}-${o.name}-${o.seed}`);
+  const dir = join(root, dirName(o, started));
   mkdirSync(dir, { recursive: true });
 
   const out = createWriteStream(join(dir, 'frames.jsonl'));
   let bytes = 0;
   let capped = false;
-  const write = (rec: unknown) => {
+  const write = (rec: unknown, f = 0) => {
     if (capped) return;
     const line = `${JSON.stringify(rec)}\n`;
     if (bytes + line.length > CAP_BYTES) {
       capped = true;
+      out.write(`${JSON.stringify({ capped: f })}\n`);
       if (!o.quiet) console.error('records passed 50 MB; no more written, the run goes on');
       return;
     }
@@ -106,7 +121,7 @@ export async function run(o: RunOptions): Promise<string> {
     },
   });
 
-  const s = entry.make({ seed: o.seed, size: o.size, lanes });
+  const s = entry.make({ seed: o.seed, size: o.size, lanes, frames: o.frames });
   const buf = new Float64Array(s.width);
   const every = Math.min(1000, Math.max(1, Math.round(o.frames * 0.02)));
   const gc = (globalThis as { gc?: () => void }).gc;
@@ -130,23 +145,26 @@ export async function run(o: RunOptions): Promise<string> {
       steps.push(step);
       reads.push(read);
       if (steps.length === o.window || f === o.frames - 1) {
-        write({
-          from,
-          to: f,
-          stepP50: round(quantile(steps, 0.5)),
-          stepP99: round(quantile(steps, 0.99)),
-          stepMax: round(steps[steps.length - 1] ?? 0),
-          readP50: round(quantile(reads, 0.5)),
-          readMax: round(reads[reads.length - 1] ?? 0),
-          heap: process.memoryUsage().heapUsed,
-          ...s.stats(),
-        });
+        write(
+          {
+            from,
+            to: f,
+            stepP50: round(quantile(steps, 0.5)),
+            stepP99: round(quantile(steps, 0.99)),
+            stepMax: round(steps[steps.length - 1] ?? 0),
+            readP50: round(quantile(reads, 0.5)),
+            readMax: round(reads[reads.length - 1] ?? 0),
+            heap: process.memoryUsage().heapUsed,
+            ...s.stats(),
+          },
+          f,
+        );
         steps = [];
         reads = [];
         from = f + 1;
       }
     } else {
-      write({ f, step: round(step), read: round(read) });
+      write({ f, step: round(step), read: round(read) }, f);
     }
     recent.push(step);
     if (recent.length > every) recent.shift();
@@ -159,8 +177,10 @@ export async function run(o: RunOptions): Promise<string> {
   const findings: Finding[] = s.check();
   writeFileSync(join(dir, 'findings.json'), `${JSON.stringify(findings, null, 2)}\n`);
   if (!o.quiet) {
-    for (const x of findings)
-      console.error(`${x.kind}${x.at === undefined ? '' : ` @${x.at}`}: ${x.what}`);
+    for (const x of findings) {
+      const label = x.kind === 'fail' && isKnown(x.key) ? `known (${x.key})` : x.kind;
+      console.error(`${label}${x.at === undefined ? '' : ` @${x.at}`}: ${x.what}`);
+    }
   }
   s.close();
   await new Promise<void>((resolve, reject) => {
@@ -171,14 +191,10 @@ export async function run(o: RunOptions): Promise<string> {
   return dir;
 }
 
-const num = (v: string | undefined, d: number) => (v === undefined ? d : Number(v));
-
 export async function main(argv: string[]): Promise<number> {
   const [name, ...rest] = argv;
   if (!name || name.startsWith('--')) {
-    console.error(
-      `usage: stress <name> [--size n] [--frames n] [--seed n] [--window n] [--lanes off] [--root dir]\nscenarios: ${Object.keys(scenarios).join(', ')}`,
-    );
+    console.error(`${USAGE}\nscenarios: ${Object.keys(scenarios).join(', ')}`);
     return 2;
   }
   const entry = scenarios[name];
@@ -186,24 +202,22 @@ export async function main(argv: string[]): Promise<number> {
     console.error(`no scenario "${name}"; have ${Object.keys(scenarios).join(', ')}`);
     return 2;
   }
-  const flags = new Map<string, string>();
-  for (let i = 0; i < rest.length; i += 2)
-    flags.set((rest[i] ?? '').replace(/^--/, ''), rest[i + 1] ?? '');
-  const size = num(flags.get('size'), entry.size);
+  const flags = parse(rest);
+  if (typeof flags === 'string') {
+    console.error(`${flags}\n${USAGE}`);
+    return 2;
+  }
+  const size = flags.size ?? entry.size;
   const dir = await run({
     name,
     size,
-    frames: flags.has('frames')
-      ? num(flags.get('frames'), entry.frames)
-      : (entry.framesFor?.(size) ?? entry.frames),
-    seed: num(flags.get('seed'), 1),
-    window: flags.has('window') ? num(flags.get('window'), 0) : entry.window,
-    lanes: flags.get('lanes') === 'off' ? false : undefined,
-    root: flags.get('root'),
+    frames: flags.frames ?? entry.framesFor?.(size) ?? entry.frames,
+    seed: flags.seed ?? 1,
+    window: flags.window ?? entry.window,
+    lanes: flags.lanes,
+    root: flags.root,
   });
   console.log(dir);
-  const found = JSON.parse(
-    (await import('node:fs')).readFileSync(join(dir, 'findings.json'), 'utf8'),
-  ) as Finding[];
-  return found.some((x) => x.kind === 'fail') ? 1 : 0;
+  const found = JSON.parse(readFileSync(join(dir, 'findings.json'), 'utf8')) as Finding[];
+  return found.some((x) => x.kind === 'fail' && !isKnown(x.key)) ? 1 : 0;
 }
