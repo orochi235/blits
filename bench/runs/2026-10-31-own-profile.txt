@@ -1,0 +1,376 @@
+# teitou, onto do -solo: FRAMES=20000 bench/cpuprof.sh own:1000:1 4 008d580 e3bfd3e (self time by function; own does not run move.ts's per-voice body)
+  waiting for room
+teitou  chosen: 10.4 cores free, 46.1G available (bash: 5 past runs, worst 1.6 cores / 3.2G)
+  msb-uai  scored 1.11 against teitou's 5.53
+  keiei    it wants the node to itself, and job fcd1250e is running there
+  orochi   refuses rotation
+  studio   it wants the node to itself, and the node is promised to forge-stories-linux-debug-b6d_184
+  base   4a6b3bb6
+  delta  97 file(s), 0 deleted
+  sent   1 new file(s), 96 already there
+  updated blits on teitou at 411e6ace + 3 uncommitted file(s)
+  job    51ffd117 on teitou
+
+onto: plan 8
+== run 1/4 008d580 own:1000:1
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  own        N=  1000 V=1     0.156 ms/frame    156 ns/subject·voice  p50    0.153  p99    0.207  worst    0.887  first    46.7 ms  gc  176   22.2 ms     166.9 kB/frame
+total 3217.1 ms
+    666.6 ms  20.7%  foldWith fold.js:151
+    515.3 ms  16.0%  patch.writes frame.mjs:67
+    406.6 ms  12.6%  apply fold.js:47
+    277.7 ms   8.6%  contribution contribution.js:48
+    183.9 ms   5.7%  get store.js:20
+    112.5 ms   3.5%  phaseAt clock.js:13
+    107.9 ms   3.4%  prepare lanes.js:283
+     93.2 ms   2.9%  prime weigh.js:6
+     76.0 ms   2.4%  fillAll fill.js:37
+     69.7 ms   2.2%  (program)
+     62.1 ms   1.9%  linked fold.js:130
+     48.5 ms   1.5%  weigh weigh.js:94
+     42.8 ms   1.3%  folded fold.js:122
+     42.4 ms   1.3%  (garbage collector)
+     35.9 ms   1.1%  elapsedAt voice.js:435
+     29.1 ms   0.9%  read frame.mjs:672
+     24.8 ms   0.8%  read contribution.js:352
+     23.3 ms   0.7%  probe mixer.js:418
+     23.0 ms   0.7%  current lanes.js:324
+     21.3 ms   0.7%  base weigh.js:113
+     20.2 ms   0.6%  chain chain.js:12
+     19.1 ms   0.6%  probedThisFrame lanes.js:391
+     18.9 ms   0.6%  elapsedWith clock.js:92
+     18.6 ms   0.6%  filled lanes.js:311
+     16.0 ms   0.5%  fadeOf weigh.js:62
+     15.9 ms   0.5%  phaseOf contribution.js:41
+     15.0 ms   0.5%  foldNumber channels.js:47
+     14.4 ms   0.4%  shownAt voice.js:567
+     14.3 ms   0.4%  capped weigh.js:50
+     12.4 ms   0.4%  get now mixer.js:300
+     12.0 ms   0.4%  envelope clock.js:28
+     12.0 ms   0.4%  over clock.js:7
+     11.2 ms   0.3%  (idle)
+     10.4 ms   0.3%  fold fold.js:118
+      9.5 ms   0.3%  copy clone.js:68
+      8.9 ms   0.3%  product channels.js:18
+      8.9 ms   0.3%  larger channels.js:20
+      8.4 ms   0.3%  toward channels.js:19
+      8.0 ms   0.2%  compileSourceTextModule utils:338
+      7.4 ms   0.2%  unstarted voice.js:528
+onto: progress 1/8
+== run 1/4 e3bfd3e own:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  own        N=  1000 V=1     0.157 ms/frame    157 ns/subject·voice  p50    0.154  p99    0.209  worst    0.921  first    45.7 ms  gc  176   23.1 ms     166.7 kB/frame
+total 3243.4 ms
+    682.0 ms  21.0%  foldWith fold.js:151
+    486.2 ms  15.0%  patch.writes frame.mjs:67
+    397.3 ms  12.3%  apply fold.js:47
+    277.8 ms   8.6%  contribution contribution.js:48
+    189.2 ms   5.8%  get store.js:20
+    111.9 ms   3.5%  prepare lanes.js:283
+    110.6 ms   3.4%  phaseAt clock.js:13
+    103.1 ms   3.2%  prime weigh.js:6
+     88.6 ms   2.7%  fillAll fill.js:37
+     68.5 ms   2.1%  linked fold.js:130
+     65.6 ms   2.0%  (program)
+     47.2 ms   1.5%  folded fold.js:122
+     44.9 ms   1.4%  (garbage collector)
+     41.1 ms   1.3%  elapsedAt voice.js:448
+     37.6 ms   1.2%  weigh weigh.js:94
+     26.9 ms   0.8%  read frame.mjs:672
+     26.0 ms   0.8%  read contribution.js:352
+     25.6 ms   0.8%  base weigh.js:113
+     21.8 ms   0.7%  fadeOf weigh.js:62
+     20.7 ms   0.6%  chain chain.js:12
+     20.7 ms   0.6%  probe mixer.js:418
+     19.8 ms   0.6%  capped weigh.js:50
+     19.4 ms   0.6%  current lanes.js:324
+     18.9 ms   0.6%  elapsedWith clock.js:92
+     18.6 ms   0.6%  filled lanes.js:311
+     18.0 ms   0.6%  probedThisFrame lanes.js:391
+     16.7 ms   0.5%  shownAt voice.js:583
+     16.5 ms   0.5%  phaseOf contribution.js:41
+     15.1 ms   0.5%  foldNumber channels.js:47
+     14.4 ms   0.4%  envelope clock.js:28
+     12.7 ms   0.4%  over clock.js:7
+     10.9 ms   0.3%  larger channels.js:20
+     10.6 ms   0.3%  times channels.js:17
+     10.3 ms   0.3%  product channels.js:18
+     10.3 ms   0.3%  get now mixer.js:300
+      8.9 ms   0.3%  compileSourceTextModule utils:338
+      8.5 ms   0.3%  toward channels.js:19
+      8.3 ms   0.3%  held held.js:24
+      8.1 ms   0.3%  fold fold.js:118
+      7.5 ms   0.2%  passAt clock.js:19
+onto: progress 2/8
+== run 2/4 e3bfd3e own:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  own        N=  1000 V=1     0.159 ms/frame    159 ns/subject·voice  p50    0.156  p99    0.210  worst    0.888  first    46.5 ms  gc  176   22.6 ms     166.7 kB/frame
+total 3281.8 ms
+    669.0 ms  20.4%  foldWith fold.js:151
+    559.4 ms  17.0%  patch.writes frame.mjs:67
+    430.9 ms  13.1%  apply fold.js:47
+    264.6 ms   8.1%  contribution contribution.js:48
+    170.2 ms   5.2%  get store.js:20
+    114.3 ms   3.5%  prepare lanes.js:283
+    112.2 ms   3.4%  phaseAt clock.js:13
+     99.4 ms   3.0%  prime weigh.js:6
+     75.7 ms   2.3%  fillAll fill.js:37
+     64.0 ms   1.9%  linked fold.js:130
+     61.1 ms   1.9%  (program)
+     47.0 ms   1.4%  weigh weigh.js:94
+     43.9 ms   1.3%  folded fold.js:122
+     41.0 ms   1.2%  (garbage collector)
+     30.8 ms   0.9%  elapsedAt voice.js:448
+     30.7 ms   0.9%  read contribution.js:352
+     29.6 ms   0.9%  read frame.mjs:672
+     24.2 ms   0.7%  current lanes.js:324
+     23.7 ms   0.7%  fadeOf weigh.js:62
+     22.1 ms   0.7%  base weigh.js:113
+     21.1 ms   0.6%  phaseOf contribution.js:41
+     19.9 ms   0.6%  chain chain.js:12
+     19.8 ms   0.6%  capped weigh.js:50
+     19.4 ms   0.6%  filled lanes.js:311
+     18.6 ms   0.6%  probe mixer.js:418
+     18.0 ms   0.5%  elapsedWith clock.js:92
+     16.4 ms   0.5%  probedThisFrame lanes.js:391
+     16.4 ms   0.5%  get now mixer.js:300
+     15.3 ms   0.5%  foldNumber channels.js:47
+     13.6 ms   0.4%  envelope clock.js:28
+     13.1 ms   0.4%  over clock.js:7
+     12.9 ms   0.4%  larger channels.js:20
+     11.2 ms   0.3%  shownAt voice.js:583
+      8.2 ms   0.2%  product channels.js:18
+      8.1 ms   0.2%  toward channels.js:19
+      7.8 ms   0.2%  unstarted voice.js:544
+      7.6 ms   0.2%  compileSourceTextModule utils:338
+      7.4 ms   0.2%  fold fold.js:118
+      6.8 ms   0.2%  frozenTime clock.js:57
+      6.6 ms   0.2%  times channels.js:17
+onto: progress 3/8
+== run 2/4 008d580 own:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  own        N=  1000 V=1     0.158 ms/frame    158 ns/subject·voice  p50    0.154  p99    0.213  worst    0.875  first    46.9 ms  gc  176   23.6 ms     166.8 kB/frame
+total 3250.6 ms
+    674.2 ms  20.7%  foldWith fold.js:151
+    519.8 ms  16.0%  patch.writes frame.mjs:67
+    415.8 ms  12.8%  apply fold.js:47
+    265.1 ms   8.2%  contribution contribution.js:48
+    184.7 ms   5.7%  get store.js:20
+    116.4 ms   3.6%  phaseAt clock.js:13
+    115.9 ms   3.6%  prime weigh.js:6
+    106.4 ms   3.3%  prepare lanes.js:283
+     82.5 ms   2.5%  fillAll fill.js:37
+     67.2 ms   2.1%  (program)
+     63.7 ms   2.0%  linked fold.js:130
+     44.1 ms   1.4%  folded fold.js:122
+     43.5 ms   1.3%  (garbage collector)
+     38.7 ms   1.2%  weigh weigh.js:94
+     34.0 ms   1.0%  elapsedAt voice.js:435
+     30.4 ms   0.9%  read frame.mjs:672
+     29.3 ms   0.9%  read contribution.js:352
+     24.1 ms   0.7%  fadeOf weigh.js:62
+     22.7 ms   0.7%  elapsedWith clock.js:92
+     22.6 ms   0.7%  base weigh.js:113
+     21.8 ms   0.7%  chain chain.js:12
+     21.7 ms   0.7%  probe mixer.js:418
+     20.3 ms   0.6%  current lanes.js:324
+     17.0 ms   0.5%  probedThisFrame lanes.js:391
+     16.3 ms   0.5%  envelope clock.js:28
+     16.2 ms   0.5%  filled lanes.js:311
+     15.8 ms   0.5%  capped weigh.js:50
+     14.6 ms   0.5%  shownAt voice.js:567
+     13.7 ms   0.4%  foldNumber channels.js:47
+     12.4 ms   0.4%  product channels.js:18
+     12.1 ms   0.4%  larger channels.js:20
+     12.1 ms   0.4%  phaseOf contribution.js:41
+     10.9 ms   0.3%  over clock.js:7
+      8.7 ms   0.3%  compileSourceTextModule utils:338
+      8.1 ms   0.2%  toward channels.js:19
+      7.5 ms   0.2%  get now mixer.js:300
+      7.1 ms   0.2%  held held.js:24
+      6.7 ms   0.2%  weighed clock.js:77
+      6.6 ms   0.2%  fold fold.js:118
+      6.2 ms   0.2%  copy clone.js:68
+onto: progress 4/8
+== run 3/4 008d580 own:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  own        N=  1000 V=1     0.156 ms/frame    156 ns/subject·voice  p50    0.153  p99    0.210  worst    0.856  first    46.0 ms  gc  176   23.0 ms     166.7 kB/frame
+total 3217.5 ms
+    674.7 ms  21.0%  foldWith fold.js:151
+    471.7 ms  14.7%  patch.writes frame.mjs:67
+    412.0 ms  12.8%  apply fold.js:47
+    263.4 ms   8.2%  contribution contribution.js:48
+    179.6 ms   5.6%  get store.js:20
+    121.8 ms   3.8%  phaseAt clock.js:13
+    110.0 ms   3.4%  prime weigh.js:6
+    106.5 ms   3.3%  prepare lanes.js:283
+     80.9 ms   2.5%  fillAll fill.js:37
+     66.6 ms   2.1%  (program)
+     60.0 ms   1.9%  linked fold.js:130
+     42.3 ms   1.3%  folded fold.js:122
+     41.1 ms   1.3%  (garbage collector)
+     40.4 ms   1.3%  elapsedAt voice.js:435
+     38.2 ms   1.2%  weigh weigh.js:94
+     30.5 ms   0.9%  read frame.mjs:672
+     25.5 ms   0.8%  fadeOf weigh.js:62
+     25.2 ms   0.8%  read contribution.js:352
+     24.3 ms   0.8%  probe mixer.js:418
+     23.2 ms   0.7%  base weigh.js:113
+     22.4 ms   0.7%  chain chain.js:12
+     19.8 ms   0.6%  elapsedWith clock.js:92
+     19.8 ms   0.6%  current lanes.js:324
+     19.5 ms   0.6%  foldNumber channels.js:47
+     19.4 ms   0.6%  probedThisFrame lanes.js:391
+     18.8 ms   0.6%  capped weigh.js:50
+     17.8 ms   0.6%  envelope clock.js:28
+     17.6 ms   0.5%  phaseOf contribution.js:41
+     16.7 ms   0.5%  filled lanes.js:311
+     13.8 ms   0.4%  times channels.js:17
+     13.3 ms   0.4%  over clock.js:7
+     12.1 ms   0.4%  toward channels.js:19
+     12.0 ms   0.4%  larger channels.js:20
+     11.4 ms   0.4%  shownAt voice.js:567
+      9.2 ms   0.3%  copy clone.js:68
+      9.0 ms   0.3%  get now mixer.js:300
+      8.8 ms   0.3%  product channels.js:18
+      8.6 ms   0.3%  fold fold.js:118
+      7.7 ms   0.2%  held held.js:24
+      7.4 ms   0.2%  unstarted voice.js:528
+onto: progress 5/8
+== run 3/4 e3bfd3e own:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  own        N=  1000 V=1     0.157 ms/frame    157 ns/subject·voice  p50    0.153  p99    0.239  worst    1.223  first    46.1 ms  gc  175   23.6 ms     166.7 kB/frame
+total 3243.1 ms
+    694.2 ms  21.4%  foldWith fold.js:151
+    510.9 ms  15.8%  patch.writes frame.mjs:67
+    408.6 ms  12.6%  apply fold.js:47
+    265.6 ms   8.2%  contribution contribution.js:48
+    167.9 ms   5.2%  get store.js:20
+    122.4 ms   3.8%  phaseAt clock.js:13
+    108.6 ms   3.3%  prepare lanes.js:283
+    103.7 ms   3.2%  prime weigh.js:6
+     81.2 ms   2.5%  fillAll fill.js:37
+     66.1 ms   2.0%  (program)
+     61.0 ms   1.9%  linked fold.js:130
+     44.6 ms   1.4%  (garbage collector)
+     44.1 ms   1.4%  folded fold.js:122
+     41.8 ms   1.3%  weigh weigh.js:94
+     35.4 ms   1.1%  elapsedAt voice.js:448
+     28.3 ms   0.9%  read contribution.js:352
+     27.1 ms   0.8%  read frame.mjs:672
+     26.1 ms   0.8%  probe mixer.js:418
+     26.0 ms   0.8%  base weigh.js:113
+     25.8 ms   0.8%  fadeOf weigh.js:62
+     20.7 ms   0.6%  current lanes.js:324
+     20.3 ms   0.6%  elapsedWith clock.js:92
+     18.3 ms   0.6%  filled lanes.js:311
+     17.8 ms   0.5%  probedThisFrame lanes.js:391
+     17.6 ms   0.5%  chain chain.js:12
+     17.0 ms   0.5%  foldNumber channels.js:47
+     15.6 ms   0.5%  shownAt voice.js:583
+     15.1 ms   0.5%  capped weigh.js:50
+     14.4 ms   0.4%  phaseOf contribution.js:41
+     13.5 ms   0.4%  envelope clock.js:28
+     12.2 ms   0.4%  get now mixer.js:300
+     11.5 ms   0.4%  over clock.js:7
+     11.1 ms   0.3%  product channels.js:18
+     10.5 ms   0.3%  larger channels.js:20
+      9.4 ms   0.3%  toward channels.js:19
+      8.0 ms   0.2%  times channels.js:17
+      7.3 ms   0.2%  compileSourceTextModule utils:338
+      6.8 ms   0.2%  fold fold.js:118
+      6.3 ms   0.2%  held held.js:24
+      6.3 ms   0.2%  unstarted voice.js:544
+onto: progress 6/8
+== run 4/4 e3bfd3e own:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  own        N=  1000 V=1     0.155 ms/frame    155 ns/subject·voice  p50    0.152  p99    0.208  worst    0.872  first    45.9 ms  gc  176   23.5 ms     166.9 kB/frame
+total 3191.3 ms
+    660.2 ms  20.7%  foldWith fold.js:151
+    503.6 ms  15.8%  patch.writes frame.mjs:67
+    414.6 ms  13.0%  apply fold.js:47
+    263.3 ms   8.3%  contribution contribution.js:48
+    166.1 ms   5.2%  get store.js:20
+    121.7 ms   3.8%  prepare lanes.js:283
+    111.7 ms   3.5%  phaseAt clock.js:13
+    100.3 ms   3.1%  prime weigh.js:6
+     83.5 ms   2.6%  fillAll fill.js:37
+     66.3 ms   2.1%  (program)
+     65.4 ms   2.0%  linked fold.js:130
+     43.0 ms   1.3%  (garbage collector)
+     39.6 ms   1.2%  weigh weigh.js:94
+     37.4 ms   1.2%  folded fold.js:122
+     35.5 ms   1.1%  elapsedAt voice.js:448
+     29.1 ms   0.9%  read contribution.js:352
+     26.9 ms   0.8%  read frame.mjs:672
+     25.0 ms   0.8%  base weigh.js:113
+     23.9 ms   0.7%  probe mixer.js:418
+     23.5 ms   0.7%  fadeOf weigh.js:62
+     21.8 ms   0.7%  chain chain.js:12
+     21.6 ms   0.7%  elapsedWith clock.js:92
+     19.2 ms   0.6%  current lanes.js:324
+     16.5 ms   0.5%  shownAt voice.js:583
+     16.3 ms   0.5%  foldNumber channels.js:47
+     16.1 ms   0.5%  probedThisFrame lanes.js:391
+     16.1 ms   0.5%  filled lanes.js:311
+     15.7 ms   0.5%  capped weigh.js:50
+     15.6 ms   0.5%  phaseOf contribution.js:41
+     12.9 ms   0.4%  get now mixer.js:300
+     12.7 ms   0.4%  envelope clock.js:28
+     12.6 ms   0.4%  toward channels.js:19
+     10.5 ms   0.3%  larger channels.js:20
+      8.0 ms   0.3%  unstarted voice.js:544
+      7.6 ms   0.2%  times channels.js:17
+      7.1 ms   0.2%  over clock.js:7
+      6.8 ms   0.2%  copy clone.js:68
+      6.7 ms   0.2%  held held.js:24
+      6.7 ms   0.2%  fold fold.js:118
+      6.3 ms   0.2%  product channels.js:18
+onto: progress 7/8
+== run 4/4 008d580 own:1000:1
+ 1/1  own        N=  1000 V=1     0.156 ms/frame    156 ns/subject·voice  p50    0.153  p99    0.206  worst    0.888  first    46.2 ms  gc  176   22.8 ms     166.8 kB/frame
+total 3213.8 ms
+    666.4 ms  20.7%  foldWith fold.js:151
+    509.2 ms  15.8%  patch.writes frame.mjs:67
+    401.5 ms  12.5%  apply fold.js:47
+    268.3 ms   8.3%  contribution contribution.js:48
+    182.0 ms   5.7%  get store.js:20
+    112.9 ms   3.5%  prepare lanes.js:283
+    111.8 ms   3.5%  phaseAt clock.js:13
+    107.1 ms   3.3%  prime weigh.js:6
+     86.5 ms   2.7%  fillAll fill.js:37
+     68.9 ms   2.1%  (program)
+     62.1 ms   1.9%  linked fold.js:130
+     48.0 ms   1.5%  weigh weigh.js:94
+     43.3 ms   1.3%  folded fold.js:122
+     43.3 ms   1.3%  (garbage collector)
+     37.7 ms   1.2%  elapsedAt voice.js:435
+     28.3 ms   0.9%  read contribution.js:352
+     25.9 ms   0.8%  read frame.mjs:672
+     24.6 ms   0.8%  probe mixer.js:418
+     20.8 ms   0.6%  current lanes.js:324
+     20.6 ms   0.6%  fadeOf weigh.js:62
+     19.7 ms   0.6%  chain chain.js:12
+     19.3 ms   0.6%  base weigh.js:113
+     19.2 ms   0.6%  capped weigh.js:50
+     18.9 ms   0.6%  elapsedWith clock.js:92
+     18.1 ms   0.6%  filled lanes.js:311
+     17.1 ms   0.5%  shownAt voice.js:567
+     16.1 ms   0.5%  phaseOf contribution.js:41
+     16.1 ms   0.5%  probedThisFrame lanes.js:391
+     12.8 ms   0.4%  get now mixer.js:300
+     12.3 ms   0.4%  over clock.js:7
+     12.1 ms   0.4%  foldNumber channels.js:47
+     12.1 ms   0.4%  envelope clock.js:28
+     11.2 ms   0.3%  larger channels.js:20
+      9.1 ms   0.3%  toward channels.js:19
+      8.7 ms   0.3%  compileSourceTextModule utils:338
+      6.8 ms   0.2%  fold fold.js:118
+      6.4 ms   0.2%  (idle)
+      6.1 ms   0.2%  product channels.js:18
+      5.8 ms   0.2%  meet meet.js:41
+      5.5 ms   0.2%  times channels.js:17
+onto: progress 8/8

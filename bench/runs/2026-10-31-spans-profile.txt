@@ -1,0 +1,420 @@
+# teitou, onto do -solo: FRAMES=20000 AB_BENCH=bench/frame.mjs bench/cpuprof.sh spans:1000:1 3 008d580 e3bfd3e . (. = dd559a8 with the spans row)
+  waiting for room
+teitou  chosen: 15.7 cores free, 45.5G available (bash: 5 past runs, worst 2.1 cores / 3.2G)
+  keiei    it wants the node to itself, and job fcd1250e is running there
+  msb-uai  bb-stroke-inner-joins has the node to itself
+  orochi   refuses rotation
+  studio   it wants the node to itself, and the node is promised to forge-stories-linux-debug-b6d_184
+  base   4a6b3bb6
+  delta  99 file(s), 0 deleted
+  updated blits on teitou at dd559a81 + 2 uncommitted file(s)
+  job    60757354 on teitou
+
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+onto: plan 9
+== run 1/3 008d580 spans:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  spans      N=  1000 V=1     0.085 ms/frame     85 ns/subject·voice  p50    0.068  p99    0.206  worst    3.239  first     6.2 ms  gc   74   65.7 ms     105.9 kB/frame
+total 1763.3 ms
+    253.1 ms  14.4%  foldWith fold.js:151
+    162.6 ms   9.2%  get store.js:20
+    118.3 ms   6.7%  prepare lanes.js:283
+     98.4 ms   5.6%  byId due.js:185
+     75.3 ms   4.3%  (garbage collector)
+     65.5 ms   3.7%  moveTo move.js:37
+     57.8 ms   3.3%  linked fold.js:130
+     50.1 ms   2.8%  build patch.js:39
+     49.4 ms   2.8%  ownerReading owner.js:51
+     38.4 ms   2.2%  read frame.mjs:689
+     38.0 ms   2.2%  (anonymous) fit.js:32
+     32.9 ms   1.9%  probe mixer.js:418
+     32.8 ms   1.9%  copyVoice crowd.js:315
+     28.0 ms   1.6%  (program)
+     26.9 ms   1.5%  copyLaned
+     24.4 ms   1.4%  pop due.js:36
+     23.2 ms   1.3%  push due.js:13
+     21.2 ms   1.2%  rows crowd.js:168
+     20.7 ms   1.2%  keys patch.js:337
+     19.4 ms   1.1%  filled lanes.js:311
+     19.3 ms   1.1%  schedule due.js:159
+     18.5 ms   1.0%  timingOf keyrows.js:29
+     17.0 ms   1.0%  probedThisFrame lanes.js:391
+     17.0 ms   1.0%  dueOf due.js:113
+     16.7 ms   0.9%  folded fold.js:122
+     16.4 ms   0.9%  current lanes.js:324
+     15.3 ms   0.9%  nextFrame move.js:20
+     15.0 ms   0.9%  (anonymous) due.js:187
+     13.7 ms   0.8%  add keyrows.js:67
+     13.5 ms   0.8%  chain chain.js:12
+     13.4 ms   0.8%  get now mixer.js:300
+     10.8 ms   0.6%  popDue due.js:170
+     10.7 ms   0.6%  voiceChanged lanes.js:528
+     10.1 ms   0.6%  lineUp spans.js:182
+      9.9 ms   0.6%  prune move.js:210
+      9.4 ms   0.5%  copy keyrows.js:109
+      9.0 ms   0.5%  layout fit.js:26
+      8.2 ms   0.5%  owes owed.js:31
+      7.8 ms   0.4%  add departed.js:19
+      7.8 ms   0.4%  refit spans.js:84
+onto: progress 1/9
+== run 1/3 e3bfd3e spans:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  spans      N=  1000 V=1     0.090 ms/frame     90 ns/subject·voice  p50    0.076  p99    0.208  worst    2.349  first     6.5 ms  gc   76   47.1 ms     112.7 kB/frame
+total 1858.7 ms
+    286.7 ms  15.4%  foldWith fold.js:151
+    178.1 ms   9.6%  get store.js:20
+    112.0 ms   6.0%  prepare lanes.js:283
+     86.8 ms   4.7%  byId due.js:185
+     73.4 ms   3.9%  ownerReading owner.js:51
+     63.6 ms   3.4%  visitOne move.js:88
+     55.8 ms   3.0%  (garbage collector)
+     52.4 ms   2.8%  linked fold.js:130
+     51.7 ms   2.8%  moveTo move.js:37
+     48.9 ms   2.6%  build patch.js:39
+     39.8 ms   2.1%  read frame.mjs:689
+     39.5 ms   2.1%  (anonymous) fit.js:32
+     33.7 ms   1.8%  copyVoice crowd.js:315
+     28.8 ms   1.6%  (program)
+     26.3 ms   1.4%  probe mixer.js:418
+     25.2 ms   1.4%  keys patch.js:337
+     23.8 ms   1.3%  rows crowd.js:168
+     23.6 ms   1.3%  push due.js:13
+     22.7 ms   1.2%  pop due.js:36
+     21.8 ms   1.2%  filled lanes.js:311
+     21.6 ms   1.2%  schedule due.js:159
+     17.8 ms   1.0%  inTurn move.js:184
+     17.3 ms   0.9%  current lanes.js:324
+     16.9 ms   0.9%  probedThisFrame lanes.js:391
+     16.4 ms   0.9%  timingOf keyrows.js:29
+     15.6 ms   0.8%  copyLaned
+     15.3 ms   0.8%  (anonymous) due.js:187
+     15.2 ms   0.8%  owes owed.js:31
+     14.7 ms   0.8%  folded fold.js:122
+     13.2 ms   0.7%  get now mixer.js:300
+     12.9 ms   0.7%  add keyrows.js:67
+     12.9 ms   0.7%  popDue due.js:170
+     12.2 ms   0.7%  chain chain.js:12
+     11.8 ms   0.6%  copy keyrows.js:109
+     11.2 ms   0.6%  dueOf due.js:113
+      9.7 ms   0.5%  lineUp spans.js:265
+      9.5 ms   0.5%  layout fit.js:26
+      8.9 ms   0.5%  elapsedWith clock.js:92
+      8.9 ms   0.5%  refit spans.js:149
+      7.6 ms   0.4%  at fit.js:70
+onto: progress 2/9
+== run 1/3 . spans:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  spans      N=  1000 V=1     0.088 ms/frame     88 ns/subject·voice  p50    0.074  p99    0.209  worst    2.379  first     6.4 ms  gc   77   49.2 ms     113.6 kB/frame
+total 1818.4 ms
+    263.5 ms  14.5%  foldWith fold.js:151
+    158.5 ms   8.7%  get store.js:20
+    115.6 ms   6.4%  prepare lanes.js:283
+     91.2 ms   5.0%  byId due.js:185
+     77.4 ms   4.3%  ownerReading owner.js:51
+     64.4 ms   3.5%  visitOne move.js:164
+     60.3 ms   3.3%  (garbage collector)
+     54.2 ms   3.0%  linked fold.js:130
+     49.4 ms   2.7%  build patch.js:39
+     47.3 ms   2.6%  moveTo move.js:37
+     36.6 ms   2.0%  (anonymous) fit.js:32
+     32.2 ms   1.8%  read frame.mjs:689
+     31.3 ms   1.7%  copyLaned
+     30.9 ms   1.7%  (program)
+     30.2 ms   1.7%  copyVoice crowd.js:315
+     29.9 ms   1.6%  probe mixer.js:420
+     28.8 ms   1.6%  push due.js:13
+     23.6 ms   1.3%  keys patch.js:337
+     22.8 ms   1.3%  pop due.js:36
+     21.9 ms   1.2%  rows crowd.js:168
+     20.8 ms   1.1%  folded fold.js:122
+     19.9 ms   1.1%  current lanes.js:324
+     19.1 ms   1.1%  filled lanes.js:311
+     18.1 ms   1.0%  timingOf keyrows.js:29
+     17.4 ms   1.0%  schedule due.js:159
+     16.6 ms   0.9%  chain chain.js:12
+     14.5 ms   0.8%  inTurn move.js:268
+     13.9 ms   0.8%  (anonymous) due.js:187
+     13.8 ms   0.8%  dueOf due.js:113
+     13.6 ms   0.7%  probedThisFrame lanes.js:391
+     12.9 ms   0.7%  add keyrows.js:67
+     12.0 ms   0.7%  layout fit.js:26
+     11.5 ms   0.6%  get now mixer.js:302
+     11.1 ms   0.6%  copy keyrows.js:109
+     11.0 ms   0.6%  popDue due.js:170
+     10.2 ms   0.6%  refit spans.js:149
+      9.0 ms   0.5%  lineUp spans.js:265
+      7.8 ms   0.4%  fold fold.js:118
+      7.6 ms   0.4%  at fit.js:70
+      7.5 ms   0.4%  prune move.js:371
+onto: progress 3/9
+== run 2/3 . spans:1000:1
+ 1/1  spans      N=  1000 V=1     0.088 ms/frame     88 ns/subject·voice  p50    0.073  p99    0.214  worst    2.316  first     6.4 ms  gc   77   47.6 ms     113.3 kB/frame
+total 1813.3 ms
+    260.8 ms  14.4%  foldWith fold.js:151
+    151.3 ms   8.3%  get store.js:20
+    117.6 ms   6.5%  prepare lanes.js:283
+     97.7 ms   5.4%  byId due.js:185
+     71.6 ms   3.9%  ownerReading owner.js:51
+     68.0 ms   3.7%  visitOne move.js:164
+     57.8 ms   3.2%  (garbage collector)
+     53.0 ms   2.9%  moveTo move.js:37
+     52.9 ms   2.9%  linked fold.js:130
+     46.1 ms   2.5%  build patch.js:39
+     40.0 ms   2.2%  read frame.mjs:689
+     39.4 ms   2.2%  (anonymous) fit.js:32
+     32.1 ms   1.8%  copyVoice crowd.js:315
+     27.3 ms   1.5%  probe mixer.js:420
+     26.6 ms   1.5%  (program)
+     25.4 ms   1.4%  push due.js:13
+     24.8 ms   1.4%  keys patch.js:337
+     24.6 ms   1.4%  filled lanes.js:311
+     23.4 ms   1.3%  pop due.js:36
+     23.1 ms   1.3%  copyLaned
+     22.5 ms   1.2%  rows crowd.js:168
+     21.0 ms   1.2%  timingOf keyrows.js:29
+     20.4 ms   1.1%  schedule due.js:159
+     17.1 ms   0.9%  dueOf due.js:113
+     16.5 ms   0.9%  current lanes.js:324
+     14.7 ms   0.8%  chain chain.js:12
+     14.4 ms   0.8%  folded fold.js:122
+     13.7 ms   0.8%  (anonymous) due.js:187
+     13.5 ms   0.7%  inTurn move.js:268
+     12.5 ms   0.7%  probedThisFrame lanes.js:391
+     12.2 ms   0.7%  add keyrows.js:67
+     11.5 ms   0.6%  get now mixer.js:302
+     11.5 ms   0.6%  popDue due.js:170
+     10.0 ms   0.6%  layout fit.js:26
+      9.6 ms   0.5%  lineUp spans.js:265
+      9.2 ms   0.5%  copy keyrows.js:109
+      9.1 ms   0.5%  refit spans.js:149
+      9.0 ms   0.5%  owes owed.js:31
+      8.9 ms   0.5%  add departed.js:19
+      8.1 ms   0.4%  at fit.js:70
+onto: progress 4/9
+== run 2/3 e3bfd3e spans:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  spans      N=  1000 V=1     0.088 ms/frame     88 ns/subject·voice  p50    0.074  p99    0.208  worst    2.379  first     6.4 ms  gc   76   47.0 ms     113.3 kB/frame
+total 1826.7 ms
+    259.8 ms  14.2%  foldWith fold.js:151
+    157.6 ms   8.6%  get store.js:20
+    121.4 ms   6.6%  prepare lanes.js:283
+     94.1 ms   5.1%  byId due.js:185
+     71.2 ms   3.9%  ownerReading owner.js:51
+     66.7 ms   3.7%  visitOne move.js:88
+     57.9 ms   3.2%  (garbage collector)
+     57.0 ms   3.1%  moveTo move.js:37
+     52.1 ms   2.9%  linked fold.js:130
+     47.6 ms   2.6%  build patch.js:39
+     40.4 ms   2.2%  (anonymous) fit.js:32
+     33.1 ms   1.8%  probe mixer.js:418
+     32.9 ms   1.8%  read frame.mjs:689
+     29.6 ms   1.6%  copyLaned
+     29.4 ms   1.6%  copyVoice crowd.js:315
+     25.4 ms   1.4%  (program)
+     23.5 ms   1.3%  rows crowd.js:168
+     21.9 ms   1.2%  push due.js:13
+     21.7 ms   1.2%  folded fold.js:122
+     21.6 ms   1.2%  keys patch.js:337
+     20.9 ms   1.1%  timingOf keyrows.js:29
+     19.3 ms   1.1%  pop due.js:36
+     19.1 ms   1.0%  current lanes.js:324
+     18.7 ms   1.0%  chain chain.js:12
+     17.9 ms   1.0%  schedule due.js:159
+     16.9 ms   0.9%  filled lanes.js:311
+     16.1 ms   0.9%  probedThisFrame lanes.js:391
+     15.4 ms   0.8%  inTurn move.js:184
+     14.2 ms   0.8%  (anonymous) due.js:187
+     13.9 ms   0.8%  dueOf due.js:113
+     13.3 ms   0.7%  add keyrows.js:67
+     12.4 ms   0.7%  popDue due.js:170
+     11.5 ms   0.6%  layout fit.js:26
+     11.2 ms   0.6%  get now mixer.js:300
+     10.7 ms   0.6%  copy keyrows.js:109
+      9.5 ms   0.5%  lineUp spans.js:265
+      9.3 ms   0.5%  fold fold.js:118
+      8.9 ms   0.5%  refit spans.js:149
+      8.4 ms   0.5%  elapsedWith clock.js:92
+      8.4 ms   0.5%  compileSourceTextModule utils:338
+onto: progress 5/9
+== run 2/3 008d580 spans:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  spans      N=  1000 V=1     0.086 ms/frame     86 ns/subject·voice  p50    0.069  p99    0.199  worst    2.927  first     6.2 ms  gc   76   68.0 ms     106.2 kB/frame
+total 1774.6 ms
+    258.1 ms  14.5%  foldWith fold.js:151
+    179.8 ms  10.1%  get store.js:20
+    121.2 ms   6.8%  prepare lanes.js:283
+     97.7 ms   5.5%  byId due.js:185
+     76.7 ms   4.3%  (garbage collector)
+     61.2 ms   3.4%  moveTo move.js:37
+     56.6 ms   3.2%  build patch.js:39
+     51.8 ms   2.9%  linked fold.js:130
+     51.0 ms   2.9%  ownerReading owner.js:51
+     37.1 ms   2.1%  (anonymous) fit.js:32
+     33.6 ms   1.9%  probe mixer.js:418
+     31.4 ms   1.8%  read frame.mjs:689
+     30.0 ms   1.7%  copyLaned
+     27.7 ms   1.6%  (program)
+     27.0 ms   1.5%  copyVoice crowd.js:315
+     25.5 ms   1.4%  schedule due.js:159
+     24.1 ms   1.4%  filled lanes.js:311
+     23.9 ms   1.3%  rows crowd.js:168
+     23.4 ms   1.3%  push due.js:13
+     22.8 ms   1.3%  keys patch.js:337
+     20.9 ms   1.2%  timingOf keyrows.js:29
+     20.8 ms   1.2%  pop due.js:36
+     19.9 ms   1.1%  folded fold.js:122
+     16.6 ms   0.9%  chain chain.js:12
+     15.8 ms   0.9%  current lanes.js:324
+     13.9 ms   0.8%  dueOf due.js:113
+     13.8 ms   0.8%  nextFrame move.js:20
+     12.8 ms   0.7%  (anonymous) due.js:187
+     12.4 ms   0.7%  probedThisFrame lanes.js:391
+     11.6 ms   0.7%  add keyrows.js:67
+     11.5 ms   0.6%  popDue due.js:170
+     11.3 ms   0.6%  layout fit.js:26
+      9.1 ms   0.5%  prune move.js:210
+      8.9 ms   0.5%  lineUp spans.js:182
+      8.7 ms   0.5%  copy keyrows.js:109
+      8.5 ms   0.5%  compileSourceTextModule utils:338
+      8.0 ms   0.4%  owes owed.js:31
+      7.9 ms   0.4%  refit spans.js:84
+      7.7 ms   0.4%  add departed.js:19
+      7.2 ms   0.4%  get now mixer.js:300
+onto: progress 6/9
+== run 3/3 008d580 spans:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  spans      N=  1000 V=1     0.085 ms/frame     85 ns/subject·voice  p50    0.068  p99    0.204  worst    3.600  first     6.1 ms  gc   75   67.1 ms     106.8 kB/frame
+total 1761.4 ms
+    261.5 ms  14.8%  foldWith fold.js:151
+    156.1 ms   8.9%  get store.js:20
+    111.9 ms   6.4%  prepare lanes.js:283
+    103.4 ms   5.9%  byId due.js:185
+     77.3 ms   4.4%  (garbage collector)
+     70.8 ms   4.0%  moveTo move.js:37
+     54.0 ms   3.1%  linked fold.js:130
+     53.7 ms   3.0%  build patch.js:39
+     44.9 ms   2.6%  ownerReading owner.js:51
+     36.2 ms   2.1%  (anonymous) fit.js:32
+     32.9 ms   1.9%  read frame.mjs:689
+     31.3 ms   1.8%  copyVoice crowd.js:315
+     30.1 ms   1.7%  copyLaned
+     29.0 ms   1.6%  (program)
+     26.4 ms   1.5%  probe mixer.js:418
+     25.3 ms   1.4%  pop due.js:36
+     24.6 ms   1.4%  rows crowd.js:168
+     24.2 ms   1.4%  push due.js:13
+     23.7 ms   1.3%  schedule due.js:159
+     22.4 ms   1.3%  timingOf keyrows.js:29
+     22.1 ms   1.3%  keys patch.js:337
+     18.9 ms   1.1%  folded fold.js:122
+     18.1 ms   1.0%  current lanes.js:324
+     17.6 ms   1.0%  filled lanes.js:311
+     16.8 ms   1.0%  chain chain.js:12
+     16.1 ms   0.9%  probedThisFrame lanes.js:391
+     13.8 ms   0.8%  dueOf due.js:113
+     13.6 ms   0.8%  nextFrame move.js:20
+     13.6 ms   0.8%  (anonymous) due.js:187
+     13.0 ms   0.7%  popDue due.js:170
+     11.9 ms   0.7%  fold fold.js:118
+     11.8 ms   0.7%  add keyrows.js:67
+      9.9 ms   0.6%  copy keyrows.js:109
+      9.7 ms   0.5%  layout fit.js:26
+      8.8 ms   0.5%  compileSourceTextModule utils:338
+      8.5 ms   0.5%  get now mixer.js:300
+      8.4 ms   0.5%  reserve keyrows.js:201
+      8.2 ms   0.5%  prune move.js:210
+      7.8 ms   0.4%  lineUp spans.js:182
+      7.8 ms   0.4%  add departed.js:19
+onto: progress 7/9
+== run 3/3 e3bfd3e spans:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  spans      N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.074  p99    0.205  worst    2.464  first     6.4 ms  gc   76   47.2 ms     113.3 kB/frame
+total 1829.5 ms
+    259.6 ms  14.2%  foldWith fold.js:151
+    172.5 ms   9.4%  get store.js:20
+    118.7 ms   6.5%  prepare lanes.js:283
+     92.3 ms   5.0%  byId due.js:185
+     72.7 ms   4.0%  ownerReading owner.js:51
+     69.2 ms   3.8%  visitOne move.js:88
+     59.3 ms   3.2%  (garbage collector)
+     54.0 ms   3.0%  linked fold.js:130
+     46.3 ms   2.5%  moveTo move.js:37
+     45.5 ms   2.5%  build patch.js:39
+     38.6 ms   2.1%  read frame.mjs:689
+     37.6 ms   2.1%  (anonymous) fit.js:32
+     32.0 ms   1.7%  probe mixer.js:418
+     30.1 ms   1.6%  copyVoice crowd.js:315
+     28.9 ms   1.6%  copyLaned
+     28.3 ms   1.5%  (program)
+     25.9 ms   1.4%  keys patch.js:337
+     24.9 ms   1.4%  rows crowd.js:168
+     23.8 ms   1.3%  push due.js:13
+     22.9 ms   1.3%  pop due.js:36
+     19.7 ms   1.1%  timingOf keyrows.js:29
+     19.6 ms   1.1%  filled lanes.js:311
+     18.9 ms   1.0%  current lanes.js:324
+     17.8 ms   1.0%  folded fold.js:122
+     17.5 ms   1.0%  probedThisFrame lanes.js:391
+     17.2 ms   0.9%  chain chain.js:12
+     16.7 ms   0.9%  inTurn move.js:184
+     16.0 ms   0.9%  schedule due.js:159
+     12.4 ms   0.7%  dueOf due.js:113
+     12.1 ms   0.7%  add keyrows.js:67
+     11.8 ms   0.6%  fold fold.js:118
+     11.8 ms   0.6%  (anonymous) due.js:187
+     11.7 ms   0.6%  lineUp spans.js:265
+     11.0 ms   0.6%  popDue due.js:170
+     10.7 ms   0.6%  layout fit.js:26
+     10.6 ms   0.6%  copy keyrows.js:109
+     10.0 ms   0.5%  get now mixer.js:300
+      9.9 ms   0.5%  elapsedWith clock.js:92
+      8.6 ms   0.5%  voiceChanged lanes.js:528
+      8.5 ms   0.5%  compileSourceTextModule utils:338
+onto: progress 8/9
+== run 3/3 . spans:1000:1
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  spans      N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.075  p99    0.195  worst    3.362  first     6.4 ms  gc   90   63.8 ms     114.0 kB/frame
+total 1835.4 ms
+    258.2 ms  14.1%  foldWith fold.js:151
+    159.9 ms   8.7%  get store.js:20
+    125.4 ms   6.8%  prepare lanes.js:283
+     91.5 ms   5.0%  byId due.js:185
+     78.0 ms   4.2%  ownerReading owner.js:51
+     72.7 ms   4.0%  (garbage collector)
+     62.6 ms   3.4%  visitOne move.js:164
+     53.8 ms   2.9%  linked fold.js:130
+     51.3 ms   2.8%  build patch.js:39
+     49.6 ms   2.7%  moveTo move.js:37
+     37.3 ms   2.0%  (anonymous) fit.js:32
+     31.1 ms   1.7%  read frame.mjs:689
+     29.2 ms   1.6%  copyVoice crowd.js:315
+     28.0 ms   1.5%  (program)
+     27.9 ms   1.5%  probe mixer.js:420
+     27.0 ms   1.5%  copyLaned
+     26.5 ms   1.4%  push due.js:13
+     25.9 ms   1.4%  rows crowd.js:168
+     21.6 ms   1.2%  current lanes.js:324
+     19.5 ms   1.1%  filled lanes.js:311
+     19.3 ms   1.1%  pop due.js:36
+     19.3 ms   1.0%  timingOf keyrows.js:29
+     19.0 ms   1.0%  schedule due.js:159
+     17.5 ms   1.0%  keys patch.js:337
+     16.6 ms   0.9%  chain chain.js:12
+     15.0 ms   0.8%  inTurn move.js:268
+     15.0 ms   0.8%  (anonymous) due.js:187
+     14.7 ms   0.8%  probedThisFrame lanes.js:391
+     14.4 ms   0.8%  folded fold.js:122
+     14.4 ms   0.8%  add keyrows.js:67
+     13.0 ms   0.7%  dueOf due.js:113
+     11.8 ms   0.6%  add departed.js:19
+     11.1 ms   0.6%  copy keyrows.js:109
+     11.0 ms   0.6%  popDue due.js:170
+      9.4 ms   0.5%  refit spans.js:149
+      9.3 ms   0.5%  get now mixer.js:302
+      8.6 ms   0.5%  layout fit.js:26
+      8.5 ms   0.5%  compileSourceTextModule utils:338
+      8.3 ms   0.5%  owes owed.js:31
+      8.2 ms   0.4%  fold fold.js:118
+onto: progress 9/9

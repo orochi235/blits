@@ -257,11 +257,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - **A handle's own rate write on a child is retraced at its latest rate** when an owner above
      runs back over it (not tested): only a fit's rate change is kept for the run back
      (`Voice.earlier`, `unfit` in `src/spans.ts`), since a host's write is not made again going forward.
-   - **This session's fixes cost `own N=1000` 3.4%** (0.148 to 0.153 ms, U 6 of 49; teitou, 7
-     rounds, `bench/runs/2026-10-31-span-order.txt`, 008d580 against e3bfd3e); `tweens N=100000`
-     +2.4% at U 13 is weaker, and churn and swap read 3% faster. Likely the per-voice checks
-     `moveTo` now makes (a span's child that starts or ends this frame waits its turn, and
-     `earlier`/`later` for `unfit`) and the loop body moved into `visitOne`; not profiled.
+   - **The span-order fixes' cost is paid back** (2026-10-31). `own` and `tweens` never run the
+     code they changed: profiled at 008d580 and e3bfd3e, `own N=1000` reads 156.5 and 157.0 µs a
+     frame with no time in `move.ts` (`bench/runs/2026-10-31-own-profile.txt`), so the 3.4% and
+     2.4% were noise. Span frames did pay, about 5% in the `spans` row's profile
+     (`bench/runs/2026-10-31-spans-profile.txt`), mostly a second walk of each child's owners'
+     clocks per visit. fc8705a reads 5.0% faster than dd559a8 on `spans` (U 7) and 3.4% faster
+     than 008d580 (U 7), every other row within noise
+     (`bench/runs/2026-10-31-span-speed-vs-{dd559a8,008d580}.txt`). What 008d580 still does
+     better: its visit sat in `moveTo`'s loop, where `visitOne` and `meetsAt` are now calls, about
+     1% of a `spans` frame in `bench/runs/2026-10-31-spans-profile-due-list.txt`. One walk that
+     also reads `heading` was profiled and was no faster
+     (`bench/runs/2026-10-31-spans-profile-one-walk.txt`).
    - **Measured fine:** the feed (100 items/s, re-sorted and filtered) at 0.08 ms a read with no
      leaks; the cue stack against its model, except `from: 'current'` above; the deck's seeks and
      `done`s; the kiosk's loop phase, voice count and return to rest at short sizes.
