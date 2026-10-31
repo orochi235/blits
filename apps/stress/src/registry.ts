@@ -1,4 +1,5 @@
 import type { Entry } from '@stress/scenario';
+import { feed } from '@stress/scenarios/feed/scenario';
 import { heatmap } from '@stress/scenarios/heatmap/scenario';
 import { idle } from '@stress/scenarios/idle';
 
@@ -14,5 +15,12 @@ export const scenarios: Record<string, Entry> = {
     size: 5,
     frames: 3600,
     blurb: 'Thousands of cells, each spring retargeted dozens of times a second.',
+  },
+  feed: {
+    make: feed,
+    size: 1,
+    frames: 3600,
+    blurb:
+      'A live feed: 100 items a second arrive and leave while the list is re-sorted and filtered.',
   },
 };
