@@ -83,7 +83,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
 /** Starts, ends and fades one voice as of `now`. */
 function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
   if (Number.isNaN(voice.opened)) voice.opened = now;
-  if (voice.earlier !== null) unfit(mix, voice, now);
+  if (voice.earlier !== null || voice.later !== null) unfit(mix, voice, now);
   if (
     voice.state === 'pending' &&
     (voice.owner === null ? now : ownerReading(voice.owner, now)) >= voice.start

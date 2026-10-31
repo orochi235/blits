@@ -59,6 +59,10 @@ version and everything else the patch. Each release lists its changes as **Break
   going forward. One skipped while playing kept its jump to its end and read on from there, and
   one skipped before it started, placed at its end at its start, played its passes backward from
   its start.
+- A span child its owner ran or was sought back over takes the change a fit made to it again as
+  the owner's clock comes forward to it, as the layout made going forward stands. The span was
+  fitted again there instead, with the children it had skipped counted as still playing or left
+  out, so the ones it had skipped together with them played on, slowed, beside them.
 
 ## 0.16.0
 

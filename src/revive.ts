@@ -31,6 +31,8 @@ interface PackedVoice {
   clocks: Past[] | null;
   /** Absent from a store written before a voice kept it. */
   earlier?: Earlier | null;
+  /** Absent from a store written before a voice kept it. */
+  later?: Earlier | null;
   cuedAt: number;
   cuedSeq: number;
   doneAt: number;
@@ -148,6 +150,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     hold: voice.hold,
     past: voice.clocks?.length ?? 0,
     earlier: voice.earlier,
+    later: voice.later,
     clocks: voice.clocks,
     cuedAt: voice.cuedAt,
     cuedSeq: voice.cuedSeq,

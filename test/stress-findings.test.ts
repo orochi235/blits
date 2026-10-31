@@ -426,8 +426,8 @@ test('a span whose children end in one frame, the later cued first, reads the sa
 // CHANGELOG 0.16.0: turning an owner back "reverses completely"; docs/schema.html, owner `seek`:
 // "Moves the owner's clock, and every child's phase with it". A fit that skips a child is undone
 // with the clock: before where it was skipped, the child reads what it read going forward.
-for (const how of ['sought back', 'run back'])
-  test(`a span whose fit skipped children reads, ${how} before the skip, as played straight`, () => {
+for (const how of ['sought back', 'run back', 'sought past it and back'])
+  test(`a span whose fit skipped children reads, ${how} before the skip and forward again, as played straight`, () => {
     const lens = [858, 1244, 744, 842, 840, 953, 507, 1557, 1211, 1497];
     const parts = lens.map((_, i) => ({ id: `p${i}` }));
     const make = () => {
@@ -457,14 +457,34 @@ for (const how of ['sought back', 'run back'])
     const fresh = make().m;
     for (let t = 10; t <= 60; t += 10) fresh.sync(t);
     const { m, reel } = make();
-    for (let t = 10; t <= 500; t += 10) m.sync(t);
-    if (how === 'sought back') {
-      reel.seek(50);
-      m.sync(510);
+    let host = 0;
+    const to = (end: number) => {
+      while (host < end) m.sync((host += 10));
+    };
+    if (how === 'sought past it and back') {
+      to(10);
+      reel.seek(5000);
+      to(30);
+      reel.seek(40);
+      to(50);
     } else {
-      reel.rate = -1;
-      for (let t = 510; t <= 940; t += 10) m.sync(t);
+      to(500);
+      if (how === 'sought back') {
+        reel.seek(50);
+        to(510);
+      } else {
+        reel.rate = -1;
+        to(940);
+      }
     }
-    for (const [i, v] of read(m).entries())
-      expect(v, parts[i]?.id).toBeCloseTo(read(fresh)[i] as number, 9);
+    // The reel reads 60, and runs on with the fresh one.
+    reel.rate = 1;
+    for (let t = 60; t <= 1000; t += 10) {
+      if (t > 60) {
+        to(host + 10);
+        fresh.sync(t);
+      }
+      for (const [i, v] of read(m).entries())
+        expect(v, `${parts[i]?.id} at ${t}`).toBeCloseTo(read(fresh)[i] as number, 9);
+    }
   });

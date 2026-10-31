@@ -59,6 +59,8 @@ export interface Controls extends Clock {
   past: number;
   /** The clocks a fit replaced; absent from a store written before a voice kept them. */
   earlier?: Earlier | null;
+  /** The clocks its owner ran back before; absent from a store written before a voice kept them. */
+  later?: Earlier | null;
   /** Shows in its own frame: made by a sync, or before anything read the mix that frame. */
   sync: boolean;
 }
@@ -66,6 +68,7 @@ export interface Controls extends Clock {
 /**
  * A clock a fit replaced, which its voice runs on again where its owner's clock runs back to
  * before the one that replaced it, with whether the fit had skipped it; `prev` is the one before.
+ * In `later`, one its owner ran back before, taken again where the owner's clock reaches it.
  */
 export interface Earlier extends Clock {
   readonly skipped: boolean;
@@ -238,6 +241,8 @@ export class Voice<I, O> {
   clocks: Past[] | null = null;
   /** The clocks a fit replaced, latest first; null for none. */
   earlier: Earlier | null = null;
+  /** The clocks its owner's clock ran back before, which it takes again going forward, soonest first. */
+  later: Earlier | null = null;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: VoiceSetting<I, O>;
   /** Every subject this voice has been asked about, so a handover knows when it is finished. */
@@ -444,6 +449,7 @@ export class Voice<I, O> {
     this.rebuilds = c.rebuilds;
     this.hold = c.hold;
     this.earlier = c.earlier ?? null;
+    this.later = c.later ?? null;
     const clocks = this.clocks;
     if (clocks !== null && clocks.length !== c.past)
       this.clocks = c.past === 0 ? null : clocks.slice(0, c.past);
@@ -713,6 +719,7 @@ export class Voice<I, O> {
       hold: this.hold,
       past: this.clocks?.length ?? 0,
       earlier: this.earlier,
+      later: this.later,
     });
   }
 

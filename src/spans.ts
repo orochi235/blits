@@ -10,7 +10,7 @@ import { leave } from './origin.js';
 import { type Holding, ownerReading, plays } from './owner.js';
 import { resolve } from './place.js';
 import type { FitResult, SpanSpec, VoiceSpec } from './types.js';
-import type { Voice } from './voice.js';
+import type { Earlier, Voice } from './voice.js';
 
 /** What a span keeps beside its owner: its claim, its fit, and how the last fit came out. */
 export class Fitting {
@@ -67,27 +67,45 @@ function ranBackOver<I, O>(span: Voice<I, O>): boolean {
 
 /**
  * Puts a child whose owner's clock ran back to before a fit changed its rate, or skipped it, back
- * on the clock it ran on before, so it reads, run back over, what it read going forward.
+ * on the clock it ran on before, so it reads, run back over, what it read going forward; and once
+ * the owner's clock reaches that change again, takes the change again, as the layout stands.
  */
 export function unfit<I, O>(mix: Mixer<I, O>, child: Voice<I, O>, now: number): void {
   const t = ownerReading(child.owner as Voice<I, O>, now);
-  let e = child.earlier;
-  if (e === null || !(t < child.anchorNow)) return;
-  while (e !== null && t < child.anchorNow) {
-    child.anchorNow = e.anchorNow;
-    child.anchorElapsed = e.anchorElapsed;
-    child.rate = e.rate;
-    child.ramp = e.ramp;
-    // Skipped, it had jumped to its end; back before the skip, its clock jumps back.
-    if (child.skipped && !e.skipped) child.seeks++;
-    child.skipped = e.skipped;
-    e = e.prev;
+  let moved = false;
+  for (let e = child.earlier; e !== null && t < child.anchorNow; e = child.earlier) {
+    child.later = { ...standing(child), prev: child.later };
+    take(child, e);
+    child.earlier = e.prev;
+    moved = true;
   }
-  child.earlier = e;
+  for (let e = child.later; e !== null && t >= e.anchorNow; e = child.later) {
+    child.earlier = { ...standing(child), prev: child.earlier };
+    take(child, e);
+    child.later = e.prev;
+    moved = true;
+  }
+  if (!moved) return;
   mix.frame = nextFrame();
   reorigin(mix, child, now);
   noted(mix, child);
   mix.lanes?.refill();
+}
+
+/** A child's clock as it stands, and whether a fit skipped it. */
+function standing<I, O>(c: Voice<I, O>): Omit<Earlier, 'prev'> {
+  const { anchorNow, anchorElapsed, rate, ramp, skipped } = c;
+  return { anchorNow, anchorElapsed, rate, ramp, skipped };
+}
+
+/** Puts a child on a clock it had, which jumps where a fit skipped it on one and not the other. */
+function take<I, O>(c: Voice<I, O>, e: Earlier): void {
+  c.anchorNow = e.anchorNow;
+  c.anchorElapsed = e.anchorElapsed;
+  c.rate = e.rate;
+  c.ramp = e.ramp;
+  if (c.skipped !== e.skipped) c.seeks++;
+  c.skipped = e.skipped;
 }
 
 /** A span's own clock at mix time `at`, from 0 while it has not started. */
@@ -175,13 +193,13 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
         c.ramp = null;
         c.clocks = null;
         c.earlier = null;
+        c.later = null;
         moved = true;
       }
     } else {
       if (skipped || c.rate !== rate || c.ramp !== null) {
-        const { anchorNow, anchorElapsed, ramp } = c;
-        const prev = c.earlier;
-        c.earlier = { anchorNow, anchorElapsed, rate: c.rate, ramp, skipped: wasSkipped, prev };
+        c.earlier = { ...standing(c), skipped: wasSkipped, prev: c.earlier };
+        c.later = null;
       }
       if (skipped) {
         leave(c, local);
@@ -209,6 +227,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
     c.anchorElapsed = 0;
     c.clocks = null;
     c.earlier = null;
+    c.later = null;
     mix.frame = nextFrame();
     reorigin(mix, c, mix.now);
     noted(mix, c);
@@ -244,12 +263,9 @@ function lineUp<I, O>(
   local: number,
   by: number,
 ): { kids: Voice<I, O>[]; floors: (number | undefined)[]; waiting: Voice<I, O>[] } {
+  // A child fading, or kept quiet past its passes, has nothing left to fit.
   const live = (span.holding?.children ?? []).filter(
-    (c) =>
-      c.state !== 'done' &&
-      c.state !== 'frozen' &&
-      c.state !== 'fading' &&
-      leftOf(c, local, by) > 0,
+    (c) => c.state !== 'done' && c.state !== 'frozen' && c.out === null && leftOf(c, local, by) > 0,
   );
   const kids = live.filter((c) => begun(c, by));
   const floors: (number | undefined)[] = kids.map(() => undefined);
