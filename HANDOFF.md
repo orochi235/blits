@@ -275,7 +275,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      (`bench/runs/2026-10-31-spans-profile-one-walk.txt`).
    - **Measured fine:** the feed (100 items/s, re-sorted and filtered) at 0.08 ms a read with no
      leaks; the cue stack against its model, except `from: 'current'` above; the deck's seeks and
-     `done`s; the kiosk's loop phase, voice count and return to rest at short sizes.
+     `done`s; and the kiosk over 72 simulated hours (keiei, `bench/runs/2026-10-31-stress-kiosk-72h.txt`):
+     no findings, heap between 17 and 86 MB with no trend, 2 voices throughout, reads 0.28 ms at
+     hour 0 and 0.29 at hour 71.
 
 2. **`NOTES-FROM-WEASEL.md`** holds what is left of weasel's read of blits: churn, stopping and
    replacing voices, and two design questions. Delete each item as it is dealt with, and the file

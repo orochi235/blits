@@ -1,0 +1,12 @@
+# keiei, onto job fcd1250e, tree synced at 193cc00 (the header's rev is the node's base commit; the tree is that plus the synced delta): npm run stress -- kiosk (size 72, window 3600)
+{"header":{"name":"kiosk","size":72,"frames":15552000,"seed":1,"lanes":true,"window":3600,"host":"Mac","cpus":8,"load":[6.90966796875,5.6201171875,5.1513671875],"node":"v26.8.2","rev":"4a6b3bb6c6858d158156a0c3aebd51a6c969a95f","dirty":true,"started":"2026-10-31T05:55:35.218Z"}}
+records                           4320
+step p50, median of windows      0.000
+step p99, p99 of windows         0.003
+step max, max of windows         3.828
+read p50, median of windows      0.286
+read max, max of windows        33.273
+heap first (MB)                 32.887
+heap last (MB)                  35.450
+findings:
+[]
