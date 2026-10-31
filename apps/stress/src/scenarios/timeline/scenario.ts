@@ -98,7 +98,6 @@ export const timeline: Make = ({ seed, size, lanes }) => {
             const { clip, field } = where(n0, k);
             framed = {
               kind: 'fail',
-              key: 'timeline/frame-rate-layout',
               at: cp.frame,
               what:
                 `a fresh timeline played forward at rate 1 reads differently by frame rate alone: at reel ${cp.at.toFixed(3)}, ` +

@@ -249,10 +249,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      `spans.ts`: a span run back over must not fit again (`ranBackOver` in `src/fade.ts`), which
      `stay` and the seek in `src/seek.ts` each check before calling `refit`; the check belongs in
      `refit` itself, and the seek's loop is `refitAll`'s, which nothing calls now.
-   - **A span's layout depends on frame rate.** A child's end re-fits its span from that end, and a
-     sibling past its start that no frame has started yet still counts as pending, so the re-fit
-     moves it (read from `refit` and `elapsedIn` in `src/spans.ts`, not traced). Two children in a
-     stagger span read 420 stepped every 10 ms and 389.47 every 25 ms.
    - **Seeking back breaks two anchored forms.** An owner placed by `anchor: { start: 2000 }`
      carries on from where it had played after `seek(1000)` (a plain `start: 2000` is right). A
      voice placed by `anchor: { end: 4000 }` comes back at the seek, then goes `done` at 0 on the

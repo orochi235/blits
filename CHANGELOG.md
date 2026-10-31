@@ -15,6 +15,10 @@ version and everything else the patch. Each release lists its changes as **Break
   back to the start of fitted the span again from there, and so did a seek back into it, counting
   the children waiting for the clock to come back as playing: the ones still to start moved
   earlier, and the playing ones changed speed.
+- A span lays out its children the same at any frame rate. When a child ended between two frames,
+  its span fitted again from that moment, and a sibling whose start had passed by then, but which
+  no frame had started yet, was placed again from there at a new start and rate: two children of a
+  `stagger` span read 420 stepped every 10 ms and 389.47 every 25 ms.
 
 ## 0.16.0
 

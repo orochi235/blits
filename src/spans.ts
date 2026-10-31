@@ -62,16 +62,24 @@ function clockOf<I, O>(span: Voice<I, O>, at: number): number {
   return Number.isFinite(t) ? Math.max(0, t) : 0;
 }
 
+/**
+ * Whether a child has started, or would have by span ms `by` had a frame come between: a fit from a
+ * moment between frames keeps a child whose start that moment had passed where it is.
+ */
+function begun<I, O>(child: Voice<I, O>, by: number): boolean {
+  return child.state !== 'pending' || child.start < by;
+}
+
 /** What a child's own clock reads at its span's `local`, 0 while it waits. */
-function elapsedIn<I, O>(child: Voice<I, O>, local: number): number {
-  return child.state === 'pending' ? 0 : Math.max(0, elapsedWith(child, local));
+function elapsedIn<I, O>(child: Voice<I, O>, local: number, by: number): number {
+  return begun(child, by) ? Math.max(0, elapsedWith(child, local)) : 0;
 }
 
 /** How much of a child is left, voice ms at its own clock: what its span still has to fit. */
-function leftOf<I, O>(child: Voice<I, O>, local: number): number {
+function leftOf<I, O>(child: Voice<I, O>, local: number, by: number): number {
   const length =
     child.fitting !== null ? child.fitting.end : child.arc !== null ? arcEnd(child) : child.span;
-  return Math.max(0, length - elapsedIn(child, local));
+  return Math.max(0, length - elapsedIn(child, local, by));
 }
 
 /**
@@ -84,13 +92,14 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
   const fitting = span.fitting as Fitting;
   if (mix.projecting || span.state === 'done') return;
   const local = clockOf(span, from);
-  const { kids, floors, waiting } = lineUp(mix, span, local);
+  const by = from < mix.now ? local : Number.NEGATIVE_INFINITY;
+  const { kids, floors, waiting } = lineUp(mix, span, local, by);
   const claims: Claim[] = kids.map((c, i) => {
     const s = c.spec;
     return {
       floor: floors[i],
-      natural: leftOf(c, local) / (s.rate ?? 1),
-      state: c.state === 'pending' ? 'pending' : 'playing',
+      natural: leftOf(c, local, by) / (s.rate ?? 1),
+      state: begun(c, by) ? 'playing' : 'pending',
       faster: Math.max(1, s.faster ?? 1),
       slower: Math.max(1, s.slower ?? 1),
       overlap: s.overlap === true,
@@ -106,7 +115,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
     const skipped = (plan.skip[i] as boolean) && c.holding === null;
     c.skipped = skipped;
     let moved = false;
-    if (c.state === 'pending') {
+    if (!begun(c, by)) {
       const start = local + (at[i] as number);
       const elapsed = skipped ? c.span : 0;
       if (c.start !== start || c.rate !== rate || c.anchorElapsed !== elapsed || c.ramp !== null) {
@@ -177,16 +186,20 @@ function lineUp<I, O>(
   mix: Mixer<I, O>,
   span: Voice<I, O>,
   local: number,
+  by: number,
 ): { kids: Voice<I, O>[]; floors: (number | undefined)[]; waiting: Voice<I, O>[] } {
   const live = (span.holding?.children ?? []).filter(
     (c) =>
-      c.state !== 'done' && c.state !== 'frozen' && c.state !== 'fading' && leftOf(c, local) > 0,
+      c.state !== 'done' &&
+      c.state !== 'frozen' &&
+      c.state !== 'fading' &&
+      leftOf(c, local, by) > 0,
   );
-  const kids = live.filter((c) => c.state !== 'pending');
+  const kids = live.filter((c) => begun(c, by));
   const floors: (number | undefined)[] = kids.map(() => undefined);
   const waiting: Voice<I, O>[] = [];
   const pending = live
-    .filter((c) => c.state === 'pending')
+    .filter((c) => !begun(c, by))
     .sort((a, b) => (a.spec.rank ?? 0) - (b.spec.rank ?? 0));
   const chained = (span.fitting as Fitting).claim.order !== 'together';
   for (const c of pending) {

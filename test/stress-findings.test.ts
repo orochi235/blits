@@ -66,11 +66,11 @@ for (const [kind, holder] of Object.entries(nested)) {
 }
 
 // docs/schema.html, Time: "a stateless patch reads the same at any rate".
-test.fails('a span lays out its children the same at any frame rate', () => {
+test('a span lays out its children the same at any frame rate', () => {
   const at300 = (stepMs: number) => {
     const m = mix<Part, Pose>(K);
     m.sync(0);
-    const s = m.span({ start: 0, duration: 500, order: 'stagger', share: 0.5 });
+    const s = m.span({ start: 0, duration: 500, order: 'stagger', share: 0.9 });
     m.cue({
       owner: s,
       patch: ramp(200, 0, 1000),
@@ -93,6 +93,57 @@ test.fails('a span lays out its children the same at any frame rate', () => {
   };
   expect(at300(10)).toBeCloseTo(420, 6);
   expect(at300(25)).toBeCloseTo(420, 6);
+});
+
+test('queued, staggered and nested spans read the same at 24, 30, 40, 60, 61, 120 and 1000 fps', () => {
+  const ids = ['q1', 'q2', 'q3', 's1', 's2', 'n1', 'n2', 'n3'].map((id) => ({ id }));
+  const [q1, q2, q3, s1, s2, n1, n2, n3] = ids as [Part, Part, Part, Part, Part, Part, Part, Part];
+  const fit = { loop: false, faster: 2, slower: 2 } as const;
+  const run = (fps: number) => {
+    const m = mix<Part, Pose>(K);
+    m.sync(0);
+    const queue = m.span({ start: 0, duration: 600 });
+    m.cue({ owner: queue, patch: ramp(150, 0, 1000), subjects: [q1], ...fit });
+    m.cue({ owner: queue, patch: ramp(250, 0, 1000), subjects: [q2], ...fit });
+    m.cue({ owner: queue, patch: ramp(300, 0, 1000), subjects: [q3], ...fit });
+    const stagger = m.span({ start: 0, duration: 500, order: 'stagger', share: 0.9 });
+    m.cue({
+      owner: stagger,
+      patch: ramp(200, 0, 1000),
+      subjects: [s1],
+      ...fit,
+      faster: 3,
+      slower: 3,
+    });
+    m.cue({
+      owner: stagger,
+      patch: ramp(400, 0, 1000),
+      subjects: [s2],
+      ...fit,
+      faster: 3,
+      slower: 3,
+    });
+    const outer = m.span({ start: 0, duration: 800 });
+    const inner = m.span({ owner: outer, duration: 300 });
+    m.cue({ owner: inner, patch: ramp(130, 0, 1000), subjects: [n1], ...fit });
+    m.cue({ owner: inner, patch: ramp(210, 0, 1000), subjects: [n2], ...fit });
+    m.cue({ owner: outer, patch: ramp(370, 0, 1000), subjects: [n3], ...fit });
+    const checks = Array.from({ length: 20 }, (_, i) => 37 + 50 * i);
+    const steps = Array.from({ length: Math.ceil(fps) }, (_, i) => ((i + 1) * 1000) / fps);
+    const frames = [...new Set([...steps, ...checks])].sort((p, q) => p - q);
+    const reads: number[] = [];
+    for (const t of frames) {
+      m.sync(t);
+      if (checks.includes(t)) for (const s of ids) reads.push(m.probe(s).x);
+    }
+    return reads;
+  };
+  const want = run(1000);
+  for (const fps of [24, 30, 40, 60, 61, 120]) {
+    const got = run(fps);
+    for (const [i, v] of got.entries())
+      expect(v, `${fps} fps, read ${i}`).toBeCloseTo(want[i] as number, 6);
+  }
 });
 
 // docs/schema.html, Score, Seeking: "mix.seek(t) moves the live mix to mix time t, as it stood at the end of
