@@ -25,8 +25,11 @@ export class HistoryMiss extends Error {
 
 /** A transport's history store: what left memory, and what `prepare` loaded back. */
 export class Pager {
-  /** What the last `prepare` loaded, and every record paged since, until a seek or read takes it. */
-  loaded: { t: number; records: Paged[] } | null = null;
+  /**
+   * What the last `prepare` loaded at mix time `now`, and every record paged since, until a seek or
+   * read takes it, or memory's length of mix time passes.
+   */
+  loaded: { t: number; now: number; records: Paged[] } | null = null;
   /** The latest record paged, which a miss names. */
   last: { mix: string; stream: PagedStream } | null = null;
 
@@ -105,7 +108,12 @@ export function pageOut<I, O, E extends { at: number; seq: number }>(
 export function page(transport: Transport, records: Paged[], reach: number): void {
   const pager = transport.pager as Pager;
   pager.store.page(records);
-  pager.loaded?.records.push(...records);
+  const loaded = pager.loaded;
+  if (loaded !== null) {
+    // Left unread for longer than memory reaches, it is let go: the store still has it all.
+    if (transport.now - loaded.now > (transport.history?.ms ?? 0)) pager.loaded = null;
+    else loaded.records.push(...records);
+  }
   const last = records[records.length - 1] as Paged;
   pager.last = { mix: last.mix, stream: last.stream };
   if (reach > transport.floor) transport.floor = reach;
@@ -151,5 +159,5 @@ export async function prepare(transport: Transport, t: number): Promise<void> {
   const pager = transport.pager;
   if (pager === null || transport.reaches(t)) return;
   const records = await pager.store.load(t);
-  pager.loaded = { t, records: [...records] };
+  pager.loaded = { t, now: transport.now, records: [...records] };
 }

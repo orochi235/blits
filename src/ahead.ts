@@ -37,12 +37,11 @@ export function playAhead(
 ): Transport {
   const tape = transport.tape;
   const depth = tape?.undoDepth() ?? 0;
-  let played = false;
   try {
     for (;;) {
       const e = nextEvent(tape, c, t);
       if (!(e < t)) break;
-      played = playTo(transport, c, copies, e) || played;
+      playTo(transport, c, copies, e);
       if (!carries(c)) continue;
       // Placed now, as the next move would place them, while a target that has just left is here.
       for (const m of c.members) if (m.anchored > 0) place(m);
@@ -60,9 +59,10 @@ export function playAhead(
       }
       c = next;
     }
-    played = playTo(transport, c, copies, t) || played;
+    playTo(transport, c, copies, t);
   } finally {
-    if (played) tape?.goto(depth);
+    // A call that throws partway has moved the tape already, so this asks the tape, not `playTo`.
+    if (tape !== undefined && tape.undoDepth() !== depth) tape.goto(depth);
   }
   return c;
 }
@@ -114,19 +114,18 @@ function nextEvent(tape: Tape | undefined, c: Transport, t: number): number {
 
 /**
  * Makes the calls the tape holds up to mix time `to` on a read ahead's copies and moves them
- * there. Answers whether it moved the tape.
+ * there.
  */
 function playTo(
   transport: Transport,
   c: Transport,
   copies: Map<Mixer<unknown, unknown>, Mixer<unknown, unknown>>,
   to: number,
-): boolean {
+): void {
   const tape = transport.tape;
   const due = (at: number) => (c.pace === null ? at : c.pace.reading(at)) <= to;
   const next = tape?.timestampAt(tape.undoDepth());
   c.u = hostAhead(c, to);
-  let played = false;
   if (next !== undefined && due(next)) {
     // A call may write what a copy shares with the voice it was copied from.
     for (const copy of c.members)
@@ -134,7 +133,6 @@ function playTo(
         if (v.parts !== null) v.parts = new Map(v.parts);
         if (v.parted !== null) v.parted = new Map(v.parted);
       }
-    played = true;
     const last = replay(transport, due, c, {
       transport: () => c,
       mix: (of) => copies.get(of as unknown as Mixer<unknown, unknown>) as typeof of | undefined,
@@ -143,7 +141,6 @@ function playTo(
   }
   // A call played at `to` itself moved the copies there before it, as a sync does.
   if (!(c.now >= to)) for (const copy of c.members) move(copy, to);
-  return played;
 }
 
 /** A transport for a read ahead's copies to go on from where those on `c` stand. */

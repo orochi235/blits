@@ -219,9 +219,12 @@ function shapeOf<I, O>(
   at(ends);
   if (!voice.freezesAfter && Number.isFinite(ends)) {
     const over = reduced ? 0 : Number.isNaN(voice.outOver) ? (voice.fade.out ?? 0) : voice.outOver;
+    // Ended before its start, as a seek past its end leaves it, it fades from its start.
+    const fades = Math.max(voice.start, ends);
+    at(fades);
     if (over > 0) {
-      bent.push([ends, ends + over]);
-      at(ends + over);
+      bent.push([fades, fades + over]);
+      at(fades + over);
     }
     // It leaves when its latest subject ends, which a subject first met later can move.
     if (spec.stagger !== undefined) bent.push([time(span), Number.POSITIVE_INFINITY]);

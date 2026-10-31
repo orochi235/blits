@@ -8,6 +8,14 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A read ahead that throws partway, on a call the tape holds that it cannot play, puts the tape
+  back. It left the live tape moved past the call, so a later seek restored the wrong state.
+- Under `history`, a voice faded out of one subject is let go when history lets it go. The mix
+  held every such voice for good, and each `drop` walked them all.
+- What `prepare` loads is let go once `history.ms` of mix time passes without a seek or read
+  taking it. Until one did, the mix kept every record paged since, for good.
+- `trace` of a voice sought past its end, with a `fade.out`, follows the fade from the voice's
+  start, where the mix runs it. It called the run exact and read 0 throughout.
 - `weightOf` with lanes on reports the weight a subject was given when its voice moved onto a lane
   after the subject's probe that frame. It reported 0.
 - A `pull` right after two or more cues folds the new voices in voice order, as a probe does. It

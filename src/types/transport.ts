@@ -46,7 +46,8 @@ export interface Transport {
   /**
    * Loads from the history `store` what a seek or projection to `time` will need. That is, what
    * `seek(time)` and `project(time)` need where it reaches past memory. Without a store, or within
-   * memory, it loads nothing.
+   * memory, it loads nothing. What it loads is kept until a seek or read takes it, or until
+   * `history.ms` of mix time passes, after which the time needs `prepare` again.
    */
   prepare(time: number): Promise<void>;
   readonly now: number;

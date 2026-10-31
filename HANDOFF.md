@@ -273,6 +273,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      1% of a `spans` frame in `bench/runs/2026-10-31-spans-profile-due-list.txt`. One walk that
      also reads `heading` was profiled and was no faster
      (`bench/runs/2026-10-31-spans-profile-one-walk.txt`).
+   - **`inert` misses a motion subject met inside its stagger** (found by audit, 2026-10-31;
+     `test.fails` in `test/life-edges.test.ts`). A subject probed only during its `stagger` has no
+     run in the motion patch, so `still` (`src/rests.ts`) finds the motion landed and `inert` reads
+     true, though the next probe moves the subject. A ticker host probes before reading `inert`
+     and mostly misses it. Counting runs against `voice.seen` is not the fix: a subject at weight 0
+     never gets a run either, and lanes on and off then disagree (the differential suite catches
+     it). It needs a per-record mark for a subject met inside its stagger whose run has not
+     started, kept through seeks.
    - **Measured fine:** the feed (100 items/s, re-sorted and filtered) at 0.08 ms a read with no
      leaks; the cue stack against its model, except `from: 'current'` above; the deck's seeks and
      `done`s; and the kiosk over 72 simulated hours (keiei, `bench/runs/2026-10-31-stress-kiosk-72h.txt`):

@@ -76,6 +76,7 @@ export function goneIndex<I, O>(mix: Mixer<I, O>): GoneIndex<I, O> {
 /** Hands voices let go of from `gone` to the departed index, noting the latest that left. */
 function forgot<I, O>(mix: Mixer<I, O>, out: readonly Voice<I, O>[]): void {
   for (const v of out) {
+    mix.parters.delete(v);
     mix.departed.add(mix, v);
     if (v.doneAt > mix.transport.forgotTo) mix.transport.forgotTo = v.doneAt;
   }
