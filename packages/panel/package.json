@@ -1,6 +1,6 @@
 {
   "name": "@msb235/blits-panel",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "A debugger window for blits: every mix on the page, its voices and subjects, channels plotted over time, and a clock to pause, step and scrub",
   "keywords": [
     "blits",
@@ -50,7 +50,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@msb235/blits": "0.16.0",
+    "@msb235/blits": "0.16.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.0.0",

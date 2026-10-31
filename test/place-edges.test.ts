@@ -54,7 +54,7 @@ test('a span child placed at a start already past by a sibling lapsing starts in
   expect(m.probe(c).x).toBeCloseTo(7, 9);
 });
 
-// CHANGELOG 0.16.0 and Unreleased: a span lays out its children the same at any frame rate.
+// CHANGELOG 0.16.0 and 0.16.1: a span lays out its children the same at any frame rate.
 test('a sibling queued after a span sought ahead starts where that span lapses, at any frame rate', () => {
   const b = { id: 'b' };
   const run = (frames: number[]) => {
