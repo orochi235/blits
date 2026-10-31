@@ -2,7 +2,7 @@ import { settleArcs } from './arcs.js';
 import { changed } from './chain.js';
 import { elapsedWith } from './clock.js';
 import { byId, popDue, schedule } from './due.js';
-import { beginFade, part, retire, rouse, stay } from './fade.js';
+import { beginFade, part, release, retire, rouse, stay } from './fade.js';
 import { expireGone, keepGone } from './gone.js';
 import { begin, reorigin } from './held.js';
 import { noted } from './history.js';
@@ -13,7 +13,7 @@ import { mixAt, place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
 import { delist, detour } from './roster.js';
 import { scoredLeft, scoredRemove } from './scored.js';
-import { lapse, unfit } from './spans.js';
+import { type Fitting, lapse, lapses, unfit } from './spans.js';
 import { unplay } from './strays.js';
 import type { Voice } from './voice.js';
 
@@ -274,8 +274,10 @@ function meets<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): boolean
 /** `meets`, given what its owner's clock reads at `now`, `t`. */
 function meetsAt<I, O>(voice: Voice<I, O>, t: number, now: number): boolean {
   if (voice.state === 'pending') return starts(voice, t, now);
-  if (voice.state !== 'live' || !Number.isFinite(voice.span)) return false;
+  if (voice.state !== 'live') return false;
   const out = voice.out;
+  if (voice.fitting !== null) return out === null && lapses(voice, now);
+  if (!Number.isFinite(voice.span)) return false;
   if (out !== null && !(out.stays === true && out.back === true)) return false;
   const at = t === Number.NEGATIVE_INFINITY ? t : elapsedWith(voice, t);
   const edge = out === null ? voice.span + voice.latest : voice.soonest;
@@ -307,7 +309,13 @@ function inTurn<I, O>(mix: Mixer<I, O>, held: Voice<I, O>[], now: number): void 
       const v = waiting[i] as Voice<I, O>;
       if (v.state === 'done' || ended.includes(v) || !meets(mix, v, now)) continue;
       const t =
-        v.state === 'pending' ? startOf(v) : v.out !== null ? v.reaches(v.soonest) : v.endsAt();
+        v.state === 'pending'
+          ? startOf(v)
+          : v.fitting !== null
+            ? lapseOf(v)
+            : v.out !== null
+              ? v.reaches(v.soonest)
+              : v.endsAt();
       // At one time an end comes first, as a fit from it counts a start there as still to come.
       if (next === undefined || t < when || (t === when && rank(v) < rank(next))) {
         next = v;
@@ -321,7 +329,8 @@ function inTurn<I, O>(mix: Mixer<I, O>, held: Voice<I, O>[], now: number): void 
     } else if (next.out !== null) rouse(mix, next, now);
     else {
       ended.push(next);
-      visitOne(mix, next, now);
+      if (next.fitting !== null) release(mix, next, when);
+      else visitOne(mix, next, now);
       for (let o = next.owner; o?.fitting; o = o.owner) join(mix, o, now, waiting, ended);
     }
   }
@@ -330,6 +339,11 @@ function inTurn<I, O>(mix: Mixer<I, O>, held: Voice<I, O>[], now: number): void 
     const v = waiting[i] as Voice<I, O>;
     if (!ended.includes(v) && v.state !== 'done') visitOne(mix, v, now);
   }
+}
+
+/** When a span's budget ran out, mix time. */
+function lapseOf<I, O>(span: Voice<I, O>): number {
+  return span.timeAt((span.fitting as Fitting).budget);
 }
 
 /** Adds to `waiting` the children of `o` that meet `now` and have not yet ended this frame. */

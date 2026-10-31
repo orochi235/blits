@@ -336,10 +336,14 @@ export function lapse<I, O>(mix: Mixer<I, O>, now: number): void {
   // Those held first, cued after what holds them, so a span whose last span lapses goes with it.
   for (let i = owners.length - 1; i >= 0; i--) {
     const span = owners[i] as Voice<I, O>;
-    const f = span.fitting;
-    if (f === null || span.state === 'done' || span.out?.stays || !Number.isFinite(f.budget))
-      continue;
-    if (plays(span, now)) continue;
-    if (ownerReading(span, now) >= f.budget) release(mix, span, span.timeAt(f.budget));
+    if (span.out?.stays !== true && lapses(span, now))
+      release(mix, span, span.timeAt((span.fitting as Fitting).budget));
   }
+}
+
+/** Whether a span's budget is out by `now` with no child of it still playing. */
+export function lapses<I, O>(span: Voice<I, O>, now: number): boolean {
+  const f = span.fitting;
+  if (f === null || span.state === 'done' || !Number.isFinite(f.budget)) return false;
+  return !plays(span, now) && ownerReading(span, now) >= f.budget;
 }

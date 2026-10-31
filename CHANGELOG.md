@@ -8,6 +8,11 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A span whose budget runs out between two frames fits again from that moment, in turn with its
+  siblings' starts and ends: a child it places at a start already passed starts in that frame, and
+  one queued after it starts where it lapsed at any frame rate. The span lapsed only after the
+  frame had started its siblings, so a sibling whose old start the frame passed kept it, and one
+  placed in the past waited a frame to start.
 - An owner running back holds a child placed where its clock stands unplayed, whether or not a
   frame lands there. An owner cued backward with a child at 0 started that child, ended it, and
   left with it only when a frame fell exactly on the owner's start; otherwise both waited for good.
