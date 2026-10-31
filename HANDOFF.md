@@ -289,6 +289,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      to that frame places it at 140. Not fixed now: it needs the `ahead` pass (`src/move.ts`) to run
      placing on the clocks it runs forward, and visit plain children there too, the same rework
      the span-held case above needs.
+   - **The audit's fixes cost nothing measurable** (2026-10-31): 6f39479 against 47c144c, 7 rounds
+     on msb-uai, every row's U at 9 or more, geometric mean 0.998
+     (`bench/runs/2026-10-31-audit-fixes-vs-47c144c.txt`).
    - **Measured fine:** the feed (100 items/s, re-sorted and filtered) at 0.08 ms a read with no
      leaks; the cue stack against its model, except `from: 'current'` above; the deck's seeks and
      `done`s; and the kiosk over 72 simulated hours (keiei, `bench/runs/2026-10-31-stress-kiosk-72h.txt`):

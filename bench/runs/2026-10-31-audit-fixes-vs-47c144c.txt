@@ -1,0 +1,506 @@
+# msb-uai, onto do -solo: AB_EACH=1 AB_BENCH=bench/frame.mjs bench/ab.sh 47c144c . 7 fn keys role signal blend own spans churn tweens (. = 6f39479)
+  waiting for room
+msb-uai  chosen: 12.0 cores free, 17.9G available (bash -c AB_EACH=1 AB_BENCH=bench/frame.…: 1 past run, worst 0.2 cores / 0.0G)
+  studio   scored 56.90 against msb-uai's 60.03
+  keiei    scored 6.66 against msb-uai's 60.03
+  orochi   refuses rotation
+  teitou   it wants the node to itself, and the node is promised to blits-main-tests-94a0
+  base   6f394790
+  commits sent directly, 806.8 KiB (not on origin)
+  updated blits on msb-uai at 6f394790
+  job    382c78f7 on msb-uai
+
+built 47c144c (47c144c3f49149130f4fcd4acb6f2c677c969ed4)
+onto: blits is already set up
+onto: playwright-browsers-104e1ee57575 is already set up
+built the working tree
+== round 1/7 47c144c
+ 1/5  fn         N=   100 V=1     0.025 ms/frame    249 ns/subject·voice  p50    0.022  p99    0.047  worst    0.450  first     2.9 ms  gc    2    0.3 ms      43.1 kB/frame
+ 2/5  fn         N=  1000 V=1     0.142 ms/frame    142 ns/subject·voice  p50    0.137  p99    0.307  worst    0.883  first     2.1 ms  gc    6    1.1 ms     125.9 kB/frame
+ 3/5  fn         N=  1000 V=3     0.287 ms/frame     96 ns/subject·voice  p50    0.277  p99    0.492  worst    1.278  first     2.0 ms  gc    4    1.0 ms     254.2 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 4/5  fn         N=  1000 V=8     0.610 ms/frame     76 ns/subject·voice  p50    0.585  p99    0.876  worst    2.000  first     2.5 ms  gc    9    1.7 ms     612.8 kB/frame
+ 5/5  fn         N= 10000 V=3     2.897 ms/frame     97 ns/subject·voice  p50    2.754  p99    5.420  worst    7.791  first    12.5 ms  gc   24   14.3 ms    2470.2 kB/frame
+== round 1/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/3  keys       N=  1000 V=1     0.091 ms/frame     91 ns/subject·voice  p50    0.088  p99    0.107  worst    0.168  first     5.0 ms  gc    1    0.1 ms      44.4 kB/frame
+ 2/3  keys       N=  1000 V=3     0.149 ms/frame     50 ns/subject·voice  p50    0.144  p99    0.195  worst    0.254  first     2.2 ms  gc    1    0.9 ms      38.3 kB/frame
+ 3/3  keys       N= 10000 V=3     1.387 ms/frame     46 ns/subject·voice  p50    1.360  p99    1.567  worst    2.557  first    12.7 ms  gc    3    1.2 ms     160.1 kB/frame
+== round 1/7 47c144c
+ 1/1  role       N= 10000 V=3     3.529 ms/frame    118 ns/subject·voice  p50    3.408  p99    5.821  worst    6.140  first    27.6 ms  gc   12    6.8 ms    2431.9 kB/frame
+== round 1/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  signal     N= 10000 V=3     4.301 ms/frame    143 ns/subject·voice  p50    4.311  p99    5.400  worst    5.708  first    23.0 ms  gc   24    9.1 ms    2432.4 kB/frame
+== round 1/7 47c144c
+ 1/1  blend      N= 10000 V=3     4.260 ms/frame    142 ns/subject·voice  p50    4.132  p99    6.274  worst    7.187  first    27.1 ms  gc   13    6.7 ms    1806.3 kB/frame
+== round 1/7 47c144c
+ 1/2  own        N=   100 V=1     0.029 ms/frame    288 ns/subject·voice  p50    0.026  p99    0.045  worst    0.317  first     4.7 ms  gc    2    0.4 ms      36.4 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  own        N=  1000 V=1     0.210 ms/frame    210 ns/subject·voice  p50    0.206  p99    0.294  worst    0.329  first    49.4 ms  gc    5    0.4 ms     198.7 kB/frame
+== round 1/7 47c144c
+ 1/1  spans      N=  1000 V=1     0.144 ms/frame    144 ns/subject·voice  p50    0.107  p99    0.566  worst    0.957  first     6.9 ms  gc   11    4.2 ms     234.1 kB/frame
+== round 1/7 47c144c
+ 1/1  churn      N= 10000 V=1     0.877 ms/frame     88 ns/subject·voice  p50    0.872  p99    0.935  worst    0.978  first    46.1 ms  gc    1    2.4 ms      64.3 kB/frame
+== round 1/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/2  tweens     N= 10000 V=1     0.857 ms/frame     86 ns/subject·voice  p50    0.851  p99    0.953  worst    0.994  first    47.1 ms  gc    0    0.0 ms      12.1 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  tweens     N=100000 V=1     9.560 ms/frame     96 ns/subject·voice  p50    9.342  p99   11.770  worst   14.963  first   387.8 ms  gc    2    4.4 ms       4.3 kB/frame
+== round 1/7 .
+ 1/5  fn         N=   100 V=1     0.024 ms/frame    243 ns/subject·voice  p50    0.020  p99    0.050  worst    0.479  first     2.9 ms  gc    2    0.3 ms      43.0 kB/frame
+ 2/5  fn         N=  1000 V=1     0.140 ms/frame    140 ns/subject·voice  p50    0.133  p99    0.235  worst    0.896  first     2.0 ms  gc    6    0.6 ms     123.1 kB/frame
+ 3/5  fn         N=  1000 V=3     0.277 ms/frame     92 ns/subject·voice  p50    0.268  p99    0.527  worst    1.200  first     2.5 ms  gc    4    0.7 ms     253.6 kB/frame
+ 4/5  fn         N=  1000 V=8     0.607 ms/frame     76 ns/subject·voice  p50    0.579  p99    0.856  worst    2.036  first     2.5 ms  gc    9    1.7 ms     613.0 kB/frame
+ 5/5  fn         N= 10000 V=3     2.803 ms/frame     93 ns/subject·voice  p50    2.725  p99    3.800  worst    9.028  first    18.4 ms  gc   25   11.6 ms    2473.2 kB/frame
+== round 1/7 .
+ 1/3  keys       N=  1000 V=1     0.093 ms/frame     93 ns/subject·voice  p50    0.091  p99    0.119  worst    0.183  first     5.2 ms  gc    1    0.1 ms      30.8 kB/frame
+ 2/3  keys       N=  1000 V=3     0.150 ms/frame     50 ns/subject·voice  p50    0.145  p99    0.197  worst    0.227  first     2.2 ms  gc    1    0.9 ms      51.8 kB/frame
+ 3/3  keys       N= 10000 V=3     1.392 ms/frame     46 ns/subject·voice  p50    1.372  p99    1.561  worst    2.499  first    12.9 ms  gc    3    1.2 ms     161.5 kB/frame
+== round 1/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.426 ms/frame    114 ns/subject·voice  p50    3.306  p99    5.125  worst    5.845  first    26.9 ms  gc   12    6.3 ms    2431.0 kB/frame
+== round 1/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  signal     N= 10000 V=3     3.909 ms/frame    130 ns/subject·voice  p50    3.734  p99    5.682  worst    7.400  first    22.7 ms  gc   24    9.9 ms    2441.4 kB/frame
+== round 1/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  blend      N= 10000 V=3     3.815 ms/frame    127 ns/subject·voice  p50    3.685  p99    5.332  worst    6.009  first    28.2 ms  gc   11    6.0 ms    1805.8 kB/frame
+== round 1/7 .
+ 1/2  own        N=   100 V=1     0.029 ms/frame    285 ns/subject·voice  p50    0.026  p99    0.047  worst    0.347  first     4.7 ms  gc    2    0.4 ms      36.0 kB/frame
+ 2/2  own        N=  1000 V=1     0.203 ms/frame    203 ns/subject·voice  p50    0.197  p99    0.258  worst    0.313  first    47.9 ms  gc    5    0.3 ms     198.7 kB/frame
+== round 1/7 .
+ 1/1  spans      N=  1000 V=1     0.178 ms/frame    178 ns/subject·voice  p50    0.114  p99    0.448  worst    4.769  first     6.3 ms  gc    2    4.7 ms     263.7 kB/frame
+== round 1/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  churn      N= 10000 V=1     0.919 ms/frame     92 ns/subject·voice  p50    0.910  p99    1.061  worst    1.127  first    47.8 ms  gc    1    2.4 ms      50.5 kB/frame
+== round 1/7 .
+ 1/2  tweens     N= 10000 V=1     0.850 ms/frame     85 ns/subject·voice  p50    0.840  p99    0.928  worst    0.950  first    45.8 ms  gc    9    8.4 ms      10.6 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  tweens     N=100000 V=1     9.467 ms/frame     95 ns/subject·voice  p50    9.245  p99   13.350  worst   14.025  first   368.9 ms  gc    0    0.0 ms       3.9 kB/frame
+== round 2/7 .
+ 1/5  fn         N=   100 V=1     0.025 ms/frame    245 ns/subject·voice  p50    0.022  p99    0.055  worst    0.432  first     2.9 ms  gc    2    0.3 ms      46.0 kB/frame
+ 2/5  fn         N=  1000 V=1     0.143 ms/frame    143 ns/subject·voice  p50    0.137  p99    0.220  worst    0.859  first     1.9 ms  gc    7    1.0 ms     128.9 kB/frame
+ 3/5  fn         N=  1000 V=3     0.284 ms/frame     95 ns/subject·voice  p50    0.276  p99    0.473  worst    1.214  first     1.9 ms  gc   10    1.2 ms     251.8 kB/frame
+ 4/5  fn         N=  1000 V=8     0.581 ms/frame     73 ns/subject·voice  p50    0.560  p99    0.762  worst    2.042  first     2.5 ms  gc   12    1.7 ms     614.5 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 5/5  fn         N= 10000 V=3     2.844 ms/frame     95 ns/subject·voice  p50    2.704  p99    5.348  worst    9.380  first    12.8 ms  gc   25   10.7 ms    2471.3 kB/frame
+== round 2/7 .
+ 1/3  keys       N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.086  p99    0.106  worst    0.167  first     5.3 ms  gc    1    0.1 ms      32.5 kB/frame
+ 2/3  keys       N=  1000 V=3     0.146 ms/frame     49 ns/subject·voice  p50    0.141  p99    0.194  worst    0.230  first     2.1 ms  gc    1    0.8 ms      44.1 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 3/3  keys       N= 10000 V=3     1.373 ms/frame     46 ns/subject·voice  p50    1.332  p99    1.797  worst    2.713  first    13.0 ms  gc    3    1.4 ms     160.7 kB/frame
+== round 2/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.499 ms/frame    117 ns/subject·voice  p50    3.400  p99    5.240  worst    5.568  first    26.2 ms  gc   12    5.7 ms    2432.6 kB/frame
+== round 2/7 .
+ 1/1  signal     N= 10000 V=3     3.835 ms/frame    128 ns/subject·voice  p50    3.609  p99    5.495  worst    7.347  first    22.6 ms  gc   14    7.3 ms    2431.9 kB/frame
+== round 2/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  blend      N= 10000 V=3     3.795 ms/frame    127 ns/subject·voice  p50    3.693  p99    5.408  worst    6.693  first    27.7 ms  gc   13    6.2 ms    1805.0 kB/frame
+== round 2/7 .
+ 1/2  own        N=   100 V=1     0.028 ms/frame    280 ns/subject·voice  p50    0.026  p99    0.044  worst    0.305  first     4.7 ms  gc    2    0.3 ms      38.0 kB/frame
+ 2/2  own        N=  1000 V=1     0.206 ms/frame    206 ns/subject·voice  p50    0.203  p99    0.262  worst    0.295  first    47.9 ms  gc    5    0.3 ms     198.6 kB/frame
+== round 2/7 .
+ 1/1  spans      N=  1000 V=1     0.148 ms/frame    148 ns/subject·voice  p50    0.106  p99    0.484  worst    1.127  first     6.2 ms  gc   11    3.2 ms     218.7 kB/frame
+== round 2/7 .
+ 1/1  churn      N= 10000 V=1     0.868 ms/frame     87 ns/subject·voice  p50    0.862  p99    0.943  worst    0.984  first    45.8 ms  gc    1    2.2 ms      42.1 kB/frame
+== round 2/7 .
+ 1/2  tweens     N= 10000 V=1     0.823 ms/frame     82 ns/subject·voice  p50    0.820  p99    0.870  worst    0.918  first    45.8 ms  gc    0    0.0 ms      13.3 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  tweens     N=100000 V=1     9.338 ms/frame     93 ns/subject·voice  p50    9.188  p99   11.133  worst   11.314  first   396.6 ms  gc    0    0.0 ms       4.2 kB/frame
+== round 2/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/5  fn         N=   100 V=1     0.024 ms/frame    243 ns/subject·voice  p50    0.021  p99    0.042  worst    0.445  first     2.8 ms  gc    2    0.3 ms      40.6 kB/frame
+ 2/5  fn         N=  1000 V=1     0.142 ms/frame    142 ns/subject·voice  p50    0.135  p99    0.213  worst    0.831  first     1.9 ms  gc    7    1.0 ms     133.9 kB/frame
+ 3/5  fn         N=  1000 V=3     0.267 ms/frame     89 ns/subject·voice  p50    0.259  p99    0.470  worst    1.150  first     1.4 ms  gc   10    1.2 ms     251.7 kB/frame
+ 4/5  fn         N=  1000 V=8     0.579 ms/frame     72 ns/subject·voice  p50    0.559  p99    0.747  worst    2.007  first     2.3 ms  gc   12    1.7 ms     614.0 kB/frame
+ 5/5  fn         N= 10000 V=3     3.019 ms/frame    101 ns/subject·voice  p50    2.866  p99    5.357  worst    9.415  first     9.9 ms  gc   25   11.6 ms    2471.8 kB/frame
+== round 2/7 47c144c
+ 1/3  keys       N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.086  p99    0.107  worst    0.160  first     4.9 ms  gc    1    0.1 ms      38.8 kB/frame
+ 2/3  keys       N=  1000 V=3     0.145 ms/frame     48 ns/subject·voice  p50    0.140  p99    0.192  worst    0.227  first     2.1 ms  gc    1    0.8 ms      52.1 kB/frame
+ 3/3  keys       N= 10000 V=3     1.340 ms/frame     45 ns/subject·voice  p50    1.315  p99    1.515  worst    2.732  first    12.1 ms  gc    3    1.4 ms     160.6 kB/frame
+== round 2/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.461 ms/frame    115 ns/subject·voice  p50    3.327  p99    5.261  worst    6.845  first    25.4 ms  gc   12    6.2 ms    2432.7 kB/frame
+== round 2/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  signal     N= 10000 V=3     3.686 ms/frame    123 ns/subject·voice  p50    3.635  p99    4.440  worst    5.249  first    22.3 ms  gc   35   13.4 ms    2430.3 kB/frame
+== round 2/7 47c144c
+ 1/1  blend      N= 10000 V=3     3.773 ms/frame    126 ns/subject·voice  p50    3.649  p99    5.280  worst    6.773  first    26.5 ms  gc   13    5.7 ms    1806.4 kB/frame
+== round 2/7 47c144c
+ 1/2  own        N=   100 V=1     0.029 ms/frame    288 ns/subject·voice  p50    0.027  p99    0.046  worst    0.297  first     4.7 ms  gc    2    0.3 ms      35.5 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  own        N=  1000 V=1     0.206 ms/frame    206 ns/subject·voice  p50    0.204  p99    0.270  worst    0.303  first    47.3 ms  gc    5    0.3 ms     197.3 kB/frame
+== round 2/7 47c144c
+ 1/1  spans      N=  1000 V=1     0.169 ms/frame    169 ns/subject·voice  p50    0.110  p99    0.456  worst    2.649  first     6.3 ms  gc    2    2.5 ms     269.1 kB/frame
+== round 2/7 47c144c
+ 1/1  churn      N= 10000 V=1     0.889 ms/frame     89 ns/subject·voice  p50    0.873  p99    0.993  worst    1.008  first    46.3 ms  gc    1    2.4 ms      45.9 kB/frame
+== round 2/7 47c144c
+ 1/2  tweens     N= 10000 V=1     0.840 ms/frame     84 ns/subject·voice  p50    0.823  p99    1.015  worst    1.190  first    44.7 ms  gc    9   11.0 ms      10.4 kB/frame
+ 2/2  tweens     N=100000 V=1     9.441 ms/frame     94 ns/subject·voice  p50    9.232  p99   11.204  worst   19.543  first   323.5 ms  gc    1    7.0 ms       4.8 kB/frame
+== round 3/7 47c144c
+ 1/5  fn         N=   100 V=1     0.025 ms/frame    248 ns/subject·voice  p50    0.022  p99    0.043  worst    0.480  first     2.9 ms  gc    2    0.3 ms      47.3 kB/frame
+ 2/5  fn         N=  1000 V=1     0.137 ms/frame    137 ns/subject·voice  p50    0.130  p99    0.271  worst    0.879  first     2.0 ms  gc    7    1.3 ms     130.2 kB/frame
+ 3/5  fn         N=  1000 V=3     0.284 ms/frame     95 ns/subject·voice  p50    0.275  p99    0.471  worst    1.157  first     1.3 ms  gc   10    1.4 ms     252.1 kB/frame
+ 4/5  fn         N=  1000 V=8     0.625 ms/frame     78 ns/subject·voice  p50    0.603  p99    0.840  worst    2.057  first     2.4 ms  gc   12    1.7 ms     611.8 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 5/5  fn         N= 10000 V=3     2.945 ms/frame     98 ns/subject·voice  p50    2.706  p99    5.972  worst    9.643  first     9.9 ms  gc   25   12.8 ms    2471.1 kB/frame
+== round 3/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/3  keys       N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.087  p99    0.106  worst    0.161  first     5.0 ms  gc    1    0.1 ms      42.3 kB/frame
+ 2/3  keys       N=  1000 V=3     0.148 ms/frame     49 ns/subject·voice  p50    0.144  p99    0.195  worst    0.226  first     2.1 ms  gc    1    0.8 ms      50.8 kB/frame
+ 3/3  keys       N= 10000 V=3     1.359 ms/frame     45 ns/subject·voice  p50    1.324  p99    1.505  worst    2.390  first    12.2 ms  gc    3    1.1 ms     160.5 kB/frame
+== round 3/7 47c144c
+ 1/1  role       N= 10000 V=3     3.423 ms/frame    114 ns/subject·voice  p50    3.313  p99    4.681  worst    5.819  first    27.0 ms  gc   12    6.2 ms    2433.2 kB/frame
+== round 3/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  signal     N= 10000 V=3     3.855 ms/frame    129 ns/subject·voice  p50    3.670  p99    5.452  worst    6.876  first    22.3 ms  gc   13    6.4 ms    2432.2 kB/frame
+== round 3/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  blend      N= 10000 V=3     4.013 ms/frame    134 ns/subject·voice  p50    3.918  p99    5.760  worst    6.867  first    26.4 ms  gc   12    5.9 ms    1810.2 kB/frame
+== round 3/7 47c144c
+ 1/2  own        N=   100 V=1     0.030 ms/frame    300 ns/subject·voice  p50    0.027  p99    0.053  worst    0.488  first     4.8 ms  gc    2    0.5 ms      36.9 kB/frame
+ 2/2  own        N=  1000 V=1     0.206 ms/frame    206 ns/subject·voice  p50    0.200  p99    0.259  worst    0.302  first    51.0 ms  gc    5    0.3 ms     196.9 kB/frame
+== round 3/7 47c144c
+ 1/1  spans      N=  1000 V=1     0.171 ms/frame    171 ns/subject·voice  p50    0.112  p99    0.453  worst    2.897  first     6.3 ms  gc    2    2.8 ms     281.4 kB/frame
+== round 3/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  churn      N= 10000 V=1     0.882 ms/frame     88 ns/subject·voice  p50    0.871  p99    1.001  worst    1.396  first    43.9 ms  gc    1    2.3 ms      52.5 kB/frame
+== round 3/7 47c144c
+ 1/2  tweens     N= 10000 V=1     0.828 ms/frame     83 ns/subject·voice  p50    0.823  p99    0.884  worst    0.930  first    48.2 ms  gc    0    0.0 ms      12.8 kB/frame
+ 2/2  tweens     N=100000 V=1     9.481 ms/frame     95 ns/subject·voice  p50    9.326  p99   11.207  worst   11.266  first   342.4 ms  gc    2    4.1 ms       5.7 kB/frame
+== round 3/7 .
+ 1/5  fn         N=   100 V=1     0.025 ms/frame    246 ns/subject·voice  p50    0.021  p99    0.046  worst    0.446  first     2.9 ms  gc    2    0.3 ms      43.1 kB/frame
+ 2/5  fn         N=  1000 V=1     0.142 ms/frame    142 ns/subject·voice  p50    0.136  p99    0.215  worst    0.843  first     1.9 ms  gc    6    0.5 ms     126.6 kB/frame
+ 3/5  fn         N=  1000 V=3     0.271 ms/frame     90 ns/subject·voice  p50    0.261  p99    0.342  worst    1.118  first     2.3 ms  gc    4    0.6 ms     254.8 kB/frame
+ 4/5  fn         N=  1000 V=8     0.589 ms/frame     74 ns/subject·voice  p50    0.566  p99    0.757  worst    1.990  first     2.4 ms  gc    9    1.4 ms     612.2 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 5/5  fn         N= 10000 V=3     2.851 ms/frame     95 ns/subject·voice  p50    2.734  p99    3.779  worst    8.997  first    17.1 ms  gc   25   10.6 ms    2474.0 kB/frame
+== round 3/7 .
+ 1/3  keys       N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.086  p99    0.108  worst    0.170  first     5.2 ms  gc    1    0.1 ms      37.7 kB/frame
+ 2/3  keys       N=  1000 V=3     0.130 ms/frame     43 ns/subject·voice  p50    0.127  p99    0.151  worst    0.169  first     2.1 ms  gc    0    0.0 ms      28.8 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 3/3  keys       N= 10000 V=3     1.321 ms/frame     44 ns/subject·voice  p50    1.314  p99    1.442  worst    1.666  first    11.3 ms  gc    3    0.5 ms     162.2 kB/frame
+== round 3/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.583 ms/frame    119 ns/subject·voice  p50    3.462  p99    5.016  worst    6.512  first    26.0 ms  gc   20   10.9 ms    2434.1 kB/frame
+== round 3/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  signal     N= 10000 V=3     3.799 ms/frame    127 ns/subject·voice  p50    3.708  p99    5.274  worst    5.771  first    23.4 ms  gc   23   12.9 ms    2436.7 kB/frame
+== round 3/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  blend      N= 10000 V=3     3.850 ms/frame    128 ns/subject·voice  p50    3.737  p99    5.300  worst    6.458  first    29.6 ms  gc   13    5.0 ms    1809.2 kB/frame
+== round 3/7 .
+ 1/2  own        N=   100 V=1     0.028 ms/frame    282 ns/subject·voice  p50    0.026  p99    0.045  worst    0.334  first     4.7 ms  gc    2    0.4 ms      40.2 kB/frame
+ 2/2  own        N=  1000 V=1     0.214 ms/frame    214 ns/subject·voice  p50    0.207  p99    0.265  worst    0.295  first    47.6 ms  gc    5    0.3 ms     214.2 kB/frame
+== round 3/7 .
+ 1/1  spans      N=  1000 V=1     0.141 ms/frame    141 ns/subject·voice  p50    0.105  p99    0.482  worst    0.858  first     6.4 ms  gc   11    3.2 ms     236.3 kB/frame
+== round 3/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  churn      N= 10000 V=1     0.864 ms/frame     86 ns/subject·voice  p50    0.858  p99    0.954  worst    0.978  first    46.6 ms  gc    1    2.1 ms      35.2 kB/frame
+== round 3/7 .
+ 1/2  tweens     N= 10000 V=1     0.844 ms/frame     84 ns/subject·voice  p50    0.837  p99    0.928  worst    0.961  first    51.5 ms  gc    0    0.0 ms      18.3 kB/frame
+ 2/2  tweens     N=100000 V=1     9.325 ms/frame     93 ns/subject·voice  p50    9.161  p99   11.292  worst   11.793  first   365.9 ms  gc    0    0.0 ms       4.0 kB/frame
+== round 4/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/5  fn         N=   100 V=1     0.025 ms/frame    254 ns/subject·voice  p50    0.020  p99    0.075  worst    0.507  first     3.0 ms  gc    2    0.4 ms      45.9 kB/frame
+ 2/5  fn         N=  1000 V=1     0.149 ms/frame    149 ns/subject·voice  p50    0.142  p99    0.254  worst    0.927  first     2.1 ms  gc    6    0.6 ms     123.5 kB/frame
+ 3/5  fn         N=  1000 V=3     0.276 ms/frame     92 ns/subject·voice  p50    0.267  p99    0.406  worst    1.105  first     2.3 ms  gc    4    0.7 ms     255.3 kB/frame
+ 4/5  fn         N=  1000 V=8     0.609 ms/frame     76 ns/subject·voice  p50    0.586  p99    0.839  worst    2.122  first     2.5 ms  gc    9    1.6 ms     612.0 kB/frame
+ 5/5  fn         N= 10000 V=3     2.751 ms/frame     92 ns/subject·voice  p50    2.648  p99    3.400  worst    8.889  first    17.4 ms  gc   25    9.9 ms    2473.6 kB/frame
+== round 4/7 .
+ 1/3  keys       N=  1000 V=1     0.090 ms/frame     90 ns/subject·voice  p50    0.088  p99    0.110  worst    0.164  first     5.2 ms  gc    1    0.1 ms      30.6 kB/frame
+ 2/3  keys       N=  1000 V=3     0.147 ms/frame     49 ns/subject·voice  p50    0.142  p99    0.193  worst    0.238  first     2.1 ms  gc    1    0.9 ms      43.8 kB/frame
+ 3/3  keys       N= 10000 V=3     1.346 ms/frame     45 ns/subject·voice  p50    1.321  p99    1.520  worst    2.477  first    12.8 ms  gc    3    1.1 ms     160.9 kB/frame
+== round 4/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.338 ms/frame    111 ns/subject·voice  p50    3.187  p99    4.747  worst    5.135  first    27.5 ms  gc   12    6.0 ms    2431.0 kB/frame
+== round 4/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  signal     N= 10000 V=3     3.583 ms/frame    119 ns/subject·voice  p50    3.448  p99    4.528  worst    5.612  first    22.7 ms  gc   24    7.3 ms    2440.2 kB/frame
+== round 4/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  blend      N= 10000 V=3     3.829 ms/frame    128 ns/subject·voice  p50    3.693  p99    5.300  worst    5.801  first    27.2 ms  gc   11    5.1 ms    1807.0 kB/frame
+== round 4/7 .
+ 1/2  own        N=   100 V=1     0.028 ms/frame    284 ns/subject·voice  p50    0.026  p99    0.041  worst    0.375  first     4.7 ms  gc    2    0.4 ms      37.7 kB/frame
+ 2/2  own        N=  1000 V=1     0.207 ms/frame    207 ns/subject·voice  p50    0.202  p99    0.265  worst    0.310  first    47.3 ms  gc    5    0.3 ms     200.8 kB/frame
+== round 4/7 .
+ 1/1  spans      N=  1000 V=1     0.161 ms/frame    161 ns/subject·voice  p50    0.115  p99    0.473  worst    1.927  first     6.8 ms  gc   11    4.5 ms     238.2 kB/frame
+== round 4/7 .
+ 1/1  churn      N= 10000 V=1     0.870 ms/frame     87 ns/subject·voice  p50    0.863  p99    0.937  worst    0.982  first    50.2 ms  gc    1    2.2 ms      47.5 kB/frame
+== round 4/7 .
+ 1/2  tweens     N= 10000 V=1     0.834 ms/frame     83 ns/subject·voice  p50    0.830  p99    0.889  worst    0.949  first    45.1 ms  gc    0    0.0 ms      11.4 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  tweens     N=100000 V=1     9.806 ms/frame     98 ns/subject·voice  p50    9.254  p99   13.613  worst   15.678  first   371.9 ms  gc    0    0.0 ms       3.5 kB/frame
+== round 4/7 47c144c
+ 1/5  fn         N=   100 V=1     0.024 ms/frame    242 ns/subject·voice  p50    0.021  p99    0.041  worst    0.446  first     2.8 ms  gc    2    0.3 ms      42.0 kB/frame
+ 2/5  fn         N=  1000 V=1     0.138 ms/frame    138 ns/subject·voice  p50    0.133  p99    0.201  worst    0.848  first     1.9 ms  gc    6    0.4 ms     134.4 kB/frame
+ 3/5  fn         N=  1000 V=3     0.270 ms/frame     90 ns/subject·voice  p50    0.262  p99    0.335  worst    1.092  first     1.9 ms  gc    4    0.6 ms     260.0 kB/frame
+ 4/5  fn         N=  1000 V=8     0.622 ms/frame     78 ns/subject·voice  p50    0.597  p99    0.917  worst    2.055  first     2.3 ms  gc    9    1.5 ms     612.9 kB/frame
+ 5/5  fn         N= 10000 V=3     2.625 ms/frame     87 ns/subject·voice  p50    2.519  p99    3.182  worst    8.806  first    18.6 ms  gc   25    9.6 ms    2470.2 kB/frame
+== round 4/7 47c144c
+ 1/3  keys       N=  1000 V=1     0.090 ms/frame     90 ns/subject·voice  p50    0.087  p99    0.112  worst    0.179  first     5.0 ms  gc    1    0.1 ms      41.7 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/3  keys       N=  1000 V=3     0.151 ms/frame     50 ns/subject·voice  p50    0.145  p99    0.205  worst    0.287  first     2.1 ms  gc    1    1.0 ms      49.7 kB/frame
+ 3/3  keys       N= 10000 V=3     1.355 ms/frame     45 ns/subject·voice  p50    1.324  p99    1.618  worst    2.636  first    13.1 ms  gc    3    1.4 ms     160.2 kB/frame
+== round 4/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.449 ms/frame    115 ns/subject·voice  p50    3.331  p99    5.155  worst    5.531  first    25.6 ms  gc   12    6.1 ms    2433.4 kB/frame
+== round 4/7 47c144c
+ 1/1  signal     N= 10000 V=3     3.586 ms/frame    120 ns/subject·voice  p50    3.477  p99    4.220  worst    4.775  first    24.0 ms  gc   24    6.8 ms    2436.4 kB/frame
+== round 4/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  blend      N= 10000 V=3     3.971 ms/frame    132 ns/subject·voice  p50    3.873  p99    5.290  worst    6.348  first    26.2 ms  gc   11    5.3 ms    1809.5 kB/frame
+== round 4/7 47c144c
+ 1/2  own        N=   100 V=1     0.028 ms/frame    281 ns/subject·voice  p50    0.026  p99    0.042  worst    0.285  first     4.7 ms  gc    2    0.3 ms      37.0 kB/frame
+ 2/2  own        N=  1000 V=1     0.205 ms/frame    205 ns/subject·voice  p50    0.201  p99    0.265  worst    0.316  first    47.4 ms  gc    5    0.3 ms     197.6 kB/frame
+== round 4/7 47c144c
+ 1/1  spans      N=  1000 V=1     0.170 ms/frame    170 ns/subject·voice  p50    0.110  p99    0.476  worst    2.907  first     6.3 ms  gc    2    2.8 ms     274.9 kB/frame
+== round 4/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  churn      N= 10000 V=1     0.872 ms/frame     87 ns/subject·voice  p50    0.866  p99    0.959  worst    1.000  first    43.0 ms  gc    1    2.1 ms      41.5 kB/frame
+== round 4/7 47c144c
+ 1/2  tweens     N= 10000 V=1     0.842 ms/frame     84 ns/subject·voice  p50    0.835  p99    0.922  worst    0.981  first    45.4 ms  gc    0    0.0 ms      16.3 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  tweens     N=100000 V=1     9.774 ms/frame     98 ns/subject·voice  p50    9.402  p99   11.445  worst   11.921  first   342.5 ms  gc    0    0.0 ms      19.3 kB/frame
+== round 5/7 47c144c
+ 1/5  fn         N=   100 V=1     0.024 ms/frame    245 ns/subject·voice  p50    0.021  p99    0.049  worst    0.482  first     2.8 ms  gc    2    0.3 ms      42.1 kB/frame
+ 2/5  fn         N=  1000 V=1     0.142 ms/frame    142 ns/subject·voice  p50    0.137  p99    0.263  worst    0.844  first     1.9 ms  gc    6    0.8 ms     133.6 kB/frame
+ 3/5  fn         N=  1000 V=3     0.266 ms/frame     89 ns/subject·voice  p50    0.256  p99    0.355  worst    1.096  first     2.0 ms  gc    4    0.6 ms     258.6 kB/frame
+ 4/5  fn         N=  1000 V=8     0.605 ms/frame     76 ns/subject·voice  p50    0.579  p99    0.781  worst    1.975  first     2.3 ms  gc    9    1.4 ms     613.1 kB/frame
+ 5/5  fn         N= 10000 V=3     2.659 ms/frame     89 ns/subject·voice  p50    2.546  p99    3.590  worst    8.996  first    17.7 ms  gc   25   10.3 ms    2472.7 kB/frame
+== round 5/7 47c144c
+ 1/3  keys       N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.087  p99    0.107  worst    0.166  first     4.9 ms  gc    1    0.1 ms      41.8 kB/frame
+ 2/3  keys       N=  1000 V=3     0.148 ms/frame     49 ns/subject·voice  p50    0.143  p99    0.192  worst    0.222  first     2.0 ms  gc    1    0.8 ms      39.3 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 3/3  keys       N= 10000 V=3     1.356 ms/frame     45 ns/subject·voice  p50    1.333  p99    1.509  worst    2.319  first    11.6 ms  gc    3    1.0 ms     160.5 kB/frame
+== round 5/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.630 ms/frame    121 ns/subject·voice  p50    3.495  p99    5.117  worst    5.901  first    25.8 ms  gc   12    6.0 ms    2432.2 kB/frame
+== round 5/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  signal     N= 10000 V=3     3.525 ms/frame    117 ns/subject·voice  p50    3.407  p99    4.357  worst    4.753  first    22.6 ms  gc   24    7.0 ms    2439.7 kB/frame
+== round 5/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  blend      N= 10000 V=3     3.840 ms/frame    128 ns/subject·voice  p50    3.740  p99    5.438  worst    5.649  first    27.4 ms  gc   11    4.7 ms    1806.7 kB/frame
+== round 5/7 47c144c
+ 1/2  own        N=   100 V=1     0.028 ms/frame    285 ns/subject·voice  p50    0.026  p99    0.041  worst    0.323  first     4.7 ms  gc    3    0.6 ms      36.2 kB/frame
+ 2/2  own        N=  1000 V=1     0.206 ms/frame    206 ns/subject·voice  p50    0.199  p99    0.264  worst    0.317  first    47.8 ms  gc    5    0.3 ms     196.7 kB/frame
+== round 5/7 47c144c
+ 1/1  spans      N=  1000 V=1     0.171 ms/frame    171 ns/subject·voice  p50    0.112  p99    0.466  worst    2.643  first     6.3 ms  gc    2    2.5 ms     267.6 kB/frame
+== round 5/7 47c144c
+ 1/1  churn      N= 10000 V=1     0.893 ms/frame     89 ns/subject·voice  p50    0.873  p99    1.023  worst    1.518  first    46.1 ms  gc    1    2.2 ms      44.8 kB/frame
+== round 5/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/2  tweens     N= 10000 V=1     0.835 ms/frame     83 ns/subject·voice  p50    0.826  p99    0.922  worst    0.934  first    42.3 ms  gc    0    0.0 ms      14.3 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  tweens     N=100000 V=1     9.485 ms/frame     95 ns/subject·voice  p50    9.211  p99   11.627  worst   16.520  first   319.5 ms  gc    1    7.2 ms       9.6 kB/frame
+== round 5/7 .
+ 1/5  fn         N=   100 V=1     0.025 ms/frame    246 ns/subject·voice  p50    0.021  p99    0.042  worst    0.441  first     2.9 ms  gc    2    0.3 ms      44.7 kB/frame
+ 2/5  fn         N=  1000 V=1     0.142 ms/frame    142 ns/subject·voice  p50    0.136  p99    0.220  worst    0.856  first     1.9 ms  gc    7    1.0 ms     127.0 kB/frame
+ 3/5  fn         N=  1000 V=3     0.271 ms/frame     90 ns/subject·voice  p50    0.263  p99    0.446  worst    1.132  first     1.7 ms  gc   10    1.2 ms     252.1 kB/frame
+ 4/5  fn         N=  1000 V=8     0.596 ms/frame     75 ns/subject·voice  p50    0.570  p99    0.819  worst    2.083  first     2.4 ms  gc   12    1.8 ms     615.2 kB/frame
+ 5/5  fn         N= 10000 V=3     2.834 ms/frame     94 ns/subject·voice  p50    2.688  p99    5.298  worst    9.142  first    10.1 ms  gc   25   10.9 ms    2471.3 kB/frame
+== round 5/7 .
+ 1/3  keys       N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.088  p99    0.108  worst    0.180  first     5.3 ms  gc    1    0.1 ms      44.7 kB/frame
+ 2/3  keys       N=  1000 V=3     0.128 ms/frame     43 ns/subject·voice  p50    0.126  p99    0.156  worst    0.172  first     2.1 ms  gc    0    0.0 ms      23.8 kB/frame
+ 3/3  keys       N= 10000 V=3     1.388 ms/frame     46 ns/subject·voice  p50    1.346  p99    1.771  worst    2.765  first    11.4 ms  gc    3    1.2 ms     162.3 kB/frame
+== round 5/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.230 ms/frame    108 ns/subject·voice  p50    3.122  p99    4.674  worst    4.919  first    26.1 ms  gc   12    5.9 ms    2431.9 kB/frame
+== round 5/7 .
+ 1/1  signal     N= 10000 V=3     4.118 ms/frame    137 ns/subject·voice  p50    4.000  p99    5.016  worst    5.792  first    22.7 ms  gc   24    7.4 ms    2432.3 kB/frame
+== round 5/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  blend      N= 10000 V=3     3.825 ms/frame    128 ns/subject·voice  p50    3.708  p99    5.560  worst    6.272  first    27.2 ms  gc   11    5.6 ms    1808.0 kB/frame
+== round 5/7 .
+ 1/2  own        N=   100 V=1     0.029 ms/frame    285 ns/subject·voice  p50    0.026  p99    0.041  worst    0.340  first     4.7 ms  gc    2    0.4 ms      33.9 kB/frame
+ 2/2  own        N=  1000 V=1     0.206 ms/frame    206 ns/subject·voice  p50    0.203  p99    0.273  worst    0.357  first    48.0 ms  gc    5    0.3 ms     204.5 kB/frame
+== round 5/7 .
+ 1/1  spans      N=  1000 V=1     0.189 ms/frame    189 ns/subject·voice  p50    0.126  p99    0.546  worst    3.446  first     7.3 ms  gc    2    3.6 ms     283.4 kB/frame
+== round 5/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  churn      N= 10000 V=1     0.878 ms/frame     88 ns/subject·voice  p50    0.874  p99    0.947  worst    0.998  first    48.9 ms  gc    1    2.1 ms      41.9 kB/frame
+== round 5/7 .
+ 1/2  tweens     N= 10000 V=1     0.828 ms/frame     83 ns/subject·voice  p50    0.825  p99    0.880  worst    0.955  first    54.0 ms  gc    0    0.0 ms       6.2 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  tweens     N=100000 V=1     9.362 ms/frame     94 ns/subject·voice  p50    9.228  p99   11.036  worst   11.191  first   320.7 ms  gc    0    0.0 ms      10.1 kB/frame
+== round 6/7 .
+ 1/5  fn         N=   100 V=1     0.025 ms/frame    249 ns/subject·voice  p50    0.022  p99    0.044  worst    0.439  first     2.8 ms  gc    2    0.3 ms      47.3 kB/frame
+ 2/5  fn         N=  1000 V=1     0.143 ms/frame    143 ns/subject·voice  p50    0.137  p99    0.216  worst    0.857  first     1.9 ms  gc    7    0.9 ms     127.9 kB/frame
+ 3/5  fn         N=  1000 V=3     0.281 ms/frame     94 ns/subject·voice  p50    0.275  p99    0.467  worst    1.142  first     1.7 ms  gc   10    1.2 ms     251.9 kB/frame
+ 4/5  fn         N=  1000 V=8     0.584 ms/frame     73 ns/subject·voice  p50    0.565  p99    0.757  worst    1.997  first     2.4 ms  gc   12    1.7 ms     614.7 kB/frame
+ 5/5  fn         N= 10000 V=3     2.997 ms/frame    100 ns/subject·voice  p50    2.799  p99    5.453  worst   10.646  first    13.5 ms  gc   25   12.4 ms    2470.6 kB/frame
+== round 6/7 .
+ 1/3  keys       N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.086  p99    0.108  worst    0.184  first     5.1 ms  gc    1    0.1 ms      40.4 kB/frame
+ 2/3  keys       N=  1000 V=3     0.146 ms/frame     49 ns/subject·voice  p50    0.141  p99    0.182  worst    0.220  first     2.1 ms  gc    1    0.8 ms      46.4 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 3/3  keys       N= 10000 V=3     1.359 ms/frame     45 ns/subject·voice  p50    1.332  p99    1.510  worst    2.420  first    12.4 ms  gc    3    1.2 ms     160.9 kB/frame
+== round 6/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.399 ms/frame    113 ns/subject·voice  p50    3.265  p99    4.897  worst    5.794  first    25.9 ms  gc   12    6.7 ms    2431.0 kB/frame
+== round 6/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  signal     N= 10000 V=3     3.625 ms/frame    121 ns/subject·voice  p50    3.521  p99    5.195  worst    6.054  first    22.8 ms  gc   14    6.3 ms    2432.5 kB/frame
+== round 6/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  blend      N= 10000 V=3     3.804 ms/frame    127 ns/subject·voice  p50    3.655  p99    5.789  worst    6.547  first    27.3 ms  gc   13    6.8 ms    1812.6 kB/frame
+== round 6/7 .
+ 1/2  own        N=   100 V=1     0.029 ms/frame    285 ns/subject·voice  p50    0.026  p99    0.043  worst    0.361  first     4.7 ms  gc    2    0.4 ms      33.1 kB/frame
+ 2/2  own        N=  1000 V=1     0.208 ms/frame    208 ns/subject·voice  p50    0.202  p99    0.258  worst    0.300  first    47.6 ms  gc    5    0.3 ms     206.0 kB/frame
+== round 6/7 .
+ 1/1  spans      N=  1000 V=1     0.171 ms/frame    171 ns/subject·voice  p50    0.113  p99    0.465  worst    2.678  first     6.3 ms  gc    2    2.5 ms     248.1 kB/frame
+== round 6/7 .
+ 1/1  churn      N= 10000 V=1     0.869 ms/frame     87 ns/subject·voice  p50    0.860  p99    0.942  worst    0.972  first    46.7 ms  gc    1    2.2 ms      50.9 kB/frame
+== round 6/7 .
+ 1/2  tweens     N= 10000 V=1     0.861 ms/frame     86 ns/subject·voice  p50    0.851  p99    0.960  worst    0.983  first    50.8 ms  gc    0    0.0 ms      11.8 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  tweens     N=100000 V=1     9.462 ms/frame     95 ns/subject·voice  p50    9.277  p99   11.422  worst   11.515  first   368.9 ms  gc    0    0.0 ms       3.9 kB/frame
+== round 6/7 47c144c
+ 1/5  fn         N=   100 V=1     0.028 ms/frame    276 ns/subject·voice  p50    0.022  p99    0.054  worst    0.589  first     3.0 ms  gc    2    0.8 ms      44.2 kB/frame
+ 2/5  fn         N=  1000 V=1     0.145 ms/frame    145 ns/subject·voice  p50    0.137  p99    0.313  worst    0.922  first     2.0 ms  gc    6    1.0 ms     137.0 kB/frame
+ 3/5  fn         N=  1000 V=3     0.280 ms/frame     93 ns/subject·voice  p50    0.272  p99    0.396  worst    1.179  first     2.5 ms  gc    4    0.7 ms     258.5 kB/frame
+ 4/5  fn         N=  1000 V=8     0.622 ms/frame     78 ns/subject·voice  p50    0.596  p99    0.937  worst    2.280  first     2.5 ms  gc    9    1.7 ms     612.0 kB/frame
+ 5/5  fn         N= 10000 V=3     2.655 ms/frame     88 ns/subject·voice  p50    2.549  p99    3.203  worst    8.607  first    17.5 ms  gc   25    9.4 ms    2475.6 kB/frame
+== round 6/7 47c144c
+ 1/3  keys       N=  1000 V=1     0.088 ms/frame     88 ns/subject·voice  p50    0.086  p99    0.108  worst    0.148  first     4.9 ms  gc    1    0.1 ms      39.7 kB/frame
+ 2/3  keys       N=  1000 V=3     0.146 ms/frame     49 ns/subject·voice  p50    0.142  p99    0.180  worst    0.225  first     2.0 ms  gc    1    0.8 ms      41.2 kB/frame
+ 3/3  keys       N= 10000 V=3     1.345 ms/frame     45 ns/subject·voice  p50    1.320  p99    1.503  worst    2.350  first    12.1 ms  gc    3    1.1 ms     160.7 kB/frame
+== round 6/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.378 ms/frame    113 ns/subject·voice  p50    3.242  p99    5.031  worst    6.229  first    26.9 ms  gc   12    6.2 ms    2431.3 kB/frame
+== round 6/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  signal     N= 10000 V=3     3.621 ms/frame    121 ns/subject·voice  p50    3.527  p99    4.546  worst    5.415  first    22.2 ms  gc   24    7.2 ms    2436.2 kB/frame
+== round 6/7 47c144c
+ 1/1  blend      N= 10000 V=3     3.634 ms/frame    121 ns/subject·voice  p50    3.608  p99    3.892  worst    4.099  first    26.9 ms  gc   18    3.6 ms    1809.1 kB/frame
+== round 6/7 47c144c
+ 1/2  own        N=   100 V=1     0.028 ms/frame    283 ns/subject·voice  p50    0.026  p99    0.045  worst    0.300  first     4.7 ms  gc    2    0.3 ms      34.5 kB/frame
+ 2/2  own        N=  1000 V=1     0.212 ms/frame    212 ns/subject·voice  p50    0.208  p99    0.271  worst    0.308  first    48.1 ms  gc    5    0.3 ms     203.4 kB/frame
+== round 6/7 47c144c
+ 1/1  spans      N=  1000 V=1     0.177 ms/frame    177 ns/subject·voice  p50    0.113  p99    0.488  worst    2.913  first     6.5 ms  gc    2    2.8 ms     229.4 kB/frame
+== round 6/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  churn      N= 10000 V=1     0.869 ms/frame     87 ns/subject·voice  p50    0.860  p99    0.962  worst    1.006  first    53.2 ms  gc    1    2.1 ms      72.3 kB/frame
+== round 6/7 47c144c
+ 1/2  tweens     N= 10000 V=1     0.838 ms/frame     84 ns/subject·voice  p50    0.834  p99    0.888  worst    0.928  first    42.5 ms  gc    0    0.0 ms      13.3 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  tweens     N=100000 V=1     9.782 ms/frame     98 ns/subject·voice  p50    9.440  p99   12.161  worst   20.157  first   323.2 ms  gc    1    7.5 ms       6.2 kB/frame
+== round 7/7 47c144c
+ 1/5  fn         N=   100 V=1     0.024 ms/frame    245 ns/subject·voice  p50    0.021  p99    0.042  worst    0.442  first     2.8 ms  gc    2    0.3 ms      40.5 kB/frame
+ 2/5  fn         N=  1000 V=1     0.142 ms/frame    142 ns/subject·voice  p50    0.135  p99    0.213  worst    0.837  first     1.9 ms  gc    6    0.5 ms     124.9 kB/frame
+ 3/5  fn         N=  1000 V=3     0.270 ms/frame     90 ns/subject·voice  p50    0.261  p99    0.338  worst    1.114  first     1.9 ms  gc    4    0.6 ms     253.5 kB/frame
+ 4/5  fn         N=  1000 V=8     0.636 ms/frame     80 ns/subject·voice  p50    0.610  p99    0.914  worst    2.174  first     2.3 ms  gc    9    1.7 ms     612.6 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 5/5  fn         N= 10000 V=3     2.994 ms/frame    100 ns/subject·voice  p50    2.766  p99    5.499  worst    7.150  first    11.7 ms  gc   24   15.5 ms    2470.2 kB/frame
+== round 7/7 47c144c
+ 1/3  keys       N=  1000 V=1     0.096 ms/frame     96 ns/subject·voice  p50    0.094  p99    0.118  worst    0.206  first     5.1 ms  gc    1    0.1 ms      41.2 kB/frame
+ 2/3  keys       N=  1000 V=3     0.151 ms/frame     50 ns/subject·voice  p50    0.147  p99    0.204  worst    0.236  first     2.4 ms  gc    1    1.0 ms      49.4 kB/frame
+ 3/3  keys       N= 10000 V=3     1.393 ms/frame     46 ns/subject·voice  p50    1.368  p99    1.600  worst    2.620  first    12.6 ms  gc    3    1.3 ms     161.1 kB/frame
+== round 7/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.427 ms/frame    114 ns/subject·voice  p50    3.295  p99    5.497  worst    5.805  first    26.5 ms  gc   12    6.8 ms    2431.7 kB/frame
+== round 7/7 47c144c
+ 1/1  signal     N= 10000 V=3     4.119 ms/frame    137 ns/subject·voice  p50    3.998  p99    6.849  worst    7.043  first    24.7 ms  gc   14    6.5 ms    2436.5 kB/frame
+== round 7/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  blend      N= 10000 V=3     3.911 ms/frame    130 ns/subject·voice  p50    3.733  p99    6.074  worst    6.589  first    28.2 ms  gc   13    6.4 ms    1810.1 kB/frame
+== round 7/7 47c144c
+ 1/2  own        N=   100 V=1     0.029 ms/frame    289 ns/subject·voice  p50    0.026  p99    0.046  worst    0.345  first     4.7 ms  gc    2    0.4 ms      34.4 kB/frame
+ 2/2  own        N=  1000 V=1     0.222 ms/frame    222 ns/subject·voice  p50    0.214  p99    0.412  worst    0.481  first    49.7 ms  gc    5    0.7 ms     198.0 kB/frame
+== round 7/7 47c144c
+ 1/1  spans      N=  1000 V=1     0.180 ms/frame    180 ns/subject·voice  p50    0.111  p99    0.490  worst    3.953  first     6.5 ms  gc    2    3.8 ms     260.5 kB/frame
+== round 7/7 47c144c
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  churn      N= 10000 V=1     0.909 ms/frame     91 ns/subject·voice  p50    0.902  p99    1.026  worst    1.323  first    52.0 ms  gc    0    0.0 ms      57.0 kB/frame
+== round 7/7 47c144c
+ 1/2  tweens     N= 10000 V=1     0.889 ms/frame     89 ns/subject·voice  p50    0.879  p99    0.976  worst    1.037  first    48.4 ms  gc    0    0.0 ms      12.7 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 2/2  tweens     N=100000 V=1     9.738 ms/frame     97 ns/subject·voice  p50    9.580  p99   11.318  worst   13.120  first   345.8 ms  gc    0    0.0 ms       8.6 kB/frame
+== round 7/7 .
+ 1/5  fn         N=   100 V=1     0.026 ms/frame    260 ns/subject·voice  p50    0.023  p99    0.052  worst    0.501  first     2.9 ms  gc    2    0.3 ms      44.8 kB/frame
+ 2/5  fn         N=  1000 V=1     0.148 ms/frame    148 ns/subject·voice  p50    0.140  p99    0.326  worst    0.944  first     2.0 ms  gc    6    1.1 ms     134.9 kB/frame
+ 3/5  fn         N=  1000 V=3     0.279 ms/frame     93 ns/subject·voice  p50    0.271  p99    0.548  worst    1.213  first     2.6 ms  gc    4    0.8 ms     253.3 kB/frame
+ 4/5  fn         N=  1000 V=8     0.664 ms/frame     83 ns/subject·voice  p50    0.642  p99    0.928  worst    2.372  first     2.6 ms  gc    9    2.2 ms     612.1 kB/frame
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 5/5  fn         N= 10000 V=3     2.689 ms/frame     90 ns/subject·voice  p50    2.590  p99    3.283  worst    9.158  first    18.3 ms  gc   25   10.0 ms    2473.8 kB/frame
+== round 7/7 .
+ 1/3  keys       N=  1000 V=1     0.089 ms/frame     89 ns/subject·voice  p50    0.087  p99    0.110  worst    0.158  first     5.0 ms  gc    1    0.1 ms      40.5 kB/frame
+ 2/3  keys       N=  1000 V=3     0.130 ms/frame     43 ns/subject·voice  p50    0.128  p99    0.155  worst    0.169  first     2.1 ms  gc    0    0.0 ms      25.3 kB/frame
+ 3/3  keys       N= 10000 V=3     1.351 ms/frame     45 ns/subject·voice  p50    1.326  p99    1.527  worst    2.423  first    11.1 ms  gc    3    1.1 ms     164.2 kB/frame
+== round 7/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  role       N= 10000 V=3     3.490 ms/frame    116 ns/subject·voice  p50    3.393  p99    4.806  worst    5.470  first    27.6 ms  gc   12    6.2 ms    2430.9 kB/frame
+== round 7/7 .
+ 1/1  signal     N= 10000 V=3     3.902 ms/frame    130 ns/subject·voice  p50    3.813  p99    4.817  worst    6.091  first    22.6 ms  gc   24    7.3 ms    2432.7 kB/frame
+== round 7/7 .
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+blits: color({ lerp }) is deprecated: 'oklch' is ink(), which also blends overlapping voices round the hue, and 'oklab' is color()
+ 1/1  blend      N= 10000 V=3     3.840 ms/frame    128 ns/subject·voice  p50    3.692  p99    5.180  worst    6.107  first    27.1 ms  gc   11    5.3 ms    1804.2 kB/frame
+== round 7/7 .
+ 1/2  own        N=   100 V=1     0.029 ms/frame    289 ns/subject·voice  p50    0.026  p99    0.050  worst    0.368  first     4.8 ms  gc    2    0.4 ms      35.7 kB/frame
+ 2/2  own        N=  1000 V=1     0.215 ms/frame    215 ns/subject·voice  p50    0.208  p99    0.280  worst    0.334  first    49.5 ms  gc    5    0.4 ms     203.9 kB/frame
+== round 7/7 .
+ 1/1  spans      N=  1000 V=1     0.170 ms/frame    170 ns/subject·voice  p50    0.110  p99    0.486  worst    2.604  first     6.4 ms  gc    2    2.5 ms     231.9 kB/frame
+== round 7/7 .
+ 1/1  churn      N= 10000 V=1     0.873 ms/frame     87 ns/subject·voice  p50    0.866  p99    0.951  worst    0.967  first    45.7 ms  gc   10   10.3 ms      36.8 kB/frame
+== round 7/7 .
+ 1/2  tweens     N= 10000 V=1     0.831 ms/frame     83 ns/subject·voice  p50    0.827  p99    0.891  worst    0.919  first    46.7 ms  gc    0    0.0 ms      11.5 kB/frame
+ 2/2  tweens     N=100000 V=1     9.406 ms/frame     94 ns/subject·voice  p50    9.180  p99   11.181  worst   11.284  first   366.1 ms  gc    0    0.0 ms       4.1 kB/frame
