@@ -281,6 +281,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      never gets a run either, and lanes on and off then disagree (the differential suite catches
      it). It needs a per-record mark for a subject met inside its stagger whose run has not
      started, kept through seeks.
+   - **A child anchored to a sibling under an owner at rate 0 is placed wrong when the owner is
+     sought forward** (2026-10-31, `test.fails` in `test/place-edges.test.ts`). `place` runs at the
+     top of `moveTo` with the owner still at rate 0, where `timeWith` answers any time its clock has
+     passed with `anchorNow`, so the sibling's mark comes back as the seek's moment and the child
+     lands at owner 1040, never to play, where played straight it starts at 140; a mix sought back
+     to that frame places it at 140. Not fixed now: it needs the `ahead` pass (`src/move.ts`) to run
+     placing on the clocks it runs forward, and visit plain children there too, the same rework
+     the span-held case above needs.
    - **Measured fine:** the feed (100 items/s, re-sorted and filtered) at 0.08 ms a read with no
      leaks; the cue stack against its model, except `from: 'current'` above; the deck's seeks and
      `done`s; and the kiosk over 72 simulated hours (keiei, `bench/runs/2026-10-31-stress-kiosk-72h.txt`):

@@ -238,3 +238,36 @@ test('a child cued into a span running back plays when the span is sought into i
   expect(run(false)).toEqual(['pending', expect.closeTo(170 / 7, 9)]);
   expect(run(true)).toEqual(run(false));
 });
+
+// Fails today: see HANDOFF.md, "Next, in order" item 1, the anchor under an owner at rate 0.
+test.fails('a child anchored to a sibling plays when its owner, at rate 0, is sought past both', () => {
+  const [c, d] = [{ id: 'c' }, { id: 'd' }];
+  const clip = { loop: false, freeze: 'after' } as const;
+  const run = (rate: number, sought: boolean) => {
+    const m = mix<Part, Pose>(K, { history: { ms: 100_000, tape } });
+    m.sync(0);
+    const o = m.owns({ start: 0 });
+    m.cue({ owner: o, patch: ramp(200, 0, 100), subjects: [d], ...clip, start: 100, name: 'd' });
+    m.cue({
+      owner: o,
+      patch: ramp(300, 0, 100),
+      subjects: [c],
+      ...clip,
+      anchor: { start: { of: 'd', mark: 'in', by: 40 } },
+    });
+    m.sync(50);
+    o.rate = rate;
+    m.sync(100);
+    o.seek(1000);
+    if (sought) {
+      m.sync(110);
+      m.sync(200);
+      m.seek(100);
+    }
+    m.sync(sought ? 210 : 110);
+    return [m.probe(c).x, m.probe(d).x];
+  };
+  expect(run(1, false)).toEqual([100, 100]);
+  expect(run(0, true)).toEqual([100, 100]);
+  expect(run(0, false)).toEqual([100, 100]);
+});
