@@ -280,7 +280,8 @@ test('a span the reel ran back over keeps its layout forward again and through a
       at += reel.rate * 10;
       m.sync(host);
       if (check && reel.rate > 0)
-        read(m).forEach((v, i) => expect(v).toBeCloseTo(straight.get(at)?.[i] as number, 9));
+        for (const [i, v] of read(m).entries())
+          expect(v).toBeCloseTo(straight.get(at)?.[i] as number, 9);
     }
   };
   // Turned back before a ends, so no fit has changed a rate yet: see the test after this one.
@@ -306,7 +307,10 @@ test('a child cued into a queue span the reel ran back over plays after its sibl
     m.cue({ owner: s, patch: ramp(200, 0, 100), subjects: [subject], loop: false });
   let host = 0;
   const step = (n: number) => {
-    for (let i = 0; i < n; i++) m.sync((host += 10));
+    for (let i = 0; i < n; i++) {
+      host += 10;
+      m.sync(host);
+    }
   };
   step(30);
   reel.rate = -1;
@@ -459,7 +463,10 @@ for (const how of ['sought back', 'run back', 'sought past it and back'])
     const { m, reel } = make();
     let host = 0;
     const to = (end: number) => {
-      while (host < end) m.sync((host += 10));
+      while (host < end) {
+        host += 10;
+        m.sync(host);
+      }
     };
     if (how === 'sought past it and back') {
       to(10);
