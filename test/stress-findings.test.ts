@@ -146,6 +146,42 @@ test('queued, staggered and nested spans read the same at 24, 30, 40, 60, 61, 12
   }
 });
 
+// The timeline demo: a child's end under an owner whose rate ramps through 0 was taken as the
+// frame that noticed it, so the span re-fit from there and the layout followed the frame rate.
+test('a span under an owner ramping back lays out as one at rate 1, up to where it turns', () => {
+  const build = () => {
+    const m = mix<Part, Pose>(K);
+    m.sync(0);
+    const reel = m.owns({ start: 0 });
+    const s = m.span({ owner: reel, start: 0, duration: 500, order: 'stagger', share: 0.5 });
+    for (const [ms, subject] of [
+      [200, { id: 'first' }],
+      [250, { id: 'second' }],
+      [400, a],
+    ] as const)
+      m.cue({
+        owner: s,
+        patch: ramp(ms, 0, 1000),
+        subjects: [subject],
+        loop: false,
+        faster: 3,
+        slower: 3,
+      });
+    return { m, reel };
+  };
+  const { m, reel } = build();
+  for (let f = 1; f <= 18; f++) {
+    if (f === 4) reel.ramp(-1, 900);
+    m.sync((f * 1000) / 60);
+  }
+  // From mix 50 the reel reads 50 + dt - dt² / 900: 230.56 at mix 300.
+  const fresh = build().m;
+  for (let t = 1; t <= 230; t++) fresh.sync(t);
+  fresh.sync(50 + 250 - 250 ** 2 / 900);
+  expect(fresh.probe(a).x).toBeGreaterThan(0);
+  expect(m.probe(a).x).toBeCloseTo(fresh.probe(a).x, 6);
+});
+
 // docs/schema.html, Score, Seeking: "mix.seek(t) moves the live mix to mix time t, as it stood at the end of
 // that frame, and it plays on from there"; an owner placed by `start: 2000` does.
 test.fails('an owner anchored to start at 2000 has not started after a seek back to 1000', () => {

@@ -19,6 +19,10 @@ version and everything else the patch. Each release lists its changes as **Break
   its span fitted again from that moment, and a sibling whose start had passed by then, but which
   no frame had started yet, was placed again from there at a new start and rate: two children of a
   `stagger` span read 420 stepped every 10 ms and 389.47 every 25 ms.
+- A voice under an owner whose rate ramps through 0 (from forward to back) ends where its passes
+  run out while the owner still runs forward. The time was taken as never, so it ended at the
+  frame that noticed, and a span holding it fitted again from there, its layout following the
+  frame rate.
 
 ## 0.16.0
 

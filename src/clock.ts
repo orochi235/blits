@@ -136,7 +136,9 @@ export function timeWith(c: Clock, elapsed: number): number {
   if (elapsed <= e0) return r.from > 0 ? c.anchorNow + (elapsed - e0) / r.from : c.anchorNow;
   const a = (r.to - r.from) / (2 * r.over);
   const atEnd = e0 + r.from * r.over + a * r.over * r.over;
-  if (elapsed <= atEnd) {
+  // A ramp that turns the clock back reads furthest where its rate crosses 0, not at its end.
+  const top = r.from > 0 && r.to < 0 ? e0 - (r.from * r.from) / (4 * a) : atEnd;
+  if (elapsed <= top) {
     const k = e0 - elapsed;
     const dt =
       Math.abs(a) < 1e-12
