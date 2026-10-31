@@ -51,6 +51,10 @@ version and everything else the patch. Each release lists its changes as **Break
   owner's clock now put the end before the mix began, where a span read its own clock as 0, so the
   children still to come were laid out from the span's start: a timeline's reel jumped into its
   fifth sequence started the third scene beside the second.
+- A span whose children end in one frame fits from each end in the order they came. They were
+  taken in cue order, so an end the frame noticed first could be one that a fit from an earlier
+  end would have moved, and two children of a `stagger` span read 509.5 stepped every 50 ms where
+  1 ms steps read 525.3.
 
 ## 0.16.0
 

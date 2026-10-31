@@ -8,7 +8,7 @@ import { begin } from './held.js';
 import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { leave as leaveClock } from './origin.js';
-import { ownerReading, plays } from './owner.js';
+import { type Holding, ownerReading, plays } from './owner.js';
 import { mixAt, place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
 import { delist, detour } from './roster.js';
@@ -60,88 +60,15 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   }
   // A live mix visits only the voices due by now; a projection, which copies few, visits all.
   const visit = mix.projecting || mix.walkAll ? mix.cued : popDue(mix, now);
+  let held: Voice<I, O>[] | null = null;
   for (const voice of visit) {
     if (voice.state === 'done') continue;
-    if (Number.isNaN(voice.opened)) voice.opened = now;
-    if (voice.earlier !== null) unfit(mix, voice, now);
-    if (
-      voice.state === 'pending' &&
-      (voice.owner === null ? now : ownerReading(voice.owner, now)) >= voice.start
-    )
-      begin(mix, voice, now);
-    // After it starts, so a fade due by now on a voice that started since the last frame begins.
-    // Not one set for after its passes run out, where a move across both would begin it first.
-    if (
-      (voice.state === 'live' || voice.state === 'frozen') &&
-      voice.outAt <= now &&
-      !(
-        voice.state === 'live' &&
-        !voice.freezesAfter &&
-        !voice.freezesBefore &&
-        voice.endsAt() < voice.outAt
-      )
-    )
-      beginFade(
-        mix,
-        voice,
-        { over: Number.isNaN(voice.outOver) ? undefined : voice.outOver },
-        Math.max(startOf(voice), voice.outAt),
-      );
-    if (voice.state !== 'pending') {
-      if (voice.turns) turn(mix, voice, now);
-      if (voice.state === 'live' && voice.out !== null && !voice.quietAt(now))
-        rouse(mix, voice, now);
-      // Its passes run out at its end running forward, and at its start running back. A clock
-      // standing still at or before its start is where it was: waiting, or frozen there.
-      const way = heading(voice, now);
-      const at = voice.elapsedAt(now);
-      const back = way < 0;
-      const atStart = !voice.beginless && at <= voice.soonest;
-      // An owner run back to its start stays for what it holds, and leaves with its last child.
-      const holds = voice.holding !== null && plays(voice, now);
-      const over = back
-        ? atStart && !holds
-        : Number.isFinite(voice.span) && at >= voice.span + voice.latest;
-      if (over) {
-        voice.play(true, now, mix.transport.seq);
-        // The fade starts when its passes ran out, not at the frame that noticed, so it plays
-        // the same at any frame rate and a read at another time can find it.
-        if (voice.state === 'live' && voice.out === null) {
-          if (back ? voice.freezesBefore : voice.freezesAfter) voice.state = 'frozen';
-          else
-            beginFade(
-              mix,
-              voice,
-              { back, stays: voice.owner !== null && mix.opts.history !== undefined },
-              Math.max(startOf(voice), Math.min(now, voice.endsAt())),
-            );
-        }
-      } else if (voice.state === 'frozen' && !(atStart && way === 0)) voice.state = 'live';
-    }
-    // A projection reads a finished ramp as weight 0, and leaves the live voice's subjects be.
-    if (voice.parts !== null && !mix.projecting)
-      for (const [subject, r] of voice.parts)
-        if (now - r.at >= r.over) part(mix, voice, subject, r.at + r.over);
-    const back = voice.back;
-    if (back !== null && now >= back.at + (1 - back.from) * back.over && !mix.projecting) {
-      voice.back = null;
-      mix.lanes?.refill();
-    }
-    if (voice.state === 'fading' && voice.out) {
-      const { at, over, rest, deadline } = voice.out;
-      const spent = now - at;
-      if (rest) {
-        const out = deadline !== undefined && spent >= deadline;
-        const settled = voice.seen > 0 && voice.restedCount >= voice.seen;
-        if (out) retire(mix, voice, at + (deadline as number));
-        else if (settled) retire(mix, voice);
-      } else if (spent >= over) {
-        if (voice.out.stays) stay(mix, voice, at + over);
-        else retire(mix, voice, at + over);
-      }
-    }
-    if (!mix.projecting) schedule(mix, voice);
+    if (voice.owner?.fitting && meets(voice, now)) {
+      held ??= [];
+      held.push(voice);
+    } else visitOne(mix, voice, now);
   }
+  if (held !== null) inTurn(mix, held, now);
   if (mix.owners !== null) {
     lapse(mix, now);
     settleArcs(mix, now);
@@ -151,6 +78,139 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   mix.asleep = false;
   if (mix.retired.length > 0) prune(mix);
   forget(mix);
+}
+
+/** Starts, ends and fades one voice as of `now`. */
+function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
+  if (Number.isNaN(voice.opened)) voice.opened = now;
+  if (voice.earlier !== null) unfit(mix, voice, now);
+  if (
+    voice.state === 'pending' &&
+    (voice.owner === null ? now : ownerReading(voice.owner, now)) >= voice.start
+  )
+    begin(mix, voice, now);
+  // After it starts, so a fade due by now on a voice that started since the last frame begins.
+  // Not one set for after its passes run out, where a move across both would begin it first.
+  if (
+    (voice.state === 'live' || voice.state === 'frozen') &&
+    voice.outAt <= now &&
+    !(
+      voice.state === 'live' &&
+      !voice.freezesAfter &&
+      !voice.freezesBefore &&
+      voice.endsAt() < voice.outAt
+    )
+  )
+    beginFade(
+      mix,
+      voice,
+      { over: Number.isNaN(voice.outOver) ? undefined : voice.outOver },
+      Math.max(startOf(voice), voice.outAt),
+    );
+  if (voice.state !== 'pending') {
+    if (voice.turns) turn(mix, voice, now);
+    if (voice.state === 'live' && voice.out !== null && !voice.quietAt(now)) rouse(mix, voice, now);
+    // Its passes run out at its end running forward, and at its start running back. A clock
+    // standing still at or before its start is where it was: waiting, or frozen there.
+    const way = heading(voice, now);
+    const at = voice.elapsedAt(now);
+    const back = way < 0;
+    const atStart = !voice.beginless && at <= voice.soonest;
+    // An owner run back to its start stays for what it holds, and leaves with its last child.
+    const holds = voice.holding !== null && plays(voice, now);
+    const over = back
+      ? atStart && !holds
+      : Number.isFinite(voice.span) && at >= voice.span + voice.latest;
+    if (over) {
+      voice.play(true, now, mix.transport.seq);
+      // The fade starts when its passes ran out, not at the frame that noticed, so it plays
+      // the same at any frame rate and a read at another time can find it.
+      if (voice.state === 'live' && voice.out === null) {
+        if (back ? voice.freezesBefore : voice.freezesAfter) voice.state = 'frozen';
+        else
+          beginFade(
+            mix,
+            voice,
+            { back, stays: voice.owner !== null && mix.opts.history !== undefined },
+            Math.max(startOf(voice), Math.min(now, voice.endsAt())),
+          );
+      }
+    } else if (voice.state === 'frozen' && !(atStart && way === 0)) voice.state = 'live';
+  }
+  // A projection reads a finished ramp as weight 0, and leaves the live voice's subjects be.
+  if (voice.parts !== null && !mix.projecting)
+    for (const [subject, r] of voice.parts)
+      if (now - r.at >= r.over) part(mix, voice, subject, r.at + r.over);
+  const back = voice.back;
+  if (back !== null && now >= back.at + (1 - back.from) * back.over && !mix.projecting) {
+    voice.back = null;
+    mix.lanes?.refill();
+  }
+  if (voice.state === 'fading' && voice.out) {
+    const { at, over, rest, deadline } = voice.out;
+    const spent = now - at;
+    if (rest) {
+      const out = deadline !== undefined && spent >= deadline;
+      const settled = voice.seen > 0 && voice.restedCount >= voice.seen;
+      if (out) retire(mix, voice, at + (deadline as number));
+      else if (settled) retire(mix, voice);
+    } else if (spent >= over) {
+      if (voice.out.stays) stay(mix, voice, at + over);
+      else retire(mix, voice, at + over);
+    }
+  }
+  if (!mix.projecting) schedule(mix, voice);
+}
+
+/**
+ * Whether a span's child starts or reaches the end of its passes by `now`: a fit from an end
+ * earlier in the frame can move either, so these wait for the ends before them.
+ */
+function meets<I, O>(voice: Voice<I, O>, now: number): boolean {
+  if (voice.state === 'pending')
+    return ownerReading(voice.owner as Voice<I, O>, now) >= voice.start;
+  return (
+    voice.state === 'live' &&
+    voice.out === null &&
+    Number.isFinite(voice.span) &&
+    voice.elapsedAt(now) >= voice.span + voice.latest &&
+    heading(voice, now) > 0
+  );
+}
+
+/**
+ * Visits span children that end or start within the frame in the order those happen: the ends one
+ * at a time by when each comes, since each fit can move the ends and starts after it, then the
+ * starts. A child a fit moves to end or start by `now` joins them.
+ */
+function inTurn<I, O>(mix: Mixer<I, O>, held: Voice<I, O>[], now: number): void {
+  const waiting = new Set(held);
+  const visited = new Set<Voice<I, O>>();
+  for (;;) {
+    let next: Voice<I, O> | undefined;
+    let when = Number.POSITIVE_INFINITY;
+    for (const v of waiting) {
+      if (v.state === 'pending') continue;
+      if (v.state === 'done' || !meets(v, now)) {
+        waiting.delete(v);
+        continue;
+      }
+      const t = v.endsAt();
+      if (next === undefined || t < when || (t === when && v.id < next.id)) {
+        next = v;
+        when = t;
+      }
+    }
+    if (next === undefined) break;
+    waiting.delete(next);
+    visited.add(next);
+    visitOne(mix, next, now);
+    for (let o = next.owner; o?.fitting; o = o.owner)
+      for (const c of (o.holding as Holding<Voice<I, O>>).children)
+        if (!visited.has(c) && c.state !== 'done' && meets(c, now)) waiting.add(c);
+  }
+  for (const v of byId([...waiting]))
+    if (v.state === 'pending' && meets(v, now)) visitOne(mix, v, now);
 }
 
 /** Starts each voice cued while the mix slept at `now`, the first sync after its cue. */

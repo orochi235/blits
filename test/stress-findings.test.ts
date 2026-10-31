@@ -384,3 +384,41 @@ test('a reel sought past a span child lays out the rest of the span as played st
   m.sync(150);
   expect([m.probe(q).x, m.probe(r).x]).toEqual([220, 0]);
 });
+
+// docs/schema.html, Time: "a stateless patch reads the same at any rate". Two children of a span end
+// between two frames, the later cued first: each fit is taken in the order the ends came, so the
+// first end's fit, which speeds up the other, moves where that one ends.
+test('a span whose children end in one frame, the later cued first, reads the same at any frame rate', () => {
+  const lens = [700, 300, 400, 800];
+  const parts = lens.map((_, i) => ({ id: `p${i}` }));
+  const run = (step: number) => {
+    const m = mix<Part, Pose>(K);
+    m.sync(0);
+    const s = m.span({ start: 0, duration: 1000, order: 'stagger', share: 0.5 });
+    for (const [i, ms] of lens.entries())
+      m.cue({
+        owner: s,
+        patch: ramp(ms, 0, 1000),
+        subjects: [parts[i] as Part],
+        loop: false,
+        faster: 3,
+        slower: 3,
+      });
+    const reads: number[] = [];
+    let time = 0;
+    for (const at of [150, 310, 470, 630, 790, 950]) {
+      const from = time;
+      const n = Math.ceil((at - from) / step - 1e-9);
+      for (let j = 1; j <= n; j++) {
+        time = j === n ? at : from + ((at - from) * j) / n;
+        m.sync(time);
+      }
+      for (const p of parts) reads.push(m.probe(p).x);
+    }
+    return reads;
+  };
+  const want = run(1);
+  for (const step of [1000 / 60, 25, 1000 / 30, 50])
+    for (const [i, v] of run(step).entries())
+      expect(v, `${step} ms frames, read ${i}`).toBeCloseTo(want[i] as number, 6);
+});
