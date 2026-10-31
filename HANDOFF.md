@@ -236,8 +236,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 1. **What the stress demos found** (`apps/stress`, built 2026-10-30; its README says what each
    demo loads and checks). Fleet runs: `bench/runs/2026-10-31-stress-short.txt`, from after a
    review made the checks able to fail (the first round is `2026-10-30-stress-short.txt`), with
-   each run's raw records beside it. Each correctness finding below is a `test.fails` in
-   `test/stress-findings.test.ts`, which flips to failing once fixed; then drop the `.fails`.
+   each run's raw records beside it. The bugs they found are fixed (CHANGELOG, Unreleased), each
+   pinned by a test in `test/stress-findings.test.ts`; what is below is still open.
    - **`from: 'current'` keeps the speed, and the docs say it does not.** `blending.mdx` says such a
      fade carries position, not speed; CHANGELOG 0.2.0 and `src/patch.ts` bend its start to the
      subject's speed, so a still fixture's linear fade eases in, and the first such fade a mix
@@ -257,6 +257,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - **A handle's own rate write on a child is retraced at its latest rate** when an owner above
      runs back over it (not tested): only a fit's rate change is kept for the run back
      (`Voice.earlier`, `unfit` in `src/spans.ts`), since a host's write is not made again going forward.
+   - **An owner a span holds is not run forward when sought forward while running back** (not
+     tested, no seed hits it): the forward pass `411e6ac` gives such a seek swaps the owner's
+     clock for one at rate 1, and a span's fits retime that owner's clock, so the swap would
+     clobber them. The span-held case needs the fit's retiming carried through the swap.
    - **The span-order fixes' cost is paid back** (2026-10-31). `own` and `tweens` never run the
      code they changed: profiled at 008d580 and e3bfd3e, `own N=1000` reads 156.5 and 157.0 µs a
      frame with no time in `move.ts` (`bench/runs/2026-10-31-own-profile.txt`), so the 3.4% and
