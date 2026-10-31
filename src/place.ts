@@ -96,7 +96,6 @@ export function checkPlacement<I, O>(
     const given = 'of' in a ? a.of : 'after' in a ? a.after : 'with' in a ? a.with : a.before;
     const mark = 'of' in a ? a.mark : 'after' in a ? 'end' : 'start';
     const q = typeof given === 'string' ? { name: given } : given;
-    if (q.name === undefined) return [];
     const score = q.score ?? asker.spec.score;
     const anywhere = q.score !== undefined;
     if (asker === self && q.name !== undefined && q.name === spec.name && score === spec.score)

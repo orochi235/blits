@@ -313,3 +313,15 @@ test.fails('a child a fit sped up reads, run back over, what it read going forwa
   reel.rate = -1;
   expect(x(m, 350)).toBeCloseTo(forward, 9);
 });
+
+// docs/schema.html, Score: "A placement that waits on itself is refused at cue." Picked by tag, a
+// starts after b and b after a.
+test('a loop of placements picked by tag is refused at cue', () => {
+  const L = kit<{ level: number }>({ level: max() });
+  const step = () => keys<Part, { level: number }>(100, [{ at: 1, delta: { level: 1 } }]);
+  const m = mix<Part, { level: number }>(L);
+  m.cue({ patch: step(), tags: ['a'], anchor: { start: { after: { tag: 'b' } } } });
+  expect(() =>
+    m.cue({ patch: step(), tags: ['b'], anchor: { start: { after: { tag: 'a' } } } }),
+  ).toThrow(/waits on itself/);
+});

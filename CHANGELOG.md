@@ -28,6 +28,10 @@ version and everything else the patch. Each release lists its changes as **Break
   on itself, since the check followed every name whatever mark it asked for. A voice's `start`,
   `in`, `coast` and the marks placed inside it wait only on what places its start; its `out` and
   `end` on that and what places its out.
+- A placement that waits on itself through a query by tag or by channel is refused at `cue`, as
+  one through names is: a voice starting after the one tagged `b`, cued beside one tagged `b`
+  starting after the one tagged `a`, was taken. A query is followed to the voices it can pick at
+  the cue, the voice being cued among them.
 
 ## 0.16.0
 
