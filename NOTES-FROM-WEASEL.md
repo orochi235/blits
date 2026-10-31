@@ -58,7 +58,7 @@ What is left, measured by `npm run bench` (`bench/frame.mjs`) and a CPU profile:
 
 Open design questions rather than asks. blits may rightly say some of these belong in a host.
 
-- **A weight per axis of a `vec` channel, and an angle that lerps the short way.** weasel's
+- **A weight per axis of a `vec` channel, and an angle that lerps the short way.** The stress demos' `rig` (2026-10-30) hit the first of these too: its IK hold on a bone's height does that part itself after `pull`. weasel's
   animator held a value on a target as voices sharing a `locus`, weighted by `weight`, until
   2026-10-11. It now cues one voice per target and folds the holds itself
   (`packages/core/src/animation/engine/holds.ts`), for two things a locus could not do: a hold
