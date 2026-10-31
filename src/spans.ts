@@ -90,8 +90,21 @@ export function unfit<I, O>(mix: Mixer<I, O>, child: Voice<I, O>, now: number): 
 /** A span's own clock at mix time `at`, from 0 while it has not started. */
 function clockOf<I, O>(span: Voice<I, O>, at: number): number {
   if (Number.isNaN(at)) return 0;
-  const t = ownerReading(span, at);
+  const t = readingAt(span, at);
   return Number.isFinite(t) ? Math.max(0, t) : 0;
+}
+
+/**
+ * What a voice's clock reads at mix time `at` through its owners' clocks as they stand, inverting
+ * `mixTime`: -Infinity where one yet to start has not reached its start. Unlike `ownerReading`, an
+ * owner that has started reads on its clock before its start, where a seek of the owner put a time
+ * its children left at.
+ */
+function readingAt<I, O>(voice: Voice<I, O>, at: number): number {
+  const t = voice.owner === null ? at : readingAt(voice.owner, at);
+  if (t === Number.NEGATIVE_INFINITY || (voice.state === 'pending' && !(t >= voice.start)))
+    return Number.NEGATIVE_INFINITY;
+  return elapsedWith(voice, t);
 }
 
 /**

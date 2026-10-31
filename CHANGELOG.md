@@ -47,6 +47,10 @@ version and everything else the patch. Each release lists its changes as **Break
 - A child whose rate a fit changed reads, run back over by an owner, what it read going forward. Its
   clock read the new rate all the way back past where the fit changed it; it now runs back on the
   clock it had before, and forward again the fit changes it at the same place.
+- An owner sought past a span's child fits the rest of the span from where that child ended. The
+  owner's clock now put the end before the mix began, where a span read its own clock as 0, so the
+  children still to come were laid out from the span's start: a timeline's reel jumped into its
+  fifth sequence started the third scene beside the second.
 
 ## 0.16.0
 

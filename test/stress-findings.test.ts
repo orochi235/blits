@@ -360,3 +360,27 @@ test('a loop of placements picked by tag is refused at cue', () => {
     m.cue({ patch: step(), tags: ['b'], anchor: { start: { after: { tag: 'a' } } } }),
   ).toThrow(/waits on itself/);
 });
+
+// docs/schema.html, owner `seek`: "Moves the owner's clock, and every child's phase with it"; a span
+// "fits again when a child joins and when one leaves". A jump past a child fits the rest from where it
+// ended on the span's clock, though the reel's clock now puts that before the mix began.
+test('a reel sought past a span child lays out the rest of the span as played straight through', () => {
+  const [p, q, r] = ['p', 'q', 'r'].map((id) => ({ id })) as [Part, Part, Part];
+  const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+  m.sync(0);
+  const reel = m.owns({ start: 0 });
+  const s = m.span({ owner: reel, start: 0, duration: 3000 });
+  for (const subject of [p, q, r])
+    m.cue({
+      owner: m.span({ owner: s, duration: 1000 }),
+      patch: ramp(500, 100, 400),
+      subjects: [subject],
+      loop: false,
+    });
+  m.sync(50);
+  reel.seek(1100);
+  m.sync(100);
+  // The reel reads 1200: q's span, 1000 to 2000, is 200 ms in, and r's has yet to start.
+  m.sync(150);
+  expect([m.probe(q).x, m.probe(r).x]).toEqual([220, 0]);
+});
