@@ -40,6 +40,10 @@ export interface Entry {
   /** Size and frames the page and a plain run use. */
   size: number;
   frames: number;
+  /** Frames per aggregate record when `--window` isn't given; unset writes one record per frame. */
+  window?: number;
+  /** Frames for a given size when `--frames` isn't given, for demos whose length follows their size. */
+  framesFor?(size: number): number;
   /** One line for the picker and the README. */
   blurb: string;
 }

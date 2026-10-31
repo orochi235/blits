@@ -189,12 +189,15 @@ export async function main(argv: string[]): Promise<number> {
   const flags = new Map<string, string>();
   for (let i = 0; i < rest.length; i += 2)
     flags.set((rest[i] ?? '').replace(/^--/, ''), rest[i + 1] ?? '');
+  const size = num(flags.get('size'), entry.size);
   const dir = await run({
     name,
-    size: num(flags.get('size'), entry.size),
-    frames: num(flags.get('frames'), entry.frames),
+    size,
+    frames: flags.has('frames')
+      ? num(flags.get('frames'), entry.frames)
+      : (entry.framesFor?.(size) ?? entry.frames),
     seed: num(flags.get('seed'), 1),
-    window: flags.has('window') ? num(flags.get('window'), 0) : undefined,
+    window: flags.has('window') ? num(flags.get('window'), 0) : entry.window,
     lanes: flags.get('lanes') === 'off' ? false : undefined,
     root: flags.get('root'),
   });

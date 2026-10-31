@@ -3,6 +3,7 @@ import { cues } from '@stress/scenarios/cues/scenario';
 import { feed } from '@stress/scenarios/feed/scenario';
 import { heatmap } from '@stress/scenarios/heatmap/scenario';
 import { idle } from '@stress/scenarios/idle';
+import { kiosk } from '@stress/scenarios/kiosk/scenario';
 import { timeline } from '@stress/scenarios/timeline/scenario';
 
 export const scenarios: Record<string, Entry> = {
@@ -38,5 +39,14 @@ export const scenarios: Record<string, Entry> = {
     frames: 7200,
     blurb:
       'A lighting desk: 500 cues over 48 fixtures, with follows, GO pressed mid-fade, BACK, and manual faders, checked against a plain model of the cue sheet.',
+  },
+  kiosk: {
+    make: kiosk,
+    size: 72,
+    frames: 15_552_000,
+    window: 3600,
+    framesFor: (size) => Math.round(size * 216_000),
+    blurb:
+      'A signage wall left on for days: 2,000 subjects under looping patterns, crossfaded and burst, with the clock slept through hourly, checked for drift, growth, and return to rest.',
   },
 };
