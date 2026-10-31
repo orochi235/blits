@@ -1,4 +1,5 @@
 import type { Entry } from '@stress/scenario';
+import { cues } from '@stress/scenarios/cues/scenario';
 import { feed } from '@stress/scenarios/feed/scenario';
 import { heatmap } from '@stress/scenarios/heatmap/scenario';
 import { idle } from '@stress/scenarios/idle';
@@ -30,5 +31,12 @@ export const scenarios: Record<string, Entry> = {
     frames: 2400,
     blurb:
       'A video timeline: 300 clips in nested spans, scrubbed, jumped and shuttled from −2× to 4× under history.',
+  },
+  cues: {
+    make: cues,
+    size: 1,
+    frames: 7200,
+    blurb:
+      'A lighting desk: 500 cues over 48 fixtures, with follows, GO pressed mid-fade, BACK, and manual faders, checked against a plain model of the cue sheet.',
   },
 };
