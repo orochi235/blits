@@ -182,8 +182,18 @@ export function stay<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at: number): vo
   if (owner.state === 'done') return;
   const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
   if (plays(owner, now) || lingers(owner, at)) {
-    if (owner.fitting !== null && !voice.skipped) refit(mix, owner, at);
+    if (owner.fitting !== null && !voice.skipped && !ranBackOver(owner)) refit(mix, owner, at);
   } else release(mix, owner, at);
+}
+
+/**
+ * Whether a span holds a child its clock ran back to the start of and has not brought back: its
+ * layout up to there was made going forward, and stands until the clock passes it again.
+ */
+export function ranBackOver<I, O>(span: Voice<I, O>): boolean {
+  for (const child of (span.holding as Holding<Voice<I, O>>).children)
+    if (child.out?.stays === true && child.out.back === true) return true;
+  return false;
 }
 
 /**

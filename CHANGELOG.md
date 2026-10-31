@@ -11,6 +11,10 @@ version and everything else the patch. Each release lists its changes as **Break
 - Under `history`, an owner another owner holds no longer leaves once none of its children plays:
   it stays with its own owner, quiet, so turning the outer owner back brings back a clip under an
   owner inside it, as it does a direct child.
+- A span an owner ran back over keeps the layout it made going forward. Before, each child it ran
+  back to the start of fitted the span again from there, and so did a seek back into it, counting
+  the children waiting for the clock to come back as playing: the ones still to start moved
+  earlier, and the playing ones changed speed.
 
 ## 0.16.0
 

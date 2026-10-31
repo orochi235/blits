@@ -245,7 +245,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      (`span.out?.stays`) and lets the rest go through `release` in `src/fade.ts`, which keeps one
      an owner holds under history (tried, and the two span tests pass; left out because another
      session held `spans.ts`). The timeline demo reports these as `undecided`; by the changelog
-     they are bugs.
+     they are bugs, and its `undecided` path becomes `fail` once they are fixed. Also for
+     `spans.ts`: a span run back over must not fit again (`ranBackOver` in `src/fade.ts`), which
+     `stay` and the seek in `src/seek.ts` each check before calling `refit`; the check belongs in
+     `refit` itself, and the seek's loop is `refitAll`'s, which nothing calls now.
    - **A span's layout depends on frame rate.** A child's end re-fits its span from that end, and a
      sibling past its start that no frame has started yet still counts as pending, so the re-fit
      moves it (read from `refit` and `elapsedIn` in `src/spans.ts`, not traced). Two children in a
@@ -253,7 +256,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - **Seeking back breaks two anchored forms.** An owner placed by `anchor: { start: 2000 }`
      carries on from where it had played after `seek(1000)` (a plain `start: 2000` is right). A
      voice placed by `anchor: { end: 4000 }` comes back at the seek, then goes `done` at 0 on the
-     next sync; `out` and looping voices too, owned voices not.
+     next sync; `out` and looping voices too, owned voices not. One cause (traced 2026-10-31):
+     `resolve` in `src/place.ts` reads a numeric anchor of a voice no owner holds as
+     `a - mix.offset` every time it places it, and a seek moves `offset` (`last - u`), so after
+     `seek(1000)` from 2100 the start reads 900 and the end 0. A plain `start` is pinned once, at
+     `cue`, as `spec.start - mix.offset` (`src/cue.ts`). The fix: keep the offset each anchored
+     voice was cued under and subtract that; tried, with both tests passing, and left out because
+     another session held `place.ts`.
    - **A loop of names is refused even when it is not a loop in time.** q1's `out` naming q2's
      start, q2 starting off q1's `coast`, is refused as "waits on itself", since `checkPlacement`
      in `src/place.ts` follows names whatever mark they point at; picking by tag is taken. Written
@@ -276,10 +285,15 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      components of a `vec` and not others (the rig's IK y-hold; weasel's item in
      `NOTES-FROM-WEASEL.md`); a mix's `rate` cannot go below 0, so reverse is an owner turned
      back; and the role fold of three or more quats depends on cue order (documented, sound).
-   - **A mix seek back can leave a clip showing that should not** (found 2026-10-30 once the
-     timeline check stopped excusing every mismatch near a reversal): seed 1, frame 1692, four
-     frames after `seek 3728.0 → 2416.1`, clip 6 reads x 478.47 where a fresh timeline reads 0.
-     Not traced; it may be the reversal state above carried back by history.
+   - **A clock run back retraces only its latest rate.** A fit changes a playing child's rate as
+     a sibling ends, and when an owner above turns back, the child's clock reads that rate all the
+     way back past where it changed (`test.fails` "a child a fit sped up reads, run back over, what
+     it read going forward"). A child's past clocks (`Voice.clocks`) are kept only for finding a
+     subject's origin; `elapsedWith` reads one segment. Seed 2's timeline `fail @1988`, off by
+     0.06, may be this (not traced); a handle's own rate write likely does the same (not tested).
+   - **The timeline demo still fails at other seeds** (2026-10-31, after the fixes above):
+     `npm run stress -- timeline --seed 3` at frame 1720, and `--seed 4` at frames 65 (right
+     after `reel to`: a clip's opacity reads 0 where fresh reads 1), 200 and 1796. Not traced.
    - **Measured fine:** the feed (100 items/s, re-sorted and filtered) at 0.08 ms a read with no
      leaks; the cue stack against its model, except `from: 'current'` above; the deck's seeks and
      `done`s; the kiosk's loop phase, voice count and return to rest at short sizes.

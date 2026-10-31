@@ -70,7 +70,7 @@ test.fails('a span lays out its children the same at any frame rate', () => {
   const at300 = (stepMs: number) => {
     const m = mix<Part, Pose>(K);
     m.sync(0);
-    const s = m.span({ start: 0, duration: 500, order: 'stagger', share: 0.9 });
+    const s = m.span({ start: 0, duration: 500, order: 'stagger', share: 0.5 });
     m.cue({
       owner: s,
       patch: ramp(200, 0, 1000),
@@ -148,4 +148,81 @@ test.fails('a cue whose out names its follow’s start, the follow starting off 
   const at = (name: string, mark: string) =>
     m.marks(0, 1000).find((k) => k.name === name && k.mark === mark)?.timestamp;
   expect([at('q1', 'out'), at('q2', 'start')]).toEqual([150, 150]);
+});
+
+// docs/schema.html, Score, Seeking: a mix sought back plays on "as it stood at the end of that
+// frame"; and CHANGELOG 0.16.0, turning an owner back "reverses completely". A stagger span run back
+// over and played forward again, then sought back into, reads as one played straight through.
+test('a span the reel ran back over keeps its layout forward again and through a seek', () => {
+  const parts = ['a', 'b', 'c', 'd', 'e'].map((id) => ({ id }));
+  const make = () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+    m.sync(0);
+    const reel = m.owns({ start: 0 });
+    m.cue({
+      owner: reel,
+      patch: ramp(10_000, 0, 1),
+      start: 0,
+      loop: false,
+      subjects: [{ id: 'k' }],
+    });
+    const s = m.span({ owner: reel, start: 0, duration: 1000, order: 'stagger', share: 0.5 });
+    parts.forEach((p, i) => {
+      const patch = ramp(600 - 50 * i, 100, 400);
+      m.cue({ owner: s, patch, subjects: [p], loop: false, faster: 3, slower: 3 });
+    });
+    return { m, reel };
+  };
+  const read = (m: Mix<Part, Pose>) => parts.map((p) => m.probe(p).x);
+  const fresh = make();
+  const straight = new Map<number, number[]>();
+  for (let t = 10; t <= 900; t += 10) {
+    fresh.m.sync(t);
+    straight.set(t, read(fresh.m));
+  }
+  const { m, reel } = make();
+  let at = 0;
+  let host = 0;
+  const to = (end: number, check: boolean) => {
+    reel.rate = end > at ? 1 : -1;
+    while (at !== end) {
+      host += 10;
+      at += reel.rate * 10;
+      m.sync(host);
+      if (check && reel.rate > 0)
+        read(m).forEach((v, i) => expect(v).toBeCloseTo(straight.get(at)?.[i] as number, 9));
+    }
+  };
+  // Turned back before a ends, so no fit has changed a rate yet: see the test after this one.
+  to(400, false);
+  to(50, false);
+  to(300, true);
+  // Mix time 800 is where the reel read 100 on its way forward again.
+  m.seek(800);
+  at = 100;
+  to(900, true);
+});
+
+// CHANGELOG 0.16.0: turning an owner back "reverses completely". A fit changes a playing child's
+// rate as a sibling ends, and the child's clock run back reads its new rate all the way back.
+test.fails('a child a fit sped up reads, run back over, what it read going forward', () => {
+  const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+  m.sync(0);
+  const reel = m.owns({ start: 0 });
+  m.cue({ owner: reel, patch: ramp(10_000, 0, 1), start: 0, loop: false, subjects: [{ id: 'k' }] });
+  const s = m.span({ owner: reel, start: 0, duration: 1000, order: 'stagger', share: 0.9 });
+  for (const [i, id] of ['first', 'a', 'c', 'd', 'e'].entries())
+    m.cue({
+      owner: s,
+      patch: ramp(600 - 50 * i, 100, 400),
+      subjects: [id === 'a' ? a : { id }],
+      loop: false,
+      faster: 3,
+      slower: 3,
+    });
+  // The first ends near 262 and the fit then speeds a up, which started near 236.
+  const forward = x(m, 250);
+  x(m, 300);
+  reel.rate = -1;
+  expect(x(m, 350)).toBeCloseTo(forward, 9);
 });
