@@ -53,6 +53,15 @@ for (const lanes of [true, false]) {
     expect(x(m, 60)).toBeCloseTo(4.5, 9);
   });
 
+  test(`a subject's fade in stays held past where it would have ended, lanes ${lanes}`, () => {
+    const m = mix<Part, Pose>(K, { lanes });
+    const h = m.cue({ patch: ten, fade: { in: 100 } });
+    x(m, 0);
+    x(m, 50);
+    h.fade({ subject: a, over: 200 });
+    expect(x(m, 120)).toBeCloseTo(10 * 0.5 * 0.65, 9);
+  });
+
   // ownWeight: "Its fade in counts from when it started".
   test(`an owner's fade in under an owner turned back stays done, lanes ${lanes}`, () => {
     const m = mix<Part, Pose>(K, { lanes });

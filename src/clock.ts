@@ -27,9 +27,36 @@ export function passAt(elapsed: number, duration: number, passes: number): numbe
 }
 
 /**
+ * A fade in from `since` over `fadeIn` at mix time `now`, 0..1. It stands still where a fade out
+ * began, or the two ramps multiply into a rise, from `stop` on, and through `stalls`, pairs of mix
+ * times.
+ */
+export function fadeInAt(
+  fadeIn: number,
+  out: { at: number; over: number; rest: boolean } | null,
+  ease: Curve | undefined,
+  now: number,
+  since: number,
+  stalls: readonly number[] | null,
+  stop = Number.POSITIVE_INFINITY,
+): number {
+  let end = out && !out.rest && out.at < now ? out.at : now;
+  if (stop < end) end = stop;
+  let climbed = end - since;
+  if (stalls !== null)
+    for (let i = 0; i < stalls.length; i += 2) {
+      const a = Math.max(stalls[i] as number, since);
+      const b = Math.min(stalls[i + 1] as number, end);
+      if (b > a) climbed -= b - a;
+    }
+  const u = climbed / fadeIn;
+  if (u >= 1) return 1;
+  return ease ? ease(Math.max(0, u)) : Math.max(0, u);
+}
+
+/**
  * A voice's own fade this frame, 0..1: in from `since` over `fadeIn`, out along its ramp, and back
- * up the same curve where a fade out was turned around. The fade in stands still through `stalls`,
- * pairs of mix times, and from `stop` on.
+ * up the same curve where a fade out was turned around.
  */
 export function envelope(
   fadeIn: number,
@@ -40,23 +67,9 @@ export function envelope(
   since: number,
   back: { from: number; at: number; over: number } | null = null,
   stalls: readonly number[] | null = null,
-  stop = Number.POSITIVE_INFINITY,
 ): number {
   let w = 1;
-  if (fadeIn > 0 && !reduced) {
-    // A fade in stops climbing where a fade out begins, or the two ramps multiply into a rise.
-    let end = out && !out.rest && out.at < now ? out.at : now;
-    if (stop < end) end = stop;
-    let climbed = end - since;
-    if (stalls !== null)
-      for (let i = 0; i < stalls.length; i += 2) {
-        const a = Math.max(stalls[i] as number, since);
-        const b = Math.min(stalls[i + 1] as number, end);
-        if (b > a) climbed -= b - a;
-      }
-    const u = climbed / fadeIn;
-    if (u < 1) w *= ease ? ease(Math.max(0, u)) : Math.max(0, u);
-  }
+  if (fadeIn > 0 && !reduced) w *= fadeInAt(fadeIn, out, ease, now, since, stalls);
   if (back && !reduced) {
     const u = back.from + (now - back.at) / back.over;
     if (u < 1) w *= ease ? ease(Math.max(0, u)) : Math.max(0, u);

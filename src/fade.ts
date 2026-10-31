@@ -1,5 +1,5 @@
 import { changed, headOf, unlink } from './chain.js';
-import { envelope } from './clock.js';
+import { envelope, fadeInAt } from './clock.js';
 import { schedule } from './due.js';
 import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
@@ -38,7 +38,11 @@ export function fadeSubject<I, O>(
   mix.lanes?.refill();
 }
 
-/** What a subject's own ramp out of a voice leaves of its weight this frame, 0..1. */
+/**
+ * What a subject's own ramp out of a voice leaves of its weight this frame. It also holds the
+ * voice's fade in where the ramp began, as a fade out of the whole voice does, so it is a ratio to
+ * the fade in the voice's envelope gives.
+ */
 export function parting<I, O>(
   this: Mixer<I, O>,
   voice: Voice<I, O>,
@@ -47,7 +51,15 @@ export function parting<I, O>(
 ): number {
   const r = voice.parts?.get(subject);
   if (r === undefined) return 1;
-  return envelope(0, { at: r.at, over: r.over, rest: false }, voice.ease, this.reducedNow, now, 0);
+  const reduced = this.reducedNow;
+  const w = envelope(0, { at: r.at, over: r.over, rest: false }, voice.ease, reduced, now, 0);
+  const fadeIn = voice.fade.in ?? 0;
+  const since = voice.subjects.get(subject)?.shown;
+  if (!(fadeIn > 0) || reduced || since === undefined || !(r.at < now)) return w;
+  const out = voice.out;
+  const climbing = fadeInAt(fadeIn, out, voice.ease, now, since, voice.stalls);
+  if (!(climbing > 0)) return w;
+  return w * (fadeInAt(fadeIn, out, voice.ease, now, since, voice.stalls, r.at) / climbing);
 }
 
 /**
