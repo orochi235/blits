@@ -168,6 +168,7 @@ export function waits<I, O>(voice: Voice<I, O>, held: Subject<unknown>, now: num
  */
 export function begin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
   voice.state = 'live';
+  voice.begunSeq = mix.transport.seq;
   if (voice.anchorElapsed !== 0) {
     voice.seeks++;
     voice.rebuilds++;

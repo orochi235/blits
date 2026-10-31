@@ -11,6 +11,7 @@ import {
   rebaseWith,
   timeWith,
 } from './clock.js';
+import { type Cut, within } from './cut.js';
 import { type Curve, curve } from './easing.js';
 import type { Leavings } from './leavings.js';
 import { motionOf } from './motion.js';
@@ -267,6 +268,11 @@ export class Voice<I, O> {
   cuedAt = Number.NEGATIVE_INFINITY;
   /** The frame it was cued in. */
   cuedSeq = Number.NEGATIVE_INFINITY;
+  /**
+   * The frame it last went live in, Infinity while pending: a seek of an owner back before its
+   * start leaves it live, which a read back by its clock alone would take for still to start.
+   */
+  begunSeq = Number.POSITIVE_INFINITY;
   /** The mix time it left at, which a fade or seek given a time already passed puts behind now. */
   doneAt = Number.POSITIVE_INFINITY;
   /** The frame its leaving was decided in, which a seek or read back partitions by. */
@@ -498,6 +504,7 @@ export class Voice<I, O> {
     this.restedCount = 0;
     this.cuedAt = Number.NEGATIVE_INFINITY;
     this.cuedSeq = Number.NEGATIVE_INFINITY;
+    this.begunSeq = Number.POSITIVE_INFINITY;
     this.doneAt = Number.POSITIVE_INFINITY;
     this.doneSeq = Number.POSITIVE_INFINITY;
     this.placing = false;
@@ -625,12 +632,17 @@ export class Voice<I, O> {
   /**
    * Its state at mix time `t`, from its clock and fade, once every clock above it is back where it
    * was: a fade begins at once, even one whose ramp starts later, at the voice's start, and one
-   * from where an owner under history keeps it ends with it quiet and live.
+   * from where an owner under history keeps it ends with it quiet and live. With `cut`, one that
+   * had started by then is live, though an owner's seek has put its clock back before its start.
    */
-  stateAt(t: number): Voice<I, O>['state'] {
+  stateAt(t: number, cut?: Cut): Voice<I, O>['state'] {
     const out = this.out;
     if (out !== null) return out.stays && t >= out.at + out.over ? 'live' : 'fading';
-    if ((this.owner === null ? t : ownerReading(this.owner, t)) < this.start) return 'pending';
+    if (
+      (this.owner === null ? t : ownerReading(this.owner, t)) < this.start &&
+      !(cut !== undefined && within(cut, this.begunSeq, true))
+    )
+      return 'pending';
     if (this.freezesAfter && this.elapsedAt(t) >= this.span + this.latest) return 'frozen';
     return 'live';
   }

@@ -180,13 +180,16 @@ function copyBack<I, O>(mix: Mixer<I, O>, c: Mixer<I, O>, t: number, cut: Cut): 
     });
   ownBlends(c.cued);
   if (mix.owners !== null) relink(c.cued, cut.seq);
-  stateAt(c, t);
+  stateAt(c, t, cut);
   recount(c);
 }
 
-/** Sets each copied voice's state to what its clock and fade make it at `t`. */
-export function stateAt<I, O>(c: Mixer<I, O>, t: number): void {
-  for (const copy of c.cued) copy.state = copy.stateAt(t);
+/**
+ * Sets each copied voice's state to what its clock and fade make it at `t`; with `cut`, the frames
+ * up to which history says which had started.
+ */
+export function stateAt<I, O>(c: Mixer<I, O>, t: number, cut?: Cut): void {
+  for (const copy of c.cued) copy.state = copy.stateAt(t, cut);
 }
 
 /**

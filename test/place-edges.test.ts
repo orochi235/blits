@@ -100,3 +100,83 @@ test('a voice cued with a start ahead of a paused mix waits for it after a seek 
   }
   expect(again).toEqual(live);
 });
+
+// docs/schema.html, Score, Seeking: a mix sought back lands "as it stood at the end of that frame" and\nplays on as it did.
+test('a child its span was sought back before keeps its place through a mix seek back', () => {
+  const [d, g] = [{ id: 'd' }, { id: 'g' }];
+  const clip = { loop: false, freeze: 'after' } as const;
+  const run = (sought: boolean) => {
+    const m = mix<Part, Pose>(K, { history: { ms: 100_000, tape } });
+    m.sync(0);
+    const s = m.span({ duration: 1000 });
+    m.sync(200);
+    m.cue({ owner: s, patch: ramp(100, 0, 100), subjects: [d], ...clip });
+    m.sync(400);
+    s.seek(50);
+    m.sync(410);
+    m.sync(420);
+    m.cue({ owner: s, patch: ramp(100, 0, 100), subjects: [g], ...clip });
+    m.sync(430);
+    if (sought) {
+      m.seek(410);
+      m.sync(440); // mix 420: the cue of g plays again
+      m.sync(450); // 430
+    }
+    const reads: number[] = [];
+    for (let k = 1; k <= 40; k++) {
+      m.sync((sought ? 450 : 430) + 10 * k);
+      reads.push(m.probe(d).x);
+    }
+    return reads;
+  };
+  const live = run(false);
+  // The span reads 200 again at mix 550, where d starts over.
+  expect([live[10], live[12]]).toEqual([0, expect.closeTo(10, 9)]);
+  expect(run(true)).toEqual(live);
+});
+
+// The same, with an anchor in place of a span.
+test('a child anchored to a sibling keeps its start through a mix seek back after an owner seek', () => {
+  const [a, c] = [{ id: 'a' }, { id: 'c' }];
+  const clip = { loop: false, freeze: 'after' } as const;
+  const run = (sought: boolean) => {
+    const m = mix<Part, Pose>(K, { history: { ms: 100_000, tape } });
+    m.sync(0);
+    const o = m.owns({ start: 0 });
+    const ch = m.cue({
+      owner: o,
+      patch: ramp(100, 0, 100),
+      subjects: [c],
+      ...clip,
+      start: 100,
+      name: 'c',
+    });
+    m.cue({
+      owner: o,
+      patch: ramp(500, 0, 100),
+      subjects: [a],
+      ...clip,
+      anchor: { start: { of: 'c', mark: 'end' } },
+    });
+    m.sync(50);
+    ch.fade({ over: 50 });
+    m.sync(300);
+    o.seek(0);
+    m.sync(310);
+    if (sought) {
+      m.sync(400);
+      m.seek(300);
+      m.sync(410);
+    }
+    const reads: number[] = [];
+    for (let k = 1; k <= 60; k++) {
+      m.sync((sought ? 410 : 310) + 10 * k);
+      reads.push(m.probe(a).x);
+    }
+    return reads;
+  };
+  const live = run(false);
+  // a starts over as the owner's clock reaches 100 again, at mix 400.
+  expect([live[8], live[9]]).toEqual([0, expect.closeTo(2, 9)]);
+  expect(run(true)).toEqual(live);
+});

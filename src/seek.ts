@@ -301,7 +301,11 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
     else if (voice.doneSeq <= seq) gone.push(voice);
     else kept.push(voice);
   for (const voice of kept) restoreVoice(mix, voice, t, seq);
-  for (const voice of kept) voice.state = voice.stateAt(t);
+  const cut = { seq, strict: false };
+  for (const voice of kept) {
+    voice.state = voice.stateAt(t, cut);
+    if (voice.begunSeq > seq) voice.begunSeq = Number.POSITIVE_INFINITY;
+  }
   mix.cued = kept;
   mix.gone = gone;
   mix.retired = [];

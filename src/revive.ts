@@ -37,6 +37,8 @@ interface PackedVoice {
   later?: Earlier | null;
   cuedAt: number;
   cuedSeq: number;
+  /** Absent from a store written before a voice kept it. */
+  begunSeq?: number;
   doneAt: number;
   doneSeq: number;
   opened: number;
@@ -157,6 +159,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     clocks: voice.clocks,
     cuedAt: voice.cuedAt,
     cuedSeq: voice.cuedSeq,
+    begunSeq: voice.begunSeq,
     doneAt: voice.doneAt,
     doneSeq: voice.doneSeq,
     opened: voice.opened,
@@ -211,6 +214,7 @@ export function reviveVoice<I, O>(mix: Mixer<I, O>, id: number, d: PackedVoice):
   voice.take(d);
   voice.cuedAt = d.cuedAt;
   voice.cuedSeq = d.cuedSeq;
+  voice.begunSeq = d.begunSeq ?? Number.POSITIVE_INFINITY;
   voice.doneAt = d.doneAt;
   voice.doneSeq = d.doneSeq;
   voice.opened = d.opened;

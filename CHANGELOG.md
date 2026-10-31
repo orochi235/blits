@@ -8,6 +8,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A child its owner's seek put back before its start stays where it was through a mix sought back to
+  after that seek: a later fit keeps it in its place, and an anchor does not place it again. The
+  seek took it for one still to start, so a span laid it out afresh, and a child anchored to a
+  sibling's end was placed again from that end, and played on as if its owner had not been sought.
 - A voice cued while the mix is paused, its `start` a host time still ahead, waits for that time
   again when a seek back plays its cue again. It started at once, at the paused mix time, since
   the voice was taken for one cued while the mix slept and its start was moved to the next sync.

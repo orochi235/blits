@@ -265,6 +265,7 @@ function enter<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>): void {
     voice.cuedAt = mix.now;
     voice.cuedSeq = mix.transport.seq;
     voice.opened = mix.now;
+    if (voice.state !== 'pending') voice.begunSeq = mix.transport.seq;
   }
   voice.placing = anchored;
   // A start the host gave by its own clock, where the mix's rate puts it.

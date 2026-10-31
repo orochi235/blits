@@ -240,6 +240,7 @@ export function beginRise<I, O>(
   voice.out = null;
   voice.outAt = Number.POSITIVE_INFINITY;
   voice.state = waiting ? 'pending' : 'live';
+  if (waiting) voice.begunSeq = Number.POSITIVE_INFINITY;
   voice.back = over > 0 && from < 1 ? { from, at, over } : null;
   // Its fade in stood still from where the fade out began, and climbs on from where it stood.
   if (!out.rest && out.at < at) voice.stalls = [...(voice.stalls ?? []), out.at, at];
