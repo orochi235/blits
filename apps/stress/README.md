@@ -35,7 +35,8 @@ record per frame, or per `--window` frames) and `findings.json`. The command exi
 is not a known one, and 2 when it cannot read its flags.
 
 Anything past a few seconds goes to the fleet (`onto do --kind bench ... -out apps/stress/runs`).
-The `kiosk` default is about 15.5M frames, roughly 1.4 core-hours.
+The `kiosk` default is about 15.5M frames, roughly 1.4 core-hours, past `onto do`'s default
+30-minute limit, so give it `-timeout 3h`.
 
 **Where runs go and what bounds them:** `apps/stress/runs/`, which is gitignored. The runner keeps
 the newest five runs of each scenario and deletes older ones as it starts, except any touched in
