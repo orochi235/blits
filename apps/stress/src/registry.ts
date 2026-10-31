@@ -4,6 +4,7 @@ import { feed } from '@stress/scenarios/feed/scenario';
 import { heatmap } from '@stress/scenarios/heatmap/scenario';
 import { idle } from '@stress/scenarios/idle';
 import { kiosk } from '@stress/scenarios/kiosk/scenario';
+import { rig } from '@stress/scenarios/rig/scenario';
 import { timeline } from '@stress/scenarios/timeline/scenario';
 
 export const scenarios: Record<string, Entry> = {
@@ -48,5 +49,12 @@ export const scenarios: Record<string, Entry> = {
     framesFor: (size) => Math.round(size * 216_000),
     blurb:
       'A signage wall left on for days: 2,000 subjects under looping patterns, crossfaded and burst, with the clock slept through hourly, checked for drift, growth, and return to rest.',
+  },
+  rig: {
+    make: rig,
+    size: 5,
+    frames: 3600,
+    blurb:
+      'A crowd of 50 characters, 1,000 bones, crossfading idle, walk and run clips on quaternions while an IK hold takes one arm, checked against the blend role.mdx documents.',
   },
 };
