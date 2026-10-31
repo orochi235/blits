@@ -65,6 +65,28 @@ function ranBackOver<I, O>(span: Voice<I, O>): boolean {
   return false;
 }
 
+/**
+ * Puts a child whose owner's clock ran back to before a fit changed its rate back on the clock it
+ * ran on before, so it reads, run back over, what it read going forward.
+ */
+export function unfit<I, O>(mix: Mixer<I, O>, child: Voice<I, O>, now: number): void {
+  const t = ownerReading(child.owner as Voice<I, O>, now);
+  let e = child.earlier;
+  if (e === null || !(t < child.anchorNow)) return;
+  while (e !== null && t < child.anchorNow) {
+    child.anchorNow = e.anchorNow;
+    child.anchorElapsed = e.anchorElapsed;
+    child.rate = e.rate;
+    child.ramp = e.ramp;
+    e = e.prev;
+  }
+  child.earlier = e;
+  mix.frame = nextFrame();
+  reorigin(mix, child, now);
+  noted(mix, child);
+  mix.lanes?.refill();
+}
+
 /** A span's own clock at mix time `at`, from 0 while it has not started. */
 function clockOf<I, O>(span: Voice<I, O>, at: number): number {
   if (Number.isNaN(at)) return 0;
@@ -135,6 +157,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
         c.rate = rate;
         c.ramp = null;
         c.clocks = null;
+        c.earlier = null;
         moved = true;
       }
     } else {
@@ -146,6 +169,10 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
         moved = true;
       }
       if (c.rate !== rate || c.ramp !== null) {
+        if (!skipped) {
+          const { anchorNow, anchorElapsed, ramp } = c;
+          c.earlier = { anchorNow, anchorElapsed, rate: c.rate, ramp, prev: c.earlier };
+        }
         leave(c, local);
         retime(c, local, rate, 0);
         moved = true;
@@ -163,6 +190,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
     c.anchorNow = Number.POSITIVE_INFINITY;
     c.anchorElapsed = 0;
     c.clocks = null;
+    c.earlier = null;
     mix.frame = nextFrame();
     reorigin(mix, c, mix.now);
     noted(mix, c);

@@ -13,7 +13,7 @@ import { mixAt, place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
 import { delist, detour } from './roster.js';
 import { scoredLeft, scoredRemove } from './scored.js';
-import { lapse } from './spans.js';
+import { lapse, unfit } from './spans.js';
 import { unplay } from './strays.js';
 import type { Voice } from './voice.js';
 
@@ -63,6 +63,7 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   for (const voice of visit) {
     if (voice.state === 'done') continue;
     if (Number.isNaN(voice.opened)) voice.opened = now;
+    if (voice.earlier !== null) unfit(mix, voice, now);
     if (
       voice.state === 'pending' &&
       (voice.owner === null ? now : ownerReading(voice.owner, now)) >= voice.start

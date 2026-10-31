@@ -254,12 +254,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      components of a `vec` and not others (the rig's IK y-hold; weasel's item in
      `NOTES-FROM-WEASEL.md`); a mix's `rate` cannot go below 0, so reverse is an owner turned
      back; and the role fold of three or more quats depends on cue order (documented, sound).
-   - **A clock run back retraces only its latest rate.** A fit changes a playing child's rate as
-     a sibling ends, and when an owner above turns back, the child's clock reads that rate all the
-     way back past where it changed (`test.fails` "a child a fit sped up reads, run back over, what
-     it read going forward"). A child's past clocks (`Voice.clocks`) are kept only for finding a
-     subject's origin; `elapsedWith` reads one segment. Seed 2's timeline `fail @1988`, off by
-     0.06, may be this (not traced); a handle's own rate write likely does the same (not tested).
+   - **A handle's own rate write on a child is retraced at its latest rate** when an owner above
+     runs back over it (not tested): only a fit's rate change is kept for the run back
+     (`Voice.earlier`, `unfit` in `src/spans.ts`), since a host's write is not made again going forward.
    - **The timeline demo still fails at other seeds** (2026-10-31, after the fixes above):
      `npm run stress -- timeline --seed 3` at frame 1720, and `--seed 4` at frames 65 (right
      after `reel to`: a clip's opacity reads 0 where fresh reads 1), 200 and 1796. Not traced.

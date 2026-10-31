@@ -324,7 +324,7 @@ test('a child cued into a queue span the reel ran back over plays after its sibl
 
 // CHANGELOG 0.16.0: turning an owner back "reverses completely". A fit changes a playing child's
 // rate as a sibling ends, and the child's clock run back reads its new rate all the way back.
-test.fails('a child a fit sped up reads, run back over, what it read going forward', () => {
+test('a child a fit sped up reads, run back over, what it read going forward', () => {
   const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
   m.sync(0);
   const reel = m.owns({ start: 0 });
@@ -341,9 +341,12 @@ test.fails('a child a fit sped up reads, run back over, what it read going forwa
     });
   // The first ends near 262 and the fit then speeds a up, which started near 236.
   const forward = x(m, 250);
-  x(m, 300);
+  const later = x(m, 300);
   reel.rate = -1;
   expect(x(m, 350)).toBeCloseTo(forward, 9);
+  // And forward again, the fit speeds it up where it did before.
+  reel.rate = 1;
+  expect(x(m, 400)).toBeCloseTo(later, 9);
 });
 
 // docs/schema.html, Score: "A placement that waits on itself is refused at cue." Picked by tag, a

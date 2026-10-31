@@ -57,8 +57,18 @@ export interface Controls extends Clock {
   hold: number;
   /** How many of the voice's past clocks it had then. */
   past: number;
+  /** The clocks a fit replaced; absent from a store written before a voice kept them. */
+  earlier?: Earlier | null;
   /** Shows in its own frame: made by a sync, or before anything read the mix that frame. */
   sync: boolean;
+}
+
+/**
+ * A clock a fit replaced, which its voice runs on again where its owner's clock runs back to
+ * before the one that replaced it; `prev` is the one before it.
+ */
+export interface Earlier extends Clock {
+  readonly prev: Earlier | null;
 }
 
 const noSend = (): void => {};
@@ -225,6 +235,8 @@ export class Voice<I, O> {
   early: Subject<unknown>[] | null = null;
   /** The clocks it ran on before its current one, where a subject's origin may lie; null for none. */
   clocks: Past[] | null = null;
+  /** The clocks a fit replaced, latest first; null for none. */
+  earlier: Earlier | null = null;
   /** Reused for every call this voice makes, so it is valid only during the call. */
   readonly setting: VoiceSetting<I, O>;
   /** Every subject this voice has been asked about, so a handover knows when it is finished. */
@@ -430,6 +442,7 @@ export class Voice<I, O> {
     this.outSet = c.outSet;
     this.rebuilds = c.rebuilds;
     this.hold = c.hold;
+    this.earlier = c.earlier ?? null;
     const clocks = this.clocks;
     if (clocks !== null && clocks.length !== c.past)
       this.clocks = c.past === 0 ? null : clocks.slice(0, c.past);
@@ -696,6 +709,7 @@ export class Voice<I, O> {
       rebuilds: this.rebuilds,
       hold: this.hold,
       past: this.clocks?.length ?? 0,
+      earlier: this.earlier,
     });
   }
 

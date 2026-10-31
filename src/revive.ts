@@ -9,7 +9,7 @@ import { type Key, type Keys, pageOut } from './paging.js';
 import type { Run } from './stretch.js';
 import type { Parted, Parting } from './subject.js';
 import type { Described, VoiceSpec } from './types.js';
-import { type Controls, type Ramp, type Rise, Voice } from './voice.js';
+import { type Controls, type Earlier, type Ramp, type Rise, Voice } from './voice.js';
 
 /** A voice that has left, as plain data: the descriptor it was cued with, its controls and its records. */
 interface PackedVoice {
@@ -29,6 +29,8 @@ interface PackedVoice {
   hold: number;
   past: number;
   clocks: Past[] | null;
+  /** Absent from a store written before a voice kept it. */
+  earlier?: Earlier | null;
   cuedAt: number;
   cuedSeq: number;
   doneAt: number;
@@ -145,6 +147,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     rebuilds: voice.rebuilds,
     hold: voice.hold,
     past: voice.clocks?.length ?? 0,
+    earlier: voice.earlier,
     clocks: voice.clocks,
     cuedAt: voice.cuedAt,
     cuedSeq: voice.cuedSeq,

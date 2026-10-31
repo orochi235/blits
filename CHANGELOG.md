@@ -44,6 +44,9 @@ version and everything else the patch. Each release lists its changes as **Break
   was fitted again at the cue, counting the children waiting for the clock to come back as
   playing, so the new one started beside them. No fit, from a cue, an arc, a sibling leaving or a
   seek, moves a span run back over until the clock passes it again.
+- A child whose rate a fit changed reads, run back over by an owner, what it read going forward. Its
+  clock read the new rate all the way back past where the fit changed it; it now runs back on the
+  clock it had before, and forward again the fit changes it at the same place.
 
 ## 0.16.0
 
