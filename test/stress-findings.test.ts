@@ -528,3 +528,44 @@ test('a reel sought past a stagger span, then back into it, reads as played stra
   m.sync(30);
   for (const p of parts) expect(m.probe(p).x, p.id).toBeCloseTo(fresh.probe(p).x, 9);
 });
+
+// The same, sought back to before the span's first end and played on: the layout made in the frame
+// that passed it stands, and no child left quiet ahead is taken as gone from the fit.
+test('a reel sought past a stagger span, then back before it, plays it on as played straight', () => {
+  const lens = [958, 300, 600, 700, 450, 800, 1100, 500, 900, 1300];
+  const parts = lens.map((_, i) => ({ id: `p${i}` }));
+  const make = () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+    m.sync(0);
+    const reel = m.owns({ start: 0 });
+    m.cue({
+      owner: reel,
+      patch: ramp(10_000, 0, 1),
+      start: 0,
+      loop: false,
+      subjects: [{ id: 'k' }],
+    });
+    const s = m.span({ owner: reel, start: 0, duration: 2000, order: 'stagger', share: 0.5 });
+    for (const [i, p] of parts.entries())
+      m.cue({
+        owner: s,
+        patch: ramp(lens[i] as number, 100, 400),
+        subjects: [p],
+        loop: false,
+        faster: 3,
+        slower: 3,
+      });
+    return { m, reel };
+  };
+  const fresh = make().m;
+  const { m, reel } = make();
+  m.sync(10);
+  reel.seek(5000);
+  m.sync(20);
+  reel.seek(0);
+  for (let t = 10; t <= 2000; t += 10) {
+    fresh.sync(t);
+    m.sync(20 + t);
+    for (const p of parts) expect(m.probe(p).x, `${p.id} at ${t}`).toBeCloseTo(fresh.probe(p).x, 9);
+  }
+});

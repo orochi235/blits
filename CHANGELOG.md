@@ -67,6 +67,9 @@ version and everything else the patch. Each release lists its changes as **Break
   children that started and ended in the frame were taken in cue order once their span had started,
   each started and ended in one step, so a fit from one end missed the children it should have
   moved.
+- A span its owner was sought back before keeps the layout it made going forward, as one run
+  back over does. A child's end there fitted it again with the children ahead, left quiet by the
+  seek, counted as gone, so the playing ones slowed to fill the span.
 
 ## 0.16.0
 

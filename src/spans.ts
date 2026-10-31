@@ -56,12 +56,13 @@ export function checkChild<I, O>(spec: VoiceSpec<I, O>, child: Voice<I, O>): voi
 }
 
 /**
- * Whether a span holds a child its clock ran back to the start of and has not brought back: its
- * layout up to there was made going forward, and stands until the clock passes it again.
+ * Whether a span's clock went back over a child at span ms `local`: it holds one kept quiet that
+ * ran back to its start, or that starts after `local`, which only a clock gone back leaves quiet.
+ * Its layout up to there was made going forward, and stands until the clock passes it again.
  */
-function ranBackOver<I, O>(span: Voice<I, O>): boolean {
+function ranBackOver<I, O>(span: Voice<I, O>, local: number): boolean {
   for (const child of (span.holding as Holding<Voice<I, O>>).children)
-    if (child.out?.stays === true && child.out.back === true) return true;
+    if (child.out?.stays === true && (child.out.back === true || child.start > local)) return true;
   return false;
 }
 
@@ -156,8 +157,9 @@ function leftOf<I, O>(child: Voice<I, O>, local: number, by: number): number {
  */
 export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now): void {
   const fitting = span.fitting as Fitting;
-  if (mix.projecting || span.state === 'done' || ranBackOver(span)) return;
+  if (mix.projecting || span.state === 'done') return;
   const local = clockOf(span, from);
+  if (ranBackOver(span, local)) return;
   const by = from < mix.now ? local : Number.NEGATIVE_INFINITY;
   const { kids, floors, waiting } = lineUp(mix, span, local, by);
   const claims: Claim[] = kids.map((c, i) => {
