@@ -234,8 +234,9 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 ## Next, in order
 
 1. **What the stress demos found** (`apps/stress`, built 2026-10-30; its README says what each
-   demo loads and checks). Fleet runs: `bench/runs/2026-10-30-stress-short.txt`, with each run's
-   raw records beside it. Each correctness finding below is a `test.fails` in
+   demo loads and checks). Fleet runs: `bench/runs/2026-10-31-stress-short.txt`, from after a
+   review made the checks able to fail (the first round is `2026-10-30-stress-short.txt`), with
+   each run's raw records beside it. Each correctness finding below is a `test.fails` in
    `test/stress-findings.test.ts`, which flips to failing once fixed; then drop the `.fails`.
    - **0.16.0's reversal stops one level down.** Turning an owner back brings back a direct child
      that left, but not a clip under an owner, a span, or a span in a span inside it: that reads 0
@@ -260,11 +261,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      subject's speed, so a still fixture's linear fade eases in, and the first such fade a mix
      plays runs straight, since no poses are kept until one is cued. Undecided which is right
      (cues demo, frame 440: 0.6501 against 0.6529 straight).
-   - **`pull` on the heatmap is slow, and it is the slowest thing found.** 5,000 springs with an
-     `ink` channel weighted by per-cell `input` signals: 6.4 ms a frame to read with lanes on
-     (studio, load 8), 95 ms at 50,000; `tweens^` reads 10,000 in about 0.17. Lanes off read 4.3 ms,
-     but at load 2.6, so that comparison is not clean. Which of the springs, the signal weights or
-     `ink` costs it is not measured: time the heatmap with each swapped out, on a quiet node.
+   - **`pull` on the heatmap is slow, and slower with lanes than without.** 5,000 springs with an
+     `ink` channel weighted by per-cell `input` signals: 5.6 ms a frame to read with lanes on and
+     4.2 with lanes off (studio, load 1.6 and 2.6, one run each), 85 ms at 50,000; `tweens^` reads
+     10,000 in about 0.17. Which of the springs, the signal weights or `ink` costs it, and why lanes
+     lose here, is not measured: time the heatmap with each swapped out, on a quiet node.
    - **The rig's quats read in 1.2 ms for 1,000 bones** (`pull`, 70 voices), with lanes on only
      about 20% faster than off: the off-lane path for quats in `keys`, named under item 14.
    - **Gaps, things the demos had to do themselves:** a voice's weight cannot cover some

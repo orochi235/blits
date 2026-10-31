@@ -1,0 +1,149 @@
+# studio, onto job 349e6e72, rev 7a70e72: every demo at registry defaults after the review's fixes; heatmap also --size 50 and --lanes off
+
+## 2026-10-30-235933-heatmap-s5-1
+{"header":{"name":"heatmap","size":5,"frames":3600,"seed":1,"lanes":true,"window":null,"host":"studio.local","cpus":10,"load":[1.57763671875,1.97802734375,2.7861328125],"node":"v26.8.1","rev":"4a6b3bb6c6858d158156a0c3aebd51a6c969a95f","dirty":true,"started":"2026-10-31T03:59:33.043Z"}}
+records                           3600
+step p50                         0.844
+step p90                         1.269
+step p99                         1.876
+step max                         4.294
+read p50                         5.597
+read max                        32.637
+findings:
+[]
+
+## 2026-10-31-000014-feed-s1-1
+{"header":{"name":"feed","size":1,"frames":3600,"seed":1,"lanes":true,"window":null,"host":"studio.local","cpus":10,"load":[2.25439453125,2.09033203125,2.783203125],"node":"v26.8.1","rev":"4a6b3bb6c6858d158156a0c3aebd51a6c969a95f","dirty":true,"started":"2026-10-31T04:00:14.089Z"}}
+records                           3600
+step p50                         0.013
+step p90                         0.027
+step p99                         0.154
+step max                         0.944
+read p50                         0.079
+read max                         3.493
+findings:
+[]
+
+## 2026-10-31-000014-timeline-s1-1
+{"header":{"name":"timeline","size":1,"frames":2400,"seed":1,"lanes":true,"window":null,"host":"studio.local","cpus":10,"load":[2.25439453125,2.09033203125,2.783203125],"node":"v26.8.1","rev":"4a6b3bb6c6858d158156a0c3aebd51a6c969a95f","dirty":true,"started":"2026-10-31T04:00:14.774Z"}}
+records                           2400
+step p50                         0.030
+step p90                         0.091
+step p99                         1.796
+step max                         7.702
+read p50                         0.005
+read max                         0.589
+findings:
+[
+  {
+    "kind": "gap",
+    "what": "the mix’s rate cannot go below 0, so the editor plays in reverse by turning back the owner every sequence plays under"
+  },
+  {
+    "kind": "fail",
+    "at": 1692,
+    "what": "frame 1692, reel at 894.408 (mix time 2749.475): clip 6 x live 478.46509201347396 fresh 0, 5 of 1800 numbers differ; recent: f1603 ramp to 4 over 401 ms; f1630 head at 356.3: forward; f1641 rate -1; f1683 head at 389.6: forward; f1688 seek 3728.0 → 2416.1"
+  },
+  {
+    "kind": "undecided",
+    "at": 2197,
+    "what": "frame 2197, reel at 2157.874 (mix time 10501.600): clip 10 x live 0 fresh 622.4197303957869, 5 of 1800 numbers differ, each in a clip the reel ran back over since it started; recent: f1933 ramp to -1 over 568 ms; f1992 rate -0.5; f2046 scrub -1118.8 ms over 10 frames from 9951.3; f2101 scrub -1139.2 ms over 21 frames from 9618.6; f2161 ramp to -2 over 359 ms"
+  },
+  {
+    "kind": "undecided",
+    "at": 2168,
+    "what": "frame 2168, reel at 3018.151 (mix time 9641.323): clip 13 x live 0 fresh 662.5860061503517, 11 of 1800 numbers differ, each in a clip the reel ran back over since it started; recent: f1933 ramp to -1 over 568 ms; f1992 rate -0.5; f2046 scrub -1118.8 ms over 10 frames from 9951.3; f2101 scrub -1139.2 ms over 21 frames from 9618.6; f2161 ramp to -2 over 359 ms"
+  },
+  {
+    "kind": "undecided",
+    "at": 2102,
+    "what": "frame 2102, reel at 3078.483 (mix time 9580.991): clip 13 x live 0 fresh 681.4295475271446, 11 of 1800 numbers differ, each in a clip the reel ran back over since it started; recent: f1854 ramp to 4 over 1328 ms; f1933 ramp to -1 over 568 ms; f1992 rate -0.5; f2046 scrub -1118.8 ms over 10 frames from 9951.3; f2101 scrub -1139.2 ms over 21 frames from 9618.6"
+  },
+  {
+    "kind": "undecided",
+    "at": 299,
+    "what": "frame 299, reel at 26660.229 (mix time 9469.226): clip 133 x live 0 fresh 559.1455968279787, 5 of 1800 numbers differ, each in a clip the reel ran back over since it started; recent: f134 head at 392.4: forward; f153 reel to 27082.2; f187 ramp to 2 over 1280 ms; f238 ramp to -1 over 572 ms; f296 seek 6894.6 → 9402.6"
+  },
+  {
+    "kind": "fail",
+    "key": "timeline/frame-rate-layout",
+    "at": 1825,
+    "what": "a fresh timeline played forward at rate 1 reads differently by frame rate alone: at reel 676.725, clip 3 x is 1000.5225152813589 at 60 fps and 991.3742892081724 at 30 fps"
+  }
+]
+
+## 2026-10-31-000015-cues-s1-1
+{"header":{"name":"cues","size":1,"frames":7200,"seed":1,"lanes":true,"window":null,"host":"studio.local","cpus":10,"load":[2.25439453125,2.09033203125,2.783203125],"node":"v26.8.1","rev":"4a6b3bb6c6858d158156a0c3aebd51a6c969a95f","dirty":true,"started":"2026-10-31T04:00:15.786Z"}}
+records                           7200
+step p50                         0.025
+step p90                         0.044
+step p99                         0.180
+step max                         3.454
+read p50                         0.000
+read max                         0.008
+findings:
+[
+  {
+    "kind": "undecided",
+    "what": "a cue that leaves at its follow's start, the follow starting 50 ms after the cue coasts, is refused when both anchors name their voice (Error: blits: q2's placement waits on itself); the same plan with the out picked by tag is taken and plays as the model says, so the stack picks by tag"
+  },
+  {
+    "kind": "fail",
+    "key": "cues/from-current-speed",
+    "at": 439,
+    "what": "a from: 'current' fade leaves at the speed the fixture had (CHANGELOG 0.2.0), where blending.mdx says it carries position, not speed; a still fixture's fade then eases in though the cue's keys say linear, which a desk would not do, and the first fade a mix plays runs straight since no poses are kept yet. Frame 439, fixture 4 level: blits 0.6500280563074384, straight 0.6514541224371092; recent: f60 GO; f439 GO; f439 fader 1 → 0.255"
+  }
+]
+
+## 2026-10-31-000016-rig-s5-1
+{"header":{"name":"rig","size":5,"frames":3600,"seed":1,"lanes":true,"window":null,"host":"studio.local","cpus":10,"load":[2.25439453125,2.09033203125,2.783203125],"node":"v26.8.1","rev":"4a6b3bb6c6858d158156a0c3aebd51a6c969a95f","dirty":true,"started":"2026-10-31T04:00:16.351Z"}}
+records                           3600
+step p50                         0.002
+step p90                         0.004
+step p99                         0.036
+step max                         6.415
+read p50                         1.042
+read max                        13.363
+findings:
+[
+  {
+    "kind": "gap",
+    "what": "a voice's weight covers every component of a vec channel, so a hold cannot take some components of a vec(3) and leave the others to what it is blended with, as an IK arm holding a bone's height while clips keep its x and z; the rig cues each arm bone's clips twice, once for rot and once for pos, and applies the IK y-hold itself after reading"
+  }
+]
+
+## 2026-10-31-000020-deck-s1-1
+{"header":{"name":"deck","size":1,"frames":3600,"seed":1,"lanes":true,"window":null,"host":"studio.local","cpus":10,"load":[2.23388671875,2.08837890625,2.7783203125],"node":"v26.8.1","rev":"4a6b3bb6c6858d158156a0c3aebd51a6c969a95f","dirty":true,"started":"2026-10-31T04:00:20.707Z"}}
+records                           3600
+step p50                         0.159
+step p90                         0.233
+step p99                         0.666
+step max                         2.700
+read p50                         0.005
+read max                         4.512
+findings:
+[]
+
+## 2026-10-31-000025-heatmap-s50-1
+{"header":{"name":"heatmap","size":50,"frames":3600,"seed":1,"lanes":true,"window":null,"host":"studio.local","cpus":10,"load":[2.134765625,2.06982421875,2.767578125],"node":"v26.8.1","rev":"4a6b3bb6c6858d158156a0c3aebd51a6c969a95f","dirty":true,"started":"2026-10-31T04:00:25.198Z"}}
+records                           3600
+step p50                        22.076
+step p90                        31.490
+step p99                        42.043
+step max                        66.365
+read p50                        85.064
+read max                       222.726
+findings:
+[]
+
+## 2026-10-31-001124-heatmap-s5-off-1
+{"header":{"name":"heatmap","size":5,"frames":3600,"seed":1,"lanes":false,"window":null,"host":"studio.local","cpus":10,"load":[2.615234375,2.40869140625,2.55078125],"node":"v26.8.1","rev":"4a6b3bb6c6858d158156a0c3aebd51a6c969a95f","dirty":true,"started":"2026-10-31T04:11:24.610Z"}}
+records                           3600
+step p50                         0.756
+step p90                         1.093
+step p99                         1.771
+step max                         4.255
+read p50                         4.229
+read max                        21.196
+findings:
+[]
