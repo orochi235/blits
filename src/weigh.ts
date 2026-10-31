@@ -96,6 +96,7 @@ export function fadeOf<I, O>(
   voice: Voice<I, O>,
   now: number,
   since: number,
+  stop?: number,
 ): number {
   return envelope(
     voice.fade.in ?? 0,
@@ -105,6 +106,8 @@ export function fadeOf<I, O>(
     now,
     since,
     voice.back,
+    voice.stalls,
+    stop,
   );
 }
 
@@ -147,8 +150,10 @@ export function weigh<I, O>(
 ): number {
   if (voice.owner !== null) return this.weighOwned(voice, subject, now, held);
   const base = this.base(voice, subject, now, held);
-  const fade = this.envelope(voice, now, held.shown);
-  return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
+  // A subject's own fade out stops its fade in climbing, as the voice's does.
+  const parts = voice.parts?.get(subject);
+  const fade = this.envelope(voice, now, held.shown, parts?.at);
+  return weighed(base, fade, parts === undefined ? 1 : this.parting(voice, subject, now));
 }
 
 /** `weigh` for a voice an owner holds, its owners' weight folded into its fade. */
@@ -162,8 +167,9 @@ export function weighOwned<I, O>(
   // Its owners first, since a signal on one takes over the setting `base` leaves for the patch.
   const owned = this.ownedBy(voice, subject);
   const base = this.base(voice, subject, now, held);
-  const fade = this.envelope(voice, now, held.shown) * owned;
-  return weighed(base, fade, voice.parts === null ? 1 : this.parting(voice, subject, now));
+  const parts = voice.parts?.get(subject);
+  const fade = this.envelope(voice, now, held.shown, parts?.at) * owned;
+  return weighed(base, fade, parts === undefined ? 1 : this.parting(voice, subject, now));
 }
 
 /**

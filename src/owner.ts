@@ -1,5 +1,6 @@
 import { arcShare } from './arcs.js';
 import { backWith, clampWeight, elapsedWith, envelope, timeWith } from './clock.js';
+import { startedAt } from './origin.js';
 import type { Patch } from './types.js';
 import type { Voice } from './voice.js';
 
@@ -143,10 +144,20 @@ export function ownWeight<I, O>(
   base: (owner: Voice<I, O>) => number,
 ): number {
   const b = typeof owner.spec.weight === 'function' ? base(owner) : owner.weight;
-  const start = owner.owner === null ? owner.start : mixTime(owner.owner, owner.start);
+  const start = startedAt(owner);
   const since = owner.freezesBefore && owner.opened < start ? owner.opened : start;
   return clampWeight(
-    b * envelope(owner.fade.in ?? 0, owner.out, owner.ease, reduced, now, since, owner.back),
+    b *
+      envelope(
+        owner.fade.in ?? 0,
+        owner.out,
+        owner.ease,
+        reduced,
+        now,
+        since,
+        owner.back,
+        owner.stalls,
+      ),
   );
 }
 

@@ -5,6 +5,7 @@ import { leave, noted, releasing } from './history.js';
 import { markOf } from './marks.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
+import { startedAt } from './origin.js';
 import { type Holding, orphan, ownerReading, plays } from './owner.js';
 import { startOf } from './place.js';
 import { isRested } from './record.js';
@@ -228,6 +229,8 @@ export function beginRise<I, O>(
   voice.outAt = Number.POSITIVE_INFINITY;
   voice.state = waiting ? 'pending' : 'live';
   voice.back = over > 0 && from < 1 ? { from, at, over } : null;
+  // Its fade in stood still from where the fade out began, and climbs on from where it stood.
+  if (!out.rest && out.at < at) voice.stalls = [...(voice.stalls ?? []), out.at, at];
   if (waiting) changed(mix, voice);
   noted(mix, voice);
   if (waiting) mix.lanes?.invalidate();
@@ -247,7 +250,7 @@ export function fadeAt<I, O>(
   if (voice.state === 'done' || voice.state === 'fading') return;
   const now = Number.isNaN(mix.now) ? startOf(voice) : mix.now;
   if (at <= now) {
-    beginFade(mix, voice, { over }, Math.max(startOf(voice), at));
+    beginFade(mix, voice, { over }, Math.max(startedAt(voice), at));
     mix.stir();
     return;
   }

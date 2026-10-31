@@ -22,6 +22,8 @@ interface PackedVoice {
   weight: number;
   out: Ramp | null;
   back: Rise | null;
+  /** Absent from a store written before a voice kept them. */
+  stalls?: readonly number[] | null;
   outAt: number;
   outOver: number;
   outSet: boolean;
@@ -143,6 +145,7 @@ function packVoice<I, O>(voice: Voice<I, O>, keys: Keys): PackedVoice {
     weight: voice.weight,
     out: voice.out,
     back: voice.back,
+    stalls: voice.stalls,
     outAt: voice.outAt,
     outOver: voice.outOver,
     outSet: voice.outSet,

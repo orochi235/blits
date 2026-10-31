@@ -7,7 +7,7 @@ import { expireGone, keepGone } from './gone.js';
 import { begin, reorigin } from './held.js';
 import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
-import { leave as leaveClock } from './origin.js';
+import { leave as leaveClock, startedAt } from './origin.js';
 import { descendants, type Holding, ownerReading, plays } from './owner.js';
 import { mixAt, place, repin, startAt, startOf } from './place.js';
 import { pageVoice } from './revive.js';
@@ -189,7 +189,7 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
       mix,
       voice,
       { over: Number.isNaN(voice.outOver) ? undefined : voice.outOver },
-      Math.max(startOf(voice), voice.outAt),
+      Math.max(startedAt(voice), voice.outAt),
     );
   if (voice.state !== 'pending') {
     if (voice.turns) turn(mix, voice, now);

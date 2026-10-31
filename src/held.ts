@@ -4,7 +4,7 @@ import { delayOf } from './delay.js';
 import { schedule } from './due.js';
 import type { Share } from './everyone.js';
 import type { Mixer } from './mixer.js';
-import { originOf } from './origin.js';
+import { originOf, startedAt } from './origin.js';
 import { record } from './record.js';
 import type { Subject } from './subject.js';
 import { unreach, unreached } from './unreached.js';
@@ -143,7 +143,7 @@ export function sinceOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, delay: numb
  * read it, as `since` is, not where they would by their controls now.
  */
 export function shownOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, since: number): number {
-  const start = voice.owner === null ? voice.start : originOf(voice.owner, voice.start, false);
+  const start = startedAt(voice);
   const from = since < start ? start : since;
   return voice.freezesBefore && voice.opened < from ? voice.opened : from;
 }

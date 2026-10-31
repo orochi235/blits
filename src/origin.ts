@@ -88,3 +88,8 @@ export function originOf<I, O>(voice: Voice<I, O>, elapsed: number, rebuilt: boo
   }
   return voice.owner === null ? t : originOf(voice.owner, t, rebuilt);
 }
+
+/** The mix time a voice started, or will by its owners' controls now: where its clock read 0. */
+export function startedAt<I, O>(voice: Voice<I, O>): number {
+  return voice.owner === null ? voice.start : originOf(voice.owner, voice.start, false);
+}

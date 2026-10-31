@@ -8,6 +8,15 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- An owner's fade in counts from when the owner started, under an owner turned back or slowed.
+  It was worked out again each frame from where the outer owner's clock would next reach the
+  inner owner's start, so a clip under an inner owner with a fade in vanished when the outer
+  owner turned back, and slowing the outer owner jumped the fade to its end.
+- A fade set for now or earlier, on a voice whose owner runs back, begins then. It was put off to
+  when the owner's clock would come back to the voice's start, playing at full weight until then.
+- A fade in stands still while a fade out runs, and climbs on from there after `rise`, rather than
+  jumping to where its clock had reached. A subject's own fade out stops its fade in climbing too,
+  as the voice's does; before, the two multiplied into a rise.
 - A span child with `faster` or `slower` at `Infinity` is retimed to fill its span. It got a rate
   of Infinity, jumping to its end, or 0, and was skipped as never fitting.
 - A `from: 'current'` voice whose stop lists fewer axes than its `vec` channel reads the missing

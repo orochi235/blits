@@ -182,6 +182,7 @@ function shapeOf<I, O>(
   if (spec.stepMs !== undefined || spec.from !== undefined) return false;
   if (voice.ramp !== null || !(voice.rate > 0) || voice.out !== null || voice.back !== null)
     return false;
+  if (voice.stalls !== null) return false;
   if (voice.parts !== null || voice.parted !== null || voice.left !== null) return false;
   if (Number.isFinite(voice.outAt) || voice.state === 'fading') return false;
   // Under a mix rate, a waiting voice's start is pinned to the host's clock, where a ramp moves it.

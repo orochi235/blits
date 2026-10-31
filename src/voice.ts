@@ -46,6 +46,8 @@ export interface Controls extends Clock {
   weight: number;
   out: Ramp | null;
   back: Rise | null;
+  /** Absent from a store written before a voice kept them. */
+  stalls?: readonly number[] | null;
   /** Where its anchors had placed it then: start, and the start of an anchored fade out. */
   start: number;
   outAt: number;
@@ -156,6 +158,11 @@ export class Voice<I, O> {
   out: Ramp | null = null;
   /** A fade out turned around, still climbing back; null once back in, or never turned. */
   back: Rise | null = null;
+  /**
+   * Where its fade in stood still under a fade out later turned around, as pairs of mix times,
+   * from and to; null where it never did. Replaced, never changed, so a noted copy stays good.
+   */
+  stalls: readonly number[] | null = null;
   subjects = new Store<I, Subject<unknown>>();
   /** The subjects its spec names, or null where it names none. */
   readonly named: Named<I> | null;
@@ -444,6 +451,7 @@ export class Voice<I, O> {
     this.weight = c.weight;
     this.out = c.out;
     this.back = c.back;
+    this.stalls = c.stalls ?? null;
     this.start = c.start;
     this.outAt = c.outAt;
     this.outOver = c.outOver;
@@ -718,6 +726,7 @@ export class Voice<I, O> {
       weight: this.weight,
       out: this.out,
       back: this.back,
+      stalls: this.stalls,
       start: this.start,
       outAt: this.outAt,
       outOver: this.outOver,
