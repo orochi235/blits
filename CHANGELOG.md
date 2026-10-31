@@ -55,6 +55,10 @@ version and everything else the patch. Each release lists its changes as **Break
   taken in cue order, so an end the frame noticed first could be one that a fit from an earlier
   end would have moved, and two children of a `stagger` span read 509.5 stepped every 50 ms where
   1 ms steps read 525.3.
+- A child a fit skipped reads, once its owner is sought or run back before the skip, what it read
+  going forward. One skipped while playing kept its jump to its end and read on from there, and
+  one skipped before it started, placed at its end at its start, played its passes backward from
+  its start.
 
 ## 0.16.0
 

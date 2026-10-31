@@ -422,3 +422,49 @@ test('a span whose children end in one frame, the later cued first, reads the sa
     for (const [i, v] of run(step).entries())
       expect(v, `${step} ms frames, read ${i}`).toBeCloseTo(want[i] as number, 6);
 });
+
+// CHANGELOG 0.16.0: turning an owner back "reverses completely"; docs/schema.html, owner `seek`:
+// "Moves the owner's clock, and every child's phase with it". A fit that skips a child is undone
+// with the clock: before where it was skipped, the child reads what it read going forward.
+for (const how of ['sought back', 'run back'])
+  test(`a span whose fit skipped children reads, ${how} before the skip, as played straight`, () => {
+    const lens = [858, 1244, 744, 842, 840, 953, 507, 1557, 1211, 1497];
+    const parts = lens.map((_, i) => ({ id: `p${i}` }));
+    const make = () => {
+      const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+      m.sync(0);
+      const reel = m.owns({ start: 0 });
+      m.cue({
+        owner: reel,
+        patch: ramp(10_000, 0, 1),
+        start: 0,
+        loop: false,
+        subjects: [{ id: 'k' }],
+      });
+      const s = m.span({ owner: reel, start: 0, duration: 2000, order: 'stagger', share: 0.5 });
+      for (const [i, p] of parts.entries())
+        m.cue({
+          owner: s,
+          patch: ramp(lens[i] as number, 100, 400),
+          subjects: [p],
+          loop: false,
+          faster: 3,
+          slower: 3,
+        });
+      return { m, reel };
+    };
+    const read = (m: Mix<Part, Pose>) => parts.map((p) => m.probe(p).x);
+    const fresh = make().m;
+    for (let t = 10; t <= 60; t += 10) fresh.sync(t);
+    const { m, reel } = make();
+    for (let t = 10; t <= 500; t += 10) m.sync(t);
+    if (how === 'sought back') {
+      reel.seek(50);
+      m.sync(510);
+    } else {
+      reel.rate = -1;
+      for (let t = 510; t <= 940; t += 10) m.sync(t);
+    }
+    for (const [i, v] of read(m).entries())
+      expect(v, parts[i]?.id).toBeCloseTo(read(fresh)[i] as number, 9);
+  });

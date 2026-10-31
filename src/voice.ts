@@ -65,9 +65,10 @@ export interface Controls extends Clock {
 
 /**
  * A clock a fit replaced, which its voice runs on again where its owner's clock runs back to
- * before the one that replaced it; `prev` is the one before it.
+ * before the one that replaced it, with whether the fit had skipped it; `prev` is the one before.
  */
 export interface Earlier extends Clock {
+  readonly skipped: boolean;
   readonly prev: Earlier | null;
 }
 
@@ -623,6 +624,8 @@ export class Voice<I, O> {
     if (this.state !== 'live' || out?.stays !== true) return false;
     // An owner kept quiet while its children were, rather than run back to its start.
     if (this.holding !== null && out.back !== true) return !plays(this, now) && !lingers(this, now);
+    // A fit that skipped it put it at its end at its start, so before its start it plays nothing.
+    if (this.skipped && ownerReading(this.owner as Voice<I, O>, now) < this.start) return true;
     const at = this.elapsedAt(now);
     const end = this.span + this.latest;
     const back = this.backs !== (this.owner !== null && turnedBack(this));

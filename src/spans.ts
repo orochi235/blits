@@ -66,8 +66,8 @@ function ranBackOver<I, O>(span: Voice<I, O>): boolean {
 }
 
 /**
- * Puts a child whose owner's clock ran back to before a fit changed its rate back on the clock it
- * ran on before, so it reads, run back over, what it read going forward.
+ * Puts a child whose owner's clock ran back to before a fit changed its rate, or skipped it, back
+ * on the clock it ran on before, so it reads, run back over, what it read going forward.
  */
 export function unfit<I, O>(mix: Mixer<I, O>, child: Voice<I, O>, now: number): void {
   const t = ownerReading(child.owner as Voice<I, O>, now);
@@ -78,6 +78,9 @@ export function unfit<I, O>(mix: Mixer<I, O>, child: Voice<I, O>, now: number): 
     child.anchorElapsed = e.anchorElapsed;
     child.rate = e.rate;
     child.ramp = e.ramp;
+    // Skipped, it had jumped to its end; back before the skip, its clock jumps back.
+    if (child.skipped && !e.skipped) child.seeks++;
+    child.skipped = e.skipped;
     e = e.prev;
   }
   child.earlier = e;
@@ -158,6 +161,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
   kids.forEach((c, i) => {
     const rate = (c.spec.rate ?? 1) * (plan.rate[i] as number);
     const skipped = (plan.skip[i] as boolean) && c.holding === null;
+    const wasSkipped = c.skipped;
     c.skipped = skipped;
     let moved = false;
     if (!begun(c, by)) {
@@ -174,6 +178,11 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
         moved = true;
       }
     } else {
+      if (skipped || c.rate !== rate || c.ramp !== null) {
+        const { anchorNow, anchorElapsed, ramp } = c;
+        const prev = c.earlier;
+        c.earlier = { anchorNow, anchorElapsed, rate: c.rate, ramp, skipped: wasSkipped, prev };
+      }
       if (skipped) {
         leave(c, local);
         c.rebase(local);
@@ -182,10 +191,6 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
         moved = true;
       }
       if (c.rate !== rate || c.ramp !== null) {
-        if (!skipped) {
-          const { anchorNow, anchorElapsed, ramp } = c;
-          c.earlier = { anchorNow, anchorElapsed, rate: c.rate, ramp, prev: c.earlier };
-        }
         leave(c, local);
         retime(c, local, rate, 0);
         moved = true;
