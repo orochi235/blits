@@ -9,6 +9,7 @@ export default defineConfig({
       '@msb235/blits-panel': fileURLToPath(
         new URL('./packages/panel/src/index.ts', import.meta.url),
       ),
+      '@stress': fileURLToPath(new URL('./apps/stress/src', import.meta.url)),
       '@pg': fileURLToPath(new URL('./apps/playground/src', import.meta.url)),
     },
   },
@@ -21,6 +22,7 @@ export default defineConfig({
       'packages/*/test/**/*.test.ts',
       'apps/playground/test/**/*.test.ts',
       'apps/devtools/test/**/*.test.ts',
+      'apps/stress/test/**/*.test.ts',
       'site/src/**/*.test.ts',
     ],
   },

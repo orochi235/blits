@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "node"],
+    "paths": {
+      "@stress/*": ["./src/*"],
+      "@msb235/blits": ["../../src/index.ts"]
+    }
+  },
+  "include": ["src", "test", "scripts", "vite.config.ts"]
+}
