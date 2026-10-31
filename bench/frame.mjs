@@ -229,6 +229,9 @@ const rows = [
   // One voice per subject, each targeted at its own: magicsmoke's faults on one shared mix.
   ['own', 100, 1],
   ['own', 1000, 1],
+  // Clips ten to a staggered span under one owner, a span cued every four frames: children
+  // start and end, and spans fit, every few frames.
+  ['spans', 1000, 1],
   // The same, each voice naming its subject with `subjects`.
   ['named', 100, 1],
   ['named', 1000, 1],
@@ -432,13 +435,26 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
     kind === 'swap' ||
     kind === 'swapkeys' ||
     kind === 'fns' ||
-    kind === 'mixed';
+    kind === 'mixed' ||
+    kind === 'spans';
   if (kind === 'own')
     for (const mine of subjects)
       m.cue({ patch: flicker(0), target: (s) => s === mine, loop: true });
   if (kind === 'named')
     for (const mine of subjects) m.cue({ patch: flicker(0), subjects: [mine], loop: true });
   if (kind === 'springs') for (const mine of subjects) m.cue({ patch: settle(), subjects: [mine] });
+  // A span of ten clips every four frames, each starting 2 s after it is cued, so as many play.
+  const reel = kind === 'spans' ? m.owns({ start: 0 }) : null;
+  let spanned = 0;
+  const nextSpan = (start) => {
+    const s = m.span({ owner: reel, start, duration: 2000, order: 'stagger', share: 0.5 });
+    for (let k = 0; k < 10; k++) {
+      const mine = subjects[(spanned * 10 + k) % n];
+      m.cue({ owner: s, patch: pulse(mine.seed * 1000), subjects: [mine], faster: 3, slower: 3 });
+    }
+    spanned++;
+  };
+  if (reel !== null) for (let k = 0; k < 30; k++) nextSpan(k * 66.8);
   const glideOf = (mine) =>
     turnover
       ? tween('position', { from: [mine, 0, 0], to: [mine, 1, 0], ms: LONG, ease: smooth })
@@ -457,6 +473,7 @@ for (const [i, [form, n, voices]] of chosen.entries()) {
   let shared = swapped === null ? null : m.cue({ patch: swapped(0), loop: true });
   const churn = () => {
     if (glow) aim();
+    if (reel !== null && turn++ % 4 === 0) nextSpan(m.now + 2000);
     if (shared !== null) {
       shared.fade({ over: 0 });
       shared = m.cue({ patch: swapped(turn++ % 3), loop: true });

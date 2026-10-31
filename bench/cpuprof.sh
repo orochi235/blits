@@ -4,6 +4,7 @@
 #   bench/cpuprof.sh <row> <runs> <rev>...
 # A revision of `.` is the working tree. Each is built from `git archive` into a temporary
 # directory, removed on exit with its profiles. FRAMES defaults to 5000; PROF_INTERVAL (µs) to 100.
+# AB_BENCH names one bench file every revision runs, as in ab.sh, for a row older ones lack.
 set -euo pipefail
 row="$1"; runs="$2"; shift 2
 root="$(git rev-parse --show-toplevel)"
@@ -21,6 +22,7 @@ for i in "${!revs[@]}"; do
   else
     git -C "$root" archive "$(commit_of "$rev")" | tar -x -C "$dir"
   fi
+  if [[ -n "${AB_BENCH:-}" ]]; then cp "$root/$AB_BENCH" "$dir/bench/frame.mjs"; fi
   ln -s "$root/node_modules" "$dir/node_modules"
   (cd "$dir" && npx tsc -b)
 done

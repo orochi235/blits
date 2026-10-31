@@ -63,10 +63,10 @@ function moveTo<I, O>(mix: Mixer<I, O>, now: number): void {
   let held: Voice<I, O>[] | null = null;
   for (const voice of visit) {
     if (voice.state === 'done') continue;
-    if (voice.owner?.fitting && meets(mix, voice, now)) {
+    if (visitOne(mix, voice, now, voice.owner !== null && voice.owner.fitting !== null)) {
       held ??= [];
       held.push(voice);
-    } else visitOne(mix, voice, now);
+    }
   }
   const back = mix.leapt === null && held === null ? null : turnedBack(mix, held, now);
   mix.leapt = null;
@@ -99,16 +99,23 @@ function turnedBack<I, O>(
   now: number,
 ): Voice<I, O>[] | null {
   let back: Voice<I, O>[] | null = null;
-  const up = (from: Voice<I, O> | null) => {
-    for (let o = from; o !== null; o = o.owner) {
-      if (o.state === 'done' || o.owner?.fitting || back?.includes(o)) continue;
-      if (o.rateAt(o.owner === null ? now : ownerReading(o.owner, now)) > 0) continue;
-      back ??= [];
-      back.push(o);
-    }
-  };
-  if (mix.leapt !== null) for (const o of mix.leapt) up(o);
-  if (held !== null) for (const v of held) up(v.owner);
+  if (mix.leapt !== null) for (const o of mix.leapt) back = up(o, now, back);
+  if (held !== null) for (const v of held) back = up(v.owner, now, back);
+  return back;
+}
+
+/** Adds to `back` the owners from `from` up that `turnedBack` takes. */
+function up<I, O>(
+  from: Voice<I, O> | null,
+  now: number,
+  back: Voice<I, O>[] | null,
+): Voice<I, O>[] | null {
+  for (let o = from; o !== null; o = o.owner) {
+    if (o.state === 'done' || o.owner?.fitting || back?.includes(o)) continue;
+    if (o.rateAt(o.owner === null ? now : ownerReading(o.owner, now)) > 0) continue;
+    back ??= [];
+    back.push(o);
+  }
   return back;
 }
 
@@ -156,15 +163,16 @@ function ahead<I, O>(
   mix.lanes?.refill();
 }
 
-/** Starts, ends and fades one voice as of `now`. */
-function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
+/**
+ * Starts, ends and fades one voice as of `now`; with `wait`, a span's child, it does none of that
+ * and answers true where the child `meets` now, to wait its turn.
+ */
+function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait = false): boolean {
   if (Number.isNaN(voice.opened)) voice.opened = now;
   if (voice.earlier !== null || voice.later !== null) unfit(mix, voice, now);
-  if (
-    voice.state === 'pending' &&
-    (voice.owner === null ? now : ownerReading(voice.owner, now)) >= voice.start
-  )
-    begin(mix, voice, now);
+  const t = voice.owner === null ? now : ownerReading(voice.owner, now);
+  if (wait && meetsAt(voice, t, now)) return true;
+  if (voice.state === 'pending' && t >= voice.start) begin(mix, voice, now);
   // After it starts, so a fade due by now on a voice that started since the last frame begins.
   // Not one set for after its passes run out, where a move across both would begin it first.
   if (
@@ -188,9 +196,10 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void
     if (voice.state === 'live' && voice.out !== null && !voice.quietAt(now)) rouse(mix, voice, now);
     // Its passes run out at its end running forward, and at its start running back. A clock
     // standing still at or before its start is where it was: waiting, or frozen there.
-    const way = heading(voice, now);
-    const at = voice.elapsedAt(now);
-    const back = way < 0;
+    const heads =
+      Math.sign(voice.rateAt(t)) * (voice.owner === null ? 1 : heading(voice.owner, now));
+    const at = t === Number.NEGATIVE_INFINITY ? t : elapsedWith(voice, t);
+    const back = heads < 0;
     const atStart = !voice.beginless && at <= voice.soonest;
     // An owner run back to its start stays for what it holds, and leaves with its last child.
     const holds = voice.holding !== null && plays(voice, now);
@@ -211,7 +220,7 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void
             Math.max(startOf(voice), Math.min(now, voice.endsAt())),
           );
       }
-    } else if (voice.state === 'frozen' && !(atStart && way === 0)) voice.state = 'live';
+    } else if (voice.state === 'frozen' && !(atStart && heads === 0)) voice.state = 'live';
   }
   // A projection reads a finished ramp as weight 0, and leaves the live voice's subjects be.
   if (voice.parts !== null && !mix.projecting)
@@ -236,6 +245,7 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void
     }
   }
   if (!mix.projecting) schedule(mix, voice);
+  return false;
 }
 
 /**
@@ -246,13 +256,17 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void
  * fit made to it that its owner's clock has come back to, as `visitOne` would.
  */
 function meets<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): boolean {
-  if (voice.state === 'pending')
-    return ownerReading(voice.owner as Voice<I, O>, now) >= voice.start;
+  if (voice.earlier !== null || voice.later !== null) unfit(mix, voice, now);
+  return meetsAt(voice, ownerReading(voice.owner as Voice<I, O>, now), now);
+}
+
+/** `meets`, given what its owner's clock reads at `now`, `t`. */
+function meetsAt<I, O>(voice: Voice<I, O>, t: number, now: number): boolean {
+  if (voice.state === 'pending') return t >= voice.start;
   if (voice.state !== 'live' || !Number.isFinite(voice.span)) return false;
   const out = voice.out;
   if (out !== null && !(out.stays === true && out.back === true)) return false;
-  if (voice.earlier !== null || voice.later !== null) unfit(mix, voice, now);
-  const at = voice.elapsedAt(now);
+  const at = t === Number.NEGATIVE_INFINITY ? t : elapsedWith(voice, t);
   const edge = out === null ? voice.span + voice.latest : voice.soonest;
   return at > edge || (at === edge && heading(voice, now) > 0);
 }
@@ -263,17 +277,24 @@ function meets<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): boolean
  * return only does that here; a child a fit moves to meet `now`, or whose span starts, joins them.
  */
 function inTurn<I, O>(mix: Mixer<I, O>, held: Voice<I, O>[], now: number): void {
-  const waiting = new Set(held);
-  const ended = new Set<Voice<I, O>>();
-  const join = (o: Voice<I, O>) => {
-    for (const c of (o.holding as Holding<Voice<I, O>>).children)
-      if (!ended.has(c) && c.state !== 'done' && meets(mix, c, now)) waiting.add(c);
-  };
+  // A lone start of a child holding nothing moves nothing else: it starts and is visited.
+  const lone = held.length === 1 ? (held[0] as Voice<I, O>) : null;
+  if (lone !== null && lone.state === 'pending' && lone.holding === null) {
+    begin(mix, lone, now);
+    if (!meets(mix, lone, now)) {
+      visitOne(mix, lone, now);
+      return;
+    }
+  }
+  // `held` is this frame's own list, so it is the one the children waiting their turn join.
+  const waiting = held;
+  const ended: Voice<I, O>[] = [];
   for (;;) {
     let next: Voice<I, O> | undefined;
     let when = Number.POSITIVE_INFINITY;
-    for (const v of waiting) {
-      if (v.state === 'done' || ended.has(v) || !meets(mix, v, now)) continue;
+    for (let i = 0; i < waiting.length; i++) {
+      const v = waiting[i] as Voice<I, O>;
+      if (v.state === 'done' || ended.includes(v) || !meets(mix, v, now)) continue;
       const t =
         v.state === 'pending' ? startOf(v) : v.out !== null ? v.reaches(v.soonest) : v.endsAt();
       // At one time an end comes first, as a fit from it counts a start there as still to come.
@@ -285,16 +306,35 @@ function inTurn<I, O>(mix: Mixer<I, O>, held: Voice<I, O>[], now: number): void 
     if (next === undefined) break;
     if (next.state === 'pending') {
       begin(mix, next, now);
-      if (next.holding !== null) join(next);
+      if (next.holding !== null) join(mix, next, now, waiting, ended);
     } else if (next.out !== null) rouse(mix, next, now);
     else {
-      ended.add(next);
+      ended.push(next);
       visitOne(mix, next, now);
-      for (let o = next.owner; o?.fitting; o = o.owner) join(o);
+      for (let o = next.owner; o?.fitting; o = o.owner) join(mix, o, now, waiting, ended);
     }
   }
-  for (const v of byId([...waiting]))
-    if (!ended.has(v) && v.state !== 'done') visitOne(mix, v, now);
+  byId(waiting);
+  for (let i = 0; i < waiting.length; i++) {
+    const v = waiting[i] as Voice<I, O>;
+    if (!ended.includes(v) && v.state !== 'done') visitOne(mix, v, now);
+  }
+}
+
+/** Adds to `waiting` the children of `o` that meet `now` and have not yet ended this frame. */
+function join<I, O>(
+  mix: Mixer<I, O>,
+  o: Voice<I, O>,
+  now: number,
+  waiting: Voice<I, O>[],
+  ended: Voice<I, O>[],
+): void {
+  const children = (o.holding as Holding<Voice<I, O>>).children;
+  for (let i = 0; i < children.length; i++) {
+    const c = children[i] as Voice<I, O>;
+    if (c.state !== 'done' && !ended.includes(c) && !waiting.includes(c) && meets(mix, c, now))
+      waiting.push(c);
+  }
 }
 
 /** Which of two events at one time comes first: an end before a start or return, then cue order. */
