@@ -8,6 +8,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- `inert` reads false while a motion voice has a subject it met inside its `stagger` and has not
+  read since, which moves once it is probed. It read true, so a host that stops on `inert` stopped
+  a subject that had yet to start.
 - A span's child whose cue a seek back plays again waits for the span's fit, as it did when first
   cued, so the span lays it out as before. It started at once wherever its span's clock had passed
   the start the fit first gave it: the fit then took it for ended, so it skipped nothing else, or,

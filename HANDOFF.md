@@ -273,14 +273,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      1% of a `spans` frame in `bench/runs/2026-10-31-spans-profile-due-list.txt`. One walk that
      also reads `heading` was profiled and was no faster
      (`bench/runs/2026-10-31-spans-profile-one-walk.txt`).
-   - **`inert` misses a motion subject met inside its stagger** (found by audit, 2026-10-31;
-     `test.fails` in `test/life-edges.test.ts`). A subject probed only during its `stagger` has no
-     run in the motion patch, so `still` (`src/rests.ts`) finds the motion landed and `inert` reads
-     true, though the next probe moves the subject. A ticker host probes before reading `inert`
-     and mostly misses it. Counting runs against `voice.seen` is not the fix: a subject at weight 0
-     never gets a run either, and lanes on and off then disagree (the differential suite catches
-     it). It needs a per-record mark for a subject met inside its stagger whose run has not
-     started, kept through seeks.
+   - **`inert` after a seek back, for a motion subject met inside its stagger** (2026-10-31):
+     `still` (`src/rests.ts`) asks after a motion voice's records listed in `voice.early` that are
+     unread since their stagger ran out. A seek back rebuilds that list from restored copies, whose
+     `probed` is reset, so it keeps only those still inside their stagger: one already past it,
+     never read, is missed until the voice's clock next changes. Not tested.
    - **A child anchored to a sibling under an owner at rate 0 is placed wrong when the owner is
      sought forward** (2026-10-31, `test.fails` in `test/place-edges.test.ts`). `place` runs at the
      top of `moveTo` with the owner still at rate 0, where `timeWith` answers any time its clock has

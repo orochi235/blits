@@ -148,6 +148,14 @@ export function shownOf<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, since: numb
   return voice.freezesBefore && voice.opened < from ? voice.opened : from;
 }
 
+/**
+ * Whether a listed record stays listed at `now`: its origin is ahead, or it is a motion voice's,
+ * unread since its origin, which `still` asks after since the motion has no run for it yet.
+ */
+function stillEarly<I, O>(voice: Voice<I, O>, held: Subject<unknown>, now: number): boolean {
+  return !(held.since <= now) || (voice.motion !== undefined && !(held.probed >= held.since));
+}
+
 /** Lists a record whose origin is still ahead of `now`, for a later change to the clock to move. */
 export function waits<I, O>(voice: Voice<I, O>, held: Subject<unknown>, now: number): void {
   if (held.since <= now) return;
@@ -156,7 +164,7 @@ export function waits<I, O>(voice: Voice<I, O>, held: Subject<unknown>, now: num
   // Prunes at each doubling, so records whose origin has passed are not kept to the voice's end.
   if (early.length >= 64 && (early.length & (early.length - 1)) === 0) {
     let kept = 0;
-    for (const h of early) if (!(h.since <= now)) early[kept++] = h;
+    for (const h of early) if (stillEarly(voice, h, now)) early[kept++] = h;
     early.length = kept;
   }
   early.push(held);
@@ -199,7 +207,7 @@ export function reorigin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number
   let kept = 0;
   for (const held of early) {
     origin(mix, voice, held);
-    if (!(held.since <= now)) early[kept++] = held;
+    if (stillEarly(voice, held, now)) early[kept++] = held;
   }
   early.length = kept;
   if (kept === 0) voice.early = null;

@@ -120,8 +120,7 @@ test('a read ahead that throws on a call the tape holds puts the tape back', () 
   expect(run(true)).toBeCloseTo(run(false), 9);
 });
 
-// Open: HANDOFF item 1, "`inert` misses a motion subject met inside its stagger".
-test.fails('inert reads false while a motion voice has a named subject it has yet to move, past its stagger', () => {
+test('inert reads false while a motion voice has a named subject it has yet to move, past its stagger', () => {
   const m = mix<Part, Pose>(K);
   const p = { id: 1 };
   m.sync(0);
@@ -135,6 +134,30 @@ test.fails('inert reads false while a motion voice has a named subject it has ye
   const b = m.probe(p).x;
   expect(b).not.toBeCloseTo(a, 3); // another frame does change the pose…
   expect(inert).toBe(false); // …so the mix is not inert
+});
+
+test('inert reads false for such a subject after a rate change past its stagger, then true once it lands', () => {
+  for (const lanes of [true, false]) {
+    const m = mix<Part, Pose>(K, { lanes });
+    const p = { id: 1 };
+    m.sync(0);
+    const h = m.cue({
+      patch: spring<Part, Pose>('x', { from: 0, to: 1 }),
+      stagger: () => 100,
+      subjects: [p],
+    });
+    m.sync(16);
+    m.probe(p);
+    m.sync(266);
+    h.rate = 2;
+    m.sync(282);
+    expect(m.inert).toBe(false);
+    for (let t = 298; t < 5000; t += 16) {
+      m.sync(t);
+      m.probe(p);
+    }
+    expect(m.inert).toBe(true);
+  }
 });
 
 test('under history, a voice faded out of one subject is let go with history', () => {

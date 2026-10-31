@@ -61,7 +61,12 @@ export function still<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, now: number):
   if (fadeIn > 0 && now - this.sinceOf(voice, voice.latest) < fadeIn) return false;
   if (voice.state === 'frozen' || voice.holding !== null) return true;
   const motion = voice.motion;
-  return motion !== undefined && voice.elapsedAt(now) >= voice.latest && motion.landed();
+  if (motion === undefined || !(voice.elapsedAt(now) >= voice.latest)) return false;
+  // A subject met inside its stagger and not read since has no run yet, and moves once it is.
+  const early = voice.early;
+  if (early !== null)
+    for (const h of early) if (h.since <= now && !(h.probed >= h.since)) return false;
+  return motion.landed();
 }
 
 export function restsLaned<I, O>(this: Mixer<I, O>): boolean {
