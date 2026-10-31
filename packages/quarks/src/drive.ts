@@ -83,6 +83,7 @@ export function drive<I, O extends Partial<Emission>>(
 
   let now = Number.NaN;
   let timestamp = Number.NaN;
+  let rate = Number.NaN;
 
   const emit = (b: Bound<O>): void => {
     const at = typeof b.at === 'function' ? b.at() : b.at;
@@ -166,10 +167,12 @@ export function drive<I, O extends Partial<Emission>>(
 
     write() {
       // Mix time passed, held to the host's gap at the mix's rate so a seek ahead owes nothing.
-      const gone = Math.min(mix.now - now, (mix.timestamp - timestamp) * mix.rate);
+      // The rate at either end bounds a ramp's, since it moves linearly between them.
+      const gone = Math.min(mix.now - now, (mix.timestamp - timestamp) * Math.max(rate, mix.rate));
       const dt = gone > 0 ? gone : 0;
       now = mix.now;
       timestamp = mix.timestamp;
+      rate = mix.rate;
       for (const [subject, b] of bound) {
         mix.probe(subject, b.pose);
         const owed = (b.pose.rate ?? 0) * dt;

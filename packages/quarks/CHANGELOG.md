@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
+## Unreleased
+
+### Fixed
+
+- `write` no longer emits too few particles while the mix's rate ramps down: it bounded the
+  frame's mix time by the rate at its end, not the higher of the two ends.
+
 ## 0.11.0
 
 ### Breaking
