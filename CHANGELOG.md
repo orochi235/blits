@@ -8,6 +8,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- An owner running back holds a child placed where its clock stands unplayed, whether or not a
+  frame lands there. An owner cued backward with a child at 0 started that child, ended it, and
+  left with it only when a frame fell exactly on the owner's start; otherwise both waited for good.
 - A read ahead that throws partway, on a call the tape holds that it cannot play, puts the tape
   back. It left the live tape moved past the call, so a later seek restored the wrong state.
 - Under `history`, a voice faded out of one subject is let go when history lets it go. The mix

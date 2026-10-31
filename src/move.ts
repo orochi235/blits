@@ -172,7 +172,7 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
   if (voice.earlier !== null || voice.later !== null) unfit(mix, voice, now);
   const t = voice.owner === null ? now : ownerReading(voice.owner, now);
   if (wait && meetsAt(voice, t, now)) return true;
-  if (voice.state === 'pending' && t >= voice.start) begin(mix, voice, now);
+  if (voice.state === 'pending' && starts(voice, t, now)) begin(mix, voice, now);
   // After it starts, so a fade due by now on a voice that started since the last frame begins.
   // Not one set for after its passes run out, where a move across both would begin it first.
   if (
@@ -249,6 +249,17 @@ function visitOne<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number, wait 
 }
 
 /**
+ * Whether a pending voice starts with its owner's clock at `t`: at its very start only on a clock
+ * not running back, where it would leave as it starts, as one passed between frames never starts.
+ */
+function starts<I, O>(voice: Voice<I, O>, t: number, now: number): boolean {
+  return (
+    t > voice.start ||
+    (t === voice.start && (voice.owner === null || heading(voice.owner, now) >= 0))
+  );
+}
+
+/**
  * Whether a span's child starts, comes back, or reaches the end of its passes by `now`: a fit from
  * an end earlier in the frame can move any of these, so they wait for the ends before them. One
  * kept quiet at its start comes back as its clock passes it. Past its end, or its start, on a clock
@@ -262,7 +273,7 @@ function meets<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): boolean
 
 /** `meets`, given what its owner's clock reads at `now`, `t`. */
 function meetsAt<I, O>(voice: Voice<I, O>, t: number, now: number): boolean {
-  if (voice.state === 'pending') return t >= voice.start;
+  if (voice.state === 'pending') return starts(voice, t, now);
   if (voice.state !== 'live' || !Number.isFinite(voice.span)) return false;
   const out = voice.out;
   if (out !== null && !(out.stays === true && out.back === true)) return false;
