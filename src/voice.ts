@@ -263,6 +263,8 @@ export class Voice<I, O> {
   outSet = false;
   /** The host time a pinned start was given at, NaN for none: a seek back pins it again. */
   pinned = Number.NaN;
+  /** The mix's offset when it was cued: a timestamp in its anchor converts at this one. */
+  offset = 0;
   /** Cued with no start while its mix slept, so the next sync sets its start. */
   waking = false;
   /** Whether its start is still to be fixed by an anchor, so it waits pending. */

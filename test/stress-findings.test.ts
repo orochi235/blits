@@ -184,7 +184,7 @@ test('a span under an owner ramping back lays out as one at rate 1, up to where 
 
 // docs/schema.html, Score, Seeking: "mix.seek(t) moves the live mix to mix time t, as it stood at the end of
 // that frame, and it plays on from there"; an owner placed by `start: 2000` does.
-test.fails('an owner anchored to start at 2000 has not started after a seek back to 1000', () => {
+test('an owner anchored to start at 2000 has not started after a seek back to 1000', () => {
   const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
   m.sync(0);
   const o = m.owns({ anchor: { start: 2000 } });
@@ -195,22 +195,29 @@ test.fails('an owner anchored to start at 2000 has not started after a seek back
 });
 
 // docs/schema.html, Score, Seeking, Back: "Voices that left after it are back on the handles the host
-// holds"; the same voice under an owner stays back.
-test.fails('a voice anchored to end at 4000 stays back after a seek to 1000', () => {
-  const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
-  m.sync(0);
-  const h = m.cue({
-    patch: ramp(300, 0, 100),
-    loop: false,
-    freeze: 'after',
-    anchor: { end: 4000 },
+// holds"; the same voice under an owner stays back. So do one placed by `out`, and a loop.
+const anchoredOut = {
+  'end at 4000': { anchor: { end: 4000 } },
+  'out at 4000': { anchor: { out: 4000 } },
+  'end at 4000, looping': { anchor: { end: 4000 }, loop: true },
+} as const;
+for (const [form, spec] of Object.entries(anchoredOut))
+  test(`a voice anchored to ${form} stays back after a seek to 1000`, () => {
+    const make = () => {
+      const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+      m.sync(0);
+      const h = m.cue({ patch: ramp(300, 0, 100), loop: false, freeze: 'after', ...spec });
+      return { m, h };
+    };
+    const fresh = make();
+    const want = [1000, 1001].map((t) => [x(fresh.m, t), fresh.h.state]);
+    const { m, h } = make();
+    x(m, 1000);
+    x(m, 5000);
+    m.seek(1000);
+    expect([m.probe(a).x, h.state]).toEqual(want[0]);
+    expect([x(m, 5001), h.state]).toEqual(want[1]);
   });
-  x(m, 1000);
-  expect(x(m, 5000)).toBe(0);
-  m.seek(1000);
-  expect([m.probe(a).x, h.state]).toEqual([100, 'frozen']);
-  expect([x(m, 5001), h.state]).toEqual([100, 'frozen']);
-});
 
 // docs/schema.html, Score: "A placement that waits on itself is refused at cue." Here q2 starts off
 // q1's coast, which q1's out does not move, so nothing waits on itself; by tag it is taken.

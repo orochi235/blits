@@ -228,7 +228,7 @@ export function resolve<I, O>(
   before?: number,
 ): number | undefined {
   const o = self.owner;
-  if (typeof a === 'number') return o === null ? mixAt(mix, a - mix.offset) : a;
+  if (typeof a === 'number') return o === null ? mixAt(mix, a - self.offset) : a;
   if ('all' in a) {
     let latest = Number.NEGATIVE_INFINITY;
     for (const m of a.all) {

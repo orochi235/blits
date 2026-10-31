@@ -249,16 +249,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      `spans.ts`: a span run back over must not fit again (`ranBackOver` in `src/fade.ts`), which
      `stay` and the seek in `src/seek.ts` each check before calling `refit`; the check belongs in
      `refit` itself, and the seek's loop is `refitAll`'s, which nothing calls now.
-   - **Seeking back breaks two anchored forms.** An owner placed by `anchor: { start: 2000 }`
-     carries on from where it had played after `seek(1000)` (a plain `start: 2000` is right). A
-     voice placed by `anchor: { end: 4000 }` comes back at the seek, then goes `done` at 0 on the
-     next sync; `out` and looping voices too, owned voices not. One cause (traced 2026-10-31):
-     `resolve` in `src/place.ts` reads a numeric anchor of a voice no owner holds as
-     `a - mix.offset` every time it places it, and a seek moves `offset` (`last - u`), so after
-     `seek(1000)` from 2100 the start reads 900 and the end 0. A plain `start` is pinned once, at
-     `cue`, as `spec.start - mix.offset` (`src/cue.ts`). The fix: keep the offset each anchored
-     voice was cued under and subtract that; tried, with both tests passing, and left out because
-     another session held `place.ts`.
    - **`from: 'current'` keeps the speed, and the docs say it does not.** `blending.mdx` says such a
      fade carries position, not speed; CHANGELOG 0.2.0 and `src/patch.ts` bend its start to the
      subject's speed, so a still fixture's linear fade eases in, and the first such fade a mix

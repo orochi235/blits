@@ -32,6 +32,11 @@ version and everything else the patch. Each release lists its changes as **Break
   one through names is: a voice starting after the one tagged `b`, cued beside one tagged `b`
   starting after the one tagged `a`, was taken. A query is followed to the voices it can pick at
   the cue, the voice being cued among them.
+- A voice no owner holds, placed by a timestamp in its anchor, stays where it was placed through a
+  seek back. Each placing read the timestamp against the mix's offset at that moment, which a seek
+  moves, so after `seek(1000)` from 2100 an owner anchored to start at 2000 had started at 900, and
+  one anchored to end at 4000 left at 0. The timestamp is now read against the offset in force when
+  the voice was cued, as a plain `start` is.
 
 ## 0.16.0
 
