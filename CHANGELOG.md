@@ -8,6 +8,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A child anchored to a sibling under an owner at rate 0 plays where its anchor puts it when the
+  owner is sought forward past both. Its anchor's time went through mix time on a clock standing
+  still, which maps every time it has passed to the seek's moment, so the child was placed at the
+  time sought plus its offset and never played.
 - `inert` reads false while a motion voice has a subject it met inside its `stagger` and has not
   read since, which moves once it is probed. It read true, so a host that stops on `inert` stopped
   a subject that had yet to start.

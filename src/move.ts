@@ -131,15 +131,28 @@ function ahead<I, O>(
   now: number,
 ): void {
   const kept = back.map((o) => {
-    const { anchorNow, anchorElapsed, rate, ramp } = o;
+    const { anchorNow, anchorElapsed, rate, ramp, start } = o;
     const at = o.owner === null ? now : ownerReading(o.owner, now);
     o.anchorElapsed = elapsedWith(o, at);
     o.anchorNow = at;
     o.rate = 1;
     o.ramp = null;
-    return { anchorNow, anchorElapsed, rate, ramp, logged: o.log?.length ?? 0 };
+    // Started where the clock run forward reads 0, so a time on it before now maps back to it.
+    o.start = at - o.anchorElapsed;
+    return { anchorNow, anchorElapsed, rate, ramp, start, logged: o.log?.length ?? 0 };
   });
   try {
+    // Anchors are placed on those clocks too, and a plain child placed behind them starts there:
+    // on a clock standing still, an owner's time maps to the seek's moment and back to where it
+    // was sought, so a later frame would place it again past it.
+    if (mix.anchored > 0) {
+      place(mix);
+      for (const o of back)
+        descendants(o, (v) => {
+          if (v.state === 'pending' && v.spec.anchor !== undefined && v.owner?.fitting === null)
+            visitOne(mix, v, now);
+        });
+    }
     settle(mix, held, now);
   } finally {
     back.forEach((o, i) => {

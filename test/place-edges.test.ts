@@ -239,8 +239,7 @@ test('a child cued into a span running back plays when the span is sought into i
   expect(run(true)).toEqual(run(false));
 });
 
-// Fails today: see HANDOFF.md, "Next, in order" item 1, the anchor under an owner at rate 0.
-test.fails('a child anchored to a sibling plays when its owner, at rate 0, is sought past both', () => {
+test('a child anchored to a sibling plays when its owner, at rate 0, is sought past both', () => {
   const [c, d] = [{ id: 'c' }, { id: 'd' }];
   const clip = { loop: false, freeze: 'after' } as const;
   const run = (rate: number, sought: boolean) => {

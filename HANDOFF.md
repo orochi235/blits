@@ -280,14 +280,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      stagger and never read. Carrying a "read since its origin" flag through copies was tried and
      reverted: the seek sweep of `test/differential.test.ts` then read lanes on and off apart. A fix
      wants the motion patch to hold the subjects it has met but not started, kept with its history.
-   - **A child anchored to a sibling under an owner at rate 0 is placed wrong when the owner is
-     sought forward** (2026-10-31, `test.fails` in `test/place-edges.test.ts`). `place` runs at the
-     top of `moveTo` with the owner still at rate 0, where `timeWith` answers any time its clock has
-     passed with `anchorNow`, so the sibling's mark comes back as the seek's moment and the child
-     lands at owner 1040, never to play, where played straight it starts at 140; a mix sought back
-     to that frame places it at 140. Not fixed now: it needs the `ahead` pass (`src/move.ts`) to run
-     placing on the clocks it runs forward, and visit plain children there too, the same rework
-     the span-held case above needs.
    - **The audit's fixes cost nothing measurable** (2026-10-31): 6f39479 against 47c144c, 7 rounds
      on msb-uai, every row's U at 9 or more, geometric mean 0.998
      (`bench/runs/2026-10-31-audit-fixes-vs-47c144c.txt`).
