@@ -77,8 +77,8 @@ describe('a motion with an infinite parameter', () => {
       RangeError,
     );
     for (const k of ['stiffness', 'damping', 'mass'] as const)
-      expect(() => spring<Part, Pose>('x', { from: 0, [k]: Number.POSITIVE_INFINITY })).toThrow(
-        RangeError,
-      );
+      expect(() =>
+        spring<Part, Pose>('x', { from: 0, to: 1, [k]: Number.POSITIVE_INFINITY }),
+      ).toThrow(RangeError);
   });
 });
