@@ -40,25 +40,29 @@ const nested: Record<string, (m: Mix<Part, Pose>, reel: Handle<Part>) => Handle<
     m.span({ owner: m.span({ owner: reel, start: 0, duration: 300 }), duration: 300 }),
 };
 for (const [kind, holder] of Object.entries(nested)) {
-  test.fails(`a clip under ${kind} under a reel turned back comes back as the reel runs back over it`, () => {
-    const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
-    m.sync(0);
-    const reel = m.owns({ start: 0 });
-    // Keeps the reel playing after the clip has left.
-    m.cue({ owner: reel, patch: ramp(300, 0, 1), loop: true, start: 0, subjects: [{ id: 'k' }] });
-    const inner = holder(m, reel);
-    m.cue({
-      owner: inner,
-      patch: ramp(300, 100, 400),
-      loop: false,
-      ...(kind === 'an owner' ? { start: 0 } : {}),
-    });
-    expect(x(m, 250)).toBe(350);
-    x(m, 500);
-    reel.rate = -1;
-    // The reel reads 300 at mix 700 and 250 at 750.
-    expect(x(m, 750)).toBeCloseTo(350, 9);
-  });
+  // Under a span the span itself still leaves once its budget is out: `lapse` in src/spans.ts.
+  (kind === 'an owner' ? test : test.fails)(
+    `a clip under ${kind} under a reel turned back comes back as the reel runs back over it`,
+    () => {
+      const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+      m.sync(0);
+      const reel = m.owns({ start: 0 });
+      // Keeps the reel playing after the clip has left.
+      m.cue({ owner: reel, patch: ramp(300, 0, 1), loop: true, start: 0, subjects: [{ id: 'k' }] });
+      const inner = holder(m, reel);
+      m.cue({
+        owner: inner,
+        patch: ramp(300, 100, 400),
+        loop: false,
+        ...(kind === 'an owner' ? { start: 0 } : {}),
+      });
+      expect(x(m, 250)).toBe(350);
+      x(m, 500);
+      reel.rate = -1;
+      // The reel reads 300 at mix 700 and 250 at 750.
+      expect(x(m, 750)).toBeCloseTo(350, 9);
+    },
+  );
 }
 
 // docs/schema.html, Time: "a stateless patch reads the same at any rate".

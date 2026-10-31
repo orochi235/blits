@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- Under `history`, an owner another owner holds no longer leaves once none of its children plays:
+  it stays with its own owner, quiet, so turning the outer owner back brings back a clip under an
+  owner inside it, as it does a direct child.
+
 ## 0.16.0
 
 ### Added

@@ -24,12 +24,13 @@ import {
   ownedElapsed,
   ownerPatch,
   ownerReading,
+  plays,
   turnedBack,
 } from './owner.js';
 import { type Built, builtOf, intosOf, type Scratch } from './patch.js';
 import type { Seat } from './seat.js';
 import { keeping, VoiceSetting } from './setting.js';
-import type { Fitting } from './spans.js';
+import { type Fitting, lingers } from './spans.js';
 import { Filled, Store } from './store.js';
 import type { Parted, Parting, Snap, Subject } from './subject.js';
 import type { Anchor, Channel, FadeSpec, Handle, Patch, VoiceSpec } from './types.js';
@@ -603,7 +604,10 @@ export class Voice<I, O> {
    * quiet unless its clock runs into them.
    */
   quietAt(now: number): boolean {
-    if (this.state !== 'live' || this.out?.stays !== true) return false;
+    const out = this.out;
+    if (this.state !== 'live' || out?.stays !== true) return false;
+    // An owner kept quiet while its children were, rather than run back to its start.
+    if (this.holding !== null && out.back !== true) return !plays(this, now) && !lingers(this, now);
     const at = this.elapsedAt(now);
     const end = this.span + this.latest;
     const back = this.backs !== (this.owner !== null && turnedBack(this));

@@ -172,7 +172,8 @@ export function beginFade<I, O>(
 
 /**
  * Keeps a voice faded at the end of its passes with its owner, live and quiet, rather than letting
- * it leave; the owner leaves at `at` if it holds no child still playing.
+ * it leave; the owner, where it holds no child still playing, leaves at `at`, or stays quiet in
+ * turn where an owner holds it.
  */
 export function stay<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at: number): void {
   voice.state = 'live';
@@ -180,8 +181,19 @@ export function stay<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, at: number): vo
   const owner = voice.owner as Voice<I, O>;
   if (owner.state === 'done') return;
   const now = Number.isNaN(mix.now) ? Number.NEGATIVE_INFINITY : mix.now;
-  if (!plays(owner, now) && !lingers(owner, at)) retire(mix, owner, at);
-  else if (owner.fitting !== null && !voice.skipped) refit(mix, owner, at);
+  if (plays(owner, now) || lingers(owner, at)) {
+    if (owner.fitting !== null && !voice.skipped) refit(mix, owner, at);
+  } else release(mix, owner, at);
+}
+
+/**
+ * Lets an owner holding no child still playing leave at `at`; under history one an owner holds
+ * stays with it instead, quiet while its children are.
+ */
+export function release<I, O>(mix: Mixer<I, O>, owner: Voice<I, O>, at: number): void {
+  if (owner.owner !== null && owner.state === 'live' && mix.opts.history !== undefined)
+    beginFade(mix, owner, { over: 0, stays: true }, at);
+  else retire(mix, owner, at);
 }
 
 /**

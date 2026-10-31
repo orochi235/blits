@@ -238,10 +238,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    review made the checks able to fail (the first round is `2026-10-30-stress-short.txt`), with
    each run's raw records beside it. Each correctness finding below is a `test.fails` in
    `test/stress-findings.test.ts`, which flips to failing once fixed; then drop the `.fails`.
-   - **0.16.0's reversal stops one level down.** Turning an owner back brings back a direct child
-     that left, but not a clip under an owner, a span, or a span in a span inside it: that reads 0
-     while the owner runs back over it. The changelog promises "playback reverses completely".
-     The timeline demo reports these as `undecided`; by the changelog they are bugs.
+   - **0.16.0's reversal stops under a span.** Turning an owner back brings back a clip under an
+     owner inside it (fixed 2026-10-31), but not one under a span or a span in a span: that reads 0
+     while the owner runs back over it, since `lapse` in `src/spans.ts` retires a span out of budget
+     whether or not an owner holds it. The fix: `lapse` skips a span already kept quiet
+     (`span.out?.stays`) and lets the rest go through `release` in `src/fade.ts`, which keeps one
+     an owner holds under history (tried, and the two span tests pass; left out because another
+     session held `spans.ts`). The timeline demo reports these as `undecided`; by the changelog
+     they are bugs.
    - **A span's layout depends on frame rate.** A child's end re-fits its span from that end, and a
      sibling past its start that no frame has started yet still counts as pending, so the re-fit
      moves it (read from `refit` and `elapsedIn` in `src/spans.ts`, not traced). Two children in a
