@@ -40,6 +40,10 @@ version and everything else the patch. Each release lists its changes as **Break
 - Under `history`, a span an owner holds no longer leaves once its budget is out and none of its
   children plays: it stays with its owner, quiet, so turning the owner back brings back a clip
   under a span, or under a span in a span, as it does one under an owner.
+- A child cued into a span an owner ran back over queues after the children it holds. The span
+  was fitted again at the cue, counting the children waiting for the clock to come back as
+  playing, so the new one started beside them. No fit, from a cue, an arc, a sibling leaving or a
+  seek, moves a span run back over until the clock passes it again.
 
 ## 0.16.0
 

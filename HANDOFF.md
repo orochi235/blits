@@ -238,9 +238,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    review made the checks able to fail (the first round is `2026-10-30-stress-short.txt`), with
    each run's raw records beside it. Each correctness finding below is a `test.fails` in
    `test/stress-findings.test.ts`, which flips to failing once fixed; then drop the `.fails`.
-   - **A span run back over must not fit again** (`ranBackOver` in `src/fade.ts`), which `stay`
-     and the seek in `src/seek.ts` each check before calling `refit`; the check belongs in `refit`
-     itself, and the seek's loop is `refitAll`'s, which nothing calls now.
    - **`from: 'current'` keeps the speed, and the docs say it does not.** `blending.mdx` says such a
      fade carries position, not speed; CHANGELOG 0.2.0 and `src/patch.ts` bend its start to the
      subject's speed, so a still fixture's linear fade eases in, and the first such fade a mix

@@ -293,6 +293,35 @@ test('a span the reel ran back over keeps its layout forward again and through a
   to(900, true);
 });
 
+// A span its clock ran back over keeps the layout it made going forward, so a child cued into it
+// then queues after the ones it holds.
+test('a child cued into a queue span the reel ran back over plays after its siblings', () => {
+  const [p, q, n] = ['p', 'q', 'n'].map((id) => ({ id })) as [Part, Part, Part];
+  const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+  m.sync(0);
+  const reel = m.owns({ start: 0 });
+  m.cue({ owner: reel, patch: ramp(10_000, 0, 1), start: 0, loop: false, subjects: [{ id: 'k' }] });
+  const s = m.span({ owner: reel, start: 0, duration: 1000 });
+  for (const subject of [p, q])
+    m.cue({ owner: s, patch: ramp(200, 0, 100), subjects: [subject], loop: false });
+  let host = 0;
+  const step = (n: number) => {
+    for (let i = 0; i < n; i++) m.sync((host += 10));
+  };
+  step(30);
+  reel.rate = -1;
+  step(25);
+  m.cue({ owner: s, patch: ramp(200, 0, 100), subjects: [n], loop: false });
+  reel.rate = 1;
+  // The reel reads 50, and runs on 10 ms a frame: q plays 200 to 400, n 400 to 600.
+  step(24);
+  expect(m.probe(q).x).toBeCloseTo(45, 9);
+  expect(m.probe(n).x).toBe(0);
+  step(20);
+  expect(m.probe(q).x).toBe(0);
+  expect(m.probe(n).x).toBeCloseTo(45, 9);
+});
+
 // CHANGELOG 0.16.0: turning an owner back "reverses completely". A fit changes a playing child's
 // rate as a sibling ends, and the child's clock run back reads its new rate all the way back.
 test.fails('a child a fit sped up reads, run back over, what it read going forward', () => {

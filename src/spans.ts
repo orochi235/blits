@@ -7,7 +7,7 @@ import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
 import { leave } from './origin.js';
-import { ownerReading, plays } from './owner.js';
+import { type Holding, ownerReading, plays } from './owner.js';
 import { resolve } from './place.js';
 import type { FitResult, SpanSpec, VoiceSpec } from './types.js';
 import type { Voice } from './voice.js';
@@ -55,6 +55,16 @@ export function checkChild<I, O>(spec: VoiceSpec<I, O>, child: Voice<I, O>): voi
     throw new Error('blits: a span cannot fit a voice that never ends');
 }
 
+/**
+ * Whether a span holds a child its clock ran back to the start of and has not brought back: its
+ * layout up to there was made going forward, and stands until the clock passes it again.
+ */
+function ranBackOver<I, O>(span: Voice<I, O>): boolean {
+  for (const child of (span.holding as Holding<Voice<I, O>>).children)
+    if (child.out?.stays === true && child.out.back === true) return true;
+  return false;
+}
+
 /** A span's own clock at mix time `at`, from 0 while it has not started. */
 function clockOf<I, O>(span: Voice<I, O>, at: number): number {
   if (Number.isNaN(at)) return 0;
@@ -86,11 +96,11 @@ function leftOf<I, O>(child: Voice<I, O>, local: number, by: number): number {
  * Lays out a span's children and fits them into what is left of its budget, from its clock at mix
  * time `from`, default now. Only what is still to come moves: a playing child keeps its place and
  * may change rate, a pending one is placed. A span held by a span is fitted again by its own span
- * after.
+ * after. A span its clock ran back over keeps the layout it made going forward.
  */
 export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now): void {
   const fitting = span.fitting as Fitting;
-  if (mix.projecting || span.state === 'done') return;
+  if (mix.projecting || span.state === 'done' || ranBackOver(span)) return;
   const local = clockOf(span, from);
   const by = from < mix.now ? local : Number.NEGATIVE_INFINITY;
   const { kids, floors, waiting } = lineUp(mix, span, local, by);
