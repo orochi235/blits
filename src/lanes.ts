@@ -341,7 +341,8 @@ export class Lanes<I, O> implements Watcher {
 
   reported(lane: Lane<I, O>, slot: number): number | undefined {
     const o = slot * Per.SLOT;
-    if (!((this.per[o + Per.LANE_PROBE] as number) > (this.per[o + Per.GENERAL_PROBE] as number)))
+    const probe = this.per[o + Per.LANE_PROBE] as number;
+    if (!(probe > (this.per[o + Per.GENERAL_PROBE] as number)) || !(probe > lane.made))
       return undefined;
     const p = lane.positionOf(slot);
     if (p < 0) return undefined;

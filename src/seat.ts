@@ -11,6 +11,8 @@ export class Seat<I, O> {
     public lanes: object | null,
     readonly crowd: Crowd<I, O>,
     public row: number,
+    /** The lanes' probe count when its row was made new, 0 for a row copied from another crowd. */
+    readonly made = 0,
   ) {}
 }
 

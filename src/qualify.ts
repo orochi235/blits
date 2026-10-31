@@ -98,7 +98,11 @@ export function requalify<I, O>(lanes: Lanes<I, O>, version: number): void {
       crowded++;
       continue;
     }
-    const lane = lanes.byId.get(v.id) ?? new Lane<I, O>(v);
+    let lane = lanes.byId.get(v.id);
+    if (lane === undefined) {
+      lane = new Lane<I, O>(v);
+      lane.made = lanes.probes;
+    }
     v.laned = true;
     if (lane.epoch === 0 && v.state !== 'pending') opened(lanes, lane);
     kept.push(lane);
@@ -386,6 +390,7 @@ function placeAll<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): void {
  */
 function enlane<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): void {
   const lane = new Lane<I, O>(v);
+  lane.made = lanes.probes;
   v.laned = true;
   if (v.state !== 'pending') opened(lanes, lane);
   lane.chans = v.slots.map((s) => lanes.bySlot[s] as Laned);

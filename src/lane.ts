@@ -196,6 +196,8 @@ export class Lane<I, O> implements Positions<I, O> {
    * checked against every lane up to some epoch has met this one if this one's is no later.
    */
   epoch = 0;
+  /** The lanes' probe count when it was made: a probe no later read its subject elsewhere. */
+  made = 0;
   /**
    * Per position, `STRIDE` numbers side by side, so one subject's are one read from memory: its
    * delay, its `since`, its weight at the last fill, its weight at the last fill a probe read, a

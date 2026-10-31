@@ -8,6 +8,10 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- `weightOf` with lanes on reports the weight a subject was given when its voice moved onto a lane
+  after the subject's probe that frame. It reported 0.
+- A `pull` right after two or more cues folds the new voices in voice order, as a probe does. It
+  folded them newest first, which on a `mul` or `sum` channel could differ in the last bit.
 - An owner's fade in counts from when the owner started, under an owner turned back or slowed.
   It was worked out again each frame from where the outer owner's clock would next reach the
   inner owner's start, so a clip under an inner owner with a fade in vanished when the outer

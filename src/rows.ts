@@ -109,7 +109,7 @@ export function join<I, O>(
   else newRow(lanes, c, p, v);
   if (c.hot[p * c.stride + Hot.EPOCH] === 0 && v.state !== 'pending')
     c.hot[p * c.stride + Hot.EPOCH] = open(lanes, v);
-  const seat = new Seat<I, O>(lanes, c, p);
+  const seat = new Seat<I, O>(lanes, c, p, from === undefined ? lanes.probes : 0);
   lanes.seats.set(v.id, seat);
   v.seat = seat;
   v.laned = true;
@@ -317,6 +317,8 @@ export function reportedRow<I, O>(
   if (!((lanes.per[o + Per.LANE_PROBE] as number) > (lanes.per[o + Per.GENERAL_PROBE] as number)))
     return undefined;
   if ((c.list[p] as number) !== slot) return undefined;
+  const made = seatOf(lanes, c.voices[p] as Voice<I, O>)?.made ?? 0;
+  if (!((lanes.per[o + Per.LANE_PROBE] as number) > made)) return undefined;
   return c.data[
     p * Row.STRIDE + (lanes.per[o + Per.LANE_FILL] === lanes.fills ? Row.WEIGHT : Row.PROBED)
   ];

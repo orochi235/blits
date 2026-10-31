@@ -85,6 +85,14 @@ export function meet<I, O>(
       met = true;
     }
   if (!met) return lane;
+  // Met newest first; folded, as the general path folds them, in voice order.
+  const ids = lanes.met;
+  for (let i = 1; i < lanes.metN; i++) {
+    const id = ids[i] as number;
+    let j = i - 1;
+    for (; j >= 0 && (ids[j] as number) > id; j--) ids[j + 1] = ids[j] as number;
+    ids[j + 1] = id;
+  }
   // The fill ran before the subject had these positions. Where every voice it just met folds
   // after every other laned voice, the general path folds just those onto the lanes' values;
   // otherwise it reads the general path all frame.
