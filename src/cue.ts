@@ -75,7 +75,12 @@ export function cue<I, O>(mix: Mixer<I, O>, given: VoiceSpec<I, O>): Handle<I> {
   if (owner?.fitting) checkChild(spec, voice);
   if (mix.pace !== null && owner === null && spec.start !== undefined && voice.state === 'pending')
     voice.pinned = spec.start - mix.offset;
-  if (start === Number.POSITIVE_INFINITY && !anchored && !owner?.fitting) {
+  if (
+    start === Number.POSITIVE_INFINITY &&
+    !anchored &&
+    !owner?.fitting &&
+    Number.isNaN(voice.pinned)
+  ) {
     voice.waking = true;
     mix.waking = true;
   }

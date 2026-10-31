@@ -8,6 +8,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A voice cued while the mix is paused, its `start` a host time still ahead, waits for that time
+  again when a seek back plays its cue again. It started at once, at the paused mix time, since
+  the voice was taken for one cued while the mix slept and its start was moved to the next sync.
 - A span whose budget runs out between two frames fits again from that moment, in turn with its
   siblings' starts and ends: a child it places at a start already passed starts in that frame, and
   one queued after it starts where it lapsed at any frame rate. The span lapsed only after the
