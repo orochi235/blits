@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `tone-v*` tag with no
 section here.
 
+## Unreleased
+
+### Fixed
+
+- A node wired by a cancelled driver can be wired by the driver that replaces it. `cancel` left
+  it marked as wired, so `wire` threw that it was already wired.
+
 ## 0.7.0
 
 ### Breaking

@@ -24,12 +24,12 @@ export interface Bind<I, O> {
   readonly mix: Mix<I, O>;
   readonly kit: Kit<O> | undefined;
   seconds(): number;
-  bind(subject: I, targets: Driven<O>[]): void;
+  bind(subject: I, targets: Driven<O>[], release: () => void): void;
   unbind(subject: I): void;
 }
 
-/** Nodes some live sound wires, across every driver: two would write the same parameters. */
-const wired = new WeakSet<object>();
+/** Each node some live sound wires, across every driver, to that sound: two would write the same parameters. */
+const wired = new WeakMap<object, object>();
 
 export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): Sound<N, I, O> {
   if (!(node instanceof ToneAudioNode))
@@ -75,7 +75,7 @@ export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): 
       dropped = true;
       for (const h of cued) h.fade({ over: 0 });
       host.unbind(sound as unknown as I);
-      wired.delete(node);
+      release();
       const time = host.seconds();
       for (const [, param, base] of bases) {
         param.cancelAndHoldAtTime(time);
@@ -84,8 +84,12 @@ export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): 
       host.mix.drop(sound as unknown as I);
     },
   };
-  host.bind(sound as unknown as I, targets);
-  wired.add(node);
+  // A sound whose driver was cancelled may be dropped after another driver wired its node.
+  const release = (): void => {
+    if (wired.get(node) === sound) wired.delete(node);
+  };
+  host.bind(sound as unknown as I, targets, release);
+  wired.set(node, sound);
   return sound;
 }
 

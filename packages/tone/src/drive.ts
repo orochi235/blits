@@ -78,6 +78,8 @@ export type Driven<O> = [keyof O, Target, ((value: number) => number) | null];
 
 interface Bound<O> {
   targets: Driven<O>[];
+  /** Frees a wired node for another driver once this one is cancelled. */
+  release?: () => void;
 }
 
 function ms(name: string, value: number, least: number): number {
@@ -123,10 +125,10 @@ export function drive<I, O, E = unknown>(
     mix,
     kit: opts.kit,
     seconds,
-    bind: (subject, targets) => {
+    bind: (subject, targets, release) => {
       if (done) throw new Error('blits-tone: that driver is cancelled');
       if (bound.has(subject)) throw new Error('blits-tone: that subject is attached already');
-      bound.set(subject, { targets });
+      bound.set(subject, { targets, release });
     },
     unbind: (subject) => bound.delete(subject),
   };
@@ -192,7 +194,10 @@ export function drive<I, O, E = unknown>(
       done = true;
       booker.cancel();
       const time = seconds();
-      for (const b of bound.values()) hold(b, time);
+      for (const b of bound.values()) {
+        hold(b, time);
+        b.release?.();
+      }
       bound.clear();
     },
   };
