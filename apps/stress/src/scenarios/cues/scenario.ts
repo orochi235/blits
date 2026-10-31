@@ -25,7 +25,6 @@ interface Pose {
 }
 
 const STAGE = kit<Pose>({ level: max(), hue: sum() });
-const EVERY = 10;
 const TOLERANCE = 1e-6;
 
 /** One cue on stage: a voice per distinct level, all under one name. */
@@ -172,11 +171,9 @@ export const cues: Make = ({ seed, size, lanes }) => {
     m.sync(f * FRAME_MS);
     m.pull(fixtures, columns);
     played = f + 1;
-    if (f % EVERY === 0) {
-      const v = new Float64Array(n * 2);
-      readInto(v);
-      recorded.set(f, v);
-    }
+    const v = new Float64Array(n * 2);
+    readInto(v);
+    recorded.set(f, v);
     if (f % 600 === 0) running = running.filter((h) => h.state !== 'done');
   }
 
@@ -213,6 +210,7 @@ export const cues: Make = ({ seed, size, lanes }) => {
           departed = true;
           found.push({
             kind: 'fail',
+            key: 'cues/from-current-speed',
             at: f,
             what:
               `a from: 'current' fade leaves at the speed the fixture had (CHANGELOG 0.2.0), where blending.mdx says it carries position, not speed; ` +

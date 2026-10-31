@@ -271,6 +271,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      components of a `vec` and not others (the rig's IK y-hold; weasel's item in
      `NOTES-FROM-WEASEL.md`); a mix's `rate` cannot go below 0, so reverse is an owner turned
      back; and the role fold of three or more quats depends on cue order (documented, sound).
+   - **A mix seek back can leave a clip showing that should not** (found 2026-10-30 once the
+     timeline check stopped excusing every mismatch near a reversal): seed 1, frame 1692, four
+     frames after `seek 3728.0 → 2416.1`, clip 6 reads x 478.47 where a fresh timeline reads 0.
+     Not traced; it may be the reversal state above carried back by history.
    - **Measured fine:** the feed (100 items/s, re-sorted and filtered) at 0.08 ms a read with no
      leaks; the cue stack against its model, except `from: 'current'` above; the deck's seeks and
      `done`s; the kiosk's loop phase, voice count and return to rest at short sizes.

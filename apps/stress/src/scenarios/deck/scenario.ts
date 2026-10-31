@@ -2,10 +2,12 @@ import { rng } from '@stress/rng';
 import type { Finding, Make, Scenario } from '@stress/scenario';
 import { build, FRAME_MS, readInto, where } from './build';
 import { doneWatch } from './done';
-import { presenter } from './script';
+import { presenter, type Target } from './script';
 import { draw } from './view';
 
 const CHECKPOINTS = 40;
+/** Frames sampled anywhere after a press, mid-build or not. */
+const ANYTIME = 40;
 const TOLERANCE = 1e-6;
 /** The fresh decks' frame lengths; the first is the live one. */
 const STEPS = [FRAME_MS, 1000 / 45];
@@ -16,6 +18,8 @@ interface Checkpoint {
   now: number;
   start: number;
   label: string;
+  /** Whether the build was still playing. */
+  mid: boolean;
   values: Float64Array;
   recent: string[];
 }
@@ -30,26 +34,35 @@ export const deck: Make = ({ seed, size, lanes }) => {
   const width = d.elems.length * 2;
   const pick = rng(seed + 0x2545f491);
   const kept: Checkpoint[] = [];
+  const anytime: Checkpoint[] = [];
   let seen = 0;
+  let seenAny = 0;
   let checked = 0;
+  let checkedMid = 0;
   let framedAt = 0;
 
-  function record(f: number): void {
-    const t = pres.settled(f);
-    if (!t) return;
-    seen++;
-    const slot = kept.length < CHECKPOINTS ? kept.length : pick.int(seen);
-    if (slot >= CHECKPOINTS) return;
+  /** Keeps a uniform sample of `cap` of the `seen` frames offered to `into`. */
+  function keep(into: Checkpoint[], cap: number, seen: number, f: number, t: Target): void {
+    const slot = into.length < cap ? into.length : pick.int(seen);
+    if (slot >= cap) return;
     const values = new Float64Array(width);
     readInto(d, values);
-    kept[slot] = {
+    into[slot] = {
       frame: f,
       now: d.m.now,
       start: t.build.start,
       label: `slide ${t.build.slide} build ${t.build.build}`,
+      mid: f < t.settleAt,
       values,
       recent: t.recent,
     };
+  }
+
+  function record(f: number): void {
+    const t = pres.settled(f);
+    if (t) keep(kept, CHECKPOINTS, ++seen, f, t);
+    const l = pres.latest();
+    if (l) keep(anytime, ANYTIME, ++seenAny, f, l);
   }
 
   function step(f: number): void {
@@ -76,7 +89,7 @@ export const deck: Make = ({ seed, size, lanes }) => {
       });
     }
     let framed: Finding | undefined;
-    for (const cp of kept.slice().sort((a, b) => a.frame - b.frame)) {
+    for (const cp of [...kept, ...anytime].sort((a, b) => a.frame - b.frame)) {
       const runs = STEPS.map((ms) => {
         const fresh = build(seed, size, lanes);
         const got = new Float64Array(width);
@@ -89,6 +102,7 @@ export const deck: Make = ({ seed, size, lanes }) => {
         return { ms, got };
       });
       checked++;
+      if (cp.mid) checkedMid++;
       const base = runs[0] as (typeof runs)[number];
       const unstable = new Set<number>();
       for (const run of runs.slice(1)) {
@@ -117,7 +131,7 @@ export const deck: Make = ({ seed, size, lanes }) => {
         kind: 'fail',
         at: cp.frame,
         what:
-          `frame ${cp.frame}, settled on ${cp.label} at mix ${cp.now.toFixed(3)}: ${where(d, first)} live ` +
+          `frame ${cp.frame}, ${cp.mid ? 'mid-build in' : 'settled on'} ${cp.label} at mix ${cp.now.toFixed(3)}: ${where(d, first)} live ` +
           `${cp.values[first]} fresh ${base.got[first]}, ${differ} of ${width} numbers differ; recent: ${cp.recent.join('; ')}`,
       });
     }
@@ -135,6 +149,7 @@ export const deck: Make = ({ seed, size, lanes }) => {
       voices: d.m.voices().length,
       now: d.m.now,
       checked,
+      checkedMid,
       framedAt,
       ...pres.stats(),
       ...watch.stats(),

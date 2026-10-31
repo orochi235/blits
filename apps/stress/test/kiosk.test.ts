@@ -16,3 +16,19 @@ test('three simulated minutes with a nap show no drift, no growth, and a return 
   expect(s.stats().live).toBe(0);
   s.close();
 }, 60_000);
+
+test('seeds differ', () => {
+  const entry = scenarios.kiosk;
+  if (!entry) throw new Error('kiosk');
+  const read = (seed: number) => {
+    const s = entry.make({ seed, size: 0.05 });
+    const buf = new Float64Array(s.width);
+    for (let f = 0; f < 60; f++) s.step(f);
+    s.read(buf);
+    s.close();
+    return buf;
+  };
+  const a = read(1);
+  const b = read(2);
+  expect(a.some((v, k) => !Object.is(v, b[k]))).toBe(true);
+});

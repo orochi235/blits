@@ -77,3 +77,40 @@ export function meanBlend(members: readonly Member[]): Q {
 
 /** How far apart two rotations are: 0 the same, up to 1. `q` and `-q` are one rotation. */
 export const apart = (a: Q, b: Q) => 1 - Math.abs(dot(a, b));
+
+/** The angle between two rotations, in radians. */
+export const angle = (a: Q, b: Q) => 2 * Math.acos(Math.min(1, Math.abs(dot(a, b))));
+
+/** A track's position at `phase`, each key to the next in a straight line. */
+export function samplePos(t: Track, phase: number): number[] {
+  let k = 0;
+  while (k < t.ats.length - 2 && phase >= (t.ats[k + 1] as number)) k++;
+  const a = t.ats[k] as number;
+  const u = (phase - a) / ((t.ats[k + 1] as number) - a);
+  const p = t.pos[k] as number[];
+  const q = t.pos[k + 1] as number[];
+  return p.map((x, j) => x + ((q[j] as number) - x) * u);
+}
+
+export interface PosMember {
+  p: number[];
+  w: number;
+}
+
+/**
+ * A `vec(3, sum())` role as role.mdx documents it: members lerped in cue order by their share of
+ * the weight so far, the result counting at weight `min(1, Σw)` from rest at 0.
+ */
+export function posBlend(members: readonly PosMember[]): number[] {
+  let acc: number[] | undefined;
+  let total = 0;
+  for (const { p, w } of members) {
+    if (!(w > 0)) continue;
+    total += w;
+    const u = w / total;
+    acc = acc === undefined ? p.slice() : acc.map((x, j) => x + ((p[j] as number) - x) * u);
+  }
+  if (acc === undefined) return [0, 0, 0];
+  const s = Math.min(1, total);
+  return acc.map((x) => x * s);
+}

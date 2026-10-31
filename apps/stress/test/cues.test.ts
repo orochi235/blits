@@ -1,8 +1,6 @@
 import { scenarios } from '@stress/registry';
 import { expect, test } from 'vitest';
 
-const DEPARTS = "a from: 'current' fade leaves at the speed";
-
 const play = (name: string, size: number, frames: number, seed = 1, lanes?: boolean) => {
   const entry = scenarios[name];
   if (!entry) throw new Error(name);
@@ -21,7 +19,7 @@ test('the cue stack shows the levels a plain model of the cue sheet gives', () =
   const { s } = play('cues', 0.1, 1200);
   // Blits departing from blending.mdx's reading of `from: 'current'` is a finding the check reports
   // once; the model then holds blits to the reading it implements.
-  const fails = s.check().filter((f) => f.kind === 'fail' && !f.what.startsWith(DEPARTS));
+  const fails = s.check().filter((f) => f.kind === 'fail' && f.key !== 'cues/from-current-speed');
   expect(fails).toEqual([]);
   expect(s.stats().gos).toBeGreaterThan(2);
   s.close();

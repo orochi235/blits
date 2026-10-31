@@ -31,6 +31,7 @@ export function presenter(seed: number, d: Deck) {
   let next = 20 + r.int(MIN_GAP);
   let second = -1;
   let pending: Target | undefined;
+  let latest: (Target & { at: number }) | undefined;
   let seeks = 0;
   let backs = 0;
   let jumps = 0;
@@ -64,6 +65,7 @@ export function presenter(seed: number, d: Deck) {
       settleAt: f + Math.ceil(b.ms / FRAME_MS) + 1,
       recent: recent.slice(),
     };
+    latest = { ...pending, at: f };
   }
 
   const press = (f: number) => go(f, at >= last ? 0 : at + 1, at >= last ? 'wrap' : 'next');
@@ -107,6 +109,8 @@ export function presenter(seed: number, d: Deck) {
   return {
     act,
     settled,
+    /** The last press that went through, and the frame it was made at, settled or not. */
+    latest: () => latest,
     recent: () => recent.slice(),
     errors: () => errors,
     stats: () => ({ seeks, backs, jumps, mids, superseded, slide: (d.builds[at] as Build).slide }),

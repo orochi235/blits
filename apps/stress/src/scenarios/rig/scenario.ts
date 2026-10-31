@@ -15,7 +15,7 @@ import {
   track,
   unitAxis,
 } from './clips';
-import { apart, type Member, meanBlend, roleBlend, sample } from './expect';
+import { angle, type Member, meanBlend, posBlend, roleBlend, sample, samplePos } from './expect';
 import { draw } from './view';
 
 const FRAME_MS = 1000 / 60;
@@ -23,16 +23,20 @@ const PER_SIZE = 10;
 const CROSSFADE_MS = 400;
 const REACH = { rise: 300, hold: 800, fall: 300 };
 const CHECKS = 30;
+/** Radians a bone's rotation may stand off its role's blend. */
 const TOL = 1e-6;
+const POS_TOL = 1e-9;
 const MAX_FAILS = 10;
 const HOLD_GAP =
   "a voice's weight covers every component of a vec channel, so a hold cannot take some components of a vec(3) and leave the others to what it is blended with, as an IK arm holding a bone's height while clips keep its x and z; the rig cues each arm bone's clips twice, once for rot and once for pos, and applies the IK y-hold itself after reading";
 
-export const rig: Make = ({ seed, size, lanes }) => {
+export const rig: Make = ({ seed, size, lanes, frames = 3600 }) => {
   const chars = Math.max(1, Math.round(size * PER_SIZE));
   const n = chars * BONES;
   const rand = rng(seed);
   const pick = rng(seed ^ 0x5bd1e995);
+  const during = new Set<number>();
+  for (let k = 0; k < CHECKS; k++) during.add(pick.int(frames));
   const bones: Bone[] = Array.from({ length: n }, (_, i) => ({
     char: Math.floor(i / BONES),
     bone: i % BONES,
@@ -100,8 +104,12 @@ export const rig: Make = ({ seed, size, lanes }) => {
   let held = 0;
   let threeWay = 0;
   let checked = 0;
+  let checkedDuring = 0;
   let fails = 0;
+  let posFails = 0;
+  let posWorst = 0;
   let meanWorst = 0;
+  let rotWorst = 0;
 
   function drive(t: number): void {
     const fall = FRAME_MS / CROSSFADE_MS;
@@ -144,38 +152,77 @@ export const rig: Make = ({ seed, size, lanes }) => {
     const t = f * FRAME_MS;
     drive(t);
     m.sync(t);
+    if (during.has(f)) {
+      checkedDuring++;
+      checkpoint(f);
+    }
   }
+
+  const phaseOf = (b: Bone, k: number, t: number) => {
+    const ms = (CLIPS[k] as (typeof CLIPS)[number]).ms;
+    return ((((t + ms - (offsets[k]?.[b.char] as number)) / ms) % 1) + 1) % 1;
+  };
 
   /** The members of a bone's `rot` role, in cue order, as the frame at `t` weighs them. */
   function members(b: Bone, t: number): Member[] {
     const h = isArm(b.bone) ? (H[b.char] as number) : 0;
-    const out: Member[] = CLIPS.map((c, k) => {
-      const phase = ((((t + c.ms - (offsets[k]?.[b.char] as number)) / c.ms) % 1) + 1) % 1;
-      return {
-        q: sample(tracks[k]?.[b.bone] as Track, phase),
-        w: (W[b.char * CLIPS.length + k] as number) * (1 - h),
-      };
-    });
+    const out: Member[] = CLIPS.map((_, k) => ({
+      q: sample(tracks[k]?.[b.bone] as Track, phaseOf(b, k, t)),
+      w: (W[b.char * CLIPS.length + k] as number) * (1 - h),
+    }));
     if (isArm(b.bone))
       out.push({ q: ikRot[b.char * ARM.length + b.bone - (ARM[0] as number)] as number[], w: h });
     return out;
   }
 
+  /** A bone's `pos` as its role blends the clips, then held at the IK height as `pulled` does. */
+  function wantPos(b: Bone, t: number): number[] {
+    const p = posBlend(
+      CLIPS.map((_, k) => ({
+        p: samplePos(tracks[k]?.[b.bone] as Track, phaseOf(b, k, t)),
+        w: W[b.char * CLIPS.length + k] as number,
+      })),
+    );
+    const h = H[b.char] as number;
+    if (isArm(b.bone) && h > 0) {
+      const y = ikY[b.char * ARM.length + b.bone - (ARM[0] as number)] as number;
+      p[1] = (p[1] as number) + (y - (p[1] as number)) * h;
+    }
+    return p;
+  }
+
   function checkpoint(f: number): void {
     const t = f * FRAME_MS;
     checked++;
+    pulled();
+    for (const b of bones) {
+      const want = wantPos(b, t);
+      let off = 0;
+      for (let j = 0; j < 3; j++)
+        off = Math.max(off, Math.abs((pos[b.i * 3 + j] as number) - (want[j] as number)));
+      posWorst = Math.max(posWorst, off);
+      if (off <= POS_TOL) continue;
+      if (++posFails > MAX_FAILS) continue;
+      found.push({
+        kind: 'fail',
+        at: f,
+        what: `character ${b.char} bone ${b.bone}: pos reads [${Array.from(pos.subarray(b.i * 3, b.i * 3 + 3)).join(', ')}]; its role's blend of the clips, with the IK height held, makes [${want.join(', ')}]`,
+      });
+    }
     for (const b of bones) {
       const ms = members(b, t);
       if (ms.filter((x, k) => k < CLIPS.length && x.w > 0).length === CLIPS.length) threeWay++;
       const want = roleBlend(ms);
       const got = m.probe(b).rot as number[];
-      meanWorst = Math.max(meanWorst, apart(got, meanBlend(ms)));
-      if (apart(got, want) <= TOL) continue;
+      meanWorst = Math.max(meanWorst, angle(got, meanBlend(ms)));
+      const off = angle(got, want);
+      rotWorst = Math.max(rotWorst, off);
+      if (off <= TOL) continue;
       if (++fails > MAX_FAILS) continue;
       found.push({
         kind: 'fail',
         at: f,
-        what: `character ${b.char} bone ${b.bone}: rot reads [${got.join(', ')}]; its role's members (${ms.map((x) => x.w.toFixed(4)).join(', ')}) blended as role.mdx says make [${want.join(', ')}]`,
+        what: `character ${b.char} bone ${b.bone}: rot reads [${got.join(', ')}], ${off} rad off; its role's members (${ms.map((x) => x.w.toFixed(4)).join(', ')}) blended as role.mdx says make [${want.join(', ')}]`,
       });
     }
   }
@@ -212,7 +259,10 @@ export const rig: Make = ({ seed, size, lanes }) => {
       held,
       threeWay,
       checked,
+      checkedDuring,
       meanWorst,
+      rotWorst,
+      posWorst,
     }),
     check: () => {
       for (let k = 0; k < CHECKS; k++) {
@@ -224,6 +274,11 @@ export const rig: Make = ({ seed, size, lanes }) => {
         found.push({
           kind: 'fail',
           what: `${fails - MAX_FAILS} more bones read a rot off their role's blend`,
+        });
+      if (posFails > MAX_FAILS)
+        found.push({
+          kind: 'fail',
+          what: `${posFails - MAX_FAILS} more bones read a pos off their role's blend`,
         });
       if (held > 0) found.push({ kind: 'gap', what: HOLD_GAP });
       return found;

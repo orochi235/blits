@@ -75,7 +75,8 @@ function engine({ seed, size, lanes }: MakeOptions) {
 }
 
 export const heatmap: Make = (opts) => {
-  const live = engine(opts);
+  const on = opts.lanes ?? true;
+  const live = engine({ ...opts, lanes: on });
   const { n } = live;
   const snaps = new Map<number, Float64Array>();
   let stride = 30;
@@ -106,7 +107,7 @@ export const heatmap: Make = (opts) => {
   }
 
   function twinFindings(final: Float64Array): Finding[] {
-    const twin = engine({ ...opts, lanes: opts.lanes === false });
+    const twin = engine({ ...opts, lanes: !on });
     const buf = new Float64Array(n * (1 + HEAT));
     const last = frame + QUIET_FRAMES;
     const diff = (f: number, want: Float64Array): Finding | undefined => {
@@ -117,7 +118,7 @@ export const heatmap: Make = (opts) => {
         return {
           kind: 'fail',
           at: f,
-          what: `lanes ${opts.lanes === false ? 'off' : 'on'} and ${opts.lanes === false ? 'on' : 'off'} differ at cell ${cell} ${what}: ${want[k]} vs ${buf[k]}`,
+          what: `lanes ${on ? 'on' : 'off'} and ${on ? 'off' : 'on'} differ at cell ${cell} ${what}: ${want[k]} vs ${buf[k]}`,
         };
       }
       return undefined;

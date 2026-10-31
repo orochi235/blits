@@ -1,4 +1,4 @@
-import { type Handle, keys, kit, mix, mul, spring, sum } from '@msb235/blits';
+import { type Handle, keys, kit, max, mix, mul, spring, sum } from '@msb235/blits';
 import { type Rng, rng } from '@stress/rng';
 import type { Finding, Make, Scenario } from '@stress/scenario';
 import { poisson } from './poisson';
@@ -7,6 +7,8 @@ import { draw } from './view';
 interface Pose {
   y: number;
   alpha: number;
+  /** 1 wherever an entrance reaches; a stranger rests at 0, so a leaked entrance shows here. */
+  shown: number;
 }
 interface Item {
   id: number;
@@ -17,9 +19,12 @@ interface Item {
   at: number;
   gone: boolean;
   entrance?: Handle<Item>;
+  /** The `done` hooked when the item departed. */
+  done?: Promise<void>;
+  resolved?: boolean;
 }
 
-const ITEM = kit<Pose>({ y: sum(), alpha: mul() });
+const ITEM = kit<Pose>({ y: sum(), alpha: mul(), shown: max() });
 const FRAME_MS = 1000 / 60;
 const PER_SIZE = 100;
 const TARGET = 400;
@@ -29,13 +34,15 @@ const EVENT_FRAMES = 180;
 const FADE_MS = 200;
 const GRACE_FRAMES = 60;
 const KEEP_DROPPED = 64;
-const SLACK = 10;
+/** Steady state is an entrance per item plus the spring that moves them all (measured). */
+const STEADY_EXTRA = 1;
+const SLACK = 2;
 
 const entrance = keys<Item, Pose>(
   300,
   [
-    { at: 0, delta: { y: -ROW_PX, alpha: 0 } },
-    { at: 1, delta: { y: 0, alpha: 1 } },
+    { at: 0, delta: { y: -ROW_PX, alpha: 0, shown: 1 } },
+    { at: 1, delta: { y: 0, alpha: 1, shown: 1 } },
   ],
   {},
 );
@@ -66,7 +73,13 @@ export const feed: Make = ({ seed, size, lanes }) => {
   let maxVoices = 0;
   let overBudget: Finding | undefined;
   let resolved = 0;
+  let departures = 0;
   let doubled = 0;
+  let maxOver = Number.NEGATIVE_INFINITY;
+  /** Items dropped with `done` not yet resolved, and the frame each was dropped at. */
+  const awaiting = new Map<Item, number>();
+  let late: Finding | undefined;
+  let lateCount = 0;
   let retargets = 0;
 
   const retarget = (it: Item, row: number) => {
@@ -110,14 +123,21 @@ export const feed: Make = ({ seed, size, lanes }) => {
       it.row = -1;
     }
     const h = it.entrance as Handle<Item>;
-    let n = 0;
-    void h.done.then(() => {
-      resolved++;
-      if (++n > 1) doubled++;
-    });
+    departures++;
+    hook(it, h.done);
     h.fade({ over: FADE_MS });
     it.gone = true;
     leaving.push(it);
+  }
+
+  function hook(it: Item, p: Promise<void>): void {
+    it.done = p;
+    void p.then(() => {
+      if (it.resolved) doubled++;
+      else resolved++;
+      it.resolved = true;
+      awaiting.delete(it);
+    });
   }
 
   function reshuffle(): void {
@@ -135,7 +155,11 @@ export const feed: Make = ({ seed, size, lanes }) => {
   function release(): void {
     for (let i = leaving.length - 1; i >= 0; i--) {
       const it = leaving[i] as Item;
-      if ((it.entrance as Handle<Item>).state !== 'done') continue;
+      const h = it.entrance as Handle<Item>;
+      if (h.state !== 'done') continue;
+      // A second promise would be a second resolution of one departure.
+      if (h.done !== it.done) hook(it, h.done);
+      if (!it.resolved) awaiting.set(it, frame);
       m.drop(it);
       leaving[i] = leaving[leaving.length - 1] as Item;
       leaving.pop();
@@ -161,12 +185,24 @@ export const feed: Make = ({ seed, size, lanes }) => {
     m.sync(f * FRAME_MS);
     const voices = m.voices().length;
     if (voices > maxVoices) maxVoices = voices;
-    const budget = (all.length + leaving.length) * 3 + SLACK;
+    const items = all.length + leaving.length;
+    if (voices - items > maxOver) maxOver = voices - items;
+    const budget = items + STEADY_EXTRA + SLACK;
     if (voices > budget && !overBudget) {
       overBudget = {
         kind: 'fail',
         at: f,
-        what: `${voices} voices for ${all.length + leaving.length} items, over the budget of ${budget}`,
+        what: `${voices} voices for ${items} items, over the budget of ${budget}`,
+      };
+    }
+    for (const [it, at] of awaiting) {
+      if (f - at <= GRACE_FRAMES) continue;
+      lateCount++;
+      awaiting.delete(it);
+      late ??= {
+        kind: 'fail',
+        at: f,
+        what: `item ${it.id} was dropped at frame ${at}, done, and its done has not resolved ${f - at} frames on`,
       };
     }
   }
@@ -174,6 +210,11 @@ export const feed: Make = ({ seed, size, lanes }) => {
   function check(): Finding[] {
     for (let g = 1; g <= GRACE_FRAMES; g++) advance(frame + 1, false);
     const found: Finding[] = overBudget ? [overBudget] : [];
+    if (late) {
+      found.push(
+        lateCount > 1 ? { ...late, what: `${late.what}; ${lateCount - 1} more as late` } : late,
+      );
+    }
     if (leaving.length > 0) {
       found.push({
         kind: 'fail',
@@ -184,19 +225,24 @@ export const feed: Make = ({ seed, size, lanes }) => {
     if (doubled > 0) {
       found.push({ kind: 'fail', at: frame, what: `${doubled} done promises resolved twice` });
     }
-    const rest = { y: 0, alpha: 0 };
+    const rest = { y: 0, alpha: 0, shown: 0 };
     const ghost: Item = { id: -1, score: 0, row: 0, at: 0, gone: true };
     m.probe(ghost, rest);
     m.drop(ghost);
-    const pose = { y: 0, alpha: 0 };
+    const pose = { y: 0, alpha: 0, shown: 0 };
+    const text = (p: Pose) => `y ${p.y}, alpha ${p.alpha}, shown ${p.shown}`;
     for (const it of dropped) {
       m.probe(it, pose);
       m.drop(it);
-      if (pose.alpha !== 0 && (pose.alpha !== rest.alpha || pose.y !== rest.y)) {
+      if (
+        !Object.is(pose.y, rest.y) ||
+        !Object.is(pose.alpha, rest.alpha) ||
+        !Object.is(pose.shown, rest.shown)
+      ) {
         found.push({
           kind: 'fail',
           at: frame,
-          what: `dropped item ${it.id} probes y ${pose.y}, alpha ${pose.alpha}; a stranger probes y ${rest.y}, alpha ${rest.alpha}`,
+          what: `dropped item ${it.id} probes ${text(pose)}; a stranger probes ${text(rest)}`,
         });
         break;
       }
@@ -225,7 +271,9 @@ export const feed: Make = ({ seed, size, lanes }) => {
       items: list.length,
       pending: leaving.length,
       resolved,
+      departures,
       maxVoices,
+      maxOver,
       retargets,
     }),
     check,

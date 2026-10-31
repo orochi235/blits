@@ -1,12 +1,11 @@
 import { rng } from '@stress/rng';
 import type { Finding, Make, Scenario } from '@stress/scenario';
+import { backTracker } from './back';
 import { build, FRAME_MS, type Pose, playhead, readInto, where } from './build';
 import { editor } from './script';
 import { draw } from './view';
 
 const CHECKPOINTS = 20;
-/** A mismatch this soon after the reel ran backward is behavior blits has not settled. */
-const BACK_FRAMES = Math.round(2000 / FRAME_MS);
 const TOLERANCE = 1e-6;
 /** Frame lengths the fresh timelines step by; the first is the live one. */
 const STEPS = [FRAME_MS, 1000 / 61, 1000 / 120, 1000 / 30];
@@ -16,7 +15,8 @@ interface Checkpoint {
   now: number;
   /** The reel's clock: the timeline time on screen. */
   at: number;
-  backAgo: number;
+  /** Clips the reel ran back over since they last started: HANDOFF's unsettled reversal. */
+  tainted: Uint8Array;
   values: Float64Array;
   recent: string[];
 }
@@ -33,7 +33,7 @@ export const timeline: Make = ({ seed, size, lanes }) => {
   const kept: Checkpoint[] = [];
   let seen = 0;
   let at = 0;
-  let lastBack = Number.NEGATIVE_INFINITY;
+  const back = backTracker(t);
   let checked = 0;
   let framedAt = 0;
 
@@ -48,7 +48,7 @@ export const timeline: Make = ({ seed, size, lanes }) => {
       frame: f,
       now: t.m.now,
       at,
-      backAgo: f - lastBack,
+      tainted: back.tainted(),
       values,
       recent: ed.recent(),
     };
@@ -58,7 +58,7 @@ export const timeline: Make = ({ seed, size, lanes }) => {
     ed.act(f, at);
     t.m.sync(f * FRAME_MS);
     at = playhead(t, pose);
-    if (t.reel.rate < 0) lastBack = f;
+    back.note(f, at, ed.jumped(f));
     sample(f);
   }
 
@@ -98,6 +98,7 @@ export const timeline: Make = ({ seed, size, lanes }) => {
             const { clip, field } = where(n0, k);
             framed = {
               kind: 'fail',
+              key: 'timeline/frame-rate-layout',
               at: cp.frame,
               what:
                 `a fresh timeline played forward at rate 1 reads differently by frame rate alone: at reel ${cp.at.toFixed(3)}, ` +
@@ -108,24 +109,27 @@ export const timeline: Make = ({ seed, size, lanes }) => {
         }
       }
       if (unstable.size > 0) framedAt++;
-      let first = -1;
-      let differ = 0;
+      const report = (kind: 'fail' | 'undecided', ks: number[]) => {
+        const k = ks[0];
+        if (k === undefined) return;
+        const { clip, field } = where(n0, k);
+        found.push({
+          kind,
+          at: cp.frame,
+          what:
+            `frame ${cp.frame}, reel at ${cp.at.toFixed(3)} (mix time ${cp.now.toFixed(3)}): ` +
+            `clip ${clip} ${field} live ${cp.values[k]} fresh ${base.got[k]}, ${ks.length} of ${width} numbers differ` +
+            `${kind === 'undecided' ? ', each in a clip the reel ran back over since it started' : ''}; recent: ${cp.recent.join('; ')}`,
+        });
+      };
+      const failing: number[] = [];
+      const excused: number[] = [];
       for (let k = 0; k < width; k++) {
         if (unstable.has(k) || same(cp.values[k] as number, base.got[k] as number)) continue;
-        differ++;
-        if (first < 0) first = k;
+        (cp.tainted[where(n0, k).clip] ? excused : failing).push(k);
       }
-      if (first < 0) continue;
-      const { clip, field } = where(n0, first);
-      const back = cp.backAgo <= BACK_FRAMES;
-      found.push({
-        kind: back ? 'undecided' : 'fail',
-        at: cp.frame,
-        what:
-          `frame ${cp.frame}, reel at ${cp.at.toFixed(3)} (mix time ${cp.now.toFixed(3)}): ` +
-          `clip ${clip} ${field} live ${cp.values[first]} fresh ${base.got[first]}, ${differ} of ${width} numbers differ` +
-          `${back ? `; the reel ran backward ${cp.backAgo} frames before` : ''}; recent: ${cp.recent.join('; ')}`,
-      });
+      report('fail', failing);
+      report('undecided', excused);
     }
     if (framed) found.push(framed);
     for (const run of runs) run.fresh.m.close();
@@ -144,6 +148,7 @@ export const timeline: Make = ({ seed, size, lanes }) => {
       reel: at,
       checked,
       framedAt,
+      tainted: back.tainted().reduce((a, b) => a + b, 0),
       ...ed.stats(),
     }),
     check,

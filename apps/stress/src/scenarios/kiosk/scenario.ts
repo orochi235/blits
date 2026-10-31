@@ -1,6 +1,7 @@
 import { type Handle, mix } from '@msb235/blits';
+import { rng } from '@stress/rng';
 import type { Finding, Make, Scenario } from '@stress/scenario';
-import { burst, PERIODS, type Pose, patterns, TILE, type Tile } from './pattern';
+import { burst, type Loop, loops, type Pose, TILE, type Tile } from './pattern';
 import { draw } from './view';
 
 const FRAME_MS = 1000 / 60;
@@ -8,7 +9,6 @@ const TILES = 2000;
 const FRAMES_PER_HOUR = 216_000;
 const SWAP_EVERY = 18_000;
 const BURST_EVERY = 1200;
-const BURST_AT = 600;
 const FADE_MS = 1200;
 const SLEEP_MS = 30 * 60_000;
 const SLEEP_AT = 1500;
@@ -19,9 +19,14 @@ const TOL = 1e-6;
 const SAMPLE = 8;
 const GROWTH_SLACK = 2;
 
-export const kiosk: Make = ({ size, lanes }) => {
+export const kiosk: Make = ({ seed, size, lanes }) => {
   const tiles: Tile[] = Array.from({ length: TILES }, (_, i) => ({ i }));
   const sample = Array.from({ length: SAMPLE }, (_, k) => tiles[(k * 251) % TILES] as Tile);
+  /** Off the wall's tiles, so the shows' crossfades and the bursts never reach the clock loop. */
+  const clockTiles: Tile[] = Array.from({ length: SAMPLE }, (_, k) => ({ i: TILES + k * 97 }));
+  const { shows, clock } = loops(seed);
+  /** Where in each 1,200-frame cycle a burst starts; it is over by the hourly check at 700. */
+  const burstAt = 760 + rng(seed ^ 0x165667b1).int(400);
   const m = mix<Tile, Pose>(TILE, { name: 'kiosk', lanes });
   const gain = new Float64Array(TILES);
   const tint = new Float64Array(TILES * 4);
@@ -43,7 +48,7 @@ export const kiosk: Make = ({ size, lanes }) => {
   function show(f: number, pattern: number): void {
     current?.fade();
     current = m.cue({
-      patch: patterns[pattern] as (typeof patterns)[number],
+      patch: (shows[pattern] as Loop).patch,
       subjects: tiles,
       loop: true,
       role: 'pattern',
@@ -57,21 +62,18 @@ export const kiosk: Make = ({ size, lanes }) => {
 
   const hour = (f: number) => Math.floor(f / FRAMES_PER_HOUR);
 
-  /** Reads the sample against a fresh mix seeked to where arithmetic says the loop stands. */
-  function drift(f: number): void {
-    const period = PERIODS[showing] as number;
-    const elapsed = (f - started - skipped) * FRAME_MS;
-    const phaseMs = elapsed % period;
+  /**
+   * Reads `subjects` against a fresh mix seeked to where arithmetic says `loop` stands, `frames`
+   * frames of mix time after it started.
+   */
+  function drift(f: number, loop: Loop, frames: number, subjects: Tile[], name: string): void {
+    const { period } = loop;
+    const phaseMs = (frames * FRAME_MS) % period;
     const fresh = mix<Tile, Pose>(TILE, { name: 'kiosk-fresh', lanes });
     try {
       fresh.sync(0);
-      fresh.cue({
-        patch: patterns[showing] as (typeof patterns)[number],
-        subjects: sample,
-        loop: true,
-        seek: phaseMs,
-      });
-      for (const t of sample) {
+      fresh.cue({ patch: loop.patch, subjects, loop: true, seek: phaseMs });
+      for (const t of subjects) {
         const want = fresh.probe(t);
         const got = m.probe(t);
         const bad = [
@@ -82,7 +84,7 @@ export const kiosk: Make = ({ size, lanes }) => {
           found.push({
             kind: 'fail',
             at: f,
-            what: `hour ${hour(f)} (host ${host(f)} ms): tile ${t.i} reads gain ${got.gain} color ${got.color}; a fresh mix started at phase ${phaseMs} ms of ${period} reads gain ${want.gain} color ${want.color}`,
+            what: `hour ${hour(f)} (host ${host(f)} ms), the ${name}: tile ${t.i} reads gain ${got.gain} color ${got.color}; a fresh mix started at phase ${phaseMs} ms of ${period} reads gain ${want.gain} color ${want.color}`,
           });
           return;
         }
@@ -94,7 +96,8 @@ export const kiosk: Make = ({ size, lanes }) => {
 
   function checkpoint(f: number): void {
     checks++;
-    drift(f);
+    drift(f, shows[showing] as Loop, f - started - skipped, sample, 'show on the wall');
+    drift(f, clock, f - slept, clockTiles, 'clock loop cued at frame 0');
     const n = m.voices().length;
     if (baseline < 0) baseline = n;
     if (n > baseline + GROWTH_SLACK) {
@@ -115,9 +118,10 @@ export const kiosk: Make = ({ size, lanes }) => {
       slept++;
       skipped++;
     }
+    if (f === 0) m.cue({ patch: clock.patch, subjects: clockTiles, loop: true, start: host(0) });
     if (!halted) {
-      if (f % SWAP_EVERY === 0) show(f, f === 0 ? 0 : (showing + 1) % patterns.length);
-      if (f % BURST_EVERY === BURST_AT) m.cue({ patch: burst, subjects: tiles });
+      if (f % SWAP_EVERY === 0) show(f, f === 0 ? 0 : (showing + 1) % shows.length);
+      if (f % BURST_EVERY === burstAt) m.cue({ patch: burst, subjects: tiles });
     }
     m.sync(host(f));
     if (at === CHECK_AT && !halted) checkpoint(f);

@@ -4,6 +4,8 @@ export interface Finding {
   /** Frame the finding was seen at, when it has one. */
   at?: number;
   what: string;
+  /** Names a finding that stays the same across runs, so `known.ts` can list it. */
+  key?: string;
 }
 
 export interface Scenario {
@@ -31,6 +33,8 @@ export interface MakeOptions {
   size: number;
   /** `false` runs the general path, as `BLITS_LANES=off` does. */
   lanes?: boolean;
+  /** Frames the run will play, for demos that spread checks across it. */
+  frames?: number;
 }
 
 export type Make = (opts: MakeOptions) => Scenario;

@@ -29,6 +29,10 @@ export interface Timeline {
   /** The owner every sequence plays under; the editor turns it back to play in reverse. */
   reel: Handle<Clip>;
   clips: Clip[];
+  /** Each clip's voice, by clip index. */
+  voices: Handle<Clip>[];
+  /** The sequence each clip plays in, by clip index. */
+  seqOf: Int32Array;
   /** A subject whose `x` is the reel's clock. */
   tracer: Clip;
   x: Float64Array;
@@ -84,6 +88,8 @@ export function build(seed: number, size: number, lanes: boolean | undefined): T
     freeze: 'both',
     name: 'tracer',
   });
+  const voices: Handle<Clip>[] = [];
+  const seqOf = new Int32Array(n);
   let c = 0;
   for (let q = 0; q < SEQUENCES; q++) {
     const seq = m.span({
@@ -102,7 +108,8 @@ export function build(seed: number, size: number, lanes: boolean | undefined): T
         name: `scene${s}`,
       });
       for (let k = 0; k < perScene; k++, c++) {
-        m.cue({
+        seqOf[c] = q;
+        const v = m.cue({
           owner: scene,
           patch: clipPatch(seed, c),
           subjects: [clips[c] as Clip],
@@ -110,6 +117,7 @@ export function build(seed: number, size: number, lanes: boolean | undefined): T
           faster: 3,
           slower: 3,
         });
+        voices.push(v);
       }
     }
   }
@@ -117,6 +125,8 @@ export function build(seed: number, size: number, lanes: boolean | undefined): T
     m,
     reel,
     clips,
+    voices,
+    seqOf,
     tracer,
     x: new Float64Array(n),
     opacity: new Float64Array(n),

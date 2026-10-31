@@ -16,12 +16,13 @@ const play = async (name: string, size: number, frames: number, seed = 1, lanes?
   return { s, trace };
 };
 
-test('every stop of the presenter reads as a fresh deck sought straight there', async () => {
+test('every stop of the presenter, and frames mid-build, read as a fresh deck sought straight there', async () => {
   const { s } = await play('deck', 0.25, 900);
   const found = s.check();
   expect(found.filter((f) => f.kind === 'fail')).toEqual([]);
   const stats = s.stats();
   expect(stats.checked).toBeGreaterThan(5);
+  expect(stats.checkedMid).toBeGreaterThan(5);
   expect(stats.backs).toBeGreaterThan(0);
   expect(stats.mids).toBeGreaterThan(0);
   expect(stats.resolutions).toBeGreaterThan(0);
