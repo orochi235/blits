@@ -23,7 +23,7 @@ const BACK = 300;
  */
 function drift(duration = 0, elapsed = false) {
   const count = { steps: 0, copies: 0 };
-  const made = patch<string, Pose, { x: number }>(duration, (_p, _s, st) => ({ x: st.state.x }), {
+  const p = patch<string, Pose, { x: number }>(duration, (_p, _s, st) => ({ x: st.state.x }), {
     writes: ['x'],
     state: (s) => ({ x: s === 'a' ? 0 : 10 }),
     step: (s, dt, _subject, setting) => {
@@ -31,14 +31,14 @@ function drift(duration = 0, elapsed = false) {
       s.x += (50 - s.x) * Math.min(1, dt / 2000) + (setting.timestamp % 7) * 1e-4;
       if (elapsed) s.x += setting.elapsed * 1e-6;
     },
+    clone: (s) => {
+      count.copies++;
+      return { ...s };
+    },
     pack: (s) => ({ ...s }),
     unpack: (d) => ({ ...(d as { x: number }) }),
   });
-  const clone = (s: { x: number }) => {
-    count.copies++;
-    return { ...s };
-  };
-  return { p: { ...made, clone }, count };
+  return { p, count };
 }
 
 /** Adds the host's `pull` each step, so its value depends on what the host read when it stepped. */

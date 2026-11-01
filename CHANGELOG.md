@@ -15,6 +15,12 @@ version and everything else the patch. Each release lists its changes as **Break
   gives it opaque, and the new `blendMode(pose)` names the CSS `mix-blend-mode` to lay it on with.
   They run on lanes. `multiply`, `screen`, `add`, `lighten` and `darken` are also numeric channels.
 
+### Fixed
+
+- `patch` takes `clone` and puts it on the patch it makes. It took `state`, `step`, `pack` and
+  `unpack` but not `clone`, so a stateful patch built with it was always copied by
+  `structuredClone`, which breaks a state holding a class instance.
+
 ## 0.16.1
 
 ### Fixed
