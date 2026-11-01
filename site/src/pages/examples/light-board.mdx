@@ -1,0 +1,17 @@
+---
+layout: ../../layouts/Page.astro
+title: Light board
+description: A small stage lit by voices, a gel recoloring it, spots dodging pools of light into it, and a master that takes it to black.
+---
+import Live from '../../components/Live';
+import Listing from '../../components/Listing.astro';
+
+# Light board
+
+A stage set lit the way a lighting desk lights one, every fixture a voice. Each look cues a gel on `color(colorMode())`, which keeps the set's lightness and gives it the gel's hue and chroma; spots on `color(colorDodge())`, which brighten what is under them more where it is already lit; and for the blackout, a master on `color(multiply())` that multiplies everything down to black. The frame loop lays the three channels on the set in that order with `toHex`.
+
+Changing look fades the last look's voices out and the new one's in. The gels share a [role](../../role/), so one gel crossfades into the next through OKLab rather than the two stacking. Run the show steps through the looks on the transport's clock; Pause sets its `rate` to 0, and the [debug panel](../../guides/debugging/) can seek back through the last four looks.
+
+<Live client:only="react" of="examples/light-board.ts" />
+
+<Listing of="live/examples/light-board.ts" />
