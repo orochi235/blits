@@ -38,11 +38,21 @@
     "prepack": "rm -rf dist && npm run build"
   },
   "peerDependencies": {
-    "@msb235/blits": "^0.16.1"
+    "@msb235/blits": "^0.16.1",
+    "@dimforge/rapier2d-compat": ">=0.21.0 <1.0.0",
+    "@dimforge/rapier3d-compat": ">=0.21.0 <1.0.0"
   },
   "devDependencies": {
     "@dimforge/rapier2d-compat": "0.21.0",
     "@dimforge/rapier3d-compat": "0.21.0",
     "@msb235/blits": "0.16.1"
+  },
+  "peerDependenciesMeta": {
+    "@dimforge/rapier2d-compat": {
+      "optional": true
+    },
+    "@dimforge/rapier3d-compat": {
+      "optional": true
+    }
   }
 }

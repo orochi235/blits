@@ -149,6 +149,10 @@ so the engine keeps no dependencies; its README says how it works.
 their sample. It is published separately for the same reason, and its README says what it does not
 do yet.
 
+`packages/rapier` is `@msb235/blits-rapier`, which holds a [Rapier](https://rapier.rs) physics
+world in a mix: voices push bodies, each body's simulated pose blends with authored motion, and a
+seek replays the world exactly. Its README says how.
+
 ## Status
 
 v0.16.1, with five consumers. magicsmoke runs every fault on it, wod its wheel, tricks and
