@@ -43,6 +43,7 @@ export const examples = [
   { slug: 'stack-order', title: 'Order matters' },
   { slug: 'light-board', title: 'Light board' },
   { slug: 'retheme', title: 'Retheme' },
+  { slug: 'threshold-wipe', title: 'Threshold wipe' },
 ] as const;
 
 export const extra = [

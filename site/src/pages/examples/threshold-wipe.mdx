@@ -1,0 +1,17 @@
+---
+layout: ../../layouts/Page.astro
+title: Threshold wipe
+description: A hard-edged wipe made of one looping voice on hardMix, laid over a map of where the wipe goes first.
+---
+import Live from '../../components/Live';
+import Listing from '../../components/Listing.astro';
+
+# Threshold wipe
+
+The picture under the voice is a map: light where the wipe should arrive first, dark where it should arrive last. One looping voice on `color(hardMix())` writes a single gray that rises from black to white and back. `hardMix` turns each channel full on where the map and the gray add up to 1 or more, and off where they don't, so the gray works as a threshold and the edge between on and off follows the map's contours as the gray rises. Each of the map's channels is a little apart from the others, so the edge passes through color on its way. The wipe's shape and timing are all in the map and the voice; the frame loop only syncs, probes and draws.
+
+`vividLight` and `linearLight` fold the same voice into a soft edge: they ramp where `hardMix` steps. Pause sets the transport's `rate` to 0, and dragging the slider seeks the voice.
+
+<Live client:only="react" of="examples/threshold-wipe.ts" />
+
+<Listing of="live/examples/threshold-wipe.ts" />
