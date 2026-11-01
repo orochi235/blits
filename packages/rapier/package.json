@@ -1,0 +1,48 @@
+{
+  "name": "@msb235/blits-rapier",
+  "version": "0.0.0",
+  "description": "Pairs Rapier rigid-body physics with a blits mix: voices push bodies, and each body's simulated pose blends with authored motion",
+  "keywords": [
+    "physics",
+    "rapier",
+    "blits",
+    "animation"
+  ],
+  "license": "MIT",
+  "author": "orochi235",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orochi235/blits.git",
+    "directory": "packages/rapier"
+  },
+  "homepage": "https://github.com/orochi235/blits/tree/main/packages/rapier#readme",
+  "bugs": "https://github.com/orochi235/blits/issues",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/.tsbuildinfo",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "prepack": "rm -rf dist && npm run build"
+  },
+  "peerDependencies": {
+    "@msb235/blits": "^0.16.1"
+  },
+  "devDependencies": {
+    "@dimforge/rapier2d-compat": "0.21.0",
+    "@dimforge/rapier3d-compat": "0.21.0",
+    "@msb235/blits": "0.16.1"
+  }
+}
