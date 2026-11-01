@@ -5,12 +5,12 @@ import ApiIndex from '../components/ApiIndex.astro';
 import Page from '../layouts/Page.astro';
 import { words } from '../nav';
 ---
-<Page title="Reference" description="Every blits export, filed under the word it belongs to.">
+<Page title="Reference" description="Every blits export, filed under the concept it belongs to.">
   <div class="ref">
     <ApiIndex />
     <div class="ref-body">
       <h1>Reference</h1>
-      <p class="lede">Every export, filed under the word it belongs to. Each word's page shows the same entries under a live explainer.</p>
+      <p class="lede">Every export, filed under the concept it belongs to. Each concept has a page that shows the same entries under a live explainer.</p>
       {words.map((w) => <ApiEntries list={entriesFor(w.slug)} heading={w.title} here="reference" />)}
     </div>
   </div>

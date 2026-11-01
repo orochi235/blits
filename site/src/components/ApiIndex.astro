@@ -7,7 +7,7 @@ import Badge from './Badge.astro';
 <nav class="api-index" aria-label="Exports">
   <input type="search" class="api-filter" placeholder="Filter  /" aria-label="Filter the exports" />
   <div class="api-order" role="group" aria-label="Order">
-    <button type="button" data-order="word" aria-pressed="true">By word</button>
+    <button type="button" data-order="word" aria-pressed="true">By concept</button>
     <button type="button" data-order="az" aria-pressed="false">A–Z</button>
   </div>
   {words.map((w) => (
@@ -52,7 +52,7 @@ import Badge from './Badge.astro';
     }
   });
 
-  // A–Z moves every entry, in the index and the body, into one list sorted by name, and By word
+  // A–Z moves every entry, in the index and the body, into one list sorted by name, and By concept
   // puts each back where the page rendered it.
   const byName = (a: HTMLElement, b: HTMLElement) =>
     (a.dataset.name ?? '').localeCompare(b.dataset.name ?? '');
