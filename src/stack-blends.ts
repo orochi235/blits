@@ -71,9 +71,28 @@ function labs(base: number[], s0: number, s1: number, s2: number): void {
   LAYER[2] = l[2] as number;
 }
 
-/** Writes OKLab `L, A, B` into `base` as linear sRGB, clipped to the gamut. */
+const EDGE = 1e-9;
+/** Whether the last `linearOf` result is inside sRGB. */
+const fits = (rgb: number[]): boolean => rgb.every((v) => v >= -EDGE && v <= 1 + EDGE);
+
+/**
+ * Writes OKLab `L, A, B` into `base` as linear sRGB. Out of gamut, it keeps the lightness and hue
+ * and gives up chroma until the color fits, as CSS's ClipColor keeps luminosity: clipping each
+ * channel instead would move the lightness these modes exist to keep.
+ */
 function put(base: number[], L: number, A: number, B: number): void {
-  const rgb = linearOf(L, A, B);
+  const l = clip(L);
+  let rgb = linearOf(l, A, B);
+  if (!fits(rgb)) {
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 20; i++) {
+      const mid = (lo + hi) / 2;
+      if (fits(linearOf(l, A * mid, B * mid))) lo = mid;
+      else hi = mid;
+    }
+    rgb = linearOf(l, A * lo, B * lo);
+  }
   base[0] = clip(rgb[0] as number);
   base[1] = clip(rgb[1] as number);
   base[2] = clip(rgb[2] as number);

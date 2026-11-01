@@ -285,6 +285,16 @@ describe('blend modes that lay a whole color', () => {
     expect(lum.h).toBeCloseTo(lch(BASE).h, 1);
   });
 
+  it('keep the lightness where the color they make is out of gamut, giving up chroma', () => {
+    // Indigo's chroma at its lightness has no room in sRGB at a green or yellow hue.
+    const INDIGO = 0x3b5bdb;
+    for (const top of [0x0c8f80, 0xc8b400, 0xe0533d]) {
+      const out = lch(one(hue, top, INDIGO));
+      expect(out.L).toBeCloseTo(lch(INDIGO).L, 2);
+      expect(out.h).toBeCloseTo(lch(top).h, 1);
+    }
+  });
+
   it('darker and lighter color take one whole color or the other', () => {
     expect(one(darkerColor, 0x2255ee, 0xeeee22)).toBe(0x2255ee);
     expect(one(darkerColor, 0xeeee22, 0x2255ee)).toBe(0x2255ee);
