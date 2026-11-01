@@ -5,7 +5,7 @@ import { color, ink, oklab } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
-import { difference, hardLight, overlay, softLight } from '../src/stacked-modes.js';
+import * as stacked from '../src/stack-rules.js';
 import type { Channel, Mix } from '../src/types.js';
 
 interface Pose {
@@ -213,17 +213,7 @@ describe('ink() runs on lanes, reading as the general path does', () => {
 });
 
 describe('blend modes run on lanes, reading as the general path does', () => {
-  for (const rule of [
-    multiply,
-    screen,
-    add,
-    lighten,
-    darken,
-    overlay,
-    softLight,
-    hardLight,
-    difference,
-  ])
+  for (const rule of [multiply, screen, add, lighten, darken, ...Object.values(stacked)])
     for (const of of [color, ink])
       it(`${of.name}(${rule.name}()) under a held color, over a fade, and looping`, () => {
         agree(
@@ -239,7 +229,7 @@ describe('blend modes run on lanes, reading as the general path does', () => {
 
   it('an ordered mode in a role, and as a crowd of voices each on a subject of its own', () => {
     agree(
-      color(overlay()),
+      color(stacked.overlay()),
       (m, parts) => {
         m.cue({ patch: sweep(RED, BLUE), role: 'one', weight: 0.7 });
         m.cue({ patch: holds(CYAN), role: 'one', weight: 0.4 });

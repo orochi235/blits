@@ -4,7 +4,28 @@ import { kit, sum } from '../src/channels.js';
 import { color, css, ink, oklab, toHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
-import { difference, hardLight, overlay, softLight } from '../src/stacked-modes.js';
+import {
+  colorBurn,
+  colorDodge,
+  colorMode,
+  darkerColor,
+  difference,
+  divide,
+  exclusion,
+  hardLight,
+  hardMix,
+  hue,
+  lighterColor,
+  linearBurn,
+  linearLight,
+  luminosity,
+  overlay,
+  pinLight,
+  saturation,
+  softLight,
+  subtract,
+  vividLight,
+} from '../src/stack-rules.js';
 import type { Channel } from '../src/types.js';
 
 interface Pose {
@@ -48,11 +69,44 @@ const soft: Blend = (b, s) => {
   const d = b <= 0.25 ? ((16 * b - 12) * b + 4) * b : Math.sqrt(b);
   return b + (2 * s - 1) * (d - b);
 };
+const dodge: Blend = (b, s) => (b === 0 ? 0 : s === 1 ? 1 : Math.min(1, b / (1 - s)));
+const burn: Blend = (b, s) => (b === 1 ? 1 : s === 0 ? 0 : 1 - Math.min(1, (1 - b) / s));
+const vivid: Blend = (b, s) => (s <= 0.5 ? burn(b, 2 * s) : dodge(b, 2 * s - 1));
 const MODES = {
   overlay: [overlay, (b: number, s: number) => hard(s, b), 'overlay'],
   softLight: [softLight, soft, 'soft-light'],
   hardLight: [hardLight, hard, 'hard-light'],
   difference: [difference, (b: number, s: number) => Math.abs(b - s), 'difference'],
+  colorDodge: [
+    colorDodge,
+    (b: number, s: number) => (b === 0 ? 0 : s === 1 ? 1 : Math.min(1, b / (1 - s))),
+    'color-dodge',
+  ],
+  colorBurn: [
+    colorBurn,
+    (b: number, s: number) => (b === 1 ? 1 : s === 0 ? 0 : 1 - Math.min(1, (1 - b) / s)),
+    'color-burn',
+  ],
+  exclusion: [exclusion, (b: number, s: number) => b + s - 2 * b * s, 'exclusion'],
+  subtract: [subtract, (b: number, s: number) => Math.max(0, b - s), 'normal'],
+  divide: [
+    divide,
+    (b: number, s: number) => (b === 0 ? 0 : s === 0 ? 1 : Math.min(1, b / s)),
+    'normal',
+  ],
+  linearBurn: [linearBurn, (b: number, s: number) => Math.max(0, b + s - 1), 'normal'],
+  vividLight: [vividLight, vivid, 'normal'],
+  linearLight: [
+    linearLight,
+    (b: number, s: number) => Math.min(1, Math.max(0, b + 2 * s - 1)),
+    'normal',
+  ],
+  pinLight: [
+    pinLight,
+    (b: number, s: number) => (s < 0.5 ? Math.min(b, 2 * s) : Math.max(b, 2 * s - 1)),
+    'normal',
+  ],
+  hardMix: [hardMix, (b: number, s: number) => (b + s >= 1 ? 1 : 0), 'normal'],
 } as const;
 
 const UNDER = 0x6699cc;
@@ -197,5 +251,58 @@ describe('ordered blend modes on a color channel', () => {
     m.cue({ patch: patch<Part, { v: number }>(0, () => ({ v: 0.5 }), { writes: ['v'] }) });
     m.sync(0);
     expect(() => m.probe(part)).toThrow(/rule for color\(\) or ink\(\)/);
+  });
+});
+
+describe('blend modes that lay a whole color', () => {
+  const lch = (hex: number) => {
+    const [L = 0, a = 0, b = 0] = oklab(hex);
+    return { L, C: Math.hypot(a, b), h: Math.atan2(b, a) };
+  };
+  const one = (rule: () => Channel<number>, layer: number, under: number) =>
+    toHex(pose(color(rule()), [[layer, 1]]), under) as number;
+  // Muted colors, so each result stays inside sRGB and nothing is clipped.
+  const BASE = 0x8a7a6a;
+  const TOP = 0x5a8a9a;
+
+  it('hue takes the layer hue and keeps the chroma and lightness under it', () => {
+    const out = lch(one(hue, TOP, BASE));
+    expect(out.L).toBeCloseTo(lch(BASE).L, 2);
+    expect(out.C).toBeCloseTo(lch(BASE).C, 2);
+    expect(out.h).toBeCloseTo(lch(TOP).h, 1);
+    expect(lch(one(hue, 0x808080, BASE)).C).toBeLessThan(0.002);
+  });
+
+  it('saturation takes the layer chroma, colorMode its hue and chroma, luminosity its lightness', () => {
+    const sat = lch(one(saturation, TOP, BASE));
+    expect(sat.C).toBeCloseTo(lch(TOP).C, 2);
+    expect(sat.h).toBeCloseTo(lch(BASE).h, 1);
+    const col = lch(one(colorMode, TOP, BASE));
+    expect(col.L).toBeCloseTo(lch(BASE).L, 2);
+    expect(col.h).toBeCloseTo(lch(TOP).h, 1);
+    const lum = lch(one(luminosity, TOP, BASE));
+    expect(lum.L).toBeCloseTo(lch(TOP).L, 2);
+    expect(lum.h).toBeCloseTo(lch(BASE).h, 1);
+  });
+
+  it('darker and lighter color take one whole color or the other', () => {
+    expect(one(darkerColor, 0x2255ee, 0xeeee22)).toBe(0x2255ee);
+    expect(one(darkerColor, 0xeeee22, 0x2255ee)).toBe(0x2255ee);
+    expect(one(lighterColor, 0x2255ee, 0xeeee22)).toBe(0xeeee22);
+  });
+
+  it('give their CSS mode, or normal where CSS has none', () => {
+    expect(blendMode(pose(color(hue()), [[TOP, 1]]))).toBe('hue');
+    expect(blendMode(pose(color(colorMode()), [[TOP, 1]]))).toBe('color');
+    expect(blendMode(pose(color(lighterColor()), [[TOP, 1]]))).toBe('normal');
+  });
+
+  it('lay a half-opaque layer halfway', () => {
+    const half = toHex(pose(color(luminosity()), [[TOP, 0.5]]), BASE) as number;
+    const full = one(luminosity, TOP, BASE);
+    for (const s of [16, 8, 0]) {
+      const mid = (lin((BASE >> s) & 0xff) + lin((full >> s) & 0xff)) / 2;
+      expect(Math.abs(((half >> s) & 0xff) - enc(mid))).toBeLessThanOrEqual(1);
+    }
   });
 });

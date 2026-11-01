@@ -164,7 +164,7 @@ function averages(of: Channel<unknown> | undefined): boolean {
 
 const refuse = (name: string, of: Channel<unknown>) =>
   new Error(
-    `${name} takes sum() to average, last() to replace, or a blend mode, multiply(), screen(), add(), lighten(), darken(), overlay(), softLight(), hardLight() or difference(), not ${of.kind ?? 'a channel of its own'}`,
+    `${name} takes sum() to average, last() to replace, or a blend mode such as multiply(), screen() or overlay() (BlendMode lists them all), not ${of.kind ?? 'a channel of its own'}`,
   );
 
 /** A `last` color channel, which replaces and travels by `lerp`. */
@@ -183,8 +183,8 @@ function replacing(kind: string, lerp: Channel<number[]>['lerp']): Channel<numbe
  * authored with. `color(multiply())`, `screen()`, `add()`, `lighten()` and `darken()` lay their
  * voices over what is under them by that blend mode, in linear sRGB, a voice's weight times its
  * coverage its opacity: the pose is the one layer they add up to, which `toHex` lays over `under`
- * and `css` gives with `blendMode` naming the CSS mode. `color(overlay())`, `softLight()`,
- * `hardLight()` and `difference()` depend on what is under each layer, so the pose keeps every
+ * and `css` gives with `blendMode` naming the CSS mode. `color(overlay())` and the other ordered
+ * modes (`OrderedMode` lists them) depend on what is under each layer, so the pose keeps every
  * voice's layer in voice order, the first cued at the bottom, and `toHex` lays them over `under`
  * one by one, room for the rule's `layers` held for each subject. It travels between two colors, in a motion
  * or a role's handoff, straight across OKLab, so opposite hues cross through gray. For colors that

@@ -1,15 +1,11 @@
 import { vouch } from './channels.js';
 import { fromLinear, labOf, linearByte, linearOf } from './oklab.js';
+import { BY_TAG, type OrderedMode, STACKED, type Stacked } from './stack-blends.js';
 import type { Channel } from './types.js';
 import { warnOnce } from './warn.js';
 
-/**
- * The blend modes whose result depends on the base nonlinearly, so no two layers fold into one:
- * a pose keeps every layer, in voice order, and `toHex` lays them over `under` one by one.
- *
- * @category channel
- */
-export type OrderedMode = 'overlay' | 'softLight' | 'hardLight' | 'difference';
+export type { OrderedMode } from './stack-blends.js';
+export { ordered } from './stack-blends.js';
 
 /**
  * What an ordered mode's rule takes.
@@ -25,39 +21,10 @@ export interface StackOptions {
   layers?: number;
 }
 
-/** A mode's per-axis blend of layer `s` over base `b`, both linear, and its CSS `mix-blend-mode`. */
-interface Stacked {
-  tag: number;
-  blend: (b: number, s: number) => number;
-  css: string;
-}
-
-const hard = (b: number, s: number): number => (s <= 0.5 ? 2 * b * s : 1 - 2 * (1 - b) * (1 - s));
-
-/** The W3C compositing spec's soft light. */
-function soft(b: number, s: number): number {
-  if (s <= 0.5) return b - (1 - 2 * s) * b * (1 - b);
-  const d = b <= 0.25 ? ((16 * b - 12) * b + 4) * b : Math.sqrt(b);
-  return b + (2 * s - 1) * (d - b);
-}
-
-const STACKED: Record<OrderedMode, Stacked> = {
-  overlay: { tag: -6, blend: (b, s) => hard(s, b), css: 'overlay' },
-  softLight: { tag: -7, blend: soft, css: 'soft-light' },
-  hardLight: { tag: -8, blend: hard, css: 'hard-light' },
-  difference: { tag: -9, blend: (b, s) => (b > s ? b - s : s - b), css: 'difference' },
-};
-const BY_TAG = [STACKED.overlay, STACKED.softLight, STACKED.hardLight, STACKED.difference];
-
 const LAYERS = 4;
 
 /** Each rule's layer count, where it was given one. */
 const capacities = new WeakMap<object, number>();
-
-/** Whether `kind` names an ordered mode. */
-export function ordered(kind: string): kind is OrderedMode {
-  return Object.hasOwn(STACKED, kind);
-}
 
 /**
  * The mode a stack was folded by, or undefined for any other value. A stack is
@@ -177,6 +144,8 @@ export function stacking(
   return channel;
 }
 
+const WHOLE = [0, 0, 0];
+
 /** A stack laid over `under` as 0xrrggbb, bottom layer first, or undefined for any other pose. */
 export function stackHex(pose: ArrayLike<number>, under: number): number | undefined {
   const m = stackOf(pose);
@@ -186,12 +155,25 @@ export function stackHex(pose: ArrayLike<number>, under: number): number | undef
   let r = linearByte((under >> 16) & 0xff);
   let g = linearByte((under >> 8) & 0xff);
   let b = linearByte(under & 0xff);
-  const blend = m.blend;
+  const axis = m.axis;
   for (let i = 2; i < end; i += 4) {
     const a = pose[i + 3] as number;
-    r += (blend(r, pose[i] as number) - r) * a;
-    g += (blend(g, pose[i + 1] as number) - g) * a;
-    b += (blend(b, pose[i + 2] as number) - b) * a;
+    const s0 = pose[i] as number;
+    const s1 = pose[i + 1] as number;
+    const s2 = pose[i + 2] as number;
+    if (axis !== undefined) {
+      r += (axis(r, s0) - r) * a;
+      g += (axis(g, s1) - g) * a;
+      b += (axis(b, s2) - b) * a;
+    } else {
+      WHOLE[0] = r;
+      WHOLE[1] = g;
+      WHOLE[2] = b;
+      (m.whole as NonNullable<Stacked['whole']>)(WHOLE, s0, s1, s2);
+      r += ((WHOLE[0] as number) - r) * a;
+      g += ((WHOLE[1] as number) - g) * a;
+      b += ((WHOLE[2] as number) - b) * a;
+    }
   }
   return fromLinear(r, g, b);
 }
@@ -214,8 +196,8 @@ export function stackMode(pose: ArrayLike<number>): string | undefined {
   return stackOf(pose)?.css;
 }
 
-/** A rule only a color channel takes: a number has no base to lay a layer over. */
-function rule(mode: OrderedMode, opts: StackOptions | undefined): Channel<number> {
+/** A rule only a color channel takes, for `mode`: a number has no base to lay a layer over. */
+export function rule(mode: OrderedMode, opts: StackOptions | undefined): Channel<number> {
   const refuse = (): never => {
     throw new Error(
       `${mode}() is a rule for color() or ink(), as color(${mode}()); a number has no base for it`,
@@ -229,44 +211,4 @@ function rule(mode: OrderedMode, opts: StackOptions | undefined): Channel<number
     capacities.set(channel, layers);
   }
   return channel;
-}
-
-/**
- * Overlay, for `color(overlay())` or `ink(overlay())`: each layer multiplies where what is under it
- * is dark and screens where it is light, so it lifts contrast and keeps the base's lights and darks.
- *
- * @category channel
- */
-export function overlay(opts?: StackOptions): Channel<number> {
-  return rule('overlay', opts);
-}
-
-/**
- * Soft light, for `color(softLight())` or `ink(softLight())`: a gentler overlay, the layer dodging
- * or burning what is under it, as the W3C compositing spec defines it.
- *
- * @category channel
- */
-export function softLight(opts?: StackOptions): Channel<number> {
-  return rule('softLight', opts);
-}
-
-/**
- * Hard light, for `color(hardLight())` or `ink(hardLight())`: overlay with layer and base swapped,
- * the layer multiplying where it is dark and screening where it is light.
- *
- * @category channel
- */
-export function hardLight(opts?: StackOptions): Channel<number> {
-  return rule('hardLight', opts);
-}
-
-/**
- * Difference, for `color(difference())` or `ink(difference())`: each axis the distance between the
- * layer and what is under it, so white inverts and black changes nothing.
- *
- * @category channel
- */
-export function difference(opts?: StackOptions): Channel<number> {
-  return rule('difference', opts);
 }

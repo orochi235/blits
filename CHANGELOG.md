@@ -22,6 +22,14 @@ version and everything else the patch. Each release lists its changes as **Break
   production. `css(pose)` gives one layer at its opacity, or several layers' average; `blendMode`
   names `overlay`, `soft-light`, `hard-light` or `difference`. They run on lanes and `pull`. The four
   are rules for a color channel only: as a channel of numbers they throw.
+- Sixteen more ordered blend modes, kept and laid the same way. From CSS: `colorDodge()`,
+  `colorBurn()`, `exclusion()`, `hue()`, `saturation()`, `colorMode()` (CSS's `color`, renamed
+  because `color` is the channel it goes in) and `luminosity()`. From image editors, with no CSS
+  mode, so `blendMode` gives `normal` and only `toHex` lays them: `subtract()`, `divide()`,
+  `linearBurn()`, `vividLight()`, `linearLight()`, `pinLight()`, `hardMix()`, `darkerColor()` and
+  `lighterColor()`. `hue`, `saturation`, `colorMode` and `luminosity` trade hue, chroma and
+  lightness in OKLab, not CSS's HSL-like space, so they differ from the browser's; `darkerColor` and
+  `lighterColor` compare OKLab lightness.
 - `min()`, where the smallest contribution wins, resting at the top of its bounds or at 1, a weight
   fading a contribution toward that rest.
 - `norm()`, which combines contributions as the `power`-th root of the sum of their `power`-th
