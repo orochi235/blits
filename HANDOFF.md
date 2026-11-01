@@ -895,17 +895,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Loose ends
 
-- **A paused mix sought back stopped short of where it was paused, and then refused to seek forward**
-  (seen 2026-11-01, unexplained). In the blend modes demo in Chromium: a mix with
-  `history: { ms: 10000, tape: createHistory }` and one looping voice over about 17,000 subjects,
-  set to `rate = 0` at mix time 32914.5, then `seek(30500)` and `seek(29500)`, both fine. Playing
-  on from the recorded rate of 1, the mix stopped at 29816.7, not at 32914.5, and `seek` to 32000,
-  29900, and 30100 each threw "the mix's rate never reaches …". The same steps in node, with
-  16.7 ms syncs, seek back and forward up to the pause without a throw, so the browser's long,
-  uneven frames (25–80 ms) are the likely difference. The demo now scrubs with the disc voice's
-  `seek` instead. Repro: an earlier version of `site/src/live/examples/blend-modes.ts` that called
-  `m.rate = 0` once and then `m.seek` on each slider move.
-
 - **A staggered voice's end depends on which subjects the host has read, for a `target` voice**
   (2026-10-23; narrowed 2026-10-29). A voice cued with `subjects` asks `stagger` for each at cue
   and ends by all of them, through seeks too, so the determinism tests' `named` variant passes every

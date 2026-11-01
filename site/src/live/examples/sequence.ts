@@ -1,4 +1,5 @@
 import { keys, kit, mix, sum } from '@msb235/blits';
+import { createHistory } from '@weasel-js/history';
 import { loop } from '../loop';
 
 interface Bar {
@@ -44,7 +45,11 @@ export default function run(root: HTMLElement): () => void {
   // Placed on the mix's score: the second starts once the first coasts, holding its last frame,
   // and the third starts with the second.
   const [a, b, c] = bars as [Bar, Bar, Bar];
-  const m = mix<Bar, BarPose>(BAR, { name: 'sequence' });
+  // History reaches back over the whole run, so the slider can seek anywhere in it.
+  const m = mix<Bar, BarPose>(BAR, {
+    name: 'sequence',
+    history: { ms: LENGTH + 1000, tape: createHistory },
+  });
   m.sync(0);
   m.cue({ patch: slide, subjects: [a], name: 'first', start: 200, freeze: 'after' });
   m.cue({
@@ -62,29 +67,32 @@ export default function run(root: HTMLElement): () => void {
     freeze: 'after',
   });
 
-  // The mix stays at 0. Each frame reads it at the scrubber's time, without moving it.
-  let t = 0;
+  // Played, the mix syncs each frame and seeks back to 0 at the end of the run. Held, it isn't
+  // synced, so nothing is recorded over the run, and the slider seeks it anywhere in it.
   let held = false;
   const onInput = () => {
     held = true;
-    t = Number(scrub.value);
+    m.seek(Number(scrub.value));
   };
   const onRelease = () => {
     held = false;
+    m.rebase();
   };
   scrub.addEventListener('input', onInput);
   scrub.addEventListener('change', onRelease);
 
   const pose = { x: 0 };
-  let last = performance.now();
-  // A step is capped, so the time the window was away doesn't count.
+  // The cues' starts count from the first frame, which the mix synced to as 0.
+  let first = Number.NaN;
   const stop = loop(m, (now) => {
-    if (!held) t = (t + Math.min(100, Math.max(0, now - last))) % LENGTH;
-    last = now;
-    scrub.value = String(t);
-    const at = m.project(t);
+    if (Number.isNaN(first)) first = now;
+    if (!held) {
+      m.sync(now - first);
+      if (m.now >= LENGTH) m.seek(0);
+      scrub.value = String(m.now);
+    }
     for (const bar of bars) {
-      at.probe(bar, pose);
+      m.probe(bar, pose);
       bar.el.style.left = `calc(${pose.x} * (100% - 6rem))`;
     }
   });

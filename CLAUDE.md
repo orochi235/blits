@@ -13,6 +13,10 @@ debug panel and shows readers code they shouldn't write.
   speed, and a `seek` to scrub, either the mix's (it needs `history` with a tape) or a voice
   handle's. A slider shows where the mix or voice is; it doesn't own a time of its own. Give the
   mix `history` anyway, so the panel can seek it.
+- **To scrub a whole mix, pause it by not syncing it, not with `rate = 0`,** and call `rebase()` on
+  resume, as `site/src/live/loop.ts` does on blur. A seek back restores the rate recorded then, and
+  any host call made after a seek back (a `rate` write included) cuts off the tape ahead, so every
+  later seek forward throws. `sequence.ts` scrubs this way.
 - **Name every mix** (`{ name }`), so the debug panel lists it.
 - **Motion is voices, not frame-loop math.** Looping, easing, fades, crossfades, and ordering are
   cues, weights, `loop`, and roles. The frame loop syncs, probes, and draws, and nothing more.
