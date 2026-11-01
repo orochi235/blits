@@ -890,6 +890,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     have to keep every voice's layer, in a defined voice order, and `toHex` replay them over
     `under`. Designing that order is the first step.
 
+17. **blits-rapier** (`packages/rapier`, built 2026-10-31, unreleased at 0.0.0; its first version
+    goes out by hand, since npm's trusted publishing refuses a name never published). Its README
+    says what it does and does not do. Open:
+    - Kinematic bodies moved by a voice need a vector channel with no rest.
+    - History cannot page to a `store`: a body's add holds Rapier descriptions, not plain data.
+    - A seek's catch-up steps read the host as it is now (`sought.test.ts`, "steps a patch that
+      reads the host again"), so the world keeps its own log of each frame's pushes and looks a
+      step's up half a step early, since replayed step times round apart from the first pass's.
+      If blits ever replays recorded host input on a seek, that log can go.
+
 ## Loose ends
 
 - **A staggered voice's end depends on which subjects the host has read, for a `target` voice**
