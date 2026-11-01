@@ -1,3 +1,5 @@
+export type { MatrixParts } from './affine.js';
+export { affine, matrix } from './affine.js';
 export type { BlendMode } from './blend-modes.js';
 export { add, blendMode, darken, lighten, multiply, screen } from './blend-modes.js';
 export type { LastOptions, NumberOptions, NumberTuple, Vec } from './channels.js';
@@ -6,6 +8,8 @@ export type { ColorOptions } from './color.js';
 export { color, css, ink, mixHex, oklab, toHex } from './color.js';
 export type { Curve } from './easing.js';
 export { curve } from './easing.js';
+export type { NormOptions } from './extremes.js';
+export { min, norm } from './extremes.js';
 export type {
   Claim,
   Fit,

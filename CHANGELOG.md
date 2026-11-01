@@ -22,6 +22,14 @@ version and everything else the patch. Each release lists its changes as **Break
   production. `css(pose)` gives one layer at its opacity, or several layers' average; `blendMode`
   names `overlay`, `soft-light`, `hard-light` or `difference`. They run on lanes and `pull`. The four
   are rules for a color channel only: as a channel of numbers they throw.
+- `min()`, where the smallest contribution wins, resting at the top of its bounds or at 1, a weight
+  fading a contribution toward that rest.
+- `norm()`, which combines contributions as the `power`-th root of the sum of their `power`-th
+  powers, between `sum` at power 1 and `max` as the power grows, resting at 0. The default power
+  is 2.
+- `affine()`, a 2D transform held as the six numbers of CSS `matrix()`, composed in cue order with
+  the first cued outermost, and weighted and interpolated by its parts, the rotation the short way
+  round. `matrix({ x, y, rotate, skew, scale, scaleX, scaleY })` builds one. It runs on lanes.
 
 ### Fixed
 

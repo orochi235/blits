@@ -38,6 +38,22 @@ const PART = kit<PartPose>({
 
 `vec(n, of)` runs one channel's arithmetic down an axis list. A consumer can declare a channel of its own: it's four functions, and only `merge` and `lerp` are required.
 
+## More ways to fold
+
+`min()` is `max` turned over: the smallest contribution wins, so the most restrictive voice decides a clip radius or a speed limit. It rests at the top of its bounds, `min({ bounds: [0, 400] })` at 400, or at 1 without any, and a weight fades a contribution toward that rest.
+
+`norm()` sits between `sum` and `max`. Two voices at 1 give 2 under `sum`, 1 under `max`, and about 1.41 under `norm()`: overlapping glows build up a little without piling up. One voice alone gives its own value. `norm({ power })` sets where it sits, `sum` at 1 and closer to `max` the higher it goes; the default is 2.
+
+`affine()` holds a 2D transform as the six numbers of CSS's `matrix()` and canvas's `setTransform`, and `matrix({ x, y, rotate, skew, scale })` builds one, angles in radians. Voices compose in the order they were cued, the first outermost, as a CSS transform list reads: a voice that rotates, cued before one that moves, swings the moved subject round the origin, and cued after it turns the subject where it stands. A weight takes a transform part of the way from none, and a crossfade goes between two by their parts, the rotation the short way round, as CSS interpolates.
+
+```ts
+const SPRITE = kit<SpritePose>({ at: affine() });
+const spin = patch<Sprite, SpritePose>(2000, (t) => ({ at: matrix({ rotate: t * 2 * Math.PI }) }), {
+  writes: ['at'],
+});
+// each frame: ctx.setTransform(...pose.at)
+```
+
 ## Two kinds of color
 
 blits has two color channels that take the same values and blend them differently. `oklab(0xrrggbb)` makes a value for either, and `toHex(pose, under)` or `css(pose)` turns a pose of either back into something to draw.
