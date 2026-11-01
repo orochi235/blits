@@ -93,7 +93,8 @@
   border-radius: 4px;
 }
 
-.live .lanes + input[type='range'] {
+.live .lanes + input[type='range'],
+.live .blend-modes + input[type='range'] {
   display: block;
   width: calc(100% - 2rem);
   margin: 0 1rem 1rem;

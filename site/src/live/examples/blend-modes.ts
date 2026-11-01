@@ -65,12 +65,12 @@ const band = (y: number) =>
 const under = band(0.75);
 const over = band(0.25);
 
-// A disc of blue sweeping back and forth across the ramp, between the two bands.
+// A disc of blue between the two bands, its phase taking it from left to right across the ramp.
+const SPAN = 1000;
 const disc = patch<Cell, Tint>(
-  5000,
+  SPAN,
   (phase, c) => {
-    const cx = 0.5 - 0.38 * Math.cos(2 * Math.PI * phase);
-    const d = Math.hypot((c.x - cx) * (COLS / ROWS), c.y - 0.5);
+    const d = Math.hypot((c.x - 0.12 - 0.76 * phase) * (COLS / ROWS), c.y - 0.5);
     return tint(BLUE, soft((0.36 - d) * 8));
   },
   { writes: NAMES },
@@ -85,7 +85,13 @@ const ramp = (c: Cell) => {
 export default function run(root: HTMLElement): () => void {
   const grid = document.createElement('div');
   grid.className = 'blend-modes';
-  root.append(grid);
+  const scrub = document.createElement('input');
+  scrub.type = 'range';
+  scrub.min = '0';
+  scrub.max = String(SPAN - 1);
+  scrub.value = String(SPAN / 2);
+  scrub.ariaLabel = 'Where the disc is';
+  root.append(grid, scrub);
 
   const tiles = NAMES.map((name) => {
     const fig = document.createElement('figure');
@@ -107,14 +113,15 @@ export default function run(root: HTMLElement): () => void {
   // Voices lay on in the order they were cued: one band under the disc, the other over it.
   const m = mix<Cell, Tint>(kit<Tint>(MODES), { name: 'blend-modes' });
   m.cue({ patch: under, subjects: cells });
-  m.cue({ patch: disc, subjects: cells, loop: true });
+  m.cue({ patch: disc, subjects: cells, freeze: 'after' });
   m.cue({ patch: over, subjects: cells });
 
   const pose = m.pose();
-  const stop = loop(m, (now) => {
-    m.sync(now);
+  // The mix stays at 0. Each frame reads it at the scrubber's time, without moving it.
+  const stop = loop(m, () => {
+    const at = m.project(Number(scrub.value));
     cells.forEach((c, i) => {
-      m.probe(c, pose);
+      at.probe(c, pose);
       const base = ramp(c);
       for (const t of tiles) {
         const hex = toHex(pose[t.name], base);

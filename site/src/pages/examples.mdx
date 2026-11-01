@@ -52,7 +52,7 @@ Drag the slider. Three voices are placed on the mix's [score](../score/): the se
 
 ## Blend modes
 
-A disc of blue sweeps across each tile, over a ramp from black to white, between two bands of orange: the bottom band is cued before the disc, so it lies underneath, and the top band after it, so it lies on top. Every tile is fed by the same voices; each folds them by a different [blend mode](../channel/#blend-modes), and `toHex(pose, ramp(cell))` lays the result on that tile's ramp. In the first six tiles the two crossings look alike, because those modes give the same result in either order. In overlay, soft light, hard light, and difference they differ, because each layer works on what is under it.
+A disc of blue sits in each tile, moved left and right by the slider, over a ramp from black to white, between two bands of orange: the bottom band is cued before the disc, so it lies underneath, and the top band after it, so it lies on top. Every tile is fed by the same voices; each folds them by a different [blend mode](../channel/#blend-modes), and `toHex(pose, ramp(cell))` lays the result on that tile's ramp. In the first six tiles the two crossings look alike, because those modes give the same result in either order. In overlay, soft light, hard light, and difference they differ, because each layer works on what is under it.
 
 <Live client:only="react" of="examples/blend-modes.ts" />
 
