@@ -169,3 +169,7 @@
   font-weight: 600;
   text-decoration: underline;
 }
+
+.live .rig-target {
+  cursor: crosshair;
+}
