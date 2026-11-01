@@ -102,6 +102,10 @@ describe('litDesk', () => {
     const filter = readoutOf('color', { ...pose, color: [0.2, 0.4, 0.6, -1] });
     expect(filter.value).toBe('multiply');
     expect(filter.swatch).toMatch(/^oklab\(/);
+    const stack = [-6, 1, 0.2, 0.4, 0.6, 0.5, ...new Array(12).fill(0)];
+    const laid = readoutOf('color', { ...pose, color: stack });
+    expect(laid.value).toBe('overlay');
+    expect(laid.swatch).toMatch(/^oklab\(.* \/ 0\.5\)$/);
   });
 });
 

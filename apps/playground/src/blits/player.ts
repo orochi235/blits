@@ -3,7 +3,7 @@ import type { Built } from './compile';
 import type { Level } from './composition';
 import { EventLog } from './events';
 import { FRAME } from './frame';
-import type { Mixed } from './kit';
+import { COLOR_AXES, type Mixed } from './kit';
 import type { Subject } from './stage';
 
 export interface Columns {
@@ -76,7 +76,7 @@ export class Player {
       offset: new Float64Array(n * 2),
       turn: new Float64Array(n),
       scale: new Float64Array(n),
-      color: new Float64Array(n * 5),
+      color: new Float64Array(n * COLOR_AXES),
       opacity: new Float64Array(n),
       glow: new Float64Array(n),
     };

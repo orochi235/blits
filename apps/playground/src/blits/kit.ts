@@ -2,6 +2,8 @@ import {
   add,
   color,
   darken,
+  difference,
+  hardLight,
   ink,
   type Kit,
   kit,
@@ -10,7 +12,9 @@ import {
   max,
   mul,
   multiply,
+  overlay,
   screen,
+  softLight,
   sum,
   vec,
 } from '@msb235/blits';
@@ -52,7 +56,17 @@ export interface NumberRuleSpec {
   bounds?: [number, number];
 }
 
-const BLENDS = { multiply, screen, add, lighten, darken } as const;
+const BLENDS = {
+  multiply,
+  screen,
+  add,
+  lighten,
+  darken,
+  overlay,
+  softLight,
+  hardLight,
+  difference,
+} as const;
 
 /** The color rules, the blend modes last. */
 export const COLOR_RULES = [
@@ -101,6 +115,16 @@ function colorChannel({ rule, type }: ColorRuleSpec) {
   const of = rule === 'replace' ? last() : rule === 'average' ? sum() : BLENDS[rule]();
   return type === 'ink' ? ink(of) : color(of);
 }
+
+/** The most numbers a subject's color takes under any rule, as a `pull` column holds it. */
+export const COLOR_AXES = Math.max(
+  ...COLOR_RULES.flatMap((rule) =>
+    (['color', 'ink'] as const).map((type) => {
+      const rest = colorChannel({ rule, type }).rest;
+      return Array.isArray(rest) ? rest.length : 4;
+    }),
+  ),
+);
 
 /** The kit a composition's rules make: each channel the default unless the rules name another. */
 export function kitOf(rules: Partial<Rules> = {}): Kit<Mixed> {
