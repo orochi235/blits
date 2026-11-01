@@ -1,3 +1,5 @@
+export type { BlendMode } from './blend-modes.js';
+export { add, blendMode, darken, lighten, multiply, screen } from './blend-modes.js';
 export type { LastOptions, NumberOptions, NumberTuple, Vec } from './channels.js';
 export { kit, last, max, mul, sum, vec } from './channels.js';
 export type { ColorOptions } from './color.js';

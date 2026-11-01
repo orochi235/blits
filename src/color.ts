@@ -1,35 +1,11 @@
+import { blendCss, blendHex, blending, modeOf } from './blend-modes.js';
 import { doubles, lerpNumber, numericOf, sum, vec, vouch, widen } from './channels.js';
 import { HUES, lchPair, shortWay } from './lch.js';
+import { fromLab, LAB, lab } from './oklab.js';
 import type { Channel } from './types.js';
 import { warnOnce } from './warn.js';
 
 const mix = lerpNumber;
-
-const LINEAR = Array.from({ length: 256 }, (_, c) => {
-  const v = c / 255;
-  return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-});
-
-/** The linear value halfway between byte c - 1 and c: at or above it, a value rounds to c. */
-const ROUNDS_UP = LINEAR.map((_, c) => {
-  const v = (c - 0.5) / 255;
-  return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-});
-
-/** The byte each 1/4096 of linear light starts at; a bin holds at most one rounding point. */
-const BINS = 4096;
-const FIRST = Array.from({ length: BINS + 1 }, (_, i) => {
-  let c = 0;
-  while (c < 255 && i / BINS >= (ROUNDS_UP[c + 1] as number)) c++;
-  return c;
-});
-
-const toByte = (v: number): number => {
-  if (v <= 0) return 0;
-  if (v >= 1) return 255;
-  const c = FIRST[(v * BINS) | 0] as number;
-  return c < 255 && v >= (ROUNDS_UP[c + 1] as number) ? c + 1 : c;
-};
 
 /**
  * Colors already turned into OKLCH, direct-mapped on a byte of their hash: a mix reads the same
@@ -40,36 +16,6 @@ const slotColor = new Int32Array(SLOTS).fill(-1);
 const slotL = new Float64Array(SLOTS);
 const slotC = new Float64Array(SLOTS);
 const slotH = new Float64Array(SLOTS);
-
-/** The last `lab` conversion's result, so the hot path allocates nothing. */
-const LAB = [0, 0, 0];
-
-/** 0xrrggbb to OKLab `[L, a, b]` in `LAB`; Björn Ottosson's OKLab matrices. */
-function lab(rgb: number): void {
-  const r = LINEAR[(rgb >> 16) & 0xff] as number;
-  const g = LINEAR[(rgb >> 8) & 0xff] as number;
-  const b = LINEAR[rgb & 0xff] as number;
-  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
-  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
-  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
-  LAB[0] = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
-  LAB[1] = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
-  LAB[2] = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
-}
-
-/** OKLab to 0xrrggbb, clipping each channel to sRGB's gamut. */
-function fromLab(L: number, A: number, B: number): number {
-  const l_ = L + 0.3963377774 * A + 0.2158037573 * B;
-  const m_ = L - 0.1055613458 * A - 0.0638541728 * B;
-  const s_ = L - 0.0894841775 * A - 1.291485548 * B;
-  const l = l_ * l_ * l_;
-  const m = m_ * m_ * m_;
-  const s = s_ * s_ * s_;
-  const r = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
-  const g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
-  const b = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
-  return (toByte(r) << 16) | (toByte(g) << 8) | toByte(b);
-}
 
 /** 0xrrggbb to its slot, filled with [L, C, h], h in radians. */
 function oklch(rgb: number): number {
@@ -211,13 +157,14 @@ export function roundsHue(channel: Channel<unknown>): boolean {
 /** Whether `of` asks a color channel to average: absent, or a stock `sum` with no turn or bounds. */
 function averages(of: Channel<unknown> | undefined): boolean {
   if (of === undefined) return true;
+  if (modeOf(of) !== undefined) return false;
   const stock = numericOf(of);
   return stock?.op === 'sum' && stock.turn === undefined && of.bounds === undefined;
 }
 
 const refuse = (name: string, of: Channel<unknown>) =>
   new Error(
-    `${name} takes sum() to average or last() to replace, not ${of.kind ?? 'a channel of its own'}`,
+    `${name} takes sum() to average, last() to replace, or a blend mode, multiply(), screen(), add(), lighten() or darken(), not ${of.kind ?? 'a channel of its own'}`,
   );
 
 /** A `last` color channel, which replaces and travels by `lerp`. */
@@ -233,8 +180,12 @@ function replacing(kind: string, lerp: Channel<number[]>['lerp']): Channel<numbe
  * merge rule given as `of`. `color()` averages: voices stack as a premultiplied sum, so a pose
  * holds `[Σw·L, Σw·a, Σw·b, Σw]` and runs on lanes; `toHex` divides it out and lays it over what
  * is under it. `color(last())` replaces, the last voice to pass winning, at the coverage it was
- * authored with. It travels between two colors, in a motion or a role's handoff, straight across
- * OKLab, so opposite hues cross through gray. For colors that stand for a meaning, use `ink`.
+ * authored with. `color(multiply())`, `screen()`, `add()`, `lighten()` and `darken()` lay their
+ * voices over what is under them by that blend mode, in linear sRGB, a voice's weight times its
+ * coverage its opacity: the pose is the one layer they add up to, which `toHex` lays over `under`
+ * and `css` gives with `blendMode` naming the CSS mode. It travels between two colors, in a motion
+ * or a role's handoff, straight across OKLab, so opposite hues cross through gray. For colors that
+ * stand for a meaning, use `ink`.
  *
  * @category channel
  */
@@ -265,8 +216,10 @@ export function color(
     return turning;
   }
   const own = of as Channel<unknown>;
-  if (own.kind === 'last')
-    return replacing(`color(last${space})`, round ? lerpLch : vec(4, sum()).lerp);
+  const travel = round ? lerpLch : vec(4, sum()).lerp;
+  if (own.kind === 'last') return replacing(`color(last${space})`, travel);
+  const mode = modeOf(own);
+  if (mode !== undefined) return blending(mode, `color(${mode}${space})`, travel);
   throw refuse('color', own);
 }
 
@@ -284,7 +237,8 @@ const WIDE = doubles(5, 0);
  * stay vivid. Near-opposite hues overlapping swing round the wheel as their weights cross, with
  * no tiebreak, and exactly opposite ones cancel to gray. A patch writes it the `oklab()` values a
  * `color` takes, and `toHex` and `css` read either. `ink(last())` replaces, traveling round the
- * hue, and holds the four numbers it was written, since it never sums.
+ * hue, and holds the four numbers it was written, since it never sums. `ink(multiply())` and the
+ * other blend modes blend as `color`'s do, traveling round the hue.
  *
  * @category channel
  */
@@ -292,6 +246,8 @@ export function ink(of?: Channel<number> | Channel<unknown>): Channel<number[]> 
   if (!averages(of as Channel<unknown> | undefined)) {
     const own = of as Channel<unknown>;
     if (own.kind === 'last') return replacing('ink(last)', lerpLch);
+    const mode = modeOf(own);
+    if (mode !== undefined) return blending(mode, `ink(${mode})`, lerpLch);
     throw refuse('ink', own);
   }
   const channel: Channel<number[]> = {
@@ -364,6 +320,8 @@ function shows(pose: ArrayLike<number>): number {
  * @category channel
  */
 export function toHex(pose: ArrayLike<number>, under = 0x000000): number {
+  const blended = blendHex(pose, under);
+  if (blended !== undefined) return blended;
   const w = shows(pose);
   if (!(w > 0)) return under;
   const L = SHOWN[0] as number;
@@ -385,6 +343,8 @@ export function toHex(pose: ArrayLike<number>, under = 0x000000): number {
  * @category channel
  */
 export function css(pose: ArrayLike<number>): string {
+  const blended = blendCss(pose);
+  if (blended !== undefined) return blended;
   const w = shows(pose);
   if (!(w > 0)) return 'oklab(0 0 0 / 0)';
   return `oklab(${SHOWN[0]} ${SHOWN[1]} ${SHOWN[2]} / ${w < 1 ? w : 1})`;

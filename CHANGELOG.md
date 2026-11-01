@@ -4,6 +4,17 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- Blend modes for both color types: `color(multiply())`, `color(screen())`, `color(add())`,
+  `color(lighten())` and `color(darken())`, and the same under `ink`, which travels round the hue.
+  Each voice is a layer blended in linear sRGB, its weight times its coverage its opacity. The pose
+  is the one layer the voices add up to; `toHex(pose, under)` blends it onto `under`, `css(pose)`
+  gives it opaque, and the new `blendMode(pose)` names the CSS `mix-blend-mode` to lay it on with.
+  They run on lanes. `multiply`, `screen`, `add`, `lighten` and `darken` are also numeric channels.
+
 ## 0.16.1
 
 ### Fixed

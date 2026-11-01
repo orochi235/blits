@@ -883,6 +883,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     (the changelog's 0.8.1 section). To measure a blits build against astv's bench: `MOTION_ONLY=1
     probes/blits-version-bench.sh <out dir> 0.7.1` in `~/src/astv` on a fleet node.
 
+16. **The ordered blend modes are unbuilt: overlay, soft light, hard light and difference** (the
+    owner deferred them, 2026-10-31). The five order-free modes shipped as merge rules on both
+    color types (schema page, "A blend mode lays voices over what is under them"). These four
+    can't fold into one layer: each result depends on the base nonlinearly, so the pose would
+    have to keep every voice's layer, in a defined voice order, and `toHex` replay them over
+    `under`. Designing that order is the first step.
+
 ## Loose ends
 
 - **A staggered voice's end depends on which subjects the host has read, for a `target` voice**

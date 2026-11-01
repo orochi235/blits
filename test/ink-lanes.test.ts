@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { add, darken, lighten, multiply, screen } from '../src/blend-modes.js';
 import { axesOf, kit, last } from '../src/channels.js';
-import { ink, oklab } from '../src/color.js';
+import { color, ink, oklab } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { glide, spring, tween } from '../src/motion.js';
 import { keys, patch } from '../src/patch.js';
@@ -208,4 +209,20 @@ describe('ink() runs on lanes, reading as the general path does', () => {
       40,
     );
   });
+});
+
+describe('blend modes run on lanes, reading as the general path does', () => {
+  for (const rule of [multiply, screen, add, lighten, darken])
+    for (const of of [color, ink])
+      it(`${of.name}(${rule.name}()) under a held color, over a fade, and looping`, () => {
+        agree(
+          of(rule()),
+          (m) => {
+            m.cue({ patch: holds(GRAY), weight: 0.3 });
+            m.cue({ patch: sweep(RED, CYAN), fade: { in: 300 }, weight: 0.8 });
+            m.cue({ patch: sweep(BLUE, oklab(0xffff00), 700), loop: true });
+          },
+          TIMES,
+        );
+      });
 });

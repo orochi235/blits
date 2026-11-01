@@ -52,4 +52,10 @@ The same voices write both rows. On the left one voice sweeps from red to blue a
 
 <Listing of="live/examples/inks.ts" />
 
+## Blend modes
+
+`color(multiply())`, `color(screen())`, `color(add())`, `color(lighten())` and `color(darken())` lay each voice over what is under it the way an image editor's layer modes do, in linear light: a voice is a layer, and its weight times its coverage is the layer's opacity. Multiply darkens, as a filter or a shadow does; screen and add lighten, as projected light does; lighten and darken keep whichever is lighter or darker on each of red, green and blue. They work on `ink` too, which only changes how a value travels between keys.
+
+blits never sees what is under a subject, so the pose holds the one layer the voices add up to, and the host supplies the base: `toHex(pose, under)` blends onto `under`, and `css(pose)` gives the layer with `blendMode(pose)` naming the CSS `mix-blend-mode` to put it on with. The browser blends in gamma-encoded sRGB rather than linear light, so its midtones come out darker than `toHex`'s.
+
 <ApiEntries word="channel" />
