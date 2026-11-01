@@ -47,7 +47,7 @@ export interface Moving<I, O, V extends Value> extends Patch<I, O, void> {
    */
   push(subject: I, velocity: V, at?: number): void;
   /**
-   * Puts `subject` at `value` from voice time `at`, keeping its velocity. `at` defaults as `push`'s
+   * Puts `subject` at `value` from voice time `at`, keeping its velocity. `at` defaults as {@link Moving.push | `push`}'s
    * does. A spring or tween heads for its target from there, a glide coasts on from there.
    */
   set(subject: I, value: V, at?: number): void;
@@ -146,13 +146,13 @@ export interface Glide<I, O, V extends Value> extends Moving<I, O, V> {
 }
 
 /**
- * The patch `tween` returns, a motion that can be retargeted, with no `push`.
+ * The patch `tween` returns, a motion that can be retargeted, with no {@link Moving.push | `push`}.
  *
  * @category patch
  */
 export interface Tween<I, O, V extends Value> extends Omit<Moving<I, O, V>, 'push'> {
   /**
-   * Heads `subject` for `target` from voice time `at`, over a full `ms` from where it is. `at` is
+   * Heads `subject` for `target` from voice time `at`, over a full {@link TweenOptions.ms | `ms`} from where it is. `at` is
    * by default the mix's latest frame, or for a subject no frame of its voice has met yet, or still
    * inside its stagger, its first read, after any change with a time due by then. A subject faded
    * out of the voice comes back at the latest frame too, however long it is before it is next read.

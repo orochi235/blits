@@ -19,7 +19,7 @@ A mix can fold a channel two ways. The general path works out a subject's pose w
 Some voices never run as a lane, so a mix full of them gets nothing from the lane code:
 
 - A voice weighted by a signal marked as an input (one that reads something the clock doesn't drive) that `input` did not make. `input` makes one that reports its changes, which keeps its voice on a lane.
-- A voice whose patch `reads` fields of the host.
+- A voice whose patch [`reads`](Patch.reads) fields of the host.
 
 ## When to use it
 
@@ -28,8 +28,8 @@ A host that probes tens of subjects a frame, such as a page of DOM elements or a
 What changes:
 
 - `mix` makes a mix on the `lean` engine, which folds every voice subject by subject.
-- `lanes: true` in `MixOptions` throws. Leaving `lanes` out, or passing `false`, is fine.
-- `mixer`, the full engine, is still exported, and passing it as `engine` brings the lanes back.
+- `lanes: true` in `MixOptions` throws. Leaving [`lanes`](MixOptions.lanes) out, or passing `false`, is fine.
+- `mixer`, the full engine, is still exported, and passing it as [`engine`](MixOptions.engine) brings the lanes back.
 
 To compare the two in your own app, keep the full import and pass `lanes: false`: it runs the same general path the lean engine does.
 

@@ -18,7 +18,7 @@ A weight scales what a voice contributes toward its channel's rest, so at 0 the 
 <Fade client:only="react" />
 <Source of="blending/Fade.tsx" />
 
-A voice's `fade` gives it ramps: `in` runs from the moment it starts, `out` from the moment it's told to leave, and `ease` shapes both. The ramp is only a weight, so it takes every channel the voice writes toward rest at once, each by its own arithmetic.
+A voice's [`fade`](VoiceSpec.fade) gives it ramps: [`in`](FadeSpec.in) runs from the moment it starts, [`out`](FadeSpec.out) from the moment it's told to leave, and [`ease`](FadeSpec.ease) shapes both. The ramp is only a weight, so it takes every channel the voice writes toward rest at once, each by its own arithmetic.
 
 ```ts
 const h = m.cue({ patch: wave, loop: true, fade: { in: 1000, out: 1200, ease: 'ease-in-out' } });
@@ -27,7 +27,7 @@ h.fade(); // over its own fade.out
 h.fade({ over: 300 }); // or over a ramp given here
 ```
 
-A voice cued with a finite `loop` fades out by itself when its passes run out.
+A voice cued with a finite [`loop`](VoiceSpec.loop) fades out by itself when its passes run out.
 
 ## Retarget on interruption
 
@@ -69,12 +69,12 @@ The voices a blend cues share a [role](../role/): the mix treats them as alterna
 <Handover client:only="react" />
 <Source of="blending/Handover.tsx" />
 
-`fade({ at: 'rest' })` doesn't ramp anything down. The voice stays at full weight and leaves each subject separately, at the first frame what it writes for that subject is at rest. A hop finishes its hop, and each subject lands on its own schedule. Whatever the next voice is, it was cued already, and it simply becomes the only thing moving that subject.
+[`fade({ at: 'rest' })`](Handle.fade) doesn't ramp anything down. The voice stays at full weight and leaves each subject separately, at the first frame what it writes for that subject is at rest. A hop finishes its hop, and each subject lands on its own schedule. Whatever the next voice is, it was cued already, and it simply becomes the only thing moving that subject.
 
 ```ts
 hop.fade({ at: 'rest', deadline: 2500 });
 ```
 
-A patch that never comes to rest would keep its voice forever, so `deadline` says how many milliseconds to wait before the voice leaves regardless. In the demo the last dot never lands, and it drops when the deadline arrives. Rest here means exactly the channel's rest, so a patch meant to hand over this way should hold its rest value for a stretch rather than pass through it between two frames.
+A patch that never comes to rest would keep its voice forever, so [`deadline`](VoiceFade.deadline) says how many milliseconds to wait before the voice leaves regardless. In the demo the last dot never lands, and it drops when the deadline arrives. Rest here means exactly the channel's rest, so a patch meant to hand over this way should hold its rest value for a stretch rather than pass through it between two frames.
 
 <ApiEntries word="blending" />

@@ -36,7 +36,7 @@ export interface Claim {
   ballast: boolean;
   priority: Strength;
   /**
-   * Span ms from now before which it may not start. From its `earliest`; absent for none. Below 0
+   * Span ms from now before which it may not start. From its {@link SpanHints.earliest | `earliest`}; absent for none. Below 0
    * where it has passed, which places the child there.
    */
   floor?: number;
@@ -248,7 +248,7 @@ export interface OverrunOptions {
 }
 
 /**
- * Lets the span run past its budget. Up to `cap` times it, or without limit.
+ * Lets the span run past its budget. Up to {@link OverrunOptions.cap | `cap`} times it, or without limit.
  *
  * @category score
  */

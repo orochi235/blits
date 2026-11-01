@@ -60,7 +60,7 @@ export interface Circle {
 }
 
 /**
- * The host's own answer to where a `within` signal can be above 0. It works over any axes or
+ * The host's own answer to where a {@link VoiceSpec.within | `within`} signal can be above 0. It works over any axes or
  * none. Once a
  * frame, `find` writes into `out`, from 0, the indices `place` or `plot` gave the subjects the
  * signal can be above 0 for, and returns how many it wrote. `out` has room for every index handed
@@ -81,7 +81,7 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
   // biome-ignore lint/suspicious/noExplicitAny: a patch naming no host fits a mix naming one
   patch: Patch<I, O, any, H>;
   /**
-   * What `history.revive` rebuilds this spec from. It lets a history `store` page the voice out
+   * What `history.revive` rebuilds this spec from. It lets a history {@link HistoryOptions.store | `store`} page the voice out
    * once it has left. A voice cued without it stays in memory for as long as history reaches it.
    */
   as?: Described;
@@ -102,23 +102,23 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
   subjects?: readonly I[];
 
   /**
-   * When the voice starts, in ms on the host's clock. That is the clock it passes `sync`: a rAF
+   * When the voice starts, in ms on the host's clock. That is the clock it passes {@link Mix.sync | `sync`}: a rAF
    * timestamp and `performance.now()` share an origin, `Date.now()` does not. Default: the time the mix last
    * synced to, and 0 for a voice cued before the first sync, which that sync finds already as far
-   * in as its timestamp. Where the host read `inert` as true since the last sync, its frame loop
+   * in as its timestamp. Where the host read {@link Mix.inert | `inert`} as true since the last sync, its frame loop
    * may be asleep, and the default is the next sync instead, so a voice cued after a long pause
    * starts there rather than that far in.
    */
   start?: number;
   /**
    * Playback rate. 1 is real time; 0 freezes; below 0 plays backward, to end where the voice
-   * starts as a voice playing forward ends where its last pass does: `played` resolves, and it
+   * starts as a voice playing forward ends where its last pass does: {@link Handle.played | `played`} resolves, and it
    * leaves over `fade.out` or, freezing before, holds its first frame.
    */
   rate?: number;
   /**
    * Where in itself the voice starts, in voice ms, as `seek` on its handle sets. Default 0, or
-   * for a voice cued backward its end: `duration` times its passes. A voice with no end cued
+   * for a voice cued backward its end: {@link Patch.duration | `duration`} times its passes. A voice with no end cued
    * backward (a loop for good, or a patch with no duration) starts at 0 and has no first pass
    * either: it plays into the pass before, `setting.pass` and `setting.elapsed` below 0, for
    * every subject from the voice's start whatever its stagger. A motion's stretches begin at 0,
@@ -126,13 +126,13 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    */
   seek?: number;
   /**
-   * The interval this voice's `step` runs at, in ms of mix time. It takes the place of the mix's
+   * The interval this voice's {@link Patch.step | `step`} runs at, in ms of mix time. It takes the place of the mix's
    * `stepMs`. 0 steps it once a frame by the frame's gap, whatever the mix sets. Default: the mix's.
    */
   stepMs?: number;
   /**
    * How a stateful subject first probed after its delay ran out starts stepping. `exact` steps it
-   * from that origin, in one step capped by `maxDt` or every `stepMs` interval since, so its state
+   * from that origin, in one step capped by {@link MixOptions.maxDt | `maxDt`} or every `stepMs` interval since, so its state
    * is the same however late the host looked. `fresh` starts it from the probe that first meets it,
    * with fresh state and no catch-up, on the `stepMs` grid counted from the origin: cheaper for a
    * subject met long after its voice started, and probe-dependent by design. A subject met on time,
@@ -158,10 +158,10 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    * Which edge frames a subject is shown while the voice is not playing. `before` shows the first
    * frame before it starts, while the voice is pending and while the subject waits out its
    * `stagger`; `after` shows the last frame of the last pass after a finite loop plays out; `both`
-   * shows both. A frozen subject's clock stands still: `at` is asked for the edge frame and `step`
+   * shows both. A frozen subject's clock stands still: {@link Patch.at | `at`} is asked for the edge frame and {@link Patch.step | `step`}
    * does not run, past one last step to the end of the last pass. `fade.in` counts from the first
    * frame the voice shows. A voice freezing after stays, `frozen`, until `fade()` or an anchored
-   * `out` takes it out, so every one cued must be faded or it stays in the mix for good. Does
+   * {@link Placement.out | `out`} takes it out, so every one cued must be faded or it stays in the mix for good. Does
    * nothing to a motion patch, which keeps its target already. Default: neither.
    */
   freeze?: 'before' | 'after' | 'both';
@@ -212,7 +212,7 @@ export interface VoiceSpec<I, O, H = unknown> extends SpanHints {
    */
   hits?: readonly Hit[];
   /**
-   * Named marks inside the voice, beside its five. Each is at voice ms into a pass, as a hit's `at`
+   * Named marks inside the voice, beside its five. Each is at voice ms into a pass, as a hit's {@link Hit.at | `at`}
    * is: `{ drop: 340 }`. An anchor names one as it names the five, `{ of: 'lead', mark: 'drop' }`, and
    * `marks` lists it and `book` books it under its name. Each is reached once: on the first pass
    * that reaches it from where the voice starts, while its clock runs forward and before it ends.
@@ -261,7 +261,7 @@ export interface OwnerSpec<I, H = unknown> extends SpanHints {
   /**
    * Its clock's rate, multiplied into every child's own. Default 1. Below 0 its clock runs back,
    * and so does every child's: a child plays backward to its start and leaves there, as a voice cued
-   * backward does, and the owner leaves with its last child. Under `history` a child that already
+   * backward does, and the owner leaves with its last child. Under {@link MixOptions.history | `history`} a child that already
    * left runs back too: a child leaves only when its owner does. A span is not cued backward, since
    * it lays out its children forward from its start; its handle's `rate` turns it once it plays.
    */
@@ -346,7 +346,7 @@ export interface FitResult {
   over: number;
   /** How many children it jumps to their end. */
   skipped: number;
-  /** Whether the fit failed and `spill` decided. */
+  /** Whether the fit failed and {@link SpanSpec.spill | `spill`} decided. */
   fell: boolean;
 }
 
@@ -376,7 +376,7 @@ export interface VoiceFade {
   over?: number;
   /**
    * When the fade begins, as a mix time or `'rest'`. A mix time: ahead, the voice plays untouched until then and begins
-   * its fade exactly there, its `out` mark fixed from now, and `rise` before then takes it
+   * its fade exactly there, its `out` mark fixed from now, and {@link Handle.rise | `rise`} before then takes it
    * back with nothing changed; at or behind now, the fade began then and is partway. `'rest'`:
    * leave per subject at the first frame that subject's contribution is at rest. Default now.
    */
@@ -394,9 +394,9 @@ export interface VoiceFade {
 export interface SubjectFade<I = unknown> {
   /**
    * The one subject to fade out of this voice, which plays on for the rest. Once the ramp ends
-   * the voice forgets the subject and reaches it no more, until a motion patch's `to` or `push`
-   * or the mix's `drop` brings it back, met afresh: `from` and `target` asked again, and
-   * `stagger` too unless the voice names its `subjects`.
+   * the voice forgets the subject and reaches it no more, until a motion patch's `to` or {@link Moving.push | `push`}
+   * or the mix's {@link Mix.drop | `drop`} brings it back, met afresh: {@link VoiceSpec.from | `from`} and {@link VoiceSpec.target | `target`} asked again, and
+   * {@link VoiceSpec.stagger | `stagger`} too unless the voice names its `subjects`.
    */
   subject: I;
   /** The ramp, ms. Defaults to the voice's own `fade.out`; 0 takes the subject out at once. */
@@ -438,7 +438,7 @@ export interface Handle<I = unknown> {
    * each subject's state (a patch's `state`, what `setting.keep` holds) is made fresh and stepped
    * again from the voice's start up to `elapsed` on its next probe; `state: 'keep'` leaves it where
    * it was. Answers how sure the state now is: `exact` for a voice with none, or rebuilt under
-   * `stepMs` with no `maxDt`; `stepped` where it was caught up in one step or holds signal state;
+   * `stepMs` with no {@link MixOptions.maxDt | `maxDt`}; `stepped` where it was caught up in one step or holds signal state;
    * `held` where it was kept, or depends on host fields or an input weight the rebuild cannot know.
    * A voice still pending starts on time, already at `elapsed`, and one that freezes before shows
    * that frame while it waits.
@@ -488,7 +488,7 @@ export interface Handle<I = unknown> {
   readonly done: Promise<void>;
   /**
    * Resolves true when a finite loop's last pass ends, false if the voice leaves before that. The
-   * last pass is the one for its latest-staggered subject; `stagger` says which subjects count.
+   * last pass is the one for its latest-staggered subject; {@link VoiceSpec.stagger | `stagger`} says which subjects count.
    * Never rejects.
    */
   readonly played: Promise<boolean>;

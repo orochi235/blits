@@ -44,7 +44,7 @@ export interface Transport {
    */
   seek(to: number | { readonly frame: number }): void;
   /**
-   * Loads from the history `store` what a seek or projection to `time` will need. That is, what
+   * Loads from the history {@link HistoryOptions.store | `store`} what a seek or projection to `time` will need. That is, what
    * `seek(time)` and `project(time)` need where it reaches past memory. Without a store, or within
    * memory, it loads nothing. What it loads is kept until a seek or read takes it, or until
    * `history.ms` of mix time passes, after which the time needs `prepare` again.
@@ -54,7 +54,7 @@ export interface Transport {
   /** As `Mix.seq`, the number of the frame being played. It is the same for every mix on it. */
   readonly seq: number;
   readonly tape: Tape | undefined;
-  /** Puts a named mark on a score every mix on it sees. Throws without a `score`. */
+  /** Puts a named mark on a score every mix on it sees. Throws without a {@link AnnounceOptions.score | `score`}. */
   announce(name: string, opts: AnnounceOptions & { score: string }): void;
   /** Every mark of every mix on it, and every mark announced on it, earliest first. */
   marks(from: number, to: number): Marked[];

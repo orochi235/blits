@@ -52,7 +52,7 @@ export interface ArcSpec<I, O, H = unknown> extends Omit<OwnerSpec<I, H>, 'freez
   exit?: ArcPart<I, O, H>;
   /**
    * How long `active` plays, ms on the arc's clock, or `'open'`. A number loops `active` for it
-   * unless its `loop` says how many passes; `'open'` plays it until `release`. Default: `active`'s
+   * unless its {@link VoiceSpec.loop | `loop`} says how many passes; `'open'` plays it until `release`. Default: `active`'s
    * own length, held open where it loops for good, and 0 with no `active`.
    */
   hold?: number | 'open';

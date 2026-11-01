@@ -31,7 +31,7 @@ Each subject here is a part: a mesh, where it rests, and its place in the row. T
 
 The bob writes an offset rather than a position, and the loop adds it to where the part rests. A voice that wrote the position outright would pin every part to the patch's numbers.
 
-`probe(part, pose)` reuses one pose object for every part. Where `pose` already holds an array of the right length for a `vec`, `quat`, or `color` channel, the mix writes into that array rather than making a new one. That saves an allocation per part per frame, and it means the array changes on the next probe: copy the numbers out before reading the next part, as the loop does.
+[`probe(part, pose)`](Mix.probe) reuses one pose object for every part. Where `pose` already holds an array of the right length for a `vec`, `quat`, or `color` channel, the mix writes into that array rather than making a new one. That saves an allocation per part per frame, and it means the array changes on the next probe: copy the numbers out before reading the next part, as the loop does.
 
 ## Instances
 
@@ -47,7 +47,7 @@ A channel with no value for a subject writes NaN in its places. The channels abo
 
 ## Particles
 
-[`@msb235/blits-quarks`](https://www.npmjs.com/package/@msb235/blits-quarks) drives [three.quarks](https://github.com/Alchemist0823/three.quarks) particle systems from a mix: how many particles each subject emits, where, and with what start values. You build the systems and the renderer; once a frame, after `sync`, `write()` turns each emitter's pose into particles.
+[`@msb235/blits-quarks`](https://www.npmjs.com/package/@msb235/blits-quarks) drives [three.quarks](https://github.com/Alchemist0823/three.quarks) particle systems from a mix: how many particles each subject emits, where, and with what start values. You build the systems and the renderer; once a frame, after [`sync`](Mix.sync), `write()` turns each emitter's pose into particles.
 
 ```ts
 import { kit, max, mix, wave } from '@msb235/blits';

@@ -12,7 +12,7 @@ import type { Circle, Finder, Handle } from './voice.js';
 export interface Registry {
   /** The mixes still alive, in the order they were made. */
   entries(): Watched[];
-  /** Hears each mix made, and each one collected, by its entry's `id`. Returns an unsubscribe. */
+  /** Hears each mix made, and each one collected, by its entry's {@link Watched.id | `id`}. Returns an unsubscribe. */
   on(fn: (change: RegistryChange) => void): () => void;
   /**
    * The history new mixes keep when they name none. It applies to a mix made from now on whose
@@ -24,7 +24,7 @@ export interface Registry {
 
 /**
  * What `Registry.on` hears. It is a mix made, with its entry, or a mix collected, by its entry's
- * `id`.
+ * {@link Watched.id | `id`}.
  *
  * @category mix
  */
@@ -58,7 +58,7 @@ export interface Watched<I = unknown, O = unknown> {
   label(subject: I): string;
   /**
    * Calls `fn` with each frame the host read, once the next one begins. While anyone watches, the
-   * mix records what `probe`, `pull` and `drain` give the host, and nothing else changes. Returns
+   * mix records what {@link Mix.probe | `probe`}, `pull` and `drain` give the host, and nothing else changes. Returns
    * a function that stops watching.
    */
   watch(fn: (frame: WatchedFrame<I, O>) => void): () => void;
@@ -68,7 +68,7 @@ export interface Watched<I = unknown, O = unknown> {
    */
   subjects(): I[];
   /**
-   * One subject's pose at mix time `at`, default now. It is read through `project`, which moves
+   * One subject's pose at mix time `at`, default now. It is read through {@link Mix.project | `project`}, which moves
    * nothing, never a probe. A time behind now needs history that reaches it.
    */
   read(subject: I, at?: number): O;
@@ -86,7 +86,7 @@ export interface WatchedHistory {
   readonly ms: number;
   /** Whether it records a tape. */
   readonly tape: boolean;
-  /** Whether the registry's `history` gave it. */
+  /** Whether the registry's {@link Registry.history | `history`} gave it. */
   readonly added: boolean;
 }
 
@@ -148,11 +148,11 @@ export interface Pulled<I> {
 }
 
 /**
- * A mix's clock in a debugger's hands, and every mix's on the same transport. The host's `sync`
+ * A mix's clock in a debugger's hands, and every mix's on the same transport. The host's {@link Mix.sync | `sync`}
  * still begins each frame, but the frame's gap counts at `rate`, so the mix moves at `rate` times
- * its own rate; the host's own clock calls (`seek`, `rate`, `ramp`, `rebase`) wait for `free`.
+ * its own rate; the host's own clock calls ({@link Mix.seek | `seek`}, {@link Mix.rate | `rate`}, {@link Mix.ramp | `ramp`}, {@link Mix.rebase | `rebase`}) wait for `free`.
  * Nothing done through a hold is recorded on the tape or in the mix's rate, and each change wakes
- * a host sleeping on `inert`.
+ * a host sleeping on {@link Mix.inert | `inert`}.
  *
  * @category mix
  */

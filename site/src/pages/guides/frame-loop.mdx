@@ -17,7 +17,7 @@ import Listing from '../../components/Listing.astro';
 
 A mix is **inert** when another frame would change no pose: every voice is done, frozen at a plain weight, or a motion that has landed. A voice that loops for good is never inert, so a page with one never sleeps.
 
-`ticker` takes `fps` to cap the frame rate, and `grain: 'timer'` to run on `setTimeout` where there are no animation frames, as in a worker. `hold()` keeps frames coming whatever the mixes say, until you call the release it returns.
+`ticker` takes [`fps`](TickerOptions.fps) to cap the frame rate, and `grain: 'timer'` to run on `setTimeout` where there are no animation frames, as in a worker. [`hold()`](Ticker.hold) keeps frames coming whatever the mixes say, until you call the release it returns.
 
 ## Or write the loop yourself
 
@@ -27,11 +27,11 @@ The ticker is built on two members of the mix that any loop can use. `m.inert` s
 
 ## Cueing into a sleeping loop
 
-A voice cued with no `start` while the loop sleeps starts at the next frame, so it plays from its beginning however long the loop slept. The mix knows the loop may be asleep because the loop read `m.inert` as true before it stopped asking for frames, as `ticker` does; a hand-written loop that sleeps on `inert` gets the same.
+A voice cued with no [`start`](VoiceSpec.start) while the loop sleeps starts at the next frame, so it plays from its beginning however long the loop slept. The mix knows the loop may be asleep because the loop read `m.inert` as true before it stopped asking for frames, as `ticker` does; a hand-written loop that sleeps on [`inert`](Mix.inert) gets the same.
 
 ## Hidden tabs
 
-A hidden tab gets no animation frames, so the first sync after it comes back sees the whole time away. Fades and finite loops finish, and every subject catches up by all of it at once. To pick up where the tab left off instead, call `rebase` when it shows again:
+A hidden tab gets no animation frames, so the first sync after it comes back sees the whole time away. Fades and finite loops finish, and every subject catches up by all of it at once. To pick up where the tab left off instead, call [`rebase`](Mix.rebase) when it shows again:
 
 ```ts
 document.addEventListener('visibilitychange', () => document.hidden || m.rebase());
@@ -41,13 +41,13 @@ The next sync takes the gap out of the mix's clock. [Time](../../time/) shows bo
 
 ## Reduced motion
 
-`reduce` in the mix's options turns on reduced motion: fades and warm-ups snap, and every `step` is handed a `dt` of Infinity. It takes a boolean, or a function the mix asks, so it can follow the reader's setting as it changes. The ticker example above passes `prefers-reduced-motion`.
+[`reduce`](MixOptions.reduce) in the mix's options turns on reduced motion: fades and warm-ups snap, and every [`step`](Patch.step) is handed a [`dt`](Setting.dt) of Infinity. It takes a boolean, or a function the mix asks, so it can follow the reader's setting as it changes. The ticker example above passes `prefers-reduced-motion`.
 
 ## Patches that integrate
 
-A patch with a `step` advances its state by the time since a subject was last probed, and after a hidden tab or a subject off screen that can be seconds in one step. Two options bound it:
+A patch with a [`step`](Patch.step) advances its state by the time since a subject was last probed, and after a hidden tab or a subject off screen that can be seconds in one step. Two options bound it:
 
-- `maxDt` caps the `dt` any step is handed, however long the gap.
-- `stepMs` runs every step at a fixed interval instead of once per frame, so a stateful patch plays the same at any frame rate. `maxDt` then caps how many intervals one probe may run.
+- [`maxDt`](MixOptions.maxDt) caps the [`dt`](Setting.dt) any step is handed, however long the gap.
+- [`stepMs`](MixOptions.stepMs) runs every step at a fixed interval instead of once per frame, so a stateful patch plays the same at any frame rate. [`maxDt`](MixOptions.maxDt) then caps how many intervals one probe may run.
 
 [Patch state](../../state/) covers when each one is the right choice.

@@ -70,10 +70,10 @@ export interface Input<I, H = unknown> extends Signal<I, H> {
 
 /**
  * Marks `read` as a signal driven from outside the clock. A host's own signal has to be one for
- * `assess` and a history's `inputs` to treat it as one. Two uses:
+ * `assess` and a history's {@link HistoryOptions.inputs | `inputs`} to treat it as one. Two uses:
  *
  * `input(read)` is an input of the host's own: a pointer, a volume, a value in a store. The host
- * calls `touch()` after each change to what `read` reads, and a voice weighted by the signal, or by
+ * calls {@link Input.touch | `touch()`} after each change to what `read` reads, and a voice weighted by the signal, or by
  * `peak`, `slew`, `lag` or `gate` over it, keeps its lane. A change nobody reports shows once the
  * mix's clock next moves.
  *
@@ -103,7 +103,7 @@ export interface Level<I, H = unknown> extends Signal<I, H> {
 }
 
 /**
- * A signal the host writes. It is `input` over one number, with `set` reporting each change.
+ * A signal the host writes. It is `input` over one number, with {@link Level.set | `set`} reporting each change.
  * klieg's `level`.
  *
  * @category signal
@@ -156,10 +156,10 @@ export interface SlewOptions {
 }
 
 /**
- * Follows its input at a rate limit, the package's linear decay primitive. No faster than `riseMs`
- * per unit climbing or `fallMs` draining. The mix keeps its state per voice and subject, so two
- * voices handed the same slew each follow on their own. A subject starts on its input, or at `from`
- * unless `dt` is infinite.
+ * Follows its input at a rate limit, the package's linear decay primitive. No faster than {@link SlewOptions.riseMs | `riseMs`}
+ * per unit climbing or {@link SlewOptions.fallMs | `fallMs`} draining. The mix keeps its state per voice and subject, so two
+ * voices handed the same slew each follow on their own. A subject starts on its input, or at {@link SlewOptions.from | `from`}
+ * unless {@link Setting.dt | `dt`} is infinite.
  *
  * @category signal
  */
@@ -207,10 +207,10 @@ export interface LagOptions {
 /**
  * Closes the same fraction of the distance to its input in every equal stretch of time. The
  * exponential counterpart to `slew`: the fraction is `1 − exp(−gap / ms)`, so it reads the same
- * however the frames that sample it are spaced while the input holds still. `riseMs` and `fallMs`
- * are time constants: after one, 63% of the way is covered. 0 follows at once. Within `floor` of
+ * however the frames that sample it are spaced while the input holds still. {@link LagOptions.riseMs | `riseMs`} and {@link LagOptions.fallMs | `fallMs`}
+ * are time constants: after one, 63% of the way is covered. 0 follows at once. Within {@link LagOptions.floor | `floor`} of
  * its input it lands on it, so a subject can reach rest; pass 0 to keep the curve exact. The mix
- * keeps its state per voice and subject. A subject starts on its input, or at `from` unless `dt` is
+ * keeps its state per voice and subject. A subject starts on its input, or at {@link LagOptions.from | `from`} unless {@link Setting.dt | `dt`} is
  * infinite.
  *
  * @category signal
@@ -246,7 +246,7 @@ interface Gated {
 
 /**
  * Passes or drops its input across a band, not an edge. The other half of the pair. It drops at
- * `off`, passes at `on`, and between the two it holds whatever it last did, so an input resting on
+ * {@link Band.off | `off`}, passes at `on`, and between the two it holds whatever it last did, so an input resting on
  * a threshold cannot chatter.
  *
  * @category signal

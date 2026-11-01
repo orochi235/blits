@@ -278,7 +278,7 @@ class TweenShape<I, V extends Value> implements Shape<I> {
 }
 
 /**
- * A damped spring toward a target, solved in closed form. `to(subject, target)` retargets one
+ * A damped spring toward a target, solved in closed form. {@link Spring.to | `to(subject, target)`} retargets one
  * subject mid-flight, and the new stretch starts from where it is and how fast it moves, so there is
  * no kink. Time is the voice's, so `rate` and `seek` apply. Its state is its own, kept per subject:
  * cue each spring on one voice. Every subject moves on the same number of axes.
@@ -315,14 +315,14 @@ export function spring<I, O, V extends Value = number>(
 
 /**
  * A patch that coasts each subject to a stop under friction, as after a fling. A subject keeps its
- * velocity, which falls by a factor of e every `ms`, and comes to rest `velocity · ms / 1000` past
- * where it was released. `push` sets it moving again from wherever it is. Closed form, so frame
+ * velocity, which falls by a factor of e every {@link GlideOptions.ms | `ms`}, and comes to rest `velocity · ms / 1000` past
+ * where it was released. {@link Glide.push | `push`} sets it moving again from wherever it is. Closed form, so frame
  * rate does not change where it stops.
  *
  * With `bounds`, a coast that would stop past an edge springs back to it from where it crosses, at
- * the speed it crosses at, on a critically damped spring of `stiffness`; one let go past an edge
- * springs back from there, unless it coasts back inside. A `set` past an edge leaves the subject
- * there, coasting on, until the next `push`, so a drag can hold it out.
+ * the speed it crosses at, on a critically damped spring of {@link GlideOptions.stiffness | `stiffness`}; one let go past an edge
+ * springs back from there, unless it coasts back inside. A {@link Glide.set | `set`} past an edge leaves the subject
+ * there, coasting on, until the next {@link Glide.push | `push`}, so a drag can hold it out.
  *
  * @category patch
  */
@@ -352,10 +352,10 @@ export function glide<I, O, V extends Value = number>(
 }
 
 /**
- * From one value to another over `ms` along an easing. Solved in closed form, so frame rate does
- * not change where a subject is. `to(subject, target)` retargets one subject mid-flight: the new
- * stretch starts from where it is and takes the full `ms` again, so its velocity jumps where a
- * spring's would not. Time is the voice's, so `rate` and `seek` apply, and a voice's `loop` does
+ * From one value to another over {@link TweenOptions.ms | `ms`} along an easing. Solved in closed form, so frame rate does
+ * not change where a subject is. {@link Tween.to | `to(subject, target)`} retargets one subject mid-flight: the new
+ * stretch starts from where it is and takes the full {@link TweenOptions.ms | `ms`} again, so its velocity jumps where a
+ * spring's would not. Time is the voice's, so `rate` and `seek` apply, and a voice's {@link VoiceSpec.loop | `loop`} does
  * not repeat it. Cue each tween on one voice. Every subject moves on the same number of axes.
  *
  * @category patch

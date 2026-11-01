@@ -1,7 +1,7 @@
 /**
  * One of the five times a voice is known by on the mix clock. They are when its fade in begins
  * (`start`), when it is fully in (`in`), when its last pass ends (`coast`), when its fade out
- * begins (`out`), and when it is gone (`end`). A voice coasts when `played` resolves true, for its
+ * begins (`out`), and when it is gone (`end`). A voice coasts when {@link Handle.played | `played`} resolves true, for its
  * latest-staggered subject: at its `out` where it does not freeze, and where it starts showing its
  * last frame where it does. A voice that loops for good, or fades before its last pass ends, never
  * coasts.
@@ -11,7 +11,7 @@
 export type Mark = 'start' | 'in' | 'coast' | 'out' | 'end';
 
 /**
- * A mark by name. It is one of a voice's own five, or one it places inside itself with `marks`.
+ * A mark by name. It is one of a voice's own five, or one it places inside itself with {@link VoiceSpec.marks | `marks`}.
  *
  * @category score
  */
@@ -37,7 +37,7 @@ export interface Query {
 
 /**
  * A time given by another voice. It is `mark` of the voice `of` selects, moved by `by` ms, where
- * `mark` is one of its five or one it places inside itself with `marks`. `after` is
+ * `mark` is one of its five or one it places inside itself with {@link VoiceSpec.marks | `marks`}. `after` is
  * sugar for that voice's `end`, `with` for its `start`, and `before` for its start less `by`. A
  * string selects by name. `all` is the latest of its anchors, known once every one is; `any` the
  * earliest, known once one has passed or every one is known.
@@ -71,7 +71,7 @@ export interface Placement {
 }
 
 /**
- * One mark as `marks` lists it. It is one of a voice's, or one the host announced on a score,
+ * One mark as {@link Mix.marks | `marks`} lists it. It is one of a voice's, or one the host announced on a score,
  * which has a name and no voice.
  *
  * @category score
@@ -95,13 +95,13 @@ export interface Marked {
 
 /**
  * An event at a time on a voice's own clock. `book` hands it to a host ahead of time. It plays once
- * per pass, for the voice and not per subject, so `stagger` does not spread it.
+ * per pass, for the voice and not per subject, so {@link VoiceSpec.stagger | `stagger`} does not spread it.
  *
  * @category score
  */
 export interface Hit<E = unknown> {
   /**
-   * Voice ms into each pass. It runs from 0 up to the patch's `duration`, or any time from 0 for a
+   * Voice ms into each pass. It runs from 0 up to the patch's {@link Patch.duration | `duration`}, or any time from 0 for a
    * patch with none.
    */
   at: number;
@@ -117,7 +117,7 @@ export interface BookedHit<E = unknown, I = unknown> {
   /** On the host's clock. */
   timestamp: number;
   voice: number;
-  /** Which of the voice's `hits`, by index. */
+  /** Which of the voice's {@link VoiceSpec.hits | `hits`}, by index. */
   hit: number;
   /** Which pass, 0 first. */
   pass: number;
@@ -148,11 +148,11 @@ export interface BookOptions<E = unknown, I = unknown> {
   /** How late an item may be when first seen and still be taken, host ms. */
   late: number;
   /**
-   * Called once per item, a mark as `marks` lists it or a hit. `when` is on the outside clock;
+   * Called once per item, a mark as {@link Mix.marks | `marks`} lists it or a hit. `when` is on the outside clock;
    * `lateBy` is how many host ms past the item was when first seen, which is then taken at the
-   * clock's now; it is 0 for one booked ahead. Return a `cancel` to hear about a booking whose time moved by
+   * clock's now; it is 0 for one booked ahead. Return a {@link Taken.cancel | `cancel`} to hear about a booking whose time moved by
    * more than 1 ms or that went away (a seek, a rate or ramp on the voice or the mix, a fade, a
-   * `rebase`, an anchor's target moving, the voice leaving); the item is then booked again, at its
+   * {@link Mix.rebase | `rebase`}, an anchor's target moving, the voice leaving); the item is then booked again, at its
    * new time, at the same sync.
    */
   take(item: Marked | BookedHit<E, I>, when: number, lateBy: number): Taken | undefined;

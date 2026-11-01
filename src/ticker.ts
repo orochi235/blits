@@ -46,7 +46,7 @@ export interface TickerOptions {
  */
 export interface Ticker {
   /**
-   * Syncs `mix` every frame from now on, and wakes the loop on its `onWake`. Asks for a frame, even
+   * Syncs `mix` every frame from now on, and wakes the loop on its {@link Ticked.onWake | `onWake`}. Asks for a frame, even
    * for a mix it already holds. Returns a remove.
    */
   add(mix: Ticked): () => void;
@@ -58,7 +58,7 @@ export interface Ticker {
   stop(): void;
   /**
    * Asks for a frame, after which the loop runs or sleeps as the mixes say. A mix changed before
-   * `stop` and not synced since does not wake the loop by itself, since it fires `onWake` once
+   * `stop` and not synced since does not wake the loop by itself, since it fires {@link Ticked.onWake | `onWake`} once
    * between syncs.
    */
   wake(): void;

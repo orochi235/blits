@@ -9,7 +9,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 
 <p class="lede">An engine is the implementation behind a mix. One ships, called <code>mixer</code>, and every mix uses it unless told otherwise.</p>
 
-An engine is three things. A `name`, for error messages. `runs`, the set of patch forms it can run: `'fn'` for patches written as a function, `'keys'` for patches written as keyframes, `'motion'` for a `spring` or `glide`. And `create(kit, opts)`, which builds a mix. Everything on a mix is the engine's to implement.
+An engine is three things. A [`name`](Engine.name), for error messages. [`runs`](Engine.runs), the set of patch forms it can run: `'fn'` for patches written as a function, `'keys'` for patches written as keyframes, `'motion'` for a `spring` or `glide`. And `create(kit, opts)`, which builds a mix. Everything on a mix is the engine's to implement.
 
 `mixer` runs every form on the CPU, working out each subject's pose when it is probed. Where every voice writing a channel allows it, it works that channel out for every subject at once at the frame's first probe instead, with the same result; `MixOptions.lanes: false` turns that off, and `mix` from `@msb235/blits/lean` is the same engine with that code left out of the bundle, about a quarter smaller.
 
@@ -29,7 +29,7 @@ A patch written as keyframes is data: its stops stay on the patch as `keys`, and
 
 - A Web Animations engine that runs `keys` patches only and hands them to the browser, so a page's motion plays off the main thread. It refuses `fn` and `motion` patches at `cue`.
 - A recording engine that wraps another and captures every pose as keyframes, turning a procedural patch into data for the first.
-- A GPU engine that writes each subject's pose into a buffer, for a part count where a JavaScript loop per frame is the cost. That is why `probe` takes an `out` object to fill.
+- A GPU engine that writes each subject's pose into a buffer, for a part count where a JavaScript loop per frame is the cost. That is why [`probe`](Mix.probe) takes an `out` object to fill.
 
 An engine can start as a wrapper around `mixer`. This one runs on the CPU like `mixer` does, but declares that it runs keyframes only, so a mix built on it refuses anything else:
 

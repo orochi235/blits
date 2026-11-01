@@ -12,14 +12,14 @@ import Listing from '../../components/Listing.astro';
 The shape is the one from [Get started](../../start/), moved into a component:
 
 - **One mix for the tree.** A mix folds every voice that reaches a subject, so effects from different components on the same element combine by the channel's arithmetic. Two mixes on one element would each write the whole transform, and the last one wins.
-- **One frame loop.** The provider calls `sync` once a frame and `probe` for each element. React never sees a frame: a pose in React state would render the component 60 times a second for a value the loop can write itself.
+- **One frame loop.** The provider calls [`sync`](Mix.sync) once a frame and [`probe`](Mix.probe) for each element. React never sees a frame: a pose in React state would render the component 60 times a second for a value the loop can write itself.
 - **Elements as subjects.** The mix keeps its state per subject by identity, so the element itself is the subject. A debugger names a DOM subject by its tag, id, and classes with no `labelOf` (see [Debugging a mix](../debugging/)).
 
 <Listing of="snippets/guides/react/stage.tsx" />
 
 The mix is made inside the effect, not during render. In development under `StrictMode`, React runs an effect, cleans it up, and runs it again, so the first mix is closed and the second one is the one the tree uses. `close` takes a mix off the list debuggers read; it does not stop it playing if something still syncs it, which is why the cleanup also cancels the loop.
 
-`track` is a ref callback that returns its own cleanup, as React 19 allows. When the element unmounts, the loop stops drawing it and `drop` makes the mix forget its per-subject state, so nothing keeps the element alive.
+`track` is a ref callback that returns its own cleanup, as React 19 allows. When the element unmounts, the loop stops drawing it and [`drop`](Mix.drop) makes the mix forget its per-subject state, so nothing keeps the element alive.
 
 A component cues from its event handlers, on its own element:
 
@@ -35,7 +35,7 @@ useEffect(() => {
 }, [mix]);
 ```
 
-`fade` ramps the voice out over its `fade.out` and then removes it, so a component that cued a voice for as long as it is mounted takes it out on the way.
+[`fade`](Handle.fade) ramps the voice out over its `fade.out` and then removes it, so a component that cued a voice for as long as it is mounted takes it out on the way.
 
 ## Reading a pose into React
 

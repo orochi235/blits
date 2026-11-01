@@ -14,7 +14,7 @@ import ApiEntries from '../components/ApiEntries.astro';
 <Signal client:only="react" />
 <Source of="Signal.tsx" />
 
-A voice's weight can be a fixed number, or it can be a **signal**: a function the mix calls for each subject every frame, which returns 0 to 1. A signal plugs in at two places only. It can be a voice's `weight`, and it can be the selector `blend` uses to choose between alternatives.
+A voice's weight can be a fixed number, or it can be a **signal**: a function the mix calls for each subject every frame, which returns 0 to 1. A signal plugs in at two places only. It can be a voice's [`weight`](VoiceSpec.weight), and it can be the selector `blend` uses to choose between alternatives.
 
 The simplest signal is one you write yourself:
 
@@ -27,13 +27,13 @@ bars.cue({ patch: glow, weight: ripple });
 
 ## Level, slew, lag and gate
 
-`level()` is a signal the host writes. It holds whatever you last `set`, for every subject. In the explainer, the gray line is a level the host sets once a frame from the input you pick.
+`level()` is a signal the host writes. It holds whatever you last [`set`](Level.set), for every subject. In the explainer, the gray line is a level the host sets once a frame from the input you pick.
 
-`slew(of, { riseMs, fallMs })` follows another signal, but no faster than `riseMs` per unit climbing and `fallMs` per unit draining. A tail that dies away is a slew with no rise, and a fade is a slew on a weight. A slew starts on its input the first time it sees a subject; `from` starts it somewhere else, so `from: 0` climbs from rest. Set the fall long and watch the slewed lamp linger after the level drops.
+`slew(of, { riseMs, fallMs })` follows another signal, but no faster than [`riseMs`](SlewOptions.riseMs) per unit climbing and [`fallMs`](SlewOptions.fallMs) per unit draining. A tail that dies away is a slew with no rise, and a fade is a slew on a weight. A slew starts on its input the first time it sees a subject; [`from`](SlewOptions.from) starts it somewhere else, so `from: 0` climbs from rest. Set the fall long and watch the slewed lamp linger after the level drops.
 
-`lag(of, { riseMs, fallMs })` follows too, but exponentially: `riseMs` and `fallMs` are time constants, and after one of them it has covered 63% of the way. It covers the same share of the distance in every equal stretch of time, so it reads the same however the frames are spaced. An exponential never quite arrives, so within `floor` (one millionth by default) it lands on its input, and the subject can come to rest; `floor: 0` keeps the curve exact. It takes `from` as a slew does.
+`lag(of, { riseMs, fallMs })` follows too, but exponentially: [`riseMs`](LagOptions.riseMs) and [`fallMs`](LagOptions.fallMs) are time constants, and after one of them it has covered 63% of the way. It covers the same share of the distance in every equal stretch of time, so it reads the same however the frames are spaced. An exponential never quite arrives, so within [`floor`](LagOptions.floor) (one millionth by default) it lands on its input, and the subject can come to rest; `floor: 0` keeps the curve exact. It takes [`from`](LagOptions.from) as a slew does.
 
-`gate(of, { on, off })` turns a signal into on or off across a band. It switches on when its input reaches `on`, off when it falls to `off`, and between the two it holds whatever it last did. Pick "Steps": the level sits at 0.5, inside the band, twice, and the gate stays where it was each time rather than flickering. A slew can't do that job. It slows a crossing down but still crosses, so an input resting on a threshold drags the slewed value onto the threshold with it.
+`gate(of, { on, off })` turns a signal into on or off across a band. It switches on when its input reaches `on`, off when it falls to [`off`](Band.off), and between the two it holds whatever it last did. Pick "Steps": the level sits at 0.5, inside the band, twice, and the gate stays where it was each time rather than flickering. A slew can't do that job. It slows a crossing down but still crosses, so an input resting on a threshold drags the slewed value onto the threshold with it.
 
 ```ts
 import { gate, level, slew } from '@msb235/blits';
@@ -49,7 +49,7 @@ bars.cue({ patch: badge, weight: gate(near, { on: 0.6, off: 0.4 }) });
 
 ## Only near the pointer: within
 
-A glow around the pointer is a signal read for every subject every frame, though most of them sit at 0. Cue it `within` a circle and the mix reads it only for the subjects inside: it gives every subject outside nothing, without calling the signal for them. The mix needs to know where the subjects are, so the host first calls `plot` with them and their positions, two numbers a subject in one `Float64Array`, `x` then `y`. The mix reads that array in place: to move the subjects, write new positions into it and call `moved`. To move the circle, write to it.
+A glow around the pointer is a signal read for every subject every frame, though most of them sit at 0. Cue it [`within`](VoiceSpec.within) a circle and the mix reads it only for the subjects inside: it gives every subject outside nothing, without calling the signal for them. The mix needs to know where the subjects are, so the host first calls `plot` with them and their positions, two numbers a subject in one `Float64Array`, `x` then `y`. The mix reads that array in place: to move the subjects, write new positions into it and call `moved`. To move the circle, write to it.
 
 ```ts
 const xy = new Float64Array(all.length * 2); // x, y for each bar in `all`
@@ -65,9 +65,9 @@ window.addEventListener('pointermove', (e) => { pointer.x = e.clientX; pointer.y
 
 Where only a few subjects move at a time, `put` moves one: `bars.put(bar, x, y)`. It writes into the array `plot` was given, so it mixes freely with writing the array yourself and calling `moved`, and it takes only a subject that array holds. The mix's grid stays as built until many subjects have left their cells: with 100 of 10,000 subjects moving each frame, `put` takes 0.679 ms a frame against 0.705 for `moved`.
 
-The circle declares where the signal is 0; it does not shape it. A signal of your own still above 0 at `r` is cut off there, so outside production the mix checks a few subjects just outside the circle every few frames and warns once if the signal reads above 0 for any of them. It pays most while the circle covers a small share of the subjects: on 10,000 subjects read by `pull`, a glow over 2% of them adds about a sixth of what it adds unbounded, and one over 60% of them still costs a little less than unbounded. `within` needs a signal `weight`. A patch that keeps state still steps outside the circle, as it does at weight 0, so bounding it saves the signal's calls but not its steps.
+The circle declares where the signal is 0; it does not shape it. A signal of your own still above 0 at [`r`](Circle.r) is cut off there, so outside production the mix checks a few subjects just outside the circle every few frames and warns once if the signal reads above 0 for any of them. It pays most while the circle covers a small share of the subjects: on 10,000 subjects read by `pull`, a glow over 2% of them adds about a sixth of what it adds unbounded, and one over 60% of them still costs a little less than unbounded. [`within`](VoiceSpec.within) needs a signal [`weight`](VoiceSpec.weight). A patch that keeps state still steps outside the circle, as it does at weight 0, so bounding it saves the signal's calls but not its steps.
 
-`around` is that glow built in: 1 at the circle's center, falling to 0 at `r` over the plotted positions, so the host writes neither the signal nor `within`. It carries its circle, and a voice it weighs is bounded to it with no check; one cued before `plot` reads 0 everywhere until then and is bounded once `plot` is called. `ease` shapes the fall, read from the edge to the center: `'ease-out'` gives a broad top, and `{ steps: 1, jump: 'start' }` a hard-edged disk.
+`around` is that glow built in: 1 at the circle's center, falling to 0 at [`r`](Circle.r) over the plotted positions, so the host writes neither the signal nor [`within`](VoiceSpec.within). It carries its circle, and a voice it weighs is bounded to it with no check; one cued before `plot` reads 0 everywhere until then and is bounded once `plot` is called. `ease` shapes the fall, read from the edge to the center: `'ease-out'` gives a broad top, and `{ steps: 1, jump: 'start' }` a hard-edged disk.
 
 ```ts
 const pointer = { x: 0, y: 0, r: 120 };
@@ -76,7 +76,7 @@ bars.cue({ patch: glow, weight: bars.around(pointer, { ease: 'ease-out' }), loop
 
 ## Bounds of your own: a finder
 
-A circle over positions is one way to say where a signal can be above 0. A host that already knows, from a scene graph's spatial index, a timeline, or what it culled as offscreen, can answer for itself, over any axes or none. Each subject gets an index from `place`, kept until `drop` or until the subject is collected, after which the next subject placed takes it. Cue the voice `within` a finder, and once a frame its `find` writes the indices it found into an array the mix lends it and returns how many:
+A circle over positions is one way to say where a signal can be above 0. A host that already knows, from a scene graph's spatial index, a timeline, or what it culled as offscreen, can answer for itself, over any axes or none. Each subject gets an index from `place`, kept until [`drop`](Mix.drop) or until the subject is collected, after which the next subject placed takes it. Cue the voice [`within`](VoiceSpec.within) a finder, and once a frame its `find` writes the indices it found into an array the mix lends it and returns how many:
 
 ```ts
 for (const node of scene.nodes) node.index = bars.place(node);
@@ -97,7 +97,7 @@ bars.cue({
 
 The array has room for every index handed out, so filling it allocates nothing. A repeat is read once, and an index no subject holds is skipped. As with a circle, outside production the mix reads the signal every few frames for a few subjects the finder did not find, and warns once if one is above 0. `plot` hands out indices too, in its list's order, so a finder can answer by the same numbers `xy` is laid out in.
 
-Under history, a bound reads as its signal does: live on a read back, or, with `inputs`, as the signal's recorded reads, including the 0 it gave each subject outside.
+Under history, a bound reads as its signal does: live on a read back, or, with [`inputs`](HistoryOptions.inputs), as the signal's recorded reads, including the 0 it gave each subject outside.
 
 ## Where the state lives
 

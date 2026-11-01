@@ -34,13 +34,13 @@ export interface Described {
 }
 
 /**
- * Where a history `store` keeps what memory let go of. blits decides what is kept and when it is
+ * Where a history {@link HistoryOptions.store | `store`} keeps what memory let go of. blits decides what is kept and when it is
  * read back; the store decides where it lives.
  *
  * @category mix
  */
 export interface HistoryStore {
-  /** Records leaving memory. One brought back by a seek may be paged again: keep one per key and `seq`. */
+  /** Records leaving memory. One brought back by a seek may be paged again: keep one per key and {@link Paged.seq | `seq`}. */
   page(out: readonly Paged[]): void;
   /**
    * Loads what a restore to mix time `t` needs, for every mix. That is, from each stream, per voice
@@ -84,7 +84,7 @@ export type PagedStream =
  */
 export interface Paged {
   /**
-   * The mix's `name`. It is '' for a mix made alone without one, and for the transport's own
+   * The mix's {@link MixOptions.name | `name`}. It is '' for a mix made alone without one, and for the transport's own
    * records.
    */
   mix: string;
@@ -135,7 +135,7 @@ export interface TapeBranch {
 }
 
 /**
- * Where a mix keeps the host's calls, by host time, for `seek`. weasel-history's `History`
+ * Where a mix keeps the host's calls, by host time, for {@link Mix.seek | `seek`}. weasel-history's `History`
  * (`@weasel-js/history`) has this shape. A host reads `branches` and calls `switchBranch` to pick
  * which recorded future plays on; moving it any other way is the mix's job.
  *

@@ -12,7 +12,7 @@ import Listing from '../components/Listing.astro';
 
 ## Staggered text reveal
 
-Each letter is a subject. One voice reaches all of them, and its `stagger` delays each letter by its place in the line. `freeze` holds a letter's first frame before its turn and its last frame after, until the voice fades out. See [Voice](../voice/).
+Each letter is a subject. One voice reaches all of them, and its [`stagger`](VoiceSpec.stagger) delays each letter by its place in the line. [`freeze`](VoiceSpec.freeze) holds a letter's first frame before its turn and its last frame after, until the voice fades out. See [Voice](../voice/).
 
 <Live client:only="react" of="examples/reveal.ts" />
 
@@ -28,7 +28,7 @@ Point at a card. One voice holds every card raised and glowing, and its weight i
 
 ## Particle burst
 
-Click the canvas. Each burst is one voice over 40 new sparks, played for one pass. When the pass ends the voice leaves the mix, its `done` promise resolves, and the sparks are let go. See [Mix](../mix/).
+Click the canvas. Each burst is one voice over 40 new sparks, played for one pass. When the pass ends the voice leaves the mix, its [`done`](Handle.done) promise resolves, and the sparks are let go. See [Mix](../mix/).
 
 <Live client:only="react" of="examples/burst.ts" />
 
@@ -44,7 +44,7 @@ Press the button. The playing loop fades out as the other fades in, and both sha
 
 ## A scrubbable sequence
 
-Drag the slider. Three voices are placed on the mix's [score](../score/): the second starts 300 ms after the first reaches its `coast` mark, where it begins holding its last frame, and the third starts 250 ms after the second. The mix itself never moves past 0. Each frame, `project` reads it at the slider's time without moving it, so scrubbing backward needs no history.
+Drag the slider. Three voices are placed on the mix's [score](../score/): the second starts 300 ms after the first reaches its `coast` mark, where it begins holding its last frame, and the third starts 250 ms after the second. The mix itself never moves past 0. Each frame, [`project`](Mix.project) reads it at the slider's time without moving it, so scrubbing backward needs no history.
 
 <Live client:only="react" of="examples/sequence.ts" />
 

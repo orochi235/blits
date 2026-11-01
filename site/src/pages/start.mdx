@@ -45,14 +45,14 @@ The page gives the dots their size and color:
 .dot { width: 1.5rem; height: 1.5rem; border: none; border-radius: 50%; background: royalblue; }
 ```
 
-The file wraps everything in `run` so this page can start and stop it. In an app you would run the body once. Making the buttons and the `requestAnimationFrame` loop is ordinary page code, so each sits in a file of its own. The loop waits while the window is out of focus, and calls `rebase` when it comes back, so the time away doesn't count.
+The file wraps everything in `run` so this page can start and stop it. In an app you would run the body once. Making the buttons and the `requestAnimationFrame` loop is ordinary page code, so each sits in a file of its own. The loop waits while the window is out of focus, and calls [`rebase`](Mix.rebase) when it comes back, so the time away doesn't count.
 
 Each part of it:
 
 - **The kit** lists the numbers an effect may move, and gives each one its arithmetic. `y` is a `sum`, so two offsets add; `scale` is a `mul`, so two scales multiply, and the pop at 1.8 on a dot breathing at 1.1 gives 1.98. The rule belongs to the channel, so neither effect has to know the other is playing. [Channel and kit](../channel/) lists the rest.
 - **A patch** is the effect: a function from phase, 0 to 1 over its duration, and the subject to the channels it writes. `keys` builds one from keyframes instead. See [Patch](../patch/).
 - **A voice** is a patch playing. `cue` starts one and gives it a clock, a loop count, a stagger per subject, and a fade. It returns a handle for changing those while it plays. See [Voice](../voice/).
-- **The mix** holds the voices and folds them. Your loop calls `sync` with the frame's time, then `probe` for each subject, and gets back the folded pose. Passing the same `pose` every time, made once by `m.pose()`, saves making one per dot per frame. See [Mix](../mix/).
+- **The mix** holds the voices and folds them. Your loop calls [`sync`](Mix.sync) with the frame's time, then [`probe`](Mix.probe) for each subject, and gets back the folded pose. Passing the same `pose` every time, made once by `m.pose()`, saves making one per dot per frame. See [Mix](../mix/).
 
 ## On a canvas
 
@@ -71,12 +71,12 @@ Each part of it:
 
 Nothing here is different for a canvas. The subjects are plain objects, not elements, and drawing is your code. Two things change as the count grows:
 
-- `stagger` and `target` run once per subject, the first time the mix sees it, and the answer is kept.
+- [`stagger`](VoiceSpec.stagger) and [`target`](VoiceSpec.target) run once per subject, the first time the mix sees it, and the answer is kept.
 - `pull` writes every subject's pose into one typed array per channel, without a pose object per subject. Where a channel runs as a lane, worked out for every subject at once (see [Engine](../engine/)), `pull` reads it fastest.
 
 ## Two more things every host needs
 
-**A hidden tab gets no frames.** When it comes back, the next `sync` sees the whole gap, and every fade finishes at once. Call `rebase` when the tab shows again, and the time away does not count:
+**A hidden tab gets no frames.** When it comes back, the next [`sync`](Mix.sync) sees the whole gap, and every fade finishes at once. Call [`rebase`](Mix.rebase) when the tab shows again, and the time away does not count:
 
 ```ts
 document.addEventListener('visibilitychange', () => document.hidden || m.rebase());

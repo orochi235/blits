@@ -22,7 +22,7 @@ import type {
  */
 export interface MixOptions<H = unknown> {
   engine?: Engine;
-  /** Whether motion is reduced. Fades and warm-ups then snap, and `dt` reads Infinity. */
+  /** Whether motion is reduced. Fades and warm-ups then snap, and {@link Setting.dt | `dt`} reads Infinity. */
   reduce?: boolean | (() => boolean);
   /** Merged into every `setting.host`. Its type is the mix's `H`, which every patch and signal it cues reads. */
   host?: H;
@@ -33,38 +33,38 @@ export interface MixOptions<H = unknown> {
   band?: Band;
   /**
    * Tags that act as roles. A voice carrying one folds with the others carrying it, as if its
-   * `role` named that tag.
+   * {@link VoiceSpec.role | `role`} named that tag.
    */
   roles?: readonly string[];
   /** @deprecated Renamed `roles`. Taken as `roles`, with a warning outside production. */
   loci?: readonly string[];
   /**
-   * The most `dt` a `step` or signal is handed, however long the gap. Off by default, since a
+   * The most {@link Setting.dt | `dt`} a {@link Patch.step | `step`} or signal is handed, however long the gap. Off by default, since a
    * patch with a closed form wants the whole gap; an integrator wants this set.
    */
   maxDt?: number;
   /**
-   * A fixed interval, ms, to run every `step` at. Without it each `step` runs once by the frame's
+   * A fixed interval, ms, to run every {@link Patch.step | `step`} at. Without it each {@link Patch.step | `step`} runs once by the frame's
    * gap; with it stateful patches play the same at any frame rate. Intervals count from when a
    * subject's delay ran out, the remainder carrying to the next sample; `maxDt` then caps how many
-   * one sample may run. Signals and `at` still see the frame. Off by default.
+   * one sample may run. Signals and {@link Patch.at | `at`} still see the frame. Off by default.
    */
   stepMs?: number;
   /**
-   * What the mix remembers so `project` and `seek` can read back. `ms` is how far back `project`
-   * may read, in ms of mix time, and `every` how often a stateful voice's state is kept per subject
+   * What the mix remembers so {@link Mix.project | `project`} and {@link Mix.seek | `seek`} can read back. {@link HistoryOptions.ms | `ms`} is how far back {@link Mix.project | `project`}
+   * may read, in ms of mix time, and {@link HistoryOptions.every | `every`} how often a stateful voice's state is kept per subject
    * on the way, in ms (default 200). Within it the mix remembers what it cued, every change a
    * handle made and when, the voices that have left, and those copies of state, so a read back
    * restores the nearest copy and steps forward from it. Off by default, and a mix without it keeps
-   * nothing. With `inputs`, it also keeps what each input signal on a voice's weight read per
-   * subject, and the host fields patches `reads`, each time they changed, so a read back over a
-   * `level` or a pointer is known rather than held. With `tape`, the mix also records every call
-   * the host makes on it, its handles and its motion patches, so `seek` can move it and play those
+   * nothing. With {@link HistoryOptions.inputs | `inputs`}, it also keeps what each input signal on a voice's weight read per
+   * subject, and the host fields patches {@link Patch.reads | `reads`}, each time they changed, so a read back over a
+   * `level` or a pointer is known rather than held. With {@link HistoryOptions.tape | `tape`}, the mix also records every call
+   * the host makes on it, its handles and its motion patches, so {@link Mix.seek | `seek`} can move it and play those
    * calls again.
    */
   history?: HistoryOptions;
   /**
-   * A subject's key, for a history `store`. It is unique among this mix's subjects for the session.
+   * A subject's key, for a history {@link HistoryOptions.store | `store`}. It is unique among this mix's subjects for the session.
    * A string or number subject is its own key; with a store, an object subject needs this.
    */
   keyOf?(subject: never): string | number;
@@ -76,19 +76,19 @@ export interface MixOptions<H = unknown> {
   /**
    * Whether a channel may run as a lane. A lane computes every subject at once in flat arrays, when
    * every voice writing the channel can run that way. On by default; what a host reads is the same
-   * either way (`probe`, `pull`, `atRest`, `weightOf`, `inert` and `project`), so turning it off is
+   * either way ({@link Mix.probe | `probe`}, `pull`, `atRest`, {@link Handle.weightOf | `weightOf`}, {@link Mix.inert | `inert`} and {@link Mix.project | `project`}), so turning it off is
    * for ruling a lane out, or for comparing against. A voice weighted by an input signal `input`
    * did not make, or whose patch reads host fields, never runs on a lane, since a change to either
    * between two probes would not reach it. Two things differ: a stateless patch's `setting.send`
-   * from `at` sends for every subject a lane fills, those probed this frame or the last, and a
+   * from {@link Patch.at | `at`} sends for every subject a lane fills, those probed this frame or the last, and a
    * patch that first calls `setting.keep` partway through playing can advance that state once more
    * for one subject probed the frame before (see `Setting.keep`).
    */
   lanes?: boolean;
   /**
    * The transport this mix plays on, shared with other mixes. They then keep one clock, and a query
-   * naming a score looks in all of them. The transport's `sync`, `rebase`, `rate`, `ramp` and
-   * `seek` move it, and the mix's own throw. Its history is the transport's, so the mix takes no
+   * naming a score looks in all of them. The transport's {@link Transport.sync | `sync`}, {@link Transport.rebase | `rebase`}, {@link Transport.rate | `rate`}, {@link Transport.ramp | `ramp`} and
+   * {@link Transport.seek | `seek`} move it, and the mix's own throw. Its history is the transport's, so the mix takes no
    * `history` of its own.
    */
   transport?: Transport;
@@ -144,7 +144,7 @@ export interface Mix<I, O, H = unknown> {
    * The signal is read once per subject per frame, with the first member's setting, and every
    * member takes its share of that one reading, which `share` reads outside the blend; a signal
    * keeping state keeps it once, not per member. One `spec` cues them all, and a member given as a
-   * `BlendMember` carries its own `name`, `tags` and `hits` in place of the spec's.
+   * `BlendMember` carries its own {@link BlendMember.name | `name`}, {@link BlendMember.tags | `tags`} and {@link BlendMember.hits | `hits`} in place of the spec's.
    */
   blend(
     // biome-ignore lint/suspicious/noExplicitAny: a patch naming no host fits a mix naming one
@@ -155,19 +155,19 @@ export interface Mix<I, O, H = unknown> {
 
   /**
    * Cues an owner, a voice with no patch that plays other voices on its own clock. It holds the
-   * voices cued with `owner` set to its handle, so they can be placed, timed and faded as one. Its
-   * handle acts on all of them: `rate` and `ramp` multiply into theirs, `seek` moves their clocks
-   * with its own and rebuilds their state as it does a voice's, and `weight` and `fade()` multiply
-   * into their weights, by what its `weightOf` reports; it fades as a whole, not by subject or at
-   * rest. It is `played` once every voice it held has finished its passes, and leaves, `done`, with
+   * voices cued with {@link VoiceSpec.owner | `owner`} set to its handle, so they can be placed, timed and faded as one. Its
+   * handle acts on all of them: {@link Handle.rate | `rate`} and {@link Handle.ramp | `ramp`} multiply into theirs, {@link Handle.seek | `seek`} moves their clocks
+   * with its own and rebuilds their state as it does a voice's, and {@link Handle.weight | `weight`} and {@link Handle.fade | `fade()`} multiply
+   * into their weights, by what its {@link Handle.weightOf | `weightOf`} reports; it fades as a whole, not by subject or at
+   * rest. It is {@link Handle.played | `played`} once every voice it held has finished its passes, and leaves, {@link Handle.done | `done`}, with
    * its last; a fade that ends takes the rest with it. One that never holds a voice stays until
    * faded. Owners nest. Throws for a `loop`: a pass would have to restart its children.
    */
   owns(spec: OwnerSpec<I, H>): Handle<I>;
   /**
-   * Cues a span, an owner that fits the voices it holds into its `duration`. It lays them out in
-   * `order`, again each time one joins or leaves early. A child's start and rate are the span's to
-   * set, so it takes neither `start` nor an anchored start; its `SpanHints` say how it may give
+   * Cues a span, an owner that fits the voices it holds into its {@link SpanSpec.duration | `duration`}. It lays them out in
+   * {@link SpanSpec.order | `order`}, again each time one joins or leaves early. A child's start and rate are the span's to
+   * set, so it takes neither {@link VoiceSpec.start | `start`} nor an anchored start; its `SpanHints` say how it may give
    * way. A span with a budget stays until the budget has passed, though its children finish sooner,
    * so late ones can still join, and its `end` mark is where its children end or its budget does,
    * whichever is later. A voice that loops for good cannot join one. Throws for a `rate` below 0: a
@@ -176,15 +176,15 @@ export interface Mix<I, O, H = unknown> {
    */
   span(spec: SpanSpec<I, H>): SpanHandle<I>;
   /**
-   * Cues an arc, an owner holding three parts that hand over in order. On its clock `enter` plays,
-   * then `active` for the `hold`, then `exit`, each a voice or several layered. Its marks are its
+   * Cues an arc, an owner holding three parts that hand over in order. On its clock {@link ArcSpec.enter | `enter`} plays,
+   * then {@link ArcSpec.active | `active`} for the {@link ArcSpec.hold | `hold`}, then {@link ArcSpec.exit | `exit`}, each a voice or several layered. Its marks are its
    * own: `start` as the enter begins, `in` as it ends, `coast` as the hold ends and `out` as the
-   * exit begins, which are one time, and `end` as the exit ends, where it leaves and `done`
+   * exit begins, which are one time, and `end` as the exit ends, where it leaves and {@link ArcHandle.done | `done`}
    * resolves. While the hold is open, `coast`, `out` and `end` are unknown until `release` fixes
    * them. Each part shows its first and last frames through the blends either side of it, and a
-   * part left out leaves its time to the one before it. Its `fade` takes it out with no exit. An
+   * part left out leaves its time to the one before it. Its {@link ArcHandle.fade | `fade`} takes it out with no exit. An
    * arc with a finite hold may sit in a span. Throws for a `rate` below 0, a hold below 0, and an
-   * `enter` or `exit` that never ends.
+   * {@link ArcSpec.enter | `enter`} or {@link ArcSpec.exit | `exit`} that never ends.
    */
   arc(spec: ArcSpec<I, O, H>): ArcHandle<I>;
 
@@ -203,9 +203,9 @@ export interface Mix<I, O, H = unknown> {
    * The mix's own playback rate, multiplied into every voice's. 1 is real time and 0 pauses the
    * whole mix. A negative rate throws: the mix plays only forward, and `seek` moves it back.
    * Setting it changes speed at once; `ramp` eases into a new one. It scales mix time, which
-   * everything a voice owns runs on: its clock, its fades and a handle's ramp, `stagger`, an
-   * anchor's `by`, `stepMs`, `maxDt`, `history.ms`, every `dt`, and `setting.timestamp`. Timestamps
-   * on the host's clock name the same moment whatever the rate does: a `start`, an anchor given as
+   * everything a voice owns runs on: its clock, its fades and a handle's ramp, {@link VoiceSpec.stagger | `stagger`}, an
+   * anchor's `by`, {@link MixOptions.stepMs | `stepMs`}, {@link MixOptions.maxDt | `maxDt`}, `history.ms`, every {@link Setting.dt | `dt`}, and `setting.timestamp`. Timestamps
+   * on the host's clock name the same moment whatever the rate does: a {@link VoiceSpec.start | `start`}, an anchor given as
    * a number, an announced mark, what `marks` reports and the time `project` reads, so a start
    * ahead of a paused mix waits for the host's clock to reach it. A weight signal is still asked at
    * every probe, so one reading host input follows it while the mix is paused.
@@ -253,18 +253,18 @@ export interface Mix<I, O, H = unknown> {
    * voice could carry state (a patch that steps, a signal weight) it reads each subject asked about
    * at every known event on the way: each call, and each mark `marks` would list. It throws
    * for the two a copy cannot take: a `drop` of a subject a motion patch holds, and a retarget or
-   * push made before its voice met the subject. Behind it, with `history`, it reads the last frame at or before `time`
+   * push made before its voice met the subject. Behind it, with {@link MixOptions.history | `history`}, it reads the last frame at or before `time`
    * as that frame showed, and throws for a time older than the history reaches. On a transport it
    * reads every mix on it together, so anchors across them answer.
    *
-   * Without `history` it reads back only where how the mix stands now says what it showed then,
+   * Without {@link MixOptions.history | `history`} it reads back only where how the mix stands now says what it showed then,
    * and throws otherwise, saying why. Every voice has to play as it was cued and read by its clock
    * alone: no state, motion, `from: 'current'`, anchor or owner, no write to its handle, and no channel without a rest
    * at a weight that moves. The mix's rate has never been set. And `time` is no earlier than the
    * last cue, `drop`, `touch`, `announce` or `rebase`, or the last frame a voice left in.
    *
    * Given `{ frame }`, a number `seq` read, it reads that frame as it showed, as `seek` does; it
-   * needs `history`.
+   * needs {@link MixOptions.history | `history`}.
    */
   project(at: number | { readonly frame: number }): Projection<I, O>;
   /**
@@ -272,11 +272,11 @@ export interface Mix<I, O, H = unknown> {
    * one moment: `trace.of(subject, channel)` gives that channel as points joined by straight lines.
    * Where every voice feeding the channel is a `keys` voice whose shape is known through the
    * window, the points are its own breakpoints and the lines are exact; elsewhere the run is read
-   * every `grid` ms, as many `project` calls would read it.
+   * every {@link TraceOptions.grid | `grid`} ms, as many `project` calls would read it.
    *
    * Exact needs, of each voice reaching the subject and writing the channel: a `keys` patch whose
    * stops are plain numbers, eased `linear`; a number weight; no owner, anchor, role, blend,
-   * `within`, `stepMs`, `from: 'current'`, or rate ramp; a fade in finished by `from` and no fade
+   * {@link VoiceSpec.within | `within`}, {@link VoiceSpec.stepMs | `stepMs`}, `from: 'current'`, or rate ramp; a fade in finished by `from` and no fade
    * out under way or due. The channel folds by `sum`, or by `mul` from one such voice, and has no
    * `bounds`. The window lies at or after the mix's own time, and the tape holds no calls ahead.
    */
@@ -284,15 +284,15 @@ export interface Mix<I, O, H = unknown> {
   /**
    * Moves the mix to mix time `time` and plays on from there. It lands as the mix stood at the end
    * of that frame; where rate 0 held the clock at `time` for several frames, the last of them.
-   * Needs `history` with a `tape`, which records the host's calls by the host time they were made
+   * Needs {@link MixOptions.history | `history`} with a `tape`, which records the host's calls by the host time they were made
    * at.
    *
    * Back, the mix restores itself: controls, records, voices and marks as they stood then. Voices
-   * that left after it are back on the handles the host holds, their `done` and `played` starting
+   * that left after it are back on the handles the host holds, their {@link Handle.done | `done`} and {@link Handle.played | `played`} starting
    * over where they had settled since. Voices cued after it wait as `pending` until the mix plays
    * their cue again, and a write to the handle of one waiting changes nothing. Stateful voices
-   * restart from the copy `history` kept nearest before it and step once to it, exact under
-   * `stepMs`. A subject faded out of a voice or dropped after it comes back with the record it had,
+   * restart from the copy {@link MixOptions.history | `history`} kept nearest before it and step once to it, exact under
+   * {@link MixOptions.stepMs | `stepMs`}. A subject faded out of a voice or dropped after it comes back with the record it had,
    * a motion patch's state included. Recorded input and host fields after it are let go: after a
    * seek back, signals and host fields read live again, and `assess` reports what they fed as
    * `held`.
@@ -305,7 +305,7 @@ export interface Mix<I, O, H = unknown> {
    *
    * The host goes on passing its own clock: the next `sync` reads the moment sought plus the host's
    * time since its last sync. Throws for a time older than history reaches, and before the first
-   * sync. With a history `store`, a time older than memory needs `prepare` first, or throws
+   * sync. With a history {@link HistoryOptions.store | `store`}, a time older than memory needs `prepare` first, or throws
    * `HistoryMiss` before anything moves.
    *
    * Given `{ frame }`, a number `seq` read, it moves to the end of that frame instead, which is how
@@ -339,7 +339,7 @@ export interface Mix<I, O, H = unknown> {
 
   /**
    * A handle on every voice still in the mix, in the order they were cued. That includes pending,
-   * live, frozen and fading voices; given a tag, only the voices whose `tags` carry it. Each is the
+   * live, frozen and fading voices; given a tag, only the voices whose {@link VoiceSpec.tags | `tags`} carry it. Each is the
    * handle `cue` returned for that voice, so a listed handle is `===` the cued one.
    */
   voices(tag?: string): Handle<I>[];
@@ -351,7 +351,7 @@ export interface Mix<I, O, H = unknown> {
    * its target. At rate 0 it is enough that every voice not done has started, at a plain weight,
    * with no anchor. A change made since the last sync, a retarget or a rate included, makes it
    * false until the next. Read as true, it tells the mix the host may sleep: a voice cued with no
-   * `start` before the next sync starts at that sync.
+   * {@link VoiceSpec.start | `start`} before the next sync starts at that sync.
    */
   readonly inert: boolean;
   /**
@@ -376,21 +376,21 @@ export interface Mix<I, O, H = unknown> {
   drop(subject: I): void;
   /**
    * Says that something a patch reads from outside the mix has changed since the last sync. One
-   * such thing is a table its `at` looks a subject up in. The next probe calls the patch again
+   * such thing is a table its {@link Patch.at | `at`} looks a subject up in. The next probe calls the patch again
    * where it would have answered with what it read this frame. Given a subject, for that subject
-   * only; with none, for every subject. The clock stays where it is and no `step` runs again, and
+   * only; with none, for every subject. The clock stays where it is and no {@link Patch.step | `step`} runs again, and
    * it wakes a frame loop sleeping on `inert`, as any change does.
    */
   touch(subject?: I): void;
   /**
-   * The subject's index, which a `within` finder names it by. It is the one it has, or a new one.
+   * The subject's index, which a {@link VoiceSpec.within | `within`} finder names it by. It is the one it has, or a new one.
    * It keeps it until `drop`, or, for an object, until the host lets it go; then the index is
    * handed to the next subject placed. A subject placed with no `plot` has no position until `put`
    * gives it one.
    */
   place(subject: I): number;
   /**
-   * Gives the mix each subject's index and position at once, for voices cued `within` a circle. The
+   * Gives the mix each subject's index and position at once, for voices cued {@link VoiceSpec.within | `within`} a circle. The
    * index is the subject's place in `subjects`, and `xy` holds two numbers a subject, `x` then `y`,
    * in that order. It is read in place, so a host moving its subjects writes into it and calls
    * `moved`. `cell` sizes the grid the mix finds subjects in, best near the radius the circles use;
@@ -412,16 +412,16 @@ export interface Mix<I, O, H = unknown> {
   put(subject: I, x: number, y: number): void;
   /**
    * A weight signal over the positions `plot` or `put` gave, highest at a circle's center. It is 1
-   * at the center, falling with distance to 0 at `r` and beyond, along `ease` read from the edge
+   * at the center, falling with distance to 0 at {@link Circle.r | `r`} and beyond, along `ease` read from the edge
    * (0) to the center (1), linear by default. The host moves or resizes the circle by writing to
-   * it. A voice it weighs is bounded to the circle as if cued `within` it, with no check, since the
+   * it. A voice it weighs is bounded to the circle as if cued {@link VoiceSpec.within | `within`} it, with no check, since the
    * circle is the signal's own edge, from the first `place` or `plot` for one cued before it. A
    * subject with no position reads 0.
    */
   around(circle: Circle, opts?: { ease?: Easing }): Signal<I, H>;
   /**
    * Puts a named mark on a score, for anchors to target as they target a voice's marks. A voice
-   * placed `{ with: 'reply' }` waits until the host announces `reply`. `at` is a timestamp on the
+   * placed `{ with: 'reply' }` waits until the host announces `reply`. {@link AnnounceOptions.at | `at`} is a timestamp on the
    * host's clock, default now, and may lie ahead, so a read ahead sees it. A mark stays while it is
    * ahead or while the mix's history reaches it.
    */
@@ -437,8 +437,8 @@ export interface Mix<I, O, H = unknown> {
    * Every event patches have sent since the last drain, earliest first. Where two share a
    * timestamp, they come in the order they were sent. A subject's events are made while it catches
    * up, which is when it is probed, so one nobody probes has sent nothing yet: promptness is the
-   * host's, by probing. A stateless patch's `at` on a lane is the exception: it runs at the frame's
-   * first probe for every subject probed that frame or the last. Under `stepMs` each carries the
+   * host's, by probing. A stateless patch's {@link Patch.at | `at`} on a lane is the exception: it runs at the frame's
+   * first probe for every subject probed that frame or the last. Under {@link MixOptions.stepMs | `stepMs`} each carries the
    * end of the interval it happened in, so what is sent and when does not depend on how the host
    * spaces its probes. Time `rebase` took out sends nothing. Given a tag, it takes only the events
    * of voices carrying it and leaves the rest for whoever drains them.
@@ -447,10 +447,10 @@ export interface Mix<I, O, H = unknown> {
   /**
    * Hands the host each mark and hit ahead of time, against a clock of its own. The host can then
    * schedule the thing itself: a sound on an `AudioContext`, a MIDI message with a timestamp, a
-   * video loaded before the voice that shows it starts. Booking runs at each `sync`, `ahead` ms
+   * video loaded before the voice that shows it starts. Booking runs at each `sync`, {@link BookOptions.ahead | `ahead`} ms
    * out, and a booking whose time moves is stopped and taken again. Nothing is booked twice: a mark
    * is known by its voice and which mark, a hit by its voice, index and pass. `project` books
-   * nothing, and nothing about booking is replayed under `history`. A mix with no booker pays
+   * nothing, and nothing about booking is replayed under {@link MixOptions.history | `history`}. A mix with no booker pays
    * nothing for it.
    */
   book<E = unknown>(opts: BookOptions<E, I>): Booker;

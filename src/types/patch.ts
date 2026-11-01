@@ -38,16 +38,16 @@ export interface Keyframe<O> {
  */
 export interface Setting<S = void, H = unknown> {
   /**
-   * The mix clock at this frame. The host's timestamp less any time `rebase` took out, run at the
-   * mix's `rate`. Identical for every probe in the frame.
+   * The mix clock at this frame. The host's timestamp less any time {@link Mix.rebase | `rebase`} took out, run at the
+   * mix's {@link Mix.rate | `rate`}. Identical for every probe in the frame.
    */
   readonly timestamp: number;
   /**
    * The gap this subject is catching up by, in milliseconds since it last advanced. That is the gap
    * since the previous sync only for a subject sampled every frame. Infinity under reduced motion;
-   * no more than `maxDt` where the mix sets one. Inside a `step` under `stepMs`, it is `stepMs`,
+   * no more than {@link MixOptions.maxDt | `maxDt`} where the mix sets one. Inside a {@link Patch.step | `step`} under `stepMs`, it is `stepMs`,
    * and `timestamp` is the end of that interval. A lane samples a subject for one frame after its
-   * last probe. A read by `project` is one sample, so its gap is not the gap a frame of play has.
+   * last probe. A read by {@link Mix.project | `project`} is one sample, so its gap is not the gap a frame of play has.
    */
   readonly dt: number;
   /**
@@ -74,10 +74,10 @@ export interface Setting<S = void, H = unknown> {
   keep<K>(owner: object, init: () => K): K;
   /**
    * Reports an event at `timestamp`, for this voice and this subject. The mix queues it until the
-   * host drains it, and never calls back. Meant for `step`, where under `stepMs` the timestamp is
+   * host drains it, and never calls back. Meant for {@link Patch.step | `step`}, where under `stepMs` the timestamp is
    * the interval the event happened in rather than the frame that sampled it. Sent from a stateless
-   * patch's `at` while it runs on a lane, it goes out for every subject the lane fills, probed that
-   * frame or not: each probed that frame or the last; `at` is not asked for a subject at weight 0,
+   * patch's {@link Patch.at | `at`} while it runs on a lane, it goes out for every subject the lane fills, probed that
+   * frame or not: each probed that frame or the last; {@link Patch.at | `at`} is not asked for a subject at weight 0,
    * so nothing is sent from it there.
    */
   send(event: unknown): void;
@@ -184,7 +184,7 @@ export interface Patch<I, O, S = void, H = unknown> {
   state?(subject: I): S;
   /**
    * Advances state once per subject per sampled frame. It advances by the whole gap since it last
-   * advanced; or, where the mix sets `stepMs`, once per whole interval of that length.
+   * advanced; or, where the mix sets {@link MixOptions.stepMs | `stepMs`}, once per whole interval of that length.
    */
   step?(state: S, dt: number, subject: I, setting: Setting<S, H>): void;
   /** Present when the patch was authored as keyframes, so an engine that reads data can. */
@@ -212,7 +212,7 @@ export interface Patch<I, O, S = void, H = unknown> {
    */
   clone?(state: S): S;
   /**
-   * `state` as data that survives `structuredClone`, for a history `store` to keep. `unpack` makes
+   * `state` as data that survives `structuredClone`, for a history {@link HistoryOptions.store | `store`} to keep. `unpack` makes
    * a state from it again. With a store, a patch with `state` or `step` needs both, or `cue`
    * refuses it.
    */

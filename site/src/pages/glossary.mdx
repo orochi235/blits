@@ -43,7 +43,7 @@ const rise = keys<Dot, DotPose>(
 
 ## anchor
 
-An anchor places a [voice](#voice) relative to another voice instead of at a fixed time. Any of a voice's [marks](#mark) can be anchored, at most one of `start` and `in` and one of `out` and `end`. `after` means when the other voice ends, `with` when it starts, and `before` that many milliseconds before it starts. A voice whose anchor has no answer yet waits, so anchoring each voice to the one before runs them in order.
+An anchor places a [voice](#voice) relative to another voice instead of at a fixed time. Any of a voice's [marks](#mark) can be anchored, at most one of [`start`](Placement.start) and [`in`](Placement.in) and one of [`out`](Placement.out) and [`end`](Placement.end). `after` means when the other voice ends, `with` when it starts, and `before` that many milliseconds before it starts. A voice whose anchor has no answer yet waits, so anchoring each voice to the one before runs them in order.
 
 ```ts
 dots.cue({ patch: rise, name: 'intro', loop: false });
@@ -108,7 +108,7 @@ In depth: [Blending](../blending/), [Role](../role/).
 
 ## `cue`
 
-`mix.cue(spec)` starts a [voice](#voice) and returns its [handle](#handle). The spec is a plain object: the [patch](#patch) to play, plus options for its clock, its [weight](#weight), and which subjects it reaches. The voice starts at the next [`sync`](#sync) unless you give it a `start`. A cue the mix can't play, such as a patch writing a field the [kit](#kit) lacks, throws at the call rather than a frame later.
+`mix.cue(spec)` starts a [voice](#voice) and returns its [handle](#handle). The spec is a plain object: the [patch](#patch) to play, plus options for its clock, its [weight](#weight), and which subjects it reaches. The voice starts at the next [`sync`](#sync) unless you give it a [`start`](VoiceSpec.start). A cue the mix can't play, such as a patch writing a field the [kit](#kit) lacks, throws at the call rather than a frame later.
 
 ```ts
 dots.cue({ patch: bob, rate: 2, loop: 3, fade: { in: 300 } });
@@ -151,7 +151,7 @@ In depth: [Mix](../mix/#clearing-up). Reference: [`Mix`](../mix/#api-Mix).
 
 ## `dt`
 
-`dt` is the gap, in milliseconds, that a [subject](#subject) is catching up by. A patch that keeps state receives it in `step`, the function that advances that state. The mix moves a subject forward only when the [host](#host) asks for its pose, so a subject nobody asked about for two seconds gets one `dt` of two seconds, not one per frame it missed. It is `Infinity` under reduced motion, and the mix's `maxDt` option caps it for a patch that can't take one long step.
+[`dt`](Setting.dt) is the gap, in milliseconds, that a [subject](#subject) is catching up by. A patch that keeps state receives it in [`step`](PatchOptions.step), the function that advances that state. The mix moves a subject forward only when the [host](#host) asks for its pose, so a subject nobody asked about for two seconds gets one [`dt`](Setting.dt) of two seconds, not one per frame it missed. It is `Infinity` under reduced motion, and the mix's [`maxDt`](MixOptions.maxDt) option caps it for a patch that can't take one long step.
 
 ```ts
 const settle = patch<Dot, DotPose, { y: number }>(0, (_phase, _dot, setting) => ({ y: setting.state.y }), {
@@ -242,7 +242,7 @@ Reference: [`Setting`](../state/#api-Setting), [`Sent`](../state/#api-Sent), [`M
 
 ## `fade`
 
-A voice's `fade` option gives it ramps: `in` is how many milliseconds it takes to reach full [weight](#weight), and `out` how long it takes to leave. `handle.fade()` starts the ramp out and removes the voice at the end. Pass `{ over }` for a different length, `{ at: 'rest' }` to keep full weight and leave each subject the moment it comes to [rest](#rest), or `{ subject }` to fade one subject out while the voice plays on for the others.
+A voice's [`fade`](VoiceSpec.fade) option gives it ramps: [`in`](FadeSpec.in) is how many milliseconds it takes to reach full [weight](#weight), and [`out`](FadeSpec.out) how long it takes to leave. `handle.fade()` starts the ramp out and removes the voice at the end. Pass `{ over }` for a different length, `{ at: 'rest' }` to keep full weight and leave each subject the moment it comes to [rest](#rest), or `{ subject }` to fade one subject out while the voice plays on for the others.
 
 ```ts
 const h = dots.cue({ patch: bob, loop: true, fade: { in: 300, out: 800 } });
@@ -273,7 +273,7 @@ In depth: [Voice](../voice/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 
 ## handle
 
-A handle is what [`cue`](#cue) returns: the live controls for one [voice](#voice). Through it you change the voice's [weight](#weight) and [rate](#rate), [`seek`](#seek) its clock, and [`fade`](#fade) it out, and each change lands at the next [`sync`](#sync). `done` is a promise that resolves once the voice has left the mix, however it left.
+A handle is what [`cue`](#cue) returns: the live controls for one [voice](#voice). Through it you change the voice's [weight](#weight) and [rate](#rate), [`seek`](#seek) its clock, and [`fade`](#fade) it out, and each change lands at the next [`sync`](#sync). [`done`](Handle.done) is a promise that resolves once the voice has left the mix, however it left.
 
 ```ts
 const h = dots.cue({ patch: bob, loop: true });
@@ -286,7 +286,7 @@ In depth: [Voice](../voice/). Reference: [`Handle`](../voice/#api-Handle).
 
 ## `history`
 
-With the `history` option, a mix remembers its recent past so a [projection](#projection) can read it at an earlier time. `ms` is how far back it reaches. Within that, it keeps what was cued, every change made through a [handle](#handle), and a copy of each patch's own state every `every` milliseconds (200 by default). A read back starts from the nearest copy and steps forward. A mix without history keeps nothing, and can only read ahead.
+With the [`history`](MixOptions.history) option, a mix remembers its recent past so a [projection](#projection) can read it at an earlier time. [`ms`](HistoryOptions.ms) is how far back it reaches. Within that, it keeps what was cued, every change made through a [handle](#handle), and a copy of each patch's own state every [`every`](HistoryOptions.every) milliseconds (200 by default). A read back starts from the nearest copy and steps forward. A mix without history keeps nothing, and can only read ahead.
 
 ```ts
 const scrubbable = mix<Dot, DotPose>(DOT, { history: { ms: 10_000 } });
@@ -297,7 +297,7 @@ In depth: [Score](../score/#reading-another-time). Reference: [`MixOptions`](../
 
 ## host
 
-The host is your code: whatever owns the frame loop, tells the [mix](#mix) the time, asks it for poses, and puts them on screen. blits draws nothing and schedules nothing itself. The host must keep each [subject](#subject) the same object from frame to frame, since the mix keeps state by identity. Whatever the host passes as the mix's `host` option reaches every patch and signal as `setting.host`, typed by the mix's third type parameter: `mix<Dot, DotPose, { pointer: number }>(…)` lets a patch read `setting.host.pointer` with no cast.
+The host is your code: whatever owns the frame loop, tells the [mix](#mix) the time, asks it for poses, and puts them on screen. blits draws nothing and schedules nothing itself. The host must keep each [subject](#subject) the same object from frame to frame, since the mix keeps state by identity. Whatever the host passes as the mix's [`host`](MixOptions.host) option reaches every patch and signal as `setting.host`, typed by the mix's third type parameter: `mix<Dot, DotPose, { pointer: number }>(…)` lets a patch read `setting.host.pointer` with no cast.
 
 ```ts
 function frame(timestamp: number) {
@@ -356,7 +356,7 @@ Reference: [`Channel`](../channel/#api-Channel), [`color`](../channel/#api-color
 
 ## `loop`
 
-`loop` says how many passes a voice plays, a [pass](#pass) being one run through its patch: `true` to repeat forever, `false` for one pass, or a number. Left out, a voice plays one pass. When a finite loop runs out, the voice leaves the mix, over its [`fade`](#fade) out if it has one, unless it [freezes](#freeze) on its last frame.
+[`loop`](VoiceSpec.loop) says how many passes a voice plays, a [pass](#pass) being one run through its patch: `true` to repeat forever, `false` for one pass, or a number. Left out, a voice plays one pass. When a finite loop runs out, the voice leaves the mix, over its [`fade`](#fade) out if it has one, unless it [freezes](#freeze) on its last frame.
 
 ```ts
 dots.cue({ patch: bob, loop: 3 }); // three bobs, then gone
@@ -411,7 +411,7 @@ In depth: [Mix](../mix/#clearing-up). Reference: [`Mix`](../mix/#api-Mix).
 
 ## `name`
 
-A voice's `name` lets another voice's [anchor](#anchor) refer to it without holding its [handle](#handle); blits never reads it otherwise. Names belong to a [score](#score), so two parts of an app can each have a voice called `intro`.
+A voice's [`name`](VoiceSpec.name) lets another voice's [anchor](#anchor) refer to it without holding its [handle](#handle); blits never reads it otherwise. Names belong to a [score](#score), so two parts of an app can each have a voice called `intro`.
 
 ```ts
 dots.cue({ patch: rise, name: 'intro', loop: false });
@@ -478,7 +478,7 @@ In depth: [Mix](../mix/#the-frame-loop). Reference: [`Mix`](../mix/#api-Mix), [`
 
 ## projection
 
-`mix.project(time)` reads the mix at another mix time without moving it, and returns a projection. `mix.now` is the mix time of the last sync. Its `probe` gives the pose a subject would have then, and its `assess` says how far to trust each channel of that pose (see [doubt](#doubt)). Reading ahead plays forward what is already cued; reading back needs [`history`](#history).
+`mix.project(time)` reads the mix at another mix time without moving it, and returns a projection. `mix.now` is the mix time of the last sync. Its [`probe`](Projection.probe) gives the pose a subject would have then, and its `assess` says how far to trust each channel of that pose (see [doubt](#doubt)). Reading ahead plays forward what is already cued; reading back needs [`history`](#history).
 
 ```ts
 dots.project(dots.now + 500).probe(dot); // where the dot will be in half a second
@@ -488,7 +488,7 @@ In depth: [Score](../score/#reading-another-time). Reference: [`Projection`](../
 
 ## query
 
-A query picks a voice for an [anchor](#anchor) to follow, by what the [score](#score) knows about it: its [`name`](#name), a [tag](#tag), or a channel it writes. Where several voices match, `resolver` chooses: the `'last'` cued (the default), the `'first'`, the `'next'` one still to come, or the `'earliest'` or `'latest'` by time. A query never reads a channel's value: "when the glow passes 0.5" is for the host to watch.
+A query picks a voice for an [anchor](#anchor) to follow, by what the [score](#score) knows about it: its [`name`](#name), a [tag](#tag), or a channel it writes. Where several voices match, [`resolver`](Query.resolver) chooses: the `'last'` cued (the default), the `'first'`, the `'next'` one still to come, or the `'earliest'` or `'latest'` by time. A query never reads a channel's value: "when the glow passes 0.5" is for the host to watch.
 
 ```ts
 // Fully dimmed 200 ms before the next voice tagged 'beat' starts.
@@ -503,7 +503,7 @@ In depth: [Score](../score/#placing-a-voice). Reference: [`Query`](../score/#api
 
 ## `rate`
 
-A voice's `rate` is its playback speed: 1 is real time, 2 is double speed, and 0 freezes it. Setting it on the [handle](#handle) changes speed at once; `ramp(rate, over)` eases into a new speed over that many milliseconds.
+A voice's [`rate`](VoiceSpec.rate) is its playback speed: 1 is real time, 2 is double speed, and 0 freezes it. Setting it on the [handle](#handle) changes speed at once; [`ramp(rate, over)`](Handle.ramp) eases into a new speed over that many milliseconds.
 
 ```ts
 const h = dots.cue({ patch: bob, loop: true });
@@ -548,7 +548,7 @@ old.fade(); // the glow holds at 0.5 the whole way across
 
 Without the role, the two half-faded voices would multiply to 0.56, and the dots would brighten halfway through.
 
-Formerly `locus`, which still works for now and warns outside production. In depth: [Role](../role/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
+Formerly [`locus`](VoiceSpec.locus), which still works for now and warns outside production. In depth: [Role](../role/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec).
 
 ## `scale`
 
@@ -580,7 +580,7 @@ const h = dots.cue({ patch: bob, loop: true });
 h.seek(250); // a quarter of the way through a bob
 ```
 
-`mix.seek(time)` moves the whole mix to a mix time, back or forward, and it plays on from there. It needs [`history`](#history) with a `tape`, where the mix records every call you make on it, so that going back and playing on makes those calls again. Unlike a voice's seek, it puts each patch's own state back as it was at that time.
+`mix.seek(time)` moves the whole mix to a mix time, back or forward, and it plays on from there. It needs [`history`](#history) with a [`tape`](HistoryOptions.tape), where the mix records every call you make on it, so that going back and playing on makes those calls again. Unlike a voice's seek, it puts each patch's own state back as it was at that time.
 
 ```ts
 const dots = mix<Dot, DotPose>(DOT, { history: { ms: 10_000, tape: createHistory } });
@@ -619,7 +619,7 @@ In depth: [Signal](../signal/). Reference: [`Signal`](../signal/#api-Signal), [`
 
 ## `stagger`
 
-`stagger` delays each [subject](#subject)'s start by its own number of milliseconds, so one voice can ripple along a row. The mix asks once per subject and keeps the answer. The delay counts on the voice's clock, so it speeds up and slows down with its [`rate`](#rate).
+[`stagger`](VoiceSpec.stagger) delays each [subject](#subject)'s start by its own number of milliseconds, so one voice can ripple along a row. The mix asks once per subject and keeps the answer. The delay counts on the voice's clock, so it speeds up and slows down with its [`rate`](#rate).
 
 ```ts
 dots.cue({ patch: bob, loop: true, stagger: (dot) => dot.i * 100 }); // a wave along the row
@@ -659,7 +659,7 @@ In depth: [Score](../score/#placing-a-voice). Reference: [`VoiceSpec`](../voice/
 
 ## `target`
 
-`target` limits a voice to the subjects a function accepts. The mix asks once per subject and keeps the answer. When you already know the subjects, list them with `subjects` instead, which is faster when there are many voices that each reach a few subjects. A voice takes one or the other, never both.
+[`target`](VoiceSpec.target) limits a voice to the subjects a function accepts. The mix asks once per subject and keeps the answer. When you already know the subjects, list them with `subjects` instead, which is faster when there are many voices that each reach a few subjects. A voice takes one or the other, never both.
 
 ```ts
 dots.cue({ patch: dim, target: (dot) => dot.i % 2 === 0 }); // every other dot
@@ -670,7 +670,7 @@ In depth: [Mix](../mix/#reach-and-rest). Reference: [`VoiceSpec`](../voice/#api-
 
 ## timestamp
 
-The timestamp is the time the [host](#host) passes to [`sync`](#sync): milliseconds on any clock that only goes forward. A `requestAnimationFrame` timestamp and `performance.now()` count from the same moment, so they can be used together; `Date.now()` counts from 1970 and can't. A voice's `start` must be on the same clock. A patch reads the current timestamp as `setting.timestamp`.
+The timestamp is the time the [host](#host) passes to [`sync`](#sync): milliseconds on any clock that only goes forward. A `requestAnimationFrame` timestamp and `performance.now()` count from the same moment, so they can be used together; `Date.now()` counts from 1970 and can't. A voice's [`start`](VoiceSpec.start) must be on the same clock. A patch reads the current timestamp as `setting.timestamp`.
 
 ```ts
 dots.cue({ patch: bob, loop: true, start: now + 500 }); // starts in half a second
@@ -702,7 +702,7 @@ In depth: [Blending](../blending/), [Signal](../signal/). Reference: [`VoiceSpec
 
 ## `within`
 
-`within` limits a voice weighted by a [signal](#signal) to a circle `{ x, y, r }` the host moves. Outside it the voice gives a subject nothing and the signal isn't read, so a glow around the pointer costs only the subjects inside. The mix needs to know where the subjects are: `mix.plot(subjects, xy)` gives it their positions, two numbers a subject. Write new ones into `xy` and call `mix.moved()`, or move one with `mix.put(subject, x, y)`. `mix.around(circle)` is a signal that is 1 at the circle's center and 0 at its edge, and keeps its voice within the circle by itself. A host that knows for itself where the signal can be above 0 gives a finder instead, `{ find(out) }`, which writes into `out` the indices `mix.place(subject)` handed those subjects.
+[`within`](VoiceSpec.within) limits a voice weighted by a [signal](#signal) to a circle `{ x, y, r }` the host moves. Outside it the voice gives a subject nothing and the signal isn't read, so a glow around the pointer costs only the subjects inside. The mix needs to know where the subjects are: `mix.plot(subjects, xy)` gives it their positions, two numbers a subject. Write new ones into `xy` and call `mix.moved()`, or move one with `mix.put(subject, x, y)`. `mix.around(circle)` is a signal that is 1 at the circle's center and 0 at its edge, and keeps its voice within the circle by itself. A host that knows for itself where the signal can be above 0 gives a finder instead, `{ find(out) }`, which writes into `out` the indices `mix.place(subject)` handed those subjects.
 
 ```ts
 const xy = Float64Array.from(all.flatMap((dot) => [dot.i * 20, 0]));

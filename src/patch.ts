@@ -8,7 +8,7 @@ import type { Channel, Easing, Keyframe, Kit, Patch, Setting } from './types.js'
  * @category patch
  */
 export interface PatchOptions<I, O, S, H = unknown> {
-  /** The channels this patch contributes to. Every key `at` sets, and no others. Default: `kit`'s. */
+  /** The channels this patch contributes to. Every key {@link Patch.at | `at`} sets, and no others. Default: `kit`'s. */
   writes?: readonly (keyof O)[];
   /** The channels this patch was written against, which `cue` checks a mix's kit against. */
   kit?: Partial<Kit<O>>;

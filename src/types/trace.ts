@@ -24,7 +24,7 @@ export interface Run {
   readonly value: readonly number[];
   /**
    * Whether the lines are the mix's own values everywhere in the window, not only at the points.
-   * Where they are not, the points are each `grid` apart and the lines between them approximate.
+   * Where they are not, the points are each {@link TraceOptions.grid | `grid`} apart and the lines between them approximate.
    */
   readonly exact: boolean;
 }
