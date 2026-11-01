@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- `patch` takes `clone` and puts it on the patch it makes. It took `state`, `step`, `pack` and
+  `unpack` but not `clone`, so a stateful patch built with it was always copied by
+  `structuredClone`, which breaks a state holding a class instance.
+
 ## 0.16.1
 
 ### Fixed
