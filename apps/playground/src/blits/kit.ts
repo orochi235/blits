@@ -1,4 +1,19 @@
-import { color, ink, type Kit, kit, last, max, mul, sum, vec } from '@msb235/blits';
+import {
+  add,
+  color,
+  darken,
+  ink,
+  type Kit,
+  kit,
+  last,
+  lighten,
+  max,
+  mul,
+  multiply,
+  screen,
+  sum,
+  vec,
+} from '@msb235/blits';
 
 /** What an author writes: color as 0xrrggbb, as the color picker and the presets hold it. */
 export interface Pose {
@@ -37,12 +52,22 @@ export interface NumberRuleSpec {
   bounds?: [number, number];
 }
 
+const BLENDS = { multiply, screen, add, lighten, darken } as const;
+
+/** The color rules, the blend modes last. */
+export const COLOR_RULES = [
+  'replace',
+  'average',
+  ...(Object.keys(BLENDS) as (keyof typeof BLENDS)[]),
+] as const;
+
 /**
- * `replace`: the last voice's color wins, eased by weight; `average`: weights blend every color.
- * `color` blends and travels straight across OKLab, as light mixes; `ink` goes round the hue.
+ * `replace`: the last voice's color wins, eased by weight; `average`: weights blend every color;
+ * a blend mode lays each voice over the subject's base color as a layer, its weight the opacity.
+ * `color` travels straight across OKLab, as light mixes; `ink` goes round the hue.
  */
 export interface ColorRuleSpec {
-  rule: 'replace' | 'average';
+  rule: (typeof COLOR_RULES)[number];
   type: 'color' | 'ink';
 }
 
@@ -73,7 +98,7 @@ function numberChannel({ rule, bounds }: NumberRuleSpec) {
 }
 
 function colorChannel({ rule, type }: ColorRuleSpec) {
-  const of = rule === 'replace' ? last() : sum();
+  const of = rule === 'replace' ? last() : rule === 'average' ? sum() : BLENDS[rule]();
   return type === 'ink' ? ink(of) : color(of);
 }
 

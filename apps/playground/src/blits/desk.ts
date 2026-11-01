@@ -1,4 +1,4 @@
-import { toHex } from '@msb235/blits';
+import { blendMode, css, toHex } from '@msb235/blits';
 import type { Flow } from '@pg/widgets/FlowDiagram/types';
 import type { Desk, DeskBus, DeskGroup, DeskStrip } from '@pg/widgets/MixerDesk/types';
 import { hexOf } from './color';
@@ -69,6 +69,8 @@ export function readoutOf(ch: ChannelName, pose: Mixed): Pick<DeskBus, 'value' |
   if (ch === 'offset') return { value: `${fixed(pose.offset[0], 1)}, ${fixed(pose.offset[1], 1)}` };
   if (ch === 'color') {
     const c = pose.color;
+    const mode = c ? blendMode(c) : 'normal';
+    if (c && mode !== 'normal') return { value: mode, swatch: css(c) };
     // An ink pose holds its coverage fifth, after its chroma.
     if (!c || !((c[c.length > 4 ? 4 : 3] ?? 0) > 0)) return { value: 'none' };
     const hex = hexOf(toHex(pose.color));

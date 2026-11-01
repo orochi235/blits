@@ -2,6 +2,7 @@ import type { Composition } from '@pg/blits/composition';
 import { withKey } from '@pg/blits/keyed';
 import {
   CHANNELS,
+  COLOR_RULES,
   type ColorRuleSpec,
   DEFAULT_RULES,
   kitOf,
@@ -191,7 +192,7 @@ export function RulesPanel({
     return (
       <PropertyRow group layout="inline" label="color" changed={!same(spec, DEFAULT_RULES.color)}>
         <span className={r.controls}>
-          {select('color rule', spec.rule, ['replace', 'average'], (v) =>
+          {select('color rule', spec.rule, COLOR_RULES, (v) =>
             set('color', { ...spec, rule: v as ColorRuleSpec['rule'] }),
           )}
           <span className={r.to}>as</span>

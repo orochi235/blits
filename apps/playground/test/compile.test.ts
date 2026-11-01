@@ -36,6 +36,7 @@ describe('kitOf', () => {
       color: { rule: 'average', type: 'color' },
     });
     expect(kinds(k)).toMatchObject({ scale: 'sum[0, 3]', color: 'color(sum)' });
+    expect(kinds(kitOf({ color: { rule: 'multiply', type: 'ink' } })).color).toBe('ink(multiply)');
   });
 });
 

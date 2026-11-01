@@ -173,7 +173,7 @@ function asColor(v: number[]): number[] {
 export function blending(
   mode: BlendMode,
   kind: string,
-  lerp: (a: number[], b: number[], u: number) => number[],
+  lerp: Channel<number[]>['lerp'],
 ): Channel<number[]> {
   const m = MODES[mode];
   const channel: Channel<number[]> = {

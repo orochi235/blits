@@ -63,6 +63,8 @@ describe('load', () => {
       color: { rule: 'average', type: 'ink' },
     };
     expect(load({ ...copy(), rules })?.rules).toEqual(rules);
+    const blend = { color: { rule: 'screen', type: 'color' } };
+    expect(load({ ...copy(), rules: blend })?.rules).toEqual(blend);
   });
 
   it('reads a color rule saved with a path or a lerp as its type', () => {

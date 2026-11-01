@@ -18,7 +18,7 @@ import {
 import { CSS } from './easing';
 import { levelsOk } from './edit';
 import { parentOf, treeFault } from './groups';
-import { CHANNELS, SWINGS } from './kit';
+import { CHANNELS, COLOR_RULES, SWINGS } from './kit';
 
 type Rec = Record<string, unknown>;
 
@@ -223,7 +223,7 @@ const RULE_CHECKS: Record<string, (v: unknown) => boolean> = {
   glow: numberRule(...NUMBER_RULES),
   color: (v) =>
     obj(v) &&
-    oneOf('replace', 'average')(v.rule) &&
+    oneOf(...COLOR_RULES)(v.rule) &&
     (v.type !== undefined
       ? oneOf('color', 'ink')(v.type)
       : v.path !== undefined

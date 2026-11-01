@@ -16,13 +16,13 @@ export const cssColor = (c: number, base = DEFAULT_PALETTE.base) =>
   c === 0 || !Number.isFinite(c) ? base : hexOf(c);
 
 /**
- * Subject `i`'s color in a `pull` column of `axes` numbers each, OKLab with coverage, as 0xrrggbb;
+ * Subject `i`'s color in a `pull` column of `axes` numbers each, laid over `under`, as 0xrrggbb;
  * NaN where unwritten.
  */
-export const hexAt = (col: Float64Array, i: number, axes = 4) =>
+export const hexAt = (col: Float64Array, i: number, axes = 4, under = 0) =>
   Number.isNaN(col[i * axes] as number)
     ? Number.NaN
-    : toHex(col.subarray(i * axes, i * axes + axes));
+    : toHex(col.subarray(i * axes, i * axes + axes), under);
 
 type Shape = (ctx: CanvasRenderingContext2D, r: number, i: number) => void;
 
@@ -88,7 +88,8 @@ function paint(
   const y = p.y + (cols.offset[i * 2 + 1] ?? 0);
   const r = Math.max(0, p.size * (cols.scale[i] ?? 1));
   const glow = cols.glow[i] ?? 0;
-  const color = cssColor(hexAt(cols.color, i, axes), palette.base);
+  const base = Number.parseInt(palette.base.slice(1), 16);
+  const color = cssColor(hexAt(cols.color, i, axes, base), palette.base);
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(((cols.turn[i] ?? 0) * Math.PI) / 180);

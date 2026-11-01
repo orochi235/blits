@@ -99,6 +99,9 @@ describe('litDesk', () => {
     const red = readoutOf('color', { ...pose, color: [0.627955, 0.224863, 0.125846, 1] });
     expect(red.value).toMatch(/^#f[ef]0000$/);
     expect(red.swatch).toBe(red.value);
+    const filter = readoutOf('color', { ...pose, color: [0.2, 0.4, 0.6, -1] });
+    expect(filter.value).toBe('multiply');
+    expect(filter.swatch).toMatch(/^oklab\(/);
   });
 });
 

@@ -81,8 +81,10 @@ edits them. Unset, `stepMs` is one frame and the rest are blits' defaults.
 `rules` picks each channel's fold rule, from which `kitOf` in `src/blits/kit.ts` makes the kit
 every mix, wave, and flow node reads. A number channel takes `sum`, `mul`, `max`, or `last`, and
 all but `last` take `bounds`; `offset` folds its two numbers alike, so not by `last`; `color`
-replaces or averages, as a `color` (straight across OKLab, as light mixes) or an `ink` (round the
-hue, for colors that stand for something). The fold rules panel has a row per
+replaces, averages, or blends by `multiply`, `screen`, `add`, `lighten`, or `darken` over the
+subject's base color, as a `color` (straight across OKLab, as light mixes) or an `ink` (round the
+hue, for colors that stand for something). The stage lays every color pose over the base color,
+so a faded color fades from it rather than from black. The fold rules panel has a row per
 channel: its rule, a `bounds` switch whose lower and upper bound show on a row beneath while it is
 on, the kind where it says more than the rule (offset's `vec(2, sum)`), and, for a channel that
 differs from blits' default, its name in the accent color and a button back to the default.
