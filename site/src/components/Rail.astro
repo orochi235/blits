@@ -1,13 +1,12 @@
 ---
 import pkg from '../../../package.json';
-import { extra, guides, local, start, words } from '../nav';
+import { extra, local, start, under, words } from '../nav';
 import Search from './Search.astro';
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 const here = Astro.url.pathname;
 const link = (slug: string) => `${base}${slug ? `${slug}/` : ''}`;
 const current = (slug: string) => (here === link(slug) ? 'page' : undefined);
-const inGuides = here.startsWith(link('guides'));
 ---
 <nav class="rail" aria-label="Pages">
   <a class="mark" href={link('')}>blits</a>
@@ -21,10 +20,10 @@ const inGuides = here.startsWith(link('guides'));
     {start.map((p) => (
       <li>
         <a href={link(p.slug)} aria-current={current(p.slug)}>{p.title}</a>
-        {p.slug === 'guides' && inGuides && (
+        {under[p.slug] && here.startsWith(link(p.slug)) && (
           <ul class="sub">
-            {guides.map((g) => (
-              <li><a href={link(`guides/${g.slug}`)} aria-current={current(`guides/${g.slug}`)}>{g.title}</a></li>
+            {under[p.slug].map((g) => (
+              <li><a href={link(`${p.slug}/${g.slug}`)} aria-current={current(`${p.slug}/${g.slug}`)}>{g.title}</a></li>
             ))}
           </ul>
         )}

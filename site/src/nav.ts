@@ -36,6 +36,12 @@ export const guides = [
   { slug: 'debugging', title: 'Debugging a mix' },
 ] as const;
 
+/** The examples with a page of their own, at `/examples/<slug>/`, after the examples index. */
+export const examples = [
+  { slug: 'blend-modes', title: 'Blend modes' },
+  { slug: 'number-rules', title: 'Number rules' },
+] as const;
+
 export const extra = [
   { slug: 'glossary', title: 'Glossary' },
   { slug: 'reference', title: 'Reference' },
@@ -51,13 +57,15 @@ interface Entry {
   title: string;
 }
 
-/** Every page in the order prev and next walk: the rail top to bottom, each guide after the index. */
+/** The pages listed under a page in `start`, each at `/<parent>/<slug>/`. */
+export const under: Record<string, readonly Entry[]> = { guides, examples };
+
+/** Every page in the order prev and next walk: the rail top to bottom, each subpage after its index. */
 export const reading: readonly Entry[] = [
-  ...start.flatMap((p): Entry[] =>
-    p.slug === 'guides'
-      ? [p, ...guides.map((g) => ({ slug: `guides/${g.slug}`, title: g.title }))]
-      : [p],
-  ),
+  ...start.flatMap((p): Entry[] => [
+    p,
+    ...(under[p.slug] ?? []).map((g) => ({ slug: `${p.slug}/${g.slug}`, title: g.title })),
+  ]),
   ...words,
   ...extra,
 ];

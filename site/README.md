@@ -53,9 +53,11 @@ site typecheck covers, so a page can't show code that no longer compiles:
 - `src/snippets/**` holds code that is shown and not run, through `<Listing of="snippets/…" />`.
   Lines above one reading `// ---` are declarations for the checker, left off the page.
 
-The rail's order lives in `src/nav.ts`: `start`, `guides`, `words`, and `extra`. The prev and next
+The rail's order lives in `src/nav.ts`: `start`, `guides`, `examples`, `words`, and `extra`. The prev and next
 links at the foot of each page walk `reading`, which is that order with each guide after the guides
-index. A guide is `src/pages/guides/<slug>.mdx`; the index lists each one's `description`.
+index and each example in `examples` after the examples index. A guide is
+`src/pages/guides/<slug>.mdx`; the index lists each one's `description`. An example with a page of
+its own is `src/pages/examples/<slug>.mdx`, and the examples index links to it.
 
 ## The reference
 
