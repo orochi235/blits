@@ -14,6 +14,14 @@ version and everything else the patch. Each release lists its changes as **Break
   is the one layer the voices add up to; `toHex(pose, under)` blends it onto `under`, `css(pose)`
   gives it opaque, and the new `blendMode(pose)` names the CSS `mix-blend-mode` to lay it on with.
   They run on lanes. `multiply`, `screen`, `add`, `lighten` and `darken` are also numeric channels.
+- Four blend modes whose layers depend on what is under them: `color(overlay())`,
+  `color(softLight())`, `color(hardLight())` and `color(difference())`, and the same under `ink`.
+  The pose keeps each voice's layer in voice order, the first cued at the bottom, and
+  `toHex(pose, under)` lays them over `under` in that order. It has room for four layers a subject,
+  or as many as `overlay({ layers })` gives; a voice past that is left off, with a warning outside
+  production. `css(pose)` gives one layer at its opacity, or several layers' average; `blendMode`
+  names `overlay`, `soft-light`, `hard-light` or `difference`. They run on lanes and `pull`. The four
+  are rules for a color channel only: as a channel of numbers they throw.
 
 ### Fixed
 

@@ -1,5 +1,13 @@
 import { doubles, lerpNumber, max, mul, sum, vouch } from './channels.js';
 import { fromLinear, labOf, linearByte, linearOf } from './oklab.js';
+import {
+  type OrderedMode,
+  ordered,
+  stackCss,
+  stackHex,
+  stacking,
+  stackMode,
+} from './stacked-modes.js';
 import type { Channel } from './types.js';
 
 /**
@@ -7,7 +15,10 @@ import type { Channel } from './types.js';
  *
  * @category channel
  */
-export type BlendMode = 'multiply' | 'screen' | 'add' | 'lighten' | 'darken';
+export type BlendMode = 'multiply' | 'screen' | 'add' | 'lighten' | 'darken' | OrderedMode;
+
+/** The modes that fold the same in any order, so a pose holds the one layer they add up to. */
+type FreeMode = Exclude<BlendMode, OrderedMode>;
 
 /**
  * A mode's fold. Each voice's layer becomes, per axis, `x = α·c`, or `α·(1 - c)` where `invert`,
@@ -22,7 +33,7 @@ interface Mode {
   css: string;
 }
 
-const MODES: Record<BlendMode, Mode> = {
+const MODES: Record<FreeMode, Mode> = {
   multiply: { tag: -1, invert: true, op: 'screen', css: 'multiply' },
   screen: { tag: -2, invert: false, op: 'screen', css: 'screen' },
   add: { tag: -3, invert: false, op: 'sum', css: 'plus-lighter' },
@@ -34,7 +45,8 @@ const BY_TAG = [undefined, MODES.multiply, MODES.screen, MODES.add, MODES.lighte
 /** The mode a merge rule names, if it names one. */
 export function modeOf(of: Channel<unknown>): BlendMode | undefined {
   const kind = of.kind;
-  return kind !== undefined && Object.hasOwn(MODES, kind) ? (kind as BlendMode) : undefined;
+  if (kind === undefined) return undefined;
+  return Object.hasOwn(MODES, kind) || ordered(kind) ? (kind as BlendMode) : undefined;
 }
 
 /** The mode a pose was folded by, or undefined for any other pose. */
@@ -174,7 +186,9 @@ export function blending(
   mode: BlendMode,
   kind: string,
   lerp: Channel<number[]>['lerp'],
+  rule: Channel<unknown>,
 ): Channel<number[]> {
+  if (ordered(mode)) return stacking(mode, kind, lerp, rule);
   const m = MODES[mode];
   const channel: Channel<number[]> = {
     kind,
@@ -202,7 +216,7 @@ function axis(m: Mode, p: number, under: number, shift: number): number {
 /** A blend pose laid over `under` as 0xrrggbb, or undefined for any other pose. */
 export function blendHex(pose: ArrayLike<number>, under: number): number | undefined {
   const m = tagged(pose);
-  if (m === undefined) return undefined;
+  if (m === undefined) return stackHex(pose, under);
   return fromLinear(
     axis(m, pose[0] as number, under, 16),
     axis(m, pose[1] as number, under, 8),
@@ -210,10 +224,13 @@ export function blendHex(pose: ArrayLike<number>, under: number): number | undef
   );
 }
 
-/** A blend pose's one layer as an opaque CSS `oklab()` color, or undefined for any other pose. */
+/**
+ * A blend pose's one layer as an opaque CSS `oklab()` color, a stack's as `stackCss` gives it, or
+ * undefined for any other pose.
+ */
 export function blendCss(pose: ArrayLike<number>): string | undefined {
   const m = tagged(pose);
-  if (m === undefined) return undefined;
+  if (m === undefined) return stackCss(pose);
   const lab = asColor(Array.from(pose));
   return `oklab(${lab[0]} ${lab[1]} ${lab[2]})`;
 }
@@ -226,5 +243,5 @@ export function blendCss(pose: ArrayLike<number>): string | undefined {
  * @category channel
  */
 export function blendMode(pose: ArrayLike<number>): string {
-  return tagged(pose)?.css ?? 'normal';
+  return tagged(pose)?.css ?? stackMode(pose) ?? 'normal';
 }

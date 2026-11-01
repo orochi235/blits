@@ -49,6 +49,8 @@ export { angle, quat } from './rotation.js';
 export type { Input, LagOptions, Level, SlewOptions } from './signals.js';
 export { gate, input, lag, level, peak, share, slew } from './signals.js';
 export { fold } from './stack.js';
+export type { OrderedMode, StackOptions } from './stacked-modes.js';
+export { difference, hardLight, overlay, softLight } from './stacked-modes.js';
 export type { Ticked, Ticker, TickerOptions } from './ticker.js';
 export { ticker } from './ticker.js';
 export { transport } from './transport.js';

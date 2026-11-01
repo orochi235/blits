@@ -164,7 +164,7 @@ function averages(of: Channel<unknown> | undefined): boolean {
 
 const refuse = (name: string, of: Channel<unknown>) =>
   new Error(
-    `${name} takes sum() to average, last() to replace, or a blend mode, multiply(), screen(), add(), lighten() or darken(), not ${of.kind ?? 'a channel of its own'}`,
+    `${name} takes sum() to average, last() to replace, or a blend mode, multiply(), screen(), add(), lighten(), darken(), overlay(), softLight(), hardLight() or difference(), not ${of.kind ?? 'a channel of its own'}`,
   );
 
 /** A `last` color channel, which replaces and travels by `lerp`. */
@@ -183,7 +183,10 @@ function replacing(kind: string, lerp: Channel<number[]>['lerp']): Channel<numbe
  * authored with. `color(multiply())`, `screen()`, `add()`, `lighten()` and `darken()` lay their
  * voices over what is under them by that blend mode, in linear sRGB, a voice's weight times its
  * coverage its opacity: the pose is the one layer they add up to, which `toHex` lays over `under`
- * and `css` gives with `blendMode` naming the CSS mode. It travels between two colors, in a motion
+ * and `css` gives with `blendMode` naming the CSS mode. `color(overlay())`, `softLight()`,
+ * `hardLight()` and `difference()` depend on what is under each layer, so the pose keeps every
+ * voice's layer in voice order, the first cued at the bottom, and `toHex` lays them over `under`
+ * one by one, room for the rule's `layers` held for each subject. It travels between two colors, in a motion
  * or a role's handoff, straight across OKLab, so opposite hues cross through gray. For colors that
  * stand for a meaning, use `ink`.
  *
@@ -219,7 +222,7 @@ export function color(
   const travel = round ? lerpLch : vec(4, sum()).lerp;
   if (own.kind === 'last') return replacing(`color(last${space})`, travel);
   const mode = modeOf(own);
-  if (mode !== undefined) return blending(mode, `color(${mode}${space})`, travel);
+  if (mode !== undefined) return blending(mode, `color(${mode}${space})`, travel, own);
   throw refuse('color', own);
 }
 
@@ -247,7 +250,7 @@ export function ink(of?: Channel<number> | Channel<unknown>): Channel<number[]> 
     const own = of as Channel<unknown>;
     if (own.kind === 'last') return replacing('ink(last)', lerpLch);
     const mode = modeOf(own);
-    if (mode !== undefined) return blending(mode, `ink(${mode})`, lerpLch);
+    if (mode !== undefined) return blending(mode, `ink(${mode})`, lerpLch, own);
     throw refuse('ink', own);
   }
   const channel: Channel<number[]> = {
