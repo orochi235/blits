@@ -21,6 +21,7 @@ export interface Row {
   name: string;
   /** A member's bare name, which its anchor `api-<Entry>.<key>` is built from. */
   key?: string;
+  method?: boolean;
   type: Tok[];
   doc: Doc;
   deprecated: boolean;
@@ -85,6 +86,7 @@ function member(c: Node): Row {
   return {
     name: `${c.flags?.isReadonly ? 'readonly ' : ''}${c.name}${c.flags?.isOptional ? '?' : ''}`,
     key: c.name,
+    method: !!sig,
     type: sig ? arrow(sig) : typeOf(c.type),
     doc: split(comment?.summary ?? []),
     deprecated: deprecated(comment),
