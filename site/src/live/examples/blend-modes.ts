@@ -17,8 +17,8 @@ import {
 } from '@msb235/blits';
 import { loop } from '../loop';
 
-const COLS = 48;
-const ROWS = 21;
+const COLS = 192;
+const ROWS = 84;
 
 interface Cell {
   x: number;
@@ -53,11 +53,12 @@ function tint(rgb: number[], cov: number): Tint {
 
 const ORANGE = oklab(0xf08a24);
 const BLUE = oklab(0x2f8fd8);
-const soft = (d: number) => Math.max(0, Math.min(1, d));
+/** Coverage for a cell `d` inside an edge, in tile heights: full a pixel in, none a pixel out. */
+const edge = (d: number) => Math.max(0, Math.min(1, 0.5 + (d * ROWS) / 2));
 
 /** A still band of orange across the whole ramp, centered at height `y`. */
 const band = (y: number) =>
-  patch<Cell, Tint>(0, (_, c) => tint(ORANGE, soft(1 - Math.abs(c.y - y) * 5)), {
+  patch<Cell, Tint>(0, (_, c) => tint(ORANGE, edge(0.13 - Math.abs(c.y - y))), {
     writes: NAMES,
   });
 
@@ -71,7 +72,7 @@ const disc = patch<Cell, Tint>(
   SPAN,
   (phase, c) => {
     const d = Math.hypot((c.x - 0.12 - 0.76 * phase) * (COLS / ROWS), c.y - 0.5);
-    return tint(BLUE, soft((0.36 - d) * 8));
+    return tint(BLUE, edge(0.3 - d));
   },
   { writes: NAMES },
 );
@@ -118,8 +119,12 @@ export default function run(root: HTMLElement): () => void {
 
   const pose = m.pose();
   // The mix stays at 0. Each frame reads it at the scrubber's time, without moving it.
+  let drawn = Number.NaN;
   const stop = loop(m, () => {
-    const at = m.project(Number(scrub.value));
+    const t = Number(scrub.value);
+    if (t === drawn) return;
+    drawn = t;
+    const at = m.project(t);
     cells.forEach((c, i) => {
       at.probe(c, pose);
       const base = ramp(c);
