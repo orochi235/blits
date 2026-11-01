@@ -9,9 +9,10 @@ debug panel and shows readers code they shouldn't write.
 - **The mix's clock is the demo's clock.** Every frame calls `sync(now)` on the mix or its
   transport, and nothing else keeps time. Several mixes in one demo share a `transport()`. Never
   hold a mix at 0 and read it with `project(t)` at a time the demo keeps itself.
-- **Play, pause, speed, and scrubbing go through the clock:** `rate` to pause or change speed, and
-  `seek` to scrub, with `history` (and a tape) so a seek can go back. A slider shows the mix's
-  `now`; it doesn't own a time of its own.
+- **Play, pause, speed, and scrubbing go through blits:** the mix's `rate` to pause or change
+  speed, and a `seek` to scrub, either the mix's (it needs `history` with a tape) or a voice
+  handle's. A slider shows where the mix or voice is; it doesn't own a time of its own. Give the
+  mix `history` anyway, so the panel can seek it.
 - **Name every mix** (`{ name }`), so the debug panel lists it.
 - **Motion is voices, not frame-loop math.** Looping, easing, fades, crossfades, and ordering are
   cues, weights, `loop`, and roles. The frame loop syncs, probes, and draws, and nothing more.
