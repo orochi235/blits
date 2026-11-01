@@ -102,3 +102,70 @@
 .live-stage:has(.rig) {
   padding-top: 2.5rem;
 }
+
+/* The retheme example's mock: every color is a custom property the frame loop sets. */
+.live .mock {
+  width: min(100%, 24rem);
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: #fff;
+  font: 400 0.85rem var(--label);
+}
+
+.live .mock > * {
+  background: var(--bg, transparent);
+  color: var(--fg, inherit);
+}
+
+.live .mock-bar {
+  display: block;
+  padding: 0.6rem 0.9rem;
+  font-weight: 600;
+}
+
+.live .mock-body {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.9rem;
+}
+
+.live .mock-title,
+.live .mock-text,
+.live .mock-link,
+.live .mock-chip,
+.live .mock-primary,
+.live .mock-secondary {
+  margin: 0;
+  background: var(--bg, transparent);
+  color: var(--fg);
+}
+
+.live .mock-title {
+  font-size: 1rem;
+}
+
+.live .mock-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.live .mock-chip {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.live .mock-primary,
+.live .mock-secondary {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--line, var(--bg));
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.live .mock-link {
+  font-weight: 600;
+  text-decoration: underline;
+}

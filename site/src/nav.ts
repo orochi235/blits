@@ -42,6 +42,7 @@ export const examples = [
   { slug: 'number-rules', title: 'Number rules' },
   { slug: 'stack-order', title: 'Order matters' },
   { slug: 'light-board', title: 'Light board' },
+  { slug: 'retheme', title: 'Retheme' },
 ] as const;
 
 export const extra = [

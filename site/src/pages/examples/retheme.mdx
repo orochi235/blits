@@ -1,0 +1,17 @@
+---
+layout: ../../layouts/Page.astro
+title: Retheme
+description: A mock interface whose color tokens all pass through one hue voice, recoloring it without changing its contrast.
+---
+import Live from '../../components/Live';
+import Listing from '../../components/Listing.astro';
+
+# Retheme
+
+Every color in the card is a subject: one token of one element, with the color it was designed in. One voice on `color(hue())` reaches all of them, and gives each the voice's hue while keeping the token's own lightness and chroma. So the label on a button keeps its contrast whatever the brand, and the grays stay gray, since a gray has no chroma to give a hue to. The readout under the card shows the Publish button's lightness holding still as its color changes.
+
+Brands share a [role](../../role/), so picking one crossfades the last into it. Cycle is a looping voice that goes once round the hue circle. Disabled cues a second voice on `color(saturation())` that takes the chroma away and fades in over half a second; turning it off fades it out.
+
+<Live client:only="react" of="examples/retheme.ts" />
+
+<Listing of="live/examples/retheme.ts" />
