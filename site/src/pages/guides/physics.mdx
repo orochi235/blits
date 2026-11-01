@@ -1,0 +1,35 @@
+---
+layout: ../../layouts/Page.astro
+title: Physics with Rapier
+description: A Rapier world held in a mix, where voices push bodies, a body's simulated pose crossfades with authored motion, and a seek replays the world exactly.
+---
+import Listing from '../../components/Listing.astro';
+import Live from '../../components/Live.tsx';
+
+# Physics with Rapier
+
+<p class="lede">blits doesn't simulate anything. <code>@msb235/blits-rapier</code> keeps a <a href="https://rapier.rs">Rapier</a> world inside a mix, so physics plays on the mix's clock: voices push bodies, each body's pose blends with authored motion, and a seek or a debugger's scrub replays the world exactly.</p>
+
+Click the canvas to send a gust through the boxes. **Tidy** crossfades every box from where physics has it to a place in a row; **Let go** hands them back.
+
+<Live client:only="react" of="guides/physics.ts" />
+
+<Listing of="live/guides/physics.ts" />
+
+## Bodies are subjects
+
+`physics` makes the mix and the world. `sim.body` adds a body from Rapier's own descriptions, and returns the mix's subject for its pose: `position` and `rotation`, read with [`probe`](Mix.probe) like any other subject. Call `sim.sync(now)` each frame where you would call [`sync`](Mix.sync); it syncs the mix, reads what is pushing each body, and steps the world, one Rapier step per [`stepMs`](MixOptions.stepMs).
+
+## Voices push
+
+A body's `controls` is a second subject, with `force` and `torque` channels. `body.drive` cues a voice there, and the voice's weight scales its push, so a gust that fades in and out is a patch with a weight like any other. The gust above is one pass of a sine, cued on every box at each click; when its pass ends the voice leaves the mix.
+
+## The simulation is a voice
+
+Each body's pose comes from a voice, `body.simulated`, that reads the body from the world. It plays in the role `sim.role`, and voices in one [role](../../role/) are alternatives: cue an authored pose in that role and the two crossfade by their weights. The demo moves one number from 0 to 1 and writes it to both weights each frame. A voice cued outside the role adds on top of wherever physics has the body instead, for a wobble or an offset.
+
+## Seeking
+
+The world lives in the mix as the state of a stateful patch, so a mix with [`history`](MixOptions.history) and a tape keeps copies of it and replays from the nearest one on a [`seek`](Mix.seek). The replay lands on the same poses as the first pass. Impulses and dropped bodies are logged at their mix time and happen again when a replay passes them; a change made to the Rapier world directly does not survive a seek.
+
+The package's [README](https://github.com/orochi235/blits/tree/main/packages/rapier#readme) lists the channels in 2D and 3D and what it does not do yet.

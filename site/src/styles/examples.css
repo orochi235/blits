@@ -36,6 +36,17 @@
   cursor: default;
 }
 
+.live .physics {
+  height: 260px;
+  cursor: pointer;
+}
+
+.live .physics-tidy {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
 .live .burst {
   height: 260px;
   cursor: crosshair;

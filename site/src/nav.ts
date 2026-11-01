@@ -30,6 +30,7 @@ export const guides = [
   { slug: 'scrubbing', title: 'Scrubbing and reading ahead' },
   { slug: 'react', title: 'From React' },
   { slug: 'three', title: 'Driving three.js' },
+  { slug: 'physics', title: 'Physics with Rapier' },
   { slug: 'patch-library', title: 'Shipping your own patches' },
   { slug: 'lean', title: 'A smaller bundle' },
   { slug: 'debugging', title: 'Debugging a mix' },

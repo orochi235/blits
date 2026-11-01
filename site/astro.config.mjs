@@ -30,6 +30,10 @@ export default defineConfig({
           find: /^@msb235\/blits-panel$/,
           replacement: fileURLToPath(new URL('../packages/panel/src/index.ts', import.meta.url)),
         },
+        {
+          find: /^@msb235\/blits-rapier$/,
+          replacement: fileURLToPath(new URL('../packages/rapier/src/index.ts', import.meta.url)),
+        },
       ],
     },
   },
