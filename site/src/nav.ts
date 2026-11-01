@@ -40,6 +40,8 @@ export const guides = [
 export const examples = [
   { slug: 'blend-modes', title: 'Blend modes' },
   { slug: 'number-rules', title: 'Number rules' },
+  { slug: 'stack-order', title: 'Order matters' },
+  { slug: 'light-board', title: 'Light board' },
 ] as const;
 
 export const extra = [

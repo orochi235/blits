@@ -1,0 +1,17 @@
+---
+layout: ../../layouts/Page.astro
+title: Order matters
+description: Three discs folded by one blend mode, cued in two orders side by side, with how many pixels differ.
+---
+import Live from '../../components/Live';
+import Listing from '../../components/Listing.astro';
+
+# Order matters
+
+Three discs turn about the middle of a ramp, each a looping voice that writes one [color channel](../../channel/#blend-modes). The left mix cues them A, B, C, and the right mix cues them in the order shown under it; swap neighbors to change it. Both mixes run on one [`transport`](../../mix/#api-transport), and a change makes them again with each voice cued as far into its turn as the transport is.
+
+Under `multiply`, `screen`, `add`, `lighten` and `darken`, the layers fold into one before anything is laid on the ramp, so the order can't change the color, and the readout stays at 0%. Under the ordered modes, `toHex` lays each voice on what is under it, first cued at the bottom, so swapping two voices changes every pixel where they overlap. `exclusion` is ordered but reads 0% too: laying one exclusion on another gives the same color whichever goes first.
+
+<Live client:only="react" of="examples/stack-order.ts" />
+
+<Listing of="live/examples/stack-order.ts" />

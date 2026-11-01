@@ -1,0 +1,104 @@
+/* The blend-mode demos: canvases above rows of controls. */
+.live .rig {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1rem 1.25rem;
+  font: 500 0.8rem var(--label);
+  color: var(--ink);
+}
+
+.live .rig canvas {
+  display: block;
+  width: 100%;
+  border-radius: 4px;
+}
+
+.live .rig > canvas {
+  width: min(100%, 36rem);
+}
+
+.live .rig figure {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  justify-items: center;
+}
+
+.live .rig figcaption {
+  font: 600 0.8rem var(--mono);
+}
+
+.live .rig-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.live .rig-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.live .rig-label {
+  min-width: 6.5rem;
+  color: var(--ink-soft);
+  text-align: end;
+}
+
+.live .rig-row button {
+  padding: 0.2rem 0.55rem;
+  font: 500 0.75rem var(--mono);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.live .rig-row button[aria-pressed='true'] {
+  border-color: var(--voice-1);
+  background: var(--panel);
+}
+
+.live .rig-row input[type='range'] {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.live .rig-chip {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  font: 700 0.8rem var(--mono);
+  color: #fff;
+}
+
+.live .rig-chip-a {
+  background: #f08a24;
+}
+.live .rig-chip-b {
+  background: #2fb8a0;
+}
+.live .rig-chip-c {
+  background: #8a5cf0;
+}
+
+.live .rig-read {
+  margin: 0;
+  font: 500 0.8rem var(--mono);
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+  color: var(--ink-soft);
+}
+
+.live-stage:has(.rig) {
+  padding-top: 2.5rem;
+}
