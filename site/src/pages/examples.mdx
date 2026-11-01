@@ -57,3 +57,11 @@ A disc of blue sits between two bands of orange, over a ramp from black to white
 <Live client:only="react" of="examples/blend-modes.ts" />
 
 <Listing of="live/examples/blend-modes.ts" />
+
+## Number rules
+
+The same three layers as numbers: the bottom band writes 0.5, the disc 0.9, and the top band 0.7, and each [number channel](../channel/) folds them by its own rule. The color scale runs from 0 to 2. Where no voice writes, each rule shows its rest: 0 for `sum`, `max`, `norm`, and `screen`, and 1 for `mul` and `min`. `last` has no rest, so a cell no voice reaches has no value, drawn gray, and where they overlap it takes the voice cued last. `norm` sits between `sum` and `max`, closer to `max` as its power rises: the disc over the bottom band reads 1.40 under `sum`, 1.03 under `norm(2)`, 0.92 under `norm(4)`, and 0.90 under `max`. Pause and drag the slider to stop the disc where it overlaps a band.
+
+<Live client:only="react" of="examples/number-rules.ts" />
+
+<Listing of="live/examples/number-rules.ts" />

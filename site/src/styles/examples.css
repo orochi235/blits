@@ -121,37 +121,57 @@
   cursor: default;
 }
 
-.live .blend-modes {
+.live .picker {
   display: grid;
   justify-items: center;
   gap: 0.6rem;
   padding: 0 1rem 1.25rem;
 }
 
-.live .blend-modes canvas {
+.live .picker canvas {
   display: block;
   aspect-ratio: 48 / 21;
   border-radius: 4px;
 }
 
-.live .blend-modes > canvas {
+.live .picker > canvas {
   width: min(100%, 36rem);
 }
 
-.live .blend-modes-name {
+.live .picker-name {
   margin: 0;
   font: 600 0.9rem var(--label);
   color: var(--ink);
 }
 
-.live .blend-modes-strip {
+.live .picker-scale {
+  display: grid;
+  gap: 0.15rem;
+  width: 10rem;
+  font: 500 0.7rem var(--label);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.live .picker-scale canvas {
+  width: 100%;
+  height: 0.5rem;
+  aspect-ratio: auto;
+}
+
+.live .picker-scale div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.live .picker-strip {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
   gap: 0.5rem;
   width: 100%;
 }
 
-.live .blend-modes-strip button {
+.live .picker-strip button {
   display: grid;
   gap: 0.2rem;
   padding: 0.25rem;
@@ -164,30 +184,30 @@
   cursor: pointer;
 }
 
-.live .blend-modes-strip button canvas {
+.live .picker-strip button canvas {
   width: 100%;
 }
 
-.live .blend-modes-strip button[aria-pressed='true'] {
+.live .picker-strip button[aria-pressed='true'] {
   border-color: var(--voice-1);
 }
 
-.live .blend-modes-controls {
+.live .picker-controls {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   width: 100%;
 }
 
-.live .blend-modes-controls .switch {
+.live .picker-controls .switch {
   min-width: 5rem;
   margin: 0;
 }
 
-.live .blend-modes-controls input[type='range'] {
+.live .picker-controls input[type='range'] {
   flex: 1;
 }
 
-.live-stage:has(.blend-modes) {
+.live-stage:has(.picker) {
   padding-top: 2.5rem;
 }

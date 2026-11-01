@@ -111,12 +111,12 @@ function put(image: ImageData, i: number, hex: number) {
 
 export default function run(root: HTMLElement): () => void {
   const wrap = document.createElement('div');
-  wrap.className = 'blend-modes';
+  wrap.className = 'picker';
   const big = canvas(192, 84);
   const caption = document.createElement('p');
-  caption.className = 'blend-modes-name';
+  caption.className = 'picker-name';
   const strip = document.createElement('div');
-  strip.className = 'blend-modes-strip';
+  strip.className = 'picker-strip';
   const thumbs = NAMES.map((name) => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -137,7 +137,7 @@ export default function run(root: HTMLElement): () => void {
   scrub.step = 'any';
   scrub.ariaLabel = 'Where the disc is in its sweep';
   const controls = document.createElement('div');
-  controls.className = 'blend-modes-controls';
+  controls.className = 'picker-controls';
   controls.append(play, scrub);
   wrap.append(big.el, caption, strip, controls);
   root.append(wrap);
