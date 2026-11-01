@@ -42,7 +42,7 @@
   justify-content: center;
   align-items: center;
   gap: 0.35rem;
-  width: 100%;
+  width: min(100%, 40rem);
 }
 
 .live .rig-label {

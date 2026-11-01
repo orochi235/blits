@@ -45,6 +45,7 @@ export const examples = [
   { slug: 'retheme', title: 'Retheme' },
   { slug: 'threshold-wipe', title: 'Threshold wipe' },
   { slug: 'hit-flash', title: 'Hit flash' },
+  { slug: 'white-balance', title: 'White balance' },
 ] as const;
 
 export const extra = [
