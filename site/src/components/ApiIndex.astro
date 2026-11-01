@@ -6,6 +6,10 @@ import Badge from './Badge.astro';
 ---
 <nav class="api-index" aria-label="Exports">
   <input type="search" class="api-filter" placeholder="Filter  /" aria-label="Filter the exports" />
+  <div class="api-order" role="group" aria-label="Order">
+    <button type="button" data-order="word" aria-pressed="true">By word</button>
+    <button type="button" data-order="az" aria-pressed="false">A–Z</button>
+  </div>
   {words.map((w) => (
     <div class="api-index-group" data-word={w.slug}>
       <h2>{w.title}</h2>
@@ -48,9 +52,47 @@ import Badge from './Badge.astro';
     }
   });
 
+  // A–Z moves every entry, in the index and the body, into one list sorted by name, and By word
+  // puts each back where the page rendered it.
+  const byName = (a: HTMLElement, b: HTMLElement) =>
+    (a.dataset.name ?? '').localeCompare(b.dataset.name ?? '');
+  const homes = new Map<HTMLElement, HTMLElement>();
+  for (const el of document.querySelectorAll<HTMLElement>('.api-index li, .api-entry'))
+    homes.set(el, el.parentElement as HTMLElement);
+  const rendered = [...homes.keys()];
+  const flatIndex = document.createElement('div');
+  flatIndex.className = 'api-index-group';
+  flatIndex.innerHTML = '<h2>A–Z</h2><ul></ul>';
+  const flatBody = document.createElement('section');
+  flatBody.className = 'api';
+  flatBody.innerHTML = '<h2>A–Z</h2>';
+  const buttons = [...(index?.querySelectorAll<HTMLButtonElement>('.api-order button') ?? [])];
+
+  function order(by: string) {
+    const az = by === 'az';
+    for (const b of buttons) b.ariaPressed = String(b.dataset.order === by);
+    if (az) {
+      const items = rendered.filter((el) => el.tagName === 'LI').sort(byName);
+      flatIndex.querySelector('ul')?.append(...items);
+      flatBody.append(...rendered.filter((el) => el.tagName !== 'LI').sort(byName));
+      index?.querySelector('.api-none')?.before(flatIndex);
+      document.querySelector('.page .api')?.before(flatBody);
+    } else {
+      for (const el of rendered) homes.get(el)?.append(el);
+      flatIndex.remove();
+      flatBody.remove();
+    }
+    all = [...document.querySelectorAll<HTMLElement>('.api-entry')];
+    apply(filter?.value ?? '');
+    try {
+      localStorage.setItem('blits-ref-order', by);
+    } catch {}
+  }
+  for (const b of buttons) b.addEventListener('click', () => order(b.dataset.order ?? 'word'));
+
   const links = new Map<string, HTMLAnchorElement>();
   for (const a of index?.querySelectorAll<HTMLAnchorElement>('a') ?? []) links.set(a.hash.slice(1), a);
-  const all = [...document.querySelectorAll<HTMLElement>('.api-entry')];
+  let all = [...document.querySelectorAll<HTMLElement>('.api-entry')];
   let current: HTMLAnchorElement | undefined;
   let queued = false;
   function mark() {
@@ -69,5 +111,8 @@ import Badge from './Badge.astro';
     if (!queued) requestAnimationFrame(mark);
     queued = true;
   }, { passive: true });
+  try {
+    if (localStorage.getItem('blits-ref-order') === 'az') order('az');
+  } catch {}
   mark();
 </script>
