@@ -4,6 +4,10 @@ import api from '../../.generated/api.json';
 export interface Part {
   kind: string;
   text: string;
+  /** An inline tag's name: `@link`, `@linkcode` or `@linkplain`. */
+  tag?: string;
+  /** A `{@link}`'s target: a reflection's id, or a URL. */
+  target?: number | string;
 }
 export interface Comment {
   summary?: Part[];
@@ -49,6 +53,7 @@ export interface Signature {
   typeParameters?: TypeParam[];
 }
 export interface Node {
+  id: number;
   name: string;
   kind: number;
   flags?: { isOptional?: boolean; isReadonly?: boolean };
@@ -59,7 +64,8 @@ export interface Node {
   type?: Type;
   typeParameters?: TypeParam[];
   extendedTypes?: Type[];
-  inheritedFrom?: unknown;
+  /** The member this one copies from a base type, by id. */
+  inheritedFrom?: { target?: number };
 }
 
 export const KIND: Record<number, string> = {

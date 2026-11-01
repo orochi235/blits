@@ -73,7 +73,12 @@ inline-object parameters, print as a table. The reference page adds `ApiIndex`: 
 word in a pinned column, with a filter box (`/` focuses it) that narrows the index and the entries.
 
 A code span that names an export links to its entry, in doc comments and in page prose alike:
-`Mix`, `cue()`, `Mix.cue`, or `mix.cue` for an instance, which reaches the member's row.
+`Mix`, `cue()`, `Mix.cue`, or `mix.cue` for an instance, which reaches the member's row. A bare
+member name links too where it can't be mistaken: in a doc comment, a member of the entry being
+documented; anywhere, a method only one export has. A name several exports share, like `seek` or
+`history`, takes an explicit link naming its owner: ``{@link Mix.seek | `seek`}`` in a doc comment,
+``[`seek`](Mix.seek)`` on a page. Either fails the build when its target names nothing: TypeDoc runs
+with `--treatValidationWarningsAsErrors`, and the prose plugin throws.
 `src/api/links.ts` resolves the name for both; `src/api/prose.ts` is the Sätteri plugin that applies
 it to MDX, since Astro's default Markdown processor runs no remark or rehype plugins. The smoke test
 fails on a link whose `#fragment` names no element on its page.
