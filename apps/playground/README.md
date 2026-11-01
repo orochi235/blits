@@ -79,7 +79,7 @@ interface Composition {
 edits them. Unset, `stepMs` is one frame and the rest are blits' defaults.
 
 `rules` picks each channel's fold rule, from which `kitOf` in `src/blits/kit.ts` makes the kit
-every mix, wave, and flow node reads. A number channel takes `sum`, `mul`, `max`, or `last`, and
+every mix, wave, and flow node reads. A number channel takes `sum`, `mul`, `max`, `min`, `norm`, or `last`, and
 all but `last` take `bounds`; `offset` folds its two numbers alike, so not by `last`; `color`
 replaces, averages, or blends by `multiply`, `screen`, `add`, `lighten`, `darken`, `overlay`,
 `softLight`, `hardLight`, or `difference` over the subject's base color, as a `color` (straight across OKLab, as light mixes) or an `ink` (round the

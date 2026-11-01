@@ -18,7 +18,7 @@ import {
 import { CSS } from './easing';
 import { levelsOk } from './edit';
 import { parentOf, treeFault } from './groups';
-import { CHANNELS, COLOR_RULES, SWINGS } from './kit';
+import { CHANNELS, COLOR_RULES, NUMBER_RULES, SWINGS } from './kit';
 
 type Rec = Record<string, unknown>;
 
@@ -214,9 +214,8 @@ const numberRule =
     rules.includes(v.rule as string) &&
     opt(v.bounds, bounds) &&
     !(v.rule === 'last' && v.bounds !== undefined);
-const NUMBER_RULES = ['sum', 'mul', 'max', 'last'];
 const RULE_CHECKS: Record<string, (v: unknown) => boolean> = {
-  offset: numberRule('sum', 'mul', 'max'),
+  offset: numberRule(...NUMBER_RULES.filter((r) => r !== 'last')),
   turn: numberRule(...NUMBER_RULES),
   scale: numberRule(...NUMBER_RULES),
   opacity: numberRule(...NUMBER_RULES),

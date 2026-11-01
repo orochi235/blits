@@ -6,6 +6,7 @@ import {
   type ColorRuleSpec,
   DEFAULT_RULES,
   kitOf,
+  NUMBER_RULES,
   type NumberRule,
   type NumberRuleSpec,
   type Rules,
@@ -28,7 +29,6 @@ const icon = scopedIcon('ui');
 
 type NumberChannel = Exclude<keyof Rules, 'color'>;
 
-const NUMBER_RULES: readonly NumberRule[] = ['sum', 'mul', 'max', 'last'];
 const ignore = () => {};
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const bandOf = (ch: string) => `${ch}Bounds`;

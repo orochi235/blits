@@ -63,6 +63,8 @@ describe('load', () => {
       color: { rule: 'average', type: 'ink' },
     };
     expect(load({ ...copy(), rules })?.rules).toEqual(rules);
+    const more = { glow: { rule: 'norm' }, offset: { rule: 'min', bounds: [0, 9] } };
+    expect(load({ ...copy(), rules: more })?.rules).toEqual(more);
     const blend = { color: { rule: 'screen', type: 'color' } };
     expect(load({ ...copy(), rules: blend })?.rules).toEqual(blend);
   });

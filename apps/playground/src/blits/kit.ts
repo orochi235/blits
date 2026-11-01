@@ -10,8 +10,10 @@ import {
   last,
   lighten,
   max,
+  min,
   mul,
   multiply,
+  norm,
   overlay,
   screen,
   softLight,
@@ -49,7 +51,8 @@ export type SwingName = { [K in keyof Mixed]: Mixed[K] extends number ? K : neve
 export const SWINGS: readonly SwingName[] = ['turn', 'scale', 'opacity', 'glow'];
 
 /** How a channel of one or more numbers folds its voices. `last` has no rest and takes no bounds. */
-export type NumberRule = 'sum' | 'mul' | 'max' | 'last';
+export const NUMBER_RULES = ['sum', 'mul', 'max', 'min', 'norm', 'last'] as const;
+export type NumberRule = (typeof NUMBER_RULES)[number];
 
 export interface NumberRuleSpec {
   rule: NumberRule;
@@ -104,7 +107,7 @@ export const DEFAULT_RULES: Rules = {
   glow: { rule: 'max' },
 };
 
-const RULES = { sum, mul, max } as const;
+const RULES = { sum, mul, max, min, norm } as const;
 
 function numberChannel({ rule, bounds }: NumberRuleSpec) {
   if (rule === 'last') return last<number>();

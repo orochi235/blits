@@ -40,6 +40,12 @@ describe('kitOf', () => {
     expect(kinds(kitOf({ color: { rule: 'overlay', type: 'color' } })).color).toBe(
       'color(overlay)',
     );
+    expect(
+      kinds(kitOf({ glow: { rule: 'norm' }, offset: { rule: 'min', bounds: [0, 9] } })),
+    ).toMatchObject({
+      glow: 'norm(2)',
+      offset: 'vec(2, min[0, 9])',
+    });
   });
 });
 
