@@ -55,18 +55,29 @@ const ORANGE = oklab(0xf08a24);
 const BLUE = oklab(0x2f8fd8);
 const soft = (d: number) => Math.max(0, Math.min(1, d));
 
-/** A still band of `rgb` across the whole ramp, centered at height `y`. */
-const band = (rgb: number[], y: number) =>
-  patch<Cell, Tint>(0, (_, c) => tint(rgb, soft((0.28 - Math.abs(c.y - y)) * 8)), {
+/** A still band of orange across the whole ramp, centered at height `y`. */
+const band = (y: number) =>
+  patch<Cell, Tint>(0, (_, c) => tint(ORANGE, soft(1 - Math.abs(c.y - y) * 5)), {
     writes: NAMES,
   });
 
-// The two bands overlap through the middle third of each tile.
-const orange = band(ORANGE, 0.36);
-const blue = band(BLUE, 0.64);
+// The disc passes through the lower half of the top band and the upper half of the bottom one.
+const under = band(0.75);
+const over = band(0.25);
+
+// A disc of blue sweeping back and forth across the ramp, between the two bands.
+const disc = patch<Cell, Tint>(
+  5000,
+  (phase, c) => {
+    const cx = 0.5 - 0.38 * Math.cos(2 * Math.PI * phase);
+    const d = Math.hypot((c.x - cx) * (COLS / ROWS), c.y - 0.5);
+    return tint(BLUE, soft((0.36 - d) * 8));
+  },
+  { writes: NAMES },
+);
 
 /** The base under each cell: black on the left to white on the right. */
-const under = (c: Cell) => {
+const ramp = (c: Cell) => {
   const g = Math.round(255 * c.x);
   return (g << 16) | (g << 8) | g;
 };
@@ -74,10 +85,7 @@ const under = (c: Cell) => {
 export default function run(root: HTMLElement): () => void {
   const grid = document.createElement('div');
   grid.className = 'blend-modes';
-  const swap = document.createElement('button');
-  swap.className = 'switch';
-  swap.textContent = 'Put orange on top';
-  root.append(swap, grid);
+  root.append(grid);
 
   const tiles = NAMES.map((name) => {
     const fig = document.createElement('figure');
@@ -96,32 +104,18 @@ export default function run(root: HTMLElement): () => void {
   for (let y = 0; y < ROWS; y++)
     for (let x = 0; x < COLS; x++) cells.push({ x: x / (COLS - 1), y: y / (ROWS - 1) });
 
-  // Voices lay on in the order they were cued. Orange is cued twice, below and above blue, and the
-  // swap moves weight from one copy to the other.
+  // Voices lay on in the order they were cued: one band under the disc, the other over it.
   const m = mix<Cell, Tint>(kit<Tint>(MODES), { name: 'blend-modes' });
-  const below = m.cue({ patch: orange, subjects: cells });
-  m.cue({ patch: blue, subjects: cells });
-  const above = m.cue({ patch: orange, subjects: cells, weight: 0 });
+  m.cue({ patch: under, subjects: cells });
+  m.cue({ patch: disc, subjects: cells, loop: true });
+  m.cue({ patch: over, subjects: cells });
 
-  let flipped = false;
-  swap.addEventListener('click', () => {
-    flipped = !flipped;
-    swap.textContent = flipped ? 'Put blue on top' : 'Put orange on top';
-  });
-
-  let u = 0;
-  let last = Number.NaN;
   const pose = m.pose();
   const stop = loop(m, (now) => {
-    const dt = Number.isNaN(last) ? 0 : now - last;
-    last = now;
-    u += ((flipped ? 1 : 0) - u) * Math.min(1, dt / 200);
-    below.weight = 1 - u;
-    above.weight = u;
     m.sync(now);
     cells.forEach((c, i) => {
       m.probe(c, pose);
-      const base = under(c);
+      const base = ramp(c);
       for (const t of tiles) {
         const hex = toHex(pose[t.name], base);
         t.image.data.set([hex >> 16, (hex >> 8) & 0xff, hex & 0xff, 255], i * 4);
