@@ -26,7 +26,7 @@ A body's `controls` is a second subject, with `force` and `torque` channels. `bo
 
 ## The simulation is a voice
 
-Each body's pose comes from a voice, `body.simulated`, that reads the body from the world. It plays in the role `sim.role`, and voices in one [role](../../role/) are alternatives: cue an authored pose in that role and the two crossfade by their weights. The demo moves one number from 0 to 1 and writes it to both weights each frame. A voice cued outside the role adds on top of wherever physics has the body instead, for a wobble or an offset.
+Each body's pose comes from a voice, `body.simulated`, that reads the body from the world. It plays in the role `sim.role`, and voices in one [role](../../role/) are alternatives: cue an authored pose in that role and the two crossfade by their weights. The demo hands the boxes over with one [`level`](../../signal/#api-level), eased by [`lag`](../../signal/#api-lag): `physics` takes a `weight` signal for every simulated voice, and the tidy voices weigh the other [`share`](../../signal/#api-share) of the same signal, so the frame loop only syncs and draws. A voice cued outside the role adds on top of wherever physics has the body instead, for a wobble or an offset.
 
 ## Seeking
 

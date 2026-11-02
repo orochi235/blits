@@ -1,5 +1,5 @@
 import RAPIER from '@dimforge/rapier2d-compat';
-import { kit, patch } from '@msb235/blits';
+import { kit, lag, level, patch, share } from '@msb235/blits';
 import { channels2, type Pose2, physics } from '@msb235/blits-rapier';
 import { loop } from '../loop';
 
@@ -36,7 +36,14 @@ export default function run(root: HTMLElement): () => void {
   void RAPIER.init().then(() => {
     if (gone || ctx === null) return;
     const width = canvas.clientWidth / SCALE;
-    const sim = physics(kit<Pose2>(channels2), { rapier: RAPIER, name: 'physics' });
+    // 0 leaves the boxes to physics, 1 puts them in their places; `lag` eases each box between.
+    const tidied = level<object>(0);
+    const toward = lag(tidied, { riseMs: 150, fallMs: 150 });
+    const sim = physics(kit<Pose2>(channels2), {
+      rapier: RAPIER,
+      name: 'physics',
+      weight: share(toward, 0, 2),
+    });
     sim.body(RAPIER.RigidBodyDesc.fixed(), RAPIER.ColliderDesc.cuboid(width, 0.05));
     sim.body(
       RAPIER.RigidBodyDesc.fixed().setTranslation(-0.05, 3),
@@ -56,18 +63,17 @@ export default function run(root: HTMLElement): () => void {
     );
 
     // Each box's tidy place plays in the simulation's role, so the two crossfade by weight.
-    const tidy = boxes.map((box, i) => {
-      const h = box.cue({ patch: rest(0.6 + (i * (width - 1.2)) / 11), role: sim.role });
-      h.weight = 0;
-      return h;
-    });
-    // How far each box has gone from physics to its place, eased toward 0 or 1 each frame.
-    let tidied = false;
-    let u = 0;
-    let last = Number.NaN;
+    for (const [i, box] of boxes.entries())
+      box.cue({
+        patch: rest(0.6 + (i * (width - 1.2)) / 11),
+        role: sim.role,
+        weight: share(toward, 1, 2),
+      });
+    let tidy = false;
     button.addEventListener('click', () => {
-      tidied = !tidied;
-      button.textContent = tidied ? 'Let go' : 'Tidy';
+      tidy = !tidy;
+      tidied.set(tidy ? 1 : 0);
+      button.textContent = tidy ? 'Let go' : 'Tidy';
     });
     canvas.addEventListener('click', () => {
       for (const box of boxes) box.drive({ patch: gust });
@@ -75,14 +81,6 @@ export default function run(root: HTMLElement): () => void {
 
     const pose = sim.mix.pose();
     stop = loop(sim.mix, (now) => {
-      const dt = Number.isNaN(last) ? 0 : now - last;
-      last = now;
-      u += ((tidied ? 1 : 0) - u) * Math.min(1, dt / 150);
-      for (const [i, box] of boxes.entries()) {
-        box.simulated.weight = 1 - u;
-        const h = tidy[i];
-        if (h) h.weight = u;
-      }
       sim.sync(now);
       canvas.width = canvas.clientWidth * devicePixelRatio;
       canvas.height = HEIGHT * devicePixelRatio;

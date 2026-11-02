@@ -1,12 +1,15 @@
 import R2 from '@dimforge/rapier2d-compat';
-import { kit, patch } from '@msb235/blits';
+import { kit, level, patch, type Signal, share } from '@msb235/blits';
 import { expect, it } from 'vitest';
 import { channels2, type Pose2, physics } from '../src/index.js';
 import { at } from './scenes.js';
 
 /** A body that falls freely, read at frame 30. */
-function falling() {
-  const sim = physics<Pose2>(kit<Pose2>(channels2), { rapier: R2 });
+function falling(weight?: Signal<object>) {
+  const sim = physics<Pose2>(kit<Pose2>(channels2), {
+    rapier: R2,
+    ...(weight === undefined ? {} : { weight }),
+  });
   const ball = sim.body(
     R2.RigidBodyDesc.dynamic().setTranslation(0, 10),
     R2.ColliderDesc.ball(0.5),
@@ -54,4 +57,20 @@ it('shows only the authored voice once the simulated one is faded out', () => {
   ball.cue({ patch: hold([4, 0]), role: sim.role });
   ball.simulated.weight = 0;
   expect(read()).toEqual([4, 0]);
+});
+
+it('hands a body to an authored voice by a weight signal, and back', () => {
+  const k = level<object>(0);
+  const { sim, ball, read } = falling(share(k, 0, 2));
+  ball.cue({ patch: hold([4, 0]), weight: share(k, 1, 2), role: sim.role });
+  const free = read();
+  expect(free[0]).toBeCloseTo(0, 6);
+  k.set(1);
+  sim.sync(at(31));
+  expect((sim.mix.probe(ball) as Pose2).position).toEqual([4, 0]);
+  k.set(0);
+  sim.sync(at(32));
+  const back = (sim.mix.probe(ball) as Pose2).position;
+  expect(back[0]).toBeCloseTo(0, 6);
+  expect(back[1]).toBeLessThan(free[1] as number);
 });

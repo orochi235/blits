@@ -46,11 +46,12 @@ const { position, rotation } = sim.mix.probe(box);
   are read before the world steps and the pose after, which is why they are two subjects.
 - **`body.drive(spec)`** cues a voice on the controls; its weight scales the push.
   **`body.cue(spec)`** cues one on the pose. Neither spec names `subjects`.
-- **`body.simulated`** is the `Handle` of the voice that shows the body where the world puts it, at
-  weight 1, in the role `sim.role`. A voice cued in that role is an alternative to the simulation,
-  and the two crossfade by weight: fade `simulated` out and an authored pose in, and a body settles
-  from physics into a scripted place. A voice outside the role adds on top of wherever physics has
-  it.
+- **`body.simulated`** is the `Handle` of the voice that shows the body where the world puts it, in
+  the role `sim.role`, at the weight `physics` was given (default 1). A voice cued in that role is
+  an alternative to the simulation, and the two crossfade by weight. To hand bodies to authored
+  poses and back, give `physics` a `weight` signal and the authored voices its complement, such as
+  `share(k, 0, 2)` and `share(k, 1, 2)` of one `level`. A voice outside the role adds on top of
+  wherever physics has it.
 - **`body.impulse(v)`** applies an impulse once, on the step after the mix's current time.
   **`body.drop()`** takes the body out of the world then. Both are logged at that time, so a seek
   back before it undoes them and playing forward through it does them again.

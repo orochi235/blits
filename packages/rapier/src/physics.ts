@@ -5,6 +5,7 @@ import {
   type MixOptions,
   mix,
   patch,
+  type Signal,
   type VoiceSpec,
 } from '@msb235/blits';
 import type { Pose2, Pose3 } from './channels.js';
@@ -20,6 +21,11 @@ export interface PhysicsOptions<H> extends MixOptions<H> {
   rapier: RapierModule;
   /** Default: `[0, -9.81]` or `[0, -9.81, 0]`. */
   gravity?: readonly number[];
+  /**
+   * The weight of every body's simulated voice, a signal reading each body. A signal hands a body
+   * between physics and authored motion with no weight written from the frame loop. Default 1.
+   */
+  weight?: number | Signal<object, H>;
 }
 
 /** A rigid body: the mix's subject for its pose, with its controls beside it. */
@@ -27,7 +33,7 @@ export interface Body<O, H> {
   readonly key: number;
   /** The subject whose `force` and `torque` push the body, read before the world steps. */
   readonly controls: object;
-  /** The voice that shows the body where the world puts it, in `Physics.role`. Weight 1. */
+  /** The voice that shows the body where the world puts it, in `Physics.role`, at `PhysicsOptions.weight`. */
   readonly simulated: Handle<object>;
   /** Cues a voice on the body's pose. In `Physics.role` it is an alternative to the simulation; outside it, it adds on top. */
   cue(spec: Omit<VoiceSpec<object, O, H>, 'subjects'>): Handle<object>;
@@ -62,7 +68,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   kit: Kit<O>,
   opts: PhysicsOptions<H>,
 ): Physics<O, H> {
-  const { rapier, gravity, ...rest } = opts;
+  const { rapier, gravity, weight, ...rest } = opts;
   const dims = dimsOf(rapier);
   const g = gravity ?? (dims.n === 2 ? [0, -9.81] : [0, -9.81, 0]);
   const m = mix<object, O, H>(kit, { ...rest, stepMs: rest.stepMs ?? 1000 / 60 });
@@ -180,6 +186,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
         patch: simulated,
         subjects: [body],
         role: ROLE,
+        ...(weight === undefined ? {} : { weight }),
       });
       return body;
     },

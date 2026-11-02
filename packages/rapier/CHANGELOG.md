@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `rapier-v*` tag with no
 section here.
 
+## Unreleased
+
+### Added
+
+- `physics` takes `weight`, a number or a signal, for every body's simulated voice. A signal hands
+  bodies between physics and authored poses with nothing written from the frame loop. Fading
+  `simulated` out ended it for good, so a body could not be handed back.
+
 ## 0.1.0
 
 ### Added
