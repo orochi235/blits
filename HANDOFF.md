@@ -942,13 +942,3 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   switched to `field` nor picked it; with `field` selected the same pick works. `picking.ts` asks
   `owner(subject)`, which reads the map `sendSubjects` builds in `agent.ts`; why that map misses the
   instance is not yet traced.
-
-- **Lanes give a different pose from the general path for an ordered blend mode's role, once an
-  earlier frame was probed** (2026-11-02, found by the gpu engine's agreement tests). 129 subjects
-  `{ x: i / 128 }` on `kit({ c: color(overlay()) })`, three looping discs (patch: coverage
-  `clamp(0.5 + (r - |x - phase|) * 20, 0, 1)`, value `[L·cov, a·cov, b·cov, cov]`, 1000 ms): red
-  `(0.63, 0.22, 0.13, r 0.2037)` in role `a`, blue `(0.45, -0.03, -0.19, r 0.2551)` with no role,
-  and `(0.8, 0, 0.1, r 0.4019)` in role `a` at weight 0.5. Sync 0, cue, sync 200 and probe every
-  subject, sync 450: subject 29's first layer reads blue 0.12032 with lanes and 0.11867 with
-  `lanes: false`, which is also what lanes give without the probes at 200 and what the GPU gives.
-  The GPU tests compare against `lanes: false` until this is fixed.

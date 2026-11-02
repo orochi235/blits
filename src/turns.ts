@@ -1,3 +1,4 @@
+import { blendRuleOf } from './blend-modes.js';
 import { doubles } from './channels.js';
 import type { Laned } from './lane.js';
 
@@ -79,6 +80,12 @@ export function turnToward(
   }
   const axes = ch.axes;
   let out = value as ArrayLike<number>;
+  // A stack keeps a first contribution as it is, padded: its fold and lerp tell one from a stack,
+  // and laying it as a layer now would clip its color before the next member is lerped in.
+  if (taken === 0 && out.length < axes && blendRuleOf(ch.channel)?.kind === 'stack') {
+    for (let a = 0; a < axes; a++) values[base + a] = (out[a] as number | undefined) ?? 0;
+    return;
+  }
   // A first value of other axes than the lane's, as an ink contribution is, widens through the lerp.
   if (taken !== 0 || out.length !== axes) {
     held = lift(values, base, axes, held);

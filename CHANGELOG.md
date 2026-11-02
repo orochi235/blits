@@ -19,6 +19,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- On lanes, a role on an ordered blend mode lerps its first member's color in as it is, as the
+  general path does. Lanes laid it as a layer first, clipping it to sRGB, so a color outside sRGB
+  folded slightly differently with lanes on and off.
 - A seek back finds a voice playing that a forward seek before it played to its end. The forward
   seek counted the voice done in the frame it seeked from, so seeking back to that frame left the
   voice out: scrub back, forward past a hop, and back again, and the hop was gone.

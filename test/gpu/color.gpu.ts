@@ -64,11 +64,7 @@ async function agreeArrays(
   axes: number,
 ): Promise<void> {
   const make = (engine: typeof mixer) => {
-    // The CPU side runs without lanes: the general path is the reference lanes must match.
-    const m = mix<C, P>(
-      kit<P>({ c: channel() }),
-      engine === mixer ? { engine, lanes: false } : { engine },
-    );
+    const m = mix<C, P>(kit<P>({ c: channel() }), { engine });
     m.sync(0);
     for (const q of cues)
       m.cue({
