@@ -18,7 +18,9 @@ export const lean: Engine = {
 };
 
 /**
- * Makes a mix over a kit, on the engine the options name or the lean one.
+ * Makes a mix, the object that plays animations. The kit says which values each subject has and
+ * how they combine; cue voices on the mix, then each frame `sync` it to the time and `probe` each
+ * subject for its pose. Imported from here, it runs on `lean` unless the options name an engine.
  *
  * @category mix
  */

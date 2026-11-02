@@ -20,7 +20,7 @@ const marked = <I, H>(
 };
 
 /**
- * The loudest of several signals.
+ * The largest of several signals, for each subject.
  *
  * @category signal
  */
@@ -42,9 +42,10 @@ export function shareOf(k: number, i: number, stops: number): number {
 }
 
 /**
- * Member `i` of `n`'s share of `by`, as `mix.blend` weighs it. It is the hat of `by`'s read at the
- * member's stop, the stops spaced evenly from 0 to 1. Weights a voice outside a blend as one of its
- * members, such as one member played alone.
+ * The weight `mix.blend` gives member `i` of `n` when `by` reads a given value. The members sit at
+ * evenly spaced stops from 0 to 1; a member weighs 1 when `by` is at its stop, falling to 0 at the
+ * stops either side. With two members, `share(by, 0, 2)` is `1 - by` and `share(by, 1, 2)` is `by`.
+ * Use it to weight voices cued on their own as if they were members of one blend.
  *
  * @category signal
  */
@@ -103,8 +104,8 @@ export interface Level<I, H = unknown> extends Signal<I, H> {
 }
 
 /**
- * A signal the host writes. It is `input` over one number, with {@link Level.set | `set`} reporting each change.
- * klieg's `level`.
+ * A signal holding one number your code sets, such as a slider's value or a toggle as 0 or 1. Call
+ * {@link Level.set | `set`} to change it; every voice it weights follows.
  *
  * @category signal
  */
@@ -156,7 +157,7 @@ export interface SlewOptions {
 }
 
 /**
- * Follows its input at a rate limit, the package's linear decay primitive. No faster than {@link SlewOptions.riseMs | `riseMs`}
+ * A signal that follows another at a limited speed, in straight lines. No faster than {@link SlewOptions.riseMs | `riseMs`}
  * per unit climbing or {@link SlewOptions.fallMs | `fallMs`} draining. The mix keeps its state per voice and subject, so two
  * voices handed the same slew each follow on their own. A subject starts on its input, or at {@link SlewOptions.from | `from`}
  * unless {@link Setting.dt | `dt`} is infinite.
@@ -245,9 +246,9 @@ interface Gated {
 }
 
 /**
- * Passes or drops its input across a band, not an edge. The other half of the pair. It drops at
- * {@link Band.off | `off`}, passes at `on`, and between the two it holds whatever it last did, so an input resting on
- * a threshold cannot chatter.
+ * A signal that is 1 while its input is high and 0 while it is low, with a gap between the two
+ * switching points so an input hovering near one doesn't flicker. It drops to 0 at
+ * {@link Band.off | `off`}, rises to 1 at `on`, and between the two holds whatever it was.
  *
  * @category signal
  */

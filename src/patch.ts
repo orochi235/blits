@@ -24,9 +24,9 @@ export interface PatchOptions<I, O, S, H = unknown> {
 }
 
 /**
- * A patch whose function computes its output from phase, subject and setting each frame.
- *
- * The procedural form, for flicker, roving, a hash walk, a starter strike.
+ * A patch from a function of your own, called each frame for each subject with the phase, the
+ * subject, and the setting (the frame's time, the voice's state, and the rest). For effects
+ * keyframes cannot describe: flicker, noise, anything computed.
  *
  * @category patch
  */
@@ -488,9 +488,8 @@ export function evalKeys<O>(
 }
 
 /**
- * A patch that interpolates between keyframes over its duration.
- *
- * The declarative form, as klieg's transition sugar and wod's keyframes use.
+ * A patch made of keyframes: values at points through its duration, with the frames between
+ * worked out from the stops either side, as in CSS `@keyframes`.
  *
  * @category patch
  */

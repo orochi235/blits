@@ -2,8 +2,8 @@ import type { WaveOptions } from '../wave.js';
 import type { Kit } from './channel.js';
 
 /**
- * A curve on 0..1, as data where it can be. CSS's names, a `cubic-bezier`, or `steps`, which a
- * WAAPI or GPU engine can read. The function form runs on the CPU engine only.
+ * How a change speeds up and slows down: a curve from 0 to 1. One of CSS's names, a cubic Bézier
+ * as in CSS's `cubic-bezier()`, `steps`, or a function of your own.
  *
  * @category patch
  */
@@ -150,7 +150,10 @@ export interface TweenSpec {
 }
 
 /**
- * A pure function of phase and a subject that returns a delta. Optionally stateful.
+ * An effect: given how far through it is (its phase, 0 to 1) and a subject, it returns that
+ * subject's change to some of the kit's channels, its delta. A patch only describes the effect;
+ * cueing it on a mix makes a voice that plays it. `patch`, `keys`, `spring`, `glide`, `tween`,
+ * and `wave` make one. It may keep state per subject, such as a velocity.
  *
  * @category patch
  */
@@ -221,9 +224,10 @@ export interface Patch<I, O, S = void, H = unknown> {
 }
 
 /**
- * A 0..1 scalar resolved per subject per frame from something outside the clock. `input` is set
- * when it reads something the clock does not drive, such as a value the host writes; a signal
- * built on one inherits it.
+ * A number from 0 to 1 worked out for each subject each frame, most often to use as a voice's
+ * weight: from the pointer's distance, a slider, a game's state. `input` is set when it reads
+ * something the mix's clock does not drive, such as a value your code writes; a signal built on
+ * one inherits it.
  *
  * @category signal
  */

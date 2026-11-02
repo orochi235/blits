@@ -722,7 +722,10 @@ export function made<I, O, H>(
 }
 
 /**
- * The engine that ships, running every form on the CPU. It probes per subject on demand.
+ * The engine every mix runs on unless its options name another. It works out poses in JavaScript,
+ * and only when asked: a subject's pose is computed when the host calls `probe` or `pull` for it,
+ * not ahead of time for every subject. It plays every kind of patch: `patch`, `keys`, and the
+ * motions `spring`, `glide`, and `tween`.
  *
  * @category engine
  */

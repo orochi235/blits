@@ -82,9 +82,8 @@ function planOf<O>(opts: WaveOptions<O>): Plan {
 }
 
 /**
- * A periodic swing on each channel {@link WaveOptions.depth | `depth`} names, around its rest. An LFO for a bob, a sway or a
- * pulse. An `fn` patch that keeps its options on `patch.wave`, for an engine reading the wave
- * rather than calling it.
+ * A patch that swings each channel {@link WaveOptions.depth | `depth`} names back and forth around its rest, `cycles` times per
+ * `duration` (default once): a bob, a sway or a pulse. Loop the voice to keep it going.
  *
  * @category patch
  */

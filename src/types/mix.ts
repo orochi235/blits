@@ -132,7 +132,8 @@ export type Columns<O> = {
 };
 
 /**
- * The live voices over one kit, folded into one pose per subject per frame.
+ * The voices playing over one kit. Each frame, after `sync`, `probe` combines whatever the voices
+ * contribute to a subject into that subject's pose, by the arithmetic each channel in the kit sets.
  *
  * @category mix
  */
@@ -470,7 +471,9 @@ export interface AnnounceOptions {
 }
 
 /**
- * The implementation behind a mix. It says which patch forms it runs, and how it makes one.
+ * The code that does a mix's work: playing its voices and working out each subject's pose. `mixer`
+ * is the one every mix uses by default. An engine names the kinds of patch it can play in `runs`,
+ * and makes mixes with `create`.
  *
  * @category engine
  */

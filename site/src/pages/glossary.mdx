@@ -175,7 +175,7 @@ In depth: [Patch](../patch/). Reference: [`Patch`](../patch/#api-Patch).
 
 ## easing
 
-An easing is a curve that reshapes progress from 0 to 1, as in CSS. blits takes CSS's names, such as `'ease-in-out'`, a `{ bezier: [x1, y1, x2, y2] }`, a `{ steps: n }`, or a plain function. Prefer the data forms: an [engine](#engine) could hand them to the browser or a GPU, but a function can only run on the CPU.
+An easing is a curve that reshapes progress from 0 to 1, as in CSS. blits takes CSS's names, such as `'ease-in-out'`, a `{ bezier: [x1, y1, x2, y2] }` like CSS's `cubic-bezier()`, a `{ steps: n }`, or a plain function of your own.
 
 ```ts
 const land = keys<Dot, DotPose>(
@@ -573,7 +573,7 @@ In depth: [Score](../score/). Reference: [`VoiceSpec`](../voice/#api-VoiceSpec),
 
 ## `seek`
 
-`handle.seek(elapsed)` moves one voice's clock to a given time, forward or back, and nothing else in the mix moves. [Phase](#phase) is worked out again from the new time. Any state the patch keeps is left as it was, not run forward to catch up.
+`handle.seek(elapsed)` moves one voice's clock to a given time, forward or back, and nothing else in the mix moves. [Phase](#phase) is worked out again from the new time. A patch that keeps state, such as a spring's velocity, has it rebuilt from the voice's start up to the new time; pass `{ state: 'keep' }` to leave it as it was instead.
 
 ```ts
 const h = dots.cue({ patch: bob, loop: true });

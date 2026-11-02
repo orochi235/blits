@@ -1,5 +1,7 @@
 /**
- * One field of a delta, with its own arithmetic.
+ * One value a subject has, such as `x`, `scale`, or `color`, and the arithmetic for it: how two
+ * voices' contributions to it combine, where it rests when nothing plays, and how a weight below 1
+ * fades a contribution. `sum`, `mul`, `color`, and the rest make one.
  *
  * @category channel
  */
@@ -42,7 +44,8 @@ export interface Channel<V> {
 }
 
 /**
- * The channel set for one kind of delta.
+ * Every channel a mix's subjects have, by name: the shape of a pose, with each value's arithmetic.
+ * Make one with `kit`.
  *
  * @category channel
  */

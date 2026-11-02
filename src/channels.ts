@@ -131,7 +131,7 @@ const kindOf = (name: string, bounds?: readonly [number, number]) =>
  * A number whose contributions add, resting at 0.
  *
  * A weight scales a contribution toward 0, so two voices each moving `x` by 10 at half weight move it
- * 10 in all. For position axes, rotation, crawl, yaw, pitch, offset.
+ * 10 in all. For positions, offsets, and anything else where two effects should add up.
  *
  * @category channel
  */
@@ -152,7 +152,7 @@ export function sum(opts?: NumberOptions): Channel<number> {
  * A number whose contributions multiply, resting at 1.
  *
  * A weight fades a contribution toward 1 rather than 0, so 0.5 at half weight multiplies by 0.75, and
- * at weight 0 it leaves the value alone. For gain, scale, opacity, hold.
+ * at weight 0 it leaves the value alone. For scale, opacity, volume, and other factors.
  *
  * @category channel
  */
@@ -173,7 +173,8 @@ export function mul(opts?: NumberOptions): Channel<number> {
  * A number where the largest contribution wins, resting at 0.
  *
  * A weight scales a contribution toward 0 before the comparison, so a fading voice gives way once
- * another's value passes its scaled one. For dark, aperture.
+ * another's value passes its scaled one. For a highlight or glow that several effects may ask for,
+where the strongest should show and two should not add.
  *
  * @category channel
  */
@@ -201,9 +202,10 @@ export interface LastOptions<V> {
 }
 
 /**
- * A channel with no rest, where the last contribution to pass wins. A weight can only gate it. The
- * default `lerp` steps at the midpoint, which is all a value with no arithmetic can promise; a
- * consumer with a real interpolation passes its own, as `hex` does.
+ * A channel for a value with no arithmetic, such as a string or a choice: of the voices writing
+ * it, the last cued wins. With no rest to fade toward, a weight can only switch a voice's value on
+ * or off, at a point the mix's options set. Between two values it steps at the halfway point; pass
+ * `lerp` where the values can be blended.
  *
  * @category channel
  */
@@ -248,7 +250,8 @@ export type NumberTuple<N extends number, T extends number[] = []> = T['length']
 export type Vec<N extends number> = number extends N ? number[] : NumberTuple<N>;
 
 /**
- * One channel's arithmetic applied down an axis list. For a Vec3 position, or premultiplied light.
+ * A channel of `n` numbers, each combined by the arithmetic of `of`: `vec(3, sum())` is a 3D
+ * position whose offsets add axis by axis.
  *
  * @category channel
  */
@@ -295,7 +298,9 @@ export function vec<N extends number>(n: N, of: Channel<number>): Channel<Vec<N>
 }
 
 /**
- * A kit is plain data; this only fixes the type.
+ * Makes a kit: names each value a subject has and gives each its channel, as
+ * `kit<Pose>({ x: sum(), scale: mul() })`. The kit is the object passed in, unchanged; the call
+ * only checks it against the pose type `O`.
  *
  * @category channel
  */
