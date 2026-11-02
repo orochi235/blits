@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kernel } from '../src/gpu/kernel.js';
+import { kernel, prefixed } from '../src/gpu/kernel.js';
 import type { Shader } from '../src/gpu/shader-patch.js';
 
 const helper = 'fn twice(x: f32) -> f32 { return 2.0 * x; }';
@@ -48,5 +48,11 @@ describe('kernel', () => {
   });
   it('reads parameters from the values buffer at the voice offset', () => {
     expect(k.code).toContain('let params = Params_1(values[base + 0u]);');
+  });
+  it('prefixes the names an author wrote, so a reserved word such as cast is fine', () => {
+    expect(prefixed('out.cast = subject.loop * params.var; let out2 = 1.0;')).toBe(
+      'out.o_cast = subject.s_loop * params.p_var; let out2 = 1.0;',
+    );
+    expect(k.code).toContain('struct Subject { s_w: f32, s_x: f32, }');
   });
 });

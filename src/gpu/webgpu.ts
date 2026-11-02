@@ -60,8 +60,12 @@ export interface GpuDevice {
   readonly lost: Promise<unknown>;
   createBuffer(desc: { size: number; usage: number; label?: string }): GpuBuffer;
   createShaderModule(desc: { code: string; label?: string }): GpuShaderModule;
+  createBindGroupLayout(desc: {
+    entries: readonly { binding: number; visibility: number; buffer: { type: string } }[];
+  }): GpuBindGroupLayout;
+  createPipelineLayout(desc: { bindGroupLayouts: readonly GpuBindGroupLayout[] }): unknown;
   createComputePipelineAsync(desc: {
-    layout: 'auto';
+    layout: unknown;
     compute: { module: GpuShaderModule; entryPoint: string };
     label?: string;
   }): Promise<GpuComputePipeline>;

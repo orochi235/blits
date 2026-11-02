@@ -1,16 +1,20 @@
 import {
   color,
   divide,
+  type GpuDevice,
+  gpu,
+  gpuOf,
   type Handle,
   kit,
   mix,
   multiply,
   oklab,
-  patch,
+  shaderPatch,
   toHex,
   transport,
-} from '@msb235/blits';
+} from '@msb235/blits/gpu';
 import { createHistory } from '@weasel-js/history';
+import { gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
 import { loop } from '../loop';
 
 interface Cell {
@@ -59,10 +63,21 @@ function light(phase: number): number[] {
   const u = (1 - Math.cos(2 * Math.PI * phase)) / 2;
   return WARM.map((w, i) => w + ((COOL[i] as number) - w) * u);
 }
-const cast = patch<Cell, Balance>(PERIOD, (phase) => ({ cast: light(phase) }), {
+/** The same drift in WGSL, for the GPU. */
+const LIGHT_WGSL = `fn light(phase: f32) -> array<f32, 4> {
+  let u = (1.0 - cos(6.28318530718 * phase)) / 2.0;
+  return array<f32, 4>(${WARM.map((w, i) => `mix(${w}, ${COOL[i]}, u)`).join(', ')});
+}`;
+const cast = shaderPatch<Cell, Balance>(PERIOD, {
+  helpers: LIGHT_WGSL,
+  wgsl: 'out.cast = light(phase);',
+  at: (phase) => ({ cast: light(phase) }),
   writes: ['cast'],
 });
-const fix = patch<Cell, Balance>(PERIOD, (phase) => ({ fix: light(phase) }), {
+const fix = shaderPatch<Cell, Balance>(PERIOD, {
+  helpers: LIGHT_WGSL,
+  wgsl: 'out.fix = light(phase);',
+  at: (phase) => ({ fix: light(phase) }),
   writes: ['fix'],
 });
 
@@ -93,8 +108,7 @@ export default function run(root: HTMLElement): () => void {
     const read = document.createElement('p');
     read.className = 'rig-read';
     fig.append(el, caption, read);
-    const ctx = el.getContext('2d') as CanvasRenderingContext2D;
-    return { fig, ctx, image: ctx.createImageData(COLS, ROWS), read };
+    return { fig, el, read };
   };
   const lightOnly = view('under the light');
   const corrected = view('corrected');
@@ -126,69 +140,128 @@ export default function run(root: HTMLElement): () => void {
   wrap.append(pair, castWeight.row, fixWeight.row, controls);
   root.append(wrap);
 
-  // Both voices loop on one period, cued together, so the correction divides by the very color
-  // the cast multiplies by, whichever way the light has drifted. Their weights are the sliders.
-  const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
-  const m = mix<Cell, Balance>(BALANCE, {
-    name: 'white-balance',
-    transport: show,
+  let stop = () => {};
+  let gone = false;
+  void gpuDevice().then((device) => {
+    if (!gone) stop = start(device);
   });
-  const lit: Handle = m.cue({
-    patch: cast,
-    subjects: CELLS,
-    loop: true,
-    name: 'cast',
-  });
-  const fixed: Handle = m.cue({
-    patch: fix,
-    subjects: CELLS,
-    loop: true,
-    name: 'correction',
-  });
-  const weigh = () => {
-    lit.weight = Number(castWeight.input.value);
-    fixed.weight = Number(fixWeight.input.value);
-  };
-  castWeight.input.addEventListener('input', weigh);
-  fixWeight.input.addEventListener('input', weigh);
-  weigh();
-  const showRate = () => {
-    play.textContent = show.rate === 0 ? 'Play' : 'Pause';
-  };
-  play.addEventListener('click', () => {
-    show.rate = show.rate === 0 ? 1 : 0;
-    showRate();
-  });
-  showRate();
 
-  // The gray card's middle, for the readouts.
-  const card = CELLS.reduce((a, c) =>
-    c.base === GRAY && Math.hypot(c.x - 0.18, c.y - 0.58) < Math.hypot(a.x - 0.18, a.y - 0.58)
-      ? c
-      : a,
-  );
-  const pose: Balance = {};
-  let drawn = -1;
-  const stop = loop(show, (now) => {
-    show.sync(now);
-    if (show.seq === drawn) return;
-    drawn = show.seq;
-    CELLS.forEach((c, i) => {
-      m.probe(c, pose);
-      const under = toHex(pose.cast ?? NONE, c.base);
-      put(lightOnly.image, i, under);
-      put(corrected.image, i, toHex(pose.fix ?? NONE, under));
+  function start(device: GpuDevice | null): () => void {
+    // Both voices loop on one period, cued together, so the correction divides by the very color
+    // the cast multiplies by, whichever way the light has drifted. Their weights are the sliders.
+    const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
+    const m = mix<Cell, Balance>(BALANCE, {
+      name: 'white-balance',
+      transport: show,
+      ...(device === null ? {} : { engine: gpu({ device }) }),
     });
-    lightOnly.ctx.putImageData(lightOnly.image, 0, 0);
-    corrected.ctx.putImageData(corrected.image, 0, 0);
-    m.probe(card, pose);
-    const under = toHex(pose.cast ?? NONE, card.base);
-    lightOnly.read.textContent = reading(under);
-    corrected.read.textContent = reading(toHex(pose.fix ?? NONE, under));
-  });
+    const lit: Handle = m.cue({
+      patch: cast,
+      subjects: CELLS,
+      loop: true,
+      name: 'cast',
+    });
+    const fixed: Handle = m.cue({
+      patch: fix,
+      subjects: CELLS,
+      loop: true,
+      name: 'correction',
+    });
+    const weigh = () => {
+      lit.weight = Number(castWeight.input.value);
+      fixed.weight = Number(fixWeight.input.value);
+    };
+    castWeight.input.addEventListener('input', weigh);
+    fixWeight.input.addEventListener('input', weigh);
+    weigh();
+    const showRate = () => {
+      play.textContent = show.rate === 0 ? 'Play' : 'Pause';
+    };
+    play.addEventListener('click', () => {
+      show.rate = show.rate === 0 ? 1 : 0;
+      showRate();
+    });
+    showRate();
+
+    // The gray card's middle, for the readouts.
+    const card = CELLS.reduce((a, c) =>
+      c.base === GRAY && Math.hypot(c.x - 0.18, c.y - 0.58) < Math.hypot(a.x - 0.18, a.y - 0.58)
+        ? c
+        : a,
+    );
+    const pose: Balance = {};
+    const readouts = () => {
+      m.probe(card, pose);
+      const under = toHex(pose.cast ?? NONE, card.base);
+      lightOnly.read.textContent = reading(under);
+      corrected.read.textContent = reading(toHex(pose.fix ?? NONE, under));
+    };
+    let draw: () => void;
+    let free = () => {};
+    if (device !== null) {
+      // The GPU folds both channels for every cell, and lays them over the scene for each view.
+      gpuOf(m).subjects(CELLS, () => ({}));
+      const grid = (el: HTMLCanvasElement, body: string) =>
+        gpuGrid({
+          canvas: el,
+          cols: COLS,
+          rows: ROWS,
+          device,
+          side: gpuOf(m),
+          channels: [
+            { name: 'cast', axes: 4 },
+            { name: 'fix', axes: 18 },
+          ],
+          bases: CELLS.map((c) => c.base),
+          body,
+          cpu: probed(m, CELLS),
+        });
+      const lit = grid(lightOnly.el, 'shown = blits_over_free(c4_cast(i), under);');
+      const both = grid(
+        corrected.el,
+        `shown = blits_over_free(c4_cast(i), under); ${layStack('fix', 'shown')}`,
+      );
+      draw = () => {
+        lit.draw();
+        both.draw();
+      };
+      free = () => {
+        lit.destroy();
+        both.destroy();
+      };
+    } else {
+      const ctxOf = (el: HTMLCanvasElement) => el.getContext('2d') as CanvasRenderingContext2D;
+      const a = { ctx: ctxOf(lightOnly.el), image: new ImageData(COLS, ROWS) };
+      const b = { ctx: ctxOf(corrected.el), image: new ImageData(COLS, ROWS) };
+      draw = () => {
+        CELLS.forEach((c, i) => {
+          m.probe(c, pose);
+          const under = toHex(pose.cast ?? NONE, c.base);
+          put(a.image, i, under);
+          put(b.image, i, toHex(pose.fix ?? NONE, under));
+        });
+        a.ctx.putImageData(a.image, 0, 0);
+        b.ctx.putImageData(b.image, 0, 0);
+      };
+    }
+    let drawn = -1;
+    const stop = loop(show, (now) => {
+      show.sync(now);
+      if (show.seq === drawn) return;
+      drawn = show.seq;
+      draw();
+      readouts();
+    });
+
+    return () => {
+      stop();
+      free();
+      m.close();
+    };
+  }
 
   return () => {
+    gone = true;
     stop();
-    m.close();
   };
 }

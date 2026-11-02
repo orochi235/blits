@@ -26,6 +26,17 @@ export interface Kernel {
 /** A number as a WGSL f32 literal. */
 const lit = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
 
+/**
+ * A shader body with the names its author wrote made safe: \`out.cast\` becomes \`out.o_cast\`, and
+ * \`subject.\` and \`params.\` fields likewise, since WGSL reserves many plain words.
+ */
+export function prefixed(wgsl: string): string {
+  return wgsl
+    .replace(/\bout\.([A-Za-z_][A-Za-z0-9_]*)/g, 'out.o_$1')
+    .replace(/\bsubject\.([A-Za-z_][A-Za-z0-9_]*)/g, 'subject.s_$1')
+    .replace(/\bparams\.([A-Za-z_][A-Za-z0-9_]*)/g, 'params.p_$1');
+}
+
 const ty = (axes: number) => (axes === 1 ? 'f32' : `array<f32, ${axes}>`);
 /** How many numbers a voice's value for a channel takes. */
 const inputOf = (c: ChannelCode | undefined) => c?.input ?? c?.axes ?? 1;
@@ -51,7 +62,7 @@ export function kernel(
   const lines: string[] = [];
   const add = (...l: string[]) => lines.push(...l);
   add(
-    `struct Subject { ${fields.length === 0 ? '__pad: f32,' : fields.map((f) => `${f}: f32,`).join(' ')} }`,
+    `struct Subject { ${fields.length === 0 ? 'pad_: f32,' : fields.map((f) => `s_${f}: f32,`).join(' ')} }`,
   );
   add('@group(0) @binding(0) var<storage, read> subjects: array<Subject>;');
   add('@group(0) @binding(1) var<storage, read> table: array<f32>;');
@@ -73,15 +84,15 @@ export function kernel(
   });
   shaders.forEach((s, i) => {
     const writes = s.writes.map((n) => ({ n, axes: inputOf(channels.get(n)) }));
-    add(`struct Out_${i} { ${writes.map((w) => `${w.n}: ${ty(w.axes)},`).join(' ')} }`);
+    add(`struct Out_${i} { ${writes.map((w) => `o_${w.n}: ${ty(w.axes)},`).join(' ')} }`);
     if (s.params.length > 0)
-      add(`struct Params_${i} { ${s.params.map((p) => `${p}: f32,`).join(' ')} }`);
+      add(`struct Params_${i} { ${s.params.map((p) => `p_${p}: f32,`).join(' ')} }`);
     add(`fn patch_${i}(phase: f32, pass_index: f32, subject: Subject, base: u32) -> Out_${i} {`);
     if (s.params.length > 0)
       add(
         `  let params = Params_${i}(${s.params.map((_, k) => `values[base + ${k}u]`).join(', ')});`,
       );
-    add(`  var out: Out_${i};`, `  ${s.wgsl}`, '  return out;', '}');
+    add(`  var out: Out_${i};`, `  ${prefixed(s.wgsl)}`, '  return out;', '}');
   });
   const index = new Map(outputs.map((o, c) => [o.name, c]));
   const arms = (body: (name: string, c: number, axes: number) => string) =>
@@ -121,7 +132,7 @@ export function kernel(
   add(
     arms(
       (n, c, axes) =>
-        `{ let v = ${arr(axes, `d.${n}`)}; let t = rt_${c}[r]; let total = t + w; if (t == 0.0) { rv_${c}[r] = v; } else { for (var a = 0u; a < ${axes}u; a++) { rv_${c}[r][a] = mix(rv_${c}[r][a], v[a], w / total); } } rt_${c}[r] = total; }`,
+        `{ let v = ${arr(axes, `d.o_${n}`)}; let t = rt_${c}[r]; let total = t + w; if (t == 0.0) { rv_${c}[r] = v; } else { for (var a = 0u; a < ${axes}u; a++) { rv_${c}[r][a] = mix(rv_${c}[r][a], v[a], w / total); } } rt_${c}[r] = total; }`,
     ),
   );
   add('      default: {}', '    }', '  }');
@@ -139,7 +150,7 @@ export function kernel(
     '    if (!(w > 0.0)) { continue; }',
     '    switch u32(table[o]) {',
   );
-  add(arms((n, c, axes) => `acc_${c} = fold_${c}(acc_${c}, ${arr(axes, `d.${n}`)}, w);`));
+  add(arms((n, c, axes) => `acc_${c} = fold_${c}(acc_${c}, ${arr(axes, `d.o_${n}`)}, w);`));
   add('      default: {}', '    }', '  }');
   outputs.forEach((o, c) => {
     const b = (channels.get(o.name) as ChannelCode).bounds;

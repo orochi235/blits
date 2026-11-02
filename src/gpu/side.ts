@@ -6,6 +6,7 @@ import { gpuDescriptor, type Shader } from './shader-patch.js';
 import { voiceTable } from './table.js';
 import {
   type GpuBindGroup,
+  type GpuBindGroupLayout,
   type GpuBuffer,
   type GpuComputePipeline,
   type GpuDevice,
@@ -152,7 +153,7 @@ export class GpuSide<I> {
       this.group = {
         of: b.pipeline,
         group: dev.createBindGroup({
-          layout: b.pipeline.getBindGroupLayout(0),
+          layout: this.layout(),
           entries: [buf.subjects, t, v, f, out].map((buffer, binding) => ({
             binding,
             resource: { buffer: buffer as GpuBuffer },
@@ -211,13 +212,31 @@ export class GpuSide<I> {
     this.uploaded = { list: this.list, fields: k.fields };
   }
 
+  private bound: GpuBindGroupLayout | null = null;
+
+  /** The kernel's bindings, given outright: 'auto' would drop the values buffer a kernel with no parameters never reads. */
+  private layout(): GpuBindGroupLayout {
+    const COMPUTE = 4;
+    const type = [
+      'read-only-storage',
+      'read-only-storage',
+      'read-only-storage',
+      'uniform',
+      'storage',
+    ];
+    this.bound ??= this.device.createBindGroupLayout({
+      entries: type.map((t, binding) => ({ binding, visibility: COMPUTE, buffer: { type: t } })),
+    });
+    return this.bound;
+  }
+
   private build(key: string, channels: Map<string, ChannelCode>, n: number): Built {
     const k = kernel(this.known.slice(), channels, n);
     const b: Built = { kernel: k, pipeline: null, failed: false };
     const module = this.device.createShaderModule({ code: k.code, label: `blits gpu ${key}` });
     const compiled = this.device
       .createComputePipelineAsync({
-        layout: 'auto',
+        layout: this.device.createPipelineLayout({ bindGroupLayouts: [this.layout()] }),
         compute: { module, entryPoint: 'main' },
         label: key,
       })

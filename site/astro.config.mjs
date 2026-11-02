@@ -25,6 +25,7 @@ export default defineConfig({
       alias: [
         { find: /^@msb235\/blits$/, replacement: src('index.ts') },
         { find: /^@msb235\/blits\/lean$/, replacement: src('lean.ts') },
+        { find: /^@msb235\/blits\/gpu$/, replacement: src('gpu.ts') },
         { find: /^@msb235\/blits\/testing$/, replacement: src('testing.ts') },
         {
           find: /^@msb235\/blits-panel$/,
