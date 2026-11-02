@@ -1,0 +1,7 @@
+.live .three-scene {
+  height: 360px;
+}
+
+.live .three-scene.three-over {
+  cursor: pointer;
+}

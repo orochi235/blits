@@ -4,6 +4,8 @@ title: Driving three.js
 description: Meshes or instance indices as subjects, vector, rotation, and color channels, and pull into typed arrays for an instanced mesh.
 ---
 import Listing from '../../components/Listing.astro';
+import Live from '../../components/Live.tsx';
+import '../../styles/guide-three.css';
 
 # Driving three.js
 
@@ -26,6 +28,10 @@ A 3D pose is mostly arrays, and blits has a channel for each kind:
 ## Meshes as subjects
 
 Each subject here is a part: a mesh, where it rests, and its place in the row. Two voices play on every part, a bob staggered along the row and a spin, and a third makes one part glow while the pointer is over it.
+
+The scene below runs both of this page's listings on one transport: the row of parts in front, and an instanced field rippling behind them. Point at a part to make it glow; with `?panel` on the URL, the debug panel's **◎ pick** finds parts and single instances in the scene.
+
+<Live client:only="react" of="guides/three.ts" />
 
 <Listing of="snippets/guides/three/meshes.ts" />
 
