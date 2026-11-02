@@ -37,7 +37,8 @@ interface Built {
 
 /** Twin check tolerances: what f32 math and the order of its operations leave apart from f64. */
 const RELATIVE = 1e-4;
-const ABSOLUTE = 1e-5;
+/** Absolute tolerance: a color's trip through linear sRGB and back leaves about 4e-4 in f32. */
+const ABSOLUTE = 1e-3;
 const SAMPLES = 16;
 
 /**

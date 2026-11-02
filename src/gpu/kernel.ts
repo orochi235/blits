@@ -27,6 +27,8 @@ export interface Kernel {
 const lit = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
 
 const ty = (axes: number) => (axes === 1 ? 'f32' : `array<f32, ${axes}>`);
+/** How many numbers a voice's value for a channel takes. */
+const inputOf = (c: ChannelCode | undefined) => c?.input ?? c?.axes ?? 1;
 const arr = (axes: number, e: string) => (axes === 1 ? `array<f32, 1>(${e})` : e);
 
 /**
@@ -56,11 +58,13 @@ export function kernel(
   add('@group(0) @binding(2) var<storage, read> values: array<f32>;');
   add('@group(0) @binding(3) var<uniform> frame: vec4u;');
   add('@group(0) @binding(4) var<storage, read_write> outv: array<f32>;');
-  for (const h of new Set(shaders.map((s) => s.helpers).filter((h) => h !== ''))) add(h);
+  const codes = [...channels.values()];
+  const helpers = [...codes.map((c) => c.helpers ?? ''), ...shaders.map((s) => s.helpers)];
+  for (const h of new Set(helpers.filter((h) => h !== ''))) add(h);
   outputs.forEach((o, c) => {
     const code = channels.get(o.name) as ChannelCode;
     add(
-      `fn fold_${c}(into: array<f32, ${o.axes}>, v: array<f32, ${o.axes}>, w: f32) -> array<f32, ${o.axes}> {`,
+      `fn fold_${c}(into: array<f32, ${o.axes}>, v: array<f32, ${inputOf(code)}>, w: f32) -> array<f32, ${o.axes}> {`,
       '  var acc = into;',
       `  ${code.fold}`,
       '  return acc;',
@@ -68,7 +72,7 @@ export function kernel(
     );
   });
   shaders.forEach((s, i) => {
-    const writes = s.writes.map((n) => ({ n, axes: channels.get(n)?.axes ?? 1 }));
+    const writes = s.writes.map((n) => ({ n, axes: inputOf(channels.get(n)) }));
     add(`struct Out_${i} { ${writes.map((w) => `${w.n}: ${ty(w.axes)},`).join(' ')} }`);
     if (s.params.length > 0)
       add(`struct Params_${i} { ${s.params.map((p) => `${p}: f32,`).join(' ')} }`);
@@ -85,7 +89,7 @@ export function kernel(
       .map((s, i) => {
         const inner = s.writes
           .filter((n) => index.has(n))
-          .map((n) => body(n, index.get(n) as number, channels.get(n)?.axes ?? 1))
+          .map((n) => body(n, index.get(n) as number, inputOf(channels.get(n))))
           .join(' ');
         return `      case ${i}u: { let d = patch_${i}(phase, pass_index, subject, base); ${inner} }`;
       })
@@ -96,7 +100,7 @@ export function kernel(
     const rest = (channels.get(o.name) as ChannelCode).rest.map(lit);
     add(`  var acc_${c} = array<f32, ${o.axes}>(${rest.join(', ')});`);
     add(
-      `  var rv_${c}: array<array<f32, ${o.axes}>, ${MAX_ROLES}>;`,
+      `  var rv_${c}: array<array<f32, ${inputOf(channels.get(o.name))}>, ${MAX_ROLES}>;`,
       `  var rt_${c}: array<f32, ${MAX_ROLES}>;`,
     );
   });

@@ -10,8 +10,8 @@ export function test(name: string, fn: Test['fn']): void {
 }
 
 /** Throws where `got` is not within f32 tolerance of `want`. */
-export function close(got: number, want: number, what: string): void {
-  if (!(Math.abs(got - want) <= 1e-5 + 1e-4 * Math.abs(want)))
+export function close(got: number, want: number, what: string, absolute = 1e-5): void {
+  if (!(Math.abs(got - want) <= absolute + 1e-4 * Math.abs(want)))
     throw new Error(`${what}: GPU ${got}, CPU ${want}`);
 }
 

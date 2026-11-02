@@ -1,3 +1,4 @@
+import { blendRuleOf } from '../../blend-modes.js';
 import { numericOf } from '../../channels.js';
 import { extremeOf } from '../../extremes.js';
 import type { Channel } from '../../types.js';
@@ -11,6 +12,10 @@ export interface ChannelCode {
   readonly axes: number;
   readonly rest: readonly number[];
   readonly fold: string;
+  /** How many numbers a voice's value takes, where that differs from the folded value's `axes`. */
+  readonly input?: number;
+  /** WGSL declarations `fold` uses, included once in a kernel. */
+  readonly helpers?: string;
   /** The channel's bounds, which its folded value is clamped to, as the CPU's `clamp` does. */
   readonly bounds?: readonly [number, number];
 }
@@ -18,11 +23,21 @@ export interface ChannelCode {
 /** A number as a WGSL f32 literal. */
 const f = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
 
-const NUMBER: Record<string, ChannelCode> = {
-  sum: { axes: 1, rest: [0], fold: 'acc[0] = acc[0] + v[0] * w;' },
-  mul: { axes: 1, rest: [1], fold: 'acc[0] = acc[0] * (1.0 + (v[0] - 1.0) * w);' },
-  max: { axes: 1, rest: [0], fold: 'acc[0] = max(acc[0], v[0] * w);' },
+/** Each stock op's fold of one axis `a`, its rest, for a channel of numbers or a `vec` of them. */
+const OPS: Record<string, { rest: number; fold: string }> = {
+  sum: { rest: 0, fold: 'acc[a] = acc[a] + v[a] * w;' },
+  mul: { rest: 1, fold: 'acc[a] = acc[a] * (1.0 + (v[a] - 1.0) * w);' },
+  max: { rest: 0, fold: 'acc[a] = max(acc[a], v[a] * w);' },
 };
+
+function stock(op: string, axes: number): ChannelCode {
+  const o = OPS[op] as { rest: number; fold: string };
+  return {
+    axes,
+    rest: Array.from({ length: axes }, () => o.rest),
+    fold: `for (var a = 0u; a < ${axes}u; a++) { ${o.fold} }`,
+  };
+}
 
 /** The WGSL for a channel's rule, or undefined where the GPU has none and it stays on the CPU. */
 export function codeFor(channel: Channel<unknown>): ChannelCode | undefined {
@@ -35,8 +50,12 @@ export function codeFor(channel: Channel<unknown>): ChannelCode | undefined {
 function ruleOf(channel: Channel<unknown>): ChannelCode | undefined {
   const n = numericOf(channel);
   const plain = typeof channel.rest === 'number';
-  if (plain && n !== undefined && n.axes === 1 && n.turn === undefined && n.op in NUMBER)
-    return NUMBER[n.op];
+  if (n !== undefined && n.turn === undefined && n.op in OPS) {
+    // A vec of numbers holds an array, color() among them; one axis of it is a number.
+    if (n.axes === 1 ? plain : Array.isArray(channel.rest)) return stock(n.op, n.axes);
+  }
+  const blend = blendRuleOf(channel);
+  if (blend !== undefined) return blended(blend);
   const x = plain ? extremeOf(channel) : undefined;
   if (x?.op === 'min')
     return {
@@ -54,4 +73,53 @@ function ruleOf(channel: Channel<unknown>): ChannelCode | undefined {
     };
   }
   return undefined;
+}
+
+/** OKLab to linear sRGB, unclipped: `linearOf` in `oklab.ts`. */
+export const LINEAR_WGSL = `fn blits_linear(L: f32, A: f32, B: f32) -> vec3f {
+  let l_ = L + 0.3963377774 * A + 0.2158037573 * B;
+  let m_ = L - 0.1055613458 * A - 0.0638541728 * B;
+  let s_ = L - 0.0894841775 * A - 1.291485548 * B;
+  let l = l_ * l_ * l_;
+  let m = m_ * m_ * m_;
+  let s = s_ * s_ * s_;
+  return vec3f(
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  );
+}`;
+
+/** A voice's OKLab contribution `v` as the clipped linear sRGB its layer shows. */
+const LAYER =
+  'let c = clamp(blits_linear(v[0] / cov, v[1] / cov, v[2] / cov), vec3f(0.0), vec3f(1.0));';
+
+/**
+ * A blend mode's fold, as `foldInto` in `blend-modes.ts` (the pose one layer, `[x, y, z, tag]`)
+ * or `layOn` in `stacked-modes.ts` (the pose `[tag, n, r, g, b, α, …]`).
+ */
+function blended(rule: NonNullable<ReturnType<typeof blendRuleOf>>): ChannelCode {
+  if (rule.kind === 'free') {
+    const x = rule.invert ? 'vec3f(1.0) - c' : 'c';
+    const op =
+      rule.op === 'screen'
+        ? 'acc[a] = acc[a] + x[a] - acc[a] * x[a];'
+        : rule.op === 'sum'
+          ? 'acc[a] = acc[a] + x[a];'
+          : 'acc[a] = max(acc[a], x[a]);';
+    return {
+      axes: 4,
+      rest: [0, 0, 0, 0],
+      helpers: LINEAR_WGSL,
+      fold: `let cov = v[3]; if (cov > 0.0 && w > 0.0) { ${LAYER} let x = w * min(cov, 1.0) * (${x}); for (var a = 0u; a < 3u; a++) { ${op} } } acc[3] = ${f(rule.tag)};`,
+    };
+  }
+  const axes = 2 + 4 * rule.layers;
+  return {
+    axes,
+    input: 4,
+    rest: [rule.tag, 0, ...Array.from({ length: 4 * rule.layers }, () => 0)],
+    helpers: LINEAR_WGSL,
+    fold: `let cov = v[3]; let n = u32(acc[1]); if (w > 0.0 && cov > 0.0 && n < ${rule.layers}u) { ${LAYER} let at = 2u + 4u * n; acc[1] = f32(n + 1u); acc[at] = c.x; acc[at + 1u] = c.y; acc[at + 2u] = c.z; acc[at + 3u] = w * min(cov, 1.0); }`,
+  };
 }

@@ -1,5 +1,7 @@
+import type { BlendRule } from './blend-modes.js';
 import { foldsInto, vouch } from './channels.js';
 import { fromLinear, labOf, linearByte, linearOf } from './oklab.js';
+import { shared } from './shared.js';
 import { BY_TAG, type OrderedMode, STACKED, type Stacked } from './stack-blends.js';
 import type { Channel } from './types.js';
 import { warnOnce } from './warn.js';
@@ -22,6 +24,8 @@ export interface StackOptions {
 }
 
 const LAYERS = 4;
+
+const blends = shared<object, BlendRule>('blend-rule@1');
 
 /** Each rule's layer count, where it was given one. */
 const capacities = new WeakMap<object, number>();
@@ -142,6 +146,7 @@ export function stacking(
   };
   vouch(channel, { op: 'own', axes: 2 + 4 * layers });
   foldsInto(channel);
+  blends.set(channel, { kind: 'stack', tag, layers });
   return channel;
 }
 

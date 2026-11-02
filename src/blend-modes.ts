@@ -1,5 +1,6 @@
 import { doubles, foldsInto, lerpNumber, max, mul, sum, vouch } from './channels.js';
 import { fromLinear, labOf, linearByte, linearOf } from './oklab.js';
+import { shared } from './shared.js';
 import {
   type OrderedMode,
   ordered,
@@ -200,7 +201,28 @@ export function blending(
   };
   vouch(channel, { op: 'own', axes: 4 });
   foldsInto(channel);
+  blends.set(channel, { kind: 'free', tag: m.tag, invert: m.invert, op: m.op });
   return channel;
+}
+
+/**
+ * How a blend-mode color channel folds, keyed by the channel itself, so another engine can trust
+ * it: a commuting mode's tag and arithmetic, or an ordered mode's tag and layer count.
+ */
+export type BlendRule =
+  | {
+      readonly kind: 'free';
+      readonly tag: number;
+      readonly invert: boolean;
+      readonly op: 'screen' | 'sum' | 'max';
+    }
+  | { readonly kind: 'stack'; readonly tag: number; readonly layers: number };
+
+const blends = shared<object, BlendRule>('blend-rule@1');
+
+/** The fold of a color channel `color(mode())` made; undefined for any other channel. */
+export function blendRuleOf(channel: Channel<unknown>): BlendRule | undefined {
+  return blends.get(channel);
 }
 
 /** The linear value of byte `shift` of `under`, laid under the pose's layer on that axis. */
