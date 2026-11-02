@@ -123,10 +123,15 @@ export class GpuSide<I> {
       if (e.channels.has(name))
         channels.set(name, codeFor(mix.channels[i] as never) as ChannelCode);
     });
+    const types = new Map<string, ChannelCode>();
+    mix.names.forEach((name, i) => {
+      const code = codeFor(mix.channels[i] as never);
+      if (code !== undefined) types.set(name, code);
+    });
     const key = `${this.known.length}|${[...channels.keys()].join(',')}|${n}`;
     let b = this.built.get(key);
     if (b === undefined) {
-      b = this.build(key, channels, n);
+      b = this.build(key, channels, n, types);
       this.built.set(key, b);
     }
     if (b.pipeline === null || b.failed) return;
@@ -230,8 +235,13 @@ export class GpuSide<I> {
     return this.bound;
   }
 
-  private build(key: string, channels: Map<string, ChannelCode>, n: number): Built {
-    const k = kernel(this.known.slice(), channels, n);
+  private build(
+    key: string,
+    channels: Map<string, ChannelCode>,
+    n: number,
+    types: Map<string, ChannelCode>,
+  ): Built {
+    const k = kernel(this.known.slice(), channels, n, types);
     const b: Built = { kernel: k, pipeline: null, failed: false };
     const module = this.device.createShaderModule({ code: k.code, label: `blits gpu ${key}` });
     const compiled = this.device

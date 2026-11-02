@@ -51,6 +51,8 @@ export function kernel(
   shaders: readonly Shader[],
   channels: ReadonlyMap<string, ChannelCode>,
   subjects: number,
+  /** Every channel a shader may write, folded this frame or not, so each output has its type. */
+  types: ReadonlyMap<string, ChannelCode> = channels,
 ): Kernel {
   const fields = [...new Set(shaders.flatMap((s) => s.fields))].sort();
   const outputs: Output[] = [];
@@ -83,7 +85,7 @@ export function kernel(
     );
   });
   shaders.forEach((s, i) => {
-    const writes = s.writes.map((n) => ({ n, axes: inputOf(channels.get(n)) }));
+    const writes = s.writes.map((n) => ({ n, axes: inputOf(types.get(n)) }));
     add(`struct Out_${i} { ${writes.map((w) => `o_${w.n}: ${ty(w.axes)},`).join(' ')} }`);
     if (s.params.length > 0)
       add(`struct Params_${i} { ${s.params.map((p) => `p_${p}: f32,`).join(' ')} }`);

@@ -2,17 +2,21 @@ import {
   color,
   colorDodge,
   colorMode,
+  type GpuDevice,
+  gpu,
+  gpuOf,
   type Handle,
   kit,
   mix,
   multiply,
   oklab,
   type Patch,
-  patch,
+  shaderPatch,
   toHex,
   transport,
-} from '@msb235/blits';
+} from '@msb235/blits/gpu';
 import { createHistory } from '@weasel-js/history';
+import { gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
 import { loop } from '../loop';
 
 interface Cell {
@@ -39,12 +43,25 @@ const ROWS = 72;
 const ASPECT = COLS / ROWS;
 const NONE = [0, 0, 0, 0];
 
-/** A layer of `rgb` over a cell, `cov` of it. */
-function layer(rgb: number, cov: number): number[] | undefined {
-  if (cov <= 0) return undefined;
-  const [L = 0, a = 0, b = 0] = oklab(rgb);
-  return [L * cov, a * cov, b * cov, cov];
+/** A color in OKLab, as a patch's parameters. */
+interface Lab extends Record<string, number> {
+  L: number;
+  A: number;
+  B: number;
 }
+const lab = (rgb: number): Lab => {
+  const [L = 0, A = 0, B = 0] = oklab(rgb);
+  return { L, A, B };
+};
+
+/** A layer of `c` over a cell, `cov` of it. */
+function layer(c: Lab, cov: number): number[] | undefined {
+  if (cov <= 0) return undefined;
+  return [c.L * cov, c.A * cov, c.B * cov, cov];
+}
+
+/** A number as a WGSL f32 literal. */
+const f32 = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
 
 /** The set: a back wall, a floor, three pillars, and curtains at the sides. */
 function set(x: number, y: number): number {
@@ -69,33 +86,70 @@ const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 const FLOOR = 0.84;
 
 /** A spot hung above `cx`: a beam widening down to a pool on the floor, squashed by the angle. */
-function spot(rgb: number, cx: number, c: Cell): Light {
-  const dx = Math.abs(c.x - cx) * ASPECT;
-  const down = Math.min(1, c.y / FLOOR);
+function spot(c: Lab, cx: number, cell: Cell): Light {
+  const dx = Math.abs(cell.x - cx) * ASPECT;
+  const down = Math.min(1, cell.y / FLOOR);
   const beam = 0.5 * (0.3 + 0.7 * down) * smooth(1 - dx / (0.06 + 0.26 * down));
-  const pool = smooth(1 - Math.hypot(dx, (c.y - FLOOR) * 3) / 0.4);
-  const spots = layer(rgb, Math.max(beam, pool));
+  const pool = smooth(1 - Math.hypot(dx, (cell.y - FLOOR) * 3) / 0.4);
+  const spots = layer(c, Math.max(beam, pool));
   return spots === undefined ? {} : { spots };
 }
+/** The same spot in WGSL, for the GPU. */
+const SPOT_WGSL = `fn board_smooth(t: f32) -> f32 {
+  let u = clamp(t, 0.0, 1.0);
+  return u * u * (3.0 - 2.0 * u);
+}
+fn board_spot(L: f32, A: f32, B: f32, cx: f32, x: f32, y: f32) -> array<f32, 4> {
+  let dx = abs(x - cx) * ${f32(ASPECT)};
+  let down = min(1.0, y / ${f32(FLOOR)});
+  let beam = 0.5 * (0.3 + 0.7 * down) * board_smooth(1.0 - dx / (0.06 + 0.26 * down));
+  let pool = board_smooth(1.0 - length(vec2f(dx, (y - ${f32(FLOOR)}) * 3.0)) / 0.4);
+  let cov = max(beam, pool);
+  if (cov <= 0.0) { return array<f32, 4>(0.0, 0.0, 0.0, 0.0); }
+  return array<f32, 4>(L * cov, A * cov, B * cov, cov);
+}`;
+const FIELDS = { x: 'f32', y: 'f32' } as const;
+const COLOR = { L: 'f32', A: 'f32', B: 'f32' } as const;
 
-const still = (rgb: number, cx: number) =>
-  patch<Cell, Light>(0, (_, c) => spot(rgb, cx, c), { writes: ['spots'] });
+/** A spot standing still above `cx`. */
+const still = shaderPatch<Cell, Light, Lab & { cx: number }>(0, {
+  helpers: SPOT_WGSL,
+  fields: FIELDS,
+  params: { ...COLOR, cx: 'f32' },
+  wgsl: 'out.spots = board_spot(params.L, params.A, params.B, params.cx, subject.x, subject.y);',
+  at: (_, c, __, p) => spot(p, p.cx, c),
+  writes: ['spots'],
+});
 
 /** A spot sweeping across the stage and back over `ms`, starting `lead` of the way in. */
-const sweep = (rgb: number, ms: number, lead: number) =>
-  patch<Cell, Light>(
-    ms,
-    (phase, c) => {
-      const t = (phase + lead) % 1;
-      return spot(rgb, 0.2 + 0.6 * ((1 - Math.cos(2 * Math.PI * t)) / 2), c);
+const sweep = (ms: number) =>
+  shaderPatch<Cell, Light, Lab & { lead: number }>(ms, {
+    helpers: SPOT_WGSL,
+    fields: FIELDS,
+    params: { ...COLOR, lead: 'f32' },
+    wgsl: `let t = fract(phase + params.lead);
+    let cx = 0.2 + 0.6 * ((1.0 - cos(6.28318530718 * t)) / 2.0);
+    out.spots = board_spot(params.L, params.A, params.B, cx, subject.x, subject.y);`,
+    at: (phase, c, _, p) => {
+      const t = (phase + p.lead) % 1;
+      return spot(p, 0.2 + 0.6 * ((1 - Math.cos(2 * Math.PI * t)) / 2), c);
     },
-    { writes: ['spots'] },
-  );
+    writes: ['spots'],
+  });
+const slowSweep = sweep(5000);
+const fastSweep = sweep(3600);
 
-const wash = (rgb: number) =>
-  patch<Cell, Light>(0, () => ({ gel: layer(rgb, 0.7) }), { writes: ['gel'] });
+/** A gel laid over the whole stage. */
+const wash = shaderPatch<Cell, Light, Lab>(0, {
+  params: COLOR,
+  wgsl: 'out.gel = array<f32, 4>(params.L * 0.7, params.A * 0.7, params.B * 0.7, 0.7);',
+  at: (_, __, ___, p) => ({ gel: layer(p, 0.7) }),
+  writes: ['gel'],
+});
 
-const dark = patch<Cell, Light>(0, () => ({ master: layer(0x000000, 1) }), {
+const dark = shaderPatch<Cell, Light>(0, {
+  wgsl: 'out.master = array<f32, 4>(0.0, 0.0, 0.0, 1.0);',
+  at: () => ({ master: layer(lab(0x000000), 1) }),
   writes: ['master'],
 });
 
@@ -107,12 +161,16 @@ interface Look {
 }
 
 const LOOKS: Look[] = [
-  { name: 'Warm', gel: 0xffa850, spots: [still(0xe0c090, 0.25), still(0xe0c090, 0.75)] },
-  { name: 'Cool', gel: 0x4a78ff, spots: [sweep(0xa8c0e8, 5000, 0)] },
+  {
+    name: 'Warm',
+    gel: 0xffa850,
+    spots: [0.25, 0.75].map((cx) => still.with({ ...lab(0xe0c090), cx })),
+  },
+  { name: 'Cool', gel: 0x4a78ff, spots: [slowSweep.with({ ...lab(0xa8c0e8), lead: 0 })] },
   {
     name: 'Chase',
     gel: 0xd040c0,
-    spots: [0, 1 / 3, 2 / 3].map((lead) => sweep(0xd8b0e0, 3600, lead)),
+    spots: [0, 1 / 3, 2 / 3].map((lead) => fastSweep.with({ ...lab(0xd8b0e0), lead })),
   },
   { name: 'Blackout', spots: [], blackout: true },
 ];
@@ -128,8 +186,6 @@ export default function run(root: HTMLElement): () => void {
   const el = document.createElement('canvas');
   el.width = COLS;
   el.height = ROWS;
-  const ctx = el.getContext('2d') as CanvasRenderingContext2D;
-  const image = ctx.createImageData(COLS, ROWS);
   const row = document.createElement('div');
   row.className = 'rig-row';
   const buttons = LOOKS.map((look) => {
@@ -148,69 +204,117 @@ export default function run(root: HTMLElement): () => void {
   wrap.append(el, row);
   root.append(wrap);
 
-  const show = transport({ history: { ms: 4 * HOLD, tape: createHistory } });
-  const m = mix<Cell, Light>(BOARD, { name: 'light-board', transport: show });
+  let stop = () => {};
+  let gone = false;
+  void gpuDevice().then((device) => {
+    if (!gone) stop = start(device);
+  });
 
-  // Gels share a role, so a change of look crossfades one gel into the next rather than stacking
-  // them. Spots and the blackout come up and go on their own fades.
-  let up: Handle[] = [];
-  let current = -1;
-  let since = 0;
-  let running = true;
-  const fade = { in: FADE, out: FADE };
-  const take = (i: number) => {
-    const look = LOOKS[i] as Look;
-    for (const h of up) h.fade();
-    up = look.spots.map((p) => m.cue({ patch: p, subjects: CELLS, loop: true, fade }));
-    if (look.gel !== undefined)
-      up.push(m.cue({ patch: wash(look.gel), subjects: CELLS, role: 'gel', fade }));
-    if (look.blackout) up.push(m.cue({ patch: dark, subjects: CELLS, fade }));
-    current = i;
-    since = show.now;
-    buttons.forEach((b, j) => {
-      b.ariaPressed = String(j === i);
+  function start(device: GpuDevice | null): () => void {
+    const show = transport({ history: { ms: 4 * HOLD, tape: createHistory } });
+    const m = mix<Cell, Light>(BOARD, {
+      name: 'light-board',
+      transport: show,
+      ...(device === null ? {} : { engine: gpu({ device }) }),
     });
-    auto.ariaPressed = String(running);
-  };
-  buttons.forEach((b, i) => {
-    b.addEventListener('click', () => {
-      running = false;
-      take(i);
+
+    // Gels share a role, so a change of look crossfades one gel into the next rather than stacking
+    // them. Spots and the blackout come up and go on their own fades.
+    let up: Handle[] = [];
+    let current = -1;
+    let since = 0;
+    let running = true;
+    const fade = { in: FADE, out: FADE };
+    const take = (i: number) => {
+      const look = LOOKS[i] as Look;
+      for (const h of up) h.fade();
+      up = look.spots.map((p) => m.cue({ patch: p, subjects: CELLS, loop: true, fade }));
+      if (look.gel !== undefined)
+        up.push(m.cue({ patch: wash.with(lab(look.gel)), subjects: CELLS, role: 'gel', fade }));
+      if (look.blackout) up.push(m.cue({ patch: dark, subjects: CELLS, fade }));
+      current = i;
+      since = show.now;
+      buttons.forEach((b, j) => {
+        b.ariaPressed = String(j === i);
+      });
+      auto.ariaPressed = String(running);
+    };
+    buttons.forEach((b, i) => {
+      b.addEventListener('click', () => {
+        running = false;
+        take(i);
+      });
     });
-  });
-  auto.addEventListener('click', () => {
-    running = true;
-    take((current + 1) % LOOKS.length);
-  });
-  const showRate = () => {
-    play.textContent = show.rate === 0 ? 'Play' : 'Pause';
-  };
-  play.addEventListener('click', () => {
-    show.rate = show.rate === 0 ? 1 : 0;
+    auto.addEventListener('click', () => {
+      running = true;
+      take((current + 1) % LOOKS.length);
+    });
+    const showRate = () => {
+      play.textContent = show.rate === 0 ? 'Play' : 'Pause';
+    };
+    play.addEventListener('click', () => {
+      show.rate = show.rate === 0 ? 1 : 0;
+      showRate();
+    });
     showRate();
-  });
-  showRate();
 
-  const pose: Light = {};
-  let drawn = -1;
-  const stop = loop(show, (now) => {
-    show.sync(now);
-    if (current < 0) take(0);
-    else if (running && show.now - since >= HOLD) take((current + 1) % LOOKS.length);
-    if (show.seq === drawn) return;
-    drawn = show.seq;
-    CELLS.forEach((c, i) => {
-      m.probe(c, pose);
-      const gelled = toHex(pose.gel ?? NONE, c.base);
-      const lit = toHex(pose.spots ?? NONE, gelled);
-      const hex = toHex(pose.master ?? NONE, lit);
-      image.data.set([hex >> 16, (hex >> 8) & 0xff, hex & 0xff, 255], i * 4);
+    let draw: () => void;
+    let free = () => {};
+    if (device !== null) {
+      // The GPU folds every channel for every cell, and lays gel, spots, and master over the set.
+      gpuOf(m).subjects(CELLS, (c) => ({ x: c.x, y: c.y }));
+      const grid = gpuGrid({
+        canvas: el,
+        cols: COLS,
+        rows: ROWS,
+        device,
+        side: gpuOf(m),
+        channels: [
+          { name: 'gel', axes: 18 },
+          { name: 'spots', axes: 26 },
+          { name: 'master', axes: 4 },
+        ],
+        bases: CELLS.map((c) => c.base),
+        body: `${layStack('gel', 'shown')} ${layStack('spots', 'shown')} shown = blits_over_free(c4_master(i), shown);`,
+        cpu: probed(m, CELLS),
+      });
+      draw = () => grid.draw();
+      free = () => grid.destroy();
+    } else {
+      const ctx = el.getContext('2d') as CanvasRenderingContext2D;
+      const image = ctx.createImageData(COLS, ROWS);
+      const pose: Light = {};
+      draw = () => {
+        CELLS.forEach((c, i) => {
+          m.probe(c, pose);
+          const gelled = toHex(pose.gel ?? NONE, c.base);
+          const lit = toHex(pose.spots ?? NONE, gelled);
+          const hex = toHex(pose.master ?? NONE, lit);
+          image.data.set([hex >> 16, (hex >> 8) & 0xff, hex & 0xff, 255], i * 4);
+        });
+        ctx.putImageData(image, 0, 0);
+      };
+    }
+
+    let drawn = -1;
+    const stop = loop(show, (now) => {
+      show.sync(now);
+      if (current < 0) take(0);
+      else if (running && show.now - since >= HOLD) take((current + 1) % LOOKS.length);
+      if (show.seq === drawn) return;
+      drawn = show.seq;
+      draw();
     });
-    ctx.putImageData(image, 0, 0);
-  });
+
+    return () => {
+      stop();
+      free();
+      m.close();
+    };
+  }
 
   return () => {
+    gone = true;
     stop();
-    m.close();
   };
 }

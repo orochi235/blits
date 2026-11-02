@@ -16,8 +16,14 @@ export interface Eligibility<I, O> {
 const PLAYING = new Set(['live', 'frozen', 'fading']);
 
 /** Why a voice cannot run on the GPU, or null where it can. */
-function why<I, O>(voice: Voice<I, O>, subjects: readonly I[]): string | null {
+function why<I, O>(
+  voice: Voice<I, O>,
+  subjects: readonly I[],
+  ruled: ReadonlySet<string>,
+): string | null {
   if (gpuDescriptor(voice.patch) === undefined) return 'its patch is not a shaderPatch';
+  for (const name of voice.patch.writes as readonly string[])
+    if (!ruled.has(name)) return `it writes ${name}, whose rule the GPU has no WGSL for`;
   if (typeof voice.spec.weight === 'function') return 'its weight is a weight signal';
   if (voice.spec.stagger !== undefined) return 'it staggers its subjects';
   if (voice.owner !== null) return 'an owner lays it out';
@@ -38,12 +44,14 @@ export function eligibility<I, O>(mix: Mixer<I, O>, subjects: readonly I[]): Eli
   const channels = new Set<string>();
   const kept = new Set<string>();
   const reasons: { voice: Voice<I, O>; why: string }[] = [];
+  const ruled = new Set<string>();
   mix.names.forEach((name, i) => {
     if (codeFor(mix.channels[i] as never) === undefined) kept.add(name);
+    else ruled.add(name);
   });
   const playing = mix.cued.filter((v) => PLAYING.has(v.state));
   for (const voice of playing) {
-    const reason = why(voice, subjects);
+    const reason = why(voice, subjects, ruled);
     for (const name of voice.patch.writes as readonly string[]) {
       if (reason === null) channels.add(name);
       else kept.add(name);
