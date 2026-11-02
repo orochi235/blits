@@ -49,6 +49,8 @@ export interface Watched<I = unknown, O = unknown> {
   readonly reach: number;
   /** The kit's channel names, in kit order. */
   readonly channels: readonly string[];
+  /** Each channel's `kind`, in kit order, undefined for a channel with none. */
+  readonly kinds: readonly (string | undefined)[];
   /**
    * What a voice was cued with that its handle does not carry. Undefined for a handle not on this
    * mix.

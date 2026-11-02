@@ -4,6 +4,7 @@ import { Ids } from './ids.js';
 import { marksOf } from './marks.js';
 import { offered } from './offer.js';
 import { picking } from './picking.js';
+import { readPose } from './pose.js';
 import type {
   Command,
   Event,
@@ -36,23 +37,6 @@ const BACKFILL_STEP_MS = 100;
 /** How often the subject list and the voices' weights are sent, ms. */
 const LIST_MS = 500;
 const VOICES_MS = 250;
-const DEPTH = 3;
-
-/** Each numeric part of a pose under a flat key: `x`, `position[1]`, `color.l`. */
-export function flatten(pose: unknown, out: Record<string, number> = {}, key = '', depth = 0) {
-  if (typeof pose === 'number') {
-    if (key !== '') out[key] = pose;
-  } else if (Array.isArray(pose) || ArrayBuffer.isView(pose)) {
-    if (depth < DEPTH)
-      Array.from(pose as ArrayLike<unknown>).forEach((v, i) => {
-        flatten(v, out, `${key}[${i}]`, depth + 1);
-      });
-  } else if (typeof pose === 'object' && pose !== null && depth < DEPTH)
-    for (const [k, v] of Object.entries(pose))
-      flatten(v, out, key === '' ? k : `${key}.${k}`, depth + 1);
-  return out;
-}
-
 /**
  * The page side of the panel: finds the mixes, watches the one picked, holds its clock, and picks
  * and outlines subjects on the page. Speaks only in the protocol's plain data.
@@ -203,7 +187,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
       try {
         weights[h.id] = h.weightOf(subject);
       } catch {}
-    return { now: frame.now, values: flatten(pose), weights, read };
+    return { now: frame.now, ...readPose(pose, e), weights, read };
   };
 
   const backfill = (e: Watched): Sample[] => {
@@ -214,7 +198,7 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
     const from = Math.max(e.reach, now - Math.min(BACKFILL_MS, h.ms));
     for (let t = from; t < now; t += BACKFILL_STEP_MS)
       try {
-        out.push({ now: t, values: flatten(e.read(subject, t)), weights: {}, read: true });
+        out.push({ now: t, ...readPose(e.read(subject, t), e), weights: {}, read: true });
       } catch {}
     return out;
   };

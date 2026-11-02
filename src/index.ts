@@ -1,5 +1,5 @@
 export type { MatrixParts } from './affine.js';
-export { affine, matrix } from './affine.js';
+export { affine, matrix, partsOf } from './affine.js';
 export type { BlendMode } from './blend-modes.js';
 export { add, blendMode, darken, lighten, multiply, screen } from './blend-modes.js';
 export type { LastOptions, NumberOptions, NumberTuple, Vec } from './channels.js';
@@ -76,6 +76,7 @@ export {
   vividLight,
 } from './stack-rules.js';
 export type { OrderedMode, StackOptions } from './stacked-modes.js';
+export { layersOf } from './stacked-modes.js';
 export type { Ticked, Ticker, TickerOptions } from './ticker.js';
 export { ticker } from './ticker.js';
 export { transport } from './transport.js';

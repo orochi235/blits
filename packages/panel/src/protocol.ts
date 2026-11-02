@@ -31,11 +31,14 @@ export interface VoiceInfo {
 
 /**
  * The picked subject in one frame: each numeric part of its pose by a flat key (`x`,
- * `position[1]`, `color.l`), and each voice's weight on it by voice id.
+ * `position[1]`, `at.rotate`), each color channel as CSS colors, and each voice's weight on it by
+ * voice id.
  */
 export interface Sample {
   now: number;
   values: Record<string, number>;
+  /** By channel: the color it shows, then an ordered blend mode's layers, bottom first. */
+  colors?: Record<string, string[]>;
   weights: Record<number, number>;
   /** The host did not read the subject this frame, so the panel read it. */
   read: boolean;

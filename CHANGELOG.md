@@ -38,6 +38,10 @@ version and everything else the patch. Each release lists its changes as **Break
 - `affine()`, a 2D transform held as the six numbers of CSS `matrix()`, composed in cue order with
   the first cued outermost, and weighted and interpolated by its parts, the rotation the short way
   round. `matrix({ x, y, rotate, skew, scale, scaleX, scaleY })` builds one. It runs on lanes.
+  `partsOf(m)` gives those parts back, so `matrix(partsOf(m))` is `m`.
+- `layersOf(pose)`, an ordered blend mode's layers as CSS colors, bottom first.
+- `Watched.kinds`, each channel's `kind` in kit order, so a debugging tool can tell a color channel
+  from four numbers.
 
 ### Fixed
 

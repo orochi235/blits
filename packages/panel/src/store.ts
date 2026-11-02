@@ -42,15 +42,20 @@ export class Samples {
     if (drop > 0) list.splice(0, drop);
   }
 
-  /** The times, and each key's values in the same order, NaN where a sample lacks the key. */
+  /**
+   * The times, and each key's values in the same order: NaN where a sample lacks a number,
+   * undefined where it lacks a color.
+   */
   series(): {
     times: number[];
     values: Map<string, number[]>;
+    colors: Map<string, (readonly string[] | undefined)[]>;
     weights: Map<number, number[]>;
     read: boolean[];
   } {
     const times = this.list.map((s) => s.now);
     const values = new Map<string, number[]>();
+    const colors = new Map<string, (readonly string[] | undefined)[]>();
     const weights = new Map<number, number[]>();
     this.list.forEach((s, i) => {
       for (const [k, v] of Object.entries(s.values)) {
@@ -58,6 +63,14 @@ export class Samples {
         if (col === undefined) {
           col = new Array(times.length).fill(Number.NaN);
           values.set(k, col);
+        }
+        col[i] = v;
+      }
+      for (const [k, v] of Object.entries(s.colors ?? {})) {
+        let col = colors.get(k);
+        if (col === undefined) {
+          col = new Array(times.length).fill(undefined);
+          colors.set(k, col);
         }
         col[i] = v;
       }
@@ -71,6 +84,6 @@ export class Samples {
         col[i] = v;
       }
     });
-    return { times, values, weights, read: this.list.map((s) => s.read) };
+    return { times, values, colors, weights, read: this.list.map((s) => s.read) };
   }
 }

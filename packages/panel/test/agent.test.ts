@@ -3,7 +3,8 @@
 import { kit, mix, patch, sum, vec } from '@msb235/blits';
 import { createHistory as tape } from '@weasel-js/history';
 import { afterEach, describe, expect, it } from 'vitest';
-import { agent, flatten } from '../src/agent.js';
+import { agent } from '../src/agent.js';
+import { flatten } from '../src/pose.js';
 import type { Event } from '../src/protocol.js';
 
 interface Pose {

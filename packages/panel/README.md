@@ -31,7 +31,10 @@ gives back any clock it holds.
   - **Top bar:** a mix picker, the same clock controls, and a rate for a held mix.
   - **Left side:** the mix's subjects, which you can filter, and its voices with their state and
     their weight on the picked subject.
-  - **Right side:** one plot per number in the picked subject's pose, then each voice's weight.
+  - **Right side:** the picked subject's channels, then each voice's weight. A color channel,
+    blend modes included, is a strip of the color it shows, with a thin strip per layer under an
+    ordered mode; an `affine` channel is its parts (`x`, `y`, `rotate`, `skew`, `scaleX`,
+    `scaleY`); any other channel is one plot per number.
     A plot is marked "read, not shown" when the app did not read the subject that frame, so the
     panel read it.
   - **◯ circles**, beside the voices: draws each bounded voice's circle (its `within`, or its

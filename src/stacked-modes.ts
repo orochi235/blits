@@ -193,6 +193,21 @@ export function stackCss(pose: ArrayLike<number>): string | undefined {
 }
 
 /**
+ * An ordered blend mode's layers as CSS colors, bottom first: each voice's color in linear sRGB at
+ * its opacity, before any is laid on what is under it. Undefined for a pose no ordered mode made.
+ *
+ * @category channel
+ */
+export function layersOf(pose: ArrayLike<number>): string[] | undefined {
+  if (stackOf(pose) === undefined) return undefined;
+  const out: string[] = [];
+  const end = 2 + 4 * (pose[1] as number);
+  for (let i = 2; i < end; i += 4)
+    out.push(`color(srgb-linear ${pose[i]} ${pose[i + 1]} ${pose[i + 2]} / ${pose[i + 3]})`);
+  return out;
+}
+
+/**
  * A stack's CSS `mix-blend-mode`, or undefined for any other pose. A mode CSS lacks gives `normal`,
  * with a warning once per mode outside production, since a page laying it by CSS draws it wrong.
  */

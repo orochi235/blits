@@ -4,6 +4,17 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## Unreleased
+
+### Added
+
+- A color channel, blend modes included, plots as a strip of the color it shows, over a
+  checkerboard so its opacity reads, with a strip per layer under an ordered mode. An `affine`
+  channel plots as its parts. Both used to plot one chart per stored number: 18 for an `overlay`
+  channel, none of them a color. Needs the engine release that adds `Watched.kinds`, `layersOf`
+  and `partsOf`.
+- `readPose`, which reads a pose the way the plots show it.
+
 ## 0.4.1
 
 ### Fixed

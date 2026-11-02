@@ -121,6 +121,7 @@ export function register(mix: Any): void {
       return reachOf(transport, false);
     },
     channels: mix.names as string[],
+    kinds: mix.channels.map((c) => c.kind),
     voice: (handle) => {
       const v =
         mix.cued.find((c) => c.handle === handle) ?? mix.gone.find((c) => c.handle === handle);

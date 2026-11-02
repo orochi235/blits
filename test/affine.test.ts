@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { affine, matrix } from '../src/affine.js';
+import { affine, matrix, partsOf } from '../src/affine.js';
 import { kit, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
 import { patch } from '../src/patch.js';
@@ -131,5 +131,15 @@ describe('affine', () => {
     on.forEach((v, i) => {
       expect(Object.is(v, off[i]), `[${i}]`).toBe(true);
     });
+  });
+});
+
+describe('partsOf', () => {
+  it('gives back the parts matrix was given, so matrix(partsOf(m)) is m', () => {
+    const given = { x: 40, y: -3, rotate: 0.7, skew: 0.2, scaleX: 2, scaleY: 0.5 };
+    const p = partsOf(matrix(given));
+    for (const k of Object.keys(given) as (keyof typeof given)[])
+      expect(p[k]).toBeCloseTo(given[k], 12);
+    closeAll(matrix(p), matrix(given));
   });
 });

@@ -26,6 +26,7 @@ import {
   subtract,
   vividLight,
 } from '../src/stack-rules.js';
+import { layersOf } from '../src/stacked-modes.js';
 import type { Channel } from '../src/types.js';
 
 interface Pose {
@@ -320,5 +321,22 @@ describe('blend modes that lay a whole color', () => {
       const mid = (lin((BASE >> s) & 0xff) + lin((full >> s) & 0xff)) / 2;
       expect(Math.abs(((half >> s) & 0xff) - enc(mid))).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+describe('layersOf', () => {
+  it("lists an ordered mode's layers bottom first, and nothing for any other pose", () => {
+    const m = mix<string, { c: number[] }>(kit({ c: color(overlay()) }));
+    const lay = (rgb: number[]) =>
+      patch<string, { c: number[] }>(0, () => ({ c: [...rgb, 1] }), { writes: ['c'] });
+    m.cue({ patch: lay([0.5, 0, 0]), subjects: ['s'] });
+    m.cue({ patch: lay([0.2, 0, 0]), subjects: ['s'], weight: 0.5 });
+    m.sync(0);
+    const layers = layersOf(m.probe('s').c) as string[];
+    expect(layers).toHaveLength(2);
+    expect(layers[0]).toMatch(/^color\(srgb-linear .* \/ 1\)$/);
+    expect(layers[1]).toMatch(/\/ 0\.5\)$/);
+    expect(layersOf(m.probe('nobody').c)).toEqual([]);
+    expect(layersOf(oklab(0xff0000))).toBeUndefined();
   });
 });

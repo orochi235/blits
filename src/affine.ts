@@ -141,3 +141,14 @@ export function matrix(p: MatrixParts): Vec<6> {
   ];
   return compose(doubles(6, 0), parts) as M;
 }
+
+/**
+ * The parts of an `affine` transform, as `matrix` takes them: `matrix(partsOf(m))` gives `m` back.
+ * A flip lands in `scaleY`, and a transform with no extent along x reads as unrotated.
+ *
+ * @category channel
+ */
+export function partsOf(m: ArrayLike<number>): Required<Omit<MatrixParts, 'scale'>> {
+  const [x, y, rotate, shear, scaleX, scaleY] = parts(doubles(6, 0), m) as M;
+  return { x, y, rotate, skew: Math.atan(shear), scaleX, scaleY };
+}

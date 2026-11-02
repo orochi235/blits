@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { MarkInfo, VoiceInfo } from '../protocol.js';
 import type { Samples } from '../store.js';
 import { ChannelPlot } from './ChannelPlot.js';
+import { ColorStrip } from './ColorStrip.js';
 import { voiceHue } from './hue.js';
 import { axisOf } from './lanes.js';
 import { Plan } from './Plan.js';
@@ -27,7 +28,7 @@ export function Plots({
 }) {
   // biome-ignore lint/correctness/useExhaustiveDependencies: `drawn` says the samples changed
   const series = useMemo(() => samples.series(), [samples, drawn]);
-  const { times, values, weights, read } = series;
+  const { times, values, colors, weights, read } = series;
   const head = Number.isFinite(playhead) ? playhead : (times[times.length - 1] ?? Number.NaN);
   const range = axisOf(head, picked ? times : [], marks);
   const plan = mix && <Plan marks={marks} voices={voices} range={range} playhead={head} />;
@@ -48,6 +49,16 @@ export function Plots({
   return (
     <div className="bp-plots">
       {plan}
+      {[...colors].map(([key, c]) => (
+        <ColorStrip
+          key={key}
+          label={`${key}${unread}`}
+          times={times}
+          colors={c}
+          range={range}
+          playhead={head}
+        />
+      ))}
       {[...values].map(([key, v]) => (
         <ChannelPlot
           key={key}

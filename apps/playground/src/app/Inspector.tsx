@@ -1,5 +1,4 @@
-import { toHex } from '@msb235/blits';
-import { ChannelPlot, type Series } from '@msb235/blits-panel';
+import { ChannelPlot, ColorStrip, colorsOf, type Series } from '@msb235/blits-panel';
 import type { Composition } from '@pg/blits/composition';
 import { ancestorsOf } from '@pg/blits/groups';
 import { CHANNELS, type ChannelName, type Mixed } from '@pg/blits/kit';
@@ -7,16 +6,8 @@ import type { Player } from '@pg/blits/player';
 import { useSyncExternalStore } from 'react';
 import s from './App.module.css';
 
-const plotted = (pose: Mixed | undefined, ch: ChannelName) =>
-  pose === undefined
-    ? Number.NaN
-    : ch === 'offset'
-      ? (pose.offset[1] ?? Number.NaN)
-      : ch === 'color'
-        ? pose.color === undefined
-          ? Number.NaN
-          : toHex(pose.color)
-        : pose[ch];
+const plotted = (pose: Mixed | undefined, ch: Exclude<ChannelName, 'color'>) =>
+  pose === undefined ? Number.NaN : ch === 'offset' ? (pose.offset[1] ?? Number.NaN) : pose[ch];
 
 export interface InspectorProps {
   player: Player;
@@ -46,6 +37,19 @@ export function Inspector({ player, comp }: InspectorProps) {
         channel, how sure blits is of it now
       </p>
       {CHANNELS.map((ch) => {
+        const label = doubts ? `${ch} · ${doubts[ch]}` : ch;
+        if (ch === 'color')
+          return (
+            <ColorStrip
+              key={ch}
+              label={label}
+              times={times}
+              colors={h.map((x) =>
+                x.full?.color === undefined ? undefined : colorsOf(x.full.color),
+              )}
+              playhead={t}
+            />
+          );
         const series: Series[] = voices.map((v) => ({
           id: v.id,
           hue: v.hue,
@@ -58,7 +62,6 @@ export function Inspector({ player, comp }: InspectorProps) {
           values: h.map((x) => plotted(x.full, ch)),
           thick: true,
         });
-        const label = doubts ? `${ch} · ${doubts[ch]}` : ch;
         return <ChannelPlot key={ch} label={label} times={times} series={series} playhead={t} />;
       })}
       <ChannelPlot label="weightOf" times={times} series={weighed(voices)} playhead={t} />

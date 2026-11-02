@@ -219,6 +219,7 @@ describe('what an entry tells', () => {
     m.sync(0);
     m.sync(300);
     expect(e.channels).toEqual(['x']);
+    expect(e.kinds).toEqual(['sum']);
     expect(e.voice(h)).toEqual({ name: 'tick', tags: ['beat'] });
     expect(e.voice(mix<Part, Pose>(K).cue({ patch: clock }))).toBeUndefined();
     expect(e.read(a, 100).x).toBe(100);
