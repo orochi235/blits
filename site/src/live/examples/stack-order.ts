@@ -7,6 +7,9 @@ import {
   darken,
   difference,
   exclusion,
+  type GpuDevice,
+  gpu,
+  gpuOf,
   hardLight,
   hue,
   kit,
@@ -18,14 +21,15 @@ import {
   multiply,
   oklab,
   overlay,
-  patch,
   pinLight,
   screen,
+  shaderPatch,
   softLight,
   toHex,
   transport,
-} from '@msb235/blits';
+} from '@msb235/blits/gpu';
 import { createHistory } from '@weasel-js/history';
+import { type Grid, gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
 import { loop } from '../loop';
 
 interface Cell {
@@ -75,26 +79,38 @@ const PERIOD = 9000;
 /** Coverage for a cell `d` inside an edge, in tile heights: full a pixel in, none a pixel out. */
 const edge = (d: number) => Math.max(0, Math.min(1, 0.5 + (d * ROWS) / 2));
 
-/** A disc turning about the middle, a third of a turn from the others, with some color in it. */
-function disc(v: (typeof VOICES)[number]) {
-  const lab = oklab(v.rgb);
-  return patch<Cell, Tint>(
-    PERIOD,
-    (phase, c) => {
-      const a = v.angle + 2 * Math.PI * phase;
-      const cx = 0.5 + (0.16 * Math.cos(a)) / ASPECT;
-      const cy = 0.5 + 0.16 * Math.sin(a);
-      const cov = edge(0.33 - Math.hypot((c.x - cx) * ASPECT, c.y - cy));
-      if (cov === 0) return {};
-      return { c: [(lab[0] ?? 0) * cov, (lab[1] ?? 0) * cov, (lab[2] ?? 0) * cov, cov] };
-    },
-    { writes: ['c'] },
-  );
+interface Disc extends Record<string, number> {
+  angle: number;
+  lab_l: number;
+  lab_a: number;
+  lab_b: number;
 }
-const DISCS = Object.fromEntries(VOICES.map((v) => [v.name, disc(v)])) as Record<
-  Name,
-  ReturnType<typeof disc>
->;
+/** A disc turning about the middle, a third of a turn from the others, with some color in it. */
+const DISC = shaderPatch<Cell, Tint, Disc>(PERIOD, {
+  fields: { x: 'f32', y: 'f32' },
+  params: { angle: 'f32', lab_l: 'f32', lab_a: 'f32', lab_b: 'f32' },
+  wgsl: `let a = params.angle + 6.28318530718 * phase;
+let cx = 0.5 + (0.16 * cos(a)) / ${ASPECT.toFixed(1)};
+let cy = 0.5 + 0.16 * sin(a);
+let d = 0.33 - length(vec2f((subject.x - cx) * ${ASPECT.toFixed(1)}, subject.y - cy));
+let cov = clamp(0.5 + (d * ${ROWS.toFixed(1)}) / 2.0, 0.0, 1.0);
+out.c = array<f32, 4>(params.lab_l * cov, params.lab_a * cov, params.lab_b * cov, cov);`,
+  at: (phase, c, _, p) => {
+    const a = p.angle + 2 * Math.PI * phase;
+    const cx = 0.5 + (0.16 * Math.cos(a)) / ASPECT;
+    const cy = 0.5 + 0.16 * Math.sin(a);
+    const cov = edge(0.33 - Math.hypot((c.x - cx) * ASPECT, c.y - cy));
+    // A zero coverage still names the mode, as the WGSL's always does.
+    return { c: [p.lab_l * cov, p.lab_a * cov, p.lab_b * cov, cov] };
+  },
+  writes: ['c'],
+});
+const DISCS = Object.fromEntries(
+  VOICES.map((v) => {
+    const [l = 0, a = 0, b = 0] = oklab(v.rgb);
+    return [v.name, DISC.with({ angle: v.angle, lab_l: l, lab_a: a, lab_b: b })];
+  }),
+) as Record<Name, typeof DISC>;
 
 /** Dark gray on the left to near white on the right, through muted color, since hue keeps a gray gray. */
 function ramp(x: number): number {
@@ -114,9 +130,10 @@ function view(caption: HTMLElement) {
   el.width = COLS;
   el.height = ROWS;
   fig.append(el, caption);
-  const ctx = el.getContext('2d') as CanvasRenderingContext2D;
-  return { fig, ctx, image: ctx.createImageData(COLS, ROWS) };
+  return { fig, el, image: new ImageData(COLS, ROWS) };
 }
+type View = ReturnType<typeof view>;
+const ctxOf = (v: View) => v.el.getContext('2d') as CanvasRenderingContext2D;
 
 function button(text: string): HTMLButtonElement {
   const b = document.createElement('button');
@@ -183,34 +200,10 @@ export default function run(root: HTMLElement): () => void {
 
   let mode: Mode = 'overlay';
   let order: Name[] = ['C', 'A', 'B'];
+  const diffCtx = ctxOf(diff);
 
-  const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
-  let left: Mix<Cell, Tint> | undefined;
-  let right: Mix<Cell, Tint> | undefined;
-  const pose: Tint = {};
-
-  // The transport's time is NaN until its first sync.
-  const into = () => (Number.isFinite(show.now) ? show.now % PERIOD : 0);
-  // Each change makes both mixes again, the voices cued in order, each as far into its turn as
-  // the transport is, so the discs carry on where they were.
-  const build = (names: readonly Name[], name: string) => {
-    const m = mix<Cell, Tint>(kit<Tint>({ c: color(RULES[mode]()) }), { name, transport: show });
-    for (const n of names)
-      m.cue({ patch: DISCS[n], subjects: CELLS, loop: true, name: n, seek: into() });
-    return m;
-  };
-  let drawn = '';
-  const rebuild = () => {
-    left?.close();
-    right?.close();
-    left = build(['A', 'B', 'C'], 'stack-order-cued');
-    right = build(order, 'stack-order-yours');
-    yoursCaption.textContent = `cued ${order.join(', ')}`;
-    for (const { n, b } of modeButtons) b.ariaPressed = String(n === mode);
-    drawOrder();
-    drawn = '';
-  };
-
+  // The picks live out here, so one made before the device is ready still counts.
+  let refresh = () => drawOrder();
   const drawOrder = () => {
     orderRow.replaceChildren();
     const tag = document.createElement('span');
@@ -229,7 +222,7 @@ export default function run(root: HTMLElement): () => void {
           const next = [...order];
           [next[i], next[i + 1]] = [next[i + 1] as Name, next[i] as Name];
           order = next;
-          rebuild();
+          refresh();
         });
         orderRow.append(swap);
       }
@@ -240,38 +233,111 @@ export default function run(root: HTMLElement): () => void {
   for (const { n, b } of modeButtons)
     b.addEventListener('click', () => {
       mode = n;
-      rebuild();
+      refresh();
     });
-  play.addEventListener('click', () => {
-    show.rate = show.rate === 0 ? 1 : 0;
-    play.textContent = show.rate === 0 ? 'Play' : 'Pause';
+  drawOrder();
+
+  let stop = () => {};
+  let gone = false;
+  void gpuDevice().then((device) => {
+    if (!gone) stop = start(device);
   });
 
-  const paint = (m: Mix<Cell, Tint> | undefined, v: ReturnType<typeof view>) => {
-    CELLS.forEach((c, i) => {
-      m?.probe(c, pose);
-      const hex = toHex(pose.c ?? NONE, c.base);
-      v.image.data.set([hex >> 16, (hex >> 8) & 0xff, hex & 0xff, 255], i * 4);
-    });
-    v.ctx.putImageData(v.image, 0, 0);
-  };
+  function start(device: GpuDevice | null): () => void {
+    const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
+    let left: Mix<Cell, Tint> | undefined;
+    let right: Mix<Cell, Tint> | undefined;
+    let grids: Grid[] = [];
+    const pose: Tint = {};
 
-  rebuild();
-  const stop = loop(show, (now) => {
-    show.sync(now);
-    const key = `${show.seq}`;
-    if (key === drawn) return;
-    drawn = key;
-    paint(left, fixed);
-    paint(right, yours);
-    const share = differing(fixed.image, yours.image, diff.image);
-    diff.ctx.putImageData(diff.image, 0, 0);
-    readout.textContent = `${(100 * share).toFixed(1).padStart(5)}% of pixels differ between the two`;
-  });
+    // The transport's time is NaN until its first sync.
+    const into = () => (Number.isFinite(show.now) ? show.now % PERIOD : 0);
+    // Each change makes both mixes again, the voices cued in order, each as far into its turn as
+    // the transport is, so the discs carry on where they were.
+    const build = (names: readonly Name[], name: string) => {
+      const m = mix<Cell, Tint>(kit<Tint>({ c: color(RULES[mode]()) }), {
+        name,
+        transport: show,
+        ...(device === null ? {} : { engine: gpu({ device }) }),
+      });
+      for (const n of names)
+        m.cue({ patch: DISCS[n], subjects: CELLS, loop: true, name: n, seek: into() });
+      if (device !== null) gpuOf(m).subjects(CELLS, (c) => ({ x: c.x, y: c.y }));
+      return m;
+    };
+    // With the GPU, it folds both mixes and lays each over the ramp. The difference between them
+    // is still found on the CPU, from probes, since reading back a WebGPU canvas is not cheap.
+    const gridFor = (m: Mix<Cell, Tint>, v: View, gpuDev: GpuDevice) =>
+      gpuGrid({
+        canvas: v.el,
+        cols: COLS,
+        rows: ROWS,
+        device: gpuDev,
+        side: gpuOf(m),
+        channels: [{ name: 'c', axes: mode in COMMUTING ? 4 : 18 }],
+        bases: CELLS.map((c) => c.base),
+        body:
+          mode in COMMUTING ? 'shown = blits_over_free(c4_c(i), under);' : layStack('c', 'shown'),
+        cpu: probed(m, CELLS),
+      });
+    const ctxs = device === null ? [ctxOf(fixed), ctxOf(yours)] : [];
+
+    let drawn = '';
+    const rebuild = () => {
+      left?.close();
+      right?.close();
+      for (const g of grids) g.destroy();
+      left = build(['A', 'B', 'C'], 'stack-order-cued');
+      right = build(order, 'stack-order-yours');
+      grids = device === null ? [] : [gridFor(left, fixed, device), gridFor(right, yours, device)];
+      yoursCaption.textContent = `cued ${order.join(', ')}`;
+      for (const { n, b } of modeButtons) b.ariaPressed = String(n === mode);
+      drawOrder();
+      drawn = '';
+    };
+    refresh = rebuild;
+
+    play.addEventListener('click', () => {
+      show.rate = show.rate === 0 ? 1 : 0;
+      play.textContent = show.rate === 0 ? 'Play' : 'Pause';
+    });
+
+    const probe = (m: Mix<Cell, Tint> | undefined, v: View) => {
+      CELLS.forEach((c, i) => {
+        m?.probe(c, pose);
+        const hex = toHex(pose.c ?? NONE, c.base);
+        v.image.data.set([hex >> 16, (hex >> 8) & 0xff, hex & 0xff, 255], i * 4);
+      });
+    };
+
+    rebuild();
+    const halt = loop(show, (now) => {
+      show.sync(now);
+      const key = `${show.seq}`;
+      if (key === drawn) return;
+      drawn = key;
+      probe(left, fixed);
+      probe(right, yours);
+      if (device === null) {
+        ctxs[0]?.putImageData(fixed.image, 0, 0);
+        ctxs[1]?.putImageData(yours.image, 0, 0);
+      } else for (const g of grids) g.draw();
+      const share = differing(fixed.image, yours.image, diff.image);
+      diffCtx.putImageData(diff.image, 0, 0);
+      readout.textContent = `${(100 * share).toFixed(1).padStart(5)}% of pixels differ between the two`;
+    });
+
+    return () => {
+      halt();
+      refresh = () => {};
+      for (const g of grids) g.destroy();
+      left?.close();
+      right?.close();
+    };
+  }
 
   return () => {
+    gone = true;
     stop();
-    left?.close();
-    right?.close();
   };
 }

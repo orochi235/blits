@@ -75,6 +75,10 @@ function check(kind: string, names: readonly string[]): void {
  * compares a sample of subjects from each and warns where they disagree. On any other engine it
  * is a plain patch.
  *
+ * Both halves give every channel in `writes` a value for every subject: WGSL has no way to give
+ * none, so an `at` returning `{}` for some subjects disagrees with its shader. Give the rest
+ * instead: zero coverage for a color, the rule's rest for a number.
+ *
  * @category gpu
  */
 export function shaderPatch<I, O, P extends Record<string, number> = Record<string, never>>(

@@ -1,17 +1,21 @@
 import {
   color,
+  type GpuDevice,
+  gpu,
+  gpuOf,
   type Handle,
   hardMix,
   kit,
   linearLight,
   type Mix,
   mix,
-  patch,
+  shaderPatch,
   toHex,
   transport,
   vividLight,
-} from '@msb235/blits';
+} from '@msb235/blits/gpu';
 import { createHistory } from '@weasel-js/history';
+import { type Grid, gpuDevice, gpuGrid, layStack, probed } from '../gpu-grid';
 import { loop } from '../loop';
 
 interface Cell {
@@ -69,15 +73,16 @@ function base(m: number): number {
 }
 
 /** The level: a gray rising from black to white and back, eased at each end. */
-const level = patch<Cell, Wipe>(
-  PERIOD,
-  (phase) => {
+const level = shaderPatch<Cell, Wipe>(PERIOD, {
+  wgsl: `let s = (1.0 - cos(6.28318530718 * phase)) / 2.0;
+out.w = array<f32, 4>(select(0.0, pow(s, 1.0 / 3.0), s > 0.0), 0.0, 0.0, 1.0);`,
+  at: (phase) => {
     const s = (1 - Math.cos(2 * Math.PI * phase)) / 2;
     // A gray's OKLab lightness is the cube root of its linear value.
     return { w: [Math.cbrt(s), 0, 0, 1] };
   },
-  { writes: ['w'] },
-);
+  writes: ['w'],
+});
 
 export default function run(root: HTMLElement): () => void {
   const wrap = document.createElement('div');
@@ -85,8 +90,6 @@ export default function run(root: HTMLElement): () => void {
   const el = document.createElement('canvas');
   el.width = COLS;
   el.height = ROWS;
-  const ctx = el.getContext('2d') as CanvasRenderingContext2D;
-  const image = ctx.createImageData(COLS, ROWS);
   const row = (label: string, names: string[]) => {
     const r = document.createElement('div');
     r.className = 'rig-row';
@@ -122,75 +125,137 @@ export default function run(root: HTMLElement): () => void {
   const cells: Cell[] = [];
   for (let y = 0; y < ROWS; y++)
     for (let x = 0; x < COLS; x++) cells.push({ x: x / (COLS - 1), y: y / (ROWS - 1), base: 0 });
+
+  // The picks live out here, so one made before the device is ready still counts.
+  let mode: Mode = 'hardMix';
+  let onMap = () => {};
+  let onMode = () => {};
   const paintMap = (name: string) => {
     const f = MAPS[name] as (x: number, y: number) => number;
     for (const c of cells) c.base = base(f(c.x, c.y));
     maps.buttons.forEach((b) => {
       b.ariaPressed = String(b.textContent === name);
     });
-    drawn = -1;
+    onMap();
   };
-
-  // Pausing stops the transport; dragging seeks the level's voice. The slider shows where the
-  // level is: the transport's time, shifted by the last drag.
-  const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
-  let shift = 0;
-  const now = () => (Number.isFinite(show.now) ? show.now : 0);
-  const place = () => (((now() + shift) % PERIOD) + PERIOD) % PERIOD;
-  let m: Mix<Cell, Wipe> | undefined;
-  let sweep: Handle | undefined;
-  const choose = (mode: Mode) => {
-    m?.close();
-    m = mix<Cell, Wipe>(kit<Wipe>({ w: color(MODES[mode]()) }), {
-      name: 'threshold-wipe',
-      transport: show,
-    });
-    sweep = m.cue({ patch: level, subjects: cells, loop: true, seek: place() });
+  const pickMode = (next: Mode) => {
+    mode = next;
     modes.buttons.forEach((b) => {
       b.ariaPressed = String(b.textContent === mode);
     });
-    drawn = -1;
+    onMode();
   };
   for (const b of maps.buttons) b.addEventListener('click', () => paintMap(b.textContent ?? ''));
-  for (const b of modes.buttons) b.addEventListener('click', () => choose(b.textContent as Mode));
-
-  const showRate = () => {
-    play.textContent = show.rate === 0 ? 'Play' : 'Pause';
-  };
-  play.addEventListener('click', () => {
-    show.rate = show.rate === 0 ? 1 : 0;
-    showRate();
-  });
-  scrub.addEventListener('input', () => {
-    if (show.rate !== 0) {
-      show.rate = 0;
-      showRate();
-    }
-    const to = Number(scrub.value);
-    sweep?.seek(to);
-    shift = to - now();
-  });
-
-  let drawn = -1;
+  for (const b of modes.buttons) b.addEventListener('click', () => pickMode(b.textContent as Mode));
   paintMap('iris');
-  choose('hardMix');
-  showRate();
-  const pose: Wipe = {};
-  const stop = loop(show, (t) => {
-    show.sync(t);
-    scrub.value = String(place());
-    if (show.seq === drawn) return;
-    drawn = show.seq;
-    cells.forEach((c, i) => {
-      m?.probe(c, pose);
-      const hex = toHex(pose.w ?? NONE, c.base);
-      image.data.set([hex >> 16, (hex >> 8) & 0xff, hex & 0xff, 255], i * 4);
-    });
-    ctx.putImageData(image, 0, 0);
+  pickMode(mode);
+
+  let stop = () => {};
+  let gone = false;
+  void gpuDevice().then((device) => {
+    if (!gone) stop = start(device);
   });
+
+  function start(device: GpuDevice | null): () => void {
+    let grid: Grid | undefined;
+    // With the GPU, it folds the level and lays it over the map; the grid holds the map's colors,
+    // so a new map or a new mix makes it again.
+    const regrid = () => {
+      grid?.destroy();
+      if (device === null || m === undefined) return;
+      gpuOf(m).subjects(cells, () => ({}));
+      grid = gpuGrid({
+        canvas: el,
+        cols: COLS,
+        rows: ROWS,
+        device,
+        side: gpuOf(m),
+        channels: [{ name: 'w', axes: 18 }],
+        bases: cells.map((c) => c.base),
+        body: layStack('w', 'shown'),
+        cpu: probed(m, cells),
+      });
+    };
+
+    // Pausing stops the transport; dragging seeks the level's voice. The slider shows where the
+    // level is: the transport's time, shifted by the last drag.
+    const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
+    let shift = 0;
+    const now = () => (Number.isFinite(show.now) ? show.now : 0);
+    const place = () => (((now() + shift) % PERIOD) + PERIOD) % PERIOD;
+    let m: Mix<Cell, Wipe> | undefined;
+    let sweep: Handle | undefined;
+    const choose = () => {
+      m?.close();
+      m = mix<Cell, Wipe>(kit<Wipe>({ w: color(MODES[mode]()) }), {
+        name: 'threshold-wipe',
+        transport: show,
+        ...(device === null ? {} : { engine: gpu({ device }) }),
+      });
+      sweep = m.cue({ patch: level, subjects: cells, loop: true, seek: place() });
+      regrid();
+      drawn = -1;
+    };
+    onMode = choose;
+    onMap = () => {
+      regrid();
+      drawn = -1;
+    };
+
+    const showRate = () => {
+      play.textContent = show.rate === 0 ? 'Play' : 'Pause';
+    };
+    play.addEventListener('click', () => {
+      show.rate = show.rate === 0 ? 1 : 0;
+      showRate();
+    });
+    scrub.addEventListener('input', () => {
+      if (show.rate !== 0) {
+        show.rate = 0;
+        showRate();
+      }
+      const to = Number(scrub.value);
+      sweep?.seek(to);
+      shift = to - now();
+    });
+
+    let drawn = -1;
+    choose();
+    showRate();
+    let draw: () => void;
+    if (device !== null) draw = () => grid?.draw();
+    else {
+      const ctx = el.getContext('2d') as CanvasRenderingContext2D;
+      const image = ctx.createImageData(COLS, ROWS);
+      const pose: Wipe = {};
+      draw = () => {
+        cells.forEach((c, i) => {
+          m?.probe(c, pose);
+          const hex = toHex(pose.w ?? NONE, c.base);
+          image.data.set([hex >> 16, (hex >> 8) & 0xff, hex & 0xff, 255], i * 4);
+        });
+        ctx.putImageData(image, 0, 0);
+      };
+    }
+    const halt = loop(show, (t) => {
+      show.sync(t);
+      scrub.value = String(place());
+      if (show.seq === drawn) return;
+      drawn = show.seq;
+      draw();
+    });
+
+    return () => {
+      halt();
+      onMap = () => {};
+      onMode = () => {};
+      grid?.destroy();
+      m?.close();
+    };
+  }
 
   return () => {
+    gone = true;
     stop();
-    m?.close();
   };
 }
