@@ -130,6 +130,13 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## Decided in conversation, and in no doc
 
+- **The gpu engine's shape** (2026-11-02): a shader patch carries WGSL and a JS `at` side by side,
+  over a JS subset compiled to WGSL and over WGSL alone; the host draws from GPU buffers, with
+  `pull` reading back; it ships as the core subpath `@msb235/blits/gpu`, not a companion, so it
+  can use the lane internals; and it is a parallel evaluator beside the stock mixer, not GPU lanes.
+  Its WebGPU tests run with `npm run test:gpu` and need a real browser with WebGPU, so `onto test`
+  leaves them out: send them with `onto do --kind test --node teitou -- npm run test:gpu`.
+
 - **The two seek-back changes in `3fd3eac` stand** (Mike, 2026-10-18): `weightOf` reads 0 after
   a seek back until the subject is probed again, and a write to the handle of a voice waiting for
   its cue after a seek back is ignored. Both stay under Fixed in the changelog.
