@@ -4,13 +4,18 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
-## Unreleased
+## 0.6.0
+
+### Breaking
+
+- `@msb235/blits` is a peer at `^0.18.0`, where it was `^0.17.0`. Built and tested against engine
+  0.18.0; ◎ pick uses its `Watched.knows`.
 
 ### Fixed
 
 - ◎ pick finds a subject that a mix other than the selected one reads only through `pull`, such
   as an instance index, and switches to that mix. It looked only in subject lists, which leave
-  out what an unwatched mix reads. Needs the engine release that adds `Watched.knows`.
+  out what an unwatched mix reads.
 
 ## 0.5.0
 

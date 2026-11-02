@@ -4,6 +4,13 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `rapier-v*` tag with no
 section here.
 
+## 0.3.0
+
+### Breaking
+
+- `@msb235/blits` is a peer at `^0.18.0`, where it was `^0.17.0`. Built and tested against engine
+  0.18.0; nothing here uses what that release changed.
+
 ## 0.2.0
 
 ### Breaking
