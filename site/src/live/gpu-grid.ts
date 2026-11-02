@@ -33,9 +33,15 @@ export function gpuDevice(): Promise<GpuDevice | null> {
 }
 
 /** One channel the grid reads: its name, and how many numbers a cell's value takes. */
-export interface GridChannel {
+export interface GridChannel<I = unknown> {
   name: string;
   axes: number;
+  /** The mix's GPU side to read it from, where it is not the grid's own `side`. */
+  side?: GpuSide<I>;
+  /** The name the body reads it by, where two mixes' channels share a name. Default `name`. */
+  as?: string;
+  /** Fills it on the CPU, where it is not the grid's own `cpu`. */
+  cpu?: (name: string, out: Float32Array) => void;
 }
 
 export interface GridSpec<I> {
@@ -44,7 +50,7 @@ export interface GridSpec<I> {
   rows: number;
   device: GpuDevice;
   side: GpuSide<I>;
-  channels: readonly GridChannel[];
+  channels: readonly GridChannel<I>[];
   /** Each cell's base color as 0xrrggbb, in cell order. */
   bases: ArrayLike<number>;
   /**
@@ -108,8 +114,8 @@ export function gpuGrid<I>(spec: GridSpec<I>): Grid {
   const decls = channels
     .map(
       (c, k) => `@group(0) @binding(${2 + k}) var<storage, read> ch_${k}: array<f32>;
-fn c_${c.name}(i: u32, a: u32) -> f32 { return ch_${k}[grid.at[${k}].x + i * grid.at[${k}].y + a]; }
-fn c4_${c.name}(i: u32) -> vec4f { return vec4f(c_${c.name}(i, 0u), c_${c.name}(i, 1u), c_${c.name}(i, 2u), c_${c.name}(i, 3u)); }`,
+fn c_${c.as ?? c.name}(i: u32, a: u32) -> f32 { return ch_${k}[grid.at[${k}].x + i * grid.at[${k}].y + a]; }
+fn c4_${c.as ?? c.name}(i: u32) -> vec4f { return vec4f(c_${c.as ?? c.name}(i, 0u), c_${c.as ?? c.name}(i, 1u), c_${c.as ?? c.name}(i, 2u), c_${c.as ?? c.name}(i, 3u)); }`,
     )
     .join('\n');
   const code = `${OVER_WGSL}
@@ -155,14 +161,14 @@ ${decls}
   return {
     draw() {
       const sources: Buf[] = channels.map((c, k) => {
-        const on: GpuChannel | null = side.channel(c.name);
+        const on: GpuChannel | null = (c.side ?? side).channel(c.name);
         const f = fallbacks[k] as { data: Float32Array; buf: Buf };
         if (on !== null) {
           metaData[4 + 4 * k] = on.offset / 4;
           metaData[5 + 4 * k] = on.stride / 4;
           return on.buffer;
         }
-        spec.cpu(c.name, f.data);
+        (c.cpu ?? spec.cpu)(c.name, f.data);
         device.queue.writeBuffer(f.buf, 0, f.data);
         metaData[4 + 4 * k] = 0;
         metaData[5 + 4 * k] = c.axes;

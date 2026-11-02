@@ -71,4 +71,10 @@ describe('voice table', () => {
     m.sync(0);
     expect(eligibility(mixerOf(m), cells).channels.size).toBe(0);
   });
+
+  it('folds a channel no playing voice writes on the GPU, at its rest', () => {
+    const m = mix<C, P>(K);
+    m.sync(0);
+    expect(eligibility(mixerOf(m), cells).channels.has('y')).toBe(true);
+  });
 });

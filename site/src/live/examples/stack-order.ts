@@ -200,7 +200,6 @@ export default function run(root: HTMLElement): () => void {
 
   let mode: Mode = 'overlay';
   let order: Name[] = ['C', 'A', 'B'];
-  const diffCtx = ctxOf(diff);
 
   // The picks live out here, so one made before the device is ready still counts.
   let refresh = () => drawOrder();
@@ -265,8 +264,7 @@ export default function run(root: HTMLElement): () => void {
       if (device !== null) gpuOf(m).subjects(CELLS, (c) => ({ x: c.x, y: c.y }));
       return m;
     };
-    // With the GPU, it folds both mixes and lays each over the ramp. The difference between them
-    // is still found on the CPU, from probes, since reading back a WebGPU canvas is not cheap.
+    // With the GPU, it folds both mixes and lays each over the ramp.
     const gridFor = (m: Mix<Cell, Tint>, v: View, gpuDev: GpuDevice) =>
       gpuGrid({
         canvas: v.el,
@@ -281,19 +279,56 @@ export default function run(root: HTMLElement): () => void {
         cpu: probed(m, CELLS),
       });
     const ctxs = device === null ? [ctxOf(fixed), ctxOf(yours)] : [];
+    const diffCtx = device === null ? ctxOf(diff) : null;
+    // On the GPU, the third view lays both mixes over the ramp and marks where they differ, as
+    // `differing` does on the CPU.
+    const lay = (name: string, v: string) =>
+      mode in COMMUTING
+        ? `${v} = blits_over_free(c4_${name}(i), under);`
+        : `${v} = under; ${layStack(name, v)}`;
+    const diffFor = (gpuDev: GpuDevice) =>
+      gpuGrid({
+        canvas: diff.el,
+        cols: COLS,
+        rows: ROWS,
+        device: gpuDev,
+        side: gpuOf(left as Mix<Cell, Tint>),
+        channels: [
+          { name: 'c', as: 'l', axes: mode in COMMUTING ? 4 : 18 },
+          {
+            name: 'c',
+            as: 'r',
+            axes: mode in COMMUTING ? 4 : 18,
+            side: gpuOf(right as Mix<Cell, Tint>),
+            cpu: probed(right as Mix<Cell, Tint>, CELLS),
+          },
+        ],
+        bases: CELLS.map((c) => c.base),
+        body: `var a = under; var b = under; ${lay('l', 'a')} ${lay('r', 'b')}
+  let ea = round(blits_encode(a) * 255.0);
+  let eb = round(blits_encode(b) * 255.0);
+  if (any(abs(ea - eb) > vec3f(2.0))) { shown = blits_decode(vec3f(236.0, 64.0, 122.0) / 255.0); }
+  else { shown = blits_decode(vec3f(floor((ea.x + ea.y + ea.z) / 6.0)) / 255.0); }`,
+        cpu: probed(left as Mix<Cell, Tint>, CELLS),
+      });
 
     let drawn = '';
+    let counted = Number.NaN;
     const rebuild = () => {
       left?.close();
       right?.close();
       for (const g of grids) g.destroy();
       left = build(['A', 'B', 'C'], 'stack-order-cued');
       right = build(order, 'stack-order-yours');
-      grids = device === null ? [] : [gridFor(left, fixed, device), gridFor(right, yours, device)];
+      grids =
+        device === null
+          ? []
+          : [gridFor(left, fixed, device), gridFor(right, yours, device), diffFor(device)];
       yoursCaption.textContent = `cued ${order.join(', ')}`;
       for (const { n, b } of modeButtons) b.ariaPressed = String(n === mode);
       drawOrder();
       drawn = '';
+      counted = Number.NaN;
     };
     refresh = rebuild;
 
@@ -316,15 +351,23 @@ export default function run(root: HTMLElement): () => void {
       const key = `${show.seq}`;
       if (key === drawn) return;
       drawn = key;
-      probe(left, fixed);
-      probe(right, yours);
+      // The share is counted from probes, so on the GPU it is counted four times a second of mix
+      // time rather than every frame.
+      const count = device === null || !(Math.floor(show.now / 250) === counted);
+      if (count) {
+        counted = Math.floor(show.now / 250);
+        probe(left, fixed);
+        probe(right, yours);
+      }
       if (device === null) {
         ctxs[0]?.putImageData(fixed.image, 0, 0);
         ctxs[1]?.putImageData(yours.image, 0, 0);
       } else for (const g of grids) g.draw();
-      const share = differing(fixed.image, yours.image, diff.image);
-      diffCtx.putImageData(diff.image, 0, 0);
-      readout.textContent = `${(100 * share).toFixed(1).padStart(5)}% of pixels differ between the two`;
+      if (count) {
+        const share = differing(fixed.image, yours.image, diff.image);
+        if (device === null) diffCtx?.putImageData(diff.image, 0, 0);
+        readout.textContent = `${(100 * share).toFixed(1).padStart(5)}% of pixels differ between the two`;
+      }
     });
 
     return () => {

@@ -58,6 +58,8 @@ export function eligibility<I, O>(mix: Mixer<I, O>, subjects: readonly I[]): Eli
     }
     if (reason !== null) reasons.push({ voice, why: reason });
   }
+  // A channel no playing voice writes folds to its rest, which the GPU gives as well as any.
+  for (const name of ruled) channels.add(name);
   for (const name of kept) channels.delete(name);
   const voices = playing.filter(
     (v) =>
