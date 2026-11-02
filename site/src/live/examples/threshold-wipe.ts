@@ -151,8 +151,8 @@ export default function run(root: HTMLElement): () => void {
     });
     drawn = -1;
   };
-  maps.buttons.forEach((b) => b.addEventListener('click', () => paintMap(b.textContent ?? '')));
-  modes.buttons.forEach((b) => b.addEventListener('click', () => choose(b.textContent as Mode)));
+  for (const b of maps.buttons) b.addEventListener('click', () => paintMap(b.textContent ?? ''));
+  for (const b of modes.buttons) b.addEventListener('click', () => choose(b.textContent as Mode));
 
   const showRate = () => {
     play.textContent = show.rate === 0 ? 'Play' : 'Pause';

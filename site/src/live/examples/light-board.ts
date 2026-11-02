@@ -172,12 +172,12 @@ export default function run(root: HTMLElement): () => void {
     });
     auto.ariaPressed = String(running);
   };
-  buttons.forEach((b, i) =>
+  buttons.forEach((b, i) => {
     b.addEventListener('click', () => {
       running = false;
       take(i);
-    }),
-  );
+    });
+  });
   auto.addEventListener('click', () => {
     running = true;
     take((current + 1) % LOOKS.length);

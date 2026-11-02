@@ -140,7 +140,9 @@ export default function run(root: HTMLElement): () => void {
     });
     cycleButton.ariaPressed = String(b === undefined);
   };
-  brandButtons.forEach((el, i) => el.addEventListener('click', () => pick(i)));
+  brandButtons.forEach((el, i) => {
+    el.addEventListener('click', () => pick(i));
+  });
   cycleButton.addEventListener('click', () => pick(-1));
 
   let muted: Handle | undefined;
