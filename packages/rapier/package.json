@@ -1,6 +1,6 @@
 {
   "name": "@msb235/blits-rapier",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Pairs Rapier rigid-body physics with a blits mix: voices push bodies, and each body's simulated pose blends with authored motion",
   "keywords": [
     "physics",
