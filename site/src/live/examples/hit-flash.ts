@@ -34,6 +34,8 @@ const ASPECT = COLS / ROWS;
 const NONE = [0, 0, 0, 0];
 /** How long a flash lasts, in ms. */
 const FLASH = 380;
+/** How much of a flash holds at full before it fades. */
+const HOLD = 0.4;
 /** How long between hits the scene lands by itself, in ms. */
 const EVERY = 1300;
 
@@ -60,11 +62,12 @@ function scene(x: number, y: number): { base: number; who: number; cov: number }
   return { base: toHex([0.24 + 0.1 * y, -0.005, -0.03, 1], 0) as number, who: -1, cov: 0 };
 }
 
-/** A flash of white over each cell of a creature, fading out over its pass. */
+/** A flash of white over each cell of a creature, held full for its first 40%, then fading out. */
 const flash = patch<Cell, Flash>(
   FLASH,
   (phase, c) => {
-    const a = c.cov * (1 - phase) * (1 - phase);
+    const fade = phase < HOLD ? 1 : (1 - phase) / (1 - HOLD);
+    const a = c.cov * fade * fade;
     return a > 0 ? { hit: [a, 0, 0, a] } : {};
   },
   { writes: ['hit'] },

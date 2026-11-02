@@ -8,9 +8,9 @@ import Listing from '../../components/Listing.astro';
 
 # Hit flash
 
-Click a creature. Each hit cues one voice over that creature's cells for a single pass of 380 ms, on `color(difference())`: a layer of white, fading out over the pass, inverts what is under it and lets it come back. When the pass ends the voice leaves the mix, as in the [particle burst](../#particle-burst). Auto lands a hit every 1.3 s on the transport's clock.
+Click a creature. Each hit cues one voice over that creature's cells for a single pass of 380 ms, on `color(difference())`: a layer of white, held full for the first 40% of the pass and then fading out, inverts what is under it and lets it come back. When the pass ends the voice leaves the mix, as in the [particle burst](../#particle-burst). Auto lands a hit every 1.3 s on the transport's clock.
 
-Hits that overlap stack in the order they were cued, one layer each, and two full flashes of white on `difference` cancel: inverting twice gives back the colors underneath. Double hit cues two flashes 70 ms apart, so the creature inverts, snaps back while both are strong, then inverts again as the first one fades.
+Hits that overlap stack in the order they were cued, one layer each, and two full flashes of white on `difference` cancel: inverting twice gives back the colors underneath. Double hit cues two flashes 70 ms apart, so the creature inverts, snaps back to its own colors while both are held full, then swings partway back toward inverted as the first one fades out, and returns as the second does.
 
 The same voice reads differently under other modes. On `colorDodge`, white burns the creature out to white and lets it come back through its brightest colors first. On `luminosity`, it takes the creature's lightness up and keeps its hue, so a hit reads as a flash of the creature's own color.
 
