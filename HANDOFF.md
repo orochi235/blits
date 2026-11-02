@@ -57,7 +57,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   (recorded in klieg's changelog). 0.3.0 needed no change in klieg: its `color` channel is a `hex`,
   but every effect voice plays at full weight with no role, so the OKLCH blend is never taken. The
   schema page's klieg section says what the port found.
-- **The package, `@msb235/blits` 0.15.0 on npm.** `src/` is the whole of it, with `types.ts` a
+- **The package, `@msb235/blits` 0.16.1 on npm.** `src/` is the whole of it, with `types.ts` a
   barrel over `types/` holding the whole public surface, doc-commented. What a probe or a fill runs
   per subject is methods, written in their modules as functions taking `this` and installed on the
   prototype at the foot of `mixer.ts`, `lanes.ts` and `motions.ts`: as plain functions they cost
@@ -883,8 +883,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     (the changelog's 0.8.1 section). To measure a blits build against astv's bench: `MOTION_ONLY=1
     probes/blits-version-bench.sh <out dir> 0.7.1` in `~/src/astv` on a fleet node.
 
-16. **blits-rapier** (`packages/rapier`, built 2026-10-31, unreleased at 0.0.0; its first version
-    goes out by hand, since npm's trusted publishing refuses a name never published). Its README
+16. **blits-rapier** (`packages/rapier`, built 2026-10-31; 0.1.0 published by hand 2026-11-01,
+    trusted publishing registered after it, so later versions go out from `rapier-v*` tags). Its README
     says what it does and does not do. Open:
     - Kinematic bodies moved by a voice need a vector channel with no rest.
     - History cannot page to a `store`: a body's add holds Rapier descriptions, not plain data.
