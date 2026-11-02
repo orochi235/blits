@@ -23,6 +23,9 @@ export interface Kernel {
   readonly fields: readonly string[];
 }
 
+/** A number as a WGSL f32 literal. */
+const lit = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
+
 const ty = (axes: number) => (axes === 1 ? 'f32' : `array<f32, ${axes}>`);
 const arr = (axes: number, e: string) => (axes === 1 ? `array<f32, 1>(${e})` : e);
 
@@ -90,7 +93,7 @@ export function kernel(
   add(`@compute @workgroup_size(${GROUP})`, 'fn main(@builtin(global_invocation_id) id: vec3u) {');
   add('  let i = id.x;', '  if (i >= frame.y) { return; }', '  let subject = subjects[i];');
   outputs.forEach((o, c) => {
-    const rest = (channels.get(o.name) as ChannelCode).rest.map((r) => `${r.toFixed(1)}`);
+    const rest = (channels.get(o.name) as ChannelCode).rest.map(lit);
     add(`  var acc_${c} = array<f32, ${o.axes}>(${rest.join(', ')});`);
     add(
       `  var rv_${c}: array<array<f32, ${o.axes}>, ${MAX_ROLES}>;`,
@@ -135,8 +138,10 @@ export function kernel(
   add(arms((n, c, axes) => `acc_${c} = fold_${c}(acc_${c}, ${arr(axes, `d.${n}`)}, w);`));
   add('      default: {}', '    }', '  }');
   outputs.forEach((o, c) => {
+    const b = (channels.get(o.name) as ChannelCode).bounds;
+    const v = b === undefined ? `acc_${c}[a]` : `clamp(acc_${c}[a], ${lit(b[0])}, ${lit(b[1])})`;
     add(
-      `  for (var a = 0u; a < ${o.axes}u; a++) { outv[${o.offset}u + i * ${o.axes}u + a] = acc_${c}[a]; }`,
+      `  for (var a = 0u; a < ${o.axes}u; a++) { outv[${o.offset}u + i * ${o.axes}u + a] = ${v}; }`,
     );
   });
   add('}');

@@ -1,5 +1,18 @@
 import { lerpNumber, type NumberOptions } from './channels.js';
+import { shared } from './shared.js';
 import type { Channel } from './types.js';
+
+/** What `min` and `norm` made, keyed by the channel itself, so another engine can trust its math. */
+export type Extreme =
+  | { readonly op: 'min'; readonly top: number }
+  | { readonly op: 'norm'; readonly power: number };
+
+const extremes = shared<object, Extreme>('extreme@1');
+
+/** The arithmetic of a channel `min` or `norm` made; undefined for any other. */
+export function extremeOf(channel: Channel<unknown>): Extreme | undefined {
+  return extremes.get(channel);
+}
 
 /** Bounds change how a value folds at its edges, so they are part of the kind. */
 const kindOf = (name: string, bounds?: readonly [number, number]) =>
@@ -20,7 +33,7 @@ export function min(opts?: NumberOptions): Channel<number> {
   const top = bounds?.[1] ?? 1;
   if (!Number.isFinite(top))
     throw new RangeError(`blits: min rests at its top bound, which has to be finite, not ${top}`);
-  return {
+  const channel: Channel<number> = {
     kind: kindOf('min', bounds),
     bounds,
     rest: top,
@@ -28,6 +41,8 @@ export function min(opts?: NumberOptions): Channel<number> {
     scale: (v, w) => top + (v - top) * w,
     lerp: lerpNumber,
   };
+  extremes.set(channel, { op: 'min', top });
+  return channel;
 }
 
 /**
@@ -59,7 +74,7 @@ export function norm(opts?: NormOptions): Channel<number> {
     throw new RangeError(`blits: norm takes a finite power of at least 1, not ${p}`);
   const up = (v: number) => (v < 0 ? -((-v) ** p) : v ** p);
   const down = (s: number) => (s < 0 ? -((-s) ** (1 / p)) : s ** (1 / p));
-  return {
+  const channel: Channel<number> = {
     kind: kindOf(`norm(${p})`, opts?.bounds),
     bounds: opts?.bounds,
     rest: 0,
@@ -67,4 +82,6 @@ export function norm(opts?: NormOptions): Channel<number> {
     scale: (v, w) => v * w,
     lerp: lerpNumber,
   };
+  extremes.set(channel, { op: 'norm', power: p });
+  return channel;
 }

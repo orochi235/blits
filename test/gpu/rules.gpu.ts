@@ -1,7 +1,7 @@
 import { gpu, gpuOf } from '../../src/gpu/engine.js';
 import { shaderPatch } from '../../src/gpu/shader-patch.js';
 import type { GpuDevice } from '../../src/gpu/webgpu.js';
-import { type Channel, kit, max, mix, mixer, mul, sum } from '../../src/index.js';
+import { type Channel, kit, max, min, mix, mixer, mul, norm, sum } from '../../src/index.js';
 import { close, readBack, test } from './harness.js';
 
 interface C {
@@ -63,6 +63,10 @@ const RULES: [string, () => Channel<number>][] = [
   ['sum', sum],
   ['mul', mul],
   ['max', max],
+  ['min', () => min({ bounds: [-5, 5] })],
+  ['min resting at 1', min],
+  ['norm(2)', norm],
+  ['norm(4)', () => norm({ power: 4 })],
 ];
 for (const [name, ch] of RULES) {
   test(`${name}: one voice at full weight`, (d) => agree(d, ch, [{ k: 1 }], [130, 470]));
