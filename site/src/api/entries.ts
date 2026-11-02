@@ -10,11 +10,8 @@ import {
   type Signature,
 } from './typedoc';
 
-/** A doc comment split for display: the first sentence, then the rest as paragraphs behind "more". */
-export interface Doc {
-  lead: Part[];
-  rest: Part[][];
-}
+/** A doc comment for display, as paragraphs. */
+export type Doc = Part[][];
 
 /** One row of a field or parameter table. */
 export interface Row {
@@ -39,7 +36,7 @@ export interface Entry {
 }
 
 /** Breaks parts into paragraphs at blank lines, keeping code spans whole. */
-function paragraphs(parts: Part[]): Part[][] {
+export function paragraphs(parts: Part[]): Doc {
   const out: Part[][] = [[]];
   for (const part of parts) {
     if (part.kind !== 'text') {
@@ -52,22 +49,6 @@ function paragraphs(parts: Part[]): Part[][] {
     });
   }
   return out.filter((para) => para.some((x) => x.text.trim()));
-}
-
-/** Splits at the end of the first sentence: a period, question or exclamation mark before a space. */
-export function split(parts: Part[]): Doc {
-  const [first = [], ...later] = paragraphs(parts);
-  for (const [i, part] of first.entries()) {
-    if (part.kind !== 'text') continue;
-    const end = /[.!?](?=\s)/.exec(part.text);
-    if (!end) continue;
-    const cut = end.index + 1;
-    const lead = [...first.slice(0, i), { kind: 'text', text: part.text.slice(0, cut) }];
-    const tail = [{ kind: 'text', text: part.text.slice(cut).trimStart() }, ...first.slice(i + 1)];
-    const rest = tail.some((x) => x.text.trim()) ? [tail, ...later] : later;
-    return { lead, rest };
-  }
-  return { lead: first, rest: later };
 }
 
 const deprecated = (c: Comment | undefined) => !!c?.blockTags?.some((b) => b.tag === '@deprecated');
@@ -88,7 +69,7 @@ function member(c: Node): Row {
     key: c.name,
     method: !!sig,
     type: sig ? arrow(sig) : typeOf(c.type),
-    doc: split(comment?.summary ?? []),
+    doc: paragraphs(comment?.summary ?? []),
     deprecated: deprecated(comment),
   };
 }
@@ -105,7 +86,7 @@ function params(sig: Signature): Row[] {
       {
         name: `${x.name}${opt}`,
         type: typeOf(x.type),
-        doc: split(x.comment.summary ?? []),
+        doc: paragraphs(x.comment.summary ?? []),
         deprecated: false,
       },
     ];
@@ -153,7 +134,7 @@ function entry(n: Node): Entry {
     kind,
     word,
     signature: signature(n, kind),
-    doc: split(comment?.summary ?? []),
+    doc: paragraphs(comment?.summary ?? []),
     deprecated: deprecated(comment),
     members: hasMembers
       ? (n.children ?? []).filter((c) => c.kind !== CONSTRUCTOR && !c.inheritedFrom).map(member)

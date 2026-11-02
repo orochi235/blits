@@ -94,32 +94,13 @@ pre.api-sig {
   margin: 0.3rem 0;
 }
 
-details.api-doc > summary {
-  cursor: pointer;
-  list-style: none;
-}
-
-details.api-doc > summary::-webkit-details-marker {
-  display: none;
-}
-
-.api-more {
-  font: 500 0.75rem var(--label);
-  color: var(--focus);
-  white-space: nowrap;
-}
-
-.api-more::after {
-  content: ' ▸';
-}
-
-details[open] > summary .api-more::after {
-  content: ' ▾';
-}
-
-details.api-doc > p,
-details.api-doc > pre {
+.api-doc > p,
+.api-doc > pre {
   margin: 0.45rem 0 0;
+}
+
+.api-doc > :first-child {
+  margin-top: 0;
 }
 
 .page table.api-rows {
