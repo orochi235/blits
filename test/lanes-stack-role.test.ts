@@ -34,5 +34,5 @@ function read(lanes: boolean, visit: boolean): number[] {
 it('folds an ordered blend mode role on lanes as the general path does, after an earlier frame', () => {
   const general = read(false, true);
   const laned = read(true, true);
-  laned.forEach((v, i) => expect(v).toBeCloseTo(general[i] as number, 9));
+  for (const [i, v] of laned.entries()) expect(v).toBeCloseTo(general[i] as number, 9);
 });
