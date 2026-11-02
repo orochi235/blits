@@ -4,6 +4,8 @@ title: Debugging a mix
 description: Name your mixes and subjects, then watch them in the in-page panel or the DevTools extension, and ask a mix what is playing, how sure a read is, and what is at rest.
 ---
 import Listing from '../../components/Listing.astro';
+import Live from '../../components/Live.tsx';
+import '../../styles/guide-debugging.css';
 
 # Debugging a mix
 
@@ -72,5 +74,9 @@ Some questions are quicker asked in code:
 | Is anything moving this subject? | `m.atRest(subject)`: true when every channel is at rest for it this frame, so the host can skip the write. |
 | Can the loop sleep? | `m.inert`: true once another frame would change no pose. `m.onWake(fn)` says when that stops being so. |
 | How sure is a read at another time? | `m.project(time).assess(subject)`: per channel, `exact` where only the clock drove it, `stepped` where state was advanced across a gap in one go, and `held` where it depends on input from outside the clock whose value then isn't known. |
+
+Below, a mix named `debugging: lamps` answers those questions every frame. Click a lamp to ask about it; **Hop** cues a short voice on it that waits 400 ms as `pending`, and **Stop idle** fades every voice tagged `idle` until the lamp is at rest and the mix is inert. **Open the debug panel** reloads the page with `?panel`, where the same mix is listed by name.
+
+<Live client:only="react" of="guides/debugging.ts" />
 
 [Scrubbing and reading ahead](../scrubbing/) covers [`project`](Mix.project) and [`seek`](Mix.seek).

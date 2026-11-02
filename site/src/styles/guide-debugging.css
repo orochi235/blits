@@ -1,0 +1,24 @@
+/* The debugging guide's lamps: each one's lift and glow are custom properties the frame loop sets. */
+.live .debug-lamps {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem 0 0.5rem;
+}
+
+.live .debug-lamp {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 2px solid var(--rule);
+  border-radius: 50%;
+  font: 700 0.85rem var(--mono);
+  color: var(--ink);
+  background: color-mix(in oklab, var(--voice-2) calc(var(--glow, 0) * 100%), var(--paper));
+  transform: translateY(var(--y, 0));
+  cursor: pointer;
+}
+
+.live .debug-lamp[aria-pressed='true'] {
+  border-color: var(--voice-1);
+}

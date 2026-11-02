@@ -4,6 +4,8 @@ title: Shipping your own patches
 description: Publish patches from your own package with the channels they write, check them with blits' testing helpers, and make stateful ones safe for history.
 ---
 import Listing from '../../components/Listing.astro';
+import Live from '../../components/Live.tsx';
+import '../../styles/guide-patch-library.css';
 
 # Shipping your own patches
 
@@ -40,6 +42,10 @@ Make blits a peer dependency of your package, as `@msb235/blits-quarks` does, so
 - [`clone`](Patch.clone), or [`pack`](Patch.pack) then [`unpack`](Patch.unpack) through JSON, gives back a state unequal to the one it was given.
 - The patch [`reads`](Patch.reads) a field the `host` you passed lacks.
 - Given a `kit`, `cue` would refuse the patch.
+
+Below, the glow library's `pulse` and `near` play on five lamps, with a stateful flicker of the same shape on top; move the pointer over the lamps to bring `near` in. Each button breaks the flicker in one of the ways above, and `checkPatch` runs on it again, in the browser, printing what it finds. The last button cues `pulse` into a mix that holds `glow` as a `mul` and prints why `cue` refuses it.
+
+<Live client:only="react" of="guides/patch-library.ts" />
 
 `setting(fields)` makes the `Setting` a patch is handed inside a mix, for calling [`at`](Patch.at) or [`step`](Patch.step) directly. Any field may be given. The rest read a voice at full weight at the start of its first pass, 1/60 s after the last frame. What the patch sends lands in its `sent` list.
 
