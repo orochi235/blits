@@ -35,6 +35,10 @@
       "types": "./dist/lean.d.ts",
       "default": "./dist/lean.js"
     },
+    "./gpu": {
+      "types": "./dist/gpu.d.ts",
+      "default": "./dist/gpu.js"
+    },
     "./fling": {
       "types": "./dist/fling.d.ts",
       "default": "./dist/fling.js"
@@ -49,6 +53,7 @@
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run",
+    "test:gpu": "node test/gpu/run.mjs",
     "test:watch": "vitest",
     "test:general": "BLITS_LANES=off vitest run",
     "typecheck": "tsc -b && tsc -p tsconfig.test.json && tsc -b packages/quarks && tsc -p packages/quarks/tsconfig.test.json && tsc -b packages/tone && tsc -p packages/tone/tsconfig.test.json && tsc -b packages/panel && tsc -p packages/panel/tsconfig.test.json && tsc -b packages/rapier && tsc -p packages/rapier/tsconfig.test.json && npm --prefix site run typecheck",

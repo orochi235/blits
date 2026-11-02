@@ -14,7 +14,7 @@ export type Scalar = 'f32';
  */
 export interface ShaderSpec<I, O, P extends Record<string, number>> {
   /**
-   * WGSL statements setting fields of `out`, one per channel in `writes`, from `phase`, `pass`,
+   * WGSL statements setting fields of `out`, one per channel in `writes`, from `phase`, `pass_index`,
    * `subject` (the fields named in `fields`), and `params` (those named in `params`).
    */
   wgsl: string;

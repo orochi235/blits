@@ -24,6 +24,8 @@ export interface Table {
   readonly rows: Float32Array;
   readonly values: Float32Array;
   readonly count: number;
+  /** How many roles this frame's voices play. */
+  readonly roles: number;
 }
 
 /**
@@ -47,6 +49,11 @@ export function voiceTable<I, O>(
     rows[o + Col.SHADER] = shaders.get(d.shader) ?? 0;
     rows[o + Col.VALUES] = values.length;
     values.push(...d.values);
+    const raw = voice.rawAt(now, 0);
+    const early = voice.before(raw, now);
+    const elapsed = early && !voice.holdsFirst ? Number.NaN : voice.shownAt(raw);
+    if (Number.isNaN(elapsed)) return;
+    // A member showing nothing this frame does not meet its role, so the next one leads it.
     const role = voice.spec.role;
     if (role !== undefined) {
       const known = roles.get(role);
@@ -56,10 +63,6 @@ export function voiceTable<I, O>(
         rows[o + Col.FIRST] = 1;
       }
     }
-    const raw = voice.rawAt(now, 0);
-    const early = voice.before(raw, now);
-    const elapsed = early && !voice.holdsFirst ? Number.NaN : voice.shownAt(raw);
-    if (Number.isNaN(elapsed)) return;
     const since = mix.sinceOf(voice, 0);
     const fade = mix.envelope(voice, now, mix.shownOf(voice, since));
     rows[o + Col.PHASE] =
@@ -69,5 +72,10 @@ export function voiceTable<I, O>(
     rows[o + Col.PASS] = passAt(elapsed, voice.duration, voice.passes);
     rows[o + Col.WEIGHT] = weighed(voice.weight, fade, 1);
   });
-  return { rows, values: new Float32Array(values.length > 0 ? values : [0]), count: voices.length };
+  return {
+    rows,
+    values: new Float32Array(values.length > 0 ? values : [0]),
+    count: voices.length,
+    roles: roles.size,
+  };
 }
