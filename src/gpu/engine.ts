@@ -7,7 +7,7 @@ import type { GpuDevice } from './webgpu.js';
 const sides = new WeakMap<object, GpuSide<unknown>>();
 
 /** The mixer behind a mix: the mix object is one. Throws for a mix no stock engine made. */
-export function mixerOf<I, O>(m: Mix<I, O>): Mixer<I, O> {
+export function mixerOf<I, O, H>(m: Mix<I, O, H>): Mixer<I, O> {
   if (!(m instanceof Mixer)) throw new Error('blits: this mix was not made by a stock engine');
   return m as unknown as Mixer<I, O>;
 }
@@ -47,7 +47,7 @@ export function gpu(opts: GpuOptions): Engine {
  *
  * @category gpu
  */
-export function gpuOf<I>(m: Mix<I, unknown, unknown>): GpuSide<I> {
+export function gpuOf<I, O, H>(m: Mix<I, O, H>): GpuSide<I> {
   const side = sides.get(m);
   if (side === undefined) throw new Error('blits: gpuOf takes a mix the gpu engine made');
   return side as GpuSide<I>;

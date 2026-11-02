@@ -44,7 +44,7 @@ export function eligibility<I, O>(mix: Mixer<I, O>, subjects: readonly I[]): Eli
   const playing = mix.cued.filter((v) => PLAYING.has(v.state));
   for (const voice of playing) {
     const reason = why(voice, subjects);
-    for (const name of voice.patch.writes as string[]) {
+    for (const name of voice.patch.writes as readonly string[]) {
       if (reason === null) channels.add(name);
       else kept.add(name);
     }
@@ -54,7 +54,7 @@ export function eligibility<I, O>(mix: Mixer<I, O>, subjects: readonly I[]): Eli
   const voices = playing.filter(
     (v) =>
       gpuDescriptor(v.patch) !== undefined &&
-      (v.patch.writes as string[]).some((n) => channels.has(n)),
+      (v.patch.writes as readonly string[]).some((n) => channels.has(n)),
   );
   return { channels, voices, reasons };
 }
