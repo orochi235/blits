@@ -18,7 +18,7 @@ import {
   transport,
 } from '@msb235/blits/gpu';
 import { createHistory } from '@weasel-js/history';
-import { type Grid, gpuDevice, gpuGrid } from '../gpu-grid';
+import { type Grid, gpuDevice, gpuGrid, probed } from '../gpu-grid';
 import { loop } from '../loop';
 
 interface Cell {
@@ -186,17 +186,6 @@ function put(image: ImageData, i: number, hex: number) {
   image.data.set([hex >> 16, (hex >> 8) & 0xff, hex & 0xff, 255], i * 4);
 }
 
-/** A grid's `cpu`: each cell's value probed on the CPU, or -1 where no voice wrote one. */
-function probedOr(m: Mix<Cell, Values>, cells: readonly Cell[]) {
-  const pose = m.pose();
-  return (name: string, out: Float32Array) => {
-    cells.forEach((c, i) => {
-      m.probe(c, pose);
-      out[i] = pose[name as Rule] ?? -1;
-    });
-  };
-}
-
 export default function run(root: HTMLElement): () => void {
   const wrap = document.createElement('div');
   wrap.className = 'picker';
@@ -293,7 +282,7 @@ export default function run(root: HTMLElement): () => void {
           channels: [{ name, axes: 1 }],
           bases: new Array(cells.length).fill(0),
           body: shadeWgsl(name),
-          cpu: probedOr(mx, cells),
+          cpu: probed(mx, cells, -1),
         });
       const tiles = thumbs.map((t) => view(t.el, m, small, t.name));
       let large1: Grid | undefined;

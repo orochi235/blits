@@ -214,6 +214,8 @@ ${decls}
 export function probed<I>(
   m: { probe(subject: I, out?: object): object },
   cells: readonly I[],
+  /** What a cell no voice wrote reads, for a channel with no rest such as `last`. */
+  missing = 0,
 ): (name: string, out: Float32Array) => void {
   const pose: Record<string, unknown> = {};
   return (name, out) => {
@@ -222,7 +224,9 @@ export function probed<I>(
       m.probe(c, pose);
       const v = pose[name];
       if (typeof v === 'number') out[i] = v;
-      else for (let a = 0; a < axes; a++) out[i * axes + a] = (v as number[])[a] ?? 0;
+      else
+        for (let a = 0; a < axes; a++)
+          out[i * axes + a] = (v as number[] | undefined)?.[a] ?? missing;
     });
   };
 }
