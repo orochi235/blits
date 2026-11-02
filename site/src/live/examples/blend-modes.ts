@@ -218,7 +218,9 @@ export default function run(root: HTMLElement): () => void {
   // Pausing stops the transport; dragging moves each disc's own voice to that point in its sweep.
   // The slider shows the disc's place: the transport's time, shifted by the last drag.
   let shift = 0;
-  const place = () => (((show.now + shift) % PERIOD) + PERIOD) % PERIOD;
+  // `now` is NaN until the first sync, and the first pick comes before it.
+  const place = () =>
+    Number.isNaN(show.now) ? 0 : (((show.now + shift) % PERIOD) + PERIOD) % PERIOD;
 
   const choose = (name: Mode) => {
     chosen = name;

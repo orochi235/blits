@@ -45,6 +45,8 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A voice's `seek` throws a `RangeError` for a time that isn't a finite number. Seeking to `NaN`,
+  such as a transport's `now` before its first sync, left the voice showing nothing.
 - `patch` takes `clone` and puts it on the patch it makes. It took `state`, `step`, `pack` and
   `unpack` but not `clone`, so a stateful patch built with it was always copied by
   `structuredClone`, which breaks a state holding a class instance.

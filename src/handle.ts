@@ -156,6 +156,8 @@ export class VoiceHandle<I, O> implements Handle<I> {
   }
 
   seek(elapsed: number, opts?: SeekOptions): Doubt {
+    if (!Number.isFinite(elapsed))
+      throw new RangeError(`blits: a voice seeks to a finite time, not ${elapsed}`);
     const voice = this.#cued;
     if (voice === null) return 'exact';
     voice.written = true;

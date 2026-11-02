@@ -1017,3 +1017,17 @@ describe('seek back to before a cue', () => {
     expect(m.probe(a).gain).toBe(gain);
   });
 });
+
+describe('a voice seek to a time that is not a number', () => {
+  it('throws, leaving the voice where it was', () => {
+    const m = mix<Part, Pose>(K);
+    const p = { id: 'p' };
+    const h = m.cue({ patch: wave, subjects: [p], loop: true });
+    m.sync(100);
+    const before = m.probe(p).x;
+    expect(() => h.seek(Number.NaN)).toThrow(RangeError);
+    expect(() => h.seek(Number.POSITIVE_INFINITY)).toThrow(RangeError);
+    m.sync(100);
+    expect(m.probe(p).x).toBe(before);
+  });
+});

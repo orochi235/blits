@@ -441,7 +441,7 @@ export interface Handle<I = unknown> {
    * `stepMs` with no {@link MixOptions.maxDt | `maxDt`}; `stepped` where it was caught up in one step or holds signal state;
    * `held` where it was kept, or depends on host fields or an input weight the rebuild cannot know.
    * A voice still pending starts on time, already at `elapsed`, and one that freezes before shows
-   * that frame while it waits.
+   * that frame while it waits. Throws a `RangeError` for a time that isn't a finite number.
    */
   seek(elapsed: number, opts?: SeekOptions): Doubt;
   /**
