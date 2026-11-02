@@ -253,7 +253,9 @@ export function seek(transport: Transport, to: number | { readonly frame: number
     const u = Number.isNaN(last) ? at : Math.max(last, at);
     if (!Number.isFinite(u)) throw new RangeError(`blits: the mix's rate never reaches ${t}`);
     transport.u = u;
-    // A call played at `t` itself moved the mixes there before it, as a sync does.
+    // A call played at `t` itself moved the mixes there before it, as a sync does. The move begins
+    // a frame first, as a sync's does, so a voice that ends on the way is done in that frame.
+    transport.tick(t);
     if (Number.isNaN(last) || transport.now !== t) for (const m of transport.members) move(m, t);
   } else {
     // On the frame itself, its own host time: rate 0 may have held the clock there for several.
@@ -273,8 +275,8 @@ export function seek(transport: Transport, to: number | { readonly frame: number
     transport.now = t;
     for (const m of transport.members) back(m, t, seq, frame.at < t);
     cut(transport, seq);
+    transport.tick(t);
   }
-  transport.tick(t);
   // The host's clock reads on from here: its next sync reads `t` plus its time since its last.
   transport.offset = transport.last - transport.u;
   transport.kept();

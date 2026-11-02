@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- A seek back finds a voice playing that a forward seek before it played to its end. The forward
+  seek counted the voice done in the frame it seeked from, so seeking back to that frame left the
+  voice out: scrub back, forward past a hop, and back again, and the hop was gone.
+
 ## 0.17.0
 
 ### Added

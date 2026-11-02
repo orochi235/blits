@@ -1031,3 +1031,25 @@ describe('a voice seek to a time that is not a number', () => {
     expect(m.probe(p).x).toBe(before);
   });
 });
+
+describe('seek back, forward past a voice ending, and back again', () => {
+  it('finds the voice playing again each time', () => {
+    const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+    const p = { id: 'p' };
+    m.sync(0);
+    for (let t = 16; t <= 1000; t += 16) m.sync(t);
+    const h = m.cue({ patch: wave, subjects: [p] });
+    for (let t = 1016; t <= 2000; t += 16) m.sync(t);
+    m.seek(1200);
+    const x = m.probe(p).x;
+    expect(h.state).toBe('live');
+    // The forward seek plays the voice to its end; the seek after it goes back from there.
+    m.seek(1700);
+    expect(h.state).toBe('done');
+    m.seek(1200);
+    expect(h.state).toBe('live');
+    expect(m.probe(p).x).toBe(x);
+    m.seek(1300);
+    expect(h.state).toBe('live');
+  });
+});
