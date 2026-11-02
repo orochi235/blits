@@ -2,7 +2,11 @@
 // part of it spent inside a mix's sync, probe, pull or project. That part is the most a different
 // engine could take off a frame. Serves `site/dist` itself, so build the site first.
 //
-//   npm --prefix site run build && node bench/demos.mjs --out bench/runs/<date>-demos.json
+// `--engine cpu` loads every page with `?engine=cpu`, so the per-pixel demos draw on the CPU as
+// before the gpu engine; `--engine gpu` (the default) lets them use WebGPU. GPU time is each
+// submit's latency until the queue reports it done, an upper bound on the GPU's own work.
+//
+//   npm --prefix site run build && node bench/demos.mjs --engine gpu --out bench/runs/<date>-demos-gpu.json
 import { readFile, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { cpus, hostname, loadavg } from 'node:os';
@@ -34,6 +38,10 @@ const PAGES = [
   'guides/three/',
 ];
 const out = process.argv[process.argv.indexOf('--out') + 1];
+const engine = process.argv.includes('--engine')
+  ? process.argv[process.argv.indexOf('--engine') + 1]
+  : 'gpu';
+if (engine !== 'cpu' && engine !== 'gpu') throw new Error('--engine is cpu or gpu');
 if (!process.argv.includes('--out') || out === undefined) throw new Error('pass --out <file>');
 
 const TYPES = {
@@ -97,11 +105,26 @@ const hooks = () => {
       wrap(mix, r.entries_.get(mix)?.name ?? '?');
     }
   };
+  // Each submit's latency until the queue says its work is done, charged to the frame it came from.
+  const queue = window.GPUQueue?.prototype;
+  if (queue !== undefined) {
+    const submit = queue.submit;
+    queue.submit = function (...args) {
+      const f = M.cur;
+      const t = performance.now();
+      const r = submit.apply(this, args);
+      if (f !== null)
+        this.onSubmittedWorkDone().then(() => {
+          f.gpu = Math.max(f.gpu, performance.now() - t);
+        });
+      return r;
+    };
+  }
   const raf = window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = (cb) =>
     raf((now) => {
       scan();
-      const f = { frame: 0, mix: 0, sync: 0, probe: 0, pull: 0, project: 0, mixes: {} };
+      const f = { frame: 0, gpu: 0, mix: 0, sync: 0, probe: 0, pull: 0, project: 0, mixes: {} };
       if (M.on) M.cur = f;
       const t = performance.now();
       try {
@@ -116,13 +139,18 @@ const hooks = () => {
     });
 };
 
-const browser = await chromium.launch({ headless: true });
+// The full browser in new headless mode reaches the real GPU; the default headless shell gets SwiftShader.
+const browser = await chromium.launch({
+  headless: true,
+  channel: 'chromium',
+  args: ['--enable-unsafe-webgpu'],
+});
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 await page.addInitScript(hooks);
 const runs = [];
 const plan = [];
 for (const path of PAGES) {
-  await page.goto(base + path, { waitUntil: 'networkidle' });
+  await page.goto(`${base}${path}?engine=${engine}`, { waitUntil: 'networkidle' });
   // Each demo is a client-only island: its figure exists only once it has hydrated.
   await page.waitForTimeout(1000);
   const n = await page.locator('figure.live').count();
@@ -135,7 +163,7 @@ const env = {
   when: new Date().toISOString(),
 };
 for (const [k, { path, i }] of plan.entries()) {
-  await page.goto(base + path);
+  await page.goto(`${base}${path}?engine=${engine}`);
   await page.locator('figure.live').nth(i).scrollIntoViewIfNeeded();
   await page.evaluate((i) => {
     document.querySelectorAll('figure.live')[i].scrollIntoView({ block: 'center' });
@@ -146,10 +174,12 @@ for (const [k, { path, i }] of plan.entries()) {
     window.__demo.on = true;
   });
   await page.waitForTimeout(MEASURE_MS);
-  const frames = await page.evaluate(() => {
+  await page.evaluate(() => {
     window.__demo.on = false;
-    return window.__demo.frames;
   });
+  // Lets the last frames' submits report done before reading them.
+  await page.waitForTimeout(200);
+  const frames = await page.evaluate(() => window.__demo.frames);
   const mixes = [...new Set(frames.flatMap((f) => Object.keys(f.mixes)))];
   const sum = (key) => frames.reduce((a, f) => a + f[key], 0);
   const n = Math.max(frames.length, 1);
@@ -159,16 +189,17 @@ for (const [k, { path, i }] of plan.entries()) {
     mixes,
     frames: frames.length,
     frameMs: sum('frame') / n,
+    gpuMs: sum('gpu') / n,
     mixMs: sum('mix') / n,
     probes: sum('probe') / n,
     pulls: sum('pull') / n,
-    raw: frames.map((f) => [f.frame, f.mix, f.probe, f.pull]),
+    raw: frames.map((f) => [f.frame, f.mix, f.probe, f.pull, f.gpu]),
   };
   runs.push(row);
   console.log(
-    `${String(k + 1).padStart(2)}/${plan.length} ${`${path}#${i}`.padEnd(28)} ${(mixes.join(',') || '-').padEnd(28)} frame ${row.frameMs.toFixed(3).padStart(7)} ms  mix ${row.mixMs.toFixed(3).padStart(7)} ms  probes ${String(Math.round(row.probes)).padStart(6)}  pulls ${String(Math.round(row.pulls)).padStart(3)}  frames ${String(row.frames).padStart(3)}`,
+    `${String(k + 1).padStart(2)}/${plan.length} ${`${path}#${i}`.padEnd(28)} ${(mixes.join(',') || '-').padEnd(28)} frame ${row.frameMs.toFixed(3).padStart(7)} ms  gpu ${row.gpuMs.toFixed(3).padStart(7)} ms  mix ${row.mixMs.toFixed(3).padStart(7)} ms  probes ${String(Math.round(row.probes)).padStart(6)}  pulls ${String(Math.round(row.pulls)).padStart(3)}  frames ${String(row.frames).padStart(3)}`,
   );
 }
-await writeFile(out, JSON.stringify({ env, warmMs: WARM_MS, measureMs: MEASURE_MS, runs }));
+await writeFile(out, JSON.stringify({ env, engine, warmMs: WARM_MS, measureMs: MEASURE_MS, runs }));
 await browser.close();
 server.close();
