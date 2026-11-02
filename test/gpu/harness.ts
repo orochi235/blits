@@ -1,4 +1,4 @@
-import type { GpuDevice } from '../../src/gpu/webgpu.js';
+import type { GpuBuffer, GpuDevice } from '../../src/gpu/webgpu.js';
 
 type Test = { name: string; fn: (device: GpuDevice) => Promise<void> };
 const tests: Test[] = [];
@@ -16,7 +16,11 @@ export function close(got: number, want: number, what: string, absolute = 1e-5):
 }
 
 export async function runAll(): Promise<void> {
-  const gpu = (navigator as unknown as { gpu?: { requestAdapter(): Promise<any> } }).gpu;
+  type Adapter = {
+    info?: { vendor?: string; architecture?: string };
+    requestDevice(): Promise<unknown>;
+  };
+  const gpu = (navigator as unknown as { gpu?: { requestAdapter(): Promise<Adapter | null> } }).gpu;
   const adapter = await gpu?.requestAdapter();
   if (!adapter) {
     say({ kind: 'result', i: 1, n: 1, ok: false, name: 'WebGPU adapter', error: 'none' });
@@ -46,7 +50,7 @@ export async function runAll(): Promise<void> {
 /** Reads `bytes` of a GPU buffer from `offset` back into floats. */
 export async function readBack(
   device: GpuDevice,
-  buffer: any,
+  buffer: GpuBuffer,
   offset: number,
   bytes: number,
 ): Promise<Float32Array> {

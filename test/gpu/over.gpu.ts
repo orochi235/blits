@@ -36,11 +36,13 @@ async function agree(device: GpuDevice, ch: Channel<number[]>, body: string): Pr
   const poses = Array.from({ length: N }, () => pose(ch, 1 + Math.floor(rand() * 5)));
   const unders = Array.from({ length: N }, hex);
   const data = new Float32Array(N * width);
-  poses.forEach((p, i) => data.set(p, i * width));
+  poses.forEach((p, i) => {
+    data.set(p, i * width);
+  });
   const base = new Float32Array(N * 4);
-  unders.forEach((u, i) =>
-    base.set([(u >> 16) / 255, ((u >> 8) & 0xff) / 255, (u & 0xff) / 255, 0], i * 4),
-  );
+  unders.forEach((u, i) => {
+    base.set([(u >> 16) / 255, ((u >> 8) & 0xff) / 255, (u & 0xff) / 255, 0], i * 4);
+  });
   const code = `${OVER_WGSL}
 @group(0) @binding(0) var<storage, read> poses: array<f32>;
 @group(0) @binding(1) var<storage, read> unders: array<vec4f>;
@@ -99,7 +101,11 @@ for (const name of ['multiply', 'screen', 'add', 'lighten', 'darken'])
   test(`blits_over_free matches toHex for ${name}`, (d) =>
     agree(
       d,
-      color((blits as unknown as Record<string, () => Channel<number>>)[name]!()),
+      color(
+        (
+          (blits as unknown as Record<string, () => Channel<number>>)[name] as () => Channel<number>
+        )(),
+      ),
       'let shown = blits_over_free(vec4f(poses[o], poses[o + 1u], poses[o + 2u], poses[o + 3u]), under);',
     ));
 
@@ -129,7 +135,11 @@ for (const name of ORDERED)
   test(`blits_lay matches toHex for ${name}`, (d) =>
     agree(
       d,
-      color((blits as unknown as Record<string, () => Channel<number>>)[name]!()),
+      color(
+        (
+          (blits as unknown as Record<string, () => Channel<number>>)[name] as () => Channel<number>
+        )(),
+      ),
       `var shown = under;
   let n = u32(poses[o + 1u]);
   for (var k = 0u; k < n; k++) {

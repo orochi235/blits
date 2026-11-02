@@ -56,7 +56,7 @@ const disc = shaderPatch<C, P, { L: number; a: number; b: number; r: number }>(1
 
 type Cue = { L: number; a: number; b: number; r: number; weight?: number; role?: string };
 
-export async function agreeArrays(
+async function agreeArrays(
   device: GpuDevice,
   channel: () => Channel<number[]>,
   cues: Cue[],

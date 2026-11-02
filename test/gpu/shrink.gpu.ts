@@ -45,5 +45,7 @@ test('a kernel compiles once the channels it folds shrink', async (device) => {
   const ch = side.channel('v');
   if (ch === null) throw new Error('v is not on the GPU');
   const got = await readBack(device, ch.buffer, ch.offset, cells.length * 4);
-  cells.forEach((s, i) => close(got[i] as number, c.probe(s).v, `subject ${i}`));
+  cells.forEach((s, i) => {
+    close(got[i] as number, c.probe(s).v, `subject ${i}`);
+  });
 });

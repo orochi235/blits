@@ -67,7 +67,9 @@ async function agree(
     const ch = side.channel('v');
     if (ch === null) throw new Error('the channel is not on the GPU');
     const got = await readBack(device, ch.buffer, ch.offset, N * 4);
-    cells.forEach((s, i) => close(got[i] as number, c.probe(s).v, `t ${t} subject ${i}`));
+    cells.forEach((s, i) => {
+      close(got[i] as number, c.probe(s).v, `t ${t} subject ${i}`);
+    });
   }
 }
 
