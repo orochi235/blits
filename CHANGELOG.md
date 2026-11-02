@@ -6,6 +6,17 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ## Unreleased
 
+### Added
+
+- `@msb235/blits/gpu`: the `gpu` engine, which folds voices on the GPU with WebGPU into buffers a
+  host draws from. A `shaderPatch` carries its math twice, as WGSL and as a JS `at`; `gpuOf(m)`
+  registers the subjects and gives each frame's buffer per channel. A voice runs on the GPU when
+  its patch is a shader patch, its weight a number, and it reaches every registered subject; any
+  other voice, and every CPU path (`probe`, `pull`, `project`, `seek`), runs as `mixer` runs it.
+  The GPU folds `sum`, `mul`, `max`, `min`, `norm`, the number channels `screen` and `darken`,
+  `vec` of those, `color()`, and all 25 color blend modes. `OVER_WGSL` lays a color pose over a
+  base in a host's shader as `toHex` does.
+
 ### Fixed
 
 - A seek back finds a voice playing that a forward seek before it played to its end. The forward

@@ -3,6 +3,7 @@ import {
   gpu,
   gpuOf,
   type Handle,
+  type Kit,
   kit,
   last,
   type Mix,
@@ -336,7 +337,7 @@ export default function run(root: HTMLElement): () => void {
       caption.textContent = TITLE[name];
       for (const t of thumbs) t.button.ariaPressed = String(t.name === name);
       one?.close();
-      one = mix<Cell, Values>(kit<Values>({ [name]: RULES[name] }), {
+      one = mix<Cell, Values>(kit<Values>({ [name]: RULES[name] } as Kit<Values>), {
         name: 'number-rules-large',
         transport: show,
         ...engine,
