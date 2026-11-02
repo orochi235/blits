@@ -98,7 +98,8 @@ export function shaderPatch<I, O, P extends Record<string, number> = Record<stri
       form: 'fn',
       duration,
       writes: spec.writes,
-      at: (phase, subject, setting) => spec.at(phase, subject, setting as Setting<void, unknown>, p),
+      at: (phase, subject, setting) =>
+        spec.at(phase, subject, setting as Setting<void, unknown>, p),
       with(next: P) {
         for (const n of params)
           if (typeof next[n] !== 'number')
