@@ -119,7 +119,13 @@ describe('ordered blend modes on a color channel', () => {
       it(`${of.name}(${name}()) lays one voice over under in linear light`, () => {
         const p = pose(of(rule()), [[LAYER, 1]]);
         expect(toHex(p, UNDER)).toBe(laid(UNDER, f, [[LAYER, 1]]));
+        // A mode CSS lacks warns the first time blendMode meets it; color() runs before ink().
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
         expect(blendMode(p)).toBe(cssName);
+        const first = cssName === 'normal' && of === color;
+        expect(warn).toHaveBeenCalledTimes(first ? 1 : 0);
+        if (first) expect(String(warn.mock.calls[0]?.[0])).toContain(`${name}()`);
+        warn.mockRestore();
       });
     }
 

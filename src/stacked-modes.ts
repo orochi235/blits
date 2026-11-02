@@ -191,9 +191,20 @@ export function stackCss(pose: ArrayLike<number>): string | undefined {
   return `oklab(${(c[0] as number) / w} ${(c[1] as number) / w} ${(c[2] as number) / w} / ${w})`;
 }
 
-/** A stack's CSS `mix-blend-mode`, or undefined for any other pose. */
+/**
+ * A stack's CSS `mix-blend-mode`, or undefined for any other pose. A mode CSS lacks gives `normal`,
+ * with a warning once per mode outside production, since a page laying it by CSS draws it wrong.
+ */
 export function stackMode(pose: ArrayLike<number>): string | undefined {
-  return stackOf(pose)?.css;
+  const s = stackOf(pose);
+  if (s?.css === 'normal') {
+    const name = Object.keys(STACKED).find((k) => STACKED[k as OrderedMode] === s);
+    warnOnce(
+      s,
+      `CSS has no mix-blend-mode for ${name}(), so blendMode gives normal and a browser will not lay it as toHex does; draw it with toHex`,
+    );
+  }
+  return s?.css;
 }
 
 /** A rule only a color channel takes, for `mode`: a number has no base to lay a layer over. */

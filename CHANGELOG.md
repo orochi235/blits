@@ -25,7 +25,8 @@ version and everything else the patch. Each release lists its changes as **Break
 - Sixteen more ordered blend modes, kept and laid the same way. From CSS: `colorDodge()`,
   `colorBurn()`, `exclusion()`, `hue()`, `saturation()`, `colorMode()` (CSS's `color`, renamed
   because `color` is the channel it goes in) and `luminosity()`. From image editors, with no CSS
-  mode, so `blendMode` gives `normal` and only `toHex` lays them: `subtract()`, `divide()`,
+  mode, so `blendMode` gives `normal`, warning once per mode outside production, and only `toHex`
+  lays them: `subtract()`, `divide()`,
   `linearBurn()`, `vividLight()`, `linearLight()`, `pinLight()`, `hardMix()`, `darkerColor()` and
   `lighterColor()`. `hue`, `saturation`, `colorMode` and `luminosity` trade hue, chroma and
   lightness in OKLab, not CSS's HSL-like space, so they differ from the browser's; `darkerColor` and

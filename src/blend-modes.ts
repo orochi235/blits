@@ -237,7 +237,9 @@ export function blendCss(pose: ArrayLike<number>): string | undefined {
 
 /**
  * The CSS `mix-blend-mode` that lays `css(pose)` over what is under it as `toHex` does: a blend
- * mode's own, `plus-lighter` for `add`, and `normal` for any other color. Browsers blend in
+ * mode's own, `plus-lighter` for `add`, and `normal` for any other color. A blend mode CSS lacks,
+ * such as `subtract()` or `hardMix()`, gives `normal` too, and warns once outside production, since
+ * a browser cannot lay it; draw those with `toHex`. Browsers blend in
  * gamma-encoded sRGB, not the linear light `toHex` uses, so the two differ in the midtones.
  *
  * @category channel
