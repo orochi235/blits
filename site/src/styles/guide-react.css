@@ -1,0 +1,41 @@
+/* The From React guide's demo: a React tree of cards, and readouts written outside it. */
+
+.live .react-demo .cards {
+  padding: 2.5rem 1rem 1.25rem;
+}
+
+.live .react-card {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+}
+
+.live .react-demo .card {
+  cursor: pointer;
+}
+
+.live .react-card-state {
+  font: 500 0.75rem var(--label);
+  color: var(--ink-soft);
+}
+
+.live .react-counts {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0 1rem 1.25rem;
+  font: 500 0.8rem var(--label);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
+.live .react-counts span {
+  min-width: 7ch;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.live .react-counts span:first-child {
+  min-width: 4ch;
+}

@@ -4,6 +4,8 @@ title: From React
 description: Run one mix and one frame loop under a React tree, with elements as subjects and transforms written straight to the DOM.
 ---
 import Listing from '../../components/Listing.astro';
+import Live from '../../components/Live.tsx';
+import '../../styles/guide-react.css';
 
 # From React
 
@@ -36,6 +38,10 @@ useEffect(() => {
 ```
 
 [`fade`](Handle.fade) ramps the voice out over its `fade.out` and then removes it, so a component that cued a voice for as long as it is mounted takes it out on the way.
+
+Here is that tree running: one provider, four cards, and the breathing voice above. Hover a card to raise it, and click it to lift it; each is a voice on that card's element, folded with the breathing one, which **Stop breathing** fades out by unmounting its component. The label under a card is React state, set when a lift starts and again when its `done` resolves, and the counters show how few times React rendered while the loop drew every frame.
+
+<Live client:only="react" of="guides/react.ts" />
 
 ## Reading a pose into React
 
