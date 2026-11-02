@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## Unreleased
+
+### Fixed
+
+- ◎ pick finds a subject that a mix other than the selected one reads only through `pull`, such
+  as an instance index, and switches to that mix. It looked only in subject lists, which leave
+  out what an unwatched mix reads. Needs the engine release that adds `Watched.knows`.
+
 ## 0.5.0
 
 ### Breaking

@@ -132,6 +132,7 @@ export function register(mix: Any): void {
     label: (subject) => labelOf(mix, subject),
     watch: (fn) => tap(mix, fn),
     subjects: () => subjectsOf(mix),
+    knows: (subject) => mix.chains.has(subject) || subjectsOf(mix).includes(subject),
     read: (subject, at = mix.now) => mix.project(at).probe(subject),
     hold: () => hold(transport),
   };

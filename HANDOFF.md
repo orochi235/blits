@@ -935,10 +935,3 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   their 18 numbers back (`bench/kitwidth.mjs`, `bench/runs/2026-11-01-kitwidth-ab.txt`). Skipping
   channels no voice writes would need the pose to stop promising rest in every channel. The blend
   modes example still gives its large view a mix whose kit holds only the mode it shows.
-
-- **The panel's ◎ pick ignores a subject that belongs to a mix other than the selected one, when
-  it comes from `offer({ pick })`** (2026-11-02, seen on the three.js guide). With `meshes`
-  selected, the page's `pick` returned instance 208 of the `field` mix, and the panel neither
-  switched to `field` nor picked it; with `field` selected the same pick works. `picking.ts` asks
-  `owner(subject)`, which reads the map `sendSubjects` builds in `agent.ts`; why that map misses the
-  instance is not yet traced.

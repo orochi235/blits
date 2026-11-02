@@ -70,6 +70,12 @@ export interface Watched<I = unknown, O = unknown> {
    */
   subjects(): I[];
   /**
+   * Whether the mix has met `subject`: read it through `probe` or `pull`, or holds a voice naming
+   * it. Unlike {@link Watched.subjects | `subjects`}, it knows a subject the host reads without
+   * the mix being watched. A copy of blits older than this one leaves it out.
+   */
+  knows?(subject: I): boolean;
+  /**
    * One subject's pose at mix time `at`, default now. It is read through {@link Mix.project | `project`}, which moves
    * nothing, never a probe. A time behind now needs history that reaches it.
    */

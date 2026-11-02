@@ -16,6 +16,9 @@ version and everything else the patch. Each release lists its changes as **Break
   The GPU folds `sum`, `mul`, `max`, `min`, `norm`, the number channels `screen` and `darken`,
   `vec` of those, `color()`, and all 25 color blend modes. `OVER_WGSL` lays a color pose over a
   base in a host's shader as `toHex` does.
+- `Watched.knows(subject)`, whether a mix has met a subject, read through `probe` or `pull` or
+  named by a voice, without the mix being watched, so a debugger can tell which mix a picked
+  subject belongs to.
 
 ### Fixed
 

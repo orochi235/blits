@@ -253,7 +253,14 @@ export function agent(opts: AgentOptions = {}): Source & { dispose(): void } {
   };
 
   const page = picking(opts, {
-    owner: (subject) => owners.get(subject),
+    // A mix knows subjects it reads unwatched, through pull, that its subject list leaves out.
+    owner: (subject) => {
+      const listed = owners.get(subject);
+      if (listed !== undefined) return listed;
+      const e = current();
+      if (e?.knows?.(subject)) return e.id;
+      return entries().find((x) => x.knows?.(subject))?.id;
+    },
     arming: (on) => {
       if (on) sendSubjects();
       emit({ kind: 'arming', on });

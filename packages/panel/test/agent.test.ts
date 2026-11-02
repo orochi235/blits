@@ -190,6 +190,23 @@ describe('the agent', () => {
     );
   });
 
+  it('picks a subject another mix reads only through pull, and switches to that mix', () => {
+    const meshes = mix<unknown, Pose>(K, { name: 'agent-meshes' });
+    meshes.cue({ patch: clock, subjects: [{ name: 'part' }] });
+    const field = mix<number, Pose>(K, { name: 'agent-field' });
+    field.cue({ patch: clock, loop: true });
+    field.sync(0);
+    field.pull([0, 1, 2, 3], { x: new Float64Array(4) });
+    const { a, last } = setup({ pick: () => 2 });
+    const ids = last('mixes')?.mixes ?? [];
+    a.send({ kind: 'mix', id: ids.find((x) => x.name === 'agent-meshes')?.id as number });
+    a.send({ kind: 'arm', on: true });
+    document.elementsFromPoint = () => [document.body];
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 1, clientY: 1 }));
+    expect(last('picked')?.mix).toBe(ids.find((x) => x.name === 'agent-field')?.id);
+    expect(last('picked')?.subject).not.toBeNull();
+  });
+
   it("draws each bounded voice's circle on the page, through the app's screen, while asked, and no finder's", () => {
     const m = mix<unknown, Pose>(K, { name: 'agent-h' });
     const dot = { name: 'dot' };
