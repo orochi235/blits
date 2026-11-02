@@ -62,18 +62,45 @@ function light(phase: number): number[] {
 const cast = patch<Cell, Balance>(PERIOD, (phase) => ({ cast: light(phase) }), {
   writes: ['cast'],
 });
-const fix = patch<Cell, Balance>(PERIOD, (phase) => ({ fix: light(phase) }), { writes: ['fix'] });
+const fix = patch<Cell, Balance>(PERIOD, (phase) => ({ fix: light(phase) }), {
+  writes: ['fix'],
+});
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
+
+/** The gray card as `shown`: its color, and its OKLab chroma, how far it is from gray. */
+function reading(shown: number): string {
+  const [, a = 0, b = 0] = oklab(shown);
+  return `gray card ${hex(shown)}  chroma ${Math.hypot(a, b).toFixed(3)}`;
+}
+
+function put(image: ImageData, i: number, rgb: number) {
+  image.data.set([rgb >> 16, (rgb >> 8) & 0xff, rgb & 0xff, 255], i * 4);
+}
 
 export default function run(root: HTMLElement): () => void {
   const wrap = document.createElement('div');
   wrap.className = 'rig';
-  const el = document.createElement('canvas');
-  el.width = COLS;
-  el.height = ROWS;
-  const ctx = el.getContext('2d') as CanvasRenderingContext2D;
-  const image = ctx.createImageData(COLS, ROWS);
+  // The same scene twice, from one probe a cell: under the light alone, and with the correction
+  // laid over it too.
+  const view = (title: string) => {
+    const fig = document.createElement('figure');
+    const el = document.createElement('canvas');
+    el.width = COLS;
+    el.height = ROWS;
+    const caption = document.createElement('figcaption');
+    caption.textContent = title;
+    const read = document.createElement('p');
+    read.className = 'rig-read';
+    fig.append(el, caption, read);
+    const ctx = el.getContext('2d') as CanvasRenderingContext2D;
+    return { fig, ctx, image: ctx.createImageData(COLS, ROWS), read };
+  };
+  const lightOnly = view('under the light');
+  const corrected = view('corrected');
+  const pair = document.createElement('div');
+  pair.className = 'rig-pair';
+  pair.append(lightOnly.fig, corrected.fig);
   const slider = (label: string, value: number) => {
     const row = document.createElement('label');
     row.className = 'rig-row';
@@ -96,17 +123,28 @@ export default function run(root: HTMLElement): () => void {
   const play = document.createElement('button');
   play.type = 'button';
   controls.append(play);
-  const readout = document.createElement('p');
-  readout.className = 'rig-read';
-  wrap.append(el, castWeight.row, fixWeight.row, controls, readout);
+  wrap.append(pair, castWeight.row, fixWeight.row, controls);
   root.append(wrap);
 
   // Both voices loop on one period, cued together, so the correction divides by the very color
   // the cast multiplies by, whichever way the light has drifted. Their weights are the sliders.
   const show = transport({ history: { ms: 2 * PERIOD, tape: createHistory } });
-  const m = mix<Cell, Balance>(BALANCE, { name: 'white-balance', transport: show });
-  const lit: Handle = m.cue({ patch: cast, subjects: CELLS, loop: true, name: 'cast' });
-  const fixed: Handle = m.cue({ patch: fix, subjects: CELLS, loop: true, name: 'correction' });
+  const m = mix<Cell, Balance>(BALANCE, {
+    name: 'white-balance',
+    transport: show,
+  });
+  const lit: Handle = m.cue({
+    patch: cast,
+    subjects: CELLS,
+    loop: true,
+    name: 'cast',
+  });
+  const fixed: Handle = m.cue({
+    patch: fix,
+    subjects: CELLS,
+    loop: true,
+    name: 'correction',
+  });
   const weigh = () => {
     lit.weight = Number(castWeight.input.value);
     fixed.weight = Number(fixWeight.input.value);
@@ -123,7 +161,7 @@ export default function run(root: HTMLElement): () => void {
   });
   showRate();
 
-  // The gray card's middle, for the readout.
+  // The gray card's middle, for the readouts.
   const card = CELLS.reduce((a, c) =>
     c.base === GRAY && Math.hypot(c.x - 0.18, c.y - 0.58) < Math.hypot(a.x - 0.18, a.y - 0.58)
       ? c
@@ -137,14 +175,16 @@ export default function run(root: HTMLElement): () => void {
     drawn = show.seq;
     CELLS.forEach((c, i) => {
       m.probe(c, pose);
-      const out = toHex(pose.fix ?? NONE, toHex(pose.cast ?? NONE, c.base));
-      image.data.set([out >> 16, (out >> 8) & 0xff, out & 0xff, 255], i * 4);
+      const under = toHex(pose.cast ?? NONE, c.base);
+      put(lightOnly.image, i, under);
+      put(corrected.image, i, toHex(pose.fix ?? NONE, under));
     });
-    ctx.putImageData(image, 0, 0);
+    lightOnly.ctx.putImageData(lightOnly.image, 0, 0);
+    corrected.ctx.putImageData(corrected.image, 0, 0);
     m.probe(card, pose);
     const under = toHex(pose.cast ?? NONE, card.base);
-    const shown = toHex(pose.fix ?? NONE, under);
-    readout.textContent = `gray card ${hex(GRAY)}   under the light ${hex(under)}   shown ${hex(shown)}`;
+    lightOnly.read.textContent = reading(under);
+    corrected.read.textContent = reading(toHex(pose.fix ?? NONE, under));
   });
 
   return () => {

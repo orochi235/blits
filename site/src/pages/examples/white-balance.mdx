@@ -8,7 +8,7 @@ import Listing from '../../components/Listing.astro';
 
 # White balance
 
-A still life under a light that drifts from warm to cool and back. The light is a looping voice on `color(multiply())`, which multiplies every color in the scene by the light's. The correction is a second looping voice on `color(divide())`, cued at the same moment with the same period, which divides by the same color, so whatever the light has drifted to, it is undone. The readout follows the gray card: its color as designed, under the light, and as shown.
+A still life under a light that drifts from warm to cool and back. The light is a looping voice on `color(multiply())`, which multiplies every color in the scene by the light's. The correction is a second looping voice on `color(divide())`, cued at the same moment with the same period, which divides by the same color, so whatever the light has drifted to, it is undone. The left view is the scene under the light alone; the right one adds the correction. Under each, the gray card's color as shown and its chroma, how far it is from gray: 0 is neutral.
 
 The sliders set each voice's [weight](../../blending/), its layer's opacity. At correction weight 1 the gray card reads gray again; at 0.5 the scene sits halfway between lit and corrected, so a partial correction is just a voice at partial weight. Pause sets the transport's `rate` to 0.
 
