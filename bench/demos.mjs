@@ -122,7 +122,9 @@ await page.addInitScript(hooks);
 const runs = [];
 const plan = [];
 for (const path of PAGES) {
-  await page.goto(base + path);
+  await page.goto(base + path, { waitUntil: 'networkidle' });
+  // Each demo is a client-only island: its figure exists only once it has hydrated.
+  await page.waitForTimeout(1000);
   const n = await page.locator('figure.live').count();
   for (let i = 0; i < n; i++) plan.push({ path, i });
 }
