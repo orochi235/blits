@@ -12,6 +12,12 @@ section here.
   bodies between physics and authored poses with nothing written from the frame loop. Fading
   `simulated` out ended it for good, so a body could not be handed back.
 
+### Fixed
+
+- A body handed back to physics starts where it was shown, at the speed it was shown moving. The
+  world went on simulating it while an authored voice held it, so it jumped back to wherever the
+  simulation had taken it, such as against a wall that a push had sent it to.
+
 ## 0.1.0
 
 ### Added

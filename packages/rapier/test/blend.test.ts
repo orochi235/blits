@@ -59,18 +59,36 @@ it('shows only the authored voice once the simulated one is faded out', () => {
   expect(read()).toEqual([4, 0]);
 });
 
-it('hands a body to an authored voice by a weight signal, and back', () => {
+it('hands a body to an authored voice by a weight signal, and back from where it was shown', () => {
   const k = level<object>(0);
   const { sim, ball, read } = falling(share(k, 0, 2));
   ball.cue({ patch: hold([4, 0]), weight: share(k, 1, 2), role: sim.role });
   const free = read();
   expect(free[0]).toBeCloseTo(0, 6);
   k.set(1);
-  sim.sync(at(31));
+  for (let f = 31; f <= 40; f++) sim.sync(at(f));
   expect((sim.mix.probe(ball) as Pose2).position).toEqual([4, 0]);
   k.set(0);
-  sim.sync(at(32));
+  sim.sync(at(41));
   const back = (sim.mix.probe(ball) as Pose2).position;
-  expect(back[0]).toBeCloseTo(0, 6);
-  expect(back[1]).toBeLessThan(free[1] as number);
+  expect(back[0]).toBeCloseTo(4, 6);
+  expect(back[1]).toBeLessThan(0);
+  expect(back[1]).toBeGreaterThan(-0.1);
+});
+
+it('carries the speed of an authored voice into the simulation it hands back to', () => {
+  const k = level<object>(1);
+  const { sim, ball } = falling(share(k, 0, 2));
+  const slide = patch<object, Pose2>(10_000, (u) => ({ position: [u * 60, 0] }), {
+    writes: ['position'],
+  });
+  ball.cue({ patch: slide, weight: share(k, 1, 2), role: sim.role });
+  for (let f = 0; f <= 30; f++) sim.sync(at(f));
+  k.set(0);
+  sim.sync(at(31));
+  const a = (sim.mix.probe(ball) as Pose2).position[0] as number;
+  for (let f = 32; f <= 41; f++) sim.sync(at(f));
+  const b = (sim.mix.probe(ball) as Pose2).position[0] as number;
+  // The slide's 6 a second, kept for the ten frames after.
+  expect((b - a) / (10 / 60)).toBeCloseTo(6, 1);
 });

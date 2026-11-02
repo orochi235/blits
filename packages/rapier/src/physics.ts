@@ -9,11 +9,19 @@ import {
   type VoiceSpec,
 } from '@msb235/blits';
 import type { Pose2, Pose3 } from './channels.js';
-import { dimsOf, type RapierModule, type RapierWorld } from './rapier.js';
+import { dimsOf, type Placed, type RapierModule, type RapierWorld } from './rapier.js';
 import { applyLog, copy, type Entry, insert, type State, worldOf } from './world.js';
 
 /** Each pushed body's force, then torque, by key. */
 type Pushes = Record<number, number[]>;
+/** Each held body's shown pose, and the one before it if it was held then too, by key. */
+type Holds = Record<number, { now: Placed; before: Placed | undefined; dt: number }>;
+/** What a frame did to the world: its pushes, and the bodies its authored voices held. */
+interface Frame {
+  at: number;
+  pushes: Pushes;
+  holds: Holds;
+}
 
 /** What `physics` takes: a mix's options, the Rapier module, and the world's gravity. */
 export interface PhysicsOptions<H> extends MixOptions<H> {
@@ -63,6 +71,9 @@ export interface Physics<O, H> {
 
 const ROLE = 'physics';
 
+const copyOf = (r: number | readonly number[]): number | number[] =>
+  typeof r === 'number' ? r : [...r];
+
 /** Makes a mix that holds a Rapier world, stepped on its `stepMs` clock and replayed by its history. */
 export function physics<O extends Pose2 | Pose3, H extends object = Record<string, never>>(
   kit: Kit<O>,
@@ -76,9 +87,9 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   // Each frame's pushes at its mix time. A seek replays steps on what the host reads now, so the
   // world reads the pushes of the frame that caused each step from here instead: the first frame
   // at or after the step's end, looked up half a step early since replayed times can round apart.
-  const pushLog: { at: number; pushes: Pushes }[] = [];
+  const pushLog: Frame[] = [];
   const keep = rest.history?.ms ?? 0;
-  const pushesAt = (t: number): Pushes => {
+  const frameAt = (t: number): Frame | undefined => {
     let lo = 0;
     let hi = pushLog.length;
     while (lo < hi) {
@@ -86,7 +97,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       if ((pushLog[mid] as { at: number }).at < t) lo = mid + 1;
       else hi = mid;
     }
-    return (pushLog[lo] ?? pushLog[pushLog.length - 1])?.pushes ?? {};
+    return pushLog[lo] ?? pushLog[pushLog.length - 1];
   };
   let seen: State | undefined;
   let live: State | undefined;
@@ -115,7 +126,15 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
         const w = worldOf(s, rapier);
         w.timestep = dt / 1000;
         applyLog(s, w, log, setting.timestamp, dt / 2, dims);
-        const pushes = pushesAt(setting.timestamp - dt / 2);
+        const frame = frameAt(setting.timestamp - dt / 2);
+        const pushes = frame?.pushes ?? {};
+        const holds = frame?.holds ?? {};
+        for (const k in holds) {
+          const handle = s.handles.get(+k);
+          const h = holds[k];
+          if (handle !== undefined && h !== undefined)
+            dims.place(w.getRigidBody(handle), h.now, h.before, h.dt);
+        }
         const pushed: number[] = [];
         for (const k in pushes) {
           const handle = s.handles.get(+k);
@@ -153,7 +172,41 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
 
   const now = () => (Number.isNaN(m.timestamp) ? Number.NEGATIVE_INFINITY : m.timestamp);
   const driven = new Set<Body<O, H>>();
+  // Each body's voices in the simulation's role besides its own, and its pose the last frame they held it.
+  const authored = new Map<Body<O, H>, Handle<object>[]>();
+  const held = new Map<Body<O, H>, { pose: Placed; at: number }>();
   const out = m.pose();
+  const shown = m.pose();
+  // Read at the end of each frame, for the next frame's steps to apply.
+  let holding: Holds = {};
+  const holdsAt = (at: number): Holds => {
+    const holds: Holds = {};
+    for (const [body, voices] of authored) {
+      const playing = voices.filter((v) => v.state !== 'done');
+      if (playing.length === 0) {
+        authored.delete(body);
+        held.delete(body);
+        continue;
+      }
+      if (playing.length < voices.length) authored.set(body, playing);
+      const p = m.probe(body, shown) as unknown as Placed;
+      // Shown with none of the simulation, the body is put where it is shown, so the simulation
+      // takes it back from there.
+      if (
+        !live?.handles.has(body.key) ||
+        body.simulated.weightOf(body) > 0 ||
+        !playing.some((v) => v.weightOf(body) > 0)
+      ) {
+        held.delete(body);
+        continue;
+      }
+      const now = { position: [...p.position], rotation: copyOf(p.rotation) };
+      const last = held.get(body);
+      holds[body.key] = { now, before: last?.pose, dt: last === undefined ? 0 : at - last.at };
+      held.set(body, { pose: now, at });
+    }
+    return holds;
+  };
   let next = 0;
 
   return {
@@ -172,7 +225,11 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
         key,
         controls,
         simulated: undefined as unknown as Handle<object>,
-        cue: (spec) => own(spec, body),
+        cue: (spec) => {
+          const h = own(spec, body);
+          if (spec.role === ROLE) authored.set(body, [...(authored.get(body) ?? []), h]);
+          return h;
+        },
         drive: (spec) => {
           driven.add(body);
           return own(spec, controls);
@@ -208,14 +265,23 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
           pushes[body.key] = [...p.force, ...torque];
       }
       const at = m.timestamp;
-      while (pushLog.length > 0 && (pushLog[pushLog.length - 1] as { at: number }).at >= at)
+      let back = false;
+      while (pushLog.length > 0 && (pushLog[pushLog.length - 1] as { at: number }).at >= at) {
         pushLog.pop();
-      pushLog.push({ at, pushes });
+        back = true;
+      }
+      // A seek back leaves the holds read before it, and their speeds, behind.
+      if (back) {
+        holding = {};
+        held.clear();
+      }
+      pushLog.push({ at, pushes, holds: holding });
       let old = 0;
       while (old < pushLog.length - 1 && (pushLog[old + 1] as { at: number }).at < at - keep) old++;
       if (old > 0) pushLog.splice(0, old);
       m.probe(WORLD);
       live = seen;
+      holding = holdsAt(at);
     },
     world: () => (live === undefined ? undefined : worldOf(live, rapier)),
   };

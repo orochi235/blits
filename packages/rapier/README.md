@@ -50,8 +50,10 @@ const { position, rotation } = sim.mix.probe(box);
   the role `sim.role`, at the weight `physics` was given (default 1). A voice cued in that role is
   an alternative to the simulation, and the two crossfade by weight. To hand bodies to authored
   poses and back, give `physics` a `weight` signal and the authored voices its complement, such as
-  `share(k, 0, 2)` and `share(k, 1, 2)` of one `level`. A voice outside the role adds on top of
-  wherever physics has it.
+  `share(k, 0, 2)` and `share(k, 1, 2)` of one `level`. While a body's simulated voice is at weight 0
+  and a voice in the role holds it, the world puts the body where it is shown, moving as fast as
+  the shown pose moves, so handing it back starts the simulation from there. A voice outside the
+  role adds on top of wherever physics has it.
 - **`body.impulse(v)`** applies an impulse once, on the step after the mix's current time.
   **`body.drop()`** takes the body out of the world then. Both are logged at that time, so a seek
   back before it undoes them and playing forward through it does them again.

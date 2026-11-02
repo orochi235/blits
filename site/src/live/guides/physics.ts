@@ -1,6 +1,7 @@
 import RAPIER from '@dimforge/rapier2d-compat';
 import { kit, lag, level, patch, share } from '@msb235/blits';
 import { channels2, type Pose2, physics } from '@msb235/blits-rapier';
+import { createHistory } from '@weasel-js/history';
 import { loop } from '../loop';
 
 const HEIGHT = 260;
@@ -42,6 +43,8 @@ export default function run(root: HTMLElement): () => void {
     const sim = physics(kit<Pose2>(channels2), {
       rapier: RAPIER,
       name: 'physics',
+      // Kept so the debug panel can seek back through the last ten seconds.
+      history: { ms: 10_000, every: 250, tape: createHistory },
       weight: share(toward, 0, 2),
     });
     sim.body(RAPIER.RigidBodyDesc.fixed(), RAPIER.ColliderDesc.cuboid(width, 0.05));

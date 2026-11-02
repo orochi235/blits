@@ -15,6 +15,10 @@ export interface RapierBody {
   applyImpulse(impulse: RapierVector, wake: boolean): void;
   resetForces(wake: boolean): void;
   resetTorques(wake: boolean): void;
+  setTranslation(v: RapierVector, wake: boolean): void;
+  setRotation(r: never, wake: boolean): void;
+  setLinvel(v: RapierVector, wake: boolean): void;
+  setAngvel(v: never, wake: boolean): void;
 }
 
 /** What blits-rapier uses of a Rapier world, in either build. */
@@ -49,7 +53,18 @@ export interface Dims {
   rotation(body: RapierBody): number | number[];
   /** Adds `torque`, a number in 2D and three numbers in 3D. */
   torque(body: RapierBody, torque: number | readonly number[]): void;
+  /** Puts the body at a pose, moving at the speed it took to get there from `before` over `dt` ms. */
+  place(body: RapierBody, now: Placed, before: Placed | undefined, dt: number): void;
 }
+
+/** A body's position and rotation as the channels hold them. */
+export interface Placed {
+  position: readonly number[];
+  rotation: number | readonly number[];
+}
+
+const speed = (now: readonly number[], before: readonly number[] | undefined, dt: number) =>
+  now.map((x, i) => (before === undefined || dt <= 0 ? 0 : (x - (before[i] ?? x)) / (dt / 1000)));
 
 const two: Dims = {
   n: 2,
@@ -60,6 +75,15 @@ const two: Dims = {
   },
   rotation: (b) => b.rotation() as number,
   torque: (b, t) => b.addTorque((typeof t === 'number' ? t : (t[0] ?? 0)) as never, true),
+  place: (b, now, before, dt) => {
+    const r = now.rotation as number;
+    b.setTranslation(two.vector(now.position), true);
+    b.setRotation(r as never, true);
+    b.setLinvel(two.vector(speed(now.position, before?.position, dt)), true);
+    let turn = before === undefined ? 0 : r - (before.rotation as number);
+    turn -= 2 * Math.PI * Math.round(turn / (2 * Math.PI));
+    b.setAngvel((dt > 0 ? turn / (dt / 1000) : 0) as never, true);
+  },
 };
 
 const three: Dims = {
@@ -74,7 +98,36 @@ const three: Dims = {
     return [q.x, q.y, q.z, q.w];
   },
   torque: (b, t) => b.addTorque(three.vector(typeof t === 'number' ? [0, 0, t] : t) as never, true),
+  place: (b, now, before, dt) => {
+    const [x, y, z, w] = now.rotation as readonly number[];
+    b.setTranslation(three.vector(now.position), true);
+    b.setRotation({ x, y, z, w } as never, true);
+    b.setLinvel(three.vector(speed(now.position, before?.position, dt)), true);
+    b.setAngvel(
+      three.vector(
+        spin(now.rotation as number[], before?.rotation as number[] | undefined, dt),
+      ) as never,
+      true,
+    );
+  },
 };
+
+/** The angular velocity turning `before` into `now` over `dt` ms, both `[x, y, z, w]`. */
+function spin(now: readonly number[], before: readonly number[] | undefined, dt: number): number[] {
+  if (before === undefined || dt <= 0) return [0, 0, 0];
+  const [ax, ay, az, aw] = now as [number, number, number, number];
+  const [bx, by, bz, bw] = before as [number, number, number, number];
+  // now · conj(before), taken the short way round.
+  let x = bw * ax - bx * aw - by * az + bz * ay;
+  let y = bw * ay - by * aw - bz * ax + bx * az;
+  let z = bw * az - bz * aw - bx * ay + by * ax;
+  let w = bw * aw + bx * ax + by * ay + bz * az;
+  if (w < 0) [x, y, z, w] = [-x, -y, -z, -w];
+  const s = Math.hypot(x, y, z);
+  if (s < 1e-12) return [0, 0, 0];
+  const k = (2 * Math.atan2(s, w)) / s / (dt / 1000);
+  return [x * k, y * k, z * k];
+}
 
 /** The 3D build where the module has `Vector3`, else the 2D. */
 export function dimsOf(rapier: RapierModule): Dims {
