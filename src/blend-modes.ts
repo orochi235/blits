@@ -1,4 +1,5 @@
 import { doubles, foldsInto, lerpNumber, max, mul, sum, vouch } from './channels.js';
+import { extremes } from './extremes.js';
 import { fromLinear, labOf, linearByte, linearOf } from './oklab.js';
 import { shared } from './shared.js';
 import {
@@ -78,7 +79,15 @@ export function multiply(): Channel<number> {
  * @category channel
  */
 export function screen(): Channel<number> {
-  return { kind: 'screen', rest: 0, merge: screened, scale: (v, w) => v * w, lerp: lerpNumber };
+  const channel: Channel<number> = {
+    kind: 'screen',
+    rest: 0,
+    merge: screened,
+    scale: (v, w) => v * w,
+    lerp: lerpNumber,
+  };
+  extremes.set(channel, { op: 'screen' });
+  return channel;
 }
 
 /**
@@ -112,13 +121,15 @@ export function lighten(): Channel<number> {
  * @category channel
  */
 export function darken(): Channel<number> {
-  return {
+  const channel: Channel<number> = {
     kind: 'darken',
     rest: 1,
     merge: (a, b) => (a < b ? a : b),
     scale: toward,
     lerp: lerpNumber,
   };
+  extremes.set(channel, { op: 'min', top: 1 });
+  return channel;
 }
 
 /**

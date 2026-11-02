@@ -60,6 +60,8 @@ export class GpuSide<I> {
   private readonly index = new Map<Shader, number>();
   private readonly built = new Map<string, Built>();
   private readonly checked = new Set<Shader>();
+  /** Each channel's reason for staying on the CPU, said once. */
+  private readonly told = new Set<string>();
   private uploaded: { list: readonly I[]; fields: readonly string[] } | null = null;
   private buffers: Partial<Record<'subjects' | 'table' | 'values' | 'frame' | 'out', GpuBuffer>> =
     {};
@@ -108,8 +110,12 @@ export class GpuSide<I> {
     const n = this.list.length;
     if (n === 0) return;
     const e = eligibility(mix, this.list);
-    for (const r of e.reasons)
-      warnOnce(r.voice, `a voice keeps its channels on the CPU under the gpu engine: ${r.why}`);
+    for (const r of e.reasons) {
+      const key = `${(r.voice.patch.writes as readonly string[]).join(',')}: ${r.why}`;
+      if (this.told.has(key)) continue;
+      this.told.add(key);
+      warnOnce(r.voice, `${key}, so the gpu engine leaves it on the CPU`);
+    }
     if (e.channels.size === 0) return;
     for (const v of e.voices) {
       const shader = gpuDescriptor(v.patch)?.shader as Shader;

@@ -63,6 +63,8 @@ function ruleOf(channel: Channel<unknown>): ChannelCode | undefined {
       rest: [x.top],
       fold: `acc[0] = min(acc[0], ${f(x.top)} + (v[0] - ${f(x.top)}) * w);`,
     };
+  if (x?.op === 'screen')
+    return { axes: 1, rest: [0], fold: 'let s = v[0] * w; acc[0] = acc[0] + s - acc[0] * s;' };
   if (x?.op === 'norm') {
     const p = f(x.power);
     const q = f(1 / x.power);

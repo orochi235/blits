@@ -2,12 +2,13 @@ import { lerpNumber, type NumberOptions } from './channels.js';
 import { shared } from './shared.js';
 import type { Channel } from './types.js';
 
-/** What `min` and `norm` made, keyed by the channel itself, so another engine can trust its math. */
+/** What `min`, `norm`, and the number blend modes `screen` and `darken` made, keyed by the channel itself, so another engine can trust its math. */
 export type Extreme =
   | { readonly op: 'min'; readonly top: number }
-  | { readonly op: 'norm'; readonly power: number };
+  | { readonly op: 'norm'; readonly power: number }
+  | { readonly op: 'screen' };
 
-const extremes = shared<object, Extreme>('extreme@1');
+export const extremes = shared<object, Extreme>('extreme@1');
 
 /** The arithmetic of a channel `min` or `norm` made; undefined for any other. */
 export function extremeOf(channel: Channel<unknown>): Extreme | undefined {
