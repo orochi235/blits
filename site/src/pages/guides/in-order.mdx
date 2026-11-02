@@ -4,12 +4,18 @@ title: Effects in order
 description: Play effects one after another on one mix, by time, against another voice's marks, inside a span with a budget, or on a moment the host announces.
 ---
 import Listing from '../../components/Listing.astro';
+import Live from '../../components/Live.tsx';
+import '../../styles/guide-in-order.css';
 
 # Effects in order
 
 <p class="lede">A mix plays everything it holds at once. To play effects in order, place each voice on the score: at a time, against another voice, or inside a span that fits them into a budget.</p>
 
 Here a heading types in, then underlines. Its lines type in alongside it, all within two seconds, and a badge shines once some data has loaded.
+
+Below, the badge waits until you press **Data loaded**. The readout is the span's fit: four lines that would take five seconds at their own speed, played faster to land inside two. Drag the slider to scrub back through the run.
+
+<Live client:only="react" of="guides/in-order.ts" />
 
 <Listing of="snippets/guides/in-order/sequence.ts" />
 

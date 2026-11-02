@@ -12,14 +12,16 @@ declare const lines: HTMLElement[];
 declare const badge: HTMLElement;
 const m = mix<HTMLElement, Pose>(kit<Pose>({ reveal: sum(), glow: sum() }));
 // ---
-// At a time: now, unless the spec gives a `start` on the host's clock.
-const title = m.cue({ patch: typeIn, name: 'title', subjects: [heading] });
+// At a time: now, unless the spec gives a `start` on the host's clock. `freeze` holds the typed
+// text once it ends.
+const title = m.cue({ patch: typeIn, name: 'title', subjects: [heading], freeze: 'after' });
 
-// Against another voice's mark: 200 ms after the title has gone.
+// Against another voice's mark: 200 ms after the title finishes typing. A frozen voice has no
+// `end` until it fades, so this waits on its `coast`, where its last pass ends.
 m.cue({
   patch: underline,
   subjects: [heading],
-  anchor: { start: { after: 'title', by: 200 } },
+  anchor: { start: { of: 'title', mark: 'coast', by: 200 } },
 });
 
 // A span fits what it holds into a budget, one after another by default.
