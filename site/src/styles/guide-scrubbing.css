@@ -1,0 +1,51 @@
+/* The scrubbing guide's demo: dots with ghosts half a second ahead, over a scrubber. */
+.live .scrub-demo {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem 1rem 1.25rem;
+}
+
+.live .scrub-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.25rem;
+  height: 9rem;
+}
+
+.live .scrub-column {
+  position: relative;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.live .scrub-dot,
+.live .scrub-ghost {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.live .scrub-dot {
+  padding: 0;
+  border: none;
+  background: var(--voice-1);
+  cursor: pointer;
+}
+
+.live .scrub-ghost {
+  border: 2px dashed var(--voice-1);
+  opacity: 0.55;
+}
+
+.live .scrub-controls input[type='range'] {
+  flex: 1;
+  max-width: 28rem;
+}
+
+.live .scrub-time {
+  min-width: 9ch;
+  font: 500 0.8rem var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}

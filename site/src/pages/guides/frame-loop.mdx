@@ -4,6 +4,7 @@ title: The frame loop and hidden tabs
 description: Run a mix from one frame loop that sleeps when nothing moves, wakes when something is cued, and does not count the time a tab spent hidden.
 ---
 import Listing from '../../components/Listing.astro';
+import Live from '../../components/Live.tsx';
 
 # The frame loop and hidden tabs
 
@@ -14,6 +15,10 @@ import Listing from '../../components/Listing.astro';
 `ticker()` is a frame loop you can add mixes to. Each frame it syncs every mix it holds, then calls the functions you gave `after` with the frame's timestamp, which is where you probe and draw. Once every mix is inert it stops asking for frames, and a cue, a fade, or any other change that needs frames again wakes it.
 
 <Listing of="snippets/guides/frame-loop/ticker.ts" />
+
+Below, a ticker runs one mix. Once the trip ends, the mix is inert and the frame count stops climbing; **Cue a trip** wakes it. **Hide** stops frames for a moment the way a hidden tab does: cue a trip, hide it partway through, and compare **Catch up** with **Pick up**, which calls `rebase` on return.
+
+<Live client:only="react" of="guides/frame-loop.ts" />
 
 A mix is **inert** when another frame would change no pose: every voice is done, frozen at a plain weight, or a motion that has landed. A voice that loops for good is never inert, so a page with one never sleeps.
 

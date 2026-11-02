@@ -4,12 +4,18 @@ title: Scrubbing and reading ahead
 description: Give a mix history so it can move back to any moment and play on, read it at another time without moving it, and keep several mixes on one clock.
 ---
 import Listing from '../../components/Listing.astro';
+import Live from '../../components/Live.tsx';
+import '../../styles/guide-scrubbing.css';
 
 # Scrubbing and reading ahead
 
 <p class="lede">A mix plays forward from the host's clock. With history it can also go back: move to any moment in the last few seconds and play on from there, as a scrubber does. Reading ahead needs no history at all.</p>
 
 ## A scrubber
+
+Click a dot to make it hop, then drag the slider back over the last ten seconds and forward again: the hops you made replay where they happened. Let go and the mix plays on from there. Each dashed ring is a [read ahead](#reading-another-time), where its dot will be half a second from now.
+
+<Live client:only="react" of="guides/scrubbing.ts" />
 
 [`seek`](Mix.seek) moves the live mix to a mix time and plays on from there. It needs [`history`](MixOptions.history) with a [`tape`](HistoryOptions.tape), which records every call you make on the mix and its handles, so going forward again plays those calls back. The tape here is `createHistory` from `@weasel-js/history`; anything of the `Tape` shape works.
 
