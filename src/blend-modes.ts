@@ -1,4 +1,4 @@
-import { doubles, lerpNumber, max, mul, sum, vouch } from './channels.js';
+import { doubles, foldsInto, lerpNumber, max, mul, sum, vouch } from './channels.js';
 import { fromLinear, labOf, linearByte, linearOf } from './oklab.js';
 import {
   type OrderedMode,
@@ -199,6 +199,7 @@ export function blending(
     lerp: (a, b, u) => lerp(asColor(a), asColor(b), u),
   };
   vouch(channel, { op: 'own', axes: 4 });
+  foldsInto(channel);
   return channel;
 }
 

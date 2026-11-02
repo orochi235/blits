@@ -1,0 +1,16 @@
+# bench/kitwidth.mjs, 16128 subjects, 40 timed passes a row, lanes on; studio, 2026-11-01.
+# base = 357ed0d; fix = the fold resetting a blend-mode channel's held array to rest in place.
+# Rounds alternate base, fix, base, fix. p50 / min of a probe pass, in ms.
+row  shown     pad       extra   base r1        fix r1         base r2        fix r2
+ 1   overlay   plain       0     8.41  8.22     8.27  8.09     8.30  8.12     8.38  8.17
+ 2   overlay   plain       9    10.95 10.38    10.92 10.34    10.47 10.21    10.53 10.34
+ 3   overlay   plain      25    13.55 13.44    13.93 13.75    13.52 13.21    14.02 13.57
+ 4   overlay   multiply    0     8.56  8.52     8.57  8.52     8.65  8.58     8.57  8.53
+ 5   overlay   multiply    9    12.41 12.19     9.95  9.89    12.34 12.08    10.04  9.98
+ 6   overlay   multiply   25    20.58 20.32    13.74 13.68    21.06 20.58    13.53 13.51
+ 7   overlay   overlay     0     8.57  8.53     8.54  8.51     8.69  8.63     8.97  8.61
+ 8   overlay   overlay     9    13.96 13.59    11.33 11.27    13.75 13.40    11.33 11.29
+ 9   overlay   overlay    25    23.12 22.86    17.35 16.82    23.15 22.79    16.83 16.59
+10   multiply  overlay     0     9.45  9.10     9.36  9.28    10.36  9.37     9.93  9.30
+11   multiply  overlay     9    14.36 13.69    11.75 11.66    14.13 13.78    11.82 11.72
+12   multiply  overlay    25    22.98 22.84    17.90 17.36    23.28 22.81    17.31 17.03

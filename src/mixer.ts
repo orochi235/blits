@@ -4,7 +4,7 @@ import { blanks } from './blank.js';
 import { blended, blendOf, laneRead, shareKept } from './blend.js';
 import type { Book } from './book.js';
 import { aims, chain, linkable, relink } from './chain.js';
-import { type LerpInto, lerpInto, STOCK_BAND, scalarOp } from './channels.js';
+import { type LerpInto, lerpInto, reusesHeld, STOCK_BAND, scalarOp } from './channels.js';
 import { baseFor, contribution, isRest, keyed, read, slopeFor, tick } from './contribution.js';
 import { cue, roleTags } from './cue.js';
 import { DepartedIndex } from './departed.js';
@@ -285,6 +285,8 @@ export class Mixer<I, O> implements Mix<I, O> {
   readonly bounded: number[];
   /** By slot, a stock array channel's in-place `lerp`. */
   readonly lerpsInto: (LerpInto | undefined)[];
+  /** By slot, whether a fold resets the array `out` holds to rest rather than copying rest. */
+  readonly reuses: boolean[];
   /** By slot, a stock scalar channel's arithmetic, which a fold applies without calling the channel. */
   readonly scalars: ('sum' | 'mul' | 'max' | undefined)[];
   /** What a fold with a role in play gathers into, one per depth of folds under way. */
@@ -320,6 +322,7 @@ export class Mixer<I, O> implements Mix<I, O> {
     this.channels = this.names.map((k) => kit[k] as Channel<unknown>);
     this.bounded = this.channels.flatMap((c, i) => (c.bounds ? [i] : []));
     this.lerpsInto = this.channels.map((c) => lerpInto(c));
+    this.reuses = this.channels.map((c) => reusesHeld(c));
     this.pose = blanks(this.names as string[], this.channels);
     this.scalars = this.channels.map((c) => scalarOp(c));
     this.names.forEach((k, i) => {

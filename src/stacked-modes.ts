@@ -1,4 +1,4 @@
-import { vouch } from './channels.js';
+import { foldsInto, vouch } from './channels.js';
 import { fromLinear, labOf, linearByte, linearOf } from './oklab.js';
 import { BY_TAG, type OrderedMode, STACKED, type Stacked } from './stack-blends.js';
 import type { Channel } from './types.js';
@@ -141,6 +141,7 @@ export function stacking(
     },
   };
   vouch(channel, { op: 'own', axes: 2 + 4 * layers });
+  foldsInto(channel);
   return channel;
 }
 

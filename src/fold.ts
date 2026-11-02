@@ -215,7 +215,7 @@ export function foldWith<I, O>(
       continue;
     }
     // A stock array channel never keeps the pose's array, so one a last fold left in `out` is ours.
-    const held = this.lerpsInto[i] === undefined ? undefined : pose[key];
+    const held = this.reuses[i] ? pose[key] : undefined;
     if (Array.isArray(held) && held !== rest && held.length === (rest as unknown[]).length) {
       for (let a = 0; a < held.length; a++) held[a] = (rest as unknown[])[a];
     } else pose[key] = channel.copy ? channel.copy(rest) : copy(rest);

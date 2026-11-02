@@ -920,9 +920,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
   times on 2026-10-07: the page kept its own picks in the browser and posted them whole on every
   click. semanticore `0c1df0c` posts only the roles a change touched. Until every browser that had
   the page open has reloaded on that build, `git diff` the picks file before trusting it.
-- **A probe pays for every channel in the kit, written or not** (measured 2026-11-01, headless
-  Chromium on this machine). 16,128 subjects, three voices each writing one color channel: a probe
-  pass takes about 21 ms with 10 channels in the kit and about 39–46 ms with 26, the extra channels
-  never written. The ordered modes' rests are 18 numbers wide, which may be most of it; unprofiled.
-  The blend modes example works around it by giving its large view a mix whose kit holds only the
-  mode it shows.
+- **A probe still pays for every channel in the kit, written or not** (2026-11-01). It resets
+  each to rest. Blend-mode channels used to copy their rest anew each probe; they now reset the
+  array `out` holds in place, as the stock array channels do (`foldsInto` in `channels.ts`). On
+  16,128 subjects, 25 unwritten `multiply` channels went from 20.8 to 13.6 ms a pass, the cost of 25
+  plain `color()` channels, and 25 `overlay` channels from 23.1 to 17.1, the rest of it writing
+  their 18 numbers back (`bench/kitwidth.mjs`, `bench/runs/2026-11-01-kitwidth-ab.txt`). Skipping
+  channels no voice writes would need the pose to stop promising rest in every channel. The blend
+  modes example still gives its large view a mix whose kit holds only the mode it shows.

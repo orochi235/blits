@@ -58,6 +58,21 @@ export function numericOf(channel: Channel<unknown>): Numeric | undefined {
   return numerics.get(channel);
 }
 
+const intoFolds = shared<object, true>('folds-into@1');
+
+/**
+ * Marks a stock array channel whose `fold` writes into the array it is given and returns it, and
+ * whose fold keeps no array a patch hands it, so a fold may reuse the array a host's `out` holds.
+ */
+export function foldsInto(channel: Channel<unknown>): void {
+  intoFolds.set(channel, true);
+}
+
+/** Whether a fold may write a channel's rest into the array `out` holds for it, not a new copy. */
+export function reusesHeld(channel: Channel<unknown>): boolean {
+  return inPlace.has(channel) || intoFolds.has(channel);
+}
+
 /** Vouches for a stock channel made outside this module, as `color` makes its own. */
 export function vouch(channel: Channel<unknown>, numeric: Numeric): void {
   numerics.set(channel, numeric);

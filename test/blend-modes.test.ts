@@ -4,6 +4,7 @@ import { kit, last, mul } from '../src/channels.js';
 import { color, css, ink, oklab, toHex } from '../src/color.js';
 import { mix } from '../src/mixer.js';
 import { keys, patch } from '../src/patch.js';
+import { overlay } from '../src/stack-rules.js';
 import type { Channel } from '../src/types.js';
 
 interface Pose {
@@ -162,5 +163,34 @@ describe('blend modes as numeric channels', () => {
   it('fade a layer toward rest by weight', () => {
     expect(fold(screen(), [[0.5, 0.5]])).toBeCloseTo(0.25, 12);
     expect(fold(darken(), [[0.5, 0.5]])).toBeCloseTo(0.75, 12);
+  });
+});
+
+describe('a probe into a held pose', () => {
+  it.each([
+    ['multiply', () => color(multiply())],
+    ['overlay', () => color(overlay())],
+  ])('resets the array %s left in out to rest rather than making another', (_, tint) => {
+    interface Cell {
+      lit: boolean;
+    }
+    const channel = tint();
+    const m = mix<Cell, Pose>(kit<Pose>({ tint: channel }), { lanes: false });
+    const lit = { lit: true };
+    const dark = { lit: false };
+    m.cue({
+      patch: patch<Cell, Pose>(0, (_, c) => (c.lit ? { tint: oklab(0x336699) } : {}), {
+        writes: ['tint'],
+      }),
+      subjects: [lit, dark],
+    });
+    m.sync(0);
+    const out = m.pose();
+    const held = m.probe(lit, out).tint;
+    expect(held).not.toEqual(channel.rest);
+    m.probe(dark, out);
+    expect(out.tint).toBe(held);
+    expect(out.tint).toEqual(channel.rest);
+    expect(out.tint).not.toBe(channel.rest);
   });
 });
