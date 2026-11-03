@@ -19,7 +19,7 @@ export interface Pose3 {
 /** A 2D world's channels, to spread into a kit. */
 export const channels2: { [K in keyof Pose2]: Channel<Pose2[K]> } = {
   position: vec(2, sum()),
-  rotation: angle(),
+  rotation: angle({ turn: 2 * Math.PI }),
   force: vec(2, sum()),
   torque: sum(),
 };

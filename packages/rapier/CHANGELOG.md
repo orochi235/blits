@@ -19,6 +19,11 @@ section here.
 - History pages to a `store`. The world's state packs to plain data, its Rapier snapshot as base64.
   With a store, the log of each frame's pushes is kept for as long as the mix plays.
 
+### Fixed
+
+- `channels2`'s `rotation` takes a turn as `2 * Math.PI`. It was `angle()`, whose turn is 360, so
+  two radian angles either side of ±π blended the long way round, through 0.
+
 ## 0.3.0
 
 ### Breaking

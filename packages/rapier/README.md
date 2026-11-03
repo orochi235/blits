@@ -65,7 +65,7 @@ const { position, rotation } = sim.mix.probe(box);
 | Channel | 2D (`channels2`) | 3D (`channels3`) | On |
 |---|---|---|---|
 | `position` | `vec(2, sum())` | `vec(3, sum())` | the body |
-| `rotation` | `angle()`, radians | `quat()`, `[x, y, z, w]` | the body |
+| `rotation` | `angle({ turn: 2 * Math.PI })`, radians | `quat()`, `[x, y, z, w]` | the body |
 | `force` | `vec(2, sum())` | `vec(3, sum())` | its controls |
 | `torque` | `sum()` | `vec(3, sum())` | its controls |
 

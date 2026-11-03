@@ -61,3 +61,7 @@ it('pushes a 3D body by force and torque', () => {
   expect(p.position[2]).toBeGreaterThan(0.5);
   expect(Math.abs(p.rotation[1])).toBeGreaterThan(0.05);
 });
+
+it('turns a 2D rotation the short way round in radians', () => {
+  expect(channels2.rotation.lerp(3, -3, 0.5)).toBeCloseTo(Math.PI, 6);
+});
