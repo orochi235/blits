@@ -45,6 +45,10 @@ export function pullRun<I, O>(
   let start = from;
   // Whether every slot so far exceeds the one before it, so none repeats.
   let rising = true;
+  // Positions up to `checked` passed the `FILLED`, `IDLE` and `SEEN` checks, and nothing since
+  // could have changed that.
+  const checked =
+    lanes.marks === lanes.checkedMarks && from >= lanes.checkedFrom ? lanes.checkedTo : from;
   for (; n < list.length; n++) {
     const subject = list[n] as I;
     if (was[n] !== subject) break;
@@ -53,9 +57,10 @@ export function pullRun<I, O>(
     if (
       slot < 0 ||
       (!current && !((unlinked[slot] as number) <= since)) ||
-      (per[o + Per.FILLED] as number) >= busy ||
-      per[o + Per.IDLE] !== 0 ||
-      (per[o + Per.SEEN] as number) < wide ||
+      (n >= checked &&
+        ((per[o + Per.FILLED] as number) >= busy ||
+          per[o + Per.IDLE] !== 0 ||
+          (per[o + Per.SEEN] as number) < wide)) ||
       (owing && lanes.owes(slot))
     )
       break;
@@ -80,6 +85,9 @@ export function pullRun<I, O>(
     }
   }
   if (first >= 0) add(lanes, first, start, n - start);
+  lanes.checkedMarks = lanes.marks;
+  lanes.checkedFrom = from;
+  lanes.checkedTo = n;
   if (unprobed) lanes.distinct += rising ? n - from : lastStamped(per, slots, from, n, stamp);
   if (n > from && holds) lanes.holding = true;
   return n;

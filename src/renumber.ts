@@ -46,6 +46,7 @@ export function renumber<I, O>(
   const per = lanes.per;
   per.copyWithin(to * Per.SLOT, from * Per.SLOT, (from + 1) * Per.SLOT);
   per[from * Per.SLOT + Per.FILLED] = lanes.fills;
+  lanes.marks++;
   lanes.unlinked[to] = lanes.unlinked[from] as number;
   lanes.subjects[to] = lanes.subjects[from];
   lanes.subjects[from] = undefined;

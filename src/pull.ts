@@ -201,6 +201,7 @@ function readAll<I, O>(
             slot = to;
           }
         }
+        if (slots[n] !== slot && lanes !== null) lanes.marks++;
         slots[n] = slot;
       }
     }
