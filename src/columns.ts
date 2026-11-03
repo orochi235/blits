@@ -33,12 +33,18 @@ export function pullRun<I, O>(
   // Nothing in `pullRun` makes a subject owe a voice, so one with nobody owing need not ask.
   const owing = lanes.owed.any();
   const current = since === Number.POSITIVE_INFINITY;
+  // Before this frame's first probe only a slot repeated within this run was probed this frame,
+  // so the subjects are counted once afterward, not each checked as it is stamped.
+  const unprobed = lanes.probes === frame;
+  const stamp = lanes.probes;
   queueFor(lanes, columns, slots);
   room(lanes, lanes.queued + list.length - from);
   let n = from;
   // The run being gathered: its first slot and row, and how far it has reached.
   let first = -1;
   let start = from;
+  // Whether every slot so far exceeds the one before it, so none repeats.
+  let rising = true;
   for (; n < list.length; n++) {
     const subject = list[n] as I;
     if (was[n] !== subject) break;
@@ -54,6 +60,7 @@ export function pullRun<I, O>(
     )
       break;
     if (
+      !unprobed &&
       !(
         (per[o + Per.LANE_PROBE] as number) > frame ||
         (per[o + Per.GENERAL_PROBE] as number) > frame
@@ -64,14 +71,35 @@ export function pullRun<I, O>(
     per[o + Per.LANE_FILL] = fills;
     if (holds) subjects[slot] = subject;
     if (slot !== first + (n - start)) {
-      if (first >= 0) add(lanes, first, start, n - start);
+      if (first >= 0) {
+        if (slot < first + (n - start)) rising = false;
+        add(lanes, first, start, n - start);
+      }
       first = slot;
       start = n;
     }
   }
   if (first >= 0) add(lanes, first, start, n - start);
+  if (unprobed) lanes.distinct += rising ? n - from : lastStamped(per, slots, from, n, stamp);
   if (n > from && holds) lanes.holding = true;
   return n;
+}
+
+/**
+ * How many of positions `from` to `to` hold a slot no later position repeats: those whose lane
+ * probe stamp is still the one `pullRun` gave them, counting on from `stamp`.
+ */
+function lastStamped(
+  per: Float64Array,
+  slots: Int32Array,
+  from: number,
+  to: number,
+  stamp: number,
+): number {
+  let count = 0;
+  for (let n = from; n < to; n++)
+    if (per[(slots[n] as number) * Per.SLOT + Per.LANE_PROBE] === stamp + 1 + (n - from)) count++;
+  return count;
 }
 
 /**
