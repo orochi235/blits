@@ -440,20 +440,30 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - **`pullRun` pays about 1 ns a subject for each thing it checks**, no one of them the cost (a
      model of its loop on this Mac, 2026-10-29, not kept): stamping alone 13 µs over 10k subjects,
      everything 58; leaving out any one of the `was` compare, the `FILLED`/`IDLE`/`SEEN` checks, the
-     `distinct` count, the `subjects` store or the run tracking saved 6–10 µs. Unbuilt: skipping
-     the `distinct` reads when no probe has run this frame and the list's slots never repeat
-     (counted from the stamps afterward when they do), about 3% of `tweens^` by the model; and
-     skipping `FILLED`/`IDLE`/`SEEN` while nothing that sets them has changed since the last pull,
-     which needs a second record of when they last changed.
-   - **A landed shortcut for a lane** (`runMotion`, so `weasel^`) is unbuilt: a lane's subjects share
-     one clock, so it would save only the easing and two reads of each stretch (about 3% of
-     `weasel^` by the profile), and it needs a number per position that a swap removal carries.
+     `distinct` count, the `subjects` store or the run tracking saved 6–10 µs. Before a frame's
+     first probe it now counts `distinct` once a run (`bb450b2`, 2026-11-03; teitou, 9 rounds:
+     `tweens^` 0.132 → 0.127, U = 6; `weasel^` 0.197 → 0.190, U = 9; `turnover^` 0.192 → 0.196,
+     U = 14.5, and 0.202 → 0.207 on a second pass, U = 16; `bench/runs/2026-11-03-distinct-once.txt`,
+     `2026-11-03-branch-turnover.txt`). Why `turnover^` pays about 2% for it is unexplained: its
+     list stays in slot order, so the counting fallback (`lastStamped`) should not run.
+   - **A landed shortcut for a lane** (`runMotion`, so `weasel^`) is built (`ec8888d`, 2026-11-03):
+     a bare position seen landed keeps the voice time less delay it landed at in `Lane.landed`,
+     which `remove` carries, and folds its `to` at any later one until it stops being bare.
+     `weasel^` 0.193 → 0.186 ms, U = 10; `weasel` 0.663 → 0.653, U = 21.5, inside noise (teitou,
+     9 rounds, `bench/runs/2026-11-03-lane-landed.txt`). It allocates about 1.3 kB a frame more on
+     `weasel^` (5.3–6.2 against 3.9–5.0), source not found.
    - **A subject the host has let go entirely may be collected before the next fill** rather than
      held until it, since a probe holds its subject only while fills look subjects up (2026-10-24);
      only a later signal or `parting` lookup on that subject could notice.
    - **What `probed` still allocates is pose data**: `foldWith` copying each channel's rest value,
      and the `fn` voices' returned objects in `fill.ts`'s `call`.
    - Measured no different, so not worth re-proposing:
+     - Skipping `pullRun`'s `FILLED`/`IDLE`/`SEEN` checks at positions that passed them while a
+       counter bumped by every write of them, a new `wide`, a fill running no lane, and a pull
+       position's slot changing stands where it stood (teitou, 2026-11-03, 9 rounds, against
+       `ec8888d`): `tweens^` 0.129 → 0.125, U = 5, but `turnover^` 0.196 → 0.204, U = 3, and
+       `churn^` 0.169 → 0.177, U = 3.5, both of which bump it every frame
+       (`bench/runs/2026-11-03-checked-flags.txt`; reverted in `4a80fd1`).
      - Counting `pullRun`'s probes and distinct subjects in locals (msb-uai, 2026-10-24).
      - Answering `runMotion`'s same-`since` check before calling `same`, which the profile shows
        out of line there (studio, 2026-10-29: `weasel^` 0.362 ms either way).
