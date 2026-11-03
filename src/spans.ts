@@ -93,6 +93,15 @@ export function unfit<I, O>(mix: Mixer<I, O>, child: Voice<I, O>, now: number): 
   mix.lanes?.refill();
 }
 
+/**
+ * Keeps a child's clock as it stands, `skipped` as a fit had it, for its owner's clock to run back
+ * to before the change about to replace it, and lets go of the changes it would take again.
+ */
+export function replacing<I, O>(c: Voice<I, O>, skipped = c.skipped): void {
+  c.earlier = { ...standing(c), skipped, prev: c.earlier };
+  c.later = null;
+}
+
 /** A child's clock as it stands, and whether a fit skipped it. */
 function standing<I, O>(c: Voice<I, O>): Omit<Earlier, 'prev'> {
   const { anchorNow, anchorElapsed, rate, ramp, skipped } = c;
@@ -199,10 +208,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
         moved = true;
       }
     } else {
-      if (skipped || c.rate !== rate || c.ramp !== null) {
-        c.earlier = { ...standing(c), skipped: wasSkipped, prev: c.earlier };
-        c.later = null;
-      }
+      if (skipped || c.rate !== rate || c.ramp !== null) replacing(c, wasSkipped);
       if (skipped) {
         leave(c, local);
         c.rebase(local);

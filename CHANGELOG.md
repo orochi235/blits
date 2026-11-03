@@ -14,6 +14,9 @@ version and everything else the patch. Each release lists its changes as **Break
 - A span held by a span, turned back and sought forward, passes the children the seek crosses in
   order, as a reel turned back does. Its own span's fits on the way retime it as playing through
   would, and that retiming stands after the seek.
+- A child whose handle changed its rate reads, as its owner runs back over the change, what it
+  read going forward, and takes the change again where it was made going forward. It ran back at
+  its latest rate, before the change as after it. Only a span's fits were kept this way.
 
 ## 0.18.0
 

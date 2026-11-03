@@ -784,3 +784,24 @@ for (const lanes of [true, false])
     expect(awake()).toEqual([false, true]);
     expect(awake(300)).toEqual([false, true]);
   });
+
+// CHANGELOG 0.16.0: turning an owner back "reverses completely". A child the host sped up partway
+// reads, run back over, what it read going forward, before the write as after it, and going forward
+// again takes the write again where it was made.
+test('a child whose handle sped it up reads, as its owner runs back over it, what it read going forward', () => {
+  const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+  m.sync(0);
+  const reel = m.owns({ start: 0 });
+  const clip = m.cue({ owner: reel, patch: ramp(1000, 0, 1000), start: 0, loop: false });
+  const forward: number[] = [];
+  for (let t = 0; t <= 400; t += 10) {
+    if (t === 200) clip.rate = 2;
+    forward.push(x(m, t));
+  }
+  reel.rate = -1;
+  for (let t = 410; t <= 700; t += 10)
+    expect(x(m, t), `reel at ${800 - t}`).toBeCloseTo(forward[(800 - t) / 10] as number, 9);
+  reel.rate = 1;
+  for (let t = 710; t <= 1000; t += 10)
+    expect(x(m, t), `reel at ${t - 600} again`).toBeCloseTo(forward[(t - 600) / 10] as number, 9);
+});
