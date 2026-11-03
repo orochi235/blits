@@ -4,6 +4,10 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `panel-v*` tag with no
 section here.
 
+## Unreleased
+
+- Takes `@weasel-js/history`, `theme` and `ui` at 1.16.1, where they were 1.12.0.
+
 ## 0.8.0
 
 ### Breaking

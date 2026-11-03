@@ -60,7 +60,7 @@ export function fadeNodes({ whole, picked, onFade, onRise }: FadeNodesProps) {
       when: f
         .enum<When>('now', [
           { value: 'now', label: 'now' },
-          ...(whole ? [] : [{ value: 'rest', label: 'at rest, per subject' }]),
+          ...(whole ? [] : [{ value: 'rest' as const, label: 'at rest, per subject' }]),
           { value: 'at', label: 'at mix time' },
         ])
         .label('when')

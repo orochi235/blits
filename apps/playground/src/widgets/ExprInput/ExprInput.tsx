@@ -1,3 +1,4 @@
+import { useIdleSettle } from '@weasel-js/ui';
 import { type KeyboardEvent, useEffect, useId, useState } from 'react';
 import s from './ExprInput.module.css';
 
@@ -24,11 +25,16 @@ export function ExprInput({
   const errorId = `${id}-error`;
   useEffect(() => setDraft(value), [value]);
   const commit = () => {
+    idle.stop();
     if (draft !== value) onCommit(draft);
   };
+  const idle = useIdleSettle(commit);
   const key = (e: KeyboardEvent) => {
     if (e.key === 'Enter') commit();
-    if (e.key === 'Escape') setDraft(value);
+    if (e.key === 'Escape') {
+      idle.stop();
+      setDraft(value);
+    }
   };
   return (
     <div className={s.field}>
@@ -46,7 +52,10 @@ export function ExprInput({
         spellCheck={false}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? errorId : undefined}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          idle.typed();
+        }}
         onBlur={commit}
         onKeyDown={key}
       />

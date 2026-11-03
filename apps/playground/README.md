@@ -47,11 +47,10 @@ These composition edits go through the same history as every other, so undo, sto
 cover them, and `src/blits/edit.ts` holds each one to the `MAX_*` caps `load` enforces. Switching
 the stage's kind starts from 12 by 6 dots or the text `blits`. A level's name must be unique and not
 blank, and its bounds may not cross; its value is held inside them. Each of these fields commits on
-Enter or leaving it, so typing is one undo step, and Escape puts back what it held; so do the
+Enter, on leaving it, or once typing rests for 800 ms, so a burst of typing is one undo step, and Escape puts back what it held; so do the
 booker's tag and read-ahead, every field of the mix, fold rules and announced marks panels, and
 every expression field. A number field left blank puts back what it held. A code pane commits on Cmd/Ctrl-Enter or leaving
-it, and Tab indents. The panels' other text and number fields are weasel's, which also commit on
-Enter or leaving them. Removing or renaming a level an expression names is allowed: the expression then reads
+it, and Tab indents. The panels' other text and number fields are weasel's, which commit the same way. Removing or renaming a level an expression names is allowed: the expression then reads
 0, with no error.
 
 ## A composition
@@ -371,7 +370,7 @@ at least 24 px apart; a desk with more voices than fit grows wider and the tab s
 
 | Panel     | Shows                                                                                   |
 |-----------|-----------------------------------------------------------------------------------------|
-| Voice     | one control panel in sections (timing, fade, blending, subjects, placement, tags and marks), each row with blits' doc comment on its ⓘ; typed fields commit on Enter or blur as one undo step; `rate` from -4 to 4 and a `seek`, blank for blits' default; for a patch with a `step`, its own `stepMs`, blank for the mix's, and `catchUp`; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `role`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `hits` and `marks` in dialogs that Done writes and Cancel or Escape drops, and `score` |
+| Voice     | one control panel in sections (timing, fade, blending, subjects, placement, tags and marks), each row with blits' doc comment on its ⓘ; typed fields commit on Enter, blur or once typing rests, as one undo step; `rate` from -4 to 4 and a `seek`, blank for blits' default; for a patch with a `step`, its own `stepMs`, blank for the mix's, and `catchUp`; `stagger`, `target` and `weight` as expressions; an `owner` menu, and under a span the hints, with `start` disabled; with a `role`, a button to blend it, and for a blend its `blend by` signal and this voice's stop in place of `weight`; `anchor` as JSON, with a menu of placements to start from; `tags`, `hits` and `marks` in dialogs that Done writes and Cancel or Escape drops, and `score` |
 | Group     | in place of Voice and Patch when a header is selected, one control panel in the same sections: name, kind, `owner`, start and anchor (not under a span), rate, `seek`, weight, fade, freeze, hints under a span; for a span a span section with its `duration`, `priority`, `order`, `share` (for `stagger`), `spill`, the fit steps (add, remove, reorder, presets; a code step in a code pane), and the live `FitResult`; `tags`, `score`, `hits` and `marks` as for a voice |
 | Weight    | a number, or a signal expression; a menu inserts common signals                         |
 | Patch     | a labkit `ControlPanel`: the kind (switching starts a blank patch of that kind) and its period or channel, then by kind: for `keys` a weasel `Timeline` track per channel, with an `EasingPicker` per key, the patch's ease, and a `ControlMatrix` of each channel's own wait and ease (`delayBy`, `easeBy`), which inherit the patch's until set; for `fn` the channels it writes and its code panes; for `wave` shape, cycles, phase and a depth per channel; for a motion a number or an expression per option, written on Enter, with its error under it. An ease is one row: steps or a curve, converting to bezier, and its plot |
