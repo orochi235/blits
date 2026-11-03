@@ -170,6 +170,12 @@ function restoreVoice<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, t: number, seq
   voice.seen = 0;
   voice.restedCount = 0;
   voice.early = null;
+  if (voice.metRead !== null) {
+    const unread = voice.metRead.filter((e) => e.seq > seq).map((e) => e.subject);
+    if (unread.length > 0) voice.met = [...(voice.met ?? []), ...unread];
+    const kept = voice.metRead.filter((e) => e.seq <= seq);
+    voice.metRead = kept.length === 0 ? null : kept;
+  }
   voice.holder = null;
   voice.keepOn = null;
   voice.laned = false;

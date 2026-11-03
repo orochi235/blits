@@ -247,6 +247,14 @@ export class Voice<I, O> {
    * or seek moves; null while none are.
    */
   early: Subject<unknown>[] | null = null;
+  /**
+   * A motion voice's subjects met inside their stagger and not yet found read since it ran out,
+   * which `still` asks after. Unlike `early` it outlives a seek back, whose records come back only
+   * as something reads them, their reads forgotten; null while none are.
+   */
+  met: I[] | null = null;
+  /** Under history, those `still` found read, with the frame it did, for a seek back before it. */
+  metRead: { subject: I; seq: number }[] | null = null;
   /** The clocks it ran on before its current one, where a subject's origin may lie; null for none. */
   clocks: Past[] | null = null;
   /** The clocks a fit replaced, latest first; null for none. */
@@ -498,6 +506,8 @@ export class Voice<I, O> {
     this.opened = Number.NaN;
     this.dueToken++;
     this.early = null;
+    this.met = null;
+    this.metRead = null;
     this.seen = 0;
     this.latest = this.named?.latest ?? 0;
     this.soonest = this.named?.soonest ?? 0;
@@ -777,6 +787,8 @@ export class Voice<I, O> {
     v.seat = null;
     v.log = null;
     v.early = null;
+    v.met = null;
+    v.metRead = null;
     if (controls) v.take(controls);
     if (v.clocks === this.clocks && v.clocks !== null) v.clocks = v.clocks.slice();
     v.quiet = true;

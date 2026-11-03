@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- `inert` stays false after a seek back while a motion voice has a subject it met inside its
+  stagger and has not read since the stagger ran out. The seek forgot such subjects, so a frame
+  loop sleeping on `inert` could sleep through the subject's motion.
+
 ## 0.18.0
 
 ### Added

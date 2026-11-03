@@ -81,6 +81,10 @@ export function held<I, O>(
   }
   voice.subjects.set(subject, held);
   waits(voice, held, now);
+  if (voice.motion !== undefined && !(since <= now)) {
+    voice.met ??= [];
+    voice.met.push(subject);
+  }
   // A subject a voice saw while it shared one record was counted then.
   if (voice.sighted !== null && this.share?.sighted(voice, slot))
     this.share.inherit(voice, held, slot);
