@@ -19,6 +19,8 @@ export interface RapierBody {
   setRotation(r: never, wake: boolean): void;
   setLinvel(v: RapierVector, wake: boolean): void;
   setAngvel(v: never, wake: boolean): void;
+  setNextKinematicTranslation(v: RapierVector): void;
+  setNextKinematicRotation(r: never): void;
 }
 
 /** What blits-rapier uses of a Rapier world, in either build. */
@@ -55,6 +57,14 @@ export interface Dims {
   torque(body: RapierBody, torque: number | readonly number[]): void;
   /** Puts the body at a pose, moving at the speed it took to get there from `before` over `dt` ms. */
   place(body: RapierBody, now: Placed, before: Placed | undefined, dt: number): void;
+  /** Moves a kinematic body to whichever of a position and rotation is given, over the next step. */
+  aim(body: RapierBody, goal: Goal): void;
+}
+
+/** Where a kinematic body's controls ask it to be: either part may be absent. */
+export interface Goal {
+  position?: readonly number[];
+  rotation?: number | readonly number[];
 }
 
 /** A body's position and rotation as the channels hold them. */
@@ -84,6 +94,10 @@ const two: Dims = {
     turn -= 2 * Math.PI * Math.round(turn / (2 * Math.PI));
     b.setAngvel((dt > 0 ? turn / (dt / 1000) : 0) as never, true);
   },
+  aim: (b, goal) => {
+    if (goal.position !== undefined) b.setNextKinematicTranslation(two.vector(goal.position));
+    if (goal.rotation !== undefined) b.setNextKinematicRotation(goal.rotation as never);
+  },
 };
 
 const three: Dims = {
@@ -109,6 +123,14 @@ const three: Dims = {
       ) as never,
       true,
     );
+  },
+  aim: (b, goal) => {
+    if (goal.position !== undefined) b.setNextKinematicTranslation(three.vector(goal.position));
+    if (goal.rotation === undefined) return;
+    const [x, y, z, w] = goal.rotation as [number, number, number, number];
+    // A keyed facing need not be unit length, and Rapier takes it as given.
+    const n = Math.hypot(x, y, z, w) || 1;
+    b.setNextKinematicRotation({ x: x / n, y: y / n, z: z / n, w: w / n } as never);
   },
 };
 

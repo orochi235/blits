@@ -38,6 +38,29 @@ export function copy(state: State): State {
   };
 }
 
+/** The state as plain data, for a history store: the snapshot as base64 and the handles as pairs. */
+export function pack(state: State): unknown {
+  const bytes = state.world === null ? state.bytes : state.world.takeSnapshot();
+  let text = '';
+  // In chunks: a spread of a large snapshot overflows the call stack.
+  for (let i = 0; i < (bytes?.length ?? 0); i += 0x8000)
+    text += String.fromCharCode(...(bytes as Uint8Array).subarray(i, i + 0x8000));
+  return {
+    bytes: btoa(text),
+    handles: [...state.handles],
+    t: Number.isNaN(state.t) ? null : state.t,
+  };
+}
+
+/** A state from what `pack` made, its world left to `worldOf` to rebuild. */
+export function unpack(data: unknown): State {
+  const d = data as { bytes: string; handles: [number, number][]; t: number | null };
+  const text = atob(d.bytes);
+  const bytes = new Uint8Array(text.length);
+  for (let i = 0; i < text.length; i++) bytes[i] = text.charCodeAt(i);
+  return { bytes, world: null, handles: new Map(d.handles), t: d.t ?? Number.NaN };
+}
+
 /** Puts `entry` into `log` after every entry at or before its time. */
 export function insert(log: Entry[], entry: Entry): void {
   let i = log.length;

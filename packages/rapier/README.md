@@ -65,12 +65,34 @@ const { position, rotation } = sim.mix.probe(box);
 | Channel | 2D (`channels2`) | 3D (`channels3`) | On |
 |---|---|---|---|
 | `position` | `vec(2, sum())` | `vec(3, sum())` | the body |
-| `rotation` | `angle()`, radians | `quat()`, `[x, y, z, w]` | the body |
+| `rotation` | `angle({ turn: 2 * Math.PI })`, radians | `quat()`, `[x, y, z, w]` | the body |
 | `force` | `vec(2, sum())` | `vec(3, sum())` | its controls |
 | `torque` | `sum()` | `vec(3, sum())` | its controls |
 
 Spread them into a kit with your own channels. Forces and torques are in Rapier's units, newtons
 and newton-meters for a body whose mass you set in kilograms.
+
+## Kinematic bodies
+
+A body made with `RigidBodyDesc.kinematicPositionBased()` goes where a voice on its controls says,
+through two more channels, `kinematic2` or `kinematic3`, spread into the kit beside the others:
+
+| Channel | 2D (`kinematic2`) | 3D (`kinematic3`) |
+|---|---|---|
+| `goal` | `vec(2, last())`, a position | `vec(3, last())`, a position |
+| `facing` | `last()`, an angle in radians | `last()`, an `[x, y, z, w]` quaternion |
+
+```ts
+const sim = physics(kit<Pose3 & Kinematic3>({ ...channels3, ...kinematic3 }), { rapier: RAPIER });
+const door = sim.body(RAPIER.RigidBodyDesc.kinematicPositionBased(), RAPIER.ColliderDesc.cuboid(1, 2, 0.1));
+door.drive({ patch: keys(800, [{ at: 0, delta: { goal: [0, 2, 0] } }, { at: 1, delta: { goal: [2, 2, 0] } }]) });
+```
+
+Neither has a rest: a body no voice writes a goal for stays where it is, and one whose voice has
+ended stays where it left it. The world moves the body there over the next step, at the speed that
+takes, so it pushes what it meets. Since the channels are `last`, a voice's weight only switches its
+goal on or off, and of the voices writing one, the last cued wins; keyframes between two goals
+interpolate, the facing the short way round.
 
 ## The clock and seeking
 
@@ -82,13 +104,14 @@ bytes and rebuilt into a world only when a replay needs it, so history costs mem
 to the world's size and `ms / every`. Each frame's pushes are logged beside it for the replay and
 pruned with history.
 
+`history.store` works: the world pages out as plain data, its snapshot in base64. Give the mix a
+`name`, as every mix on a transport with a store needs; `physics` keys its own subjects, so it takes
+no `keyOf`. The log of each frame's pushes is not paged and, with a store, is never pruned, so it
+grows by one small record a frame for as long as the mix plays.
+
 Replay matches the first pass exactly on one machine. To match across machines, pass Rapier's
 deterministic build.
 
 ## Not yet
 
-- Kinematic bodies moved by a voice. They need a channel with no rest, which blits' `vec` of
-  `sum()` is not.
-- Paging history to a `store`: a Rapier description is not plain data, so a body's add cannot be
-  written out.
 - Soft bodies, cloth and ropes.
