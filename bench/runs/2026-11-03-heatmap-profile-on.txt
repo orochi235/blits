@@ -1,0 +1,94 @@
+# msb-uai, onto task blits-heatmap-motion-owed-prof: AB_BENCH=bench/heatmap.mjs FRAMES=5000 bench/cpuprof.sh spring/input/ink/on 1 4931533 e6ec18c (e6ec18c carries the fix of 952abdb)
+onto: plan 2
+== run 1/1 4931533 spring/input/ink/on
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   4.720 ms  p90   5.654  step p50   0.902  load 1.95
+onto: progress 1/1
+total 28201.8 ms
+   1928.1 ms   6.8%  numbers stretch.js:4
+   1794.7 ms   6.4%  subject numbers.js:73
+   1465.1 ms   5.2%  one fill.js:304
+   1219.9 ms   4.3%  base weigh.js:113
+    810.9 ms   2.9%  contribution contribution.js:49
+    774.3 ms   2.7%  call fill.js:455
+    746.5 ms   2.6%  change changes.js:12
+    658.0 ms   2.3%  keepProbed lane.js:7
+    639.9 ms   2.3%  prepare closed.js:25
+    635.2 ms   2.3%  primeLaned weigh.js:27
+    600.7 ms   2.1%  (garbage collector)
+    573.4 ms   2.0%  foldWith fold.js:151
+    568.0 ms   2.0%  commit changes.js:146
+    541.7 ms   1.9%  signalled fill.js:191
+    514.4 ms   1.8%  get store.js:20
+    486.4 ms   1.7%  runMotion sample.js:12
+    470.2 ms   1.7%  apply fold.js:47
+    433.3 ms   1.5%  signal hosts.js:87
+    433.2 ms   1.5%  prune lives.js:158
+    413.0 ms   1.5%  latest motions.js:407
+    409.4 ms   1.5%  has named.js:50
+    404.9 ms   1.4%  closed closed.js:165
+    394.2 ms   1.4%  (program)
+    371.1 ms   1.3%  pullRun columns.js:9
+    367.0 ms   1.3%  turnInto turns.js:21
+    360.6 ms   1.3%  readAll pull.js:131
+    357.2 ms   1.3%  insert changes.js:171
+    338.0 ms   1.2%  foldDelta gather.js:262
+    323.6 ms   1.1%  changed strays.js:53
+    310.6 ms   1.1%  revive strays.js:65
+    309.0 ms   1.1%  next frame.mjs:48
+    269.8 ms   1.0%  moved moved.js:10
+    269.0 ms   1.0%  base motions.js:377
+    265.4 ms   0.9%  evaluate motions.js:440
+    264.1 ms   0.9%  read frame.mjs:66
+    261.9 ms   0.9%  lift turns.js:10
+    251.8 ms   0.9%  queue changes.js:44
+    237.2 ms   0.8%  flag motions.js:361
+    235.8 ms   0.8%  now strays.js:43
+    232.3 ms   0.8%  fold color.js:216
+onto: progress 1/2
+== run 1/1 e6ec18c spring/input/ink/on
+onto: plan 1
+ 1/1  spring/input/ink/on     read p50   4.403 ms  p90   5.291  step p50   0.901  load 1.69
+onto: progress 1/1
+total 26758.9 ms
+   1893.1 ms   7.1%  numbers stretch.js:4
+   1665.2 ms   6.2%  one fill.js:304
+   1562.5 ms   5.8%  subject numbers.js:73
+   1108.4 ms   4.1%  base weigh.js:113
+    855.5 ms   3.2%  call fill.js:455
+    699.1 ms   2.6%  primeLaned weigh.js:27
+    695.7 ms   2.6%  runMotion sample.js:13
+    597.1 ms   2.2%  (garbage collector)
+    594.7 ms   2.2%  prepare closed.js:25
+    589.9 ms   2.2%  commit changes.js:146
+    581.7 ms   2.2%  change changes.js:12
+    508.5 ms   1.9%  get store.js:20
+    504.1 ms   1.9%  signalled fill.js:191
+    453.5 ms   1.7%  read frame.mjs:66
+    449.8 ms   1.7%  has named.js:50
+    436.8 ms   1.6%  signal hosts.js:87
+    430.3 ms   1.6%  prune lives.js:158
+    423.2 ms   1.6%  latest motions.js:407
+    416.0 ms   1.6%  closed closed.js:165
+    407.6 ms   1.5%  insert changes.js:171
+    393.6 ms   1.5%  readAll pull.js:131
+    378.0 ms   1.4%  foldDelta gather.js:262
+    374.2 ms   1.4%  (program)
+    367.6 ms   1.4%  keepProbed lane.js:7
+    342.8 ms   1.3%  turnInto turns.js:21
+    338.5 ms   1.3%  pullRun columns.js:9
+    326.0 ms   1.2%  foldWith fold.js:151
+    323.5 ms   1.2%  next frame.mjs:48
+    318.6 ms   1.2%  revive strays.js:65
+    299.3 ms   1.1%  stretchChanged lanes.js:484
+    289.5 ms   1.1%  evaluate motions.js:440
+    287.9 ms   1.1%  base motions.js:377
+    279.3 ms   1.0%  flag motions.js:361
+    274.5 ms   1.0%  seq strays.js:46
+    271.4 ms   1.0%  moved moved.js:10
+    266.9 ms   1.0%  contribution contribution.js:49
+    253.8 ms   0.9%  lift turns.js:10
+    251.7 ms   0.9%  ready hosts.js:80
+    248.0 ms   0.9%  move sample.js:202
+    247.3 ms   0.9%  changed strays.js:53
+onto: progress 2/2

@@ -4,6 +4,17 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- On lanes, a subject whose spring or tween has a retarget waiting reads only that voice on the
+  general path, where no laned voice after it writes the same channel; its other voices still read
+  the lanes. Every voice of such a subject was read again on the general path after the lanes had
+  already filled it, so a host retargeting many subjects each frame read them slower with lanes
+  than without. The stress heatmap (5,000 springs retargeted at 20-60 Hz, three `ink` voices
+  weighted per cell) reads in 5.40 ms a frame with lanes, from 5.84; it reads 3.78 without.
+
 ## 0.18.0
 
 ### Added
