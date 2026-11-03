@@ -17,6 +17,12 @@ version and everything else the patch. Each release lists its changes as **Break
   reading its clock or easing it, until its stretch or its subject changes or its voice time reads
   earlier than when it landed. `weasel^` takes 0.186 ms a frame against 0.193 (teitou, medians of
   nine runs of 5,000 frames, each in its own process); other rows are unchanged.
+- On lanes, a subject whose spring or tween has a retarget waiting reads only that voice on the
+  general path, where no laned voice after it writes the same channel; its other voices still read
+  the lanes. Every voice of such a subject was read again on the general path after the lanes had
+  already filled it, so a host retargeting many subjects each frame read them slower with lanes
+  than without. The stress heatmap (5,000 springs retargeted at 20-60 Hz, three `ink` voices
+  weighted per cell) reads in 5.40 ms a frame with lanes, from 5.84; it reads 3.78 without.
 
 ## 0.18.0
 

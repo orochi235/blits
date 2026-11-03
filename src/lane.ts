@@ -262,6 +262,11 @@ export class Lane<I, O> implements Positions<I, O> {
   mark = Number.NaN;
   /** Whether it took every subject when it opened, so a fill makes each one's first call. */
   every = false;
+  /** Its voice's id alone, the list a subject owes when only this voice's sample waits for it. */
+  alone: number[] = [];
+  /** The fill `owableAlone` last answered for, and its answer. */
+  aloneFill = -1;
+  aloneOwable = false;
 
   voiceAt(): Voice<I, O> {
     return this.voice;

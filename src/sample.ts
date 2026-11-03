@@ -3,6 +3,7 @@ import { foldNumber } from './channels.js';
 import { clampWeight, passAt, same, weighed } from './clock.js';
 import { Arg, keepProbed, type Lane, type Laned, Per, type Positions, Row } from './lane.js';
 import type { Lanes } from './lanes.js';
+import { owableAlone } from './meet.js';
 import { Law, type Motions } from './motions.js';
 import { absent } from './numbers.js';
 import { reading } from './reading.js';
@@ -247,7 +248,12 @@ export function move<I, O>(
     if (lanes.keeps) lanes.host.horizon(voice, delay);
     else reading.horizon = Number.POSITIVE_INFINITY;
     if (!run.quiet(ms, elapsed)) {
-      lanes.late.push(slot);
+      // Only this voice waits for the general path where it can fold there last: the subject's
+      // other voices still read the lanes.
+      const own = lanes.byId.get(voice.id);
+      if (own === lane && lanes.filling && !lanes.owes(slot) && owableAlone(lanes, own))
+        lanes.owed.owe(slot, own.alone, 1);
+      else lanes.late.push(slot);
       return;
     }
     run.sample(ms, elapsed, run.xs, run.vs);

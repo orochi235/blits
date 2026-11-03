@@ -1,0 +1,86 @@
+# studio, onto job 9610b243 (--solo, load 2.0-2.9), rev 952abdb: bench/heatmap.mjs, N=5000, 600 timed frames after 60 warm, one run per setting in its own process; every frame in 2026-11-03-heatmap-parts-952abdb.jsonl. Studio reads slower than teitou: compare with 2026-11-03-heatmap-parts-4931533.txt only within a machine.
+onto: plan 42
+ 1/42  spring/input/ink/on     read p50   5.761 ms  p90   7.129  step p50   1.308  load 2.60
+onto: progress 1/42
+ 2/42  spring/input/ink/off    read p50   4.029 ms  p90   5.037  step p50   1.092  load 2.71
+onto: progress 2/42
+ 3/42  spring/fn/ink/on        read p50   5.546 ms  p90   6.883  step p50   1.096  load 2.65
+onto: progress 3/42
+ 4/42  spring/fn/ink/off       read p50   4.076 ms  p90   5.062  step p50   1.033  load 2.60
+onto: progress 4/42
+ 5/42  spring/const/ink/on     read p50   5.237 ms  p90   6.528  step p50   1.235  load 2.60
+onto: progress 5/42
+ 6/42  spring/const/ink/off    read p50   4.007 ms  p90   4.860  step p50   1.113  load 2.71
+onto: progress 6/42
+ 7/42  spring/input/color/on   read p50   5.557 ms  p90   6.896  step p50   1.244  load 2.65
+onto: progress 7/42
+ 8/42  spring/input/color/off  read p50   3.808 ms  p90   4.832  step p50   1.068  load 2.92
+onto: progress 8/42
+ 9/42  spring/fn/color/on      read p50   5.162 ms  p90   6.856  step p50   1.104  load 2.77
+onto: progress 9/42
+10/42  spring/fn/color/off     read p50   3.518 ms  p90   4.418  step p50   0.920  load 2.77
+onto: progress 10/42
+11/42  spring/const/color/on   read p50   4.520 ms  p90   5.712  step p50   1.067  load 2.87
+onto: progress 11/42
+12/42  spring/const/color/off  read p50   3.668 ms  p90   4.604  step p50   0.976  load 2.72
+onto: progress 12/42
+13/42  spring/-/none/on        read p50   2.456 ms  p90   3.386  step p50   0.904  load 2.72
+onto: progress 13/42
+14/42  spring/-/none/off       read p50   2.091 ms  p90   2.879  step p50   0.923  load 2.74
+onto: progress 14/42
+15/42  tween/input/ink/on      read p50   5.119 ms  p90   6.552  step p50   1.143  load 2.76
+onto: progress 15/42
+16/42  tween/input/ink/off     read p50   3.728 ms  p90   4.664  step p50   0.997  load 2.76
+onto: progress 16/42
+17/42  tween/fn/ink/on         read p50   5.110 ms  p90   6.509  step p50   1.113  load 2.62
+onto: progress 17/42
+18/42  tween/fn/ink/off        read p50   3.883 ms  p90   4.826  step p50   0.918  load 2.49
+onto: progress 18/42
+19/42  tween/const/ink/on      read p50   4.644 ms  p90   5.947  step p50   1.193  load 2.45
+onto: progress 19/42
+20/42  tween/const/ink/off     read p50   3.917 ms  p90   4.971  step p50   0.938  load 2.45
+onto: progress 20/42
+21/42  tween/input/color/on    read p50   5.219 ms  p90   6.407  step p50   1.232  load 2.65
+onto: progress 21/42
+22/42  tween/input/color/off   read p50   3.502 ms  p90   4.397  step p50   0.987  load 2.52
+onto: progress 22/42
+23/42  tween/fn/color/on       read p50   4.962 ms  p90   6.035  step p50   1.213  load 2.40
+onto: progress 23/42
+24/42  tween/fn/color/off      read p50   3.621 ms  p90   4.472  step p50   0.897  load 2.40
+onto: progress 24/42
+25/42  tween/const/color/on    read p50   4.455 ms  p90   5.861  step p50   1.223  load 2.29
+onto: progress 25/42
+26/42  tween/const/color/off   read p50   3.783 ms  p90   4.798  step p50   0.946  load 2.26
+onto: progress 26/42
+27/42  tween/-/none/on         read p50   2.498 ms  p90   3.324  step p50   0.988  load 2.26
+onto: progress 27/42
+28/42  tween/-/none/off        read p50   2.216 ms  p90   3.045  step p50   0.838  load 2.16
+onto: progress 28/42
+29/42  none/input/ink/on       read p50   1.783 ms  p90   2.077  step p50   0.083  load 2.16
+onto: progress 29/42
+30/42  none/input/ink/off      read p50   1.285 ms  p90   1.425  step p50   0.081  load 2.16
+onto: progress 30/42
+31/42  none/fn/ink/on          read p50   1.536 ms  p90   2.074  step p50   0.079  load 2.16
+onto: progress 31/42
+32/42  none/fn/ink/off         read p50   1.645 ms  p90   1.919  step p50   0.081  load 2.07
+onto: progress 32/42
+33/42  none/const/ink/on       read p50   1.286 ms  p90   1.629  step p50   0.081  load 2.07
+onto: progress 33/42
+34/42  none/const/ink/off      read p50   1.441 ms  p90   1.522  step p50   0.081  load 2.07
+onto: progress 34/42
+35/42  none/input/color/on     read p50   1.500 ms  p90   1.772  step p50   0.081  load 2.07
+onto: progress 35/42
+36/42  none/input/color/off    read p50   1.042 ms  p90   1.251  step p50   0.079  load 1.98
+onto: progress 36/42
+37/42  none/fn/color/on        read p50   1.316 ms  p90   1.407  step p50   0.080  load 1.98
+onto: progress 37/42
+38/42  none/fn/color/off       read p50   1.136 ms  p90   1.440  step p50   0.080  load 1.98
+onto: progress 38/42
+39/42  none/const/color/on     read p50   1.152 ms  p90   1.303  step p50   0.080  load 1.98
+onto: progress 39/42
+40/42  none/const/color/off    read p50   1.211 ms  p90   1.503  step p50   0.081  load 1.98
+onto: progress 40/42
+41/42  none/-/none/on          read p50   0.293 ms  p90   0.308  step p50   0.079  load 1.98
+onto: progress 41/42
+42/42  none/-/none/off         read p50   0.134 ms  p90   0.136  step p50   0.079  load 1.98
+onto: progress 42/42

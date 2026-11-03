@@ -250,11 +250,21 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      subject's speed, so a still fixture's linear fade eases in, and the first such fade a mix
      plays runs straight, since no poses are kept until one is cued. Undecided which is right
      (cues demo, frame 440: 0.6501 against 0.6529 straight).
-   - **`pull` on the heatmap is slow, and slower with lanes than without.** 5,000 springs with an
-     `ink` channel weighted by per-cell `input` signals: 5.6 ms a frame to read with lanes on and
-     4.2 with lanes off (studio, load 1.6 and 2.6, one run each), 85 ms at 50,000; `tweens^` reads
-     10,000 in about 0.17. Which of the springs, the signal weights or `ink` costs it, and why lanes
-     lose here, is not measured: time the heatmap with each swapped out, on a quiet node.
+   - **`pull` on the heatmap is slower with lanes than without** (2026-11-03). 5,000 springs
+     retargeted at 20–60 Hz, with three `ink` voices weighted per cell by `input` signals, read in
+     5.40 ms a frame with lanes and 3.78 without (studio, solo, 7 rounds,
+     `bench/runs/2026-11-03-motion-owed-ab-heatmap.txt`); 5.84 with lanes before 952abdb, which
+     has a cell with a retarget waiting read only its motion voice on the general path, not every
+     voice (`owableAlone`, `src/meet.ts`). `bench/heatmap.mjs` times the shape with each part
+     swapped out (`bench/runs/2026-11-03-heatmap-parts-*.txt`): the signal weights against a
+     constant and `ink` against `color()` cost little either way, and tweens cost what springs do.
+     The lanes' loss needs a motion voice with retargets and other voices together: spring alone
+     reads 1.39 ms with lanes and 1.25 without, heat alone 0.96 and 0.89 (teitou). What is
+     left is not measured: the per-cell path the about 45% of cells retargeted each frame take
+     through `pull`, outside `pullRun`'s runs, and a lane's per-cell cost for voices weighted by
+     a signal (profiles: `bench/runs/2026-11-03-heatmap-profile-{on,off}.txt`). Most of the base
+     cost is the retargets themselves, about 3,000 `.to()` calls a frame, each committed when its
+     cell is read.
    - **The rig's quats read in 1.2 ms for 1,000 bones** (`pull`, 70 voices), with lanes on only
      about 20% faster than off: the off-lane path for quats in `keys`, named under item 14.
    - **Gaps, things the demos had to do themselves:** a voice's weight cannot cover some

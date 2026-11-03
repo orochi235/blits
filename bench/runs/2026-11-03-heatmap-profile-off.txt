@@ -1,0 +1,48 @@
+# msb-uai, onto task blits-heatmap-motion-owed-prof: AB_BENCH=bench/heatmap.mjs FRAMES=5000 bench/cpuprof.sh spring/input/ink/off 1 4931533
+onto: plan 1
+== run 1/1 4931533 spring/input/ink/off
+onto: plan 1
+ 1/1  spring/input/ink/off    read p50   3.360 ms  p90   4.020  step p50   0.929  load 1.51
+onto: progress 1/1
+total 21768.1 ms
+   2072.7 ms   9.5%  contribution contribution.js:49
+   1738.6 ms   8.0%  numbers stretch.js:4
+   1340.9 ms   6.2%  foldWith fold.js:151
+   1011.2 ms   4.6%  apply fold.js:47
+    964.8 ms   4.4%  subject numbers.js:73
+    674.6 ms   3.1%  change changes.js:12
+    592.0 ms   2.7%  (garbage collector)
+    589.2 ms   2.7%  prepare closed.js:25
+    518.8 ms   2.4%  commit changes.js:146
+    511.7 ms   2.4%  get store.js:20
+    484.6 ms   2.2%  sample motions.js:245
+    479.1 ms   2.2%  base weigh.js:113
+    478.7 ms   2.2%  readAll pull.js:131
+    430.4 ms   2.0%  closed closed.js:165
+    413.0 ms   1.9%  changed strays.js:53
+    412.7 ms   1.9%  prune lives.js:158
+    409.9 ms   1.9%  latest motions.js:407
+    394.4 ms   1.8%  (program)
+    389.8 ms   1.8%  has named.js:50
+    356.1 ms   1.6%  revive strays.js:65
+    347.7 ms   1.6%  weigh weigh.js:94
+    332.7 ms   1.5%  next frame.mjs:48
+    310.1 ms   1.4%  prime weigh.js:6
+    304.2 ms   1.4%  seq strays.js:46
+    281.8 ms   1.3%  fadeOf weigh.js:62
+    272.0 ms   1.2%  now strays.js:43
+    264.7 ms   1.2%  shownAt voice.js:598
+    251.8 ms   1.2%  frame strays.js:38
+    248.6 ms   1.1%  early strays.js:49
+    226.4 ms   1.0%  rawAt voice.js:572
+    224.2 ms   1.0%  queue changes.js:44
+    223.4 ms   1.0%  copy clone.js:68
+    222.7 ms   1.0%  page strays.js:58
+    208.2 ms   1.0%  write motions.js:389
+    192.9 ms   0.9%  writeValue pull.js:12
+    189.7 ms   0.9%  inked color.js:90
+    184.3 ms   0.8%  unband fold.js:37
+    181.1 ms   0.8%  read contribution.js:359
+    177.5 ms   0.8%  insert changes.js:171
+    165.6 ms   0.8%  fold color.js:216
+onto: progress 1/1

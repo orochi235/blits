@@ -35,6 +35,29 @@ export function owable<I, O>(lanes: Lanes<I, O>, slot: number): boolean {
 }
 
 /**
+ * Whether a lane's voice alone can be folded on the general path after the lanes' values: it is in
+ * no role, and no laned voice after it in voice order writes a channel it writes, so folding it
+ * last folds each of its channels in the general path's order. The same for every subject in one
+ * fill, so asked once a fill.
+ */
+export function owableAlone<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>): boolean {
+  if (lane.aloneFill === lanes.fills) return lane.aloneOwable;
+  const id = lane.voice.id;
+  let ok = lane.group === null;
+  for (const c of lanes.crowds)
+    if (ok && c.size > 0 && (c.hot[(c.size - 1) * c.stride + Hot.ID] as number) > id) ok = false;
+  for (const other of lanes.lanes) {
+    if (!ok) break;
+    if (other.voice.id <= id) continue;
+    for (const ch of other.chans) if (lane.chans.includes(ch)) ok = false;
+  }
+  if (lane.alone.length === 0) lane.alone.push(id);
+  lane.aloneFill = lanes.fills;
+  lane.aloneOwable = ok;
+  return ok;
+}
+
+/**
  * Gives a probed subject a position on every lane that started playing since the subject was last
  * checked and that reaches it, and says whether the probe still reads the lanes, given `lane`,
  * whether it would have. Kept out of `prepare`, which V8 then inlines into its callers.
