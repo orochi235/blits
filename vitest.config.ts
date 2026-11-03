@@ -5,6 +5,7 @@ export default defineConfig({
   // The engine is not a workspace member, so a package testing against it reads its source.
   resolve: {
     alias: {
+      '@msb235/blits/testing': fileURLToPath(new URL('./src/testing.ts', import.meta.url)),
       '@msb235/blits': fileURLToPath(new URL('./src/index.ts', import.meta.url)),
       '@msb235/blits-panel': fileURLToPath(
         new URL('./packages/panel/src/index.ts', import.meta.url),

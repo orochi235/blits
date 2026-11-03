@@ -3,6 +3,13 @@ import { fitsKit } from './cue.js';
 import { same } from './history.js';
 import type { Kit, Patch, Setting } from './types.js';
 
+export {
+  checkDriver,
+  type DriverMixOptions,
+  type DriverRun,
+  type DriverScene,
+} from './drivercheck.js';
+
 /**
  * A `Setting` for calling a patch's `at` or `step` outside a mix: `keep` holds per owner as a mix's
  * does, and `send` keeps what is sent in `sent`. Any field may be given; the rest read a voice at

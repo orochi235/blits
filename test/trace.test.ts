@@ -412,3 +412,22 @@ describe('trace over random scenes', () => {
     expect(exact).toBeGreaterThan(80);
   });
 });
+
+describe('a point within rounding of the window', () => {
+  it('is the window’s end, not a second point beside it', () => {
+    const m = mix<Part, Pose>(K);
+    const p: Part = { id: 'p' };
+    m.cue({
+      patch: keys<Part, Pose>(1500, [
+        { at: 0, delta: { x: 0 } },
+        { at: 1, delta: { x: 300 } },
+      ]),
+      subjects: [p],
+      loop: true,
+    });
+    m.sync(0);
+    // The loop's end at 1500, and a window ending a hair past it, as a rebased clock lands.
+    const run = m.trace(1450, 1500 + 1e-12).of(p, 'x');
+    expect(run.at.filter((t) => Math.abs(t - 1500) < 1e-9)).toHaveLength(1);
+  });
+});

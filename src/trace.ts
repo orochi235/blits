@@ -330,8 +330,10 @@ function shapeOf<I, O>(
   const knots: number[] = [];
   const bent: Bent[] = [];
   const bentBy = new Map<number, Bent[]>();
+  // One within rounding of an end is that end, as a clock rebased or sought lands a hair off it.
+  const slack = 1e-12 * Math.max(1, Math.abs(from), Math.abs(to));
   const at = (t: number): void => {
-    if (t > from && t < to) knots.push(t);
+    if (t > from + slack && t < to - slack) knots.push(t);
   };
   const reduced = mix.reduced;
   const held = voice.sharing ? undefined : voice.subjects.get(subject);

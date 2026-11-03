@@ -12,6 +12,17 @@ version and everything else the patch. Each release lists its changes as **Break
 - `mix.played`, the mix time its syncs have played, each counting no more than `maxDt`, with
   nothing for a seek or a `rebase`. A driver owing output per mix time, as blits-quarks does,
   owes the difference since its last write, exact through seeks, rate ramps and long frames.
+- `checkDriver` in `@msb235/blits/testing`, for a driver's own tests: it plays a scene the driver
+  gives alone and on a shared transport, paused, across a `rebase` over a hidden tab, across a seek
+  back and on, and on for long enough to see what it keeps grow, and says in a sentence each what
+  a host could not rely on. `docs/drivers.md` lists what a driver has to handle, which of it this
+  checks, and what is left to the driver's own tests.
+
+### Fixed
+
+- `trace` no longer puts a second point a hair from the window's end where a voice's breakpoint
+  falls within rounding of it, as a clock moved by `rebase` or a seek lands. blits-tone wrote a
+  breakpoint and the window's end there as two points 1e-12 ms apart.
 
 ## 0.19.0
 

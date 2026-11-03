@@ -4,7 +4,11 @@
     "composite": false,
     "noEmit": true,
     "rootDir": "../..",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@msb235/blits": ["../../src/index.ts"],
+      "@msb235/blits/testing": ["../../src/testing.ts"]
+    }
   },
   "include": ["src", "test"]
 }

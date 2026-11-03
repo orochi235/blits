@@ -51,3 +51,15 @@ that it does not handle that case.
 | **A late subscriber gets the current state**, not only changes after it subscribes. | the panel after a reload |
 | **Peer range and pin**: widen the `@msb235/blits` peer range with every engine minor, pin the engine to build and test against, and work with two copies of blits loaded. | every release |
 | **Name the mixes the driver makes**, so the debug panel lists them. | the site's demos |
+
+## What `checkDriver` checks
+
+`checkDriver`, in `@msb235/blits/testing`, plays a scene the driver's own tests give and returns a
+sentence per problem: `expect(checkDriver(scene)).toEqual([])`. It checks that the driver puts out
+the same alone and on a shared transport, nothing new while paused, the same across a `rebase` over
+a hidden tab, the same after a seek back and on for a driver whose output follows the mix
+(`restores: true`), and that what it keeps (`size`) stops growing. It cannot say what a long frame
+should put out, or what a seek owes a driver whose output stays once sent, since both are the
+driver's to decide: those rules stay in the driver's own tests. `packages/quarks/test/conformance.test.ts`
+and `packages/tone/test/conformance.test.ts` are scenes to copy.
+
