@@ -82,6 +82,11 @@ bytes and rebuilt into a world only when a replay needs it, so history costs mem
 to the world's size and `ms / every`. Each frame's pushes are logged beside it for the replay and
 pruned with history.
 
+`history.store` works: the world pages out as plain data, its snapshot in base64. Give the mix a
+`name`, as every mix on a transport with a store needs; `physics` keys its own subjects, so it takes
+no `keyOf`. The log of each frame's pushes is not paged and, with a store, is never pruned, so it
+grows by one small record a frame for as long as the mix plays.
+
 Replay matches the first pass exactly on one machine. To match across machines, pass Rapier's
 deterministic build.
 
@@ -89,6 +94,4 @@ deterministic build.
 
 - Kinematic bodies moved by a voice. They need a channel with no rest, which blits' `vec` of
   `sum()` is not.
-- Paging history to a `store`: a Rapier description is not plain data, so a body's add cannot be
-  written out.
 - Soft bodies, cloth and ropes.

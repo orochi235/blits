@@ -10,7 +10,7 @@ import {
 } from '@msb235/blits';
 import type { Pose2, Pose3 } from './channels.js';
 import { dimsOf, type Placed, type RapierModule, type RapierWorld } from './rapier.js';
-import { applyLog, copy, type Entry, insert, type State, worldOf } from './world.js';
+import { applyLog, copy, type Entry, insert, pack, type State, unpack, worldOf } from './world.js';
 
 /** Each pushed body's force, then torque, by key. */
 type Pushes = Record<number, number[]>;
@@ -23,8 +23,11 @@ interface Frame {
   holds: Holds;
 }
 
-/** What `physics` takes: a mix's options, the Rapier module, and the world's gravity. */
-export interface PhysicsOptions<H> extends MixOptions<H> {
+/**
+ * What `physics` takes: a mix's options, the Rapier module, and the world's gravity. There is no
+ * `keyOf`: every subject is the driver's own, and it keys them itself for a history store.
+ */
+export interface PhysicsOptions<H> extends Omit<MixOptions<H>, 'keyOf'> {
   /** An initialized Rapier module. `@dimforge/rapier3d-compat` makes a 3D world, `rapier2d-compat` a 2D one. */
   rapier: RapierModule;
   /** Default: `[0, -9.81]` or `[0, -9.81, 0]`. */
@@ -82,13 +85,20 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   const { rapier, gravity, weight, ...rest } = opts;
   const dims = dimsOf(rapier);
   const g = gravity ?? (dims.n === 2 ? [0, -9.81] : [0, -9.81, 0]);
-  const m = mix<object, O, H>(kit, { ...rest, stepMs: rest.stepMs ?? 1000 / 60 });
+  // Every subject is the driver's own: the world, each body and each body's controls.
+  const keys = new WeakMap<object, string>();
+  const m = mix<object, O, H>(kit, {
+    ...rest,
+    stepMs: rest.stepMs ?? 1000 / 60,
+    keyOf: (subject: object) => keys.get(subject) as string,
+  });
   const log: Entry[] = [];
   // Each frame's pushes at its mix time. A seek replays steps on what the host reads now, so the
   // world reads the pushes of the frame that caused each step from here instead: the first frame
   // at or after the step's end, looked up half a step early since replayed times can round apart.
+  // With a store, history reaches back without end, so the log is kept as far.
   const pushLog: Frame[] = [];
-  const keep = rest.history?.ms ?? 0;
+  const keep = rest.history?.store ? Number.POSITIVE_INFINITY : (rest.history?.ms ?? 0);
   const frameAt = (t: number): Frame | undefined => {
     let lo = 0;
     let hi = pushLog.length;
@@ -154,9 +164,12 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
         s.t = setting.timestamp;
       },
       clone: copy,
+      pack,
+      unpack,
     },
   );
   const WORLD = {};
+  keys.set(WORLD, 'world');
   let started = false;
 
   const simulated = patch<object, O>(
@@ -216,6 +229,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       const key = next++;
       insert(log, { at: now(), key, kind: 'add', desc, colliders });
       const controls = {};
+      keys.set(controls, `controls ${key}`);
       const own = (spec: Omit<VoiceSpec<object, O, H>, 'subjects'>, subject: object) => {
         if ('subjects' in spec)
           throw new Error('blits-rapier: a body cues on itself; its spec names no subjects');
@@ -239,6 +253,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
           insert(log, { at: now(), key, kind: 'drop' });
         },
       };
+      keys.set(body, `body ${key}`);
       (body as { simulated: Handle<object> }).simulated = m.cue({
         patch: simulated,
         subjects: [body],

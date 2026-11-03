@@ -4,6 +4,18 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `rapier-v*` tag with no
 section here.
 
+## Unreleased
+
+### Breaking
+
+- `PhysicsOptions` no longer takes `keyOf`: every subject in the mix is the driver's, and it keys
+  them itself.
+
+### Added
+
+- History pages to a `store`. The world's state packs to plain data, its Rapier snapshot as base64.
+  With a store, the log of each frame's pushes is kept for as long as the mix plays.
+
 ## 0.3.0
 
 ### Breaking
