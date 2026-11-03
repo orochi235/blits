@@ -89,6 +89,7 @@ function scene(dims: 2 | 3, store?: HistoryStore, shared?: true | 'unwrapped') {
   let kicked = false;
   return {
     sim,
+    bodies,
     beside: () => (beside?.probe(dot) as { x: number } | undefined)?.x,
     frame(f: number) {
       if (t === undefined) sim.sync(at(f) + shift);
@@ -186,6 +187,21 @@ describe.each([2, 3] as const)('%iD, on a transport', (dims) => {
       if (f === 290) expect(sought.beside()).toBe(besideAt290);
     }
     expect(got).toEqual(want.slice(281));
+  });
+
+  it('shows the time a seek of the transport lands on before the host syncs again', async () => {
+    const straight = scene(dims);
+    const want = [];
+    for (let f = 0; f <= 300; f++) want.push(straight.frame(f));
+
+    const sought = scene(dims, undefined, true);
+    for (let f = 0; f <= 300; f++) sought.frame(f);
+    await sought.seek(300, 280);
+    const shown = sought.bodies.map((b) => {
+      const p = sought.sim.mix.probe(b) as { position: number[]; rotation: unknown };
+      return [[...p.position], structuredClone(p.rotation)];
+    });
+    expect(shown).toEqual(want[280]);
   });
 
   it("pages the log through the transport's store when it is wrapped", async () => {

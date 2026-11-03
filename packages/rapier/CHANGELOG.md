@@ -12,6 +12,23 @@ section here.
   `sim.step()`, and the world seeks with the transport's other mixes. `physicsStore(store)` wraps
   the transport's history store so the world's log of pushes pages through it. `sim.sync` on a
   transport throws, as does `physics` on a transport whose store is not wrapped.
+- The mix is named `'physics'` when `physics` is given no `name`, so the debug panel lists it.
+
+### Fixed
+
+- A seek forward after playing on from a seek back replays the world with the pushes logged the
+  first time. Playing on dropped every frame logged ahead, so the world replayed that stretch with
+  one frame's push.
+- An `impulse`, `drop` or `body` call made after a seek lets go of the calls logged ahead of it
+  before the seek. A host making its calls again on the way did each twice, and a call it did not
+  make again still happened.
+- A body shows the time sought as soon as a seek lands, and `sim.world()` returns that world. It
+  showed the world from before the seek until the next frame, and on that frame too if no time
+  had passed.
+- A mix given no `history` keeps the one a debugger's `watched().history` gives it. The world
+  logged only one frame of pushes, so the debugger's seek replayed every step with that frame's.
+- Without a history `store`, the log of `impulse`, `drop` and `body` calls lets go of what history
+  can no longer reach. It grew for the session, holding every body's Rapier description.
 
 ## 0.4.0
 
