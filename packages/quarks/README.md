@@ -27,9 +27,10 @@ spot.cue({ patch: wave(800, { depth: { rate: 40 } }) });
 spot.burst(30);
 
 // each frame
+const from = m.now;
 m.sync(now);
 quarks.write();
-batch.update(dt / 1000);
+batch.update(Math.max(0, m.now - from) / 1000);   // particles move on mix time
 ```
 
 ## Sources and emitters
@@ -129,7 +130,23 @@ batch.update(dt / 1000);    // your own BatchedRenderer
   `quarks.emitted` still holds what the others emitted.
 
 `send` is also yours for anything else a discharge drives, such as flashes or audio: drain your own
-tags; the driver takes only the one you gave it.
+tags; the driver takes only the one you gave it. Two drivers on one mix may share a `bursts` tag:
+a burst one drains for the other's subject is emitted at the other's next `write`.
+
+## The clock and seeking
+
+The driver keeps no clock. It reads the mix's after your `sync`, so a mix on a shared `transport`
+works unchanged: sync the transport, then `write`. Emission follows the mix's rate, ramps
+included, and stops at rate 0, but quarks moves particles by the seconds you pass
+`batch.update`: pass the mix time since the last frame, as above, so they slow and pause with it.
+
+A seek leaves the particles already alive where they are. They are output already shown, which
+quarks owns and history does not keep. Bursts patches `send` play again with the tape, and those
+from `burst` do not. The carry, the part of a particle each subject is owed, goes on from where it
+stood, so a stretch played again may emit one particle more or fewer per subject. **Call `write()`
+right after a seek**, before the next `sync`: the driver tells a seek from a frame by comparing the
+mix time with the host's, so a seek back then loses the frame after it, and a seek ahead made while
+you were not syncing, as when scrubbing a paused mix, would otherwise be emitted in full on resume.
 
 ## Limits
 
@@ -144,7 +161,11 @@ tags; the driver takes only the one you gave it.
   the captured generator and puts the captured values back each frame. Detach every subject on the
   system, change it, and attach again, or drive with `capture: 'write'`.
 - `write` emits everything a frame owes at once, so a long frame bursts its whole gap's worth of
-  particles. The first write owes nothing, and neither does time `mix.rebase()` took out or a seek
-  ahead. A long gap you sync straight through is emitted in full: call `mix.rebase()` first for a
-  gap you do not want played.
+  particles, born together. The first write owes nothing, and neither does time `mix.rebase()` took
+  out or a seek ahead. A long gap you sync straight through is emitted in full, past the mix's
+  `maxDt`, which the mix does not expose: call `mix.rebase()` first for a gap you do not want
+  played.
+- When a frame both sets the mix's rate and starts a ramp, `write` caps that frame by the rates at
+  the two writes, not the rate set, so it can come up short: setting rate 1 on a paused mix and
+  ramping to 0 over a second emitted 4 particles where 5 were owed.
 - What quarks does to a particle after birth (forces, behaviors, color over life) stays quarks'.
