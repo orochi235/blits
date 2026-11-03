@@ -1,9 +1,11 @@
 import {
   type Handle,
+  type HistoryStore,
   type Kit,
   type Mix,
   type MixOptions,
   mix,
+  type Paged,
   patch,
   type Signal,
   type VoiceSpec,
@@ -21,6 +23,7 @@ type Goals = Record<number, Goal>;
 /** What a frame did to the world: its pushes, the bodies its authored voices held, and the kinematic goals. */
 interface Frame {
   at: number;
+  seq: number;
   pushes: Pushes;
   holds: Holds;
   goals: Goals;
@@ -80,6 +83,9 @@ const ROLE = 'physics';
 const copyOf = (r: number | readonly number[]): number | number[] =>
   typeof r === 'number' ? r : [...r];
 
+/** The subject key the world's frame records go under in a history store, on the `host` stream. */
+const FRAMES = 'blits-rapier frames';
+
 /** Makes a mix that holds a Rapier world, stepped on its `stepMs` clock and replayed by its history. */
 export function physics<O extends Pose2 | Pose3, H extends object = Record<string, never>>(
   kit: Kit<O>,
@@ -88,20 +94,54 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   const { rapier, gravity, weight, ...rest } = opts;
   const dims = dimsOf(rapier);
   const g = gravity ?? (dims.n === 2 ? [0, -9.81] : [0, -9.81, 0]);
+  const stepMs = rest.stepMs ?? 1000 / 60;
+  const name = rest.name ?? '';
+  const history = rest.history;
+  const store = history?.store;
+  // Each frame's pushes at its mix time. A seek replays steps on what the host reads now, so the
+  // world reads the pushes of the frame that caused each step from here instead: the first frame
+  // at or after the step's end, looked up half a step early since replayed times can round apart.
+  // It reaches back past memory to the world's copy a replay starts from; older frames go to the
+  // store as host records under `FRAMES`, and come back when `prepare` loads.
+  const pushLog: Frame[] = [];
+  const keep = history === undefined ? 0 : history.ms + (history.every ?? 200) + 2 * stepMs;
+  const ours = (r: Paged) => r.mix === name && r.stream === 'host' && r.subject === FRAMES;
+  const restore = (records: readonly Paged[], from: number) => {
+    let start = Number.NEGATIVE_INFINITY;
+    for (const r of records) if (ours(r) && r.at <= from && r.at > start) start = r.at;
+    const byAt = new Map<number, Paged>();
+    for (const r of records)
+      if (ours(r) && r.at >= start && (byAt.get(r.at)?.seq ?? -1) < r.seq) byAt.set(r.at, r);
+    const first = pushLog[0]?.at ?? Number.POSITIVE_INFINITY;
+    const older = [...byAt.values()]
+      .filter((r) => r.at < first)
+      .sort((a, b) => a.at - b.at)
+      .map((r) => ({ ...(r.data as Omit<Frame, 'at' | 'seq'>), at: r.at, seq: r.seq }));
+    pushLog.unshift(...older);
+  };
+  const paging: HistoryStore | undefined = store && {
+    page: (out) => store.page(out),
+    cut: (seq) => store.cut(seq),
+    async load(t) {
+      const all = await store.load(t);
+      // A replay to t starts from the world's latest copy at or before it, which needs the frames from there.
+      let from = t;
+      for (const r of all)
+        if (r.mix === name && r.stream === 'snap' && r.subject === 'world' && r.at < from)
+          from = r.at;
+      restore(from < t ? await store.load(from) : all, from);
+      return all.filter((r) => !ours(r));
+    },
+  };
   // Every subject is the driver's own: the world, each body and each body's controls.
   const keys = new WeakMap<object, string>();
   const m = mix<object, O, H>(kit, {
     ...rest,
-    stepMs: rest.stepMs ?? 1000 / 60,
+    ...(paging ? { history: { ...(history as NonNullable<typeof history>), store: paging } } : {}),
+    stepMs,
     keyOf: (subject: object) => keys.get(subject) as string,
   });
   const log: Entry[] = [];
-  // Each frame's pushes at its mix time. A seek replays steps on what the host reads now, so the
-  // world reads the pushes of the frame that caused each step from here instead: the first frame
-  // at or after the step's end, looked up half a step early since replayed times can round apart.
-  // With a store, history reaches back without end, so the log is kept as far.
-  const pushLog: Frame[] = [];
-  const keep = rest.history?.store ? Number.POSITIVE_INFINITY : (rest.history?.ms ?? 0);
   const frameAt = (t: number): Frame | undefined => {
     let lo = 0;
     let hi = pushLog.length;
@@ -192,7 +232,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
     { writes: ['position', 'rotation'] as (keyof O)[] },
   );
 
-  const now = () => (Number.isNaN(m.timestamp) ? Number.NEGATIVE_INFINITY : m.timestamp);
+  const now = () => (Number.isNaN(m.now) ? Number.NEGATIVE_INFINITY : m.now);
   const driven = new Set<Body<O, H>>();
   // Each body's voices in the simulation's role besides its own, and its pose the last frame they held it.
   const authored = new Map<Body<O, H>, Handle<object>[]>();
@@ -297,7 +337,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
           goals[body.key] = g;
         }
       }
-      const at = m.timestamp;
+      const at = m.now;
       let back = false;
       while (pushLog.length > 0 && (pushLog[pushLog.length - 1] as { at: number }).at >= at) {
         pushLog.pop();
@@ -308,10 +348,21 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
         holding = {};
         held.clear();
       }
-      pushLog.push({ at, pushes, holds: holding, goals });
+      pushLog.push({ at, seq: m.seq, pushes, holds: holding, goals });
       let old = 0;
       while (old < pushLog.length - 1 && (pushLog[old + 1] as { at: number }).at < at - keep) old++;
-      if (old > 0) pushLog.splice(0, old);
+      const gone = old > 0 ? pushLog.splice(0, old) : undefined;
+      if (gone !== undefined && store !== undefined)
+        store.page(
+          gone.map(({ at, seq, pushes, holds, goals }) => ({
+            mix: name,
+            stream: 'host',
+            subject: FRAMES,
+            at,
+            seq,
+            data: { pushes, holds, goals },
+          })),
+        );
       m.probe(WORLD);
       live = seen;
       holding = holdsAt(at);

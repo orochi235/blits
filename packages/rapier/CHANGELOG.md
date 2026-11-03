@@ -16,11 +16,15 @@ section here.
 - Kinematic bodies moved by a voice: `kinematic2` and `kinematic3` add `goal` and `facing` channels
   to a body's controls, which move a kinematic body over the next step. Neither has a rest, so a
   body no voice writes stays where it is.
-- History pages to a `store`. The world's state packs to plain data, its Rapier snapshot as base64.
-  With a store, the log of each frame's pushes is kept for as long as the mix plays.
+- History pages to a `store`. The world's state packs to plain data, its Rapier snapshot as base64,
+  and the log of each frame's pushes pages out beside it, so memory stays bounded.
 
 ### Fixed
 
+- Pushes, impulses, drops and added bodies are logged at the mix's time (`mix.now`), not the host's
+  timestamp, so a seek, `rebase` or rate other than 1 no longer files them at the wrong step.
+- The log of each frame's pushes reaches back to the world copy a replay at the edge of memory
+  starts from, not just `history.ms`.
 - `channels2`'s `rotation` takes a turn as `2 * Math.PI`. It was `angle()`, whose turn is 360, so
   two radian angles either side of ±π blended the long way round, through 0.
 
