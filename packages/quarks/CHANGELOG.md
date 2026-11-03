@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
+## Unreleased
+
+### Fixed
+
+- Two drivers on one mix that share a `bursts` tag no longer lose each other's bursts. A drain
+  takes every event under its tag, so the driver that wrote first dropped the bursts it drained for
+  the other's subjects; it now hands them to that driver, which emits them at its next `write`.
+
 ## 0.14.0
 
 ### Breaking

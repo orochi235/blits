@@ -60,6 +60,38 @@ describe('bursts', () => {
     expect(m.drain('other')).toHaveLength(1);
   });
 
+  it("hands another driver on the mix the bursts it drained for that driver's subjects", () => {
+    const m = mix<Spot, Emission>(K);
+    const s = system();
+    // A stateless send on a lane fires at the frame's first probe for every subject, so whichever
+    // driver writes first drains the bursts of both.
+    const every = patch<Spot, Emission>(
+      0,
+      (_t, _subject, setting) => {
+        setting.send({ count: 1 });
+        return { speed: 1 };
+      },
+      { writes: ['speed'] },
+    );
+    m.cue({ patch: every, subjects: [a, b], tags: ['sparks'] });
+    const one = drive(m, { kit: K, bursts: 'sparks' });
+    const two = drive(m, { kit: K, bursts: 'sparks' });
+    one.attach(a, s, { at: [1, 0, 0] });
+    two.attach(b, s, { at: [2, 0, 0] });
+    for (let f = 0; f < 6; f++) {
+      m.sync(f * 100);
+      if (f % 2) {
+        one.write();
+        two.write();
+      } else {
+        two.write();
+        one.write();
+      }
+    }
+    expect(born(s).filter((p) => p.position.x === 1)).toHaveLength(6);
+    expect(born(s).filter((p) => p.position.x === 2)).toHaveLength(6);
+  });
+
   it('treats a count that is not finite as 0', () => {
     const m = mix<Spot, Emission>(K);
     const s = system();
