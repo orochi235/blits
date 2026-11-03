@@ -14,11 +14,15 @@ import {
 import { at, FRAME } from './scenes.js';
 
 /** A store that keeps each record only as JSON text, so anything but plain data is lost or throws. */
-function jsonStore(): HistoryStore & { size(): number } {
+function jsonStore(): HistoryStore & { size(): number; frames(): Paged[] } {
   const held = new Map<string, string>();
   const id = (p: Paged) => [p.mix, p.stream, p.voice, p.subject, p.seq].join('|');
   return {
     size: () => held.size,
+    frames: () =>
+      [...held.values()]
+        .map((s) => JSON.parse(s) as Paged)
+        .filter((p) => p.stream === 'host' && p.subject === 'blits-rapier frames'),
     page(out) {
       for (const p of out) held.set(id(p), JSON.stringify(p));
     },
@@ -62,11 +66,15 @@ function scene(dims: 2 | 3, store?: HistoryStore) {
   });
   bodies[0]?.drive({ patch: swing<Pose2 | Pose3>((u) => ({ force: v(u * 4, 0) }) as never) });
   let shift = 0;
+  let kicked = false;
   return {
     sim,
     frame(f: number) {
       sim.sync(at(f) + shift);
-      if (f === 40) bodies[2]?.impulse(v(0.4, 1));
+      if (f === 40 && !kicked) {
+        kicked = true;
+        bodies[2]?.impulse(v(0.4, 1));
+      }
       return bodies.map((b) => {
         const p = sim.mix.probe(b) as { position: number[]; rotation: unknown };
         return [[...p.position], structuredClone(p.rotation)];
@@ -99,5 +107,32 @@ describe.each([2, 3] as const)('%iD, with a history store', (dims) => {
     expect(got).toEqual(want.slice(21));
     expect(want[21]).not.toEqual(want[frames]);
     expect(FRAME * (frames - 20)).toBeGreaterThan(500);
+  });
+
+  it('pages the log of frames past memory, brings it back for a seek, and cuts its future', async () => {
+    const frames = 1200;
+    const straight = scene(dims);
+    const want = [];
+    for (let f = 0; f <= frames; f++) want.push(straight.frame(f));
+
+    const store = jsonStore();
+    const sought = scene(dims, store);
+    for (let f = 0; f <= frames; f++) sought.frame(f);
+    // 500 ms of memory, 250 between copies and two steps' margin keep 47 frames; the rest are paged.
+    const paged = store.frames().length;
+    expect(paged).toBeGreaterThanOrEqual(frames - 48);
+    expect(paged).toBeLessThanOrEqual(frames);
+
+    await sought.seek(frames, 20);
+    // What was paged after frame 20 is cut, so the store holds only what comes before it.
+    expect(Math.max(...store.frames().map((p) => p.at))).toBeLessThanOrEqual(at(20));
+    const got = [];
+    for (let f = 21; f <= frames; f++) got.push(sought.frame(f));
+
+    expect(got).toEqual(want.slice(21));
+    // Played forward again, the log is paged again, one record a frame.
+    const ats = store.frames().map((p) => p.at);
+    expect(new Set(ats).size).toBe(ats.length);
+    expect(ats.length).toBeGreaterThanOrEqual(frames - 48);
   });
 });

@@ -101,13 +101,13 @@ per interval, so it runs at the same rate whatever the frame rate. Pass `history
 seek. The world lives in the mix as the state of a stateful patch, so blits' history keeps a copy
 every `every` ms and a seek replays from the nearest one. A copy is Rapier's snapshot, kept as
 bytes and rebuilt into a world only when a replay needs it, so history costs memory in proportion
-to the world's size and `ms / every`. Each frame's pushes are logged beside it for the replay and
-pruned with history.
+to the world's size and `ms / every`. Each frame's pushes are logged beside it for the replay, back
+to the copy a replay at the edge of memory would start from.
 
 `history.store` works: the world pages out as plain data, its snapshot in base64. Give the mix a
 `name`, as every mix on a transport with a store needs; `physics` keys its own subjects, so it takes
-no `keyOf`. The log of each frame's pushes is not paged and, with a store, is never pruned, so it
-grows by one small record a frame for as long as the mix plays.
+no `keyOf`. The log of each frame's pushes pages out with it, one `host` record a frame under the
+subject `'blits-rapier frames'`, and `prepare` loads it back for a seek past memory.
 
 Replay matches the first pass exactly on one machine. To match across machines, pass Rapier's
 deterministic build.

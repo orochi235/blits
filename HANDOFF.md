@@ -922,13 +922,16 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     says what it does and does not do. Kinematic bodies (`kinematic2`/`kinematic3`, `goal` and
     `facing` on core's rest-less `last` channels) and paging to a `store` landed 2026-11-03,
     unreleased. Open:
-    - With a store, the world's log of each frame's pushes and goals is never pruned, since a seek
-      past memory replays from it and nothing pages it: memory grows a small record a frame for as
-      long as the mix plays. It goes with the next bullet.
     - A seek's catch-up steps read the host as it is now (`sought.test.ts`, "steps a patch that
-      reads the host again"), so the world keeps its own log of each frame's pushes and looks a
-      step's up half a step early, since replayed step times round apart from the first pass's.
-      If blits ever replays recorded host input on a seek, that log can go.
+      reads the host again"), so the world keeps its own log of each frame's pushes, paged to a
+      store as `host` records, and looks a step's up half a step early, since replayed step times
+      round apart from the first pass's. If blits ever replays recorded host input on a seek, that
+      log can go.
+    - On a shared `transport`, `physics` sees no `history` (it is the transport's), so it keeps one
+      frame of pushes and pages none: a seek there replays on the wrong pushes. It needs the
+      transport's history options, which `Transport` does not expose. Calls logged by `impulse`,
+      `drop` and `body` are never pruned or paged, by design, since a replay through them does them
+      again; they grow per call, not per frame.
     - A kinematic goal's voice weight only switches it on or off (`last`); goals cannot crossfade
       by weight without a core channel that blends rest-less values.
 
