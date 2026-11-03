@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.18.0 (2026-11-02), with blits-panel 0.6.0, blits-rapier 0.3.0, blits-quarks 0.13.0, and blits-tone 0.9.0 taking it as a `^0.18.0` peer and pinning 0.18.0 to build against. 0.17.0 and 0.18.0 were minor bumps with no Breaking section, against the changelog rule's "everything else the patch", at the owner's call both times (2026-11-02).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.19.0 (2026-11-03), with blits-panel 0.7.0, blits-rapier 0.4.0, blits-quarks 0.14.0, and blits-tone 0.10.0 taking it as a `^0.19.0` peer and pinning 0.19.0 to build against. 0.17.0, 0.18.0 and 0.19.0 were minor bumps with no Breaking section, against the changelog rule's "everything else the patch", at the owner's call (2026-11-02, 2026-11-03).
   Pushing driver tags at once leaves the middle run canceled (the `release` concurrency
   group keeps one pending run), so rerun it once the last one starts.
   blits-tone 0.2.0 was its first release through trusted publishing.
@@ -623,12 +623,12 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    way to say offscreen.
 
 8. **blits-quarks and magicsmoke.** The driver changes magicsmoke's `docs/HANDOFF.md` asked for
-   are built and unreleased (2026-11-03): `write` returns `quarks.emitted`, each subject's
+   are released in blits-quarks 0.14.0 (2026-11-03): `write` returns `quarks.emitted`, each subject's
    particle count that write; `attach` takes `rate`, the host's own particles per second that no
    voice weight scales, and `frame: 'world'`, a pure translation; `drive`'s `capture: 'write'`
    rereads start values every write for live tuning; `quarks.burst(subject, n)`; and the carry
    floors exactly, without the `1e-6` slack. magicsmoke has not switched. It still needs engine
-   `^0.18.0` (it pins 0.8.1). Its own float carry emits a frame late against exact arithmetic on
+   `^0.19.0` (it pins 0.8.1). Its own float carry emits a frame late against exact arithmetic on
    41 of 1200 frames at 60 fps and 4/s (simulated), so to stay frame-identical it keeps that
    carry and passes counts to `quarks.burst` rather than a `rate`. The driver has no `MAX_STEP`
    clamp, and it emits every subject at `write` where magicsmoke interleaves fizz with each
@@ -637,9 +637,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    the survey proposed is this same question.
 
 9. **blits-tone.** Its README says what it does and does not do yet. Open:
-   - **blits-tone's next release takes the next engine** (2026-11-03): `write` calls `mix.time`,
-     `mix.when` and `trace`'s `bends`, unreleased, so on engine 0.18.0 it throws. Move the peer
-     range with that engine release; the package changelog's Unreleased section says so.
    - `mix.trace` (2026-11-03) knows `keys` voices, any easing as a bend under `bends`, and tweens
      with no retarget timed inside the window. Still read every `grid` ms: other patches, a signal
      weight, a fade under way, and a voice whose own rate is ramping (the 0.078 Hz left at a 25 ms
@@ -915,8 +912,8 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 16. **blits-rapier** (`packages/rapier`, built 2026-10-31; 0.1.0 published by hand 2026-11-01,
     trusted publishing registered after it, so later versions go out from `rapier-v*` tags). Its README
     says what it does and does not do. Kinematic bodies (`kinematic2`/`kinematic3`, `goal` and
-    `facing` on core's rest-less `last` channels) and paging to a `store` landed 2026-11-03,
-    unreleased. Open:
+    `facing` on core's rest-less `last` channels) and paging to a `store` are released in 0.4.0
+    (2026-11-03). Open:
     - A seek's catch-up steps read the host as it is now (`sought.test.ts`, "steps a patch that
       reads the host again"), so the world keeps its own log of each frame's pushes, paged to a
       store as `host` records, and looks a step's up half a step early, since replayed step times
