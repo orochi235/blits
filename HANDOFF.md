@@ -609,12 +609,19 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    decided (the schema page's Decided against). A reach that changes over time (item 5) is another
    way to say offscreen.
 
-8. **blits-quarks and magicsmoke.** magicsmoke is on engine 0.8.1 but its fizz and tuning stay on
-   its own code: the driver doesn't fit without changing what magicsmoke does. Its
-   `docs/HANDOFF.md` has the gaps; the likely driver changes are a per-subject emitted count from
-   `write`, rate or counts settable by the host, and rounding without the `1e-6` slack. Mike's call
-   whether to make them. `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the
-   driver scaffold the survey proposed is this same question.
+8. **blits-quarks and magicsmoke.** The driver changes magicsmoke's `docs/HANDOFF.md` asked for
+   are built and unreleased (2026-11-03): `write` returns `quarks.emitted`, each subject's
+   particle count that write; `attach` takes `rate`, the host's own particles per second that no
+   voice weight scales, and `frame: 'world'`, a pure translation; `drive`'s `capture: 'write'`
+   rereads start values every write for live tuning; `quarks.burst(subject, n)`; and the carry
+   floors exactly, without the `1e-6` slack. magicsmoke has not switched. It still needs engine
+   `^0.18.0` (it pins 0.8.1). Its own float carry emits a frame late against exact arithmetic on
+   41 of 1200 frames at 60 fps and 4/s (simulated), so to stay frame-identical it keeps that
+   carry and passes counts to `quarks.burst` rather than a `rate`. The driver has no `MAX_STEP`
+   clamp, and it emits every subject at `write` where magicsmoke interleaves fizz with each
+   fault's discharges; check whether that reorders a shared random stream.
+   `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the driver scaffold
+   the survey proposed is this same question.
 
 9. **blits-tone.** Its README says what it does and does not do yet. Open:
    - `mix.trace` (2026-10-29) is exact only for `keys` voices eased `linear`. A stretch eased
