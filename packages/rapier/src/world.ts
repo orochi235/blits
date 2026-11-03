@@ -13,11 +13,15 @@ export interface State {
   t: number;
 }
 
-/** Something done to the world at a mix time, applied by whichever step reaches it, on every replay. */
-export type Entry =
-  | { at: number; key: number; kind: 'add'; desc: unknown; colliders: readonly unknown[] }
-  | { at: number; key: number; kind: 'drop' }
-  | { at: number; key: number; kind: 'impulse'; v: readonly number[] };
+/**
+ * Something done to the world at a mix time, applied by whichever step reaches it, on every
+ * replay. `seq` is the frame the host made the call in.
+ */
+export type Entry = { at: number; seq: number; key: number } & (
+  | { kind: 'add'; desc: unknown; colliders: readonly unknown[] }
+  | { kind: 'drop' }
+  | { kind: 'impulse'; v: readonly number[] }
+);
 
 /** The state's world, rebuilt from its snapshot where it has none yet. */
 export function worldOf(state: State, rapier: RapierModule): RapierWorld {

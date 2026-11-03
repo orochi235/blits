@@ -45,6 +45,59 @@ describe.each([
     expect(want[21]).not.toEqual(want[frames]);
   });
 
+  it('replays a seek forward after playing on from a seek back', () => {
+    const straight = play(scene);
+    const want = [];
+    for (let f = 0; f <= 301; f++) want.push(straight.frame(f));
+
+    const sought = play(scene);
+    for (let f = 0; f <= 300; f++) sought.frame(f);
+    sought.seek(300, 20);
+    for (let f = 21; f <= 30; f++) sought.frame(f);
+    sought.seek(30, 300);
+    expect(sought.frame(301)).toEqual(want[301]);
+  });
+
+  it('replaces the calls logged ahead of a seek back with those the host makes again', () => {
+    const straight = play(scene);
+    const want = [];
+    for (let f = 0; f <= 200; f++) want.push(straight.frame(f));
+
+    const sought = play(scene);
+    for (let f = 0; f <= 200; f++) {
+      sought.frame(f);
+      if (f === 80) sought.s.bodies[0]?.drop();
+    }
+    sought.seek(200, 20);
+    const kick = sought.s.bodies[2]?.impulse as (v: number[]) => void;
+    const got = [];
+    for (let f = 21; f <= 200; f++) {
+      got.push(sought.frame(f));
+      // The host makes the scene's kick again on the way, and not the drop.
+      if (f === 40) kick(scene === scene2 ? [0.4, 1] : [0.4, 1, 0]);
+    }
+    expect(got).toEqual(want.slice(21));
+  });
+
+  it('shows the time sought as soon as a seek lands, before the host syncs again', () => {
+    const straight = play(scene);
+    const want = [];
+    for (let f = 0; f <= 120; f++) want.push(straight.frame(f));
+
+    const sought = play(scene);
+    for (let f = 0; f <= 120; f++) sought.frame(f);
+    const shown = () =>
+      sought.s.bodies.map((b) => [
+        ...(sought.s.sim.mix.probe(b) as unknown as { position: number[] }).position,
+      ]);
+    sought.s.sim.mix.seek(at(60));
+    // Read before the host syncs again, as a paused host drawing a scrub does.
+    expect(shown()).toEqual(want[60]?.map(([p]) => p));
+    // The host's clock has not moved, so this frame reads the moment sought too.
+    sought.s.sim.sync(at(120));
+    expect(shown()).toEqual(want[60]?.map(([p]) => p));
+  });
+
   it('takes a dropped body out, and brings it back on a seek to before the drop', () => {
     const run = play(scene);
     for (let f = 0; f <= 120; f++) run.frame(f);

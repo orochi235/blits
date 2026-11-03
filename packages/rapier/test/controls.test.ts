@@ -27,6 +27,14 @@ it('moves a body by a force on its controls, scaled by the voice weight', () => 
   expect(full.position[1]).toBeCloseTo(0, 6);
 });
 
+it('pushes nothing from a voice at weight 0', () => {
+  const still = float((_s, b) =>
+    b.drive({ patch: push({ force: [2, 0], torque: 0.5 }), weight: 0 }),
+  );
+  expect(still.position).toEqual([0, 0]);
+  expect(still.rotation).toBe(0);
+});
+
 it('spins a body by a torque on its controls', () => {
   const spun = float((_s, b) => b.drive({ patch: push({ torque: 0.5 }) }));
   expect(Math.abs(spun.rotation)).toBeGreaterThan(0.1);

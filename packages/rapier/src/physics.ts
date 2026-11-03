@@ -9,6 +9,7 @@ import {
   patch,
   type Signal,
   type VoiceSpec,
+  watched,
 } from '@msb235/blits';
 import type { Pose2, Pose3 } from './channels.js';
 import { dimsOf, type Goal, type Placed, type RapierModule, type RapierWorld } from './rapier.js';
@@ -136,9 +137,10 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   const dims = dimsOf(rapier);
   const g = gravity ?? (dims.n === 2 ? [0, -9.81] : [0, -9.81, 0]);
   const stepMs = rest.stepMs ?? 1000 / 60;
-  const name = rest.name ?? '';
+  const name = rest.name ?? 'physics';
   const transport = rest.transport;
-  const history = transport === undefined ? rest.history : transport.history;
+  // A mix naming no history keeps the one a debugger gives mixes made from now on.
+  const history = transport === undefined ? (rest.history ?? watched().history) : transport.history;
   const outer = history?.store;
   if (outer !== undefined && transport !== undefined && !paging.has(outer))
     throw new Error(
@@ -176,6 +178,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       ? { history: { ...(history as NonNullable<typeof history>), store } }
       : {}),
     stepMs,
+    name,
     keyOf: (subject: object) => keys.get(subject) as string,
   });
   const log: Entry[] = [];
@@ -260,7 +263,9 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
 
   const simulated = patch<object, O>(
     0,
-    (_p, subject) => {
+    (_p, subject, setting) => {
+      // A read at another time sees the world as it stands; see the README.
+      if (setting.timestamp === m.now) fresh();
       const handle = live?.handles.get((subject as Body<O, H>).key);
       if (live === undefined || handle === undefined) return {};
       const b = worldOf(live, rapier).getRigidBody(handle);
@@ -307,6 +312,37 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
     return holds;
   };
   let next = 0;
+  // The frame, mix time and host timestamp of the last `step`, the first frame after a seek it
+  // noticed, and the frame `live` was read in. A seek comes and goes without the driver hearing.
+  let lastSeq: number | undefined;
+  let lastAt = Number.NEGATIVE_INFINITY;
+  let lastTs = Number.NaN;
+  let soughtSeq = Number.NEGATIVE_INFINITY;
+  let liveSeq = Number.NaN;
+  let startAt = Number.NaN;
+  const sought = () =>
+    lastSeq !== undefined && history?.tape !== undefined && (m.seq > lastSeq + 1 || m.now < lastAt);
+  /** Reads the world at the time sought after seeks since the last step, with no sync since. */
+  const fresh = () => {
+    if (
+      lastSeq === undefined ||
+      history?.tape === undefined ||
+      liveSeq === m.seq ||
+      m.timestamp !== lastTs
+    )
+      return;
+    m.probe(WORLD);
+    live = seen;
+    liveSeq = m.seq;
+  };
+  /** Logs a call, letting go of the calls logged ahead of it before a seek, as the mix's tape does. */
+  const call = (entry: Entry) => {
+    if (sought()) soughtSeq = (lastSeq as number) + 1;
+    const from = entry.at - stepMs / 2;
+    for (let i = log.length - 1; i >= 0 && (log[i] as Entry).at >= from; i--)
+      if ((log[i] as Entry).seq < soughtSeq) log.splice(i, 1);
+    insert(log, entry);
+  };
 
   const step = () => {
     // Cued before the mix has a time, the world would catch up from mix time 0 on its first step.
@@ -334,17 +370,29 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       }
     }
     const at = m.now;
-    let back = false;
-    while (pushLog.length > 0 && (pushLog[pushLog.length - 1] as { at: number }).at >= at) {
-      pushLog.pop();
-      back = true;
-    }
-    // A seek back leaves the holds read before it, and their speeds, behind.
-    if (back) {
+    const seq = m.seq;
+    if (Number.isNaN(startAt)) startAt = at;
+    // This frame stands for the frames logged after where the mix stood before it, up to its own
+    // time. Those ahead stay for a seek forward, which replays them as the mix's tape does its calls.
+    let before = lastAt;
+    if (sought()) {
+      before = m.project({ frame: seq - 1 }).timestamp;
+      soughtSeq = (lastSeq as number) + 1;
       holding = {};
       held.clear();
     }
-    pushLog.push({ at, seq: m.seq, pushes, holds: holding, goals });
+    let end = pushLog.length;
+    while (end > 0 && (pushLog[end - 1] as Frame).at > at) end--;
+    let start = end;
+    while (
+      start > 0 &&
+      ((pushLog[start - 1] as Frame).at > before || (pushLog[start - 1] as Frame).at === at)
+    )
+      start--;
+    pushLog.splice(start, end - start, { at, seq, pushes, holds: holding, goals });
+    lastSeq = seq;
+    lastAt = at;
+    lastTs = m.timestamp;
     let old = 0;
     while (old < pushLog.length - 1 && (pushLog[old + 1] as { at: number }).at < at - keep) old++;
     const gone = old > 0 ? pushLog.splice(0, old) : undefined;
@@ -361,6 +409,15 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       );
     m.probe(WORLD);
     live = seen;
+    liveSeq = seq;
+    // Without a store, calls older than any copy a replay starts from are in every copy already,
+    // once history no longer reaches the world's first step, which a fresh world replays from.
+    const reach = Math.min(at, live?.t ?? at) - keep - stepMs;
+    if (store === undefined && reach > startAt) {
+      let n = 0;
+      while (n < log.length && (log[n] as Entry).at < reach) n++;
+      if (n > 0) log.splice(0, n);
+    }
     holding = holdsAt(at);
   };
 
@@ -369,7 +426,7 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
     role: ROLE,
     body(desc, ...colliders) {
       const key = next++;
-      insert(log, { at: now(), key, kind: 'add', desc, colliders });
+      call({ at: now(), seq: m.seq, key, kind: 'add', desc, colliders });
       const controls = {};
       keys.set(controls, `controls ${key}`);
       const own = (spec: Omit<VoiceSpec<object, O, H>, 'subjects'>, subject: object) => {
@@ -390,10 +447,8 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
           driven.add(body);
           return own(spec, controls);
         },
-        impulse: (v) => insert(log, { at: now(), key, kind: 'impulse', v: [...v] }),
-        drop: () => {
-          insert(log, { at: now(), key, kind: 'drop' });
-        },
+        impulse: (v) => call({ at: now(), seq: m.seq, key, kind: 'impulse', v: [...v] }),
+        drop: () => call({ at: now(), seq: m.seq, key, kind: 'drop' }),
       };
       keys.set(body, `body ${key}`);
       (body as { simulated: Handle<object> }).simulated = m.cue({
@@ -413,6 +468,9 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       step();
     },
     step,
-    world: () => (live === undefined ? undefined : worldOf(live, rapier)),
+    world: () => {
+      fresh();
+      return live === undefined ? undefined : worldOf(live, rapier);
+    },
   };
 }
