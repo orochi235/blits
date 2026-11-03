@@ -238,6 +238,7 @@ export class Transport implements TransportApi {
       throw new RangeError(
         `blits: sync went back from ${this.last} to ${timestamp}; the host's clock only goes forward, and seek moves the mix`,
       );
+    const before = this.now;
     if (this.rebasing && !Number.isNaN(this.last)) this.offset += timestamp - this.last;
     this.rebasing = false;
     this.last = timestamp;
@@ -263,6 +264,11 @@ export class Transport implements TransportApi {
       const moved = now !== this.now;
       for (const m of this.members) if (moved || (later && pace !== null && waits(m))) move(m, now);
     }
+    if (!Number.isNaN(before) && this.now > before)
+      for (const m of this.members) {
+        const cap = m.opts.maxDt;
+        m.played += cap !== undefined && this.now - before > cap ? cap : this.now - before;
+      }
     const history = this.history;
     this.kept();
     const reach = this.keepsFrom();

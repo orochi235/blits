@@ -45,7 +45,7 @@ describe('the clock', () => {
     expect(s.particleNum).toBe(15);
   });
 
-  it('catches a long frame up in full, past the mix’s maxDt', () => {
+  it('caps a long frame at the mix’s maxDt', () => {
     const m = mix<Spot, Emission>(K, { maxDt: 50 });
     const s = system();
     m.cue({ patch: hold({ rate: 10 }), subjects: [a] });
@@ -55,7 +55,28 @@ describe('the clock', () => {
     q.write();
     m.sync(2000);
     q.write();
-    expect(s.particleNum).toBe(20);
+    expect(s.particleNum).toBe(0);
+    m.sync(2100);
+    q.write();
+    expect(s.particleNum).toBe(1);
+  });
+
+  it('owes a ramp begun the frame its rate is set in full', () => {
+    const m = mix<Spot, Emission>(K);
+    const s = system();
+    m.cue({ patch: hold({ rate: 10 }), subjects: [a] });
+    const q = drive(m, { kit: K });
+    q.attach(a, s, { at: [0, 0, 0] });
+    m.rate = 0;
+    m.sync(0);
+    q.write();
+    m.rate = 1;
+    m.ramp(0, 1000);
+    m.sync(1000);
+    q.write();
+    m.sync(1100);
+    q.write();
+    expect(s.particleNum).toBe(5);
   });
 });
 
@@ -73,21 +94,19 @@ describe('a seek', () => {
     return { m, s, q };
   }
 
-  it('back leaves particles alive, and owes the frame after it when written at the seek', () => {
+  it('back leaves particles alive, and owes the frame after it', () => {
     const { m, s, q } = setup(10);
     expect(s.particleNum).toBe(10);
     m.seek(500);
-    q.write();
     expect(s.particleNum).toBe(10);
     m.sync(1100);
     q.write();
     expect(s.particleNum).toBe(11);
   });
 
-  it('ahead, while the host is not syncing, owes nothing when written at the seek', () => {
+  it('ahead, while the host is not syncing, owes nothing', () => {
     const { m, s, q } = setup(10);
     m.seek(m.now + 5000);
-    q.write();
     m.rebase();
     m.sync(60_000);
     q.write();

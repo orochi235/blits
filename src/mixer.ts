@@ -123,6 +123,8 @@ export class Mixer<I, O> implements Mix<I, O> {
    * before that shows in this frame live, so it is recorded as showing in it.
    */
   looked = false;
+  /** As `Mix.played`: what syncs have played, each capped by `maxDt`. */
+  played = 0;
   /**
    * Under `history` with `inputs`, the host fields patches read, copied each frame they changed. In
    * a projection reading back, the copy in force then.

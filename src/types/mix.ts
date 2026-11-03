@@ -343,6 +343,12 @@ export interface Mix<I, O, H = unknown> {
   /** The host's timestamp at the last sync; NaN before the first. */
   readonly timestamp: number;
   /**
+   * Mix time played by syncs since the mix began, each sync counting what it moved the clock on,
+   * from the last sync or the seek since, and no more than {@link MixOptions.maxDt | `maxDt`}. A seek or a {@link Mix.rebase | `rebase`} adds nothing,
+   * so it never goes back. A driver owing output per mix time owes the difference since its last write.
+   */
+  readonly played: number;
+  /**
    * The number of the frame being played. `seek({ frame })` and `project({ frame })` take it. Each
    * sync and seek begins a frame with a higher one, so two frames at one mix time differ.
    */

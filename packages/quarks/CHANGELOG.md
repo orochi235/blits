@@ -6,7 +6,18 @@ section here.
 
 ## Unreleased
 
+### Breaking
+
+- Needs the engine release after 0.19.0, for `mix.played`. The peer range moves to it when this
+  releases.
+
 ### Fixed
+
+- `write` owes what the mix's syncs played since the last write, `mix.played`, so a long frame
+  emits no more than the mix's `maxDt` allows, as patches step. It emitted the whole gap. A seek no
+  longer needs a `write` right after it: a seek back lost the frame after it, and a seek ahead made
+  while the host was not syncing was emitted on resume. A frame that sets the rate and starts a
+  ramp owes the ramp in full, where it came up short (4 particles where 5 were owed).
 
 - Two drivers on one mix that share a `bursts` tag no longer lose each other's bursts. A drain
   takes every event under its tag, so the driver that wrote first dropped the bursts it drained for

@@ -9,6 +9,9 @@ version and everything else the patch. Each release lists its changes as **Break
 ### Added
 
 - `Transport.history`, the history a transport keeps for every mix on it, as it was made with.
+- `mix.played`, the mix time its syncs have played, each counting no more than `maxDt`, with
+  nothing for a seek or a `rebase`. A driver owing output per mix time, as blits-quarks does,
+  owes the difference since its last write, exact through seeks, rate ramps and long frames.
 
 ## 0.19.0
 

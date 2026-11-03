@@ -129,9 +129,7 @@ export function drive<I, O extends Partial<Emission>>(
     travelDistance: 0,
   };
 
-  let now = Number.NaN;
-  let timestamp = Number.NaN;
-  let rate = Number.NaN;
+  let played = Number.NaN;
 
   const emit = (b: Bound<O>): void => {
     const at = typeof b.at === 'function' ? b.at() : b.at;
@@ -228,13 +226,9 @@ export function drive<I, O extends Partial<Emission>>(
     write() {
       emitted.clear();
       if (live) for (const held of systems.values()) held.authored.capture();
-      // Mix time passed, held to the host's gap at the mix's rate so a seek ahead owes nothing.
-      // The rate at either end bounds a ramp's, since it moves linearly between them.
-      const gone = Math.min(mix.now - now, (mix.timestamp - timestamp) * Math.max(rate, mix.rate));
+      const gone = mix.played - played;
       const dt = gone > 0 ? gone : 0;
-      now = mix.now;
-      timestamp = mix.timestamp;
-      rate = mix.rate;
+      played = mix.played;
       for (const [subject, b] of bound) {
         mix.probe(subject, b.pose);
         const own = typeof b.rate === 'function' ? b.rate() : (b.rate ?? 0);
