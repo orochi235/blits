@@ -67,9 +67,9 @@ function ranBackOver<I, O>(span: Voice<I, O>, local: number): boolean {
 }
 
 /**
- * Puts a child whose owner's clock ran back to before a fit changed its rate, or skipped it, back
- * on the clock it ran on before, so it reads, run back over, what it read going forward; and once
- * the owner's clock reaches that change again, takes the change again, as the layout stands.
+ * Puts a child whose owner's clock ran back to before a fit or its handle changed its rate, or a fit
+ * skipped it, back on the clock it ran on before, so it reads, run back over, what it read going
+ * forward; and once the owner's clock reaches that change again, takes the change again.
  */
 export function unfit<I, O>(mix: Mixer<I, O>, child: Voice<I, O>, now: number): void {
   const t = ownerReading(child.owner as Voice<I, O>, now);
@@ -91,6 +91,15 @@ export function unfit<I, O>(mix: Mixer<I, O>, child: Voice<I, O>, now: number): 
   reorigin(mix, child, now);
   noted(mix, child);
   mix.lanes?.refill();
+}
+
+/**
+ * Keeps a child's clock as it stands, `skipped` as a fit had it, for its owner's clock to run back
+ * to before the change about to replace it, and lets go of the changes it would take again.
+ */
+export function replacing<I, O>(c: Voice<I, O>, skipped = c.skipped): void {
+  c.earlier = { ...standing(c), skipped, prev: c.earlier };
+  c.later = null;
 }
 
 /** A child's clock as it stands, and whether a fit skipped it. */
@@ -199,10 +208,7 @@ export function refit<I, O>(mix: Mixer<I, O>, span: Voice<I, O>, from = mix.now)
         moved = true;
       }
     } else {
-      if (skipped || c.rate !== rate || c.ramp !== null) {
-        c.earlier = { ...standing(c), skipped: wasSkipped, prev: c.earlier };
-        c.later = null;
-      }
+      if (skipped || c.rate !== rate || c.ramp !== null) replacing(c, wasSkipped);
       if (skipped) {
         leave(c, local);
         c.rebase(local);

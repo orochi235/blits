@@ -1,7 +1,9 @@
 import { createHistory as tape } from '@weasel-js/history';
 import { expect, test } from 'vitest';
 import { kit, max, sum } from '../src/channels.js';
+import { condense } from '../src/fit.js';
 import { mix } from '../src/mixer.js';
+import { tween } from '../src/motion.js';
 import { keys } from '../src/patch.js';
 import type { Handle, Mix } from '../src/types.js';
 
@@ -640,7 +642,7 @@ const staggered = (outer = false) => {
       faster: 3,
       slower: 3,
     });
-  return { m, reel };
+  return { m, reel, s };
 };
 const played = (to: number, outer = false) => {
   const { m } = staggered(outer);
@@ -691,4 +693,115 @@ test('a span holding a span, passed by a seek while turned back, has left as of 
   reel.seek(1890);
   m.sync(620);
   for (const p of parts) expect(m.probe(p).x, p.id).toBeCloseTo(fresh.probe(p).x, 9);
+});
+
+// A span turned back and sought forward passes the children it crosses in order, as a reel does,
+// whether a reel or a span holds it.
+for (const outer of [false, true])
+  test(`a span held by ${outer ? 'a span' : 'a reel'}, sought forward while turned back, reads as played straight`, () => {
+    const fresh = played(1900, outer);
+    const { m, s } = staggered(outer);
+    for (let t = 10; t <= 1500; t += 10) m.sync(t);
+    s.rate = -1;
+    m.sync(1510);
+    s.seek(900);
+    m.sync(1520);
+    s.rate = 1;
+    m.sync(1530);
+    for (const p of parts) expect(m.probe(p).x, p.id).toBeCloseTo(fresh.probe(p).x, 9);
+  });
+
+// A span held by a span, overrunning so that each child's end has the outer span retime it. Sought
+// forward while turned back, the outer span's fits on the way retime it as playing through would,
+// and that retiming stands after the frame; a mix seek back to before the frame finds it turned
+// back, and one after finds the retiming again.
+test('a span held by a span keeps the retiming its span gave it on a seek forward while turned back', () => {
+  const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+  m.sync(0);
+  const reel = m.owns({ start: 0 });
+  const host = m.span({ owner: reel, start: 1000, duration: 2000 });
+  const s = m.span({
+    owner: host,
+    duration: 2000,
+    order: 'stagger',
+    share: 0.5,
+    spill: 'overrun',
+    fit: condense(),
+    faster: 3,
+    slower: 3,
+  });
+  for (const [i, p] of parts.entries())
+    m.cue({ owner: s, patch: ramp(lens[i] as number, 100, 400), subjects: [p], loop: false });
+  for (let t = 10; t <= 1300; t += 10) m.sync(t);
+  const fitted = s.rate;
+  s.rate = -1;
+  m.sync(1310);
+  s.seek(2000);
+  m.sync(1320);
+  const rate = s.rate;
+  expect(rate).toBeGreaterThan(0);
+  expect(rate).not.toBe(fitted);
+  const read = (from: number) => {
+    const out: number[] = [];
+    for (let t = from; t < from + 200; t += 10) {
+      m.sync(t);
+      for (const p of parts) out.push(m.probe(p).x);
+    }
+    return out;
+  };
+  const first = read(1330);
+  m.seek(1320);
+  expect(s.rate).toBe(rate);
+  const again = read(1530);
+  for (const [i, x] of first.entries()) expect(again[i], `reading ${i}`).toBeCloseTo(x, 9);
+  m.seek(1310);
+  expect(s.rate).toBe(-1);
+});
+
+// A motion subject met inside its stagger and not read once the stagger ran out has no run yet, so
+// the mix is not inert; a seek back to after the stagger ran out finds it so again.
+for (const lanes of [true, false])
+  test(`a motion subject met inside its stagger and never read keeps the mix awake after a seek back, lanes ${lanes ? 'on' : 'off'}`, () => {
+    const awake = (seekTo?: number) => {
+      const m = mix<Part, Pose>(K, { lanes, history: { ms: 10_000, tape } });
+      m.sync(0);
+      m.cue({
+        patch: tween<Part, Pose>('x', { from: 0, to: 1, ms: 100, ease: 'linear' }),
+        stagger: () => 200,
+      });
+      m.sync(10);
+      m.probe(a);
+      for (let t = 20; t <= 400; t += 10) m.sync(t);
+      if (seekTo !== undefined) m.seek(seekTo);
+      m.sync(410);
+      const before = m.inert;
+      // Read, it starts its run, lands, and the mix may sleep.
+      m.probe(a);
+      m.sync(1000);
+      m.probe(a);
+      return [before, m.inert];
+    };
+    expect(awake()).toEqual([false, true]);
+    expect(awake(300)).toEqual([false, true]);
+  });
+
+// CHANGELOG 0.16.0: turning an owner back "reverses completely". A child the host sped up partway
+// reads, run back over, what it read going forward, before the write as after it, and going forward
+// again takes the write again where it was made.
+test('a child whose handle sped it up reads, as its owner runs back over it, what it read going forward', () => {
+  const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+  m.sync(0);
+  const reel = m.owns({ start: 0 });
+  const clip = m.cue({ owner: reel, patch: ramp(1000, 0, 1000), start: 0, loop: false });
+  const forward: number[] = [];
+  for (let t = 0; t <= 400; t += 10) {
+    if (t === 200) clip.rate = 2;
+    forward.push(x(m, t));
+  }
+  reel.rate = -1;
+  for (let t = 410; t <= 700; t += 10)
+    expect(x(m, t), `reel at ${800 - t}`).toBeCloseTo(forward[(800 - t) / 10] as number, 9);
+  reel.rate = 1;
+  for (let t = 710; t <= 1000; t += 10)
+    expect(x(m, t), `reel at ${t - 600} again`).toBeCloseTo(forward[(t - 600) / 10] as number, 9);
 });

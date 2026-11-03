@@ -271,13 +271,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      components of a `vec` and not others (the rig's IK y-hold; weasel's item in
      `NOTES-FROM-WEASEL.md`); a mix's `rate` cannot go below 0, so reverse is an owner turned
      back; and the role fold of three or more quats depends on cue order (documented, sound).
-   - **A handle's own rate write on a child is retraced at its latest rate** when an owner above
-     runs back over it (not tested): only a fit's rate change is kept for the run back
-     (`Voice.earlier`, `unfit` in `src/spans.ts`), since a host's write is not made again going forward.
-   - **An owner a span holds is not run forward when sought forward while running back** (not
-     tested, no seed hits it): the forward pass `411e6ac` gives such a seek swaps the owner's
-     clock for one at rate 1, and a span's fits retime that owner's clock, so the swap would
-     clobber them. The span-held case needs the fit's retiming carried through the swap.
    - **The span-order fixes' cost is paid back** (2026-10-31). `own` and `tweens` never run the
      code they changed: profiled at 008d580 and e3bfd3e, `own N=1000` reads 156.5 and 157.0 µs a
      frame with no time in `move.ts` (`bench/runs/2026-10-31-own-profile.txt`), so the 3.4% and
@@ -290,13 +283,18 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      1% of a `spans` frame in `bench/runs/2026-10-31-spans-profile-due-list.txt`. One walk that
      also reads `heading` was profiled and was no faster
      (`bench/runs/2026-10-31-spans-profile-one-walk.txt`).
-   - **`inert` after a seek back, for a motion subject met inside its stagger** (2026-10-31):
-     `still` (`src/rests.ts`) asks after a motion voice's records listed in `voice.early` that are
-     unread since their stagger ran out. A seek back puts records back lazily, as something reads
-     them, and a copy's `probed` is reset, so the list it rebuilds misses one already past its
-     stagger and never read. Carrying a "read since its origin" flag through copies was tried and
-     reverted: the seek sweep of `test/differential.test.ts` then read lanes on and off apart. A fix
-     wants the motion patch to hold the subjects it has met but not started, kept with its history.
+   - **A replay over an owner's forward seek fits differently** (found 2026-11-03, not fixed): a
+     span overrunning its budget (`spill: 'overrun'`, `fit: condense()`) turned back and sought
+     forward after a sync fits to length 4798.75 live; a mix seek back to that frame and forward to
+     the next fits to 4279, on 0.18.0 too. As far as traced, the seek back sets each child's
+     state from the owner's clock as sought and loses the pending forward pass; restoring the
+     pending pass alone (`leapt`) did not fix it.
+   - **A span held by a span, sought forward while turned back, takes its span's fits on the way**
+     (2026-11-03): latest write wins, so the seek leaves it running forward at the fit's rate, not
+     turned back. Undecided whether a host's turn-back should survive that.
+   - **A rate write on an owned voice keeps the clock it replaced** (2026-11-03) in `Voice.earlier`,
+     one entry per write at a new moment, so a host writing a child's rate every frame grows it
+     without bound.
    - **The audit's fixes cost nothing measurable** (2026-10-31): 6f39479 against 47c144c, 7 rounds
      on msb-uai, every row's U at 9 or more, geometric mean 0.998
      (`bench/runs/2026-10-31-audit-fixes-vs-47c144c.txt`).

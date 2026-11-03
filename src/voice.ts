@@ -60,7 +60,7 @@ export interface Controls extends Clock {
   hold: number;
   /** How many of the voice's past clocks it had then. */
   past: number;
-  /** The clocks a fit replaced; absent from a store written before a voice kept them. */
+  /** The clocks a fit or a rate write replaced; absent from a store written before a voice kept them. */
   earlier?: Earlier | null;
   /** The clocks its owner ran back before; absent from a store written before a voice kept them. */
   later?: Earlier | null;
@@ -71,8 +71,9 @@ export interface Controls extends Clock {
 }
 
 /**
- * A clock a fit replaced, which its voice runs on again where its owner's clock runs back to
- * before the one that replaced it, with whether the fit had skipped it; `prev` is the one before.
+ * A clock a fit or a rate write replaced, which its voice runs on again where its owner's clock
+ * runs back to before the one that replaced it, with whether a fit had skipped it; `prev` is the
+ * one before.
  * In `later`, one its owner ran back before, taken again where the owner's clock reaches it.
  */
 export interface Earlier extends Clock {
@@ -247,9 +248,17 @@ export class Voice<I, O> {
    * or seek moves; null while none are.
    */
   early: Subject<unknown>[] | null = null;
+  /**
+   * A motion voice's subjects met inside their stagger and not yet found read since it ran out,
+   * which `still` asks after. Unlike `early` it outlives a seek back, whose records come back only
+   * as something reads them, their reads forgotten; null while none are.
+   */
+  met: I[] | null = null;
+  /** Under history, those `still` found read, with the frame it did, for a seek back before it. */
+  metRead: { subject: I; seq: number }[] | null = null;
   /** The clocks it ran on before its current one, where a subject's origin may lie; null for none. */
   clocks: Past[] | null = null;
-  /** The clocks a fit replaced, latest first; null for none. */
+  /** The clocks a fit or its handle's rate write replaced, latest first; null for none. */
   earlier: Earlier | null = null;
   /** The clocks its owner's clock ran back before, which it takes again going forward, soonest first. */
   later: Earlier | null = null;
@@ -498,6 +507,8 @@ export class Voice<I, O> {
     this.opened = Number.NaN;
     this.dueToken++;
     this.early = null;
+    this.met = null;
+    this.metRead = null;
     this.seen = 0;
     this.latest = this.named?.latest ?? 0;
     this.soonest = this.named?.soonest ?? 0;
@@ -777,6 +788,8 @@ export class Voice<I, O> {
     v.seat = null;
     v.log = null;
     v.early = null;
+    v.met = null;
+    v.metRead = null;
     if (controls) v.take(controls);
     if (v.clocks === this.clocks && v.clocks !== null) v.clocks = v.clocks.slice();
     v.quiet = true;

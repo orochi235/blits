@@ -39,6 +39,15 @@ version and everything else the patch. Each release lists its changes as **Break
   already filled it, so a host retargeting many subjects each frame read them slower with lanes
   than without. The stress heatmap (5,000 springs retargeted at 20-60 Hz, three `ink` voices
   weighted per cell) reads in 5.40 ms a frame with lanes, from 5.84; it reads 3.78 without.
+- `inert` stays false after a seek back while a motion voice has a subject it met inside its
+  stagger and has not read since the stagger ran out. The seek forgot such subjects, so a frame
+  loop sleeping on `inert` could sleep through the subject's motion.
+- A span held by a span, turned back and sought forward, passes the children the seek crosses in
+  order, as a reel turned back does. Its own span's fits on the way retime it as playing through
+  would, and that retiming stands after the seek.
+- A child whose handle changed its rate reads, as its owner runs back over the change, what it
+  read going forward, and takes the change again where it was made going forward. It ran back at
+  its latest rate, before the change as after it. Only a span's fits were kept this way.
 
 ## 0.18.0
 

@@ -1,6 +1,6 @@
 import { settleArcs } from './arcs.js';
 import { changed } from './chain.js';
-import { elapsedWith } from './clock.js';
+import { type Clock, elapsedWith } from './clock.js';
 import { byId, popDue, schedule } from './due.js';
 import { beginFade, part, release, retire, rouse, stay } from './fade.js';
 import { expireGone, keepGone } from './gone.js';
@@ -15,7 +15,7 @@ import { delist, detour } from './roster.js';
 import { scoredLeft, scoredRemove } from './scored.js';
 import { type Fitting, lapse, lapses, unfit } from './spans.js';
 import { unplay } from './strays.js';
-import type { Voice } from './voice.js';
+import type { Controls, Earlier, Voice } from './voice.js';
 
 /** Numbers every mix's frames apart, so a blend's read is never taken for another mix's or frame's. */
 let frames = 0;
@@ -91,7 +91,7 @@ function settle<I, O>(mix: Mixer<I, O>, held: Voice<I, O>[] | null, now: number)
 /**
  * The owners sought forward since the last frame, or above the span children waiting their turn,
  * whose clocks do not run forward at `now`, with those above them that do not either; null where
- * there are none. An owner a span holds is left out, since its span's fits change its clock.
+ * there are none.
  */
 function turnedBack<I, O>(
   mix: Mixer<I, O>,
@@ -111,7 +111,7 @@ function up<I, O>(
   back: Voice<I, O>[] | null,
 ): Voice<I, O>[] | null {
   for (let o = from; o !== null; o = o.owner) {
-    if (o.state === 'done' || o.owner?.fitting || back?.includes(o)) continue;
+    if (o.state === 'done' || back?.includes(o)) continue;
     if (o.rateAt(o.owner === null ? now : ownerReading(o.owner, now)) > 0) continue;
     back ??= [];
     back.push(o);
@@ -139,7 +139,14 @@ function ahead<I, O>(
     o.ramp = null;
     // Started where the clock run forward reads 0, so a time on it before now maps back to it.
     o.start = at - o.anchorElapsed;
-    return { anchorNow, anchorElapsed, rate, ramp, start, logged: o.log?.length ?? 0 };
+    const ran = { anchorNow: at, anchorElapsed: o.anchorElapsed };
+    return {
+      clock: { anchorNow, anchorElapsed, rate, ramp },
+      start,
+      ran,
+      earlier: o.earlier,
+      logged: o.log?.length ?? 0,
+    };
   });
   try {
     // Anchors are placed on those clocks too, and a plain child placed behind them starts there:
@@ -156,11 +163,27 @@ function ahead<I, O>(
     settle(mix, held, now);
   } finally {
     back.forEach((o, i) => {
-      const { logged, ...clock } = kept[i] as (typeof kept)[number];
-      Object.assign(o, clock);
+      const { clock, start, ran, earlier, logged } = kept[i] as (typeof kept)[number];
+      o.start = start;
       const log = o.log;
+      // A span's fit retimed the owner it holds on the clock run forward, as playing straight
+      // through would: that clock stands, and the one the fit replaced is the owner's own.
+      const fitted = o.earlier === earlier ? null : replaced(o.earlier, earlier);
+      if (fitted === null) Object.assign(o, clock);
+      else Object.assign(fitted, clock);
       if (log !== null)
-        for (let k = logged; k < log.length; k++) Object.assign(log[k] as object, clock);
+        for (let k = logged; k < log.length; k++) {
+          const c = log[k] as Controls;
+          c.start = start;
+          if (
+            fitted === null ||
+            (c.rate === 1 &&
+              c.ramp === null &&
+              c.anchorNow === ran.anchorNow &&
+              c.anchorElapsed === ran.anchorElapsed)
+          )
+            Object.assign(c, clock);
+        }
     });
   }
   // What was worked out in mix time from the clocks run forward is worked out again on their own.
@@ -174,6 +197,12 @@ function ahead<I, O>(
     });
   }
   mix.lanes?.refill();
+}
+
+/** In `top`, the clock fits pushed on `below` first, null where `top` does not reach `below`. */
+function replaced(top: Earlier | null, below: Earlier | null): Clock | null {
+  for (let e = top; e !== null; e = e.prev) if (e.prev === below) return e;
+  return null;
 }
 
 /**

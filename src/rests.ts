@@ -66,6 +66,31 @@ export function still<I, O>(this: Mixer<I, O>, voice: Voice<I, O>, now: number):
   const early = voice.early;
   if (early !== null)
     for (const h of early) if (h.since <= now && !(h.probed >= h.since)) return false;
+  // A seek back drops `early` and forgets reads, so these are asked after by subject.
+  const met = voice.met;
+  if (met !== null) {
+    const seq = this.transport.seq;
+    const history = this.opts.history !== undefined;
+    let kept = 0;
+    let waiting = false;
+    for (const subject of met) {
+      const h = waiting ? undefined : voice.subjects.get(subject);
+      if (h?.reaches && h.since <= now) {
+        if (h.probed >= h.since) {
+          if (history) {
+            voice.metRead ??= [];
+            voice.metRead.push({ subject, seq });
+          }
+          continue;
+        }
+        waiting = true;
+      }
+      met[kept++] = subject;
+    }
+    met.length = kept;
+    if (kept === 0) voice.met = null;
+    if (waiting) return false;
+  }
   return motion.landed();
 }
 
