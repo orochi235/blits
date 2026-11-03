@@ -105,8 +105,12 @@ export function traceMix<I, O>(
         !mix.bounded.includes(slot) &&
         (op === 'sum' || (op === 'mul' && (plan.writers.get(slot) ?? 0) <= 1));
       const bent = plan.bent.get(slot);
-      const over = (a: number, b: number): Bent[] =>
-        bent === undefined ? [] : bent.filter(([lo, hi]) => lo < b && hi > a);
+      // A bend meeting a stretch only within rounding of its end does not bend it.
+      const over = (a: number, b: number): Bent[] => {
+        if (bent === undefined) return [];
+        const slack = 1e-12 * Math.max(1, Math.abs(a), Math.abs(b));
+        return bent.filter(([lo, hi]) => lo < b - slack && hi > a + slack);
+      };
       if (from === to) {
         const once = { at: [from], value: [value(from)], exact: shaped };
         return bending ? { ...once, bends: [] } : once;

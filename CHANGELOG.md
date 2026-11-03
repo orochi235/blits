@@ -21,8 +21,9 @@ version and everything else the patch. Each release lists its changes as **Break
 ### Fixed
 
 - `trace` no longer puts a second point a hair from the window's end where a voice's breakpoint
-  falls within rounding of it, as a clock moved by `rebase` or a seek lands. blits-tone wrote a
-  breakpoint and the window's end there as two points 1e-12 ms apart.
+  falls within rounding of it, as a clock moved by `rebase` or a seek lands, and a bend that only
+  touches the window there does not bend the stretch before it. blits-tone wrote a breakpoint and
+  the window's end as two points 1e-12 ms apart, or split a straight line for a bend outside it.
 
 ## 0.19.0
 

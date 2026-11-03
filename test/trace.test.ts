@@ -430,4 +430,22 @@ describe('a point within rounding of the window', () => {
     const run = m.trace(1450, 1500 + 1e-12).of(p, 'x');
     expect(run.at.filter((t) => Math.abs(t - 1500) < 1e-9)).toHaveLength(1);
   });
+
+  it('does not bend the stretch before it with the bend that starts there', () => {
+    const m = mix<Part, Pose>(K);
+    const p: Part = { id: 'p' };
+    m.cue({
+      patch: keys<Part, Pose>(1500, [
+        { at: 0, delta: { x: 0 } },
+        { at: 0.5, delta: { x: 300 }, ease: 'ease-in-out' },
+        { at: 1, delta: { x: 0 } },
+      ]),
+      subjects: [p],
+      loop: true,
+    });
+    m.sync(0);
+    // The next pass's eased stretch starts at 1500, a hair inside the window.
+    const run = m.trace(1450, 1500 + 1e-12, { bends: true }).of(p, 'x');
+    expect(run.bends).toEqual([]);
+  });
 });

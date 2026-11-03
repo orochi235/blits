@@ -20,7 +20,7 @@ it('passes checkDriver: the values each write schedules ahead', () => {
       m.cue({
         patch: keys<string, { x: number }>(1500, [
           { at: 0, delta: { x: 0 } },
-          { at: 0.5, delta: { x: 300 }, easing: 'ease-in-out' },
+          { at: 0.5, delta: { x: 300 }, ease: 'ease-in-out' },
           { at: 1, delta: { x: 0 } },
         ]),
         subjects: ['a'],
