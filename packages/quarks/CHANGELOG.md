@@ -4,12 +4,12 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
-## Unreleased
+## 0.15.0
 
 ### Breaking
 
-- Needs the engine release after 0.19.0, for `mix.played`. The peer range moves to it when this
-  releases.
+- `@msb235/blits` is a peer at `^0.20.0`, where it was `^0.19.0`. Built and tested against engine
+  0.20.0; `write` owes by its `mix.played`.
 
 ### Fixed
 

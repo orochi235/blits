@@ -4,7 +4,12 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `rapier-v*` tag with no
 section here.
 
-## Unreleased
+## 0.5.0
+
+### Breaking
+
+- `@msb235/blits` is a peer at `^0.20.0`, where it was `^0.19.0`. Built and tested against engine
+  0.20.0; a physics mix on a transport reads its `Transport.history`.
 
 ### Added
 
