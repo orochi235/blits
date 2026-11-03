@@ -1,9 +1,9 @@
 // The stress demo's heatmap (apps/stress, `heatmap`) headless, with each of its parts swapped out
 // in turn, lanes on and off: which of the springs, the per-cell signal weights or `ink` makes its
 // `pull` slow. Run with `node bench/heatmap.mjs` after a build. Each setting runs in a process of
-// its own, so no setting's numbers depend on the JIT state another left. One line per setting as
-// it finishes; every frame's step and read times, with the machine and its load, as JSON lines
-// with OUT=<file>. Settings named after the script (`spring/input/ink/on`) run only those.
+// its own, so no setting's numbers depend on the JIT state another left; one setting named alone
+// runs in this process, for a profile. One line per setting as it finishes; every frame's step and
+// read times, with the machine and its load, as JSON lines with OUT=<file>. Settings named after the script (`spring/input/ink/on`) run only those.
 //   move    spring (the demo), tween (300 ms, retargeted the same), none (no value voice)
 //   weight  input (the demo: `input` signals read per cell), fn (the same function, not marked
 //           as an input), const (each band at a fixed 1/3)
@@ -128,12 +128,17 @@ if (process.env.HEATMAP_CHILD) {
   if (out) writeFileSync(out, '');
   console.log(`onto: plan ${chosen.length}`);
   for (const [k, name] of chosen.entries()) {
-    const raw = execFileSync(process.execPath, [...process.execArgv, self], {
-      env: { ...process.env, HEATMAP_CHILD: name },
-      encoding: 'utf8',
-      maxBuffer: 64 * 1024 * 1024,
-    });
-    const rec = JSON.parse(raw);
+    // One setting alone runs here, so a profile of this process is the setting's.
+    const rec =
+      chosen.length === 1
+        ? await play(name)
+        : JSON.parse(
+            execFileSync(process.execPath, [...process.execArgv, self], {
+              env: { ...process.env, HEATMAP_CHILD: name },
+              encoding: 'utf8',
+              maxBuffer: 64 * 1024 * 1024,
+            }),
+          );
     if (out) appendFileSync(out, `${JSON.stringify(rec)}\n`);
     const f = (v) => v.toFixed(3).padStart(7);
     console.log(

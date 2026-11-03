@@ -1,0 +1,43 @@
+# teitou, onto job 369304fe (--solo), rev 4931533: bench/heatmap.mjs, N=5000, 600 timed frames after 60 warm, one run per setting, each in its own process; every frame in 2026-11-03-heatmap-parts-4931533.jsonl
+ 1/42  spring/input/ink/on     read p50   3.189 ms  p90   3.852  step p50   0.617  load 2.23
+ 2/42  spring/input/ink/off    read p50   2.315 ms  p90   2.763  step p50   0.604  load 2.13
+ 3/42  spring/fn/ink/on        read p50   3.236 ms  p90   3.986  step p50   0.629  load 2.13
+ 4/42  spring/fn/ink/off       read p50   2.233 ms  p90   2.943  step p50   0.568  load 2.13
+ 5/42  spring/const/ink/on     read p50   3.014 ms  p90   4.029  step p50   0.615  load 2.20
+ 6/42  spring/const/ink/off    read p50   2.302 ms  p90   2.791  step p50   0.633  load 2.20
+ 7/42  spring/input/color/on   read p50   3.093 ms  p90   4.033  step p50   0.638  load 2.10
+ 8/42  spring/input/color/off  read p50   2.184 ms  p90   2.647  step p50   0.704  load 2.10
+ 9/42  spring/fn/color/on      read p50   3.097 ms  p90   3.735  step p50   0.626  load 2.10
+10/42  spring/fn/color/off     read p50   2.164 ms  p90   2.833  step p50   0.691  load 2.10
+11/42  spring/const/color/on   read p50   2.786 ms  p90   3.663  step p50   0.607  load 2.17
+12/42  spring/const/color/off  read p50   2.121 ms  p90   2.687  step p50   0.592  load 2.17
+13/42  spring/-/none/on        read p50   1.389 ms  p90   1.928  step p50   0.513  load 2.17
+14/42  spring/-/none/off       read p50   1.252 ms  p90   1.575  step p50   0.525  load 2.39
+15/42  tween/input/ink/on      read p50   3.365 ms  p90   4.019  step p50   0.780  load 2.39
+16/42  tween/input/ink/off     read p50   2.244 ms  p90   2.738  step p50   0.632  load 2.36
+17/42  tween/fn/ink/on         read p50   3.174 ms  p90   4.057  step p50   0.766  load 2.36
+18/42  tween/fn/ink/off        read p50   2.152 ms  p90   2.788  step p50   0.598  load 2.36
+19/42  tween/const/ink/on      read p50   3.033 ms  p90   3.834  step p50   0.734  load 2.49
+20/42  tween/const/ink/off     read p50   2.357 ms  p90   2.810  step p50   0.561  load 2.49
+21/42  tween/input/color/on    read p50   3.153 ms  p90   3.771  step p50   0.815  load 2.61
+22/42  tween/input/color/off   read p50   2.169 ms  p90   2.711  step p50   0.563  load 2.61
+23/42  tween/fn/color/on       read p50   2.997 ms  p90   3.883  step p50   0.722  load 2.56
+24/42  tween/fn/color/off      read p50   2.090 ms  p90   2.623  step p50   0.521  load 2.56
+25/42  tween/const/color/on    read p50   2.731 ms  p90   3.625  step p50   0.675  load 2.84
+26/42  tween/const/color/off   read p50   2.202 ms  p90   2.745  step p50   0.562  load 2.84
+27/42  tween/-/none/on         read p50   1.399 ms  p90   1.962  step p50   0.731  load 2.84
+28/42  tween/-/none/off        read p50   1.322 ms  p90   1.725  step p50   0.537  load 2.93
+29/42  none/input/ink/on       read p50   0.959 ms  p90   1.028  step p50   0.044  load 2.93
+30/42  none/input/ink/off      read p50   0.888 ms  p90   0.965  step p50   0.049  load 2.93
+31/42  none/fn/ink/on          read p50   0.925 ms  p90   0.989  step p50   0.044  load 2.93
+32/42  none/fn/ink/off         read p50   0.770 ms  p90   0.815  step p50   0.044  load 2.93
+33/42  none/const/ink/on       read p50   0.806 ms  p90   0.948  step p50   0.047  load 2.93
+34/42  none/const/ink/off      read p50   0.884 ms  p90   0.981  step p50   0.046  load 2.78
+35/42  none/input/color/on     read p50   0.899 ms  p90   0.965  step p50   0.043  load 2.78
+36/42  none/input/color/off    read p50   0.708 ms  p90   0.755  step p50   0.046  load 2.78
+37/42  none/fn/color/on        read p50   0.874 ms  p90   1.047  step p50   0.044  load 2.78
+38/42  none/fn/color/off       read p50   0.677 ms  p90   0.745  step p50   0.045  load 2.78
+39/42  none/const/color/on     read p50   0.713 ms  p90   1.002  step p50   0.047  load 2.78
+40/42  none/const/color/off    read p50   0.713 ms  p90   0.762  step p50   0.047  load 2.78
+41/42  none/-/none/on          read p50   0.143 ms  p90   0.155  step p50   0.044  load 2.78
+42/42  none/-/none/off         read p50   0.056 ms  p90   0.061  step p50   0.043  load 2.78
