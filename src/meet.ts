@@ -49,7 +49,6 @@ export function meet<I, O>(
   const seen = lanes.per[slot * Per.SLOT + Per.SEEN] as number;
   const from = seen < 0 ? -1 - seen : seen;
   lanes.per[slot * Per.SLOT + Per.SEEN] = lanes.epochs;
-  lanes.marks++;
   let met = false;
   lanes.metN = 0;
   lanes.metCrowd = false;
@@ -229,5 +228,4 @@ function place<I, O>(
 export function reach<I, O>(lanes: Lanes<I, O>, slot: number, by: number): void {
   const i = slot * Per.SLOT + Per.IDLE;
   lanes.per[i] = (lanes.per[i] as number) + by;
-  lanes.marks++;
 }

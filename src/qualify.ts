@@ -268,7 +268,6 @@ function sameChannels<I, O>(lanes: Lanes<I, O>, channels: readonly boolean[]): b
  */
 export function open<I, O>(lanes: Lanes<I, O>, v: Voice<I, O>): number {
   const epoch = ++lanes.epochs;
-  lanes.marks++;
   if (v.named === null) {
     lanes.wide = epoch;
     return epoch;

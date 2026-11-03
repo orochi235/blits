@@ -166,15 +166,6 @@ export class Lanes<I, O> implements Watcher {
   fills = 0;
   /** The latest fill if it ran a lane, else 0: a subject whose `FILLED` is below it reads it. */
   busyFill = 0;
-  /**
-   * Counts every change that could make a subject fail `pullRun`'s `FILLED`, `IDLE` and `SEEN`
-   * checks: a write of one of them, a new `wide`, or a fill that ran no lane. While it stands at
-   * `checkedMarks`, the subjects at `pull`'s positions `checkedFrom` to `checkedTo` still pass.
-   */
-  marks = 0;
-  checkedMarks = -1;
-  checkedFrom = 0;
-  checkedTo = 0;
   probes = 0;
   /**
    * Each subject by number as last probed, held from that probe until the next fill uses it, so a
@@ -293,7 +284,6 @@ export class Lanes<I, O> implements Watcher {
     this.per[slot * Per.SLOT + Per.LANE_PROBE] = 0;
     this.per[slot * Per.SLOT + Per.GENERAL_PROBE] = 0;
     this.per[slot * Per.SLOT + Per.LANE_FILL] = 0;
-    this.marks++;
     if (this.filling) this.late.push(slot);
     return slot;
   }
@@ -314,7 +304,6 @@ export class Lanes<I, O> implements Watcher {
   renew(slot: number): boolean {
     if (!this.sought(slot)) return false;
     this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
-    this.marks++;
     if (this.filling) this.late.push(slot);
     return true;
   }
@@ -335,7 +324,6 @@ export class Lanes<I, O> implements Watcher {
   /** A voice brought a subject back: its next probe meets every lane again, as it met them first. */
   rejoin(slot: number): void {
     if (slot < this.cap) this.per[slot * Per.SLOT + Per.SEEN] = -1;
-    this.marks++;
   }
 
   /**
@@ -472,7 +460,6 @@ export class Lanes<I, O> implements Watcher {
     )
       return false;
     per[o + Per.FILLED] = this.fills;
-    this.marks++;
     return true;
   }
 
@@ -542,7 +529,6 @@ export class Lanes<I, O> implements Watcher {
       else placed.remove(slot, id);
     }
     if (slot < this.cap) this.per[slot * Per.SLOT + Per.FILLED] = this.fills;
-    this.marks++;
     this.subjects[slot] = undefined;
   }
 
