@@ -4,12 +4,12 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `tone-v*` tag with no
 section here.
 
-## Unreleased
+## 0.10.0
 
 ### Breaking
 
-- Needs the engine release after 0.18.0, for `mix.time`, `mix.when` and `trace`'s `bends`. The
-  peer range moves to it when this releases.
+- `@msb235/blits` is a peer at `^0.19.0`, where it was `^0.18.0`. Built and tested against engine
+  0.19.0; `write` uses its `mix.time`, `mix.when` and `trace`'s `bends`.
 
 ### Added
 
