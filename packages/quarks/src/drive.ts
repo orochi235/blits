@@ -11,6 +11,16 @@ export type Position = { x: number; y: number; z: number } | readonly [number, n
 export interface AttachOptions {
   /** Where the subject emits: a position, or a function asked on each frame it emits. */
   at: Position | (() => Position);
+  /**
+   * Particles per second added to the pose's `rate`, or a function asked on every write. It is the
+   * host's own, so no voice weight scales it, and it emits whether or not any voice plays.
+   */
+  rate?: number | (() => number);
+  /**
+   * Whose rotation and scale particles leave with: the system's emitter's world matrix
+   * (`'emitter'`, the default), or none, a pure translation to `at` in world coordinates (`'world'`).
+   */
+  frame?: 'emitter' | 'world';
 }
 
 /** The event a patch sends to burst particles at its subject. */
@@ -23,6 +33,12 @@ export interface DriveOptions<O> {
   kit: Kit<O>;
   /** The tag whose events are bursts; without one the driver drains nothing. */
   bursts?: string;
+  /**
+   * When a system's start values are read as the host's authored ones: at its first `attach`
+   * (`'attach'`, the default), or at every `write` (`'write'`), so the host can edit or replace a
+   * generator between writes and the driver scales from what it finds.
+   */
+  capture?: 'attach' | 'write';
 }
 
 export interface Driver<I, O = unknown> {
@@ -35,17 +51,26 @@ export interface Driver<I, O = unknown> {
   particles(options: ConstructorParameters<typeof ParticleSystem>[0]): Source<I, O>;
   attach(subject: I, system: ParticleSystem, opts: AttachOptions): void;
   detach(subject: I): void;
+  /** Emits `n` particles, floored, at the subject on the next write, if it is attached. */
+  burst(subject: I, n: number): void;
   /**
    * Probes every attached subject and emits what its `rate` owes for the mix time since the last
-   * write. Call it after `mix.sync`; the first write owes nothing.
+   * write. Call it after `mix.sync`; the first write owes nothing. Returns `emitted`.
    */
-  write(): void;
+  write(): ReadonlyMap<I, number>;
+  /**
+   * How many particles each subject emitted at the last write, bursts included; a subject that
+   * emitted none is absent. The driver reuses this map, so read it before the next write.
+   */
+  readonly emitted: ReadonlyMap<I, number>;
 }
 
 interface Bound<O> {
   system: ParticleSystem;
   authored: Authored;
   at: AttachOptions['at'];
+  rate: AttachOptions['rate'];
+  world: boolean;
   pose: O;
   /** Particle-milliseconds owed by `rate`, below one particle's worth. */
   carry: Carry;
@@ -66,6 +91,8 @@ export function drive<I, O extends Partial<Emission>>(
     tint: 'tint' in kit,
   };
   const bound = new Map<I, Bound<O>>();
+  const emitted = new Map<I, number>();
+  const live = opts.capture === 'write';
   const systems = new Map<ParticleSystem, { authored: Authored; users: number }>();
   const matrix = new Matrix4();
   const state: EmissionState = {
@@ -98,10 +125,12 @@ export function drive<I, O extends Partial<Emission>>(
       y = at[1];
       z = at[2];
     }
-    // The emitter's world rotation and scale, as quarks itself emits with, at the subject's position.
+    // The emitter's world rotation and scale, as quarks itself emits with, unless the frame is
+    // the world; either way at the subject's position.
     const world = b.system.emitter.matrixWorld.elements;
     const e = matrix.elements;
-    for (let i = 0; i < 12; i++) e[i] = world[i] as number;
+    if (b.world) for (let i = 0; i < 12; i++) e[i] = i % 5 === 0 ? 1 : 0;
+    else for (let i = 0; i < 12; i++) e[i] = world[i] as number;
     e[12] = x + (o?.[0] ?? 0);
     e[13] = y + (o?.[1] ?? 0);
     e[14] = z + (o?.[2] ?? 0);
@@ -121,19 +150,18 @@ export function drive<I, O extends Partial<Emission>>(
 
   const host: Host<I, O> = {
     mix,
-    attach: (subject, system, at) => driver.attach(subject, system, { at }),
+    attach: (subject, system, o) => driver.attach(subject, system, o),
     detach: (subject) => driver.detach(subject),
-    burst: (subject, n) => {
-      const b = bound.get(subject);
-      if (b !== undefined) b.extra += n;
-    },
+    burst: (subject, n) => driver.burst(subject, n),
   };
 
   const driver: Driver<I, O> = {
     wire: (system) => wire(host, system),
     particles: (options) => wire(host, new ParticleSystem({ worldSpace: true, ...options })),
 
-    attach(subject, system, { at }) {
+    emitted,
+
+    attach(subject, system, { at, rate, frame }) {
       if (bound.has(subject)) throw new Error('blits-quarks: that subject is attached already');
       let held = systems.get(system);
       if (held === undefined) {
@@ -145,6 +173,8 @@ export function drive<I, O extends Partial<Emission>>(
         system,
         authored: held.authored,
         at,
+        rate,
+        world: frame === 'world',
         pose: {} as O,
         carry: new Carry(),
         count: 0,
@@ -158,12 +188,21 @@ export function drive<I, O extends Partial<Emission>>(
       bound.delete(subject);
       const held = systems.get(b.system);
       if (held !== undefined && --held.users === 0) {
-        held.authored.restore();
+        // Captured at every write, they are already back, and the host may have edited them since.
+        if (!live) held.authored.restore();
         systems.delete(b.system);
       }
     },
 
+    burst(subject, n) {
+      const b = bound.get(subject);
+      const whole = Math.floor(n);
+      if (b !== undefined && Number.isFinite(whole) && whole > 0) b.extra += whole;
+    },
+
     write() {
+      emitted.clear();
+      if (live) for (const held of systems.values()) held.authored.capture();
       // Mix time passed, held to the host's gap at the mix's rate so a seek ahead owes nothing.
       // The rate at either end bounds a ramp's, since it moves linearly between them.
       const gone = Math.min(mix.now - now, (mix.timestamp - timestamp) * Math.max(rate, mix.rate));
@@ -173,7 +212,8 @@ export function drive<I, O extends Partial<Emission>>(
       rate = mix.rate;
       for (const [subject, b] of bound) {
         mix.probe(subject, b.pose);
-        const r = b.pose.rate ?? 0;
+        const own = typeof b.rate === 'function' ? b.rate() : (b.rate ?? 0);
+        const r = (b.pose.rate ?? 0) + own;
         if (Number.isFinite(r * dt) && r * dt > 0) b.carry.add(r, dt);
         b.count = b.carry.take();
       }
@@ -188,13 +228,14 @@ export function drive<I, O extends Partial<Emission>>(
       let failed = false;
       let first: unknown;
       try {
-        for (const b of bound.values()) {
+        for (const [subject, b] of bound) {
           // A burst waits here, not in the probe loop, so a probe that throws does not lose it.
           b.count += b.extra;
           b.extra = 0;
           if (b.count <= 0) continue;
           try {
             emit(b);
+            emitted.set(subject, b.count);
           } catch (err) {
             if (!failed) first = err;
             failed = true;
@@ -206,6 +247,7 @@ export function drive<I, O extends Partial<Emission>>(
         for (const held of systems.values()) held.authored.restore();
       }
       if (failed) throw first;
+      return emitted;
     },
   };
   return driver;

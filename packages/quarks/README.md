@@ -38,8 +38,8 @@ batch.update(dt / 1000);
   `worldSpace` on unless you say otherwise, and wires it. **`quarks.wire(system)`** wires one you
   built. Either returns a `Source`; its `system` is the quarks object, yours to add to a scene and
   a renderer.
-- **`source.at(position)`** adds an emission point on that system and returns its `Emitter`.
-  `position` is what `attach` takes below. Every emitter on a source shares its one system, so one
+- **`source.at(position, opts?)`** adds an emission point on that system and returns its
+  `Emitter`. `position` is what `attach` takes below, and `opts` are its other options. Every emitter on a source shares its one system, so one
   shader serves them all. An emitter is the mix's subject for that point: `m.probe(spot)` reads it.
 - **`emitter.cue(spec)`** cues a voice on that emitter alone and returns blits' `Handle`. The spec
   names no `subjects`; one that does throws.
@@ -94,15 +94,26 @@ batch.update(dt / 1000);    // your own BatchedRenderer
 ```
 
 
-- **`drive(mix, { kit, bursts? })`** returns the driver. `kit` is the mix's kit, which tells the
-  driver which of its channels are present; `bursts` is the tag it drains, and without one it
-  drains nothing.
-- **`attach(subject, system, { at })`** binds a subject to a system and a position: `{ x, y, z }`,
-  `[x, y, z]`, or a function returning either, asked each frame the subject emits. The first
-  subject attached to a system captures its authored start values, so scaling never compounds.
-  Attaching a subject twice throws.
+- **`drive(mix, { kit, bursts?, capture? })`** returns the driver. `kit` is the mix's kit, which
+  tells the driver which of its channels are present; `bursts` is the tag it drains, and without
+  one it drains nothing. `capture` says when it reads a system's authored start values: at the
+  first `attach` (`'attach'`, the default), or at every `write` (`'write'`), so you can edit or
+  replace a generator between writes, as a live tuning panel does, and the driver scales from
+  what it finds there.
+- **`attach(subject, system, { at, rate?, frame? })`** binds a subject to a system and a position:
+  `{ x, y, z }`, `[x, y, z]`, or a function returning either, asked each frame the subject emits.
+  The first subject attached to a system captures its authored start values, so scaling never
+  compounds. Attaching a subject twice throws.
+  - `rate`, a number or a function asked every write, is particles per second of your own, added
+    to the pose's `rate`. No voice weight scales it, and it emits whether or not a voice plays, so
+    emission can follow a level you keep yourself.
+  - `frame: 'world'` emits at a pure translation to `at`, ignoring the emitter's world rotation and
+    scale; the default, `'emitter'`, keeps them, as below.
 - **`detach(subject)`** unbinds it. Detaching a system's last subject puts its authored values back
-  and forgets them, so a later `attach` captures whatever you have set since.
+  and forgets them, so a later `attach` captures whatever you have set since. Under
+  `capture: 'write'` it leaves the system as it stands.
+- **`burst(subject, n)`** emits `n` particles, floored, at the subject on the next `write`, as
+  `emitter.burst` does.
 - **`write()`**, after `mix.sync`: probes each attached subject, adds `rate` times the mix time
   since the last write to its carry and emits the whole particles, on the frame exact arithmetic
   would, adds the floored `count` of each burst drained for it,
@@ -110,9 +121,12 @@ batch.update(dt / 1000);    // your own BatchedRenderer
   or not finite, adds nothing, and a burst for a subject not attached is ignored. Particles leave
   at the subject's position but with the emitter's world rotation and scale, as of its last
   `matrixWorld` update, so a rotated emitter shape still points where you turned it.
+  It returns `quarks.emitted`, a map from each subject that emitted to how many particles it did,
+  bursts included, which the driver reuses: read it before the next `write`.
 - **If emitting a subject throws** (its `at`, or a behavior's `initialize`), that subject's
   particles for the frame are dropped, every other subject still emits, including its drained
   bursts, your authored values are put back, and then `write` rethrows the first error.
+  `quarks.emitted` still holds what the others emitted.
 
 `send` is also yours for anything else a discharge drives, such as flashes or audio: drain your own
 tags; the driver takes only the one you gave it.
@@ -121,14 +135,14 @@ tags; the driver takes only the one you gave it.
 
 - `startSpeed`, `startSize` and `startLife` must be a `ConstantValue` or `IntervalValue`, and
   `startColor` a `ConstantColor`, when their channel is in the kit; anything else is refused at
-  `attach`, naming the field.
+  `attach`, and under `capture: 'write'` at every `write`, naming the field.
 - A system must have `worldSpace: true`.
 - One generator object may not serve two of `startSpeed`, `startSize` and `startLife`, since
   scaling one would scale the other; `attach` refuses it, naming both fields.
-- The start values are captured at the first `attach` of a system. Replacing a generator, or
-  editing one, while the system is attached is not seen: the driver keeps writing to the captured
-  generator and puts the captured values back each frame. Detach every subject on the system,
-  change it, and attach again.
+- By default the start values are captured at the first `attach` of a system. Replacing a
+  generator, or editing one, while the system is attached is not seen: the driver keeps writing to
+  the captured generator and puts the captured values back each frame. Detach every subject on the
+  system, change it, and attach again, or drive with `capture: 'write'`.
 - `write` emits everything a frame owes at once, so a long frame bursts its whole gap's worth of
   particles. The first write owes nothing, and neither does time `mix.rebase()` took out or a seek
   ahead. A long gap you sync straight through is emitted in full: call `mix.rebase()` first for a
