@@ -7,26 +7,34 @@ const FIELD = { speed: 'startSpeed', size: 'startSize', life: 'startLife' } as c
 const SCALARS = ['speed', 'size', 'life'] as const;
 
 type Range = { gen: ConstantValue; value: number } | { gen: IntervalValue; a: number; b: number };
+type Tint = { gen: ConstantColor; rgba: readonly number[] };
 
 /** Which of the driver's channels a host's kit holds, and so which fields the driver writes. */
 export type Applies = Readonly<Record<Scalar | 'tint', boolean>>;
 
 /**
- * A system's start values as the host authored them, captured once so scaling never compounds:
- * written scaled for one subject before its particles are born, and put back afterwards.
+ * A system's start values as the host authored them, captured so scaling never compounds: written
+ * scaled for one subject before its particles are born, and put back afterwards.
  */
 export class Authored {
-  private readonly ranges: Partial<Record<Scalar, Range>> = {};
-  private readonly tint: { gen: ConstantColor; rgba: readonly number[] } | null;
+  private ranges: Partial<Record<Scalar, Range>> = {};
+  private tint: Tint | null = null;
 
   constructor(
     readonly system: ParticleSystem,
-    applies: Applies,
+    private readonly applies: Applies,
   ) {
     if (!system.worldSpace)
       throw new Error(
         'blits-quarks: a system needs worldSpace: true, since the driver places particles in world coordinates',
       );
+    this.capture();
+  }
+
+  /** Reads the system's start values as they stand, refusing any the driver cannot scale. */
+  capture(): void {
+    const { system, applies } = this;
+    const ranges: Partial<Record<Scalar, Range>> = {};
     for (const [i, name] of SCALARS.entries()) {
       if (!applies[name]) continue;
       for (const [j, other] of SCALARS.entries())
@@ -35,18 +43,22 @@ export class Authored {
             `blits-quarks: ${FIELD[i < j ? name : other]} and ${FIELD[i < j ? other : name]} share one generator, so scaling one would scale both; give each its own`,
           );
       const gen = system[FIELD[name]];
-      if (gen instanceof ConstantValue) this.ranges[name] = { gen, value: gen.value };
-      else if (gen instanceof IntervalValue) this.ranges[name] = { gen, a: gen.a, b: gen.b };
+      if (gen instanceof ConstantValue) ranges[name] = { gen, value: gen.value };
+      else if (gen instanceof IntervalValue) ranges[name] = { gen, a: gen.a, b: gen.b };
       else
         throw new Error(
           `blits-quarks: ${FIELD[name]} has to be a ConstantValue or an IntervalValue to scale`,
         );
     }
-    if (!applies.tint) this.tint = null;
-    else if (system.startColor instanceof ConstantColor) {
+    let tint: Tint | null = null;
+    if (applies.tint) {
+      if (!(system.startColor instanceof ConstantColor))
+        throw new Error('blits-quarks: startColor has to be a ConstantColor to tint');
       const c = system.startColor.color;
-      this.tint = { gen: system.startColor, rgba: [c.x, c.y, c.z, c.w] };
-    } else throw new Error('blits-quarks: startColor has to be a ConstantColor to tint');
+      tint = { gen: system.startColor, rgba: [c.x, c.y, c.z, c.w] };
+    }
+    this.ranges = ranges;
+    this.tint = tint;
   }
 
   apply(pose: Partial<Emission>): void {

@@ -4,6 +4,31 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
+## Unreleased
+
+### Added
+
+- `write` returns `quarks.emitted`, a map from each subject that emitted at that write to how many
+  particles it did, bursts included. A host that does something per particle, such as a crackle
+  sound, reads it rather than counting again. It still holds the other subjects' counts when
+  `write` throws.
+- `attach`'s `rate`, a number or a function asked every write, adds particles per second of the
+  host's own to the pose's `rate`. No voice weight scales it, and it emits whether or not a voice
+  plays.
+- `quarks.burst(subject, n)` emits `n` particles at an attached subject on the next write, as
+  `emitter.burst` does.
+- `drive`'s `capture: 'write'` reads each system's start values at every write instead of once at
+  `attach`, so a host can rescale or replace them live. `'attach'` stays the default.
+- `attach`'s `frame: 'world'` emits at a pure translation, ignoring the emitter's world rotation
+  and scale. `'emitter'` stays the default.
+- `source.at(position, opts?)` takes `attach`'s other options.
+
+### Fixed
+
+- `write` no longer emits a particle a frame early when a subject's carry falls within a billionth
+  of a particle of a whole one. The carry is now summed in twice a double's precision and floored
+  exactly, where it added that much slack before flooring to absorb float drift.
+
 ## 0.13.0
 
 ### Breaking

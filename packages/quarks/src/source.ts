@@ -5,8 +5,11 @@ import type { AttachOptions } from './drive.js';
 /** A particle system wired to a mix. Its emitters share it, so it compiles one shader. */
 export interface Source<I, O> {
   readonly system: ParticleSystem;
-  /** A new emission point on this system, and the mix's subject for it. */
-  at(position: AttachOptions['at']): Emitter<I, O>;
+  /**
+   * A new emission point on this system, and the mix's subject for it. `opts` are `attach`'s other
+   * options.
+   */
+  at(position: AttachOptions['at'], opts?: Omit<AttachOptions, 'at'>): Emitter<I, O>;
   /**
    * A clone of the system (`system.clone()`), wired as a source of its own with no emitters. It
    * shares the material, and its `emitter` starts untransformed: add it to the scene and place it.
@@ -33,7 +36,7 @@ export interface Emitter<I, O> {
 /** What `wire` needs of the driver it belongs to. */
 export interface Host<I, O> {
   readonly mix: Mix<I, O>;
-  attach(subject: I, system: ParticleSystem, at: AttachOptions['at']): void;
+  attach(subject: I, system: ParticleSystem, opts: AttachOptions): void;
   detach(subject: I): void;
   burst(subject: I, n: number): void;
 }
@@ -46,7 +49,7 @@ export function wire<I, O>(host: Host<I, O>, system: ParticleSystem): Source<I, 
   const live = new Set<Emitter<I, O>>();
   const source: Source<I, O> = {
     system,
-    at(position) {
+    at(position, opts) {
       let dropped = false;
       const cued = new Set<Handle<I>>();
       const emitter: Emitter<I, O> = {
@@ -66,9 +69,7 @@ export function wire<I, O>(host: Host<I, O>, system: ParticleSystem): Source<I, 
           return h;
         },
         burst(n) {
-          const whole = Math.floor(n);
-          if (dropped || !Number.isFinite(whole) || whole <= 0) return;
-          host.burst(emitter as unknown as I, whole);
+          if (!dropped) host.burst(emitter as unknown as I, n);
         },
         drop() {
           if (dropped) return;
@@ -79,7 +80,7 @@ export function wire<I, O>(host: Host<I, O>, system: ParticleSystem): Source<I, 
           host.mix.drop(emitter as unknown as I);
         },
       };
-      host.attach(emitter as unknown as I, system, position);
+      host.attach(emitter as unknown as I, system, { ...opts, at: position });
       live.add(emitter);
       return emitter;
     },
