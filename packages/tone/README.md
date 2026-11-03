@@ -107,9 +107,22 @@ Every booked note sounds within a sample of its time at 48 kHz, through a rate c
 with the clock read up to 1 ms off, within 0.25 ms.
 
 `ahead` has to outlast the longest gap between two writes: past it the parameter holds its last
-value until the next `write`. A longer `ahead` costs more reads where the mix is sampled, and a
-change made to the mix is heard only once the next `write` replaces the curve, which a stall also
-delays.
+value until the next `write`, which jumps it to where the mix is. A longer `ahead` costs more reads
+where the mix is sampled, and a change made to the mix is heard only once the next `write` replaces
+the curve, which a stall also delays.
+
+### Long frames, seeks and `rebase`
+
+The driver neither catches up nor clamps: each `write` plays the mix from where it is, so a two
+second frame holds for two seconds less `ahead`, then jumps, and the notes it skipped play only if
+`late` covers them. A seek, of the mix or of its transport, is heard from the next `write`, which
+cancels every curve and note scheduled past the time sought and schedules the mix from there. Call
+`write` in the frame that seeks.
+
+What was read ahead has already played by the time a `rebase` comes. A tab hidden mid-play keeps
+its audio clock running, so the curve plays on `ahead` ms past where the mix will resume and then
+holds; on resume it steps back to the mix. A note booked in that stretch sounds then, and not again
+where the mix plays it.
 
 ## Lower level
 
@@ -160,7 +173,7 @@ tone.write();
 - **`detach(subject)`** unbinds it and cancels what was scheduled ahead, so its targets hold the
   value they had reached. A sound detached frees its node to be wired again, by this driver or
   another; a `drop` of the old sound afterward leaves alone a node another sound wires.
-- **`write()`**, after `mix.sync`: schedules every attached subject's curves from that sync on.
+- **`write()`**, after `mix.sync`, or the sync of the `transport` the mix plays on: schedules every attached subject's curves from that sync on.
   Before the mix's first sync it does nothing.
 - **`cancel()`** detaches every subject and cancels what `take` booked ahead. The driver is done
   after it; drive the mix again to play on.
@@ -181,5 +194,11 @@ timestamp as usual. The driver maps one onto the other by the offset `mix.book` 
   straight one: on the sweep above, about 1.5 times what reading it every 5 ms did.
 - **Only channels of one number.** A `vec` or `color` channel takes no target; read it with
   `mix.project` yourself.
+- **Wiring is not on the tape.** `wire`, `attach`, `detach` and a sound's `drop` are the host's,
+  and a seek does not undo them. A sound dropped after the time sought stays unwired: the seek
+  brings its voices back in the mix, but its node holds its base until the tape plays the drop
+  again, and `cue` on it still throws.
+- **An `angle` channel is written as the numbers the mix gives**, so where it wraps between two
+  points the parameter ramps the long way round.
 - **Tone's `Transport` is not involved.** Times are on the audio context's clock, and the mix's
   rate, not Tone's tempo, sets the pace.

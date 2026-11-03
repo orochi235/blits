@@ -76,6 +76,26 @@ describe('wire', () => {
     expect(gain).toBeCloseTo(0.25, 6);
   });
 
+  it('holds the base under a voice at weight 0, and moves off it as the weight rises', async () => {
+    const [detune, gain, risen] = await offline((_m, d, play) => {
+      const o = d.wire(new Tone.Oscillator({ detune: 50 }));
+      const g = d.wire(new Tone.Gain(0.5));
+      const h = o.cue({ patch: hold({ detune: 100 }), weight: 0 });
+      g.cue({ patch: hold({ gain: 0.5 }), weight: 0 });
+      play(0, 160);
+      h.weight = 0.5;
+      play(176, 300);
+      return [
+        o.node.detune.getValueAtTime(0.15),
+        g.node.gain.getValueAtTime(0.15),
+        o.node.detune.getValueAtTime(0.25),
+      ];
+    });
+    expect(detune).toBeCloseTo(50, 6);
+    expect(gain).toBeCloseTo(0.5, 6);
+    expect(risen).toBeCloseTo(100, 6);
+  });
+
   it("leaves a note's frequency alone", async () => {
     const freq = await offline((_m, d, play) => {
       const s = d.wire(new Tone.Synth());
