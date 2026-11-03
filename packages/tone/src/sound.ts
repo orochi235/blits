@@ -24,6 +24,8 @@ export interface Bind<I, O> {
   readonly mix: Mix<I, O>;
   readonly kit: Kit<O> | undefined;
   seconds(): number;
+  /** Holds a target at `time`, s, as the driver does, and returns the time it held at. */
+  hold(target: Target, time: number): number;
   bind(subject: I, targets: Driven<O>[], release: () => void): void;
   unbind(subject: I): void;
 }
@@ -77,10 +79,7 @@ export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): 
       host.unbind(sound as unknown as I);
       release();
       const time = host.seconds();
-      for (const [, param, base] of bases) {
-        param.cancelAndHoldAtTime(time);
-        param.setValueAtTime(base, time);
-      }
+      for (const [, param, base] of bases) param.setValueAtTime(base, host.hold(param, time));
       host.mix.drop(sound as unknown as I);
     },
   };

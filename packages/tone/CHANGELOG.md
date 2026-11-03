@@ -4,6 +4,29 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `tone-v*` tag with no
 section here.
 
+## Unreleased
+
+### Breaking
+
+- Needs the engine release after 0.18.0, for `mix.time`, `mix.when` and `trace`'s `bends`. The
+  peer range moves to it when this releases.
+
+### Added
+
+- An eased `keys` stop and a tween's stretch are written as the curve the mix plays, at any
+  `grid`, where they were read every `grid` ms: ramps that stand no further off the curve than
+  1/10,000 of its size. On the tests' sweep the worst error at a 25 ms grid fell from 1.8 Hz to
+  0.08, and the sweep alone stays within 0.04 Hz at any grid.
+
+### Fixed
+
+- Curves land where the mix will be while `mix.rate` ramps. The driver converted mix time with the
+  rate as it stood at each `write`, which drifted 3.6 Hz on the tests' sweep for a ramp from 1 to
+  0.5 over 600 ms; it now converts through the ramp, within 0.04 Hz.
+- A `write`, `detach`, `cancel` or `drop` whose hold fell within a microsecond of a point the last
+  `write` scheduled lost the line into that point, and could flatten the curve before it. The hold
+  now lands on the point.
+
 ## 0.9.0
 
 ### Breaking

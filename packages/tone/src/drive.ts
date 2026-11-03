@@ -1,5 +1,7 @@
-import type { BookedHit, Kit, Marked, Mix, NumberChannel } from '@msb235/blits';
+import type { Bend, BookedHit, Kit, Marked, Mix, NumberChannel } from '@msb235/blits';
 import { immediate, Noise, Oscillator, PolySynth, Synth, type ToneAudioNode } from 'tone';
+import { hold as holdAt, ramp, set } from './held.js';
+import { lines } from './lines.js';
 import { type Bind, type Sound, wire } from './sound.js';
 
 /** What the driver schedules on: a Tone `Param` or `Signal`, or a native `AudioParam`. */
@@ -117,14 +119,18 @@ export function drive<I, O, E = unknown>(
     take: (item, when, lateBy) => take?.(item, when / 1000, lateBy),
   });
 
-  const hold = (b: Bound<O>, time: number): void => {
-    for (const [, target] of b.targets) target.cancelAndHoldAtTime(time);
+  /** Holds each of the subject's targets at `time`, s, and returns the latest time one held at. */
+  const hold = (b: Bound<O>, time: number): number => {
+    let latest = time;
+    for (const [, target] of b.targets) latest = Math.max(latest, holdAt(target, time));
+    return latest;
   };
 
   const host: Bind<I, O> = {
     mix,
     kit: opts.kit,
     seconds,
+    hold: holdAt,
     bind: (subject, targets, release) => {
       if (done) throw new Error('blits-tone: that driver is cancelled');
       if (bound.has(subject)) throw new Error('blits-tone: that subject is attached already');
@@ -159,33 +165,66 @@ export function drive<I, O, E = unknown>(
       if (done || Number.isNaN(now) || bound.size === 0) return;
       const read = Number.isNaN(reading) ? seconds() * 1000 : reading;
       reading = Number.NaN;
-      const est = booker.at(mix.timestamp);
+      const stamp = mix.timestamp;
+      const est = booker.at(stamp);
 
       // Audio ms: the estimate may trail the clock, and nothing is scheduled behind the clock.
-      const from = Math.max(est, read);
+      let from = Math.max(est, read);
+      let held = from / 1000;
+      for (const b of bound.values()) held = Math.max(held, hold(b, from / 1000));
+      from = held * 1000;
       const to = Math.max(from, est + ahead);
-      for (const b of bound.values()) hold(b, from / 1000);
 
-      // Mix time runs `rate` ms to the audio clock's one, so a paused mix has one point to write.
-      const rate = mix.rate;
-      const start = now + (from - est) * rate;
-      const trace =
-        rate > 0
-          ? mix.trace(start, now + (to - est) * rate, { grid: grid * rate })
-          : mix.trace(start, start);
-      const audio = (t: number): number =>
-        rate > 0 ? Math.min(to, Math.max(from, est + (t - now) / rate)) : from;
+      // The mix's clock carries its rate and any ramp of it; a paused mix has one point to write.
+      const start = Math.max(now, mix.time(stamp + from - est));
+      const end = Math.max(start, mix.time(stamp + to - est));
+      const moves = end > start;
+      const trace = moves
+        ? mix.trace(start, end, { grid: (grid * (end - start)) / (to - from), bends: true })
+        : mix.trace(start, start);
+      const raw = (t: number): number => est + mix.when(t) - stamp;
+      const audio = (t: number): number => (moves ? Math.min(to, Math.max(from, raw(t))) : from);
+      // Under a ramp of the rate a line in mix time is a curve on the audio clock.
+      const steady =
+        !moves || Math.abs(raw((start + end) / 2) - (raw(start) + raw(end)) / 2) < 1e-6;
       for (const [subject, b] of bound)
         for (const [channel, target, move] of b.targets) {
           const run = trace.of(subject, channel as NumberChannel<O>);
+          const bends = run.bends ?? [];
+          let next = 0;
           for (let i = 0; i < run.at.length; i++) {
             const value = run.value[i] as number;
             if (!Number.isFinite(value)) continue;
-            const v = move === null ? value : move(value);
-            const at = audio(run.at[i] as number) / 1000;
+            const t = run.at[i] as number;
+            const at = audio(t);
+            const t0 = run.at[i - 1] as number;
             // Two points at one time are a jump: the line arrives at the first, then it steps.
-            if (i > 0 && run.at[i] === run.at[i - 1]) target.setValueAtTime(v, at);
-            else target.linearRampToValueAtTime(v, at);
+            if (i > 0 && t === t0) {
+              set(target, move === null ? value : move(value), at / 1000);
+              continue;
+            }
+            while (next < bends.length && (bends[next] as Bend).index < i - 1) next++;
+            const bend = bends[next]?.index === i - 1 ? bends[next] : undefined;
+            const v0 = run.value[i - 1] as number;
+            if (i > 0 && (bend !== undefined || !steady) && Number.isFinite(v0)) {
+              const a0 = audio(t0);
+              const along = (a: number): number => {
+                const m = steady
+                  ? t0 + ((t - t0) * (a - a0)) / (at - a0)
+                  : mix.time(stamp + a - est);
+                const u = Math.min(1, Math.max(0, (m - t0) / (t - t0)));
+                return v0 + (value - v0) * u + (bend === undefined ? 0 : bend.off(u));
+              };
+              const size =
+                Math.abs(value - v0) +
+                (bend === undefined
+                  ? 0
+                  : Math.abs(bend.off(0.25)) + Math.abs(bend.off(0.5)) + Math.abs(bend.off(0.75)));
+              lines(along, a0, v0, at, value, size, (v, a) =>
+                ramp(target, move === null ? v : move(v), a / 1000),
+              );
+            }
+            ramp(target, move === null ? value : move(value), at / 1000);
           }
         }
     },
