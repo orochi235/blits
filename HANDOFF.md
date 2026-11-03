@@ -283,6 +283,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      1% of a `spans` frame in `bench/runs/2026-10-31-spans-profile-due-list.txt`. One walk that
      also reads `heading` was profiled and was no faster
      (`bench/runs/2026-10-31-spans-profile-one-walk.txt`).
+   - **An owner's forward seek is restored by a mix seek back, not by every read back**
+     (2026-11-03): `Voice.leaps` (`src/leaps.ts`) records the children it left waiting, and
+     `leapBack` puts them back on a seek. An owner revived from a history store loses that record,
+     as `metRead` is lost, and `project`/`standing` reckon from the clock without it.
    - **A span held by a span, sought forward while turned back, takes its span's fits on the way**
      (2026-11-03): latest write wins, so the seek leaves it running forward at the fit's rate, not
      turned back. Undecided whether a host's turn-back should survive that.
@@ -918,11 +922,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       store as `host` records, and looks a step's up half a step early, since replayed step times
       round apart from the first pass's. If blits ever replays recorded host input on a seek, that
       log can go.
-    - On a shared `transport`, `physics` sees no `history` (it is the transport's), so it keeps one
-      frame of pushes and pages none: a seek there replays on the wrong pushes. It needs the
-      transport's history options, which `Transport` does not expose. Calls logged by `impulse`,
-      `drop` and `body` are never pruned or paged, by design, since a replay through them does them
-      again; they grow per call, not per frame.
+    - `physics` does not run on a shared `transport` (checked 2026-11-03): its `sync` calls the
+      mix's, which throws there. Supporting one needs a step the host calls after the transport's
+      sync, and the transport's `history`, which `Transport` does not expose, to size the log.
+    - Calls logged by `impulse`, `drop` and `body` are never pruned or paged, by design, since a
+      replay through them does them again; they grow per call, not per frame.
     - A kinematic goal's voice weight only switches it on or off (`last`); goals cannot crossfade
       by weight without a core channel that blends rest-less values.
 
