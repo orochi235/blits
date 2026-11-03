@@ -158,7 +158,8 @@ tone.write();
   twice throws. The driver builds no synths: a subject that should sound on its own needs a
   synth of its own, which the host builds and attaches.
 - **`detach(subject)`** unbinds it and cancels what was scheduled ahead, so its targets hold the
-  value they had reached.
+  value they had reached. A sound detached frees its node to be wired again, by this driver or
+  another; a `drop` of the old sound afterward leaves alone a node another sound wires.
 - **`write()`**, after `mix.sync`: schedules every attached subject's curves from that sync on.
   Before the mix's first sync it does nothing.
 - **`cancel()`** detaches every subject and cancels what `take` booked ahead. The driver is done

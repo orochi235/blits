@@ -80,7 +80,7 @@ export type Driven<O> = [keyof O, Target, ((value: number) => number) | null];
 
 interface Bound<O> {
   targets: Driven<O>[];
-  /** Frees a wired node for another driver once this one is cancelled. */
+  /** Frees a wired node to be wired again once it is detached or this driver cancelled. */
   release?: () => void;
 }
 
@@ -158,6 +158,7 @@ export function drive<I, O, E = unknown>(
       if (b === undefined) return;
       bound.delete(subject);
       hold(b, seconds());
+      b.release?.();
     },
 
     write() {

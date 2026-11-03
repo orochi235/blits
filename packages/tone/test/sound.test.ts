@@ -150,6 +150,36 @@ describe('wire', () => {
       expect(() => d.wire(o)).not.toThrow();
     });
   });
+
+  it('wires the node again once its sound is detached, here or by another driver', async () => {
+    await offline((m, d) => {
+      const o = new Tone.Oscillator();
+      d.detach(d.wire(o));
+      expect(() => d.wire(o)).not.toThrow();
+      const s = d.wire(new Tone.Oscillator());
+      d.detach(s);
+      const other = drive<unknown, Pose>(m, { clock: () => 0, kit: K });
+      expect(() => other.wire(s.node)).not.toThrow();
+    });
+  });
+
+  it('leaves a node another sound now wires alone when the old sound is dropped', async () => {
+    const detune = await offline((_m, d, play) => {
+      const o = new Tone.Oscillator({ detune: 50 });
+      const old = d.wire(o);
+      old.cue({ patch: hold({ detune: 100 }) });
+      play(0, 96);
+      d.detach(old);
+      const now = d.wire(o);
+      now.cue({ patch: hold({ detune: 10 }) });
+      play(112, 160);
+      old.drop();
+      play(176, 300);
+      return o.detune.getValueAtTime(0.25);
+    });
+    // The new sound's base is what the old one had reached, 150, and its voice adds 10.
+    expect(detune).toBeCloseTo(160, 6);
+  });
 });
 
 describe('shortcuts and copy', () => {

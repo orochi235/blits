@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `tone-v*` tag with no
 section here.
 
+## Unreleased
+
+### Fixed
+
+- A sound's node can be wired again once the sound is detached. `detach` left the node marked as
+  wired, so `wire` threw that it was already wired, from this driver or any other. Dropping the
+  detached sound afterward no longer puts its base back on a node another sound now wires.
+
 ## 0.10.0
 
 ### Breaking

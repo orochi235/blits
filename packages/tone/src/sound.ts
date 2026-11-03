@@ -77,13 +77,16 @@ export function wire<I, O, N extends ToneAudioNode>(host: Bind<I, O>, node: N): 
       dropped = true;
       for (const h of cued) h.fade({ over: 0 });
       host.unbind(sound as unknown as I);
+      const owner = wired.get(node);
       release();
-      const time = host.seconds();
-      for (const [, param, base] of bases) param.setValueAtTime(base, host.hold(param, time));
+      if (owner === undefined || owner === sound) {
+        const time = host.seconds();
+        for (const [, param, base] of bases) param.setValueAtTime(base, host.hold(param, time));
+      }
       host.mix.drop(sound as unknown as I);
     },
   };
-  // A sound whose driver was cancelled may be dropped after another driver wired its node.
+  // A sound detached, or whose driver was cancelled, may be dropped after another sound wired its node.
   const release = (): void => {
     if (wired.get(node) === sound) wired.delete(node);
   };
