@@ -79,6 +79,28 @@ interface Bound<O> {
   extra: number;
 }
 
+type Drained = ReadonlyMap<unknown, { extra: number }>;
+
+/**
+ * The drivers with subjects attached that drain each tag of each mix. A burst one drains for
+ * another's subject goes to that one, since a drain takes every event under its tag.
+ */
+const draining = new WeakMap<object, Map<string, Set<Drained>>>();
+
+function drainers(mix: object, tag: string): Set<Drained> {
+  let tags = draining.get(mix);
+  if (tags === undefined) {
+    tags = new Map();
+    draining.set(mix, tags);
+  }
+  let set = tags.get(tag);
+  if (set === undefined) {
+    set = new Set();
+    tags.set(tag, set);
+  }
+  return set;
+}
+
 export function drive<I, O extends Partial<Emission>>(
   mix: Mix<I, O>,
   opts: DriveOptions<O>,
@@ -91,6 +113,7 @@ export function drive<I, O extends Partial<Emission>>(
     tint: 'tint' in kit,
   };
   const bound = new Map<I, Bound<O>>();
+  const others = opts.bursts === undefined ? undefined : drainers(mix, opts.bursts);
   const emitted = new Map<I, number>();
   const live = opts.capture === 'write';
   const systems = new Map<ParticleSystem, { authored: Authored; users: number }>();
@@ -169,6 +192,7 @@ export function drive<I, O extends Partial<Emission>>(
         systems.set(system, held);
       }
       held.users++;
+      others?.add(bound);
       bound.set(subject, {
         system,
         authored: held.authored,
@@ -186,6 +210,7 @@ export function drive<I, O extends Partial<Emission>>(
       const b = bound.get(subject);
       if (b === undefined) return;
       bound.delete(subject);
+      if (bound.size === 0) others?.delete(bound);
       const held = systems.get(b.system);
       if (held !== undefined && --held.users === 0) {
         // Captured at every write, they are already back, and the host may have edited them since.
@@ -219,9 +244,17 @@ export function drive<I, O extends Partial<Emission>>(
       }
       if (opts.bursts !== undefined)
         for (const sent of mix.drain<Burst>(opts.bursts)) {
-          const b = bound.get(sent.subject);
           const n = Math.floor(sent.event.count);
-          if (b !== undefined && Number.isFinite(n) && n > 0) b.count += n;
+          if (!(Number.isFinite(n) && n > 0)) continue;
+          const b = bound.get(sent.subject);
+          if (b !== undefined) b.count += n;
+          else if (others !== undefined)
+            for (const other of others) {
+              const o = other.get(sent.subject);
+              if (o === undefined) continue;
+              o.extra += n;
+              break;
+            }
         }
       // A subject that throws loses this frame's particles; the rest still emit, the authored
       // values always go back, and the first error is rethrown once they have.
