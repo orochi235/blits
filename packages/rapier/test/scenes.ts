@@ -15,7 +15,7 @@ const history = { ms: 10_000, every: 250, tape };
 /** A force that swings back and forth on the mix clock. */
 function swing<O>(force: (u: number) => Partial<O>) {
   return patch<object, O>(2000, (phase) => force(Math.sin(phase * Math.PI * 2)), {
-    writes: ['force'] as (keyof O)[],
+    writes: Object.keys(force(0)) as (keyof O)[],
   });
 }
 
