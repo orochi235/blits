@@ -88,6 +88,7 @@ export type {
   ArcSpec,
   ArcVoice,
   Band,
+  Bend,
   BlendMember,
   BookedHit,
   Booker,

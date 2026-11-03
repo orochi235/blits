@@ -58,6 +58,14 @@ const named: Record<Exclude<Easing, object | ((u: number) => number)>, Curve> = 
 
 const built = new WeakMap<object, Curve>();
 
+/** Each `steps` curve's count of steps. */
+const stepped = new WeakMap<Curve, number>();
+
+/** How many steps a curve takes, for one built from `steps`; undefined for any other. */
+export function stepsOf(c: Curve): number | undefined {
+  return stepped.get(c);
+}
+
 /** Each built curve's slope at 0, where its definition gives one: Infinity for a jump. */
 const starts = new WeakMap<Curve, number>([[linear, 1]]);
 
@@ -111,6 +119,7 @@ export function curve(easing: Easing): Curve {
       return (start ? Math.min(n, Math.floor(c * n) + 1) : Math.floor(c * n)) / n;
     };
     starts.set(made, start ? Number.POSITIVE_INFINITY : 0);
+    stepped.set(made, n);
   }
   built.set(easing, made);
   return made;

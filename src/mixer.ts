@@ -31,7 +31,7 @@ import type { HandleHost } from './handle.js';
 import { held, shownOf, sinceOf, unreachedOf } from './held.js';
 import { book, laneHost } from './hosts.js';
 import { Lanes } from './lanes.js';
-import { listed } from './marks.js';
+import { hostOf, listed, readingAt } from './marks.js';
 import type { Motions } from './motions.js';
 import { nextFrame } from './move.js';
 import { ownerPatch } from './owner.js';
@@ -522,6 +522,14 @@ export class Mixer<I, O> implements Mix<I, O> {
 
   trace(from: number, to: number, opts?: TraceOptions): Trace<I, O> {
     return traceMix(this, from, to, opts);
+  }
+
+  time(timestamp: number): number {
+    return readingAt(this, timestamp - this.offset);
+  }
+
+  when(time: number): number {
+    return hostOf(this, time);
   }
 
   announce(

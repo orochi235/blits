@@ -4,6 +4,21 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- `mix.time(timestamp)` and `mix.when(time)` convert between a host timestamp and mix time
+  through the mix's rate and any ramp of it, as the clock stands at the last sync. A host
+  scheduling ahead on its own clock lands where the mix will be while the rate ramps.
+- `trace`'s `bends` option: a stretch whose shape is known but not straight, a `keys` stop eased
+  other than `linear` or a tween's stretch, comes as its two ends and a `Bend` in `run.bends`,
+  whose `off(u)` is how far the value stands off the line between them, rather than as reads every
+  `grid` ms. Up to four voices' bends may overlap in one stretch.
+- `trace` knows more shapes exactly: a `tween` with no retarget timed inside the window, a stop
+  eased by `steps` (its jumps come as breakpoints, with or without `bends`), and a voice whose rate
+  ramp finished before the window.
+
 ## 0.18.0
 
 ### Added
