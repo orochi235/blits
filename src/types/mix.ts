@@ -292,8 +292,8 @@ export interface Mix<I, O, H = unknown> {
    *
    * Exact needs, of each voice reaching the subject and writing the channel: a `keys` patch whose
    * stops are plain numbers, eased `linear` or `steps` (or any easing, with `bends`), or a `tween`
-   * with no retarget timed inside the window (a retarget with no time is not read ahead, as
-   * `project` does not); a number weight; no owner, anchor, role, blend, {@link VoiceSpec.within | `within`},
+   * with no retarget timed inside the window (one with no time counts from when it was made); a
+   * number weight; no owner, anchor, role, blend, {@link VoiceSpec.within | `within`},
    * {@link VoiceSpec.stepMs | `stepMs`}, or `from: 'current'`; no ramp of its rate under way; a fade in finished by
    * `from` and no fade out under way or due. The channel folds by `sum`, or by `mul` from one such
    * voice, and has no `bounds`; with `bends`, no more than four bending stretches overlap. The

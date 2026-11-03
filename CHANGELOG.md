@@ -21,6 +21,9 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- `project` and `trace` read a tween retargeted with no time from when it was retargeted, for a
+  subject nothing has read. They left it out, so a host that never probes such a subject, as
+  blits-tone does, never played the retarget.
 - `pull` counts the subjects it reads from the lanes once a run, not once a subject, when nothing
   has probed the mix yet this frame. 10,000 one-subject tween voices read by `pull` (`tweens^`)
   take 0.127 ms a frame against 0.132, and one tween voice over 10,000 subjects (`weasel^`) 0.190

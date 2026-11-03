@@ -651,10 +651,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      with no retarget timed inside the window. Still read every `grid` ms: other patches, a signal
      weight, a fade under way, and a voice whose own rate is ramping (the 0.078 Hz left at a 25 ms
      grid in `curves.test.ts`). The schema page's Mix section lists what it needs to be exact.
-   - **A tween retargeted with no time is likely never heard through the driver** (2026-11-03,
-     inferred from `peek` in `src/changes.ts`, not run): `project` skips an untimed change until
-     a live read stamps it, and nothing probes a subject blits-tone drives. The README says to
-     retarget with a time.
    - **`apps/fireworks`**, which plays one mix through this driver and the quarks one, has never
      been listened to. It still packs pan and size into each event and could read them off the
      shell, since a booked hit carries its voice's `subjects` (2026-10-11).

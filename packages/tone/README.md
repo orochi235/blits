@@ -173,8 +173,7 @@ timestamp as usual. The driver maps one onto the other by the offset `mix.book` 
 - **Only `keys` voices and tweens are known shapes.** Any other patch, a signal weight, a fade
   under way, and a voice whose rate is ramping are read every `grid` ms, where the error grows with
   the square of `grid` and a jump between two points plays as a ramp. Each such point is one
-  `mix.project`. A tween retargeted with no time is not read ahead, as `mix.project` does not
-  read it, so retarget a tween the driver plays with a time.
+  `mix.project`. A tween retargeted with no time plays from when it was retargeted.
 - **Curves are written as ramps, not `setValueCurveAtTime`.** Tone's own `setValueCurveAtTime`
   is a run of ramps, and `node-web-audio-api` 2.2.0 lets a native curve play on through the
   `cancelAndHoldAtTime` each `write` starts with. An eased stretch costs more points than a

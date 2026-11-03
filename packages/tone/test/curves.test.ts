@@ -94,8 +94,12 @@ describe('a tween', () => {
     return t;
   };
 
-  it('plays its stretches exactly, a retarget included, whatever the grid', async () => {
-    // Sent toward 300 Hz at the first frame from 1.4 s, timed, since nothing probes the subject.
+  it.each([
+    ['timed', true],
+    ['untimed', false],
+  ])('plays its stretches exactly, a retarget %s included, whatever the grid', async (_, timed) => {
+    // Sent toward 300 Hz at the first frame from 1.4 s. Nothing probes the subject, so an untimed
+    // one is read ahead from when it was made.
     let turn = Number.NaN;
     const buffer = await Tone.Offline(
       () => {
@@ -111,7 +115,8 @@ describe('a tween', () => {
           m.sync(f);
           if (Number.isNaN(turn) && f >= 1400) {
             turn = f;
-            t.to(SUBJECT, 300, f);
+            if (timed) t.to(SUBJECT, 300, f);
+            else t.to(SUBJECT, 300);
           }
           driver.write();
         }

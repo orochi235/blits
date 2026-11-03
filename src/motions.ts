@@ -480,8 +480,8 @@ export class Motions<I> {
 
   /**
    * The one stretch a read ahead finds `subject` playing at every voice time from `t` on, as `peek`
-   * reads it: the changes due by `t` applied, and an untimed one not. Undefined where a timed
-   * change lands after `t`, or an earlier stretch plays at `t`.
+   * reads it: the changes due by `t` applied, one no read has stamped counting from when it was
+   * made. Undefined where a change lands after `t`, or an earlier stretch plays at `t`.
    */
   ahead(subject: I, t: number): Segment | undefined {
     const s = this.known(subject);
@@ -491,8 +491,8 @@ export class Motions<I> {
       return undefined;
     let seg = this.latest(s);
     for (const change of this.dueTo(s) ?? []) {
-      const a = change.at;
-      if (a === undefined) break;
+      const a = change.at ?? change.made;
+      if (a === undefined || Number.isNaN(a)) break;
       if (!(a <= t)) return undefined;
       if (a >= seg.at) seg = this.applied(subject, seg, change, a);
     }

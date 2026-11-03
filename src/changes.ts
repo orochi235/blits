@@ -62,7 +62,8 @@ export function peek<I>(
   const list = this.dueTo(s);
   if (list !== undefined)
     for (const change of list) {
-      const a = change.at;
+      // A change no read has stamped counts from when it was made, as a read that frame would stamp it.
+      const a = change.at ?? change.made;
       if (a === undefined || !(a <= t)) break;
       if (a >= seg.at) seg = this.applied(this.numbers.subject(s), seg, change, a);
     }
