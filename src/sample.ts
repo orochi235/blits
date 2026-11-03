@@ -47,6 +47,7 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
     }
   }
   const samples = lane.samples;
+  const landed = lane.landed;
   const xs = run.xs;
   // A tween round the hue is no straight line between its ends: `sampleBare` reads it round the hue.
   const ease = run.round ? undefined : run.ease;
@@ -146,13 +147,23 @@ export function runMotion<I, O>(lanes: Lanes<I, O>, lane: Lane<I, O>, run: Motio
       if (data[o + Row.SAMPLED] !== Sampled.BARE) {
         data[o + Row.SAMPLED] = Sampled.BARE;
         lane.deltas[p] = null;
+        landed[p] = Number.POSITIVE_INFINITY;
       }
       if (w <= 0) continue;
-      const share = left(ease, progress(elapsed, runs[b] as number, runs[b + 2] as number));
       const values = ch.values;
       const base = slot * n;
       const x = b + 3;
       const g = x + 2 * n;
+      // A bare position's stretch tells the lane before it changes, and a sample's progress rounds
+      // monotonically in voice time, so one seen landed folds its `to` as it is at any later time.
+      if (elapsed >= (landed[p] as number)) {
+        for (let a = 0; a < n; a++)
+          values[base + a] = foldNumber(op, values[base + a] as number, runs[g + a] as number, w);
+        continue;
+      }
+      const u = progress(elapsed, runs[b] as number, runs[b + 2] as number);
+      const share = left(ease, u);
+      if (u >= 1) landed[p] = elapsed;
       for (let a = 0; a < n; a++)
         values[base + a] = foldNumber(
           op,

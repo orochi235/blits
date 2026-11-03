@@ -212,6 +212,11 @@ export class Lane<I, O> implements Positions<I, O> {
   deltas: (Record<string, unknown> | null)[] = [];
   /** For a motion voice, per position, its last sample's value on each of `axes` axes. */
   samples = new Float64Array(0);
+  /**
+   * Per position sampled bare, a voice time less its delay at which `runMotion` saw its tween
+   * landed: it is landed at any later one while it stays bare. Infinity until seen landed.
+   */
+  landed = new Float64Array(0);
   axes = 0;
   /** What a keys read writes into, reused across subjects. */
   readonly delta: Record<string, unknown> = {};
@@ -319,6 +324,7 @@ export class Lane<I, O> implements Positions<I, O> {
       const data = new Float64Array(n * Row.STRIDE);
       data.set(this.data);
       this.data = data;
+      this.landed = grownTo(this.landed, n);
     }
     if (cap > this.at.length) {
       const at = new Int32Array(cap);
@@ -343,6 +349,7 @@ export class Lane<I, O> implements Positions<I, O> {
       );
       data.set(this.data);
       this.data = data;
+      this.landed = grownTo(this.landed, data.length / Row.STRIDE);
     }
     const o = p * Row.STRIDE;
     this.data[o + Row.DELAY] = held.delay;
@@ -384,6 +391,7 @@ export class Lane<I, O> implements Positions<I, O> {
       this.list[p] = moved;
       this.at[moved] = p + 1;
       this.data.copyWithin(p * Row.STRIDE, last * Row.STRIDE, (last + 1) * Row.STRIDE);
+      this.landed[p] = this.landed[last] as number;
       this.records[p] = this.records[last];
       this.deltas[p] = this.deltas[last] ?? null;
       const n = this.axes;
@@ -394,4 +402,10 @@ export class Lane<I, O> implements Positions<I, O> {
     this.records[last] = undefined;
     this.deltas[last] = null;
   }
+}
+
+function grownTo(a: Float64Array, size: number): Float64Array<ArrayBuffer> {
+  const b = new Float64Array(size);
+  b.set(a);
+  return b;
 }

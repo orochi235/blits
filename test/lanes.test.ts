@@ -864,6 +864,30 @@ describe('lanes give motion voices the pose the general path gives', () => {
     );
   });
 
+  it('for a landed tween over every subject, after a drop moves a position, a retarget and a seek back', () => {
+    agree(
+      (m, parts) => {
+        const tw = tween<Part, Pose>('crawl', { from: 0, to: crawlTo, ms: 200 });
+        const h = m.cue({ patch: tw, stagger: (p) => p.id * 30 });
+        return {
+          handles: [h],
+          at: (t) => {
+            if (t === 999) m.drop(parts[0] as Part);
+            if (t === 1016) tw.to(parts[5] as Part, -40);
+            if (t === 1500) h.seek(100);
+            if (t === 2000) h.rate = -1;
+          },
+        };
+      },
+      {
+        times: [
+          0, 16, 50, 120, 333, 500, 700, 999, 1000, 1016, 1100, 1300, 1500, 1516, 1700, 2000, 2016,
+          2200, 2600,
+        ],
+      },
+    );
+  });
+
   for (const change of ['to', 'past', 'weight', 'rate', 'seek', 'fade', 'cue', 'drop'])
     it(`reads a tween over every subject again after a ${change} between two reads of one frame`, () => {
       script((m, parts, look) => {

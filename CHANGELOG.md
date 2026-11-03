@@ -4,6 +4,20 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Fixed
+
+- `pull` counts the subjects it reads from the lanes once a run, not once a subject, when nothing
+  has probed the mix yet this frame. 10,000 one-subject tween voices read by `pull` (`tweens^`)
+  take 0.127 ms a frame against 0.132, and one tween voice over 10,000 subjects (`weasel^`) 0.190
+  against 0.197; with one subject leaving and one arriving every frame (`turnover^`) a frame takes
+  0.196 ms against 0.192 (teitou, medians of nine runs of 5,000 frames, each in its own process).
+- A tween voice over many subjects folds a subject's landed tween's end as it stands, without
+  reading its clock or easing it, until its stretch or its subject changes or its voice time reads
+  earlier than when it landed. `weasel^` takes 0.186 ms a frame against 0.193 (teitou, medians of
+  nine runs of 5,000 frames, each in its own process); other rows are unchanged.
+
 ## 0.18.0
 
 ### Added
