@@ -72,6 +72,28 @@ const { position, rotation } = sim.mix.probe(box);
 Spread them into a kit with your own channels. Forces and torques are in Rapier's units, newtons
 and newton-meters for a body whose mass you set in kilograms.
 
+## Kinematic bodies
+
+A body made with `RigidBodyDesc.kinematicPositionBased()` goes where a voice on its controls says,
+through two more channels, `kinematic2` or `kinematic3`, spread into the kit beside the others:
+
+| Channel | 2D (`kinematic2`) | 3D (`kinematic3`) |
+|---|---|---|
+| `goal` | `vec(2, last())`, a position | `vec(3, last())`, a position |
+| `facing` | `last()`, an angle in radians | `last()`, an `[x, y, z, w]` quaternion |
+
+```ts
+const sim = physics(kit<Pose3 & Kinematic3>({ ...channels3, ...kinematic3 }), { rapier: RAPIER });
+const door = sim.body(RAPIER.RigidBodyDesc.kinematicPositionBased(), RAPIER.ColliderDesc.cuboid(1, 2, 0.1));
+door.drive({ patch: keys(800, [{ at: 0, delta: { goal: [0, 2, 0] } }, { at: 1, delta: { goal: [2, 2, 0] } }]) });
+```
+
+Neither has a rest: a body no voice writes a goal for stays where it is, and one whose voice has
+ended stays where it left it. The world moves the body there over the next step, at the speed that
+takes, so it pushes what it meets. Since the channels are `last`, a voice's weight only switches its
+goal on or off, and of the voices writing one, the last cued wins; keyframes between two goals
+interpolate, the facing the short way round.
+
 ## The clock and seeking
 
 `physics` makes the mix, with `stepMs` 1000 / 60 unless you set it; the world takes one Rapier step
@@ -92,6 +114,4 @@ deterministic build.
 
 ## Not yet
 
-- Kinematic bodies moved by a voice. They need a channel with no rest, which blits' `vec` of
-  `sum()` is not.
 - Soft bodies, cloth and ropes.

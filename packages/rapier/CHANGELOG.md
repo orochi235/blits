@@ -13,6 +13,9 @@ section here.
 
 ### Added
 
+- Kinematic bodies moved by a voice: `kinematic2` and `kinematic3` add `goal` and `facing` channels
+  to a body's controls, which move a kinematic body over the next step. Neither has a rest, so a
+  body no voice writes stays where it is.
 - History pages to a `store`. The world's state packs to plain data, its Rapier snapshot as base64.
   With a store, the log of each frame's pushes is kept for as long as the mix plays.
 
