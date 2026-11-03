@@ -11,6 +11,9 @@ version and everything else the patch. Each release lists its changes as **Break
 - `inert` stays false after a seek back while a motion voice has a subject it met inside its
   stagger and has not read since the stagger ran out. The seek forgot such subjects, so a frame
   loop sleeping on `inert` could sleep through the subject's motion.
+- A span held by a span, turned back and sought forward, passes the children the seek crosses in
+  order, as a reel turned back does. Its own span's fits on the way retime it as playing through
+  would, and that retiming stands after the seek.
 
 ## 0.18.0
 
