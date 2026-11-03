@@ -21,7 +21,8 @@ that it does not handle that case.
 | Rule | Learned from |
 |---|---|
 | **Say what a seek does to output already sent**: particles alive, audio scheduled, bodies in flight. Whatever state the driver holds is restored or rebuilt to match the time sought. A seek is not a frame: tell them apart by `mix.played`, which a seek leaves alone, not by comparing mix time with host time. A driver that reads ahead cannot take back what it already scheduled into a hidden tab's gap. | rapier's replay; tone's `cancel`; quarks lost the frame after a seek back |
-| **Log host input read each frame.** A seek's catch-up reads the host as it is now, not as it was, so input the driver reads from the host has to be kept by mix time and replayed. | rapier's log of pushes |
+| **Log host input read each frame.** A seek's catch-up reads the host as it is now, not as it was, so input the driver reads from the host has to be kept by mix time and replayed, and a new call after a seek back replaces what was logged ahead of it, as a host call cuts the tape's future. | rapier's log of pushes; rapier replayed one frame's push over a seek forward, and applied an impulse twice when the host made it again after a seek back (fixed 2026-11-03) |
+| **Show a seek at once.** What the driver shows reflects the time sought as soon as the seek lands, so scrubbing a paused page moves it. | rapier showed the old world until the next frame (fixed 2026-11-03) |
 | **Page to a history `store`**: state packs to plain data, and any log of the driver's own pages through the store and comes back on `prepare`, including through a transport's store. | rapier (2026-11-03, twice) |
 | **Bound every list** that grows per frame or per write: prune it to what history can reach, or page it. | rapier's log of pushes; the engine's `Voice.earlier` |
 
@@ -50,7 +51,7 @@ that it does not handle that case.
 | **Several drivers on one mix share its drains.** A drain takes every event under its tag, so a driver draining a shared tag hands on what belongs to another. | quarks lost another driver's bursts (fixed 2026-11-03) |
 | **A late subscriber gets the current state**, not only changes after it subscribes. | the panel after a reload |
 | **Peer range and pin**: widen the `@msb235/blits` peer range with every engine minor, pin the engine to build and test against, and work with two copies of blits loaded. | every release |
-| **Name the mixes the driver makes**, so the debug panel lists them. | the site's demos |
+| **Name the mixes the driver makes**, so the debug panel lists them, and **keep the history a debugger gives** (`watched().history`) a mix made with none. | the site's demos; rapier's mix was unnamed and logged one frame of pushes under the panel's history (fixed 2026-11-03) |
 
 ## What `checkDriver` checks
 
