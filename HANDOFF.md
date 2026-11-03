@@ -627,12 +627,14 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    particle count that write; `attach` takes `rate`, the host's own particles per second that no
    voice weight scales, and `frame: 'world'`, a pure translation; `drive`'s `capture: 'write'`
    rereads start values every write for live tuning; `quarks.burst(subject, n)`; and the carry
-   floors exactly, without the `1e-6` slack. magicsmoke has not switched. It still needs engine
-   `^0.19.0` (it pins 0.8.1). Its own float carry emits a frame late against exact arithmetic on
-   41 of 1200 frames at 60 fps and 4/s (simulated), so to stay frame-identical it keeps that
-   carry and passes counts to `quarks.burst` rather than a `rate`. The driver has no `MAX_STEP`
-   clamp, and it emits every subject at `write` where magicsmoke interleaves fizz with each
-   fault's discharges; check whether that reorders a shared random stream.
+   floors exactly, without the `1e-6` slack. magicsmoke switched (2026-11-03, its `650bd28`, on
+   engine 0.19.0, unpushed): fizz goes through a driver per fault, by `attach` with
+   `frame: 'world'`, `burst` and `write`, byte-identical to before over 1,200 stubbed-random
+   frames. It keeps its own carry (frame-late on 41 of 1,200 frames against exact), `MAX_STEP`
+   clamp and tuning, and writes each fault's driver right after its discharges to keep the
+   `Math.random` order, so it uses neither `rate`, `capture: 'write'` nor `emitted`. At 1,000
+   faults a frame costs about 5–10% more (2.00–2.10 ms against 1.83–2.02, three alternating runs).
+   Taking `rate` would mean accepting the carry's frame-late difference.
    `@msb235/blits/testing` (`setting`, `checkPatch`) is the authoring kit; the driver scaffold
    the survey proposed is this same question.
 
