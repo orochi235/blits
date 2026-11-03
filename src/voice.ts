@@ -256,6 +256,11 @@ export class Voice<I, O> {
   met: I[] | null = null;
   /** Under history, those `still` found read, with the frame it did, for a seek back before it. */
   metRead: { subject: I; seq: number }[] | null = null;
+  /**
+   * Under history, an owner's seeks forward after frame `seq`, with the voices under it that were
+   * yet to start, which the next frame passes in order: a seek back to that frame does so again.
+   */
+  leaps: { seq: number; at: number; pending: Voice<I, O>[] }[] | null = null;
   /** The clocks it ran on before its current one, where a subject's origin may lie; null for none. */
   clocks: Past[] | null = null;
   /** The clocks a fit or its handle's rate write replaced, latest first; null for none. */
@@ -509,6 +514,7 @@ export class Voice<I, O> {
     this.early = null;
     this.met = null;
     this.metRead = null;
+    this.leaps = null;
     this.seen = 0;
     this.latest = this.named?.latest ?? 0;
     this.soonest = this.named?.soonest ?? 0;
@@ -790,6 +796,7 @@ export class Voice<I, O> {
     v.early = null;
     v.met = null;
     v.metRead = null;
+    v.leaps = null;
     if (controls) v.take(controls);
     if (v.clocks === this.clocks && v.clocks !== null) v.clocks = v.clocks.slice();
     v.quiet = true;

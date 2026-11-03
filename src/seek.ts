@@ -4,6 +4,7 @@ import { fadesAt } from './fade.js';
 import { origin } from './held.js';
 import { apart, copyHeld, copyHeldInto, lastIndex, lastWithin, unread } from './history.js';
 import { laneHost } from './hosts.js';
+import { leapBack } from './leaps.js';
 import { Leavings } from './leavings.js';
 import type { Mixer } from './mixer.js';
 import type { Motions } from './motions.js';
@@ -314,6 +315,7 @@ function back<I, O>(mix: Mixer<I, O>, t: number, seq: number, on: boolean): void
     voice.state = voice.stateAt(t, cut);
     if (voice.begunSeq > seq) voice.begunSeq = Number.POSITIVE_INFINITY;
   }
+  leapBack(mix, kept, seq);
   mix.cued = kept;
   mix.gone = gone;
   mix.retired = [];
