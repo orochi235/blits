@@ -18,7 +18,7 @@ sherpa and magicsmoke run on it**, each on its own `main`.
 
 ## State
 
-- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.19.0 (2026-11-03), with blits-panel 0.7.0, blits-rapier 0.4.0, blits-quarks 0.14.0, and blits-tone 0.10.0 taking it as a `^0.19.0` peer and pinning 0.19.0 to build against. 0.17.0, 0.18.0 and 0.19.0 were minor bumps with no Breaking section, against the changelog rule's "everything else the patch", at the owner's call (2026-11-02, 2026-11-03).
+- `main` at `git@github.com:orochi235/blits.git` — **public**; release 0.20.0 (2026-11-03), with blits-panel 0.8.0, blits-rapier 0.5.0, blits-quarks 0.15.0, and blits-tone 0.11.0 taking it as a `^0.20.0` peer and pinning 0.20.0 to build against. 0.17.0 through 0.20.0 were minor bumps with no Breaking section, against the changelog rule's "everything else the patch", at the owner's call (2026-11-02, 2026-11-03).
   Pushing driver tags at once leaves the middle run canceled (the `release` concurrency
   group keeps one pending run), so rerun it once the last one starts.
   blits-tone 0.2.0 was its first release through trusted publishing.
@@ -921,11 +921,10 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       store as `host` records, and looks a step's up half a step early, since replayed step times
       round apart from the first pass's. If blits ever replays recorded host input on a seek, that
       log can go.
-    - On a shared `transport` (built 2026-11-03, unreleased) the host calls `sim.step()` after the
+    - On a shared `transport` (released in 0.5.0, 2026-11-03) the host calls `sim.step()` after the
       transport's sync, and a store must be wrapped by `physicsStore`, since a transport's store is
       the transport's and the world has no other way to page into it (chosen over an engine hook
-      for a mix's host records, 2026-11-03). The next blits-rapier release needs the engine release
-      with `Transport.history`.
+      for a mix's host records, 2026-11-03).
     - Calls logged by `impulse`, `drop` and `body` are never pruned or paged, by design, since a
       replay through them does them again; they grow per call, not per frame.
     - A kinematic goal's voice weight only switches it on or off (`last`); goals cannot crossfade
@@ -944,8 +943,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       later seek forward past memory needs.
     - **`project` and `trace` show a body at the last synced world**: a patch cannot read another
       subject's state.
-    - **Releases:** blits-quarks' next release needs the engine's `mix.played`, and blits-rapier's
-      `Transport.history`; both move their peer range with that engine release.
 
 ## Loose ends
 
