@@ -13,14 +13,14 @@ that it does not handle that case.
 |---|---|
 | **Don't own the clock.** Take a mix the host made and synced. A driver that must make its own mix also works when that mix is on a shared `transport`, where the host syncs the transport and the mix's own `sync` throws. | rapier threw on a transport until `sim.step()` (2026-11-03) |
 | **Keep time as mix time** (`mix.now`), never the host's timestamp, for anything logged or scheduled. They part at the first seek, `rebase` or rate other than 1. | rapier logged pushes at host time (fixed 2026-11-03) |
-| **Work at any `rate`**: other than 1, ramping, and 0, and across `rebase` after a hidden tab. Convert between host and mix time through `mix.time` and `mix.when`, which follow a ramp. | tone's curves drifted 3.6 Hz during a ramp; quarks emitted too few particles while the rate ramped down |
-| **Decide what a long frame does** (two seconds after a tab comes back): catch up, clamp to the mix's `maxDt`, or drop. Say which. | magicsmoke clamps by `MAX_STEP` |
+| **Work at any `rate`**: other than 1, ramping, and 0, and across `rebase` after a hidden tab. Convert between host and mix time through `mix.time` and `mix.when`, which follow a ramp. Output owed per mix time is owed by `mix.played` since the last write. Whatever the host advances on its own clock, as three.quarks' `batch.update`, is advanced by mix time too. | tone's curves drifted 3.6 Hz during a ramp; quarks emitted too few particles while the rate ramped down, and its README example moved particles at full speed on a paused mix |
+| **Decide what a long frame does** (two seconds after a tab comes back): catch up, clamp to the mix's `maxDt`, or drop. Say which. `mix.played` counts each sync up to `maxDt`. | quarks emitted a long frame's whole gap past `maxDt` (fixed by `mix.played`, 2026-11-03) |
 
 ## Seek and history
 
 | Rule | Learned from |
 |---|---|
-| **Say what a seek does to output already sent**: particles alive, audio scheduled, bodies in flight. Whatever state the driver holds is restored or rebuilt to match the time sought. | rapier's replay; tone's `cancel` |
+| **Say what a seek does to output already sent**: particles alive, audio scheduled, bodies in flight. Whatever state the driver holds is restored or rebuilt to match the time sought. A seek is not a frame: tell them apart by `mix.played`, which a seek leaves alone, not by comparing mix time with host time. A driver that reads ahead cannot take back what it already scheduled into a hidden tab's gap. | rapier's replay; tone's `cancel`; quarks lost the frame after a seek back |
 | **Log host input read each frame.** A seek's catch-up reads the host as it is now, not as it was, so input the driver reads from the host has to be kept by mix time and replayed. | rapier's log of pushes |
 | **Page to a history `store`**: state packs to plain data, and any log of the driver's own pages through the store and comes back on `prepare`, including through a transport's store. | rapier (2026-11-03, twice) |
 | **Bound every list** that grows per frame or per write: prune it to what history can reach, or page it. | rapier's log of pushes; the engine's `Voice.earlier` |
@@ -45,7 +45,9 @@ that it does not handle that case.
 
 | Rule | Learned from |
 |---|---|
-| **Releasing lets go of everything wired**: `detach`, `cancel` and `drop` leave nothing a replacement driver cannot wire again. | tone's `cancel` |
+| **Releasing lets go of everything wired**: `detach`, `cancel` and `drop` leave nothing a replacement driver cannot wire again. | tone's `cancel`, and its `detach` (fixed 2026-11-03) |
+| **Calls on the driver are not on the tape.** Wiring, attaching and `burst` are the host's, and a seek does not undo or replay them; say so, or route what must replay through the mix (an event a patch `send`s). | tone's wiring; quarks' `burst` |
+| **Several drivers on one mix share its drains.** A drain takes every event under its tag, so a driver draining a shared tag hands on what belongs to another. | quarks lost another driver's bursts (fixed 2026-11-03) |
 | **A late subscriber gets the current state**, not only changes after it subscribes. | the panel after a reload |
 | **Peer range and pin**: widen the `@msb235/blits` peer range with every engine minor, pin the engine to build and test against, and work with two copies of blits loaded. | every release |
 | **Name the mixes the driver makes**, so the debug panel lists them. | the site's demos |
