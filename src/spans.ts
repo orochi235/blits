@@ -67,9 +67,9 @@ function ranBackOver<I, O>(span: Voice<I, O>, local: number): boolean {
 }
 
 /**
- * Puts a child whose owner's clock ran back to before a fit changed its rate, or skipped it, back
- * on the clock it ran on before, so it reads, run back over, what it read going forward; and once
- * the owner's clock reaches that change again, takes the change again, as the layout stands.
+ * Puts a child whose owner's clock ran back to before a fit or its handle changed its rate, or a fit
+ * skipped it, back on the clock it ran on before, so it reads, run back over, what it read going
+ * forward; and once the owner's clock reaches that change again, takes the change again.
  */
 export function unfit<I, O>(mix: Mixer<I, O>, child: Voice<I, O>, now: number): void {
   const t = ownerReading(child.owner as Voice<I, O>, now);
