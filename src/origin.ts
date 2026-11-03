@@ -11,7 +11,7 @@ export interface Past extends Clock {
 }
 
 /** The most past clocks a voice keeps. */
-const MOST = 256;
+export const MOST = 256;
 
 /**
  * Keeps the clock a voice is leaving at its local time `u`, ahead of a rate change, ramp or seek,

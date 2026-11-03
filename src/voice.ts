@@ -258,7 +258,10 @@ export class Voice<I, O> {
   metRead: { subject: I; seq: number }[] | null = null;
   /** The clocks it ran on before its current one, where a subject's origin may lie; null for none. */
   clocks: Past[] | null = null;
-  /** The clocks a fit or its handle's rate write replaced, latest first; null for none. */
+  /**
+   * The clocks a fit or its handle's rate write replaced, latest first, and no more than `MOST`
+   * once a write adds one; null for none.
+   */
   earlier: Earlier | null = null;
   /** The clocks its owner's clock ran back before, which it takes again going forward, soonest first. */
   later: Earlier | null = null;

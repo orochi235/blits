@@ -1,7 +1,7 @@
 import { retime } from './clock.js';
 import { type Motion, motionOf, type Value } from './motion.js';
 import { leave } from './origin.js';
-import { replacing } from './spans.js';
+import { rewriting } from './spans.js';
 import type { Doubt, FadeOptions, FitResult, Handle, SeekOptions } from './types.js';
 import type { Voice } from './voice.js';
 
@@ -147,11 +147,14 @@ export class VoiceHandle<I, O> implements Handle<I> {
       const from = voice.ramp === null ? voice.rate : voice.ramp.from;
       voice.ramp = over > 0 && r !== from ? { from, to: r, over } : null;
       voice.rate = r;
+    } else if (voice.ramp === null && voice.rate === r) {
+      // Its clock runs on unchanged, and only a change it would take again going forward goes.
+      voice.later = null;
     } else {
       const now = this.#host.nowFor(voice);
       // An owner running back over the write takes the clock from before it, as a fit's change.
       // Writes at one moment keep only the clock from before the first.
-      if (voice.owner !== null && voice.anchorNow !== now) replacing(voice);
+      if (voice.owner !== null && voice.anchorNow !== now) rewriting(voice);
       leave(voice, now);
       retime(voice, now, r, over);
     }

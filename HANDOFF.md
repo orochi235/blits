@@ -292,9 +292,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    - **A span held by a span, sought forward while turned back, takes its span's fits on the way**
      (2026-11-03): latest write wins, so the seek leaves it running forward at the fit's rate, not
      turned back. Undecided whether a host's turn-back should survive that.
-   - **A rate write on an owned voice keeps the clock it replaced** (2026-11-03) in `Voice.earlier`,
-     one entry per write at a new moment, so a host writing a child's rate every frame grows it
-     without bound.
    - **The audit's fixes cost nothing measurable** (2026-10-31): 6f39479 against 47c144c, 7 rounds
      on msb-uai, every row's U at 9 or more, geometric mean 0.998
      (`bench/runs/2026-10-31-audit-fixes-vs-47c144c.txt`).

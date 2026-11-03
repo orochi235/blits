@@ -2,10 +2,13 @@ import { createHistory as tape } from '@weasel-js/history';
 import { expect, test } from 'vitest';
 import { kit, max, sum } from '../src/channels.js';
 import { condense } from '../src/fit.js';
+import { VoiceHandle } from '../src/handle.js';
 import { mix } from '../src/mixer.js';
 import { tween } from '../src/motion.js';
+import { MOST } from '../src/origin.js';
 import { keys } from '../src/patch.js';
 import type { Handle, Mix } from '../src/types.js';
+import type { Earlier, Voice } from '../src/voice.js';
 
 // What the stress demos in apps/stress found. Each `test.fails` asserts the documented behavior and
 // fails today; once blits is fixed it starts failing, and its `.fails` comes off.
@@ -804,4 +807,40 @@ test('a child whose handle sped it up reads, as its owner runs back over it, wha
   reel.rate = 1;
   for (let t = 710; t <= 1000; t += 10)
     expect(x(m, t), `reel at ${t - 600} again`).toBeCloseTo(forward[(t - 600) / 10] as number, 9);
+});
+
+const kept = (h: Handle<Part>) => {
+  let n = 0;
+  const v = VoiceHandle.voiceOf(h as unknown as VoiceHandle<Part, Pose>) as Voice<Part, Pose>;
+  for (let e: Earlier | null = v.earlier; e !== null; e = e.prev) n++;
+  return n;
+};
+
+for (const history of [true, false])
+  test(`a child whose rate is written every frame keeps a bounded run of clocks and runs back over the latest${history ? ', under history' : ''}`, () => {
+    const m = mix<Part, Pose>(K, history ? { history: { ms: 10_000, tape } } : {});
+    m.sync(0);
+    const reel = m.owns({ start: 0 });
+    const clip = m.cue({ owner: reel, patch: ramp(100_000, 0, 100_000), start: 0, loop: false });
+    const forward: number[] = [];
+    for (let t = 0; t < 6000; t += 10) {
+      if (t > 0) clip.rate = 1 + ((t / 10) % 2);
+      forward.push(x(m, t));
+      expect(kept(clip)).toBeLessThanOrEqual(MOST);
+    }
+    reel.rate = -1;
+    for (let t = 6000; t < 7000; t += 10)
+      expect(x(m, t), `reel at ${11_980 - t}`).toBeCloseTo(forward[(11_980 - t) / 10] as number, 9);
+  });
+
+test('a child whose rate is written every frame to the rate it has keeps no clock for it', () => {
+  const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+  m.sync(0);
+  const reel = m.owns({ start: 0 });
+  const clip = m.cue({ owner: reel, patch: ramp(100_000, 0, 100_000), start: 0, loop: false });
+  for (let t = 0; t < 1000; t += 10) {
+    clip.rate = 1;
+    x(m, t);
+  }
+  expect(kept(clip)).toBe(0);
 });

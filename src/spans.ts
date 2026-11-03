@@ -6,7 +6,7 @@ import { reorigin } from './held.js';
 import { noted } from './history.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
-import { leave } from './origin.js';
+import { leave, MOST } from './origin.js';
 import { type Holding, ownerReading, plays } from './owner.js';
 import { resolve } from './place.js';
 import type { FitResult, SpanSpec, VoiceSpec } from './types.js';
@@ -100,6 +100,24 @@ export function unfit<I, O>(mix: Mixer<I, O>, child: Voice<I, O>, now: number): 
 export function replacing<I, O>(c: Voice<I, O>, skipped = c.skipped): void {
   c.earlier = { ...standing(c), skipped, prev: c.earlier };
   c.later = null;
+}
+
+/**
+ * Keeps a child's clock ahead of its handle's rate write, as `replacing` does, holding at most
+ * `MOST` clocks, the latest, as a voice's past clocks are capped: an owner running back past the
+ * oldest kept runs the child on that one.
+ */
+export function rewriting<I, O>(c: Voice<I, O>): void {
+  replacing(c);
+  let n = 0;
+  for (let e = c.earlier; e !== null && n <= MOST; e = e.prev) n++;
+  if (n <= MOST) return;
+  // Down to half, so the copy comes once every MOST / 2 writes, not on each.
+  const kept: Earlier[] = [];
+  for (let e = c.earlier; kept.length < MOST / 2; e = (e as Earlier).prev) kept.push(e as Earlier);
+  let out: Earlier | null = null;
+  for (let i = kept.length - 1; i >= 0; i--) out = { ...(kept[i] as Earlier), prev: out };
+  c.earlier = out;
 }
 
 /** A child's clock as it stands, and whether a fit skipped it. */
