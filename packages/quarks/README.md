@@ -104,7 +104,8 @@ batch.update(dt / 1000);    // your own BatchedRenderer
 - **`detach(subject)`** unbinds it. Detaching a system's last subject puts its authored values back
   and forgets them, so a later `attach` captures whatever you have set since.
 - **`write()`**, after `mix.sync`: probes each attached subject, adds `rate` times the mix time
-  since the last write to its carry and emits the whole particles, adds the floored `count` of each burst drained for it,
+  since the last write to its carry and emits the whole particles, on the frame exact arithmetic
+  would, adds the floored `count` of each burst drained for it,
   and emits them all at `at + offset` with that subject's values. A rate or count at or below 0,
   or not finite, adds nothing, and a burst for a subject not attached is ignored. Particles leave
   at the subject's position but with the emitter's world rotation and scale, as of its last

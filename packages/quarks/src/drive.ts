@@ -1,6 +1,7 @@
 import type { Kit, Mix } from '@msb235/blits';
 import { type EmissionState, Matrix4, ParticleSystem } from 'three.quarks';
 import { Authored } from './authored.js';
+import { Carry } from './carry.js';
 import type { Emission } from './channels.js';
 import { type Host, type Source, wire } from './source.js';
 
@@ -47,7 +48,7 @@ interface Bound<O> {
   at: AttachOptions['at'];
   pose: O;
   /** Particle-milliseconds owed by `rate`, below one particle's worth. */
-  carry: number;
+  carry: Carry;
   count: number;
   /** Particles `burst` owes on the next write. */
   extra: number;
@@ -77,9 +78,6 @@ export function drive<I, O extends Partial<Emission>>(
     waitEmiting: 0,
     travelDistance: 0,
   };
-
-  // Floating-point drift in `rate × dt` lands a hair under a whole particle; this much is ignored.
-  const SLACK = 1e-6;
 
   let now = Number.NaN;
   let timestamp = Number.NaN;
@@ -148,7 +146,7 @@ export function drive<I, O extends Partial<Emission>>(
         authored: held.authored,
         at,
         pose: {} as O,
-        carry: 0,
+        carry: new Carry(),
         count: 0,
         extra: 0,
       });
@@ -175,11 +173,9 @@ export function drive<I, O extends Partial<Emission>>(
       rate = mix.rate;
       for (const [subject, b] of bound) {
         mix.probe(subject, b.pose);
-        const owed = (b.pose.rate ?? 0) * dt;
-        if (Number.isFinite(owed) && owed > 0) b.carry += owed;
-        const n = Math.floor((b.carry + SLACK) / 1000);
-        b.carry -= n * 1000;
-        b.count = n;
+        const r = b.pose.rate ?? 0;
+        if (Number.isFinite(r * dt) && r * dt > 0) b.carry.add(r, dt);
+        b.count = b.carry.take();
       }
       if (opts.bursts !== undefined)
         for (const sent of mix.drain<Burst>(opts.bursts)) {

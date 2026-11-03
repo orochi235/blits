@@ -4,6 +4,14 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `quarks-v*` tag with no
 section here.
 
+## Unreleased
+
+### Fixed
+
+- `write` no longer emits a particle a frame early when a subject's carry falls within a billionth
+  of a particle of a whole one. The carry is now summed in twice a double's precision and floored
+  exactly, where it added that much slack before flooring to absorb float drift.
+
 ## 0.13.0
 
 ### Breaking
