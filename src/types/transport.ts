@@ -54,6 +54,8 @@ export interface Transport {
   /** As `Mix.seq`, the number of the frame being played. It is the same for every mix on it. */
   readonly seq: number;
   readonly tape: Tape | undefined;
+  /** The history every mix on it keeps, as it was made with; undefined for none. */
+  readonly history: TransportOptions['history'];
   /** Puts a named mark on a score every mix on it sees. Throws without a {@link AnnounceOptions.score | `score`}. */
   announce(name: string, opts: AnnounceOptions & { score: string }): void;
   /** Every mark of every mix on it, and every mark announced on it, earliest first. */

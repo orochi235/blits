@@ -109,6 +109,19 @@ to the copy a replay at the edge of memory would start from.
 no `keyOf`. The log of each frame's pushes pages out with it, one `host` record a frame under the
 subject `'blits-rapier frames'`, and `prepare` loads it back for a seek past memory.
 
+On a shared `transport`, the world plays on the transport's clock and history beside its other
+mixes: sync the transport, then call `sim.step()` each frame, where a mix alone calls
+`sim.sync(now)`. If the transport keeps a history `store`, make it with `physicsStore(store)`, so
+the log of pushes pages through it; `physics` throws for a transport whose store is not wrapped.
+
+```ts
+const t = transport({ history: { ms: 10_000, tape, store: physicsStore(store) } });
+const sim = physics(kit<Pose3>(channels3), { rapier: RAPIER, transport: t, name: 'world' });
+// each frame
+t.sync(now);
+sim.step();
+```
+
 Replay matches the first pass exactly on one machine. To match across machines, pass Rapier's
 deterministic build.
 

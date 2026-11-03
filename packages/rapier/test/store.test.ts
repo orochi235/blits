@@ -1,6 +1,6 @@
 import R2 from '@dimforge/rapier2d-compat';
 import R3 from '@dimforge/rapier3d-compat';
-import { type HistoryStore, kit, type Paged, patch } from '@msb235/blits';
+import { type HistoryStore, kit, mix, type Paged, patch, sum, transport } from '@msb235/blits';
 import { createHistory as tape } from '@weasel-js/history';
 import { describe, expect, it } from 'vitest';
 import {
@@ -10,6 +10,7 @@ import {
   type Pose2,
   type Pose3,
   physics,
+  physicsStore,
 } from '../src/index.js';
 import { at, FRAME } from './scenes.js';
 
@@ -40,14 +41,33 @@ const swing = <O>(force: (u: number) => Partial<O>) =>
     writes: ['force'] as (keyof O)[],
   });
 
-/** Three boxes on a floor, one swung by a force and one kicked at frame 40, paging past 500 ms. */
-function scene(dims: 2 | 3, store?: HistoryStore) {
-  const history = { ms: 500, every: 250, tape, ...(store ? { store } : {}) };
+/**
+ * Three boxes on a floor, one swung by a force and one kicked at frame 40, paging past 500 ms.
+ * `shared` puts the world on a transport beside a mix of its own, whose store is wrapped by
+ * `physicsStore` unless `shared` is `'unwrapped'`.
+ */
+function scene(dims: 2 | 3, store?: HistoryStore, shared?: true | 'unwrapped') {
+  const history = {
+    ms: 500,
+    every: 250,
+    tape,
+    ...(store ? { store: shared === true ? physicsStore(store) : store } : {}),
+  };
+  const t = shared === undefined ? undefined : transport({ history });
+  const opts = t === undefined ? { history, name: 'world' } : { transport: t, name: 'world' };
   const sim = (
     dims === 2
-      ? physics<Pose2>(kit<Pose2>(channels2), { rapier: R2, history, name: 'world' })
-      : physics<Pose3>(kit<Pose3>(channels3), { rapier: R3, history, name: 'world' })
+      ? physics<Pose2>(kit<Pose2>(channels2), { rapier: R2, ...opts })
+      : physics<Pose3>(kit<Pose3>(channels3), { rapier: R3, ...opts })
   ) as Physics<Pose2 | Pose3, Record<string, never>>;
+  // A mix beside the world on the transport, so a seek moves both.
+  const beside =
+    t && mix<object, { x: number }>(kit({ x: sum() }), { transport: t, name: 'beside' });
+  const dot = {};
+  beside?.cue({
+    patch: patch<object, { x: number }>(10_000, (p) => ({ x: p }), { writes: ['x'] }),
+    subjects: [dot],
+  });
   const R = dims === 2 ? R2 : R3;
   const v = (x: number, y: number) => (dims === 2 ? [x, y] : [x, y, 0]);
   sim.body(
@@ -69,8 +89,13 @@ function scene(dims: 2 | 3, store?: HistoryStore) {
   let kicked = false;
   return {
     sim,
+    beside: () => (beside?.probe(dot) as { x: number } | undefined)?.x,
     frame(f: number) {
-      sim.sync(at(f) + shift);
+      if (t === undefined) sim.sync(at(f) + shift);
+      else {
+        t.sync(at(f) + shift);
+        sim.step();
+      }
       if (f === 40 && !kicked) {
         kicked = true;
         bodies[2]?.impulse(v(0.4, 1));
@@ -81,8 +106,13 @@ function scene(dims: 2 | 3, store?: HistoryStore) {
       });
     },
     async seek(from: number, to: number) {
-      await sim.mix.prepare(at(to));
-      sim.mix.seek(at(to));
+      if (t === undefined) {
+        await sim.mix.prepare(at(to));
+        sim.mix.seek(at(to));
+      } else {
+        await t.prepare(at(to));
+        t.seek(at(to));
+      }
       shift += at(from) - at(to);
     },
   };
@@ -134,5 +164,50 @@ describe.each([2, 3] as const)('%iD, with a history store', (dims) => {
     const ats = store.frames().map((p) => p.at);
     expect(new Set(ats).size).toBe(ats.length);
     expect(ats.length).toBeGreaterThanOrEqual(frames - 48);
+  });
+});
+
+describe.each([2, 3] as const)('%iD, on a transport', (dims) => {
+  it('steps after the transport syncs, and replays a seek of the transport exactly', async () => {
+    const frames = 300;
+    const straight = scene(dims);
+    const want = [];
+    for (let f = 0; f <= frames; f++) want.push(straight.frame(f));
+
+    const sought = scene(dims, undefined, true);
+    for (let f = 0; f <= 290; f++) sought.frame(f);
+    const besideAt290 = sought.beside();
+    for (let f = 291; f <= frames; f++) sought.frame(f);
+    // 20 frames back is within the 500 ms memory reaches.
+    await sought.seek(frames, 280);
+    const got = [];
+    for (let f = 281; f <= frames; f++) {
+      got.push(sought.frame(f));
+      if (f === 290) expect(sought.beside()).toBe(besideAt290);
+    }
+    expect(got).toEqual(want.slice(281));
+  });
+
+  it("pages the log through the transport's store when it is wrapped", async () => {
+    const frames = 1200;
+    const straight = scene(dims);
+    const want = [];
+    for (let f = 0; f <= frames; f++) want.push(straight.frame(f));
+
+    const store = jsonStore();
+    const sought = scene(dims, store, true);
+    for (let f = 0; f <= frames; f++) sought.frame(f);
+    expect(store.frames().length).toBeGreaterThanOrEqual(frames - 48);
+
+    await sought.seek(frames, 20);
+    const got = [];
+    for (let f = 21; f <= frames; f++) got.push(sought.frame(f));
+    expect(got).toEqual(want.slice(21));
+  });
+
+  it("refuses a transport whose store is not wrapped, and the mix's own sync", () => {
+    expect(() => scene(dims, jsonStore(), 'unwrapped')).toThrow(/physicsStore/);
+    const s = scene(dims, undefined, true);
+    expect(() => s.sim.sync(at(0))).toThrow(/call step/);
   });
 });

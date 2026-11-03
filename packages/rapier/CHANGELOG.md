@@ -4,6 +4,15 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. The release workflow refuses a `rapier-v*` tag with no
 section here.
 
+## Unreleased
+
+### Added
+
+- A physics mix plays on a shared `transport`: the host syncs the transport and calls the new
+  `sim.step()`, and the world seeks with the transport's other mixes. `physicsStore(store)` wraps
+  the transport's history store so the world's log of pushes pages through it. `sim.sync` on a
+  transport throws, as does `physics` on a transport whose store is not wrapped.
+
 ## 0.4.0
 
 ### Breaking

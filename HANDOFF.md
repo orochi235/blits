@@ -919,9 +919,11 @@ sherpa and magicsmoke run on it**, each on its own `main`.
       store as `host` records, and looks a step's up half a step early, since replayed step times
       round apart from the first pass's. If blits ever replays recorded host input on a seek, that
       log can go.
-    - `physics` does not run on a shared `transport` (checked 2026-11-03): its `sync` calls the
-      mix's, which throws there. Supporting one needs a step the host calls after the transport's
-      sync, and the transport's `history`, which `Transport` does not expose, to size the log.
+    - On a shared `transport` (built 2026-11-03, unreleased) the host calls `sim.step()` after the
+      transport's sync, and a store must be wrapped by `physicsStore`, since a transport's store is
+      the transport's and the world has no other way to page into it (chosen over an engine hook
+      for a mix's host records, 2026-11-03). The next blits-rapier release needs the engine release
+      with `Transport.history`.
     - Calls logged by `impulse`, `drop` and `body` are never pruned or paged, by design, since a
       replay through them does them again; they grow per call, not per frame.
     - A kinematic goal's voice weight only switches it on or off (`last`); goals cannot crossfade

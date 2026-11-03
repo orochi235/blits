@@ -4,6 +4,12 @@ This package follows [semver](https://semver.org). Below 1.0.0, a breaking chang
 version and everything else the patch. Each release lists its changes as **Breaking**, **Added** and
 **Fixed**, and the release workflow refuses a tag with no section here.
 
+## Unreleased
+
+### Added
+
+- `Transport.history`, the history a transport keeps for every mix on it, as it was made with.
+
 ## 0.19.0
 
 ### Added

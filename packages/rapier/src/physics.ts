@@ -72,8 +72,13 @@ export interface Physics<O, H> {
    * the first step before the mix has synced.
    */
   body(desc: unknown, ...colliders: unknown[]): Body<O, H>;
-  /** Syncs the mix to `now`, reads every body's controls, and steps the world. Call it in place of `mix.sync`. */
+  /** Syncs the mix to `now`, then calls `step`. Call it in place of `mix.sync`; on a transport, call `step`. */
   sync(now: number): void;
+  /**
+   * Reads every body's controls and steps the world to the mix's time. On a transport, call it each
+   * frame after the transport's `sync`.
+   */
+  step(): void;
   /** The world as it stands after the last `sync`, for reading. A change made to it is lost at the next seek. */
   world(): RapierWorld | undefined;
 }
@@ -86,6 +91,42 @@ const copyOf = (r: number | readonly number[]): number | number[] =>
 /** The subject key the world's frame records go under in a history store, on the `host` stream. */
 const FRAMES = 'blits-rapier frames';
 
+/** A world paging its frames through a store: whose they are, and how to take them back. */
+interface Pages {
+  ours(r: Paged): boolean;
+  restore(records: readonly Paged[], from: number): void;
+  name: string;
+}
+
+const paging = new WeakMap<HistoryStore, Set<Pages>>();
+
+/**
+ * Wraps a history store so the worlds of physics mixes on a transport page their log of each
+ * frame's pushes through it, and get it back on `prepare`. Make the transport with
+ * `history: { ..., store: physicsStore(store) }`; a mix made alone wraps its own store.
+ */
+export function physicsStore(store: HistoryStore): HistoryStore {
+  const worlds = new Set<Pages>();
+  const wrapped: HistoryStore = {
+    page: (out) => store.page(out),
+    cut: (seq) => store.cut(seq),
+    async load(t) {
+      const all = await store.load(t);
+      for (const w of worlds) {
+        // A replay to t starts from the world's latest copy at or before it, which needs the frames from there.
+        let from = t;
+        for (const r of all)
+          if (r.mix === w.name && r.stream === 'snap' && r.subject === 'world' && r.at < from)
+            from = r.at;
+        w.restore(from < t ? await store.load(from) : all, from);
+      }
+      return all.filter((r) => !(r.stream === 'host' && r.subject === FRAMES));
+    },
+  };
+  paging.set(wrapped, worlds);
+  return wrapped;
+}
+
 /** Makes a mix that holds a Rapier world, stepped on its `stepMs` clock and replayed by its history. */
 export function physics<O extends Pose2 | Pose3, H extends object = Record<string, never>>(
   kit: Kit<O>,
@@ -96,8 +137,15 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   const g = gravity ?? (dims.n === 2 ? [0, -9.81] : [0, -9.81, 0]);
   const stepMs = rest.stepMs ?? 1000 / 60;
   const name = rest.name ?? '';
-  const history = rest.history;
-  const store = history?.store;
+  const transport = rest.transport;
+  const history = transport === undefined ? rest.history : transport.history;
+  const outer = history?.store;
+  if (outer !== undefined && transport !== undefined && !paging.has(outer))
+    throw new Error(
+      "blits-rapier: a physics mix on a transport with a history store needs the transport's store made with physicsStore(store), so the world's frames page with it",
+    );
+  const store =
+    outer === undefined ? undefined : transport === undefined ? physicsStore(outer) : outer;
   // Each frame's pushes at its mix time. A seek replays steps on what the host reads now, so the
   // world reads the pushes of the frame that caused each step from here instead: the first frame
   // at or after the step's end, looked up half a step early since replayed times can round apart.
@@ -119,25 +167,14 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       .map((r) => ({ ...(r.data as Omit<Frame, 'at' | 'seq'>), at: r.at, seq: r.seq }));
     pushLog.unshift(...older);
   };
-  const paging: HistoryStore | undefined = store && {
-    page: (out) => store.page(out),
-    cut: (seq) => store.cut(seq),
-    async load(t) {
-      const all = await store.load(t);
-      // A replay to t starts from the world's latest copy at or before it, which needs the frames from there.
-      let from = t;
-      for (const r of all)
-        if (r.mix === name && r.stream === 'snap' && r.subject === 'world' && r.at < from)
-          from = r.at;
-      restore(from < t ? await store.load(from) : all, from);
-      return all.filter((r) => !ours(r));
-    },
-  };
+  if (store !== undefined) paging.get(store)?.add({ ours, restore, name });
   // Every subject is the driver's own: the world, each body and each body's controls.
   const keys = new WeakMap<object, string>();
   const m = mix<object, O, H>(kit, {
     ...rest,
-    ...(paging ? { history: { ...(history as NonNullable<typeof history>), store: paging } } : {}),
+    ...(store !== undefined && transport === undefined
+      ? { history: { ...(history as NonNullable<typeof history>), store } }
+      : {}),
     stepMs,
     keyOf: (subject: object) => keys.get(subject) as string,
   });
@@ -271,6 +308,62 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
   };
   let next = 0;
 
+  const step = () => {
+    // Cued before the mix has a time, the world would catch up from mix time 0 on its first step.
+    if (!started) {
+      started = true;
+      m.cue({ patch: world, subjects: [WORLD] });
+    }
+    const pushes: Pushes = {};
+    const goals: Goals = {};
+    for (const body of driven) {
+      const p = m.probe(body.controls, out) as unknown as {
+        force: number[];
+        torque: number | number[];
+        goal?: number[];
+        facing?: number | number[];
+      };
+      const torque = typeof p.torque === 'number' ? [p.torque] : p.torque;
+      if (p.force.some((x) => x !== 0) || torque.some((x) => x !== 0))
+        pushes[body.key] = [...p.force, ...torque];
+      if (p.goal !== undefined || p.facing !== undefined) {
+        const g: Goal = {};
+        if (p.goal !== undefined) g.position = [...p.goal];
+        if (p.facing !== undefined) g.rotation = copyOf(p.facing);
+        goals[body.key] = g;
+      }
+    }
+    const at = m.now;
+    let back = false;
+    while (pushLog.length > 0 && (pushLog[pushLog.length - 1] as { at: number }).at >= at) {
+      pushLog.pop();
+      back = true;
+    }
+    // A seek back leaves the holds read before it, and their speeds, behind.
+    if (back) {
+      holding = {};
+      held.clear();
+    }
+    pushLog.push({ at, seq: m.seq, pushes, holds: holding, goals });
+    let old = 0;
+    while (old < pushLog.length - 1 && (pushLog[old + 1] as { at: number }).at < at - keep) old++;
+    const gone = old > 0 ? pushLog.splice(0, old) : undefined;
+    if (gone !== undefined && store !== undefined)
+      store.page(
+        gone.map(({ at, seq, pushes, holds, goals }) => ({
+          mix: name,
+          stream: 'host',
+          subject: FRAMES,
+          at,
+          seq,
+          data: { pushes, holds, goals },
+        })),
+      );
+    m.probe(WORLD);
+    live = seen;
+    holding = holdsAt(at);
+  };
+
   return {
     mix: m,
     role: ROLE,
@@ -312,61 +405,14 @@ export function physics<O extends Pose2 | Pose3, H extends object = Record<strin
       return body;
     },
     sync(t) {
-      m.sync(t);
-      // Cued before the mix has a time, the world would catch up from mix time 0 on its first step.
-      if (!started) {
-        started = true;
-        m.cue({ patch: world, subjects: [WORLD] });
-      }
-      const pushes: Pushes = {};
-      const goals: Goals = {};
-      for (const body of driven) {
-        const p = m.probe(body.controls, out) as unknown as {
-          force: number[];
-          torque: number | number[];
-          goal?: number[];
-          facing?: number | number[];
-        };
-        const torque = typeof p.torque === 'number' ? [p.torque] : p.torque;
-        if (p.force.some((x) => x !== 0) || torque.some((x) => x !== 0))
-          pushes[body.key] = [...p.force, ...torque];
-        if (p.goal !== undefined || p.facing !== undefined) {
-          const g: Goal = {};
-          if (p.goal !== undefined) g.position = [...p.goal];
-          if (p.facing !== undefined) g.rotation = copyOf(p.facing);
-          goals[body.key] = g;
-        }
-      }
-      const at = m.now;
-      let back = false;
-      while (pushLog.length > 0 && (pushLog[pushLog.length - 1] as { at: number }).at >= at) {
-        pushLog.pop();
-        back = true;
-      }
-      // A seek back leaves the holds read before it, and their speeds, behind.
-      if (back) {
-        holding = {};
-        held.clear();
-      }
-      pushLog.push({ at, seq: m.seq, pushes, holds: holding, goals });
-      let old = 0;
-      while (old < pushLog.length - 1 && (pushLog[old + 1] as { at: number }).at < at - keep) old++;
-      const gone = old > 0 ? pushLog.splice(0, old) : undefined;
-      if (gone !== undefined && store !== undefined)
-        store.page(
-          gone.map(({ at, seq, pushes, holds, goals }) => ({
-            mix: name,
-            stream: 'host',
-            subject: FRAMES,
-            at,
-            seq,
-            data: { pushes, holds, goals },
-          })),
+      if (transport !== undefined)
+        throw new Error(
+          'blits-rapier: this physics plays on a transport: sync the transport, then call step()',
         );
-      m.probe(WORLD);
-      live = seen;
-      holding = holdsAt(at);
+      m.sync(t);
+      step();
     },
+    step,
     world: () => (live === undefined ? undefined : worldOf(live, rapier)),
   };
 }
