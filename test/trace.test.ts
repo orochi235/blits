@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { kit, max, mul, sum } from '../src/channels.js';
 import { mix } from '../src/mixer.js';
+import { tween } from '../src/motion.js';
 import { keys } from '../src/patch.js';
 import { level } from '../src/signals.js';
 import type { Mix, Run } from '../src/types.js';
@@ -16,7 +17,7 @@ interface Part {
   id: string;
 }
 
-/** The run's value at `t`, along its lines; at a jump, the value after it. */
+/** The run's value at `t`, along its lines and bends; at a jump, the value after it. */
 function along(run: Run, t: number): number {
   const { at, value } = run;
   for (let i = at.length - 1; i >= 0; i--) {
@@ -25,7 +26,9 @@ function along(run: Run, t: number): number {
     const a = at[i] as number;
     const b = at[i + 1] as number;
     const va = value[i] as number;
-    return va + (((value[i + 1] as number) - va) * (t - a)) / (b - a);
+    const u = (t - a) / (b - a);
+    const off = run.bends?.find((bend) => bend.index === i)?.off(u) ?? 0;
+    return va + ((value[i + 1] as number) - va) * u + off;
   }
   return value[0] as number;
 }
@@ -158,6 +161,117 @@ describe('trace', () => {
       expect(run.value[i]).toBeCloseTo(m.project(run.at[i] as number).probe(a).x, 4);
   });
 
+  it('gives an eased stretch as its two ends and a bend, when asked', () => {
+    const a = { id: 'a' };
+    const m = mix<Part, Pose>(K);
+    m.sync(0);
+    const eased = keys<Part, Pose>(200, [
+      { at: 0, delta: { x: 0 } },
+      { at: 0.5, delta: { x: 10 } },
+      { at: 1, delta: { x: 0 }, ease: 'ease-in' },
+    ]);
+    m.cue({ patch: eased });
+    m.sync(0);
+    const run = m.trace(0, 200, { grid: 20, bends: true }).of(a, 'x');
+    expect(run.exact).toBe(true);
+    expect(run.at).toEqual([0, 100, 200]);
+    expect(run.bends?.map((b) => b.index)).toEqual([1]);
+    matches(m, run, a, 'x');
+    expect(m.trace(0, 200).of(a, 'x').bends).toBeUndefined();
+  });
+
+  it('bends where eased stretches of two voices overlap, through every kind of easing', () => {
+    const a = { id: 'a' };
+    for (const ease of [
+      'ease-out',
+      'ease-in-out',
+      { bezier: [0.3, -0.4, 0.6, 1.5] },
+      { steps: 4 },
+      (u: number) => u * u * u,
+    ] as const) {
+      const m = mix<Part, Pose>(K);
+      m.sync(0);
+      m.cue({
+        patch: keys<Part, Pose>(300, [
+          { at: 0, delta: { x: 0 } },
+          { at: 1, delta: { x: 30 }, ease },
+        ]),
+        loop: true,
+      });
+      m.cue({
+        patch: keys<Part, Pose>(200, [
+          { at: 0, delta: { x: 5 } },
+          { at: 0.3, delta: { x: 5 } },
+          { at: 1, delta: { x: -8 }, ease: 'ease' },
+        ]),
+        start: 40,
+        weight: 0.5,
+      });
+      m.sync(10);
+      const run = m.trace(10, 700, { bends: true }).of(a, 'x');
+      expect(run.exact).toBe(true);
+      matches(m, run, a, 'x', 0.7);
+    }
+  });
+
+  it("bends a tween's stretch, and samples one with a change still to come", () => {
+    const a = { id: 'a' };
+    const m = mix<Part, Pose>(K);
+    const slide = tween<Part, Pose>('x', { from: 0, to: 40, ms: 300, ease: 'ease-in-out' });
+    m.sync(0);
+    m.cue({ patch: slide });
+    m.sync(16);
+    m.probe(a);
+    slide.to(a, -20);
+    m.sync(100);
+    m.probe(a);
+    const run = m.trace(100, 600, { bends: true }).of(a, 'x');
+    expect(run.exact).toBe(true);
+    expect(run.at).toEqual([100, 316, 600]);
+    matches(m, run, a, 'x');
+    slide.to(a, 10, 200);
+    expect(m.trace(100, 600, { bends: true }).of(a, 'x').exact).toBe(false);
+  });
+
+  it('bends a tween nothing has probed, with a retarget already due', () => {
+    const a = { id: 'a' };
+    const m = mix<Part, Pose>(K);
+    const slide = tween<Part, Pose>('x', { from: 0, to: 40, ms: 300 });
+    m.sync(0);
+    m.cue({ patch: slide });
+    m.sync(100);
+    const first = m.trace(100, 600, { bends: true }).of(a, 'x');
+    expect(first.exact).toBe(true);
+    expect(first.at).toEqual([100, 300, 600]);
+    matches(m, first, a, 'x');
+    slide.to(a, -20, 80);
+    const run = m.trace(100, 600, { bends: true }).of(a, 'x');
+    expect(run.exact).toBe(true);
+    expect(run.at).toEqual([100, 380, 600]);
+    matches(m, run, a, 'x');
+  });
+
+  it('samples a voice while its rate ramps, and bends it exactly once the ramp is over', () => {
+    const a = { id: 'a' };
+    const m = mix<Part, Pose>(K);
+    m.sync(0);
+    const h = m.cue({
+      patch: keys<Part, Pose>(400, [
+        { at: 0, delta: { x: 0 } },
+        { at: 1, delta: { x: 40 }, ease: 'ease-in-out' },
+      ]),
+      loop: true,
+    });
+    m.sync(50);
+    h.ramp(0.5, 100);
+    m.sync(100);
+    expect(m.trace(100, 600, { bends: true }).of(a, 'x').exact).toBe(false);
+    m.sync(160);
+    const run = m.trace(160, 1200, { bends: true }).of(a, 'x');
+    expect(run.exact).toBe(true);
+    matches(m, run, a, 'x');
+  });
+
   it('samples a channel a signal weighs, one with bounds, and one folded by max', () => {
     const a = { id: 'a' };
     const m = mix<Part, Pose>(K);
@@ -260,7 +374,10 @@ describe('trace over random scenes', () => {
         const stops = Array.from({ length: n }, (_, i) => ({
           at: i === 0 ? pick([0, 0.1]) : i === n - 1 ? pick([1, 0.9]) : r(),
           delta: { [ch]: ch === 'gain' ? r() * 2 : r() * 20 - 10 },
-          ease: r() < 0.15 ? ('ease-in' as const) : undefined,
+          ease:
+            r() < 0.15
+              ? pick(['ease-in', 'ease-in-out', { bezier: [0.2, 0.7, 0.4, 1] }] as const)
+              : undefined,
         }));
         m.cue({
           patch: keys<Part, Pose>(pick([0, 50, 120, 300]), stops, {
@@ -278,7 +395,7 @@ describe('trace over random scenes', () => {
       m.sync(now);
       m.probe(a);
       m.probe(b);
-      const t = m.trace(now, now + 400, { grid: 7 });
+      const t = m.trace(now, now + 400, { grid: 7, bends: seed % 2 === 0 });
       for (const s of [a, b])
         for (const ch of ['x', 'gain'] as const) {
           const run = t.of(s, ch);

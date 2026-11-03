@@ -307,6 +307,29 @@ describe('mix rate', () => {
       for (const [k, t] of [600, 600, 800, 800, 800].entries())
         expect(marks[k]?.timestamp).toBeCloseTo(t, 9);
     });
+
+    it('turn into mix time and back through a ramp, as the clock will read them', () => {
+      const build = (m: Mix<Part, Pose>) => {
+        m.sync(1000);
+        m.rebase();
+        m.sync(1500);
+        m.ramp(0.25, 600);
+      };
+      const ahead = mix<Part, Pose>(K);
+      build(ahead);
+      const played = mix<Part, Pose>(K);
+      build(played);
+      expect(ahead.time(1500)).toBe(ahead.now);
+      for (const h of [1600, 1900, 2100, 2500]) {
+        const t = ahead.time(h);
+        played.sync(h);
+        expect(t).toBeCloseTo(played.now, 9);
+        expect(ahead.when(t)).toBeCloseTo(h, 9);
+      }
+      ahead.rate = 0;
+      expect(ahead.time(4000)).toBe(ahead.now);
+      expect(ahead.when(ahead.now + 1)).toBe(Number.POSITIVE_INFINITY);
+    });
   });
 
   describe('reading another time', () => {

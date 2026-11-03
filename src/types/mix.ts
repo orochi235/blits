@@ -220,6 +220,19 @@ export interface Mix<I, O, H = unknown> {
    */
   ramp(rate: number, over: number): void;
   /**
+   * The mix time the clock will read at host `timestamp`, by the rate and any ramp in force at the
+   * last sync, so a host can say where a moment ahead falls in mix time, as `trace` takes it.
+   * `rebase` and `seek` are counted as the clock stands; a later rate write or ramp changes the
+   * answer. Meant for timestamps at or after the last sync.
+   */
+  time(timestamp: number): number;
+  /**
+   * The host timestamp at which the clock reads mix time `time`, the inverse of
+   * {@link Mix.time | `time`}: the earliest, by the rate and any ramp in force at the last sync,
+   * and Infinity where the clock stops short of it. Meant for times at or after `now`.
+   */
+  when(time: number): number;
+  /**
    * The merged pose for one subject at the synced frame, written into `out` when given. Without
    * it, each call makes a new object, so a host reading every subject every frame passes `out` or
    * reads by `pull`. An array `out` already holds for a `vec` channel, a `quat` that
@@ -271,15 +284,20 @@ export interface Mix<I, O, H = unknown> {
   /**
    * Reads the mix over a window of mix time, `from` to `to`, without moving it, as `project` reads
    * one moment: `trace.of(subject, channel)` gives that channel as points joined by straight lines.
-   * Where every voice feeding the channel is a `keys` voice whose shape is known through the
-   * window, the points are its own breakpoints and the lines are exact; elsewhere the run is read
-   * every {@link TraceOptions.grid | `grid`} ms, as many `project` calls would read it.
+   * Where every voice feeding the channel is a `keys` voice or a tween whose shape is known through
+   * the window, the points are its own breakpoints and the lines are exact; elsewhere the run is
+   * read every {@link TraceOptions.grid | `grid`} ms, as many `project` calls would read it. A stretch eased other than
+   * `linear`, or a tween's stretch, is known but not straight: it is read on the grid, or with
+   * {@link TraceOptions.bends | `bends`} given as its two ends and a {@link Bend}. A `steps` easing is straight between its jumps, which come as breakpoints.
    *
    * Exact needs, of each voice reaching the subject and writing the channel: a `keys` patch whose
-   * stops are plain numbers, eased `linear`; a number weight; no owner, anchor, role, blend,
-   * {@link VoiceSpec.within | `within`}, {@link VoiceSpec.stepMs | `stepMs`}, `from: 'current'`, or rate ramp; a fade in finished by `from` and no fade
-   * out under way or due. The channel folds by `sum`, or by `mul` from one such voice, and has no
-   * `bounds`. The window lies at or after the mix's own time, and the tape holds no calls ahead.
+   * stops are plain numbers, eased `linear` or `steps` (or any easing, with `bends`), or a `tween`
+   * with no retarget timed inside the window (a retarget with no time is not read ahead, as
+   * `project` does not); a number weight; no owner, anchor, role, blend, {@link VoiceSpec.within | `within`},
+   * {@link VoiceSpec.stepMs | `stepMs`}, or `from: 'current'`; no ramp of its rate under way; a fade in finished by
+   * `from` and no fade out under way or due. The channel folds by `sum`, or by `mul` from one such
+   * voice, and has no `bounds`; with `bends`, no more than four bending stretches overlap. The
+   * window lies at or after the mix's own time, and the tape holds no calls ahead.
    */
   trace(from: number, to: number, opts?: TraceOptions): Trace<I, O>;
   /**

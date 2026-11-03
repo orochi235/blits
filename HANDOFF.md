@@ -644,20 +644,26 @@ sherpa and magicsmoke run on it**, each on its own `main`.
    the survey proposed is this same question.
 
 9. **blits-tone.** Its README says what it does and does not do yet. Open:
-   - `mix.trace` (2026-10-29) is exact only for `keys` voices eased `linear`. A stretch eased
-     otherwise, any other patch, a signal weight and a fade under way are still read every
-     `grid` ms; a tween's or an eased stop's shape could be sent as a curve
-     (`setValueCurveAtTime`) rather than sampled. The schema page's Mix section lists what it
-     needs to be exact.
-   - Mix time converted to the outside clock while `mix.rate` ramps; the driver reads
-     `mix.rate` as it stands at each write, which drifts during a ramp (3.59 Hz in its test).
+   - **blits-tone's next release takes the next engine** (2026-11-03): `write` calls `mix.time`,
+     `mix.when` and `trace`'s `bends`, unreleased, so on engine 0.18.0 it throws. Move the peer
+     range with that engine release; the package changelog's Unreleased section says so.
+   - `mix.trace` (2026-11-03) knows `keys` voices, any easing as a bend under `bends`, and tweens
+     with no retarget timed inside the window. Still read every `grid` ms: other patches, a signal
+     weight, a fade under way, and a voice whose own rate is ramping (the 0.078 Hz left at a 25 ms
+     grid in `curves.test.ts`). The schema page's Mix section lists what it needs to be exact.
+   - **A tween retargeted with no time is likely never heard through the driver** (2026-11-03,
+     inferred from `peek` in `src/changes.ts`, not run): `project` skips an untimed change until
+     a live read stamps it, and nothing probes a subject blits-tone drives. The README says to
+     retarget with a time.
    - **`apps/fireworks`**, which plays one mix through this driver and the quarks one, has never
      been listened to. It still packs pan and size into each event and could read them off the
      shell, since a booked hit carries its voice's `subjects` (2026-10-11).
    - **`node-web-audio-api` 2.2.0 frees a channel's samples under a live array** (2026-10-11):
      the `Float32Array` from `getChannelData` reads freed memory once its `AudioBuffer` is
      collected, so `render` in `packages/tone/test/render.ts` copies them. Upstream knows:
-     ircam-ismm/node-web-audio-api issue 80. The copy can go once that is fixed.
+     ircam-ismm/node-web-audio-api issue 80. The copy can go once that is fixed. It also lets a
+     native `setValueCurveAtTime` play on through a `cancelAndHoldAtTime` (2026-11-03), which is
+     why the driver writes curves as ramps.
 
 10. **Two copies of blits loaded together** share what each knows of its patches and channels
    (`src/shared.ts`, `test/copies.test.ts`; the schema page's motion section). blits-quarks,

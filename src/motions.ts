@@ -478,6 +478,27 @@ export class Motions<I> {
     };
   }
 
+  /**
+   * The one stretch a read ahead finds `subject` playing at every voice time from `t` on, as `peek`
+   * reads it: the changes due by `t` applied, and an untimed one not. Undefined where a timed
+   * change lands after `t`, or an earlier stretch plays at `t`.
+   */
+  ahead(subject: I, t: number): Segment | undefined {
+    const s = this.known(subject);
+    if (s === undefined) return this.fresh(subject);
+    const b = this.base(s);
+    if (((this.runs[b + 1] as number) & OLDER) !== 0 && t < (this.runs[b] as number))
+      return undefined;
+    let seg = this.latest(s);
+    for (const change of this.dueTo(s) ?? []) {
+      const a = change.at;
+      if (a === undefined) break;
+      if (!(a <= t)) return undefined;
+      if (a >= seg.at) seg = this.applied(subject, seg, change, a);
+    }
+    return seg;
+  }
+
   /** The stretch playing at voice time `t`: the latest released by then, else the first. */
   playing(s: number, t: number): Segment {
     const list = this.older?.[s];

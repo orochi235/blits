@@ -11,7 +11,7 @@ describe('a host clock that is not the audio clock', () => {
   it('plays the same samples when the host clock reads 5 s past the audio clock', async () => {
     const level = await render();
     const skewed = await render({ skew: 5000 });
-    expect(worst(level.freq, reference([], []), 'freq', STALL)).toBeLessThan(0.75);
+    expect(worst(level.freq, reference([], []), 'freq', STALL)).toBeLessThan(0.04);
     let apart = 0;
     for (let i = 0; i < level.freq.length; i++)
       apart = Math.max(apart, Math.abs((level.freq[i] as number) - (skewed.freq[i] as number)));
@@ -37,7 +37,7 @@ describe('a mix whose rate is not 1', () => {
       { from: 0, e0: 0, rate: 1 },
       { from: at, e0: at, rate: 0.5 },
     ]);
-    expect(worst(r.freq, ref, 'freq', STALL)).toBeLessThan(0.68);
+    expect(worst(r.freq, ref, 'freq', STALL)).toBeLessThan(0.04);
     expect(onsets(r.notes)).toHaveLength(expected.length);
     expect(Math.max(...offBy(r.notes, expected))).toBeLessThan(1000 / SR + 1e-9);
   });
@@ -49,13 +49,13 @@ describe('a mix whose rate is not 1', () => {
     ];
     const r = await render({ acts });
     const ref = reference(acts, r.done);
-    expect(worst(r.freq, ref, 'freq', STALL)).toBeLessThan(0.68);
+    expect(worst(r.freq, ref, 'freq', STALL)).toBeLessThan(0.04);
   });
 
-  it('only approximates a ramp of the rate, by the rate at each write', async () => {
+  it('follows a ramp of the rate as closely as a rate that holds', async () => {
     const acts: Act[] = [{ at: 1000, run: (m) => m.ramp(0.5, 600) }];
     const r = await render({ acts });
     const ref = reference(acts, r.done);
-    expect(worst(r.freq, ref, 'freq', STALL)).toBeLessThan(5);
+    expect(worst(r.freq, ref, 'freq', STALL)).toBeLessThan(0.04);
   });
 });
