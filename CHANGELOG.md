@@ -21,6 +21,11 @@ version and everything else the patch. Each release lists its changes as **Break
 
 ### Fixed
 
+- A mix seek back to a frame after which the host sought an owner forward leaves the children
+  the seek crossed waiting for the next frame, as they were live, and the next frame passes them
+  in order again. It started them from the owner's clock as sought and forgot the pass, so an
+  overrunning span turned back and sought forward fitted to 4279 ms on a seek forward where it
+  had played to 4798.75.
 - `project` and `trace` read a tween retargeted with no time from when it was retargeted, for a
   subject nothing has read. They left it out, so a host that never probes such a subject, as
   blits-tone does, never played the retarget.

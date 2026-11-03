@@ -11,6 +11,7 @@ import { reorigin } from './held.js';
 import { noted, remember } from './history.js';
 import { Arg } from './lane.js';
 import type { LaneHost, Lanes } from './lanes.js';
+import { leap } from './leaps.js';
 import { hostOf, listed, markOf, readingAt } from './marks.js';
 import type { Mixer } from './mixer.js';
 import { nextFrame } from './move.js';
@@ -218,6 +219,7 @@ function handleHost<I, O>(mix: Mixer<I, O>): HandleHost<I, O> {
     sought: (voice, rebuild, ahead) => {
       if (ahead && voice.holding !== null && !mix.projecting) {
         mix.leapt ??= new Set();
+        if (!mix.leapt.has(voice) && mix.opts.history !== undefined) leap(mix, voice);
         mix.leapt.add(voice);
       }
       if (rebuild) voice.rebuilds++;

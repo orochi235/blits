@@ -761,6 +761,41 @@ test('a span held by a span keeps the retiming its span gave it on a seek forwar
   expect(s.rate).toBe(-1);
 });
 
+// An overrunning span turned back and sought forward after a frame leaves the children it crosses
+// waiting for the next frame, which starts them in order. A mix seek back to that frame leaves them
+// waiting again, rather than started from the span's clock as sought, so the frame after fits alike.
+for (const outer of [false, true])
+  for (const to of [1800, 2000])
+    test(`a mix seek back over a span ${outer ? 'a span holds' : 'a reel holds'}, sought to ${to} while turned back, fits as it played`, () => {
+      const m = mix<Part, Pose>(K, { history: { ms: 10_000, tape } });
+      m.sync(0);
+      const reel = m.owns({ start: 0 });
+      const host = outer ? m.span({ owner: reel, start: 1000, duration: 2000 }) : undefined;
+      const s = m.span({
+        owner: host ?? reel,
+        ...(host ? {} : { start: 1000 }),
+        duration: 2000,
+        order: 'stagger',
+        share: 0.5,
+        spill: 'overrun',
+        fit: condense(),
+        faster: 3,
+        slower: 3,
+      });
+      for (const [i, p] of parts.entries())
+        m.cue({ owner: s, patch: ramp(lens[i] as number, 100, 400), subjects: [p], loop: false });
+      for (let t = 10; t <= 1300; t += 10) m.sync(t);
+      s.rate = -1;
+      m.sync(1310);
+      s.seek(to);
+      m.sync(1320);
+      const shown = () => ({ ...s.result, rate: s.rate, x: parts.map((p) => m.probe(p).x) });
+      const live = shown();
+      m.seek(1310);
+      m.seek(1320);
+      expect(shown()).toEqual(live);
+    });
+
 // A motion subject met inside its stagger and not read once the stagger ran out has no run yet, so
 // the mix is not inert; a seek back to after the stagger ran out finds it so again.
 for (const lanes of [true, false])

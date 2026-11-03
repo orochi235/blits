@@ -283,12 +283,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
      1% of a `spans` frame in `bench/runs/2026-10-31-spans-profile-due-list.txt`. One walk that
      also reads `heading` was profiled and was no faster
      (`bench/runs/2026-10-31-spans-profile-one-walk.txt`).
-   - **A replay over an owner's forward seek fits differently** (found 2026-11-03, not fixed): a
-     span overrunning its budget (`spill: 'overrun'`, `fit: condense()`) turned back and sought
-     forward after a sync fits to length 4798.75 live; a mix seek back to that frame and forward to
-     the next fits to 4279, on 0.18.0 too. As far as traced, the seek back sets each child's
-     state from the owner's clock as sought and loses the pending forward pass; restoring the
-     pending pass alone (`leapt`) did not fix it.
    - **A span held by a span, sought forward while turned back, takes its span's fits on the way**
      (2026-11-03): latest write wins, so the seek leaves it running forward at the fit's rate, not
      turned back. Undecided whether a host's turn-back should survive that.
