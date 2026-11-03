@@ -56,7 +56,10 @@ const { position, rotation } = sim.mix.probe(box);
   role adds on top of wherever physics has it.
 - **`body.impulse(v)`** applies an impulse once, on the step after the mix's current time.
   **`body.drop()`** takes the body out of the world then. Both are logged at that time, so a seek
-  back before it undoes them and playing forward through it does them again.
+  back before it undoes them and playing forward through it does them again. One of these calls,
+  or `sim.body`, made after a seek lets go of the calls logged ahead of it before the seek, as a
+  call on the mix's tape starts a new future: a host that makes its calls again on the way does
+  each once.
 - **`sim.world()`** is the Rapier world as the last `sync` left it, for reading: raycasts, contact
   queries, debugging draws. A change made to it directly is lost at the next seek.
 
@@ -96,9 +99,15 @@ interpolate, the facing the short way round.
 
 ## The clock and seeking
 
-`physics` makes the mix, with `stepMs` 1000 / 60 unless you set it; the world takes one Rapier step
-per interval, so it runs at the same rate whatever the frame rate. Pass `history` and a `tape` to
-seek. The world lives in the mix as the state of a stateful patch, so blits' history keeps a copy
+`physics` makes the mix, named `'physics'` unless you name it, with `stepMs` 1000 / 60 unless you
+set it; the world takes one Rapier step per interval of mix time, so it runs at the same rate
+whatever the frame rate or the mix's `rate`. Each frame reads every body's controls once, and the
+steps that frame takes all push by what it read, so a force that changes faster than the frame
+rate is sampled at it. A long frame, such as the first after a tab was hidden, catches up every
+step it owes, unless the mix's `maxDt` caps how far a frame steps: two seconds take 120 steps
+without it and 6 under `maxDt: 100`, the rest dropped rather than owed. Call `mix.rebase()` when a
+tab comes back to leave the hidden time out instead. Pass `history` and a `tape` to
+seek, or leave `history` out and a debugger's `watched().history` is kept as the mix's. The world lives in the mix as the state of a stateful patch, so blits' history keeps a copy
 every `every` ms and a seek replays from the nearest one. A copy is Rapier's snapshot, kept as
 bytes and rebuilt into a world only when a replay needs it, so history costs memory in proportion
 to the world's size and `ms / every`. Each frame's pushes are logged beside it for the replay, back
@@ -125,6 +134,19 @@ sim.step();
 Replay matches the first pass exactly on one machine. To match across machines, pass Rapier's
 deterministic build.
 
-## Not yet
+## Not handled
 
+- **Reads at another time.** `mix.project(t)` and `mix.trace` show a body where the world was at
+  the last `sync`, not at `t`, since the world is a voice on a subject of its own. A seek is
+  shown at once, before the next `sync`.
+- **Picking another future.** The tape's `switchBranch` brings back the mix's own calls, not
+  `impulse`, `drop` or `body` calls a later one let go of. A call on the mix itself, such as a
+  `cue`, made after a seek does not let go of those calls logged ahead.
+- **A seek forward past memory after playing on from a seek back**, with a `store`: the seek back
+  cuts the pushes paged after it from the store, so the world replays that stretch with the push
+  of the first frame it still holds. Within memory it replays exactly.
+- **Growth with a store.** Each `impulse`, `drop` and `body` call is kept for the session, since
+  a seek past memory replays it and a body's description is a Rapier object, not data a store
+  takes. Without a store they go once history can no longer reach them. Every body made keeps its
+  voices in the mix for the session, dropped or not.
 - Soft bodies, cloth and ropes.
