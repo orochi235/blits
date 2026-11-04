@@ -93,8 +93,6 @@ async function agreeArrays(
   side.subjects(cells, (s) => ({ x: s.x }));
   side.channel('c');
   await side.ready;
-  // Folds again at the time the mix is at, which a sync to that time would not.
-  side.subjects(cells, (s) => ({ x: s.x }));
   for (const t of times) {
     g.sync(t);
     c.sync(t);

@@ -56,8 +56,6 @@ async function agree(device: GpuDevice, cues: Cue[], near = false) {
   side.subjects(cells, (s) => ({ x: s.x }));
   for (const name of NAMES) side.channel(name);
   await side.ready;
-  // Folds again at time 0, which a sync to the time the mix is already at would not.
-  side.subjects(cells, (s) => ({ x: s.x }));
   // Keys ignore the subject, so one lone CPU mix gives the value at any nearby time.
   const cpuAt = (t: number, name: (typeof NAMES)[number], a: number) => {
     const one = make(cues, mixer, [cells[0] as C]);
@@ -123,6 +121,11 @@ test('keys: an angle track crossing 0', (d) =>
 
 test('keys: delayBy on one channel', (d) =>
   agree(d, [{ stops: MIXED, opts: { delayBy: (c) => (c === 's' ? 300 : 0) } }]));
+
+test('keys: a delay as long as the duration, or longer', (d) =>
+  agree(d, [
+    { stops: MIXED, opts: { delayBy: (c) => (c === 's' ? 1000 : c === 'm' ? 1500 : 0) } },
+  ]));
 
 test('keys: steps easing', (d) =>
   agree(

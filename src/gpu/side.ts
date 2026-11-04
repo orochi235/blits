@@ -41,7 +41,9 @@ export class GpuSide<I> {
   private list: readonly I[] = [];
   private fieldsOf: (subject: I) => Record<string, number> = () => ({});
   private off = false;
+  /** The mix's frame and change count the last fold was for: a fold is good until either moves. */
   private frame = Number.NaN;
+  private stirs = Number.NaN;
   private outputs = new Map<string, GpuChannel>();
   private readonly known: Runner[] = [];
   /** Each runner's place in `known`, by key, as the table's runner column gives it. */
@@ -89,8 +91,9 @@ export class GpuSide<I> {
    */
   channel(name: string): GpuChannel | null {
     if (this.off) return null;
-    if (this.mix.frame !== this.frame) {
+    if (this.mix.frame !== this.frame || this.mix.stirs !== this.stirs) {
       this.frame = this.mix.frame;
+      this.stirs = this.mix.stirs;
       this.outputs = new Map();
       this.dispatch();
     }
@@ -128,7 +131,13 @@ export class GpuSide<I> {
       b = made.built;
       this.built.set(key, b);
       this.ready = made.compiled;
-      made.compiled.catch(() => {});
+      // A fold made while this compiled had nothing to show; the next read folds again.
+      made.compiled.then(
+        () => {
+          this.frame = Number.NaN;
+        },
+        () => {},
+      );
     }
     if (b.pipeline === null || b.failed) return;
     const entries: Entry[] = e.voices.map((v) => ({

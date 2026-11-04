@@ -14,6 +14,11 @@ version and everything else the patch. Each release lists its changes as **Break
 - The `gpu` engine folds `keys()` voices, a blend-mode color channel's stops interpolated as the
   channel does, straight across OKLab or round the hue, and a role of its voices blended the same.
 
+### Fixed
+
+- `gpuOf(m).channel()` folds again after a cue, stop or other change made without a sync, and
+  after its kernel finishes compiling, rather than giving the last fold until the next frame.
+
 ## 0.20.0
 
 ### Added
