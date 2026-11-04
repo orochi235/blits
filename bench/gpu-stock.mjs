@@ -6,7 +6,13 @@
 //
 //   node bench/gpu-stock.mjs --out bench/runs/<date>-gpu-stock      writes <out>.jsonl
 //   ROWS=mixer:1000000,gpu:10000 FRAMES=20 node bench/gpu-stock.mjs  only those rows
-// MIX=still keeps the spring but retargets nothing; MIX=nospring leaves the spring out.
+// MIX=still keeps the spring but retargets nothing; MIX=nospring leaves the spring out. MIX=anchor
+// is still played past 2^14 ms of voice time, where the spring's mirror re-anchors (FRAMES=1100).
+//   UPLOAD=1 node bench/gpu-stock.mjs --out <out>    the retarget upload alone: a spring mirror's
+//   rows at 100k and 1M with 0.1%, 1%, 5% and 25% of them changed at random each frame, written as
+//   one writeBuffer per run of changed rows, as one write of the span from the first to the last,
+//   as the whole mirror, and as Mirrors.upload chooses between the first two, each taking its turn
+//   frame by frame (UPLOADS=1000000:5 for one row)
 // One line per row as it finishes; one JSON line per row, every frame's time and the conditions it
 // ran under, appended to <out>.jsonl as the row finishes.
 //   node bench/gpu-stock.mjs --digest <out>.jsonl     medians and p95 from those records, and each
@@ -26,6 +32,7 @@ const arg = (name) => {
 };
 const out = arg('--out');
 
+const UPLOAD = process.env.UPLOAD === '1';
 const quantile = (xs, q) => {
   const s = [...xs].sort((a, b) => a - b);
   return s[Math.min(s.length - 1, Math.floor(q * s.length))];
@@ -38,8 +45,26 @@ if (digest) {
     .trim()
     .split('\n')
     .map((l) => JSON.parse(l));
+  if (recs[0]?.kind === 'upload') {
+    console.log(
+      'subjects   changed   ranges  span MB  ranges ms    span ms   whole ms    rule ms   (medians: issue + GPU wait)',
+    );
+    for (const r of recs) {
+      const med = (k) =>
+        ms(
+          quantile(
+            r[k].map(([a, b]) => a + b),
+            0.5,
+          ),
+        );
+      console.log(
+        `${String(r.n).padStart(8)} ${`${r.pct}%`.padStart(9)} ${String(Math.round(quantile(r.counts, 0.5))).padStart(8)} ${(quantile(r.spans, 0.5) / 2 ** 20).toFixed(2).padStart(8)} ${med('ranges')}  ${med('span')}  ${med('whole')}  ${med(r.chosen ? 'chosen' : 'gaps')}`,
+      );
+    }
+    process.exit(0);
+  }
   console.log(
-    'engine          subjects   median ms     p95 ms  frames   retarget       sync       read       wait',
+    'engine          subjects   median ms     p95 ms     max ms  frames   retarget       sync       read       wait',
   );
   for (const r of recs) {
     const part = (k) =>
@@ -50,7 +75,7 @@ if (digest) {
         ),
       );
     console.log(
-      `${`${r.engine}${r.mix && r.mix !== 'full' ? `/${r.mix}` : ''}`.padEnd(14)} ${String(r.n).padStart(9)} ${ms(quantile(r.frames, 0.5))}  ${ms(quantile(r.frames, 0.95))}  ${String(r.frames.length).padStart(6)}  ${part(0)}  ${part(1)}  ${part(2)}  ${part(3)}`,
+      `${`${r.engine}${r.mix && r.mix !== 'full' ? `/${r.mix}` : ''}`.padEnd(14)} ${String(r.n).padStart(9)} ${ms(quantile(r.frames, 0.5))}  ${ms(quantile(r.frames, 0.95))}  ${ms(Math.max(...r.frames))}  ${String(r.frames.length).padStart(6)}  ${part(0)}  ${part(1)}  ${part(2)}  ${part(3)}`,
     );
   }
   process.exit(0);
@@ -62,10 +87,15 @@ for (const n of [10_000, 100_000, 1_000_000])
 const only = process.env.ROWS?.split(',');
 const MIX = process.env.MIX ?? 'full';
 const rows = only ? all.filter((r) => only.includes(`${r.engine}:${r.n}`)) : all;
+const uploads = [];
+for (const n of [100_000, 1_000_000]) for (const pct of [0.1, 1, 5, 25]) uploads.push({ n, pct });
+const onlyUp = process.env.UPLOADS?.split(',');
+const upRows = onlyUp ? uploads.filter((r) => onlyUp.includes(`${r.n}:${r.pct}`)) : uploads;
 
 // The page's side: builds the mix for a row and times its frames.
 const PAGE = `
 import { gpu, gpuOf } from './src/gpu/engine.ts';
+import { spanned } from './src/gpu/mirrors.ts';
 import { keys, kit, mix, mixer, spring, sum, wave } from './src/index.ts';
 
 const K = kit({ x: sum(), y: sum(), p: sum() });
@@ -143,6 +173,68 @@ window.bench = async (engine, n, frames, warm, variant) => {
   g?.device.destroy();
   return { frames: times, parts, adapter: g?.adapter ?? null, ua: navigator.userAgent, isolated: crossOriginIsolated };
 };
+
+// A scalar spring's mirror rows (6 f32s each) on the GPU, pct% of them changed each frame.
+window.upload = async (n, pct, frames, warm) => {
+  const g = await device();
+  const dev = g.device;
+  const STRIDE = 6;
+  const bytes = STRIDE * 4;
+  const rows = new Float32Array(n * STRIDE);
+  const buffer = dev.createBuffer({ size: rows.byteLength, usage: 0x0080 | 0x0008 });
+  dev.queue.writeBuffer(buffer, 0, rows);
+  await dev.queue.onSubmittedWorkDone();
+  const k = Math.max(1, Math.round((n * pct) / 100));
+  const pick = new Uint8Array(n);
+  const ways = {
+    ranges: (ranges) => {
+      for (const [from, to] of ranges) dev.queue.writeBuffer(buffer, from, rows.subarray(from / 4, to / 4));
+    },
+    span: (ranges) => {
+      const from = ranges[0][0];
+      const to = ranges[ranges.length - 1][1];
+      dev.queue.writeBuffer(buffer, from, rows.subarray(from / 4, to / 4));
+    },
+    whole: () => dev.queue.writeBuffer(buffer, 0, rows),
+    // What Mirrors.upload does: the span where many runs changed, each run where few did.
+    chosen: (ranges) =>
+      (spanned(ranges) ? ways.span : ways.ranges)(ranges),
+  };
+  const out = { ranges: [], span: [], whole: [], chosen: [], counts: [], spans: [] };
+  const names = Object.keys(ways);
+  for (let f = 0; f < (warm + frames) * names.length; f++) {
+    pick.fill(0);
+    for (let j = 0; j < k; j++) {
+      const r = Math.floor(Math.random() * n);
+      pick[r] = 1;
+      rows[r * STRIDE] = f + j;
+    }
+    const ranges = [];
+    for (let r = 0; r < n; r++) {
+      if (!pick[r]) continue;
+      const last = ranges[ranges.length - 1];
+      if (last !== undefined && last[1] === r * bytes) last[1] += bytes;
+      else ranges.push([r * bytes, (r + 1) * bytes]);
+    }
+    const name = names[f % names.length];
+    const a = performance.now();
+    ways[name](ranges);
+    dev.queue.submit([]);
+    const b = performance.now();
+    await dev.queue.onSubmittedWorkDone();
+    const c = performance.now();
+    if (f >= warm * names.length) {
+      out[name].push([b - a, c - b]);
+      if (name === 'ranges') {
+        out.counts.push(ranges.length);
+        out.spans.push(ranges[ranges.length - 1][1] - ranges[0][0]);
+      }
+    }
+  }
+  buffer.destroy();
+  dev.destroy();
+  return { ...out, adapter: g.adapter, ua: navigator.userAgent, isolated: crossOriginIsolated };
+};
 `;
 
 const root = new URL('..', import.meta.url).pathname;
@@ -186,7 +278,57 @@ try {
     );
 } catch {}
 
+const conditions = () => ({
+  host: hostname(),
+  cpu: cpus()[0]?.model,
+  cpus: cpus().length,
+  memGB: Math.round(totalmem() / 2 ** 30),
+  load: loadavg(),
+  node: process.version,
+  browser: browser.version(),
+  commit,
+  at: new Date().toISOString(),
+});
+
 if (out) writeFileSync(`${out}.jsonl`, '');
+if (UPLOAD) {
+  console.log(`onto: plan ${upRows.length}`);
+  for (const [k, { n, pct }] of upRows.entries()) {
+    const page = await browser.newPage();
+    page.on('pageerror', (e) => console.log(`  [page error] ${e.message}`));
+    await page.goto(`http://localhost:${server.address().port}/`);
+    await page.waitForFunction(() => typeof window.upload === 'function');
+    const started = Date.now();
+    const got = await page.evaluate(
+      ([n, p, f, w]) => window.upload(n, p, f, w),
+      [n, pct, FRAMES, WARM],
+    );
+    await page.close();
+    const rec = {
+      kind: 'upload',
+      n,
+      pct,
+      warm: WARM,
+      ...got,
+      wallMs: Date.now() - started,
+      ...conditions(),
+    };
+    if (out) appendFileSync(`${out}.jsonl`, `${JSON.stringify(rec)}\n`);
+    const med = (w) =>
+      ms(
+        quantile(
+          got[w].map(([a, b]) => a + b),
+          0.5,
+        ),
+      );
+    console.log(
+      `${String(k + 1).padStart(2)}/${upRows.length} ${String(n).padStart(8)} ${`${pct}%`.padStart(5)}  ranges ${String(Math.round(quantile(got.counts, 0.5))).padStart(7)}  per-range ${med('ranges')} ms  span ${med('span')} ms  whole ${med('whole')} ms  chosen ${med('chosen')} ms  wall ${(rec.wallMs / 1000).toFixed(1).padStart(6)} s`,
+    );
+  }
+  await browser.close();
+  server.close();
+  process.exit(0);
+}
 console.log(`onto: plan ${rows.length}`);
 for (const [k, { engine, n }] of rows.entries()) {
   const page = await browser.newPage();
@@ -221,8 +363,9 @@ for (const [k, { engine, n }] of rows.entries()) {
     at: new Date().toISOString(),
   };
   if (out) appendFileSync(`${out}.jsonl`, `${JSON.stringify(rec)}\n`);
+  const top = Math.max(...got.frames);
   console.log(
-    `${String(k + 1).padStart(2)}/${rows.length} ${engine.padEnd(5)} ${MIX.padEnd(8)} ${String(n).padStart(8)}  median ${ms(quantile(got.frames, 0.5))} ms  p95 ${ms(quantile(got.frames, 0.95))} ms  frames ${got.frames.length}  wall ${(rec.wallMs / 1000).toFixed(1).padStart(6)} s`,
+    `${String(k + 1).padStart(2)}/${rows.length} ${engine.padEnd(5)} ${MIX.padEnd(8)} ${String(n).padStart(8)}  median ${ms(quantile(got.frames, 0.5))} ms  p95 ${ms(quantile(got.frames, 0.95))} ms  max ${ms(top)} ms at frame ${String(got.frames.indexOf(top) + WARM + 1).padStart(5)}  frames ${got.frames.length}  wall ${(rec.wallMs / 1000).toFixed(1).padStart(6)} s`,
   );
 }
 await browser.close();

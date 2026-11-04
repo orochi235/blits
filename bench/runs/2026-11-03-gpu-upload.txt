@@ -1,0 +1,57 @@
+# teitou (Apple M5 Max, 18 cores, apple metal-3), 2026-11-03, headless Chromium 153.0.8010.12, node v26.13.0, load 2.1-3.5
+# onto do --kind bench --node teitou --solo. Every run recorded its commit as fba6842+dirty:
+#   gpu-upload, gpu-anchor-before    fba6842's src with only the bench changed
+#   gpu-upload-gaps                   the fix tree with a first upload rule (runs at most 8 KiB apart joined), since replaced
+#   gpu-upload-chosen, gpu-anchor-after, gpu-stock-after   the tree committed as the final-review fixes
+#
+# The retarget upload alone (UPLOAD=1 FRAMES=30 WARM=5): a scalar spring's mirror rows (24 bytes
+# each) in a GPU buffer, a random 0.1% to 25% of them changed each frame, written four ways in turn:
+# one writeBuffer per run of changed rows ("ranges"), one write from the first changed row to the
+# last ("span"), the whole buffer ("whole"), and the rule Mirrors.upload uses ("rule": the span
+# where ranges > 500 + span bytes / 13,000, else ranges). A frame is the writes, an empty submit,
+# and onSubmittedWorkDone. Raw records: 2026-11-03-gpu-upload*.jsonl.
+
+node bench/gpu-stock.mjs --digest bench/runs/2026-11-03-gpu-upload-chosen.jsonl
+subjects   changed   ranges  span MB  ranges ms    span ms   whole ms    rule ms   (medians: issue + GPU wait)
+  100000      0.1%      100     2.26     0.305      0.870      1.060      0.300
+  100000        1%      985     2.29     1.290      0.930      1.030      1.035
+  100000        5%     4645     2.29     4.555      0.960      1.070      1.055
+  100000       25%    17226     2.29    15.685      0.910      1.130      1.120
+ 1000000      0.1%      998    22.86     1.385      2.435      2.410      1.390
+ 1000000        1%     9851    22.89    10.355      2.635      2.500      2.515
+ 1000000        5%    46390    22.89    38.350      2.800      2.720      2.760
+ 1000000       25%   172284    22.89   131.515      4.310      3.060      2.915
+
+# The first rule tried, runs at most 8 KiB apart joined, lost to one span at 1M and 1% (5.625 ms
+# against 2.450): many writes of a few KiB each cost more than the per-write figure predicts.
+node bench/gpu-stock.mjs --digest bench/runs/2026-11-03-gpu-upload-gaps.jsonl
+subjects   changed   ranges  span MB  ranges ms    span ms   whole ms    rule ms   (medians: issue + GPU wait)
+  100000      0.1%      100     2.25     0.330      0.885      1.060      0.325
+  100000        1%      986     2.29     1.145      0.805      0.855      1.070
+  100000        5%     4639     2.29     4.550      0.970      1.015      1.025
+  100000       25%    17224     2.29    16.385      1.010      1.105      1.125
+ 1000000      0.1%      998    22.86     1.430      2.525      2.440      1.440
+ 1000000        1%     9854    22.88    10.385      2.450      2.455      5.625
+ 1000000        5%    46382    22.89    39.270      2.860      2.695      2.810
+ 1000000       25%   172317    22.89   135.595      3.975      3.030      3.145
+
+# The re-anchor (MIX=anchor FRAMES=1100 WARM=5): the bench's mix with the spring cued and never
+# retargeted, played past 2^14 ms of voice time, where the mirror re-anchors (frame 985).
+node bench/gpu-stock.mjs --digest bench/runs/2026-11-03-gpu-anchor-before.jsonl
+engine          subjects   median ms     p95 ms     max ms  frames   retarget       sync       read       wait
+gpu/anchor        100000     0.205      0.300      5.555    1100      0.000      0.000      0.010      0.195
+gpu/anchor       1000000     0.365      0.705     49.445    1100      0.000      0.000      0.010      0.355
+node bench/gpu-stock.mjs --digest bench/runs/2026-11-03-gpu-anchor-after.jsonl
+engine          subjects   median ms     p95 ms     max ms  frames   retarget       sync       read       wait
+gpu/anchor        100000     0.195      0.325      1.730    1100      0.000      0.000      0.010      0.185
+gpu/anchor       1000000     0.395      0.570      6.580    1100      0.000      0.000      0.010      0.385
+# Both maxima before, and the 1M one after, fell on frame 985; the 100k one after fell on frame 569.
+
+# The full mix (FRAMES=300 WARM=30, 5% retargeted a frame) with the upload rule, against
+# 2026-11-03-gpu-stock.jsonl (gpu 10000: 0.880 median; 100000: 7.140; 1000000: 75.940). At 10k the
+# rule writes each run, as before, so the two 10k figures differ by run-to-run variation alone.
+node bench/gpu-stock.mjs --digest bench/runs/2026-11-03-gpu-stock-after.jsonl
+engine          subjects   median ms     p95 ms     max ms  frames   retarget       sync       read       wait
+gpu                10000     1.035      1.690      3.015     300      0.085      0.000      0.290      0.630
+gpu               100000     4.190      4.690      9.145     300      0.940      0.005      2.690      0.465
+gpu              1000000    45.655     50.455    117.895     300     14.065      0.010     28.170      3.305

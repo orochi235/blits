@@ -16,7 +16,7 @@ import { chromium } from 'playwright';
 const DIST = new URL('../site/dist/', import.meta.url).pathname;
 const WARM_MS = 1500;
 const MEASURE_MS = 3000;
-const PAGES = [
+const ALL = [
   'start/',
   'channel/',
   'examples/',
@@ -37,6 +37,8 @@ const PAGES = [
   'guides/scrubbing/',
   'guides/three/',
 ];
+// PAGES=examples/light-board/,examples/white-balance/ times only those.
+const PAGES = process.env.PAGES?.split(',') ?? ALL;
 const out = process.argv[process.argv.indexOf('--out') + 1];
 const engine = process.argv.includes('--engine')
   ? process.argv[process.argv.indexOf('--engine') + 1]
