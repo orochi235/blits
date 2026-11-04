@@ -54,6 +54,10 @@ function why<I, O>(voice: Voice<I, O>, codes: ChannelLookup, answers: Answers<I>
   if (voice.parts !== null || voice.parted !== null) return 'it is parting from subjects';
   if (voice.bound !== null) return 'it is bounded';
   if (!varies(voice as Voice<unknown, unknown>)) return null;
+  // Asked as met, its delays raise `latest` and lower `soonest` only where a host reads subjects.
+  // Said before asking, which for a large list costs a call per subject and a store of answers.
+  if (voice.named === null && voice.spec.stagger !== undefined && Number.isFinite(voice.span))
+    return 'its stagger is asked as subjects are met, so when it ends depends on which were read';
   const answer = answers.of(voice as Voice<I, unknown>);
   if (!answer.finite) return 'its stagger gives a subject a delay that is not a finite number';
   const delays = answer.delays;
@@ -63,13 +67,8 @@ function why<I, O>(voice: Voice<I, O>, codes: ChannelLookup, answers: Answers<I>
 
 /** Why a voice that staggers its subjects cannot run on the GPU, or null where it can. */
 function staggered<I, O>(voice: Voice<I, O>, delays: Float64Array): string | null {
-  // Asked as met, its delays raise `latest` and lower `soonest` only where a host reads subjects.
-  if (voice.named === null) {
-    if (Number.isFinite(voice.span))
-      return 'its stagger is asked as subjects are met, so when it ends depends on which were read';
-    if (!voice.beginless && delays.some((d) => d < 0))
-      return 'its stagger is asked as subjects are met and gives some a negative delay, so where it ends running back depends on which were read';
-  }
+  if (voice.named === null && !voice.beginless && delays.some((d) => d < 0))
+    return 'its stagger is asked as subjects are met and gives some a negative delay, so where it ends running back depends on which were read';
   if ((voice.fade.in ?? 0) > 0) {
     if (curveData(voice.ease) === undefined)
       return 'its fade in eases by a function, which the GPU cannot run';
