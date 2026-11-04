@@ -147,6 +147,27 @@ describe('motion mirror', () => {
     expect(motions.pending?.[s1]?.[0]?.at).toBeUndefined();
   });
 
+  it("stamps a change to an unsampled row a frame met with that frame's time, as the CPU's record does", () => {
+    const list = cells(4);
+    const { s, m, motions, mirror } = setup(list, [], Float64Array.of(0, 0, 0, 200));
+    const silent = (row: number) => row !== 0;
+    const reached = (row: number) => row !== 2;
+    mirror.prepare(0, Number.POSITIVE_INFINITY, false, silent, reached);
+    m.sync(150);
+    for (const c of list) s.to(c, 50);
+    const [s0, s1, s2, s3] = list.map((c) => motions.known(c) as number) as number[];
+    mirror.prepare(150, Number.POSITIVE_INFINITY, false, silent, reached);
+    expect(motions.runs[motions.base(s0 as number)]).toBe(150);
+    // Silent and reached: stamped, not committed, so a later read applies it from 150.
+    expect(motions.pending?.[s1 as number]?.[0]?.at).toBe(150);
+    expect(motions.runs[motions.base(s1 as number)]).toBe(0);
+    // Unreached, or inside its delay: the CPU's record would not stamp it.
+    expect(motions.pending?.[s2 as number]?.[0]?.at).toBeUndefined();
+    expect(motions.pending?.[s3 as number]?.[0]?.at).toBeUndefined();
+    mirror.prepare(400, Number.POSITIVE_INFINITY, false, () => false, reached);
+    expect(motions.runs[motions.base(s1 as number)]).toBe(150);
+  });
+
   it('reads a subject as unread where unreached, or at its first frame of a fade in', () => {
     const list = cells(3);
     const m = mix<C, P>(K);

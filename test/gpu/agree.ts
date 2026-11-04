@@ -1,7 +1,15 @@
 import { createHistory } from '@weasel-js/history';
 import { gpu, gpuOf, mixerOf } from '../../src/gpu/engine.js';
 import type { GpuDevice } from '../../src/gpu/webgpu.js';
-import { type Easing, type Kit, type Mix, mix, mixer } from '../../src/index.js';
+import {
+  type Easing,
+  type Kit,
+  type Mix,
+  mix,
+  mixer,
+  type Signal,
+  type Handle as VoiceHandle,
+} from '../../src/index.js';
 import type { Voice } from '../../src/voice.js';
 import { close, closeNear, nudge, readBack } from './harness.js';
 
@@ -55,13 +63,30 @@ export interface Cue {
   loop?: number | boolean;
   rate?: number;
   role?: string;
-  weight?: number;
+  weight?: number | Signal<C>;
   fade?: { in?: number; out?: number; ease?: Easing };
   freeze?: 'after';
+  /** The owner it plays under, as an index into the script's `owners`. */
+  owner?: number;
+  /** When it starts, on its owner's clock where it has one. */
+  start?: number;
+}
+
+/** An owner the cues play under; `span` cues it as a span with that budget. */
+export interface OwnerCue {
+  start?: number;
+  rate?: number;
+  seek?: number;
+  weight?: number | Signal<C>;
+  fade?: { in?: number; out?: number };
+  /** The owner it plays under, as an index into the owners before it. */
+  owner?: number;
+  span?: { duration: number };
 }
 
 export type Handle = {
   rate: number;
+  weight: number;
   ramp(r: number, over: number): void;
   seek(elapsed: number): unknown;
   fade(): void;
@@ -76,12 +101,18 @@ export type Moving = {
 
 export interface Script {
   cues: Cue[];
+  owners?: OwnerCue[];
   times: number[];
   /**
-   * Done to both mixes, their handles and patches right after the sync at `at`, before that time
-   * is compared.
+   * Done to both mixes, their handles, patches and owners' handles right after the sync at `at`,
+   * before that time is compared. One `after` runs once the GPU has folded that frame and the CPU
+   * has probed every subject, as a host's change between syncs does, and the GPU folds again.
    */
-  acts?: { at: number; act: (h: Handle[], p: Moving[], m: Mix<C, never>) => void }[];
+  acts?: {
+    at: number;
+    act: (h: Handle[], p: Moving[], m: Mix<C, never>, o: Handle[]) => void;
+    after?: boolean;
+  }[];
   /** Gives both mixes a history, so a mix-level `seek` can move them. */
   history?: boolean;
   /** From this time on the voices stay on the CPU, so the GPU folds no channel. */
@@ -90,13 +121,17 @@ export interface Script {
   reorder?: number;
 }
 
-/** The kind's voices cued by `cues` on a mix made by `engine`, named or asked as met. */
+/**
+ * The kind's voices cued by `cues` on a mix made by `engine`, named or asked as met, under the
+ * owners cued first.
+ */
 export function make(
   kind: Kind,
   cues: Cue[],
   named: boolean,
   engine: typeof mixer,
   history = false,
+  owners: OwnerCue[] = [],
 ) {
   const kt = kind.kit();
   const m = mix<C, never>(kt, {
@@ -105,6 +140,11 @@ export function make(
     ...(history ? { history: { ms: 1e5, tape: createHistory } } : {}),
   });
   m.sync(0);
+  const held: VoiceHandle<C>[] = [];
+  for (const { owner, span, ...rest } of owners) {
+    const spec = { ...rest, ...(owner === undefined ? {} : { owner: held[owner] }) };
+    held.push(span === undefined ? m.owns(spec) : m.span({ ...spec, ...span }));
+  }
   const patches: Moving[] = [];
   const handles = cues.map((c, k) => {
     const reached = c.reach === undefined ? CELLS : CELLS.filter((_, i) => c.reach?.(i));
@@ -125,9 +165,11 @@ export function make(
       ...(c.weight === undefined ? {} : { weight: c.weight }),
       ...(c.fade === undefined ? {} : { fade: c.fade }),
       ...(c.freeze === undefined ? {} : { freeze: c.freeze }),
+      ...(c.owner === undefined ? {} : { owner: held[c.owner] }),
+      ...(c.start === undefined ? {} : { start: c.start }),
     }) as unknown as Handle;
   });
-  return { m, handles, patches };
+  return { m, handles, patches, owners: held as unknown as Handle[] };
 }
 
 /** The distance from `x` to the next f32 out from 0, as `nudge` steps. */
@@ -164,9 +206,12 @@ export function probed(m: { probe(s: C): unknown }, s: C, channel: string, a: nu
  * times, with `closeNear` only where a subject's time is on a pass edge or its start.
  */
 export async function agree(device: GpuDevice, kind: Kind, script: Script, named: boolean) {
-  const g = make(kind, script.cues, named, gpu({ device }), script.history);
-  const c = make(kind, script.cues, named, mixer, script.history);
-  const cpuVoices = [...mixerOf(c.m).cued] as unknown as Voice<C, never>[];
+  const g = make(kind, script.cues, named, gpu({ device }), script.history, script.owners);
+  const c = make(kind, script.cues, named, mixer, script.history, script.owners);
+  // The voices the cues made, in cue order, so `nearEdge` pairs each with its cue.
+  const cpuVoices = ([...mixerOf(c.m).cued] as unknown as Voice<C, never>[]).filter(
+    (v) => v.holding === null,
+  );
   const side = gpuOf(g.m);
   let list = CELLS;
   side.subjects(list, fieldsOf);
@@ -177,13 +222,21 @@ export async function agree(device: GpuDevice, kind: Kind, script: Script, named
   for (const t of all) {
     g.m.sync(t);
     c.m.sync(t);
-    for (const a of acts)
-      if (a.at === t) {
-        a.act(g.handles, g.patches, g.m);
-        a.act(c.handles, c.patches, c.m);
-      }
+    const run = (after: boolean) => {
+      for (const a of acts)
+        if (a.at === t && !!a.after === after) {
+          a.act(g.handles, g.patches, g.m, g.owners);
+          a.act(c.handles, c.patches, c.m, c.owners);
+        }
+    };
+    run(false);
     // Every frame as a host drawing every subject sees it: the GPU folds, the CPU probes each.
-    const ch = side.channel(kind.channel);
+    let ch = side.channel(kind.channel);
+    if (acts.some((a) => a.at === t && a.after)) {
+      for (const s of list) c.m.probe(s);
+      run(true);
+      ch = side.channel(kind.channel);
+    }
     if (!script.times.includes(t)) {
       for (const s of list) c.m.probe(s);
       continue;
@@ -191,6 +244,11 @@ export async function agree(device: GpuDevice, kind: Kind, script: Script, named
     if (script.cpuFrom !== undefined && t >= script.cpuFrom) {
       if (ch !== null) throw new Error(`the channel is on the GPU at ${t}, past ${script.cpuFrom}`);
       continue;
+    }
+    if (ch === null) {
+      // A voice starting late brings a runner the first kernel lacked; it folds once that compiles.
+      await side.ready;
+      ch = side.channel(kind.channel);
     }
     if (ch === null) throw new Error(`the channel is not on the GPU at ${t}`);
     const axes = ch.axes;

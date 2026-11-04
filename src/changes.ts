@@ -151,17 +151,22 @@ export function applied<I>(
   return { at, ms, x0: xs, v0: vs, to, change };
 }
 
+/** Gives subject `s`'s changes still waiting for a time the time `t`, filed among the timed ones. */
+export function stamp<I>(this: Motions<I>, s: number, t: number): void {
+  const list = this.pending?.[s];
+  if (list === undefined || (list[list.length - 1] as Change).at !== undefined) return;
+  let i = list.length;
+  while (i > 0 && (list[i - 1] as Change).at === undefined) i--;
+  for (const c of list.splice(i)) {
+    c.at = t;
+    this.queue(list, c, t);
+  }
+}
+
 export function commit<I>(this: Motions<I>, s: number, t: number): void {
   const list = (this.pending as Change[][])[s] as Change[];
   // The first read of a subject no frame had met: those waiting for a time take this one.
-  if ((list[list.length - 1] as Change).at === undefined) {
-    let i = list.length;
-    while (i > 0 && (list[i - 1] as Change).at === undefined) i--;
-    for (const c of list.splice(i)) {
-      c.at = t;
-      this.queue(list, c, t);
-    }
-  }
+  this.stamp(s, t);
   while (list.length > 0) {
     const change = list[0] as Change;
     const a = change.at as number;

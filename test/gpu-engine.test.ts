@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { Col } from '../src/gpu/columns.js';
 import { gpu, gpuOf, mixerOf } from '../src/gpu/engine.js';
 import { shaderPatch } from '../src/gpu/shader-patch.js';
 import type { GpuBuffer, GpuDevice } from '../src/gpu/webgpu.js';
@@ -28,9 +29,14 @@ const untouched = new Proxy(
   },
 ) as unknown as GpuDevice;
 
-/** A device that does nothing, keeping the label of each buffer the gpu side destroys. */
+/**
+ * A device that does nothing, keeping the label of each buffer the gpu side destroys and the last
+ * data written to each.
+ */
 function stub() {
   const destroyed: string[] = [];
+  const labels = new WeakMap<object, string>();
+  const written = new Map<string, Float32Array>();
   let dispatched = 0;
   let lose = () => {};
   const lost = new Promise<void>((resolve) => {
@@ -45,10 +51,21 @@ function stub() {
     end() {},
   };
   const device = {
-    queue: { writeBuffer() {}, submit() {}, onSubmittedWorkDone: async () => {} },
+    queue: {
+      writeBuffer(b: GpuBuffer, _at: number, data: ArrayBufferView) {
+        const label = labels.get(b);
+        if (label !== undefined)
+          written.set(
+            label,
+            new Float32Array(data.buffer, data.byteOffset, data.byteLength / 4).slice(),
+          );
+      },
+      submit() {},
+      onSubmittedWorkDone: async () => {},
+    },
     lost,
     createBuffer(desc: { size: number; label?: string }): GpuBuffer {
-      return {
+      const made: GpuBuffer = {
         size: desc.size,
         mapAsync: () => new Promise(() => {}),
         getMappedRange: () => new ArrayBuffer(desc.size),
@@ -57,6 +74,8 @@ function stub() {
           if (desc.label?.startsWith('blits gpu ')) destroyed.push(desc.label.slice(10));
         },
       };
+      if (desc.label !== undefined) labels.set(made, desc.label);
+      return made;
     },
     createShaderModule: () => ({}),
     createBindGroupLayout: () => ({}),
@@ -69,7 +88,8 @@ function stub() {
       finish: () => ({}),
     }),
   } as unknown as GpuDevice;
-  return { device, destroyed, lose: () => lose(), dispatched: () => dispatched };
+  const write = (label: string) => written.get(`blits gpu ${label}`);
+  return { device, destroyed, lose: () => lose(), dispatched: () => dispatched, write };
 }
 
 /** A gpu mix folding a staggered spring that fades in, so the side has a mirror and a timing block. */
@@ -136,6 +156,7 @@ describe('gpu engine', () => {
     lvl.set(0.25);
     side.channel('y');
     expect(d.dispatched()).toBe(2);
+    expect(d.write('table')?.[Col.WEIGHT]).toBe(0.25);
     side.channel('y');
     expect(d.dispatched()).toBe(2);
   });

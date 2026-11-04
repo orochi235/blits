@@ -1,4 +1,15 @@
-import { applied, change, commit, cut, dueTo, insert, peek, queue, rewind } from './changes.js';
+import {
+  applied,
+  change,
+  commit,
+  cut,
+  dueTo,
+  insert,
+  peek,
+  queue,
+  rewind,
+  stamp,
+} from './changes.js';
 import { BOUND, closed } from './closed.js';
 import type { Curve } from './easing.js';
 import { closedLch } from './lch.js';
@@ -581,6 +592,7 @@ const methods = {
   cut,
   applied,
   commit,
+  stamp,
   insert,
 };
 type Methods = typeof methods;

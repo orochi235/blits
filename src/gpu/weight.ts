@@ -82,7 +82,7 @@ export function weightWhy<I, O>(
   voice: Voice<I, O>,
   refused?: WeakMap<object, string>,
 ): string | null {
-  const recorded = mix.opts.history?.inputs === true;
+  const recorded = !!mix.opts.history?.inputs;
   const signal = signalOf(voice);
   if (signal !== null) {
     if (voice.blend !== null)

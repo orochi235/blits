@@ -14,7 +14,7 @@ import { type Packed, packOf, type Runner, unpack } from './runner.js';
 import { elapsedOf, type Slot, voiceTable } from './table.js';
 import { sizeOf, Timings } from './timings.js';
 import { twins } from './twins.js';
-import { unreadOf } from './unread.js';
+import { reachedOf, unreadOf } from './unread.js';
 import { type GpuBuffer, type GpuDevice, STORAGE_LIMIT, Usage } from './webgpu.js';
 import { type Weighs, weighsOf } from './weight.js';
 import type { ChannelCode } from './wgsl/channels.js';
@@ -197,10 +197,11 @@ export class GpuSide<I> {
       const now = mix.now;
       const horizon = mix.horizonFor(v, 0, now);
       const unread = unreadOf(mix, u, this.answers, this.timings, null, weighs[k] as Weighs);
-      if (delays === null) m.prepare(elapsedOf(v, now), horizon, false, unread);
+      const reached = reachedOf(u, this.answers);
+      if (delays === null) m.prepare(elapsedOf(v, now), horizon, false, unread, reached);
       else {
         const t = v.unstarted(now) && !v.holdsFirst ? Number.NaN : v.rawAt(now, 0);
-        m.prepare(t, horizon, v.holdsFirst, unread);
+        m.prepare(t, horizon, v.holdsFirst, unread, reached);
       }
       mirrors.push(m as Mirror<unknown>);
       return { owner: v, values: m.values() };
