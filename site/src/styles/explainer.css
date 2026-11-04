@@ -56,6 +56,12 @@
   min-width: 0;
 }
 
+/* An inline slider row keeps its label at full width, so where label, slider and readout don't fit
+   on one line, the slider and its readout go to the next rather than past the page. */
+.explainer-controls label:has(> input[type='range']) {
+  flex-wrap: wrap;
+}
+
 .ledger {
   flex: 2 1 22rem;
   max-width: 40rem;
