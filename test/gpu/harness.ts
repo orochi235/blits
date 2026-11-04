@@ -41,11 +41,12 @@ export function closeNear(
   cpuAt: (t: number) => number,
   t: number,
   what: string,
+  absolute?: number,
 ): void {
   const tries = [t, nudge(t, -1), nudge(t, 1)];
   for (const at of tries) {
     try {
-      close(got, cpuAt(at), what);
+      close(got, cpuAt(at), what, absolute);
       return;
     } catch {}
   }

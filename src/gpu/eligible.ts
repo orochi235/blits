@@ -1,3 +1,4 @@
+import { curveData } from '../easing.js';
 import type { Mixer } from '../mixer.js';
 import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
@@ -55,7 +56,27 @@ function why<I, O>(voice: Voice<I, O>, codes: ChannelLookup, answers: Answers<I>
   if (!varies(voice as Voice<unknown, unknown>)) return null;
   const answer = answers.of(voice as Voice<I, unknown>);
   if (!answer.finite) return 'its stagger gives a subject a delay that is not a finite number';
-  if (answer.delays !== null) return 'it staggers its subjects';
+  const delays = answer.delays;
+  if (delays === null) return null;
+  return staggered(voice, delays);
+}
+
+/** Why a voice that staggers its subjects cannot run on the GPU, or null where it can. */
+function staggered<I, O>(voice: Voice<I, O>, delays: Float64Array): string | null {
+  // Asked as met, its delays raise `latest` and lower `soonest` only where a host reads subjects.
+  if (voice.named === null) {
+    if (Number.isFinite(voice.span))
+      return 'its stagger is asked as subjects are met, so when it ends depends on which were read';
+    if (!voice.beginless && delays.some((d) => d < 0))
+      return 'its stagger is asked as subjects are met and gives some a negative delay, so where it ends running back depends on which were read';
+  }
+  if ((voice.fade.in ?? 0) > 0) {
+    if (curveData(voice.ease) === undefined)
+      return 'its fade in eases by a function, which the GPU cannot run';
+    if (voice.stalls !== null)
+      return 'its fade in stalled where a fade out turned back, and its subjects start at different times';
+  }
+  if (voice.motion !== undefined) return 'it staggers its subjects';
   return null;
 }
 

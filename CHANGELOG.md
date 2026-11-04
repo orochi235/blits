@@ -19,6 +19,7 @@ version and everything else the patch. Each release lists its changes as **Break
   or `push()` at the voice's time even where nothing reads the subject on the CPU.
 - The `gpu` engine folds a voice that reaches only some of the registered subjects,
   through `subjects` or `target`.
+- The `gpu` engine folds voices that stagger their subjects, for shader patches, `wave` and `keys`.
 
 ### Fixed
 

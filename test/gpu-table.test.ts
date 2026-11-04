@@ -8,7 +8,7 @@ import { shaderPatch } from '../src/gpu/shader-patch.js';
 import { Col, ROW, type Slot, voiceTable } from '../src/gpu/table.js';
 import { Timings } from '../src/gpu/timings.js';
 import { Flag, NONE } from '../src/gpu/wgsl/timing.js';
-import { kit, type Mix, mix, quat, sum } from '../src/index.js';
+import { kit, type Mix, mix, quat, sum, tween } from '../src/index.js';
 import type { Mixer } from '../src/mixer.js';
 import type { Voice } from '../src/voice.js';
 
@@ -278,6 +278,84 @@ describe('voice table', () => {
     expect(e.channels.has('y')).toBe(false);
     expect(e.reasons.map((r) => r.why)).toEqual([
       'its stagger gives a subject a delay that is not a finite number',
+    ]);
+  });
+
+  it('folds a staggered voice on the GPU', () => {
+    const m = mix<C, P>(K);
+    m.cue({ patch: wave, subjects: cells, stagger: (c: C) => c.x * 100, loop: 2 });
+    m.cue({ patch: wave, stagger: (c: C) => c.x * 100, loop: true });
+    m.sync(0);
+    const e = elig(m);
+    expect(e.reasons).toEqual([]);
+    expect(e.voices.length).toBe(2);
+  });
+
+  it('keeps a staggered motion voice on the CPU', () => {
+    const m = mix<C, P>(K);
+    m.cue({
+      patch: tween<C, P>('y', { from: 0, to: 1, ms: 500 }),
+      subjects: cells,
+      stagger: () => 10,
+    });
+    m.sync(0);
+    expect(elig(m).reasons.map((r) => r.why)).toEqual(['it staggers its subjects']);
+  });
+
+  it('keeps an unnamed staggered voice with an end on the CPU', () => {
+    const m = mix<C, P>(K);
+    m.cue({ patch: wave, stagger: (c: C) => c.x * 100, loop: 2 });
+    m.cue({ patch: wave, target: () => true, stagger: (c: C) => c.x * 100 });
+    m.sync(0);
+    const why =
+      'its stagger is asked as subjects are met, so when it ends depends on which were read';
+    expect(elig(m).reasons.map((r) => r.why)).toEqual([why, why]);
+  });
+
+  it('keeps an unnamed staggered loop with a negative delay on the CPU, cued forward', () => {
+    const m = mix<C, P>(K);
+    const h = m.cue({ patch: wave, stagger: (c: C) => c.x * 100 - 50, loop: true });
+    m.cue({ patch: wave, stagger: (c: C) => c.x * 100 - 50, loop: true, rate: -1 });
+    m.sync(0);
+    const why =
+      'its stagger is asked as subjects are met and gives some a negative delay, so where it ends running back depends on which were read';
+    expect(elig(m).reasons.map((r) => r.why)).toEqual([why]);
+    m.sync(100);
+    h.rate = -1;
+    m.sync(150);
+    expect(elig(m).reasons.map((r) => r.why)).toEqual([why]);
+  });
+
+  it('keeps a staggered voice fading in on a function on the CPU', () => {
+    const m = mix<C, P>(K);
+    const stagger = (c: C) => c.x * 100;
+    m.cue({ patch: wave, subjects: cells, stagger, fade: { in: 400, ease: (u) => u * u } });
+    m.cue({ patch: wave, subjects: cells, stagger, fade: { in: 400, ease: 'ease-in-out' } });
+    m.cue({ patch: wave, subjects: cells, fade: { in: 400, ease: (u) => u * u } });
+    m.sync(0);
+    expect(elig(m).reasons.map((r) => r.why)).toEqual([
+      'its fade in eases by a function, which the GPU cannot run',
+    ]);
+  });
+
+  it('keeps a staggered voice on the CPU once its fade out is turned back', () => {
+    const m = mix<C, P>(K);
+    const h = m.cue({
+      patch: wave,
+      subjects: cells,
+      stagger: (c: C) => c.x * 100,
+      loop: true,
+      fade: { in: 400, out: 300 },
+    });
+    m.sync(0);
+    m.sync(100);
+    h.fade();
+    m.sync(200);
+    expect(elig(m).reasons).toEqual([]);
+    h.rise();
+    m.sync(250);
+    expect(elig(m).reasons.map((r) => r.why)).toEqual([
+      'its fade in stalled where a fade out turned back, and its subjects start at different times',
     ]);
   });
 
