@@ -14,34 +14,24 @@ import ApiEntries from '../components/ApiEntries.astro';
 <Score client:only="react" />
 <Source of="Score.tsx" />
 
-Every voice has five **marks** on the mix clock: `start`, when its fade in begins; `in`, when it is at full weight; `coast`, when its last pass ends; `out`, when its fade out begins; and `end`, when it is gone. Above, an orb flies in, its row's text arrives once it lands, and a tint comes in as the text finishes, holds, then fades.
+Every voice has five **marks** on the mix clock: `start`, when its fade in begins; `in`, when it is at full weight; `coast`, when its last pass ends; `out`, when its fade out begins; and `end`, when it is gone. Above, a lead sings each line to the tune of "Deck the Halls", and a chorus answers it. Each line is one voice, a bar on its part's lane, and its syllables are the subjects it lights.
 
 ## Placing a voice
 
 A voice takes a [`name`](VoiceSpec.name), and a placement in [`anchor`](VoiceSpec.anchor): at most one of [`start`](Placement.start) and [`in`](Placement.in), and at most one of [`out`](Placement.out) and [`end`](Placement.end). Each is a timestamp on the host's clock or an **anchor** to another voice's mark.
 
 ```ts
-m.cue({ patch: flight, name: 'orb', start: 300, loop: false });
-m.cue({
-  patch: arrive,
-  name: 'text',
-  loop: false,
-  freeze: 'after',
-  anchor: { start: { after: 'orb' } },
-});
-m.cue({
-  patch: tint,
-  fade: { in: 200, out: 1400 },
-  anchor: {
-    in: { of: 'text', mark: 'coast' },
-    out: { of: 'text', mark: 'coast', by: 600 },
-  },
-});
+m.cue({ patch: countIn, name: 'count-in', start: 300, loop: false });
+m.cue({ patch: line1, name: 'line 1', loop: false, anchor: { start: { after: 'count-in' } } });
+m.cue({ patch: answer, name: 'fa-la 1', loop: false, anchor: { start: { after: 'line 1' } } });
+m.cue({ patch: line2, name: 'line 2', loop: false, anchor: { start: { after: 'fa-la 1' } } });
 ```
 
-The text freezes on its last frame, so the line stays up and the voice has no `end` until something fades it. The tint hangs from its `coast` instead.
+Nothing above says when line 2 starts. It waits on the answer before it, which waits on line 1, so a change anywhere up the chain moves everything after it. Give the answers a `by` and each comes in that much after its line ends.
 
-`after` is the other voice's `end`, `with` is its `start`, and `before` is its start less `by`. The general form names the mark: `{ of: 'orb', mark: 'in', by: 50 }`. Anchoring [`in`](Placement.in) or [`end`](Placement.end) takes the voice's own fade into account, so `anchor: { in: 12_400 }` means fully in at 12.4 s.
+A voice that freezes on its last frame has no `end` until something fades it, so hang what follows from its `coast` instead.
+
+`after` is the other voice's `end`, `with` is its `start`, and `before` is its start less `by`. The general form names the mark: `{ of: 'line 1', mark: 'in', by: 50 }`. Anchoring [`in`](Placement.in) or [`end`](Placement.end) takes the voice's own fade into account, so `anchor: { in: 12_400 }` means fully in at 12.4 s.
 
 A string picks a voice by name. A **query** picks by what the plan knows of a voice instead: its [`name`](Query.name), a [`tag`](Query.tag), or a channel it [`writes`](Query.writes). Where several match, its [`resolver`](Query.resolver) chooses: the `last` cued (the default), the `first`, the `next` whose mark is still to come, or the `earliest` or `latest` by time. A query never reads a channel's value: "when gain crosses 0.5" is the host's to watch.
 
@@ -52,7 +42,7 @@ Each source can keep its own plan as a [`score`](VoiceSpec.score). Names are loo
 m.cue({ patch: lead, fade: { in: 50 }, anchor: { in: { before: { writes: 'gain', resolver: 'next' }, by: 200 } } });
 ```
 
-A voice whose anchor has no answer yet waits pending: a name nobody has cued, or the `out` of a voice that repeats forever. One whose mark is already past starts partway through, the way playback starts in the middle of a region. While it waits, it follows its target, so cutting the orb short above brings everything after it forward. A placement that waits on itself is refused at `cue`.
+A voice whose anchor has no answer yet waits pending: a name nobody has cued, or the `out` of a voice that repeats forever. One whose mark is already past starts partway through, the way playback starts in the middle of a region. While it waits, it follows its target, so cutting line 2 short above brings its answer, and everything after it, forward. A placement that waits on itself is refused at `cue`.
 
 A voice that has left can still be anchored to only while the mix's history reaches it.
 
