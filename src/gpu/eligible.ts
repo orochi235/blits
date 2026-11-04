@@ -1,4 +1,5 @@
 import type { Mixer } from '../mixer.js';
+import { reading } from '../reading.js';
 import type { Voice } from '../voice.js';
 import { type ChannelLookup, packOf } from './runner.js';
 import { type ChannelCode, codeFor } from './wgsl/channels.js';
@@ -43,6 +44,10 @@ function why<I, O>(
   const packed = packOf(voice.patch, codes);
   if (packed === undefined) return `no gpu runner takes a ${voice.patch.form} patch`;
   if ('why' in packed) return packed.why;
+  if (voice.motion !== undefined && reading.back !== null)
+    return 'it is a motion read back through its history';
+  if (voice.motion !== undefined && !reading.live)
+    return 'it is a motion read by a projection, which commits nothing';
   if (voice.spec.from === 'current') return "it starts from the subject's current pose";
   if (typeof voice.spec.weight === 'function') return 'its weight is a weight signal';
   if (voice.spec.stagger !== undefined) return 'it staggers its subjects';

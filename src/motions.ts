@@ -232,6 +232,14 @@ export class Motions<I> {
   watcher: Watcher | null = null;
   watchId = -1;
 
+  /** What `watch` set; called only here and in `change`. */
+  listener: ((slot: number) => void) | null = null;
+
+  /** Calls `listener` with a subject's number whenever its run or what is pending for it changes. */
+  watch(listener: ((slot: number) => void) | null): void {
+    this.listener = listener;
+  }
+
   /** The easing a tween's stretches follow; undefined for every other shape. */
   get ease(): Curve | undefined {
     return this.shape.ease;
@@ -296,10 +304,9 @@ export class Motions<I> {
    */
   sample(s: number, t: number, xo: Float64Array, vo: Float64Array): void {
     if (reading.live) {
+      this.advance(s, t);
       const runs = this.runs;
       const b = this.base(s);
-      if ((runs[b + 1] as number) & PENDING) this.commit(s, t);
-      if ((runs[b + 1] as number) & OLDER) this.prune(s);
       const at = runs[b] as number;
       if (t < at && (runs[b + 1] as number) & OLDER)
         this.evaluateSegment(this.playing(s, t), t, xo, vo);
@@ -311,6 +318,16 @@ export class Motions<I> {
       return;
     }
     this.peek(s, t, xo, vo);
+  }
+
+  /**
+   * What a live `sample` at `t` does before it reads: commits subject `s`'s changes due by then and
+   * lets go of stretches older than `reading.horizon`.
+   */
+  advance(s: number, t: number): void {
+    const i = this.base(s) + 1;
+    if ((this.runs[i] as number) & PENDING) this.commit(s, t);
+    if ((this.runs[i] as number) & OLDER) this.prune(s);
   }
 
   /**
@@ -420,6 +437,7 @@ export class Motions<I> {
 
   flag(s: number, bit: number, on: boolean): void {
     this.watcher?.stretchChanged(this.watchId, s);
+    this.listener?.(s);
     const i = this.base(s) + 1;
     const flags = this.runs[i] as number;
     this.runs[i] = on ? flags | bit : flags & ~bit;
@@ -450,6 +468,7 @@ export class Motions<I> {
     const n = this.n;
     const b = this.base(s);
     this.watcher?.stretchChanged(this.watchId, s);
+    this.listener?.(s);
     if (seg.change !== undefined || this.causes !== null) {
       this.causes ??= [];
       this.causes[s] = seg.change;

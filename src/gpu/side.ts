@@ -3,9 +3,11 @@ import { production, warnOnce } from '../warn.js';
 import { type Built, compile, layoutOf } from './compile.js';
 import { codesOf, eligibility } from './eligible.js';
 import { GROUP, type Kernel, MAX_ROLES } from './kernel.js';
+import type { Mirror } from './mirror.js';
+import { Mirrors } from './mirrors.js';
 import { type Entry, Regions } from './region.js';
-import { packOf, type Runner } from './runner.js';
-import { type Slot, voiceTable } from './table.js';
+import { type Packed, packOf, type Runner } from './runner.js';
+import { elapsedOf, type Slot, voiceTable } from './table.js';
 import { twins } from './twins.js';
 import {
   type GpuBindGroup,
@@ -51,6 +53,7 @@ export class GpuSide<I> {
   private readonly built = new Map<string, Built>();
   private readonly checked = new Set<string>();
   private readonly regions = new Regions();
+  private readonly mirrors = new Mirrors();
   /** Set where the values buffer may not hold what `regions` does, so all of it is written next. */
   private stale = true;
   /** Each channel's reason for staying on the CPU, said once. */
@@ -82,6 +85,7 @@ export class GpuSide<I> {
     this.fieldsOf = fieldsOf;
     this.uploaded = null;
     this.frame = Number.NaN;
+    this.mirrors.clear();
   }
 
   /**
@@ -91,7 +95,7 @@ export class GpuSide<I> {
    */
   channel(name: string): GpuChannel | null {
     if (this.off) return null;
-    if (this.mix.frame !== this.frame || this.mix.stirs !== this.stirs) {
+    if (this.mix.frame !== this.frame || this.mix.stirs !== this.stirs || this.mirrors.stirred) {
       this.frame = this.mix.frame;
       this.stirs = this.mix.stirs;
       this.outputs = new Map();
@@ -140,15 +144,25 @@ export class GpuSide<I> {
       );
     }
     if (b.pipeline === null || b.failed) return;
-    const entries: Entry[] = e.voices.map((v) => ({
-      owner: v,
-      values: (packOf(v.patch, codes) as { values: Float32Array }).values,
-    }));
+    const mirrors: (Mirror<unknown> | undefined)[] = [];
+    const entries: Entry[] = e.voices.map((v) => {
+      const p = packOf(v.patch, codes) as Extract<Packed, { runner: Runner }>;
+      if (p.perSubject === undefined) {
+        mirrors.push(undefined);
+        return { owner: v, values: p.values };
+      }
+      const m = this.mirrors.of(v, p.perSubject, p.values, this.list);
+      // A host reading only these buffers never samples, so the changes it made are committed here.
+      m.prepare(elapsedOf(v, mix.now), mix.horizonFor(v, 0, mix.now));
+      mirrors.push(m as Mirror<unknown>);
+      return { owner: v, values: m.values() };
+    });
     const placed = this.regions.frame(entries);
+    const subs = this.mirrors.place(mirrors);
     const slots: Slot[] = runners.map((r, k) => ({
       runner: this.index.get(r.key) as number,
       values: placed.offsets[k] as number,
-      sub: 0,
+      sub: subs[k] as number,
     }));
     const table = voiceTable(mix, e.voices, slots);
     if (table.roles > MAX_ROLES) {
@@ -168,8 +182,8 @@ export class GpuSide<I> {
     const v = this.sized('values', this.regions.length * 4, Usage.STORAGE | Usage.COPY_DST);
     const f = this.sized('frame', 16, Usage.UNIFORM | Usage.COPY_DST);
     const out = this.sized('out', k.size * 4, Usage.STORAGE | Usage.COPY_SRC);
-    // Bound to a placeholder until a runner reads per-subject data.
-    const persub = this.sized('persub', 16, Usage.STORAGE | Usage.COPY_DST);
+    const hadSub = buf.persub;
+    const persub = this.sized('persub', this.mirrors.length * 4, Usage.STORAGE | Usage.COPY_DST);
     dev.queue.writeBuffer(t, 0, table.rows);
     const data = this.regions.data;
     if (this.stale || v !== had) {
@@ -179,6 +193,7 @@ export class GpuSide<I> {
     } else
       for (const [from, to] of placed.changed)
         dev.queue.writeBuffer(v, from, data.subarray(from / 4, to / 4));
+    this.mirrors.upload(dev, persub, persub !== hadSub);
     dev.queue.writeBuffer(f, 0, new Uint32Array([table.count, n, 0, 0]));
     if (this.group === null || this.group.of !== b.pipeline) {
       this.group = {

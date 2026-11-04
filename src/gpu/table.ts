@@ -38,6 +38,15 @@ export interface Table {
 }
 
 /**
+ * A voice's time at mix time `now`, as the general path's `contribution` gives a subject with no
+ * stagger; NaN where it shows nothing then.
+ */
+export function elapsedOf<I, O>(voice: Voice<I, O>, now: number): number {
+  const raw = voice.rawAt(now, 0);
+  return voice.before(raw, now) && !voice.holdsFirst ? Number.NaN : voice.shownAt(raw);
+}
+
+/**
  * Each voice's numbers for this frame, worked out once for every subject: a voice the GPU runs
  * plays the same for all of them. The time, phase, and weight come out as the general path's
  * `contribution` and `weigh` give them.
@@ -58,9 +67,7 @@ export function voiceTable<I, O>(
     rows[o + Col.SHADER] = slot.runner;
     rows[o + Col.VALUES] = slot.values;
     rows[o + Col.SUB] = slot.sub;
-    const raw = voice.rawAt(now, 0);
-    const early = voice.before(raw, now);
-    const elapsed = early && !voice.holdsFirst ? Number.NaN : voice.shownAt(raw);
+    const elapsed = elapsedOf(voice, now);
     if (Number.isNaN(elapsed)) return;
     // A member showing nothing this frame does not meet its role, so the next one leads it.
     const role = voice.spec.role;

@@ -34,6 +34,7 @@ export function change<I>(this: Motions<I>, subject: I, c: Change): void {
     this.flag(s, PENDING, true);
   } else if (c.at === undefined) list.push(c);
   else this.queue(list, c, c.at);
+  this.listener?.(s);
   reading.moved++;
   const made: Change = { at: c.at, to: c.to, x: c.x, v: c.v };
   this.owner?.changed(this.ownerId, this, subject, made);

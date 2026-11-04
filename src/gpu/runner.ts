@@ -1,4 +1,6 @@
+import type { Motions } from '../motions.js';
 import { keysPack } from './runners/keys-pack.js';
+import { motionPack } from './runners/motion.js';
 import { wavePack } from './runners/wave.js';
 import { shaderPack } from './shader-patch.js';
 import type { ChannelCode } from './wgsl/channels.js';
@@ -21,8 +23,10 @@ export interface Runner {
   readonly stride?: number;
 }
 
-/** What a voice reads per subject from the `persub` buffer. No runner has any yet. */
-export type PerSubject = object;
+/** What a voice reads per subject from the `persub` buffer: each subject's motion run. */
+export interface PerSubject {
+  readonly motions: Motions<unknown>;
+}
 
 /** Each channel's WGSL, by name: what a runner reads to pack a patch for the channels it writes. */
 export type ChannelLookup = ReadonlyMap<string, ChannelCode>;
@@ -35,7 +39,7 @@ export type Packed =
 /** A kind of patch's packer: undefined for a patch of another kind. */
 type Claim = (patch: object, channels: ChannelLookup) => Packed | undefined;
 
-const claims: readonly Claim[] = [shaderPack, wavePack, keysPack];
+const claims: readonly Claim[] = [shaderPack, wavePack, keysPack, motionPack];
 
 const packs = new WeakMap<ChannelLookup, WeakMap<object, Packed | null>>();
 
