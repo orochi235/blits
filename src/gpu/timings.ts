@@ -30,29 +30,16 @@ enum Dirty {
   ALL = 2,
 }
 
-/** The fields of a voice's clock that move its subjects' origins, as `reorigin`'s callers see them. */
-function signatureOf(v: Voice<unknown, unknown>): unknown[] {
-  return [
-    v.state,
-    v.start,
-    v.anchorNow,
-    v.anchorElapsed,
-    v.rate,
-    v.ramp,
-    v.clocks?.length,
-    v.opened,
-    v.seeks,
-  ];
-}
-
 /** One voice's timing block for one `register`: its f32s, and the f64 origins they are made from. */
 class Block {
   readonly data: Float32Array;
   /** Where the origins start in `data`; -1 for none. */
   private readonly at: number;
-  private readonly since: Float64Array | null;
+  /** 1 where a subject's record would be on its voice's `early` list. */
+  private readonly early: Uint8Array | null;
   private readonly shown: Float64Array | null;
-  private readonly sig: unknown[];
+  /** Set where an origin moved since `data` last took them, so the next `place` lays them again. */
+  private stale = false;
   anchor: number;
   latest = Number.NEGATIVE_INFINITY;
   dirty = Dirty.ALL;
@@ -70,27 +57,44 @@ class Block {
     if (delays !== null) this.data.set(delays);
     if (reach !== null) new Uint32Array(this.data.buffer).set(reach, n);
     this.at = delays !== null && fades ? n + (reach?.length ?? 0) : -1;
-    this.sig = signatureOf(voice);
     this.anchor = now;
     if (this.at < 0 || delays === null) {
-      this.since = null;
+      this.early = null;
       this.shown = null;
       return;
     }
-    this.since = new Float64Array(n);
+    this.early = new Uint8Array(n);
     this.shown = new Float64Array(n);
-    for (let i = 0; i < n; i++) this.since[i] = mix.sinceOf(voice, delays[i] as number);
-    this.reshow(mix, now);
+    for (let i = 0; i < n; i++) {
+      const since = mix.sinceOf(voice, delays[i] as number);
+      this.early[i] = since <= now ? 0 : 1;
+      this.shown[i] = mix.shownOf(voice, since);
+    }
+    this.lay(now);
   }
 
-  /** Where its clock moved since the last frame, moves the origins still ahead, as `reorigin` does. */
-  follow(mix: Mixer<unknown, unknown>, now: number): void {
-    const since = this.since;
+  /**
+   * The voice's clock changed at `now`: the listed origins count from where the clock now puts
+   * them, and stay listed while still ahead of `now`, as `reorigin` moves its `early` records.
+   */
+  reorigin(mix: Mixer<unknown, unknown>, now: number): void {
+    const { early, shown } = this;
     const delays = this.answer.delays;
-    if (since === null || delays === null || !this.moved()) return;
-    for (let i = 0; i < since.length; i++)
-      if (!((since[i] as number) <= now)) since[i] = mix.sinceOf(this.voice, delays[i] as number);
-    this.reshow(mix, now);
+    if (early === null || shown === null || delays === null) return;
+    for (let i = 0; i < early.length; i++) {
+      if (early[i] === 0) continue;
+      const s = mix.sinceOf(this.voice, delays[i] as number);
+      // A motion voice's record stays listed until read past its origin, which the GPU never does.
+      if (this.voice.motion === undefined && s <= now) early[i] = 0;
+      shown[i] = mix.shownOf(this.voice, s);
+      this.stale = true;
+    }
+  }
+
+  /** Lays origins that moved since the last frame, against `now`. */
+  follow(now: number): void {
+    if (!this.stale) return;
+    this.lay(now);
     if (this.dirty === Dirty.NONE) this.dirty = Dirty.SHOWN;
   }
 
@@ -111,32 +115,19 @@ class Block {
     return [this.at, this.data.length];
   }
 
-  /** Whether the voice's clock signature moved, taking the new one where it did. */
-  private moved(): boolean {
-    const now = signatureOf(this.voice);
-    let moved = false;
-    for (let k = 0; k < now.length; k++)
-      if (!Object.is(now[k], this.sig[k])) {
-        this.sig[k] = now[k];
-        moved = true;
-      }
-    return moved;
-  }
-
-  private reshow(mix: Mixer<unknown, unknown>, now: number): void {
-    const since = this.since as Float64Array;
+  private lay(now: number): void {
     const shown = this.shown as Float64Array;
     const reach = this.answer.reach;
     let latest = Number.NEGATIVE_INFINITY;
-    for (let i = 0; i < since.length; i++) {
-      const s = mix.shownOf(this.voice, since[i] as number);
-      shown[i] = s;
+    for (let i = 0; i < shown.length; i++) {
+      const s = shown[i] as number;
       this.data[this.at + i] = s - now;
       const reached = reach === null || (((reach[i >>> 5] as number) >>> (i & 31)) & 1) === 1;
       if (reached && s > latest) latest = s;
     }
     this.anchor = now;
     this.latest = latest;
+    this.stale = false;
   }
 }
 
@@ -150,6 +141,8 @@ export class Timings {
   private placed: { block: Block; offset: number }[] = [];
   /** Set where `placed` moved since the last upload, so all of it is written next. */
   private moved = true;
+  /** The mix whose clock changes this hears, through its `reorigined`. */
+  private hooked: Mixer<unknown, unknown> | null = null;
   /** f32s the blocks take. */
   length = 0;
 
@@ -169,6 +162,10 @@ export class Timings {
     from: number,
   ): (TimingSlot | undefined)[] {
     const m = mix as Mixer<unknown, unknown>;
+    if (this.hooked !== m) {
+      m.reorigined = (voice, t) => this.by.get(voice)?.reorigin(m, t);
+      this.hooked = m;
+    }
     const now = mix.now;
     const live = new Set<Voice<unknown, unknown>>();
     const placed: { block: Block; offset: number }[] = [];
@@ -182,7 +179,7 @@ export class Timings {
       if (b === undefined || b.answer !== answer) {
         b = new Block(m, v, answer, now);
         this.by.set(v, b);
-      } else b.follow(m, now);
+      } else b.follow(now);
       placed.push({ block: b, offset: at });
       const slot = b.slotAt(at);
       at += b.data.length;

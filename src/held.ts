@@ -206,6 +206,7 @@ export function origin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, held: Subject
  * ahead count from where its clock now puts them.
  */
 export function reorigin<I, O>(mix: Mixer<I, O>, voice: Voice<I, O>, now: number): void {
+  mix.reorigined?.(voice, now);
   const early = voice.early;
   if (early === null) return;
   let kept = 0;
