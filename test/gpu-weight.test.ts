@@ -15,9 +15,9 @@ const leaves = (m: ReturnType<typeof mix<C, P>>) =>
   mixerOf(m).cued.filter((v) => v.holding === null) as Voice<C, P>[];
 
 describe('gpu weight', () => {
-  it('reads a level once, and a subject-reading signal per subject', () => {
+  it('reads a level once, and every input and subject-reading signal per subject', () => {
     expect(uniform(level(0.3))).toBe(true);
-    expect(uniform(input(() => 1))).toBe(true);
+    expect(uniform(input(() => 1))).toBe(false);
     expect(uniform(signal((c) => c.x))).toBe(false);
     expect(uniform(share(level(0.5), 0, 2))).toBe(false);
     expect(sampled(level(0.3))).toBe(0.3);
@@ -32,6 +32,18 @@ describe('gpu weight', () => {
     expect(uniform(signal(defaulted))).toBe(false);
     expect(uniform(signal(() => 1))).toBe(false);
     expect(uniform(input((c: C) => c.x) as unknown as Signal<unknown>)).toBe(false);
+    const inputOf = (fn: (...args: C[]) => number) =>
+      input(fn as (c: C) => number) as unknown as Signal<unknown>;
+    expect(uniform(inputOf(rest))).toBe(false);
+    expect(uniform(inputOf(defaulted))).toBe(false);
+    expect(
+      uniform(
+        inputOf(function () {
+          // biome-ignore lint/complexity/noArguments: a read that takes its subject this way has length 0.
+          return (arguments[0] as C).x;
+        }),
+      ),
+    ).toBe(false);
     expect(uniform(input(() => 1, [level(0.5)]))).toBe(false);
   });
 

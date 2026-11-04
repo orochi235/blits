@@ -941,8 +941,6 @@ sherpa and magicsmoke run on it**, each on its own `main`.
     - **A frame where a scene starts costs 195–241 ms at 1M on the gpu engine**, about half in
       `sync` and half in the fold, against a 0.515 ms median (`bench/runs/2026-11-04-gpu-owned.txt`);
       unexplained.
-    - An `input(read)` whose `read` declares no parameter but reads `arguments` is read once for
-      every subject, so the GPU folds the wrong weight. Documented, not detected.
     - `Met` keeps a voice met after `park()` (a seek back before its cue) and after a subject is
       dropped, where the CPU drops its records; storing `voice.seeks` with the mark would fix it.
       `read()`/`landed()` answering from that hook on a gpu mix is untested.

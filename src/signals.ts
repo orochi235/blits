@@ -7,7 +7,7 @@ const told = new WeakSet<object>();
 /** Whether a change to an input signal reaches `reading.inputs`, so a lane fill can see it. */
 export const heard = (signal: object): boolean => told.has(signal);
 
-/** Signals that read the same for every subject: `level`'s, and `input`'s of a function taking none. */
+/** Signals that read the same for every subject: only `level`'s, since a function's `length` can't say. */
 const alike = new WeakSet<object>();
 
 /** Whether a signal reads the same for every subject, so one read serves them all. */
@@ -88,10 +88,6 @@ export interface Input<I, H = unknown> extends Signal<I, H> {
  * signal `read` calls, and the result is an input where any of them is, and reports its changes
  * where they all do.
  *
- * In `input(read)`, a `read` that declares no parameter is taken to read the same for every
- * subject, and the gpu engine reads it once a frame, so a `read` that uses the subject must
- * declare it as a parameter.
- *
  * @category signal
  */
 export function input<I, H = unknown>(
@@ -100,7 +96,6 @@ export function input<I, H = unknown>(
 ): Input<I, H> {
   if (of !== undefined) return Object.assign(marked(read, of), { touch });
   told.add(read);
-  if (read.length === 0) alike.add(read);
   return Object.assign(read, { input: true, touch });
 }
 
@@ -122,16 +117,15 @@ export interface Level<I, H = unknown> extends Signal<I, H> {
  */
 export function level<I, H = unknown>(initial = 0): Level<I, H> {
   let value = initial;
-  return Object.assign(
-    input<I, H>(() => value),
-    {
-      set(v: number) {
-        if (Object.is(v, value)) return;
-        value = v;
-        touch();
-      },
+  const read = input<I, H>(() => value);
+  alike.add(read);
+  return Object.assign(read, {
+    set(v: number) {
+      if (Object.is(v, value)) return;
+      value = v;
+      touch();
     },
-  );
+  });
 }
 
 interface Slewed {
